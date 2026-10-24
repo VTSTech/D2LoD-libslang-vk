@@ -15,16 +15,20 @@
 //   ARGB palette (grTexDownloadTable), TMU-addressed (grTexDownloadMipMap
 //   stores, grTexSource binds); vertex = 20B used of 0x1C stride: x,y float,
 //   PARGB dword, oow, s, t.
-//   TEXTURE COORDS (P2.6): the game submits TWO conventions. (a) TEXEL UNITS —
-//   DrawPalettedQuad (sprites/UI/buttons/text; spans = the texel dims via
-//   gaPerspectiveImageSizeTable) and the ground lattice (InitGroundTileVertices,
-//   spans x256/x128 = the 256x128 floor texture dims) — never beyond the dims.
-//   (b) VOODOO 256-SPACE — the glBlocks wall lattice (InitPerspectiveTables:
-//   S=col*128, T=row*64 up to 256 regardless of the 32x32 subtile dims; texel =
-//   coord * dim/256). The raster auto-detects per draw, per axis: an extent
-//   beyond the texture dims switches that axis to rule (b). Textures:
-//   GR_TEXFMT_P_8 (fmt 5) via the palette + GR_TEXFMT_RGB_565 (fmt 0xa, the
-//   in-game Smacker video quads).
+//   TEXTURE COORDS (P2.7): the game ALWAYS submits VOODOO SQUARE-MIP-SPACE
+//   coordinates — texel = coord * (2^largeLod / 256) on BOTH axes, for every
+//   aspect. Ground truth: DrawPalettedQuad/DrawPerspectiveImage scale raw
+//   coords by gaPerspectiveImageSizeTable[aspect] spans {S,T} = (256,256)
+//   square, (256,256>>a) wide, (256>>|a|,256) tall — which reduces to the
+//   uniform square rule for every aspect (the short axis's span makes texel
+//   = coord*2^lod/256, identical to the long axis). The P2.6 per-axis extent
+//   auto-detect is retired: it mis-scaled the short axis of non-square
+//   textures (dim/256 instead of 2^lod/256), vertically crushing 64x32
+//   buttons and 128x64 panels, and horizontally crushing 16x64/16x128
+//   sprites. Wrap stays at the declared (w,h) texel dims; the valid image
+//   occupies the [0,w)x[0,h) sub-rectangle of the 2^lod square.
+//   Textures: GR_TEXFMT_P_8 (fmt 5) via the palette + GR_TEXFMT_RGB_565
+//   (fmt 0xa, the in-game Smacker video quads).
 //   colorCombine: mode 1 = SCALE_OTHER x LOCAL (texel * vertex color),
 //   mode 2 = LOCAL constant (grConstantColorValue solid fill: gray in bits
 //   15..8, blend alpha in bits 7..0 — RENDERER_GLIDE_ScalePaletteValue << 8).
@@ -60,9 +64,9 @@ unsigned g3x_frame_tex_miss_count();   // grTexSource bindings with no download
 
 // Draw-path totals since context open: vac fans, pointer-array draws,
 // pointer-array strips, pointer-array fans, draws skipped (no texture),
-// 256-space auto-detected draws, RGB565-texture draws (P2.6).
-// Feeds the periodic frame lines + shutdown summary (P2.4/P2.6 diagnostics).
-void     g3x_frame_draw_stats(unsigned out[7]);
+// sub-256-mip draws, RGB565-texture draws, constant-fill quads (P2.7).
+// Feeds the periodic frame lines + shutdown summary (P2.4/P2.6/P2.7).
+void     g3x_frame_draw_stats(unsigned out[8]);
 
 // TRIANGLE_FAN (mode 5): count vertices at `base`, `stride` bytes apart.
 void     g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride);

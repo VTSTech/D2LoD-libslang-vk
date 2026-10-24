@@ -202,6 +202,20 @@ int tex_slot_alloc(unsigned key) {
 
 unsigned s_tex_miss_total = 0;       // exit-summary diagnostic (round 6)
 
+// P2.4 draw-path counters (surfaced via g3x_frame_draw_stats for the periodic
+// frame lines — with per-call tags budget-quiet, these are the only window
+// into what a gameplay session actually submits). Declared before the raster
+// section: fill_rect_fast bumps s_n_fill (P2.7 fill diagnostic).
+static unsigned s_n_vac = 0;          // grDrawVertexArrayContiguous fans
+static unsigned s_n_parr = 0;         // grDrawVertexArray pointer-array draws
+static unsigned s_n_parr_strip = 0;
+static unsigned s_n_parr_fan = 0;
+static unsigned s_n_skip_notex = 0;   // draws dropped: no texture bound
+static unsigned s_n_space256 = 0;     // draws on sub-256-mip textures (P2.7:
+                                      // the class the square-space scale fixes)
+static unsigned s_n_rgb565 = 0;       // draws sampled from RGB_565 textures (P2.6)
+static unsigned s_n_fill = 0;         // constant-fill quads (axis-aligned fast path)
+
 // ---- raster ---------------------------------------------------------------
 struct RVert { float x, y, u, v; uint32_t argb; };
 
@@ -459,6 +473,12 @@ static void raster_tri(const RVert& A0, const RVert& B0, const RVert& C0,
 // loading screens — DrawSolidRectEx/DrawSolidRectAlpha) run FULL-SCREEN at
 // 800x600; detect the rect shape at the quad level and fill scanlines
 // directly. Blending applies per pixel through the hoisted blend class.
+//
+// P2.7 fill diagnostic: the round-9 field log shows ~14 black (constant RGB 0)
+// LERP-alpha fills per in-game frame (constantColor=0x40/0x80/0xc0 = the
+// SetDrawMode 0/1/2 dim family) and the user still reports "black bars" —
+// log the first fill of each distinct (src, blend) class WITH its screen
+// rect so the round-10 log pins exactly which rects those are.
 bool fill_rect_fast(unsigned count, const RVert* v) {
     if (!s_color_fill || count != 4 || !s_px) return false;
     float xa = v[0].x, xb = v[0].x, ya = v[0].y, yb = v[0].y;
@@ -472,6 +492,23 @@ bool fill_rect_fast(unsigned count, const RVert* v) {
         if (v[i].x != xa && v[i].x != xb) return false;
         if (v[i].y != ya && v[i].y != yb) return false;
     }
+    ++s_n_fill;
+    const uint32_t fill_src = const_fill_rgb();
+    {
+        struct FillKey { uint32_t src; unsigned sf, df; };
+        static FillKey s_seen[12]; static unsigned s_n = 0;
+        const FillKey key = { fill_src, s_blend_sf, s_blend_df };
+        bool seen = false;
+        for (unsigned k = 0; k < s_n; ++k) {
+            if (s_seen[k].src == key.src && s_seen[k].sf == key.sf && s_seen[k].df == key.df) { seen = true; break; }
+        }
+        if (!seen && s_n < 12) {
+            s_seen[s_n++] = key;
+            g3x_log("fill#%u: rect(%.0f,%.0f)..(%.0f,%.0f) src=0x%06x alpha=%u blend=(%u,%u)",
+                    s_n, xa < xb ? xa : xb, ya < yb ? ya : yb, xa > xb ? xa : xb, ya > yb ? ya : yb,
+                    fill_src, s_const_alpha, s_blend_sf, s_blend_df);
+        }
+    }
     const float minx = xa < xb ? xa : xb, maxx = xa > xb ? xa : xb;
     const float miny = ya < yb ? ya : yb, maxy = ya > yb ? ya : yb;
     // pixel centers strictly inside [min,max) — same coverage as the
@@ -480,7 +517,6 @@ bool fill_rect_fast(unsigned count, const RVert* v) {
     int y0 = (int)ceilf(miny - 0.5f); if (y0 < 0) y0 = 0;
     int x1 = (int)ceilf(maxx - 0.5f); if (x1 > (int)s_w) x1 = (int)s_w;
     int y1 = (int)ceilf(maxy - 0.5f); if (y1 > (int)s_h) y1 = (int)s_h;
-    const uint32_t fill_src = const_fill_rgb();
     for (int y = y0; y < y1; ++y) {
         uint32_t* row = s_px + (size_t)y * s_w;
         for (int x = x0; x < x1; ++x) row[x] = blend_px(row[x], fill_src);
@@ -488,66 +524,53 @@ bool fill_rect_fast(unsigned count, const RVert* v) {
     return true;
 }
 
-// P2.6 — per-draw s/t coordinate-space auto-detect. The game submits TWO
-// conventions: (a) TEXEL UNITS — DrawPalettedQuad (sprites/UI/buttons/text;
-// spans = the texel dims via gaPerspectiveImageSizeTable) and the ground
-// lattice (InitGroundTileVertices: spans x256/x128 = the 256x128 floor texture
-// dims, max S=163/T=81) — never beyond the texture dims; and (b) the VOODOO
-// 256-SPACE — the glBlocks wall lattice (InitPerspectiveTables: S=col*128,
-// T=row*64, up to 256 REGARDLESS of the 32x32 subtile dims). An extent beyond
-// the dims is therefore the unambiguous signature of (b): texel = coord *
-// dim/256. The P2.2-P2.5 scalar tscale (2^lod/256) was rule (b) applied to
-// EVERYTHING — correct for lod-8 textures and the wall lattice, but it
-// crushed every lod<8 sprite/UI texture (64x32 title buttons sampled their
-// top-left 16x8 corner; 32x32 wall subtiles a 4x4 corner).
+// P2.7 — the UNIFORM coordinate rule (the P2.6 per-axis auto-detect is
+// retired). Ground truth, decoded one level deeper into the game tree:
+// DrawPalettedQuad/DrawPerspectiveImage scale raw sprite coords by
+// gaPerspectiveImageSizeTable[aspect] spans {S,T} = (256,256) square,
+// (256,256>>a) wide, (256>>|a|,256) tall. Reducing texel = coord/Span*dim for
+// every aspect collapses to texel = coord * (2^largeLod / 256) on BOTH axes:
+//   wide  (a >= 0): S span 256      -> texel_s = s*w/256 = s*2^lod/256 (w=2^lod)
+//                   T span 256*h/w -> texel_t = t*h/(256*h/w) = t*w/256
+//   tall  (a  < 0): S span 256*w/h -> texel_s = s*w/(256*w/h) = s*h/256 (h=2^lod)
+//                   T span 256     -> texel_t = t*h/256
+// i.e. coordinates ALWAYS live in the square mip space 2^largeLod x 2^largeLod
+// (256 units = one full square), valid image in the [0,w)x[0,h) sub-rect.
+// This is exactly the P2.2 scalar rule with lod = largeLodLog2 (which Tex
+// stores). P2.6's extent heuristic mis-scaled the SHORT axis of non-square
+// textures (dim/256 instead of 2^lod/256): 64x32 title buttons were crushed
+// to half height (quad#5 field: rows 1..16 instead of 2..32), the 128x64
+// mini-panel to half height (quad#12), 16x128 sprites to an eighth width
+// (quad#14), 32x128/16x32/16x64 similarly. All 14 round-9 field quad classes
+// pin 2^lod/256 on both axes with 1:1 texel:pixel mapping.
 struct TexSpace { float sx, sy; };
-TexSpace tex_space(const RVert* v, unsigned n, const Tex& t) {
-    float ms = 0.0f, mt = 0.0f;
-    for (unsigned i = 0; i < n; ++i) {
-        const float as = v[i].u < 0.0f ? -v[i].u : v[i].u;
-        const float at = v[i].v < 0.0f ? -v[i].v : v[i].v;
-        if (as > ms) ms = as;
-        if (at > mt) mt = at;
-    }
-    TexSpace ts = { 1.0f, 1.0f };
-    if (ms > (float)t.w) ts.sx = (float)t.w / 256.0f;
-    if (mt > (float)t.h) ts.sy = (float)t.h / 256.0f;
-    return ts;
+TexSpace tex_space(const RVert* /*v*/, unsigned /*n*/, const Tex& t) {
+    const float sc = (float)(1u << t.lod) / 256.0f;
+    return { sc, sc };
 }
 
-// Field diagnostic (round 9): the first quads per distinct (dims, space)
-// class, with raw vertices — verifies the button/wall sampling fix directly
-// in the field log without flooding.
-void quad_diag(unsigned count, const RVert* v, const Tex& t, bool sp256) {
-    static unsigned s_w[14], s_h[14], s_sp[14], s_n = 0;
+// Field diagnostic (round 10): the first quads per distinct (dims) class,
+// with raw vertices + the applied square-space scale — verifies the P2.7
+// sampling rule directly in the field log without flooding.
+void quad_diag(unsigned count, const RVert* v, const Tex& t, float sc) {
+    static unsigned s_w[14], s_h[14], s_n = 0;
     if (s_n >= 14) return;
     for (unsigned k = 0; k < s_n; ++k) {
-        if (s_w[k] == t.w && s_h[k] == t.h && s_sp[k] == (sp256 ? 1u : 0u)) return;
+        if (s_w[k] == t.w && s_h[k] == t.h) return;
     }
-    s_w[s_n] = t.w; s_h[s_n] = t.h; s_sp[s_n] = sp256 ? 1u : 0u; ++s_n;
+    s_w[s_n] = t.w; s_h[s_n] = t.h; ++s_n;
     RVert q[4] = { {}, {}, {}, {} };
     const unsigned n = count < 4 ? count : 4;
     for (unsigned i = 0; i < n; ++i) q[i] = v[i];
-    g3x_log("quad#%u: tex %ux%u %s v0(%.1f,%.1f|c%08x|s%.1f,t%.1f) "
+    g3x_log("quad#%u: tex %ux%u lod%u sc=%.4g v0(%.1f,%.1f|c%08x|s%.1f,t%.1f) "
             "v1(%.1f,%.1f|c%08x|s%.1f,t%.1f) v2(%.1f,%.1f|c%08x|s%.1f,t%.1f) "
             "v3(%.1f,%.1f|c%08x|s%.1f,t%.1f)",
-            s_n, t.w, t.h, sp256 ? "256sp" : "texel",
+            s_n, t.w, t.h, t.lod, sc,
             q[0].x, q[0].y, q[0].argb, q[0].u, q[0].v,
             q[1].x, q[1].y, q[1].argb, q[1].u, q[1].v,
             q[2].x, q[2].y, q[2].argb, q[2].u, q[2].v,
             q[3].x, q[3].y, q[3].argb, q[3].u, q[3].v);
 }
-
-// P2.4 draw-path counters (surfaced via g3x_frame_draw_stats for the periodic
-// frame lines — with per-call tags budget-quiet, these are the only window
-// into what a gameplay session actually submits).
-static unsigned s_n_vac = 0;          // grDrawVertexArrayContiguous fans
-static unsigned s_n_parr = 0;         // grDrawVertexArray pointer-array draws
-static unsigned s_n_parr_strip = 0;
-static unsigned s_n_parr_fan = 0;
-static unsigned s_n_skip_notex = 0;   // draws dropped: no texture bound
-static unsigned s_n_space256 = 0;     // draws auto-detected as 256-space (P2.6)
-static unsigned s_n_rgb565 = 0;       // draws sampled from RGB_565 textures (P2.6)
 
 void gamma_identity() {
     for (int c = 0; c < 3; ++c)
@@ -719,10 +742,10 @@ unsigned g3x_frame_tex_miss_count() {
     return s_tex_miss_total;
 }
 
-void g3x_frame_draw_stats(unsigned out[7]) {
+void g3x_frame_draw_stats(unsigned out[8]) {
     out[0] = s_n_vac; out[1] = s_n_parr; out[2] = s_n_parr_strip;
     out[3] = s_n_parr_fan; out[4] = s_n_skip_notex;
-    out[5] = s_n_space256; out[6] = s_n_rgb565;
+    out[5] = s_n_space256; out[6] = s_n_rgb565; out[7] = s_n_fill;
 }
 
 void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
@@ -742,7 +765,8 @@ void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
         if (t.bpp == 2) ++s_n_rgb565;
         const TexSpace ts = tex_space(verts, count, t);
         tsx = ts.sx; tsy = ts.sy;
-        quad_diag(count, verts, t, tsx != 1.0f || tsy != 1.0f);
+        if (tsx != 1.0f) ++s_n_space256;
+        quad_diag(count, verts, t, tsx);
     }
     // Field diagnostic: the first fans' raw vertices (x,y | color | s,t) — the
     // ground truth for the s/t convention, quad geometry AND vertex colors
@@ -782,7 +806,8 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
         if (t.bpp == 2) ++s_n_rgb565;
         const TexSpace ts = tex_space(verts, count, t);
         tsx = ts.sx; tsy = ts.sy;
-        quad_diag(count, verts, t, tsx != 1.0f || tsy != 1.0f);
+        if (tsx != 1.0f) ++s_n_space256;
+        quad_diag(count, verts, t, tsx);
     }
     // Field diagnostic: the pointer-array path (ground tiles / wall strips).
     // First 4 draws log the primitive + first vertex colors so ground lighting

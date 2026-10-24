@@ -93,7 +93,8 @@ void __stdcall grGlideShutdown() {
     // Always-on totals: the round-6 report arrived without any summary (the
     // every-300-swaps gate never fired at 112 frames), so the exit evidence
     // was lost. Print the full picture unconditionally.
-    unsigned ds[5];
+    unsigned ds[8];   // P2.7: stats grew to 8 slots (P2.6 left ds[5] here — a
+                      // silent 3-slot stack overrun on every shutdown log)
     g3x_frame_draw_stats(ds);
     g3x_log("grGlideShutdown: swaps=%u clears=%u draws=%u (vac=%u parr=%u "
             "strip=%u fan=%u point=%u line=%u tri=%u) skip=%u texdl=%u paldl=%u "
@@ -132,7 +133,7 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
 FxBool __stdcall grSstWinClose(GrContext_t context) {
     // Phase marker: the game opens/closes contexts for probes, videos and the
     // real window — the totals here separate those phases in the log.
-    unsigned ds[5];
+    unsigned ds[8];   // P2.7: stats grew to 8 slots (same overrun as above)
     g3x_frame_draw_stats(ds);
     g3x_log("grSstWinClose: ctx=%u (swaps=%u vac=%u parr=%u strip=%u fan=%u "
             "skip=%u texmiss=%u)",
@@ -180,12 +181,12 @@ void __stdcall grBufferSwap(FxU32 swap_interval) {
     // tag budget-quiet, so these are the only evidence of what each phase
     // actually submitted (and how fast the CPU raster is keeping up).
     if (g_st.n_swaps % 120 == 0) {
-        unsigned ds[7];
+        unsigned ds[8];
         g3x_frame_draw_stats(ds);
-        g3x_log("frame %u: avg=%.1fms vac=%u parr=%u(strip=%u fan=%u) sp256=%u "
-                "rgb565=%u skip=%u texdl=%u paldl=%u lfb=%u",
+        g3x_log("frame %u: avg=%.1fms vac=%u parr=%u(strip=%u fan=%u) sub256=%u "
+                "rgb565=%u fill=%u skip=%u texdl=%u paldl=%u lfb=%u",
                 g_st.n_swaps, s_ms_n ? s_ms_acc / (double)s_ms_n : 0.0,
-                ds[0], ds[1], ds[2], ds[3], ds[4], ds[5], ds[6],
+                ds[0], ds[1], ds[2], ds[3], ds[4], ds[5], ds[6], ds[7],
                 g_st.n_tex_downloads, g_st.n_palette_downloads, g_st.n_lfb_locks);
         s_ms_acc = 0.0; s_ms_n = 0;
     }
@@ -607,8 +608,9 @@ static void g3x_banner() {
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
     g3x_log("glide3xvk scaffold %s — loaded into %s", G3XVK_BUILD_ID, exe);
     g3x_log("compiled " __DATE__ " " __TIME__
-            "; P2.6 = per-draw s/t space auto-detect (texel units vs Voodoo"
-            " 256-space: wall subtiles + small sprites/buttons) + RGB565 quads");
+            "; P2.7 = uniform square-mip s/t space (texel = coord*2^lod/256 both axes;"
+            " retires the P2.6 per-axis auto-detect that crushed short axes)"
+            " + fill-rect diagnostics");
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {

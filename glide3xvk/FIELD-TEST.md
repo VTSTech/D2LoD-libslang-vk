@@ -562,3 +562,75 @@ Host rig: 76/76 checks pass, including three new P2.6 tests (wall lattice
 
 Same install: replace `glide3x.dll`, run `Game -w -3dfx`. Screenshot plus
 log tells the whole story.
+
+---
+
+# Round 10 — v10 (P2.7): uniform square-mip s/t space
+
+## Round 9 field report
+
+"still a lot of black bars, text on buttons still not correct."
+
+The round-9 log's 14 `quad#` lines were decisive. Checking every observed
+draw against three candidate coordinate rules showed the P2.6 extent
+auto-detect wrong on 7 of 14 classes while the **uniform square-mip rule**
+(`texel = coord * 2^largeLod/256` on BOTH axes) is exactly 1:1 on all of
+them — including the wall lattice, ground lattice, border strips and every
+sprite/UI class:
+
+| draw | declared | screen | P2.6 sampled | P2.7 samples |
+|------|----------|--------|--------------|--------------|
+| quad#5 button | 64x32 | 35x30 | 35x15 (2x vertical crush) | 35x30 |
+| quad#12 mini-panel | 128x64 | 128x35 | 128x18 | 128x35 |
+| quad#14 sprite | 16x128 | 16x93 | 2x93 (8x crush) | 16x93 |
+| quad#4 strip | 32x128 | 32x88 | 8x88 | 32x88 |
+| quad#8 sprite | 16x32 | 16x25 | 8x25 | 16x25 |
+| quad#11 sprite | 16x64 | 16x35 | 4x35 | 16x35 |
+| quad#6/#9/#13, walls, ground, borders | — | — | 1:1 | 1:1 (unchanged) |
+
+Ground truth, one level deeper in the game tree:
+`RENDERER_GLIDE_DrawPalettedQuad`/`DrawPerspectiveImage` scale raw sprite
+coords by `gaPerspectiveImageSizeTable[aspect]` = {S,T} spans (256,256)
+square, (256,256>>a) wide, (256>>|a|,256) tall. Reducing
+`texel = coord/Span*dim` for every aspect collapses to
+`texel = coord * 2^largeLod/256` on both axes — i.e. coordinates ALWAYS live
+in the square mip space (256 units = one full square), with the image in the
+[0,w)x[0,h) sub-rectangle. The P2.6 heuristic scaled the short axis by
+`dim/256` instead of `2^lod/256` — exactly the crush table above. Crushed
+sub-rect sampling also explains the black bars: icon/HUD/text quads sampled
+mostly empty atlas padding (palette index 0 = black, drawn opaque).
+
+## P2.7 changes
+
+1. **Uniform square-mip sampling** — `tex_space()` now returns
+   `2^largeLod/256` on both axes unconditionally (the P2.6 extent heuristic
+   is retired). Every currently-correct class is bit-identical (lod-8
+   textures scale 1:1; wall subtiles were already sampled dim/256 = square
+   for 32x32); the seven crushed classes are fixed.
+2. **Fill-rect diagnostics** — the round-9 log shows ~14 black LERP fills
+   per in-game frame (SetDrawMode 0/1/2 = 25/50/75% black dim rects) and
+   "black bars" is still unexplained; `fill#N: rect(...) src=0x... alpha=...
+   blend=(sf,df)` lines now pin the first fill of each distinct class WITH
+   its screen rect.
+3. **Stack-overrun fix** — `grGlideShutdown`/`grSstWinClose` passed a 5-slot
+   array into the 7-slot (now 8-slot) draw-stats writer; 2-3 unsigneds were
+   silently smashed on every shutdown log since P2.6.
+4. Frame lines now print `sub256=` (draws on sub-256-mip textures — the
+   fixed class) and `fill=` (constant-fill quads); `quad#` lines print the
+   applied scale (`sc=`) and lod.
+5. New host tests pin the EXACT field geometry of round-9 quads #5 and #11.
+
+Host rig: 84/84 checks pass.
+
+## Round 10 success criteria
+
+1. **Title buttons**: label text correct (no more vertical crush/garble).
+2. **Inventory / item icons / skill icons / HUD art**: render at 1:1 — the
+   "black bars" should collapse or vanish; whatever black rectangles remain,
+   the new `fill#` lines now name their exact screen rects.
+3. Walls/ground/title (all previously correct) unchanged.
+4. Log: banner **P2.7 = uniform square-mip s/t space ...**; `quad#` lines
+   with `sc=`; `fill#` lines (please capture a session that enters the game
+   and opens the inventory again).
+
+Same install: replace `glide3x.dll`, run `Game -w -3dfx`.
