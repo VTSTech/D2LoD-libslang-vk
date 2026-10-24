@@ -10,6 +10,7 @@
 #include "g3x_log.h"
 #include "g3x_frame.h"
 #include "g3x_overlay.h"
+#include "g3x_slang.h"
 #include "vk_backend.h"
 
 #include <cstring>
@@ -153,6 +154,10 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
         g3x_log("grSstWinOpen: overlay=%s (glide3xvk v%s, ini: %s)",
                 on ? "on" : "off", G3XVK_VERSION, ini[0] ? ini : "<exe path unresolved>");
     }
+    // P3: preset chain — re-read d2slangvk.conf on every context open so a
+    // relaunch picks up conf/preset edits without touching the DLL. Same
+    // fail-soft spirit as the overlay switch: no conf = no chain = P2 look.
+    g3x_slang_context_open();
     g3x_frame_reset(w, h);   // game framebuffer exists even if Vulkan does not
     if (s_ctx == 0) s_ctx = 1;
     return s_ctx;
@@ -655,12 +660,11 @@ static void g3x_banner() {
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
     g3x_log("glide3xvk %s %s — loaded into %s", G3XVK_VERSION, G3XVK_BUILD_ID, exe);
     g3x_log("compiled " __DATE__ " " __TIME__
-            "; P2.11 = version tag moved top-right: \"glide3xvk " G3XVK_VERSION " (%s)\" "
-            "drawn 4px from the top-right edge at present time (leaves the game's "
-            "/fps readout — top-left — visible; 8x8 bitmap font, post-gamma, over "
-            "everything incl. LFB video frames; off-switch glide3xvk.ini "
-            "[glide3xvk] overlay=0); P2.9 chroma index-0 fix retained",
-            G3XVK_BUILD_ID);
+            "; P3 = libslang-vk preset chain at the present pass: d2slangvk.conf "
+            "[slangvk] preset=<path.slangp> runs every presented frame through "
+            "the preset (scale=fit|integer|stretch, vsync=, hot-reload on file "
+            "change; no conf = unfiltered P2 look); P2.11 top-right version "
+            "tag + P2.9 chroma index-0 fix retained");
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {

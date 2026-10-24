@@ -31,11 +31,44 @@ set(G3XVK_SOURCES
     src/g3x_state.cpp
     src/g3x_frame.cpp
     src/g3x_overlay.cpp
+    src/g3x_slang.cpp
     src/vk_backend.cpp
     src/glide_exports.cpp
     vendor/volk/volk.c)
 
 add_library(glide3x SHARED ${G3XVK_SOURCES})
+
+# ---- P3: libslang-vk (the preset chain at the present pass) -----------------
+#
+# Expects a libslang-vk checkout beside this repo (BUILD-32BIT.md recipe):
+#   git clone https://github.com/VTSTech/libslang-vk ../libslang-vk
+# Override the location with -DG3XVK_SLANGVK_DIR=<path>. When the checkout is
+# missing, glide3x still builds — with the preset chain stubbed out (same API,
+# always inactive) and a loud STATUS line here plus a log line at runtime.
+# The d2 tree is unaffected either way (glide3xvk is excluded from the d2 glob).
+set(G3XVK_SLANGVK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../libslang-vk"
+    CACHE PATH "libslang-vk checkout (static slangvk target gets linked)")
+if(EXISTS "${G3XVK_SLANGVK_DIR}/CMakeLists.txt")
+    # Normal (non-cache) sets: visible to add_subdirectory below, invisible to
+    # the parent scope — the game tree's flags stay exactly as they were.
+    set(SLANGVK_BUILD_SHARED OFF)
+    set(SLANGVK_BUILD_TESTS OFF)
+    set(SLANGVK_BUILD_EXAMPLES OFF)
+    set(SLANGVK_BUILD_BENCHMARKS OFF)
+    # glslang names its archives with the Debug postfix when the build type is
+    # empty, which breaks the slangvk consumer graph (BUILD-32BIT.md); the
+    # directory-scoped shadow below fixes that without touching the cache —
+    # the superproject (d2.exe at -O0/-g per PLAN.md R5) keeps its build type.
+    set(CMAKE_BUILD_TYPE Release)
+    add_subdirectory("${G3XVK_SLANGVK_DIR}" "${CMAKE_BINARY_DIR}/glide3xvk-slangvk" EXCLUDE_FROM_ALL)
+    target_link_libraries(glide3x PRIVATE slangvk::slangvk)
+    target_compile_definitions(glide3x PRIVATE G3XVK_HAVE_SLANGVK=1)
+    message(STATUS "glide3xvk: libslang-vk at ${G3XVK_SLANGVK_DIR} — preset chain linked (P3)")
+else()
+    target_compile_definitions(glide3x PRIVATE G3XVK_HAVE_SLANGVK=0)
+    message(STATUS "glide3xvk: libslang-vk NOT FOUND at ${G3XVK_SLANGVK_DIR} — "
+        "building WITHOUT the preset chain (clone it beside the repo, see BUILD-32BIT.md)")
+endif()
 
 set_target_properties(glide3x PROPERTIES
     OUTPUT_NAME "glide3x"

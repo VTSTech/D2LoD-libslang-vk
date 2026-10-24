@@ -747,3 +747,50 @@ off-switch restores exact frame bytes).
 Round 13 expectations: pixels identical to round 12 except the tag line sits
 in the top-right corner. `/fps` (chat command) stays fully visible top-left.
 The tag reads `glide3xvk 0.3.1 (<pushed commit hash>)`.
+
+## Round 14 (P3, build glide3xvk-0.4.0) — preset chain at the present pass
+
+The libslang-vk chain is wired: gamma-corrected frames go through a
+`slangvk_image` at NATIVE game resolution into
+`slangvk_chain_render_swapchain` — the preset does the scaling, so 640x480
+sources can land in a big window with the preset's own algorithms. No
+`d2slangvk.conf` = the DLL behaves exactly like 0.3.1 (same pixels, one extra
+one-shot log line), so the safe first test is: nothing.
+
+Test matrix, in order:
+
+1. **No conf** (or no `preset=` line): everything must look and feel exactly
+   like round 13. Log: one `slang: no preset= in d2slangvk.conf — unfiltered
+   present` line, no slang errors, frame rate unchanged (~27 fps @ 800x600).
+2. **Scanline starter**: copy `presets/d2slangvk.conf.sample` beside Game.exe,
+   uncomment `preset=presets/glide3xvk-scanline.slangp`, ship the `presets/`
+   folder from the repo next to it. Expect: image identical to step 1 except
+   every other source line darkened ~30%; log: `slang: device adopted — <gpu>`,
+   `slang: chain ready 'presets/glide3xvk-scanline.slangp' (conf): 1 passes,
+   scale=fit, output <WxH>`, `slang: input image 640x480 B8G8R8A8` (or
+   800x600). The version tag filters with the frame (expected — WYSIWYG).
+3. **Sharpen starter**: swap `preset=` to `glide3xvk-sharpen.slangp` WITHOUT
+   restarting. Within ~half a second the log shows the reload and the image
+   re-sharpens — the hot-reload proof.
+4. **Resolution swing**: menu (800x600) vs a cutscene (LFB path) vs gameplay —
+   the chain must survive the game's resolution switches; the log re-prints
+   `slang: input image <WxH>` on each change and never logs render failures.
+5. **scale=**: `integer` (letterboxes to whole multiples) and `stretch`
+   (fills) — set in the conf, watch it apply without a restart.
+6. **vsync=0**: swapchain drops to IMMEDIATE if the driver offers it
+   (`vk: swapchain ... (IMMEDIATE)` in the log); tearing visible is expected.
+7. **CRT-Royale**: `preset=` pointed at a RetroArch checkout (absolute path),
+   e.g. `Shaders/crt/CRT-Royale.slangp`. This is the P3 exit shot: a real
+   multi-pass chain on the game. Watch for pass counts in the log and frame
+   cost in the periodic `frame N:` lines.
+8. **Failure path**: `preset=` pointed at a missing/garbage file — log carries
+   the slang error (`preset_load failed (preset_parse)` or similar), the game
+   keeps rendering unfiltered, no crash.
+9. **What still needs reporting**: fps with the chain on vs off (the CPU
+   raster is still the bottleneck; the chain cost shows up in the `frame N:`
+   summaries), any color shift (the chain input is BGRA8 UNORM — if red/blue
+   swap somewhere, that's a real bug to chase).
+
+Host rig: 115/115 fxtest checks (tests 23–25 cover the conf parser, the
+output-rect math, and the present-branch fallback); DLL 8,673,489 bytes,
+45/45 exports, KERNEL32+msvcrt imports only. Build id: a pushed 0.4.0 commit.

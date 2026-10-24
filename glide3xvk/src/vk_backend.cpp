@@ -1,5 +1,6 @@
 #include "vk_backend.h"
 #include "g3x_log.h"
+#include "g3x_slang.h"
 
 // volk first: it pulls in <vulkan/vulkan.h> with VK_NO_PROTOTYPES and provides
 // every entry point as a function pointer loaded from vulkan-1.dll at runtime
@@ -24,6 +25,7 @@ VkFormat         s_format     = VK_FORMAT_B8G8R8A8_UNORM;
 VkExtent2D       s_extent     = {640, 480};
 uint32_t         s_image_n    = 0;
 VkImage          s_images[8]  = {};
+VkImageView      s_views[8]   = {};   // P3: per-image views (the chain renders into these)
 bool             s_sync_live  = false;
 VkSemaphore      s_sem_acquire = VK_NULL_HANDLE;
 VkSemaphore      s_sem_render  = VK_NULL_HANDLE;
@@ -53,6 +55,9 @@ void destroy_swapchain_objects() {
     if (s_staging)          { vkDestroyBuffer(s_device, s_staging, nullptr); s_staging = VK_NULL_HANDLE; }
     if (s_staging_mem)      { vkFreeMemory(s_device, s_staging_mem, nullptr); s_staging_mem = VK_NULL_HANDLE; }
     s_staging_size = 0;
+    for (uint32_t i = 0; i < s_image_n; ++i) {
+        if (s_views[i] != VK_NULL_HANDLE) { vkDestroyImageView(s_device, s_views[i], nullptr); s_views[i] = VK_NULL_HANDLE; }
+    }
     if (s_swapchain != VK_NULL_HANDLE) { vkDestroySwapchainKHR(s_device, s_swapchain, nullptr); s_swapchain = VK_NULL_HANDLE; }
     if (s_sem_acquire != VK_NULL_HANDLE) { vkDestroySemaphore(s_device, s_sem_acquire, nullptr); s_sem_acquire = VK_NULL_HANDLE; }
     if (s_sem_render != VK_NULL_HANDLE)  { vkDestroySemaphore(s_device, s_sem_render, nullptr);  s_sem_render  = VK_NULL_HANDLE; }
@@ -141,6 +146,19 @@ bool create_swapchain() {
     uint32_t image_count = caps.minImageCount + 1;
     if (caps.maxImageCount > 0 && image_count > caps.maxImageCount) image_count = caps.maxImageCount;
 
+    // P3: the preset chain draws as a render pass -> COLOR_ATTACHMENT usage is
+    // required; TRANSFER_DST stays for the legacy unfiltered copy path.
+    VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR; // always supported
+    if (g3x_slang_vsync_pref() == 0) {
+        uint32_t npm = 0;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(s_phys, s_surface, &npm, nullptr);
+        VkPresentModeKHR modes[8] = {}; if (npm > 8) npm = 8;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(s_phys, s_surface, &npm, modes);
+        for (uint32_t i = 0; i < npm; ++i) {
+            if (modes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR) { present_mode = VK_PRESENT_MODE_IMMEDIATE_KHR; break; }
+        }
+    }
+
     VkSwapchainCreateInfoKHR ci{}; ci.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     ci.surface = s_surface;
     ci.minImageCount = image_count;
@@ -148,11 +166,11 @@ bool create_swapchain() {
     ci.imageColorSpace = fmts[0].colorSpace;
     ci.imageExtent = s_extent;
     ci.imageArrayLayers = 1;
-    ci.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT; // clear target for P1
+    ci.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     ci.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     ci.preTransform = caps.currentTransform;
     ci.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    ci.presentMode = VK_PRESENT_MODE_FIFO_KHR; // always supported; vsync on
+    ci.presentMode = present_mode;
     ci.clipped = VK_TRUE;
     G3X_VK_CHECK(vkCreateSwapchainKHR(s_device, &ci, nullptr, &s_swapchain), "vkCreateSwapchainKHR");
 
@@ -162,10 +180,21 @@ bool create_swapchain() {
     G3X_VK_CHECK(vkGetSwapchainImagesKHR(s_device, s_swapchain, &s_image_n, s_images),
                  "vkGetSwapchainImagesKHR imgs");
 
-    g3x_log("vk: swapchain %ux%u fmt=%d images=%u (FIFO)", s_extent.width, s_extent.height,
-            (int)s_format, s_image_n);
+    g3x_log("vk: swapchain %ux%u fmt=%d images=%u (%s)", s_extent.width, s_extent.height,
+            (int)s_format, s_image_n,
+            present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? "IMMEDIATE" : "FIFO");
+    for (uint32_t i = 0; i < s_image_n; ++i) {
+        VkImageViewCreateInfo vi{}; vi.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        vi.image = s_images[i]; vi.viewType = VK_IMAGE_VIEW_TYPE_2D; vi.format = s_format;
+        vi.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        vi.subresourceRange.levelCount = 1; vi.subresourceRange.layerCount = 1;
+        G3X_VK_CHECK(vkCreateImageView(s_device, &vi, nullptr, &s_views[i]),
+                     "vkCreateImageView");
+    }
     if (!ensure_staging((VkDeviceSize)s_extent.width * s_extent.height * 4)) return false;
-    if (!s_sync_live) return create_sync_and_cmd();
+    if (!s_sync_live && !create_sync_and_cmd()) return false;
+    // P3: let the preset chain retarget (slangvk_chain_resize) to the new extent.
+    g3x_slang_swapchain_resized(s_extent.width, s_extent.height, (int)s_format);
     return true;
 }
 
@@ -249,6 +278,11 @@ bool g3x_vk_init(HWND hwnd, unsigned width, unsigned height) {
         g3x_log("vk: windowed scale — window %ux%u, game renders %ux%u (present scales)",
                 s_extent.width, s_extent.height, g_vk.width, g_vk.height);
     }
+
+    // P3: hand the live context to the libslang-vk preset chain. Fail-soft:
+    // without d2slangvk.conf (or on any slang failure) the legacy unfiltered
+    // present below stays the whole story.
+    g3x_slang_init(s_instance, s_phys, s_device, s_queue, s_queue_fam);
     return true;
 }
 
@@ -400,6 +434,7 @@ bool g3x_vk_present_pixels(const uint8_t* bgra, unsigned w, unsigned h) {
 }
 
 void g3x_vk_shutdown() {
+    g3x_slang_shutdown();   // chains -> presets -> image -> adopt-release, BEFORE the device goes
     if (s_device != VK_NULL_HANDLE) destroy_swapchain_objects();
     if (s_device != VK_NULL_HANDLE) { vkDestroyDevice(s_device, nullptr); s_device = VK_NULL_HANDLE; }
     if (s_surface != VK_NULL_HANDLE && s_instance != VK_NULL_HANDLE) {
@@ -409,3 +444,35 @@ void g3x_vk_shutdown() {
     g_vk.alive = false;
     g3x_log("vk: shutdown (frames presented: %llu)", (unsigned long long)s_frame);
 }
+
+// ---- P3 slang services -----------------------------------------------------
+
+bool g3x_vk_slang_ready() { return g_vk.alive && s_sync_live; }
+
+bool g3x_vk_slang_acquire(uint32_t* idx) { return acquire_image(idx); }
+
+void g3x_vk_slang_present_acquired(uint32_t idx) {
+    // The chain render already left the image in PRESENT_SRC_KHR and fenced
+    // its own submission, so the present waits on nothing.
+    VkPresentInfoKHR pi{}; pi.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    pi.swapchainCount = 1; pi.pSwapchains = &s_swapchain;
+    pi.pImageIndices = &idx;
+    VkResult r = vkQueuePresentKHR(s_queue, &pi);
+    if (r == VK_ERROR_OUT_OF_DATE_KHR) {
+        g3x_log_once("swap-oode3", "present (slang) out of date, recreating");
+        g3x_vk_resize(g_vk.width, g_vk.height);
+    }
+}
+
+void* g3x_vk_slang_swap_view(uint32_t idx) {
+    return (idx < s_image_n) ? (void*)s_views[idx] : nullptr;
+}
+
+int g3x_vk_slang_swap_format() { return (int)s_format; }
+
+void g3x_vk_slang_swap_extent(unsigned* w, unsigned* h) {
+    if (w) *w = s_extent.width;
+    if (h) *h = s_extent.height;
+}
+
+void* g3x_vk_slang_acquire_semaphore() { return (void*)s_sem_acquire; }

@@ -1,11 +1,11 @@
 # PLAN.md — libslang-vk Integration (D2LoD-libslang-vk)
 
-> Status: v3, 2026-10-24. Baseline build verified in-sandbox (see §2); rebuilt
+> Status: v4, 2026-10-25. Baseline build verified in-sandbox (see §2); rebuilt
 > d2.exe verified PLAYABLE on real hardware (silent-startup saga closed — see §0 for
-> where the bootlog work lives). glide3xvk is past P1 and mid-P2 — **P2.1–P2.6
-> shipped and field-tested** on vanilla retail 1.14d (rounds 1–9 of the
-> `glide3x.log` loop; menu + world render, ~27 fps @ 800x600 — see the ledger in
-> §5 P2). Owner: VTSTech. Agent session log:
+> where the bootlog work lives). glide3xvk is **past P2 and P3 code-complete**:
+> P2.1–P2.11 shipped and field-verified (rounds 1–13, verdict round 12:
+> "Everything actually looks correct"), and 0.4.0 ships the P3 preset chain at
+> the present pass (field round 14 pending). Owner: VTSTech. Agent session log:
 > `/home/z/my-project/worklog.md`.
 > **All integration work happens on the `libslang-vk` branch (see §0).**
 
@@ -311,7 +311,7 @@ Leftover polish, deliberately deferred:
 - Frame pace: the CPU raster measured 27 fps @ 800x600 (round 8); the
   60 fps target moves to P3's GPU path if the CPU raster plateaus here.
 
-### P3 — libslang-vk preset chain
+### P3 — libslang-vk preset chain — **SHIPPED 0.4.0 (code complete; field round 14 pending)**
 The payoff. Everything above already runs through our swapchain.
 
 - Offscreen frame image feeds `slangvk_input_frame`; chain created per preset at
@@ -322,6 +322,20 @@ The payoff. Everything above already runs through our swapchain.
   fallback behavior); hot-reload preset on file change (chain recreate).
 - Exit: CRT Royale + a scanline + a simple sharpening preset run live in-game at
   1440p/4K output from 640x480 input; preset hot-swap works; frame cost measured.
+
+Sub-milestone ledger (0.4.0, agent-sandbox verified; field round pending):
+
+| Step | Shipped | Verification so far |
+|---|---|---|
+| P3.1 | libslang-vk linked: static `slangvk` target built i686 from the sibling checkout (`G3XVK_SLANGVK_DIR`, fail-soft stub without it); `slangvk_device_adopt` of our context; CI checks out the repo pinned (`d208ac5`) | 76/76 slangvk targets build pe-i386; 27 C symbols; DLL 8.67 MB, still KERNEL32+msvcrt only |
+| P3.2 | present-pass chain: gamma'd NATIVE game-res frame → `slangvk_image` → `slangvk_chain_render_swapchain` into our swapchain (per-image views, COLOR_ATTACHMENT usage, acquire semaphore handed to the chain, present without our render semaphore); legacy unfiltered path preserved byte-for-byte as fallback | 45/45 export surface unchanged; fxtest 115/115 (conf parser, rect math, present-branch fallback) |
+| P3.3 | `d2slangvk.conf` (`[slangvk] preset=/scale=/vsync=/fallback=`), portable parser; hot-reload (conf + preset file stat every 32 frames, mid-session chain rebuild); fail-soft (log + downgrade; 3 consecutive render failures disable the chain for the session); two MIT starter presets (scanline, sharpen) + conf sample | field round 14 pending: CRT-Royale + scanline + sharpen live, hot-swap, frame cost |
+
+P3 exit status: **code-complete; the field half of the exit (live CRT-Royale at
+1440p/4K from 640x480, hot-swap, frame cost) is round 14.** Remaining P3-scope
+perf item deliberately deferred to its own milestone: GPU-side raster
+(~27 fps CPU compose + a fullscreen preset pass makes the 60 fps target the
+next optimization work, not a P3 gate).
 
 ### P4 — Hardening + packaging
 - Failure paths: no Vulkan → unfiltered present; device lost → libslang-vk's

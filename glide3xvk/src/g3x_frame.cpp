@@ -2,6 +2,7 @@
 #include "g3x_log.h"
 #include "vk_backend.h"
 #include "g3x_overlay.h"
+#include "g3x_slang.h"
 
 #include <cstring>
 #include <cstdlib>
@@ -1007,10 +1008,54 @@ void g3x_frame_draw_line(float x0, float y0, float x1, float y1) {
     }
 }
 
+// Gamma-correct (and, when the target differs, nearest-scale) the raster
+// buffer into a BGRA8 staging buffer. Shared by the legacy compose path
+// (scales to the swapchain extent) and the P3 slang path (native res, 1:1).
+static void gamma_scale_copy(uint8_t* dst, unsigned dw, unsigned dh) {
+    if (s_gamma_identity && dw == s_w && dh == s_h) {
+        std::memcpy(dst, s_px, (size_t)s_w * s_h * 4);
+        return;
+    }
+    uint8_t* d = dst;
+    for (unsigned y = 0; y < dh; ++y) {
+        const unsigned sy = y * s_h / dh;
+        const uint32_t* row = s_px + (size_t)sy * s_w;
+        for (unsigned x = 0; x < dw; ++x, d += 4) {
+            const unsigned sx = x * s_w / dw;
+            const uint32_t p = row[sx];
+            d[0] = s_gamma_lut[2][p & 0xFF];          // B
+            d[1] = s_gamma_lut[1][(p >> 8) & 0xFF];   // G
+            d[2] = s_gamma_lut[0][(p >> 16) & 0xFF];  // R
+            d[3] = 0xFF;
+        }
+    }
+}
+
 bool g3x_frame_present() {
     unsigned ext_w = 0, ext_h = 0;
     g3x_vk_present_extent(&ext_w, &ext_h);
     if (!ext_w || !ext_h || !s_px) return false;
+
+    // P3: preset-chain path. The chain receives the gamma-corrected NATIVE
+    // game resolution (no pre-scaling) so the preset's own scaling algorithms
+    // see the true source size — 640x480 in, big-window out is the P3 exit
+    // shape. The overlay is drawn at game res and filters along with the
+    // frame (WYSIWYG); it still never touches the game's own framebuffer.
+    if (g3x_slang_active()) {
+        static uint8_t* slang_buf = nullptr;
+        static unsigned slang_cap = 0;
+        const size_t sneed = (size_t)s_w * s_h * 4;
+        if (slang_cap < sneed) {
+            delete[] slang_buf;
+            slang_buf = new (std::nothrow) uint8_t[sneed];
+            if (!slang_buf) { slang_cap = 0; return false; }
+            slang_cap = (unsigned)sneed;
+        }
+        gamma_scale_copy(slang_buf, s_w, s_h);
+        g3x_overlay_render(slang_buf, s_w, s_h);
+        if (g3x_slang_present(slang_buf, s_w, s_h)) return true;
+        g3x_log_once("slang-fell", "preset chain unavailable — unfiltered present this frame");
+    }
 
     static uint8_t* compose = nullptr;
     static unsigned compose_cap = 0;
@@ -1021,25 +1066,10 @@ bool g3x_frame_present() {
         if (!compose) { compose_cap = 0; return false; }
         compose_cap = (unsigned)need;
     }
-    // P2.5 fast path: 1:1 window + identity gamma = straight copy (the dword
-    // layout already matches the swapchain's BGRA byte order).
-    if (s_gamma_identity && ext_w == s_w && ext_h == s_h) {
-        memcpy(compose, s_px, (size_t)s_w * s_h * 4);
-    } else {
-        uint8_t* dst = compose;
-        for (unsigned y = 0; y < ext_h; ++y) {
-            const unsigned sy = y * s_h / ext_h;
-            const uint32_t* row = s_px + (size_t)sy * s_w;
-            for (unsigned x = 0; x < ext_w; ++x, dst += 4) {
-                const unsigned sx = x * s_w / ext_w;
-                const uint32_t p = row[sx];
-                dst[0] = s_gamma_lut[2][p & 0xFF];          // B
-                dst[1] = s_gamma_lut[1][(p >> 8) & 0xFF];   // G
-                dst[2] = s_gamma_lut[0][(p >> 16) & 0xFF];  // R
-                dst[3] = 0xFF;
-            }
-        }
-    }
+    // P2.5 fast path lives inside gamma_scale_copy: 1:1 window + identity
+    // gamma = straight copy (the dword layout already matches the swapchain's
+    // BGRA byte order).
+    gamma_scale_copy(compose, ext_w, ext_h);
     // P2.10: version tag — post-gamma, swapchain-resolution, drawn over
     // everything (including the LFB/Bink path); never enters the game's own
     // framebuffer, so grLfbLock reads and fade logic never see it.
