@@ -55,6 +55,17 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   lines now also carry **work=** — time spent inside the swap (gamma,
   compose upload, chain render, submit, present) — so the log separates
   engine pacing from wrapper cost from now on.
+- **Field result (build 10da725 — first log carrying work=):** at 100%
+  desktop scaling the window reports a true 1920x1080 (125% Windows scaling
+  DPI-virtualizes it to 1536x864 = 1080p/1.25 — the earlier "windowed
+  scale" lines, explained). Timeline: logo videos avg=87.0 ms (movie-paced
+  LFB path), main menu avg=40.8 ms = the D2Win MessagePump 40 ms budget
+  (L3, dead-on), first in-game window avg=45.6 ms (tick gate + first-load
+  uploads), paused/Esc windows avg=23.9-26.5 ms unthrottled (510
+  strips/frame, same scene as the be8737e log). work= puts the wrapper's
+  present-path cost at 12.1-18.5 ms: ~31% of a gated gameplay frame, ~51%
+  of a paused one; the 1080p chain costs about what the 1536x864 chain did
+  (42 vs 45 fps paused for +55% pixels).
 - **CI artifact names carry the commit hash** (.github/workflows/build.yml):
   the upload is now `glide3x-dll-<shortsha>` — the same 7-char
   `git rev-parse --short=7` form the DLL's log banner uses, so a downloaded
