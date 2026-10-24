@@ -90,7 +90,18 @@ void __stdcall grGlideInit() {
 }
 
 void __stdcall grGlideShutdown() {
-    g3x_log("grGlideShutdown");
+    // Always-on totals: the round-6 report arrived without any summary (the
+    // every-300-swaps gate never fired at 112 frames), so the exit evidence
+    // was lost. Print the full picture unconditionally.
+    unsigned ds[5];
+    g3x_frame_draw_stats(ds);
+    g3x_log("grGlideShutdown: swaps=%u clears=%u draws=%u (vac=%u parr=%u "
+            "strip=%u fan=%u point=%u line=%u tri=%u) skip=%u texdl=%u paldl=%u "
+            "texmiss=%u",
+            g_st.n_swaps, g_st.n_clears, g_st.n_draw_calls,
+            ds[0], ds[1], ds[2], ds[3], g_st.n_point, g_st.n_line, g_st.n_tri,
+            ds[4], g_st.n_tex_downloads, g_st.n_palette_downloads,
+            g3x_frame_tex_miss_count());
     g3x_vk_shutdown();
 }
 
@@ -119,7 +130,14 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
 }
 
 FxBool __stdcall grSstWinClose(GrContext_t context) {
-    g3x_log("grSstWinClose: ctx=%u", context);
+    // Phase marker: the game opens/closes contexts for probes, videos and the
+    // real window — the totals here separate those phases in the log.
+    unsigned ds[5];
+    g3x_frame_draw_stats(ds);
+    g3x_log("grSstWinClose: ctx=%u (swaps=%u vac=%u parr=%u strip=%u fan=%u "
+            "skip=%u texmiss=%u)",
+            context, g_st.n_swaps, ds[0], ds[1], ds[2], ds[3], ds[4],
+            g3x_frame_tex_miss_count());
     g3x_vk_shutdown();
     return FXTRUE;
 }
@@ -145,6 +163,17 @@ void __stdcall grBufferClear(GrColor_t color, GrAlpha_t alpha, FxU32 depth) {
 void __stdcall grBufferSwap(FxU32 swap_interval) {
     ++g_st.n_swaps;
     g3x_frame_present();
+    // P2.4: periodic activity line — gameplay phases run with every per-call
+    // tag budget-quiet, so these are the only evidence of what each phase
+    // actually submitted (and how fast the CPU raster is keeping up).
+    if (g_st.n_swaps % 120 == 0) {
+        unsigned ds[5];
+        g3x_frame_draw_stats(ds);
+        g3x_log("frame %u: vac=%u parr=%u(strip=%u fan=%u) skip=%u texdl=%u "
+                "paldl=%u lfb=%u",
+                g_st.n_swaps, ds[0], ds[1], ds[2], ds[3], ds[4],
+                g_st.n_tex_downloads, g_st.n_palette_downloads, g_st.n_lfb_locks);
+    }
     if (g_st.n_swaps % 300 == 0) {
         g3x_log("frame %u: swaps=%u draws=%u texdl=%u paldl=%u lfblocks=%u",
                 g_st.n_swaps, g_st.n_swaps, g_st.n_draw_calls, g_st.n_tex_downloads,
@@ -411,6 +440,7 @@ void __stdcall grTexMipMapMode(GrChipID_t tmu, GrMipMapMode_t mode, FxBool lodBl
 void __stdcall grDrawVertexArrayContiguous(FxU32 mode, FxU32 Count, void* pointers,
                                            FxU32 stride) {
     ++g_st.n_draw_calls;
+    ++g_st.n_vac;
     if (mode == G3X_GR_TRIANGLE_FAN && Count >= 3) {
         g3x_frame_draw_fan(Count, pointers, stride);   // the D2 UI/world quad path
     }
@@ -438,6 +468,7 @@ void __stdcall grDrawVertexArrayContiguous(FxU32 mode, FxU32 Count, void* pointe
 
 FxU32 __stdcall grDrawVertexArray(FxU32 mode, FxU32 Count, void* pointers) {
     ++g_st.n_draw_calls;
+    ++g_st.n_parr;
     // D2's ground/wall path (D2Glide/Renderer/Glide.cpp): `pointers` is an
     // array of Count vertex pointers, each to a 0x1C-stride vertex.
     //   DrawGroundTile: 5x mode-4 strips of 12 verts (normal quality) or one
@@ -453,16 +484,19 @@ FxU32 __stdcall grDrawVertexArray(FxU32 mode, FxU32 Count, void* pointers) {
 
 void __stdcall grDrawPoint(void* pt) {
     ++g_st.n_draw_calls;
+    ++g_st.n_point;
     g3x_log_once("grDrawPoint", "pt=%p", pt);
 }
 
 void __stdcall grDrawLine(void* v1, void* v2) {
     ++g_st.n_draw_calls;
+    ++g_st.n_line;
     g3x_log_once("grDrawLine", "v1=%p v2=%p", v1, v2);
 }
 
 void __stdcall grDrawTriangle(void* a, void* b, void* c) {
     ++g_st.n_draw_calls;
+    ++g_st.n_tri;
     g3x_log_once("grDrawTriangle", "a=%p b=%p c=%p", a, b, c);
 }
 
@@ -534,7 +568,9 @@ static void g3x_banner() {
     char exe[MAX_PATH] = "(?)";
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
     g3x_log("glide3xvk scaffold %s — loaded into %s", G3XVK_BUILD_ID, exe);
-    g3x_log("compiled " __DATE__ " " __TIME__ "; P2.3 = pointer-array strips/fans (ground+walls) + color-space chromakey");
+    g3x_log("compiled " __DATE__ " " __TIME__
+            "; P2.4 = negative-s/t wrap (ground tile edges) + fill-rect fast path"
+            " + session log + per-path draw totals");
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {

@@ -54,6 +54,11 @@ bool     g3x_frame_tex_download(unsigned tmu, unsigned addr, const GrTexInfo* in
 void     g3x_frame_tex_source(unsigned tmu, unsigned addr);
 unsigned g3x_frame_tex_miss_count();   // grTexSource bindings with no download
 
+// Draw-path totals since context open: vac fans, pointer-array draws,
+// pointer-array strips, pointer-array fans, draws skipped (no texture).
+// Feeds the periodic frame lines + shutdown summary (P2.4 diagnostics).
+void     g3x_frame_draw_stats(unsigned out[5]);
+
 // TRIANGLE_FAN (mode 5): count vertices at `base`, `stride` bytes apart.
 void     g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride);
 

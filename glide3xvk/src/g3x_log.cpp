@@ -69,13 +69,39 @@ void g3x_log_open() {
             chosen[sizeof(chosen) - 1] = '\0';
         }
     }
-    if (chosen[0]) g_log = fopen(chosen, "wb");
+    // P2.4: APPEND, don't truncate. The round-6 field report proved a quick
+    // relaunch (mode-probe check) wipes the log of the real gameplay session
+    // that came before it — sessions are separated by a banner line instead.
+    if (chosen[0]) g_log = fopen(chosen, "ab");
     if (!g_log) { // %TEMP% fallback
         if (GetTempPathA(MAX_PATH, path) > 0) {
             _snprintf(chosen, sizeof(chosen) - 1, "%sglide3x.log", path);
             chosen[sizeof(chosen) - 1] = '\0';
-            g_log = fopen(chosen, "wb");
+            g_log = fopen(chosen, "ab");
         }
+    }
+    // 2 MB rotation: rename to .1 and start fresh so the file can't grow
+    // unbounded across many sessions.
+    if (g_log) {
+        fseek(g_log, 0, SEEK_END);
+        const long size = ftell(g_log);
+        fclose(g_log); g_log = nullptr;
+        if (size > 2 * 1024 * 1024) {
+            char old[MAX_PATH];
+            _snprintf(old, sizeof(old) - 1, "%s.1", chosen);
+            old[sizeof(old) - 1] = '\0';
+            remove(old);
+            rename(chosen, old);
+        }
+        g_log = fopen(chosen, "ab");
+    }
+    // Session banner: makes multi-launch logs readable at a glance.
+    if (g_log) {
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+        fprintf(g_log, "==== glide3xvk session %04u-%02u-%02u %02u:%02u:%02u ====\n",
+                st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+        fflush(g_log);
     }
     g_start_ms = now_ms();
 }

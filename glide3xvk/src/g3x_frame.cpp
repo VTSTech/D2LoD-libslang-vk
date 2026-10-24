@@ -127,10 +127,18 @@ inline uint32_t sample_texel(const Tex& t, float u, float v, bool* skip) {
     // note). For 256x256 squares this is the identity; for tall 128x256 the
     // game's S stops at 128 and for wide 256x64 its T stops at 64 — texels.
     const float scale = (float)(1u << t.lod) / 256.0f;
-    const float fu = u > 0.0f ? u * scale : 0.0f;
-    const float fv = v > 0.0f ? v * scale : 0.0f;
-    const unsigned tx = (unsigned)fu & (t.w - 1);
-    const unsigned ty = (unsigned)fv & (t.h - 1);
+    // Floor-WRAP both axes (P2.4): the game's ground lattice overshoots the
+    // tile origin slightly NEGATIVE (RENDERER_GLIDE_InitGroundTileVertices
+    // edge adjustments: S spans ~[-3,162], T ~[-1,81] for a 256x256 tile),
+    // and with glide's GR_TEXTURECLAMP_WRAP a negative coord samples from the
+    // far edge of the texture — those texels sit in the parked/chroma region,
+    // so the wrap is invisible on real hardware. Clamping to 0 (P2.1-P2.3
+    // behavior) instead smeared texel column 0 along every floor tile's
+    // top-left diamond edges.
+    const int iu = (int)floorf(u * scale);
+    const int iv = (int)floorf(v * scale);
+    const unsigned tx = (unsigned)iu & (t.w - 1);
+    const unsigned ty = (unsigned)iv & (t.h - 1);
     const unsigned idx = t.data[(size_t)ty * t.w + tx];
     if (s_chroma_mode == 1) {
         // Voodoo chroma semantics: the compare happens on the POST-PALETTE
@@ -155,6 +163,50 @@ inline bool owns_edge(const RVert& p, const RVert& q) {
     const float dy = q.y - p.y;
     if (dy != 0.0f) return dy < 0.0f;
     return (q.x - p.x) > 0.0f;
+}
+
+// P2.4 draw-path counters (surfaced via g3x_frame_draw_stats for the periodic
+// frame lines — with per-call tags budget-quiet, these are the only window
+// into what a gameplay session actually submits).
+static unsigned s_n_vac = 0;          // grDrawVertexArrayContiguous fans
+static unsigned s_n_parr = 0;         // grDrawVertexArray pointer-array draws
+static unsigned s_n_parr_strip = 0;
+static unsigned s_n_parr_fan = 0;
+static unsigned s_n_skip_notex = 0;   // draws dropped: no texture bound
+
+// Fast path (P2.4): axis-aligned constant-fill quads (fades, dim rects,
+// loading screens — DrawSolidRectEx/DrawSolidRectAlpha) run FULL-SCREEN at
+// 800x600; per-pixel barycentrics on those were the slowest thing on the CPU
+// raster (the round-6 fades dipped to ~7 fps). Detect the rect shape at the
+// quad level and fill scanlines directly; blending still applies per pixel.
+bool fill_rect_fast(unsigned count, const RVert* v) {
+    if (!s_color_fill || count != 4 || !s_px) return false;
+    float xa = v[0].x, xb = v[0].x, ya = v[0].y, yb = v[0].y;
+    bool two_x = false, two_y = false;
+    for (unsigned i = 1; i < 4; ++i) {
+        if (v[i].x != xa && v[i].x != xb) { if (two_x) return false; xb = v[i].x; two_x = true; }
+        if (v[i].y != ya && v[i].y != yb) { if (two_y) return false; yb = v[i].y; two_y = true; }
+    }
+    if (!two_x || !two_y) return false;   // degenerate line
+    for (unsigned i = 0; i < 4; ++i) {    // every vertex must sit on a corner
+        if (v[i].x != xa && v[i].x != xb) return false;
+        if (v[i].y != ya && v[i].y != yb) return false;
+    }
+    const float minx = xa < xb ? xa : xb, maxx = xa > xb ? xa : xb;
+    const float miny = ya < yb ? ya : yb, maxy = ya > yb ? ya : yb;
+    // pixel centers strictly inside [min,max) — same coverage as the
+    // barycentric path's top-left rule for axis-aligned integer rects
+    int x0 = (int)ceilf(minx - 0.5f); if (x0 < 0) x0 = 0;
+    int y0 = (int)ceilf(miny - 0.5f); if (y0 < 0) y0 = 0;
+    int x1 = (int)ceilf(maxx - 0.5f); if (x1 > (int)s_w) x1 = (int)s_w;
+    int y1 = (int)ceilf(maxy - 0.5f); if (y1 > (int)s_h) y1 = (int)s_h;
+    const unsigned fill_gray = (s_constant >> 8) & 0xFFu;
+    const uint32_t fill_src = fill_gray | (fill_gray << 8) | (fill_gray << 16);
+    for (int y = y0; y < y1; ++y) {
+        uint32_t* row = s_px + (size_t)y * s_w;
+        for (int x = x0; x < x1; ++x) row[x] = shade_blend(row[x], fill_src);
+    }
+    return true;
 }
 
 void raster_tri(const RVert& a, const RVert& b, const RVert& c) {
@@ -212,12 +264,16 @@ void raster_tri(const RVert& a, const RVert& b, const RVert& c) {
                 bool skip;
                 const uint32_t tex = sample_texel(*t, u, v, &skip);
                 if (skip) continue;
-                // colorCombine SCALE_OTHER x LOCAL: texel * vertex color
-                const unsigned tr = tex & 0xFF, tg = (tex >> 8) & 0xFF, tb = (tex >> 16) & 0xFF;
-                const unsigned vr = vc & 0xFF, vg = (vc >> 8) & 0xFF, vb = (vc >> 16) & 0xFF;
-                src = ((tr * vr + 255) >> 8) |
-                      (((tg * vg + 255) >> 8) << 8) |
-                      (((tb * vb + 255) >> 8) << 16);
+                if (vc == 0xFFFFFFu) {
+                    src = tex;    // white vertex light: multiply is identity (P2.4 fast path)
+                } else {
+                    // colorCombine SCALE_OTHER x LOCAL: texel * vertex color
+                    const unsigned tr = tex & 0xFF, tg = (tex >> 8) & 0xFF, tb = (tex >> 16) & 0xFF;
+                    const unsigned vr = vc & 0xFF, vg = (vc >> 8) & 0xFF, vb = (vc >> 16) & 0xFF;
+                    src = ((tr * vr + 255) >> 8) |
+                          (((tg * vg + 255) >> 8) << 8) |
+                          (((tb * vb + 255) >> 8) << 16);
+                }
             }
             row[x] = shade_blend(row[x], src);
         }
@@ -383,14 +439,21 @@ unsigned g3x_frame_tex_miss_count() {
     return s_tex_miss_total;
 }
 
+void g3x_frame_draw_stats(unsigned out[5]) {
+    out[0] = s_n_vac; out[1] = s_n_parr; out[2] = s_n_parr_strip;
+    out[3] = s_n_parr_fan; out[4] = s_n_skip_notex;
+}
+
 void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
     if (!s_px || !base || count < 3 || stride < 24) return;
-    if (s_cur < 0 && !s_color_fill) return;
+    if (s_cur < 0 && !s_color_fill) { ++s_n_skip_notex; return; }
+    ++s_n_vac;
     RVert verts[64];
     if (count > 64) count = 64;
     for (unsigned i = 0; i < count; ++i) {
         read_vert(verts[i], (const uint8_t*)base + (size_t)i * stride);
     }
+    if (fill_rect_fast(count, verts)) return;   // P2.4: fades/dim rects
     // Field diagnostic: the first fans' raw vertices (x,y | color | s,t) — the
     // ground truth for the s/t convention, quad geometry AND vertex colors
     // (ground lighting = 0xFFRRGGBB light-table tints; UI = 0xFFFFFFFF white).
@@ -412,7 +475,8 @@ void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
 
 void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointers) {
     if (!s_px || !pointers || count < 3) return;
-    if (s_cur < 0 && !s_color_fill) return;
+    if (s_cur < 0 && !s_color_fill) { ++s_n_skip_notex; return; }
+    ++s_n_parr;
     if (count > 64) count = 64;
     RVert verts[64];
     for (unsigned i = 0; i < count; ++i) {
@@ -420,6 +484,7 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
         if (!p) return;
         read_vert(verts[i], p);   // pointer-array vertices: fixed 0x1C layout
     }
+    if (fill_rect_fast(count, verts)) return;   // P2.4: fades/dim rects
     // Field diagnostic: the pointer-array path (ground tiles / wall strips).
     // First 4 draws log the primitive + first vertex colors so ground lighting
     // values show up in the field log.
@@ -431,10 +496,12 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
         ++s_pdumped;
     }
     if (mode == G3X_GR_TRIANGLE_FAN) {
+        ++s_n_parr_fan;
         for (unsigned i = 1; i + 1 < count; ++i) {
             raster_tri(verts[0], verts[i], verts[i + 1]);
         }
     } else if (mode == G3X_GR_TRIANGLE_STRIP) {
+        ++s_n_parr_strip;
         // Triangle strip: consecutive triangles alternate winding; normalize
         // to the rasterizer's CCW (y-down) convention per triangle. Shared
         // edges between neighbours then fall on opposite directed edges, so
