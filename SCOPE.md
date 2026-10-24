@@ -39,6 +39,7 @@ model nGlide and d2dx use).
 | Version identity in any screenshot: top-right overlay + `grGetString(GR_RENDERER)` + the game's own `Video:` line (one 4-byte runtime pointer patch, fail-soft — no file touched) | 0.3.0–0.4.1 | `drivertag:` log lines every session |
 | Performance round 1: SSE2 float math (x87 off the hot path), O(1) texture table, swapchain `minImageCount+2` | 0.4.4 | in-game swap-to-swap 51.6 ms → 39 ms (19 → 26 fps) on a ~30% HEAVIER scene; Esc menu 45 fps = the wrapper's true per-frame speed (~22 ms); bit-identical present-buffer hash before/after (fxparity harness) |
 | Diagnostics: `frame N:` lines with `avg=` (engine pacing) + `work=` (wrapper present-path cost), draw-mix counters, 1 MB rotating log | P2.5–0.4.4 | every field round parsed from these lines |
+| Present-window presets + DPI awareness: `window=`/`borderless=` conf keys + F10 cycle sizing the OS window (canonical 240p..1080p, `desktop` borderless, `WxH`), `SetThreadDpiAwarenessContext` apply — output sizing only, the game still renders 800x600 | 0.4.4 | `g3x_window.{h,cpp}`; wintest 57/57; the 1536x864 = 1080p/1.25 DPI receipt in the 0.4.4 field log |
 | Fail-soft everywhere: no Vulkan → unfiltered present; bad preset → downgrade; DLL still self-contained (KERNEL32+msvcrt imports only) | since P1 | R2/R4 risk register, PLAN.md §6 |
 | CI: every push builds the DLL from a clean checkout and uploads it as an artifact | P2.11 | `.github/workflows/build.yml` |
 
@@ -66,8 +67,7 @@ Ordered by expected value:
    and we point-sample it. Look change only, wrapper-internal.
 4. **P4 packaging**: CI-built drop-in zip (DLL + presets + conf), preset
    parameter UI via `slangvk_chain_set_parameter`, crash-ring export hook.
-5. **Window niceties**: borderless-fullscreen and window-placement options at
-   `grSstWinOpen` (we own the swapchain on the game's HWND).
+5. **~~Window niceties~~ — SHIPPED in 0.4.4** as `window=`/`borderless=` presets + F10 cycle + DPI-aware apply (`g3x_window.{h,cpp}`, see §1). Remaining nibble: window *placement* presets (multi-monitor pinning) if field rounds ask for it.
 6. **F9 screenshot paletted compat** (P5 stretch) — LFB write path.
 
 What this backlog does **not** buy: in-game fps above 25, resolutions beyond

@@ -66,6 +66,27 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   present-path cost at 12.1-18.5 ms: ~31% of a gated gameplay frame, ~51%
   of a paused one; the 1080p chain costs about what the 1536x864 chain did
   (42 vs 45 fps paused for +55% pixels).
+- **Window size presets + DPI awareness** (g3x_window): `window=` and
+  `borderless=` join d2slangvk.conf — `native` (default: the game's own
+  window, nothing touched), `240p`=320x240, `480p`=640x480, `576p`=720x576,
+  `720p`=1280x720, `768p`=1366x768, `1080p`=1920x1080, `desktop` (monitor-
+  sized, borderless) or an explicit `WxH`; F10 cycles them in-game
+  (toast + log, session-only, conf reload snaps back — F11/F12 semantics,
+  except F10 works with the chain off; polled from the swap path). Presets
+  re-apply at every renderer (re)open and the resize is DPI-aware:
+  `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` loaded dynamically
+  (pre-1607 Windows = the old best-effort virtualized behavior), because a
+  DPI-unaware game otherwise sizes in virtualized coordinates — the field
+  log's 1536x864 = 1080p/1.25 receipt. This is output sizing only: the game
+  keeps rendering 800x600 (L4, SCOPE.md), so the unfiltered present path
+  also learned to fit + center (below) instead of stretching.
+- **Legacy present fits + centers** (g3x_frame): `gamma_scale_copy` stretched
+  the raster to whatever the window was — 800x600 distorted to 16:9 on every
+  16:9 window. Mismatched targets now get the largest centered source-ratio
+  rect with black bars (same geometry as the chain's `scale=fit`), so
+  chain-less users at 720p/1080p window sizes get correct aspect, and the
+  LFB/Bink video path inherits it through the same seam. 1:1 fast path
+  untouched; bars are a few hundred KB of zero fill per frame.
 - **CI artifact names carry the commit hash** (.github/workflows/build.yml):
   the upload is now `glide3x-dll-<shortsha>` — the same 7-char
   `git rev-parse --short=7` form the DLL's log banner uses, so a downloaded
@@ -76,6 +97,12 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
 
 ### Validated
 
+- Host window-preset test (scripts/wintest.cpp, agent-side): the pure
+  g3x_window.h core — table shape, case-insensitive name lookup, every
+  canonical size, `WxH` forms, strict rejection (zero sides, >8192,
+  non-digit, separators/space forms), failure zeroes its outputs, and the
+  full F10 cycle walk including the unconfigured-state first press (57/57
+  checks).
 - Host log-cap test (agent-side): mid-session rotation at exactly cap + one
   line, repeated rotation keeps log + `.1` ~= 2 MB for a 3 MB spam run,
   open-time rotation of an oversized file, and the P2.4

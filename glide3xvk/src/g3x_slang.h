@@ -51,13 +51,17 @@ struct G3xSlangRect {
 };
 
 // d2slangvk.conf body, parsed. Defaults: preset disabled, fit, vsync default,
-// aspect auto, base res 1x.
+// aspect auto, base res 1x, window native, borderless off.
 struct G3xSlangConf {
     char preset[512];   // "" = chain disabled; relative paths resolve against the game exe dir
     int  scale;         // G3XSLANG_SCALE_*
     int  vsync;         // -1 = swapchain default (FIFO), 0 = off, 1 = on
     int  aspect;        // G3XSLANG_ASPECT_* (0.4.3; default auto)
     int  base_res;      // shader base resolution multiplier 1..4 (0.4.3; default 1)
+    char window[32];    // 0.4.4 present-window preset name ("" = native; consumed by
+                        // g3x_window — native|240p|480p|576p|720p|768p|1080p|desktop|WxH)
+    int  borderless;    // 0.4.4: strip the frame on preset windows (0/1; "desktop" is
+                        // borderless regardless)
 };
 
 // Pure parser for a d2slangvk.conf body: "[slangvk]" section with

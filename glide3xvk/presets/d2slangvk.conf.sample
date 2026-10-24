@@ -49,6 +49,24 @@ vsync=
 ; Accepts 1x|2x|3x|4x (bare 1..4 too). F12 cycles this live for the session.
 ;base_res=1x
 
+; Present-window preset (0.4.4): sizes the OS window the game presents into.
+;   native   — the game's own 800x600 window (default; nothing is touched)
+;   240p     — 320x240        480p — 640x480        576p — 720x576 (PAL 4:3)
+;   720p     — 1280x720       768p — 1366x768      1080p — 1920x1080
+;   desktop  — the current monitor's size, borderless
+;   WxH      — any explicit client size, e.g. 1600x1200
+; Windowed presets are centered on the current monitor; the resize is
+; DPI-aware (true physical pixels — no desktop-scaling surprises). The game
+; still renders 800x600; the wrapper scales it (L4: the game's render
+; resolution is the game's). F10 cycles this live for the session.
+;window=native
+;window=1080p
+;window=1600x1200
+
+; Strip the caption/borders on preset windows (0.4.4). desktop is borderless
+; regardless. 0/empty = keep the game's own frame.
+;borderless=0
+
 ; On any preset failure the DLL keeps presenting the raw game frame (fail-soft,
 ; the log carries the slang error). There is no other fallback mode; unknown
 ; keys are ignored.

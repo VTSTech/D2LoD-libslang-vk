@@ -50,6 +50,7 @@ set(G3XVK_SOURCES
     src/g3x_overlay.cpp
     src/g3x_drivertag.cpp
     src/g3x_slang.cpp
+    src/g3x_window.cpp
     src/vk_backend.cpp
     src/glide_exports.cpp
     vendor/volk/volk.c)

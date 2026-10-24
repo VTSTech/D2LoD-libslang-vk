@@ -1062,23 +1062,58 @@ void g3x_frame_draw_line(float x0, float y0, float x1, float y1) {
 // Gamma-correct (and, when the target differs, nearest-scale) the raster
 // buffer into a BGRA8 staging buffer. Shared by the legacy compose path
 // (scales to the swapchain extent) and the P3 slang path (native res, 1:1).
+//
+// 0.4.4: when the target's ratio differs from the source's, this now FITS +
+// CENTERS with black bars instead of stretching — 800x600 into a 1920x1080
+// window used to distort 4:3 content to 16:9, and the window presets make
+// 16:9 client sizes routine. Same geometry the chain's scale=fit uses, so
+// the legacy and chain paths agree. The 1:1 fast path is untouched; the bar
+// fill is a few hundred KB of writes, noise next to the copy itself. Bars
+// are plain zero fill: alpha is don't-care for an opaque present buffer.
 static void gamma_scale_copy(uint8_t* dst, unsigned dw, unsigned dh) {
     if (s_gamma_identity && dw == s_w && dh == s_h) {
         std::memcpy(dst, s_px, (size_t)s_w * s_h * 4);
         return;
     }
-    uint8_t* d = dst;
-    for (unsigned y = 0; y < dh; ++y) {
-        const unsigned sy = y * s_h / dh;
+    // fit + center: cross-multiply to compare ratios without floats
+    unsigned rw = dw, rh = dh, ox = 0, oy = 0;
+    const uint64_t src_x = (uint64_t)s_w * dh;
+    const uint64_t dst_x = (uint64_t)dw * s_h;
+    if (src_x != dst_x) {
+        if (src_x > dst_x) {                        // source wider -> bars top/bottom
+            rh = (unsigned)((uint64_t)dw * s_h / s_w);
+            if (!rh) rh = 1;
+            oy = (dh - rh) / 2;
+        } else {                                    // source taller -> bars left/right
+            rw = (unsigned)((uint64_t)dh * s_w / s_h);
+            if (!rw) rw = 1;
+            ox = (dw - rw) / 2;
+        }
+        uint32_t* d32 = (uint32_t*)dst;
+        for (unsigned y = 0; y < oy; ++y)                     // top band
+            std::memset(d32 + (size_t)y * dw, 0, (size_t)dw * 4);
+        for (unsigned y = oy + rh; y < dh; ++y)               // bottom band
+            std::memset(d32 + (size_t)y * dw, 0, (size_t)dw * 4);
+        for (unsigned y = oy; y < oy + rh; ++y) {             // middle band edges
+            if (ox) std::memset(d32 + (size_t)y * dw, 0, (size_t)ox * 4);
+            if (dw > ox + rw)
+                std::memset(d32 + (size_t)y * dw + ox + rw, 0,
+                            (size_t)(dw - ox - rw) * 4);
+        }
+    }
+    uint8_t* d = dst + ((size_t)oy * dw + ox) * 4;
+    for (unsigned y = 0; y < rh; ++y) {
+        const unsigned sy = y * s_h / rh;
         const uint32_t* row = s_px + (size_t)sy * s_w;
-        for (unsigned x = 0; x < dw; ++x, d += 4) {
-            const unsigned sx = x * s_w / dw;
+        for (unsigned x = 0; x < rw; ++x, d += 4) {
+            const unsigned sx = x * s_w / rw;
             const uint32_t p = row[sx];
             d[0] = s_gamma_lut[2][p & 0xFF];          // B
             d[1] = s_gamma_lut[1][(p >> 8) & 0xFF];   // G
             d[2] = s_gamma_lut[0][(p >> 16) & 0xFF];  // R
             d[3] = 0xFF;
         }
+        d = dst + ((size_t)(oy + y + 1) * dw + ox) * 4;   // next row start
     }
 }
 

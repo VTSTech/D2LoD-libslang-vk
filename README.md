@@ -49,6 +49,19 @@ resolution — is the same one proven in
   render finer. Toast feedback in the overlay, logged, session-only; both also
   settable via the new `aspect=` / `base_res=` conf keys (see the
   [d2slangvk.conf reference](#d2slangvkconf-reference) below).
+- **Window size presets (0.4.4)**: `window=native|240p|480p|576p|720p|768p|1080p|desktop|WxH`
+  and `borderless=0|1` in `d2slangvk.conf` size the OS window the game presents
+  into — canonical sizes (240p=320x240 ... 1080p=1920x1080; `desktop` =
+  monitor-sized borderless), centered, `desktop`/`borderless` strip the frame.
+  In-game **F10** cycles the presets live (toast + log, session-only, same
+  semantics as F11/F12 — and it works with the chain off). The resize is
+  **DPI-aware** (runs inside `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)`,
+  loaded dynamically), so presets come out at their true physical size even
+  though the game is DPI-unaware — no desktop-scaling fiddling required. The
+  game still renders 800x600 into it: presets are output sizing (L4 — the
+  game's own render resolution stays the game's), and the unfiltered present
+  path now fits + centers with black bars instead of stretching, so 4:3
+  content stays 4:3 on any 16:9 window with or without a chain.
 - **Perf round 1 (0.4.4)**: the full-screen 0.4.3 field log showed
   avg=51.6 ms ≈ 19 fps @ 800x600 with the crtglow_lanczos 7-pass chain active
   (≈ 470 draw calls per frame; the chain itself filtered 516 frames with
@@ -143,6 +156,8 @@ Every key (0.4.4):
 | `vsync=` | *(empty)* = FIFO \| `0` \| `1` | Present mode of the swapchain the chain renders into: empty = default FIFO (vsync on); `0` prefers IMMEDIATE (uncapped, silently falls back to FIFO where unsupported); `1` = FIFO. Takes effect when the swapchain is (re)created — game start or resolution change. |
 | `aspect=` | `auto` \| `4:3` \| `16:10` \| `16:9` | Content-aspect override (0.4.3). `auto` keeps the `scale=` geometry. A fixed ratio letterboxes the chain output into the largest centered rectangle of that ratio inside the window: `4:3` on a 16:9 window = pillarbox with correct proportions; `16:9` on a 16:9 window = full-bleed. F11 cycles this live. |
 | `base_res=` | `1x` \| `2x` \| `3x` \| `4x` (bare `1`..`4` accepted) | Shader base resolution (0.4.3). The game frame is linearly upscaled N-x on the GPU before the chain sees it, so every source-relative pass FBO renders at N-x — scanline pitch, glow and blur radii get finer as N rises; the final pass is fit back into the output rect. Costs one extra fullscreen blit. F12 cycles this live. |
+| `window=` | *(empty)* = `native` \| `240p` \| `480p` \| `576p` \| `720p` \| `768p` \| `1080p` \| `desktop` \| `WxH` | Present-window preset (0.4.4). Sizes the OS window: `240p`=320x240, `480p`=640x480, `576p`=720x576, `720p`=1280x720, `768p`=1366x768, `1080p`=1920x1080, `desktop` = the current monitor's size (borderless), `WxH` = any explicit client size (e.g. `1600x1200`). Windowed presets are centered on the current monitor; the game's own 800x600 window is untouched at `native`. DPI-aware (physical pixels, see the presets bullet above); reapplied at every renderer (re)open, and F10 cycles it live for the session. This is output sizing only — the game keeps rendering 800x600. |
+| `borderless=` | `0` \| `1` | Strip the caption/borders on preset windows (0.4.4): `WS_POPUP` instead of the game's overlapped style, centered like the windowed presets. `desktop` is borderless regardless. `0`/empty keeps the game's own frame. |
 
 A worked example (the field setup from the round-16 screenshots):
 
@@ -155,19 +170,23 @@ aspect=auto
 base_res=1x
 ```
 
-### Hotkeys (in-game, 0.4.3)
+### Hotkeys (in-game, 0.4.3 + 0.4.4)
 
-While a preset chain filters frames and the game window has focus — the same
-scheme as Chocolate-Doom-VK:
+While the game window has focus — the same scheme as Chocolate-Doom-VK
+(F11/F12 additionally require a chain to be filtering frames; F10 works
+always):
 
+- **F10** — cycle the present-window preset: `native -> 240p -> 480p -> 576p -> 720p -> 768p -> 1080p -> desktop -> native -> ...` (0.4.4; from an unconfigured window the first press lands on 240p)
 - **F11** — cycle content aspect: `4:3 -> 16:10 -> 16:9 -> auto -> ...`
 - **F12** — cycle shader base resolution: `1x -> 2x -> 3x -> 4x -> 1x`
 
 Each press shows a toast line in the overlay box (`aspect 16:9`,
-`shader base 2x`) for ~2 seconds and logs a `slang: F11/F12 ...` line. Both
-picks are **session-only**: they are never written back to `d2slangvk.conf`,
-and a conf hot-reload snaps them back to whatever the file says. With no
-preset configured the keys do nothing and fall through to the game untouched.
+`shader base 2x`, `window 1080p 1920x1080`) for ~2 seconds and logs a
+`slang: F11/F12 ...` / `window: ...` line. All picks are **session-only**:
+they are never written back to `d2slangvk.conf`, and a conf hot-reload snaps
+them back to whatever the file says. With no preset configured F11/F12 do
+nothing and fall through to the game untouched; F10 always works (it sizes
+the window, not the chain).
 
 ## Build from source
 

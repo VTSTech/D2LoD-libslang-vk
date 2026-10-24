@@ -87,6 +87,14 @@ bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out) {
                     // "1x".."4x" or the bare digit; anything else = default
                     if (val[0] == '1' || val[0] == '2' || val[0] == '3' || val[0] == '4')
                         out->base_res = val[0] - '0';
+                } else if (_strnicmp(key, "borderless", 10) == 0 && kl == 10) {
+                    if (val[0] == '0')      out->borderless = 0;
+                    else if (val[0] == '1') out->borderless = 1;
+                    // empty or anything else = default (off)
+                } else if (_strnicmp(key, "window", 6) == 0 && kl == 6) {
+                    // 0.4.4 present-window preset: name validation lives in
+                    // g3x_window_preset_size; here it is an opaque token.
+                    std::snprintf(out->window, sizeof(out->window), "%s", val);
                 }
                 // unknown keys are deliberately ignored (forward compatibility)
             }

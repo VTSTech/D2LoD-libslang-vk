@@ -12,6 +12,7 @@
 #include "g3x_overlay.h"
 #include "g3x_drivertag.h"
 #include "g3x_slang.h"
+#include "g3x_window.h"
 #include "vk_backend.h"
 
 #include <cstring>
@@ -136,6 +137,11 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
         // stays black until Vulkan works. The log names the reason.
         g3x_log("grSstWinOpen: Vulkan unavailable -> black-screen mode (game continues)");
     }
+    // 0.4.4: window presets + DPI awareness — independent of Vulkan health.
+    // Rebinds the game window + "native" size, rereads d2slangvk.conf's
+    // window=/borderless=, and re-applies the active preset (the game may
+    // have re-made its window on a mode change).
+    g3x_window_init((void*)(uintptr_t)hWnd, w, h);
     // 0.4.1: the version stamp's primary home is the game's own "Video:"
     // debug line — g3x_drivertag repoints the game's renderer-name string at
     // our tag (see g3x_drivertag.cpp). The P2.10 overlay box becomes the
@@ -208,6 +214,10 @@ void __stdcall grBufferClear(GrColor_t color, GrAlpha_t alpha, FxU32 depth) {
 
 void __stdcall grBufferSwap(FxU32 swap_interval) {
     ++g_st.n_swaps;
+    // 0.4.4: F10 window presets + conf hot-reload for window=/borderless=.
+    // Before the present so a resize lands ahead of this frame's swapchain
+    // use (an OUT_OF_DATE recreate then picks the new extent for free).
+    g3x_window_frame_tick();
     // P2.5: rolling frame time so the field log shows the raster's real pace
     // (round-7 session ran at ~4.3 fps — the number this build must move).
     // 0.4.4: avg= is swap-to-swap WALL time, and the engine paces in-game
