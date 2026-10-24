@@ -8,6 +8,7 @@
 #include "g3x_types.h"
 #include "g3x_state.h"
 #include "g3x_log.h"
+#include "g3x_frame.h"
 #include "vk_backend.h"
 
 #include <cstring>
@@ -112,6 +113,7 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
         // stays black until Vulkan works. The log names the reason.
         g3x_log("grSstWinOpen: Vulkan unavailable -> black-screen mode (game continues)");
     }
+    g3x_frame_reset(w, h);   // game framebuffer exists even if Vulkan does not
     if (s_ctx == 0) s_ctx = 1;
     return s_ctx;
 }
@@ -135,13 +137,14 @@ void __stdcall grFinish() {
 // ---------------------------------------------------------------------------
 void __stdcall grBufferClear(GrColor_t color, GrAlpha_t alpha, FxU32 depth) {
     ++g_st.n_clears;
-    g3x_log_once("grBufferClear", "color=0x%08x alpha=0x%02x depth=0x%08x (P1: ignored, "
-                 "frame is cleared black)", color, alpha, depth);
+    g3x_frame_clear(color);   // observed: color=0 (black) every time
+    g3x_log_once("grBufferClear", "color=0x%08x alpha=0x%02x depth=0x%08x",
+                 color, alpha, depth);
 }
 
 void __stdcall grBufferSwap(FxU32 swap_interval) {
     ++g_st.n_swaps;
-    g3x_vk_present(swap_interval);
+    g3x_frame_present();
     if (g_st.n_swaps % 300 == 0) {
         g3x_log("frame %u: swaps=%u draws=%u texdl=%u paldl=%u lfblocks=%u",
                 g_st.n_swaps, g_st.n_swaps, g_st.n_draw_calls, g_st.n_tex_downloads,
@@ -238,16 +241,19 @@ void __stdcall grTexCombine(GrChipID_t tmu, GrCombineFunction_t rgb_function,
 void __stdcall grAlphaBlendFunction(GrAlphaBlendFnc_t rgb_sf, GrAlphaBlendFnc_t rgb_df,
                                     GrAlphaBlendFnc_t alpha_sf, GrAlphaBlendFnc_t alpha_df) {
     g_st.blend[0] = rgb_sf; g_st.blend[1] = rgb_df; g_st.blend[2] = alpha_sf; g_st.blend[3] = alpha_df;
+    g3x_frame_set_blend(rgb_sf, rgb_df);   // rgb pair drives the P2.1 raster
     g3x_state_note_u32("alphaBlend", (rgb_sf << 24) | (rgb_df << 16) | (alpha_sf << 8) | alpha_df);
 }
 
 void __stdcall grChromakeyMode(GrChromakeyMode_t mode) {
     g_st.chroma_mode = mode;
+    g3x_frame_set_chromakey(mode, g_st.chroma_value);
     g3x_state_note_u32("chromakeyMode", mode);
 }
 
 void __stdcall grChromakeyValue(GrColor_t value) {
     g_st.chroma_value = value;
+    g3x_frame_set_chromakey(g_st.chroma_mode, value);
     g3x_state_note_u32("chromakeyValue", value);
 }
 
@@ -303,7 +309,8 @@ void __stdcall grCoordinateSpace(GrCoordinateSpaceMode_t mode) {
 
 void __stdcall guGammaCorrectionRGB(FxFloat red, FxFloat green, FxFloat blue) {
     g_st.gamma[0] = red; g_st.gamma[1] = green; g_st.gamma[2] = blue;
-    g3x_log_once("guGammaCorrectionRGB", "%.3f %.3f %.3f (applied in present pass from P2)",
+    g3x_frame_set_gamma(red, green, blue);   // applied in the present scale pass
+    g3x_log_once("guGammaCorrectionRGB", "%.3f %.3f %.3f (applied in present)",
                  red, green, blue);
 }
 
@@ -343,6 +350,7 @@ void __stdcall grTexSource(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, Gr
         g_st.tex_addr[tmu] = startAddress;
         if (info) g_st.tex_format[tmu] = info->format;
     }
+    g3x_frame_tex_source(tmu, startAddress);   // bind for the P2.1 raster
     g3x_log_once("grTexSource", "tmu=%u addr=0x%08x fmt=%u", tmu, startAddress,
                  info ? info->format : 0);
 }
@@ -350,8 +358,9 @@ void __stdcall grTexSource(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, Gr
 void __stdcall grTexDownloadMipMap(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd,
                                    GrTexInfo* info) {
     ++g_st.n_tex_downloads;
-    g3x_log_once("grTexDownloadMipMap", "tmu=%u addr=0x%08x fmt=%u lods %u..%u (P1: counted, "
-                 "not uploaded)", tmu, startAddress, info ? info->format : 0,
+    g3x_frame_tex_download(tmu, startAddress, info);   // P2.1: real upload (CPU copy)
+    g3x_log_once("grTexDownloadMipMap", "tmu=%u addr=0x%08x fmt=%u lods %u..%u",
+                 tmu, startAddress, info ? info->format : 0,
                  info ? info->smallLodLog2 : 0, info ? info->largeLodLog2 : 0);
 }
 
@@ -362,6 +371,7 @@ void __stdcall grTexDownloadTable(GrTexTable_t type, void* data) {
         memcpy(g_st.palette, data, sizeof(g_st.palette));
         g_st.palette_valid = FXTRUE;
         ++g_st.n_palette_downloads;
+        g3x_frame_set_palette(data);   // active palette for the P2.1 raster
         g3x_log_once("grTexDownloadTable:palette", "256-entry palette copied (0x%08x first)",
                      g_st.palette[0]);
     } else {
@@ -387,11 +397,14 @@ void __stdcall grTexMipMapMode(GrChipID_t tmu, GrMipMapMode_t mode, FxBool lodBl
 }
 
 // ---------------------------------------------------------------------------
-// Geometry (P1: counted no-ops — nothing rasterized by design)
+// Geometry (P2.1: TRIANGLE_FAN quads rasterize; other primitives still counted)
 // ---------------------------------------------------------------------------
 void __stdcall grDrawVertexArrayContiguous(FxU32 mode, FxU32 Count, void* pointers,
                                            FxU32 stride) {
     ++g_st.n_draw_calls;
+    if (mode == G3X_GR_TRIANGLE_FAN && Count >= 3) {
+        g3x_frame_draw_fan(Count, pointers, stride);   // the D2 UI/world quad path
+    }
     if (stride != G3X_D2_VERTEX_STRIDE) {
         g3x_log_once("draw:stride", "UNEXPECTED stride=0x%x (spec says 0x1C)", stride);
     }
@@ -425,45 +438,64 @@ void __stdcall grDrawTriangle(void* a, void* b, void* c) {
 }
 
 void __stdcall grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode) {
-    g3x_log_once("grVertexLayout", "param=%u offset=%d mode=%u", param, offset, mode);
+    // Decode the observed D2 vertex (glide.h GrParam): a 20-byte vertex of
+    // XY@0, PARGB@8, Q0@12, ST0@16 — the P2 vertex-input contract.
+    const char* name = (param == 0x01u) ? "XY"
+                     : (param == 0x30u) ? "PARGB"
+                     : (param == 0x50u) ? "Q0"
+                     : (param == 0x40u) ? "ST0" : "?";
+    g3x_log_once("grVertexLayout", "param=0x%02x(%s) offset=%d mode=%u",
+                 param, name, offset, mode);
 }
 
 // ---------------------------------------------------------------------------
-// LFB (framebuffer linear access — fades/screenshots/cutscene blits)
-// P1: hand out a CPU-side shadow buffer so writes land somewhere harmless.
-// P2: map these over the frame image (linear views) per PLAN.md P2.
+// LFB (framebuffer linear access) — the Bink video path. The observed caller
+// is D2Glide/glBlocks.cpp GLBLOCKS_RenderBinkVideoFrame:
+//   grLfbLock(1,0,GR_LFBWRITEMODE_8888,UPPER_LEFT)
+//   -> BinkCopyToBuffer(hBink, lfbPtr, OUR stride, h, xOffset, yOffset, 2)
+//   -> grLfbUnlock
+// On a real Voodoo the front-buffer write is immediately visible and the video
+// loop never calls grBufferSwap — so here, unlock = present. Since P2.1 the
+// lock hands out the SAME game framebuffer the raster draws into (frame is
+// memset black per video frame; Bink overwrites only its centered rect).
+// The READ_ONLY back-buffer call (GetBackBuffer, 565 read-back for fades)
+// returns the frame too; interpreting 32bpp rows as 565 is a known P2 gap.
 // ---------------------------------------------------------------------------
-static uint8_t* s_lfb_shadow = nullptr;
-static unsigned s_lfb_w = 0, s_lfb_h = 0;
+static bool s_lfb_write_pending = false;
 
 FxBool __stdcall grLfbLock(GrLock_t type, GrBuffer_t buffer, GrLfbWriteMode_t writeMode,
                            GrOriginLocation_t origin, FxBool pixelPipeline,
                            GrLfbInfo_t* info) {
     ++g_st.n_lfb_locks;
     if (!info || info->size < (int)sizeof(GrLfbInfo_t)) return FXFALSE;
-    if (!s_lfb_shadow) {
-        // generous max: 1600x1200 x 4 B
-        s_lfb_shadow = new (std::nothrow) uint8_t[1600u * 1200u * 4u];
-        if (!s_lfb_shadow) {
-            g3x_log("grLfbLock: shadow buffer alloc failed");
-            return FXFALSE;
-        }
-        memset(s_lfb_shadow, 0, 1600u * 1200u * 4u);
+    uint8_t* px = g3x_frame_pixels();
+    if (!px) return FXFALSE;
+    s_lfb_write_pending = (type == G3X_GR_LFB_WRITE_ONLY &&
+                           buffer == G3X_GR_BUFFER_FRONTBUFFER);
+    if (s_lfb_write_pending) {
+        // game clears color=0 (black) and Bink overwrites only its centered
+        // rect — start every video frame from black so the letterbox is clean.
+        memset(px, 0, (size_t)g3x_frame_stride() * g3x_frame_height());
     }
-    s_lfb_w = g_vk.alive ? g_vk.width : s_open_w;
-    s_lfb_h = g_vk.alive ? g_vk.height : s_open_h;
-    info->lfbPtr = s_lfb_shadow;
-    info->strideInBytes = s_lfb_w * 4;
+    info->lfbPtr = px;
+    info->strideInBytes = g3x_frame_stride();
     info->writeMode = writeMode;
     info->origin = origin;
-    g3x_log_once("grLfbLock", "type=%u buffer=%u writeMode=0x%02x -> %ux%u shadow",
-                 type, buffer, writeMode, s_lfb_w, s_lfb_h);
+    g3x_log_once("grLfbLock", "type=%u buffer=%u writeMode=0x%02x origin=%u -> %ux%u frame "
+                 "stride=%u (unlock=present)", type, buffer, writeMode, origin,
+                 g3x_frame_width(), g3x_frame_height(), g3x_frame_stride());
     return FXTRUE;
 }
 
 FxBool __stdcall grLfbUnlock(GrLock_t type, GrBuffer_t buffer) {
-    g3x_log_once("grLfbUnlock", "type=%u buffer=%u (shadow contents dropped in P1)",
-                 type, buffer);
+    if (s_lfb_write_pending) {
+        g3x_frame_present();
+        s_lfb_write_pending = false;
+        g3x_log_once("grLfbUnlock", "type=%u buffer=%u -> front-buffer frame presented",
+                     type, buffer);
+    } else {
+        g3x_log_once("grLfbUnlock", "type=%u buffer=%u", type, buffer);
+    }
     return FXTRUE;
 }
 
@@ -473,7 +505,7 @@ static void g3x_banner() {
     char exe[MAX_PATH] = "(?)";
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
     g3x_log("glide3xvk scaffold %s — loaded into %s", G3XVK_BUILD_ID, exe);
-    g3x_log("compiled " __DATE__ " " __TIME__ "; P1.1 = Voodoo-class caps + swapchain clear-black present");
+    g3x_log("compiled " __DATE__ " " __TIME__ "; P2.1 = P_8 textured quad raster (menu/title)");
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {

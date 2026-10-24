@@ -18,7 +18,7 @@ uint64_t g_start_ms = 0;
 // log-once registry: tag -> count. Small fixed table, no allocations — this
 // runs inside the game's render loop and, at attach, inside the loader lock.
 struct OnceEntry {
-    char tag[24];
+    char tag[40];  // must hold the longest tag we use: "grTexDownloadTable:palette" (26)
     uint32_t count;
 };
 constexpr int kMaxOnce = 64;
@@ -127,8 +127,8 @@ void g3x_log_summary() {
     EnterCriticalSection(&g_cs);
     write_line("[g3xvk] ---- activity summary ----");
     for (int i = 0; i < g_once_n; ++i) {
-        char line[128];
-        _snprintf(line, sizeof(line) - 1, "[g3xvk]   %-24s x %u call(s)",
+        char line[144];
+        _snprintf(line, sizeof(line) - 1, "[g3xvk]   %-40s x %u call(s)",
                   g_once[i].tag, g_once[i].count);
         write_line(line);
     }

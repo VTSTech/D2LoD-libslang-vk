@@ -109,6 +109,17 @@ inline void g3x_resolution_size(GrScreenResolution_t res, unsigned* w, unsigned*
 #define G3X_GR_LFB_READ_ONLY  0u
 #define G3X_GR_LFB_WRITE_ONLY 1u
 
+// LFB targets / origin / pixel layouts (3dfx glide.h; the two observed call
+// sites are D2Glide/glBlocks.cpp GLBLOCKS_RenderBinkVideoFrame -> (1,0,5,0)
+// and D2Glide/Renderer/Glide.cpp GetBackBuffer -> (0,1,0xff,0)).
+#define G3X_GR_BUFFER_FRONTBUFFER 0u
+#define G3X_GR_ORIGIN_UPPER_LEFT  0u
+#define G3X_GR_ORIGIN_LOWER_LEFT  1u
+#define G3X_GR_LFB_WRITEMODE_565  0x0u  // RGB:RGB   16bpp
+#define G3X_GR_LFB_WRITEMODE_555  0x1u  // RGB:RGB   16bpp
+#define G3X_GR_LFB_WRITEMODE_1555 0x2u  // ARGB:ARGB 16bpp
+#define G3X_GR_LFB_WRITEMODE_8888 0x5u  // ARGB      32bpp — the Bink path
+
 // -- grGet caps table (field-test v1 finding, 2026-10-24) --------------------
 //
 // The fork's decompiled call sites query six pnames right after a successful

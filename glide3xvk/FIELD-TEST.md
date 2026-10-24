@@ -129,3 +129,57 @@ init gate), 0x24 is `GR_TEXTURE_ALIGN`, 0xE is `GR_MEMORY_UMA`.
 
 Same install/run steps as above; just replace `glide3x.dll` with the v2 build
 (build id in the banner is `77cb059-dirty` or later — check the first log line).
+
+---
+
+# Round 3 — P1.2 (Bink video / LFB present)
+
+## Round 2 result (2026-10-24, RX 560, `Game -w -3dfx`)
+
+The caps fix worked — the game got further than ever: state-call burst,
+7 × `grTexDownloadMipMap` (P_8 palettized, exactly D2's art format), palette
+uploads, one frame presented, and then the **Bink video path**: at 640x480 the
+game called `grLfbLock(WRITE_ONLY, FRONTBUFFER, 8888)` in a ~25 fps rhythm.
+Source-confirmed (D2Glide/glBlocks.cpp `GLBLOCKS_RenderBinkVideoFrame`): D2
+plays cutscenes by `BinkCopyToBuffer`-ing frames **directly into the locked
+front buffer** and never calls `grBufferSwap` — on a real Voodoo the front
+write *is* the present. v2 dropped those writes on unlock → videos invisible.
+
+Bonus finds from the round-2 log: the 800x600-swapchain/640x480-backend line
+pair is windowed-mode reality (the Vulkan swapchain must match the 800x600
+window client area while the game renders 640x480 video into it) — v3 handles
+it explicitly by scaling in present. And the doubled `palette(#1)` log lines
+were a logging bug (tag truncation), fixed.
+
+## What changed in the DLL (v3 / P1.2)
+
+1. **LFB front-buffer present** — `grLfbLock(WRITE_ONLY, FRONT)` hands the game
+   a real shadow buffer; `grLfbUnlock` scales/converts it (8888 straight copy,
+   565/555/1555 expand, row flip for LOWER_LEFT origin) and **presents**.
+   This is the Bink cutscene path, live.
+2. **Windowed scale** — present scales the game's frame (e.g. 640x480) to the
+   window client area (e.g. 800x600); new log line names both sizes.
+3. Logging fixes: palette counter, `grVertexLayout` params now decoded
+   (`0x01=XY 0x30=PARGB 0x50=Q0 0x40=ST0` — the 20-byte D2 vertex, P2 contract).
+
+## Round 3 success criteria
+
+1. **You should SEE the intro/logo videos playing** (black letterbox around
+   them is normal). Sound was always there; now picture joins it.
+2. Log shows the new pair during video:
+   `grLfbLock ... -> 640x480 shadow stride=2560 (unlock=present)` /
+   `grLfbUnlock ... -> front-buffer frame presented (P1.2)`.
+3. If you ran `-w`: a `vk: windowed scale — window 800x600, game renders
+   640x480` line right after `backend ready`.
+4. After the videos, the menu stays black — expected (menu needs P2
+   rasterization: `grDrawVertexArrayContiguous` is still a counted no-op).
+   Menu music + clicks = game alive behind it.
+5. Same quit/restart safety as before; activity summary at detach should now
+   show `grLfbLock`/`grLfbUnlock` counts.
+
+Windowed note: v2 round-2 proved `Game -w -3dfx` loads the Glide renderer fine
+on this install (the doc's earlier fullscreen-only warning was overly
+conservative) — and `-w` is what exercises the scale path, so keep using it.
+
+Build id: `77cb059-dirty`, banner line says **P1.2 = Bink LFB present +
+windowed scale** — check the first two log lines to confirm you're on v3.

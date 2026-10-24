@@ -29,6 +29,7 @@ endif()
 set(G3XVK_SOURCES
     src/g3x_log.cpp
     src/g3x_state.cpp
+    src/g3x_frame.cpp
     src/vk_backend.cpp
     src/glide_exports.cpp
     vendor/volk/volk.c)

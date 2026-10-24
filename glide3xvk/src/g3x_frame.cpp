@@ -1,0 +1,335 @@
+#include "g3x_frame.h"
+#include "g3x_log.h"
+#include "vk_backend.h"
+
+#include <cstring>
+#include <cstdlib>
+#include <cmath>
+#include <new>
+
+namespace {
+
+// ---- frame ----------------------------------------------------------------
+uint32_t* s_px = nullptr;            // ARGB dwords (LE bytes = B,G,R,A)
+unsigned  s_w = 0, s_h = 0;
+
+// ---- state ----------------------------------------------------------------
+uint32_t s_palette[256] = {};        // ARGB dwords as downloaded
+unsigned s_chroma_mode = 0;
+unsigned s_chroma_value = 0;
+unsigned s_blend_sf = 4, s_blend_df = 0;   // GR_BLEND rgb pair; default ONE,ZERO
+uint8_t  s_gamma_lut[3][256];        // per channel; identity until set_gamma
+
+// ---- textures -------------------------------------------------------------
+struct Tex {
+    uint8_t* data;                   // our own copy (base lod first)
+    unsigned w, h;                   // texel dims of the base (large) lod
+    unsigned bpp;                    // 1 for P_8
+    bool     used;
+};
+constexpr unsigned kMaxTex = 1024;
+Tex         s_tex[kMaxTex];
+unsigned    s_keys[kMaxTex];         // (tmu<<28) | (addr & 0x0FFFFFFF)
+int         s_cur = -1;              // bound texture slot (grTexSource)
+
+bool s_warned_tex_full = false;
+bool s_warned_tex_miss = false;
+
+unsigned tex_key(unsigned tmu, unsigned addr) {
+    return (tmu << 28) | (addr & 0x0FFFFFFFu);
+}
+
+// Game-side dims convention (D2Glide/Renderer/Glide.cpp
+// RENDERER_GLIDE_CalculateTextureSize): lod = log2(max dim), aspect = log2(w/h).
+void tex_dims(unsigned lod, int aspect, unsigned* w, unsigned* h) {
+    if (lod > 11) lod = 11;
+    if (aspect > 3) aspect = 3;
+    if (aspect < -3) aspect = -3;
+    if (aspect >= 0) {
+        *w = 1u << lod;
+        *h = 1u << (lod - (aspect > (int)lod ? (int)lod : aspect));
+    } else {
+        *w = 1u << (lod + (-aspect > (int)lod ? -(int)lod : aspect));
+        *h = 1u << lod;
+    }
+}
+
+unsigned tex_bytes_per_pixel(unsigned fmt) {
+    // GR_TEXFMT_P_8 (5) and the other 8bpp formats are 1 byte; the rest 2.
+    return (fmt == 0x5u || fmt <= 0x3u) ? 1u : 2u;
+}
+
+int tex_slot_alloc(unsigned key) {
+    for (unsigned i = 0; i < kMaxTex; ++i) {
+        if (!s_tex[i].used || s_keys[i] == key) return (int)i;
+    }
+    return -1;
+}
+
+// ---- raster ---------------------------------------------------------------
+struct RVert { float x, y, u, v; uint32_t argb; };
+
+inline uint32_t shade_blend(uint32_t dst, uint32_t src) {
+    // src channels already multiplied by vertex color by the caller.
+    const unsigned sf = s_blend_sf, df = s_blend_df;
+    const unsigned s[3] = { src & 0xFF, (src >> 8) & 0xFF, (src >> 16) & 0xFF };
+    const unsigned d[3] = { dst & 0xFF, (dst >> 8) & 0xFF, (dst >> 16) & 0xFF };
+    unsigned out[3];
+    for (int i = 0; i < 3; ++i) {
+        unsigned sc, dc;
+        switch (sf) {
+            case 0:  sc = 0; break;                          // ZERO
+            case 1:  sc = (src >> 24) & 0xFF; break;         // SRC_ALPHA
+            case 2:  sc = s[i]; break;                       // SRC_COLOR
+            case 4:  sc = 255; break;                        // ONE
+            case 5:  sc = 255 - ((src >> 24) & 0xFF); break; // ONE_MINUS_SRC_ALPHA
+            default: sc = 255; break;
+        }
+        switch (df) {
+            case 0:  dc = 0; break;                          // ZERO
+            case 1:  dc = (src >> 24) & 0xFF; break;         // SRC_ALPHA
+            case 2:  dc = s[i]; break;                       // SRC_COLOR (dst * src)
+            case 3:  dc = (dst >> 24) & 0xFF; break;         // DST_ALPHA
+            case 4:  dc = 255; break;                        // ONE
+            case 5:  dc = 255 - ((src >> 24) & 0xFF); break;
+            default: dc = 0; break;
+        }
+        unsigned v = (s[i] * sc + 255) >> 8;
+        v += (d[i] * dc + 255) >> 8;
+        out[i] = v > 255 ? 255 : v;
+    }
+    return out[0] | (out[1] << 8) | (out[2] << 16) | 0xFF000000u;
+}
+
+inline uint32_t sample_texel(const Tex& t, float u, float v, bool* skip) {
+    *skip = false;
+    if (t.bpp != 1 || !t.data || !t.w || !t.h) return 0xFF000000u;
+    // s,t span [0,256] per wrap (game multiplies normalized coords by 256).
+    const unsigned tx = (unsigned)(u * (float)t.w / 256.0f) & (t.w - 1);
+    const unsigned ty = (unsigned)(v * (float)t.h / 256.0f) & (t.h - 1);
+    const unsigned idx = t.data[(size_t)ty * t.w + tx];
+    if (s_chroma_mode == 1 && idx == (s_chroma_value & 0xFFu)) { *skip = true; return 0; }
+    return s_palette[idx];
+}
+
+// Top-left ownership rule (uniform form, y-down, interior = f>0 side): a pixel
+// exactly on an edge belongs to the triangle whose interior is below/right of
+// it — otherwise shared fan diagonals get drawn twice (visible with additive
+// blend) or not at all (hairline seams with opaque).
+inline bool owns_edge(const RVert& p, const RVert& q) {
+    const float dy = q.y - p.y;
+    if (dy != 0.0f) return dy < 0.0f;
+    return (q.x - p.x) > 0.0f;
+}
+
+void raster_tri(const RVert& a, const RVert& b, const RVert& c) {
+    if (s_cur < 0) return;
+    const Tex& t = s_tex[s_cur];
+    const float area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    if (area == 0.0f) return;
+    const float inv = 1.0f / area;
+    const float minx = a.x < b.x ? (a.x < c.x ? a.x : c.x) : (b.x < c.x ? b.x : c.x);
+    const float miny = a.y < b.y ? (a.y < c.y ? a.y : c.y) : (b.y < c.y ? b.y : c.y);
+    const float maxx = a.x > b.x ? (a.x > c.x ? a.x : c.x) : (b.x > c.x ? b.x : c.x);
+    const float maxy = a.y > b.y ? (a.y > c.y ? a.y : c.y) : (b.y > c.y ? b.y : c.y);
+    int x0 = (int)minx;     if (x0 < 0) x0 = 0;
+    int y0 = (int)miny;     if (y0 < 0) y0 = 0;
+    int x1 = (int)maxx + 1; if (x1 > (int)s_w) x1 = (int)s_w;
+    int y1 = (int)maxy + 1; if (y1 > (int)s_h) y1 = (int)s_h;
+    const bool own0 = owns_edge(a, b);   // wc == 0 -> pixel on edge a->b
+    const bool own1 = owns_edge(b, c);   // wa == 0 -> pixel on edge b->c
+    const bool own2 = owns_edge(c, a);   // wb == 0 -> pixel on edge c->a
+
+    for (int y = y0; y < y1; ++y) {
+        const float py = (float)y + 0.5f;
+        uint32_t* row = s_px + (size_t)y * s_w;
+        for (int x = x0; x < x1; ++x) {
+            const float px = (float)x + 0.5f;
+            // barycentrics, each from its own cross so edge zeros are exact:
+            //   wa = weight of a (0 on edge b->c), wb = weight of b (0 on c->a),
+            //   wc = weight of c (0 on a->b)
+            const float wa = ((c.x - b.x) * (py - b.y) - (c.y - b.y) * (px - b.x)) * inv;
+            const float wb = ((a.x - c.x) * (py - c.y) - (a.y - c.y) * (px - c.x)) * inv;
+            const float wc = ((b.x - a.x) * (py - a.y) - (b.y - a.y) * (px - a.x)) * inv;
+            if (wa < 0.0f || wb < 0.0f || wc < 0.0f) continue;
+            if ((wa == 0.0f && !own1) || (wb == 0.0f && !own2) || (wc == 0.0f && !own0)) continue;
+            const float u = a.u * wa + b.u * wb + c.u * wc;
+            const float v = a.v * wa + b.v * wb + c.v * wc;
+            uint32_t vc;
+            if (a.argb == b.argb && b.argb == c.argb) {
+                vc = a.argb;
+            } else {
+                const unsigned cr = (unsigned)(0.5f + (a.argb & 0xFF) * wa + (b.argb & 0xFF) * wb + (c.argb & 0xFF) * wc);
+                const unsigned cg = (unsigned)(0.5f + ((a.argb >> 8) & 0xFF) * wa + ((b.argb >> 8) & 0xFF) * wb + ((c.argb >> 8) & 0xFF) * wc);
+                const unsigned cb = (unsigned)(0.5f + ((a.argb >> 16) & 0xFF) * wa + ((b.argb >> 16) & 0xFF) * wb + ((c.argb >> 16) & 0xFF) * wc);
+                vc = (cr > 255 ? 255 : cr) | ((cg > 255 ? 255 : cg) << 8) | ((cb > 255 ? 255 : cb) << 16);
+            }
+            bool skip;
+            const uint32_t tex = sample_texel(t, u, v, &skip);
+            if (skip) continue;
+            // colorCombine SCALE_OTHER x LOCAL: texel * vertex color
+            const unsigned tr = tex & 0xFF, tg = (tex >> 8) & 0xFF, tb = (tex >> 16) & 0xFF;
+            const unsigned vr = vc & 0xFF, vg = (vc >> 8) & 0xFF, vb = (vc >> 16) & 0xFF;
+            const uint32_t src = ((tr * vr + 255) >> 8) |
+                                 (((tg * vg + 255) >> 8) << 8) |
+                                 (((tb * vb + 255) >> 8) << 16);
+            row[x] = shade_blend(row[x], src);
+        }
+    }
+}
+
+void gamma_identity() {
+    for (int c = 0; c < 3; ++c)
+        for (int i = 0; i < 256; ++i) s_gamma_lut[c][i] = (uint8_t)i;
+}
+
+struct GammaInit { GammaInit() { gamma_identity(); } } s_gamma_init;
+
+} // namespace
+
+// ---------------------------------------------------------------------------
+
+void g3x_frame_reset(unsigned w, unsigned h) {
+    if (!s_px || s_w != w || s_h != h) {
+        delete[] s_px;
+        s_px = new (std::nothrow) uint32_t[(size_t)w * h];
+    }
+    s_w = w; s_h = h;
+    if (s_px) memset(s_px, 0, (size_t)w * h * 4);
+}
+
+void g3x_frame_clear(uint32_t color) {
+    if (!s_px) return;
+    const size_t n = (size_t)s_w * s_h;
+    for (size_t i = 0; i < n; ++i) s_px[i] = color | 0xFF000000u;
+}
+
+uint8_t* g3x_frame_pixels() { return (uint8_t*)s_px; }
+unsigned g3x_frame_width()  { return s_w; }
+unsigned g3x_frame_height() { return s_h; }
+unsigned g3x_frame_stride() { return s_w * 4; }
+
+void g3x_frame_set_palette(const void* entries256) {
+    if (entries256) memcpy(s_palette, entries256, sizeof(s_palette));
+}
+
+void g3x_frame_set_chromakey(unsigned mode, unsigned value) {
+    s_chroma_mode = mode; s_chroma_value = value;
+}
+
+void g3x_frame_set_blend(unsigned rgb_sf, unsigned rgb_df) {
+    s_blend_sf = rgb_sf; s_blend_df = rgb_df;
+}
+
+void g3x_frame_set_gamma(float r, float g, float b) {
+    const float gm[3] = { r, g, b };
+    for (int c = 0; c < 3; ++c) {
+        const float gamma = (gm[c] > 0.05f) ? gm[c] : 1.0f;
+        const float inv = 1.0f / gamma;
+        for (int i = 0; i < 256; ++i) {
+            int out = (int)(pow((double)i / 255.0, (double)inv) * 255.0 + 0.5);
+            if (out < 0) out = 0;
+            if (out > 255) out = 255;
+            s_gamma_lut[c][i] = (uint8_t)out;
+        }
+    }
+}
+
+bool g3x_frame_tex_download(unsigned tmu, unsigned addr, const GrTexInfo* info) {
+    if (!info || !info->data) return false;
+    unsigned w = 0, h = 0;
+    tex_dims(info->largeLodLog2, (int)info->aspectRatioLog2, &w, &h);
+    if (!w || !h) return false;
+    const unsigned bpp = tex_bytes_per_pixel(info->format);
+    // copy the whole mip chain when present (base = large lod comes first in
+    // the glide layout); sampling only touches the base lod in P2.1.
+    size_t bytes = 0;
+    for (unsigned lod = info->smallLodLog2; lod <= info->largeLodLog2 && lod <= 11; ++lod) {
+        unsigned lw = 0, lh = 0;
+        tex_dims(lod, (int)info->aspectRatioLog2, &lw, &lh);
+        bytes += (size_t)lw * lh * bpp;
+    }
+    if (!bytes) return false;
+
+    const unsigned key = tex_key(tmu, addr);
+    const int slot = tex_slot_alloc(key);
+    if (slot < 0) {
+        if (!s_warned_tex_full) {
+            s_warned_tex_full = true;
+            g3x_log("frame: texture table full (%u) — downloads dropped", kMaxTex);
+        }
+        return false;
+    }
+    Tex& t = s_tex[slot];
+    uint8_t* nd = (uint8_t*)realloc(t.data, bytes);
+    if (!nd) return false;
+    memcpy(nd, info->data, bytes);
+    t.data = nd; t.w = w; t.h = h; t.bpp = bpp; t.used = true;
+    s_keys[slot] = key;
+    return true;
+}
+
+void g3x_frame_tex_source(unsigned tmu, unsigned addr) {
+    const unsigned key = tex_key(tmu, addr);
+    for (unsigned i = 0; i < kMaxTex; ++i) {
+        if (s_tex[i].used && s_keys[i] == key) { s_cur = (int)i; return; }
+    }
+    s_cur = -1;
+    if (!s_warned_tex_miss) {
+        s_warned_tex_miss = true;
+        g3x_log("frame: grTexSource tmu=%u addr=0x%08x not in download table (draws skipped)",
+                tmu, addr);
+    }
+}
+
+void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
+    if (!s_px || !base || count < 3 || stride < 24) return;
+    if (s_cur < 0) return;
+    RVert verts[64];
+    if (count > 64) count = 64;
+    for (unsigned i = 0; i < count; ++i) {
+        const uint8_t* p = (const uint8_t*)base + (size_t)i * stride;
+        float x, y, u, v;
+        uint32_t argb;
+        memcpy(&x,    p + 0,  4);
+        memcpy(&y,    p + 4,  4);
+        memcpy(&argb, p + 8,  4);
+        memcpy(&u,    p + 16, 4);   // s (ST0 @16)
+        memcpy(&v,    p + 20, 4);   // t @20
+        verts[i].x = x; verts[i].y = y; verts[i].u = u; verts[i].v = v;
+        verts[i].argb = argb;
+    }
+    for (unsigned i = 1; i + 1 < count; ++i) {
+        raster_tri(verts[0], verts[i], verts[i + 1]);
+    }
+}
+
+bool g3x_frame_present() {
+    unsigned ext_w = 0, ext_h = 0;
+    g3x_vk_present_extent(&ext_w, &ext_h);
+    if (!ext_w || !ext_h || !s_px) return false;
+
+    static uint8_t* compose = nullptr;
+    static unsigned compose_cap = 0;
+    const size_t need = (size_t)ext_w * ext_h * 4;
+    if (compose_cap < need) {
+        delete[] compose;
+        compose = new (std::nothrow) uint8_t[need];
+        if (!compose) { compose_cap = 0; return false; }
+        compose_cap = (unsigned)need;
+    }
+    uint8_t* dst = compose;
+    for (unsigned y = 0; y < ext_h; ++y) {
+        const unsigned sy = y * s_h / ext_h;
+        const uint32_t* row = s_px + (size_t)sy * s_w;
+        for (unsigned x = 0; x < ext_w; ++x, dst += 4) {
+            const unsigned sx = x * s_w / ext_w;
+            const uint32_t p = row[sx];
+            dst[0] = s_gamma_lut[2][p & 0xFF];          // B
+            dst[1] = s_gamma_lut[1][(p >> 8) & 0xFF];   // G
+            dst[2] = s_gamma_lut[0][(p >> 16) & 0xFF];  // R
+            dst[3] = 0xFF;
+        }
+    }
+    return g3x_vk_present_pixels(compose, ext_w, ext_h);
+}
