@@ -6,3 +6,4 @@ sites2.tsv
 *.cpp.map
 /build/
 /build-g3x/
+*.bak

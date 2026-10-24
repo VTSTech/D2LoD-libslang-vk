@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [main]
+    branches: [main, libslang-vk]
     paths-ignore: ['**.md']
   pull_request:
     paths-ignore: ['**.md']
@@ -13,8 +13,12 @@ concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
 
+# Builds the game's Glide renderer DLL only — the d2.exe tree is NOT built
+# here (the 500-TU clean-clone gate lives in tools/check-build.sh, run by
+# hand). glide3x.dll is self-contained and needs no game objects to link.
+
 jobs:
-  mingw-i686:
+  glide3x:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -24,12 +28,6 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq g++-mingw-w64-i686 binutils-mingw-w64-i686 cmake ninja-build
 
-      - name: Build from a clean clone
-        run: tools/check-build.sh "$GITHUB_WORKSPACE" "$GITHUB_SHA"
-
-      # The clean-clone gate above exercises the glide3xvk target too, but its
-      # build dir is a temp clone. Configure the checkout itself and keep the
-      # DLL: the artifact below is what field testers run.
       - name: Build glide3x.dll
         run: |
           cmake -S . -B build-g3x -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
