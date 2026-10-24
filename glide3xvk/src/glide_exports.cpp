@@ -215,6 +215,12 @@ void __stdcall grColorCombine(GrCombineFunction_t function, GrCombineFactor_t fa
     g_st.color_combine[0] = function; g_st.color_combine[1] = factor;
     g_st.color_combine[2] = local;    g_st.color_combine[3] = other;
     g_st.color_combine[4] = (unsigned)invert;
+    // Game decode (D2Glide/Renderer/Glide.cpp RENDERER_GLIDE_SetColorCombine):
+    //   mode 1: grColorCombine(3=SCALE_OTHER, 1=FACTOR_LOCAL, 0, 1=OTHER_TEXTURE)
+    //           -> output = vertex color * texel (the textured sprite path)
+    //   mode 2: grColorCombine(1=LOCAL, 0, 1=LOCAL_CONSTANT, 2) -> output =
+    //           grConstantColorValue (the solid-fill / fade-rect path)
+    g3x_frame_set_color_fill(function == 1 && local == 1);
     g3x_state_note_u32("colorCombine", (function << 24) | (factor & 0xFFFFFF));
 }
 
@@ -269,6 +275,7 @@ void __stdcall grColorMask(FxBool rgb, FxBool a) {
 
 void __stdcall grConstantColorValue(GrColor_t value) {
     g_st.constant_color = value;
+    g3x_frame_set_constant(value);   // fill color (bits 15..8) + blend alpha (bits 7..0)
     g3x_state_note_u32("constantColor", value);
 }
 
@@ -324,13 +331,12 @@ void __stdcall grLoadGammaTable(FxU32 nentries, FxU32* red, FxU32* green, FxU32*
 // ---------------------------------------------------------------------------
 FxU32 __stdcall grTexTextureMemRequired(FxU32 evenOdd, GrTexInfo* info) {
     if (!info) return 0;
-    // Glide size model: width = 1<<(lod+aspect), height = 1<<(lod-aspect);
-    // 8bpp formats (<= GR_TEXFMT_P_8 range) cost 1 B/texel, the rest 2 B.
+    // Same dims convention as the raster's g3x_tex_dims: max dim = 2^lod, the
+    // other = 2^(lod-|aspect|); 8bpp formats cost 1 B/texel, the rest 2 B.
     FxU32 bytes = 0;
     for (unsigned lod = info->smallLodLog2; lod <= info->largeLodLog2 && lod < 12; ++lod) {
-        int aspect = (int)info->aspectRatioLog2;
-        unsigned w = 1u << (lod + (aspect > 0 ? aspect : 0));
-        unsigned h = 1u << (lod - (aspect < 0 ? -aspect : 0));
+        unsigned w = 0, h = 0;
+        g3x_tex_dims(lod, (int)info->aspectRatioLog2, &w, &h);
         bytes += w * h * ((info->format <= 0x3u) ? 1u : 2u);
     }
     return bytes;
@@ -407,6 +413,17 @@ void __stdcall grDrawVertexArrayContiguous(FxU32 mode, FxU32 Count, void* pointe
     }
     if (stride != G3X_D2_VERTEX_STRIDE) {
         g3x_log_once("draw:stride", "UNEXPECTED stride=0x%x (spec says 0x1C)", stride);
+    }
+    // Field diagnostic: distinct (mode,count) shapes — anything other than the
+    // 4-vertex fan quads changes what the rasterizer must handle.
+    static unsigned s_shape_mode[8], s_shape_count[8], s_shape_n = 0;
+    bool known = false;
+    for (unsigned i = 0; i < s_shape_n; ++i) {
+        if (s_shape_mode[i] == mode && s_shape_count[i] == Count) { known = true; break; }
+    }
+    if (!known && s_shape_n < 8) {
+        s_shape_mode[s_shape_n] = mode; s_shape_count[s_shape_n] = Count; ++s_shape_n;
+        g3x_log("drawshape #%u: mode=%u count=%u", s_shape_n, mode, Count);
     }
     if (g_st.n_draw_calls <= 4) {
         g3x_log("grDrawVertexArrayContiguous: mode=%u count=%u stride=0x%x ptr=%p (call %u)",
@@ -505,7 +522,7 @@ static void g3x_banner() {
     char exe[MAX_PATH] = "(?)";
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
     g3x_log("glide3xvk scaffold %s — loaded into %s", G3XVK_BUILD_ID, exe);
-    g3x_log("compiled " __DATE__ " " __TIME__ "; P2.1 = P_8 textured quad raster (menu/title)");
+    g3x_log("compiled " __DATE__ " " __TIME__ "; P2.2 = texel-unit s/t (2^lod space) + constant fills");
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
