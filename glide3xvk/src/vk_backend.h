@@ -66,3 +66,15 @@ void* g3x_vk_slang_swap_view(uint32_t idx);        // VkImageView of swapchain i
 int   g3x_vk_slang_swap_format();                  // VkFormat of the swapchain images
 void  g3x_vk_slang_swap_extent(unsigned* w, unsigned* h);
 void* g3x_vk_slang_acquire_semaphore();            // the binary semaphore acquire signaled
+
+// 0.4.3 shader base resolution: one fenced one-shot submit that stretches the
+// game-res source image into the N-times larger input image (linear filter).
+// Both images are VkImage handles of the SAME VkDevice/queue the backend owns
+// (slangvk adopted our context). The caller guarantees both images rest in
+// VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL (slangvk_image's layout) and that
+// no other submission is in flight on our command buffer/fence - true at the
+// g3x_slang_present call site (slangvk_image_update just fenced-waited, the
+// chain render has not been submitted yet, and the legacy path is idle).
+// Returns false (soft, logged) when the backend is down.
+bool g3x_vk_slang_blit_scaled(void* src_image, void* dst_image,
+                              unsigned sw, unsigned sh, unsigned dw, unsigned dh);

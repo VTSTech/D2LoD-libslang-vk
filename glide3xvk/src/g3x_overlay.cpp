@@ -40,6 +40,13 @@ char     s_shader[64];
 unsigned s_shader_len = 0;
 bool     s_shader_on  = false;
 
+// 0.4.3: transient hotkey-feedback line (F11 aspect / F12 base res). Decays
+// per g3x_overlay_render call — one call == one presented frame.
+char     s_toast[64];
+unsigned s_toast_len   = 0;
+bool     s_toast_on    = false;
+unsigned s_toast_frames = 0;
+
 const uint8_t* glyph_of(char c) {
     unsigned char uc = (unsigned char)c;
     if (uc < G3X_FONT8X8_FIRST || uc >= G3X_FONT8X8_FIRST + G3X_FONT8X8_COUNT)
@@ -99,6 +106,19 @@ void g3x_overlay_set_shader(const char* name) {
     s_shader_on = s_shader_len != 0;
 }
 
+void g3x_overlay_toast(const char* text) {
+    if (!text || !text[0]) {
+        s_toast[0] = '\0'; s_toast_len = 0; s_toast_on = false;
+        return;
+    }
+    s_toast_len = (unsigned)std::strlen(text);
+    if (s_toast_len >= sizeof(s_toast)) s_toast_len = sizeof(s_toast) - 1;
+    std::memcpy(s_toast, text, s_toast_len);
+    s_toast[s_toast_len] = '\0';
+    s_toast_on = true;
+    s_toast_frames = 120;                        // ~2s at 60fps, ~4s at D2's 30
+}
+
 void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     if (!s_enabled || !bgra || w < 8 || h < 8) return;
 
@@ -106,13 +126,22 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     // readout occupies the top-left corner, so the tag moved out of its way.
     // 0.4.2: up to two lines — the tag, then the active shader's file name
     // one line-step below (10px: 8px cell + 2px gap, so line 1's descenders
-    // stay clear of line 2). Box: (w-4-bw, 4)..(w-4, 4+bh), clamped to the
-    // buffer edges so absurdly small present targets can't write OOB.
+    // stay clear of line 2). 0.4.3: optional third line — the hotkey toast,
+    // same step, decaying per presented frame; the box grows for it and
+    // shrinks back when it expires. Box: (w-4-bw, 4)..(w-4, 4+bh), clamped
+    // to the buffer edges so absurdly small present targets can't write OOB.
+    if (s_toast_on && s_toast_frames > 0) --s_toast_frames;
+    else s_toast_on = false;
+
     const unsigned pad = 3, oy = 4, step = 10;
-    const bool     two = s_shader_on;
-    const unsigned len = (two && s_shader_len > s_tag.len) ? s_shader_len : s_tag.len;
-    unsigned bw = len * 8 + pad * 2;
-    unsigned bh = 8 + (two ? step : 0) + pad * 2;
+    const bool     two   = s_shader_on;
+    const bool     three = two && s_toast_on;
+    unsigned max_len = s_tag.len;
+    if (two)   max_len = (s_shader_len > max_len) ? s_shader_len : max_len;
+    if (three) max_len = (s_toast_len  > max_len) ? s_toast_len  : max_len;
+    unsigned lines = 1 + (two ? 1u : 0u) + (three ? 1u : 0u);
+    unsigned bw = max_len * 8 + pad * 2;
+    unsigned bh = 8 + (lines - 1) * step + pad * 2;
     if (bw + 4 > w) bw = w - 4;                    // keep the 4px right margin
     const unsigned ox = w - bw - 4;                // unsigned-safe: bw+4 <= w
     if (oy + bh > h) bh = h - oy;                  // tiny present targets
@@ -135,4 +164,6 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     draw_line(bgra, w, h, tx, ty, s_tag.text, s_tag.len);
     if (two)
         draw_line(bgra, w, h, tx, ty + step, s_shader, s_shader_len);
+    if (three)
+        draw_line(bgra, w, h, tx, ty + step * 2, s_toast, s_toast_len);
 }

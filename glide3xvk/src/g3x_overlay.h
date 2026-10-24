@@ -1,6 +1,6 @@
 // glide3xvk — P2.10/P2.11: on-screen version tag + active-shader line.
 //
-// Line 1 — "glide3xvk 0.4.2 (181780c)" — drawn into the present buffer every
+// Line 1 — "glide3xvk 0.4.3 (181780c)" — drawn into the present buffer every
 // frame, so a field screenshot always proves which build produced it (rounds
 // 6-11 repeatedly opened with "which dll was that?" ambiguity).
 //
@@ -41,7 +41,7 @@
 // Release version of this glide3xvk build. Shown by the overlay, printed by
 // the session banner and reported through grGetString(GR_RENDERER). Bump on
 // every field-delivered change set.
-#define G3XVK_VERSION "0.4.2"
+#define G3XVK_VERSION "0.4.3"
 
 // Render the tag into a BGRA8 buffer (w*h*4 bytes, stride = w*4). Safe to call
 // with any buffer size; the box anchors 4px from the right/top edge and clamps
@@ -58,6 +58,12 @@ const char* g3x_overlay_tagline();
 // the tag alone. Called by g3x_slang when a chain goes ready / dies; copies
 // internally, caller's storage may be transient.
 void g3x_overlay_set_shader(const char* name);
+
+// 0.4.3: transient third line for hotkey feedback — "aspect 4:3",
+// "shader base 2x" — drawn inside the box below the shader line for ~120
+// presented frames (~2s at 60fps, ~4s at D2's typical 30), then the box
+// shrinks back. NULL/empty clears immediately. Copies internally.
+void g3x_overlay_toast(const char* text);
 
 // On/off switch. glide_exports wires [glide3xvk] overlay=0/1 to this; with no
 // ini key the value is auto — off when the drivertag patch owns the game's

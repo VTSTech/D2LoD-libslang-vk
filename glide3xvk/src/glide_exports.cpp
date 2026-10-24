@@ -674,8 +674,10 @@ static void g3x_banner() {
     g3x_log("compiled " __DATE__ " " __TIME__
             "; P3 = libslang-vk preset chain at the present pass: d2slangvk.conf "
             "[slangvk] preset=<path.slangp> runs every presented frame through "
-            "the preset (scale=fit|integer|stretch, vsync=, hot-reload on file "
-            "change; no conf = unfiltered P2 look); P2.11 top-right version "
+            "the preset (scale=fit|integer|stretch, vsync=, aspect=auto|4:3|"
+            "16:10|16:9, base_res=1x..4x, hot-reload on file change; no conf = "
+            "unfiltered P2 look); in-game F11 cycles aspect, F12 cycles the "
+            "shader base resolution (session-only); P2.11 top-right version "
             "tag + P2.9 chroma index-0 fix retained");
 }
 

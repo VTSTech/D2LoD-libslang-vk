@@ -31,6 +31,18 @@ enum {
     G3XSLANG_SCALE_INTEGER = 2   // largest whole-number multiple, centered
 };
 
+// Content aspect (d2slangvk.conf "aspect="; also cycles live on F11).
+// auto keeps the scale= geometry; an explicit ratio letterboxes the chain's
+// output into the largest centered rect of that ratio inside the swapchain
+// (4:3 on a 16:9 window = pillarbox; 16:9 on a 16:9 window = full-bleed).
+enum {
+    G3XSLANG_ASPECT_AUTO = 0,    // follow scale= (startup default)
+    G3XSLANG_ASPECT_4_3   = 1,
+    G3XSLANG_ASPECT_16_10 = 2,
+    G3XSLANG_ASPECT_16_9  = 3,
+    G3XSLANG_ASPECT_COUNT
+};
+
 // Pixel rectangle for the chain's output (library semantics: all-zero =
 // fit + center letterbox; x/y may be negative when host-supplied).
 struct G3xSlangRect {
@@ -38,11 +50,14 @@ struct G3xSlangRect {
     uint32_t w, h;
 };
 
-// d2slangvk.conf body, parsed. Defaults: preset disabled, fit, vsync default.
+// d2slangvk.conf body, parsed. Defaults: preset disabled, fit, vsync default,
+// aspect auto, base res 1x.
 struct G3xSlangConf {
     char preset[512];   // "" = chain disabled; relative paths resolve against the game exe dir
     int  scale;         // G3XSLANG_SCALE_*
     int  vsync;         // -1 = swapchain default (FIFO), 0 = off, 1 = on
+    int  aspect;        // G3XSLANG_ASPECT_* (0.4.3; default auto)
+    int  base_res;      // shader base resolution multiplier 1..4 (0.4.3; default 1)
 };
 
 // Pure parser for a d2slangvk.conf body: "[slangvk]" section with
@@ -56,6 +71,12 @@ bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out);
 // target when the input is larger than it, which degenerates to fill).
 G3xSlangRect g3x_slang_output_rect(int mode, unsigned in_w, unsigned in_h,
                                    unsigned out_w, unsigned out_h);
+
+// Pure aspect-rect math (0.4.3). Largest centered rect of the requested
+// ratio inside the out_w x out_h target; G3XSLANG_ASPECT_AUTO returns the
+// all-zero sentinel meaning "caller keeps its scale= geometry". The chain
+// output is letterboxed into this rect by the library.
+G3xSlangRect g3x_slang_aspect_rect(int aspect, unsigned out_w, unsigned out_h);
 
 // ---- lifecycle (called from vk_backend / glide_exports) --------------------
 //
@@ -83,6 +104,13 @@ bool g3x_slang_active();
 
 // Vsync preference for swapchain creation: -1 default (FIFO), 0 = off, 1 = on.
 int g3x_slang_vsync_pref();
+
+// 0.4.3 hotkeys, polled from the present path while a chain filters frames
+// (mirrors Chocolate-Doom-VK): F11 cycles the content aspect
+// 4:3 -> 16:10 -> 16:9 -> auto, F12 cycles the shader base resolution
+// 1x -> 2x -> 3x -> 4x -> 1x. Both are session-only (never written back to
+// d2slangvk.conf; a conf reload resets them to the file's values).
+void g3x_slang_hotkeys_poll();
 
 #ifndef G3XVK_HAVE_SLANGVK
 // Stub-build test hooks (host tests only; not compiled into the real DLL).
