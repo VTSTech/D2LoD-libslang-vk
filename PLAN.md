@@ -222,6 +222,7 @@ presents — game reaches the menu with a black screen and no crash.
   target + vendored volk/VMA). Fallbacks if C++23 gaps appear: compile the
   library as C++20 with pinned features, or build a 32-bit C shim against a
   reduced core. Record findings in `glide3xvk/BUILD-32BIT.md`.
+  **DONE — PASSED 2026-10-24, R1 retired, no fallbacks needed (BUILD-32BIT.md).**
 - **Resolved:** 1.14d exposes the Glide mode via the ini flag store — command
   line `-3dfx` or `[VIDEO] 3DFX=1` (Fog globals flag table, offset 0xa) — and
   it is **fullscreen-only** (D2GFX.cpp:497 excludes Glide from windowed mode).
@@ -286,7 +287,7 @@ The payoff. Everything above already runs through our swapchain.
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| R1 | libslang-vk C++23 doesn't build i686-mingw gcc-13 | Med | High (blocks all) | P1 spike first; fallbacks: C++20 core / reduced core / clang the DLL only (llvm-mingw is fine for OUR DLL — header drift only affects the game tree, not a fresh library) |
+| R1 | libslang-vk C++23 doesn't build i686-mingw gcc-13 | **Retired 2026-10-24** | — | **Spike PASSED** (`glide3xvk/BUILD-32BIT.md`): builds clean with zero source changes; fallbacks not needed; verified recipe recorded there |
 | R2 | No 32-bit Vulkan loader/ICD on VTSTech's box | Low | Med | 32-bit vulkan-1.dll ships with modern GPU drivers (verify on RX 560 early); fail-soft unfiltered present regardless |
 | R3 | 1.14d doesn't expose Glide video mode in UI | Med | Med | Registry/video-test investigation in P1; d2dx documents 1.14d Glide selection; worst case a tiny d2vidtst-style selector or conf-forced mode |
 | R4 | Glide state semantics subtly wrong (combine functions) | Med | Med | In-tree D2Glide is a complete usage spec; d2dx as prior art; screenshot-diff loop vs original renderer in P2 |

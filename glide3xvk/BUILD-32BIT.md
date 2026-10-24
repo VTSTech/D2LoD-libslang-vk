@@ -1,8 +1,9 @@
 # BUILD-32BIT.md — libslang-vk as 32-bit Windows (the P1 gate)
 
-> Status: **SPIKE PENDING** — this file is the template; fill in the Results
-> section as the spike runs. Everything downstream (linking libslang-vk into
-> glide3x.dll, the P3 preset chain) waits on this.
+> Status: **SPIKE PASSED (2026-10-24, agent sandbox) — R1 RETIRED.** libslang-vk
+> 0.4.06 builds as i686 Windows with the exact d2 toolchain: C++23 + gcc-13,
+> zero source changes, zero fallbacks exercised. Everything downstream (linking
+> libslang-vk into glide3x.dll, the P3 preset chain) is unblocked.
 
 ## Why this is the gate
 
@@ -19,11 +20,17 @@ git clone https://github.com/VTSTech/libslang-vk
 # 2. Same toolchain as d2 (scripts/setup-toolchain.sh recipe)
 export PATH=/home/z/.local/opt/venv/bin:/home/z/.local/opt/mingw-wrappers:$PATH
 
-# 3. Configure 32-bit, static slangvk, vendored volk/VMA
-cmake -S libslang-vk -B libslang-vk/build-i686 \
-    -DCMAKE_TOOLCHAIN_FILE=../cmake/mingw-i686.cmake \
+# 3. Configure 32-bit, static slangvk target, vendored deps (verified flags;
+#    note: the static lib is the DEFAULT target — there is no SLANGVK_STATIC
+#    option, disable the shared variant instead. CMAKE_BUILD_TYPE=Release is
+#    REQUIRED — with an empty build type glslang emits Debug-postfixed archive
+#    names (libSPIRVd.a) that break the ninja graph; see Results.)
+cmake -S libslang-vk -B libslang-vk/build-i686 -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE=D2LoD-libslang-vk/cmake/mingw-i686.cmake \
     -DD2_TOOL_PREFIX=d2w- \
-    -DSLANGVK_STATIC=ON -DSLANGVK_BUILD_TESTS=OFF -DSLANGVK_BUILD_BENCHMARKS=OFF
+    -DCMAKE_BUILD_TYPE=Release \
+    -DSLANGVK_BUILD_SHARED=OFF -DSLANGVK_BUILD_TESTS=OFF \
+    -DSLANGVK_BUILD_EXAMPLES=OFF -DSLANGVK_BUILD_BENCHMARKS=OFF
 
 # 4. Build + record every error verbatim
 cmake --build libslang-vk/build-i686 2>&1 | tee /tmp/slangvk-i686.log
@@ -51,6 +58,42 @@ cmake --build libslang-vk/build-i686 2>&1 | tee /tmp/slangvk-i686.log
    library code); the header-drift problem only affects the *game* tree,
    which keeps its mingw gcc build. Two toolchains, clean seam.
 
-## Results
+## Results (2026-10-24, agent sandbox)
 
-_(fill in)_
+**Verdict: PASS.** libslang-vk 0.4.06 (d208ac5) builds as i686 Windows with the
+exact d2 toolchain — no source changes, no fallback needed.
+
+| Checklist item | Result |
+|---|---|
+| Configure | Clean first try, 6.5 s incl. dep fetch. Two recipe corrections below. |
+| C++23 gaps on gcc-13 i686 | **None.** All 76 targets compile at `c++23`, 0 errors, no fallback exercised. |
+| Vendored volk + VMA | Clean. Static `libvolk.a` 205 KB; VMA impl TU fine; no 32-bit pointer-width complaints. |
+| glslang (embedded) | 16.6.0 builds i686; auto-selects `OSDependent/Windows`; PCH auto-disabled on cross (fine). **2 warnings total** (`-Wmaybe-uninitialized` on `TType::longVector`/`coopvecNV` — known upstream noise, benign). Build: ~2 min for 76 targets (ninja). |
+| Artifact | `libslangvk.a` **1,819,150 B**, members `pe-i386`; **27 exported `_slangvk_*` C symbols**, incl. `_slangvk_device_create`, `_slangvk_chain_create`, `_slangvk_chain_render_swapchain`, `_slangvk_preset_load`, `_slangvk_device_get_handles` (COFF keeps an internal leading underscore; the extern name is plain `slangvk_*` cdecl). |
+| Smoke (link) | Consumer TU `spike/slangvk-i686-smoke.cpp` exercising the P3 present-pass pattern links against the full closure → `pei-i386` exe importing **`KERNEL32.dll` + `msvcrt.dll` only** (`-static`), the same import profile as `glide3x.dll`. Link-only in-sandbox: executing needs 32-bit Windows Vulkan (field test; wine smoke on the VM later). |
+
+Static closure sizes (Release): `libglslang.a` 7.46 MB (in 16.6.0 the
+MachineIndependent / GenericCodeGen / SPIRV archives are 800-byte stubs
+forwarding into it), `libslangvk.a` 1.82 MB, `libvolk.a` 0.21 MB,
+resource-limits 0.04 MB → smoke exe 8.47 MB fully static. Expect glide3x.dll to
+grow by roughly this order once slangvk links in (P3) — still trivial next to a
+348 MB d2.exe.
+
+### Recipe corrections (vs. the draft above)
+
+1. `-DSLANGVK_STATIC=ON` does not exist — the static `slangvk` target is the
+   default; turn OFF `SLANGVK_BUILD_SHARED` (plus tests/examples/benchmarks).
+2. `-DCMAKE_BUILD_TYPE=Release` is **required**: with an empty build type,
+   glslang names its outputs with the Debug postfix (`libSPIRVd.a`) while the
+   consumer graph expects `libSPIRV.a` → `ninja: error: ... missing and no
+   known rule to make it`. Release also re-enables glslang PCH.
+
+### What this unblocks / what stays open
+
+- **Unblocked:** P3 wiring — `glide3xvk/CMakeLists.txt` can add the libslang-vk
+  tree with the same flags and replace `TODO(P3)` in `src/vk_backend.cpp` with
+  `slangvk_chain_render_swapchain` at present.
+- **Open (field):** runtime behavior of the i686 artifact on real 32-bit
+  Windows Vulkan — covered by the P1 field test (VTSTech, Win11 + RX 560) or a
+  later wine smoke on the Ubuntu VM (sandbox lavapipe is 64-bit; a 32-bit
+  Windows exe cannot run here).
