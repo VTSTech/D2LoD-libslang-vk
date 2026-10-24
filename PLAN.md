@@ -189,10 +189,11 @@ presents — game reaches the menu with a black screen and no crash.
   target + vendored volk/VMA). Fallbacks if C++23 gaps appear: compile the
   library as C++20 with pinned features, or build a 32-bit C shim against a
   reduced core. Record findings in `glide3xvk/BUILD-32BIT.md`.
-- **Open question to resolve:** how 1.14d exposes the Glide video mode to the
-  user (video test app, registry `VideoConfig`, command-line switch). The loader
-  path exists in-source; find what selects it (trace `Initialize` callers, check
-  `d2vidtst` equivalents; d2dx docs describe 1.14d specifics).
+- **Resolved:** 1.14d exposes the Glide mode via the ini flag store — command
+  line `-3dfx` or `[VIDEO] 3DFX=1` (Fog globals flag table, offset 0xa) — and
+  it is **fullscreen-only** (D2GFX.cpp:497 excludes Glide from windowed mode).
+  Renderer table index 4 = `D2Client::Renderer::GlideFunctionTable`. Test P1
+  with `d2.exe -3dfx` (no `-w`).
 - Exit: game boots, menu UI invisible but present (nothing rasterized yet),
   clean log, crash-free 5-minute idle in menu.
 

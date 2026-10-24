@@ -53,6 +53,10 @@ foreach(list D2_SOURCES D2_HEADERS)
     # Vendored C library, built as its own target below; its headers (config.h,
     # internal.h) must not land on the game's include path.
     list(FILTER ${list} EXCLUDE REGEX "^${CMAKE_SOURCE_DIR}/thirdparty/libbacktrace/")
+    # Our glide3x.dll (glide3xvk/, PLAN.md section 0/4): separate SHARED target,
+    # built below when present. Nothing here may leak into the game's build —
+    # zero game-source drift.
+    list(FILTER ${list} EXCLUDE REGEX "^${CMAKE_SOURCE_DIR}/glide3xvk/")
 endforeach()
 list(SORT D2_SOURCES)
 
@@ -169,4 +173,13 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/thirdparty")
     add_custom_target(d2_implibs DEPENDS ${D2_IMPLIBS})
     add_dependencies(d2 d2_implibs)
     target_link_libraries(d2 PRIVATE ${D2_IMPLIBS})
+endif()
+
+# ---------------------------------------------------------------------------
+# glide3xvk: our own glide3x.dll (Glide-on-Vulkan + libslang-vk at present).
+# Built from glide3xvk/ when present; excluded from the d2 glob above. Remove
+# the directory to build exactly the game, as before.
+# ---------------------------------------------------------------------------
+if(EXISTS "${CMAKE_SOURCE_DIR}/glide3xvk/CMakeLists.txt")
+    add_subdirectory(glide3xvk)
 endif()

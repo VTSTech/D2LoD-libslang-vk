@@ -1,0 +1,477 @@
+// glide3xvk — the 45 Glide exports D2Client::Renderer::Glide resolves via
+// GetProcAddress, with the exact decorated names from that loader
+// (_guGammaCorrectionRGB@12 ... _grGlideShutdown@0). glide3x.def maps them.
+//
+// P1 scaffold (PLAN.md section 5): every export is a real symbol with state
+// tracking; grGet/grGetString/grSstWinOpen/grBufferSwap carry the actual
+// contract; draw calls are counted no-ops (nothing rasterized by design).
+#include "g3x_types.h"
+#include "g3x_state.h"
+#include "g3x_log.h"
+#include "vk_backend.h"
+
+#include <cstring>
+#include <cstdio>
+#include <new>
+
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+
+#ifndef G3XVK_BUILD_ID
+#define G3XVK_BUILD_ID "unknown"
+#endif
+
+static GrContext_t s_ctx = 0;
+static unsigned    s_open_w = 640, s_open_h = 480;
+
+// All 45 exports must keep their undecorated stdcall names (_grXxx@N) for the
+// def file and GetProcAddress — so: extern "C".
+extern "C" {
+
+// Export prototypes: the __asm__ labels give every symbol a DOUBLE leading
+// underscore. GNU ld strips exactly one underscore when writing the export
+// table, so glide3x.def (single-underscore names) yields the literal
+// decorated strings D2Client/Renderer/Glide.cpp resolves via GetProcAddress.
+// -Wl,-u flags in CMakeLists force the archive member in for the def lookup.
+void __stdcall grGlideInit() __asm__("__grGlideInit@0");
+void __stdcall grGlideShutdown() __asm__("__grGlideShutdown@0");
+GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resolution, GrScreenRefresh_t refresh_rate, GrColorFormat_t color_format, GrOriginLocation_t origin_location, int nColBuffers, int nAuxBuffers) __asm__("__grSstWinOpen@28");
+FxBool __stdcall grSstWinClose(GrContext_t context) __asm__("__grSstWinClose@4");
+void __stdcall grSstSelect(int which_sst) __asm__("__grSstSelect@4");
+void __stdcall grFinish() __asm__("__grFinish@0");
+void __stdcall grBufferClear(GrColor_t color, GrAlpha_t alpha, FxU32 depth) __asm__("__grBufferClear@12");
+void __stdcall grBufferSwap(FxU32 swap_interval) __asm__("__grBufferSwap@4");
+FxU32 __stdcall grGet(FxU32 pname, FxU32 plength, FxI32* params) __asm__("__grGet@12");
+char* __stdcall grGetString(FxU32 pname) __asm__("__grGetString@4");
+GrProc __stdcall grGetProcAddress(char* procName) __asm__("__grGetProcAddress@4");
+void __stdcall grColorCombine(GrCombineFunction_t function, GrCombineFactor_t factor, GrCombineLocal_t local, GrCombineOther_t other, FxBool invert) __asm__("__grColorCombine@20");
+void __stdcall grAlphaCombine(GrCombineFunction_t function, GrCombineFactor_t factor, GrCombineLocal_t local, GrCombineOther_t other, FxBool invert) __asm__("__grAlphaCombine@20");
+void __stdcall grTexCombine(GrChipID_t tmu, GrCombineFunction_t rgb_function, GrCombineFactor_t rgb_factor, GrCombineFunction_t alpha_function, GrCombineFactor_t alpha_factor, FxBool rgb_invert, FxBool alpha_invert) __asm__("__grTexCombine@28");
+void __stdcall grAlphaBlendFunction(GrAlphaBlendFnc_t rgb_sf, GrAlphaBlendFnc_t rgb_df, GrAlphaBlendFnc_t alpha_sf, GrAlphaBlendFnc_t alpha_df) __asm__("__grAlphaBlendFunction@16");
+void __stdcall grChromakeyMode(GrChromakeyMode_t mode) __asm__("__grChromakeyMode@4");
+void __stdcall grChromakeyValue(GrColor_t value) __asm__("__grChromakeyValue@4");
+void __stdcall grClipWindow(FxU32 minx, FxU32 miny, FxU32 maxx, FxU32 maxy) __asm__("__grClipWindow@16");
+void __stdcall grColorMask(FxBool rgb, FxBool a) __asm__("__grColorMask@8");
+void __stdcall grConstantColorValue(GrColor_t value) __asm__("__grConstantColorValue@4");
+void __stdcall grDepthBufferFunction(GrCmpFnc_t function) __asm__("__grDepthBufferFunction@4");
+void __stdcall grDepthBufferMode(GrDepthBufferMode_t mode) __asm__("__grDepthBufferMode@4");
+void __stdcall grDepthMask(FxBool mask) __asm__("__grDepthMask@4");
+void __stdcall grDitherMode(GrDitherMode_t mode) __asm__("__grDitherMode@4");
+void __stdcall grEnable(GrEnableMode_t mode) __asm__("__grEnable@4");
+void __stdcall grDisable(GrEnableMode_t mode) __asm__("__grDisable@4");
+void __stdcall grCoordinateSpace(GrCoordinateSpaceMode_t mode) __asm__("__grCoordinateSpace@4");
+void __stdcall guGammaCorrectionRGB(FxFloat red, FxFloat green, FxFloat blue) __asm__("__guGammaCorrectionRGB@12");
+void __stdcall grLoadGammaTable(FxU32 nentries, FxU32* red, FxU32* green, FxU32* blue) __asm__("__grLoadGammaTable@16");
+FxU32 __stdcall grTexTextureMemRequired(FxU32 evenOdd, GrTexInfo* info) __asm__("__grTexTextureMemRequired@8");
+FxU32 __stdcall grTexMinAddress(GrChipID_t tmu) __asm__("__grTexMinAddress@4");
+FxU32 __stdcall grTexMaxAddress(GrChipID_t tmu) __asm__("__grTexMaxAddress@4");
+void __stdcall grTexSource(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo* info) __asm__("__grTexSource@16");
+void __stdcall grTexDownloadMipMap(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo* info) __asm__("__grTexDownloadMipMap@16");
+void __stdcall grTexDownloadTable(GrTexTable_t type, void* data) __asm__("__grTexDownloadTable@8");
+void __stdcall grTexFilterMode(GrChipID_t tmu, GrTextureFilterMode_t minfilter_mode, GrTextureFilterMode_t magfilter_mode) __asm__("__grTexFilterMode@12");
+void __stdcall grTexMipMapMode(GrChipID_t tmu, GrMipMapMode_t mode, FxBool lodBlend) __asm__("__grTexMipMapMode@12");
+void __stdcall grDrawVertexArrayContiguous(FxU32 mode, FxU32 Count, void* pointers, FxU32 stride) __asm__("__grDrawVertexArrayContiguous@16");
+FxU32 __stdcall grDrawVertexArray(FxU32 mode, FxU32 Count, void* pointers) __asm__("__grDrawVertexArray@12");
+void __stdcall grDrawPoint(void* pt) __asm__("__grDrawPoint@4");
+void __stdcall grDrawLine(void* v1, void* v2) __asm__("__grDrawLine@8");
+void __stdcall grDrawTriangle(void* a, void* b, void* c) __asm__("__grDrawTriangle@12");
+void __stdcall grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode) __asm__("__grVertexLayout@12");
+FxBool __stdcall grLfbLock(GrLock_t type, GrBuffer_t buffer, GrLfbWriteMode_t writeMode, GrOriginLocation_t origin, FxBool pixelPipeline, GrLfbInfo_t* info) __asm__("__grLfbLock@24");
+FxBool __stdcall grLfbUnlock(GrLock_t type, GrBuffer_t buffer) __asm__("__grLfbUnlock@8");
+
+// ---------------------------------------------------------------------------
+// Lifecycle
+// ---------------------------------------------------------------------------
+void __stdcall grGlideInit() {
+    g3x_log_once("grGlideInit", "grGlideInit");
+}
+
+void __stdcall grGlideShutdown() {
+    g3x_log("grGlideShutdown");
+    g3x_vk_shutdown();
+}
+
+GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resolution,
+                                   GrScreenRefresh_t refresh_rate, GrColorFormat_t color_format,
+                                   GrOriginLocation_t origin_location, int nColBuffers,
+                                   int nAuxBuffers) {
+    unsigned w = 0, h = 0;
+    g3x_resolution_size(screen_resolution, &w, &h);
+    if (screen_resolution > 15) {
+        g3x_log("grSstWinOpen: unknown resolution %u -> falling back 640x480",
+                (unsigned)screen_resolution);
+    }
+    s_open_w = w; s_open_h = h;
+    g3x_log("grSstWinOpen: hwnd=0x%08X res=%u (%ux%u) refresh=%u colorfmt=%u origin=%u "
+            "colbuf=%d aux=%d", hWnd, screen_resolution, w, h, refresh_rate, color_format,
+            origin_location, nColBuffers, nAuxBuffers);
+    if (!g3x_vk_init((HWND)(uintptr_t)hWnd, w, h)) {
+        // Fail-soft (PLAN.md section 4): the game continues; the window just
+        // stays black until Vulkan works. The log names the reason.
+        g3x_log("grSstWinOpen: Vulkan unavailable -> black-screen mode (game continues)");
+    }
+    if (s_ctx == 0) s_ctx = 1;
+    return s_ctx;
+}
+
+FxBool __stdcall grSstWinClose(GrContext_t context) {
+    g3x_log("grSstWinClose: ctx=%u", context);
+    g3x_vk_shutdown();
+    return FXTRUE;
+}
+
+void __stdcall grSstSelect(int which_sst) {
+    g3x_log_once("grSstSelect", "grSstSelect -> %d", which_sst);
+}
+
+void __stdcall grFinish() {
+    // no-op: everything P1 submits is fenced inside the backend
+}
+
+// ---------------------------------------------------------------------------
+// Buffer / present
+// ---------------------------------------------------------------------------
+void __stdcall grBufferClear(GrColor_t color, GrAlpha_t alpha, FxU32 depth) {
+    ++g_st.n_clears;
+    g3x_log_once("grBufferClear", "color=0x%08x alpha=0x%02x depth=0x%08x (P1: ignored, "
+                 "frame is cleared black)", color, alpha, depth);
+}
+
+void __stdcall grBufferSwap(FxU32 swap_interval) {
+    ++g_st.n_swaps;
+    g3x_vk_present(swap_interval);
+    if (g_st.n_swaps % 300 == 0) {
+        g3x_log("frame %u: swaps=%u draws=%u texdl=%u paldl=%u lfblocks=%u",
+                g_st.n_swaps, g_st.n_swaps, g_st.n_draw_calls, g_st.n_tex_downloads,
+                g_st.n_palette_downloads, g_st.n_lfb_locks);
+        g3x_log_summary();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Queries (the acceptance contract)
+// ---------------------------------------------------------------------------
+FxU32 __stdcall grGet(FxU32 pname, FxU32 plength, FxI32* params) {
+    if (pname == G3X_GR_GET_TMU_COUNT) {
+        // The 1.14d Glide gate (D2Client/Renderer/Glide.cpp:452): result must
+        // be >= 1 or the renderer is rejected and LoadLibrarySymbols fails.
+        if (params && plength >= 4) params[0] = 1; // single TMU (Voodoo Graphics class)
+        g3x_log_once("grGet:0xF", "TMU count -> 1");
+        return 4;
+    }
+    g3x_log_once("grGet:other", "grGet pname=0x%x plength=%u -> 0 (unhandled)", pname, plength);
+    if (params && plength >= 4) params[0] = 0;
+    return plength;
+}
+
+static char s_str_ext[2]   = "";  // no extensions advertised in P1
+static char s_str_hw[64]   = "3Dfx Voodoo Graphics";
+static char s_str_rdr[64]  = "glide3xvk " G3XVK_BUILD_ID " (Vulkan scaffold)";
+
+char* __stdcall grGetString(FxU32 pname) {
+    switch (pname) {
+        case 1: return s_str_ext;   // GR_EXTENSION
+        case 2: return s_str_hw;    // GR_HARDWARE
+        case 3: return s_str_rdr;   // GR_RENDERER
+        default:
+            g3x_log_once("grGetString", "pname=%u -> empty", pname);
+            return s_str_ext;
+    }
+}
+
+GrProc __stdcall grGetProcAddress(char* procName) {
+    g3x_log_once("grGetProcAddress", "'%s' -> null (no extensions in P1)",
+                 procName ? procName : "(null)");
+    return nullptr;
+}
+
+// ---------------------------------------------------------------------------
+// State machine (tracked; feeds the P2 pipeline-variant cache later)
+// ---------------------------------------------------------------------------
+void __stdcall grColorCombine(GrCombineFunction_t function, GrCombineFactor_t factor,
+                              GrCombineLocal_t local, GrCombineOther_t other, FxBool invert) {
+    g_st.color_combine[0] = function; g_st.color_combine[1] = factor;
+    g_st.color_combine[2] = local;    g_st.color_combine[3] = other;
+    g_st.color_combine[4] = (unsigned)invert;
+    g3x_state_note_u32("colorCombine", (function << 24) | (factor & 0xFFFFFF));
+}
+
+void __stdcall grAlphaCombine(GrCombineFunction_t function, GrCombineFactor_t factor,
+                              GrCombineLocal_t local, GrCombineOther_t other, FxBool invert) {
+    g_st.alpha_combine[0] = function; g_st.alpha_combine[1] = factor;
+    g_st.alpha_combine[2] = local;    g_st.alpha_combine[3] = other;
+    g_st.alpha_combine[4] = (unsigned)invert;
+    g3x_state_note_u32("alphaCombine", (function << 24) | (factor & 0xFFFFFF));
+}
+
+void __stdcall grTexCombine(GrChipID_t tmu, GrCombineFunction_t rgb_function,
+                            GrCombineFactor_t rgb_factor, GrCombineFunction_t alpha_function,
+                            GrCombineFactor_t alpha_factor, FxBool rgb_invert,
+                            FxBool alpha_invert) {
+    if (tmu < 2) {
+        g_st.tex_combine[tmu][0] = rgb_function; g_st.tex_combine[tmu][1] = rgb_factor;
+        g_st.tex_combine[tmu][2] = alpha_function; g_st.tex_combine[tmu][3] = alpha_factor;
+        g_st.tex_combine[tmu][4] = (unsigned)rgb_invert; g_st.tex_combine[tmu][5] = (unsigned)alpha_invert;
+    }
+    g3x_state_note_u32("texCombine", (tmu << 28) | (rgb_function << 24) | (rgb_factor & 0xFFFFFF));
+}
+
+void __stdcall grAlphaBlendFunction(GrAlphaBlendFnc_t rgb_sf, GrAlphaBlendFnc_t rgb_df,
+                                    GrAlphaBlendFnc_t alpha_sf, GrAlphaBlendFnc_t alpha_df) {
+    g_st.blend[0] = rgb_sf; g_st.blend[1] = rgb_df; g_st.blend[2] = alpha_sf; g_st.blend[3] = alpha_df;
+    g3x_state_note_u32("alphaBlend", (rgb_sf << 24) | (rgb_df << 16) | (alpha_sf << 8) | alpha_df);
+}
+
+void __stdcall grChromakeyMode(GrChromakeyMode_t mode) {
+    g_st.chroma_mode = mode;
+    g3x_state_note_u32("chromakeyMode", mode);
+}
+
+void __stdcall grChromakeyValue(GrColor_t value) {
+    g_st.chroma_value = value;
+    g3x_state_note_u32("chromakeyValue", value);
+}
+
+void __stdcall grClipWindow(FxU32 minx, FxU32 miny, FxU32 maxx, FxU32 maxy) {
+    g_st.clip[0] = minx; g_st.clip[1] = miny; g_st.clip[2] = maxx; g_st.clip[3] = maxy;
+    g3x_log_once("grClipWindow", "%u,%u-%u,%u", minx, miny, maxx, maxy);
+}
+
+void __stdcall grColorMask(FxBool rgb, FxBool a) {
+    g_st.mask_rgb = rgb; g_st.mask_a = a;
+    g3x_state_note_u32("colorMask", ((unsigned)rgb << 1) | (unsigned)a);
+}
+
+void __stdcall grConstantColorValue(GrColor_t value) {
+    g_st.constant_color = value;
+    g3x_state_note_u32("constantColor", value);
+}
+
+void __stdcall grDepthBufferFunction(GrCmpFnc_t function) {
+    g_st.depth_func = function;
+    g3x_state_note_u32("depthFunc", function);
+}
+
+void __stdcall grDepthBufferMode(GrDepthBufferMode_t mode) {
+    g_st.depth_mode = mode;
+    g3x_state_note_u32("depthMode", mode);
+}
+
+void __stdcall grDepthMask(FxBool mask) {
+    g_st.depth_mask = mask;
+    g3x_state_note_u32("depthMask", (unsigned)mask);
+}
+
+void __stdcall grDitherMode(GrDitherMode_t mode) {
+    g_st.dither_mode = mode;
+    g3x_state_note_u32("ditherMode", mode);
+}
+
+void __stdcall grEnable(GrEnableMode_t mode) {
+    g_st.enable_value = 1; g_st.enabled[0] = mode;
+    g3x_state_note_u32("enable", mode);
+}
+
+void __stdcall grDisable(GrEnableMode_t mode) {
+    g_st.enable_value = 0; g_st.enabled[0] = mode;
+    g3x_state_note_u32("disable", mode);
+}
+
+void __stdcall grCoordinateSpace(GrCoordinateSpaceMode_t mode) {
+    g_st.coord_space = mode;
+    g3x_state_note_u32("coordinateSpace", mode);
+}
+
+void __stdcall guGammaCorrectionRGB(FxFloat red, FxFloat green, FxFloat blue) {
+    g_st.gamma[0] = red; g_st.gamma[1] = green; g_st.gamma[2] = blue;
+    g3x_log_once("guGammaCorrectionRGB", "%.3f %.3f %.3f (applied in present pass from P2)",
+                 red, green, blue);
+}
+
+void __stdcall grLoadGammaTable(FxU32 nentries, FxU32* red, FxU32* green, FxU32* blue) {
+    g_st.gamma_entries = nentries;
+    g3x_log_once("grLoadGammaTable", "entries=%u", nentries);
+}
+
+// ---------------------------------------------------------------------------
+// Textures (P1: track; P2: upload as 8bpp index + palette LUT)
+// ---------------------------------------------------------------------------
+FxU32 __stdcall grTexTextureMemRequired(FxU32 evenOdd, GrTexInfo* info) {
+    if (!info) return 0;
+    // Glide size model: width = 1<<(lod+aspect), height = 1<<(lod-aspect);
+    // 8bpp formats (<= GR_TEXFMT_P_8 range) cost 1 B/texel, the rest 2 B.
+    FxU32 bytes = 0;
+    for (unsigned lod = info->smallLodLog2; lod <= info->largeLodLog2 && lod < 12; ++lod) {
+        int aspect = (int)info->aspectRatioLog2;
+        unsigned w = 1u << (lod + (aspect > 0 ? aspect : 0));
+        unsigned h = 1u << (lod - (aspect < 0 ? -aspect : 0));
+        bytes += w * h * ((info->format <= 0x3u) ? 1u : 2u);
+    }
+    return bytes;
+}
+
+FxU32 __stdcall grTexMinAddress(GrChipID_t tmu) {
+    return 0;
+}
+
+FxU32 __stdcall grTexMaxAddress(GrChipID_t tmu) {
+    return 0x00800000u; // 8 MB per TMU — generous (PLAN.md R6)
+}
+
+void __stdcall grTexSource(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo* info) {
+    if (tmu < 2) {
+        g_st.tex_source_tmu[tmu] = tmu;
+        g_st.tex_addr[tmu] = startAddress;
+        if (info) g_st.tex_format[tmu] = info->format;
+    }
+    g3x_log_once("grTexSource", "tmu=%u addr=0x%08x fmt=%u", tmu, startAddress,
+                 info ? info->format : 0);
+}
+
+void __stdcall grTexDownloadMipMap(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd,
+                                   GrTexInfo* info) {
+    ++g_st.n_tex_downloads;
+    g3x_log_once("grTexDownloadMipMap", "tmu=%u addr=0x%08x fmt=%u lods %u..%u (P1: counted, "
+                 "not uploaded)", tmu, startAddress, info ? info->format : 0,
+                 info ? info->smallLodLog2 : 0, info ? info->largeLodLog2 : 0);
+}
+
+void __stdcall grTexDownloadTable(GrTexTable_t type, void* data) {
+    if (type == G3X_GR_TEXTABLE_PALETTE && data) {
+        // Palette-indexed path (observed: D2Glide/Renderer/Glide.cpp:200). Copy
+        // 256 entries — the game may free or overwrite its buffer afterwards.
+        memcpy(g_st.palette, data, sizeof(g_st.palette));
+        g_st.palette_valid = FXTRUE;
+        ++g_st.n_palette_downloads;
+        g3x_log_once("grTexDownloadTable:palette", "256-entry palette copied (0x%08x first)",
+                     g_st.palette[0]);
+    } else {
+        g3x_log_once("grTexDownloadTable", "type=%u (unhandled)", type);
+    }
+}
+
+void __stdcall grTexFilterMode(GrChipID_t tmu, GrTextureFilterMode_t minfilter_mode,
+                               GrTextureFilterMode_t magfilter_mode) {
+    if (tmu < 2) {
+        g_st.tex_filter[tmu][0] = minfilter_mode;
+        g_st.tex_filter[tmu][1] = magfilter_mode;
+    }
+    g3x_state_note_u32("texFilterMode", (tmu << 16) | (minfilter_mode << 8) | magfilter_mode);
+}
+
+void __stdcall grTexMipMapMode(GrChipID_t tmu, GrMipMapMode_t mode, FxBool lodBlend) {
+    if (tmu < 2) {
+        g_st.tex_mipmap[tmu] = mode;
+        g_st.tex_lodblend[tmu] = lodBlend;
+    }
+    g3x_state_note_u32("texMipMapMode", (tmu << 16) | (mode << 8) | (unsigned)lodBlend);
+}
+
+// ---------------------------------------------------------------------------
+// Geometry (P1: counted no-ops — nothing rasterized by design)
+// ---------------------------------------------------------------------------
+void __stdcall grDrawVertexArrayContiguous(FxU32 mode, FxU32 Count, void* pointers,
+                                           FxU32 stride) {
+    ++g_st.n_draw_calls;
+    if (stride != G3X_D2_VERTEX_STRIDE) {
+        g3x_log_once("draw:stride", "UNEXPECTED stride=0x%x (spec says 0x1C)", stride);
+    }
+    if (g_st.n_draw_calls <= 4) {
+        g3x_log("grDrawVertexArrayContiguous: mode=%u count=%u stride=0x%x ptr=%p (call %u)",
+                mode, Count, stride, pointers, g_st.n_draw_calls);
+    } else {
+        g3x_log_once("draw:vac", "mode=%u count=%u stride=0x%x", mode, Count, stride);
+    }
+}
+
+FxU32 __stdcall grDrawVertexArray(FxU32 mode, FxU32 Count, void* pointers) {
+    ++g_st.n_draw_calls;
+    g3x_log_once("grDrawVertexArray", "mode=%u count=%u", mode, Count);
+    return Count;
+}
+
+void __stdcall grDrawPoint(void* pt) {
+    ++g_st.n_draw_calls;
+    g3x_log_once("grDrawPoint", "pt=%p", pt);
+}
+
+void __stdcall grDrawLine(void* v1, void* v2) {
+    ++g_st.n_draw_calls;
+    g3x_log_once("grDrawLine", "v1=%p v2=%p", v1, v2);
+}
+
+void __stdcall grDrawTriangle(void* a, void* b, void* c) {
+    ++g_st.n_draw_calls;
+    g3x_log_once("grDrawTriangle", "a=%p b=%p c=%p", a, b, c);
+}
+
+void __stdcall grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode) {
+    g3x_log_once("grVertexLayout", "param=%u offset=%d mode=%u", param, offset, mode);
+}
+
+// ---------------------------------------------------------------------------
+// LFB (framebuffer linear access — fades/screenshots/cutscene blits)
+// P1: hand out a CPU-side shadow buffer so writes land somewhere harmless.
+// P2: map these over the frame image (linear views) per PLAN.md P2.
+// ---------------------------------------------------------------------------
+static uint8_t* s_lfb_shadow = nullptr;
+static unsigned s_lfb_w = 0, s_lfb_h = 0;
+
+FxBool __stdcall grLfbLock(GrLock_t type, GrBuffer_t buffer, GrLfbWriteMode_t writeMode,
+                           GrOriginLocation_t origin, FxBool pixelPipeline,
+                           GrLfbInfo_t* info) {
+    ++g_st.n_lfb_locks;
+    if (!info || info->size < (int)sizeof(GrLfbInfo_t)) return FXFALSE;
+    if (!s_lfb_shadow) {
+        // generous max: 1600x1200 x 4 B
+        s_lfb_shadow = new (std::nothrow) uint8_t[1600u * 1200u * 4u];
+        if (!s_lfb_shadow) {
+            g3x_log("grLfbLock: shadow buffer alloc failed");
+            return FXFALSE;
+        }
+        memset(s_lfb_shadow, 0, 1600u * 1200u * 4u);
+    }
+    s_lfb_w = g_vk.alive ? g_vk.width : s_open_w;
+    s_lfb_h = g_vk.alive ? g_vk.height : s_open_h;
+    info->lfbPtr = s_lfb_shadow;
+    info->strideInBytes = s_lfb_w * 4;
+    info->writeMode = writeMode;
+    info->origin = origin;
+    g3x_log_once("grLfbLock", "type=%u buffer=%u writeMode=0x%02x -> %ux%u shadow",
+                 type, buffer, writeMode, s_lfb_w, s_lfb_h);
+    return FXTRUE;
+}
+
+FxBool __stdcall grLfbUnlock(GrLock_t type, GrBuffer_t buffer) {
+    g3x_log_once("grLfbUnlock", "type=%u buffer=%u (shadow contents dropped in P1)",
+                 type, buffer);
+    return FXTRUE;
+}
+
+} // extern "C"
+
+static void g3x_banner() {
+    char exe[MAX_PATH] = "(?)";
+    GetModuleFileNameA(nullptr, exe, MAX_PATH);
+    g3x_log("glide3xvk scaffold %s — loaded into %s", G3XVK_BUILD_ID, exe);
+    g3x_log("compiled " __DATE__ " " __TIME__ "; P1 = swapchain + clear-black present");
+}
+
+extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
+    (void)hinstDLL; (void)lpReserved;
+    switch (fdwReason) {
+        case DLL_PROCESS_ATTACH:
+            g3x_log_open();
+            g3x_banner();
+            break;
+        case DLL_PROCESS_DETACH:
+            g3x_log("process detach (swaps=%u draws=%u)", g_st.n_swaps, g_st.n_draw_calls);
+            g3x_vk_shutdown();
+            g3x_log_close();
+            break;
+        default:
+            break;
+    }
+    return TRUE;
+}

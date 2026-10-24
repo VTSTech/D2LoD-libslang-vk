@@ -1,0 +1,54 @@
+; glide3xvk — export table for glide3x.dll.
+; Names are the exact decorated strings D2Client/Renderer/Glide.cpp resolves
+; via GetProcAddress (e.g. "_grBufferSwap@4"); a missing one halts the game
+; with ErrorManager line 0x9e/0xa1..0xcd.
+; ld semantics: these names land VERBATIM in the export table, while the
+; symbol lookup prepends one '_' — which is why every function carries an
+; __asm__("__name@N") label in glide_exports.cpp (see CMakeLists comment).
+LIBRARY glide3x.dll
+EXPORTS
+    _guGammaCorrectionRGB@12
+    _grDrawPoint@4
+    _grDrawLine@8
+    _grDrawTriangle@12
+    _grVertexLayout@12
+    _grDrawVertexArray@12
+    _grDrawVertexArrayContiguous@16
+    _grBufferClear@12
+    _grBufferSwap@4
+    _grFinish@0
+    _grSstWinOpen@28
+    _grSstWinClose@4
+    _grSstSelect@4
+    _grAlphaBlendFunction@16
+    _grAlphaCombine@20
+    _grChromakeyMode@4
+    _grChromakeyValue@4
+    _grClipWindow@16
+    _grColorCombine@20
+    _grColorMask@8
+    _grConstantColorValue@4
+    _grDepthBufferFunction@4
+    _grDepthBufferMode@4
+    _grDepthMask@4
+    _grDitherMode@4
+    _grLoadGammaTable@16
+    _grGet@12
+    _grGetString@4
+    _grGetProcAddress@4
+    _grEnable@4
+    _grDisable@4
+    _grCoordinateSpace@4
+    _grTexTextureMemRequired@8
+    _grTexMinAddress@4
+    _grTexMaxAddress@4
+    _grTexSource@16
+    _grTexCombine@28
+    _grTexFilterMode@12
+    _grTexDownloadMipMap@16
+    _grTexDownloadTable@8
+    _grTexMipMapMode@12
+    _grLfbLock@24
+    _grLfbUnlock@8
+    _grGlideInit@0
+    _grGlideShutdown@0

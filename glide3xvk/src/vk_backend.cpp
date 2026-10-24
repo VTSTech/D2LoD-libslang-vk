@@ -1,0 +1,294 @@
+#include "vk_backend.h"
+#include "g3x_log.h"
+
+// volk first: it pulls in <vulkan/vulkan.h> with VK_NO_PROTOTYPES and provides
+// every entry point as a function pointer loaded from vulkan-1.dll at runtime
+// — no Vulkan SDK needed at build time, no static import of the loader.
+// (windows.h already came in via vk_backend.h, LEAN_AND_MEAN + NOMINMAX.)
+#include <volk.h>
+
+#include <cstring>
+
+G3xVkBackend g_vk;
+
+namespace {
+
+VkInstance       s_instance   = VK_NULL_HANDLE;
+VkSurfaceKHR     s_surface    = VK_NULL_HANDLE;
+VkPhysicalDevice s_phys       = VK_NULL_HANDLE;
+VkDevice         s_device     = VK_NULL_HANDLE;
+VkQueue          s_queue      = VK_NULL_HANDLE;
+uint32_t         s_queue_fam  = 0;
+VkSwapchainKHR   s_swapchain  = VK_NULL_HANDLE;
+VkFormat         s_format     = VK_FORMAT_B8G8R8A8_UNORM;
+VkExtent2D       s_extent     = {640, 480};
+uint32_t         s_image_n    = 0;
+VkImage          s_images[8]  = {};
+bool             s_sync_live  = false;
+VkSemaphore      s_sem_acquire = VK_NULL_HANDLE;
+VkSemaphore      s_sem_render  = VK_NULL_HANDLE;
+VkFence          s_fence       = VK_NULL_HANDLE;
+VkCommandPool    s_cmd_pool    = VK_NULL_HANDLE;
+VkCommandBuffer  s_cmd         = VK_NULL_HANDLE;
+uint64_t         s_frame       = 0;
+
+#define G3X_VK_CHECK(expr, what)                                              \
+    do {                                                                      \
+        VkResult _r = (expr);                                                 \
+        if (_r != VK_SUCCESS) {                                               \
+            g3x_log("vk fail: %s -> %d", what, (int)_r);                      \
+            return false;                                                     \
+        }                                                                     \
+    } while (0)
+
+void destroy_swapchain_objects() {
+    if (s_device == VK_NULL_HANDLE) return;
+    vkDeviceWaitIdle(s_device);
+    if (s_swapchain != VK_NULL_HANDLE) { vkDestroySwapchainKHR(s_device, s_swapchain, nullptr); s_swapchain = VK_NULL_HANDLE; }
+    if (s_sem_acquire != VK_NULL_HANDLE) { vkDestroySemaphore(s_device, s_sem_acquire, nullptr); s_sem_acquire = VK_NULL_HANDLE; }
+    if (s_sem_render != VK_NULL_HANDLE)  { vkDestroySemaphore(s_device, s_sem_render, nullptr);  s_sem_render  = VK_NULL_HANDLE; }
+    if (s_fence != VK_NULL_HANDLE)       { vkDestroyFence(s_device, s_fence, nullptr);           s_fence       = VK_NULL_HANDLE; }
+    if (s_cmd_pool != VK_NULL_HANDLE)    { vkDestroyCommandPool(s_device, s_cmd_pool, nullptr);  s_cmd_pool    = VK_NULL_HANDLE; }
+    s_sync_live = false;
+    s_image_n = 0;
+}
+
+bool create_sync_and_cmd() {
+    VkSemaphoreCreateInfo si{}; si.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    VkFenceCreateInfo fi{}; fi.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    G3X_VK_CHECK(vkCreateSemaphore(s_device, &si, nullptr, &s_sem_acquire), "vkCreateSemaphore acquire");
+    G3X_VK_CHECK(vkCreateSemaphore(s_device, &si, nullptr, &s_sem_render),  "vkCreateSemaphore render");
+    G3X_VK_CHECK(vkCreateFence(s_device, &fi, nullptr, &s_fence), "vkCreateFence");
+    VkCommandPoolCreateInfo pi{}; pi.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    pi.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    pi.queueFamilyIndex = s_queue_fam;
+    G3X_VK_CHECK(vkCreateCommandPool(s_device, &pi, nullptr, &s_cmd_pool), "vkCreateCommandPool");
+    VkCommandBufferAllocateInfo ai{}; ai.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    ai.commandPool = s_cmd_pool; ai.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; ai.commandBufferCount = 1;
+    G3X_VK_CHECK(vkAllocateCommandBuffers(s_device, &ai, &s_cmd), "vkAllocateCommandBuffers");
+    s_sync_live = true;
+    return true;
+}
+
+bool create_swapchain() {
+    VkSurfaceCapabilitiesKHR caps{};
+    G3X_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(s_phys, s_surface, &caps),
+                 "vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
+    s_extent = caps.currentExtent;
+    if (s_extent.width == 0xFFFFFFFFu) { s_extent.width = g_vk.width; }
+    if (s_extent.height == 0xFFFFFFFFu) { s_extent.height = g_vk.height; }
+
+    // format: prefer BGRA8/RGBA8 UNORM, whatever the surface supports first
+    uint32_t nf = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(s_phys, s_surface, &nf, nullptr);
+    VkSurfaceFormatKHR fmts[16] = {};
+    if (nf == 0) { g3x_log("vk fail: surface has no formats"); return false; }
+    if (nf > 16) nf = 16;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(s_phys, s_surface, &nf, fmts);
+    s_format = fmts[0].format;
+    for (uint32_t i = 0; i < nf; ++i) {
+        if (fmts[i].format == VK_FORMAT_B8G8R8A8_UNORM || fmts[i].format == VK_FORMAT_R8G8B8A8_UNORM) {
+            s_format = fmts[i].format;
+            break;
+        }
+    }
+
+    uint32_t image_count = caps.minImageCount + 1;
+    if (caps.maxImageCount > 0 && image_count > caps.maxImageCount) image_count = caps.maxImageCount;
+
+    VkSwapchainCreateInfoKHR ci{}; ci.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    ci.surface = s_surface;
+    ci.minImageCount = image_count;
+    ci.imageFormat = s_format;
+    ci.imageColorSpace = fmts[0].colorSpace;
+    ci.imageExtent = s_extent;
+    ci.imageArrayLayers = 1;
+    ci.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT; // clear target for P1
+    ci.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    ci.preTransform = caps.currentTransform;
+    ci.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    ci.presentMode = VK_PRESENT_MODE_FIFO_KHR; // always supported; vsync on
+    ci.clipped = VK_TRUE;
+    G3X_VK_CHECK(vkCreateSwapchainKHR(s_device, &ci, nullptr, &s_swapchain), "vkCreateSwapchainKHR");
+
+    G3X_VK_CHECK(vkGetSwapchainImagesKHR(s_device, s_swapchain, &s_image_n, nullptr),
+                 "vkGetSwapchainImagesKHR");
+    if (s_image_n > 8) s_image_n = 8;
+    G3X_VK_CHECK(vkGetSwapchainImagesKHR(s_device, s_swapchain, &s_image_n, s_images),
+                 "vkGetSwapchainImagesKHR imgs");
+
+    g3x_log("vk: swapchain %ux%u fmt=%d images=%u (FIFO)", s_extent.width, s_extent.height,
+            (int)s_format, s_image_n);
+    if (!s_sync_live) return create_sync_and_cmd();
+    return true;
+}
+
+} // namespace
+
+bool g3x_vk_init(HWND hwnd, unsigned width, unsigned height) {
+    if (g_vk.alive) { // re-open after close: reset first
+        if (hwnd == g_vk.hwnd && width == g_vk.width && height == g_vk.height) return true;
+        g3x_vk_shutdown();
+    }
+    g_vk.hwnd = hwnd; g_vk.width = width; g_vk.height = height;
+
+    if (volkInitialize() != VK_SUCCESS) {
+        g3x_log("vk: vulkan-1.dll (32-bit) not loadable — fail-soft, no present. "
+                "Install/repair GPU driver or use the DirectDraw path (-w).");
+        return false;
+    }
+    g3x_log("vk: loader ok, api %u.%u", VK_VERSION_MAJOR(volkGetInstanceVersion()),
+            VK_VERSION_MINOR(volkGetInstanceVersion()));
+
+    VkApplicationInfo app{}; app.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    app.pApplicationName = "D2 glide3xvk"; app.apiVersion = VK_API_VERSION_1_1;
+    const char* exts[] = { VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
+    VkInstanceCreateInfo ii{}; ii.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    ii.pApplicationInfo = &app;
+    ii.enabledExtensionCount = 2; ii.ppEnabledExtensionNames = exts;
+    G3X_VK_CHECK(vkCreateInstance(&ii, nullptr, &s_instance), "vkCreateInstance");
+    volkLoadInstance(s_instance);
+
+    VkWin32SurfaceCreateInfoKHR sci{}; sci.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    sci.hinstance = GetModuleHandleA(nullptr); sci.hwnd = hwnd;
+    G3X_VK_CHECK(vkCreateWin32SurfaceKHR(s_instance, &sci, nullptr, &s_surface),
+                 "vkCreateWin32SurfaceKHR");
+
+    uint32_t nd = 0;
+    vkEnumeratePhysicalDevices(s_instance, &nd, nullptr);
+    if (nd == 0) { g3x_log("vk fail: no physical devices"); return false; }
+    VkPhysicalDevice devs[8] = {}; if (nd > 8) nd = 8;
+    vkEnumeratePhysicalDevices(s_instance, &nd, devs);
+    s_phys = devs[0]; // first with swapchain ext; prefer discrete
+    for (uint32_t i = 0; i < nd; ++i) {
+        VkPhysicalDeviceProperties p{};
+        vkGetPhysicalDeviceProperties(devs[i], &p);
+        uint32_t qn = 0; vkGetPhysicalDeviceQueueFamilyProperties(devs[i], &qn, nullptr);
+        VkQueueFamilyProperties qf[8] = {}; if (qn > 8) qn = 8;
+        vkGetPhysicalDeviceQueueFamilyProperties(devs[i], &qn, qf);
+        bool graphics = false;
+        for (uint32_t q = 0; q < qn; ++q) if (qf[q].queueFlags & VK_QUEUE_GRAPHICS_BIT) { graphics = true; s_queue_fam = q; break; }
+        VkBool32 present = VK_FALSE;
+        vkGetPhysicalDeviceSurfaceSupportKHR(devs[i], s_queue_fam, s_surface, &present);
+        if (graphics && present) {
+            s_phys = devs[i];
+            if (p.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) break; // prefer discrete
+        }
+        VkPhysicalDeviceProperties pp{}; vkGetPhysicalDeviceProperties(s_phys, &pp);
+        g3x_log("vk: gpu[%u] %s type=%d", i, p.deviceName, (int)p.deviceType);
+    }
+    {
+        VkPhysicalDeviceProperties p{};
+        vkGetPhysicalDeviceProperties(s_phys, &p);
+        g3x_log("vk: picked %s", p.deviceName);
+    }
+
+    const float prio = 1.0f;
+    VkDeviceQueueCreateInfo qc{}; qc.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    qc.queueFamilyIndex = s_queue_fam; qc.queueCount = 1; qc.pQueuePriorities = &prio;
+    const char* dev_exts[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+    VkDeviceCreateInfo di{}; di.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    di.queueCreateInfoCount = 1; di.pQueueCreateInfos = &qc;
+    di.enabledExtensionCount = 1; di.ppEnabledExtensionNames = dev_exts;
+    G3X_VK_CHECK(vkCreateDevice(s_phys, &di, nullptr, &s_device), "vkCreateDevice");
+    volkLoadDevice(s_device);
+    vkGetDeviceQueue(s_device, s_queue_fam, 0, &s_queue);
+
+    if (!create_swapchain()) return false;
+
+    g_vk.alive = true;
+    s_frame = 0;
+    g3x_log("vk: backend ready (%ux%u)", g_vk.width, g_vk.height);
+    return true;
+}
+
+bool g3x_vk_resize(unsigned width, unsigned height) {
+    if (!g_vk.alive && s_device == VK_NULL_HANDLE) return false;
+    g_vk.width = width; g_vk.height = height;
+    destroy_swapchain_objects();
+    if (!create_swapchain()) { g_vk.alive = false; return false; }
+    g_vk.alive = true;
+    return true;
+}
+
+void g3x_vk_present(unsigned swap_interval) {
+    if (!g_vk.alive || !s_sync_live) { ++s_frame; return; }
+    ++s_frame;
+
+    uint32_t idx = 0;
+    VkResult r = vkAcquireNextImageKHR(s_device, s_swapchain, UINT64_MAX,
+                                       s_sem_acquire, VK_NULL_HANDLE, &idx);
+    if (r == VK_ERROR_OUT_OF_DATE_KHR) {
+        g3x_log_once("swap-oode", "swapchain out of date, recreating");
+        g3x_vk_resize(g_vk.width, g_vk.height);
+        return;
+    }
+    if (r != VK_SUCCESS && r != VK_SUBOPTIMAL_KHR) {
+        g3x_log_once("swap-acq", "vkAcquireNextImageKHR -> %d", (int)r);
+        return;
+    }
+
+    // P1 frame content: solid black. P3 replaces this command buffer with the
+    // libslang-vk chain render (slangvk_chain_render_swapchain) — see PLAN.md.
+    VkCommandBufferBeginInfo bi{}; bi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer(s_cmd, &bi);
+
+    VkImageMemoryBarrier bar{}; bar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    bar.image = s_images[idx];
+    bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bar.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    bar.subresourceRange.levelCount = 1;
+    bar.subresourceRange.layerCount = 1;
+    bar.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    bar.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    bar.srcAccessMask = 0;
+    bar.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    vkCmdPipelineBarrier(s_cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &bar);
+
+    VkClearColorValue black{}; black.float32[3] = 1.f;
+    vkCmdClearColorImage(s_cmd, s_images[idx], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                         &black, 1, &bar.subresourceRange);
+
+    bar.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    bar.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    bar.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    bar.dstAccessMask = 0;
+    vkCmdPipelineBarrier(s_cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &bar);
+    vkEndCommandBuffer(s_cmd);
+
+    VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    VkSubmitInfo sub{}; sub.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    sub.waitSemaphoreCount = 1; sub.pWaitSemaphores = &s_sem_acquire;
+    sub.pWaitDstStageMask = &wait_stage;
+    sub.commandBufferCount = 1; sub.pCommandBuffers = &s_cmd;
+    sub.signalSemaphoreCount = 1; sub.pSignalSemaphores = &s_sem_render;
+    vkQueueSubmit(s_queue, 1, &sub, s_fence);
+    vkWaitForFences(s_device, 1, &s_fence, VK_TRUE, UINT64_MAX);
+    vkResetFences(s_device, 1, &s_fence);
+
+    VkPresentInfoKHR pi{}; pi.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    pi.waitSemaphoreCount = 1; pi.pWaitSemaphores = &s_sem_render;
+    pi.swapchainCount = 1; pi.pSwapchains = &s_swapchain;
+    pi.pImageIndices = &idx;
+    r = vkQueuePresentKHR(s_queue, &pi);
+    (void)swap_interval; // FIFO is always on in P1; immediate mode is P2 polish
+    if (r == VK_ERROR_OUT_OF_DATE_KHR) {
+        g3x_log_once("swap-oode2", "present out of date, recreating");
+        g3x_vk_resize(g_vk.width, g_vk.height);
+    }
+}
+
+void g3x_vk_shutdown() {
+    if (s_device != VK_NULL_HANDLE) destroy_swapchain_objects();
+    if (s_device != VK_NULL_HANDLE) { vkDestroyDevice(s_device, nullptr); s_device = VK_NULL_HANDLE; }
+    if (s_surface != VK_NULL_HANDLE && s_instance != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(s_instance, s_surface, nullptr); s_surface = VK_NULL_HANDLE;
+    }
+    if (s_instance != VK_NULL_HANDLE) { vkDestroyInstance(s_instance, nullptr); s_instance = VK_NULL_HANDLE; }
+    g_vk.alive = false;
+    g3x_log("vk: shutdown (frames presented: %llu)", (unsigned long long)s_frame);
+}
