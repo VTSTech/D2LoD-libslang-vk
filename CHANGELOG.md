@@ -7,6 +7,38 @@ Format follows Keep a Changelog. Where a field round already ran, entries cite w
 glide3x.log showed on real hardware (RX 560, Vulkan 1.3, windowed). Commit refs are on
 branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
 
+## [0.4.2] - 2026-10-24 (overlay: descenders + active-shader line)
+
+Field round 15 found the fallback box's 8x8 font crushing descenders ("can't
+see the bottom of the g in glide"), and an active preset was invisible in
+screenshots.
+
+### Fixed
+
+- **Descender glyphs** (`g p q j`): DejaVu's descent does not fit the 8-row
+  tile under the generator's baseline, so the box filter crushed every tail
+  into one broken row (the `g` read as chopped). The generator now carries
+  hand-tuned overrides - bowls at rows 2-5, real tails on rows 6-7, the
+  classic 8x8-font answer. 'y' was already acceptable and stays generated.
+
+### Added
+
+- **Second overlay line: the active preset's file name** (basename only, no
+  path). `g3x_slang` pushes it when a chain goes ready (first open, conf
+  change, hot reload) and clears it whenever the chain dies - `destroy_chain()`
+  is the single choke point (reload start, `preset_load`/`chain_create`
+  failure, shutdown). With no preset the line is absent and the box shrinks
+  back to the tag alone (the clean P2 baseline look). 10px line step keeps
+  line 1's descenders clear of line 2.
+- The font generator ships in-tree at `scripts/gen_font8x8.py` - the header
+  always promised it; the repo never carried it.
+
+### Verification
+
+- Host overlay harness: shader line painted on rows 17..24, `g`-descender ink
+  on rows 14/15 (plus shadow), clear -> single-line shrink, long-path basename
+  handling; mingw-i686 build links, 45/45 export surface unchanged.
+
 ## [0.4.1] - 2026-10-24 (181780c)
 
 The version stamp moves onto the game's own "Video:" debug line; the P2.10 overlay box
