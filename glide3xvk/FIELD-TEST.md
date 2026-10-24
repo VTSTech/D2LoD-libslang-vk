@@ -634,3 +634,58 @@ Host rig: 84/84 checks pass.
    and opens the inventory again).
 
 Same install: replace `glide3x.dll`, run `Game -w -3dfx`.
+
+## Round 11 (P2.8, build d2-glide3xvk-p28) — diagnostics for the two open symptoms
+
+Field evidence (first screenshots, v10 session): ground/walls/HUD/big sprites
+all correct; two symptoms remain — (a) in-game solid black rectangles near
+units/objects (offset up-left of visible sprites, also over wall areas), and
+(b) menu button labels render as garbled glyph fragments on an opaque black
+box (the "v 1.14d" corner text and the button plate art render correctly).
+
+Game-source ground truth this round:
+- Unit shadows: `DrawShadow` -> blend (ONE,ZERO) OPAQUE (non-blended setting)
+  or LERP + constant 0xc0 (blended), then `DrawShadowQuad` submits the shadow
+  texture with ALL-BLACK vertex colors. The soft blob shape exists ONLY
+  because chromakey punches the texture's transparent texels; if the chroma
+  rule misses, the quad is a solid black rectangle — shape matches (a).
+- Menu labels: `DrawImage` drawMode 7 -> upload mode 2 (ink remap), drawn
+  via `SetDrawMode(7)` = OPAQUE; transparency again comes purely from
+  chromakey. The label black box = background texels surviving the chroma
+  rule; the garbled fragments = ink texels colored by the WRONG palette
+  entry — both point at the palette/chroma state at text-draw time.
+- `DrawSolidRect`/`DrawSolidRectAlpha` (the ~14/frame in-game fills): LERP
+  + constant (palette color, alpha 0x40/0x80/0xc0), chroma toggled OFF
+  around them; `DrawLightMap` draws 48x48x8 radial points with chroma OFF.
+
+What P2.8 changes (diagnostics only — no raster semantics touched):
+1. `vc0#N:` lines — the first 12 textured quads with all-black vertex colors
+   (the shadow/darken class): texture dims, screen rect, blend pair, chroma
+   state. Overlay these rects on the screenshot black bars.
+2. `pal#N:` lines — the first 64 palette downloads with pal[0]/[1]/[128]/
+   [254]/[255]. Settles where the transparency marker (parked blue) lives in
+   every palette regime, and whether palettes switch around text/shadows.
+3. `chroma#N:` lines — the first 32 chromakey mode/value transitions.
+4. `quad#` lines now carry `blend=(sf,df) ca=alpha chm=on`.
+5. Frame lines gained `vc0=` `point=` `chm=`; shutdown gained a P2.8 class
+   summary + texture-table high-water/dropped counters.
+6. Fixes: `grTexTextureMemRequired` charged P_8 (fmt 5) and ARGB_8332 (fmt 8)
+   2 bytes/texel (real glide.h: 1) — the game sizes its texture-cache
+   allocations from this; kMaxTex 4096 -> 8192 (table-full drops would bind
+   stale textures).
+
+Host rig: 84/84 checks pass (fill double-draw guard regression caught and
+fixed during development).
+
+## Round 11 success criteria
+
+1. Reproduce BOTH symptoms in one session: title screen (garbled labels),
+   then enter game with units + shadows visible on screen.
+2. The log will then contain, in order: banner P2.8, `chroma#` lines,
+   `pal#` lines, `quad#` lines with blend/chroma, `vc0#` lines (if the
+   black rects are the shadow class), `fill#` lines.
+3. Send the FULL glide3x.log (and the two screenshots again if convenient) —
+   the vc0#/pal#/chroma# combination pins which of the three candidate
+   mechanisms produces each symptom, and the next build fixes it directly.
+
+Same install: replace `glide3x.dll`, run `Game -w -3dfx`.

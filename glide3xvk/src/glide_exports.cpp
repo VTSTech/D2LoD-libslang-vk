@@ -93,7 +93,7 @@ void __stdcall grGlideShutdown() {
     // Always-on totals: the round-6 report arrived without any summary (the
     // every-300-swaps gate never fired at 112 frames), so the exit evidence
     // was lost. Print the full picture unconditionally.
-    unsigned ds[8];   // P2.7: stats grew to 8 slots (P2.6 left ds[5] here — a
+    unsigned ds[9];   // P2.8: 9 slots (vc0 joins; P2.7 left ds[5] here — a
                       // silent 3-slot stack overrun on every shutdown log)
     g3x_frame_draw_stats(ds);
     g3x_log("grGlideShutdown: swaps=%u clears=%u draws=%u (vac=%u parr=%u "
@@ -103,6 +103,14 @@ void __stdcall grGlideShutdown() {
             ds[0], ds[1], ds[2], ds[3], g_st.n_point, g_st.n_line, g_st.n_tri,
             ds[4], g_st.n_tex_downloads, g_st.n_palette_downloads,
             g3x_frame_tex_miss_count());
+    {
+        unsigned tex_used = 0, tex_dropped = 0;
+        g3x_frame_tex_table_stats(&tex_used, &tex_dropped);
+        g3x_log("grGlideShutdown: P2.8 classes: fill=%u vc0=%u sub256=%u rgb565=%u "
+                "chromaToggles=%u texTable(hwm=%u dropped=%u)",
+                ds[7], ds[8], ds[5], ds[6], g3x_frame_chroma_toggles(),
+                tex_used, tex_dropped);
+    }
     g3x_vk_shutdown();
 }
 
@@ -133,12 +141,12 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
 FxBool __stdcall grSstWinClose(GrContext_t context) {
     // Phase marker: the game opens/closes contexts for probes, videos and the
     // real window — the totals here separate those phases in the log.
-    unsigned ds[8];   // P2.7: stats grew to 8 slots (same overrun as above)
+    unsigned ds[9];   // P2.8: 9 slots (same growth as the shutdown summary)
     g3x_frame_draw_stats(ds);
     g3x_log("grSstWinClose: ctx=%u (swaps=%u vac=%u parr=%u strip=%u fan=%u "
-            "skip=%u texmiss=%u)",
+            "skip=%u texmiss=%u fill=%u vc0=%u)",
             context, g_st.n_swaps, ds[0], ds[1], ds[2], ds[3], ds[4],
-            g3x_frame_tex_miss_count());
+            g3x_frame_tex_miss_count(), ds[7], ds[8]);
     g3x_vk_shutdown();
     return FXTRUE;
 }
@@ -181,13 +189,15 @@ void __stdcall grBufferSwap(FxU32 swap_interval) {
     // tag budget-quiet, so these are the only evidence of what each phase
     // actually submitted (and how fast the CPU raster is keeping up).
     if (g_st.n_swaps % 120 == 0) {
-        unsigned ds[8];
+        unsigned ds[9];
         g3x_frame_draw_stats(ds);
         g3x_log("frame %u: avg=%.1fms vac=%u parr=%u(strip=%u fan=%u) sub256=%u "
-                "rgb565=%u fill=%u skip=%u texdl=%u paldl=%u lfb=%u",
+                "rgb565=%u fill=%u vc0=%u skip=%u point=%u texdl=%u paldl=%u "
+                "chm=%u lfb=%u",
                 g_st.n_swaps, s_ms_n ? s_ms_acc / (double)s_ms_n : 0.0,
-                ds[0], ds[1], ds[2], ds[3], ds[4], ds[5], ds[6], ds[7],
-                g_st.n_tex_downloads, g_st.n_palette_downloads, g_st.n_lfb_locks);
+                ds[0], ds[1], ds[2], ds[3], ds[4], ds[5], ds[6], ds[7], ds[8],
+                g_st.n_point, g_st.n_tex_downloads, g_st.n_palette_downloads,
+                g3x_frame_chroma_toggles(), g_st.n_lfb_locks);
         s_ms_acc = 0.0; s_ms_n = 0;
     }
     if (g_st.n_swaps % 300 == 0) {
@@ -381,12 +391,22 @@ void __stdcall grLoadGammaTable(FxU32 nentries, FxU32* red, FxU32* green, FxU32*
 FxU32 __stdcall grTexTextureMemRequired(FxU32 evenOdd, GrTexInfo* info) {
     if (!info) return 0;
     // Same dims convention as the raster's g3x_tex_dims: max dim = 2^lod, the
-    // other = 2^(lod-|aspect|); 8bpp formats cost 1 B/texel, the rest 2 B.
+    // other = 2^(lod-|aspect|). Bytes per texel per the real glide.h format
+    // table (P2.8 fix — the old `format <= 3 ? 1 : 2` charged P_8 (fmt 5)
+    // and ARGB_8332 (fmt 8) two bytes; both are 8-bit formats):
+    //   1 B: 0x0 RGB332, 0x2 A8, 0x3 I8, 0x4 AI44, 0x5 P_8, 0x8 ARGB8332
+    //   2 B: 0x1 YIQ422, 0x9 AYIQ8422, 0xa RGB565, 0xb ARGB1555, 0xc ARGB4444,
+    //        0xd AI88, 0xe AP88
+    static const uint8_t kFmtBpp[16] = {
+        1, 2, 1, 1, 1, 1, 2, 2,   // 0x0..0x7 (rsvd 6/7 charged 2 — never seen)
+        1, 2, 2, 2, 2, 2, 2, 2    // 0x8..0xf
+    };
+    const unsigned bpp = info->format < 16 ? kFmtBpp[info->format] : 2u;
     FxU32 bytes = 0;
     for (unsigned lod = info->smallLodLog2; lod <= info->largeLodLog2 && lod < 12; ++lod) {
         unsigned w = 0, h = 0;
         g3x_tex_dims(lod, (int)info->aspectRatioLog2, &w, &h);
-        bytes += w * h * ((info->format <= 0x3u) ? 1u : 2u);
+        bytes += w * h * bpp;
     }
     return bytes;
 }
@@ -427,11 +447,18 @@ void __stdcall grTexDownloadTable(GrTexTable_t type, void* data) {
         g_st.palette_valid = FXTRUE;
         ++g_st.n_palette_downloads;
         g3x_frame_set_palette(data);   // active palette for the P2.1 raster
-        // Field diagnostic (round 6): entries 0/128/255 — settles where the
-        // transparent marker and the text-ink ramp live in each palette.
-        g3x_log_once("grTexDownloadTable:palette", "256-entry palette copied "
-                     "(pal[0]=0x%08x pal[128]=0x%08x pal[255]=0x%08x)",
-                     g_st.palette[0], g_st.palette[128], g_st.palette[255]);
+        // P2.8: log the first 64 downloads WITH their epoch — the menu label
+        // black boxes and the in-game shadow rects both hinge on WHICH palette
+        // (and which pal[0] transparency marker) is live at draw time. The
+        // old log_once hid every download after the first.
+        static unsigned s_plog = 0;
+        if (s_plog < 64) {
+            ++s_plog;
+            const uint32_t* pal = g_st.palette;
+            g3x_log("pal#%u: pal[0]=0x%08x pal[1]=0x%08x pal[128]=0x%08x "
+                    "pal[254]=0x%08x pal[255]=0x%08x",
+                    s_plog, pal[0], pal[1], pal[128], pal[254], pal[255]);
+        }
     } else {
         g3x_log_once("grTexDownloadTable", "type=%u (unhandled)", type);
     }
@@ -608,9 +635,11 @@ static void g3x_banner() {
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
     g3x_log("glide3xvk scaffold %s — loaded into %s", G3XVK_BUILD_ID, exe);
     g3x_log("compiled " __DATE__ " " __TIME__
-            "; P2.7 = uniform square-mip s/t space (texel = coord*2^lod/256 both axes;"
-            " retires the P2.6 per-axis auto-detect that crushed short axes)"
-            " + fill-rect diagnostics");
+            "; P2.8 = field diagnostics for the two open symptoms: vc0# lines "
+            "(uniform-black vertex quads = shadow/darken class), pal# lines "
+            "(first 64 palette downloads with pal[0]/1/128/254/255), chroma# "
+            "transition log, quad# lines now carry blend+chroma state; "
+            "grTexTextureMemRequired P_8 bpp fix; kMaxTex 4096->8192") ;
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {

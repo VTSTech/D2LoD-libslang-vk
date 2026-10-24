@@ -36,6 +36,7 @@ unsigned s_palette_epoch = 0;        // bumped on every palette download
 unsigned s_chroma_mode = 0;
 unsigned s_chroma_value = 0;
 bool     s_chroma_on = false;
+unsigned s_chroma_toggles = 0;       // P2.8: grChromakeyMode/value changes
 unsigned s_blend_sf = 4, s_blend_df = 0;   // GR_BLEND rgb pair; default ONE,ZERO
 uint32_t s_constant = 0xFFu;         // grConstantColorValue, raw as passed
 unsigned s_const_alpha = 0xFFu;      // game packs the blend alpha in bits 7..0
@@ -177,9 +178,12 @@ struct Tex {
     unsigned bpp;                    // 1 for P_8
     bool     used;
 };
-constexpr unsigned kMaxTex = 4096;   // in-game tile churn needs headroom (943+ dl/round-5)
+constexpr unsigned kMaxTex = 8192;   // in-game tile churn needs headroom (943+ dl/round-5;
+                                     // 4096 risked mid-session exhaustion -> stale binds)
 Tex         s_tex[kMaxTex];
 unsigned    s_keys[kMaxTex];         // (tmu<<28) | (addr & 0x0FFFFFFF)
+unsigned    s_tex_used_hwm = 0;      // P2.8: high-water of live slots
+unsigned    s_tex_dropped_total = 0; // P2.8: downloads rejected (table full)
 int         s_cur = -1;              // bound texture slot (grTexSource)
 
 bool s_warned_tex_full = false;
@@ -215,6 +219,10 @@ static unsigned s_n_space256 = 0;     // draws on sub-256-mip textures (P2.7:
                                       // the class the square-space scale fixes)
 static unsigned s_n_rgb565 = 0;       // draws sampled from RGB_565 textures (P2.6)
 static unsigned s_n_fill = 0;         // constant-fill quads (axis-aligned fast path)
+static unsigned s_n_vc0 = 0;          // P2.8: textured quads with (near-)uniform
+                                      // BLACK vertex color — the shadow/darken
+                                      // class; opaque-black rects unless chroma
+                                      // punches their transparent texels
 
 // ---- raster ---------------------------------------------------------------
 struct RVert { float x, y, u, v; uint32_t argb; };
@@ -551,7 +559,11 @@ TexSpace tex_space(const RVert* /*v*/, unsigned /*n*/, const Tex& t) {
 
 // Field diagnostic (round 10): the first quads per distinct (dims) class,
 // with raw vertices + the applied square-space scale — verifies the P2.7
-// sampling rule directly in the field log without flooding.
+// sampling rule directly in the field log without flooding. P2.8: the line
+// also carries the blend pair + chroma state, because the two open field
+// symptoms (in-game black rects, menu-label black boxes) are both
+// "opaque-black unless chroma punches" classes and the log must show which
+// blend/chroma regime each class drew under.
 void quad_diag(unsigned count, const RVert* v, const Tex& t, float sc) {
     static unsigned s_w[14], s_h[14], s_n = 0;
     if (s_n >= 14) return;
@@ -562,14 +574,44 @@ void quad_diag(unsigned count, const RVert* v, const Tex& t, float sc) {
     RVert q[4] = { {}, {}, {}, {} };
     const unsigned n = count < 4 ? count : 4;
     for (unsigned i = 0; i < n; ++i) q[i] = v[i];
-    g3x_log("quad#%u: tex %ux%u lod%u sc=%.4g v0(%.1f,%.1f|c%08x|s%.1f,t%.1f) "
+    g3x_log("quad#%u: tex %ux%u lod%u sc=%.4g blend=(%u,%u) ca=%u chm=%u "
+            "v0(%.1f,%.1f|c%08x|s%.1f,t%.1f) "
             "v1(%.1f,%.1f|c%08x|s%.1f,t%.1f) v2(%.1f,%.1f|c%08x|s%.1f,t%.1f) "
             "v3(%.1f,%.1f|c%08x|s%.1f,t%.1f)",
-            s_n, t.w, t.h, t.lod, sc,
+            s_n, t.w, t.h, t.lod, sc, s_blend_sf, s_blend_df, s_const_alpha,
+            (unsigned)s_chroma_on,
             q[0].x, q[0].y, q[0].argb, q[0].u, q[0].v,
             q[1].x, q[1].y, q[1].argb, q[1].u, q[1].v,
             q[2].x, q[2].y, q[2].argb, q[2].u, q[2].v,
             q[3].x, q[3].y, q[3].argb, q[3].u, q[3].v);
+}
+
+// P2.8 field diagnostic: the shadow/darken class — textured quads whose
+// vertex color is (near-)uniform BLACK. Ground truth (D2Glide DrawShadow /
+// DrawShadowQuad): non-blended shadows submit blend (ONE,ZERO) + all-vertex
+// color 0, so the ONLY thing separating a soft shadow blob from a solid
+// black rectangle is chromakey punching the texture's transparent texels.
+// Menu labels draw the same way (SetDrawMode 5/7 -> opaque). Log the first
+// 12 with texture dims, blend, chroma state and the screen rect so the
+// round-11 log can be overlaid directly on the user's screenshots.
+void vc0_diag(unsigned count, const RVert* v, const Tex& t) {
+    static unsigned s_logged = 0;
+    const uint32_t c0 = v[0].argb, c1 = v[1].argb, c2 = v[2].argb, c3 = v[3].argb;
+    const bool three_black = (c0 == 0 && c1 == 0 && c2 == 0);
+    if (!three_black) return;   // not the class (v0..v2 carry the fill color)
+    ++s_n_vc0;
+    if (s_logged >= 12) return;
+    float xa = v[0].x, xb = v[0].x, ya = v[0].y, yb = v[0].y;
+    for (unsigned i = 1; i < 4 && i < count; ++i) {
+        if (v[i].x < xa) xa = v[i].x; if (v[i].x > xb) xb = v[i].x;
+        if (v[i].y < ya) ya = v[i].y; if (v[i].y > yb) yb = v[i].y;
+    }
+    ++s_logged;
+    g3x_log("vc0#%u: tex %ux%u lod%u rect(%.0f,%.0f)..(%.0f,%.0f) "
+            "c=%08x/%08x/%08x/%08x blend=(%u,%u) ca=%u chm=%u fill=%u",
+            s_logged, t.w, t.h, t.lod, xa, ya, xb, yb,
+            c0, c1, c2, c3, s_blend_sf, s_blend_df, s_const_alpha,
+            (unsigned)s_chroma_on, (unsigned)s_color_fill);
 }
 
 void gamma_identity() {
@@ -615,9 +657,19 @@ void g3x_frame_set_palette(const void* entries256) {
 }
 
 void g3x_frame_set_chromakey(unsigned mode, unsigned value) {
+    if (mode != s_chroma_mode || value != s_chroma_value) ++s_chroma_toggles;
     s_chroma_mode = mode; s_chroma_value = value;
     s_chroma_on = (mode == 1);
     s_chroma_dirty = true;
+    // P2.8: the game flips chroma OFF around DrawSolidRect/DrawLightMap
+    // batches and back ON after; the first 32 transitions show the exact
+    // sequence (and whether it is active at label/shadow draws).
+    static unsigned s_tlog = 0;
+    if (s_tlog < 32) {
+        ++s_tlog;
+        g3x_log("chroma#%u: mode=%u value=0x%x (on=%u)", s_tlog, mode, value,
+                (unsigned)s_chroma_on);
+    }
 }
 
 void g3x_frame_set_blend(unsigned rgb_sf, unsigned rgb_df) {
@@ -668,13 +720,12 @@ bool g3x_frame_tex_download(unsigned tmu, unsigned addr, const GrTexInfo* info) 
     const unsigned key = tex_key(tmu, addr);
     const int slot = tex_slot_alloc(key);
     if (slot < 0) {
-        static unsigned s_tex_dropped = 0;
-        ++s_tex_dropped;
+        ++s_tex_dropped_total;
         if (!s_warned_tex_full) {
             s_warned_tex_full = true;
             g3x_log("frame: texture table full (%u) — downloads dropped", kMaxTex);
-        } else if (s_tex_dropped % 500 == 0) {
-            g3x_log("frame: texture table full — %u downloads dropped so far", s_tex_dropped);
+        } else if (s_tex_dropped_total % 500 == 0) {
+            g3x_log("frame: texture table full — %u downloads dropped so far", s_tex_dropped_total);
         }
         return false;
     }
@@ -685,6 +736,7 @@ bool g3x_frame_tex_download(unsigned tmu, unsigned addr, const GrTexInfo* info) 
     t.data = nd; t.w = w; t.h = h; t.bpp = bpp; t.used = true;
     t.lod = info->largeLodLog2 > 11 ? 11 : info->largeLodLog2;
     s_keys[slot] = key;
+    if (slot + 1 > (int)s_tex_used_hwm) s_tex_used_hwm = (unsigned)(slot + 1);
     return true;
 }
 
@@ -742,10 +794,20 @@ unsigned g3x_frame_tex_miss_count() {
     return s_tex_miss_total;
 }
 
-void g3x_frame_draw_stats(unsigned out[8]) {
+void g3x_frame_draw_stats(unsigned out[9]) {
     out[0] = s_n_vac; out[1] = s_n_parr; out[2] = s_n_parr_strip;
     out[3] = s_n_parr_fan; out[4] = s_n_skip_notex;
     out[5] = s_n_space256; out[6] = s_n_rgb565; out[7] = s_n_fill;
+    out[8] = s_n_vc0;
+}
+
+unsigned g3x_frame_chroma_toggles() {
+    return s_chroma_toggles;
+}
+
+void g3x_frame_tex_table_stats(unsigned* used, unsigned* dropped) {
+    if (used)    *used = s_tex_used_hwm;
+    if (dropped) *dropped = s_tex_dropped_total;
 }
 
 void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
@@ -758,7 +820,12 @@ void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
     for (unsigned i = 0; i < count; ++i) {
         read_vert(verts[i], (const uint8_t*)base + (size_t)i * stride);
     }
-    if (fill_rect_fast(count, verts)) return;   // P2.4: fades/dim rects
+    if (!fill_rect_fast(count, verts)) {        // P2.4: fades/dim rects
+        if (s_cur >= 0) vc0_diag(count, verts, s_tex[s_cur]);   // P2.8 shadows
+    } else {
+        return;   // P2.8: the fill fast path owns the quad — falling through
+                  // would draw it a second time through the triangle loop
+    }
     float tsx = 1.0f, tsy = 1.0f;
     if (s_cur >= 0) {
         const Tex& t = s_tex[s_cur];
@@ -799,7 +866,11 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
         if (!p) return;
         read_vert(verts[i], p);   // pointer-array vertices: fixed 0x1C layout
     }
-    if (fill_rect_fast(count, verts)) return;   // P2.4: fades/dim rects
+    if (!fill_rect_fast(count, verts)) {        // P2.4: fades/dim rects
+        if (s_cur >= 0) vc0_diag(count, verts, s_tex[s_cur]);   // P2.8 shadows
+    } else {
+        return;   // P2.8: same double-draw guard as the fan path
+    }
     float tsx = 1.0f, tsy = 1.0f;
     if (s_cur >= 0) {
         const Tex& t = s_tex[s_cur];

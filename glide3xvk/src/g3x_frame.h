@@ -61,12 +61,20 @@ void     g3x_tex_dims(unsigned lod, int aspect, unsigned* w, unsigned* h);
 bool     g3x_frame_tex_download(unsigned tmu, unsigned addr, const GrTexInfo* info);
 void     g3x_frame_tex_source(unsigned tmu, unsigned addr);
 unsigned g3x_frame_tex_miss_count();   // grTexSource bindings with no download
+void     g3x_frame_tex_table_stats(unsigned* used, unsigned* dropped); // P2.8
+
+// Chroma toggle count since context open (P2.8): the game flips
+// grChromakeyMode OFF->ON around DrawSolidRect/DrawLightMap batches; the
+// per-frame delta says whether those batches run in the current phase.
+unsigned g3x_frame_chroma_toggles();
 
 // Draw-path totals since context open: vac fans, pointer-array draws,
 // pointer-array strips, pointer-array fans, draws skipped (no texture),
-// sub-256-mip draws, RGB565-texture draws, constant-fill quads (P2.7).
-// Feeds the periodic frame lines + shutdown summary (P2.4/P2.6/P2.7).
-void     g3x_frame_draw_stats(unsigned out[8]);
+// sub-256-mip draws, RGB565-texture draws, constant-fill quads (P2.7),
+// uniform-black-vertex textured quads (P2.8: the shadow/darken class —
+// opaque-black rects unless chroma punches the transparent texels).
+// Feeds the periodic frame lines + shutdown summary (P2.4/P2.6/P2.7/P2.8).
+void     g3x_frame_draw_stats(unsigned out[9]);
 
 // TRIANGLE_FAN (mode 5): count vertices at `base`, `stride` bytes apart.
 void     g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride);
