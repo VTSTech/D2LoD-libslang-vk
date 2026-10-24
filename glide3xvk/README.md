@@ -43,7 +43,7 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `src/glide_exports.cpp` | All 45 exports with exact signatures; the game-contract entry points (`grGet(0xF)`, `grSstWinOpen`, ini reading, session banner) |
 | `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam |
 | `src/g3x_state.{h,cpp}` | Glide state tracking (grChromakey/grColorCombine/... current values) |
-| `src/g3x_overlay.{h,cpp}` | The version tag: composes `glide3xvk <version> (<short hash>)` and draws it as a top-right box — the fallback stamp since 0.4.1 |
+| `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), and since 0.4.2 a second line with the active preset's file name |
 | `src/g3x_drivertag.{h,cpp}` | 0.4.1: repoints the game's `"Video: Glide"` renderer-name string at our tag (one 4-byte fail-soft patch in the mapped Game.exe image) — the version stamp's primary home |
 | `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf`, owns the input image + preset + chain, hot-reloads on file change, fails soft to the unfiltered path |
 | `presets/` | Two starter presets (scanline, sharpen — MIT, ours) + `d2slangvk.conf.sample` |
@@ -57,7 +57,7 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `BUILD-32BIT.md` | **P1 spike notes**: building libslang-vk itself as i686 Windows |
 | `FIELD-TEST.md` | The field log: per-round builds, diagnostics, and results on a vanilla retail 1.14d install |
 
-## The version stamp (0.4.1)
+## The version stamp (0.4.1) + the overlay's shader line (0.4.2)
 
 The primary stamp is the game's own debug line: the `/fps` block ends with
 `Video: Glide` (a hardcoded string drawn at fixed game coords, decompiled
@@ -82,6 +82,17 @@ ini key it draws only when the patch missed; the key is still honored
 [glide3xvk]
 overlay=1
 ```
+
+Since 0.4.2 the box carries a **second line when a preset filters frames**:
+the active preset's file name (basename only). `g3x_slang` pushes it on chain
+ready — first open, conf change, hot reload — and clears it whenever the
+chain dies (`destroy_chain()` is the single choke point: reload start,
+`preset_load`/`chain_create` failure, shutdown), so the line is truthful by
+construction; with no preset the box shrinks back to the tag alone. The same
+round re-tuned the 8x8 font's descenders (`g p q j`): bowls at rows 2-5, real
+tails on rows 6-7 — DejaVu's descent does not fit the tile and the generated
+tails were one broken row. Overrides live in `scripts/gen_font8x8.py`, which
+ships in-tree now.
 
 ## The preset chain (P3, 0.4.0)
 

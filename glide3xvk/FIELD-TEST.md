@@ -835,3 +835,42 @@ Field checklist:
 Host rig: 45/45 exports, 8,676,239 bytes, KERNEL32+msvcrt imports only; tag
 length asserted for both clean and dirty trees. Build id: pushed 0.4.0 state
 plus this change set.
+
+## Round 16 (0.4.2) — descenders fixed, the overlay shows the active shader
+
+The round-15 fallback box surfaced two things: the 8x8 font crushed every
+descender (DejaVu's descent does not fit the 8-row tile — "can't see the
+bottom of the g in glide"), and once a preset is active there is no way to
+tell from a screenshot WHICH shader produced the look.
+
+What 0.4.2 does:
+
+1. **Hand-tuned descender glyphs** (`g p q j`) via overrides in the font
+   generator — which now ships in-tree at `scripts/gen_font8x8.py` (the
+   header always promised it, the repo never carried it). Bowls at rows 2-5,
+   tails get real rows 6-7: the classic 8x8-font answer. 'y' was already
+   acceptable and stays generated.
+2. **Second overlay line — the active preset's file name** (basename only).
+   `g3x_slang` pushes it when a chain goes ready (first open, conf change,
+   hot reload) and clears it whenever the chain dies — `destroy_chain()` is
+   the single choke point (reload start, load/create failure, shutdown). No
+   preset = no line, the box shrinks back to the tag alone. 10px line step
+   keeps line 1's descenders clear of line 2.
+
+Field checklist:
+
+- screen: the `g` in `glide3xvk` shows a full descender hook; with a preset
+  active the box carries two lines, the wider line sizing the box, and the
+  second line reads the preset's file name (`res-independent-scanlines.slangp`
+  for the round-14 starter).
+- log: `slang: chain ready '<path>' (...)` pairs with the second line
+  appearing; `slang: chain_create failed` / `preset_load failed` / shutdown
+  pair with it disappearing.
+- empty or remove `preset=` in d2slangvk.conf -> second line gone, box
+  shrinks to the tag alone (log: `slang: no preset= ... unfiltered present`).
+- hot-reload the conf onto a different preset -> the name follows within the
+  reload window (~0.5 s cadence).
+
+Host rig: 45/45 exports unchanged (def untouched), 8,678,032 bytes. New host
+harness (`overlay_preview.cpp`, sandbox) asserts the shader-line rows 17..24,
+the `g`-descender ink on rows 14/15, and the clear -> single-line shrink.

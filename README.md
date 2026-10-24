@@ -22,7 +22,7 @@ resolution — is the same one proven in
 (Diablo/Hellfire) and
 [chocolate-doom-vk](https://github.com/VTSTech/chocolate-doom-vk) (Doom).
 
-## Status — 0.4.1
+## Status — 0.4.2
 
 - The full game renders correctly through the Vulkan swapchain: menu, world, units,
   UI, shadows, text, cutscenes (field-verified rounds 4–12 on real hardware; see
@@ -33,8 +33,13 @@ resolution — is the same one proven in
   integer / stretch scaling, unfiltered fallback on any failure.
 - **The version stamp now lives on the game's own `Video:` debug line (0.4.1)**:
   at renderer init glide3xvk repoints the game's renderer-name string (`Glide`)
-  at a static `glide3xvk 0.4.1 (<hash>)` tag — one 4-byte patch, fail-soft. The
+  at a static `glide3xvk 0.4.2 (<hash>)` tag — one 4-byte patch, fail-soft. The
   old top-right overlay box only draws if that patch fails (or `overlay=1`).
+- **The overlay shows the active shader (0.4.2)**: while a preset filters
+  frames, the fallback box's second line reads the preset's file name — pushed
+  on chain ready (first open, conf change, hot reload), cleared whenever the
+  chain dies; no preset = no line. Also fixed in 0.4.2: the 8x8 font's crushed
+  descenders (`g p q j` — "can't see the bottom of the g in glide").
 - ~27 fps @ 800x600 from the CPU raster today (the preset chain adds a
   fullscreen pass on top); moving the compose buffer to the GPU is the
   remaining P3 exit item for the 60 fps target.
@@ -62,8 +67,8 @@ No build required:
 4. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
 
 A healthy run looks like: the menu renders, play works, and `glide3x.log` beside the
-exe carries the session banner (`glide3xvk 0.4.1 <build-id>`), `drivertag: "Video:"
-line patched -> "glide3xvk 0.4.1 (<hash>)"`, periodic `frame N:`
+exe carries the session banner (`glide3xvk 0.4.2 <build-id>`), `drivertag: "Video:"
+line patched -> "glide3xvk 0.4.2 (<hash>)"`, periodic `frame N:`
 summaries, and a clean exit summary on shutdown. With a preset configured, the log
 adds `slang: chain ready '<preset>' ...` and per-event slang lines; without one, it
 says so once. If 32-bit Vulkan is unavailable
@@ -74,8 +79,8 @@ running — the DirectDraw path (`-w` without `-3dfx`) is untouched by all of th
 
 The primary stamp is the game's own debug line. The `/fps` readout ends with
 `Video: Glide` (drawn at fixed game coords from a hardcoded string); at renderer init
-glide3xvk patches that string pointer to a static `glide3xvk 0.4.1 (<hash>)` tag, so
-the line reads `Video: glide3xvk 0.4.1 (d76cf3c)` in the game's own font — no extra
+glide3xvk patches that string pointer to a static `glide3xvk 0.4.2 (<hash>)` tag, so
+the line reads `Video: glide3xvk 0.4.2 (d76cf3c)` in the game's own font — no extra
 draw, no collision. The patch is a single 4-byte store and strictly fail-soft: any
 surprise (pool missing, ambiguous, page protect fails) is logged as `drivertag=miss`
 and the fallback box below takes over untouched.

@@ -1,8 +1,14 @@
-// glide3xvk — P2.10/P2.11: on-screen version tag.
+// glide3xvk — P2.10/P2.11: on-screen version tag + active-shader line.
 //
-// A single line — "glide3xvk 0.3.1 (77cb059-dirty)" — drawn into the present
-// buffer every frame, so a field screenshot always proves which build produced
-// it (rounds 6-11 repeatedly opened with "which dll was that?" ambiguity).
+// Line 1 — "glide3xvk 0.4.2 (181780c)" — drawn into the present buffer every
+// frame, so a field screenshot always proves which build produced it (rounds
+// 6-11 repeatedly opened with "which dll was that?" ambiguity).
+//
+// Line 2 — the active slang preset's file name, since 0.4.2 — so a field
+// screenshot also proves WHICH shader produced the look. g3x_slang pushes the
+// name when a chain goes ready (including hot reload) and clears it when the
+// chain dies; with no preset the line is absent and the box shrinks to the
+// tag alone (the clean P2 baseline look).
 //
 // Placement: since 0.4.1 the box is the FALLBACK, not the primary stamp. The
 // primary is the game's own "Video:" debug line, which g3x_drivertag repoints
@@ -35,7 +41,7 @@
 // Release version of this glide3xvk build. Shown by the overlay, printed by
 // the session banner and reported through grGetString(GR_RENDERER). Bump on
 // every field-delivered change set.
-#define G3XVK_VERSION "0.4.1"
+#define G3XVK_VERSION "0.4.2"
 
 // Render the tag into a BGRA8 buffer (w*h*4 bytes, stride = w*4). Safe to call
 // with any buffer size; the box anchors 4px from the right/top edge and clamps
@@ -46,6 +52,12 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h);
 // valid for the process lifetime. g3x_drivertag hands the same text to the
 // game's "Video:" line, so the two stamps can never disagree.
 const char* g3x_overlay_tagline();
+
+// The overlay's second line: the active slang preset's file name (basename
+// only, no path). NULL or empty clears the line and shrinks the box back to
+// the tag alone. Called by g3x_slang when a chain goes ready / dies; copies
+// internally, caller's storage may be transient.
+void g3x_overlay_set_shader(const char* name);
 
 // On/off switch. glide_exports wires [glide3xvk] overlay=0/1 to this; with no
 // ini key the value is auto — off when the drivertag patch owns the game's
