@@ -9,7 +9,7 @@ branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
 
 ## [0.4.4] - 2026-10-25 (CPU raster perf round 1 — x87 off the hot path)
 
-Field trigger: the round-14 field log (0.4.3, full screen, crtglow_lanczos
+Field trigger: the 0.4.3 full-screen field log (round-17 build, crtglow_lanczos
 7-pass chain) showed avg=51.6 ms ≈ 19 fps in-game @ 800x600 — the frame line
 mix (152 fans + 170 strips + 142 RGB565 quads per frame, fill=0) pointed at
 CPU raster + texture-table upkeep as the budget, not the chain or the game.

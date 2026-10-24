@@ -24,7 +24,7 @@ resolution — is the same one proven in
 (Diablo/Hellfire) and
 [chocolate-doom-vk](https://github.com/VTSTech/chocolate-doom-vk) (Doom).
 
-## Status — 0.4.3
+## Status — 0.4.4
 
 - The full game renders correctly through the Vulkan swapchain: menu, world, units,
   UI, shadows, text, cutscenes (field-verified rounds 4–12 on real hardware; see
@@ -35,7 +35,7 @@ resolution — is the same one proven in
   integer / stretch scaling, unfiltered fallback on any failure.
 - **The version stamp now lives on the game's own `Video:` debug line (0.4.1)**:
   at renderer init glide3xvk repoints the game's renderer-name string (`Glide`)
-  at a static `glide3xvk 0.4.3 (<hash>)` tag — one 4-byte patch, fail-soft. The
+  at a static `glide3xvk 0.4.4 (<hash>)` tag — one 4-byte patch, fail-soft. The
   old top-right overlay box only draws if that patch fails (or `overlay=1`).
 - **The overlay shows the active shader (0.4.2)**: while a preset filters
   frames, the fallback box's second line reads the preset's file name — pushed
@@ -49,12 +49,24 @@ resolution — is the same one proven in
   render finer. Toast feedback in the overlay, logged, session-only; both also
   settable via the new `aspect=` / `base_res=` conf keys (see the
   [d2slangvk.conf reference](#d2slangvkconf-reference) below).
-- ~27 fps @ 800x600 from the CPU raster today (the preset chain adds a
-  fullscreen pass on top); moving the compose buffer to the GPU is the
-  remaining P3 exit item for the 60 fps target.
-- Not wired yet, on purpose: GPU-side raster (P3 exit), bilinear texture
-  filtering (a look delta only; the ground's `texFilterMode(1,1)` request is
-  point-sampled).
+- **Perf round 1 (0.4.4)**: the full-screen 0.4.3 field log showed
+  avg=51.6 ms ≈ 19 fps @ 800x600 with the crtglow_lanczos 7-pass chain active
+  (≈ 470 draw calls per frame; the chain itself filtered 516 frames with
+  0 fallbacks — the chain is not the bottleneck). 0.4.4 goes after the CPU
+  side: **SSE2 float math** (i686 MinGW defaults to x87 for all float math,
+  and the raster is float-heavy), an **O(1) texture table** (binds were a
+  linear scan over up to 8192 slots) and **swapchain minImageCount+2** (the
+  log showed images=2, the bare minimum). Verified bit-identical by a
+  220-frame parity harness, so pixels cannot change — this round is pure
+  speed. Field numbers land in the next round's `frame N:` lines.
+- Frame budget today (0.4.3 field log, chain active): 51.6 ms ≈ 19 fps
+  @ 800x600 — the CPU raster + texture upkeep dominate; the chain adds a
+  fullscreen GPU pass on top but is not the bottleneck. 0.4.4 attacks the CPU
+  side (see above); moving the compose buffer to the GPU remains the 60 fps
+  endgame (PLAN.md §5 perf track).
+- Not wired yet, on purpose: GPU-side raster (the 60 fps endgame), bilinear
+  texture filtering (a look delta only; the ground's `texFilterMode(1,1)`
+  request is point-sampled).
 
 ## Install
 
@@ -78,8 +90,8 @@ No build required:
 4. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
 
 A healthy run looks like: the menu renders, play works, and `glide3x.log` beside the
-exe carries the session banner (`glide3xvk 0.4.3 <build-id>`), `drivertag: "Video:"
-line patched -> "glide3xvk 0.4.3 (<hash>)"`, periodic `frame N:`
+exe carries the session banner (`glide3xvk 0.4.4 <build-id>`), `drivertag: "Video:"
+line patched -> "glide3xvk 0.4.4 (<hash>)"`, periodic `frame N:`
 summaries, and a clean exit summary on shutdown. With a preset configured, the log
 adds `slang: chain ready '<preset>' ...` and per-event slang lines; without one, it
 says so once. If 32-bit Vulkan is unavailable
@@ -90,8 +102,8 @@ running — the DirectDraw path (`-w` without `-3dfx`) is untouched by all of th
 
 The primary stamp is the game's own debug line. The `/fps` readout ends with
 `Video: Glide` (drawn at fixed game coords from a hardcoded string); at renderer init
-glide3xvk patches that string pointer to a static `glide3xvk 0.4.3 (<hash>)` tag, so
-the line reads `Video: glide3xvk 0.4.3 (6f01f9a)` in the game's own font — no extra
+glide3xvk patches that string pointer to a static `glide3xvk 0.4.4 (<hash>)` tag, so
+the line reads `Video: glide3xvk 0.4.4 (2d31346)` in the game's own font — no extra
 draw, no collision. The patch is a single 4-byte store and strictly fail-soft: any
 surprise (pool missing, ambiguous, page protect fails) is logged as `drivertag=miss`
 and the fallback box below takes over untouched.
@@ -122,7 +134,7 @@ ignored (forward compatibility); a malformed value keeps the previous/default
 one and never fails the session. No file at all — or no `preset=` line — means
 the chain stays disabled and frames present unfiltered, exactly the 0.3.x look.
 
-Every key (0.4.3):
+Every key (0.4.4):
 
 | Key | Values (default first) | What it does |
 |-----|------------------------|--------------|
@@ -196,9 +208,14 @@ diff /tmp/game.txt /tmp/ours.txt && echo "MATCH: all 45 GetProcAddress names cov
 
 ## Roadmap
 
-- **P3 (shipped, 0.4.0)** — the libslang-vk preset chain at the present pass
-  (`d2slangvk.conf`, hot-reload, scaling modes, fail-soft); remaining exit
-  item: GPU-side raster for the 60 fps target
+- **P3 (shipped, 0.4.0; chain field-proven live)** — the libslang-vk preset
+  chain at the present pass (`d2slangvk.conf`, hot-reload, scaling modes,
+  fail-soft); the full-screen 0.4.3 log shows a 7-pass community chain
+  filtering every frame with 0 fallbacks
+- **Perf track (in progress, 0.4.4)** — CPU raster round 1 shipped (SSE2 float
+  math, O(1) texture table, swapchain headroom — bit-identical pixels); round-2
+  candidates: present-path fence pipelining, span-raster templating; the GPU
+  compose move is the 60 fps endgame (PLAN.md §5)
 - **P4** — preset parameter UI, CI-packaged drop-in zip (DLL + presets +
   conf), crash-reporter hook
 - Deferred look item: bilinear texture filtering

@@ -13,8 +13,11 @@ shadows, text, cutscenes (field-verified over rounds 4–12; see
 `FIELD-TEST.md`). The CPU raster feeds a BGRA compose buffer; the GPU side is
 bootstrap + present. **P3 shipped (0.4.0): the libslang-vk preset chain sits
 at the present pass** — set `preset=` in `d2slangvk.conf` and every presented
-frame runs through the slang preset at up-scaled resolution (field round
-pending).
+frame runs through the slang preset at up-scaled resolution; the full-screen
+0.4.3 field log proves it live on real hardware (crtglow_lanczos 7-pass chain,
+516 filtered frames, 0 fallbacks). **0.4.4 ships perf round 1** for the CPU
+side (SSE2 float math, O(1) texture table, swapchain headroom — verified
+bit-identical by the agent-side parity harness); field numbers pending.
 
 ```
 d2.exe ── LoadLibraryA("glide3x.dll") ──► glide3x.dll (this directory)
@@ -41,7 +44,7 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | Path | What |
 |---|---|
 | `src/glide_exports.cpp` | All 45 exports with exact signatures; the game-contract entry points (`grGet(0xF)`, `grSstWinOpen`, ini reading, session banner) |
-| `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam |
+| `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam; 0.4.4: the texture table is O(1) (open-addressing hash + monotonic alloc cursor + same-texture rebind fast-out) |
 | `src/g3x_state.{h,cpp}` | Glide state tracking (grChromakey/grColorCombine/... current values) |
 | `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, and since 0.4.3 a transient toast line for the F11/F12 hotkeys |
 | `src/g3x_drivertag.{h,cpp}` | 0.4.1: repoints the game's `"Video: Glide"` renderer-name string at our tag (one 4-byte fail-soft patch in the mapped Game.exe image) — the version stamp's primary home |
@@ -50,7 +53,7 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `src/g3x_font8x8.h` | Embedded 8x8 1-bit bitmap font for the overlay (generated from DejaVu Sans Mono Bold) |
 | `src/g3x_log.{h,cpp}` | `glide3x.log` beside the game exe (`%TEMP%` fallback), log-once budgets, periodic frame summaries, exit summary |
 | `src/g3x_types.h` | Minimal Glide type surface (mirror of the game's `d2_platform.h` block) + values observed in the in-tree `D2Glide` call sites |
-| `src/vk_backend.{h,cpp}` | Vulkan bootstrap: volk → instance → win32 surface → device → swapchain → present; plus the 0.4.3 `g3x_vk_slang_blit_scaled` one-shot (fenced) upscale blit for the shader base resolution; fail-soft everywhere |
+| `src/vk_backend.{h,cpp}` | Vulkan bootstrap: volk → instance → win32 surface → device → swapchain → present; plus the 0.4.3 `g3x_vk_slang_blit_scaled` one-shot (fenced) upscale blit for the shader base resolution; 0.4.4: swapchain `minImageCount+2` for present-pacing headroom; fail-soft everywhere |
 | `glide3x.def` | The 45 decorated export names (`_grBufferSwap@4`...), repo `binkw32.def` syntax |
 | `vendor/volk/` | volk (runtime Vulkan loader, MIT — loads `vulkan-1.dll`, no SDK needed) |
 | `vendor/Vulkan-Headers/` | Khronos Vulkan C headers (Apache-2.0) |
@@ -153,6 +156,36 @@ Behavior contract:
   chains (CRT-Royale and friends) load from a RetroArch `shaders/` checkout
   by absolute or game-relative path.
 
+## Performance (0.4.4)
+
+Measured profile (full-screen 0.4.3 field log, RX 560, 800x600, crtglow_lanczos
+7-pass chain active): **avg 51.6 ms/frame ≈ 19 fps** in-game. Per-frame draw
+mix: 152 fans + 170 strips + 142 RGB565 quads (≈ 470 draw calls), **fill=0** —
+the fullscreen dim-fill path is not a real-world cost. The budget is the CPU
+raster + texture-table upkeep, with the chain's fullscreen GPU pass on top
+(516 filtered frames, 0 fallbacks — the chain is not the bottleneck).
+
+Perf round 1 (0.4.4), chosen off that profile:
+
+- **SSE2 float math** — i686 MinGW defaults every float operation to x87
+  (stack-based 80-bit, slow `fistp` int conversions, no SIMD, no
+  auto-vectorization), and the raster is float-heavy. glide3x now builds with
+  `-msse2 -mfpmath=sse` (target-scoped; the game tree keeps project policy).
+- **O(1) texture table** — `g3x_frame_tex_source` linearly scanned up to 8192
+  slots per bind and `tex_slot_alloc` rescanned from 0 per download; now an
+  open-addressing hash plus a monotonic allocation cursor (preserves the exact
+  first-free slot order) plus a same-texture rebind fast-out.
+- **Swapchain `minImageCount+2`** — the field log showed images=2, the bare
+  minimum; one extra image keeps FIFO present pacing from stalling the raster
+  thread.
+
+Zero pixel risk by construction: the agent-side `fxparity` harness replays a
+220-frame deterministic mixed scene (all blend classes, chroma, palettes,
+rebind storms, table-full stress) and hashes every present buffer — the
+before/after hash and counters are identical, so the round cannot change what
+you see, only how fast it gets there. Field numbers: capture `frame N:` lines
+chain-on vs chain-off on the next round's build.
+
 ## Build (same toolchain as the game)
 
 From the repository root, with a **libslang-vk checkout beside the repo**
@@ -213,7 +246,7 @@ GitHub.
    rig). Full per-round walkthrough and history: `FIELD-TEST.md`.
 3. A healthy run looks like: the menu renders, play works, and
    `glide3x.log` beside the exe carries the session banner
-   (`glide3xvk 0.3.1 <build-id>`), periodic `frame N:` summaries and a clean
+   (`glide3xvk 0.4.4 <build-id>`), periodic `frame N:` summaries and a clean
    exit summary on shutdown.
 4. The version tag in the top-right corner identifies the DLL in any
    screenshot; `/fps` in the game stays readable top-left.
@@ -226,9 +259,11 @@ The DirectDraw path (`-w`) is untouched by all of this.
 
 ## What is deliberately NOT here yet
 
-- GPU-side raster (P3 exit for the 60 fps target): the CPU scanline raster
-  measures ~27 fps @ 800x600, and the preset chain adds a fullscreen pass on
-  top of that — the compose-to-GPU move is now the main remaining perf item.
+- GPU-side raster (the 60 fps endgame): the 0.4.3 full-screen log measured
+  51.6 ms ≈ 19 fps @ 800x600 with the chain active; 0.4.4 took the first CPU
+  side cut (see Performance above), and the compose-to-GPU move remains the
+  main remaining perf item — present-path fence pipelining and span-raster
+  templating are queued as CPU-side round 2 (PLAN.md §5 perf track).
 - Bilinear texture filtering (look delta only): the ground requests
   `texFilterMode(1,1)` and is point-sampled today.
 - Preset parameter UI / per-preset geometry defaults (P4): parameters are

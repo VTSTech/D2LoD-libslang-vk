@@ -1,12 +1,15 @@
 # PLAN.md — libslang-vk Integration (D2LoD-libslang-vk)
 
-> Status: v4, 2026-10-25. Baseline build verified in-sandbox (see §2); rebuilt
+> Status: v5, 2026-10-25. Baseline build verified in-sandbox (see §2); rebuilt
 > d2.exe verified PLAYABLE on real hardware (silent-startup saga closed — see §0 for
 > where the bootlog work lives). glide3xvk is **past P2 and P3 code-complete**:
 > P2.1–P2.11 shipped and field-verified (rounds 1–13, verdict round 12:
-> "Everything actually looks correct"), and 0.4.0 ships the P3 preset chain at
-> the present pass (field round 14 pending). Owner: VTSTech. Agent session log:
-> `/home/z/my-project/worklog.md`.
+> "Everything actually looks correct"), 0.4.0 shipped the P3 preset chain and the
+> full-screen 0.4.3 field log proves it live on real hardware (crtglow_lanczos
+> 7-pass chain: 516 filtered frames, 0 fallbacks), and **0.4.4 ships perf round 1**
+> (P2.12: SSE2 float math, O(1) texture table, swapchain headroom —
+> parity-verified bit-identical; field numbers pending). Owner: VTSTech.
+> Agent session log: `/home/z/my-project/worklog.md`.
 > **All integration work happens on the `libslang-vk` branch (see §0).**
 
 ---
@@ -277,6 +280,7 @@ details in `glide3xvk/FIELD-TEST.md` + `worklog.md`):
 | P2.9 | chroma-fix | chroma discards texel **index 0** (the DC6 transparent texel RLE leaves unwritten) in addition to RGB==key | round-11 field: **"Great job! Everything actually looks correct."** — both symptoms closed, one root cause |
 | P2.10 | 0.3.0 | version-tag overlay (8x8 font, backdrop, shadow), `grGetString(GR_RENDERER)` identity, `glide3xvk.ini` off-switch, release packaging | delivered; every screenshot now self-identifies its build |
 | P2.11 | 0.3.1 | overlay moved **top-right** (the game's `/fps` readout owns the top-left corner); CI builds `glide3x.dll` and uploads it as an artifact; README/PLAN refresh; all P2 work committed to the branch so the build id names a real pushed commit | this round |
+| P2.12 | 0.4.4 | **perf round 1**: `-msse2 -mfpmath=sse` (x87 off the raster hot path), O(1) texture table (open-addressing hash + monotonic alloc cursor + same-texture rebind fast-out), swapchain `minImageCount+2`; agent-side fxparity harness (220-frame mixed scene) proves the raster bit-identical | field round pending: build the DLL, capture `frame N:` lines chain-on vs chain-off |
 
 The P2.6 discovery (game-tree ground truth): D2 submits **two s/t
 conventions** — texel units (`DrawPalettedQuad` sprites/UI/buttons/text via
@@ -299,6 +303,17 @@ so every transparent texel painted opaque black: sprite/tile-corner rects
 in-game and glyph-background bars in the menu. Chroma now discards index 0 in
 addition to the RGB match.
 
+The P2.12 trigger (perf round 1, 0.4.4): the full-screen 0.4.3 field log — RX
+560, 800x600, crtglow_lanczos 7-pass chain active — averaged **51.6 ms/frame ≈
+19 fps** in-game, with a per-frame draw mix of 152 fans + 170 strips + 142
+RGB565 quads (≈ 470 draw calls) and **fill=0** — the fullscreen dim-fill path
+is not a real-world cost. The chain itself filtered 516 frames with 0
+fallbacks, so the budget sits in the CPU raster + texture-table upkeep, not in
+the preset chain. Round 1 attacks that CPU side (ledger row above; backlog in
+the §5 perf track) and is verified bit-identical by the agent-side fxparity
+harness — a 220-frame deterministic mixed scene hashing every present buffer
+before and after the change — so the round cannot move pixels, only time.
+
 P2 exit: **met** (round-12 field verdict on a full single-player session:
 menu, world, units, inventory UI, shadows, text, cutscenes all correct).
 Leftover polish, deliberately deferred:
@@ -308,10 +323,13 @@ Leftover polish, deliberately deferred:
 - Mip chains: download bytes stored, sampling is base-lod only; no
   `grTexMipMapMode` calls observed in any log — revisit only if distance
   artifacts show up.
-- Frame pace: the CPU raster measured 27 fps @ 800x600 (round 8); the
-  60 fps target moves to P3's GPU path if the CPU raster plateaus here.
+- Frame pace: the full-screen 0.4.3 field log measured avg=51.6 ms ≈ 19 fps
+  @ 800x600 **with the crtglow_lanczos chain active** (round 8's chain-free
+  baseline was 27 fps — the chain's fullscreen pass costs real time, but the
+  CPU raster + texture upkeep still own the budget). P2.12 (0.4.4) takes the
+  first CPU-side cut; the 60 fps endgame remains the GPU compose move.
 
-### P3 — libslang-vk preset chain — **SHIPPED 0.4.0 (code complete; field round 14 pending)**
+### P3 — libslang-vk preset chain — **SHIPPED 0.4.0; chain field-proven live (full-screen 0.4.3 log: crtglow_lanczos 7-pass, 516 filtered frames, 0 fallbacks)**
 The payoff. Everything above already runs through our swapchain.
 
 - Offscreen frame image feeds `slangvk_input_frame`; chain created per preset at
@@ -329,13 +347,45 @@ Sub-milestone ledger (0.4.0, agent-sandbox verified; field round pending):
 |---|---|---|
 | P3.1 | libslang-vk linked: static `slangvk` target built i686 from the sibling checkout (`G3XVK_SLANGVK_DIR`, fail-soft stub without it); `slangvk_device_adopt` of our context; CI checks out the repo pinned (`d208ac5`) | 76/76 slangvk targets build pe-i386; 27 C symbols; DLL 8.67 MB, still KERNEL32+msvcrt only |
 | P3.2 | present-pass chain: gamma'd NATIVE game-res frame → `slangvk_image` → `slangvk_chain_render_swapchain` into our swapchain (per-image views, COLOR_ATTACHMENT usage, acquire semaphore handed to the chain, present without our render semaphore); legacy unfiltered path preserved byte-for-byte as fallback | 45/45 export surface unchanged; fxtest 115/115 (conf parser, rect math, present-branch fallback) |
-| P3.3 | `d2slangvk.conf` (`[slangvk] preset=/scale=/vsync=/fallback=`), portable parser; hot-reload (conf + preset file stat every 32 frames, mid-session chain rebuild); fail-soft (log + downgrade; 3 consecutive render failures disable the chain for the session); two MIT starter presets (scanline, sharpen) + conf sample | field round 14 pending: CRT-Royale + scanline + sharpen live, hot-swap, frame cost |
+| P3.3 | `d2slangvk.conf` (`[slangvk] preset=/scale=/vsync=/fallback=`), portable parser; hot-reload (conf + preset file stat every 32 frames, mid-session chain rebuild); fail-soft (log + downgrade; 3 consecutive render failures disable the chain for the session); two MIT starter presets (scanline, sharpen) + conf sample | chain verified live on real hardware (full-screen 0.4.3 log: crtglow_lanczos 7-pass chain, 516 filtered frames, 0 fallbacks); frame cost moved to the P2.12 perf track |
 
-P3 exit status: **code-complete; the field half of the exit (live CRT-Royale at
-1440p/4K from 640x480, hot-swap, frame cost) is round 14.** Remaining P3-scope
-perf item deliberately deferred to its own milestone: GPU-side raster
-(~27 fps CPU compose + a fullscreen preset pass makes the 60 fps target the
-next optimization work, not a P3 gate).
+P3 exit status: **code-complete and field-proven live.** The full-screen 0.4.3
+log shows a 7-pass community chain filtering every frame on the RX 560
+(516 filtered, 0 fallbacks) — the chain is not the bottleneck. F11/F12
+hot-swap field confirmations ride along with the perf rounds. The deferred
+perf item is now its own running milestone (P2.12 / the §5 perf track): 0.4.4
+took the first CPU-side cut, GPU-side compose remains the 60 fps endgame.
+
+### Perf track — P2.12 and beyond (runs alongside P4; owns the 60 fps question)
+
+Trigger: the full-screen 0.4.3 field log (RX 560, 800x600, crtglow_lanczos
+7-pass chain active) averaged **51.6 ms/frame ≈ 19 fps** in-game. The frame
+mix (152 fans + 170 strips + 142 RGB565 quads, fill=0) put the budget in the
+CPU raster + texture-table upkeep — not the chain (0 fallbacks) and not the
+game's draw volume.
+
+Round 1 — **shipped 0.4.4** (the P2.12 ledger row): SSE2 float math
+(`-msse2 -mfpmath=sse`; i686 MinGW defaults ALL float math to x87 — 1.5–3x
+expected on the span/tri inner loops), O(1) texture table (binds were a linear
+scan over up to 8192 slots + a rescan-from-0 per download), swapchain
+`minImageCount+2` (the log showed images=2, the bare minimum). Verified
+bit-identical on the agent-side fxparity harness — zero pixel risk by
+construction.
+
+Round 2 candidates (expected-gain order, not started):
+
+- **Fence pipelining**: the submit path waits the fence every frame (a single
+  staging/cmd/semaphore set) — a 2-frames-in-flight ring overlaps CPU raster N
+  with GPU present N-1. Same shape in the chain path (`slangvk_image_update` +
+  `slangvk_chain_render_swapchain` are fenced serially today).
+- **`fill_span` templating**: the per-pixel loop re-branches on blend class /
+  chroma / varying-vc every texel; a (blend × chroma × vc) template expansion
+  gives straight-line inner loops.
+- **Phase-2 micro**: 3 divides + up to 12 exact texel fixups per scanline row;
+  `-O3` for the glide3x target (free on top of SSE2).
+
+Method note: every raster-affecting change re-runs the fxparity hash; a hash
+mismatch needs an explicit pixel-delta justification before it ships.
 
 ### P4 — Hardening + packaging
 - Failure paths: no Vulkan → unfiltered present; device lost → libslang-vk's
@@ -369,17 +419,20 @@ next optimization work, not a P3 gate).
 | R4 | Glide state semantics subtly wrong (combine functions) | Low (reduced) | Med | Materialized twice and fixed: the two s/t conventions (P2.7 square-mip rule) and palette-index-0 transparency (P2.9 chroma rule). The in-tree D2Glide spec + field-log loop keeps catching the rest; open item: bilinear look only |
 | R5 | Optimized codegen breaks decompiled game code | — | — | Non-issue: project policy pins -O0/-g; our DLL may optimize freely (separate target) |
 | R6 | TMU memory emulation complexity | **Retired 2026-10-24** | — | Allocate-on-upload + (tmu,addr) hash store shipped in P2.1; texmiss=0 across 60k+ binds in round 8 |
-| R7 | CPU raster can't reach the fps target before P3 | Low | Med | P2.5 span raster moved 4.3 → 27 fps @ 800x600; if round 9 still feels heavy, perf passes (scanline skip, LUT reuse) bridge to P3's GPU move |
+| R7 | CPU raster can't reach the fps target | **Active — perf track opened** | Med | Full-screen 0.4.3 log: 51.6 ms ≈ 19 fps with the chain active. P2.12 round 1 shipped (SSE2, O(1) texture table, swapchain headroom — bit-identical); round-2 candidates: fence ring, `fill_span` templating; endgame = GPU compose |
 
 ---
 
 ## 7. Test plan
 
 - **Sandbox (agent):** full build per phase; export-table verification
-  (`objdump -p glide3x.dll`); headless slangvk smoke (lavapipe per
-  `libslang-vk/benchmarks/README.md` recipe) running a preset over a captured
-  D2 frame from the corpus; parse bench over the 2,658-preset pack already in
-  place from the libslang-vk benchmark session.
+  (`objdump -p glide3x.dll`); for raster-affecting changes, the agent-side
+  **fxparity harness** (220-frame deterministic mixed scene hashing every
+  present buffer + counters) must reproduce the pre-change hash bit-for-bit;
+  headless slangvk smoke (lavapipe per `libslang-vk/benchmarks/README.md`
+  recipe) running a preset over a captured D2 frame from the corpus; parse
+  bench over the 2,658-preset pack already in place from the libslang-vk
+  benchmark session.
 - **VTSTech VM (Ubuntu 26.04, VirtualBox):** build parity; wine smoke test
   optional (Vulkan via lavapipe) — menus only.
 - **Real hardware (Win11 + RX 560, vanilla 1.14d install):** the authoritative
