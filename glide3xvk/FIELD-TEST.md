@@ -689,3 +689,33 @@ fixed during development).
    mechanisms produces each symptom, and the next build fixes it directly.
 
 Same install: replace `glide3x.dll`, run `Game -w -3dfx`.
+
+## Round 12 (P2.10, build glide3xvk-0.3.0) — field-confirmed clean, version-tag overlay
+
+Round 11 field report: **"Great job! Everything actually looks correct."** —
+the P2.9 chroma index-0 fix resolved both open symptoms (in-game black rects
+around sprites/wall tiles/shadows; black bars behind the menu button labels).
+The P2 render path is visually correct on the field rig; no further raster
+changes in this build.
+
+P2.10 adds the identification layer requested for field testing:
+
+1. **Version-tag overlay** — `glide3xvk 0.3.0 (77cb059-dirty)` drawn top-left
+   every frame: 8x8 bitmap font (generated from DejaVu Sans Mono Bold), 65%
+   black backdrop, 1px drop shadow. Rendered at present time, post-gamma, at
+   swapchain resolution — identical in the 640x480 probe phases, the 800x600
+   menu, gameplay and the LFB/Bink video path. It never enters the game's own
+   framebuffer, so GetBackBuffer reads / fade logic cannot see or smear it.
+2. **Off-switch** — `glide3xvk.ini` beside `Game.exe`:
+   `[glide3xvk]` / `overlay=0` (default on; re-read on every context open).
+3. **Identity plumbing** — session banner prints the version;
+   `grGetString(GR_RENDERER)` now returns `glide3xvk 0.3.0 (<build>)`.
+
+Host rig: 92/92 checks pass (test 16 re-based to raw-bytes-with-overlay-off;
+new test 22 pins the overlay: backdrop dim factor, glyph whites, shadow
+blacks, box clamping, off-switch restores exact frame bytes).
+
+Round 12 expectations: nothing raster changes — the game should look exactly
+like the round-11 clean state, plus the tag line. Any future screenshot now
+self-identifies its build. Optional checks: `overlay=0` removes it after a
+relaunch; the tag also appears over intro/logo videos (LFB path proof).

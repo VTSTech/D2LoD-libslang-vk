@@ -9,6 +9,7 @@
 #include "g3x_state.h"
 #include "g3x_log.h"
 #include "g3x_frame.h"
+#include "g3x_overlay.h"
 #include "vk_backend.h"
 
 #include <cstring>
@@ -106,7 +107,7 @@ void __stdcall grGlideShutdown() {
     {
         unsigned tex_used = 0, tex_dropped = 0;
         g3x_frame_tex_table_stats(&tex_used, &tex_dropped);
-        g3x_log("grGlideShutdown: P2.8 classes: fill=%u vc0=%u sub256=%u rgb565=%u "
+        g3x_log("grGlideShutdown: P2.9 classes: fill=%u vc0=%u sub256=%u rgb565=%u "
                 "chromaToggles=%u texTable(hwm=%u dropped=%u)",
                 ds[7], ds[8], ds[5], ds[6], g3x_frame_chroma_toggles(),
                 tex_used, tex_dropped);
@@ -132,6 +133,25 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
         // Fail-soft (PLAN.md section 4): the game continues; the window just
         // stays black until Vulkan works. The log names the reason.
         g3x_log("grSstWinOpen: Vulkan unavailable -> black-screen mode (game continues)");
+    }
+    // P2.10: version-tag overlay on/off — glide3xvk.ini beside the game exe,
+    // [glide3xvk] overlay=0/1 (default 1 = on). Read per context open so a
+    // relaunch picks up edits without touching the DLL.
+    {
+        char ini[MAX_PATH] = "";
+        char exe[MAX_PATH];
+        if (GetModuleFileNameA(nullptr, exe, MAX_PATH) > 0) {
+            char* slash = strrchr(exe, '\\');
+            if (slash) {
+                *slash = '\0';
+                _snprintf(ini, sizeof(ini) - 1, "%s\\glide3xvk.ini", exe);
+                ini[sizeof(ini) - 1] = '\0';
+            }
+        }
+        const UINT on = ini[0] ? GetPrivateProfileIntA("glide3xvk", "overlay", 1, ini) : 1;
+        g3x_overlay_set_enabled(on != 0);
+        g3x_log("grSstWinOpen: overlay=%s (glide3xvk v%s, ini: %s)",
+                on ? "on" : "off", G3XVK_VERSION, ini[0] ? ini : "<exe path unresolved>");
     }
     g3x_frame_reset(w, h);   // game framebuffer exists even if Vulkan does not
     if (s_ctx == 0) s_ctx = 1;
@@ -243,7 +263,7 @@ FxU32 __stdcall grGet(FxU32 pname, FxU32 plength, FxI32* params) {
 
 static char s_str_ext[2]   = "";  // no extensions advertised in P1
 static char s_str_hw[64]   = "3Dfx Voodoo Graphics";
-static char s_str_rdr[64]  = "glide3xvk " G3XVK_BUILD_ID " (Vulkan scaffold)";
+static char s_str_rdr[64]  = "glide3xvk " G3XVK_VERSION " (" G3XVK_BUILD_ID ")";
 
 char* __stdcall grGetString(FxU32 pname) {
     switch (pname) {
@@ -633,13 +653,13 @@ FxBool __stdcall grLfbUnlock(GrLock_t type, GrBuffer_t buffer) {
 static void g3x_banner() {
     char exe[MAX_PATH] = "(?)";
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
-    g3x_log("glide3xvk scaffold %s — loaded into %s", G3XVK_BUILD_ID, exe);
+    g3x_log("glide3xvk %s scaffold %s — loaded into %s", G3XVK_VERSION, G3XVK_BUILD_ID, exe);
     g3x_log("compiled " __DATE__ " " __TIME__
-            "; P2.8 = field diagnostics for the two open symptoms: vc0# lines "
-            "(uniform-black vertex quads = shadow/darken class), pal# lines "
-            "(first 64 palette downloads with pal[0]/1/128/254/255), chroma# "
-            "transition log, quad# lines now carry blend+chroma state; "
-            "grTexTextureMemRequired P_8 bpp fix; kMaxTex 4096->8192") ;
+            "; P2.10 = on-screen version tag: \"glide3xvk " G3XVK_VERSION " (%s)\" "
+            "drawn top-left at present time (8x8 bitmap font, post-gamma, over "
+            "everything incl. LFB video frames; off-switch glide3xvk.ini "
+            "[glide3xvk] overlay=0); P2.9 chroma index-0 fix retained",
+            G3XVK_BUILD_ID);
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {

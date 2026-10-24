@@ -1,6 +1,7 @@
 #include "g3x_frame.h"
 #include "g3x_log.h"
 #include "vk_backend.h"
+#include "g3x_overlay.h"
 
 #include <cstring>
 #include <cstdlib>
@@ -137,8 +138,19 @@ inline uint32_t blend_px(uint32_t dst, uint32_t src) {
 }
 
 // ---- chroma ---------------------------------------------------------------
-// Precomputed post-palette color match (identical rule to the P2.3 per-pixel
-// compare, evaluated once per palette/chroma change instead of per pixel).
+// P2.9 ROOT-CAUSE FIX (round-11 field evidence: in-game black rects around
+// every sprite/wall tile + solid black bars behind the menu button labels):
+// the old rule (post-palette RGB == chroma key) never fired — the game sets
+// grChromakeyValue(0xff) = pure blue while EVERY downloaded palette carries
+// pal[0] = 0xff000000 black, so hit[] stayed all-zero and every DC6 sprite's
+// transparent texels painted black.
+// The D2 ground truth (D2CMP/SRC/FastCmp.cpp FASTCMP_DecompressRLE +
+// RENDERER_GLIDE_UploadTextureToCache): DC6 RLE transparent runs are SKIPPED
+// over a memset-0 upload buffer, so the transparent texel is palette INDEX 0
+// in every sprite and tile texture (index 1 is the darkest art color; 0 is
+// reserved). Real hardware punched those texels — so the working chroma rule
+// is: discard texel when its index is 0, or when its post-palette RGB equals
+// the key (kept for completeness).
 uint8_t s_chroma_hit[256];
 bool    s_chroma_dirty = true;
 
@@ -147,6 +159,7 @@ inline void chroma_sync() {
     const uint32_t key = s_chroma_value & 0x00FFFFFFu;
     for (int i = 0; i < 256; ++i)
         s_chroma_hit[i] = (uint8_t)((s_palette[i] & 0x00FFFFFFu) == key);
+    s_chroma_hit[0] = 1;   // P2.9: the DC6 transparent index
     s_chroma_dirty = false;
 }
 
@@ -614,6 +627,49 @@ void vc0_diag(unsigned count, const RVert* v, const Tex& t) {
             (unsigned)s_chroma_on, (unsigned)s_color_fill);
 }
 
+// P2.9 field diagnostic: the small-texture (font-glyph / UI-bit) quad class.
+// The round-11 screenshots show the menu labels as glyph cores floating on
+// their own black background bars — with the chroma fix the bars should
+// vanish; these lines pin the glyph textures' CONTENT (top texel indices +
+// their palette colors) and the quads' mapping so any residual label
+// garbling can be decoded directly from the next field log.
+void gly_diag(unsigned count, const RVert* v, const Tex& t, float sc) {
+    static unsigned s_logged = 0;
+    if (s_logged >= 10) return;
+    const unsigned maxdim = t.w > t.h ? t.w : t.h;
+    if (maxdim > 32 || t.bpp != 1 || !t.data) return;
+    unsigned hist[256] = {};
+    const unsigned n = t.w * t.h;
+    for (unsigned i = 0; i < n; ++i) ++hist[t.data[i]];
+    unsigned best[3] = {}, bcnt[3] = {};
+    for (unsigned i = 0; i < 256; ++i) {
+        if (hist[i] > bcnt[0]) {
+            bcnt[2] = bcnt[1]; best[2] = best[1];
+            bcnt[1] = bcnt[0]; best[1] = best[0];
+            bcnt[0] = hist[i]; best[0] = i;
+        } else if (hist[i] > bcnt[1]) {
+            bcnt[2] = bcnt[1]; best[2] = best[1];
+            bcnt[1] = hist[i]; best[1] = i;
+        } else if (hist[i] > bcnt[2]) {
+            bcnt[2] = hist[i]; best[2] = i;
+        }
+    }
+    ++s_logged;
+    g3x_log("gly#%u: tex %ux%u lod%u sc=%.4g rect(%.0f,%.0f)..(%.0f,%.0f) "
+            "s0=%.1f t0=%.1f s2=%.1f t2=%.1f "
+            "top=%u(x%u)/%u(x%u)/%u(x%u) pal[%u]=%08x pal[%u]=%08x pal[%u]=%08x "
+            "blend=(%u,%u) ca=%u chm=%u",
+            s_logged, t.w, t.h, t.lod, sc,
+            v[0].x, v[0].y,
+            v[count < 4 ? count - 1 : 2].x, v[count < 4 ? count - 1 : 2].y,
+            v[0].u, v[0].v, v[2].u, v[2].v,
+            best[0], bcnt[0], best[1], bcnt[1], best[2], bcnt[2],
+            best[0], s_palette[best[0] & 0xFF],
+            best[1], s_palette[best[1] & 0xFF],
+            best[2], s_palette[best[2] & 0xFF],
+            s_blend_sf, s_blend_df, s_const_alpha, (unsigned)s_chroma_on);
+}
+
 void gamma_identity() {
     for (int c = 0; c < 3; ++c)
         for (int i = 0; i < 256; ++i) s_gamma_lut[c][i] = (uint8_t)i;
@@ -834,6 +890,7 @@ void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
         tsx = ts.sx; tsy = ts.sy;
         if (tsx != 1.0f) ++s_n_space256;
         quad_diag(count, verts, t, tsx);
+        gly_diag(count, verts, t, tsx);   // P2.9: font-glyph/UI-bit class
     }
     // Field diagnostic: the first fans' raw vertices (x,y | color | s,t) — the
     // ground truth for the s/t convention, quad geometry AND vertex colors
@@ -879,6 +936,7 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
         tsx = ts.sx; tsy = ts.sy;
         if (tsx != 1.0f) ++s_n_space256;
         quad_diag(count, verts, t, tsx);
+        gly_diag(count, verts, t, tsx);   // P2.9: font-glyph/UI-bit class
     }
     // Field diagnostic: the pointer-array path (ground tiles / wall strips).
     // First 4 draws log the primitive + first vertex colors so ground lighting
@@ -967,20 +1025,24 @@ bool g3x_frame_present() {
     // layout already matches the swapchain's BGRA byte order).
     if (s_gamma_identity && ext_w == s_w && ext_h == s_h) {
         memcpy(compose, s_px, (size_t)s_w * s_h * 4);
-        return g3x_vk_present_pixels(compose, ext_w, ext_h);
-    }
-    uint8_t* dst = compose;
-    for (unsigned y = 0; y < ext_h; ++y) {
-        const unsigned sy = y * s_h / ext_h;
-        const uint32_t* row = s_px + (size_t)sy * s_w;
-        for (unsigned x = 0; x < ext_w; ++x, dst += 4) {
-            const unsigned sx = x * s_w / ext_w;
-            const uint32_t p = row[sx];
-            dst[0] = s_gamma_lut[2][p & 0xFF];          // B
-            dst[1] = s_gamma_lut[1][(p >> 8) & 0xFF];   // G
-            dst[2] = s_gamma_lut[0][(p >> 16) & 0xFF];  // R
-            dst[3] = 0xFF;
+    } else {
+        uint8_t* dst = compose;
+        for (unsigned y = 0; y < ext_h; ++y) {
+            const unsigned sy = y * s_h / ext_h;
+            const uint32_t* row = s_px + (size_t)sy * s_w;
+            for (unsigned x = 0; x < ext_w; ++x, dst += 4) {
+                const unsigned sx = x * s_w / ext_w;
+                const uint32_t p = row[sx];
+                dst[0] = s_gamma_lut[2][p & 0xFF];          // B
+                dst[1] = s_gamma_lut[1][(p >> 8) & 0xFF];   // G
+                dst[2] = s_gamma_lut[0][(p >> 16) & 0xFF];  // R
+                dst[3] = 0xFF;
+            }
         }
     }
+    // P2.10: version tag — post-gamma, swapchain-resolution, drawn over
+    // everything (including the LFB/Bink path); never enters the game's own
+    // framebuffer, so grLfbLock reads and fade logic never see it.
+    g3x_overlay_render(compose, ext_w, ext_h);
     return g3x_vk_present_pixels(compose, ext_w, ext_h);
 }

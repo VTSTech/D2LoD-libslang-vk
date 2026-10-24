@@ -30,6 +30,7 @@ set(G3XVK_SOURCES
     src/g3x_log.cpp
     src/g3x_state.cpp
     src/g3x_frame.cpp
+    src/g3x_overlay.cpp
     src/vk_backend.cpp
     src/glide_exports.cpp
     vendor/volk/volk.c)
@@ -86,4 +87,7 @@ target_link_options(glide3x PRIVATE
 target_compile_options(glide3x PRIVATE -O2 -w)
 
 set_source_files_properties(src/glide_exports.cpp PROPERTIES
+    COMPILE_DEFINITIONS "G3XVK_BUILD_ID=\"${G3XVK_BUILD_ID}\"")
+# The overlay tag line embeds the same build id (see g3x_overlay.cpp).
+set_source_files_properties(src/g3x_overlay.cpp PROPERTIES
     COMPILE_DEFINITIONS "G3XVK_BUILD_ID=\"${G3XVK_BUILD_ID}\"")
