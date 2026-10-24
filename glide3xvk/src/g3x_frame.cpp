@@ -252,13 +252,12 @@ static void fill_span(uint32_t* row, int sx, int ex,
                       bool textured, const Tex& t,
                       bool varying_vc,
                       const float* vc0, const float* dvc,
-                      uint32_t fill_src) {
-    const bool chroma = s_chroma_on;
+                      uint32_t fill_src, float tsx, float tsy) {
+    const bool chroma = s_chroma_on && t.bpp == 1;
     const uint8_t* hit = s_chroma_hit;
     const uint32_t* pmult = s_pal_mult;
     const uint8_t* tdata = t.data;
     const unsigned tw = t.w, th = t.h;
-    const float tscale = (float)(1u << t.lod) / 256.0f;
     float cr = vc0[0], cg = vc0[1], cb = vc0[2];
 
     for (int x = sx; x < ex; ++x) {
@@ -266,8 +265,8 @@ static void fill_span(uint32_t* row, int sx, int ex,
         if (!textured) {
             src = fill_src;
         } else if (t.bpp == 1 && tdata) {
-            const unsigned tx = (unsigned)(int)(u * tscale + 4096.0f) & (tw - 1);
-            const unsigned ty = (unsigned)(int)(v * tscale + 4096.0f) & (th - 1);
+            const unsigned tx = (unsigned)(int)(u * tsx + 4096.0f) & (tw - 1);
+            const unsigned ty = (unsigned)(int)(v * tsy + 4096.0f) & (th - 1);
             const unsigned idx = tdata[(size_t)ty * tw + tx];
             if (chroma && hit[idx]) {
                 u += dudx; v += dvdx;
@@ -286,8 +285,22 @@ static void fill_span(uint32_t* row, int sx, int ex,
             } else {
                 src = pmult[idx];
             }
+        } else if (t.bpp == 2 && tdata) {
+            // GR_TEXFMT_RGB_565 (format 0xa) — the in-game Smacker video quads
+            // (GLSMACK_DrawSmackerQuad via gTexInfoBlocks0/1Glide, 256x64).
+            // P2.5 and earlier sampled every non-P_8 texel as black.
+            const unsigned tx = (unsigned)(int)(u * tsx + 4096.0f) & (tw - 1);
+            const unsigned ty = (unsigned)(int)(v * tsy + 4096.0f) & (th - 1);
+            const uint16_t p5 = ((const uint16_t*)tdata)[(size_t)ty * tw + tx];
+            const unsigned r5 = (p5 >> 11) & 0x1Fu;
+            const unsigned g6 = (p5 >> 5) & 0x3Fu;
+            const unsigned b5 = p5 & 0x1Fu;
+            src = 0xFF000000u
+                | ((r5 << 3 | r5 >> 2) << 16)
+                | ((g6 << 2 | g6 >> 4) << 8)
+                | (b5 << 3 | b5 >> 2);
         } else {
-            src = 0xFF000000u;   // non-P_8: P2.1 sampled black, no chroma
+            src = 0xFF000000u;   // other formats: still black, no chroma
         }
         row[x] = blend_px(row[x], src);
         u += dudx; v += dvdx;
@@ -312,7 +325,8 @@ static void fill_span(uint32_t* row, int sx, int ex,
 // swap inverts all three ownership flags — that reproduces the old decision
 // per triangle exactly (shared diagonals still covered exactly once, by the
 // same triangle as before; strips pre-normalize upstream and never swap).
-static void raster_tri(const RVert& A0, const RVert& B0, const RVert& C0) {
+static void raster_tri(const RVert& A0, const RVert& B0, const RVert& C0,
+                       float tsx, float tsy) {
     if (!s_px) return;
     float area = (B0.x - A0.x) * (C0.y - A0.y) - (B0.y - A0.y) * (C0.x - A0.x);
     if (area == 0.0f) return;
@@ -437,7 +451,7 @@ static void raster_tri(const RVert& A0, const RVert& B0, const RVert& C0) {
         static const Tex k_no_tex = {};   // fill mode: hoists read it, never use it
         fill_span(s_px + (size_t)y * s_w, sx, ex, u0, v0, dudx, dvdx,
                   textured, textured ? *t : k_no_tex,
-                  !uniform_vc && !s_color_fill, vc0, dvc, fill_src);
+                  !uniform_vc && !s_color_fill, vc0, dvc, fill_src, tsx, tsy);
     }
 }
 
@@ -474,6 +488,56 @@ bool fill_rect_fast(unsigned count, const RVert* v) {
     return true;
 }
 
+// P2.6 — per-draw s/t coordinate-space auto-detect. The game submits TWO
+// conventions: (a) TEXEL UNITS — DrawPalettedQuad (sprites/UI/buttons/text;
+// spans = the texel dims via gaPerspectiveImageSizeTable) and the ground
+// lattice (InitGroundTileVertices: spans x256/x128 = the 256x128 floor texture
+// dims, max S=163/T=81) — never beyond the texture dims; and (b) the VOODOO
+// 256-SPACE — the glBlocks wall lattice (InitPerspectiveTables: S=col*128,
+// T=row*64, up to 256 REGARDLESS of the 32x32 subtile dims). An extent beyond
+// the dims is therefore the unambiguous signature of (b): texel = coord *
+// dim/256. The P2.2-P2.5 scalar tscale (2^lod/256) was rule (b) applied to
+// EVERYTHING — correct for lod-8 textures and the wall lattice, but it
+// crushed every lod<8 sprite/UI texture (64x32 title buttons sampled their
+// top-left 16x8 corner; 32x32 wall subtiles a 4x4 corner).
+struct TexSpace { float sx, sy; };
+TexSpace tex_space(const RVert* v, unsigned n, const Tex& t) {
+    float ms = 0.0f, mt = 0.0f;
+    for (unsigned i = 0; i < n; ++i) {
+        const float as = v[i].u < 0.0f ? -v[i].u : v[i].u;
+        const float at = v[i].v < 0.0f ? -v[i].v : v[i].v;
+        if (as > ms) ms = as;
+        if (at > mt) mt = at;
+    }
+    TexSpace ts = { 1.0f, 1.0f };
+    if (ms > (float)t.w) ts.sx = (float)t.w / 256.0f;
+    if (mt > (float)t.h) ts.sy = (float)t.h / 256.0f;
+    return ts;
+}
+
+// Field diagnostic (round 9): the first quads per distinct (dims, space)
+// class, with raw vertices — verifies the button/wall sampling fix directly
+// in the field log without flooding.
+void quad_diag(unsigned count, const RVert* v, const Tex& t, bool sp256) {
+    static unsigned s_w[14], s_h[14], s_sp[14], s_n = 0;
+    if (s_n >= 14) return;
+    for (unsigned k = 0; k < s_n; ++k) {
+        if (s_w[k] == t.w && s_h[k] == t.h && s_sp[k] == (sp256 ? 1u : 0u)) return;
+    }
+    s_w[s_n] = t.w; s_h[s_n] = t.h; s_sp[s_n] = sp256 ? 1u : 0u; ++s_n;
+    RVert q[4] = { {}, {}, {}, {} };
+    const unsigned n = count < 4 ? count : 4;
+    for (unsigned i = 0; i < n; ++i) q[i] = v[i];
+    g3x_log("quad#%u: tex %ux%u %s v0(%.1f,%.1f|c%08x|s%.1f,t%.1f) "
+            "v1(%.1f,%.1f|c%08x|s%.1f,t%.1f) v2(%.1f,%.1f|c%08x|s%.1f,t%.1f) "
+            "v3(%.1f,%.1f|c%08x|s%.1f,t%.1f)",
+            s_n, t.w, t.h, sp256 ? "256sp" : "texel",
+            q[0].x, q[0].y, q[0].argb, q[0].u, q[0].v,
+            q[1].x, q[1].y, q[1].argb, q[1].u, q[1].v,
+            q[2].x, q[2].y, q[2].argb, q[2].u, q[2].v,
+            q[3].x, q[3].y, q[3].argb, q[3].u, q[3].v);
+}
+
 // P2.4 draw-path counters (surfaced via g3x_frame_draw_stats for the periodic
 // frame lines — with per-call tags budget-quiet, these are the only window
 // into what a gameplay session actually submits).
@@ -482,6 +546,8 @@ static unsigned s_n_parr = 0;         // grDrawVertexArray pointer-array draws
 static unsigned s_n_parr_strip = 0;
 static unsigned s_n_parr_fan = 0;
 static unsigned s_n_skip_notex = 0;   // draws dropped: no texture bound
+static unsigned s_n_space256 = 0;     // draws auto-detected as 256-space (P2.6)
+static unsigned s_n_rgb565 = 0;       // draws sampled from RGB_565 textures (P2.6)
 
 void gamma_identity() {
     for (int c = 0; c < 3; ++c)
@@ -653,9 +719,10 @@ unsigned g3x_frame_tex_miss_count() {
     return s_tex_miss_total;
 }
 
-void g3x_frame_draw_stats(unsigned out[5]) {
+void g3x_frame_draw_stats(unsigned out[7]) {
     out[0] = s_n_vac; out[1] = s_n_parr; out[2] = s_n_parr_strip;
     out[3] = s_n_parr_fan; out[4] = s_n_skip_notex;
+    out[5] = s_n_space256; out[6] = s_n_rgb565;
 }
 
 void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
@@ -669,6 +736,14 @@ void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
         read_vert(verts[i], (const uint8_t*)base + (size_t)i * stride);
     }
     if (fill_rect_fast(count, verts)) return;   // P2.4: fades/dim rects
+    float tsx = 1.0f, tsy = 1.0f;
+    if (s_cur >= 0) {
+        const Tex& t = s_tex[s_cur];
+        if (t.bpp == 2) ++s_n_rgb565;
+        const TexSpace ts = tex_space(verts, count, t);
+        tsx = ts.sx; tsy = ts.sy;
+        quad_diag(count, verts, t, tsx != 1.0f || tsy != 1.0f);
+    }
     // Field diagnostic: the first fans' raw vertices (x,y | color | s,t) — the
     // ground truth for the s/t convention, quad geometry AND vertex colors
     // (ground lighting = 0xFFRRGGBB light-table tints; UI = 0xFFFFFFFF white).
@@ -684,7 +759,7 @@ void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
         ++s_dumped;
     }
     for (unsigned i = 1; i + 1 < count; ++i) {
-        raster_tri(verts[0], verts[i], verts[i + 1]);
+        raster_tri(verts[0], verts[i], verts[i + 1], tsx, tsy);
     }
 }
 
@@ -701,6 +776,14 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
         read_vert(verts[i], p);   // pointer-array vertices: fixed 0x1C layout
     }
     if (fill_rect_fast(count, verts)) return;   // P2.4: fades/dim rects
+    float tsx = 1.0f, tsy = 1.0f;
+    if (s_cur >= 0) {
+        const Tex& t = s_tex[s_cur];
+        if (t.bpp == 2) ++s_n_rgb565;
+        const TexSpace ts = tex_space(verts, count, t);
+        tsx = ts.sx; tsy = ts.sy;
+        quad_diag(count, verts, t, tsx != 1.0f || tsy != 1.0f);
+    }
     // Field diagnostic: the pointer-array path (ground tiles / wall strips).
     // First 4 draws log the primitive + first vertex colors so ground lighting
     // values show up in the field log.
@@ -714,7 +797,7 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
     if (mode == G3X_GR_TRIANGLE_FAN) {
         ++s_n_parr_fan;
         for (unsigned i = 1; i + 1 < count; ++i) {
-            raster_tri(verts[0], verts[i], verts[i + 1]);
+            raster_tri(verts[0], verts[i], verts[i + 1], tsx, tsy);
         }
     } else if (mode == G3X_GR_TRIANGLE_STRIP) {
         ++s_n_parr_strip;
@@ -728,8 +811,8 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
             const RVert& b = verts[i + 1];
             const RVert& c = verts[i + 2];
             const float area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-            if (area >= 0.0f) raster_tri(a, b, c);
-            else              raster_tri(a, c, b);
+            if (area >= 0.0f) raster_tri(a, b, c, tsx, tsy);
+            else              raster_tri(a, c, b, tsx, tsy);
         }
     }
     // other primitives: counted by the caller, not rasterized (as before)

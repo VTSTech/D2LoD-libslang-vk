@@ -365,3 +365,200 @@ Title renders; button art and character sprites fixed. Three defects left:
 
 Same install: replace `glide3x.dll`, run `Game -w -3dfx`. Build id
 `77cb059-dirty` (banner line is the version marker).
+
+---
+
+# Round 7 — P2.4 (negative-s/t wrap + fill-rect fast path + session log)
+
+## What the round-6 log showed
+
+- The pasted session presented 112 frames: mode probes → Bink videos (51 LFB
+  presents) → menu → a short gold-palette phase with multiply + 50%-alpha
+  overlays. **Zero `grDrawVertexArray` calls and zero tex misses** in it —
+  that phase was the loading screen, not gameplay. The ground you saw came
+  from an earlier launch, whose log was erased: the DLL used to TRUNCATE
+  glide3x.log on every start.
+- Meanwhile the game source gave up a real ground defect:
+  `RENDERER_GLIDE_InitGroundTileVertices` builds the 6x6 floor lattice with
+  edge adjustments that push texture coords slightly NEGATIVE (S ≥ -3, T ≥
+  -1 for a 256x256 tile). Glide textures WRAP — negative coords sample the
+  far edge (which sits in the parked/chroma region, invisible on a real
+  Voodoo). P2.1–P2.3 clamped them to texel 0 instead, smearing texel column
+  0 along the top-left edges of every floor tile.
+- Fades/dim rects (DrawSolidRectEx/Alpha = constant fill quads) ran through
+  the per-pixel barycentric raster at 800x600 — that is the ~7 fps dip.
+
+## v7 change list (banner: P2.4)
+
+1. **Negative s/t floor-wrap** in the sampler — the ground diamond edges now
+   wrap like real hardware instead of smearing column 0.
+2. **Fill-rect fast path**: axis-aligned constant-fill quads fill scanlines
+   directly (no barycentrics) — fades and dim overlays should be much
+   smoother. Non-rect quads and all textured draws are untouched.
+3. **Session log**: glide3x.log now APPENDS with a
+   `==== glide3xvk session ... ====` banner per launch (2 MB rotation to
+   `.1`). A quick relaunch no longer erases the previous session's log —
+   copy the log after your LAST session, everything is in there.
+4. **Per-path draw totals**: `grSstWinClose` and `grGlideShutdown` now print
+   full counters unconditionally (vac / parr / strip / fan / point / line /
+   tri / skip / texmiss), and every 120 frames an activity line
+   (`frame N: vac=... parr=... skip=... texdl=... paldl=...`) fires even
+   when the per-call tags are budget-quiet.
+
+## Round 7 success criteria
+
+1. Ground/walls/text still render as in round 6 (the wrap only changes a
+   ~3-texel strip at each floor tile's top-left edges — same or slightly
+   cleaner).
+2. Fades and the loading screen feel smoother (fast path).
+3. Log: banner **P2.4 = negative-s/t wrap ...**; at exit a
+   `grGlideShutdown: swaps=... (vac=... parr=... strip=... fan=...)` line.
+   **Play a real session** (menu → game, walk around, open inventory) and
+   paste the log AFTER quitting — with append mode the whole thing survives
+   extra launches.
+4. The counters settle two open questions from this round:
+   `parr>0` = the game is drawing ground strips (perspective or normal
+   quality path live); `parr=0` with `vac` huge = everything goes through
+   the fan path. Either way the next fix targets exactly what your session
+   used.
+
+Same install: replace `glide3x.dll`, run `Game -w -3dfx`. Build id
+`77cb059-dirty` (banner line is the version marker).
+
+# Round 8 — P2.5 (scanline raster + line/point + constant-color lanes)
+
+## What the round-7 log showed
+
+First FULL gameplay session: intro video (61 LFB presents), title screen
+(23 frames), real in-game ground (46 frames, `parr=30504` = the mode-4
+12-vertex strips drawing the floor), back to menu, clean exit. `texmiss=0`
+— every texture bind hit the cache. The world layer is alive.
+
+Two problems are left, both visible in the log:
+
+1. **Speed.** 46 game frames took 10.9 s ≈ **4.3 fps**. The CPU rasterizer
+   evaluated three cross-products per pixel plus two `floorf` calls per
+   pixel — that cost is the whole frame budget.
+2. **`grDrawPoint` x79 / `grDrawLine` x170 were counted but never drawn.**
+   Those are the game's stroke paths (D2Glide `DrawLine`/`DrawPoint` —
+   automap-style overlays and the radial-light dots). They render now.
+
+Bonus fix found in the game tree: `grConstantColorValue` is built as
+`ScalePaletteValue(v) | alpha` = palette entry (0xFFRRGGBB) **<< 8** | alpha,
+so the dword is `[R:24-31][G:16-23][B:8-15][alpha:0-7]`. The old decode
+replicated byte 1 into all three lanes — correct for grays (every fade), but
+colored constants came out wrong: the round-7 log's `0xf4c04cc0` is
+**orange (244,192,76)** — a fire/light glow — not dim gray.
+
+## v8 change list (banner: P2.5)
+
+1. **Scanline rasterizer.** Each triangle's three edges are affine along a
+   scanline, so each row's coverage is one px interval (solved per edge);
+   the interior fills with interpolated s/t/color and NO per-pixel edge
+   tests. Only the boundary pixels run the exact old per-pixel test, so
+   tie pixels and shared-edge ownership behave exactly like P2.4 (no new
+   seams; verified pixel-exact against the old algorithm on 120 random
+   triangles + the real 12-vertex ground strip in the host test rig).
+2. **Sampler fast math**: the two per-pixel `floorf` calls are replaced by
+   an exact integer trick (float + 4096 truncation — 4096 is a multiple of
+   every texture width). Negative-wrap semantics unchanged (test-pinned).
+3. **Blend classes hoisted**: the game's five blend pairs (opaque /
+   additive / alpha / multiply / other) compile to direct inner-loop math
+   instead of a per-pixel switch loop; lane math is bit-identical to P2.1.
+4. **Vertex-color palette cache**: draws with one constant vertex color
+   (your ground strips submit `ff808080` on all corners) multiply the
+   palette once per color instead of once per pixel.
+5. **Chroma as a 256-entry table**: the post-palette color match is
+   precomputed per palette download (same rule as P2.3, cheaper per pixel).
+6. **grDrawPoint / grDrawLine rasterized**: point = rounded pixel, line =
+   Bresenham with clipping, colored by the constant fill through the
+   current blend (opaque for alpha=0xff automap strokes, alpha-scaled
+   otherwise).
+7. **Constant-color RGB lanes fixed** (fire glows, tinted overlays).
+8. **Present/clear fast paths**: identity gamma at 1:1 window = straight
+   copy; clear color 0 = memset.
+9. **Frame pace in the log**: the every-120-frames activity line now
+   includes `avg=NN.Nms` — the field-visible speed number.
+
+Host rig: 61/61 checks pass, including the new parity/reference,
+blend-class, line/point, lane-decode and present tests. The round-7 field
+draw mix (665 ground strips + 114 sprite quads per frame at 800x600)
+benchmarks at ~4.6 ms/frame on the build host — roughly 40x the old
+raster's speed on that mix.
+
+## Round 8 success criteria
+
+1. **Speed.** The menu and game should now feel fluid (tens of fps). The
+   `avg=NN.Nms` number in the `frame ...` log lines is the ground truth —
+   paste it either way.
+2. **Ground/walls/text look the same as round 7** (the raster change is
+   coverage-exact; interior texel boundaries can shift by one texel where a
+   sprite's coordinates land exactly on a boundary — invisible).
+3. **If you toggle the automap (TAB)** it should now draw its lines/dots.
+4. Log: banner **P2.5 = scanline raster ...**; `frame ...` lines with
+   `avg=`; the usual shutdown totals.
+
+Same install: replace `glide3x.dll`, run `Game -w -3dfx`. If anything looks
+wrong, a screenshot plus the log tells the whole story.
+
+---
+
+# Round 9 — P2.6 (build 77cb059-dirty, compiled Oct 24 2026 ~08:01)
+
+## What round 8 showed (your log, 03:42:44–03:43:00)
+
+Full session ran healthy and fast (avg 36.8 ms ≈ 27 fps, 293 frames, 146k
+draws, zero texture misses). Two defects remained:
+
+1. **Title buttons still not right** — the button art textures are 64x32
+   (lod 6). Every sprite/UI quad with a texture smaller than 256 on a side
+   was being sampled through the old scalar rule `texel = s * 2^lod/256`,
+   which squeezed a 64x32 button into its **top-left 16x8 corner**. The
+   ground tiles looked correct only because they are 256x128 (lod 8), where
+   that factor is exactly 1.0.
+2. **"A lot missing" in game** — same root cause, different victim: the
+   wall layer. Wall subtiles are 32x32 textures sampled by the game's
+   perspective lattice through S,T in [0,256]; with the old rule they
+   sampled a 4x4 corner (smeared mush), and every small sprite, item icon
+   and inventory-art quad was crushed the same way.
+
+## Root cause (from the game tree, ground truth)
+
+D2 submits **two coordinate conventions**, and P2.2–P2.5 applied one rule
+to everything:
+
+- **Texel units** — DrawPalettedQuad (sprites/UI/buttons/text: S/T spans =
+  the texture dims via gaPerspectiveImageSizeTable) and the ground lattice
+  (InitGroundTileVertices: spans x256/x128 = the 256x128 floor texture).
+- **Voodoo 256-space** — the glBlocks wall lattice (InitPerspectiveTables:
+  S=col*128, T=row*64, up to 256 regardless of the 32x32 subtile dims).
+
+## P2.6 changes
+
+1. **Per-draw, per-axis s/t space auto-detect**: if a quad's |s| (or |t|)
+   extent exceeds the texture dim, that axis is in the 256-space and is
+   sampled as `texel = coord * dim/256`; otherwise it is a direct texel
+   unit. This fixes buttons, wall subtiles, item icons, inventory art and
+   all small sprites without touching the paths that already worked.
+2. **RGB_565 textures** (format 0xa): the in-game Smacker video quads
+   (GLSMACK_DrawSmackerQuad, 256x64 565 textures) rendered black in every
+   previous build — now decoded.
+3. **New diagnostics**: `quad#N: tex WxH texel|256sp v0(...) ...` lines
+   (first quads per distinct dims/space class — direct field proof of the
+   fix), `sp256=` and `rgb565=` counters in the frame lines.
+
+Host rig: 76/76 checks pass, including three new P2.6 tests (wall lattice
+256-space on a 32x32 subtile, 64x32 button full-width texel sampling,
+565 decode) and the re-based strip/chroma tests.
+
+## Round 9 success criteria
+
+1. **Title buttons**: full button art (frame + label) visible.
+2. **In game**: walls standing, item/inventory art correct — "a lot
+   missing" should collapse to small stuff if anything remains.
+3. In-game Smacker/cutscene video quads (if any play) no longer black.
+4. Log: banner **P2.6 = per-draw s/t space auto-detect ...**; the new
+   `quad#` lines; `sp256=`/`rgb565=` in `frame ...` lines.
+
+Same install: replace `glide3x.dll`, run `Game -w -3dfx`. Screenshot plus
+log tells the whole story.

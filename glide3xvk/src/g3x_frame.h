@@ -15,12 +15,16 @@
 //   ARGB palette (grTexDownloadTable), TMU-addressed (grTexDownloadMipMap
 //   stores, grTexSource binds); vertex = 20B used of 0x1C stride: x,y float,
 //   PARGB dword, oow, s, t.
-//   TEXTURE COORDS: the game's gaPerspectiveImageSizeTable (globals/D2Glide.cpp)
-//   gives the S/T span per aspect = the image dims in texels, with both axes
-//   expressed in a 2^lod coordinate space: texel = s * (2^lod / 256), wrapped
-//   mod (w,h). For 256x256 squares this equals the old [0,256] convention; for
-//   tall 128x256 sprites S spans [0,128] and for wide 256x64 T spans [0,64] —
-//   scaling both axes by 2^lod/256 is the only rule that fits every case.
+//   TEXTURE COORDS (P2.6): the game submits TWO conventions. (a) TEXEL UNITS —
+//   DrawPalettedQuad (sprites/UI/buttons/text; spans = the texel dims via
+//   gaPerspectiveImageSizeTable) and the ground lattice (InitGroundTileVertices,
+//   spans x256/x128 = the 256x128 floor texture dims) — never beyond the dims.
+//   (b) VOODOO 256-SPACE — the glBlocks wall lattice (InitPerspectiveTables:
+//   S=col*128, T=row*64 up to 256 regardless of the 32x32 subtile dims; texel =
+//   coord * dim/256). The raster auto-detects per draw, per axis: an extent
+//   beyond the texture dims switches that axis to rule (b). Textures:
+//   GR_TEXFMT_P_8 (fmt 5) via the palette + GR_TEXFMT_RGB_565 (fmt 0xa, the
+//   in-game Smacker video quads).
 //   colorCombine: mode 1 = SCALE_OTHER x LOCAL (texel * vertex color),
 //   mode 2 = LOCAL constant (grConstantColorValue solid fill: gray in bits
 //   15..8, blend alpha in bits 7..0 — RENDERER_GLIDE_ScalePaletteValue << 8).
@@ -55,9 +59,10 @@ void     g3x_frame_tex_source(unsigned tmu, unsigned addr);
 unsigned g3x_frame_tex_miss_count();   // grTexSource bindings with no download
 
 // Draw-path totals since context open: vac fans, pointer-array draws,
-// pointer-array strips, pointer-array fans, draws skipped (no texture).
-// Feeds the periodic frame lines + shutdown summary (P2.4 diagnostics).
-void     g3x_frame_draw_stats(unsigned out[5]);
+// pointer-array strips, pointer-array fans, draws skipped (no texture),
+// 256-space auto-detected draws, RGB565-texture draws (P2.6).
+// Feeds the periodic frame lines + shutdown summary (P2.4/P2.6 diagnostics).
+void     g3x_frame_draw_stats(unsigned out[7]);
 
 // TRIANGLE_FAN (mode 5): count vertices at `base`, `stride` bytes apart.
 void     g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride);
