@@ -26,6 +26,29 @@ Rules:
 - The glide3x DLL lands as a new `glide3xvk/` subtree (§4), so the branch diff
   vs `master` stays reviewable.
 
+### Upstream byproducts (what can flow back to Redivivus)
+
+glide3xvk needs zero game-source changes — the fork serves as a read-only spec
+and optional diagnostics host — but the work still produces material useful to
+Redivivus's own goals (fidelity + buildability):
+
+- **Already on `master` (PR-able now):** `[d2boot]` boot trace,
+  `support/d2_boot.{h,cpp}`, VEH `d2crash-*.txt` reporter, and the mingw
+  build fixes (`Bnclient.cpp` CERT_INFO + direct handle cleanup,
+  `Storm/_unnamespaced.cpp` cleanup-helper retirement).
+- **Glide usage documentation:** the enumerated 45-export contract plus the
+  call patterns `glide3x.log` captures (combine-mode sets, vertex stride 0x1C,
+  palette flow, LFB sites) — reference material for anyone touching the
+  `D2Glide` module.
+- **Vanilla-vs-rebuilt differential harness:** the same DLL runs on vanilla
+  `Game.exe` and the rebuilt `d2.exe`, so the `glide3x.log` Glide-call stream
+  is a behavioral diff oracle — same save/scenario on both, and any divergence
+  flags either a stub gap (ours) or a recovery bug (theirs). Cheap to run,
+  high signal for a fidelity-driven project.
+- **Toolchain findings:** llvm-mingw header-drift specifics and the GNU ld
+  export-decoration workaround (`glide3xvk/README.md`) — relevant if
+  Redivivus formalizes mingw-w64 CI.
+
 ---
 
 ## 1. Goal
