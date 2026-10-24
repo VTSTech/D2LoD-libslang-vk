@@ -7,6 +7,42 @@ Format follows Keep a Changelog. Where a field round already ran, entries cite w
 glide3x.log showed on real hardware (RX 560, Vulkan 1.3, windowed). Commit refs are on
 branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
 
+## [0.4.4] - 2026-10-25 (CPU raster perf round 1 — x87 off the hot path)
+
+Field trigger: the round-14 field log (0.4.3, full screen, crtglow_lanczos
+7-pass chain) showed avg=51.6 ms ≈ 19 fps in-game @ 800x600 — the frame line
+mix (152 fans + 170 strips + 142 RGB565 quads per frame, fill=0) pointed at
+CPU raster + texture-table upkeep as the budget, not the chain or the game.
+
+### Changed
+
+- **SSE2 float math for the DLL** (CMakeLists): the i686 MinGW default is x87
+  for all float math — stack-based 80-bit, slow `fistp` int conversions, no
+  SIMD, no auto-vectorization — and the raster is float-heavy. glide3x now
+  builds with `-msse2 -mfpmath=sse` (target-scoped; the game tree and the
+  libslang-vk subbuild keep their own flags). Expected 1.5-3x on the
+  fill_span/raster_tri inner loops. Pixel-risk class: the already-accepted
+  "one texel at exact float boundaries" shift (SSE is IEEE single and MORE
+  deterministic than x87's 80-bit intermediates, not less).
+- **Texture table O(1)** (g3x_frame): `g3x_frame_tex_source` was a linear
+  scan over up to 8192 slots per bind and `tex_slot_alloc` rescanned from 0
+  per download. Now a key -> slot+1 open-addressing hash (16K entries,
+  insert-only — slots are never freed) plus a monotonic allocation cursor
+  that preserves the exact first-free slot order, plus a rebind fast-out for
+  consecutive binds of the same texture. Bit-identical by construction
+  (fxtest-parity harness: same 220-frame mixed-scene raster hash).
+- **Swapchain headroom** (vk_backend): swapchain images = minImageCount+2
+  (was +1) — the field log showed images=2, the bare minimum; one extra
+  image keeps FIFO present pacing from stalling the raster thread.
+
+### Validated
+
+- Host parity harness (scripts/fxparity.cpp, agent-side): 220-frame mixed
+  scene — ground strips, sprite fans (uniform/varying vc, 565 textures),
+  chroma toggles, 5 blend classes, full-screen fills, points/lines, gamma
+  swings, palette epoch bumps, rebind storms, 8600-key table-full stress —
+  produces the identical present-buffer FNV hash and counters before/after.
+
 ## [0.4.3] - 2026-10-24 (F11/F12 hotkeys + the full d2slangvk.conf reference)
 
 The user asked for Chocolate-Doom-VK's hotkey scheme here (the other

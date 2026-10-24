@@ -211,11 +211,54 @@ unsigned tex_bytes_per_pixel(unsigned fmt) {
     return (fmt == 0x5u || fmt <= 0x3u) ? 1u : 2u;
 }
 
-int tex_slot_alloc(unsigned key) {
-    for (unsigned i = 0; i < kMaxTex; ++i) {
-        if (!s_tex[i].used || s_keys[i] == key) return (int)i;
+// P2.12 perf: key -> slot+1 open-addressing hash. g3x_frame_tex_source was a
+// linear scan over up to kMaxTex slots per bind and tex_slot_alloc rescanned
+// from 0 on every download — with the in-game table at several thousand live
+// slots and hundreds of binds+downloads per frame that was real per-frame CPU
+// (the round-14 field log shows ~500 draws/frame with continuous tile churn).
+// Slots are never freed (no glide call releases one), so the table is
+// insert-only and a monotonic allocation cursor preserves the exact
+// first-free slot order of the old scan while making it O(1) amortized.
+constexpr unsigned kTexHashBits = 14;                 // 16384 > 2*kMaxTex
+constexpr unsigned kTexHashSize = 1u << kTexHashBits;
+unsigned s_tex_hash[kTexHashSize] = {};               // 0 = empty; else slot+1
+unsigned s_tex_alloc_cursor = 0;                      // first possibly-free slot
+
+unsigned tex_hash(unsigned key) {
+    return (key * 2654435761u) >> (32 - kTexHashBits);
+}
+
+int tex_slot_find(unsigned key) {
+    unsigned h = tex_hash(key);
+    for (;;) {
+        const unsigned v = s_tex_hash[h];
+        if (!v) return -1;
+        const int slot = (int)v - 1;
+        if (s_keys[slot] == key && s_tex[slot].used) return slot;
+        h = (h + 1) & (kTexHashSize - 1);
     }
-    return -1;
+}
+
+int tex_slot_alloc(unsigned key) {
+    const int found = tex_slot_find(key);
+    if (found >= 0) return found;
+    while (s_tex_alloc_cursor < kMaxTex && s_tex[s_tex_alloc_cursor].used)
+        ++s_tex_alloc_cursor;
+    if (s_tex_alloc_cursor >= kMaxTex) return -1;
+    return (int)s_tex_alloc_cursor;
+}
+
+// Insert a freshly allocated slot's key. No-op when the key is already in the
+// table (re-download of a live texture through the tex_slot_find fast path).
+void tex_hash_insert(unsigned key, int slot) {
+    unsigned h = tex_hash(key);
+    for (;;) {
+        const unsigned v = s_tex_hash[h];
+        if (!v) { s_tex_hash[h] = (unsigned)slot + 1; return; }
+        const int s = (int)v - 1;
+        if (s_keys[s] == key && s_tex[s].used) return;
+        h = (h + 1) & (kTexHashSize - 1);
+    }
 }
 
 unsigned s_tex_miss_total = 0;       // exit-summary diagnostic (round 6)
@@ -793,14 +836,22 @@ bool g3x_frame_tex_download(unsigned tmu, unsigned addr, const GrTexInfo* info) 
     t.data = nd; t.w = w; t.h = h; t.bpp = bpp; t.used = true;
     t.lod = info->largeLodLog2 > 11 ? 11 : info->largeLodLog2;
     s_keys[slot] = key;
+    tex_hash_insert(key, slot);
     if (slot + 1 > (int)s_tex_used_hwm) s_tex_used_hwm = (unsigned)(slot + 1);
     return true;
 }
 
 void g3x_frame_tex_source(unsigned tmu, unsigned addr) {
     const unsigned key = tex_key(tmu, addr);
-    for (unsigned i = 0; i < kMaxTex; ++i) {
-        if (s_tex[i].used && s_keys[i] == key) {
+    // P2.12 perf rebind fast-out: the game re-binds the same texture across
+    // consecutive draws constantly (tile strips share a download); the hash
+    // lookup below is O(1), but this is O(0). Bind/miss counters unaffected:
+    // the fast-out only fires when s_cur ALREADY holds the requested texture.
+    if (s_cur >= 0 && s_tex[s_cur].used && s_keys[s_cur] == key) return;
+    const int slot = tex_slot_find(key);
+    if (slot >= 0) {
+        const unsigned i = (unsigned)slot;
+        {
             s_cur = (int)i;
             // Field diagnostic: log the first few DISTINCT (addr -> dims)
             // bindings so texture-size mistakes show up in the field log.

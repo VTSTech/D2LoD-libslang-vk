@@ -135,7 +135,15 @@ target_link_options(glide3x PRIVATE
 
 # Our code may optimize freely (PLAN.md R5: only the decompiled game tree is
 # pinned to -O0/-g). volk.c stays at its own pace; -O2 everywhere is fine.
-target_compile_options(glide3x PRIVATE -O2 -w)
+#
+# P2.12 perf: -msse2 -mfpmath=sse. The i686 default is x87 for ALL float math
+# (stack-based 80-bit, slow int conversions, no SIMD, no auto-vectorization)
+# and the raster is float-heavy — every fill_span/raster_tri inner loop pays
+# 1.5-3x. SSE2 is IEEE-754 single precision, deterministic, and universal on
+# any rig that runs a Vulkan driver (Pentium 4 / Athlon 64, 2003+).
+# glide3x target only: the game tree and the libslang-vk subbuild keep their
+# own flags.
+target_compile_options(glide3x PRIVATE -O2 -msse2 -mfpmath=sse -w)
 
 set_source_files_properties(src/glide_exports.cpp PROPERTIES
     COMPILE_DEFINITIONS "G3XVK_BUILD_ID=\"${G3XVK_BUILD_ID}\"")

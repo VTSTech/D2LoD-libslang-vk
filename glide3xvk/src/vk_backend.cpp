@@ -143,7 +143,11 @@ bool create_swapchain() {
         }
     }
 
-    uint32_t image_count = caps.minImageCount + 1;
+    // P2.12 perf: +2 (was +1). The field log shows images=2 — the minimum.
+    // The chain render is synchronous per frame, but FIFO pacing blocks
+    // present until the previous image retires; one more swapchain image
+    // gives the queue headroom so acquire stalls the raster thread less.
+    uint32_t image_count = caps.minImageCount + 2;
     if (caps.maxImageCount > 0 && image_count > caps.maxImageCount) image_count = caps.maxImageCount;
 
     // P3: the preset chain draws as a render pass -> COLOR_ATTACHMENT usage is
