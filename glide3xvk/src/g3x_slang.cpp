@@ -148,11 +148,24 @@ const uint8_t* g3x_slang_test_last_frame(unsigned* w, unsigned* h) {
 // ---------------------------------------------------------------------------
 
 #include "vk_backend.h"          // windows.h + the g3x_vk_slang_* services
+#include "g3x_overlay.h"         // 0.4.2: the active-shader line on the overlay
 
 #include <volk.h>                // vulkan.h with VK_NO_PROTOTYPES (auto-defined)
 #include <slangvk/c.h>           // the C API (POD only — fine from C++17)
 
 #include <cstdio>
+
+// 0.4.2: keep the overlay's second line truthful. Called with the resolved
+// preset path when a chain goes ready and with nullptr whenever the chain
+// dies (reload start, load/create failure, shutdown) — the overlay draws the
+// file name only while that preset is actually filtering frames.
+static void overlay_shader_line(const char* path_or_null) {
+    if (!path_or_null || !path_or_null[0]) { g3x_overlay_set_shader(nullptr); return; }
+    const char* base = path_or_null;
+    for (const char* p = path_or_null; *p; ++p)
+        if (*p == '/' || *p == '\\') base = p + 1;
+    g3x_overlay_set_shader(base);
+}
 
 static slangvk_device* s_dev      = nullptr;   // adopted context
 static slangvk_preset* s_preset   = nullptr;
@@ -243,6 +256,7 @@ static const char* scale_name(int m) {
 static void destroy_chain() {
     if (s_chain) { slangvk_chain_destroy(s_chain); s_chain = nullptr; }
     s_disabled = true;
+    overlay_shader_line(nullptr);   // nothing is filtering frames right now
 }
 
 static void destroy_all() {
@@ -296,6 +310,7 @@ static void reload_preset_and_chain(const char* why) {
     }
     s_consec_fail = 0;
     s_disabled = false;
+    overlay_shader_line(resolved);
     g3x_log("slang: chain ready '%s' (%s): %u passes, scale=%s, output %ux%u%s",
             s_conf.preset, why, passes, scale_name(s_conf.scale), s_ext_w, s_ext_h,
             s_img ? "" : " (input image deferred)");
