@@ -1,3 +1,5 @@
+<img width="997" height="776" alt="image" src="https://github.com/user-attachments/assets/7c3ee833-6425-4006-869b-ea3d564f35c9" />
+
 # Redivivus
 
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/MHK2Dg9)
