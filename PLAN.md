@@ -1,7 +1,30 @@
 # PLAN.md — libslang-vk Integration (D2LoD-libslang-vk)
 
-> Status: draft v1, 2026-10-24. Baseline build verified in-sandbox (see §2).
-> Owner: VTSTech. Agent session log: `/home/z/my-project/worklog.md`.
+> Status: draft v2, 2026-10-24. Baseline build verified in-sandbox (see §2); rebuilt
+> d2.exe verified PLAYABLE on real hardware (silent-startup saga closed — see §0 for
+> where the bootlog work lives). Owner: VTSTech. Agent session log:
+> `/home/z/my-project/worklog.md`.
+> **All integration work happens on the `libslang-vk` branch (see §0).**
+
+---
+
+## 0. Branching & git workflow
+
+Lesson learned from the DevilutionX fork: feature commits landed straight on
+`master` and tangled it. This fork keeps the lines separate from day one:
+
+| Branch | Role |
+|---|---|
+| [`master`](https://github.com/VTSTech/D2LoD-libslang-vk) | Redivivus base + the **bootlog/diagnostic work**: `[d2boot]` boot trace, `support/d2_boot.{h,cpp}`, VEH `d2crash-*.txt` reporter, signature-verification fixes (`Bnclient/Bnclient.cpp` CERT_INFO + direct handle cleanup, `Storm/_unnamespaced.cpp` cleanup helper retired). Deliberately kept close to upstream; **may be PR'd upstream** once tidied. No feature work lands here. |
+| [`libslang-vk`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/libslang-vk) | **Active development line — all glide3x / Vulkan / libslang-vk integration work happens here.** Created from current master state 2026-10-24. |
+
+Rules:
+
+- Every phase below (P1–P5) commits to `libslang-vk` only.
+- `master` receives changes only via PR (`libslang-vk` → `master`) at stable
+  milestones, or via a standalone bootlog PR if upstream wants the diagnostics.
+- The glide3x DLL lands as a new `glide3xvk/` subtree (§4), so the branch diff
+  vs `master` stays reviewable.
 
 ---
 
@@ -208,8 +231,9 @@ The payoff. Everything above already runs through our swapchain.
 - Failure paths: no Vulkan → unfiltered present; device lost → libslang-vk's
   recovery path (SLANGVK_ERR_DEVICE_LOST_RECOVERY_FAILED handling); alt-tab,
   windowed mode (`-w`), resolution changes.
-- Crash reporting: hook the fork's existing crash handler (`d2trace.log`) to
-  include the DLL's last-N-Glide-calls ring buffer.
+- Crash reporting: hook the fork's VEH crash reporter (`support/d2_crash.cpp`,
+  `d2crash-*.txt` — lives on `master`, see §0) to include the DLL's
+  last-N-Glide-calls ring buffer.
 - Packaging: drop-in zip (`glide3x.dll` + `presets/` + `d2slangvk.conf`) laid
   over a D2 install; README with video-mode instructions.
 - CI: extend the fork's `tools/check-build.sh` pattern with a `check-glide3x.sh`
