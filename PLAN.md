@@ -10,6 +10,8 @@
 > (P2.12: SSE2 float math, O(1) texture table, swapchain headroom —
 > parity-verified bit-identical; field numbers pending). Owner: VTSTech.
 > Agent session log: `/home/z/my-project/worklog.md`.
+> Capability boundary (wrapper vs. Game.exe work): **SCOPE.md** — the in-game
+> 25 fps pace is engine design (source-verified, see the §5 perf track).
 > **All integration work happens on the `libslang-vk` branch (see §0).**
 
 ---

@@ -202,6 +202,8 @@ diff /tmp/game.txt /tmp/ours.txt && echo "MATCH: all 45 GetProcAddress names cov
   field-test procedure and fail-soft behavior
 - [glide3xvk/FIELD-TEST.md](glide3xvk/FIELD-TEST.md) — the per-round field log:
   builds, diagnostics and results on a vanilla retail 1.14d install
+- [SCOPE.md](SCOPE.md) — the capability boundary: what the wrapper achieved and
+  can still do alone vs. what needs Game.exe work (source-receipted)
 - [glide3xvk/BUILD-32BIT.md](glide3xvk/BUILD-32BIT.md) — building libslang-vk itself
   as i686 Windows (the P3 gate)
 - [PLAN.md](PLAN.md) — the P1–P5 integration plan with the phase ledger
