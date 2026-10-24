@@ -8,10 +8,13 @@
 #include "g3x_types.h"
 #include "g3x_state.h"
 #include "g3x_log.h"
+#include "g3x_frame.h"
+#include "g3x_overlay.h"
 #include "vk_backend.h"
 
 #include <cstring>
 #include <cstdio>
+#include <initializer_list>
 #include <new>
 
 #define WIN32_LEAN_AND_MEAN
@@ -88,7 +91,27 @@ void __stdcall grGlideInit() {
 }
 
 void __stdcall grGlideShutdown() {
-    g3x_log("grGlideShutdown");
+    // Always-on totals: the round-6 report arrived without any summary (the
+    // every-300-swaps gate never fired at 112 frames), so the exit evidence
+    // was lost. Print the full picture unconditionally.
+    unsigned ds[9];   // P2.8: 9 slots (vc0 joins; P2.7 left ds[5] here — a
+                      // silent 3-slot stack overrun on every shutdown log)
+    g3x_frame_draw_stats(ds);
+    g3x_log("grGlideShutdown: swaps=%u clears=%u draws=%u (vac=%u parr=%u "
+            "strip=%u fan=%u point=%u line=%u tri=%u) skip=%u texdl=%u paldl=%u "
+            "texmiss=%u",
+            g_st.n_swaps, g_st.n_clears, g_st.n_draw_calls,
+            ds[0], ds[1], ds[2], ds[3], g_st.n_point, g_st.n_line, g_st.n_tri,
+            ds[4], g_st.n_tex_downloads, g_st.n_palette_downloads,
+            g3x_frame_tex_miss_count());
+    {
+        unsigned tex_used = 0, tex_dropped = 0;
+        g3x_frame_tex_table_stats(&tex_used, &tex_dropped);
+        g3x_log("grGlideShutdown: P2.9 classes: fill=%u vc0=%u sub256=%u rgb565=%u "
+                "chromaToggles=%u texTable(hwm=%u dropped=%u)",
+                ds[7], ds[8], ds[5], ds[6], g3x_frame_chroma_toggles(),
+                tex_used, tex_dropped);
+    }
     g3x_vk_shutdown();
 }
 
@@ -111,12 +134,39 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
         // stays black until Vulkan works. The log names the reason.
         g3x_log("grSstWinOpen: Vulkan unavailable -> black-screen mode (game continues)");
     }
+    // P2.10: version-tag overlay on/off — glide3xvk.ini beside the game exe,
+    // [glide3xvk] overlay=0/1 (default 1 = on). Read per context open so a
+    // relaunch picks up edits without touching the DLL.
+    {
+        char ini[MAX_PATH] = "";
+        char exe[MAX_PATH];
+        if (GetModuleFileNameA(nullptr, exe, MAX_PATH) > 0) {
+            char* slash = strrchr(exe, '\\');
+            if (slash) {
+                *slash = '\0';
+                _snprintf(ini, sizeof(ini) - 1, "%s\\glide3xvk.ini", exe);
+                ini[sizeof(ini) - 1] = '\0';
+            }
+        }
+        const UINT on = ini[0] ? GetPrivateProfileIntA("glide3xvk", "overlay", 1, ini) : 1;
+        g3x_overlay_set_enabled(on != 0);
+        g3x_log("grSstWinOpen: overlay=%s (glide3xvk v%s, ini: %s)",
+                on ? "on" : "off", G3XVK_VERSION, ini[0] ? ini : "<exe path unresolved>");
+    }
+    g3x_frame_reset(w, h);   // game framebuffer exists even if Vulkan does not
     if (s_ctx == 0) s_ctx = 1;
     return s_ctx;
 }
 
 FxBool __stdcall grSstWinClose(GrContext_t context) {
-    g3x_log("grSstWinClose: ctx=%u", context);
+    // Phase marker: the game opens/closes contexts for probes, videos and the
+    // real window — the totals here separate those phases in the log.
+    unsigned ds[9];   // P2.8: 9 slots (same growth as the shutdown summary)
+    g3x_frame_draw_stats(ds);
+    g3x_log("grSstWinClose: ctx=%u (swaps=%u vac=%u parr=%u strip=%u fan=%u "
+            "skip=%u texmiss=%u fill=%u vc0=%u)",
+            context, g_st.n_swaps, ds[0], ds[1], ds[2], ds[3], ds[4],
+            g3x_frame_tex_miss_count(), ds[7], ds[8]);
     g3x_vk_shutdown();
     return FXTRUE;
 }
@@ -134,13 +184,42 @@ void __stdcall grFinish() {
 // ---------------------------------------------------------------------------
 void __stdcall grBufferClear(GrColor_t color, GrAlpha_t alpha, FxU32 depth) {
     ++g_st.n_clears;
-    g3x_log_once("grBufferClear", "color=0x%08x alpha=0x%02x depth=0x%08x (P1: ignored, "
-                 "frame is cleared black)", color, alpha, depth);
+    g3x_frame_clear(color);   // observed: color=0 (black) every time
+    g3x_log_once("grBufferClear", "color=0x%08x alpha=0x%02x depth=0x%08x",
+                 color, alpha, depth);
 }
 
 void __stdcall grBufferSwap(FxU32 swap_interval) {
     ++g_st.n_swaps;
-    g3x_vk_present(swap_interval);
+    g3x_frame_present();
+    // P2.5: rolling frame time so the field log shows the raster's real pace
+    // (round-7 session ran at ~4.3 fps — the number this build must move).
+    static LARGE_INTEGER s_prev = {};
+    static double s_ms_acc = 0.0;
+    static unsigned s_ms_n = 0;
+    LARGE_INTEGER now, freq;
+    if (QueryPerformanceCounter(&now) && QueryPerformanceFrequency(&freq)) {
+        if (s_prev.QuadPart) {
+            s_ms_acc += (double)(now.QuadPart - s_prev.QuadPart) * 1000.0 / (double)freq.QuadPart;
+            ++s_ms_n;
+        }
+        s_prev = now;
+    }
+    // P2.4: periodic activity line — gameplay phases run with every per-call
+    // tag budget-quiet, so these are the only evidence of what each phase
+    // actually submitted (and how fast the CPU raster is keeping up).
+    if (g_st.n_swaps % 120 == 0) {
+        unsigned ds[9];
+        g3x_frame_draw_stats(ds);
+        g3x_log("frame %u: avg=%.1fms vac=%u parr=%u(strip=%u fan=%u) sub256=%u "
+                "rgb565=%u fill=%u vc0=%u skip=%u point=%u texdl=%u paldl=%u "
+                "chm=%u lfb=%u",
+                g_st.n_swaps, s_ms_n ? s_ms_acc / (double)s_ms_n : 0.0,
+                ds[0], ds[1], ds[2], ds[3], ds[4], ds[5], ds[6], ds[7], ds[8],
+                g_st.n_point, g_st.n_tex_downloads, g_st.n_palette_downloads,
+                g3x_frame_chroma_toggles(), g_st.n_lfb_locks);
+        s_ms_acc = 0.0; s_ms_n = 0;
+    }
     if (g_st.n_swaps % 300 == 0) {
         g3x_log("frame %u: swaps=%u draws=%u texdl=%u paldl=%u lfblocks=%u",
                 g_st.n_swaps, g_st.n_swaps, g_st.n_draw_calls, g_st.n_tex_downloads,
@@ -150,24 +229,41 @@ void __stdcall grBufferSwap(FxU32 swap_interval) {
 }
 
 // ---------------------------------------------------------------------------
-// Queries (the acceptance contract)
+// Queries (the caps contract; see g3x_types.h for the field-test v1 story —
+// GR_NUM_TMU == 0 is a hard D2Glide init failure, the v1 zero-frame cause)
 // ---------------------------------------------------------------------------
 FxU32 __stdcall grGet(FxU32 pname, FxU32 plength, FxI32* params) {
-    if (pname == G3X_GR_GET_TMU_COUNT) {
-        // The 1.14d Glide gate (D2Client/Renderer/Glide.cpp:452): result must
-        // be >= 1 or the renderer is rejected and LoadLibrarySymbols fails.
-        if (params && plength >= 4) params[0] = 1; // single TMU (Voodoo Graphics class)
-        g3x_log_once("grGet:0xF", "TMU count -> 1");
-        return 4;
+    FxI32 value = 0;
+    switch (pname) {
+        case G3X_GR_GET_GAMMA_ENTRIES:    value = 32; break;
+        case G3X_GR_GET_MAX_TEXTURE_SIZE: value = 256; break;
+        case G3X_GR_GET_MAX_TEXTURE_AR:   value = 3;  break;
+        case G3X_GR_GET_MEMORY_UMA:       value = 0;  break;
+        case G3X_GR_GET_NUM_BOARDS:       value = 1;  break;
+        case G3X_GR_GET_NUM_FB:           value = 1;  break;
+        case G3X_GR_GET_NUM_TMU:          value = 1;  break;
+        case G3X_GR_GET_TEXTURE_ALIGN:    value = 8;  break;
+        case G3X_GR_GET_BITS_GAMMA:       value = 8;  break;
+        default:
+            // Real glide3x returns 0 (FXFALSE) for unknown pnames; D2's windowed
+            // gamma path checks the return before using the value, so failing a
+            // query honestly is the safe contract.
+            g3x_log_once("grGet:other", "grGet pname=0x%x plength=%u -> 0 (unhandled)", pname, plength);
+            if (params && plength >= 4) params[0] = 0;
+            return 0;
     }
-    g3x_log_once("grGet:other", "grGet pname=0x%x plength=%u -> 0 (unhandled)", pname, plength);
-    if (params && plength >= 4) params[0] = 0;
+    if (params && plength >= 4) params[0] = value;
+    static bool s_caps_logged = false;
+    if (!s_caps_logged) {
+        s_caps_logged = true;
+        g3x_log("caps: Voodoo-class profile — BOARDS=1 TMU=1 FB=1 MAX_TEX=256 TEXAR=3 UMA=0 TEXALIGN=8 GAMMA=8bit/32");
+    }
     return plength;
 }
 
 static char s_str_ext[2]   = "";  // no extensions advertised in P1
 static char s_str_hw[64]   = "3Dfx Voodoo Graphics";
-static char s_str_rdr[64]  = "glide3xvk " G3XVK_BUILD_ID " (Vulkan scaffold)";
+static char s_str_rdr[64]  = "glide3xvk " G3XVK_VERSION " (" G3XVK_BUILD_ID ")";
 
 char* __stdcall grGetString(FxU32 pname) {
     switch (pname) {
@@ -194,6 +290,12 @@ void __stdcall grColorCombine(GrCombineFunction_t function, GrCombineFactor_t fa
     g_st.color_combine[0] = function; g_st.color_combine[1] = factor;
     g_st.color_combine[2] = local;    g_st.color_combine[3] = other;
     g_st.color_combine[4] = (unsigned)invert;
+    // Game decode (D2Glide/Renderer/Glide.cpp RENDERER_GLIDE_SetColorCombine):
+    //   mode 1: grColorCombine(3=SCALE_OTHER, 1=FACTOR_LOCAL, 0, 1=OTHER_TEXTURE)
+    //           -> output = vertex color * texel (the textured sprite path)
+    //   mode 2: grColorCombine(1=LOCAL, 0, 1=LOCAL_CONSTANT, 2) -> output =
+    //           grConstantColorValue (the solid-fill / fade-rect path)
+    g3x_frame_set_color_fill(function == 1 && local == 1);
     g3x_state_note_u32("colorCombine", (function << 24) | (factor & 0xFFFFFF));
 }
 
@@ -220,16 +322,19 @@ void __stdcall grTexCombine(GrChipID_t tmu, GrCombineFunction_t rgb_function,
 void __stdcall grAlphaBlendFunction(GrAlphaBlendFnc_t rgb_sf, GrAlphaBlendFnc_t rgb_df,
                                     GrAlphaBlendFnc_t alpha_sf, GrAlphaBlendFnc_t alpha_df) {
     g_st.blend[0] = rgb_sf; g_st.blend[1] = rgb_df; g_st.blend[2] = alpha_sf; g_st.blend[3] = alpha_df;
+    g3x_frame_set_blend(rgb_sf, rgb_df);   // rgb pair drives the P2.1 raster
     g3x_state_note_u32("alphaBlend", (rgb_sf << 24) | (rgb_df << 16) | (alpha_sf << 8) | alpha_df);
 }
 
 void __stdcall grChromakeyMode(GrChromakeyMode_t mode) {
     g_st.chroma_mode = mode;
+    g3x_frame_set_chromakey(mode, g_st.chroma_value);
     g3x_state_note_u32("chromakeyMode", mode);
 }
 
 void __stdcall grChromakeyValue(GrColor_t value) {
     g_st.chroma_value = value;
+    g3x_frame_set_chromakey(g_st.chroma_mode, value);
     g3x_state_note_u32("chromakeyValue", value);
 }
 
@@ -245,6 +350,11 @@ void __stdcall grColorMask(FxBool rgb, FxBool a) {
 
 void __stdcall grConstantColorValue(GrColor_t value) {
     g_st.constant_color = value;
+    // P2.5 lane decode: the game builds this as ScalePaletteValue(v) | alpha =
+    // palette_entry(0xFFRRGGBB) << 8 | alpha -> [R:24-31][G:16-23][B:8-15]
+    // [alpha:0-7]; the raster's fill color is (value >> 8) & 0xFFFFFF in our
+    // 0xAARRGGBB pixels, blend alpha stays in bits 7..0.
+    g3x_frame_set_constant(value);
     g3x_state_note_u32("constantColor", value);
 }
 
@@ -285,7 +395,8 @@ void __stdcall grCoordinateSpace(GrCoordinateSpaceMode_t mode) {
 
 void __stdcall guGammaCorrectionRGB(FxFloat red, FxFloat green, FxFloat blue) {
     g_st.gamma[0] = red; g_st.gamma[1] = green; g_st.gamma[2] = blue;
-    g3x_log_once("guGammaCorrectionRGB", "%.3f %.3f %.3f (applied in present pass from P2)",
+    g3x_frame_set_gamma(red, green, blue);   // applied in the present scale pass
+    g3x_log_once("guGammaCorrectionRGB", "%.3f %.3f %.3f (applied in present)",
                  red, green, blue);
 }
 
@@ -299,14 +410,23 @@ void __stdcall grLoadGammaTable(FxU32 nentries, FxU32* red, FxU32* green, FxU32*
 // ---------------------------------------------------------------------------
 FxU32 __stdcall grTexTextureMemRequired(FxU32 evenOdd, GrTexInfo* info) {
     if (!info) return 0;
-    // Glide size model: width = 1<<(lod+aspect), height = 1<<(lod-aspect);
-    // 8bpp formats (<= GR_TEXFMT_P_8 range) cost 1 B/texel, the rest 2 B.
+    // Same dims convention as the raster's g3x_tex_dims: max dim = 2^lod, the
+    // other = 2^(lod-|aspect|). Bytes per texel per the real glide.h format
+    // table (P2.8 fix — the old `format <= 3 ? 1 : 2` charged P_8 (fmt 5)
+    // and ARGB_8332 (fmt 8) two bytes; both are 8-bit formats):
+    //   1 B: 0x0 RGB332, 0x2 A8, 0x3 I8, 0x4 AI44, 0x5 P_8, 0x8 ARGB8332
+    //   2 B: 0x1 YIQ422, 0x9 AYIQ8422, 0xa RGB565, 0xb ARGB1555, 0xc ARGB4444,
+    //        0xd AI88, 0xe AP88
+    static const uint8_t kFmtBpp[16] = {
+        1, 2, 1, 1, 1, 1, 2, 2,   // 0x0..0x7 (rsvd 6/7 charged 2 — never seen)
+        1, 2, 2, 2, 2, 2, 2, 2    // 0x8..0xf
+    };
+    const unsigned bpp = info->format < 16 ? kFmtBpp[info->format] : 2u;
     FxU32 bytes = 0;
     for (unsigned lod = info->smallLodLog2; lod <= info->largeLodLog2 && lod < 12; ++lod) {
-        int aspect = (int)info->aspectRatioLog2;
-        unsigned w = 1u << (lod + (aspect > 0 ? aspect : 0));
-        unsigned h = 1u << (lod - (aspect < 0 ? -aspect : 0));
-        bytes += w * h * ((info->format <= 0x3u) ? 1u : 2u);
+        unsigned w = 0, h = 0;
+        g3x_tex_dims(lod, (int)info->aspectRatioLog2, &w, &h);
+        bytes += w * h * bpp;
     }
     return bytes;
 }
@@ -325,6 +445,7 @@ void __stdcall grTexSource(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, Gr
         g_st.tex_addr[tmu] = startAddress;
         if (info) g_st.tex_format[tmu] = info->format;
     }
+    g3x_frame_tex_source(tmu, startAddress);   // bind for the P2.1 raster
     g3x_log_once("grTexSource", "tmu=%u addr=0x%08x fmt=%u", tmu, startAddress,
                  info ? info->format : 0);
 }
@@ -332,8 +453,9 @@ void __stdcall grTexSource(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, Gr
 void __stdcall grTexDownloadMipMap(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd,
                                    GrTexInfo* info) {
     ++g_st.n_tex_downloads;
-    g3x_log_once("grTexDownloadMipMap", "tmu=%u addr=0x%08x fmt=%u lods %u..%u (P1: counted, "
-                 "not uploaded)", tmu, startAddress, info ? info->format : 0,
+    g3x_frame_tex_download(tmu, startAddress, info);   // P2.1: real upload (CPU copy)
+    g3x_log_once("grTexDownloadMipMap", "tmu=%u addr=0x%08x fmt=%u lods %u..%u",
+                 tmu, startAddress, info ? info->format : 0,
                  info ? info->smallLodLog2 : 0, info ? info->largeLodLog2 : 0);
 }
 
@@ -344,8 +466,19 @@ void __stdcall grTexDownloadTable(GrTexTable_t type, void* data) {
         memcpy(g_st.palette, data, sizeof(g_st.palette));
         g_st.palette_valid = FXTRUE;
         ++g_st.n_palette_downloads;
-        g3x_log_once("grTexDownloadTable:palette", "256-entry palette copied (0x%08x first)",
-                     g_st.palette[0]);
+        g3x_frame_set_palette(data);   // active palette for the P2.1 raster
+        // P2.8: log the first 64 downloads WITH their epoch — the menu label
+        // black boxes and the in-game shadow rects both hinge on WHICH palette
+        // (and which pal[0] transparency marker) is live at draw time. The
+        // old log_once hid every download after the first.
+        static unsigned s_plog = 0;
+        if (s_plog < 64) {
+            ++s_plog;
+            const uint32_t* pal = g_st.palette;
+            g3x_log("pal#%u: pal[0]=0x%08x pal[1]=0x%08x pal[128]=0x%08x "
+                    "pal[254]=0x%08x pal[255]=0x%08x",
+                    s_plog, pal[0], pal[1], pal[128], pal[254], pal[255]);
+        }
     } else {
         g3x_log_once("grTexDownloadTable", "type=%u (unhandled)", type);
     }
@@ -369,13 +502,28 @@ void __stdcall grTexMipMapMode(GrChipID_t tmu, GrMipMapMode_t mode, FxBool lodBl
 }
 
 // ---------------------------------------------------------------------------
-// Geometry (P1: counted no-ops — nothing rasterized by design)
+// Geometry (P2.1: TRIANGLE_FAN quads rasterize; other primitives still counted)
 // ---------------------------------------------------------------------------
 void __stdcall grDrawVertexArrayContiguous(FxU32 mode, FxU32 Count, void* pointers,
                                            FxU32 stride) {
     ++g_st.n_draw_calls;
+    ++g_st.n_vac;
+    if (mode == G3X_GR_TRIANGLE_FAN && Count >= 3) {
+        g3x_frame_draw_fan(Count, pointers, stride);   // the D2 UI/world quad path
+    }
     if (stride != G3X_D2_VERTEX_STRIDE) {
         g3x_log_once("draw:stride", "UNEXPECTED stride=0x%x (spec says 0x1C)", stride);
+    }
+    // Field diagnostic: distinct (mode,count) shapes — anything other than the
+    // 4-vertex fan quads changes what the rasterizer must handle.
+    static unsigned s_shape_mode[8], s_shape_count[8], s_shape_n = 0;
+    bool known = false;
+    for (unsigned i = 0; i < s_shape_n; ++i) {
+        if (s_shape_mode[i] == mode && s_shape_count[i] == Count) { known = true; break; }
+    }
+    if (!known && s_shape_n < 8) {
+        s_shape_mode[s_shape_n] = mode; s_shape_count[s_shape_n] = Count; ++s_shape_n;
+        g3x_log("drawshape #%u: mode=%u count=%u", s_shape_n, mode, Count);
     }
     if (g_st.n_draw_calls <= 4) {
         g3x_log("grDrawVertexArrayContiguous: mode=%u count=%u stride=0x%x ptr=%p (call %u)",
@@ -387,65 +535,116 @@ void __stdcall grDrawVertexArrayContiguous(FxU32 mode, FxU32 Count, void* pointe
 
 FxU32 __stdcall grDrawVertexArray(FxU32 mode, FxU32 Count, void* pointers) {
     ++g_st.n_draw_calls;
+    ++g_st.n_parr;
+    // D2's ground/wall path (D2Glide/Renderer/Glide.cpp): `pointers` is an
+    // array of Count vertex pointers, each to a 0x1C-stride vertex.
+    //   DrawGroundTile: 5x mode-4 strips of 12 verts (normal quality) or one
+    //   mode-5 fan of 4 (low quality) — P2.2 and earlier ignored this export
+    //   entirely, which is why the world floor rendered black.
+    //   DrawWallTile*: 2x mode-4 strips of 10 verts.
+    if (pointers && Count >= 3) {
+        g3x_frame_draw_pointers(mode, Count, (void* const*)pointers);
+    }
     g3x_log_once("grDrawVertexArray", "mode=%u count=%u", mode, Count);
     return Count;
 }
 
 void __stdcall grDrawPoint(void* pt) {
     ++g_st.n_draw_calls;
+    ++g_st.n_point;
+    // P2.5: real raster. Callers (D2Glide DrawPoint path + the radial-light
+    // dot helpers) always run constant-fill + chromakey-off; the vertex is
+    // x,y floats at offset 0/4.
+    if (pt) {
+        float x, y;
+        memcpy(&x, pt, 4);
+        memcpy(&y, (const char*)pt + 4, 4);
+        g3x_frame_draw_point(x, y);
+    }
     g3x_log_once("grDrawPoint", "pt=%p", pt);
 }
 
 void __stdcall grDrawLine(void* v1, void* v2) {
     ++g_st.n_draw_calls;
+    ++g_st.n_line;
+    // P2.5: real raster (Bresenham). Callers set constant-fill + chromakey-off;
+    // each endpoint vertex is 24 bytes with x,y floats at offset 0/4.
+    if (v1 && v2) {
+        float x0, y0, x1, y1;
+        memcpy(&x0, v1, 4);
+        memcpy(&y0, (const char*)v1 + 4, 4);
+        memcpy(&x1, v2, 4);
+        memcpy(&y1, (const char*)v2 + 4, 4);
+        g3x_frame_draw_line(x0, y0, x1, y1);
+    }
     g3x_log_once("grDrawLine", "v1=%p v2=%p", v1, v2);
 }
 
 void __stdcall grDrawTriangle(void* a, void* b, void* c) {
     ++g_st.n_draw_calls;
+    ++g_st.n_tri;
     g3x_log_once("grDrawTriangle", "a=%p b=%p c=%p", a, b, c);
 }
 
 void __stdcall grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode) {
-    g3x_log_once("grVertexLayout", "param=%u offset=%d mode=%u", param, offset, mode);
+    // Decode the observed D2 vertex (glide.h GrParam): a 20-byte vertex of
+    // XY@0, PARGB@8, Q0@12, ST0@16 — the P2 vertex-input contract.
+    const char* name = (param == 0x01u) ? "XY"
+                     : (param == 0x30u) ? "PARGB"
+                     : (param == 0x50u) ? "Q0"
+                     : (param == 0x40u) ? "ST0" : "?";
+    g3x_log_once("grVertexLayout", "param=0x%02x(%s) offset=%d mode=%u",
+                 param, name, offset, mode);
 }
 
 // ---------------------------------------------------------------------------
-// LFB (framebuffer linear access — fades/screenshots/cutscene blits)
-// P1: hand out a CPU-side shadow buffer so writes land somewhere harmless.
-// P2: map these over the frame image (linear views) per PLAN.md P2.
+// LFB (framebuffer linear access) — the Bink video path. The observed caller
+// is D2Glide/glBlocks.cpp GLBLOCKS_RenderBinkVideoFrame:
+//   grLfbLock(1,0,GR_LFBWRITEMODE_8888,UPPER_LEFT)
+//   -> BinkCopyToBuffer(hBink, lfbPtr, OUR stride, h, xOffset, yOffset, 2)
+//   -> grLfbUnlock
+// On a real Voodoo the front-buffer write is immediately visible and the video
+// loop never calls grBufferSwap — so here, unlock = present. Since P2.1 the
+// lock hands out the SAME game framebuffer the raster draws into (frame is
+// memset black per video frame; Bink overwrites only its centered rect).
+// The READ_ONLY back-buffer call (GetBackBuffer, 565 read-back for fades)
+// returns the frame too; interpreting 32bpp rows as 565 is a known P2 gap.
 // ---------------------------------------------------------------------------
-static uint8_t* s_lfb_shadow = nullptr;
-static unsigned s_lfb_w = 0, s_lfb_h = 0;
+static bool s_lfb_write_pending = false;
 
 FxBool __stdcall grLfbLock(GrLock_t type, GrBuffer_t buffer, GrLfbWriteMode_t writeMode,
                            GrOriginLocation_t origin, FxBool pixelPipeline,
                            GrLfbInfo_t* info) {
     ++g_st.n_lfb_locks;
     if (!info || info->size < (int)sizeof(GrLfbInfo_t)) return FXFALSE;
-    if (!s_lfb_shadow) {
-        // generous max: 1600x1200 x 4 B
-        s_lfb_shadow = new (std::nothrow) uint8_t[1600u * 1200u * 4u];
-        if (!s_lfb_shadow) {
-            g3x_log("grLfbLock: shadow buffer alloc failed");
-            return FXFALSE;
-        }
-        memset(s_lfb_shadow, 0, 1600u * 1200u * 4u);
+    uint8_t* px = g3x_frame_pixels();
+    if (!px) return FXFALSE;
+    s_lfb_write_pending = (type == G3X_GR_LFB_WRITE_ONLY &&
+                           buffer == G3X_GR_BUFFER_FRONTBUFFER);
+    if (s_lfb_write_pending) {
+        // game clears color=0 (black) and Bink overwrites only its centered
+        // rect — start every video frame from black so the letterbox is clean.
+        memset(px, 0, (size_t)g3x_frame_stride() * g3x_frame_height());
     }
-    s_lfb_w = g_vk.alive ? g_vk.width : s_open_w;
-    s_lfb_h = g_vk.alive ? g_vk.height : s_open_h;
-    info->lfbPtr = s_lfb_shadow;
-    info->strideInBytes = s_lfb_w * 4;
+    info->lfbPtr = px;
+    info->strideInBytes = g3x_frame_stride();
     info->writeMode = writeMode;
     info->origin = origin;
-    g3x_log_once("grLfbLock", "type=%u buffer=%u writeMode=0x%02x -> %ux%u shadow",
-                 type, buffer, writeMode, s_lfb_w, s_lfb_h);
+    g3x_log_once("grLfbLock", "type=%u buffer=%u writeMode=0x%02x origin=%u -> %ux%u frame "
+                 "stride=%u (unlock=present)", type, buffer, writeMode, origin,
+                 g3x_frame_width(), g3x_frame_height(), g3x_frame_stride());
     return FXTRUE;
 }
 
 FxBool __stdcall grLfbUnlock(GrLock_t type, GrBuffer_t buffer) {
-    g3x_log_once("grLfbUnlock", "type=%u buffer=%u (shadow contents dropped in P1)",
-                 type, buffer);
+    if (s_lfb_write_pending) {
+        g3x_frame_present();
+        s_lfb_write_pending = false;
+        g3x_log_once("grLfbUnlock", "type=%u buffer=%u -> front-buffer frame presented",
+                     type, buffer);
+    } else {
+        g3x_log_once("grLfbUnlock", "type=%u buffer=%u", type, buffer);
+    }
     return FXTRUE;
 }
 
@@ -454,8 +653,14 @@ FxBool __stdcall grLfbUnlock(GrLock_t type, GrBuffer_t buffer) {
 static void g3x_banner() {
     char exe[MAX_PATH] = "(?)";
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
-    g3x_log("glide3xvk scaffold %s — loaded into %s", G3XVK_BUILD_ID, exe);
-    g3x_log("compiled " __DATE__ " " __TIME__ "; P1 = swapchain + clear-black present");
+    g3x_log("glide3xvk %s %s — loaded into %s", G3XVK_VERSION, G3XVK_BUILD_ID, exe);
+    g3x_log("compiled " __DATE__ " " __TIME__
+            "; P2.11 = version tag moved top-right: \"glide3xvk " G3XVK_VERSION " (%s)\" "
+            "drawn 4px from the top-right edge at present time (leaves the game's "
+            "/fps readout — top-left — visible; 8x8 bitmap font, post-gamma, over "
+            "everything incl. LFB video frames; off-switch glide3xvk.ini "
+            "[glide3xvk] overlay=0); P2.9 chroma index-0 fix retained",
+            G3XVK_BUILD_ID);
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
@@ -466,7 +671,17 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpRes
             g3x_banner();
             break;
         case DLL_PROCESS_DETACH:
-            g3x_log("process detach (swaps=%u draws=%u)", g_st.n_swaps, g_st.n_draw_calls);
+            g3x_log("process detach (swaps=%u draws=%u texmiss=%u)", g_st.n_swaps,
+                    g_st.n_draw_calls, g3x_frame_tex_miss_count());
+            // Field diagnostics (v2): if the game dropped us after init, the
+            // competing renderer backends appear as loaded modules. D2Glide.dll
+            // is our own caller (always loaded — not diagnostic); the D3D/DDraw/
+            // GDI backends only load if D2GFX fell back to them.
+            for (const char* mod : {"D2Direct3D.dll", "D2DDraw.dll", "D2GDI.dll"}) {
+                if (GetModuleHandleA(mod)) {
+                    g3x_log("detach: %s loaded (game fell back to another renderer?)", mod);
+                }
+            }
             g3x_vk_shutdown();
             g3x_log_close();
             break;

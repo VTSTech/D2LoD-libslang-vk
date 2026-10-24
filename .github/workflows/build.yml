@@ -26,3 +26,29 @@ jobs:
 
       - name: Build from a clean clone
         run: tools/check-build.sh "$GITHUB_WORKSPACE" "$GITHUB_SHA"
+
+      # The clean-clone gate above exercises the glide3xvk target too, but its
+      # build dir is a temp clone. Configure the checkout itself and keep the
+      # DLL: the artifact below is what field testers run.
+      - name: Build glide3x.dll
+        run: |
+          cmake -S . -B build-g3x -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
+          cmake --build build-g3x --target glide3x
+
+      - name: Check the Glide export surface
+        run: |
+          i686-w64-mingw32-objdump -p build-g3x/glide3x.dll \
+            | sed -n '/Ordinal\/Name Pointer/,$p' \
+            | grep -oE '_[A-Za-z]+@[0-9]+' | sort -u > /tmp/ours.txt
+          grep -oE '"_[A-Za-z]+@[0-9]+"' D2Client/Renderer/Glide.cpp \
+            | tr -d '"' | sort -u > /tmp/game.txt
+          diff /tmp/game.txt /tmp/ours.txt
+          echo "glide3x.dll: $(wc -l < /tmp/ours.txt) exports, $(stat -c %s build-g3x/glide3x.dll) bytes"
+          i686-w64-mingw32-strings build-g3x/glide3x.dll | grep -m1 '^glide3xvk ' || true
+
+      - name: Upload glide3x.dll
+        uses: actions/upload-artifact@v4
+        with:
+          name: glide3x-dll
+          path: build-g3x/glide3x.dll
+          if-no-files-found: error

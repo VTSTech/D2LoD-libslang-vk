@@ -42,6 +42,12 @@ struct G3xState {
     uint32_t             n_lfb_locks        = 0;
     uint32_t             n_swaps            = 0;
     uint32_t             n_clears           = 0;
+    // per-path draw counters (P2.4 diagnostics; strips/fans live in g3x_frame)
+    uint32_t             n_vac              = 0;   // grDrawVertexArrayContiguous
+    uint32_t             n_parr             = 0;   // grDrawVertexArray
+    uint32_t             n_point            = 0;
+    uint32_t             n_line             = 0;
+    uint32_t             n_tri              = 0;
 };
 
 extern G3xState g_st;

@@ -29,6 +29,8 @@ endif()
 set(G3XVK_SOURCES
     src/g3x_log.cpp
     src/g3x_state.cpp
+    src/g3x_frame.cpp
+    src/g3x_overlay.cpp
     src/vk_backend.cpp
     src/glide_exports.cpp
     vendor/volk/volk.c)
@@ -61,7 +63,10 @@ target_compile_definitions(glide3x PRIVATE
 #      def lookups find nothing — solved by -Wl,-u flags forcing every symbol
 #      undefined before the archive scan.
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/glide3x.def" _g3x_def)
-string(REGEX MATCHALL "_[a-zA-Z]+@[0-9]+" _g3x_syms "${_g3x_def}")
+# Strip ';' comment lines first — the header comment cites "_grBufferSwap@4"
+# as an example, which the naive regex would count as a 46th export.
+string(REGEX REPLACE ";[^\n]*" "" _g3x_code "${_g3x_def}")
+string(REGEX MATCHALL "_[a-zA-Z]+@[0-9]+" _g3x_syms "${_g3x_code}")
 list(LENGTH _g3x_syms _g3x_n)
 if(NOT _g3x_n EQUAL 45)
     message(FATAL_ERROR "glide3x.def must list exactly 45 exports (found ${_g3x_n})")
@@ -82,4 +87,7 @@ target_link_options(glide3x PRIVATE
 target_compile_options(glide3x PRIVATE -O2 -w)
 
 set_source_files_properties(src/glide_exports.cpp PROPERTIES
+    COMPILE_DEFINITIONS "G3XVK_BUILD_ID=\"${G3XVK_BUILD_ID}\"")
+# The overlay tag line embeds the same build id (see g3x_overlay.cpp).
+set_source_files_properties(src/g3x_overlay.cpp PROPERTIES
     COMPILE_DEFINITIONS "G3XVK_BUILD_ID=\"${G3XVK_BUILD_ID}\"")

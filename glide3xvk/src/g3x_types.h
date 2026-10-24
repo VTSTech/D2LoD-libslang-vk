@@ -109,8 +109,35 @@ inline void g3x_resolution_size(GrScreenResolution_t res, unsigned* w, unsigned*
 #define G3X_GR_LFB_READ_ONLY  0u
 #define G3X_GR_LFB_WRITE_ONLY 1u
 
-// grGet pname 0xF (observed, D2Client/Renderer/Glide.cpp:452): the 1.14d
-// Glide-accept gate. The result is read as "TMU count"; anything >= 1 accepts
-// the renderer. We report 1 (single-TMU Voodoo Graphics class) so the game
-// stays on the single-TMU combine paths = smallest P2 surface.
-#define G3X_GR_GET_TMU_COUNT 0xFu
+// LFB targets / origin / pixel layouts (3dfx glide.h; the two observed call
+// sites are D2Glide/glBlocks.cpp GLBLOCKS_RenderBinkVideoFrame -> (1,0,5,0)
+// and D2Glide/Renderer/Glide.cpp GetBackBuffer -> (0,1,0xff,0)).
+#define G3X_GR_BUFFER_FRONTBUFFER 0u
+#define G3X_GR_ORIGIN_UPPER_LEFT  0u
+#define G3X_GR_ORIGIN_LOWER_LEFT  1u
+#define G3X_GR_LFB_WRITEMODE_565  0x0u  // RGB:RGB   16bpp
+#define G3X_GR_LFB_WRITEMODE_555  0x1u  // RGB:RGB   16bpp
+#define G3X_GR_LFB_WRITEMODE_1555 0x2u  // ARGB:ARGB 16bpp
+#define G3X_GR_LFB_WRITEMODE_8888 0x5u  // ARGB      32bpp — the Bink path
+
+// -- grGet caps table (field-test v1 finding, 2026-10-24) --------------------
+//
+// The fork's decompiled call sites query six pnames right after a successful
+// grSstWinOpen (D2Glide/Renderer/Glide.cpp). The v1 stub answered 0 for all of
+// them, and D2Glide's init treats GR_NUM_TMU == 0 as a hard failure
+// (`if (!gnGlideTextureMemoryUsed) return 0;`) — the game tore down cleanly
+// and never presented a frame. Names below are CANONICAL (3dfx glide.h /
+// diget.c, cvg = Voodoo2 build); the decompiler locals in the fork
+// ("nTexMemFbzColorPath", "gnGlideTextureMemoryUsed", ...) mislabel several
+// of them. Answers mirror the real 3dfx Voodoo2 implementation so D2 configures
+// itself exactly like on a period card: single board, single TMU, 256x256
+// textures, no UMA, no SLI.
+#define G3X_GR_GET_GAMMA_ENTRIES     0x05u  // GR_GAMMA_TABLE_ENTRIES  -> 32
+#define G3X_GR_GET_MAX_TEXTURE_SIZE  0x0Au  // GR_MAX_TEXTURE_SIZE     -> 256
+#define G3X_GR_GET_MAX_TEXTURE_AR    0x0Bu  // GR_MAX_TEXTURE_ASPECT_RATIO -> 3
+#define G3X_GR_GET_MEMORY_UMA        0x0Eu  // GR_MEMORY_UMA           -> 0 (split-memory Voodoo)
+#define G3X_GR_GET_NUM_BOARDS        0x0Fu  // GR_NUM_BOARDS           -> 1 (acceptance gate, D2Client/Renderer/Glide.cpp:452)
+#define G3X_GR_GET_NUM_FB            0x11u  // GR_NUM_FB               -> 1 (non-SLI)
+#define G3X_GR_GET_NUM_TMU           0x13u  // GR_NUM_TMU              -> 1 (HARD GATE: 0 = D2Glide init fails)
+#define G3X_GR_GET_TEXTURE_ALIGN     0x24u  // GR_TEXTURE_ALIGN        -> 8 (SST_TEXTURE_ALIGN)
+#define G3X_GR_GET_BITS_GAMMA        0x2Au  // GR_BITS_GAMMA           -> 8

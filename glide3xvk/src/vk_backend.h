@@ -39,5 +39,15 @@ bool g3x_vk_resize(unsigned width, unsigned height);
 // swap_interval: 0 = immediate, 1 = FIFO vsync (D2 passes bVSync as 0/1).
 void g3x_vk_present(unsigned swap_interval);
 
+// Current present extent (swapchain, i.e. the window client area — which in
+// windowed mode can differ from the game's requested render size). Returns
+// 0,0 when no live swapchain.
+void g3x_vk_present_extent(unsigned* w, unsigned* h);
+
+// Present a ready-made BGRA8 frame: w*h*4 bytes, B8G8R8A8 byte order (what an
+// ARGB dword looks like in little-endian memory — Glide's GR_LFBWRITEMODE_8888
+// layout). w/h must match g3x_vk_present_extent. Used by the LFB/Bink path.
+bool g3x_vk_present_pixels(const uint8_t* bgra, unsigned w, unsigned h);
+
 // Tear everything down (grSstWinClose / grGlideShutdown / DLL detach).
 void g3x_vk_shutdown();

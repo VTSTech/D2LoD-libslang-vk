@@ -31,6 +31,11 @@ VkFence          s_fence       = VK_NULL_HANDLE;
 VkCommandPool    s_cmd_pool    = VK_NULL_HANDLE;
 VkCommandBuffer  s_cmd         = VK_NULL_HANDLE;
 uint64_t         s_frame       = 0;
+// host-visible upload buffer for the LFB/Bink present path (extent-sized)
+VkBuffer         s_staging      = VK_NULL_HANDLE;
+VkDeviceMemory   s_staging_mem  = VK_NULL_HANDLE;
+uint8_t*         s_staging_map  = nullptr;
+VkDeviceSize     s_staging_size = 0;
 
 #define G3X_VK_CHECK(expr, what)                                              \
     do {                                                                      \
@@ -44,6 +49,10 @@ uint64_t         s_frame       = 0;
 void destroy_swapchain_objects() {
     if (s_device == VK_NULL_HANDLE) return;
     vkDeviceWaitIdle(s_device);
+    if (s_staging_map)      { vkUnmapMemory(s_device, s_staging_mem); s_staging_map = nullptr; }
+    if (s_staging)          { vkDestroyBuffer(s_device, s_staging, nullptr); s_staging = VK_NULL_HANDLE; }
+    if (s_staging_mem)      { vkFreeMemory(s_device, s_staging_mem, nullptr); s_staging_mem = VK_NULL_HANDLE; }
+    s_staging_size = 0;
     if (s_swapchain != VK_NULL_HANDLE) { vkDestroySwapchainKHR(s_device, s_swapchain, nullptr); s_swapchain = VK_NULL_HANDLE; }
     if (s_sem_acquire != VK_NULL_HANDLE) { vkDestroySemaphore(s_device, s_sem_acquire, nullptr); s_sem_acquire = VK_NULL_HANDLE; }
     if (s_sem_render != VK_NULL_HANDLE)  { vkDestroySemaphore(s_device, s_sem_render, nullptr);  s_sem_render  = VK_NULL_HANDLE; }
@@ -67,6 +76,42 @@ bool create_sync_and_cmd() {
     ai.commandPool = s_cmd_pool; ai.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; ai.commandBufferCount = 1;
     G3X_VK_CHECK(vkAllocateCommandBuffers(s_device, &ai, &s_cmd), "vkAllocateCommandBuffers");
     s_sync_live = true;
+    return true;
+}
+
+bool ensure_staging(VkDeviceSize bytes) {
+    if (s_staging && s_staging_size >= bytes) return true;
+    if (s_staging_map)      { vkUnmapMemory(s_device, s_staging_mem); s_staging_map = nullptr; }
+    if (s_staging)          { vkDestroyBuffer(s_device, s_staging, nullptr); s_staging = VK_NULL_HANDLE; }
+    if (s_staging_mem)      { vkFreeMemory(s_device, s_staging_mem, nullptr); s_staging_mem = VK_NULL_HANDLE; }
+    s_staging_size = 0;
+
+    VkBufferCreateInfo bi{}; bi.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bi.size = bytes;
+    bi.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    G3X_VK_CHECK(vkCreateBuffer(s_device, &bi, nullptr, &s_staging), "vkCreateBuffer staging");
+    VkMemoryRequirements mr{}; vkGetBufferMemoryRequirements(s_device, s_staging, &mr);
+    uint32_t mem_type = 0;
+    {
+        VkPhysicalDeviceMemoryProperties mp{}; vkGetPhysicalDeviceMemoryProperties(s_phys, &mp);
+        bool found = false;
+        for (uint32_t i = 0; i < mp.memoryTypeCount; ++i) {
+            if ((mr.memoryTypeBits & (1u << i)) &&
+                (mp.memoryTypes[i].propertyFlags & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))) {
+                mem_type = i; found = true; break;
+            }
+        }
+        if (!found) { g3x_log("vk fail: no host-visible memory type"); return false; }
+    }
+    VkMemoryAllocateInfo ai{}; ai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    ai.allocationSize = mr.size; ai.memoryTypeIndex = mem_type;
+    G3X_VK_CHECK(vkAllocateMemory(s_device, &ai, nullptr, &s_staging_mem), "vkAllocateMemory staging");
+    G3X_VK_CHECK(vkBindBufferMemory(s_device, s_staging, s_staging_mem, 0), "vkBindBufferMemory staging");
+    G3X_VK_CHECK(vkMapMemory(s_device, s_staging_mem, 0, mr.size, 0, (void**)&s_staging_map),
+                 "vkMapMemory staging");
+    s_staging_size = mr.size;
     return true;
 }
 
@@ -119,6 +164,7 @@ bool create_swapchain() {
 
     g3x_log("vk: swapchain %ux%u fmt=%d images=%u (FIFO)", s_extent.width, s_extent.height,
             (int)s_format, s_image_n);
+    if (!ensure_staging((VkDeviceSize)s_extent.width * s_extent.height * 4)) return false;
     if (!s_sync_live) return create_sync_and_cmd();
     return true;
 }
@@ -199,6 +245,10 @@ bool g3x_vk_init(HWND hwnd, unsigned width, unsigned height) {
     g_vk.alive = true;
     s_frame = 0;
     g3x_log("vk: backend ready (%ux%u)", g_vk.width, g_vk.height);
+    if (s_extent.width != g_vk.width || s_extent.height != g_vk.height) {
+        g3x_log("vk: windowed scale — window %ux%u, game renders %ux%u (present scales)",
+                s_extent.width, s_extent.height, g_vk.width, g_vk.height);
+    }
     return true;
 }
 
@@ -211,29 +261,26 @@ bool g3x_vk_resize(unsigned width, unsigned height) {
     return true;
 }
 
-void g3x_vk_present(unsigned swap_interval) {
-    if (!g_vk.alive || !s_sync_live) { ++s_frame; return; }
-    ++s_frame;
+namespace {
 
-    uint32_t idx = 0;
+bool acquire_image(uint32_t* idx) {
+    if (!g_vk.alive || !s_sync_live) return false;
     VkResult r = vkAcquireNextImageKHR(s_device, s_swapchain, UINT64_MAX,
-                                       s_sem_acquire, VK_NULL_HANDLE, &idx);
+                                       s_sem_acquire, VK_NULL_HANDLE, idx);
     if (r == VK_ERROR_OUT_OF_DATE_KHR) {
         g3x_log_once("swap-oode", "swapchain out of date, recreating");
         g3x_vk_resize(g_vk.width, g_vk.height);
-        return;
+        return false;
     }
     if (r != VK_SUCCESS && r != VK_SUBOPTIMAL_KHR) {
         g3x_log_once("swap-acq", "vkAcquireNextImageKHR -> %d", (int)r);
-        return;
+        return false;
     }
+    return true;
+}
 
-    // P1 frame content: solid black. P3 replaces this command buffer with the
-    // libslang-vk chain render (slangvk_chain_render_swapchain) — see PLAN.md.
-    VkCommandBufferBeginInfo bi{}; bi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vkBeginCommandBuffer(s_cmd, &bi);
-
+// barriers to TRANSFER_DST, caller records the transfer op, then this closes
+void transfer_barriers_to_dst(uint32_t idx) {
     VkImageMemoryBarrier bar{}; bar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     bar.image = s_images[idx];
     bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -247,11 +294,16 @@ void g3x_vk_present(unsigned swap_interval) {
     bar.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     vkCmdPipelineBarrier(s_cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                          VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &bar);
+}
 
-    VkClearColorValue black{}; black.float32[3] = 1.f;
-    vkCmdClearColorImage(s_cmd, s_images[idx], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                         &black, 1, &bar.subresourceRange);
-
+void submit_and_present(uint32_t idx) {
+    VkImageMemoryBarrier bar{}; bar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    bar.image = s_images[idx];
+    bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bar.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    bar.subresourceRange.levelCount = 1;
+    bar.subresourceRange.layerCount = 1;
     bar.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     bar.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     bar.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -274,12 +326,77 @@ void g3x_vk_present(unsigned swap_interval) {
     pi.waitSemaphoreCount = 1; pi.pWaitSemaphores = &s_sem_render;
     pi.swapchainCount = 1; pi.pSwapchains = &s_swapchain;
     pi.pImageIndices = &idx;
-    r = vkQueuePresentKHR(s_queue, &pi);
-    (void)swap_interval; // FIFO is always on in P1; immediate mode is P2 polish
+    VkResult r = vkQueuePresentKHR(s_queue, &pi);
     if (r == VK_ERROR_OUT_OF_DATE_KHR) {
         g3x_log_once("swap-oode2", "present out of date, recreating");
         g3x_vk_resize(g_vk.width, g_vk.height);
     }
+}
+
+} // namespace
+
+void g3x_vk_present(unsigned swap_interval) {
+    ++s_frame;
+    uint32_t idx = 0;
+    if (!acquire_image(&idx)) return;
+
+    VkCommandBufferBeginInfo bi{}; bi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer(s_cmd, &bi);
+    transfer_barriers_to_dst(idx);
+
+    // P1 frame content: solid black. P3 replaces this command buffer with the
+    // libslang-vk chain render (slangvk_chain_render_swapchain) — see PLAN.md.
+    VkClearColorValue black{}; black.float32[3] = 1.f;
+    VkImageSubresourceRange rng{};
+    rng.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; rng.levelCount = 1; rng.layerCount = 1;
+    vkCmdClearColorImage(s_cmd, s_images[idx], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                         &black, 1, &rng);
+
+    (void)swap_interval; // FIFO is always on in P1; immediate mode is P2 polish
+    submit_and_present(idx);
+}
+
+void g3x_vk_present_extent(unsigned* w, unsigned* h) {
+    if (w) *w = (g_vk.alive && s_sync_live) ? s_extent.width : 0;
+    if (h) *h = (g_vk.alive && s_sync_live) ? s_extent.height : 0;
+}
+
+bool g3x_vk_present_pixels(const uint8_t* bgra, unsigned w, unsigned h) {
+    ++s_frame;
+    if (!g_vk.alive || !s_sync_live) return false;
+    if (w != s_extent.width || h != s_extent.height) return false; // stale compose buffer
+    VkDeviceSize bytes = (VkDeviceSize)w * h * 4;
+    if (!ensure_staging(bytes) || !s_staging_map) return false;
+
+    if (s_format == VK_FORMAT_B8G8R8A8_UNORM) {
+        memcpy(s_staging_map, bgra, (size_t)bytes);
+    } else {
+        // rare surface format (e.g. RGBA8): swizzle BGRA -> RGBA while uploading
+        const uint8_t* s = bgra; uint8_t* d = s_staging_map;
+        for (VkDeviceSize i = 0; i < w * h; ++i, s += 4, d += 4) {
+            d[0] = s[2]; d[1] = s[1]; d[2] = s[0]; d[3] = s[3];
+        }
+    }
+
+    uint32_t idx = 0;
+    if (!acquire_image(&idx)) return false;
+    VkCommandBufferBeginInfo bi{}; bi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer(s_cmd, &bi);
+    transfer_barriers_to_dst(idx);
+
+    VkBufferImageCopy cpy{};
+    cpy.bufferOffset = 0;
+    cpy.bufferRowLength = 0; cpy.bufferImageHeight = 0;   // tightly packed
+    cpy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    cpy.imageSubresource.layerCount = 1;
+    cpy.imageExtent = {s_extent.width, s_extent.height, 1};
+    vkCmdCopyBufferToImage(s_cmd, s_staging, s_images[idx],
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &cpy);
+
+    submit_and_present(idx);
+    return true;
 }
 
 void g3x_vk_shutdown() {

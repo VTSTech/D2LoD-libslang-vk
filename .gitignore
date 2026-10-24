@@ -5,3 +5,4 @@ compile-errors.txt
 sites2.tsv
 *.cpp.map
 /build/
+/build-g3x/

@@ -1,8 +1,11 @@
 # PLAN.md — libslang-vk Integration (D2LoD-libslang-vk)
 
-> Status: draft v2, 2026-10-24. Baseline build verified in-sandbox (see §2); rebuilt
+> Status: v3, 2026-10-24. Baseline build verified in-sandbox (see §2); rebuilt
 > d2.exe verified PLAYABLE on real hardware (silent-startup saga closed — see §0 for
-> where the bootlog work lives). Owner: VTSTech. Agent session log:
+> where the bootlog work lives). glide3xvk is past P1 and mid-P2 — **P2.1–P2.6
+> shipped and field-tested** on vanilla retail 1.14d (rounds 1–9 of the
+> `glide3x.log` loop; menu + world render, ~27 fps @ 800x600 — see the ledger in
+> §5 P2). Owner: VTSTech. Agent session log:
 > `/home/z/my-project/worklog.md`.
 > **All integration work happens on the `libslang-vk` branch (see §0).**
 
@@ -78,6 +81,7 @@ phase below compiles against this exact toolchain.
 | Verify | 0 compile errors over 510 TUs; 0× `-fpermissive`; imports `msvcrt.dll`, `ddraw.dll` as expected |
 | Sandbox recipe (no sudo) | debs from `archive.ubuntu.com` pool → `dpkg -x` into `~/.local/opt/mingw-root` → wrapper scripts (`d2w-gcc` = `i686-w64-mingw32-gcc-posix --sysroot=...`) → configure with `-DD2_TOOL_PREFIX=d2w-` |
 | Why not llvm-mingw | clang 23 rejects the tree: mingw-w64 header drift (`_EXCEPTION_DISPOSITION` enum vs project `typedef int`, missing `threadlocinfo`). GNU/CI headers avoid all of it; zero source drift. |
+| glide3xvk (P2, committed) | `glide3x.dll`, `pei-i386`, 45/45 exports, self-contained (KERNEL32 + msvcrt imports only); rendering field-verified correct on retail 1.14d (rounds 4–12); CI builds + uploads it per push |
 
 The toolchain lives at `/home/z/.local/opt/` (venv: cmake 4.4.4 + ninja; llvm-mingw
 20261020 kept as fallback). VTSTech's Ubuntu 26.04 VM can use the same deb-extract
@@ -94,8 +98,12 @@ Reverse-engineering the renderer dispatch turned up the ideal integration point 
   `LoadLibraryA("glide3x.dll")` and resolves **45 stdcall exports**
   (`_grBufferSwap@4`, `_grSstWinOpen@28`, `_grDrawVertexArrayContiguous@16`, ...).
   A missing export halts via `ErrorManager` with a per-symbol line code.
-- `D2Client/Renderer/Glide.cpp::Initialize()` gates on `grGet(0xf, ...)` — the
-  game requires **secondary TMU count ≥ 1** before accepting the Glide renderer.
+- `D2Client/Renderer/Glide.cpp::Initialize()` gates on `grGet` answers — the
+  decompiler mislabels the variables: `0xF` is `GR_NUM_BOARDS` (the accept
+  gate, must be ≥ 1) and `0x13` is `GR_NUM_TMU` (the init gate, must be ≥ 1;
+  answering 0 there was the v1 zero-frame cause). `0x05/0x0A/0x0B/0x11/0x24/
+  0x2A/0x0E` round out the caps contract (Voodoo-class single-TMU profile,
+  answered per the real 3dfx glide3x `diget.c`).
 - The whole renderer is classic fixed-function Glide: palette-indexed 8-bit
   textures (`grTexDownloadMipMap`, `grTexDownloadTable` palettes), quad/line/point
   submits (`grDrawVertexArrayContiguous` — vertex stride 0x1C, `D2GlideVertexStrc`:
@@ -224,15 +232,19 @@ presents — game reaches the menu with a black screen and no crash.
   reduced core. Record findings in `glide3xvk/BUILD-32BIT.md`.
   **DONE — PASSED 2026-10-24, R1 retired, no fallbacks needed (BUILD-32BIT.md).**
 - **Resolved:** 1.14d exposes the Glide mode via the ini flag store — command
-  line `-3dfx` or `[VIDEO] 3DFX=1` (Fog globals flag table, offset 0xa) — and
-  it is **fullscreen-only** (D2GFX.cpp:497 excludes Glide from windowed mode).
-  Renderer table index 4 = `D2Client::Renderer::GlideFunctionTable`. Test P1 on a
-  **vanilla retail install**: `Game.exe -3dfx` (no `-w`) — no rebuilt d2.exe
+  line `-3dfx` or `[VIDEO] 3DFX=1` (Fog globals flag table, offset 0xa).
+  Field-proved correction (rounds 2–9): **windowed `-w -3dfx` also loads
+  Glide** on retail — the D2GFX.cpp:497 "fullscreen-only" read was wrong.
+  Renderer table index 4 = `D2Client::Renderer::GlideFunctionTable`. Test on a
+  **vanilla retail install**: `Game.exe -w -3dfx` — no rebuilt d2.exe
   needed (§3 vanilla note); the Redivivus build behaves identically when available.
 - Exit: game boots, menu UI invisible but present (nothing rasterized yet),
   clean log, crash-free 5-minute idle in menu.
+- **Shipped 2026-10-24 (rounds 1–3):** v1 scaffold → v2 caps fix
+  (`GR_NUM_BOARDS`/`GR_NUM_TMU` — the zero-frame root cause) → v3 Bink LFB
+  present + windowed scale (intro videos visible on retail). P1 exit met.
 
-### P2 — Glide raster core  *(the meat)*
+### P2 — Glide raster core  *(the meat)* — **SHIPPED: P2.1–P2.11 (rounds 4–13); field verdict round 12: "Everything actually looks correct"**
 Render what D2 actually draws, unfiltered, through the new backend.
 
 - Texture path: `grTexDownloadMipMap`/`grTexSource` uploads as 8bpp index
@@ -247,9 +259,57 @@ Render what D2 actually draws, unfiltered, through the new backend.
 - Special cases: LFB lock/unlock (fades, screenshots) → linear views over the
   frame image; gamma via `guGammaCorrectionRGB` (fold into present pass);
   Smacker cutscene quads.
-- Exit: single-player session — menu, character select, a few acts' outdoor +
-  indoor areas, combat, cutscene — visually correct vs original (screenshot
-  diffs), 60 fps at 640x480 on RX 560.
+
+Sub-milestone ledger — each row is one field round (user pastes `glide3x.log`
+→ agent analyzes against the game tree → build → zip → tmpfiles.org → retest;
+details in `glide3xvk/FIELD-TEST.md` + `worklog.md`):
+
+| Step | Build | Shipped | Field result |
+|---|---|---|---|
+| P2.1 | v4 | fan-quad barycentric raster; P_8 + palette; 3 blend classes; gamma in present | title renders; buttons black, char sprites halved (s/t convention) |
+| P2.2 | v5 | texel-unit s/t rule v1 (`2^lod/256`) + constant-fill path | button art appears; glyph text missing; ground black (parr path ignored) |
+| P2.3 | v6 | pointer-array strips/fans (ground/walls) + color-space chromakey | ground appears; button/text and edge artifacts remain |
+| P2.4 | v7 | negative-coord wrap; fill-rect fast path; append-mode logs | same pixels; 4.3 fps becomes the complaint |
+| P2.5 | v8 | scanline span raster (~40x); `grDrawPoint`/`grDrawLine`; constant-color RGB lanes; `avg=ms` | ~27 fps @ 800x600; "a lot missing" + buttons still wrong |
+| P2.6 | v9 | **s/t space auto-detect** (texel units vs Voodoo 256-space, per axis) + RGB565 quads | quad# field data: auto-detect wrong on 7 of 14 classes |
+| P2.7 | v10 | **uniform square-mip s/t space** — texel = coord·2^largeLod/256 on BOTH axes (reduces exactly to D2's own `gaPerspectiveImageSizeTable` spans for every aspect) | 7 crushed classes fixed (button text, mini-panel, sprites); 2 residual symptoms: black rects in-game, black bars behind menu labels |
+| P2.8 | v11 | evidence build: `vc0#`/`pal#`/`chroma#`/`fill#` diagnostic lines; `grTexTextureMemRequired` 1 B/texel fix; kMaxTex 8192 | evidence pinned: transparency lives in palette INDEX 0, not the blue chroma key |
+| P2.9 | chroma-fix | chroma discards texel **index 0** (the DC6 transparent texel RLE leaves unwritten) in addition to RGB==key | round-11 field: **"Great job! Everything actually looks correct."** — both symptoms closed, one root cause |
+| P2.10 | 0.3.0 | version-tag overlay (8x8 font, backdrop, shadow), `grGetString(GR_RENDERER)` identity, `glide3xvk.ini` off-switch, release packaging | delivered; every screenshot now self-identifies its build |
+| P2.11 | 0.3.1 | overlay moved **top-right** (the game's `/fps` readout owns the top-left corner); CI builds `glide3x.dll` and uploads it as an artifact; README/PLAN refresh; all P2 work committed to the branch so the build id names a real pushed commit | this round |
+
+The P2.6 discovery (game-tree ground truth): D2 submits **two s/t
+conventions** — texel units (`DrawPalettedQuad` sprites/UI/buttons/text via
+`gaPerspectiveImageSizeTable`, and the ground lattice `InitGroundTileVertices`)
+and the **Voodoo 256-space** (glBlocks wall lattice `InitPerspectiveTables`:
+S=col\*128, T=row\*64 up to 256, sampling 32x32 subtiles). The single scalar
+rule of P2.2–P2.5 was exact only for lod-8 textures — which is why the ground
+fixed in rounds 6–8 while 64x32 title buttons (crushed to a 16x8 corner) and
+32x32 wall subtiles (4x4 corner) never did. P2.6 auto-detected per draw and
+per axis; P2.7 replaced that heuristic with the uniform square rule
+`texel = coord·2^largeLod/256` on both axes, which reduces to the game's own
+aspect-table spans for every aspect and measured 1:1 on all 14 field draw
+classes.
+
+The P2.9 root cause (one defect, both symptoms): DC6 sprites/tiles/textures
+carry their transparent texels as palette **index 0** (RLE decompression skips
+transparent runs, leaving the memset zero). The chroma rule only compared
+post-palette RGB against the blue chroma key — palette 0 is black, not blue —
+so every transparent texel painted opaque black: sprite/tile-corner rects
+in-game and glyph-background bars in the menu. Chroma now discards index 0 in
+addition to the RGB match.
+
+P2 exit: **met** (round-12 field verdict on a full single-player session:
+menu, world, units, inventory UI, shadows, text, cutscenes all correct).
+Leftover polish, deliberately deferred:
+
+- Bilinear filtering: the ground runs `texFilterMode(1,1)` when `pTileData`
+  is set — currently point-sampled (look delta only, not missing content).
+- Mip chains: download bytes stored, sampling is base-lod only; no
+  `grTexMipMapMode` calls observed in any log — revisit only if distance
+  artifacts show up.
+- Frame pace: the CPU raster measured 27 fps @ 800x600 (round 8); the
+  60 fps target moves to P3's GPU path if the CPU raster plateaus here.
 
 ### P3 — libslang-vk preset chain
 The payoff. Everything above already runs through our swapchain.
@@ -272,9 +332,11 @@ The payoff. Everything above already runs through our swapchain.
   last-N-Glide-calls ring buffer.
 - Packaging: drop-in zip (`glide3x.dll` + `presets/` + `d2slangvk.conf`) laid
   over a D2 install; README with video-mode instructions.
-- CI: extend the fork's `tools/check-build.sh` pattern with a `check-glide3x.sh`
-  (build DLL, verify exports present via objdump, link-check); agent sandbox
-  build-only smoke (no ICD in CI).
+- CI: **done for the DLL** (P2.11) — `.github/workflows/build.yml` builds the
+  tree from a clean clone (`tools/check-build.sh`), then builds `glide3x.dll`
+  from the checkout, verifies the 45-export surface via objdump, and uploads
+  the DLL as the `glide3x-dll` artifact. Remaining (P4): package the drop-in
+  zip (`glide3x.dll` + presets) in CI instead of the hand-run tmpfiles loop.
 
 ### P5 — Stretch
 - Per-preset retro CRT curvature/geometry defaults per D2's 4:3 vs wide hacks.
@@ -288,11 +350,12 @@ The payoff. Everything above already runs through our swapchain.
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
 | R1 | libslang-vk C++23 doesn't build i686-mingw gcc-13 | **Retired 2026-10-24** | — | **Spike PASSED** (`glide3xvk/BUILD-32BIT.md`): builds clean with zero source changes; fallbacks not needed; verified recipe recorded there |
-| R2 | No 32-bit Vulkan loader/ICD on VTSTech's box | Low | Med | 32-bit vulkan-1.dll ships with modern GPU drivers (verify on RX 560 early); fail-soft unfiltered present regardless |
-| R3 | 1.14d doesn't expose Glide video mode in UI | Med | Med | Registry/video-test investigation in P1; d2dx documents 1.14d Glide selection; worst case a tiny d2vidtst-style selector or conf-forced mode |
-| R4 | Glide state semantics subtly wrong (combine functions) | Med | Med | In-tree D2Glide is a complete usage spec; d2dx as prior art; screenshot-diff loop vs original renderer in P2 |
+| R2 | No 32-bit Vulkan loader/ICD on VTSTech's box | **Retired 2026-10-24** | — | **Field-proved**: the driver stack serves Vulkan 1.3 to the 32-bit DLL (RX 560, rounds 1–9, 293-frame sessions); fail-soft unfiltered present stays in place regardless |
+| R3 | 1.14d doesn't expose Glide video mode in UI | **Retired 2026-10-24** | — | **Field-proved**: `-3dfx` selects Glide on retail 1.14d, and `-w -3dfx` runs it windowed (rounds 2–9) |
+| R4 | Glide state semantics subtly wrong (combine functions) | Low (reduced) | Med | Materialized twice and fixed: the two s/t conventions (P2.7 square-mip rule) and palette-index-0 transparency (P2.9 chroma rule). The in-tree D2Glide spec + field-log loop keeps catching the rest; open item: bilinear look only |
 | R5 | Optimized codegen breaks decompiled game code | — | — | Non-issue: project policy pins -O0/-g; our DLL may optimize freely (separate target) |
-| R6 | TMU memory emulation complexity | Low | Low | Game's usage bounded by in-tree caches; allocate-on-upload + LRU eviction is enough (grTexMinAddress/MaxAddress answered generously) |
+| R6 | TMU memory emulation complexity | **Retired 2026-10-24** | — | Allocate-on-upload + (tmu,addr) hash store shipped in P2.1; texmiss=0 across 60k+ binds in round 8 |
+| R7 | CPU raster can't reach the fps target before P3 | Low | Med | P2.5 span raster moved 4.3 → 27 fps @ 800x600; if round 9 still feels heavy, perf passes (scanline skip, LUT reuse) bridge to P3's GPU move |
 
 ---
 
@@ -306,8 +369,12 @@ The payoff. Everything above already runs through our swapchain.
 - **VTSTech VM (Ubuntu 26.04, VirtualBox):** build parity; wine smoke test
   optional (Vulkan via lavapipe) — menus only.
 - **Real hardware (Win11 + RX 560, vanilla 1.14d install):** the authoritative
-  pass per phase exit criteria — `Game.exe -3dfx` (rebuilt d2.exe optional until
-  P4); frame-time capture at 640x480→1440p; preset sweep with the corpus.
+  pass per phase exit criteria — `Game.exe -w -3dfx` (rebuilt d2.exe optional
+  until P4); frame-time capture at 640x480→1440p; preset sweep with the corpus.
+  Operating loop since round 4: user pastes `glide3x.log` → agent analyzes it
+  against the game tree → builds → zips (DLL + FIELD-TEST.md) → tmpfiles.org
+  (60-min links) → user retests. Each round's log contract lives in
+  `glide3xvk/FIELD-TEST.md`.
 
 ## 8. References
 
