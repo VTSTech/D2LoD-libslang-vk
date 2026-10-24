@@ -2,7 +2,7 @@
 
 # D2LoD-libslang-vk
 
-[![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/MHK2Dg9)
+[![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/XcJ8mSCNZ)
 
 A drop-in **`glide3x.dll`** for **Diablo II: Lord of Destruction 1.14d** that renders the
 game through **Vulkan** — with libretro slang shader presets (`.slangp`) routed through
