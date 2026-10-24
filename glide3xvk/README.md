@@ -43,7 +43,8 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `src/glide_exports.cpp` | All 45 exports with exact signatures; the game-contract entry points (`grGet(0xF)`, `grSstWinOpen`, ini reading, session banner) |
 | `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam |
 | `src/g3x_state.{h,cpp}` | Glide state tracking (grChromakey/grColorCombine/... current values) |
-| `src/g3x_overlay.{h,cpp}` | The version-tag overlay: `glide3xvk <version> (<build id>)` drawn top-right every frame |
+| `src/g3x_overlay.{h,cpp}` | The version tag: composes `glide3xvk <version> (<short hash>)` and draws it as a top-right box — the fallback stamp since 0.4.1 |
+| `src/g3x_drivertag.{h,cpp}` | 0.4.1: repoints the game's `"Video: Glide"` renderer-name string at our tag (one 4-byte fail-soft patch in the mapped Game.exe image) — the version stamp's primary home |
 | `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf`, owns the input image + preset + chain, hot-reloads on file change, fails soft to the unfiltered path |
 | `presets/` | Two starter presets (scanline, sharpen — MIT, ours) + `d2slangvk.conf.sample` |
 | `src/g3x_font8x8.h` | Embedded 8x8 1-bit bitmap font for the overlay (generated from DejaVu Sans Mono Bold) |
@@ -56,22 +57,30 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `BUILD-32BIT.md` | **P1 spike notes**: building libslang-vk itself as i686 Windows |
 | `FIELD-TEST.md` | The field log: per-round builds, diagnostics, and results on a vanilla retail 1.14d install |
 
-## The overlay
+## The version stamp (0.4.1)
 
-Every present draws one line — `glide3xvk 0.3.1 (<build id>)` — into the
-**top-right** corner (4px from the edge): 8x8 bitmap font, 65%-black backdrop,
-1px drop shadow. It is rendered post-gamma at swapchain resolution, so it is
+The primary stamp is the game's own debug line: the `/fps` block ends with
+`Video: Glide` (a hardcoded string drawn at fixed game coords, decompiled
+`D2Client/GAME/Rendering.cpp`), and `g3x_drivertag` repoints that string at a
+static `glide3xvk <ver> (<short hash>)` buffer of ours with one 4-byte store —
+the game then draws our tag in its own font at its own spot. Every patch step
+is fail-soft and logged (`drivertag: ...` in glide3x.log); on any miss the
+original P2.10 box below takes over untouched. The tag text uses a **short**
+build id (`git rev-parse --short=7 HEAD` + `-dirty`) because the game
+`sprintf()`s it into a `char[32]` stack buffer — worst case 31 chars, exact
+fit; the long describe form would truncate mid-hash.
+
+The fallback box is the original P2.10 overlay: the tag drawn every present
+into the **top-right** corner (4px from the edge): 8x8 bitmap font, 65%-black
+backdrop, 1px drop shadow, rendered post-gamma at swapchain resolution —
 identical in the 640x480 probe phases, the 800x600 menu, gameplay, and the
-LFB/Bink video path, and it never enters the game's own framebuffer (fade and
-screenshot logic cannot see it). The corner choice is deliberate: the game's
-own `/fps` readout draws top-left, and both should be visible at once.
-
-`glide3xvk.ini` beside `Game.exe` can turn it off (re-read on every context
-open):
+LFB/Bink video path, and it never enters the game's own framebuffer. With no
+ini key it draws only when the patch missed; the key is still honored
+(re-read on every context open):
 
 ```ini
 [glide3xvk]
-overlay=0
+overlay=1
 ```
 
 ## The preset chain (P3, 0.4.0)

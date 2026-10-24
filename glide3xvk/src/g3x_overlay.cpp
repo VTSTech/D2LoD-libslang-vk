@@ -9,6 +9,12 @@
 #ifndef G3XVK_BUILD_ID
 #define G3XVK_BUILD_ID "unknown"
 #endif
+// Short form (7-char hash + optional -dirty). The game's own "Video:" line
+// gets this exact text via g3x_drivertag, and the game sprintf()s it into a
+// char[32] stack buffer — the long describe form would be truncated there.
+#ifndef G3XVK_BUILD_SHORT
+#define G3XVK_BUILD_SHORT G3XVK_BUILD_ID
+#endif
 
 namespace {
 
@@ -20,7 +26,7 @@ struct TagLine {
     unsigned len;
     TagLine() {
         std::snprintf(text, sizeof(text), "glide3xvk %s (%s)",
-                      G3XVK_VERSION, G3XVK_BUILD_ID);
+                      G3XVK_VERSION, G3XVK_BUILD_SHORT);
         text[sizeof(text) - 1] = '\0';
         len = (unsigned)std::strlen(text);
     }
@@ -38,6 +44,8 @@ const uint8_t* glyph_of(char c) {
 
 void g3x_overlay_set_enabled(bool on) { s_enabled = on; }
 bool g3x_overlay_enabled()            { return s_enabled; }
+
+const char* g3x_overlay_tagline() { return s_tag.text; }
 
 void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     if (!s_enabled || !bgra || w < 8 || h < 8) return;
