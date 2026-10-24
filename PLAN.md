@@ -91,6 +91,16 @@ for D2, MIT-licensed — primary prior art for API semantics), upgraded: instead
 D3D11, our `glide3x.dll` implements Glide on Vulkan and threads the final frame
 through libslang-vk before present.
 
+**Vanilla-compatible by construction.** The seam is retail code, not a patch: any
+stock D2LoD 1.14d install (GOG / Blizzard downloader) already does
+`LoadLibraryA("glide3x.dll")` and resolves the same 45 stdcall exports — the
+Redivivus tree is a recovery of exactly that code. A drop-in `glide3x.dll` works
+on vanilla `Game.exe`, mode selected via `Game.exe -3dfx` or D2VidTst.exe — the
+same deployment model nGlide and d2dx use on stock installs. **Consequence: no
+rebuilt d2.exe is required for any P1–P3 field test**; the Redivivus build only
+becomes relevant in P4 (optional VEH crash-report hook). Field-test procedure:
+`glide3xvk/FIELD-TEST.md`.
+
 **Why not alternatives:**
 
 - *New in-tree Vulkan renderer module*: the renderer contract
@@ -192,8 +202,9 @@ presents — game reaches the menu with a black screen and no crash.
 - **Resolved:** 1.14d exposes the Glide mode via the ini flag store — command
   line `-3dfx` or `[VIDEO] 3DFX=1` (Fog globals flag table, offset 0xa) — and
   it is **fullscreen-only** (D2GFX.cpp:497 excludes Glide from windowed mode).
-  Renderer table index 4 = `D2Client::Renderer::GlideFunctionTable`. Test P1
-  with `d2.exe -3dfx` (no `-w`).
+  Renderer table index 4 = `D2Client::Renderer::GlideFunctionTable`. Test P1 on a
+  **vanilla retail install**: `Game.exe -3dfx` (no `-w`) — no rebuilt d2.exe
+  needed (§3 vanilla note); the Redivivus build behaves identically when available.
 - Exit: game boots, menu UI invisible but present (nothing rasterized yet),
   clean log, crash-free 5-minute idle in menu.
 
@@ -270,8 +281,9 @@ The payoff. Everything above already runs through our swapchain.
   place from the libslang-vk benchmark session.
 - **VTSTech VM (Ubuntu 26.04, VirtualBox):** build parity; wine smoke test
   optional (Vulkan via lavapipe) — menus only.
-- **Real hardware (Win11 + RX 560):** the authoritative pass per phase exit
-  criteria; frame-time capture at 640x480→1440p; preset sweep with the corpus.
+- **Real hardware (Win11 + RX 560, vanilla 1.14d install):** the authoritative
+  pass per phase exit criteria — `Game.exe -3dfx` (rebuilt d2.exe optional until
+  P4); frame-time capture at 640x480→1440p; preset sweep with the corpus.
 
 ## 8. References
 

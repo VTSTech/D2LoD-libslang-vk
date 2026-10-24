@@ -35,6 +35,7 @@ swapchain image).
 | `vendor/volk/` | volk (runtime Vulkan loader, MIT — loads `vulkan-1.dll`, no SDK needed) |
 | `vendor/Vulkan-Headers/` | Khronos Vulkan C headers (Apache-2.0) |
 | `BUILD-32BIT.md` | **P1 spike notes**: building libslang-vk itself as i686 Windows |
+| `FIELD-TEST.md` | Step-by-step P1 field test on a **vanilla retail 1.14d install** (`Game.exe -3dfx`) — no rebuilt d2.exe required |
 
 ## Build (same toolchain as the game)
 
@@ -68,10 +69,14 @@ before (zero game-source drift).
 
 ## Test procedure (P1 exit criteria)
 
-1. Copy `build/glide3x.dll` next to `d2.exe`.
-2. Launch `d2.exe -3dfx` — that selects the Glide renderer
+1. Copy `build/glide3x.dll` into the game root, next to the game exe.
+2. Launch the game with `-3dfx` — that selects the Glide renderer
    (command line arg or `[VIDEO] 3DFX=1` in the ini; **fullscreen only** —
    the game refuses Glide in windowed mode, D2GFX.cpp:497).
+   This works on a **vanilla retail 1.14d install** (`Game.exe -3dfx`) —
+   retail ships the same `LoadLibraryA("glide3x.dll")` loader the recovered
+   source has; a rebuilt d2.exe is NOT required for P1–P3. Full walkthrough:
+   `FIELD-TEST.md`.
 3. Expected: the game boots to the menu **behind a black screen** (nothing is
    rasterized yet), stays alive and stable — no crash, clean 5-minute idle.
 4. Check `glide3x.log` beside the exe. A healthy P1 run looks like:
