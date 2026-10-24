@@ -55,9 +55,21 @@ jobs:
           echo "glide3x.dll: $(wc -l < /tmp/ours.txt) exports, $(stat -c %s build-g3x/glide3x.dll) bytes"
           i686-w64-mingw32-strings build-g3x/glide3x.dll | grep -m1 '^glide3xvk ' || true
 
+      # Artifact names carry the short commit hash so a downloaded zip is
+      # self-identifying - the same 7-char form the DLL's log banner uses
+      # (git rev-parse --short=7, see CMakeLists). PR runs must use the head
+      # sha: github.sha there is the preview merge commit, which never exists
+      # in the branch history. The DLL inside stays glide3x.dll (drop-in
+      # name the game loads); only the artifact name is versioned.
+      - name: Compute short commit hash for artifact names
+        id: shortsha
+        run: |
+          sha="${{ github.event.pull_request.head.sha || github.sha }}"
+          echo "short=${sha:0:7}" >> "$GITHUB_OUTPUT"
+
       - name: Upload glide3x.dll
         uses: actions/upload-artifact@v4
         with:
-          name: glide3x-dll
+          name: glide3x-dll-${{ steps.shortsha.outputs.short }}
           path: build-g3x/glide3x.dll
           if-no-files-found: error

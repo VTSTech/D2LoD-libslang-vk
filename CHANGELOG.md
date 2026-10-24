@@ -55,6 +55,13 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   lines now also carry **work=** — time spent inside the swap (gamma,
   compose upload, chain render, submit, present) — so the log separates
   engine pacing from wrapper cost from now on.
+- **CI artifact names carry the commit hash** (.github/workflows/build.yml):
+  the upload is now `glide3x-dll-<shortsha>` — the same 7-char
+  `git rev-parse --short=7` form the DLL's log banner uses, so a downloaded
+  artifact self-identifies against the in-game banner. PR runs name by head
+  sha (github.sha there is the preview merge commit, which never exists in
+  the branch history); the DLL inside stays `glide3x.dll`, the drop-in name
+  the game loads.
 
 ### Validated
 
