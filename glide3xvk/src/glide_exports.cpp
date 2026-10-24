@@ -10,6 +10,7 @@
 #include "g3x_log.h"
 #include "g3x_frame.h"
 #include "g3x_overlay.h"
+#include "g3x_drivertag.h"
 #include "g3x_slang.h"
 #include "vk_backend.h"
 
@@ -135,9 +136,13 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
         // stays black until Vulkan works. The log names the reason.
         g3x_log("grSstWinOpen: Vulkan unavailable -> black-screen mode (game continues)");
     }
-    // P2.10: version-tag overlay on/off — glide3xvk.ini beside the game exe,
-    // [glide3xvk] overlay=0/1 (default 1 = on). Read per context open so a
-    // relaunch picks up edits without touching the DLL.
+    // 0.4.1: the version stamp's primary home is the game's own "Video:"
+    // debug line — g3x_drivertag repoints the game's renderer-name string at
+    // our tag (see g3x_drivertag.cpp). The P2.10 overlay box becomes the
+    // fallback: [glide3xvk] overlay=0/1 still forces off/on; with no key the
+    // box draws only when the patch did not land. Re-read per context open so
+    // a relaunch picks up edits without touching the DLL.
+    const bool tag_ok = g3x_drivertag::install();
     {
         char ini[MAX_PATH] = "";
         char exe[MAX_PATH];
@@ -149,10 +154,17 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
                 ini[sizeof(ini) - 1] = '\0';
             }
         }
-        const UINT on = ini[0] ? GetPrivateProfileIntA("glide3xvk", "overlay", 1, ini) : 1;
-        g3x_overlay_set_enabled(on != 0);
-        g3x_log("grSstWinOpen: overlay=%s (glide3xvk v%s, ini: %s)",
-                on ? "on" : "off", G3XVK_VERSION, ini[0] ? ini : "<exe path unresolved>");
+        char raw[8] = "";
+        if (ini[0])
+            GetPrivateProfileStringA("glide3xvk", "overlay", "", raw, sizeof(raw), ini);
+        bool on;
+        if (raw[0] == '0')      on = false;   // explicit off
+        else if (raw[0] == '1') on = true;   // explicit on (preference / debugging)
+        else                    on = !tag_ok; // auto: box only as fallback
+        g3x_overlay_set_enabled(on);
+        g3x_log("grSstWinOpen: drivertag=%s tag=\"%s\" overlay=%s (glide3xvk v%s, ini: %s)",
+                tag_ok ? "patched" : "miss", g3x_drivertag::tag(), on ? "on" : "off",
+                G3XVK_VERSION, ini[0] ? ini : "<exe path unresolved>");
     }
     // P3: preset chain — re-read d2slangvk.conf on every context open so a
     // relaunch picks up conf/preset edits without touching the DLL. Same

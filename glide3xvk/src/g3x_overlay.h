@@ -4,9 +4,12 @@
 // buffer every frame, so a field screenshot always proves which build produced
 // it (rounds 6-11 repeatedly opened with "which dll was that?" ambiguity).
 //
-// Placement: TOP-RIGHT corner (P2.11 — was top-left). The game's own `/fps`
-// readout draws in the top-left corner, directly under the old tag position;
-// anchoring ours right leaves both visible at once.
+// Placement: since 0.4.1 the box is the FALLBACK, not the primary stamp. The
+// primary is the game's own "Video:" debug line, which g3x_drivertag repoints
+// at our tag string (see g3x_drivertag.cpp) — same info, the game's font, at
+// the game's position (500,2), and no collision with anything. glide_exports
+// turns the box off when that patch lands and keeps it on when it doesn't;
+// [glide3xvk] overlay=1 in the ini forces the box back on, overlay=0 hides it.
 //
 // Render seam: g3x_frame_present() calls this AFTER the game frame is scaled +
 // gamma-mapped into the swapchain-sized compose buffer and BEFORE the queue
@@ -32,14 +35,20 @@
 // Release version of this glide3xvk build. Shown by the overlay, printed by
 // the session banner and reported through grGetString(GR_RENDERER). Bump on
 // every field-delivered change set.
-#define G3XVK_VERSION "0.4.0"
+#define G3XVK_VERSION "0.4.1"
 
 // Render the tag into a BGRA8 buffer (w*h*4 bytes, stride = w*4). Safe to call
 // with any buffer size; the box anchors 4px from the right/top edge and clamps
 // to the buffer edges. No-op when disabled.
 void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h);
 
-// On/off switch. Default: enabled. glide_exports wires
-// glide3xvk.ini [glide3xvk] overlay=0/1 to this (default on).
+// The composed tag line — "glide3xvk <ver> (<build id>)". Static storage,
+// valid for the process lifetime. g3x_drivertag hands the same text to the
+// game's "Video:" line, so the two stamps can never disagree.
+const char* g3x_overlay_tagline();
+
+// On/off switch. glide_exports wires [glide3xvk] overlay=0/1 to this; with no
+// ini key the value is auto — off when the drivertag patch owns the game's
+// "Video:" line, on as a fallback when it doesn't.
 void g3x_overlay_set_enabled(bool on);
 bool g3x_overlay_enabled();

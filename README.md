@@ -21,7 +21,7 @@ resolution — is the same one proven in
 (Diablo/Hellfire) and
 [chocolate-doom-vk](https://github.com/VTSTech/chocolate-doom-vk) (Doom).
 
-## Status — 0.4.0
+## Status — 0.4.1
 
 - The full game renders correctly through the Vulkan swapchain: menu, world, units,
   UI, shadows, text, cutscenes (field-verified rounds 4–12 on real hardware; see
@@ -30,6 +30,10 @@ resolution — is the same one proven in
   `d2slangvk.conf` at any libretro `.slangp` and every presented frame runs
   through it at native game resolution — hot-reload on file change, fit /
   integer / stretch scaling, unfiltered fallback on any failure.
+- **The version stamp now lives on the game's own `Video:` debug line (0.4.1)**:
+  at renderer init glide3xvk repoints the game's renderer-name string (`Glide`)
+  at a static `glide3xvk 0.4.1 (<hash>)` tag — one 4-byte patch, fail-soft. The
+  old top-right overlay box only draws if that patch fails (or `overlay=1`).
 - ~27 fps @ 800x600 from the CPU raster today (the preset chain adds a
   fullscreen pass on top); moving the compose buffer to the GPU is the
   remaining P3 exit item for the 60 fps target.
@@ -57,27 +61,33 @@ No build required:
 4. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
 
 A healthy run looks like: the menu renders, play works, and `glide3x.log` beside the
-exe carries the session banner (`glide3xvk 0.4.0 <build-id>`), periodic `frame N:`
+exe carries the session banner (`glide3xvk 0.4.1 <build-id>`), `drivertag: "Video:"
+line patched -> "glide3xvk 0.4.1 (<hash>)"`, periodic `frame N:`
 summaries, and a clean exit summary on shutdown. With a preset configured, the log
 adds `slang: chain ready '<preset>' ...` and per-event slang lines; without one, it
 says so once. If 32-bit Vulkan is unavailable
 (`vulkan-1.dll` x86 missing), the log says so, the DLL still loads, and the game keeps
 running — the DirectDraw path (`-w` without `-3dfx`) is untouched by all of this.
 
-## The overlay
+## The version stamp
 
-Every present draws one line — `glide3xvk 0.4.0 (<build id>)` — into the **top-right**
-corner (4px from the edge): 8x8 bitmap font, 65%-black backdrop, 1px drop shadow. The
-corner is deliberate: the game's own `/fps` readout draws top-left, and both should be
-visible at once. The tag renders post-gamma at present resolution — swapchain
-resolution on the legacy path, game resolution when a preset chain is on (it filters
-with the frame) — and never enters
-the game's own framebuffer, so fades and screenshots cannot see it. Turn it off with
-`overlay=0` under `[glide3xvk]` in `glide3xvk.ini` (re-read on every context open):
+The primary stamp is the game's own debug line. The `/fps` readout ends with
+`Video: Glide` (drawn at fixed game coords from a hardcoded string); at renderer init
+glide3xvk patches that string pointer to a static `glide3xvk 0.4.1 (<hash>)` tag, so
+the line reads `Video: glide3xvk 0.4.1 (d76cf3c)` in the game's own font — no extra
+draw, no collision. The patch is a single 4-byte store and strictly fail-soft: any
+surprise (pool missing, ambiguous, page protect fails) is logged as `drivertag=miss`
+and the fallback box below takes over untouched.
+
+That fallback box is the original P2.10 overlay — `glide3xvk <ver> (<hash>)` drawn
+every present into the **top-right** corner (8x8 bitmap font, 65%-black backdrop, 1px
+drop shadow, post-gamma, never in the game's own framebuffer). With no ini key it
+draws only when the patch missed; `overlay=1` forces it on (both stamps show the
+same text), `overlay=0` hides it (re-read on every context open):
 
 ```ini
 [glide3xvk]
-overlay=0
+overlay=1
 ```
 
 ## Build from source

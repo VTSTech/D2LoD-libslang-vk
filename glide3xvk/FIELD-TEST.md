@@ -794,3 +794,44 @@ Test matrix, in order:
 Host rig: 115/115 fxtest checks (tests 23–25 cover the conf parser, the
 output-rect math, and the present-branch fallback); DLL 8,673,489 bytes,
 45/45 exports, KERNEL32+msvcrt imports only. Build id: a pushed 0.4.0 commit.
+
+## Round 15 (0.4.1) — the version stamp becomes the game's own `Video:` line
+
+The P3 field round surfaced a collision: the game's `/fps` block draws
+`Video: Glide` at fixed game coords (500, 2) from a hardcoded string
+(decompiled `D2Client/GAME/Rendering.cpp`, `DRAW_UI_FPSStats`), and the P2.10
+box drew straight over it — double-struck text in the top-right corner.
+
+What 0.4.1 does instead:
+
+1. **`g3x_drivertag` (new TU)**: at `grSstWinOpen`, scan the mapped Game.exe
+   image for the renderer-name string pool
+   (`Software\0DirectDraw\0Glide\0...`), find the single 4-byte reference to
+   the "Glide" string's VA (executable sections first, data sections as a
+   fallback; exactly one hit or bail), flip the page writable, store our
+   static tag VA, restore protection, flush the icache. Fail-soft end to end;
+   every outcome lands in glide3x.log.
+2. The tag text is the overlay tagline, now composed from a **short** build id
+   (`git rev-parse --short=7 HEAD`, `-dirty` suffix kept): the game
+   `sprintf()`s it into a `char[32]` stack buffer, so the worst case
+   `glide3xvk 0.4.1 (<hash>-dirty)` is 31 chars — exact fit. The long describe
+   form (40 chars) would have been truncated mid-hash by the game's own
+   buffer.
+3. **The P2.10 box retires to fallback**: no ini key -> box off when the patch
+   landed, on when it missed; `overlay=0/1` still forces off/on.
+
+Field checklist:
+
+- log: `drivertag: pool found, "Glide" @0x...`, `drivertag: "Video:" line
+  patched @0x... -> "glide3xvk 0.4.1 (<hash>)"`, and `grSstWinOpen:
+  drivertag=patched ... overlay=off`.
+- screen: the `/fps` block's right-hand line reads
+  `Video: glide3xvk 0.4.1 (<hash>)` in the game's own font, no bold box in the
+  top-right corner, no double-struck text.
+- `overlay=1` -> the box returns; both stamps show identical text.
+- `drivertag=miss` in the log = the fail-soft path: the box should be on and
+  everything else unchanged — send the log either way.
+
+Host rig: 45/45 exports, 8,676,239 bytes, KERNEL32+msvcrt imports only; tag
+length asserted for both clean and dirty trees. Build id: pushed 0.4.0 state
+plus this change set.
