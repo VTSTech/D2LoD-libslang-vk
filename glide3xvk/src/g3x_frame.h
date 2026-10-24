@@ -2,7 +2,11 @@
 //
 // Owns the CPU "game framebuffer" that all Glide write paths converge on:
 //   - grBufferClear        -> g3x_frame_clear
-//   - grDrawVertexArray*   -> g3x_frame_draw_fan (P_8 textured fan quads)
+//   - grDrawVertexArrayContiguous -> g3x_frame_draw_fan (P_8 textured fan quads)
+//   - grDrawVertexArray    -> g3x_frame_draw_pointers (ground/wall strips+fans:
+//                            D2Glide DrawGroundTile submits 5x mode-4 strips of
+//                            12 verts (or one mode-5 fan of 4 in low quality);
+//                            DrawWallTile* submits 2x mode-4 strips of 10)
 //   - grLfbLock (Bink)     -> game writes straight into g3x_frame_pixels
 //   - grBufferSwap / LFB unlock -> g3x_frame_present (scale + gamma -> swapchain)
 //
@@ -48,9 +52,14 @@ void     g3x_tex_dims(unsigned lod, int aspect, unsigned* w, unsigned* h);
 // TMU model: download stores a copy keyed by (tmu, addr); source binds.
 bool     g3x_frame_tex_download(unsigned tmu, unsigned addr, const GrTexInfo* info);
 void     g3x_frame_tex_source(unsigned tmu, unsigned addr);
+unsigned g3x_frame_tex_miss_count();   // grTexSource bindings with no download
 
 // TRIANGLE_FAN (mode 5): count vertices at `base`, `stride` bytes apart.
 void     g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride);
+
+// Pointer-array variant (grDrawVertexArray): `pointers` is an array of count
+// vertex pointers, each to a 0x1C-stride vertex. mode 5 = fan, mode 4 = strip.
+void     g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointers);
 
 // Scale + gamma the frame into the swapchain and present. Also the Bink
 // unlock path (the video loop never calls grBufferSwap).

@@ -48,13 +48,12 @@ struct Tex {
     unsigned bpp;                    // 1 for P_8
     bool     used;
 };
-constexpr unsigned kMaxTex = 1024;
+constexpr unsigned kMaxTex = 4096;   // in-game tile churn needs headroom (943+ dl/round-5)
 Tex         s_tex[kMaxTex];
 unsigned    s_keys[kMaxTex];         // (tmu<<28) | (addr & 0x0FFFFFFF)
 int         s_cur = -1;              // bound texture slot (grTexSource)
 
 bool s_warned_tex_full = false;
-bool s_warned_tex_miss = false;
 
 unsigned tex_key(unsigned tmu, unsigned addr) {
     return (tmu << 28) | (addr & 0x0FFFFFFFu);
@@ -72,8 +71,19 @@ int tex_slot_alloc(unsigned key) {
     return -1;
 }
 
+unsigned s_tex_miss_total = 0;       // exit-summary diagnostic (round 6)
+
 // ---- raster ---------------------------------------------------------------
 struct RVert { float x, y, u, v; uint32_t argb; };
+
+// The D2 glide vertex: x,y @0 (f32), PARGB @8, oow @12, s,t @16/20 (0x1C stride).
+inline void read_vert(RVert& out, const uint8_t* p) {
+    memcpy(&out.x,    p + 0,  4);
+    memcpy(&out.y,    p + 4,  4);
+    memcpy(&out.argb, p + 8,  4);
+    memcpy(&out.u,    p + 16, 4);   // s (ST0 @16)
+    memcpy(&out.v,    p + 20, 4);   // t @20
+}
 
 inline uint32_t shade_blend(uint32_t dst, uint32_t src) {
     // src channels already multiplied by vertex color by the caller.
@@ -123,12 +133,13 @@ inline uint32_t sample_texel(const Tex& t, float u, float v, bool* skip) {
     const unsigned ty = (unsigned)fv & (t.h - 1);
     const unsigned idx = t.data[(size_t)ty * t.w + tx];
     if (s_chroma_mode == 1) {
-        // Two accepted identities for "transparent": the raw palette index
-        // (P2.1 behaviour, held up in the field) and the format-consistent
-        // color match — the game's chroma value is a color, and D2 parks pure
-        // blue (0x00ff as passed) on its transparent palette entry.
-        if (idx == (s_chroma_value & 0xFFu) ||
-            (s_palette[idx] & 0x00FFFFFFu) == (s_chroma_value & 0x00FFFFFFu)) {
+        // Voodoo chroma semantics: the compare happens on the POST-PALETTE
+        // COLOR, and D2 parks pure blue (chroma value 0x000000ff as passed) on
+        // its transparent palette entry. P2.1's additional raw-index rule
+        // (idx == 255) also ate font/text ink texels that legitimately sit at
+        // the top of the palette — that erased button and menu text, and
+        // hollowed bright cores out of the copyright line. Color rule only.
+        if ((s_palette[idx] & 0x00FFFFFFu) == (s_chroma_value & 0x00FFFFFFu)) {
             *skip = true;
             return 0;
         }
@@ -298,9 +309,13 @@ bool g3x_frame_tex_download(unsigned tmu, unsigned addr, const GrTexInfo* info) 
     const unsigned key = tex_key(tmu, addr);
     const int slot = tex_slot_alloc(key);
     if (slot < 0) {
+        static unsigned s_tex_dropped = 0;
+        ++s_tex_dropped;
         if (!s_warned_tex_full) {
             s_warned_tex_full = true;
             g3x_log("frame: texture table full (%u) — downloads dropped", kMaxTex);
+        } else if (s_tex_dropped % 500 == 0) {
+            g3x_log("frame: texture table full — %u downloads dropped so far", s_tex_dropped);
         }
         return false;
     }
@@ -340,11 +355,32 @@ void g3x_frame_tex_source(unsigned tmu, unsigned addr) {
         }
     }
     s_cur = -1;
-    if (!s_warned_tex_miss) {
-        s_warned_tex_miss = true;
-        g3x_log("frame: grTexSource tmu=%u addr=0x%08x not in download table (draws skipped)",
-                tmu, addr);
+    ++s_tex_miss_total;
+    // Field diagnostic (round 6): the first 8 DISTINCT missing addresses + a
+    // running total. In-game ground/wall tiles binding nothing = black world,
+    // so misses need to be visible per-address, not just once.
+    static unsigned s_miss_addr[8];
+    static unsigned s_miss_n = 0;
+    bool known = false;
+    for (unsigned k = 0; k < s_miss_n; ++k) {
+        if (s_miss_addr[k] == addr) { known = true; break; }
     }
+    if (!known && s_miss_n < 8) {
+        s_miss_addr[s_miss_n++] = addr;
+        g3x_log("frame: tex miss tmu=%u addr=0x%08x (no download; draws skipped; total %u)",
+                tmu, addr, s_tex_miss_total);
+    } else if (s_tex_miss_total == 100 || s_tex_miss_total == 1000 || s_tex_miss_total == 10000) {
+        g3x_log("frame: tex miss total=%u (8 distinct logged above)", s_tex_miss_total);
+    } else if (!known) {
+        // distinct beyond 8: keep the count honest without spamming
+        if (s_miss_n == 8 && s_tex_miss_total == 9) {
+            g3x_log("frame: tex miss — more than 8 distinct addresses follow (total %u)", s_tex_miss_total);
+        }
+    }
+}
+
+unsigned g3x_frame_tex_miss_count() {
+    return s_tex_miss_total;
 }
 
 void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
@@ -353,33 +389,67 @@ void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
     RVert verts[64];
     if (count > 64) count = 64;
     for (unsigned i = 0; i < count; ++i) {
-        const uint8_t* p = (const uint8_t*)base + (size_t)i * stride;
-        float x, y, u, v;
-        uint32_t argb;
-        memcpy(&x,    p + 0,  4);
-        memcpy(&y,    p + 4,  4);
-        memcpy(&argb, p + 8,  4);
-        memcpy(&u,    p + 16, 4);   // s (ST0 @16)
-        memcpy(&v,    p + 20, 4);   // t @20
-        verts[i].x = x; verts[i].y = y; verts[i].u = u; verts[i].v = v;
-        verts[i].argb = argb;
+        read_vert(verts[i], (const uint8_t*)base + (size_t)i * stride);
     }
-    // Field diagnostic: the first fans' raw vertices (x,y | s,t) — this is the
-    // ground truth for the s/t unit convention and quad geometry.
+    // Field diagnostic: the first fans' raw vertices (x,y | color | s,t) — the
+    // ground truth for the s/t convention, quad geometry AND vertex colors
+    // (ground lighting = 0xFFRRGGBB light-table tints; UI = 0xFFFFFFFF white).
     static unsigned s_dumped = 0;
     if (s_dumped < 8) {
-        g3x_log("fan#%u: v0(%.1f,%.1f|%.2f,%.2f) v1(%.1f,%.1f|%.2f,%.2f) "
-                "v2(%.1f,%.1f|%.2f,%.2f) v3(%.1f,%.1f|%.2f,%.2f)",
+        g3x_log("fan#%u: v0(%.1f,%.1f|c%08x|%.2f,%.2f) v1(%.1f,%.1f|c%08x|%.2f,%.2f) "
+                "v2(%.1f,%.1f|c%08x|%.2f,%.2f) v3(%.1f,%.1f|c%08x|%.2f,%.2f)",
                 s_dumped + 1,
-                verts[0].x, verts[0].y, verts[0].u, verts[0].v,
-                verts[1].x, verts[1].y, verts[1].u, verts[1].v,
-                verts[2].x, verts[2].y, verts[2].u, verts[2].v,
-                verts[3].x, verts[3].y, verts[3].u, verts[3].v);
+                verts[0].x, verts[0].y, verts[0].argb, verts[0].u, verts[0].v,
+                verts[1].x, verts[1].y, verts[1].argb, verts[1].u, verts[1].v,
+                verts[2].x, verts[2].y, verts[2].argb, verts[2].u, verts[2].v,
+                verts[3].x, verts[3].y, verts[3].argb, verts[3].u, verts[3].v);
         ++s_dumped;
     }
     for (unsigned i = 1; i + 1 < count; ++i) {
         raster_tri(verts[0], verts[i], verts[i + 1]);
     }
+}
+
+void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointers) {
+    if (!s_px || !pointers || count < 3) return;
+    if (s_cur < 0 && !s_color_fill) return;
+    if (count > 64) count = 64;
+    RVert verts[64];
+    for (unsigned i = 0; i < count; ++i) {
+        const uint8_t* p = (const uint8_t*)pointers[i];
+        if (!p) return;
+        read_vert(verts[i], p);   // pointer-array vertices: fixed 0x1C layout
+    }
+    // Field diagnostic: the pointer-array path (ground tiles / wall strips).
+    // First 4 draws log the primitive + first vertex colors so ground lighting
+    // values show up in the field log.
+    static unsigned s_pdumped = 0;
+    if (s_pdumped < 4) {
+        g3x_log("parr#%u: mode=%u count=%u c0=%08x c1=%08x c2=%08x c3=%08x",
+                s_pdumped + 1, mode, count,
+                verts[0].argb, verts[1].argb, verts[2].argb, verts[3].argb);
+        ++s_pdumped;
+    }
+    if (mode == G3X_GR_TRIANGLE_FAN) {
+        for (unsigned i = 1; i + 1 < count; ++i) {
+            raster_tri(verts[0], verts[i], verts[i + 1]);
+        }
+    } else if (mode == G3X_GR_TRIANGLE_STRIP) {
+        // Triangle strip: consecutive triangles alternate winding; normalize
+        // to the rasterizer's CCW (y-down) convention per triangle. Shared
+        // edges between neighbours then fall on opposite directed edges, so
+        // the top-left ownership rule still assigns each edge pixel exactly
+        // once (no seams under opaque, no double-blend under additive).
+        for (unsigned i = 0; i + 2 < count; ++i) {
+            const RVert& a = verts[i];
+            const RVert& b = verts[i + 1];
+            const RVert& c = verts[i + 2];
+            const float area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+            if (area >= 0.0f) raster_tri(a, b, c);
+            else              raster_tri(a, c, b);
+        }
+    }
+    // other primitives: counted by the caller, not rasterized (as before)
 }
 
 bool g3x_frame_present() {

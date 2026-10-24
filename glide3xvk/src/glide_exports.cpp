@@ -378,8 +378,11 @@ void __stdcall grTexDownloadTable(GrTexTable_t type, void* data) {
         g_st.palette_valid = FXTRUE;
         ++g_st.n_palette_downloads;
         g3x_frame_set_palette(data);   // active palette for the P2.1 raster
-        g3x_log_once("grTexDownloadTable:palette", "256-entry palette copied (0x%08x first)",
-                     g_st.palette[0]);
+        // Field diagnostic (round 6): entries 0/128/255 — settles where the
+        // transparent marker and the text-ink ramp live in each palette.
+        g3x_log_once("grTexDownloadTable:palette", "256-entry palette copied "
+                     "(pal[0]=0x%08x pal[128]=0x%08x pal[255]=0x%08x)",
+                     g_st.palette[0], g_st.palette[128], g_st.palette[255]);
     } else {
         g3x_log_once("grTexDownloadTable", "type=%u (unhandled)", type);
     }
@@ -435,6 +438,15 @@ void __stdcall grDrawVertexArrayContiguous(FxU32 mode, FxU32 Count, void* pointe
 
 FxU32 __stdcall grDrawVertexArray(FxU32 mode, FxU32 Count, void* pointers) {
     ++g_st.n_draw_calls;
+    // D2's ground/wall path (D2Glide/Renderer/Glide.cpp): `pointers` is an
+    // array of Count vertex pointers, each to a 0x1C-stride vertex.
+    //   DrawGroundTile: 5x mode-4 strips of 12 verts (normal quality) or one
+    //   mode-5 fan of 4 (low quality) — P2.2 and earlier ignored this export
+    //   entirely, which is why the world floor rendered black.
+    //   DrawWallTile*: 2x mode-4 strips of 10 verts.
+    if (pointers && Count >= 3) {
+        g3x_frame_draw_pointers(mode, Count, (void* const*)pointers);
+    }
     g3x_log_once("grDrawVertexArray", "mode=%u count=%u", mode, Count);
     return Count;
 }
@@ -522,7 +534,7 @@ static void g3x_banner() {
     char exe[MAX_PATH] = "(?)";
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
     g3x_log("glide3xvk scaffold %s — loaded into %s", G3XVK_BUILD_ID, exe);
-    g3x_log("compiled " __DATE__ " " __TIME__ "; P2.2 = texel-unit s/t (2^lod space) + constant fills");
+    g3x_log("compiled " __DATE__ " " __TIME__ "; P2.3 = pointer-array strips/fans (ground+walls) + color-space chromakey");
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
@@ -533,7 +545,8 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpRes
             g3x_banner();
             break;
         case DLL_PROCESS_DETACH:
-            g3x_log("process detach (swaps=%u draws=%u)", g_st.n_swaps, g_st.n_draw_calls);
+            g3x_log("process detach (swaps=%u draws=%u texmiss=%u)", g_st.n_swaps,
+                    g_st.n_draw_calls, g3x_frame_tex_miss_count());
             // Field diagnostics (v2): if the game dropped us after init, the
             // competing renderer backends appear as loaded modules. D2Glide.dll
             // is our own caller (always loaded — not diagnostic); the D3D/DDraw/
