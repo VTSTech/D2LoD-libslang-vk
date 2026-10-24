@@ -42,14 +42,17 @@ bool g3x_overlay_enabled()            { return s_enabled; }
 void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     if (!s_enabled || !bgra || w < 8 || h < 8) return;
 
-    // Box: (4,4)..(4+pad*2+8*len, 4+pad*2+8), clamped to the buffer edges so
+    // P2.11: box anchored 4px from the TOP-RIGHT edge — the game's `/fps`
+    // readout occupies the top-left corner, so the tag moved out of its way.
+    // Box: (w-4-bw, 4)..(w-4, 4+pad*2+8), clamped to the buffer edges so
     // absurdly small present targets can't write out of bounds.
-    const unsigned pad = 3, ox = 4, oy = 4;
+    const unsigned pad = 3, oy = 4;
     const unsigned text_w = s_tag.len * 8;
     unsigned bw = text_w + pad * 2;
     unsigned bh = 8 + pad * 2;
-    if (ox + bw > w) bw = w - ox;
-    if (oy + bh > h) bh = h - oy;
+    if (bw + 4 > w) bw = w - 4;                    // keep the 4px right margin
+    const unsigned ox = w - bw - 4;                // unsigned-safe: bw+4 <= w
+    if (oy + bh > h) bh = h - oy;                  // tiny present targets
     if (!bw || !bh) return;
 
     // 1. 65%-black backdrop (dst *= 0.35 per channel — rounds toward black).

@@ -74,8 +74,10 @@ cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
 cmake --build build
 ```
 
-That produces `build/d2.exe`, a 32-bit Windows executable. `tools/check-build.sh` does
-the same from a clean clone and checks the result; CI runs it on every push.
+That produces `build/d2.exe`, a 32-bit Windows executable — and, because
+`glide3xvk/` is part of the tree, `build/glide3x.dll` alongside it. `tools/check-build.sh`
+does the same from a clean clone and checks the result; CI runs it on every push
+and uploads the built `glide3x.dll` as a workflow artifact.
 
 ## Run
 
@@ -87,6 +89,20 @@ d2.exe -w
 ```
 
 `-w` runs it in a window.
+
+## Glide renderer (glide3xvk)
+
+`glide3xvk/` builds a drop-in `glide3x.dll`: the Glide 3 API the game speaks when
+started with `-3dfx`, re-implemented on Vulkan. It runs on a **vanilla retail
+1.14d install** (`Game.exe -3dfx`) — copy the DLL next to the game exe, no
+rebuilt `d2.exe` required. The full game renders through it today: menu, world,
+UI, cutscenes. A small version tag (`glide3xvk <version> (<commit>)`) is drawn
+into the top-right corner of every frame — deliberately top-right, so the
+game's own `/fps` readout in the top-left stays visible; it can be turned off
+with `overlay=0` under `[glide3xvk]` in `glide3xvk.ini`.
+
+See [glide3xvk/README.md](glide3xvk/README.md) for the renderer's architecture,
+build, and field-test procedure.
 
 ## Known issues
 

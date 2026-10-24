@@ -653,10 +653,11 @@ FxBool __stdcall grLfbUnlock(GrLock_t type, GrBuffer_t buffer) {
 static void g3x_banner() {
     char exe[MAX_PATH] = "(?)";
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
-    g3x_log("glide3xvk %s scaffold %s — loaded into %s", G3XVK_VERSION, G3XVK_BUILD_ID, exe);
+    g3x_log("glide3xvk %s %s — loaded into %s", G3XVK_VERSION, G3XVK_BUILD_ID, exe);
     g3x_log("compiled " __DATE__ " " __TIME__
-            "; P2.10 = on-screen version tag: \"glide3xvk " G3XVK_VERSION " (%s)\" "
-            "drawn top-left at present time (8x8 bitmap font, post-gamma, over "
+            "; P2.11 = version tag moved top-right: \"glide3xvk " G3XVK_VERSION " (%s)\" "
+            "drawn 4px from the top-right edge at present time (leaves the game's "
+            "/fps readout — top-left — visible; 8x8 bitmap font, post-gamma, over "
             "everything incl. LFB video frames; off-switch glide3xvk.ini "
             "[glide3xvk] overlay=0); P2.9 chroma index-0 fix retained",
             G3XVK_BUILD_ID);

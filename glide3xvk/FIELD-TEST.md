@@ -719,3 +719,31 @@ Round 12 expectations: nothing raster changes — the game should look exactly
 like the round-11 clean state, plus the tag line. Any future screenshot now
 self-identifies its build. Optional checks: `overlay=0` removes it after a
 relaunch; the tag also appears over intro/logo videos (LFB path proof).
+
+## Round 13 (P2.11, build glide3xvk-0.3.1) — tag moves top-right, CI artifact, branch committed
+
+No raster changes. Three housekeeping items in one build:
+
+1. **Overlay repositioned top-right** — the tag now anchors 4px from the
+   top-right edge of the frame. Reason: the game's own `/fps` readout draws in
+   the top-left corner, directly under the old tag position; both should be
+   readable at once. Same rendering otherwise (8x8 font, 65% black backdrop,
+   1px drop shadow, post-gamma, swapchain resolution, off-switch unchanged).
+2. **CI artifact** — `.github/workflows/build.yml` now (a) builds the tree
+   from a clean clone as before, (b) configures the checkout and builds
+   `glide3x.dll`, (c) diffs the 45-export surface against the game's own
+   loader, (d) uploads the DLL as the `glide3x-dll` artifact. From now on a
+   CI-run DLL is downloadable without the 60-minute tmpfiles loop.
+3. **The branch is committed** — everything from P2.1 to P2.11 went in as a
+   real commit on `libslang-vk` and was pushed, so the build id in the banner,
+   `grGetString(GR_RENDERER)` and this overlay is a hash that exists on
+   GitHub. Builds before 0.3.1 stamped `77cb059-dirty` — the R1 base of a
+   permanently dirty working tree — which matched no commit anyone could find.
+
+Host rig: 92/92 checks pass (test 22 re-based to the right anchor: top-left
+corner untouched again, right-edge backdrop dimming, glyph/shadow classes,
+off-switch restores exact frame bytes).
+
+Round 13 expectations: pixels identical to round 12 except the tag line sits
+in the top-right corner. `/fps` (chat command) stays fully visible top-left.
+The tag reads `glide3xvk 0.3.1 (<pushed commit hash>)`.

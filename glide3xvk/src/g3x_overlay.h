@@ -1,10 +1,14 @@
-// glide3xvk — P2.10: on-screen version tag.
+// glide3xvk — P2.10/P2.11: on-screen version tag.
 //
-// A single line — "glide3xvk 0.3.0 (77cb059-dirty)" — drawn into the present
+// A single line — "glide3xvk 0.3.1 (77cb059-dirty)" — drawn into the present
 // buffer every frame, so a field screenshot always proves which build produced
 // it (rounds 6-11 repeatedly opened with "which dll was that?" ambiguity).
 //
-// Placement: g3x_frame_present() calls this AFTER the game frame is scaled +
+// Placement: TOP-RIGHT corner (P2.11 — was top-left). The game's own `/fps`
+// readout draws in the top-left corner, directly under the old tag position;
+// anchoring ours right leaves both visible at once.
+//
+// Render seam: g3x_frame_present() calls this AFTER the game frame is scaled +
 // gamma-mapped into the swapchain-sized compose buffer and BEFORE the queue
 // submit. Consequences (all deliberate):
 //   - the tag is post-gamma: pure white/black regardless of the game's
@@ -28,11 +32,11 @@
 // Release version of this glide3xvk build. Shown by the overlay, printed by
 // the session banner and reported through grGetString(GR_RENDERER). Bump on
 // every field-delivered change set.
-#define G3XVK_VERSION "0.3.0"
+#define G3XVK_VERSION "0.3.1"
 
 // Render the tag into a BGRA8 buffer (w*h*4 bytes, stride = w*4). Safe to call
-// with any buffer size; the box clamps to the right/bottom edge. No-op when
-// disabled.
+// with any buffer size; the box anchors 4px from the right/top edge and clamps
+// to the buffer edges. No-op when disabled.
 void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h);
 
 // On/off switch. Default: enabled. glide_exports wires
