@@ -1064,8 +1064,16 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           __frame1.nWordLimit = nWordCount;
           Fog::Source::SFile::thunk_ReadFile(hFileHandle, pCellData, sFileEntry.dwFloorDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
           if (dwBytesRead != sFileEntry.dwFloorDataSize) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x57a);
-            exit(-1);
+            // A hard crash between the header write and the data writes in
+            // AUTOMAP_SaveLayerToFile, or an entry written by an older build,
+            // leaves the chain promising more bytes than the .ma file holds.
+            // The cache entry is disposable: drop this layer's chain the way
+            // the layer-mismatch path does and keep playing instead of
+            // halting. The next AUTOMAP_SaveCurrentLayer rebuilds the chain.
+            D2_FREE(pCellData);
+            AUTOMAP_InvalidateLayerEntry(0, hMapFile, (LPCVOID)&__frame0.nNextFilePos);
+            Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
+            return;
           }
 
           nWordIndex = 0;
@@ -1100,8 +1108,11 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           __frame1.nWordLimit = nWordCount;
           Fog::Source::SFile::thunk_ReadFile(hFileHandle, pCellData, sFileEntry.dwWallDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
           if (dwBytesRead != sFileEntry.dwWallDataSize) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x58f);
-            exit(-1);
+            // Same stale-entry tolerance as the floor read above.
+            D2_FREE(pCellData);
+            AUTOMAP_InvalidateLayerEntry(0, hMapFile, (LPCVOID)&__frame0.nNextFilePos);
+            Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
+            return;
           }
 
           nWordIndex = 0;
@@ -1137,8 +1148,11 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
             __frame1.nWordLimit = nWordCount;
             Fog::Source::SFile::thunk_ReadFile(hFileHandle, pCellData, sFileEntry.dwObjectDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
             if (dwBytesRead != sFileEntry.dwObjectDataSize) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a7);
-              exit(-1);
+              // Same stale-entry tolerance as the floor read above.
+              D2_FREE(pCellData);
+              AUTOMAP_InvalidateLayerEntry(0, hMapFile, (LPCVOID)&__frame0.nNextFilePos);
+              Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
+              return;
             }
 
             nWordIndex = 0;
@@ -1178,8 +1192,11 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           __frame1.nWordLimit = nWordCount;
           Fog::Source::SFile::thunk_ReadFile(hFileHandle, pCellData, sFileEntry.dwExtraDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
           if (dwBytesRead != sFileEntry.dwExtraDataSize) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5c2);
-            exit(-1);
+            // Same stale-entry tolerance as the floor read above.
+            D2_FREE(pCellData);
+            AUTOMAP_InvalidateLayerEntry(0, hMapFile, (LPCVOID)&__frame0.nNextFilePos);
+            Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
+            return;
           }
 
           nWordIndex = 0;
