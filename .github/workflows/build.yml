@@ -26,3 +26,12 @@ jobs:
 
       - name: Build from a clean clone
         run: tools/check-build.sh "$GITHUB_WORKSPACE" "$GITHUB_SHA"
+        env:
+          D2_ARTIFACT_DIR: ${{ github.workspace }}/artifacts
+
+      - name: Upload the build
+        uses: actions/upload-artifact@v4
+        with:
+          name: d2-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
