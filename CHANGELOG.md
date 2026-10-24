@@ -7,6 +7,53 @@ Format follows Keep a Changelog. Where a field round already ran, entries cite w
 glide3x.log showed on real hardware (RX 560, Vulkan 1.3, windowed). Commit refs are on
 branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
 
+## [0.4.3] - 2026-10-24 (F11/F12 hotkeys + the full d2slangvk.conf reference)
+
+The user asked for Chocolate-Doom-VK's hotkey scheme here (the other
+libslang-vk reference host cycles content aspect on F11 and shader base
+resolution on F12) and for every d2slangvk.conf value to be documented.
+
+### Added
+
+- **F11 - content aspect, live**: cycles `4:3 -> 16:10 -> 16:9 -> auto`. A
+  fixed ratio letterboxes the chain output into the largest centered rect of
+  that ratio inside the swapchain (`g3x_slang_aspect_rect`, host-tested);
+  `auto` hands the geometry back to `scale=`. Only intercepts while a chain
+  filters frames and the game window has focus (GetAsyncKeyState is
+  process-global; without the focus guard the keys would fire while alt-tabbed).
+- **F12 - shader base resolution, live**: cycles `1x -> 2x -> 3x -> 4x -> 1x`.
+  N > 1 uploads the game frame as usual, then one linear vkCmdBlitImage in a
+  fenced one-shot submit (`g3x_vk_slang_blit_scaled` in vk_backend; layouts
+  round-trip SHADER_READ_ONLY -> TRANSFER and back in the same command buffer)
+  stretches it into a game-res-x-N slangvk_image, so every source-relative
+  pass FBO re-derives at N-x - scanline pitch, glow and blur radii get finer
+  with crtglow_lanczos and friends. Fail-soft: image_create or blit failure
+  logs once and presents 1x.
+- **Toast feedback**: each press draws a transient third overlay line
+  (`aspect 4:3`, `shader base 2x`) for ~120 presented frames, then the box
+  shrinks back. Every change is logged (`slang: F11/F12 ...`).
+- **Conf keys for both**: `aspect=auto|4:3|16:10|16:9` and `base_res=1x..4x`
+  (bare `1`..`4` accepted) in the `[slangvk]` section. Session hotkey picks
+  are never written back; a conf hot-reload snaps them to the file's values.
+
+### Documentation
+
+- **d2slangvk.conf reference** (README.md): every key - `preset=`, `scale=`,
+  `vsync=`, `aspect=`, `base_res=` - with defaults, accepted values, path
+  resolution, reload semantics and error behavior, plus the hotkey table.
+- Sample conf (`presets/d2slangvk.conf.sample`) now documents all five keys
+  and drops the never-implemented `fallback=` line the 0.4.0 sample carried
+  (unknown keys were always ignored; fail-soft to unfiltered is the only
+  fallback mode).
+
+### Verification
+
+- fxtest 134/134 (42 new checks: aspect rect math incl. portrait and
+  degenerate targets, conf aspect/base_res parse with bad-value and
+  later-section-wins handling, toast grow/decay/shrink on a fresh page).
+- mingw-i686 build links; exports unchanged 45/45 (def untouched);
+  8,684,837 bytes. Field round 17 checklist in glide3xvk/FIELD-TEST.md.
+
 ## [0.4.2] - 2026-10-24 (overlay: descenders + active-shader line)
 
 Field round 15 found the fallback box's 8x8 font crushing descenders ("can't
