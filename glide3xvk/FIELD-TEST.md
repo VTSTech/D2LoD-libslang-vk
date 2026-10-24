@@ -10,7 +10,7 @@ required until P4 (optional VEH crash-report hook).
 ## What this DLL is right now (P1 scaffold)
 
 - All 45 Glide exports, correct stdcall decorations, state-tracking stubs.
-- `grGet(GR_SECONDARY_TMU, ...)` answers correctly so the game **accepts** the renderer.
+- `grGet(0xF)` (`GR_NUM_BOARDS`) answers 1 so the game **accepts** the renderer.
 - `grSstWinOpen` → Vulkan: volk → instance → Win32 surface → device → swapchain.
 - `grBufferSwap` → clear **black** + present. Nothing is rasterized yet (that's P2),
   no shader presets yet (that's P3).
@@ -83,3 +83,49 @@ Battle.net is out of scope for this project — test offline / single-player onl
 - The whole `glide3x.log` file.
 - One line: black screen? menu sounds? cursor visible? any crash?
 - GPU + driver version (e.g. "RX 560, Adrenalin 26.x").
+
+---
+
+# Round 2 — P1.1 (caps fix)
+
+## Round 1 result (2026-10-24, RX 560, vanilla retail 1.14d)
+
+The v1 DLL **loaded, initialized Vulkan end-to-end and shut down cleanly** — full
+P1 plumbing validated on real hardware. But zero frames were presented: after
+`grSstWinOpen`, D2Glide runs a caps block (`grGet` pnames 0xA/0xB/0x11/0x13/0x24/0xE)
+and **hard-fails its init when `GR_NUM_TMU` (0x13) comes back 0**
+(`if (!gnGlideTextureMemoryUsed) return 0;` in `D2Glide/Renderer/Glide.cpp`).
+The v1 stub answered 0 → the game dropped us by its own rules. Decoded against
+the real 3dfx glide3x source (diget.c, Voodoo2 build): the decompiler names were
+misleading — 0xF is `GR_NUM_BOARDS` (the accept gate), 0x13 is `GR_NUM_TMU` (the
+init gate), 0x24 is `GR_TEXTURE_ALIGN`, 0xE is `GR_MEMORY_UMA`.
+
+## What changed in the DLL (v2 / P1.1)
+
+1. **Voodoo-class caps table** — answers mirror 3dfx's own Voodoo2 glide3x:
+   BOARDS=1, TMU=1, FB=1, MAX_TEXTURE_SIZE=256, TEX_ASPECT=3, UMA=0,
+   TEXTURE_ALIGN=8, GAMMA=8-bit/32 entries. Single-TMU profile = the smallest,
+   best-tested D2 code paths (no secondary-TMU combine layouts).
+2. **Fallback detector** — at detach, the DLL logs if `D2Direct3D.dll` /
+   `D2DDraw.dll` / `D2GDI.dll` are loaded (i.e. the game moved on to another
+   renderer). `D2Glide.dll` is our caller, always present, not diagnostic.
+3. Unknown `grGet` pnames now return 0 like real glide3x (v1 returned a
+   success-looking value).
+
+## Round 2 success criteria
+
+1. Log shows the one-line **`caps: Voodoo-class profile — BOARDS=1 TMU=1 ...`**
+   after the six caps queries.
+2. After the caps block, expect a **burst of state calls** (`grVertexLayout`,
+   `grTexCombine`, `grCoordinateSpace`, `grTexFilterMode`, …) — that is D2Glide
+   finishing init, which it never reached in round 1.
+3. The menu phase then shows up as periodic **`frame N: swaps=...`** summary
+   lines. Menu visible + swaps counting = P1 fully exited, P2 gets its oracle
+   data. The screen may still be black-ish (clear-only present) — sounds/UI
+   clicks prove the game is alive.
+4. If the menu appears but the log stays silent until you quit, the detach line
+   will now **name the fallback renderer** that took over — that alone is a
+   useful report.
+
+Same install/run steps as above; just replace `glide3x.dll` with the v2 build
+(build id in the banner is `77cb059-dirty` or later — check the first log line).

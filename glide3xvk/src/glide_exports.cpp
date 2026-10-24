@@ -12,6 +12,7 @@
 
 #include <cstring>
 #include <cstdio>
+#include <initializer_list>
 #include <new>
 
 #define WIN32_LEAN_AND_MEAN
@@ -150,18 +151,35 @@ void __stdcall grBufferSwap(FxU32 swap_interval) {
 }
 
 // ---------------------------------------------------------------------------
-// Queries (the acceptance contract)
+// Queries (the caps contract; see g3x_types.h for the field-test v1 story —
+// GR_NUM_TMU == 0 is a hard D2Glide init failure, the v1 zero-frame cause)
 // ---------------------------------------------------------------------------
 FxU32 __stdcall grGet(FxU32 pname, FxU32 plength, FxI32* params) {
-    if (pname == G3X_GR_GET_TMU_COUNT) {
-        // The 1.14d Glide gate (D2Client/Renderer/Glide.cpp:452): result must
-        // be >= 1 or the renderer is rejected and LoadLibrarySymbols fails.
-        if (params && plength >= 4) params[0] = 1; // single TMU (Voodoo Graphics class)
-        g3x_log_once("grGet:0xF", "TMU count -> 1");
-        return 4;
+    FxI32 value = 0;
+    switch (pname) {
+        case G3X_GR_GET_GAMMA_ENTRIES:    value = 32; break;
+        case G3X_GR_GET_MAX_TEXTURE_SIZE: value = 256; break;
+        case G3X_GR_GET_MAX_TEXTURE_AR:   value = 3;  break;
+        case G3X_GR_GET_MEMORY_UMA:       value = 0;  break;
+        case G3X_GR_GET_NUM_BOARDS:       value = 1;  break;
+        case G3X_GR_GET_NUM_FB:           value = 1;  break;
+        case G3X_GR_GET_NUM_TMU:          value = 1;  break;
+        case G3X_GR_GET_TEXTURE_ALIGN:    value = 8;  break;
+        case G3X_GR_GET_BITS_GAMMA:       value = 8;  break;
+        default:
+            // Real glide3x returns 0 (FXFALSE) for unknown pnames; D2's windowed
+            // gamma path checks the return before using the value, so failing a
+            // query honestly is the safe contract.
+            g3x_log_once("grGet:other", "grGet pname=0x%x plength=%u -> 0 (unhandled)", pname, plength);
+            if (params && plength >= 4) params[0] = 0;
+            return 0;
     }
-    g3x_log_once("grGet:other", "grGet pname=0x%x plength=%u -> 0 (unhandled)", pname, plength);
-    if (params && plength >= 4) params[0] = 0;
+    if (params && plength >= 4) params[0] = value;
+    static bool s_caps_logged = false;
+    if (!s_caps_logged) {
+        s_caps_logged = true;
+        g3x_log("caps: Voodoo-class profile — BOARDS=1 TMU=1 FB=1 MAX_TEX=256 TEXAR=3 UMA=0 TEXALIGN=8 GAMMA=8bit/32");
+    }
     return plength;
 }
 
@@ -455,7 +473,7 @@ static void g3x_banner() {
     char exe[MAX_PATH] = "(?)";
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
     g3x_log("glide3xvk scaffold %s — loaded into %s", G3XVK_BUILD_ID, exe);
-    g3x_log("compiled " __DATE__ " " __TIME__ "; P1 = swapchain + clear-black present");
+    g3x_log("compiled " __DATE__ " " __TIME__ "; P1.1 = Voodoo-class caps + swapchain clear-black present");
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
@@ -467,6 +485,15 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpRes
             break;
         case DLL_PROCESS_DETACH:
             g3x_log("process detach (swaps=%u draws=%u)", g_st.n_swaps, g_st.n_draw_calls);
+            // Field diagnostics (v2): if the game dropped us after init, the
+            // competing renderer backends appear as loaded modules. D2Glide.dll
+            // is our own caller (always loaded — not diagnostic); the D3D/DDraw/
+            // GDI backends only load if D2GFX fell back to them.
+            for (const char* mod : {"D2Direct3D.dll", "D2DDraw.dll", "D2GDI.dll"}) {
+                if (GetModuleHandleA(mod)) {
+                    g3x_log("detach: %s loaded (game fell back to another renderer?)", mod);
+                }
+            }
             g3x_vk_shutdown();
             g3x_log_close();
             break;

@@ -61,7 +61,10 @@ target_compile_definitions(glide3x PRIVATE
 #      def lookups find nothing — solved by -Wl,-u flags forcing every symbol
 #      undefined before the archive scan.
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/glide3x.def" _g3x_def)
-string(REGEX MATCHALL "_[a-zA-Z]+@[0-9]+" _g3x_syms "${_g3x_def}")
+# Strip ';' comment lines first — the header comment cites "_grBufferSwap@4"
+# as an example, which the naive regex would count as a 46th export.
+string(REGEX REPLACE ";[^\n]*" "" _g3x_code "${_g3x_def}")
+string(REGEX MATCHALL "_[a-zA-Z]+@[0-9]+" _g3x_syms "${_g3x_code}")
 list(LENGTH _g3x_syms _g3x_n)
 if(NOT _g3x_n EQUAL 45)
     message(FATAL_ERROR "glide3x.def must list exactly 45 exports (found ${_g3x_n})")
