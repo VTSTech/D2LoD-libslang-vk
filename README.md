@@ -1,4 +1,4 @@
-<img width="997" height="776" alt="glide3xvk 0.3.1 rendering Diablo II: LoD 1.14d through Vulkan, version tag top-right" src="https://github.com/user-attachments/assets/7c3ee833-6425-4006-869b-ea3d564f35c9" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8da961b2-fba3-4913-b2e4-bb2510c3a5e3" />
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ba3a6c67-0195-4581-82b5-d9208ef64661" />
 
 # D2LoD-libslang-vk
