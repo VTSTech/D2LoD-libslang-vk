@@ -22,7 +22,7 @@ resolution — is the same one proven in
 (Diablo/Hellfire) and
 [chocolate-doom-vk](https://github.com/VTSTech/chocolate-doom-vk) (Doom).
 
-## Status — 0.4.2
+## Status — 0.4.3
 
 - The full game renders correctly through the Vulkan swapchain: menu, world, units,
   UI, shadows, text, cutscenes (field-verified rounds 4–12 on real hardware; see
@@ -33,13 +33,20 @@ resolution — is the same one proven in
   integer / stretch scaling, unfiltered fallback on any failure.
 - **The version stamp now lives on the game's own `Video:` debug line (0.4.1)**:
   at renderer init glide3xvk repoints the game's renderer-name string (`Glide`)
-  at a static `glide3xvk 0.4.2 (<hash>)` tag — one 4-byte patch, fail-soft. The
+  at a static `glide3xvk 0.4.3 (<hash>)` tag — one 4-byte patch, fail-soft. The
   old top-right overlay box only draws if that patch fails (or `overlay=1`).
 - **The overlay shows the active shader (0.4.2)**: while a preset filters
   frames, the fallback box's second line reads the preset's file name — pushed
   on chain ready (first open, conf change, hot reload), cleared whenever the
   chain dies; no preset = no line. Also fixed in 0.4.2: the 8x8 font's crushed
   descenders (`g p q j` — "can't see the bottom of the g in glide").
+- **Chocolate-Doom-VK-style hotkeys (0.4.3)**: in-game **F11** cycles the
+  content aspect (`4:3 -> 16:10 -> 16:9 -> auto`) and **F12** cycles the shader
+  base resolution (`1x -> 2x -> 3x -> 4x`) — the frame is linearly upscaled N-x
+  before the chain sees it, so source-relative pass FBOs (scanlines, glow)
+  render finer. Toast feedback in the overlay, logged, session-only; both also
+  settable via the new `aspect=` / `base_res=` conf keys (see the
+  [d2slangvk.conf reference](#d2slangvkconf-reference) below).
 - ~27 fps @ 800x600 from the CPU raster today (the preset chain adds a
   fullscreen pass on top); moving the compose buffer to the GPU is the
   remaining P3 exit item for the 60 fps target.
@@ -62,13 +69,15 @@ No build required:
 3. (Optional, the payoff) Copy `presets/d2slangvk.conf.sample` from the repo as
    `d2slangvk.conf` beside `Game.exe`, uncomment a `preset=` line, and every
    frame runs through that slang shader — hot-reload mid-game, `fit`/`integer`/
-   `stretch` scaling, unfiltered fallback on any failure. No conf = the exact
-   0.3.x behavior.
+   `stretch` scaling, `aspect=`/`base_res=` geometry, F11/F12 live hotkeys,
+   unfiltered fallback on any failure. No conf = the exact 0.3.x behavior.
+   Every accepted value is documented in the
+   [d2slangvk.conf reference](#d2slangvkconf-reference) below.
 4. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
 
 A healthy run looks like: the menu renders, play works, and `glide3x.log` beside the
-exe carries the session banner (`glide3xvk 0.4.2 <build-id>`), `drivertag: "Video:"
-line patched -> "glide3xvk 0.4.2 (<hash>)"`, periodic `frame N:`
+exe carries the session banner (`glide3xvk 0.4.3 <build-id>`), `drivertag: "Video:"
+line patched -> "glide3xvk 0.4.3 (<hash>)"`, periodic `frame N:`
 summaries, and a clean exit summary on shutdown. With a preset configured, the log
 adds `slang: chain ready '<preset>' ...` and per-event slang lines; without one, it
 says so once. If 32-bit Vulkan is unavailable
@@ -79,8 +88,8 @@ running — the DirectDraw path (`-w` without `-3dfx`) is untouched by all of th
 
 The primary stamp is the game's own debug line. The `/fps` readout ends with
 `Video: Glide` (drawn at fixed game coords from a hardcoded string); at renderer init
-glide3xvk patches that string pointer to a static `glide3xvk 0.4.2 (<hash>)` tag, so
-the line reads `Video: glide3xvk 0.4.2 (d76cf3c)` in the game's own font — no extra
+glide3xvk patches that string pointer to a static `glide3xvk 0.4.3 (<hash>)` tag, so
+the line reads `Video: glide3xvk 0.4.3 (6f01f9a)` in the game's own font — no extra
 draw, no collision. The patch is a single 4-byte store and strictly fail-soft: any
 surprise (pool missing, ambiguous, page protect fails) is logged as `drivertag=miss`
 and the fallback box below takes over untouched.
@@ -95,6 +104,56 @@ same text), `overlay=0` hides it (re-read on every context open):
 [glide3xvk]
 overlay=1
 ```
+
+## d2slangvk.conf reference
+
+`d2slangvk.conf` lives beside `Game.exe` (same folder as `glide3x.dll` and
+`glide3xvk.ini` — the two files are independent: the ini only carries the
+overlay switch above, everything shader-related lives in the conf). It is read
+once at renderer init and re-checked every 32 frames while a chain filters:
+edit the conf or the `.slangp` it points at in place and the chain reloads
+within ~half a second, no game restart.
+
+Syntax: a `[slangvk]` section header, `key=value` lines, `;` or `#` comment to
+end of line, blank lines ignored, later assignments win. Unknown keys are
+ignored (forward compatibility); a malformed value keeps the previous/default
+one and never fails the session. No file at all — or no `preset=` line — means
+the chain stays disabled and frames present unfiltered, exactly the 0.3.x look.
+
+Every key (0.4.3):
+
+| Key | Values (default first) | What it does |
+|-----|------------------------|--------------|
+| `preset=` | *(empty)* = off, or a path to a `.slangp` | The libretro slang preset every presented frame runs through. Relative paths resolve against the game exe folder; drive-letter (`F:\...`) and UNC paths work as-is. Empty or missing line = chain disabled. Changing it (in the file) triggers a full preset reload. |
+| `scale=` | `fit` \| `integer` \| `stretch` | How the chain's output sits in the window: `fit` fits + centers with letterbox; `integer` picks the largest whole-number multiple of the game resolution, centered; `stretch` fills the window edge to edge. Ignored while an explicit `aspect=` (or an F11 pick) is active. |
+| `vsync=` | *(empty)* = FIFO \| `0` \| `1` | Present mode of the swapchain the chain renders into: empty = default FIFO (vsync on); `0` prefers IMMEDIATE (uncapped, silently falls back to FIFO where unsupported); `1` = FIFO. Takes effect when the swapchain is (re)created — game start or resolution change. |
+| `aspect=` | `auto` \| `4:3` \| `16:10` \| `16:9` | Content-aspect override (0.4.3). `auto` keeps the `scale=` geometry. A fixed ratio letterboxes the chain output into the largest centered rectangle of that ratio inside the window: `4:3` on a 16:9 window = pillarbox with correct proportions; `16:9` on a 16:9 window = full-bleed. F11 cycles this live. |
+| `base_res=` | `1x` \| `2x` \| `3x` \| `4x` (bare `1`..`4` accepted) | Shader base resolution (0.4.3). The game frame is linearly upscaled N-x on the GPU before the chain sees it, so every source-relative pass FBO renders at N-x — scanline pitch, glow and blur radii get finer as N rises; the final pass is fit back into the output rect. Costs one extra fullscreen blit. F12 cycles this live. |
+
+A worked example (the field setup from the round-16 screenshots):
+
+```ini
+[slangvk]
+preset=shaders/crt/crtglow_lanczos.slangp
+scale=stretch
+vsync=
+aspect=auto
+base_res=1x
+```
+
+### Hotkeys (in-game, 0.4.3)
+
+While a preset chain filters frames and the game window has focus — the same
+scheme as Chocolate-Doom-VK:
+
+- **F11** — cycle content aspect: `4:3 -> 16:10 -> 16:9 -> auto -> ...`
+- **F12** — cycle shader base resolution: `1x -> 2x -> 3x -> 4x -> 1x`
+
+Each press shows a toast line in the overlay box (`aspect 16:9`,
+`shader base 2x`) for ~2 seconds and logs a `slang: F11/F12 ...` line. Both
+picks are **session-only**: they are never written back to `d2slangvk.conf`,
+and a conf hot-reload snaps them back to whatever the file says. With no
+preset configured the keys do nothing and fall through to the game untouched.
 
 ## Build from source
 

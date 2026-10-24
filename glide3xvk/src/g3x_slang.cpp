@@ -23,6 +23,8 @@ bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out) {
     std::memset(out, 0, sizeof(*out));
     out->scale = G3XSLANG_SCALE_FIT;
     out->vsync = -1;
+    out->aspect = G3XSLANG_ASPECT_AUTO;
+    out->base_res = 1;
     if (!text) return false;
 
     bool in_section = false;   // inside [slangvk]?
@@ -75,6 +77,16 @@ bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out) {
                     if (val[0] == '0')      out->vsync = 0;
                     else if (val[0] == '1') out->vsync = 1;
                     // empty or anything else = default
+                } else if (_strnicmp(key, "aspect", 6) == 0 && kl == 6) {
+                    if (_strnicmp(val, "4:3", 3) == 0)        out->aspect = G3XSLANG_ASPECT_4_3;
+                    else if (_strnicmp(val, "16:10", 5) == 0) out->aspect = G3XSLANG_ASPECT_16_10;
+                    else if (_strnicmp(val, "16:9", 4) == 0)  out->aspect = G3XSLANG_ASPECT_16_9;
+                    else if (_strnicmp(val, "auto", 4) == 0)  out->aspect = G3XSLANG_ASPECT_AUTO;
+                    // anything else keeps the previous/default value
+                } else if (_strnicmp(key, "base_res", 8) == 0 && kl == 8) {
+                    // "1x".."4x" or the bare digit; anything else = default
+                    if (val[0] == '1' || val[0] == '2' || val[0] == '3' || val[0] == '4')
+                        out->base_res = val[0] - '0';
                 }
                 // unknown keys are deliberately ignored (forward compatibility)
             }
@@ -110,6 +122,33 @@ G3xSlangRect g3x_slang_output_rect(int mode, unsigned in_w, unsigned in_h,
     return r;
 }
 
+G3xSlangRect g3x_slang_aspect_rect(int aspect, unsigned out_w, unsigned out_h) {
+    G3xSlangRect r = {0, 0, 0, 0};
+    if (aspect <= G3XSLANG_ASPECT_AUTO || aspect >= G3XSLANG_ASPECT_COUNT) return r;
+    if (!out_w || !out_h) return r;                      // degenerate -> library default
+
+    // num : den, reduced to what each ratio needs
+    const unsigned num = (aspect == G3XSLANG_ASPECT_4_3)   ? 4u
+                       : (aspect == G3XSLANG_ASPECT_16_10) ? 16u : 16u;
+    const unsigned den = (aspect == G3XSLANG_ASPECT_4_3)   ? 3u
+                       : (aspect == G3XSLANG_ASPECT_16_10) ? 10u : 9u;
+
+    // largest rect with that ratio that fits, centered (round half down on
+    // the constrained axis so the rect never exceeds the target)
+    uint64_t w_num = (uint64_t)out_h * num;
+    if (w_num >= (uint64_t)out_w * den) {
+        r.w = out_w;
+        r.h = (uint32_t)((uint64_t)out_w * den / num);   // height-constrained
+    } else {
+        r.h = out_h;
+        r.w = (uint32_t)(w_num / den);                   // width-constrained
+    }
+    if (!r.w || !r.h) return {};                         // 1px-tall targets etc.
+    r.x = (int32_t)((out_w - r.w) / 2);
+    r.y = (int32_t)((out_h - r.h) / 2);
+    return r;
+}
+
 // ---------------------------------------------------------------------------
 // Stub build (no libslang-vk checkout): same API, always inactive.
 // ---------------------------------------------------------------------------
@@ -127,6 +166,7 @@ void g3x_slang_context_open() {}
 void g3x_slang_swapchain_resized(unsigned, unsigned, int) {}
 bool g3x_slang_active() { return s_stub_active; }
 int  g3x_slang_vsync_pref() { return -1; }
+void g3x_slang_hotkeys_poll() {}
 
 bool g3x_slang_present(const uint8_t* bgra, unsigned w, unsigned h) {
     if (!s_stub_active || !s_stub_present || !bgra || !w || !h) return false;
@@ -185,6 +225,19 @@ static unsigned     s_frames_filtered = 0;
 static unsigned     s_frames_fallback = 0;
 static uint64_t     s_conf_mtime = 0;             // d2slangvk.conf last-write (low dword enough to compare)
 static uint64_t     s_preset_mtime = 0;
+
+// 0.4.3: live hotkey state. Starts from the conf; F11/F12 cycle it for the
+// session; a conf reload snaps both back to the file's values.
+static int          s_aspect_live = G3XSLANG_ASPECT_AUTO;
+static int          s_base_live   = 1;
+static bool         s_prev_f11 = false, s_prev_f12 = false;
+
+// 0.4.3: the shader base resolution's upscaled input image (game res x
+// s_base_live). The game frame is uploaded to s_img exactly as before, then
+// one linear blit stretches it to s_img_up so the chain's source-relative
+// pass FBOs all derive from the multiplied size. Null when 1x.
+static slangvk_image* s_img_up = nullptr;
+static unsigned       s_img_up_w = 0, s_img_up_h = 0;
 
 static char s_exe_dir[MAX_PATH] = "";
 static char s_conf_path[MAX_PATH] = "";
@@ -251,6 +304,20 @@ static const char* scale_name(int m) {
          : m == G3XSLANG_SCALE_INTEGER ? "integer" : "fit";
 }
 
+static const char* aspect_name(int a) {
+    switch (a) {
+        case G3XSLANG_ASPECT_4_3:   return "4:3";
+        case G3XSLANG_ASPECT_16_10: return "16:10";
+        case G3XSLANG_ASPECT_16_9:  return "16:9";
+        default:                    return "auto";
+    }
+}
+
+static void drop_input_up() {
+    if (s_img_up) { slangvk_image_destroy(s_img_up); s_img_up = nullptr; }
+    s_img_up_w = s_img_up_h = 0;
+}
+
 // ---- chain lifecycle -------------------------------------------------------
 
 static void destroy_chain() {
@@ -261,6 +328,7 @@ static void destroy_chain() {
 
 static void destroy_all() {
     destroy_chain();
+    drop_input_up();
     if (s_preset) { slangvk_preset_destroy(s_preset); s_preset = nullptr; }
     if (s_img)    { slangvk_image_destroy(s_img); s_img = nullptr; }
     s_img_w = s_img_h = 0;
@@ -330,9 +398,17 @@ static void reread_conf() {
         std::memset(&fresh, 0, sizeof(fresh));   // no file = disabled, defaults
         fresh.scale = G3XSLANG_SCALE_FIT;
         fresh.vsync = -1;
+        fresh.aspect = G3XSLANG_ASPECT_AUTO;
+        fresh.base_res = 1;
     }
     const bool target_changed = std::strcmp(fresh.preset, s_conf.preset) != 0;
     s_conf = fresh;
+    // 0.4.3: the conf is the source of truth on every (re)read - session
+    // hotkey overrides snap back to the file's values, and a base-res change
+    // drops the upscaled input image (rebuilt lazily at the new multiplier).
+    if (s_base_live != fresh.base_res) drop_input_up();
+    s_aspect_live = fresh.aspect;
+    s_base_live   = fresh.base_res;
     if (target_changed) {
         s_preset_mtime = 0;                      // force preset reload
         reload_preset_and_chain("conf");
@@ -363,6 +439,42 @@ static void hot_reload_tick() {
     }
 }
 
+// ---- 0.4.3 hotkeys (F11 aspect, F12 shader base resolution) ----------------
+
+// Mirrors Chocolate-Doom-VK's in-game hotkeys. Only meaningful while a chain
+// filters frames (g3x_slang_present gates this), and only when the game
+// window is focused - GetAsyncKeyState is process-global otherwise. Both
+// choices live for the session only; d2slangvk.conf keeps its say.
+void g3x_slang_hotkeys_poll() {
+    if (GetForegroundWindow() != g_vk.hwnd) {
+        s_prev_f11 = s_prev_f12 = false;         // don't queue presses made elsewhere
+        return;
+    }
+    const bool f11 = (GetAsyncKeyState(VK_F11) & 0x8000) != 0;
+    const bool f12 = (GetAsyncKeyState(VK_F12) & 0x8000) != 0;
+
+    if (f11 && !s_prev_f11) {
+        // 4:3 -> 16:10 -> 16:9 -> auto -> 4:3 ...
+        s_aspect_live = (s_aspect_live == G3XSLANG_ASPECT_AUTO)
+                            ? G3XSLANG_ASPECT_4_3 : s_aspect_live + 1;
+        if (s_aspect_live >= G3XSLANG_ASPECT_COUNT) s_aspect_live = G3XSLANG_ASPECT_AUTO;
+        g3x_log("slang: F11 aspect -> %s", aspect_name(s_aspect_live));
+        char msg[32];
+        std::snprintf(msg, sizeof(msg), "aspect %s", aspect_name(s_aspect_live));
+        g3x_overlay_toast(msg);
+    }
+    if (f12 && !s_prev_f12) {
+        s_base_live = (s_base_live >= 4) ? 1 : s_base_live + 1;
+        drop_input_up();                         // rebuilt lazily at the new size
+        g3x_log("slang: F12 base res -> %dx", s_base_live);
+        char msg[32];
+        std::snprintf(msg, sizeof(msg), "shader base %dx", s_base_live);
+        g3x_overlay_toast(msg);
+    }
+    s_prev_f11 = f11;
+    s_prev_f12 = f12;
+}
+
 // ---- public API ------------------------------------------------------------
 
 bool g3x_slang_init(void* instance, void* physical_device, void* device,
@@ -370,6 +482,10 @@ bool g3x_slang_init(void* instance, void* physical_device, void* device,
     std::memset(&s_conf, 0, sizeof(s_conf));
     s_conf.scale = G3XSLANG_SCALE_FIT;
     s_conf.vsync = -1;
+    s_conf.aspect = G3XSLANG_ASPECT_AUTO;
+    s_conf.base_res = 1;
+    s_aspect_live = G3XSLANG_ASPECT_AUTO;
+    s_base_live = 1;
 
     if (slangvk_device_adopt((VkInstance)instance, (VkPhysicalDevice)physical_device,
                              (VkDevice)device, (VkQueue)queue, queue_family,
@@ -427,6 +543,7 @@ bool g3x_slang_active() { return s_ready && !s_disabled && s_chain != nullptr; }
 bool g3x_slang_present(const uint8_t* bgra, unsigned w, unsigned h) {
     if (!g3x_slang_active() || !bgra || !w || !h) return false;
     ++s_frame;
+    g3x_slang_hotkeys_poll();
     hot_reload_tick();
     if (!g3x_slang_active()) return false;        // hot reload may have torn it down
 
@@ -454,11 +571,49 @@ bool g3x_slang_present(const uint8_t* bgra, unsigned w, unsigned h) {
         return false;
     }
 
+    // 0.4.3: shader base resolution. 1x feeds s_img directly; N>1 lazily
+    // creates the multiplied image and stretches the frame into it with one
+    // linear blit (both slangvk_image_update and our blit are fenced-waited,
+    // so the chain's own submission sees everything with no extra semaphores).
+    slangvk_image* feed_img = s_img;
+    unsigned feed_w = w, feed_h = h;
+    if (s_base_live > 1) {
+        const unsigned upw = w * s_base_live, uph = h * s_base_live;
+        if (!s_img_up || s_img_up_w != upw || s_img_up_h != uph) {
+            drop_input_up();
+            slangvk_image_options uo{};
+            uo.width = upw; uo.height = uph;
+            uo.format = VK_FORMAT_B8G8R8A8_UNORM;
+            if (slangvk_image_create(s_dev, &uo, &s_img_up) == SLANGVK_OK) {
+                s_img_up_w = upw; s_img_up_h = uph;
+                g3x_log("slang: base %dx input image %ux%u", s_base_live, upw, uph);
+            } else {
+                g3x_log_once("slang-upimg", "slang: base-res image_create %ux%u failed "
+                           "- 1x until further notice", upw, uph);
+                s_img_up = nullptr;
+            }
+        }
+        if (s_img_up) {
+            VkImageView sv = VK_NULL_HANDLE, dv = VK_NULL_HANDLE;
+            VkImage si = VK_NULL_HANDLE, di = VK_NULL_HANDLE;
+            VkFormat sf = VK_FORMAT_UNDEFINED, df = VK_FORMAT_UNDEFINED;
+            unsigned suw = 0, suh = 0, duw = 0, duh = 0;
+            slangvk_image_get_handles(s_img, &sv, &si, &sf, &suw, &suh);
+            slangvk_image_get_handles(s_img_up, &dv, &di, &df, &duw, &duh);
+            if (si && di && g3x_vk_slang_blit_scaled((void*)si, (void*)di,
+                                                     w, h, upw, uph)) {
+                feed_img = s_img_up; feed_w = upw; feed_h = uph;
+            } else {
+                g3x_log_once("slang-blit", "slang: base-res blit failed - 1x this frame");
+            }
+        }
+    }
+
     uint32_t idx = 0;
     if (!g3x_vk_slang_acquire(&idx)) return false;
 
     slangvk_input_frame in{};
-    slangvk_image_get_handles(s_img, &in.view, &in.image, &in.format, &in.width, &in.height);
+    slangvk_image_get_handles(feed_img, &in.view, &in.image, &in.format, &in.width, &in.height);
     in.rotation = SLANGVK_ROTATION_NONE;
 
     unsigned ew = 0, eh = 0;
@@ -468,7 +623,9 @@ bool g3x_slang_present(const uint8_t* bgra, unsigned w, unsigned h) {
     out.format   = (VkFormat)g3x_vk_slang_swap_format();
     out.width    = ew;
     out.height   = eh;
-    const G3xSlangRect rect = g3x_slang_output_rect(s_conf.scale, w, h, ew, eh);
+    const G3xSlangRect rect = (s_aspect_live != G3XSLANG_ASPECT_AUTO)
+        ? g3x_slang_aspect_rect(s_aspect_live, ew, eh)
+        : g3x_slang_output_rect(s_conf.scale, feed_w, feed_h, ew, eh);
     out.output_rect.x = rect.x; out.output_rect.y = rect.y;
     out.output_rect.width = rect.w; out.output_rect.height = rect.h;
     out.acquire_semaphore = (VkSemaphore)g3x_vk_slang_acquire_semaphore();

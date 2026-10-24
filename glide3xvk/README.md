@@ -43,21 +43,21 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `src/glide_exports.cpp` | All 45 exports with exact signatures; the game-contract entry points (`grGet(0xF)`, `grSstWinOpen`, ini reading, session banner) |
 | `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam |
 | `src/g3x_state.{h,cpp}` | Glide state tracking (grChromakey/grColorCombine/... current values) |
-| `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), and since 0.4.2 a second line with the active preset's file name |
+| `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, and since 0.4.3 a transient toast line for the F11/F12 hotkeys |
 | `src/g3x_drivertag.{h,cpp}` | 0.4.1: repoints the game's `"Video: Glide"` renderer-name string at our tag (one 4-byte fail-soft patch in the mapped Game.exe image) — the version stamp's primary home |
-| `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf`, owns the input image + preset + chain, hot-reloads on file change, fails soft to the unfiltered path |
+| `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf` (`preset`/`scale`/`vsync`/`aspect`/`base_res`), owns the input image + preset + chain, hot-reloads on file change, polls the F11/F12 hotkeys on the present path, fails soft to the unfiltered path |
 | `presets/` | Two starter presets (scanline, sharpen — MIT, ours) + `d2slangvk.conf.sample` |
 | `src/g3x_font8x8.h` | Embedded 8x8 1-bit bitmap font for the overlay (generated from DejaVu Sans Mono Bold) |
 | `src/g3x_log.{h,cpp}` | `glide3x.log` beside the game exe (`%TEMP%` fallback), log-once budgets, periodic frame summaries, exit summary |
 | `src/g3x_types.h` | Minimal Glide type surface (mirror of the game's `d2_platform.h` block) + values observed in the in-tree `D2Glide` call sites |
-| `src/vk_backend.{h,cpp}` | Vulkan bootstrap: volk → instance → win32 surface → device → swapchain → present; fail-soft everywhere |
+| `src/vk_backend.{h,cpp}` | Vulkan bootstrap: volk → instance → win32 surface → device → swapchain → present; plus the 0.4.3 `g3x_vk_slang_blit_scaled` one-shot (fenced) upscale blit for the shader base resolution; fail-soft everywhere |
 | `glide3x.def` | The 45 decorated export names (`_grBufferSwap@4`...), repo `binkw32.def` syntax |
 | `vendor/volk/` | volk (runtime Vulkan loader, MIT — loads `vulkan-1.dll`, no SDK needed) |
 | `vendor/Vulkan-Headers/` | Khronos Vulkan C headers (Apache-2.0) |
 | `BUILD-32BIT.md` | **P1 spike notes**: building libslang-vk itself as i686 Windows |
 | `FIELD-TEST.md` | The field log: per-round builds, diagnostics, and results on a vanilla retail 1.14d install |
 
-## The version stamp (0.4.1) + the overlay's shader line (0.4.2)
+## The version stamp (0.4.1) + the overlay's shader line (0.4.2) + hotkey toasts (0.4.3)
 
 The primary stamp is the game's own debug line: the `/fps` block ends with
 `Video: Glide` (a hardcoded string drawn at fixed game coords, decompiled
@@ -93,6 +93,20 @@ round re-tuned the 8x8 font's descenders (`g p q j`): bowls at rows 2-5, real
 tails on rows 6-7 — DejaVu's descent does not fit the tile and the generated
 tails were one broken row. Overrides live in `scripts/gen_font8x8.py`, which
 ships in-tree now.
+
+Since 0.4.3 the box also carries a **transient third line** when a hotkey
+fires: F11 (content aspect, `4:3 -> 16:10 -> 16:9 -> auto`) and F12 (shader
+base resolution, `1x -> 2x -> 3x -> 4x`) — the Chocolate-Doom-VK scheme. Both
+only intercept while a chain filters frames and the game window is focused
+(`GetAsyncKeyState` is process-global, so the focus check matters); each press
+toasts (`aspect 16:9`, `shader base 2x`) for ~120 presented frames and logs a
+`slang: F11/F12 ...` line. The picks are session-only — never written back to
+`d2slangvk.conf`; a conf hot-reload snaps them back to the file's values. F12
+feeds the chain from a game-res-x-N upscaled `slangvk_image` (one linear
+`vkCmdBlitImage` in a fenced one-shot submit through `vk_backend`, layouts
+round-tripped SHADER_READ_ONLY -> TRANSFER and back inside the same command
+buffer), so every source-relative pass FBO re-derives at N-x; the output rect
+math honors the aspect pick before `scale=`.
 
 ## The preset chain (P3, 0.4.0)
 

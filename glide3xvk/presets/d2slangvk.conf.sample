@@ -1,14 +1,16 @@
-; d2slangvk.conf — glide3xvk 0.4.0 preset-chain settings.
+; d2slangvk.conf — glide3xvk 0.4.3 preset-chain settings.
 ; Copy this file beside Game.exe (same folder as glide3x.dll + glide3xvk.ini)
 ; and uncomment "preset=" to enable. No file (or no preset= line) = the DLL
 ; presents unfiltered, exactly like 0.3.x.
 ;
 ; The file is re-read automatically (also while the game runs): edit it or the
-; .slangp preset in place and the chain reloads within ~half a second.
+; .slangp preset in place and the chain reloads within ~half a second. Syntax:
+; [slangvk] header, key=value lines, ';' or '#' comment to end of line, later
+; assignments win, unknown keys ignored, bad values keep the default.
 ;
-; Full story: glide3xvk/README.md (P3 section). Presets are libretro .slangp
-; files — point preset= at your RetroArch shaders (e.g. Shaders/crt/...) or
-; the two starters shipped in glide3xvk/presets/.
+; Full story: README.md ("d2slangvk.conf reference"). Presets are libretro
+; .slangp files — point preset= at your RetroArch shaders (e.g. Shaders/crt/...)
+; or the two starters shipped in glide3xvk/presets/.
 
 [slangvk]
 
@@ -22,15 +24,31 @@
 ;   fit      — fit + center, letterboxed (default)
 ;   integer  — largest whole-number multiple of the game resolution, centered
 ;   stretch  — fill the window edge to edge
+; Ignored while an explicit aspect= (or an F11 pick) is active.
 scale=fit
 
 ; Vertical sync for the swapchain the chain renders into:
 ;   (empty)  — default: FIFO (vsync on)
 ;   0        — prefer IMMEDIATE (no vsync; falls back to FIFO if unsupported)
 ;   1        — FIFO
+; Applied when the swapchain is (re)created: game start / resolution change.
 vsync=
 
-; What the DLL does when the preset fails to load/compile/render:
-;   unfiltered — keep presenting the raw game frame (default; the log carries
-;                the slang error)
-fallback=unfiltered
+; Content aspect (0.4.3). auto = follow scale= (default). A fixed ratio
+; letterboxes the chain output into the largest centered rect of that ratio
+; inside the window (4:3 on a 16:9 window = pillarbox). F11 cycles this live
+; for the session.
+;aspect=auto
+;aspect=4:3
+;aspect=16:10
+;aspect=16:9
+
+; Shader base resolution (0.4.3): the game frame is linearly upscaled N-x on
+; the GPU before the chain sees it, so source-relative pass FBOs (scanlines,
+; glow, blur) render at N-x — finer effects, one extra fullscreen blit.
+; Accepts 1x|2x|3x|4x (bare 1..4 too). F12 cycles this live for the session.
+;base_res=1x
+
+; On any preset failure the DLL keeps presenting the raw game frame (fail-soft,
+; the log carries the slang error). There is no other fallback mode; unknown
+; keys are ignored.

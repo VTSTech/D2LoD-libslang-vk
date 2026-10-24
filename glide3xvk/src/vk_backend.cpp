@@ -476,3 +476,76 @@ void g3x_vk_slang_swap_extent(unsigned* w, unsigned* h) {
 }
 
 void* g3x_vk_slang_acquire_semaphore() { return (void*)s_sem_acquire; }
+
+bool g3x_vk_slang_blit_scaled(void* src_image, void* dst_image,
+                              unsigned sw, unsigned sh, unsigned dw, unsigned dh) {
+    if (!g_vk.alive || !s_sync_live || !src_image || !dst_image ||
+        !sw || !sh || !dw || !dh) return false;
+
+    // Layout dance in one submit: SHADER_READ_ONLY -> TRANSFER both ways.
+    // Access masks cover the previous frame's shader reads (src) and blit
+    // writes (dst WAW), so no knowledge of the chain's exact read stages is
+    // needed. The fence wait after the submit makes every write visible to
+    // the chain's own (later, separately fenced) submission.
+    VkImageMemoryBarrier base{}; base.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    base.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    base.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    base.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    base.subresourceRange.levelCount = 1;
+    base.subresourceRange.layerCount = 1;
+
+    VkImageMemoryBarrier to_src = base;
+    to_src.image = (VkImage)src_image;
+    to_src.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    to_src.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    to_src.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    to_src.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+    VkImageMemoryBarrier to_dst = base;
+    to_dst.image = (VkImage)dst_image;
+    to_dst.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    to_dst.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    to_dst.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    to_dst.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    VkImageMemoryBarrier back_src = to_src;
+    back_src.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    back_src.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    back_src.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    back_src.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+
+    VkImageMemoryBarrier back_dst = to_dst;
+    back_dst.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    back_dst.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    back_dst.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    back_dst.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+
+    VkImageBlit blit{};
+    blit.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    blit.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    blit.srcOffsets[1] = {(int32_t)sw, (int32_t)sh, 1};
+    blit.dstOffsets[1] = {(int32_t)dw, (int32_t)dh, 1};
+
+    VkCommandBufferBeginInfo bi{}; bi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    if (vkBeginCommandBuffer(s_cmd, &bi) != VK_SUCCESS) return false;
+    VkImageMemoryBarrier enter[2] = {to_src, to_dst};
+    vkCmdPipelineBarrier(s_cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr,
+                         2, enter);
+    vkCmdBlitImage(s_cmd, (VkImage)src_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                   (VkImage)dst_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                   1, &blit, VK_FILTER_LINEAR);
+    VkImageMemoryBarrier leave[2] = {back_src, back_dst};
+    vkCmdPipelineBarrier(s_cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr,
+                         2, leave);
+    if (vkEndCommandBuffer(s_cmd) != VK_SUCCESS) return false;
+
+    VkSubmitInfo sub{}; sub.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    sub.commandBufferCount = 1; sub.pCommandBuffers = &s_cmd;
+    if (vkQueueSubmit(s_queue, 1, &sub, s_fence) != VK_SUCCESS) return false;
+    if (vkWaitForFences(s_device, 1, &s_fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) return false;
+    vkResetFences(s_device, 1, &s_fence);
+    return true;
+}

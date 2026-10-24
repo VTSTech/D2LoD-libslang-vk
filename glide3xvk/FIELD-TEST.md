@@ -874,3 +874,57 @@ Field checklist:
 Host rig: 45/45 exports unchanged (def untouched), 8,678,032 bytes. New host
 harness (`overlay_preview.cpp`, sandbox) asserts the shader-line rows 17..24,
 the `g`-descender ink on rows 14/15, and the clear -> single-line shrink.
+
+## Round 17 (0.4.3) — F11/F12 hotkeys, d2slangvk.conf fully documented
+
+The user asked for Chocolate-Doom-VK's hotkey scheme here (that project, the
+other libslang-vk reference host, cycles aspect on F11 and shader base
+resolution on F12) and for every `d2slangvk.conf` value to be documented.
+The fresh round-17 log (2026-10-24 15:10 session) confirmed the 0.4.2 field
+state first: `crtglow_lanczos.slangp` via conf, 7 passes, `scale=stretch`,
+output 1536x864, 0 fallbacks, drivertag=miss on this Game.exe (box overlay
+active), and the git-describe stamp still `0.3.1-8-g6f01f9a` (tag v0.4.2 has
+not been applied in the field clone yet).
+
+What 0.4.3 ships:
+
+1. **F11 — content aspect, live**: cycles `4:3 -> 16:10 -> 16:9 -> auto`. The
+   pick letterboxes the chain output into the largest centered rect of that
+   ratio inside the swapchain (`g3x_slang_aspect_rect`, host-tested); `auto`
+   hands geometry back to `scale=`. Only intercepts while a chain filters
+   frames and the game window has focus.
+2. **F12 — shader base resolution, live**: cycles `1x -> 2x -> 3x -> 4x -> 1x`.
+   N>1 uploads the game frame as usual, then one linear `vkCmdBlitImage`
+   (fenced one-shot via `g3x_vk_slang_blit_scaled`) stretches it into a
+   game-res-x-N `slangvk_image`, so every source-relative pass FBO re-derives
+   at N-x. Fail-soft: image_create/blit failure logs once and presents 1x.
+3. **Toast feedback**: each press draws a third overlay line
+   (`aspect 4:3`, `shader base 2x`) for ~120 presented frames, then the box
+   shrinks back. Every change is logged (`slang: F11/F12 ...`).
+4. **Conf keys for both**: `aspect=auto|4:3|16:10|16:9`,
+   `base_res=1x..4x` (bare digits accepted). Session hotkey picks are never
+   written back; a conf hot-reload snaps them to the file's values.
+5. **d2slangvk.conf fully documented**: new README.md reference section with
+   every key, defaults, accepted values and error semantics; the sample conf
+   now documents all five keys and drops the never-implemented `fallback=`
+   line from the 0.4.0 sample (unknown keys were always ignored; fail-soft to
+   unfiltered is the only fallback mode).
+
+Field checklist:
+
+- with a preset active: F11 steps `4:3 -> 16:10 -> 16:9 -> auto`, the picture
+  pillarboxes/unpillars live, a toast shows in the box each press, and the log
+  carries `slang: F11 aspect -> ...`.
+- F12 steps `1x -> 2x -> 3x -> 4x`; at 2x+ the scanline/glow grain visibly
+  refines with crtglow_lanczos (source-relative passes); the log adds
+  `slang: base 2x input image 1280x960` (at 640x480 game res).
+- toast disappears ~2 s after the press; box shrinks back to two lines.
+- alt-tab to another window, press F11/F12 there -> game ignores them and the
+  other app sees them (focus guard).
+- set `aspect=4:3` in d2slangvk.conf -> pillarboxed from launch; press F11
+  once -> `16:10`; edit the conf again (hot reload) -> snaps back to `4:3`.
+- no preset configured: F11/F12 do nothing, no toast, no log lines.
+
+Host rig: fxtest 134/134 (42 new checks: aspect rect math, conf aspect/base_res
+parse + bad-value handling, toast grow/decay/shrink). Exports unchanged
+45/45 (def untouched). DLL 8,684,837 bytes.
