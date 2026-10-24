@@ -12,11 +12,24 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/_unnamespaced.h"
-#include "support/d2_boot.h" // [d2boot]
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
+
+#ifndef D2_ALLOC
+#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#endif
+
+#ifndef D2_FREE
+#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#endif
+
+#ifndef D2_NEW
+#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#endif
+
+static_assert(sizeof(void*) != 4 || sizeof(::D2FogArchiveStrc) == 0x108, "D2_NEW(D2FogArchiveStrc): the 32-bit layout must be the 0x108 bytes 1.14d allocates");
 
 
 namespace Fog::Archive {
@@ -33,25 +46,20 @@ void * __fastcall D2FILE_AllocAndLoadD2File(D2PoolManagerStrc * pMemory, char * 
     __frame0_t __frame0;
     __frame0.dwFileSizeOut = (DWORD)pMemory;
     __frame0.pFile = (D2MPQFileStrc*)pMemory;
-    static int s_nAllocLogBudget = 30; // [d2boot] log only first file loads, then stay silent
-    if (s_nAllocLogBudget > 0) { s_nAllocLogBudget--; D2BOOT_MarkFmt("AllocAndLoad: %s", szFilename); } // [d2boot]
     BOOL bFileExistsResult = D2Common::DATATBLS::DataTbls::CheckIfFileExists(pMemory, szFilename, &__frame0.pFile, 0);
-    if (s_nAllocLogBudget > 0) { s_nAllocLogBudget--; D2BOOT_MarkFmt("AllocAndLoad: %s exists -> %d", szFilename, (int)bFileExistsResult); } // [d2boot]
     void* pBuffer = 0;
     if (!bFileExistsResult) {
       return pBuffer;
     }
 
     DWORD dwFileSize = D2FILE_GetFileSize(pMemory, __frame0.pFile, &__frame0.dwFileSizeOut);
-    if (s_nAllocLogBudget > 0) { s_nAllocLogBudget--; D2BOOT_MarkFmt("AllocAndLoad: %s size -> %u", szFilename, (unsigned)dwFileSize); } // [d2boot]
-    pBuffer = Memory::AllocClientMemory(dwFileSize + 800, ".\\SRC\\Archive.cpp", 0xcf, 0);
+    pBuffer = D2_ALLOC(dwFileSize + 800);
     if (!pBuffer) {
       return pBuffer;
     }
 
     D2FILE_ReadFile(pMemory, __frame0.pFile, pBuffer, dwFileSize);
     D2FILE_CloseFile(pMemory, __frame0.pFile);
-    if (s_nAllocLogBudget > 0) { s_nAllocLogBudget--; D2BOOT_MarkFmt("AllocAndLoad: %s read+close ok", szFilename); } // [d2boot]
     if (!pSize) {
       return pBuffer;
     }
@@ -171,7 +179,7 @@ int * __stdcall FindMpqFromDiskOrCd(char * pszMpqName, int * pnPriority, int * p
 // @sourcefile .\SRC\Archive.cpp
 D2FogArchiveStrc * __fastcall ARCHIVE_LoadMPQ(char * szMpqFileName, int32_t nZero, ::fpRequiredUserAction nfpRequiredUserAction, int32_t nTimeTBC) {
     BOOL BVar1;
-    D2FogArchiveStrc* pFogArchive = (D2FogArchiveStrc*)Memory::AllocClientMemory(0x108, ".\\SRC\\Archive.cpp", 0x20a, 0);
+    D2FogArchiveStrc* pFogArchive = D2_NEW(D2FogArchiveStrc);
     pFogArchive->hArchive = 0;
     while (true) {
       D2ArchiveStrc* pArchive;
@@ -195,7 +203,7 @@ D2FogArchiveStrc * __fastcall ARCHIVE_LoadMPQ(char * szMpqFileName, int32_t nZer
       }
     }
 
-    Memory::FreeClientMemory(pFogArchive, ".\\SRC\\Archive.cpp", 0x21a, 0);
+    D2_FREE(pFogArchive);
     return nullptr;
 }
 
@@ -206,7 +214,7 @@ void __fastcall ARCHIVE_FreeMpqFile(D2FogArchiveStrc * pFogArchive) {
     }
 
     pFogArchive->hArchive = 0;
-    Memory::FreeClientMemory(pFogArchive, ".\\SRC\\Archive.cpp", 0x25c, 0);
+    D2_FREE(pFogArchive);
 }
 
 } // namespace Fog::Archive
