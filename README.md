@@ -1,5 +1,5 @@
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8da961b2-fba3-4913-b2e4-bb2510c3a5e3" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ba3a6c67-0195-4581-82b5-d9208ef64661" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ef24cacf-3573-416b-a982-fc54520bab47" />
 
 # D2LoD-libslang-vk
 
