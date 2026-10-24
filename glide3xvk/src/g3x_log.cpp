@@ -14,6 +14,14 @@ FILE* g_log = nullptr;
 CRITICAL_SECTION g_cs;
 bool g_cs_ok = false;
 uint64_t g_start_ms = 0;
+char g_path[MAX_PATH] = ""; // full path of the active log (rotation target)
+uint64_t g_bytes = 0;       // running size estimate of the active log file
+
+// 0.4.5: hard cap — the file is renamed to glide3x.log.1 and a fresh log is
+// started whenever it reaches this size, checked at open AND on every written
+// line (tracked bytewise, no per-line stat). Long single sessions no longer
+// grow the log unbounded; worst case on disk is ~2 MB (log + .1).
+constexpr uint64_t kRotateBytes = 1024ull * 1024;
 
 // log-once registry: tag -> count. Small fixed table, no allocations — this
 // runs inside the game's render loop and, at attach, inside the loader lock.
@@ -43,13 +51,40 @@ uint64_t now_ms() {
     return GetTickCount64();
 }
 
+void rotate_if_big() {
+    if (!g_log || !g_path[0] || g_bytes < kRotateBytes) return;
+    fclose(g_log);
+    g_log = nullptr;
+    char old[MAX_PATH];
+    _snprintf(old, sizeof(old) - 1, "%s.1", g_path);
+    old[sizeof(old) - 1] = '\0';
+    remove(old);
+    rename(g_path, old);
+    g_log = fopen(g_path, "ab");
+    g_bytes = 0;
+    if (g_log) {
+        SYSTEMTIME st;
+        GetLocalTime(&st);
+        g_bytes = (uint64_t)fprintf(g_log,
+                "==== glide3xvk log rotated %02u:%02u:%02u — previous %lu KB moved to %s ===="
+                "\n==== glide3xvk session (continued) %04u-%02u-%02u %02u:%02u:%02u ====\n",
+                st.wHour, st.wMinute, st.wSecond,
+                (unsigned long)(kRotateBytes / 1024), old);
+        g_bytes += (uint64_t)fprintf(g_log, "[g3xvk] (rotation marker)\n");
+        fflush(g_log);
+    }
+}
+
 void write_line(const char* line) {
     if (!g_log) return;
     SYSTEMTIME st;
     GetLocalTime(&st);
+    // "[HH:MM:SS.mmm] " = 14 chars, + line + \n; close enough for a size cap.
+    g_bytes += 14 + strlen(line) + 1;
     fprintf(g_log, "[%02u:%02u:%02u.%03u] %s\n", st.wHour, st.wMinute, st.wSecond,
             st.wMilliseconds, line);
     fflush(g_log);
+    rotate_if_big(); // callers hold g_cs; mid-session hard cap
 }
 
 } // namespace
@@ -80,13 +115,15 @@ void g3x_log_open() {
             g_log = fopen(chosen, "ab");
         }
     }
-    // 2 MB rotation: rename to .1 and start fresh so the file can't grow
-    // unbounded across many sessions.
+    // 0.4.5: 1 MB rotation (was 2 MB, open-time only). Rename to .1 and start
+    // fresh so the file can't grow unbounded — across many sessions (this
+    // open-time check) or inside one long session (the per-line check in
+    // write_line).
     if (g_log) {
         fseek(g_log, 0, SEEK_END);
         const long size = ftell(g_log);
         fclose(g_log); g_log = nullptr;
-        if (size > 2 * 1024 * 1024) {
+        if (size > (long)kRotateBytes) {
             char old[MAX_PATH];
             _snprintf(old, sizeof(old) - 1, "%s.1", chosen);
             old[sizeof(old) - 1] = '\0';
@@ -94,6 +131,13 @@ void g3x_log_open() {
             rename(chosen, old);
         }
         g_log = fopen(chosen, "ab");
+    }
+    _snprintf(g_path, sizeof(g_path) - 1, "%s", chosen);
+    g_path[sizeof(g_path) - 1] = '\0';
+    g_bytes = 0;
+    if (g_log && g_path[0]) {
+        fseek(g_log, 0, SEEK_END);
+        g_bytes = (uint64_t)ftell(g_log);
     }
     // Session banner: makes multi-launch logs readable at a glance.
     if (g_log) {

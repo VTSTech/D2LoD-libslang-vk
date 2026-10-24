@@ -34,9 +34,25 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
 - **Swapchain headroom** (vk_backend): swapchain images = minImageCount+2
   (was +1) — the field log showed images=2, the bare minimum; one extra
   image keeps FIFO present pacing from stalling the raster thread.
+- **Log hard cap, 1 MB** (g3x_log): glide3x.log rotated to `.1` only at
+  open time before, so one long session grew the file unbounded (the
+  state-line + summary traffic makes ~72 KB in a 30-second round). Now the
+  size is tracked per written line and the log rotates to
+  `glide3x.log.1` mid-session the moment it crosses 1 MB — a rotation
+  marker banner separates the halves, worst case on disk is ~2 MB
+  (log + .1), and the P2.4 append-across-sessions behavior is unchanged.
+- **Field result (this round's log, 0.4.4 build 7a2e132):** in-game
+  avg=39.0 ms ≈ 26 fps (was 51.6 ms ≈ 19 fps on 0.4.3), menu/light scenes
+  avg=24.6 ms ≈ 40 fps; swapchain images=3 confirmed in the banner. Same
+  scene is heavier this round (~800 draw calls/frame vs ~470), so the
+  fps gain understates the raster speedup.
 
 ### Validated
 
+- Host log-cap test (agent-side): mid-session rotation at exactly cap + one
+  line, repeated rotation keeps log + `.1` ~= 2 MB for a 3 MB spam run,
+  open-time rotation of an oversized file, and the P2.4
+  append-across-sessions behavior unchanged (15/15 checks).
 - Host parity harness (scripts/fxparity.cpp, agent-side): 220-frame mixed
   scene — ground strips, sprite fans (uniform/varying vc, 565 textures),
   chroma toggles, 5 blend classes, full-screen fills, points/lines, gamma
