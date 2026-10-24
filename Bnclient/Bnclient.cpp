@@ -139,7 +139,6 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     DWORD nNameLen;
     int nAnsiLen;
     uint32_t dwSehUnused;
-    uint8_t abCertFindPara[4];
     uint32_t dwSignerEncryptedHash;
     uint32_t dwSignerAlgId;
     uint32_t dwSignerSubject;
@@ -174,11 +173,32 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
         if (hMsgInfo) {
           bSuccess = CryptMsgGetParam(hCryptMsg, 6, 0, hMsgInfo, &nMsgInfoSize);
           if (bSuccess) {
-            dwSignerSubject = *(uint32_t*)((int)hMsgInfo + 4);
-            dwSignerIssuer = *(uint32_t*)((int)hMsgInfo + 8);
-            dwSignerEncryptedHash = *(uint32_t*)((int)hMsgInfo + 0xc);
-            dwSignerAlgId = *(uint32_t*)((int)hMsgInfo + 0x10);
-            /* PCCERT_CONTEXT pPrevCertContext for CertFindCertificateInStore */ /* void * pvFindPara for CertFindCertificateInStore */ /* DWORD dwFindType for CertFindCertificateInStore */ /* DWORD dwFindFlags for CertFindCertificateInStore */ /* DWORD dwCertEncodingType for CertFindCertificateInStore */ /* HCERTSTORE hCertStore for CertFindCertificateInStore */ pCertContext = CertFindCertificateInStore(hCertStore, 0x10001, 0, 0xb0000, abCertFindPara, (PCCERT_CONTEXT)0x0);
+            // CMSG_SIGNER_INFO: dwVersion@0, Issuer.cbData@4, Issuer.pbData@8,
+            // SerialNumber.cbData@0xc, SerialNumber.pbData@0x10.
+            dwSignerSubject = *(uint32_t*)((int)hMsgInfo + 4);         // Issuer.cbData
+            dwSignerIssuer = *(uint32_t*)((int)hMsgInfo + 8);          // Issuer.pbData
+            dwSignerEncryptedHash = *(uint32_t*)((int)hMsgInfo + 0xc); // SerialNumber.cbData
+            dwSignerAlgId = *(uint32_t*)((int)hMsgInfo + 0x10);        // SerialNumber.pbData
+            // CERT_FIND_SUBJECT_CERT (0xb0000) wants pvFindPara = const CERT_INFO*
+            // describing the signer certificate. The decompile placeholder passed a
+            // 4-byte uninitialized stack array, so crypt32 dereferenced garbage
+            // Issuer/SerialNumber blob pointers and the process died with 0xC0000005
+            // immediately after WinVerifyTrust succeeded. The original built this
+            // CERT_INFO from the CMSG_SIGNER_INFO fetched just above; rebuild it here.
+            //
+            // mingw's CERT_INFO has an extra SubjectPublicKeyInfo member the real MS
+            // struct lacks (112 vs 88 bytes), but it sits after Subject (offset 56);
+            // SerialNumber@4 and Issuer@24 - the two fields CERT_FIND_SUBJECT_CERT
+            // reads - are at identical offsets, and everything else is zeroed.
+            static_assert(__builtin_offsetof(CERT_INFO, SerialNumber) == 4, "CERT_INFO SerialNumber offset");
+            static_assert(__builtin_offsetof(CERT_INFO, Issuer) == 24, "CERT_INFO Issuer offset");
+            CERT_INFO sCertFindInfo;
+            memset(&sCertFindInfo, 0, sizeof(sCertFindInfo));
+            sCertFindInfo.Issuer.cbData = dwSignerSubject;
+            sCertFindInfo.Issuer.pbData = (BYTE*)(UINT_PTR)dwSignerIssuer;
+            sCertFindInfo.SerialNumber.cbData = dwSignerEncryptedHash;
+            sCertFindInfo.SerialNumber.pbData = (BYTE*)(UINT_PTR)dwSignerAlgId;
+            /* PCCERT_CONTEXT pPrevCertContext for CertFindCertificateInStore */ /* void * pvFindPara for CertFindCertificateInStore */ /* DWORD dwFindType for CertFindCertificateInStore */ /* DWORD dwFindFlags for CertFindCertificateInStore */ /* DWORD dwCertEncodingType for CertFindCertificateInStore */ /* HCERTSTORE hCertStore for CertFindCertificateInStore */ pCertContext = CertFindCertificateInStore(hCertStore, 0x10001, 0, 0xb0000, &sCertFindInfo, (PCCERT_CONTEXT)0x0);
             /* DWORD cchNameString for CertGetNameStringW */ /* LPWSTR pszNameString for CertGetNameStringW */ /* void * pvTypePara for CertGetNameStringW */ /* DWORD dwFlags for CertGetNameStringW */ /* DWORD dwType for CertGetNameStringW */ /* PCCERT_CONTEXT pCertContext for CertGetNameStringW */ if (pCertContext) {
               pWideStr = (LPWSTR)CertGetNameStringW(pCertContext, 3, 0, (void*)"2.5.4.10", (LPWSTR)0x0, 0);
               if (pWideStr) {
@@ -201,7 +221,18 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     }
 
     local_8 = (uint8_t*)-2;
-    D2FILE_CleanupCryptHandles(0, (uintptr_t)(uint8_t*)__builtin_frame_address(0));
+    // D2FILE_CleanupCryptHandles is the Ghidra rendering of the original MSVC
+    // __try/__finally cleanup: it reads the handle locals at fixed offsets from
+    // the caller's frame (-0x2c hMsgInfo, -0x28 pCertContext, -0x30 hCertStore,
+    // -0x24 hCryptMsg) using the ORIGINAL MSVC frame layout. Under mingw those
+    // slots hold unrelated locals, so the helper handed garbage handles to
+    // LocalFree / CertFreeCertificateContext / CertCloseStore / CryptMsgClose and
+    // the process faulted inside crypt32/ntdll after the body had already
+    // succeeded. Clean up with the real handle variables instead.
+    if (hMsgInfo) LocalFree(hMsgInfo);
+    if (pCertContext) CertFreeCertificateContext(pCertContext);
+    if (hCertStore) CertCloseStore(hCertStore, 0);
+    if (hCryptMsg) CryptMsgClose(hCryptMsg);
     return bGotOrg;
 }
 
