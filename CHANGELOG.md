@@ -46,6 +46,15 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   avg=24.6 ms ≈ 40 fps; swapchain images=3 confirmed in the banner. Same
   scene is heavier this round (~800 draw calls/frame vs ~470), so the
   fps gain understates the raster speedup.
+- **25 fps in-game is the engine, source-verified:** a second field log
+  (build be8737e) shows in-game swap-to-swap avg dead-on 40.0-40.3 ms with
+  the same per-frame draw volume as 24 ms Esc-menu windows;
+  `CLIENT_GameLoopFrame` (D2Client/GAME/Game.cpp) gates sim+render on a
+  40 ms budget and hardcodes fps_drawn=25, while the Esc menu early-returns
+  and draws unthrottled (45 fps = the wrapper's true speed). `frame N:`
+  lines now also carry **work=** — time spent inside the swap (gamma,
+  compose upload, chain render, submit, present) — so the log separates
+  engine pacing from wrapper cost from now on.
 
 ### Validated
 

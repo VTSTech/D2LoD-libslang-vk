@@ -387,6 +387,43 @@ Round 2 candidates (expected-gain order, not started):
 Method note: every raster-affecting change re-runs the fxparity hash; a hash
 mismatch needs an explicit pixel-delta justification before it ships.
 
+### The 25 fps ceiling — engine design, source-verified (2026-10-25)
+
+The 0.4.4 field logs ended the "is it us or the game?" question. Two facts
+from the second 0.4.4 log (build be8737e):
+
+- `avg=` in the `frame N:` line is **swap-to-swap wall time** (QPC between
+  `grBufferSwap` calls, glide_exports.cpp). In-game it reads a dead-on
+  **40.0–40.3 ms = 25.0 fps** while the Esc-menu windows read ~24 ms — with
+  the **same per-frame draw volume** (parr = exactly 510/frame in both).
+  Identical work at two different paces = the game chooses the pace.
+- The game's own decompiled source confirms it: `CLIENT_GameLoopFrame`
+  (`D2Client/GAME/Game/Game.cpp`) gates sim + render on a **40 ms budget**
+  (`uGlobalTickCountB = 0x28`) and hardcodes `fps_drawn = 25`; the in-tree
+  comment is explicit — *"In single player the gameserver runs as part of the
+  drawing process, this is why in single player the game is capped so hard at
+  25 frames, as serverside needs to be ran at 25 ticks per second."* The Esc
+  menu takes an **early-return path that draws unthrottled** — hence 45 fps
+  there, which is the wrapper's true current speed for a full scene.
+
+Consequences for this plan:
+
+- **In-game fps is engine-locked at 25 on vanilla.** No wrapper change moves
+  it. The perf rounds did still matter: 0.4.3's 51.6 ms frames exceeded the
+  game's 40 ms tick budget — that is tick-skip territory (the game's own
+  frame-skip logic, `framesSkipped`, the choppiness source). 0.4.4's ~22 ms
+  true cost fits the budget: every logic tick renders, no skips.
+- **60+ fps smoothness is an engine-level project, not a wrapper project:**
+  d2dx-style motion interpolation (render the 25 Hz sim state but interpolate
+  sprite positions to the display refresh — MIT prior art) or a game patch to
+  the tick gate (which speeds the SIMULATION up, not just the picture — breaks
+  the game). Both are rebuilt-d2.exe territory (P4+), out of glide3xvk scope.
+- The remaining wrapper perf items still pay: Esc menu 45 → 60 (FIFO cap),
+  cutscenes, keeping heavy scenes (Baal runs) inside the 40 ms budget so the
+  engine never skips, and present latency. `work=` in the frame line (0.4.4)
+  now reports the wrapper's present-path cost per frame so future rounds
+  can separate engine pacing from wrapper cost at a glance.
+
 ### P4 — Hardening + packaging
 - Failure paths: no Vulkan → unfiltered present; device lost → libslang-vk's
   recovery path (SLANGVK_ERR_DEVICE_LOST_RECOVERY_FAILED handling); alt-tab,
@@ -419,7 +456,7 @@ mismatch needs an explicit pixel-delta justification before it ships.
 | R4 | Glide state semantics subtly wrong (combine functions) | Low (reduced) | Med | Materialized twice and fixed: the two s/t conventions (P2.7 square-mip rule) and palette-index-0 transparency (P2.9 chroma rule). The in-tree D2Glide spec + field-log loop keeps catching the rest; open item: bilinear look only |
 | R5 | Optimized codegen breaks decompiled game code | — | — | Non-issue: project policy pins -O0/-g; our DLL may optimize freely (separate target) |
 | R6 | TMU memory emulation complexity | **Retired 2026-10-24** | — | Allocate-on-upload + (tmu,addr) hash store shipped in P2.1; texmiss=0 across 60k+ binds in round 8 |
-| R7 | CPU raster can't reach the fps target | **Active — perf track opened** | Med | Full-screen 0.4.3 log: 51.6 ms ≈ 19 fps with the chain active. P2.12 round 1 shipped (SSE2, O(1) texture table, swapchain headroom — bit-identical); round-2 candidates: fence ring, `fill_span` templating; endgame = GPU compose |
+| R7 | CPU raster can't reach the fps target | **Closed — superseded** | — | Source-verified: in-game 25 fps is the engine's tick lock (see the perf track). Wrapper cost ~22 ms (Esc-menu fps) fits the 40 ms budget; remaining perf work = headroom/menus/latency, not in-game fps |
 
 ---
 

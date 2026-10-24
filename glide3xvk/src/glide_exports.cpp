@@ -208,19 +208,36 @@ void __stdcall grBufferClear(GrColor_t color, GrAlpha_t alpha, FxU32 depth) {
 
 void __stdcall grBufferSwap(FxU32 swap_interval) {
     ++g_st.n_swaps;
-    g3x_frame_present();
     // P2.5: rolling frame time so the field log shows the raster's real pace
     // (round-7 session ran at ~4.3 fps — the number this build must move).
+    // 0.4.4: avg= is swap-to-swap WALL time, and the engine paces in-game
+    // frames at 25 Hz (CLIENT_GameLoopFrame's 40 ms gate — see
+    // D2Client/GAME/Game/Game.cpp; the in-tree comment is explicit: the SP
+    // server runs as part of the draw process, hence "capped so hard at 25
+    // frames"). So in-game avg saturates at ~40 ms regardless of our speed.
+    // work= is the time spent INSIDE this swap (gamma, compose upload, slang
+    // chain render, submit, present) — the wrapper's own per-frame cost at
+    // the present path, and the number that shows our real headroom.
     static LARGE_INTEGER s_prev = {};
     static double s_ms_acc = 0.0;
     static unsigned s_ms_n = 0;
-    LARGE_INTEGER now, freq;
-    if (QueryPerformanceCounter(&now) && QueryPerformanceFrequency(&freq)) {
+    static double s_work_acc = 0.0;
+    static unsigned s_work_n = 0;
+    LARGE_INTEGER now, w0 = {}, w1 = {}, freq;
+    const BOOL have_freq = QueryPerformanceFrequency(&freq);
+    const BOOL have_w = have_freq && QueryPerformanceCounter(&w0);
+    g3x_frame_present();
+    const BOOL have_work = have_w && QueryPerformanceCounter(&w1);
+    if (QueryPerformanceCounter(&now) && have_freq) {
         if (s_prev.QuadPart) {
             s_ms_acc += (double)(now.QuadPart - s_prev.QuadPart) * 1000.0 / (double)freq.QuadPart;
             ++s_ms_n;
         }
         s_prev = now;
+    }
+    if (have_work) {
+        s_work_acc += (double)(w1.QuadPart - w0.QuadPart) * 1000.0 / (double)freq.QuadPart;
+        ++s_work_n;
     }
     // P2.4: periodic activity line — gameplay phases run with every per-call
     // tag budget-quiet, so these are the only evidence of what each phase
@@ -228,14 +245,16 @@ void __stdcall grBufferSwap(FxU32 swap_interval) {
     if (g_st.n_swaps % 120 == 0) {
         unsigned ds[9];
         g3x_frame_draw_stats(ds);
-        g3x_log("frame %u: avg=%.1fms vac=%u parr=%u(strip=%u fan=%u) sub256=%u "
+        g3x_log("frame %u: avg=%.1fms work=%.1fms vac=%u parr=%u(strip=%u fan=%u) sub256=%u "
                 "rgb565=%u fill=%u vc0=%u skip=%u point=%u texdl=%u paldl=%u "
                 "chm=%u lfb=%u",
                 g_st.n_swaps, s_ms_n ? s_ms_acc / (double)s_ms_n : 0.0,
+                s_work_n ? s_work_acc / (double)s_work_n : 0.0,
                 ds[0], ds[1], ds[2], ds[3], ds[4], ds[5], ds[6], ds[7], ds[8],
                 g_st.n_point, g_st.n_tex_downloads, g_st.n_palette_downloads,
                 g3x_frame_chroma_toggles(), g_st.n_lfb_locks);
         s_ms_acc = 0.0; s_ms_n = 0;
+        s_work_acc = 0.0; s_work_n = 0;
     }
     if (g_st.n_swaps % 300 == 0) {
         g3x_log("frame %u: swaps=%u draws=%u texdl=%u paldl=%u lfblocks=%u",

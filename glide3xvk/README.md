@@ -186,6 +186,28 @@ before/after hash and counters are identical, so the round cannot change what
 you see, only how fast it gets there. Field numbers: capture `frame N:` lines
 chain-on vs chain-off on the next round's build.
 
+### The 25 fps ceiling (source-verified)
+
+Second 0.4.4 field log closed the loop: in-game `avg=` reads a dead-on
+40.0–40.3 ms (= 25.0 fps) while the Esc menu reads ~24 ms — with the same
+per-frame draw volume. `avg=` is swap-to-swap wall time, and the engine
+paces in-game frames itself: `CLIENT_GameLoopFrame`
+(`D2Client/GAME/Game/Game.cpp`) gates sim + render on a 40 ms budget
+(`uGlobalTickCountB = 0x28`, `fps_drawn = 25` hardcoded — the in-tree comment
+says it outright: the SP gameserver runs as part of the drawing process,
+"capped so hard at 25 frames"). The Esc menu early-returns and draws
+unthrottled, so its 45 fps ≈ the wrapper's true per-frame cost today.
+
+What this means: in-game fps is the engine's, not ours — the perf rounds
+still mattered because 0.4.3's 51.6 ms frames overflowed the game's 40 ms
+tick budget (the game's own frame-skip logic then drops ticks — the choppiness
+source); 0.4.4's ~22 ms fits. The `work=` field in the `frame N:` line (this
+build) reports the wrapper's present-path cost so the log separates engine
+pacing from wrapper cost. 60+ fps smoothness in-game is an engine-level
+project (d2dx-style motion interpolation on a rebuilt exe) — out of scope
+here; the wrapper targets: stay far under the 40 ms budget on the heaviest
+scenes, menus/cutscenes at full speed.
+
 ## Build (same toolchain as the game)
 
 From the repository root, with a **libslang-vk checkout beside the repo**
