@@ -51,3 +51,18 @@ bool g3x_vk_present_pixels(const uint8_t* bgra, unsigned w, unsigned h);
 
 // Tear everything down (grSstWinClose / grGlideShutdown / DLL detach).
 void g3x_vk_shutdown();
+
+// ---- P3 slang services (consumed by g3x_slang.cpp) -------------------------
+//
+// The preset chain renders into OUR swapchain: it needs the acquire step, the
+// per-image views, the swap format/extent, the acquire semaphore, and a
+// present that does not wait on our own render semaphore (the chain render is
+// synchronous/fenced and leaves the image in PRESENT_SRC_KHR).
+
+bool  g3x_vk_slang_ready();                        // live swapchain + sync objects
+bool  g3x_vk_slang_acquire(uint32_t* idx);         // vkAcquireNextImageKHR (logs OODE + recreates)
+void  g3x_vk_slang_present_acquired(uint32_t idx); // vkQueuePresentKHR, no wait semaphore
+void* g3x_vk_slang_swap_view(uint32_t idx);        // VkImageView of swapchain image idx
+int   g3x_vk_slang_swap_format();                  // VkFormat of the swapchain images
+void  g3x_vk_slang_swap_extent(unsigned* w, unsigned* h);
+void* g3x_vk_slang_acquire_semaphore();            // the binary semaphore acquire signaled

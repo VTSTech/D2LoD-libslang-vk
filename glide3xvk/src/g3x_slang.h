@@ -1,0 +1,92 @@
+// glide3xvk — libslang-vk preset chain at the present pass (P3).
+//
+// Owns everything slang: the adopted Vulkan context, the d2slangvk.conf
+// settings, the game-resolution input image, the loaded preset and the render
+// chain. The present seam (g3x_frame_present) feeds the gamma-corrected
+// NATIVE-RESOLUTION game frame here; this module uploads it through
+// slangvk_image and renders the preset chain straight into the acquired
+// swapchain image (slangvk_chain_render_swapchain), so the preset's own
+// scaling algorithms see the true source size — 640x480 in, 1440p out is the
+// P3 exit shape (PLAN.md section 5).
+//
+// Fail-soft everywhere: any slang failure downgrades that frame (or the
+// session) to the legacy unfiltered present path; the game never notices
+// beyond the look. Everything here is silent when d2slangvk.conf carries no
+// preset= line — zero cost, zero behavior change vs P2.
+//
+// Build modes: with G3XVK_HAVE_SLANGVK=1 the real library is linked; =0 gives
+// a stub build (same API, always inactive) so the game tree and CI keep
+// building when the libslang-vk checkout is absent. The pure logic (conf
+// parse, output-rect math) lives outside the ifdef and is covered by the
+// host tests (scripts/fxtest).
+#pragma once
+
+#include <stddef.h>
+#include <stdint.h>
+
+// Scaling modes (d2slangvk.conf "scale=").
+enum {
+    G3XSLANG_SCALE_FIT = 0,      // fit + center, letterbox (library default)
+    G3XSLANG_SCALE_STRETCH = 1,  // fill the whole swapchain image
+    G3XSLANG_SCALE_INTEGER = 2   // largest whole-number multiple, centered
+};
+
+// Pixel rectangle for the chain's output (library semantics: all-zero =
+// fit + center letterbox; x/y may be negative when host-supplied).
+struct G3xSlangRect {
+    int32_t  x, y;
+    uint32_t w, h;
+};
+
+// d2slangvk.conf body, parsed. Defaults: preset disabled, fit, vsync default.
+struct G3xSlangConf {
+    char preset[512];   // "" = chain disabled; relative paths resolve against the game exe dir
+    int  scale;         // G3XSLANG_SCALE_*
+    int  vsync;         // -1 = swapchain default (FIFO), 0 = off, 1 = on
+};
+
+// Pure parser for a d2slangvk.conf body: "[slangvk]" section with
+// preset=/scale=/vsync= keys; ';' and '#' comments; blanks ignored; later
+// assignments win. Missing keys keep defaults. Never fails on content —
+// unknown keys are ignored, bad values fall back to the default.
+bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out);
+
+// Pure output-rect math. fit -> {0,0,0,0}; stretch -> full target; integer ->
+// k = floor(min(out/in)) clamped to >= 1, rect centered (clamped to the
+// target when the input is larger than it, which degenerates to fill).
+G3xSlangRect g3x_slang_output_rect(int mode, unsigned in_w, unsigned in_h,
+                                   unsigned out_w, unsigned out_h);
+
+// ---- lifecycle (called from vk_backend / glide_exports) --------------------
+//
+// Handles are the REAL Vulkan objects as void* so this header stays
+// window/Vulkan-free (the stub build compiles on the Linux test host):
+// instance, physical device, device, graphics queue, queue family index.
+
+bool g3x_slang_init(void* instance, void* physical_device, void* device,
+                    void* queue, unsigned queue_family);
+void g3x_slang_shutdown();                       // chains -> presets -> image -> adopt-release
+
+void g3x_slang_context_open();                   // re-read d2slangvk.conf (grSstWinOpen)
+
+// Called after every swapchain (re)creation: retargets the chain (slangvk_chain_resize).
+void g3x_slang_swapchain_resized(unsigned out_w, unsigned out_h, int swap_format);
+
+// Per-frame: upload the game-res BGRA frame (post-gamma, overlay already
+// drawn) and render the chain into an acquired swapchain image, then present.
+// Returns true when THIS module handled the frame; false = caller must run
+// the legacy unfiltered present path.
+bool g3x_slang_present(const uint8_t* bgra, unsigned w, unsigned h);
+
+// True when the chain will take the next frame (gates g3x_frame_present's path).
+bool g3x_slang_active();
+
+// Vsync preference for swapchain creation: -1 default (FIFO), 0 = off, 1 = on.
+int g3x_slang_vsync_pref();
+
+#ifndef G3XVK_HAVE_SLANGVK
+// Stub-build test hooks (host tests only; not compiled into the real DLL).
+void g3x_slang_test_set_active(bool on);
+void g3x_slang_test_set_present(bool on);        // false -> present() fails like the real thing
+const uint8_t* g3x_slang_test_last_frame(unsigned* w, unsigned* h); // last upload attempt
+#endif

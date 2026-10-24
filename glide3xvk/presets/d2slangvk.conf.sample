@@ -1,0 +1,36 @@
+; d2slangvk.conf — glide3xvk 0.4.0 preset-chain settings.
+; Copy this file beside Game.exe (same folder as glide3x.dll + glide3xvk.ini)
+; and uncomment "preset=" to enable. No file (or no preset= line) = the DLL
+; presents unfiltered, exactly like 0.3.x.
+;
+; The file is re-read automatically (also while the game runs): edit it or the
+; .slangp preset in place and the chain reloads within ~half a second.
+;
+; Full story: glide3xvk/README.md (P3 section). Presets are libretro .slangp
+; files — point preset= at your RetroArch shaders (e.g. Shaders/crt/...) or
+; the two starters shipped in glide3xvk/presets/.
+
+[slangvk]
+
+; Path to a .slangp preset. Relative paths resolve against the game exe
+; folder; drive-letter paths work too. Empty/missing line = chain disabled.
+;preset=presets/glide3xvk-scanline.slangp
+;preset=presets/glide3xvk-sharpen.slangp
+;preset=Shaders/crt/crt-royale.slangp
+
+; How the game frame sits in the window when the preset chain is on:
+;   fit      — fit + center, letterboxed (default)
+;   integer  — largest whole-number multiple of the game resolution, centered
+;   stretch  — fill the window edge to edge
+scale=fit
+
+; Vertical sync for the swapchain the chain renders into:
+;   (empty)  — default: FIFO (vsync on)
+;   0        — prefer IMMEDIATE (no vsync; falls back to FIFO if unsupported)
+;   1        — FIFO
+vsync=
+
+; What the DLL does when the preset fails to load/compile/render:
+;   unfiltered — keep presenting the raw game frame (default; the log carries
+;                the slang error)
+fallback=unfiltered

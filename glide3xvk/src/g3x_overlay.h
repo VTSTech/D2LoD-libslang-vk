@@ -32,7 +32,7 @@
 // Release version of this glide3xvk build. Shown by the overlay, printed by
 // the session banner and reported through grGetString(GR_RENDERER). Bump on
 // every field-delivered change set.
-#define G3XVK_VERSION "0.3.1"
+#define G3XVK_VERSION "0.4.0"
 
 // Render the tag into a BGRA8 buffer (w*h*4 bytes, stride = w*4). Safe to call
 // with any buffer size; the box anchors 4px from the right/top edge and clamps

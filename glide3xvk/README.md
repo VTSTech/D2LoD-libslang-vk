@@ -11,8 +11,10 @@ not required.
 Status: the game renders correctly through it — menu, world, units, UI,
 shadows, text, cutscenes (field-verified over rounds 4–12; see
 `FIELD-TEST.md`). The CPU raster feeds a BGRA compose buffer; the GPU side is
-bootstrap + present. libslang-vk preset filtering is the P3 payoff (not wired
-yet).
+bootstrap + present. **P3 shipped (0.4.0): the libslang-vk preset chain sits
+at the present pass** — set `preset=` in `d2slangvk.conf` and every presented
+frame runs through the slang preset at up-scaled resolution (field round
+pending).
 
 ```
 d2.exe ── LoadLibraryA("glide3x.dll") ──► glide3x.dll (this directory)
@@ -21,14 +23,18 @@ d2.exe ── LoadLibraryA("glide3x.dll") ──► glide3x.dll (this directory)
               grBufferSwap:                   │   paletted textures, combine
                compose buffer                 │   states, fan/strip/point
                + gamma                        │   raster, chroma, LFB, fills
-               + version-tag overlay          ├─ present → Vulkan swapchain
-               → queue submit                 └─ P3 (later): libslang-vk preset
-                                                   chain at the present pass
+               + version-tag overlay          ├─ P3 (done, 0.4.0): preset chain
+               → queue submit                 │   slangvk_image (game res) →
+                                              │   slangvk_chain_render_swapchain
+                                              │   (d2slangvk.conf, hot-reload)
+                                              └─ present → Vulkan swapchain
 ```
 
-`libslang-vk` is **embedded** at the present pass (P3) — it is not the DLL
-itself (it doesn't speak Glide; it turns an input image into a preset-filtered
-swapchain image).
+`libslang-vk` is **embedded** at the present pass — it is not the DLL itself
+(it doesn't speak Glide; it turns an input image into a preset-filtered
+swapchain image). The DLL links the static `slangvk` target and adopts our
+own Vulkan context (`slangvk_device_adopt`); without `d2slangvk.conf` the
+chain never engages and the DLL behaves exactly like 0.3.x.
 
 ## Layout
 
@@ -38,6 +44,8 @@ swapchain image).
 | `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam |
 | `src/g3x_state.{h,cpp}` | Glide state tracking (grChromakey/grColorCombine/... current values) |
 | `src/g3x_overlay.{h,cpp}` | The version-tag overlay: `glide3xvk <version> (<build id>)` drawn top-right every frame |
+| `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf`, owns the input image + preset + chain, hot-reloads on file change, fails soft to the unfiltered path |
+| `presets/` | Two starter presets (scanline, sharpen — MIT, ours) + `d2slangvk.conf.sample` |
 | `src/g3x_font8x8.h` | Embedded 8x8 1-bit bitmap font for the overlay (generated from DejaVu Sans Mono Bold) |
 | `src/g3x_log.{h,cpp}` | `glide3x.log` beside the game exe (`%TEMP%` fallback), log-once budgets, periodic frame summaries, exit summary |
 | `src/g3x_types.h` | Minimal Glide type surface (mirror of the game's `d2_platform.h` block) + values observed in the in-tree `D2Glide` call sites |
@@ -66,9 +74,63 @@ open):
 overlay=0
 ```
 
+## The preset chain (P3, 0.4.0)
+
+Every present, the gamma-corrected frame is uploaded at its **native game
+resolution** into a `slangvk_image`, and `slangvk_chain_render_swapchain`
+draws the preset chain straight into the acquired swapchain image — so the
+preset's own scaling algorithms see the true source size (640x480 in,
+whatever the window is out). The version-tag overlay is drawn onto the chain
+input, so it filters along with the frame (screenshots show what the player
+sees). The scaling/vsync/overlay relationship:
+
+- `scale=fit` — the chain fit-and-centers (letterbox). `scale=integer` — we
+  compute the largest whole-number multiple of the game resolution that fits
+  and hand the chain a centered rect. `scale=stretch` — full-rect.
+- `vsync=` — swapchain present mode (FIFO default; `0` prefers IMMEDIATE).
+- The overlay box anchors top-right exactly as in P2 (see above); with a
+  preset on it warps/filters with everything else.
+
+`d2slangvk.conf` beside `Game.exe` (copy it from
+`presets/d2slangvk.conf.sample`):
+
+```ini
+[slangvk]
+preset=presets/glide3xvk-scanline.slangp   ; or an absolute path into your
+                                            ; RetroArch shaders (CRT-Royale)
+scale=fit                                  ; fit | integer | stretch
+vsync=                                     ; empty = FIFO, 0 = immediate
+fallback=unfiltered                        ; preset failure -> raw frame
+```
+
+Behavior contract:
+
+- **No conf / no `preset=` line = the chain never engages.** Identical pixels
+  and logs to 0.3.x (the only log line is a one-shot "no preset" note).
+- **Hot reload**: the conf and the preset file are stat'ed every 32 frames;
+  any change reloads the preset and rebuilds the chain mid-session (a few
+  frames of unfiltered present during the swap).
+- **Fail-soft**: preset parse/compile/render failure logs the slang error and
+  downgrades to the unfiltered path (the whole session after 3 consecutive
+  render failures); the game never crashes on a bad preset.
+- Starter presets (ours, MIT): `presets/glide3xvk-scanline.slangp` (the
+  zero-risk smoke test — image identical apart from darkened alternate source
+  lines) and `presets/glide3xvk-sharpen.slangp` (mild unsharp mask). Real CRT
+  chains (CRT-Royale and friends) load from a RetroArch `shaders/` checkout
+  by absolute or game-relative path.
+
 ## Build (same toolchain as the game)
 
-From the repository root:
+From the repository root, with a **libslang-vk checkout beside the repo**
+(the P3 preset chain links its static `slangvk` target; see `BUILD-32BIT.md`
+for the i686 verification of that build):
+
+```sh
+git clone https://github.com/VTSTech/libslang-vk ../libslang-vk   # once
+```
+
+Without the checkout the DLL still builds — with the chain stubbed out
+(same API, always inactive) and a loud CMake STATUS line saying so.
 
 ```sh
 cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
@@ -78,7 +140,8 @@ cmake --build build --target glide3x
 ```
 
 CI (`.github/workflows/build.yml`) does exactly this on every push and uploads
-the DLL as the `glide3x-dll` artifact.
+the DLL as the `glide3x-dll` artifact; it checks out `VTSTech/libslang-vk`
+pinned (`ref: d208ac5`) so the chain builds reproducibly.
 
 Verify the export surface against the game's own loader (must be an empty diff):
 
@@ -129,10 +192,10 @@ The DirectDraw path (`-w`) is untouched by all of this.
 
 ## What is deliberately NOT here yet
 
-- libslang-vk linkage (P3): the present pass is marked `TODO(P3)` in
-  `src/vk_backend.cpp`; the 32-bit libslang-vk build spike is the gate
-  (`BUILD-32BIT.md`). Preset config/hot-reload is P4.
-- GPU-side raster (P3): the CPU scanline raster measures ~27 fps @ 800x600;
-  moving the compose to the GPU is the P3 exit for the 60 fps target.
+- GPU-side raster (P3 exit for the 60 fps target): the CPU scanline raster
+  measures ~27 fps @ 800x600, and the preset chain adds a fullscreen pass on
+  top of that — the compose-to-GPU move is now the main remaining perf item.
 - Bilinear texture filtering (look delta only): the ground requests
   `texFilterMode(1,1)` and is point-sampled today.
+- Preset parameter UI / per-preset geometry defaults (P4): parameters are
+  reachable through `slangvk_chain_set_parameter` but nothing drives them yet.

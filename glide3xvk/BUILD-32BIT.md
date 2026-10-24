@@ -90,10 +90,15 @@ grow by roughly this order once slangvk links in (P3) — still trivial next to 
 
 ### What this unblocks / what stays open
 
-- **Unblocked:** P3 wiring — `glide3xvk/CMakeLists.txt` can add the libslang-vk
-  tree with the same flags and replace `TODO(P3)` in `src/vk_backend.cpp` with
-  `slangvk_chain_render_swapchain` at present.
+- **Unblocked — and used (0.4.0):** P3 is wired — `glide3xvk/CMakeLists.txt`
+  adds the sibling libslang-vk checkout with exactly these flags
+  (`-DG3XVK_SLANGVK_DIR`, default `../libslang-vk`; fail-soft stub when the
+  checkout is absent), and `g3x_slang.cpp` drives
+  `slangvk_chain_render_swapchain` at the present pass. CI checks out
+  `VTSTech/libslang-vk` pinned to `d208ac5`. The recipe below remains the
+  authoritative way to reproduce/upgrade the linked build.
 - **Open (field):** runtime behavior of the i686 artifact on real 32-bit
   Windows Vulkan — covered by the P1 field test (VTSTech, Win11 + RX 560) or a
   later wine smoke on the Ubuntu VM (sandbox lavapipe is 64-bit; a 32-bit
-  Windows exe cannot run here).
+  Windows exe cannot run here). For the preset chain specifically: round 14
+  exercises it on the field rig.

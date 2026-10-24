@@ -21,42 +21,57 @@ resolution — is the same one proven in
 (Diablo/Hellfire) and
 [chocolate-doom-vk](https://github.com/VTSTech/chocolate-doom-vk) (Doom).
 
-## Status — 0.3.1
+## Status — 0.4.0
 
 - The full game renders correctly through the Vulkan swapchain: menu, world, units,
   UI, shadows, text, cutscenes (field-verified rounds 4–12 on real hardware; see
   [glide3xvk/FIELD-TEST.md](glide3xvk/FIELD-TEST.md)).
-- ~27 fps @ 800x600 from the CPU raster today; moving the compose buffer to the GPU
-  is the P3 exit for the 60 fps target.
-- Not wired yet, on purpose: the libslang-vk preset chain (P3 — marked `TODO(P3)` in
-  `glide3xvk/src/vk_backend.cpp`), GPU-side raster (P3), bilinear texture filtering
-  (a look delta only; the ground's `texFilterMode(1,1)` request is point-sampled).
+- **The libslang-vk preset chain is live (0.4.0)**: point `preset=` in
+  `d2slangvk.conf` at any libretro `.slangp` and every presented frame runs
+  through it at native game resolution — hot-reload on file change, fit /
+  integer / stretch scaling, unfiltered fallback on any failure.
+- ~27 fps @ 800x600 from the CPU raster today (the preset chain adds a
+  fullscreen pass on top); moving the compose buffer to the GPU is the
+  remaining P3 exit item for the 60 fps target.
+- Not wired yet, on purpose: GPU-side raster (P3 exit), bilinear texture
+  filtering (a look delta only; the ground's `texFilterMode(1,1)` request is
+  point-sampled).
 
 ## Install
 
 No build required:
 
-1. Get `glide3x.dll` — either the
-   [0.3.1 release](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/0.3.1)
-   (pre-release) or the `glide3x-dll` artifact of the latest run in
-   [Actions](https://github.com/VTSTech/D2LoD-libslang-vk/actions).
+1. Get `glide3x.dll` — the
+   [releases page](https://github.com/VTSTech/D2LoD-libslang-vk/releases)
+   (0.3.1 there today) or the `glide3x-dll` artifact of the latest run in
+   [Actions](https://github.com/VTSTech/D2LoD-libslang-vk/actions) (current
+   code, preset chain included).
 2. Copy it into your Diablo II folder, next to the original `Game.exe`
    (vanilla retail 1.14d). This repository contains no game data and no Blizzard
    binaries; the DLL only draws what the game hands it.
-3. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
+3. (Optional, the payoff) Copy `presets/d2slangvk.conf.sample` from the repo as
+   `d2slangvk.conf` beside `Game.exe`, uncomment a `preset=` line, and every
+   frame runs through that slang shader — hot-reload mid-game, `fit`/`integer`/
+   `stretch` scaling, unfiltered fallback on any failure. No conf = the exact
+   0.3.x behavior.
+4. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
 
 A healthy run looks like: the menu renders, play works, and `glide3x.log` beside the
-exe carries the session banner (`glide3xvk 0.3.1 <build-id>`), periodic `frame N:`
-summaries, and a clean exit summary on shutdown. If 32-bit Vulkan is unavailable
+exe carries the session banner (`glide3xvk 0.4.0 <build-id>`), periodic `frame N:`
+summaries, and a clean exit summary on shutdown. With a preset configured, the log
+adds `slang: chain ready '<preset>' ...` and per-event slang lines; without one, it
+says so once. If 32-bit Vulkan is unavailable
 (`vulkan-1.dll` x86 missing), the log says so, the DLL still loads, and the game keeps
 running — the DirectDraw path (`-w` without `-3dfx`) is untouched by all of this.
 
 ## The overlay
 
-Every present draws one line — `glide3xvk 0.3.1 (<build id>)` — into the **top-right**
+Every present draws one line — `glide3xvk 0.4.0 (<build id>)` — into the **top-right**
 corner (4px from the edge): 8x8 bitmap font, 65%-black backdrop, 1px drop shadow. The
 corner is deliberate: the game's own `/fps` readout draws top-left, and both should be
-visible at once. The tag renders post-gamma at swapchain resolution and never enters
+visible at once. The tag renders post-gamma at present resolution — swapchain
+resolution on the legacy path, game resolution when a preset chain is on (it filters
+with the frame) — and never enters
 the game's own framebuffer, so fades and screenshots cannot see it. Turn it off with
 `overlay=0` under `[glide3xvk]` in `glide3xvk.ini` (re-read on every context open):
 
@@ -104,9 +119,11 @@ diff /tmp/game.txt /tmp/ours.txt && echo "MATCH: all 45 GetProcAddress names cov
 
 ## Roadmap
 
-- **P3** — wire the libslang-vk preset chain into the present pass, and move the
-  compose buffer to the GPU (60 fps target)
-- **P4** — preset configuration / hot-reload, CI-packaged drop-in zip
+- **P3 (shipped, 0.4.0)** — the libslang-vk preset chain at the present pass
+  (`d2slangvk.conf`, hot-reload, scaling modes, fail-soft); remaining exit
+  item: GPU-side raster for the 60 fps target
+- **P4** — preset parameter UI, CI-packaged drop-in zip (DLL + presets +
+  conf), crash-reporter hook
 - Deferred look item: bilinear texture filtering
 
 ## Upstream

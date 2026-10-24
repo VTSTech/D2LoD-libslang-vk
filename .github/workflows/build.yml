@@ -13,7 +13,7 @@ concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
 
-# Builds the game's Glide renderer DLL only � the d2.exe tree is NOT built
+# Builds the game's Glide renderer DLL only  the d2.exe tree is NOT built
 # here (the 500-TU clean-clone gate lives in tools/check-build.sh, run by
 # hand). glide3x.dll is self-contained and needs no game objects to link.
 
@@ -23,6 +23,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # P3: the preset chain links the static slangvk target from the
+      # libslang-vk checkout. Pinned for reproducible builds — bump with care
+      # (BUILD-32BIT.md holds the i686 recipe + verification checklist).
+      - name: Check out libslang-vk (pinned)
+        uses: actions/checkout@v4
+        with:
+          repository: VTSTech/libslang-vk
+          ref: d208ac5
+          path: libslang-vk
+
       - name: Install the toolchain
         run: |
           sudo apt-get update -qq
@@ -30,7 +40,8 @@ jobs:
 
       - name: Build glide3x.dll
         run: |
-          cmake -S . -B build-g3x -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
+          cmake -S . -B build-g3x -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake \
+            -DG3XVK_SLANGVK_DIR=${{ github.workspace }}/libslang-vk
           cmake --build build-g3x --target glide3x
 
       - name: Check the Glide export surface
