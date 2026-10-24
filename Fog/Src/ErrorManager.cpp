@@ -20,6 +20,7 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/_unnamespaced.h"
 #include "support/d2_trace.h"
+#include "support/d2_boot.h" // [d2boot]
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 
@@ -645,6 +646,8 @@ void FOG_ErrorHandler(eFOG_ErrorType eErrorType, char * szFile, int32_t nLine, c
       szFile = ".\\Src\\ErrorManager.cpp";
     }
 
+    D2BOOT_MarkFmt("FOG_ErrorHandler type=%d file=%s line=%d", (int)eErrorType, szFile ? szFile : "(null)", (int)nLine); // [d2boot]
+
     int nResult = CheckErrorDuringError(szFile, nLine, szReasonFormat);
     if (!nResult) {
       g_dwErrorState = 1;
@@ -669,12 +672,15 @@ void FOG_ErrorHandler(eFOG_ErrorType eErrorType, char * szFile, int32_t nLine, c
       if (!bIsFatalErrorType) {
         g_dwErrorState = 0;
       }
+    } else {
+      D2BOOT_Mark("FOG_ErrorHandler: error-during-error (recursive) -> suppressed"); // [d2boot]
     }
 
     Debug::GuardStack();
 }
 
 void ERROR_UnrecoverableInternalError_AssertionFailure(char * szUnused, int32_t nAddress, int32_t nLine) {
+    D2BOOT_MarkFmt("ASSERT-FAIL line=%d addr=%08X", nLine, (unsigned)nAddress); // [d2boot]
     Safesock::WSACleanup();
     FOG_ErrorHandler(ERROR_AssertionFailure, "", nLine, "Unrecoverable internal error %08x", nAddress);
     LogManager::ExitOrCrashCleanUpJmp();
@@ -690,6 +696,7 @@ void ERROR_UnrecoverableInternalError_Halt(char * szMessage, int32_t nAddress, i
     // actually fired. Naming the line here is what makes an assert readable at all.
     D2TraceFmt("HALT line=%d (0x%x) addr=%08X ra=%08X", nLine, nLine,
                (unsigned)nAddress, (unsigned)(uintptr_t)__builtin_return_address(0));
+    D2BOOT_MarkFmt("HALT line=%d (0x%x) addr=%08X", nLine, nLine, (unsigned)nAddress); // [d2boot]
     // ra as a module RVA: the absolute value is useless across runs because the image is
     // relocated, and every attempt to place a halt has started by guessing the load base.
     Safesock::WSACleanup();
@@ -698,18 +705,21 @@ void ERROR_UnrecoverableInternalError_Halt(char * szMessage, int32_t nAddress, i
 }
 
 void ERROR_UnrecoverableInternalError_Warning(char * szUnused, int32_t nAddress, int32_t nLine) {
+    D2BOOT_MarkFmt("ERROR-WARN line=%d addr=%08X", nLine, (unsigned)nAddress); // [d2boot]
     Safesock::WSACleanup();
     FOG_ErrorHandler(ERROR_Warning, "", nLine, "Unrecoverable internal error %08x", nAddress);
     LogManager::ExitOrCrashCleanUpJmp();
 }
 
 void ERROR_DeadlockedThread(DWORD pThread, int32_t nTicks) {
+    D2BOOT_MarkFmt("DEADLOCK thread=%X ticks=%d", (unsigned)pThread, (int)nTicks); // [d2boot]
     Safesock::WSACleanup();
     FOG_ErrorHandler(ERROR_Deadlock, (char*)pThread, 0x87f, "Deadlocked in thread %X for %d ticks", pThread, nTicks);
     LogManager::ExitOrCrashCleanUpJmp();
 }
 
 void ERROR_UnrecoverableInternalError_Any(eFOG_ErrorType eErrorType, uint32_t dwParam, int32_t nAddress, int32_t nLine) {
+    D2BOOT_MarkFmt("ERROR-ANY type=%d line=%d addr=%08X", (int)eErrorType, nLine, (unsigned)nAddress); // [d2boot]
     Safesock::WSACleanup();
     FOG_ErrorHandler(eErrorType, "", nLine, "Unrecoverable internal error %08x", nAddress);
     LogManager::ExitOrCrashCleanUpJmp();

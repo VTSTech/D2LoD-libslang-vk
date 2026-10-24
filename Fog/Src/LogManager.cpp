@@ -14,6 +14,7 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/_unnamespaced.h"
+#include "support/d2_boot.h" // [d2boot]
 #include "compiler/compiler.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
@@ -1090,6 +1091,7 @@ void __stdcall ExitOrCrashCleanup() {
     DWORD dwTickCountC;
     uint32_t nQueueCount;
     if (!gLogManagerInitialized) {
+      D2BOOT_Mark("ExitOrCrashCleanup: log manager NOT initialized -> HALT 0x1c8 then exit(-1)"); // [d2boot]
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x1c8);
       exit(-1);
     }
@@ -1125,6 +1127,7 @@ void __stdcall ExitOrCrashCleanup() {
 
 // JMP thunk
 void __stdcall ExitOrCrashCleanUpJmp() {
+    D2BOOT_Mark("ExitOrCrashCleanUpJmp (error-path cleanup reached)"); // [d2boot]
     ::Fog::Src::LogManager::ExitOrCrashCleanup();
 }
 

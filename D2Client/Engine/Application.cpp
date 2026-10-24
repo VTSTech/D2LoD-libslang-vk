@@ -21,6 +21,7 @@
 #include "globals/globals.h"
 #include "D2Client/Engine.h"
 #include "support/d2_trace.h"
+#include "support/d2_boot.h" // [d2boot]
 #include "D2Client/UI/Panel.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -52,24 +53,37 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
 
     /* Here it assign global D2Application mode then param is used as variable to
                          determine renderer */ geD2ApplicationMode = eD2ApplicationModeAndRenderer;
+    D2BOOT_MarkFmt("ApplicationMain enter (mode=%d)", (int)geD2ApplicationMode); // [d2boot]
     __frame0.bSoundInit = 0;
     Fog::Source::SFile::SFILE_InitializeFileSystem((uint32_t)pD2IniData->bDIRECT, 0);
+    D2BOOT_Mark("SFile filesystem init ok"); // [d2boot]
     Fog::Src::AsyncData::STRUCT_AllocAsyncData(1);
     Fog::Return();
     Fog::Src::D2Net::NET_SERVER_SentPacketLog_Clear();
     if (geD2ApplicationMode != APPMODE_server) {
       bMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadAllDataMpqFiles();
-      if (!bMpqLoaded || (bMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles((::fpRequiredUserAction)D2Win::Src::D2WinArchive::MessageBoxA_InsertPlayDisc, (::fpRequiredUserAction)D2Win::Src::D2WinArchive::MessageBoxA_InsertExpansionDisc, 0, pD2IniData) , !bMpqLoaded)) {
+      D2BOOT_MarkFmt("data MPQs -> %d", (int)bMpqLoaded); // [d2boot]
+      if (bMpqLoaded) {
+        D2BOOT_Mark("loading media MPQs..."); // [d2boot]
+        bMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles((::fpRequiredUserAction)D2Win::Src::D2WinArchive::MessageBoxA_InsertPlayDisc, (::fpRequiredUserAction)D2Win::Src::D2WinArchive::MessageBoxA_InsertExpansionDisc, 0, pD2IniData);
+        D2BOOT_MarkFmt("media MPQs -> %d", (int)bMpqLoaded); // [d2boot]
+      }
+      if (!bMpqLoaded) {
+        D2BOOT_Fail("MPQ load failed (see data/media MPQ lines above in d2boot.log)"); // [d2boot]
         D2Win::Src::D2WinArchive::MPQ_UnloadAllDataMpqFiles();
         return 0;
       }
 
       bMpqLoaded = Fog::D2CheckExpansionGame();
+      D2BOOT_MarkFmt("expansion recheck -> %d", (int)bMpqLoaded); // [d2boot]
       *(BOOL*)pD2IniData->bD2ExpMpqExistsOrLanugageCode = bMpqLoaded;
+      D2BOOT_Mark("expansion flag stored to ini"); // [d2boot]
       Fog::Engine::Application::SystemSurvey_WriteProductLanugageToLocaleFile();
+      D2BOOT_Mark("SystemSurvey locale ok"); // [d2boot]
     }
 
     D2Lang::StrTable::strtable::MISC_GetLanguageCode();
+    D2BOOT_Mark("language code ok"); // [d2boot]
     if (!pD2IniData->b3DFX) {
       if (!pD2IniData->bWINDOW) {
         eD2ApplicationModeAndRenderer = (pD2IniData->bD3D ? 3 : 0) + RENDERED_DirectDraw;
@@ -86,8 +100,11 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       bWindowCreated = false;
     } else {
       HWND hWnd;
+      D2BOOT_MarkFmt("calling D2GFX_PreSetup (renderer=%d windowed=%d)", (int)eD2ApplicationModeAndRenderer, (int)bWindowed); // [d2boot]
       bMpqLoaded = D2Win::Src::D2WinMain::D2GFX_PreSetupBeforeCreatingWindow(hInstance, eD2ApplicationModeAndRenderer, bWindowed, (uint32_t)!pD2IniData->bNOCOMPRESS);
+      D2BOOT_MarkFmt("GFX pre-setup -> %d", (int)bMpqLoaded); // [d2boot]
       if (!bMpqLoaded) {
+        D2BOOT_Fail("D2GFX_PreSetupBeforeCreatingWindow returned 0"); // [d2boot]
         return 0;
       }
       if (pD2IniData->bPERSPECTIVE && RENDERED_DirectDraw < eD2ApplicationModeAndRenderer) {
@@ -95,7 +112,9 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       }
 
       bMpqLoaded = D2gfx::D2GFX::CreateWindowWithChecks(bWindowed, bExpansionMode ? 2 : 0);
+      D2BOOT_MarkFmt("CreateWindowWithChecks -> %d", (int)bMpqLoaded); // [d2boot]
       if (!bMpqLoaded) {
+        D2BOOT_Fail("CreateWindowWithChecks returned 0"); // [d2boot]
         D2gfx::D2GFX::D2GFX_Release();
         return 0;
       }
@@ -135,6 +154,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       __frame0.bSoundInit = 1;
     }
 
+    D2BOOT_Mark("setup ok -> entering mode loop"); // [d2boot]
     while (geD2ApplicationMode != APPMODE_mode0) {
       if (geD2ApplicationMode == APPMODE_server) {
         if (__frame0.bSoundInit) {
@@ -160,6 +180,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       D2gfx::D2GFX::D2GFX_Release();
     }
 
+    D2BOOT_Mark("mode loop exited - ApplicationMain returning"); // [d2boot]
     D2Win::Src::D2WinArchive::MPQ_UnloadAllDataMpqFiles();
     if (ghKeyhookDll) {
       /* LPCSTR lpProcName for GetProcAddress */ /* HMODULE hModule for GetProcAddress */ pfnKeyhook = GetProcAddress(ghKeyhookDll, "UninstallKeyboardHook");

@@ -13,6 +13,7 @@
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "support/d2_trace.h"
+#include "support/d2_boot.h" // [d2boot]
 #define POOLPROBE(tag) D2TraceFmt("poolprobe %-22s nPoolId=%d", tag, \
     (int)Fog::Memory::pGlobalPoolSystem.pManagers[0].nPoolId)
 
@@ -454,9 +455,12 @@ uint32_t __stdcall MISC_GetLanguageCode() {
     }
 
     gbLanguageCodeCached = '\x01';
+    D2BOOT_Mark("lang: loading data\\local\\use from d2data.mpq"); // [d2boot]
     uint8_t* pMemoryToFree = (uint8_t*)Fog::Archive::D2FILE_AllocAndLoadD2File((D2PoolManagerStrc*)MPQ_d2data, "data\\local\\use", nullptr, ".\\StrTable\\strtable.cpp", 1099);
+    D2BOOT_MarkFmt("lang: file load -> %08X", (unsigned)(uintptr_t)pMemoryToFree); // [d2boot]
     if (pMemoryToFree) {
       gnLanguageCode = (uint32_t)*pMemoryToFree;
+      D2BOOT_MarkFmt("lang code -> %u", (unsigned)gnLanguageCode); // [d2boot]
       Fog::Memory::FreeClientMemory(pMemoryToFree, ".\\StrTable\\strtable.cpp", 0x450, 0);
     }
     if (0xd >= (int)gnLanguageCode) {

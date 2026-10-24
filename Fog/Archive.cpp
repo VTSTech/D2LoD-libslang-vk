@@ -12,6 +12,7 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/_unnamespaced.h"
+#include "support/d2_boot.h" // [d2boot]
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 
@@ -32,13 +33,17 @@ void * __fastcall D2FILE_AllocAndLoadD2File(D2PoolManagerStrc * pMemory, char * 
     __frame0_t __frame0;
     __frame0.dwFileSizeOut = (DWORD)pMemory;
     __frame0.pFile = (D2MPQFileStrc*)pMemory;
+    static int s_nAllocLogBudget = 30; // [d2boot] log only first file loads, then stay silent
+    if (s_nAllocLogBudget > 0) { s_nAllocLogBudget--; D2BOOT_MarkFmt("AllocAndLoad: %s", szFilename); } // [d2boot]
     BOOL bFileExistsResult = D2Common::DATATBLS::DataTbls::CheckIfFileExists(pMemory, szFilename, &__frame0.pFile, 0);
+    if (s_nAllocLogBudget > 0) { s_nAllocLogBudget--; D2BOOT_MarkFmt("AllocAndLoad: %s exists -> %d", szFilename, (int)bFileExistsResult); } // [d2boot]
     void* pBuffer = 0;
     if (!bFileExistsResult) {
       return pBuffer;
     }
 
     DWORD dwFileSize = D2FILE_GetFileSize(pMemory, __frame0.pFile, &__frame0.dwFileSizeOut);
+    if (s_nAllocLogBudget > 0) { s_nAllocLogBudget--; D2BOOT_MarkFmt("AllocAndLoad: %s size -> %u", szFilename, (unsigned)dwFileSize); } // [d2boot]
     pBuffer = Memory::AllocClientMemory(dwFileSize + 800, ".\\SRC\\Archive.cpp", 0xcf, 0);
     if (!pBuffer) {
       return pBuffer;
@@ -46,6 +51,7 @@ void * __fastcall D2FILE_AllocAndLoadD2File(D2PoolManagerStrc * pMemory, char * 
 
     D2FILE_ReadFile(pMemory, __frame0.pFile, pBuffer, dwFileSize);
     D2FILE_CloseFile(pMemory, __frame0.pFile);
+    if (s_nAllocLogBudget > 0) { s_nAllocLogBudget--; D2BOOT_MarkFmt("AllocAndLoad: %s read+close ok", szFilename); } // [d2boot]
     if (!pSize) {
       return pBuffer;
     }

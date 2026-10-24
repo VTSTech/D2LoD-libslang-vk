@@ -16,6 +16,7 @@
 #include <cxxabi.h>
 
 #include "thirdparty/libbacktrace/backtrace.h"
+#include "support/d2_boot.h" // [d2boot]
 
 #ifndef REDIVIVUS_BUILD_ID
 #define REDIVIVUS_BUILD_ID "unknown"
@@ -438,6 +439,8 @@ volatile LONG g_nBusy = 0;
 LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
     DWORD dwCode = pExc->ExceptionRecord->ExceptionCode;
     if (!FatalName(dwCode)) return EXCEPTION_CONTINUE_SEARCH;
+    D2BOOT_MarkFmt("VEH: fatal exception 0x%08X at addr %08X", // [d2boot]
+                   (unsigned)dwCode, (unsigned)(UINT_PTR)pExc->ExceptionRecord->ExceptionAddress);
     // A fault while a report is being written (on any thread) is left alone.
     if (InterlockedCompareExchange(&g_nBusy, 1, 0) != 0) return EXCEPTION_CONTINUE_SEARCH;
 

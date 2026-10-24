@@ -22,6 +22,7 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/_unnamespaced.h"
 #include "support/d2_trace.h"
+#include "support/d2_boot.h" // [d2boot]
 #include "globals/globals.h"
 #include "D2Client/ClientModeInGame.h"
 #include "D2Game/Objects/ObjectsRgn.h"
@@ -1127,8 +1128,11 @@ void __stdcall SystemSurvey_WriteProductLanugageToLocaleFile() {
     FILE* pLocaleFile;
     BOOL bIsExpansion;
     __frame0.dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
+    D2BOOT_Mark("SystemSurvey fn enter"); // [d2boot]
     D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation((char*)&__frame0.langInfo, 3);
+    D2BOOT_MarkFmt("SystemSurvey: lang abbrev -> %08X", (unsigned)__frame0.langInfo); // [d2boot]
     int bAppDataPathOk = Source::SFile::SFILE_GetBlizzardAppDataPath(__frame0.szLocaleFilePath, 0x104);
+    D2BOOT_MarkFmt("SystemSurvey: appdata -> %d", bAppDataPathOk); // [d2boot]
     if (bAppDataPathOk) {
       Storm::Source::SSTR::SStrPack(__frame0.szLocaleFilePath, "System Survey\\ProductData\\", 0x104);
       pszLocaleSuffix = Storm::Source::SSTR::SStrLen(__frame0.szLocaleFilePath);
@@ -1159,14 +1163,18 @@ void __stdcall SystemSurvey_WriteProductLanugageToLocaleFile() {
       }
     }
 
+    D2BOOT_Mark("SystemSurvey: locale files done"); // [d2boot]
     Source::SFile::SFILE_GetExecutableDirectory(__frame0.szExePathBuf, 0x400);
     Storm::Source::SSTR::SStrPack(__frame0.szExePathBuf, "SystemSurvey.exe", 0x400);
     char bSignatureValid = Bnclient::D2FILE_VerifyFileSignature(__frame0.szExePathBuf);
+    D2BOOT_MarkFmt("SystemSurvey: sig check -> %d", (int)bSignatureValid); // [d2boot]
     if (bSignatureValid != '\0') {
       D2FILE_CreateProcess(__frame0.szExePathBuf);
     }
 
+    D2BOOT_Mark("SystemSurvey: spawn done"); // [d2boot]
     D2TRACE("ApplicationMain returned");
+    D2BOOT_Mark("SystemSurvey fn end"); // [d2boot]
     Debug::GuardStack();
 }
 
@@ -1306,6 +1314,7 @@ void __fastcall PreInitApplication(int32_t argc, char * * argv) {
     }
 
     D2TRACE("PreInitApplication enter");
+    D2BOOT_Mark("PreInitApplication enter"); // [d2boot]
     Storm::Source::SSTR::SStrPrintf(szVersionString, 0x104, "v%d.%02d", 1, 0xe);
     D2TRACE("SetLogFilePath");
     Source::SFile::FILETOOLS_SetLogFilePathWithoutDateAndExtension2((FILE*)"D2");
@@ -1334,7 +1343,9 @@ void __fastcall PreInitApplication(int32_t argc, char * * argv) {
     }
 
     D2TRACE("ApplicationMain");
+    D2BOOT_Mark("cmdline/ini ok -> ApplicationMain"); // [d2boot]
     D2Client::Engine::Application::ApplicationMain(WinMain_hInstance, &pD2IniData, eAppMode);
+    D2BOOT_Mark("ApplicationMain returned"); // [d2boot]
     Debug::GuardStack();
 }
 
@@ -1346,8 +1357,10 @@ int32_t __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lp
     WinMain_hInstance = hInstance;
     WinMain_nShowCmd = nShowCmd;
     D2TRACE("WinMain enter");
+    D2BOOT_Mark("WinMain enter"); // [d2boot]
     BOOL bStartedAsService = Service::StartDiablo2ServerAsService();
     D2TRACE("StartDiablo2ServerAsService returned");
+    D2BOOT_MarkFmt("service check -> %d", (int)bStartedAsService); // [d2boot]
     if (bStartedAsService) {
       return 0;
     }
