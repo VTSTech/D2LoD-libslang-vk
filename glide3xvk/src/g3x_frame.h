@@ -66,6 +66,12 @@ void     g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride);
 // vertex pointers, each to a 0x1C-stride vertex. mode 5 = fan, mode 4 = strip.
 void     g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointers);
 
+// P2.5: grDrawPoint / grDrawLine (D2Glide DrawLine/DrawPoint: automap-style
+// strokes, radial-light dots — constant-fill color through the current blend).
+// Point = single rounded pixel; line = Bresenham with per-pixel frame clip.
+void     g3x_frame_draw_point(float x, float y);
+void     g3x_frame_draw_line(float x0, float y0, float x1, float y1);
+
 // Scale + gamma the frame into the swapchain and present. Also the Bink
 // unlock path (the video loop never calls grBufferSwap).
 bool     g3x_frame_present();

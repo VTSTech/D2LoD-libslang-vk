@@ -163,16 +163,31 @@ void __stdcall grBufferClear(GrColor_t color, GrAlpha_t alpha, FxU32 depth) {
 void __stdcall grBufferSwap(FxU32 swap_interval) {
     ++g_st.n_swaps;
     g3x_frame_present();
+    // P2.5: rolling frame time so the field log shows the raster's real pace
+    // (round-7 session ran at ~4.3 fps — the number this build must move).
+    static LARGE_INTEGER s_prev = {};
+    static double s_ms_acc = 0.0;
+    static unsigned s_ms_n = 0;
+    LARGE_INTEGER now, freq;
+    if (QueryPerformanceCounter(&now) && QueryPerformanceFrequency(&freq)) {
+        if (s_prev.QuadPart) {
+            s_ms_acc += (double)(now.QuadPart - s_prev.QuadPart) * 1000.0 / (double)freq.QuadPart;
+            ++s_ms_n;
+        }
+        s_prev = now;
+    }
     // P2.4: periodic activity line — gameplay phases run with every per-call
     // tag budget-quiet, so these are the only evidence of what each phase
     // actually submitted (and how fast the CPU raster is keeping up).
     if (g_st.n_swaps % 120 == 0) {
         unsigned ds[5];
         g3x_frame_draw_stats(ds);
-        g3x_log("frame %u: vac=%u parr=%u(strip=%u fan=%u) skip=%u texdl=%u "
-                "paldl=%u lfb=%u",
-                g_st.n_swaps, ds[0], ds[1], ds[2], ds[3], ds[4],
+        g3x_log("frame %u: avg=%.1fms vac=%u parr=%u(strip=%u fan=%u) skip=%u "
+                "texdl=%u paldl=%u lfb=%u",
+                g_st.n_swaps, s_ms_n ? s_ms_acc / (double)s_ms_n : 0.0,
+                ds[0], ds[1], ds[2], ds[3], ds[4],
                 g_st.n_tex_downloads, g_st.n_palette_downloads, g_st.n_lfb_locks);
+        s_ms_acc = 0.0; s_ms_n = 0;
     }
     if (g_st.n_swaps % 300 == 0) {
         g3x_log("frame %u: swaps=%u draws=%u texdl=%u paldl=%u lfblocks=%u",
@@ -304,7 +319,11 @@ void __stdcall grColorMask(FxBool rgb, FxBool a) {
 
 void __stdcall grConstantColorValue(GrColor_t value) {
     g_st.constant_color = value;
-    g3x_frame_set_constant(value);   // fill color (bits 15..8) + blend alpha (bits 7..0)
+    // P2.5 lane decode: the game builds this as ScalePaletteValue(v) | alpha =
+    // palette_entry(0xFFRRGGBB) << 8 | alpha -> [R:24-31][G:16-23][B:8-15]
+    // [alpha:0-7]; the raster's fill color is (value >> 8) & 0xFFFFFF in our
+    // 0xAARRGGBB pixels, blend alpha stays in bits 7..0.
+    g3x_frame_set_constant(value);
     g3x_state_note_u32("constantColor", value);
 }
 
@@ -485,12 +504,31 @@ FxU32 __stdcall grDrawVertexArray(FxU32 mode, FxU32 Count, void* pointers) {
 void __stdcall grDrawPoint(void* pt) {
     ++g_st.n_draw_calls;
     ++g_st.n_point;
+    // P2.5: real raster. Callers (D2Glide DrawPoint path + the radial-light
+    // dot helpers) always run constant-fill + chromakey-off; the vertex is
+    // x,y floats at offset 0/4.
+    if (pt) {
+        float x, y;
+        memcpy(&x, pt, 4);
+        memcpy(&y, (const char*)pt + 4, 4);
+        g3x_frame_draw_point(x, y);
+    }
     g3x_log_once("grDrawPoint", "pt=%p", pt);
 }
 
 void __stdcall grDrawLine(void* v1, void* v2) {
     ++g_st.n_draw_calls;
     ++g_st.n_line;
+    // P2.5: real raster (Bresenham). Callers set constant-fill + chromakey-off;
+    // each endpoint vertex is 24 bytes with x,y floats at offset 0/4.
+    if (v1 && v2) {
+        float x0, y0, x1, y1;
+        memcpy(&x0, v1, 4);
+        memcpy(&y0, (const char*)v1 + 4, 4);
+        memcpy(&x1, v2, 4);
+        memcpy(&y1, (const char*)v2 + 4, 4);
+        g3x_frame_draw_line(x0, y0, x1, y1);
+    }
     g3x_log_once("grDrawLine", "v1=%p v2=%p", v1, v2);
 }
 
@@ -569,8 +607,8 @@ static void g3x_banner() {
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
     g3x_log("glide3xvk scaffold %s — loaded into %s", G3XVK_BUILD_ID, exe);
     g3x_log("compiled " __DATE__ " " __TIME__
-            "; P2.4 = negative-s/t wrap (ground tile edges) + fill-rect fast path"
-            " + session log + per-path draw totals");
+            "; P2.5 = scanline raster (span fill + exact boundary fixups)"
+            " + grDrawPoint/grDrawLine + constant-color RGB lanes + perf paths");
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved) {
