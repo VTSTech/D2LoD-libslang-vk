@@ -1,144 +1,123 @@
-<img width="997" height="776" alt="image" src="https://github.com/user-attachments/assets/7c3ee833-6425-4006-869b-ea3d564f35c9" />
+<img width="997" height="776" alt="glide3xvk 0.3.1 rendering Diablo II: LoD 1.14d through Vulkan, version tag top-right" src="https://github.com/user-attachments/assets/7c3ee833-6425-4006-869b-ea3d564f35c9" />
 
-# Redivivus
+# D2LoD-libslang-vk
 
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/MHK2Dg9)
 
-Diablo II: Lord of Destruction 1.14d, recovered as C++ source that builds.
+A drop-in **`glide3x.dll`** for **Diablo II: Lord of Destruction 1.14d** that renders the
+game through **Vulkan** — with libretro slang shader presets (`.slangp`) routed through
+**libslang-vk** as the goal of this branch.
 
-*Redivivus* is Latin for a thing restored to life. This is not a reimplementation that
-behaves like the game. It is the shipped `Game.exe`, taken apart function by function,
-turned back into source code, and compiled into a working executable again.
+When the game is started with `-3dfx`, its Glide loader
+(`D2Client/Renderer/Glide.cpp`) does `LoadLibraryA("glide3x.dll")` and resolves
+**45 stdcall exports**. This branch builds a replacement for exactly that DLL: it
+exports those 45 entry points, implements the Glide 3 state machine and raster
+semantics D2 actually uses, and presents every frame through a Vulkan swapchain.
+It runs on a **vanilla retail 1.14d install** — copy the DLL next to `Game.exe`,
+no rebuilt executable, no game-source changes. The payoff pattern — filtering the
+presented frame through a user-chosen preset (CRT-Royale and friends) at up-scaled
+resolution — is the same one proven in
+[DevilutionX-libslang-vk](https://github.com/VTSTech/DevilutionX-libslang-vk)
+(Diablo/Hellfire) and
+[chocolate-doom-vk](https://github.com/VTSTech/chocolate-doom-vk) (Doom).
 
-It is the **whole** game. Up to 1.13 Diablo II shipped as a small `Game.exe` plus a dozen
-DLLs (`D2Client`, `D2Common`, `D2Game`, `D2Win`, `D2gfx`, `Storm`, `Fog`, ...). Patch 1.14
-linked all of them into one `Game.exe`, and that single executable is what is recovered
-here: the client, the game server that single player runs in the same process, map
-generation, the renderers, sound, networking, Battle.net, and Blizzard's Storm and Fog
-libraries. The source tree keeps those module names as its top-level directories.
+## Status — 0.3.1
 
-The code is machine-generated from a reverse-engineered database and then corrected by
-hand where needed. It is not the original source: the names, types and structure are
-reconstructions, and some functions read like a decompiler wrote them, because one did.
+- The full game renders correctly through the Vulkan swapchain: menu, world, units,
+  UI, shadows, text, cutscenes (field-verified rounds 4–12 on real hardware; see
+  [glide3xvk/FIELD-TEST.md](glide3xvk/FIELD-TEST.md)).
+- ~27 fps @ 800x600 from the CPU raster today; moving the compose buffer to the GPU
+  is the P3 exit for the 60 fps target.
+- Not wired yet, on purpose: the libslang-vk preset chain (P3 — marked `TODO(P3)` in
+  `glide3xvk/src/vk_backend.cpp`), GPU-side raster (P3), bilinear texture filtering
+  (a look delta only; the ground's `texFilterMode(1,1)` request is point-sampled).
 
-## How it was made
+## Install
 
-This project started in 2021, well before large language models were any use for this kind of
-work. The reverse-engineering of 1.14d (naming, typing and understanding the code) was
-done by hand over years. Once LLMs became usable for it they sped the work up
-considerably: proposing types, chasing crashes, and building the tooling below. They
-joined an existing project; they did not start it.
+No build required:
 
-1. The 1.14d `Game.exe` was reverse-engineered in [Ghidra](https://ghidra-sre.org/):
-   every function named, typed and given its calling convention; every global given a
-   type and an extent.
-2. [ghidra-reconstruct](https://github.com/jaenster/ghidra-reconstruct) pulls the
-   decompilation out through [ghidra-mcp](https://github.com/jaenster/ghidra-mcp),
-   parses it into a C++ syntax tree, undoes the decompiler's artifacts, and emits this
-   tree.
-3. The tree is built, run, and every crash is traced back to its cause. That cause is
-   fixed where it belongs, usually in the Ghidra database, sometimes in the generator,
-   and only rarely by hand in the source.
+1. Get `glide3x.dll` — either the
+   [0.3.1 release](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/0.3.1)
+   (pre-release) or the `glide3x-dll` artifact of the latest run in
+   [Actions](https://github.com/VTSTech/D2LoD-libslang-vk/actions).
+2. Copy it into your Diablo II folder, next to the original `Game.exe`
+   (vanilla retail 1.14d). This repository contains no game data and no Blizzard
+   binaries; the DLL only draws what the game hands it.
+3. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
 
-## Status
+A healthy run looks like: the menu renders, play works, and `glide3x.log` beside the
+exe carries the session banner (`glide3xvk 0.3.1 <build-id>`), periodic `frame N:`
+summaries, and a clean exit summary on shutdown. If 32-bit Vulkan is unavailable
+(`vulkan-1.dll` x86 missing), the log says so, the DLL still loads, and the game keeps
+running — the DirectDraw path (`-w` without `-3dfx`) is untouched by all of this.
 
-- Every translation unit compiles with a strict `-std=c++17`, without `-fpermissive`,
-  and the executable links with no undefined symbol.
-- It starts, reaches the menus, and plays single player: create a character, enter the
-  game, walk, fight, change areas.
-- It is not finished. Some areas and features still crash. See
-  [Known issues](#known-issues).
+## The overlay
 
-## You need
+Every present draws one line — `glide3xvk 0.3.1 (<build id>)` — into the **top-right**
+corner (4px from the edge): 8x8 bitmap font, 65%-black backdrop, 1px drop shadow. The
+corner is deliberate: the game's own `/fps` readout draws top-left, and both should be
+visible at once. The tag renders post-gamma at swapchain resolution and never enters
+the game's own framebuffer, so fades and screenshots cannot see it. Turn it off with
+`overlay=0` under `[glide3xvk]` in `glide3xvk.ini` (re-read on every context open):
 
-- Your own installation of Diablo II: Lord of Destruction, version 1.14. This repository
-  contains no game data and no Blizzard binaries; the executable reads the MPQ archives
-  from your installation. If you have no installation at hand,
-  [blizzard-legacy-dl](https://github.com/jaenster/blizzard-legacy-dl) downloads the
-  installers from Blizzard's own servers:
+```ini
+[glide3xvk]
+overlay=0
+```
 
-  ```sh
-  blizzard-legacy-dl fetch D2DV -o ./d2     # Diablo II
-  blizzard-legacy-dl fetch D2XP -o ./d2     # Lord of Destruction
-  ```
-
-  You still need your own CD keys to install.
-- To build: a mingw-w64 cross compiler for 32-bit Windows (`i686-w64-mingw32-g++`), CMake
-  and Ninja.
-  - macOS: `brew install mingw-w64 cmake ninja`
-  - Debian/Ubuntu: `apt install g++-mingw-w64-i686 cmake ninja-build`
-  - Windows: an MSYS2 MinGW32 shell
-
-## Build
+## Build from source
 
 ```sh
-cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
-cmake --build build
+apt install g++-mingw-w64-i686 binutils-mingw-w64-i686 cmake ninja-build   # Debian/Ubuntu
+
+cmake -S . -B build-g3x -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
+cmake --build build-g3x --target glide3x
+# → build-g3x/glide3x.dll (pei-i386; KERNEL32 + msvcrt imports only)
 ```
 
-That produces `build/d2.exe`, a 32-bit Windows executable — and, because
-`glide3xvk/` is part of the tree, `build/glide3x.dll` alongside it. `tools/check-build.sh`
-does the same from a clean clone and checks the result; CI runs it on every push
-and uploads the built `glide3x.dll` as a workflow artifact.
+CI (`.github/workflows/build.yml`) builds exactly this on every push to `main` or
+`libslang-vk` and uploads the DLL as the `glide3x-dll` workflow artifact. The build id
+embedded in the log banner, `grGetString(GR_RENDERER)` and the overlay comes from
+`git describe --always --dirty --tags` at compile time — build from a clean checkout
+of the pushed branch and the tag names a commit you can find on GitHub.
 
-## Run
+Verify the export surface against the game's own loader (must be an empty diff):
 
-Copy `d2.exe` into your Diablo II folder, next to the original `Game.exe`, and
-start it from there:
-
+```sh
+i686-w64-mingw32-objdump -p build-g3x/glide3x.dll \
+  | sed -n '/Ordinal\/Name Pointer/,$p' \
+  | grep -oE '_[A-Za-z]+@[0-9]+' | sort -u > /tmp/ours.txt
+grep -oE '"_[A-Za-z]+@[0-9]+"' D2Client/Renderer/Glide.cpp | tr -d '"' | sort -u > /tmp/game.txt
+diff /tmp/game.txt /tmp/ours.txt && echo "MATCH: all 45 GetProcAddress names covered"
 ```
-d2.exe -w
-```
 
-`-w` runs it in a window.
+## Documentation
 
-## Glide renderer (glide3xvk)
+- [glide3xvk/README.md](glide3xvk/README.md) — the renderer's architecture, module
+  layout, build, toolchain notes (GNU ld export decoration), overlay internals,
+  field-test procedure and fail-soft behavior
+- [glide3xvk/FIELD-TEST.md](glide3xvk/FIELD-TEST.md) — the per-round field log:
+  builds, diagnostics and results on a vanilla retail 1.14d install
+- [glide3xvk/BUILD-32BIT.md](glide3xvk/BUILD-32BIT.md) — building libslang-vk itself
+  as i686 Windows (the P3 gate)
+- [PLAN.md](PLAN.md) — the P1–P5 integration plan with the phase ledger
 
-`glide3xvk/` builds a drop-in `glide3x.dll`: the Glide 3 API the game speaks when
-started with `-3dfx`, re-implemented on Vulkan. It runs on a **vanilla retail
-1.14d install** (`Game.exe -3dfx`) — copy the DLL next to the game exe, no
-rebuilt `d2.exe` required. The full game renders through it today: menu, world,
-UI, cutscenes. A small version tag (`glide3xvk <version> (<commit>)`) is drawn
-into the top-right corner of every frame — deliberately top-right, so the
-game's own `/fps` readout in the top-left stays visible; it can be turned off
-with `overlay=0` under `[glide3xvk]` in `glide3xvk.ini`.
+## Roadmap
 
-See [glide3xvk/README.md](glide3xvk/README.md) for the renderer's architecture,
-build, and field-test procedure.
+- **P3** — wire the libslang-vk preset chain into the present pass, and move the
+  compose buffer to the GPU (60 fps target)
+- **P4** — preset configuration / hot-reload, CI-packaged drop-in zip
+- Deferred look item: bilinear texture filtering
 
-## Known issues
+## Upstream
 
-- **It crashes.** Not constantly, but a session of any length will probably hit one. Every
-  crash so far has been a single wrong type or a lost value somewhere in the
-  reconstruction, and each one fixed takes a class of others with it. A crash writes the
-  faulting address and a stack trace to `d2trace.log`; please attach it to an issue.
-- **Your character's name shows up garbled** in the message when you enter a game.
-- **Battle.net does not work.** Logging in crashes in the version check. Single player
-  is what works today.
-
-## Future ideas
-
-Other Diablo II code is known to exist and could be recovered the same way:
-
-- **D2Server**, the game-server module that hosted closed Battle.net games. Recovered as
-  source, it would give a realm game server built from the same code as the game itself.
-- **The Mac build.** It carries code the Windows executable never had, most visibly an
-  OpenGL renderer. [D2OpenGL](https://github.com/jaenster/D2OpenGL) already brings that
-  renderer to 1.14d on Windows.
-
-## Contributing
-
-Changes are welcome as pull requests or patches against a release tag. Most of the tree
-is regenerated, so a fix that belongs in the reverse-engineering (a wrong type, a missing
-parameter) is best reported as an issue with the evidence; it will land upstream and
-survive the next regeneration.
-
-## Credits
-
-- Much of the 1.14d reverse-engineering comes from [blizzhackers](https://blizzhackers.dev),
-  dzik in particular.
-- [D2MOO](https://github.com/ThePhrozenKeep/D2MOO) supplied many of the structure layouts
-  this work started from in 2021, though it went another direction since.
+This branch is part of a fork whose `master` line tracks the upstream 1.14d source
+recovery; the recovered game source stays untouched here — glide3xvk needs zero
+game-source edits, and the DLL is designed to run against the vanilla retail exe.
+While testing, upstream PRs we may discover (recovery fixes, build or diagnostics
+material) will be noted and, where they hold up, sent upstream — but the work on this
+branch is glide3xvk, and glide3x.dll loading Vulkan / libretro slang with libslang-vk
+is the goal.
 
 Diablo and Blizzard Entertainment are trademarks of Blizzard Entertainment, Inc. This
 project is not affiliated with or endorsed by Blizzard.
