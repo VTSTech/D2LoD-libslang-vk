@@ -67,9 +67,23 @@ jobs:
           sha="${{ github.event.pull_request.head.sha || github.sha }}"
           echo "short=${sha:0:7}" >> "$GITHUB_OUTPUT"
 
-      - name: Upload glide3x.dll
+      # Artifact = the DLL plus the scripts/*.cmd helpers, flat at the zip
+      # root: unzip-all into the game folder is a drop-in DLL with the tools
+      # beside it. The name still carries the 7-char short hash (the DLL's
+      # log-banner form; PR runs use the head sha - github.sha there is the
+      # preview merge commit, which never exists in the branch history).
+      # gen_font8x8.py stays repo-side: a font-header dev tool, not a
+      # player-facing helper.
+      - name: Stage artifact contents (DLL + helper scripts)
+        run: |
+          mkdir -p stage
+          cp build-g3x/glide3x.dll stage/
+          cp scripts/*.cmd stage/
+          ls -la stage/
+
+      - name: Upload glide3x.dll + helper scripts
         uses: actions/upload-artifact@v4
         with:
           name: glide3x-dll-${{ steps.shortsha.outputs.short }}
-          path: build-g3x/glide3x.dll
+          path: stage/*
           if-no-files-found: error

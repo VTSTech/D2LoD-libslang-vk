@@ -87,13 +87,28 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   chain-less users at 720p/1080p window sizes get correct aspect, and the
   LFB/Bink video path inherits it through the same seam. 1:1 fast path
   untouched; bars are a few hundred KB of zero fill per frame.
-- **CI artifact names carry the commit hash** (.github/workflows/build.yml):
-  the upload is now `glide3x-dll-<shortsha>` — the same 7-char
+- **CI artifact names carry the commit hash + helper scripts**
+  (.github/workflows/build.yml): the upload is now `glide3x-dll-<shortsha>` — the same 7-char
   `git rev-parse --short=7` form the DLL's log banner uses, so a downloaded
   artifact self-identifies against the in-game banner. PR runs name by head
   sha (github.sha there is the preview merge commit, which never exists in
   the branch history); the DLL inside stays `glide3x.dll`, the drop-in name
-  the game loads.
+  the game loads. The artifact now also ships the `scripts/*.cmd` helpers
+  (`clear_glide3x.log.cmd`, `install_shaders.cmd`, `install_git.cmd`) flat
+  at the zip root beside the DLL — unzip-all into the game folder is a
+  complete setup (gen_font8x8.py stays repo-side; it is a font-header dev
+  tool, not a player-facing helper).
+
+### Fixed
+
+- **Window preset apply compiled with the wrong `kind` type**
+  (g3x_window.cpp): `apply_now()` declared `kind` as `unsigned` while
+  `g3x_window_preset_size()` takes `int*` — a hard compile error, first
+  seen as the 0.4.4 CI run failing at g3x_window.cpp.obj (invalid
+  conversion from `unsigned int*` to `int*`, -fpermissive not an option
+  here). One-line type fix; downstream uses are only `== 0` / `== 2`
+  compares, so no behavior change. Full rebuild + link verified locally
+  (45/45 Glide exports match D2Client/Renderer/Glide.cpp).
 
 ### Validated
 

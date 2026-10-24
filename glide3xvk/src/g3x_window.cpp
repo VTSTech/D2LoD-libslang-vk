@@ -128,7 +128,8 @@ void revert_native(const char* why) {
 
 void apply_now(const char* why) {
     if (!s_hwnd) return;
-    unsigned w = 0, h = 0, kind = 0;
+    unsigned w = 0, h = 0;
+    int kind = 0;                                 // int: matches g3x_window_preset_size
     if (!g3x_window_preset_size(s_want, &w, &h, &kind)) {
         g3x_log_once("win-tok", "window: unknown preset '%s' — treating as native", s_want);
         kind = 0;
