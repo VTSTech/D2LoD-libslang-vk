@@ -13,7 +13,7 @@ concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
 
-# Builds the game's Glide renderer DLL only  the d2.exe tree is NOT built
+# Builds the game's Glide renderer DLL only - the d2.exe tree is NOT built
 # here (the 500-TU clean-clone gate lives in tools/check-build.sh, run by
 # hand). glide3x.dll is self-contained and needs no game objects to link.
 
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
 
       # P3: the preset chain links the static slangvk target from the
-      # libslang-vk checkout. Pinned for reproducible builds — bump with care
+      # libslang-vk checkout. Pinned for reproducible builds - bump with care
       # (BUILD-32BIT.md holds the i686 recipe + verification checklist).
       - name: Check out libslang-vk (pinned)
         uses: actions/checkout@v4
