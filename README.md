@@ -1,6 +1,6 @@
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8da961b2-fba3-4913-b2e4-bb2510c3a5e3" />
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ef24cacf-3573-416b-a982-fc54520bab47" />
-
+https://www.youtube.com/watch?v=fgnrBxsOLWU
 # D2LoD-libslang-vk
 
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/XcJ8mSCNZ)
