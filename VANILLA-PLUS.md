@@ -100,3 +100,14 @@ cannot be attributed.
   pattern); (2) `threadlocinfo` unknown type in `d2_platform.h` (gcc exposes
   it via libstdc++ internals clang's libc++ names differently). Both only
   matter if someone wants a local clang build later.
+- exe size: the default d2.exe is ~300 MB **on purpose**. Upstream builds
+  -O0 with full DWARF (`-g`) so the in-process fault handler
+  (support/d2_crash.cpp + vendored libbacktrace) can write the SYMBOLIZED
+  `d2crash-*.txt` at crash time, and explicitly warns that optimizing
+  decompiled code which may lean on undefined behaviour is "an experiment,
+  not a release". Linking is fully static (`-static -static-libgcc
+  -static-libstdc++`), so no mingw runtime DLLs are needed beside it. The
+  original 1.14d Game.exe is ~6 MB; -O0 code bloat plus DWARF for tens of
+  thousands of functions is the rest. Keep the fat exe as the crash-triage
+  instrument; `strip` removes only the DWARF (the CI job uploads both),
+  it does not shrink the -O0 code itself.

@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [main]
+    branches: [main, vanilla-plus]
     paths-ignore: ['**.md']
   pull_request:
     paths-ignore: ['**.md']
@@ -26,12 +26,25 @@ jobs:
 
       - name: Build from a clean clone
         run: tools/check-build.sh "$GITHUB_WORKSPACE" "$GITHUB_SHA"
-        env:
-          D2_ARTIFACT_DIR: ${{ github.workspace }}/artifacts
 
-      - name: Upload the build
+      # check-build.sh builds in a temp clone and deletes it, so build in-tree
+      # too and keep the exe as an artifact.
+      - name: Build in-tree
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
+          cmake --build build -j "$(getconf _NPROCESSORS_ONLN)"
+
+      - name: Make stripped copy
+        run: cp build/d2.exe build/d2-stripped.exe && strip build/d2-stripped.exe
+
+      - name: Upload full d2.exe (symbolized crash reports need its DWARF)
         uses: actions/upload-artifact@v4
         with:
-          name: d2-${{ github.sha }}
-          path: artifacts/
-          if-no-files-found: error
+          name: d2-full-${{ github.sha }}
+          path: build/d2.exe
+
+      - name: Upload stripped d2.exe (play/distribute)
+        uses: actions/upload-artifact@v4
+        with:
+          name: d2-stripped-${{ github.sha }}
+          path: build/d2-stripped.exe
