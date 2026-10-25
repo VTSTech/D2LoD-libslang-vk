@@ -68,9 +68,9 @@ vsync=
 ; regardless. 0/empty = keep the game's own frame.
 ;borderless=0
 
-; Controller support (0.4.5): gamepad-to-mouse/keys via input injection.
-; controller=1 polls pad 0 through XInput on a background thread and injects
-; ordinary mouse/keyboard events, so the game sees a normal mouse and
+; Controller support (0.4.5, experimental): gamepad-to-mouse/keys via input
+; injection. controller=1 polls pad 0 through XInput on a background thread
+; and injects ordinary mouse/keyboard events, so the game sees a normal mouse and
 ; keyboard and every screen works. Off by default. Injects only while the
 ; game window is focused. Map v2 (tuned for Diablo II, where movement IS
 ; the mouse):
@@ -104,13 +104,13 @@ vsync=
 ; walks toward the cursor. Uncomment for a cursor-only left stick.
 ;controller_moveclick=0
 
-; Cursor-home (default on): after ~0.4s of quiet the cursor moves back onto
-; the player, and every stick move emanates from there — the cursor can't
-; get lost at the screen edge. Home self-syncs: a D2 walk always ends with
-; the character standing at the cursor, so each walk release re-homes it.
-; The cursor is parked, not hidden (hiding the game's own cursor sprite is
-; Game.exe territory). Requires controller_moveclick. Uncomment for a free
-; cursor.
+; Cursor-home (default on, experimental): after ~0.4s of quiet the cursor
+; moves back onto the player, and every stick move emanates from there —
+; the cursor can't get lost at the screen edge. Home self-syncs: a D2 walk
+; always ends with the character standing at the cursor, so each walk
+; release re-homes it. The cursor is parked, not hidden (hiding the game's
+; own cursor sprite is Game.exe territory). Requires controller_moveclick.
+; Uncomment for a free cursor.
 ;controller_home=0
 
 ; On any preset failure the DLL keeps presenting the raw game frame (fail-soft,

@@ -17,6 +17,10 @@ Later field rounds drove the controller work: a pad map for D2, then (once
 stick-walking worked) the cursor-home model — "when no analog input, put the
 cursor on the player and hide it, then when the analog moves, it's from
 player position and when analog stops, it's back to player position".
+Field round 3 verdict (after testing the shipped build): kept, but as an
+experimental feature — the direction is right yet "it still doesn't quite
+work right" in play, so the whole controller module now ships flagged
+experimental in the docs while it waits for another tuning pass.
 
 ### Added
 
@@ -75,6 +79,9 @@ player position and when analog stops, it's back to player position".
   territory, out of scope), and a click that walks the character somewhere
   (LT on a far portal) leaves home there until the next stick-walk.
   Requires stick-walk; `controller_home=0` restores a plain free cursor.
+  Field round 3 (verdict on the shipped build): experimental — the anchor
+  model helps but is not fully dialed in; docs now flag the module as such
+  and the escape hatch is documented everywhere.
 
 ### Changed
 

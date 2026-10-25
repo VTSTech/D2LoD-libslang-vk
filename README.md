@@ -65,7 +65,8 @@ resolution — is the same one proven in
   game's own render resolution stays the game's), and the unfiltered present
   path now fits + centers with black bars instead of stretching, so 4:3
   content stays 4:3 on any 16:9 window with or without a chain.
-- **Controller support (0.4.5)**: opt-in gamepad play via input injection —
+- **Controller support (0.4.5, experimental)**: opt-in gamepad play via input
+  injection —
   `controller=1` in `d2slangvk.conf` starts a background XInput poller that
   drives the game through ordinary injected mouse/keyboard events (SendInput),
   so every D2 screen works unchanged. Map tuned for Diablo II (movement IS
@@ -84,7 +85,9 @@ resolution — is the same one proven in
   `controller_moveclick=` (set 0 for a cursor-only left stick),
   `controller_home=` (set 0 for a free cursor). Injects only while the game
   window is focused; off by default; XInput loaded dynamically (no new DLL
-  imports). See the conf reference below.
+  imports). Status after three field rounds: **experimental** — close but not
+  fully dialed in yet; `controller_home=0` restores a plain free cursor if the
+  parked cursor fights hybrid mouse use. See the conf reference below.
 - **Perf round 1 (0.4.5)**: the full-screen 0.4.3 field log showed
   avg=51.6 ms ≈ 19 fps @ 800x600 with the crtglow_lanczos 7-pass chain active
   (≈ 470 draw calls per frame; the chain itself filtered 516 frames with
@@ -182,7 +185,7 @@ Every key (0.4.5):
 | `controller_aimsens=` | float (default `0.35`, clamp `0.05`..`4`) | Right-stick fine-aim speed as a multiplier of the left-stick speed (0.4.5). Same curve and deadzone; slower by default so the cursor can be placed on a monster, portal or item label. Missing/`0` = default. Hot-reloads. |
 | `controller_deadzone=` | percent `1`..`80` (default `15`) | Radial stick deadzone as a percent of full throw (0.4.5). Stick response stays zero inside the zone and follows the squared curve outside it. Missing/`0` = default 15. Hot-reloads. |
 | `controller_moveclick=` | absent = on, `0` = off | Left-stick walk behavior (0.4.5): while the stick is deflected past the deadzone, left click is held so the character walks toward the cursor (D2 movement). Set `0` for a cursor-only left stick (clicks come only from LT/A). Hot-reloads. |
-| `controller_home=` | absent = on, `0` = off | Cursor-home (0.4.5): after ~0.4 s of quiet (sticks centered, nothing injected) the cursor is moved back onto the player, and every stick move emanates from there. Needs no player detection — a D2 walk always ends with the character standing at the cursor, so each stick-walk release re-syncs home (self-correcting; a walk stopped short by an obstacle re-syncs on the next one). The cursor can no longer get lost at the screen edge. Two honest limits: the cursor is parked, not hidden (hiding D2's own cursor sprite would mean intercepting the game's WM_SETCURSOR — Game.exe territory, out of scope), and a click that walks the character somewhere (LT on a far portal) leaves home there until the next stick-walk. Requires `controller_moveclick` on; a real mouse always wins while it moves. Set `0` for a plain free cursor. Hot-reloads. |
+| `controller_home=` | absent = on, `0` = off | Cursor-home (0.4.5, experimental): after ~0.4 s of quiet (sticks centered, nothing injected) the cursor is moved back onto the player, and every stick move emanates from there. Needs no player detection — a D2 walk always ends with the character standing at the cursor, so each stick-walk release re-syncs home (self-correcting; a walk stopped short by an obstacle re-syncs on the next one). The cursor can no longer get lost at the screen edge. Two honest limits: the cursor is parked, not hidden (hiding D2's own cursor sprite would mean intercepting the game's WM_SETCURSOR — Game.exe territory, out of scope), and a click that walks the character somewhere (LT on a far portal) leaves home there until the next stick-walk. Requires `controller_moveclick` on; a real mouse always wins while it moves. Set `0` for a plain free cursor. Hot-reloads. |
 
 A worked example (the field setup from the round-16 screenshots):
 
