@@ -1489,47 +1489,72 @@ void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int32_t nPosX, int32
     int nPosX_00 = nPosX + textureSize.nTop * 0x1000 + textureSize.nLeft * 0x800;
     int nPosY_00 = nPosY + textureSize.nTop * 0x1000 + textureSize.nLeft * -0x800;
     bSpriteResult = nPosY_00 + textureSize.nTexHeight * -0x1000;
+    // [vanilla-plus fix 5] The 4x0x1c fan vertices were decompiled into ~20
+    // separate globals (gGlideVertex0, gfGlideQuadZ0/1, gfGlideVertex*n*,
+    // gfGlidePaletteTableOffset, ...). In the original binary they are adjacent
+    // words of one 4x0x1c block at &gGlideVertex0 (shared with DrawShadowQuad /
+    // DrawPalettedQuad - see fix 4); rebuilt, the linker scatters them and this
+    // submit reads unrelated objects. gGlideVertex0 itself is declared as a
+    // 4-byte int, so the (int)(float) round-trip also corrupts the v0.x bit
+    // pattern. Submit a contiguous local block with every field filled
+    // explicitly, same as fix 4. Slot map (x/y words cross-checked by the
+    // screenMode nudge and the visibility-check sets; oow/s/t/color by the
+    // VertexN* label families):
+    //   v0: x<-(gGlideVertex0 wr)  y<-(gfGlideQuadZ0 wr)   oow=1.0 s=S0 t=T0
+    //   v1: x<-(gfGlideVertex0X)   y<-(gfGlideQuadZ1)      oow=1.0 s=S0 t=S1
+    //   v2: x<-(gfGlidePaletteTbl) y<-(gfGlideVertex1Y)    oow/s/t = .data residue
+    //       in the original (never written) -> filled with the UV-parallelogram
+    //       completion: oow=1.0 s=fTexT1Scaled t=fTexT0Scaled
+    //   v3: x<-(gfGlideVertex2X)   y<-(gfGlideVertex2Y)    oow=1.0 s=T1 t=S1
+    //   Colors v0-v2 = gnGlideVertexColor; the stray "gfGlideVertex3Color=1.0"
+    //   float write is a typing artifact and ApplyColorLighting overwrites the
+    //   word afterwards anyway -> v3 keeps gnGlideVertexColor. If the fourth
+    //   corner tints wrong in the field, verify this slot against the original.
+    struct GlideFanVertexStrc { float x, y; uint32_t argb; float oow, s, t, pad; };
+    GlideFanVertexStrc aFanVerts[4];
     Glide::AdjustPerspectivePosition(nPosX_00 + textureSize.nTexHeight * -0x1000, bSpriteResult, 0, &nScreenX, &nScreenY);
-    gGlideVertex0 = (int)(float)nScreenX;
-    gfGlideQuadZ0 = (float)nScreenY;
-    gfGlideVertex0OOW = 1.0;
-    gfGlideVertex0S = fTexS0Scaled;
-    *(uint32_t*)(char*)&gfGlideVertex0T = fTexT0Scaled;
+    aFanVerts[0].x = (float)nScreenX;
+    aFanVerts[0].y = (float)nScreenY;
+    aFanVerts[0].oow = 1.0f;
+    aFanVerts[0].s = fTexS0Scaled;
+    aFanVerts[0].t = fTexT0Scaled;
     Glide::AdjustPerspectivePosition(nPosX_00, nPosY_00, 0, &nScreenX, &nScreenY);
-    gfGlideVertex0X = (float)nScreenX;
-    gfGlideQuadZ1 = (float)nScreenY;
-    gfGlideVertex1OOW = 1.0;
-    gfGlideVertex1S = fTexS0Scaled;
-    *(uint32_t*)(char*)&gfGlideVertex1T = fTexS1Scaled;
+    aFanVerts[1].x = (float)nScreenX;
+    aFanVerts[1].y = (float)nScreenY;
+    aFanVerts[1].oow = 1.0f;
+    aFanVerts[1].s = fTexS0Scaled;
+    aFanVerts[1].t = fTexS1Scaled;
     Glide::AdjustPerspectivePosition(textureSize.nTexWidth * 0x800 + nPosX_00, nPosY_00 + textureSize.nTexWidth * -0x800, 0, &nScreenX, &nScreenY);
-    gfGlidePaletteTableOffset = (float)nScreenX;
-    gfGlideVertex1Y = (float)nScreenY;
-    gfGlideVertex3OOW = 1.0;
-    gfGlideVertex3S = fTexT1Scaled;
-    gfGlideVertex3T = fTexS1Scaled;
+    aFanVerts[2].x = (float)nScreenX;
+    aFanVerts[2].y = (float)nScreenY;
+    aFanVerts[2].oow = 1.0f;
+    aFanVerts[2].s = fTexT1Scaled;
+    aFanVerts[2].t = fTexT0Scaled;
     Glide::AdjustPerspectivePosition(textureSize.nTexWidth * 0x800 - nHalfTexHeightScaled + nPosX_00, bSpriteResult + textureSize.nTexWidth * -0x800, 0, &nScreenX, &nScreenY);
-    gfGlideVertex2X = (float)nScreenX;
-    gfGlideVertex2Y = (float)nScreenY;
-    gfGlideVertex3Color = 1.0;
+    aFanVerts[3].x = (float)nScreenX;
+    aFanVerts[3].y = (float)nScreenY;
+    aFanVerts[3].oow = 1.0f;
+    aFanVerts[3].s = fTexT1Scaled;
+    aFanVerts[3].t = fTexS1Scaled;
     bSpriteResult = (int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2;
     gnGlideAlphaBlendDst = (int)fTexT1Scaled;
     gnGlideAlphaBlendSrc = (int)fTexT0Scaled;
     if (nScreenMode == 1) {
       fHalfWindowWidth = (float)bSpriteResult;
-      gGlideVertex0 = (int)((float)gGlideVertex0 - fHalfWindowWidth);
-      gfGlideVertex0X -= fHalfWindowWidth;
-      gfGlidePaletteTableOffset -= fHalfWindowWidth;
-      gfGlideVertex2X -= fHalfWindowWidth;
+      aFanVerts[0].x -= fHalfWindowWidth;
+      aFanVerts[1].x -= fHalfWindowWidth;
+      aFanVerts[2].x -= fHalfWindowWidth;
+      aFanVerts[3].x -= fHalfWindowWidth;
     } else if (nScreenMode == 2) {
       fHalfWindowWidth = (float)bSpriteResult;
-      gGlideVertex0 = (int)(fHalfWindowWidth + (float)gGlideVertex0);
-      gfGlideVertex0X = fHalfWindowWidth + gfGlideVertex0X;
-      gfGlidePaletteTableOffset = fHalfWindowWidth + gfGlidePaletteTableOffset;
-      gfGlideVertex2X = fHalfWindowWidth + gfGlideVertex2X;
+      aFanVerts[0].x = fHalfWindowWidth + aFanVerts[0].x;
+      aFanVerts[1].x = fHalfWindowWidth + aFanVerts[1].x;
+      aFanVerts[2].x = fHalfWindowWidth + aFanVerts[2].x;
+      aFanVerts[3].x = fHalfWindowWidth + aFanVerts[3].x;
     }
 
     bSpriteResult = RENDERER_nWindowHeight - 0x2f;
-    if (!(0.0 <= (float)gGlideVertex0 && (float)gGlideVertex0 < (float)RENDERER_nWindowWidth && 0.0 <= gfGlideQuadZ0 && gfGlideQuadZ0 < (float)bSpriteResult || 0.0 <= gfGlideVertex0X && gfGlideVertex0X < (float)RENDERER_nWindowWidth && 0.0 <= gfGlideQuadZ1 && gfGlideQuadZ1 < (float)bSpriteResult || 0.0 <= gfGlidePaletteTableOffset && gfGlidePaletteTableOffset < (float)RENDERER_nWindowWidth && 0.0 <= gfGlideVertex1Y && gfGlideVertex1Y < (float)bSpriteResult || 0.0 <= gfGlideVertex2X && gfGlideVertex2X < (float)RENDERER_nWindowWidth && 0.0 <= gfGlideVertex2Y && gfGlideVertex2Y < (float)bSpriteResult)) {
+    if (!(0.0 <= aFanVerts[0].x && aFanVerts[0].x < (float)RENDERER_nWindowWidth && 0.0 <= aFanVerts[0].y && aFanVerts[0].y < (float)bSpriteResult || 0.0 <= aFanVerts[1].x && aFanVerts[1].x < (float)RENDERER_nWindowWidth && 0.0 <= aFanVerts[1].y && aFanVerts[1].y < (float)bSpriteResult || 0.0 <= aFanVerts[2].x && aFanVerts[2].x < (float)RENDERER_nWindowWidth && 0.0 <= aFanVerts[2].y && aFanVerts[2].y < (float)bSpriteResult || 0.0 <= aFanVerts[3].x && aFanVerts[3].x < (float)RENDERER_nWindowWidth && 0.0 <= aFanVerts[3].y && aFanVerts[3].y < (float)bSpriteResult)) {
       return;
     }
 
@@ -1541,11 +1566,11 @@ void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int32_t nPosX, int32
     RENDERER_GLIDE_SetDrawMode(nDrawMode);
     RENDERER_GLIDE_SetColorCombine(1);
     RENDERER_GLIDE_SetTextureFiltering(1);
-    RENDERER_GLIDE_ApplyColorLighting((uint32_t*)&gGlideVertex0, dwGamma);
-    gfGlideVertex0Color = gnGlideVertexColor;
-    gfGlideVertex2Color = gnGlideVertexColor;
-    gfGlideVertex1Color = gnGlideVertexColor;
-    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gGlideVertex0, 0x1c);
+    RENDERER_GLIDE_ApplyColorLighting((uint32_t*)aFanVerts, dwGamma);
+    aFanVerts[0].argb = gnGlideVertexColor;
+    aFanVerts[1].argb = gnGlideVertexColor;
+    aFanVerts[2].argb = gnGlideVertexColor;
+    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, aFanVerts, 0x1c);
     (*GLIDEDLL_grDitherMode_4)(2);
 }
 
