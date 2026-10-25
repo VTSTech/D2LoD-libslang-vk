@@ -1260,20 +1260,53 @@ void __stdcall RENDERER_GLIDE_DrawShadowQuad(int32_t nParam1, int32_t nParam2, i
     *(uint32_t*)(char*)&gfGlideVertex0T = fTexT0;
     gfGlideVertex1S = fTexS0;
     *(uint32_t*)(char*)&gfGlideVertex1T = fTexT1;
-    gfGlideVertex1Y = gfGlideQuadZ1;
-    gfGlideVertex3S = fTexS1;
-    gfGlideVertex3T = fTexT1;
-    gfGlideVertex2Y = gfGlideQuadZ0;
-    gnGlideAlphaBlendDst = (int)fTexS1;
-    gnGlideAlphaBlendSrc = (int)fTexT0;
-    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gGlideVertex0, 0x1c);
+    // [vanilla-plus fix 4] The fan vertices were decompiled into ~20 separate
+    // "vertex globals" (gGlideVertex0, gfGlideQuadZ0/1, gfGlideVertex*n*, ...).
+    // In the original binary they are adjacent words of one 4x0x1C-byte block
+    // at &gGlideVertex0; rebuilt, the linker scatters them (the T pair lands
+    // 6 KB away), so the vertex data this submit reads is garbage and the fan
+    // rasterizes as one giant clipped triangle. Submit a contiguous local
+    // block with every field filled explicitly instead (the decompiled
+    // write-set relies on .data residue for v1.x / v2.oow/s/t / v3.x/y).
+    struct GlideFanVertexStrc { float x, y; uint32_t argb; float oow, s, t, pad; };
+    GlideFanVertexStrc aFanVerts[4];
+    // Isometric shadow footprint: v0 left corner, v1 bottom, v2 right,
+    // v3 far corner - the x/y values the (scattered) labels received.
+    // Shadow color: uniform opaque black (the 1.0 written to
+    // gfGlideVertex3Color is a float/dword typing artifact).
+    aFanVerts[0].x = (float)(nScreenXCenter - nTexHeight);
+    aFanVerts[0].y = (float)(nScreenXBase + nParam2);
+    aFanVerts[0].argb = 0;
+    aFanVerts[0].oow = 1.0f;
+    aFanVerts[0].s = fTexS0;
+    aFanVerts[0].t = fTexT0;
+    aFanVerts[0].pad = 0.0f;
+    aFanVerts[1].x = (float)nScreenXCenter;
+    aFanVerts[1].y = (float)(nScreenXBase + nParam2 + nTexHeight);
+    aFanVerts[1].argb = 0;
+    aFanVerts[1].oow = 1.0f;
+    aFanVerts[1].s = fTexS0;
+    aFanVerts[1].t = fTexT1;
+    aFanVerts[1].pad = 0.0f;
+    aFanVerts[2].x = (float)(nScreenXCenter - nTexHeight + nTexWidth);
+    aFanVerts[2].y = (float)(nScreenXBase + nParam2);
+    aFanVerts[2].argb = 0;
+    aFanVerts[2].oow = 1.0f;
+    aFanVerts[2].s = fTexS1;
+    aFanVerts[2].t = fTexT0;
+    aFanVerts[2].pad = 0.0f;
+    aFanVerts[3].x = (float)(nScreenXCenter + nTexWidth);
+    aFanVerts[3].y = (float)(nScreenXBase + nParam2 + nTexHeight);
+    aFanVerts[3].argb = 0;
+    aFanVerts[3].oow = 1.0f;
+    aFanVerts[3].s = fTexS1;
+    aFanVerts[3].t = fTexT1;
+    aFanVerts[3].pad = 0.0f;
+    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, aFanVerts, 0x1c);
 }
 
 // Glide renderer: draws a textured quad using the palette table at gpPaletteTable+0x114. Applies viewport scaling, handles palette color lookup, and submits a 4-vertex triangle fan via grDrawVertexArrayContiguous.
 void __stdcall RENDERER_GLIDE_DrawPalettedQuad(GlideTexInfoStrc * pGlideQuad, int32_t nParam1, int32_t nParam2, uint32_t nParam, int32_t nParam3, int32_t nParam4) {
-    // Static local variables (originally global data)
-    static int gnGlideCacheSize[5] = { 0x100, 0x40, 0x100, 0x80, 0x100 };
-
     int32_t nTexHeight;
     RENDERER_GLIDE_SetColorCombine(1);
     RENDERER_GLIDE_SetTextureFiltering(1);
@@ -1287,8 +1320,15 @@ void __stdcall RENDERER_GLIDE_DrawPalettedQuad(GlideTexInfoStrc * pGlideQuad, in
 
     float fTexS0 = (float)gaPerspectiveImageSizeTable[pGlideQuad->nAspect * 2] * pGlideQuad->fScale0;
     float fTexS1 = (float)gaPerspectiveImageSizeTable[pGlideQuad->nAspect * 2] * pGlideQuad->fTexS0;
-    float fTexT0 = (float)gnGlideCacheSize[(pGlideQuad->nAspect + 3) * 2] * pGlideQuad->fTexT0;
-    float fTexT1 = (float)gnGlideCacheSize[(pGlideQuad->nAspect + 3) * 2] * pGlideQuad->fTexS1;
+    // [vanilla-plus fix 4] This used gnGlideCacheSize[(nAspect + 3) * 2] -
+    // indices 6..12 into a [5] static. In the original binary that label sat
+    // immediately before gaPerspectiveImageSizeTable[8] in .data, so the
+    // expression aliased gaPerspectiveImageSizeTable[nAspect * 2 + 1] (the T
+    // span; DrawShadowQuad still spells that read out). Rebuilt, the index
+    // runs off the array into unrelated .bss and every T coordinate was
+    // garbage. Read the real table.
+    float fTexT0 = (float)gaPerspectiveImageSizeTable[pGlideQuad->nAspect * 2 + 1] * pGlideQuad->fTexT0;
+    float fTexT1 = (float)gaPerspectiveImageSizeTable[pGlideQuad->nAspect * 2 + 1] * pGlideQuad->fTexS1;
     gfGlideVertex0Color = gnGlideVertexColor;
     gfGlideVertex2Color = gnGlideVertexColor;
     gfGlideVertex1Color = gnGlideVertexColor;
@@ -1326,11 +1366,56 @@ void __stdcall RENDERER_GLIDE_DrawPalettedQuad(GlideTexInfoStrc * pGlideQuad, in
     gfGlideVertex1Y = gfGlideQuadZ1;
     gfGlideVertex3S = fTexS1;
     gfGlideVertex3T = fTexT1;
-    gfGlideVertex2X = gfGlidePaletteTableOffset;
-    gfGlideVertex2Y = gfGlideQuadZ0;
-    gnGlideAlphaBlendDst = (int)fTexS1;
-    gnGlideAlphaBlendSrc = (int)fTexT0;
-    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gGlideVertex0, 0x1c);
+    // [vanilla-plus fix 4] The fan vertices were decompiled into ~20 separate
+    // "vertex globals" (gGlideVertex0, gfGlideQuadZ0/1, gfGlideVertex*n*, ...).
+    // In the original binary they are adjacent words of one 4x0x1C-byte block
+    // at &gGlideVertex0; rebuilt, the linker scatters them (the T pair lands
+    // 6 KB away), so the vertex data this submit reads is garbage and the fan
+    // rasterizes as one giant clipped triangle. Submit a contiguous local
+    // block with every field filled explicitly instead (the decompiled
+    // write-set relies on .data residue for v1.x / v2.oow/s/t / v3.x/y).
+    struct GlideFanVertexStrc { float x, y; uint32_t argb; float oow, s, t, pad; };
+    GlideFanVertexStrc aFanVerts[4];
+    uint32_t dwFanColor;
+    if (nParam3 || nParam4) {
+      dwFanColor = (uint32_t)gnGlideVertexColor;
+    } else {
+      // Same tint ApplyColorLighting writes into the (scattered) v0.argb word,
+      // captured so all four vertices carry it.
+      uint32_t anLightTmp[3];
+      anLightTmp[2] = 0;
+      RENDERER_GLIDE_ApplyColorLighting(anLightTmp, nParam);
+      dwFanColor = anLightTmp[2];
+    }
+    aFanVerts[0].x = (float)(nQuadLeft + nParam1);
+    aFanVerts[0].y = (float)(nQuadTop + nParam2);
+    aFanVerts[0].argb = dwFanColor;
+    aFanVerts[0].oow = 1.0f;
+    aFanVerts[0].s = fTexS0;
+    aFanVerts[0].t = fTexT0;
+    aFanVerts[0].pad = 0.0f;
+    aFanVerts[1].x = (float)(nQuadLeft + nParam1);
+    aFanVerts[1].y = (float)(nQuadTop + nParam2 + nTexHeight);
+    aFanVerts[1].argb = dwFanColor;
+    aFanVerts[1].oow = 1.0f;
+    aFanVerts[1].s = fTexS0;
+    aFanVerts[1].t = fTexT1;
+    aFanVerts[1].pad = 0.0f;
+    aFanVerts[2].x = (float)(nQuadLeft + nParam1 + nParam3);
+    aFanVerts[2].y = (float)(nQuadTop + nParam2);
+    aFanVerts[2].argb = dwFanColor;
+    aFanVerts[2].oow = 1.0f;
+    aFanVerts[2].s = fTexS1;
+    aFanVerts[2].t = fTexT0;
+    aFanVerts[2].pad = 0.0f;
+    aFanVerts[3].x = (float)(nQuadLeft + nParam1 + nParam3);
+    aFanVerts[3].y = (float)(nQuadTop + nParam2 + nTexHeight);
+    aFanVerts[3].argb = dwFanColor;
+    aFanVerts[3].oow = 1.0f;
+    aFanVerts[3].s = fTexS1;
+    aFanVerts[3].t = fTexT1;
+    aFanVerts[3].pad = 0.0f;
+    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, aFanVerts, 0x1c);
     (*GLIDEDLL_grDitherMode_4)(2);
 }
 
