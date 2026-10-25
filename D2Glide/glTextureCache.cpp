@@ -4,7 +4,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "support/d2_boot.h" // [d2boot] halt-state dump before the 0xc1 halt
+#include "support/d2_boot.h" // [d2boot] halt-state dump + cache coordinates
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -60,6 +60,11 @@ int __fastcall GLTEXCACHE_Initialize(GlTextureCacheStrc * pCache, int nVramStart
     pNodeArray = pCache->pNodes;
     pCache->pFreeHead = pNodeArray;
     pCache->pFreeTail = pNodeArray + pCache->nMaxEntries * 0x1c - 0x1c;
+    // [vanilla-plus fix 3] Known-good cache coordinates: any future 0xc1 dump
+    // whose pCache does not match one of these lines is a phantom cache struct.
+    D2BOOT_MarkFmt("GLTEXCACHE init: pCache=%08x max=%u entrySize=%u pNodes=%08x",
+                   (unsigned)(size_t)pCache, (unsigned)pCache->nMaxEntries,
+                   (unsigned)pCache->dwEntrySize, (unsigned)(size_t)pCache->pNodes);
     if (gbGlideIsDebugBuild) {
       return pCache->nMaxEntries * dwTextureSize + nVramStart;
     }
@@ -181,11 +186,11 @@ int GLTEXCACHE_AllocateNode(GlTextureCacheStrc * pCache) {
       return *pAllocNode + 1;
     }
 
-    // [vanilla-plus fix 2] State dump: with these four values a future halt
-    // report self-identifies (used < max with an exhausted free list = count
-    // drift; pNodes not a heap address = the cache pointer itself is bad).
-    D2BOOT_MarkFmt("GLTEXCACHE halt 0xc1: used=%u max=%u pFreeHead=%08x pActiveHead=%08x pNodes=%08x",
-                   (unsigned)pCache->nUsedCount, (unsigned)pCache->nMaxEntries,
+    // [vanilla-plus fix 2/3] State dump before the halt. pCache lets a future
+    // dump be matched against the GLTEXCACHE init lines: a pCache that appears
+    // in no init line is a phantom cache struct (the 870031f failure).
+    D2BOOT_MarkFmt("GLTEXCACHE halt 0xc1: pCache=%08x used=%u max=%u pFreeHead=%08x pActiveHead=%08x pNodes=%08x",
+                   (unsigned)(size_t)pCache, (unsigned)pCache->nUsedCount, (unsigned)pCache->nMaxEntries,
                    (unsigned)(size_t)pCache->pFreeHead, (unsigned)(size_t)pCache->pActiveHead,
                    (unsigned)(size_t)pCache->pNodes);
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc1);
@@ -206,6 +211,20 @@ void __fastcall GLTEXCACHE_PromoteNodeToMRU(GlTextureCacheStrc * pCache, int nNo
       exit(-1);
     } else {
       if (0 < nNodeIndex1Based) {
+        // [vanilla-plus fix 3] A node whose sprite backpointer is clear is not
+        // on the active list: every allocation gets its backpointer written by
+        // the upload right after AllocateNode, and every transition back to the
+        // free list (EvictLRU, EnsureCapacity inline evict, Initialize memset)
+        // clears it. RemoveNodeByIndex would splice such a node's links anyway
+        // -- they are the free-list links -- moving it to the active list
+        // without nUsedCount++ (the issue-5 count-drift family). Drop the
+        // promote instead; the caller falls through to a fresh allocation.
+        uint8_t* pPromoteNode = pCache->pNodes + (nNodeIndex1Based - 1) * 0x1c;
+        if (!*(int*)(pPromoteNode + 8)) {
+          D2BOOT_MarkFmt("GLTEXCACHE promote bail: pCache=%08x idx=%d used=%u",
+                         (unsigned)(size_t)pCache, nNodeIndex1Based, (unsigned)pCache->nUsedCount);
+          return;
+        }
         pNode = GLTEXCACHE_RemoveNodeByIndex(pCache, nNodeIndex1Based - 1);
         GLTEXCACHE_AppendNodeToTail(pCache, pNode);
         return;

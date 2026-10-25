@@ -1013,9 +1013,16 @@ void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
 
 // Glide texture cache: uploads a DC6 frame to video memory. Determines LOD level based on texture size, allocates cache slot, renders frame to buffer, encrypts with hash, and downloads to TMU via grTexDownloadMipMap.
 int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
-    // Static local variables (originally global data)
-    static int gGlideSmallTextureCacheBase;
-    static int gnGlideState;
+    // [vanilla-plus fix 3] The generated code declared two function-local
+    // static ints here (gGlideSmallTextureCacheBase, gnGlideState). In the
+    // original binary those are .data labels sitting immediately in front of
+    // gGlideSmallTextureCache[3] (at -0x20 and -0x04), so "&base + n * 8" and
+    // "(&gnGlideState)[n * 8]" reach cache[n-1] and its node array. Rebuilt
+    // with gcc they are unrelated 4-byte objects, so every upload addressed a
+    // phantom cache struct (fix-2 halt dump: used=ffffffff max=0 pFreeHead=0
+    // pActiveHead=pNodes=3f800000) and AllocateNode halted 0xc1 on the
+    // phantom's NULL pFreeHead. Address the real global array instead; no
+    // static locals are needed.
 
     int nNewCacheNode;
     uint8_t* pbyPalettePixel;
@@ -1042,6 +1049,13 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
     grTexInfo.aspectRatioLog2 = pTexInfo->nAspect;
     grTexInfo.format = 5;
     grTexInfo.data = gpGlideSpriteBuffer;
+    // [vanilla-plus fix 3] Sprite headers come from a non-zeroing pool, so a
+    // first-use header can carry pool garbage in the size-class slot. Treat an
+    // out-of-range class like an unset one (recompute below) and zero the slot
+    // so the recompute sticks, instead of skipping the upload forever.
+    if (*(int*)(nTexStartAddress + nMode * 8) < 1 || 3 < *(int*)(nTexStartAddress + nMode * 8)) {
+      *(uint32_t*)(nTexStartAddress + nMode * 8) = 0;
+    }
     if (!*(int*)(nTexStartAddress + nMode * 8)) {
       nSpriteBufferPtr = pTexInfo->nTexArea;
       if (nSpriteBufferPtr < 0x1001) {
@@ -1073,6 +1087,12 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
     }
     nSpriteBufferPtr--;
 
+    // [vanilla-plus fix 3] The cache and its node array for this size class
+    // (0-based index after the decrement): the real globals, not the removed
+    // static-local stand-ins above.
+    GlTextureCacheStrc* pTextureCache = &gGlideSmallTextureCache[nSpriteBufferPtr];
+    uint8_t* pCacheNodes = pTextureCache->pNodes;
+
     int nCacheSlot = *(int*)(nTexStartAddress + 4 + nMode * 8);
     int* pnCacheEntryIndex = (int*)(nTexStartAddress + 4 + nMode * 8);
     // [vanilla-plus fix 2, jaenster/redivivus#5] A recycled sprite header can
@@ -1086,17 +1106,16 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
     // and allocate fresh. The legit palette-change re-upload (same sprite and
     // node) still passes: its node backpointer/mode match by construction.
     if (nCacheSlot) {
-      GlTextureCacheStrc* pSlotCache = (GlTextureCacheStrc*)(&gGlideSmallTextureCacheBase + nSpriteBufferPtr * 8);
-      uint8_t* pSlotNode = pSlotCache->pNodes + (nCacheSlot - 1) * 0x1c;
+      uint8_t* pSlotNode = pCacheNodes + (nCacheSlot - 1) * 0x1c;
       if (*(FxU32*)(pSlotNode + 8) != nTexStartAddress || *(int*)(pSlotNode + 0xc) != nMode) {
         nCacheSlot = 0;
         *pnCacheEntryIndex = 0;
       }
     }
     grTexInfo.largeLodLog2 = grTexInfo.smallLodLog2;
-    if (nCacheSlot && (*(uint8_t**)((&gnGlideState)[nSpriteBufferPtr * 8] - 0xc + nCacheSlot * 0x1c) == pPalette || nErrorAddress == 4)) {
-      glTextureCache::GLTEXCACHE_PromoteNodeToMRU((GlTextureCacheStrc*)(&gGlideSmallTextureCacheBase + nSpriteBufferPtr * 8), *pnCacheEntryIndex);
-      startAddress = *(FxU32*)((&gnGlideState)[nSpriteBufferPtr * 8] - 0x18 + *pnCacheEntryIndex * 0x1c);
+    if (nCacheSlot && (*(uint8_t**)(pCacheNodes + (nCacheSlot - 1) * 0x1c + 0x10) == pPalette || nErrorAddress == 4)) {
+      glTextureCache::GLTEXCACHE_PromoteNodeToMRU(pTextureCache, *pnCacheEntryIndex);
+      startAddress = *(FxU32*)(pCacheNodes + (*pnCacheEntryIndex - 1) * 0x1c + 4);
       (*GLIDEDLL_grTexSource_16)(gnGlideTMUIndex, startAddress, 3, &grTexInfo);
       RENDERER_GLIDE_SetTextureMode(gnGlideTMUIndex);
       return 1;
@@ -1106,14 +1125,15 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
       // The generated code stored the uninitialized local nNewCacheNode here,
       // writing a garbage 1-based node index into the sprite header; every
       // later draw of the sprite then used a wild node offset.
-      *pnCacheEntryIndex = glTextureCache::GLTEXCACHE_EnsureCapacity((GlTextureCacheStrc*)(&gGlideSmallTextureCacheBase + nSpriteBufferPtr * 8));
+      *pnCacheEntryIndex = glTextureCache::GLTEXCACHE_EnsureCapacity(pTextureCache);
     }
 
-    *(FxU32*)((&gnGlideState)[nSpriteBufferPtr * 8] - 0x14 + *pnCacheEntryIndex * 0x1c) = nTexStartAddress;
-    *(int32_t*)((&gnGlideState)[nSpriteBufferPtr * 8] - 0x10 + *pnCacheEntryIndex * 0x1c) = nMode;
-    *(uint8_t**)((&gnGlideState)[nSpriteBufferPtr * 8] - 0xc + *pnCacheEntryIndex * 0x1c) = (uint8_t*)pPalette;
+    uint8_t* pCacheNode = pCacheNodes + (*pnCacheEntryIndex - 1) * 0x1c;
+    *(FxU32*)(pCacheNode + 8) = nTexStartAddress;
+    *(int32_t*)(pCacheNode + 0xc) = nMode;
+    *(uint8_t**)(pCacheNode + 0x10) = (uint8_t*)pPalette;
     void* pvVar2 = gpGlideSpriteBuffer;
-    nTexStartAddress = *(FxU32*)((&gnGlideState)[nSpriteBufferPtr * 8] - 0x18 + *pnCacheEntryIndex * 0x1c);
+    nTexStartAddress = *(FxU32*)(pCacheNode + 4);
     if (!gpGlideSpriteBuffer) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x184);
       exit(-1);
