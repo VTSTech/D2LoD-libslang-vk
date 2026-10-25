@@ -62,6 +62,11 @@ struct G3xSlangConf {
                         // g3x_window — native|240p|480p|576p|720p|768p|1080p|desktop|WxH)
     int  borderless;    // 0.4.4: strip the frame on preset windows (0/1; "desktop" is
                         // borderless regardless)
+    int  controller;        // 0.4.4: gamepad-to-mouse/keys master switch (0/1; consumed
+                            // by g3x_controller — off by default)
+    float controller_sens;  // 0.4.4: cursor speed multiplier (<=0 = default 1.0)
+    int  controller_deadzone; // 0.4.4: radial deadzone percent (<=0 = default 15,
+                              // clamped 1..80)
 };
 
 // Pure parser for a d2slangvk.conf body: "[slangvk]" section with

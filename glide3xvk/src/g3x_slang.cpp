@@ -5,6 +5,7 @@
 #include "g3x_log.h"
 
 #include <cstdio>
+#include <cstdlib>            // atof/atoi (controller_sens/deadzone)
 #include <cstring>
 
 // The portable logic below (parser + rect math) also compiles on the Linux
@@ -95,6 +96,17 @@ bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out) {
                     // 0.4.4 present-window preset: name validation lives in
                     // g3x_window_preset_size; here it is an opaque token.
                     std::snprintf(out->window, sizeof(out->window), "%s", val);
+                } else if (_strnicmp(key, "controller", 10) == 0 && kl == 10) {
+                    // 0.4.4 gamepad-to-mouse/keys (g3x_controller); fixups and
+                    // defaults live in g3x_ctrl_conf_fixup.
+                    if (val[0] == '0')      out->controller = 0;
+                    else if (val[0] == '1') out->controller = 1;
+                } else if (_strnicmp(key, "controller_sens", 15) == 0 && kl == 15) {
+                    // float; <=0 falls back to the module default (1.0)
+                    out->controller_sens = (float)std::atof(val);
+                } else if (_strnicmp(key, "controller_deadzone", 19) == 0 && kl == 19) {
+                    // percent; <=0 falls back to the module default (15)
+                    out->controller_deadzone = (int)std::atoi(val);
                 }
                 // unknown keys are deliberately ignored (forward compatibility)
             }

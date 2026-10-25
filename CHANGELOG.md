@@ -14,6 +14,31 @@ Field trigger: the 0.4.3 full-screen field log (round-17 build, crtglow_lanczos
 mix (152 fans + 170 strips + 142 RGB565 quads per frame, fill=0) pointed at
 CPU raster + texture-table upkeep as the budget, not the chain or the game.
 
+### Added
+
+- **Controller support** (g3x_controller): opt-in gamepad play via input
+  injection — the wrapper polls pad 0 through XInput on its own background
+  thread (~125 Hz, smooth regardless of the game's 25 Hz tick) and injects
+  ordinary mouse/keyboard events (SendInput), so the game just sees a normal
+  mouse and keyboard and every D2 screen works. No Game.exe patch, no driver,
+  no new DLL imports (XInput loads dynamically: xinput1_4 -> xinput9_1_0 ->
+  xinput1_3; none = logged once, feature stays off). Default map: left stick
+  = cursor (radial deadzone + squared precision curve), A = left click,
+  B = right click, X = hold Alt (item labels), Y = tap I (inventory),
+  D-pad = belt 1-4, LB = C (character), RB = T (skill tree), RT = hold Shift
+  (attack in place), LT = tap Ctrl (run/walk), Start = Esc, Back = Tab
+  (automap); right stick + L3/R3 reserved. Taps are one clean keystroke
+  (down this tick, up the next) so held menu keys cannot auto-repeat-flip a
+  D2 screen closed. Injection is gated on the game window being foreground,
+  and everything held is released on focus loss, disable, pad disconnect and
+  shutdown. Conf keys (hot-reloaded like everything else, ~2s probe):
+  `controller=0|1` (off by default), `controller_sens=` (cursor speed
+  multiplier, default 1.0, clamp 16), `controller_deadzone=` (percent,
+  default 15, clamp 1-80). Zero present-path cost — no grBufferSwap hook;
+  lifecycle rides grSstWinOpen/grSstWinClose/detach. Pure core host-tested
+  (scripts/ctrltest.cpp: 152/152 — conf fixups, bind-table shape, stick
+  response, edge/hold/tap walks, trigger edges, flood cap, release_all).
+
 ### Changed
 
 - **SSE2 float math for the DLL** (CMakeLists): the i686 MinGW default is x87
@@ -140,6 +165,17 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   here). One-line type fix; downstream uses are only `== 0` / `== 2`
   compares, so no behavior change. Full rebuild + link verified locally
   (45/45 Glide exports match D2Client/Renderer/Glide.cpp).
+- **Flicker investigation closed by the config-only switch (field
+  confirmation):** the "constantly resizing the frame" turbulence reported
+  on the F10 builds (b6c5bce log: 20 applies = 20 clean one-shot swap
+  recreates, no storms — the wrapper's per-frame path was never the
+  culprit) rode on the live hotkey apply cycle itself (SetWindowPos +
+  same-frame swapchain recreate + chain retarget + toast at the menu's
+  cadence). Field-verified after the F10 removal: resizing via `window=` in
+  the conf — applied at renderer open and on the quiet ~32-frame mtime
+  hot-reload — changes the running size with **no flicker**. Config-only
+  presets are therefore also the flicker fix; any future live-resize
+  feature must solve the apply-cycle turbulence first.
 
 ### Validated
 
@@ -157,6 +193,13 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   chroma toggles, 5 blend classes, full-screen fills, points/lines, gamma
   swings, palette epoch bumps, rebind storms, 8600-key table-full stress —
   produces the identical present-buffer FNV hash and counters before/after.
+- Host controller-core test (scripts/ctrltest.cpp, agent-side): 152/152 —
+  conf fixups (defaults/clamps), bind-table shape (unique masks, valid
+  kinds, documented map), stick response (deadzone, squared curve,
+  normalized diagonals, pad y convention), A hold walk, Y tap walk
+  (no auto-repeat window), RT hold + LT tap trigger edges, 14-event flood
+  with cap, release_all idempotence + ghost-free after, NULL tolerance.
+  wintest regression still 40/40.
 
 ## [0.4.3] - 2026-10-24 (F11/F12 hotkeys + the full d2slangvk.conf reference)
 

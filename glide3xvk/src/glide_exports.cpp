@@ -12,6 +12,7 @@
 #include "g3x_overlay.h"
 #include "g3x_slang.h"
 #include "g3x_window.h"
+#include "g3x_controller.h"
 #include "vk_backend.h"
 
 #include <cstring>
@@ -141,6 +142,9 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
     // window=/borderless=, and re-applies the active preset (the game may
     // have re-made its window on a mode change).
     g3x_window_init((void*)(uintptr_t)hWnd, w, h);
+    // 0.4.4: gamepad-to-mouse/keys (controller= in the conf; own poll thread,
+    // zero present-path cost). Idempotent across mode changes.
+    g3x_controller_init((void*)(uintptr_t)hWnd);
     // 0.4.4: the version stamp's home is the P2.10 overlay box. The old
     // drivertag patch (repointing the game's renderer-name string so the
     // /fps box read our tag) is REMOVED — field builds showed the stock
@@ -188,6 +192,7 @@ FxBool __stdcall grSstWinClose(GrContext_t context) {
             "skip=%u texmiss=%u fill=%u vc0=%u)",
             context, g_st.n_swaps, ds[0], ds[1], ds[2], ds[3], ds[4],
             g3x_frame_tex_miss_count(), ds[7], ds[8]);
+    g3x_controller_shutdown();      // release held pad->key injections first
     g3x_vk_shutdown();
     return FXTRUE;
 }
@@ -728,6 +733,7 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpRes
                     g3x_log("detach: %s loaded (game fell back to another renderer?)", mod);
                 }
             }
+            g3x_controller_shutdown();
             g3x_vk_shutdown();
             g3x_log_close();
             break;

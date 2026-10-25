@@ -65,6 +65,16 @@ resolution — is the same one proven in
   game's own render resolution stays the game's), and the unfiltered present
   path now fits + centers with black bars instead of stretching, so 4:3
   content stays 4:3 on any 16:9 window with or without a chain.
+- **Controller support (0.4.4)**: opt-in gamepad play via input injection —
+  `controller=1` in `d2slangvk.conf` starts a background XInput poller that
+  drives the game through ordinary injected mouse/keyboard events (SendInput),
+  so every D2 screen works unchanged: left stick = cursor, A = left click,
+  B = right click, X = hold Alt (items), Y = I (inventory), D-pad = belt
+  1-4, LB = C, RB = T, RT = hold Shift (attack in place), LT = Ctrl
+  (run/walk), Start = Esc, Back = Tab (automap). Tunables:
+  `controller_sens=` (cursor speed), `controller_deadzone=` (radial %).
+  Injects only while the game window is focused; off by default; XInput
+  loaded dynamically (no new DLL imports). See the conf reference below.
 - **Perf round 1 (0.4.4)**: the full-screen 0.4.3 field log showed
   avg=51.6 ms ≈ 19 fps @ 800x600 with the crtglow_lanczos 7-pass chain active
   (≈ 470 draw calls per frame; the chain itself filtered 516 frames with
@@ -157,6 +167,9 @@ Every key (0.4.4):
 | `base_res=` | `1x` \| `2x` \| `3x` \| `4x` (bare `1`..`4` accepted) | Shader base resolution (0.4.3). The game frame is linearly upscaled N-x on the GPU before the chain sees it, so every source-relative pass FBO renders at N-x — scanline pitch, glow and blur radii get finer as N rises; the final pass is fit back into the output rect. Costs one extra fullscreen blit. F12 cycles this live. |
 | `window=` | *(empty)* = `native` \| `240p` \| `480p` \| `576p` \| `720p` \| `768p` \| `1080p` \| `desktop` \| `WxH` | Present-window preset (0.4.4). Sizes the OS window: `240p`=320x240, `480p`=640x480, `576p`=720x576, `720p`=1280x720, `768p`=1366x768, `1080p`=1920x1080, `desktop` = the current monitor's size (borderless), `WxH` = any explicit client size (e.g. `1600x1200`). Windowed presets are centered on the current monitor; the game's own 800x600 window is untouched at `native`. DPI-aware (physical pixels, see the presets bullet above); reapplied at every renderer (re)open, and conf edits hot-reload live (file is the source of truth). Config-only — no hotkey. This is output sizing only — the game keeps rendering 800x600. |
 | `borderless=` | `0` \| `1` | Strip the caption/borders on preset windows (0.4.4): `WS_POPUP` instead of the game's overlapped style, centered like the windowed presets. `desktop` is borderless regardless. `0`/empty keeps the game's own frame. |
+| `controller=` | `0` \| `1` | Gamepad-to-mouse/keys input injection (0.4.4, off by default). `1` starts a background XInput poller (pad 0) that injects ordinary mouse/keyboard events — the game sees a normal mouse and keyboard, so every screen works. Map: left stick = cursor, A = LMB, B = RMB, X = hold Alt (item labels), Y = tap I, D-pad = belt 1-4, LB = tap C, RB = tap T, RT = hold Shift (attack in place), LT = tap Ctrl (run/walk), Start = Esc, Back = Tab (automap). Injects only while the game window is foreground; focus loss / disable / shutdown release everything held; taps are one clean keystroke (no auto-repeat flips). XInput loads dynamically (`xinput1_4` / `xinput9_1_0` / `xinput1_3`; none = logged once, feature stays off). Settings hot-reload with the conf (~2 s). |
+| `controller_sens=` | float (default `1.0`, clamp `16`) | Cursor speed multiplier for the left stick (0.4.4). Full-tilt base speed is ~1200 px/s before the multiplier; the squared response curve keeps precision near center. Missing/`0` = default. Hot-reloads. |
+| `controller_deadzone=` | percent `1`..`80` (default `15`) | Radial stick deadzone as a percent of full throw (0.4.4). Stick response stays zero inside the zone and follows the squared curve outside it. Missing/`0` = default 15. Hot-reloads. |
 
 A worked example (the field setup from the round-16 screenshots):
 

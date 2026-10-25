@@ -50,6 +50,7 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `src/g3x_drivertag.{h,cpp}` | 0.4.1–0.4.3: repointed the game's `"Video: Glide"` renderer-name string at our tag. **Removed in 0.4.4** (field call: the /fps tag must stay the game's own; the DLL is now strictly read-only toward Game.exe) — pending `git rm` of the two files |
 | `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf` (`preset`/`scale`/`vsync`/`aspect`/`base_res`/`window`/`borderless`), owns the input image + preset + chain, hot-reloads on file change, polls the F11/F12 hotkeys on the present path, fails soft to the unfiltered path |
 | `src/g3x_window.{h,cpp}` | 0.4.4: present-window presets + DPI awareness — sizes the game's own HWND to a `window=` preset (canonical sizes, `desktop`, `WxH`), config-only (applies at every renderer (re)open + conf hot-reload; no hotkey — F10 is a game skill-slot bind), reverts cleanly to the game's own window; pure table/parse lives inline in the header (host-tested), the Win32 apply runs inside `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` |
+| `src/g3x_controller.{h,cpp}` | 0.4.4: controller support — a background XInput poller (pad 0, ~125 Hz, own thread; zero present-path cost) injects ordinary mouse/keyboard via SendInput (stick = cursor, A/B = clicks, X = Alt hold, Y = I, D-pad = belt, LB/RB = C/T, RT = Shift hold, LT = Ctrl tap, Start = Esc, Back = Tab), gated on game-window focus, everything held released on focus loss/disable/shutdown; opt-in via `controller=` + `controller_sens=` + `controller_deadzone=`, hot-reloaded from the conf; XInput loaded dynamically (no new imports); pure core (bind table, stick curve, edge/hold/tap step) inline in the header, host-tested (scripts/ctrltest.cpp) |
 | `presets/` | Two starter presets (scanline, sharpen — MIT, ours) + `d2slangvk.conf.sample` |
 | `src/g3x_font8x8.h` | Embedded 8x8 1-bit bitmap font for the overlay (generated from DejaVu Sans Mono Bold) |
 | `src/g3x_log.{h,cpp}` | `glide3x.log` beside the game exe (`%TEMP%` fallback), log-once budgets, periodic frame summaries, exit summary |
@@ -115,6 +116,13 @@ math honors the aspect pick before `scale=`.
 Window presets (0.4.4) carry the same toast scheme without a hotkey: `window=`
 applies at renderer open and on conf change, toasting (`window 1080p
 1920x1080`) from the swap path (g3x_window) — it works with the chain off.
+
+Controller support (0.4.4) is log-only on purpose: `controller=1` prints one
+`controller: on (...)` line with the active map and settings, the poll thread
+lives entirely outside the present path (no grBufferSwap hook, no toast race),
+and disabling or closing the renderer logs `controller: off (...)` after
+releasing everything held. Focus loss releases too — after alt-tabbing back,
+re-press a pad button if a held action did not resume.
 
 ## The preset chain (P3, 0.4.0)
 

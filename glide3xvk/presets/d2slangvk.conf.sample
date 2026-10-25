@@ -68,6 +68,27 @@ vsync=
 ; regardless. 0/empty = keep the game's own frame.
 ;borderless=0
 
+; Controller support (0.4.4): gamepad-to-mouse/keys via input injection.
+; controller=1 polls pad 0 through XInput on a background thread and injects
+; ordinary mouse/keyboard events, so the game sees a normal mouse and
+; keyboard and every screen works. Off by default. Injects only while the
+; game window is focused. Default map:
+;   left stick = cursor        A = left click (hold)   B = right click (hold)
+;   X = hold Alt (items)       Y = tap I (inventory)   D-pad = belt 1-4
+;   LB = tap C (character)     RB = tap T (skills)     Start = Esc, Back = Tab
+;   RT = hold Shift (attack in place)                  LT = Ctrl (run/walk)
+; XInput loads dynamically (xinput1_4 / xinput9_1_0 / xinput1_3); a missing
+; DLL or pad just logs once and the game runs untouched.
+;controller=0
+;controller=1
+
+; Cursor speed multiplier for the left stick (full tilt ~1200 px/s at 1.0;
+; the squared response curve keeps precision near center). Default 1.0.
+;controller_sens=1.0
+
+; Radial stick deadzone as a percent of full throw (1-80). Default 15.
+;controller_deadzone=15
+
 ; On any preset failure the DLL keeps presenting the raw game frame (fail-soft,
 ; the log carries the slang error). There is no other fallback mode; unknown
 ; keys are ignored.
