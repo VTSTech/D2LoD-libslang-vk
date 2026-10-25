@@ -212,9 +212,10 @@ void __stdcall grBufferClear(GrColor_t color, GrAlpha_t alpha, FxU32 depth) {
 
 void __stdcall grBufferSwap(FxU32 swap_interval) {
     ++g_st.n_swaps;
-    // 0.4.4: F10 window presets + conf hot-reload for window=/borderless=.
-    // Before the present so a resize lands ahead of this frame's swapchain
-    // use (an OUT_OF_DATE recreate then picks the new extent for free).
+    // 0.4.4: window presets are config-only (window=/borderless=); the tick
+    // hot-reloads the conf every 32nd frame. Before the present so a resize
+    // lands ahead of this frame's swapchain use (the refresh-flag recreate
+    // then picks the new extent for free).
     g3x_window_frame_tick();
     // P2.5: rolling frame time so the field log shows the raster's real pace
     // (round-7 session ran at ~4.3 fps — the number this build must move).

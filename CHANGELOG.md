@@ -70,10 +70,11 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   `borderless=` join d2slangvk.conf — `native` (default: the game's own
   window, nothing touched), `240p`=320x240, `480p`=640x480, `576p`=720x576,
   `720p`=1280x720, `768p`=1366x768, `1080p`=1920x1080, `desktop` (monitor-
-  sized, borderless) or an explicit `WxH`; F10 cycles them in-game
-  (toast + log, session-only, conf reload snaps back — F11/F12 semantics,
-  except F10 works with the chain off; polled from the swap path). Presets
-  re-apply at every renderer (re)open and the resize is DPI-aware:
+  sized, borderless) or an explicit `WxH`. **Config-only** — no hotkey (the
+  game owns F10 for its skill slots; the wrapper doesn't steal game keys):
+  presets apply at every renderer (re)open and a conf edit hot-reloads live
+  (file is the source of truth, F11/F12 semantics; toast + log on apply,
+  works with the chain off). The resize is DPI-aware:
   `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` loaded dynamically
   (pre-1607 Windows = the old best-effort virtualized behavior), because a
   DPI-unaware game otherwise sizes in virtualized coordinates — the field
@@ -123,7 +124,7 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   acquire_image consumes it BEFORE the acquire: fresh caps, swapchain
   recreate, g3x_slang_swapchain_resized retarget, all ahead of the same
   frame's present (g3x_window_frame_tick runs at the top of grBufferSwap).
-  Applies to F10 picks, conf edits and revert-to-native alike.
+  Applies to conf edits and revert-to-native alike.
 - **A failed swapchain recreate is no longer a permanent present death**
   (vk_backend): one failed recreate (e.g. a minimized window's 0x0 surface
   extent, or a mode change in flight) used to leave the backend dead until
@@ -145,9 +146,8 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
 - Host window-preset test (scripts/wintest.cpp, agent-side): the pure
   g3x_window.h core — table shape, case-insensitive name lookup, every
   canonical size, `WxH` forms, strict rejection (zero sides, >8192,
-  non-digit, separators/space forms), failure zeroes its outputs, and the
-  full F10 cycle walk including the unconfigured-state first press (57/57
-  checks).
+  non-digit, separators/space forms), failure zeroes its outputs (40/40
+  checks; the F10 cycle walk retired with the hotkey).
 - Host log-cap test (agent-side): mid-session rotation at exactly cap + one
   line, repeated rotation keeps log + `.1` ~= 2 MB for a 3 MB spam run,
   open-time rotation of an oversized file, and the P2.4

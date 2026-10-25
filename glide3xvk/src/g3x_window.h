@@ -10,11 +10,13 @@
 // game RENDER at other resolutions is the mode-2 custom-res project (SCOPE
 // section 4, P6).
 //
-// d2slangvk.conf [slangvk]:
+// d2slangvk.conf [slangvk] — config-only, no hotkey (F10 is the game's own
+// skill-slot bind; the wrapper must not steal it):
 //   window=native|240p|480p|576p|720p|768p|1080p|desktop|WxH
 //   borderless=0|1        ("desktop" is borderless regardless)
-// F10 cycles the presets live (session-only; a conf reload snaps back to
-// the file's values — same semantics as F11/F12).
+// Applied at every renderer (re)open and re-read from the conf every 32nd
+// frame — edit the file and the window follows (same file-is-truth semantics
+// as the slang chain's hot reload).
 //
 // DPI: D2 is a DPI-unaware process, so SetWindowPos from inside it would be
 // DPI-VIRTUALIZED (125% scaling turns a requested 1920x1080 into a
@@ -27,14 +29,14 @@
 // window, exactly as before). Any apply failure logs and leaves the window
 // as the game made it.
 //
-// The pure preset core below (table + parse + cycle) is host-tested
+// The pure preset core below (table + parse) is host-tested
 // (scripts/wintest.cpp); the header deliberately stays window-free, so the
 // core lives here as inline functions. The Win32 apply side is g3x_window.cpp.
 #pragma once
 
 #include <stddef.h>
 
-// One F10/conf preset. w/h = 0 marks a SYMBOLIC size resolved at apply time
+// One conf preset. w/h = 0 marks a SYMBOLIC size resolved at apply time
 // (native = the game's own client size; desktop = the current monitor).
 // kind: 0 = native, 1 = fixed size, 2 = desktop (monitor-sized, borderless).
 struct G3xWindowPreset {
@@ -43,9 +45,10 @@ struct G3xWindowPreset {
     int         kind;
 };
 
-// F10 cycle order == table order. 576p is 720x576 (PAL 4:3 DAR); 768p is
-// 1366x768 (the common WXGA panel). Content aspect inside the window is the
-// chain's business (scale=/aspect=/F11) and the legacy path's fit+center.
+// Table order is documentation only (no cycle anymore). 576p is 720x576
+// (PAL 4:3 DAR); 768p is 1366x768 (the common WXGA panel). Content aspect
+// inside the window is the chain's business (scale=/aspect=/F11) and the
+// legacy path's fit+center.
 inline const G3xWindowPreset* g3x_window_preset_table(unsigned* count) {
     static const G3xWindowPreset kTable[] = {
         { "native",     0,    0, 0 },
@@ -121,19 +124,7 @@ inline bool g3x_window_preset_size(const char* name, unsigned* w, unsigned* h, i
     return true;
 }
 
-// F10 cycle: the name after `cur` in table order. Unknown/NULL/"" cur starts
-// at the first FIXED preset (240p) — from an unconfigured state the first
-// press must do something visible; the cycle still covers native after
-// desktop. Never returns nullptr.
-inline const char* g3x_window_preset_next_name(const char* cur) {
-    unsigned count = 0;
-    const G3xWindowPreset* t = g3x_window_preset_table(&count);
-    const int i = g3x_window_preset_index(cur);
-    if (i < 0) return t[1 % count].name;
-    return t[(i + 1) % count].name;
-}
-
-// ---- lifecycle (called from glide_exports) ---------------------------------
+// ---- lifecycle (called from glide_exports) --------------------------------
 //
 // void* hwnd keeps this header window-free (the host tests include it).
 
@@ -142,7 +133,6 @@ inline const char* g3x_window_preset_next_name(const char* cur) {
 // re-sized its window on a mode change).
 void g3x_window_init(void* hwnd, unsigned game_w, unsigned game_h);
 
-// grBufferSwap, every frame: F10 polling + a conf mtime check every 32nd
-// frame. Cheap no-op unless a preset is active or F10 is pressed while the
-// game window is focused.
+// grBufferSwap, every frame: a conf mtime check every 32nd frame so an edit
+// to window=/borderless= follows without a restart. Cheap no-op otherwise.
 void g3x_window_frame_tick();

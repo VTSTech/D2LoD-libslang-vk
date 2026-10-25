@@ -1,7 +1,9 @@
 // glide3xvk — 0.4.4 window preset apply (Win32 side; design contract in
-// g3x_window.h). The pure preset core (table/parse/cycle) lives in the
+// g3x_window.h). The pure preset core (table/parse) lives in the
 // header and is host-tested; everything here is thin Win32 plumbing around
-// it: read d2slangvk.conf, poll F10, size the window DPI-aware.
+// it: read d2slangvk.conf, size the window DPI-aware. Config-only — no
+// hotkeys (F10 belongs to the game's skill slots); the conf file is polled
+// for changes and is the single source of truth.
 //
 // Conf-file helpers below mirror g3x_slang.cpp's (exe dir, mtime probe,
 // HeapAlloc text read) — deliberately duplicated, NOT shared: g3x_window
@@ -30,12 +32,11 @@ namespace {
 
 HWND     s_hwnd = nullptr;
 unsigned s_game_w = 0, s_game_h = 0;      // the game's own client size ("native")
-char     s_want[32] = "";                 // desired preset token (conf value or F10 pick)
+char     s_want[32] = "";                 // desired preset token (conf value)
 int      s_borderless_want = 0;           // conf borderless=
 uint64_t s_conf_mtime = 0;
-bool     s_modified = false;              // we resized/re-styled the window since open
 LONG_PTR s_orig_style = 0;                // captured before our first modification
-bool     s_prev_f10 = false;
+bool     s_modified = false;              // we resized/re-styled the window since open
 unsigned s_tick = 0;
 char     s_exe_dir[MAX_PATH] = "";
 
@@ -93,9 +94,8 @@ char* read_text_file(const char* path) {
     return buf;
 }
 
-// Record-only conf read (applies are driven by init/tick/F10). An F10 pick
-// lives until the next conf file change — the file is the source of truth,
-// same semantics as F11/F12.
+// Record-only conf read (applies are driven by init and the tick's mtime
+// probe — the file is the single source of truth, same semantics as F11/F12).
 void reread_conf() {
     char path[MAX_PATH];
     if (!conf_path_of(path, sizeof(path))) return;
@@ -247,14 +247,4 @@ void g3x_window_frame_tick() {
             }
         }
     }
-    if (GetForegroundWindow() != s_hwnd) {        // don't queue presses made elsewhere
-        s_prev_f10 = false;
-        return;
-    }
-    const bool f10 = (GetAsyncKeyState(VK_F10) & 0x8000) != 0;
-    if (f10 && !s_prev_f10) {
-        std::snprintf(s_want, sizeof(s_want), "%s", g3x_window_preset_next_name(s_want));
-        apply_current("F10");
-    }
-    s_prev_f10 = f10;
 }

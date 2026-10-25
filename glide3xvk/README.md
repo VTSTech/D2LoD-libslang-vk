@@ -47,9 +47,9 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam; 0.4.4: the texture table is O(1) (open-addressing hash + monotonic alloc cursor + same-texture rebind fast-out) |
 | `src/g3x_state.{h,cpp}` | Glide state tracking (grChromakey/grColorCombine/... current values) |
 | `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, and since 0.4.3 a transient toast line for the F11/F12 hotkeys |
-| `src/g3x_drivertag.{h,cpp}` | 0.4.1: repoints the game's `"Video: Glide"` renderer-name string at our tag (one 4-byte fail-soft patch in the mapped Game.exe image) — the version stamp's primary home |
+| `src/g3x_drivertag.{h,cpp}` | 0.4.1–0.4.3: repointed the game's `"Video: Glide"` renderer-name string at our tag. **Removed in 0.4.4** (field call: the /fps tag must stay the game's own; the DLL is now strictly read-only toward Game.exe) — pending `git rm` of the two files |
 | `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf` (`preset`/`scale`/`vsync`/`aspect`/`base_res`/`window`/`borderless`), owns the input image + preset + chain, hot-reloads on file change, polls the F11/F12 hotkeys on the present path, fails soft to the unfiltered path |
-| `src/g3x_window.{h,cpp}` | 0.4.4: present-window presets + DPI awareness — sizes the game's own HWND to a `window=` preset (canonical sizes, `desktop`, `WxH`), F10 cycles live, reapplies at every renderer (re)open, reverts cleanly to the game's own window; pure table/parse/cycle lives inline in the header (host-tested), the Win32 apply runs inside `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` |
+| `src/g3x_window.{h,cpp}` | 0.4.4: present-window presets + DPI awareness — sizes the game's own HWND to a `window=` preset (canonical sizes, `desktop`, `WxH`), config-only (applies at every renderer (re)open + conf hot-reload; no hotkey — F10 is a game skill-slot bind), reverts cleanly to the game's own window; pure table/parse lives inline in the header (host-tested), the Win32 apply runs inside `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` |
 | `presets/` | Two starter presets (scanline, sharpen — MIT, ours) + `d2slangvk.conf.sample` |
 | `src/g3x_font8x8.h` | Embedded 8x8 1-bit bitmap font for the overlay (generated from DejaVu Sans Mono Bold) |
 | `src/g3x_log.{h,cpp}` | `glide3x.log` beside the game exe (`%TEMP%` fallback), log-once budgets, periodic frame summaries, exit summary |
@@ -106,16 +106,15 @@ only intercept while a chain filters frames and the game window is focused
 toasts (`aspect 16:9`, `shader base 2x`) for ~120 presented frames and logs a
 `slang: F11/F12 ...` line. The picks are session-only — never written back to
 `d2slangvk.conf`; a conf hot-reload snaps them back to the file's values. F12
-
-Since 0.4.4 the same toast scheme carries **F10** (window presets, `window
-1080p 1920x1080`): F10 is polled from the swap path (g3x_window), not the
-chain path, so it works with the chain off — and its pick snaps back to the
-file on conf reload exactly like F11/F12.
 feeds the chain from a game-res-x-N upscaled `slangvk_image` (one linear
 `vkCmdBlitImage` in a fenced one-shot submit through `vk_backend`, layouts
 round-tripped SHADER_READ_ONLY -> TRANSFER and back inside the same command
 buffer), so every source-relative pass FBO re-derives at N-x; the output rect
 math honors the aspect pick before `scale=`.
+
+Window presets (0.4.4) carry the same toast scheme without a hotkey: `window=`
+applies at renderer open and on conf change, toasting (`window 1080p
+1920x1080`) from the swap path (g3x_window) — it works with the chain off.
 
 ## The preset chain (P3, 0.4.0)
 
