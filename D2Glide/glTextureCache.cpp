@@ -274,7 +274,9 @@ void __fastcall GLTEXCACHE_Destroy(GlTextureCacheStrc * pCacheData, GlTextureCac
 }
 
 // Ensures cache has free capacity by allocating a node. If cache is full, evicts LRU entry first.
-void __fastcall GLTEXCACHE_EnsureCapacity(GlTextureCacheStrc * pCache) {
+// [vanilla-plus fix] Returns the allocated 1-based node index so the caller can
+// store it in the sprite header (it used to assign an uninitialized local).
+int __fastcall GLTEXCACHE_EnsureCapacity(GlTextureCacheStrc * pCache) {
     uint8_t* pEvictNode;
     uint8_t* pNextNode;
     int nAllocResult = GLTEXCACHE_AllocateNode(pCache);
@@ -311,6 +313,8 @@ void __fastcall GLTEXCACHE_EnsureCapacity(GlTextureCacheStrc * pCache) {
 
       nAllocResult = GLTEXCACHE_AllocateNode(pCache);
     }
+
+    return nAllocResult;
 }
 
 } // namespace D2Glide::glTextureCache

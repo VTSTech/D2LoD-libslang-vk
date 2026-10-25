@@ -1061,6 +1061,17 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
     if (gnGlideSpriteSecondaryTMUEnabled) {
       gnGlideTMUIndex = (uint32_t)(nSpriteBufferPtr == 1);
     }
+    // [vanilla-plus fix] The size class stored in the sprite header is 1-based
+    // (1=large, 2=medium, 3=small); the cache array gGlideSmallTextureCache[3]
+    // is 0-based - [0] is the large cache, see the GLTEXCACHE_Initialize order
+    // and the "- 1" applied at the invalidate sites in this file. Without the
+    // -1 a small texture (<= 64x64, class 3) indexes gGlideSmallTextureCache[3],
+    // one 0x20-byte struct past the end, and the next upload faults inside
+    // GLTEXCACHE_AllocateNode on the phantom struct's garbage fields.
+    if (nSpriteBufferPtr < 1 || 3 < nSpriteBufferPtr) {
+      return 0; // corrupt size class in the sprite header; skip the upload
+    }
+    nSpriteBufferPtr--;
 
     int nCacheSlot = *(int*)(nTexStartAddress + 4 + nMode * 8);
     int* pnCacheEntryIndex = (int*)(nTexStartAddress + 4 + nMode * 8);
@@ -1073,8 +1084,11 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
       return 1;
     }
     if (!*pnCacheEntryIndex) {
-      glTextureCache::GLTEXCACHE_EnsureCapacity((GlTextureCacheStrc*)(&gGlideSmallTextureCacheBase + nSpriteBufferPtr * 8));
-      *pnCacheEntryIndex = nNewCacheNode;
+      // [vanilla-plus fix] EnsureCapacity allocates the node: keep its result.
+      // The generated code stored the uninitialized local nNewCacheNode here,
+      // writing a garbage 1-based node index into the sprite header; every
+      // later draw of the sprite then used a wild node offset.
+      *pnCacheEntryIndex = glTextureCache::GLTEXCACHE_EnsureCapacity((GlTextureCacheStrc*)(&gGlideSmallTextureCacheBase + nSpriteBufferPtr * 8));
     }
 
     *(FxU32*)((&gnGlideState)[nSpriteBufferPtr * 8] - 0x14 + *pnCacheEntryIndex * 0x1c) = nTexStartAddress;
