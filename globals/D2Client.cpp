@@ -61982,7 +61982,7 @@ uint32_t gaLightmapInterpBuffer[4096] = {
     0
 };
 
-uint32_t gnLightmapInterpolationState[256] = {
+uint32_t gnLightmapInterpolationState[257] = { // [glide fix 9] [256] -> [257]: VIEW_Init writes indices 2..0x100 and AddLightToCell reads index newIntensity+1 (up to 0x100 for saturated cells)
     0,
     0,
     0,

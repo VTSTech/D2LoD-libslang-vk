@@ -3091,7 +3091,7 @@ extern int gnLightmapWorldRefreshFlag;
 extern int gnLightmapBufferState;
 extern int gnLightmapWorldMaxX;
 extern int gnLightmapWorldMaxY;
-extern uint32_t gnLightmapInterpolationState[256];
+extern uint32_t gnLightmapInterpolationState[257]; // [glide fix 9] 257 dwords: index 0x100 is the falloff for saturated intensity 0xff (was [256] -> OOB read = 0 -> black light cores)
 extern D2LightMapCellStrc gaLightMapCells[2304];
 extern D2LightMapCellStrc gLightmapCellData[2304];
 extern D2LightMapCellStrc gLightmapCellDataRed[2304];
