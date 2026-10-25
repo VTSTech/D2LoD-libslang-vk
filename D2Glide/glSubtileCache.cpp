@@ -305,7 +305,14 @@ void __fastcall GLSUBTILE_Destroy(uint32_t * pCacheData, GlSubtileCacheStrc * pC
 }
 
 // Ensures cache has free capacity by allocating a node. If cache is full, evicts LRU entry first.
-void __fastcall GLSUBTILE_EnsureCapacity(GlSubtileCacheStrc * pCache) {
+// [vanilla-plus fix 7] Returns the 1-based index of the node it allocated, like
+// GLFLOOR_EnsureCapacity (which returns short for the floor cache). The
+// decompile typed this void, but the evict-and-retry loop exits only when
+// nNodeIndex != 0, so the index is live at exit and the original caller read
+// it back. With the return dropped, GLBLOCKS_LoadWallSubtileTexture stored
+// an uninitialized local into pSubTile->nTextureCacheIndex and halted 0x112
+// ("line=274") on the first wall-subtile cache miss = first in-game wall draw.
+short __fastcall GLSUBTILE_EnsureCapacity(GlSubtileCacheStrc * pCache) {
     GlSubtileCacheNodeStrc* pEvictedNode;
     GlSubtileCacheNodeStrc* pNextFree;
     int nNodeIndex = GLSUBTILE_AllocateNode(pCache);
@@ -342,6 +349,8 @@ void __fastcall GLSUBTILE_EnsureCapacity(GlSubtileCacheStrc * pCache) {
 
       nNodeIndex = GLSUBTILE_AllocateNode(pCache);
     }
+
+    return (short)nNodeIndex;
 }
 
 } // namespace D2Glide::glSubtileCache
