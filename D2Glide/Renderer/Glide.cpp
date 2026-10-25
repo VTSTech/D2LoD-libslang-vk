@@ -1508,10 +1508,29 @@ void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int32_t nPosX, int32
     }
 
     RENDERER_GLIDE_CalculateTextureSize(&textureSize);
-    float fTexS0Scaled = (float)gaPerspectiveImageSizeTable[textureSize.nAspect * 2] * textureSize.fScale0;
-    float fTexT1Scaled = (float)gaPerspectiveImageSizeTable[textureSize.nAspect * 2] * textureSize.fTexS0;
-    float fTexT0Scaled = (float)gaPerspectiveImageSizeTable[textureSize.nAspect * 2 + 1] * textureSize.fTexT0;
-    float fTexS1Scaled = (float)gaPerspectiveImageSizeTable[textureSize.nAspect * 2 + 1] * textureSize.fTexS1;
+    // [vanilla-plus fix 6] Same negative-aspect disease that fix 5 solved for
+    // DrawPalettedQuad: portrait textures (iso walls/pillars are portrait) carry
+    // a NEGATIVE glide aspect, so these raw gaPerspectiveImageSizeTable
+    // [nAspect * 2] reads index BACKWARD out of the table - .data residue in the
+    // original binary, .bss zeros in the rebuild - and the affected sprites
+    // submitted s/t = 0. Same verified fallback spans:
+    // S = nTexWidth * 2^(8-lod), T = nTexHeight * 2^(8-lod).
+    // Decompiler note: fTexT1Scaled is the RIGHT-edge S product (table[a*2] *
+    // fTexS0) and fTexS1Scaled the BOTTOM-edge T product (table[a*2+1] *
+    // fTexS1); the names, not the values, are offset.
+    float fSpanS, fSpanT;
+    if (textureSize.nAspect < 0) {
+        const float fLodScale = (float)(1 << (8 - textureSize.nLodLevel));
+        fSpanS = (float)textureSize.nTexWidth * fLodScale;
+        fSpanT = (float)textureSize.nTexHeight * fLodScale;
+    } else {
+        fSpanS = (float)gaPerspectiveImageSizeTable[textureSize.nAspect * 2];
+        fSpanT = (float)gaPerspectiveImageSizeTable[textureSize.nAspect * 2 + 1];
+    }
+    float fTexS0Scaled = fSpanS * textureSize.fScale0;
+    float fTexT1Scaled = fSpanS * textureSize.fTexS0;
+    float fTexT0Scaled = fSpanT * textureSize.fTexT0;
+    float fTexS1Scaled = fSpanT * textureSize.fTexS1;
     BOOL bPerspectiveEnabled = RENDERER_GLIDE_IsPerspectiveEnabled();
     if (!bPerspectiveEnabled) {
       textureSize.nTexWidth = textureSize.nWidth;
@@ -1574,11 +1593,65 @@ void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int32_t nPosX, int32
     RENDERER_GLIDE_SetDrawMode(nDrawMode);
     RENDERER_GLIDE_SetColorCombine(1);
     RENDERER_GLIDE_SetTextureFiltering(1);
-    RENDERER_GLIDE_ApplyColorLighting((uint32_t*)&gGlideVertex0, dwGamma);
+    // [vanilla-plus fix 6] The fan vertices were decompiled into ~20 separate
+    // "vertex globals" (gGlideVertex0, gfGlideQuadZ0, gfGlidePaletteTableOffset,
+    // gfGlideVertex*n*, ...). In the original binary they are adjacent words of
+    // one 4x0x1C-byte block at &gGlideVertex0; rebuilt, the linker scatters them,
+    // so the contiguous submit read unrelated .bss and every perspective image
+    // rasterized from garbage. Submit a contiguous local block with every field
+    // filled explicitly instead. Corner semantics follow from the decompiled s/t
+    // writes plus the fix-5 slot rule ("vertex3"-named words = block slot 2):
+    //   slot0 = group 1 (s=left, t=top)     = tex TL  = up-left screen corner
+    //   slot1 = group 2 (s=left, t=bottom)  = tex BL  = anchor screen corner
+    //   slot2 = group 3 (s=right, t=bottom) = tex BR  = right screen corner
+    //   slot3 = group 4 ("vertex2*" words)  = tex TR  = up-right screen corner
+    // TL,BL,BR,TR is the verified hardware fan order and is cyclic for the
+    // isometric parallelogram, so the fan covers it fully. Group 4's s/t were
+    // never decompiled (the original read them as .data residue); supplied
+    // explicitly as right/top. Documented deviations (as in fixes 3/5): all four
+    // vertices carry the ApplyColorLighting tint captured through a temp buffer -
+    // the original spread slot 0's lit color through .data adjacency the rebuild
+    // cannot reproduce (gnGlideVertexColor is a stale separate global here), and
+    // ApplyColorLighting(&gGlideVertex0) would write an unknown .bss neighbor -
+    // and the stray 1.0f-bit artifact word becomes oow = 1.0 on slot 3.
+    uint32_t anLightTmp[3];
+    anLightTmp[2] = 0;
+    RENDERER_GLIDE_ApplyColorLighting(anLightTmp, dwGamma);
+    uint32_t dwFanColor = anLightTmp[2];
     gfGlideVertex0Color = gnGlideVertexColor;
     gfGlideVertex2Color = gnGlideVertexColor;
     gfGlideVertex1Color = gnGlideVertexColor;
-    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gGlideVertex0, 0x1c);
+    struct GlideFanVertexStrc { float x, y; uint32_t argb; float oow, s, t, pad; };
+    GlideFanVertexStrc aFanVerts[4];
+    aFanVerts[0].x = (float)gGlideVertex0;
+    aFanVerts[0].y = gfGlideQuadZ0;
+    aFanVerts[0].argb = dwFanColor;
+    aFanVerts[0].oow = 1.0f;
+    aFanVerts[0].s = fTexS0Scaled;
+    aFanVerts[0].t = fTexT0Scaled;
+    aFanVerts[0].pad = 0.0f;
+    aFanVerts[1].x = gfGlideVertex0X;
+    aFanVerts[1].y = gfGlideQuadZ1;
+    aFanVerts[1].argb = dwFanColor;
+    aFanVerts[1].oow = 1.0f;
+    aFanVerts[1].s = fTexS0Scaled;
+    aFanVerts[1].t = fTexS1Scaled;
+    aFanVerts[1].pad = 0.0f;
+    aFanVerts[2].x = gfGlidePaletteTableOffset;
+    aFanVerts[2].y = gfGlideVertex1Y;
+    aFanVerts[2].argb = dwFanColor;
+    aFanVerts[2].oow = 1.0f;
+    aFanVerts[2].s = fTexT1Scaled;
+    aFanVerts[2].t = fTexS1Scaled;
+    aFanVerts[2].pad = 0.0f;
+    aFanVerts[3].x = gfGlideVertex2X;
+    aFanVerts[3].y = gfGlideVertex2Y;
+    aFanVerts[3].argb = dwFanColor;
+    aFanVerts[3].oow = 1.0f;
+    aFanVerts[3].s = fTexT1Scaled;
+    aFanVerts[3].t = fTexT0Scaled;
+    aFanVerts[3].pad = 0.0f;
+    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, aFanVerts, 0x1c);
     (*GLIDEDLL_grDitherMode_4)(2);
 }
 
@@ -2835,11 +2908,52 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTileSimple(D2TileLibraryEntryStrc * pTi
         gfGlideWallVertex3Y = gfGlideWallVertexYMid;
         gfGlideWallVertex4X = gfGlideWallVertexYMax;
         gfGlideWallVertex4Y = gfGlideWallVertexYMin;
-        RENDERER_GLIDE_ApplyShadowLighting((uint32_t*)&gGlidePerspectiveVertexBuffer, (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(dwAlphaWord >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)nAlpha));
-        gfGlideWallVertex2ARGB = gdwGlideWallVertex1Color;
-        gfGlideWallVertex3ARGB = gdwGlideWallVertex1Color;
-        gfGlideShadowTileVertexOow = gdwGlideWallVertex1Color;
-        (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gGlidePerspectiveVertexBuffer, 0x1c);
+        // [vanilla-plus fix 6] Same scattered 4x0x1C block as DrawWallTileSimple
+        // (above): contiguous submit from &gGlidePerspectiveVertexBuffer, oow/s/t
+        // preset by InitPerspectiveTables function-local statics (oow = 1,
+        // s/t = 0/0, 0/256, 256/256, 256/0) and unreachable in the rebuild. The
+        // original spread slot 0's shadow tint over the other argb words through
+        // .data adjacency (gdwGlideWallVertex1Color IS the word ApplyShadowLighting
+        // wrote; the 2ARGB/3ARGB/Oow copies are slots 1/2/3); rebuilt, capture
+        // through a temp buffer and fill all four slots uniformly. Note
+        // ApplyShadowLighting masks its packed argument down to the low byte (the
+        // intensity row), so the decompile's never-assigned dwAlphaWord contributes
+        // nothing - only nAlpha reaches the lighting table.
+        uint32_t anShadowLightTmp[3];
+        anShadowLightTmp[2] = 0;
+        RENDERER_GLIDE_ApplyShadowLighting(anShadowLightTmp, (uint32_t)(uint8_t)nAlpha);
+        uint32_t dwShadowColor = anShadowLightTmp[2];
+        struct GlideFanVertexStrc { float x, y; uint32_t argb; float oow, s, t, pad; };
+        GlideFanVertexStrc aShadowVerts[4];
+        aShadowVerts[0].x = (float)nSubtileX;
+        aShadowVerts[0].y = (float)(nScreenY - 0x20);
+        aShadowVerts[0].argb = dwShadowColor;
+        aShadowVerts[0].oow = 1.0f;
+        aShadowVerts[0].s = 0.0f;
+        aShadowVerts[0].t = 0.0f;
+        aShadowVerts[0].pad = 0.0f;
+        aShadowVerts[1].x = (float)nSubtileX;
+        aShadowVerts[1].y = (float)nScreenY;
+        aShadowVerts[1].argb = dwShadowColor;
+        aShadowVerts[1].oow = 1.0f;
+        aShadowVerts[1].s = 0.0f;
+        aShadowVerts[1].t = 256.0f;
+        aShadowVerts[1].pad = 0.0f;
+        aShadowVerts[2].x = (float)(nSubtileX + 0x20);
+        aShadowVerts[2].y = (float)nScreenY;
+        aShadowVerts[2].argb = dwShadowColor;
+        aShadowVerts[2].oow = 1.0f;
+        aShadowVerts[2].s = 256.0f;
+        aShadowVerts[2].t = 256.0f;
+        aShadowVerts[2].pad = 0.0f;
+        aShadowVerts[3].x = (float)(nSubtileX + 0x20);
+        aShadowVerts[3].y = (float)(nScreenY - 0x20);
+        aShadowVerts[3].argb = dwShadowColor;
+        aShadowVerts[3].oow = 1.0f;
+        aShadowVerts[3].s = 256.0f;
+        aShadowVerts[3].t = 0.0f;
+        aShadowVerts[3].pad = 0.0f;
+        (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, aShadowVerts, 0x1c);
       }
 
       nSubtileIdx++;
@@ -3017,11 +3131,58 @@ BOOL __fastcall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, D2TileL
         gfGlideWallVertex3Y = gfGlideWallVertexYMid;
         gfGlideWallVertex4X = gfGlideWallVertexYMax;
         gfGlideWallVertex4Y = gfGlideWallVertexYMin;
-        RENDERER_GLIDE_ApplyColorLighting((uint32_t*)&gGlidePerspectiveVertexBuffer, dwColor0);
-        RENDERER_GLIDE_ApplyColorLighting((uint32_t*)&gfGlideWallVertex2X, dwColor0);
-        RENDERER_GLIDE_ApplyColorLighting((uint32_t*)&gfGlideWallVertexYMax, dwColor1);
-        RENDERER_GLIDE_ApplyColorLighting((uint32_t*)&gfGlideWallVertex4X, dwColor1);
-        (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gGlidePerspectiveVertexBuffer, 0x1c);
+        // [vanilla-plus fix 6] The wall fan was decompiled into 8 separately-named
+        // "vertex globals" (gfGlideWallVertexYMax even holds an X coordinate). In
+        // the original binary they are adjacent words of one 4x0x1C-byte block at
+        // &gGlidePerspectiveVertexBuffer; rebuilt, the linker scatters them, so
+        // the contiguous submit read unrelated .bss and wall subtiles rasterized
+        // from garbage. The block's oow/s/t words are what InitPerspectiveTables
+        // presets through its function-local "static" words (gfGlideWallVertex
+        // 1OOW/1S/1T = slot 0, 2OOW/2S/2T = slot 1, 4W/5X/5Y = slot 2,
+        // 5W/6W/6Y = slot 3) - function-scoped in the rebuild, hence unreachable
+        // here. Their values give the full-texture wall mapping: oow = 1,
+        // s/t = 0/0, 0/256, 256/256, 256/0 (the only assignment consistent with
+        // the left-edge pattern and the top/mid corner geometry). The four
+        // ApplyColorLighting(&scattered) calls wrote the block's argb words
+        // (each base + 8: &base, &2X, &YMax, &4X land on +8/+36/+64/+92) -
+        // rebuilt they would hit unknown .bss neighbors, so capture both tints
+        // through temp buffers instead. Submit a contiguous local block.
+        uint32_t anWallLightTmp[2][3];
+        anWallLightTmp[0][2] = 0;
+        anWallLightTmp[1][2] = 0;
+        RENDERER_GLIDE_ApplyColorLighting(anWallLightTmp[0], dwColor0);
+        RENDERER_GLIDE_ApplyColorLighting(anWallLightTmp[1], dwColor1);
+        struct GlideFanVertexStrc { float x, y; uint32_t argb; float oow, s, t, pad; };
+        GlideFanVertexStrc aWallVerts[4];
+        aWallVerts[0].x = (float)nScreenX;
+        aWallVerts[0].y = (float)(nScreenY - 0x20);
+        aWallVerts[0].argb = anWallLightTmp[0][2];
+        aWallVerts[0].oow = 1.0f;
+        aWallVerts[0].s = 0.0f;
+        aWallVerts[0].t = 0.0f;
+        aWallVerts[0].pad = 0.0f;
+        aWallVerts[1].x = (float)nScreenX;
+        aWallVerts[1].y = (float)nScreenY;
+        aWallVerts[1].argb = anWallLightTmp[0][2];
+        aWallVerts[1].oow = 1.0f;
+        aWallVerts[1].s = 0.0f;
+        aWallVerts[1].t = 256.0f;
+        aWallVerts[1].pad = 0.0f;
+        aWallVerts[2].x = (float)(nScreenX + 0x20);
+        aWallVerts[2].y = (float)nScreenY;
+        aWallVerts[2].argb = anWallLightTmp[1][2];
+        aWallVerts[2].oow = 1.0f;
+        aWallVerts[2].s = 256.0f;
+        aWallVerts[2].t = 256.0f;
+        aWallVerts[2].pad = 0.0f;
+        aWallVerts[3].x = (float)(nScreenX + 0x20);
+        aWallVerts[3].y = (float)(nScreenY - 0x20);
+        aWallVerts[3].argb = anWallLightTmp[1][2];
+        aWallVerts[3].oow = 1.0f;
+        aWallVerts[3].s = 256.0f;
+        aWallVerts[3].t = 0.0f;
+        aWallVerts[3].pad = 0.0f;
+        (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, aWallVerts, 0x1c);
       }
 
       nSubtileIdx++;
