@@ -1,4 +1,4 @@
-// glide3xvk — 0.4.4 present-window presets + DPI awareness.
+// glide3xvk — 0.4.5 present-window presets + DPI awareness.
 //
 // L4 (SCOPE.md) locks the GAME's render resolution — the game creates the
 // window and the back buffer, and D2 renders 800x600, full stop. What L4

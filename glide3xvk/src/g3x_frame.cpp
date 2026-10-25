@@ -1063,7 +1063,7 @@ void g3x_frame_draw_line(float x0, float y0, float x1, float y1) {
 // buffer into a BGRA8 staging buffer. Shared by the legacy compose path
 // (scales to the swapchain extent) and the P3 slang path (native res, 1:1).
 //
-// 0.4.4: when the target's ratio differs from the source's, this now FITS +
+// 0.4.5: when the target's ratio differs from the source's, this now FITS +
 // CENTERS with black bars instead of stretching — 800x600 into a 1920x1080
 // window used to distort 4:3 content to 16:9, and the window presets make
 // 16:9 client sizes routine. Same geometry the chain's scale=fit uses, so

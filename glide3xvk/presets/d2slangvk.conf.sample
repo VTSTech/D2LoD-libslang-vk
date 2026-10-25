@@ -49,7 +49,7 @@ vsync=
 ; Accepts 1x|2x|3x|4x (bare 1..4 too). F12 cycles this live for the session.
 ;base_res=1x
 
-; Present-window preset (0.4.4): sizes the OS window the game presents into.
+; Present-window preset (0.4.5): sizes the OS window the game presents into.
 ;   native   — the game's own 800x600 window (default; nothing is touched)
 ;   240p     — 320x240        480p — 640x480        576p — 720x576 (PAL 4:3)
 ;   720p     — 1280x720       768p — 1366x768      1080p — 1920x1080
@@ -64,11 +64,11 @@ vsync=
 ;window=1080p
 ;window=1600x1200
 
-; Strip the caption/borders on preset windows (0.4.4). desktop is borderless
+; Strip the caption/borders on preset windows (0.4.5). desktop is borderless
 ; regardless. 0/empty = keep the game's own frame.
 ;borderless=0
 
-; Controller support (0.4.4): gamepad-to-mouse/keys via input injection.
+; Controller support (0.4.5): gamepad-to-mouse/keys via input injection.
 ; controller=1 polls pad 0 through XInput on a background thread and injects
 ; ordinary mouse/keyboard events, so the game sees a normal mouse and
 ; keyboard and every screen works. Off by default. Injects only while the
@@ -103,6 +103,15 @@ vsync=
 ; Left-stick walk behavior: deflection holds left click so the character
 ; walks toward the cursor. Uncomment for a cursor-only left stick.
 ;controller_moveclick=0
+
+; Cursor-home (default on): after ~0.4s of quiet the cursor moves back onto
+; the player, and every stick move emanates from there — the cursor can't
+; get lost at the screen edge. Home self-syncs: a D2 walk always ends with
+; the character standing at the cursor, so each walk release re-homes it.
+; The cursor is parked, not hidden (hiding the game's own cursor sprite is
+; Game.exe territory). Requires controller_moveclick. Uncomment for a free
+; cursor.
+;controller_home=0
 
 ; On any preset failure the DLL keeps presenting the raw game frame (fail-soft,
 ; the log carries the slang error). There is no other fallback mode; unknown

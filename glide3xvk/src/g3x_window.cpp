@@ -1,4 +1,4 @@
-// glide3xvk — 0.4.4 window preset apply (Win32 side; design contract in
+// glide3xvk — 0.4.5 window preset apply (Win32 side; design contract in
 // g3x_window.h). The pure preset core (table/parse) lives in the
 // header and is host-tested; everything here is thin Win32 plumbing around
 // it: read d2slangvk.conf, size the window DPI-aware. Config-only — no
@@ -188,7 +188,7 @@ void apply_now(const char* why) {
     }
     SetWindowPos(s_hwnd, HWND_TOP, x, y, ow, oh,
                  SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-    // 0.4.4 fix: don't wait for the driver to notice the resize (OUT_OF_DATE
+    // 0.4.5 fix: don't wait for the driver to notice the resize (OUT_OF_DATE
     // is unreliable on windows we resize from a per-monitor-v2 context while
     // the process is DPI-unaware — the field receipt was the picture keeping
     // the old extent, a top-left crop of the old scale). Recreate the

@@ -39,7 +39,7 @@ model nGlide and d2dx use).
 | Version identity in any screenshot: top-right overlay + `grGetString(GR_RENDERER)` + the game's own `Video:` line (one 4-byte runtime pointer patch, fail-soft — no file touched) | 0.3.0–0.4.1 | `drivertag:` log lines every session |
 | Performance round 1: SSE2 float math (x87 off the hot path), O(1) texture table, swapchain `minImageCount+2` | 0.4.4 | in-game swap-to-swap 51.6 ms → 39 ms (19 → 26 fps) on a ~30% HEAVIER scene; Esc menu 45 fps = the wrapper's true per-frame speed (~22 ms); bit-identical present-buffer hash before/after (fxparity harness) |
 | Diagnostics: `frame N:` lines with `avg=` (engine pacing) + `work=` (wrapper present-path cost), draw-mix counters, 1 MB rotating log | P2.5–0.4.4 | every field round parsed from these lines |
-| Present-window presets + DPI awareness: `window=`/`borderless=` conf keys sizing the OS window (canonical 240p..1080p, `desktop` borderless, `WxH`; config-only — no hotkey, F10 stays the game's skill-slot bind), `SetThreadDpiAwarenessContext` apply — output sizing only, the game still renders 800x600 | 0.4.4 | `g3x_window.{h,cpp}`; wintest 40/40; the 1536x864 = 1080p/1.25 DPI receipt in the 0.4.4 field log |
+| Present-window presets + DPI awareness: `window=`/`borderless=` conf keys sizing the OS window (canonical 240p..1080p, `desktop` borderless, `WxH`; config-only — no hotkey, F10 stays the game's skill-slot bind), `SetThreadDpiAwarenessContext` apply — output sizing only, the game still renders 800x600 | 0.4.5 | `g3x_window.{h,cpp}`; wintest 40/40; the 1536x864 = 1080p/1.25 DPI receipt in the 0.4.4 field log |
 | Fail-soft everywhere: no Vulkan → unfiltered present; bad preset → downgrade; DLL still self-contained (KERNEL32+msvcrt imports only) | since P1 | R2/R4 risk register, PLAN.md §6 |
 | CI: every push builds the DLL from a clean checkout and uploads it as an artifact | P2.11 | `.github/workflows/build.yml` |
 
@@ -100,7 +100,7 @@ Two very different tiers, because of the fork's structure.
 
 glide3xvk 0.4.1-0.4.3 carried one 4-byte patch inside the mapped Game.exe image
 (`g3x_drivertag` — repointing the /fps "Video:" line at our tag). It never showed
-on field builds and was REMOVED in 0.4.4; the game binary is no longer patched at
+on field builds and was REMOVED in 0.4.5; the game binary is no longer patched at
 all. The same *technique* could reach
 engine variables — but almost everything worth reaching is either
 version-fragile (offsets move per build) or a bad idea:

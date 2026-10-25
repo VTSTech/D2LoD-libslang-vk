@@ -12,7 +12,7 @@
 //
 // Placement: the box is the PRIMARY version stamp. An earlier approach
 // (0.4.1-0.4.3) repointed the game's own "Video:" debug line at our tag via a
-// PE patch (g3x_drivertag) — removed in 0.4.4: field builds showed the stock
+// PE patch (g3x_drivertag) — removed in 0.4.5: field builds showed the stock
 // "Video: Glide" line either way, and the box draws the same info at the
 // swapchain resolution with none of the patching. [glide3xvk] overlay=1 in
 // the ini forces the box on, overlay=0 hides it.
@@ -41,7 +41,7 @@
 // Release version of this glide3xvk build. Shown by the overlay, printed by
 // the session banner and reported through grGetString(GR_RENDERER). Bump on
 // every field-delivered change set.
-#define G3XVK_VERSION "0.4.4"
+#define G3XVK_VERSION "0.4.5"
 
 // Render the tag into a BGRA8 buffer (w*h*4 bytes, stride = w*4). Safe to call
 // with any buffer size; the box anchors 4px from the right/top edge and clamps

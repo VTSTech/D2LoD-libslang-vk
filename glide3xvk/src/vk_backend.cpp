@@ -27,7 +27,7 @@ uint32_t         s_image_n    = 0;
 VkImage          s_images[8]  = {};
 VkImageView      s_views[8]   = {};   // P3: per-image views (the chain renders into these)
 bool             s_sync_live  = false;
-// 0.4.4 window presets: set by g3x_window after an OS-window resize so the
+// 0.4.5 window presets: set by g3x_window after an OS-window resize so the
 // next present recreates the swapchain from fresh caps WITHOUT waiting for
 // the driver to raise OUT_OF_DATE (flaky on mixed-DPI-awareness windows).
 bool             s_refresh_requested = false;
@@ -319,7 +319,7 @@ void g3x_vk_request_swapchain_refresh() { s_refresh_requested = true; }
 namespace {
 
 bool acquire_image(uint32_t* idx) {
-    // 0.4.4 window presets: an OS resize lands here as an explicit refresh
+    // 0.4.5 window presets: an OS resize lands here as an explicit refresh
     // request, consumed before the acquire — the swapchain (and the preset
     // chain via g3x_slang_swapchain_resized) retargets to the new extent on
     // the very frame after the resize, no driver OUT_OF_DATE signal needed.

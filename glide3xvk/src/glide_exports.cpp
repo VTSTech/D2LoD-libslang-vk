@@ -137,15 +137,15 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
         // stays black until Vulkan works. The log names the reason.
         g3x_log("grSstWinOpen: Vulkan unavailable -> black-screen mode (game continues)");
     }
-    // 0.4.4: window presets + DPI awareness — independent of Vulkan health.
+    // 0.4.5: window presets + DPI awareness — independent of Vulkan health.
     // Rebinds the game window + "native" size, rereads d2slangvk.conf's
     // window=/borderless=, and re-applies the active preset (the game may
     // have re-made its window on a mode change).
     g3x_window_init((void*)(uintptr_t)hWnd, w, h);
-    // 0.4.4: gamepad-to-mouse/keys (controller= in the conf; own poll thread,
+    // 0.4.5: gamepad-to-mouse/keys (controller= in the conf; own poll thread,
     // zero present-path cost). Idempotent across mode changes.
     g3x_controller_init((void*)(uintptr_t)hWnd);
-    // 0.4.4: the version stamp's home is the P2.10 overlay box. The old
+    // 0.4.5: the version stamp's home is the P2.10 overlay box. The old
     // drivertag patch (repointing the game's renderer-name string so the
     // /fps box read our tag) is REMOVED — field builds showed the stock
     // "Video: Glide" line either way, and an unpatched game is the honest
@@ -217,14 +217,14 @@ void __stdcall grBufferClear(GrColor_t color, GrAlpha_t alpha, FxU32 depth) {
 
 void __stdcall grBufferSwap(FxU32 swap_interval) {
     ++g_st.n_swaps;
-    // 0.4.4: window presets are config-only (window=/borderless=); the tick
+    // 0.4.5: window presets are config-only (window=/borderless=); the tick
     // hot-reloads the conf every 32nd frame. Before the present so a resize
     // lands ahead of this frame's swapchain use (the refresh-flag recreate
     // then picks the new extent for free).
     g3x_window_frame_tick();
     // P2.5: rolling frame time so the field log shows the raster's real pace
     // (round-7 session ran at ~4.3 fps — the number this build must move).
-    // 0.4.4: avg= is swap-to-swap WALL time, and the engine paces in-game
+    // 0.4.5: avg= is swap-to-swap WALL time, and the engine paces in-game
     // frames at 25 Hz (CLIENT_GameLoopFrame's 40 ms gate — see
     // D2Client/GAME/Game/Game.cpp; the in-tree comment is explicit: the SP
     // server runs as part of the draw process, hence "capped so hard at 25

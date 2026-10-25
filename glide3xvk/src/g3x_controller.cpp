@@ -1,4 +1,4 @@
-// glide3xvk — 0.4.4 controller support, Win32 side (pure core in
+// glide3xvk — 0.4.5 controller support, Win32 side (pure core in
 // g3x_controller.h). Polls pad 0 via XInput on a background thread (~125 Hz,
 // independent of the game's 25 Hz tick so stick-cursor motion stays smooth)
 // and executes the core's events through SendInput — the game just sees a
@@ -152,6 +152,24 @@ G3xCtrlCore     s_core = {};
 float           s_acc_x = 0.0f, s_acc_y = 0.0f;       // left stick px remainders
 float           s_aim_acc_x = 0.0f, s_aim_acc_y = 0.0f; // right stick px remainders
 
+// ---- cursor-home state (0.4.5; design notes in g3x_controller.h) ----------
+// s_anchor is the believed player position in SCREEN coords; s_cur mirrors
+// the real cursor so external mouse movement can be detected and respected.
+// Both are owned by the poll thread (written in the focused branch only).
+POINT           s_anchor = { 0, 0 };
+POINT           s_cur = { 0, 0 };
+bool            s_anchor_init = false;   // (re)computed per window bind
+bool            s_cur_init = false;      // first GetCursorPos seen
+bool            s_walk_prev = false;     // left-stick walk active last tick
+double          s_now = 0.0;             // monotonic seconds (accumulated dt)
+double          s_last_activity = 0.0;   // last pad-injection / external move
+
+// Quiet time before the cursor goes home. The walk-release rule that feeds
+// it: when a stick-walk disengages, the character walks to the cursor and
+// stops THERE, so the cursor position at that instant is the player's
+// screen position — that becomes the new home anchor.
+const double    kHomeDwellSec = 0.4;
+
 // Cursor speed at full rim deflection before sens= (px/second). The squared
 // response curve scales it down near center; at 125 Hz a full-tilt tick
 // moves ~10px — smooth at the game's own 25 fps. The right stick multiplies
@@ -209,6 +227,9 @@ void release_now() {
     for (int i = 0; i < n; ++i) inject_event(ev[i]);
     s_acc_x = s_acc_y = 0.0f;
     s_aim_acc_x = s_aim_acc_y = 0.0f;
+    // forget any in-flight walk: the focus-loss path must NOT adopt the
+    // cursor position as home on the next tick (it is not the player)
+    s_walk_prev = false;
 }
 
 bool window_focused() {
@@ -238,6 +259,7 @@ void reread_conf(const char* why) {
     c.aimsens      = raw.controller_aimsens;
     c.deadzone_pct = raw.controller_deadzone;
     c.moveclick    = raw.controller_moveclick;
+    c.home         = raw.controller_home;
     g3x_ctrl_conf_fixup(&c);
 
     const bool was = s_conf.enabled != 0;
@@ -247,12 +269,13 @@ void reread_conf(const char* why) {
             s_core = G3xCtrlCore{};
             s_acc_x = s_acc_y = 0.0f;
             s_aim_acc_x = s_aim_acc_y = 0.0f;
+            s_walk_prev = false;
             g3x_log("controller: on (%s, sens=%.2f aim=%.2f deadzone=%d%% "
-                    "stickwalk=%d) — stick=walk rstick=aim LT=LMB RT=RMB "
-                    "A=Shift+LMB B=Alt X=Space Y=I dpad=1-4 LB=C RB=T L3=R "
-                    "Start=Esc Back=Tab",
+                    "stickwalk=%d home=%d) — stick=walk rstick=aim LT=LMB "
+                    "RT=RMB A=Shift+LMB B=Alt X=Space Y=I dpad=1-4 LB=C RB=T "
+                    "L3=R Start=Esc Back=Tab",
                     s_xinput_name, c.sens, c.aimsens, c.deadzone_pct,
-                    c.moveclick);
+                    c.moveclick, c.home);
         } else {
             s_conf.enabled = 0;                   // nothing to inject with
         }
@@ -309,6 +332,29 @@ DWORD WINAPI s_poll_proc(LPVOID) {
             if (dt > 0.05f)  dt = 0.05f;
             prev = now;
         }
+        s_now += dt;
+
+        // ---- cursor-home bookkeeping (see g3x_controller.h) ----------------
+        POINT cp{};
+        bool external = false;
+        if (GetCursorPos(&cp)) {
+            const LONG ddx = cp.x - s_cur.x, ddy = cp.y - s_cur.y;
+            external = !s_cur_init || ddx < -2 || ddx > 2 || ddy < -2 || ddy > 2;
+            s_cur = cp;                    // a real mouse is always respected
+            s_cur_init = true;
+            if (external) s_last_activity = s_now;
+        }
+        if (!s_anchor_init) {              // first guess: client center; the
+            RECT rc{};                     // first walk release corrects it
+            POINT c{};
+            if (GetClientRect(s_hwnd, &rc)) {
+                c.x = (rc.right - rc.left) / 2;
+                c.y = (rc.bottom - rc.top) / 2;
+                ClientToScreen(s_hwnd, &c);
+                s_anchor = c;
+                s_anchor_init = true;
+            }
+        }
 
         G3xCtrlPadState ps;
         ps.sx      = xs.gamepad.sThumbLX;
@@ -323,6 +369,16 @@ DWORD WINAPI s_poll_proc(LPVOID) {
         // movement instead of on whatever the cursor was resting on
         float nx = 0.0f, ny = 0.0f;
         const float resp = g3x_ctrl_stick(ps.sx, ps.sy, s_conf.deadzone_pct, &nx, &ny);
+        const bool move_active = resp > 0.0f && s_conf.moveclick != 0;
+
+        // walk release = the character walks to the cursor and stops THERE;
+        // adopt that landing spot as the new home anchor (self-correcting)
+        if (s_conf.home && s_conf.moveclick && s_walk_prev && !move_active &&
+            s_cur_init)
+            s_anchor = s_cur;
+        s_walk_prev = move_active;
+
+        bool moved = false;
         if (resp > 0.0f) {
             const float speed = kMaxPxPerSec * s_conf.sens * resp * dt;
             s_acc_x += nx * speed;
@@ -333,6 +389,7 @@ DWORD WINAPI s_poll_proc(LPVOID) {
                 inject_move(dx, dy);
                 s_acc_x -= (float)dx;
                 s_acc_y -= (float)dy;
+                moved = true;
             }
         } else {
             s_acc_x = s_acc_y = 0.0f;
@@ -350,6 +407,7 @@ DWORD WINAPI s_poll_proc(LPVOID) {
                 inject_move(dx, dy);
                 s_aim_acc_x -= (float)dx;
                 s_aim_acc_y -= (float)dy;
+                moved = true;
             }
         } else {
             s_aim_acc_x = s_aim_acc_y = 0.0f;
@@ -358,6 +416,23 @@ DWORD WINAPI s_poll_proc(LPVOID) {
         G3xCtrlEvent ev[kEvCap];
         const int n = g3x_ctrl_step(&s_core, &ps, &s_conf, ev, kEvCap);
         for (int i = 0; i < n; ++i) inject_event(ev[i]);
+
+        // any injection (or real-mouse move, handled above) counts as activity
+        if (moved || n > 0) s_last_activity = s_now;
+
+        // cursor-home: after a short quiet dwell (sticks centered, nothing
+        // injected, nothing held), put the cursor back on the player. Stick
+        // motion therefore always emanates from where the player is.
+        if (s_conf.home && s_conf.moveclick && s_anchor_init && s_cur_init &&
+            !move_active && !s_core.cur_lmb && !s_core.cur_rmb) {
+            bool keys_down = false;
+            for (int vk = 0; vk < 256 && !keys_down; ++vk)
+                keys_down = s_core.cur_vk[vk] != 0;
+            if (!keys_down && (s_now - s_last_activity) >= kHomeDwellSec &&
+                (s_cur.x != s_anchor.x || s_cur.y != s_anchor.y)) {
+                if (SetCursorPos(s_anchor.x, s_anchor.y)) s_cur = s_anchor;
+            }
+        }
     }
     release_now();                                // exit path: nothing held
     return 0;
@@ -370,7 +445,10 @@ DWORD WINAPI s_poll_proc(LPVOID) {
 void g3x_controller_init(void* hwnd) {
     s_hwnd = (HWND)hwnd;
     if (!s_hwnd) return;
-    if (s_thread) return;                         // mode change: rebind only
+    if (s_thread) {                               // mode change: rebind only
+        s_anchor_init = false;                    // re-home for the new window
+        return;
+    }
     reread_conf("renderer open");
     if (!s_conf.enabled)
         g3x_log_once("ctrl-off", "controller: off (set controller=1 in "

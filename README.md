@@ -24,7 +24,7 @@ resolution — is the same one proven in
 (Diablo/Hellfire) and
 [chocolate-doom-vk](https://github.com/VTSTech/chocolate-doom-vk) (Doom).
 
-## Status — 0.4.4
+## Status — 0.4.5
 
 - The full game renders correctly through the Vulkan swapchain: menu, world, units,
   UI, shadows, text, cutscenes (field-verified rounds 4–12 on real hardware; see
@@ -33,7 +33,7 @@ resolution — is the same one proven in
   `d2slangvk.conf` at any libretro `.slangp` and every presented frame runs
   through it at native game resolution — hot-reload on file change, fit /
   integer / stretch scaling, unfiltered fallback on any failure.
-- **The version stamp is the overlay box (0.4.4)**: `glide3xvk <ver> (<hash>)`
+- **The version stamp is the overlay box (0.4.5)**: `glide3xvk <ver> (<hash>)`
   drawn top-right every present — 8x8 bitmap font, post-gamma, never in the
   game's framebuffer. The 0.4.1-0.4.3 drivertag patch (repointing the game's
   own `Video:` line) is removed: field builds showed the stock `Video: Glide`
@@ -51,7 +51,7 @@ resolution — is the same one proven in
   render finer. Toast feedback in the overlay, logged, session-only; both also
   settable via the new `aspect=` / `base_res=` conf keys (see the
   [d2slangvk.conf reference](#d2slangvkconf-reference) below).
-- **Window size presets (0.4.4)**: `window=native|240p|480p|576p|720p|768p|1080p|desktop|WxH`
+- **Window size presets (0.4.5)**: `window=native|240p|480p|576p|720p|768p|1080p|desktop|WxH`
   and `borderless=0|1` in `d2slangvk.conf` size the OS window the game presents
   into — canonical sizes (240p=320x240 ... 1080p=1920x1080; `desktop` =
   monitor-sized borderless), centered, `desktop`/`borderless` strip the frame.
@@ -65,7 +65,7 @@ resolution — is the same one proven in
   game's own render resolution stays the game's), and the unfiltered present
   path now fits + centers with black bars instead of stretching, so 4:3
   content stays 4:3 on any 16:9 window with or without a chain.
-- **Controller support (0.4.4)**: opt-in gamepad play via input injection —
+- **Controller support (0.4.5)**: opt-in gamepad play via input injection —
   `controller=1` in `d2slangvk.conf` starts a background XInput poller that
   drives the game through ordinary injected mouse/keyboard events (SendInput),
   so every D2 screen works unchanged. Map tuned for Diablo II (movement IS
@@ -75,15 +75,20 @@ resolution — is the same one proven in
   click, A = hold Shift+LMB (attack in place toward the cursor — hit things
   near you without pixel-perfect aiming), B = hold Alt (item labels), X =
   Space, Y = I, D-pad = belt 1-4, LB = C, RB = T, L3 = R (run/walk), Start =
-  Esc, Back = Tab. Tunables: `controller_sens=`, `controller_aimsens=`,
-  `controller_deadzone=`, `controller_moveclick=` (set 0 for a cursor-only
-  left stick). Injects only while the game window is focused; off by
-  default; XInput loaded dynamically (no new DLL imports). See the conf
-  reference below.
-- **Perf round 1 (0.4.4)**: the full-screen 0.4.3 field log showed
+  Esc, Back = Tab. **Cursor-home** (field round 2): after a short quiet dwell
+  the cursor returns to the player, and every stick move emanates from there
+  — it works without seeing the player because a D2 walk always ends with the
+  character standing AT the cursor, so each walk release re-syncs home. The
+  cursor can no longer get lost at the screen edge. Tunables:
+  `controller_sens=`, `controller_aimsens=`, `controller_deadzone=`,
+  `controller_moveclick=` (set 0 for a cursor-only left stick),
+  `controller_home=` (set 0 for a free cursor). Injects only while the game
+  window is focused; off by default; XInput loaded dynamically (no new DLL
+  imports). See the conf reference below.
+- **Perf round 1 (0.4.5)**: the full-screen 0.4.3 field log showed
   avg=51.6 ms ≈ 19 fps @ 800x600 with the crtglow_lanczos 7-pass chain active
   (≈ 470 draw calls per frame; the chain itself filtered 516 frames with
-  0 fallbacks — the chain is not the bottleneck). 0.4.4 goes after the CPU
+  0 fallbacks — the chain is not the bottleneck). 0.4.5 goes after the CPU
   side: **SSE2 float math** (i686 MinGW defaults to x87 for all float math,
   and the raster is float-heavy), an **O(1) texture table** (binds were a
   linear scan over up to 8192 slots) and **swapchain minImageCount+2** (the
@@ -92,7 +97,7 @@ resolution — is the same one proven in
   speed. Field numbers land in the next round's `frame N:` lines.
 - Frame budget today (0.4.3 field log, chain active): 51.6 ms ≈ 19 fps
   @ 800x600 — the CPU raster + texture upkeep dominate; the chain adds a
-  fullscreen GPU pass on top but is not the bottleneck. 0.4.4 attacks the CPU
+  fullscreen GPU pass on top but is not the bottleneck. 0.4.5 attacks the CPU
   side (see above); moving the compose buffer to the GPU remains the 60 fps
   endgame (PLAN.md §5 perf track).
 - Not wired yet, on purpose: GPU-side raster (the 60 fps endgame), bilinear
@@ -121,7 +126,7 @@ No build required:
 4. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
 
 A healthy run looks like: the menu renders, play works, and `glide3x.log` beside the
-exe carries the session banner (`glide3xvk 0.4.4 <build-id>`), periodic `frame N:`
+exe carries the session banner (`glide3xvk 0.4.5 <build-id>`), periodic `frame N:`
 summaries, and a clean exit summary on shutdown. With a preset configured, the log
 adds `slang: chain ready '<preset>' ...` and per-event slang lines; without one, it
 says so once. If 32-bit Vulkan is unavailable
@@ -143,7 +148,7 @@ overlay=0
 
 The game's own `/fps` line keeps its stock `Video: Glide` text — an earlier
 attempt to repoint that string (0.4.1-0.4.3, `g3x_drivertag`) never showed on
-field builds and was removed in 0.4.4; the game binary is no longer patched at
+field builds and was removed in 0.4.5; the game binary is no longer patched at
 all.
 
 ## d2slangvk.conf reference
@@ -161,7 +166,7 @@ ignored (forward compatibility); a malformed value keeps the previous/default
 one and never fails the session. No file at all — or no `preset=` line — means
 the chain stays disabled and frames present unfiltered, exactly the 0.3.x look.
 
-Every key (0.4.4):
+Every key (0.4.5):
 
 | Key | Values (default first) | What it does |
 |-----|------------------------|--------------|
@@ -170,13 +175,14 @@ Every key (0.4.4):
 | `vsync=` | *(empty)* = FIFO \| `0` \| `1` | Present mode of the swapchain the chain renders into: empty = default FIFO (vsync on); `0` prefers IMMEDIATE (uncapped, silently falls back to FIFO where unsupported); `1` = FIFO. Takes effect when the swapchain is (re)created — game start or resolution change. |
 | `aspect=` | `auto` \| `4:3` \| `16:10` \| `16:9` | Content-aspect override (0.4.3). `auto` keeps the `scale=` geometry. A fixed ratio letterboxes the chain output into the largest centered rectangle of that ratio inside the window: `4:3` on a 16:9 window = pillarbox with correct proportions; `16:9` on a 16:9 window = full-bleed. F11 cycles this live. |
 | `base_res=` | `1x` \| `2x` \| `3x` \| `4x` (bare `1`..`4` accepted) | Shader base resolution (0.4.3). The game frame is linearly upscaled N-x on the GPU before the chain sees it, so every source-relative pass FBO renders at N-x — scanline pitch, glow and blur radii get finer as N rises; the final pass is fit back into the output rect. Costs one extra fullscreen blit. F12 cycles this live. |
-| `window=` | *(empty)* = `native` \| `240p` \| `480p` \| `576p` \| `720p` \| `768p` \| `1080p` \| `desktop` \| `WxH` | Present-window preset (0.4.4). Sizes the OS window: `240p`=320x240, `480p`=640x480, `576p`=720x576, `720p`=1280x720, `768p`=1366x768, `1080p`=1920x1080, `desktop` = the current monitor's size (borderless), `WxH` = any explicit client size (e.g. `1600x1200`). Windowed presets are centered on the current monitor; the game's own 800x600 window is untouched at `native`. DPI-aware (physical pixels, see the presets bullet above); reapplied at every renderer (re)open, and conf edits hot-reload live (file is the source of truth). Config-only — no hotkey. This is output sizing only — the game keeps rendering 800x600. |
-| `borderless=` | `0` \| `1` | Strip the caption/borders on preset windows (0.4.4): `WS_POPUP` instead of the game's overlapped style, centered like the windowed presets. `desktop` is borderless regardless. `0`/empty keeps the game's own frame. |
-| `controller=` | `0` \| `1` | Gamepad-to-mouse/keys input injection (0.4.4, off by default). `1` starts a background XInput poller (pad 0) that injects ordinary mouse/keyboard events — the game sees a normal mouse and keyboard, so every screen works. Map: left stick = walk (cursor + held LMB while deflected), right stick = fine aim, LT = LMB, RT = RMB, A = hold Shift+LMB (attack in place toward the cursor), B = hold Alt (item labels), X = tap Space, Y = tap I, D-pad = belt 1-4, LB = tap C, RB = tap T, L3 = tap R (run/walk), Start = Esc, Back = Tab (automap). Injects only while the game window is foreground; focus loss / disable / shutdown release everything held; taps are one clean keystroke (no auto-repeat flips). XInput loads dynamically (`xinput1_4` / `xinput9_1_0` / `xinput1_3`; none = logged once, feature stays off). Settings hot-reload with the conf (~2 s). |
-| `controller_sens=` | float (default `1.0`, clamp `16`) | Cursor speed multiplier for the left stick (0.4.4). Full-tilt base speed is ~1200 px/s before the multiplier; the squared response curve keeps precision near center. Missing/`0` = default. Hot-reloads. |
-| `controller_aimsens=` | float (default `0.35`, clamp `0.05`..`4`) | Right-stick fine-aim speed as a multiplier of the left-stick speed (0.4.4). Same curve and deadzone; slower by default so the cursor can be placed on a monster, portal or item label. Missing/`0` = default. Hot-reloads. |
-| `controller_deadzone=` | percent `1`..`80` (default `15`) | Radial stick deadzone as a percent of full throw (0.4.4). Stick response stays zero inside the zone and follows the squared curve outside it. Missing/`0` = default 15. Hot-reloads. |
-| `controller_moveclick=` | absent = on, `0` = off | Left-stick walk behavior (0.4.4): while the stick is deflected past the deadzone, left click is held so the character walks toward the cursor (D2 movement). Set `0` for a cursor-only left stick (clicks come only from LT/A). Hot-reloads. |
+| `window=` | *(empty)* = `native` \| `240p` \| `480p` \| `576p` \| `720p` \| `768p` \| `1080p` \| `desktop` \| `WxH` | Present-window preset (0.4.5). Sizes the OS window: `240p`=320x240, `480p`=640x480, `576p`=720x576, `720p`=1280x720, `768p`=1366x768, `1080p`=1920x1080, `desktop` = the current monitor's size (borderless), `WxH` = any explicit client size (e.g. `1600x1200`). Windowed presets are centered on the current monitor; the game's own 800x600 window is untouched at `native`. DPI-aware (physical pixels, see the presets bullet above); reapplied at every renderer (re)open, and conf edits hot-reload live (file is the source of truth). Config-only — no hotkey. This is output sizing only — the game keeps rendering 800x600. |
+| `borderless=` | `0` \| `1` | Strip the caption/borders on preset windows (0.4.5): `WS_POPUP` instead of the game's overlapped style, centered like the windowed presets. `desktop` is borderless regardless. `0`/empty keeps the game's own frame. |
+| `controller=` | `0` \| `1` | Gamepad-to-mouse/keys input injection (0.4.5, off by default). `1` starts a background XInput poller (pad 0) that injects ordinary mouse/keyboard events — the game sees a normal mouse and keyboard, so every screen works. Map: left stick = walk (cursor + held LMB while deflected), right stick = fine aim, LT = LMB, RT = RMB, A = hold Shift+LMB (attack in place toward the cursor), B = hold Alt (item labels), X = tap Space, Y = tap I, D-pad = belt 1-4, LB = tap C, RB = tap T, L3 = tap R (run/walk), Start = Esc, Back = Tab (automap). Injects only while the game window is foreground; focus loss / disable / shutdown release everything held; taps are one clean keystroke (no auto-repeat flips). XInput loads dynamically (`xinput1_4` / `xinput9_1_0` / `xinput1_3`; none = logged once, feature stays off). Settings hot-reload with the conf (~2 s). |
+| `controller_sens=` | float (default `1.0`, clamp `16`) | Cursor speed multiplier for the left stick (0.4.5). Full-tilt base speed is ~1200 px/s before the multiplier; the squared response curve keeps precision near center. Missing/`0` = default. Hot-reloads. |
+| `controller_aimsens=` | float (default `0.35`, clamp `0.05`..`4`) | Right-stick fine-aim speed as a multiplier of the left-stick speed (0.4.5). Same curve and deadzone; slower by default so the cursor can be placed on a monster, portal or item label. Missing/`0` = default. Hot-reloads. |
+| `controller_deadzone=` | percent `1`..`80` (default `15`) | Radial stick deadzone as a percent of full throw (0.4.5). Stick response stays zero inside the zone and follows the squared curve outside it. Missing/`0` = default 15. Hot-reloads. |
+| `controller_moveclick=` | absent = on, `0` = off | Left-stick walk behavior (0.4.5): while the stick is deflected past the deadzone, left click is held so the character walks toward the cursor (D2 movement). Set `0` for a cursor-only left stick (clicks come only from LT/A). Hot-reloads. |
+| `controller_home=` | absent = on, `0` = off | Cursor-home (0.4.5): after ~0.4 s of quiet (sticks centered, nothing injected) the cursor is moved back onto the player, and every stick move emanates from there. Needs no player detection — a D2 walk always ends with the character standing at the cursor, so each stick-walk release re-syncs home (self-correcting; a walk stopped short by an obstacle re-syncs on the next one). The cursor can no longer get lost at the screen edge. Two honest limits: the cursor is parked, not hidden (hiding D2's own cursor sprite would mean intercepting the game's WM_SETCURSOR — Game.exe territory, out of scope), and a click that walks the character somewhere (LT on a far portal) leaves home there until the next stick-walk. Requires `controller_moveclick` on; a real mouse always wins while it moves. Set `0` for a plain free cursor. Hot-reloads. |
 
 A worked example (the field setup from the round-16 screenshots):
 
@@ -189,7 +195,7 @@ aspect=auto
 base_res=1x
 ```
 
-### Hotkeys (in-game, 0.4.3 + 0.4.4)
+### Hotkeys (in-game, 0.4.3 + 0.4.5)
 
 While the game window has focus — the same scheme as Chocolate-Doom-VK
 (both require a chain to be filtering frames):
@@ -249,7 +255,7 @@ diff /tmp/game.txt /tmp/ours.txt && echo "MATCH: all 45 GetProcAddress names cov
   chain at the present pass (`d2slangvk.conf`, hot-reload, scaling modes,
   fail-soft); the full-screen 0.4.3 log shows a 7-pass community chain
   filtering every frame with 0 fallbacks
-- **Perf track (in progress, 0.4.4)** — CPU raster round 1 shipped (SSE2 float
+- **Perf track (in progress, 0.4.5)** — CPU raster round 1 shipped (SSE2 float
   math, O(1) texture table, swapchain headroom — bit-identical pixels); round-2
   candidates: present-path fence pipelining, span-raster templating; the GPU
   compose move is the 60 fps endgame (PLAN.md §5)

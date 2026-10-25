@@ -35,7 +35,7 @@ bool g3x_vk_init(HWND hwnd, unsigned width, unsigned height);
 // Recreate the swapchain (mode change / out-of-date). Returns false soft.
 bool g3x_vk_resize(unsigned width, unsigned height);
 
-// 0.4.4 window presets: after an OS-window resize, recreate the swapchain on
+// 0.4.5 window presets: after an OS-window resize, recreate the swapchain on
 // the NEXT present instead of relying on the driver raising OUT_OF_DATE
 // (mixed-DPI-awareness windows are exactly where that signal is flaky). The
 // flag is consumed inside acquire_image; calling it when Vulkan is down is a

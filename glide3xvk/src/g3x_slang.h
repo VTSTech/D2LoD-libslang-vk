@@ -58,19 +58,21 @@ struct G3xSlangConf {
     int  vsync;         // -1 = swapchain default (FIFO), 0 = off, 1 = on
     int  aspect;        // G3XSLANG_ASPECT_* (0.4.3; default auto)
     int  base_res;      // shader base resolution multiplier 1..4 (0.4.3; default 1)
-    char window[32];    // 0.4.4 present-window preset name ("" = native; consumed by
+    char window[32];    // 0.4.5 present-window preset name ("" = native; consumed by
                         // g3x_window — native|240p|480p|576p|720p|768p|1080p|desktop|WxH)
-    int  borderless;    // 0.4.4: strip the frame on preset windows (0/1; "desktop" is
+    int  borderless;    // 0.4.5: strip the frame on preset windows (0/1; "desktop" is
                         // borderless regardless)
-    int  controller;        // 0.4.4: gamepad-to-mouse/keys master switch (0/1; consumed
+    int  controller;        // 0.4.5: gamepad-to-mouse/keys master switch (0/1; consumed
                             // by g3x_controller — off by default)
-    float controller_sens;  // 0.4.4: left-stick speed multiplier (<=0 = default 1.0)
-    int  controller_deadzone; // 0.4.4: radial deadzone percent (<=0 = default 15,
+    float controller_sens;  // 0.4.5: left-stick speed multiplier (<=0 = default 1.0)
+    int  controller_deadzone; // 0.4.5: radial deadzone percent (<=0 = default 15,
                               // clamped 1..80)
-    float controller_aimsens; // 0.4.4: right-stick fine-aim multiplier (<=0 = default 0.35)
-    int  controller_moveclick; // 0.4.4: stick-walk flag; parser writes 1 (present
+    float controller_aimsens; // 0.4.5: right-stick fine-aim multiplier (<=0 = default 0.35)
+    int  controller_moveclick; // 0.4.5: stick-walk flag; parser writes 1 (present
                                // non-zero value), -1 (present "0"), 0 = key absent;
                                // fixup maps >=0 -> on (the default), <0 -> off
+    int  controller_home;      // 0.4.5: cursor-home flag; same parser convention as
+                               // moveclick — absent/default = on, present "0" = off
 };
 
 // Pure parser for a d2slangvk.conf body: "[slangvk]" section with

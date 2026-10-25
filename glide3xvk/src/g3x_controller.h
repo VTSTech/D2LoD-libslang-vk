@@ -1,4 +1,4 @@
-// glide3xvk — 0.4.4 controller support: gamepad-to-mouse/keys at the
+// glide3xvk — 0.4.5 controller support: gamepad-to-mouse/keys at the
 // wrapper layer.
 //
 // D2 has no gamepad input path (input is Game.exe territory — SCOPE.md), so
@@ -16,6 +16,8 @@
 //   controller_deadzone=<%>    radial deadzone 1..80 (0/missing = 15%)
 //   controller_moveclick=      present "0" = left stick cursor-only; absent or
 //                              any other value = stick-walk (the default)
+//   controller_home=           present "0" = free cursor; absent or any other
+//                              value = cursor-home (the default, see below)
 // Hot-reloaded from the conf by the poll thread (~2s mtime probe) — same
 // file-is-truth semantics as the window presets and the slang chain.
 //
@@ -37,6 +39,26 @@
 // (melee/ranged both work — the click never moves you), or just brush the
 // walking cursor across a monster (held LMB attacks on contact). Alt-held
 // looting clicks the much larger label text instead of the item sprite.
+//
+// Cursor-home (field round 2 — "when no analog input, put the cursor on the
+// player and hide it, then when the analog moves, it's from player position
+// and when analog stops, it's back to player position"). The wrapper cannot
+// see the player, and it does not need to: D2 walk-to-click always ends with
+// the character standing AT the cursor, so the cursor position at every
+// stick-walk release IS the player's screen position (self-correcting — a
+// walk that ends early on an obstacle just re-syncs on the next one). The
+// executor keeps that position as the HOME anchor: after a short quiet dwell
+// (sticks centered, nothing injected) the cursor is SetCursorPos'd back onto
+// the anchor; stick motion then always emanates from the player. Effects:
+// the cursor can never get lost at the screen edge, attacking/interacting
+// things NEAR you is always one small stick flick away, and the model reads
+// exactly like a console cursor. Honest limits, documented in the README:
+// the OS cursor is parked, not hidden (hiding D2's own cursor sprite would
+// mean intercepting the game's WM_SETCURSOR — Game.exe territory, out of
+// scope), and a click that WALKS the character somewhere (LT on a far
+// portal) leaves the anchor there until the next stick-walk re-syncs it.
+// Requires stick-walk (moveclick) — without walk-click the anchor has
+// nothing to self-correct from, so home is skipped when moveclick is off.
 //
 // Injection is gated on the game window being foreground; losing focus
 // releases everything held (re-press after refocus — no surprise clicks).
@@ -165,6 +187,7 @@ struct G3xCtrlConf {
     float aimsens;       // conf controller_aimsens= (<=0 -> 0.35, clamp 0.05..4)
     int   deadzone_pct;  // conf controller_deadzone= (<=0 -> 15, clamp 1..80)
     int   moveclick;     // normalized by fixup: 1 = stick-walk, 0 = cursor-only
+    int   home;          // normalized by fixup: 1 = cursor-home, 0 = free cursor
 };
 
 inline void g3x_ctrl_conf_fixup(G3xCtrlConf* c) {
@@ -177,6 +200,7 @@ inline void g3x_ctrl_conf_fixup(G3xCtrlConf* c) {
     if (c->deadzone_pct <= 0) c->deadzone_pct = 15;
     if (c->deadzone_pct > 80) c->deadzone_pct = 80;
     c->moveclick = (c->moveclick < 0) ? 0 : 1;
+    c->home      = (c->home      < 0) ? 0 : 1;
     if (c->enabled != 1) c->enabled = 0;
 }
 

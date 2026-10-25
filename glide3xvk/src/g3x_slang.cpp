@@ -93,11 +93,11 @@ bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out) {
                     else if (val[0] == '1') out->borderless = 1;
                     // empty or anything else = default (off)
                 } else if (_strnicmp(key, "window", 6) == 0 && kl == 6) {
-                    // 0.4.4 present-window preset: name validation lives in
+                    // 0.4.5 present-window preset: name validation lives in
                     // g3x_window_preset_size; here it is an opaque token.
                     std::snprintf(out->window, sizeof(out->window), "%s", val);
                 } else if (_strnicmp(key, "controller", 10) == 0 && kl == 10) {
-                    // 0.4.4 gamepad-to-mouse/keys (g3x_controller); fixups and
+                    // 0.4.5 gamepad-to-mouse/keys (g3x_controller); fixups and
                     // defaults live in g3x_ctrl_conf_fixup.
                     if (val[0] == '0')      out->controller = 0;
                     else if (val[0] == '1') out->controller = 1;
@@ -115,6 +115,9 @@ bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out) {
                     // key-absent zero-fill can keep meaning default-on); any
                     // other present value means on. Fixup normalizes.
                     out->controller_moveclick = (val[0] == '0') ? -1 : 1;
+                } else if (_strnicmp(key, "controller_home", 15) == 0 && kl == 15) {
+                    // cursor-home: same convention as moveclick (absent = on)
+                    out->controller_home = (val[0] == '0') ? -1 : 1;
                 }
                 // unknown keys are deliberately ignored (forward compatibility)
             }

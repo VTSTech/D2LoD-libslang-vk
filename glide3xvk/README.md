@@ -15,7 +15,7 @@ bootstrap + present. **P3 shipped (0.4.0): the libslang-vk preset chain sits
 at the present pass** — set `preset=` in `d2slangvk.conf` and every presented
 frame runs through the slang preset at up-scaled resolution; the full-screen
 0.4.3 field log proves it live on real hardware (crtglow_lanczos 7-pass chain,
-516 filtered frames, 0 fallbacks). **0.4.4 ships perf round 1** for the CPU
+516 filtered frames, 0 fallbacks). **0.4.5 ships perf round 1** for the CPU
 side (SSE2 float math, O(1) texture table, swapchain headroom — verified
 bit-identical by the agent-side parity harness); field numbers pending.
 
@@ -44,18 +44,18 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | Path | What |
 |---|---|
 | `src/glide_exports.cpp` | All 45 exports with exact signatures; the game-contract entry points (`grGet(0xF)`, `grSstWinOpen`, ini reading, session banner) |
-| `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam; 0.4.4: the texture table is O(1) (open-addressing hash + monotonic alloc cursor + same-texture rebind fast-out) |
+| `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam; 0.4.5: the texture table is O(1) (open-addressing hash + monotonic alloc cursor + same-texture rebind fast-out) |
 | `src/g3x_state.{h,cpp}` | Glide state tracking (grChromakey/grColorCombine/... current values) |
 | `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, and since 0.4.3 a transient toast line for the F11/F12 hotkeys |
-| `src/g3x_drivertag.{h,cpp}` | 0.4.1–0.4.3: repointed the game's `"Video: Glide"` renderer-name string at our tag. **Removed in 0.4.4** (field call: the /fps tag must stay the game's own; the DLL is now strictly read-only toward Game.exe) — pending `git rm` of the two files |
+| `src/g3x_drivertag.{h,cpp}` | 0.4.1–0.4.3: repointed the game's `"Video: Glide"` renderer-name string at our tag. **Removed in 0.4.5** (field call: the /fps tag must stay the game's own; the DLL is now strictly read-only toward Game.exe) — pending `git rm` of the two files |
 | `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf` (`preset`/`scale`/`vsync`/`aspect`/`base_res`/`window`/`borderless`), owns the input image + preset + chain, hot-reloads on file change, polls the F11/F12 hotkeys on the present path, fails soft to the unfiltered path |
-| `src/g3x_window.{h,cpp}` | 0.4.4: present-window presets + DPI awareness — sizes the game's own HWND to a `window=` preset (canonical sizes, `desktop`, `WxH`), config-only (applies at every renderer (re)open + conf hot-reload; no hotkey — F10 is a game skill-slot bind), reverts cleanly to the game's own window; pure table/parse lives inline in the header (host-tested), the Win32 apply runs inside `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` |
-| `src/g3x_controller.{h,cpp}` | 0.4.4: controller support — a background XInput poller (pad 0, ~125 Hz, own thread; zero present-path cost) injects ordinary mouse/keyboard via SendInput (left stick = walk: cursor + auto-held LMB; right stick = fine aim at `controller_aimsens` speed; LT = LMB, RT = RMB, A = hold Shift+LMB attack-in-place combo, B = Alt hold, X = Space, Y = I, D-pad = belt 1-4, LB/RB = C/T, L3 = R run/walk, Start = Esc, Back = Tab), gated on game-window focus, everything held released on focus loss/disable/shutdown; opt-in via `controller=` + `controller_sens=` + `controller_aimsens=` + `controller_deadzone=` + `controller_moveclick=`, hot-reloaded from the conf; XInput loaded dynamically (no new imports); pure core (bind table with multi-step combos, stick curve, desired-state diff step) inline in the header, host-tested (scripts/ctrltest.cpp) |
+| `src/g3x_window.{h,cpp}` | 0.4.5: present-window presets + DPI awareness — sizes the game's own HWND to a `window=` preset (canonical sizes, `desktop`, `WxH`), config-only (applies at every renderer (re)open + conf hot-reload; no hotkey — F10 is a game skill-slot bind), reverts cleanly to the game's own window; pure table/parse lives inline in the header (host-tested), the Win32 apply runs inside `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` |
+| `src/g3x_controller.{h,cpp}` | 0.4.5: controller support — a background XInput poller (pad 0, ~125 Hz, own thread; zero present-path cost) injects ordinary mouse/keyboard via SendInput (left stick = walk: cursor + auto-held LMB; right stick = fine aim at `controller_aimsens` speed; LT = LMB, RT = RMB, A = hold Shift+LMB attack-in-place combo, B = Alt hold, X = Space, Y = I, D-pad = belt 1-4, LB/RB = C/T, L3 = R run/walk, Start = Esc, Back = Tab), gated on game-window focus, everything held released on focus loss/disable/shutdown; cursor-home (0.4.5 field round 2): the walk-release cursor position becomes the player anchor (D2 walks end standing at the cursor — self-correcting) and a 0.4s quiet dwell parks the cursor back on it, so stick motion always emanates from the player; opt-in via `controller=` + `controller_sens=` + `controller_aimsens=` + `controller_deadzone=` + `controller_moveclick=` + `controller_home=`, hot-reloaded from the conf; XInput loaded dynamically (no new imports); pure core (bind table with multi-step combos, stick curve, desired-state diff step) inline in the header, host-tested (scripts/ctrltest.cpp) |
 | `presets/` | Two starter presets (scanline, sharpen — MIT, ours) + `d2slangvk.conf.sample` |
 | `src/g3x_font8x8.h` | Embedded 8x8 1-bit bitmap font for the overlay (generated from DejaVu Sans Mono Bold) |
 | `src/g3x_log.{h,cpp}` | `glide3x.log` beside the game exe (`%TEMP%` fallback), log-once budgets, periodic frame summaries, exit summary |
 | `src/g3x_types.h` | Minimal Glide type surface (mirror of the game's `d2_platform.h` block) + values observed in the in-tree `D2Glide` call sites |
-| `src/vk_backend.{h,cpp}` | Vulkan bootstrap: volk → instance → win32 surface → device → swapchain → present; plus the 0.4.3 `g3x_vk_slang_blit_scaled` one-shot (fenced) upscale blit for the shader base resolution; 0.4.4: swapchain `minImageCount+2` for present-pacing headroom; fail-soft everywhere |
+| `src/vk_backend.{h,cpp}` | Vulkan bootstrap: volk → instance → win32 surface → device → swapchain → present; plus the 0.4.3 `g3x_vk_slang_blit_scaled` one-shot (fenced) upscale blit for the shader base resolution; 0.4.5: swapchain `minImageCount+2` for present-pacing headroom; fail-soft everywhere |
 | `glide3x.def` | The 45 decorated export names (`_grBufferSwap@4`...), repo `binkw32.def` syntax |
 | `vendor/volk/` | volk (runtime Vulkan loader, MIT — loads `vulkan-1.dll`, no SDK needed) |
 | `vendor/Vulkan-Headers/` | Khronos Vulkan C headers (Apache-2.0) |
@@ -113,11 +113,11 @@ round-tripped SHADER_READ_ONLY -> TRANSFER and back inside the same command
 buffer), so every source-relative pass FBO re-derives at N-x; the output rect
 math honors the aspect pick before `scale=`.
 
-Window presets (0.4.4) carry the same toast scheme without a hotkey: `window=`
+Window presets (0.4.5) carry the same toast scheme without a hotkey: `window=`
 applies at renderer open and on conf change, toasting (`window 1080p
 1920x1080`) from the swap path (g3x_window) — it works with the chain off.
 
-Controller support (0.4.4) is log-only on purpose: `controller=1` prints one
+Controller support (0.4.5) is log-only on purpose: `controller=1` prints one
 `controller: on (...)` line with the active map and settings, the poll thread
 lives entirely outside the present path (no grBufferSwap hook, no toast race),
 and disabling or closing the renderer logs `controller: off (...)` after
@@ -169,7 +169,7 @@ Behavior contract:
   chains (CRT-Royale and friends) load from a RetroArch `shaders/` checkout
   by absolute or game-relative path.
 
-## Performance (0.4.4)
+## Performance (0.4.5)
 
 Measured profile (full-screen 0.4.3 field log, RX 560, 800x600, crtglow_lanczos
 7-pass chain active): **avg 51.6 ms/frame ≈ 19 fps** in-game. Per-frame draw
@@ -178,7 +178,7 @@ the fullscreen dim-fill path is not a real-world cost. The budget is the CPU
 raster + texture-table upkeep, with the chain's fullscreen GPU pass on top
 (516 filtered frames, 0 fallbacks — the chain is not the bottleneck).
 
-Perf round 1 (0.4.4), chosen off that profile:
+Perf round 1 (0.4.5), chosen off that profile:
 
 - **SSE2 float math** — i686 MinGW defaults every float operation to x87
   (stack-based 80-bit, slow `fistp` int conversions, no SIMD, no
@@ -201,7 +201,7 @@ chain-on vs chain-off on the next round's build.
 
 ### The 25 fps ceiling (source-verified)
 
-Second 0.4.4 field log closed the loop: in-game `avg=` reads a dead-on
+Second 0.4.5 field log closed the loop: in-game `avg=` reads a dead-on
 40.0–40.3 ms (= 25.0 fps) while the Esc menu reads ~24 ms — with the same
 per-frame draw volume. `avg=` is swap-to-swap wall time, and the engine
 paces in-game frames itself: `CLIENT_GameLoopFrame`
@@ -214,7 +214,7 @@ unthrottled, so its 45 fps ≈ the wrapper's true per-frame cost today.
 What this means: in-game fps is the engine's, not ours — the perf rounds
 still mattered because 0.4.3's 51.6 ms frames overflowed the game's 40 ms
 tick budget (the game's own frame-skip logic then drops ticks — the choppiness
-source); 0.4.4's ~22 ms fits. The `work=` field in the `frame N:` line (this
+source); 0.4.5's ~22 ms fits. The `work=` field in the `frame N:` line (this
 build) reports the wrapper's present-path cost so the log separates engine
 pacing from wrapper cost. 60+ fps smoothness in-game is an engine-level
 project (d2dx-style motion interpolation on a rebuilt exe) — out of scope
@@ -281,7 +281,7 @@ GitHub.
    rig). Full per-round walkthrough and history: `FIELD-TEST.md`.
 3. A healthy run looks like: the menu renders, play works, and
    `glide3x.log` beside the exe carries the session banner
-   (`glide3xvk 0.4.4 <build-id>`), periodic `frame N:` summaries and a clean
+   (`glide3xvk 0.4.5 <build-id>`), periodic `frame N:` summaries and a clean
    exit summary on shutdown.
 4. The version tag in the top-right corner identifies the DLL in any
    screenshot; `/fps` in the game stays readable top-left.
@@ -295,7 +295,7 @@ The DirectDraw path (`-w`) is untouched by all of this.
 ## What is deliberately NOT here yet
 
 - GPU-side raster (the 60 fps endgame): the 0.4.3 full-screen log measured
-  51.6 ms ≈ 19 fps @ 800x600 with the chain active; 0.4.4 took the first CPU
+  51.6 ms ≈ 19 fps @ 800x600 with the chain active; 0.4.5 took the first CPU
   side cut (see Performance above), and the compose-to-GPU move remains the
   main remaining perf item — present-path fence pipelining and span-raster
   templating are queued as CPU-side round 2 (PLAN.md §5 perf track).

@@ -7,12 +7,16 @@ Format follows Keep a Changelog. Where a field round already ran, entries cite w
 glide3x.log showed on real hardware (RX 560, Vulkan 1.3, windowed). Commit refs are on
 branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
 
-## [0.4.4] - 2026-10-25 (CPU raster perf round 1 — x87 off the hot path)
+## [0.4.5] - 2026-10-25 (controller support + cursor-home; window presets config-only; CPU raster perf round 1)
 
-Field trigger: the 0.4.3 full-screen field log (round-17 build, crtglow_lanczos
+Field triggers: the 0.4.3 full-screen field log (round-17 build, crtglow_lanczos
 7-pass chain) showed avg=51.6 ms ≈ 19 fps in-game @ 800x600 — the frame line
 mix (152 fans + 170 strips + 142 RGB565 quads per frame, fill=0) pointed at
 CPU raster + texture-table upkeep as the budget, not the chain or the game.
+Later field rounds drove the controller work: a pad map for D2, then (once
+stick-walking worked) the cursor-home model — "when no analog input, put the
+cursor on the player and hide it, then when the analog moves, it's from
+player position and when analog stops, it's back to player position".
 
 ### Added
 
@@ -50,9 +54,27 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   (percent, default 15, clamp 1-80), `controller_moveclick=0` (opt out of
   stick-walk). Zero present-path cost — no grBufferSwap hook; lifecycle
   rides grSstWinOpen/grSstWinClose/detach. Pure core host-tested
-  (scripts/ctrltest.cpp: 237/237 — conf fixups, bind-table shape, stick
+  (scripts/ctrltest.cpp: 240/240 — conf fixups, bind-table shape, stick
   response, trigger edges, combo order, the stick-walk/A-combo interaction,
   tap walks, flood cap, release_all re-arm semantics).
+- **Controller cursor-home** (field round 2 — the user's own design: "when
+  no analog input, put the cursor on the player and hide it, then when the
+  analog moves, it's from player position and when analog stops, it's back
+  to player position"). The wrapper cannot see the player and does not need
+  to: D2 walk-to-click always ends with the character standing AT the
+  cursor, so the cursor position at every stick-walk release IS the player's
+  screen position. That spot becomes the home anchor (self-correcting — a
+  walk stopped short by an obstacle re-syncs on the next walk), and after a
+  ~0.4 s quiet dwell (sticks centered, nothing injected, nothing held) the
+  cursor is SetCursorPos'd back onto it; stick motion therefore always
+  emanates from where the player is, and the cursor can no longer get lost
+  at the screen edge. Real-mouse movement is detected and respected (it
+  counts as activity and re-syncs the tracked cursor). Honest limits, in
+  the README: the cursor is parked, not hidden (hiding D2's own cursor
+  sprite would mean intercepting the game's WM_SETCURSOR — Game.exe
+  territory, out of scope), and a click that walks the character somewhere
+  (LT on a far portal) leaves home there until the next stick-walk.
+  Requires stick-walk; `controller_home=0` restores a plain free cursor.
 
 ### Changed
 
@@ -208,8 +230,8 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   chroma toggles, 5 blend classes, full-screen fills, points/lines, gamma
   swings, palette epoch bumps, rebind storms, 8600-key table-full stress —
   produces the identical present-buffer FNV hash and counters before/after.
-- Host controller-core test (scripts/ctrltest.cpp, agent-side): 237/237 —
-  conf fixups (defaults/clamps, aimsens, moveclick normalization), bind-table
+- Host controller-core test (scripts/ctrltest.cpp, agent-side): 240/240 —
+  conf fixups (defaults/clamps, aimsens, moveclick/home normalization), bind-table
   shape (unique masks, valid steps, documented map v2 incl. the A combo and
   trigger pseudo-binds), stick response (deadzone, squared curve, normalized
   diagonals, pad y convention), LT/RT click edges with threshold, A combo
