@@ -141,7 +141,12 @@ set_source_files_properties("${CMAKE_SOURCE_DIR}/support/d2_crash.cpp" PROPERTIE
 # shim performs a real C++ throw, so libstdc++ is needed regardless.
 # ---------------------------------------------------------------------------
 set_target_properties(d2 PROPERTIES WIN32_EXECUTABLE ON OUTPUT_NAME d2)
-target_link_options(d2 PRIVATE -static -static-libgcc -static-libstdc++)
+# -Wl,-Map: write build/d2exe.map next to the exe. Map emission is a link-time
+# text dump only - it does not change code layout, so addresses in the exe stay
+# identical with and without it. It lets any crash address (module+0xOFFSET
+# from a d2crash report, or a VEH bootlog line) be resolved to its function by
+# grepping the map, even from a machine without addr2line/DWARF tools.
+target_link_options(d2 PRIVATE -static -static-libgcc -static-libstdc++ -Wl,-Map,d2exe.map)
 
 target_link_libraries(d2 PRIVATE
     kernel32 user32 gdi32 advapi32 shell32 ole32 oleaut32

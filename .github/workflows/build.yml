@@ -48,3 +48,10 @@ jobs:
         with:
           name: d2-stripped-${{ github.sha }}
           path: build/d2-stripped.exe
+
+      - name: Upload linker map (crash address -> symbol, for triage)
+        uses: actions/upload-artifact@v4
+        with:
+          name: d2-map-${{ github.sha }}
+          path: build/d2exe.map
+          if-no-files-found: warn

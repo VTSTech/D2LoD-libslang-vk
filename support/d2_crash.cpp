@@ -173,6 +173,12 @@ void CollectFrames(const CONTEXT* pCtx) {
 // ---------------------------------------------------------------------------
 HANDLE g_hFile = INVALID_HANDLE_VALUE;
 
+// When no report file could be created, Out() routes every line into
+// d2boot.log instead, which is unbuffered and has already proven it reaches
+// disk from a dying process. Lines longer than ~600 chars are truncated by
+// the boot writer; every report line is far below that.
+bool g_bOutToBootLog = false;
+
 void Out(const char* pszFormat, ...) {
     static char s_szLine[1100];
     va_list args;
@@ -182,6 +188,8 @@ void Out(const char* pszFormat, ...) {
     DWORD dwWritten;
     if (n > 0 && g_hFile != INVALID_HANDLE_VALUE)
         WriteFile(g_hFile, s_szLine, (DWORD)n, &dwWritten, 0);
+    if (n > 0 && g_bOutToBootLog)
+        D2BOOT_Mark(s_szLine); // [d2boot] report-file fallback
 }
 
 const char* BaseName(const char* pszPath) {
@@ -233,11 +241,17 @@ bool OpenReport(const SYSTEMTIME& st) {
                 OutputDebugStringA("Redivivus crash report: ");
                 OutputDebugStringA(szPath);
                 OutputDebugStringA("\n");
+                D2BOOT_MarkFmt("crash report: writing %s", szPath); // [d2boot]
                 return true;
             }
-            if (GetLastError() != ERROR_FILE_EXISTS) break;
+            if (GetLastError() != ERROR_FILE_EXISTS) {
+                D2BOOT_MarkFmt("crash report: CreateFile failed (%s) gle=%lu", // [d2boot]
+                               szPath, (unsigned long)GetLastError());
+                break;
+            }
         }
     }
+    D2BOOT_Mark("crash report: no report file could be created - full report follows in d2boot.log"); // [d2boot]
     return false;
 }
 
@@ -396,7 +410,7 @@ void WriteReport(EXCEPTION_POINTERS* pExc, bool bForeign, DWORD dwThreadId,
                  const HaltInfo* pHalt = 0) {
     SYSTEMTIME st;
     GetLocalTime(&st);
-    if (!OpenReport(st)) return;
+    if (!OpenReport(st)) g_bOutToBootLog = true; // the report still goes out, via d2boot.log
 
     const EXCEPTION_RECORD* pRec = pExc->ExceptionRecord;
     const CONTEXT* pCtx = pExc->ContextRecord;
@@ -478,6 +492,12 @@ void WriteReport(EXCEPTION_POINTERS* pExc, bool bForeign, DWORD dwThreadId,
     FlushFileBuffers(g_hFile);
     CloseHandle(g_hFile);
     g_hFile = INVALID_HANDLE_VALUE;
+    if (g_bOutToBootLog) {
+        g_bOutToBootLog = false;
+        D2BOOT_Mark("crash report: end of bootlog fallback report"); // [d2boot]
+    } else {
+        D2BOOT_Mark("crash report: written and closed"); // [d2boot]
+    }
 }
 
 // A stack overflow leaves the faulting thread only the reserved guarantee, too
@@ -507,7 +527,10 @@ LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
     D2BOOT_MarkFmt("VEH: fatal exception 0x%08X at addr %08X", // [d2boot]
                    (unsigned)dwCode, (unsigned)(UINT_PTR)pExc->ExceptionRecord->ExceptionAddress);
     // A fault while a report is being written (on any thread) is left alone.
-    if (InterlockedCompareExchange(&g_nBusy, 1, 0) != 0) return EXCEPTION_CONTINUE_SEARCH;
+    if (InterlockedCompareExchange(&g_nBusy, 1, 0) != 0) {
+        D2BOOT_Mark("VEH: report already in flight - no report for this fault"); // [d2boot]
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
 
     DWORD dwAddr = (DWORD)(UINT_PTR)pExc->ExceptionRecord->ExceptionAddress;
     HMODULE hMod = 0;
@@ -517,6 +540,8 @@ LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
     bool bForeign = bInModule && (DWORD)(UINT_PTR)hMod != g_dwExeLo;
 
     CollectFrames(pExc->ContextRecord);
+    D2BOOT_MarkFmt("VEH: %s fault, %d frames collected", // [d2boot]
+                   bForeign ? "foreign-module" : "own-code", g_nFrames);
     bool bReport;
     if (!bForeign) {
         bReport = InterlockedExchange(&g_nOwnReported, 1) == 0;
@@ -529,6 +554,8 @@ LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
                 bOursOnStack = true;
         bReport = bOursOnStack && InterlockedExchange(&g_nForeignReported, 1) == 0;
     }
+    if (!bReport)
+        D2BOOT_Mark("VEH: report skipped (this fault class already reported)"); // [d2boot]
     if (bReport) {
         static ReportJob s_job;
         s_job.pExc = pExc;
@@ -544,6 +571,7 @@ LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
             ReportThread(&s_job);
         }
     }
+    D2BOOT_Mark("VEH: report attempt finished"); // [d2boot]
     InterlockedExchange(&g_nBusy, 0);
     // The game's own handling (Fog's crash dialog) still runs.
     return EXCEPTION_CONTINUE_SEARCH;
@@ -557,7 +585,11 @@ LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
 // Writing the report takes the "own" slot: the fall-off-the-end ud2 that follows
 // a halt in a non-void caller is the same failure, and is not reported again.
 extern "C" __attribute__((noinline)) void D2CRASH_ReportHalt(int nLine, unsigned nAddress) {
-    if (InterlockedCompareExchange(&g_nBusy, 1, 0) != 0) return;
+    D2BOOT_MarkFmt("halt report: line=%d addr=%08X", nLine, nAddress); // [d2boot]
+    if (InterlockedCompareExchange(&g_nBusy, 1, 0) != 0) {
+        D2BOOT_Mark("halt report: skipped, another report is in flight"); // [d2boot]
+        return;
+    }
     if (InterlockedExchange(&g_nOwnReported, 1) == 0) {
         static CONTEXT s_ctx;
         static EXCEPTION_RECORD s_rec;
