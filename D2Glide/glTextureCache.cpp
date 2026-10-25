@@ -198,6 +198,18 @@ void __fastcall GLTEXCACHE_PromoteNodeToMRU(GlTextureCacheStrc * pCache, int nNo
       exit(-1);
     } else {
       if (0 < nNodeIndex1Based) {
+        // [redivivus#5] A node whose sprite backpointer is clear is not
+        // on the active list: every allocation gets its backpointer written by
+        // the upload right after AllocateNode, and every transition back to the
+        // free list (EvictLRU, EnsureCapacity inline evict, Initialize memset)
+        // clears it. RemoveNodeByIndex would splice such a node's links anyway
+        // -- they are the free-list links -- moving it to the active list
+        // without nUsedCount++ (the issue-5 count-drift family). Drop the
+        // promote instead; the caller falls through to a fresh allocation.
+        uint8_t* pPromoteNode = pCache->pNodes + (nNodeIndex1Based - 1) * 0x1c;
+        if (!*(int*)(pPromoteNode + 8)) {
+          return;
+        }
         pNode = GLTEXCACHE_RemoveNodeByIndex(pCache, nNodeIndex1Based - 1);
         GLTEXCACHE_AppendNodeToTail(pCache, pNode);
         return;
@@ -274,7 +286,9 @@ void __fastcall GLTEXCACHE_Destroy(GlTextureCacheStrc * pCacheData, GlTextureCac
 }
 
 // Ensures cache has free capacity by allocating a node. If cache is full, evicts LRU entry first.
-void __fastcall GLTEXCACHE_EnsureCapacity(GlTextureCacheStrc * pCache) {
+// Returns the allocated 1-based node index so the caller can
+// store it in the sprite header (it used to assign an uninitialized local).
+int __fastcall GLTEXCACHE_EnsureCapacity(GlTextureCacheStrc * pCache) {
     uint8_t* pEvictNode;
     uint8_t* pNextNode;
     int nAllocResult = GLTEXCACHE_AllocateNode(pCache);
@@ -311,6 +325,8 @@ void __fastcall GLTEXCACHE_EnsureCapacity(GlTextureCacheStrc * pCache) {
 
       nAllocResult = GLTEXCACHE_AllocateNode(pCache);
     }
+
+    return nAllocResult;
 }
 
 } // namespace D2Glide::glTextureCache

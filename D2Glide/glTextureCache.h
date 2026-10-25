@@ -53,6 +53,6 @@ void __fastcall GLTEXCACHE_EvictLRU(struct GlTextureCacheStrc * pCache);
 // @sourcefile .\Src\glTextureCache.cpp
 void __fastcall GLTEXCACHE_Destroy(struct GlTextureCacheStrc * pCacheData, struct GlTextureCacheStrc * pCache);
 // Ensures cache has free capacity by allocating a node. If cache is full, evicts LRU entry first.
-void __fastcall GLTEXCACHE_EnsureCapacity(struct GlTextureCacheStrc * pCache);
+int __fastcall GLTEXCACHE_EnsureCapacity(struct GlTextureCacheStrc * pCache);
 
 } // namespace D2Glide::glTextureCache

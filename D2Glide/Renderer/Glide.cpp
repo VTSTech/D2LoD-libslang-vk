@@ -1013,9 +1013,16 @@ void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
 
 // Glide texture cache: uploads a DC6 frame to video memory. Determines LOD level based on texture size, allocates cache slot, renders frame to buffer, encrypts with hash, and downloads to TMU via grTexDownloadMipMap.
 int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
-    // Static local variables (originally global data)
-    static int gGlideSmallTextureCacheBase;
-    static int gnGlideState;
+    // The generated code declared two function-local
+    // static ints here (gGlideSmallTextureCacheBase, gnGlideState). In the
+    // original binary those are .data labels sitting immediately in front of
+    // gGlideSmallTextureCache[3] (at -0x20 and -0x04), so "&base + n * 8" and
+    // "(&gnGlideState)[n * 8]" reach cache[n-1] and its node array. Rebuilt
+    // with gcc they are unrelated 4-byte objects, so every upload addressed a
+    // phantom cache struct (fix-2 halt dump: used=ffffffff max=0 pFreeHead=0
+    // pActiveHead=pNodes=3f800000) and AllocateNode halted 0xc1 on the
+    // phantom's NULL pFreeHead. Address the real global array instead; no
+    // static locals are needed.
 
     int nNewCacheNode;
     uint8_t* pbyPalettePixel;
@@ -1042,6 +1049,13 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
     grTexInfo.aspectRatioLog2 = pTexInfo->nAspect;
     grTexInfo.format = 5;
     grTexInfo.data = gpGlideSpriteBuffer;
+    // Sprite headers come from a non-zeroing pool, so a
+    // first-use header can carry pool garbage in the size-class slot. Treat an
+    // out-of-range class like an unset one (recompute below) and zero the slot
+    // so the recompute sticks, instead of skipping the upload forever.
+    if (*(int*)(nTexStartAddress + nMode * 8) < 1 || 3 < *(int*)(nTexStartAddress + nMode * 8)) {
+      *(uint32_t*)(nTexStartAddress + nMode * 8) = 0;
+    }
     if (!*(int*)(nTexStartAddress + nMode * 8)) {
       nSpriteBufferPtr = pTexInfo->nTexArea;
       if (nSpriteBufferPtr < 0x1001) {
@@ -1061,27 +1075,65 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
     if (gnGlideSpriteSecondaryTMUEnabled) {
       gnGlideTMUIndex = (uint32_t)(nSpriteBufferPtr == 1);
     }
+    // The size class stored in the sprite header is 1-based
+    // (1=large, 2=medium, 3=small); the cache array gGlideSmallTextureCache[3]
+    // is 0-based - [0] is the large cache, see the GLTEXCACHE_Initialize order
+    // and the "- 1" applied at the invalidate sites in this file. Without the
+    // -1 a small texture (<= 64x64, class 3) indexes gGlideSmallTextureCache[3],
+    // one 0x20-byte struct past the end, and the next upload faults inside
+    // GLTEXCACHE_AllocateNode on the phantom struct's garbage fields.
+    if (nSpriteBufferPtr < 1 || 3 < nSpriteBufferPtr) {
+      return 0; // corrupt size class in the sprite header; skip the upload
+    }
+    nSpriteBufferPtr--;
+
+    // The cache and its node array for this size class
+    // (0-based index after the decrement): the real globals, not the removed
+    // static-local stand-ins above.
+    GlTextureCacheStrc* pTextureCache = &gGlideSmallTextureCache[nSpriteBufferPtr];
+    uint8_t* pCacheNodes = pTextureCache->pNodes;
 
     int nCacheSlot = *(int*)(nTexStartAddress + 4 + nMode * 8);
     int* pnCacheEntryIndex = (int*)(nTexStartAddress + 4 + nMode * 8);
+    // [redivivus#5] A recycled sprite header can
+    // inherit a stale node index: GLIDE_PixelDataFreeCallback_ClearCacheNodes
+    // clears the node's backpointer but never the header slots, and sprite
+    // headers come from a non-zeroing pool. Promoting a stale index splices a
+    // free-list node onto the active list without nUsedCount++ (RemoveNodeByIndex
+    // walks the node's own links, which the free list shares), draining the
+    // cache early and halting GLTEXCACHE_AllocateNode with error 0xc1. Validate
+    // the slot against the node's own backpointer; on mismatch drop the slot
+    // and allocate fresh. The legit palette-change re-upload (same sprite and
+    // node) still passes: its node backpointer/mode match by construction.
+    if (nCacheSlot) {
+      uint8_t* pSlotNode = pCacheNodes + (nCacheSlot - 1) * 0x1c;
+      if (*(FxU32*)(pSlotNode + 8) != nTexStartAddress || *(int*)(pSlotNode + 0xc) != nMode) {
+        nCacheSlot = 0;
+        *pnCacheEntryIndex = 0;
+      }
+    }
     grTexInfo.largeLodLog2 = grTexInfo.smallLodLog2;
-    if (nCacheSlot && (*(uint8_t**)((&gnGlideState)[nSpriteBufferPtr * 8] - 0xc + nCacheSlot * 0x1c) == pPalette || nErrorAddress == 4)) {
-      glTextureCache::GLTEXCACHE_PromoteNodeToMRU((GlTextureCacheStrc*)(&gGlideSmallTextureCacheBase + nSpriteBufferPtr * 8), *pnCacheEntryIndex);
-      startAddress = *(FxU32*)((&gnGlideState)[nSpriteBufferPtr * 8] - 0x18 + *pnCacheEntryIndex * 0x1c);
+    if (nCacheSlot && (*(uint8_t**)(pCacheNodes + (nCacheSlot - 1) * 0x1c + 0x10) == pPalette || nErrorAddress == 4)) {
+      glTextureCache::GLTEXCACHE_PromoteNodeToMRU(pTextureCache, *pnCacheEntryIndex);
+      startAddress = *(FxU32*)(pCacheNodes + (*pnCacheEntryIndex - 1) * 0x1c + 4);
       (*GLIDEDLL_grTexSource_16)(gnGlideTMUIndex, startAddress, 3, &grTexInfo);
       RENDERER_GLIDE_SetTextureMode(gnGlideTMUIndex);
       return 1;
     }
     if (!*pnCacheEntryIndex) {
-      glTextureCache::GLTEXCACHE_EnsureCapacity((GlTextureCacheStrc*)(&gGlideSmallTextureCacheBase + nSpriteBufferPtr * 8));
-      *pnCacheEntryIndex = nNewCacheNode;
+      // EnsureCapacity allocates the node: keep its result.
+      // The generated code stored the uninitialized local nNewCacheNode here,
+      // writing a garbage 1-based node index into the sprite header; every
+      // later draw of the sprite then used a wild node offset.
+      *pnCacheEntryIndex = glTextureCache::GLTEXCACHE_EnsureCapacity(pTextureCache);
     }
 
-    *(FxU32*)((&gnGlideState)[nSpriteBufferPtr * 8] - 0x14 + *pnCacheEntryIndex * 0x1c) = nTexStartAddress;
-    *(int32_t*)((&gnGlideState)[nSpriteBufferPtr * 8] - 0x10 + *pnCacheEntryIndex * 0x1c) = nMode;
-    *(uint8_t**)((&gnGlideState)[nSpriteBufferPtr * 8] - 0xc + *pnCacheEntryIndex * 0x1c) = (uint8_t*)pPalette;
+    uint8_t* pCacheNode = pCacheNodes + (*pnCacheEntryIndex - 1) * 0x1c;
+    *(FxU32*)(pCacheNode + 8) = nTexStartAddress;
+    *(int32_t*)(pCacheNode + 0xc) = nMode;
+    *(uint8_t**)(pCacheNode + 0x10) = (uint8_t*)pPalette;
     void* pvVar2 = gpGlideSpriteBuffer;
-    nTexStartAddress = *(FxU32*)((&gnGlideState)[nSpriteBufferPtr * 8] - 0x18 + *pnCacheEntryIndex * 0x1c);
+    nTexStartAddress = *(FxU32*)(pCacheNode + 4);
     if (!gpGlideSpriteBuffer) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x184);
       exit(-1);
@@ -1208,20 +1260,53 @@ void __stdcall RENDERER_GLIDE_DrawShadowQuad(int32_t nParam1, int32_t nParam2, i
     *(uint32_t*)(char*)&gfGlideVertex0T = fTexT0;
     gfGlideVertex1S = fTexS0;
     *(uint32_t*)(char*)&gfGlideVertex1T = fTexT1;
-    gfGlideVertex1Y = gfGlideQuadZ1;
-    gfGlideVertex3S = fTexS1;
-    gfGlideVertex3T = fTexT1;
-    gfGlideVertex2Y = gfGlideQuadZ0;
-    gnGlideAlphaBlendDst = (int)fTexS1;
-    gnGlideAlphaBlendSrc = (int)fTexT0;
-    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gGlideVertex0, 0x1c);
+    // The fan vertices were decompiled into ~20 separate
+    // "vertex globals" (gGlideVertex0, gfGlideQuadZ0/1, gfGlideVertex*n*, ...).
+    // In the original binary they are adjacent words of one 4x0x1C-byte block
+    // at &gGlideVertex0; rebuilt, the linker scatters them (the T pair lands
+    // 6 KB away), so the vertex data this submit reads is garbage and the fan
+    // rasterizes as one giant clipped triangle. Submit a contiguous local
+    // block with every field filled explicitly instead (the decompiled
+    // write-set relies on .data residue for v1.x / v2.oow/s/t / v3.x/y).
+    struct GlideFanVertexStrc { float x, y; uint32_t argb; float oow, s, t, pad; };
+    GlideFanVertexStrc aFanVerts[4];
+    // Isometric shadow footprint: v0 left corner, v1 bottom, v2 right,
+    // v3 far corner - the x/y values the (scattered) labels received.
+    // Shadow color: uniform opaque black (the 1.0 written to
+    // gfGlideVertex3Color is a float/dword typing artifact).
+    aFanVerts[0].x = (float)(nScreenXCenter - nTexHeight);
+    aFanVerts[0].y = (float)(nScreenXBase + nParam2);
+    aFanVerts[0].argb = 0;
+    aFanVerts[0].oow = 1.0f;
+    aFanVerts[0].s = fTexS0;
+    aFanVerts[0].t = fTexT0;
+    aFanVerts[0].pad = 0.0f;
+    aFanVerts[1].x = (float)nScreenXCenter;
+    aFanVerts[1].y = (float)(nScreenXBase + nParam2 + nTexHeight);
+    aFanVerts[1].argb = 0;
+    aFanVerts[1].oow = 1.0f;
+    aFanVerts[1].s = fTexS0;
+    aFanVerts[1].t = fTexT1;
+    aFanVerts[1].pad = 0.0f;
+    aFanVerts[2].x = (float)(nScreenXCenter - nTexHeight + nTexWidth);
+    aFanVerts[2].y = (float)(nScreenXBase + nParam2);
+    aFanVerts[2].argb = 0;
+    aFanVerts[2].oow = 1.0f;
+    aFanVerts[2].s = fTexS1;
+    aFanVerts[2].t = fTexT0;
+    aFanVerts[2].pad = 0.0f;
+    aFanVerts[3].x = (float)(nScreenXCenter + nTexWidth);
+    aFanVerts[3].y = (float)(nScreenXBase + nParam2 + nTexHeight);
+    aFanVerts[3].argb = 0;
+    aFanVerts[3].oow = 1.0f;
+    aFanVerts[3].s = fTexS1;
+    aFanVerts[3].t = fTexT1;
+    aFanVerts[3].pad = 0.0f;
+    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, aFanVerts, 0x1c);
 }
 
 // Glide renderer: draws a textured quad using the palette table at gpPaletteTable+0x114. Applies viewport scaling, handles palette color lookup, and submits a 4-vertex triangle fan via grDrawVertexArrayContiguous.
 void __stdcall RENDERER_GLIDE_DrawPalettedQuad(GlideTexInfoStrc * pGlideQuad, int32_t nParam1, int32_t nParam2, uint32_t nParam, int32_t nParam3, int32_t nParam4) {
-    // Static local variables (originally global data)
-    static int gnGlideCacheSize[5] = { 0x100, 0x40, 0x100, 0x80, 0x100 };
-
     int32_t nTexHeight;
     RENDERER_GLIDE_SetColorCombine(1);
     RENDERER_GLIDE_SetTextureFiltering(1);
@@ -1235,8 +1320,15 @@ void __stdcall RENDERER_GLIDE_DrawPalettedQuad(GlideTexInfoStrc * pGlideQuad, in
 
     float fTexS0 = (float)gaPerspectiveImageSizeTable[pGlideQuad->nAspect * 2] * pGlideQuad->fScale0;
     float fTexS1 = (float)gaPerspectiveImageSizeTable[pGlideQuad->nAspect * 2] * pGlideQuad->fTexS0;
-    float fTexT0 = (float)gnGlideCacheSize[(pGlideQuad->nAspect + 3) * 2] * pGlideQuad->fTexT0;
-    float fTexT1 = (float)gnGlideCacheSize[(pGlideQuad->nAspect + 3) * 2] * pGlideQuad->fTexS1;
+    // This used gnGlideCacheSize[(nAspect + 3) * 2] -
+    // indices 6..12 into a [5] static. In the original binary that label sat
+    // immediately before gaPerspectiveImageSizeTable[8] in .data, so the
+    // expression aliased gaPerspectiveImageSizeTable[nAspect * 2 + 1] (the T
+    // span; DrawShadowQuad still spells that read out). Rebuilt, the index
+    // runs off the array into unrelated .bss and every T coordinate was
+    // garbage. Read the real table.
+    float fTexT0 = (float)gaPerspectiveImageSizeTable[pGlideQuad->nAspect * 2 + 1] * pGlideQuad->fTexT0;
+    float fTexT1 = (float)gaPerspectiveImageSizeTable[pGlideQuad->nAspect * 2 + 1] * pGlideQuad->fTexS1;
     gfGlideVertex0Color = gnGlideVertexColor;
     gfGlideVertex2Color = gnGlideVertexColor;
     gfGlideVertex1Color = gnGlideVertexColor;
@@ -1274,11 +1366,56 @@ void __stdcall RENDERER_GLIDE_DrawPalettedQuad(GlideTexInfoStrc * pGlideQuad, in
     gfGlideVertex1Y = gfGlideQuadZ1;
     gfGlideVertex3S = fTexS1;
     gfGlideVertex3T = fTexT1;
-    gfGlideVertex2X = gfGlidePaletteTableOffset;
-    gfGlideVertex2Y = gfGlideQuadZ0;
-    gnGlideAlphaBlendDst = (int)fTexS1;
-    gnGlideAlphaBlendSrc = (int)fTexT0;
-    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gGlideVertex0, 0x1c);
+    // The fan vertices were decompiled into ~20 separate
+    // "vertex globals" (gGlideVertex0, gfGlideQuadZ0/1, gfGlideVertex*n*, ...).
+    // In the original binary they are adjacent words of one 4x0x1C-byte block
+    // at &gGlideVertex0; rebuilt, the linker scatters them (the T pair lands
+    // 6 KB away), so the vertex data this submit reads is garbage and the fan
+    // rasterizes as one giant clipped triangle. Submit a contiguous local
+    // block with every field filled explicitly instead (the decompiled
+    // write-set relies on .data residue for v1.x / v2.oow/s/t / v3.x/y).
+    struct GlideFanVertexStrc { float x, y; uint32_t argb; float oow, s, t, pad; };
+    GlideFanVertexStrc aFanVerts[4];
+    uint32_t dwFanColor;
+    if (nParam3 || nParam4) {
+      dwFanColor = (uint32_t)gnGlideVertexColor;
+    } else {
+      // Same tint ApplyColorLighting writes into the (scattered) v0.argb word,
+      // captured so all four vertices carry it.
+      uint32_t anLightTmp[3];
+      anLightTmp[2] = 0;
+      RENDERER_GLIDE_ApplyColorLighting(anLightTmp, nParam);
+      dwFanColor = anLightTmp[2];
+    }
+    aFanVerts[0].x = (float)(nQuadLeft + nParam1);
+    aFanVerts[0].y = (float)(nQuadTop + nParam2);
+    aFanVerts[0].argb = dwFanColor;
+    aFanVerts[0].oow = 1.0f;
+    aFanVerts[0].s = fTexS0;
+    aFanVerts[0].t = fTexT0;
+    aFanVerts[0].pad = 0.0f;
+    aFanVerts[1].x = (float)(nQuadLeft + nParam1);
+    aFanVerts[1].y = (float)(nQuadTop + nParam2 + nTexHeight);
+    aFanVerts[1].argb = dwFanColor;
+    aFanVerts[1].oow = 1.0f;
+    aFanVerts[1].s = fTexS0;
+    aFanVerts[1].t = fTexT1;
+    aFanVerts[1].pad = 0.0f;
+    aFanVerts[2].x = (float)(nQuadLeft + nParam1 + nParam3);
+    aFanVerts[2].y = (float)(nQuadTop + nParam2);
+    aFanVerts[2].argb = dwFanColor;
+    aFanVerts[2].oow = 1.0f;
+    aFanVerts[2].s = fTexS1;
+    aFanVerts[2].t = fTexT0;
+    aFanVerts[2].pad = 0.0f;
+    aFanVerts[3].x = (float)(nQuadLeft + nParam1 + nParam3);
+    aFanVerts[3].y = (float)(nQuadTop + nParam2 + nTexHeight);
+    aFanVerts[3].argb = dwFanColor;
+    aFanVerts[3].oow = 1.0f;
+    aFanVerts[3].s = fTexS1;
+    aFanVerts[3].t = fTexT1;
+    aFanVerts[3].pad = 0.0f;
+    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, aFanVerts, 0x1c);
     (*GLIDEDLL_grDitherMode_4)(2);
 }
 
