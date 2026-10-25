@@ -533,31 +533,56 @@ LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
     }
 
     DWORD dwAddr = (DWORD)(UINT_PTR)pExc->ExceptionRecord->ExceptionAddress;
+    // The cached exe range is set once at static init. The 0x871CAB run proved it
+    // can be wrong at crash time: a fault plainly inside d2.exe (every frame
+    // dumped as d2.exe+... by the live-API path) was classified foreign, because
+    // this check compared against the cached g_dwExeLo. Re-derive the range from
+    // the live module handle on every fault, and say so when the cache drifted.
+    HMODULE hExeLive = GetModuleHandleA(0);
+    DWORD dwExeLoLive = (DWORD)(UINT_PTR)hExeLive;
+    if (g_dwExeLo != dwExeLoLive) {
+        D2BOOT_MarkFmt("VEH: exe range cache drifted: cached=%08X live=%08X - re-deriving", // [d2boot]
+                       (unsigned)g_dwExeLo, (unsigned)dwExeLoLive);
+        const IMAGE_NT_HEADERS* pNtLive =
+            (const IMAGE_NT_HEADERS*)((const char*)hExeLive + ((const IMAGE_DOS_HEADER*)hExeLive)->e_lfanew);
+        g_dwExeLo = dwExeLoLive;
+        g_dwExeHi = dwExeLoLive + pNtLive->OptionalHeader.SizeOfImage;
+    }
     HMODULE hMod = 0;
     bool bInModule = GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
                                         GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                                         (LPCSTR)(UINT_PTR)dwAddr, &hMod) != 0;
-    bool bForeign = bInModule && (DWORD)(UINT_PTR)hMod != g_dwExeLo;
+    bool bForeign = bInModule && (DWORD)(UINT_PTR)hMod != dwExeLoLive;
+    D2BOOT_MarkFmt("VEH: classify eip=%08X mod=%08X exe=%08X..%08X", // [d2boot]
+                   (unsigned)dwAddr, (unsigned)(UINT_PTR)hMod,
+                   (unsigned)g_dwExeLo, (unsigned)g_dwExeHi);
 
     CollectFrames(pExc->ContextRecord);
     D2BOOT_MarkFmt("VEH: %s fault, %d frames collected", // [d2boot]
                    bForeign ? "foreign-module" : "own-code", g_nFrames);
+    // The single most useful datum for an access violation: which address the
+    // faulting instruction touched, and whether it read, wrote or executed it.
+    // WriteReport prints this too, but the skip path previously printed nothing.
+    if (dwCode == 0xC0000005 && pExc->ExceptionRecord->NumberParameters >= 2) {
+        ULONG_PTR uOp = pExc->ExceptionRecord->ExceptionInformation[0];
+        D2BOOT_MarkFmt("VEH: AV %s at %08X (target of the faulting access)", // [d2boot]
+                       uOp == 0 ? "READ" : uOp == 1 ? "WRITE" : uOp == 8 ? "EXEC/DEP" : "ACCESS",
+                       (unsigned)pExc->ExceptionRecord->ExceptionInformation[1]);
+    }
     bool bReport;
     if (!bForeign) {
         bReport = InterlockedExchange(&g_nOwnReported, 1) == 0;
         if (!bReport)
             D2BOOT_Mark("VEH: own-code report skipped (own slot already used)"); // [d2boot]
     } else {
-        // A fault in another module counts only when our code is on the stack:
-        // a driver or overlay thread faulting on its own is not our crash.
-        bool bOursOnStack = false;
-        for (int i = 1; i < g_nFrames; ++i)
-            if (g_aFrames[i].dwAddr >= g_dwExeLo && g_aFrames[i].dwAddr < g_dwExeHi)
-                bOursOnStack = true;
-        bReport = bOursOnStack && InterlockedExchange(&g_nForeignReported, 1) == 0;
-        if (!bOursOnStack)
-            D2BOOT_Mark("VEH: foreign fault, no d2.exe frames on stack - VEH skips; unhandled-exception path reports if the process dies"); // [d2boot]
-        else if (!bReport)
+        // Policy change after the 0x871CAB run: a foreign-module fault is now
+        // reported too (first one per process). The old rule - skip unless our
+        // frames are on the stack, then wait for the unhandled-exception filter
+        // - was tested in the wild and the filter never ran: three crashes in a
+        // row died with no report at all. An own-code crash still has its own
+        // slot, so a recovered foreign fault cannot eat the real report.
+        bReport = InterlockedExchange(&g_nForeignReported, 1) == 0;
+        if (!bReport)
             D2BOOT_Mark("VEH: foreign report skipped (foreign slot already used)"); // [d2boot]
     }
     if (!bReport) {
@@ -620,11 +645,11 @@ extern "C" __attribute__((noinline)) void D2CRASH_ReportHalt(int nLine, unsigned
 
 // Last-chance report: Fog's top-level filter (Fog/File.cpp,
 // ERRORMANAGER_UnhandledExceptionFilter) calls this right before it gives up
-// on an exception and the process dies. The VEH deliberately skips
-// foreign-module faults with no game frames on the stack - an async fault in
-// a DLL worker thread (Vulkan ICD, Bink, sound) - but when nothing handles
-// the exception, that fault IS the crash and must be reported, with the full
-// module list naming the DLL. Same once-per-class slots as the VEH.
+// on an exception and the process dies. In the wild this filter has never been
+// observed to run (no TOPFILTER line on any crash so far), so the VEH now does
+// the reporting itself for both own-code and foreign faults; this stays as a
+// belt-and-suspenders path for a fault that slips past the VEH's FatalName
+// list. Same once-per-class slots as the VEH.
 extern "C" void D2CRASH_ReportUnhandled(void* pvExc) {
     EXCEPTION_POINTERS* pExc = (EXCEPTION_POINTERS*)pvExc;
     if (!pExc || !pExc->ExceptionRecord || !pExc->ContextRecord) return;
