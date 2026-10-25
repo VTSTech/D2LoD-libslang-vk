@@ -10,12 +10,12 @@
 // chain dies; with no preset the line is absent and the box shrinks to the
 // tag alone (the clean P2 baseline look).
 //
-// Placement: since 0.4.1 the box is the FALLBACK, not the primary stamp. The
-// primary is the game's own "Video:" debug line, which g3x_drivertag repoints
-// at our tag string (see g3x_drivertag.cpp) — same info, the game's font, at
-// the game's position (500,2), and no collision with anything. glide_exports
-// turns the box off when that patch lands and keeps it on when it doesn't;
-// [glide3xvk] overlay=1 in the ini forces the box back on, overlay=0 hides it.
+// Placement: the box is the PRIMARY version stamp. An earlier approach
+// (0.4.1-0.4.3) repointed the game's own "Video:" debug line at our tag via a
+// PE patch (g3x_drivertag) — removed in 0.4.4: field builds showed the stock
+// "Video: Glide" line either way, and the box draws the same info at the
+// swapchain resolution with none of the patching. [glide3xvk] overlay=1 in
+// the ini forces the box on, overlay=0 hides it.
 //
 // Render seam: g3x_frame_present() calls this AFTER the game frame is scaled +
 // gamma-mapped into the swapchain-sized compose buffer and BEFORE the queue
@@ -49,8 +49,8 @@
 void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h);
 
 // The composed tag line — "glide3xvk <ver> (<build id>)". Static storage,
-// valid for the process lifetime. g3x_drivertag hands the same text to the
-// game's "Video:" line, so the two stamps can never disagree.
+// valid for the process lifetime. The overlay box draws it; it is also the
+// grGetString(GR_RENDERER) text, so the two stamps can never disagree.
 const char* g3x_overlay_tagline();
 
 // The overlay's second line: the active slang preset's file name (basename
@@ -66,7 +66,7 @@ void g3x_overlay_set_shader(const char* name);
 void g3x_overlay_toast(const char* text);
 
 // On/off switch. glide_exports wires [glide3xvk] overlay=0/1 to this; with no
-// ini key the value is auto — off when the drivertag patch owns the game's
-// "Video:" line, on as a fallback when it doesn't.
+// ini key the value is auto — on (the box is the version stamp since the
+// drivertag patch was removed).
 void g3x_overlay_set_enabled(bool on);
 bool g3x_overlay_enabled();

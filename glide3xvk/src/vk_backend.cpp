@@ -27,6 +27,10 @@ uint32_t         s_image_n    = 0;
 VkImage          s_images[8]  = {};
 VkImageView      s_views[8]   = {};   // P3: per-image views (the chain renders into these)
 bool             s_sync_live  = false;
+// 0.4.4 window presets: set by g3x_window after an OS-window resize so the
+// next present recreates the swapchain from fresh caps WITHOUT waiting for
+// the driver to raise OUT_OF_DATE (flaky on mixed-DPI-awareness windows).
+bool             s_refresh_requested = false;
 VkSemaphore      s_sem_acquire = VK_NULL_HANDLE;
 VkSemaphore      s_sem_render  = VK_NULL_HANDLE;
 VkFence          s_fence       = VK_NULL_HANDLE;
@@ -292,6 +296,17 @@ bool g3x_vk_init(HWND hwnd, unsigned width, unsigned height) {
 
 bool g3x_vk_resize(unsigned width, unsigned height) {
     if (!g_vk.alive && s_device == VK_NULL_HANDLE) return false;
+    // Minimized (or cloaked) windows report a 0x0 currentExtent: there is no
+    // swapchain to make yet. Keep the old one alive and bail; the retry in
+    // acquire_image brings it back the moment the window has a real size.
+    if (s_phys != VK_NULL_HANDLE && s_surface != VK_NULL_HANDLE) {
+        VkSurfaceCapabilitiesKHR caps{};
+        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(s_phys, s_surface, &caps) == VK_SUCCESS
+            && caps.currentExtent.width == 0 && caps.currentExtent.height == 0) {
+            g3x_log_once("swap-min", "surface extent 0x0 (minimized?) — swapchain kept, retrying");
+            return false;
+        }
+    }
     g_vk.width = width; g_vk.height = height;
     destroy_swapchain_objects();
     if (!create_swapchain()) { g_vk.alive = false; return false; }
@@ -299,9 +314,28 @@ bool g3x_vk_resize(unsigned width, unsigned height) {
     return true;
 }
 
+void g3x_vk_request_swapchain_refresh() { s_refresh_requested = true; }
+
 namespace {
 
 bool acquire_image(uint32_t* idx) {
+    // 0.4.4 window presets: an OS resize lands here as an explicit refresh
+    // request, consumed before the acquire — the swapchain (and the preset
+    // chain via g3x_slang_swapchain_resized) retargets to the new extent on
+    // the very frame after the resize, no driver OUT_OF_DATE signal needed.
+    if (s_refresh_requested) {
+        s_refresh_requested = false;
+        if (g_vk.hwnd) {
+            g3x_log_once("swap-refresh", "swapchain refresh requested (window preset resized)");
+            g3x_vk_resize(g_vk.width, g_vk.height);
+        }
+    }
+    // A recreate can fail transiently (minimized 0x0 extent, mode change in
+    // flight): retry here every frame until it succeeds — a present outage is
+    // never permanent (the old code went dead at the first failed recreate).
+    if ((!g_vk.alive || !s_sync_live) && g_vk.hwnd && s_device != VK_NULL_HANDLE) {
+        if (!g3x_vk_resize(g_vk.width, g_vk.height)) return false;
+    }
     if (!g_vk.alive || !s_sync_live) return false;
     VkResult r = vkAcquireNextImageKHR(s_device, s_swapchain, UINT64_MAX,
                                        s_sem_acquire, VK_NULL_HANDLE, idx);

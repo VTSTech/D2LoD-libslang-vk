@@ -9,9 +9,9 @@
 #ifndef G3XVK_BUILD_ID
 #define G3XVK_BUILD_ID "unknown"
 #endif
-// Short form (7-char hash + optional -dirty). The game's own "Video:" line
-// gets this exact text via g3x_drivertag, and the game sprintf()s it into a
-// char[32] stack buffer — the long describe form would be truncated there.
+// Short form (7-char hash + optional -dirty). Keeps the tag line compact for
+// the 8x8-font box (and matches the CI artifact-name form) — the long
+// describe form would blow the line budget on small preset windows.
 #ifndef G3XVK_BUILD_SHORT
 #define G3XVK_BUILD_SHORT G3XVK_BUILD_ID
 #endif

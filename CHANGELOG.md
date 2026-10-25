@@ -99,8 +99,38 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   complete setup (gen_font8x8.py stays repo-side; it is a font-header dev
   tool, not a player-facing helper).
 
+### Removed
+
+- **The drivertag patch** (g3x_drivertag.cpp/.h, glide_exports install site):
+  the 0.4.1-0.4.3 PE patch that repointed the game's renderer-name string so
+  the in-game `/fps` box would read `Video: glide3xvk ...` instead of
+  `Video: Glide` never actually showed on field builds (the stock line won
+  either way), and field feedback is to leave the game's own line alone.
+  Removed entirely: no Game.exe byte is touched anymore — the overlay box
+  (now the primary stamp, on by default; `overlay=0` hides it) carries the
+  version. SCOPE.md Tier A is now a hard "the DLL stays read-only toward
+  Game.exe".
+
 ### Fixed
 
+- **Window presets now retarget the present on the same frame** (g3x_window +
+  vk_backend): a preset resize used to leave the picture at the OLD swapchain
+  extent — the field receipt was a top-left crop ("smaller portion of the
+  original scale screen"). Root cause of the miss: the recreate relied on the
+  driver raising OUT_OF_DATE, which is flaky on windows we resize from a
+  per-monitor-v2 context while the process is DPI-unaware. g3x_window now
+  sets an explicit refresh request (g3x_vk_request_swapchain_refresh) and
+  acquire_image consumes it BEFORE the acquire: fresh caps, swapchain
+  recreate, g3x_slang_swapchain_resized retarget, all ahead of the same
+  frame's present (g3x_window_frame_tick runs at the top of grBufferSwap).
+  Applies to F10 picks, conf edits and revert-to-native alike.
+- **A failed swapchain recreate is no longer a permanent present death**
+  (vk_backend): one failed recreate (e.g. a minimized window's 0x0 surface
+  extent, or a mode change in flight) used to leave the backend dead until
+  the next grSstWinOpen — acquire_image returned early forever. acquire_image
+  now retries the recreate every frame until it succeeds, and resize bails
+  early (keeping the old swapchain) on a 0x0 currentExtent instead of tearing
+  down into it.
 - **Window preset apply compiled with the wrong `kind` type**
   (g3x_window.cpp): `apply_now()` declared `kind` as `unsigned` while
   `g3x_window_preset_size()` takes `int*` — a hard compile error, first

@@ -35,6 +35,13 @@ bool g3x_vk_init(HWND hwnd, unsigned width, unsigned height);
 // Recreate the swapchain (mode change / out-of-date). Returns false soft.
 bool g3x_vk_resize(unsigned width, unsigned height);
 
+// 0.4.4 window presets: after an OS-window resize, recreate the swapchain on
+// the NEXT present instead of relying on the driver raising OUT_OF_DATE
+// (mixed-DPI-awareness windows are exactly where that signal is flaky). The
+// flag is consumed inside acquire_image; calling it when Vulkan is down is a
+// harmless no-op.
+void g3x_vk_request_swapchain_refresh();
+
 // One present: acquire -> clear to black -> present.
 // swap_interval: 0 = immediate, 1 = FIFO vsync (D2 passes bVSync as 0/1).
 void g3x_vk_present(unsigned swap_interval);

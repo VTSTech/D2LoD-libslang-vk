@@ -96,10 +96,12 @@ position.
 
 Two very different tiers, because of the fork's structure.
 
-### Tier A — runtime soft patches from the DLL (precedent: drivertag)
+### Tier A — runtime soft patches from the DLL (removed)
 
-The DLL already patches one 4-byte pointer inside the mapped Game.exe image
-(fail-soft, no file change, `g3x_drivertag`). The same *technique* could reach
+glide3xvk 0.4.1-0.4.3 carried one 4-byte patch inside the mapped Game.exe image
+(`g3x_drivertag` — repointing the /fps "Video:" line at our tag). It never showed
+on field builds and was REMOVED in 0.4.4; the game binary is no longer patched at
+all. The same *technique* could reach
 engine variables — but almost everything worth reaching is either
 version-fragile (offsets move per build) or a bad idea:
 
@@ -107,8 +109,8 @@ version-fragile (offsets move per build) or a bad idea:
   picture — the game runs fast-forward. Breaks the game. **Not viable.**
 - **`fps_drawn` display patch**: cosmetic lie in the game's own /fps line.
   Pointless — our overlay already tells the truth.
-- Verdict: **no Tier A work is planned.** The drivertag stays as the one
-  justified soft patch (identity stamping, purely additive).
+- Verdict: **no Tier A work is planned; the DLL stays read-only toward
+  Game.exe.**
 
 ### Tier B — projects on the rebuilt d2.exe (the fork's actual advantage)
 

@@ -26,11 +26,11 @@ if(NOT G3XVK_BUILD_ID)
     endif()
 endif()
 
-# Short build id for strings with a tight length budget: the game sprintf()s
-# the drivertag into a char[32] stack buffer (g3x_drivertag.cpp), so the tag
-# must stay <= 31 chars — "glide3xvk 0.4.1 (d76cf3c-dirty)" is the worst case
-# at 30. The long describe form ("0.3.1-6-gd76cf3c-dirty", 40 chars with the
-# tag prefix) would be truncated mid-hash by the game's own buffer.
+# Short build id for strings with a length budget: the overlay tag line and
+# toast draw it via the embedded 8x8 font, and the grGetString(GR_RENDERER)
+# reply carries it. "glide3xvk 0.4.1 (d76cf3c-dirty)" is the worst-case shape
+# at 30 chars. The long describe form ("0.3.1-6-gd76cf3c-dirty", 40 chars
+# with the tag prefix) would overrun the toast/line budgets.
 if(NOT G3XVK_BUILD_SHORT)
     execute_process(COMMAND git rev-parse --short=7 HEAD
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
@@ -48,7 +48,6 @@ set(G3XVK_SOURCES
     src/g3x_state.cpp
     src/g3x_frame.cpp
     src/g3x_overlay.cpp
-    src/g3x_drivertag.cpp
     src/g3x_slang.cpp
     src/g3x_window.cpp
     src/vk_backend.cpp
@@ -148,7 +147,6 @@ target_compile_options(glide3x PRIVATE -O2 -msse2 -mfpmath=sse -w)
 
 set_source_files_properties(src/glide_exports.cpp PROPERTIES
     COMPILE_DEFINITIONS "G3XVK_BUILD_ID=\"${G3XVK_BUILD_ID}\"")
-# The overlay tag line embeds the short build id (see g3x_overlay.cpp and
-# g3x_drivertag.cpp — the game line and the box line must never disagree).
+# The overlay tag line embeds the short build id (see g3x_overlay.cpp).
 set_source_files_properties(src/g3x_overlay.cpp PROPERTIES
     COMPILE_DEFINITIONS "G3XVK_BUILD_ID=\"${G3XVK_BUILD_ID}\";G3XVK_BUILD_SHORT=\"${G3XVK_BUILD_SHORT}\"")

@@ -33,10 +33,12 @@ resolution — is the same one proven in
   `d2slangvk.conf` at any libretro `.slangp` and every presented frame runs
   through it at native game resolution — hot-reload on file change, fit /
   integer / stretch scaling, unfiltered fallback on any failure.
-- **The version stamp now lives on the game's own `Video:` debug line (0.4.1)**:
-  at renderer init glide3xvk repoints the game's renderer-name string (`Glide`)
-  at a static `glide3xvk 0.4.4 (<hash>)` tag — one 4-byte patch, fail-soft. The
-  old top-right overlay box only draws if that patch fails (or `overlay=1`).
+- **The version stamp is the overlay box (0.4.4)**: `glide3xvk <ver> (<hash>)`
+  drawn top-right every present — 8x8 bitmap font, post-gamma, never in the
+  game's framebuffer. The 0.4.1-0.4.3 drivertag patch (repointing the game's
+  own `Video:` line) is removed: field builds showed the stock `Video: Glide`
+  line either way, and the game's /fps output stays untouched now.
+  `overlay=0` in glide3xvk.ini hides the box.
 - **The overlay shows the active shader (0.4.2)**: while a preset filters
   frames, the fallback box's second line reads the preset's file name — pushed
   on chain ready (first open, conf change, hot reload), cleared whenever the
@@ -103,8 +105,7 @@ No build required:
 4. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
 
 A healthy run looks like: the menu renders, play works, and `glide3x.log` beside the
-exe carries the session banner (`glide3xvk 0.4.4 <build-id>`), `drivertag: "Video:"
-line patched -> "glide3xvk 0.4.4 (<hash>)"`, periodic `frame N:`
+exe carries the session banner (`glide3xvk 0.4.4 <build-id>`), periodic `frame N:`
 summaries, and a clean exit summary on shutdown. With a preset configured, the log
 adds `slang: chain ready '<preset>' ...` and per-event slang lines; without one, it
 says so once. If 32-bit Vulkan is unavailable
@@ -113,24 +114,21 @@ running — the DirectDraw path (`-w` without `-3dfx`) is untouched by all of th
 
 ## The version stamp
 
-The primary stamp is the game's own debug line. The `/fps` readout ends with
-`Video: Glide` (drawn at fixed game coords from a hardcoded string); at renderer init
-glide3xvk patches that string pointer to a static `glide3xvk 0.4.4 (<hash>)` tag, so
-the line reads `Video: glide3xvk 0.4.4 (2d31346)` in the game's own font — no extra
-draw, no collision. The patch is a single 4-byte store and strictly fail-soft: any
-surprise (pool missing, ambiguous, page protect fails) is logged as `drivertag=miss`
-and the fallback box below takes over untouched.
-
-That fallback box is the original P2.10 overlay — `glide3xvk <ver> (<hash>)` drawn
-every present into the **top-right** corner (8x8 bitmap font, 65%-black backdrop, 1px
-drop shadow, post-gamma, never in the game's own framebuffer). With no ini key it
-draws only when the patch missed; `overlay=1` forces it on (both stamps show the
-same text), `overlay=0` hides it (re-read on every context open):
+The stamp is the original P2.10 overlay box — `glide3xvk <ver> (<hash>)` drawn
+every present into the **top-right** corner (8x8 bitmap font, 65%-black backdrop,
+1px drop shadow, post-gamma, never in the game's own framebuffer). It draws by
+default; `overlay=0` in glide3xvk.ini hides it, `overlay=1` forces it (re-read on
+every context open):
 
 ```ini
 [glide3xvk]
-overlay=1
+overlay=0
 ```
+
+The game's own `/fps` line keeps its stock `Video: Glide` text — an earlier
+attempt to repoint that string (0.4.1-0.4.3, `g3x_drivertag`) never showed on
+field builds and was removed in 0.4.4; the game binary is no longer patched at
+all.
 
 ## d2slangvk.conf reference
 

@@ -12,6 +12,7 @@
 #include "g3x_log.h"
 #include "g3x_overlay.h"
 #include "g3x_slang.h"       // G3xSlangConf + g3x_slang_conf_parse (reused)
+#include "vk_backend.h"      // g3x_vk_request_swapchain_refresh (present-side retarget)
 
 #include <cstdio>
 #include <cstring>
@@ -120,6 +121,9 @@ void revert_native(const char* why) {
     AdjustWindowRect(&rc, (DWORD)s_orig_style, FALSE);
     SetWindowPos(s_hwnd, HWND_TOP, 0, 0, rc.right - rc.left, rc.bottom - rc.top,
                  SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    // Present-side retarget: the swapchain (and the preset chain) re-queries
+    // caps on the next acquire — the window is back to the game's own size.
+    g3x_vk_request_swapchain_refresh();
     s_modified = false;
     g3x_log("window: native (%s) — back to the game's own %ux%u",
             why, s_game_w, s_game_h);
@@ -184,6 +188,14 @@ void apply_now(const char* why) {
     }
     SetWindowPos(s_hwnd, HWND_TOP, x, y, ow, oh,
                  SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+    // 0.4.4 fix: don't wait for the driver to notice the resize (OUT_OF_DATE
+    // is unreliable on windows we resize from a per-monitor-v2 context while
+    // the process is DPI-unaware — the field receipt was the picture keeping
+    // the old extent, a top-left crop of the old scale). Recreate the
+    // swapchain from fresh caps on this same frame's acquire; it runs before
+    // any present because g3x_window_frame_tick sits at the top of
+    // grBufferSwap.
+    g3x_vk_request_swapchain_refresh();
 
     RECT crc{};
     GetClientRect(s_hwnd, &crc);                  // aware ctx -> physical
