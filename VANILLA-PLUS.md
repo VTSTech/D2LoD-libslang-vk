@@ -87,3 +87,16 @@ cannot be attributed.
    note any game-side differences vs original Game.exe.
 3. **Vanilla-plus improvements** — opt-in QoL on top of a stable base
    (candidates discussed per issue; nothing lands without a config gate).
+
+## Build notes
+
+- CI-first policy: the tree builds on GitHub CI (real `i686-w64-mingw32-g++`,
+  `tools/check-build.sh`) — do not burn local cycles on full rebuilds.
+- Local recon (llvm-mingw / clang 23): CMake configure is clean with
+  `cmake/mingw-i686.cmake` as-is. Compiling trips on two **clang-specific**
+  quirks gcc does not have, so CI is unaffected: (1) `_EXCEPTION_DISPOSITION`
+  typedef redefinitions — clang's mingw-w64 headers already declare the type,
+  the decompiled `typedef int` versions conflict (8 sites incl. d2_platform.h
+  pattern); (2) `threadlocinfo` unknown type in `d2_platform.h` (gcc exposes
+  it via libstdc++ internals clang's libc++ names differently). Both only
+  matter if someone wants a local clang build later.
