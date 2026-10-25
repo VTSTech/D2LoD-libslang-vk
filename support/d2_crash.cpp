@@ -410,6 +410,12 @@ void WriteReport(EXCEPTION_POINTERS* pExc, bool bForeign, DWORD dwThreadId,
                  const HaltInfo* pHalt = 0) {
     SYSTEMTIME st;
     GetLocalTime(&st);
+    if (!g_szExePath[0]) {
+        // [d2crash] CrashInit normally fills this at static-init; one field
+        // report printed 'Exe:' empty, so repopulate here if needed.
+        DWORD n = GetModuleFileNameA(0, g_szExePath, MAX_PATH);
+        if (n == 0 || n >= MAX_PATH) g_szExePath[0] = 0;
+    }
     if (!OpenReport(st)) g_bOutToBootLog = true; // the report still goes out, via d2boot.log
 
     const EXCEPTION_RECORD* pRec = pExc->ExceptionRecord;

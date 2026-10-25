@@ -4,6 +4,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
+#include "support/d2_boot.h" // [d2boot] halt-state dump before the 0xc1 halt
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -180,6 +181,13 @@ int GLTEXCACHE_AllocateNode(GlTextureCacheStrc * pCache) {
       return *pAllocNode + 1;
     }
 
+    // [vanilla-plus fix 2] State dump: with these four values a future halt
+    // report self-identifies (used < max with an exhausted free list = count
+    // drift; pNodes not a heap address = the cache pointer itself is bad).
+    D2BOOT_MarkFmt("GLTEXCACHE halt 0xc1: used=%u max=%u pFreeHead=%08x pActiveHead=%08x pNodes=%08x",
+                   (unsigned)pCache->nUsedCount, (unsigned)pCache->nMaxEntries,
+                   (unsigned)(size_t)pCache->pFreeHead, (unsigned)(size_t)pCache->pActiveHead,
+                   (unsigned)(size_t)pCache->pNodes);
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc1);
     exit(-1);
 }

@@ -1075,6 +1075,24 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
 
     int nCacheSlot = *(int*)(nTexStartAddress + 4 + nMode * 8);
     int* pnCacheEntryIndex = (int*)(nTexStartAddress + 4 + nMode * 8);
+    // [vanilla-plus fix 2, jaenster/redivivus#5] A recycled sprite header can
+    // inherit a stale node index: GLIDE_PixelDataFreeCallback_ClearCacheNodes
+    // clears the node's backpointer but never the header slots, and sprite
+    // headers come from a non-zeroing pool. Promoting a stale index splices a
+    // free-list node onto the active list without nUsedCount++ (RemoveNodeByIndex
+    // walks the node's own links, which the free list shares), draining the
+    // cache early and halting GLTEXCACHE_AllocateNode with error 0xc1. Validate
+    // the slot against the node's own backpointer; on mismatch drop the slot
+    // and allocate fresh. The legit palette-change re-upload (same sprite and
+    // node) still passes: its node backpointer/mode match by construction.
+    if (nCacheSlot) {
+      GlTextureCacheStrc* pSlotCache = (GlTextureCacheStrc*)(&gGlideSmallTextureCacheBase + nSpriteBufferPtr * 8);
+      uint8_t* pSlotNode = pSlotCache->pNodes + (nCacheSlot - 1) * 0x1c;
+      if (*(FxU32*)(pSlotNode + 8) != nTexStartAddress || *(int*)(pSlotNode + 0xc) != nMode) {
+        nCacheSlot = 0;
+        *pnCacheEntryIndex = 0;
+      }
+    }
     grTexInfo.largeLodLog2 = grTexInfo.smallLodLog2;
     if (nCacheSlot && (*(uint8_t**)((&gnGlideState)[nSpriteBufferPtr * 8] - 0xc + nCacheSlot * 0x1c) == pPalette || nErrorAddress == 4)) {
       glTextureCache::GLTEXCACHE_PromoteNodeToMRU((GlTextureCacheStrc*)(&gGlideSmallTextureCacheBase + nSpriteBufferPtr * 8), *pnCacheEntryIndex);
