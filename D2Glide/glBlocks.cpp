@@ -219,7 +219,13 @@ void __fastcall GLBLOCKS_LoadWallSubtileTexture(D2GroundSubTileStrc * pSubTile) 
       }
 
       GLBLOCKS_DecodeRLEBlock(pSubTile->pPixelData, (uint8_t*)gpGlBlocksWallBuffer);
-      glSubtileCache::GLSUBTILE_EnsureCapacity(&gGlideSubtileTextureCache);
+      // [glide fix 7] Capture the 1-based node index EnsureCapacity allocates;
+      // the floor path right above already does exactly this (GLFLOOR call at
+      // the matching spot). The decompile left nCacheSlot unassigned here, so
+      // the first wall-subtile cache miss stored garbage into nTextureCacheIndex
+      // and the nNodeIdx0 < 0 guard halted the game (0x112, "line=274") as soon
+      // as the first in-game wall needed a texture.
+      nCacheSlot = glSubtileCache::GLSUBTILE_EnsureCapacity(&gGlideSubtileTextureCache);
       pSubTile->nTextureCacheIndex = nCacheSlot;
       nNodeIdx0 = nCacheSlot - 1;
       if (nNodeIdx0 < 0) {
