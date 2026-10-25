@@ -34,20 +34,23 @@ jobs:
           cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
           cmake --build build -j "$(getconf _NPROCESSORS_ONLN)"
 
-      - name: Make stripped copy
-        run: cp build/d2.exe build/d2-stripped.exe && strip build/d2-stripped.exe
+      # Ship the stripped exe only. The link still embeds -O0 + DWARF (the
+      # charter), but the fat exe is no longer uploaded: crash triage resolves
+      # module+offset addresses against the map artifact below, which the link
+      # writes via -Wl,-Map (CMakeLists.txt). strip does not move sections, so
+      # map offsets stay valid against the stripped exe.
+      - name: Make stripped d2s-<commit>.exe
+        run: |
+          D2S="build/d2s-${GITHUB_SHA::7}.exe"
+          cp build/d2.exe "$D2S"
+          strip "$D2S"
+          echo "D2S=$D2S" >> "$GITHUB_ENV"
 
-      - name: Upload full d2.exe (symbolized crash reports need its DWARF)
+      - name: Upload d2s-<commit>.exe (play/distribute)
         uses: actions/upload-artifact@v4
         with:
-          name: d2-full-${{ github.sha }}
-          path: build/d2.exe
-
-      - name: Upload stripped d2.exe (play/distribute)
-        uses: actions/upload-artifact@v4
-        with:
-          name: d2-stripped-${{ github.sha }}
-          path: build/d2-stripped.exe
+          name: d2s-${{ github.sha }}
+          path: ${{ env.D2S }}
 
       - name: Upload linker map (crash address -> symbol, for triage)
         uses: actions/upload-artifact@v4
