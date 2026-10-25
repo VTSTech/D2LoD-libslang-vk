@@ -3491,42 +3491,54 @@ BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
     _nAlpha = 4;
     uint8_t* pbLightEntry = &pLight->sLight.nGreen;
     float* pfVertexSlot = &gaGlideGroundTileVertices[0].fY;
+    // [glide fix 10] The nine vertex-color writes below must store the packed
+    // u32 as-is: the PARGB word (@+8) is 0xAARRGGBB, and Blizzard 1.14d retail
+    // stores the lighting-table result raw (logging-wrapper parr# dumps:
+    // 0xff808080 - not even a legal finite-float bit pattern, so retail cannot
+    // be round-tripping colors through float). The rebuild wrote the same
+    // expressions through this float* cursor with a (float) cast, storing
+    // f32(color) bits instead: 0xff808080 -> 0x4f7f8080 (byte3 0x4f, byte2
+    // pinned to the mantissa top byte 0x7f, byte0 (blue) rounded away,
+    // byte1 <- red). Rendered: red pinned at 0x7f, green<-red, blue<-green -
+    // invisible on uniform ambient gray, a hard discoloration wherever light
+    // varies (the player light radius, torches). Store through a uint32_t*
+    // lvalue like the bLowQuality corner path above does.
     do {
       uint8_t* pLightingTable = gpGlideLightingTable;
       byIntensity = ((D2GfxLightStrc*)(pbLightEntry - 2))->nIntensity;
-      pfVertexSlot[1] = (float)(((pLightingTable[(uint32_t)pbLightEntry[-1] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)*pbLightEntry + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[1] + (uint32_t)byIntensity * 0x100]);
+      *(uint32_t*)&pfVertexSlot[1] = (((pLightingTable[(uint32_t)pbLightEntry[-1] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)*pbLightEntry + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[1] + (uint32_t)byIntensity * 0x100]);
       ((D2GlideVertexStrc*)(pfVertexSlot - 1))->fX = (float)*(int*)(pbLightEntry + 2);
       *pfVertexSlot = (float)*(int*)(pbLightEntry + 6);
       byIntensity = pbLightEntry[10];
-      pfVertexSlot[8] = (float)(((pLightingTable[(uint32_t)pbLightEntry[0xb] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0xc] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0xd] + (uint32_t)byIntensity * 0x100]);
+      *(uint32_t*)&pfVertexSlot[8] = (((pLightingTable[(uint32_t)pbLightEntry[0xb] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0xc] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0xd] + (uint32_t)byIntensity * 0x100]);
       pfVertexSlot[6] = (float)*(int*)(pbLightEntry + 0xe);
       pfVertexSlot[7] = (float)*(int*)(pbLightEntry + 0x12);
       byIntensity = pbLightEntry[0x16];
-      pfVertexSlot[0xf] = (float)(((pLightingTable[(uint32_t)pbLightEntry[0x17] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x18] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x19] + (uint32_t)byIntensity * 0x100]);
+      *(uint32_t*)&pfVertexSlot[0xf] = (((pLightingTable[(uint32_t)pbLightEntry[0x17] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x18] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x19] + (uint32_t)byIntensity * 0x100]);
       pfVertexSlot[0xd] = (float)*(int*)(pbLightEntry + 0x1a);
       pfVertexSlot[0xe] = (float)*(int*)(pbLightEntry + 0x1e);
       byIntensity = pbLightEntry[0x22];
-      pfVertexSlot[0x16] = (float)(((pLightingTable[(uint32_t)pbLightEntry[0x23] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x24] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x25] + (uint32_t)byIntensity * 0x100]);
+      *(uint32_t*)&pfVertexSlot[0x16] = (((pLightingTable[(uint32_t)pbLightEntry[0x23] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x24] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x25] + (uint32_t)byIntensity * 0x100]);
       pfVertexSlot[0x14] = (float)*(int*)(pbLightEntry + 0x26);
       pfVertexSlot[0x15] = (float)*(int*)(pbLightEntry + 0x2a);
       byIntensity = pbLightEntry[0x2e];
-      pfVertexSlot[0x1d] = (float)(((pLightingTable[(uint32_t)pbLightEntry[0x2f] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x30] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x31] + (uint32_t)byIntensity * 0x100]);
+      *(uint32_t*)&pfVertexSlot[0x1d] = (((pLightingTable[(uint32_t)pbLightEntry[0x2f] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x30] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x31] + (uint32_t)byIntensity * 0x100]);
       pfVertexSlot[0x1b] = (float)*(int*)(pbLightEntry + 0x32);
       pfVertexSlot[0x1c] = (float)*(int*)(pbLightEntry + 0x36);
       byIntensity = pbLightEntry[0x3a];
-      pfVertexSlot[0x24] = (float)(((pLightingTable[(uint32_t)pbLightEntry[0x3b] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x3c] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x3d] + (uint32_t)byIntensity * 0x100]);
+      *(uint32_t*)&pfVertexSlot[0x24] = (((pLightingTable[(uint32_t)pbLightEntry[0x3b] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x3c] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x3d] + (uint32_t)byIntensity * 0x100]);
       pfVertexSlot[0x22] = (float)*(int*)(pbLightEntry + 0x3e);
       pfVertexSlot[0x23] = (float)*(int*)(pbLightEntry + 0x42);
       byIntensity = pbLightEntry[0x46];
-      pfVertexSlot[0x2b] = (float)(((pLightingTable[(uint32_t)pbLightEntry[0x47] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x48] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x49] + (uint32_t)byIntensity * 0x100]);
+      *(uint32_t*)&pfVertexSlot[0x2b] = (((pLightingTable[(uint32_t)pbLightEntry[0x47] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x48] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x49] + (uint32_t)byIntensity * 0x100]);
       pfVertexSlot[0x29] = (float)*(int*)(pbLightEntry + 0x4a);
       pfVertexSlot[0x2a] = (float)*(int*)(pbLightEntry + 0x4e);
       byIntensity = pbLightEntry[0x52];
-      pfVertexSlot[0x32] = (float)(((pLightingTable[(uint32_t)pbLightEntry[0x53] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x54] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x55] + (uint32_t)byIntensity * 0x100]);
+      *(uint32_t*)&pfVertexSlot[0x32] = (((pLightingTable[(uint32_t)pbLightEntry[0x53] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x54] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x55] + (uint32_t)byIntensity * 0x100]);
       pfVertexSlot[0x30] = (float)*(int*)(pbLightEntry + 0x56);
       pfVertexSlot[0x31] = (float)*(int*)(pbLightEntry + 0x5a);
       byIntensity = pbLightEntry[0x5e];
-      pfVertexSlot[0x39] = (float)(((pLightingTable[(uint32_t)pbLightEntry[0x5f] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x60] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x61] + (uint32_t)byIntensity * 0x100]);
+      *(uint32_t*)&pfVertexSlot[0x39] = (((pLightingTable[(uint32_t)pbLightEntry[0x5f] + (uint32_t)byIntensity * 0x100] | -256) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x60] + (uint32_t)byIntensity * 0x100]) << 8 | (uint32_t)pLightingTable[(uint32_t)pbLightEntry[0x61] + (uint32_t)byIntensity * 0x100]);
       _nAlpha--;
       pfVertexSlot[0x37] = (float)*(int*)(pbLightEntry + 0x62);
       pfVertexSlot[0x38] = (float)*(int*)(pbLightEntry + 0x66);
