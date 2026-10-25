@@ -545,6 +545,8 @@ LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
     bool bReport;
     if (!bForeign) {
         bReport = InterlockedExchange(&g_nOwnReported, 1) == 0;
+        if (!bReport)
+            D2BOOT_Mark("VEH: own-code report skipped (own slot already used)"); // [d2boot]
     } else {
         // A fault in another module counts only when our code is on the stack:
         // a driver or overlay thread faulting on its own is not our crash.
@@ -553,9 +555,20 @@ LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
             if (g_aFrames[i].dwAddr >= g_dwExeLo && g_aFrames[i].dwAddr < g_dwExeHi)
                 bOursOnStack = true;
         bReport = bOursOnStack && InterlockedExchange(&g_nForeignReported, 1) == 0;
+        if (!bOursOnStack)
+            D2BOOT_Mark("VEH: foreign fault, no d2.exe frames on stack - VEH skips; unhandled-exception path reports if the process dies"); // [d2boot]
+        else if (!bReport)
+            D2BOOT_Mark("VEH: foreign report skipped (foreign slot already used)"); // [d2boot]
     }
-    if (!bReport)
-        D2BOOT_Mark("VEH: report skipped (this fault class already reported)"); // [d2boot]
+    if (!bReport) {
+        // Even a skipped fault names its module: dump the frames as
+        // module+offset into the bootlog.
+        for (int i = 0; i < g_nFrames && i < 24; ++i) {
+            char szMod[MAX_PATH + 40];
+            ModuleOffset(g_aFrames[i].dwAddr, szMod);
+            D2BOOT_MarkFmt("VEH: frame #%-2d %s", i, szMod); // [d2boot]
+        }
+    }
     if (bReport) {
         static ReportJob s_job;
         s_job.pExc = pExc;
@@ -602,6 +615,32 @@ extern "C" __attribute__((noinline)) void D2CRASH_ReportHalt(int nLine, unsigned
         HaltInfo halt = { nLine, (DWORD)nAddress };
         WriteReport(&exc, false, GetCurrentThreadId(), &halt);
     }
+    InterlockedExchange(&g_nBusy, 0);
+}
+
+// Last-chance report: Fog's top-level filter (Fog/File.cpp,
+// ERRORMANAGER_UnhandledExceptionFilter) calls this right before it gives up
+// on an exception and the process dies. The VEH deliberately skips
+// foreign-module faults with no game frames on the stack - an async fault in
+// a DLL worker thread (Vulkan ICD, Bink, sound) - but when nothing handles
+// the exception, that fault IS the crash and must be reported, with the full
+// module list naming the DLL. Same once-per-class slots as the VEH.
+extern "C" void D2CRASH_ReportUnhandled(void* pvExc) {
+    EXCEPTION_POINTERS* pExc = (EXCEPTION_POINTERS*)pvExc;
+    if (!pExc || !pExc->ExceptionRecord || !pExc->ContextRecord) return;
+    if (!FatalName(pExc->ExceptionRecord->ExceptionCode)) return;
+    if (InterlockedCompareExchange(&g_nBusy, 1, 0) != 0) return;
+    if (g_nOwnReported || InterlockedExchange(&g_nForeignReported, 1) != 0) {
+        D2BOOT_Mark("last-chance: skipped, a report already went out this process"); // [d2boot]
+        InterlockedExchange(&g_nBusy, 0);
+        return;
+    }
+    D2BOOT_MarkFmt("last-chance: unhandled %s at addr %08X - writing report", // [d2boot]
+                   FatalName(pExc->ExceptionRecord->ExceptionCode),
+                   (unsigned)(UINT_PTR)pExc->ExceptionRecord->ExceptionAddress);
+    CollectFrames(pExc->ContextRecord);
+    D2BOOT_MarkFmt("last-chance: %d frames collected", g_nFrames); // [d2boot]
+    WriteReport(pExc, true, GetCurrentThreadId());
     InterlockedExchange(&g_nBusy, 0);
 }
 

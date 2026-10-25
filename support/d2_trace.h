@@ -14,6 +14,13 @@ extern "C" void D2TraceFmt(const char* pszFormat, ...);
 // call-site address and the halting thread's stack. Declared here because the
 // generated ErrorManager.cpp already includes this header.
 extern "C" void D2CRASH_ReportHalt(int nLine, unsigned nAddress);
+
+// Last-chance report for an unhandled exception (support/d2_crash.cpp): Fog's
+// top-level filter calls it right before it gives up on the exception, so a
+// fatal fault in a DLL-own thread (no game frames on the stack) still gets a
+// full report with the module list. void* is _EXCEPTION_POINTERS*, kept as
+// pointer-to-void so this header stays free of windows.h.
+extern "C" void D2CRASH_ReportUnhandled(void* pExceptionPointers);
 extern "C" int D2ProbeReadTileClipYMin(void);
 extern "C" void D2ProbeArmClipGuard(void);
 extern "C" void D2ProbeArmClipHwbpSelf(void);

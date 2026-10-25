@@ -430,6 +430,12 @@ LONG __stdcall ERRORMANAGER_UnhandledExceptionFilter(_EXCEPTION_POINTERS * pExce
       }
     }
 
+    // [d2crash] This filter is about to give up on the exception (return
+    // EXCEPTION_CONTINUE_SEARCH below): nothing in the process will handle it
+    // and the process dies. Write the last-chance crash report so a fatal
+    // fault in a DLL-own thread - no game frames, skipped by the VEH - is
+    // still reported with the module list naming the culprit DLL.
+    D2CRASH_ReportUnhandled(pExceptionPointers);
     Debug::GuardStack();
     return 0;
 }
