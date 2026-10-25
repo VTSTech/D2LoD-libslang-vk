@@ -4,9 +4,13 @@
 // and executes the core's events through SendInput — the game just sees a
 // normal mouse and keyboard.
 //
-// Conf: controller=/controller_sens=/controller_deadzone= in [slangvk]
-// (parsed by the shared g3x_slang_conf_parse; fields documented in
-// g3x_controller.h). The thread probes the conf mtime every 256th poll
+// Both sticks drive the cursor: left = walk speed (and, with stick-walk on,
+// an auto-held LMB — D2 movement is walk-to-cursor), right = fine aim at
+// aimsens of the base speed for putting the cursor ON a monster, portal or
+// item label without pixel-hunting. Conf: controller=/controller_sens=/
+// controller_aimsens=/controller_deadzone=/controller_moveclick= in
+// [slangvk] (parsed by the shared g3x_slang_conf_parse; fields documented
+// in g3x_controller.h). The thread probes the conf mtime every 256th poll
 // (~2s) — same file-is-truth hot-reload as everywhere else, zero cost on
 // the present path (no grBufferSwap hook at all).
 //
@@ -105,7 +109,7 @@ struct XINPUT_STATE_S {
 };
 typedef DWORD (WINAPI *XInputGetStateFn)(DWORD, XINPUT_STATE_S*);
 
-HMODULE        s_xinput = nullptr;
+HMODULE          s_xinput = nullptr;
 XInputGetStateFn s_get_state = nullptr;
 const char*    s_xinput_name = "";
 bool           s_xinput_tried = false;
@@ -145,14 +149,16 @@ volatile LONG   s_run = 0;
 uint64_t        s_conf_mtime = 0;
 G3xCtrlConf     s_conf = {};            // zeroed = disabled, defaults
 G3xCtrlCore     s_core = {};
-float           s_acc_x = 0.0f, s_acc_y = 0.0f;   // stick px remainders
+float           s_acc_x = 0.0f, s_acc_y = 0.0f;       // left stick px remainders
+float           s_aim_acc_x = 0.0f, s_aim_acc_y = 0.0f; // right stick px remainders
 
 // Cursor speed at full rim deflection before sens= (px/second). The squared
 // response curve scales it down near center; at 125 Hz a full-tilt tick
-// moves ~10px — smooth at the game's own 25 fps.
+// moves ~10px — smooth at the game's own 25 fps. The right stick multiplies
+// this by aimsens (default 0.35) for fine aim.
 const float kMaxPxPerSec = 1200.0f;
 
-enum { kEvCap = 24 };                   // >= worst-case taps+holds of one tick
+enum { kEvCap = 32 };                   // >= worst-case mass-press + tap-release tick
 
 // ---- injection --------------------------------------------------------------
 
@@ -202,6 +208,7 @@ void release_now() {
     const int n = g3x_ctrl_release_all(&s_core, ev, kEvCap);
     for (int i = 0; i < n; ++i) inject_event(ev[i]);
     s_acc_x = s_acc_y = 0.0f;
+    s_aim_acc_x = s_aim_acc_y = 0.0f;
 }
 
 bool window_focused() {
@@ -228,7 +235,9 @@ void reread_conf(const char* why) {
     G3xCtrlConf c;
     c.enabled      = raw.controller;
     c.sens         = raw.controller_sens;
+    c.aimsens      = raw.controller_aimsens;
     c.deadzone_pct = raw.controller_deadzone;
+    c.moveclick    = raw.controller_moveclick;
     g3x_ctrl_conf_fixup(&c);
 
     const bool was = s_conf.enabled != 0;
@@ -237,10 +246,13 @@ void reread_conf(const char* why) {
         if (ensure_xinput()) {
             s_core = G3xCtrlCore{};
             s_acc_x = s_acc_y = 0.0f;
-            g3x_log("controller: on (%s, sens=%.2f deadzone=%d%%) — "
-                    "stick=cursor A=LMB B=RMB X=Alt Y=I dpad=1-4 LB=C RB=T "
-                    "RT=Shift LT=Ctrl Start=Esc Back=Tab",
-                    s_xinput_name, c.sens, c.deadzone_pct);
+            s_aim_acc_x = s_aim_acc_y = 0.0f;
+            g3x_log("controller: on (%s, sens=%.2f aim=%.2f deadzone=%d%% "
+                    "stickwalk=%d) — stick=walk rstick=aim LT=LMB RT=RMB "
+                    "A=Shift+LMB B=Alt X=Space Y=I dpad=1-4 LB=C RB=T L3=R "
+                    "Start=Esc Back=Tab",
+                    s_xinput_name, c.sens, c.aimsens, c.deadzone_pct,
+                    c.moveclick);
         } else {
             s_conf.enabled = 0;                   // nothing to inject with
         }
@@ -301,15 +313,14 @@ DWORD WINAPI s_poll_proc(LPVOID) {
         G3xCtrlPadState ps;
         ps.sx      = xs.gamepad.sThumbLX;
         ps.sy      = xs.gamepad.sThumbLY;
+        ps.rx      = xs.gamepad.sThumbRX;
+        ps.ry      = xs.gamepad.sThumbRY;
         ps.buttons = xs.gamepad.wButtons;
         ps.lt      = xs.gamepad.bLeftTrigger;
         ps.rt      = xs.gamepad.bRightTrigger;
 
-        G3xCtrlEvent ev[kEvCap];
-        const int n = g3x_ctrl_step(&s_core, &ps, ev, kEvCap);
-        for (int i = 0; i < n; ++i) inject_event(ev[i]);
-
-        // left stick -> cursor (pad y up = +; Windows +dy is down)
+        // sticks first so an engage-tick click lands a few px into the
+        // movement instead of on whatever the cursor was resting on
         float nx = 0.0f, ny = 0.0f;
         const float resp = g3x_ctrl_stick(ps.sx, ps.sy, s_conf.deadzone_pct, &nx, &ny);
         if (resp > 0.0f) {
@@ -326,6 +337,27 @@ DWORD WINAPI s_poll_proc(LPVOID) {
         } else {
             s_acc_x = s_acc_y = 0.0f;
         }
+
+        // right stick -> fine aim (same curve/deadzone, aimsens speed)
+        const float aresp = g3x_ctrl_stick(ps.rx, ps.ry, s_conf.deadzone_pct, &nx, &ny);
+        if (aresp > 0.0f) {
+            const float aspeed = kMaxPxPerSec * s_conf.sens * s_conf.aimsens * aresp * dt;
+            s_aim_acc_x += nx * aspeed;
+            s_aim_acc_y -= ny * aspeed;
+            const int dx = (int)lroundf(s_aim_acc_x);
+            const int dy = (int)lroundf(s_aim_acc_y);
+            if (dx || dy) {
+                inject_move(dx, dy);
+                s_aim_acc_x -= (float)dx;
+                s_aim_acc_y -= (float)dy;
+            }
+        } else {
+            s_aim_acc_x = s_aim_acc_y = 0.0f;
+        }
+
+        G3xCtrlEvent ev[kEvCap];
+        const int n = g3x_ctrl_step(&s_core, &ps, &s_conf, ev, kEvCap);
+        for (int i = 0; i < n; ++i) inject_event(ev[i]);
     }
     release_now();                                // exit path: nothing held
     return 0;

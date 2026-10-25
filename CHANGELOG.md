@@ -22,22 +22,37 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   ordinary mouse/keyboard events (SendInput), so the game just sees a normal
   mouse and keyboard and every D2 screen works. No Game.exe patch, no driver,
   no new DLL imports (XInput loads dynamically: xinput1_4 -> xinput9_1_0 ->
-  xinput1_3; none = logged once, feature stays off). Default map: left stick
-  = cursor (radial deadzone + squared precision curve), A = left click,
-  B = right click, X = hold Alt (item labels), Y = tap I (inventory),
-  D-pad = belt 1-4, LB = C (character), RB = T (skill tree), RT = hold Shift
-  (attack in place), LT = tap Ctrl (run/walk), Start = Esc, Back = Tab
-  (automap); right stick + L3/R3 reserved. Taps are one clean keystroke
-  (down this tick, up the next) so held menu keys cannot auto-repeat-flip a
-  D2 screen closed. Injection is gated on the game window being foreground,
-  and everything held is released on focus loss, disable, pad disconnect and
-  shutdown. Conf keys (hot-reloaded like everything else, ~2s probe):
-  `controller=0|1` (off by default), `controller_sens=` (cursor speed
-  multiplier, default 1.0, clamp 16), `controller_deadzone=` (percent,
-  default 15, clamp 1-80). Zero present-path cost — no grBufferSwap hook;
-  lifecycle rides grSstWinOpen/grSstWinClose/detach. Pure core host-tested
-  (scripts/ctrltest.cpp: 152/152 — conf fixups, bind-table shape, stick
-  response, edge/hold/tap walks, trigger edges, flood cap, release_all).
+  xinput1_3; none = logged once, feature stays off). Map v2 (field spec:
+  left analog moves me, triggers click, d-pad belts, and hitting things NEAR
+  me must not need pixel-perfect cursor work — in D2 movement IS the mouse):
+  left stick = walk (steers the cursor and auto-holds left click while
+  deflected — D2 walk-to-cursor; `controller_moveclick=0` for cursor-only),
+  right stick = fine aim (same curve at `controller_aimsens` speed, default
+  0.35, for placing the cursor on monsters/portals/item labels), LT = left
+  click hold, RT = right click hold, A = hold Shift+LMB (D2 attack-in-place
+  toward the cursor — swings/shoots at what is near it without moving, the
+  forgiving way to fight with a stick), B = hold Alt (item labels),
+  X = tap Space (close screens), Y = tap I (inventory), D-pad = belt 1-4,
+  LB = C (character), RB = T (skill tree), L3 = tap R (run/walk),
+  Start = Esc, Back = Tab (automap); R3 reserved. Binds are multi-step
+  combos pressed in order and released in reverse, and the event model is
+  desired-state diffing — sources OR together, so the walking LMB and the
+  A combo's LMB can never double-press or steal each other's release.
+  Taps are one clean keystroke (down this tick, up the next) so held menu
+  keys cannot auto-repeat-flip a D2 screen closed. Injection is gated on
+  the game window being foreground, and everything held is released on
+  focus loss, disable, pad disconnect and shutdown (a still-held control
+  stays silent until a fresh press — no surprise clicks after alt-tab).
+  Conf keys (hot-reloaded like everything else, ~2s probe):
+  `controller=0|1` (off by default), `controller_sens=` (left-stick speed
+  multiplier, default 1.0, clamp 16), `controller_aimsens=` (right-stick
+  fine-aim multiplier, default 0.35, clamp 0.05-4), `controller_deadzone=`
+  (percent, default 15, clamp 1-80), `controller_moveclick=0` (opt out of
+  stick-walk). Zero present-path cost — no grBufferSwap hook; lifecycle
+  rides grSstWinOpen/grSstWinClose/detach. Pure core host-tested
+  (scripts/ctrltest.cpp: 237/237 — conf fixups, bind-table shape, stick
+  response, trigger edges, combo order, the stick-walk/A-combo interaction,
+  tap walks, flood cap, release_all re-arm semantics).
 
 ### Changed
 
@@ -193,12 +208,15 @@ CPU raster + texture-table upkeep as the budget, not the chain or the game.
   chroma toggles, 5 blend classes, full-screen fills, points/lines, gamma
   swings, palette epoch bumps, rebind storms, 8600-key table-full stress —
   produces the identical present-buffer FNV hash and counters before/after.
-- Host controller-core test (scripts/ctrltest.cpp, agent-side): 152/152 —
-  conf fixups (defaults/clamps), bind-table shape (unique masks, valid
-  kinds, documented map), stick response (deadzone, squared curve,
-  normalized diagonals, pad y convention), A hold walk, Y tap walk
-  (no auto-repeat window), RT hold + LT tap trigger edges, 14-event flood
-  with cap, release_all idempotence + ghost-free after, NULL tolerance.
+- Host controller-core test (scripts/ctrltest.cpp, agent-side): 237/237 —
+  conf fixups (defaults/clamps, aimsens, moveclick normalization), bind-table
+  shape (unique masks, valid steps, documented map v2 incl. the A combo and
+  trigger pseudo-binds), stick response (deadzone, squared curve, normalized
+  diagonals, pad y convention), LT/RT click edges with threshold, A combo
+  press/release order, THE stick-walk x A-combo interaction (one LMB, Shift
+  only on A release, walk LMB persists), stick-walk arming after release_all,
+  Y/X tap walks (no auto-repeat window), 15-event flood with cap, release_all
+  idempotence + ghost-free re-press semantics, NULL tolerance (incl. conf).
   wintest regression still 40/40.
 
 ## [0.4.3] - 2026-10-24 (F11/F12 hotkeys + the full d2slangvk.conf reference)

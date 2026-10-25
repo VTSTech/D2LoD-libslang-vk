@@ -72,11 +72,18 @@ vsync=
 ; controller=1 polls pad 0 through XInput on a background thread and injects
 ; ordinary mouse/keyboard events, so the game sees a normal mouse and
 ; keyboard and every screen works. Off by default. Injects only while the
-; game window is focused. Default map:
-;   left stick = cursor        A = left click (hold)   B = right click (hold)
-;   X = hold Alt (items)       Y = tap I (inventory)   D-pad = belt 1-4
-;   LB = tap C (character)     RB = tap T (skills)     Start = Esc, Back = Tab
-;   RT = hold Shift (attack in place)                  LT = Ctrl (run/walk)
+; game window is focused. Map v2 (tuned for Diablo II, where movement IS
+; the mouse):
+;   left stick = walk (steers the cursor and holds LMB while deflected)
+;   right stick = fine aim (~35% speed: place the cursor on monsters,
+;                 portals, chests, item labels without pixel-hunting)
+;   LT = left click (hold)     RT = right click (hold)
+;   A = hold Shift+LMB: attack IN PLACE toward the cursor — melee swings /
+;       ranged shots at whatever is near it without moving, no pixel-perfect
+;       aim needed (or just brush the walking cursor across a monster)
+;   B = hold Alt (item labels) X = Space (close screens)  Y = I (inventory)
+;   D-pad = belt 1-4           LB = C (character)         RB = T (skills)
+;   L3 = R (run/walk)          Start = Esc                Back = Tab (automap)
 ; XInput loads dynamically (xinput1_4 / xinput9_1_0 / xinput1_3); a missing
 ; DLL or pad just logs once and the game runs untouched.
 ;controller=0
@@ -86,8 +93,16 @@ vsync=
 ; the squared response curve keeps precision near center). Default 1.0.
 ;controller_sens=1.0
 
+; Right-stick fine-aim speed as a multiplier of the left stick. Default 0.35
+; (slower on purpose — this is the precision stick).
+;controller_aimsens=0.35
+
 ; Radial stick deadzone as a percent of full throw (1-80). Default 15.
 ;controller_deadzone=15
+
+; Left-stick walk behavior: deflection holds left click so the character
+; walks toward the cursor. Uncomment for a cursor-only left stick.
+;controller_moveclick=0
 
 ; On any preset failure the DLL keeps presenting the raw game frame (fail-soft,
 ; the log carries the slang error). There is no other fallback mode; unknown

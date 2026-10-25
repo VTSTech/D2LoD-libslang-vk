@@ -107,6 +107,14 @@ bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out) {
                 } else if (_strnicmp(key, "controller_deadzone", 19) == 0 && kl == 19) {
                     // percent; <=0 falls back to the module default (15)
                     out->controller_deadzone = (int)std::atoi(val);
+                } else if (_strnicmp(key, "controller_aimsens", 18) == 0 && kl == 18) {
+                    // float; <=0 falls back to the module default (0.35)
+                    out->controller_aimsens = (float)std::atof(val);
+                } else if (_strnicmp(key, "controller_moveclick", 20) == 0 && kl == 20) {
+                    // stick-walk: a present "0" means off (written as -1 so the
+                    // key-absent zero-fill can keep meaning default-on); any
+                    // other present value means on. Fixup normalizes.
+                    out->controller_moveclick = (val[0] == '0') ? -1 : 1;
                 }
                 // unknown keys are deliberately ignored (forward compatibility)
             }

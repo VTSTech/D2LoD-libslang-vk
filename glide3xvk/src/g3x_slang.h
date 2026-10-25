@@ -64,9 +64,13 @@ struct G3xSlangConf {
                         // borderless regardless)
     int  controller;        // 0.4.4: gamepad-to-mouse/keys master switch (0/1; consumed
                             // by g3x_controller — off by default)
-    float controller_sens;  // 0.4.4: cursor speed multiplier (<=0 = default 1.0)
+    float controller_sens;  // 0.4.4: left-stick speed multiplier (<=0 = default 1.0)
     int  controller_deadzone; // 0.4.4: radial deadzone percent (<=0 = default 15,
                               // clamped 1..80)
+    float controller_aimsens; // 0.4.4: right-stick fine-aim multiplier (<=0 = default 0.35)
+    int  controller_moveclick; // 0.4.4: stick-walk flag; parser writes 1 (present
+                               // non-zero value), -1 (present "0"), 0 = key absent;
+                               // fixup maps >=0 -> on (the default), <0 -> off
 };
 
 // Pure parser for a d2slangvk.conf body: "[slangvk]" section with
