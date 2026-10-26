@@ -37,6 +37,8 @@ option(REDIVIVUS_LOUD
     "Loud build: 0xFE-filled locals, stack canaries and array index checks that report at the defect (support/d2_loud.cpp). Not for release." OFF)
 option(REDIVIVUS_LOUD_STACK_PROTECTOR
     "With REDIVIVUS_LOUD: also -fstack-protector-strong (fatal on a smashed canary). OFF gives the playable loud build." ON)
+option(REDIVIVUS_LEAN
+    "Lean build: drop -g. Code generation is identical (-O0 either way) and d2exe.map addresses do not move, but objects and the exe shrink to a fraction, and compiling and linking are much faster. What is lost: d2_crash symbolises stack traces from the running image's own DWARF, so a lean crash report prints module+0xOFFSET to resolve against d2exe.map - exactly what the stripped d2s artifact CI ships does. OFF = charter default fat exe." OFF)
 
 # ---------------------------------------------------------------------------
 # Sources. Globbed, not listed: the generator adds and removes files on every
@@ -109,8 +111,14 @@ target_include_directories(d2 PRIVATE ${D2_INCLUDE_DIRS})
 set(CXX_ONLY "$<COMPILE_LANGUAGE:CXX>")
 set_target_properties(d2 PROPERTIES
     CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+if(REDIVIVUS_LEAN)
+    target_compile_options(d2 PRIVATE
+        "$<${CXX_ONLY}:-w;-fms-extensions>")
+else()
+    target_compile_options(d2 PRIVATE
+        "$<${CXX_ONLY}:-g;-w;-fms-extensions>")
+endif()
 target_compile_options(d2 PRIVATE
-    "$<${CXX_ONLY}:-g;-w;-fms-extensions>"
     "$<${CXX_ONLY}:SHELL:-include ${CMAKE_SOURCE_DIR}/d2_platform.h>"
     "$<${CXX_ONLY}:-fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=>")
 if(EXISTS "${CMAKE_SOURCE_DIR}/support/d2_hand.h")
@@ -160,7 +168,11 @@ add_library(d2_backtrace STATIC
     thirdparty/libbacktrace/state.c)
 set_target_properties(d2_backtrace PROPERTIES C_STANDARD 99 C_EXTENSIONS ON)
 target_include_directories(d2_backtrace PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/libbacktrace")
-target_compile_options(d2_backtrace PRIVATE -g -w)
+if(REDIVIVUS_LEAN)
+    target_compile_options(d2_backtrace PRIVATE -w)
+else()
+    target_compile_options(d2_backtrace PRIVATE -g -w)
+endif()
 target_link_libraries(d2 PRIVATE d2_backtrace)
 
 if(NOT REDIVIVUS_BUILD_ID)
