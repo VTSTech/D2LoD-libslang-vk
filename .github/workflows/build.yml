@@ -41,13 +41,19 @@ jobs:
         run: |
           set -o pipefail
 
-          if [ -x toolchain-cache/usr/bin/i686-w64-mingw32-g++-win32 ]; then
+          # cmake/ninja must exist before trusting a restore - they come from
+          # the image (/usr/local/bin), not from the snapshot. ccache comes
+          # WITH the snapshot, so it is only checked in the smoke test below.
+          if [ -x toolchain-cache/usr/bin/i686-w64-mingw32-g++-win32 ] \
+             && command -v cmake >/dev/null && command -v ninja >/dev/null; then
             sudo cp -a toolchain-cache/usr/. /usr/
             # Debian's generic compiler names are alternatives symlinks into
             # /etc/alternatives, which is not part of the snapshot - relink.
             sudo ln -sf i686-w64-mingw32-gcc-win32 /usr/bin/i686-w64-mingw32-gcc
             sudo ln -sf i686-w64-mingw32-g++-win32 /usr/bin/i686-w64-mingw32-g++
-            if echo 'int main(){}' | i686-w64-mingw32-g++ -x c++ - -o /tmp/tc-smoke.exe; then
+            if echo 'int main(){}' | i686-w64-mingw32-g++ -x c++ - -o /tmp/tc-smoke.exe \
+               && cmake --version >/dev/null && ninja --version >/dev/null \
+               && ccache --version >/dev/null; then
               echo "toolchain restored from cache; apt skipped"
               exit 0
             fi
@@ -82,15 +88,22 @@ jobs:
           command -v ccache
           echo 'int main(){}' | i686-w64-mingw32-g++ -x c++ - -o /tmp/tc-smoke.exe
 
-          # Snapshot everything apt put under /usr for the cache action.
+          # Snapshot the cross toolchain for the cache action. Every source
+          # is guarded: this run proved /usr/libexec/gcc/<target> does not
+          # exist in Ubuntu's cross-mingw packaging (cc1plus lives under
+          # /usr/lib/gcc/...), and one missing path must not kill the step.
+          # cmake/ninja are not snapshotted: the image preinstalls them in
+          # /usr/local/bin, which shadows /usr/bin anyway.
           rm -rf toolchain-cache && mkdir -p toolchain-cache
-          sudo cp -a --parents \
-            /usr/bin/i686-w64-mingw32-* /usr/bin/cmake /usr/bin/cpack /usr/bin/ctest \
-            /usr/bin/ninja /usr/bin/ccache /usr/i686-w64-mingw32 \
-            /usr/lib/gcc/i686-w64-mingw32 /usr/libexec/gcc/i686-w64-mingw32 \
-            /usr/share/cmake-3.* \
-            toolchain-cache/
+          for p in \
+            /usr/bin/i686-w64-mingw32-* \
+            /usr/bin/ccache \
+            /usr/i686-w64-mingw32 \
+            /usr/lib/gcc/i686-w64-mingw32; do
+            [ -e "$p" ] && sudo cp -a --parents "$p" toolchain-cache/
+          done
           sudo chown -R "$(id -u):$(id -g)" toolchain-cache
+          echo "snapshot: $(du -sh toolchain-cache | cut -f1)"
 
       - name: Restore ccache
         uses: actions/cache@v4
