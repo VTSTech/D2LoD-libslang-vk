@@ -3688,8 +3688,12 @@ D2UnitStrc * __stdcall ITEMGEN_CreateItemFromClassIdAndQuality(int32_t nItemClas
     pSpawnPos = &ptSpawnPos;
     D2RoomStrc* pSpawnRoom;
     pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    sItemGenCtx.pDrlgRoom = FindBestSpotToSpawnItem(pSpawnRoom, &ptUnitPos, pSpawnPos, bUseBestSpot, bCheckPassable);
-    if (!sItemGenCtx.pDrlgRoom) {
+    // [vanilla-plus fix 14] keep the resolved spawn room in a LOCAL. The gen context is
+    // memset to 0 below and D2ItemGenContextStrc.pDrlgRoom sits at offset 0x24 (Drop.h) -
+    // inside the wiped 0x84 range - so assigning it here and never re-assigning handed
+    // CreateUnit pRoom=NULL and orphaned every ground drop (issue #7).
+    D2RoomStrc* pResolvedSpawnRoom = FindBestSpotToSpawnItem(pSpawnRoom, &ptUnitPos, pSpawnPos, bUseBestSpot, bCheckPassable);
+    if (!pResolvedSpawnRoom) {
       Fog::Debug::GuardStack();
       return nullptr;
     }
@@ -3730,6 +3734,14 @@ D2UnitStrc * __stdcall ITEMGEN_CreateItemFromClassIdAndQuality(int32_t nItemClas
     }
 
     sItemGenCtx.nFlags |= nFlags;
+    // [vanilla-plus fix 14] restore the spawn room after the memset wipe. Without it the
+    // item unit is created with pStaticPath->pRoom==NULL: UNITS_PlaceUnitInRoom's UNIT_ITEM
+    // case then skips DRLGROOM_AddUnitToRoomList and its tail's `if (pUnitRoom)` guard
+    // skips ROOM_LinkUnitToUpdateList, so the drop never joins a room update list and is
+    // never broadcast to clients (issue #7: DropDiag v2 capture - IGEN2 room=00000000
+    // islink=0, UPLINK frozen at 32/32, disp=0, crx frozen at join-time 6). Retail sets
+    // this field after the memset; the transcription assigned it before and lost it.
+    sItemGenCtx.pDrlgRoom = pResolvedSpawnRoom;
     pNewItem = ITEM_CreateItemInstance(pGame, &sItemGenCtx, 0);
     Fog::Debug::GuardStack();
     return pNewItem;
