@@ -29,6 +29,7 @@
 #include <string.h>
 #include "D2Glide/Renderer/Glide.h"
 #include "D2Glide/Renderer/ShadowDiag.h"
+#include "D2Client/D2GfxDataStrc.h" // full D2GfxDataStrc for the pSprite derefs below; upstream moved the struct out of the old globals include chain
 #include "globals/globals.h"
 
 namespace D2Glide::Renderer::ShadowDiag {

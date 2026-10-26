@@ -3714,14 +3714,6 @@ D2UnitStrc * __stdcall ITEMGEN_CreateItemFromClassIdAndQuality(int32_t nItemClas
     }
 
     sItemGenCtx.nFlags |= nFlags;
-    // [vanilla-plus fix 14] restore the spawn room after the memset wipe. Without it the
-    // item unit is created with pStaticPath->pRoom==NULL: UNITS_PlaceUnitInRoom's UNIT_ITEM
-    // case then skips DRLGROOM_AddUnitToRoomList and its tail's `if (pUnitRoom)` guard
-    // skips ROOM_LinkUnitToUpdateList, so the drop never joins a room update list and is
-    // never broadcast to clients (issue #7: DropDiag v2 capture - IGEN2 room=00000000
-    // islink=0, UPLINK frozen at 32/32, disp=0, crx frozen at join-time 6). Retail sets
-    // this field after the memset; the transcription assigned it before and lost it.
-    sItemGenCtx.pDrlgRoom = pResolvedSpawnRoom;
     pNewItem = ITEM_CreateItemInstance(pGame, &sItemGenCtx, 0);
     Fog::Debug::GuardStack();
     return pNewItem;

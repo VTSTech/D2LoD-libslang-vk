@@ -1065,40 +1065,34 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
     if (gnGlideSpriteSecondaryTMUEnabled) {
       gnGlideTMUIndex = (uint32_t)(nSpriteBufferPtr == 1);
     }
-    // [vanilla-plus fix] The size class stored in the sprite header is 1-based
-    // (1=large, 2=medium, 3=small); the cache array gGlideSmallTextureCache[3]
-    // is 0-based - [0] is the large cache, see the GLTEXCACHE_Initialize order
-    // and the "- 1" applied at the invalidate sites in this file. Without the
-    // -1 a small texture (<= 64x64, class 3) indexes gGlideSmallTextureCache[3],
-    // one 0x20-byte struct past the end, and the next upload faults inside
-    // GLTEXCACHE_AllocateNode on the phantom struct's garbage fields.
-    if (nSpriteBufferPtr < 1 || 3 < nSpriteBufferPtr) {
-      return 0; // corrupt size class in the sprite header; skip the upload
-    }
-    nSpriteBufferPtr--;
-
-    // [vanilla-plus fix 3] The cache and its node array for this size class
-    // (0-based index after the decrement): the real globals, not the removed
-    // static-local stand-ins above.
-    GlTextureCacheStrc* pTextureCache = &gGlideSmallTextureCache[nSpriteBufferPtr];
-    uint8_t* pCacheNodes = pTextureCache->pNodes;
 
     int nNewCacheNode = *(int*)(nTexStartAddress + 4 + nMode * 8);
     int* pnCacheEntryIndex = (int*)(nTexStartAddress + 4 + nMode * 8);
     // [vanilla-plus fix 2, jaenster/redivivus#5] A recycled sprite header can
     // inherit a stale node index: GLIDE_PixelDataFreeCallback_ClearCacheNodes
-    // clears the node's backpointer but never the header slots, and sprite
-    // headers come from a non-zeroing pool. Promoting a stale index splices a
-    // free-list node onto the active list without nUsedCount++ (RemoveNodeByIndex
-    // walks the node's own links, which the free list shares), draining the
-    // cache early and halting GLTEXCACHE_AllocateNode with error 0xc1. Validate
-    // the slot against the node's own backpointer; on mismatch drop the slot
-    // and allocate fresh. The legit palette-change re-upload (same sprite and
-    // node) still passes: its node backpointer/mode match by construction.
-    if (nCacheSlot) {
-      uint8_t* pSlotNode = pCacheNodes + (nCacheSlot - 1) * 0x1c;
+    // clears the node's header backpointer (node+8) but never the header
+    // slots, and sprite headers come from a non-zeroing pool. Promoting a
+    // stale index splices a free-list node onto the active list without
+    // nUsedCount++ (RemoveNodeByIndex walks the node's own links, which the
+    // free list shares), draining the cache early and halting
+    // GLTEXCACHE_AllocateNode with error 0xc1. Validate the slot against the
+    // node's own backpointer; on mismatch drop the slot and allocate fresh.
+    // The legit palette-change re-upload (same sprite and node) still passes:
+    // its node backpointer/mode match by construction (node+8 =
+    // nTexStartAddress, node+0xc = nMode - the same layout the upload writes
+    // at the - 0x14 / - 0x10 sites below).
+    //
+    // Port note (cf36935 follow-up): pre-merge this ran against the
+    // gGlideSmallTextureCache[3] array with a 0-based class (fix 3's guard +
+    // decrement). Upstream's re-typing moved the three caches into
+    // gGlideVertex0.aTextureCache[] and indexes them with the raw 1-based
+    // class, so the guard+decrement is retired - the zero-and-recompute above
+    // already pins the class to 1..3 - and the validation is ported to the
+    // upstream holder.
+    if (nNewCacheNode) {
+      uint8_t* pSlotNode = gGlideVertex0.aTextureCache[nSpriteBufferPtr - 1].pNodes + (nNewCacheNode - 1) * 0x1c;
       if (*(FxU32*)(pSlotNode + 8) != nTexStartAddress || *(int*)(pSlotNode + 0xc) != nMode) {
-        nCacheSlot = 0;
+        nNewCacheNode = 0;
         *pnCacheEntryIndex = 0;
       }
     }
