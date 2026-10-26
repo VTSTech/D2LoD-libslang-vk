@@ -69,13 +69,13 @@ D2SoundSmpStrc * __fastcall CallSounds(uint32_t nSoundFlags, uint32_t dwSamplePa
 }
 
 BOOL __fastcall SOUNDSMP_LoadWavDataIntoBuffer(D2SoundSmpStrc * ppSoundSmp, int * pWavData, uint32_t nWavDataSize) {
-    short int waveFormat[10];
+    WAVEFORMATEX waveFormat;
     uint32_t uVar1 = nWavDataSize;
     if (ppSoundSmp && ppSoundSmp->pDSBuffer && pWavData && nWavDataSize) {
       uint8_t* pPcmData;
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gSoundSmpCs);
       nWavDataSize = uVar1;
-      pPcmData = (uint8_t*)SOUNDSMP_ParseWavHeader(pWavData, &nWavDataSize, waveFormat);
+      pPcmData = (uint8_t*)SOUNDSMP_ParseWavHeader(pWavData, &nWavDataSize, &waveFormat);
       if ((uint32_t)ppSoundSmp->nMinBufSize < nWavDataSize) {
         ppSoundSmp->nPcmSize = nWavDataSize;
         ppSoundSmp->pPcmData = pPcmData;
@@ -642,7 +642,7 @@ DWORD __stdcall D2SOUNDSMP_SoundUpdateThreadProc(void * lpThreadParam) {
         if (ppnParam->field_0x4c) {
           dwWaitResult = GetTickCount();
           piVar5 = ppnParam->field_0x58;
-          if ((int)dwWaitResult < piVar5 || (int)ppnParam->field_0x5c < (int)dwWaitResult) {
+          if ((int)dwWaitResult < piVar5 || ppnParam->field_0x5c < (int)dwWaitResult) {
             SOUNDSMP_SetVolume(ppnParam, ppnParam->field_0x54);
             if (!ppnParam->field_0x54) {
               if (!ppnParam->pDSBuffer) {
@@ -836,8 +836,9 @@ void __fastcall SOUNDSMP_InitWaveFormat(WAVEFORMATEX * pWaveFormat, WORD nChanne
     pWaveFormat->nAvgBytesPerSec = (uint32_t)(uint16_t)(nChannels * 2) * 0x5622;
 }
 
-int * __fastcall SOUNDSMP_ParseWavHeader(int * pWavData, uint32_t * pDataSize, short * pWavFormat) {
-    int* pChunkData;
+int * __fastcall SOUNDSMP_ParseWavHeader(int * pWavData, uint32_t * pDataSize, WAVEFORMATEX * pWavFormat) {
+    WORD* pChunkData;
+    int* piVar1;
     uint32_t nChunkSize;
     if (0x1f >= *pDataSize) {
       return nullptr;
@@ -849,26 +850,26 @@ int * __fastcall SOUNDSMP_ParseWavHeader(int * pWavData, uint32_t * pDataSize, s
     }
 
     nChunkSize = 0;
-    pChunkData = SOUNDSMP_FindWavChunk(pDataSize, &nChunkSize, 0x20746d66, pWavData + 3);
+    pChunkData = (WORD*)SOUNDSMP_FindWavChunk(pDataSize, &nChunkSize, 0x20746d66, pWavData + 3);
     if (!(pChunkData && 0xf < nChunkSize && nChunkSize <= *pDataSize)) {
       return nullptr;
     }
 
     *pDataSize -= nChunkSize;
-    *pWavFormat = (short int)*pChunkData;
-    pWavFormat[1] = *(short int*)((int)pChunkData + 2);
-    *(int*)(pWavFormat + 2) = pChunkData[1];
-    *(int*)(pWavFormat + 4) = pChunkData[2];
-    pWavFormat[6] = (short int)pChunkData[3];
-    pWavFormat[7] = *(short int*)((int)pChunkData + 0xe);
-    pWavFormat[8] = 0;
-    pChunkData = SOUNDSMP_FindWavChunk(pDataSize, &nChunkSize, 0x61746164, (int*)((int)pChunkData + nChunkSize));
-    if (!(pChunkData && nChunkSize <= *pDataSize)) {
+    pWavFormat->wFormatTag = *pChunkData;
+    pWavFormat->nChannels = pChunkData[1];
+    pWavFormat->nSamplesPerSec = *(DWORD*)(pChunkData + 2);
+    pWavFormat->nAvgBytesPerSec = *(DWORD*)(pChunkData + 4);
+    pWavFormat->nBlockAlign = pChunkData[6];
+    pWavFormat->wBitsPerSample = pChunkData[7];
+    pWavFormat->cbSize = 0;
+    piVar1 = SOUNDSMP_FindWavChunk(pDataSize, &nChunkSize, 0x61746164, (int*)((int)pChunkData + nChunkSize));
+    if (!(piVar1 && nChunkSize <= *pDataSize)) {
       return nullptr;
     }
 
     *pDataSize = nChunkSize;
-    return pChunkData;
+    return piVar1;
 }
 
 void __fastcall SOUNDSMP_CalculateVolumeAndPan(uint32_t * pnVolume, uint32_t * pnPan, float fDeltaX, float fDeltaY, float fDeltaZ) {

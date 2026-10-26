@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "D2Common/D2DynamicPathStrc.h"
+#include "D2Common/Drlg/Path.h"
 
 // Forward declarations
 struct CMDPARAMS;
@@ -36,6 +36,13 @@ struct _CONTEXT;
 #define RECON_FPTD_fnBinkFrameCallback
 typedef void (__stdcall *fnBinkFrameCallback)();
 #endif
+
+// Data types
+struct __attribute__((packed)) D2GSPacketSrv0x50 {
+    /* 0x00 */ uint8_t nPacketId; // 0x50
+    /* 0x01 */ uint16_t nMessageType; // 1/2/4/0xd/0x17 or quest id (Q36)
+    /* 0x03 */ uint16_t aPayload[6]; // word stores at +3,+5,+7; stone-order word loop from +3
+};
 
 namespace D2Client {
 
@@ -161,7 +168,7 @@ int __stdcall D2CLIENT_GetTradePlayerGoldAmount();
 void __fastcall TRADE_SendGoldToPartner(uint32_t nParam);
 int __stdcall TRADE_IsTradeThrottled();
 void __stdcall SHOP_CleanupAssets();
-void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(int32_t nParam);
+void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(struct D2GSPacketSrv0x50 * pPacket);
 // Handles GS→client packet 0x5E (quest availability update): copies 37 bytes (9 dwords + 1 byte) from packet payload into aQuestAvailabilityPacket global buffer, then sets bReceivedQuestAvailabilityPacket=1.
 void __fastcall NET_D2GS_CLIENT_Incoming0x5E_QUESTPICKS(char * pBytes);
 uint32_t __stdcall GetQuestAvailabilityByIndex(int32_t nUnused, int32_t nQuestIndex);

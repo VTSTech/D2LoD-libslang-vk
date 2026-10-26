@@ -761,7 +761,7 @@ BOOL __fastcall Q12_IsSanctuaryComplete(::SGAMEDATA * pGame) {
 }
 
 // A2Q4 - GetSummonerCoords. Outputs the Summoner location into pnParam[0/1]. If bSummonerKilled, returns exact (X,Y); if bSummonerCoordsFallback, returns (X, Y-4). Returns 1 if coords written, else 0. Used to place the Canyon-of-the-Magi portal near where the Summoner was.
-BOOL __fastcall Q12_GetSummonerCoords(::SGAMEDATA * pGame, int * pnParam) {
+BOOL __fastcall Q12_GetSummonerCoords(::SGAMEDATA * pGame, D2CoordStrc * pCoord) {
     D2QuestDataStrc* pDVar2 = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheArcaneSanctuary);
     if (!pDVar2) {
       return 0;
@@ -769,17 +769,17 @@ BOOL __fastcall Q12_GetSummonerCoords(::SGAMEDATA * pGame, int * pnParam) {
 
     D2QuestDataA2Q4Strc* pDVar1 = pDVar2->pQuestSpecificData.pA2Q4;
     if (pDVar1->bSummonerKilled) {
-      *pnParam = pDVar1->nSummonerX;
-      pnParam[1] = pDVar1->nSummonerY;
+      pCoord->nX = pDVar1->nSummonerX;
+      pCoord->nY = pDVar1->nSummonerY;
       return 1;
     }
     if (!pDVar1->bSummonerCoordsFallback) {
       return 0;
     }
 
-    *pnParam = pDVar1->nSummonerX;
-    pnParam[1] = pDVar1->nSummonerY;
-    pnParam[1] += -4;
+    pCoord->nX = pDVar1->nSummonerX;
+    pCoord->nY = pDVar1->nSummonerY;
+    pCoord->nY += -4;
     return 1;
 }
 

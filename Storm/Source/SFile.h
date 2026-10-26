@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
+#include "Storm/Source/SSystem.h"
 
 // Forward declarations
 struct D2ArchiveStrc;
@@ -138,6 +139,16 @@ struct IDirectSoundBuffer;
 struct IDirectSoundBufferVtbl;
 
 // Data types
+struct D2FileChunkHeaderStrc {
+    D2FileChunkHeaderStrc() = default;
+    D2FileChunkHeaderStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+    D2FileChunkHeaderStrc(int32_t a0, int32_t a1) : nChunkId(a0), nChunkSize(a1) {}
+
+    /* 0x00 */ int32_t nChunkId;
+    /* 0x04 */ int32_t nChunkSize; // SetFilePointer distance
+};
+
 struct __attribute__((packed)) D2MPQBlockEntryStrc {
     /* 0x00 */ uint32_t dwFilePos; // offset of the file data in the archive
     /* 0x04 */ uint32_t dwCompressedSize;
@@ -212,9 +223,9 @@ struct IDirectSoundBufferVtbl {
     /* 0x50 */ HRESULT (__stdcall *Restore)(void *);
 };
 
-struct StormLinkStrc {
-    /* 0x00 */ struct StormLinkStrc * pPrevLink; // points at the previous node's link, or at the list head's own link
-    /* 0x04 */ int pNext; // pointer to the NEXT ITEM (not its link); end of list is ~(int)&headLink, i.e. negative
+struct __attribute__((packed)) StormEventRecStrc {
+    /* 0x00 */ StormLinkStrc link;
+    /* 0x08 */ HANDLE hEvent;
 };
 
 namespace Storm::Source::SFile {
@@ -478,7 +489,7 @@ struct D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord3(int * * ppArchive, in
 uint32_t __fastcall SFILE_RemoveAsyncRequestFromQueue(void * pListContext, int * pNode);
 struct D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord4(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
 // @blizzard IssueRequest (SFILE.CPP)
-void * __stdcall SFILE_IssueRequest(uint32_t nFileOffset, uint32_t pChunkWritePtr, uint32_t pReadBufferBase, struct IDirectSoundBuffer * pStream, uint32_t pUserCtx2, struct D2StormAudioStreamRec * pParentStream, uint32_t nChunkSize, int32_t nTimeoutMs, uint32_t bUrgent, HANDLE hCompletionEvent, uint32_t bQueueImmediately, int32_t bIsLastChunk, struct D2StormAsyncCompletionStrc * pCompletion, struct D2MPQFileStrc * pMPQFile);
+struct D2StormAsyncOpStrc * __stdcall SFILE_IssueRequest(uint32_t nFileOffset, uint32_t pChunkWritePtr, uint32_t pReadBufferBase, struct IDirectSoundBuffer * pStream, uint32_t pUserCtx2, struct D2StormAudioStreamRec * pParentStream, uint32_t nChunkSize, int32_t nTimeoutMs, uint32_t bUrgent, HANDLE hCompletionEvent, uint32_t bQueueImmediately, int32_t bIsLastChunk, struct D2StormAsyncCompletionStrc * pCompletion, struct D2MPQFileStrc * pMPQFile);
 // @blizzard SFileCloseFile (SFILE.CPP)
 int __stdcall SFileCloseFile(struct D2MPQFileStrc * pMPQFile);
 // @blizzard SFileOpenFile (SFILE.CPP)
@@ -511,7 +522,7 @@ int __stdcall SFileDestroy();
 // Releases and frees one async request (REQUEST tag) and returns the next link of the list it was on (0 at the end). Provenance: 1.14d asm 0041a2c0.
 int __fastcall SFILE_DeleteAsyncRequestGetNext(int32_t pListContext, struct D2StormAsyncOpStrc * pAsyncOp);
 int __stdcall SFILE_CancelAsyncRequest(int32_t hFileHandle, struct D2MPQFileStrc * pMPQFile);
-void __stdcall SFILE_SelectAsyncRequest(int32_t nFileHandle, uint32_t nCurrentFilePos, int * * ppReadyRequest, int * * ppTimeoutRequest, int * * ppMinTimeout);
+void __stdcall SFILE_SelectAsyncRequest(int32_t nFileHandle, uint32_t nCurrentFilePos, int * * ppReadyRequest, int * * ppTimeoutRequest, int32_t * ppMinTimeout);
 // Async I/O worker thread (lpStartAddress for CreateThread). Main loop: process cancelled requests, select next request (priority vs normal queue), read file via SFILE_ReadFileBytes/SFILE_SyncReadFile, invoke completion callbacks, signal hCompletionEvent, and free request when done. Throttles based on gnSFileDataChunkSize/gnSFileAsyncBudgetBytesPerSec. Exits when gbAsyncIOWorkerShutdown shutdown flag is set. Updates gpCurrentAsyncIORequest during execution.
 // @blizzard CdThreadProc (SFILE.CPP)
 DWORD __stdcall SFILE_CdThreadProc(void * lpThreadParam);

@@ -317,34 +317,33 @@ LPVOID * __stdcall AllocatePoolBlock(LPVOID pPool, int32_t nManager) {
     exit(-1);
 }
 
-int32_t __stdcall FindOrCreateBlockWithFreeSlots(LPVOID * ppOutBlock, int32_t nManager, LPVOID pPool) {
+int32_t __stdcall FindOrCreateBlockWithFreeSlots(LPVOID * ppOutBlock, int32_t nManager, D2PoolStrc * pPool) {
     int32_t nSlotIndex;
-    LPVOID* pOverflowBlock;
-    LPVOID pCurrentBlock = *(LPVOID*)((int)pPool + 0x28);
-    if (!pCurrentBlock) {
-      LPVOID* pNewBlock;
-      pNewBlock = AllocatePoolBlock(pPool, nManager);
+    D2PoolBlockStrc* pOverflowBlock = pPool->pBlocks;
+    if (!pOverflowBlock) {
+      D2PoolBlockStrc* pNewBlock;
+      pNewBlock = (D2PoolBlockStrc*)AllocatePoolBlock(pPool, nManager);
       pOverflowBlock = 0;
       if (pNewBlock) {
-        *(LPVOID**)((int)pPool + 0x2c) = (LPVOID*)pNewBlock;
-        *(LPVOID**)((int)pPool + 0x28) = (LPVOID*)pNewBlock;
+        pPool->pTail = pNewBlock;
+        pPool->pBlocks = pNewBlock;
         *ppOutBlock = pNewBlock;
         return 0;
       }
     } else {
-      if (*(int*)((int)pCurrentBlock + 8) < (int)*(uint32_t*)((int)pPool + 0x1c)) {
-        nSlotIndex = FindFreeSlotInBitmap(*(uint32_t**)((int)pCurrentBlock + 4), *(uint32_t*)((int)pPool + 0x1c));
+      if ((int)pOverflowBlock->nBlocks < (int)pPool->nBlocks) {
+        nSlotIndex = FindFreeSlotInBitmap((uint32_t*)pOverflowBlock->pUsage, pPool->nBlocks);
         if (-1 < nSlotIndex) {
-          *ppOutBlock = pCurrentBlock;
+          *ppOutBlock = pOverflowBlock;
           return nSlotIndex;
         }
       }
 
-      pOverflowBlock = AllocatePoolBlock(pPool, nManager);
+      pOverflowBlock = (D2PoolBlockStrc*)AllocatePoolBlock(pPool, nManager);
       if (pOverflowBlock) {
-        pOverflowBlock[4] = *(LPVOID*)((int)pPool + 0x28);
-        *(LPVOID**)(*(int*)((int)pPool + 0x28) + 0xc) = (LPVOID*)pOverflowBlock;
-        *(LPVOID**)((int)pPool + 0x28) = (LPVOID*)pOverflowBlock;
+        pOverflowBlock->pNext = pPool->pBlocks;
+        pPool->pBlocks->pPrev = pOverflowBlock;
+        pPool->pBlocks = pOverflowBlock;
       }
     }
 
@@ -529,8 +528,8 @@ void __fastcall Free(D2PoolManagerStrc * pMemory, void * * pStruct, char * szFil
 }
 
 void InitializeMemoryManagers(D2PoolManagerStrc * pMemory) {
-    LPCRITICAL_SECTION pPool;
-    uint32_t* pNextBlock;
+    D2PoolBlockStrc* _Memory;
+    D2PoolBlockStrc* pNextBlock;
     D2PoolManagerStrc* pManager = pMemory;
     if (!pMemory) {
       pManager = pGlobalPoolSystem.pManagers;
@@ -542,42 +541,42 @@ void InitializeMemoryManagers(D2PoolManagerStrc * pMemory) {
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pManager->pSync);
     pMemory = 0;
     if (0 < (int)pManager->nPools) {
-      uint32_t* pBlock;
-      pPool = &pManager->pPools[0].pSync;
+      D2PoolStrc* pPool;
+      pPool = pManager->pPools;
       do {
-        /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(pPool);
-        pNextBlock = (uint32_t*)pPool[1].LockSemaphore;
+        /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pPool->pSync);
+        pNextBlock = pPool->pBlocks;
         while (true) {
-          pBlock = pNextBlock;
-          if (!pBlock) {
+          _Memory = pNextBlock;
+          if (!_Memory) {
             break;
           }
 
-          pNextBlock = (uint32_t*)pBlock[4];
-          if (!pBlock[2]) {
-            if (pBlock[3]) {
-              *(uint32_t**)(pBlock[3] + 0x10) = (uint32_t*)pNextBlock;
+          pNextBlock = _Memory->pNext;
+          if (!_Memory->nBlocks) {
+            if (_Memory->pPrev) {
+              _Memory->pPrev->pNext = pNextBlock;
             }
-            if (pBlock[4]) {
-              *(uint32_t*)(pBlock[4] + 0xc) = pBlock[3];
+            if (_Memory->pNext) {
+              _Memory->pNext->pPrev = _Memory->pPrev;
             }
-            if (pPool[1].LockSemaphore == (void*)pBlock) {
-              pPool[1].LockSemaphore = (HANDLE)pBlock[4];
+            if (pPool->pBlocks == _Memory) {
+              pPool->pBlocks = _Memory->pNext;
             }
-            if ((uint32_t*)pPool[1].SpinCount == pBlock) {
-              pPool[1].SpinCount = pBlock[3];
+            if (pPool->pTail == _Memory) {
+              pPool->pTail = _Memory->pPrev;
             }
 
-            pPool[1].OwningThread = (HANDLE)((int)pPool[1].OwningThread - 1);
-            RemoveBlockFromSortedArray(pBlock, (int32_t)pManager);
-            /* DWORD dwFreeType for VirtualFree */ /* SIZE_T dwSize for VirtualFree */ /* LPVOID lpAddress for VirtualFree */ VirtualFree((LPVOID)*pBlock, 0, 0x8000);
-            free(pBlock);
+            pPool->nAllocBlock--;
+            RemoveBlockFromSortedArray((uint32_t*)_Memory, (int32_t)pManager);
+            /* DWORD dwFreeType for VirtualFree */ /* SIZE_T dwSize for VirtualFree */ /* LPVOID lpAddress for VirtualFree */ VirtualFree(_Memory->pCommit, 0, 0x8000);
+            free(_Memory);
           }
         }
 
-        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(pPool);
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pPool->pSync);
         pMemory = (D2PoolManagerStrc*)((uintptr_t)&pMemory->nPoolId + 1);
-        pPool += 2;
+        pPool++;
       } while ((int)pMemory < (int)pManager->nPools);
     }
 
@@ -586,7 +585,8 @@ void InitializeMemoryManagers(D2PoolManagerStrc * pMemory) {
 
 void FreeMemoryPool(D2PoolManagerStrc * pMemory) {
     void* pBlockHeader;
-    void* pNextBlock;
+    D2PoolBlockStrc* pNextBlock;
+    D2PoolBlockStrc* pCurrentBlock;
     uint8_t* pNextOverflow;
     uint8_t* pOverflowNode;
     if (!pGlobalPoolSystem.bInit) {
@@ -601,20 +601,20 @@ void FreeMemoryPool(D2PoolManagerStrc * pMemory) {
 
     int nPoolIndex = 0;
     if (0 < (int)pMemory->nPools) {
-      LPCRITICAL_SECTION pPool;
-      pPool = &pMemory->pPools[0].pSync;
+      D2PoolStrc* pPool;
+      pPool = pMemory->pPools;
       do {
-        pBlockHeader = pPool[1].LockSemaphore;
-        while (pBlockHeader) {
-          pNextBlock = *(void**)((int)pBlockHeader + 0x10);
-          /* DWORD dwFreeType for VirtualFree */ /* SIZE_T dwSize for VirtualFree */ /* LPVOID lpAddress for VirtualFree */ VirtualFree(*(LPVOID*)pBlockHeader, 0, 0x8000);
-          free(pBlockHeader);
-          pBlockHeader = pNextBlock;
+        pCurrentBlock = pPool->pBlocks;
+        while (pCurrentBlock) {
+          pNextBlock = pCurrentBlock->pNext;
+          /* DWORD dwFreeType for VirtualFree */ /* SIZE_T dwSize for VirtualFree */ /* LPVOID lpAddress for VirtualFree */ VirtualFree(pCurrentBlock->pCommit, 0, 0x8000);
+          free(pCurrentBlock);
+          pCurrentBlock = pNextBlock;
         }
 
-        /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ DeleteCriticalSection(pPool);
+        /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ DeleteCriticalSection(&pPool->pSync);
         nPoolIndex++;
-        pPool += 2;
+        pPool++;
       } while (nPoolIndex < (int)pMemory->nPools);
     }
 
@@ -783,9 +783,9 @@ DWORD getDwMemory(D2PoolManagerStrc * pMemory) {
 
 void * __fastcall Alloc(D2PoolManagerStrc * pMemory, size_t MemSize, char * szFile, int32_t Line) {
     void* pOverflowResult;
-    PRTL_CRITICAL_SECTION_DEBUG nBlockSize;
+    size_t nBlockSize;
     uint32_t* pBitmapWord;
-    HANDLE pNextBlock;
+    D2PoolBlockStrc* pNextBlock;
     if (!pMemory) {
       pMemory = pGlobalPoolSystem.pManagers;
     }
@@ -803,14 +803,14 @@ void * __fastcall Alloc(D2PoolManagerStrc * pMemory, size_t MemSize, char * szFi
       return pOverflowResult;
     }
 
-    LPCRITICAL_SECTION lpCriticalSection = &pMemory->pPools[nSizeClass].pSync;
-    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(lpCriticalSection);
+    D2PoolStrc* pPool = pMemory->pPools + nSizeClass;
+    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pPool->pSync);
     int32_t nLine = 0x40a10d;
-    uint32_t nSlotIndex = FindOrCreateBlockWithFreeSlots((LPVOID*)&Line, (int32_t)pMemory, lpCriticalSection);
-    if ((int)nSlotIndex < lpCriticalSection[1].LockCount) {
+    uint32_t nSlotIndex = FindOrCreateBlockWithFreeSlots((LPVOID*)&Line, (int32_t)pMemory, pPool);
+    if ((int)nSlotIndex < (int)pPool->nBlocks) {
       int nBitmapByteOff;
       if (!Line) {
-        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pPool->pSync);
         nLine = 0x4f8;
       } else {
         (*(int*)(Line + 8))++;
@@ -818,33 +818,33 @@ void * __fastcall Alloc(D2PoolManagerStrc * pMemory, size_t MemSize, char * szFi
         if (!(*(uint32_t*)(nBitmapByteOff + *(int*)(Line + 4)) & gadwBitMasks[nSlotIndex & 0x1f])) {
           pBitmapWord = (uint32_t*)(nBitmapByteOff + *(int*)(Line + 4));
           *pBitmapWord |= gadwBitMasks[nSlotIndex & 0x1f];
-          if (lpCriticalSection[1].LockCount <= *(int*)(Line + 8) && *(int*)(Line + 0x10)) {
-            pNextBlock = *(HANDLE*)(Line + 0x10);
-            if (*(int*)((int)pNextBlock + 8) < lpCriticalSection[1].LockCount) {
+          if ((int)pPool->nBlocks <= *(int*)(Line + 8) && *(int*)(Line + 0x10)) {
+            pNextBlock = *(D2PoolBlockStrc**)(Line + 0x10);
+            if ((int)pNextBlock->nBlocks < (int)pPool->nBlocks) {
               if (!*(int*)(Line + 0xc)) {
-                lpCriticalSection[1].LockSemaphore = pNextBlock;
+                pPool->pBlocks = pNextBlock;
               } else {
-                *(HANDLE*)(*(int*)(Line + 0xc) + 0x10) = pNextBlock;
+                *(D2PoolBlockStrc**)(*(int*)(Line + 0xc) + 0x10) = (D2PoolBlockStrc*)pNextBlock;
               }
               if (*(int*)(Line + 0x10)) {
                 *(uint32_t*)(*(int*)(Line + 0x10) + 0xc) = *(uint32_t*)(Line + 0xc);
               }
-              if (!lpCriticalSection[1].SpinCount) {
+              if (!pPool->pTail) {
                 Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x50d);
                 exit(-1);
               }
 
-              *(int32_t*)(lpCriticalSection[1].SpinCount + 0x10) = Line;
-              *(ULONG_PTR*)(Line + 0xc) = lpCriticalSection[1].SpinCount;
-              lpCriticalSection[1].SpinCount = Line;
+              pPool->pTail->pNext = (D2PoolBlockStrc*)Line;
+              *(D2PoolBlockStrc**)(Line + 0xc) = pPool->pTail;
+              pPool->pTail = (D2PoolBlockStrc*)Line;
               *(uint32_t*)(Line + 0x10) = 0;
             }
           }
 
-          nBlockSize = lpCriticalSection[1].DebugInfo;
+          nBlockSize = pPool->nBlockSize;
           nBitmapByteOff = *(int*)Line;
-          /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
-          return (void*)((int)nBlockSize * nSlotIndex + nBitmapByteOff);
+          /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pPool->pSync);
+          return (void*)(nBlockSize * nSlotIndex + nBitmapByteOff);
         }
 
         nLine = 0x4ff;

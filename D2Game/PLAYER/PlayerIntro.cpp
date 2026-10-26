@@ -136,15 +136,15 @@ void __fastcall PLAYER_UnsetSpokenWithNPC_Intro2(::SGAMEDATA * pGame, D2UnitStrc
 }
 
 void __fastcall CopyBufferToPointer(D2BitBufferStrc * pBitBuffer, char * pDest) {
-    int pSrcBuf = *(int*)pBitBuffer->pBuffer;
-    *(uint32_t*)pDest = *(uint32_t*)pSrcBuf;
-    *(uint32_t*)(pDest + 4) = *(uint32_t*)(pSrcBuf + 4);
+    uint32_t* pSrcBuf = *(uint32_t**)pBitBuffer->pBuffer;
+    *(uint32_t*)pDest = *pSrcBuf;
+    *(uint32_t*)(pDest + 4) = pSrcBuf[1];
 }
 
 void __fastcall CopySizeAndPosToBuffer(D2BitBufferStrc * pBitBuffer, uint8_t * pDest) {
-    int pSizePosData = *(int*)pBitBuffer->nBitsInBuffer;
-    *(uint32_t*)pDest = *(uint32_t*)pSizePosData;
-    *(uint32_t*)(pDest + 4) = *(uint32_t*)(pSizePosData + 4);
+    uint32_t* pSizePosData = *(uint32_t**)pBitBuffer->nBitsInBuffer;
+    *(uint32_t*)pDest = *pSizePosData;
+    *(uint32_t*)(pDest + 4) = pSizePosData[1];
 }
 
 void __fastcall PLAYERINTRO_CopyIntroData8Bytes(uint32_t * pdwParam1, uint32_t * pdwParam2) {

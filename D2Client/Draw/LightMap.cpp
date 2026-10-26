@@ -90,9 +90,9 @@ D2LightMapStrc * __fastcall AllocLightMap(D2UnitStrc * pUnit, int32_t nLightType
 
     pLightMap->nUnitGUID = nUnitGUID;
     if (!pUnit || !(pUnit->eUnitFlags >> 0x15 & 1)) {
-      *(uint8_t*)&pLightMap->bUnknown = 0;
+      pLightMap->bUnknown = '\0';
     } else {
-      *(uint8_t*)&pLightMap->bUnknown = 1;
+      pLightMap->bUnknown = '\x01';
     }
 
     uint32_t nPrecision = D2Common::Units::GetPrecisionX(pUnit);
@@ -851,7 +851,7 @@ void LIGHTMAP_ApplyCollisionOccludedLight(D2LightMapStrc * pLightMap) {
     if (eUnitType == UNIT_COUNT) {
       return;
     }
-    if ((char)pLightMap->bUnknown == '\0') {
+    if (pLightMap->bUnknown == '\0') {
       pUnit = UNIT::Player::UNITS_FindClientSideUnit(pLightMap->nUnitGUID, eUnitType);
     } else {
       pUnit = UNIT::Player::UNITS_FindServerSideUnit(pLightMap->nUnitGUID, eUnitType);
@@ -1053,7 +1053,7 @@ void __stdcall LIGHTMAP_UpdateSingleLight(int nQuality, D2LightMapStrc * pLightM
       D2UnitStrc* pUnit;
       eUnitType = pLightMap->eUnitType;
       if (eUnitType != UNIT_COUNT) {
-        if ((char)pLightMap->bUnknown == '\0') {
+        if (pLightMap->bUnknown == '\0') {
           pUnit = UNIT::Player::UNITS_FindClientSideUnit(pLightMap->nUnitGUID, eUnitType);
         } else {
           pUnit = UNIT::Player::UNITS_FindServerSideUnit(pLightMap->nUnitGUID, eUnitType);

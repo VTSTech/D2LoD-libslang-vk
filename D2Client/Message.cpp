@@ -137,13 +137,13 @@ void __fastcall MESSAGE_RegisterEventHandler(HWND hWnd, int32_t eEventType, int3
 }
 
 // Unregisters a Windows event handler (message/command/keyup/keydown) based on eEventType. Filters out WM_COMMAND (0x111) from generic message handlers.
-void __fastcall MESSAGE_UnregisterEventHandler(HWND hWnd, int32_t eEventType, char * nMessageOrKeyCode, char * pfHandler) {
+void __fastcall MESSAGE_UnregisterEventHandler(HWND hWnd, int32_t eEventType, int32_t nMessageOrKeyCode, char * pfHandler) {
     if (hWnd) {
       switch (eEventType) {
         case 0:
           {
-            if (nMessageOrKeyCode != (char*)0x111) {
-              Storm::WindowHandle::SMsgUnregisterMessage((uint32_t)hWnd, nMessageOrKeyCode, pfHandler);
+            if (nMessageOrKeyCode != 0x111) {
+              Storm::WindowHandle::SMsgUnregisterMessage((uint32_t)hWnd, (char*)nMessageOrKeyCode, pfHandler);
               return;
             }
 
@@ -151,13 +151,13 @@ void __fastcall MESSAGE_UnregisterEventHandler(HWND hWnd, int32_t eEventType, ch
             exit(-1);
           }
         case 1:
-          Storm::WindowHandle::SMsgUnregisterCommand(hWnd, nMessageOrKeyCode, pfHandler);
+          Storm::WindowHandle::SMsgUnregisterCommand(hWnd, (char*)nMessageOrKeyCode, pfHandler);
         return;
         case 2:
-          Storm::WindowHandle::SMsgUnregisterKeyUp((uint32_t)hWnd, nMessageOrKeyCode, pfHandler);
+          Storm::WindowHandle::SMsgUnregisterKeyUp((uint32_t)hWnd, (char*)nMessageOrKeyCode, pfHandler);
         return;
         case 3:
-          Storm::WindowHandle::SMsgUnregisterKeyDown((uint32_t)hWnd, nMessageOrKeyCode, pfHandler);
+          Storm::WindowHandle::SMsgUnregisterKeyDown((uint32_t)hWnd, (char*)nMessageOrKeyCode, pfHandler);
         default:
           return;
       }
@@ -199,7 +199,7 @@ void __fastcall MESSAGE_UnregisterEventHandlerBatch(HWND hWnd, D2UIFlagInitStrc 
 
       pnMessageCode = &pEventHandlers->nMessageOrKeyCode;
       do {
-        MESSAGE_UnregisterEventHandler(hWnd, ((D2UIFlagInitStrc*)(pnMessageCode - 1))->eEventType, (char*)*pnMessageCode, (char*)pnMessageCode[1]);
+        MESSAGE_UnregisterEventHandler(hWnd, ((D2UIFlagInitStrc*)(pnMessageCode - 1))->eEventType, *pnMessageCode, (char*)pnMessageCode[1]);
         pnMessageCode += 3;
         nCount--;
       } while (nCount);
@@ -230,7 +230,7 @@ void __fastcall MESSAGE_UnregisterWindowMessageHandlers(char * szText) {
 
     uint32_t nByteOffset = 0;
     do {
-      MESSAGE_UnregisterEventHandler((HWND)szText, gaUIFlagInitMessageHandlers[nByteOffset].eEventType, *(char**)&gaUIFlagInitMessageHandlers[nByteOffset].nMessageOrKeyCode, *(char**)&gaUIFlagInitMessageHandlers[nByteOffset].pfHandler);
+      MESSAGE_UnregisterEventHandler((HWND)szText, gaUIFlagInitMessageHandlers[nByteOffset].eEventType, gaUIFlagInitMessageHandlers[nByteOffset].nMessageOrKeyCode, *(char**)&gaUIFlagInitMessageHandlers[nByteOffset].pfHandler);
       nByteOffset++;
     } while (nByteOffset < 4);
 

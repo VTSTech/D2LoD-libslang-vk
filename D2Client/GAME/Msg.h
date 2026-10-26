@@ -8,7 +8,17 @@
 #include <cstdarg>
 #include "d2_platform.h"
 
+// Forward declarations
+struct D2ChatPacketBuildStrc;
+
 // Data types
+struct D2ChatPacketSendStrc {
+    /* 0x00 */ uint8_t nCmd;
+    /* 0x01 */ uint8_t nMsgType;
+    /* 0x02 */ uint8_t nIMEMode;
+    /* 0x03 */ char abData[513]; // message NUL, target NUL, trailing NUL
+};
+
 struct __attribute__((packed)) D2GSPacketClt0x5E {
     /* 0x00 */ uint8_t nId;
     /* 0x01 */ uint8_t nActionType;
@@ -46,6 +56,13 @@ struct __attribute__((packed)) D2GSPacketClt0x68 {
     /* 0x10 */ int nConstant;
     /* 0x14 */ uint8_t nLanguageCode;
     /* 0x15 */ char szCharName[16];
+};
+
+struct __attribute__((packed)) D2GSPacketClt0x6C {
+    /* 0x00 */ uint8_t nId; // 0x6C
+    /* 0x01 */ uint8_t nChunkSize; // 0xFF for full chunks, remainder for the last
+    /* 0x02 */ uint32_t nTotalSize; // total save size; server side D2GSMsg6CUploadSaveStrc.nTotalSize
+    /* 0x06 */ uint8_t aData[258]; // up to 255 bytes used; region runs to the next local
 };
 
 struct __attribute__((packed)) D2GSPacketClt0x6D {
@@ -143,7 +160,7 @@ void __fastcall NET_D2GS_CLIENT_Send_INT_INT_INT(uint8_t nPacketId, int32_t nArg
 void __fastcall NET_D2GS_CLIENT_Send_INT_INT_INT_INT(uint8_t nPacketId, int32_t nUnitType, int32_t nUnitGUID, int32_t nTargetX, int32_t nTargetY);
 void __fastcall NET_D2GS_CLIENT_Send_0x5D(uint8_t nActionType, uint32_t nPlayerGUID, int32_t bToggle);
 void __fastcall NET_D2GS_CLIENT_Send_0x5E(uint8_t nActionType, int32_t nPlayerGUID);
-void __fastcall NET_D2GS_CLIENT_Send_Chat(uint8_t * pbParam);
+void __fastcall NET_D2GS_CLIENT_Send_Chat(struct D2ChatPacketBuildStrc * pChatPacket);
 void __fastcall NET_D2GS_CLIENT_Send_0x66(void * pData, uint32_t nLen);
 void __stdcall NET_D2GS_CLIENT_Send_0x66_HaltTail(int nLine);
 

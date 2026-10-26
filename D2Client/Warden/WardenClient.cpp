@@ -79,13 +79,9 @@ void __stdcall WARDEN_ComputeModuleHash(char * szModuleName, int32_t pHashOut, u
     Storm::Source::SSignature::Sha1_Finalize((uint8_t*)pHashOut, &sha1Ctx);
 }
 
-//   pModulus: Stack[0xc]:4 (void *) - nKeySize bytes
-//   pExponent: Stack[0x10]:4 (void *)
-//   nExponentLen: Stack[0x14]:4 (uint32_t)
-//   nSigDataLen: Stack[0x18]:4 (uint32_t)
-//   nTotalLen: EAX:4 (uint32_t)
-// @sourcefile .\WARDEN\WardenClient.cpp
-bool __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName, int32_t pData, void * pModulus, void * pExponent, uint32_t nExponentLen, uint32_t nSigDataLen, uint32_t nTotalLen) {
+// Verifies a Warden module's RSA signature: checks the 'NGIS' tag at the end of the module, builds the expected padded SHA-1 hash of the module and its name, decrypts the trailing signature with the supplied modulus and exponent (SBigPowMod) and returns TRUE when the two match.
+// Source file WARDEN/WardenClient.cpp (__FILE__ literal, 4 sites).
+BOOL __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName, int32_t pData, void * pModulus, void * pExponent, uint32_t nExponentLen, uint32_t nSigDataLen, uint32_t nTotalLen) {
     // Frame slots -24..-4 are ONE object: &pExpectedHash is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -104,13 +100,13 @@ bool __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName
 
     uint32_t nSigOffset = nTotalLen - nKeySize - 4;
     if (nKeySize + 4 > nTotalLen) {
-      return false;
+      return 0;
     }
 
     void* pSigBlob = (void*)(nSigOffset + pData);
     Storm::Source::SSystem::SMemCopy(&__frame0.pExpectedHash, pSigBlob, 4);
     if (__frame0.pExpectedHash != (uint8_t*)0x5349474e) {
-      return false;
+      return 0;
     }
 
     uint8_t* pHashBuf = (uint8_t*)Storm::SMem::SMemAlloc(nKeySize, ".\\WARDEN\\WardenClient.cpp", 0xab, 0);
@@ -137,7 +133,7 @@ bool __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName
     Storm::Source::SBig::SBigDel(__frame0.pBnSig);
     Storm::Source::SBig::SBigDel(__frame0.pBnExponent);
     Storm::Source::SBig::SBigDel(__frame0.pBnModulus);
-    return (bool)('\x01' - (nCmpResult != 0));
+    return (uint32_t)!nCmpResult;
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
@@ -424,7 +420,6 @@ BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Key, uint
     0xc7
 };
 
-    uint32_t byUnusedVar;
     int32_t nErrLine;
     D2WardenModuleStrc* ppModule;
     uint32_t bDecryptOk;
@@ -468,8 +463,8 @@ BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Key, uint
 
     WARDEN_RC4Init(&rc4State, (uint8_t*)pRc4Key, 0x10);
     WARDEN_RC4Decrypt(&rc4State, (int32_t)pDecrypted, nSize);
-    bool bSigValid = WARDEN_VerifyModuleSignature(0x100, szModuleName, (int32_t)pDecrypted, gabWardenModuleRsaModulus, &gdwWardenModuleRsaExponent, 4, 0, nSize);
-    if ((uint32_t)((uint32_t)((uint32_t)byUnusedVar & 0xffffffu) << 8 | (uint32_t)(uint8_t)bSigValid)) {
+    BOOL BVar1 = WARDEN_VerifyModuleSignature(0x100, szModuleName, (int32_t)pDecrypted, gabWardenModuleRsaModulus, &gdwWardenModuleRsaExponent, 4, 0, nSize);
+    if (BVar1) {
       uint32_t** pDecompressed;
       nDecompressedSize = *pDecrypted;
       pDecompressed = (uint32_t**)Storm::SMem::SMemAlloc(nDecompressedSize, ".\\WARDEN\\WardenClient.cpp", 0x182, 0);
@@ -602,24 +597,23 @@ bool CheckModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pRc4Key) 
 }
 
 void LoadModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pData, uint32_t nSize) {
-    char szHexBuf;
-    char szExt[8];
+    char szModuleFile[40];
     _FILETIME fileTime;
     uint32_t i = 0;
-    char* pszHexCursor = &szHexBuf;
+    char* pszHexCursor = szModuleFile;
     do {
       sprintf(pszHexCursor, "%02x", (uint32_t)pModuleHash[i]);
       i++;
       pszHexCursor += 2;
     } while (i < 0x10);
 
-    Storm::Source::SSTR::SStrCopy(szExt, ".mod", 5);
+    Storm::Source::SSTR::SStrCopy(szModuleFile + 0x20, ".mod", 5);
     if (!sgpUnknownSequence) {
       return;
     }
 
     /* LPFILETIME lpSystemTimeAsFileTime for GetSystemTimeAsFileTime */ GetSystemTimeAsFileTime(&fileTime);
-    sgpUnknownSequence->pfnCacheWriteData(&szHexBuf, pData, nSize, (int*)&fileTime, -1, -1);
+    sgpUnknownSequence->pfnCacheWriteData(szModuleFile, pData, nSize, (int*)&fileTime, -1, -1);
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp

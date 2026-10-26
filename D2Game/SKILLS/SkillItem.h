@@ -97,12 +97,7 @@ BOOL __fastcall ITEMEVENT_CastOnAttack(::SGAMEDATA * pGame, uint32_t nUnitEvent,
 BOOL __fastcall ITEMEVENT_CastOnStriking(::SGAMEDATA * pGame, uint32_t nUnitEvent, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, struct D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall ITEMEVENT_CastOnDeath(::SGAMEDATA * pGame, uint32_t nUnitEvent, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, struct D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall ITEMEVENT_SetRestInPeace(::SGAMEDATA * pGame, uint32_t nUnitEvent, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, struct D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl);
-//   pAttacker: Stack[0x4]:4 (D2UnitStrc *) - the corpse being revived
-//   pTarget: Stack[0x8]:4 (D2UnitStrc *)
-//   pDamage: Stack[0xc]:4 (D2DamageStrc *)
-//   eSkill: Stack[0x10]:4 (eD2Skills) - carries the monster class to spawn
-//   nSkillLvl: Stack[0x14]:4 (int32_t) - carries the owner player's GUID
-// Server-side Necromancer Revive handler: validates the corpse (consumable check, MonStats bounds), removes its collision, spawns a new monster of class eSkill in a nearby room, sets ISREVIVE flags and STATE_revive, attaches minion AI, assigns owner, and schedules AI-think and expiry timer events. Returns 1 on success, 0 on any validation failure.
+// Server-side Necromancer Revive handler: validates the corpse (consumable check, MonStats bounds), removes its collision, spawns a monster of class eSkill in a nearby room, sets ISREVIVE flags and STATE_revive, attaches minion AI, assigns the owner (GUID in nSkillLvl) and schedules AI-think and expiry events. Returns 1 on success, 0 on any validation failure.
 BOOL __fastcall SKILL_ReviveMonsterFromCorpse(::SGAMEDATA * pGame, uint32_t nUnitEvent, struct D2UnitStrc * pAttacker, struct D2UnitStrc * pTarget, struct D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall ITEMEVENT_ReviveMonster(::SGAMEDATA * pGame, uint32_t nUnitEvent, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, struct D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl);
 // Item hit-event handler that retaliates by launching a missile at the owner of pTarget. Resolves the target's owner via GetOwnerUnit, checks hostility via UNITS_CheckIfCanAttackTarget, then reads the skill's srvmissilea. Only fires if pTarget's missile has the retaliating flag (flags2 bit 1). Creates a missile aimed at the owner's position with UNITFLAG_SKSRVDOFUNC set. Returns 1 if the missile was launched.

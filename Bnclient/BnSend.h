@@ -8,6 +8,7 @@
 #include <cstdarg>
 #include "d2_platform.h"
 #include "Bnclient/net_sid.h"
+#include "Storm/D2SHA1.h"
 
 // Forward declarations
 struct D2BNetGatewayAccessStr;
@@ -26,6 +27,110 @@ typedef unsigned long LCID;
 
 #endif // _WIN32
 
+struct __attribute__((packed)) BnCDKeyHashInput26 {
+    /* 0x00 */ uint32_t dwClientToken;
+    /* 0x04 */ uint32_t dwServerToken;
+    /* 0x08 */ uint32_t dwProductId;
+    /* 0x0C */ uint32_t dwPublicValue;
+    /* 0x10 */ uint8_t abPrivateValue[10];
+};
+
+struct __attribute__((packed)) BnDoubleHashInput {
+    /* 0x00 */ uint32_t dwClientToken;
+    /* 0x04 */ uint32_t dwServerToken;
+    /* 0x08 */ D2SHA1 sHash;
+};
+
+struct D2BnNewsTableStrc {
+    /* 0x00 */ uint32_t nCapacity; // unsigned JBE compares
+    /* 0x04 */ uint32_t nCount;
+    /* 0x08 */ void * pEntries; // 0x408-byte entries (IMUL 0x408); entry layout not modelled
+    /* 0x0C */ uint32_t nGrowStep; // 0 -> BNNEWS_RoundToPowerOfTwo sets 8
+};
+
+struct SID_C2S_CheckAd {
+    /* 0x00 */ uint32_t dwPlatformId; // 'IX86'
+    /* 0x04 */ uint32_t dwProductId;
+    /* 0x08 */ uint32_t dwLastAdId;
+    /* 0x0C */ uint32_t dwTimestamp;
+};
+
+struct SID_C2S_ClickAd {
+    SID_C2S_ClickAd() = default;
+    SID_C2S_ClickAd(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+    SID_C2S_ClickAd(uint32_t a0, uint32_t a1) : dwAdId(a0), dwRequestType(a1) {}
+
+    /* 0x00 */ uint32_t dwAdId;
+    /* 0x04 */ uint32_t dwRequestType; // EDX!=0
+};
+
+struct __attribute__((packed)) SID_C2S_ClientId2 {
+    /* 0x00 */ uint32_t dwServerVersion;
+    /* 0x04 */ uint32_t dwRegVersion;
+    /* 0x08 */ uint32_t dwRegAuthority;
+    /* 0x0C */ uint32_t dwClientId;
+    /* 0x10 */ uint32_t dwClientToken;
+    /* 0x14 */ char szComputerName[1];
+    /* 0x15 */ char szUserName[1];
+};
+
+struct __attribute__((packed)) SID_C2S_DisplayAd {
+    /* 0x00 */ uint32_t dwPlatformId;
+    /* 0x04 */ uint32_t dwProductId;
+    /* 0x08 */ uint32_t dwAdId;
+    /* 0x0C */ char szFilename[1];
+    /* 0x0D */ char szUrl[1];
+};
+
+struct SID_C2S_GetFileTime {
+    /* 0x00 */ uint32_t dwRequestId;
+    /* 0x04 */ uint32_t dwUnknown;
+    /* 0x08 */ char szFilename[260];
+};
+
+struct __attribute__((packed)) SID_C2S_LogonResponse {
+    /* 0x00 */ uint32_t dwClientToken;
+    /* 0x04 */ uint32_t dwServerToken;
+    /* 0x08 */ D2SHA1 sPasswordHash;
+    /* 0x1C */ char szUsername[256];
+};
+
+struct SID_C2S_ReportVersion {
+    /* 0x00 */ uint32_t dwPlatformId; // 'IX86'
+    /* 0x04 */ uint32_t dwProductId; // 'D2DV' or 'D2XP'
+    /* 0x08 */ uint32_t dwVersionByte;
+    /* 0x0C */ uint32_t dwExeVersion;
+    /* 0x10 */ uint32_t dwExeChecksum;
+    /* 0x14 */ char szExeInfo[256];
+};
+
+struct SID_C2S_StartAdvex3 {
+    /* 0x00 */ uint32_t dwState;
+    /* 0x04 */ uint32_t dwTimeSinceStart;
+    /* 0x08 */ uint32_t dwGameType;
+    /* 0x0C */ uint32_t dwProviderVersion;
+    /* 0x10 */ uint32_t dwLadderType;
+    /* 0x14 */ char szStrings[256]; // name\0password\0statstring\0 via 3x SStrCopy 0x100
+};
+
+struct SID_C2S_StartVersioning {
+    /* 0x00 */ uint32_t dwPlatformId; // 'IX86'
+    /* 0x04 */ uint32_t dwProductId;
+    /* 0x08 */ uint32_t dwVersionByte;
+    /* 0x0C */ uint32_t dwUnknown; // always 0
+};
+
+struct __attribute__((packed)) SID_C2S_LocaleInfo {
+    /* 0x00 */ FILETIME ftSystemTime;
+    /* 0x08 */ FILETIME ftLocalTime;
+    /* 0x10 */ LONG nTimeZoneBias;
+    /* 0x14 */ LCID dwSystemLCID;
+    /* 0x18 */ LCID dwUserLCID;
+    /* 0x1C */ uint32_t dwUserLangId;
+    /* 0x20 */ char szStrings[256];
+};
+
 namespace Bnclient::BnSend {
 
 // Function declarations
@@ -42,7 +147,7 @@ void __fastcall NET_SID_CLIENT_Send_0x31_ChangePassword(char * szText1, char * s
 void __fastcall NET_SID_CLIENT_Send_0x07_ReportVersion(uint32_t dwExeHash, uint32_t dwParam2, char * szExeInfoStr);
 void NET_SID_CLIENT_Send_0x06_StartVersioning();
 // @sourcefile .\BnSend.cpp
-void __fastcall BNSEND_StoreCDKeyHashData(struct D2CDKeyHashStrc * pKeyHashData, size_t nSize);
+void __fastcall BNSEND_StoreCDKeyHashData(void * pKeyHashData, size_t nSize);
 int32_t __fastcall NET_SID_CLIENT_Send_0x41_QueryAdURL(uint32_t dwParam);
 // SID_QUERYREALMS2 (0x40) client request sender. Queries available Battle.net realms. Packet format: empty (no payload). Sends request, waits for 0x40 response containing realm list with names and descriptions. Returns gpRealmQueryData on success, 0 on send failure.
 void * __stdcall NET_SID_CLIENT_Send_0x40_QueryRealms2();
@@ -128,19 +233,19 @@ int __stdcall BattleConnectFastest();
 HANDLE ConnectingToBattleNet();
 void __fastcall BNNEWS_SetNewsChannel(int bIsClassic);
 int __fastcall BNNEWS_GetNewsEntryByIndex(int * pNewsTable, int nIndex);
-uint32_t __fastcall BNNEWS_RoundToPowerOfTwo(int * pNewsTable, uint32_t dwSize);
+uint32_t __fastcall BNNEWS_RoundToPowerOfTwo(struct D2BnNewsTableStrc * pNewsTable, uint32_t dwSize);
 DWORD __stdcall BNNEWS_RoundUpToMultiple(DWORD dwValue, DWORD dwMultiple);
 // @sourcefile .\BNNews.cpp
 void __stdcall BNNEWS_SaveToCache();
 void __stdcall BNNEWS_InvokeCallbacks();
 void * __fastcall BNNEWS_DestroyNewsTable(void * pNewsTable, uint8_t bFreeMemory);
-void __fastcall BNNEWS_ReallocateNewsTable(uint32_t * pNewsTable, uint32_t dwNewCapacity);
+void __fastcall BNNEWS_ReallocateNewsTable(struct D2BnNewsTableStrc * pNewsTable, uint32_t dwNewCapacity);
 void __fastcall BNNEWS_ClearNewsTable(uint32_t * pNewsTable);
 void __fastcall BNNEWS_EnsureCapacityWithGrowth(uint32_t * pNewsTable, int dwAdditionalCount, int bGrow);
 BOOL __stdcall BNNEWS_Shutdown();
 int __fastcall BNNEWS_AllocateNewsEntry(uint32_t * pNewsTable);
 void __fastcall BNNEWS_EnsureCapacity(uint32_t * pNewsTable, int dwAdditionalCount);
-void __fastcall BNNEWS_SetNewsEntryCount(uint32_t * pNewsTable, uint32_t dwNewCount);
+void __fastcall BNNEWS_SetNewsEntryCount(struct D2BnNewsTableStrc * pNewsTable, uint32_t dwNewCount);
 // BATTLE.NET NEWS PARSER (SID_NEWS_INFO 0x46)
 // Parses news entries from Battle.net packet containing: count(1), unknown(4), motd_timestamp(4), timestamp(4), then array of entries. Each entry: entry_id(4), message(null-terminated). Maintains sorted cache (up to 256 entries) in gpBNetNewsCache, each 0x408 bytes with entry_id at +4 and message at +8. Special case: entry_id=0 triggers callback g_pfnMotdCallback for MOTD. Sorts by entry_id descending, calculates first unread index (g_nFirstUnreadNewsIndex) based on motd_timestamp, saves to disk cache, and invokes UI callbacks.
 BOOL __fastcall NET_SID_CLIENT_Incoming0x46(char * pBytes, size_t nSize);

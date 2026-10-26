@@ -31,6 +31,11 @@ typedef void (__fastcall *pfnItemTransactionCb)(::SGAMEDATA * pGame, struct D2Un
 #endif
 
 // Data types
+struct D2ItemCalcContextStrc {
+    /* 0x00 */ struct D2UnitStrc * pUnit;
+    /* 0x04 */ int32_t nContext;
+};
+
 struct __attribute__((packed)) D2RuneTableStrc {
     /* 0x00 */ char szName[64]; // runeword name (ASCII, starts here, 64 bytes)
     /* 0x40 */ char szRuneName[64]; // rune name column (ASCII, starts here, 64 bytes)
@@ -229,7 +234,7 @@ int32_t __stdcall ITEM_GetTxtSetItems_setIndex(struct D2UnitStrc * pUnit);
 eD2ItemTypes __stdcall ITEM_GetItemData_wType(struct D2UnitStrc * pUnit);
 void __stdcall ITEMS_SumSocketedItemStats(eD2UnitStat eUnitStat, int * pOutTotal, struct D2UnitStrc * pItem);
 uint32_t __stdcall ITEMS_CheckIfUpgradeable(uint32_t nItemClassId);
-void __stdcall ITEM_ValidateAndGetClass(struct D2UnitStrc * pUnit);
+uint32_t __stdcall ITEM_ValidateAndGetClass(struct D2UnitStrc * pUnit);
 // Computes the effective required character level to use an item (pUnit), optionally relative to a player (pUnit2) for class-specific affix requirements. Takes the max over: the item-quality contribution (magic prefix/suffix/automagic, set/unique/crafted lvlReq, rare affix level requirements using classlevelreq when the affix is class-restricted and matches the player class), the base Items.txt level requirement, the requirements of all socketed/contained items (recursive), the reqlevel of any +skill stats on the item (stat 0x6b) and +skilltab stats (stat 0x61, +6 unless the tab matches the player's class), plus the item_levelreq stat bonus. Returns the clamped (>=0) result. __fastcall, recursive over inventory contents.
 uint32_t __fastcall ITEM_CalcRequiredLevel(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 uint32_t __stdcall ITEM_GetRequiredLevel(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);

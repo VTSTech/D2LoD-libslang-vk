@@ -1157,7 +1157,7 @@ uint32_t * __stdcall SMEM_AllocateHeapBlock(uint32_t nSize, uint8_t byFlags, D2F
 
     void* pFreeBinHead = pHeap->aFreeBins[nBinIndex];
     void** ppBinSlot = pHeap->aFreeBins + nBinIndex;
-    D2FogHeapBlockHdrStrc* nBestFit = (D2FogHeapBlockHdrStrc*)0x7fffffff;
+    uint32_t nBestFit = 0x7fffffff;
     while (true) {
       if (pFreeBinHead) {
         break;
@@ -1179,14 +1179,14 @@ uint32_t * __stdcall SMEM_AllocateHeapBlock(uint32_t nSize, uint8_t byFlags, D2F
       ppBestSlot = 0;
       do {
         pFitRemainder = (D2FogHeapBlockHdrStrc*)(*pFreeBlock - nTotalSize);
-        if (pFitRemainder < nBestFit) {
+        if ((uintptr_t)pFitRemainder < nBestFit) {
           ppBestSlot = ppBinSlot;
           if (pFitRemainder < pAllocBlock) {
             break;
           }
 
           pAllocBlock = (D2FogHeapBlockHdrStrc*)&pAllocBlock->dwHeapSignature;
-          nBestFit = pFitRemainder;
+          nBestFit = (uint32_t)pFitRemainder;
         }
 
         ppBinSlot = (void**)(pFreeBlock + 2);
@@ -1227,7 +1227,7 @@ uint32_t * __stdcall SMEM_AllocateHeapBlock(uint32_t nSize, uint8_t byFlags, D2F
       pAllocBlock = (D2FogHeapBlockHdrStrc*)*ppBestSlot;
       byBlockFlags = pAllocBlock->byFlags >> 4;
       *ppBestSlot = (void*)pAllocBlock->dwHeapSignature;
-      nBestFit = (D2FogHeapBlockHdrStrc*)(byBlockFlags & 1);
+      nBestFit = byBlockFlags & 1;
       pFreeBinHead = (void*)((uintptr_t)&pAllocBlock->wBlockSize + (uint32_t)pAllocBlock->wBlockSize);
       if (pHeap->nFragCount && (byBlockFlags & 1 || pFreeBinHead != pHeap->pWriteCursor && *(uint8_t*)((int)pFreeBinHead + 3) & 2)) {
         pHeap->nFragCount--;

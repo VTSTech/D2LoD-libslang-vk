@@ -6,6 +6,7 @@
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GameViewStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2LightMapStrc.h"
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Draw/Weather.h"
@@ -33,7 +34,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinPalette.h"
@@ -87,7 +87,7 @@ void __fastcall ACTCALLBACKFN(D2RoomStrc * pRoom) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x591);
           exit(-1);
         }
-        if ((char)pLightMap->bUnknown == '\0') {
+        if (pLightMap->bUnknown == '\0') {
           pUnit = UNIT::Player::UNITS_FindClientSideUnit(pLightMap->nUnitGUID, eLightUnitType);
         } else {
           pUnit = UNIT::Player::UNITS_FindServerSideUnit(pLightMap->nUnitGUID, eLightUnitType);

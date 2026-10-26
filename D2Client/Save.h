@@ -8,6 +8,13 @@
 #include <cstdarg>
 #include "d2_platform.h"
 
+// Data types
+struct D2KeyFileHeaderStrc {
+    /* 0x00 */ uint16_t wSignature; // 0x5357
+    /* 0x02 */ uint16_t wVersion; // 0x25
+    /* 0x04 */ uint16_t wDataSize; // 0x47a
+};
+
 namespace D2Client::Save {
 
 // Function declarations

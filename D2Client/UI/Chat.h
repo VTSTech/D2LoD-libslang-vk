@@ -32,6 +32,14 @@ struct __attribute__((packed)) D2ChatCommandStrc {
     /* 0x0A */ int bAllowedInSinglePlayer; // zero: skipped unless the game type is not GAMETYPE_SINGLEPLAYER
 };
 
+struct D2ChatPacketBuildStrc {
+    /* 0x000 */ uint8_t nCmd; // 0x15 chat, 0x14 overhead
+    /* 0x001 */ uint8_t nMsgType; // 1 normal (CHAT_ParseCommand out), 2 whisper
+    /* 0x002 */ uint8_t nIMEMode;
+    /* 0x003 */ char szMsg[256]; // +0x102 is forced NUL
+    /* 0x103 */ char szTarget[17]; // whisper target; Send_Chat copies up to 16 from +0x103
+};
+
 namespace D2Client::UI::Chat {
 
 // Function declarations

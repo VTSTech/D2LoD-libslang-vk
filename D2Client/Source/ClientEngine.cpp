@@ -1812,8 +1812,8 @@ void __stdcall CLIENT_MonsterAi_CorpseSeekerBehavior(uint32_t nTargetDistance, D
       return;
     }
 
-    eD2PlayerAnimMode nTargetState = pUnit->eAnimMode.ePlayerMode;
-    if (!(nTargetState != Kick && nTargetState != Death)) {
+    eD2MonsterAnimMode nTargetState = pUnit->eAnimMode.eMonsterMode;
+    if (!(nTargetState != eD2MonsterAnimMode_ns::Dead && nTargetState != Death)) {
       return;
     }
     if (nTargetDistance < 2) {
@@ -1823,7 +1823,7 @@ void __stdcall CLIENT_MonsterAi_CorpseSeekerBehavior(uint32_t nTargetDistance, D
         return;
       }
     }
-    if (nTargetState != eD2PlayerAnimMode_ns::Neutral) {
+    if (nTargetState != eD2MonsterAnimMode_ns::Neutral) {
       return;
     }
     if (nTargetDistance < 4) {

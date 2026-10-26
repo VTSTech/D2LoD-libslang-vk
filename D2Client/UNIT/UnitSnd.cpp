@@ -57,7 +57,6 @@
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Game/Monster/Create.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "D2Game/UNIT/SUNITNPC.h"
 
@@ -104,7 +103,7 @@ eD2UnitType GetSndUnitType(D2UnitStrc * pUnit) {
     return eUnitType;
 }
 
-int * GetSndUnitMode(D2UnitStrc * pUnit) {
+int32_t GetSndUnitMode(D2UnitStrc * pUnit) {
     int nClassId;
     eD2UnitType eUnitType = UNIT_COUNT;
     if (!pUnit) {
@@ -114,12 +113,12 @@ int * GetSndUnitMode(D2UnitStrc * pUnit) {
       nClassId = pUnit->nClassId;
     }
 
-    int* nAnimMode = (int*)D2Common::Units::GetAnimOrSeqMode(pUnit);
+    int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
     if (eUnitType != UNIT_PLAYER) {
       return nAnimMode;
     }
 
-    D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, &eUnitType, &nClassId, (int*)&nAnimMode, ".\\UNIT\\UnitSnd.cpp", 0xb19);
+    D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, &eUnitType, &nClassId, &nAnimMode, ".\\UNIT\\UnitSnd.cpp", 0xb19);
     return nAnimMode;
 }
 
@@ -135,11 +134,9 @@ int * UNITSND_GetBaseSoundId(uint32_t nUnitClassId) {
 
 // Returns the D2MonSoundsTxt record for a unit's sound set. For monsters, resolves in priority order: super-unique boss sound override (MonSound), unique/minion UMonSound field, then base MonStats sound. Returns line 0 (silent) if pUnit is null or class ID is out of range.
 D2MonSoundsTxt * TxtGetSoundIdLineFromUnit(D2UnitStrc * pUnit) {
-    uint16_t nBossId;
     D2MonSoundsTxt* pMonSoundsResult;
-    uint32_t bIsSuperUnique;
-    D2SuperUniquesTxt* pSuperUniquesTxt;
     BOOL BVar1;
+    D2SuperUniquesTxt* pSuperUniquesTxt;
     int32_t iVar2;
     D2MonStatsTxt* pMonStatsTxt;
     D2MonSoundsTxt* pUMonSoundsLine;
@@ -150,10 +147,10 @@ D2MonSoundsTxt * TxtGetSoundIdLineFromUnit(D2UnitStrc * pUnit) {
 
     DWORD nMonStatsId = GetSndUnitClassId(pUnit);
     if ((int)nMonStatsId < sgptDataTable->nTxtMonStatsSize) {
-      bool bIsSpecialMonster;
+      uint16_t nBossId;
       if (pUnit->eUnitType == UNIT_MONSTER) {
-        bIsSpecialMonster = Monster::IsMonsterSuperUnique(pUnit);
-        if ((uint32_t)((uint32_t)((uint32_t)bIsSuperUnique & 0xffffffu) << 8 | (uint32_t)(uint8_t)bIsSpecialMonster)) {
+        BVar1 = Monster::IsMonsterSuperUnique(pUnit);
+        if (BVar1) {
           nBossId = MonUnique::GetBossId(pUnit);
           pSuperUniquesTxt = D2Common::DATATBLS::MonsterTbls::TXT_SuperUniques_GetLine((int)(short int)nBossId);
           if (pSuperUniquesTxt && 0 < pSuperUniquesTxt->MonSound) {
@@ -773,39 +770,40 @@ int32_t __fastcall UNITSND_GetFootstepSound(D2UnitStrc * pUnit, int32_t bIsRunni
 }
 
 // Plays a unit's footstep sound for the current animation frame. For monsters, gates on walk/run-like animation modes and MonStats class range. Computes the step interval from frame count, anim speed and footstep count (FsCnt, FootstepLayer/FsPrb/FsOff from MonSounds.txt for monsters), debounces against the last step tick (dwSfxStepTicks), and picks the loudest of three candidate frame offsets. Selects walk vs run footstep via UNITSND_GetFootstepSound, plays it with distance-scaled channel priority (quieter when not the local player), optionally plays the layered footstep sound by probability, and stamps dwSfxStepTicks. Client/sound side effect only.
-D2MonSoundsTxt * __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
-    D2MonSoundsTxt* nMonClassIdOrSounds;
+void __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
+    D2MonSoundsTxt* pDVar1;
     uint32_t nFrameCount;
     int32_t nSoundChannelPrev;
     int32_t nSoundChannelNext;
+    int32_t iVar2;
     eD2Sounds nSoundId;
-    D2MonSoundsTxt* pReturnVal;
+    D2UnitStrc* pLocalPlayer;
     bool bIsRunOrRespawn;
-    int32_t nVolume;
     int32_t nRunCheck;
     eD2UnitType eUnitType;
     eUnitType = GetSndUnitType(pUnit);
-    int* nUnitMode;
+    int32_t nUnitMode;
     nUnitMode = GetSndUnitMode(pUnit);
     if (eUnitType == UNIT_MONSTER) {
-      nMonClassIdOrSounds = (D2MonSoundsTxt*)GetSndUnitClassId(pUnit);
+      DWORD nMonClassIdOrSounds;
+      nMonClassIdOrSounds = GetSndUnitClassId(pUnit);
       if ((int)nMonClassIdOrSounds < 0 || sgptDataTable->nTxtMonStatsSize <= (int)nMonClassIdOrSounds) {
-        nMonClassIdOrSounds = (D2MonSoundsTxt*)-1;
+        nMonClassIdOrSounds = -1;
       }
 
       bIsRunOrRespawn = false;
-      if (nUnitMode == (int*)0x2 || nUnitMode == (int*)0xf) {
+      if (nUnitMode == 2 || nUnitMode == 0xf) {
         bIsRunOrRespawn = true;
       }
-      if (nMonClassIdOrSounds == (D2MonSoundsTxt*)0xf) {
-        if (nUnitMode == (int*)0x1) {
+      if (nMonClassIdOrSounds == 0xf) {
+        if (nUnitMode == 1) {
           goto time_footstep;
         }
-      } else if (nMonClassIdOrSounds == (D2MonSoundsTxt*)0x6e) {
-        bIsRunOrRespawn = nUnitMode == (int*)0x8;
+      } else if (nMonClassIdOrSounds == 0x6e) {
+        bIsRunOrRespawn = nUnitMode == 8;
       }
       if (!bIsRunOrRespawn) {
-        return nMonClassIdOrSounds;
+        return;
       }
     }
 
@@ -818,7 +816,7 @@ D2MonSoundsTxt * __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     uint32_t nFsOffset;
     nFsOffset = 0;
     if (!nAnimSpeed) {
-      return nullptr;
+      return;
     }
 
     eD2Sounds eFootstepLayerSnd;
@@ -828,15 +826,15 @@ D2MonSoundsTxt * __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     uint32_t nFsCount;
     nFsCount = 2;
     if (eUnitType == UNIT_MONSTER) {
-      nMonClassIdOrSounds = TxtGetSoundIdLineFromUnit(pUnit);
+      pDVar1 = TxtGetSoundIdLineFromUnit(pUnit);
       nFsCount = 2;
-      if (nMonClassIdOrSounds) {
-        nFsCount = nMonClassIdOrSounds->FsCnt;
-        eFootstepLayerSnd = nMonClassIdOrSounds->FootstepLayer;
-        nFsProbability = nMonClassIdOrSounds->FsPrb;
-        nFsOffset = nMonClassIdOrSounds->FsOff << 8;
+      if (pDVar1) {
+        nFsCount = pDVar1->FsCnt;
+        eFootstepLayerSnd = pDVar1->FootstepLayer;
+        nFsProbability = pDVar1->FsPrb;
+        nFsOffset = pDVar1->FsOff << 8;
         if (!nFsCount) {
-          return nMonClassIdOrSounds;
+          return;
         }
       }
     }
@@ -848,29 +846,29 @@ D2MonSoundsTxt * __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     uint32_t nElapsedTicks;
     nElapsedTicks = nRecordingIdx - pUnit->uSideData.pClientSide.dwSfxStepTicks;
     if (1 < nFsCount && nElapsedTicks < nStepInterval * 2 / 3) {
-      return (D2MonSoundsTxt*)(nStepInterval * 0x55555556);
+      return;
     }
 
     nFrameCount /= nFsCount;
     nSoundChannelPrev = Sound::SOUND_PlayFootstepSound(nCurrentFrame, nFsOffset, nFrameCount);
     nSoundChannelNext = Sound::SOUND_PlayFootstepSound(nCurrentFrame + nAnimSpeed, nFsOffset, nFrameCount);
-    nMonClassIdOrSounds = (D2MonSoundsTxt*)Sound::SOUND_PlayFootstepSound(nCurrentFrame - nAnimSpeed, nFsOffset, nFrameCount);
+    iVar2 = Sound::SOUND_PlayFootstepSound(nCurrentFrame - nAnimSpeed, nFsOffset, nFrameCount);
     if (nSoundChannelNext <= nSoundChannelPrev) {
-      return nMonClassIdOrSounds;
+      return;
     }
-    if ((int)nMonClassIdOrSounds <= nSoundChannelPrev) {
-      return nMonClassIdOrSounds;
+    if (iVar2 <= nSoundChannelPrev) {
+      return;
     }
 
     nSoundChannelPrev = 0;
     if (eUnitType == UNIT_PLAYER) {
-      bIsRunOrRespawn = nUnitMode == (int*)0x3;
+      bIsRunOrRespawn = nUnitMode == 3;
     } else {
       if (eUnitType != UNIT_MONSTER) {
         goto play_footstep;
       }
 
-      bIsRunOrRespawn = nUnitMode == (int*)0xf;
+      bIsRunOrRespawn = nUnitMode == 0xf;
     }
     if (bIsRunOrRespawn) {
       nSoundChannelPrev = 1;
@@ -878,12 +876,11 @@ D2MonSoundsTxt * __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
 
     play_footstep:
     nRunCheck = 0;
-    nVolume = 0;
+    iVar2 = 0;
     nSoundChannelNext = 0;
     nSoundId = UNITSND_GetFootstepSound(pUnit, nSoundChannelPrev);
-    nAnimSpeed = Sound::SOUND_PlaySound(nSoundId, pUnit, nSoundChannelNext, nVolume, nRunCheck);
+    nAnimSpeed = Sound::SOUND_PlaySound(nSoundId, pUnit, nSoundChannelNext, iVar2, nRunCheck);
     if (nAnimSpeed) {
-      D2UnitStrc* pLocalPlayer;
       nFrameCount = 0xff;
       pLocalPlayer = Player::GetPlayerUnit_UI();
       if (pUnit != pLocalPlayer) {
@@ -903,7 +900,6 @@ D2MonSoundsTxt * __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     }
 
     SetSfxStepTicks(nRecordingIdx, (int32_t)pUnit);
-    return pReturnVal;
 }
 
 void __fastcall UNITSND_StopAllSkillSounds(D2UnitStrc * pUnit) {
@@ -1076,7 +1072,7 @@ void __fastcall UpdateUnitSfxOnModeChange(D2UnitStrc * pUnit) {
     D2MonSoundsTxt* pMonSoundsLine;
     BOOL bIsInTown;
     eD2Sounds eNeutralSound;
-    int* nUnitMode;
+    int32_t nUnitMode;
     nUnitMode = GetSndUnitMode(pUnit);
     eD2UnitType eUnitType;
     eUnitType = GetSndUnitType(pUnit);
@@ -1096,11 +1092,11 @@ void __fastcall UpdateUnitSfxOnModeChange(D2UnitStrc * pUnit) {
         }
       }
       if (pUnit) {
-        if (pUnit->uSideData.pClientSide.bUnitSfx && nUnitMode == (int*)pUnit->uSideData.pClientSide.nSfxMode) {
+        if (pUnit->uSideData.pClientSide.bUnitSfx && nUnitMode == pUnit->uSideData.pClientSide.nSfxMode) {
           return;
         }
 
-        eSpecialSound = UNITSND_GetSpecialSoundByMode(pUnit, (int32_t)nUnitMode);
+        eSpecialSound = UNITSND_GetSpecialSoundByMode(pUnit, nUnitMode);
         if (eSpecialSound == SOUND_NONE) {
           UNITSND_UpdatePositionalAudio(pUnit);
         } else {
@@ -1112,13 +1108,13 @@ void __fastcall UpdateUnitSfxOnModeChange(D2UnitStrc * pUnit) {
 
         nClassId = GetSndUnitClassId(pUnit);
         if (pUnit->uSideData.pClientSide.bUnitSfx || nClassId == 0x3b) {
-          eSpecialSound = UNITSND_GetModeChangeSound(pUnit->uSideData.pClientSide.nSfxMode, pUnit, (int32_t)nUnitMode);
+          eSpecialSound = UNITSND_GetModeChangeSound(pUnit->uSideData.pClientSide.nSfxMode, pUnit, nUnitMode);
           if (eSpecialSound != SOUND_NONE) {
             Sound::SOUND_PlaySound(eSpecialSound, pUnit, 0, 0, 0);
           }
         }
 
-        pUnit->uSideData.pClientSide.nSfxMode = (uint32_t)nUnitMode;
+        pUnit->uSideData.pClientSide.nSfxMode = nUnitMode;
         pUnit->uSideData.pClientSide.bUnitSfx = 1;
         return;
       }
@@ -1140,14 +1136,14 @@ void __fastcall UpdateUnitSfxOnModeChange(D2UnitStrc * pUnit) {
 
     bool bIsWalkOrRunMode;
     bIsWalkOrRunMode = false;
-    if (nUnitMode == (int*)0x1 || nUnitMode == (int*)0x2 || nUnitMode == (int*)0xf) {
+    if (nUnitMode == 1 || nUnitMode == 2 || nUnitMode == 0xf) {
       bIsWalkOrRunMode = true;
     }
     if (iVar1 == 0x6e) {
-      if (nUnitMode == (int*)0x8) {
+      if (nUnitMode == 8) {
         goto try_neutral_sound;
       }
-    } else if (iVar1 == 0x88 && nUnitMode == (int*)0xb) {
+    } else if (iVar1 == 0x88 && nUnitMode == 0xb) {
       goto try_neutral_sound;
     }
     if (!bIsWalkOrRunMode) {
@@ -1972,8 +1968,8 @@ void __fastcall PlayUnitInitSound(D2UnitStrc * pUnit) {
       }
     }
 
-    int* pnUnitMode = GetSndUnitMode(pUnit);
-    if (pnUnitMode != (int*)0x8) {
+    int32_t pnUnitMode = GetSndUnitMode(pUnit);
+    if (pnUnitMode != 8) {
       return;
     }
 
@@ -2093,7 +2089,7 @@ void __fastcall UNITSND_DispatchModeChangeSound(D2UnitStrc * pUnit, int32_t pnPa
     DWORD nClassId;
     nClassId = GetSndUnitClassId(pUnit);
     if (!nMode) {
-      pnParam = (int32_t)GetSndUnitMode(pUnit);
+      pnParam = GetSndUnitMode(pUnit);
     }
     if (eUnitType == UNIT_PLAYER) {
       switch (pnParam) {
@@ -2134,13 +2130,13 @@ void __fastcall UNITSND_DispatchModeChangeSound(D2UnitStrc * pUnit, int32_t pnPa
           }
       }
     } else if (eUnitType == UNIT_MONSTER && (pMonSoundsLine = TxtGetSoundIdLineFromUnit(pUnit) , pMonSoundsLine != 0)) {
-      if ((int*)pnParam == (int*)(uint32_t)(uint8_t)pMonSoundsLine->CvtMo1 && pMonSoundsLine->CvtSk1 < 0) {
+      if (pnParam == (uint32_t)(uint8_t)pMonSoundsLine->CvtMo1 && pMonSoundsLine->CvtSk1 < 0) {
         pnParam = (int32_t)(uint8_t)pMonSoundsLine->CvtTgt1;
       }
-      if ((int*)pnParam == (int*)(uint32_t)(uint8_t)pMonSoundsLine->CvtMo2 && pMonSoundsLine->CvtSk2 < 0) {
+      if (pnParam == (uint32_t)(uint8_t)pMonSoundsLine->CvtMo2 && pMonSoundsLine->CvtSk2 < 0) {
         pnParam = (int32_t)(uint8_t)pMonSoundsLine->CvtTgt2;
       }
-      if ((int*)pnParam == (int*)(uint32_t)(uint8_t)pMonSoundsLine->CvtMo3 && pMonSoundsLine->CvtSk3 < 0) {
+      if (pnParam == (uint32_t)(uint8_t)pMonSoundsLine->CvtMo3 && pMonSoundsLine->CvtSk3 < 0) {
         pnParam = (int32_t)(uint8_t)pMonSoundsLine->CvtTgt3;
       }
 

@@ -383,7 +383,7 @@ int32_t __stdcall GetLastPathPointX(D2DynamicPathStrc * pDynamicPath) {
       return 0;
     }
 
-    return (uint32_t)(uint16_t)pDynamicPath->PathPoints[pDynamicPath->dwPathPoints - 1].nX;
+    return (uint32_t)pDynamicPath->PathPoints[pDynamicPath->dwPathPoints - 1].nX;
 }
 
 int32_t __stdcall GetLastPathPointY(D2DynamicPathStrc * pDynamicPath) {
@@ -391,7 +391,7 @@ int32_t __stdcall GetLastPathPointY(D2DynamicPathStrc * pDynamicPath) {
       return 0;
     }
 
-    return (uint32_t)(uint16_t)pDynamicPath->PathPoints[pDynamicPath->dwPathPoints - 1].nY;
+    return (uint32_t)pDynamicPath->PathPoints[pDynamicPath->dwPathPoints - 1].nY;
 }
 
 D2RoomStrc * __stdcall GetRoom(D2DynamicPathStrc * pDynamicPath) {
@@ -692,7 +692,7 @@ int32_t __stdcall GetLastInitCoordX(D2DynamicPathStrc * pDynamicPath) {
       return 0;
     }
 
-    return (uint32_t)(uint16_t)pDynamicPath->SaveCoords[pDynamicPath->nSaveCoordsSize - 1].nX;
+    return (uint32_t)pDynamicPath->SaveCoords[pDynamicPath->nSaveCoordsSize - 1].nX;
 }
 
 int32_t __stdcall GetLastInitCoordY(D2DynamicPathStrc * pDynamicPath) {
@@ -704,7 +704,7 @@ int32_t __stdcall GetLastInitCoordY(D2DynamicPathStrc * pDynamicPath) {
       return 0;
     }
 
-    return (uint32_t)(uint16_t)pDynamicPath->SaveCoords[pDynamicPath->nSaveCoordsSize - 1].nY;
+    return (uint32_t)pDynamicPath->SaveCoords[pDynamicPath->nSaveCoordsSize - 1].nY;
 }
 
 void __stdcall SetUnsetFlags0x40(D2DynamicPathStrc * pDynamicPath, int32_t bSet) {
@@ -1148,7 +1148,7 @@ int32_t PATH_CalculateMissilePath(D2DynamicPathStrc * pDynamicPath, int32_t nPar
           exit(-1);
         }
 
-        Drlg::Path::DRLGPATH_BuildCircularPathPoints((D2StaticPathStrc*)pDynamicPath);
+        Drlg::Path::DRLGPATH_BuildCircularPathPoints(pDynamicPath);
         pDynamicPath->nFlags |= 0x20;
         return pDynamicPath->dwPathPoints;
       }
@@ -1469,12 +1469,12 @@ void __stdcall AllocDynamicPath(D2PoolManagerStrc * pMemory, D2RoomStrc * pRoom,
     pDynamicPath->nUnitWidth = nUnitWidth;
     pDynamicPath->Coords.tFixed.x = nX * 0x10000 + 0x8000;
     pDynamicPath->Coords.tFixed.y = nY * 0x10000 + 0x8000;
-    pDynamicPath->SaveCoords[0].nX = (short int)nX;
+    pDynamicPath->SaveCoords[0].nX = (uint16_t)nX;
     pDynamicPath->dwVelocity = 0x800;
     pDynamicPath->pRoom = pRoom;
     pDynamicPath->nStepNum = 0;
     pDynamicPath->nSaveCoordsSize = 1;
-    pDynamicPath->SaveCoords[0].nY = (short int)nY;
+    pDynamicPath->SaveCoords[0].nY = (uint16_t)nY;
     eD2UnitType eUnitType;
     eUnitType = pUnit_00->eUnitType;
     if (eUnitType == UNIT_PLAYER) {

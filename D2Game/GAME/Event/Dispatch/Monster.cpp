@@ -73,7 +73,6 @@
 #include "D2Client/UI/QuestLog.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Game/Ai/AiGeneral.h"
-#include "D2Game/Monster/Create.h"
 #include "D2Game/Quests/QUESTS/Quest40.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -658,32 +657,19 @@ void __stdcall MONMODE_OwnerCastOrDie(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 
 // The live monster-death dispatcher.
 BOOL __fastcall MONSTER_OnDeathDispatch(::SGAMEDATA * pGame, D2MonsterKillStrc * pMonsterKill) {
-    // Frame -188..-76 is ONE object: a call writes 112 literal bytes starting at &anCEDmgRange.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      int anCEDmgRange[2];
-      int nCEDamage;
-      uint8_t __pad12[100];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 112, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    // Frame -76..-20 is ONE object: a call writes 56 literal bytes starting at &nUnitFindArg.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame1_t {
-      int nUnitFindArg;
-      int32_t nMaxHpValue;
-      uint8_t __pad8[48];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 56, "frame group __frame1_t must reproduce the Ghidra frame layout");
-    __frame1_t __frame1;
     int nClassId;
+    D2UnitStrc* pUnit_00;
     D2DifficultyLevelsTxt* pDifficultyLvl;
     int nMonsterLevel;
     uint32_t nCEDamageScaled;
     uint32_t nRandCEOffset;
     int64_t nMulResult;
+    D2DamageStrc sDamage;
+    D2MonStatsInitStrc sMonStats;
     int32_t nPosYCoord;
     int32_t nPosY;
+    ::SGAMEDATA* pGameSaved;
+    D2MonsterKillStrc* pMonsterKillSaved;
     eD2UnitType eUnitType;
     ::SGAMEDATA* pGameCE;
     uint32_t bRandDmgFlag;
@@ -691,11 +677,9 @@ BOOL __fastcall MONSTER_OnDeathDispatch(::SGAMEDATA * pGame, D2MonsterKillStrc *
     D2UnitStrc* pUnit;
     int32_t nVictimClassIdForStats;
     D2UnitStrc* pVictim = pMonsterKill->pVictim;
-    ::SGAMEDATA* pGameSaved = pGame;
-    D2MonsterKillStrc* pMonsterKillSaved = pMonsterKill;
     UNIT::SUnit::FreeCombatAndChangeAnimMode(pGame, pVictim, 0);
     D2Game::Monster::MonsterMode::MONSTERMODE_OnDeath(pMonsterKill->nAnimatedMode1, pGame, pVictim);
-    DropItemForVictim_Unused(pGame, (D2ObjectOperateFnArg*)pMonsterKillSaved, 0);
+    DropItemForVictim_Unused(pGame, (D2ObjectOperateFnArg*)pMonsterKill, 0);
     D2Game::Monster::MonsterRegion::IncreaseMonKillCount(pGame->pMonsterRegion, pVictim);
     if (!pVictim) {
       nClassId = -1;
@@ -750,24 +734,23 @@ BOOL __fastcall MONSTER_OnDeathDispatch(::SGAMEDATA * pGame, D2MonsterKillStrc *
             nPosY = D2Common::PATH::DynamicPath::GetYPos(pVictim->pPath.pDynamicPath);
           }
 
-          pGameCE = pGameSaved;
-          nPosYCoord = (int32_t)SKILLS::SkillsServer::CreatingAMissile(pGameSaved, MISSILE_Monstercorpseexplode, pVictim, SKILL_Attack, 1, 0, 0, (int32_t)pMonsterKillSaved, nPosY, 1);
-          if (!(D2UnitStrc*)nPosYCoord) {
+          pUnit_00 = SKILLS::SkillsServer::CreatingAMissile(pGame, MISSILE_Monstercorpseexplode, pVictim, SKILL_Attack, 1, 0, 0, (int32_t)pMonsterKillSaved, nPosY, 1);
+          if (!pUnit_00) {
             return 1;
           }
 
-          pDifficultyLvl = D2Common::DATATBLS::DataTbls::GetDifficultyLevels((uint32_t)pGameCE->nDifficulty);
+          pDifficultyLvl = D2Common::DATATBLS::DataTbls::GetDifficultyLevels((uint32_t)pGame->nDifficulty);
           if (!pDifficultyLvl) {
             return 1;
           }
 
-          memset(&__frame1.nUnitFindArg, 0, 0x38);
+          memset(&sMonStats, 0, 0x38);
           nVictimClassIdForStats = pVictim->nClassId;
-          pScaledStatsOut = &__frame1.nUnitFindArg;
+          pScaledStatsOut = &sMonStats.nMinHP;
           bRandDmgFlag = 1;
           nMonsterLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pVictim, UNITSTAT_level, 0);
-          D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nVictimClassIdForStats, pGameSaved->eGameType, (uint32_t)pGameSaved->nDifficulty, nMonsterLevel, bRandDmgFlag, pScaledStatsOut);
-          nCEDamageScaled = D2Client::Stats::D2ApplyPercent(__frame1.nMaxHpValue, pDifficultyLvl->MonsterCEDamagePercent, 100);
+          D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nVictimClassIdForStats, pGame->eGameType, (uint32_t)pGame->nDifficulty, nMonsterLevel, bRandDmgFlag, (D2MonStatsInitStrc*)pScaledStatsOut);
+          nCEDamageScaled = D2Client::Stats::D2ApplyPercent(sMonStats.nMaxHP, pDifficultyLvl->MonsterCEDamagePercent, 100);
           if ((int)nCEDamageScaled < 0x100001) {
             nClassId = (int)(nCEDamageScaled * 0x3c) / 100;
           } else if ((int)(nCEDamageScaled & -16) < 0x640) {
@@ -778,20 +761,20 @@ BOOL __fastcall MONSTER_OnDeathDispatch(::SGAMEDATA * pGame, D2MonsterKillStrc *
             nClassId = (int)nCEDamageScaled / 100 * 0x3c;
           }
 
-          memset(__frame0.anCEDmgRange, 0, 0x70);
+          memset(&sDamage, 0, 0x70);
           nRandCEOffset = D2Client::Archive::RANDOM_RandomNumberSelector(&pVictim->sSeed, nCEDamageScaled - nClassId);
-          __frame0.nCEDamage = (nRandCEOffset + nClassId) * 0x80;
-          UNIT::SUnitDmg::DAMAGE_ApplyAreaOfEffectDamage(pGameSaved, (D2UnitStrc*)nPosYCoord, (int32_t)pMonsterKillSaved, nPosY, 5, __frame0.anCEDmgRange, 0, 0, nullptr, 0x581);
+          sDamage.dwPhysDamage = (nRandCEOffset + nClassId) * 0x80;
+          UNIT::SUnitDmg::DAMAGE_ApplyAreaOfEffectDamage(pGame, pUnit_00, (int32_t)pMonsterKillSaved, nPosY, 5, &sDamage, 0, 0, nullptr, 0x581);
           return 1;
         }
         if (nClassId == 0x1b9) {
-          MONMODE_OwnerCastOrDie(pGameSaved, pVictim);
+          MONMODE_OwnerCastOrDie(pGame, pVictim);
           return 1;
         }
       }
     }
 
-    CalculateCollisionDamage_Unused(pGameSaved, pVictim);
+    CalculateCollisionDamage_Unused(pGame, pVictim);
     return 1;
 }
 
@@ -1676,7 +1659,7 @@ void __fastcall MONSTER_EndOfFrameAiDispatch(::SGAMEDATA * pGame, D2UnitStrc * p
     D2MonStatsTxt* pMonStats;
     eD2States eUnitState;
     int nResolvedBaseId;
-    eD2PlayerAnimMode eAnimMode;
+    eD2MonsterAnimMode eAnimMode;
     if (!pUnit) {
       eAnimMode = Death;
       nBaseMonClassId = -1;
@@ -1709,7 +1692,7 @@ void __fastcall MONSTER_EndOfFrameAiDispatch(::SGAMEDATA * pGame, D2UnitStrc * p
       switch (nResolvedBaseId) {
         case 0x6e:
           {
-            if (eAnimMode == eD2PlayerAnimMode_ns::Attack2) {
+            if (eAnimMode == eD2MonsterAnimMode_ns::Skill1) {
               eUnitState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_freeze);
               if (eUnitState != STATE_none) {
                 _bIsModeZeroDeath = UNIT::SUnit::CheckForModeZeroDeath(pUnit);
@@ -1726,7 +1709,7 @@ void __fastcall MONSTER_EndOfFrameAiDispatch(::SGAMEDATA * pGame, D2UnitStrc * p
           }
         case 0xf7:
           {
-            if (eAnimMode == eD2PlayerAnimMode_ns::Skill2) {
+            if (eAnimMode == eD2MonsterAnimMode_ns::Sequence) {
               eUnitState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_freeze);
               if (eUnitState != STATE_none) {
                 _bIsModeZeroDeath = UNIT::SUnit::CheckForModeZeroDeath(pUnit);
@@ -1743,7 +1726,7 @@ void __fastcall MONSTER_EndOfFrameAiDispatch(::SGAMEDATA * pGame, D2UnitStrc * p
           }
         case 0x88:
           {
-            if (eAnimMode == eD2PlayerAnimMode_ns::Cast || eAnimMode == Throw) {
+            if (eAnimMode == eD2MonsterAnimMode_ns::Skill3 || eAnimMode == eD2MonsterAnimMode_ns::Skill4) {
               eUnitState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_freeze);
               if (eUnitState != STATE_none) {
                 _bIsModeZeroDeath = UNIT::SUnit::CheckForModeZeroDeath(pUnit);

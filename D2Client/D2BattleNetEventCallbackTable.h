@@ -9,6 +9,7 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2BNetSystemInfoStrc;
 struct D2ClientStrc;
 #ifndef RECON_FPTD_fnCloseGame
 #define RECON_FPTD_fnCloseGame
@@ -44,7 +45,7 @@ typedef void (*fnRelockDatabaseCharacter)(int nAccountId);
 #endif
 #ifndef RECON_FPTD_fnReserved2_systemMsg
 #define RECON_FPTD_fnReserved2_systemMsg
-typedef void (*fnReserved2_systemMsg)();
+typedef void (__fastcall *fnReserved2_systemMsg)(struct D2BNetSystemInfoStrc * pInfo);
 #endif
 #ifndef RECON_FPTD_fnSaveDatabaseCharacter
 #define RECON_FPTD_fnSaveDatabaseCharacter
@@ -81,7 +82,7 @@ struct D2BattleNetEventCallbackTable {
     /* 0x24 */ uint8_t * fpReserved1;
     /* 0x28 */ void (__fastcall *fpUpdateCharacterLadder)(char *, uint16_t, uint32_t, uint32_t, uint32_t, uint16_t, void *);
     /* 0x2C */ void (__fastcall *fpUpdateGameInformation)(int, int);
-    /* 0x30 */ void (*fpReserved2_systemMsg)();
+    /* 0x30 */ void (__fastcall *fpReserved2_systemMsg)(struct D2BNetSystemInfoStrc *);
     /* 0x34 */ int (*fpSetGameData)();
     /* 0x38 */ void (*fpRelockDatabaseCharacter)(int);
     /* 0x3C */ void (*fpLoadComplete)();

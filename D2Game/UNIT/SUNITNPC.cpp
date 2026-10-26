@@ -8,6 +8,7 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
+#include "D2Client/UI/npcmenu/Merc.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/Units.h"
@@ -76,6 +77,7 @@
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
@@ -84,6 +86,7 @@
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/Unit/D2UnitDataItemStrc.h"
 #include "D2Game/Monster/AI/AI.h"
+#include "D2Game/Objects/ObjectsMode.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "Fog/Src/Safesock.h"
@@ -582,14 +585,14 @@ void __fastcall SUNITNPC_FillNpcStore(::SGAMEDATA * pGame, D2UnitStrc * pPlayer,
     uint32_t bIsStackable;
     int32_t nScrollCountBonus;
     int32_t nRolledMax;
-    D2ItemsTxt* nScrollsToGen;
+    int32_t nScrollsToGen;
     D2ItemsTxt* pItemTxtTmp;
     int nTradeListOffset;
     int nTradeItemClassId;
     int32_t nNpcIndex;
     uint32_t nItemClassId;
     D2ItemsTxt* pTradeItemTxt;
-    D2ItemsTxt* nItemsToGen;
+    int32_t nItemsToGen;
     ::SGAMEDATA* pGame2 = pGame;
     D2SeedStrc* pNpcControl = (D2SeedStrc*)sunitproxy::SUNITPROXY_GetNpcControl(pGame);
     DWORD dwTickCount = GetTickCount();
@@ -613,7 +616,7 @@ void __fastcall SUNITNPC_FillNpcStore(::SGAMEDATA * pGame, D2UnitStrc * pPlayer,
         if ((int)(uint32_t)(uint8_t)pTradeItemTxt->nLevel <= nStoreItemLevel) {
           if (nStoreItemLevel < 0x19) {
             pvVar1 = pGameNpc->sTrade.pTradeList1;
-            nItemsToGen = (D2ItemsTxt*)D2Client::SEED_RollRange(pNpcControl, (uint32_t)*(uint8_t*)((int)pvVar1 + nTradeListOffset), *(uint8_t*)((int)pvVar1 + nTradeListOffset + 1) + 1);
+            nItemsToGen = D2Client::SEED_RollRange(pNpcControl, (uint32_t)*(uint8_t*)((int)pvVar1 + nTradeListOffset), *(uint8_t*)((int)pvVar1 + nTradeListOffset + 1) + 1);
           } else {
             nItemsToGen = 0;
           }
@@ -631,7 +634,7 @@ void __fastcall SUNITNPC_FillNpcStore(::SGAMEDATA * pGame, D2UnitStrc * pPlayer,
                 }
 
                 pTradeItemTxt = (D2ItemsTxt*)(pTradeItemTxt->szFlippyFile + 1);
-              } while (pTradeItemTxt < nItemsToGen);
+              } while ((uintptr_t)pTradeItemTxt < (uint32_t)nItemsToGen);
             }
 
             D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(*(uint32_t*)(nTradeListOffset + 4 + (int)pTradeState->pTradeList1), (int*)&nItemClassId);
@@ -645,10 +648,10 @@ void __fastcall SUNITNPC_FillNpcStore(::SGAMEDATA * pGame, D2UnitStrc * pPlayer,
               }
 
               pvVar1 = pGameNpc->sTrade.pTradeList1;
-              nScrollsToGen = (D2ItemsTxt*)D2Client::SEED_RollRange(pNpcControl, (uint32_t)*(uint8_t*)((int)pvVar1 + nTradeListOffset + 2), (uint32_t)*(uint8_t*)((int)pvVar1 + nTradeListOffset + 3) + nScrollCountBonus);
+              nScrollsToGen = D2Client::SEED_RollRange(pNpcControl, (uint32_t)*(uint8_t*)((int)pvVar1 + nTradeListOffset + 2), (uint32_t)*(uint8_t*)((int)pvVar1 + nTradeListOffset + 3) + nScrollCountBonus);
               pItemTxtTmp = pTradeItemTxt;
               while (true) {
-                pTradeItemTxt = nScrollsToGen;
+                pTradeItemTxt = (D2ItemsTxt*)nScrollsToGen;
                 if (!pTradeItemTxt) {
                   break;
                 }
@@ -659,7 +662,7 @@ void __fastcall SUNITNPC_FillNpcStore(::SGAMEDATA * pGame, D2UnitStrc * pPlayer,
                 }
 
                 pItemTxtTmp = (D2ItemsTxt*)((uintptr_t)&pTradeItemTxt[-1].pad422 + 1);
-                nScrollsToGen = pItemTxtTmp;
+                nScrollsToGen = (int32_t)pItemTxtTmp;
               }
             }
           }
@@ -971,7 +974,7 @@ void __fastcall NPC_ProcessMercHire(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2U
     BOOL bCheckPassed;
     int nPlayerGold;
     uint32_t nNameId;
-    uint16_t* pHireSlot;
+    D2MercForHire* pHireSlot;
     D2MonsterAiStrc* pNpcMonsterAi;
     int32_t nGold;
     D2ClientStrc* pClientSend;
@@ -1047,11 +1050,11 @@ void __fastcall NPC_ProcessMercHire(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2U
         nResult = 9;
         nLineNum = 0x685;
       } else {
-        pHireSlot = (uint16_t*)((nNameId - nNameFirst) * 0x10 + *(int*)(nGameNpcPtr + 0x10));
-        if (*pHireSlot == nMarcNameId) {
-          if (!*(int*)(pHireSlot + 4)) {
-            nLineNum = D2Common::Merc::GetMercAct(pGame->bExpansion, 0, *pHireSlot);
-            bCheckPassed = D2Common::Merc::RollMercStats(pGame->bExpansion, pUnit, *(int32_t*)(pHireSlot + 2), nLineNum, (uint32_t)pGame->nDifficulty, &sMercHireData);
+        pHireSlot = (D2MercForHire*)((nNameId - nNameFirst) * 0x10 + *(int*)(nGameNpcPtr + 0x10));
+        if (pHireSlot->nNameStringId == nMarcNameId) {
+          if (!pHireSlot->bActive) {
+            nLineNum = D2Common::Merc::GetMercAct(pGame->bExpansion, 0, pHireSlot->nNameStringId);
+            bCheckPassed = D2Common::Merc::RollMercStats(pGame->bExpansion, pUnit, pHireSlot->nSeed, nLineNum, (uint32_t)pGame->nDifficulty, &sMercHireData);
             if (!bCheckPassed) {
               return;
             }
@@ -1066,9 +1069,8 @@ void __fastcall NPC_ProcessMercHire(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2U
             } else {
               pClient = D2Game::Monster::Create::SpawnMonsterAtUnit(pGame, pNPC, nClassId, eD2MonsterAnimMode_ns::Neutral, 4, 0);
               if (pClient || (pClient = D2Game::Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, nClassId, eD2MonsterAnimMode_ns::Neutral, 4, 0) , pClient != 0)) {
-                pHireSlot[4] = 1;
-                pHireSlot[5] = 0;
-                D2Game::Monster::MonsterAI::MERC_HireAndReplaceMerc(pGame, pUnit, pClient, -1, (uint8_t*)pHireSlot, 0);
+                pHireSlot->bActive = 1;
+                D2Game::Monster::MonsterAI::MERC_HireAndReplaceMerc(pGame, pUnit, pClient, -1, pHireSlot, 0);
                 pNpcMonsterAi = sunitproxy::GetMonsterAI(pNPC);
                 nLineNum = D2Game::Monster::MonsterAI::CountMonstersByAi(pNpcMonsterAi);
                 bFirstInteraction = (uint32_t)(nLineNum < 2);
@@ -1179,7 +1181,7 @@ void __fastcall SUNITNPC_ProcessGambleResult(D2UnitStrc * pUnit) {
 // @sourcefile .\UNIT\SUNITNPC.CPP
 D2UnitStrc * __fastcall CreateMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint16_t nMercNameId, uint32_t dwHireFlags, uint16_t nNameIdOverride, int32_t nClassIdOverride, int32_t nReplaceFlag) {
     D2HirelingTxt* pHirelingTxt;
-    uint16_t aMercSlot[2];
+    D2MercForHire sHireInfo;
     int nSellerNpcIdx;
     D2UnitStrc* pUnitSave = pUnit;
     uint32_t nMercAct = D2Common::Merc::GetMercAct(pGame->bExpansion, 0, nMercNameId);
@@ -1229,9 +1231,9 @@ D2UnitStrc * __fastcall CreateMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint
       return nullptr;
     }
 
-    uint32_t dwHireData = dwHireFlags;
-    aMercSlot[0] = nMercNameId;
-    D2Game::Monster::MonsterAI::MERC_HireAndReplaceMerc(pGame, pUnitSave, pNewMerc, nNameIdOverride, (uint8_t*)aMercSlot, nReplaceFlag);
+    sHireInfo.nSeed = dwHireFlags;
+    sHireInfo.nNameStringId = nMercNameId;
+    D2Game::Monster::MonsterAI::MERC_HireAndReplaceMerc(pGame, pUnitSave, pNewMerc, nNameIdOverride, &sHireInfo, nReplaceFlag);
     return pNewMerc;
 }
 
@@ -2384,24 +2386,24 @@ BOOL __fastcall SUNITNPC_HandleHireableAction(D2UnitStrc * pUnit) {
     return _bAnyStateRemoved;
 }
 
-void __stdcall HealByPlayerPetsByNPC(D2UnitStrc * pUnit, bool * pbChanged) {
+void __stdcall HealByPlayerPetsByNPC(D2UnitStrc * pUnit, BOOL * pbChanged) {
     int nCurHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
     int32_t nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
     if (nCurHp < nMaxHp) {
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, nMaxHp, 0);
-      *pbChanged = true;
+      *(uint8_t*)pbChanged = 1;
     }
 
     BOOL BVar1 = SUNITNPC_HandleHireableAction(pUnit);
     if (BVar1) {
-      *pbChanged = true;
+      *(uint8_t*)pbChanged = 1;
     }
 
     D2StatListExStrc* pStateStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_poison);
     if (pStateStatList) {
       D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStateStatList);
       D2Common::Stats::StatsEx::FreeStatList(&pStateStatList->sStatList);
-      *pbChanged = true;
+      *(uint8_t*)pbChanged = 1;
     }
 
     pStateStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_freeze);
@@ -2411,27 +2413,25 @@ void __stdcall HealByPlayerPetsByNPC(D2UnitStrc * pUnit, bool * pbChanged) {
 
     D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStateStatList);
     D2Common::Stats::StatsEx::FreeStatList(&pStateStatList->sStatList);
-    *pbChanged = true;
+    *(uint8_t*)pbChanged = 1;
 }
 
 // Server-side NPC heal handler. Verifies that pNpc is the player's currently interacted NPC, then restores HP, mana, and stamina to their txt-data maximums, removes poison and freeze state lists, clears any hireable AI state, and iterates pets to apply the same healing. Sends attribute-update packets (ids 6, 8, 10) for each stat that changed. Triggers an AI-reset sound event on the NPC if anything changed.
 void __fastcall HealByPlayerByNPC(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pNpc) {
-    bool _bChangedAny;
     bool _bHireableStateRemoved;
     bool bHireableStateRemoved;
-    bool bChangedAny;
     D2UnitStrc* pInteractedNpc = SUnit::GetInteractedNpc(pGame, pUnit);
     if (pInteractedNpc != pNpc) {
       return;
     }
 
-    _bChangedAny = UNIT_PLAYER;
+    BOOL bChangedAny = 0;
     uint32_t nMaxStat = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
     uint32_t nCurStat = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
     if (nCurStat < nMaxStat) {
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, nMaxStat, 0);
       PLAYER::PlayerMsg::SendAttributeUpdate(pUnit, 6, nMaxStat, pUnit);
-      _bChangedAny = UNIT_MONSTER;
+      bChangedAny = 1;
     }
 
     nMaxStat = D2Common::Stats::StatsEx::GetTxtMaxMana(pUnit);
@@ -2439,7 +2439,7 @@ void __fastcall HealByPlayerByNPC(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Uni
     if (nCurStat < nMaxStat) {
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mana, nMaxStat, 0);
       PLAYER::PlayerMsg::SendAttributeUpdate(pUnit, 8, nMaxStat, pUnit);
-      _bChangedAny = UNIT_MONSTER;
+      bChangedAny = 1;
     }
 
     nMaxStat = D2Common::Stats::StatsEx::GetTxtMaxStamina(pUnit);
@@ -2447,30 +2447,30 @@ void __fastcall HealByPlayerByNPC(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Uni
     if (nCurStat < nMaxStat) {
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_stamina, nMaxStat, 0);
       PLAYER::PlayerMsg::SendAttributeUpdate(pUnit, 10, nMaxStat, pUnit);
-      _bChangedAny = UNIT_MONSTER;
+      bChangedAny = 1;
     }
 
     D2StatListExStrc* pStateStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_poison);
     if (pStateStatList) {
       D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStateStatList);
       D2Common::Stats::StatsEx::FreeStatList(&pStateStatList->sStatList);
-      _bChangedAny = UNIT_MONSTER;
+      bChangedAny = 1;
     }
 
     pStateStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_freeze);
     if (pStateStatList) {
       D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStateStatList);
       D2Common::Stats::StatsEx::FreeStatList(&pStateStatList->sStatList);
-      _bChangedAny = UNIT_MONSTER;
+      bChangedAny = 1;
     }
 
     _bHireableStateRemoved = SUNITNPC_HandleHireableAction(pUnit);
     if (_bHireableStateRemoved) {
-      _bChangedAny = UNIT_MONSTER;
+      bChangedAny = 1;
     }
 
     PLAYER::PlayerPets::PetsForEach(pGame, pUnit, (pfnPetForEachCallback)HealByPlayerPetsByNPC, (D2UnitStrc*)&bChangedAny);
-    if (_bChangedAny != UNIT_MONSTER) {
+    if (bChangedAny != 1) {
       return;
     }
 
@@ -2633,18 +2633,6 @@ void __fastcall SUNITNPC_CloseNpcInteraction(::SGAMEDATA * pGame, D2UnitStrc * p
 // Server-side mercenary hiring from a town NPC (e.g. Greiz/Asheara). Looks up the NPC's per-game hire-list state by class id; bails if the player already owns a hireable pet. For each available, not-yet-hired list slot in the hireling name range, marks the slot taken, sends a 0x50 quest-special packet to the player's client to confirm, spawns the merc monster (trying placement modes 4/6/0xC), and calls MERC_HireAndReplaceMerc to attach it as the player's hireling. Resets the NPC hire list if it becomes empty. Halts (error 0xFA2) if no hireling.txt entry exists.
 // @sourcefile .\UNIT\SUNITNPC.CPP
 void __fastcall HireMercFromNpc(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, int32_t nNpcClassId) {
-    // Frame slots -24..-19 are ONE object: &byPktCmd is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byPktCmd;
-      uint16_t wPktData1;
-      uint16_t wPktData2;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 5, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    uint8_t* pHireInfo;
     D2UnitStrc* pExistingMerc;
     D2HirelingTxt* pHirelingTxt;
     int iHireSlot;
@@ -2657,8 +2645,7 @@ void __fastcall HireMercFromNpc(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, int32
     int pHireList;
     int nMercClassId;
     uint32_t nNameFirst;
-    uint32_t dwStackCookie;
-    dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
+    D2GSPacketSrv0x50 sPacket;
     D2GameNpcStrc* pNpcData;
     pNpcData = sunitproxy::GetGameNpcbyClassId(pGame, nNpcClassId, &nNpcDataIdx);
     D2GameNpcStrc* pNpcDataSaved;
@@ -2668,6 +2655,7 @@ void __fastcall HireMercFromNpc(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, int32
       return;
     }
     if (!pGame->bExpansion) {
+      D2MercForHire* pHireInfo;
       require_no_merc:
       pExistingMerc = PLAYER::PlayerPets::SERVER_GetUnitPetByTypeId(pGame, pPlayer, PETTYPE_hireable, 0);
       if (pExistingMerc) {
@@ -2696,16 +2684,13 @@ void __fastcall HireMercFromNpc(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, int32
             break;
           }
           if (*pSlotInUse != 1 && *pSlotAvail == 1) {
-            __frame0.wPktData2 = *(uint16_t*)(iHireSlot * 0x10 + pHireList);
-            pHireInfo = (uint8_t*)(iHireSlot * 0x10 + pHireList);
-            __frame0.byPktCmd = 'P';
-            __frame0.wPktData1 = 2;
-            pHireInfo[8] = '\x01';
-            pHireInfo[9] = '\0';
-            pHireInfo[10] = '\0';
-            pHireInfo[0xb] = '\0';
+            sPacket.aPayload[0] = *(uint16_t*)(iHireSlot * 0x10 + pHireList);
+            pHireInfo = (D2MercForHire*)(iHireSlot * 0x10 + pHireList);
+            sPacket.nPacketId = 'P';
+            sPacket.nMessageType = 2;
+            pHireInfo->bActive = 1;
             pClient = SUnit::SUNIT_GetClient(pPlayer, ".\\UNIT\\SUNITNPC.CPP", 0xfc7);
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x50_QuestSpecial(pClient, (uint32_t*)&__frame0.byPktCmd);
+            GAME::SCmd::NET_D2GS_SERVER_Send_0x50_QuestSpecial(pClient, &sPacket);
             pExistingMerc = D2Game::Monster::Create::SpawnMonsterAtUnit(pGame, pPlayer, nMercClassId, eD2MonsterAnimMode_ns::Neutral, 4, 0);
             if (!pExistingMerc) {
               pExistingMerc = D2Game::Monster::Create::SpawnMonsterAtUnit(pGame, pPlayer, nMercClassId, eD2MonsterAnimMode_ns::Neutral, 6, 0);
@@ -3431,8 +3416,8 @@ int __fastcall UseMenu(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2QuestState pQ
 
         bQuestState = D2Common::ITEMS::Items::IsValidImbumeItem(pItem);
         if (!bQuestState) {
-          __frame0.byMenuType = 7;
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT((D2ClientStrc*)sUseMenuPkt.y, (uint32_t*)&__frame0.pClient);
+          __frame0.byMenuType = '\a';
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT((D2ClientStrc*)sUseMenuPkt.y, (D2GSPacketSrv0x58*)&__frame0.pClient);
           ITEMS::ItemMode::SERVER_DropItemFromPlayer(pGame, pUnit, nGuid);
           Fog::Debug::GuardStack();
           return 0;
@@ -3468,8 +3453,8 @@ int __fastcall UseMenu(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2QuestState pQ
 
           pClonedItem = ITEMS::Items::Drop::ITEM_CreateItemInstance(pGame, &__frame0.sItemGenCtx, 0);
           if (!pClonedItem) {
-            __frame0.byMenuType = 7;
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT((D2ClientStrc*)sUseMenuPkt.y, (uint32_t*)&__frame0.pClient);
+            __frame0.byMenuType = '\a';
+            GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT((D2ClientStrc*)sUseMenuPkt.y, (D2GSPacketSrv0x58*)&__frame0.pClient);
           } else {
             SUNITNPC_UpdateNpcInventory(pGame, pClonedItem, nullptr);
             ITEMS::ItemMode::ITEMMODE_GetItemCursorMode(pGame, pClonedItem, pUnit);
@@ -3489,8 +3474,8 @@ int __fastcall UseMenu(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2QuestState pQ
             }
 
             Quests::QUESTS::A1Q3::DeactivateToolsOfTrade(pGame, pUnit);
-            __frame0.byMenuType = 6;
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT((D2ClientStrc*)sUseMenuPkt.y, (uint32_t*)&__frame0.pClient);
+            __frame0.byMenuType = '\x06';
+            GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT((D2ClientStrc*)sUseMenuPkt.y, (D2GSPacketSrv0x58*)&__frame0.pClient);
           }
 
           Fog::Debug::GuardStack();
@@ -3498,8 +3483,8 @@ int __fastcall UseMenu(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2QuestState pQ
         }
       }
 
-      __frame0.byMenuType = 7;
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT((D2ClientStrc*)sUseMenuPkt.y, (uint32_t*)&__frame0.pClient);
+      __frame0.byMenuType = '\a';
+      GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT((D2ClientStrc*)sUseMenuPkt.y, (D2GSPacketSrv0x58*)&__frame0.pClient);
       ITEMS::ItemMode::SERVER_DropItemFromPlayer(pGame, pUnit, nGuid);
       Fog::Debug::GuardStack();
       return 0;
@@ -3665,7 +3650,7 @@ int __fastcall UseMenu(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2QuestState pQ
           pClonedItem = ITEMS::Items::Drop::ITEM_CloneFromSerializedData(pGame, (D2UnitStrc*)sUseMenuPkt.y, pUnit, 1);
           if (!pClonedItem) {
             *(uint8_t*)((char*)&PStack_108.y + 1) = 7;
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(__frame0.pClient, (uint32_t*)&PStack_108);
+            GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(__frame0.pClient, (D2GSPacketSrv0x58*)&PStack_108);
             ITEMS::ItemMode::SERVER_DropItemFromPlayer(pGame, pUnit, nGuid);
           }
 
@@ -3694,7 +3679,7 @@ int __fastcall UseMenu(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2QuestState pQ
             D2Common::ITEMS::Items::ITEM_GetPlayerNameAkaNamedString(pClonedItem, pCustomName->szCharName);
             Quests::QUESTS::A5Q4::Q34_ClaimReward(pGame, pUnit);
             *(uint8_t*)((char*)&PStack_108.y + 1) = 6;
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(__frame0.pClient, (uint32_t*)&PStack_108);
+            GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(__frame0.pClient, (D2GSPacketSrv0x58*)&PStack_108);
             Fog::Debug::GuardStack();
             return 0;
           }
@@ -3705,7 +3690,7 @@ int __fastcall UseMenu(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2QuestState pQ
 
       reject_ineligible_item:
       *(uint8_t*)((char*)&PStack_108.y + 1) = 7;
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(__frame0.pClient, (uint32_t*)&PStack_108);
+      GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(__frame0.pClient, (D2GSPacketSrv0x58*)&PStack_108);
       ITEMS::ItemMode::SERVER_DropItemFromPlayer(pGame, pUnit, nGuid);
       Fog::Debug::GuardStack();
       return 0;
@@ -3744,7 +3729,7 @@ int __fastcall UseMenu(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2QuestState pQ
     if (!pClonedItem || (bQuestState = ITEMS::ItemMode::ToCursorItem(pGame, pUnit, (D2UnitStrc*)sUseMenuPkt.y) , !bQuestState)) {
       reject_transfer_failed:
       *(uint8_t*)((char*)&PStack_108.y + 1) = 7;
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(__frame0.pClient, (uint32_t*)&PStack_108);
+      GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(__frame0.pClient, (D2GSPacketSrv0x58*)&PStack_108);
       ITEMS::ItemMode::SERVER_DropItemFromPlayer(pGame, pUnit, nGuid);
       Fog::Debug::GuardStack();
       return 0;
@@ -3782,7 +3767,7 @@ int __fastcall UseMenu(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2QuestState pQ
 
     Quests::QUESTS::A5Q1::Q31_ClaimReward(pGame, pUnit);
     *(uint8_t*)((char*)&PStack_108.y + 1) = 6;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(__frame0.pClient, (uint32_t*)&PStack_108);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(__frame0.pClient, (D2GSPacketSrv0x58*)&PStack_108);
     Fog::Debug::GuardStack();
     return 0;
 }

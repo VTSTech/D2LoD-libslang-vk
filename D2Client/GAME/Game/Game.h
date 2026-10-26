@@ -38,6 +38,11 @@ struct __attribute__((packed)) BetaScreenEntry {
     /* 0x09 */ char * fileName; // path token for wsprintf
 };
 
+struct D2CharPortraitTextStrc {
+    /* 0x00 */ char szName[100];
+    /* 0x64 */ char szTitle[100]; // strcat(szTitle, szName) cursor starts at szTitle-1
+};
+
 struct D2ClientGameDataStrc {
     /* 0x00 */ int32_t nZeroHead;
     /* 0x04 */ void (__fastcall *CurrentDrawFunction)(int32_t); // __fastcall draw proc; ECX=0 at every call site
@@ -71,6 +76,16 @@ struct D2ClientGameDataStrc {
     /* 0x74 */ BOOL CLIENT_bExpansion;
     /* 0x78 */ uint32_t CLIENT_bLadder;
     /* 0x7C */ uint32_t gnGameDataValue04fc;
+};
+
+struct D2ClientTimerStrc {
+    D2ClientTimerStrc() = default;
+    D2ClientTimerStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+    D2ClientTimerStrc(DWORD a0, DWORD a1) : dwStartTick(a0), dwDurationMs(a1) {}
+
+    /* 0x00 */ DWORD dwStartTick; // GetTickCount at arm time; cleared on expiry
+    /* 0x04 */ DWORD dwDurationMs; // 0 = timer idle
 };
 
 namespace D2Client::GAME::Game {
@@ -120,7 +135,7 @@ void __stdcall GameLoop();
 // Client-side world update. Runs at 25 FPS (same cadence as server loop).
 // Per-frame: GameLoop -> UpdateGfxState -> AnimateTiles -> UpdateLights -> Gfx_UpdateNearbyUnitGfx.
 // Also: day/night cycle, room activation, automap, periodic FreeDungeons (13th frame).
-int32_t __stdcall ClientSideGameLoop();
+void __stdcall ClientSideGameLoop();
 void __stdcall GAMEDATA_InitializeEclipseEnvironment();
 void __stdcall ExitFunction(uint32_t dwArg1, uint32_t dwArg2, uint32_t dwArg3);
 void __fastcall D2CLIENT_SetExitVar2(BOOL bResult);
@@ -265,9 +280,9 @@ void __stdcall ClearInGameUIFlags();
 void __stdcall GAMEDATA_RegisterEventHandlers();
 void __fastcall D2CLIENT_ExitGame(int32_t nParam);
 int32_t __fastcall GAMEDATA_TimerGetRemaining(int32_t * pTimerStruct);
-uint32_t __fastcall GAMEDATA_CheckTimerExpired(int32_t * pTimerStruct);
+uint32_t __fastcall GAMEDATA_CheckTimerExpired(struct D2ClientTimerStrc * pTimer);
 // Timer helper: checks [start,duration] pair, clears when expired, returns active status.
-uint32_t __fastcall Timer_IsActiveAndUpdate(int * pnParam);
+uint32_t __fastcall Timer_IsActiveAndUpdate(struct D2ClientTimerStrc * pTimer);
 // Send exit-game request (0x69) if not already exiting; updates exit flags.
 void __stdcall SendExitGameRequest(struct D2UIMouseMsgStrc * pMsg);
 void __fastcall CLIENT_AllocAct(int32_t nActNo, int32_t nMapSeed, int32_t nAutomap, eD2LevelId eLevel);

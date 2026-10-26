@@ -14,6 +14,7 @@ struct D2GfxHelperStrc;
 struct D2GfxLightExStrc;
 struct D2GfxLightStrc;
 struct D2GfxSettingsStrc;
+struct D2RenderClipOutStrc;
 struct D2SmackerContextStrc;
 struct D2TileLibraryEntryStrc;
 struct D3DTextureCacheStrc;
@@ -474,6 +475,21 @@ struct D2D3DDisplayModeStrc {
     /* 0x10 */ uint32_t dwRefreshRate;
 };
 
+struct D2D3DSpriteInfoStrc {
+    /* 0x00 */ struct D2GfxDataStrc * pSprite;
+    /* 0x04 */ int nWidth;
+    /* 0x08 */ int nHeight;
+    /* 0x0C */ int nOffsetX;
+    /* 0x10 */ int nOffsetY;
+    /* 0x14 */ int nTexWidth;
+    /* 0x18 */ int nTexHeight;
+    /* 0x1C */ int nTexArea;
+    /* 0x20 */ float fU0;
+    /* 0x24 */ float fU1;
+    /* 0x28 */ float fV0;
+    /* 0x2C */ float fV1;
+};
+
 struct D2D3DVertexStrc {
     /* 0x00 */ float fX;
     /* 0x04 */ float fY;
@@ -514,14 +530,6 @@ struct D3DPRIMCAPS {
     /* 0x34 */ DWORD dwStippleHeight;
 };
 
-struct D3DPRIMVERTEX {
-    /* 0x00 */ float x;
-    /* 0x04 */ float y;
-    /* 0x08 */ float z;
-    /* 0x0C */ float rhw;
-    /* 0x10 */ DWORD color;
-};
-
 struct D3DTRANSFORMCAPS {
     D3DTRANSFORMCAPS() = default;
     D3DTRANSFORMCAPS(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
@@ -530,6 +538,13 @@ struct D3DTRANSFORMCAPS {
 
     /* 0x00 */ DWORD dwSize;
     /* 0x04 */ DWORD dwCaps;
+};
+
+struct D3DVERTEXBUFFERDESC {
+    /* 0x00 */ DWORD dwSize;
+    /* 0x04 */ DWORD dwCaps;
+    /* 0x08 */ DWORD dwFVF;
+    /* 0x0C */ DWORD dwNumVertices;
 };
 
 struct D3DVIEWPORT {
@@ -556,6 +571,21 @@ struct __attribute__((packed)) DDDEVICEIDENTIFIER2 {
     /* 0x414 */ DWORD dwRevision;
     /* 0x418 */ GUID guidDeviceIdentifier;
     /* 0x428 */ DWORD dwWHQLLevel;
+};
+
+struct DDSCAPS {
+    DDSCAPS() = default;
+    DDSCAPS(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
+    operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
+
+    /* 0x00 */ DWORD dwCaps;
+};
+
+struct DDSCAPS2 {
+    /* 0x00 */ DWORD dwCaps;
+    /* 0x04 */ DWORD dwCaps2;
+    /* 0x08 */ DWORD dwCaps3;
+    /* 0x0C */ DWORD dwCaps4; // union dwVolumeDepth in the SDK
 };
 
 struct __attribute__((packed)) DDSURFACEDESC2 {
@@ -1018,6 +1048,68 @@ struct D3DDEVICEDESC {
 };
 #pragma pack(pop)
 
+#pragma pack(push, 1)
+struct DDCAPS_DX7 {
+    /* 0x000 */ DWORD dwSize;
+    /* 0x004 */ DWORD dwCaps;
+    /* 0x008 */ DWORD dwCaps2;
+    /* 0x00C */ DWORD dwCKeyCaps;
+    /* 0x010 */ DWORD dwFXCaps;
+    /* 0x014 */ DWORD dwFXAlphaCaps;
+    /* 0x018 */ DWORD dwPalCaps;
+    /* 0x01C */ DWORD dwSVCaps;
+    /* 0x020 */ DWORD dwAlphaBltConstBitDepths;
+    /* 0x024 */ DWORD dwAlphaBltPixelBitDepths;
+    /* 0x028 */ DWORD dwAlphaBltSurfaceBitDepths;
+    /* 0x02C */ DWORD dwAlphaOverlayConstBitDepths;
+    /* 0x030 */ DWORD dwAlphaOverlayPixelBitDepths;
+    /* 0x034 */ DWORD dwAlphaOverlaySurfaceBitDepths;
+    /* 0x038 */ DWORD dwZBufferBitDepths;
+    /* 0x03C */ DWORD dwVidMemTotal;
+    /* 0x040 */ DWORD dwVidMemFree;
+    /* 0x044 */ DWORD dwMaxVisibleOverlays;
+    /* 0x048 */ DWORD dwCurrVisibleOverlays;
+    /* 0x04C */ DWORD dwNumFourCCCodes;
+    /* 0x050 */ DWORD dwAlignBoundarySrc;
+    /* 0x054 */ DWORD dwAlignSizeSrc;
+    /* 0x058 */ DWORD dwAlignBoundaryDest;
+    /* 0x05C */ DWORD dwAlignSizeDest;
+    /* 0x060 */ DWORD dwAlignStrideAlign;
+    /* 0x064 */ DWORD dwRops[8];
+    /* 0x084 */ DDSCAPS ddsOldCaps;
+    /* 0x088 */ DWORD dwMinOverlayStretch;
+    /* 0x08C */ DWORD dwMaxOverlayStretch;
+    /* 0x090 */ DWORD dwMinLiveVideoStretch;
+    /* 0x094 */ DWORD dwMaxLiveVideoStretch;
+    /* 0x098 */ DWORD dwMinHwCodecStretch;
+    /* 0x09C */ DWORD dwMaxHwCodecStretch;
+    /* 0x0A0 */ DWORD dwReserved1;
+    /* 0x0A4 */ DWORD dwReserved2;
+    /* 0x0A8 */ DWORD dwReserved3;
+    /* 0x0AC */ DWORD dwSVBCaps;
+    /* 0x0B0 */ DWORD dwSVBCKeyCaps;
+    /* 0x0B4 */ DWORD dwSVBFXCaps;
+    /* 0x0B8 */ DWORD dwSVBRops[8];
+    /* 0x0D8 */ DWORD dwVSBCaps;
+    /* 0x0DC */ DWORD dwVSBCKeyCaps;
+    /* 0x0E0 */ DWORD dwVSBFXCaps;
+    /* 0x0E4 */ DWORD dwVSBRops[8];
+    /* 0x104 */ DWORD dwSSBCaps;
+    /* 0x108 */ DWORD dwSSBCKeyCaps;
+    /* 0x10C */ DWORD dwSSBFXCaps;
+    /* 0x110 */ DWORD dwSSBRops[8];
+    /* 0x130 */ DWORD dwMaxVideoPorts;
+    /* 0x134 */ DWORD dwCurrVideoPorts;
+    /* 0x138 */ DWORD dwSVBCaps2;
+    /* 0x13C */ DWORD dwNLVBCaps;
+    /* 0x140 */ DWORD dwNLVBCaps2;
+    /* 0x144 */ DWORD dwNLVBCKeyCaps;
+    /* 0x148 */ DWORD dwNLVBFXCaps;
+    /* 0x14C */ DWORD dwNLVBRops[8];
+    /* 0x16C */ DDSCAPS2 ddsCaps;
+};
+#pragma pack(pop)
+
 namespace D2Direct3D::Renderer {
 
 // Function declarations
@@ -1070,13 +1162,13 @@ void thunk_Release();
 BOOL __fastcall InitPerspective(struct D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc * pHelpers);
 void __stdcall RENDERER_D3D_ReleaseTexturePools();
 void __fastcall D3D_PixelDataFreeCallback_ClearCacheNodes(int * pCacheIndices);
-BOOL __stdcall RENDERER_D3D_ExtractSpriteInfo(struct D2GfxDataStrc * pSprite, int * pOutput);
-void __stdcall RENDERER_D3D_CalculateTextureSize(int * pStruct);
+BOOL __stdcall RENDERER_D3D_ExtractSpriteInfo(struct D2GfxDataStrc * pSprite, struct D2D3DSpriteInfoStrc * pOutput);
+void __stdcall RENDERER_D3D_CalculateTextureSize(struct D2D3DSpriteInfoStrc * pStruct);
 // Direct3D texture cache: uploads a DC6 frame to video memory. Determines mipmap level based on size, allocates cache slot, renders frame to memory surface, copies to texture via LockRect/memcpy, and sets as active texture.
-int32_t RENDERER_DIRECT3D_UploadTextureToCache(int * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode);
+int32_t RENDERER_DIRECT3D_UploadTextureToCache(struct D2D3DSpriteInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode);
 void __stdcall RENDERER_D3D_DrawShadowQuad(int * pTextureInfo, int nPosX, int nPosY, uint8_t nAlpha);
 // Direct3D renderer: draws a textured quad with palette or solid color fill. Looks up RGB color from gpPaletteTable+0x114 palette based on nParam4 index.
-void __stdcall RENDERER_DIRECT3D_DrawPalettedQuad(int * pTextureInfo, int nPosX, int nPosY, uint32_t nColor, int nParam4, uint8_t nAlpha, int nParam6);
+void __stdcall RENDERER_DIRECT3D_DrawPalettedQuad(struct D2D3DSpriteInfoStrc * pTextureInfo, int nPosX, int nPosY, uint32_t nColor, int nParam4, uint8_t nAlpha, int nParam6);
 // Sets blend mode based on draw mode enum (0-7) and returns the appropriate alpha value. Mode 0=25%, 1=50%, 2=75%, 3=additive, 4=modulate, 5/7=opaque, default=100% alpha.
 uint8_t __stdcall SetDrawModeAndGetAlpha(int nDrawMode);
 // Stack-slot reuse: the nScreenMode slot first holds the clip bottom RENDERER_nWindowHeight - 0x2f (whole dword, 006b694e) that the quad's y coordinates are tested against; then its low byte holds the alpha returned by SetDrawModeAndGetAlpha(nDrawMode) (006b6999).
@@ -1084,7 +1176,7 @@ void __fastcall DrawPerspectiveImage(struct D2GfxDataStrc * pData, int nPosX, in
 BOOL __fastcall DrawImage(struct D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwGamma, int nDrawMode, BYTE * pPalette);
 void __fastcall DrawShiftedImage(struct D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwGamma, int nDrawMode, int nGlobalPaletteShift);
 void __fastcall DrawVerticalCropImage(struct D2GfxDataStrc * pData, int nPosX, int nPosY, int nSkipLines, int nDrawLines, int nDrawMode);
-BOOL __fastcall RENDERER_D3D_ClipSpriteToRect(int * pClipResult, int * pSpriteInfo, int nPosX, int nPosY, uint32_t * pClipRect);
+BOOL __fastcall RENDERER_D3D_ClipSpriteToRect(struct D2RenderClipOutStrc * pClipResult, int * pSpriteInfo, int nPosX, int nPosY, uint32_t * pClipRect);
 void __fastcall DrawClippedImage(struct D2GfxDataStrc * pData, int nPosX, int nPosY, void * pCropRect, int nDrawMode);
 void __fastcall DrawShadow(struct D2GfxDataStrc * pData, int nPosX, int nPosY);
 void __fastcall DrawImageFast(struct D2GfxDataStrc * pData, int nPosX, int nPosY, BYTE nPaletteIndex);
@@ -1106,7 +1198,7 @@ void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex);
 void __fastcall DrawSolidSquare(POINT * pPoint, BYTE nSize, BYTE nPaletteIndex);
 void __fastcall ClearScreen(BOOL bPartial);
 // Calculates viewport rectangle based on screen panel layout. nScreenPanels=0: full screen. nScreenPanels=1: left half. nScreenPanels=2: right half. When nParam1=0, adds 32-pixel border and adjusts for status bar (47 pixels). When nParam1=1, applies quarter-width offset for panel centering (stored in pOffset).
-void RENDERER_D3D_CalculateViewportRect(int * pRect, int nScreenPanels, int * pOffset, int nParam1);
+void RENDERER_D3D_CalculateViewportRect(RECT * pRect, int nScreenPanels, int * pOffset, int nParam1);
 // Initializes perspective rendering system. Builds 3x6 vertex grid at 0x00971630 with texture coordinates for ground tile cache. Transforms coordinate lookup table at 0x0074c110 (shifts all entries left 16 bits for fixed-point math). Sets up identity matrices and default vertex colors.
 void __stdcall RENDERER_D3D_InitPerspectiveVertexBuffer();
 // NOTE: Register params: pTileLibraryEntryStrc (ECX): D2TileLibraryEntryStrc *, nTilePosX (EDX): int

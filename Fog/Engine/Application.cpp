@@ -13,6 +13,7 @@
 #include "Fog/3rdparty/crashy.h"
 #include "Fog/Debug.h"
 #include "Fog/Engine/Application/Service.h"
+#include "Fog/File.h"
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
 #include "Fog/Source/SFile.h"
@@ -567,21 +568,22 @@ uint32_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInfo) {
 }
 
 // Unwinds stack frames for crash dumps. Walks EBP chain up to 128 frames, validates stack pointers, skips first N frames. Captures EIP, ESP, EBP for each frame. Handles current thread or remote thread via OpenThread/SuspendThread.
-int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, int pFrameArray, uint32_t nSkipFrames, CONTEXT * pContext) {
+int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFrameArray, uint32_t nSkipFrames, CONTEXT * pContext) {
     // Frame slots -780..-752 are ONE object: &nStackLimit is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       int nStackLimit;
       uint32_t nWalkIndex;
       uint32_t* pStackTop;
-      int pFrameArrayBase;
+      D2CrashFrameStrc* pFrameArrayBase;
       uint32_t nFramesWritten;
       uint32_t nCurEip;
       uint32_t* pCurEsp;
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 28, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    char cVar1;
+    D2CrashFrameStrc* pDVar1;
+    char cVar2;
     DWORD dwThreadIdOrSuspend;
     HANDLE hThread;
     BOOL bGetContextOk;
@@ -642,15 +644,15 @@ int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, int pFrameArray, uint32_
       __frame0.nFramesWritten = 0;
       __frame0.nCurEip = threadContext.Eip;
       __frame0.pCurEsp = (uint32_t*)threadContext.Esp;
-      cVar1 = _3rdparty::crashy::SYSTEM_CaptureThreadContext((int*)&__frame0.pStackTop, dwThreadId, &__frame0.nStackLimit, &pStackBase);
+      cVar2 = _3rdparty::crashy::SYSTEM_CaptureThreadContext((int*)&__frame0.pStackTop, dwThreadId, &__frame0.nStackLimit, &pStackBase);
       hThread = hOpenedThread;
-      if (cVar1 != '\0') {
+      if (cVar2 != '\0') {
         for (__frame0.nWalkIndex = 0; __frame0.nWalkIndex < 0x80; __frame0.nWalkIndex++) {
           if (nSkipFrames <= __frame0.nWalkIndex) {
-            pNextEbp = (uint32_t*)(__frame0.pFrameArrayBase + nFrameCount * 0x24);
-            *pNextEbp = __frame0.nCurEip;
-            pNextEbp[2] = (uint32_t)__frame0.pCurEsp;
-            pNextEbp[1] = threadContext.Ebp;
+            pDVar1 = __frame0.pFrameArrayBase + nFrameCount;
+            pDVar1->dwReturnAddr = __frame0.nCurEip;
+            pDVar1->dw08 = (uint32_t)__frame0.pCurEsp;
+            pDVar1->dw04 = threadContext.Ebp;
             nFrameCount++;
             __frame0.nFramesWritten = nFrameCount;
             if (0x7f < nFrameCount) {
@@ -1362,6 +1364,7 @@ int32_t __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lp
     // Static local variables (originally global data)
     static BOOL WinMain_nShowCmd = 0x0;
 
+    char* aszArgv[2];
     WinMain_hInstance = hInstance;
     WinMain_nShowCmd = nShowCmd;
     D2TRACE("WinMain enter");
@@ -1373,10 +1376,10 @@ int32_t __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lp
       return 0;
     }
 
-    char* szArgv0 = "d2server";
-    LPSTR szArgv1 = lpCmdLine;
+    aszArgv[0] = "d2server";
+    aszArgv[1] = lpCmdLine;
     Storm::Engine::Application::LIB_LoadAdvapi32();
-    PreInitApplication(2, &szArgv0);
+    PreInitApplication(2, aszArgv);
     return 0;
 }
 

@@ -54,6 +54,7 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/D2GossipTextStrc.h"
@@ -205,7 +206,7 @@ BOOL __fastcall OBJOP_A4Q2_PandemoniumFortressGate(D2ObjectOperateFnArg * pOpera
           aQuestStatePacket[1] = 0x17;
           aQuestStatePacket[2] = 2;
           aQuestStatePacket[3] = 0;
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pPlayerClient, aQuestStatePacket);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pPlayerClient, (D2GSPacketSrv0x5D*)aQuestStatePacket);
           GAME::SCmd::NET_D2GS_SERVER_Send_0x61_CanGoToAct(pPlayerClient, 5);
         }
       }
@@ -336,7 +337,7 @@ void __fastcall Q28_PlayerCompleteForgeInAct4(::SGAMEDATA * pGame, D2UnitStrc * 
 BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
     int32_t nForgeObjClassId;
     D2ObjectsTxt* pObjectsTxt;
-    eD2PlayerAnimMode eForgeMode;
+    eD2ObjectAnimMode eForgeMode;
     D2UnitStrc* pQuestItem;
     D2ItemsTxt* pItemsTxt;
     int* pStrikeCount;
@@ -366,11 +367,11 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
 
         pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nForgeObjClassId);
         pQuestItem = pOperation->sArg.pVictim;
-        eForgeMode = Death;
+        eForgeMode = eD2ObjectAnimMode_ns::Neutral;
         if (pQuestItem) {
-          eForgeMode = pQuestItem->eAnimMode.ePlayerMode;
+          eForgeMode = pQuestItem->eAnimMode.eObjectMode;
         }
-        if (eForgeMode == Death) {
+        if (eForgeMode == eD2ObjectAnimMode_ns::Neutral) {
           /* HasQuestItem('mss '=0x2073736d, Mephisto's Soulstone): forge idle + player
                          carries soulstone -> place stone on anvil (internal state 2) */ pQuestItem = ITEMS::Items::Drop::HasQuestItem(pOperation->sArg.pGame, pOperation->pAttacker, 0x2073736d);
           if (pQuestItem) {
@@ -396,7 +397,7 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
           QUEST_SetStateFlag(pForgeQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q3.cpp", 0xf1);
           return 0;
         }
-        if (eForgeMode != Walk) {
+        if (eForgeMode != Opened) {
           return 0;
         }
 

@@ -11,6 +11,19 @@
 // Forward declarations
 struct D2BitBufferStrc;
 
+// Data types
+struct __attribute__((packed)) D2GSPacketSrv0xB2 {
+    /* 0x00 */ uint8_t nPacketId; // 0xB2
+    /* 0x01 */ char szPlayerName[48];
+    /* 0x31 */ uint16_t nUniqueCode;
+    /* 0x33 */ uint16_t nGuildFlags;
+};
+
+struct __attribute__((packed)) D2GSPacketSrv0xB4 {
+    /* 0x00 */ uint8_t nPacketId; // 0xB4
+    /* 0x01 */ int32_t nReason; // EDX
+};
+
 namespace D2Game::GAME::Server::ServerCmd {
 
 // Function declarations

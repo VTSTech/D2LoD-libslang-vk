@@ -33,10 +33,7 @@ struct D2DrawFloorStrc {
     /* 0x02 */ uint8_t field_0x2;
     /* 0x03 */ uint8_t field_0x3;
     /* 0x04 */ uint32_t bIsPerspective;
-    /* 0x08 */ bool bWeatherSplashEnabled;
-    /* 0x09 */ uint8_t field_0x9;
-    /* 0x0A */ uint8_t field_0xa;
-    /* 0x0B */ uint8_t field_0xb;
+    /* 0x08 */ BOOL bWeatherSplashEnabled;
     /* 0x0C */ int nRecordingRelated;
     /* 0x10 */ int uWeatherRelated;
     /* 0x14 */ uint32_t nLastSplashFrame;

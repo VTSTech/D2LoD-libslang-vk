@@ -423,17 +423,10 @@ int __stdcall NET_MCP_CLIENT_SendPacketToQSocket(D2QSSocketStrc * pQSocket, char
 }
 
 int32_t __stdcall NET_MCP_CLIENT_Send(D2QSSocketStrc * pQSocket, char * pBytes, uint16_t nDataSizeNoHeader) {
-    // Frame slots -8304..-8 are ONE object: &wPacketLength is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint16_t wPacketLength;
-      short int wDataSize;
-      uint8_t aSendBuf[8292];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8296, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint16_t _nDataSizeNoHeader;
     uint32_t nTotalSendSize;
+    uint8_t abLenHeader[4];
+    uint8_t aSendBuf[8292];
     uint16_t nDataSize = nDataSizeNoHeader;
     _nDataSizeNoHeader = (uint32_t)nDataSizeNoHeader;
     if (!pQSocket || !pQSocket->pSafesock || !pQSocket->pSafesock->bConnected) {
@@ -447,30 +440,31 @@ int32_t __stdcall NET_MCP_CLIENT_Send(D2QSSocketStrc * pQSocket, char * pBytes, 
       }
 
       _nDataSizeNoHeader = (uint32_t)nDataSize;
-      Storm::Source::SSystem::SMemCopy(__frame0.aSendBuf + 3, pBytes, _nDataSizeNoHeader - 1);
-      __frame0.wDataSize = nDataSize + 3;
-      __frame0.wPacketLength = (uint16_t)((uint16_t)(uint8_t)*pBytes << 8 | (uint16_t)(uint8_t)(char)pQSocket->nHeaderLeadByte);
-      Storm::Source::SSystem::SMemCopy(__frame0.aSendBuf, &__frame0.wPacketLength, 4);
+      Storm::Source::SSystem::SMemCopy(aSendBuf + 3, pBytes, _nDataSizeNoHeader - 1);
+      *(uint16_t*)((char*)&abLenHeader + 2) = nDataSize + 3;
+      abLenHeader[1] = *pBytes;
+      abLenHeader[0] = (uint8_t)pQSocket->nHeaderLeadByte;
+      Storm::Source::SSystem::SMemCopy(aSendBuf, abLenHeader, 4);
       nTotalSendSize = _nDataSizeNoHeader + 3;
     } else {
-      __frame0.wPacketLength = nDataSize + 2;
-      if (0x2063 < __frame0.wPacketLength) {
+      *(uint16_t*)(char*)&abLenHeader = nDataSize + 2;
+      if (0x2063 < (uint16_t)*(uint16_t*)(char*)&abLenHeader) {
         ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x71);
         exit(-1);
       }
 
-      Storm::Source::SSystem::SMemCopy(__frame0.aSendBuf, &__frame0.wPacketLength, 2);
+      Storm::Source::SSystem::SMemCopy(aSendBuf, abLenHeader, 2);
       if (!pBytes) {
         _nDataSizeNoHeader = 0;
       }
 
       nTotalSendSize = _nDataSizeNoHeader + 2;
       if (pBytes && nTotalSendSize < 0x2064) {
-        Storm::Source::SSystem::SMemCopy(__frame0.aSendBuf + 2, pBytes, _nDataSizeNoHeader);
+        Storm::Source::SSystem::SMemCopy(aSendBuf + 2, pBytes, _nDataSizeNoHeader);
       }
     }
 
-    int nSendResult = NET_MCP_CLIENT_SendPacketToQSocket(pQSocket, (char*)__frame0.aSendBuf, (short int)nTotalSendSize);
+    int nSendResult = NET_MCP_CLIENT_SendPacketToQSocket(pQSocket, (char*)aSendBuf, (short int)nTotalSendSize);
     Debug::GuardStack();
     return nSendResult + (_nDataSizeNoHeader - nTotalSendSize);
 }

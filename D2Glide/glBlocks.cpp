@@ -202,14 +202,13 @@ BOOL __fastcall GLBLOCKS_LoadFloorTileTexture(D2TileLibraryEntryStrc * pTileLibr
 }
 
 void __fastcall GLBLOCKS_LoadWallSubtileTexture(D2GroundSubTileStrc * pSubTile) {
-    FxU32 startAddress;
     int nNodeIdx0;
     short int nTexCacheIdx = pSubTile->nTextureCacheIndex;
     if (nTexCacheIdx < 0) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x105);
       exit(-1);
     } else {
-      short int nCacheSlot;
+      FxU32 startAddress;
       if (nTexCacheIdx) {
         glSubtileCache::GLSUBTILE_PromoteNodeToMRU(&gGlideSubtileTextureCache, (int)nTexCacheIdx);
         startAddress = gGlideSubtileTextureCache.pNodes[pSubTile->nTextureCacheIndex - 1].dwAddress;
@@ -233,7 +232,7 @@ void __fastcall GLBLOCKS_LoadWallSubtileTexture(D2GroundSubTileStrc * pSubTile) 
         exit(-1);
       } else {
         if (nNodeIdx0 < (int)gGlideSubtileTextureCache.nMaxEntries) {
-          gGlideSubtileTextureCache.pNodes[nCacheSlot - 1].pSubTile = pSubTile;
+          gGlideSubtileTextureCache.pNodes[nTexCacheIdx - 1].pSubTile = pSubTile;
           startAddress = gGlideSubtileTextureCache.pNodes[pSubTile->nTextureCacheIndex - 1].dwAddress;
           (*GLIDEDLL_grTexDownloadMipMap_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);
           (*GLIDEDLL_grTexSource_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);

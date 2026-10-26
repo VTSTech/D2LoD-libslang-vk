@@ -43,9 +43,7 @@ struct D2RoomExStrc {
     /* 0x00 */ struct D2DrlgOrthStrc * pOrth; // struct D2DrlgOrthStrc* - linked list of orthogonal room connections
     /* 0x04 */ int nSeed; // Initial seed value
     /* 0x08 */ struct D2RoomExStrc * * ppDrlgRoomsExNear; // struct D2RoomExStrc** - array of near room pointers
-    /* 0x0C */ short nDrlgRoomsExNearMax; // Max near rooms array capacity
-    /* 0x0E */ short bIsInit; // Room initialization flag
-    /* 0x10 */ int nType; // Room type
+    /* 0x0C */ uint16_t awRoomsInList[4]; // Max near rooms array capacity
     /* 0x14 */ D2SeedStrc sSeed; // Room seed (nSeedLow + nSeedHigh)
     /* 0x1C */ struct D2RoomExStrc * pStatusNext; // Forward link in activation priority doubly-linked list
     /* 0x20 */ D2DrlgRoomExDataUnion pRoomExData; // struct D2DrlgRoomExDataMazeStrc* for maze and outdoor rooms (nPresetType==1), struct D2DrlgPresetRoomStrc* for preset rooms (nPresetType==2)
@@ -54,7 +52,10 @@ struct D2RoomExStrc {
     /* 0x2C */ int nDrlgRoomsExNearCount; // Number of near rooms
     /* 0x30 */ struct D2RoomStrc * pRoom; // Active room (struct D2RoomStrc*), NULL when not tiled
     /* 0x34 */ D2DrlgCoordsStrc sCoords; // Room coordinates: WorldPosition.x/y, WorldSize.x/y
-    /* 0x44 */ int fRoomStatus; // Room activation status/priority (0-4)
+    /* 0x44 */ uint8_t fRoomStatus; // Room activation status/priority (0-4)
+    /* 0x45 */ uint8_t field_0x45;
+    /* 0x46 */ uint8_t field_0x46;
+    /* 0x47 */ uint8_t field_0x47;
     /* 0x48 */ int nPresetType; // 1=RandomMaze(outdoor), 2=PresetArea
     /* 0x4C */ struct D2DrlgRoomExRoomTileNodeStrc * pRoomTileNodes; // warp tile nodes (D2DrlgRoomExRoomTileNodeStrc, 0x18 each), linked via pRoomTileNext; DRLGROOMEX_AllocRoomTile pushes, FreeDrlgRoomTile frees
     /* 0x50 */ int nDT1Mask; // Bitmask of DT1 tile files to load

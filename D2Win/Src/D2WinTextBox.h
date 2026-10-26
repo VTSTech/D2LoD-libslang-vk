@@ -78,12 +78,12 @@ int __fastcall D2WINTEXTBOX_GetScrollbarStyle(::D2WinTextBox * pTextBox);
 ::D2WinTextBox * __fastcall D2WinTextBox(int32_t nParam1, int32_t nParam2, int32_t nWidth, int32_t nHeight, int32_t nParam3, int32_t nParam4, struct DC6 * pDC6, OnPress pOnPress, uint32_t nParam, int * pnParam1, int * pnParam2);
 void __fastcall FORMS_DestroyD2WinTextBox(::D2WinTextBox * pWinTextBox);
 // @sourcefile .\Src\D2WinTextBox.cpp
-uint32_t __fastcall SetText(::D2WinTextBox * pTextBox, uint16_t * szText, int32_t nLineStyle, bool bIndent, int nAlignment);
+BOOL __fastcall SetText(::D2WinTextBox * pTextBox, uint16_t * szText, int32_t nLineStyle, bool bIndent, int nAlignment);
 // @sourcefile .\Src\D2WinTextBox.cpp
 void __fastcall D2WINTEXTBOX_AddLines(::D2WinTextBox * pnParam, uint16_t * wszText, int nRepeatCount, int32_t nLineStyle, bool bIndent);
 void __fastcall D2WINTEXTBOX_SetLineCellTextA(::D2WinTextBox * pnParam, char * szText, int32_t nRowIndex, int32_t nColIndex);
 void __fastcall D2WINTEXTBOX_SetLineCellTextWDirect(::D2WinTextBox * pnParam, uint16_t * wszText, int32_t nParam1, int32_t nParam2);
 // @sourcefile .\Src\D2WinTextBox.cpp
-void __fastcall D2WINTEXTBOX_WordWrapAndSetText(::D2WinTextBox * pTextBox, uint16_t * wszText, int32_t nLineStyle, int32_t nAlignment);
+BOOL __fastcall D2WINTEXTBOX_WordWrapAndSetText(::D2WinTextBox * pTextBox, uint16_t * wszText, int32_t nLineStyle, int32_t nAlignment);
 
 } // namespace D2Win::Src::D2WinTextBox

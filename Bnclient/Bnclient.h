@@ -15,6 +15,16 @@ struct D2Srp;
 // Data types
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 
+typedef _CRYPTOAPI_BLOB CERT_NAME_BLOB;
+
+typedef _CERT_PUBLIC_KEY_INFO CERT_PUBLIC_KEY_INFO;
+
+typedef _CRYPT_ALGORITHM_IDENTIFIER CRYPT_ALGORITHM_IDENTIFIER;
+
+typedef _CRYPT_BIT_BLOB CRYPT_BIT_BLOB;
+
+typedef _CRYPTOAPI_BLOB CRYPT_INTEGER_BLOB;
+
 typedef void * HCERTSTORE;
 
 typedef void * HCRYPTMSG;
@@ -22,6 +32,8 @@ typedef void * HCRYPTMSG;
 typedef void * HLOCAL;
 
 typedef CERT_CONTEXT * PCCERT_CONTEXT;
+
+typedef struct _CERT_EXTENSION * PCERT_EXTENSION;
 
 #endif // _WIN32
 
@@ -39,6 +51,32 @@ struct D2WinTrustData {
     /* 0x28 */ uint32_t dwProvFlags;
     /* 0x2C */ uint32_t dwUIContext;
 };
+
+struct __attribute__((packed)) D2WinTrustFileInfo {
+    /* 0x00 */ DWORD cbStruct;
+    /* 0x04 */ LPCWSTR pcwszFilePath;
+    /* 0x08 */ HANDLE hFile;
+    /* 0x0C */ GUID * pgKnownSubject;
+};
+
+#ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
+
+struct _CERT_INFO {
+    /* 0x00 */ DWORD dwVersion;
+    /* 0x04 */ CRYPT_INTEGER_BLOB SerialNumber;
+    /* 0x0C */ CRYPT_ALGORITHM_IDENTIFIER SignatureAlgorithm;
+    /* 0x18 */ CERT_NAME_BLOB Issuer;
+    /* 0x20 */ FILETIME NotBefore;
+    /* 0x28 */ FILETIME NotAfter;
+    /* 0x30 */ CERT_NAME_BLOB Subject;
+    /* 0x38 */ CERT_PUBLIC_KEY_INFO SubjectPublicKeyInfo;
+    /* 0x50 */ CRYPT_BIT_BLOB IssuerUniqueId;
+    /* 0x5C */ CRYPT_BIT_BLOB SubjectUniqueId;
+    /* 0x68 */ DWORD cExtension;
+    /* 0x6C */ PCERT_EXTENSION rgExtension;
+};
+
+#endif // _WIN32
 
 namespace Bnclient {
 

@@ -13,7 +13,6 @@
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2MonStatsTxt.h"
-#include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
@@ -31,6 +30,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
+#include "D2Common/D2SeedStrc.h"
 #include "D2Common/Drlg/Drlg.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -138,7 +138,7 @@ void __fastcall AddRosterPet(int32_t nRosterGUID, int32_t nOwnerGUID, int32_t nS
 
 // Registers a pet or mercenary in the client-side roster pet list. For skillID 7 (merc), first removes any existing merc for the owner, then adds the pet entry and populates seed/owner fields from pMercArg. If the merc unit already exists in the world, initializes it via MERC_InitializeFromPacket, marks it attackable, sets up its light map, and flags it for update.
 void __fastcall AddRosterPetMerc(DWORD nRosterGUID, int32_t nOwnerGUID, int32_t nSkillID, int32_t nRosterType, D2RosterMercArg * pMercArg) {
-    uint16_t aMercInit[2];
+    D2MercInitArgStrc sMercInit;
     D2RosterPetStrc* pRosterPet;
     pRosterPet = RosterPets::pRosterPet;
     if (nSkillID == 7) {
@@ -165,21 +165,21 @@ void __fastcall AddRosterPetMerc(DWORD nRosterGUID, int32_t nOwnerGUID, int32_t 
     pRosterPet->nRosterGUID = nRosterGUID;
     pRosterPet->nOwnerGUID = nOwnerGUID;
     pRosterPet->nSkillID = nSkillID;
-    pRosterPet->pSeed.nSeedLow = pMercArg->nSeed;
-    pRosterPet->pSeed.nSeedHigh = pMercArg->nInitSeed;
-    pRosterPet->nZero = pMercArg->nZero;
+    pRosterPet->sSeed.sSeed.nSeedLow = pMercArg->nSeed;
+    pRosterPet->sSeed.sSeed.nSeedHigh = pMercArg->nInitSeed;
+    pRosterPet->sSeed.nState = pMercArg->nZero;
     if (nSkillID != 7) {
       return;
     }
 
-    int nSeed = pMercArg->nSeed;
-    aMercInit[0] = (uint16_t)pMercArg->nInitSeed;
+    sMercInit.nSeed = pMercArg->nSeed;
+    sMercInit.wInitSeed = (uint16_t)pMercArg->nInitSeed;
     D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(nRosterGUID, UNIT_MONSTER);
     if (!pUnit) {
       return;
     }
 
-    UNIT::Monster::MERC_InitializeFromPacket(pUnit, aMercInit);
+    UNIT::Monster::MERC_InitializeFromPacket(pUnit, &sMercInit);
     UNIT::CUnit::IsAttackable(pUnit);
     UNIT::Monster::MONSTER_InitLightMap(pUnit);
     D2Common::Units::SetupUpdateFlag(pUnit, 1);
@@ -275,7 +275,7 @@ int __fastcall ROSTER_GetPetOwnershipRelation(int32_t nRosterGUID) {
     return 0;
 }
 
-D2SeedStrc * __fastcall GetSeed(int32_t nRosterGUID) {
+D2RosterPetSeedStrc * __fastcall GetSeed(int32_t nRosterGUID) {
     D2RosterPetStrc* pPet = pRosterPet;
     while (true) {
       if (!pPet) {
@@ -288,7 +288,7 @@ D2SeedStrc * __fastcall GetSeed(int32_t nRosterGUID) {
       pPet = pPet->pNext;
     }
 
-    return &pPet->pSeed;
+    return &pPet->sSeed;
 }
 
 // Returns 1 (hostile) or 0 (friendly) for two units. If pRosterUnit is a roster pet, hostility is determined by whether pUnit is the pet's owner (0) or not (delegates to CheckRostersArePartied). For non-pet units, returns 1 unless both are monsters that are allies via IsAllyOf. Null unit arguments always yield hostile.

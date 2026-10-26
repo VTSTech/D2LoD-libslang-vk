@@ -5,6 +5,7 @@
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
@@ -36,7 +37,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -822,7 +822,7 @@ void __fastcall QUESTLOG_HandleSpecialPacket(int32_t nParam) {
     }
 
     gQuestLog.MonstersleftInDenOfEvil = (int)*(uint16_t*)(nParam + 3);
-    gQuestLog.nQuestLogSpecialState = (uint32_t)*(uint16_t*)(nParam + 5);
+    gQuestLog.nQuestLogSpecialState = (int32_t)*(uint16_t*)(nParam + 5);
     gQuestLog.pQuestLogData = (uint32_t)*(uint16_t*)(nParam + 7);
 }
 

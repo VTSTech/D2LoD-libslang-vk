@@ -2917,40 +2917,33 @@ int32_t __stdcall PATH_GetCurrentDirection(D2UnitStrc * pUnit) {
 
 // Returns the active weapon unit for a dual-wield-capable player, taking the current skill's weapsel field into account. weapsel 1=right hand, 2=skill-flag-driven left/right selection, 3=animation-frame-driven slot, 4=no weapon. Falls back to the default equipped weapon when the unit cannot dual-wield or the skill txt is missing. Returns NULL if no valid non-broken weapon is found.
 D2UnitStrc * __stdcall GetWeaponBySkill(D2UnitStrc * pUnit, int32_t nParam) {
-    // Frame slots -12..-4 are ONE object: &bIsDualWieldSlot is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      bool bIsDualWieldSlot;
-      uint8_t __pad1[3];
-      D2UnitStrc* pEquippedWeapon;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     D2UnitStrc* pRightHandItem;
     uint32_t nWeaponSlot;
     D2UnitStrc* pSelectedWeapon;
     uint32_t bIsWeaponType;
     uint32_t dwSkillFlags;
-    eD2BodyLoc eEquipBodyLoc;
+    int32_t eEquipBodyLoc;
+    BOOL bIsDualWieldSlot;
+    D2UnitStrc* pEquippedWeapon;
     D2InventoryStrc* pInventory = pUnit->pInventory;
     if (!pInventory) {
       return nullptr;
     }
 
-    INVENTORY::Inventory::INVENTORY_GetEquippedWeaponInfo(pInventory, &__frame0.pEquippedWeapon, (int32_t*)&eEquipBodyLoc, (BOOL*)&__frame0.bIsDualWieldSlot);
+    INVENTORY::Inventory::INVENTORY_GetEquippedWeaponInfo(pInventory, &pEquippedWeapon, &eEquipBodyLoc, &bIsDualWieldSlot);
     BOOL bCanDualWield = CanDualWield(pUnit);
     if (!bCanDualWield) {
-      return __frame0.pEquippedWeapon;
+      return pEquippedWeapon;
     }
 
     D2SkillStrc* pSkill = Skills::GetCurrentSkill(pUnit->pSkillsList);
     if (!pSkill) {
-      return __frame0.pEquippedWeapon;
+      return pEquippedWeapon;
     }
 
     D2SkillsTxt* pSkillsTxt = Skills::GetSkillsTxt(pSkill);
     if (!pSkillsTxt) {
-      return __frame0.pEquippedWeapon;
+      return pEquippedWeapon;
     }
 
     switch (pSkillsTxt->weapsel) {
@@ -2984,7 +2977,7 @@ D2UnitStrc * __stdcall GetWeaponBySkill(D2UnitStrc * pUnit, int32_t nParam) {
       pSelectedWeapon = INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, bIsWeaponType);
       break;
       case '\x04':
-        __frame0.pEquippedWeapon = 0;
+        pEquippedWeapon = 0;
       pSelectedWeapon = 0;
       break;
       default:
@@ -3003,12 +2996,12 @@ D2UnitStrc * __stdcall GetWeaponBySkill(D2UnitStrc * pUnit, int32_t nParam) {
 
     bIsWeaponType = ITEMS::Items::ITEMS_IsA(pSelectedWeapon, ITEMTYPE_Weapon);
     if (!bIsWeaponType) {
-      return __frame0.pEquippedWeapon;
+      return pEquippedWeapon;
     }
 
     bCanDualWield = ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pSelectedWeapon);
     if (!bCanDualWield) {
-      return __frame0.pEquippedWeapon;
+      return pEquippedWeapon;
     }
 
     return pSelectedWeapon;

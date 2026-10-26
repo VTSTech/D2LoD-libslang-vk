@@ -69,8 +69,7 @@ struct D2GemsTxt {
 
 struct D2LowQualityItemsTxt {
     /* 0x00 */ char Name[32]; // d2bs binfields FIELDTYPE_ASCII
-    /* 0x20 */ uint8_t field_0x20;
-    /* 0x21 */ uint8_t field_0x21;
+    /* 0x20 */ uint16_t wNameStringId;
 };
 
 struct __attribute__((packed)) D2QualityItemsTxt {

@@ -83,6 +83,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/Drlg/Drlg.h"
+#include "D2Common/Drlg/Path.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -617,8 +618,8 @@ void MONSTER_ResetToNeutralFacingTarget(D2UnitStrc * pUnit) {
       return;
     }
 
-    eD2PlayerAnimMode eMonAnimMode = pUnit->eAnimMode.ePlayerMode;
-    if (!(eMonAnimMode < eD2PlayerAnimMode_ns::Skill4 && eMonAnimMode != Death && eMonAnimMode != Kick)) {
+    eD2MonsterAnimMode eMonAnimMode = pUnit->eAnimMode.eMonsterMode;
+    if (!(eMonAnimMode < 0x10 && eMonAnimMode != Death && eMonAnimMode != eD2MonsterAnimMode_ns::Dead)) {
       return;
     }
 
@@ -710,13 +711,13 @@ int32_t __fastcall IsMonsterMinion(D2UnitStrc * pUnit) {
     return bIsMinion;
 }
 
-bool __fastcall IsMonsterSuperUnique(D2UnitStrc * pUnit) {
+BOOL __fastcall IsMonsterSuperUnique(D2UnitStrc * pUnit) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
-      return false;
+      return 0;
     }
 
     BOOL bIsSuperUnique = MonUnique::CheckMonTypeForMonster(pUnit, MONTYPE_SUPERUNIQUE, '\0');
-    return (uint8_t)(uint32_t)bIsSuperUnique;
+    return bIsSuperUnique;
 }
 
 void __fastcall MONSTER_ExplodeOwnerMissile(D2UnitStrc * pUnit) {
@@ -1575,16 +1576,16 @@ int * MONSTER_GetAnimModeDataEntry(D2UnitStrc * pUnit) {
       return nullptr;
     }
 
-    eD2PlayerAnimMode eVar1 = pUnit->eAnimMode.ePlayerMode;
+    eD2MonsterAnimMode eVar1 = pUnit->eAnimMode.ePlayerMode;
     if ((int)eVar1 >= 0x10) {
       return nullptr;
     }
 
     int nClassId_00 = pUnit->nClassId;
-    if (nClassId_00 == 0xf3 && eVar1 == Throw || nClassId_00 == 0x14d && eVar1 == Throw) {
+    if (nClassId_00 == 0xf3 && eVar1 == eD2MonsterAnimMode_ns::Skill4 || nClassId_00 == 0x14d && eVar1 == eD2MonsterAnimMode_ns::Skill4) {
       return &gaMonsterAnimModeData[6].nField0;
     }
-    if (nClassId_00 == 0x21f && eVar1 == eD2PlayerAnimMode_ns::Cast || nClassId_00 == 0x220 && eVar1 == eD2PlayerAnimMode_ns::Cast || nClassId_00 == 0x23a && eVar1 == eD2PlayerAnimMode_ns::Cast) {
+    if (nClassId_00 == 0x21f && eVar1 == eD2MonsterAnimMode_ns::Skill3 || nClassId_00 == 0x220 && eVar1 == eD2MonsterAnimMode_ns::Skill3 || nClassId_00 == 0x23a && eVar1 == eD2MonsterAnimMode_ns::Skill3) {
       return &gaMonsterAnimModeData[7].nField0;
     }
 
@@ -1592,7 +1593,7 @@ int * MONSTER_GetAnimModeDataEntry(D2UnitStrc * pUnit) {
     if (!pMonStats2) {
       return nullptr;
     }
-    if ((uint8_t)gadwBitMasks[eVar1 & eD2PlayerAnimMode_ns::Attack1] & pMonStats2->aCompCodes[((int)eVar1 >> 3) + 0xde]) {
+    if ((uint8_t)gadwBitMasks[eVar1 & eD2MonsterAnimMode_ns::Cast] & pMonStats2->aCompCodes[((int)eVar1 >> 3) + 0xde]) {
       return &gaMonsterAnimModeData[eVar1].nField0;
     }
     if (eVar1 != Death) {
@@ -2167,8 +2168,9 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
     int32_t nPosY;
     uint32_t bPathCalcResult;
     eD2States eAttachedState;
-    eD2PlayerAnimMode eDeathMode;
+    eD2MonsterAnimMode eDeathMode;
     D2SkillStrc* pCurrentSkill;
+    eD2PlayerAnimMode eVar2;
     eOverlayId eDeathOverlay;
     bool bIsWalkMsg;
     D2ServerMessageHandleStrc sLocalMsg;
@@ -2572,7 +2574,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
               eDeathOverlay = OVERLAY_thornedhulk_death;
             break;
             case 0xbe:
-              eDeathMode = Death;
+              eVar2 = Death;
             if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Skill2) {
               UnitMode::UNITMODE_SetAnimModeSilent(pUnit, 0);
               pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
@@ -2718,9 +2720,9 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
       }
 
       default_death:
-      eDeathMode = Death;
+      eVar2 = Death;
       apply_death_mode:
-      UnitMode::UNITMODE_SetAnimMode(pUnit, eDeathMode);
+      UnitMode::UNITMODE_SetAnimMode(pUnit, eVar2);
       untarget_and_unlight:
       pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
       CUnit::FreeLightMap(pUnit);
@@ -2832,13 +2834,13 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
       D2Common::Skills::AddSkill(pUnit, eDeathSkill, pMessage->nSkillLvl, 0, ".\\UNIT\\Monster.cpp", 0x929);
       pCurrentSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eDeathSkill, pUnit);
       D2Common::Units::SetCurrentSkill(pUnit, pCurrentSkill);
-      eDeathMode = D2Common::Skills::GetSkillMode(pUnit, pCurrentSkill);
-      if (eDeathMode == eD2PlayerAnimMode_ns::Skill2) {
+      eVar2 = D2Common::Skills::GetSkillMode(pUnit, pCurrentSkill);
+      if (eVar2 == eD2PlayerAnimMode_ns::Skill2) {
         MONSTER_PreloadSequenceAnimations(pUnit);
       }
 
       pMessage->nItemId = -1;
-      UnitMode::UNITMODE_SetAnimMode(pUnit, eDeathMode);
+      UnitMode::UNITMODE_SetAnimMode(pUnit, eVar2);
       SKILLS::Skills::SKILL_ProcessCastFromPacket(pUnit, (int*)pMessage);
       break;
       case 0x16:
@@ -2852,7 +2854,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
       pCurrentSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eDeathSkill, pUnit);
       D2Common::Units::SetCurrentSkill(pUnit, pCurrentSkill);
       eDeathMode = D2Common::Skills::GetSkillMode(pUnit, pCurrentSkill);
-      if (eDeathMode == eD2PlayerAnimMode_ns::Skill2) {
+      if (eDeathMode == eD2MonsterAnimMode_ns::Sequence) {
         MONSTER_PreloadSequenceAnimations(pUnit);
       }
 
@@ -2881,7 +2883,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
     hide_as_dead:
     pUnit->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
     pUnit->eUnitFlags |= UNITFLAG_DRAWSHADOW;
-    eDeathMode = Kick;
+    eVar2 = Kick;
     goto apply_death_mode;
 }
 
@@ -2903,10 +2905,9 @@ uint32_t __fastcall NPCMENU_ParseSpeechData(int * pnParam, uint8_t * pParam, int
 }
 
 // Client-side initialization of a mercenary unit from a network packet. Sets ISMERC|TARGETABLE flags, reads the name/seed from the packet, rolls stats via RollMercStats using the current player's level and difficulty, then assigns skills (id, level, mode) from the HirelingTxt table, sets the localized name, and recalculates equipped item stats.
-void __fastcall MERC_InitializeFromPacket(D2UnitStrc * pUnit, uint16_t * nParam) {
+void __fastcall MERC_InitializeFromPacket(D2UnitStrc * pUnit, D2MercInitArgStrc * pMercInit) {
     uint8_t bVar1;
     BOOL bIsExpansion;
-    int32_t nMercAct;
     uint32_t nDifficulty;
     D2UnitStrc* pPlayerUnit_lcl;
     int32_t nLevel;
@@ -2916,30 +2917,29 @@ void __fastcall MERC_InitializeFromPacket(D2UnitStrc * pUnit, uint16_t * nParam)
     uint32_t nSkillModeVal;
     int nSkillIdx;
     D2HirelingHireData sHireData;
-    uint16_t* pPacketData;
+    D2MercInitArgStrc* pPacketData;
     D2HirelingTxt* pHirelingTxt;
     int nLevelDelta;
     int* pSkillIdPtr;
     D2UnitStrc* pMercUnit;
-    uint16_t nMercNameId;
     D2HirelingHireData* pHireData;
-    if (!(pUnit && nParam)) {
+    if (!(pUnit && pMercInit)) {
       return;
     }
 
     pUnit->eUnitFlags |= UNITFLAG_ISMERC | UNITFLAG_TARGETABLE;
-    nMercNameId = *nParam;
-    pPacketData = nParam;
+    nNameId = pMercInit->wInitSeed;
+    pPacketData = pMercInit;
     pMercUnit = pUnit;
     bIsExpansion = GAME::Game::CLIENT_CheckExpansion();
-    nMercAct = D2Common::Merc::GetMercAct(bIsExpansion, 0, nMercNameId);
+    nLevel = D2Common::Merc::GetMercAct(bIsExpansion, 0, nNameId);
     bVar1 = GAME::Game::GetDificulity();
-    nLevel = *(int32_t*)(nParam + 2);
+    nSkillModeVal = pMercInit->nSeed;
     nDifficulty = (uint32_t)bVar1;
     pHireData = &sHireData;
     pPlayerUnit_lcl = Player::GetPlayerUnit_UI();
     bIsExpansion = GAME::Game::CLIENT_CheckExpansion();
-    bIsExpansion = D2Common::Merc::RollMercStats(bIsExpansion, pPlayerUnit_lcl, nLevel, nMercAct, nDifficulty, pHireData);
+    bIsExpansion = D2Common::Merc::RollMercStats(bIsExpansion, pPlayerUnit_lcl, nSkillModeVal, nLevel, nDifficulty, pHireData);
     if (!bIsExpansion) {
       return;
     }
@@ -2979,7 +2979,7 @@ void __fastcall MERC_InitializeFromPacket(D2UnitStrc * pUnit, uint16_t * nParam)
       pUnit = pMercUnit;
     } while (nSkillIdx < 6);
 
-    nNameId = *pPacketData;
+    nNameId = pPacketData->wInitSeed;
     if (nNameId == 0x421) {
       nNameId = 0x2b0d;
     }
@@ -3041,19 +3041,6 @@ void __fastcall NPCMENU_HandleQuestUpdate(int32_t nParam) {
 
 // Client-side monster animation tick / end-of-cycle event dispatcher. Fires MonsterMessage(9) when SplEndDeath is set and both target coords are zero at the end of the frame cycle. Then switches on mode (nParam+4): advances the frame, clears collision/size, sets a path-point flag, or resets size to 0x100 depending on mode 0-3.
 uint32_t __fastcall CLIENT_UpdateMonsterAnimByMode(D2DynamicPathStrc * pDynamicPath, int32_t nParam) {
-    // Frame slots -32..-4 are ONE object: &nMsgOwnerGUID is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t nMsgOwnerGUID;
-      uint32_t nMsgTargetX;
-      uint32_t nMsgMaxDistance;
-      uint32_t nMsgTargetUnitType;
-      uint32_t nMsgTargetUnitId;
-      uint32_t nMsgItemId;
-      int32_t nMsgSkillId;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 28, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint32_t nResult;
     int nClassId;
     int nDeltaCheck;
@@ -3061,6 +3048,7 @@ uint32_t __fastcall CLIENT_UpdateMonsterAnimByMode(D2DynamicPathStrc * pDynamicP
       return 0;
     }
     if (pDynamicPath->Coords.tFixed.x == 1) {
+      D2ServerMessageHandleStrc nMsgOwnerGUID;
       nClassId = pDynamicPath->Coords.tFixed.y;
       if (nClassId < 0) {
         return 0;
@@ -3077,14 +3065,14 @@ uint32_t __fastcall CLIENT_UpdateMonsterAnimByMode(D2DynamicPathStrc * pDynamicP
         if (!nClassId) {
           nResult = D2Common::Units::IsAtEndOfFrameCycle((D2UnitStrc*)pDynamicPath);
           if (nResult) {
-            __frame0.nMsgOwnerGUID = 0;
-            __frame0.nMsgTargetX = 0;
-            __frame0.nMsgMaxDistance = 0;
-            __frame0.nMsgTargetUnitType = 0;
-            __frame0.nMsgTargetUnitId = 0;
-            __frame0.nMsgItemId = 0;
-            __frame0.nMsgSkillId = 0;
-            MonsterMessage(9, (D2UnitStrc*)pDynamicPath, (D2ServerMessageHandleStrc*)&__frame0.nMsgOwnerGUID);
+            nMsgOwnerGUID.nSkillId = 0;
+            nMsgOwnerGUID.nItemId = 0;
+            nMsgOwnerGUID.nTargetUnitType = 0;
+            nMsgOwnerGUID.nTargetUnitId = 0;
+            nMsgOwnerGUID.nSkillLvl = 0;
+            nMsgOwnerGUID.nMaxDistance = 0;
+            nMsgOwnerGUID.nTargetX = 0;
+            MonsterMessage(9, (D2UnitStrc*)pDynamicPath, &nMsgOwnerGUID);
           }
         }
       }

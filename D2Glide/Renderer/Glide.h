@@ -9,15 +9,14 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2GfxDataStrc;
 struct D2GfxHelperStrc;
 struct D2GfxLightExStrc;
 struct D2GfxLightStrc;
 struct D2GfxSettingsStrc;
+struct D2GlideVertexStrc;
 struct D2SmackerContextStrc;
 struct D2TileLibraryEntryStrc;
-struct DC6;
-struct DC6Block;
-typedef int eD2UnitType;
 
 // Data types
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
@@ -26,37 +25,21 @@ typedef unsigned long COLORREF;
 
 #endif // _WIN32
 
-struct __attribute__((packed)) D2GfxDataStrc {
-    /* 0x00 */ int nFrameNumber; // Current animation frame index
-    /* 0x04 */ uint8_t dwFlags; // Flags: bit1=overlay, bit3=local player unit
-    /* 0x05 */ uint8_t nComponentType; // COF component/body location index (0-15)
-    /* 0x06 */ uint8_t pad_0x6[2]; // Padding
-    /* 0x08 */ eD2UnitType eUnitType; // Unit type (player/monster/object/missile/item)
-    /* 0x0C */ int nClassId; // Unit class ID
-    /* 0x10 */ int nMode; // Animation mode index
-    /* 0x14 */ int nOverlayId; // Overlay texture ID (used for UNIT_WARP/overlays)
-    /* 0x18 */ int nUnitToken; // Four-character COF token for the unit, the first of the token group with nCompositToken / nArmorToken / nModeToken. GFXUTIL_GetUnitToken @004daa00 returns it in EAX as a dword (MOV EAX,[EAX+0x10] / [EAX+0x20]); it was typed void * and its one caller round-tripped the dword through a float conversion.
-    /* 0x1C */ int nCompositToken; // Composit token (from gTxtCompositTokens indexed by component type)
-    /* 0x20 */ int nArmorToken; // Weapon/armor token string (4-char, e.g. lit, xxx)
-    /* 0x24 */ int nModeToken; // Mode token (from gPlrModeTokens/gMonModeTokens/gObjModeTokens)
-    /* 0x28 */ int nWeaponClass; // Weapon class / COF weapon configuration index
-    /* 0x2C */ char * szFilename; // DC6/COF filename pointer (used for overlays: pTxtOverlay.Filename)
-    /* 0x30 */ uint32_t nFrameCount; // frames in the loaded sprite: SPRITECACHE_FindByHash copies it from the cache entry byte +0x24; CUNIT_CalculateSpriteBounds halts (line 0x5df) when the requested frame exceeds it
-    /* 0x34 */ struct DC6 * pDC6; // DC6 sprite file pointer
-    /* 0x38 */ int bLoaded; // Sprite loaded/valid flag
-    /* 0x3C */ struct DC6Block * pDC6Block; // DC6 frame block (specific frame data, loaded by sprite cache)
-    /* 0x40 */ int nDirection; // direction in 1/64 turns (0..0x3f): scaled nDirection*nDirections>>6 to a sprite direction (SPRITECACHE_GetOrLoadSprite/PrecacheSpriteSync), bounded < 0x40 in CELCMP_GetDC6BlockFromGfxData; used directly as the frame for UNIT_ITEM in LoadCelFileAndCache
-    /* 0x44 */ uint32_t dwRenderFlags; // Rendering flags: bit1=apply palette color transform
+struct D2GlideGroundVertexCursorStrc {
+    /* 0x00 */ float fY;
+    /* 0x04 */ uint32_t dwColor; // packed ARGB, integer store
+    /* 0x08 */ float fOOW;
+    /* 0x0C */ float fS;
+    /* 0x10 */ float fT;
+    /* 0x14 */ float fW;
+    /* 0x18 */ float fXNext; // fX of the following D2GlideVertexStrc
 };
 
-struct D2GlideVertexStrc {
-    /* 0x00 */ float fX;
-    /* 0x04 */ float fY;
-    /* 0x08 */ uint32_t dwColor;
-    /* 0x0C */ float fOOW;
-    /* 0x10 */ float fS;
-    /* 0x14 */ float fT;
-    /* 0x18 */ float fW;
+struct D2RenderClipOutStrc {
+    /* 0x00 */ int32_t nSkipLeft;
+    /* 0x04 */ int32_t nDrawWidth;
+    /* 0x08 */ int32_t nSkipTop;
+    /* 0x0C */ int32_t nDrawHeight;
 };
 
 struct GlideTexInfoStrc {
@@ -116,7 +99,7 @@ int RENDERER_GLIDE_GetSpriteMetadata(struct D2GfxDataStrc * pGfxData, uint32_t *
 void RENDERER_GLIDE_CalculateTextureSize(struct GlideTexInfoStrc * pTexInfo);
 // Glide texture cache: uploads a DC6 frame to video memory. Determines LOD level based on texture size, allocates cache slot, renders frame to buffer, encrypts with hash, and downloads to TMU via grTexDownloadMipMap.
 int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(struct GlideTexInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode);
-void __stdcall RENDERER_GLIDE_DrawShadowQuad(int32_t nParam1, int32_t nParam2, int32_t nParam3);
+void __stdcall RENDERER_GLIDE_DrawShadowQuad(int32_t nParam1, int32_t nParam2, struct GlideTexInfoStrc * nParam3);
 // Glide renderer: draws a textured quad using the palette table at gpPaletteTable+0x114. Applies viewport scaling, handles palette color lookup, and submits a 4-vertex triangle fan via grDrawVertexArrayContiguous.
 void __stdcall RENDERER_GLIDE_DrawPalettedQuad(struct GlideTexInfoStrc * pGlideQuad, int32_t nParam1, int32_t nParam2, uint32_t nParam, int32_t nParam3, int32_t nParam4);
 void RENDERER_GLIDE_SetDrawMode(int32_t nParam);
@@ -125,7 +108,7 @@ void __fastcall DrawPerspectiveImage(struct D2GfxDataStrc * pData, int32_t nPosX
 BOOL __fastcall DrawImage(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, DWORD dwGamma, int32_t nDrawMode, BYTE * pPalette);
 void __fastcall DrawShiftedImage(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, DWORD dwGamma, int32_t nDrawMode, int32_t nGlobalPaletteShift);
 void __fastcall DrawVerticalCropImage(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, int32_t nSkipLines, int32_t nDrawLines, int32_t nDrawMode);
-BOOL __stdcall RENDERER_GLIDE_CalculateClipRect(int32_t nScreenX, int32_t nScreenY, int32_t nPosY, uint32_t * pnClipBounds, int * pnOutRect);
+BOOL __stdcall RENDERER_GLIDE_CalculateClipRect(int32_t nScreenX, int32_t nScreenY, int32_t nPosY, uint32_t * pnClipBounds, struct D2RenderClipOutStrc * pnOutRect);
 void __fastcall DrawClippedImage(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, void * pCropRect, int32_t nDrawMode);
 void __fastcall DrawShadow(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY);
 void __fastcall DrawImageFast(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, BYTE nPaletteIndex);
@@ -151,7 +134,7 @@ void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex);
 void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex);
 void __fastcall DrawSolidSquare(POINT * pPoint, BYTE nSize, int32_t nPaletteIndex);
 void __fastcall ClearScreen(BOOL bPartial);
-void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode, int * pnBounds, int32_t nScreenPanels, int * pnXOffset);
+void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode, RECT * pnBounds, int32_t nScreenPanels, int * pnXOffset);
 void __stdcall RENDERER_GLIDE_InitPerspectiveTables();
 BOOL __fastcall RENDERER_GLIDE_DrawShadowTileSimple(struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, uint8_t nAlpha, int32_t nSubtileIdx);
 // Renders shadow tile with perspective projection in GLIDE renderer. Takes screen coordinates and alpha, applies perspective transform and blending.
@@ -169,8 +152,8 @@ void __stdcall RENDERER_GLIDE_AllocLightingTable();
 void __stdcall RENDERER_GLIDE_FreeLightingTable();
 void __stdcall RENDERER_GLIDE_BuildLightingTable();
 void __fastcall SetGlobalLight(BYTE nRed, BYTE nGreen, BYTE nBlue);
-void __fastcall RENDERER_GLIDE_ApplyShadowLighting(uint32_t * pVertexColor, uint32_t nIntensity);
-void __fastcall RENDERER_GLIDE_ApplyColorLighting(uint32_t * pVertexColor, uint32_t dwPackedColor);
+void __fastcall RENDERER_GLIDE_ApplyShadowLighting(struct D2GlideVertexStrc * pVertex, uint32_t nIntensity);
+void __fastcall RENDERER_GLIDE_ApplyColorLighting(struct D2GlideVertexStrc * pVertex, uint32_t dwPackedColor);
 // @sourcefile .\Src\glPerspective.cpp
 void __stdcall RENDERER_GLIDE_AllocPerspectiveLUT();
 // @sourcefile .\Src\glPerspective.cpp

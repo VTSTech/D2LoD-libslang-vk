@@ -274,7 +274,7 @@ void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
     int32_t nSpawnMonsterId;
     int* pGfxFrame;
     D2ObjectsTxt* pTxtLine = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
-    eD2PlayerAnimMode eAnimMode = pUnit->eAnimMode.ePlayerMode;
+    eD2ObjectAnimMode eAnimMode = pUnit->eAnimMode.ePlayerMode;
     uint32_t nFrameCnt = pTxtLine->FrameCnt[eAnimMode];
     if (nFrameCnt == 0x100) {
       return;
@@ -288,14 +288,14 @@ void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
         return;
       }
       if ((int)(nFrameCnt - 0x100) <= pUnit->nGfxCurrentFrame) {
-        if (pUnit->nClassId == 0xbd && (eAnimMode == Walk || eAnimMode == eD2PlayerAnimMode_ns::Run)) {
-          pUnit->eAnimMode.ePlayerMode = eAnimMode + eD2PlayerAnimMode_ns::Neutral;
-          pUnit->nGfxCurrentFrame = (uint32_t)pTxtLine->Start[eAnimMode + eD2PlayerAnimMode_ns::Neutral] << 8;
+        if (pUnit->nClassId == 0xbd && (eAnimMode == Opened || eAnimMode == Special1)) {
+          pUnit->eAnimMode.ePlayerMode = eAnimMode + Operating;
+          pUnit->nGfxCurrentFrame = (uint32_t)pTxtLine->Start[eAnimMode + Operating] << 8;
           Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
           D2Common::Units::InitAnimMode(pUnit);
           return;
         }
-        if (eAnimMode != eD2PlayerAnimMode_ns::Neutral) {
+        if (eAnimMode != Operating) {
           return;
         }
 
@@ -339,7 +339,7 @@ void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
         pUnit->nGfxCurrentFrame += nFrameCnt;
         return;
       }
-    } else if (pUnit->nClassId == 0xbd && eAnimMode == eD2PlayerAnimMode_ns::Run) {
+    } else if (pUnit->nClassId == 0xbd && eAnimMode == Special1) {
       pGfxFrame = &pUnit->nGfxCurrentFrame;
       *pGfxFrame -= (int)pUnit->nAnimSpeed;
       if (*pGfxFrame < 0) {
@@ -366,8 +366,8 @@ void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
 void __stdcall OBJECT_HandlePortalOpen(int32_t bTargetable, int32_t nNewAnimMode, D2UnitStrc * pUnit) {
     int32_t nErrAddr;
     int32_t nErrLine;
+    eD2ObjectAnimMode eCurAnimMode;
     uint8_t byStartFrame;
-    eD2PlayerAnimMode eCurAnimMode;
     D2ObjectsTxt* pTxtLine;
     pTxtLine = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
     if (7 < nNewAnimMode) {
@@ -394,13 +394,13 @@ void __stdcall OBJECT_HandlePortalOpen(int32_t bTargetable, int32_t nNewAnimMode
       } else {
         pUnit->eUnitFlags |= UNITFLAG_TARGETABLE;
       }
-      eCurAnimMode = pUnit->eAnimMode.ePlayerMode;
+      eCurAnimMode = pUnit->eAnimMode.eObjectMode;
       if (nNewAnimMode != eCurAnimMode) {
         if (nNewAnimMode == 4 || nNewAnimMode == 2 || nNewAnimMode == 5) {
-          if (eCurAnimMode != TownNeutral && eCurAnimMode != Walk && eCurAnimMode != eD2PlayerAnimMode_ns::GetHit) {
+          if (eCurAnimMode != Special3 && eCurAnimMode != Opened && eCurAnimMode != Special2) {
             D2Common::Units::RemoveCollision_Vector(pUnit);
           }
-        } else if (!nNewAnimMode && eCurAnimMode != Death) {
+        } else if (!nNewAnimMode && eCurAnimMode != eD2ObjectAnimMode_ns::Neutral) {
           nErrAddr = Units::GetYPosFromDynamicPathUnit(pUnit);
           nErrLine = Units::GetXPosFromDynamicPathUnit(pUnit);
           pRoom = D2Common::Units::UNITS_GetRoom(pUnit);

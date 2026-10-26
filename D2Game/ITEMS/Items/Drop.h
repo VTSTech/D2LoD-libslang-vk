@@ -76,9 +76,12 @@ struct __attribute__((packed)) D2ItemGenContextStrc {
 struct D2TCStackEntryStrc {
     /* 0x00 */ struct D2ParsedTreasureClassStrc * pTC;
     /* 0x04 */ int32_t nPicks;
-    /* 0x08 */ int32_t nMagic;
-    /* 0x0C */ int32_t nSet;
-    /* 0x10 */ int32_t nFromTCOffset0x30; // Carried from the parent treasure class at +0x30.
+    /* 0x08 */ uint16_t nMagic;
+    /* 0x0A */ uint16_t nRare;
+    /* 0x0C */ uint16_t nSet;
+    /* 0x0E */ uint16_t nUnique;
+    /* 0x10 */ uint16_t nFromTCOffset0x30; // Carried from the parent treasure class at +0x30.
+    /* 0x12 */ uint16_t nFromTCOffset0x32;
 };
 
 namespace D2Game::ITEMS::Items::Drop {
@@ -131,32 +134,11 @@ void __stdcall ITEM_ApplyNormalTypeProperties(::SGAMEDATA * pGame, struct D2Unit
 uint32_t __stdcall ITEM_RollItemQuality(struct D2UnitStrc * pUnit, struct D2ItemGenContextStrc * pItemGenContext);
 void ITEM_ClearAllMagicAffixes(struct D2UnitStrc * * ppUnit);
 void __stdcall ITEM_FallbackToNormalQuality(struct D2UnitStrc * * ppUnit, ::SGAMEDATA * pGame, struct D2ItemGenContextStrc * pItemGenContext, int32_t nModSeedVal);
-//   pnParam: ESI:4 (int *) - seed in/out
-//   pItemGenContext: EBX:4 (D2ItemGenContextStrc *)
-//   ppUnit: EAX:4 (D2UnitStrc **)
-// @returns BOOL in EAX: the result of ITEMMOD_RollSuperiorQualityMods, passed straight through.
-// Re-generates the item as QUALITY_SUPERIOR: clears its magic affixes, re-seeds the
-// mod seed and item seed from *pnParam (seed high 0x29A), rerolls the quality fields, sets the
-// quality on the item and on the gen context, writes the new seed low back to *pnParam, then
-// calls ITEMMOD_RollSuperiorQualityMods.
+// Re-generates the item as QUALITY_SUPERIOR: clears its magic affixes, re-seeds mod and item seed from *pnParam (seed high 0x29A), rerolls the quality fields, sets the quality on the item and gen context, writes the new seed low back to *pnParam, and returns the result of ITEMMOD_RollSuperiorQualityMods.
 BOOL ITEM_FallbackToSuperiorQuality(int * pnParam, struct D2ItemGenContextStrc * pItemGenContext, struct D2UnitStrc * * ppUnit);
-//   pnParam: EBX:4 (int *) - seed in/out
-//   ppUnit: EAX:4 (D2UnitStrc **)
-// @returns BOOL in EAX: the result of ITEM_RollMagicPrefixSuffix, passed straight through.
-// Downgrades the item being generated to magic quality: clears its magic affixes,
-// re-seeds the mod seed and item seed from *pnParam (seed high 0x29A), rerolls the quality
-// fields, sets QUALITY_MAGIC on the item and the gen context, writes the new seed low back to
-// *pnParam, then rolls the magic prefix/suffix. ITEM_ApplyQualityAndAffixes tests the result
-// at its three call sites (TEST EAX,EAX after 557647/557783/557915).
+// Downgrades the item being generated to QUALITY_MAGIC: clears its magic affixes, re-seeds mod and item seed from *pnParam (seed high 0x29A), rerolls the quality fields, sets the quality on the item and gen context, writes the new seed low back to *pnParam, and returns the result of ITEM_RollMagicPrefixSuffix (tested by ITEM_ApplyQualityAndAffixes at 557647/557783/557915).
 BOOL __stdcall ITEM_FallbackToMagicQuality(struct D2ItemGenContextStrc * pItemGenContext, int * pnParam, struct D2UnitStrc * * ppUnit);
-//   pnParam: ESI:4 (int *) - seed in/out
-//   pItemGenContext: EBX:4 (D2ItemGenContextStrc *)
-//   ppUnit: EAX:4 (D2UnitStrc **)
-// @returns BOOL in EAX: the result of SKILLS::Items::RollingItem, passed straight through.
-// Re-generates the item as QUALITY_RARE: clears its magic affixes, re-seeds the mod
-// seed and item seed from *pnParam (seed high 0x29A), rerolls the quality fields, sets the
-// quality on the item and on the gen context, writes the new seed low back to *pnParam, then
-// calls RollingItem.
+// Re-generates the item as QUALITY_RARE: clears its magic affixes, re-seeds mod and item seed from *pnParam (seed high 0x29A), rerolls the quality fields, sets the quality on the item and gen context, writes the new seed low back to *pnParam, and returns the result of RollingItem.
 BOOL ITEM_FallbackToRareQuality(int * pnParam, struct D2ItemGenContextStrc * pItemGenContext, struct D2UnitStrc * * ppUnit);
 // Apply quality tier to item and generate affixes based on quality type (magic/rare/set/unique/superior)
 int __fastcall ITEM_ApplyQualityAndAffixes(::SGAMEDATA * pGame, struct D2UnitStrc * * ppItem, struct D2ItemGenContextStrc * pItemGenContext);

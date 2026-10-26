@@ -15,7 +15,7 @@ namespace D2Common::Drlg::OutDesr {
 
 // Function declarations
 // Given an array of nVariants preset IDs, rolls the level seed to pick a starting index, then iterates all variants calling SpawnOutdoorLevelPreset for each. If bIterateFiles is set, expands each preset ID to all its LvlPrest file entries and spawns each file separately.
-void __stdcall PlacePresetVariants(struct D2DrlgLevelStrc * pLevel, D2LvlPrestId * pLevelPrestIds, uint32_t nVariants, bool bIterateFiles);
+void __stdcall PlacePresetVariants(struct D2DrlgLevelStrc * pLevel, D2LvlPrestId * pLevelPrestIds, uint32_t nVariants, BOOL bIterateFiles);
 // Places the Lut Gholein exit preset in Act 2 desert levels. Searches the outdoor room linked list for the town connection (level 0x28), then spawns the appropriate exit preset (0x16A or 0x16B) based on the connection direction.
 void __fastcall DRLGOUTPLACE_PlaceAct2CanyonExitPresets(struct D2DrlgLevelStrc * pLevel);
 void PlaceCliffs(struct D2DrlgLevelStrc * pLevel);

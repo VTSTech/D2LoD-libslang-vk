@@ -360,8 +360,9 @@ BOOL __fastcall STATES_HasPoisonState(D2UnitStrc * pUnit) {
     return BVar1;
 }
 
-void __stdcall STATES_HasColdState(D2UnitStrc * pUnit) {
-    STATES_HasMatchingStateFlag(pUnit, sgptDataTable->pSingleStateDataTbl[0x12]);
+BOOL __stdcall STATES_HasColdState(D2UnitStrc * pUnit) {
+    BOOL BVar1 = STATES_HasMatchingStateFlag(pUnit, sgptDataTable->pSingleStateDataTbl[0x12]);
+    return BVar1;
 }
 
 BOOL __stdcall STATES_HasFireState(D2UnitStrc * pUnit) {

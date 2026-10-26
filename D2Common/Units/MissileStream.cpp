@@ -151,7 +151,6 @@ void __stdcall ExecuteHit(D2UnitStrc * pUnit, int32_t eCollisionFlag, uint32_t n
 
 // Server-side per-frame update for a missile "stream" (e.g. lightning/firewall-like spread). Computes the dynamic path for pMissile, then walks path segments creating child missiles via the fpCreate callback into the unit's persistent D2MissileStreamStrc array (allocated/grown from the game-pool). Distributes nParam1 damage across segments in steps of nParam2 and spreads extra missiles using a spacing remainder so the stream covers the gap evenly. Recycles unused stream slots via fpUnknown. Halts with Fog error 0x8a if the stream struct is missing, 0xa9 if fpCreate is a bad code ptr.
 void __stdcall Update(D2UnitStrc * pUnit, D2UnitStrc * pMissile, int32_t nParam1, int32_t nParam2, fpCreate nfpCreate, fpUnknownMissileStream nfpUnknown) {
-    uint8_t _byDir;
     int* pStreamArray;
     BOOL bBadPtr;
     uint32_t nDirection;
@@ -165,8 +164,7 @@ void __stdcall Update(D2UnitStrc * pUnit, D2UnitStrc * pMissile, int32_t nParam1
     int nSegmentCount;
     uint32_t nCurX;
     uint32_t nCurY;
-    uint8_t byDir;
-    uint32_t uStack_13;
+    int32_t nDirection_20;
     int nExtraCycleCounter;
     uint32_t bExtended;
     int nSubSegIdx;
@@ -217,10 +215,10 @@ void __stdcall Update(D2UnitStrc * pUnit, D2UnitStrc * pMissile, int32_t nParam1
         nCurDamage = nParam1;
         if (0 < nSegmentCount) {
           do {
-            nCurY = (uint32_t)(uint16_t)pPathPoints[nPathIdx].nY;
-            nCurX = (uint32_t)(uint16_t)pPathPoints[nPathIdx].nX;
-            nDirection = Drlg::Path::DRLGPATH_GetDirectionFromCoords((uint32_t)(uint16_t)pPathPoints[nPathIdx + 1].nX, (uint32_t)(uint16_t)pPathPoints[nPathIdx + 1].nY, nCurX, nCurY);
-            _byDir = (uint32_t)((uint32_t)((uint32_t)uStack_13 & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nDirection);
+            nCurY = (uint32_t)pPathPoints[nPathIdx].nY;
+            nCurX = (uint32_t)pPathPoints[nPathIdx].nX;
+            nDirection = Drlg::Path::DRLGPATH_GetDirectionFromCoords((uint32_t)pPathPoints[nPathIdx + 1].nX, (uint32_t)pPathPoints[nPathIdx + 1].nY, nCurX, nCurY);
+            nDirection_20 = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nDirection_20 + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nDirection);
             if (nSubSegIdx < nExtraPerSegment / nDivisions || !nParam1) {
               nSubSegIdx++;
               nCreated = (*nfpCreate)(pUnit, pStream->pStream[nPathIdx], nCurX, nCurY, nCurDamage, 0);

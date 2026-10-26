@@ -46,14 +46,12 @@
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Common/Units.h"
-#include "D2Game/Ai/D2AiGeneralStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Clients.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/SCmd.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/ITEMS/Items/Drop.h"
-#include "D2Game/Monster/Monsters.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
@@ -71,6 +69,7 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Debug.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
@@ -86,12 +85,12 @@
 
 namespace D2Game::ITEMS::ItemMode {
 
-D2UnitDataMonsterStrc * __fastcall GetMonsterData(D2UnitStrc * pUnit) {
+D2MonStatsTxt * __fastcall GetMonsterData(D2UnitStrc * pUnit) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
       return nullptr;
     }
 
-    return (D2UnitDataMonsterStrc*)pUnit->pUnitData.pUnitDataMonster->pMonStatsTxt;
+    return pUnit->pUnitData.pUnitDataMonster->pMonStatsTxt;
 }
 
 // Server-side callback invoked when an item/stat modifier (op-function) changes a unit stat by (fParam1 old -> fParam2 new). Extracts the stat index from the eSkill packed param, looks up its ItemStatCost.txt line, and fires associated aura item-events. Switches on the affected stat: maxhp/maxmana/maxstamina proportionally rescales the current hitpoints/mana/stamina; item_addclassskills/addskill_tab/nonclassskill/singleskill grant or remove the granted skill (allocating, broadcasting via 0x21, updating passive/pet stats, deselecting if leveled to 0); state toggles a unit state and gfx; item_aura activates/deactivates a periodic aura; item_charged_skill adds/removes a charged item skill. Pure side-effects on pUnit's stats/skills/states.
@@ -102,7 +101,7 @@ void __fastcall STATSLISTEX_FunctionCallback(::SGAMEDATA * pGame, D2UnitStrc * p
     bool bIsMercUnit;
     int fScaledHp;
     int fNewValue;
-    D2UnitDataMonsterStrc* pMonsterData;
+    D2MonStatsTxt* pMonsterData;
     D2SkillsTxt* pSkillsTxt;
     D2SkillStrc* pSkill;
     D2ClientStrc* pClient;
@@ -119,7 +118,6 @@ void __fastcall STATSLISTEX_FunctionCallback(::SGAMEDATA * pGame, D2UnitStrc * p
     int32_t pManaTxt;
     int32_t pStaminaTxt;
     uint32_t nChargedSkillId;
-    short int* pSkillId;
     eD2States eState;
     bool bStateActivate;
     int32_t bStateActive;
@@ -192,8 +190,8 @@ void __fastcall STATSLISTEX_FunctionCallback(::SGAMEDATA * pGame, D2UnitStrc * p
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, fNewValue, 0);
           if (pUnit->eUnitType == UNIT_MONSTER) {
             pMonsterData = GetMonsterData(pUnit);
-            if (pMonsterData && *(int*)(pMonsterData[4].MonUModList + 4)) {
-              D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hpregen, (fNewValue2 >> 8) * *(int*)(pMonsterData[4].MonUModList + 4) >> 4, 0);
+            if (pMonsterData && pMonsterData->DamageRegen) {
+              D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hpregen, (fNewValue2 >> 8) * pMonsterData->DamageRegen >> 4, 0);
               return;
             }
           }
@@ -264,24 +262,24 @@ void __fastcall STATSLISTEX_FunctionCallback(::SGAMEDATA * pGame, D2UnitStrc * p
       case UNITSTAT_item_nonclassskill:
 
       case UNITSTAT_item_singleskill:
-        pSkillId = (short int*)(fOldMaxStat & 0xffff);
-      pSkillsTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine((eD2Skills)pSkillId);
-      if (pSkillId && (eStat != UNITSTAT_item_singleskill || pUnit->eUnitType == UNIT_PLAYER && pUnit->nClassId == (int)pSkillsTxt->charclass)) {
-        pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, (eD2Skills)pSkillId, -1);
+        fOldMaxStat &= 0xffff;
+      pSkillsTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine(fOldMaxStat);
+      if (fOldMaxStat != SKILL_Attack && (eStat != UNITSTAT_item_singleskill || pUnit->eUnitType == UNIT_PLAYER && pUnit->nClassId == (int)pSkillsTxt->charclass)) {
+        pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, fOldMaxStat, -1);
         if (!pSkill) {
-          pSkill = D2Common::Skills::AllocSkill(pUnit, (eD2Skills)pSkillId);
-          D2Common::Skills::AddSkill(pUnit, (eD2Skills)pSkillId, 0, 0, ".\\ITEMS\\ItemMode.cpp", 0xf9);
+          pSkill = D2Common::Skills::AllocSkill(pUnit, fOldMaxStat);
+          D2Common::Skills::AddSkill(pUnit, fOldMaxStat, 0, 0, ".\\ITEMS\\ItemMode.cpp", 0xf9);
           if (pUnit->eUnitType == UNIT_PLAYER) {
             pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0xfd);
           } else {
             pClient = 0;
           }
 
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x21_SETSKILLLEVEL(pClient, pUnit, (eD2Skills)pSkillId, 0, 0);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x21_SETSKILLLEVEL(pClient, pUnit, fOldMaxStat, 0, 0);
         }
 
-        D2Common::Skills::SKILLS_UpdatePassiveSkillStats(pUnit, (eD2Skills)pSkillId);
-        SKILLS::SkillsServer::SKILLS_UpdatePetMax(pGame, pUnit, pSkillId);
+        D2Common::Skills::SKILLS_UpdatePassiveSkillStats(pUnit, fOldMaxStat);
+        SKILLS::SkillsServer::SKILLS_UpdatePetMax(pGame, pUnit, fOldMaxStat);
         if (nNewValue < 1) {
           nNewValue = 1;
           nSkillLevel = D2Common::Skills::GetSkillLevel(pUnit, pSkill, 0);
@@ -303,7 +301,7 @@ void __fastcall STATSLISTEX_FunctionCallback(::SGAMEDATA * pGame, D2UnitStrc * p
             SKILLS::SkillsServer::Server_SelectSkill(pUnit, 0, SKILL_Attack, -1);
           }
           if (nNewValue) {
-            D2Common::Skills::AddSkill(pUnit, (eD2Skills)pSkillId, 0, 1, ".\\ITEMS\\ItemMode.cpp", 0x11a);
+            D2Common::Skills::AddSkill(pUnit, fOldMaxStat, 0, 1, ".\\ITEMS\\ItemMode.cpp", 0x11a);
             return;
           }
         }
@@ -370,19 +368,19 @@ void __fastcall STATSLISTEX_FunctionCallback(::SGAMEDATA * pGame, D2UnitStrc * p
         if (pItemOwner) {
           nChargedSkillParam = fOldMaxStat & 0xffff;
           nChargedSkillId = sgptDataTable->dwChargedSkillLevelMask & nChargedSkillParam;
-          pSkillId = (short int*)((int)nChargedSkillParam >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f));
+          nSkillLevel = (int)nChargedSkillParam >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
           _bChargedCountActive = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pItemOwner, eStat, (uint16_t)fOldMaxStat);
           nNewValue = _bChargedCountActive & 0xff;
           if (nNewValue) {
             pItemOwnerUnit = D2Common::Stats::StatsEx::SEVER_ITEM_GetOwner(pItemOwner, nullptr);
             if (pItemOwnerUnit == pUnit) {
-              D2Common::Skills::thunk_SKILLS_AddOrRemoveItemSkill(pUnit, eSkill, (int32_t)pSkillId, nChargedSkillId, nNewValue, 0);
+              D2Common::Skills::thunk_SKILLS_AddOrRemoveItemSkill(pUnit, eSkill, nSkillLevel, nChargedSkillId, nNewValue, 0);
               return;
             }
           }
 
-          D2Common::Skills::thunk_SKILLS_AddOrRemoveItemSkill(pUnit, eSkill, (int32_t)pSkillId, nChargedSkillId, 0, 1);
-          SKILLS::SkillsServer::SKILLS_UpdatePetMax(pGame, pUnit, pSkillId);
+          D2Common::Skills::thunk_SKILLS_AddOrRemoveItemSkill(pUnit, eSkill, nSkillLevel, nChargedSkillId, 0, 1);
+          SKILLS::SkillsServer::SKILLS_UpdatePetMax(pGame, pUnit, nSkillLevel);
           return;
         }
     }
@@ -1013,11 +1011,9 @@ void __stdcall PickingGold(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc *
     UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit2, 0x17, pUnit2);
 }
 
-void __stdcall ITEMMODE_GetItemPageForUnit(int16_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
-    int16_t _nParam;
+void __stdcall ITEMMODE_GetItemPageForUnit(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     eD2UnitType eUnitType;
     int nUnit2Guid;
-    int16_t wInvPage;
     if (!pUnit2) {
       nUnit2Guid = -1;
       eUnitType = UNIT_COUNT;
@@ -1034,7 +1030,7 @@ void __stdcall ITEMMODE_GetItemPageForUnit(int16_t nParam, D2UnitStrc * pUnit, D
     }
 
     D2Common::Units::SetupUpdateFlag(pUnit2, 3);
-    UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, _nParam, pUnit);
+    UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, nParam, pUnit);
 }
 
 uint32_t ITEMMODE_CheckQuestItemCodePair(D2ItemsTxt * pItemsTxt1, D2ItemsTxt * pItemsTxt2, int32_t nCode1, int32_t nCode2) {
@@ -4774,7 +4770,6 @@ BOOL __fastcall SERVER_Swap2HandItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DW
 // Server-side: equips the item nItemGUID onto body slot eTargetBodyLoc for pUnit, specifically handling the weapon/shield arm-swap case (L_ARM<->R_ARM). Validates the item exists and is in the cursor/GetHit state, that the equip action resolves to slot type 7, and equip requirements pass. Frees the conflicting arm slot: unequips the existing arm item, places it back into the inventory grid (or fails), then equips the new item to the target slot, updating socketed stats, weapon skills, body-loc, page, and item command flags, and recalculates equipped item states. Writes a result token into pOutToken->nToken (1 = blocked). Returns 1 on full success, 0 otherwise; halts (Fog error) on null game/unit or inventory inconsistency.
 // @sourcefile .\ITEMS\ItemMode.cpp
 BOOL __fastcall ITEMMODE_EquipItemToBodyLoc(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD nItemGUID, eD2BodyLoc eTargetBodyLoc, ::SGAMEDATA * pOutToken) {
-    eD2BodyLoc _nSwapBodyLoc;
     bool _bCanMoveSwappedToInv;
     bool bIsDisabled;
     bool bCanMoveSwappedToInv;
@@ -4784,7 +4779,7 @@ BOOL __fastcall ITEMMODE_EquipItemToBodyLoc(::SGAMEDATA * pGame, D2UnitStrc * pU
     D2UnitStrc* pSwapArmItem;
     D2UnitStrc* pInvVerifiedItem;
     int* pGridSlot;
-    eD2BodyLoc nSwapBodyLoc;
+    eD2BodyLocDWORD nSwapBodyLoc;
     D2InventoryStrc* pInventory;
     if (!pGame) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd38);
@@ -4814,13 +4809,13 @@ BOOL __fastcall ITEMMODE_EquipItemToBodyLoc(::SGAMEDATA * pGame, D2UnitStrc * pU
         pInventory = pUnit->pInventory;
         if (eTargetBodyLoc == BODYLOC_L_ARM) {
           pSwapArmItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
-          _nSwapBodyLoc = 4;
+          nSwapBodyLoc = BODYLOC_R_ARM;
         } else {
           pSwapArmItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
-          _nSwapBodyLoc = 5;
+          nSwapBodyLoc = BODYLOC_L_ARM;
         }
 
-        _bCanMoveSwappedToInv = D2Common::INVENTORY::Inventory::INVENTORY_CanMoveEquippedToPage(pInventory, pItem, _nSwapBodyLoc, pOppositeArmItem);
+        _bCanMoveSwappedToInv = D2Common::INVENTORY::Inventory::INVENTORY_CanMoveEquippedToPage(pInventory, pItem, nSwapBodyLoc, pOppositeArmItem);
         if (!_bCanMoveSwappedToInv) {
           pOutToken->m_hashval = 1;
           return 0;
@@ -4842,7 +4837,7 @@ BOOL __fastcall ITEMMODE_EquipItemToBodyLoc(::SGAMEDATA * pGame, D2UnitStrc * pU
             exit(-1);
           }
 
-          D2Common::INVENTORY::Inventory::NullSub_2Arg(pInventory, _nSwapBodyLoc);
+          D2Common::INVENTORY::Inventory::NullSub_2Arg(pInventory, nSwapBodyLoc);
           ITEMMODE_UnequipItemStats(pGame, pInvVerifiedItem, pUnit, 0, 1);
           pGridSlot = D2Common::INVENTORY::Inventory::INVENTORY_AutoPlaceItemInGrid(pInventory, pInvVerifiedItem, pOppositeArmItem, 0, 0, ".\\ITEMS\\ItemMode.cpp", 0xd86);
           if (pGridSlot) {

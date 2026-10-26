@@ -26,6 +26,7 @@
 #include "D2Game/UNIT/sunitproxy.h"
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
+#include "Fog/Save.h"
 #include "Storm/H/stpl.h"
 #include "Storm/SMem.h"
 #include "globals/globals.h"

@@ -802,24 +802,24 @@ void __stdcall GetGridDimensions(int32_t neInventoryPage, int32_t nScreenMode, D
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7f);
       exit(-1);
     } else {
-      uint16_t uVar1;
+      short int sVar1;
       if (nTxtIndex <= (uint32_t)nTxtInventorySize) {
         pTxtEntry = pTxtInventory + nTxtIndex;
         if (pTxtEntry) {
-          byGridRows = pTxtEntry->gridY;
-          uVar1 = *(uint16_t*)&pTxtEntry->field_0x12;
-          pOutput->nGridCols = pTxtEntry->gridX;
+          byGridRows = pTxtEntry->sGrid.nGridRows;
+          sVar1 = pTxtEntry->sGrid.pad_02;
+          pOutput->nGridCols = pTxtEntry->sGrid.nGridCols;
           pOutput->nGridRows = byGridRows;
-          pOutput->pad_02 = uVar1;
-          pOutput->nPixelLeft = pTxtEntry->gridLeft;
-          pOutput->nRight = pTxtEntry->gridRight;
-          pOutput->nTop = pTxtEntry->gridTop;
-          pOutput->nBottom = pTxtEntry->gridBottom;
-          byGridRows = pTxtEntry->gridBoxHeight;
-          uVar1 = *(uint16_t*)&pTxtEntry->field_0x26;
-          pOutput->nCellWidth = pTxtEntry->gridBoxWidth;
+          pOutput->pad_02 = sVar1;
+          pOutput->nPixelLeft = pTxtEntry->sGrid.nPixelLeft;
+          pOutput->nRight = pTxtEntry->sGrid.nRight;
+          pOutput->nTop = pTxtEntry->sGrid.nTop;
+          pOutput->nBottom = pTxtEntry->sGrid.nBottom;
+          byGridRows = pTxtEntry->sGrid.nCellHeight;
+          sVar1 = pTxtEntry->sGrid.pad_16;
+          pOutput->nCellWidth = pTxtEntry->sGrid.nCellWidth;
           pOutput->nCellHeight = byGridRows;
-          pOutput->pad_16 = uVar1;
+          pOutput->pad_16 = sVar1;
           return;
         }
       }

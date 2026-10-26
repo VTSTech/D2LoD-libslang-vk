@@ -393,30 +393,30 @@ template<> ::CELLIST * TSHashTable<CELLIST, HASHKEY_NONE>::Ptr(uint32_t dwHashVa
 }
 
 template<> void TSGrowableArray<CELLIST>::Destructor() {
-    TSHashObject<::CELLIST, HASHKEY_NONE>* nEntryAddr;
-    uint32_t* pBackLink;
-    uint32_t nNext;
-    TSLink<::CELLIST>* uLinkOffset;
+    ::CELLIST* nEntryAddr;
+    int* pBackLink;
+    TSLink<::TCELENTRY>* nNext;
+    uint32_t uLinkOffset;
     uint32_t nIdx = 0;
     if (this->m_count) {
-      TSHashObject<::CELLIST, HASHKEY_NONE>* pTVar1;
+      TSLink<::TCELENTRY>* pTVar1;
       do {
         nEntryAddr = &this->m_data[nIdx];
-        ((TSList<::TCELENTRY, TSGetLink<::TCELENTRY>>*)&nEntryAddr[1].m_key)->UnlinkAll();
-        nNext = nEntryAddr[2].m_hashval;
-        pTVar1 = nEntryAddr + 2;
+        nEntryAddr->m_frames.UnlinkAll();
+        nNext = nEntryAddr->m_frames.m_terminator.m_prevlink;
+        pTVar1 = &nEntryAddr->m_frames.m_terminator;
         if (nNext) {
-          uLinkOffset = nEntryAddr[2].m_linktoslot.m_prevlink;
+          uLinkOffset = nEntryAddr->m_frames.m_terminator.m_next;
           if ((int)uLinkOffset < 0) {
-            pBackLink = (uint32_t*)~(uint32_t)uLinkOffset;
+            pBackLink = (int*)~uLinkOffset;
           } else {
-            pBackLink = (uint32_t*)((int)pTVar1 + ((int)uLinkOffset - *(int*)(nNext + 4)));
+            pBackLink = (int*)((int)pTVar1 + (uLinkOffset - nNext->m_next));
           }
 
-          *pBackLink = nNext;
-          *(TSLink<::CELLIST>**)(pTVar1->m_hashval + 4) = nEntryAddr[2].m_linktoslot.m_prevlink;
-          pTVar1->m_hashval = 0;
-          nEntryAddr[2].m_linktoslot.m_prevlink = 0;
+          *pBackLink = (int)nNext;
+          pTVar1->m_prevlink->m_next = nEntryAddr->m_frames.m_terminator.m_next;
+          pTVar1->m_prevlink = 0;
+          nEntryAddr->m_frames.m_terminator.m_next = 0;
         }
 
         nEntryAddr->Destructor();

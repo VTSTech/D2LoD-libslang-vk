@@ -14,9 +14,6 @@
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/D2ArchiveStrc.h"
-#include "Storm/D2MPQFileStrc.h"
-#include "Storm/Source/SFile.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 
@@ -48,7 +45,7 @@ namespace D2Common::DATATBLS::FieldTbls {
 // offset lookup tables used for automap/collision field stepping.
 // Source: .\\DATATBLS\\FieldTbls.cpp
 // @sourcefile .\DATATBLS\FieldTbls.cpp
-void __stdcall FIELDTBLS_InitFieldData(D2ArchiveStrc * pArchive, uint32_t dwUnused) {
+void __stdcall FIELDTBLS_InitFieldData(D2ExpFieldFileStrc * pArchive, uint32_t dwUnused) {
     // Static local variables (originally global data)
     static int gnFieldDataTableDirectionOffset0;
     static int gnFieldStepOffset_N;
@@ -60,8 +57,8 @@ void __stdcall FIELDTBLS_InitFieldData(D2ArchiveStrc * pArchive, uint32_t dwUnus
     static int gnFieldStepOffset_NW;
     static int gnFieldStepOffset_NE;
 
-    uint32_t nHeight = *(uint32_t*)((uintptr_t)&pArchive->pPrevLink + 2);
-    uint32_t nWidth = *(uint32_t*)((uintptr_t)&pArchive->pNext + 2);
+    uint32_t nHeight = pArchive->nHeight;
+    uint32_t nWidth = pArchive->nWidth;
     size_t nAllocSize = nWidth * nHeight;
     void* pFieldData = D2_ALLOC_POOL(nullptr, nAllocSize);
     if (!pFieldData) {
@@ -69,7 +66,7 @@ void __stdcall FIELDTBLS_InitFieldData(D2ArchiveStrc * pArchive, uint32_t dwUnus
       exit(-1);
     }
 
-    memcpy(pFieldData, pArchive->szArchivePath + 2, nAllocSize);
+    memcpy(pFieldData, pArchive + 1, nAllocSize);
     gnFieldDataTableDirectionOffset0 = gaFieldStepDeltaY[0] * nWidth + gaFieldStepDeltaX[0];
     gnFieldStepOffset_N = gaFieldStepDeltaY[1] * nWidth + gaFieldStepDeltaX[1];
     gnFieldTableHalfWidth = (int)nWidth >> 1;
@@ -218,7 +215,7 @@ void __fastcall FIELDTBLS_LoadExpFieldFile(D2PoolManagerStrc * pMemory) {
     char szFilePath[260];
     uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFilePath, "%s\\expfield.d2", "DATA\\GLOBAL");
-    D2ArchiveStrc* pArchive = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMemory, szFilePath, &nFileSize, ".\\DATATBLS\\FieldTbls.cpp", 0x28);
+    D2ExpFieldFileStrc* pArchive = (D2ExpFieldFileStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMemory, szFilePath, &nFileSize, ".\\DATATBLS\\FieldTbls.cpp", 0x28);
     FIELDTBLS_InitFieldData(pArchive, nFileSize);
     Fog::Debug::GuardStack();
 }

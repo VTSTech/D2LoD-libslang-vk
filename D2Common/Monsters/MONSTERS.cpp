@@ -87,7 +87,7 @@ eMissilesId __stdcall MONSTER_GetMissileForAnimEvent(D2UnitStrc * pUnit, int32_t
     0x0
 };
 
-    eD2PlayerAnimMode eAnimMode;
+    eD2MonsterAnimMode eAnimMode;
     int nPrevFrameShifted;
     int nEventFrame;
     D2UnitStrc* pMonster = pUnit;

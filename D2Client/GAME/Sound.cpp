@@ -65,7 +65,7 @@ void __fastcall SOUND_ParseStreamWavHeader(int32_t pSoundStream) {
     }
 
     uint32_t nBufSize = *(uint32_t*)(pSoundStream + 0x70);
-    int* pWavData = D2Sound::Src::D2SoundSmp::SOUNDSMP_ParseWavHeader(*(int**)(pSoundStream + 0x6c), &nBufSize, (short int*)&sWaveFormat);
+    int* pWavData = D2Sound::Src::D2SoundSmp::SOUNDSMP_ParseWavHeader(*(int**)(pSoundStream + 0x6c), &nBufSize, &sWaveFormat);
     if (pWavData && sWaveFormat.wBitsPerSample == 0x10 && sWaveFormat.nSamplesPerSec == 0x5622) {
       *(int**)(pSoundStream + 0x74) = (int*)pWavData;
       *(bool*)(pSoundStream + 0x50) = sWaveFormat.nChannels == 2;
@@ -81,26 +81,8 @@ void __fastcall SOUND_SetEaxEnvironment(int32_t nEnvId) {
     // Static local variables (originally global data)
     static uint32_t gnCurrentEaxEnvironmentId = -0x1;
 
-    // Frame slots -56..-4 are ONE object: &nEaxEnviron is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nEaxEnviron;
-      float fEnvSize;
-      float fEnvDiff;
-      int nRoomVol;
-      int nRoomHF;
-      float fDecayTime;
-      float fDecayHF;
-      int nReflect;
-      float fReflectDelay;
-      int nReverb;
-      float fRevDelay;
-      float fRoomRoll;
-      float fAirAbsorb;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 52, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     DWORD bHas3D;
+    D2SoundEaxEnvironStrc sEnviron;
     int nNewEnvId = gnCurrentEaxEnvironmentId;
     if (nEnvId != gnCurrentEaxEnvironmentId) {
       D2SoundEnvironTxt* pEnvTxt;
@@ -110,20 +92,20 @@ void __fastcall SOUND_SetEaxEnvironment(int32_t nEnvId) {
         bHas3D = D2Sound::SOUND_GetSound3DFlag();
         nNewEnvId = nEnvId;
         if (bHas3D) {
-          __frame0.nRoomVol = pEnvTxt->EAX_Room_Vol;
-          __frame0.nEaxEnviron = pEnvTxt->EAX_Environ;
-          __frame0.nRoomHF = pEnvTxt->EAX_Room_HF;
-          __frame0.fEnvSize = (float)pEnvTxt->EAX_Env_Size / 1000.0;
-          __frame0.nReverb = pEnvTxt->EAX_Reverb;
-          __frame0.nReflect = pEnvTxt->EAX_Reflect;
-          __frame0.fEnvDiff = (float)pEnvTxt->EAX_Env_Diff / 1000.0;
-          __frame0.fDecayTime = (float)pEnvTxt->EAX_Decay_Time / 1000.0;
-          __frame0.fDecayHF = (float)pEnvTxt->EAX_Decay_HF / 1000.0;
-          __frame0.fReflectDelay = (float)pEnvTxt->EAX_Reflect_Delay / 1000.0;
-          __frame0.fRevDelay = (float)pEnvTxt->EAX_Rev_Delay / 1000.0;
-          __frame0.fRoomRoll = (float)pEnvTxt->EAX_Room_Roll / 1000.0;
-          __frame0.fAirAbsorb = (float)pEnvTxt->EAX_Air_Absorb / 1000.0;
-          D2Sound::Sound::SOUND_ApplyEAXEnvironment((float)d2_bits_to_float(&__frame0.nEaxEnviron));
+          sEnviron.nRoom = pEnvTxt->EAX_Room_Vol;
+          sEnviron.nEnvironment = pEnvTxt->EAX_Environ;
+          sEnviron.nRoomHF = pEnvTxt->EAX_Room_HF;
+          sEnviron.fEnvSize = (float)pEnvTxt->EAX_Env_Size / 1000.0;
+          sEnviron.nReverb = pEnvTxt->EAX_Reverb;
+          sEnviron.nReflections = pEnvTxt->EAX_Reflect;
+          sEnviron.fEnvDiffusion = (float)pEnvTxt->EAX_Env_Diff / 1000.0;
+          sEnviron.fDecayTime = (float)pEnvTxt->EAX_Decay_Time / 1000.0;
+          sEnviron.fDecayHFRatio = (float)pEnvTxt->EAX_Decay_HF / 1000.0;
+          sEnviron.fReflectionsDelay = (float)pEnvTxt->EAX_Reflect_Delay / 1000.0;
+          sEnviron.fReverbDelay = (float)pEnvTxt->EAX_Rev_Delay / 1000.0;
+          sEnviron.fRoomRolloff = (float)pEnvTxt->EAX_Room_Roll / 1000.0;
+          sEnviron.fAirAbsorptionHF = (float)pEnvTxt->EAX_Air_Absorb / 1000.0;
+          D2Sound::Sound::SOUND_ApplyEAXEnvironment(&sEnviron);
           nNewEnvId = nEnvId;
         }
       }
@@ -352,9 +334,8 @@ BOOL SOUND_InitStreamChannels(int32_t nParam) {
 
 // Finds a free or preemptable sound channel for playback. First scans the global sound instance pool for a channel matching pnParam (sound type/category) that is not currently playing and has no active sound. If none found, scans for the best occupied channel that can be preempted via SOUND_IsChannelAvailable; if preemptable, stops the current sample, saves its stream progress, marks the channel free, and returns it. Returns NULL if no channel is available.
 int * * __stdcall SOUND_FindAvailableChannel(uint32_t nParam, int * pnParam) {
-    bool bCanReplace;
     int32_t bIsPlaying;
-    uint32_t uPad1;
+    BOOL BVar1;
     uint32_t nStreamProgress;
     D2ClientSoundChannelStrc* pBestChannel;
     pBestChannel = gaSoundChannels;
@@ -373,11 +354,10 @@ int * * __stdcall SOUND_FindAvailableChannel(uint32_t nParam, int * pnParam) {
     void** pChannelEntry;
     pChannelEntry = &gaSoundChannels[0].pActiveSound;
     do {
-      uint32_t uPad0;
       if (pChannelEntry[-1] == (void*)pnParam && *pChannelEntry) {
         if (pBestChannel) {
-          bCanReplace = D2Client::Sound::SOUND_IsChannelAvailable((uint32_t)pBestChannel->pActiveSound, (uint32_t)*pChannelEntry, 1, 1);
-          if (!(uint32_t)((uint32_t)((uint32_t)uPad0 & 0xffffffu) << 8 | (uint32_t)(uint8_t)bCanReplace)) {
+          BVar1 = D2Client::Sound::SOUND_IsChannelAvailable((uint32_t)pBestChannel->pActiveSound, (uint32_t)*pChannelEntry, 1, 1);
+          if (!BVar1) {
             goto next_channel;
           }
         }
@@ -392,8 +372,8 @@ int * * __stdcall SOUND_FindAvailableChannel(uint32_t nParam, int * pnParam) {
           return nullptr;
         }
 
-        bCanReplace = D2Client::Sound::SOUND_IsChannelAvailable(nParam, (uint32_t)pBestChannel->pActiveSound, 0, 0);
-        if (!(uint32_t)((uint32_t)((uint32_t)uPad1 & 0xffffffu) << 8 | (uint32_t)(uint8_t)bCanReplace)) {
+        BVar1 = D2Client::Sound::SOUND_IsChannelAvailable(nParam, (uint32_t)pBestChannel->pActiveSound, 0, 0);
+        if (!BVar1) {
           return nullptr;
         }
         if (pBestChannel->pSoundSmp) {

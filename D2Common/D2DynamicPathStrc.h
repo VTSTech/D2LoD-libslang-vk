@@ -19,16 +19,6 @@ union D2DynamicPathCoordsUnion {
     /* 0x00 */ POINT tFixed;
 };
 
-struct D2PathPointStrc {
-    D2PathPointStrc() = default;
-    D2PathPointStrc(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
-    operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
-    D2PathPointStrc(short a0, short a1) : nX(a0), nY(a1) {}
-
-    /* 0x00 */ short nX;
-    /* 0x02 */ short nY;
-};
-
 #pragma pack(push, 1)
 struct D2DynamicPathStrc {
     /* 0x000 */ D2DynamicPathCoordsUnion Coords; // Fixed-point world pos (hi=tile, lo=subtile)

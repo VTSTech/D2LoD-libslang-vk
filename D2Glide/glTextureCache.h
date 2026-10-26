@@ -8,6 +8,9 @@
 #include <cstdarg>
 #include "d2_platform.h"
 
+// Forward declarations
+struct GlTextureCacheStrc;
+
 // Data types
 struct GlTextureCacheNodeStrc {
     /* 0x00 */ int nIndex; // Node index in array
@@ -20,17 +23,6 @@ struct GlTextureCacheNodeStrc {
     /* 0x13 */ uint8_t field_0x13;
     /* 0x14 */ uint8_t * pNext; // Next in LRU list
     /* 0x18 */ uint8_t * pPrev; // Previous in LRU list
-};
-
-struct GlTextureCacheStrc {
-    /* 0x00 */ uint32_t dwEntrySize; // Size of each node in bytes (0x1C)
-    /* 0x04 */ uint32_t nMaxEntries; // Total cache capacity
-    /* 0x08 */ uint32_t nUsedCount; // Number of active entries
-    /* 0x0C */ uint8_t * pActiveHead; // Head of LRU active list
-    /* 0x10 */ uint8_t * pActiveTail; // Tail of LRU active list (MRU position)
-    /* 0x14 */ uint8_t * pFreeHead; // Head of free node list
-    /* 0x18 */ uint8_t * pFreeTail; // Tail of free node list
-    /* 0x1C */ uint8_t * pNodes; // Allocated node array base
 };
 
 namespace D2Glide::glTextureCache {

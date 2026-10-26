@@ -36,6 +36,7 @@
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
+#include "D2Common/Drlg/Path.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
@@ -5369,7 +5370,7 @@ int __fastcall Hits(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarge
     D2RoomStrc* pRoom;
     eD2CollisionUnitSize nWidth;
     int32_t nX;
-    eD2PlayerAnimMode eCurrMode;
+    int32_t eCurrMode;
     int32_t eCollisionFlag;
     D2DamageStrc tDamage;
     D2UnitStrc* pOwnerSaved;
@@ -5418,7 +5419,7 @@ int __fastcall Hits(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarge
 
       D2Common::Units::Missile::SetOwner(pUnit, pTarget);
       if (!pUnit) {
-        eCurrMode = Death;
+        eCurrMode = 0;
       } else {
         eCurrMode = pUnit->eAnimMode.ePlayerMode;
       }
@@ -5597,8 +5598,8 @@ int __fastcall MISSMODE_SrvDoFn01_BasicMissile(::SGAMEDATA * pGame, D2UnitStrc *
     pDynamicPath = (D2DynamicPathStrc*)&gaMissileSrvDoFuncTable[eAnimModeIdx].nFlags;
     do {
       uint32_t nCoordX;
-      nCoordX = (uint32_t)(uint16_t)pFuncEntry[(int)nPathCoordIdx].nX;
-      nCoordY = (uint32_t)(uint16_t)pFuncEntry[(int)nPathCoordIdx].nY;
+      nCoordX = (uint32_t)pFuncEntry[(int)nPathCoordIdx].nX;
+      nCoordY = (uint32_t)pFuncEntry[(int)nPathCoordIdx].nY;
       eCollide = D2Common::Collision::CheckCollision_BlockAll_Width(pRoom, nCoordX, nCoordY, unitSize, pDynamicPath->Coords.tFixed.x);
       nLocalSecurity = (uint32_t)eCollide;
       if (eCollide != COLLIDE_NONE) {

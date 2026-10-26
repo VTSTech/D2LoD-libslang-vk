@@ -81,16 +81,16 @@ int32_t __fastcall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
     uint16_t* wBits;
     uint16_t wRefill;
     uint16_t** pBitBufAlias = pBitBuf;
-    uint16_t* wWord = pBitBuf[2];
-    if (wWord < (uint16_t*)0x8) {
+    uint32_t wWord = (uint32_t)pBitBuf[2];
+    if (wWord < 8) {
       wRefill = **pBitBuf;
-      pBitBuf[2] = wWord + 8;
-      pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << ((uint8_t)(uintptr_t)wWord & 0x1f));
+      pBitBuf[2] = (uint16_t*)(wWord + 0x10);
+      pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << ((uint8_t)wWord & 0x1f));
       (*pBitBuf)++;
     }
 
-    wWord = pBitBuf[1];
-    int* pQuickEntry = (int*)(pThis + (((uint32_t)wWord & 0x7f) * 3 + 0xd1d) * 4);
+    uint16_t* puVar2 = pBitBuf[1];
+    int* pQuickEntry = (int*)(pThis + (((uint32_t)puVar2 & 0x7f) * 3 + 0xd1d) * 4);
     bool bNeedRebuild = *pQuickEntry != *(int*)(pThis + 4);
     if (bNeedRebuild) {
       nBitCount = *(uint32_t*)(**(int**)(pThis + 0x3060) + 4);
@@ -99,12 +99,12 @@ int32_t __fastcall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
       nBitCount = pQuickEntry[1];
       if (nBitCount < 8) {
         pBitBuf[2] = (uint16_t*)((int)pBitBuf[2] - nBitCount);
-        pBitBuf[1] = (uint16_t*)((uint32_t)wWord >> ((uint8_t)nBitCount & 0x1f));
+        pBitBuf[1] = (uint16_t*)((uint32_t)puVar2 >> ((uint8_t)nBitCount & 0x1f));
         return pQuickEntry[2];
       }
 
       pBitBuf[2] = (uint16_t*)((int)pBitBuf[2] - 7);
-      pBitBuf[1] = (uint16_t*)((uint32_t)wWord >> 7);
+      pBitBuf[1] = (uint16_t*)((uint32_t)puVar2 >> 7);
       pTreeNode = (uint16_t**)pQuickEntry[2];
     }
 
@@ -143,7 +143,7 @@ int32_t __fastcall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
       return (int32_t)pTreeNode[2];
     }
 
-    uint32_t nQuickIdx = 0xffffffffU >> (0x20 - (uint8_t)nBitCount & 0x1f) & (uint32_t)wWord & 0x7f;
+    uint32_t nQuickIdx = 0xffffffffU >> (0x20 - (uint8_t)nBitCount & 0x1f) & (uint32_t)puVar2 & 0x7f;
     nQuickStep = 1 << ((uint8_t)nBitCount & 0x1f);
     uint32_t* pQuickFill = (uint32_t*)(pThis + 0x347c + nQuickIdx * 0xc);
     do {
@@ -195,52 +195,52 @@ int __fastcall HUFFMAN_DecompressBlock(uint8_t * pDst, int32_t nDstMax, uint16_t
       return 0;
     }
 
-    uint16_t* wWord = pBitBuf[2];
-    if (wWord < (uint16_t*)0x9) {
+    uint32_t wWord = (uint32_t)pBitBuf[2];
+    if (wWord < 9) {
       wRefill = **pBitBuf;
-      pBitBuf[2] = wWord + 8;
-      pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << ((uint8_t)(uintptr_t)wWord & 0x1f));
+      pBitBuf[2] = (uint16_t*)(wWord + 0x10);
+      pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << ((uint8_t)wWord & 0x1f));
       (*pBitBuf)++;
     }
 
-    wWord = pBitBuf[1];
+    uint16_t* puVar1 = pBitBuf[1];
     pBitBuf[2] += -4;
-    pBitBuf[1] = (uint16_t*)((uint32_t)wWord >> 8);
-    Source::SSComp::COMPRESS_InitEncoderContext((D2CompressEncoderStrc*)pDecoderCtx, (int**)((uint32_t)wWord & 0xff));
+    pBitBuf[1] = (uint16_t*)((uint32_t)puVar1 >> 8);
+    Source::SSComp::COMPRESS_InitEncoderContext((D2CompressEncoderStrc*)pDecoderCtx, (int**)((uint32_t)puVar1 & 0xff));
     pBitBuf = (uint16_t**)pDst;
-    *pDecoderCtx = (uint32_t)((char)(uintptr_t)wWord == '\0');
+    *pDecoderCtx = (uint32_t)((char)(uintptr_t)puVar1 == '\0');
     while (true) {
-      int* nSymbol;
-      nSymbol = (int*)HUFFMAN_DecodeSymbol((int32_t)pDecoderCtx, pBitBufAlias);
-      if (nSymbol == (int*)0x101) {
-        wWord = pBitBufAlias[2];
-        if (wWord < (uint16_t*)0x9) {
+      int32_t nSymbol;
+      nSymbol = HUFFMAN_DecodeSymbol((int32_t)pDecoderCtx, pBitBufAlias);
+      if (nSymbol == 0x101) {
+        puVar1 = pBitBufAlias[2];
+        if (puVar1 < (uint16_t*)0x9) {
           wRefill = **pBitBufAlias;
-          pBitBufAlias[2] = wWord + 8;
-          pBitBufAlias[1] = (uint16_t*)((uint32_t)pBitBufAlias[1] | (uint32_t)wRefill << ((uint8_t)(uintptr_t)wWord & 0x1f));
+          pBitBufAlias[2] = puVar1 + 8;
+          pBitBufAlias[1] = (uint16_t*)((uint32_t)pBitBufAlias[1] | (uint32_t)wRefill << ((uint8_t)(uintptr_t)puVar1 & 0x1f));
           (*pBitBufAlias)++;
         }
 
         pBitBufAlias[2] += -4;
-        nSymbol = (int*)((uint32_t)pBitBufAlias[1] & 0xff);
+        nSymbol = (uint32_t)pBitBufAlias[1] & 0xff;
         pBitBufAlias[1] = (uint16_t*)((uint32_t)pBitBufAlias[1] >> 8);
-        Source::SSComp::COMPRESS_EncodeSymbol((D2CompressEncoderStrc*)pDecoderCtx, nSymbol);
+        Source::SSComp::COMPRESS_EncodeSymbol((D2CompressEncoderStrc*)pDecoderCtx, (int*)nSymbol);
         if (!*pDecoderCtx) {
-          Source::SSComp::COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pDecoderCtx, (D2CompressHuffNodeStrc*)pDecoderCtx[(int)nSymbol + 0xc1b]);
+          Source::SSComp::COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pDecoderCtx, (D2CompressHuffNodeStrc*)pDecoderCtx[nSymbol + 0xc1b]);
         }
       }
-      if (nSymbol == (int*)0x100) {
+      if ((int*)nSymbol == (int*)0x100) {
         break;
       }
 
-      *(char*)pBitBuf = (char)(uintptr_t)nSymbol;
+      *(char*)pBitBuf = (char)nSymbol;
       pBitBuf = (uint16_t**)((int)pBitBuf + 1);
       nDstMax--;
       if (!nDstMax) {
         return (int)pBitBuf - (int)pDst;
       }
       if (*pDecoderCtx) {
-        Source::SSComp::COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pDecoderCtx, (D2CompressHuffNodeStrc*)pDecoderCtx[(int)nSymbol + 0xc1b]);
+        Source::SSComp::COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pDecoderCtx, (D2CompressHuffNodeStrc*)pDecoderCtx[nSymbol + 0xc1b]);
       }
     }
 

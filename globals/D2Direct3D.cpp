@@ -7,7 +7,6 @@
 #include "D2Direct3D/Renderer/Direct3D.h"
 #include "D2Direct3D/d3dFloorCache.h"
 #include "D2Direct3D/d3dSubtileCache.h"
-#include "D2Direct3D/d3dTextureCache.h"
 
 
 // =============================================================================
@@ -2250,39 +2249,39 @@ uint16_t g_OriginalGammaRamp[3][256] = {
     }
 };
 
-D3DTextureCacheStrc gD3DGenericTextureCache[3] = {
-    {
-        /* .nMaxNodes = */ 0,
-        /* .nUsedCount = */ 0,
-        /* .pUsedHead = */ nullptr,
-        /* .pUsedTail = */ nullptr,
-        /* .pFreeHead = */ nullptr,
-        /* .pFreeTail = */ nullptr,
-        /* .pNodeBuffer = */ nullptr
+D3DTextureCacheSetStrc gD3DGenericTextureCache = {
+    /* .aCaches = */ {
+        {
+            /* .nMaxNodes = */ 0,
+            /* .nUsedCount = */ 0,
+            /* .pUsedHead = */ nullptr,
+            /* .pUsedTail = */ nullptr,
+            /* .pFreeHead = */ nullptr,
+            /* .pFreeTail = */ nullptr,
+            /* .pNodeBuffer = */ nullptr
+        },
+        {
+            /* .nMaxNodes = */ 0,
+            /* .nUsedCount = */ 0,
+            /* .pUsedHead = */ nullptr,
+            /* .pUsedTail = */ nullptr,
+            /* .pFreeHead = */ nullptr,
+            /* .pFreeTail = */ nullptr,
+            /* .pNodeBuffer = */ nullptr
+        },
+        {
+            /* .nMaxNodes = */ 0,
+            /* .nUsedCount = */ 0,
+            /* .pUsedHead = */ nullptr,
+            /* .pUsedTail = */ nullptr,
+            /* .pFreeHead = */ nullptr,
+            /* .pFreeTail = */ nullptr,
+            /* .pNodeBuffer = */ nullptr
+        }
     },
-    {
-        /* .nMaxNodes = */ 0,
-        /* .nUsedCount = */ 0,
-        /* .pUsedHead = */ nullptr,
-        /* .pUsedTail = */ nullptr,
-        /* .pFreeHead = */ nullptr,
-        /* .pFreeTail = */ nullptr,
-        /* .pNodeBuffer = */ nullptr
-    },
-    {
-        /* .nMaxNodes = */ 0,
-        /* .nUsedCount = */ 0,
-        /* .pUsedHead = */ nullptr,
-        /* .pUsedTail = */ nullptr,
-        /* .pFreeHead = */ nullptr,
-        /* .pFreeTail = */ nullptr,
-        /* .pNodeBuffer = */ nullptr
-    }
+    /* .apSpriteTextures = */ { nullptr, nullptr, nullptr },
+    /* .apSpriteSurfaces = */ { nullptr, nullptr, nullptr }
 };
-
-IDirect3DTexture2 * gpD3DSpriteSystemTexture0[3] = { nullptr, nullptr, nullptr };
-
-IDirectDrawSurface7 * gpD3DSpriteSystemSurface0[3] = { nullptr, nullptr, nullptr };
 
 void * g_pFontTextureBuffer[96] = {
     nullptr,

@@ -47,6 +47,7 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "globals/globals.h"
+#include "D2Game/Monster/AI/AI.h"
 #include "Fog/Src/Safesock.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -429,50 +430,44 @@ D2UnitStrc * __stdcall MONSTER_SpawnMonsterGroup(::SGAMEDATA * pGame, D2RoomStrc
     return pUnit;
 }
 
-void __stdcall SPAWN_SpawnMonsterFormation(::SGAMEDATA * pGame, int32_t nClassId, D2RoomStrc * pRoom, int * pGroupOffsetTable) {
+BOOL __stdcall SPAWN_SpawnMonsterFormation(::SGAMEDATA * pGame, int32_t nClassId, D2RoomStrc * pRoom, int * pGroupOffsetTable) {
     bool _bSuccess;
     bool bSuccess;
     int32_t nOffsetX;
     int32_t nOffsetY;
     _bSuccess = SPAWN_SpawnMonsterGroupAtRandom(pGame, pRoom, nullptr, nClassId, pGroupOffsetTable, &nOffsetX, &nOffsetY);
     if (!_bSuccess) {
+      return 0;
+    }
+
+    _bSuccess = Monster::Create::SpawnMonsterAtUnitOffset(pGame, pRoom, nOffsetX, nOffsetY, nullptr, nClassId, eD2MonsterAnimMode_ns::Neutral, pGroupOffsetTable, 0);
+    return _bSuccess;
+}
+
+void __stdcall MONSTER_SetMinionsForBoss(D2RoomCoordListStrc * pRoomCoordList, int32_t nMinionClassId, ::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+    bool _bIsBossType;
+    bool bIsBossType;
+    _bIsBossType = CheckMonsterType(pUnit, 4);
+    if (!_bIsBossType) {
       return;
     }
 
-    Monster::Create::SpawnMonsterAtUnitOffset(pGame, pRoom, nOffsetX, nOffsetY, nullptr, nClassId, eD2MonsterAnimMode_ns::Neutral, pGroupOffsetTable, 0);
-}
-
-D2UnitStrc * __stdcall MONSTER_SetMinionsForBoss(D2RoomCoordListStrc * pRoomCoordList, int32_t nMinionClassId, ::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    bool _bIsBossType;
-    bool bIsBossType;
-    D2UnitStrc* pMinionAfterMod;
-    _bIsBossType = CheckMonsterType(pUnit, 4);
-    D2UnitStrc* pResultMinion = 0;
-    if (!_bIsBossType) {
-      return pResultMinion;
-    }
-
     D2SeedStrc seedNext = D2_SEED_NEXT(pUnit->sSeed);
-    pResultMinion = (D2UnitStrc*)(((uint64_t)d2_bits_of(seedNext) & 0xffffffff) * 0xaaaaaaab);
     pUnit->sSeed = seedNext;
     int32_t nMinionCount = seedNext.nSeedLow + (int)(((uint64_t)d2_bits_of(seedNext) & 0xffffffff) / 3) * -3 + 1;
     if (0 >= nMinionCount) {
-      return pResultMinion;
+      return;
     }
 
     do {
       D2UnitStrc* pMinion;
       pMinion = Monster::Create::SpawnMonsterAtCoordList(pGame, pRoomCoordList, pUnit, nMinionClassId, eD2MonsterAnimMode_ns::Neutral, 4, 0);
-      pResultMinion = 0;
       if (pMinion) {
         MONSTER_AddUniqueModifier(pGame, pMinion, '\x10');
-        pResultMinion = pMinionAfterMod;
       }
 
       nMinionCount--;
     } while (nMinionCount);
-
-    return pResultMinion;
 }
 
 uint32_t __stdcall MONSTER_SpawnUniquePackInRoom(D2RoomStrc * pRoom, ::SGAMEDATA * pGame, D2RoomCoordListStrc * pCoordList, uint32_t nClassId) {
@@ -911,14 +906,14 @@ BOOL MONSTER_CanSpawnInRoom(D2RoomStrc * pRoom, ::SGAMEDATA * pGame) {
     return 0;
 }
 
-BOOL __fastcall CheckIfBaseIsFallenOrScarabAndSet(int32_t * nMonstatId) {
-    if (-1 >= (int)nMonstatId) {
+BOOL __fastcall CheckIfBaseIsFallenOrScarabAndSet(int32_t nMonstatId) {
+    if (-1 >= nMonstatId) {
       return 0;
     }
-    if ((int)nMonstatId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + (int)nMonstatId) {
-      nMonstatId = (int32_t*)(int)sgptDataTable->pTxtMonStats[(int)nMonstatId].BaseId;
+    if (nMonstatId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonstatId) {
+      nMonstatId = (int32_t)sgptDataTable->pTxtMonStats[nMonstatId].BaseId;
     }
-    if (!(-1 < (int)nMonstatId && (int)nMonstatId < sgptDataTable->nTxtMonStatsSize && (nMonstatId == (int32_t*)19 || nMonstatId == (int32_t*)91))) {
+    if (!(-1 < nMonstatId && nMonstatId < sgptDataTable->nTxtMonStatsSize && (nMonstatId == 19 || nMonstatId == 91))) {
       return 0;
     }
 
@@ -927,9 +922,8 @@ BOOL __fastcall CheckIfBaseIsFallenOrScarabAndSet(int32_t * nMonstatId) {
 
 // Server-side: populates a freshly-loaded room with monsters per the level's MonsterRegion density. Clamps the region monster density to 10000, then walks the room's coord-list nodes; for each spawnable rect it computes density slots ((w/3)*(h/3)) and rolls the game seed per slot against density. On a hit it rolls a random monster type (MONREGION_RollRandomMonsterType) and spawns either a unique pack (SpawnUniquePack + boss minions), a formation (SPAWN_SpawnMonsterFormation), or a normal group with minions (SPAWN_SpawnMonsterWithMinions, group size from MonStats MinGrp/MaxGrp, gated by sparsePopulate roll). Increments the region's nRoomsWithMonsters if anything spawned. Mutates pGame->pGameSeed.
 void __fastcall MONSTER_SpawnRoomMonsters(::SGAMEDATA * pGame, D2RoomStrc * pRoom) {
-    int32_t* nMonstatId;
-    D2UnitStrc* pSpawnedUnit;
     int* pGroupOffsetTable;
+    D2UnitStrc* pFormationUnit;
     uint32_t dwClassId;
     RECT sRoomRect;
     bool bAnySpawned;
@@ -966,7 +960,6 @@ void __fastcall MONSTER_SpawnRoomMonsters(::SGAMEDATA * pGame, D2RoomStrc * pRoo
     bool bDidSpawn;
     bDidSpawn = false;
     do {
-      D2UnitStrc* pFormationUnit;
       /* RECT * lprcSrc for CopyRect */ /* LPRECT lprcDst for CopyRect */ if (pCoordList->nIndex && !pCoordList->bNode) {
         CopyRect(&sRoomRect, &pCoordList->pRect);
         if (sRoomRect.left || sRoomRect.right) {
@@ -977,7 +970,7 @@ void __fastcall MONSTER_SpawnRoomMonsters(::SGAMEDATA * pGame, D2RoomStrc * pRoo
             iVar1 = (int)(((uint64_t)d2_bits_of(seedNext) & 0xffffffff) * 0x4f8b588f >> 0x20);
             pGame->pGameSeed = seedNext;
             if ((int)(seedNext.nSeedLow + ((seedNext.nSeedLow - iVar1 >> 1) + iVar1 >> 0x10) * -100000) <= pMonsterRegion->nMonsterDensity) {
-              nMonstatId = (int32_t*)SKILLS::SkillItem::MONREGION_RollRandomMonsterType(pGame, pMonsterRegion, pRoom, &pMonStatLine, 0x14, 0);
+              dwClassId = SKILLS::SkillItem::MONREGION_RollRandomMonsterType(pGame, pMonsterRegion, pRoom, &pMonStatLine, 0x14, 0);
               if (!pMonStatLine) {
                 return;
               }
@@ -988,20 +981,19 @@ void __fastcall MONSTER_SpawnRoomMonsters(::SGAMEDATA * pGame, D2RoomStrc * pRoo
               }
               if (!iVar1) {
                 dwClassId = SKILLS::SkillItem::MONREGION_RollRandomMonsterType(pGame, pMonsterRegion, pRoom, &pMonStatLine, 0, 1);
-                pSpawnedUnit = SpawnUniquePack(pGame, pRoom, pCoordListIter, dwClassId, 1, 0, 0, 1);
-                if (pSpawnedUnit) {
-                  MONSTER_SetMinionsForBoss(pCoordListIter, dwClassId, pGame, pSpawnedUnit);
+                pFormationUnit = SpawnUniquePack(pGame, pRoom, pCoordListIter, dwClassId, 1, 0, 0, 1);
+                if (pFormationUnit) {
+                  MONSTER_SetMinionsForBoss(pCoordListIter, dwClassId, pGame, pFormationUnit);
                   bDidSpawn = true;
                 }
               } else {
                 if (iVar1 == 1) {
                   pGroupOffsetTable = SKILLS::SkillItem::RollRoomSeed(pRoom);
-                  SPAWN_SpawnMonsterFormation(pGame, (int32_t)nMonstatId, pRoom, pGroupOffsetTable);
-                  pSpawnedUnit = pFormationUnit;
+                  pFormationUnit = (D2UnitStrc*)SPAWN_SpawnMonsterFormation(pGame, dwClassId, pRoom, pGroupOffsetTable);
                 } else {
                   *(uint8_t*)(char*)&nMinGrp = 1;
                   *(uint8_t*)(char*)&nMaxGrp = 1;
-                  bIsFallenOrScarab = CheckIfBaseIsFallenOrScarabAndSet(nMonstatId);
+                  bIsFallenOrScarab = CheckIfBaseIsFallenOrScarabAndSet(dwClassId);
                   if (!bIsFallenOrScarab) {
                     *(uint8_t*)(char*)&nMinGrp = pMonStatLine->MinGrp;
                     *(uint8_t*)(char*)&nMaxGrp = pMonStatLine->MaxGrp;
@@ -1014,9 +1006,9 @@ void __fastcall MONSTER_SpawnRoomMonsters(::SGAMEDATA * pGame, D2RoomStrc * pRoo
                     }
                   }
 
-                  pSpawnedUnit = SPAWN_SpawnMonsterWithMinions(pGame, pRoom, pCoordListIter, (uint8_t)nMinGrp, (uint8_t)nMaxGrp, (uint32_t)nMonstatId);
+                  pFormationUnit = SPAWN_SpawnMonsterWithMinions(pGame, pRoom, pCoordListIter, (uint8_t)nMinGrp, (uint8_t)nMaxGrp, dwClassId);
                 }
-                if (pSpawnedUnit) {
+                if (pFormationUnit) {
                   bDidSpawn = true;
                 }
               }

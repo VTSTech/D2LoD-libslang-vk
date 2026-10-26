@@ -23,6 +23,13 @@ typedef int eD2States;
 typedef int eD2UnitStat;
 typedef int eD2UnitType;
 
+// Data types
+struct __attribute__((packed)) D2SkillCalcContextStrc {
+    /* 0x00 */ struct D2UnitStrc * pUnit;
+    /* 0x04 */ eD2Skills nSkillId;
+    /* 0x08 */ int32_t nSkillLevel;
+};
+
 namespace D2Common::Skills {
 
 // Function declarations
@@ -31,7 +38,7 @@ int32_t __fastcall SKILLS_CalcSkillParam(eD2Skills eSkill, int32_t nParam);
 // Gets or allocates a stat list associated with a given state on a unit. If arg1 is nonzero and no stat list exists for the state, allocates one and attaches it. If arg1 is zero, frees the existing stat list for that state.
 struct D2PoolManagerStrc * __stdcall SKILLS_GetOrAllocStateStatList(int32_t bAlloc, struct D2UnitStrc * pUnit, eD2States eState);
 // Returns the passivestate field from D2SkillsTxt for the given skill ID. Returns 0 if invalid or no passive state.
-int __stdcall TXT_Skills_GetPassiveState(int nSkillId);
+int TXT_Skills_GetPassiveState(int nSkillId);
 int __fastcall SKILLS_Min(int nParam1, int nParam2, uint32_t dwParam3, uint32_t dwParam4);
 int __fastcall SKILLS_Max(int nParam1, int nParam2, uint32_t dwParam3, uint32_t dwParam4);
 int * __fastcall SKILLS_RandomRange(int * pnMinVal, int32_t nRange, uint32_t nUnused, int * pnSeed);
@@ -177,7 +184,7 @@ int32_t __stdcall SKILL_GetConcentrationDamageBonus(struct D2UnitStrc * pUnit, i
 void __stdcall SKILL_CalcKickDamage(struct D2UnitStrc * pUnit, int * pnParam1, int * pnParam2, int * pnParam3);
 // Evaluates one skill-description calc code (bParam selects which, 0..0x48) for skill eSkill at level/param nParam, optionally for unit pUnit; returns the computed value. Dispatches a large switch over the calc selector to skill range, mana cost (and shifted variants), to-hit, min/max/synergy damage (>>8 for display scaling), per-element min/max damage and length from the skill's descmissile entries, missile range, unit level/skill-level, aura/passive radii, and the raw skills.txt calc-column fields (auralencalc, calc[0..3], aurarangecalc, aurastatcalc[0..5], passivecalc[0..4], petmax, skpoints). For the raw-field cases it then runs the value through SKILLS_CompileSkillFormula against the skills calc-code blob. Bounds-checks eSkill; returns 0 on invalid skill/missile or out-of-range selector.
 uint32_t __stdcall SKILLDESC_EvalDescCalcValue(struct D2UnitStrc * pUnit, uint8_t bParam, eD2Skills eSkill, uint32_t nParam);
-uint32_t __fastcall SKILLS_DescCalcCallback_Eval(uint8_t nCalcCode, struct D2UnitStrc * * ppContext);
+uint32_t __fastcall SKILLS_DescCalcCallback_Eval(uint8_t nCalcCode, struct D2SkillCalcContextStrc * pCalcCtx);
 void __fastcall SKILLS_EvalSkillDescCalc_CurrentLevel(eD2Skills eSkill, uint8_t bParam, uint32_t nUnused, struct D2UnitStrc * * ppUnit);
 uint32_t __fastcall SKILLS_EvalSkillDescCalc_Chained(eD2Skills eSkill, uint8_t bParam, uint8_t bCalcIndex, struct D2UnitStrc * * ppUnit);
 int32_t __stdcall D2GetSkillCalc(struct D2UnitStrc * pUnit, int32_t calc, eD2Skills eSkill, int32_t nSkillLvl);

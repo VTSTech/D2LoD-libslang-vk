@@ -50,7 +50,7 @@ struct D2UnitDataPlayerPetsStrc {
 };
 
 struct D2UnknownStructure0x18 {
-    /* 0x00 */ struct D2InventoryStrc * pCopyInventory;
+    /* 0x00 */ int32_t pCopyInventory;
     /* 0x04 */ void * pSaveBuffer;
     /* 0x08 */ struct D2UnknownStructure0xc * pUnknownStruct;
     /* 0x0C */ uint32_t nTradeStatus;
@@ -78,7 +78,7 @@ BOOL __fastcall Objects_OperateFn32_OpenStash(struct D2ObjectOperateFnArg * pOpe
 void __stdcall GOLD_HandleStashGoldTransaction(int32_t nGoldAmount, ::SGAMEDATA * pGame, int16_t nParam, struct D2UnitStrc * pUnit, uint32_t nUnitGUID);
 uint32_t PLAYERTRADE_CompareUint32(uint32_t * pnParam1, uint32_t * pnParam2);
 // Removes all items from the cube before transmutation. Iterates through the player's inventory, extracts items from INVPAGE_CUBE, sets their page to None, and frees them from the server unit system. Returns the inventory pointer.
-struct D2InventoryStrc * __stdcall CUBE_RemoveAllCubeItems(::SGAMEDATA * pGame, struct D2ClientStrc * pClient, struct D2UnitStrc * pUnit);
+int32_t __stdcall CUBE_RemoveAllCubeItems(::SGAMEDATA * pGame, struct D2ClientStrc * pClient, struct D2UnitStrc * pUnit);
 // Counts the number of items currently in the Horadric Cube (INVPAGE_CUBE). Iterates through the player's inventory and counts items whose containing page is INVPAGE_CUBE. Returns the total count.
 int32_t CUBE_CountCubeItems(struct D2InventoryStrc * pInventory);
 // Matches a single input descriptor (D2CubeInputStrc) against cube items. Checks flags (item code, item type, quality, unique ID, sockets, ethereal, normal/exceptional/elite tier, runeword), applies per-item stat requirements (op 15-26), and fills pMatchedItems entries with matched items. The usage array pItemUsedFlags tracks which items have been consumed. Returns 1 if the required quantity of matching items was found, 0 otherwise. Handles special output type 0xff (use-item) and 0xfe (use-type) by storing item pointers and upgrade class IDs in pMatchedItems for GenerateCubingResult.
@@ -130,7 +130,7 @@ bool __stdcall SetUidOther(int * pnParam, char * szText, struct D2UnitStrc * pUn
 // Server-side handler for a player picking up an item from the trade screen. Validates that the interact partner is a player; sends 0x77/0x0C error if not. Calls SERVER_TakeItemToCursor to move the item to the cursor slot. On success, resets the 10-second trade acceptance timer for both parties and sends 0x77/0x0E (unaccept) to both clients. If either party had committed gold (dwTradeState==4), zeroes out both gold totals via 0x79 packets and finalises the trade via TRADE_SendTradeCompleteToPlayers.
 // @sourcefile .\PLAYER\PlrTrade.cpp
 void __fastcall SERVER_TradeTransferItemToCursor(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitDataPlayerStrc * pPlayerData);
-struct D2InventoryStrc * __fastcall CopyInventory(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, int32_t nBufSize);
+int32_t __fastcall CopyInventory(struct D2UnitStrc * pUnit, uint8_t * pUnit2, int32_t nBufSize);
 // Server-side guard and initiator for a player-to-player trade session. Verifies both parties are alive (flag 0x800000 clear), Diablo has not been killed (classic trade restriction), the other player's trade inventory exists, and no prohibited item (monster-dropped or quest item with the "box" cube exception) is being offered. On success sets both players' dwTradeState to 7, fires event 0xD on the next frame for each, and sends NET packet 0x77 opcode 6 (TradeAccepted) to both clients. Returns 1 if the offered item needs re-validation, 0 if trade is blocked, or <5 trade-state guard on early-out paths.
 // @sourcefile .\PLAYER\PlrTrade.cpp
 uint32_t __fastcall PLRTRADE_ValidateAndInitiateTrade(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pItemUnit);

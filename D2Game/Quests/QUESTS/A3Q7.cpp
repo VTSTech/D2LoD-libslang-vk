@@ -67,7 +67,7 @@ void __fastcall Objects_InitFn52(D2ObjectInitFnArg * pInitArg) {
 
     D2QuestDataStrc* pGuardianUnit = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_TheGuardian);
     D2QuestDataA3Q6Strc* pQuestSpecific = pGuardianUnit->pQuestSpecificData.pA3Q6;
-    if (!((char)pQuestSpecific->nDarkWandererMapAiState == '\0' || (pGuardianQuest = UNIT::SUnit::FindUnitFromTable(pInitArg->pGame, UNIT_MONSTER, pQuestSpecific->nDarkWandererGUID) , !pGuardianQuest) || pGuardianQuest->nClassId != 0x129)) {
+    if (!(pQuestSpecific->nDarkWandererMapAiState == '\0' || (pGuardianQuest = UNIT::SUnit::FindUnitFromTable(pInitArg->pGame, UNIT_MONSTER, pQuestSpecific->nDarkWandererGUID) , !pGuardianQuest) || pGuardianQuest->nClassId != 0x129)) {
       return;
     }
 
@@ -75,12 +75,12 @@ void __fastcall Objects_InitFn52(D2ObjectInitFnArg * pInitArg) {
     if (!pGuardianQuest) {
       pGuardianQuest = Monster::Create::SpawnMonsterAtRoomPos(pInitArg->pGame, pInitArg->pRoom, pInitArg->nX, pInitArg->nY, 0x129, eD2MonsterAnimMode_ns::Neutral, 3, 0);
       if (!pGuardianQuest) {
-        *(uint8_t*)&pQuestSpecific->nDarkWandererMapAiState = 0;
+        pQuestSpecific->nDarkWandererMapAiState = '\0';
         return;
       }
     }
 
-    *(uint8_t*)&pQuestSpecific->nDarkWandererMapAiState = 1;
+    pQuestSpecific->nDarkWandererMapAiState = '\x01';
     if (!pGuardianQuest) {
       iVar1 = -1;
     } else {
@@ -153,7 +153,7 @@ void Q24_SetupDarkWandererMapAi(void * pThis, int32_t nParam) {
     D2QuestDataA3Q6Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA3Q6;
     D2MapAIStrc** pDrlgMapPtr = &pQuestSpecificData->pDrlgMap;
     *pDrlgMapPtr = (D2MapAIStrc*)nParam;
-    if ((char)pQuestSpecificData->nDarkWandererMapAiState == '\0') {
+    if (pQuestSpecificData->nDarkWandererMapAiState == '\0') {
       return;
     }
 

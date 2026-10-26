@@ -345,15 +345,7 @@ void __stdcall SOUND_InitSoundEffectBuffers() {
 
 // @sourcefile .\Src\D2SoundFast.cpp
 void __fastcall SOUND_LoadWavFile(char * szText) {
-    // Frame slots -32..-24 are ONE object: &wFormatType is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      short int wFormatType;
-      short int wChannels;
-      int nWavFormatTag;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    WAVEFORMATEX sWaveFormat;
     size_t nAllocSize;
     char cFilenameChar;
     if (!gnSoundEffectSampleCount) {
@@ -366,8 +358,8 @@ void __fastcall SOUND_LoadWavFile(char * szText) {
     }
 
     size_t nRawSize = nAllocSize;
-    D2SoundSmp::SOUNDSMP_ParseWavHeader(pArchive, &nRawSize, &__frame0.wFormatType);
-    if (__frame0.nWavFormatTag != 0x5622) {
+    D2SoundSmp::SOUNDSMP_ParseWavHeader(pArchive, &nRawSize, &sWaveFormat);
+    if (sWaveFormat.nSamplesPerSec != 0x5622) {
       return;
     }
 
@@ -376,7 +368,7 @@ void __fastcall SOUND_LoadWavFile(char * szText) {
     *(int**)((int)pWavEntry + 0x50) = (int*)pArchive;
     *(size_t*)((int)pWavEntry + 0x54) = nAllocSize;
     gpWavFileCacheListHead = pWavEntry;
-    *(uint32_t*)((int)pWavEntry + 0x58) = (uint32_t)(__frame0.wChannels == 2);
+    *(uint32_t*)((int)pWavEntry + 0x58) = (uint32_t)(sWaveFormat.nChannels == 2);
     int nNameOffset = (int)pWavEntry - (int)szText;
     do {
       cFilenameChar = *szText;

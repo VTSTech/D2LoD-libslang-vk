@@ -315,16 +315,14 @@ void __stdcall CopyCharListToGlobal(char * pBytes, size_t nSize) {
 }
 
 void __stdcall McpConnectionLoop(int * pnParam) {
-    int hMCPEventHandle;
-    int32_t bGotPeerName;
     DWORD dwWaitResult;
     sockaddr peerAddr;
     if (!pMCPEventHandle) {
       /* LPCSTR lpName for CreateEventA */ /* BOOL bInitialState for CreateEventA */ /* BOOL bManualReset for CreateEventA */ /* LPSECURITY_ATTRIBUTES lpEventAttributes for CreateEventA */ pMCPEventHandle = CreateEventA((LPSECURITY_ATTRIBUTES)0x0, 0, 0, (LPCSTR)0x0);
     }
 
-    NET_MCP_CLIENT_Send_0x01_StartUp(pnParam);
-    if (hMCPEventHandle == -1) {
+    int32_t bGotPeerName = NET_MCP_CLIENT_Send_0x01_StartUp(pnParam);
+    if (bGotPeerName == -1) {
       D2Client::MCP::D2GSJoinResult = 0xb;
       return;
     }
@@ -438,7 +436,8 @@ char * __stdcall STRING_GetStringLength(char * szText, char * * ppszText, char *
     return pszScan + nParam + (1 - (int)pcVar1);
 }
 
-void __fastcall NET_MCP_CLIENT_Send_0x01_StartUp(int * pnParam) {
+int32_t __fastcall NET_MCP_CLIENT_Send_0x01_StartUp(int * pnParam) {
+    int32_t nAddress;
     MCPPacketClt0x01 mcp0x01;
     uint8_t payloadBuffer[1027];
     SetD2GSJoinResult(0);
@@ -466,18 +465,19 @@ void __fastcall NET_MCP_CLIENT_Send_0x01_StartUp(int * pnParam) {
       exit(-1);
     }
 
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &mcp0x01.nPacketId, (uint16_t)(uintptr_t)(pStrLen + 0x41));
+    nAddress = Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &mcp0x01.nPacketId, (uint16_t)(uintptr_t)(pStrLen + 0x41));
+    return nAddress;
 }
 
-void __fastcall NET_MCP_CLIENT_Send_0x02_CharCreate(char * szCharName, uint32_t dwCharClassFlags, uint32_t dwUnused) {
+void __fastcall NET_MCP_CLIENT_Send_0x02_CharCreate(char * szCharName, DWORD dwCharClassFlags, uint32_t dwUnused) {
     MCP_CHARCREATE mcp0x02;
-    uint8_t payloadBuffer[1025];
     SetD2GSJoinResult(0);
     MCPSTATE_SetConnectionEstablished(0);
     char* pStrLen = 0;
     mcp0x02.nPacketId = '\x02';
-    *(uint32_t*)((char*)&mcp0x02 + 1) = dwCharClassFlags;
-    STRING_GetStringLength(szCharName, &pStrLen, (char*)0x400, (int32_t)payloadBuffer);
+    mcp0x02.wCharFlags = (WORD)dwUnused;
+    mcp0x02.dwCharClass = dwCharClassFlags;
+    STRING_GetStringLength(szCharName, &pStrLen, (char*)0x400, (int32_t)mcp0x02.szCharName);
     if ((char*)0xfffe < pStrLen + 7) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x7e);
       exit(-1);
@@ -509,17 +509,17 @@ void __fastcall NET_MCP_CLIENT_Send_0x07_CharLogon(char * szText) {
 }
 
 void __fastcall NET_MCP_CLIENT_Send_0x03_CreateGame(mcp0x03data * pMcpData, int16_t nRequestId) {
-    MCP_CREATEGAME local_414;
+    MCP_CREATEGAME sPacket;
     SetD2GSJoinResult(0);
-    local_414.nGameFlags = pMcpData->nGameFlags;
-    local_414.nAlways1 = pMcpData->field_0x44;
-    local_414.nDifference = pMcpData->nDifference;
-    local_414.nMaxPlayers = pMcpData->nMaxPlayers;
+    sPacket.nGameFlags = pMcpData->nGameFlags;
+    sPacket.nAlways1 = pMcpData->field_0x44;
+    sPacket.nDifference = pMcpData->nDifference;
+    sPacket.nMaxPlayers = pMcpData->nMaxPlayers;
     char* pStrLen = 0;
-    local_414.nPacketId = '\x03';
+    sPacket.nPacketId = '\x03';
     nMcpPacketSequence = nRequestId;
-    local_414.RequestId = nRequestId;
-    char* pszBufCursor = STRING_GetStringLength(pMcpData->szGameName, &pStrLen, (char*)0x400, (int32_t)local_414.szName);
+    sPacket.RequestId = nRequestId;
+    char* pszBufCursor = STRING_GetStringLength(pMcpData->szGameName, &pStrLen, (char*)0x400, (int32_t)sPacket.szStrings);
     pszBufCursor = STRING_GetStringLength(pMcpData->szGamePassword, &pStrLen, (char*)0x400, (int32_t)pszBufCursor);
     STRING_GetStringLength(pMcpData->szGameDescription, &pStrLen, (char*)0x400, (int32_t)pszBufCursor);
     if ((char*)0xfffe < pStrLen + 10) {
@@ -528,156 +528,90 @@ void __fastcall NET_MCP_CLIENT_Send_0x03_CreateGame(mcp0x03data * pMcpData, int1
     }
 
     D2Client::MCP::D2GSGameToken = 0;
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &local_414.nPacketId, (uint16_t)(uintptr_t)(pStrLen + 10));
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &sPacket.nPacketId, (uint16_t)(uintptr_t)(pStrLen + 10));
 }
 
 void __fastcall NET_MCP_CLIENT_Send_0x04_JoinGame(char * szGameName, char * szGamePassword, uint16_t nRequestId) {
-    // Frame slots -1036..-4 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      char byPacketId;
-      uint16_t wRequestId;
-      uint8_t payloadBuffer[1025];
-      char* pStrLen;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1032, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    MCPPacketCltStr byPacketId;
     SetD2GSJoinResult(0);
-    __frame0.pStrLen = 0;
-    __frame0.byPacketId = '\x04';
-    __frame0.wRequestId = nRequestId;
+    char* pStrLen = 0;
+    byPacketId.nPacketId = 4;
+    byPacketId.wRequestId = nRequestId;
     nMcpPacketSequence = nRequestId;
-    char* pszBufCursor = STRING_GetStringLength(szGameName, &__frame0.pStrLen, (char*)0x400, (int32_t)__frame0.payloadBuffer);
-    STRING_GetStringLength(szGamePassword, &__frame0.pStrLen, (char*)0x400, (int32_t)pszBufCursor);
-    if ((char*)0xfffe < __frame0.pStrLen + 3) {
+    char* pszBufCursor = STRING_GetStringLength(szGameName, &pStrLen, (char*)0x400, (int32_t)byPacketId.szData);
+    STRING_GetStringLength(szGamePassword, &pStrLen, (char*)0x400, (int32_t)pszBufCursor);
+    if ((char*)0xfffe < pStrLen + 3) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe9);
       exit(-1);
     }
 
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &__frame0.byPacketId, (uint16_t)(uintptr_t)(__frame0.pStrLen + 3));
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)&byPacketId, (uint16_t)(uintptr_t)(pStrLen + 3));
 }
 
 void __fastcall NET_MCP_CLIENT_Send_0x05_GameList(char * szText, uint16_t wRequestIdArg) {
-    // Frame slots -1040..-4 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      char byPacketId;
-      uint16_t wRequestId;
-      uint32_t dwGameField;
-      uint8_t payloadBuffer[1025];
-      char* pStrLen;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1036, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    MCPPacketClt0x05 sPacket;
     SetD2GSJoinResult(0);
-    __frame0.dwGameField = *(uint32_t*)(szText + 0x14);
-    __frame0.pStrLen = 0;
-    __frame0.byPacketId = '\x05';
+    sPacket.dwGameField = *(uint32_t*)(szText + 0x14);
+    char* pStrLen = 0;
+    sPacket.nPacketId = 5;
     nMcpPacketSequence = wRequestIdArg;
-    __frame0.wRequestId = wRequestIdArg;
-    STRING_GetStringLength(szText, &__frame0.pStrLen, (char*)0x400, (int32_t)__frame0.payloadBuffer);
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &__frame0.byPacketId, (short int)(uintptr_t)__frame0.pStrLen + 7);
+    sPacket.wRequestId = wRequestIdArg;
+    STRING_GetStringLength(szText, &pStrLen, (char*)0x400, (int32_t)sPacket.szData);
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)&sPacket, (short int)(uintptr_t)pStrLen + 7);
 }
 
 void __fastcall NET_MCP_CLIENT_Send_0x06_GameInfo(char * szText, uint16_t wRequestIdArg) {
-    // Frame slots -1036..-4 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      char byPacketId;
-      uint16_t wRequestId;
-      uint8_t payloadBuffer[1025];
-      char* pStrLen;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1032, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    MCPPacketCltStr byPacketId;
     SetD2GSJoinResult(0);
-    __frame0.pStrLen = 0;
-    __frame0.byPacketId = '\x06';
+    char* pStrLen = 0;
+    byPacketId.nPacketId = 6;
     nMcpPacketSequence = wRequestIdArg;
-    __frame0.wRequestId = wRequestIdArg;
-    STRING_GetStringLength(szText, &__frame0.pStrLen, (char*)0x400, (int32_t)__frame0.payloadBuffer);
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &__frame0.byPacketId, (short int)(uintptr_t)__frame0.pStrLen + 3);
+    byPacketId.wRequestId = wRequestIdArg;
+    STRING_GetStringLength(szText, &pStrLen, (char*)0x400, (int32_t)byPacketId.szData);
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)&byPacketId, (short int)(uintptr_t)pStrLen + 3);
 }
 
 void __fastcall NET_MCP_CLIENT_Send_0x08(char * szText, uint16_t wRequestIdArg) {
-    // Frame slots -1036..-4 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      char byPacketId;
-      uint16_t wRequestId;
-      uint8_t payloadBuffer[1025];
-      char* pStrLen;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1032, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    MCPPacketCltStr byPacketId;
     SetD2GSJoinResult(0);
-    __frame0.pStrLen = 0;
-    __frame0.byPacketId = '\b';
-    __frame0.wRequestId = wRequestIdArg;
-    STRING_GetStringLength(szText, &__frame0.pStrLen, (char*)0x400, (int32_t)__frame0.payloadBuffer);
-    if ((char*)0xfffe < __frame0.pStrLen + 3) {
+    char* pStrLen = 0;
+    byPacketId.nPacketId = 8;
+    byPacketId.wRequestId = wRequestIdArg;
+    STRING_GetStringLength(szText, &pStrLen, (char*)0x400, (int32_t)byPacketId.szData);
+    if ((char*)0xfffe < pStrLen + 3) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x148);
       exit(-1);
     }
 
     nMcpPacketSequence = wRequestIdArg;
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &__frame0.byPacketId, (uint16_t)(uintptr_t)(__frame0.pStrLen + 3));
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)&byPacketId, (uint16_t)(uintptr_t)(pStrLen + 3));
 }
 
 void __fastcall NET_MCP_CLIENT_Send_0x09(char * szText, uint16_t wRequestIdArg) {
-    // Frame slots -1036..-4 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      char byPacketId;
-      uint16_t wRequestId;
-      uint8_t payloadBuffer[1025];
-      char* pStrLen;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1032, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    MCPPacketCltStr byPacketId;
     SetD2GSJoinResult(0);
-    __frame0.pStrLen = 0;
-    __frame0.byPacketId = '\t';
-    __frame0.wRequestId = wRequestIdArg;
-    STRING_GetStringLength(szText, &__frame0.pStrLen, (char*)0x400, (int32_t)__frame0.payloadBuffer);
-    if ((char*)0xfffe < __frame0.pStrLen + 3) {
+    char* pStrLen = 0;
+    byPacketId.nPacketId = 9;
+    byPacketId.wRequestId = wRequestIdArg;
+    STRING_GetStringLength(szText, &pStrLen, (char*)0x400, (int32_t)byPacketId.szData);
+    if ((char*)0xfffe < pStrLen + 3) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x169);
       exit(-1);
     }
 
     nMcpPacketSequence = wRequestIdArg;
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &__frame0.byPacketId, (uint16_t)(uintptr_t)(__frame0.pStrLen + 3));
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)&byPacketId, (uint16_t)(uintptr_t)(pStrLen + 3));
 }
 
 void __fastcall NET_MCP_CLIENT_Send_0x0A_CharDelete(D2CharSelStrc * pCharSel, uint16_t wRequestIdArg) {
-    // Frame slots -1032..-4 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      char byPacketId;
-      uint16_t wRequestId;
-      char szCharBuffer[1025];
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1028, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    MCPPacketCltStr byPacketId;
     SetD2GSJoinResult(0);
-    __frame0.byPacketId = '\n';
+    byPacketId.nPacketId = 10;
     nMcpPacketSequence = wRequestIdArg;
-    __frame0.wRequestId = wRequestIdArg;
-    Storm::Source::SSTR::SStrCopy(__frame0.szCharBuffer, pCharSel->szCharname, 0x400);
-    uint32_t pStrLen = Storm::Source::SSTR::SStrLen(__frame0.szCharBuffer);
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &__frame0.byPacketId, (short int)pStrLen + 4);
+    byPacketId.wRequestId = wRequestIdArg;
+    Storm::Source::SSTR::SStrCopy(byPacketId.szData, pCharSel->szCharname, 0x400);
+    uint32_t pStrLen = Storm::Source::SSTR::SStrLen(byPacketId.szData);
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)&byPacketId, (short int)pStrLen + 4);
 }
 
 void __fastcall NET_MCP_CLIENT_Send_0x18_CharUpgrade(D2CharSelStrc * pCharSel) {
@@ -801,31 +735,19 @@ int __stdcall NET_MCP_CLIENT_Send_0x19_CharList2() {
 }
 
 void __fastcall NET_MCP_CLIENT_Send_0x16_CharRank(char * szText, uint32_t dwField1, uint32_t dwField2) {
-    // Frame slots -1044..-4 are ONE object: &byPacketOpcode is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      char byPacketOpcode;
-      uint32_t dwPacketField1;
-      uint32_t dwPacketField2;
-      uint8_t szTextScratch[1027];
-      char* nTextLength;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1040, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    MCPPacketClt0x16 sPacket;
     SetD2GSJoinResult(0);
-    __frame0.nTextLength = 0;
-    __frame0.byPacketOpcode = '\x16';
-    __frame0.dwPacketField2 = dwField2;
-    __frame0.dwPacketField1 = dwField1;
-    STRING_GetStringLength(szText, &__frame0.nTextLength, (char*)0x400, (int32_t)__frame0.szTextScratch);
-    if ((char*)0xfffe < __frame0.nTextLength + 9) {
+    uint32_t nTextLength = 0;
+    sPacket.nPacketId = 0x16;
+    sPacket.dwField2 = dwField2;
+    sPacket.dwField1 = dwField1;
+    STRING_GetStringLength(szText, (char**)&nTextLength, (char*)0x400, (int32_t)sPacket.szData);
+    if (0xfffe < nTextLength + 9) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27b);
       exit(-1);
     }
 
-    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &__frame0.byPacketOpcode, (uint16_t)(uintptr_t)(__frame0.nTextLength + 9));
+    Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, (char*)&sPacket, (uint16_t)(nTextLength + 9));
 }
 
 BOOL __fastcall NET_MCP_CLIENT_IncomingReturn(char * pBytes, size_t nSize) {

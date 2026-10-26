@@ -62,7 +62,6 @@
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Game/Monster/Create.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -297,7 +296,6 @@ void __fastcall SKILLPAL_OnAuraExpire(D2UnitStrc * pUnit, eD2States eState, int3
 
 // Paladin skill helper: reduces the remaining duration of active poison and curse states on pUnit by nParam percent (via D2ApplyPercent). Iterates all states flagged as curse states (pAllStatesDataTblFlag0x0B) and adjusts each statlist timeout; reschedules the expiry event for each shortened state. Returns non-zero if at least one state was shortened.
 BOOL __stdcall SKILLPAL_ReducePoisonAndCurseDuration(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam) {
-    bool _bReduced;
     D2StatListExStrc* pStatList;
     int32_t nGameFrame2;
     uint32_t bIsCurseState;
@@ -305,9 +303,8 @@ BOOL __stdcall SKILLPAL_ReducePoisonAndCurseDuration(::SGAMEDATA * pGame, D2Unit
     int32_t nNewPoisonExpire;
     int32_t nNewCurseExpire;
     eD2States eState;
-    bool bReduced;
     int nGameFrame;
-    _bReduced = 0;
+    BOOL bReduced = 0;
     eD2States ePoisonState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_poison);
     if (ePoisonState != STATE_none) {
       int32_t nPoisonExpire;
@@ -319,13 +316,13 @@ BOOL __stdcall SKILLPAL_ReducePoisonAndCurseDuration(::SGAMEDATA * pGame, D2Unit
         nNewPoisonExpire = nGameFrame2 + nGameFrame;
         D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatList, nNewPoisonExpire);
         GAME::Event::SetEvent(pGame, pUnit, 0xc, nNewPoisonExpire, 0, 0);
-        _bReduced = 1;
+        bReduced = 1;
       }
     }
 
     int nCurseStateIdx = 0;
     if (0 >= (short int)sgptDataTable->nAllStatesDataTblFlag0x0BSize) {
-      return _bReduced;
+      return bReduced;
     }
 
     do {
@@ -344,14 +341,14 @@ BOOL __stdcall SKILLPAL_ReducePoisonAndCurseDuration(::SGAMEDATA * pGame, D2Unit
             GAME::Event::SetEvent(pGame, pUnit, 0xc, nNewCurseExpire, 0, 0);
           }
 
-          _bReduced = 1;
+          bReduced = 1;
         }
       }
 
       nCurseStateIdx++;
     } while (nCurseStateIdx < (short int)sgptDataTable->nAllStatesDataTblFlag0x0BSize);
 
-    return _bReduced;
+    return bReduced;
 }
 
 // Aura-state hit callback (PFN_AreaEffectCallback shape): pContext->pCallbackArg is a D2SkillAuraArgStrc. Applies nAuraState to pUnit for nDelayFrame frames through SetStateWithExpiryTime (expire callback pExtra, else SKILLPAL_OnAuraExpire when the caster is the target), stores the new stat list in pStatList, then for each of the 6 anStats/anCalcs pairs with a non-zero value adds the stat (clamped by SKILLNEC_ClampResistPenalty and the difficulty floor for stats 0x43/0x44) or raises the current stat up to its maxstat, counting each applied pair in nAppliedCount. Finally tags the list with the skill and level and removes the state in nFlag if set. Returns 1 when the state was applied, 0 otherwise.

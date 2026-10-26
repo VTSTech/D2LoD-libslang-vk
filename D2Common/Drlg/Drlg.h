@@ -396,7 +396,7 @@ void __fastcall DRLGMAZE_FreeRoomPresetData(struct D2DrlgRoomExDataMazeStrc * pD
 uint32_t __fastcall DRLGROOMEX_RollLevelSubstitutionMask(struct D2RoomExStrc * pRoomEx, int32_t nSubType, int32_t nSubTheme);
 void __fastcall SubTypeWpShrine(struct D2DrlgWallLayerGridsStrc * pUnkn);
 // Returns whether the room's selected preset is a single-file type.
-BOOL __fastcall DRLGMAZE_IsPresetSingleFile(struct D2DrlgMapStrc * pDrlgMap);
+BOOL __fastcall DRLGMAZE_IsPresetSingleFile(struct D2DrlgLevelStrc * pDrlgMap);
 // Positions a replacement DRLG room adjacent to an existing room in one of 8 directions (0-7: W, N, E, S, and the four diagonals) by computing the new room's world position from the source room's position and size, then validates the placement: walks the source room's orth (adjacency) list calling FreeRoomEx, and returns the Manhattan-distance-based fitness from ComputeRectanglesManhattanDistance. Returns 0/false (as a float-derived bool) if any adjacency check fails or direction is out of range. Mutates pNewRoom's coords in place. (pRoomExStrc passed in ESI.)
 int __stdcall ReplaceRoomWithNewRoom(int nDirection, struct D2RoomExStrc * pNewRoom, struct D2RoomExStrc * pRoomExStrc);
 // Directly sets a room's preset ID and variant in pRoomExData. Writes nPresetId and nVariant (stack arg) to the room data, and sets or clears the 'has preset' flag based on bHasPreset (stack arg). Returns the room pointer. No callers found (dead code).

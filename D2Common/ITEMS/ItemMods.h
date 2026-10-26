@@ -59,7 +59,7 @@ void __stdcall ITEMMODS_GetQualityFields1_2_3(uint32_t nPackedQuality, uint32_t 
 int32_t __stdcall ITEMMODS_GetQualityField3(int32_t nParam1, int32_t nParam2, int32_t nParam3);
 // Returns an existing stat list on pUnit (or pUnitUnknown if non-null) matching nState+nFlags, creating and attaching one if absent. Allocates via AllocStatList using the unit's memory pool and GUID, sets the state, then halts unrecoverably if allocation fails.
 struct D2StatListExStrc * __stdcall ITEMMOD_GetOrCreateStatList(struct D2UnitStrc * pUnit, int32_t nState, uint32_t nFlags, struct D2UnitStrc * pUnitUnknown);
-// Already has a meaningful @description (maximizes AC or damage stats when an enhanced property is applied).
+// For an enhanced-defense or enhanced-damage property, raises the item's armor class above its Items.txt maxac, or sets max/min (one-hand, two-hand, throw) damage to the Items.txt maximums, so an enhanced item rolls at least its base maximum.
 void __stdcall ITEMMOD_MaximizeStatForEnhanced(eD2UnitStat eEnhancedProp, struct D2UnitStrc * pUnit);
 // Scales stat values by shifting left 8 bits for specific stat types (life, mana, stamina, resistances). Twenty-eight bytes: an ADD, a jump table and a shift through ECX, touching EDX not at all. PropertyFunc_MinMaxDamagePair loads the max-stat code into EDX before calling this and reads it back afterwards, so declaring EDX killed lost the code and every elemental and poison MAX damage value was scaled with garbage.
 void ITEMMOD_ScaleValueForStatType(int * pnParam, eD2UnitStat eStatType);
@@ -339,6 +339,6 @@ void __stdcall RollRunewordMostlikely(struct D2UnitStrc * pUnit, struct D2UnitSt
 // Applies set-item partial and full set bonus properties to pUnit when equipping set item pUnit2 (nApplyFlags nonzero). Only acts on UNIT_ITEM of quality 5 (set). Resolves the item's SetItems/Sets txt lines, computes how many set pieces are equipped (ITEMS_GetEquippedSetItemsMask -> count via gnPropertyBaseValueByCode), then iterates the set's partial-bonus property list up to that piece count and, if the full set is worn, its full-set property block, applying each valid property via ITEMMOD_ApplyPropertyToUnitStats(type 4). No return.
 void __fastcall ITEMMOD_ApplySetBonuses(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, int32_t nApplyFlags);
 // @sourcefile .\ITEMS\ItemMods.cpp
-void __stdcall ITEMMOD_ApplyRunewordProperties(struct D2UnitStrc * pUnit, int * pnParam, ::SGAMEDATA * pGame);
+void __stdcall ITEMMOD_ApplyRunewordProperties(struct D2UnitStrc * pUnit, struct D2SetsTxtFStrc * pProperty, ::SGAMEDATA * pGame);
 
 } // namespace D2Common::ITEMS::ItemMods

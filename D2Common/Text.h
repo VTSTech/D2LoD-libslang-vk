@@ -9,7 +9,6 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2GossipTextStrc;
 struct D2PoolManagerStrc;
 #ifndef RECON_FPTD_pfnTextMessageCompare
 #define RECON_FPTD_pfnTextMessageCompare
@@ -41,7 +40,7 @@ void TEXT_FreeAllMessages(struct D2PoolManagerStrc * * ppPoolManager);
 // @sourcefile .\Text\Text.cpp
 void __stdcall STRUCT_FreeTxtMessageForPacket0x27(struct D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x27_Text);
 // @sourcefile .\Text\Text.cpp
-void __stdcall AddNewGossipText(struct D2GossipTextStrc * pGossipText, int32_t nStringIndex, int32_t bMenu);
+void __stdcall AddNewGossipText(struct D2GSPacketSrv0x27_TextStrc * pGossipText, int32_t nStringIndex, int32_t bMenu);
 // @sourcefile .\Text\Text.cpp
 void __stdcall TEXT_RemoveMessageById(struct D2PoolManagerStrc * * ppPoolManager, int16_t nParam);
 int32_t __stdcall TEXT_CountMessagesOfType2(struct D2GSPacketSrv0x27_TextStrc * pMsgList);

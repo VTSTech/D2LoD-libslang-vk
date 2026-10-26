@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
+#include "Storm/Source/SSystem.h"
 
 // Forward declarations
 #ifndef RECON_FPTD_pfnSEvtHandler
@@ -20,6 +21,11 @@ struct D2SevtHandlerNodeStrc {
     /* 0x04 */ uint32_t nPriority; // registration counter; chain is walked in descending order
     /* 0x08 */ void (__stdcall *pfnHandler)(void *); // callback invoked with SEvtDispatch arg4
     /* 0x0C */ struct D2SevtHandlerNodeStrc * pNext; // next node in the hash bucket chain
+};
+
+struct __attribute__((packed)) StormBreakCmdStrc {
+    /* 0x00 */ StormLinkStrc link;
+    /* 0x08 */ void * pData;
 };
 
 namespace Storm::Source::SEVT {
@@ -48,14 +54,8 @@ uint32_t SEvtDestroy();
 // @former-name SEVT_SnapshotEventHandlers
 // @sourcefile .\SOURCE\SEVT.CPP
 void __stdcall SEvtPushState(uint32_t nEventId, uint32_t nSubId);
-// Registers a handler for an (eventId, subId) event type. The entry validates its arguments (pfnHandler non-NULL and dwReserved zero, else SetLastError ERROR_INVALID_PARAMETER 0x57 and return FALSE) and then falls through into the body at 0042644a, which creates or grows the event hash table, creates or grows the event's handler table, and links a new {key=arg3, priority=++pEvent[2], pfnHandler=arg5, next} node.
-// @oracle SEvtRegisterHandler
-// @oracle-source Storm export name list, and the PEF traceback-named body .SEvtRegisterHandler @100175e0 in Mac PPC 1.10b Storm
-// @rename-basis Behaviour. This is the only entry point in SEVT that allocates a handler node and links it into an event's handler table, and its argument checks are exactly a handler registration's: arg5 (stored as the callback at node[2], and the value SEvtDispatch calls) must be non-NULL, arg4 must be zero. The handler key it stores at node[0] is the value SEvtDispatch 00426f90 matches its third argument against, and the value SEvtUnregisterHandler 00426720 hashes by. RET 0x14 fixes the arity at five.
-// @former-name SEVT_RegisterEventValidated (invented)
-// @ghidra-gap 0042644a is NOT a separate function. It is reached only by the JNZ at 00426439 and is the fall-through body of this one; Ghidra split it. Named SEVT_RegisterHandler_Body until the split is repaired. Its @sourcefile stamp .\SOURCE\SEVT.CPP therefore belongs to this function as well.
-// @sourcefile .\SOURCE\SEVT.CPP
-// @ghidra-repair 2026-08-28: 0042644a was a spurious second function (SEVT_RegisterHandler_Body). It had no prologue, its only inbound reference in the whole program was the JNZ at 00426439 inside this function, and it read its arguments off this function's EBP frame with the same 20-byte purge. Merged back in, so this function's body is now the whole 00426420-00426710 span. The fragment's old plate read: @function SEVT_RegisterHandler_Body | @address Game.exe.ram:0042644a | @date 2026.06.13 | @description NOT A FUNCTION. This is the fall-through body of SEvtRegisterHandler at 00426420: its only inbound reference is the CONDITIONAL_JUMP from the argument check at 00426439, it has no prologue of its own, and it reads its arguments off the caller's EBP frame (EBP+8 eventId, +0xc subId, +0x10 key, +0x18 pfnHandler). Ghidra created a spurious function here. Descriptive name only - it makes no Storm API claim. | @body Creates the event hash table on first use and rehashes it when load exceeds 1/2; creates or grows the event's handler table the same way; allocates a 0x10-byte handler node {key, ++pEvent[2] as priority, pfnHandler, next} and links it into the handler bucket, incrementing the handler count at pEvent[3]+8 and setting gnSevtSnapshotActive. | @former-name SEVT_RegisterEventCallback | @ghidra-gap The correct repair is to delete this function and let 00426420's body extend over it. Not done here - that is a function-boundary change, not a rename. | @sourcefile .\SOURCE\SEVT.CPP | @sourcefile-basis Blizzard __FILE__ literal referenced from inside this body (9 sites: 004264a6, 0042651d, 00426542, 00426561, 004265c7, 004265e0, ...). First-party 1.14d evidence, not inferred and not from D2R.
+// Registers an event handler: allocates a handler node keyed by dwKey and links it into the handler table for (dwEventId, dwSubId); pfnHandler must be non-NULL and dwReserved zero. SEvtDispatch matches its key argument against the stored key.
+// Storm export SEvtRegisterHandler (export name list and Mac PPC 1.10b traceback).
 void __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey, int dwReserved, pfnSEvtHandler pfnHandler);
 // Removes one registered handler from an event type.
 // @oracle SEvtUnregisterHandler

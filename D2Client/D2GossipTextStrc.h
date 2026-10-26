@@ -13,8 +13,6 @@ struct D2GossipTextStrc {
     /* 0x00 */ int16_t nStringIndex;
     /* 0x02 */ uint8_t field_0x2;
     /* 0x03 */ uint8_t field_0x3;
-    /* 0x04 */ int16_t bMenu;
-    /* 0x06 */ uint8_t field_0x6;
-    /* 0x07 */ uint8_t field_0x7;
+    /* 0x04 */ int32_t bMenu;
     /* 0x08 */ struct D2GossipTextStrc * pNext;
 };

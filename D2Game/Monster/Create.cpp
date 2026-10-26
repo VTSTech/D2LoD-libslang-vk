@@ -102,19 +102,18 @@ void __fastcall MONSTER_SetClearPartyFlags(int32_t nParam, int * pnParam, uint32
 }
 
 void __fastcall MONSTER_EquipFromClassTable(D2UnitStrc * pUnit) {
-    // Frame slots -24..-4 are ONE object: &pEquipEntry is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -16..-4 are ONE object: &bNormalCode is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
-      uint32_t pEquipEntry;
-      int32_t nItemClassId;
       bool bNormalCode;
-      uint8_t __pad9[3];
+      uint8_t __pad1[3];
       int nMonsterLevel;
       int nEquipSlotsLeft;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     int nClassId;
+    D2MonEquipEntryStrc sEquipEntry;
     if (!pUnit) {
       nClassId = -1;
     } else {
@@ -127,16 +126,16 @@ void __fastcall MONSTER_EquipFromClassTable(D2UnitStrc * pUnit) {
     __frame0.nEquipSlotsLeft = 4;
     do {
       D2ItemsTxt* pItemsTxt;
-      __frame0.pEquipEntry = *pEquipTableEntry;
-      __frame0.nItemClassId = pEquipTableEntry[1];
-      pItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(__frame0.pEquipEntry, (int*)&__frame0.bNormalCode);
+      sEquipEntry.dwItemCode = *pEquipTableEntry;
+      *(uint32_t*)((char*)&sEquipEntry + 4) = pEquipTableEntry[1];
+      pItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(sEquipEntry.dwItemCode, (int*)&__frame0.bNormalCode);
       if (pGame->nDifficulty == 1) {
-        __frame0.pEquipEntry = pItemsTxt->dwUberCode;
+        sEquipEntry.dwItemCode = pItemsTxt->dwUberCode;
       } else if (pGame->nDifficulty == 2) {
-        __frame0.pEquipEntry = pItemsTxt->dwUltraCode;
+        sEquipEntry.dwItemCode = pItemsTxt->dwUltraCode;
       }
 
-      MONSTER_CreateAndEquipItem(pGame, pUnit, &__frame0.pEquipEntry, __frame0.nMonsterLevel, QUALITY_MAGIC);
+      MONSTER_CreateAndEquipItem(pGame, pUnit, &sEquipEntry, __frame0.nMonsterLevel, QUALITY_MAGIC);
       pEquipTableEntry += 6;
       __frame0.nEquipSlotsLeft--;
     } while (__frame0.nEquipSlotsLeft);

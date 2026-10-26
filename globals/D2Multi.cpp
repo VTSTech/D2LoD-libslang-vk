@@ -5777,6 +5777,7 @@ uint32_t gbLadderExpansionEnabled = 0x1;
 uint32_t gnChatTabCompletionIndex = -0x1;
 uint32_t gnLadderBoardSelectedRank = -0x1;
 uint32_t gnLadderRequestedCharIndex = -0x1;
+int32_t gnPendingGameInfoCharIndex = -0x1;
 uint32_t gnCurrentChannelContextId = -0x1;
 // also labelled: gnChatRoomListScrollStartPos
 int32_t gnLadderEntryTotal = 0;

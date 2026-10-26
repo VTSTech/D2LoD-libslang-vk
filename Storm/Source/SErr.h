@@ -19,6 +19,12 @@ typedef BOOL (__stdcall *pfnSErrDisplayCallback)(uint32_t dwErrorCode, char * sz
 #endif
 
 // Data types
+struct SErrAppFatalContextStrc {
+    /* 0x00 */ void * pfnCallback; // SErrPrepareAppFatal arg 1
+    /* 0x04 */ uint32_t nParam; // SErrPrepareAppFatal arg 2
+    /* 0x08 */ DWORD dwThreadId; // GetCurrentThreadId of the preparer
+};
+
 struct StormSErrHandlerNode {
     /* 0x00 */ void * pPrevLink; // TSLink prev (Storm list: may hold ~&link)
     /* 0x04 */ struct StormSErrHandlerNode * pNext; // TSLink next; <=0 ends the walk next handler; the walk stops at a non-positive link (Storm list tag)
@@ -81,7 +87,7 @@ BOOL __stdcall SERR_UndecorateObjectName(char * szMangled, int32_t nMaxLen, char
 // @was SSYSTEM_SetThreadContext (pass 6, 2026.08.28) - the old name also collided with the Win32 API SetThreadContext, which this is not.
 // @oracle Storm 1.10b PPC export SErrPrepareAppFatal, code vector 10015af0 (TVector 100cbe9c).
 // @oracle-basis Callee set {EnterCriticalSection, GetCurrentThreadId, LeaveCriticalSection} is exactly the oracle's and is unique among all 19 SErr exports and all 82 functions of this namespace - the only other GetCurrentThreadId user, SErrDisplayAppFatal 0041d160, additionally calls memset/vsprintf/DisplayError/ExitProcess. Arity 2 = 2 (PPC prologue saves r3 and r4 only).
-void __stdcall SErrPrepareAppFatal(uint32_t pfnCallback, uint32_t nCallbackParam);
+void __stdcall SErrPrepareAppFatal(void * pfnCallback, uint32_t nCallbackParam);
 // Heap-allocates a 12-byte node {wModuleId, hModule, pNext} and pushes it on gpErrorModuleList, the list SErrGetErrorStr 0041c430 searches to pick FormatMessage's lpSource. Returns 1.
 // @was SSYSTEM_RegisterErrorHandler (pass 6, 2026.08.28) - it registers a message source, not a handler; the real SErrRegisterHandler is 0041c900.
 // @oracle Storm 1.10b PPC export SErrRegisterMessageSource, code vector 10015890 (TVector 100cbeac).

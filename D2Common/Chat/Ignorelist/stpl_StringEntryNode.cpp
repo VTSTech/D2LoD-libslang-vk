@@ -699,10 +699,9 @@ template<> TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* TSHashTable<StringEnt
 
     this->nSlotMask = 3;
     this->tSlotListArray.SetCount(4);
-    int nBucketByteOff = 0;
-    uint8_t* nBucketIter = 0;
+    uint32_t nBucketIter = 0;
     do {
-      pBucketEntry = &this->tSlotListArray.m_data[nBucketByteOff];
+      pBucketEntry = &this->tSlotListArray.m_data[nBucketIter];
       if (pBucketEntry->m_linkoffset != 4) {
         pBucketEntry->UnlinkAll();
         pTVar1 = &pBucketEntry->m_terminator;
@@ -712,8 +711,7 @@ template<> TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* TSHashTable<StringEnt
       }
 
       nBucketIter++;
-      nBucketByteOff++;
-    } while (nBucketIter <= (uint8_t*)this->nSlotMask);
+    } while (nBucketIter <= this->nSlotMask);
 
     return this;
 }

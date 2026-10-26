@@ -45,7 +45,7 @@ int32_t __fastcall MessageGameLoop(::fpGameLoopFunction nfpGameLoopFunction);
 // Registers a Windows event handler (message/command/keyup/keydown) based on eEventType. Filters out WM_COMMAND (0x111) from generic message handlers.
 void __fastcall MESSAGE_RegisterEventHandler(HWND hWnd, int32_t eEventType, int32_t nMessageOrKeyCode, int32_t pfHandler);
 // Unregisters a Windows event handler (message/command/keyup/keydown) based on eEventType. Filters out WM_COMMAND (0x111) from generic message handlers.
-void __fastcall MESSAGE_UnregisterEventHandler(HWND hWnd, int32_t eEventType, char * nMessageOrKeyCode, char * pfHandler);
+void __fastcall MESSAGE_UnregisterEventHandler(HWND hWnd, int32_t eEventType, int32_t nMessageOrKeyCode, char * pfHandler);
 // Iterates D2UIFlagInitStrc array and registers nCount event handlers via MESSAGE_RegisterEventHandler. Used during UI state initialization.
 void __fastcall MESSAGE_RegisterEventHandlerBatch(HWND hWnd, struct D2UIFlagInitStrc * pEventHandlers, int32_t nCount);
 // Iterates D2UIFlagInitStrc array and unregisters nCount event handlers via MESSAGE_UnregisterEventHandler. Used during UI state cleanup.

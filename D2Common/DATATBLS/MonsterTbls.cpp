@@ -1531,7 +1531,7 @@ void __fastcall TXT_AllocTxt_monstats(D2PoolManagerStrc * pMemory) {
 }
 
 // Computes level/difficulty-scaled monster combat stats from monstats.txt + monlvl.txt into the caller-supplied pnOutStats[] array. Inputs: nMonStatsId (monstats row), bIsChampion (selects champion HP/AC/XP/TH/DM column triplet), nDifficultyIdx (0-2, clamped), nMonLevel (clamped to monlvl table), nStatFlags (bitmask 0x1..0x100 selecting which stat groups to fill: HP, AC, XP, to-hit/damage, elemental). Per the monstat noRatio flag, values are either taken raw from the monstats row or scaled against the monlvl base via D2ApplyPercent(base, percent, 100). Returns 1 on success, 0 if the monstats/monlvl row is out of range or null. Pure stat computation; no unit mutation.
-BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bIsChampion, uint32_t nDifficultyIdx, int32_t nMonLevel, uint32_t nStatFlags, int * pnOutStats) {
+BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bIsChampion, uint32_t nDifficultyIdx, int32_t nMonLevel, uint32_t nStatFlags, D2MonStatsInitStrc * pOutStats) {
     int32_t nScaledStat;
     if (!(-1 < nMonStatsId && nMonStatsId < sgptDataTable->nTxtMonStatsSize)) {
       return 0;
@@ -1564,112 +1564,112 @@ BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bI
     if (nStatFlags & 1) {
       if (!pMonStatsTxt->noRatio) {
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->HP[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aMinHP[nClampedDiff], 100);
-        *pnOutStats = nScaledStat;
+        pOutStats->nMinHP = nScaledStat;
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->HP[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aMaxHP[nClampedDiff], 100);
-        pnOutStats[1] = nScaledStat;
+        pOutStats->nMaxHP = nScaledStat;
       } else {
-        *pnOutStats = (int)pMonStatsTxt->aMinHP[nClampedDiff];
-        pnOutStats[1] = (int)pMonStatsTxt->aMaxHP[nClampedDiff];
+        pOutStats->nMinHP = (int)pMonStatsTxt->aMinHP[nClampedDiff];
+        pOutStats->nMaxHP = (int)pMonStatsTxt->aMaxHP[nClampedDiff];
       }
     }
     if (nStatFlags & 2) {
       if (!pMonStatsTxt->noRatio) {
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->AC[nClampedDiff + nChampionIdx * 3], (int)pMonStatsTxt->aAC[nClampedDiff], 100);
-        pnOutStats[2] = nScaledStat;
+        pOutStats->nAC = nScaledStat;
       } else {
-        pnOutStats[2] = (int)pMonStatsTxt->aAC[nClampedDiff];
+        pOutStats->nAC = (int)pMonStatsTxt->aAC[nClampedDiff];
       }
     }
     if (nStatFlags & 4) {
       if (!pMonStatsTxt->noRatio) {
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->XP[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aExp[nClampedDiff], 100);
-        pnOutStats[4] = nScaledStat;
+        pOutStats->nExp = nScaledStat;
       } else {
-        pnOutStats[4] = (int)pMonStatsTxt->aExp[nClampedDiff];
+        pOutStats->nExp = (int)pMonStatsTxt->aExp[nClampedDiff];
       }
     }
     if (nStatFlags & 8) {
       if (!pMonStatsTxt->noRatio) {
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->TH[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aA1TH[nClampedDiff], 100);
-        pnOutStats[3] = nScaledStat;
+        pOutStats->nTH = nScaledStat;
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aA1MinD[nClampedDiff], 100);
-        pnOutStats[5] = nScaledStat;
+        pOutStats->nA1MinD = nScaledStat;
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aA1MaxD[nClampedDiff], 100);
-        pnOutStats[6] = nScaledStat;
+        pOutStats->nA1MaxD = nScaledStat;
       } else {
-        pnOutStats[3] = (int)pMonStatsTxt->aA1TH[nClampedDiff];
-        pnOutStats[5] = (int)pMonStatsTxt->aA1MinD[nClampedDiff];
-        pnOutStats[6] = (int)pMonStatsTxt->aA1MaxD[nClampedDiff];
+        pOutStats->nTH = (int)pMonStatsTxt->aA1TH[nClampedDiff];
+        pOutStats->nA1MinD = (int)pMonStatsTxt->aA1MinD[nClampedDiff];
+        pOutStats->nA1MaxD = (int)pMonStatsTxt->aA1MaxD[nClampedDiff];
       }
     }
     if (nStatFlags & 0x10) {
       if (!pMonStatsTxt->noRatio) {
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->TH[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aA2TH[nClampedDiff], 100);
-        pnOutStats[3] = nScaledStat;
+        pOutStats->nTH = nScaledStat;
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aA2MinD[nClampedDiff], 100);
-        pnOutStats[7] = nScaledStat;
+        pOutStats->nA2MinD = nScaledStat;
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aA2MaxD[nClampedDiff], 100);
-        pnOutStats[8] = nScaledStat;
+        pOutStats->nA2MaxD = nScaledStat;
       } else {
-        pnOutStats[3] = (int)pMonStatsTxt->aA2TH[nClampedDiff];
-        pnOutStats[7] = (int)pMonStatsTxt->aA2MinD[nClampedDiff];
-        pnOutStats[8] = (int)pMonStatsTxt->aA2MaxD[nClampedDiff];
+        pOutStats->nTH = (int)pMonStatsTxt->aA2TH[nClampedDiff];
+        pOutStats->nA2MinD = (int)pMonStatsTxt->aA2MinD[nClampedDiff];
+        pOutStats->nA2MaxD = (int)pMonStatsTxt->aA2MaxD[nClampedDiff];
       }
     }
     if (nStatFlags & 0x20) {
       if (!pMonStatsTxt->noRatio) {
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->TH[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aS1TH[nClampedDiff], 100);
-        pnOutStats[3] = nScaledStat;
+        pOutStats->nTH = nScaledStat;
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aS1MinD[nClampedDiff], 100);
-        pnOutStats[9] = nScaledStat;
+        pOutStats->nS1MinD = nScaledStat;
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aS1MaxD[nClampedDiff], 100);
-        pnOutStats[10] = nScaledStat;
+        pOutStats->nS1MaxD = nScaledStat;
       } else {
-        pnOutStats[3] = (int)pMonStatsTxt->aS1TH[nClampedDiff];
-        pnOutStats[9] = (int)pMonStatsTxt->aS1MinD[nClampedDiff];
-        pnOutStats[10] = (int)pMonStatsTxt->aS1MaxD[nClampedDiff];
+        pOutStats->nTH = (int)pMonStatsTxt->aS1TH[nClampedDiff];
+        pOutStats->nS1MinD = (int)pMonStatsTxt->aS1MinD[nClampedDiff];
+        pOutStats->nS1MaxD = (int)pMonStatsTxt->aS1MaxD[nClampedDiff];
       }
     }
     if (nStatFlags & 0x40) {
       if (!pMonStatsTxt->noRatio) {
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aEl1MinD[nClampedDiff], 100);
-        pnOutStats[0xb] = nScaledStat;
+        pOutStats->nElMinD = nScaledStat;
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aEl1MaxD[nClampedDiff], 100);
-        pnOutStats[0xc] = nScaledStat;
+        pOutStats->nElMaxD = nScaledStat;
       } else {
-        pnOutStats[9] = (int)pMonStatsTxt->aEl1MinD[nClampedDiff];
-        pnOutStats[10] = (int)pMonStatsTxt->aEl1MaxD[nClampedDiff];
+        pOutStats->nS1MinD = (int)pMonStatsTxt->aEl1MinD[nClampedDiff];
+        pOutStats->nS1MaxD = (int)pMonStatsTxt->aEl1MaxD[nClampedDiff];
       }
 
-      pnOutStats[0xd] = (int)pMonStatsTxt->aEl1Dur[nClampedDiff];
+      pOutStats->nElDur = (int)pMonStatsTxt->aEl1Dur[nClampedDiff];
     }
     if (nStatFlags & 0x80) {
       if (!pMonStatsTxt->noRatio) {
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aEl2MinD[nClampedDiff], 100);
-        pnOutStats[0xb] = nScaledStat;
+        pOutStats->nElMinD = nScaledStat;
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aEl2MaxD[nClampedDiff], 100);
-        pnOutStats[0xc] = nScaledStat;
+        pOutStats->nElMaxD = nScaledStat;
       } else {
-        pnOutStats[9] = (int)pMonStatsTxt->aEl2MinD[nClampedDiff];
-        pnOutStats[10] = (int)pMonStatsTxt->aEl2MaxD[nClampedDiff];
+        pOutStats->nS1MinD = (int)pMonStatsTxt->aEl2MinD[nClampedDiff];
+        pOutStats->nS1MaxD = (int)pMonStatsTxt->aEl2MaxD[nClampedDiff];
       }
 
-      pnOutStats[0xd] = (int)pMonStatsTxt->aEl2Dur[nClampedDiff];
+      pOutStats->nElDur = (int)pMonStatsTxt->aEl2Dur[nClampedDiff];
     }
     if (!(nStatFlags & 0x100)) {
       return 1;
     }
     if (!pMonStatsTxt->noRatio) {
       nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aEl3MinD[nClampedDiff], 100);
-      pnOutStats[0xb] = nScaledStat;
+      pOutStats->nElMinD = nScaledStat;
       nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->DM[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aEl3MaxD[nClampedDiff], 100);
-      pnOutStats[0xc] = nScaledStat;
+      pOutStats->nElMaxD = nScaledStat;
     } else {
-      pnOutStats[9] = (int)pMonStatsTxt->aEl3MinD[nClampedDiff];
-      pnOutStats[10] = (int)pMonStatsTxt->aEl3MaxD[nClampedDiff];
+      pOutStats->nS1MinD = (int)pMonStatsTxt->aEl3MinD[nClampedDiff];
+      pOutStats->nS1MaxD = (int)pMonStatsTxt->aEl3MaxD[nClampedDiff];
     }
 
-    pnOutStats[0xd] = (int)pMonStatsTxt->aEl3Dur[nClampedDiff];
+    pOutStats->nElDur = (int)pMonStatsTxt->aEl3Dur[nClampedDiff];
     return 1;
 }
 
@@ -1686,22 +1686,22 @@ void __stdcall MONSTER_SetVelocityByIndex(int32_t nMonStatsId, int16_t nVelocity
 }
 
 void __fastcall DATATBLS_CompileUniqueTitleTxt(D2PoolManagerStrc * pMemory, char * szText, uint32_t nTitleIdx) {
-    D2BinFieldInputStrc local_2c;
-    local_2c.szName = "Name";
-    local_2c.eType = FIELDTYPE_KEY_WORD;
-    local_2c.nSize = 0;
-    local_2c.nOffset = 0;
-    local_2c.fpLinker = (void*)DataTbls::DATATBLS_LookupStringId;
-    char* pGlobalMemPool = "end";
-    D2PoolManagerStrc* pUnusedMemPool = 0;
-    int32_t nUnusedLinker = 0;
-    int32_t nUnusedOffset = 0;
-    int32_t nUnusedSize = 0;
+    D2BinFieldInputStrc aBinFields[2];
+    aBinFields[0].szName = "Name";
+    aBinFields[0].eType = FIELDTYPE_KEY_WORD;
+    aBinFields[0].nSize = 0;
+    aBinFields[0].nOffset = 0;
+    aBinFields[0].fpLinker = (void*)DataTbls::DATATBLS_LookupStringId;
+    aBinFields[1].szName = "end";
+    aBinFields[1].eType = FIELDTYPE_END;
+    aBinFields[1].nSize = 0;
+    aBinFields[1].nOffset = 0;
+    aBinFields[1].fpLinker = 0;
     if (nTitleIdx >= 4) {
       return;
     }
 
-    void* pCompiledTxt = DataTbls::CompileTxt(pMemory, szText, &local_2c, gsTxtUniqueNameTables.anSize + nTitleIdx, 2);
+    void* pCompiledTxt = DataTbls::CompileTxt(pMemory, szText, aBinFields, gsTxtUniqueNameTables.anSize + nTitleIdx, 2);
     gsTxtUniqueNameTables.apTable[nTitleIdx] = pCompiledTxt;
 }
 
@@ -2504,33 +2504,33 @@ void __stdcall MONSTERTBLS_Unused_HaltLine1710() {
 
 // Compile body locations txt - monster hit location armor percentages
 void __fastcall DATATBLS_CompileBodyLocsTxt(D2PoolManagerStrc * pMemory) {
-    D2BinFieldInputStrc fieldDesc;
-    fieldDesc.nSize = 0;
-    fieldDesc.nOffset = 0;
-    fieldDesc.fpLinker = 0;
-    int nField5Size = 0;
-    int fpField4Linker = 0;
-    int nField4Type = 0;
-    int nField3Offset = 0;
-    int fpField2Linker = 0;
-    int nField2Size = 0;
-    int nField1Type = 0;
-    int fpField1Linker = 0;
-    int nField1Offset = 0;
-    int nField1Size = 0;
-    fieldDesc.szName = "HeartPercent";
-    fieldDesc.eType = FIELDTYPE_CHAR;
-    char* szField2Name = "BodyPartPercent";
-    int nField5Offset = 4;
-    int nField5Type = 1;
-    char* szField4Name = "TreasureClassPercent";
-    int nField4Size = 4;
-    int fpField3Linker = 2;
-    char* szField3Name = "ComponentPercent";
-    int nField3Type = 4;
-    int nField2Offset = 3;
-    D2PoolManagerStrc* pField2MemPool = (D2PoolManagerStrc*)gTxtCompilationMemPool;
-    pMonItemPercentTxt = (D2MonItemPercentTxt*)DataTbls::CompileTxt(pMemory, "monitempercent", &fieldDesc, (int*)&gnTreasureClassArraySize, 4);
+    D2BinFieldInputStrc aFields[5];
+    aFields[0].nSize = 0;
+    aFields[0].nOffset = 0;
+    aFields[0].fpLinker = 0;
+    aFields[1].nSize = 0;
+    aFields[1].fpLinker = 0;
+    aFields[2].nSize = 0;
+    aFields[2].fpLinker = 0;
+    aFields[3].nSize = 0;
+    aFields[3].fpLinker = 0;
+    aFields[4].eType = FIELDTYPE_END;
+    aFields[4].nSize = 0;
+    aFields[4].nOffset = 0;
+    aFields[4].fpLinker = 0;
+    aFields[0].szName = "HeartPercent";
+    aFields[0].eType = FIELDTYPE_CHAR;
+    aFields[1].szName = "BodyPartPercent";
+    aFields[1].eType = FIELDTYPE_CHAR;
+    aFields[1].nOffset = 1;
+    aFields[2].szName = "TreasureClassPercent";
+    aFields[2].eType = FIELDTYPE_CHAR;
+    aFields[2].nOffset = 2;
+    aFields[3].szName = "ComponentPercent";
+    aFields[3].eType = FIELDTYPE_CHAR;
+    aFields[3].nOffset = 3;
+    aFields[4].szName = "end";
+    pMonItemPercentTxt = (D2MonItemPercentTxt*)DataTbls::CompileTxt(pMemory, "monitempercent", aFields, (int*)&gnTreasureClassArraySize, 4);
 }
 
 void __stdcall thunk_UnloadBin_MonStats() {
@@ -5081,169 +5081,163 @@ void __fastcall TXT_AllocTxt_monprop(D2PoolManagerStrc * pMemory) {
 
 // Builds the monlvl.txt field-binding table (AC/TH/HP/DM/XP normal+nightmare+hell columns and their per-level L- variants, each an INT field with a target struct offset) on the stack, then calls DataTbls::CompileTxt to parse data/global/excel/monlvl.txt into the sgtDataTable.pTxtMonLvl array (count in nTxtMonLvlSize). Holds per-area-level monster scaling stats used to compute monster AC/to-hit/HP/damage/experience by level. Uses the gTxtCompilationMemPool; takes the game memory pool via ECX.
 void __fastcall TXT_AllocTxt_monlvl(D2PoolManagerStrc * pMemory) {
-    // Static local variables (originally global data)
-    static uint8_t gszMonLvlField_XP = 0x58;
-    static uint8_t gszMonLvlField_DMH = 0x44;
-    static uint8_t gszMonLvlField_HPH = 0x48;
-    static uint8_t gszMonLvlField_ACH = 0x54;
-
-    D2BinFieldInputStrc sMonLvlFieldTable;
-    sMonLvlFieldTable.szName = "AC";
-    sMonLvlFieldTable.eType = FIELDTYPE_INT;
-    sMonLvlFieldTable.nSize = 0;
-    sMonLvlFieldTable.nOffset = 0;
-    sMonLvlFieldTable.fpLinker = 0;
-    char* szACNName = "AC(N)";
-    int eACNType = 2;
-    int nACNSize = 0;
-    int nACNOffset = 4;
-    int pACNLink = 0;
-    char* szACHName = "AC(H)";
-    int eACHType = 2;
-    int nACHSize = 0;
-    int nACHOffset = 8;
-    int pACHLink = 0;
-    char** pszMonLvlField_ACH = (char**)&gszMonLvlField_ACH;
-    int eTHType = 2;
-    int nTHSize = 0;
-    int nTHOffset = 0x18;
-    int pTHLink = 0;
-    char* szTHNName = "TH(N)";
-    int eTHNType = 2;
-    int nTHNSize = 0;
-    int nTHNOffset = 0x1c;
-    int pTHNLink = 0;
-    char* szTHHName = "TH(H)";
-    int eTHHType = 2;
-    int nTHHSize = 0;
-    int nTHHOffset = 0x20;
-    int pTHHLink = 0;
-    char** pszMonLvlField_HPH = (char**)&gszMonLvlField_HPH;
-    int eHPType = 2;
-    int nHPSize = 0;
-    int nHPOffset = 0x30;
-    int pHPLink = 0;
-    char* szHPNName = "HP(N)";
-    int eHPNType = 2;
-    int nHPNSize = 0;
-    int nHPNOffset = 0x34;
-    int pHPNLink = 0;
-    char* szHPHName = "HP(H)";
-    int eHPHType = 2;
-    int nHPHSize = 0;
-    int nHPHOffset = 0x38;
-    int pHPHLink = 0;
-    char** pszMonLvlField_DMH = (char**)&gszMonLvlField_DMH;
-    int eDMType = 2;
-    int nDMSize = 0;
-    int nDMOffset = 0x48;
-    int pDMLink = 0;
-    char* szDMNName = "DM(N)";
-    int eDMNType = 2;
-    int nDMNSize = 0;
-    int nDMNOffset = 0x4c;
-    int pDMNLink = 0;
-    char* szDMHName = "DM(H)";
-    int eDMHType = 2;
-    int nDMHSize = 0;
-    int nDMHOffset = 0x50;
-    int pDMHLink = 0;
-    char** pszMonLvlField_XP = (char**)&gszMonLvlField_XP;
-    int eXPType = 2;
-    int nXPSize = 0;
-    int nXPOffset = 0x60;
-    int pXPLink = 0;
-    char* szXPNName = "XP(N)";
-    int eXPNType = 2;
-    int nXPNSize = 0;
-    int nXPNOffset = 100;
-    int pXPNLink = 0;
-    char* szXPHName = "XP(H)";
-    int eXPHType = 2;
-    int nXPHSize = 0;
-    int nXPHOffset = 0x68;
-    int pXPHLink = 0;
-    char* szLACName = "L-AC";
-    int eLACType = 2;
-    int nLACSize = 0;
-    int nLACOffset = 0xc;
-    int pLACLink = 0;
-    int nLACNSize = 0;
-    int pLACNLink = 0;
-    int nLACHSize = 0;
-    int pLACHLink = 0;
-    int nLTHSize = 0;
-    int pLTHLink = 0;
-    int nLTHNSize = 0;
-    int pLTHNLink = 0;
-    int nLTHHSize = 0;
-    int pLTHHLink = 0;
-    int nLHPSize = 0;
-    int pLHPLink = 0;
-    int nLHPNSize = 0;
-    int pLHPNLink = 0;
-    int nLHPHSize = 0;
-    int pLHPHLink = 0;
-    int nLDMSize = 0;
-    int pLDMLink = 0;
-    int nLDMNSize = 0;
-    int pLDMNLink = 0;
-    int nLDMHSize = 0;
-    int pLDMHLink = 0;
-    int nLXPSize = 0;
-    int pLXPLink = 0;
-    int nLXPNSize = 0;
-    int pLXPNLink = 0;
-    int nLXPHSize = 0;
-    int pLXPHLink = 0;
-    int eTerminatorType = 0;
-    int nTerminatorSize = 0;
-    int nTerminatorOffset = 0;
-    int pTerminatorLink = 0;
-    char* szLACNName = "L-AC(N)";
-    int eLACNType = 2;
-    int nLACNOffset = 0x10;
-    char* szLACHName = "L-AC(H)";
-    int eLACHType = 2;
-    int nLACHOffset = 0x14;
-    char* szLTHName = "L-TH";
-    int eLTHType = 2;
-    int nLTHOffset = 0x24;
-    char* szLTHNName = "L-TH(N)";
-    int eLTHNType = 2;
-    int nLTHNOffset = 0x28;
-    char* szLTHHName = "L-TH(H)";
-    int eLTHHType = 2;
-    int nLTHHOffset = 0x2c;
-    char* szLHPName = "L-HP";
-    int eLHPType = 2;
-    int nLHPOffset = 0x3c;
-    char* szLHPNName = "L-HP(N)";
-    int eLHPNType = 2;
-    int nLHPNOffset = 0x40;
-    char* szLHPHName = "L-HP(H)";
-    int eLHPHType = 2;
-    int nLHPHOffset = 0x44;
-    char* szLDMName = "L-DM";
-    int eLDMType = 2;
-    int nLDMOffset = 0x54;
-    char* szLDMNName = "L-DM(N)";
-    int eLDMNType = 2;
-    int nLDMNOffset = 0x58;
-    char* szLDMHName = "L-DM(H)";
-    int eLDMHType = 2;
-    int nLDMHOffset = 0x5c;
-    char* szLXPName = "L-XP";
-    int eLXPType = 2;
-    int nLXPOffset = 0x6c;
-    char* szLXPNName = "L-XP(N)";
-    int eLXPNType = 2;
-    int nLXPNOffset = 0x70;
-    char* szLXPHName = "L-XP(H)";
-    int eLXPHType = 2;
-    int nLXPHOffset = 0x74;
-    char* pMemPoolSaved = "end";
-    sgtDataTable.pTxtMonLvl = (D2MonLvlTxt*)DataTbls::CompileTxt(pMemory, "monlvl", &sMonLvlFieldTable, &sgtDataTable.nTxtMonLvlSize, 0x78);
+    D2BinFieldInputStrc aMonLvlFieldTable[31];
+    aMonLvlFieldTable[0].szName = "AC";
+    aMonLvlFieldTable[0].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0].nSize = 0;
+    aMonLvlFieldTable[0].nOffset = 0;
+    aMonLvlFieldTable[0].fpLinker = 0;
+    aMonLvlFieldTable[1].szName = "AC(N)";
+    aMonLvlFieldTable[1].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[1].nSize = 0;
+    aMonLvlFieldTable[1].nOffset = 4;
+    aMonLvlFieldTable[1].fpLinker = 0;
+    aMonLvlFieldTable[2].szName = "AC(H)";
+    aMonLvlFieldTable[2].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[2].nSize = 0;
+    aMonLvlFieldTable[2].nOffset = 8;
+    aMonLvlFieldTable[2].fpLinker = 0;
+    aMonLvlFieldTable[3].szName = "TH";
+    aMonLvlFieldTable[3].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[3].nSize = 0;
+    aMonLvlFieldTable[3].nOffset = 0x18;
+    aMonLvlFieldTable[3].fpLinker = 0;
+    aMonLvlFieldTable[4].szName = "TH(N)";
+    aMonLvlFieldTable[4].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[4].nSize = 0;
+    aMonLvlFieldTable[4].nOffset = 0x1c;
+    aMonLvlFieldTable[4].fpLinker = 0;
+    aMonLvlFieldTable[5].szName = "TH(H)";
+    aMonLvlFieldTable[5].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[5].nSize = 0;
+    aMonLvlFieldTable[5].nOffset = 0x20;
+    aMonLvlFieldTable[5].fpLinker = 0;
+    aMonLvlFieldTable[6].szName = "HP";
+    aMonLvlFieldTable[6].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[6].nSize = 0;
+    aMonLvlFieldTable[6].nOffset = 0x30;
+    aMonLvlFieldTable[6].fpLinker = 0;
+    aMonLvlFieldTable[7].szName = "HP(N)";
+    aMonLvlFieldTable[7].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[7].nSize = 0;
+    aMonLvlFieldTable[7].nOffset = 0x34;
+    aMonLvlFieldTable[7].fpLinker = 0;
+    aMonLvlFieldTable[8].szName = "HP(H)";
+    aMonLvlFieldTable[8].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[8].nSize = 0;
+    aMonLvlFieldTable[8].nOffset = 0x38;
+    aMonLvlFieldTable[8].fpLinker = 0;
+    aMonLvlFieldTable[9].szName = "DM";
+    aMonLvlFieldTable[9].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[9].nSize = 0;
+    aMonLvlFieldTable[9].nOffset = 0x48;
+    aMonLvlFieldTable[9].fpLinker = 0;
+    aMonLvlFieldTable[10].szName = "DM(N)";
+    aMonLvlFieldTable[10].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[10].nSize = 0;
+    aMonLvlFieldTable[10].nOffset = 0x4c;
+    aMonLvlFieldTable[10].fpLinker = 0;
+    aMonLvlFieldTable[0xb].szName = "DM(H)";
+    aMonLvlFieldTable[0xb].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0xb].nSize = 0;
+    aMonLvlFieldTable[0xb].nOffset = 0x50;
+    aMonLvlFieldTable[0xb].fpLinker = 0;
+    aMonLvlFieldTable[0xc].szName = "XP";
+    aMonLvlFieldTable[0xc].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0xc].nSize = 0;
+    aMonLvlFieldTable[0xc].nOffset = 0x60;
+    aMonLvlFieldTable[0xc].fpLinker = 0;
+    aMonLvlFieldTable[0xd].szName = "XP(N)";
+    aMonLvlFieldTable[0xd].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0xd].nSize = 0;
+    aMonLvlFieldTable[0xd].nOffset = 100;
+    aMonLvlFieldTable[0xd].fpLinker = 0;
+    aMonLvlFieldTable[0xe].szName = "XP(H)";
+    aMonLvlFieldTable[0xe].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0xe].nSize = 0;
+    aMonLvlFieldTable[0xe].nOffset = 0x68;
+    aMonLvlFieldTable[0xe].fpLinker = 0;
+    aMonLvlFieldTable[0xf].szName = "L-AC";
+    aMonLvlFieldTable[0xf].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0xf].nSize = 0;
+    aMonLvlFieldTable[0xf].nOffset = 0xc;
+    aMonLvlFieldTable[0xf].fpLinker = 0;
+    aMonLvlFieldTable[0x10].nSize = 0;
+    aMonLvlFieldTable[0x10].fpLinker = 0;
+    aMonLvlFieldTable[0x11].nSize = 0;
+    aMonLvlFieldTable[0x11].fpLinker = 0;
+    aMonLvlFieldTable[0x12].nSize = 0;
+    aMonLvlFieldTable[0x12].fpLinker = 0;
+    aMonLvlFieldTable[0x13].nSize = 0;
+    aMonLvlFieldTable[0x13].fpLinker = 0;
+    aMonLvlFieldTable[0x14].nSize = 0;
+    aMonLvlFieldTable[0x14].fpLinker = 0;
+    aMonLvlFieldTable[0x15].nSize = 0;
+    aMonLvlFieldTable[0x15].fpLinker = 0;
+    aMonLvlFieldTable[0x16].nSize = 0;
+    aMonLvlFieldTable[0x16].fpLinker = 0;
+    aMonLvlFieldTable[0x17].nSize = 0;
+    aMonLvlFieldTable[0x17].fpLinker = 0;
+    aMonLvlFieldTable[0x18].nSize = 0;
+    aMonLvlFieldTable[0x18].fpLinker = 0;
+    aMonLvlFieldTable[0x19].nSize = 0;
+    aMonLvlFieldTable[0x19].fpLinker = 0;
+    aMonLvlFieldTable[0x1a].nSize = 0;
+    aMonLvlFieldTable[0x1a].fpLinker = 0;
+    aMonLvlFieldTable[0x1b].nSize = 0;
+    aMonLvlFieldTable[0x1b].fpLinker = 0;
+    aMonLvlFieldTable[0x1c].nSize = 0;
+    aMonLvlFieldTable[0x1c].fpLinker = 0;
+    aMonLvlFieldTable[0x1d].nSize = 0;
+    aMonLvlFieldTable[0x1d].fpLinker = 0;
+    aMonLvlFieldTable[0x1e].eType = FIELDTYPE_END;
+    aMonLvlFieldTable[0x1e].nSize = 0;
+    aMonLvlFieldTable[0x1e].nOffset = 0;
+    aMonLvlFieldTable[0x1e].fpLinker = 0;
+    aMonLvlFieldTable[0x10].szName = "L-AC(N)";
+    aMonLvlFieldTable[0x10].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x10].nOffset = 0x10;
+    aMonLvlFieldTable[0x11].szName = "L-AC(H)";
+    aMonLvlFieldTable[0x11].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x11].nOffset = 0x14;
+    aMonLvlFieldTable[0x12].szName = "L-TH";
+    aMonLvlFieldTable[0x12].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x12].nOffset = 0x24;
+    aMonLvlFieldTable[0x13].szName = "L-TH(N)";
+    aMonLvlFieldTable[0x13].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x13].nOffset = 0x28;
+    aMonLvlFieldTable[0x14].szName = "L-TH(H)";
+    aMonLvlFieldTable[0x14].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x14].nOffset = 0x2c;
+    aMonLvlFieldTable[0x15].szName = "L-HP";
+    aMonLvlFieldTable[0x15].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x15].nOffset = 0x3c;
+    aMonLvlFieldTable[0x16].szName = "L-HP(N)";
+    aMonLvlFieldTable[0x16].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x16].nOffset = 0x40;
+    aMonLvlFieldTable[0x17].szName = "L-HP(H)";
+    aMonLvlFieldTable[0x17].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x17].nOffset = 0x44;
+    aMonLvlFieldTable[0x18].szName = "L-DM";
+    aMonLvlFieldTable[0x18].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x18].nOffset = 0x54;
+    aMonLvlFieldTable[0x19].szName = "L-DM(N)";
+    aMonLvlFieldTable[0x19].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x19].nOffset = 0x58;
+    aMonLvlFieldTable[0x1a].szName = "L-DM(H)";
+    aMonLvlFieldTable[0x1a].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x1a].nOffset = 0x5c;
+    aMonLvlFieldTable[0x1b].szName = "L-XP";
+    aMonLvlFieldTable[0x1b].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x1b].nOffset = 0x6c;
+    aMonLvlFieldTable[0x1c].szName = "L-XP(N)";
+    aMonLvlFieldTable[0x1c].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x1c].nOffset = 0x70;
+    aMonLvlFieldTable[0x1d].szName = "L-XP(H)";
+    aMonLvlFieldTable[0x1d].eType = FIELDTYPE_INT;
+    aMonLvlFieldTable[0x1d].nOffset = 0x74;
+    aMonLvlFieldTable[0x1e].szName = "end";
+    sgtDataTable.pTxtMonLvl = (D2MonLvlTxt*)DataTbls::CompileTxt(pMemory, "monlvl", aMonLvlFieldTable, &sgtDataTable.nTxtMonLvlSize, 0x78);
 }
 
 void __fastcall DATATBLS_LinkerMonsterPreset(char * pName, char * pRecord, int32_t nParam3, int32_t nParam4, int32_t nParam5, int32_t nParam6) {

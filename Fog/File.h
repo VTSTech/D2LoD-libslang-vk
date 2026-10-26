@@ -9,7 +9,11 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2CrashReportStrc;
 struct Report;
+#ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
+struct _EXCEPTION_POINTERS;
+#endif // _WIN32
 #ifndef RECON_FPTD_CONTAINER_TypeInitialValue
 #define RECON_FPTD_CONTAINER_TypeInitialValue
 typedef void (__fastcall *CONTAINER_TypeInitialValue)(void * pBuffer);
@@ -20,15 +24,11 @@ typedef void (__fastcall *fnCrashOutputLine)(::Report * pReport, char * szString
 #endif
 #ifndef RECON_FPTD_pfnFogExceptionFilter
 #define RECON_FPTD_pfnFogExceptionFilter
-typedef int (__fastcall *pfnFogExceptionFilter)(void * pExceptionReport, void * pUserContext);
+typedef int (__fastcall *pfnFogExceptionFilter)(struct D2CrashReportStrc * pExceptionReport, void * pUserContext);
 #endif
 
 // Data types
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
-
-typedef CONTEXT * PCONTEXT;
-
-typedef EXCEPTION_RECORD * PEXCEPTION_RECORD;
 
 struct _PROCESS_INFORMATION {
     /* 0x00 */ HANDLE hProcess;
@@ -71,12 +71,19 @@ struct _WIN32_FIND_DATAW {
     /* 0x234 */ uint16_t cAlternateFileName[14];
 };
 
-struct _EXCEPTION_POINTERS {
-    /* 0x00 */ PEXCEPTION_RECORD ExceptionRecord;
-    /* 0x04 */ PCONTEXT ContextRecord;
-};
-
 #endif // _WIN32
+
+struct D2CrashFrameStrc {
+    /* 0x00 */ uint32_t dwReturnAddr;
+    /* 0x04 */ uint32_t dw04;
+    /* 0x08 */ uint32_t dw08;
+    /* 0x0C */ uint32_t dw0C;
+    /* 0x10 */ uint8_t b10;
+    /* 0x11 */ uint8_t field_0x11;
+    /* 0x12 */ uint8_t field_0x12;
+    /* 0x13 */ uint8_t field_0x13;
+    /* 0x14 */ uint32_t a14[4];
+};
 
 namespace Fog::File {
 
@@ -84,7 +91,7 @@ namespace Fog::File {
 void __stdcall CONTAINER_InitializeBuffer(void * pBuffer, int32_t nTypeSize, int32_t nBufferSize, CONTAINER_TypeInitialValue fpInitValueCallback);
 void __fastcall CRASH_DumpThreadContext(DWORD dwThreadId, void * pContext, fnCrashOutputLine pOutputCallback, ::Report * pReport, char bIncludeThreadName, char bIncludeStackInfo, uint32_t nMaxFrames);
 // Format stack trace for crash dump. Captures thread context if bIncludeThreadName set, iterates frames and calls callback for each formatted address line. If bIncludeStackInfo set, includes stack space usage info.
-void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, void * * aFrameAddrs, int32_t nNumFrames, fnCrashOutputLine pOutputCallback, ::Report * pReport, char bIncludeThreadName, char bIncludeStackInfo);
+void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, struct D2CrashFrameStrc * aFrameAddrs, int32_t nNumFrames, fnCrashOutputLine pOutputCallback, ::Report * pReport, char bIncludeThreadName, char bIncludeStackInfo);
 void __fastcall CRASH_DumpRegisters(DWORD dwThreadId, fnCrashOutputLine pOutputCallback, ::Report * pReport);
 void __fastcall CRASH_EnumerateThreads(fnCrashOutputLine pOutputCallback, ::Report * pReport, DWORD dwSkipThreadId);
 void CRASH_GetExceptionName(char * szText, DWORD dwExceptionCode);
@@ -98,7 +105,7 @@ LONG __stdcall ERRORMANAGER_UnhandledExceptionFilter(struct _EXCEPTION_POINTERS 
 void __fastcall CRASH_SetExceptionHandler(pfnFogExceptionFilter pfnFilter, void * pContext, uint32_t nUnused);
 uint32_t __stdcall FILETOOLS_ExtractDirectory(char * szDest, char * nDestSize, char * szSrcPath);
 uint32_t __stdcall FILETOOLS_ExtractFilename(char * szDest, char * szSrcPath, char * nDestSize);
-uint32_t __fastcall STRING_AppendBlizzardErrorSubfolderToPath(uint32_t nUnused, LPSTR wchFilePath);
+bool __fastcall STRING_AppendBlizzardErrorSubfolderToPath(char * szPath);
 char * STRING_CopyStringBounded(int32_t nDestSize, char * szDest, char * szSrc);
 char * __stdcall STRING_AppendStringToString(char * szDest, int32_t nDestSize, char * szSrc);
 int STRING_FormatVarArgs(char * szFormat, char * szDest, int32_t nDestSize, ...);

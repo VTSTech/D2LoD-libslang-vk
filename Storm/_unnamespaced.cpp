@@ -21,7 +21,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Launch/CharSel.h"
 #include "D2Sound/Src/D2SoundFast.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
@@ -372,44 +371,37 @@ void __fastcall D2MEM_VirtualFree(LPVOID pParam) {
     /* DWORD dwFreeType for VirtualFree */ /* SIZE_T dwSize for VirtualFree */ /* LPVOID lpAddress for VirtualFree */ VirtualFree(pParam, 0, 0x8000);
 }
 
-// D2MEM_CopyRows copies nRows rows of nBytesPerRow bytes from pSrc to pDst,
-// byte tail first, then whole DWORDs, then skips (stride - width) on each
-// buffer. The generator typed the first parameter D2CharSelCompStrc * and
-// walked the cursor through the nFlags (0x00) / nAnimSpeed (0x04) member
-// ladder, which mangles to a name no caller references; the header declares
-// the raw char * contract the D2CMP tile callers use, so the body now walks a
-// plain char cursor. Same instructions either way.
 void __fastcall D2MEM_CopyRows(char * pCharSelComp, uint32_t * pSrc, int32_t nDstStride, int32_t nSrcStride, int32_t nRows, uint32_t nBytesPerRow) {
     do {
       uint32_t nRemainder;
       nRemainder = nBytesPerRow & 3;
       if (nRemainder) {
         if (nRemainder == 1) {
-          *pCharSelComp = (char)*pSrc;
-          pCharSelComp += 1;
+          *pCharSelComp = *(char*)pSrc;
+          pCharSelComp++;
           pSrc = (uint32_t*)((int)pSrc + 1);
         } else if (nRemainder == 2) {
-          *pCharSelComp = (char)*pSrc;
-          *(uint8_t*)(pCharSelComp + 1) = *(uint8_t*)((int)pSrc + 1);
+          *pCharSelComp = *(char*)pSrc;
+          pCharSelComp[1] = *(char*)((int)pSrc + 1);
           pCharSelComp += 2;
           pSrc = (uint32_t*)((int)pSrc + 2);
         } else {
-          *pCharSelComp = (char)*pSrc;
-          *(uint8_t*)(pCharSelComp + 1) = *(uint8_t*)((int)pSrc + 1);
-          *(uint8_t*)(pCharSelComp + 2) = *(uint8_t*)((int)pSrc + 2);
+          *pCharSelComp = *(char*)pSrc;
+          pCharSelComp[1] = *(char*)((int)pSrc + 1);
+          pCharSelComp[2] = *(char*)((int)pSrc + 2);
           pCharSelComp += 3;
           pSrc = (uint32_t*)((int)pSrc + 3);
         }
       }
 
       for (nRemainder = nBytesPerRow >> 2; nRemainder; nRemainder--) {
-        *(uint32_t *)pCharSelComp = *pSrc;
-        pSrc++;
+        *(uint32_t*)pCharSelComp = *pSrc;
+        pSrc = (uint32_t*)((int)pSrc + 4);
         pCharSelComp += 4;
       }
 
       pSrc = (uint32_t*)((int)pSrc + (nSrcStride - nBytesPerRow));
-      pCharSelComp += (nDstStride - nBytesPerRow);
+      pCharSelComp += nDstStride - nBytesPerRow;
       nRows--;
     } while (nRows);
 }
@@ -483,28 +475,6 @@ int32_t D2MEM_FindLowestSetBit(uint32_t dwMask) {
     for (; !(dwMask >> nBitPos & 1); nBitPos++) {}
 
     return nBitPos + 1;
-}
-
-// [d2boot v5] DO NOT CALL from the mingw rebuild: this is the Ghidra rendering of the
-// original MSVC __try/__finally cleanup and reads handle locals at fixed offsets
-// (-0x2C/-0x28/-0x30/-0x24) from the CALLER's frame as laid out by the original MSVC
-// compiler. Under mingw those slots are unrelated locals -> garbage handles are freed.
-// Its only caller (Bnclient::D2FILE_GetSignerOrganization) now cleans up directly.
-void D2FILE_CleanupCryptHandles(DWORD dwNull, int32_t nFrameBase) {
-    if (*(DWORD*)(nFrameBase - 0x2c) != dwNull) {
-      /* HLOCAL hMem for LocalFree */ LocalFree(*(HLOCAL*)(nFrameBase - 0x2c));
-    }
-    if (*(DWORD*)(nFrameBase - 0x28) != dwNull) {
-      /* PCCERT_CONTEXT pCertContext for CertFreeCertificateContext */ CertFreeCertificateContext(*(PCCERT_CONTEXT*)(nFrameBase - 0x28));
-    }
-    if (*(DWORD*)(nFrameBase - 0x30) != dwNull) {
-      /* DWORD dwFlags for CertCloseStore */ /* HCERTSTORE hCertStore for CertCloseStore */ CertCloseStore(*(HCERTSTORE*)(nFrameBase - 0x30), dwNull);
-    }
-    if (*(DWORD*)(nFrameBase - 0x24) == dwNull) {
-      return;
-    }
-
-    /* HCRYPTMSG hCryptMsg for CryptMsgClose */ CryptMsgClose(*(HCRYPTMSG*)(nFrameBase - 0x24));
 }
 
 uint32_t __stdcall FOG_ParseStringValue(char * szText, uint32_t nParam) {

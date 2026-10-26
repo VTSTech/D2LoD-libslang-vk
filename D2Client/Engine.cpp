@@ -3,6 +3,7 @@
 #include "D2Client/Engine.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2ClientStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2LightMapStrc.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Draw/LightMap.h"
@@ -34,7 +35,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
@@ -52,7 +52,7 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Game/SKILLS/SkillNec.h"
+#include "D2Game/SKILLS/SkillSor.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

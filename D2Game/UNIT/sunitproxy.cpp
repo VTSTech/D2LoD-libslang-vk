@@ -44,6 +44,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/Drlg/Drlg.h"
@@ -824,8 +825,8 @@ void __fastcall SUNITPROXY_CountPlayerInLevel(::SGAMEDATA * pGame, D2UnitStrc * 
 }
 
 // @sourcefile .\UNIT\sunitproxy.cpp
-void __fastcall SUNITPROXY_RefreshGambleForAllNpcs(::SGAMEDATA * pThis, D2UnitStrc * dwGameTick) {
-    uint32_t* pNewQueueEntry;
+void __fastcall SUNITPROXY_RefreshGambleForAllNpcs(::SGAMEDATA * pThis, int32_t dwGameTick) {
+    int32_t* pNewQueueEntry;
     D2GameNpcControlStrc* pNpcCtrl = pThis->pNpcControl;
     uint8_t* pNpcArrayBase = (uint8_t*)pNpcCtrl->pNpc;
     int nNpcIdx = 0;
@@ -837,13 +838,13 @@ void __fastcall SUNITPROXY_RefreshGambleForAllNpcs(::SGAMEDATA * pThis, D2UnitSt
     uint8_t* pNpcEntryFlags = pNpcArrayBase + 0x20;
     do {
       if (pNpcEntryFlags[3] == 1 && *pNpcEntryFlags == 1 && *(int*)(pNpcEntryFlags - 4) == 1) {
-        pNewQueueEntry = (uint32_t*)D2_ALLOC_POOL(pThis->pMemoryPool, 0x14);
-        pNewQueueEntry[4] = *(uint32_t*)(pNpcEntryFlags - 0xc);
+        pNewQueueEntry = (int32_t*)D2_ALLOC_POOL(pThis->pMemoryPool, 0x14);
+        pNewQueueEntry[4] = *(int32_t*)(pNpcEntryFlags - 0xc);
         pNewQueueEntry[3] = 0;
-        *pNewQueueEntry = (uint32_t)(uintptr_t)dwGameTick;
+        *pNewQueueEntry = dwGameTick;
         pNewQueueEntry[2] = 1;
         pNewQueueEntry[1] = 4;
-        *(uint32_t**)(pNpcEntryFlags - 0xc) = (uint32_t*)pNewQueueEntry;
+        *(int32_t**)(pNpcEntryFlags - 0xc) = (int32_t*)pNewQueueEntry;
       }
 
       nNpcIdx++;

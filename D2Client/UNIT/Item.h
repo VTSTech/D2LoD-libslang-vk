@@ -9,8 +9,11 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2GSPacketSrv0x3F;
+struct D2GSPacketSrv0x40;
 struct D2GSPacketSrv0x47;
 struct D2GSPacketSrv0x48;
+struct D2GSPacketSrv0x7D;
 struct D2InventoryStrc;
 struct D2RoomStrc;
 struct D2ServerMessageHandleStrc;
@@ -374,7 +377,7 @@ BOOL __fastcall ITEM_UpdateChargedSkillStat(struct D2UnitStrc * pUnit, int32_t n
 // Client-side handler for an item stat-update network message: applies a stat change to a client-side item (located by GUID) and re-evaluates which equipped/charm items remain valid. For UNITSTAT_item_charged_skill it forwards to ITEM_UpdateChargedSkillStat. Otherwise, if bSetStat it writes the stat (STATLIST_SetUnitStat), then (unless the stat is quantity) re-runs equip validation over the player: re-enables active charms whose requirements are now met, disables/removes equipped body-loc items that no longer meet requirements (iterating body locs 0-0xA, looping up to 100 passes until stable), handles weapon-swap and gfx mode flags, reapplies socketable/equip stats, and for set items recalculates owner stats. Saves/restores skill selections around the pass and, if anything changed (bNeedsGfxReload), reloads the unit's mode COF (player) or sends MonsterMessage 7. For quantity>0 it just clears the item's cursor/disabled flags. No return.
 // @sourcefile .\UNIT\Item.cpp
 void __fastcall ITEM_HandleStatUpdatePacket(DWORD nUnitGUID, char bSetStat, eD2UnitStat eUnitStat, uint32_t nValue, uint16_t nStatParam);
-void __fastcall ITEM_HandleItemFlagEditPacket(uint8_t * pbPacket);
+void __fastcall ITEM_HandleItemFlagEditPacket(struct D2GSPacketSrv0x40 * pbPacket);
 void __fastcall ITEM_HandleCursorItemRemoval(int32_t pbPacket);
 void __fastcall HandleItemToCursor(uint8_t * pbParam);
 // @sourcefile .\UNIT\Item.cpp
@@ -384,7 +387,7 @@ void __fastcall ITEM_RemoveClientSide(struct D2UnitStrc * pUnit);
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 BOOL __fastcall PlayerIsUnInterruptable(struct D2UnitStrc * pUnit);
 // Handles an item break/repair state-change packet (pPacket carries item GUID at +6, owner unit type/id at +1/+2, action code at +10, broken flag at +0xe). Action 0x100 = item broke: sets ITEMFLAG_BROKEN, removes the item from the body and recalculates equipped stats, then iterates the owner's body slots disabling items whose equip requirements no longer hold and re-enabling charms; loops (up to 100 passes) to settle dependent gear, restores skill selections, and reloads the unit's GFX/COF. Action 0x200 = item repaired: clears ITEMFLAG_BROKEN, re-equips it on the body, and recalculates all equipped items. No-op if item or owner unit can't be found.
-void __fastcall ITEM_HandleItemRepairBreak(uint8_t * pPacket);
+void __fastcall ITEM_HandleItemRepairBreak(struct D2GSPacketSrv0x7D * pPacket);
 void __fastcall ITEM_HandleItemCopyToCursor(uint8_t * pbParam);
 // Re-validates and re-applies all socketed/equipped item effects for a unit's inventory. For each item carrying a socket-filler, re-enables charms whose owner is empty and whose equip requirements are met, then iterates the 11 body-location slots: disables items failing equip requirements (removing them from body), repeatedly re-equips items now meeting requirements (up to 100 passes), and re-applies set-item (quality==5) bonus stats. Saves/restores skill selections around the recalc and triggers a GFX mode-COF reload (player) or MonsterMessage(7) if anything changed. Finally frees the recursive child inventories. Halts via Fog ErrorManager on inventory-consistency failures.
 // @sourcefile .\UNIT\Item.cpp
@@ -446,7 +449,7 @@ void __stdcall ITEM_HandleSwapBeltNewItem(int32_t pPacket, struct D2UnitDataItem
 void __stdcall ITEM_HandleSwapBeltOldItem(uint8_t * pBytes, struct D2UnitDataItemDetailsStrc * itemDetails);
 void __fastcall HandleItemSwapInBelt(uint8_t * pBytes);
 // Client-side handler that places or removes an item from the cursor. On removal (byte[1]==-1): clears ITEMFLAG_CURSOR, removes uninterruptable state, calls ITEM_SetItemOnHand(null). On pickup: auto-opens inventory if item type matches gaaCursorAutoOpenInventoryTypes, sets ITEMFLAG_CURSOR and calls CURSOR_SetCursorItem.
-void __fastcall ITEM_HandleItemCursorAssign(int32_t nParam);
+void __fastcall ITEM_HandleItemCursorAssign(struct D2GSPacketSrv0x3F * pPacket);
 // Process auto-unequip packet from client when item no longer meets requirements
 // @sourcefile .\UNIT\Item.cpp
 void __fastcall HandleItemAutoUnequip(uint8_t * pPacketData);

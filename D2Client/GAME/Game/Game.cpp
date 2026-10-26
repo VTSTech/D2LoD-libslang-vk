@@ -10,6 +10,7 @@
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GameViewStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Draw/Weather.h"
@@ -65,7 +66,6 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -93,6 +93,7 @@
 #include "Storm/Source/SCMD.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SSTR.h"
+#include "Storm/Source/SSystem.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Client/Engine.h"
@@ -558,8 +559,7 @@ void __stdcall GameLoop() {
 // Client-side world update. Runs at 25 FPS (same cadence as server loop).
 // Per-frame: GameLoop -> UpdateGfxState -> AnimateTiles -> UpdateLights -> Gfx_UpdateNearbyUnitGfx.
 // Also: day/night cycle, room activation, automap, periodic FreeDungeons (13th frame).
-int32_t __stdcall ClientSideGameLoop() {
-    int32_t freeResult;
+void __stdcall ClientSideGameLoop() {
     gClientGameData.uGlobalTickCountA = GetTickCount();
     GameLoop();
     UNIT::CUnit::CLIENT_UpdateUnitGfxState();
@@ -577,14 +577,11 @@ int32_t __stdcall ClientSideGameLoop() {
     D2Common::DUNGEON::Dungeon::DRLGROOMEX_UpdateClientRoomExActivation(pDrlgAct);
     UI::Automap::AUTOMAP_Update();
     gClientGameData.gnRecordEntryIndex++;
-    int nReturnValue = gClientGameData.gnRecordEntryIndex * 0x4ec4ec4f;
     if (gClientGameData.gnRecordEntryIndex != (uint32_t)gClientGameData.gnRecordEntryIndex / 0xd * 0xd) {
-      return nReturnValue;
+      return;
     }
 
     D2Common::DUNGEON::Dungeon::FreeDungeons(sgpDrlgAct);
-    nReturnValue = freeResult;
-    return nReturnValue;
 }
 
 void __stdcall GAMEDATA_InitializeEclipseEnvironment() {
@@ -1862,34 +1859,34 @@ int32_t __fastcall GAMEDATA_TimerGetRemaining(int32_t * pTimerStruct) {
     return 0;
 }
 
-uint32_t __fastcall GAMEDATA_CheckTimerExpired(int32_t * pTimerStruct) {
-    if (!pTimerStruct[1]) {
+uint32_t __fastcall GAMEDATA_CheckTimerExpired(D2ClientTimerStrc * pTimer) {
+    if (!pTimer->dwDurationMs) {
       return 1;
     }
 
     DWORD dwCurrentTick = GetTickCount();
-    if ((uint32_t)(*pTimerStruct + pTimerStruct[1]) > dwCurrentTick) {
-      return (uint32_t)!(*pTimerStruct - dwCurrentTick + pTimerStruct[1]);
+    if (pTimer->dwStartTick + pTimer->dwDurationMs > dwCurrentTick) {
+      return (uint32_t)!(pTimer->dwStartTick - dwCurrentTick + pTimer->dwDurationMs);
     }
 
-    *pTimerStruct = 0;
-    pTimerStruct[1] = 0;
+    pTimer->dwStartTick = 0;
+    pTimer->dwDurationMs = 0;
     return 1;
 }
 
 // Timer helper: checks [start,duration] pair, clears when expired, returns active status.
-uint32_t __fastcall Timer_IsActiveAndUpdate(int * pnParam) {
-    if (!pnParam[1]) {
+uint32_t __fastcall Timer_IsActiveAndUpdate(D2ClientTimerStrc * pTimer) {
+    if (!pTimer->dwDurationMs) {
       return 0;
     }
 
     DWORD nowTick = GetTickCount();
-    if ((uint32_t)(*pnParam + pnParam[1]) > nowTick) {
-      return (uint32_t)(*pnParam - nowTick + pnParam[1] != 0);
+    if (pTimer->dwStartTick + pTimer->dwDurationMs > nowTick) {
+      return (uint32_t)(pTimer->dwStartTick - nowTick + pTimer->dwDurationMs != 0);
     }
 
-    *pnParam = 0;
-    pnParam[1] = 0;
+    pTimer->dwStartTick = 0;
+    pTimer->dwDurationMs = 0;
     return 0;
 }
 
@@ -1954,8 +1951,8 @@ void __fastcall CLIENT_AllocAct(int32_t nActNo, int32_t nMapSeed, int32_t nAutom
 // GAME_InitClientSide: reset globals, init client pool, view/UI, loading screen, send join packet for network games, init palette/weather/lighting/chat; set CurrentDrawFunction and flags.
 // @sourcefile .\GAME\Game.cpp
 void __stdcall GAME_InitClientSide() {
-    gLoadTimerDurationMs = 0;
-    gLoadTimerStartTick = 0;
+    gLoadTimerDurationMs.dwStartTick = 0;
+    gLoadTimerDurationMs.dwDurationMs = 0;
     gExitCutsceneState.cutscenePlayed = false;
     gExitCutsceneState._pad0[0] = '\0';
     gExitCutsceneState._pad0[1] = '\0';
@@ -2020,8 +2017,8 @@ void __fastcall CLIENT_ConnectionRefused(int32_t nReason) {
     }
 
     UI::Draw::UI_CloseActivePanels(1, 0);
-    gLoadTimerDurationMs = GetTickCount();
-    gLoadTimerStartTick = 0x9c4;
+    gLoadTimerDurationMs.dwStartTick = GetTickCount();
+    gLoadTimerDurationMs.dwDurationMs = 0x9c4;
     D2CLIENT_ExitVar3 = 1;
     ServerLoadingComplete = 0;
     D2GS_Connected = 0;
@@ -2031,14 +2028,14 @@ void __fastcall CLIENT_ConnectionRefused(int32_t nReason) {
 // While load timer active, draw loading message; otherwise cleanup after loading act.
 uint32_t __stdcall LoadingScreen_TickOrCleanup(uint32_t dwArg1) {
     int iVar2;
-    if (gLoadTimerStartTick) {
+    if (gLoadTimerDurationMs.dwDurationMs) {
       DWORD DVar1;
       DVar1 = GetTickCount();
-      if (DVar1 < (uint32_t)(gLoadTimerStartTick + gLoadTimerDurationMs)) {
-        iVar2 = gLoadTimerStartTick - DVar1 + gLoadTimerDurationMs;
+      if (DVar1 < gLoadTimerDurationMs.dwDurationMs + gLoadTimerDurationMs.dwStartTick) {
+        iVar2 = gLoadTimerDurationMs.dwDurationMs - DVar1 + gLoadTimerDurationMs.dwStartTick;
       } else {
-        gLoadTimerDurationMs = 0;
-        gLoadTimerStartTick = 0;
+        gLoadTimerDurationMs.dwStartTick = 0;
+        gLoadTimerDurationMs.dwDurationMs = 0;
         iVar2 = 0;
       }
       if (iVar2) {
@@ -2101,14 +2098,12 @@ void __stdcall Congratz_HandleOkButton(D2UIMouseMsgStrc * pMsg) {
 }
 
 void __stdcall GAMEDATA_DrawCharacterPortrait() {
+    char* pcVar1;
     int nTitleIndex;
     uint32_t nCopyWords;
-    char* pDstChar;
     uint16_t awcTitle[100];
     uint16_t awcName[100];
-    char szName[99];
-    char cStack_69;
-    char szTitle[100];
+    D2CharPortraitTextStrc sText;
     char cChar;
     D2IniConfigStrc* pIniData = ClientModeInGame::D2IniData_Getter();
     uint16_t* pwClearCursor = awcName;
@@ -2119,14 +2114,14 @@ void __stdcall GAMEDATA_DrawCharacterPortrait() {
     }
 
     char* pSrcChar = pIniData->szNAME;
-    nTitleIndex = -(int)pSrcChar;
+    nTitleIndex = (uintptr_t)&sText - (int)pSrcChar;
     do {
       cChar = *pSrcChar;
-      pSrcChar[(int)(szName + nTitleIndex)] = cChar;
+      pSrcChar[nTitleIndex] = cChar;
       pSrcChar++;
     } while (cChar != '\0');
 
-    D2Lang::UTF8_ConvertToWideChar(awcName, szName, 0x40);
+    D2Lang::UTF8_ConvertToWideChar(awcName, sText.szName, 0x40);
     int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(awcName);
     D2Win::Src::D2WinFont::DRAW_text(awcName, ScreenSizeX / 2 - nTextWidth / 2, 0xbb, 4, 0);
     eD2PlayerStatus ePlayerStatus = pIniData->eCTEMP_eD2PlayerStatus;
@@ -2164,36 +2159,40 @@ void __stdcall GAMEDATA_DrawCharacterPortrait() {
       return;
     }
 
-    nTitleIndex = -(int)pSrcChar;
+    nTitleIndex = 100 - (int)pSrcChar;
     do {
       cChar = *pSrcChar;
-      pSrcChar[(int)(szTitle + nTitleIndex)] = cChar;
+      pSrcChar[(uintptr_t)&sText + nTitleIndex] = cChar;
       pSrcChar++;
     } while (cChar != '\0');
 
-    pSrcChar = szName;
-    pSrcChar = pSrcChar + strlen(pSrcChar) + 1;
-    nHardcoreFlag = (int)pSrcChar - (int)szName;
-    pSrcChar = &cStack_69;
+    D2CharPortraitTextStrc* pDstChar = &sText;
     do {
-      pDstChar = pSrcChar + 1;
-      pSrcChar++;
-    } while (*pDstChar != '\0');
+      pSrcChar = pDstChar->szName;
+      pDstChar = (D2CharPortraitTextStrc*)(pDstChar->szName + 1);
+    } while (*pSrcChar != '\0');
 
-    pDstChar = szName;
+    nHardcoreFlag = (int)pDstChar - (uintptr_t)&sText;
+    pSrcChar = sText.szName + 99;
+    do {
+      pcVar1 = pSrcChar + 1;
+      pSrcChar++;
+    } while (*pcVar1 != '\0');
+
+    pDstChar = &sText;
     for (nCopyWords = nHardcoreFlag >> 2; nCopyWords; nCopyWords--) {
-      *(uint32_t*)pSrcChar = *(uint32_t*)pDstChar;
-      pDstChar += 4;
+      *(uint32_t*)pSrcChar = *(uint32_t*)pDstChar->szName;
+      pDstChar = (D2CharPortraitTextStrc*)(pDstChar->szName + 4);
       pSrcChar += 4;
     }
 
     for (nHardcoreFlag &= 3; nHardcoreFlag; nHardcoreFlag--) {
-      *pSrcChar = *pDstChar;
-      pDstChar++;
+      *pSrcChar = pDstChar->szName[0];
+      pDstChar = (D2CharPortraitTextStrc*)(pDstChar->szName + 1);
       pSrcChar++;
     }
 
-    D2Lang::UTF8_ConvertToWideChar(awcTitle, szTitle, 0x40);
+    D2Lang::UTF8_ConvertToWideChar(awcTitle, sText.szTitle, 0x40);
     nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(awcTitle);
     int32_t nY = 0x115;
     if (gClientGameData.CLIENT_bExpansion) {
@@ -2720,16 +2719,16 @@ static uint32_t gdwHostGameThreadId;
     int nRecordResult;
     uint8_t byPlayerStatus;
     tagMSG sMsg;
-    if (!gLoadTimerStartTick) {
+    if (!gLoadTimerDurationMs.dwDurationMs) {
       ClientModeInGame::D2CLIENT_SetExitVar1(1);
     } else {
       DWORD dwNow;
       dwNow = GetTickCount();
-      if (dwNow < (uint32_t)(gLoadTimerStartTick + gLoadTimerDurationMs)) {
-        nRecordResult = gLoadTimerStartTick - dwNow + gLoadTimerDurationMs;
+      if (dwNow < gLoadTimerDurationMs.dwDurationMs + gLoadTimerDurationMs.dwStartTick) {
+        nRecordResult = gLoadTimerDurationMs.dwDurationMs - dwNow + gLoadTimerDurationMs.dwStartTick;
       } else {
-        gLoadTimerDurationMs = 0;
-        gLoadTimerStartTick = 0;
+        gLoadTimerDurationMs.dwStartTick = 0;
+        gLoadTimerDurationMs.dwDurationMs = 0;
         nRecordResult = 0;
       }
       if (!nRecordResult) {

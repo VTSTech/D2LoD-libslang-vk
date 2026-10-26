@@ -99,18 +99,18 @@ BOOL __fastcall Skills_CltStFunc_CheckAmmoFindClosestTarget(D2UnitStrc * pUnit, 
       pFoundTarget = Skills::SKILL_FindClosestTarget(pUnit, 0, 0, nAuraRange, 3);
     }
 
-    D2UnitStrc* nMaxCount = (D2UnitStrc*)D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[2], eSkill, nSkillLvl);
-    D2UnitStrc* nCalcMin = (D2UnitStrc*)D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[0], eSkill, nSkillLvl);
-    if ((int)nCalcMin < (int)nMaxCount) {
+    int32_t nMaxCount = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[2], eSkill, nSkillLvl);
+    int32_t nCalcMin = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[0], eSkill, nSkillLvl);
+    if (nCalcMin < nMaxCount) {
       nMaxCount = nCalcMin;
     }
 
     D2UnitStrc* nCalc0 = pFoundTarget;
-    if ((int)pFoundTarget <= (int)nMaxCount) {
-      nCalc0 = nMaxCount;
+    if ((int)pFoundTarget <= nMaxCount) {
+      nCalc0 = (D2UnitStrc*)nMaxCount;
     }
-    if ((int)nCalcMin <= (int)nCalc0 || (nCalcMin = nMaxCount , (int)pFoundTarget <= (int)nMaxCount)) {
-      pFoundTarget = nCalcMin;
+    if (nCalcMin <= (int)nCalc0 || (nCalcMin = nMaxCount , (int)pFoundTarget <= nMaxCount)) {
+      pFoundTarget = (D2UnitStrc*)nCalcMin;
     }
 
     D2Common::Skills::SKILL_SetParam1(pSkill, (int32_t)pFoundTarget);
@@ -159,9 +159,9 @@ BOOL __fastcall Skills_CltStFunc_FindClosestMeleeTargetSetParams(D2UnitStrc * pU
       pFoundTarget = Skills::SKILL_FindClosestTarget(pUnit, 0, 0, nMeleeRange, 0x20003);
     }
 
-    D2UnitStrc* nCalcMaxRange = (D2UnitStrc*)D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt[eSkill].calc[0], eSkill, nSkillLvl);
-    if ((int)nCalcMaxRange <= (int)pFoundTarget) {
-      pFoundTarget = nCalcMaxRange;
+    int32_t nCalcMaxRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt[eSkill].calc[0], eSkill, nSkillLvl);
+    if (nCalcMaxRange <= (int)pFoundTarget) {
+      pFoundTarget = (D2UnitStrc*)nCalcMaxRange;
     }
 
     D2Common::Skills::SKILL_SetParam1(pSkill, (int32_t)pFoundTarget);

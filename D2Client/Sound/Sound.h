@@ -152,7 +152,7 @@ int __fastcall SOUND_StopChannelById(int32_t nSoundId);
 void __stdcall SOUND_PauseAll();
 void __stdcall SOUND_ResumeAll();
 uint32_t __fastcall SOUND_GetCurrentMusic(int32_t nSoundId);
-bool __fastcall SOUND_IsChannelAvailable(uint32_t pChanA, uint32_t pChanB, int32_t nParam1, int32_t nParam2);
+BOOL __fastcall SOUND_IsChannelAvailable(uint32_t pChanA, uint32_t pChanB, int32_t nParam1, int32_t nParam2);
 uint32_t __fastcall SOUND_FindChannelForSound(int32_t nSoundId);
 void __fastcall SOUND_StopChannelGracefully(int32_t nSoundId, int32_t nFadeTarget, int32_t nFadeDelay, uint32_t nFadeDuration);
 void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime);

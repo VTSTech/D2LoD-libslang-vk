@@ -66,6 +66,17 @@ struct __attribute__((packed)) D2HirelingHireData {
     /* 0x38 */ int16_t field14_0x38;
 };
 
+struct D2MercInitArgStrc {
+    D2MercInitArgStrc() = default;
+    D2MercInitArgStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+    D2MercInitArgStrc(uint16_t a0, uint16_t a1, uint32_t a2) : wInitSeed(a0), wPad(a1), nSeed(a2) {}
+
+    /* 0x00 */ uint16_t wInitSeed;
+    /* 0x02 */ uint16_t wPad; // never written
+    /* 0x04 */ uint32_t nSeed;
+};
+
 struct __attribute__((packed)) D2MonMsgAnimModeStrc {
     /* 0x00 */ eD2MonsterAnimMode eMode; // Mode MonsterMessage sets for this message id; 0x10 = none (MONSTER_IsModeMoveFlagSet rejects >= 0x10)
     /* 0x04 */ int bCheckMoveFlag; // Nonzero: test the MonStats2 per-mode move flag (+0x104 bit[mode])
@@ -328,7 +339,7 @@ int32_t __fastcall IsMonsterGhostly(struct D2UnitStrc * pUnit);
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 BOOL __fastcall IsMonsterUnique(struct D2UnitStrc * pUnit);
 int32_t __fastcall IsMonsterMinion(struct D2UnitStrc * pUnit);
-bool __fastcall IsMonsterSuperUnique(struct D2UnitStrc * pUnit);
+BOOL __fastcall IsMonsterSuperUnique(struct D2UnitStrc * pUnit);
 void __fastcall MONSTER_ExplodeOwnerMissile(struct D2UnitStrc * pUnit);
 // Advances the monster's RNG seed, picks one of 5 missile IDs from a hard-coded table at gTxtCompilationMemPool+0x157c, casts it at the monster's own position via CastAttack, stores mutual owner links between unit and missile, and marks the missile NODRAW so it renders only via its attached particle.
 void MONSTER_SpawnRandomAttachedMissile(struct D2UnitStrc * pUnit);
@@ -365,7 +376,7 @@ void MONSTER_HandleBurrowTransition(struct D2UnitStrc * pUnit, int32_t nParam);
 void __fastcall MonsterMessage(int32_t nParam, struct D2UnitStrc * pUnit, struct D2ServerMessageHandleStrc * pMessage);
 uint32_t __fastcall NPCMENU_ParseSpeechData(int * pnParam, uint8_t * pParam, int * pnSpeechResult);
 // Client-side initialization of a mercenary unit from a network packet. Sets ISMERC|TARGETABLE flags, reads the name/seed from the packet, rolls stats via RollMercStats using the current player's level and difficulty, then assigns skills (id, level, mode) from the HirelingTxt table, sets the localized name, and recalculates equipped item stats.
-void __fastcall MERC_InitializeFromPacket(struct D2UnitStrc * pUnit, uint16_t * nParam);
+void __fastcall MERC_InitializeFromPacket(struct D2UnitStrc * pUnit, struct D2MercInitArgStrc * pMercInit);
 int __fastcall MONSTER_CanBeConverted(void * pUnit);
 void __fastcall NPCMENU_HandleQuestUpdate(int32_t nParam);
 // Client-side monster animation tick / end-of-cycle event dispatcher. Fires MonsterMessage(9) when SplEndDeath is set and both target coords are zero at the end of the frame cycle. Then switches on mode (nParam+4): advances the frame, clears collision/size, sets a path-point flag, or resets size to 0x100 depending on mode 0-3.

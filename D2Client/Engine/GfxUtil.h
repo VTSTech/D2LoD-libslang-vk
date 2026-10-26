@@ -40,7 +40,7 @@ struct __attribute__((packed)) D2ArmTypeTxt {
 namespace D2Client::Engine::GfxUtil {
 
 // Function declarations
-void GFXUTIL_PadTokenString(uint32_t dwParam, char * szText1, char * szText2);
+void GFXUTIL_PadTokenString(char * szText1, char * szText2);
 uint8_t GFXUTIL_GetCompositePaletteIndex(struct D2UnitStrc * pUnit, uint8_t byComponent);
 void __stdcall InitializeModeTokens();
 void __stdcall GFXUTIL_SetMissileCelFile(struct D2GfxDataStrc * pGfxData, struct D2UnitStrc * pMissile);

@@ -14,27 +14,11 @@ struct D2DrlgPathNodeStrc;
 struct D2DrlgRoomAStarNodeStrc;
 struct D2DrlgRoomCoordsStrc;
 struct D2DynamicPathStrc;
-struct D2PathPointStrc;
 struct D2PathTypeArg;
 struct D2RoomStrc;
-struct D2StaticPathStrc;
 struct D2UnitStrc;
 
 // Data types
-struct D2DrlgPathScannerStrc {
-    /* 0x00 */ int32_t nDir; // index into the direction tables
-    /* 0x04 */ int32_t nWaypointCount;
-    /* 0x08 */ uint32_t nPosPacked;
-    /* 0x0C */ uint16_t wCurYCoord;
-    /* 0x0E */ uint16_t wPrevXCoord;
-    /* 0x10 */ int32_t nLoopPos;
-    /* 0x14 */ int * pDirTableX;
-    /* 0x18 */ int * pDirTableY;
-    /* 0x1C */ int32_t nFlags;
-    /* 0x20 */ uint32_t nDone;
-    /* 0x24 */ uint32_t anWaypoints[201]; // packed x|y<<16 waypoints; indexed as scanner[nWaypointCount + 9]
-};
-
 struct D2DynamicPathCoordsStrc {
     D2DynamicPathCoordsStrc() = default;
     D2DynamicPathCoordsStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
@@ -46,6 +30,39 @@ struct D2DynamicPathCoordsStrc {
     /* 0x04 */ short nOffsetY;
     /* 0x06 */ short nPosY;
 };
+
+struct D2PathExtractFrameStrc {
+    /* 0x000 */ uint32_t aWaypoints[78]; // packed x|y<<16 of each kept node; filled from element 77 downwards, copied out from &aWaypoints[78 - n]
+    /* 0x138 */ void * pWaypointDst;
+    /* 0x13C */ void * * pParentNode; // A* node: parent pointer at +0xc
+    /* 0x140 */ int nPrevDeltaY;
+    /* 0x144 */ uint32_t * pWritePtr;
+};
+
+struct D2PathPointStrc {
+    D2PathPointStrc() = default;
+    D2PathPointStrc(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
+    operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
+    D2PathPointStrc(uint16_t a0, uint16_t a1) : nX(a0), nY(a1) {}
+
+    /* 0x00 */ uint16_t nX;
+    /* 0x02 */ uint16_t nY;
+};
+
+#pragma pack(push, 1)
+struct D2DrlgPathScannerStrc {
+    /* 0x00 */ int32_t nDir; // index into the direction tables
+    /* 0x04 */ int32_t nWaypointCount;
+    /* 0x08 */ uint32_t nPosPacked;
+    /* 0x0C */ D2PathPointStrc sCurPos;
+    /* 0x10 */ int32_t nLoopPos;
+    /* 0x14 */ int * pDirTableX;
+    /* 0x18 */ int * pDirTableY;
+    /* 0x1C */ int32_t nFlags;
+    /* 0x20 */ uint32_t nDone;
+    /* 0x24 */ D2PathPointStrc anWaypoints[201]; // packed x|y<<16 waypoints; indexed as scanner[nWaypointCount + 9]
+};
+#pragma pack(pop)
 
 namespace D2Common::Drlg::Path {
 
@@ -62,7 +79,7 @@ int __fastcall DRLGPATH_CalcDirectionVector(POINT * pPoint, uint32_t * pnParam, 
 void __fastcall DRLGPATH_CalcPathDirection(POINT * pPoint, uint32_t * pnParam, uint32_t nFromX, uint32_t nFromY);
 // DRLGPATH_GetDirectionFromCoords - Converts tile coordinates to fixed-point and calls DRLGPATH_CalcDirectionVector. Used by GetDirectionToCoords, Skills_SrvDoFunc_062, and Update to determine facing direction.
 uint32_t __stdcall DRLGPATH_GetDirectionFromCoords(uint32_t nX, int32_t nY, int32_t nNewX, int32_t nNewY);
-// Already has a meaningful @description (added 2026.06.10): describes advancing the dynamic path walker, velocity vector calculation, direction changes, and return-1 condition. No improvement needed.
+// Advances a dynamic path along its path points: skips points already reached, computes the direction vector and velocity toward the current point (flips the direction index when flag 0x200 is set), and returns 1 when the last point is reached or the next step lands on the target subtile.
 int32_t __fastcall DRLGPATH_AdvanceAlongPathPoints(struct D2DynamicPathStrc * pDynamicPath, int32_t nParam, int32_t bForceDirection);
 // Computes an approximate isometric distance between two points (x1,y1) and (x2,y2).
 // Uses a fast heuristic: min(|dx|,|dy|) + max(|dx|,|dy|) * 2.
@@ -151,7 +168,7 @@ BOOL DRLGPATH_CheckTargetReachable(uint32_t * pnParam, struct D2DynamicPathStrc 
 // Smooths a path by iterating through waypoints, choosing the best non-blocked direction at each step using direction triplets and collision checks. Builds a refined path with fewer unnecessary turns. Returns the waypoint count, which it also stores into pDynamicPath->dwPathPoints - the tail is MOV [ECX+0x28],EAX at 00679c71, so the count is live in EAX at the RET. PATH_FindPathToward tail-returns it for the nDirOffset case; typing this void made that caller return an uninitialised local, which reached PATH_CalculatePath as a waypoint count of ~2e9 and indexed PathPoints[] off the end.
 int32_t __fastcall DRLGPATH_SmoothPathPoints(struct D2PathTypeArg * pPathTypeArg);
 // Builds a circular set of path points around the origin using sin/cos lookup tables. Generates up to 77 waypoints in a spiral pattern, stored in the static path structure. Used for circular movement patterns.
-void * __fastcall DRLGPATH_BuildCircularPathPoints(struct D2StaticPathStrc * pStaticPath);
+void * __fastcall DRLGPATH_BuildCircularPathPoints(struct D2DynamicPathStrc * pStaticPath);
 // Builds a set of randomized path waypoints using a seed-based random direction offset. Computes direction triplets and applies random perturbations to create organic-looking movement paths.
 void __fastcall DRLGPATH_BuildRandomizedPathPoints(int32_t pPathStrc, struct D2DynamicPathStrc * pDynamicPath);
 // Scales a direction vector by a velocity factor (fixed-point). Computes a normalized velocity direction and validates the resulting magnitude does not exceed 0x200000.
@@ -203,7 +220,7 @@ int32_t __stdcall DRLGPATH_BuildBresenhamPointList(uint32_t nSrcPacked, uint32_t
 // Computes a direction lookup value from two packed coordinates using a table at 0x6F1E28. The index is computed as (dy*3 - srcX + dstX), suggesting a 3-state direction encoding. No callers found - likely used via function pointer.
 uint32_t __stdcall DRLGPATH_GetDirectionLookupFromPacked(uint32_t nSrcPacked, uint32_t nDstPacked);
 // Attempts to step in a preferred direction, falling back to alternate directions on collision. Uses direction lookup tables at 0x6F1D98 to compute the target position. Tries up to 4 directions before marking the step as failed. Used by the dual-scan pathfinder (PathTypeFunc_15).
-bool DRLGPATH_TryStepWithFallbackDirections(struct D2PathTypeArg * pPathTypeArg, int * pScannerState);
+BOOL DRLGPATH_TryStepWithFallbackDirections(struct D2PathTypeArg * pPathTypeArg, int * pScannerState);
 // Inserts a set of waypoints from a path node into the main waypoint buffer at a given index. Uses memmove to shift existing data and memcpy to copy the new points. Updates the insertion index and total count.
 void __stdcall DRLGPATH_InsertWaypointsIntoBuffer(int32_t pScanNode, int32_t nWaypointBuf, int32_t nInsertIdx, int * pnParam1, int * pnParam2);
 // Main pathfinding function for PathTypeFunc_15. Uses a dual-scanner approach: two independent directional scanners advance from the start toward the path endpoints. Handles loop detection, waypoint insertion, and selects the better of the two scan results based on squared distance to the target. Returns the best path length found.

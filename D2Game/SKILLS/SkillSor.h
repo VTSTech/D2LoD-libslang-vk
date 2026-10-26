@@ -17,6 +17,15 @@ typedef int eD2Skills;
 typedef int eD2States;
 typedef int eMissilesId;
 
+// Data types
+struct __attribute__((packed)) D2StaticFieldArgStrc {
+    /* 0x00 */ int32_t nCalc1;
+    /* 0x04 */ int32_t nDrainPct;
+    /* 0x08 */ int32_t nStaticMin;
+    /* 0x0C */ int32_t nSynergyBonus;
+    /* 0x10 */ eSkillEType eElemType;
+};
+
 namespace D2Game::SKILLS::SkillSor {
 
 // Function declarations

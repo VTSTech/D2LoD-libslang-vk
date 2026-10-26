@@ -86,6 +86,7 @@
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
@@ -2076,16 +2077,11 @@ D2UnitStrc * __fastcall CreateUnit(eD2UnitType eUnitType, int32_t nClassId, int3
         D2Game::Monster::STRUCT_FillDataMonster(pGame, pRoom, pAllocUnit, (int32_t)pMonsterData);
         break;
         case UNIT_OBJECT:
-          /* Jump-table branch of CreateUnit for UNIT_OBJECT (dispatched via
-                         UNIT_FillFunctions[eUnitType]). Allocates a 0x38-byte object data block,
-                         links the Objects.txt row, assigns a static path, calls
-                         OBJECT_InitializeObject, then optionally places in room and applies corpse
-                         collision. The D2ObjectsTxt row pointer is stored in
-                         pUnitDataObject->pTxtObjectsLine.
-                         @sourcefile .\UNIT\SUnit.cpp
-                         @sourcefile-basis Blizzard __FILE__ literal referenced from inside self
-                         function's body (1 site: 005553b4). First-party 1.14d evidence, not inferred
-                         and not from D2R. */ pObjectData = D2_NEW_POOL(pGame->pMemoryPool, D2UnitDataObjectStrc);
+          /* Jump-table branch of CreateUnit for UNIT_OBJECT: allocates the 0x38-byte
+                         object data, links the Objects.txt row (pUnitDataObject->pTxtObjectsLine),
+                         assigns a static path, calls OBJECT_InitializeObject, then optionally places
+                         in room and applies corpse collision.
+                         Source file UNIT/SUnit.cpp (__FILE__ literal at 005553b4). */ pObjectData = D2_NEW_POOL(pGame->pMemoryPool, D2UnitDataObjectStrc);
         pAllocUnit->pUnitData.pUnitDataObject = pObjectData;
         memset(pObjectData, 0, 0x38);
         pDVar1 = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nClassId);

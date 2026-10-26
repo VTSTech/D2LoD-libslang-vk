@@ -338,7 +338,7 @@ bool __stdcall MallusHandler(D2QuestDataStrc * pQuestData) {
     QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x1c8);
     pQuestData->nQuestPacketFlags = '\x01';
     QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q03_NpcGossipHandler, true);
-    *(uint8_t*)&pA1Q3Data->field_0x08 = 0;
+    pA1Q3Data->field_0x08 = '\0';
     if (!pA1Q3Data->bMalusTaken) {
       return true;
     }
@@ -430,7 +430,7 @@ void __fastcall Q03_Callback06_Unused(D2QuestDataStrc * pQuestData, D2QuestArgSt
 // Already documented.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q3.cpp
 BOOL __fastcall OBJOP_A1Q3_DenOfEvil_CheckCompletion(D2ObjectOperateFnArg * pOperation) {
-    eD2PlayerAnimMode ePlayerAnimMode;
+    eD2ObjectAnimMode ePlayerAnimMode;
     D2ObjectOperateFnArg* pOperationLocal = pOperation;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_ToolsOfTheTrade);
     if (!pQuestData) {
@@ -439,7 +439,7 @@ BOOL __fastcall OBJOP_A1Q3_DenOfEvil_CheckCompletion(D2ObjectOperateFnArg * pOpe
 
     D2UnitStrc* pDVar2 = pOperation->sArg.pVictim;
     if (!pDVar2) {
-      ePlayerAnimMode = Death;
+      ePlayerAnimMode = eD2ObjectAnimMode_ns::Neutral;
     } else {
       ePlayerAnimMode = pDVar2->eAnimMode.ePlayerMode;
     }
@@ -448,7 +448,7 @@ BOOL __fastcall OBJOP_A1Q3_DenOfEvil_CheckCompletion(D2ObjectOperateFnArg * pOpe
       UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
       return 0;
     }
-    if (ePlayerAnimMode != Death) {
+    if (ePlayerAnimMode != eD2ObjectAnimMode_ns::Neutral) {
       return 0;
     }
 
@@ -715,10 +715,10 @@ void __fastcall Q03_InitData(D2QuestDataStrc * pQuestData) {
     memset(pQuestSpecificData, 0, 0xa4);
     pQuestSpecificData->field_0x00 = 0;
     pQuestSpecificData->nMalusGUID = 0;
-    *(uint8_t*)&pQuestSpecificData->field_0x10 = 0;
+    pQuestSpecificData->field_0x10 = '\0';
     pQuestSpecificData->field_0x12 = 0;
     pQuestSpecificData->bMalusTaken = false;
-    *(uint8_t*)&pQuestSpecificData->field_0x08 = 0;
+    pQuestSpecificData->field_0x08 = '\0';
     pQuestSpecificData->bCharsiNotified = 0;
     pQuestSpecificData->bQuestAccepted = 0;
     pQuestSpecificData->nMalusMode = 0;

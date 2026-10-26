@@ -111,7 +111,7 @@ void __fastcall SUNITPROXY_QueueTradeAction(struct D2UnitStrc * pNpcUnit, ::SGAM
 // Callers IterateNpcIntroUnits and SERVER_InitClassicTowns pass an {eLevelId, nCount} pair from their stack.
 void __fastcall SUNITPROXY_CountPlayerInLevel(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2LevelPlayerCountArgStrc * pArgs);
 // @sourcefile .\UNIT\sunitproxy.cpp
-void __fastcall SUNITPROXY_RefreshGambleForAllNpcs(::SGAMEDATA * pThis, struct D2UnitStrc * dwGameTick);
+void __fastcall SUNITPROXY_RefreshGambleForAllNpcs(::SGAMEDATA * pThis, int32_t dwGameTick);
 // Server-side: processes the pending item queue for the NPC associated with pUnit (vendor/merc interactions). Finds the D2GameNpcStrc for the unit's class id (GetGameNpcbyClassId). First pass: refills the NPC's gamble inventory — counts queue entries marked needing refill and, for each gambleable (quality==4) item carried by the player's inventory, fills the NPC inventory via SUNITNPC_FillNpcInventory. Second pass: walks the NPC item-transfer queue; for state==1 entries it moves the item into the NPC/merc inventory (SERVER_ItemToInventory), flipping the item's inventory page between CORPSE and MERC on retry, then either confirms placement (SUNITNPC_SetItemForNpc) and unlinks+frees the queue node, or leaves it pending. Non-state-1 entries call SUNITNPC_DiscardTradeListRolls(entry+0, entry+4), which always returns 0, so the free-node branch at 00536aac never runs and the entry stays queued. Operates entirely by side effect on the NPC's queue and inventories; frees nodes from pGame->pMemoryPool.
 // @sourcefile .\UNIT\sunitproxy.cpp
 void __fastcall SUNITPROXY_ProcessNpcItemQueue(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);

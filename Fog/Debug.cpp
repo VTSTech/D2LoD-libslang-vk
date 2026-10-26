@@ -2,14 +2,12 @@
 
 #include "Fog/Debug.h"
 #include "D2Common/D2SkillsTxt.h"
-#include "D2Game/D2QuestDataStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Launch/CharSel.h"
 #include "D2Win/DC6.h"
 #include "Fog/3rdparty/crashy.h"
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/Engine/Application.h"
-#include "Fog/File.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Source/SSComp.h"
@@ -20,7 +18,7 @@
 #include "Storm/Source/SSystem.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "D2Game/D2QuestGUIDStrc.h"
+#include "Bnclient/BNGatewayAccess.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -128,6 +126,10 @@ typedef BOOL (__stdcall *pfnModule32First)(HANDLE hSnapshot, void * lpme);
 #define RECON_FPTD_pfnModule32Next
 typedef BOOL (__stdcall *pfnModule32Next)(HANDLE hSnapshot, void * lpme);
 #endif
+#ifndef RECON_FPTD_pfnGetModuleInformation
+#define RECON_FPTD_pfnGetModuleInformation
+typedef BOOL (__stdcall *pfnGetModuleInformation)(HANDLE hProcess, void * hModule, void * lpmodinfo, DWORD cb);
+#endif
 #ifndef RECON_FPTD_pfnEnumProcessModules
 #define RECON_FPTD_pfnEnumProcessModules
 typedef BOOL (__stdcall *pfnEnumProcessModules)(HANDLE hProcess, void * lphModule, DWORD cb, LPDWORD lpcbNeeded);
@@ -139,10 +141,6 @@ typedef DWORD (__stdcall *pfnGetModuleFileNameExA)(HANDLE hProcess, void * hModu
 #ifndef RECON_FPTD_pfnGetModuleBaseNameA
 #define RECON_FPTD_pfnGetModuleBaseNameA
 typedef DWORD (__stdcall *pfnGetModuleBaseNameA)(HANDLE hProcess, void * hModule, LPSTR lpBaseName, DWORD nSize);
-#endif
-#ifndef RECON_FPTD_pfnGetModuleInformation
-#define RECON_FPTD_pfnGetModuleInformation
-typedef BOOL (__stdcall *pfnGetModuleInformation)(HANDLE hProcess, void * hModule, void * lpmodinfo, DWORD cb);
 #endif
 #ifndef RECON_FPTD_pfnSymFunctionTableAccess
 #define RECON_FPTD_pfnSymFunctionTableAccess
@@ -296,21 +294,10 @@ int __stdcall InitializeDebugSymbols() {
 
 // NOTE: Return type changed void→char (1 callers, MEDIUM confidence)
 bool __stdcall GetModuleInfoForAddress(uint32_t dwQueryAddr, uint32_t * pdwModuleBase, char * szModuleName) {
-    // Frame -1688..-24 is ONE object: a call writes 1664 literal bytes starting at &moduleInfo.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      uint32_t moduleInfo[2];
-      uint32_t dwBaseOfImage;
-      uint8_t __pad12[56];
-      char szInfoModuleName[256];
-      char szImageName[1340];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1664, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     bool bVar1;
-    int bSymbolsInitOk;
     BOOL bGotModuleInfo;
     HMODULE hModule;
+    IMAGEHLP_MODULE64 sModuleInfo;
     pfnSymGetModuleInfo64 pfnSymGetModuleInfo64Cached;
     uint32_t nSehState;
     nSehState = -1;
@@ -318,14 +305,13 @@ bool __stdcall GetModuleInfoForAddress(uint32_t dwQueryAddr, uint32_t * pdwModul
     puStack12 = __GSHandlerCheck_EH_6ca6c5;
     void* pPrevExceptionList;
     pPrevExceptionList = ExceptionList;
-    uint32_t dwStackCookie;
-    dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     ExceptionList = &pPrevExceptionList;
     *szModuleName = '\0';
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ *pdwModuleBase = 0;
     EnterCriticalSection(&lpCriticalSection_0098a6f0);
     nSehState = 0;
     if (hDbgHelpDll || (bVar1 = DEBUG_LoadDbgHelp64Apis() , bVar1)) {
+      int bSymbolsInitOk;
       if (bDebugSymbolsInitialized == '\0') {
         bSymbolsInitOk = InitializeDebugSymbols();
         if ((char)bSymbolsInitOk == '\0') {
@@ -335,16 +321,16 @@ bool __stdcall GetModuleInfoForAddress(uint32_t dwQueryAddr, uint32_t * pdwModul
 
       pfnSymGetModuleInfo64Cached = pSymGetModuleInfo64;
       if (pSymGetModuleInfo64) {
-        memset(__frame0.moduleInfo, 0, 0x680);
-        __frame0.moduleInfo[0] = 0x680;
-        bGotModuleInfo = (*pfnSymGetModuleInfo64Cached)(ghCurrentProcessHandle, dwQueryAddr, 0, __frame0.moduleInfo);
+        memset(&sModuleInfo, 0, 0x680);
+        sModuleInfo.SizeOfStruct = 0x680;
+        bGotModuleInfo = (*pfnSymGetModuleInfo64Cached)(ghCurrentProcessHandle, dwQueryAddr, 0, &sModuleInfo);
         if (bGotModuleInfo) {
-          /* LPCSTR lpModuleName for GetModuleHandleA */ hModule = GetModuleHandleA(__frame0.szImageName);
+          /* LPCSTR lpModuleName for GetModuleHandleA */ hModule = GetModuleHandleA(sModuleInfo.LoadedImageName);
           if (hModule) {
-            *pdwModuleBase = __frame0.dwBaseOfImage;
+            *pdwModuleBase = (uint32_t)sModuleInfo.BaseOfImage;
           }
 
-          _strncpy_s(szModuleName, 0x100, __frame0.szInfoModuleName, -1);
+          _strncpy_s(szModuleName, 0x100, sModuleInfo.ImageName, -1);
           /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0098a6f0);
           bVar1 = true;
           ExceptionList = pPrevExceptionList;
@@ -363,34 +349,24 @@ bool __stdcall GetModuleInfoForAddress(uint32_t dwQueryAddr, uint32_t * pdwModul
 }
 
 bool __stdcall GetSymbolNameForAddress(DWORD dwQueryAddr, char * szSymbolName, uint32_t * pdwSymDisplacement) {
-    // Frame -1080..-24 is ONE object: a call writes 1056 literal bytes starting at &symbolInfo.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      uint32_t symbolInfo[2];
-      uint8_t __pad8[20];
-      char szSymName[1028];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1056, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     bool bVar1;
-    int bInitOk;
     BOOL bApiOk;
     uint32_t local_ac0[2];
     IMAGEHLP_MODULE64 moduleInfo;
+    D2ImagehlpSymbol64BufStrc sSymbol;
     uint32_t nSehState;
     nSehState = -1;
     pfnEHHandlerRoutine pfnSehHandler;
     pfnSehHandler = __GSHandlerCheck_EH_6ca695;
     void* pPrevSehFrame;
     pPrevSehFrame = ExceptionList;
-    uint32_t dwStackCookie;
-    dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     ExceptionList = &pPrevSehFrame;
     *szSymbolName = '\0';
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ *pdwSymDisplacement = 0;
     EnterCriticalSection(&lpCriticalSection_0098a6f0);
     nSehState = 0;
     if (hDbgHelpDll || (bVar1 = DEBUG_LoadDbgHelp64Apis() , bVar1)) {
+      int bInitOk;
       if (bDebugSymbolsInitialized == '\0') {
         bInitOk = InitializeDebugSymbols();
         if ((char)bInitOk == '\0') {
@@ -398,17 +374,20 @@ bool __stdcall GetSymbolNameForAddress(DWORD dwQueryAddr, char * szSymbolName, u
         }
       }
       if (pSymGetSymFromAddr64) {
-        memset(__frame0.symbolInfo, 0, 0x420);
-        __frame0.symbolInfo[0] = 0x20;
+        memset(&sSymbol, 0, 0x420);
+        sSymbol.SizeOfStruct = 0x20;
+        *(uint32_t*)((char*)&sSymbol.Address + 4) = 0;
+        sSymbol.MaxNameLength = 0x400;
         local_ac0[0] = 0;
         local_ac0[1] = 0;
-        bApiOk = (*pSymGetSymFromAddr64)(ghCurrentProcessHandle, dwQueryAddr, 0, local_ac0, __frame0.symbolInfo);
+        *(uint32_t*)(char*)&sSymbol.Address = dwQueryAddr;
+        bApiOk = (*pSymGetSymFromAddr64)(ghCurrentProcessHandle, dwQueryAddr, 0, local_ac0, &sSymbol);
         if (bApiOk && pSymGetModuleInfo64) {
           memset(&moduleInfo, 0, 0x680);
           moduleInfo.SizeOfStruct = 0x680;
           bApiOk = (*pSymGetModuleInfo64)(ghCurrentProcessHandle, dwQueryAddr, 0, &moduleInfo);
           if (bApiOk && moduleInfo.SymType && moduleInfo.SymType != 4 && moduleInfo.SymType != 5) {
-            _strncpy_s(szSymbolName, 0x200, __frame0.szSymName, -1);
+            _strncpy_s(szSymbolName, 0x200, sSymbol.Name, -1);
             /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ *pdwSymDisplacement = local_ac0[0];
             LeaveCriticalSection(&lpCriticalSection_0098a6f0);
             bVar1 = true;
@@ -429,22 +408,18 @@ bool __stdcall GetSymbolNameForAddress(DWORD dwQueryAddr, char * szSymbolName, u
 }
 
 bool __stdcall GetSourceLineForAddress(uint32_t dwQueryAddr, char * szFileName, uint32_t * pdwLineNumber) {
-    // Frame slots -48..-12 are ONE object: &lineInfoSize is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -24..-12 are ONE object: &dwDisplacement is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
-      uint32_t lineInfoSize;
-      uint32_t pLineInfoKey;
-      uint32_t nLineNumber;
-      char* pszFileName;
-      uint32_t dwLineAddrLow;
-      uint32_t dwLineAddrHigh;
-      DWORD qwDisplacement[2];
+      DWORD dwDisplacement;
+      uint8_t __pad4[4];
       void* pPrevExceptionRecord;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 36, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     int uInitSymbolsResult;
     BOOL bGotLine;
+    IMAGEHLP_LINE64 sLineInfo;
     uint32_t nSehState;
     nSehState = -1;
     pfnEHHandlerRoutine pSehHandlerFunc;
@@ -469,16 +444,16 @@ bool __stdcall GetSourceLineForAddress(uint32_t dwQueryAddr, char * szFileName, 
       }
     }
     if (pSymGetLineFromAddr64) {
-      __frame0.pLineInfoKey = 0;
-      __frame0.nLineNumber = 0;
-      __frame0.pszFileName = 0;
-      __frame0.dwLineAddrLow = 0;
-      __frame0.dwLineAddrHigh = 0;
-      __frame0.lineInfoSize = 0x18;
-      bGotLine = (*pSymGetLineFromAddr64)(ghCurrentProcessHandle, dwQueryAddr, 0, __frame0.qwDisplacement, &__frame0.lineInfoSize);
+      sLineInfo.Key = 0;
+      sLineInfo.LineNumber = 0;
+      sLineInfo.FileName = 0;
+      *(uint32_t*)(char*)&sLineInfo.Address = 0;
+      *(uint32_t*)((char*)&sLineInfo.Address + 4) = 0;
+      sLineInfo.SizeOfStruct = 0x18;
+      bGotLine = (*pSymGetLineFromAddr64)(ghCurrentProcessHandle, dwQueryAddr, 0, &__frame0.dwDisplacement, &sLineInfo);
       if (bGotLine) {
-        _strncpy_s(szFileName, 0x100, __frame0.pszFileName, -1);
-        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ *pdwLineNumber = __frame0.nLineNumber;
+        _strncpy_s(szFileName, 0x100, sLineInfo.FileName, -1);
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ *pdwLineNumber = sLineInfo.LineNumber;
         LeaveCriticalSection(&lpCriticalSection_0098a6f0);
         ExceptionList = __frame0.pPrevExceptionRecord;
         return true;
@@ -735,6 +710,7 @@ void __stdcall WriteCrashDumpViaThread() {
     bool _bDumpOk;
     bool bDumpOk;
     void* pExceptParam;
+    MINIDUMP_EXCEPTION_INFORMATION sExceptionInfo;
     uint32_t dwDumpType;
     HANDLE hDumpFile;
     char cCurrent;
@@ -745,12 +721,12 @@ void __stdcall WriteCrashDumpViaThread() {
     pfnEHHandlerRoutine puStack12 = __GSHandlerCheck_EH_6ca595;
     __frame0.pExceptionListSaved = ExceptionList;
     ExceptionList = &__frame0.pExceptionListSaved;
-    uint32_t exceptionInfo = *(uint32_t*)((int)pCrashDumpInfo + 8);
-    uint32_t dwExceptionThreadId = *(uint32_t*)((int)pCrashDumpInfo + 4);
+    sExceptionInfo.ThreadId = *(DWORD*)((int)pCrashDumpInfo + 8);
+    sExceptionInfo.ExceptionPointers = *(_EXCEPTION_POINTERS**)((int)pCrashDumpInfo + 4);
     int* pbHasException = (int*)((int)pCrashDumpInfo + 4);
     char* szUserStream = *(char**)((int)pCrashDumpInfo + 0xc);
     __frame0.nUserStreamCount = 0;
-    uint32_t dwStreamType = 0;
+    sExceptionInfo.ClientPointers = 0;
     if (szUserStream) {
       __frame0.nBufferSize = 0x1000;
       __frame0.pUserStreamEnd = szUserStream;
@@ -770,7 +746,7 @@ void __stdcall WriteCrashDumpViaThread() {
       pCallbackParam = 0;
       pUserStreamInfo = &__frame0.nUserStreamCount;
       hDumpFile = *(HANDLE*)pDumpInfo;
-      pExceptParam = *pbHasException ? (void*)&exceptionInfo : nullptr;
+      pExceptParam = *pbHasException ? (void*)&sExceptionInfo : nullptr;
       dwDumpType = 0x40;
       dwProcessId = GetCurrentProcessId();
       _bDumpOk = (*pMiniDumpWriteDumpApi)(ghCurrentProcessHandle, dwProcessId, hDumpFile, dwDumpType, pExceptParam, pUserStreamInfo, pCallbackParam);
@@ -794,18 +770,13 @@ DWORD __stdcall DEBUG_CrashDumpRequestThreadProc(void * lpThreadParam) {
     return 0;
 }
 
-bool __fastcall CrashDumpWriterThread(LPCSTR szDumpPath, uint32_t pExceptionPtrs, uint32_t nEventHandle, DWORD dwThreadId) {
-    uint8_t uVar1;
+bool __fastcall CrashDumpWriterThread(LPCSTR szDumpPath, char * pExceptionPtrs, _EXCEPTION_POINTERS * nEventHandle, DWORD dwThreadId) {
+    uint8_t bVar1;
     uint32_t bLoadOk;
     HANDLE hResult;
-    HANDLE hDumpFile;
-    uint32_t nEventHandleField;
-    DWORD dwExcThreadId;
-    uint32_t pExcPtrsLocal;
-    uint8_t bDumpResult;
+    D2CrashDumpRequestStrc sDumpRequest;
     uint16_t wszDumpPath[260];
     uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    uint32_t pExcPtrsSaved = pExceptionPtrs;
     if (bEnableCrashDumps == '\0') {
       GuardStack();
       return false;
@@ -827,24 +798,24 @@ bool __fastcall CrashDumpWriterThread(LPCSTR szDumpPath, uint32_t pExceptionPtrs
       /* HANDLE hTemplateFile for CreateFileW */ /* DWORD dwFlagsAndAttributes for CreateFileW */ /* DWORD dwCreationDisposition for CreateFileW */ /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateFileW */ /* DWORD dwShareMode for CreateFileW */ /* DWORD dwDesiredAccess for CreateFileW */ /* LPCWSTR lpFileName for CreateFileW */ hResult = CreateFileW((LPCWSTR)wszDumpPath, 0x40000000, 3, (LPSECURITY_ATTRIBUTES)0x0, 2, 0x80, (HANDLE)0x0);
       if (hResult != (HANDLE)-1) {
         /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0098a6c4);
-        hDumpFile = hResult;
+        sDumpRequest.hFile = hResult;
         if (!dwThreadId) {
           dwThreadId = GetCurrentThreadId();
         }
 
-        pExcPtrsLocal = pExcPtrsSaved;
-        pCrashDumpInfo = &hDumpFile;
-        /* HANDLE hEvent for SetEvent */ nEventHandleField = nEventHandle;
-        bDumpResult = 0;
-        dwExcThreadId = dwThreadId;
+        pCrashDumpInfo = &sDumpRequest;
+        /* HANDLE hEvent for SetEvent */ sDumpRequest.pExceptionPointers = nEventHandle;
+        sDumpRequest.bSuccess = 0;
+        sDumpRequest.dwThreadId = dwThreadId;
+        sDumpRequest.szComment = pExceptionPtrs;
         SetEvent(hCrashDumpRequestEvent);
         /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ WaitForSingleObject(hCrashDumpCompleteEvent, -1);
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pCrashDumpInfo = 0;
         LeaveCriticalSection(&lpCriticalSection_0098a6c4);
         /* HANDLE hObject for CloseHandle */ CloseHandle(hResult);
-        uVar1 = bDumpResult;
+        bVar1 = sDumpRequest.bSuccess;
         GuardStack();
-        return (bool)uVar1;
+        return (bool)bVar1;
       }
     }
 
@@ -983,21 +954,18 @@ int CompareUintDescending(LPCVOID pParam1, LPCVOID pParam2) {
     return 1;
 }
 
-void FormatModuleDebugString(char * szText, D2QuestDataA1Q1Strc * pQuestDataA1Q1) {
+void FormatModuleDebugString(char * szText, D2FogDebugModuleEntryStrc * pModule) {
     char szGuidStr[40];
     char szTimeStampSuffix[16];
-    uint32_t dwTimestamp;
     uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     *szText = '\0';
-    *(uint16_t*)(char*)&dwTimestamp = pQuestDataA1Q1[3].sQuestGUID.nPlayerCount;
-    *(uint16_t*)((char*)&dwTimestamp + 2) = pQuestDataA1Q1[3].sQuestGUID.field2_0x82;
     szTimeStampSuffix[0] = '\0';
-    if (dwTimestamp) {
-      __snprintf_s(szTimeStampSuffix, 0x10, -1, " %8x", dwTimestamp);
+    if (pModule->dwTimestamp) {
+      __snprintf_s(szTimeStampSuffix, 0x10, -1, " %8x", pModule->dwTimestamp);
     }
 
-    __snprintf_s(szGuidStr, 0x28, -1, "{%08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x}", pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID[0x1a], (uint32_t)(uint16_t)pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID[0x1b], (uint32_t)*(uint16_t*)((int)pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID + 0x6e), (uint32_t)(uint8_t)pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID[0x1c], (uint32_t)*(uint8_t*)((int)pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID + 0x71), (uint32_t)*(uint8_t*)((int)pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID + 0x72), (uint32_t)*(uint8_t*)((int)pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID + 0x73), (uint32_t)(uint8_t)pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID[0x1d], (uint32_t)*(uint8_t*)((int)pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID + 0x75), (uint32_t)*(uint8_t*)((int)pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID + 0x76), (uint32_t)*(uint8_t*)((int)pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID + 0x77));
-    __snprintf_s(szText, 0x400, -1, "DBG-MODULE<%p %08x \"%s\" \"%s\" %u %s %u %u%s>", (void*)pQuestDataA1Q1->sQuestGUID.aPlayerGUID[0], pQuestDataA1Q1->sQuestGUID.aPlayerGUID[1], (char*)(pQuestDataA1Q1->sQuestGUID.aPlayerGUID + 2), (char*)(pQuestDataA1Q1[1].sQuestGUID.aPlayerGUID + 0x1f), pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID[0x19], szGuidStr, pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID[0x1e], pQuestDataA1Q1[3].sQuestGUID.aPlayerGUID[0x1f], szTimeStampSuffix);
+    __snprintf_s(szGuidStr, 0x28, -1, "{%08x-%04x-%04x-%02x%02x%02x%02x%02x%02x%02x%02x}", pModule->guidPdb.Data1, (uint32_t)pModule->guidPdb.Data2, (uint32_t)pModule->guidPdb.Data3, (uint32_t)pModule->guidPdb.Data4[0], (uint32_t)pModule->guidPdb.Data4[1], (uint32_t)pModule->guidPdb.Data4[2], (uint32_t)pModule->guidPdb.Data4[3], (uint32_t)pModule->guidPdb.Data4[4], (uint32_t)pModule->guidPdb.Data4[5], (uint32_t)pModule->guidPdb.Data4[6], (uint32_t)pModule->guidPdb.Data4[7]);
+    __snprintf_s(szText, 0x400, -1, "DBG-MODULE<%p %08x \"%s\" \"%s\" %u %s %u %u%s>", pModule->pImageBase, pModule->nImageSize, pModule->szModuleName, pModule->szImagePath, pModule->dwUnknown208, szGuidStr, pModule->dwUnknown21c, pModule->dwUnknown220, szTimeStampSuffix);
     GuardStack();
 }
 
@@ -1038,67 +1006,46 @@ void __fastcall FormatAddressDebugString(uint32_t * pAddrInfo, char * pSymInfo, 
 void __fastcall EnumerateAndDumpAllFunctions(fnCrashOutputLine pOutputCallback, ::Report * pReport) {
     char* pszLine;
     uint32_t nLineLen;
-    D2QuestDataA1Q1Strc* pModuleEntry;
-    size_t nModuleCount;
-    D2QuestDataA1Q1Strc aModuleEntries[1009];
+    D2FogDebugModuleEntryStrc* pModuleEntry;
+    D2FogDebugModuleTableStrc sModuleTable;
     char szLineBuffer[1024];
     char cScanChar;
-    InitializeDebugInfoTable((uintptr_t)&nModuleCount);
-    uint32_t nIndex = 0;
-    nModuleCount = 0;
-    char bPsapiEnumOk = Engine::Application::DEBUG_EnumerateModulesViaPsapi((int*)&nModuleCount);
+    InitializeDebugInfoTable(&sModuleTable);
+    char bPsapiEnumOk = Engine::Application::DEBUG_EnumerateModulesViaPsapi((int*)&sModuleTable);
     if (!(bool)bPsapiEnumOk) {
       bool bToolhelpEnumOk;
-      bToolhelpEnumOk = Engine::Application::DEBUG_EnumerateModulesViaToolhelp32((int*)&nModuleCount);
+      bToolhelpEnumOk = Engine::Application::DEBUG_EnumerateModulesViaToolhelp32((int*)&sModuleTable);
       if (!bToolhelpEnumOk) {
-        Engine::Application::DEBUG_EnumerateModulesViaPEB((int*)&nModuleCount);
+        Engine::Application::DEBUG_EnumerateModulesViaPEB((int*)&sModuleTable);
       }
     }
 
-    qsort(aModuleEntries, nModuleCount, 0x228, CompareUintDescending);
-    if (nModuleCount) {
-      pModuleEntry = aModuleEntries;
-      do {
-        pszLine = szLineBuffer;
-        FormatModuleDebugString(pszLine, pModuleEntry);
-        pszLine = pszLine + strlen(pszLine) + 1;
-        nLineLen = (int)pszLine - (int)(szLineBuffer + 1);
-        if (nLineLen < 0x3ff) {
-          szLineBuffer[nLineLen] = '\n';
-          szLineBuffer[nLineLen + 1] = '\0';
-        } else {
-          szLineBuffer[0x3fe] = '\n';
-          szLineBuffer[0x3ff] = '\0';
-        }
-
-        (*pOutputCallback)(pReport, szLineBuffer);
-        nIndex++;
-        pModuleEntry = (D2QuestDataA1Q1Strc*)&pModuleEntry[3].bQuestCompleted;
-      } while (nIndex < nModuleCount);
-    }
-
+    qsort(sModuleTable.aEntries, 0, 0x228, CompareUintDescending);
     GuardStack();
 }
 
-void InitializeDebugInfoTable(int32_t pTable) {
-    uint32_t* pEntryBase = (uint32_t*)(pTable + 4);
+void InitializeDebugInfoTable(D2FogDebugModuleTableStrc * pTable) {
+    D2FogDebugModuleEntryStrc* pEntryBase = pTable->aEntries;
     int nRemaining = 0xff;
-    uint16_t* pEntryCursor = (uint16_t*)(pTable + 0x216);
+    uint16_t* pEntryCursor = &pTable->aEntries[0].guidPdb.Data3;
     do {
-      *pEntryBase = 0;
+      uint8_t* puVar1;
+      pEntryBase->pImageBase = 0;
       *(uint32_t*)(pEntryCursor - 0x107) = 0;
       *(uint32_t*)(pEntryCursor - 5) = 0;
-      *(uint32_t*)(pEntryCursor - 3) = 0;
+      ((GUID*)(pEntryCursor - 3))->Data1 = 0;
       pEntryCursor[-1] = 0;
       *pEntryCursor = 0;
-      *(uint32_t*)(pEntryCursor + 1) = 0;
-      *(uint32_t*)(pEntryCursor + 3) = 0;
+      puVar1 = (uint8_t*)(pEntryCursor + 1);
+      memset(puVar1, 0, 4 * sizeof(puVar1[0]));
+      puVar1 = (uint8_t*)(pEntryCursor + 3);
+      memset(puVar1, 0, 4 * sizeof(puVar1[0]));
       *(uint32_t*)(pEntryCursor + 5) = 0;
       *(uint32_t*)(pEntryCursor + 7) = 0;
       *(uint32_t*)(pEntryCursor + 9) = 0;
       *(uint8_t*)(pEntryCursor - 0x105) = 0;
       *(uint8_t*)(pEntryCursor - 0x85) = 0;
-      pEntryBase += 0x8a;
+      pEntryBase++;
       pEntryCursor += 0x114;
       nRemaining--;
     } while (-1 < nRemaining);
@@ -1120,9 +1067,9 @@ void __fastcall DumpThreadContext(HANDLE hHandle) {
     /* LPCONTEXT lpContext for GetThreadContext */ /* HANDLE hThread for GetThreadContext */ sContext.ContextFlags = 0x10007;
     GetThreadContext(hHandle, &sContext);
     Src::LogManager::LogWithCategoryVarArgs("", "Stack bytes:\n");
-    Src::LogManager::EnqueueLogMessage("ERR", "", (void*)sContext.Esp, (void*)0x1000, nullptr, (void*)0x1, 0);
+    Src::LogManager::EnqueueLogMessage("ERR", "", (void*)sContext.Esp, (void*)0x1000, nullptr, 1, 0);
     Src::LogManager::LogWithCategoryVarArgs("", "Code bytes:\n");
-    Src::LogManager::EnqueueLogMessage("ERR", "", (void*)sContext.Eip, (void*)0x20, nullptr, (void*)0x1, 0);
+    Src::LogManager::EnqueueLogMessage("ERR", "", (void*)sContext.Eip, (void*)0x20, nullptr, 1, 0);
     GuardStack();
 }
 
@@ -1273,14 +1220,6 @@ D2FogModuleNodeStrc * __stdcall EnumerateModulesToolhelp32(uint32_t dwProcessId)
 // Enumerates process modules using PSAPI library. Loads PSAPI.DLL, queries module list, retrieves module paths and base names, constructs sorted list of module information for debugging.
 // @sourcefile .\Src\Exceptions.cpp
 D2FogModuleNodeStrc * __stdcall EnumerateModulesPsapi(HANDLE hProcess) {
-    // Frame slots -564..-556 are ONE object: &pModuleBase is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t pModuleBase;
-      uint32_t nModuleSize;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     DWORD dwLastError;
     BOOL bCallOk;
     D2FogModuleNodeStrc* pModuleNode;
@@ -1289,6 +1228,8 @@ D2FogModuleNodeStrc * __stdcall EnumerateModulesPsapi(HANDLE hProcess) {
     D2FogModuleNodeStrc* pSortedHead;
     int iVar1;
     HMODULE ahModules[256];
+    _MODULEINFO sModuleInfo;
+    pfnGetModuleInformation pGetModuleInformation;
     uint32_t nBytesNeeded;
     uint32_t nModuleCount;
     char szModuleName[256];
@@ -1315,11 +1256,11 @@ D2FogModuleNodeStrc * __stdcall EnumerateModulesPsapi(HANDLE hProcess) {
     pGetModuleFileNameExA = (pfnGetModuleFileNameExA)GetProcAddress(hPsapi, "GetModuleFileNameExA");
     pfnGetModuleBaseNameA pGetModuleBaseNameA;
     pGetModuleBaseNameA = (pfnGetModuleBaseNameA)GetProcAddress(hPsapi, "GetModuleBaseNameA");
-    pfnGetModuleInformation pGetModuleInformation;
-    pGetModuleInformation = (pfnGetModuleInformation)GetProcAddress(hPsapi, "GetModuleInformation");
+    pfnGetModuleInformation pFVar1;
+    pFVar1 = (pfnGetModuleInformation)GetProcAddress(hPsapi, "GetModuleInformation");
     HANDLE hProcessLocal2;
     hProcessLocal2 = hProcessLocal;
-    if (!pEnumProcessModules || !pGetModuleFileNameExA || !pGetModuleBaseNameA || !pGetModuleInformation) {
+    if (!pEnumProcessModules || !pGetModuleFileNameExA || !pGetModuleBaseNameA || !pFVar1) {
       pszCopySrc = "Unable to load psapi library";
     } else {
       bCallOk = (*pEnumProcessModules)(hProcessLocal, ahModules, 0x400, (LPDWORD)&nBytesNeeded);
@@ -1335,7 +1276,7 @@ D2FogModuleNodeStrc * __stdcall EnumerateModulesPsapi(HANDLE hProcess) {
         iVar1 = 0;
         if (0 < (int)nModuleCount) {
           do {
-            bCallOk = (*pGetModuleInformation)(hProcessLocal2, ahModules[iVar1], &__frame0.pModuleBase, 0xc);
+            bCallOk = (*pFVar1)(hProcessLocal2, ahModules[iVar1], &sModuleInfo, 0xc);
             if (!bCallOk) {
               dwLastError = GetLastError();
               Src::LogManager::LOGMANAGER_TraceToModuleLog("", "ERROR: PSAPI GetModuleInformation (%d)", dwLastError);
@@ -1374,9 +1315,9 @@ D2FogModuleNodeStrc * __stdcall EnumerateModulesPsapi(HANDLE hProcess) {
               pszCopySrc++;
             } while (chCopy != '\0');
 
-            pModuleNode->dwBaseAddress = __frame0.pModuleBase;
+            pModuleNode->dwBaseAddress = (uint32_t)sModuleInfo.lpBaseOfDll;
             pModuleNode->pNext = pModuleListHead;
-            pModuleNode->dwSize = __frame0.nModuleSize;
+            pModuleNode->dwSize = sModuleInfo.SizeOfImage;
             pPrevModule = 0;
             pSortedHead = pModuleNode;
             do {
@@ -1462,7 +1403,7 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
     // Frame slots -632..-4 are ONE object: &nBytesRemaining is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame1_t {
-      char* nBytesRemaining;
+      DWORD nBytesRemaining;
       char* pBytesToDump;
       uint32_t aSymInfo[4];
       uint32_t nMaxNameLen;
@@ -1481,6 +1422,7 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
     int nByteOffset;
     uint8_t* pAsciiOut;
     char chCur;
+    DWORD nBytesThisRow;
     __frame1.dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     void* pStackPtr;
     pStackPtr = (void*)pContext->Esp;
@@ -1512,16 +1454,16 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
     Src::LogManager::LogWithCategoryVarArgs("", "\n                     // EIP = 0x%08X - %s - %s+%04X\n\n", nEip, pcVar4, pBytesRemaining, __frame1.nBytesRemaining);
     int nLinesEmitted;
     nLinesEmitted = 0;
-    __frame1.nBytesRemaining = (char*)0x1000;
+    __frame1.nBytesRemaining = 0x1000;
     do {
-      pBytesRemaining = __frame1.nBytesRemaining;
+      nBytesThisRow = __frame1.nBytesRemaining;
       if (399 < nLinesEmitted) {
         break;
       }
 
       Src::LogManager::LogWithCategoryVarArgs("", "              %08X:", pStackPtr);
-      __frame1.pBytesToDump = pBytesRemaining;
-      if ((char*)0xf < pBytesRemaining) {
+      __frame1.pBytesToDump = (char*)nBytesThisRow;
+      if (0xf < nBytesThisRow) {
         __frame1.pBytesToDump = (char*)0x10;
       }
 
@@ -1620,7 +1562,7 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
       }
 
       nLinesEmitted++;
-      __frame1.nBytesRemaining += -iVar2;
+      __frame1.nBytesRemaining -= iVar2;
       pStackPtr = (void*)((int)pStackPtr + iVar2);
     } while (__frame1.nBytesRemaining);
 
@@ -1693,14 +1635,14 @@ BOOL __fastcall FILETOOLS_GetExecutableFolderPath(LPSTR lpFilename, DWORD nSize)
 
     LPSTR pszEnd = lpFilename;
     pszEnd = pszEnd + strlen(pszEnd) + 1;
-    char* nScanIndex = pszEnd + (-1 - (int)(lpFilename + 1));
-    if (0 >= (int)nScanIndex) {
+    int32_t nScanIndex = (int)pszEnd + (-1 - (int)(lpFilename + 1));
+    if (0 >= nScanIndex) {
       return 0;
     }
 
     while (true) {
       char chCur;
-      chCur = lpFilename[(int)nScanIndex];
+      chCur = lpFilename[nScanIndex];
       if (!(chCur != '\\' && chCur != '/')) {
         break;
       }
@@ -1709,19 +1651,19 @@ BOOL __fastcall FILETOOLS_GetExecutableFolderPath(LPSTR lpFilename, DWORD nSize)
       }
 
       nScanIndex--;
-      if ((int)nScanIndex < 1) {
+      if (nScanIndex < 1) {
         return 0;
       }
     }
 
-    if (0 >= (int)nScanIndex) {
+    if (0 >= nScanIndex) {
       return 0;
     }
-    if (lpFilename[(int)nScanIndex] == ':') {
+    if (lpFilename[nScanIndex] == ':') {
       nScanIndex++;
     }
 
-    lpFilename[(int)nScanIndex] = '\0';
+    lpFilename[nScanIndex] = '\0';
     return 1;
 }
 
@@ -6024,7 +5966,6 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame3_t) == 572, "frame group __frame3_t must reproduce the Ghidra frame layout");
     __frame3_t __frame3;
-    BOOL BVar1;
     uint32_t nStrLen;
     bool bCarry;
     char* pszRelFileName;
@@ -6032,10 +5973,8 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
     ULONGLONG qwModInfoCycles;
     ULONGLONG qwFmtCycles;
     char* pszSymName;
-    uint32_t nSymStructSize[4];
-    char aSymbolInfo[260];
+    D2ImagehlpSymbolBufStrc sSymbol;
     HANDLE hProcessCur;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     __frame1.pContextCopy = pContext;
     HANDLE hThread = hProcess;
     __frame1.szLogCategory = szSearchPath;
@@ -6070,11 +6009,12 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
     __frame0.nAddrPCMode = 3;
     __frame0.nAddrFrameMode = 3;
     __frame0.nAddrStackMode = 3;
-    nSymStructSize[0] = 0x18;
-    uint32_t nSymMaxNameLen = 0x100;
+    sSymbol.SizeOfStruct = 0x18;
+    sSymbol.MaxNameLength = 0x100;
     __frame1.nSymLookupFails = 0;
     __frame2.nFrameIdx = 0;
     do {
+      BOOL BVar1;
       if (2 < __frame1.nSymLookupFails) {
         break;
       }
@@ -6098,12 +6038,12 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
         __frame1.pszFileName = 0;
         __frame1.nLineAddr = 0;
         __frame1.nLineStructSize = 0x14;
-        BVar1 = (*pSymGetSymFromAddr)(hCurrentProcess, __frame0.stackFrame[0], &__frame2.nSymOffset, nSymStructSize);
+        BVar1 = (*pSymGetSymFromAddr)(hCurrentProcess, __frame0.stackFrame[0], &__frame2.nSymOffset, &sSymbol);
         if (!BVar1) {
           __frame1.nSymLookupFails++;
           pszSymName = "unknown";
         } else {
-          pszSymName = aSymbolInfo;
+          pszSymName = sSymbol.Name;
           __frame1.nLineNumber = __frame2.nSymOffset;
           BVar1 = GetSourceLineWithRetry(hProcessCur, __frame0.stackFrame[0], &__frame1.nLineNumber, &__frame1.nLineStructSize);
           nCycleSample = __frame1.nLineCycleSample;
@@ -6184,9 +6124,7 @@ void __fastcall FullStackWalkWithAnnotations(HANDLE hThread, CONTEXT * pContext)
     HANDLE hDupProcess;
     uint32_t moduleInfo[7];
     uint8_t szModuleName[544];
-    uint32_t aSymInfo[3];
-    uint8_t byModuleFlags;
-    char aSymNameBuf[260];
+    D2ImagehlpSymbolBufStrc sSymbol;
     char szSearchPath[4096];
     char szModulePath[260];
     uint32_t dwFpoLocals;
@@ -6246,8 +6184,8 @@ void __fastcall FullStackWalkWithAnnotations(HANDLE hThread, CONTEXT * pContext)
     tStackFrame.AddrPC.Mode = AddrModeFlat;
     tStackFrame.AddrStack.Mode = AddrModeFlat;
     tStackFrame.AddrFrame.Mode = AddrModeFlat;
-    aSymInfo[0] = 0x18;
-    uint32_t dwSymMaxNameLen = 0x100;
+    sSymbol.SizeOfStruct = 0x18;
+    sSymbol.MaxNameLength = 0x100;
     __frame0.nSymFailCount = 0;
     __frame0.nFrameCount = 0;
     do {
@@ -6269,12 +6207,12 @@ void __fastcall FullStackWalkWithAnnotations(HANDLE hThread, CONTEXT * pContext)
       __frame0.pszFileName = 0;
       __frame0.dwLineAddr = 0;
       __frame0.nSymDisplacement = 0;
-      bWalkOk = (*pSymGetSymFromAddr)(hDupProcess, tStackFrame.AddrPC.Offset, &__frame0.nSymDisplacement, aSymInfo);
+      bWalkOk = (*pSymGetSymFromAddr)(hDupProcess, tStackFrame.AddrPC.Offset, &__frame0.nSymDisplacement, &sSymbol);
       if (!bWalkOk) {
         __frame0.nSymFailCount++;
         __frame0.pszSymbolName = "unknown";
       } else {
-        __frame0.pszSymbolName = aSymNameBuf;
+        __frame0.pszSymbolName = sSymbol.Name;
         __frame0.pLineInfo = __frame0.nSymDisplacement;
         __frame0.dwLineStructSize = 0x14;
         bWalkOk = GetSourceLineWithRetry(hDupProcess, tStackFrame.AddrPC.Offset, &__frame0.pLineInfo, &__frame0.dwLineStructSize);
@@ -6299,7 +6237,7 @@ void __fastcall FullStackWalkWithAnnotations(HANDLE hThread, CONTEXT * pContext)
       }
 
       Src::LogManager::LogWithCategoryVarArgs("", "%s+%04X ", __frame0.pszSymbolName, __frame0.nSymDisplacement);
-      if (byModuleFlags & 3) {
+      if ((uint8_t)sSymbol.Flags & 3) {
         Src::LogManager::LogWithCategoryVarArgs("", "[omap] ");
       }
 
@@ -6362,32 +6300,19 @@ void __fastcall FullStackWalkWithAnnotations(HANDLE hThread, CONTEXT * pContext)
 }
 
 void __fastcall WriteCrashDump(uint32_t dwHeader0, uint32_t dwHeader1, uint32_t dwRecordType, int32_t nDwordCount, void * pData) {
-    // Frame slots -320..-4 are ONE object: &recHeader0 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t recHeader0;
-      uint32_t recHeader1;
-      uint32_t recType;
-      int32_t recCount;
-      uint8_t recData[32];
-      void* pDataLocal;
-      char szDumpPath[260];
-      uint32_t local_8;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 316, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    __frame0.pDataLocal = pData;
-    Src::LogManager::FILETOOLS_GetUserMyDocumentsDiabloIIGameLogsFolder(__frame0.szDumpPath, 0x104);
-    Storm::Source::SSTR::SStrPack(__frame0.szDumpPath, "Crashdump", 0x104);
-    FILE* _File = fopen(__frame0.szDumpPath, "ab");
+    D2CrashDumpRecordStrc sRecord;
+    char szDumpPath[260];
+    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
+    Src::LogManager::FILETOOLS_GetUserMyDocumentsDiabloIIGameLogsFolder(szDumpPath, 0x104);
+    Storm::Source::SSTR::SStrPack(szDumpPath, "Crashdump", 0x104);
+    FILE* _File = fopen(szDumpPath, "ab");
     if (_File) {
-      __frame0.recType = dwRecordType;
-      __frame0.recCount = nDwordCount;
-      __frame0.recHeader0 = dwHeader0;
-      __frame0.recHeader1 = dwHeader1;
-      Storm::Source::SSystem::SMemCopy(__frame0.recData, __frame0.pDataLocal, nDwordCount * 4);
-      fwrite(&__frame0.recHeader0, nDwordCount * 4 + 0x10, 1, _File);
+      sRecord.dwRecordType = dwRecordType;
+      sRecord.nDwordCount = nDwordCount;
+      sRecord.dwHeader0 = dwHeader0;
+      sRecord.dwHeader1 = dwHeader1;
+      Storm::Source::SSystem::SMemCopy(sRecord.aData, pData, nDwordCount * 4);
+      fwrite(&sRecord, nDwordCount * 4 + 0x10, 1, _File);
       fclose(_File);
     }
 

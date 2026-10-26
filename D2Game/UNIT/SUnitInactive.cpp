@@ -214,27 +214,17 @@ void __stdcall SUNITINACTIVE_RestoreInactiveItemList(::SGAMEDATA * pGame, D2Room
 // Serializes a ground/dropped item into a bitstream (up to 1024 bytes), allocates an inactive record (serialized bytes + 0xF header) in the game memory pool, calculates a despawn timer, then frees the unit and any socketed items via FreeServerUnit. Appends the record to pInactiveList->next chain, or if pOutInactiveRecord is non-null writes the pointer there instead.
 // @sourcefile .\UNIT\SUnitInactive.cpp
 void __stdcall SUNITINACTIVE_SerializeAndDeactivateItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t pInactiveList, int * pOutInactiveRecord) {
-    // Frame slots -1048..-8 are ONE object: &dwZeroInit is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t dwZeroInit;
-      int32_t nDespawnFrame;
-      int32_t nGUID;
-      uint16_t nBitStreamSize;
-      char BitStream[1024];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1040, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     D2UnitStrc* pNextSocketedItem;
+    D2InactiveItemRecordBufferStrc sRecord;
     D2InventoryStrc* pInventory;
-    __frame0.nGUID = D2Common::ITEMS::Items::ITEM_GetItemData_nPlayerGUID(pUnit);
-    __frame0.dwZeroInit = 0;
-    int32_t nSerializedLen = D2Common::ITEMS::Items::SerializeItem(pUnit, (uint8_t*)__frame0.BitStream, 0x400, (D2StatListExStrc*)0x1, 1, 0);
-    __frame0.nBitStreamSize = (uint16_t)nSerializedLen;
-    __frame0.nDespawnFrame = ITEMS::Items::Drop::ITEM_CalculateDespawnTimer(pGame, pUnit);
-    uint32_t nSerializedBytes = (uint32_t)__frame0.nBitStreamSize;
+    sRecord.nPlayerGUID = D2Common::ITEMS::Items::ITEM_GetItemData_nPlayerGUID(pUnit);
+    sRecord.pNext = 0;
+    int32_t nSerializedLen = D2Common::ITEMS::Items::SerializeItem(pUnit, sRecord.itemData, 0x400, (D2StatListExStrc*)0x1, 1, 0);
+    sRecord.nItemDataSize = (int16_t)nSerializedLen;
+    sRecord.nDespawnTimer = ITEMS::Items::Drop::ITEM_CalculateDespawnTimer(pGame, pUnit);
+    uint32_t nSerializedBytes = (uint32_t)(uint16_t)sRecord.nItemDataSize;
     int* pNewInactiveRecord = (int*)D2_ALLOC_POOL(pGame->pMemoryPool, nSerializedBytes + 0xf);
-    memcpy(pNewInactiveRecord, &__frame0.dwZeroInit, nSerializedBytes + 0xf);
+    memcpy(pNewInactiveRecord, &sRecord, nSerializedBytes + 0xf);
     int32_t iVar1 = D2Common::ITEMS::Items::ITEM_GetItemsTxt_bHasInv(pUnit);
     if (iVar1) {
       D2UnitStrc* pSocketedItem;
@@ -1038,7 +1028,7 @@ void __fastcall SUNITINACTIVE_RoomInit(::SGAMEDATA * pGame, D2RoomStrc * pRoom) 
     int nGrowStepsElapsed;
     uint32_t dwDefaultSize;
     int32_t nObjSize;
-    eD2PlayerAnimMode eActNo;
+    uint32_t eActNo;
     D2UnitStrc* pUnit;
     int nRemainingGrowSteps;
     D2ObjectsTxt* pObjTxtGrowable;
@@ -1078,7 +1068,7 @@ void __fastcall SUNITINACTIVE_RoomInit(::SGAMEDATA * pGame, D2RoomStrc * pRoom) 
           bIsGrowable = D2Common::Units::IsShrine(pUnit);
           if (!bIsGrowable || !pCurUnitRecord->nGameFrame) {
             if (!(pObjTxtGrowable->SubClass & 0x20U)) {
-              pUnit->pUnitData.pUnitDataPlayer->szCharName[4] = (char)pCurUnitRecord->field_0x28;
+              pUnit->pUnitData.pUnitDataPlayer->szCharName[4] = pCurUnitRecord->field_0x28;
               pUnit->uSideData.pServerSide.bSparkChest = (uint8_t)pCurUnitRecord->nDropItemCode;
               if (pCurUnitRecord->nLevelId) {
                 pUnit->dwDropItemCode = pCurUnitRecord->nLevelId;
@@ -1086,7 +1076,7 @@ void __fastcall SUNITINACTIVE_RoomInit(::SGAMEDATA * pGame, D2RoomStrc * pRoom) 
             } else {
               nObjSize = Objects::OBJECT_GetDoubledTxtSize((int32_t)pObjTxtGrowable);
               byMaxStage = (uint8_t)nObjSize;
-              if ((uint8_t)pCurUnitRecord->field_0x28 < byMaxStage) {
+              if (pCurUnitRecord->field_0x28 < byMaxStage) {
                 pObjTxtLine = (D2ObjectsTxt*)pObjTxtGrowable->Parm[0];
                 if (!pObjTxtLine) {
                   pObjTxtLine = 0;
@@ -1099,7 +1089,7 @@ void __fastcall SUNITINACTIVE_RoomInit(::SGAMEDATA * pGame, D2RoomStrc * pRoom) 
                     nGrowStepsElapsed = 1;
                   }
 
-                  byNewStage = (char)pCurUnitRecord->field_0x28 + (char)nGrowStepsElapsed;
+                  byNewStage = pCurUnitRecord->field_0x28 + (char)nGrowStepsElapsed;
                   if (byMaxStage < byNewStage) {
                     byNewStage = byMaxStage;
                   }
@@ -1109,13 +1099,13 @@ void __fastcall SUNITINACTIVE_RoomInit(::SGAMEDATA * pGame, D2RoomStrc * pRoom) 
                   eActNo = dwDefaultSize - (int)((int64_t)(uint64_t)byNewStage / (int64_t)pObjTxtGrowable->Parm[2]);
                   pUnit->eAnimMode.ePlayerMode = eActNo;
                   bObjectMode = byNewStage;
-                  if (Walk < eActNo) {
+                  if (2 < eActNo) {
                     pUnit->eAnimMode.ePlayerMode = Death;
                     pUnit->pUnitData.pUnitDataMonster->Components[0] = byMaxStage;
                     goto free_spawned_record;
                   }
                 } else {
-                  bObjectMode = (uint8_t)pCurUnitRecord->field_0x28;
+                  bObjectMode = pCurUnitRecord->field_0x28;
                 }
 
                 pUnit->pUnitData.pUnitDataMonster->Components[0] = bObjectMode;
@@ -1143,8 +1133,8 @@ void __fastcall SUNITINACTIVE_RoomInit(::SGAMEDATA * pGame, D2RoomStrc * pRoom) 
               GAME::Event::SetEvent(pGame, pUnit, 5, (int)pRespawnFrame, 0, 0);
             }
 
-            pUnit->pUnitData.pUnitDataPlayer->szCharName[4] = (char)pCurUnitRecord->field_0x28;
-            pShrineTxtRec = D2Common::DATATBLS::ObjectTbls::TXT_Shrines_GetLine((uint32_t)(uint8_t)pCurUnitRecord->field_0x28);
+            pUnit->pUnitData.pUnitDataPlayer->szCharName[4] = pCurUnitRecord->field_0x28;
+            pShrineTxtRec = D2Common::DATATBLS::ObjectTbls::TXT_Shrines_GetLine((uint32_t)pCurUnitRecord->field_0x28);
             D2Common::Units::SetShrineTxtRecordInObjectData(pUnit, pShrineTxtRec);
           }
         }
@@ -1164,7 +1154,7 @@ void __fastcall SUNITINACTIVE_RoomInit(::SGAMEDATA * pGame, D2RoomStrc * pRoom) 
 
             D2Common::Units::SetupUpdateFlag(pUnit, 0x11);
           } else if (pObjTxtLine == (D2ObjectsTxt*)0x2) {
-            pUnit->pUnitData.pUnitDataPlayer->szCharName[4] = (char)pCurUnitRecord->field_0x28;
+            pUnit->pUnitData.pUnitDataPlayer->szCharName[4] = pCurUnitRecord->field_0x28;
             nLine = 0x15c;
             continue;
           }
@@ -1297,7 +1287,7 @@ void __stdcall SUNITINACTIVE_SaveInactiveUnit(::SGAMEDATA * pGame, D2UnitStrc * 
       }
 
       _Dst->nLevelId = pUnit->dwDropItemCode;
-      *(char*)&_Dst->field_0x28 = pUnit->pUnitData.pUnitDataPlayer->szCharName[4];
+      _Dst->field_0x28 = pUnit->pUnitData.pUnitDataPlayer->szCharName[4];
     } else {
       _Dst->eAnimMode = pUnit->eAnimMode;
     }

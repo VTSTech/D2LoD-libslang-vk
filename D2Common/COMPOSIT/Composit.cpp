@@ -355,33 +355,6 @@ void __stdcall COMPOSIT_BuildCofPath(D2UnitStrc * pUnit, uint32_t nPlrClass, uin
     static uint32_t gaMonsterCompositeOverrideGfx[2] = { 0x20206867, 0xd };
     static uint32_t gnMonsterCompositeOverrideCount = 0x1;
 
-    // Frame slots -28..-4 are ONE object: &byModeToken0 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint8_t byModeToken0;
-      uint8_t byModeToken1;
-      uint8_t byModeToken2;
-      uint8_t byModeToken3;
-      uint8_t __pad4[4];
-      uint8_t byWeaponToken0;
-      uint8_t byWeaponToken1;
-      uint8_t byWeaponToken2;
-      uint8_t byWeaponToken3;
-      uint8_t byModeToken0Obj;
-      uint8_t byModeToken1Obj;
-      uint8_t byModeToken2Obj;
-      uint8_t byTypeToken3Obj;
-      uint8_t byWeaponToken0Obj;
-      uint8_t byWeaponToken1Obj;
-      uint8_t byWeaponToken2Obj;
-      uint8_t byWeaponToken3Obj;
-      uint8_t byTypeToken0;
-      uint8_t byTypeToken1;
-      uint8_t byTypeToken2;
-      uint8_t byTypeToken3;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 24, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint8_t byRawTokenChar2;
     uint8_t byRawTokenChar1;
     D2ObjTypeTxt* pObjModeLine;
@@ -395,12 +368,17 @@ void __stdcall COMPOSIT_BuildCofPath(D2UnitStrc * pUnit, uint32_t nPlrClass, uin
     uint32_t dwModeToken;
     uint32_t nMonModeItemCode;
     uint8_t byObjTypeToken0;
-    uint32_t nModeOrClass;
+    char szModeToken[4];
+    char szWeaponToken[4];
+    char szModeTokenObj[4];
+    char szWeaponTokenObj[4];
+    char szTypeToken[4];
     uint32_t nTypeToken;
     uint8_t* pszDirToken;
     uint32_t nPlrClassCopy;
     uint32_t nMode2;
     uint32_t nModeItemCode;
+    uint32_t nModeOrClass;
     int nWeaponClassCode;
     int32_t* pnWeaponClass;
     uint32_t nResolvedClass = nItemCode;
@@ -439,34 +417,34 @@ void __stdcall COMPOSIT_BuildCofPath(D2UnitStrc * pUnit, uint32_t nPlrClass, uin
         }
       }
 
-      __frame0.byWeaponToken3 = 0;
-      __frame0.byTypeToken3 = 0;
-      __frame0.byModeToken3 = 0;
-      __frame0.byWeaponToken0 = (uint8_t)*pnWeaponClass == 0x20 ? 0 : (uint8_t)*pnWeaponClass;
-      __frame0.byWeaponToken1 = *(uint8_t*)((int)pnWeaponClass + 1) == 0x20 ? 0 : *(uint8_t*)((int)pnWeaponClass + 1);
-      __frame0.byWeaponToken2 = *(uint8_t*)((int)pnWeaponClass + 2) == 0x20 ? 0 : *(uint8_t*)((int)pnWeaponClass + 2);
-      __frame0.byTypeToken0 = (uint8_t)nModeItemCode == 0x20 ? 0 : (uint8_t)nModeItemCode;
-      __frame0.byTypeToken1 = (uint8_t)((uint32_t)nModeItemCode >> 8);
-      __frame0.byTypeToken1 = __frame0.byTypeToken1 == 0x20 ? 0 : __frame0.byTypeToken1;
-      __frame0.byTypeToken2 = (uint8_t)((uint32_t)nModeItemCode >> 0x10);
-      __frame0.byTypeToken2 = __frame0.byTypeToken2 == 0x20 ? 0 : __frame0.byTypeToken2;
-      __frame0.byModeToken0 = (uint8_t)nMonModeItemCode == 0x20 ? 0 : (uint8_t)nMonModeItemCode;
-      __frame0.byModeToken1 = (uint8_t)(nMonModeItemCode >> 8);
-      __frame0.byModeToken1 = __frame0.byModeToken1 == 0x20 ? 0 : __frame0.byModeToken1;
-      __frame0.byModeToken2 = (uint8_t)(nMonModeItemCode >> 0x10);
-      __frame0.byModeToken2 = __frame0.byModeToken2 == 0x20 ? 0 : __frame0.byModeToken2;
+      szWeaponToken[3] = '\0';
+      szTypeToken[3] = '\0';
+      szModeToken[3] = '\0';
+      szWeaponToken[0] = (uint8_t)*pnWeaponClass == 0x20 ? 0 : (uint8_t)*pnWeaponClass;
+      szWeaponToken[1] = *(uint8_t*)((int)pnWeaponClass + 1) == 0x20 ? 0 : *(uint8_t*)((int)pnWeaponClass + 1);
+      szWeaponToken[2] = *(uint8_t*)((int)pnWeaponClass + 2) == 0x20 ? 0 : *(uint8_t*)((int)pnWeaponClass + 2);
+      szTypeToken[0] = (uint8_t)nModeItemCode == 0x20 ? 0 : (uint8_t)nModeItemCode;
+      byRawTokenChar1 = (uint8_t)((uint32_t)nModeItemCode >> 8);
+      szTypeToken[1] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
+      byRawTokenChar1 = (uint8_t)((uint32_t)nModeItemCode >> 0x10);
+      szTypeToken[2] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
+      szModeToken[0] = (uint8_t)nMonModeItemCode == 0x20 ? 0 : (uint8_t)nMonModeItemCode;
+      byRawTokenChar1 = (uint8_t)(nMonModeItemCode >> 8);
+      szModeToken[1] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
+      byRawTokenChar1 = (uint8_t)(nMonModeItemCode >> 0x10);
+      szModeToken[2] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
       if (bBuildFullPath) {
-        pszWeaponToken = (uint32_t*)&__frame0.byWeaponToken0;
-        pszModeToken = (uint32_t*)&__frame0.byModeToken0;
-        pszTypeToken = (uint32_t*)&__frame0.byTypeToken0;
+        pszWeaponToken = (uint32_t*)szWeaponToken;
+        pszModeToken = (uint32_t*)szModeToken;
+        pszTypeToken = (uint32_t*)szTypeToken;
         nTypeToken = (uint32_t)"DATA\\GLOBAL\\CHARS";
         /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutCofPath, "%s\\%s\\COF\\%s%s%s.COF", nTypeToken, pszTypeToken, pszTypeToken, pszModeToken, pszWeaponToken);
         return;
       }
 
-      pszWeaponToken = (uint32_t*)&__frame0.byWeaponToken0;
-      pszModeToken = (uint32_t*)&__frame0.byModeToken0;
-      pszTypeToken = (uint32_t*)&__frame0.byTypeToken0;
+      pszWeaponToken = (uint32_t*)szWeaponToken;
+      pszModeToken = (uint32_t*)szModeToken;
+      pszTypeToken = (uint32_t*)szTypeToken;
     } else if (nCompType == 1) {
       if ((int)nPlrClass < 0) {
         return;
@@ -529,34 +507,34 @@ void __stdcall COMPOSIT_BuildCofPath(D2UnitStrc * pUnit, uint32_t nPlrClass, uin
       byObjTypeToken0 = (uint8_t)nModeOrClass;
       pObjModeLine = DATATBLS::TokTbls::TxtGetObjTypeModeLine(nItemCode, 1);
       nMode2 = *(uint32_t*)pObjModeLine->token;
-      __frame0.byModeToken0 = (uint8_t)nMode2;
-      __frame0.byModeToken1 = (uint8_t)((uint32_t)nMode2 >> 8);
-      __frame0.byModeToken2 = (uint8_t)((uint32_t)nMode2 >> 0x10);
-      __frame0.byModeToken3 = (uint8_t)((uint32_t)nMode2 >> 0x18);
+      szModeToken[0] = (char)nMode2;
+      szModeToken[1] = (char)((uint32_t)nMode2 >> 8);
+      szModeToken[2] = (char)((uint32_t)nMode2 >> 0x10);
+      szModeToken[3] = (char)((uint32_t)nMode2 >> 0x18);
       nResolvedClass = COMPOSIT_ResolveWeaponClass(pUnit, 2, nItemCodeCopy, nResolvedClass, pInventory, (int32_t*)&pInventory);
       *pOutWeaponClass = nResolvedClass;
-      __frame0.byWeaponToken3Obj = 0;
-      __frame0.byTypeToken3Obj = 0;
-      __frame0.byWeaponToken0Obj = (uint8_t)nResolvedClass == 0x20 ? 0 : (uint8_t)nResolvedClass;
-      __frame0.byWeaponToken1Obj = *(uint8_t*)((int)pOutWeaponClass + 1) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 1);
-      __frame0.byWeaponToken2Obj = *(uint8_t*)((int)pOutWeaponClass + 2) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 2);
+      szWeaponTokenObj[3] = '\0';
+      szModeTokenObj[3] = '\0';
+      szWeaponTokenObj[0] = (uint8_t)nResolvedClass == 0x20 ? 0 : (uint8_t)nResolvedClass;
+      szWeaponTokenObj[1] = *(uint8_t*)((int)pOutWeaponClass + 1) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 1);
+      szWeaponTokenObj[2] = *(uint8_t*)((int)pOutWeaponClass + 2) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 2);
       byRawTokenChar1 = (uint8_t)((uint32_t)nModeOrClass >> 8);
       byRawTokenChar2 = (uint8_t)((uint32_t)nModeOrClass >> 0x10);
       nCompType = (uint32_t)(uint32_t)((uint32_t)((uint32_t)(uint8_t)(byRawTokenChar2 == 0x20 ? 0 : byRawTokenChar2) << 16 | (uint32_t)(uint16_t)((uint16_t)(uint8_t)(byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1) << 8 | (uint16_t)(uint8_t)(byObjTypeToken0 == 0x20 ? 0 : byObjTypeToken0))) & 0xffffffu);
-      __frame0.byModeToken0Obj = __frame0.byModeToken0 == 0x20 ? 0 : __frame0.byModeToken0;
-      __frame0.byModeToken1Obj = __frame0.byModeToken1 == 0x20 ? 0 : __frame0.byModeToken1;
-      __frame0.byModeToken2Obj = __frame0.byModeToken2 == 0x20 ? 0 : __frame0.byModeToken2;
+      szModeTokenObj[0] = szModeToken[0] == ' ' ? 0 : szModeToken[0];
+      szModeTokenObj[1] = szModeToken[1] == ' ' ? 0 : szModeToken[1];
+      szModeTokenObj[2] = szModeToken[2] == ' ' ? 0 : szModeToken[2];
       if (bBuildFullPath) {
-        pszWeaponToken = (uint32_t*)&__frame0.byWeaponToken0Obj;
-        pszModeToken = (uint32_t*)&__frame0.byModeToken0Obj;
+        pszWeaponToken = (uint32_t*)szWeaponTokenObj;
+        pszModeToken = (uint32_t*)szModeTokenObj;
         pszTypeToken = &nCompType;
         nTypeToken = (uint32_t)gszDirObjects;
         /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutCofPath, "%s\\%s\\COF\\%s%s%s.COF", nTypeToken, pszTypeToken, pszTypeToken, pszModeToken, pszWeaponToken);
         return;
       }
 
-      pszWeaponToken = (uint32_t*)&__frame0.byWeaponToken0Obj;
-      pszModeToken = (uint32_t*)&__frame0.byModeToken0Obj;
+      pszWeaponToken = (uint32_t*)szWeaponTokenObj;
+      pszModeToken = (uint32_t*)szModeTokenObj;
       pszTypeToken = &nCompType;
     }
 

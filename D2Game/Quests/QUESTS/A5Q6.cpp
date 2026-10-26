@@ -44,6 +44,7 @@
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
+#include "D2Game/Quests/QUESTS/A4Q2.h"
 #include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/Party.h"
 #include "D2Game/UNIT/PlayerList.h"
@@ -54,6 +55,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "globals/globals.h"
 #include "D2Client/UI/QuestLog.h"
 #include "D2Game/D2Game.h"
@@ -506,7 +508,7 @@ BOOL __fastcall SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void 
 BOOL __fastcall Q36_SendCompletionNotification(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     bool _bJustCompleted;
     bool bJustCompleted;
-    uint8_t abyQuestPacket[8];
+    D2GSPacketSrv0x5D abyQuestPacket;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     /* GetQuestState(QUEST_EveOfDestruction, 0xd=JustCompleted) — only send
                          completion FX/packet if just killed Baal */ _bJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
@@ -515,13 +517,12 @@ BOOL __fastcall Q36_SendCompletionNotification(::SGAMEDATA * pGame, D2UnitStrc *
     }
 
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q6.cpp", 0x1d8);
-    abyQuestPacket[4] = 0;
-    abyQuestPacket[5] = 0;
-    abyQuestPacket[0] = 0x5d;
-    abyQuestPacket[1] = 0x24;
-    abyQuestPacket[2] = 2;
-    abyQuestPacket[3] = 0;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, abyQuestPacket);
+    abyQuestPacket.nExtra = 0;
+    abyQuestPacket.nPacketId = ']';
+    abyQuestPacket.nQuestId = '$';
+    abyQuestPacket.nAlertFlags = '\x02';
+    abyQuestPacket.nFilterStatus = '\0';
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, &abyQuestPacket);
     UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x53, pUnit);
     return 0;
 }
@@ -665,25 +666,14 @@ void __fastcall Q36_Callback_08_CompleteQuest(D2QuestDataStrc * pQuestData, D2Qu
 // A5Q6 Eve of Destruction. Sends the 0x50 "quest special" packet (quest 0x24) to a player's client, carrying the A5Q6-specific field (the randomly-rolled monster id from Objects_InitFn79). Used to sync the quest's special data to the client.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q6.cpp
 void Q36_SendQuestSpecialPacket(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
-    // Frame slots -24..-19 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byPacketId;
-      uint16_t wQuestId;
-      uint16_t wQuestFlags;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 5, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int nSendResult;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
+    D2GSPacketSrv0x50 sPacket;
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q6.cpp", 0x243);
-    __frame0.byPacketId = 0x50;
-    __frame0.wQuestId = 0x24;
+    sPacket.nPacketId = 'P';
+    sPacket.nMessageType = 0x24;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_EveOfDestruction);
-    __frame0.wQuestFlags = (uint16_t)pQuestData->pQuestSpecificData.pA5Q6->nQuestFlags;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x50_QuestSpecial(pClient, (uint32_t*)&__frame0.byPacketId);
+    sPacket.aPayload[0] = (uint16_t)pQuestData->pQuestSpecificData.pA5Q6->nQuestFlags;
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x50_QuestSpecial(pClient, &sPacket);
     Fog::Debug::GuardStack();
 }
 
@@ -1015,7 +1005,7 @@ void __fastcall Objects_InitFn79(D2ObjectInitFnArg * pInitArg) {
     int nMax;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_EveOfDestruction);
     D2QuestDataA5Q6Strc* pQuestSpecificA1Q4 = pQuestData->pQuestSpecificData.pA5Q6;
-    if ((char)pQuestSpecificA1Q4->field_0xA0 != '\0') {
+    if (pQuestSpecificA1Q4->field_0xA0 != '\0') {
       return;
     }
 
@@ -1033,14 +1023,14 @@ void __fastcall Objects_InitFn79(D2ObjectInitFnArg * pInitArg) {
       nAttempt++;
       pQuestSpecificA1Q4->nQuestFlags = nRolledMonId;
       if (-1 < nRolledMonId && nRolledMonId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nRolledMonId && sgptDataTable->pTxtMonStats[nRolledMonId].zoo) {
-        *(uint8_t*)&pQuestSpecificA1Q4->field_0xA0 = 1;
+        pQuestSpecificA1Q4->field_0xA0 = '\x01';
       }
-    } while ((char)pQuestSpecificA1Q4->field_0xA0 == '\0');
+    } while (pQuestSpecificA1Q4->field_0xA0 == '\0');
 
-    if ((char)pQuestSpecificA1Q4->field_0xA0 == '\0') {
-      *(uint8_t*)&pQuestSpecificA1Q4->field_0xA0 = 1;
+    if (pQuestSpecificA1Q4->field_0xA0 == '\0') {
+      pQuestSpecificA1Q4->field_0xA0 = '\x01';
       pQuestSpecificA1Q4->nQuestFlags = 0;
-      if ((char)pQuestSpecificA1Q4->field_0xA0 == '\0') {
+      if (pQuestSpecificA1Q4->field_0xA0 == '\0') {
         return;
       }
     }

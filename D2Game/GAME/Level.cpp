@@ -36,6 +36,7 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Game/UNIT/sunitproxy.h"
 #include "Fog/D2PoolManagerStrc.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/D2DynamicPathStrc.h"

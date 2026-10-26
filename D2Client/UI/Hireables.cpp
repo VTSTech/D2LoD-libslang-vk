@@ -2,6 +2,7 @@
 
 #include "D2Client/UI/Hireables.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2RosterStrc.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
@@ -34,7 +35,6 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -254,102 +254,30 @@ void __fastcall UI_DrawHirelingNameFromString(char * szText, int32_t nX, int32_t
 }
 
 void __stdcall UI_DrawHirelingGoldCost(int nGoldCost, int32_t nDrawPositionX) {
-    // Frame slots -132..-68 are ONE object: &wszConverted is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t wszConverted;
-      uint32_t local_80;
-      uint32_t local_7c;
-      uint32_t local_78;
-      uint32_t local_74;
-      uint32_t local_70;
-      uint32_t local_6c;
-      uint32_t local_68;
-      uint32_t local_64;
-      uint32_t local_60;
-      uint32_t local_5c;
-      uint32_t local_58;
-      uint32_t local_54;
-      uint32_t local_50;
-      uint32_t local_4c;
-      uint32_t local_48;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 64, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    // Frame -68..-4 is ONE object: a call writes 64 literal bytes starting at &wszGoldText.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame1_t {
-      uint32_t wszGoldText;
-      uint32_t uStack_40;
-      uint32_t uStack_3c;
-      uint32_t uStack_38;
-      uint32_t local_34;
-      uint32_t local_30;
-      uint32_t local_2c;
-      uint32_t local_28;
-      uint32_t local_24;
-      uint32_t local_20;
-      uint32_t local_1c;
-      uint32_t local_18;
-      uint32_t local_14;
-      uint32_t local_10;
-      uint32_t local_c;
-      uint32_t local_8;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 64, "frame group __frame1_t must reproduce the Ghidra frame layout");
-    __frame1_t __frame1;
     int32_t nStrLen;
     int nTextWidth;
     uint16_t* pwszTrunc;
     char szGoldCostStr[32];
-    __frame0.wszConverted = 0;
-    __frame0.local_80 = 0;
-    __frame0.local_7c = 0;
-    __frame0.local_78 = 0;
-    __frame0.local_74 = 0;
-    __frame0.local_70 = 0;
-    __frame0.local_6c = 0;
-    __frame0.local_68 = 0;
-    __frame0.local_64 = 0;
-    __frame0.local_60 = 0;
-    __frame0.local_5c = 0;
-    __frame0.local_58 = 0;
-    __frame0.local_54 = 0;
-    __frame0.local_50 = 0;
-    __frame0.local_4c = 0;
-    __frame0.local_48 = 0;
-    __frame1.wszGoldText = 0;
-    __frame1.uStack_40 = 0;
-    __frame1.uStack_3c = 0;
-    __frame1.uStack_38 = 0;
-    __frame1.local_34 = 0;
-    __frame1.local_30 = 0;
-    __frame1.local_2c = 0;
-    __frame1.local_28 = 0;
-    __frame1.local_24 = 0;
-    __frame1.local_20 = 0;
-    __frame1.local_1c = 0;
-    __frame1.local_18 = 0;
-    __frame1.local_14 = 0;
-    __frame1.local_10 = 0;
-    __frame1.local_c = 0;
-    __frame1.local_8 = 0;
+    uint16_t wszConverted[32];
+    uint16_t wszGoldText[32];
+    memset(wszConverted, 0, 32 * sizeof(wszConverted[0]));
+    memset(wszGoldText, 0, 32 * sizeof(wszGoldText[0]));
     sprintf(szGoldCostStr, "%d", nGoldCost);
-    memset(&__frame1.wszGoldText, 0, 0x40);
-    D2Lang::UTF8_ConvertToWideChar((uint16_t*)&__frame0.wszConverted, szGoldCostStr, 0x20);
-    D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer((uint16_t*)&__frame1.wszGoldText, (uint16_t*)&__frame0.wszConverted, 0x20);
-    __frame1.local_8 &= 0xffff;
-    nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength((uint16_t*)&__frame1.wszGoldText);
-    pwszTrunc = (uint16_t*)((uintptr_t)&__frame1.wszGoldText + nStrLen * 2);
-    nTextWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)&__frame1.wszGoldText);
+    memset(wszGoldText, 0, 0x40);
+    D2Lang::UTF8_ConvertToWideChar(wszConverted, szGoldCostStr, 0x20);
+    D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszGoldText, wszConverted, 0x20);
+    *(uint32_t*)((char*)&wszGoldText + 60) &= 0xffff;
+    nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszGoldText);
+    pwszTrunc = wszGoldText + nStrLen;
+    nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszGoldText);
     while (0x2e < nTextWidth) {
       pwszTrunc--;
-      *pwszTrunc = 0;
-      nTextWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)&__frame1.wszGoldText);
+      *pwszTrunc = L'\0';
+      nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszGoldText);
     }
 
     nStrLen = D2Win::Src::D2WinFont::SetAndReturnLastFont(6);
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)&__frame1.wszGoldText, nDrawPositionX + 8, 0x37, 0, 0);
+    D2Win::Src::D2WinFont::DRAW_text(wszGoldText, nDrawPositionX + 8, 0x37, 0, 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nStrLen);
 }
 
@@ -806,24 +734,17 @@ void __stdcall DrawHealthBar(uint32_t nRosterGUID, uint32_t nPetType, int32_t nX
 }
 
 void __stdcall UI_DrawHirelingNameFromUnit(int32_t nX, int32_t nY, D2UnitStrc * pUnit) {
-    // Frame -68..-4 is ONE object: a call writes 64 literal bytes starting at &wszName.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      uint16_t wszName[31];
-      uint16_t wszNull;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 64, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    uint16_t wszName[32];
     if (!pUnit) {
       return;
     }
 
-    memset(__frame0.wszName, 0, 0x40);
+    memset(wszName, 0, 0x40);
     size_t nNameMaxChars = 0x20;
     uint16_t* pwszName = UNIT::CUnit::GetName(pUnit);
-    D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(__frame0.wszName, pwszName, nNameMaxChars);
-    __frame0.wszNull = L'\0';
-    DrawHirelingName(nX, nY, 0, __frame0.wszName);
+    D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszName, pwszName, nNameMaxChars);
+    wszName[0x1f] = L'\0';
+    DrawHirelingName(nX, nY, 0, wszName);
 }
 
 BOOL __stdcall UI_DrawPartyMembersHirelingIcons(int * pnY, int * pnYOffset, int * pnX, D2UnitStrc * pUnit) {

@@ -5,17 +5,13 @@
 
 #include "globals/globals.h"
 #include "D2Client/Renderer/Glide.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Glide/glFloorCache.h"
 #include "D2Glide/glSubtileCache.h"
-#include "D2Glide/glTextureCache.h"
 
 
 // =============================================================================
 // Initialized data (arrays, structs, tables)
 // =============================================================================
-
-int gaPerspectiveImageSizeTable[8] = { 0x100, 0x100, 0x100, 0x80, 0x100, 0x40, 0x100, 0x20 };
 
 GrTexInfo gTexInfoDebugFontGlide = {
     /* .smallLodLog2 = */ 0x4,
@@ -669,40 +665,76 @@ uint32_t gGlidePaletteEntry0[256] = {
 
 int gnGlideSecondaryTMUCount[2] = { 0, 0 };
 
-double gfGlideVertex0T = 0;
-
-double gfGlideVertex1T = 0;
-
-GlTextureCacheStrc gGlideSmallTextureCache[3] = {
-    {
-        /* .dwEntrySize = */ 0,
-        /* .nMaxEntries = */ 0,
-        /* .nUsedCount = */ 0,
-        /* .pActiveHead = */ nullptr,
-        /* .pActiveTail = */ nullptr,
-        /* .pFreeHead = */ nullptr,
-        /* .pFreeTail = */ nullptr,
-        /* .pNodes = */ nullptr
+D2GlideVertexTexCacheBlockStrc gGlideVertex0 = {
+    /* .aVertex = */ {
+        {
+            /* .fX = */ 0,
+            /* .fY = */ 0,
+            /* .dwColor = */ 0,
+            /* .fOOW = */ 0,
+            /* .fS = */ 0,
+            /* .fT = */ 0,
+            /* .fW = */ 0
+        },
+        {
+            /* .fX = */ 0,
+            /* .fY = */ 0,
+            /* .dwColor = */ 0,
+            /* .fOOW = */ 0,
+            /* .fS = */ 0,
+            /* .fT = */ 0,
+            /* .fW = */ 0
+        },
+        {
+            /* .fX = */ 0,
+            /* .fY = */ 0,
+            /* .dwColor = */ 0,
+            /* .fOOW = */ 0,
+            /* .fS = */ 0,
+            /* .fT = */ 0,
+            /* .fW = */ 0
+        },
+        {
+            /* .fX = */ 0,
+            /* .fY = */ 0,
+            /* .dwColor = */ 0,
+            /* .fOOW = */ 0,
+            /* .fS = */ 0,
+            /* .fT = */ 0,
+            /* .fW = */ 0
+        }
     },
-    {
-        /* .dwEntrySize = */ 0,
-        /* .nMaxEntries = */ 0,
-        /* .nUsedCount = */ 0,
-        /* .pActiveHead = */ nullptr,
-        /* .pActiveTail = */ nullptr,
-        /* .pFreeHead = */ nullptr,
-        /* .pFreeTail = */ nullptr,
-        /* .pNodes = */ nullptr
-    },
-    {
-        /* .dwEntrySize = */ 0,
-        /* .nMaxEntries = */ 0,
-        /* .nUsedCount = */ 0,
-        /* .pActiveHead = */ nullptr,
-        /* .pActiveTail = */ nullptr,
-        /* .pFreeHead = */ nullptr,
-        /* .pFreeTail = */ nullptr,
-        /* .pNodes = */ nullptr
+    /* .aTextureCache = */ {
+        {
+            /* .dwEntrySize = */ 0,
+            /* .nMaxEntries = */ 0,
+            /* .nUsedCount = */ 0,
+            /* .pActiveHead = */ nullptr,
+            /* .pActiveTail = */ nullptr,
+            /* .pFreeHead = */ nullptr,
+            /* .pFreeTail = */ nullptr,
+            /* .pNodes = */ nullptr
+        },
+        {
+            /* .dwEntrySize = */ 0,
+            /* .nMaxEntries = */ 0,
+            /* .nUsedCount = */ 0,
+            /* .pActiveHead = */ nullptr,
+            /* .pActiveTail = */ nullptr,
+            /* .pFreeHead = */ nullptr,
+            /* .pFreeTail = */ nullptr,
+            /* .pNodes = */ nullptr
+        },
+        {
+            /* .dwEntrySize = */ 0,
+            /* .nMaxEntries = */ 0,
+            /* .nUsedCount = */ 0,
+            /* .pActiveHead = */ nullptr,
+            /* .pActiveTail = */ nullptr,
+            /* .pFreeHead = */ nullptr,
+            /* .pFreeTail = */ nullptr,
+            /* .pNodes = */ nullptr
+        }
     }
 };
 
@@ -2069,6 +2101,45 @@ D2GlideVertexStrc gaGlidePerspectiveVertices[15] = {
     }
 };
 
+D2GlideVertexStrc gGlidePerspectiveVertexBuffer[4] = {
+    {
+        /* .fX = */ 0,
+        /* .fY = */ 0,
+        /* .dwColor = */ 0,
+        /* .fOOW = */ 0,
+        /* .fS = */ 0,
+        /* .fT = */ 0,
+        /* .fW = */ 0
+    },
+    {
+        /* .fX = */ 0,
+        /* .fY = */ 0,
+        /* .dwColor = */ 0,
+        /* .fOOW = */ 0,
+        /* .fS = */ 0,
+        /* .fT = */ 0,
+        /* .fW = */ 0
+    },
+    {
+        /* .fX = */ 0,
+        /* .fY = */ 0,
+        /* .dwColor = */ 0,
+        /* .fOOW = */ 0,
+        /* .fS = */ 0,
+        /* .fT = */ 0,
+        /* .fW = */ 0
+    },
+    {
+        /* .fX = */ 0,
+        /* .fY = */ 0,
+        /* .dwColor = */ 0,
+        /* .fOOW = */ 0,
+        /* .fS = */ 0,
+        /* .fT = */ 0,
+        /* .fW = */ 0
+    }
+};
+
 D2GlideVertexStrc gaGlideGroundTileVertices[36] = {
     {
         /* .fX = */ 0,
@@ -2478,28 +2549,6 @@ uint32_t gbGlideInScene = 0;
 uint32_t gbGlidePerspectiveMode = 0;
 uint32_t gnGlideSpriteSecondaryTMUEnabled = 0;
 uint32_t gnGlideTMUIndex = 0;
-int gGlideVertex0 = 0;
-float gfGlideQuadZ0 = 0;
-uint32_t gnGlideVertexColor = 0;
-float gfGlideVertex0OOW = 0;
-float gfGlideVertex0S = 0;
-float gfGlideVertex0X = 0;
-float gfGlideQuadZ1 = 0;
-float gfGlideVertex0Color = 0;
-float gfGlideVertex1OOW = 0;
-float gfGlideVertex1S = 0;
-float gfGlidePaletteTableOffset = 0;
-float gfGlideVertex1Y = 0;
-float gfGlideVertex2Color = 0;
-float gfGlideVertex3OOW = 0;
-float gfGlideVertex3S = 0;
-float gfGlideVertex3T = 0;
-float gfGlideVertex2X = 0;
-float gfGlideVertex2Y = 0;
-float gfGlideVertex1Color = 0;
-float gfGlideVertex3Color = 0;
-int gnGlideAlphaBlendDst = 0;
-int gnGlideAlphaBlendSrc = 0;
 void * gpGlideSpriteBuffer = 0;
 void * gpGlideSpritePixelBuffer = 0;
 float gfGlideDebugFontVertex0X = 0;
@@ -2513,14 +2562,6 @@ float gfGlideDebugFontVertex3T = 0;
 void * gpGlideDebugFontTexture = 0;
 uint32_t gnGlideDebugFontTMU = 0;
 int * gpnLightmapRowPointers = 0;
-int gGlidePerspectiveVertexBuffer = 0;
-float gfGlideWallVertexYMin = 0;
-float gfGlideWallVertex2X = 0;
-float gfGlideWallVertexYMid = 0;
-float gfGlideWallVertexYMax = 0;
-float gfGlideWallVertex3Y = 0;
-float gfGlideWallVertex4X = 0;
-float gfGlideWallVertex4Y = 0;
 uint8_t gbGlideGlobalLightGreen = 0;
 uint8_t gbGlideGlobalLightBlue = 0;
 uint8_t gbGlideGlobalLightRed = 0;

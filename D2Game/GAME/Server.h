@@ -30,6 +30,28 @@ typedef void (__fastcall *fpForEachClientFn)(struct D2ClientStrc * pClient, void
 #endif
 
 // Data types
+struct __attribute__((packed)) D2BNetSystemInfoStrc {
+    /* 0x000 */ uint32_t adwHeader[10]; // copied to FF01 pkt+0x01..+0x25
+    /* 0x028 */ char szCompilationData[128]; // SStrCopy 0x80 -> pkt+0x29
+    /* 0x0A8 */ uint32_t dw0xA8; // -> pkt+0xa9
+    /* 0x0AC */ uint32_t dw0xAC; // -> pkt+0x10b; +0xb0 -> pkt+0xad
+    /* 0x0B0 */ uint32_t dw0xB0; // -> pkt+0x10f
+    /* 0x0B4 */ uint32_t dw0xB4; // -> pkt+0xb1
+    /* 0x0B8 */ uint32_t dw0xB8;
+    /* 0x0BC */ uint32_t dw0xBC;
+    /* 0x0C0 */ uint32_t dw0xC0; // -> pkt+0xb9
+    /* 0x0C4 */ uint32_t dw0xC4; // -> pkt+0xe5
+    /* 0x0C8 */ uint32_t dw0xC8; // -> pkt+0xe9
+    /* 0x0CC */ uint32_t dw0xCC; // -> pkt+0xed
+    /* 0x0D0 */ uint32_t dw0xD0; // -> pkt+0xf1
+    /* 0x0D4 */ uint16_t w0xD4; // -> pkt+0xf5
+    /* 0x0D6 */ uint32_t adw0xD6[5]; // unaligned; -> pkt+0xf7..+0x107
+    /* 0x0EA */ uint16_t w0xEA; // not read here
+    /* 0x0EC */ uint32_t dw0xEC; // -> pkt+0xbd
+    /* 0x0F0 */ int32_t aSomeInts[8]; // MOVSD.REP 8 -> pkt+0xc1
+    /* 0x110 */ uint32_t dw0x110; // -> pkt+0xe1
+};
+
 struct D2Game_Line0x13af {
     /* 0x00 */ int32_t nValue;
     /* 0x04 */ int32_t nWins;
@@ -38,11 +60,14 @@ struct D2Game_Line0x13af {
     /* 0x8C */ struct D2Game_Line0x13af * pNext;
 };
 
-struct __attribute__((packed)) D2GSPacketSrv0x53 {
-    /* 0x00 */ uint8_t nHeader; // 0x53
-    /* 0x01 */ int32_t nCycleIndex; // day/night time index, 0-5
-    /* 0x05 */ int32_t nTicks; // ticks into the current cycle
-    /* 0x09 */ uint8_t bEclipse; // eclipse flag
+struct __attribute__((packed)) D2Packet0x5aEventStructure {
+    /* 0x00 */ uint8_t nPacketId;
+    /* 0x01 */ uint8_t nMessageType;
+    /* 0x02 */ uint8_t nColor;
+    /* 0x03 */ uint32_t nArg;
+    /* 0x07 */ uint8_t nArgTypes;
+    /* 0x08 */ char szName1[16];
+    /* 0x18 */ char szName2[16];
 };
 
 struct __attribute__((packed)) D2PacketD2GS_SC_0xFFFD {
@@ -292,7 +317,7 @@ void InitNewRooms(::SGAMEDATA * pGame);
 // Frees idle rooms across all 5 acts to conserve memory. For each act, iterates active rooms and checks idle tick count via DRLGROOM_GetIdleTicks. Rooms idle for 10+ frames and passing TestRoomCanUntile (no players nearby) are candidates for cleanup. Moves all units in room to inactive lists via SERVER_GAME_UNIT_method, then removes room from act via RemoveRoomFromAct. Called every 12 frames from GAME_ServerGameLoop. Critical for dynamic memory management in large games.
 void __stdcall CleanupIdleRooms(::SGAMEDATA * pGame);
 // Frees unused dropped items every 1500 frames (60 seconds at 25 FPS). When dwGameFrame is exact multiple of 0x5dc (1500), iterates all 5 acts and calls FreeUnusedItems + SUNITINACTIVE_FreeUnusedItems for each. Removes items that have been on ground too long or in inactive state. Prevents memory leaks from abandoned loot in long-running games. Returns frame counter / 1500.
-int32_t FreeUnusedItems(::SGAMEDATA * pGamee);
+void FreeUnusedItems(::SGAMEDATA * pGamee);
 // Checks all clients for connection timeouts. If timeout exceeded and client has file flag 0x4 set with 10+ heartbeat samples and 10+ seconds idle, OR 45+ seconds idle, OR forced timeout flag set, saves that player and disconnects them. Two timeout thresholds: strict (10 seconds with heartbeat monitoring) and lenient (45 seconds absolute). Sets *pnParam if any disconnects occur, triggering full game save. Only active when gnClientTimeoutCheckInterval enabled.
 void __stdcall CheckClientTimeouts(::SGAMEDATA * pGame, int * pnParam);
 // Processes all clients and sends state updates. Checks timeouts, saves all players every 8192 frames. For clients in state 3 (WAITING_ROOMS), waits for all nearby rooms to activate, then transitions to state 4 (FULLY_PLAYING), recalcs inventory, broadcasts 0x5a player join event with char/account names. For state 4, runs GAME_UpdateSingleClient which builds visibility lists and generates compressed update packets (0x6D positions, 0x51 vitals, 0x95 skills, 0xAC spawns). For state 5 (CHANGING_ACT), waits for rooms then transitions back to state 4. Calls BNet EnterGame callback on join completion.

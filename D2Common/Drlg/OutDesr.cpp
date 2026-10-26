@@ -23,12 +23,10 @@
 namespace D2Common::Drlg::OutDesr {
 
 // Given an array of nVariants preset IDs, rolls the level seed to pick a starting index, then iterates all variants calling SpawnOutdoorLevelPreset for each. If bIterateFiles is set, expands each preset ID to all its LvlPrest file entries and spawns each file separately.
-void __stdcall PlacePresetVariants(D2DrlgLevelStrc * pLevel, D2LvlPrestId * pLevelPrestIds, uint32_t nVariants, bool bIterateFiles) {
-    bool _bIterateFiles;
+void __stdcall PlacePresetVariants(D2DrlgLevelStrc * pLevel, D2LvlPrestId * pLevelPrestIds, uint32_t nVariants, BOOL bIterateFiles) {
     D2LvlPrestTxt* pLvlPrest;
     uint32_t nRandVariantIdx;
     int nFileIdx;
-    uint32_t bIterateFilesHigh;
     int nFileCount;
     if ((int)nVariants < 1) {
       nRandVariantIdx = 0;
@@ -53,7 +51,7 @@ void __stdcall PlacePresetVariants(D2DrlgLevelStrc * pLevel, D2LvlPrestId * pLev
 
     uint32_t nIterCountdown = nVariants;
     do {
-      if (!_bIterateFiles) {
+      if (!bIterateFiles) {
         Outdoors::SpawnOutdoorLevelPreset(pLevel, pLevelPrestIds[nRandVariantIdx], -1, 0, '\x0f');
       } else {
         pLvlPrest = DATATBLS::LvlTbls::TXT_LvlPrest_GetLine(pLevelPrestIds[nRandVariantIdx]);
@@ -313,7 +311,7 @@ void PlaceFillsInRockyWaste(D2DrlgLevelStrc * pLevel) {
     nPresetId0[4] = 399;
     nPresetId0[5] = 0x18e;
     nPresetId0[6] = 0x193;
-    PlacePresetVariants(pLevel, nPresetId0, 7, false);
+    PlacePresetVariants(pLevel, nPresetId0, 7, 0);
 }
 
 void PlaceFillsInDryHills(D2DrlgLevelStrc * pLevel) {
@@ -326,8 +324,8 @@ void PlaceFillsInDryHills(D2DrlgLevelStrc * pLevel) {
     nPresetId0[1] = 0x195;
     nPresetId0[2] = 0x196;
     nPresetId0[3] = 0x197;
-    PlacePresetVariants(pLevel, nPresetId0 + 4, 4, false);
-    PlacePresetVariants(pLevel, nPresetId0, 4, true);
+    PlacePresetVariants(pLevel, nPresetId0 + 4, 4, 0);
+    PlacePresetVariants(pLevel, nPresetId0, 4, 1);
 }
 
 void PlaceFillsInFarOasis(D2DrlgLevelStrc * pLevel) {
@@ -338,9 +336,9 @@ void PlaceFillsInFarOasis(D2DrlgLevelStrc * pLevel) {
     nPresetIds[2] = LVLPREST_ACT_2_DESERT_FILL_MESA_1;
     nPresetIds[3] = LVLPREST_ACT_2_DESERT_FILL_WAGON_1;
     nPresetIdBonus[0] = LVLPREST_ACT_2_DESERT_OASIS_1;
-    PlacePresetVariants(pLevel, nPresetIds, 4, false);
-    PlacePresetVariants(pLevel, nPresetIdBonus, 1, true);
-    PlacePresetVariants(pLevel, nPresetIdBonus, 1, true);
+    PlacePresetVariants(pLevel, nPresetIds, 4, 0);
+    PlacePresetVariants(pLevel, nPresetIdBonus, 1, 1);
+    PlacePresetVariants(pLevel, nPresetIdBonus, 1, 1);
 }
 
 void PlaceRuinsInLostCity(D2DrlgLevelStrc * pLevel) {
@@ -349,7 +347,7 @@ void PlaceRuinsInLostCity(D2DrlgLevelStrc * pLevel) {
     nPresetId0[1] = 0x198;
     nPresetId0[2] = 0x199;
     nPresetId0[3] = 0x19a;
-    PlacePresetVariants(pLevel, nPresetId0, 4, false);
+    PlacePresetVariants(pLevel, nPresetId0, 4, 0);
 }
 
 void PlaceFillsInLostCity(D2DrlgLevelStrc * pLevel) {
@@ -360,9 +358,9 @@ void PlaceFillsInLostCity(D2DrlgLevelStrc * pLevel) {
     nPresetId0[3] = 0x194;
     nPresetId0[4] = 0x195;
     nPresetId0[5] = 0x19b;
-    PlacePresetVariants(pLevel, nPresetId0, 5, false);
-    PlacePresetVariants(pLevel, nPresetId0 + 5, 1, true);
-    PlacePresetVariants(pLevel, nPresetId0 + 5, 1, true);
+    PlacePresetVariants(pLevel, nPresetId0, 5, 0);
+    PlacePresetVariants(pLevel, nPresetId0 + 5, 1, 1);
+    PlacePresetVariants(pLevel, nPresetId0 + 5, 1, 1);
 }
 
 void PlaceTombEntriesInCanyon(D2DrlgLevelStrc * pLevel) {
@@ -384,8 +382,8 @@ void PlaceFillsInCanyon(D2DrlgLevelStrc * pLevel) {
     nPresetId0[4] = 0x193;
     nPresetId0[5] = 0x188;
     nPresetId0[6] = 0x189;
-    PlacePresetVariants(pLevel, nPresetId0, 5, false);
-    PlacePresetVariants(pLevel, nPresetId0 + 5, 2, true);
+    PlacePresetVariants(pLevel, nPresetId0, 5, 0);
+    PlacePresetVariants(pLevel, nPresetId0 + 5, 2, 1);
 }
 
 // DRLG outdoor-level generator dispatcher for Act 2 wilderness levels. Applies common outdoor setup (SetOutGridLinkFlags, PlaceAct1245OutdoorBorders) then switches on pLevel->eD2LevelId to run the per-level placement for Rocky Waste (0x29), Dry Hills (0x2a), Far Oasis (0x2b), Lost City (0x2c), Canyon of the Magi (0x2e), etc.: placing cliffs/ruins/tomb-entries/preset variants, secondary borders, exits, waypoints, Act1/2 shrines, and level-specific fills. Level 0x86 spawns an extra outdoor preset. Out-of-range/intermediate ids fall through to a no-op return.
@@ -415,7 +413,7 @@ void __fastcall InitAct2OutdoorLevel(D2DrlgLevelStrc * pLevel) {
       AddExits(pLevel);
       nPresetId0[0] = LVLPREST_ACT_2_DESERT_OASIS_2;
       nPresetId0[1] = 0x18d;
-      PlacePresetVariants(pLevel, nPresetId0, 2, false);
+      PlacePresetVariants(pLevel, nPresetId0, 2, 0);
       Outdoors::SpawnAct12Waypoint(pLevel);
       Outdoors::SpawnAct12Shrines(pLevel, 5);
       PlaceFillsInFarOasis(pLevel);

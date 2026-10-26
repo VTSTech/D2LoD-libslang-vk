@@ -50,6 +50,7 @@
 #include "D2Game/PLAYER/PlayerSave.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
+#include "D2Game/Quests/QUESTS/A2Q3.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/Save.h"
@@ -66,13 +67,13 @@
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -397,10 +398,11 @@ void __stdcall GAME_OnClientRoomChange(D2RoomStrc * pRoom, D2ClientStrc * pClien
 }
 
 // Inserts a player unit into a client's bounded nearest-units list kept sorted by Manhattan distance. Computes |nX-unitX|+|nY-unitY| using the unit's static (objects) or dynamic path position, then maintains an intrusive singly-linked sorted list of up to nMaxSlots entries (each entry = {pUnit, dist, nextLink}, head link at pSortList[2]; current count at pClient->nPacketBuffer+500). If full and the new unit is nearer than the farthest, evicts the tail; otherwise allocates the next free slot. Splices the entry into distance order and updates *ppnMaxDist (the running worst kept distance). Only acts on UNIT_PLAYER units. Custom calling convention: nX in EAX, pSortList in ESI, rest on stack.
-void __stdcall CLIENT_AddUnitToProximitySortedList(int32_t nX, D2UnitStrc * pUnit, int32_t nY, int32_t * ppnMaxDist, D2ClientStrc * pClient, uint32_t nMaxSlots, uint32_t * pSortList) {
+void __stdcall CLIENT_AddUnitToProximitySortedList(int32_t nX, D2UnitStrc * pUnit, int32_t nY, int32_t * ppnMaxDist, D2ClientStrc * pClient, uint32_t nMaxSlots, D2UnitProximityNodeStrc * pNodes) {
     int nDeltaX;
     int nDeltaY;
     uint32_t nSlotIdx;
+    uint32_t* pnCurSlotLink;
     uint32_t* pnTailSlotLink;
     if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
       return;
@@ -433,71 +435,71 @@ void __stdcall CLIENT_AddUnitToProximitySortedList(int32_t nX, D2UnitStrc * pUni
     }
 
     uint32_t pnManhattanDist = nDeltaX + nDeltaY;
-    if (!(*(uint32_t*)(pClient->nPacketBuffer + 500) < nMaxSlots || pnManhattanDist < (uint32_t)*ppnMaxDist)) {
+    if (!(pClient->nPacketBuffer.nCount < nMaxSlots || pnManhattanDist < (uint32_t)*ppnMaxDist)) {
       return;
     }
 
-    uint32_t nFreeSlot = pSortList[2];
-    uint32_t* pnCurSlotLink = pSortList + 2;
-    uint32_t uVar1 = 0;
+    uint32_t nFreeSlot = pNodes->nNext;
+    uint32_t uVar2 = 0;
+    D2UnitProximityNodeStrc* pDVar1 = pNodes;
     while (true) {
       if (!nFreeSlot) {
         break;
       }
 
-      nSlotIdx = *pnCurSlotLink;
-      if (pSortList[nSlotIdx * 3 + 1] >= pnManhattanDist) {
+      nSlotIdx = pDVar1->nNext;
+      if (pNodes[nSlotIdx].nDistance >= pnManhattanDist) {
         break;
       }
 
-      nFreeSlot = pSortList[nSlotIdx * 3 + 2];
-      pnCurSlotLink = pSortList + nSlotIdx * 3 + 2;
-      uVar1 = nSlotIdx;
+      nFreeSlot = pNodes[nSlotIdx].nNext;
+      pDVar1 = pNodes + nSlotIdx;
+      uVar2 = nSlotIdx;
     }
 
-    nFreeSlot = *(uint32_t*)(pClient->nPacketBuffer + 500);
+    nFreeSlot = pClient->nPacketBuffer.nCount;
     if (nFreeSlot == nMaxSlots) {
-      pnTailSlotLink = pSortList + 2;
+      pnTailSlotLink = &pNodes->nNext;
       nSlotIdx = 0;
-      nFreeSlot = pSortList[pSortList[2] * 3 + 2];
+      nFreeSlot = pNodes[pNodes->nNext].nNext;
       while (nFreeSlot) {
         nSlotIdx = *pnTailSlotLink;
-        pnTailSlotLink = pSortList + nSlotIdx * 3 + 2;
-        nFreeSlot = pSortList[*pnTailSlotLink * 3 + 2];
+        pnTailSlotLink = &pNodes[nSlotIdx].nNext;
+        nFreeSlot = pNodes[*pnTailSlotLink].nNext;
       }
 
-      nFreeSlot = pSortList[nSlotIdx * 3 + 2];
-      if (*(int*)(pClient->nPacketBuffer + 500) && pSortList[nFreeSlot * 3 + 1] <= pnManhattanDist) {
+      nFreeSlot = pNodes[nSlotIdx].nNext;
+      if (pClient->nPacketBuffer.nCount && pNodes[nFreeSlot].nDistance <= pnManhattanDist) {
         return;
       }
-      if (*(int*)(pClient->nPacketBuffer + 500) == 1) {
+      if (pClient->nPacketBuffer.nCount == 1) {
         *ppnMaxDist = pnManhattanDist;
-        pSortList[nSlotIdx * 3 + 2] = 0;
+        pNodes[nSlotIdx].nNext = 0;
       } else {
-        *ppnMaxDist = pSortList[nSlotIdx * 3 + 1];
-        pSortList[nSlotIdx * 3 + 2] = 0;
+        *ppnMaxDist = pNodes[nSlotIdx].nDistance;
+        pNodes[nSlotIdx].nNext = 0;
       }
     } else {
-      *(uint32_t*)(pClient->nPacketBuffer + 500) = nFreeSlot + 1;
+      pClient->nPacketBuffer.nCount = nFreeSlot + 1;
     }
-    if (!uVar1 && pnManhattanDist < pSortList[1]) {
+    if (!uVar2 && pnManhattanDist < pNodes->nDistance) {
       uint32_t* pSlotEntry;
-      if (*(int*)(pClient->nPacketBuffer + 500) != 1) {
-        pSlotEntry = pSortList + nFreeSlot * 3;
-        pSlotEntry[2] = pSortList[2];
-        *pSlotEntry = *pSortList;
-        pSlotEntry[1] = pSortList[1];
+      if (pClient->nPacketBuffer.nCount != 1) {
+        pSlotEntry = (uint32_t*)&pNodes[nFreeSlot].pUnit;
+        pSlotEntry[2] = pNodes->nNext;
+        *pSlotEntry = (uint32_t)(uintptr_t)pNodes->pUnit;
+        pSlotEntry[1] = pNodes->nDistance;
       }
 
-      pSortList[2] = nFreeSlot;
+      pNodes->nNext = nFreeSlot;
       nFreeSlot = 0;
     } else {
-      pSortList[nFreeSlot * 3 + 2] = pSortList[uVar1 * 3 + 2];
-      pSortList[uVar1 * 3 + 2] = nFreeSlot;
+      pNodes[nFreeSlot].nNext = pNodes[uVar2].nNext;
+      pNodes[uVar2].nNext = nFreeSlot;
     }
 
-    (pSortList + nFreeSlot * 3)[1] = pnManhattanDist;
-    pSortList[nFreeSlot * 3] = (uint32_t)pUnit;
+    pNodes[nFreeSlot].nDistance = pnManhattanDist;
+    pNodes[nFreeSlot].pUnit = pUnit;
     if ((uint32_t)*ppnMaxDist >= pnManhattanDist) {
       return;
     }
@@ -506,69 +508,64 @@ void __stdcall CLIENT_AddUnitToProximitySortedList(int32_t nX, D2UnitStrc * pUni
 }
 
 // Serialises a proximity-sorted unit list into the client's nPacketBuffer for the visibility update packet. Iterates slots in the sort list writing 9-byte records: unit type (byte), GUID (dword), X position (word), Y position (word). Increments the buffer count per slot and follows the linked sort-list until a null slot is encountered. Called by GAME_CollectNearbyUnitPositions after building the sorted list.
-void __stdcall CLIENT_PopulateVisibilityPacketBuffer(int * * ppnSortList, D2ClientStrc * pClient) {
+void __stdcall CLIENT_PopulateVisibilityPacketBuffer(D2UnitProximityNodeStrc * pNodes, D2ClientStrc * pClient) {
+    D2UnitStrc* pDVar2;
+    eD2UnitType eVar3;
+    short int wCoord;
     uint16_t nUnitTypeRaw;
     uint8_t byUnitType;
     int nCoord;
     int32_t nPos;
-    int* pnUnitRaw;
-    memset(pClient->nPacketBuffer + 500, 0, 4 * sizeof(pClient->nPacketBuffer[0]));
-    int** ppnSlotCursor = ppnSortList;
+    pClient->nPacketBuffer.nCount = 0;
+    D2UnitProximityNodeStrc* ppnSlotCursor = pNodes;
     do {
-      short int wCoord;
-      byUnitType = 6;
-      if (*ppnSlotCursor) {
-        byUnitType = (uint8_t)**ppnSlotCursor;
+      uint32_t* puVar1;
+      byUnitType = '\x06';
+      if (ppnSlotCursor->pUnit) {
+        byUnitType = (uint8_t)ppnSlotCursor->pUnit->eUnitType;
       }
 
-      pClient->nPacketBuffer[*(int*)(pClient->nPacketBuffer + 500) * 9 + 4] = byUnitType;
-      if (!*ppnSlotCursor) {
+      pClient->nPacketBuffer.aEntries[pClient->nPacketBuffer.nCount].nUnitType = byUnitType;
+      if (!ppnSlotCursor->pUnit) {
         nCoord = -1;
       } else {
-        nCoord = (*ppnSlotCursor)[3];
+        nCoord = ppnSlotCursor->pUnit->nUnitGUID;
       }
 
-      *(int*)(pClient->nPacketBuffer + *(int*)(pClient->nPacketBuffer + 500) * 9 + 5) = nCoord;
-      pnUnitRaw = *ppnSlotCursor;
-      nCoord = *pnUnitRaw;
-      if (nCoord == 2 || 3 < nCoord && nCoord < 6) {
-        wCoord = (short int)*(uint32_t*)(pnUnitRaw[0xb] + 0xc);
-      } else if (!(D2DynamicPathStrc*)pnUnitRaw[0xb]) {
+      *(int*)(pClient->nPad1AE + pClient->nPacketBuffer.nCount * 9 + 0x1f) = nCoord;
+      pDVar2 = ppnSlotCursor->pUnit;
+      eVar3 = pDVar2->eUnitType;
+      if (eVar3 == UNIT_OBJECT || 3 < (int)eVar3 && (int)eVar3 < 6) {
+        wCoord = (short int)pDVar2->pPath.pStaticPath->nPosX;
+      } else if (!pDVar2->pPath.pDynamicPath) {
         wCoord = 0;
       } else {
-        nPos = D2Common::PATH::DynamicPath::GetXPos((D2DynamicPathStrc*)pnUnitRaw[0xb]);
+        nPos = D2Common::PATH::DynamicPath::GetXPos(pDVar2->pPath.pDynamicPath);
         wCoord = (short int)nPos;
       }
 
-      *(short int*)(pClient->nPacketBuffer + *(int*)(pClient->nPacketBuffer + 500) * 9 + 9) = wCoord;
-      pnUnitRaw = *ppnSlotCursor;
-      nCoord = *pnUnitRaw;
-      if (nCoord == 2 || 3 < nCoord && nCoord < 6) {
-        nUnitTypeRaw = (uint16_t)*(uint32_t*)(pnUnitRaw[0xb] + 0x10);
-      } else if (!(D2DynamicPathStrc*)pnUnitRaw[0xb]) {
+      *(short int*)(pClient->nPad1AE + pClient->nPacketBuffer.nCount * 9 + 0x23) = wCoord;
+      pDVar2 = ppnSlotCursor->pUnit;
+      eVar3 = pDVar2->eUnitType;
+      if (eVar3 == UNIT_OBJECT || 3 < (int)eVar3 && (int)eVar3 < 6) {
+        nUnitTypeRaw = (uint16_t)pDVar2->pPath.pStaticPath->nPosY;
+      } else if (!pDVar2->pPath.pDynamicPath) {
         nUnitTypeRaw = 0;
       } else {
-        nPos = D2Common::PATH::DynamicPath::GetYPos((D2DynamicPathStrc*)pnUnitRaw[0xb]);
+        nPos = D2Common::PATH::DynamicPath::GetYPos(pDVar2->pPath.pDynamicPath);
         nUnitTypeRaw = (uint16_t)nPos;
       }
 
-      *(uint16_t*)(pClient->nPacketBuffer + *(int*)(pClient->nPacketBuffer + 500) * 9 + 0xb) = nUnitTypeRaw;
-      (*(int*)(pClient->nPacketBuffer + 500))++;
-      ppnSlotCursor = ppnSortList + (int)ppnSlotCursor[2] * 3;
-    } while (ppnSlotCursor[2]);
+      *(uint16_t*)(pClient->nPad1AE + pClient->nPacketBuffer.nCount * 9 + 0x25) = nUnitTypeRaw;
+      puVar1 = &pClient->nPacketBuffer.nCount;
+      (*puVar1)++;
+      ppnSlotCursor = pNodes + ppnSlotCursor->nNext;
+    } while (ppnSlotCursor->nNext);
 }
 
 // Builds a proximity-sorted list of up to nParam units from all adjacent rooms around the client's current room and serialises them into the client's packet buffer. Gets the player unit's world position, iterates every unit in adjacent rooms via CLIENT_AddUnitToProximitySortedList, then calls CLIENT_PopulateVisibilityPacketBuffer. Halts fatally if pClient->pRoom is null or the adjacent-room list is unavailable.
 void __fastcall GAME_CollectNearbyUnitPositions(D2ClientStrc * pClient, uint32_t nParam) {
-    // Frame slots -692..-680 are ONE object: &pSortList is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t* pSortList;
-      int nSortBufHead;
-      int nSortBufNext;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D2UnitProximityNodeStrc aProximityNodes[55];
     int32_t pnMaxDist;
     int32_t nX;
     int32_t nY;
@@ -591,21 +588,21 @@ void __fastcall GAME_CollectNearbyUnitPositions(D2ClientStrc * pClient, uint32_t
         nX = D2Client::Units::GetXPosFromDynamicPathUnit(pPlayerUnit_lcl);
         nY = D2Client::Units::GetYPosFromDynamicPathUnit(pPlayerUnit_lcl);
         pnMaxDist = 0;
-        memset(pClient->nPacketBuffer + 500, 0, 4 * sizeof(pClient->nPacketBuffer[0]));
-        __frame0.nSortBufNext = 0;
-        __frame0.nSortBufHead = 0;
+        pClient->nPacketBuffer.nCount = 0;
+        aProximityNodes[0].nNext = 0;
+        aProximityNodes[0].nDistance = 0;
         nRoomIdx = 0;
         if (nAdjacentRoomCount) {
           do {
             for (pPlayerUnit_lcl = ppAdjacentRooms[nRoomIdx]->pUnitList; pPlayerUnit_lcl; pPlayerUnit_lcl = pPlayerUnit_lcl->pRoomNext) {
-              CLIENT_AddUnitToProximitySortedList(nX, pPlayerUnit_lcl, nY, &pnMaxDist, pClient, nMaxUnits, (uint32_t*)&__frame0.pSortList);
+              CLIENT_AddUnitToProximitySortedList(nX, pPlayerUnit_lcl, nY, &pnMaxDist, pClient, nMaxUnits, aProximityNodes);
             }
 
             nRoomIdx++;
           } while (nRoomIdx < nAdjacentRoomCount);
         }
 
-        CLIENT_PopulateVisibilityPacketBuffer((int**)&__frame0.pSortList, pClient);
+        CLIENT_PopulateVisibilityPacketBuffer(aProximityNodes, pClient);
         return;
       }
 
@@ -2714,22 +2711,11 @@ void __fastcall CLIENT_RemoveFromAdjacentRooms(D2RoomStrc * pRoom, int32_t nClie
 }
 
 void __fastcall TellClientToLoadAct(::SGAMEDATA * pGame, D2ClientStrc * pClient) {
-    // Frame slots -32..-22 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byPacketId;
-      int nCycleIndex;
-      int nTicks;
-      uint8_t bEclipse;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 10, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint8_t _byActNoArg;
+    D2GSPacketSrv0x53 sPacket;
     uint8_t bEclipseOut[4];
-    int nTicksOut;
-    int nCycleOut;
+    int32_t nTicksOut;
+    int32_t nCycleOut;
     uint8_t byActNoArg;
     uint32_t uStack_7;
     uint8_t bActNo = GetAct(pClient);
@@ -2737,11 +2723,11 @@ void __fastcall TellClientToLoadAct(::SGAMEDATA * pGame, D2ClientStrc * pClient)
     eD2LevelId eTownLevelId = D2Common::DUNGEON::Dungeon::GetTownLevelIdFromAct(pGame->pAct[bActNo]);
     SCmd::NET_D2GS_SERVER_Send_0x03_NEWACT(pClient, '\x03', (uint8_t)_byActNoArg, pGame->pInitSeed.nSeedLow, pGame->pInitSeed.nSeedHigh, (uint16_t)eTownLevelId);
     D2Common::Environment::DRLGENV_GetCycleIndex_Ticks_EclipseFromAct(pGame->pAct[bActNo], &nCycleOut, &nTicksOut, (BOOL*)bEclipseOut);
-    __frame0.nTicks = nTicksOut;
-    __frame0.bEclipse = bEclipseOut[0];
-    __frame0.byPacketId = 0x53;
-    __frame0.nCycleIndex = nCycleOut;
-    SCmd::NET_D2GS_SERVER_Send_0x53_ACTTIMEOFDAY(pClient, (D2GSPacketSrv0x53*)&__frame0.byPacketId);
+    sPacket.nTicks = nTicksOut;
+    sPacket.bEclipse = bEclipseOut[0];
+    sPacket.nHeader = 'S';
+    sPacket.nCycleIndex = nCycleOut;
+    SCmd::NET_D2GS_SERVER_Send_0x53_ACTTIMEOFDAY(pClient, &sPacket);
 }
 
 } // namespace D2Game::GAME::Clients

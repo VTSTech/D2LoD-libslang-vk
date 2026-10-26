@@ -10,9 +10,9 @@
 
 // Forward declarations
 struct D2AiParamStrc;
+struct D2MonsterAiCmdStrc;
 struct D2MonsterAiParameterStruct;
 struct D2SkillStrc;
-struct D2UnitDataClientSide;
 struct D2UnitStrc;
 struct SGAMEDATA;
 #ifndef RECON_FPTD_fpAiTargetPredicate
@@ -53,10 +53,10 @@ int32_t __stdcall AI_Baal_SelectActionWeighted(::SGAMEDATA * pGame, int32_t nPar
 int32_t __stdcall AI_BaalEvaluateCombatAction(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, int32_t nParam3, int32_t nParam4, struct D2UnitStrc * pUnit2, struct D2UnitStrc * pUnit3);
 void __fastcall AI_BAAL_CountPowerfulSkills(int32_t nSkillNode, int * pnSelfSkillNode, int * pnPowerfulSkillCount);
 // Baal-AI helper that spawns a single weakened Baal clone minion. First counts existing "powerful skill" minions via CallForEachMinion/AI_BAAL_CountPowerfulSkills and bails if any already exist (one-clone guard). Resolves Baal's current target/owner, derives a spawn position near the target (or Baal) by jittering its X/Y with the room/unit RNG (mod 0x18 offsets), finds a valid nearby room, and spawns the clone monster (class id ~0x23a) via SpawnMonster. The clone is flagged NOXP|NOTC, restarts AI thinking, is registered as Baal's minion (AssignMinionOwner/AddMinionToList, mutual StoreOwner), and gets 1/3 of Baal's max-hp/current-hp with hpregen 0. On success increments a counter at *(nParam+0x18) and returns 1 (packed in EAX high bits); returns 0 if guard hit, owner dead, or spawn failed.
-uint32_t __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, struct D2UnitStrc * pUnit);
+bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, struct D2UnitStrc * pUnit);
 // Executes a specific Baal AI action. Handles Baal clone spawning, teleport positioning, and multi-skill attack selection during the boss encounter.
 // @sourcefile .\Ai\AiBaal.cpp
-void __fastcall AI_Baal_ExecuteAction(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nParam, struct D2UnitStrc * pTarget, int nParam2, struct D2UnitDataClientSide * pClientSideData);
+void __fastcall AI_Baal_ExecuteAction(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nParam, struct D2UnitStrc * pTarget, int nParam2, struct D2MonsterAiCmdStrc * pClientSideData);
 void __fastcall BaalCrabAi_ResetInfernoAndReattach(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);
 // Baal Crab (Baal's crab minion) AI tick. Selects best target via SelectTargetBaal, stores an anchor position AI-cmd (id=10) on first tick, then calls AI_BaalEvaluateCombatAction to choose an action and AI_Baal_ExecuteAction to perform it. Schedules next tick in 25 frames (RestartAiThink 0x19).
 void __fastcall AI_Fn1_BaalCrab(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);

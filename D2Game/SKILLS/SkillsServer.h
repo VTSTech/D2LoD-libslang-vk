@@ -92,14 +92,14 @@ uint32_t __fastcall SKILLS_ApplyDamageCallback(struct D2SkillCallbackContextStrc
 // @sourcefile .\SKILLS\Skills.cpp
 BOOL __fastcall SKILLS_ApplyAreaDamage(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nX, int32_t nY, int32_t nRadius, struct D2DamageStrc * pDamage, uint32_t nCollisionFlags);
 // @sourcefile .\SKILLS\Skills.cpp
-eD2MissileHitFlags __fastcall SKILLS_ApplyAreaHitAtUnit(int32_t nGame, struct D2UnitStrc * pUnit, int32_t nRange, fpAreaHitUnitFilter nSkillLevel);
+struct D2UnitStrc * __fastcall SKILLS_ApplyAreaHitAtUnit(int32_t nGame, struct D2UnitStrc * pUnit, int32_t nRange, fpAreaHitUnitFilter nSkillLevel);
 // @sourcefile .\SKILLS\Skills.cpp
 eD2MissileHitFlags __fastcall SKILLS_ApplyAreaHitAtPos(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nX, int32_t nY, int32_t nParam2, uint32_t nCollisionFlags);
 // Returns the unit in the radius whose GUID is the smallest above nAfterGUID, else the lowest GUID at or below it (cycles targets); *pnUnitCount = units visited. Asm 0056bd49..0056bd7e.
 // @sourcefile .\SKILLS\Skills.cpp
 struct D2UnitStrc * __fastcall SKILLS_FindNextUnitInAreaByGUID(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nX, int32_t nY, int32_t nRadius, uint32_t nCollisionFlags, uint32_t nAfterGUID, int * pnUnitCount);
 // Recomputes and enforces the maximum pet count for the pet type associated with skill nSkillId. Iterates every skill listed in the pet type's nSkillId table, evaluates the petmax calc at the current skill level, and takes the highest result. Calls PETS_SetMaxAndTrimExcess to apply the new cap and kill excess pets. Only acts on player units with a valid pettype in D2PetTypeTxt.
-void __fastcall SKILLS_UpdatePetMax(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, short * nSkillId);
+void __fastcall SKILLS_UpdatePetMax(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nSkillId);
 // Consumes one charge from a charged-skill item when cast. Looks up the weapon item by nWeaponUnitId, finds the matching charged-skill stat via ITEMMOD_FindChargedSkill, decrements the remaining charge count (floor 0), writes the updated stat back via STATLIST_SetStatValueInBaseArraySafe, and sends a 0x3E UpdateItemStats packet to the client to sync the new charge count.
 // @sourcefile .\SKILLS\Skills.cpp
 void __stdcall SKILLS_UseChargedSkillCharge(::SGAMEDATA * pGame, struct D2SkillStrc * pSkill, struct D2UnitStrc * pUnit, uint32_t nWeaponUnitId);
@@ -151,7 +151,7 @@ BOOL __fastcall SKILLS_GetTargetOrCursorPos(::SGAMEDATA * pGame, struct D2UnitSt
 void __fastcall SKILLS_NormalizeDirectionMin(int * pnParam1, int * pnParam2);
 void __fastcall SKILLS_NormalizeDirectionPerp(int * pnParam1, int * pnParam2);
 // Server-side helper that spawns a full ring of 64 missiles around a target unit's position (used by nova/ring-style skills). Resolves the ring center from the target's path (static path pos for objects/tiles, dynamic path GetXPos/GetYPos otherwise, else 0). Builds a D2SkillArgStrc owned by pUnit with the given missile txt id, skill no (nParam1), nToHit (eSkill), and an optional velocity override (nParam2, sets flag 4). Loops the 64-entry global ring cos/sin offset tables, setting each missile's directional unit X/Y and calling Missiles::CreatingMissile per angle. __fastcall: pGame(ECX), pUnit(EDX), remaining args (pTargetUnit, pMissileTxtNo, nParam1, eSkill, nParam2) on stack; no return.
-void __fastcall SKILLS_CreateMissileRing(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTargetUnit, eMissilesId * pMissileTxtNo, int32_t nParam1, eD2Skills eSkill, int32_t nParam2);
+void __fastcall SKILLS_CreateMissileRing(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTargetUnit, eMissilesId pMissileTxtNo, int32_t nParam1, eD2Skills eSkill, int32_t nParam2);
 // Spawns a star-pattern burst of missiles for skills like Meteor/Nova rings. Fires one central missile offset (+14,-14), then iterates ring rows (up to 7 rings, 5 missiles per ring) using gaSkillMissileStarOffsets lookup tables to compute symmetric X/Y offsets, calling CreatingMissile for each. Halts with an unrecoverable error if nMissileCount exceeds the supported ring table size.
 void __fastcall SKILLS_CreateMissileStar(::SGAMEDATA * pGame, int32_t nMissileCount, struct D2SkillArgStrc * pSkillArg);
 // Server-side: gives a player a temporary weapon item in the free weapon hand for skills that require one. Inspects the player's R_ARM/L_ARM body-loc items; if a hand is empty (or the held item is not a one-handed weapon) it generates a normal-quality item of szItemCode via ITEM_CreateItemInstance at the appropriate ilvl and equips it to that body location (BODYLOC_R_ARM=4 / L_ARM=5) via SERVER_EquipItemToBodyLoc. No-op for non-player units. Halts with Fog error 0xf4c (bad item code) or 0xf55 (item creation failed).

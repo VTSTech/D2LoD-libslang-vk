@@ -89,11 +89,11 @@ void __fastcall FASTCMP_RemapFramePaletteIndices(DC6Block * pFrame, BYTE * pPale
     int nRunLength;
     uint8_t byRleControl;
     int nRowsRemaining = pFrame->nHeight;
-    DC6Block* pStreamCursor = pFrame + 1;
+    uint8_t* pStreamCursor = (uint8_t*)(pFrame + 1);
     do {
       while (true) {
-        byRleControl = (uint8_t)pStreamCursor->nFlip;
-        pStreamCursor = (DC6Block*)((uintptr_t)&pStreamCursor->nFlip + 1);
+        byRleControl = (uint8_t)((DC6Block*)pStreamCursor)->nFlip;
+        pStreamCursor = (uint8_t*)((uintptr_t)&((DC6Block*)pStreamCursor)->nFlip + 1);
         if ((char)byRleControl < '\0') {
           break;
         }
@@ -101,8 +101,8 @@ void __fastcall FASTCMP_RemapFramePaletteIndices(DC6Block * pFrame, BYTE * pPale
         nRunLength = (int)(char)byRleControl;
         if (0 < nRunLength) {
           do {
-            *(uint8_t*)&pStreamCursor->nFlip = pPaletteRemap[(uint8_t)pStreamCursor->nFlip];
-            pStreamCursor = (DC6Block*)((uintptr_t)&pStreamCursor->nFlip + 1);
+            *pStreamCursor = pPaletteRemap[*pStreamCursor];
+            pStreamCursor++;
             nRunLength--;
           } while (nRunLength);
         }
@@ -116,12 +116,12 @@ void __fastcall FASTCMP_ConvertDCCWithPaletteRemap(DC6 * pDCC, DC6 * pDCCDest, p
     size_t nPixelCount;
     uint8_t* pbSrcPixel;
     uint8_t* pbCompressedData;
-    uint8_t* nCompressedSize;
+    uint32_t nCompressedSize;
     uint8_t* pbIndexedBuf;
     uint32_t nPixelIndex;
     uint8_t* pbIndexOut;
     uint32_t nFrameFlags;
-    uint8_t* nCompressedSizeOut;
+    uint32_t nCompressedSizeOut;
     int32_t nErrorLine;
     if (!(pDCC->nFlags & 4)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
@@ -162,21 +162,21 @@ void __fastcall FASTCMP_ConvertDCCWithPaletteRemap(DC6 * pDCC, DC6 * pDCCDest, p
       }
 
       pNewFrameData = (uint32_t*)pSrcFrame->nVersion;
-      FASTCMP_CompressToRLE((uint8_t*)pNewFrameData[1], pNewFrameData[2], (uint8_t*)*pNewFrameData, &pbCompressedData, &nCompressedSize, pbIndexedBuf);
+      FASTCMP_CompressToRLE((uint8_t*)pNewFrameData[1], pNewFrameData[2], (uint8_t*)*pNewFrameData, &pbCompressedData, (uint8_t**)&nCompressedSize, pbIndexedBuf);
       D2_FREE(pbIndexedBuf);
       nCompressedSizeOut = nCompressedSize;
-      pNewFrameData = (uint32_t*)D2_ALLOC((size_t)(nCompressedSize + 0x23));
+      pNewFrameData = (uint32_t*)D2_ALLOC(nCompressedSize + 0x23);
       pbSrcPixel = pbCompressedData;
       *pNewFrameData = *(uint32_t*)pSrcFrame->nVersion;
       pNewFrameData[1] = *(uint32_t*)(pSrcFrame->nVersion + 4);
       pNewFrameData[2] = *(uint32_t*)(pSrcFrame->nVersion + 8);
       pNewFrameData[3] = *(uint32_t*)(pSrcFrame->nVersion + 0xc);
       nFrameFlags = *(uint32_t*)(pSrcFrame->nVersion + 0x10);
-      pNewFrameData[7] = (uint32_t)(uintptr_t)nCompressedSizeOut;
+      pNewFrameData[7] = nCompressedSizeOut;
       pNewFrameData[4] = nFrameFlags;
       pNewFrameData[5] = 0;
       pNewFrameData[6] = 0;
-      memcpy(pNewFrameData + 8, pbCompressedData, (size_t)nCompressedSizeOut);
+      memcpy(pNewFrameData + 8, pbCompressedData, nCompressedSizeOut);
       D2_FREE(pbSrcPixel);
       *(uint32_t**)((int)pDCCDest - (int)pDCC + (int)pSrcFrame) = (uint32_t*)pNewFrameData;
       nFrameIndex++;

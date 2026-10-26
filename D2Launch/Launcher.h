@@ -8,6 +8,7 @@
 #include <cstdarg>
 #include "d2_platform.h"
 #include "Bnclient/net_sid.h"
+#include "Fog/Save.h"
 
 // Forward declarations
 struct D2CharSelStrc;
@@ -18,6 +19,11 @@ struct D2IniConfigStrc;
 struct __attribute__((packed)) D2OogErrorDataStrc {
     /* 0x00 */ eOogErrorCode eErrorCode; // Error dialog type to display
     /* 0x04 */ void * pCustomData; // Optional: Character name or custom error string (used by codes 6, 10, 27)
+};
+
+struct __attribute__((packed)) D2SaveFileBufferStrc {
+    /* 0x000 */ D2SaveFileHeaderStrc sHeader;
+    /* 0x14F */ uint8_t abTail[7857];
 };
 
 namespace D2Launch::Launcher {
@@ -50,7 +56,7 @@ int __stdcall LAUNCHER_PumpChangePasswordResponse(int nFrameIndex);
 void __stdcall LAUNCHER_DisconnectFromBnet();
 // Displays out-of-game error/message dialogs. Error code determines which localized string to show. Custom data used for character names or custom messages.
 int __fastcall ShowOogErrorDialog(struct D2OogErrorDataStrc * pErrorData);
-void __stdcall LAUNCHER_ShowOogErrorDialog_ForEnterEmail();
+void __fastcall LAUNCHER_ShowOogErrorDialog_ForEnterEmail(eOogErrorCode eErrorCode, void * pCustomData);
 uint32_t __stdcall CLIENT_ConnectToBattleNet();
 int __fastcall EnterEmailMessagePumper(struct D2IniConfigStrc * pIniConfig, int32_t bCreateAccount, int32_t nResponseCode);
 void __stdcall UIMENU_MainMenuWithoutMenuButWithDiabloLogo();

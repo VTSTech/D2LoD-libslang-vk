@@ -2,8 +2,6 @@
 
 #include "Fog/Src/LogManager.h"
 #include "Bnclient/net_sid.h"
-#include "D2Launch/CharSel.h"
-#include "D2Win/DC6.h"
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
@@ -11,13 +9,14 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/H/Storm.h"
 #include "Storm/SMem.h"
-#include "Storm/Source/SFile.h"
 #include "Storm/Source/SSTR.h"
+#include "Storm/Source/SSystem.h"
 #include "Storm/_unnamespaced.h"
 #include "support/d2_boot.h" // [d2boot]
 #include "compiler/compiler.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
+#include "D2Launch/CharSel.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -45,78 +44,25 @@ static char gLogFileNameArray_0__1_[20][16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 static char gLogFileNameArray_0__2_[20][16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 int __stdcall DetectCpuVendor() {
-    // Frame slots -24..-4 are ONE object: &dwVendorPart0 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t dwVendorPart0;
-      uint32_t dwVendorPart1;
-      uint32_t dwVendorPart2;
-      uint32_t dwVendorTerm;
-      uint32_t local_8;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    __frame0.dwVendorTerm = 0;
+    char szCpuVendor[16];
+    memset(szCpuVendor + 12, 0, 4 * sizeof(szCpuVendor[0]));
     int nCpuidResult = D2_Cpuid(0);
-    __frame0.dwVendorPart0 = *(uint32_t*)(nCpuidResult + 4);
-    __frame0.dwVendorPart1 = *(uint32_t*)(nCpuidResult + 8);
-    __frame0.dwVendorPart2 = *(uint32_t*)(nCpuidResult + 0xc);
-    nCpuidResult = 0xd;
-    bool bMatch = true;
-    uint32_t* pVendor = &__frame0.dwVendorPart0;
-    char* pExpected = "GenuineIntel";
-    do {
-      if (!nCpuidResult) {
-        break;
-      }
-
-      nCpuidResult--;
-      bMatch = (char)*pVendor == *pExpected;
-      pVendor = (uint32_t*)((int)pVendor + 1);
-      pExpected++;
-    } while (bMatch);
-
+    *(uint32_t*)(char*)&szCpuVendor = *(uint32_t*)(nCpuidResult + 4);
+    *(uint32_t*)((char*)&szCpuVendor + 4) = *(uint32_t*)(nCpuidResult + 8);
+    *(uint32_t*)((char*)&szCpuVendor + 8) = *(uint32_t*)(nCpuidResult + 0xc);
+    bool bMatch = !strcmp(szCpuVendor, "GenuineIntel");
     if (bMatch) {
       Debug::GuardStack();
       return 1;
     }
 
-    nCpuidResult = 0xd;
-    bMatch = true;
-    pVendor = &__frame0.dwVendorPart0;
-    pExpected = "AuthenticAMD";
-    do {
-      if (!nCpuidResult) {
-        break;
-      }
-
-      nCpuidResult--;
-      bMatch = (char)*pVendor == *pExpected;
-      pVendor = (uint32_t*)((int)pVendor + 1);
-      pExpected++;
-    } while (bMatch);
-
+    bMatch = !strcmp(szCpuVendor, "AuthenticAMD");
     if (bMatch) {
       Debug::GuardStack();
       return 2;
     }
 
-    bMatch = true;
-    nCpuidResult = 0xd;
-    pVendor = &__frame0.dwVendorPart0;
-    pExpected = "CyrixInstead";
-    do {
-      if (!nCpuidResult) {
-        break;
-      }
-
-      nCpuidResult--;
-      bMatch = (char)*pVendor == *pExpected;
-      pVendor = (uint32_t*)((int)pVendor + 1);
-      pExpected++;
-    } while (bMatch);
-
+    bMatch = !strcmp(szCpuVendor, "CyrixInstead");
     Debug::GuardStack();
     return !bMatch ? 0 : 0x3;
 }
@@ -1014,11 +960,11 @@ long __fastcall GetLogFileSize(uint8_t * szFileName) {
 }
 
 // @sourcefile .\Src\LogManager.cpp
-D2CharSelCompStrc * __fastcall ReadLogFileRange(uint8_t * szFileName, int32_t nStartOffset, int32_t nEndOffset) {
+char * __fastcall ReadLogFileRange(uint8_t * szFileName, int32_t nStartOffset, int32_t nEndOffset) {
     _SYSTEMTIME localTime;
     size_t nAllocSize = nEndOffset - nStartOffset + 1;
     int32_t nSavedStart = nStartOffset;
-    D2CharSelCompStrc* pBuffer = (D2CharSelCompStrc*)D2_ALLOC(nAllocSize);
+    char* pBuffer = (char*)D2_ALLOC(nAllocSize);
     memset(pBuffer, 0, nAllocSize);
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gLogFileCS);
     CloseLogFileByName(szFileName);
@@ -1027,7 +973,7 @@ D2CharSelCompStrc * __fastcall ReadLogFileRange(uint8_t * szFileName, int32_t nS
       int nSeekResult;
       nSeekResult = fseek(pFile, nSavedStart, 0);
       if (!nSeekResult) {
-        fread(pBuffer, 1, nEndOffset - nStartOffset, pFile);
+        fread((D2CharSelCompStrc*)pBuffer, 1, nEndOffset - nStartOffset, pFile);
       }
 
       fclose(pFile);
@@ -1438,7 +1384,7 @@ void __stdcall StopLogWriterThread() {
     LeaveCriticalSection(&gLogMessageQueueCS);
 }
 
-void EnqueueLogMessage(char * szText1, char * szText2, void * pData, void * nDataLen, void * pCategory, void * bSkipData, int32_t nVerbose) {
+void EnqueueLogMessage(char * szText1, char * szText2, void * pData, void * nDataLen, void * pCategory, BOOL bSkipData, int32_t nVerbose) {
     int* pPrevLink;
     if (!(!gLogWriterThreadStopFlag && gLogManagerInitialized)) {
       return;
@@ -1447,7 +1393,7 @@ void EnqueueLogMessage(char * szText1, char * szText2, void * pData, void * nDat
       BOOL bIsBadPtr;
       /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ bIsBadPtr = IsBadReadPtr(pData, (UINT_PTR)nDataLen);
       if (bIsBadPtr) {
-        bSkipData = (void*)0x1;
+        bSkipData = 1;
       }
     }
 
@@ -1470,7 +1416,7 @@ void EnqueueLogMessage(char * szText1, char * szText2, void * pData, void * nDat
     *(void**)(pcVar1 + 4) = (void*)nDataLen;
     *(void**)pcVar1 = (void*)pData;
     *(void**)(pcVar1 + 8) = (void*)pCategory;
-    *(void**)(pcVar1 + 0xc) = (void*)bSkipData;
+    *(BOOL*)(pcVar1 + 0xc) = bSkipData;
     *(uint32_t*)(pcVar1 + 0x10) = (uint32_t)!nVerbose;
     nLen1 = Storm::Source::SSTR::SStrCopy(pcVar1 + 0x14, szText2, 0x7fffffff);
     if (!bSkipData) {
@@ -1678,9 +1624,9 @@ void __stdcall StartLogWriterThread() {
     gLogFileSlotMutex[0x13] = 1;
     uint32_t nByteOffset = 0;
     do {
-      gLogFilePathArray[0][nByteOffset] = '\0';
-      nByteOffset += 0x104;
-    } while (nByteOffset < 0x1450);
+      gLogFilePathArray[nByteOffset][0] = '\0';
+      nByteOffset++;
+    } while (nByteOffset < 20);
 }
 
 void LOGFILE_WriteStringToFile(char * Format, ...) {
@@ -1788,20 +1734,10 @@ void __fastcall Atomic64Load(int64_t * pllResult, int64_t * pllSource) {
 }
 
 void __stdcall GetFreeDiskSpaceForSavePath() {
-    // Frame slots -1072..-1044 are ONE object: &dwTotalBytesLo is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t dwTotalBytesLo;
-      uint32_t dwTotalBytesHi;
-      uint32_t dwFreeBytesLo;
-      uint32_t dwFreeBytesHi;
-      DWORD dwBytesPerSector;
-      uint32_t anDiskInfo;
-      uint32_t local_418;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 28, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     pfnGetDiskFreeSpaceEx npfnGetDiskFreeSpaceEx;
+    ULONGLONG uTotalFreeBytes;
+    ULONGLONG uTotalBytes;
+    ULONGLONG uFreeBytesAvailable;
     DWORD local_414[3];
     char szSavePath[1024];
     uint32_t dwStackGuard = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
@@ -1810,13 +1746,13 @@ void __stdcall GetFreeDiskSpaceForSavePath() {
     /* LPCSTR lpProcName for GetProcAddress */ /* HMODULE hModule for GetProcAddress */ if (hModule) {
       npfnGetDiskFreeSpaceEx = (pfnGetDiskFreeSpaceEx)GetProcAddress(hModule, "GetDiskFreeSpaceExA");
       if (npfnGetDiskFreeSpaceEx) {
-        __frame0.dwTotalBytesLo = 0;
-        __frame0.dwTotalBytesHi = 0;
-        __frame0.dwFreeBytesLo = 0;
-        __frame0.dwFreeBytesHi = 0;
-        __frame0.anDiskInfo = 0;
-        __frame0.local_418 = 0;
-        (*npfnGetDiskFreeSpaceEx)(szSavePath, &__frame0.anDiskInfo, &__frame0.dwFreeBytesLo, &__frame0.dwTotalBytesLo);
+        *(uint32_t*)(char*)&uTotalFreeBytes = 0;
+        *(uint32_t*)((char*)&uTotalFreeBytes + 4) = 0;
+        *(uint32_t*)(char*)&uTotalBytes = 0;
+        *(uint32_t*)((char*)&uTotalBytes + 4) = 0;
+        *(uint32_t*)(char*)&uFreeBytesAvailable = 0;
+        *(uint32_t*)((char*)&uFreeBytesAvailable + 4) = 0;
+        (*npfnGetDiskFreeSpaceEx)(szSavePath, &uFreeBytesAvailable, &uTotalBytes, &uTotalFreeBytes);
         /* HMODULE hLibModule for FreeLibrary */ FreeLibrary(hModule);
         Debug::GuardStack();
         return;
@@ -1836,8 +1772,8 @@ void __stdcall GetFreeDiskSpaceForSavePath() {
     /* LPDWORD lpTotalNumberOfClusters for GetDiskFreeSpaceA */ /* LPDWORD lpNumberOfFreeClusters for GetDiskFreeSpaceA */ /* LPDWORD lpBytesPerSector for GetDiskFreeSpaceA */ /* LPDWORD lpSectorsPerCluster for GetDiskFreeSpaceA */ /* LPCSTR lpRootPathName for GetDiskFreeSpaceA */ local_414[2] = 0;
     local_414[0] = 0;
     local_414[1] = 0;
-    __frame0.dwBytesPerSector = 0;
-    GetDiskFreeSpaceA(szSavePath, local_414 + 2, local_414, local_414 + 1, &__frame0.dwBytesPerSector);
+    DWORD dwBytesPerSector = 0;
+    GetDiskFreeSpaceA(szSavePath, local_414 + 2, local_414, local_414 + 1, &dwBytesPerSector);
     Debug::GuardStack();
 }
 

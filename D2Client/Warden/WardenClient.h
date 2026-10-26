@@ -110,13 +110,9 @@ namespace D2Client::Warden {
 void __fastcall WARDEN_RC4Decrypt(struct D2RC4StateStrc * pState, int32_t pData, uint32_t nLen);
 uint32_t __stdcall WARDEN_CheckSignatureMagic(int32_t nDataLen, uint32_t nTotalLen, int32_t pBuffer, int * pnSigOffset);
 void __stdcall WARDEN_ComputeModuleHash(char * szModuleName, int32_t pHashOut, uint32_t nSplitOffset, uint32_t nTotalLen, uint8_t * pModuleData);
-//   pModulus: Stack[0xc]:4 (void *) - nKeySize bytes
-//   pExponent: Stack[0x10]:4 (void *)
-//   nExponentLen: Stack[0x14]:4 (uint32_t)
-//   nSigDataLen: Stack[0x18]:4 (uint32_t)
-//   nTotalLen: EAX:4 (uint32_t)
-// @sourcefile .\WARDEN\WardenClient.cpp
-bool __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName, int32_t pData, void * pModulus, void * pExponent, uint32_t nExponentLen, uint32_t nSigDataLen, uint32_t nTotalLen);
+// Verifies a Warden module's RSA signature: checks the 'NGIS' tag at the end of the module, builds the expected padded SHA-1 hash of the module and its name, decrypts the trailing signature with the supplied modulus and exponent (SBigPowMod) and returns TRUE when the two match.
+// Source file WARDEN/WardenClient.cpp (__FILE__ literal, 4 sites).
+BOOL __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName, int32_t pData, void * pModulus, void * pExponent, uint32_t nExponentLen, uint32_t nSigDataLen, uint32_t nTotalLen);
 // @sourcefile .\WARDEN\WardenClient.cpp
 void __fastcall WARDEN_CbAllocModuleStruct(uint32_t nParam);
 // @sourcefile .\WARDEN\WardenClient.cpp

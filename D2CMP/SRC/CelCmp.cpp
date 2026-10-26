@@ -2,15 +2,15 @@
 
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/CelCmp/CELLIST.h"
+#include "D2CMP/SRC/CelCmp/TCELENTRY.h"
 #include "D2CMP/SRC/Codec.h"
 #include "D2CMP/SRC/FastCmp.h"
 #include "D2CMP/SRC/Raw.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2CMP/SRC/SubTile.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Glide/Renderer/Glide.h"
-#include "D2Launch/CharSel.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "Fog/3rdparty/crashy/Report.h"
@@ -21,7 +21,6 @@
 #include "Storm/SMem.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "D2CMP/SRC/CelCmp/TCELENTRY.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -1377,7 +1376,7 @@ void __stdcall CELCMP_ApplyPaletteToAllFrames(DC6 * pDCC, uint8_t * pPalette) {
 }
 
 uint32_t __stdcall CELCMP_SerializeCelFileToMemory(uint32_t * pDCCSrc, uint32_t * ppDCCDest, size_t * pSizeOut) {
-    D2InventoryGridStrc* pSrcFrameRef;
+    uint32_t pSrcFrameRef;
     size_t _Size;
     uint32_t iFrame;
     uint32_t iNextFrame;
@@ -1399,7 +1398,7 @@ uint32_t __stdcall CELCMP_SerializeCelFileToMemory(uint32_t * pDCCSrc, uint32_t 
     uint32_t* pWriteCursor = (uint32_t*)D2_ALLOC(nTotalSize);
     uint32_t* pDstFrameCursor = pDCCSrc;
     uint32_t* pOutputBlock = pWriteCursor;
-    for (pSrcFrameRef = (D2InventoryGridStrc*)0x7; pSrcFrameRef; pSrcFrameRef = (D2InventoryGridStrc*)((uintptr_t)&pSrcFrameRef[-1].pSwappedLeftArmItem + 3)) {
+    for (pSrcFrameRef = 7; pSrcFrameRef; pSrcFrameRef--) {
       *pOutputBlock = *pDstFrameCursor;
       pDstFrameCursor++;
       pOutputBlock++;
@@ -1878,14 +1877,14 @@ void __stdcall CELCMP_FreeCelFileAndData(DC6 * pDC6) {
 }
 
 void __stdcall CELCMP_AddCelFrameToCache(uint32_t nParam1, uint32_t * pdwParam, uint32_t nParam2, uint32_t nParam3, uint32_t nParam4, uint32_t nParam5, uint32_t nParam6, uint32_t nParam7) {
-    TSLink<::TCELENTRY>* pNewFrame;
-    D2CharSelCompStrc* pPixelBuf;
+    ::TCELENTRY* pNewFrame;
+    uint8_t* pPixelBuf;
     int* pBackLink;
     uint32_t uRowPitch;
     int bCriticalLocked;
     uint32_t uLinkOffset;
     TSLink<::TCELENTRY>* uPrevHeadNode;
-    TSLink<::TCELENTRY>* pCacheEntry = 0;
+    ::TCELENTRY* pCacheEntry = 0;
     if (!nParam3 || !nParam4) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x229);
       exit(-1);
@@ -1900,18 +1899,18 @@ void __stdcall CELCMP_AddCelFrameToCache(uint32_t nParam1, uint32_t * pdwParam, 
           bCriticalLocked = 0;
         }
 
-        pNewFrame = (TSLink<::TCELENTRY>*)Storm::SMem::SMemAlloc(0x24, s___AUTCELENTRY___00741f14, -2, 8);
+        pNewFrame = (::TCELENTRY*)Storm::SMem::SMemAlloc(0x24, s___AUTCELENTRY___00741f14, -2, 8);
         if (!pNewFrame) {
-          pNewFrame = &pHashEntry->m_frames.m_terminator;
+          pNewFrame = (::TCELENTRY*)&pHashEntry->m_frames.m_terminator;
         } else {
-          pNewFrame->m_prevlink = 0;
-          pNewFrame->m_next = 0;
+          pNewFrame->m_link.m_prevlink = 0;
+          pNewFrame->m_link.m_next = 0;
           pCacheEntry = pNewFrame;
         }
 
-        uPrevHeadNode = pNewFrame->m_prevlink;
+        uPrevHeadNode = pNewFrame->m_link.m_prevlink;
         if (uPrevHeadNode) {
-          uLinkOffset = pNewFrame->m_next;
+          uLinkOffset = pNewFrame->m_link.m_next;
           if ((int)uLinkOffset < 0) {
             pBackLink = (int*)~uLinkOffset;
           } else {
@@ -1919,31 +1918,31 @@ void __stdcall CELCMP_AddCelFrameToCache(uint32_t nParam1, uint32_t * pdwParam, 
           }
 
           *pBackLink = (int)uPrevHeadNode;
-          pNewFrame->m_prevlink->m_next = pNewFrame->m_next;
-          pNewFrame->m_prevlink = 0;
-          pNewFrame->m_next = 0;
+          pNewFrame->m_link.m_prevlink->m_next = pNewFrame->m_link.m_next;
+          pNewFrame->m_link.m_prevlink = 0;
+          pNewFrame->m_link.m_next = 0;
         }
 
         uPrevHeadNode = pHashEntry->m_frames.m_terminator.m_prevlink;
-        pNewFrame->m_prevlink = uPrevHeadNode;
-        pNewFrame->m_next = uPrevHeadNode->m_next;
+        pNewFrame->m_link.m_prevlink = uPrevHeadNode;
+        pNewFrame->m_link.m_next = uPrevHeadNode->m_next;
         uPrevHeadNode->m_next = (int)pCacheEntry;
-        pHashEntry->m_frames.m_terminator.m_prevlink = pNewFrame;
+        pHashEntry->m_frames.m_terminator.m_prevlink = &pNewFrame->m_link;
         pHashEntry->nFrameCount++;
-        pCacheEntry[2].m_next = nParam3 * nParam4;
-        pCacheEntry[3].m_prevlink = (TSLink<::TCELENTRY>*)nParam5;
-        pCacheEntry[2].m_prevlink = (TSLink<::TCELENTRY>*)nParam3;
-        pCacheEntry[1].m_next = nParam4;
-        pCacheEntry[3].m_next = nParam6;
-        pCacheEntry[1].m_prevlink = (TSLink<::TCELENTRY>*)nParam7;
+        pCacheEntry->nPixelCount = nParam3 * nParam4;
+        pCacheEntry->nOffsetX = nParam5;
+        pCacheEntry->nHeight = nParam3;
+        pCacheEntry->nWidth = nParam4;
+        pCacheEntry->nOffsetY = nParam6;
+        pCacheEntry->dwArg7 = nParam7;
         uRowPitch = nParam4 * 3;
         if (!(pHashEntry->dwFlags & 4)) {
           uRowPitch = nParam4;
         }
 
-        pPixelBuf = (D2CharSelCompStrc*)D2_ALLOC(uRowPitch * nParam3);
-        pCacheEntry[4].m_prevlink = (TSLink<::TCELENTRY>*)pPixelBuf;
-        D2MEM_CopyRows(pPixelBuf, pdwParam, uRowPitch, nParam2, nParam3, uRowPitch);
+        pPixelBuf = (uint8_t*)D2_ALLOC(uRowPitch * nParam3);
+        pCacheEntry->pPixels = pPixelBuf;
+        D2MEM_CopyRows((char*)pPixelBuf, pdwParam, uRowPitch, nParam2, nParam3, uRowPitch);
         if (!bCriticalLocked) {
           return;
         }

@@ -816,11 +816,11 @@ uint32_t __fastcall MAINMENU_CheckFileExists(char * szFileName) {
     return 1;
 }
 
-void MAINMENU_GetLocalizedFilePath(char * szPathFormat, char * szOutPath) {
+void MAINMENU_GetLocalizedFilePath(char * szPathFormat, char * szOutPath, char * szResolution) {
     D2MPQFileStrc* pFileHandle;
     char szLangAbbrev[4];
     D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbrev, 0);
-    sprintf(szOutPath, szPathFormat, "DATA\\LOCAL", szLangAbbrev);
+    sprintf(szOutPath, szPathFormat, "DATA\\LOCAL", szLangAbbrev, szResolution);
     int bOpened = Storm::Source::SFile::SFileOpenFileEx(nullptr, szOutPath, 0, (void**)&pFileHandle);
     if (bOpened) {
       Storm::Source::SFile::SFileCloseFile(pFileHandle);
@@ -829,13 +829,13 @@ void MAINMENU_GetLocalizedFilePath(char * szPathFormat, char * szOutPath) {
 
     uint32_t nLanguageCode = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
     if (!nLanguageCode) {
-      sprintf(szOutPath, szPathFormat, "DATA\\LOCAL", "CHI");
+      sprintf(szOutPath, szPathFormat, "DATA\\LOCAL", "CHI", szResolution);
       bOpened = Storm::Source::SFile::SFileOpenFileEx(nullptr, szOutPath, 0, (void**)&pFileHandle);
       if (bOpened) {
         Storm::Source::SFile::SFileCloseFile(pFileHandle);
       }
     } else {
-      sprintf(szOutPath, szPathFormat, "DATA\\LOCAL", "ENG");
+      sprintf(szOutPath, szPathFormat, "DATA\\LOCAL", "ENG", szResolution);
       bOpened = Storm::Source::SFile::SFileOpenFileEx(nullptr, szOutPath, 0, (void**)&pFileHandle);
       if (bOpened) {
         Storm::Source::SFile::SFileCloseFile(pFileHandle);
@@ -1179,14 +1179,7 @@ void __stdcall UIMENU_AreYouSureToCreateHardcoreCharacter() {
 
 // Validates character name input as user types. First character must be a-z or A-Z (rejects '-' and '_' at start). If nTextLen is 0 (first char position), rejects non-alpha. Also rejects consecutive '-' or '_' characters by checking if previous character was the same special char. Returns 1 if valid, 0 if invalid.
 int __stdcall MAINMENU_ValidateCharacterName(::D2WinEditBox * pEditBox, int nTextLen, char * pKeyChar) {
-    // Frame slots -36..-4 are ONE object: &szNameBuffer is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      char szNameBuffer;
-      char szNameBufferRest[31];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 32, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    char szNameBuffer[32];
     char cFirstChar = *pKeyChar;
     if (!((cFirstChar < 'a' || 'z' < cFirstChar) && (cFirstChar < 'A' || 'Z' < cFirstChar))) {
       return 1;
@@ -1196,23 +1189,23 @@ int __stdcall MAINMENU_ValidateCharacterName(::D2WinEditBox * pEditBox, int nTex
     }
 
     uint16_t* wszCurrentValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&pEditBox->sControl);
-    D2Lang::WideCharToUTF8(&__frame0.szNameBuffer, wszCurrentValue, 0x20);
-    if (__frame0.szNameBuffer == '\0') {
+    D2Lang::WideCharToUTF8(szNameBuffer, wszCurrentValue, 0x20);
+    if (szNameBuffer[0] == '\0') {
       return 1;
     }
 
-    char* szIterator = &__frame0.szNameBuffer;
+    char* szIterator = szNameBuffer;
     do {
-      if (__frame0.szNameBuffer == '-') {
+      if (szNameBuffer[0] == '-') {
         return 0;
       }
-      if (__frame0.szNameBuffer == '_') {
+      if (szNameBuffer[0] == '_') {
         return 0;
       }
 
-      __frame0.szNameBuffer = szIterator[1];
+      szNameBuffer[0] = szIterator[1];
       szIterator++;
-    } while (__frame0.szNameBuffer != '\0');
+    } while (szNameBuffer[0] != '\0');
 
     return 1;
 }
@@ -1293,10 +1286,7 @@ BOOL __stdcall MAINMENU_OnPressToggleExpansionFlag(D2ControlMsg * pControlMsg) {
     }
 
     /* Expansion game: toggle PLAYERSTATUS_Expansion. Label
-                         MAINMENU_ToggleExpansionFlag marks self JNZ target (00430777). */ /* @function MAINMENU_ToggleExpansionFlag
-                         @address Game.exe.ram:0043077c
-                         @date 2026.02.26
-                         @params */ D2IniData_launcher->eCTEMP_eD2PlayerStatus ^= PLAYERSTATUS_Expansion;
+                         MAINMENU_ToggleExpansionFlag marks self JNZ target (00430777). */ D2IniData_launcher->eCTEMP_eD2PlayerStatus ^= PLAYERSTATUS_Expansion;
     return 1;
 }
 
@@ -1566,10 +1556,11 @@ uint16_t * __stdcall MAINMENU_LoadCreditsFile(uint32_t * pnCharCount) {
     int i;
     uint16_t* pwText;
     char local_134[260];
-    char szExpFileName[24];
-    char szFileNameBase[16];
+    char szExpFileName[21];
+    char szFileNameBase[12];
+    char szLangAbbrev[4];
     D2MPQFileStrc* pArchive;
-    D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szFileNameBase + 0xc, 0);
+    D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbrev, 0);
     memcpy(szFileNameBase, "Credits.txt", 0xc);
     memcpy(szExpFileName, "ExpansionCredits.txt", 0x15);
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
@@ -1578,7 +1569,7 @@ uint16_t * __stdcall MAINMENU_LoadCreditsFile(uint32_t * pnCharCount) {
       szFileName = szExpFileName;
     }
 
-    Storm::Source::SSTR::SStrPrintf(local_134, 0x104, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szFileNameBase + 0xc, szFileName);
+    Storm::Source::SSTR::SStrPrintf(local_134, 0x104, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, szFileName);
     int32_t nOpenResult = Fog::Source::SFile::ARCHIVE_OpenD2FileWrap(local_134, &pArchive);
     if (!nOpenResult) {
       return nullptr;
@@ -2012,7 +2003,7 @@ void __stdcall UIMENU_PlayCutScene(char * szSceneName, D2ControlMsg * pControlMs
       }
 
       memcpy(pFourccTail, "640x", 4);
-      MAINMENU_GetLocalizedFilePath(szSceneName, szFilePath);
+      MAINMENU_GetLocalizedFilePath(szSceneName, szFilePath, pFourccTail);
       D2gfx::D2GFX::D2GFX_PlayCutScene(szFilePath, nFlags, nullptr);
       D2Win::D2GFX::SetResolutionModeWithEndCutScene(1);
     }
@@ -2921,8 +2912,7 @@ void __stdcall MAINMENU_PlayExpansionIntro() {
       int32_t nVerB;
       D2MPQFileStrc* pVideoFile;
       char szLangAbbrev[4];
-      char pVidSuffix[4];
-      char szResolution[4];
+      char szVidSuffix[8];
       uint32_t nVerD;
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 32, "frame group __frame0_t must reproduce the Ghidra frame layout");
@@ -2933,18 +2923,18 @@ void __stdcall MAINMENU_PlayExpansionIntro() {
     int32_t nCutSceneFlags = 0;
     BOOL bLoggingEnabled = Fog::Src::LogManager::GetLoggerState_Stub();
     if (!bLoggingEnabled) {
-      memcpy(__frame0.szResolution, "292", 4);
+      memcpy(__frame0.szVidSuffix + 4, "292", 4);
     } else {
       nCutSceneFlags = 2;
-      memcpy(__frame0.szResolution, "146", 4);
+      memcpy(__frame0.szVidSuffix + 4, "146", 4);
     }
 
-    memcpy(__frame0.pVidSuffix, "640x", 4);
+    memcpy(__frame0.szVidSuffix, "640x", 4);
     D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(__frame0.szLangAbbrev, 0);
-    sprintf(szVideoPath, "%s\\video\\%s\\D2x_Intro_%s.bik", "DATA\\LOCAL", __frame0.szLangAbbrev, __frame0.pVidSuffix);
+    sprintf(szVideoPath, "%s\\video\\%s\\D2x_Intro_%s.bik", "DATA\\LOCAL", __frame0.szLangAbbrev, __frame0.szVidSuffix);
     int nIsHighRes = Storm::Source::SFile::SFileOpenFileEx(nullptr, szVideoPath, 0, (void**)&__frame0.pVideoFile);
     if (!nIsHighRes) {
-      sprintf(szVideoPath, "%s\\video\\%s\\D2x_Intro%s.bik", "DATA\\LOCAL", "ENG", __frame0.pVidSuffix);
+      sprintf(szVideoPath, "%s\\video\\%s\\D2x_Intro%s.bik", "DATA\\LOCAL", "ENG", __frame0.szVidSuffix);
     } else {
       Storm::Source::SFile::SFileCloseFile(__frame0.pVideoFile);
     }
@@ -2962,15 +2952,19 @@ void __stdcall MAINMENU_PlayExpansionIntro() {
 
 void __stdcall MAINMENU_PlayD2Intro() {
     char szVideoPath[260];
-    char szResolution[4];
+    char szResolution[8];
     GetAndDispatchAllPossible();
     int32_t nCutSceneFlags = 0;
     BOOL bWidescreen = Fog::Src::LogManager::GetLoggerState_Stub();
-    if (bWidescreen) {
+    if (!bWidescreen) {
+      memcpy(szResolution + 4, "292", 4);
+    } else {
       nCutSceneFlags = 2;
+      memcpy(szResolution + 4, "146", 4);
     }
 
-    MAINMENU_GetLocalizedFilePath("%s\\video\\%s\\d2intro%s.bik", szVideoPath);
+    memcpy(szResolution, "640x", 4);
+    MAINMENU_GetLocalizedFilePath("%s\\video\\%s\\d2intro%s.bik", szVideoPath, szResolution);
     D2gfx::D2GFX::D2GFX_PlayCutScene(szVideoPath, nCutSceneFlags, nullptr);
     UIMENU_MainScreenBeforeMenu();
 }

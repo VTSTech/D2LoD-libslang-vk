@@ -5,6 +5,7 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2GameViewStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Rendering.h"
@@ -16,7 +17,6 @@
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT/Missile.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Sound/Src/D2SoundFast.h"
 #include "D2Win/DC6.h"
@@ -888,7 +888,7 @@ void __stdcall ESCMENU_DrawProgressBar(D2EscMenuItemStrc * pMenuItem, int32_t nB
     int nCenterX;
     int32_t nBarWidth;
     D2GfxDataStrc sGfxData;
-    int nItemCount = gpEscMenuItemCount[1].nItemCount + nBaseY;
+    int nItemCount = gpEscMenuItemCount->nBarYOffset + nBaseY;
     int nScreenCenterX = ScreenSizeX / 2;
     if (!bIsOptionsMenu) {
       nCenterX = nScreenCenterX - 0x3c;

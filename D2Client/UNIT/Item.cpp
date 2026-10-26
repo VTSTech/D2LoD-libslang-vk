@@ -1101,13 +1101,13 @@ void __fastcall ITEM_HandleStatUpdatePacket(DWORD nUnitGUID, char bSetStat, eD2U
     }
 }
 
-void __fastcall ITEM_HandleItemFlagEditPacket(uint8_t * pbPacket) {
-    D2UnitStrc* pUnit = Player::UNITS_FindClientSideUnit(*(int32_t*)(pbPacket + 1), UNIT_ITEM);
+void __fastcall ITEM_HandleItemFlagEditPacket(D2GSPacketSrv0x40 * pbPacket) {
+    D2UnitStrc* pUnit = Player::UNITS_FindClientSideUnit(pbPacket->dwItemGUID, UNIT_ITEM);
     if (!pUnit) {
       return;
     }
 
-    D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pUnit, *(eD2ItemFlag*)(pbPacket + 5), *(BOOL*)(pbPacket + 9));
+    D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pUnit, pbPacket->eItemFlag, pbPacket->bSet);
 }
 
 void __fastcall ITEM_HandleCursorItemRemoval(int32_t pbPacket) {
@@ -1229,17 +1229,17 @@ BOOL __fastcall PlayerIsUnInterruptable(D2UnitStrc * pUnit) {
 }
 
 // Handles an item break/repair state-change packet (pPacket carries item GUID at +6, owner unit type/id at +1/+2, action code at +10, broken flag at +0xe). Action 0x100 = item broke: sets ITEMFLAG_BROKEN, removes the item from the body and recalculates equipped stats, then iterates the owner's body slots disabling items whose equip requirements no longer hold and re-enabling charms; loops (up to 100 passes) to settle dependent gear, restores skill selections, and reloads the unit's GFX/COF. Action 0x200 = item repaired: clears ITEMFLAG_BROKEN, re-equips it on the body, and recalculates all equipped items. No-op if item or owner unit can't be found.
-void __fastcall ITEM_HandleItemRepairBreak(uint8_t * pPacket) {
+void __fastcall ITEM_HandleItemRepairBreak(D2GSPacketSrv0x7D * pPacket) {
     int iBodyLocSaved;
     int nEquipReqResult;
     uint32_t nItemComponent;
     bool bNeedsGfxReload;
-    D2UnitStrc* pItem = Player::UNITS_FindClientSideUnit(*(int32_t*)(pPacket + 6), UNIT_ITEM);
+    D2UnitStrc* pItem = Player::UNITS_FindClientSideUnit(pPacket->dwItemGUID, UNIT_ITEM);
     if (!pItem) {
       return;
     }
 
-    D2UnitStrc* pUnit = Player::UNITS_FindClientSideUnit(*(int32_t*)(pPacket + 2), (eD2UnitType)pPacket[1]);
+    D2UnitStrc* pUnit = Player::UNITS_FindClientSideUnit(pPacket->dwOwnerGUID, (eD2UnitType)pPacket->nOwnerUnitType);
     if (!pUnit) {
       return;
     }
@@ -1247,8 +1247,8 @@ void __fastcall ITEM_HandleItemRepairBreak(uint8_t * pPacket) {
     *(uint8_t*)(char*)&nItemComponent = D2Common::Units::GetItemComponent(pUnit, pItem);
     nItemComponent = (uint32_t)(uint8_t)nItemComponent;
     eD2PlayerAnimMode eAnimMode = pItem->eAnimMode.ePlayerMode;
-    if (*(int*)(pPacket + 10) == 0x100) {
-      D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pItem, ITEMFLAG_BROKEN, *(BOOL*)(pPacket + 0xe));
+    if (pPacket->dwItemState == 0x100) {
+      D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pItem, ITEMFLAG_BROKEN, pPacket->dwBrokenFlag);
       Units::IfPlayer(pUnit);
       ITEM_RemoveItemFromBodyAndRecalc(nItemComponent, pItem, pUnit);
       Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
@@ -1256,7 +1256,7 @@ void __fastcall ITEM_HandleItemRepairBreak(uint8_t * pPacket) {
       ITEM_RecalcAllEquippedItems_EBX(pUnit);
       return;
     }
-    if (*(int*)(pPacket + 10) != 0x200) {
+    if (pPacket->dwItemState != 0x200) {
       return;
     }
 
@@ -3030,7 +3030,7 @@ void __fastcall HandleItemSwapInBelt(uint8_t * pBytes) {
 }
 
 // Client-side handler that places or removes an item from the cursor. On removal (byte[1]==-1): clears ITEMFLAG_CURSOR, removes uninterruptable state, calls ITEM_SetItemOnHand(null). On pickup: auto-opens inventory if item type matches gaaCursorAutoOpenInventoryTypes, sets ITEMFLAG_CURSOR and calls CURSOR_SetCursorItem.
-void __fastcall ITEM_HandleItemCursorAssign(int32_t nParam) {
+void __fastcall ITEM_HandleItemCursorAssign(D2GSPacketSrv0x3F * pPacket) {
     // Static local variables (originally global data)
     static uint32_t gaaCursorAutoOpenInventoryTypes[2] = { 0x0, 0x2 };
     static uint32_t gnCursorAutoOpenInventoryTypeCount = 0x2;
@@ -3038,9 +3038,9 @@ void __fastcall ITEM_HandleItemCursorAssign(int32_t nParam) {
     BOOL bInventoryOpen;
     D2UnitStrc* pItem;
     uint32_t nTypeIdx;
-    if (*(short int*)(nParam + 6) == -1) {
-      if (*(char*)(nParam + 1) == -1) {
-        pItem = Player::UNITS_FindClientSideUnit(*(int32_t*)(nParam + 2), UNIT_ITEM);
+    if (pPacket->nSkillId == -1) {
+      if (pPacket->nItemSlot == 0xff) {
+        pItem = Player::UNITS_FindClientSideUnit(pPacket->nUnitGUID, UNIT_ITEM);
         if (pItem) {
           D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pItem, ITEMFLAG_CURSOR, 0);
           ITEM_RemoveUninterruptableState(pItem);
@@ -3053,7 +3053,7 @@ void __fastcall ITEM_HandleItemCursorAssign(int32_t nParam) {
       nTypeIdx = 0;
       if (gnCursorAutoOpenInventoryTypeCount) {
         do {
-          if ((uint32_t)*(uint8_t*)(nParam + 1) == gaaCursorAutoOpenInventoryTypes[nTypeIdx]) {
+          if ((uint32_t)pPacket->nItemSlot == gaaCursorAutoOpenInventoryTypes[nTypeIdx]) {
             bInventoryOpen = UI::ui::UI_GetFlag(UI_INVENTORY);
             if (!bInventoryOpen) {
               UI::Draw::SetUIFlag(UI_INVENTORY, UI_SET, 0);
@@ -3064,17 +3064,17 @@ void __fastcall ITEM_HandleItemCursorAssign(int32_t nParam) {
         } while (nTypeIdx < gnCursorAutoOpenInventoryTypeCount);
       }
 
-      pItem = Player::UNITS_FindClientSideUnit(*(int32_t*)(nParam + 2), UNIT_ITEM);
+      pItem = Player::UNITS_FindClientSideUnit(pPacket->nUnitGUID, UNIT_ITEM);
       if (pItem) {
         D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pItem, ITEMFLAG_CURSOR, 1);
-        UI::ui::CURSOR_SetCursorItem(pItem, (uint32_t)*(uint8_t*)(nParam + 1));
+        UI::ui::CURSOR_SetCursorItem(pItem, (uint32_t)pPacket->nItemSlot);
         return;
       }
     } else {
       nTypeIdx = 0;
       if (gnCursorAutoOpenInventoryTypeCount) {
         do {
-          if ((uint32_t)*(uint8_t*)(nParam + 1) == gaaCursorAutoOpenInventoryTypes[nTypeIdx]) {
+          if ((uint32_t)pPacket->nItemSlot == gaaCursorAutoOpenInventoryTypes[nTypeIdx]) {
             bInventoryOpen = UI::ui::UI_GetFlag(UI_INVENTORY);
             if (!bInventoryOpen) {
               UI::Draw::SetUIFlag(UI_INVENTORY, UI_SET, 0);
@@ -3086,9 +3086,9 @@ void __fastcall ITEM_HandleItemCursorAssign(int32_t nParam) {
         } while (nTypeIdx < gnCursorAutoOpenInventoryTypeCount);
       }
 
-      pItem = Player::UNITS_FindClientSideUnit(*(int32_t*)(nParam + 2), UNIT_ITEM);
+      pItem = Player::UNITS_FindClientSideUnit(pPacket->nUnitGUID, UNIT_ITEM);
       if (pItem) {
-        UI::ui::CURSOR_SetCursorItem(pItem, (uint32_t)*(uint8_t*)(nParam + 1));
+        UI::ui::CURSOR_SetCursorItem(pItem, (uint32_t)pPacket->nItemSlot);
         return;
       }
     }

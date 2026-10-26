@@ -573,33 +573,33 @@ template<> void TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCrit
 // Walk the chunk list and free all CelList object chunks
 template<> void TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::Clear() {
     uint32_t* pBackLink;
-    uint32_t nNext;
-    TSGrowableArray<::CELLIST>* pObject;
+    TSHashObjectChunk<::CELLIST, HASHKEY_NONE>* pObject;
+    TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>* nNext;
     uint32_t uLinkOffset;
     while (true) {
-      TSGrowableArray<::CELLIST>* pTVar1;
-      pObject = (TSGrowableArray<::CELLIST>*)this->m_terminator.m_next;
+      TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>* pTVar1;
+      pObject = (TSHashObjectChunk<::CELLIST, HASHKEY_NONE>*)this->m_terminator.m_next;
       if (0 >= (int)pObject) {
         break;
       }
 
-      nNext = pObject[1].m_alloc;
-      pTVar1 = pObject + 1;
+      nNext = pObject->m_link.m_prevlink;
+      pTVar1 = &pObject->m_link;
       if (nNext) {
-        uLinkOffset = pObject[1].m_count;
+        uLinkOffset = pObject->m_link.m_next;
         if ((int)uLinkOffset < 0) {
           pBackLink = (uint32_t*)~uLinkOffset;
         } else {
-          pBackLink = (uint32_t*)((int)pTVar1 + (uLinkOffset - *(int*)(nNext + 4)));
+          pBackLink = (uint32_t*)((int)pTVar1 + (uLinkOffset - nNext->m_next));
         }
 
-        *pBackLink = nNext;
-        *(uint32_t*)(pTVar1->m_alloc + 4) = pObject[1].m_count;
-        pTVar1->m_alloc = 0;
-        pObject[1].m_count = 0;
+        *pBackLink = (uint32_t)(uintptr_t)nNext;
+        pTVar1->m_prevlink->m_next = pObject->m_link.m_next;
+        pTVar1->m_prevlink = 0;
+        pObject->m_link.m_next = 0;
       }
 
-      pObject->Destructor();
+      ((TSGrowableArray<::CELLIST>*)pObject)->Destructor();
       Storm::SMem::SMemFree(pObject, s___AV__TSHashObjectChunk_UCELLIST_00741fb4, -2, 0);
     }
 }
@@ -710,11 +710,11 @@ template<> void TSHashTable<CELLIST, HASHKEY_NONE>::GrowListArray() {
       } while (nIndex < nNewSize);
     }
 
-    pBucket = nDoubleBucketCount;
+    uint32_t* puVar1 = nDoubleBucketCount;
     pThis->tSlotListArray.SetCount((uint32_t)nDoubleBucketCount);
-    if (pBucket) {
+    if (puVar1) {
       nBucketByteOffset = 0;
-      nIndex = (uint32_t)pBucket;
+      nIndex = (uint32_t)puVar1;
       do {
         pPrevLink = (TSExplicitList<::CELLIST, -572662307>*)((uintptr_t)&pThis->tSlotListArray.m_data->m_linkoffset + nBucketByteOffset);
         if (pPrevLink->m_linkoffset != 4) {
@@ -730,10 +730,10 @@ template<> void TSHashTable<CELLIST, HASHKEY_NONE>::GrowListArray() {
       } while (nIndex);
 
       nIndex = 0;
-      pBucket = nDoubleBucketCount;
+      puVar1 = nDoubleBucketCount;
     }
 
-    pThis->nSlotMask = (int)pBucket - 1;
+    pThis->nSlotMask = (int)puVar1 - 1;
     while (0 < nTempSentinel.m_terminator.m_next) {
       int nSavedNode = nTempSentinel.m_terminator.m_next;
       pPrevLink = pThis->tSlotListArray.m_data + (*(uint32_t*)nTempSentinel.m_terminator.m_next & pThis->nSlotMask);

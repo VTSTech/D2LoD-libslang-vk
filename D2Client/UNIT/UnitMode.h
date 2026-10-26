@@ -24,7 +24,7 @@ void __fastcall ClickWithSkillOnUnitOrCoord(eD2UnitModeAction pThis, int32_t nTa
 uint32_t UNITMODE_CanInterruptSkill(struct D2UnitStrc * pUnit);
 BOOL __fastcall HandleMessage(int32_t pTargetUid, struct D2UnitStrc * pUnit, struct D2ServerMessageHandleStrc * pMessage, int32_t nParam);
 // Returns true if pUnit (the target) is within action range for pUnit2 performing nActionType. For action types 6/0xd (left/right skill use), checks SKILL_CheckAuraRange if the equipped skill is an aura (srvdofunc==0x13). For objects, uses IsObjectInInteractRange + collision test. For all others, checks melee range accounting for pUnit's current movement mode.
-bool UNITMODE_IsTargetInActionRange(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, int32_t nActionType);
+BOOL UNITMODE_IsTargetInActionRange(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, int32_t nActionType);
 // Client-side: when a player/monster unit enters a hit/death anim mode (player modes 0/4/0x13, monster modes 0/3/0xd), spawns the appropriate elemental-hit overlay graphic on the unit based on the high nibble of dwLastHitClass (provided the low nibble is also set). Maps element class 0x20->fire_hit, 0x30->ice_explode, 0x40->lightning, 0x10->doubledamage1, 0x70->bash, 0x80->hit_thorns, 0x90->sanctuaryknockback via GFX_AddOverlayToUnit. Visual only; no-op for other unit types or non-hit modes.
 void __fastcall UNITMODE_ShowElementalHitOverlay(struct D2UnitStrc * pUnit, int32_t nAnimMode);
 BOOL __stdcall UNITMODE_SetModeAndLoadCof(int32_t nAnimMode, struct D2UnitStrc * pUnit);

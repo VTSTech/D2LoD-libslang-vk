@@ -92,8 +92,7 @@ struct D2RareAffixTxt {
     /* 0x09 */ uint8_t field_0x9;
     /* 0x0A */ uint8_t field_0xa;
     /* 0x0B */ uint8_t field_0xb;
-    /* 0x0C */ uint8_t nNameStrIdLo; // low byte of the 2-byte string-table id for the affix name (written by TXT_AllocTxt_RareAffixes, read by GetItemName)
-    /* 0x0D */ uint8_t nNameStrIdHi; // high byte of the 2-byte string-table id for the affix name
+    /* 0x0C */ uint16_t wNameStrId;
     /* 0x0E */ short version; // d2bs binfields FIELDTYPE_SHORT
     /* 0x10 */ short itype1; // d2bs binfields FIELDTYPE_CODE_SHORT
     /* 0x12 */ short itype2; // d2bs binfields FIELDTYPE_CODE_SHORT

@@ -912,7 +912,7 @@ int32_t __fastcall deflate_fast(deflate_state * pDeflateState, int32_t nFlush) {
 
 int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
     uint32_t nLookahead;
-    char* nMatchLen;
+    uint32_t nMatchLen;
     uint32_t nInsHash;
     uint16_t nDistIdx;
     short int nDistShort;
@@ -1001,9 +1001,9 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
       pDeflateState->prev_match = pDeflateState->match_start;
       pDeflateState->match_length = 2;
       if (nHashHead && nLookahead < pDeflateState->max_lazy_match && pDeflateState->strstart - nHashHead <= pDeflateState->w_size - 0x106) {
-        nMatchLen = longest_match(nHashHead, pDeflateState);
-        pDeflateState->match_length = (uint32_t)nMatchLen;
-        if (nMatchLen < (char*)(void*)0x6 && (pDeflateState->strategy == 1 || nMatchLen == (char*)0x3 && 0x1000 < pDeflateState->strstart - pDeflateState->match_start)) {
+        nMatchLen = (uint32_t)longest_match(nHashHead, pDeflateState);
+        pDeflateState->match_length = nMatchLen;
+        if (nMatchLen < 6 && (pDeflateState->strategy == 1 || nMatchLen == 3 && 0x1000 < pDeflateState->strstart - pDeflateState->match_start)) {
           pDeflateState->match_length = 2;
         }
       }

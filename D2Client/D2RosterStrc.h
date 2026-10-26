@@ -29,10 +29,7 @@ struct __attribute__((packed)) D2RosterStrc {
     /* 0x24 */ eD2LevelId eLevelId;
     /* 0x28 */ int nX;
     /* 0x2C */ int nY;
-    /* 0x30 */ bool bInParty;
-    /* 0x31 */ uint8_t field_0x31;
-    /* 0x32 */ uint8_t field_0x32;
-    /* 0x33 */ uint8_t field_0x33;
+    /* 0x30 */ uint32_t nPartyState;
     /* 0x34 */ struct D2PlayerListStrc * pPlayerList;
     /* 0x38 */ struct D2RosterLinkListStrc * pRosterLinkList;
     /* 0x3C */ int nPortalGUID1;
