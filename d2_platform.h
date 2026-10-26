@@ -72,6 +72,51 @@ static inline int D2_Cpuid(uint32_t nLeaf) {
 #  ifndef WIN32_LEAN_AND_MEAN
 #    define WIN32_LEAN_AND_MEAN
 #  endif
+
+// --- mingw-w64 header drift compatibility (MSYS2 current = post-12.0.0
+//     master headers, llvm-mingw; CI's mingw-w64 11 is unaffected). ---
+// Post-12.0.0 mingw-w64 turned <excpt.h>'s `#define EXCEPTION_DISPOSITION int`
+// (v11 and 12.0.0) into `typedef enum _EXCEPTION_DISPOSITION {...}`. That enum
+// clashes with the decompiled `typedef int _EXCEPTION_DISPOSITION;` used
+// across this tree (d2_enums.h, Fog/, Storm/, D2Client/... — matching the
+// original 1.14d binaries) and would flip D2SehDispatch below to an
+// enum-returning function. Pre-empt the guard so excpt.h never loads, and
+// keep the v11 `int` spelling plus the v11 Exception* macros that winnt.h's
+// EXCEPTION_ROUTINE typedef, D2SehDispatch and the Storm/Fog SEH handlers
+// use. Nothing else in the Win32 header chain or this tree consumes
+// excpt.h's remaining declarations (__try1, _XcptFilter, ...).
+#  if defined(__MINGW32__)
+#    ifndef _INC_EXCPT
+#      define _INC_EXCPT
+#    endif
+#    ifndef EXCEPTION_DISPOSITION
+#      define EXCEPTION_DISPOSITION int
+#    endif
+#    ifndef ExceptionContinueExecution
+#      define ExceptionContinueExecution 0
+#    endif
+#    ifndef ExceptionContinueSearch
+#      define ExceptionContinueSearch 1
+#    endif
+#    ifndef ExceptionNestedException
+#      define ExceptionNestedException 2
+#    endif
+#    ifndef ExceptionCollidedUnwind
+#      define ExceptionCollidedUnwind 3
+#    endif
+#    ifndef ExceptionExecuteHandler
+#      define ExceptionExecuteHandler 4
+#    endif
+#    ifndef EXCEPTION_CONTINUE_SEARCH
+#      define EXCEPTION_CONTINUE_SEARCH 0
+#    endif
+#    ifndef EXCEPTION_CONTINUE_EXECUTION
+#      define EXCEPTION_CONTINUE_EXECUTION -1
+#    endif
+#    ifndef EXCEPTION_EXECUTE_HANDLER
+#      define EXCEPTION_EXECUTE_HANDLER 1
+#    endif
+#  endif
 // in_addr, with Ghidra's names on the nested anonymous aggregates. Claimed
 // before <winsock2.h>, whose inaddr.h is guarded on `s_addr` and so becomes
 // a no-op. Same layout, same members, same offsets — the union spellings
@@ -739,10 +784,17 @@ static inline __time64_t __time64(__time64_t* destTime) { return _time64(destTim
 static inline __time32_t FID_conflict___time32(__time32_t* destTime) { return _time32(destTime); }
 static inline uintptr_t __beginthreadex(void* security, unsigned stackSize, unsigned (__stdcall* startAddress)(void*), void* arglist, unsigned initflag, unsigned* thrdaddr) { return _beginthreadex(security, stackSize, startAddress, arglist, initflag, thrdaddr); }
 extern "C" int _except_handler3(struct _EXCEPTION_RECORD* pExceptionRecord, EH3_EXCEPTION_REGISTRATION* pRegistration, CONTEXT* pContext, void* pDispatcherContext);
-extern "C" int ___init_ctype(threadlocinfo* _LocInfo);
-extern "C" int ___init_monetary(threadlocinfo* _LocInfo);
-extern "C" int ___init_numeric(threadlocinfo* _LocInfo);
-extern "C" int ___init_time(threadlocinfo* _LocInfo);
+// ___init_* take MSVCRT's per-thread locale struct: MSVC <internal.h> and
+// mingw-w64 <= 12.0.0 (corecrt.h) spelled it threadlocinfo; post-12.0.0
+// mingw-w64 renamed the tag to threadlocaleinfostruct (pointer typedef
+// pthreadlocinfo) and dropped the old spelling. These externs have no call
+// sites or definitions in-tree, so the parameter is spelled as the
+// ABI-identical void* to stay toolchain-neutral (C linkage: symbol name and
+// calling convention are unaffected).
+extern "C" int ___init_ctype(void* _LocInfo);
+extern "C" int ___init_monetary(void* _LocInfo);
+extern "C" int ___init_numeric(void* _LocInfo);
+extern "C" int ___init_time(void* _LocInfo);
 extern "C" __stdcall HRESULT DirectDrawCreate(GUID* lpGUID, struct IDirectDraw1** lplpDD, struct IUnknown* pUnkOuter);
 extern "C" __stdcall int32_t DirectSoundCreate(const GUID* pcGuidDevice, struct IDirectSound** ppDS, struct IUnknown* pUnkOuter);
 extern "C" __stdcall int32_t DirectSoundEnumerateA(BOOL (__stdcall* pCallback)(int, char*, char*, DWORD), void* pContext);
