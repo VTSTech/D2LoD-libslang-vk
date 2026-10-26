@@ -4,6 +4,7 @@
 
 *Rev 2 (2026-10-26, later same day): §2 rewritten for the remote-repo state — the fix chain now lives on the public remote and the full fix-chain hash map is recorded; PR #6's verified live state moved to §9.1 (the updated body was never applied); §10 is now a build spec (prior tooling lost); §12's grep gates corrected against the actual in-tree marker text; §13 refreshed for the clean re-cloned sandbox. This file is committed in-tree at the tip (`03705cf`).*
 *Rev 3 (2026-10-26, later still): upstream/main absorbed the PR #6/#8 content as the eef5f2c regeneration ("Monsters drop items again, Act 5 snow no longer hangs, Glide fixes", closes #6/#8, co-authored) and it was merged into vanilla-plus at cf36935. Resolution: D2Glide/*, Drop.cpp and Storm/_unnamespaced.cpp took upstream's canonical implementations of the same defects (field-verified on jaenster-main); Bnclient.cpp kept the d2boot-instrumented v5 chain; the globals [257] hunks kept our marker comments. The [glide fix 10] / [vanilla-plus fix 13] marker gates inside D2Glide/Renderer/Glide.cpp are RETIRED — upstream's file replaces those sites (perspective size table, struct-typed gGlideVertex0/D2GlideGroundVertexCursorStrc). The ShadowDiag OnShadowQuad hook was re-inserted into upstream's DrawShadowQuad (NoteWorldFrame + include survived the auto-merge); LightDiag and DropDiag hooks untouched. The falloff [257] gate in globals/globals.h still greps clean. The D2MEM_CopyRows char* link fix (2612a51) is superseded by upstream's own version of the same fix in eef5f2c.*
+*Rev 4 (2026-10-26): the merge's CI fallout is fixed and the delivery model changed. The first post-merge push (0fa2003) failed check-build with 18 compile errors — four roots, all "re-inserted hooks referenced pre-merge names": Drop.cpp's redundant fix-14 tail (deleted; upstream's pSpawnRoomFound-after-memset IS canonical fix 14), Glide.cpp's fix-2 stale-slot validation + fix-3 guard/decrement (ported to upstream's gGlideVertex0.aTextureCache[] holder with the raw 1-based class; node+8 backpointer / node+0xc mode offsets verified against upstream's upload writes (- 0x14/- 0x10) and eviction reads in glTextureCache.cpp:258-261, so fix-2 semantics are unchanged; the guard+decrement is retired — the zero-and-recompute above it already pins the class to 1..3), glBlocks.cpp's fix-7 capture (upstream's re-typed miss path is canonical: nNodeIdx0/nTexCacheIdx), and ShadowDiag.cpp's incomplete D2GfxDataStrc (upstream moved the struct to D2Client/D2GfxDataStrc.h — included directly now). Fixed as 45c6c2d, scratch-verified; CI run in progress at write time. Fixes now travel as GIT BUNDLES (§7bis) since the sandbox still cannot push. Sibling line: jaenster-main got its own CI split (d2-<sha> fat + d2-stripped-<sha>, 9e0ae75) and the CopyRows fix + MANIFEST removal landed there as b2411ec.*
 
 ---
 
@@ -25,10 +26,12 @@ Root pattern behind all eleven PR defects: labels adjacent in the original `.dat
 
 ## 2. Branch / commit topology
 
-- **The authoritative tree is now the public remote**: `origin = https://github.com/VTSTech/D2LoD-libslang-vk` (public repo, default branch `main`). **`vanilla-plus` carries the entire fix chain plus this file**; tip at rev-2 time = `03705cf` ("Create handoff.md"). A fresh clone is clean and complete — verified 2026-10-26: `[glide fix 9]` falloff `[257]` at `globals/globals.h:3094`, the fix-10 u32-store block at `D2Glide/Renderer/Glide.cpp:3522`, the `[vanilla-plus fix 13]` span block at `Glide.cpp:1221`, ShadowDiag + LightDiag v2 modules in tree, `Glide.cpp` = 165 953 B.
+- **The authoritative tree is now the public remote**: `origin = https://github.com/VTSTech/D2LoD-libslang-vk` (public repo, default branch `main`). **`vanilla-plus` carries the entire fix chain plus this file**; tip at rev-4 time = `45c6c2d` ("fix: port fix-2/3/7/14 leftovers to upstream's re-typed tree"). A fresh clone is clean and complete — verified 2026-10-26: `[glide fix 9]` falloff `[257]` at `globals/globals.h:3075`, the fix-2 stale-slot validation ported block at `D2Glide/Renderer/Glide.cpp:1071-1098`, ShadowDiag + LightDiag v2 modules in tree, `Glide.cpp` = 141 830 B (upstream's re-typing shrank it from the rev-2 165 953 B).
 - Remote branches / tags (verified against origin 2026-10-26):
-  - `vanilla-plus` = `03705cf` — the game-source line; everything below hangs off it.
+  - `vanilla-plus` = `45c6c2d` — the game-source line; everything below hangs off it.
   - `main` = `fd236ce` — pre-fix-chain baseline, ancestor of vanilla-plus.
+  - `upstream/main` (jaenster/redivivus) = `eef5f2c` — the regeneration; merged into vanilla-plus at `cf36935`.
+  - `jaenster-main` = `b2411ec` — clean upstream-tracking line with its own CI artifact split (d2 fat + d2-stripped); the CopyRows link fix + MANIFEST.txt removal landed there as b2411ec.
   - `pr2/glide-renderer-fixes` = `31acdac` ("vanilla-plus fix 13") — in-repo mirror of the PR #6 line; its own revised text (drift note below).
   - `libslang-vk` = `3a52553` (tip titled `0.4.5`) — the **glide3xvk wrapper line** (§1's logging ICD; module `535f2aa` is its parent). Tags `0.3.1`, `0.4.2`–`0.4.4` sit on this lineage.
   - `PR1-Bnclient-signer-verify-crash-fix` = `449d0a2` — early crash-triage-era side branch off `1b24c75` (tag `0.4.1`, a shared early commit); **not merged** into vanilla-plus.
@@ -51,10 +54,15 @@ Root pattern behind all eleven PR defects: labels adjacent in the original `.dat
   | 12 | `7e07380` | restore glide fix 10 | fix-11 drop-in regression restore |
   | 13s | `440c5f8` | vanilla-plus fix 13 | shadow spans — CI build `d2s-440c5f8`, field-verified |
   | 13l | `1a180d1` | glide fix 13 | LightDiag v2 (diagnostic) |
-  | — | `03705cf` | Create handoff.md | this file |
+  | — | `03705cf` | Create handoff.md | this file (rev 1/2) |
+  | — | `2612a51` | fix: D2MEM_CopyRows definition must match its char* declaration (link) | link fix, vanilla-plus; superseded by upstream's own version inside eef5f2c |
+  | — | `cf36935` | Merge upstream/main (eef5f2c) | the 424-file regeneration merge; resolution policy in the commit message |
+  | — | `0fa2003` | docs: handoff rev 3 | this file, rev 3 |
+  | — | `45c6c2d` | fix: port fix-2/3/7/14 leftovers to upstream's re-typed tree | CI fallout of the merge (18 errors) — rev 4 |
+  | — | `b2411ec` | fix (jaenster-main) | sibling line: CopyRows fix + MANIFEST.txt removal |
 
-  (The PR #6 "commit N" numbering for this table lives in the collision table below.)
-- CI (GitHub Actions `.github/workflows/build.yml`): green on `440c5f8` and `1a180d1` (runs completed 2026-10-26 UTC; 46 runs total at rev-2 time). No run observed for the docs-only `03705cf`. Still ships `d2s-<sha>.exe` + `d2-map-<sha>.map`.
+  (Rows fixes 1–13l date from 2026-10-25 on the pre-merge first-parent chain; the dated rows below them are the 2026-10-26/27 merge era. The PR #6 "commit N" numbering for this table lives in the collision table below.)
+- CI (GitHub Actions `.github/workflows/build.yml`): red on `0fa2003` (18 compile errors — the merge fallout, rev 4), green expected on `45c6c2d` (run in progress at write time; the same workflow was green through `1a180d1`). Still ships `d2s-<sha>.exe` + `d2-map-<sha>.map`.
 - **Sandbox reset (2026-10-26, after rev 1 was written)**: the prior session's local artifacts are gone — worklog Tasks 1–22, `scripts/` overlay builders + diag decoders, `download/pr6-updated-body.md`, `work/` forensic areas, `upload/` zips. The worklog was re-initialized; §10's tooling table is now a *build spec*, not an inventory. Rev-1's forensics-copy notes (HEAD `c607f7f`, ~1137 dirty files) are historical only — `c607f7f` is simply the last pre-fix-chain commit (the bundle-merge point).
 - **`pr2/glide-renderer-fixes` / PR #6** (on `jaenster/redivivus`): verified live state in §9.1. Key facts: PR head = `c65fa93` = the pr2-line `vanilla-plus fix 6` commit; **the live PR body is still the original five-defect text** — the finalized 11-defect body was never applied, and its source file was lost in the sandbox reset (§9.1).
 - Note: pr2's Glide.cpp text has **drifted from vanilla-plus's** (jaenster revision: reworded comments, ~2441 lines). Overlay scripts therefore assert *per-anchor* uniqueness, never whole-file equality, across the two lines.
@@ -141,6 +149,32 @@ QA gauntlet (all must be green before shipping):
 - Drop-ins must be cut **from the tip the user actually has** — verify with a base-state grep gate printed in the OVERLAY.md (e.g. `grep -c "glide fix 10" D2Glide/Renderer/Glide.cpp` → 0 = regressed, ≥1 = intact; same pattern for any future fix marker).
 - Deltas touching the same file must be QA'd order-independent (fix-10 delta and fix-11 hooks touch disjoint lines; apply either order, byte-identical both ways).
 
+### §7bis. Git bundles — the primary delivery route (rev 4)
+
+The sandbox has no push credentials, but whole commits transfer cleanly as git bundles —
+stronger than overlay zips (history, authorship, and the ability to fast-forward arrive
+intact):
+
+```
+# sandbox side (after verifying local state and fetching origin):
+git bundle create download/<repo>-vanilla-plus-<tip7>-bundle-<date>.bundle origin/vanilla-plus..vanilla-plus
+
+# user side (on vanilla-plus):
+git fetch <file>.bundle vanilla-plus && git merge --ff-only FETCH_HEAD && git push origin vanilla-plus
+```
+
+QA for a bundle (all green before shipping):
+- `git bundle verify` in the sandbox clone AND in a scratch repo initialized at exactly
+  the prerequisite tip (fetch that tip from the clone, never the branch head being delivered).
+- In the scratch repo: `git fetch <bundle> vanilla-plus` + `git merge --ff-only FETCH_HEAD`
+  must fast-forward cleanly, then content greps for every fix the bundle claims to carry.
+- The bundle's prerequisite is the user's pushed tip — check `git rev-parse origin/vanilla-plus`
+  AFTER a fresh `git fetch origin`, not from a stale remote-tracking ref (bit once: scratch
+  was built at 9389e07 while the user was already at 0fa2003).
+- Record bundle path + prerequisite + verification in the worklog.
+
+Overlay zips (§7 above) remain the fallback for file-level application to a non-git tree.
+
 ## 8. Diagnostics on the tree (and their quirks)
 
 - **ShadowDiag** (`D2Glide/Renderer/ShadowDiag.{h,cpp}` + 3 hooks in Glide.cpp: include, `DrawGroundTile` head `NoteWorldFrame()`, `DrawShadowQuad` submit-tail `OnShadowQuad`): arms at the first ground tile (in-world marker), captures the **first 24 in-world shadow quads**, writes `d2shadow-diag.txt` **once per session**. Record layout: unit/frame identity, DC6 block header, full `GlideTexInfoStrc` (nAspect@+0x34, fScale0/fTexS0/fTexT0/fTexS1@+0x20..+0x2c), mask crc32 + ASCII bitmap, 4 fan vertices (28-byte stride). Quirk: cache-hit records show stale mask crc/bitmap (see §5) — only first-decode records are trustworthy.
@@ -189,11 +223,12 @@ QA gauntlet (all must be green before shipping):
 
 | Symptom | First check |
 |---|---|
-| Black light cores / black unit silhouettes | falloff table still `[257]`? (`globals/globals.h:3094`) |
-| Light radius / torch discoloration | (rev-3: marker retired by the cf36935 merge — the fix now lives upstream-typed) was: `grep -n "glide fix 10" D2Glide/Renderer/Glide.cpp` — exactly one block comment (~3522) naming the nine u32 stores; confirm the nine `*(uint32_t*)&pfVertexSlot[...]` writes beneath it. Missing = the fix-11-style regression again (apply §7 patch-first rules). (Rev-2: rev 1 said "expect 9" — that counted the stores, not marker lines.) |
-| Every unit shadow is a solid blob / samples (0,0) | (rev-3: marker retired by the cf36935 merge) was: `grep -n "vanilla-plus fix 13" D2Glide/Renderer/Glide.cpp` — block comment at ~1221 (DrawShadowQuad). (Rev-2: the marker is `[vanilla-plus fix 13]`, not `glide fix 13` — rev 1's gate string returned 0 on a healthy tree.) Then a fresh `d2shadow-diag.txt` — aspect<0 records must show s 0..64/0..128, t 0..256 |
-| `0xc1` halt at boot/menu | texture cache (defects 1–4); check promote bails in bootlog |
-| Halt `0x112` at end-of-loading | `GLSUBTILE_EnsureCapacity` return capture (defect 8) |
+| Black light cores / black unit silhouettes | falloff table still `[257]`? (`globals/globals.h:3075` — rev 4: line moved from 3094 by the eef5f2c merge) |
+| Light radius / torch discoloration | (rev 4: the u32 stores are upstream's re-typed code now; our survivors in `D2Glide/Renderer/Glide.cpp`) `grep -c "vanilla-plus fix 3"` → 1 (zero-and-recompute at ~1042, guards the garbage size class) and `grep -c "vanilla-plus fix 2"` → 1 (ported stale-slot validation at ~1071-1098). Missing = a fix-11-style regression again (§7bis bundle or §7 patch route). |
+| Every unit shadow is a solid blob / samples (0,0) | (rev 4: fix-13 marker retired — upstream's DrawShadowQuad owns the spans) gates: `grep -c "ShadowDiag" D2Glide/Renderer/Glide.cpp` → 3 (include + NoteWorldFrame + OnShadowQuad hook) and `grep -c "D2Client/D2GfxDataStrc.h" D2Glide/Renderer/ShadowDiag.cpp` → 1 (the 45c6c2d include — missing it is a compile error, not silent). Then a fresh `d2shadow-diag.txt` — aspect<0 records must show s 0..64/0..128, t 0..256 |
+| Drops never broadcast / ground items vanish | `grep -c "pSpawnRoomFound" D2Game/ITEMS/Items/Drop.cpp` → 3 (upstream's canonical fix 14: found after FindBestSpotToSpawnItem, assigned to sItemGenCtx.pDrlgRoom AFTER the memset) + DropDiag hooks intact (include + `NoteRollLookup`/`NoteItemGen`/`NoteItemSpawnAudit`). A `pResolvedSpawnRoom` reference = the 0fa2003 regression (deleted in 45c6c2d). |
+| `0xc1` halt at boot/menu | texture cache (defects 1–4); check promote bails in bootlog; rev-4 gate: the fix-2 validation block runs in the upload path (`if (nNewCacheNode)` at ~1092) — its absence reopens the stale-slot drain |
+| Halt `0x112` at end-of-loading | wall-subtile cache capture (defect 8): `grep -c "nTexCacheIdx = (short int)nNodeIdx0" D2Glide/glBlocks.cpp` → 1 (upstream's canonical fix 7; a bare `nCacheSlot` there = the 0fa2003 regression) |
 | Black-triangle grid on title screen | fan slot order (defect 6) — do *not* blame the wrapper (that attribution was retracted) |
 | Foreign-module crash in `d2boot.log` | crash-triage stack (Task 2/2-b): VEH skip paths now dump module+offset; symbolize via CI map |
 | New "retail right, rebuild wrong" color issue | start from the §1 root pattern; audit decompiler guesses around the site; then capture (§6.1) |
@@ -203,6 +238,6 @@ QA gauntlet (all must be green before shipping):
 - No `gh` CLI/token — PR body edits are handed to the user.
 - `git apply` needs `--no-index` and `GIT_CEILING_DIRECTORIES=/home/z/my-project` (the clone has no clean parent boundary).
 - Use `rg --hidden` for repo sweeps. The rev-2 clone is **clean** (`03705cf`, 0 dirty files) — a dirty worktree now means *new* local work: inspect it, don't blanket-revert.
-- The sandbox resets between sessions (the 2026-10-26 reset lost the rev-1 worklog, scripts/, download zips, work/, upload/ — §2). Persist anything load-bearing in the repo itself; that is why this handoff is committed in-tree.
+- The sandbox resets between sessions (the 2026-10-26 reset lost the rev-1 worklog, scripts/, download zips, work/, upload/ — §2). Persist anything load-bearing in the repo itself; that is why this handoff is committed in-tree. (Rev 4: the re-initialized worklog now carries Tasks 1–6 — jaenster-main CI split, overlay zips, the CopyRows fix, the eef5f2c merge, first bundle delivery, and the merge-fallout fix 45c6c2d; scripts/ holds `make_overlay_zip.sh`, `verify_copyrows_fix.sh`, `resolve_merge.py`.)
 - Script Persistence Rule: scripts >10 lines go to `scripts/` and get edited in place on failure.
 - User timezone America/Toronto; session language English; delivery zips always to `/home/z/my-project/download/`.

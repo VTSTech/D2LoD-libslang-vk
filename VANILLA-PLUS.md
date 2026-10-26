@@ -26,6 +26,23 @@ and overlays on top of whatever `d2.exe` is running.
 The wrapper never touches Game.exe and this branch never touches the wrapper;
 each can be fixed, replaced and released independently.
 
+## Status (2026-10-26)
+
+- **Up to date with upstream.** `jaenster/redivivus:main` (`eef5f2c`) is merged
+  (`cf36935`); vanilla-plus is ahead of upstream and never behind. Upstream's
+  regeneration absorbed the game-side content of the closed PRs, including canonical
+  versions of the drops fix (fix 14) and the glide defect series.
+- **The glide defect series (fixes 1–13) is closed and field-verified**: launcher
+  crash, title-screen black triangles, end-of-loading halt, black light cores and unit
+  silhouettes, light-radius discoloration, shadow blobbing — all gone. Root causes and
+  evidence: `handoff.md` §3–§4.
+- **Drops work again and the Act 5 snow hang is gone** (upstream `eef5f2c`, field-checked
+  on the sibling `jaenster-main` line; drops carry the usual caveats).
+- **Tip `45c6c2d`**: the one-round CI fallout of the merge (18 compile errors where
+  re-inserted hooks referenced pre-merge names) is fixed — see `handoff.md` rev 4.
+- Diagnostics (`ShadowDiag`, `LightDiag v2`, `DropDiag v2.1`) stay in-tree, zero cost
+  when idle, armed for the next regression.
+
 ## Principles
 
 1. **Vanilla behavior is the default.** Improvements are opt-in, config-gated
@@ -53,10 +70,12 @@ Copy `d2.exe` next to the original `Game.exe` in a 1.14d install and run
 `d2.exe -w`. Works with the `libslang-vk` overlay: drop that overlay's
 `glide3x.dll` in the same folder as usual.
 
-## Crash triage protocol (current top priority)
+## Crash triage protocol
 
-The game is "currently crashing with glide". To attribute a crash correctly,
-collect **both** reports from one repro:
+The glide-crash class that motivated the fix chain (fixes 1–13) is closed, but the
+protocol stands for any new crash — a decompiler-reconstructed rebuild will keep
+yielding single-wrong-type crashes upstream hasn't hit yet. To attribute a crash
+correctly, collect **both** reports from one repro:
 
 | Artifact | Comes from | Tells us |
 |---|---|---|
@@ -78,10 +97,12 @@ cannot be attributed.
 
 ## Roadmap
 
-1. **Stable base** — a full single-player session (create character, several
-   area transitions, save+exit, town + combat + inventory screens) crash-free
-   on `d2.exe` + `glide3xvk` together, with the crash protocol above used to
-   burn down whatever fires.
+1. **Stable base** — *in progress.* The known glide crash class is burned down
+   (fixes 1–13) and field-verified sessions run on the sibling `jaenster-main` line
+   (3dfx works, drops work with caveats, shadows/lighting in glide correct). Finish
+   the full single-player gauntlet (create character, several area transitions,
+   save+exit, town + combat + inventory screens) crash-free on `d2.exe` +
+   `glide3xvk` together, using the crash protocol above for whatever fires.
 2. **Compatibility pass** — confirm the wrapper's whole feature set (window
    presets, shader chain, controller, base_res) against the rebuilt exe and
    note any game-side differences vs original Game.exe.
@@ -91,7 +112,13 @@ cannot be attributed.
 ## Build notes
 
 - CI-first policy: the tree builds on GitHub CI (real `i686-w64-mingw32-g++`,
-  `tools/check-build.sh`) — do not burn local cycles on full rebuilds.
+  `tools/check-build.sh`) — do not burn local cycles on full rebuilds. Every push
+  ships artifacts: `d2s-<sha>.exe` (stripped, play/distribute) + `d2-map-<sha>.map`
+  (linker map, load-bearing for crash symbolization).
+- Transfer: the agent sandbox has no push credentials, so fixes travel as **git
+  bundles** — user side: `git fetch <file>.bundle vanilla-plus && git merge
+  --ff-only FETCH_HEAD`, then push. Overlay zips remain the fallback for
+  file-level application to a non-git tree.
 - Local recon (llvm-mingw / clang 23): CMake configure is clean with
   `cmake/mingw-i686.cmake` as-is. Compiling trips on two **clang-specific**
   quirks gcc does not have, so CI is unaffected: (1) `_EXCEPTION_DISPOSITION`

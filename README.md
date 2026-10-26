@@ -19,6 +19,23 @@ The code is machine-generated from a reverse-engineered database and then correc
 hand where needed. It is not the original source: the names, types and structure are
 reconstructions, and some functions read like a decompiler wrote them, because one did.
 
+## This fork
+
+This repository is VTSTech's working fork of
+[jaenster/redivivus](https://github.com/jaenster/redivivus). Upstream `main` is merged
+in as it moves; work is organized into three lines:
+
+| Branch | What it is | Docs |
+|---|---|---|
+| `vanilla-plus` | **The game-source line**: crash fixes and opt-in improvements made directly in the recovered source, kept merged with upstream `main`. | [`VANILLA-PLUS.md`](VANILLA-PLUS.md) (charter) · [`handoff.md`](handoff.md) (engineering handoff) · [`PLAN.md`](PLAN.md) |
+| `libslang-vk` | The `glide3xvk` wrapper line: a `glide3x.dll` that renders Glide on Vulkan and threads the final frame through libretro `.slangp` shader presets. | [`PLAN.md`](PLAN.md) |
+| `jaenster-main` | A clean line tracking upstream with the CI artifact split: fat `d2.exe` for crash triage, `d2-stripped.exe` for play. | — |
+
+CI (`.github/workflows/build.yml`) runs `tools/check-build.sh` on every push and uploads
+workflow artifacts: `d2s-<sha>.exe` + `d2-map-<sha>.map` on `vanilla-plus` (the linker map
+is load-bearing for crash symbolization), `d2-<sha>.exe` + `d2-stripped-<sha>.exe` on
+`jaenster-main`.
+
 ## The same idea as Devilution
 
 [Devilution](https://github.com/diasurgical/devilution) did this for the first Diablo: it
@@ -92,7 +109,9 @@ cmake --build build
 ```
 
 That produces `build/d2.exe`, a 32-bit Windows executable. `tools/check-build.sh` does
-the same from a clean clone and checks the result; CI runs it on every push.
+the same from a clean clone and checks the result; CI runs it on every push and uploads
+the exe (plus, on this fork's branches, a stripped copy and the linker map) as workflow
+artifacts — grab one from the Actions tab instead of building locally.
 
 ## Run
 

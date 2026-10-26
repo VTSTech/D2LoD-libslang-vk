@@ -1,10 +1,13 @@
 # PLAN.md — libslang-vk Integration (D2LoD-libslang-vk)
 
-> Status: draft v2, 2026-10-24. Baseline build verified in-sandbox (see §2); rebuilt
-> d2.exe verified PLAYABLE on real hardware (silent-startup saga closed — see §0 for
-> where the bootlog work lives). Owner: VTSTech. Agent session log:
-> `/home/z/my-project/worklog.md`.
-> **All integration work happens on the `libslang-vk` branch (see §0).**
+> Status: v3, 2026-10-26. **The d2.exe source line is `vanilla-plus`** — upstream `main`
+> (eef5f2c) is merged, the glide fix chain (1–13) is closed and field-verified, drops and
+> the Act 5 snow hang are fixed (see `VANILLA-PLUS.md` + `handoff.md`). **The wrapper line
+> `libslang-vk` is at 0.4.5** with P1–P3 delivered and packaging partially done (per-phase
+> status in §5). The §2 build baseline is CI-verified now (the sandbox toolchain recipe is
+> historical). Owner: VTSTech. Agent session log: `/home/z/my-project/worklog.md`.
+> **All integration work happens on the `libslang-vk` branch (see §0); all d2.exe fixes
+> happen on `vanilla-plus`.**
 
 ---
 
@@ -15,16 +18,20 @@ Lesson learned from the DevilutionX fork: feature commits landed straight on
 
 | Branch | Role |
 |---|---|
-| [`master`](https://github.com/VTSTech/D2LoD-libslang-vk) | Redivivus base + the **bootlog/diagnostic work**: `[d2boot]` boot trace, `support/d2_boot.{h,cpp}`, VEH `d2crash-*.txt` reporter, signature-verification fixes (`Bnclient/Bnclient.cpp` CERT_INFO + direct handle cleanup, `Storm/_unnamespaced.cpp` cleanup helper retired). Deliberately kept close to upstream; **may be PR'd upstream** once tidied. No feature work lands here. |
-| [`libslang-vk`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/libslang-vk) | **Active development line — all glide3x / Vulkan / libslang-vk integration work happens here.** Created from current master state 2026-10-24. |
+| [`main`](https://github.com/VTSTech/D2LoD-libslang-vk) | Redivivus baseline (`fd236ce`), kept close to upstream; no feature work lands here. |
+| [`vanilla-plus`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/vanilla-plus) | **The d2.exe source line.** All game-source crash fixes (glide fix chain 1–13, drops fix 14) plus the bootlog/diagnostic work: `[d2boot]` boot trace, `support/d2_boot.{h,cpp}`, VEH `d2crash-*.txt` reporter, signature-verification fixes (`Bnclient/Bnclient.cpp` CERT_INFO + direct handle cleanup). Merged with upstream `main` (`eef5f2c`). CI ships `d2s-<sha>.exe` + `d2-map-<sha>.map`. |
+| [`jaenster-main`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/jaenster-main) | Clean upstream-tracking line with the CI artifact split: `d2-<sha>` (fat, crash triage) + `d2-stripped-<sha>` (play). |
+| [`libslang-vk`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/libslang-vk) | **Active development line — all glide3x / Vulkan / libslang-vk integration work happens here.** Wrapper tip `0.4.5` (`3a52553`). |
 
 Rules:
 
 - Every phase below (P1–P5) commits to `libslang-vk` only.
-- `master` receives changes only via PR (`libslang-vk` → `master`) at stable
-  milestones, or via a standalone bootlog PR if upstream wants the diagnostics.
+- `main` receives changes only via PR (`libslang-vk` → `main`) at stable
+  milestones; upstream-able diagnostics (bootlog, crash reporter) are best
+  proposed against upstream `main` directly (the jaenster-main line exists to
+  prove them in isolation first).
 - The glide3x DLL lands as a new `glide3xvk/` subtree (§4), so the branch diff
-  vs `master` stays reviewable.
+  stays reviewable.
 
 ---
 
@@ -43,7 +50,14 @@ beyond what the Glide surface requires.
 
 ---
 
-## 2. Where we are (baseline, verified 2026-10-24)
+## 2. Where we are (baseline)
+
+**Update 2026-10-26:** the authoritative toolchain is now **CI** — every push builds with
+`i686-w64-mingw32-g++ (GCC) 13-win32` over 514 TUs, strict `-std=c++17`, zero
+`-fpermissive`, and ships artifacts (`d2s` + linker map on vanilla-plus; `d2` fat +
+stripped on jaenster-main). The sandbox recipe below is historical: the sandbox resets
+between sessions and the deb-extract toolchain is gone; recreate on demand if a local
+cross-build is ever needed again.
 
 The untouched fork builds clean in the agent sandbox. This matters because every
 phase below compiles against this exact toolchain.
@@ -175,6 +189,20 @@ vkQueuePresentKHR(...);
 ---
 
 ## 5. Work breakdown
+
+**Phase status (2026-10-26):**
+
+| Phase | Status |
+|---|---|
+| P1 — Skeleton DLL + Vulkan bootstrap | **Done** — `glide3xvk` boots the game to the menu; proven on real hardware; the libslang-vk i686 spike resolved on the gcc path. |
+| P2 — Glide raster core | **Done** — palette-indexed textures, combine/alpha pipeline variants, fans/quads, LFB, cutscenes render in-game (0.4.x line). |
+| P3 — libslang-vk preset chain | **Done** — the 0.4.5 wrapper carries window presets, the slang chain, controller support and base_res (tip `3a52553`). |
+| P4 — Hardening + packaging | **Partial** — drop-in zips exist; the d2crash + wrapper ring-buffer hook and a CI export-check for the DLL are still open. |
+| P5 — Stretch | Open. |
+
+The d2.exe side of the house moved in parallel: the glide fix chain (fixes 1–13) that
+de-risked P2's assumptions about what the game actually submits is closed and
+field-verified on `vanilla-plus` (see `handoff.md`).
 
 ### P1 — Skeleton DLL + Vulkan bootstrap  *(de-risk first)*
 Deliver `glide3x.dll` that loads in the game, opens a swapchain, clears black,
