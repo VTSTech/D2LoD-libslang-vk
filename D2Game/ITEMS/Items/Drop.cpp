@@ -3982,6 +3982,7 @@ void __fastcall SERVER_ITEM_RollItemToDrop(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
                     pCreatedItem = ITEMGEN_CreateItemFromClassIdAndQuality(nRolledItemClassId, eRolledQuality, pUnit, pGame, eRolledQuality, nQuantity, nDropFlags);
                     D2Common::DATATBLS::DropDiag::NoteItemGen(nRolledItemClassId, eRolledQuality, pCreatedItem, nQuantity, nDropFlags); // [dropdiag v1]
+                    D2Common::DATATBLS::DropDiag::NoteItemSpawnAudit(pCreatedItem); // [dropdiag v2]
                     if (pCreatedItem) {
                       nNearbyPlayerCount = D2Common::ITEMS::Items::ITEMS_IsA(pCreatedItem, ITEMTYPE_Gold);
                       if (nNearbyPlayerCount && pNestedTC->pEntries[nEntryIdx].nItemLinkNodeId) {

@@ -5697,6 +5697,7 @@ void __stdcall TXT_AllocParsedTreasureClassDiffActChestABC() {
     uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     D2ParsedTreasureClassStrc* pTCDest = (D2ParsedTreasureClassStrc*)&sgtDataTable.pParsedTreasureClassDiffActChestABC;
     D2TxtLinkStrc* szDifficulty = (D2TxtLinkStrc*)gapTreasureClassChestParsedData;
+    DropDiag::NoteChestTableBuildStart(); // [dropdiag v2]
     do {
       nActNum = 0;
       do {
@@ -5712,6 +5713,7 @@ void __stdcall TXT_AllocParsedTreasureClassDiffActChestABC() {
           }
 
           *(D2ParsedTreasureClassStrc**)pTCDest = (D2ParsedTreasureClassStrc*)pTCEntry;
+          DropDiag::NoteChestTableLookup(szTCName, nTCIdx); // [dropdiag v2]
           pszChestId++;
           pTCDest = (D2ParsedTreasureClassStrc*)&pTCDest->nEntriesCount;
         } while ((int)pszChestId < (uintptr_t)((char*)&gaszTreasureClassChestColumnNames + sizeof(gaszTreasureClassChestColumnNames)));

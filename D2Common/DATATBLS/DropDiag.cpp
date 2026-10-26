@@ -21,6 +21,21 @@ static const int kCapLookup = 128;
 static const int kCapItemGen = 128;
 static const int kCapChest = 48;
 
+// [dropdiag v2] broadcast-chain caps (per event class).
+static const int kCapV2 = 96;
+
+static uint32_t s_nItemGensAudited;
+static uint32_t s_nUpLinks;
+static uint32_t s_nUpLinkSkips;
+static uint32_t s_nDispatchItems;
+static uint32_t s_nInitPktItemOpen;
+static uint32_t s_nInitPktItemClosed;
+static uint32_t s_nClientRx;
+static uint32_t s_nItemReuse;
+static uint32_t s_nItemFree;
+static bool s_bChestBuildStarted;
+static int s_nChestBuildSlot;
+
 static uint32_t s_nVictimDrops;
 static uint32_t s_nRollLookups;
 static uint32_t s_nNullLookups;
@@ -42,6 +57,31 @@ static void WriteAggregates(FILE * pFile) {
     fprintf(pFile, " | agg victim=%u lookup=%u lookupNull=%u itemGen=%u itemGenFail=%u chest=%u chestNullTc=%u chestNoItems=%u",
             s_nVictimDrops, s_nRollLookups, s_nNullLookups, s_nItemGens, s_nItemGenFails,
             s_nChestRolls, s_nChestNullTc, s_nChestNoItems);
+    // [dropdiag v2] broadcast-chain counters appended (v1 fields unchanged).
+    fprintf(pFile, " | v2 igen2=%u uplink=%u uplinkSkip=%u disp=%u initOpen=%u initClosed=%u crx=%u reuse=%u free=%u",
+            s_nItemGensAudited, s_nUpLinks, s_nUpLinkSkips, s_nDispatchItems,
+            s_nInitPktItemOpen, s_nInitPktItemClosed, s_nClientRx, s_nItemReuse, s_nItemFree);
+}
+
+// [dropdiag v2] shared cap+log prologue: returns NULL past the cap (writing a
+// periodic aggregate line every 32 overflow calls), else an open log file.
+static FILE * V2LogOrAggregate(uint32_t * pnCounter) {
+    (*pnCounter)++;
+    if ((int)*pnCounter > kCapV2) {
+        if (!((*pnCounter - kCapV2) % 32)) {
+            FILE * pFile = OpenLog();
+            if (pFile) {
+                fprintf(pFile, "V2 AGG cap reached, tick=%u", GetTickCount());
+                WriteAggregates(pFile);
+                fprintf(pFile, "\n");
+                fclose(pFile);
+            }
+        }
+
+        return nullptr;
+    }
+
+    return OpenLog();
 }
 
 // One-line health summary of a parsed TC record (indices are table slots).
@@ -354,6 +394,185 @@ void __stdcall NoteItemGen(int nItemClassId, int eQuality, const void * pCreated
     WriteAggregates(pFile);
     fprintf(pFile, "\n");
     fclose(pFile);
+}
+
+// ==== [dropdiag v2] broadcast-chain audit — see DropDiag.h stage table ====//
+
+void __stdcall NoteItemSpawnAudit(const void * pVoidUnit) {
+    const D2UnitStrc * pUnit = (const D2UnitStrc *)pVoidUnit;
+    if (!pUnit) {
+        return;
+    }
+
+    FILE * pFile = V2LogOrAggregate(&s_nItemGensAudited);
+    if (!pFile) {
+        return;
+    }
+
+    const D2StaticPathStrc * pPath = pUnit->pPath.pStaticPath;
+    fprintf(pFile, "V2 IGEN2 guid=%08x mode=%d uflags=%08x path=%d bRNU=%d room=%p islink=%d initseed=%d",
+            (unsigned)pUnit->nUnitGUID, (int)pUnit->eAnimMode.ePlayerMode, (unsigned)pUnit->eUnitFlags,
+            pPath ? 1 : 0, (pPath && pPath->bRoomNeedsUpdate) ? 1 : 0,
+            (const void *)(pPath ? pPath->pRoom : nullptr),
+            (pUnit->eUnitFlags & UNITFLAG_ISLINKREFRESHMSG) ? 1 : 0,
+            (pUnit->eUnitFlags & UNITFLAG_INITSEEDSET) ? 1 : 0);
+    WriteAggregates(pFile);
+    fprintf(pFile, "\n");
+    fclose(pFile);
+}
+
+void __stdcall NoteUpdateListLink(const void * pVoidUnit, int nReason) {
+    const D2UnitStrc * pUnit = (const D2UnitStrc *)pVoidUnit;
+    if (!pUnit || pUnit->eUnitType != UNIT_ITEM) {
+        return;
+    }
+
+    // V2LogOrAggregate owns the class counter bump (s_nUpLinks = ok + skip).
+    FILE * pFile = V2LogOrAggregate(&s_nUpLinks);
+    if (nReason) {
+        s_nUpLinkSkips++;
+    }
+
+    if (!pFile) {
+        return;
+    }
+
+    const D2StaticPathStrc * pPath = pUnit->pPath.pStaticPath;
+    fprintf(pFile, "V2 UPLINK guid=%08x res=%d room=%p bRNU=%d islink=%d",
+            (unsigned)pUnit->nUnitGUID, nReason,
+            (const void *)(pPath ? pPath->pRoom : nullptr),
+            (pPath && pPath->bRoomNeedsUpdate) ? 1 : 0,
+            (pUnit->eUnitFlags & UNITFLAG_ISLINKREFRESHMSG) ? 1 : 0);
+    WriteAggregates(pFile);
+    fprintf(pFile, "\n");
+    fclose(pFile);
+}
+
+void __stdcall NoteDispatchUnitUpdate(const void * pVoidUnit, const void * pVoidClient) {
+    const D2UnitStrc * pUnit = (const D2UnitStrc *)pVoidUnit;
+    if (!pUnit || pUnit->eUnitType != UNIT_ITEM) {
+        return;
+    }
+
+    s_nDispatchItems++;
+    if ((int)s_nDispatchItems > kCapV2) {
+        if (!((s_nDispatchItems - kCapV2) % 32)) {
+            FILE * pFile = OpenLog();
+            if (pFile) {
+                fprintf(pFile, "V2 AGG dispatch cap, tick=%u", GetTickCount());
+                WriteAggregates(pFile);
+                fprintf(pFile, "\n");
+                fclose(pFile);
+            }
+        }
+
+        return;
+    }
+
+    FILE * pFile = OpenLog();
+    if (!pFile) {
+        return;
+    }
+
+    fprintf(pFile, "V2 DISPATCH guid=%08x initseed=%d client=%p",
+            (unsigned)pUnit->nUnitGUID,
+            (pUnit->eUnitFlags & UNITFLAG_INITSEEDSET) ? 1 : 0, pVoidClient);
+    WriteAggregates(pFile);
+    fprintf(pFile, "\n");
+    fclose(pFile);
+}
+
+void __stdcall NoteInitPacketItemCase(const void * pVoidUnit) {
+    const D2UnitStrc * pUnit = (const D2UnitStrc *)pVoidUnit;
+    if (!pUnit) {
+        return;
+    }
+
+    BOOL bGateOpen = pUnit->eUnitFlags >> 4 & 1;
+
+    // V2LogOrAggregate owns the counter bump (open and closed cap together).
+    FILE * pFile = V2LogOrAggregate(bGateOpen ? &s_nInitPktItemOpen : &s_nInitPktItemClosed);
+    if (!pFile) {
+        return;
+    }
+
+    fprintf(pFile, "V2 INITPKT guid=%08x gate=%d mode=%d refresh=%d",
+            (unsigned)pUnit->nUnitGUID, (int)bGateOpen,
+            (int)pUnit->eAnimMode.ePlayerMode,
+            (pUnit->eUnitFlags & UNITFLAG_SENDREFRESHMSG) ? 1 : 0);
+    WriteAggregates(pFile);
+    fprintf(pFile, "\n");
+    fclose(pFile);
+}
+
+void __stdcall NoteItemRecycle(const void * pVoidUnit, int nStage) {
+    const D2UnitStrc * pUnit = (const D2UnitStrc *)pVoidUnit;
+    if (!pUnit || pUnit->eUnitType != UNIT_ITEM) {
+        return;
+    }
+
+    uint32_t * pnCounter = nStage ? &s_nItemFree : &s_nItemReuse;
+    (*pnCounter)++;
+    if ((int)*pnCounter > kCapV2) {
+        return;
+    }
+
+    FILE * pFile = OpenLog();
+    if (!pFile) {
+        return;
+    }
+
+    fprintf(pFile, "V2 %s guid=%08x mode=%d islink=%d",
+            nStage ? "FREE" : "RECYCLE", (unsigned)pUnit->nUnitGUID,
+            (int)pUnit->eAnimMode.ePlayerMode,
+            (pUnit->eUnitFlags & UNITFLAG_ISLINKREFRESHMSG) ? 1 : 0);
+    WriteAggregates(pFile);
+    fprintf(pFile, "\n");
+    fclose(pFile);
+}
+
+void __stdcall NoteClient0x9C(const uint8_t * pBytes) {
+    if (!pBytes) {
+        return;
+    }
+
+    s_nClientRx++;
+    if ((int)s_nClientRx > kCapV2) {
+        return;
+    }
+
+    FILE * pFile = OpenLog();
+    if (!pFile) {
+        return;
+    }
+
+    // 0x9C layout: [0]=0x9C, [1]=action subcode, [2..5]=item GUID dword.
+    fprintf(pFile, "V2 CRX9C sub=%d guid=%08x",
+            (int)pBytes[1], (unsigned)*(const uint32_t *)&pBytes[2]);
+    WriteAggregates(pFile);
+    fprintf(pFile, "\n");
+    fclose(pFile);
+}
+
+void __stdcall NoteChestTableBuildStart() {
+    s_bChestBuildStarted = true;
+    s_nChestBuildSlot = 0;
+}
+
+void __stdcall NoteChestTableLookup(const char * szTCName, int nTCIdx) {
+    if (!s_bChestBuildStarted || s_nChestBuildSlot >= 45) {
+        return;
+    }
+
+    FILE * pFile = OpenLog();
+    if (!pFile) {
+        return;
+    }
+
+    fprintf(pFile, "V2 CHESTBUILD [%d] \"%s\" -> %d\n",
+            s_nChestBuildSlot, szTCName ? szTCName : "(null)", nTCIdx);
+    fclose(pFile);
+    s_nChestBuildSlot++;
 }
 
 } // namespace D2Common::DATATBLS::DropDiag
