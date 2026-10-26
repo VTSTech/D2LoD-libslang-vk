@@ -20,9 +20,34 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install the toolchain
+        timeout-minutes: 15
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq g++-mingw-w64-i686 binutils-mingw-w64-i686 cmake ninja-build
+          # A fresh runner can have unattended-upgrades holding the dpkg lock;
+          # clear it instead of waiting silently for it.
+          sudo systemctl stop unattended-upgrades.service 2>/dev/null || true
+          sudo dpkg --configure -a
+
+          # -qq hid every symptom (a hang looked identical to a slow mirror).
+          # Run visibly and retry; the 15-minute step timeout turns a hard
+          # hang into a fast red X instead of burning the 6-hour job limit.
+          for i in 1 2 3; do
+            sudo apt-get update -o Acquire::Retries=5 && break
+            echo "::warning::apt-get update failed (attempt $i/3), retrying in 15s"
+            sleep 15
+          done
+
+          for i in 1 2 3; do
+            sudo apt-get install -y -o Acquire::Retries=5 -o Acquire::http::Timeout=60 \
+              g++-mingw-w64-i686 binutils-mingw-w64-i686 cmake ninja-build && break
+            echo "::warning::apt-get install failed (attempt $i/3), retrying in 15s"
+            sleep 15
+          done
+
+          # 'apt-get ... && break' swallows a final failed attempt under
+          # bash -e, so assert the toolchain actually landed.
+          command -v i686-w64-mingw32-g++
+          command -v cmake
+          command -v ninja
 
       - name: Build from a clean clone
         run: tools/check-build.sh "$GITHUB_WORKSPACE" "$GITHUB_SHA"
