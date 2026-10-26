@@ -176,6 +176,7 @@ void __fastcall SOUNDSMP_SetVolume(D2SoundSmpStrc * ppSoundSmp, int nVolume) {
     nErrorAddr = (int)((1.0 - (float)ppSoundSmp->fEaxObstruction) * (float)nErrorAddr);
     apply_volume:
     fVar1 = SOUNDSMP_ClampVolume(0.0, 255.0, (float)nErrorAddr);
+    if ((int)fVar1 <= 0 && nVolume != 0) { static int s_nSilentVolR3 = 0; if (s_nSilentVolR3++ < 8) D2BOOT_MarkFmt("[sounddiag] SetVolume SILENT: d2vol=%u glob=%u eaxX1000=%d", (unsigned)nVolume, (unsigned)gnSoundGlobalVolume, (int)(ppSoundSmp->fEaxObstruction * 1000.0f)); } // [sounddiag]
     ppSoundSmp->pDSBuffer->lpVtbl->SetVolume(ppSoundSmp->pDSBuffer, (int)fVar1);
 }
 
@@ -399,7 +400,7 @@ BOOL __fastcall SOUNDSMP_OpenAndStreamFile(int * * ppnParam, char * szText, int3
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gSoundSmpCs);
     BOOL pStreamHandle = Storm::Source::SFile::SFileDdaBeginEx(pArchive, (uint32_t)ppnParam[1], bIsLooping ? 0x40000 : 0, nLooping * 4, 0x7fffffff, 0x7fffffff, (IDirectSoundBuffer*)*ppnParam);
-    { static int s_nOpenOk = 0; if (s_nOpenOk++ < 6) D2BOOT_MarkFmt("[sounddiag] stream OPEN: %s -> dda=%d", szText ? szText : "?", (int)pStreamHandle); } // [sounddiag]
+    { static int s_nOpenOk = 0; if (s_nOpenOk++ < 6) D2BOOT_MarkFmt("[sounddiag] stream OPEN: %s -> dda=%d buf=%p bytes=%u loop=%d", szText ? szText : "?", (int)pStreamHandle, (void*)*ppnParam, (unsigned)ppnParam[1], (int)bIsLooping); } // [sounddiag]
     if (pStreamHandle) {
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ ppnParam[0x12] = (int*)pArchive;
       ppnParam[7] = (int*)0x1;
