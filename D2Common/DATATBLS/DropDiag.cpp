@@ -13,6 +13,11 @@
 #include "D2Common/DATATBLS/DropDiag.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
+// [dropdiag v2.1] full D2UnitStrc definition — the v2 broadcast hooks
+// dereference unit fields (pPath.pStaticPath, eUnitFlags, eAnimMode);
+// previously only a forward declaration leaked in, which CI rejected
+// (21x "invalid use of incomplete type" at d14e0af).
+#include "D2Common/Unit/D2UnitStrc.h"
 
 namespace D2Common::DATATBLS::DropDiag {
 
