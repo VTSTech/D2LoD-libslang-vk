@@ -9,6 +9,7 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
+#include "support/d2_boot.h" // [sounddiag]
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -290,12 +291,14 @@ BOOL __stdcall SOUNDSMP_CreateSoundBuffer(uint32_t nFlags, D2SoundSmpStrc * pSou
     IDirectSound* pDSDevice = SOUND_GetSpeakerConfigFlag();
     HRESULT nHResult = pDSDevice->lpVtbl->CreateSoundBuffer(pDSDevice, &tBufferDesc, (void**)&pSoundSmp->pDSBuffer, nullptr);
     if (nHResult < 0) {
+      D2BOOT_MarkFmt("[sounddiag] sample CreateSoundBuffer FAIL hr=%08x flags=%x", (unsigned)nHResult, (unsigned)tBufferDesc.dwFlags); // [sounddiag]
       return 0;
     }
     if (u3DFlag) {
       DWORD dw3DFlag;
       nHResult = pSoundSmp->pDSBuffer->lpVtbl->QueryInterface(pSoundSmp->pDSBuffer, (GUID*)&gIID_IDirectSound3DBuffer, (void**)&pSoundSmp->pDS3DBuffer);
       if (nHResult < 0) {
+        D2BOOT_MarkFmt("[sounddiag] sample 3D QI FAIL hr=%08x", (unsigned)nHResult); // [sounddiag]
         pSoundSmp->pDSBuffer->lpVtbl->Release(pSoundSmp->pDSBuffer);
         return 0;
       }
@@ -315,6 +318,7 @@ BOOL __stdcall SOUNDSMP_CreateSoundBuffer(uint32_t nFlags, D2SoundSmpStrc * pSou
 
             nHResult = (*ppEaxInterface2)->lpVtbl->QuerySupport(*ppEaxInterface2, pObstructionGuid, 1, (ULONG*)&dwEaxCapabilities);
             if (!(-1 < nHResult && ((uint8_t)dwEaxCapabilities & 3) == 3)) {
+              D2BOOT_MarkFmt("[sounddiag] sample EAX QuerySupport FAIL hr=%08x", (unsigned)nHResult); // [sounddiag]
               (*ppEaxInterface2)->lpVtbl->Release(*ppEaxInterface2);
               pSoundSmp->pDSBuffer->lpVtbl->Release(pSoundSmp->pDSBuffer);
               return 0;
