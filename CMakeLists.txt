@@ -50,14 +50,28 @@ file(GLOB_RECURSE D2_HEADERS CONFIGURE_DEPENDS
     LIST_DIRECTORIES false
     "${CMAKE_SOURCE_DIR}/*.h")
 
-# A build directory inside the tree must not feed its own files back in.
+# A build directory inside the tree must not feed its own files back in, and
+# the vendored libbacktrace (built as its own target below) must not leak its
+# headers (config.h, internal.h) onto the game's include path. The prefix
+# excludes match LITERALLY (string(FIND) == 0) instead of by regex: building
+# a regex from the raw path fails to compile ("Nested *?+") when the checkout
+# lives under a name with regex metacharacters, e.g. F:\Coding\Code\C++\.
 foreach(list D2_SOURCES D2_HEADERS)
-    list(FILTER ${list} EXCLUDE REGEX "^${CMAKE_BINARY_DIR}/")
     list(FILTER ${list} EXCLUDE REGEX "/\\.git/")
-    # Vendored C library, built as its own target below; its headers (config.h,
-    # internal.h) must not land on the game's include path.
-    list(FILTER ${list} EXCLUDE REGEX "^${CMAKE_SOURCE_DIR}/thirdparty/libbacktrace/")
+    set(_kept "")
+    foreach(entry IN LISTS ${list})
+        string(FIND "${entry}" "${CMAKE_BINARY_DIR}/" _in_build)
+        string(FIND "${entry}" "${CMAKE_SOURCE_DIR}/thirdparty/libbacktrace/" _in_backtrace)
+        if(NOT _in_build EQUAL 0 AND NOT _in_backtrace EQUAL 0)
+            list(APPEND _kept "${entry}")
+        endif()
+    endforeach()
+    set(${list} "${_kept}")
 endforeach()
+unset(_kept)
+unset(entry)
+unset(_in_build)
+unset(_in_backtrace)
 list(SORT D2_SOURCES)
 
 # Headers are included by tree-relative path ("D2Game/UNIT/SUNITNPC.h"), with a
