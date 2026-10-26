@@ -2,7 +2,7 @@
 
 #include "D2Win/Src/D2WinEditBox.h"
 #include "D2Client/D2ControlStrc.h"
-#include "D2Glide/Renderer/Glide.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Win/DC6.h"
@@ -1322,14 +1322,14 @@ BOOL __stdcall D2WINEDITBOX_CreateControl(D2ControlStrc * pControl, eD2FormType 
 }
 
 BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
-    D2ControlStrc* pDVar1 = pControlMsg->pControl;
+    ::D2WinEditBox* pDVar1 = (::D2WinEditBox*)pControlMsg->pControl;
     if (!pDVar1) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7e5);
       exit(-1);
     } else {
       BOOL bResult;
-      if (pDVar1->neD2FormType == FORM_EditBox) {
-        bResult = D2WINEDITBOX_CreateControl((D2ControlStrc*)pControlMsg, D2Client::Mouse::nPosX - pDVar1[1].neD2FormType - pDVar1->dwPosX, (DC6*)(pDVar1->dwSizeY - (int)pDVar1[1].pDC6 - pDVar1->dwPosY + D2Client::Mouse::nPosY));
+      if (pDVar1->sControl.neD2FormType == FORM_EditBox) {
+        bResult = D2WINEDITBOX_CreateControl((D2ControlStrc*)pControlMsg, D2Client::Mouse::nPosX - pDVar1->nInsetX - pDVar1->sControl.dwPosX, (DC6*)(pDVar1->sControl.dwSizeY - pDVar1->nInsetY - pDVar1->sControl.dwPosY + D2Client::Mouse::nPosY));
         return bResult;
       }
 
@@ -1842,10 +1842,11 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cP
     BOOL nHasText;
     int bMouseResult;
     uint32_t nFontHeight;
-    ::DrawEx nMoveSize;
+    eD2FormType eFormType;
+    int32_t nMoveSize;
     uint16_t* pwszNewCursor;
     ::D2WinEditBox* pNextControl;
-    ::DrawEx nSelStart;
+    int32_t nSelStart;
     char local_8[4];
     int32_t nLine;
     DC6* nSelY;
@@ -1870,7 +1871,7 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cP
     pwszCursor = pEditBox->wszText + pEditBox->nCursorIndex;
     ::Mouse pMouseArg;
     pMouseArg = 0;
-    ::DrawEx nSelEnd;
+    int32_t nSelEnd;
     nSelEnd = 0;
     uint16_t wKeyState;
     wKeyState = GetKeyState(0x10);
@@ -1883,7 +1884,7 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cP
       if (nHasText) {
         D2WINEDITBOX_HandleDelete(pEditBox);
         pMouseArg = (::Mouse)0x1;
-        nSelEnd = (::DrawEx)0x1;
+        nSelEnd = 1;
         pwszCursor = pEditBox->wszText + pEditBox->nCursorIndex;
       }
 
@@ -1912,13 +1913,13 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cP
         if (pEditBox->wszText < pwszCursor && !nSelEnd) {
           pwszNewCursor = pwszCursor - 1;
           nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszCursor);
-          nSelStart = (::DrawEx)((nLine + 1) * 2);
-          memmove(pwszNewCursor, pwszCursor, (size_t)nSelStart);
+          nSelStart = (nLine + 1) * 2;
+          memmove(pwszNewCursor, pwszCursor, nSelStart);
           if (pEditBox->wszText < pwszNewCursor && (short int)*(int32_t*)(pwszCursor - 2) == 0xd) {
             pwszCursor += -2;
             nMoveSize = nSelStart;
             delete_line_break_partner:
-            memmove(pwszCursor, pwszCursor + 1, (size_t)nMoveSize);
+            memmove(pwszCursor, pwszCursor + 1, nMoveSize);
             pwszNewCursor = pwszCursor;
           }
 
@@ -2038,14 +2039,14 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cP
         if (!(pEditBox->nFlags & 8)) {
           goto move_cursor_to_start;
         }
-      D2WINEDITBOX_HandleTextSelection((int*)pEditBox, (int*)&nSelStart, (int*)&nSelEnd);
+      D2WINEDITBOX_HandleTextSelection((int*)pEditBox, &nSelStart, &nSelEnd);
       nFontHeight = D2WinFont::D2WINFONT_GetCurrentFontHeight();
       nSelY = (DC6*)(nSelEnd - nFontHeight);
-      nMoveSize = nSelStart;
+      eFormType = nSelStart;
       move_cursor_vertically:
       __frame0.pDC6Arg = 0;
       __frame0.pFocusControlArg = pEditBox;
-      D2WINEDITBOX_CreateControl((D2ControlStrc*)&__frame0.pFocusControlArg, (eD2FormType)nMoveSize, nSelY);
+      D2WINEDITBOX_CreateControl((D2ControlStrc*)&__frame0.pFocusControlArg, eFormType, nSelY);
       pwszCursor = pEditBox->wszText + pEditBox->nCursorIndex;
       break;
       case '\'':
@@ -2064,10 +2065,10 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cP
       break;
       case '(':
         if (pEditBox->nFlags & 8) {
-          D2WINEDITBOX_HandleTextSelection((int*)pEditBox, (int*)&nSelEnd, (int*)&nSelStart);
+          D2WINEDITBOX_HandleTextSelection((int*)pEditBox, &nSelEnd, &nSelStart);
           nFontHeight = D2WinFont::D2WINFONT_GetCurrentFontHeight();
-          nSelY = (DC6*)(nSelStart + nFontHeight);
-          nMoveSize = nSelEnd;
+          nSelY = (DC6*)(nFontHeight + nSelStart);
+          eFormType = nSelEnd;
           goto move_cursor_vertically;
         }
       wChar = *pwszCursor;
@@ -2087,7 +2088,7 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cP
           memmove(pwszCursor, pwszCursor + 1, (nLine + 1) * 2);
           pwszNewCursor = pwszCursor;
           if (*pwszCursor != L'\0' && *pwszCursor == L'\n') {
-            nMoveSize = (::DrawEx)(nLine - 1 + nLine + 1);
+            nMoveSize = nLine - 1 + nLine + 1;
             goto delete_line_break_partner;
           }
 

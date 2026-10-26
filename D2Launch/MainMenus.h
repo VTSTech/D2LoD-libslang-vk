@@ -146,7 +146,7 @@ uint32_t __stdcall MAINMENU_CheckBattleNetIPFlag();
 // Displays main menu screen before menu UI. Creates background forms with sky palette, retrieves copyright string (classic: 0x13f0, expansion: 0x557a), searches for year "2000"/"2001" and replaces with "2000 - 2016" to update copyright range, converts UTF8 to wide char, sets textbox text, hides cursor, and enables music if configured.
 void __stdcall UIMENU_MainScreenBeforeMenu();
 uint32_t __fastcall MAINMENU_CheckFileExists(char * szFileName);
-void MAINMENU_GetLocalizedFilePath(char * szPathFormat, char * szOutPath);
+void MAINMENU_GetLocalizedFilePath(char * szPathFormat, char * szOutPath, char * szResolution);
 void __stdcall MAINMENU_CloseAndLaunchCharSelect();
 int __stdcall MAINMENU_ValidateCharNameChar(::D2WinEditBox * pEditBox, int nTextLen, char * pKeyChar);
 // Edit-box key filter installed via D2WINEDITBOX_SetMaxLength @004fdad0 into D2WinEditBox+0x268 (fpFilterCallback, fpD2WinEditBoxFilter). Body is MOV EAX,1 / RET 0xc - accepts every character. Signature proven by RET 0xc (3 stack args, callee cleans) and by the funcdef of the slot it is stored into.

@@ -23,7 +23,13 @@ struct D2RosterLinkListStrc {
 };
 
 #pragma pack(push, 1)
-struct D2RosterPetStrc {
+struct D2RosterPetSeedStrc {
+    /* 0x00 */ D2SeedStrc sSeed;
+    /* 0x08 */ int32_t nState; // pet state 1/2 and timestamp, was D2RosterPetStrc.nZero
+};
+#pragma pack(pop)
+
+struct __attribute__((packed)) D2RosterPetStrc {
     /* 0x00 */ int nRosterClass;
     /* 0x04 */ int nSkillID;
     /* 0x08 */ int nRosterGUID;
@@ -33,11 +39,9 @@ struct D2RosterPetStrc {
     /* 0x18 */ int field6_0x18;
     /* 0x1C */ int nHpPercent;
     /* 0x20 */ int bRemoved; // merc inactive/dead flag: 0=active, 1=removed-but-kept
-    /* 0x24 */ D2SeedStrc pSeed;
-    /* 0x2C */ int nZero;
+    /* 0x24 */ D2RosterPetSeedStrc sSeed;
     /* 0x30 */ struct D2RosterPetStrc * pNext;
 };
-#pragma pack(pop)
 
 namespace D2Client::GAME::Roster {
 

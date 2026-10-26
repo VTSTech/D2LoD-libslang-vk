@@ -33,77 +33,60 @@ void __stdcall Roll(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgCoordsStrc * 
     static int RackType[4] = { 0x68, 0x69, 0x6a, 0x6b };
     static int RackTypeCount = 0x2;
 
-    // Frame slots -32..-4 are ONE object: &nSpawnX is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t nSpawnX;
-      uint32_t nSpawnY;
-      uint32_t nYEnd;
-      uint32_t nEvenRackIdx;
-      uint32_t nRackIdx;
-      D2ObjectsTxt* pObjectsTxt;
-      uint32_t nRackVariant;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 28, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     BOOL nCollisionResultX;
+    D2CoordStrc sSpawnCoord;
     if (nRackType >= RackTypeCount) {
       return;
     }
 
     D2SeedStrc* pCtrlSeed = ObjectsRgn::GetObjectControlSeed(pGame);
-    D2SeedStrc seedNew = D2_SEED_NEXT(*pCtrlSeed);
-    __frame0.nRackVariant = seedNew.nSeedLow & 1;
-    *pCtrlSeed = seedNew;
-    __frame0.nEvenRackIdx = nRackType * 2;
-    __frame0.nRackIdx = __frame0.nRackVariant + __frame0.nEvenRackIdx;
-    __frame0.pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(RackType[__frame0.nRackIdx]);
-    uint32_t nObjSizeX = __frame0.pObjectsTxt->SizeX;
-    int iVar1 = pDrlgCoords->WorldPosition.x;
-    int iVar2 = pDrlgCoords->WorldPosition.y;
+    D2SeedStrc DVar2 = D2_SEED_NEXT(*pCtrlSeed);
+    *pCtrlSeed = DVar2;
+    int iVar3 = (DVar2.nSeedLow & 1) + nRackType * 2;
+    D2ObjectsTxt* pDVar4 = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(RackType[iVar3]);
+    uint32_t nObjSizeX = pDVar4->SizeX;
+    int iVar6 = pDrlgCoords->WorldPosition.x;
+    int iVar1 = pDrlgCoords->WorldPosition.y;
     int nXEnd = pDrlgCoords->WorldSize.x - nObjSizeX;
-    uint32_t nObjSizeY = __frame0.pObjectsTxt->SizeY;
-    __frame0.nYEnd = pDrlgCoords->WorldSize.y - nObjSizeY + iVar2;
-    if (!__frame0.nRackVariant) {
-      __frame0.nSpawnY = iVar2 + 1;
-      __frame0.nSpawnX = pDrlgCoords->WorldPosition.x + nObjSizeX;
-      __frame0.nRackIdx = __frame0.nSpawnY;
-      while (__frame0.nSpawnX < (uint32_t)(nXEnd + iVar1)) {
-        __frame0.nRackVariant = __frame0.nSpawnX;
-        nCollisionResultX = ROOM_CheckSpawnCollision(pRoom, __frame0.pObjectsTxt->SizeY, (int*)&__frame0.nSpawnX, nObjSizeX, (int*)pDrlgCoords);
+    uint32_t nObjSizeY = pDVar4->SizeY;
+    uint32_t uVar5 = pDrlgCoords->WorldSize.y - nObjSizeY + iVar1;
+    if (!((uint64_t)d2_bits_of(DVar2) & 1)) {
+      sSpawnCoord.nY = iVar1 + 1;
+      for (uVar5 = pDrlgCoords->WorldPosition.x + nObjSizeX; uVar5 < (uint32_t)(nXEnd + iVar6); uVar5 += nObjSizeX * 2) {
+        sSpawnCoord.nX = uVar5;
+        nCollisionResultX = ROOM_CheckSpawnCollision(pRoom, pDVar4->SizeY, &sSpawnCoord.nX, nObjSizeX, (int*)pDrlgCoords);
         if (nCollisionResultX == 1) {
           if (!pRoom) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb12);
             exit(-1);
           }
 
-          UNIT::SUnit::CreateUnit(UNIT_OBJECT, RackType[__frame0.nEvenRackIdx], __frame0.nRackVariant, __frame0.nRackIdx, pGame, pRoom, 1, 0, nullptr);
+          UNIT::SUnit::CreateUnit(UNIT_OBJECT, RackType[nRackType * 2], uVar5, iVar1 + 1, pGame, pRoom, 1, 0, nullptr);
         }
 
-        nObjSizeX = __frame0.pObjectsTxt->SizeX;
-        __frame0.nSpawnX = __frame0.nRackVariant + nObjSizeX * 2;
+        nObjSizeX = pDVar4->SizeX;
       }
     } else {
       uint32_t nCurY;
-      __frame0.nSpawnX = pDrlgCoords->WorldPosition.x + 1;
-      nCurY = iVar2 + nObjSizeY;
-      __frame0.nEvenRackIdx = __frame0.nSpawnX;
-      if (nCurY < __frame0.nYEnd) {
+      iVar6 = pDrlgCoords->WorldPosition.x + 1;
+      nCurY = iVar1 + nObjSizeY;
+      sSpawnCoord.nX = iVar6;
+      if (nCurY < uVar5) {
         do {
-          __frame0.nSpawnY = nCurY;
-          nCollisionResultX = ROOM_CheckSpawnCollision(pRoom, nObjSizeY, (int*)&__frame0.nSpawnX, __frame0.pObjectsTxt->SizeX, (int*)pDrlgCoords);
+          sSpawnCoord.nY = nCurY;
+          nCollisionResultX = ROOM_CheckSpawnCollision(pRoom, nObjSizeY, &sSpawnCoord.nX, pDVar4->SizeX, (int*)pDrlgCoords);
           if (nCollisionResultX == 1) {
             if (!pRoom) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb25);
               exit(-1);
             }
 
-            UNIT::SUnit::CreateUnit(UNIT_OBJECT, RackType[__frame0.nRackIdx], __frame0.nEvenRackIdx, nCurY, pGame, pRoom, 1, 0, nullptr);
+            UNIT::SUnit::CreateUnit(UNIT_OBJECT, RackType[iVar3], iVar6, nCurY, pGame, pRoom, 1, 0, nullptr);
           }
 
-          nObjSizeY = __frame0.pObjectsTxt->SizeY;
+          nObjSizeY = pDVar4->SizeY;
           nCurY += nObjSizeY * 2;
-          if (__frame0.nYEnd <= nCurY) {
+          if (uVar5 <= nCurY) {
             return;
           }
         } while (true);

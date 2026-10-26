@@ -25,6 +25,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -105,7 +106,7 @@ void __fastcall PLAYERLIST_AddPlayerEntry(::SGAMEDATA * pGame, D2UnitStrc * pUni
     pNewEntry->nUnitGUID = 0;
     pNewEntry->nRelationshipFlags = 0;
     pNewEntry->nHostileDelay = 0;
-    *(uint32_t*)&pNewEntry->bIsPartied = 0;
+    pNewEntry->bIsPartied = 0;
     pNewEntry->pNext = 0;
     if (!pUnit2) {
       nTargetGUID = -1;
@@ -116,7 +117,7 @@ void __fastcall PLAYERLIST_AddPlayerEntry(::SGAMEDATA * pGame, D2UnitStrc * pUni
     pNewEntry->nUnitGUID = nTargetGUID;
     pNewEntry->nHostileDelay = 0;
     int16_t sPartyId = SUnit::GetPartyId(pUnit2);
-    *(uint32_t*)&pNewEntry->bIsPartied = (uint32_t)(sPartyId != -1);
+    pNewEntry->bIsPartied = (uint32_t)(sPartyId != -1);
     pNewEntry->pNext = pPlayerData->pPlayerList;
     pPlayerData->pPlayerList = pNewEntry;
 }
@@ -277,7 +278,7 @@ void __fastcall SetPlayerRelationship(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, i
     pListEntry = 0;
     lookup_done:
     if (pUnit != pUnit2 && pListEntry) {
-      *(int32_t*)&pListEntry->bIsPartied = nRelationship;
+      pListEntry->bIsPartied = nRelationship;
     }
 }
 
@@ -307,7 +308,7 @@ uint32_t __fastcall PLAYERLIST_IsPartied(D2UnitStrc * pUnit, D2UnitStrc * pUnit2
       return (uint32_t)((uint32_t)(uint16_t)wPtrHigh << 16 | (uint32_t)(uint16_t)1);
     }
     if (pListEntry) {
-      return (uint32_t)((uint32_t)(uint16_t)wPtrHigh << 16 | (uint32_t)(uint16_t)*(uint16_t*)&pListEntry->bIsPartied);
+      return (uint32_t)((uint32_t)(uint16_t)wPtrHigh << 16 | (uint32_t)(uint16_t)(short int)pListEntry->bIsPartied);
     }
 
     return 0;
@@ -356,7 +357,7 @@ void __fastcall Send0x8bRelationshipStatus(D2UnitStrc * pUnit, D2UnitStrc * pUni
       dwTargetArg = pUnit2->nUnitGUID;
     }
 
-    bool bIsPartied = pListEntry->bIsPartied;
+    bool bIsPartied = (uint8_t)(uint32_t)pListEntry->bIsPartied;
     D2ClientStrc* pClient = SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\PlayerList.cpp", 0x10b);
     GAME::SCmd::NET_D2GS_SERVER_Send_0x8B_PlayerRelationship(pClient, dwTargetArg, bIsPartied);
 }
@@ -427,7 +428,7 @@ void __fastcall PLAYERLIST_AddBothWays(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     pListEntry = 0;
     lookup_done:
     if (pUnit != pOtherPlayer && pListEntry) {
-      *(uint32_t*)&pListEntry->bIsPartied = 0;
+      pListEntry->bIsPartied = 0;
     }
     int16_t sPartyId = SUnit::GetPartyId(pUnit);
     SetPlayerRelationship(pOtherPlayer, pUnit, (uint32_t)(sPartyId != -1));

@@ -14,6 +14,7 @@ struct D2RoomStrc;
 struct D2UnitStrc;
 struct D2UnknownCreateMonsterStrc;
 struct SGAMEDATA;
+typedef int eD2MonsterAnimMode;
 
 namespace D2Game::Monster::Create {
 

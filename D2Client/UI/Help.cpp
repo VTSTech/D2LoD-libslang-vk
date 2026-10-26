@@ -2,6 +2,7 @@
 
 #include "D2Client/UI/Help.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/UI/CmdTbl.h"
@@ -9,7 +10,6 @@
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/Party.h"
 #include "D2Client/UI/ui.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Win/DC6.h"

@@ -6,6 +6,7 @@
 #include "D2Client/Archive.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/D2GfxInfoStrc.h"
 #include "D2Client/D2LightMapStrc.h"
@@ -57,7 +58,6 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinArchive.h"
@@ -460,24 +460,10 @@ void __stdcall GFX_BuildMonsterCofPath(uint32_t nModeId, LPSTR szOutputPath, int
     static uint32_t gnMonsterCofPathBuildProgress = 0xd;
     static uint32_t gnMonsterCofPathCount = 0x1;
 
-    // Frame slots -16..-4 are ONE object: &byToken0 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint8_t byToken0;
-      uint8_t byToken1;
-      uint8_t byToken2;
-      uint8_t byTokenNul;
-      uint8_t byComp0;
-      uint8_t byComp1;
-      uint8_t byComp2;
-      uint8_t byMonCodeNul;
-      uint8_t byMonCode0;
-      uint8_t byMonCode1;
-      uint8_t byMonCode2;
-      uint8_t byCompNul;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    char szMonStatsCode[4];
+    char szAnimToken[4];
+    char szCompToken[4];
+    char szMonCode[4];
     if (!(-1 < nMonsterClassId && nMonsterClassId < sgptDataTable->nTxtMonStatsSize)) {
       return;
     }
@@ -498,7 +484,7 @@ void __stdcall GFX_BuildMonsterCofPath(uint32_t nModeId, LPSTR szOutputPath, int
     }
 
     uint32_t dwCodeChars = *(uint32_t*)pMonStats->Code;
-    uint8_t byCode0 = (uint8_t)dwCodeChars;
+    szMonStatsCode[0] = (char)dwCodeChars;
     D2MonModeTxt* pMonMode = D2Common::DATATBLS::TokTbls::TxtGetMonModeLine(nModeId, 1);
     if (!pMonMode) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe86);
@@ -527,23 +513,23 @@ void __stdcall GFX_BuildMonsterCofPath(uint32_t nModeId, LPSTR szOutputPath, int
       } while (nPathIndex < gnMonsterCofPathCount);
     }
 
-    __frame0.byMonCodeNul = 0;
-    __frame0.byCompNul = 0;
-    __frame0.byTokenNul = 0;
-    __frame0.byComp0 = (uint8_t)*pnComponentCode == 0x20 ? 0 : (uint8_t)*pnComponentCode;
-    __frame0.byComp1 = *(uint8_t*)((int)pnComponentCode + 1) == 0x20 ? 0 : *(uint8_t*)((int)pnComponentCode + 1);
-    __frame0.byComp2 = *(uint8_t*)((int)pnComponentCode + 2) == 0x20 ? 0 : *(uint8_t*)((int)pnComponentCode + 2);
-    __frame0.byMonCode0 = byCode0 == 0x20 ? 0 : byCode0;
-    __frame0.byMonCode1 = (uint8_t)((uint32_t)dwCodeChars >> 8);
-    __frame0.byMonCode1 = __frame0.byMonCode1 == 0x20 ? 0 : __frame0.byMonCode1;
-    __frame0.byMonCode2 = (uint8_t)((uint32_t)dwCodeChars >> 0x10);
-    __frame0.byMonCode2 = __frame0.byMonCode2 == 0x20 ? 0 : __frame0.byMonCode2;
-    __frame0.byToken0 = (uint8_t)dwTokenChars == 0x20 ? 0 : (uint8_t)dwTokenChars;
-    __frame0.byToken1 = (uint8_t)(dwTokenChars >> 8);
-    __frame0.byToken1 = __frame0.byToken1 == 0x20 ? 0 : __frame0.byToken1;
-    __frame0.byToken2 = (uint8_t)(dwTokenChars >> 0x10);
-    __frame0.byToken2 = __frame0.byToken2 == 0x20 ? 0 : __frame0.byToken2;
-    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutputPath, "%s\\%s\\COF\\%s%s%s.COF", "DATA\\GLOBAL\\MONSTERS", &__frame0.byMonCode0, &__frame0.byMonCode0, &__frame0.byToken0, &__frame0.byComp0);
+    szCompToken[3] = '\0';
+    szMonCode[3] = '\0';
+    szAnimToken[3] = '\0';
+    szCompToken[0] = (uint8_t)*pnComponentCode == 0x20 ? 0 : (uint8_t)*pnComponentCode;
+    szCompToken[1] = *(uint8_t*)((int)pnComponentCode + 1) == 0x20 ? 0 : *(uint8_t*)((int)pnComponentCode + 1);
+    szCompToken[2] = *(uint8_t*)((int)pnComponentCode + 2) == 0x20 ? 0 : *(uint8_t*)((int)pnComponentCode + 2);
+    szMonCode[0] = szMonStatsCode[0] == ' ' ? 0 : szMonStatsCode[0];
+    uint8_t bVar1 = (uint8_t)((uint32_t)dwCodeChars >> 8);
+    szMonCode[1] = bVar1 == 0x20 ? 0 : bVar1;
+    bVar1 = (uint8_t)((uint32_t)dwCodeChars >> 0x10);
+    szMonCode[2] = bVar1 == 0x20 ? 0 : bVar1;
+    szAnimToken[0] = (uint8_t)dwTokenChars == 0x20 ? 0 : (uint8_t)dwTokenChars;
+    bVar1 = (uint8_t)(dwTokenChars >> 8);
+    szAnimToken[1] = bVar1 == 0x20 ? 0 : bVar1;
+    bVar1 = (uint8_t)(dwTokenChars >> 0x10);
+    szAnimToken[2] = bVar1 == 0x20 ? 0 : bVar1;
+    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutputPath, "%s\\%s\\COF\\%s%s%s.COF", "DATA\\GLOBAL\\MONSTERS", szMonCode, szMonCode, szAnimToken, szCompToken);
 }
 
 void __stdcall GFX_PrecacheMonsterCofSprites(D2MonStatsTxt * pMonStatsTxt, uint32_t nModeId, int32_t bSync, short * pComponentTable) {
@@ -2342,6 +2328,7 @@ int32_t __fastcall DrawUnitShadows(D2UnitStrc * pUnit) {
 
 // @sourcefile .\ENGINE\Gfx.cpp
 BOOL __fastcall GFX_DrawUnitColoredShape(D2UnitStrc * pUnit) {
+    uint8_t uVar1;
     int32_t nWorldX;
     int32_t nDrawX;
     uint32_t nBorderType;
@@ -2414,8 +2401,8 @@ BOOL __fastcall GFX_DrawUnitColoredShape(D2UnitStrc * pUnit) {
       return 0;
     }
 
-    nBorderType = GfxInfo::GFX_GetUnitHealthBarColor(pUnit);
-    nPerspActive = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nPerspActive + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nBorderType);
+    uVar1 = GfxInfo::GFX_GetUnitHealthBarColor(pUnit);
+    nPerspActive = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nPerspActive + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)uVar1);
     nDirection = D2Common::Units::GetDirection(pUnit);
     D2Common::Units::GetShiftedFrameMetrics(pUnit, &nFrameMetricX, &nFrameMetricY);
     memset(&sGfxData, 0, 0x48);
@@ -2438,13 +2425,14 @@ BOOL __fastcall GFX_DrawUnitSelectionShape(D2UnitStrc * pUnit) {
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
+    uint8_t uVar1;
     uint8_t byLayerComponent;
     int32_t nCoord;
     int32_t nWorldOffsetVal;
     int32_t nParticleXY;
     int nParticleOffset;
     D2GfxInfoUnkStrc* pGfxInfoUnk;
-    BOOL BVar1;
+    BOOL BVar2;
     D2UnitStrc* pOwnerUnit;
     D2InventoryStrc* pInventoryUsed;
     uint8_t* pCofData;
@@ -2510,16 +2498,16 @@ BOOL __fastcall GFX_DrawUnitSelectionShape(D2UnitStrc * pUnit) {
       return 0;
     }
 
-    nCallResult = GfxInfo::GFX_GetUnitHealthBarColor(pUnit);
+    uVar1 = GfxInfo::GFX_GetUnitHealthBarColor(pUnit);
     eUnitType = pUnit->eUnitType;
     nClassId = pUnit->nClassId;
-    nHealthBarColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nHealthBarColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nCallResult);
+    nHealthBarColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nHealthBarColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)uVar1);
     nSeqMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
     D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, &eUnitType, &nClassId, &nSeqMode, ".\\ENGINE\\Gfx.cpp", 0xa2f);
     byLayerComponent = D2Common::Units::GetDirection(pUnit);
     nDirection = (uint32_t)byLayerComponent;
     D2Common::Units::GetShiftedFrameMetrics(pUnit, (int*)&nFrameMetricX, &nFrameMetricY);
-    if (!(pUnit->eUnitFlagsEx >> 3 & 1) || (BVar1 = D2Common::DATATBLS::ItemStats::ITEMSTATS_CheckUnitHasStateFlagIndex(pUnit, 0x25) , !BVar1) || (pOwnerUnit = UNIT::Player::MISSILE_GetOwnerUnit(pUnit) , !pOwnerUnit)) {
+    if (!(pUnit->eUnitFlagsEx >> 3 & 1) || (BVar2 = D2Common::DATATBLS::ItemStats::ITEMSTATS_CheckUnitHasStateFlagIndex(pUnit, 0x25) , !BVar2) || (pOwnerUnit = UNIT::Player::MISSILE_GetOwnerUnit(pUnit) , !pOwnerUnit)) {
       pInventoryUsed = pUnit->pInventory;
     } else {
       pInventoryUsed = pOwnerUnit->pInventory;

@@ -2,7 +2,7 @@
 
 #include "D2Win/Src/D2WinList.h"
 #include "D2Client/D2ControlStrc.h"
-#include "D2Glide/Renderer/Glide.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/MainMenus.h"

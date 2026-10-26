@@ -14,7 +14,6 @@ struct D2DynamicPathStrc;
 struct D2GfxInfoStrc;
 struct D2ObjectsTxt;
 struct D2RoomStrc;
-struct D2SeedStrc;
 struct D2ServerCmdStrc;
 struct D2SkillStrc;
 struct D2UnitStrc;
@@ -124,7 +123,7 @@ struct D2UnitStrc * __fastcall UNIT_CreateWarp(int32_t nUnitGUID, int32_t nClass
 struct D2UnitStrc * __fastcall UNIT_CreatePlayer(int32_t nUnitGuid, int32_t nClassId, int32_t nX, int32_t nY, char * szName);
 struct D2UnitStrc * __fastcall CreateObject(int32_t nUnitGUID, int32_t nClassId, int32_t nX, int32_t nY, eD2UnitType eUnitType, int32_t nUnused, int32_t nState, bool nInteraction);
 // Client-side monster unit creation from a network create-monster packet. 00466723 is MOV EAX,ESI immediately before the epilogue: it returns the unit it made, and 0045f40c stores that into ESI and tests it. Typed void, the created monster was thrown away and NET_D2GS_CLIENT_Incoming0xAC read an uninitialised pUnit. The SIXTH parameter is real: 00466429 is CMP dword ptr [EBP+0x14],EBX - a client-unit flag at Stack[0x10]. Omitting it made the reconstruction read it as an uninitialised local and take the wrong branch.
-struct D2UnitStrc * __fastcall UNIT_CreateMonster(struct D2CreateMonsterUnitStrc * pCreateData, struct D2SeedStrc * pItemSeed, uint8_t * pMonUModList, uint32_t nNameSeed, int16_t nBossId, int32_t bClientUnit);
+struct D2UnitStrc * __fastcall UNIT_CreateMonster(struct D2CreateMonsterUnitStrc * pCreateData, uint8_t * pItemSeed, uint8_t * pMonUModList, uint32_t nNameSeed, int16_t nBossId, int32_t bClientUnit);
 struct D2UnitStrc * __fastcall CreateMissileOrMonster(int32_t nMonstatId, int32_t nX, int32_t nY, eD2UnitType eUnitType, int32_t nItemAnimMode);
 void ROOM_SpawnPresetUnitAtCoords(struct D2RoomStrc * pRoom, int * pnParam);
 void __fastcall CreateUnitsForMissiles(struct D2RoomStrc * pRoom);

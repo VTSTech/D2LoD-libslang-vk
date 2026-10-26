@@ -18,6 +18,13 @@ typedef int eD2ItemQuality;
 typedef int eD2LevelId;
 
 // Data types
+struct D2MonEquipEntryStrc {
+    /* 0x00 */ uint32_t dwItemCode;
+    /* 0x04 */ uint8_t nBodyLoc;
+    /* 0x05 */ uint8_t nFlag;
+    /* 0x06 */ uint8_t _pad06[2];
+};
+
 union D2MonStatsExTxtSlot {
     operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
 
@@ -59,7 +66,7 @@ void __fastcall MONSTER_RollComponentAppearance(int32_t nParam, struct D2UnitStr
 // 2022.01.09 - dzik
 BOOL __fastcall CheckComponents(struct D2UnitStrc * pUnit);
 // Creates an item from a class-code entry (ppItemId) and equips it to a monster unit at the body location encoded in the entry. Allocates inventory if needed, sets ITEMFLAG_MONSTER, calls SERVER_EquipItemToBodyLoc, and initialises durability to max. Frees the item unit if equipping fails.
-void __fastcall MONSTER_CreateAndEquipItem(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t * ppItemId, int32_t nItemLevel, eD2ItemQuality eQuality);
+void __fastcall MONSTER_CreateAndEquipItem(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2MonEquipEntryStrc * ppItemId, int32_t nItemLevel, eD2ItemQuality eQuality);
 // Force-kills all living, non-boss, neutral-alignment monsters of class nAltMonClassId or nAltMonClassId2 in the specified level (or all rooms of the act if eLevel==LEVEL_None). For each match, sets the Death skill and executes the lifecycle transition via MONSTERAI_ExecuteLifecycleTransition.
 void __fastcall MONSTER_KillAllInLevel(::SGAMEDATA * pGame, int32_t nAltMonClassId, int32_t nAltMonClassId2, eD2LevelId eLevel);
 // Server-side: fully initializes a spawned monster's stats/skills/inventory. Bails unless pUnit is a valid UNIT_MONSTER with MonStats/MonStatsEx records. Rolls component appearance, applies act-boss name bytes (classId 0x137/0x138), computes level/difficulty scaling (player-count multipliers), then SETs resistances, block, attack/velocity/animrate, HP (rolled min..max + player% bonus, capped 0x7FFFFF, x256), armorclass, experience and HP-regen via STATLIST_SetUnitStat. Applies difficulty scaling, attaches a second stat list, creates player or NPC inventory, builds the skills list (8 skills from MonStatsEx with level bonus + mode), sets CANBEATTACKED/PETIGNORE flags, rolls up-to-6 random monster properties (MonProp txt, per-difficulty chance), and equips summon items. Halts on bad HP-regen value.

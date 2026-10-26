@@ -7,11 +7,13 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "Storm/Source/SFile.h"
 #include "Storm/Source/SSComp.h"
+#include "Storm/Source/SSystem.h"
 
 // Forward declarations
 struct D2MPQFileStrc;
+struct D2StormAudioStreamRec;
+struct IDirectSoundBuffer;
 struct D2StormAsyncCompletionStrc;
 #ifndef RECON_FPTD_fnStormAsyncCompletion
 #define RECON_FPTD_fnStormAsyncCompletion

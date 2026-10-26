@@ -1673,42 +1673,42 @@ D2UIFlagInitStrc g_UIFlagInitDrawPanel1[2] = {
 D2UIFlagDescStrc * gUIFlagDismissModeTable[38] = {
     gaUIFlagDescsClient,
     gaUIFlagDescs,
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[1].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[2].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[3].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[4].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[5].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[6].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[7].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[18].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[8].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[9].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[10].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[11].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[12].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[13].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[14].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[15].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[16].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescsClient[1].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[17].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[22].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[23].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[24].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[25].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[26].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[27].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[28].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[29].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[30].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[31].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[32].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[33].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[34].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[35].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescsClient[2].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[36].aHeader[0],
-    (D2UIFlagDescStrc*)&gaUIFlagDescs[37].aHeader[0]
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[1].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[2].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[3].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[4].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[5].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[6].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[7].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[18].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[8].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[9].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[10].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[11].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[12].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[13].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[14].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[15].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[16].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescsClient[1].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[17].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[22].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[23].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[24].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[25].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[26].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[27].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[28].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[29].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[30].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[31].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[32].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[33].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[34].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[35].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescsClient[2].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[36].anDismissMode[0],
+    (D2UIFlagDescStrc*)&gaUIFlagDescs[37].anDismissMode[0]
 };
 
 char s___AUTALLOCREC___00711480[16] = {
@@ -3085,7 +3085,8 @@ D2EscMenuHeaderStrc gEscMenuHeaderInitData = {
     /* .nItemCount = */ 0x3,
     /* .nVerticalSpacing = */ 0x32,
     /* .nRowHeight = */ 0x27,
-    /* .nStarOffset = */ 0x33
+    /* .nStarOffset = */ 0x33,
+    /* .nBarYOffset = */ 0x0
 };
 
 D2EscMenuUIFlagStrc gaEscMenuUIFlags[38] = {
@@ -7260,14 +7261,16 @@ D2EscMenuHeaderStrc gaEscMenuHeaderOptions = {
     /* .nItemCount = */ 0x5,
     /* .nVerticalSpacing = */ 0x32,
     /* .nRowHeight = */ 0x27,
-    /* .nStarOffset = */ 0x33
+    /* .nStarOffset = */ 0x33,
+    /* .nBarYOffset = */ 0x0
 };
 
 D2EscMenuHeaderStrc gaEscMenuHeaderSaveExit = {
     /* .nItemCount = */ 0x8,
     /* .nVerticalSpacing = */ 0x2d,
     /* .nRowHeight = */ 0x22,
-    /* .nStarOffset = */ 0x31
+    /* .nStarOffset = */ 0x31,
+    /* .nBarYOffset = */ 0x24
 };
 
 D2EscMenuItemStrc gaEscMenuOptionsTable[5] = {
@@ -24492,28 +24495,32 @@ D2EscMenuHeaderStrc gaEscMenuHeaderSwitchClass = {
     /* .nItemCount = */ 0x7,
     /* .nVerticalSpacing = */ 0x2d,
     /* .nRowHeight = */ 0x22,
-    /* .nStarOffset = */ 0x31
+    /* .nStarOffset = */ 0x31,
+    /* .nBarYOffset = */ 0x24
 };
 
 D2EscMenuHeaderStrc gaEscMenuHeaderDeleteChar = {
     /* .nItemCount = */ 0x8,
     /* .nVerticalSpacing = */ 0x2d,
     /* .nRowHeight = */ 0x22,
-    /* .nStarOffset = */ 0x31
+    /* .nStarOffset = */ 0x31,
+    /* .nBarYOffset = */ 0x24
 };
 
 D2EscMenuHeaderStrc gaEscMenuHeaderExpansionOptions = {
     /* .nItemCount = */ 0x6,
     /* .nVerticalSpacing = */ 0x2d,
     /* .nRowHeight = */ 0x22,
-    /* .nStarOffset = */ 0x31
+    /* .nStarOffset = */ 0x31,
+    /* .nBarYOffset = */ 0x24
 };
 
 D2EscMenuHeaderStrc gaEscMenuHeaderExpansionSaveExit = {
     /* .nItemCount = */ 0x7,
     /* .nVerticalSpacing = */ 0x2d,
     /* .nRowHeight = */ 0x22,
-    /* .nStarOffset = */ 0x31
+    /* .nStarOffset = */ 0x31,
+    /* .nBarYOffset = */ 0x24
 };
 
 D2EscMenuItemStrc gaEscMenuClassicSaveExitTable[6] = {
@@ -41744,35 +41751,35 @@ D2CutsceneDescStrc gdwSoundHeaderCacheIndex[8] = {
     },
     {
         /* .nCutsceneId = */ 0x1,
-        /* .pszVideoPath = */ (char*)&DAT_006d919c,
+        /* .pszVideoPath = */ s_d2intro_s_bik_006d919c,
         /* .bHasAltSoundPath = */ 0x1,
         /* .bCharacterAnimationPlayed = */ 0x1,
         /* .pad = */ { 0x0, 0x0 }
     },
     {
         /* .nCutsceneId = */ 0x2,
-        /* .pszVideoPath = */ (char*)&DAT_006d9188,
+        /* .pszVideoPath = */ s_ACT02START_s_BIK_006d9188,
         /* .bHasAltSoundPath = */ 0x1,
         /* .bCharacterAnimationPlayed = */ 0x1,
         /* .pad = */ { 0x0, 0x0 }
     },
     {
         /* .nCutsceneId = */ 0x3,
-        /* .pszVideoPath = */ (char*)&DAT_006d9174,
+        /* .pszVideoPath = */ s_ACT03START_s_BIK_006d9174,
         /* .bHasAltSoundPath = */ 0x1,
         /* .bCharacterAnimationPlayed = */ 0x1,
         /* .pad = */ { 0x0, 0x0 }
     },
     {
         /* .nCutsceneId = */ 0x4,
-        /* .pszVideoPath = */ (char*)&DAT_006d9160,
+        /* .pszVideoPath = */ s_ACT04START_s_BIK_006d9160,
         /* .bHasAltSoundPath = */ 0x1,
         /* .bCharacterAnimationPlayed = */ 0x1,
         /* .pad = */ { 0x0, 0x0 }
     },
     {
         /* .nCutsceneId = */ 0x5,
-        /* .pszVideoPath = */ (char*)&DAT_006d9150,
+        /* .pszVideoPath = */ s_ACT04END_s_BIK_006d9150,
         /* .bHasAltSoundPath = */ 0x1,
         /* .bCharacterAnimationPlayed = */ 0x1,
         /* .pad = */ { 0x0, 0x0 }
@@ -41786,7 +41793,7 @@ D2CutsceneDescStrc gdwSoundHeaderCacheIndex[8] = {
     },
     {
         /* .nCutsceneId = */ 0x7,
-        /* .pszVideoPath = */ (char*)&DAT_006d912c,
+        /* .pszVideoPath = */ s_D2X_OUT__s_BIK_006d912c,
         /* .bHasAltSoundPath = */ 0x1,
         /* .bCharacterAnimationPlayed = */ 0x1,
         /* .pad = */ { 0x0, 0x0 }
@@ -45072,6 +45079,11 @@ D2ExitCutsceneState gExitCutsceneState = {
     /* ._pad0 = */ { 0, 0, 0 }
 };
 
+D2ClientTimerStrc gLoadTimerDurationMs = {
+    /* .dwStartTick = */ 0,
+    /* .dwDurationMs = */ 0
+};
+
 HACCEL gbLanguageDllLoaded = nullptr;
 
 char lpLibFileName_007a0710[260] = {
@@ -48345,6 +48357,14 @@ D2GameRecordStrc gsGameRecordContext = {
     /* .pNext = */ nullptr
 };
 
+D2GameRecordFileHeaderStrc lpBuffer_007a2768 = {
+    /* .nVersion = */ 0,
+    /* .nBlockCount = */ 0,
+    /* .nLastBlockEntries = */ 0,
+    /* .nStepCount = */ 0,
+    /* .dwSeed = */ 0
+};
+
 D2UIFlagStrc GFX_bShowUIFlag = {
     /* .Game = */ 0,
     /* .Inventory = */ 0,
@@ -48388,120 +48408,7 @@ D2UIFlagStrc GFX_bShowUIFlag = {
 
 D2UIFlagDescStrc gaUIFlagDescsClient[3] = {
     {
-        /* .aHeader = */ {
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-        },
-        /* .nDismissMode = */ 0,
-        /* .aTail = */ {
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+        /* .anDismissMode = */ {
             0,
             0,
             0,
@@ -48543,120 +48450,7 @@ D2UIFlagDescStrc gaUIFlagDescsClient[3] = {
         }
     },
     {
-        /* .aHeader = */ {
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-        },
-        /* .nDismissMode = */ 0,
-        /* .aTail = */ {
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+        /* .anDismissMode = */ {
             0,
             0,
             0,
@@ -48698,120 +48492,7 @@ D2UIFlagDescStrc gaUIFlagDescsClient[3] = {
         }
     },
     {
-        /* .aHeader = */ {
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-        },
-        /* .nDismissMode = */ 0,
-        /* .aTail = */ {
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
+        /* .anDismissMode = */ {
             0,
             0,
             0,
@@ -61982,7 +61663,8 @@ uint32_t gaLightmapInterpBuffer[4096] = {
     0
 };
 
-uint32_t gnLightmapInterpolationState[256] = {
+uint32_t gnLightmapInterpolationState[257] = {
+    0,
     0,
     0,
     0,
@@ -100095,6 +99777,21 @@ RECT gnTextBoxExclusionLeft[16] = {
     }
 };
 
+D2ScreenMessageListStrc ScreenMessagesMaybe = {
+    /* .pHead = */ nullptr,
+    /* .nCount = */ 0
+};
+
+D2ScreenMessageListStrc ScreenPartyMessages = {
+    /* .pHead = */ nullptr,
+    /* .nCount = */ 0
+};
+
+D2ScreenMessageListStrc AllMessagesMaybe = {
+    /* .pHead = */ nullptr,
+    /* .nCount = */ 0
+};
+
 RECT lprcTextOverheadRect = {
     /* .left = */ 0,
     /* .top = */ 0,
@@ -110400,8 +110097,6 @@ BOOL D2CLIENT_ExitVar2 = 0;
 uint32_t gnCameraWorldDeltaX = 0;
 uint32_t gnCameraWorldDeltaY = 0;
 uint32_t gbMinimapClickValid = 0;
-int gLoadTimerDurationMs = 0;
-int gLoadTimerStartTick = 0;
 HMODULE ghLngLibrary = 0;
 uint32_t gdwQuestResurrectDismissThrottle = 0;
 DC6 * DC6_EnteredAreaName = 0;
@@ -110687,11 +110382,6 @@ uint32_t gbTextScrollBoxActive = 0;
 uint32_t gbTextStaticPopupActive = 0;
 uint32_t gpTextStaticPopupBox = 0;
 int gaTextStaticPopupRect = 0;
-ScreenMessage_t * ScreenMessagesMaybe = 0;
-uint16_t gnTextChatMessageCount = 0;
-ScreenMessage_t * ScreenPartyMessages = 0;
-uint16_t gnTextPartyMessageCount = 0;
-ScreenMessage_t * AllMessagesMaybe = 0;
 uint32_t gnTextDisplayMode = 0;
 uint32_t gbTextScrollBoxVisible = 0;
 uint32_t gnTextNpcGuid = 0;

@@ -334,12 +334,11 @@ __attribute__((noinline)) int32_t __stdcall GetInstructionPointer() {
 
 // Formats debug output with optional timestamp and outputs to debugger/log. Supports flags: 0x04=prepend timestamp (HH:MM:SS.mmm format via GetLocalTime), 0x02=skip OutputDebugStringA, 0x01=write to LOG category via LogManager, 0x18=check CapsLock state. Uses a 4096-byte buffer for vsnprintf formatting with varargs, appending formatted text after timestamp if present.
 void __stdcall FormatDebugOutput(uint8_t bFlags, va_list vaArgs, char * szText) {
-    SYSTEMTIME sLocalTime;
-    char szOutputBuffer[4095];
+    char szOutputBuffer[4096];
     char cCurrent;
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     szOutputBuffer[0] = '\0';
     if (bFlags & 4) {
+      SYSTEMTIME sLocalTime;
       /* LPSYSTEMTIME lpSystemTime for GetLocalTime */ GetLocalTime(&sLocalTime);
       __snprintf(szOutputBuffer, 0x1000, "%02d:%02d:%02d.%03d    ", (uint32_t)sLocalTime.wHour, (uint32_t)sLocalTime.wMinute, (uint32_t)sLocalTime.wSecond, (uint32_t)sLocalTime.wMilliseconds);
     }
@@ -347,7 +346,7 @@ void __stdcall FormatDebugOutput(uint8_t bFlags, va_list vaArgs, char * szText) 
     char* pScan = szOutputBuffer;
     pScan = pScan + strlen(pScan) + 1;
     __vsnprintf(szOutputBuffer + ((int)pScan - (int)(szOutputBuffer + 1)), 0x1000 - ((int)pScan - (int)(szOutputBuffer + 1)), szText, vaArgs);
-    uint8_t byNullTerm = 0;
+    szOutputBuffer[0xfff] = '\0';
     if (!(bFlags & 2)) {
       /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA(szOutputBuffer);
     }
@@ -409,7 +408,7 @@ void __stdcall FormatDebugOutputLogOnly(char * szText, char firstArg) {
 // the pfnFogExceptionFilter slot's 2.
 // Returns int 2 ('mov eax,2' at 00408637, before the only RET at 00408657); the dispatcher
 // compares that EAX at 00403f28 and 00403f2f, matching the pfnFogExceptionFilter slot.
-int __fastcall DumpLog(void * pCrashInfo, void * pUserContext) {
+int __fastcall DumpLog(D2CrashReportStrc * pCrashInfo, void * pUserContext) {
     // Static local variables (originally global data)
     static int32_t lpAddend_007076b8 = -0x1;
 
@@ -424,7 +423,7 @@ int __fastcall DumpLog(void * pCrashInfo, void * pUserContext) {
     void* pPrevSehFrame = ExceptionList;
     uint32_t nAttachIndex = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     ExceptionList = &pPrevSehFrame;
-    void* pExceptionContext = *(void**)(*(int*)((int)pCrashInfo + 0x18) + 4);
+    void* pExceptionContext = pCrashInfo->pExceptionPointers->ContextRecord;
     LONG nRecursionGuard = InterlockedIncrement((LONG*)&lpAddend_007076b8);
     uint32_t dwDumpFlags = 0;
     if (!nRecursionGuard) {
@@ -434,46 +433,46 @@ int __fastcall DumpLog(void * pCrashInfo, void * pUserContext) {
       iVar1 = _3rdparty::crashy::Open(&crashFile, "Crash.txt");
       if (iVar1 != '\0') {
         WriteCrashReportProcessInfo(&crashFile);
-        _3rdparty::crashy::Printf(&crashFile, "<Inspector.Summary:>\n%s", *(uint32_t*)pCrashInfo, nAttachIndex);
-        if (**(char**)((int)pCrashInfo + 4) != '\0') {
-          _3rdparty::crashy::Printf(&crashFile, " (%s)", *(char**)((int)pCrashInfo + 4));
+        _3rdparty::crashy::Printf(&crashFile, "<Inspector.Summary:>\n%s", pCrashInfo->pszExceptionName, nAttachIndex);
+        if (*pCrashInfo->pszMessage != '\0') {
+          _3rdparty::crashy::Printf(&crashFile, " (%s)", pCrashInfo->pszMessage);
         }
 
         _3rdparty::crashy::Printf(&crashFile, "\n<:Inspector.Summary>\n");
         _3rdparty::crashy::Printf(&crashFile, "<Inspector.Assertion:>\n");
-        if (!pExceptionContext && !*(int*)((int)pCrashInfo + 8)) {
-          dwDumpFlags = *(uint32_t*)((int)pCrashInfo + 0x10);
+        if (!pExceptionContext && !pCrashInfo->apFrameAddrs) {
+          dwDumpFlags = pCrashInfo->nSkipFrames;
           dwThreadId = _3rdparty::crashy::GetCurrentThreadId();
-          if (*(DWORD*)((int)pCrashInfo + 0x14) == dwThreadId) {
+          if (pCrashInfo->dwThreadId == dwThreadId) {
             dwDumpFlags += 2;
           }
         }
-        if (!*(void***)((int)pCrashInfo + 8)) {
-          File::CRASH_DumpThreadContext(*(DWORD*)((int)pCrashInfo + 0x14), pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\x01', dwDumpFlags);
+        if (!(D2CrashFrameStrc*)pCrashInfo->apFrameAddrs) {
+          File::CRASH_DumpThreadContext(pCrashInfo->dwThreadId, pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\x01', dwDumpFlags);
         } else {
-          File::CRASH_FormatStackTrace(*(DWORD*)((int)pCrashInfo + 0x14), *(void***)((int)pCrashInfo + 8), *(int32_t*)((int)pCrashInfo + 0xc), FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\x01');
+          File::CRASH_FormatStackTrace(pCrashInfo->dwThreadId, (D2CrashFrameStrc*)pCrashInfo->apFrameAddrs, pCrashInfo->nNumFrames, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\x01');
         }
 
         _3rdparty::crashy::Printf(&crashFile, "<:Inspector.Assertion>\n");
         _3rdparty::crashy::Printf(&crashFile, "Registers:\n");
-        File::CRASH_DumpRegisters(*(DWORD*)((int)pCrashInfo + 0x14), FILETOOLS_WriteOneStringToFile, &crashFile);
+        File::CRASH_DumpRegisters(pCrashInfo->dwThreadId, FILETOOLS_WriteOneStringToFile, &crashFile);
         _3rdparty::crashy::Printf(&crashFile, "Threads:\n");
-        File::CRASH_EnumerateThreads(FILETOOLS_WriteOneStringToFile, &crashFile, *(DWORD*)((int)pCrashInfo + 0x14));
+        File::CRASH_EnumerateThreads(FILETOOLS_WriteOneStringToFile, &crashFile, pCrashInfo->dwThreadId);
         _3rdparty::crashy::Printf(&crashFile, "<Inspector.DebugModules:>\n");
         Debug::EnumerateAndDumpAllFunctions(FILETOOLS_WriteOneStringToFile, &crashFile);
         _3rdparty::crashy::Printf(&crashFile, "<:Inspector.DebugModules>\n");
         _3rdparty::crashy::Printf(&crashFile, "<Inspector.HashBlock:>\n");
         _3rdparty::crashy::Printf(&crashFile, "[JOIN]  SrvRecvDatabaseCharacter: Didn\'t recv full char from db - CSResult(%d), ClientID(%d)");
-        if (!*(void***)((int)pCrashInfo + 8)) {
-          File::CRASH_DumpThreadContext(*(DWORD*)((int)pCrashInfo + 0x14), pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\0', dwDumpFlags);
+        if (!(D2CrashFrameStrc*)pCrashInfo->apFrameAddrs) {
+          File::CRASH_DumpThreadContext(pCrashInfo->dwThreadId, pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\0', dwDumpFlags);
         } else {
-          File::CRASH_FormatStackTrace(*(DWORD*)((int)pCrashInfo + 0x14), *(void***)((int)pCrashInfo + 8), *(int32_t*)((int)pCrashInfo + 0xc), FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\0');
+          File::CRASH_FormatStackTrace(pCrashInfo->dwThreadId, (D2CrashFrameStrc*)pCrashInfo->apFrameAddrs, pCrashInfo->nNumFrames, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\0');
         }
 
         _3rdparty::crashy::Printf(&crashFile, "DBG-OPTIONS<>\n");
         Storm::Source::SSTR::SStrCopy(gszCrashReportProcessPath, crashFile.szReportDir, 0x800);
         Storm::Source::SSTR::SStrPack(gszCrashReportProcessPath, "/Minidump.dmp", 0x800);
-        bMinidumpCreated = Debug::CrashDumpWriterThread(gszCrashReportProcessPath, (uint32_t)"", *(uint32_t*)((int)pCrashInfo + 0x18), 0);
+        bMinidumpCreated = Debug::CrashDumpWriterThread(gszCrashReportProcessPath, "", pCrashInfo->pExceptionPointers, 0);
         if (bMinidumpCreated) {
           _3rdparty::crashy::AddAttachment(&crashFile, gszCrashReportProcessPath, '\0');
         }
@@ -721,10 +720,9 @@ void ERROR_UnrecoverableInternalError_Any(eFOG_ErrorType eErrorType, uint32_t dw
 void __stdcall ShowUnrecoverableErrorDialog(int32_t nParam, char * szText, int nLine, char * szSourceFile, va_list vaArgs, DWORD dwParam) {
     char* szRelativePath2;
     char* pScan;
-    char szMessageBoxBuffer[4095];
-    char szLocationBuffer;
+    char szMessageBoxBuffer[4096];
     char szFinalErrorMessage[4096];
-    char szFormattedMessageBuffer[4095];
+    char szFormattedMessageBuffer[4096];
     char szTitleBuffer[256];
     int nCopyIdx;
     if (szText) {
@@ -743,7 +741,7 @@ void __stdcall ShowUnrecoverableErrorDialog(int32_t nParam, char * szText, int n
     }
 
     __vsnprintf(szFormattedMessageBuffer, 0x1000, szSourceFile, vaArgs);
-    uint8_t byNullTerm = 0;
+    szFormattedMessageBuffer[0xfff] = '\0';
     if (!szText) {
       nCopyIdx = 0;
       do {

@@ -1999,33 +1999,21 @@ void __fastcall SKILLS_CreateMissileScatter(D2UnitStrc * pUnit, D2SkillArgStrc *
 }
 
 BOOL __fastcall CLIENT_HandleUnitMessage0x16(D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit) {
-    // Frame slots -32..-4 are ONE object: &nMsgHandle is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int32_t nMsgHandle;
-      int32_t nAnimMode;
-      int32_t nMsgAnimMode;
-      int32_t nUnitGUID;
-      int32_t nMsgField4;
-      int32_t nMsgField5;
-      int32_t nResult;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 28, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.nMsgField5 = 0;
-    __frame0.nResult = 0;
-    __frame0.nMsgHandle = 0;
-    __frame0.nAnimMode = -1;
+    D2ServerMessageHandleStrc nMsgHandle;
+    nMsgHandle.nMaxDistance = 0;
+    nMsgHandle.nTargetX = 0;
+    nMsgHandle.nSkillId = 0;
+    nMsgHandle.nItemId = -1;
+    nMsgHandle.nTargetUnitType = UNIT_COUNT;
     if (!pTargetUnit) {
-      __frame0.nUnitGUID = -1;
+      nMsgHandle.nTargetUnitId = -1;
     } else {
-      __frame0.nMsgAnimMode = UNIT_COUNT;
-      __frame0.nMsgAnimMode = pTargetUnit->eUnitType;
-      __frame0.nUnitGUID = pTargetUnit->nUnitGUID;
+      nMsgHandle.nTargetUnitType = pTargetUnit->eUnitType;
+      nMsgHandle.nTargetUnitId = pTargetUnit->nUnitGUID;
     }
 
-    __frame0.nMsgField4 = 1;
-    UNIT::UnitMode::HandleMessage(0x16, pUnit, (D2ServerMessageHandleStrc*)&__frame0.nMsgHandle, 1);
+    nMsgHandle.nSkillLvl = 1;
+    UNIT::UnitMode::HandleMessage(0x16, pUnit, &nMsgHandle, 1);
     return 1;
 }
 

@@ -51,7 +51,7 @@ struct __attribute__((packed)) D2QuestLogStrc {
     /* 0x004 */ uint32_t dwUnused04; // no references
     /* 0x008 */ uint32_t nQuestLogQuestCount;
     /* 0x00C */ int MonstersleftInDenOfEvil;
-    /* 0x010 */ uint32_t nQuestLogSpecialState;
+    /* 0x010 */ int32_t nQuestLogSpecialState;
     /* 0x014 */ uint32_t pQuestLogData;
     /* 0x018 */ uint8_t bQuestLogWindowOpen;
     /* 0x019 */ uint8_t bQuestLogIconPressed;

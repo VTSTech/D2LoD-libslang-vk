@@ -118,18 +118,19 @@ void __fastcall DRAW_DrawWallTileWithLighting(int32_t nTileDataPtr, int32_t nScr
 }
 
 // Stack-slot reuse: with perspective on, the low byte of the pCoords slot caches the first byte read through pCoords (tested against 0xf8).
-void __fastcall fpDrawWallTile(int32_t pTileData, int32_t nScreenX, int32_t nScreenY, int32_t pCoords) {
+void __fastcall fpDrawWallTile(uint8_t * pTileData, int32_t nScreenX, int32_t nScreenY, uint8_t * pCoords) {
     uint8_t* pDst;
+    int32_t nCoords;
     if (gbPerspectiveRenderEnabled) {
       uint8_t bVar1;
-      bVar1 = *(uint8_t*)pCoords;
-      pCoords = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&pCoords + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)bVar1);
+      bVar1 = *pCoords;
+      nCoords = (int32_t)(uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&pCoords + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)bVar1);
       if ((bVar1 & 0xf8) == 0xf8) {
-        fpDrawVisTile((uint8_t*)pTileData, nScreenX, nScreenY);
+        fpDrawVisTile(pTileData, nScreenX, nScreenY);
         return;
       }
 
-      DRAW_DrawWallTileWithLighting(pTileData, nScreenX, nScreenY, pCoords);
+      DRAW_DrawWallTileWithLighting((int32_t)pTileData, nScreenX, nScreenY, nCoords);
       return;
     }
 
@@ -161,20 +162,20 @@ void __fastcall fpDrawWallTile(int32_t pTileData, int32_t nScreenX, int32_t nScr
 
         pDst = (uint8_t*)(gaYBufferRowOffsets[nScreenY + 0x20] + pRenderSurfaceBuffer + nScreenX);
         if (gnTileInnerClipYMinRow <= nScreenY && nScreenY < gnTileInnerClipYMax && gnTileInnerClipXMax_b <= nScreenX && nScreenX < gnTileClipXMax) {
-          D2gfx::D2GFX::D2GFX_DrawWallTileWithPerspective((uint8_t*)pTileData, pDst, nLightShifted, nDeltaX1, nLightY << 5, nDeltaY1, 0x20, 8);
+          D2gfx::D2GFX::D2GFX_DrawWallTileWithPerspective(pTileData, pDst, nLightShifted, nDeltaX1, nLightY << 5, nDeltaY1, 0x20, 8);
           return;
         }
 
-        D2GFX::D2GFX_DrawGroundTileWithPerspective(nScreenX, nScreenY, (uint8_t*)pTileData, (int32_t)pDst, nLightShifted, nDeltaX1, nLightY << 5, nDeltaY1, 0x20, 8);
+        D2GFX::D2GFX_DrawGroundTileWithPerspective(nScreenX, nScreenY, pTileData, (int32_t)pDst, nLightShifted, nDeltaX1, nLightY << 5, nDeltaY1, 0x20, 8);
         return;
       }
     } else {
       if ((nLightShifted & -256) == 0x1f00) {
-        fpDrawVisTile((uint8_t*)pTileData, nScreenX, nScreenY);
+        fpDrawVisTile(pTileData, nScreenX, nScreenY);
         return;
       }
 
-      DRAW_DrawWallTileWithLighting(pTileData, nScreenX, nScreenY, (uint32_t)*(uint8_t*)pCoords);
+      DRAW_DrawWallTileWithLighting((int32_t)pTileData, nScreenX, nScreenY, (uint32_t)*pCoords);
     }
 }
 
@@ -288,7 +289,7 @@ void __fastcall fpDrawBlendedVisTile(uint8_t * pTileData, int32_t nScreenX, int3
     } while (nScreenY < 0x20);
 }
 
-void __fastcall fpDrawRoofTile(uint8_t * pTileData, int32_t nScreenX, int32_t nScreenY, int32_t pCoords, int32_t nLightVal) {
+void __fastcall fpDrawRoofTile(uint8_t * pTileData, int32_t nScreenX, int32_t nScreenY, int * pCoords, int32_t nLightVal) {
     uint8_t* pbLineBuf;
     uint8_t* pbRunEnd;
     uint8_t* nBlendTableBase;
@@ -313,10 +314,10 @@ void __fastcall fpDrawRoofTile(uint8_t * pTileData, int32_t nScreenX, int32_t nS
       nBlendTableBase = *gpPaletteBlendLookupTable;
     }
 
-    int nDeltaX = *(int*)(pCoords + 0xc) - *(int*)pCoords;
-    int nDeltaY = *(int*)(pCoords + 8) - *(int*)(pCoords + 4);
-    int nLightX = *(int*)pCoords << 5;
-    int nLightY = *(int*)(pCoords + 4) << 5;
+    int nDeltaX = pCoords[3] - *pCoords;
+    int nDeltaY = pCoords[2] - pCoords[1];
+    int* nLightX = (int*)(*pCoords << 5);
+    int nLightY = pCoords[1] << 5;
     if (!(gnMinTileDrawY <= nScreenY && nScreenY < gnTileClipYMin && gnTileInnerClipXMin <= nScreenX && nScreenX < gnTileInnerClipYMin)) {
       return;
     }
@@ -326,7 +327,7 @@ void __fastcall fpDrawRoofTile(uint8_t * pTileData, int32_t nScreenX, int32_t nS
     }
 
     uint8_t* pRowDst = (uint8_t*)(gaYBufferRowOffsets[nScreenY + 0x20] + pRenderSurfaceBuffer + nScreenX);
-    uint8_t (*pbLineEnd)[32] = gpLineBufferTileArray[nLightX >> 8] + (nLightY >> 8);
+    uint8_t (*pbLineEnd)[32] = gpLineBufferTileArray[(int)nLightX >> 8] + (nLightY >> 8);
     pCoords = nLightX;
     uint8_t* pLightVal = pRowDst;
     if (gnTileInnerClipYMinRow <= nScreenY && nScreenY < gnTileInnerClipYMax && gnTileInnerClipXMax_b <= nScreenX && nScreenX < gnTileClipXMax) {
@@ -337,11 +338,11 @@ void __fastcall fpDrawRoofTile(uint8_t * pTileData, int32_t nScreenX, int32_t nS
         pbRunEnd = pTileData + 1;
         pTileData += 2;
         if (!nSkip && !*pbRunEnd) {
-          nLightX += nDeltaX;
+          nLightX = (int*)((int)nLightX + nDeltaX);
           nLightY += nDeltaY;
           pRowDst += gRenderBufferPitch;
           nScreenY--;
-          pbLineEnd = gpLineBufferTileArray[nLightX >> 8] + (nLightY >> 8);
+          pbLineEnd = gpLineBufferTileArray[(int)nLightX >> 8] + (nLightY >> 8);
           pDst = pRowDst;
           pCoords = nLightX;
           pLightVal = pRowDst;
@@ -373,8 +374,8 @@ void __fastcall fpDrawRoofTile(uint8_t * pTileData, int32_t nScreenX, int32_t nS
         pRowNext = pRowDst + gRenderBufferPitch;
         nRowIdx++;
         nScreenY++;
-        pCoords += nDeltaX;
-        pbLineEnd = gpLineBufferTileArray[pCoords >> 8] + (nLightY >> 8);
+        pCoords = (int*)((int)pCoords + nDeltaX);
+        pbLineEnd = gpLineBufferTileArray[(int)pCoords >> 8] + (nLightY >> 8);
         pTileData = pbRunEnd;
         pRowDst = pRowNext;
         pLightVal = pRowNext;

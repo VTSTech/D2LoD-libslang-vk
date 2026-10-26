@@ -16,6 +16,14 @@ struct D2QuestDataStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
 
+// Data types
+struct __attribute__((packed)) D2GSPacketSrv0x53 {
+    /* 0x00 */ uint8_t nHeader; // 0x53
+    /* 0x01 */ int32_t nCycleIndex; // day/night time index, 0-5
+    /* 0x05 */ int32_t nTicks; // ticks into the current cycle
+    /* 0x09 */ uint8_t bEclipse; // eclipse flag
+};
+
 namespace D2Game::Quests::QUESTS::A2Q3 {
 
 // Function declarations

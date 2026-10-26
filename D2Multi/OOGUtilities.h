@@ -21,6 +21,15 @@ struct D2WinButton;
 struct D2WinSmack;
 
 // Data types
+struct __attribute__((packed)) D2LanGameEntryStrc {
+    /* 0x00 */ uint8_t field_0x0;
+    /* 0x01 */ char szGameName[16];
+    /* 0x11 */ char szGameDesc[34];
+    /* 0x33 */ uint16_t nPort;
+    /* 0x35 */ uint8_t field_0x35[2];
+    /* 0x37 */ uint32_t dwIpAddress;
+};
+
 struct D2LobbyControlsStrc {
     /* 0x00 */ struct D2ControlStrc * pLobbyForm0;
     /* 0x04 */ struct D2ControlStrc * pLobbyForm1;

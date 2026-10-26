@@ -4,6 +4,7 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2ClientStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/Seed.h"
 #include "D2Client/Sound/Sound.h"
@@ -27,7 +28,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinPalette.h"
@@ -644,7 +644,7 @@ void WEATHER_SpawnParticle(D2SeedStrc * pSeed) {
       *pSeed = D2_SEED_NEXT(*pSeed);
       pParticleArray[nParticleSlotIndex].nFadeCountdown = 1;
       nLineIndex = pParticleArray[nParticleSlotIndex].nMaxY;
-      *(int*)&pParticleArray[nParticleSlotIndex].nSpeedLo = 8 - (int)(fVar1 * -28.0);
+      pParticleArray[nParticleSlotIndex].nSpeed = 8 - (int)(fVar1 * -28.0);
       nLineIndex = (nLineIndex - 0x28) * 7 / (ScreenSizeY - 0x57);
       bIsBlizzard = gnWeatherAct5ParticleCount != 0;
       pParticleArray[nParticleSlotIndex].nLineIndex = nLineIndex;
@@ -683,7 +683,7 @@ void WEATHER_SpawnParticle(D2SeedStrc * pSeed) {
     }
 
     pParticleArray[nParticleSlotIndex].nLineIndex = 4 - (int)(fVar1 * -8.0);
-    *(int*)&pParticleArray[nParticleSlotIndex].nSpeedLo = 0xf - (int)(fVar1 * -15.0);
+    pParticleArray[nParticleSlotIndex].nSpeed = 0xf - (int)(fVar1 * -15.0);
     pParticleArray[nParticleSlotIndex].nFadeCountdown = 3;
 }
 
@@ -691,7 +691,7 @@ void __stdcall WEATHER_UpdateParticles(D2SeedStrc * pSeed) {
     // Static local variables (originally global data)
     static uint32_t gnWeatherParticleSinPhase;
 
-    int nXDrift;
+    float fVar1;
     float fVar2;
     float fDepthFactor;
     if (!nWeatherParticleCountAct5) {
@@ -707,15 +707,14 @@ void __stdcall WEATHER_UpdateParticles(D2SeedStrc * pSeed) {
     int nIndex = 0;
     D2WeatherParticleStrc* pParticleData = (D2WeatherParticleStrc*)pEnvironmentParticles->pData;
     if (-1 < pEnvironmentParticles->nHighestUsedIndex) {
-      int iVar1;
+      int nXDrift;
       do {
         if (pParticleData->nFlags) {
-          *(uint16_t*)(char*)&iVar1 = pParticleData->nSpeedLo;
-          *(uint16_t*)((char*)&iVar1 + 2) = pParticleData->nSpeedHi;
-          fVar2 = Fog::MATH_sinTable_f32_LookupOffset(gnWeatherParticleOffsetYModulo);
-          nXDrift = (int)(fVar2 * (float)(int)((float)iVar1 * fDepthFactor));
-          fVar2 = Fog::MATH_sinTable_f32_Lookup(gnWeatherParticleOffsetYModulo);
-          pParticleData->nPosY += (int)(fVar2 * (float)(int)((float)iVar1 * fDepthFactor)) - gnCameraWorldDeltaY;
+          fVar2 = (float)(int)((float)pParticleData->nSpeed * fDepthFactor);
+          fVar1 = Fog::MATH_sinTable_f32_LookupOffset(gnWeatherParticleOffsetYModulo);
+          nXDrift = (int)(fVar1 * fVar2);
+          fVar1 = Fog::MATH_sinTable_f32_Lookup(gnWeatherParticleOffsetYModulo);
+          pParticleData->nPosY += (int)(fVar1 * fVar2) - gnCameraWorldDeltaY;
           if (pParticleData->nMaxY < pParticleData->nPosY) {
             pParticleData->nDying = 1;
           }
@@ -727,8 +726,7 @@ void __stdcall WEATHER_UpdateParticles(D2SeedStrc * pSeed) {
               }
             } else {
               nXDrift = 0;
-              pParticleData->nSpeedLo = 0;
-              pParticleData->nSpeedHi = 0;
+              pParticleData->nSpeed = 0;
               pParticleData->nFadeCountdown--;
             }
           }
@@ -758,7 +756,7 @@ void __stdcall WEATHER_UpdateParticles(D2SeedStrc * pSeed) {
 
 void __stdcall WEATHER_DrawParticles() {
     // Static local variables (originally global data)
-    static D2WeatherLineOffsetStrc gaWeatherLineOffsets[2] = {
+    static D2WeatherLineOffsetStrc gaWeatherLineOffsets[9] = {
     {
         /* .nStartX = */ 0x0,
         /* .nStartY = */ 0x0,
@@ -770,6 +768,48 @@ void __stdcall WEATHER_DrawParticles() {
         /* .nStartY = */ -0x1,
         /* .nEndX = */ 0x0,
         /* .nEndY = */ 0x0
+    },
+    {
+        /* .nStartX = */ 0x0,
+        /* .nStartY = */ -0x1,
+        /* .nEndX = */ 0x0,
+        /* .nEndY = */ 0x1
+    },
+    {
+        /* .nStartX = */ 0x1,
+        /* .nStartY = */ 0x0,
+        /* .nEndX = */ -0x1,
+        /* .nEndY = */ 0x1
+    },
+    {
+        /* .nStartX = */ 0x1,
+        /* .nStartY = */ 0x0,
+        /* .nEndX = */ 0x0,
+        /* .nEndY = */ 0x1
+    },
+    {
+        /* .nStartX = */ 0x2,
+        /* .nStartY = */ -0x1,
+        /* .nEndX = */ -0x1,
+        /* .nEndY = */ 0x1
+    },
+    {
+        /* .nStartX = */ 0x1,
+        /* .nStartY = */ 0x1,
+        /* .nEndX = */ -0x2,
+        /* .nEndY = */ -0x1
+    },
+    {
+        /* .nStartX = */ 0x2,
+        /* .nStartY = */ 0x1,
+        /* .nEndX = */ -0x2,
+        /* .nEndY = */ -0x1
+    },
+    {
+        /* .nStartX = */ 0x2,
+        /* .nStartY = */ -0x1,
+        /* .nEndX = */ -0x2,
+        /* .nEndY = */ 0x2
     }
 };
 

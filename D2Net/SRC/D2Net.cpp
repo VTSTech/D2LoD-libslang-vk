@@ -5,6 +5,7 @@
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Src/Safesock.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
@@ -22,25 +23,21 @@ namespace D2Net::SRC::D2Net {
 
 // Gets local IP address as string. Calls getsockname on CLIENT_SocketToServer, converts sockaddr to string via inet_ntoa, copies to output buffer.
 void __stdcall NET_GetLocalIPAddressString(char * szIpAddressOut) {
-    // Frame slots -28..-20 are ONE object: &nAddrLen is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -28..-8 are ONE object: &nAddrLen is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       int nAddrLen;
-      uint8_t sockAddrFamily[4];
+      sockaddr_in sSockAddr;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    _union_1226 inAddr;
-    char szIpBuffer[8];
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    *(uint16_t*)(char*)&__frame0.sockAddrFamily = 0;
-    __frame0.sockAddrFamily[2] = '\0';
-    __frame0.sockAddrFamily[3] = '\0';
-    inAddr.S_addr = 0;
-    memset(szIpBuffer, 0, 8 * sizeof(szIpBuffer[0]));
+    __frame0.sSockAddr.sin_family = 0;
+    __frame0.sSockAddr.sin_port = 0;
+    __frame0.sSockAddr.sin_addr = 0;
+    memset(__frame0.sSockAddr.sin_zero, 0, 8 * sizeof(__frame0.sSockAddr.sin_zero[0]));
     __frame0.nAddrLen = 0x10;
-    getsockname(CLIENT_SocketToServer, (sockaddr*)__frame0.sockAddrFamily, &__frame0.nAddrLen);
-    char* szInetNtoaResult = inet_ntoa((in_addr)inAddr.S_un_b);
+    getsockname(CLIENT_SocketToServer, (sockaddr*)&__frame0.sSockAddr, &__frame0.nAddrLen);
+    char* szInetNtoaResult = inet_ntoa((in_addr)__frame0.sSockAddr.sin_addr);
     Storm::Source::SSTR::SStrCopy(szIpAddressOut, szInetNtoaResult, 0x7fffffff);
     Fog::Debug::GuardStack();
 }

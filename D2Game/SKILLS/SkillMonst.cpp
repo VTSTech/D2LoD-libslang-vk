@@ -2091,7 +2091,7 @@ BOOL __fastcall Skills_SrvDoFunc_106_FireMissileRingOnTarget(::SGAMEDATA * pGame
     }
 
     int32_t nVelocity = D2Common::DATATBLS::MissileTbls::MISSILETBLS_CalculateVelocity(eMissileId, nSkillLvl);
-    SkillsServer::SKILLS_CreateMissileRing(pGame, pUnit, pUnit, (eMissilesId*)eMissileId, eSkill, nSkillLvl, nVelocity);
+    SkillsServer::SKILLS_CreateMissileRing(pGame, pUnit, pUnit, eMissileId, eSkill, nSkillLvl, nVelocity);
     return 1;
 }
 
@@ -2640,7 +2640,6 @@ BOOL __fastcall Skills_SrvDoFunc_112_RandomCurse(::SGAMEDATA * pGame, D2UnitStrc
 
 // Server tick function called each frame for spider-type monsters: if the unit is moving (path flags non-zero), computes a directional offset from the spider's current facing, then spawns a MISSILE_Spidergoolay missile (SKILL_SpiderLay) at the offset position behind the spider, forming a persistent web trail.
 void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    uint32_t nPathFlags;
     D2SkillStrc* pSkill;
     int nPosX;
     int nPosY;
@@ -2649,26 +2648,21 @@ void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUni
     D2SkillArgStrc sSkillArg;
     int nOffsetY;
     int nOffsetX;
-    uint8_t abyDirLookup[4];
-    int nSpiderDirGfxOff;
+    uint8_t abyDirLookup[8];
     eD2UnitType eUnitType;
-    uint32_t nStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     if (pDynamicPath) {
+      uint32_t nPathFlags;
       nPathFlags = D2Common::PATH::Path::Get8FlagsFromDynamicPath(pDynamicPath);
       if (nPathFlags) {
-        abyDirLookup[0] = 10;
-        abyDirLookup[1] = 8;
-        abyDirLookup[2] = 0x16;
-        abyDirLookup[3] = 0x14;
-        nSpiderDirGfxOff = 0xc0e1012;
+        memcpy(abyDirLookup, "\n\b\x16\x14\x12\x10\x0e\f", 8);
         nPathFlags = D2Common::PATH::DynamicPath::UpdateDirection(pDynamicPath);
         nPathFlags = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nPathFlags);
-        nSpiderDirGfxOff = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nSpiderDirGfxOff + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)abyDirLookup[nPathFlags & 0xff]);
+        abyDirLookup[4] = abyDirLookup[nPathFlags & 0xff];
         D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(abyDirLookup[nPathFlags & 0xff], &nOffsetX, &nOffsetY);
         bApplyBonus = 1;
         pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_SpiderLay, pUnit);
-        nSpiderDirGfxOff = D2Common::Skills::GetSkillLevel(pUnit, pSkill, bApplyBonus);
+        *(uint32_t*)((char*)&abyDirLookup + 4) = D2Common::Skills::GetSkillLevel(pUnit, pSkill, bApplyBonus);
         eUnitType = pUnit->eUnitType;
         if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
           nPosX = pUnit->pPath.pStaticPath->nPosX;
@@ -2694,7 +2688,10 @@ void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUni
         memset(&sSkillArg, 0, 0x5c);
         sSkillArg.nUnitX = nPosX + nOffsetX * 2;
         sSkillArg.nUnitY = nPosY + nOffsetY * 2;
-        sSkillArg.nSkillLevel = nSpiderDirGfxOff;
+        *(uint8_t*)(char*)&sSkillArg.nSkillLevel = abyDirLookup[4];
+        *(uint8_t*)((char*)&sSkillArg.nSkillLevel + 1) = abyDirLookup[5];
+        *(uint8_t*)((char*)&sSkillArg.nSkillLevel + 2) = abyDirLookup[6];
+        *(uint8_t*)((char*)&sSkillArg.nSkillLevel + 3) = abyDirLookup[7];
         sSkillArg.nFlags = 0x21;
         sSkillArg.nVelocityOverride = 3;
         sSkillArg.eSkillNo = SKILL_SpiderLay;

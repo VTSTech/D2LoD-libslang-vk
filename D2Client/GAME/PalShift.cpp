@@ -145,7 +145,7 @@ int * __fastcall PALSHIFT_FindPalShiftByToken(int32_t nToken) {
 }
 
 // Remaps the blood-color entries in a monster's palette table to green if the monster uses local blood (MonStats2.byLocalBlood == 2). Copies the base 512-byte palette block to an offset within pPaletteData, then applies the PalShift_GreenBlood lookup table across 8 rows of 256 entries, replacing non-zero mapped indices. No-ops for monsters outside the valid MonStats/MonStatsEx range or without local blood.
-void PALSHIFT_ApplyGreenBloodPalette(int32_t pPaletteData, int32_t nMonsterId) {
+void PALSHIFT_ApplyGreenBloodPalette(uint8_t * pPaletteData, int32_t nMonsterId) {
     D2GamePalShiftGreenBloodStrc* pGreenBlood;
     if (!(-1 < nMonsterId && nMonsterId < sgptDataTable->nTxtMonStatsSize)) {
       return;
@@ -156,34 +156,34 @@ void PALSHIFT_ApplyGreenBloodPalette(int32_t pPaletteData, int32_t nMonsterId) {
       return;
     }
 
-    uint32_t* pPalBase = (uint32_t*)(pPaletteData + 0x804);
-    uint32_t* pDstPal = pPalBase;
+    uint8_t* pPalBase = pPaletteData + 0x804;
+    uint8_t* pDstPal = pPalBase;
     for (nMonStatsExId = 0x200; pGreenBlood = PalShift_GreenBlood , pPaletteData += 4 , nMonStatsExId != 0; nMonStatsExId--) {
-      *pDstPal = *(uint32_t*)pPaletteData;
-      pDstPal++;
+      *(uint32_t*)pDstPal = *(uint32_t*)pPaletteData;
+      pDstPal += 4;
     }
 
     int nPalRows = 8;
     do {
       nMonStatsExId = 0;
       do {
-        if (pGreenBlood->abyRemap[((uint8_t*)((int)pPalBase + nMonStatsExId))[-0x800]] != '\0') {
-          *(uint8_t*)((int)pPalBase + nMonStatsExId) = pGreenBlood->abyRemap[((uint8_t*)((int)pPalBase + nMonStatsExId))[-0x800]];
+        if (pGreenBlood->abyRemap[(pPalBase + nMonStatsExId)[-0x800]] != '\0') {
+          pPalBase[nMonStatsExId] = pGreenBlood->abyRemap[(pPalBase + nMonStatsExId)[-0x800]];
         }
-        if (pGreenBlood->abyRemap[*(uint8_t*)((int)pPalBase + nMonStatsExId - 0x7ff)] != '\0') {
-          *(uint8_t*)((int)pPalBase + nMonStatsExId + 1) = pGreenBlood->abyRemap[*(uint8_t*)((int)pPalBase + nMonStatsExId - 0x7ff)];
+        if (pGreenBlood->abyRemap[pPalBase[nMonStatsExId - 0x7ff]] != '\0') {
+          pPalBase[nMonStatsExId + 1] = pGreenBlood->abyRemap[pPalBase[nMonStatsExId - 0x7ff]];
         }
-        if (pGreenBlood->abyRemap[*(uint8_t*)((int)pPalBase + nMonStatsExId - 0x7fe)] != '\0') {
-          *(uint8_t*)((int)pPalBase + nMonStatsExId + 2) = pGreenBlood->abyRemap[*(uint8_t*)((int)pPalBase + nMonStatsExId - 0x7fe)];
+        if (pGreenBlood->abyRemap[pPalBase[nMonStatsExId - 0x7fe]] != '\0') {
+          pPalBase[nMonStatsExId + 2] = pGreenBlood->abyRemap[pPalBase[nMonStatsExId - 0x7fe]];
         }
-        if (pGreenBlood->abyRemap[*(uint8_t*)((int)pPalBase + nMonStatsExId - 0x7fd)] != '\0') {
-          *(uint8_t*)((int)pPalBase + nMonStatsExId + 3) = pGreenBlood->abyRemap[*(uint8_t*)((int)pPalBase + nMonStatsExId - 0x7fd)];
+        if (pGreenBlood->abyRemap[pPalBase[nMonStatsExId - 0x7fd]] != '\0') {
+          pPalBase[nMonStatsExId + 3] = pGreenBlood->abyRemap[pPalBase[nMonStatsExId - 0x7fd]];
         }
 
         nMonStatsExId += 4;
       } while (nMonStatsExId < 0x100);
 
-      pPalBase += 0x40;
+      pPalBase += 0x100;
       nPalRows--;
     } while (nPalRows);
 }
@@ -198,8 +198,8 @@ void __fastcall PALSHIFT_LoadMonsterPalShift(int32_t nMonsterId) {
     D2MPQFileStrc* pFileHandle;
     char cCode0;
     char cCode1;
-    D2MonStatsTxt* pMonStats = DataTbls::MonsterTbls::TXT_MonStats_GetLine(nMonsterId);
-    if (!pMonStats) {
+    D2MonStatsTxt* pDVar1 = DataTbls::MonsterTbls::TXT_MonStats_GetLine(nMonsterId);
+    if (!pDVar1) {
       return;
     }
 
@@ -207,15 +207,15 @@ void __fastcall PALSHIFT_LoadMonsterPalShift(int32_t nMonsterId) {
     if (pExisting) {
       return;
     }
-    if (pMonStats->Code[0] == ' ') {
+    if (pDVar1->Code[0] == ' ') {
       cCode0 = '\0';
     } else {
-      cCode0 = pMonStats->Code[0];
+      cCode0 = pDVar1->Code[0];
     }
-    if (pMonStats->Code[1] == ' ') {
+    if (pDVar1->Code[1] == ' ') {
       cCode1 = '\0';
     } else {
-      cCode1 = pMonStats->Code[1];
+      cCode1 = pDVar1->Code[1];
     }
 
     szMonsterCode[3] = 0;
@@ -240,7 +240,7 @@ void __fastcall PALSHIFT_LoadMonsterPalShift(int32_t nMonsterId) {
     memset(pPalShiftEntry, 0, 0x1008);
     D2FILE_ReadFile(nullptr, pFileHandle, pPalShiftEntry + 1, 0x800);
     D2FILE_CloseFile(nullptr, pFileHandle);
-    PALSHIFT_ApplyGreenBloodPalette((int32_t)pPalShiftEntry, nMonsterId);
+    PALSHIFT_ApplyGreenBloodPalette((uint8_t*)pPalShiftEntry, nMonsterId);
     *pPalShiftEntry = nMonsterId;
     pPalShiftEntry[0x401] = (int)gpPalShiftEntryListHead;
     gpPalShiftEntryListHead = pPalShiftEntry;

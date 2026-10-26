@@ -339,12 +339,12 @@ int __fastcall NPCMENU_ScrollCompleteShowNextMessage(void * pUserParam, uint32_t
     return 1;
 }
 
-void __fastcall NPCMENU_AddHandledMessageId(short wParam) {
+void NPCMENU_AddHandledMessageId(short wMsgId) {
     if (gnNpcMenuScrollMessageHead >= 9) {
       return;
     }
 
-    gaNpcMenuHandledMessageIds[gnNpcMenuScrollMessageHead] = wParam;
+    gaNpcMenuHandledMessageIds[gnNpcMenuScrollMessageHead] = wMsgId;
     gnNpcMenuScrollMessageHead++;
 }
 
@@ -594,8 +594,9 @@ void __stdcall NPCMENU_HireMerc() {
     Dialog::AddStringData(Dialog::gpNpcTransactionWaitDialog, pszCancelString, nFontSize, nTextAlign, nFontId, bClickable, nUnused, nColorId);
 }
 
-void NPCMENU_IsItemIdentified(D2UnitStrc * pUnit) {
-    D2Common::ITEMS::Items::CheckItemFlag(pUnit, ITEMFLAG_IDENTIFIED, 0x999, ".\\UI\\npcmenu.cpp");
+BOOL NPCMENU_IsItemIdentified(D2UnitStrc * pUnit) {
+    BOOL BVar1 = D2Common::ITEMS::Items::CheckItemFlag(pUnit, ITEMFLAG_IDENTIFIED, 0x999, ".\\UI\\npcmenu.cpp");
+    return BVar1;
 }
 
 int NPCMENU_CanItemBeRepaired(D2UnitStrc * pUnit) {
@@ -3588,9 +3589,9 @@ int __stdcall NPCMENU_BuildMercHireMenu() {
     eStatId = UNITSTAT_gold;
     pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
     int nGoldOnBody = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayerUnit_lcl, eStatId, nNameStringId);
-    uint16_t* nTotalGold = (uint16_t*)(nLoopCounter + nGoldOnBody);
+    int32_t nTotalGold = nLoopCounter + nGoldOnBody;
     pszDialogPtr = D2Lang::StrTable::strtable::GetLocaleString(0xd24);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(300, wszGoldFmtBuf, pszDialogPtr, nTotalGold);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(300, wszGoldFmtBuf, pszDialogPtr, (uint16_t*)nTotalGold);
     Dialog::AddStringData(Dialog::gpNpcMercListDialog, wszGoldFmtBuf, 0x15, 0, 4, 1, nullptr, 0);
     int32_t nMercSeed = 1;
     fpDialogFunc pfnCloseCallback = NPCMENU_MercListDrawCallback;

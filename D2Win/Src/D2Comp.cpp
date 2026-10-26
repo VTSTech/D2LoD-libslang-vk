@@ -3,6 +3,7 @@
 #include "D2Win/Src/D2Comp.h"
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/SpriteCache.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/GAME/PalShift.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Item.h"
@@ -11,7 +12,6 @@
 #include "D2Common/Txt/D2TxtLinkNodeStrc.h"
 #include "D2Game/D2QuestDataStrc.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -1566,29 +1566,29 @@ void __fastcall D2COMP_AllocTxt_Items(D2PoolManagerStrc * pMemory) {
 }
 
 void __fastcall D2COMP_LoadItemTypesTxt(D2PoolManagerStrc * pMemory) {
-    D2BinFieldInputStrc local_54;
-    local_54.szName = "code";
-    local_54.eType = FIELDTYPE_CODE4;
-    local_54.nSize = 0;
-    local_54.nOffset = 0;
-    local_54.fpLinker = &gnItemTypesCacheHandle;
-    char* szEquiv1Name = "equiv1";
-    uint32_t eEquiv1Type = 0xf;
-    uint32_t nEquiv1Size = 0;
-    uint32_t nEquiv1Offset = 4;
-    D2TxtLinkStrc** pEquiv1Linker = &gnItemTypesCacheHandle;
-    char* szEquiv2Name = "equiv2";
-    uint32_t eEquiv2Type = 0xf;
-    uint32_t nEquiv2Size = 0;
-    uint32_t nEquiv2Offset = 6;
-    D2TxtLinkStrc** pEquiv2Linker = &gnItemTypesCacheHandle;
-    char* pMemPool = "end";
-    uint32_t dwEndSentinel1 = 0;
-    uint32_t dwEndSentinel2 = 0;
-    uint32_t dwEndSentinel3 = 0;
-    uint32_t dwEndSentinel4 = 0;
+    D2BinFieldInputStrc aBinFields[4];
+    aBinFields[0].szName = "code";
+    aBinFields[0].eType = FIELDTYPE_CODE4;
+    aBinFields[0].nSize = 0;
+    aBinFields[0].nOffset = 0;
+    aBinFields[0].fpLinker = &gnItemTypesCacheHandle;
+    aBinFields[1].szName = "equiv1";
+    aBinFields[1].eType = FIELDTYPE_CODE_SHORT;
+    aBinFields[1].nSize = 0;
+    aBinFields[1].nOffset = 4;
+    aBinFields[1].fpLinker = &gnItemTypesCacheHandle;
+    aBinFields[2].szName = "equiv2";
+    aBinFields[2].eType = FIELDTYPE_CODE_SHORT;
+    aBinFields[2].nSize = 0;
+    aBinFields[2].nOffset = 6;
+    aBinFields[2].fpLinker = &gnItemTypesCacheHandle;
+    aBinFields[3].szName = "end";
+    aBinFields[3].eType = FIELDTYPE_END;
+    aBinFields[3].nSize = 0;
+    aBinFields[3].nOffset = 0;
+    aBinFields[3].fpLinker = 0;
     gnItemTypesCacheHandle = Fog::Src::Excel::STRUCT_CreateTxtLinkStrc(".\\Src\\D2Comp.cpp", 0xa97);
-    gpItemTypesTxt = LoadTxt(pMemory, "itemtypes", &local_54, &gnD2CompCompressionBufferSize, 0xe4);
+    gpItemTypesTxt = LoadTxt(pMemory, "itemtypes", aBinFields, &gnD2CompCompressionBufferSize, 0xe4);
 }
 
 int32_t __stdcall D2COMP_IsItemTypeDescendant(int32_t nItemType, int32_t nAncestorType) {

@@ -72,7 +72,6 @@ typedef int (__stdcall *ChatDlgCallback)(uint32_t dwParam);
 
 namespace D2Multi::OOGUtilities {
 
-static uint16_t gnPendingGameInfoCharIndex = -0x1;
 static char gbLanGameListEntryNamePadding2 = 0;
 static uint16_t gwGameListCacheEntryPort = 0;
 static uint8_t gChatBufferData3 = 0;
@@ -1176,7 +1175,7 @@ int __stdcall CHAT_SendOutOfGameMessage() {
       }
 
       pNetworkUnknown->pfnSendChatCommand((uint8_t*)gszOogChatInputBuffer);
-      ComCallback::COMCALLBACK_BroadcastChatMessage();
+      ComCallback::COMCALLBACK_BroadcastChatMessage(gszOogChatInputBuffer);
     }
 
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetTextWide(gpChatDlgInputEditBox, nullptr);
@@ -1436,7 +1435,7 @@ void __stdcall OOGMENU_RequestGameInfo() {
     }
 
     D2MCPClient::McpConnect::NET_MCP_CLIENT_Send_0x06_GameInfo(gszOOGRequestedGameName, (uint16_t)gnPendingGameInfoCharIndex);
-    gwLastGameInfoRequestId = gnPendingGameInfoCharIndex;
+    gwLastGameInfoRequestId = (uint16_t)gnPendingGameInfoCharIndex;
     gnPendingGameInfoCharIndex = -1;
 }
 
@@ -1984,22 +1983,11 @@ int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
     static uint16_t gnLanGameListEntryPort;
     static uint32_t gnLanGameIPAddr;
 
-    // Frame slots -64..-11 are ONE object: &entryBuf is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t entryBuf;
-      uint8_t aEntryName[50];
-      int16_t nEntryPort;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 53, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     char* pszIpAddr;
     uint8_t* pbEntryName;
     mcp0x03data aGameName[3];
     mcp0x03data aPassword[3];
-    _union_1226 entryIpAddr;
+    D2LanGameEntryStrc sGameEntry;
     BOOL bStatusVisible = D2Win::Src::D2WinMain::D2WINMAIN_GetControlVisible(gpCtlGameListStatus);
     if (!bStatusVisible) {
       return 0;
@@ -2044,15 +2032,15 @@ int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
       } while (nEntryIdx < nGameListDifficultyFilter);
     }
 
-    bHasPeerName = OOGUTIL_HandleGameListEntry(aPassword[0].szGameName, aGameName[0].szGameName, (uintptr_t)&__frame0.entryBuf);
+    bHasPeerName = OOGUTIL_HandleGameListEntry(aPassword[0].szGameName, aGameName[0].szGameName, (uintptr_t)&sGameEntry);
     if (!bHasPeerName) {
       pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1411);
       ChatDlg::UIMENU_DrawTitleOnCenterSmaller(pwszLocaleStr, nullptr);
     } else {
-      nEntryIdx = strcmp((char*)__frame0.aEntryName, aPassword->szGameName);
+      nEntryIdx = strcmp(sGameEntry.szGameName, aPassword->szGameName);
       if (!nEntryIdx) {
-        pszIpAddr = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)entryIpAddr);
-        ChatDlg::OOGMENU_JoinGame(__frame0.nEntryPort, aPassword[0].szGameName, aGameName[0].szGameName, pszIpAddr);
+        pszIpAddr = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)sGameEntry.dwIpAddress);
+        ChatDlg::OOGMENU_JoinGame(sGameEntry.nPort, aPassword[0].szGameName, aGameName[0].szGameName, pszIpAddr);
         UIMENU_DestroyLobbyAndJoinGameForms();
         pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x147b);
         ChatDlg::UIMENU_PrintSmallTitleOnCenterScreen(pwszLocaleStr, nullptr);

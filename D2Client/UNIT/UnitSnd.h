@@ -20,7 +20,7 @@ namespace D2Client::UNIT::UnitSnd {
 // Function declarations
 DWORD GetSndUnitClassId(struct D2UnitStrc * pUnit);
 eD2UnitType GetSndUnitType(struct D2UnitStrc * pUnit);
-int * GetSndUnitMode(struct D2UnitStrc * pUnit);
+int32_t GetSndUnitMode(struct D2UnitStrc * pUnit);
 int * UNITSND_GetBaseSoundId(uint32_t nUnitClassId);
 // Returns the D2MonSoundsTxt record for a unit's sound set. For monsters, resolves in priority order: super-unique boss sound override (MonSound), unique/minion UMonSound field, then base MonStats sound. Returns line 0 (silent) if pUnit is null or class ID is out of range.
 struct D2MonSoundsTxt * TxtGetSoundIdLineFromUnit(struct D2UnitStrc * pUnit);
@@ -67,7 +67,7 @@ int32_t __fastcall UNITSND_GetGroundMaterial(struct D2UnitStrc * pUnit);
 // Returns the sound ID for pUnit's footstep given ground material and whether running. For players, indexes gaUnitSoundTableByClassId[classId][10]; for monsters, reads D2MonSoundsTxt.Footstep. Adds a material offset (+0/+4/+8/+0xc/+0x10/+0x14 for materials 1-6) and +0x18 if bIsRunning. Returns 0 for unsupported unit types or missing data.
 int32_t __fastcall UNITSND_GetFootstepSound(struct D2UnitStrc * pUnit, int32_t bIsRunning);
 // Plays a unit's footstep sound for the current animation frame. For monsters, gates on walk/run-like animation modes and MonStats class range. Computes the step interval from frame count, anim speed and footstep count (FsCnt, FootstepLayer/FsPrb/FsOff from MonSounds.txt for monsters), debounces against the last step tick (dwSfxStepTicks), and picks the loudest of three candidate frame offsets. Selects walk vs run footstep via UNITSND_GetFootstepSound, plays it with distance-scaled channel priority (quieter when not the local player), optionally plays the layered footstep sound by probability, and stamps dwSfxStepTicks. Client/sound side effect only.
-struct D2MonSoundsTxt * __fastcall PlayUnitFootstepSound(struct D2UnitStrc * pUnit);
+void __fastcall PlayUnitFootstepSound(struct D2UnitStrc * pUnit);
 void __fastcall UNITSND_StopAllSkillSounds(struct D2UnitStrc * pUnit);
 // Iterates the unit's active SFX channel list and stops or gracefully fades any channel whose base sound matches the unit's neutral (idle ambient) sound. bForceStop=1 kills the channel immediately; bForceStop=0 fades it. Halts with a fatal error if pUnit is null.
 void __stdcall UNITSND_UpdateNeutralSound(struct D2UnitStrc * pUnit, int32_t bForceStop);

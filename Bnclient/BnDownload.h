@@ -23,11 +23,17 @@ struct D2BnetDownloadStateStrc {
     /* 0x22C */ int nFileType; // file transfer type (2=direct recv; pDownloadCtx+0x116 as ushort* = byte 0x22c)
 };
 
+struct SID_C2S_ExtraWork {
+    /* 0x00 */ uint16_t wGameType;
+    /* 0x02 */ uint16_t wLength; // set to 4, then the ExtraWork callback may grow it
+    /* 0x04 */ uint8_t abWorkData[4096];
+};
+
 namespace Bnclient::BnDownload {
 
 // Function declarations
 void __stdcall BNDOWNLOAD_WriteFileWithTimestamp(LPCSTR pThis, LPCVOID param_1, DWORD dwParam, FILETIME * pFileTime);
-bool __stdcall NET_CopyDllFromArchive(struct D2ArchiveStrc * pArchive, char * pszSrcFileName, LPSTR szText);
+BOOL __stdcall NET_CopyDllFromArchive(struct D2ArchiveStrc * pArchive, char * pszSrcFileName, LPSTR szText);
 void __stdcall BNDOWNLOAD_SetCancelFlag();
 uint32_t __stdcall BNDOWNLOAD_HasActiveDownloads();
 BOOL __stdcall NET_RecvExact(SOCKET hSocket, int32_t pBuffer, uint32_t nLen);

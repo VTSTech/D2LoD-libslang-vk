@@ -10,6 +10,7 @@
 
 // Forward declarations
 struct D2ClientStrc;
+struct D2GSPacketSrv0x74;
 struct D2RoomStrc;
 struct D2ServerMessageHandleStrc;
 struct D2SkillStrc;
@@ -136,7 +137,7 @@ BOOL INPUT_HandleRightClickWithPet(struct D2UnderMouseStrc * pUnderMouse);
 int __fastcall ClickMap(int32_t clickType, int32_t nX, int32_t nY, uint8_t mouseEventFlags);
 uint8_t __stdcall PLAYER_GetWeaponTypeForAnimation(struct D2UnitStrc * pPlayerUnit, struct D2UnitStrc * pUnit);
 // Client-side handler for a player-death message (msg ptr arg: type byte at +1, dead-unit GUID at +2, killer GUID at +6). Locates the dead player unit; if inactive sets its anim mode to Death. If the dead unit is the local player, finds the killer unit, makes the corpse non-colliding (width 5), and copies the dead unit's position/facing onto the corpse. Then walks the dead unit's inventory unequipping each equipped (grid type 3) item: swaps primary weapon, clears weapon anim mode flags, removes item stats, reloads the unit COF, and drops the item from the client object table.
-void __fastcall PLAYER_HandlePlayerDeath(int32_t pDeathMsg);
+void __fastcall PLAYER_HandlePlayerDeath(struct D2GSPacketSrv0x74 * pDeathMsg);
 uint32_t __fastcall PLAYER_GetAppearanceBytes(uint32_t * pAppearanceOut, uint32_t nBufSize);
 uint32_t __fastcall PLAYER_GetMercAppearanceBytes(uint32_t * pAppearanceOut, uint32_t nBufSize);
 // Teleports a player unit to a new room/position (via PATH_CheckCollisionFlags) and, if the unit was in a movement mode, re-issues the appropriate walk/run PlayerMessage to resume movement toward the previous target unit or coordinates.

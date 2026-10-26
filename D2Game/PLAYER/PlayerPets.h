@@ -22,6 +22,17 @@ typedef void (__stdcall *pfnPetForEachCallback)(struct D2UnitStrc * pPetUnit, vo
 #endif
 
 // Data types
+struct D2PetArgStrc {
+    /* 0x00 */ int32_t nPetGUID;
+    /* 0x04 */ int32_t nOwnerGUID;
+    /* 0x08 */ uint16_t nPetClassId;
+    /* 0x0A */ uint16_t _pad0A; // zeroed by the 7-dword clear, never read
+    /* 0x0C */ int32_t nPetType;
+    /* 0x10 */ uint32_t nSeed;
+    /* 0x14 */ uint32_t nNameId;
+    /* 0x18 */ uint32_t nUnused18; // zeroed by every builder, read by neither callback
+};
+
 struct D2PetArguments {
     /* 0x00 */ int nSeed;
     /* 0x04 */ int nNameId;
@@ -32,21 +43,6 @@ struct D2PetDataStrc {
     /* 0x00 */ int nSeed;
     /* 0x04 */ int nNameId;
     /* 0x08 */ int nType;
-};
-
-struct D2PetPacketArgumentsStrc {
-    /* 0x00 */ int32_t nPetGUID;
-    /* 0x04 */ uint32_t nNameId;
-    /* 0x08 */ uint32_t nType;
-};
-
-struct D2PetSummonAndAssignOwner {
-    /* 0x00 */ uint32_t nPetUid;
-    /* 0x04 */ uint32_t nOwnerGuid;
-    /* 0x08 */ uint32_t nMinionClassId;
-    /* 0x0C */ uint32_t nIndexId;
-    /* 0x10 */ uint32_t nMercFlags;
-    /* 0x14 */ uint32_t nMercOwnerGuid;
 };
 
 struct D2PetStrc {
@@ -60,7 +56,7 @@ namespace D2Game::PLAYER::PlayerPets {
 
 // Function declarations
 // @sourcefile .\PLAYER\PlayerPets.cpp
-void __fastcall Send0x7aSummonLog(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2PetPacketArgumentsStrc * pPetArgs);
+void __fastcall Send0x7aSummonLog(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2PetArgStrc * pPetArgs);
 void KillHandlerPet(DWORD nUid, ::SGAMEDATA * pGame);
 struct D2PetListStrc * __stdcall GetPetListFromId(struct D2UnitDataPlayerPetsStrc * pPet, int32_t nMinionId);
 // Iterates a player's pet list performing free or kill operations on each entry. If nParam1==0 calls KillHandlerPet (kill path); otherwise locates the pet monster, broadcasts a 0x7A summon-log packet, removes it from the DRLG room, and either frees the server unit (nParam2==0) or executes a Death lifecycle transition and sends a 0x9B merc-revive-cost packet to the client. Decrements nPets2/nMax and frees the D2PetStrc node from the game memory pool on removal.
@@ -74,8 +70,8 @@ int32_t GetPetUidByIndex(int32_t nIndex, struct D2UnitStrc * pUnit);
 // @sourcefile .\PLAYER\PlayerPets.cpp
 void __stdcall KillingPets(uint32_t nTargetGUID, struct D2PetListStrc * pPetList, int32_t nParam, ::SGAMEDATA * pGame);
 // @sourcefile .\PLAYER\PlayerPets.cpp
-void __fastcall SummonAndAssign(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2PetSummonAndAssignOwner * pSummonArgs);
-void __fastcall PETS_UpdatePetData(struct D2UnitStrc * pUnit, int32_t nParam, int32_t nTargetPetGUID, int * pNewPetData);
+void __fastcall SummonAndAssign(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2PetArgStrc * pSummonArgs);
+void __fastcall PETS_UpdatePetData(struct D2UnitStrc * pUnit, int32_t nParam, int32_t nTargetPetGUID, struct D2PetDataStrc * pNewPetData);
 // Returns the pet-type index (1..nTxtPetTypeSize-1) that owns the monster with the given GUID in the player's pet lists, or 0 if not found. Halts fatally if player data is null. Used to classify whether a unit is a summoned pet and of which type (e.g. 7 = merc).
 int32_t __fastcall GetOwnersPetType(struct D2UnitStrc * pUnit, int32_t nUnitGUID);
 // Searches the owner player's pet list for a pet whose GUID matches pPetUnit, clears its active flag, captures its class ID / seed / name ID / pet-type index, then calls SUnit::IterateAllUnits with SummonAndAssign to re-spawn it. Returns 1 if the pet was found and a resummon was triggered, 0 if pPetUnit is not in the pet list or the player has no pet data.
@@ -127,7 +123,7 @@ BOOL __stdcall KillPetOnRecast(struct D2UnitStrc * pUnit, struct D2UnitStrc * pM
 // Handles re-cast of a summoning skill onto an existing pet unit (pPet may be null for a fresh summon). Removes conflicting pets by group, trims excess via PETS_SetMaxAndTrimExcess, checks for valid recast via KillPetOnRecast, then iterates all units calling SummonAndAssign to bind the new/existing minion to the owner. pPet==null summons a fresh minion; non-null re-assigns the specified monster.
 void __fastcall SKILL_ResummonPet(::SGAMEDATA * pGame, struct D2UnitStrc * pOwner, struct D2UnitStrc * pPet, int32_t nPetTypeId, int32_t nSkillCalc);
 // Re-summons a pet of nPetType for pPlayer, replacing the existing pPet. Validates player data and pet list bounds, calls KillPetOnRecast to despawn the old pet, then iterates all units via IterateAllUnits/SummonAndAssign to spawn and register the new minion with the saved seed/nameId/type arguments from pPetArgs. Aborts with a fatal error if pPlayerData is null.
-void __fastcall RecastPetAndAssign(::SGAMEDATA * pGame, struct D2UnitStrc * pPlayer, struct D2UnitStrc * pPet, int32_t nPetType, uint32_t * pPetArgs);
+void __fastcall RecastPetAndAssign(::SGAMEDATA * pGame, struct D2UnitStrc * pPlayer, struct D2UnitStrc * pPet, int32_t nPetType, struct D2PetDataStrc * pPetArgs);
 uint32_t __fastcall GetCarry1FlagOfitem(struct D2UnitStrc * pUnit);
 int32_t __fastcall GetHirelingNamesAndSize(::SGAMEDATA * pGame, int32_t nNcpClassId, uint32_t * pNameFirst, uint32_t * pNameLast, int * pClassId);
 

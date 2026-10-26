@@ -20,6 +20,14 @@ struct SGAMEDATA;
 typedef int eD2Skills;
 
 // Data types
+struct D2ItemDupeCacheEntryStrc {
+    /* 0x00 */ char szCode[4]; // D2UnknownItemRelatedStruct.szCode (+0x44)
+    /* 0x04 */ int32_t dwFileIndex; // record +0x20
+    /* 0x08 */ uint32_t nItemLevel; // record +0x02 (unaligned load)
+    /* 0x0C */ uint32_t nInitSeed; // record +0x28
+    /* 0x10 */ uint32_t nModSeed; // record +0x2c
+};
+
 struct __attribute__((packed)) D2OldSaveHeaderStrc {
     /* 0x00 */ int saveDataBuf[2];
     /* 0x08 */ char szCharNameClient[15];
@@ -119,7 +127,7 @@ void __stdcall SaveToBuffer(::SGAMEDATA * pGame, int32_t nSaveParam, struct D2Un
 BOOL __fastcall SaveGameAllGameTypes(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, char * pCharName, BOOL bUnknown);
 void __stdcall SERVER_InitPlayer(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
 // Creates fresh player unit for new character. Allocates unit from class ID, initializes base stats, creates starter items (potions/weapons/armor per CharStartItems.txt), sets default left/right attack skills and starting skill if present (e.g. Fire Bolt for Sorc). Notifies quests of player join. Returns unit via ppUnitOut.
-BOOL __stdcall SERVER_CreatePlayerUnit(::SGAMEDATA * pGameStrc, struct D2ClientStrc * pClient, uint32_t nActFlags, struct D2UnitStrc * * ppUnitOut);
+BOOL __stdcall SERVER_CreatePlayerUnit(::SGAMEDATA * pGameStrc, struct D2ClientStrc * pClient, struct D2UnitStrc * * ppUnitOut);
 // Parses and validates a legacy/single-player save-game character block when a client loads into the game, then instantiates the player unit. Copies the 0x82-byte save header from param_1_00, checks the magic (0xAA55AA55) and size, validates the char name matches the client's, and enforces expansion/hardcore/difficulty-progression rules (calling GuardStack with a distinct error code on each rejection). On success it applies guild tag/name/info and weapon-swap/class flags to the client, sets the act, restores the single-player init seed when applicable, creates the UNIT_PLAYER unit (CreateUnit + SERVER_InitPlayer) and sends the init-unit packet, then writes out skill-tab/skill-list counts, remaps the 8 hotkey + left/right skill-hotkey entries, and reports the skill list size via the out-params. *pdwParam signals a Battle.net redirect/abort path. Stack-guarded.
 int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, struct D2ClientStrc * pClient, int * param_1, struct D2UnitStrc * * param_2, uint32_t * pdwParam, uint32_t * pnParam1, uint32_t * pnParam2, uint32_t * pnParam3, uint32_t * pnParam4, uint32_t * pnParam5, uint32_t * pnParam6);
 int __fastcall _oldSaveGameLoadingPart2(struct D2UnitStrc * pUnit, int * pnParam, uint32_t dwUnused, uint32_t * pnBytesConsumed);

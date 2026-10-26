@@ -1116,55 +1116,45 @@ void __stdcall WALL2_InsertUnitShadowDraw(D2Wall2CellStrc * pWall2Cell, D2UnitSt
 
 // Client-side draw-list builder for a single dungeon room within the wall2 (low-perspective wall/roof culling) view. Given pRoom and pnParam (game-view ptr + screen cull rectangle), early-rejects rooms outside the minimap rect, then walks the room's wall tiles and roof tiles: for each on-screen tile it computes iso grid coords (DRLG_OrthToIsoCoordsDiv160), clears the grid cell's dwFlags, and dispatches to WALL2_AddShadowPassTile/AddRoofTile/AddLowerWallTile/AddWallTile by tile type/flags. Then (when pnParam[6]==0) inserts each unit in the room into its grid cell (draw/draw-below/shadow) based on alive state and unit flags. Halts via Fog error if a unit's grid index is out of range. Always returns 1.
 BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, int * pnParam) {
-    // Frame slots -44..-4 are ONE object: &nMinimapLeft is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nMinimapLeft;
-      int nMinimapTop;
-      int nMinimapRight;
-      int nMinimapBottom;
-      D2TileLibraryEntryStrc* nIsoY2;
-      int nIsoX2;
-      int nIsoY;
-      int nIsoX;
-      uint32_t nTileCount;
-      uint32_t nTileIdx;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 40, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    int nRoofHeightIdx2;
     BOOL bInDrawGrid;
     D2UnitStrc* pUnit;
     int nRoofHeightIdx;
+    RECT nMinimapLeft;
+    int nIsoY;
+    int nIsoX;
+    uint32_t nTileCount;
     uint32_t nGridDim;
     int32_t nLine;
     D2Wall2CellStrc* pGridCellVoid;
+    D2TileLibraryEntryStrc* pTileLibEntry;
     int* pParamTmp = pnParam;
     D2RoomStrc* pRoomTmp = pRoom;
     D2GameViewStrc* pGameView = (D2GameViewStrc*)*pnParam;
     D2Wall2DrawListStrc* pAllocBase = &pGameView->sWall2;
-    D2Common::DUNGEON::Dungeon::DRLGROOM_GetMinimapRect((uint32_t)pnParam, pRoom, &__frame0.nMinimapLeft);
-    if (!(__frame0.nMinimapLeft <= pParamTmp[3] && __frame0.nMinimapTop <= pParamTmp[4] + 400 && pParamTmp[1] - 200 <= __frame0.nMinimapRight && pParamTmp[2] <= __frame0.nMinimapBottom)) {
+    D2Common::DUNGEON::Dungeon::DRLGROOM_GetMinimapRect((uint32_t)pnParam, pRoom, (int32_t*)&nMinimapLeft.left);
+    if (!(nMinimapLeft.left <= pParamTmp[3] && nMinimapLeft.top <= pParamTmp[4] + 400 && pParamTmp[1] - 200 <= nMinimapLeft.right && pParamTmp[2] <= nMinimapLeft.bottom)) {
       return 1;
     }
 
-    D2DrlgTileDataStrc* pTileData = D2Common::DUNGEON::Dungeon::DRLGROOM_GetWallTilesFromRoom(pRoomTmp, (int*)&__frame0.nTileCount);
-    __frame0.nTileIdx = 0;
-    if (__frame0.nTileCount) {
+    D2DrlgTileDataStrc* pTileData = D2Common::DUNGEON::Dungeon::DRLGROOM_GetWallTilesFromRoom(pRoomTmp, (int*)&nTileCount);
+    uint32_t nTileIdx = 0;
+    if (nTileCount) {
       int nScreenYAdj;
       do {
-        __frame0.nIsoY2 = pTileData->pTileLibraryEntry;
-        __frame0.nIsoX2 = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetRoofHeightIndex((int32_t)__frame0.nIsoY2);
-        D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160(pTileData->nScreenX, pTileData->nScreenY, &__frame0.nIsoX, &__frame0.nIsoY);
-        nRoofHeightIdx = __frame0.nIsoY - 1;
-        __frame0.nIsoY = nRoofHeightIdx;
+        pTileLibEntry = pTileData->pTileLibraryEntry;
+        nRoofHeightIdx2 = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetRoofHeightIndex((int32_t)pTileLibEntry);
+        D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160(pTileData->nScreenX, pTileData->nScreenY, &nIsoX, &nIsoY);
+        nRoofHeightIdx = nIsoY - 1;
+        nIsoY = nRoofHeightIdx;
         if (pTileData->nScreenX <= pnParam[3] && pnParam[1] <= pTileData->nScreenX + 0xa0) {
-          nScreenYAdj = pTileData->nScreenY - (uint32_t)(uint16_t)__frame0.nIsoY2->nRoofHeight;
-          if (__frame0.nIsoX2 + nScreenYAdj <= pnParam[4] && pnParam[2] <= nScreenYAdj - __frame0.nIsoX2) {
-            bInDrawGrid = WALL2_IsInDrawGrid(__frame0.nIsoX, nRoofHeightIdx, pAllocBase);
+          nScreenYAdj = pTileData->nScreenY - (uint32_t)(uint16_t)pTileLibEntry->nRoofHeight;
+          if (nRoofHeightIdx2 + nScreenYAdj <= pnParam[4] && pnParam[2] <= nScreenYAdj - nRoofHeightIdx2) {
+            bInDrawGrid = WALL2_IsInDrawGrid(nIsoX, nRoofHeightIdx, pAllocBase);
             if (bInDrawGrid) {
-              __frame0.nIsoY = nRoofHeightIdx - pGameView->sWall2.nWall2GridOriginY;
-              __frame0.nIsoX -= pGameView->sWall2.nWall2GridOriginX;
-              pGridCellVoid = pGameView->sWall2.pWall2 + pGameView->sWall2.nWall2GridDim * __frame0.nIsoY + __frame0.nIsoX;
+              nIsoY = nRoofHeightIdx - pGameView->sWall2.nWall2GridOriginY;
+              nIsoX -= pGameView->sWall2.nWall2GridOriginX;
+              pGridCellVoid = pGameView->sWall2.pWall2 + pGameView->sWall2.nWall2GridDim * nIsoY + nIsoX;
               pGridCellVoid->dwFlags = 0;
               if (!(pTileData->nFlags & 0x1c000U)) {
                 WALL2_AddShadowPassTile(pGridCellVoid, pRoom, pTileData, pAllocBase);
@@ -1179,35 +1169,35 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, int * pnParam)
           }
         }
 
-        __frame0.nTileIdx++;
+        nTileIdx++;
         pTileData++;
         pParamTmp = pnParam;
         pRoomTmp = pRoom;
-      } while (__frame0.nTileIdx < __frame0.nTileCount);
+      } while (nTileIdx < nTileCount);
     }
 
-    pTileData = D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoofTilesFromRoom(pRoomTmp, (int*)&__frame0.nTileCount);
-    __frame0.nTileIdx = 0;
-    if (__frame0.nTileCount) {
+    pTileData = D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoofTilesFromRoom(pRoomTmp, (int*)&nTileCount);
+    nTileIdx = 0;
+    if (nTileCount) {
       do {
-        __frame0.nIsoX2 = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetRoofHeightIndex((int32_t)pTileData->pTileLibraryEntry);
-        D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160(pTileData->nScreenX, pTileData->nScreenY, &__frame0.nIsoY, &__frame0.nIsoX);
-        nRoofHeightIdx = __frame0.nIsoX - 1;
-        __frame0.nIsoX = nRoofHeightIdx;
-        if (pTileData->nScreenX <= pnParam[3] && pnParam[1] <= pTileData->nScreenX + 0xa0 && __frame0.nIsoX2 + pTileData->nScreenY <= pnParam[4] && pnParam[2] <= pTileData->nScreenY - __frame0.nIsoX2) {
-          bInDrawGrid = WALL2_IsInDrawGrid(__frame0.nIsoY, nRoofHeightIdx, pAllocBase);
+        nRoofHeightIdx2 = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetRoofHeightIndex((int32_t)pTileData->pTileLibraryEntry);
+        D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160(pTileData->nScreenX, pTileData->nScreenY, &nIsoY, &nIsoX);
+        nRoofHeightIdx = nIsoX - 1;
+        nIsoX = nRoofHeightIdx;
+        if (pTileData->nScreenX <= pnParam[3] && pnParam[1] <= pTileData->nScreenX + 0xa0 && nRoofHeightIdx2 + pTileData->nScreenY <= pnParam[4] && pnParam[2] <= pTileData->nScreenY - nRoofHeightIdx2) {
+          bInDrawGrid = WALL2_IsInDrawGrid(nIsoY, nRoofHeightIdx, pAllocBase);
           if (bInDrawGrid) {
-            __frame0.nIsoX = nRoofHeightIdx - pGameView->sWall2.nWall2GridOriginY;
-            __frame0.nIsoY -= pGameView->sWall2.nWall2GridOriginX;
-            WALL2_AddShadowPassTile(pGameView->sWall2.pWall2 + pGameView->sWall2.nWall2GridDim * __frame0.nIsoX + __frame0.nIsoY, pRoom, pTileData, pAllocBase);
+            nIsoX = nRoofHeightIdx - pGameView->sWall2.nWall2GridOriginY;
+            nIsoY -= pGameView->sWall2.nWall2GridOriginX;
+            WALL2_AddShadowPassTile(pGameView->sWall2.pWall2 + pGameView->sWall2.nWall2GridDim * nIsoX + nIsoY, pRoom, pTileData, pAllocBase);
           }
         }
 
-        __frame0.nTileIdx++;
+        nTileIdx++;
         pTileData++;
         pParamTmp = pnParam;
         pRoomTmp = pRoom;
-      } while (__frame0.nTileIdx < __frame0.nTileCount);
+      } while (nTileIdx < nTileCount);
     }
     if (pParamTmp[6]) {
       return 1;
@@ -1314,8 +1304,8 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
           nGridColIdx = 0;
           if (pGameView->sWall2.nWall2GridDim) {
             do {
-              *(uint32_t*)&pGridCellIter->field_0x8 = nIsoY + nGridColIdx;
-              *(uint32_t*)&pGridCellIter->field_0xc = nIsoX + nGridRowIdx;
+              pGridCellIter->nGridIsoX = nIsoY + nGridColIdx;
+              pGridCellIter->nGridIsoY = nIsoX + nGridRowIdx;
               nGridColIdx++;
               pGridCellIter++;
             } while (nGridColIdx < pGameView->sWall2.nWall2GridDim);

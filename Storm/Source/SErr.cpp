@@ -6,7 +6,6 @@
 #include "Fog/Source/SFile.h"
 #include "Storm/H/Storm.h"
 #include "Storm/SMem.h"
-#include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
@@ -445,11 +444,11 @@ BOOL __stdcall SERR_UndecorateObjectName(char * szMangled, int32_t nMaxLen, char
 // @was SSYSTEM_SetThreadContext (pass 6, 2026.08.28) - the old name also collided with the Win32 API SetThreadContext, which this is not.
 // @oracle Storm 1.10b PPC export SErrPrepareAppFatal, code vector 10015af0 (TVector 100cbe9c).
 // @oracle-basis Callee set {EnterCriticalSection, GetCurrentThreadId, LeaveCriticalSection} is exactly the oracle's and is unique among all 19 SErr exports and all 82 functions of this namespace - the only other GetCurrentThreadId user, SErrDisplayAppFatal 0041d160, additionally calls memset/vsprintf/DisplayError/ExitProcess. Arity 2 = 2 (PPC prologue saves r3 and r4 only).
-void __stdcall SErrPrepareAppFatal(uint32_t pfnCallback, uint32_t nCallbackParam) {
+void __stdcall SErrPrepareAppFatal(void * pfnCallback, uint32_t nCallbackParam) {
     SERR_InternalEnterCriticalSection();
-    gpSSystemThreadContextCallback = pfnCallback;
-    gnSSystemThreadContextParam = nCallbackParam;
-    gnSSystemThreadContextThreadId = GetCurrentThreadId();
+    gpSSystemThreadContextCallback.pfnCallback = pfnCallback;
+    gpSSystemThreadContextCallback.nParam = nCallbackParam;
+    gpSSystemThreadContextCallback.dwThreadId = GetCurrentThreadId();
     SERR_InternalLeaveCriticalSection();
 }
 
@@ -886,13 +885,13 @@ void __stdcall SErrDisplayAppFatal(char * szText, ...) {
     uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     SERR_InternalEnterCriticalSection();
     DWORD dwCurrentThreadId_lcl = GetCurrentThreadId();
-    int32_t nSavedContextParam = gnSSystemThreadContextParam;
-    uint32_t* pSavedCallback = (uint32_t*)gpSSystemThreadContextCallback;
+    uint32_t nSavedContextParam = gpSSystemThreadContextCallback.nParam;
+    void* pSavedCallback = gpSSystemThreadContextCallback.pfnCallback;
     uint32_t* pContextCallback = 0;
-    int32_t nContextParam = 0;
-    if (gnSSystemThreadContextThreadId == dwCurrentThreadId_lcl) {
+    uint32_t nContextParam = 0;
+    if (gpSSystemThreadContextCallback.dwThreadId == dwCurrentThreadId_lcl) {
       SSystem::SMemZero(&gpSSystemThreadContextCallback, 0xc);
-      pContextCallback = pSavedCallback;
+      pContextCallback = (uint32_t*)pSavedCallback;
       nContextParam = nSavedContextParam;
     }
 

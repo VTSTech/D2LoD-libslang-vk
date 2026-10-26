@@ -1626,7 +1626,7 @@ void __fastcall TXT_AllocTxt_RareAffixes(D2PoolManagerStrc * pMemory) {
     do {
       uint32_t nStringId;
       nStringId = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)&gsRareAffixTable.pTable[nIdx].name[0], &__frame0.pStringOut);
-      *(short int*)&gsRareAffixTable.pTable[nIdx].nNameStrIdLo = (short int)nStringId;
+      gsRareAffixTable.pTable[nIdx].wNameStrId = (short int)nStringId;
       nIdx++;
     } while (nIdx < gsRareAffixTable.nSize);
 }
@@ -3104,10 +3104,7 @@ void __fastcall TXT_AllocTxt_gems(D2PoolManagerStrc * pMemory) {
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       uint16_t* pStringLookup;
-      uint8_t byLetterCode3;
-      uint8_t byLetterCode2;
-      uint8_t byLetterCode1;
-      uint8_t byLetterCode0;
+      char szGemCode[4];
       int nGemIdx;
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
@@ -3325,18 +3322,17 @@ void __fastcall TXT_AllocTxt_gems(D2PoolManagerStrc * pMemory) {
     aFieldDefs[0x29].nSize = 0;
     aFieldDefs[0x29].nOffset = 0;
     aFieldDefs[0x29].fpLinker = 0;
-    __frame0.nGemIdx = (int)pMemory;
     pTxtGems = (D2GemsTxt*)DataTbls::CompileTxt(pMemory, "gems", aFieldDefs, &nTxtGemsSize, 0xc0);
     __frame0.pStringLookup = 0;
     __frame0.nGemIdx = 0;
     if (0 < nTxtGemsSize) {
       nGemsSize = 0;
       do {
-        __frame0.byLetterCode3 = pTxtGems->letter[nGemsSize + 8] == 0x20U ? 0 : pTxtGems->letter[nGemsSize + 8];
-        __frame0.byLetterCode2 = pTxtGems->letter[nGemsSize + 9] == 0x20U ? 0 : pTxtGems->letter[nGemsSize + 9];
-        __frame0.byLetterCode0 = 0;
-        __frame0.byLetterCode1 = pTxtGems->letter[nGemsSize + 10] == 0x20U ? 0 : pTxtGems->letter[nGemsSize + 10];
-        nTxtGemsBase = D2Lang::StrTable::strtable::STRTABLE_LookupString(&__frame0.byLetterCode3, &__frame0.pStringLookup);
+        __frame0.szGemCode[0] = pTxtGems->letter[nGemsSize + 8] == 0x20U ? 0 : pTxtGems->letter[nGemsSize + 8];
+        __frame0.szGemCode[1] = pTxtGems->letter[nGemsSize + 9] == 0x20U ? 0 : pTxtGems->letter[nGemsSize + 9];
+        __frame0.szGemCode[3] = '\0';
+        __frame0.szGemCode[2] = pTxtGems->letter[nGemsSize + 10] == 0x20U ? 0 : pTxtGems->letter[nGemsSize + 10];
+        nTxtGemsBase = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)__frame0.szGemCode, &__frame0.pStringLookup);
         *(short int*)(pTxtGems->letter + nGemsSize + 0xc) = (short int)nTxtGemsBase;
         __frame0.nGemIdx++;
         nGemsSize += 0xc0;
@@ -3501,7 +3497,7 @@ void __fastcall TXT_AllocTxt_lowqualityitems(D2PoolManagerStrc * pMemory) {
     do {
       uint32_t nStringId;
       nStringId = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)&pTxtLowQualityItems[nIdx].Name[0], &pStringOut);
-      *(short int*)(pTxtLowQualityItems[nIdx].Name + 0x20) = (short int)nStringId;
+      pTxtLowQualityItems[nIdx].wNameStringId = (short int)nStringId;
       nIdx++;
     } while (nIdx < nTxtLowQualityItemsSize);
 }

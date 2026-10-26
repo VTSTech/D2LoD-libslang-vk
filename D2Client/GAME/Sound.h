@@ -74,6 +74,22 @@ struct D2NpcGreetingSoundsStrc {
     /* 0x14 */ int nLastRecordingIdx; // gnRecordingIndex() when it was chosen (written [EDI+0x14])
 };
 
+struct D2SoundEaxEnvironStrc {
+    /* 0x00 */ int32_t nEnvironment;
+    /* 0x04 */ float fEnvSize;
+    /* 0x08 */ float fEnvDiffusion;
+    /* 0x0C */ int32_t nRoom;
+    /* 0x10 */ int32_t nRoomHF;
+    /* 0x14 */ float fDecayTime;
+    /* 0x18 */ float fDecayHFRatio;
+    /* 0x1C */ int32_t nReflections;
+    /* 0x20 */ float fReflectionsDelay;
+    /* 0x24 */ int32_t nReverb;
+    /* 0x28 */ float fReverbDelay;
+    /* 0x2C */ float fRoomRolloff;
+    /* 0x30 */ float fAirAbsorptionHF;
+};
+
 struct D2SoundSmpStrc {
     /* 0x00 */ struct IDirectSoundBuffer * pDSBuffer; // IDirectSoundBuffer
     /* 0x04 */ int32_t nBufSize; // total DirectSound buffer size in bytes
@@ -95,10 +111,10 @@ struct D2SoundSmpStrc {
     /* 0x44 */ int32_t nMinBufSize; // minimum buffer size threshold
     /* 0x48 */ struct D2MPQFileStrc * pStreamFile; // SFile async-stream handle; SFILE_CancelAsyncRequestsForHandle/CloseFileWrapper/GetStreamInfo
     /* 0x4C */ uint32_t field_0x4c; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
-    /* 0x50 */ uint32_t field_0x50; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
-    /* 0x54 */ uint32_t field_0x54; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
-    /* 0x58 */ uint32_t field_0x58; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
-    /* 0x5C */ uint32_t field_0x5c; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
+    /* 0x50 */ int32_t field_0x50; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
+    /* 0x54 */ int32_t field_0x54; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
+    /* 0x58 */ int32_t field_0x58; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
+    /* 0x5C */ int32_t field_0x5c; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
 };
 
 struct D2SoundStringKeyStrc {

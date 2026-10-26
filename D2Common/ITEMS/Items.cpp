@@ -113,21 +113,14 @@ uint32_t __stdcall ITEMS_SearchItemCodeTable(D2UnitStrc * pUnit, int32_t dwConte
 };
     static int nItemsEventMethodSize = 0x4;
 
-    // Frame slots -12..-4 are ONE object: &pUnitArg is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      D2UnitStrc* pUnitArg;
-      int32_t dwContextArg;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D2ItemCalcContextStrc sCalcContext;
     if (!(sgptDataTable->pItemsCode && nOffset < (uint32_t)sgptDataTable->nItemsCodeSize)) {
       return 0;
     }
 
-    __frame0.pUnitArg = pUnit;
-    __frame0.dwContextArg = dwContext;
-    uint32_t nFormulaResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pItemsCode + nOffset), sgptDataTable->nItemsCodeSize - nOffset, Stats::StatsEx::nullsub, aItemsEventMethod, nItemsEventMethodSize, &__frame0.pUnitArg);
+    sCalcContext.pUnit = pUnit;
+    sCalcContext.nContext = dwContext;
+    uint32_t nFormulaResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pItemsCode + nOffset), sgptDataTable->nItemsCodeSize - nOffset, Stats::StatsEx::nullsub, aItemsEventMethod, nItemsEventMethodSize, &sCalcContext);
     return nFormulaResult;
 }
 
@@ -2707,7 +2700,7 @@ void __fastcall ITEMS_WriteClampedValueToBitBuffer(int32_t nBits, uint32_t nValu
 void __stdcall SerializeSimpleItem(D2UnitStrc * pItem, D2BitBufferStrc * pBitBuffer, D2StatListExStrc * pStatListEx) {
     uint32_t nClassId;
     int nQuestDifficulty;
-    eD2PlayerAnimMode eAnimModeClamp;
+    eD2ItemAnimMode eAnimModeClamp;
     char* pcName;
     char cNameChar;
     eD2UnitType eUnitType;
@@ -2738,17 +2731,18 @@ void __stdcall SerializeSimpleItem(D2UnitStrc * pItem, D2BitBufferStrc * pBitBuf
 
     Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, uVal, 10);
     if (!pItem) {
-      eAnimModeClamp = Death;
+      eAnimModeClamp = Container;
     } else {
       eAnimModeClamp = pItem->eAnimMode.ePlayerMode;
     }
 
-    eAnimModeClamp = eAnimModeClamp != Death ? eAnimModeClamp : 0;
-    if (TownWalk < eAnimModeClamp) {
-      eAnimModeClamp = eD2PlayerAnimMode_ns::Attack1;
+    eD2ItemAnimMode nValue;
+    nValue = eAnimModeClamp != Container ? eAnimModeClamp : 0;
+    if (InItem < nValue) {
+      nValue = InItem | Equipment;
     }
 
-    Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, eAnimModeClamp, 3);
+    Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nValue, 3);
     if (!pItem) {
       eInventoryPage eVar1;
       no_body_loc:
@@ -3008,14 +3002,15 @@ uint32_t __stdcall ITEMS_CheckIfUpgradeable(uint32_t nItemClassId) {
     return (uint32_t)!pItemsTxt->bQuest;
 }
 
-void __stdcall ITEM_ValidateAndGetClass(D2UnitStrc * pUnit) {
+uint32_t __stdcall ITEM_ValidateAndGetClass(D2UnitStrc * pUnit) {
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78c);
       exit(-1);
     } else {
+      uint32_t uVar1;
       if (pUnit->eUnitType == UNIT_ITEM) {
-        ITEMS_CheckIfUpgradeable(pUnit->nClassId);
-        return;
+        uVar1 = ITEMS_CheckIfUpgradeable(pUnit->nClassId);
+        return uVar1;
       }
 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78d);

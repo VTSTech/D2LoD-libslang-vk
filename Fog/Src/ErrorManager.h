@@ -15,6 +15,7 @@ struct Report;
 typedef int _EXCEPTION_DISPOSITION;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct _CONTEXT;
+struct _EXCEPTION_POINTERS;
 #endif // _WIN32
 
 // Data types
@@ -47,6 +48,16 @@ struct __attribute__((packed)) D2BlizzardErrorArgument {
     /* 0x0F */ uint8_t field_0xf;
     /* 0x10 */ char * szAttachment[16];
     /* 0x50 */ int nAttachmentCount;
+};
+
+struct D2CrashReportStrc {
+    /* 0x00 */ char * pszExceptionName;
+    /* 0x04 */ char * pszMessage; // 512-byte buffer, first byte cleared
+    /* 0x08 */ void * * apFrameAddrs; // EDX of CRASH_FormatStackTrace
+    /* 0x0C */ int32_t nNumFrames;
+    /* 0x10 */ int32_t nSkipFrames;
+    /* 0x14 */ DWORD dwThreadId;
+    /* 0x18 */ struct _EXCEPTION_POINTERS * pExceptionPointers;
 };
 
 namespace Fog::Src::ErrorManager {
@@ -84,7 +95,7 @@ void __stdcall FormatDebugOutputLogOnly(char * szText, char firstArg);
 // the pfnFogExceptionFilter slot's 2.
 // Returns int 2 ('mov eax,2' at 00408637, before the only RET at 00408657); the dispatcher
 // compares that EAX at 00403f28 and 00403f2f, matching the pfnFogExceptionFilter slot.
-int __fastcall DumpLog(void * pCrashInfo, void * pUserContext);
+int __fastcall DumpLog(struct D2CrashReportStrc * pCrashInfo, void * pUserContext);
 // Fog's implementation of Storm's Blizzard-error callback: writes Crash.txt (summary, line number,
 // thread context, registers, thread list, attachments) and hands it to ErrorReportingLaunch.
 // @abi __fastcall(char *szSummary @ECX, char *szReason @EDX, char **ppszAttachPaths @Stack[0x4],

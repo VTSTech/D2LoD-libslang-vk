@@ -599,16 +599,7 @@ uint32_t __fastcall SKILLSOR_ApplyStaticFieldToUnit(D2SkillCallbackContextStrc *
 
 // @sourcefile .\SKILLS\SkillSor.cpp
 BOOL __fastcall Skills_SrvDoFunc_020_Static(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    // Frame slots -28..-12 are ONE object: &nCalc1 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int32_t nCalc1;
-      int32_t nCalc0;
-      int nStaticMin;
-      int32_t nSynergyBonus;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D2StaticFieldArgStrc sStaticArgs;
     if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -618,23 +609,22 @@ BOOL __fastcall Skills_SrvDoFunc_020_Static(::SGAMEDATA * pGame, D2UnitStrc * pU
       return 0;
     }
 
-    ::SGAMEDATA* pGameSaved = pGame;
     D2DifficultyLevelsTxt* pDiffLvlTxt = D2Common::DATATBLS::DataTbls::GetDifficultyLevels((uint32_t)pGame->nDifficulty);
     if (!pDiffLvlTxt) {
       return 0;
     }
 
-    __frame0.nCalc1 = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[1], eSkill, nSkillLvl);
-    __frame0.nCalc0 = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[0], eSkill, nSkillLvl);
-    if (pGameSaved->bExpansion) {
-      __frame0.nStaticMin = 0;
-      __frame0.nStaticMin = pDiffLvlTxt->StaticFieldMin;
+    sStaticArgs.nCalc1 = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[1], eSkill, nSkillLvl);
+    sStaticArgs.nDrainPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[0], eSkill, nSkillLvl);
+    sStaticArgs.nStaticMin = 0;
+    if (pGame->bExpansion) {
+      sStaticArgs.nStaticMin = pDiffLvlTxt->StaticFieldMin;
     }
 
-    __frame0.nSynergyBonus = D2Common::Skills::SERVER_Synergy1(pUnit, eSkill, nSkillLvl, 1);
-    eSkillEType eElemType = (eSkillEType)pSkillTxt->EType;
+    sStaticArgs.nSynergyBonus = D2Common::Skills::SERVER_Synergy1(pUnit, eSkill, nSkillLvl, 1);
+    sStaticArgs.eElemType = (eSkillEType)pSkillTxt->EType;
     int32_t nRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->aurarangecalc, eSkill, nSkillLvl);
-    SkillsServer::SKILLS_ApplyAreaEffect(pGameSaved, pUnit, 0, 0, nRange, pSkillTxt->aurafilter, SKILLSOR_ApplyStaticFieldToUnit, &__frame0.nCalc1, 0, ".\\SKILLS\\SkillSor.cpp", 0x273);
+    SkillsServer::SKILLS_ApplyAreaEffect(pGame, pUnit, 0, 0, nRange, pSkillTxt->aurafilter, SKILLSOR_ApplyStaticFieldToUnit, &sStaticArgs, 0, ".\\SKILLS\\SkillSor.cpp", 0x273);
     return 1;
 }
 
@@ -777,12 +767,12 @@ BOOL __fastcall Skills_SrvDoFunc_022_Nova_FrostNova(::SGAMEDATA * pGame, D2UnitS
       return 0;
     }
 
-    eMissilesId* peMissileId = (eMissilesId*)SkillAss::SKILLASS_GetChargeUpMissile(pUnit, eSkill);
+    eMissilesId peMissileId = SkillAss::SKILLASS_GetChargeUpMissile(pUnit, eSkill);
     if (!(-1 < (int)peMissileId && (int)peMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
 
-    int32_t nVelocity = D2Common::DATATBLS::MissileTbls::MISSILETBLS_CalculateVelocity((int32_t)peMissileId, nSkillLvl);
+    int32_t nVelocity = D2Common::DATATBLS::MissileTbls::MISSILETBLS_CalculateVelocity(peMissileId, nSkillLvl);
     int32_t nCalc0 = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxtBase[eSkill].calc[0], eSkill, nSkillLvl);
     SkillsServer::SKILLS_CreateMissileRing(pGame, pUnit, pUnit, peMissileId, eSkill, nSkillLvl, nVelocity + nCalc0);
     return 1;

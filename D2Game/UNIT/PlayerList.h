@@ -17,10 +17,7 @@ struct D2UnitPlayerListStrc {
     /* 0x00 */ int32_t nUnitGUID;
     /* 0x04 */ int32_t nRelationshipFlags; // Bitmask: 0x2=Muted, 0x4=Squelched, 0x8=Hostile
     /* 0x08 */ int32_t nHostileDelay; // Timestamp for 10s waypoint/portal block after going hostile
-    /* 0x0C */ bool bIsPartied; // True if in same party
-    /* 0x0D */ uint8_t field_0xd;
-    /* 0x0E */ uint8_t field_0xe;
-    /* 0x0F */ uint8_t field_0xf;
+    /* 0x0C */ BOOL bIsPartied; // True if in same party
     /* 0x10 */ struct D2UnitPlayerListStrc * pNext;
 };
 

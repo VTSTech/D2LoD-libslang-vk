@@ -85,6 +85,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
@@ -564,32 +565,31 @@ BOOL __fastcall SKILLS_ApplyAreaDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 }
 
 // @sourcefile .\SKILLS\Skills.cpp
-eD2MissileHitFlags __fastcall SKILLS_ApplyAreaHitAtUnit(int32_t nGame, D2UnitStrc * pUnit, int32_t nRange, fpAreaHitUnitFilter nSkillLevel) {
-    eD2MissileHitFlags eHitFlags[3];
-    int32_t nPosY;
+D2UnitStrc * __fastcall SKILLS_ApplyAreaHitAtUnit(int32_t nGame, D2UnitStrc * pUnit, int32_t nRange, fpAreaHitUnitFilter nSkillLevel) {
+    D2AreaHitNearestCtx sNearestCtx;
     eD2UnitType eUnitType = pUnit->eUnitType;
-    eHitFlags[0] = 0;
-    eHitFlags[1] = 0x7fffffff;
+    sNearestCtx.pNearest = 0;
+    sNearestCtx.nBestDistSq = 0x7fffffff;
     if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
-      eHitFlags[2] = pUnit->pPath.pStaticPath->nPosX;
+      sNearestCtx.nX = pUnit->pPath.pStaticPath->nPosX;
     } else if (!pUnit->pPath.pDynamicPath) {
-      eHitFlags[2] = 0;
+      sNearestCtx.nX = 0;
     } else {
-      eHitFlags[2] = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+      sNearestCtx.nX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
     }
 
     eUnitType = pUnit->eUnitType;
     if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
-      nPosY = pUnit->pPath.pStaticPath->nPosY;
+      sNearestCtx.nY = pUnit->pPath.pStaticPath->nPosY;
     } else if (!pUnit->pPath.pDynamicPath) {
-      nPosY = 0;
+      sNearestCtx.nY = 0;
     } else {
-      nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+      sNearestCtx.nY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
     }
 
-    fpAreaHitUnitFilter nSkillLevelSave = nSkillLevel;
-    SKILLS_ApplyAreaEffect((::SGAMEDATA*)nGame, pUnit, 0, 0, nRange, 0x8783, SKILLS_AreaEffect_FindNearestUnit, eHitFlags, 0, ".\\SKILLS\\Skills.cpp", 0x2b8);
-    return eHitFlags[0];
+    sNearestCtx.pfnFilter = nSkillLevel;
+    SKILLS_ApplyAreaEffect((::SGAMEDATA*)nGame, pUnit, 0, 0, nRange, 0x8783, SKILLS_AreaEffect_FindNearestUnit, &sNearestCtx, 0, ".\\SKILLS\\Skills.cpp", 0x2b8);
+    return sNearestCtx.pNearest;
 }
 
 // @sourcefile .\SKILLS\Skills.cpp
@@ -622,17 +622,16 @@ D2UnitStrc * __fastcall SKILLS_FindNextUnitInAreaByGUID(::SGAMEDATA * pGame, D2U
 }
 
 // Recomputes and enforces the maximum pet count for the pet type associated with skill nSkillId. Iterates every skill listed in the pet type's nSkillId table, evaluates the petmax calc at the current skill level, and takes the highest result. Calls PETS_SetMaxAndTrimExcess to apply the new cap and kill excess pets. Only acts on player units with a valid pettype in D2PetTypeTxt.
-void __fastcall SKILLS_UpdatePetMax(::SGAMEDATA * pGame, D2UnitStrc * pUnit, short * nSkillId) {
+void __fastcall SKILLS_UpdatePetMax(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nSkillId) {
     D2SkillStrc* pSkill;
     int nSkillLvl;
     int nPetMaxCalc;
     eD2Skills eSkill;
-    short* pSkillId;
-    if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER && -1 < (int)nSkillId && (int)nSkillId < sgptDataTable->nTxtSkillsCount)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER && -1 < nSkillId && nSkillId < sgptDataTable->nTxtSkillsCount)) {
       return;
     }
 
-    D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + (int)nSkillId;
+    D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + nSkillId;
     if (!pSkillTxt) {
       return;
     }
@@ -651,9 +650,9 @@ void __fastcall SKILLS_UpdatePetMax(::SGAMEDATA * pGame, D2UnitStrc * pUnit, sho
     int nSkillIdx = 0;
     if (0 < pPetTypeTxt->nSkillIndexCounter) {
       D2SkillsTxt* pPetSkillTxt;
-      pSkillId = pPetTypeTxt->nSkillId;
+      nSkillId = (int32_t)pPetTypeTxt->nSkillId;
       do {
-        eSkill = (eD2Skills)*(short int*)pSkillId;
+        eSkill = (eD2Skills)*(short int*)nSkillId;
         pPetSkillTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine(eSkill);
         if (pPetSkillTxt) {
           pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
@@ -672,7 +671,7 @@ void __fastcall SKILLS_UpdatePetMax(::SGAMEDATA * pGame, D2UnitStrc * pUnit, sho
           }
         }
 
-        pSkillId = (short int*)pSkillId + 1;
+        nSkillId += 2;
         nSkillIdx++;
       } while (nSkillIdx < pPetTypeTxt->nSkillIndexCounter);
     }
@@ -1666,7 +1665,7 @@ void __fastcall SKILLS_NormalizeDirectionPerp(int * pnParam1, int * pnParam2) {
 }
 
 // Server-side helper that spawns a full ring of 64 missiles around a target unit's position (used by nova/ring-style skills). Resolves the ring center from the target's path (static path pos for objects/tiles, dynamic path GetXPos/GetYPos otherwise, else 0). Builds a D2SkillArgStrc owned by pUnit with the given missile txt id, skill no (nParam1), nToHit (eSkill), and an optional velocity override (nParam2, sets flag 4). Loops the 64-entry global ring cos/sin offset tables, setting each missile's directional unit X/Y and calling Missiles::CreatingMissile per angle. __fastcall: pGame(ECX), pUnit(EDX), remaining args (pTargetUnit, pMissileTxtNo, nParam1, eSkill, nParam2) on stack; no return.
-void __fastcall SKILLS_CreateMissileRing(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit, eMissilesId * pMissileTxtNo, int32_t nParam1, eD2Skills eSkill, int32_t nParam2) {
+void __fastcall SKILLS_CreateMissileRing(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit, eMissilesId pMissileTxtNo, int32_t nParam1, eD2Skills eSkill, int32_t nParam2) {
     // Static local variables (originally global data)
     static uint8_t ganMissileRingCosTable[256] = {
     0x1e,
@@ -2206,7 +2205,7 @@ void __fastcall SKILLS_CreateMissileRing(::SGAMEDATA * pGame, D2UnitStrc * pUnit
       sSkillArg.nY = D2Common::PATH::DynamicPath::GetYPos(pTargetUnit->pPath.pDynamicPath);
     }
 
-    sSkillArg.nMissileTxtNo = (eMissilesId)pMissileTxtNo;
+    sSkillArg.nMissileTxtNo = pMissileTxtNo;
     sSkillArg.eSkillNo = nParam1;
     sSkillArg.nSkillLevel = eSkill;
     if (nParam2) {
@@ -2280,11 +2279,10 @@ void __fastcall SKILLS_CreateMissileStar(::SGAMEDATA * pGame, int32_t nMissileCo
 
 // Server-side: gives a player a temporary weapon item in the free weapon hand for skills that require one. Inspects the player's R_ARM/L_ARM body-loc items; if a hand is empty (or the held item is not a one-handed weapon) it generates a normal-quality item of szItemCode via ITEM_CreateItemInstance at the appropriate ilvl and equips it to that body location (BODYLOC_R_ARM=4 / L_ARM=5) via SERVER_EquipItemToBodyLoc. No-op for non-player units. Halts with Fog error 0xf4c (bad item code) or 0xf55 (item creation failed).
 void __fastcall SKILLS_SpawnWeaponForHand(::SGAMEDATA * pGame, D2UnitStrc * pUnit, char * szItemCode) {
-    eD2BodyLoc _eBodyLoc;
     D2UnitStrc* pUnit_00;
     BOOL BVar1;
     uint32_t bIsWeapon2;
-    eD2BodyLoc eBodyLoc;
+    eD2BodyLocDWORD eBodyLoc;
     D2ItemGenContextStrc sItemGenCtx;
     ::SGAMEDATA* pGameLocal;
     D2InventoryStrc* pInventory;
@@ -2297,7 +2295,7 @@ void __fastcall SKILLS_SpawnWeaponForHand(::SGAMEDATA * pGame, D2UnitStrc * pUni
       pUnit_00 = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
       if (!pCreatedItem) {
         if (!pUnit_00) {
-          _eBodyLoc = 4;
+          eBodyLoc = BODYLOC_R_ARM;
           goto create_and_equip;
         }
 
@@ -2305,7 +2303,7 @@ void __fastcall SKILLS_SpawnWeaponForHand(::SGAMEDATA * pGame, D2UnitStrc * pUni
         if (!BVar1) {
           bIsWeapon2 = D2Common::ITEMS::Items::ITEMS_IsA(pUnit_00, ITEMTYPE_Weapon);
           if (!bIsWeapon2) {
-            _eBodyLoc = 4;
+            eBodyLoc = BODYLOC_R_ARM;
             goto create_and_equip;
           }
         }
@@ -2315,7 +2313,7 @@ void __fastcall SKILLS_SpawnWeaponForHand(::SGAMEDATA * pGame, D2UnitStrc * pUni
         if (!BVar1) {
           bIsWeapon2 = D2Common::ITEMS::Items::ITEMS_IsA(pCreatedItem, ITEMTYPE_Weapon);
           if (!bIsWeapon2) {
-            _eBodyLoc = 5;
+            eBodyLoc = BODYLOC_L_ARM;
             create_and_equip:
             memset(&sItemGenCtx, 0, 0x84);
             pGameLocal = pGameCopy;
@@ -2336,7 +2334,7 @@ void __fastcall SKILLS_SpawnWeaponForHand(::SGAMEDATA * pGame, D2UnitStrc * pUni
               sItemGenCtx.nItemLevel = ITEMS::Items::Drop::GetLevel(pUnit, LEVEL_None);
               pCreatedItem = ITEMS::Items::Drop::ITEM_CreateItemInstance(pGameLocal, &sItemGenCtx, 0);
               if (pCreatedItem) {
-                ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGameLocal, pUnit, pCreatedItem->nUnitGUID, (eD2BodyLoc)_eBodyLoc, 0, (uint32_t*)&pGameCopy);
+                ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGameLocal, pUnit, pCreatedItem->nUnitGUID, (eD2BodyLoc)eBodyLoc, 0, (uint32_t*)&pGameCopy);
                 Fog::Debug::GuardStack();
                 return;
               }
@@ -4449,7 +4447,7 @@ void __fastcall Server_SelectSkill(D2UnitStrc * pUnit, int32_t leftOrRight, eD2S
     D2SkillsTxt* pSkillTxt;
     D2StatListExStrc* pStatList;
     ::SGAMEDATA* pGame;
-    uint32_t* dwSkillOwnerId;
+    uint32_t dwSkillOwnerId;
     uint32_t dwPlayerGUID;
     short int ePrevAuraState;
     eD2TimerTypeDWORD eTimerType;
@@ -4484,9 +4482,9 @@ void __fastcall Server_SelectSkill(D2UnitStrc * pUnit, int32_t leftOrRight, eD2S
       dwPlayerGUID = pUnit->nUnitGUID;
       nHandedness = leftOrRight;
       ePrevSkillId = eSkill;
-      dwSkillOwnerId = (uint32_t*)ownerId;
+      dwSkillOwnerId = ownerId;
       pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\Skills.cpp", 0xdab);
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x23_SetSkill(pClient, '\0', dwPlayerGUID, (uint8_t)nHandedness, (uint16_t)ePrevSkillId, (uint32_t)dwSkillOwnerId);
+      GAME::SCmd::NET_D2GS_SERVER_Send_0x23_SetSkill(pClient, '\0', dwPlayerGUID, (uint8_t)nHandedness, (uint16_t)ePrevSkillId, dwSkillOwnerId);
     }
     if (leftOrRight) {
       return;

@@ -4,6 +4,7 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/D2Client.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxInfoStrc.h"
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/Engine/GfxUtil.h"
@@ -39,7 +40,6 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinPalette.h"
@@ -810,7 +810,7 @@ void __fastcall GFX_FreeNonBaseGfxInfoEntries(D2UnitStrc * pUnit) {
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
-uint32_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
+uint8_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static uint8_t gbHealthBarColorGreen;
     static uint8_t gbHealthBarColorYellow;
@@ -819,7 +819,6 @@ uint32_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
     static BOOL BOOL_007a8924;
 
     int32_t nColorIndex;
-    uint32_t nColorResult;
     D2MonStatsTxt* pMonStats;
     int nClassId;
     if (!BOOL_007a8924) {
@@ -844,9 +843,8 @@ uint32_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
 
     int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
     D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, &eUnitType, &nClassId, &nAnimMode, ".\\ENGINE\\Gfx.cpp", 0x991);
-    uint32_t dwColor = nColorResult;
     if (eUnitType != UNIT_MONSTER) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(dwColor >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorGreen);
+      return gbHealthBarColorGreen;
     }
     if (nClassId < 0 || sgptDataTable->nTxtMonStatsSize <= nClassId) {
       pMonStats = 0;
@@ -854,28 +852,24 @@ uint32_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
       pMonStats = sgptDataTable->pTxtMonStats + nClassId;
     }
     if (pMonStats->interact) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pMonStats >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorBlue);
+      return gbHealthBarColorBlue;
     }
 
     nColorIndex = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
-    dwColor = 0;
     if (!nColorIndex) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(dwColor >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorGreen);
+      return gbHealthBarColorGreen;
     }
 
     int nHpPercent = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
     nHpPercent = nHpPercent * 100 / nColorIndex;
-    uint32_t uVar1 = (uint32_t)((uint32_t)nHpPercent >> 8) & 0xffffffu;
     if (nHpPercent < 0x21) {
-      return (uint32_t)((uint32_t)((uint32_t)uVar1 & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorRed);
+      return gbHealthBarColorRed;
     }
-
-    dwColor = (uint32_t)((uint32_t)((uint32_t)uVar1 & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorYellow);
     if (nHpPercent >= 0x42) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(dwColor >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorGreen);
+      return gbHealthBarColorGreen;
     }
 
-    return dwColor;
+    return gbHealthBarColorYellow;
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp

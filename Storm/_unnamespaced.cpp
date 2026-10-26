@@ -20,7 +20,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Launch/CharSel.h"
 #include "D2Sound/Src/D2SoundFast.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
@@ -368,37 +367,37 @@ void __fastcall D2MEM_VirtualFree(LPVOID pParam) {
     /* DWORD dwFreeType for VirtualFree */ /* SIZE_T dwSize for VirtualFree */ /* LPVOID lpAddress for VirtualFree */ VirtualFree(pParam, 0, 0x8000);
 }
 
-void __fastcall D2MEM_CopyRows(D2CharSelCompStrc * pCharSelComp, uint32_t * pSrc, int32_t nDstStride, int32_t nSrcStride, int32_t nRows, uint32_t nBytesPerRow) {
+void __fastcall D2MEM_CopyRows(char * pCharSelComp, uint32_t * pSrc, int32_t nDstStride, int32_t nSrcStride, int32_t nRows, uint32_t nBytesPerRow) {
     do {
       uint32_t nRemainder;
       nRemainder = nBytesPerRow & 3;
       if (nRemainder) {
         if (nRemainder == 1) {
-          *(char*)&pCharSelComp->nFlags = (char)*pSrc;
-          pCharSelComp = (D2CharSelCompStrc*)((uintptr_t)&pCharSelComp->nFlags + 1);
+          *pCharSelComp = *(char*)pSrc;
+          pCharSelComp++;
           pSrc = (uint32_t*)((int)pSrc + 1);
         } else if (nRemainder == 2) {
-          *(char*)&pCharSelComp->nFlags = (char)*pSrc;
-          *(uint8_t*)((uintptr_t)&pCharSelComp->nFlags + 1) = *(uint8_t*)((int)pSrc + 1);
-          pCharSelComp = (D2CharSelCompStrc*)((uintptr_t)&pCharSelComp->nFlags + 2);
+          *pCharSelComp = *(char*)pSrc;
+          pCharSelComp[1] = *(char*)((int)pSrc + 1);
+          pCharSelComp += 2;
           pSrc = (uint32_t*)((int)pSrc + 2);
         } else {
-          *(char*)&pCharSelComp->nFlags = (char)*pSrc;
-          *(uint8_t*)((uintptr_t)&pCharSelComp->nFlags + 1) = *(uint8_t*)((int)pSrc + 1);
-          *(uint8_t*)((uintptr_t)&pCharSelComp->nFlags + 2) = *(uint8_t*)((int)pSrc + 2);
-          pCharSelComp = (D2CharSelCompStrc*)((uintptr_t)&pCharSelComp->nFlags + 3);
+          *pCharSelComp = *(char*)pSrc;
+          pCharSelComp[1] = *(char*)((int)pSrc + 1);
+          pCharSelComp[2] = *(char*)((int)pSrc + 2);
+          pCharSelComp += 3;
           pSrc = (uint32_t*)((int)pSrc + 3);
         }
       }
 
       for (nRemainder = nBytesPerRow >> 2; nRemainder; nRemainder--) {
-        pCharSelComp->nFlags = *pSrc;
-        pSrc++;
-        pCharSelComp = (D2CharSelCompStrc*)&pCharSelComp->nAnimSpeed;
+        *(uint32_t*)pCharSelComp = *pSrc;
+        pSrc = (uint32_t*)((int)pSrc + 4);
+        pCharSelComp += 4;
       }
 
       pSrc = (uint32_t*)((int)pSrc + (nSrcStride - nBytesPerRow));
-      pCharSelComp = (D2CharSelCompStrc*)((int)pCharSelComp + (nDstStride - nBytesPerRow));
+      pCharSelComp += nDstStride - nBytesPerRow;
       nRows--;
     } while (nRows);
 }
@@ -472,23 +471,6 @@ int32_t D2MEM_FindLowestSetBit(uint32_t dwMask) {
     for (; !(dwMask >> nBitPos & 1); nBitPos++) {}
 
     return nBitPos + 1;
-}
-
-void D2FILE_CleanupCryptHandles(DWORD dwNull, int32_t nFrameBase) {
-    if (*(DWORD*)(nFrameBase - 0x2c) != dwNull) {
-      /* HLOCAL hMem for LocalFree */ LocalFree(*(HLOCAL*)(nFrameBase - 0x2c));
-    }
-    if (*(DWORD*)(nFrameBase - 0x28) != dwNull) {
-      /* PCCERT_CONTEXT pCertContext for CertFreeCertificateContext */ CertFreeCertificateContext(*(PCCERT_CONTEXT*)(nFrameBase - 0x28));
-    }
-    if (*(DWORD*)(nFrameBase - 0x30) != dwNull) {
-      /* DWORD dwFlags for CertCloseStore */ /* HCERTSTORE hCertStore for CertCloseStore */ CertCloseStore(*(HCERTSTORE*)(nFrameBase - 0x30), dwNull);
-    }
-    if (*(DWORD*)(nFrameBase - 0x24) == dwNull) {
-      return;
-    }
-
-    /* HCRYPTMSG hCryptMsg for CryptMsgClose */ CryptMsgClose(*(HCRYPTMSG*)(nFrameBase - 0x24));
 }
 
 uint32_t __stdcall FOG_ParseStringValue(char * szText, uint32_t nParam) {

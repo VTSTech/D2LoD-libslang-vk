@@ -11,6 +11,7 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2DialogStrc.h"
 #include "D2Client/D2GameViewStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2RosterStrc.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Engine.h"
@@ -85,7 +86,6 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -813,9 +813,9 @@ void __stdcall UI_DrawMercenaryHealthBar() {
       return;
     }
 
-    D2SeedStrc* pSeed;
+    D2RosterPetSeedStrc* pSeed;
     pSeed = GAME::RosterPets::GetSeed(nCoord);
-    if (pSeed[1].nSeedLow != 1) {
+    if (pSeed->nState != 1) {
       return;
     }
 
@@ -1387,7 +1387,7 @@ uint32_t UI_HandleKeyInputAndDismiss(int32_t nKeyAction, int32_t nUIFlagToCheck)
           exit(-1);
         }
 
-        switch (*(uint32_t*)(gUIFlagDismissModeTable[eCurrentUI]->aHeader + nUIFlagToCheck * 4)) {
+        switch (gUIFlagDismissModeTable[eCurrentUI]->anDismissMode[nUIFlagToCheck]) {
           case 0:
             break;
           case 1:
@@ -4368,10 +4368,10 @@ void __fastcall DRAW_UI_StatWindow_III(int32_t nX, int32_t nY, int32_t nValue) {
 
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_Net();
     BOOL bExpansion = GAME::Game::CLIENT_CheckExpansion();
-    uint16_t* nBlockRateOrDescStrId = (uint16_t*)D2Common::Units::GetBlockRate(pUnit, bExpansion);
-    if ((int)nBlockRateOrDescStrId < 1) {
-      nBlockRateOrDescStrId = (uint16_t*)UI_GetStatDescriptionStringId((int32_t)pUnit);
-      if (0 < (int)nBlockRateOrDescStrId) {
+    int32_t nBlockRateOrDescStrId = D2Common::Units::GetBlockRate(pUnit, bExpansion);
+    if (nBlockRateOrDescStrId < 1) {
+      nBlockRateOrDescStrId = UI_GetStatDescriptionStringId((int32_t)pUnit);
+      if (0 < nBlockRateOrDescStrId) {
         D2Common::COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, pUnit->pInventory, (uint32_t*)&nWeaponClass, -1, 1);
         if (nWeaponClass != 0xd) {
           nBlockRateOrDescStrId = 0;
@@ -4388,13 +4388,13 @@ void __fastcall DRAW_UI_StatWindow_III(int32_t nX, int32_t nY, int32_t nValue) {
 
     iVar1 = nValue;
     pwszClear = D2Lang::StrTable::strtable::GetLocaleString(pMonStatsTxt->NameStr);
-    if (!nBlockRateOrDescStrId) {
+    if (!(uint16_t*)nBlockRateOrDescStrId) {
       uint16_t* wszFmt;
       wszFmt = D2Lang::StrTable::strtable::GetLocaleString(0x2778);
       D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszMessage, wszFmt, (uint16_t*)pwszClear, iVar1);
     } else {
       pwszClear = D2Lang::StrTable::strtable::GetLocaleString(0x2779);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszMessage, pwszClear, nBlockRateOrDescStrId, nValue);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszMessage, pwszClear, (uint16_t*)nBlockRateOrDescStrId, nValue);
     }
 
     D2Win::Src::D2WinFont::D2WINFONT_DrawTextWithBackgroundRect(wszMessage, gnPanelOffsetX + 0x8b, gnPanelOffsetY - 0x13b + ScreenSizeY, (uint32_t)(uint8_t)gbUIStatWindowDrawFlag, DRAW_LESSTRANSPARENT, 0);
@@ -4417,18 +4417,10 @@ int32_t __stdcall CHAR_AddClassToHitFactor(D2UnitStrc * pUnit, int32_t nValue) {
 // Body continues at 004a7354, the JNZ target of 004a734a - a branch, not a call. Ghidra had a CALL_RETURN flow override there and a separate function named 'UI_FormatStatTooltip'; that made EBP look like a parameter and turned this frame's locals into wild pointers.
 // Retired notes from 'UI_FormatStatTooltip':
 int32_t __stdcall UI_GetStatValueForDisplay(int32_t nUnit) {
-    // Frame -68..-12 is ONE object: a call writes 56 literal bytes starting at &aiStack_44.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      int aiStack_44[2];
-      int iStack_3c;
-      uint8_t __pad12[44];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 56, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     BOOL BVar4;
     D2MonStatsTxt* pDVar7;
     int32_t iVar8;
+    D2MonStatsInitStrc aiStack_44;
     if (!nUnit) {
       return 0;
     }
@@ -4453,47 +4445,47 @@ int32_t __stdcall UI_GetStatValueForDisplay(int32_t nUnit) {
       exit(-1);
     }
 
-    memset(__frame0.aiStack_44, 0, 0x38);
+    memset(&aiStack_44, 0, 0x38);
     int iVar5;
     iVar5 = (int)pDVar7->aLevel[uVar6];
-    int* pnOutStats;
-    pnOutStats = __frame0.aiStack_44;
+    D2MonStatsInitStrc* pOutStats;
+    pOutStats = &aiStack_44;
     uint32_t nStatFlags;
     nStatFlags = 2;
     uint32_t nDifficultyIdx;
     nDifficultyIdx = uVar6;
     uint32_t bIsChampion;
     bIsChampion = GAME::Game::GAMEDATA_GetLadderOrGameType();
-    D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(iVar3, bIsChampion, nDifficultyIdx, iVar5, nStatFlags, pnOutStats);
+    D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(iVar3, bIsChampion, nDifficultyIdx, iVar5, nStatFlags, pOutStats);
     if (pDVar7->Align != '\x01') {
       uint8_t uVar2;
       BVar4 = GAME::Game::CLIENT_CheckExpansion();
       if (!BVar4) {
         uVar2 = GAME::Game::GetDificulity();
         if (uVar2 != '\0') {
-          __frame0.iStack_3c = __frame0.iStack_3c * 10 / 0xc;
+          aiStack_44.nAC = aiStack_44.nAC * 10 / 0xc;
         }
       }
     }
 
     iVar3 = CHAR_AddClassToHitFactor(pDStack_8, nUnit);
-    if (__frame0.iStack_3c < 0) {
-      iVar3 -= __frame0.iStack_3c;
-      __frame0.iStack_3c = 0;
+    if (aiStack_44.nAC < 0) {
+      iVar3 -= aiStack_44.nAC;
+      aiStack_44.nAC = 0;
     }
     if (iVar3 < 0) {
-      __frame0.iStack_3c -= iVar3;
+      aiStack_44.nAC -= iVar3;
       iVar3 = 0;
       check_zero_divisor:
       iVar5 = iStack_c;
-      if (!__frame0.iStack_3c) {
+      if (!aiStack_44.nAC) {
         goto apply_level_factor;
       }
     } else if (!iVar3) {
       goto check_zero_divisor;
     }
 
-    iVar5 = iVar3 * 100 / (__frame0.iStack_3c + iVar3);
+    iVar5 = iVar3 * 100 / (aiStack_44.nAC + iVar3);
     apply_level_factor:
     iVar3 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pDStack_8, UNITSTAT_level, 0);
     iVar8 = iVar3 * iVar5 * 2 / (pDVar7->aLevel[uVar6] + iVar3);
@@ -4509,29 +4501,16 @@ int32_t __stdcall UI_GetStatValueForDisplay(int32_t nUnit) {
 }
 
 int32_t __stdcall UI_BuildStatWindowDescriptions() {
-    // Frame -76..-20 is ONE object: a call writes 56 literal bytes starting at &aMonScaledStats.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      int aMonScaledStats[3];
-      int nScaledStat;
-      uint8_t __pad16[40];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 56, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     BOOL bExpansion;
-    int nBlockRatio;
+    D2MonStatsInitStrc sMonStats;
     short int wMonStatVal;
     D2UnitStrc* pUnit;
     pUnit = UNIT::Player::GetPlayerUnit_UI();
-    int nBaseChance;
-    nBaseChance = 100;
-    D2UnitStrc* pPlayerUnit_lcl;
-    pPlayerUnit_lcl = pUnit;
     int32_t nTmp2;
     nTmp2 = D2Common::Units::GetDefense(pUnit);
-    int nTotalDefense;
-    nTotalDefense = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_armorclass_vs_hth, 0);
-    nTotalDefense = nTmp2 + nTotalDefense;
+    int nBlockRatio;
+    nBlockRatio = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_armorclass_vs_hth, 0);
+    nBlockRatio = nTmp2 + nBlockRatio;
     uint8_t bVar1;
     bVar1 = GAME::Game::GetDificulity();
     uint32_t uVar3;
@@ -4556,13 +4535,11 @@ int32_t __stdcall UI_BuildStatWindowDescriptions() {
       return 0;
     }
 
-    int nMonIdxSaved;
-    nMonIdxSaved = nMonIdx;
-    memset(__frame0.aMonScaledStats, 0, 0x38);
+    memset(&sMonStats, 0, 0x38);
     int nMonLevel;
     nMonLevel = (int)pMonStatsTxt->aLevel[uVar3];
-    int* pMonScaledStats;
-    pMonScaledStats = __frame0.aMonScaledStats;
+    D2MonStatsInitStrc* pMonScaledStats;
+    pMonScaledStats = &sMonStats;
     uint32_t nScaleFlag;
     nScaleFlag = 8;
     uint32_t nDifficultyArg;
@@ -4570,25 +4547,25 @@ int32_t __stdcall UI_BuildStatWindowDescriptions() {
     uint32_t uVar2;
     uVar2 = GAME::Game::GAMEDATA_GetLadderOrGameType();
     D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nMonIdx, uVar2, nDifficultyArg, nMonLevel, nScaleFlag, pMonScaledStats);
-    nMonIdx = __frame0.nScaledStat;
-    if (!__frame0.nScaledStat) {
-      memset(__frame0.aMonScaledStats, 0, 0x38);
-      nMonIdx = (int)pMonStatsTxt->aLevel[uVar3];
-      pMonScaledStats = __frame0.aMonScaledStats;
+    nMonLevel = sMonStats.nTH;
+    if (!sMonStats.nTH) {
+      memset(&sMonStats, 0, 0x38);
+      nMonLevel = (int)pMonStatsTxt->aLevel[uVar3];
+      pMonScaledStats = &sMonStats;
       nScaleFlag = 0x10;
       nDifficultyArg = uVar3;
       uVar2 = GAME::Game::GAMEDATA_GetLadderOrGameType();
-      D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nMonIdxSaved, uVar2, nDifficultyArg, nMonIdx, nScaleFlag, pMonScaledStats);
-      nMonIdx = __frame0.nScaledStat;
-      if (!__frame0.nScaledStat) {
-        memset(__frame0.aMonScaledStats, 0, 0x38);
-        nMonIdx = (int)pMonStatsTxt->aLevel[uVar3];
-        pMonScaledStats = __frame0.aMonScaledStats;
+      D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nMonIdx, uVar2, nDifficultyArg, nMonLevel, nScaleFlag, pMonScaledStats);
+      nMonLevel = sMonStats.nTH;
+      if (!sMonStats.nTH) {
+        memset(&sMonStats, 0, 0x38);
+        nMonLevel = (int)pMonStatsTxt->aLevel[uVar3];
+        pMonScaledStats = &sMonStats;
         nScaleFlag = 0x20;
         nDifficultyArg = uVar3;
         uVar2 = GAME::Game::GAMEDATA_GetLadderOrGameType();
-        D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nMonIdxSaved, uVar2, nDifficultyArg, nMonIdx, nScaleFlag, pMonScaledStats);
-        nMonIdx = __frame0.nScaledStat;
+        D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nMonIdx, uVar2, nDifficultyArg, nMonLevel, nScaleFlag, pMonScaledStats);
+        nMonLevel = sMonStats.nTH;
       }
     }
     if (pMonStatsTxt->Align != '\x01') {
@@ -4597,35 +4574,30 @@ int32_t __stdcall UI_BuildStatWindowDescriptions() {
       if (!bExpansion) {
         byDifficultyCheck = GAME::Game::GetDificulity();
         if (byDifficultyCheck != '\0') {
-          nMonIdx = nMonIdx * 10 / 0xf;
+          nMonLevel = nMonLevel * 10 / 0xf;
         }
       }
     }
-
-    nMonLevel = nTotalDefense;
-    if (nTotalDefense < 0) {
-      nTotalDefense = 0;
-      nMonIdx -= nMonLevel;
+    if (nBlockRatio < 0) {
+      nMonLevel -= nBlockRatio;
+      nBlockRatio = 0;
     }
-    if (nMonIdx < 0) {
-      nMonLevel = nTotalDefense - nMonIdx;
-      nMonIdx = 0;
+    if (nMonLevel < 0) {
+      nBlockRatio -= nMonLevel;
+      nMonLevel = 0;
       check_zero_divisor:
-      nBlockRatio = nBaseChance;
-      if (!nMonLevel) {
+      if (!nBlockRatio) {
+        nBlockRatio = 100;
         goto apply_level_factor;
       }
-    } else {
-      nMonLevel = nTotalDefense;
-      if (!nMonIdx) {
-        goto check_zero_divisor;
-      }
+    } else if (!nMonLevel) {
+      goto check_zero_divisor;
     }
 
-    nBlockRatio = nMonIdx * 100 / (nMonIdx + nMonLevel);
+    nBlockRatio = nMonLevel * 100 / (nMonLevel + nBlockRatio);
     apply_level_factor:
     wMonStatVal = pMonStatsTxt->aLevel[uVar3];
-    nMonIdx = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayerUnit_lcl, UNITSTAT_level, 0);
+    nMonIdx = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     return wMonStatVal * nBlockRatio * 2 / (nMonIdx + wMonStatVal);
 }
 
@@ -5534,7 +5506,6 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
     int32_t nMonStatsId;
     BOOL bMonInteractFlag;
     D2UnitStrc* pPlayerUnit_lcl;
-    int16_t wNextMsgType;
     uint16_t wMsgType0;
     uint32_t dwMsgType;
     bool bInteractableSideNpc;
@@ -5605,7 +5576,7 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
       gnNpcMenuRepairCostGold = wMsgType0;
       Text::TEXT_ShowNpcDialog(pNpcUnit, wMsgType0, 1);
       npcmenu::NPCMENU_AddHandledMessageId(wMsgType0);
-      dwNextMsgType1 = npcmenu::NPCMENU_FindNextUnhandledMessage(wNextMsgType);
+      dwNextMsgType1 = npcmenu::NPCMENU_FindNextUnhandledMessage(wMsgType0);
       gnNpcMenuTradeActionGold = (int16_t)dwNextMsgType1;
       GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x31, pNpcUnit->nUnitGUID, dwMsgType & 0xffff);
       gnNpcMenuActiveMode = 1;
@@ -6044,17 +6015,8 @@ BOOL __stdcall NPCSHOP_IsRepairTabActive() {
 }
 
 void __stdcall UI_ShowHoradricCubeTransmuteDialog() {
-    // Frame slots -20..-4 are ONE object: &nExcludeLeft is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int32_t nExcludeLeft;
-      int32_t nExcludeTop;
-      int32_t nExcludeBottom;
-      int32_t nExcludeRight;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int nUnitType;
+    RECT nExcludeLeft;
     Draw::UI_CloseActivePanels(0, 0);
     gnPlayerCashDisplay = 1;
     gnTextSystemInitFlag = GetTickCount();
@@ -6065,11 +6027,11 @@ void __stdcall UI_ShowHoradricCubeTransmuteDialog() {
     DWORD bUIAlreadyOpen = Draw::SetUIFlag(UI_ANVIL, UI_SET, 0);
     if (bUIAlreadyOpen) {
       GAME::Game::UI_ResetInputState();
-      __frame0.nExcludeTop = 0x5b;
-      __frame0.nExcludeLeft = 0x6b;
-      __frame0.nExcludeRight = 0x116;
-      __frame0.nExcludeBottom = 0xde;
-      GAME::Select::SELECT_SetExclusionRect((uint32_t*)&__frame0.nExcludeLeft);
+      nExcludeLeft.top = 0x5b;
+      nExcludeLeft.left = 0x6b;
+      nExcludeLeft.bottom = 0x116;
+      nExcludeLeft.right = 0xde;
+      GAME::Select::SELECT_SetExclusionRect(&nExcludeLeft);
       return;
     }
     if (!nHoradricCubeUIState) {

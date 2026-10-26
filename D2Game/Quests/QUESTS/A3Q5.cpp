@@ -700,7 +700,7 @@ void __fastcall Q22_TrackCouncilKill(::SGAMEDATA * pGame, D2UnitStrc * pKillerUn
     nKillerCount = 0;
     if (0 < nKillerGUID) {
       int32_t* piGUIDSlot;
-      piGUIDSlot = &pQuestSpecificData->aCouncilKillerGUIDs_0;
+      piGUIDSlot = pQuestSpecificData->anCouncilKillerGUIDs;
       do {
         if (*piGUIDSlot == nLoopIdx) {
           return;
@@ -711,7 +711,7 @@ void __fastcall Q22_TrackCouncilKill(::SGAMEDATA * pGame, D2UnitStrc * pKillerUn
       } while (nKillerCount < nKillerGUID);
     }
 
-    (&pQuestSpecificData->aCouncilKillerGUIDs_0)[nKillerGUID] = nLoopIdx;
+    pQuestSpecificData->anCouncilKillerGUIDs[nKillerGUID] = nLoopIdx;
     pQuestSpecificData->nCouncilKillCount++;
     pQuestSpecificData->nCouncilKillsRemaining = pQuestSpecificData->nCouncilKillCount;
     if (pQuestData->nStateFlag < 2) {

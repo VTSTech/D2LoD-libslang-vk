@@ -905,29 +905,29 @@ uint8_t * __fastcall SKILLS_WriteValueToBuffer(uint8_t * pBase, int nValue, int 
     return nullptr;
 }
 
-uint8_t * __fastcall SKILLS_WriteValueToBuffer2(int pBase, int nValue, int nBufferSize, D2QuestDataA5Q2Strc * pStruct, int pWritePtr) {
+uint8_t * __fastcall SKILLS_WriteValueToBuffer2(uint8_t * pBase, int nValue, int nBufferSize, D2QuestDataA5Q2Strc * pStruct, uint8_t * pWritePtr) {
     if (nValue + 0x80U < 0x100) {
-      if (pWritePtr - pBase < nBufferSize) {
-        *(uint8_t*)pWritePtr = 4;
-        *(char*)(pWritePtr + 1) = (char)nValue;
+      if ((int)pWritePtr - (int)pBase < nBufferSize) {
+        *pWritePtr = '\x04';
+        pWritePtr[1] = (uint8_t)nValue;
         pStruct->anWussieMonsterGUIDs[9]++;
-        return (uint8_t*)(pWritePtr + 2);
+        return pWritePtr + 2;
       }
     } else if (nValue + 0x8000U < 0x10000) {
-      if (pWritePtr - pBase + 3 < nBufferSize) {
-        *(uint8_t*)pWritePtr = 5;
+      if ((int)(pWritePtr + (3 - (int)pBase)) < nBufferSize) {
+        *pWritePtr = '\x05';
         *(short int*)(pWritePtr + 1) = (short int)nValue;
         pStruct->anWussieMonsterGUIDs[9]++;
-        return (uint8_t*)(pWritePtr + 3);
+        return pWritePtr + 3;
       }
-    } else if (pWritePtr - pBase + 5 < nBufferSize) {
-      *(uint8_t*)pWritePtr = 6;
+    } else if ((int)(pWritePtr + (5 - (int)pBase)) < nBufferSize) {
+      *pWritePtr = '\x06';
       *(int*)(pWritePtr + 1) = nValue;
       pStruct->anWussieMonsterGUIDs[9]++;
-      return (uint8_t*)(pWritePtr + 5);
+      return pWritePtr + 5;
     }
 
-    *(uint8_t*)pBase = 0;
+    *pBase = '\0';
     return nullptr;
 }
 
@@ -1095,7 +1095,7 @@ int __stdcall SKILLS_ParseCalcExpression(char * szExpressionString, uint8_t * pb
         __frame0.bLastWasValue = 1;
         goto finish_token;
         case 0x11:
-          pbWritePtr = SKILLS_WriteValueToBuffer2((int)pbByteCodeOutput, __frame0.dwTokenValue, nMaxOutputSize, (D2QuestDataA5Q2Strc*)__frame0.aOpStackTokenTypes, (int)pbWritePtr);
+          pbWritePtr = SKILLS_WriteValueToBuffer2(pbByteCodeOutput, __frame0.dwTokenValue, nMaxOutputSize, (D2QuestDataA5Q2Strc*)__frame0.aOpStackTokenTypes, pbWritePtr);
         __frame0.bLastWasValue = 1;
         bHasVarRef = true;
         goto finish_token;

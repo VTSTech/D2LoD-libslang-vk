@@ -5,6 +5,7 @@
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2CMP/tagPALETTEENTRY.h"
 #include "D2Client/D2ControlStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
 #include "D2Client/Engine/Gfx.h"
@@ -12,11 +13,11 @@
 #include "D2Client/GAME/PalShift.h"
 #include "D2Client/Renderer/Renderer.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Multi/OOGUtilities.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinEditBox.h"
+#include "D2Win/Src/D2WinImage.h"
 #include "D2gfx/D2GfxHelperStrc.h"
 #include "Fog/Fog.h"
 #include "Fog/Src/ErrorManager.h"
@@ -2501,8 +2502,8 @@ void __stdcall D2GFX_DrawVerticalCropImage(D2GfxDataStrc * pDC6Context, int32_t 
     RENDERER_CurrentRenderedFunctions->nfpDrawVerticalCropImage(pDC6Context, nPositionX, nPositionY, nPercentHideFromBottom, nPercentShowFromBottom, nDrawMode);
 }
 
-void __stdcall D2GFX_DrawSprite6(D2GfxDataStrc * pDC6Context, int32_t nParam1, int32_t nParam2, void * pParam, int32_t nParam3) {
-    RENDERER_CurrentRenderedFunctions->nfpDrawClippedImage(pDC6Context, nParam1, nParam2, pParam, nParam3);
+void __stdcall D2GFX_DrawSprite6(D2GfxDataStrc * pDC6Context, int32_t nParam1, int32_t nParam2, D2GfxTileRectStrc * pClipRect, int32_t nParam3) {
+    RENDERER_CurrentRenderedFunctions->nfpDrawClippedImage(pDC6Context, nParam1, nParam2, pClipRect, nParam3);
 }
 
 void __stdcall D2GFX_DrawShadow(D2GfxDataStrc * pDC6Context, int32_t nPositionX, int32_t nPositionY) {

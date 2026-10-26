@@ -2,9 +2,9 @@
 
 #include "D2Win/Src/D2WinFont.h"
 #include "D2CMP/SRC/CelCmp.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/UI/Text.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"

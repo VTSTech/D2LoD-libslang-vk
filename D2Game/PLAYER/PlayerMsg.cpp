@@ -82,6 +82,7 @@
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
 #include "Storm/Source/SSTR.h"
@@ -91,7 +92,6 @@
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/Unit/D2UnitDataItemStrc.h"
 #include "D2Game/D2Game.h"
-#include "D2Game/Monster/Create.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
@@ -1992,85 +1992,68 @@ void __fastcall NET_D2GS_SERVER_Send_0x26_Chat(D2ClientStrc * pClient, D2GSPacke
 // Successful whisper echoed back to sender via 0x26 packet. Source: .\PLAYER\PlrMsg.cpp
 // @sourcefile .\PLAYER\PlrMsg.cpp
 eD2ServerIncomingStatus __fastcall SCMD_0x15_ChatMessage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2GSPacketClt0x15_ChatMessage * pPacket, size_t nSize) {
-    // Frame slots -608..-49 are ONE object: &byOpcode is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byOpcode;
-      char bIsWhisper;
-      char byLocale;
-      uint8_t byMsgSubType;
-      uint32_t dwReserved;
-      uint8_t byPacketType;
-      uint8_t nSenderLevel;
-      char szSenderName[16];
-      uint32_t szMsgBuf[64];
-      uint8_t __pad282[2];
-      D2ChatMessage pBuffer;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 559, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     fpForEachClientFn pfnChatCallback;
     uint32_t* pMsgBufDst;
     char* szFilteredMsg;
     D2ChatBroadcastCtx replyPacket;
     D2GSPacketSrv0x26 local_37c;
+    D2GSPacketSrv0x26 sPacket;
+    D2ChatMessage pBuffer;
     D2Packet0x5aEventStructure sEventPacket;
     int32_t nErrorLine;
     uint32_t nStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    memset(&__frame0.pBuffer, 0, 0x113);
-    __frame0.pBuffer.nMessageId = pPacket->nCmd;
-    __frame0.pBuffer.nMessageType = pPacket->nMsgId;
-    __frame0.pBuffer.nLocale = pPacket->nMsgType;
-    Storm::Source::SSTR::SStrCopy(__frame0.pBuffer.szMessage, (char*)&pPacket->nLocale, 0x100);
+    memset(&pBuffer, 0, 0x113);
+    pBuffer.nMessageId = pPacket->nCmd;
+    pBuffer.nMessageType = pPacket->nMsgId;
+    pBuffer.nLocale = pPacket->nMsgType;
+    Storm::Source::SSTR::SStrCopy(pBuffer.szMessage, (char*)&pPacket->nLocale, 0x100);
     uint32_t szFiltered = Storm::Source::SSTR::SStrLen((char*)&pPacket->nLocale);
     if (0xff < (int)szFiltered || (int)nSize <= (int)(szFiltered + 4)) {
       Fog::Debug::GuardStack();
       return SERVERSTATUS_BAD_DATA;
     }
 
-    Storm::Source::SSTR::SStrCopy(__frame0.pBuffer.szTarget, pPacket->szMsg + szFiltered, 0x10);
+    Storm::Source::SSTR::SStrCopy(pBuffer.szTarget, pPacket->szMsg + szFiltered, 0x10);
     Storm::Source::SSTR::SStrLen(pPacket->szMsg + szFiltered);
     D2ClientStrc* pSenderClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PlrMsg.cpp", 0x9e7);
     char* nMsgLen = GAME::Clients::GetCharName(pSenderClient);
     szFiltered = Storm::Source::SSTR::SStrLen(nMsgLen);
     if (!szFiltered) {
-      __frame0.szSenderName[0] = '\0';
+      sPacket.szName[0] = '\0';
     } else {
-      Storm::Source::SSTR::SStrCopy(__frame0.szSenderName, nMsgLen, 0x7fffffff);
+      Storm::Source::SSTR::SStrCopy(sPacket.szName, nMsgLen, 0x7fffffff);
     }
 
-    szFiltered = Storm::Source::SSTR::SStrLen(__frame0.pBuffer.szTarget);
+    szFiltered = Storm::Source::SSTR::SStrLen(pBuffer.szTarget);
     int nResult = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-    __frame0.nSenderLevel = (uint8_t)nResult;
-    __frame0.pBuffer.szTarget[0xf] = '\0';
-    if (__frame0.pBuffer.szMessage[0xff] == '\0') {
-      nMsgLen = Storm::Source::SSTR::SStrChr(__frame0.pBuffer.szMessage, -1);
-      __frame0.byLocale = __frame0.pBuffer.nLocale;
+    sPacket.nColor = (uint8_t)nResult;
+    pBuffer.szTarget[0xf] = '\0';
+    if (pBuffer.szMessage[0xff] == '\0') {
+      nMsgLen = Storm::Source::SSTR::SStrChr(pBuffer.szMessage, -1);
+      sPacket.nLanguage = pBuffer.nLocale;
       if (!nMsgLen) {
-        nMsgLen = __frame0.pBuffer.szMessage;
-        pMsgBufDst = __frame0.szMsgBuf;
+        nMsgLen = pBuffer.szMessage;
+        pMsgBufDst = (uint32_t*)sPacket.szMessage;
         for (nResult = 0x40; nResult; nResult--) {
           *pMsgBufDst = *(uint32_t*)nMsgLen;
           nMsgLen += 4;
           pMsgBufDst++;
         }
 
-        __frame0.byPacketType = 0;
-        __frame0.byOpcode = 0x26;
-        __frame0.dwReserved = 0;
-        __frame0.byMsgSubType = 2;
+        sPacket.nMessageColor = '\0';
+        sPacket.nPacketId = '&';
+        sPacket.nUnitGUID = 0;
+        sPacket.nMsgSubType = '\x02';
         if (szFiltered - 1 < 0xf) {
-          __frame0.bIsWhisper = '\x02';
+          sPacket.nMessageType = '\x02';
           pfnChatCallback = (fpForEachClientFn)CHAT_DeliverWhisper;
         } else {
-          __frame0.bIsWhisper = '\x01';
+          sPacket.nMessageType = '\x01';
           pfnChatCallback = (fpForEachClientFn)CHAT_BroadcastToClient;
         }
 
-        replyPacket.pPacketData = &__frame0.byOpcode;
-        replyPacket.pChatMessage = &__frame0.pBuffer;
+        replyPacket.pPacketData = &sPacket;
+        replyPacket.pChatMessage = &pBuffer;
         g_bWhisperDelivered = 0;
         g_bWhisperSquelched = 0;
         if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
@@ -2080,7 +2063,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x15_ChatMessage(::SGAMEDATA * pGame, D2
         }
 
         GAME::Server::ForEachClient(pGame, pfnChatCallback, &replyPacket);
-        if (__frame0.bIsWhisper == '\x02') {
+        if (sPacket.nMessageType == '\x02') {
           if (!g_bWhisperSquelched) {
             if (g_bWhisperDelivered) {
               local_37c.nPacketId = '&';
@@ -2088,10 +2071,10 @@ eD2ServerIncomingStatus __fastcall SCMD_0x15_ChatMessage(::SGAMEDATA * pGame, D2
               local_37c.nUnitGUID = 0;
               local_37c.nMsgSubType = '\x02';
               local_37c.nMessageColor = '\0';
-              Storm::Source::SSTR::SStrCopy(local_37c.szName, __frame0.pBuffer.szTarget, 0x7fffffff);
+              Storm::Source::SSTR::SStrCopy(local_37c.szName, pBuffer.szTarget, 0x7fffffff);
               local_37c.szName[0xf] = '\0';
               local_37c.nLanguage = '\0';
-              nMsgLen = __frame0.pBuffer.szMessage;
+              nMsgLen = pBuffer.szMessage;
               szFilteredMsg = local_37c.szMessage;
               for (nResult = 0x40; nResult; nResult--) {
                 *(uint32_t*)szFilteredMsg = *(uint32_t*)nMsgLen;
@@ -2112,7 +2095,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x15_ChatMessage(::SGAMEDATA * pGame, D2
             sEventPacket.nColor = '\0';
             sEventPacket.nPacketId = 'Z';
             sEventPacket.nArg = 0;
-            Storm::Source::SSTR::SStrCopy(sEventPacket.szName1, __frame0.pBuffer.szTarget, 0x7fffffff);
+            Storm::Source::SSTR::SStrCopy(sEventPacket.szName1, pBuffer.szTarget, 0x7fffffff);
             sEventPacket.nMessageType = '\x04';
             nErrorLine = 0xa38;
           } else {
@@ -2123,7 +2106,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x15_ChatMessage(::SGAMEDATA * pGame, D2
             sEventPacket.nPacketId = 'Z';
             sEventPacket.nColor = '\0';
             sEventPacket.nArg = 0;
-            Storm::Source::SSTR::SStrCopy(sEventPacket.szName1, __frame0.pBuffer.szTarget, 0x7fffffff);
+            Storm::Source::SSTR::SStrCopy(sEventPacket.szName1, pBuffer.szTarget, 0x7fffffff);
             sEventPacket.nMessageType = '\r';
             nErrorLine = 0xa2c;
           }
@@ -2145,8 +2128,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x15_ChatMessage(::SGAMEDATA * pGame, D2
 }
 
 // Builds a 0x26 chat packet inline on the stack using a D2UnitStrc as raw packet buffer, then broadcasts to all clients via ForEachClient. dwParam is packed into the locale/color byte of the 0x26 header.
-int __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint32_t dwParam) {
-    int nGuardCheck;
+void __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint32_t dwParam) {
     int nGuardResult;
     D2GSPacketSrv0x26 aPacketBuf;
     aPacketBuf.nUnitGUID = 0;
@@ -2165,7 +2147,6 @@ int __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint3
 
     GAME::Server::ForEachClient(pGame, (fpForEachClientFn)NET_D2GS_SERVER_Send_0x26_Chat, &aPacketBuf);
     Fog::Debug::GuardStack();
-    return nGuardCheck;
 }
 
 // Broadcasts a pre-built 0x26 chat packet (pointed to by pdwParam as uint32_t array) to all clients in the game. dwParam is packed into the packet color/locale byte. Wraps ForEachClient with NET_D2GS_SERVER_Send_0x26_Chat callback.
@@ -2190,21 +2171,21 @@ void __fastcall CHAT_BroadcastMessageToAllClients(::SGAMEDATA * pGame, uint32_t 
 }
 
 // Iterates all clients in pGame via ForEachClient, broadcasting a 0x5A EventMessages packet built from nParam (pointer to message data). First measures the embedded character name string (capped at 16 chars); skips broadcast if name exceeds that limit. Side-effect: sends to every player in the game session.
-void __fastcall BroadcastEventMessage(::SGAMEDATA * pGame, uint8_t * pEventData) {
+void __fastcall BroadcastEventMessage(::SGAMEDATA * pGame, D2Packet0x5aEventStructure * pEventData) {
     int nNameLen = 0;
     do {
-      if (pEventData[nNameLen + 8] == '\0') {
+      if (pEventData->szName1[nNameLen] == '\0') {
         break;
       }
-      if (pEventData[nNameLen + 9] == '\0') {
+      if (pEventData->szName1[nNameLen + 1] == '\0') {
         nNameLen++;
         break;
       }
-      if (pEventData[nNameLen + 10] == '\0') {
+      if (pEventData->szName1[nNameLen + 2] == '\0') {
         nNameLen += 2;
         break;
       }
-      if (pEventData[nNameLen + 0xb] == '\0') {
+      if (pEventData->szName1[nNameLen + 3] == '\0') {
         nNameLen += 3;
         break;
       }
@@ -2865,17 +2846,17 @@ eD2ServerIncomingStatus __fastcall SCMD_0x26_UseItemAtPlayerCoords(::SGAMEDATA *
       nUnitPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
     }
 
-    D2GSPacketClt0x26_ItemToCube* nInteractResult = (D2GSPacketClt0x26_ItemToCube*)ItemBelongsToInventoryOf(pGame, pUnit, nItemGid);
+    int32_t nInteractResult = ItemBelongsToInventoryOf(pGame, pUnit, nItemGid);
     if (nInteractResult) {
       return (eD2ServerIncomingStatus)nInteractResult;
     }
 
-    nInteractResult = (D2GSPacketClt0x26_ItemToCube*)CheckIfCoordsAreInRange(pUnit, 0x32, (uint16_t)nSize, (uint16_t)nUnitPosY);
-    if (nInteractResult) {
+    nInteractResult = CheckIfCoordsAreInRange(pUnit, 0x32, (uint16_t)nSize, (uint16_t)nUnitPosY);
+    if ((D2GSPacketClt0x26_ItemToCube*)nInteractResult) {
       return (eD2ServerIncomingStatus)nInteractResult;
     }
 
-    pPacket = nInteractResult;
+    pPacket = (D2GSPacketClt0x26_ItemToCube*)nInteractResult;
     BOOL nUseResult = ITEMS::ItemMode::SERVER_UseItemAtCoords(pGame, pUnit, nItemGid, nSize, nUnitPosY, (D2UnitStrc*)&pPacket, nUseMercArg);
     if (!nUseResult && pPacket) {
       return SERVERSTATUS_BAD_PARAMS;
@@ -4688,7 +4669,7 @@ void __fastcall PLAYERMSG_BroadcastPlayerSlain(::SGAMEDATA * pGame, D2UnitStrc *
         }
       }
 
-      BroadcastEventMessage(pGame, &packet0x5a.nPacketId);
+      BroadcastEventMessage(pGame, &packet0x5a);
       Fog::Debug::GuardStack();
       return;
     }

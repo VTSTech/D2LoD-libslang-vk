@@ -7,6 +7,7 @@
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2DialogStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Client/D2LightMapStrc.h"
 #include "D2Client/Draw/LightMap.h"
@@ -52,7 +53,6 @@
 #include "D2Client/UNIT/UnitMode.h"
 #include "D2Client/Warden/WardenClient.h"
 #include "D2Common/D2BitBufferStrc.h"
-#include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2MonStatsTxt.h"
@@ -68,6 +68,7 @@
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
+#include "D2Common/Drlg/Path.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Environment.h"
 #include "D2Common/INVENTORY/Inventory.h"
@@ -90,7 +91,6 @@
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/MainMenus.h"
@@ -1143,11 +1143,10 @@ void __fastcall AUTOMAP_UpdatePartyNamesCallback(D2EscMenuItemStrc * pItem, D2UI
 }
 
 BOOL __stdcall UNITMODE_TryInteractWithObject(D2UnitStrc * pUnit, D2PathPointStrc pathPoint, int32_t nActionType, D2UnitStrc * pTargetUnit, int32_t nTargetGUID) {
-    uint32_t byInRangeHi;
     if (pTargetUnit && pTargetUnit->eUnitFlags >> 1 & 1) {
-      bool bInRange;
-      bInRange = UNIT::UnitMode::UNITMODE_IsTargetInActionRange(pTargetUnit, pUnit, nActionType);
-      if (!(uint32_t)((uint32_t)((uint32_t)byInRangeHi & 0xffffffu) << 8 | (uint32_t)(uint8_t)bInRange)) {
+      BOOL BVar1;
+      BVar1 = UNIT::UnitMode::UNITMODE_IsTargetInActionRange(pTargetUnit, pUnit, nActionType);
+      if (!BVar1) {
         return 1;
       }
 
@@ -1701,23 +1700,23 @@ void __stdcall SHOP_CleanupAssets() {
     UI::ui::UI_CloseTradeWindow(0);
 }
 
-void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(int32_t nParam) {
-    switch (*(uint16_t*)(nParam + 1)) {
+void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(D2GSPacketSrv0x50 * pPacket) {
+    switch (pPacket->nMessageType) {
       case 1:
-        UI::QuestLog::QUESTLOG_HandleSpecialPacket(nParam);
+        UI::QuestLog::QUESTLOG_HandleSpecialPacket((int32_t)pPacket);
       return;
       case 2:
-        UI::npcmenu::Merc::NPCMENU_SetSelectedMercIndex(*(int16_t*)(nParam + 3));
+        UI::npcmenu::Merc::NPCMENU_SetSelectedMercIndex(pPacket->aPayload[0]);
       return;
       case 3:
 
       case 6:
-        UI::npcmenu::NPCMENU_SetTransactionMode(nParam);
+        UI::npcmenu::NPCMENU_SetTransactionMode((int32_t)pPacket);
       return;
       case 4:
 
       case 0xd:
-        UI::Text::TEXT_HandleScrollLinePacket((uint8_t*)nParam);
+        UI::Text::TEXT_HandleScrollLinePacket(&pPacket->nPacketId);
       return;
       case 0x17:
         GAME::Msg::NET_D2GS_CLIENT_Send_0x69();
@@ -1726,7 +1725,7 @@ void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(int32_t nParam) {
       GAME::Game::D2CLIENT_SetExitVar3ToTrue();
       return;
       case 0x24:
-        UI::QuestLog::QUESTLOG_SetZooSpawnFlag((uint32_t)*(uint16_t*)(nParam + 3));
+        UI::QuestLog::QUESTLOG_SetZooSpawnFlag((uint32_t)pPacket->aPayload[0]);
       return;
     }
 }
@@ -2009,9 +2008,6 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
     bool _bCompositeDeath;
     bool bCompositeDeath;
     int nOverlay;
-    uint32_t nPaddedToken;
-    uint32_t nPaddedToken2;
-    uint32_t dwParam;
     uint32_t nComponentIdx;
     uint32_t nVariantIdx;
     uint8_t* pCofEntry;
@@ -2057,22 +2053,19 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
             nMonStatsTxt = (int)pCofEntry;
             if (!nAnimMode || nAnimMode == 0xc) {
               _bCompositeDeath = UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(nMonStatsId, compositeDeath);
-              dwParam = nPaddedToken;
               if (_bCompositeDeath) {
                 nVariantIdx = nComponentTable >> 0x18;
                 nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
                 pGfxData->nArmorToken = nOverlay;
-                dwParam = nPaddedToken2;
               }
             } else {
               nVariantIdx = (uint32_t)byColorVariant;
               nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
               pGfxData->nArmorToken = nOverlay;
-              dwParam = nPaddedToken2;
             }
 
             nAnimMode = 0;
-            Engine::GfxUtil::GFXUTIL_PadTokenString(dwParam, (char*)(nMonStatsTxt + 5), (char*)&nAnimMode);
+            Engine::GfxUtil::GFXUTIL_PadTokenString((char*)(nMonStatsTxt + 5), (char*)&nAnimMode);
             pGfxData->nWeaponClass = nAnimMode;
             if (!pGfxData->nCompositToken) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x425);

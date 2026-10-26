@@ -140,7 +140,7 @@ D2PoolManagerStrc * __stdcall SKILLS_GetOrAllocStateStatList(int32_t bAlloc, D2U
 }
 
 // Returns the passivestate field from D2SkillsTxt for the given skill ID. Returns 0 if invalid or no passive state.
-int __stdcall TXT_Skills_GetPassiveState(int nSkillId) {
+int TXT_Skills_GetPassiveState(int nSkillId) {
     if (!(-1 < nSkillId && nSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + nSkillId)) {
       return 0;
     }
@@ -1275,6 +1275,7 @@ uint32_t __stdcall SpendSkillPointOnSkill(D2UnitStrc * pUnit, eD2Skills eSkill) 
 }
 
 uint32_t __stdcall SKILLS_CalcToHit(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel) {
+    D2SkillCalcContextStrc sCalcCtx;
     if ((int)eSkill < 0) {
       return 0;
     }
@@ -1298,10 +1299,10 @@ uint32_t __stdcall SKILLS_CalcToHit(D2UnitStrc * pUnit, eD2Skills eSkill, int32_
       return 0;
     }
 
-    D2UnitStrc* pUnitForFormula = pUnit;
-    eD2Skills eSkillForFormula = eSkill;
-    int32_t nSkillLevelForFormula = nSkillLevel;
-    uint32_t uFormulaResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pSkillsCode + nToHitCalcIdx), sgptDataTable->nSkillsCodeSize - nToHitCalcIdx, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &pUnitForFormula);
+    sCalcCtx.pUnit = pUnit;
+    sCalcCtx.nSkillId = eSkill;
+    sCalcCtx.nSkillLevel = nSkillLevel;
+    uint32_t uFormulaResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pSkillsCode + nToHitCalcIdx), sgptDataTable->nSkillsCodeSize - nToHitCalcIdx, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &sCalcCtx);
     return uFormulaResult;
 }
 
@@ -1438,15 +1439,6 @@ int32_t SKILLS_ApplyElementalMasteryBonus(eD2ElementalDamageTypeDWORD eElementTy
 
 // Calculates the minimum elemental damage for a skill at a given level. Looks up the skill in sgptDataTable, computes base min damage from EMinLev breakpoints and EMin, then optionally evaluates the EDmgSymPerCalc formula via SKILLS_CompileSkillFormula, and if bApplyMastery is set, further scales by the caster's elemental mastery passive stat. Returns 0 if skill ID or level is invalid.
 int32_t __stdcall SERVER_MinDamage(D2UnitStrc * pUnit, int32_t eSkillId, int32_t nSkillLevel, BOOL bApplyMastery) {
-    // Frame slots -16..-4 are ONE object: &pUnitForFormula is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      D2UnitStrc* pUnitForFormula;
-      int32_t nSkillIdArg;
-      int32_t nSkillLevelForFormula;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int32_t nElemMasteryBonus;
     D2DataTableTxtStrc* pDataTable = sgptDataTable;
     if (!(-1 < eSkillId && eSkillId < sgptDataTable->nTxtSkillsCount)) {
@@ -1462,10 +1454,11 @@ int32_t __stdcall SERVER_MinDamage(D2UnitStrc * pUnit, int32_t eSkillId, int32_t
     uint32_t uCalcResult = pSkillTxt->EDmgSymPerCalc;
     nDamage = nDamage + pSkillTxt->EMin << (pSkillTxt->HitShift & 0x1fU);
     if (uCalcResult != -1 && (0x100 < nDamage || pSkillTxt->EMinLev[0]) && pDataTable->pSkillsCode && uCalcResult < (uint32_t)pDataTable->nSkillsCodeSize) {
-      __frame0.pUnitForFormula = pUnit;
-      __frame0.nSkillIdArg = eSkillId;
-      __frame0.nSkillLevelForFormula = nSkillLevel;
-      uCalcResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(pDataTable->pSkillsCode + uCalcResult), pDataTable->nSkillsCodeSize - uCalcResult, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &__frame0.pUnitForFormula);
+      D2SkillCalcContextStrc sCalcCtx;
+      sCalcCtx.pUnit = pUnit;
+      sCalcCtx.nSkillId = eSkillId;
+      sCalcCtx.nSkillLevel = nSkillLevel;
+      uCalcResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(pDataTable->pSkillsCode + uCalcResult), pDataTable->nSkillsCodeSize - uCalcResult, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &sCalcCtx);
       if (uCalcResult) {
         nElemMasteryBonus = D2Client::Stats::D2ApplyPercent(nDamage, uCalcResult, 100);
         nDamage += nElemMasteryBonus;
@@ -1481,15 +1474,6 @@ int32_t __stdcall SERVER_MinDamage(D2UnitStrc * pUnit, int32_t eSkillId, int32_t
 }
 
 int32_t __stdcall SERVER_MaxDamage(D2UnitStrc * pUnit, int32_t eSkillId, int32_t nSkillLevel, int32_t bApplyElemBonus) {
-    // Frame slots -16..-4 are ONE object: &pUnitArg is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      D2UnitStrc* pUnitArg;
-      int32_t eSkillIdArg;
-      int32_t nSkillLevelArg;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int32_t nElemMasteryBonus;
     D2DataTableTxtStrc* pDataTable = sgptDataTable;
     if (!(-1 < eSkillId && eSkillId < sgptDataTable->nTxtSkillsCount)) {
@@ -1505,10 +1489,11 @@ int32_t __stdcall SERVER_MaxDamage(D2UnitStrc * pUnit, int32_t eSkillId, int32_t
     uint32_t uCalcResult = pSkillTxt->EDmgSymPerCalc;
     nDamage = nDamage + pSkillTxt->EMax << (pSkillTxt->HitShift & 0x1fU);
     if (uCalcResult != -1 && pDataTable->pSkillsCode && uCalcResult < (uint32_t)pDataTable->nSkillsCodeSize) {
-      __frame0.pUnitArg = pUnit;
-      __frame0.eSkillIdArg = eSkillId;
-      __frame0.nSkillLevelArg = nSkillLevel;
-      uCalcResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(pDataTable->pSkillsCode + uCalcResult), pDataTable->nSkillsCodeSize - uCalcResult, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &__frame0.pUnitArg);
+      D2SkillCalcContextStrc sCalcCtx;
+      sCalcCtx.pUnit = pUnit;
+      sCalcCtx.nSkillId = eSkillId;
+      sCalcCtx.nSkillLevel = nSkillLevel;
+      uCalcResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(pDataTable->pSkillsCode + uCalcResult), pDataTable->nSkillsCodeSize - uCalcResult, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &sCalcCtx);
       if (uCalcResult) {
         nElemMasteryBonus = D2Client::Stats::D2ApplyPercent(nDamage, uCalcResult, 100);
         nDamage += nElemMasteryBonus;
@@ -1525,16 +1510,8 @@ int32_t __stdcall SERVER_MaxDamage(D2UnitStrc * pUnit, int32_t eSkillId, int32_t
 
 // Computes the synergy duration/length bonus for a skill at a given level. Uses the ELevLen breakpoint array (three tiers: levels 1-8, 9-16, 17+) to compute a scaled length offset added to ELen, then optionally evaluates ELenSymPerCalc formula for a percent modifier. Used to calculate e.g. cold duration granted by a synergy skill. Returns 0 if skill or level is invalid.
 int32_t __stdcall SERVER_Synergy1(D2UnitStrc * pUnit, int32_t eSkillId, int32_t nSkillLevel, int32_t nUnused) {
-    // Frame slots -16..-4 are ONE object: &pUnitArg is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      D2UnitStrc* pUnitArg;
-      int32_t eSkillIdArg;
-      int32_t nSkillLevelArg;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int nLevelLenOffset;
+    D2SkillCalcContextStrc sCalcCtx;
     if (!(-1 < eSkillId && eSkillId < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -1559,10 +1536,10 @@ int32_t __stdcall SERVER_Synergy1(D2UnitStrc * pUnit, int32_t eSkillId, int32_t 
       return nSynergyLen;
     }
 
-    __frame0.nSkillLevelArg = nSkillLevel;
-    __frame0.pUnitArg = pUnit;
-    __frame0.eSkillIdArg = eSkillId;
-    uCalcResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pSkillsCode + uCalcResult), sgptDataTable->nSkillsCodeSize - uCalcResult, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &__frame0.pUnitArg);
+    sCalcCtx.nSkillLevel = nSkillLevel;
+    sCalcCtx.pUnit = pUnit;
+    sCalcCtx.nSkillId = eSkillId;
+    uCalcResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pSkillsCode + uCalcResult), sgptDataTable->nSkillsCodeSize - uCalcResult, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &sCalcCtx);
     if (!uCalcResult) {
       return nSynergyLen;
     }
@@ -2435,7 +2412,7 @@ eD2Skills __stdcall SKILLS_GetClassSkillByIndex(uint32_t nClassId, int32_t nSkil
       return ~SKILL_Attack;
     }
 
-    return (int)(&sgptDataTable->pSkillsPerClassStrc->Amazon)[sgptDataTable->nSkillCountMaxPerClass * nClassId + nSkillIndex];
+    return (int)sgptDataTable->pSkillsPerClassStrc[sgptDataTable->nSkillCountMaxPerClass * nClassId + nSkillIndex];
 }
 
 int32_t __stdcall AmountOfSkillsByClassId(uint32_t nClassId) {
@@ -2601,6 +2578,7 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
     D2MissilesTxt* pMissileTxt;
     uint32_t uResult;
     uint32_t nCalcOffset;
+    D2SkillCalcContextStrc sCalcCtx;
     int32_t bApplyMastery;
     short int nMissileId;
     short int sMissileId;
@@ -2928,19 +2906,19 @@ uint32_t __stdcall SKILLDESC_EvalDescCalcValue(D2UnitStrc * pUnit, uint8_t bPara
       return 0;
     }
 
-    eD2Skills eContextSkill = eSkill;
-    D2UnitStrc* pContextUnit = pUnit;
-    uint32_t nContextSkillLevel = nParam;
-    nCalcOffset = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pSkillsCode + nCalcOffset), sgptDataTable->nSkillsCodeSize - nCalcOffset, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &pContextUnit);
+    sCalcCtx.nSkillId = eSkill;
+    sCalcCtx.pUnit = pUnit;
+    sCalcCtx.nSkillLevel = nParam;
+    nCalcOffset = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pSkillsCode + nCalcOffset), sgptDataTable->nSkillsCodeSize - nCalcOffset, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &sCalcCtx);
     return nCalcOffset;
 }
 
-uint32_t __fastcall SKILLS_DescCalcCallback_Eval(uint8_t nCalcCode, D2UnitStrc * * ppContext) {
-    if (!ppContext) {
+uint32_t __fastcall SKILLS_DescCalcCallback_Eval(uint8_t nCalcCode, D2SkillCalcContextStrc * pCalcCtx) {
+    if (!pCalcCtx) {
       return 0;
     }
 
-    uint32_t uResult = SKILLDESC_EvalDescCalcValue(*ppContext, nCalcCode, (eD2Skills)ppContext[1], (uint32_t)ppContext[2]);
+    uint32_t uResult = SKILLDESC_EvalDescCalcValue(pCalcCtx->pUnit, nCalcCode, pCalcCtx->nSkillId, pCalcCtx->nSkillLevel);
     return uResult;
 }
 
@@ -2973,26 +2951,28 @@ uint32_t __fastcall SKILLS_EvalSkillDescCalc_Chained(eD2Skills eSkill, uint8_t b
 }
 
 int32_t __stdcall D2GetSkillCalc(D2UnitStrc * pUnit, int32_t calc, eD2Skills eSkill, int32_t nSkillLvl) {
+    D2SkillCalcContextStrc sCalcCtx;
     if (!(sgptDataTable->pSkillsCode && (uint32_t)calc < (uint32_t)sgptDataTable->nSkillsCodeSize)) {
       return 0;
     }
 
-    D2UnitStrc* pContextUnit = pUnit;
-    eD2Skills eContextSkill = eSkill;
-    int32_t nContextSkillLevel = nSkillLvl;
-    uint32_t nCalcResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pSkillsCode + calc), sgptDataTable->nSkillsCodeSize - calc, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &pContextUnit);
+    sCalcCtx.pUnit = pUnit;
+    sCalcCtx.nSkillId = eSkill;
+    sCalcCtx.nSkillLevel = nSkillLvl;
+    uint32_t nCalcResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pSkillsCode + calc), sgptDataTable->nSkillsCodeSize - calc, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &sCalcCtx);
     return nCalcResult;
 }
 
 uint32_t __stdcall SKILLS_EvalDescCalcBytecode(D2UnitStrc * pUnit, uint32_t nCalcOffset, eD2Skills eSkillId, int32_t nSkillLevel) {
+    D2SkillCalcContextStrc sCalcCtx;
     if (!(sgptDataTable->pSkillDescCode && nCalcOffset < (uint32_t)sgptDataTable->nSkillDescCodeSize)) {
       return 0;
     }
 
-    D2UnitStrc* pContextUnit = pUnit;
-    eD2Skills eContextSkill = eSkillId;
-    int32_t nContextSkillLevel = nSkillLevel;
-    uint32_t uResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pSkillDescCode + nCalcOffset), sgptDataTable->nSkillDescCodeSize - nCalcOffset, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &pContextUnit);
+    sCalcCtx.pUnit = pUnit;
+    sCalcCtx.nSkillId = eSkillId;
+    sCalcCtx.nSkillLevel = nSkillLevel;
+    uint32_t uResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pSkillDescCode + nCalcOffset), sgptDataTable->nSkillDescCodeSize - nCalcOffset, (fnSkillCalcMethod)SKILLS_DescCalcCallback_Eval, gaSkillCalcMethods, gnSkillCalcMethodCount, &sCalcCtx);
     return uResult;
 }
 
@@ -3113,7 +3093,6 @@ void __stdcall SKILLS_UpdateAllPassiveSkills(D2UnitStrc * pUnit) {
 // Removes a permanent skill entry from pUnit's skill list. Clears the associated passive state if any, deselects the skill from left/right/current slots if it was active, and either decrements the skill's level (when decrement flag is set and level remains >= 1) or fully unlinks and frees the D2SkillStrc node. Finishes by updating passive skill stats.
 // @sourcefile .\SKILLS\Skills.cpp
 void __stdcall SKILLS_RemoveSkill(D2UnitStrc * pUnitStrc, eD2Skills dwParam2, int dwParam3) {
-    eD2Skills eSkillOut;
     if (!pUnitStrc) {
       return;
     }
@@ -3129,37 +3108,33 @@ void __stdcall SKILLS_RemoveSkill(D2UnitStrc * pUnitStrc, eD2Skills dwParam2, in
     }
 
     eD2States ePassiveState = TXT_Skills_GetPassiveState(dwParam2);
-    eD2Skills eSkillId = eSkillOut;
     if (ePassiveState != STATE_none) {
       DATATBLS::ItemStats::SetState(pUnitStrc, ePassiveState, 0);
-      eSkillId = dwParam2;
     }
 
     D2SkillStrc* pSlotSkill = pSkillList->pLeftSkill;
-    if (pSlotSkill && eSkillId == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
+    if (pSlotSkill && dwParam2 == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
       SelectSkillLeft(pUnitStrc, SKILL_Attack, -1);
-      eSkillId = dwParam2;
     }
 
     pSlotSkill = pSkillList->pRightSkill;
-    if (pSlotSkill && eSkillId == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
+    if (pSlotSkill && dwParam2 == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
       SelectSkillRight(pUnitStrc, 0, -1);
-      eSkillId = dwParam2;
     }
 
     pSlotSkill = pSkillList->pCurrentSkill;
-    if (pSlotSkill && eSkillId == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
+    if (pSlotSkill && dwParam2 == (int)pSlotSkill->pRecord->skill && pSlotSkill->nOwnerGUID == -1) {
       pSkillList->pCurrentSkill = 0;
     }
 
     pSlotSkill = 0;
-    while ((int)pSkillToRemove->pRecord->skill != eSkillId || pSkillToRemove->nOwnerGUID != -1) {
+    while ((int)pSkillToRemove->pRecord->skill != dwParam2 || pSkillToRemove->nOwnerGUID != -1) {
       D2SkillStrc** ppDVar1;
       ppDVar1 = &pSkillToRemove->pNext;
       pSlotSkill = pSkillToRemove;
       pSkillToRemove = *ppDVar1;
       if (!*ppDVar1) {
-        SKILLS_UpdatePassiveSkillStats(pUnitStrc, eSkillId);
+        SKILLS_UpdatePassiveSkillStats(pUnitStrc, dwParam2);
         return;
       }
     }
@@ -3172,10 +3147,9 @@ void __stdcall SKILLS_RemoveSkill(D2UnitStrc * pUnitStrc, eD2Skills dwParam2, in
       }
 
       D2_FREE_POOL(pUnitStrc->pMemory, pSkillToRemove);
-      eSkillId = dwParam2;
     }
 
-    SKILLS_UpdatePassiveSkillStats(pUnitStrc, eSkillId);
+    SKILLS_UpdatePassiveSkillStats(pUnitStrc, dwParam2);
 }
 
 void __stdcall SKILL_RemoveSkillCallback(D2UnitStrc * pUnit, eD2Skills eSkill, char * szSourceFile, int32_t nParam2) {
@@ -3648,7 +3622,6 @@ uint32_t __stdcall SKILL_IsDelayExpired(D2SkillStrc * pSkill, D2UnitStrc * pUnit
 // Validates whether pUnit can currently activate pSkill. Returns an error code: 0=ok/can use (via SKILL_IsDelayExpired returning non-zero producing 8), 1=not enough mana or start-mana check failed, 2=no item charges or missing required weapon/quantity, 3=skill record missing or flag2 bit2 clear (not usable), 4=restriction check failed, 5=skill flag bit4 set, 6=skill flag bit5 set, 7=skill level zero. Halts with an internal error if pSkill is null.
 int32_t __stdcall SKILLS_CanUseSkill(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
     uint8_t* puVar1;
-    uint8_t bySkillFlags;
     if (!pSkill) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8e9);
       exit(-1);
@@ -3661,7 +3634,7 @@ int32_t __stdcall SKILLS_CanUseSkill(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
     if (!nSkillLevel) {
       return 7;
     }
-    if ((int32_t)((int32_t)((uint32_t)bySkillFlags << 26) >> 31)) {
+    if (pSkill->pRecord->aura) {
       return 6;
     }
     if (pSkill->pRecord->passive) {

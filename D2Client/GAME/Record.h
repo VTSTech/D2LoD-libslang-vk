@@ -16,6 +16,14 @@ struct __attribute__((packed)) D2GameRecordEntryStrc {
     /* 0x0C */ LPARAM lParam;
 };
 
+struct D2GameRecordFileHeaderStrc {
+    /* 0x00 */ int nVersion; // must be 1
+    /* 0x04 */ int nBlockCount; // signed JLE/JL loop bound
+    /* 0x08 */ int nLastBlockEntries;
+    /* 0x0C */ int nStepCount;
+    /* 0x10 */ uint32_t dwSeed; // SetupRecording pushes it after loading
+};
+
 struct __attribute__((packed)) D2GameRecordStrc {
     /* 0x0000 */ D2GameRecordEntryStrc pEntry[500];
     /* 0x1F40 */ int nEntrySize;

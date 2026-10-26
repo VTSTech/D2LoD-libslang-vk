@@ -12,6 +12,7 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2DialogStrc.h"
 #include "D2Client/D2GameViewStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Draw/Weather.h"
@@ -79,7 +80,6 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Win/DC6.h"
@@ -709,8 +709,10 @@ void __stdcall DRAW_Overlay_EnteringAreaX() {
 };
     static int gnQuestAreaIntroCount = 0x2;
     static uint32_t gnAreaNameCurrentLevelId;
-    static int32_t gnAreaNameOverlay;
-    static int gnAreaNameOverlayDuration;
+    static D2ClientTimerStrc gnAreaNameOverlay = {
+    /* .dwStartTick = */ 0,
+    /* .dwDurationMs = */ 0
+};
     static bool gbAreaNameOverlayInitialized;
 
     eD2LevelId eRoomLevel;
@@ -732,8 +734,8 @@ void __stdcall DRAW_Overlay_EnteringAreaX() {
       eAct neAct;
       if (!(gbAreaNameOverlayInitialized & 1)) {
         gbAreaNameOverlayInitialized |= 1;
-        gnAreaNameOverlay = 0;
-        gnAreaNameOverlayDuration = 0;
+        gnAreaNameOverlay.dwStartTick = 0;
+        gnAreaNameOverlay.dwDurationMs = 0;
       }
 
       eRoomLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
@@ -744,12 +746,12 @@ void __stdcall DRAW_Overlay_EnteringAreaX() {
           DC6_EnteredAreaName = 0;
         }
         if (gnAreaNameCurrentLevelId == LEVEL_None) {
-          gnAreaNameOverlay = 0;
-          gnAreaNameOverlayDuration = 0;
+          gnAreaNameOverlay.dwStartTick = 0;
+          gnAreaNameOverlay.dwDurationMs = 0;
           gnAreaNameCurrentLevelId = eRoomLevel;
         } else {
-          gnAreaNameOverlay = GetTickCount();
-          gnAreaNameOverlayDuration = 2000;
+          gnAreaNameOverlay.dwStartTick = GetTickCount();
+          gnAreaNameOverlay.dwDurationMs = 2000;
           gnAreaNameCurrentLevelId = eRoomLevel;
         }
       }
@@ -1721,7 +1723,7 @@ void __stdcall UI_ToggleMiniPanel() {
       if (0 < gnUIFlagCount) {
         do {
           if ((&GFX_bShowUIFlag.Game)[eUI] == 1) {
-            switch (gUIFlagDismissModeTable[eUI]->nDismissMode) {
+            switch (gUIFlagDismissModeTable[eUI]->anDismissMode[0x15]) {
               case 0:
                 break;
               case 1:
@@ -1841,7 +1843,7 @@ void __stdcall InitializeUI() {
         if (0 < gnUIFlagCount) {
           do {
             if ((&GFX_bShowUIFlag.Game)[eUI] == 1) {
-              switch (*(uint32_t*)gUIFlagDismissModeTable[eUI]->aHeader) {
+              switch (gUIFlagDismissModeTable[eUI]->anDismissMode[0]) {
                 case 0:
                   break;
                 case 1:
@@ -1894,7 +1896,7 @@ void __stdcall InitializeUI() {
           if (0 < gnUIFlagCount) {
             do {
               if ((&GFX_bShowUIFlag.Game)[eUI] == 1) {
-                switch (*(uint32_t*)(gUIFlagDismissModeTable[eUI]->aTail + 0x30)) {
+                switch (gUIFlagDismissModeTable[eUI]->anDismissMode[0x22]) {
                   case 0:
                     break;
                   case 1:
@@ -2181,7 +2183,7 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
           if (0 < gnUIFlagCount) {
             do {
               if ((&GFX_bShowUIFlag.Game)[eUIIndex] == 1) {
-                switch (*(uint32_t*)(gUIFlagDismissModeTable[eUIIndex]->aTail + 0x2c)) {
+                switch (gUIFlagDismissModeTable[eUIIndex]->anDismissMode[0x21]) {
                   case 0:
                     break;
                   case 1:

@@ -2,7 +2,7 @@
 
 #include "D2Win/Src/D2WinTextBox.h"
 #include "D2Client/D2ControlStrc.h"
-#include "D2Glide/Renderer/Glide.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/MainMenus.h"
@@ -1331,28 +1331,17 @@ void __fastcall FORMS_DestroyD2WinTextBox(::D2WinTextBox * pWinTextBox) {
 }
 
 // @sourcefile .\Src\D2WinTextBox.cpp
-uint32_t __fastcall SetText(::D2WinTextBox * pTextBox, uint16_t * szText, int32_t nLineStyle, bool bIndent, int nAlignment) {
-    // Frame slots -16..-4 are ONE object: &wszIndentBuf is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint16_t wszIndentBuf;
-      uint16_t wIndent1;
-      uint16_t wIndent2;
-      uint16_t wIndent3;
-      uint16_t wIndent4;
-      uint16_t wIndentNull;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+BOOL __fastcall SetText(::D2WinTextBox * pTextBox, uint16_t * szText, int32_t nLineStyle, bool bIndent, int nAlignment) {
     bool _uResult;
     bool uResult;
     int32_t nStrLen;
     int32_t nMaxWidth;
     void* pAllocedText;
     int nVisibleLines;
-    uint16_t* wDestination;
+    int32_t wDestination;
     uint16_t* pszTrimmed;
     uint16_t wszWorkBuf[1024];
+    uint16_t wszIndent[6];
     bool bAutoScroll;
     int32_t nSourceLine;
     ::D2WinScrollbar* pScrollbar;
@@ -1393,20 +1382,15 @@ uint32_t __fastcall SetText(::D2WinTextBox * pTextBox, uint16_t * szText, int32_
         if (!((uint32_t)pTextBox->sStyleControl.fpDraw & 0x20)) {
           nVisibleLines = pTextBox->sControl.dwSizeX + pTextBox->sStyleControl.neD2FormType * -2;
           if (nAlignment == 2) {
-            Fog::File::CONTAINER_InitializeBuffer(&__frame0.wszIndentBuf, 2, 6, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-            __frame0.wIndent4 = 0x20;
-            __frame0.wIndent3 = 0x20;
-            __frame0.wIndent2 = 0x20;
-            __frame0.wIndent1 = 0x20;
-            __frame0.wszIndentBuf = L' ';
-            __frame0.wIndentNull = 0;
-            nStrLen = D2WinFont::DRAW_text0(&__frame0.wszIndentBuf);
+            Fog::File::CONTAINER_InitializeBuffer(wszIndent, 2, 6, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+            memcpy(wszIndent, L"     ", 0xc);
+            nStrLen = D2WinFont::DRAW_text0(wszIndent);
             nVisibleLines -= nStrLen;
           }
 
           nStrLen = D2WinFont::D2WINFONT_GetStringPixelWidth(pszTrimmed, 0xff);
           if (nVisibleLines <= nStrLen) {
-            D2WINTEXTBOX_WordWrapAndSetText(pTextBox, pszTrimmed, nLineStyle, nAlignment);
+            _uResult = D2WINTEXTBOX_WordWrapAndSetText(pTextBox, pszTrimmed, nLineStyle, nAlignment);
             return _uResult;
           }
         }
@@ -1423,15 +1407,15 @@ uint32_t __fastcall SetText(::D2WinTextBox * pTextBox, uint16_t * szText, int32_
           *(uint16_t*)(*pLineEntry + 4) = *(uint16_t*)(*pLineEntry + 6);
           *(uint16_t*)(*pLineEntry + 2) = *(uint16_t*)(*pLineEntry + 4);
           *(uint16_t*)*pLineEntry = ((uint16_t*)*pLineEntry)[1];
-          wDestination = (uint16_t*)(*pLineEntry + 10);
+          wDestination = *pLineEntry + 10;
         } else {
           nSourceLine = 0x167;
           nMaxWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pszTrimmed);
-          wDestination = (uint16_t*)Fog::Memory::AllocClientMemory(nMaxWidth * 2 + 2, ".\\Src\\D2WinTextBox.cpp", nSourceLine, nStrLen);
-          *pLineEntry = (int)wDestination;
+          wDestination = (int32_t)Fog::Memory::AllocClientMemory(nMaxWidth * 2 + 2, ".\\Src\\D2WinTextBox.cpp", nSourceLine, nStrLen);
+          *pLineEntry = wDestination;
         }
 
-        D2Lang::Unicode::UNISYS::STRING_CopyWideString(wDestination, pszTrimmed);
+        D2Lang::Unicode::UNISYS::STRING_CopyWideString((uint16_t*)wDestination, pszTrimmed);
         memset(pLineEntry + 1, 0, 4 * sizeof(pLineEntry[0]));
         pLineEntry[5] = nLineStyle;
         *(bool*)(pLineEntry + 6) = bIndent;
@@ -1555,7 +1539,7 @@ void __fastcall D2WINTEXTBOX_SetLineCellTextWDirect(::D2WinTextBox * pnParam, ui
 }
 
 // @sourcefile .\Src\D2WinTextBox.cpp
-void __fastcall D2WINTEXTBOX_WordWrapAndSetText(::D2WinTextBox * pTextBox, uint16_t * wszText, int32_t nLineStyle, int32_t nAlignment) {
+BOOL __fastcall D2WINTEXTBOX_WordWrapAndSetText(::D2WinTextBox * pTextBox, uint16_t * wszText, int32_t nLineStyle, int32_t nAlignment) {
     uint16_t* pSecondLine;
     int nAvailWidth;
     size_t nPrevCharCount;
@@ -1631,7 +1615,7 @@ void __fastcall D2WINTEXTBOX_WordWrapAndSetText(::D2WinTextBox * pTextBox, uint1
         D2WinTextBox::SetText(pTextBoxSaved, pSecondLine, nLineStyle, false, nAlignment);
         Storm::SMem::SMemFree(pFirstLine, ".\\Src\\D2WinTextBox.cpp", 0x4c4, 0);
         Storm::SMem::SMemFree(pSecondLine, ".\\Src\\D2WinTextBox.cpp", 0x4c5, 0);
-        return;
+        return 1;
       }
 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x483);

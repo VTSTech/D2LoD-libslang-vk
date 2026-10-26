@@ -7,11 +7,11 @@
 #include "D2CMP/SRC/GfxHash.h"
 #include "D2CMP/SRC/LRUCache.h"
 #include "D2CMP/SRC/Tilecmp.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/D2GfxMemoryStrc.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "Fog/D2PoolManagerStrc.h"
@@ -482,22 +482,11 @@ BOOL SPRITECACHE_FindOrLoad(char * szText, D2GfxDataStrc * pGfxData) {
 }
 
 BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxData, LPSTR szText2) {
-    // Frame slots -12..-4 are ONE object: &byCharClass is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint8_t byCharClass;
-      uint8_t byArmorClass;
-      uint8_t byWeapon1;
-      uint8_t byWeapon2;
-      uint8_t byWeapon3;
-      uint8_t byToken1;
-      uint8_t byToken2;
-      uint8_t byToken3;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    int iVar2;
     int32_t nStrCmpResult;
     char* szBasePath;
+    char szToken0[4];
+    char szToken1[4];
     char* szFormat;
     int bUseCompressed;
     bUseCompressed = bUseCompressedData;
@@ -523,7 +512,7 @@ BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxData, LPST
         return 1;
       }
     } else {
-      int iVar1;
+      uint8_t bVar1;
       if (nSpriteType == UNIT_ITEM) {
         if (!pGfxData->szFilename) {
           *szText2 = '\0';
@@ -572,11 +561,11 @@ BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxData, LPST
           goto build_token_path;
         }
 
-        iVar1 = pGfxData->nClassId;
+        iVar2 = pGfxData->nClassId;
         szBasePath = "DATA\\GLOBAL\\MONSTERS";
-        if (iVar1 < 0x20a) {
-          if (iVar1 != 0x209) {
-            switch (iVar1) {
+        if (iVar2 < 0x20a) {
+          if (iVar2 != 0x209) {
+            switch (iVar2) {
               case 0xf2:
 
               case 0xfb:
@@ -594,7 +583,7 @@ BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxData, LPST
             }
           }
         } else {
-          switch (iVar1) {
+          switch (iVar2) {
             case 0x220:
 
             case 0x22f:
@@ -618,26 +607,26 @@ BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxData, LPST
 
         bUseCompressed = 0;
         build_token_path:
-        __frame0.byCharClass = (uint8_t)pGfxData->nUnitToken;
-        __frame0.byWeapon2 = 0;
-        __frame0.byToken3 = 0;
-        __frame0.byCharClass = __frame0.byCharClass == 0x20 ? 0 : __frame0.byCharClass;
-        __frame0.byArmorClass = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 1);
-        __frame0.byArmorClass = __frame0.byArmorClass == 0x20 ? 0 : __frame0.byArmorClass;
-        __frame0.byWeapon1 = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 2);
-        __frame0.byWeapon1 = __frame0.byWeapon1 == 0x20 ? 0 : __frame0.byWeapon1;
-        __frame0.byWeapon3 = (uint8_t)pGfxData->nCompositToken;
-        __frame0.byWeapon3 = __frame0.byWeapon3 == 0x20 ? 0 : __frame0.byWeapon3;
-        __frame0.byToken1 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 1);
-        __frame0.byToken1 = __frame0.byToken1 == 0x20 ? 0 : __frame0.byToken1;
-        __frame0.byToken2 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 2);
-        __frame0.byToken2 = __frame0.byToken2 == 0x20 ? 0 : __frame0.byToken2;
+        bVar1 = (uint8_t)pGfxData->nUnitToken;
+        szToken0[3] = '\0';
+        szToken1[3] = '\0';
+        szToken0[0] = bVar1 == 0x20 ? 0 : bVar1;
+        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 1);
+        szToken0[1] = bVar1 == 0x20 ? 0 : bVar1;
+        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 2);
+        szToken0[2] = bVar1 == 0x20 ? 0 : bVar1;
+        bVar1 = (uint8_t)pGfxData->nCompositToken;
+        szToken1[0] = bVar1 == 0x20 ? 0 : bVar1;
+        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 1);
+        szToken1[1] = bVar1 == 0x20 ? 0 : bVar1;
+        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 2);
+        szToken1[2] = bVar1 == 0x20 ? 0 : bVar1;
         if (!bUseCompressed) {
-          /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dc6", szBasePath, &__frame0.byCharClass, &__frame0.byWeapon3, szText);
+          /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dc6", szBasePath, szToken0, szToken1, szText);
           return 1;
         }
 
-        /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dcc", szBasePath, &__frame0.byCharClass, &__frame0.byWeapon3, szText);
+        /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dcc", szBasePath, szToken0, szToken1, szText);
         pGfxData->dwRenderFlags |= 1;
         return 1;
       }

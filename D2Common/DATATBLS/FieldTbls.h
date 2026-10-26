@@ -9,9 +9,15 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2ArchiveStrc;
 struct D2PoolManagerStrc;
 struct D2RoomStrc;
+
+// Data types
+struct __attribute__((packed)) D2ExpFieldFileStrc {
+    /* 0x00 */ uint16_t wHeader; // never read
+    /* 0x02 */ uint32_t nHeight;
+    /* 0x06 */ uint32_t nWidth;
+};
 
 namespace D2Common::DATATBLS::FieldTbls {
 
@@ -21,7 +27,7 @@ namespace D2Common::DATATBLS::FieldTbls {
 // offset lookup tables used for automap/collision field stepping.
 // Source: .\\DATATBLS\\FieldTbls.cpp
 // @sourcefile .\DATATBLS\FieldTbls.cpp
-void __stdcall FIELDTBLS_InitFieldData(struct D2ArchiveStrc * pArchive, uint32_t dwUnused);
+void __stdcall FIELDTBLS_InitFieldData(struct D2ExpFieldFileStrc * pArchive, uint32_t dwUnused);
 // Frees the global field table data and zeroes all field dimensions/offsets.
 // Source: .\\DATATBLS\\FieldTbls.cpp
 // @sourcefile .\DATATBLS\FieldTbls.cpp

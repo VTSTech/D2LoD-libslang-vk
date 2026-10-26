@@ -33,6 +33,7 @@
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
+#include "D2Common/Drlg/Path.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/PATH/DynamicPath.h"
@@ -1266,8 +1267,8 @@ BOOL __fastcall Skills_CltStFunc_CalcLeapDestViaPathfind(D2UnitStrc * pUnit, eD2
       D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pServerPath, 0x401);
       nLine = D2Common::PATH::DynamicPath::GetPathPoint(pServerPath, &pPathPoints);
       if (nLine) {
-        nSrcX = (uint32_t)(uint16_t)pPathPoints[nLine - 1].nX;
-        nSrcY = (uint32_t)(uint16_t)pPathPoints[nLine - 1].nY;
+        nSrcX = (uint32_t)pPathPoints[nLine - 1].nX;
+        nSrcY = (uint32_t)pPathPoints[nLine - 1].nY;
         nType = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
         nSkillFlags = nSrcX;
         nDestY = nSrcY;

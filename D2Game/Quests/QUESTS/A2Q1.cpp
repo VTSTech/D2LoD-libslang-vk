@@ -173,9 +173,9 @@ void __fastcall Q09_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
 
-    D2QuestDataA2Q1Strc* pA2Q1Data = pQuestData->pQuestSpecificData.pA2Q1;
+    D2QuestDataA1Q3Strc* pA2Q1Data = pQuestData->pQuestSpecificData.pA1Q3;
     if (nMessageIndex == 0x130) {
-      pA2Q1Data->bSpokeToAtma = 1;
+      pA2Q1Data->field_0x08 = '\x01';
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q1.cpp", 0xef);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q09_UpdateQuestRecord);
     } else {
@@ -191,7 +191,7 @@ void __fastcall Q09_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
       if (!bQuestState) {
-        if (pA2Q1Data->bRewardPending) {
+        if (pA2Q1Data->field_0x10 != '\0') {
           pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
           if (pSeqQuestData) {
             /* FARPROC lpfn for IsBadCodePtr */ bQuestState = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -558,7 +558,7 @@ void __fastcall Q09_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
       /* GetQuestState RewardAwaits under FinishedInPreviousGame -> set bRewardPending
                          so Atma still hands over book */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RadamentsLair, QUESTSTATE_RewardAwaits);
       if (bQuestState == 1) {
-        pQuestData->pQuestSpecificData.pA2Q1->bRewardPending = true;
+        pQuestData->pQuestSpecificData.pA1Q3->field_0x10 = '\x01';
       }
 
       pQuestData->nStateFlag = 0;

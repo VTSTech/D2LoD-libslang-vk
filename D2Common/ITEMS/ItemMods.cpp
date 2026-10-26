@@ -339,7 +339,7 @@ D2StatListExStrc * __stdcall ITEMMOD_GetOrCreateStatList(D2UnitStrc * pUnit, int
     exit(-1);
 }
 
-// Already has a meaningful @description (maximizes AC or damage stats when an enhanced property is applied).
+// For an enhanced-defense or enhanced-damage property, raises the item's armor class above its Items.txt maxac, or sets max/min (one-hand, two-hand, throw) damage to the Items.txt maximums, so an enhanced item rolls at least its base maximum.
 void __stdcall ITEMMOD_MaximizeStatForEnhanced(eD2UnitStat eEnhancedProp, D2UnitStrc * pUnit) {
     int32_t nCurrentAC;
     int nNewAC;
@@ -539,7 +539,7 @@ int32_t __stdcall PropertyFunc_SimpleStat(int32_t nParam1, D2UnitStrc * pUnit, i
 // Property-to-stat conversion with additional context parameter for situational stat application. Reads scaled value from pPropData+4, optionally maximizes enhanced-damage stats, gets or creates the stat list (using pUnit as context for ITEMMOD_GetOrCreateStatList), then adds or negates the stat value. Halts on stat list failure.
 int32_t __fastcall PropertyFunc_SimpleStatWithContext(int32_t nType, D2UnitStrc * pUnit, D2UnitStrc * pItemUnit, D2SetsTxtFStrc * pProperty, eD2UnitStat eStatCode, int32_t nParam2, int32_t nParam3, uint32_t nParam, int32_t nContext) {
     int nStatVal;
-    D2SetsTxtFStrc* nValue;
+    int32_t nValue;
     int32_t nErrorLine;
     eD2UnitStat eTargetStat = eStatCode;
     if (pProperty) {
@@ -555,13 +555,13 @@ int32_t __fastcall PropertyFunc_SimpleStatWithContext(int32_t nType, D2UnitStrc 
       ITEMMOD_ScaleValueForStatType((int*)&pProperty, eTargetStat);
       pStatList = ITEMMOD_GetOrCreateStatList(pItemUnit, nParam3, nParam, pUnit);
       if (pStatList) {
-        nValue = pProperty;
+        nValue = (int32_t)pProperty;
         if (nParam2) {
           nStatVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, eTargetStat, 0);
-          nValue = (D2SetsTxtFStrc*)-nStatVal;
+          nValue = -nStatVal;
         }
 
-        Stats::StatsEx::STATLIST_AddStatValue(pStatList, eTargetStat, (int32_t)nValue, 0);
+        Stats::StatsEx::STATLIST_AddStatValue(pStatList, eTargetStat, nValue, 0);
         return 1;
       }
 
@@ -697,7 +697,7 @@ void __stdcall PropertyFunc_SimpleStatThunk2(int32_t nFastCallECX, int32_t pProp
 // lines with different values.
 int32_t __fastcall PropertyFunc_AllResistances(int32_t nType, D2UnitStrc * pUnit, D2UnitStrc * pItemUnit, D2SetsTxtFStrc * pProperty, eD2UnitStat eStatCode, int32_t nParam2, int32_t nParam3, uint32_t nParam, int32_t nContext) {
     D2SetsTxtFStrc* nRangeLow;
-    D2SetsTxtFStrc* nRangeHigh;
+    int32_t nRangeHigh;
     uint32_t nRandom;
     int16_t sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
     if (!sVar1) {
@@ -709,17 +709,17 @@ int32_t __fastcall PropertyFunc_AllResistances(int32_t nType, D2UnitStrc * pUnit
     }
     if (pProperty) {
       D2SeedStrc* pSeed;
-      nRangeHigh = (D2SetsTxtFStrc*)pProperty->fmax;
+      nRangeHigh = pProperty->fmax;
       pProperty = (D2SetsTxtFStrc*)pProperty->fmin;
-      if (nRangeHigh != pProperty) {
+      if ((D2SetsTxtFStrc*)nRangeHigh != pProperty) {
         nRangeLow = pProperty;
-        if ((int)nRangeHigh < (int)pProperty) {
-          nRangeLow = nRangeHigh;
-          nRangeHigh = pProperty;
+        if (nRangeHigh < (int)pProperty) {
+          nRangeLow = (D2SetsTxtFStrc*)nRangeHigh;
+          nRangeHigh = (int32_t)pProperty;
         }
 
         sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
-        nRandom = (int)nRangeHigh - (int)nRangeLow;
+        nRandom = nRangeHigh - (int)nRangeLow;
         if (sVar1) {
           nRandom++;
         }
@@ -744,7 +744,7 @@ int32_t __fastcall PropertyFunc_AllResistances(int32_t nType, D2UnitStrc * pUnit
 // Property function for All Maximum Resistances (+X% max fire/light/cold/poison resist). Classic items: 4 independent RNG rolls via ITEMMOD_ApplyRandomStatValue. Expansion items: single RNG roll from property min/max applied identically to all four max-resist stats via PropertyFunc_SimpleStat. Halts if property data pointer is null.
 int32_t __fastcall PropertyFunc_AllMaxResistances(int32_t nType, D2UnitStrc * pUnit, D2UnitStrc * pItemUnit, D2SetsTxtFStrc * pProperty, eD2UnitStat eStatCode, int32_t nParam2, int32_t nParam3, uint32_t nParam, int32_t nContext) {
     D2SetsTxtFStrc* nRangeLow;
-    D2SetsTxtFStrc* nRangeHigh;
+    int32_t nRangeHigh;
     uint32_t nRandom;
     int16_t sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
     if (!sVar1) {
@@ -756,17 +756,17 @@ int32_t __fastcall PropertyFunc_AllMaxResistances(int32_t nType, D2UnitStrc * pU
     }
     if (pProperty) {
       D2SeedStrc* pSeed;
-      nRangeHigh = (D2SetsTxtFStrc*)pProperty->fmax;
+      nRangeHigh = pProperty->fmax;
       pProperty = (D2SetsTxtFStrc*)pProperty->fmin;
-      if (nRangeHigh != pProperty) {
+      if ((D2SetsTxtFStrc*)nRangeHigh != pProperty) {
         nRangeLow = pProperty;
-        if ((int)nRangeHigh < (int)pProperty) {
-          nRangeLow = nRangeHigh;
-          nRangeHigh = pProperty;
+        if (nRangeHigh < (int)pProperty) {
+          nRangeLow = (D2SetsTxtFStrc*)nRangeHigh;
+          nRangeHigh = (int32_t)pProperty;
         }
 
         sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
-        nRandom = (int)nRangeHigh - (int)nRangeLow;
+        nRandom = nRangeHigh - (int)nRangeLow;
         if (sVar1) {
           nRandom++;
         }
@@ -794,23 +794,23 @@ int32_t __fastcall PropertyFunc_MinDamage(int32_t nType, D2UnitStrc * pUnit, D2U
     D2ItemsTxt* pDVar4;
     uint32_t nRolled;
     D2SetsTxtFStrc* nRangeLow;
-    D2SetsTxtFStrc* nRangeB;
+    int32_t nRangeB;
     D2SetsTxtFStrc* nRangeA;
     int32_t nProperty;
     if (pProperty) {
       int16_t wItemVersion;
       nRangeA = (D2SetsTxtFStrc*)pProperty->fmin;
-      nRangeB = (D2SetsTxtFStrc*)pProperty->fmax;
+      nRangeB = pProperty->fmax;
       nProperty = (int32_t)nRangeA;
-      if (nRangeA != nRangeB) {
+      if (nRangeA != (D2SetsTxtFStrc*)nRangeB) {
         nRangeLow = nRangeA;
-        if ((int)nRangeB < (int)nRangeA) {
-          nRangeLow = nRangeB;
-          nRangeB = nRangeA;
+        if (nRangeB < (int)nRangeA) {
+          nRangeLow = (D2SetsTxtFStrc*)nRangeB;
+          nRangeB = (int32_t)nRangeA;
         }
 
         wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
-        nRolled = (int)nRangeB - (int)nRangeLow;
+        nRolled = nRangeB - (int)nRangeLow;
         if (wItemVersion) {
           nRolled++;
         }
@@ -878,23 +878,23 @@ int32_t __fastcall PropertyFunc_MaxDamage(int32_t nType, D2UnitStrc * pUnit, D2U
     D2ItemsTxt* pDVar4;
     uint32_t nRolled;
     D2SetsTxtFStrc* nRangeLow;
-    D2SetsTxtFStrc* nRangeB;
+    int32_t nRangeB;
     D2SetsTxtFStrc* nRangeA;
     int32_t nProperty;
     if (pProperty) {
       int16_t wItemVersion;
       nRangeA = (D2SetsTxtFStrc*)pProperty->fmin;
-      nRangeB = (D2SetsTxtFStrc*)pProperty->fmax;
+      nRangeB = pProperty->fmax;
       nProperty = (int32_t)nRangeA;
-      if (nRangeA != nRangeB) {
+      if (nRangeA != (D2SetsTxtFStrc*)nRangeB) {
         nRangeLow = nRangeA;
-        if ((int)nRangeB < (int)nRangeA) {
-          nRangeLow = nRangeB;
-          nRangeB = nRangeA;
+        if (nRangeB < (int)nRangeA) {
+          nRangeLow = (D2SetsTxtFStrc*)nRangeB;
+          nRangeB = (int32_t)nRangeA;
         }
 
         wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
-        nRolled = (int)nRangeB - (int)nRangeLow;
+        nRolled = nRangeB - (int)nRangeLow;
         if (wItemVersion) {
           nRolled++;
         }
@@ -967,7 +967,7 @@ int32_t __fastcall PropertyFunc_EnhancedDamage(int32_t nType, D2UnitStrc * pUnit
     uint32_t nRolled;
     D2SetsTxtFStrc* nRangeLow;
     uint32_t nBaseMaxDam;
-    D2SetsTxtFStrc* nRangeHigh;
+    int32_t nRangeHigh;
     int16_t wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
     if (!wItemVersion) {
       ITEMMOD_ApplyRandomStatValue(pItemUnit, nType, pUnit, UNITSTAT_item_maxdamage_percent, nParam2, 1, nParam3, nParam, pProperty);
@@ -979,17 +979,17 @@ int32_t __fastcall PropertyFunc_EnhancedDamage(int32_t nType, D2UnitStrc * pUnit
       exit(-1);
     } else {
       uint8_t byMaxDam;
-      nRangeHigh = (D2SetsTxtFStrc*)pProperty->fmax;
+      nRangeHigh = pProperty->fmax;
       pProperty = (D2SetsTxtFStrc*)pProperty->fmin;
-      if (nRangeHigh != pProperty) {
+      if ((D2SetsTxtFStrc*)nRangeHigh != pProperty) {
         nRangeLow = pProperty;
-        if ((int)nRangeHigh < (int)pProperty) {
-          nRangeLow = nRangeHigh;
-          nRangeHigh = pProperty;
+        if (nRangeHigh < (int)pProperty) {
+          nRangeLow = (D2SetsTxtFStrc*)nRangeHigh;
+          nRangeHigh = (int32_t)pProperty;
         }
 
         wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
-        nRolled = (int)nRangeHigh - (int)nRangeLow;
+        nRolled = nRangeHigh - (int)nRangeLow;
         if (wItemVersion) {
           nRolled++;
         }
@@ -1096,16 +1096,16 @@ int32_t __fastcall PropertyFunc_Charges(int32_t nType, D2UnitStrc * pUnit, D2Uni
       return 0;
     }
 
-    uint8_t* eSkill;
-    eSkill = (uint8_t*)pProperty->fparam;
-    if ((int)eSkill < 0 || sgptDataTable->nTxtSkillsCount <= (int)eSkill || !(sgptDataTable->pTxtSkills + (int)eSkill)) {
+    int32_t eSkill;
+    eSkill = (int32_t)pProperty->fparam;
+    if (eSkill < 0 || sgptDataTable->nTxtSkillsCount <= eSkill || !(sgptDataTable->pTxtSkills + eSkill)) {
       return 0;
     }
 
     int nChargeSkillLevel;
     nChargeSkillLevel = pProperty->fmax;
     if (!nChargeSkillLevel) {
-      nReqLevel = Skills::TXT_Skills_GetReqLevel((eD2Skills)eSkill);
+      nReqLevel = Skills::TXT_Skills_GetReqLevel(eSkill);
       nItemLevel = Items::ITEM_GetItemData_nItemLevel(pItemUnit);
       nSkillLevel = (int)(nItemLevel - nReqLevel + (nItemLevel - nReqLevel >> 0x1f & 3U)) >> 2;
       nChargeSkillLevel = nSkillLevel + 1;
@@ -1114,17 +1114,17 @@ int32_t __fastcall PropertyFunc_Charges(int32_t nType, D2UnitStrc * pUnit, D2Uni
         nClampedSkillLevel = 1;
       }
 
-      nReqLevel = D2Client::DataTbls::SKILL_GetMaxLevelForSkill((int32_t)eSkill);
+      nReqLevel = D2Client::DataTbls::SKILL_GetMaxLevelForSkill(eSkill);
       if (nClampedSkillLevel < nReqLevel) {
         bSignedLessOrEqual = nChargeSkillLevel <= 1;
         if (bSignedLessOrEqual) {
           nChargeSkillLevel = 1;
         }
       } else {
-        nChargeSkillLevel = D2Client::DataTbls::SKILL_GetMaxLevelForSkill((int32_t)eSkill);
+        nChargeSkillLevel = D2Client::DataTbls::SKILL_GetMaxLevelForSkill(eSkill);
       }
     } else if (nChargeSkillLevel < 0) {
-      nReqLevel = Skills::TXT_Skills_GetReqLevel((eD2Skills)eSkill);
+      nReqLevel = Skills::TXT_Skills_GetReqLevel(eSkill);
       nSkillLevel = 99 - nReqLevel;
       if (nSkillLevel < 1) {
         nSkillLevel = 1;
@@ -1169,7 +1169,7 @@ int32_t __fastcall PropertyFunc_Charges(int32_t nType, D2UnitStrc * pUnit, D2Uni
     D2SeedStrc* pSeed = Items::GetItemSeed(pItemUnit);
     uint32_t nRandChargeOffset = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nSkillLevel - nChargesDiv8);
     D2StatListExStrc* pStatsEx = ITEMMOD_GetOrCreateStatList(pItemUnit, nParam3, nParam, pUnit);
-    nClampedSkillLevel = (int)eSkill << ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
+    nClampedSkillLevel = eSkill << ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
     Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, eStatCode, (nRandChargeOffset + 1 + nChargesDiv8 & 0xff) + nSkillLevel * 0x100, (uint32_t)((uint32_t)(uint16_t)(short int)((uint32_t)nClampedSkillLevel >> 0x10) << 16 | (uint32_t)(uint16_t)((short int)nClampedSkillLevel + ((uint16_t)sgptDataTable->dwChargedSkillLevelMask & (uint16_t)nChargeSkillLevel))));
     return 1;
 }
@@ -1385,8 +1385,8 @@ int32_t __fastcall PropertyFunc_SingleSkillBonus(int32_t nType, D2UnitStrc * pUn
       nValue = nSkillId + nRangeLow;
     }
 
-    uint8_t* nParam_00 = (uint8_t*)pProperty->fparam;
-    if (!(-1 < (int)nParam_00 && (int)nParam_00 < sgptDataTable->nTxtSkillsCount)) {
+    int32_t nParam_00 = (int32_t)pProperty->fparam;
+    if (!(-1 < nParam_00 && nParam_00 < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
@@ -1395,11 +1395,11 @@ int32_t __fastcall PropertyFunc_SingleSkillBonus(int32_t nType, D2UnitStrc * pUn
       return 0;
     }
     if (nParam2) {
-      nExistingValue = Stats::StatsEx::thunk_STATLIST_GetStatFromBaseArray(pStatsEx, UNITSTAT_item_singleskill, (uint32_t)nParam_00);
+      nExistingValue = Stats::StatsEx::thunk_STATLIST_GetStatFromBaseArray(pStatsEx, UNITSTAT_item_singleskill, nParam_00);
       nValue = -nExistingValue;
     }
 
-    Stats::StatsEx::STATLIST_AddStatValue(pStatsEx, UNITSTAT_item_singleskill, nValue, (uint16_t)(uintptr_t)nParam_00);
+    Stats::StatsEx::STATLIST_AddStatValue(pStatsEx, UNITSTAT_item_singleskill, nValue, (uint16_t)nParam_00);
     return 1;
 }
 
@@ -2231,7 +2231,7 @@ uint32_t __fastcall ITEMPROP_AddSkillCharges(uint32_t dwParam1, D2UnitStrc * pUn
     int32_t nReqLevel;
     int32_t nItemLevel;
     uint32_t nPropPtr;
-    int* nComputedLevel;
+    int32_t nComputedLevel;
     bool bSignedLessOrEqual;
     int nParam12;
     int* nParam1_00 = nParam1;
@@ -2249,29 +2249,29 @@ uint32_t __fastcall ITEMPROP_AddSkillCharges(uint32_t dwParam1, D2UnitStrc * pUn
       nMaxCharges = 5;
     }
 
-    int* nSkillLevel = (int*)nParam1[3];
+    int32_t nSkillLevel = nParam1[3];
     if (!nSkillLevel) {
       nReqLevel = Skills::TXT_Skills_GetReqLevel(eSkill);
       nItemLevel = Items::ITEM_GetItemData_nItemLevel(pUnit2);
-      nComputedLevel = (int*)((int)(nItemLevel - nReqLevel + (nItemLevel - nReqLevel >> 0x1f & 3U)) >> 2);
-      nSkillLevel = (int*)((int)nComputedLevel + 1);
-      nParam12 = (int)nSkillLevel;
-      if ((int)nSkillLevel < 2) {
+      nComputedLevel = (int)(nItemLevel - nReqLevel + (nItemLevel - nReqLevel >> 0x1f & 3U)) >> 2;
+      nSkillLevel = nComputedLevel + 1;
+      nParam12 = nSkillLevel;
+      if (nSkillLevel < 2) {
         nParam12 = 0x1;
       }
 
       nReqLevel = D2Client::DataTbls::SKILL_GetMaxLevelForSkill(eSkill);
       if (nReqLevel <= nParam12) {
-        nSkillLevel = (int*)D2Client::DataTbls::SKILL_GetMaxLevelForSkill(eSkill);
-        nPropPtr = ITEMMOD_AddStatToItem(pUnit, (int32_t)nParam1_00, nParam, (int16_t)nParam2, eSkill * 0x40 + ((uint32_t)nSkillLevel & 0x3f), nMaxCharges, nParam3, pUnit2, nParam4);
+        nSkillLevel = D2Client::DataTbls::SKILL_GetMaxLevelForSkill(eSkill);
+        nPropPtr = ITEMMOD_AddStatToItem(pUnit, (int32_t)nParam1_00, nParam, (int16_t)nParam2, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nParam3, pUnit2, nParam4);
         return nPropPtr;
       }
 
-      bSignedLessOrEqual = (int)nSkillLevel <= 1;
+      bSignedLessOrEqual = nSkillLevel <= 1;
     } else {
       int nScaleDivisor;
-      if (-1 < (int)nSkillLevel) {
-        nPropPtr = ITEMMOD_AddStatToItem(pUnit, (int32_t)nParam1_00, nParam, (int16_t)nParam2, eSkill * 0x40 + ((uint32_t)nSkillLevel & 0x3f), nMaxCharges, nParam3, pUnit2, nParam4);
+      if (-1 < nSkillLevel) {
+        nPropPtr = ITEMMOD_AddStatToItem(pUnit, (int32_t)nParam1_00, nParam, (int16_t)nParam2, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nParam3, pUnit2, nParam4);
         return nPropPtr;
       }
 
@@ -2281,20 +2281,20 @@ uint32_t __fastcall ITEMPROP_AddSkillCharges(uint32_t dwParam1, D2UnitStrc * pUn
         nScaleDivisor = 1;
       }
 
-      nScaleDivisor = -(nScaleDivisor / (int)nSkillLevel);
+      nScaleDivisor = -(nScaleDivisor / nSkillLevel);
       if (nScaleDivisor < 1) {
         nScaleDivisor = 1;
       }
 
       nItemLevel = Items::ITEM_GetItemData_nItemLevel(pUnit2);
-      nSkillLevel = (int*)((nItemLevel - nReqLevel) / nScaleDivisor);
-      bSignedLessOrEqual = (int)nComputedLevel <= 0;
+      nSkillLevel = (nItemLevel - nReqLevel) / nScaleDivisor;
+      bSignedLessOrEqual = nComputedLevel <= 0;
     }
     if (bSignedLessOrEqual) {
-      nSkillLevel = (int*)0x1;
+      nSkillLevel = 1;
     }
 
-    nPropPtr = ITEMMOD_AddStatToItem(pUnit, (int32_t)nParam1_00, nParam, (int16_t)nParam2, eSkill * 0x40 + ((uint32_t)nSkillLevel & 0x3f), nMaxCharges, nParam3, pUnit2, nParam4);
+    nPropPtr = ITEMMOD_AddStatToItem(pUnit, (int32_t)nParam1_00, nParam, (int16_t)nParam2, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nParam3, pUnit2, nParam4);
     return nPropPtr;
 }
 
@@ -3891,12 +3891,12 @@ void __fastcall ITEMMOD_ApplySetBonuses(D2UnitStrc * pUnit, D2UnitStrc * pUnit2,
 }
 
 // @sourcefile .\ITEMS\ItemMods.cpp
-void __stdcall ITEMMOD_ApplyRunewordProperties(D2UnitStrc * pUnit, int * pnParam, ::SGAMEDATA * pGame) {
+void __stdcall ITEMMOD_ApplyRunewordProperties(D2UnitStrc * pUnit, D2SetsTxtFStrc * pProperty, ::SGAMEDATA * pGame) {
     if (!pUnit) {
       return;
     }
 
-    ITEMMOD_ApplyPropertyToUnitStats(7, nullptr, (D2SetsTxtFStrc*)pnParam, pUnit, (uint32_t)pnParam, 0, 0, 0, 0, 0x40, 0);
+    ITEMMOD_ApplyPropertyToUnitStats(7, nullptr, pProperty, pUnit, (uint32_t)pProperty, 0, 0, 0, 0, 0x40, 0);
     BOOL bIsEthereal = Items::CheckItemFlag(pUnit, ITEMFLAG_ETHEREAL, 0x858, ".\\ITEMS\\ItemMods.cpp");
     if (!bIsEthereal) {
       return;

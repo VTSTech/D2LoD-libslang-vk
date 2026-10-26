@@ -57,6 +57,6 @@ void __fastcall GLSUBTILE_InvalidateByIndex(struct GlSubtileCacheStrc * pCache, 
 // @sourcefile .\Src\glSubtileCache.cpp
 void __fastcall GLSUBTILE_Destroy(uint32_t * pCacheData, struct GlSubtileCacheStrc * pCache);
 // Ensures cache has free capacity by allocating a node. If cache is full, evicts LRU entry first.
-void __fastcall GLSUBTILE_EnsureCapacity(struct GlSubtileCacheStrc * pCache);
+int __fastcall GLSUBTILE_EnsureCapacity(struct GlSubtileCacheStrc * pCache);
 
 } // namespace D2Glide::glSubtileCache

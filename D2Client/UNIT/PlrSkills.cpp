@@ -12,6 +12,7 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/Rendering.h"
 #include "D2Client/GAME/RosterPets.h"
+#include "D2Client/GAME/SCmd.h"
 #include "D2Client/SKILLS/Skills.h"
 #include "D2Client/SKILLS/SkillsBar.h"
 #include "D2Client/SKILLS/SkillsPal.h"
@@ -58,7 +59,6 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "globals/globals.h"
 #include "D2Client/D2LightMapStrc.h"
-#include "D2Client/GAME/SCmd.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Common/Drlg/Drlg.h"
@@ -794,45 +794,33 @@ void __fastcall PLRSKILLS_StateRemFn10_Pregnant(D2UnitStrc * pUnit) {
 }
 
 void __fastcall PLRSKILLS_StateSetFn14_Shapeshift(D2UnitStrc * pUnit, eD2States eState) {
-    // Frame slots -32..-4 are ONE object: &nPosX is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int32_t nPosX;
-      int32_t nPosY;
-      int32_t nMsgDir;
-      int32_t nMsgParam1;
-      int32_t nMsgParam2;
-      int32_t nMsgParam3;
-      int32_t nMsgParam4;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 28, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.nPosX = 0;
-    __frame0.nPosY = 0;
-    __frame0.nMsgDir = 0;
-    __frame0.nMsgParam1 = 0;
-    __frame0.nMsgParam2 = 0;
-    __frame0.nMsgParam3 = 0;
-    __frame0.nMsgParam4 = 0;
+    D2ServerMessageHandleStrc nPosX;
+    nPosX.nSkillId = 0;
+    nPosX.nItemId = 0;
+    nPosX.nTargetUnitType = 0;
+    nPosX.nTargetUnitId = 0;
+    nPosX.nSkillLvl = 0;
+    nPosX.nMaxDistance = 0;
+    nPosX.nTargetX = 0;
     eD2UnitType eUnitType = pUnit->eUnitType;
     if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
-      __frame0.nPosX = pUnit->pPath.pStaticPath->nPosX;
+      nPosX.nSkillId = pUnit->pPath.pStaticPath->nPosX;
     } else if (!pUnit->pPath.pDynamicPath) {
-      __frame0.nPosX = 0;
+      nPosX.nSkillId = 0;
     } else {
-      __frame0.nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+      nPosX.nSkillId = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
     }
 
     eUnitType = pUnit->eUnitType;
     if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
-      __frame0.nPosY = pUnit->pPath.pStaticPath->nPosY;
+      nPosX.nItemId = pUnit->pPath.pStaticPath->nPosY;
     } else if (!pUnit->pPath.pDynamicPath) {
-      __frame0.nPosY = 0;
+      nPosX.nItemId = 0;
     } else {
-      __frame0.nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+      nPosX.nItemId = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
     }
 
-    UnitMode::HandleMessage(0x19, pUnit, (D2ServerMessageHandleStrc*)&__frame0.nPosX, 0);
+    UnitMode::HandleMessage(0x19, pUnit, &nPosX, 0);
     D2Common::PATH::DynamicPath::PATH_SetNewDirection(pUnit->pPath.pDynamicPath, 0);
 }
 

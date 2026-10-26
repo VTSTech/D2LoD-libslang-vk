@@ -3,7 +3,7 @@
 #include "D2Win/D2WinAnimImage.h"
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/D2ControlStrc.h"
-#include "D2Glide/Renderer/Glide.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"

@@ -54,6 +54,7 @@
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
@@ -171,12 +172,12 @@ void __fastcall UpdateGameInfo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 
     int32_t nCurrentStat = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
     uint32_t nExperience = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_experience, 0);
-    D2UnitStrc* nNewLevel = (D2UnitStrc*)D2Common::DATATBLS::DataTbls::DATATBLS_GetLevelFromExperience(nCurHp, nExperience);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_level, (int32_t)nNewLevel, 0);
+    int nNewLevel = D2Common::DATATBLS::DataTbls::DATATBLS_GetLevelFromExperience(nCurHp, nExperience);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_level, nNewLevel, 0);
     int32_t nLayer = 0;
-    DWORD nNextExp = D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(nCurHp, (int32_t)nNewLevel);
+    DWORD nNextExp = D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(nCurHp, nNewLevel);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_nextexp, nNextExp, nLayer);
-    int nLevelDelta = (int)nNewLevel - nCurrentStat;
+    int nLevelDelta = nNewLevel - nCurrentStat;
     if (0 >= nLevelDelta) {
       return;
     }
@@ -363,21 +364,6 @@ BOOL __fastcall PLAYER_AssignStatPoint(D2UnitStrc * pUnit, uint32_t eStatType) {
 
 // Send all active buff/debuff states for unit to client. Iterates state flags, encodes state list via bit buffer with per-state stat lists using ItemStatCost config. Sends via 0xA8 opcode.
 void __fastcall PLAYER_SendStateListToClient(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
-    // Frame slots -260..-4 are ONE object: &byOpcode is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byOpcode;
-      uint8_t byUnitTypePkt;
-      int nUnitGUID;
-      uint8_t byPktSize;
-      uint8_t byPacketBuf[245];
-      uint32_t nStackGuard;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 256, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    uint32_t uVar1;
     void* _Src;
     int nFlagDwordCount;
     uint32_t nSetBitIdx;
@@ -402,22 +388,23 @@ void __fastcall PLAYER_SendStateListToClient(D2UnitStrc * pUnit, D2ClientStrc * 
     int nDwordIdx;
     uint32_t nStatId;
     int nStateBaseIdx;
+    D2GSPacketSrv0xAA sPacket;
     uint32_t nFlagDwordVal;
     eD2States eState;
     uint8_t bySendBits;
-    __frame0.nStackGuard = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     D2ClientStrc* pClientSaved = pClient;
     D2UnitStrc* pUnitSaved = pUnit;
     if (pUnit && pClient) {
+      uint32_t uVar1;
       _Src = (void*)D2Common::DATATBLS::ItemStats::thunk_UNIT_GetStateList_StateFlags(pUnit);
       nFlagDwordCount = sgptDataTable->nTxtStatesSize + 0x1f;
       nFlagDwordCount = (int)(nFlagDwordCount + (nFlagDwordCount >> 0x1f & 0x1fU)) >> 5;
       nStateFlagDwordCount = nFlagDwordCount;
       memcpy(aStateFlagDwords, _Src, nFlagDwordCount * 4);
-      __frame0.nUnitGUID = pUnit->nUnitGUID;
-      __frame0.byUnitTypePkt = (uint8_t)pUnit->eUnitType;
-      __frame0.byOpcode = 0xaa;
-      Fog::BitBuffer::InitBitBuffer(&bitBuf, __frame0.byPacketBuf, 0xf4);
+      sPacket.nUnitGUID = pUnit->nUnitGUID;
+      sPacket.nUnitType = (uint8_t)pUnit->eUnitType;
+      sPacket.nPacketId = 0xaa;
+      Fog::BitBuffer::InitBitBuffer(&bitBuf, sPacket.aBitStream, 0xf4);
       nDwordIdx = 0;
       nStateBaseIdx = 0;
       if (0 < nFlagDwordCount) {
@@ -521,8 +508,8 @@ void __fastcall PLAYER_SendStateListToClient(D2UnitStrc * pUnit, D2ClientStrc * 
 
       Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, 0xff, 8);
       nBitPosCheck = Fog::BitBuffer::GetNextPositon(&bitBuf);
-      __frame0.byPktSize = (uint8_t)(nBitPosCheck + 7U);
-      GAME::SCmd::NET_D2GS_SERVER_Send_0xAA_AddUnit_0xA8_SetState(pClient, &__frame0.byOpcode, nBitPosCheck + 7U);
+      sPacket.nPacketSize = (uint8_t)(nBitPosCheck + 7U);
+      GAME::SCmd::NET_D2GS_SERVER_Send_0xAA_AddUnit_0xA8_SetState(pClient, &sPacket.nPacketId, nBitPosCheck + 7U);
     }
 
     Fog::Debug::GuardStack();
@@ -530,22 +517,6 @@ void __fastcall PLAYER_SendStateListToClient(D2UnitStrc * pUnit, D2ClientStrc * 
 
 // Send stat changes (buffs/debuffs) to client. Iterates state flags, checks which are new/ending, encodes changed stats into bit buffer with ItemStatCost config, sends via 0xA7/0xA8/0xA9 opcodes.
 void __fastcall PLAYER_SendStateDeltaToClient(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
-    // Frame slots -260..-4 are ONE object: &byOpcode is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byOpcode;
-      uint8_t byUnitType;
-      uint32_t nUnitGUID;
-      uint8_t byPacketSize;
-      uint8_t byStateId;
-      uint8_t byPacketBuf[244];
-      uint32_t nStackGuard;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 256, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    eD2States eState_00;
     void* _Src;
     int nFlagDwordCountTmp;
     uint32_t nSetBitIdx;
@@ -572,13 +543,14 @@ void __fastcall PLAYER_SendStateDeltaToClient(D2UnitStrc * pUnit, D2ClientStrc *
     uint32_t nStatId;
     eD2UnitType eUnitType;
     uint32_t* pCurFlagDword;
+    D2GSPacketSrv0xA8 sPacket;
     uint32_t nFlagDwordVal;
     eD2States eState;
     uint8_t bySendBits;
-    __frame0.nStackGuard = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     D2UnitStrc* pUnitSaved = pUnit;
     D2ClientStrc* pClientSaved = pClient;
     if (pUnit && pClient) {
+      eD2States eState_00;
       _Src = (void*)D2Common::DATATBLS::ItemStats::STATES_AssertGetGfxFlags(pUnit);
       nFlagDwordCountTmp = sgptDataTable->nTxtStatesSize + 0x1f;
       nFlagDwordCount = (int)(nFlagDwordCountTmp + (nFlagDwordCountTmp >> 0x1f & 0x1fU)) >> 5;
@@ -614,11 +586,11 @@ void __fastcall PLAYER_SendStateDeltaToClient(D2UnitStrc * pUnit, D2ClientStrc *
                       GAME::SCmd::NET_D2GS_SERVER_Send_0xA7_UNITSTATE_ON_EX(pClientSaved, (uint8_t)eUnitType, uVar1, eState_00);
                       pUnit = pUnitSaved;
                     } else {
-                      __frame0.byOpcode = 0xa8;
-                      __frame0.byUnitType = (uint8_t)eUnitType;
-                      __frame0.byStateId = (uint8_t)eState_00;
-                      __frame0.nUnitGUID = uVar1;
-                      Fog::BitBuffer::InitBitBuffer(&bitBuf, __frame0.byPacketBuf, 0xf4);
+                      sPacket.nPacketId = 0xa8;
+                      sPacket.nUnitType = (uint8_t)eUnitType;
+                      sPacket.nStateId = (uint8_t)eState_00;
+                      sPacket.nUnitGUID = uVar1;
+                      Fog::BitBuffer::InitBitBuffer(&bitBuf, sPacket.aBitStream, 0xf4);
                       nStatBufIdx = 0;
                       pDataTable = sgptDataTable;
                       if (0 < nCopiedStats) {
@@ -674,8 +646,8 @@ void __fastcall PLAYER_SendStateDeltaToClient(D2UnitStrc * pUnit, D2ClientStrc *
 
                       Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, 0x1ff, 9);
                       nCopiedStats = Fog::BitBuffer::GetNextPositon(&bitBuf);
-                      __frame0.byPacketSize = (uint8_t)(nCopiedStats + 8U);
-                      GAME::SCmd::NET_D2GS_SERVER_Send_0xAA_AddUnit_0xA8_SetState(pClientSaved, &__frame0.byOpcode, nCopiedStats + 8U);
+                      sPacket.nPacketSize = (uint8_t)(nCopiedStats + 8U);
+                      GAME::SCmd::NET_D2GS_SERVER_Send_0xAA_AddUnit_0xA8_SetState(pClientSaved, &sPacket.nPacketId, nCopiedStats + 8U);
                       pUnit = pUnitSaved;
                     }
                   }
@@ -786,18 +758,7 @@ void __fastcall PLAYER_SendHoverTextToClient(D2UnitStrc * pUnit, D2ClientStrc * 
 }
 
 void __fastcall UNITMSG_SendSoundPacketToClient(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
-    // Frame slots -12..-4 are ONE object: &byOpcode is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byOpcode;
-      uint8_t byUnitType;
-      int nUnitGUID;
-      uint16_t wSoundId;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D2GSPacketSrv0x2C sPacket;
     D2UnitStrc* pUpdateUnit = pUnit->uSideData.pServerSide.pUpdateUnit;
     if (pUpdateUnit) {
       D2UnitStrc* pPlayerUnit_lcl;
@@ -807,11 +768,11 @@ void __fastcall UNITMSG_SendSoundPacketToClient(D2UnitStrc * pUnit, D2ClientStrc
       }
     }
 
-    __frame0.nUnitGUID = pUnit->nUnitGUID;
-    __frame0.wSoundId = *(uint16_t*)((uintptr_t)&pUnit->uSideData + 10);
-    __frame0.byOpcode = 0x2c;
-    __frame0.byUnitType = (uint8_t)pUnit->eUnitType;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x2C_PlaySound(pClient, (uint32_t*)&__frame0.byOpcode);
+    sPacket.nUnitGUID = pUnit->nUnitGUID;
+    sPacket.nSoundId = *(uint16_t*)((uintptr_t)&pUnit->uSideData + 10);
+    sPacket.nPacketId = ',';
+    sPacket.nUnitType = (uint8_t)pUnit->eUnitType;
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x2C_PlaySound(pClient, &sPacket);
 }
 
 // @sourcefile .\UNIT\SUnitMsg.cpp

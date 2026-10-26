@@ -8,8 +8,8 @@
 #include <cstdarg>
 #include "d2_platform.h"
 #include "D2Common/D2SeedStrc.h"
-#include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Game/Monster/Monsters.h"
+#include "D2Game/Objects/Objects.h"
 
 // Forward declarations
 struct D2AiGeneralStrc;
@@ -19,7 +19,6 @@ struct D2ClientStrc;
 struct D2InventoryStrc;
 struct D2LightMapStrc;
 struct D2MonStatsTxt;
-struct D2ObjectsTxt;
 struct D2PartyDataStrc;
 struct D2RoomStrc;
 struct D2SUnitEventStrc;

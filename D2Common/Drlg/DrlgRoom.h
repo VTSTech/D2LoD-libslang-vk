@@ -90,7 +90,7 @@ struct D2RoomExStrc * __fastcall DRLGSPAWN_GetRandomPresetSpawnPoint(int32_t nSp
 struct D2RoomExStrc * __stdcall DRLGSPAWN_FindWaypointRoomAndCoords(int * pX, int * pY, struct D2DrlgLevelStrc * pLevel);
 // Gets the room at the level's center position offset by (nOffsetX, nOffsetY).
 // Computes center as (WorldPos + WorldSize/2 - 2) plus the offsets.
-void __fastcall DRLGSPAWN_GetRoomAtLevelCenterOffset(int32_t nOffsetX, int32_t nOffsetY, struct D2DrlgLevelStrc * pLevel);
+struct D2RoomExStrc * __fastcall DRLGSPAWN_GetRoomAtLevelCenterOffset(int32_t nOffsetX, int32_t nOffsetY, struct D2DrlgLevelStrc * pLevel);
 // Selects a random room from the level's room list.
 // Asserts that the level and its room list are non-null.
 // Uses RANDOM_RandomNumberSelector with the level seed and room count.

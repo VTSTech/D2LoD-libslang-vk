@@ -75,6 +75,7 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/ITEMS/ItemMods.h"
@@ -2975,11 +2976,11 @@ uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, D2UnitStrc 
 }
 
 // Applies missile hit damage to all units within nRadius of (nCenterX,nCenterY) that pass targeting checks. Builds a UnitFind result set (flags nUnitFlags, default 0x583), skips the owner and owner-owner unless bHitOwner/bHitOwnerOwner are set, requires line-of-sight (COLLISION_LOS), optionally filters through pfnProc callback, then calls MISSMODE_ApplyMissileHitDamage for each hit. Returns 1 if any unit was hit, 0 otherwise.
-void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, int * pnParam, BOOL bHitOwner, BOOL bHitOwnerOwner, pfnAoEDamageFilter pfnProc, int32_t nUnitFlags) {
+void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, D2DamageStrc * pDamage, BOOL bHitOwner, BOOL bHitOwnerOwner, pfnAoEDamageFilter pfnProc, int32_t nUnitFlags) {
     BOOL bBadCodePtr;
     int32_t iVar1;
     int nCopyIdx;
-    int* pDmgSrc;
+    D2DamageStrc* pDmgSrc;
     D2DamageStrc* pDmgDst;
     D2DamageStrc sDamage;
     D2UnitFindArgStrc sUnitFindArg;
@@ -3018,11 +3019,11 @@ void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, D2UnitStrc *
           if (bCanAttack) {
             bCanAttack = D2Common::Skills::SKILLS_HasLineOfSightToUnit(nCenterX, nCenterY, sUnitFindData.pUnitsArray->aFoundUnitsList[nUnitIdx], 0x805);
             if (bCanAttack) {
-              pDmgSrc = pnParam;
+              pDmgSrc = pDamage;
               pDmgDst = &sDamage;
               for (nCopyIdx = 0x1c; nCopyIdx; nCopyIdx--) {
-                pDmgDst->dwHitFlags = *pDmgSrc;
-                pDmgSrc++;
+                pDmgDst->dwHitFlags = pDmgSrc->dwHitFlags;
+                pDmgSrc = (D2DamageStrc*)&pDmgSrc->wResultFlags;
                 pDmgDst = (D2DamageStrc*)&pDmgDst->wResultFlags;
               }
 

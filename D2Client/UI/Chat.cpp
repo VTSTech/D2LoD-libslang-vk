@@ -1116,13 +1116,12 @@ BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szCommandName, 
     // Static local variables (originally global data)
     static char gszChatWhisperTargetName[2] = " ";
 
-    D2RosterStrc* pRoster;
     D2BNetClientCallbacksStrc* pCallbacks;
-    uint8_t* puVar6;
-    uint8_t szMessageText[256];
+    char* pdwMsgDst;
+    char szMessageText[256];
     MessageStrc MStack_334;
-    uint8_t szTargetName[256];
-    uint8_t aWhisperBuf[276];
+    char szTargetName[256];
+    D2ChatPacketBuildStrc sWhisperPacket;
     char cScanChar;
     int nTokenCopyBase;
     char* pScan;
@@ -1137,7 +1136,7 @@ BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szCommandName, 
     pScan = szInput;
     do {
       cScanChar = *pScan;
-      pScan[(int)(aWhisperBuf + (0x10 - (int)szInput))] = cScanChar;
+      pScan[(uintptr_t)&sWhisperPacket + (0x10 - (int)szInput)] = cScanChar;
       pScan++;
     } while (cScanChar != '\0');
 
@@ -1145,7 +1144,7 @@ BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szCommandName, 
     int nTokenCount;
     nTokenCount = 0;
     if (pScan) {
-      uint8_t bVar1;
+      D2RosterStrc* pRoster;
       do {
         nTokenCount++;
         if (nTokenCount == 2) {
@@ -1156,7 +1155,7 @@ BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szCommandName, 
             pScan++;
           } while (cScanChar != '\0');
         } else if (nTokenCount == 3) {
-          pScan += (int)(aWhisperBuf + (0x10 - (int)szInput));
+          pScan = pScan + (uintptr_t)&sWhisperPacket + (0x10 - (int)szInput);
           nTokenCount = -(int)pScan;
           do {
             cScanChar = *pScan;
@@ -1174,28 +1173,28 @@ BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szCommandName, 
         send_whisper:
         if (bInGame) {
           for (pRoster = GAME::Roster::GetNextRosterPlayer(nullptr); pRoster; pRoster = GAME::Roster::GetNextRosterPlayer(pRoster)) {
-            puVar6 = szTargetName;
-            pScan = GAME::Roster::GetRosterName(pRoster);
-            nTokenCount = __stricmp(pScan, (char*)puVar6);
+            pScan = szTargetName;
+            pdwMsgDst = GAME::Roster::GetRosterName(pRoster);
+            nTokenCount = __stricmp(pdwMsgDst, pScan);
             if (!nTokenCount) {
-              strncpy((char*)(aWhisperBuf + 3), (char*)szMessageText, 0xff);
-              aWhisperBuf[0x102] = 0;
+              strncpy(sWhisperPacket.szMsg, szMessageText, 0xff);
+              sWhisperPacket.szMsg[0xff] = '\0';
               nTokenCount = 0;
               do {
-                bVar1 = szTargetName[nTokenCount];
-                aWhisperBuf[nTokenCount + 0x103] = bVar1;
+                cScanChar = szTargetName[nTokenCount];
+                sWhisperPacket.szTarget[nTokenCount] = cScanChar;
                 nTokenCount++;
-              } while (bVar1);
+              } while (cScanChar != '\0');
 
-              aWhisperBuf[2] = gaIMECompositionBuffer;
-              aWhisperBuf[1] = 2;
-              aWhisperBuf[0] = 0x15;
-              GAME::Msg::NET_D2GS_CLIENT_Send_Chat(aWhisperBuf);
+              sWhisperPacket.nIMEMode = gaIMECompositionBuffer;
+              sWhisperPacket.nMsgType = '\x02';
+              sWhisperPacket.nCmd = '\x15';
+              GAME::Msg::NET_D2GS_CLIENT_Send_Chat(&sWhisperPacket);
               return 1;
             }
           }
         }
-        sprintf(szInput, "%s %s %s", szCommandName, (char*)szTargetName, (char*)szMessageText);
+        sprintf(szInput, "%s %s %s", szCommandName, szTargetName, szMessageText);
         pCallbacks = ClientModeInGame::CLIENT_GetGameVersionInfo();
         if (!pCallbacks) {
           return 1;
@@ -1208,13 +1207,13 @@ BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szCommandName, 
 
     MStack_334.messageType = 4;
     MStack_334.messageColor = 3;
-    sprintf((char*)(aWhisperBuf + 0x10), "<BattleNet>: Correct usage is: %s (name) (message)", szCommandName);
-    puVar6 = aWhisperBuf + 0x10;
-    pScan = MStack_334.message;
+    sprintf(sWhisperPacket.szMsg + 0xd, "<BattleNet>: Correct usage is: %s (name) (message)", szCommandName);
+    pScan = sWhisperPacket.szMsg + 0xd;
+    pdwMsgDst = MStack_334.message;
     for (nTokenCount = 0x40; nTokenCount; nTokenCount--) {
-      *(uint32_t*)pScan = *(uint32_t*)puVar6;
-      puVar6 += 4;
+      *(uint32_t*)pdwMsgDst = *(uint32_t*)pScan;
       pScan += 4;
+      pdwMsgDst += 4;
     }
 
     Text::TEXT_ProcessChatMessage(&MStack_334);
@@ -1234,24 +1233,6 @@ void __stdcall CHAT_ExtractCommandParameter(int32_t nMaxLength, char * szInput, 
 // Process chat commands (/fps, /framerate, /players, /nopickup, /ignore, /unignore, /filtermsg, /msg, /help, etc.). Parses command, checks game state, executes handler or sends message via NET_D2GS_CLIENT_Send_Chat.
 // Stack[0x8] nInputOffset is reused as the parse cursor: it is overwritten with pszInputBase + nInputOffset (asm 0047c44c..45b); the caller passes the count of leading spaces it skipped.
 void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBase, int32_t nInputOffset) {
-    // Frame slots -368..-365 are ONE object: &byChatPacketType is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint8_t byChatPacketType;
-      char byCommandType;
-      char byIMEMode;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 3, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    // Frame -365..-109 is ONE object: a call writes 256 literal bytes starting at &wszChatBody.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame1_t {
-      uint32_t wszChatBody;
-      uint8_t __pad4[251];
-      uint8_t byChatBodyTerminator;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 256, "frame group __frame1_t must reproduce the Ghidra frame layout");
-    __frame1_t __frame1;
     eD2GSGameType eGameType;
     int32_t nCmpResult;
     BOOL BVar1;
@@ -1262,20 +1243,20 @@ void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBa
     uint16_t wStringId;
     uint16_t* pwFormatArg;
     uint16_t* pwMessage;
-    uint32_t* pdwChatBodyDst;
+    char* pdwChatBodyDst;
     uint16_t wszMsgBuffer1[260];
     uint16_t wszMsgBuffer2[130];
     char szCommandParam[260];
     uint16_t wszMsgBuffer3[260];
     uint16_t wszMsgBuffer4[260];
-    char szParsedCmd[17];
+    D2ChatPacketBuildStrc sChatPacket;
     uint16_t wszAccountName[34];
     char szExtractedAccount[20];
     IgnoreListVtable* pIgnoreListVtable;
-    memset(&__frame1.wszChatBody, 0, 0x100);
+    memset(sChatPacket.szMsg, 0, 0x100);
     char* pszInput;
     pszInput = pszInputBase + nInputOffset;
-    __frame0.byIMEMode = gaIMECompositionBuffer;
+    sChatPacket.nIMEMode = gaIMECompositionBuffer;
     nInputOffset = (int32_t)pszInput;
     int nCompareResult;
     nCompareResult = __stricmp(pszInput, "/fps");
@@ -1318,14 +1299,14 @@ void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBa
       goto close_chatbox;
     }
 
-    __frame0.byCommandType = '\x01';
-    __frame0.byChatPacketType = 0x15;
-    __frame0.byIMEMode = gaIMECompositionBuffer;
+    sChatPacket.nMsgType = '\x01';
+    sChatPacket.nCmd = '\x15';
+    sChatPacket.nIMEMode = gaIMECompositionBuffer;
     if (!gbChatInputEnabled || (nCmpResult = CHAT_IsWideStringASCII(pwInputMessage) , (char)nCmpResult != '\0')) {
-      BVar1 = CHAT_ParseCommand((char**)&nInputOffset, (uint8_t*)&__frame0.byCommandType, szParsedCmd);
+      BVar1 = CHAT_ParseCommand((char**)&nInputOffset, &sChatPacket.nMsgType, sChatPacket.szTarget);
       pszInput = (char*)nInputOffset;
-      if (BVar1 && __frame0.byCommandType == '\0') {
-        __frame0.byChatPacketType = 0x14;
+      if (BVar1 && sChatPacket.nMsgType == '\0') {
+        sChatPacket.nCmd = '\x14';
       }
     }
 
@@ -1394,7 +1375,7 @@ void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBa
             } else {
               nCmpResult = CHAT_CompareCaseInsensitive(pszInput, "/unfiltermsg ");
               if (nCmpResult) {
-                if (__frame0.byCommandType == '\x03' && (!gbChatInputEnabled || (nCmpResult = CHAT_IsWideStringASCII(pwInputMessage) , (char)nCmpResult != '\0'))) {
+                if (sChatPacket.nMsgType == '\x03' && (!gbChatInputEnabled || (nCmpResult = CHAT_IsWideStringASCII(pwInputMessage) , (char)nCmpResult != '\0'))) {
                   BVar1 = CHAT_HandleWhisperCommand(1, "/msg", pszInput);
                   if (!BVar1) {
                     BVar1 = CHAT_HandleWhisperCommand(1, "/m", pszInput);
@@ -1420,17 +1401,17 @@ void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBa
                 } else {
                   nCmpResult = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwInputMessage);
                   if (0 < nCmpResult) {
-                    pdwChatBodyDst = &__frame1.wszChatBody;
+                    pdwChatBodyDst = sChatPacket.szMsg;
                     for (nCompareResult = 0x3f; nCompareResult; nCompareResult--) {
-                      *pdwChatBodyDst = *(uint32_t*)pszInput;
+                      *(uint32_t*)pdwChatBodyDst = *(uint32_t*)pszInput;
                       pszInput += 4;
-                      pdwChatBodyDst++;
+                      pdwChatBodyDst += 4;
                     }
 
                     *(uint16_t*)pdwChatBodyDst = *(uint16_t*)pszInput;
-                    *(char*)((int)pdwChatBodyDst + 2) = pszInput[2];
-                    __frame1.byChatBodyTerminator = 0;
-                    GAME::Msg::NET_D2GS_CLIENT_Send_Chat(&__frame0.byChatPacketType);
+                    pdwChatBodyDst[2] = pszInput[2];
+                    sChatPacket.szMsg[0xff] = '\0';
+                    GAME::Msg::NET_D2GS_CLIENT_Send_Chat(&sChatPacket);
                   }
                 }
 

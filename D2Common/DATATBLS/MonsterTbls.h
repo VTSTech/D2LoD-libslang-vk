@@ -13,6 +13,7 @@ struct D2HirelingTxt;
 struct D2MonPresetTxt;
 struct D2MonSeqMonsterTbls;
 struct D2MonSoundsTxt;
+struct D2MonStatsInitStrc;
 struct D2NpcTxt;
 struct D2ParsedTreasureClassEntriesStrc;
 struct D2ParsedTreasureClassStrc;
@@ -79,7 +80,7 @@ void __fastcall MONSTERTBLS_ParseMonStatsField(char * szText, char * pRecord, ui
 // Loads and compiles monstats.txt into the engine's runtime MonStats table. Builds the column schema as a stack D2BinFieldInputStrc array (Id/BaseId/NextInClass/NameStr/DescStr/Code/TransLvl/... with per-field type/offset/linker), wiring the field linkers to sgtDataTable.pTxtMonStatsLink (most fields), pTxtMonSoundsLink (sound fields), and DATATBLS_LookupStringId for the string-key name/desc columns, then hands the schema + pMemory to the standard DATATBLS bin-compile/alloc routine to populate the MonStats table. pMemory passed in ECX (thiscall/fastcall-style); large alloca'd stack frame.
 void __fastcall TXT_AllocTxt_monstats(struct D2PoolManagerStrc * pMemory);
 // Computes level/difficulty-scaled monster combat stats from monstats.txt + monlvl.txt into the caller-supplied pnOutStats[] array. Inputs: nMonStatsId (monstats row), bIsChampion (selects champion HP/AC/XP/TH/DM column triplet), nDifficultyIdx (0-2, clamped), nMonLevel (clamped to monlvl table), nStatFlags (bitmask 0x1..0x100 selecting which stat groups to fill: HP, AC, XP, to-hit/damage, elemental). Per the monstat noRatio flag, values are either taken raw from the monstats row or scaled against the monlvl base via D2ApplyPercent(base, percent, 100). Returns 1 on success, 0 if the monstats/monlvl row is out of range or null. Pure stat computation; no unit mutation.
-BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bIsChampion, uint32_t nDifficultyIdx, int32_t nMonLevel, uint32_t nStatFlags, int * pnOutStats);
+BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bIsChampion, uint32_t nDifficultyIdx, int32_t nMonLevel, uint32_t nStatFlags, struct D2MonStatsInitStrc * pOutStats);
 void __stdcall MONSTER_SetVelocityByIndex(int32_t nMonStatsId, int16_t nVelocity);
 void __fastcall DATATBLS_CompileUniqueTitleTxt(struct D2PoolManagerStrc * pMemory, char * szText, uint32_t nTitleIdx);
 void __stdcall TXT_UnloadUniqueMonsterNameTables();

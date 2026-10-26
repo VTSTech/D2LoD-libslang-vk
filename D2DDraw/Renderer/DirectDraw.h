@@ -246,6 +246,16 @@ struct D2ddDebugFont {
     /* 0x0001 */ uint8_t _pad_0x0001[12287];
 };
 
+struct DDCOLORKEY {
+    DDCOLORKEY() = default;
+    DDCOLORKEY(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+    DDCOLORKEY(DWORD a0, DWORD a1) : dwColorSpaceLowValue(a0), dwColorSpaceHighValue(a1) {}
+
+    /* 0x00 */ DWORD dwColorSpaceLowValue;
+    /* 0x04 */ DWORD dwColorSpaceHighValue;
+};
+
 struct DDSURFACEDESC {
     /* 0x00 */ DWORD dwSize;
     /* 0x04 */ DWORD dwFlags;
@@ -359,6 +369,34 @@ struct IDirectDrawVtbl {
     /* 0x74 */ void * EvaluateMode;
 };
 
+#pragma pack(push, 1)
+struct DDBLTFX {
+    /* 0x00 */ DWORD dwSize;
+    /* 0x04 */ DWORD dwDDFX;
+    /* 0x08 */ DWORD dwROP;
+    /* 0x0C */ DWORD dwDDROP;
+    /* 0x10 */ DWORD dwRotationAngle;
+    /* 0x14 */ DWORD dwZBufferOpCode;
+    /* 0x18 */ DWORD dwZBufferLow;
+    /* 0x1C */ DWORD dwZBufferHigh;
+    /* 0x20 */ DWORD dwZBufferBaseDest;
+    /* 0x24 */ DWORD dwZDestConstBitDepth;
+    /* 0x28 */ DWORD dwZDestConst; // union with lpDDSZBufferDest
+    /* 0x2C */ DWORD dwZSrcConstBitDepth;
+    /* 0x30 */ DWORD dwZSrcConst; // union with lpDDSZBufferSrc
+    /* 0x34 */ DWORD dwAlphaEdgeBlendBitDepth;
+    /* 0x38 */ DWORD dwAlphaEdgeBlend;
+    /* 0x3C */ DWORD dwReserved;
+    /* 0x40 */ DWORD dwAlphaDestConstBitDepth;
+    /* 0x44 */ DWORD dwAlphaDestConst; // union with lpDDSAlphaDest
+    /* 0x48 */ DWORD dwAlphaSrcConstBitDepth;
+    /* 0x4C */ DWORD dwAlphaSrcConst; // union with lpDDSAlphaSrc
+    /* 0x50 */ DWORD dwFillColor; // union dwFillDepth/dwFillPixel/lpDDSPattern
+    /* 0x54 */ DDCOLORKEY ddckDestColorkey;
+    /* 0x5C */ DDCOLORKEY ddckSrcColorkey;
+};
+#pragma pack(pop)
+
 namespace D2DDraw::Renderer::DirectDraw {
 
 // Function declarations
@@ -431,7 +469,7 @@ void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEn
 void __fastcall RENDERER_DDRAW_DrawPixel(int32_t nX, int32_t nY, BYTE nPaletteIndex);
 void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, BYTE nAlpha);
 // DirectDraw renderer internal helpers for sprite visibility testing, clip rect computation, debug font rendering, shadow quality query, pixel/line drawing primitives, and smacker video frame blitting.
-void __fastcall RENDERER_DDRAW_DrawLine(int * pStartPoint, int * pEndPoint, BYTE nPaletteIndex);
+void __fastcall RENDERER_DDRAW_DrawLine(POINT * pStartPoint, POINT * pEndPoint, BYTE nPaletteIndex);
 void __fastcall DrawRect(RECT * pRect, BYTE nColor);
 void __fastcall DrawRectEx(RECT * pRect, BYTE nColor);
 void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex);

@@ -8,6 +8,7 @@
 #include "Storm/3rdparty/zlib/deflate.h"
 #include "Storm/3rdparty/zlib/trees.h"
 #include "Storm/H/Storm.h"
+#include "Storm/Source/SErr.h"
 #include "Storm/Source/SSComp.h"
 #include "Storm/_unnamespaced.h"
 
@@ -7730,6 +7731,12 @@ char szSFileBasePath[260] = {
     0
 };
 
+SErrAppFatalContextStrc gpSSystemThreadContextCallback = {
+    /* .pfnCallback = */ nullptr,
+    /* .nParam = */ 0,
+    /* .dwThreadId = */ 0
+};
+
 _RTL_CRITICAL_SECTION lpCriticalSection_007790cc = {
     /* .DebugInfo = */ nullptr,
     /* .LockCount = */ 0,
@@ -7814,9 +7821,6 @@ uint32_t gnSSystemOption1 = 0;
 uint32_t gnSSystemWaveBufferSize = 0;
 uint32_t gnSSystemAsyncReadSize = 0;
 uint32_t gbCompressionDebugOutput = 0;
-uint32_t gpSSystemThreadContextCallback = 0;
-uint32_t gnSSystemThreadContextParam = 0;
-uint32_t gnSSystemThreadContextThreadId = 0;
 void * gpErrorModuleList = 0;
 uint32_t gbFormatErrorModulesInitialized = 0;
 uint32_t gbSSystemShutdownInProgress = 0;

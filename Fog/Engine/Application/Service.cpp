@@ -24,7 +24,7 @@ void __stdcall main(DWORD dwNumServicesArgs, LPSTR * lpServiceArgVectors) {
 }
 
 BOOL StartDiablo2ServerAsService() {
-    SERVICE_TABLE_ENTRYA serviceTableEntry;
+    SERVICE_TABLE_ENTRYA aServiceTable[2];
     DWORD dwVersion = GetVersion();
     if (-1 >= (int)dwVersion) {
       return 0;
@@ -45,11 +45,11 @@ BOOL StartDiablo2ServerAsService() {
       return 0;
     }
 
-    uint32_t dwSvcTableTermName = 0;
-    uint32_t dwSvcTableTermProc = 0;
-    /* SERVICE_TABLE_ENTRYA * lpServiceStartTable for StartServiceCtrlDispatcherA */ serviceTableEntry.lpServiceName = s_DIABLO2SRV_007065dc;
-    serviceTableEntry.lpServiceProc = (LPSERVICE_MAIN_FUNCTIONA)main;
-    BOOL bDispatched = StartServiceCtrlDispatcherA(&serviceTableEntry);
+    aServiceTable[1].lpServiceName = (LPSTR)0x0;
+    aServiceTable[1].lpServiceProc = (LPSERVICE_MAIN_FUNCTIONA)0x0;
+    /* SERVICE_TABLE_ENTRYA * lpServiceStartTable for StartServiceCtrlDispatcherA */ aServiceTable[0].lpServiceName = s_DIABLO2SRV_007065dc;
+    aServiceTable[0].lpServiceProc = (LPSERVICE_MAIN_FUNCTIONA)main;
+    BOOL bDispatched = StartServiceCtrlDispatcherA(aServiceTable);
     return (uint32_t)(bDispatched != 0);
 }
 

@@ -139,9 +139,9 @@ uint32_t __stdcall SCOMP_ADPCMEncode(uint32_t nMaxOutSize, short * pInSamples, u
     uint16_t wHeader = (uint16_t)(uint8_t)(nBitsPerSample - 1) << 8;
     *pOutBuffer = wHeader;
     uint8_t* pOutCur = (uint8_t*)(pOutBuffer + 1);
-    uint8_t* nOutSize = pOutCur + (nChannels * 2 - (int)pOutBuffer);
-    if ((int)nOutSize > (int)nMaxOutSize) {
-      return (uint32_t)nOutSize;
+    int32_t nOutSize = nChannels * 2 - (int)pOutBuffer + (int)pOutCur;
+    if (nOutSize > (int)nMaxOutSize) {
+      return nOutSize;
     }
 
     aChannelState[2] = 0x2c;
@@ -271,8 +271,8 @@ uint32_t __stdcall SCOMP_ADPCMEncode(uint32_t nMaxOutSize, short * pInSamples, u
       return (int)pOutCur - (int)pOutStart;
     }
 
-    nOutSize = pOutCur - (int)pOutStart;
-    return (uint32_t)nOutSize;
+    nOutSize = (int)pOutCur - (int)pOutStart;
+    return nOutSize;
 }
 
 short * __stdcall SCOMP_ADPCMDecode(short * pOut, uint32_t nOutSize, int32_t pIn, uint32_t nChannels, int32_t nInSize) {
@@ -473,22 +473,22 @@ void __fastcall SCOMP_PkwareDecompress(void * pOutBuf, uint32_t * pdwOutLength, 
 }
 
 // @sourcefile .\SOURCE\SCOMP.CPP
-void __fastcall SCOMP_ArenaAlloc(int * pArenaState, int32_t nItems, int32_t nItemSize) {
-    uint32_t nSize = nItems * nItemSize;
-    if (nSize & 3) {
-      nSize += 4 - (nSize & 3);
+void __fastcall SCOMP_ArenaAlloc(D2ScompArenaStrc * pArenaState, int32_t nItems, int32_t nItemSize) {
+    uint8_t* nSize = (uint8_t*)(nItems * nItemSize);
+    if ((uint32_t)nSize & 3) {
+      nSize += 4 - ((uint32_t)nSize & 3);
     }
-    if (nSize < (uint32_t)(pArenaState[2] + pArenaState[1] - *pArenaState)) {
-      *pArenaState = nSize + *pArenaState;
+    if (nSize < pArenaState->pBase + (pArenaState->nSize - (int)pArenaState->pCur)) {
+      pArenaState->pCur = nSize + (int)pArenaState->pCur;
       return;
     }
 
-    SMem::SMemAlloc(nSize, ".\\SOURCE\\SCOMP.CPP", 0x4c4, 0);
+    SMem::SMemAlloc((uint32_t)nSize, ".\\SOURCE\\SCOMP.CPP", 0x4c4, 0);
 }
 
 // @sourcefile .\SOURCE\SCOMP.CPP
-void __fastcall SCOMP_ArenaFree(int32_t pArenaState, void * pBlock) {
-    if (!(pBlock < *(void**)(pArenaState + 8) || (void*)(*(int*)(pArenaState + 4) + (int)*(void**)(pArenaState + 8)) <= pBlock)) {
+void __fastcall SCOMP_ArenaFree(D2ScompArenaStrc * pArenaState, void * pBlock) {
+    if (!(pBlock < (void*)pArenaState->pBase || pArenaState->pBase + pArenaState->nSize <= (unsigned char*)pBlock)) {
       return;
     }
 
@@ -496,26 +496,18 @@ void __fastcall SCOMP_ArenaFree(int32_t pArenaState, void * pBlock) {
 }
 
 int __stdcall SCOMP_ZlibCompress(uint8_t * pSrc, uint32_t nSrcLen, uint32_t nLevel, uint32_t * pnOutLen) {
-    // Frame slots -300020..-4 are ONE object: &pArenaCur is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint8_t* pArenaCur;
-      uint32_t nArenaSize;
-      uint8_t* pArenaBase;
-      uint8_t aArenaBuf[300004];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 300016, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     z_stream zStream;
+    D2ScompArenaStrc sArena;
+    uint8_t aArenaBuf[300004];
     zStream.avail_out = *pnOutLen;
     zStream.next_out = pSrc;
-    __frame0.pArenaCur = __frame0.aArenaBuf;
+    sArena.pCur = aArenaBuf;
     zStream.avail_in = nSrcLen;
-    zStream.opaque = &__frame0.pArenaCur;
-    __frame0.nArenaSize = 300000;
+    zStream.opaque = &sArena;
+    sArena.nSize = 300000;
     zStream.zalloc = (z_alloc_func)SCOMP_ArenaAlloc;
     zStream.zfree = (z_free_func)SCOMP_ArenaFree;
-    __frame0.pArenaBase = __frame0.pArenaCur;
+    sArena.pBase = sArena.pCur;
     uint32_t nRetInit = _3rdparty::zlib::deflate::deflateInit_(&zStream, nLevel, "1.1.3", 0x38);
     if (!nRetInit) {
       uint32_t nRet;
@@ -564,50 +556,44 @@ void __fastcall SCOMP_ZlibCompressWithLevel(uint8_t * pDst, uint32_t * pnDstLen,
 // bzip2, so the whole pair may be misnamed. What would
 // settle it is the SCompDecompress method-table entry that points at 0041e340 and the compression id
 // it sits under.
-void __stdcall SCOMP_InflateZlibStackArena(uint8_t * pSrc, uint32_t nSrcLen, uint32_t * pnOutLen) {
-    // Frame slots -47020..-4 are ONE object: &pArenaCur is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint8_t* pArenaCur;
-      uint32_t nArenaSize;
-      uint8_t* pArenaBase;
-      uint8_t aArenaBuf[47000];
-      uint32_t local_8;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 47016, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+int __stdcall SCOMP_InflateZlibStackArena(uint8_t * pSrc, uint8_t * pDst, uint32_t nSrcLen, uint32_t * pnOutLen) {
     int32_t nRet;
     z_stream zStream;
-    __frame0.local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
+    D2ScompArenaStrc sArena;
+    uint8_t aArenaBuf[47000];
+    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     zStream.avail_out = *pnOutLen;
-    zStream.next_out = pSrc;
-    __frame0.pArenaCur = __frame0.aArenaBuf;
+    zStream.next_out = pDst;
+    sArena.pCur = aArenaBuf;
     zStream.avail_in = nSrcLen;
-    zStream.opaque = &__frame0.pArenaCur;
-    __frame0.nArenaSize = 47000;
+    zStream.opaque = &sArena;
+    sArena.nSize = 47000;
     zStream.zalloc = (z_alloc_func)SCOMP_ArenaAlloc;
     zStream.zfree = (z_free_func)SCOMP_ArenaFree;
-    __frame0.pArenaBase = __frame0.pArenaCur;
+    zStream.next_in = pSrc;
+    sArena.pBase = sArena.pCur;
     int nRetInit = _3rdparty::zlib::inflate::inflateInit_(&zStream, "1.1.3", 0x38);
     if (!nRetInit) {
       nRet = _3rdparty::zlib::inflate::inflate(&zStream, 4);
       if (nRet == 1) {
         *pnOutLen = zStream.total_out;
-        _3rdparty::zlib::inflate::inflateEnd(&zStream);
+        nRetInit = _3rdparty::zlib::inflate::inflateEnd(&zStream);
       } else {
         _3rdparty::zlib::inflate::inflateEnd(&zStream);
+        nRetInit = -5;
         if (nRet) {
           Fog::Debug::GuardStack();
-          return;
+          return nRet;
         }
       }
     }
 
     Fog::Debug::GuardStack();
+    return nRetInit;
 }
 
-void __fastcall SCOMP_Bzip2Decompress(uint8_t * pDst, uint32_t * pnDstLen, uint32_t pSrc, uint32_t nSrcLen, uint32_t pUserData) {
-    SCOMP_InflateZlibStackArena(pDst, nSrcLen, pnDstLen);
+void __fastcall SCOMP_Bzip2Decompress(uint8_t * pDst, uint32_t * pnDstLen, uint8_t * pSrc, uint32_t nSrcLen, uint32_t pUserData) {
+    SCOMP_InflateZlibStackArena(pSrc, pDst, nSrcLen, pnDstLen);
 }
 
 // @blizzard AdpcmMonoCompress (SCOMP.CPP)
@@ -3854,7 +3840,7 @@ int __fastcall COMPRESS_EncodeBuffer(int32_t pBitStream, uint8_t * pbSrc, int32_
     *pHuffCtx = (uint32_t)((char)(uintptr_t)nTableSel == '\0');
     BITSTREAM_WriteBits((D2BitStreamWriterStrc*)pBitStream, (uint32_t)nTableSel & 0xff, 8);
     while (true) {
-      int* nSymbol;
+      uint32_t nSymbol;
       if (!nSrcLen) {
         BITSTREAM_WriteLiteralByte((int32_t)pHuffCtx, pBitStream, 0x100);
         nBitsLeft = *(int*)(pBitStream + 0x10);
@@ -3880,25 +3866,25 @@ int __fastcall COMPRESS_EncodeBuffer(int32_t pBitStream, uint8_t * pbSrc, int32_
         return nRemainingBits;
       }
 
-      nSymbol = (int*)(uint32_t)*pbSrc;
+      nSymbol = (uint32_t)*pbSrc;
       nSrcLen--;
       pbSrc++;
-      if (!pHuffCtx[(int)nSymbol + 0xc1b]) {
+      if (!pHuffCtx[nSymbol + 0xc1b]) {
         BITSTREAM_WriteLiteralByte((int32_t)pHuffCtx, pBitStream, 0x101);
-        BITSTREAM_WriteBits((D2BitStreamWriterStrc*)pBitStream, (int32_t)nSymbol, 8);
-        COMPRESS_EncodeSymbol((D2CompressEncoderStrc*)pHuffCtx, nSymbol);
+        BITSTREAM_WriteBits((D2BitStreamWriterStrc*)pBitStream, nSymbol, 8);
+        COMPRESS_EncodeSymbol((D2CompressEncoderStrc*)pHuffCtx, (int*)nSymbol);
         if (!*pHuffCtx) {
-          COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pHuffCtx, (D2CompressHuffNodeStrc*)pHuffCtx[(int)nSymbol + 0xc1b]);
+          COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pHuffCtx, (D2CompressHuffNodeStrc*)pHuffCtx[nSymbol + 0xc1b]);
           if (*pHuffCtx) {
-            COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pHuffCtx, (D2CompressHuffNodeStrc*)pHuffCtx[(int)nSymbol + 0xc1b]);
+            COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pHuffCtx, (D2CompressHuffNodeStrc*)pHuffCtx[nSymbol + 0xc1b]);
           }
         } else {
-          COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pHuffCtx, (D2CompressHuffNodeStrc*)pHuffCtx[(int)nSymbol + 0xc1b]);
+          COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pHuffCtx, (D2CompressHuffNodeStrc*)pHuffCtx[nSymbol + 0xc1b]);
         }
       } else {
-        BITSTREAM_WriteLiteralByte((int32_t)pHuffCtx, pBitStream, (int32_t)nSymbol);
+        BITSTREAM_WriteLiteralByte((int32_t)pHuffCtx, pBitStream, nSymbol);
         if (*pHuffCtx) {
-          COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pHuffCtx, (D2CompressHuffNodeStrc*)pHuffCtx[(int)nSymbol + 0xc1b]);
+          COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pHuffCtx, (D2CompressHuffNodeStrc*)pHuffCtx[nSymbol + 0xc1b]);
         }
       }
     }
@@ -3965,7 +3951,72 @@ void SLOG_OutputReturn(D2SLogStrc * pLog) {
 void __stdcall SLOG_OutputTime(int32_t bHasData, D2SLogStrc * pLog) {
     // Static local variables (originally global data)
     static uint32_t gnSLogTimeStrLen;
-    static LPSTR gszSLogTimeStr;
+    static char gszSLogTimeStr[64] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+};
     static uint32_t gdwSLogLastTime;
 
     if (!pLog->bTimestamps) {
@@ -3977,11 +4028,11 @@ void __stdcall SLOG_OutputTime(int32_t bHasData, D2SLogStrc * pLog) {
       _SYSTEMTIME localTime;
       gdwSLogLastTime = dwTickCount;
       /* LPSYSTEMTIME lpSystemTime for GetLocalTime */ GetLocalTime(&localTime);
-      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA((LPSTR)&gszSLogTimeStr, "%u/%u %02u:%02u:%02u.%03u  ", (uint32_t)localTime.wMonth, (uint32_t)localTime.wDay, (uint32_t)localTime.wHour, (uint32_t)localTime.wMinute, (uint32_t)localTime.wSecond, (uint32_t)localTime.wMilliseconds);
-      gnSLogTimeStrLen = SSTR::SStrLen((char*)&gszSLogTimeStr);
+      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(gszSLogTimeStr, "%u/%u %02u:%02u:%02u.%03u  ", (uint32_t)localTime.wMonth, (uint32_t)localTime.wDay, (uint32_t)localTime.wHour, (uint32_t)localTime.wMinute, (uint32_t)localTime.wSecond, (uint32_t)localTime.wMilliseconds);
+      gnSLogTimeStrLen = SSTR::SStrLen(gszSLogTimeStr);
     }
     if (bHasData) {
-      SSystem::SMemCopy(pLog->acBuffer + pLog->nUsed, &gszSLogTimeStr, gnSLogTimeStrLen + 1);
+      SSystem::SMemCopy(pLog->acBuffer + pLog->nUsed, gszSLogTimeStr, gnSLogTimeStrLen + 1);
       pLog->nUsed += gnSLogTimeStrLen;
       SLOG_OutputIndent(pLog);
       return;
@@ -3995,7 +4046,7 @@ void __stdcall SLOG_OutputTime(int32_t bHasData, D2SLogStrc * pLog) {
 }
 
 // @blizzard UnlockDeleteLog (SLOG.CPP)
-void SLOG_UnlockDeleteLog(uint32_t dwUnused, LPVOID pTarget, int32_t nSlot) {
+void SLOG_UnlockDeleteLog(LPVOID pTarget, int32_t nSlot) {
     D2SLogStrc* pNode = gaSLogHead[nSlot];
     if (pNode) {
       D2SLogStrc** ppPrevNext = gaSLogHead + nSlot;
@@ -4022,7 +4073,6 @@ void SLOG_UnlockLog(int32_t nParam) {
 
 // @blizzard SLogClose (SLOG.CPP)
 void __stdcall SLogClose(uint32_t nHandle) {
-    uint32_t dwScratch;
     D2SLogStrc* pContext = SLOG_LockLog(&nHandle, 0, nHandle);
     if (!pContext) {
       return;
@@ -4030,7 +4080,7 @@ void __stdcall SLogClose(uint32_t nHandle) {
 
     SLOG_FlushLog(pContext);
     /* HANDLE hObject for CloseHandle */ CloseHandle(pContext->hFile);
-    SLOG_UnlockDeleteLog(dwScratch, pContext, nHandle);
+    SLOG_UnlockDeleteLog(pContext, nHandle);
 }
 
 // @blizzard SLogDump (SLOG.CPP)

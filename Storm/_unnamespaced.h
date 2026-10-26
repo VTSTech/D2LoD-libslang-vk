@@ -7,10 +7,9 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "Storm/Source/SFile.h"
+#include "Storm/Source/SSystem.h"
 
 // Forward declarations
-struct D2CharSelCompStrc;
 struct D2EscMenuItemStrc;
 struct D2MPQFileStrc;
 struct D2PoolManagerStrc;
@@ -139,10 +138,9 @@ void FAULT_ShowFormattedErrorAndTerminate(uint32_t nErrorCode, ...);
 void FAULT_ShowFormattedErrorWithArgs(uint32_t nErrorCode, ...);
 LPVOID __fastcall D2MEM_VirtualAlloc(SIZE_T nSize);
 void __fastcall D2MEM_VirtualFree(LPVOID pParam);
-void __fastcall D2MEM_CopyRows(struct D2CharSelCompStrc * pCharSelComp, uint32_t * pSrc, int32_t nDstStride, int32_t nSrcStride, int32_t nRows, uint32_t nBytesPerRow);
+void __fastcall D2MEM_CopyRows(char * pCharSelComp, uint32_t * pSrc, int32_t nDstStride, int32_t nSrcStride, int32_t nRows, uint32_t nBytesPerRow);
 uint32_t __fastcall D2MEM_CompareBytes(int * pBuf1, int * pBuf2, uint32_t nByteCount);
 int32_t D2MEM_FindLowestSetBit(uint32_t dwMask);
-void D2FILE_CleanupCryptHandles(DWORD dwNull, int32_t nFrameBase);
 uint32_t __stdcall FOG_ParseStringValue(char * szText, uint32_t nParam);
 void __stdcall QSSOCKET_SetCallbackHandler1(struct D2QSSocketStrc * pQSSocket, void * fpCallback, void * pContext);
 uint32_t __fastcall FOG_ParseFieldValue(char * szText, char * * ppszCursor, int * pnOut);

@@ -605,19 +605,18 @@ void * __stdcall CompileTxt(D2PoolManagerStrc * pMemory, char * szTableName, D2B
     int nStrCmpResult;
     D2ArchiveStrc* pArchiveTxt;
     D2BinFieldExcelStrc* pBinField;
-    size_t sVar5;
-    D2InventoryToBeUpdatedStrc* pDataTable;
+    void* pDataTable;
     char* szEffectiveName;
     char* pNameEnd;
     D2ArchiveStrc** pParsedData;
     size_t nBinAllocSize;
-    char szTableNameBuf[4];
-    char szTableNameRest[252];
+    char szTableNameBuf[256];
+    uint32_t dwStackCookie;
     char cChar;
     int32_t nErrorLine;
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     size_t nSize = 0;
     if (sgtDataTable.bUseTxt) {
+      size_t sVar5;
       nStrCmpResult = __stricmp(szTableName, "leveldefs");
       if (!nStrCmpResult) {
         nErrorLine = 0x8b9;
@@ -636,7 +635,7 @@ void * __stdcall CompileTxt(D2PoolManagerStrc * pMemory, char * szTableName, D2B
       pBinField = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pArchiveTxt, nSize);
       sVar5 = Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinField);
       nBinAllocSize = sVar5 * nEndOffset;
-      pDataTable = (D2InventoryToBeUpdatedStrc*)D2_ALLOC_POOL(nullptr, nBinAllocSize);
+      pDataTable = D2_ALLOC_POOL(nullptr, nBinAllocSize);
       memset(pDataTable, 0, nBinAllocSize);
       Fog::Src::Excel::TXT_ParseDataAndPutIntoStructure(pBinField, pBinFieldInput, (char*)pDataTable, sVar5, nEndOffset);
       Fog::Src::Excel::TXT_FreeBinFieldExcel(pBinField);
@@ -654,7 +653,7 @@ void * __stdcall CompileTxt(D2PoolManagerStrc * pMemory, char * szTableName, D2B
       } while (pNameEnd[1] != '\0');
 
       memcpy(pNameEnd + 1, ".bin", 5);
-      StoreDataTables((uint32_t)szTableNameBuf, pDataTable, nBinAllocSize, sVar5);
+      StoreDataTables((uint32_t)szTableNameBuf, (D2InventoryToBeUpdatedStrc*)pDataTable, nBinAllocSize, sVar5);
       D2_FREE_POOL(nullptr, pDataTable);
     }
     if (!gpaMiscTxtTables) {
@@ -3569,7 +3568,7 @@ void __stdcall TXT_AllocTxt_skill_skilldesc(D2PoolManagerStrc * pMemory) {
           sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Assassin;
         }
 
-        sgtDataTable.pSkillsPerClassStrc = (D2SkillsPerClassStrc*)D2_ALLOC_POOL(nullptr, sgtDataTable.nSkillCountMaxPerClass * 0xe);
+        sgtDataTable.pSkillsPerClassStrc = (int16_t*)D2_ALLOC_POOL(nullptr, sgtDataTable.nSkillCountMaxPerClass * 0xe);
         memset(sgtDataTable.pSkillsPerClassStrc, 0, sgtDataTable.nSkillCountMaxPerClass * 0xe);
         sgtDataTable.pSkillsPerClassCounter->Amazon = 0;
         sgtDataTable.pSkillsPerClassCounter->Sorceress = 0;
@@ -3588,11 +3587,11 @@ void __stdcall TXT_AllocTxt_skill_skilldesc(D2PoolManagerStrc * pMemory) {
             pSrvPrgFunc = sgtDataTable.pTxtSkills->srvprgfunc;
             nPetType = *(char*)((uintptr_t)&((D2PoolManagerStrc*)pMemory2)->pPools[0].pSync.DebugInfo + (int)(pSrvPrgFunc - 0x22));
             if (-1 < nPetType && nPetType < '\a') {
-              (&sgtDataTable.pSkillsPerClassStrc->Amazon)[nPetType * sgtDataTable.nSkillCountMaxPerClass + (&sgtDataTable.pSkillsPerClassCounter->Amazon)[nPetType]] = (short int)nCounter;
+              sgtDataTable.pSkillsPerClassStrc[nPetType * sgtDataTable.nSkillCountMaxPerClass + (&sgtDataTable.pSkillsPerClassCounter->Amazon)[nPetType]] = (int16_t)nCounter;
               (&sgtDataTable.pSkillsPerClassCounter->Amazon)[*(char*)((uintptr_t)&((D2PoolManagerStrc*)pMemory2)->pPools[0].pSync.DebugInfo + (int)(pSrvPrgFunc - 0x22))]++;
             }
             if (-1 < *(short int*)((uintptr_t)&((D2PoolManagerStrc*)pMemory2)->pPools[0].pSync.DebugInfo + (int)(pSrvPrgFunc + 0x22))) {
-              sgtDataTable.pPassiveSkillsPerClassStrc[sgtDataTable.nPassiveSkillsCount].nSkillId = (short int)nCounter;
+              sgtDataTable.pPassiveSkillsPerClassStrc[sgtDataTable.nPassiveSkillsCount].nSkillId = (int16_t)nCounter;
               sgtDataTable.nPassiveSkillsCount++;
             }
 

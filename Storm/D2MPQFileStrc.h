@@ -26,14 +26,8 @@ struct __attribute__((packed)) D2MPQFileStrc {
     /* 0x124 */ uint32_t nLastFilePos;
     /* 0x128 */ uint32_t nSectorCount;
     /* 0x12C */ uint32_t * pSectorTable;
-    /* 0x130 */ bool bSectorsLoaded;
-    /* 0x131 */ uint8_t field_0x131;
-    /* 0x132 */ uint8_t field_0x132;
-    /* 0x133 */ uint8_t field_0x133;
-    /* 0x134 */ bool bStreamActive;
-    /* 0x135 */ uint8_t field_0x135;
-    /* 0x136 */ uint8_t field_0x136;
-    /* 0x137 */ uint8_t field_0x137;
+    /* 0x130 */ BOOL bSectorsLoaded;
+    /* 0x134 */ BOOL bStreamActive;
     /* 0x138 */ void * pReadBuffer;
     /* 0x13C */ uint32_t nBytesRead;
     /* 0x140 */ uint32_t nBufferSize;

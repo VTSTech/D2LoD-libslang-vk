@@ -20,17 +20,17 @@ struct D3DTextureCacheNodeStrc {
     /* 0x0C */ void * field_0x0C;
     /* 0x10 */ struct IDirectDrawSurface7 * pSurface;
     /* 0x14 */ struct IDirect3DTexture2 * pTexture;
-    /* 0x18 */ uint8_t * pNext;
-    /* 0x1C */ uint8_t * pPrev;
+    /* 0x18 */ struct D3DTextureCacheNodeStrc * pNext;
+    /* 0x1C */ struct D3DTextureCacheNodeStrc * pPrev;
 };
 
 struct D3DTextureCacheStrc {
     /* 0x00 */ int nMaxNodes;
     /* 0x04 */ int nUsedCount;
-    /* 0x08 */ uint8_t * pUsedHead;
-    /* 0x0C */ uint8_t * pUsedTail;
-    /* 0x10 */ uint8_t * pFreeHead;
-    /* 0x14 */ uint8_t * pFreeTail;
+    /* 0x08 */ struct D3DTextureCacheNodeStrc * pUsedHead;
+    /* 0x0C */ struct D3DTextureCacheNodeStrc * pUsedTail;
+    /* 0x10 */ struct D3DTextureCacheNodeStrc * pFreeHead;
+    /* 0x14 */ struct D3DTextureCacheNodeStrc * pFreeTail;
     /* 0x18 */ struct D3DTextureCacheNodeStrc * pNodeBuffer;
 };
 

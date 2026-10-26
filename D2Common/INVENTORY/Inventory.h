@@ -110,18 +110,7 @@ struct __attribute__((packed)) D2InventoryTxt {
     /* 0x04 */ int invRight;
     /* 0x08 */ int nTop;
     /* 0x0C */ int invBottom;
-    /* 0x10 */ uint8_t gridX;
-    /* 0x11 */ uint8_t gridY;
-    /* 0x12 */ uint8_t field_0x12;
-    /* 0x13 */ uint8_t field_0x13;
-    /* 0x14 */ int gridLeft;
-    /* 0x18 */ int gridRight;
-    /* 0x1C */ int gridTop;
-    /* 0x20 */ int gridBottom;
-    /* 0x24 */ uint8_t gridBoxWidth;
-    /* 0x25 */ uint8_t gridBoxHeight;
-    /* 0x26 */ uint8_t field_0x26;
-    /* 0x27 */ uint8_t field_0x27;
+    /* 0x10 */ D2GridScreenCoordinates sGrid;
     /* 0x28 */ D2InventoryBodyStrc pBody;
 };
 
@@ -160,7 +149,7 @@ struct D2UnitStrc * __stdcall INVENTORY_GetFirstItem(struct D2InventoryStrc * pI
 struct D2UnitStrc * __stdcall INVENTORY_GetLastItem(struct D2InventoryStrc * pInventory);
 uint32_t __stdcall INVENTORY_CheckItemFitsInGrid(uint32_t dwUnused, uint32_t nGridCol, int32_t nY, int32_t nX, uint8_t byItemHeight, int32_t pGridInfo);
 // Scores a candidate inventory grid placement for an item of dimensions (byItemWidth x byItemHeight) at grid position (nStartRow, nStartCol). Counts occupied neighbouring cells on all four sides (left column, right column, top row, bottom row) of the placement rectangle; adds byItemWidth or byItemHeight when the rectangle touches a grid boundary. Returns the score (lower = more isolated = better fit); returns 0xFF if the score equals or exceeds the item perimeter, indicating a fully surrounded or impossible placement. byItemWidth is a single byte: the prologue does MOVZX EDX, CL, so the upper 24 bits of ECX are dead and callers set only CL.
-uint32_t __stdcall INVENTORY_CalcGridPlacementScore(uint8_t byItemWidth, int32_t pGridInfo, int * nStartCol, uint8_t byItemHeight, int32_t nStartRow);
+uint32_t __stdcall INVENTORY_CalcGridPlacementScore(uint8_t byItemWidth, int32_t pGridInfo, int32_t nStartCol, uint8_t byItemHeight, int32_t nStartRow);
 // Scans the grid (pGridInfo) in reverse column order for an empty rectangle that fits byItemWidth x byItemHeight, scoring each candidate via INVENTORY_CalcGridPlacementScore. Writes the best column and row to *ppnOutX/*pnOutY. Returns 1 if a valid placement was found, 0 otherwise. Exits early with score 1 if a perfect-score (0xFF) slot is found. Companion to INVENTORY_FindBestGridPosition (row-first scan).
 uint32_t __stdcall INVENTORY_FindBestPlacementWithScore(int * * ppnOutX, int * pnOutY, uint8_t byItemWidth, uint8_t byItemHeight, int32_t pGridInfo);
 // Scans the grid (pGridInfo) in reverse column order for the first empty cell where an item of size byItemWidth x byItemHeight fits, verified by INVENTORY_IsGridRectEmpty. Writes the column to *pnOutX and row to *pnOutY. Returns 1 on success, 0 if no slot found. Does not score placements — use INVENTORY_FindBestGridPosition for scored placement.
@@ -169,7 +158,7 @@ BOOL __stdcall INVENTORY_FindPlacementSlot(uint8_t byItemWidth, uint8_t byItemHe
 // Scans the grid (pGridInfo) in row-major order for the highest-scoring empty placement that fits byItemWidth x byItemHeight, using INVENTORY_IsGridRectEmpty and INVENTORY_CalcGridPlacementScore. Writes best column to *ppnOutX and row to *pnOutY. Returns 1 if any valid placement found, 0 otherwise. Exits early on a perfect score (0xFF). Row-major counterpart to INVENTORY_FindBestPlacementWithScore.
 uint32_t __stdcall INVENTORY_FindBestGridPosition(int * * ppnOutX, int * pnOutY, uint8_t byItemWidth, uint8_t byItemHeight, int32_t pGridInfo);
 // Finds the first empty grid slot that fits byItemWidth x byItemHeight for non-player inventories (e.g. stash, cube), iterating column-major. Uses raw field offsets relative to pGridInfo->pOwner instead of the player-side grid accessors. Writes result to *pnOutX / *pnOutY. Returns 1 on success, 0 if no slot found. Note: the pGridInfo parameter is typed D2InventoryStrc* but used as a raw grid info block here.
-BOOL __stdcall INVENTORY_FindBestGridPositionNonPlayer(int * pnOutX, int * pnOutY, uint8_t byItemWidth, uint8_t byItemHeight, struct D2InventoryStrc * pGridInfo);
+BOOL __stdcall INVENTORY_FindBestGridPositionNonPlayer(int * pnOutX, int * pnOutY, uint8_t byItemWidth, uint8_t byItemHeight, struct D2InventoryGridInfoStrc * pGridInfo);
 BOOL __stdcall INVENTORY_FindGridPositionByOwner(uint8_t byItemWidth, uint8_t byItemHeight, struct D2InventoryStrc * pInventory, int * pnOutY, int * * ppnOutX, int32_t pGridInfo);
 BOOL __stdcall INVENTORY_FindGridPositionByOwner2(uint8_t byItemWidth, uint8_t byItemHeight, int32_t pInventory, int * pnOutY, int * * ppnOutX, int32_t pGridInfo);
 BOOL __stdcall INVENTORY_FindGridPositionByOwner3(uint8_t byItemWidth, uint8_t byItemHeight, int32_t pInventory, int * * ppnOutX, int * pnOutY, int32_t pGridInfo);

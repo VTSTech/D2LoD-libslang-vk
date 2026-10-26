@@ -78,7 +78,7 @@ void __fastcall PLRMODES_BreakZeroDurabilityWeapons(::SGAMEDATA * pGame, struct 
 int32_t __fastcall PLRMODES_ModeCallback_AttackSkill(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nModeArg, int32_t nSeqFrame);
 // Ticks stamina recovery for a player unit each game loop. Reads current stamina and UNITSTAT_staminarecoverybonus; recovery shift is 8 (standing/town-walk) or 9 (walking). Applies bonus percentage, clamps to max stamina, then writes back via STATLIST_SetUnitStat. Returns early if already at max or if in a non-recovery anim mode (e.g. attacking).
 void PLRMODES_RecoverStamina(struct D2UnitStrc * pUnit);
-int32_t PLRMODES_GetHpPercent128(struct D2UnitStrc * pUnit, int32_t dwParam);
+uint8_t PLRMODES_GetHpPercent128(struct D2UnitStrc * pUnit);
 // Per-tick HP regeneration tick for a player unit. Reads UNITSTAT_hpregen; if zero returns early. Adds regen to current HP capped at txt-max; if the max is exceeded and the player has a healthpot state-list, removes and frees it. Enforces a floor of 0x100. Writes the new HP via STATLIST_SetUnitStat, then computes a 7-bit HP-percent and sends packet 0xAB to the client only if the change exceeds 4 units from the last sent value.
 BOOL PLRMODES_RegenHp(struct D2UnitStrc * pUnit);
 // Per-tick mana regeneration for a player unit (called from the player-mode timer). Reads current mana and max mana; if STATE_nomanaregen is absent, computes base regen from CharStatsTxt.ManaRegen scaled by manarecoverybonus stat. Adds flat manarecovery stat on top. Removes the active mana-potion stat list once mana is full. Clamps the delta to not exceed max or go below zero, then applies via STATLIST_AddUnitStat.

@@ -3,7 +3,7 @@
 #include "D2Win/Src/D2WinImage.h"
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/D2ControlStrc.h"
-#include "D2Glide/Renderer/Glide.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Win/D2WinImage.h"
@@ -229,73 +229,59 @@ BOOL __fastcall Draw(::D2WinImage * pImage) {
 }
 
 void __stdcall D2WinImage_Draw(D2GfxTileRectStrc * pScreenRect, D2GfxTileRectStrc * pDstRect, D2GfxDataStrc * pGfxData) {
-    // Frame slots -40..-4 are ONE object: &nClipX0 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nClipX0;
-      int nClipX1;
-      int nClipY0;
-      int nClipY1;
-      int nTileCountY;
-      int nTileRepeatX;
-      int nSrcX1;
-      int nSrcY0;
-      int nSrcX0;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 36, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.nTileCountY = pDstRect->nX0;
-    int nTileCountX = pDstRect->nX1 - __frame0.nTileCountY;
+    D2GfxTileRectStrc sClipRect;
+    int nSrcX1;
+    int nTileCountX = pDstRect->nX1 - pDstRect->nX0;
     int iVar1 = pScreenRect->nX1 - pScreenRect->nX0;
-    __frame0.nSrcX1 = pDstRect->nY1;
-    __frame0.nSrcX0 = __frame0.nSrcX1 - pDstRect->nY0;
+    int iVar2 = pDstRect->nY1 - pDstRect->nY0;
     int nDstOffsetX = pScreenRect->nY1 - pScreenRect->nY0;
-    if (nTileCountX == iVar1 && __frame0.nSrcX0 == nDstOffsetX) {
-      D2gfx::D2GFX::D2GFX_DrawSprite6(pGfxData, pScreenRect->nX0 - __frame0.nTileCountY, pScreenRect->nY1 - __frame0.nSrcX1 + 0x100, pScreenRect, 5);
+    if (nTileCountX == iVar1 && iVar2 == nDstOffsetX) {
+      D2gfx::D2GFX::D2GFX_DrawSprite6(pGfxData, pScreenRect->nX0 - pDstRect->nX0, pScreenRect->nY1 - pDstRect->nY1 + 0x100, pScreenRect, 5);
       return;
     }
 
-    __frame0.nTileCountY = (iVar1 - 1 + nTileCountX) / nTileCountX;
-    __frame0.nTileRepeatX = (nDstOffsetX - 1 + __frame0.nSrcX0) / __frame0.nSrcX0;
-    __frame0.nSrcY0 = pScreenRect->nY0 - pDstRect->nY0 + 0x100;
-    if (0 >= __frame0.nTileRepeatX) {
+    iVar1 = (iVar1 - 1 + nTileCountX) / nTileCountX;
+    int nTileRepeatX = (nDstOffsetX - 1 + iVar2) / iVar2;
+    nDstOffsetX = pScreenRect->nY0 - pDstRect->nY0 + 0x100;
+    if (0 >= nTileRepeatX) {
       return;
     }
 
     do {
-      iVar1 = pScreenRect->nX0 - pDstRect->nX0;
-      if (0 < __frame0.nTileCountY) {
-        __frame0.nSrcX1 = __frame0.nTileCountY;
+      int nParam1;
+      nParam1 = pScreenRect->nX0 - pDstRect->nX0;
+      nSrcX1 = iVar1;
+      if (0 < iVar1) {
         do {
-          __frame0.nClipX0 = pDstRect->nX0 + iVar1;
-          if (__frame0.nClipX0 < pScreenRect->nX0) {
-            __frame0.nClipX0 = pScreenRect->nX0;
+          sClipRect.nX0 = pDstRect->nX0 + nParam1;
+          if (sClipRect.nX0 < pScreenRect->nX0) {
+            sClipRect.nX0 = pScreenRect->nX0;
           }
 
-          __frame0.nClipX1 = pScreenRect->nX1;
-          if (__frame0.nClipX0 + nTileCountX <= pScreenRect->nX1) {
-            __frame0.nClipX1 = __frame0.nClipX0 + nTileCountX;
+          sClipRect.nX1 = pScreenRect->nX1;
+          if (sClipRect.nX0 + nTileCountX <= pScreenRect->nX1) {
+            sClipRect.nX1 = sClipRect.nX0 + nTileCountX;
           }
 
-          __frame0.nClipY0 = pDstRect->nY0 - 0x100 + __frame0.nSrcY0;
-          if (__frame0.nClipY0 < pScreenRect->nY0) {
-            __frame0.nClipY0 = pScreenRect->nY0;
+          sClipRect.nY0 = pDstRect->nY0 - 0x100 + nDstOffsetX;
+          if (sClipRect.nY0 < pScreenRect->nY0) {
+            sClipRect.nY0 = pScreenRect->nY0;
           }
 
-          __frame0.nClipY1 = pScreenRect->nY1;
-          if (__frame0.nClipY0 + __frame0.nSrcX0 <= pScreenRect->nY1) {
-            __frame0.nClipY1 = __frame0.nClipY0 + __frame0.nSrcX0;
+          sClipRect.nY1 = pScreenRect->nY1;
+          if (sClipRect.nY0 + iVar2 <= pScreenRect->nY1) {
+            sClipRect.nY1 = sClipRect.nY0 + iVar2;
           }
 
-          D2gfx::D2GFX::D2GFX_DrawSprite6(pGfxData, iVar1, __frame0.nSrcY0, &__frame0.nClipX0, 5);
-          iVar1 += nTileCountX;
-          __frame0.nSrcX1--;
-        } while (__frame0.nSrcX1);
+          D2gfx::D2GFX::D2GFX_DrawSprite6(pGfxData, nParam1, nDstOffsetX, &sClipRect, 5);
+          nParam1 += nTileCountX;
+          nSrcX1--;
+        } while (nSrcX1);
       }
 
-      __frame0.nSrcY0 += __frame0.nSrcX0;
-      __frame0.nTileRepeatX--;
-    } while (__frame0.nTileRepeatX);
+      nDstOffsetX += iVar2;
+      nTileRepeatX--;
+    } while (nTileRepeatX);
 }
 
 BOOL __stdcall Push(D2ControlMsg * pControlMsg) {

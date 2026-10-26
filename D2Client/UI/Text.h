@@ -29,9 +29,15 @@ struct _CONTEXT;
 typedef int (__fastcall *pfnTextScrollComplete)(void * pUserParam, uint32_t nReason, void * pDismissCallback);
 #endif
 
+struct ScreenMessage_t;
 struct D2TextLineStrc;
 
 // Data types
+struct __attribute__((packed)) D2ScreenMessageListStrc {
+    /* 0x00 */ struct ScreenMessage_t * pHead; // singly linked via ScreenMessage_t+0x22
+    /* 0x04 */ uint16_t nCount; // word; TEXT_FreeAllScreenMessages asserts it equals the freed count
+};
+
 struct __attribute__((packed)) D2TextBoxStrc {
     /* 0x00 */ struct D2TextLineStrc * pLineList; // head of the 8-byte line nodes {WCHAR *pwszLine; next} from TEXT_ParseMultilineString / D2WINFONT_WordWrapString; freed by TEXT_FreeTextLineList
     /* 0x04 */ int nLineCount; // line count written by TEXT_ParseMultilineString / D2WINFONT_WordWrapString
@@ -70,7 +76,7 @@ void TEXT_RecalcTextBoxDimensions(struct D2TextBoxStrc * pTextBox);
 void __stdcall TEXT_FreeTextBox(struct D2TextBoxStrc * pTextBox);
 void __stdcall TEXT_InitTextDisplaySettings();
 void TEXT_FreeScreenMessage(struct ScreenMessage_t * pMessage);
-void __stdcall TEXT_FreeAllScreenMessages(void * * ppMessageList);
+void __stdcall TEXT_FreeAllScreenMessages(struct D2ScreenMessageListStrc * pList);
 void __fastcall TEXT_SetTextDisplayMode(int32_t nParam);
 BOOL TEXT_DrawScrollingTextBox(uint16_t * * ppwszText);
 void __fastcall TEXT_DrawTextBoxAtPosition(struct D2TextBoxStrc * pTextBox, int32_t nScreenX, int32_t nScreenY);

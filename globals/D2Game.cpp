@@ -588,123 +588,123 @@ D2PlayerModeFnPairStrc gaPlayerModeMoveFuncs[20] = {
     }
 };
 
-D2ShrinesTableStrc OBJECTSHRINEFUNCTION = {
-    /* .None = */ {
+D2ShrinesTableEntryStrc OBJECTSHRINEFUNCTION[24] = {
+    {
         /* .fpShrineHandler = */ nullptr,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .Refill = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_RefillFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .HealthBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_HealthBoostFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .ManaBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_ManaBoostFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .HealthExchange = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_HealthExchangeFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .ManaExchange = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_ManaExchangeFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .ArmorBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_StatBoostFunction,
         /* .eStat = */ UNITSTAT_skill_armor_percent,
         /* .nState = */ STATE_shrine_armor
     },
-    /* .CombatBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_CombatBoostFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_shrine_combat
     },
-    /* .ResistFireBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_StatBoostFunction,
         /* .eStat = */ UNITSTAT_fireresist,
         /* .nState = */ STATE_shrine_resist_fire
     },
-    /* .ResistColdBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_StatBoostFunction,
         /* .eStat = */ UNITSTAT_coldresist,
         /* .nState = */ STATE_shrine_resist_cold
     },
-    /* .ResistLightningBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_StatBoostFunction,
         /* .eStat = */ UNITSTAT_lightresist,
         /* .nState = */ STATE_shrine_resist_lightning
     },
-    /* .ResistPoisonBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_StatBoostFunction,
         /* .eStat = */ UNITSTAT_poisonresist,
         /* .nState = */ STATE_shrine_resist_poison
     },
-    /* .SkillBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_SkillBoostFunction,
         /* .eStat = */ UNITSTAT_maxstamina,
         /* .nState = */ STATE_shrine_skill
     },
-    /* .RechargeBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_StatBoostFunction,
         /* .eStat = */ UNITSTAT_manarecoverybonus,
         /* .nState = */ STATE_shrine_mana_regen
     },
-    /* .StaminaBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_StaminaBoostFunction,
         /* .eStat = */ UNITSTAT_skill_staminapercent,
         /* .nState = */ STATE_shrine_stamina
     },
-    /* .ExperienceBoost = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_StatBoostFunction,
         /* .eStat = */ UNITSTAT_item_addexperience,
         /* .nState = */ STATE_shrine_experience
     },
-    /* .ShrineOfEnirhs = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_ShrineOfEnirhsFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .PortalShrine = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_PortalShrineFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .GemShrine = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_GemShrineFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .StormShrine = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_StormShrineFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .WarpingShrine = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_WarpingShrineFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .ExplodingShrine = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_ExplodingShrineFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .PoisonShrine = */ {
+    {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_PoisonShrineFunction,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     },
-    /* .Terminator = */ {
+    {
         /* .fpShrineHandler = */ nullptr,
         /* .eStat = */ -1,
         /* .nState = */ STATE_none

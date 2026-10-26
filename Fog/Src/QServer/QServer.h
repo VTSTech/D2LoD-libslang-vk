@@ -9,10 +9,9 @@
 #include "d2_platform.h"
 #include "D2Net/in_addr.h"
 #include "Fog/D2QServerStrc.h"
-#include "Storm/Source/SFile.h"
+#include "Storm/Source/SSystem.h"
 
 // Forward declarations
-struct QServer;
 struct SGAMEDATA;
 typedef int eD2GSGameType;
 struct D2QServerStrc;
@@ -41,10 +40,9 @@ struct D2QServerClientListStrc {
     /* 0x00 */ struct D2QServerClientConnectionStrc * pQServerClient[16];
 };
 
-struct __attribute__((packed)) D2QServerClientPacketStrc {
-    /* 0x00 */ uint32_t nPacketSize; // payload byte count; WriteFile(socket, pBytes, nPacketSize) in BeginAsyncWriteForClient
+struct D2QServerClientPacketStrc {
+    /* 0x00 */ uint32_t nPacketSize; // payload byte count; WriteFile(socket, aBytes, nPacketSize) in BeginAsyncWriteForClient
     /* 0x04 */ struct D2QServerClientPacketStrc * pQServerClientPacketNext;
-    /* 0x08 */ char pBytes;
 };
 
 struct D2QServerField0x20 {
@@ -333,6 +331,10 @@ struct __attribute__((packed)) D2TSExplicitListHeadStrc {
     /* 0x04 */ StormLinkStrc sTerminator; // The head's own link: sTerminator.pPrevLink = last link (self when empty), sTerminator.pNext = first element or ~&sTerminator when empty
 };
 
+struct FogCritSectLockStrc {
+    /* 0x00 */ LPCRITICAL_SECTION pCriticalSection;
+};
+
 struct __attribute__((packed)) D2QServerClientConnectionStrc {
     /* 0x00 */ int nClientToken;
     /* 0x04 */ struct D2QServerClientConnectionStrc * pNextByToken;
@@ -389,11 +391,11 @@ int __stdcall GetConnectedClients(struct D2QServerStrc * pQServer);
 uint32_t __stdcall IsSingleplayer(struct D2QServerStrc * pQServer);
 void __stdcall SetPerIpConnectionLimit(struct D2QServerStrc * pQServer, int nPerIpConnectionLimit);
 DWORD __stdcall WaitForEmptyEvent(struct D2QServerStrc * pQServer, DWORD dwParam);
-::QServer * _unused_broken(::QServer * pQServer, LPCRITICAL_SECTION pCriticalSection);
+struct FogCritSectLockStrc * _unused_broken(struct FogCritSectLockStrc * pQServer, LPCRITICAL_SECTION pCriticalSection);
 // Leaves the critical section a QServer frame local holds: LeaveCriticalSection(*ppCriticalSection). ECX = &local,
 // plain RET; reached from the EH unwind funclet Unwind_006ca540 (LEA ECX,[EBP-0x10]; JMP).
 // Provenance: 1.14d 006be530 MOV EAX,[ECX] / PUSH EAX / CALL [LeaveCriticalSection].
-void __fastcall LeaveCriticalSection_QServer(LPCRITICAL_SECTION * ppCriticalSection);
+void __fastcall LeaveCriticalSection_QServer(struct FogCritSectLockStrc * ppCriticalSection);
 struct D2QServerClientConnectionStrc * __fastcall FindClientByClientId(struct D2QServerStrc * pQServer, int nClientId);
 struct D2QServerClientConnectionStrc * __fastcall FindClientBySocket(struct D2QServerStrc * pQServer, SOCKET Socket);
 void __fastcall IncrementClientRefCount(struct D2QServerStrc * pQServer, struct D2QServerClientConnectionStrc * pQServerClient);

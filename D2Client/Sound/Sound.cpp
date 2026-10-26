@@ -5413,16 +5413,7 @@ void SOUND_Calculate3DPosition(float * pfPosition, D2SoundChannelStrc * pChannel
 }
 
 void __fastcall SOUND_PlayEnvironmentSound(int32_t nSoundId, int32_t nPosX, int32_t nPosY, int32_t nPosZ) {
-    // Frame slots -20..-4 are ONE object: &fPosX is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      float fPosX;
-      float fPosY;
-      float fPosZ;
-      int32_t nChanHandle;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    float afPosition[3];
     if (!nSoundId) {
       return;
     }
@@ -5441,11 +5432,10 @@ void __fastcall SOUND_PlayEnvironmentSound(int32_t nSoundId, int32_t nPosX, int3
       }
     }
 
-    __frame0.fPosX = (float)nPosX;
-    __frame0.fPosY = (float)nPosY;
-    __frame0.fPosZ = (float)nPosZ + 640.0;
-    __frame0.nChanHandle = nPosX;
-    SOUND_Calculate3DPosition(&__frame0.fPosX, pChannel->pChannel);
+    afPosition[0] = (float)nPosX;
+    afPosition[1] = (float)nPosY;
+    afPosition[2] = (float)nPosZ + 640.0;
+    SOUND_Calculate3DPosition(afPosition, pChannel->pChannel);
 }
 
 int __fastcall SOUND_PlaySound(eD2Sounds nSoundId, D2UnitStrc * pUnit, int32_t nDelay, int32_t nVolume, int32_t nParam) {
@@ -5671,35 +5661,35 @@ uint32_t __fastcall SOUND_GetCurrentMusic(int32_t nSoundId) {
     return 0;
 }
 
-bool __fastcall SOUND_IsChannelAvailable(uint32_t pChanA, uint32_t pChanB, int32_t nParam1, int32_t nParam2) {
+BOOL __fastcall SOUND_IsChannelAvailable(uint32_t pChanA, uint32_t pChanB, int32_t nParam1, int32_t nParam2) {
     if (*(uint8_t*)(pChanB + 0x3c) < *(uint8_t*)(pChanA + 0x3c)) {
-      return true;
+      return 1;
     }
     if (*(uint8_t*)(pChanA + 0x3c) < *(uint8_t*)(pChanB + 0x3c)) {
-      return false;
+      return 0;
     }
     if (nParam1) {
       if (*(float*)(pChanA + 0x18) < *(float*)(pChanB + 0x18)) {
-        return true;
+        return 1;
       }
       if (*(float*)(pChanB + 0x18) < *(float*)(pChanA + 0x18)) {
-        return false;
+        return 0;
       }
     }
     if (!nParam2) {
-      return pChanB < pChanA;
+      return (uint32_t)(pChanB < pChanA);
     }
 
     uint32_t nStartTick1 = *(uint32_t*)(pChanA + 0x34);
     uint32_t nStartTick2 = *(uint32_t*)(pChanB + 0x34);
     if (nStartTick1 >= nStartTick2 && nStartTick1 != nStartTick2) {
-      return true;
+      return 1;
     }
     if (nStartTick1 >= nStartTick2) {
-      return pChanB < pChanA;
+      return (uint32_t)(pChanB < pChanA);
     }
 
-    return false;
+    return 0;
 }
 
 uint32_t __fastcall SOUND_FindChannelForSound(int32_t nSoundId) {
@@ -5808,15 +5798,12 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
     // Static local variables (originally global data)
     static uint32_t gnSoundVolumeUpdateFrame;
 
-    // Frame slots -80..-4 are ONE object: &fBestDir1 is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -68..-4 are ONE object: &fDir1 is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
-      float fBestDir1;
-      float fDirY;
-      uint32_t fDirZ;
       float fDir1;
       float fDirX2;
-      uint32_t fDirX3;
+      float fDirX3;
       D2SoundChannelStrc* pChanEntrySave;
       uint32_t bMasterVolOn;
       D2FloatIntUnion fClosestDist;
@@ -5831,7 +5818,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
       int* pFreeChannelList;
       D2SoundsTxt* pSoundsTxtLocal;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 76, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 64, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     D2SoundChannelNodeStrc* pDVar1;
     D2UnitStrc* pUnit_00;
@@ -5913,6 +5900,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
     nFadeVolStart = D2Sound::Src::D2SoundFast::SOUND_GetMasterVolume();
     __frame0.bMasterVolOn = (uint32_t)(0 < nFadeVolStart);
     for (__frame0.pSortedFlag = gpActiveSoundChannelsHead; __frame0.pSortedFlag; __frame0.pSortedFlag = __frame0.pSortedFlag->pNext) {
+      float afSoundDir[3];
       pChanEntry = __frame0.pSortedFlag->pChannel;
       __frame0.pChanEntrySave = pChanEntry;
       pSoundsTxt = DataTbls::TXT_sounds_GetLineBySoundId(pChanEntry->nSoundId);
@@ -5949,10 +5937,10 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
           __frame0.pClosestUnit = 0;
           __frame0.fDirX2 = 0.0;
           __frame0.nUnitCount = 0;
-          __frame0.fDirX3 = 0;
-          __frame0.fBestDir1 = 0.0;
-          __frame0.fDirY = 0.0;
-          __frame0.fDirZ = 0;
+          __frame0.fDirX3 = 0.0;
+          afSoundDir[0] = 0.0;
+          afSoundDir[1] = 0.0;
+          afSoundDir[2] = 0.0;
           __frame0.fClosestDist.fValue = -1.0;
           __frame0.fIndoorsSum = 0.0;
           __frame0.pUnitListLocal = pChanEntry->pGlobal3Ref;
@@ -5966,9 +5954,9 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
             SOUND_CalculateUnitDirection(pUnit_00, pChanEntry->nSoundId, &__frame0.fDir1);
             __frame0.fUnitDistSmooth = _Utils::CalculateHypotenusePowered(__frame0.fDir1, __frame0.fDirX2);
             if (!__frame0.pClosestUnit || __frame0.fUnitDistSmooth < __frame0.fClosestDist.fValue) {
-              __frame0.fBestDir1 = __frame0.fDir1;
-              __frame0.fDirY = __frame0.fDirX2;
-              __frame0.fDirZ = __frame0.fDirX3;
+              afSoundDir[0] = __frame0.fDir1;
+              afSoundDir[1] = __frame0.fDirX2;
+              afSoundDir[2] = __frame0.fDirX3;
               __frame0.fClosestDist.fValue = __frame0.fUnitDistSmooth;
               __frame0.pClosestUnit = pUnit_00;
             }
@@ -6006,7 +5994,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
             __frame0.nUnitCount++;
           } while (__frame0.pUnitListLocal);
 
-          SOUND_Calculate3DPosition(&__frame0.fBestDir1, pChanEntry);
+          SOUND_Calculate3DPosition(afSoundDir, pChanEntry);
           __frame0.fClosestDist.fValue = __frame0.fIndoorsSum / (float)__frame0.nUnitCount;
           fIndoorsSmoothed = (float)pChanEntry->nUnitDistance;
           if (__frame0.fClosestDist.fValue <= (float)pChanEntry->nUnitDistance) {

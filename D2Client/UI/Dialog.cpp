@@ -4,6 +4,7 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2DialogStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Select.h"
@@ -13,7 +14,6 @@
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/ui.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
@@ -835,7 +835,7 @@ void __stdcall FreeDialogStrc() {
 
 void __fastcall DIALOG_DrawBackground(D2DialogStrc * pDialog) {
     // Static local variables (originally global data)
-    static uint32_t gpDialogBackgroundDC6;
+    static int32_t gpDialogBackgroundDC6;
 
     int nBottom;
     int32_t* piStringData;
@@ -1080,61 +1080,47 @@ int __stdcall GetDialogCounter() {
 }
 
 void __fastcall AddStringData(D2DialogStrc * pDialog, uint16_t * szString, uint32_t param_1, uint32_t param_2, int32_t nParam1, uint32_t nParam, fpDialogFunc nParam2, int32_t nParam3) {
-    // Frame slots -28..-4 are ONE object: &nDialogX is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nDialogX;
-      int nDialogY;
-      int nExclusionBottom;
-      int nExclusionRight;
-      int nDialogX2;
-      uint16_t* pSrcString;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 24, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    RECT nDialogX;
     int32_t nErrLine;
-    int nStringIdx = pDialog->nSubCounter;
-    __frame0.nDialogX2 = nStringIdx;
-    __frame0.pSrcString = szString;
-    if (nStringIdx < 10) {
+    int nIndex = pDialog->nSubCounter;
+    if (nIndex < 10) {
       size_t nStrLen;
-      pDialog->nSubCounter = nStringIdx + 1;
-      pDialog->aStringData[nStringIdx].nYPos = param_1;
-      pDialog->aStringData[nStringIdx].nFont = nParam;
-      pDialog->aStringData[nStringIdx].nXOffset = 0;
-      pDialog->aStringData[nStringIdx].nColor = param_2;
+      pDialog->nSubCounter = nIndex + 1;
+      pDialog->aStringData[nIndex].nYPos = param_1;
+      pDialog->aStringData[nIndex].nFont = nParam;
+      pDialog->aStringData[nIndex].nXOffset = 0;
+      pDialog->aStringData[nIndex].nColor = param_2;
       if (nParam1 != 3 || pDialog->nHighlightStyle != 1) {
-        pDialog->aStringData[nStringIdx].nLineType = nParam1;
-        pDialog->aStringData[nStringIdx].fpOnClick = nParam2;
-        pDialog->aStringData[nStringIdx].nCallbackParam = nParam3;
+        pDialog->aStringData[nIndex].nLineType = nParam1;
+        pDialog->aStringData[nIndex].fpOnClick = nParam2;
+        pDialog->aStringData[nIndex].nCallbackParam = nParam3;
         nErrLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(szString);
         nStrLen = nErrLine + 1;
         if (0x77 < (int)nStrLen) {
           nStrLen = 119;
         }
 
-        D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pDialog->aStringData[nStringIdx].szString, __frame0.pSrcString, nStrLen);
-        nStringIdx = __frame0.nDialogX2;
-        pDialog->aStringData[__frame0.nDialogX2].szString[nStrLen] = L'\0';
+        D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pDialog->aStringData[nIndex].szString, szString, nStrLen);
+        pDialog->aStringData[nIndex].szString[nStrLen] = L'\0';
         if (nParam3) {
           pDialog->nClickableCount++;
         }
         if (!pDialog->nAutoLayout) {
-          DIALOG_CenterStringLine(pDialog, __frame0.nDialogX2);
+          DIALOG_CenterStringLine(pDialog, nIndex);
         } else {
           DIALOG_RecalculateLayout(pDialog);
         }
 
-        __frame0.nDialogY = pDialog->pCoords2.y;
-        __frame0.nDialogX = pDialog->pCoords2.x;
-        __frame0.nExclusionRight = pDialog->nBackgroundHeight + __frame0.nDialogY;
-        __frame0.nExclusionBottom = pDialog->nBackgroundWidth + __frame0.nDialogX;
-        GAME::Select::SELECT_SetExclusionRect((uint32_t*)&__frame0.nDialogX);
+        nDialogX.top = pDialog->pCoords2.y;
+        nDialogX.left = pDialog->pCoords2.x;
+        nDialogX.bottom = pDialog->nBackgroundHeight + nDialogX.top;
+        nDialogX.right = pDialog->nBackgroundWidth + nDialogX.left;
+        GAME::Select::SELECT_SetExclusionRect(&nDialogX);
         if (!(pDialog->nSelectedLine == -1 && nParam3)) {
           return;
         }
 
-        DIALOG_SetSelectedLine(pDialog, nStringIdx);
+        DIALOG_SetSelectedLine(pDialog, nIndex);
         return;
       }
 

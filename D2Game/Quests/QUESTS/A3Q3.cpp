@@ -198,7 +198,7 @@ bool __fastcall Q20_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
       *nUnknown = '\x04';
       return true;
     }
-    if ((char)pQuestSpecific->field_0x20 != '\0') {
+    if (pQuestSpecific->field_0x20 != '\0') {
       *nUnknown = (pQuestData->pGame->nGameType == SGAMETYPE_SINGLEPLAYER) + '\a';
       return true;
     }
@@ -728,11 +728,11 @@ void __fastcall Q20_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2
     if (pDVar2) {
       pDVar1->nBladeItemCount++;
     }
-    if (!((char)pDVar1->field_0x20 != '\0' && pDVar1->nBladeItemCount == 1)) {
+    if (!(pDVar1->field_0x20 != '\0' && pDVar1->nBladeItemCount == 1)) {
       return;
     }
 
-    *(uint8_t*)&pDVar1->field_0x20 = 0;
+    pDVar1->field_0x20 = '\0';
 }
 
 // A3Q3 "Khalim's Will" — callback #9: fires when the quest item (0x20333367) is destroyed/removed.
@@ -752,7 +752,7 @@ void __fastcall Q20_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
       return;
     }
 
-    *(uint8_t*)&pQuestSpecific->field_0x20 = 1;
+    pQuestSpecific->field_0x20 = '\x01';
 }
 
 // Already documented.
@@ -861,7 +861,7 @@ void __fastcall Q20_InitData(D2QuestDataStrc * pQuestData) {
 // carries the quest item. Sets in-progress guard at +4 around the spawn; on success records spawned,
 // clears the "pending" flag (+3) and stores the spawned unit's GUID at +0x24. No quest-state writes.
 void Q20_SpawnUniqueSerpent(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2QuestDataA3Q3Strc * pA3Q3Data) {
-    *(uint8_t*)&pA3Q3Data->nBladeGivenFlag = 1;
+    pA3Q3Data->nBladeGivenFlag = '\x01';
     D2UnitStrc* pSerpentUnit = Monsters::SpawnUniquePack(pGame, pRoom, nullptr, 0x197, 1, 0, 0, 1);
     if (pSerpentUnit) {
       pA3Q3Data->bSerpentArrived = false;
@@ -869,7 +869,7 @@ void Q20_SpawnUniqueSerpent(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2QuestData
       pA3Q3Data->nSerpentUnitGUID = pSerpentUnit->nUnitGUID;
     }
 
-    *(uint8_t*)&pA3Q3Data->nBladeGivenFlag = 0;
+    pA3Q3Data->nBladeGivenFlag = '\0';
 }
 
 // A3Q3 "Khalim's Will" — accessor: returns the quest's "blade has been given/dropped" flag
@@ -922,14 +922,14 @@ uint8_t __fastcall Q20_QuestUpdate(::SGAMEDATA * pGame, D2QuestDataStrc * pQuest
     D2RoomStrc** pAdjacentRooms;
     uint32_t nAdjacentCount;
     D2UnitStrc* pRoom;
-    D2QuestDataA3Q3Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA3Q3;
-    bool bVar1 = pQuestSpecific->bSerpentLocationValid;
-    *(uint8_t*)((uintptr_t)&pQuestSpecific->nBladeGivenFlag + 1) = 0;
-    if (!(bVar1 && pQuestSpecific->bSerpentArrived && !pQuestSpecific->bCanDropBlade && pGame->pAct[2])) {
+    D2QuestDataA1Q1Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q1;
+    bool bVar1 = *(bool*)((int)pQuestSpecific->sQuestGUID.aPlayerGUID + 0x18);
+    *(uint8_t*)((int)pQuestSpecific->sQuestGUID.aPlayerGUID + 5) = 0;
+    if (!(bVar1 && *(bool*)((int)pQuestSpecific->sQuestGUID.aPlayerGUID + 3) && !*(bool*)((int)pQuestSpecific->sQuestGUID.aPlayerGUID + 2) && pGame->pAct[2])) {
       return '\x01';
     }
 
-    D2RoomStrc* pSpawnRoom = D2Common::DUNGEON::Dungeon::FindRoomBySubtileCoordinates(pGame->pAct[2], pQuestSpecific->nSerpentKillerGUID, pQuestSpecific->nSerpentSpawnX);
+    D2RoomStrc* pSpawnRoom = D2Common::DUNGEON::Dungeon::FindRoomBySubtileCoordinates(pGame->pAct[2], *(int32_t*)((int)pQuestSpecific->sQuestGUID.aPlayerGUID + 8), *(int32_t*)((int)pQuestSpecific->sQuestGUID.aPlayerGUID + 0xc));
     if (!pSpawnRoom) {
       return '\x01';
     }
@@ -943,7 +943,7 @@ uint8_t __fastcall Q20_QuestUpdate(::SGAMEDATA * pGame, D2QuestDataStrc * pQuest
     do {
       for (pRoom = pAdjacentRooms[nRoomIdx]->pUnitList; pRoom; pRoom = pRoom->pRoomNext) {
         if (pRoom->eUnitType == UNIT_PLAYER) {
-          Q20_SpawnUniqueSerpent(pGame, pSpawnRoom, pQuestSpecific);
+          Q20_SpawnUniqueSerpent(pGame, pSpawnRoom, (D2QuestDataA3Q3Strc*)pQuestSpecific);
           pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q20_Callback08_MonsterKilled;
           return '\x01';
         }

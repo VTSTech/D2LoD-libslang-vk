@@ -7,6 +7,7 @@
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/Msg.h"
+#include "D2Client/GAME/Roster.h"
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/GAME/View.h"
 #include "D2Client/SKILLS/Skills.h"
@@ -23,7 +24,6 @@
 #include "D2Common/D2MonStatsTxt.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
-#include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
@@ -396,16 +396,16 @@ void __fastcall SELECT_SetPetSeedTimestamp(int32_t bEnabled, D2UnitStrc * pUnit,
       return;
     }
 
-    D2SeedStrc* pSeed = RosterPets::GetSeed(pUnit->nUnitGUID);
-    pSeed[1].nSeedLow = nTimestamp;
+    D2RosterPetSeedStrc* pSeed = RosterPets::GetSeed(pUnit->nUnitGUID);
+    pSeed->nState = nTimestamp;
 }
 
-void __fastcall SELECT_SetExclusionRect(uint32_t * pRect) {
+void __fastcall SELECT_SetExclusionRect(RECT * pRect) {
     if (pRect) {
-      gnSelectExclusionRectLeft = *pRect;
-      gnSelectExclusionRectTop = pRect[1];
-      gnSelectExclusionRectRight = pRect[2];
-      gnSelectExclusionRectBottom = pRect[3];
+      gnSelectExclusionRectLeft = pRect->left;
+      gnSelectExclusionRectTop = pRect->top;
+      gnSelectExclusionRectRight = pRect->right;
+      gnSelectExclusionRectBottom = pRect->bottom;
       gbSelectExclusionActive = 1;
       return;
     }
@@ -639,7 +639,6 @@ D2UnitStrc * __fastcall SKILL_ValidateTarget(D2SkillStrc * pSkill, D2UnitStrc * 
     int32_t nPosOrResult;
     BOOL bIsMoving;
     int32_t nCanUseSkillResult;
-    uint8_t nSkillFlags;
     D2SkillsTxt* pSkillsTxt;
     pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill);
     D2UnitStrc* pPlayerUnit_lcl;
@@ -694,7 +693,7 @@ D2UnitStrc * __fastcall SKILL_ValidateTarget(D2SkillStrc * pSkill, D2UnitStrc * 
     if (nPosOrResult) {
       return pUnit;
     }
-    if ((int32_t)((int32_t)((uint32_t)nSkillFlags << 25) >> 31)) {
+    if (pSkillsTxt->SearchEnemyNear) {
       pPlayerUnit_lcl = SKILL_FindTargetInRange(pSkill, pUnit, pX, pY, pSkillsTxt);
       return pPlayerUnit_lcl;
     }

@@ -307,21 +307,22 @@ void __fastcall CMD_InvokeCallbackByParam(int32_t nParam) {
 
 // @sourcefile .\UI\CmdTbl.cpp
 void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
+    char* pEnd;
     HANDLE hFile;
     D2CmdTbl_Line0x50f* pKeyData;
     int nCount;
-    uint32_t* pFileBufCursor;
-    int* pSrc;
+    uint16_t* pFileBufCursor;
+    D2KeyBindStrc* pSrc;
     D2CmdTbl_Line0x50f* pDst;
     int* pDstDefault;
-    uint32_t aKeyBindFileBuf[286];
+    uint8_t aKeyBindFileBuf[1146];
     char cStack_10d;
     char szPath[260];
     char szLangAbbr[4];
     char* pScan;
     D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbr, 0);
     if (dwParam) {
-      char* pEnd;
+      uint16_t uVar1;
       Fog::Source::SFile::SFILE_GetInstallPath(szPath, 0xdc);
       pScan = &cStack_10d;
       do {
@@ -336,15 +337,17 @@ void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
         Fog::Source::SFile::SFILE_Win32CloseHandle(hFile);
         if (dwParam == 0x47a) {
           pKeyData = D2_NEW_POOL(nullptr, D2CmdTbl_Line0x50f);
-          pFileBufCursor = aKeyBindFileBuf;
+          pFileBufCursor = (uint16_t*)aKeyBindFileBuf;
           pDst = pKeyData;
           for (nCount = 0x11e; nCount; nCount--) {
-            *(uint32_t*)pDst = *pFileBufCursor;
-            pFileBufCursor++;
-            pDst = (D2CmdTbl_Line0x50f*)&pDst->pNext;
+            uVar1 = pFileBufCursor[1];
+            pDst->wMagic = pFileBufCursor[0];
+            pDst->wVersion = uVar1;
+            pFileBufCursor += 2;
+            pDst = (D2CmdTbl_Line0x50f*)&pDst->wSize;
           }
 
-          *(uint16_t*)pDst = *(uint16_t*)pFileBufCursor;
+          pDst->wMagic = *pFileBufCursor;
           goto apply_key_data;
         }
       }
@@ -361,12 +364,12 @@ void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
     pKeyData = (D2CmdTbl_Line0x50f*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMPQ, szPath, pFileSize, pScan, nLine);
     apply_key_data:
     if (pKeyData) {
-      if (*(short int*)pKeyData == 0x5357 && *(short int*)&pKeyData->field_0x2 == 0x25 && *(short int*)&pKeyData->pNext == 0x47a) {
-        pSrc = (int*)((uintptr_t)&pKeyData->pNext + 2);
+      if (pKeyData->wMagic == 0x5357 && pKeyData->wVersion == 0x25 && pKeyData->wSize == 0x47a) {
+        pSrc = pKeyData->aBindings;
         pDstDefault = gaKeyBindingsDefault;
         for (nCount = 0x11d; nCount; nCount--) {
-          *pDstDefault = *pSrc;
-          pSrc++;
+          *pDstDefault = pSrc->nCmdIndex;
+          pSrc = (D2KeyBindStrc*)&pSrc->wKeyCode;
           pDstDefault++;
         }
 

@@ -9,21 +9,34 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2QuestDataA1Q1Strc;
 struct D2SkillsTxt;
 struct Report;
-#ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
-struct _EXCEPTION_POINTERS;
-#endif // _WIN32
 #ifndef RECON_FPTD_fnCrashOutputLine
 #define RECON_FPTD_fnCrashOutputLine
 typedef void (__fastcall *fnCrashOutputLine)(::Report * pReport, char * szString);
 #endif
 
+#ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
+struct _EXCEPTION_POINTERS;
+#endif // _WIN32
+
 // Data types
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 
 typedef _FLOATING_SAVE_AREA FLOATING_SAVE_AREA;
+
+typedef CONTEXT * PCONTEXT;
+
+typedef EXCEPTION_RECORD * PEXCEPTION_RECORD;
+
+struct _EXCEPTION_RECORD {
+    /* 0x00 */ DWORD ExceptionCode;
+    /* 0x04 */ DWORD ExceptionFlags;
+    /* 0x08 */ struct _EXCEPTION_RECORD * ExceptionRecord;
+    /* 0x0C */ PVOID ExceptionAddress;
+    /* 0x10 */ DWORD NumberParameters;
+    /* 0x14 */ ULONG_PTR ExceptionInformation[15];
+};
 
 #endif // _WIN32
 
@@ -34,6 +47,35 @@ struct __attribute__((packed)) ADDRESS {
     /* 0x08 */ ADDRESS_MODE Mode;
 };
 
+struct D2CrashDumpRecordStrc {
+    /* 0x00 */ uint32_t dwHeader0;
+    /* 0x04 */ uint32_t dwHeader1;
+    /* 0x08 */ uint32_t dwRecordType;
+    /* 0x0C */ int32_t nDwordCount;
+    /* 0x10 */ uint32_t aData[8]; // nDwordCount dwords copied in
+};
+
+struct __attribute__((packed)) D2CrashDumpRequestStrc {
+    /* 0x00 */ HANDLE hFile;
+    /* 0x04 */ struct _EXCEPTION_POINTERS * pExceptionPointers;
+    /* 0x08 */ DWORD dwThreadId;
+    /* 0x0C */ char * szComment;
+    /* 0x10 */ uint8_t bSuccess;
+    /* 0x11 */ uint8_t field_0x11[3];
+};
+
+struct __attribute__((packed)) D2FogDebugModuleEntryStrc {
+    /* 0x000 */ void * pImageBase; // %p in DBG-MODULE line
+    /* 0x004 */ uint32_t nImageSize; // %08x
+    /* 0x008 */ char szModuleName[256]; // "%s"
+    /* 0x108 */ char szImagePath[256]; // "%s" at +0x108
+    /* 0x208 */ uint32_t dwUnknown208; // %u
+    /* 0x20C */ GUID guidPdb; // +0x20c dword, +0x210/+0x212 words, +0x214..+0x21b bytes; manual placement, no padding
+    /* 0x21C */ uint32_t dwUnknown21c; // %u
+    /* 0x220 */ uint32_t dwUnknown220; // %u
+    /* 0x224 */ uint32_t dwTimestamp; // printed as ' %8x' when nonzero
+};
+
 struct D2FogModuleNodeStrc {
     /* 0x000 */ char szModulePath[260]; // GetModuleFileNameExA / MODULEENTRY32.szExePath copy
     /* 0x104 */ char szModuleName[256]; // GetModuleBaseNameA / szModule copy at +0x104
@@ -42,7 +84,34 @@ struct D2FogModuleNodeStrc {
     /* 0x20C */ struct D2FogModuleNodeStrc * pNext; // next module (+0x20c)
 };
 
+struct D2ImagehlpSymbol64BufStrc {
+    /* 0x00 */ DWORD SizeOfStruct;
+    /* 0x04 */ DWORD dwPad;
+    /* 0x08 */ uint64_t Address;
+    /* 0x10 */ DWORD Size;
+    /* 0x14 */ DWORD Flags;
+    /* 0x18 */ DWORD MaxNameLength;
+    /* 0x1C */ char Name[1028]; // IMAGEHLP_SYMBOL64 with its name buffer; MaxNameLength is 0x400
+};
+
+struct D2ImagehlpSymbolBufStrc {
+    /* 0x00 */ DWORD SizeOfStruct;
+    /* 0x04 */ DWORD Address;
+    /* 0x08 */ DWORD Size;
+    /* 0x0C */ DWORD Flags;
+    /* 0x10 */ DWORD MaxNameLength;
+    /* 0x14 */ char Name[260]; // IMAGEHLP_SYMBOL with its name buffer; MaxNameLength is 0x100
+};
+
 struct EHExceptionRecord {
+    /* 0x00 */ DWORD ExceptionCode;
+    /* 0x04 */ DWORD ExceptionFlags;
+    /* 0x08 */ struct _EXCEPTION_RECORD * ExceptionRecord;
+    /* 0x0C */ void * ExceptionAddress;
+    /* 0x10 */ DWORD NumberParameters;
+    /* 0x14 */ DWORD magicNumber; // params.magicNumber
+    /* 0x18 */ void * pExceptionObject; // params.pExceptionObject
+    /* 0x1C */ void * pThrowInfo; // params.pThrowInfo (ThrowInfo not in the program)
 };
 
 struct EHRegistrationNode {
@@ -54,6 +123,14 @@ struct __attribute__((packed)) FPO_DATA_WORD {
     /* 0x08 */ DWORD cdwLocals;
     /* 0x0C */ WORD cdwParams;
     /* 0x0E */ WORD wAttributes; // Bit-fields: cbProlog bits 0-7, cbRegs bits 8-10, fHasSEH bit 11, fUseBP bit 12, reserved bit 13, cbFrame bits 14-15 (0 FRAME_FPO, 3 FRAME_NONFPO)
+};
+
+struct __attribute__((packed)) IMAGEHLP_LINE64 {
+    /* 0x00 */ DWORD SizeOfStruct;
+    /* 0x04 */ void * Key;
+    /* 0x08 */ DWORD LineNumber;
+    /* 0x0C */ char * FileName;
+    /* 0x10 */ ULONGLONG Address;
 };
 
 struct __attribute__((packed)) IMAGEHLP_MODULE64 {
@@ -99,6 +176,12 @@ struct KDHELP {
     /* 0x2C */ DWORD Reserved[5];
 };
 
+struct MINIDUMP_EXCEPTION_INFORMATION {
+    /* 0x00 */ DWORD ThreadId;
+    /* 0x04 */ struct _EXCEPTION_POINTERS * ExceptionPointers;
+    /* 0x08 */ BOOL ClientPointers;
+};
+
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 
 struct _CONTEXT {
@@ -129,7 +212,17 @@ struct _CONTEXT {
     /* 0xCC */ BYTE ExtendedRegisters[512];
 };
 
+struct _EXCEPTION_POINTERS {
+    /* 0x00 */ PEXCEPTION_RECORD ExceptionRecord;
+    /* 0x04 */ PCONTEXT ContextRecord;
+};
+
 #endif // _WIN32
+
+struct __attribute__((packed)) D2FogDebugModuleTableStrc {
+    /* 0x00 */ uint32_t nCount;
+    /* 0x04 */ D2FogDebugModuleEntryStrc aEntries[256];
+};
 
 struct __attribute__((packed)) STACKFRAME {
     /* 0x00 */ ADDRESS AddrPC;
@@ -165,7 +258,7 @@ bool __stdcall WalkStackFrame(HANDLE hThread, uint32_t pStackFrame, uint32_t pCo
 void __stdcall WriteCrashDumpViaThread();
 // lpStartAddress parameter of CreateThread
 DWORD __stdcall DEBUG_CrashDumpRequestThreadProc(void * lpThreadParam);
-bool __fastcall CrashDumpWriterThread(LPCSTR szDumpPath, uint32_t pExceptionPtrs, uint32_t nEventHandle, DWORD dwThreadId);
+bool __fastcall CrashDumpWriterThread(LPCSTR szDumpPath, char * pExceptionPtrs, struct _EXCEPTION_POINTERS * nEventHandle, DWORD dwThreadId);
 void __stdcall InitializeDebugSubsystem();
 uint32_t __stdcall DEBUG_GetDbgHelpModuleRange(LPVOID * ppBaseOfDll, DWORD * pdwSizeOfImage);
 void __stdcall CleanupDebugSymbols();
@@ -174,10 +267,10 @@ void __stdcall ZeroStruct16Bytes(void * pStruct);
 void __stdcall ZeroStruct16BytesDuplicate(void * pStruct);
 void __fastcall SKILLSTXT_ZeroOutFields(struct D2SkillsTxt * pSkillsTxt);
 int CompareUintDescending(LPCVOID pParam1, LPCVOID pParam2);
-void FormatModuleDebugString(char * szText, struct D2QuestDataA1Q1Strc * pQuestDataA1Q1);
+void FormatModuleDebugString(char * szText, struct D2FogDebugModuleEntryStrc * pModule);
 void __fastcall FormatAddressDebugString(uint32_t * pAddrInfo, char * pSymInfo, char * szOutput);
 void __fastcall EnumerateAndDumpAllFunctions(fnCrashOutputLine pOutputCallback, ::Report * pReport);
-void InitializeDebugInfoTable(int32_t pTable);
+void InitializeDebugInfoTable(struct D2FogDebugModuleTableStrc * pTable);
 void __stdcall DEBUG_UnloadStackCrawlDbgHelp();
 void __fastcall DumpThreadContext(HANDLE hHandle);
 BOOL __stdcall GetSourceLineWithRetry(HANDLE hProcess, DWORD nAddress, void * pdwDisplacement, void * pLine);

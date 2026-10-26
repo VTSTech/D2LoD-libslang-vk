@@ -38,26 +38,12 @@ void thunk_NET_D2GS_SERVER_SendPacketToClient(char * szText, size_t nSize) {
 }
 
 int __fastcall SERVERCMD_SendBufferToClient(int32_t nClientId, uint16_t wGuildFlags, uint16_t wUniqueCode, char * szPlayerName) {
-    // Frame slots -64..-4 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      char byPacketId;
-      char szPayload[48];
-      uint16_t wBufferOutput;
-      uint16_t wParamCopy;
-      uint8_t __pad53[3];
-      uint32_t nSecurityCookie;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 60, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.nSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    __frame0.byPacketId = -0x4e;
-    __frame0.wBufferOutput = wUniqueCode;
-    __frame0.wParamCopy = wGuildFlags;
-    Storm::Source::SSTR::SStrCopy(__frame0.szPayload, szPlayerName, 0x10);
-    int32_t iVar1 = D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(0, nClientId, &__frame0.byPacketId, 0x35);
+    D2GSPacketSrv0xB2 sPacket;
+    sPacket.nPacketId = 0xb2;
+    sPacket.nUniqueCode = wUniqueCode;
+    sPacket.nGuildFlags = wGuildFlags;
+    Storm::Source::SSTR::SStrCopy(sPacket.szPlayerName, szPlayerName, 0x10);
+    int32_t iVar1 = D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(0, nClientId, (char*)&sPacket, 0x35);
     Fog::Debug::GuardStack();
     return iVar1;
 }
@@ -77,19 +63,10 @@ void __fastcall SERVERCMD_SendSingleBytePacket(int32_t nParam) {
 }
 
 void __fastcall NET_D2GS_SERVER_Send_0xB4_ConnectionRefused(int32_t nClientId, int32_t nReason) {
-    // Frame slots -12..-7 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      char byPacketId;
-      int32_t nReasonCopy;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 5, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.byPacketId = -0x4c;
-    __frame0.nReasonCopy = nReason;
-    D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(0, nClientId, &__frame0.byPacketId, 5);
+    D2GSPacketSrv0xB4 sPacket;
+    sPacket.nPacketId = 0xb4;
+    sPacket.nReason = nReason;
+    D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(0, nClientId, (char*)&sPacket, 5);
 }
 
 } // namespace D2Game::GAME::Server::ServerCmd

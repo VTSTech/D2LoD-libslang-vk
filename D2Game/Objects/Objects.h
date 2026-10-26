@@ -23,6 +23,16 @@ typedef uint32_t (__fastcall *pfnObjectPlaceTestCallback)(::SGAMEDATA * pGame, e
 #endif
 
 // Data types
+struct D2CoordStrc {
+    D2CoordStrc() = default;
+    D2CoordStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+    D2CoordStrc(int a0, int a1) : nX(a0), nY(a1) {}
+
+    /* 0x00 */ int nX;
+    /* 0x04 */ int nY;
+};
+
 struct __attribute__((packed)) D2ObjectsTxt {
     /* 0x000 */ char Name[64];
     /* 0x040 */ uint16_t NameWideString[64];

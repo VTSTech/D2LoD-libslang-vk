@@ -2,9 +2,9 @@
 
 #include "Storm/Engine/Application.h"
 #include "Fog/Debug.h"
+#include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
-#include "Fog/Src/ErrorManager.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -29,33 +29,16 @@ typedef DWORD (__stdcall *pfnSetSecurityInfo)(HANDLE handle, DWORD ObjectType, D
 namespace Storm::Engine::Application {
 
 void __stdcall LIB_LoadAdvapi32() {
-    // Frame slots -528..-4 are ONE object: &bySidAuthority is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint8_t bySidAuthority;
-      uint8_t bySidAuth1;
-      uint8_t bySidAuth2;
-      uint8_t bySidAuth3;
-      uint8_t bySidAuth4;
-      uint8_t bySidAuth5;
-      uint8_t __pad6[2];
-      uint8_t aclBuf[512];
-      uint32_t dwSecurityCookie;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 524, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     pfnAllocateAndInitializeSid pfnAllocateSid;
     pfnInitializeAcl pInitializeAcl;
     pfnAddAccessDeniedAce pAddAccessDeniedAce;
     pfnSetSecurityInfo pSetSecurityInfo;
     BOOL nResult;
-    __frame0.dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    __frame0.bySidAuthority = 0;
-    __frame0.bySidAuth1 = 0;
-    __frame0.bySidAuth2 = 0;
-    __frame0.bySidAuth3 = 0;
-    __frame0.bySidAuth4 = 0;
-    __frame0.bySidAuth5 = 1;
+    _SID_IDENTIFIER_AUTHORITY sSidAuthority;
+    uint8_t aclBuf[512];
+    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
+    memset(sSidAuthority.Value, 0, 5 * sizeof(sSidAuthority.Value[0]));
+    sSidAuthority.Value[5] = '\x01';
     HANDLE hProcess = GetCurrentProcess();
     PSID pSid = (PSID)0x0;
     HMODULE hModule = LoadLibraryA("advapi32.dll");
@@ -68,13 +51,13 @@ void __stdcall LIB_LoadAdvapi32() {
           if (pAddAccessDeniedAce) {
             pSetSecurityInfo = (pfnSetSecurityInfo)GetProcAddress(hModule, "SetSecurityInfo");
             if (pSetSecurityInfo) {
-              nResult = (*pfnAllocateSid)(&__frame0.bySidAuthority, 1, 0, 0, 0, 0, 0, 0, 0, 0, &pSid);
+              nResult = (*pfnAllocateSid)(&sSidAuthority, 1, 0, 0, 0, 0, 0, 0, 0, 0, &pSid);
               if (nResult) {
-                nResult = (*pInitializeAcl)(__frame0.aclBuf, 0x200, 2);
+                nResult = (*pInitializeAcl)(aclBuf, 0x200, 2);
                 if (nResult) {
-                  nResult = (*pAddAccessDeniedAce)(__frame0.aclBuf, 2, -266338306, pSid);
+                  nResult = (*pAddAccessDeniedAce)(aclBuf, 2, -266338306, pSid);
                   if (nResult) {
-                    (*pSetSecurityInfo)(hProcess, 6, 0x80000004, (PSID)0x0, (PSID)0x0, __frame0.aclBuf, nullptr);
+                    (*pSetSecurityInfo)(hProcess, 6, 0x80000004, (PSID)0x0, (PSID)0x0, aclBuf, nullptr);
                   }
                 }
               }

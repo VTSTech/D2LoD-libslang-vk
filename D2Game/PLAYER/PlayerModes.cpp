@@ -69,6 +69,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
@@ -1105,8 +1106,9 @@ int32_t __fastcall PLRMODES_ModeCallback_AttackSkill(::SGAMEDATA * pGame, D2Unit
 // Ticks stamina recovery for a player unit each game loop. Reads current stamina and UNITSTAT_staminarecoverybonus; recovery shift is 8 (standing/town-walk) or 9 (walking). Applies bonus percentage, clamps to max stamina, then writes back via STATLIST_SetUnitStat. Returns early if already at max or if in a non-recovery anim mode (e.g. attacking).
 void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
     eD2PlayerAnimMode eAnimMode;
+    int32_t nShiftAmount;
     uint32_t nCurrentStamina = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_stamina, 0);
-    int8_t nShiftAmount = 8;
+    *(uint8_t*)(char*)&nShiftAmount = 8;
     int nRecoveryBonus = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_staminarecoverybonus, 0);
     if (!pUnit) {
       eAnimMode = Death;
@@ -1120,7 +1122,7 @@ void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
       case TownNeutral:
         break;
       case Walk:
-        nShiftAmount = 9;
+        *(uint8_t*)(char*)&nShiftAmount = 9;
       if (!(nCurrentStamina & -256)) {
         return;
       }
@@ -1132,7 +1134,7 @@ void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
         }
       break;
       case TownWalk:
-        nShiftAmount = 9;
+        *(uint8_t*)(char*)&nShiftAmount = 9;
     }
 
     int32_t nMaxStamina = D2Common::Stats::StatsEx::GetTxtMaxStamina(pUnit);
@@ -1140,7 +1142,7 @@ void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
       return;
     }
 
-    int nRecoverAmount = nMaxStamina >> nShiftAmount;
+    int nRecoverAmount = nMaxStamina >> (int8_t)nShiftAmount;
     if (nRecoveryBonus) {
       nRecoverAmount += nRecoverAmount * nRecoveryBonus / 100;
     }
@@ -1153,19 +1155,19 @@ void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_stamina, nRecoveryBonus, 0);
 }
 
-int32_t PLRMODES_GetHpPercent128(D2UnitStrc * pUnit, int32_t dwParam) {
+uint8_t PLRMODES_GetHpPercent128(D2UnitStrc * pUnit) {
     if (!pUnit) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)dwParam >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)0x80);
+      return 0x80;
     }
 
     int nHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
     int32_t nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
     int nMaxHpShifted = nMaxHp >> 8;
     if (!(0 < nMaxHpShifted && nHp >> 8 < nMaxHpShifted)) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nMaxHp >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)0x80);
+      return 0x80;
     }
 
-    return (nHp >> 8 << 7) / nMaxHpShifted;
+    return (uint8_t)((nHp >> 8 << 7) / nMaxHpShifted);
 }
 
 // Per-tick HP regeneration tick for a player unit. Reads UNITSTAT_hpregen; if zero returns early. Adds regen to current HP capped at txt-max; if the max is exceeded and the player has a healthpot state-list, removes and frees it. Enforces a floor of 0x100. Writes the new HP via STATLIST_SetUnitStat, then computes a 7-bit HP-percent and sends packet 0xAB to the client only if the change exceeds 4 units from the last sent value.

@@ -47,8 +47,6 @@ void Destructor(::Report * pThis) {
 }
 
 int8_t Open(::Report * pThis, char * szFileName) {
-    uint32_t bResult;
-    uint32_t dwResult;
     bool bGotPath;
     tm localTime;
     __time64_t tTime = __time64(nullptr);
@@ -57,8 +55,8 @@ int8_t Open(::Report * pThis, char * szFileName) {
       bool bVar1;
       bVar1 = File::FILETOOLS_GetTempPath_UTF8(gszCrashLogTempDir);
       if (bVar1) {
-        bResult = File::STRING_AppendBlizzardErrorSubfolderToPath(dwResult, gszCrashLogTempDir);
-        if ((char)bResult == '\0') {
+        bVar1 = File::STRING_AppendBlizzardErrorSubfolderToPath(gszCrashLogTempDir);
+        if (!bVar1) {
           return '\0';
         }
       } else {
@@ -104,14 +102,14 @@ int8_t AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir) {
     char* pBaseDirPtr;
     uint32_t uVar1;
     char* pDst;
-    int* pEntrySlot;
+    char (*pEntrySlot)[1024];
     int nCopyRemaining;
     char szPathCopy[1024];
     char cCh;
     uint32_t local_8;
     local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    FILE* pFileReg;
-    pFileReg = (FILE*)pThis;
+    ::Report* pFileReg;
+    pFileReg = pThis;
     if (0xf < pThis->nAttachmentCount) {
       Debug::GuardStack();
       return '\0';
@@ -121,12 +119,12 @@ int8_t AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir) {
       pDst = pDst + strlen(pDst) + 1;
       if ((uint32_t)((int)pDst - (int)(szPath + 1)) < 0x400) {
         store_path:
-        pEntrySlot = &pFileReg[(int)pFileReg[0x40]._base * 0x20 + 0x40]._flag;
+        pEntrySlot = pFileReg->aszAttachmentPaths + pFileReg->nAttachmentCount;
         nCopyRemaining = 0x3ff;
         do {
           cCh = *szPath;
-          *(char*)pEntrySlot = cCh;
-          pEntrySlot = (int*)((int)pEntrySlot + 1);
+          (*pEntrySlot)[0] = cCh;
+          pEntrySlot = (char (*)[1024])(*pEntrySlot + 1);
           szPath++;
           if (cCh == '\0') {
             if (nCopyRemaining) {
@@ -139,10 +137,10 @@ int8_t AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir) {
           nCopyRemaining--;
         } while (nCopyRemaining);
 
-        *(char*)pEntrySlot = '\0';
+        (*pEntrySlot)[0] = '\0';
         szPath = szPath + strlen(szPath) + 1;
         count_attachment:
-        pFileReg[0x40]._base++;
+        pFileReg->nAttachmentCount++;
         Debug::GuardStack();
         return '\x01';
       }
@@ -186,8 +184,7 @@ int8_t AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir) {
 }
 
 int32_t Printf(::Report * pThis, char * szFormat, ...) {
-    int32_t nWritten;
-    CRT_Vsprintf_L(pThis->pFile, (int)szFormat, (va_list)((uint8_t*)&szFormat + 4));
+    int nWritten = CRT_Vsprintf_L(pThis->pFile, (int)szFormat, (va_list)((uint8_t*)&szFormat + 4));
     return nWritten;
 }
 

@@ -12,7 +12,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "D2Launch/CharSel.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -252,7 +251,7 @@ void __stdcall TILECMP_CacheTileData(int * pTileMeasures, uint32_t * pTilePixels
             pNewTileNode->wPixelSize = 0xc00;
             pNewTileNode->pPixelBuf = (uint32_t)(uintptr_t)pNodePixelBuf;
             pNewTileNode->wFlags = 0x1001;
-            D2MEM_CopyRows((D2CharSelCompStrc*)pNodePixelBuf, pTilePixels, 0x60, nPitch, 0x20, 0x60);
+            D2MEM_CopyRows((char*)pNodePixelBuf, pTilePixels, 0x60, nPitch, 0x20, 0x60);
             if (nOffsetX < *pTileMeasures) {
               *pTileMeasures = nOffsetX;
             }

@@ -11,8 +11,13 @@
 // Forward declarations
 struct D2BitStreamWriterStrc;
 struct D2StormListHead;
-struct StormLinkStrc;
 struct StormLinkedListStrc;
+
+// Data types
+struct StormLinkStrc {
+    /* 0x00 */ struct StormLinkStrc * pPrevLink; // points at the previous node's link, or at the list head's own link
+    /* 0x04 */ int pNext; // pointer to the NEXT ITEM (not its link); end of list is ~(int)&headLink, i.e. negative
+};
 
 namespace Storm::Source::SSystem {
 

@@ -325,8 +325,9 @@ D2RoomExStrc * __stdcall DRLGSPAWN_FindWaypointRoomAndCoords(int * pX, int * pY,
 
 // Gets the room at the level's center position offset by (nOffsetX, nOffsetY).
 // Computes center as (WorldPos + WorldSize/2 - 2) plus the offsets.
-void __fastcall DRLGSPAWN_GetRoomAtLevelCenterOffset(int32_t nOffsetX, int32_t nOffsetY, D2DrlgLevelStrc * pLevel) {
-    GetRoomOfCoord(pLevel, pLevel->sCoordinatesAndSize.WorldSize.x / 2 + pLevel->sCoordinatesAndSize.WorldPosition.x - 2 + nOffsetX, pLevel->sCoordinatesAndSize.WorldSize.y / 2 + pLevel->sCoordinatesAndSize.WorldPosition.y - 2 + nOffsetY);
+D2RoomExStrc * __fastcall DRLGSPAWN_GetRoomAtLevelCenterOffset(int32_t nOffsetX, int32_t nOffsetY, D2DrlgLevelStrc * pLevel) {
+    D2RoomExStrc* pDVar1 = GetRoomOfCoord(pLevel, pLevel->sCoordinatesAndSize.WorldSize.x / 2 + pLevel->sCoordinatesAndSize.WorldPosition.x - 2 + nOffsetX, pLevel->sCoordinatesAndSize.WorldSize.y / 2 + pLevel->sCoordinatesAndSize.WorldPosition.y - 2 + nOffsetY);
+    return pDVar1;
 }
 
 // Selects a random room from the level's room list.
@@ -638,7 +639,7 @@ D2RoomExStrc * __fastcall DRLGROOMEX_AllocRoomEx(D2DrlgLevelStrc * pLevel, int n
     memset(pRoomEx, 0, 0xec);
     pRoomEx->nPresetType = nPresetType;
     pRoomEx->pLevel = pLevel;
-    *(uint8_t*)&pRoomEx->fRoomStatus = 4;
+    pRoomEx->fRoomStatus = '\x04';
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
     D2SeedStrc* pSeedPtr = &pRoomEx->sSeed;
     pLevel->sSeed = sNewSeed;
@@ -1266,15 +1267,13 @@ void __stdcall DRLGROOMEX_AllocRoomTile(D2RoomExStrc * pLinkedRoomEx, uint8_t vi
 
 // Searches dst level rooms for a matching warp flag bit (dstVisSlot+4). If warpDestLevel is valid, immediately link rooms and allocate a room tile. Otherwise, link only if room bounding boxes are within 6 tiles in X/Y. Returns 1 if link added, else 0.
 BOOL __stdcall DRLGROOMEX_LinkNearRoomByDirection(uint8_t dstVisSlot, D2RoomExStrc * pRoomEx, D2PoolManagerStrc * pMemory, uint8_t srcVisSlot, int32_t warpDestLevel, D2RoomExStrc * pDstRoomExIter) {
-    bool _bLinkAdded;
     int nGapX;
     int nGapY;
-    bool bLinkAdded;
     int nDstRoomY;
-    _bLinkAdded = 0;
+    BOOL bLinkAdded = 0;
     do {
       if (!pDstRoomExIter) {
-        return _bLinkAdded;
+        return bLinkAdded;
       }
       if (pDstRoomExIter->eRoomExFlags & 1 << (dstVisSlot + 4 & 0x1f)) {
         if (warpDestLevel != -1) {
@@ -1300,7 +1299,7 @@ BOOL __stdcall DRLGROOMEX_LinkNearRoomByDirection(uint8_t dstVisSlot, D2RoomExSt
         }
         if (nGapX < 6 && nGapY < 6) {
           DRLGROOMEX_ResizeArrayAndAddNewNearRoom(pRoomEx, pMemory, pDstRoomExIter, pDstRoomExIter);
-          _bLinkAdded = 1;
+          bLinkAdded = 1;
         }
       }
 

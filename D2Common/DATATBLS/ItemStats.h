@@ -48,7 +48,7 @@ uint32_t __stdcall ITEMSTATS_CheckStateFlagArray11(eD2States eState);
 uint32_t __stdcall ITEMSTATS_CheckStateFlagArray12(uint32_t nParam);
 uint32_t __stdcall STATES_IsStateActive(struct D2UnitStrc * pUnit, uint32_t nParam);
 BOOL __fastcall STATES_HasPoisonState(struct D2UnitStrc * pUnit);
-void __stdcall STATES_HasColdState(struct D2UnitStrc * pUnit);
+BOOL __stdcall STATES_HasColdState(struct D2UnitStrc * pUnit);
 BOOL __stdcall STATES_HasFireState(struct D2UnitStrc * pUnit);
 BOOL __stdcall STATES_HasLifeState(struct D2UnitStrc * pUnit);
 BOOL __stdcall STATES_HasManaState(struct D2UnitStrc * pUnit);

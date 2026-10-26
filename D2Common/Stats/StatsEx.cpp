@@ -182,22 +182,20 @@ void __stdcall STATLIST_RemoveStatFromArray(D2PoolManagerStrc * pPoolManager1, D
     *pParam = pReallocBuf;
 }
 
-int32_t STATLIST_BinarySearchChangedInsertPos(D2StatInfoStrc * pStatInfo, int32_t nParam) {
+int32_t STATLIST_BinarySearchChangedInsertPos(D2ChangedStatArrayStrc * pStatInfo, int32_t nParam) {
     int nMid;
-    int nCount = (int)pStatInfo->wStatCount;
+    int nCount = (int)pStatInfo->wCount;
     int nLo = 0;
     if (0 >= nCount) {
       return nLo;
     }
 
     do {
-      int nEntryKey;
       nMid = (nCount - nLo) / 2 + nLo;
-      nEntryKey = *(int*)(&pStatInfo->pStatInfo->wSubIndex + nMid * 2);
-      if (nEntryKey < nParam) {
+      if (pStatInfo->pChangedStatIds[nMid] < nParam) {
         nLo = nMid + 1;
         nMid = nCount;
-      } else if (nEntryKey <= nParam) {
+      } else if (pStatInfo->pChangedStatIds[nMid] <= nParam) {
         return -1;
       }
 
@@ -239,7 +237,7 @@ void __stdcall STATLIST_TrackChangedStat(int32_t nShiftedStat, D2StatListExStrc 
     }
 
     D2ChangedStatArrayStrc* pStatInfo = &pStatEx->sChangedStats;
-    int32_t nInsertPos = STATLIST_BinarySearchChangedInsertPos((D2StatInfoStrc*)pStatInfo, nShiftedStat);
+    int32_t nInsertPos = STATLIST_BinarySearchChangedInsertPos(pStatInfo, nShiftedStat);
     if (nInsertPos < 0) {
       return;
     }
@@ -648,8 +646,9 @@ int32_t __stdcall STATLIST_CalcStatWithPercentBonus(D2StatListExStrc * pStatList
     return nPercentStatValue + nBonusPart + nValue;
 }
 
-void __stdcall UNITS_CalcUnitStatWithPercentBonus(D2UnitStrc * pUnit, eD2UnitStat eUnitStat, eD2UnitStat ePercentStat, int32_t nValue) {
-    STATLIST_CalcStatWithPercentBonus(pUnit->pStatsEx, eUnitStat, ePercentStat, nValue);
+int32_t __stdcall UNITS_CalcUnitStatWithPercentBonus(D2UnitStrc * pUnit, eD2UnitStat eUnitStat, eD2UnitStat ePercentStat, int32_t nValue) {
+    int32_t iVar1 = STATLIST_CalcStatWithPercentBonus(pUnit->pStatsEx, eUnitStat, ePercentStat, nValue);
+    return iVar1;
 }
 
 int32_t __stdcall STATLIST_GetStatValueByIndex(D2StatListExStrc * pStatList, int32_t nIndex) {
@@ -819,7 +818,7 @@ void __stdcall STATLIST_DispatchUnchangedStatToCallback(D2UnitStrc * pUnit, D2Un
       return;
     }
 
-    int32_t nShiftedStatId = STATLIST_BinarySearchChangedInsertPos((D2StatInfoStrc*)&pDVar2->sChangedStats, eUnitStat << 0x10);
+    int32_t nShiftedStatId = STATLIST_BinarySearchChangedInsertPos(&pDVar2->sChangedStats, eUnitStat << 0x10);
     if (nShiftedStatId != -1) {
       return;
     }

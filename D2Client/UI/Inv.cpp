@@ -4,6 +4,7 @@
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/DataTbls.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Engine/GfxInfo.h"
@@ -66,12 +67,11 @@
 #include "D2Common/Units/Missile.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
-#include "D2Game/PLAYER/PlayerMsg.h"
+#include "D2Game/GAME/Server.h"
 #include "D2Game/SKILLS/Items.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -321,7 +321,7 @@ BOOL IsInInventoryScreenRange(int32_t nX, int32_t nY) {
 }
 
 BOOL IsInTradepage1ScreenRange(int32_t nX, int32_t nY) {
-    if (!(pTradePage1GridScreenCoordinates.nPixelLeft < nY && nY < pTradePage1GridScreenCoordinates.nRight && pTradePage1GridScreenCoordinates.nTop <= nX && nX <= pTradePage1GridScreenCoordinates.nBottom)) {
+    if (!(pTradePage1GridScreenCoordinates.nPixelLeft < nX && nX < pTradePage1GridScreenCoordinates.nRight && pTradePage1GridScreenCoordinates.nTop <= nY && nY <= pTradePage1GridScreenCoordinates.nBottom)) {
       return 0;
     }
 
@@ -329,7 +329,7 @@ BOOL IsInTradepage1ScreenRange(int32_t nX, int32_t nY) {
 }
 
 BOOL IsInTradePage2ScreenRange(int32_t nX, int32_t nY) {
-    if (!(pTradePage2GridScreenCoordinates.nPixelLeft < nY && nY < pTradePage2GridScreenCoordinates.nRight && pTradePage2GridScreenCoordinates.nTop <= nX && nX <= pTradePage2GridScreenCoordinates.nBottom)) {
+    if (!(pTradePage2GridScreenCoordinates.nPixelLeft < nX && nX < pTradePage2GridScreenCoordinates.nRight && pTradePage2GridScreenCoordinates.nTop <= nY && nY <= pTradePage2GridScreenCoordinates.nBottom)) {
       return 0;
     }
 
@@ -1849,7 +1849,7 @@ void __stdcall DRAW_UI_InventoryContent(D2UnitStrc * pUnit) {
           return;
         }
       if (CurrentInventoryPage == INVPAGE_MERC) {
-        nColorIndex = IsInTradePage2ScreenRange(nMouseYPos, nColorIndex);
+        nColorIndex = IsInTradePage2ScreenRange(nColorIndex, nMouseYPos);
       } else {
         hit_test_inventory:
         nColorIndex = IsInInventoryScreenRange(nColorIndex, nMouseYPos);
@@ -1882,8 +1882,7 @@ void __stdcall DRAW_UI_InventoryContent(D2UnitStrc * pUnit) {
     INV_DrawGridPlacementHighlight(pInventory, pPlayerUnit_lcl, (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pCoords >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)CurrentInventoryPage), nGridIndex, (int32_t)pCoords);
 }
 
-uint32_t __fastcall ITEM_CanTheseBeSocketed(D2UnitStrc * pUnit) {
-    D2UnitStrc* pTargetItem;
+uint32_t __fastcall ITEM_CanTheseBeSocketed(D2UnitStrc * pUnit, D2UnitStrc * pTargetItem) {
     if (!(pUnit && pTargetItem && g_nCurrentInventoryPage != 10 && g_nCurrentInventoryPage != 0xb)) {
       return 0;
     }
@@ -1930,7 +1929,7 @@ uint32_t __fastcall ITEM_CanTheseBeSocketed(D2UnitStrc * pUnit) {
 
 void INV_DrawBodySlotCursorHighlight(D2InventoryStrc * pInventory) {
     int nResult;
-    BOOL BVar1;
+    D2UnitStrc* pPlayerUnit_lcl;
     uint32_t bCanSocket;
     char nItemWidth;
     char nItemHeight;
@@ -1969,14 +1968,14 @@ void INV_DrawBodySlotCursorHighlight(D2InventoryStrc * pInventory) {
     bHighlightValid = D2Common::ITEMS::Items::ITEMS_CheckBodyLocationFit(pUnit, gnInvBodySlotUnderCursor);
     if (!bHighlightValid) {
       try_socket_fit:
-      D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, gnInvBodySlotUnderCursor);
-      bCanSocket = ITEM_CanTheseBeSocketed(pUnit);
+      pPlayerUnit_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, gnInvBodySlotUnderCursor);
+      bCanSocket = ITEM_CanTheseBeSocketed(pUnit, pPlayerUnit_lcl);
       if (!bCanSocket) {
         bHighlightValid = 0;
         goto draw_highlight;
       }
     } else {
-      D2UnitStrc* pPlayerUnit_lcl;
+      BOOL BVar1;
       pnOut3 = 0;
       pnOut2 = 0;
       pnOut1 = 0;
@@ -3865,7 +3864,6 @@ void __stdcall INV_HandleMouseMove(D2UIMouseMsgStrc * pMsg) {
     D2UnitStrc* pCursorItem_lcl;
     D2GridScreenCoordinates* pGridCoords;
     int nBodyLoc;
-    int32_t nUnusedX;
     BOOL bResult;
     bResult = GAME::Game::GAMEDATA_GetExitFlag3();
     if (bResult || (bIsDead = UNIT::Player::IsPlayerDead() , bIsDead != 0) || !gnInventoryActiveUnitId) {
@@ -3987,9 +3985,9 @@ void __stdcall INV_HandleMouseMove(D2UIMouseMsgStrc * pMsg) {
       return;
     }
 
-    bResult = IsInTradepage1ScreenRange(nMouseY, nMouseX);
+    bResult = IsInTradepage1ScreenRange(nMouseX, nMouseY);
     if (!bResult) {
-      bResult = IsInTradePage2ScreenRange(nUnusedX, nMouseX);
+      bResult = IsInTradePage2ScreenRange(nMouseX, nMouseY);
       if (!bResult) {
         goto finish_hover;
       }
@@ -5821,7 +5819,7 @@ void __stdcall CloseStash() {
     gpInvStashImage2 = 0;
 }
 
-BOOL INV_IsMouseOverTransmuteBtn(uint32_t dwUnused, int32_t nY, int32_t nX) {
+BOOL INV_IsMouseOverTransmuteBtn(int32_t nX, int32_t nY) {
     if (!(gnPanelOffsetX + 0x113 < nX && nX < gnPanelOffsetX + 0x13b && gnPanelOffsetY - 100 + ScreenSizeY < nY && nY < gnPanelOffsetY - 0x3c + ScreenSizeY)) {
       return 0;
     }
@@ -6218,60 +6216,23 @@ BOOL __stdcall INV_IsMouseInRectLTRB(int32_t nLeft, int32_t nTop, int32_t nRight
 }
 
 void __stdcall INV_DrawHirelingName(D2UnitStrc * pUnit) {
-    // Frame slots -68..-4 are ONE object: &wszNameBuf is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t wszNameBuf;
-      uint32_t wszNameBuf_1;
-      uint32_t wszNameBuf_2;
-      uint32_t wszNameBuf_3;
-      uint32_t wszNameBuf_4;
-      uint32_t wszNameBuf_5;
-      uint32_t wszNameBuf_6;
-      uint32_t wszNameBuf_7;
-      uint32_t wszNameBuf_8;
-      uint32_t wszNameBuf_9;
-      uint32_t wszNameBuf_a;
-      uint32_t wszNameBuf_b;
-      uint32_t wszNameBuf_c;
-      uint32_t wszNameBuf_d;
-      uint32_t wszNameBuf_e;
-      uint32_t wszNameBuf_f;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 64, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int nTextWidth;
-    uint16_t* pwTruncate;
-    __frame0.wszNameBuf = 0;
-    __frame0.wszNameBuf_1 = 0;
-    __frame0.wszNameBuf_2 = 0;
-    __frame0.wszNameBuf_3 = 0;
-    __frame0.wszNameBuf_4 = 0;
-    __frame0.wszNameBuf_5 = 0;
-    __frame0.wszNameBuf_6 = 0;
-    __frame0.wszNameBuf_7 = 0;
-    __frame0.wszNameBuf_8 = 0;
-    __frame0.wszNameBuf_9 = 0;
-    __frame0.wszNameBuf_a = 0;
-    __frame0.wszNameBuf_b = 0;
-    __frame0.wszNameBuf_c = 0;
-    __frame0.wszNameBuf_d = 0;
-    __frame0.wszNameBuf_e = 0;
-    __frame0.wszNameBuf_f = 0;
+    uint16_t wszNameBuf[32];
+    memset(wszNameBuf, 0, 32 * sizeof(wszNameBuf[0]));
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(6);
     size_t nMaxChars = 0x20;
-    uint16_t* wszName = UNIT::CUnit::GetName(pUnit);
-    D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer((uint16_t*)&__frame0.wszNameBuf, wszName, nMaxChars);
-    __frame0.wszNameBuf_f &= 0xffff;
-    pwTruncate = (uint16_t*)((uintptr_t)&__frame0.wszNameBuf_f + 2);
-    nTextWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)&__frame0.wszNameBuf);
+    uint16_t* pwTruncate = UNIT::CUnit::GetName(pUnit);
+    D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszNameBuf, pwTruncate, nMaxChars);
+    *(uint32_t*)((char*)&wszNameBuf + 60) &= 0xffff;
+    pwTruncate = wszNameBuf + 0x1f;
+    nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszNameBuf);
     while (0xa0 < nTextWidth) {
       pwTruncate--;
-      *pwTruncate = 0;
-      nTextWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)&__frame0.wszNameBuf);
+      *pwTruncate = L'\0';
+      nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszNameBuf);
     }
 
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)&__frame0.wszNameBuf, gnPanelOffsetX + 0xf, 0xd6 - gnPanelOffsetY, 0, 0);
+    D2Win::Src::D2WinFont::DRAW_text(wszNameBuf, gnPanelOffsetX + 0xf, 0xd6 - gnPanelOffsetY, 0, 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -9396,8 +9357,6 @@ void __stdcall DRAW_UI_Inventory() {
     int nWeaponHandedness;
     char* pszRosterName;
     D2UnitStrc* pMonsterUnit;
-    uint32_t dwNpcGuid;
-    int32_t nTransmuteCheckY;
     int32_t nDrawY;
     int nTradeNameWidth;
     uint16_t wszStashGoldText[100];
@@ -9572,10 +9531,11 @@ void __stdcall DRAW_UI_Inventory() {
         }
 
         D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
+        pSlotItem = pLArmItem;
         bIsTwoHandedEquipped = nMouseX;
-        bIsExpansion = INV_IsMouseOverTransmuteBtn(dwNpcGuid, (int32_t)pLArmItem, nMouseX);
+        bIsExpansion = INV_IsMouseOverTransmuteBtn(nMouseX, (int32_t)pLArmItem);
         if (!bIsExpansion) {
-          bIsExpansion = CheckSomeCoords(bIsTwoHandedEquipped, nTransmuteCheckY);
+          bIsExpansion = CheckSomeCoords(bIsTwoHandedEquipped, (int32_t)pSlotItem);
           if (!bIsExpansion) {
             goto draw_inventory_panel;
           }
@@ -10139,7 +10099,7 @@ BOOL __stdcall ClickItemLeft(D2UnitStrc * pUnit, D2InventoryStrc * pInventory, D
           return bReturnValue;
         }
 
-        nCheckResult = ITEM_CanTheseBeSocketed(pCursorItem_lcl);
+        nCheckResult = ITEM_CanTheseBeSocketed(pCursorItem_lcl, targetItem);
         if (nCheckResult) {
           nItemType = UNIT::PlayerIsUnInterruptable(pCursorItem_lcl);
           if (!nItemType) {
@@ -11071,7 +11031,7 @@ void __stdcall ClickItemHandler(D2UIMouseMsgStrc * pMsg) {
               iVar1 = ui::GetItemType();
               if (iVar1 != 8) {
                 pSlotItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nBodySlotIdx);
-                nPage = ITEM_CanTheseBeSocketed(pCursorItem_lcl);
+                nPage = ITEM_CanTheseBeSocketed(pCursorItem_lcl, pSlotItem);
                 if (nPage) {
                   bResult = UNIT::PlayerIsUnInterruptable(pCursorItem_lcl);
                   if (!bResult) {
@@ -11832,7 +11792,7 @@ void __stdcall INPUT_TradeScreenLeftClick(D2UIMouseMsgStrc * pMsg) {
     if (nHitTest == 1) {
       return;
     }
-    if (pInventoryScreenCoordinates.nLeft <= nY && nY < pInventoryScreenCoordinates.nRight && pInventoryScreenCoordinates.nTop <= nX && nX <= pInventoryScreenCoordinates.nBottom || (nHitTest = IsInTradePage2ScreenRange(nX, nY) , nHitTest != 0)) {
+    if (pInventoryScreenCoordinates.nLeft <= nY && nY < pInventoryScreenCoordinates.nRight && pInventoryScreenCoordinates.nTop <= nX && nX <= pInventoryScreenCoordinates.nBottom || (nHitTest = IsInTradePage2ScreenRange(nY, nX) , nHitTest != 0)) {
       ClickItemHandler(pMsg);
       return;
     }
@@ -12016,9 +11976,6 @@ void __stdcall INPUT_WeaponSwap(D2UIMouseMsgStrc * pMsg) {
 
 // Input handler for cube left-click. Maps mouse coords to cube grid, calls INV_HandleCubeLeftClick. Clears gbInventoryDragInProgress on cancel, sets on drag start. Handles transmute button.
 void __stdcall INPUT_CubeLeftClick(D2UIMouseMsgStrc * pMsg) {
-    uint32_t nTmpEcx2;
-    uint32_t nTmpEcx3;
-    int32_t nTmpEdx;
     if (g_nCurrentInventoryPage != 0xe) {
       return;
     }
@@ -12031,11 +11988,8 @@ void __stdcall INPUT_CubeLeftClick(D2UIMouseMsgStrc * pMsg) {
     gpInvCursorItem = nY;
     BOOL bInRange;
     bInRange = Panel::PANEL_CalculateBeltSlotIndex(pMsg);
-    uint32_t nTmpEcx;
-    nTmpEcx = nTmpEcx2;
     if (!bInRange) {
       bInRange = INV_IsMouseOverCloseButton(nX, nY);
-      nTmpEcx = nTmpEcx3;
       if (bInRange) {
         gbInvPanelButtonPressed = 1;
         pMsg->dwResult = 0;
@@ -12047,7 +12001,7 @@ void __stdcall INPUT_CubeLeftClick(D2UIMouseMsgStrc * pMsg) {
       }
     }
 
-    bInRange = INV_IsMouseOverTransmuteBtn(nTmpEcx, nY, nX);
+    bInRange = INV_IsMouseOverTransmuteBtn(nX, nY);
     if (bInRange) {
       gbInvCubeTransmuteClicked = 1;
       gbInvCubePageOpen = 1;
@@ -12058,7 +12012,7 @@ void __stdcall INPUT_CubeLeftClick(D2UIMouseMsgStrc * pMsg) {
       goto consume_button_click;
     }
 
-    bInRange = CheckSomeCoords(nX, nTmpEdx);
+    bInRange = CheckSomeCoords(nX, nY);
     if (bInRange) {
       D2UnitStrc* pCursorItem_lcl;
       gbInvCubeTransmuteClicked = 0;

@@ -17,9 +17,19 @@ struct D2RoomStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
 
+struct D2InactiveItemRecordStrc;
 struct D2InactiveUnitRecordStrc;
 
 // Data types
+struct D2InactiveItemRecordBufferStrc {
+    /* 0x000 */ struct D2InactiveItemRecordStrc * pNext;
+    /* 0x004 */ int32_t nDespawnTimer;
+    /* 0x008 */ int32_t nPlayerGUID;
+    /* 0x00C */ int16_t nItemDataSize;
+    /* 0x00E */ uint8_t itemData[1024];
+    /* 0x40E */ uint8_t _pad40E[2];
+};
+
 struct __attribute__((packed)) D2InactiveItemRecordStrc {
     /* 0x00 */ struct D2InactiveItemRecordStrc * pNext;
     /* 0x04 */ int nDespawnTimer;
@@ -76,7 +86,10 @@ struct __attribute__((packed)) D2InactiveUnitRecordStrc {
     /* 0x1C */ int eUnitFlagsEx;
     /* 0x20 */ int nUnitGUID;
     /* 0x24 */ int nDropItemCode;
-    /* 0x28 */ int field_0x28;
+    /* 0x28 */ uint8_t field_0x28;
+    /* 0x29 */ uint8_t field_0x29;
+    /* 0x2A */ uint8_t field_0x2a;
+    /* 0x2B */ uint8_t field_0x2b;
     /* 0x2C */ int nLevelId;
     /* 0x30 */ struct D2InactiveUnitRecordStrc * pNext;
 };

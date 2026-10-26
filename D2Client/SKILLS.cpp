@@ -32,6 +32,7 @@
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
+#include "D2Common/Drlg/Path.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
@@ -1189,7 +1190,7 @@ void __fastcall SKILLSCLT_SetMissilePathExtended(D2UnitStrc * pUnit, int32_t nIn
 
     int nSerpentineSign;
     int nPathFrameIdx;
-    int* nSerpentineAmp;
+    int32_t nSerpentineAmp;
     D2PathPointStrc* pPathPoints;
     int32_t nCurY;
     int32_t nCurX;
@@ -1239,21 +1240,21 @@ void __fastcall SKILLSCLT_SetMissilePathExtended(D2UnitStrc * pUnit, int32_t nIn
     nSerpentineSign = ullSeedTemp & 1 ? 0x1 : -0x1;
     sSeedNext = D2_SEED_NEXT_VAL(ullSeedTemp);
     *pUnitSeed = sSeedNext;
-    nSerpentineAmp = (int*)(sSeedNext.nSeedLow + (int)(((uint64_t)d2_bits_of(sSeedNext) & 0xffffffff) / 3) * -3 + gaSkillDescLayoutPositions[0x54]);
+    nSerpentineAmp = sSeedNext.nSeedLow + (int)(((uint64_t)d2_bits_of(sSeedNext) & 0xffffffff) / 3) * -3 + gaSkillDescLayoutPositions[0x54];
     nPathFrameIdx = 0;
     if (0 < nTotalFrames) {
       do {
-        nCurDir += (int)nSerpentineAmp * nSerpentineSign;
+        nCurDir += nSerpentineAmp * nSerpentineSign;
         nSP1Y = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nCurDir & 0x3f);
         nCurX += gnSkillSynergiesTableIndex[nSP1Y & 0xff];
         nCurY += gnSkillSynergiesTableOffset[nSP1Y & 0xff];
-        pPathPoints[nPathFrameIdx].nX = (short int)nCurX;
-        pPathPoints[nPathFrameIdx].nY = (short int)nCurY;
+        pPathPoints[nPathFrameIdx].nX = (uint16_t)nCurX;
+        pPathPoints[nPathFrameIdx].nY = (uint16_t)nCurY;
         if (!(nPathFrameIdx % gaSkillDescLayoutPositions[0x53])) {
           nSerpentineSign = -nSerpentineSign;
           sSeedNext = D2_SEED_NEXT(*pUnitSeed);
           *pUnitSeed = sSeedNext;
-          nSerpentineAmp = (int*)(sSeedNext.nSeedLow % 3 + gaSkillDescLayoutPositions[0x54]);
+          nSerpentineAmp = sSeedNext.nSeedLow % 3 + gaSkillDescLayoutPositions[0x54];
         }
 
         nPathFrameIdx++;

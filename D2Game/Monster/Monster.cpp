@@ -70,7 +70,6 @@
 #include "D2Common/Chat.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/Unit/D2UnitDataItemStrc.h"
-#include "D2Game/Monster/Create.h"
 #include "D2Game/Quests/QUESTS/Quest40.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -238,12 +237,12 @@ void __fastcall MONSTERAI_TriggerMageThink(::SGAMEDATA * pGame, D2UnitStrc * pUn
       return;
     }
 
-    eD2PlayerAnimMode eMonAnimMode = pUnit->eAnimMode.ePlayerMode;
-    if (eMonAnimMode == eD2PlayerAnimMode_ns::Neutral) {
+    eD2MonsterAnimMode eMonAnimMode = pUnit->eAnimMode.eMonsterMode;
+    if (eMonAnimMode == eD2MonsterAnimMode_ns::Neutral) {
       GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_AITHINK, 0);
       GAME::Event::SetEvent(pGame, pUnit, 2, pGame->dwGameFrame + 2, 0, 0);
     } else {
-      if (eMonAnimMode == Kick) {
+      if (eMonAnimMode == eD2MonsterAnimMode_ns::Dead) {
         return;
       }
       if (eMonAnimMode == Death) {
@@ -423,7 +422,7 @@ BOOL __fastcall CheckComponents(D2UnitStrc * pUnit) {
 }
 
 // Creates an item from a class-code entry (ppItemId) and equips it to a monster unit at the body location encoded in the entry. Allocates inventory if needed, sets ITEMFLAG_MONSTER, calls SERVER_EquipItemToBodyLoc, and initialises durability to max. Frees the item unit if equipping fails.
-void __fastcall MONSTER_CreateAndEquipItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t * ppItemId, int32_t nItemLevel, eD2ItemQuality eQuality) {
+void __fastcall MONSTER_CreateAndEquipItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2MonEquipEntryStrc * ppItemId, int32_t nItemLevel, eD2ItemQuality eQuality) {
     bool bEquipSuccess;
     int32_t nItemClassId;
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
@@ -433,8 +432,8 @@ void __fastcall MONSTER_CreateAndEquipItem(::SGAMEDATA * pGame, D2UnitStrc * pUn
       D2Common::INVENTORY::Inventory::STRUCT_CreatePlayerInventory(nullptr, pUnit);
     }
 
-    uint32_t* pItemCodeEntry = ppItemId;
-    D2ItemsTxt* pItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(*ppItemId, &nItemClassId);
+    D2MonEquipEntryStrc* pItemCodeEntry = ppItemId;
+    D2ItemsTxt* pItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(ppItemId->dwItemCode, &nItemClassId);
     if (!pItemsTxt) {
       return;
     }
@@ -445,13 +444,13 @@ void __fastcall MONSTER_CreateAndEquipItem(::SGAMEDATA * pGame, D2UnitStrc * pUn
     }
 
     D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pItemUnit, ITEMFLAG_MONSTER, 1);
-    D2Common::ITEMS::Items::SetBodyLoc(pItemUnit, *(eD2BodyLoc*)(pItemCodeEntry + 1));
-    if ((char)pItemCodeEntry[1] == '\0') {
+    D2Common::ITEMS::Items::SetBodyLoc(pItemUnit, pItemCodeEntry->nBodyLoc);
+    if (pItemCodeEntry->nBodyLoc == '\0') {
       return;
     }
 
     uint32_t nItemUnitGUID = pItemUnit->nUnitGUID;
-    uint32_t** ppItemCodeEntry = &ppItemId;
+    D2MonEquipEntryStrc** ppItemCodeEntry = &ppItemId;
     int32_t bDoEquip = 1;
     eD2BodyLoc eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pItemUnit);
     BOOL bEquipped = ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit, nItemUnitGUID, eBodyLoc, bDoEquip, (uint32_t*)ppItemCodeEntry);
@@ -509,18 +508,6 @@ void __fastcall MONSTER_KillAllInLevel(::SGAMEDATA * pGame, int32_t nAltMonClass
 
 // Server-side: fully initializes a spawned monster's stats/skills/inventory. Bails unless pUnit is a valid UNIT_MONSTER with MonStats/MonStatsEx records. Rolls component appearance, applies act-boss name bytes (classId 0x137/0x138), computes level/difficulty scaling (player-count multipliers), then SETs resistances, block, attack/velocity/animrate, HP (rolled min..max + player% bonus, capped 0x7FFFFF, x256), armorclass, experience and HP-regen via STATLIST_SetUnitStat. Applies difficulty scaling, attaches a second stat list, creates player or NPC inventory, builds the skills list (8 skills from MonStatsEx with level bonus + mode), sets CANBEATTACKED/PETIGNORE flags, rolls up-to-6 random monster properties (MonProp txt, per-difficulty chance), and equips summon items. Halts on bad HP-regen value.
 void __stdcall MONSTER_InitStats(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint32_t nParam, D2UnitStrc * pUnit) {
-    // Frame -96..-40 is ONE object: a call writes 56 literal bytes starting at &nHpMin.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      int nHpMin;
-      int nHpMaxRoll;
-      int32_t nBaseArmorClass;
-      uint8_t __pad12[4];
-      int32_t nBaseExp;
-      uint8_t __pad20[36];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 56, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint32_t dwTmpStat;
     uint32_t nTmpVal;
     eD2LevelId eRoomLevelId;
@@ -528,6 +515,7 @@ void __stdcall MONSTER_InitStats(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint32
     D2InventoryStrc* pNpcInventory;
     D2SkillListStrc* pSkillsList;
     D2SkillStrc* pSkill;
+    D2MonStatsInitStrc sMonStats;
     D2MonsterLevelDataStrc monLevelData;
     D2MonStatsExTxtSlot uMonTxt;
     int32_t nStatLayer;
@@ -646,11 +634,11 @@ void __stdcall MONSTER_InitStats(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint32
       pRoom = (D2RoomStrc*)0x1;
     }
 
-    memset(&__frame0.nHpMin, 0, 0x38);
-    D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(pUnit->nClassId, (int32_t)pRoom, nParam, nMonLevel, 7, &__frame0.nHpMin);
-    nTmpVal = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, __frame0.nHpMaxRoll - __frame0.nHpMin + 1);
-    int32_t nScaledStat = D2Client::Stats::D2ApplyPercent(nTmpVal + __frame0.nHpMin, monLevelData.nPlayerMultiplyer, 100);
-    nTmpInt = nTmpVal + __frame0.nHpMin + nScaledStat;
+    memset(&sMonStats, 0, 0x38);
+    D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(pUnit->nClassId, (int32_t)pRoom, nParam, nMonLevel, 7, &sMonStats);
+    nTmpVal = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, sMonStats.nMaxHP - sMonStats.nMinHP + 1);
+    int32_t nScaledStat = D2Client::Stats::D2ApplyPercent(nTmpVal + sMonStats.nMinHP, monLevelData.nPlayerMultiplyer, 100);
+    nTmpInt = nTmpVal + sMonStats.nMinHP + nScaledStat;
     if (0x7fffff < nTmpInt) {
       nTmpInt = 0x7fffff;
     }
@@ -658,10 +646,10 @@ void __stdcall MONSTER_InitStats(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint32
     nTmpInt *= 0x100;
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxhp, nTmpInt, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, nTmpInt, 0);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_armorclass, __frame0.nBaseArmorClass, 0);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_armorclass, sMonStats.nAC, 0);
     nStatLayer = 0;
-    nScaledStat = D2Client::Stats::D2ApplyPercent(__frame0.nBaseExp, monLevelData.nPlayerMultiplyer2, 100);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_experience, nScaledStat + __frame0.nBaseExp, nStatLayer);
+    nScaledStat = D2Client::Stats::D2ApplyPercent(sMonStats.nExp, monLevelData.nPlayerMultiplyer2, 100);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_experience, nScaledStat + sMonStats.nExp, nStatLayer);
     dwHpRegenRaw = pMonStatsTxt->DamageRegen;
     if ((int)dwHpRegenRaw < 0) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xde);
@@ -755,7 +743,7 @@ void __stdcall MONSTER_InitStats(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint32
 void __fastcall STRUCT_FillDataMonster(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2UnitStrc * pUnit, int32_t dwUnitGUID) {
     D2MonStatsTxt* pMonStatsTxt;
     D2AiGeneralStrc* pAiGeneralInit;
-    eD2PlayerAnimMode eAnimMode;
+    eD2MonsterAnimMode eAnimMode;
     D2UnitDataMonsterStrc* pUnitDataMonster;
     int32_t nClassId;
     if (pUnit) {
@@ -801,7 +789,7 @@ void __fastcall STRUCT_FillDataMonster(::SGAMEDATA * pGame, D2RoomStrc * pRoom, 
       }
 
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
-      if (eAnimMode != Death && eAnimMode != Kick) {
+      if (eAnimMode != Death && eAnimMode != eD2MonsterAnimMode_ns::Dead) {
         Quests::QUESTS::AttachToUnit(pGame, pUnit, pRoom, 1);
         UNIT::SUnit::InitAnimFrame(pUnit);
         return;

@@ -52,6 +52,7 @@
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
@@ -246,11 +247,11 @@ void __fastcall PARTY_RefreshPlayerListRelationships(::SGAMEDATA * pGame, D2Unit
     D2UnitPlayerListStrc* pPlayerListEntry;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     for (pPlayerListEntry = pPlayerData->pPlayerList; pPlayerListEntry; pPlayerListEntry = pPlayerListEntry->pNext) {
-      if (*(int*)&pPlayerListEntry->bIsPartied == 2) {
+      if (pPlayerListEntry->bIsPartied == 2) {
         pUnit_00 = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, pPlayerListEntry->nUnitGUID);
         if (pUnit_00) {
           nFoundPartyId = UNIT::Party::GetPartyIdFromUnit(pGame, pUnit_00);
-          *(uint32_t*)&pPlayerListEntry->bIsPartied = (uint32_t)(nFoundPartyId != -1);
+          pPlayerListEntry->bIsPartied = (uint32_t)(nFoundPartyId != -1);
           UNIT::PlayerList::Send0x8bRelationshipStatus(pUnit, pUnit_00);
         }
       }

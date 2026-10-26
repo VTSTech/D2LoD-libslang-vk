@@ -44,6 +44,11 @@ struct __attribute__((packed)) D2CharSelCompStrc {
     /* 0x230 */ uint32_t dwProductCode;
 };
 
+struct D2CharSelLineBufStrc {
+    /* 0x00 */ uint16_t wszLineBuf[100];
+    /* 0xC8 */ char szNameBuf[104]; // inlined strcat cursor starts at szNameBuf-1
+};
+
 struct __attribute__((packed)) D2CharSelStrc {
     /* 0x000 */ char szCharname[256]; // Character name (max 16 chars + null, rest unused)
     /* 0x100 */ char szCommandStringTable[512]; // Byte-addressable chat command format string table (packed at fixed sub-offsets 0x8..0xfe); NOT wide chars despite original name

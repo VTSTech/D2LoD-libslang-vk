@@ -28,7 +28,7 @@ namespace D2Client::Archive {
 // Function declarations
 // Writes formatted text to a file handle using wvsprintfA. Variadic printf-style format arguments follow pFormat on the stack. Epilogue is a bare RET (no stack cleanup by callee), so the convention is __cdecl, not __stdcall.
 bool ARCHIVE_WriteFormattedText(HANDLE hFile, char * pFormat, ...);
-uint32_t __fastcall ARCHIVE_ComputeAddress(int * nBaseAddr, int * pNode);
+uint32_t __fastcall ARCHIVE_ComputeAddress(int32_t nBaseAddr, int * pNode);
 int32_t __fastcall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode);
 uint32_t __fastcall ARCHIVE_GetNodeValue(int32_t pThis, int32_t nNode);
 void __fastcall ARCHIVE_UnlinkNode(int32_t pThis, int * pNode);

@@ -9,6 +9,7 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2MercForHire;
 struct D2MonsterAiStrc;
 struct D2UnitDataPlayerArenaStrc;
 struct D2UnitPlayerListStrc;
@@ -64,6 +65,6 @@ uint32_t __fastcall NpcStateIsntZero(struct D2UnitStrc * pUnit, int32_t nParam);
 void __fastcall ClearAISub(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, fpAiClear fpFunction, bool bClientSide);
 // Hires a new mercenary unit for a player, replacing any existing one. Removes the current hired merc (fires 0x9B revive-cost packet, unassigns ownership, frees the unit), then rolls new merc stats via RollMercStats, assigns ownership and pet slot, applies level stats, and zeros name-record fields in the new merc's monster data. bSkipUnitNodeCreate skips adding the unit to the room node list (used during game-join restore).
 // @sourcefile .\MONSTER\MonsterAI.cpp
-void __fastcall MERC_HireAndReplaceMerc(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pMinion, int16_t nMercLevelOverride, uint8_t * pHireInfo, BOOL bSkipUnitNodeCreate);
+void __fastcall MERC_HireAndReplaceMerc(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pMinion, int16_t nMercLevelOverride, struct D2MercForHire * pHireInfo, BOOL bSkipUnitNodeCreate);
 
 } // namespace D2Game::Monster::MonsterAI

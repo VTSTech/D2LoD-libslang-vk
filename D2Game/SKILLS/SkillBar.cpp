@@ -32,6 +32,7 @@
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Drlg.h"
+#include "D2Common/Drlg/Path.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
@@ -339,7 +340,7 @@ BOOL __fastcall Skills_SrvDoFunc_068_WarCry(::SGAMEDATA * pGame, D2UnitStrc * pU
       return 0;
     }
 
-    eMissilesId* eMissileId = (eMissilesId*)SkillAss::SKILLASS_GetChargeUpMissile(pUnit, eSkill);
+    eMissilesId eMissileId = SkillAss::SKILLASS_GetChargeUpMissile(pUnit, eSkill);
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -434,7 +435,7 @@ BOOL __fastcall Skills_SrvDoFunc_071_IronMaiden_GenericCurse(::SGAMEDATA * pGame
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
     D2UnitStrc* pTargetUnit = pTarget;
     if (!pTarget || (nAuraStatIdx = SKILL_CheckCorpseCanBeConsumed(pGame2, pTarget) , !nAuraStatIdx) || (_bCanAttack = UNIT::SUnit::UNITS_CheckIfCanAttackTarget(pGame2, pUnit, pTarget) , !_bCanAttack)) {
-      pTarget = (D2UnitStrc*)SkillsServer::SKILLS_ApplyAreaHitAtUnit((int32_t)pGame2, pUnit, 0x14, SKILL_CheckCorpseCanBeConsumed);
+      pTarget = SkillsServer::SKILLS_ApplyAreaHitAtUnit((int32_t)pGame2, pUnit, 0x14, SKILL_CheckCorpseCanBeConsumed);
       pTargetUnit = pTarget;
     }
     if (!pTarget) {
@@ -924,8 +925,8 @@ BOOL __fastcall SKILLBAR_SrvStFn38_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc * p
       return 0;
     }
 
-    nTargetX = (uint32_t)(uint16_t)pPathPoints[nCalcResult - 1].nX;
-    nTargetY = (uint32_t)(uint16_t)pPathPoints[nCalcResult - 1].nY;
+    nTargetX = (uint32_t)pPathPoints[nCalcResult - 1].nX;
+    nTargetY = (uint32_t)pPathPoints[nCalcResult - 1].nY;
     int eCollisionFlag = (eUnitType == UNIT_PLAYER ? -128 : 0) + 0x100;
     eD2CollisionShapeType nType = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
     uint32_t nCollideX = nTargetX;

@@ -5,6 +5,7 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/Debug.h"
 #include "Fog/Engine/Application.h"
+#include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "support/d2_trace.h"
@@ -22,7 +23,7 @@ typedef void (__fastcall *fnCrashOutputLine)(::Report * pReport, char * szString
 #endif
 #ifndef RECON_FPTD_pfnFogExceptionFilter
 #define RECON_FPTD_pfnFogExceptionFilter
-typedef int (__fastcall *pfnFogExceptionFilter)(void * pExceptionReport, void * pUserContext);
+typedef int (__fastcall *pfnFogExceptionFilter)(D2CrashReportStrc * pExceptionReport, void * pUserContext);
 #endif
 
 namespace Fog::File {
@@ -40,23 +41,22 @@ void __stdcall CONTAINER_InitializeBuffer(void * pBuffer, int32_t nTypeSize, int
 }
 
 void __fastcall CRASH_DumpThreadContext(DWORD dwThreadId, void * pContext, fnCrashOutputLine pOutputCallback, ::Report * pReport, char bIncludeThreadName, char bIncludeStackInfo, uint32_t nMaxFrames) {
-    void* aFrameAddrs[2];
-    uint32_t aFrameBuffer[1149];
-    uint32_t nReturnAddr = 0x40307d;
+    D2CrashFrameStrc aFrames[128];
+    aFrames[0x7f].a14[3] = 0x40307d;
     int nFrameCountClamped = 0x7f;
-    uint32_t* pFrameBufCursor = aFrameBuffer;
+    uint32_t* pFrameBufCursor = &aFrames[0].dw08;
     do {
-      pFrameBufCursor[-2] = 0;
+      ((D2CrashFrameStrc*)(pFrameBufCursor - 2))->dwReturnAddr = 0;
       pFrameBufCursor[-1] = 0;
       *pFrameBufCursor = 0;
       pFrameBufCursor[1] = 0;
-      *(uint8_t*)(pFrameBufCursor + 2) = 0;
+      *(uint8_t*)(pFrameBufCursor + 2) = '\0';
       memset(pFrameBufCursor + 3, 0, 4 * sizeof(pFrameBufCursor[0]));
       pFrameBufCursor += 9;
       nFrameCountClamped--;
     } while (-1 < nFrameCountClamped);
 
-    int32_t nFrameCount = Engine::Application::DEBUG_UnwindStackFrames(dwThreadId, (int)aFrameAddrs, nMaxFrames, (CONTEXT*)pContext);
+    int32_t nFrameCount = Engine::Application::DEBUG_UnwindStackFrames(dwThreadId, aFrames, nMaxFrames, (CONTEXT*)pContext);
     if (0 >= nFrameCount) {
       return;
     }
@@ -64,11 +64,11 @@ void __fastcall CRASH_DumpThreadContext(DWORD dwThreadId, void * pContext, fnCra
       nFrameCount = 0x80;
     }
 
-    CRASH_FormatStackTrace(dwThreadId, aFrameAddrs, nFrameCount, pOutputCallback, pReport, bIncludeThreadName, bIncludeStackInfo);
+    CRASH_FormatStackTrace(dwThreadId, aFrames, nFrameCount, pOutputCallback, pReport, bIncludeThreadName, bIncludeStackInfo);
 }
 
 // Format stack trace for crash dump. Captures thread context if bIncludeThreadName set, iterates frames and calls callback for each formatted address line. If bIncludeStackInfo set, includes stack space usage info.
-void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, void * * aFrameAddrs, int32_t nNumFrames, fnCrashOutputLine pOutputCallback, ::Report * pReport, char bIncludeThreadName, char bIncludeStackInfo) {
+void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, D2CrashFrameStrc * aFrameAddrs, int32_t nNumFrames, fnCrashOutputLine pOutputCallback, ::Report * pReport, char bIncludeThreadName, char bIncludeStackInfo) {
     // Frame slots -2012..-16 are ONE object: &dwStackBytesUsed is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -109,12 +109,12 @@ void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, void * * aFrameAddrs, i
     }
 
     for (; nNumFrames; nNumFrames--) {
-      Engine::Application::DEBUG_FormatAddressInfo((uint32_t)*aFrameAddrs, __frame0.szAddressInfo);
+      Engine::Application::DEBUG_FormatAddressInfo(aFrameAddrs->dwReturnAddr, __frame0.szAddressInfo);
       if (bIncludeThreadName == '\0') {
         __frame0.szAddressInfo[0] = '\0';
       }
 
-      Debug::FormatAddressDebugString((uint32_t*)aFrameAddrs, __frame0.szAddressInfo, __frame0.szLineBuffer);
+      Debug::FormatAddressDebugString(&aFrameAddrs->dwReturnAddr, __frame0.szAddressInfo, __frame0.szLineBuffer);
       pszScan = __frame0.szLineBuffer;
       pszScan = pszScan + strlen(pszScan) + 1;
       nLineLen = (int)pszScan - (int)(__frame0.szLineBuffer + 1);
@@ -127,135 +127,108 @@ void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, void * * aFrameAddrs, i
       }
 
       (*pOutputCallback)(pReport, __frame0.szLineBuffer);
-      aFrameAddrs += 9;
+      aFrameAddrs++;
     }
 
     Debug::GuardStack();
 }
 
 void __fastcall CRASH_DumpRegisters(DWORD dwThreadId, fnCrashOutputLine pOutputCallback, ::Report * pReport) {
-    // Frame slots -1692..-1544 are ONE object: &nStRegLoWord is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t nStRegLoWord;
-      uint32_t nStRegHiWord;
-      uint32_t nStRegExpSign;
-      uint32_t nStRegPad;
-      uint32_t aXmmRegisters[17];
-      uint32_t nRegGs;
-      uint32_t nRegFs;
-      uint32_t nRegEs;
-      uint32_t nRegDs;
-      uint32_t nRegEdi;
-      uint32_t nRegEsi;
-      uint32_t nRegEbx;
-      uint32_t nRegEdx;
-      uint32_t nRegEcx;
-      uint32_t nRegEax;
-      uint32_t nRegEip;
-      uint32_t nRegEflags;
-      uint32_t nRegEbp;
-      uint32_t nRegEsp;
-      uint32_t nRegCs;
-      uint32_t nRegSs;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 148, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int nWritten;
     int nChunkLen;
-    uint32_t* pStRegLoWord;
+    uint8_t* pStRegLoWord;
     uint32_t iReg;
-    uint32_t* nFpuErrOffset;
-    uint32_t* nFpuErrSelector;
-    uint32_t* nFpuDataOffset;
-    uint8_t local_6d4[56];
+    uint32_t nFpuErrOffset;
+    uint8_t* nFpuErrSelector;
+    uint8_t* nFpuDataOffset;
+    CONTEXT sContext;
     char szLineBuffer[1024];
     uint32_t nStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    bool bVar1 = Engine::Application::DEBUG_CaptureThreadContext(dwThreadId, (LPCONTEXT)local_6d4);
+    bool bVar1 = Engine::Application::DEBUG_CaptureThreadContext(dwThreadId, &sContext);
     if (bVar1) {
-      if (*(uint32_t*)(char*)&local_6d4 & 0x10002) {
-        nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%6s:0x%08x", "EAX", __frame0.nRegEax);
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "EBX", __frame0.nRegEbx);
+      if (sContext.ContextFlags & 0x10002) {
+        nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%6s:0x%08x", "EAX", sContext.Eax);
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "EBX", sContext.Ebx);
         nWritten += nChunkLen;
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "ECX", __frame0.nRegEcx);
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "ECX", sContext.Ecx);
         nWritten += nChunkLen;
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "EDX", __frame0.nRegEdx);
-        nWritten += nChunkLen;
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "\n");
-        nWritten += nChunkLen;
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "ESI", __frame0.nRegEsi);
-        nWritten += nChunkLen;
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "EDI", __frame0.nRegEdi);
-        __snprintf_s(szLineBuffer + nWritten + nChunkLen, 0x400 - (nWritten + nChunkLen), -1, "\n\n");
-        (*pOutputCallback)(pReport, szLineBuffer);
-      }
-      if (*(uint32_t*)(char*)&local_6d4 & 0x10001) {
-        nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%6s:0x%08x", "EBP", __frame0.nRegEip);
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "ESP", __frame0.nRegCs);
-        nWritten += nChunkLen;
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "EIP", __frame0.nRegEflags);
-        nWritten += nChunkLen;
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "FLG", __frame0.nRegEsp);
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "EDX", sContext.Edx);
         nWritten += nChunkLen;
         nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "\n");
         nWritten += nChunkLen;
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "CS", __frame0.nRegEbp);
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "ESI", sContext.Esi);
         nWritten += nChunkLen;
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "SS", __frame0.nRegSs);
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "EDI", sContext.Edi);
         __snprintf_s(szLineBuffer + nWritten + nChunkLen, 0x400 - (nWritten + nChunkLen), -1, "\n\n");
         (*pOutputCallback)(pReport, szLineBuffer);
       }
-      if (*(uint32_t*)(char*)&local_6d4 & 0x10004) {
-        nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%6s:0x%08x", "DS", __frame0.nRegDs);
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "ES", __frame0.nRegEs);
+      if (sContext.ContextFlags & 0x10001) {
+        nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%6s:0x%08x", "EBP", sContext.Ebp);
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "ESP", sContext.Esp);
         nWritten += nChunkLen;
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "FS", __frame0.nRegFs);
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "EIP", sContext.Eip);
         nWritten += nChunkLen;
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "GS", __frame0.nRegGs);
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "FLG", sContext.EFlags);
+        nWritten += nChunkLen;
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "\n");
+        nWritten += nChunkLen;
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "CS", sContext.SegCs);
+        nWritten += nChunkLen;
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "SS", sContext.SegSs);
         __snprintf_s(szLineBuffer + nWritten + nChunkLen, 0x400 - (nWritten + nChunkLen), -1, "\n\n");
         (*pOutputCallback)(pReport, szLineBuffer);
       }
-      if (*(uint32_t*)(char*)&local_6d4 & 0x10008) {
-        nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%6s:0x%08x", "CTRL", *(uint32_t*)((char*)&local_6d4 + 28));
-        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "STAT", *(uint32_t*)((char*)&local_6d4 + 32));
+      if (sContext.ContextFlags & 0x10004) {
+        nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%6s:0x%08x", "DS", sContext.SegDs);
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "ES", sContext.SegEs);
+        nWritten += nChunkLen;
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "FS", sContext.SegFs);
+        nWritten += nChunkLen;
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "GS", sContext.SegGs);
+        __snprintf_s(szLineBuffer + nWritten + nChunkLen, 0x400 - (nWritten + nChunkLen), -1, "\n\n");
+        (*pOutputCallback)(pReport, szLineBuffer);
+      }
+      if (sContext.ContextFlags & 0x10008) {
+        nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%6s:0x%08x", "CTRL", sContext.FloatSave.ControlWord);
+        nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%6s:0x%08x", "STAT", sContext.FloatSave.StatusWord);
         __snprintf_s(szLineBuffer + nWritten + nChunkLen, 0x400 - (nWritten + nChunkLen), -1, "\n");
         (*pOutputCallback)(pReport, szLineBuffer);
-        nFpuErrSelector = &__frame0.nStRegExpSign;
-        nFpuDataOffset = &__frame0.nStRegHiWord;
+        nFpuErrSelector = sContext.FloatSave.RegisterArea + 8;
+        nFpuDataOffset = sContext.FloatSave.RegisterArea + 4;
         iReg = 0;
-        pStRegLoWord = &__frame0.nStRegLoWord;
+        pStRegLoWord = sContext.FloatSave.RegisterArea;
         do {
-          nFpuErrOffset = (uint32_t*)(uint32_t)(uint16_t)*nFpuErrSelector;
-          nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%5s%d:0x%08x 0x%08x 0x%08x", "ST", iReg, *pStRegLoWord, *nFpuDataOffset, (uint32_t)nFpuErrOffset);
-          nFpuErrOffset = (uint32_t*)(uint32_t)*(uint16_t*)((int)nFpuErrSelector + 10);
-          nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%5s%d:0x%08x 0x%08x 0x%08x", "ST", iReg + 1, *(uint32_t*)((int)pStRegLoWord + 10), *(uint32_t*)((int)nFpuDataOffset + 10), (uint32_t)nFpuErrOffset);
+          nFpuErrOffset = (uint32_t)*(uint16_t*)nFpuErrSelector;
+          nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%5s%d:0x%08x 0x%08x 0x%08x", "ST", iReg, *(uint32_t*)pStRegLoWord, *(uint32_t*)nFpuDataOffset, nFpuErrOffset);
+          nFpuErrOffset = (uint32_t)*(uint16_t*)(nFpuErrSelector + 10);
+          nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%5s%d:0x%08x 0x%08x 0x%08x", "ST", iReg + 1, *(uint32_t*)(pStRegLoWord + 10), *(uint32_t*)(nFpuDataOffset + 10), nFpuErrOffset);
           __snprintf_s(szLineBuffer + nWritten + nChunkLen, 0x400 - (nWritten + nChunkLen), -1, "\n");
           (*pOutputCallback)(pReport, szLineBuffer);
-          nFpuDataOffset += 5;
-          nFpuErrSelector += 5;
+          nFpuDataOffset += 0x14;
+          nFpuErrSelector += 0x14;
           iReg += 2;
-          pStRegLoWord += 5;
+          pStRegLoWord += 0x14;
         } while (iReg < 8);
 
         __snprintf_s(szLineBuffer, 0x400, -1, "\n");
         (*pOutputCallback)(pReport, szLineBuffer);
       }
-      if (*(uint32_t*)(char*)&local_6d4 & 0x10020) {
-        nFpuDataOffset = &__frame0.nStRegPad;
-        nFpuErrOffset = &__frame0.nStRegExpSign;
-        nFpuErrSelector = &__frame0.nStRegHiWord;
+      if (sContext.ContextFlags & 0x10020) {
+        nFpuDataOffset = sContext.FloatSave.RegisterArea + 0xc;
+        nFpuErrOffset = (uint32_t)(sContext.FloatSave.RegisterArea + 8);
+        nFpuErrSelector = sContext.FloatSave.RegisterArea + 4;
         iReg = 0;
-        pStRegLoWord = &__frame0.nStRegLoWord;
+        pStRegLoWord = sContext.FloatSave.RegisterArea;
         do {
-          nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%5s%d:0x%08x 0x%08x 0x%08x 0x%08x", "XMM", iReg, *pStRegLoWord, *nFpuErrSelector, *nFpuErrOffset, *nFpuDataOffset);
-          nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%5s%d:0x%08x 0x%08x 0x%08x 0x%08x", "XMM", iReg + 1, pStRegLoWord[4], nFpuErrSelector[4], nFpuErrOffset[4], nFpuDataOffset[4]);
+          nWritten = __snprintf_s(szLineBuffer, 0x400, -1, "%5s%d:0x%08x 0x%08x 0x%08x 0x%08x", "XMM", iReg, *(uint32_t*)pStRegLoWord, *(uint32_t*)nFpuErrSelector, *(uint32_t*)nFpuErrOffset, *(uint32_t*)nFpuDataOffset);
+          nChunkLen = __snprintf_s(szLineBuffer + nWritten, 0x400 - nWritten, -1, "%5s%d:0x%08x 0x%08x 0x%08x 0x%08x", "XMM", iReg + 1, *(uint32_t*)(pStRegLoWord + 0x10), *(uint32_t*)(nFpuErrSelector + 0x10), *(uint32_t*)(nFpuErrOffset + 0x10), *(uint32_t*)(nFpuDataOffset + 0x10));
           __snprintf_s(szLineBuffer + nWritten + nChunkLen, 0x400 - (nWritten + nChunkLen), -1, "\n");
           (*pOutputCallback)(pReport, szLineBuffer);
-          nFpuErrSelector += 8;
-          nFpuErrOffset += 8;
-          nFpuDataOffset += 8;
+          nFpuErrSelector += 0x20;
+          nFpuErrOffset += 0x20;
+          nFpuDataOffset += 0x20;
           iReg += 2;
-          pStRegLoWord += 8;
+          pStRegLoWord += 0x20;
         } while (iReg < 8);
 
         __snprintf_s(szLineBuffer, 0x400, -1, "\n");
@@ -388,19 +361,6 @@ void CRASH_GetExceptionName(char * szText, DWORD dwExceptionCode) {
 // reconstruction. The parameter is _EXCEPTION_POINTERS *, which 00403ec3 MOV EAX,[EBX] / MOV ESI,[EAX]
 // walks as ExceptionRecord -> ExceptionCode.
 LONG __stdcall ERRORMANAGER_UnhandledExceptionFilter(_EXCEPTION_POINTERS * pExceptionPointers) {
-    // Frame slots -804..-776 are ONE object: &pszExceptionName is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      char* pszExceptionName;
-      uint8_t* pszMessageBuffer;
-      uint32_t local_31c;
-      uint32_t local_318;
-      uint32_t local_314;
-      DWORD dwThreadId;
-      _EXCEPTION_POINTERS* pExceptionPtrsCopy;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 28, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     if (pExceptionPointers && pExceptionPointers->ExceptionRecord && pExceptionPointers->ContextRecord) {
       D2TraceFmt("TOPFILTER code=%08X addr=%p eip=%08X",
                  (unsigned)pExceptionPointers->ExceptionRecord->ExceptionCode,
@@ -410,20 +370,21 @@ LONG __stdcall ERRORMANAGER_UnhandledExceptionFilter(_EXCEPTION_POINTERS * pExce
       D2Trace("TOPFILTER entered with no records");
     }
     int nFilterResult;
-    uint8_t aMessageBuffer[512];
+    D2CrashReportStrc sCrashReport;
+    char aMessageBuffer[512];
     char szExceptionName[256];
     uint32_t nStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (gpCurrentExceptionFilter) {
       CRASH_GetExceptionName(szExceptionName, pExceptionPointers->ExceptionRecord->ExceptionCode);
-      __frame0.pszMessageBuffer = aMessageBuffer;
-      aMessageBuffer[0] = 0;
-      __frame0.pszExceptionName = szExceptionName;
-      __frame0.dwThreadId = GetCurrentThreadId();
-      __frame0.pExceptionPtrsCopy = pExceptionPointers;
-      __frame0.local_31c = 0;
-      __frame0.local_318 = 0;
-      __frame0.local_314 = 0;
-      nFilterResult = (*gpCurrentExceptionFilter)(&__frame0.pszExceptionName, gpCurrentExceptionContext);
+      sCrashReport.pszMessage = aMessageBuffer;
+      aMessageBuffer[0] = '\0';
+      sCrashReport.pszExceptionName = szExceptionName;
+      sCrashReport.dwThreadId = GetCurrentThreadId();
+      sCrashReport.pExceptionPointers = pExceptionPointers;
+      sCrashReport.apFrameAddrs = 0;
+      sCrashReport.nNumFrames = 0;
+      sCrashReport.nSkipFrames = 0;
+      nFilterResult = (*gpCurrentExceptionFilter)(&sCrashReport, gpCurrentExceptionContext);
       if (nFilterResult) {
         Debug::GuardStack();
         return (uint32_t)(nFilterResult != 1) * 2 - 1;
@@ -531,19 +492,19 @@ uint32_t __stdcall FILETOOLS_ExtractFilename(char * szDest, char * szSrcPath, ch
     return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)(pSep + (-1 - (int)szSrcPath)) >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(pSep + (-1 - (int)szSrcPath) < nDestSize));
 }
 
-uint32_t __fastcall STRING_AppendBlizzardErrorSubfolderToPath(uint32_t nUnused, LPSTR wchFilePath) {
-    LPSTR pScan = wchFilePath;
-    char* pEnd = pScan + strlen(pScan);
-    pScan = pEnd + 1;
-    if (pEnd == wchFilePath + 0x400) {
-      return (uint32_t)pEnd & -256;
+bool __fastcall STRING_AppendBlizzardErrorSubfolderToPath(char * szPath) {
+    char* pEnd = szPath;
+    char* pcVar1 = pEnd + strlen(pEnd);
+    pEnd = pcVar1 + 1;
+    if (pcVar1 == szPath + 0x400) {
+      return false;
     }
-    if (pEnd != wchFilePath && pEnd[-1] != '/' && pEnd[-1] != '\\') {
-      *pEnd = '\\';
+    if (pcVar1 != szPath && pcVar1[-1] != '/' && pcVar1[-1] != '\\') {
+      *pcVar1 = '\\';
     }
 
-    pEnd = STRING_CopyStringBounded(0x400, wchFilePath, "BlizzardError");
-    return (uint32_t)(pEnd < (char*)0x400);
+    pEnd = STRING_CopyStringBounded(0x400, szPath, "BlizzardError");
+    return pEnd < (char*)0x400;
 }
 
 char * STRING_CopyStringBounded(int32_t nDestSize, char * szDest, char * szSrc) {

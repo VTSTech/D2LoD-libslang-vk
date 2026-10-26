@@ -36,12 +36,14 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/Quests/QUESTS/A2Q7.h"
+#include "D2Game/Quests/QUESTS/A4Q2.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -177,7 +179,7 @@ void __fastcall Q19_SequenceFilter(D2QuestDataStrc * pQuestData) {
 
 // Q19_SendQuestStatePacket (Khalim's Will). Builds and sends the 0x5D quest-state packet to the player's client conveying which Khalim's Will sub-stage/relic message to display. No QuestRecord transitions; pure client notification.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q2.cpp
-void __fastcall Q19_SendQuestStatePacket(uint32_t dwQuestStateWord, uint8_t bStateByte, D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
+void __fastcall Q19_SendQuestStatePacket(uint8_t bStateByte, D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     uint8_t aPacketFrame[8];
     aPacketFrame[4] = 0;
     aPacketFrame[5] = 0;
@@ -186,14 +188,11 @@ void __fastcall Q19_SendQuestStatePacket(uint32_t dwQuestStateWord, uint8_t bSta
     aPacketFrame[0] = 0x5d;
     aPacketFrame[1] = 0x10;
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pQuestArgs->pPlayer, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q2.cpp", 0x238);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, aPacketFrame);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, (D2GSPacketSrv0x5D*)aPacketFrame);
 }
 
 // Q19_Callback_04 (Khalim's Will). Item-interaction handler fired when player handles a Khalim relic / assembled Khalim's Will. Gates on QUEST_AbleGoToAct3=Completed and quest not already Completed. Inspects which of the 4 relics (Flail 0x20316671, Eye 0x20796571, Brain 0x20726271, Heart 0x20726871) and the combined Khalim's Will (0x20326671) the player holds, plus sub-steps 0x02-0x07, then sends the appropriate Q19_SendQuestStatePacket message. Reads quest state only; no SetQuestState here.
 void __fastcall Q19_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    uint32_t nECXTmp;
-    uint32_t nECXTmp2;
-    int32_t nQuestStateArg;
     ::SGAMEDATA* pGame;
     pGame = pQuestArgs->pGame;
     D2UnitDataPlayerStrc* pPlayerData;
@@ -233,13 +232,8 @@ void __fastcall Q19_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
     bool bMissingKhalimsRib;
     bMissingKhalimsRib = !pRelicItem;
     pRelicItem = ITEMS::Items::Drop::HasQuestItem(pQuestArgs->pGame, pQuestArgs->pPlayer, 0x20726871);
-    uint32_t uVar1;
-    uVar1 = (uint32_t)((uint32_t)nECXTmp >> 8) & 0xffffffu;
-    uint32_t nECXTmp3;
-    nECXTmp3 = (uint32_t)((uint32_t)((uint32_t)uVar1 & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
-    if (!pRelicItem) {
-      nECXTmp3 = (uint32_t)uVar1 << 8;
-    }
+    bool bHasKhalimsHeart;
+    bHasKhalimsHeart = !pRelicItem;
     if (nItemCode == 0x20326671) {
       if (pQuestData->nStateFlagPrev) {
         pQuestData->nStateFlagPrev = 7;
@@ -249,27 +243,24 @@ void __fastcall Q19_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
       if (bQuestState) {
         return;
       }
-
-      nECXTmp3 = nECXTmp2;
       if (bStep07Set) {
-        Q19_SendQuestStatePacket(nECXTmp2, 6, pQuestData, pQuestArgs);
+        Q19_SendQuestStatePacket('\x06', pQuestData, pQuestArgs);
         return;
       }
     } else {
-      char byCLTmp;
-      byCLTmp = (char)nECXTmp3;
+      int32_t nQuestStateArg;
       if (nItemCode != 0x20316671) {
         if (nItemCode == 0x20796571) {
           if (bMissingKhalimsRib) {
             goto send_state2_no_brain;
           }
           if (bHasKhalimsFlail) {
-            if (byCLTmp == '\0') {
-              Q19_SendQuestStatePacket(nECXTmp3, 4, pQuestData, pQuestArgs);
+            if (bHasKhalimsHeart) {
+              Q19_SendQuestStatePacket('\x04', pQuestData, pQuestArgs);
               return;
             }
 
-            Q19_SendQuestStatePacket(nECXTmp3, 7, pQuestData, pQuestArgs);
+            Q19_SendQuestStatePacket('\a', pQuestData, pQuestArgs);
             return;
           }
         } else if (nItemCode == 0x20726871) {
@@ -278,55 +269,55 @@ void __fastcall Q19_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
           }
           if (bHasKhalimsFlail) {
             if (!bHasKhalimsEye) {
-              Q19_SendQuestStatePacket(nECXTmp3, 1, pQuestData, pQuestArgs);
+              Q19_SendQuestStatePacket('\x01', pQuestData, pQuestArgs);
               return;
             }
 
-            Q19_SendQuestStatePacket(nECXTmp3, 7, pQuestData, pQuestArgs);
+            Q19_SendQuestStatePacket('\a', pQuestData, pQuestArgs);
             return;
           }
         } else {
           if (nItemCode != 0x20726271) {
             return;
           }
-          if (byCLTmp == '\0') {
+          if (bHasKhalimsHeart) {
             goto send_state4_no_heart;
           }
           if (bHasKhalimsFlail) {
-            *(uint8_t*)(char*)&nQuestStateArg = 1;
+            *(uint8_t*)(char*)&nQuestStateArg = '\x01';
             if (bHasKhalimsEye) {
-              *(uint8_t*)(char*)&nQuestStateArg = 7;
+              *(uint8_t*)(char*)&nQuestStateArg = '\a';
             }
 
-            Q19_SendQuestStatePacket(nECXTmp3, (uint8_t)nQuestStateArg, pQuestData, pQuestArgs);
+            Q19_SendQuestStatePacket((uint8_t)nQuestStateArg, pQuestData, pQuestArgs);
             return;
           }
         }
 
-        Q19_SendQuestStatePacket(nECXTmp3, 3, pQuestData, pQuestArgs);
+        Q19_SendQuestStatePacket('\x03', pQuestData, pQuestArgs);
         return;
       }
       if (!bHasKhalimsEye) {
-        Q19_SendQuestStatePacket(nECXTmp3, 1, pQuestData, pQuestArgs);
+        Q19_SendQuestStatePacket('\x01', pQuestData, pQuestArgs);
         return;
       }
       if (bMissingKhalimsRib) {
         send_state2_no_brain:
-        Q19_SendQuestStatePacket(nECXTmp3, 2, pQuestData, pQuestArgs);
+        Q19_SendQuestStatePacket('\x02', pQuestData, pQuestArgs);
         return;
       }
-      if (byCLTmp == '\0') {
+      if (bHasKhalimsHeart) {
         send_state4_no_heart:
-        Q19_SendQuestStatePacket(nECXTmp3, 4, pQuestData, pQuestArgs);
+        Q19_SendQuestStatePacket('\x04', pQuestData, pQuestArgs);
         return;
       }
       if (bQuestState) {
-        Q19_SendQuestStatePacket(nECXTmp3, 7, pQuestData, pQuestArgs);
+        Q19_SendQuestStatePacket('\a', pQuestData, pQuestArgs);
         return;
       }
     }
 
-    Q19_SendQuestStatePacket(nECXTmp3, 5, pQuestData, pQuestArgs);
+    Q19_SendQuestStatePacket('\x05', pQuestData, pQuestArgs);
 }
 
 // Q19_Callback_13 (Khalim's Will). Quest-load/refresh handler. If not Completed: if Step0x07 not set but Step0x02 set, sets in-memory StateFlag=2/prev=7 (mid-quest resume). Also resumes StateFlag=2 when the quest GUID player-bitmask is non-empty. Reads QuestRecord; mutates only in-memory StateFlag.

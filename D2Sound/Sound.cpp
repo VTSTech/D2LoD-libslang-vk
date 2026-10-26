@@ -41,38 +41,38 @@ void __stdcall SOUND_ReleaseEAXInterfaces() {
 }
 
 // Applies EAX environment parameters to gpDirectSoundEAXInterface. Two modes: gnSoundQualityMode==1 (simple: vol/distance/flags), ==2 (full: 14 reverb properties including decay, reflections, room size). Calls Set() on EAX property GUIDs for each param.
-void __fastcall SOUND_ApplyEAXEnvironment(float fParam) {
+void __fastcall SOUND_ApplyEAXEnvironment(D2SoundEaxEnvironStrc * pEnviron) {
     D2FloatIntUnion fAttenuation;
     if (!(gnSound3DLoudness && gpDirectSoundEAXInterface)) {
       return;
     }
     if (gnSoundQualityMode == 1) {
-      fAttenuation.fValue = fParam;
-      fAttenuation.fValue = Src::D2SoundSmp::SOUNDSMP_ClampAttenuation((float)*(int*)((int)fParam + 0xc));
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved1, 1, nullptr, 0, (void*)d2_bits_of(fParam), 4);
+      fAttenuation = d2_bits_as<D2FloatIntUnion>(pEnviron);
+      fAttenuation.fValue = Src::D2SoundSmp::SOUNDSMP_ClampAttenuation((float)pEnviron->nRoom);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved1, 1, nullptr, 0, pEnviron, 4);
       gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved1, 2, nullptr, 0, &fAttenuation, 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved1, 3, nullptr, 0, (void*)((int)fParam + 0x14), 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved1, 3, nullptr, 0, &pEnviron->fDecayTime, 4);
     }
     if (gnSoundQualityMode == 2) {
       fAttenuation.nValue = 0x20;
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 0xb, nullptr, 0, (void*)d2_bits_of(fParam), 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 0xb, nullptr, 0, pEnviron, 4);
       gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 0xf, nullptr, 0, &fAttenuation, 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 0xb, nullptr, 0, (void*)d2_bits_of(fParam), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 0xc, nullptr, 0, (void*)((int)fParam + 4), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 0xd, nullptr, 0, (void*)((int)fParam + 8), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 2, nullptr, 0, (void*)((int)fParam + 0xc), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 3, nullptr, 0, (void*)((int)fParam + 0x10), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 5, nullptr, 0, (void*)((int)fParam + 0x14), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 6, nullptr, 0, (void*)((int)fParam + 0x18), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 7, nullptr, 0, (void*)((int)fParam + 0x1c), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 8, nullptr, 0, (void*)((int)fParam + 0x20), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 9, nullptr, 0, (void*)((int)fParam + 0x24), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 10, nullptr, 0, (void*)((int)fParam + 0x28), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 4, nullptr, 0, (void*)((int)fParam + 0x2c), 4);
-      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 0xe, nullptr, 0, (void*)((int)fParam + 0x30), 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 0xb, nullptr, 0, pEnviron, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 0xc, nullptr, 0, &pEnviron->fEnvSize, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 0xd, nullptr, 0, &pEnviron->fEnvDiffusion, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 2, nullptr, 0, &pEnviron->nRoom, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 3, nullptr, 0, &pEnviron->nRoomHF, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 5, nullptr, 0, &pEnviron->fDecayTime, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 6, nullptr, 0, &pEnviron->fDecayHFRatio, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 7, nullptr, 0, &pEnviron->nReflections, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 8, nullptr, 0, &pEnviron->fReflectionsDelay, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 9, nullptr, 0, &pEnviron->nReverb, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 10, nullptr, 0, &pEnviron->fReverbDelay, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 4, nullptr, 0, &pEnviron->fRoomRolloff, 4);
+      gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, gEAXPropertyGuid_Reserved2, 0xe, nullptr, 0, &pEnviron->fAirAbsorptionHF, 4);
     }
 
-    g_bEAXEnabled = (uint32_t)(*(int*)((int)fParam + 0xc) == -10000);
+    g_bEAXEnabled = (uint32_t)(pEnviron->nRoom == -10000);
 }
 
 void __stdcall SOUND_ShutdownDirectSound() {
@@ -127,16 +127,9 @@ void __stdcall SOUND_InitDirectSound() {
     /* .dwReserved2 = */ 0
 };
 
-    // Frame slots -108..-100 are ONE object: &dwDSCapsSize is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t dwDSCapsSize;
-      uint32_t dwDSCapsFlags;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     char* szErrorMsg;
     BOOL BVar2;
+    DSBCAPS sPrimaryBufferCaps;
     DSBUFFERDESC tEaxBufferDesc;
     DSBUFFERDESC tPrimaryBufferDesc;
     WAVEFORMATEX tSecondaryFormat;
@@ -249,13 +242,13 @@ void __stdcall SOUND_InitDirectSound() {
       }
     }
 
-    __frame0.dwDSCapsFlags = 0;
-    size_t dwDSCapsMinSecondarySampleRate = 0;
-    uint32_t dwDSCapsMaxSecondarySampleRate = 0;
-    uint32_t dwDSCapsPrimaryBuffers = 0;
-    __frame0.dwDSCapsSize = 0x14;
-    gpDSoundPrimaryBuffer->lpVtbl->GetCaps(gpDSoundPrimaryBuffer, &__frame0.dwDSCapsSize);
-    SOUNDSMP_ClearBuffer(gpDSoundPrimaryBuffer, 0, dwDSCapsMinSecondarySampleRate);
+    sPrimaryBufferCaps.dwFlags = 0;
+    sPrimaryBufferCaps.dwBufferBytes = 0;
+    sPrimaryBufferCaps.dwUnlockTransferRate = 0;
+    sPrimaryBufferCaps.dwPlayCpuOverhead = 0;
+    sPrimaryBufferCaps.dwSize = 0x14;
+    gpDSoundPrimaryBuffer->lpVtbl->GetCaps(gpDSoundPrimaryBuffer, &sPrimaryBufferCaps);
+    SOUNDSMP_ClearBuffer(gpDSoundPrimaryBuffer, 0, sPrimaryBufferCaps.dwBufferBytes);
     gpDSoundPrimaryBuffer->lpVtbl->Play(gpDSoundPrimaryBuffer, 0, 0, 1);
     Src::D2SoundSmp::SOUNDSMP_CreateSoundThread();
     SOUND_InitMusicBuffer((uint32_t)g_hwndSoundWindow);

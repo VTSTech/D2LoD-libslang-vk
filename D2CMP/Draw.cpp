@@ -4,6 +4,7 @@
 #include "D2CMP/tagPALETTEENTRY.h"
 #include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
+#include "Storm/Source/SBMP.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
@@ -234,22 +235,17 @@ void __stdcall DRAW_SetTransparentColorRGB(uint32_t nRGB) {
 }
 
 BOOL __fastcall DRAW_LoadPaletteFromPCX(LPCSTR szFilePath) {
-    // Frame -136..-8 is ONE object: a call writes 128 literal bytes starting at &pcxHeader.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
+    // Frame slots -140..-8 are ONE object: &nBytesRead is passed out and the callee reaches the rest by byte offset.
+    // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
-      char pcxHeader;
-      char pcxEncoding;
-      uint8_t __pad2[1];
-      char pcxBitsPerPixel;
-      uint8_t __pad4[124];
+      DWORD nBytesRead;
+      D2PcxHeaderStrc sPcxHeader;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 128, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 132, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    uint32_t iPaletteEntry;
     uint8_t* pbPaletteEntry;
     PcxPaletteTrailer pcxPaletteTrailer;
     char* lpOutputString;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     HANDLE hFile = CreateFileA(szFilePath, 0x80000000, 1, (LPSECURITY_ATTRIBUTES)0x0, 3, 0, (HANDLE)0x0);
     if (hFile == (HANDLE)-1) {
       /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("Unable to open ");
@@ -259,14 +255,15 @@ BOOL __fastcall DRAW_LoadPaletteFromPCX(LPCSTR szFilePath) {
       return 0;
     }
 
-    memset(&__frame0.pcxHeader, 0, 0x80);
-    DWORD nBytesRead = 0;
-    ReadFile(hFile, &__frame0.pcxHeader, 0x80, &nBytesRead, (LPOVERLAPPED)0x0);
-    if (nBytesRead == 0x80 && __frame0.pcxHeader == '\n' && __frame0.pcxEncoding == '\x05' && __frame0.pcxBitsPerPixel == '\b') {
+    memset(&__frame0.sPcxHeader, 0, 0x80);
+    __frame0.nBytesRead = 0;
+    ReadFile(hFile, &__frame0.sPcxHeader, 0x80, &__frame0.nBytesRead, (LPOVERLAPPED)0x0);
+    if (__frame0.nBytesRead == 0x80 && __frame0.sPcxHeader.byManufacturer == '\n' && __frame0.sPcxHeader.byVersion == '\x05' && __frame0.sPcxHeader.byBitsPerPixel == '\b') {
+      uint32_t iPaletteEntry;
       memset(&pcxPaletteTrailer, 0, 0x301);
       /* DWORD dwMoveMethod for SetFilePointer */ /* PLONG lpDistanceToMoveHigh for SetFilePointer */ /* LONG lDistanceToMove for SetFilePointer */ /* HANDLE hFile for SetFilePointer */ SetFilePointer(hFile, -0x301, (PLONG)0x0, 2);
-      /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ ReadFile(hFile, &pcxPaletteTrailer, 0x301, &nBytesRead, (LPOVERLAPPED)0x0);
-      if (nBytesRead == 0x301 && pcxPaletteTrailer.nMarker == 0xc) {
+      /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ ReadFile(hFile, &pcxPaletteTrailer, 0x301, &__frame0.nBytesRead, (LPOVERLAPPED)0x0);
+      if (__frame0.nBytesRead == 0x301 && pcxPaletteTrailer.nMarker == 0xc) {
         pbPaletteEntry = pcxPaletteTrailer.rgb + 1;
         iPaletteEntry = 0;
         do {
@@ -1475,90 +1472,90 @@ void __stdcall DRAW_BuildBrightenTable(LPPALETTEENTRY pPalette) {
 }
 
 void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEENTRY pHSLPalette) {
+    double dVar1;
     uint32_t nPaletteIndex;
-    PALETTEENTRY* pHSLEntry;
-    PALETTEENTRY* pHSLSrcEntry;
+    D2HSLColorStrc* pHSLLoopPtr;
+    LPPALETTEENTRY ptVar2;
     int nEntryCount;
     int nHSLSrcOffset;
-    long double fVar1;
-    PALETTEENTRY ahslBuffer[1536];
+    uint32_t nColorIdx;
+    long double fVar3;
+    D2HSLColorStrc ahslBuffer[256];
     uint8_t rgbBuffer[1028];
     uint32_t nTableIndex;
-    double dHueBase;
     double dHueWrapped;
     float fHueFloat;
     float fHueWrapped;
     uint32_t nHueShift = 0x605f0d;
     uint32_t nTableIdx = 0;
-    PALETTEENTRY* pHSLSource = pHSLPalette + 0xc;
+    LPPALETTEENTRY pHSLSource = pHSLPalette + 0xc;
     LPPALETTEENTRY pDestEntry = pPalette + 0x14d40;
     do {
-      uint32_t nColorIdx;
       nTableIndex = nTableIdx;
-      dHueBase = (double)(int)nTableIdx;
+      dVar1 = (double)(int)nTableIdx;
       if ((int)nTableIdx < 0) {
-        dHueBase += 4294967296.0;
+        dVar1 += 4294967296.0;
       }
 
-      dHueBase *= 15.0;
-      pHSLEntry = ahslBuffer + 6;
+      dVar1 *= 15.0;
+      pHSLLoopPtr = ahslBuffer + 1;
       nHSLSrcOffset = 0x40;
-      pHSLSrcEntry = pHSLSource;
+      ptVar2 = pHSLSource;
       do {
-        pHSLEntry[-6] = pHSLSrcEntry[-0xc];
-        pHSLEntry[-5] = pHSLSrcEntry[-0xb];
-        pHSLEntry[-4] = pHSLSrcEntry[-10];
-        pHSLEntry[-3] = pHSLSrcEntry[-9];
-        pHSLEntry[-2] = pHSLSrcEntry[-8];
-        pHSLEntry[-1] = pHSLSrcEntry[-7];
-        dHueWrapped = dHueBase + *(double*)(pHSLEntry - 6);
-        *(double*)(pHSLEntry - 6) = dHueWrapped;
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dHue = ptVar2[-0xc];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dHue + 4) = ptVar2[-0xb];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dSaturation = ptVar2[-10];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dSaturation + 4) = ptVar2[-9];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dLightness = ptVar2[-8];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dLightness + 4) = ptVar2[-7];
+        dHueWrapped = dVar1 + pHSLLoopPtr[-1].dHue;
+        pHSLLoopPtr[-1].dHue = dHueWrapped;
         if (360.0 < dHueWrapped) {
-          *(double*)(pHSLEntry - 6) = dHueWrapped - 360.0;
+          pHSLLoopPtr[-1].dHue = dHueWrapped - 360.0;
         }
 
-        *pHSLEntry = pHSLSrcEntry[-6];
-        pHSLEntry[1] = pHSLSrcEntry[-5];
-        pHSLEntry[2] = pHSLSrcEntry[-4];
-        pHSLEntry[3] = pHSLSrcEntry[-3];
-        pHSLEntry[4] = pHSLSrcEntry[-2];
-        pHSLEntry[5] = pHSLSrcEntry[-1];
-        dHueWrapped = *(double*)pHSLEntry + dHueBase;
-        *(double*)pHSLEntry = dHueWrapped;
+        *(tagPALETTEENTRY*)&pHSLLoopPtr->dHue = ptVar2[-6];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dHue + 4) = ptVar2[-5];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr->dSaturation = ptVar2[-4];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dSaturation + 4) = ptVar2[-3];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr->dLightness = ptVar2[-2];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dLightness + 4) = ptVar2[-1];
+        dHueWrapped = pHSLLoopPtr->dHue + dVar1;
+        pHSLLoopPtr->dHue = dHueWrapped;
         if (360.0 < dHueWrapped) {
-          *(double*)pHSLEntry = dHueWrapped - 360.0;
+          pHSLLoopPtr->dHue = dHueWrapped - 360.0;
         }
 
-        pHSLEntry[6] = *pHSLSrcEntry;
-        pHSLEntry[7] = pHSLSrcEntry[1];
-        pHSLEntry[8] = pHSLSrcEntry[2];
-        pHSLEntry[9] = pHSLSrcEntry[3];
-        pHSLEntry[10] = pHSLSrcEntry[4];
-        pHSLEntry[0xb] = pHSLSrcEntry[5];
-        dHueWrapped = dHueBase + *(double*)(pHSLEntry + 6);
-        *(double*)(pHSLEntry + 6) = dHueWrapped;
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[1].dHue = *ptVar2;
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[1].dHue + 4) = ptVar2[1];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[1].dSaturation = ptVar2[2];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[1].dSaturation + 4) = ptVar2[3];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[1].dLightness = ptVar2[4];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[1].dLightness + 4) = ptVar2[5];
+        dHueWrapped = dVar1 + pHSLLoopPtr[1].dHue;
+        pHSLLoopPtr[1].dHue = dHueWrapped;
         if (360.0 < dHueWrapped) {
-          *(double*)(pHSLEntry + 6) = dHueWrapped - 360.0;
+          pHSLLoopPtr[1].dHue = dHueWrapped - 360.0;
         }
 
-        pHSLEntry[0xc] = pHSLSrcEntry[6];
-        pHSLEntry[0xd] = pHSLSrcEntry[7];
-        pHSLEntry[0xe] = pHSLSrcEntry[8];
-        pHSLEntry[0xf] = pHSLSrcEntry[9];
-        pHSLEntry[0x10] = pHSLSrcEntry[10];
-        pHSLEntry[0x11] = pHSLSrcEntry[0xb];
-        dHueWrapped = dHueBase + *(double*)(pHSLEntry + 0xc);
-        *(double*)(pHSLEntry + 0xc) = dHueWrapped;
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[2].dHue = ptVar2[6];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[2].dHue + 4) = ptVar2[7];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[2].dSaturation = ptVar2[8];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[2].dSaturation + 4) = ptVar2[9];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[2].dLightness = ptVar2[10];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[2].dLightness + 4) = ptVar2[0xb];
+        dHueWrapped = dVar1 + pHSLLoopPtr[2].dHue;
+        pHSLLoopPtr[2].dHue = dHueWrapped;
         if (360.0 < dHueWrapped) {
-          *(double*)(pHSLEntry + 0xc) = dHueWrapped - 360.0;
+          pHSLLoopPtr[2].dHue = dHueWrapped - 360.0;
         }
 
-        pHSLEntry += 0x18;
-        pHSLSrcEntry += 0x18;
+        pHSLLoopPtr += 4;
+        ptVar2 += 0x18;
         nHSLSrcOffset--;
       } while (nHSLSrcOffset);
 
-      DRAW_ConvertPaletteHSLtoRGB((D2HSLColorStrc*)ahslBuffer, rgbBuffer);
+      DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
       nColorIdx = 0;
       do {
         nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nColorIdx * 4], (uint32_t)rgbBuffer[nColorIdx * 4 + 1], (uint32_t)rgbBuffer[nColorIdx * 4 + 2]);
@@ -1579,33 +1576,33 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
         fHueFloat += 4.2949673e+09;
       }
 
-      pHSLEntry = ahslBuffer;
+      pHSLLoopPtr = ahslBuffer;
       nEntryCount = 0x100;
       do {
-        *pHSLEntry = *(PALETTEENTRY*)(nHSLSrcOffset + (int)pHSLEntry);
-        pHSLEntry[1] = *(PALETTEENTRY*)(nHSLSrcOffset + 4 + (int)pHSLEntry);
-        pHSLEntry[2] = *(PALETTEENTRY*)(nHSLSrcOffset + 8 + (int)pHSLEntry);
-        pHSLEntry[3] = *(PALETTEENTRY*)(nHSLSrcOffset + 0xc + (int)pHSLEntry);
-        pHSLEntry[4] = *(PALETTEENTRY*)(nHSLSrcOffset + 0x10 + (int)pHSLEntry);
-        pHSLEntry[5] = *(PALETTEENTRY*)(nHSLSrcOffset + 0x14 + (int)pHSLEntry);
-        fHueWrapped = (float)*(double*)pHSLEntry + fHueFloat * 15.0;
-        *(double*)pHSLEntry = (double)fHueWrapped;
+        *(uint32_t*)&pHSLLoopPtr->dHue = *(uint32_t*)(nHSLSrcOffset + (int)pHSLLoopPtr);
+        *(uint32_t*)((uintptr_t)&pHSLLoopPtr->dHue + 4) = *(uint32_t*)(nHSLSrcOffset + 4 + (int)pHSLLoopPtr);
+        *(uint32_t*)&pHSLLoopPtr->dSaturation = *(uint32_t*)(nHSLSrcOffset + 8 + (int)pHSLLoopPtr);
+        *(uint32_t*)((uintptr_t)&pHSLLoopPtr->dSaturation + 4) = *(uint32_t*)(nHSLSrcOffset + 0xc + (int)pHSLLoopPtr);
+        *(uint32_t*)&pHSLLoopPtr->dLightness = *(uint32_t*)(nHSLSrcOffset + 0x10 + (int)pHSLLoopPtr);
+        *(uint32_t*)((uintptr_t)&pHSLLoopPtr->dLightness + 4) = *(uint32_t*)(nHSLSrcOffset + 0x14 + (int)pHSLLoopPtr);
+        fHueWrapped = (float)pHSLLoopPtr->dHue + fHueFloat * 15.0;
+        pHSLLoopPtr->dHue = (double)fHueWrapped;
         if (360.0 < fHueWrapped) {
-          *(double*)pHSLEntry = (double)(fHueWrapped - 360.0);
+          pHSLLoopPtr->dHue = (double)(fHueWrapped - 360.0);
         }
 
-        *(double*)(pHSLEntry + 2) = 0.5;
-        dHueBase = *(double*)(pHSLEntry + 4);
-        *(double*)(pHSLEntry + 4) = dHueBase - 0.10000000149011612;
-        if (dHueBase - 0.10000000149011612 < 0.0) {
-          *(double*)(pHSLEntry + 4) = 0.0;
+        pHSLLoopPtr->dSaturation = 0.5;
+        dVar1 = pHSLLoopPtr->dLightness - 0.10000000149011612;
+        pHSLLoopPtr->dLightness = dVar1;
+        if (dVar1 < 0.0) {
+          pHSLLoopPtr->dLightness = 0.0;
         }
 
-        pHSLEntry += 6;
+        pHSLLoopPtr++;
         nEntryCount--;
       } while (nEntryCount);
 
-      DRAW_ConvertPaletteHSLtoRGB((D2HSLColorStrc*)ahslBuffer, rgbBuffer);
+      DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
       nTableIdx = 0;
       do {
         nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
@@ -1625,33 +1622,33 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
         fHueFloat += 4.2949673e+09;
       }
 
-      pHSLEntry = ahslBuffer;
+      pHSLLoopPtr = ahslBuffer;
       nEntryCount = 0x100;
       do {
-        *pHSLEntry = *(PALETTEENTRY*)(nHSLSrcOffset + (int)pHSLEntry);
-        pHSLEntry[1] = *(PALETTEENTRY*)(nHSLSrcOffset + 4 + (int)pHSLEntry);
-        pHSLEntry[2] = *(PALETTEENTRY*)(nHSLSrcOffset + 8 + (int)pHSLEntry);
-        pHSLEntry[3] = *(PALETTEENTRY*)(nHSLSrcOffset + 0xc + (int)pHSLEntry);
-        pHSLEntry[4] = *(PALETTEENTRY*)(nHSLSrcOffset + 0x10 + (int)pHSLEntry);
-        pHSLEntry[5] = *(PALETTEENTRY*)(nHSLSrcOffset + 0x14 + (int)pHSLEntry);
-        fHueWrapped = fHueFloat * 15.0 + (float)*(double*)pHSLEntry;
-        *(double*)pHSLEntry = (double)fHueWrapped;
+        *(uint32_t*)&pHSLLoopPtr->dHue = *(uint32_t*)(nHSLSrcOffset + (int)pHSLLoopPtr);
+        *(uint32_t*)((uintptr_t)&pHSLLoopPtr->dHue + 4) = *(uint32_t*)(nHSLSrcOffset + 4 + (int)pHSLLoopPtr);
+        *(uint32_t*)&pHSLLoopPtr->dSaturation = *(uint32_t*)(nHSLSrcOffset + 8 + (int)pHSLLoopPtr);
+        *(uint32_t*)((uintptr_t)&pHSLLoopPtr->dSaturation + 4) = *(uint32_t*)(nHSLSrcOffset + 0xc + (int)pHSLLoopPtr);
+        *(uint32_t*)&pHSLLoopPtr->dLightness = *(uint32_t*)(nHSLSrcOffset + 0x10 + (int)pHSLLoopPtr);
+        *(uint32_t*)((uintptr_t)&pHSLLoopPtr->dLightness + 4) = *(uint32_t*)(nHSLSrcOffset + 0x14 + (int)pHSLLoopPtr);
+        fHueWrapped = fHueFloat * 15.0 + (float)pHSLLoopPtr->dHue;
+        pHSLLoopPtr->dHue = (double)fHueWrapped;
         if (360.0 < fHueWrapped) {
-          *(double*)pHSLEntry = (double)(fHueWrapped - 360.0);
+          pHSLLoopPtr->dHue = (double)(fHueWrapped - 360.0);
         }
 
-        *(double*)(pHSLEntry + 2) = 0.5;
-        dHueBase = *(double*)(pHSLEntry + 4);
-        *(double*)(pHSLEntry + 4) = dHueBase + 0.20000000298023224;
-        if (1.0 < dHueBase + 0.20000000298023224) {
-          *(double*)(pHSLEntry + 4) = 1.0;
+        pHSLLoopPtr->dSaturation = 0.5;
+        dVar1 = pHSLLoopPtr->dLightness + 0.20000000298023224;
+        pHSLLoopPtr->dLightness = dVar1;
+        if (1.0 < dVar1) {
+          pHSLLoopPtr->dLightness = 1.0;
         }
 
-        pHSLEntry += 6;
+        pHSLLoopPtr++;
         nEntryCount--;
       } while (nEntryCount);
 
-      DRAW_ConvertPaletteHSLtoRGB((D2HSLColorStrc*)ahslBuffer, rgbBuffer);
+      DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
       nTableIdx = 0;
       do {
         nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
@@ -1664,19 +1661,19 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
       pTempDestTable += 0x40;
     } while (nHueShift < 0x18);
 
-    pHSLEntry = ahslBuffer;
+    pHSLLoopPtr = ahslBuffer;
     do {
-      *pHSLEntry = *(PALETTEENTRY*)(nHSLSrcOffset + (int)pHSLEntry);
-      pHSLEntry[1] = *(PALETTEENTRY*)(nHSLSrcOffset + 4 + (int)pHSLEntry);
-      pHSLEntry[4] = *(PALETTEENTRY*)(nHSLSrcOffset + 0x10 + (int)pHSLEntry);
-      pHSLEntry[5] = *(PALETTEENTRY*)(nHSLSrcOffset + 0x14 + (int)pHSLEntry);
-      *(uint64_t*)(pHSLEntry + 2) = 0;
+      *(uint32_t*)&pHSLLoopPtr->dHue = *(uint32_t*)(nHSLSrcOffset + (int)pHSLLoopPtr);
+      *(uint32_t*)((uintptr_t)&pHSLLoopPtr->dHue + 4) = *(uint32_t*)(nHSLSrcOffset + 4 + (int)pHSLLoopPtr);
+      *(uint32_t*)&pHSLLoopPtr->dLightness = *(uint32_t*)(nHSLSrcOffset + 0x10 + (int)pHSLLoopPtr);
+      *(uint32_t*)((uintptr_t)&pHSLLoopPtr->dLightness + 4) = *(uint32_t*)(nHSLSrcOffset + 0x14 + (int)pHSLLoopPtr);
+      pHSLLoopPtr->dSaturation = 0.0;
       nEntryCount--;
-      *(double*)(pHSLEntry + 4) *= 0.5;
-      pHSLEntry += 6;
+      pHSLLoopPtr->dLightness *= 0.5;
+      pHSLLoopPtr++;
     } while (nEntryCount);
 
-    DRAW_ConvertPaletteHSLtoRGB((D2HSLColorStrc*)ahslBuffer, rgbBuffer);
+    DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
     nTableIdx = 0;
     do {
       nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
@@ -1685,19 +1682,19 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
     } while (nTableIdx < 0x100);
 
     nEntryCount = 0x100;
-    pHSLEntry = ahslBuffer;
+    pHSLLoopPtr = ahslBuffer;
     do {
-      *pHSLEntry = *(PALETTEENTRY*)(nHSLSrcOffset + (int)pHSLEntry);
-      pHSLEntry[1] = *(PALETTEENTRY*)(nHSLSrcOffset + 4 + (int)pHSLEntry);
-      pHSLEntry[4] = *(PALETTEENTRY*)(nHSLSrcOffset + 0x10 + (int)pHSLEntry);
-      pHSLEntry[5] = *(PALETTEENTRY*)(nHSLSrcOffset + 0x14 + (int)pHSLEntry);
-      *(uint64_t*)(pHSLEntry + 2) = 0;
+      *(uint32_t*)&pHSLLoopPtr->dHue = *(uint32_t*)(nHSLSrcOffset + (int)pHSLLoopPtr);
+      *(uint32_t*)((uintptr_t)&pHSLLoopPtr->dHue + 4) = *(uint32_t*)(nHSLSrcOffset + 4 + (int)pHSLLoopPtr);
+      *(uint32_t*)&pHSLLoopPtr->dLightness = *(uint32_t*)(nHSLSrcOffset + 0x10 + (int)pHSLLoopPtr);
+      *(uint32_t*)((uintptr_t)&pHSLLoopPtr->dLightness + 4) = *(uint32_t*)(nHSLSrcOffset + 0x14 + (int)pHSLLoopPtr);
+      pHSLLoopPtr->dSaturation = 0.0;
       nEntryCount--;
-      *(double*)(pHSLEntry + 4) = (*(double*)(pHSLEntry + 4) + 0.20000000298023224) / 1.2000000476837158;
-      pHSLEntry += 6;
+      pHSLLoopPtr->dLightness = (pHSLLoopPtr->dLightness + 0.20000000298023224) / 1.2000000476837158;
+      pHSLLoopPtr++;
     } while (nEntryCount);
 
-    DRAW_ConvertPaletteHSLtoRGB((D2HSLColorStrc*)ahslBuffer, rgbBuffer);
+    DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
     nTableIdx = 0;
     do {
       nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
@@ -1711,89 +1708,89 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
     pHSLPalette = pPalette + 0x15fc0;
     nHueShift = 0;
     do {
-      pHSLEntry = ahslBuffer + 6;
+      pHSLLoopPtr = ahslBuffer + 1;
       pTempDestTable = (LPPALETTEENTRY)0x40;
-      pHSLSrcEntry = pHSLSource;
+      pDestEntry = pHSLSource;
       do {
-        if (45.0 < *(double*)(pHSLSrcEntry - 0xc) && *(double*)(pHSLSrcEntry - 0xc) < 315.0) {
-          dHueBase = (double)(int)nHueShift;
-          pHSLEntry[-6] = pHSLSrcEntry[-0xc];
-          pHSLEntry[-5] = pHSLSrcEntry[-0xb];
-          pHSLEntry[-4] = pHSLSrcEntry[-10];
-          pHSLEntry[-3] = pHSLSrcEntry[-9];
-          pHSLEntry[-2] = pHSLSrcEntry[-8];
-          pHSLEntry[-1] = pHSLSrcEntry[-7];
+        if (45.0 < *(double*)(pDestEntry - 0xc) && *(double*)(pDestEntry - 0xc) < 315.0) {
+          dVar1 = (double)(int)nHueShift;
+          *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dHue = pDestEntry[-0xc];
+          *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dHue + 4) = pDestEntry[-0xb];
+          *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dSaturation = pDestEntry[-10];
+          *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dSaturation + 4) = pDestEntry[-9];
+          *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dLightness = pDestEntry[-8];
+          *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dLightness + 4) = pDestEntry[-7];
           if ((int)nHueShift < 0) {
-            dHueBase += 4294967296.0;
+            dVar1 += 4294967296.0;
           }
 
-          dHueBase = dHueBase * 15.0 + *(double*)(pHSLEntry - 6);
-          *(double*)(pHSLEntry - 6) = dHueBase;
-          if (360.0 < dHueBase) {
-            *(double*)(pHSLEntry - 6) = dHueBase - 360.0;
+          dVar1 = dVar1 * 15.0 + pHSLLoopPtr[-1].dHue;
+          pHSLLoopPtr[-1].dHue = dVar1;
+          if (360.0 < dVar1) {
+            pHSLLoopPtr[-1].dHue = dVar1 - 360.0;
           }
         }
-        if (45.0 < *(double*)(pHSLSrcEntry - 6) && *(double*)(pHSLSrcEntry - 6) < 315.0) {
-          dHueBase = (double)(int)nHueShift;
-          *pHSLEntry = pHSLSrcEntry[-6];
-          pHSLEntry[1] = pHSLSrcEntry[-5];
-          pHSLEntry[2] = pHSLSrcEntry[-4];
-          pHSLEntry[3] = pHSLSrcEntry[-3];
-          pHSLEntry[4] = pHSLSrcEntry[-2];
-          pHSLEntry[5] = pHSLSrcEntry[-1];
+        if (45.0 < *(double*)(pDestEntry - 6) && *(double*)(pDestEntry - 6) < 315.0) {
+          dVar1 = (double)(int)nHueShift;
+          *(tagPALETTEENTRY*)&pHSLLoopPtr->dHue = pDestEntry[-6];
+          *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dHue + 4) = pDestEntry[-5];
+          *(tagPALETTEENTRY*)&pHSLLoopPtr->dSaturation = pDestEntry[-4];
+          *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dSaturation + 4) = pDestEntry[-3];
+          *(tagPALETTEENTRY*)&pHSLLoopPtr->dLightness = pDestEntry[-2];
+          *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dLightness + 4) = pDestEntry[-1];
           if ((int)nHueShift < 0) {
-            dHueBase += 4294967296.0;
+            dVar1 += 4294967296.0;
           }
 
-          dHueBase = dHueBase * 15.0 + *(double*)pHSLEntry;
-          *(double*)pHSLEntry = dHueBase;
-          if (360.0 < dHueBase) {
-            *(double*)pHSLEntry = dHueBase - 360.0;
+          dVar1 = dVar1 * 15.0 + pHSLLoopPtr->dHue;
+          pHSLLoopPtr->dHue = dVar1;
+          if (360.0 < dVar1) {
+            pHSLLoopPtr->dHue = dVar1 - 360.0;
           }
         }
-        if (45.0 < *(double*)pHSLSrcEntry && *(double*)pHSLSrcEntry < 315.0) {
-          dHueBase = (double)(int)nHueShift;
-          *(PALETTEENTRY*)(nHSLEntryBufOffset + (int)pHSLSrcEntry) = *pHSLSrcEntry;
-          *(PALETTEENTRY*)((int)ahslBuffer + nEntryCount + 4 + (int)pHSLSrcEntry) = pHSLSrcEntry[1];
-          *(PALETTEENTRY*)((int)ahslBuffer + nEntryCount + 8 + (int)pHSLSrcEntry) = pHSLSrcEntry[2];
-          *(PALETTEENTRY*)((int)ahslBuffer + nEntryCount + 0xc + (int)pHSLSrcEntry) = pHSLSrcEntry[3];
-          *(PALETTEENTRY*)((int)ahslBuffer + nEntryCount + 0x10 + (int)pHSLSrcEntry) = pHSLSrcEntry[4];
-          *(PALETTEENTRY*)((int)ahslBuffer + nEntryCount + 0x14 + (int)pHSLSrcEntry) = pHSLSrcEntry[5];
+        if (45.0 < *(double*)pDestEntry && *(double*)pDestEntry < 315.0) {
+          dVar1 = (double)(int)nHueShift;
+          *(tagPALETTEENTRY*)(nHSLEntryBufOffset + (int)pDestEntry) = *pDestEntry;
+          *(tagPALETTEENTRY*)((int)ahslBuffer + nEntryCount + 4 + (int)pDestEntry) = pDestEntry[1];
+          *(tagPALETTEENTRY*)((int)ahslBuffer + nEntryCount + 8 + (int)pDestEntry) = pDestEntry[2];
+          *(tagPALETTEENTRY*)((int)ahslBuffer + nEntryCount + 0xc + (int)pDestEntry) = pDestEntry[3];
+          *(tagPALETTEENTRY*)((int)ahslBuffer + nEntryCount + 0x10 + (int)pDestEntry) = pDestEntry[4];
+          *(tagPALETTEENTRY*)((int)ahslBuffer + nEntryCount + 0x14 + (int)pDestEntry) = pDestEntry[5];
           if ((int)nHueShift < 0) {
-            dHueBase += 4294967296.0;
+            dVar1 += 4294967296.0;
           }
 
-          dHueBase = dHueBase * 15.0 + *(double*)(nHSLEntryBufOffset + (int)pHSLSrcEntry);
-          *(double*)(nHSLEntryBufOffset + (int)pHSLSrcEntry) = dHueBase;
-          if (360.0 < dHueBase) {
-            *(double*)(nHSLEntryBufOffset + (int)pHSLSrcEntry) = dHueBase - 360.0;
+          dVar1 = dVar1 * 15.0 + *(double*)(nHSLEntryBufOffset + (int)pDestEntry);
+          *(double*)(nHSLEntryBufOffset + (int)pDestEntry) = dVar1;
+          if (360.0 < dVar1) {
+            *(double*)(nHSLEntryBufOffset + (int)pDestEntry) = dVar1 - 360.0;
           }
         }
-        if (45.0 < *(double*)(pHSLSrcEntry + 6) && *(double*)(pHSLSrcEntry + 6) < 315.0) {
-          dHueBase = (double)(int)nHueShift;
-          *(PALETTEENTRY*)(&pHSLSrcEntry->peRed + nTableIndex) = pHSLSrcEntry[6];
-          *(PALETTEENTRY*)(&pHSLSrcEntry[1].peRed + nTableIndex) = pHSLSrcEntry[7];
-          *(PALETTEENTRY*)(&pHSLSrcEntry[2].peRed + nTableIndex) = pHSLSrcEntry[8];
-          *(PALETTEENTRY*)(&pHSLSrcEntry[3].peRed + nTableIndex) = pHSLSrcEntry[9];
-          *(PALETTEENTRY*)(&pHSLSrcEntry[4].peRed + nTableIndex) = pHSLSrcEntry[10];
-          *(PALETTEENTRY*)(&pHSLSrcEntry[5].peRed + nTableIndex) = pHSLSrcEntry[0xb];
+        if (45.0 < *(double*)(pDestEntry + 6) && *(double*)(pDestEntry + 6) < 315.0) {
+          dVar1 = (double)(int)nHueShift;
+          *(tagPALETTEENTRY*)(&pDestEntry->peRed + nTableIndex) = pDestEntry[6];
+          *(tagPALETTEENTRY*)(&pDestEntry[1].peRed + nTableIndex) = pDestEntry[7];
+          *(tagPALETTEENTRY*)(&pDestEntry[2].peRed + nTableIndex) = pDestEntry[8];
+          *(tagPALETTEENTRY*)(&pDestEntry[3].peRed + nTableIndex) = pDestEntry[9];
+          *(tagPALETTEENTRY*)(&pDestEntry[4].peRed + nTableIndex) = pDestEntry[10];
+          *(tagPALETTEENTRY*)(&pDestEntry[5].peRed + nTableIndex) = pDestEntry[0xb];
           if ((int)nHueShift < 0) {
-            dHueBase += 4294967296.0;
+            dVar1 += 4294967296.0;
           }
 
-          dHueBase = dHueBase * 15.0 + *(double*)(&pHSLSrcEntry->peRed + nTableIndex);
-          *(double*)(&pHSLSrcEntry->peRed + nTableIndex) = dHueBase;
-          if (360.0 < dHueBase) {
-            *(double*)(&pHSLSrcEntry->peRed + nTableIndex) = dHueBase - 360.0;
+          dVar1 = dVar1 * 15.0 + *(double*)(&pDestEntry->peRed + nTableIndex);
+          *(double*)(&pDestEntry->peRed + nTableIndex) = dVar1;
+          if (360.0 < dVar1) {
+            *(double*)(&pDestEntry->peRed + nTableIndex) = dVar1 - 360.0;
           }
         }
 
-        pHSLEntry += 0x18;
-        pHSLSrcEntry += 0x18;
+        pHSLLoopPtr += 4;
+        pDestEntry += 0x18;
         pTempDestTable = (LPPALETTEENTRY)((int)pTempDestTable - 1);
       } while (pTempDestTable);
 
-      DRAW_ConvertPaletteHSLtoRGB((D2HSLColorStrc*)ahslBuffer, rgbBuffer);
+      DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
       nTableIdx = 0;
       do {
         nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
@@ -1808,6 +1805,7 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
     nHueShift = 0;
     pDestEntry = pPalette + 0x16600;
     do {
+      D2HSLColorStrc* pHSLEntry;
       fHueFloat = (float)(int)nHueShift;
       if ((int)nHueShift < 0) {
         fHueFloat += 4.2949673e+09;
@@ -1816,15 +1814,15 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
       nEntryCount = 0x100;
       pHSLEntry = ahslBuffer;
       do {
-        pHSLEntry[4] = *(PALETTEENTRY*)(nHSLSrcOffset + 0x10 + (int)pHSLEntry);
-        pHSLEntry[5] = *(PALETTEENTRY*)(nHSLSrcOffset + 0x14 + (int)pHSLEntry);
-        *(double*)pHSLEntry = (double)(fHueFloat * 30.0);
+        *(uint32_t*)&pHSLEntry->dLightness = *(uint32_t*)(nHSLSrcOffset + 0x10 + (int)pHSLEntry);
+        *(uint32_t*)((uintptr_t)&pHSLEntry->dLightness + 4) = *(uint32_t*)(nHSLSrcOffset + 0x14 + (int)pHSLEntry);
+        pHSLEntry->dHue = (double)(fHueFloat * 30.0);
         nEntryCount--;
-        *(double*)(pHSLEntry + 2) = 1.0;
-        pHSLEntry += 6;
+        pHSLEntry->dSaturation = 1.0;
+        pHSLEntry++;
       } while (nEntryCount);
 
-      DRAW_ConvertPaletteHSLtoRGB((D2HSLColorStrc*)ahslBuffer, rgbBuffer);
+      DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
       nTableIdx = 0;
       do {
         nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
@@ -1838,10 +1836,10 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
 
     pDestEntry = pPalette + 0x16940;
     uint8_t* pbSrcPalEntry = &pPalette->peGreen;
-    pHSLSource = (PALETTEENTRY*)0x100;
+    pHSLSource = (LPPALETTEENTRY)0x100;
     do {
-      fVar1 = __CIsqrt((long double)((uint32_t)*pbSrcPalEntry * (uint32_t)*pbSrcPalEntry + (uint32_t)((tagPALETTEENTRY*)(pbSrcPalEntry - 1))->peRed * (uint32_t)((tagPALETTEENTRY*)(pbSrcPalEntry - 1))->peRed + (uint32_t)pbSrcPalEntry[1] * (uint32_t)pbSrcPalEntry[1]));
-      nTableIndex = (uint32_t)std::nearbyint(fVar1);
+      fVar3 = __CIsqrt((long double)((uint32_t)*pbSrcPalEntry * (uint32_t)*pbSrcPalEntry + (uint32_t)((tagPALETTEENTRY*)(pbSrcPalEntry - 1))->peRed * (uint32_t)((tagPALETTEENTRY*)(pbSrcPalEntry - 1))->peRed + (uint32_t)pbSrcPalEntry[1] * (uint32_t)pbSrcPalEntry[1]));
+      nTableIndex = (uint32_t)std::nearbyint(fVar3);
       nTableIdx = nTableIndex & 0xff;
       nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, nTableIdx, 0, 0);
       pDestEntry[-0x40].peRed = (uint8_t)nPaletteIndex;
@@ -1851,7 +1849,7 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
       pDestEntry[0x40].peRed = (uint8_t)nPaletteIndex;
       pbSrcPalEntry += 4;
       pDestEntry = (LPPALETTEENTRY)&pDestEntry->peGreen;
-      pHSLSource = (PALETTEENTRY*)((int)pHSLSource - 1);
+      pHSLSource = (LPPALETTEENTRY)((int)pHSLSource - 1);
     } while (pHSLSource);
 }
 

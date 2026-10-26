@@ -59,20 +59,12 @@ char __fastcall D2FILE_VerifyFileSignature(LPCSTR szText) {
 }
 
 int32_t __fastcall D2FILE_VerifySignatureWinTrust(LPCSTR szText) {
-    // Frame -48..-32 is ONE object: a call writes 16 literal bytes starting at &dwWvtFileInfoData.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      uint32_t dwWvtFileInfoData[2];
-      uint32_t dwFileAttributes;
-      uint32_t dwWvtFileInfoReserved;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint32_t nVerifyResult;
     LPWSTR pWideStr;
     LONG nTrustResult;
     DWORD dwLastError;
     D2WinTrustData sWvtData;
+    D2WinTrustFileInfo sWvtFileInfo;
     GUID sActionGuid;
     uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (szText && *szText != '\0') {
@@ -80,8 +72,10 @@ int32_t __fastcall D2FILE_VerifySignatureWinTrust(LPCSTR szText) {
       if (0 < (int)nVerifyResult) {
         pWideStr = (LPWSTR)Fog::Engine::Application::MISC_OperatorNewShim(-(uint32_t)((int)((uint64_t)nVerifyResult * 2 >> 0x20) != 0) | (uint32_t)((uint64_t)nVerifyResult * 2));
         /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ MultiByteToWideChar(0, 0, szText, -1, pWideStr, nVerifyResult);
-        memset(__frame0.dwWvtFileInfoData, 0, 0x10);
-        __frame0.dwWvtFileInfoData[0] = 0x10;
+        memset(&sWvtFileInfo, 0, 0x10);
+        sWvtFileInfo.cbStruct = 0x10;
+        sWvtFileInfo.hFile = (HANDLE)0x0;
+        sWvtFileInfo.pgKnownSubject = 0;
         sActionGuid.Data1 = 0xaac56b;
         sActionGuid.Data2 = 0xcd44;
         sActionGuid.Data3 = 0x11d0;
@@ -93,9 +87,9 @@ int32_t __fastcall D2FILE_VerifySignatureWinTrust(LPCSTR szText) {
         sActionGuid.Data4[5] = 0xc2;
         sActionGuid.Data4[6] = 0x95;
         sActionGuid.Data4[7] = 0xee;
-        __frame0.dwWvtFileInfoData[1] = (uint32_t)pWideStr;
+        sWvtFileInfo.pcwszFilePath = pWideStr;
         memset(&sWvtData, 0, 0x30);
-        sWvtData.pUnion = __frame0.dwWvtFileInfoData;
+        sWvtData.pUnion = &sWvtFileInfo;
         /* LPVOID pWVTData for WinVerifyTrust */ /* GUID * pgActionID for WinVerifyTrust */ /* HWND hwnd for WinVerifyTrust */ sWvtData.cbStruct = 0x30;
         sWvtData.pPolicyCallbackData = 0;
         sWvtData.pSIPClientData = 0;
@@ -139,11 +133,7 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     DWORD nNameLen;
     int nAnsiLen;
     uint32_t dwSehUnused;
-    uint8_t abCertFindPara[4];
-    uint32_t dwSignerEncryptedHash;
-    uint32_t dwSignerAlgId;
-    uint32_t dwSignerSubject;
-    uint32_t dwSignerIssuer;
+    _CERT_INFO sCertInfo;
     SIZE_T nMsgInfoSize;
     uint8_t* local_8 = &gszFileSignerOrganizationAttribute;
     uint32_t dwSehHandlerAddr = 0x517c3f;
@@ -151,15 +141,13 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
       return false;
     }
 
-    LPCSTR szFilePathLocal = szFilePath;
-    LPSTR szOrgOutLocal = szOrgOut;
     int nWideCharLen = MultiByteToWideChar(0xfde9, 0, szFilePath, -1, (LPWSTR)0x0, 0);
     if (0 >= nWideCharLen) {
       return false;
     }
 
     LPWSTR pWideStr = (LPWSTR)Fog::Engine::Application::MISC_OperatorNewShim(-(uint32_t)((int)((uint64_t)(uint32_t)nWideCharLen * 2 >> 0x20) != 0) | (uint32_t)((uint64_t)(uint32_t)nWideCharLen * 2));
-    /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ MultiByteToWideChar(0xfde9, 0, szFilePathLocal, -1, pWideStr, nWideCharLen);
+    /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ MultiByteToWideChar(0xfde9, 0, szFilePath, -1, pWideStr, nWideCharLen);
     bool bGotOrg = false;
     HCERTSTORE hCertStore = (HCERTSTORE)0x0;
     HCRYPTMSG hCryptMsg = (HCRYPTMSG)0x0;
@@ -174,11 +162,11 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
         if (hMsgInfo) {
           bSuccess = CryptMsgGetParam(hCryptMsg, 6, 0, hMsgInfo, &nMsgInfoSize);
           if (bSuccess) {
-            dwSignerSubject = *(uint32_t*)((int)hMsgInfo + 4);
-            dwSignerIssuer = *(uint32_t*)((int)hMsgInfo + 8);
-            dwSignerEncryptedHash = *(uint32_t*)((int)hMsgInfo + 0xc);
-            dwSignerAlgId = *(uint32_t*)((int)hMsgInfo + 0x10);
-            /* PCCERT_CONTEXT pPrevCertContext for CertFindCertificateInStore */ /* void * pvFindPara for CertFindCertificateInStore */ /* DWORD dwFindType for CertFindCertificateInStore */ /* DWORD dwFindFlags for CertFindCertificateInStore */ /* DWORD dwCertEncodingType for CertFindCertificateInStore */ /* HCERTSTORE hCertStore for CertFindCertificateInStore */ pCertContext = CertFindCertificateInStore(hCertStore, 0x10001, 0, 0xb0000, abCertFindPara, (PCCERT_CONTEXT)0x0);
+            sCertInfo.Issuer.cbData = *(DWORD*)((int)hMsgInfo + 4);
+            sCertInfo.Issuer.pbData = *(uint8_t**)((int)hMsgInfo + 8);
+            sCertInfo.SerialNumber.cbData = *(DWORD*)((int)hMsgInfo + 0xc);
+            sCertInfo.SerialNumber.pbData = *(uint8_t**)((int)hMsgInfo + 0x10);
+            /* PCCERT_CONTEXT pPrevCertContext for CertFindCertificateInStore */ /* void * pvFindPara for CertFindCertificateInStore */ /* DWORD dwFindType for CertFindCertificateInStore */ /* DWORD dwFindFlags for CertFindCertificateInStore */ /* DWORD dwCertEncodingType for CertFindCertificateInStore */ /* HCERTSTORE hCertStore for CertFindCertificateInStore */ pCertContext = CertFindCertificateInStore(hCertStore, 0x10001, 0, 0xb0000, &sCertInfo, (PCCERT_CONTEXT)0x0);
             /* DWORD cchNameString for CertGetNameStringW */ /* LPWSTR pszNameString for CertGetNameStringW */ /* void * pvTypePara for CertGetNameStringW */ /* DWORD dwFlags for CertGetNameStringW */ /* DWORD dwType for CertGetNameStringW */ /* PCCERT_CONTEXT pCertContext for CertGetNameStringW */ if (pCertContext) {
               pWideStr = (LPWSTR)CertGetNameStringW(pCertContext, 3, 0, (void*)"2.5.4.10", (LPWSTR)0x0, 0);
               if (pWideStr) {
@@ -187,7 +175,7 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
                 /* LPBOOL lpUsedDefaultChar for WideCharToMultiByte */ /* LPCSTR lpDefaultChar for WideCharToMultiByte */ /* int cbMultiByte for WideCharToMultiByte */ /* LPSTR lpMultiByteStr for WideCharToMultiByte */ /* int cchWideChar for WideCharToMultiByte */ /* LPCWSTR lpWideCharStr for WideCharToMultiByte */ /* DWORD dwFlags for WideCharToMultiByte */ /* UINT CodePage for WideCharToMultiByte */ if (nNameLen) {
                   nAnsiLen = WideCharToMultiByte(0xfde9, 0, (LPCWSTR)nWideCharLen, -1, (LPSTR)0x0, 0, (LPCSTR)0x0, (LPBOOL)0x0);
                   if (0 < nAnsiLen) {
-                    /* LPBOOL lpUsedDefaultChar for WideCharToMultiByte */ /* LPCSTR lpDefaultChar for WideCharToMultiByte */ /* int cbMultiByte for WideCharToMultiByte */ /* LPSTR lpMultiByteStr for WideCharToMultiByte */ /* int cchWideChar for WideCharToMultiByte */ /* LPCWSTR lpWideCharStr for WideCharToMultiByte */ /* DWORD dwFlags for WideCharToMultiByte */ /* UINT CodePage for WideCharToMultiByte */ WideCharToMultiByte(0xfde9, 0, (LPCWSTR)nWideCharLen, -1, szOrgOutLocal, nOrgMaxLen, (LPCSTR)0x0, (LPBOOL)0x0);
+                    /* LPBOOL lpUsedDefaultChar for WideCharToMultiByte */ /* LPCSTR lpDefaultChar for WideCharToMultiByte */ /* int cbMultiByte for WideCharToMultiByte */ /* LPSTR lpMultiByteStr for WideCharToMultiByte */ /* int cchWideChar for WideCharToMultiByte */ /* LPCWSTR lpWideCharStr for WideCharToMultiByte */ /* DWORD dwFlags for WideCharToMultiByte */ /* UINT CodePage for WideCharToMultiByte */ WideCharToMultiByte(0xfde9, 0, (LPCWSTR)nWideCharLen, -1, szOrgOut, nOrgMaxLen, (LPCSTR)0x0, (LPBOOL)0x0);
                     bGotOrg = true;
                   }
                 }
@@ -201,7 +189,22 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     }
 
     local_8 = (uint8_t*)-2;
-    D2FILE_CleanupCryptHandles(0, (uintptr_t)(uint8_t*)__builtin_frame_address(0));
+    // The original runs its __finally block (1.14d 00517df5) here, which frees the four handles
+    // through fixed offsets of this MSVC frame. Under another compiler those offsets hold other
+    // locals, so the handles are freed by name instead, in the original order.
+    // Retire-When: the generator emits an MSVC __finally block as code in its own function.
+    if (hMsgInfo) {
+      LocalFree(hMsgInfo);
+    }
+    if (pCertContext) {
+      CertFreeCertificateContext(pCertContext);
+    }
+    if (hCertStore) {
+      CertCloseStore(hCertStore, 0);
+    }
+    if (hCryptMsg) {
+      CryptMsgClose(hCryptMsg);
+    }
     return bGotOrg;
 }
 
@@ -478,30 +481,19 @@ void __fastcall NET_SID_CLIENT_IDEAEncryptDecrypt(int32_t nKeyScheduleIdx, uint1
 
 // Initializes an IDEA key schedule from a 128-bit key (4 dwords at pdwKeyMaterial) into slot nKeyScheduleIdx of g_IDEAKeySchedules. bEncryptMode!=0: expand key directly (encrypt schedule); ==0: expand then invert (decrypt schedule). Stack-cookie guarded.
 void __fastcall NET_SID_CLIENT_SetupIDEAKey(int32_t nKeyScheduleIdx, int32_t bEncryptMode, uint32_t * pdwKeyMaterial) {
-    // Frame slots -24..-4 are ONE object: &dwKeyWord0 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t dwKeyWord0;
-      uint32_t dwKeyWord1;
-      uint32_t dwKeyWord2;
-      uint32_t dwKeyWord3;
-      uint32_t dwStackCookie;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint16_t aKeyScheduleBuf[52];
-    __frame0.dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    __frame0.dwKeyWord0 = *pdwKeyMaterial;
-    __frame0.dwKeyWord1 = pdwKeyMaterial[1];
-    __frame0.dwKeyWord2 = pdwKeyMaterial[2];
-    __frame0.dwKeyWord3 = pdwKeyMaterial[3];
+    uint16_t aUserKey[8];
+    *(uint32_t*)(char*)&aUserKey = *pdwKeyMaterial;
+    *(uint32_t*)((char*)&aUserKey + 4) = pdwKeyMaterial[1];
+    *(uint32_t*)((char*)&aUserKey + 8) = pdwKeyMaterial[2];
+    *(uint32_t*)((char*)&aUserKey + 12) = pdwKeyMaterial[3];
     if (bEncryptMode) {
-      _net_sid::NET_SID_CLIENT_IDEAExpandKey((uint16_t*)&__frame0.dwKeyWord0, (uint16_t*)(g_IDEAKeySchedules + nKeyScheduleIdx * 0x68));
+      _net_sid::NET_SID_CLIENT_IDEAExpandKey(aUserKey, (uint16_t*)(g_IDEAKeySchedules + nKeyScheduleIdx * 0x68));
       Fog::Debug::GuardStack();
       return;
     }
 
-    _net_sid::NET_SID_CLIENT_IDEAExpandKey((uint16_t*)&__frame0.dwKeyWord0, aKeyScheduleBuf);
+    _net_sid::NET_SID_CLIENT_IDEAExpandKey(aUserKey, aKeyScheduleBuf);
     _net_sid::NET_SID_CLIENT_IDEAInvertKey(aKeyScheduleBuf, (uint16_t*)(g_IDEAKeySchedules + nKeyScheduleIdx * 0x68));
     Fog::Debug::GuardStack();
 }

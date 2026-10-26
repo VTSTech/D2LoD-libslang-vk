@@ -18,6 +18,15 @@ struct D2RoomStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
 
+// Data types
+struct D2GSPacketSrv0x5D {
+    /* 0x00 */ uint8_t nPacketId; // 0x5D
+    /* 0x01 */ uint8_t nQuestId;
+    /* 0x02 */ uint8_t nAlertFlags;
+    /* 0x03 */ uint8_t nFilterStatus;
+    /* 0x04 */ uint16_t nExtra;
+};
+
 namespace D2Game::Quests::QUESTS::A4Q2 {
 
 // Function declarations

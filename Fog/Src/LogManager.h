@@ -10,7 +10,6 @@
 #include "Bnclient/net_sid.h"
 
 // Forward declarations
-struct D2CharSelCompStrc;
 struct D2StormListHead;
 struct EHExceptionRecord;
 struct EHRegistrationNode;
@@ -66,7 +65,7 @@ uint32_t __fastcall ComputeAbsoluteFromRelative(int * pBase, int * pNode);
 void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(FILE * szSuffix);
 long __fastcall GetLogFileSize(uint8_t * szFileName);
 // @sourcefile .\Src\LogManager.cpp
-struct D2CharSelCompStrc * __fastcall ReadLogFileRange(uint8_t * szFileName, int32_t nStartOffset, int32_t nEndOffset);
+char * __fastcall ReadLogFileRange(uint8_t * szFileName, int32_t nStartOffset, int32_t nEndOffset);
 // Writes one log record to its log file, prefixed with the record's time of day.
 void __fastcall LogToFile(uint32_t pLogRecord);
 void __fastcall UnlinkListNode(int * pNode);
@@ -88,7 +87,7 @@ void * DestroyListNodeAndFree(void * pThis, uint8_t bFreeMemory);
 void __fastcall DestroyAllListNodes(void * pListHead);
 int * * __fastcall AllocateAndInsertMessageNode(int32_t nInsertMode, int32_t nPayloadSize, uint32_t dwAllocFlags, int * * ppListHead);
 void __stdcall StopLogWriterThread();
-void EnqueueLogMessage(char * szText1, char * szText2, void * pData, void * nDataLen, void * pCategory, void * bSkipData, int32_t nVerbose);
+void EnqueueLogMessage(char * szText1, char * szText2, void * pData, void * nDataLen, void * pCategory, BOOL bSkipData, int32_t nVerbose);
 // lpStartAddress parameter of CreateThread
 DWORD __stdcall LOGMANAGER_LogWriterThreadProc(void * lpThreadParam);
 void __fastcall EnqueueFormattedLogMessage(char * szText, int32_t nPriority, int32_t bAppendNewline, char * szFormat, va_list vaArgs);

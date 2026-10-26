@@ -36,6 +36,12 @@ struct D2CompressHuffNodeStrc {
     /* 0x14 */ struct D2CompressHuffNodeStrc * pSibling; // sibling node in Huffman tree
 };
 
+struct D2ScompArenaStrc {
+    /* 0x00 */ uint8_t * pCur;
+    /* 0x04 */ uint32_t nSize; // unsigned JC/JNC compares
+    /* 0x08 */ uint8_t * pBase;
+};
+
 struct __attribute__((packed)) D2SLogStrc {
     /* 0x00 */ uint32_t nHandle; // the HSLOG this entry belongs to (slot = nHandle & 3)
     /* 0x04 */ struct D2SLogStrc * pNext; // next log in the slot's list
@@ -144,9 +150,9 @@ void __fastcall SCOMP_PkwareCompress(void * pOutBuf, uint32_t * pdwOutLength, vo
 // @blizzard PkwareDecompress (SCOMP.CPP)
 void __fastcall SCOMP_PkwareDecompress(void * pOutBuf, uint32_t * pdwOutLength, void * pInBuf, uint32_t nInLen, uint32_t dwUnused);
 // @sourcefile .\SOURCE\SCOMP.CPP
-void __fastcall SCOMP_ArenaAlloc(int * pArenaState, int32_t nItems, int32_t nItemSize);
+void __fastcall SCOMP_ArenaAlloc(struct D2ScompArenaStrc * pArenaState, int32_t nItems, int32_t nItemSize);
 // @sourcefile .\SOURCE\SCOMP.CPP
-void __fastcall SCOMP_ArenaFree(int32_t pArenaState, void * pBlock);
+void __fastcall SCOMP_ArenaFree(struct D2ScompArenaStrc * pArenaState, void * pBlock);
 int __stdcall SCOMP_ZlibCompress(uint8_t * pSrc, uint32_t nSrcLen, uint32_t nLevel, uint32_t * pnOutLen);
 void __fastcall SCOMP_ZlibCompressWithLevel(uint8_t * pDst, uint32_t * pnDstLen, uint32_t pSrc, uint32_t nSrcLen, uint32_t * pUserData, int32_t nLevel);
 // @wasnamed SCOMP_Bzip2Decompress - one name on two different functions.
@@ -155,8 +161,8 @@ void __fastcall SCOMP_ZlibCompressWithLevel(uint8_t * pDst, uint32_t * pnDstLen,
 // bzip2, so the whole pair may be misnamed. What would
 // settle it is the SCompDecompress method-table entry that points at 0041e340 and the compression id
 // it sits under.
-void __stdcall SCOMP_InflateZlibStackArena(uint8_t * pSrc, uint32_t nSrcLen, uint32_t * pnOutLen);
-void __fastcall SCOMP_Bzip2Decompress(uint8_t * pDst, uint32_t * pnDstLen, uint32_t pSrc, uint32_t nSrcLen, uint32_t pUserData);
+int __stdcall SCOMP_InflateZlibStackArena(uint8_t * pSrc, uint8_t * pDst, uint32_t nSrcLen, uint32_t * pnOutLen);
+void __fastcall SCOMP_Bzip2Decompress(uint8_t * pDst, uint32_t * pnDstLen, uint8_t * pSrc, uint32_t nSrcLen, uint32_t pUserData);
 // @blizzard AdpcmMonoCompress (SCOMP.CPP)
 void __fastcall SCOMP_AdpcmMonoCompress(short * pDst, uint32_t * pnDstLen, short * pSrc, uint32_t nSrcLen, uint32_t * pUserData, uint32_t nBitsPerSample);
 // @blizzard AdpcmMonoDecompress (SCOMP.CPP)
@@ -199,7 +205,7 @@ void SLOG_OutputReturn(struct D2SLogStrc * pLog);
 // @blizzard OutputTime (SLOG.CPP)
 void __stdcall SLOG_OutputTime(int32_t bHasData, struct D2SLogStrc * pLog);
 // @blizzard UnlockDeleteLog (SLOG.CPP)
-void SLOG_UnlockDeleteLog(uint32_t dwUnused, LPVOID pTarget, int32_t nSlot);
+void SLOG_UnlockDeleteLog(LPVOID pTarget, int32_t nSlot);
 // @blizzard UnlockLog (SLOG.CPP)
 void SLOG_UnlockLog(int32_t nParam);
 // @blizzard SLogClose (SLOG.CPP)

@@ -46,7 +46,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     BOOL bMpqLoaded;
     FARPROC pfnKeyhook;
     bool bWindowCreated;
-    if (*(int*)&pD2IniData->bCRASHAPP == 1) {
+    if (pD2IniData->bCRASHAPP == 1) {
       Fog::Src::ErrorManager::CrashGame();
     }
 

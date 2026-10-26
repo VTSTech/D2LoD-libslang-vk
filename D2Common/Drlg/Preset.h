@@ -395,7 +395,7 @@ char * __fastcall DRLGPRESET_GetPickedFilePathFromRoomEx(struct D2RoomExStrc * p
 // Reads the width and height from a DrlgFile structure (at offset 0x20->0x08).
 // Outputs values to optional pWidth and pHeight out parameters.
 // Appears to be an unreferenced/unused accessor function.
-void __fastcall DRLGPRESET_GetDrlgFileSize(struct D2DrlgMapStrc * pDrlgMap, int32_t * pnWidth, int32_t * pnHeight);
+void __fastcall DRLGPRESET_GetDrlgFileSize(struct D2RoomExStrc * pDrlgMap, int32_t * pnWidth, int32_t * pnHeight);
 // Already documented — existing description is accurate and meaningful.
 void __stdcall DRLGPRESET_UpdatePopTiles(int nTickCount, struct D2RoomExStrc * pRoomEx, struct D2DrlgCoordsStrc * pPopLocation, uint32_t dwParam3, uint32_t dwParam4);
 // DRLG preset-area "POP" (preset-object population) updater. Given a RoomEx and an (nX,nY) world coordinate plus bOtherRoom flag: if the room is a preset (type 2), finds which POP bounds rectangle the point falls inside and notes its matched POP id. Then iterates the room's nearby preset RoomEx neighbors and, comparing POP tick deadlines, calls DRLGPRESET_UpdatePopTiles to refresh/expire POP tiles (a fresh GetTickCount+500 deadline for the matched POP, or the stored deadline otherwise). If any update occurred, does a second pass writing back the new deadlines (0 for non-matching POPs, the new deadline for the matched POP). No return. NOTE: pRoomExData POP sub-structure accessed via raw +0x40/+0x44/+0x4c/+0x50 offsets - shared struct lacks named fields here.
@@ -415,7 +415,7 @@ void __fastcall DRLGPRESET_AddPresetUnitToDrlgMap(struct D2PoolManagerStrc * pMe
 void __fastcall DRLGPRESET_CreateMonsterPresets(struct D2RoomExStrc * pRoomEx);
 // Builds preset-area grid flags from DS1 data. Sets vis/warp flag bits, loads DS1 file if needed, allocates pops arrays, scans wall layers to mark vis flags and pop locations, records spawn points, and marks grid flags for special objects. Uses LvlPrest Scan/Pops settings to control scanning.
 // @sourcefile .\DRLG\Preset.cpp
-void __stdcall DRLGPRESET_BuildPresetArea(struct D2DrlgMapStrc * pDrlgMap, struct D2DrlgLevelStrc * pLevel, struct D2DrlgGridStrc * pDrlgGrid, int32_t nFlags, bool bSingleRoom);
+void __stdcall DRLGPRESET_BuildPresetArea(struct D2DrlgMapStrc * pDrlgMap, struct D2DrlgLevelStrc * pLevel, struct D2DrlgGridStrc * pDrlgGrid, int32_t nFlags, BOOL bSingleRoom);
 // Builds preset-area RoomEx grid. Creates a temp grid from map size, runs DRLGPRESET_BuildPresetArea, then either:
 // - Single-room: allocate one RoomEx covering the whole map with dt1 mask and room data.
 // - Multi-room: iterate in 8x8 chunks, compute grid flags and allocate preset RoomEx tiles.

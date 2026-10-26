@@ -138,7 +138,7 @@ void __stdcall ROSTER_InitializeFields(D2RosterStrc * pRoster, char * szPlayerNa
     pRoster->nCharType = nCharType;
     pRoster->nUnitLevel = nUnitLevel;
     pRoster->nPartyId = nPartyId;
-    *(int32_t*)&pRoster->bInParty = bInParty;
+    pRoster->nPartyState = bInParty;
     pRoster->nGuildFlags = nGuildFlags;
     pSrcCursor = szClanTag;
     do {
@@ -766,7 +766,7 @@ BOOL __fastcall GetRosterInPartyBool(D2RosterStrc * pRoster) {
       return 1;
     }
 
-    return *(BOOL*)&pRoster->bInParty;
+    return pRoster->nPartyState;
 }
 
 void ROSTER_TogglePlayerFlag(D2RosterStrc * pRoster, int16_t nFlags) {
@@ -867,9 +867,9 @@ void __fastcall ClickParty_i(D2RosterStrc * pRoster) {
       return;
     }
 
-    switch (*(uint32_t*)&pRoster->bInParty) {
+    switch (pRoster->nPartyState) {
       case 0:
-        *(uint32_t*)&pRoster->bInParty = 4;
+        pRoster->nPartyState = 4;
       Msg::NET_D2GS_CLIENT_Send_0x5E(6, pRoster->nRosterGUID);
       ROSTER_RebuildPlayerParty();
       UI::Party::ResetPartyUi();
@@ -885,7 +885,7 @@ void __fastcall ClickParty_i(D2RosterStrc * pRoster) {
         nActionType = 9;
       break;
       case 4:
-        *(uint32_t*)&pRoster->bInParty = 0;
+        pRoster->nPartyState = 0;
       Msg::NET_D2GS_CLIENT_Send_0x5E(7, pRoster->nRosterGUID);
       ROSTER_RebuildPlayerParty();
       UI::Party::ResetPartyUi();
@@ -894,7 +894,7 @@ void __fastcall ClickParty_i(D2RosterStrc * pRoster) {
         goto send_party_action;
     }
 
-    *(uint32_t*)&pRoster->bInParty = 1;
+    pRoster->nPartyState = 1;
     send_party_action:
     Msg::NET_D2GS_CLIENT_Send_0x5E(nActionType, pRoster->nRosterGUID);
     ROSTER_RebuildPlayerParty();
@@ -917,7 +917,7 @@ D2RosterStrc * __stdcall ROSTER_LeaveParty() {
     }
 
     pRoster->nPartyId = -1;
-    *(uint32_t*)&pRoster->bInParty = 1;
+    pRoster->nPartyState = 1;
     ROSTER_RebuildPlayerParty();
     UI::Party::ResetPartyUi();
     return pRoster;
@@ -1179,7 +1179,7 @@ void __fastcall SetRosterInParty(int32_t nRosterGUID, bool bInParty) {
       return;
     }
 
-    *(uint32_t*)&pRoster->bInParty = (uint32_t)bInParty;
+    pRoster->nPartyState = (uint32_t)bInParty;
     UI::Party::ResetPartyUi();
 }
 
@@ -1486,7 +1486,7 @@ void __fastcall ROSTER_UpdatePlayerPartyInfo(int32_t nUnitGuid, int16_t nPartyId
 
     pRoster->nPartyId = nPartyId;
     pRoster->nUnitLevel = nUnitLevel;
-    *(BOOL*)&pRoster->bInParty = bInParty;
+    pRoster->nPartyState = bInParty;
     RosterPets::ROSTER_UpdateHostileColors();
     ROSTER_RebuildPlayerParty();
     UI::Party::ResetPartyUi();

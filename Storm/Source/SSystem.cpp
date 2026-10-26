@@ -7,7 +7,6 @@
 #include "Storm/H/stpl.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SErr.h"
-#include "Storm/Source/SFile.h"
 #include "Storm/Source/SSComp.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"

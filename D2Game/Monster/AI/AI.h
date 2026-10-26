@@ -19,7 +19,6 @@ struct D2UnitDataPlayerInteractedNPCStrc;
 struct D2UnitFindArgStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2MonsterAnimMode;
 typedef int eD2Skills;
 struct D2MonsterAiParameterStruct;
 #ifndef RECON_FPTD_AI_Init
@@ -46,6 +45,12 @@ typedef uint32_t (__fastcall *fpMonsterAiForEach)(::SGAMEDATA * pGame, struct D2
 struct D2MonsterAiParameterStruct;
 
 // Data types
+struct D2AdjacentUnitCheckArgStrc {
+    /* 0x00 */ struct D2UnitStrc * pSelf;
+    /* 0x04 */ struct D2UnitStrc * pAdjacent;
+    /* 0x08 */ int32_t nAdjacentCount;
+};
+
 struct D2AiCmdArgumentsStrc {
     /* 0x00 */ int nUnused0;
     /* 0x04 */ int nUnused1;
@@ -61,6 +66,14 @@ struct __attribute__((packed)) D2AiListStrc {
     /* 0x04 */ void (__fastcall *fpInit)(::SGAMEDATA *, struct D2UnitStrc *, struct D2AiParamStrc *);
     /* 0x08 */ void (__fastcall *fpMain)(::SGAMEDATA *, struct D2UnitStrc *, struct D2AiParamStrc *);
     /* 0x0C */ void (__fastcall *fpSecondary)(::SGAMEDATA *, struct D2UnitStrc *, struct D2AiParamStrc *);
+};
+
+struct __attribute__((packed)) D2AiSkillCandidateStrc {
+    /* 0x00 */ struct D2SkillStrc * pSkill;
+    /* 0x04 */ eD2Skills eSkillId;
+    /* 0x08 */ int32_t nScore;
+    /* 0x0C */ int32_t nUnused0C; // only zeroed
+    /* 0x10 */ int32_t nUnused10; // only zeroed
 };
 
 struct D2MinionForEachCtx {
@@ -487,7 +500,7 @@ int32_t __fastcall MONSTERAI_CommandWalkToUnitWithCombat(::SGAMEDATA * pGame, st
 // Per-tick AI for the Druid Raven summon (pet). Requires an owner (GetOwnerUnit) and MonStats; missing either plans the next move and returns. Lazily initializes a remaining-attacks counter in pAiGeneral->dwArg0 from the Raven skill's Param4 (SkillLevel of MonStats->Skill1); when it reaches 0 the raven self-kills (SERVER_KillMonster). Pet-follow logic by distance to owner (teleport >0x32, run >0x1c using a Run/Velocity speed ratio). Within range it picks a target (MONSTERAI_FindBestTarget), and if able and the attack-cooldown (dwArg1) elapsed, fires an attack via CalledOnEndAiFunction1 (decrementing dwArg0, resetting cooldown) or walks to the target; otherwise does combat-walk toward the owner and partial-walks toward the average skill range. Difficulty-scaled ranges/cooldowns are read from MonStats->TreasureClass-relative shorts. __fastcall(pGame,pUnit,pAiParam).
 void __fastcall AITHINK_Fn1_Raven(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);
 // Per-tick AI think handler for a ranged hireling/pet (e.g. Rogue Scout mercenary). Resolves the owner unit; if none, optionally casts the configured owner-buff skill at the owner's position and restarts AI think, else plans next move. Caches owner GUID. In town it just follows the owner (AI_Pet_EvaluateMovementPriority). In combat it finds a target in range (MONSTERAI_FindTargetInRange / FindBestTarget), validates line-of-sight (TestIfMonsterCanHitTarget), computes a velocity percentage from MonStats speed columns and the owner-distance. If too far from owner it buffs the owner; otherwise it executes pet movement/follow behavior keyed on owner anim-mode, then either approaches/melees the target, casts a skill at a distance offset, or wanders. Operates on a D2AiGeneralStrc table passed as ppAiGeneralTable; many per-difficulty params indexed by pGame->nDifficulty.
-void __fastcall AI_Hireling_ThinkRangedCombat(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiGeneralStrc * * ppAiGeneralTable);
+void __fastcall AI_Hireling_ThinkRangedCombat(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * ppAiGeneralTable);
 // Per-think server AI for a melee hireling/pet (__fastcall: pGame, pUnit, ppAiGeneralTable). Resolves the owner unit (re-finding the player from a cached GUID if needed). If the owner is in town, defers to AI_Pet_EvaluateMovementPriority/PlanNextAiMove (follow behavior). Otherwise finds a target in range (MONSTERAI_FindTargetInRange) and the best reachable target (MONSTERAI_FindBestTarget), discarding ones that cannot be hit or are beyond range. Computes a run-speed-derived combat-speed pct. If the owner is too far (>distance threshold) casts the owner-recall/teleport skill or runs/walks back via AI_Pet_ExecuteMovementBehavior matching the owner's anim mode (Run/Walk/TownWalk). May seek and revive a nearby corpse (SKILLEMONST_FindNearbyCorpse) by casting its corpse skill in melee range. Otherwise engages the chosen target (CalledOnEndAiFunction1), runs toward it, or wanders, then schedules the next think. Reads difficulty-indexed ranges/chances from the AiGeneral table.
 void __fastcall AI_Hireling_ThinkMeleeCombat(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiGeneralStrc * * ppAiGeneralTable);
 void __fastcall AITHINK_Fn1_DruidWolf(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);
@@ -511,7 +524,7 @@ void __fastcall AITHINK_Fn0_Nihlathak(::SGAMEDATA * pGame, struct D2UnitStrc * p
 void __fastcall AITHINK_Fn1_Nihlathak(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);
 void __fastcall AITHINK_Fn1_AncientStatue(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);
 // AI think function for Koric, one of the Ancients (Act 5 Q5). If quest data is absent (ancients not yet activated), selects a combat target and evaluates a charge attack: rolls the unit seed against a difficulty-scaled probability; if it fires, launches the charge skill toward the target's position via MONSTERAI_ExecuteLifecycleTransition. Otherwise chooses randomly between two melee skill modes (slots 4 or 5) or idles at range if out of melee.
-void __fastcall AITHINK_AncientKoric(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * param_1);
+void __fastcall AITHINK_AncientKoric(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * param_1);
 // Phase-1 AI tick for Ancient Talic (Arreat Summit). If the ancients quest is still active (GetQuestDataAncients returns non-null) defers for 0x19 frames and returns. Otherwise selects the nearest same-level target; at melee range rolls a chance (from MonStats TreasureClass field, difficulty-scaled) to perform a whirlwind-walk; independently checks skill-1 aura eligibility (aurastate + auratargetstate) and rolls a chance to cast it; if within distance threshold rolls a normal attack via CalledOnEndAiFunction1; otherwise walks toward the target. Calls PlanNextAiMove(0x19) if no target found or move fails.
 void __fastcall AITHINK_AncientTalic(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * param_1);
 // AI think-tick for Ancient Madawc (Act 5 Q5 Ancients boss). Idles (25 frames) while Ancient quest data is active. Selects a same-level target via AI_SelectTarget_SameLevelFilter. If in range of Skill1 (difficulty-scaled distance) and random roll (per difficulty) passes, fires MONSTERAI_CommandSkillSequence with Skill1 (throwing weapon attack). Otherwise, if in melee range, randomly selects melee attack direction (mode 4 or 5 via CalledOnEndAiFunction1); if out of melee range, approaches target. Falls back to 25-frame idle if no target.

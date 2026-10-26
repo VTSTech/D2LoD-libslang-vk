@@ -2,13 +2,13 @@
 
 #include "D2Client/UI/ControlConfig.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Select.h"
 #include "D2Client/UI/CmdTbl.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/ui.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
@@ -27,7 +27,7 @@ namespace D2Client::UI::ControlConfig {
 // Control config mouse handler. Tracks g_nControlConfigMouseButtonState array for each UI region (scroll up/down, list drag, buttons). Dispatches scroll/selection based on mouse state. Main mouse logic for config UI.
 void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouseYStack) {
     // Static local variables (originally global data)
-    static D2ConfigControlDescStrc * gnUICtrlConfigHoveredControl;
+    static int32_t gnUICtrlConfigHoveredControl;
     static bool gbUICtrlConfigNeedRefresh;
     static bool gbUICtrlConfigPendingKey;
 
@@ -59,7 +59,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
     int* pButtonState;
     pButtonState = gaControlConfigRegionMouseState;
     do {
-      if ((D2ConfigControlDescStrc*)*pButtonState && (D2ConfigControlDescStrc**)pButtonState != &gnUICtrlConfigHoveredControl) {
+      if (*pButtonState && pButtonState != &gnUICtrlConfigHoveredControl) {
         goto handle_list_area;
       }
 
@@ -203,13 +203,13 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
         goto handle_page_down;
       }
     } else if (!gaControlConfigRegionMouseState[4] && gnUICtrlConfigMouseButtonState) {
-      gnUICtrlConfigHoveredControl = (D2ConfigControlDescStrc*)gnUICtrlConfigScrollPosition;
+      gnUICtrlConfigHoveredControl = gnUICtrlConfigScrollPosition;
       gbUICtrlConfigNeedRefresh = nMouseYStack;
     }
 
     gaControlConfigRegionMouseState[4] = gnUICtrlConfigMouseButtonState;
     if (gnUICtrlConfigMouseButtonState) {
-      ui::UI_ScrollConfigListVertical(((int)gnUICtrlConfigHoveredControl + nMouseYStack + (-gbUICtrlConfigNeedRefresh - (WindowSizeY - 0x1a4) / 2) - 0x2f) * (gnUICtrlConfigColumnWidth + 1) / (gnUICtrlConfigScrollMaxLines * -0xc + 0xf6) - gnUICtrlConfigScrollOffset);
+      ui::UI_ScrollConfigListVertical((gnUICtrlConfigHoveredControl - (WindowSizeY - 0x1a4) / 2 - gbUICtrlConfigNeedRefresh - 0x2f + nMouseYStack) * (gnUICtrlConfigColumnWidth + 1) / (gnUICtrlConfigScrollMaxLines * -0xc + 0xf6) - gnUICtrlConfigScrollOffset);
     }
 
     handle_page_down:

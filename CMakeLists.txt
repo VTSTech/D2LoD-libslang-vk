@@ -33,6 +33,10 @@ option(REDIVIVUS_PERMISSIVE
     "Add -fpermissive. Opt-in only: the gate is that every TU compiles strict." OFF)
 option(REDIVIVUS_DEV
     "Development build: per-call tracing and the in-process control channel, which listens on an unauthenticated TCP port." OFF)
+option(REDIVIVUS_LOUD
+    "Loud build: 0xFE-filled locals, stack canaries and array index checks that report at the defect (support/d2_loud.cpp). Not for release." OFF)
+option(REDIVIVUS_LOUD_STACK_PROTECTOR
+    "With REDIVIVUS_LOUD: also -fstack-protector-strong (fatal on a smashed canary). OFF gives the playable loud build." ON)
 
 # ---------------------------------------------------------------------------
 # Sources. Globbed, not listed: the generator adds and removes files on every
@@ -69,6 +73,9 @@ list(REMOVE_DUPLICATES D2_INCLUDE_DIRS)
 if(NOT REDIVIVUS_DEV)
     list(REMOVE_ITEM D2_SOURCES "${CMAKE_SOURCE_DIR}/support/d2_control.cpp")
 endif()
+if(NOT REDIVIVUS_LOUD)
+    list(REMOVE_ITEM D2_SOURCES "${CMAKE_SOURCE_DIR}/support/d2_loud.cpp")
+endif()
 
 add_executable(d2 ${D2_SOURCES})
 target_include_directories(d2 PRIVATE ${D2_INCLUDE_DIRS})
@@ -103,6 +110,25 @@ if(REDIVIVUS_DEV)
     target_compile_definitions(d2 PRIVATE REDIVIVUS_DEV)
 endif()
 
+# The loud build: every game TU gets the checks, the code that reports them does
+# not - a bounds check inside its own handler would recurse, and the crash report
+# must keep working on a smashed stack. See docs/runtime-testing.md, "The loud build".
+if(REDIVIVUS_LOUD)
+    # REDIVIVUS_LOUD_STACK_PROTECTOR=OFF is the playable variant: the two non-fatal checks
+    # without the canaries, whose slot sort breaks a frame run Ghidra still splits.
+    if(REDIVIVUS_LOUD_STACK_PROTECTOR)
+        set(D2_LOUD_FLAGS
+            -ftrivial-auto-var-init=pattern -fstack-protector-strong -fsanitize=bounds-strict)
+    else()
+        set(D2_LOUD_FLAGS -ftrivial-auto-var-init=pattern -fsanitize=bounds-strict)
+    endif()
+    foreach(src IN LISTS D2_SOURCES)
+        if(src MATCHES "\\.cpp$" AND NOT src MATCHES "/support/d2_(loud|crash)\\.cpp$")
+            set_property(SOURCE "${src}" APPEND PROPERTY COMPILE_OPTIONS ${D2_LOUD_FLAGS})
+        endif()
+    endforeach()
+endif()
+
 # ---------------------------------------------------------------------------
 # Crash reports (support/d2_crash.cpp) symbolise the stack from this build's own
 # DWARF with libbacktrace, vendored as C. The report names the build, so the git
@@ -132,8 +158,21 @@ if(NOT REDIVIVUS_BUILD_ID)
         set(REDIVIVUS_BUILD_ID "unknown")
     endif()
 endif()
+if(REDIVIVUS_LOUD AND REDIVIVUS_LOUD_STACK_PROTECTOR)
+    string(APPEND REDIVIVUS_BUILD_ID "-loud")
+elseif(REDIVIVUS_LOUD)
+    string(APPEND REDIVIVUS_BUILD_ID "-loudnosp")
+endif()
 set_source_files_properties("${CMAKE_SOURCE_DIR}/support/d2_crash.cpp" PROPERTIES
     COMPILE_DEFINITIONS "REDIVIVUS_BUILD_ID=\"${REDIVIVUS_BUILD_ID}\"")
+if(REDIVIVUS_LOUD)
+    set_source_files_properties("${CMAKE_SOURCE_DIR}/support/d2_loud.cpp" PROPERTIES
+        COMPILE_DEFINITIONS "REDIVIVUS_BUILD_ID=\"${REDIVIVUS_BUILD_ID}\"")
+    if(NOT REDIVIVUS_LOUD_STACK_PROTECTOR)
+        set_property(SOURCE "${CMAKE_SOURCE_DIR}/support/d2_loud.cpp" APPEND PROPERTY
+            COMPILE_DEFINITIONS REDIVIVUS_LOUD_NOSP)
+    endif()
+endif()
 
 # ---------------------------------------------------------------------------
 # Link.

@@ -7,8 +7,19 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
+#include "Bnclient/net_sid.h"
 
 // Data types
+struct D2SaveHandSkillStrc {
+    D2SaveHandSkillStrc() = default;
+    D2SaveHandSkillStrc(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
+    operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
+    D2SaveHandSkillStrc(short a0, short a1) : nSkillId(a0), nItemIndex(a1) {}
+
+    /* 0x00 */ short nSkillId;
+    /* 0x02 */ short nItemIndex;
+};
+
 struct __attribute__((packed)) D2SaveHeaderStrc {
     /* 0x00 */ uint32_t dwMagic;
     /* 0x04 */ uint32_t dwVersion;
@@ -35,6 +46,55 @@ struct __attribute__((packed)) D2SaveHeaderStrc {
     /* 0x80 */ uint8_t byGuildInfoC;
     /* 0x81 */ uint8_t byInitSeedByte;
 };
+
+struct D2SaveHotKeyStrc {
+    D2SaveHotKeyStrc() = default;
+    D2SaveHotKeyStrc(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
+    operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
+    D2SaveHotKeyStrc(uint16_t a0, short a1) : nSkillIdAndHand(a0), nItemIndex(a1) {}
+
+    /* 0x00 */ uint16_t nSkillIdAndHand;
+    /* 0x02 */ short nItemIndex;
+};
+
+#pragma pack(push, 1)
+struct D2SaveFileHeaderStrc {
+    /* 0x00 */ uint32_t dwHeader;
+    /* 0x04 */ uint32_t dwFileVersion;
+    /* 0x08 */ uint32_t nFileSize; // total .d2s file size; file-bound (save header), 4 bytes on disk
+    /* 0x0C */ uint32_t dwChecksum;
+    /* 0x10 */ bool bWeaponSwapped;
+    /* 0x11 */ uint8_t field_0x11;
+    /* 0x12 */ uint8_t field_0x12;
+    /* 0x13 */ uint8_t field_0x13;
+    /* 0x14 */ char szCharacterName[16];
+    /* 0x24 */ uint32_t dwCharacterStatus;
+    /* 0x28 */ uint8_t nPlayerClassId;
+    /* 0x29 */ uint8_t nConst16;
+    /* 0x2A */ uint8_t nMaxSkillsCount;
+    /* 0x2B */ uint8_t bCharacterLevel;
+    /* 0x2C */ __time32_t nCreateTime;
+    /* 0x30 */ int nTime32;
+    /* 0x34 */ int nTimeEx;
+    /* 0x38 */ D2SaveHotKeyStrc pHotKeys[16];
+    /* 0x78 */ D2SaveHandSkillStrc pLeftHand;
+    /* 0x7C */ D2SaveHandSkillStrc pRightHand;
+    /* 0x80 */ D2SaveHandSkillStrc pLeftSwapHand;
+    /* 0x84 */ D2SaveHandSkillStrc pRightSwapHand;
+    /* 0x88 */ char pAppearance1[16];
+    /* 0x98 */ char pAppearance2[16];
+    /* 0xA8 */ uint8_t pDifficulty[3];
+    /* 0xAB */ int nInitSeed;
+    /* 0xAF */ int nMercFlags;
+    /* 0xB3 */ int nMercSeed;
+    /* 0xB7 */ short nMercNameId;
+    /* 0xB9 */ short nMercType;
+    /* 0xBB */ int nMercExperience;
+    /* 0xBF */ int nMercReserved[4]; // Reserved merc block padding (copied by LoadMerc but never written by SaveMercData)
+    /* 0xCF */ uint8_t nGuildInfo[3];
+    /* 0xD2 */ uint8_t nReserved[125]; // Unused header padding bytes (zeroed on save, never read)
+};
+#pragma pack(pop)
 
 namespace Fog::Save {
 

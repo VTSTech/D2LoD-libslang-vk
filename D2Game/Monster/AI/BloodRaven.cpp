@@ -22,7 +22,6 @@
 #include "globals/globals.h"
 #include "D2Common/D2DynamicPathStrc.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Game/Monster/Create.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

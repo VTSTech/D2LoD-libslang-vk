@@ -28,6 +28,7 @@ struct D2EscMenuHeaderStrc {
     /* 0x04 */ int nVerticalSpacing; // Vertical spacing between menu items in pixels
     /* 0x08 */ int nRowHeight; // Height of each menu row
     /* 0x0C */ int nStarOffset; // Horizontal offset for rotating star decoration
+    /* 0x10 */ int nBarYOffset;
 };
 
 struct D2EscMenuItemStrc {

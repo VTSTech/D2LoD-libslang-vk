@@ -31,6 +31,14 @@ typedef int eD2UnitStat;
 typedef void (__fastcall *PFN_StatExpireCallback)(struct D2UnitStrc * pUnit, eD2States eState, int32_t nParam);
 #endif
 
+// Data types
+struct __attribute__((packed)) D2GSPacketSrv0x58 {
+    /* 0x00 */ uint8_t nPacketId; // 0x58
+    /* 0x01 */ uint32_t nUnitGUID;
+    /* 0x05 */ uint8_t nUIType;
+    /* 0x06 */ uint8_t nUIState;
+};
+
 namespace D2Game::Objects::ObjectsMode {
 
 // Function declarations

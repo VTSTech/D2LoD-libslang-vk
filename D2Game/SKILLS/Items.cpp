@@ -766,23 +766,23 @@ uint32_t __fastcall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, D2UnitStrc * 
     int nAffixRangeBytes;
     uint32_t apiStack4108[1024];
     D2RareAffixTxt* pCurAffixEntry = (D2RareAffixTxt*)0x5c19ad;
-    D2RareAffixTxt* pRareAffixTableInfo = (D2RareAffixTxt*)D2Common::DATATBLS::ItemTbls::TXT_RareAffixes_GetTableInfo();
+    D2RareAffixTableStrc* pRareAffixTableInfo = D2Common::DATATBLS::ItemTbls::TXT_RareAffixes_GetTableInfo();
     if (!pThis) {
-      pAffixRangeStart = *(D2RareAffixTxt**)&pRareAffixTableInfo->field_0x8;
+      pAffixRangeStart = pRareAffixTableInfo->pSuffixStart;
       pCurAffixEntry = pAffixRangeStart;
     } else {
-      pAffixRangeStart = pRareAffixTableInfo;
-      pCurAffixEntry = *(D2RareAffixTxt**)&pRareAffixTableInfo->nNameStrIdLo;
+      pAffixRangeStart = (D2RareAffixTxt*)pRareAffixTableInfo;
+      pCurAffixEntry = pRareAffixTableInfo->pPrefixStart;
     }
     if (!pCurAffixEntry) {
       return (uint32_t)pAffixRangeStart & -65536;
     }
 
-    int nAffixTableBaseIdx = ((int)pCurAffixEntry - *(int*)&pRareAffixTableInfo->field_0x4) / 0x48;
+    int nAffixTableBaseIdx = ((int)pCurAffixEntry - (int)pRareAffixTableInfo->pTable) / 0x48;
     if (!pThis) {
-      nAffixRangeBytes = *(int*)&pRareAffixTableInfo->nNameStrIdLo - *(int*)&pRareAffixTableInfo->field_0x8;
+      nAffixRangeBytes = (int)pRareAffixTableInfo->pPrefixStart - (int)pRareAffixTableInfo->pSuffixStart;
     } else {
-      nAffixRangeBytes = *(int*)pRareAffixTableInfo * 0x48 - *(int*)&pRareAffixTableInfo->nNameStrIdLo + *(int*)&pRareAffixTableInfo->field_0x4;
+      nAffixRangeBytes = pRareAffixTableInfo->nSize * 0x48 - (int)pRareAffixTableInfo->pPrefixStart + (int)pRareAffixTableInfo->pTable;
     }
 
     uint32_t nCanApply = nAffixRangeBytes * 0x38e38e39;

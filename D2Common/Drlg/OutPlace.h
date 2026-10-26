@@ -7,12 +7,28 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
+#include "D2Common/Drlg/D2DrlgCoordsStrc.h"
 
 // Forward declarations
-struct D2DrlgCoordsStrc;
 struct D2DrlgLevelStrc;
 struct D2DrlgStrc;
 struct D2RoomExStrc;
+
+// Data types
+struct __attribute__((packed)) D2DrlgSubLevelPlaceStrc {
+    /* 0x00 */ D2DrlgCoordsStrc sCoords;
+    /* 0x10 */ int32_t nDirection;
+    /* 0x14 */ int32_t nLinkCount;
+    /* 0x18 */ struct D2DrlgSubLevelPlaceStrc * pParent;
+    /* 0x1C */ struct D2DrlgSubLevelPlaceStrc * apLinks[3];
+    /* 0x28 */ int32_t nGridX;
+    /* 0x2C */ int32_t nGridY;
+    /* 0x30 */ int32_t * pCellMap;
+    /* 0x34 */ uint8_t field_0x34;
+    /* 0x35 */ uint8_t field_0x35;
+    /* 0x36 */ uint8_t field_0x36;
+    /* 0x37 */ uint8_t field_0x37;
+};
 
 namespace D2Common::Drlg::OutPlace {
 
@@ -27,7 +43,7 @@ void __fastcall SetOutGridLinkFlags(struct D2DrlgLevelStrc * pLevel);
 // DRLG outdoor wilderness border/road generator: walks the level's polygon outline (linked list of D2DrlgVertexStrc edges) and stamps edge presets, corner presets and grid border flags into the outdoor preset grid. For each edge it picks a road/border preset type from the level type (case 2 dirt, 0x10, 0x1b, 0x1f siege-grid-division) and direction lookup tables (gaRoadPresetDirectionLookup / gaOutPlaceRoadPresetLookup / gRoadPresetIdLookupTable), then spawns presets along the edge via SpawnOutdoorLevelPresetEx and flags cells via AlterGridFlag. Has act-specific corner handling for acts I/II/IV/V (and special-cases level 0x11) plus joint/corner presets at each vertex. Finishes with SetBlankBorderGridCells. Used during outdoor level layout for acts 1,2,4,5.
 void __fastcall PlaceAct1245OutdoorBorders(struct D2DrlgLevelStrc * pLevel);
 // Calculates placement coordinates for a sub-level within the outdoor grid, writing results to pOutCoords.
-void __stdcall DRLGOUTPLACE_CalcSubLevelPlacement(int nHeight, int nWidth, struct D2DrlgCoordsStrc * pOutCoords, int * dwParam4, int32_t dwParam5);
+void __stdcall DRLGOUTPLACE_CalcSubLevelPlacement(int nHeight, int nWidth, struct D2DrlgSubLevelPlaceStrc * pOutCoords, struct D2DrlgSubLevelPlaceStrc * dwParam4, int32_t dwParam5);
 // Server-side DRLG out-of-placement generator for the Spider Forest level (LEVEL_SpiderForest). Places three procedurally-connected sub-levels (ids 0x4c..0x4e) inside the forest using the drlg RNG seed: picks non-overlapping room placements (FreeRoomEx), allocates four scratch tile maps from the level memory pool, carves a maze of connecting paths/exits between sub-levels (flood/adjacency passes building per-cell connection-flag bitmasks 0x10/0x20/0x40/0x80), maps cell flags to tile codes via the gdwOutPlaceMap* lookup tables, writes the resulting grids back into each sub-level, sorts the three sub-levels, then GetLevelAndAllocs each and stores coords/size/automap. Frees the scratch maps and returns the last allocated sub-level. Halts via Fog ErrorManager on overflow/invalid tile. pLevel passed in EAX (custom convention); mutates pDrlg->nSeed throughout.
 struct D2DrlgLevelStrc * DRLGLEVEL_FixDrlgLevelForSpiderForest(struct D2DrlgLevelStrc * pLevel);
 int32_t __stdcall DRLGLEVEL_FixDrlgLevelForLowerKurast(struct D2DrlgLevelStrc * pLevel);

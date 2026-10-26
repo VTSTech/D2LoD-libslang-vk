@@ -38,6 +38,7 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/D2GossipTextStrc.h"
@@ -45,6 +46,8 @@
 #include "D2Client/UI/QuestLog.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/D2QuestGUIDStrc.h"
+#include "D2Game/Monster/AI/AI.h"
+#include "D2Game/Quests/QUESTS/A4Q2.h"
 #include "Fog/Src/Safesock.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -262,7 +265,7 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
           __frame0.wQuestStatePacket = 0;
           __frame0.pBitBuffer2 = (D2BitBufferStrc*)0x2205d;
           pClient = UNIT::SUnit::SUNIT_GetClient(pQuestArgs->pPlayer, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q2.cpp", 0x14e);
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, (uint8_t*)&__frame0.pBitBuffer2);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, (D2GSPacketSrv0x5D*)&__frame0.pBitBuffer2);
         }
       }
     }
@@ -1178,7 +1181,7 @@ int32_t __fastcall Q32_GetRemainingPrisonersCount(D2QuestDataStrc * pQuestData) 
 // portal (>5 sets the 'arrived' flag field_0x10B) then update mode 3, Run->update mode 4. Re-arms the timer
 // (SetEvent +0x19 frames) until the prisoner reaches the portal. No QuestRecord access.
 void __fastcall Q32_PrisonerTimerCallback(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
-    eD2PlayerAnimMode eAnimMode;
+    eD2MonsterAnimMode eAnimMode;
     int nUnitGUID;
     int32_t nNewAnimMode;
     if (!pUnit) {
@@ -1206,7 +1209,7 @@ void __fastcall Q32_PrisonerTimerCallback(D2QuestDataStrc * pQuestData, D2UnitSt
     } else {
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode == eD2PlayerAnimMode_ns::Neutral) {
+    if (eAnimMode == eD2MonsterAnimMode_ns::Neutral) {
       nNewAnimMode = 2;
     } else if (eAnimMode == Walk) {
       if (pA5Q2Data->abGroupWussiesKilled[nPrisonerGroupIdx] == 1) {
@@ -1221,7 +1224,7 @@ void __fastcall Q32_PrisonerTimerCallback(D2QuestDataStrc * pQuestData, D2UnitSt
 
       nNewAnimMode = 3;
     } else {
-      if (eAnimMode != eD2PlayerAnimMode_ns::Run) {
+      if (eAnimMode != eD2MonsterAnimMode_ns::GetHit) {
         goto rearm_timer;
       }
 

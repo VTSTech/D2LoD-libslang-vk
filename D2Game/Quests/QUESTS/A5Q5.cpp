@@ -913,7 +913,7 @@ void __fastcall Q35_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 
     UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q35_UpdateQuestStep);
     set_quest_object_mode:
-    if (!pQuestSpecificData->bAncientsDefeated && (char)pQuestSpecificData->field_0x58 != '\0' && (pAncientAlive = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, pQuestSpecificData->nSummitDoorGUID) , pAncientAlive != 0) && !pQuestSpecificData->nSummitDoorObjectMode) {
+    if (!pQuestSpecificData->bAncientsDefeated && pQuestSpecificData->field_0x58 != '\0' && (pAncientAlive = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, pQuestSpecificData->nSummitDoorGUID) , pAncientAlive != 0) && !pQuestSpecificData->nSummitDoorObjectMode) {
       pQuestSpecificData->nSummitDoorObjectMode = 2;
       D2Common::Units::SetupUpdateFlag(pAncientAlive, 1);
     }
@@ -1312,7 +1312,7 @@ BOOL __fastcall OBJOP_A5Q5_AncientsAltarActivate(D2ObjectOperateFnArg * pOperati
 // [A5Q5 = Rite of Passage] OBJOP_A5Q5_WorldstonePortalActivate: operate handler for the Worldstone Keep portal. Only opens (TakeStairs to next level) if RiteOfPassage is Completed or RewardAwaits AND the Ancients are dead; otherwise plays the locked sound. Read-only on quest record (GetQuestState only).
 BOOL __fastcall OBJOP_A5Q5_WorldstonePortalActivate(D2ObjectOperateFnArg * pOperation) {
     D2RoomStrc* pRoom;
-    eD2PlayerAnimMode eAnimMode;
+    eD2ObjectAnimMode eAnimMode;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_RiteOfPassage);
     if (!pQuestData) {
       return 0;
@@ -1339,18 +1339,18 @@ BOOL __fastcall OBJOP_A5Q5_WorldstonePortalActivate(D2ObjectOperateFnArg * pOper
     D2ObjectsTxt* pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pOperation->nObjectClassId);
     D2UnitStrc* pUnit = pOperation->sArg.pVictim;
     if (!pUnit) {
-      eAnimMode = Death;
+      eAnimMode = eD2ObjectAnimMode_ns::Neutral;
     } else {
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode == Death) {
+    if (eAnimMode == eD2ObjectAnimMode_ns::Neutral) {
       D2Common::Units::SetupUpdateFlag(pUnit, 1);
       bQuestState = 0;
       pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
       D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bQuestState);
       pGame = pOperation->sArg.pGame;
       GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectTxt->FrameCnt[1] >> 8) + pGame->dwGameFrame, 0, 0);
-    } else if (eAnimMode == Walk) {
+    } else if (eAnimMode == Opened) {
       A2Q7::TakeStairs(pOperation);
       bQuestState = 1;
       pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
@@ -1439,7 +1439,7 @@ void __fastcall Objects_InitFn76(D2ObjectInitFnArg * pInitArg) {
     int nUnitGUID;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_RiteOfPassage);
     D2QuestDataA5Q5Strc* pA5Q5QuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
-    *(uint8_t*)&pA5Q5QuestSpecificData->field_0x58 = 1;
+    pA5Q5QuestSpecificData->field_0x58 = '\x01';
     if (!pInitArg->pObject) {
       nUnitGUID = -1;
     } else {
@@ -1458,7 +1458,7 @@ void __fastcall Objects_InitFn76(D2ObjectInitFnArg * pInitArg) {
 
 // [A5Q5 = Rite of Passage] OBJOP_A5Q5_WorldstoneStairPortal: operate handler for the Worldstone stairway. If the Ancients are dead (field_0x00) lets the player TakeStairs into the Worldstone Keep; otherwise plays the locked sound and keeps it sealed. No quest-record writes.
 BOOL __fastcall OBJOP_A5Q5_WorldstoneStairPortal(D2ObjectOperateFnArg * pOperation) {
-    eD2PlayerAnimMode eAnimMode;
+    eD2ObjectAnimMode eAnimMode;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_RiteOfPassage);
     if (!pQuestData) {
       return 0;
@@ -1467,13 +1467,13 @@ BOOL __fastcall OBJOP_A5Q5_WorldstoneStairPortal(D2ObjectOperateFnArg * pOperati
     D2UnitStrc* pUnit = pOperation->sArg.pVictim;
     D2QuestDataA5Q5Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
     if (!pUnit) {
-      eAnimMode = Death;
+      eAnimMode = eD2ObjectAnimMode_ns::Neutral;
     } else {
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode != Death) {
-      if (eAnimMode != eD2PlayerAnimMode_ns::Neutral) {
-        if (eAnimMode != Walk) {
+    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
+      if (eAnimMode != Operating) {
+        if (eAnimMode != Opened) {
           return 0;
         }
         if (!pQuestSpecificData->bAncientsDefeated) {

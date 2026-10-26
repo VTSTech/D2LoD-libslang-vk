@@ -377,6 +377,13 @@ D2BNetGatewayAccessStr ActualRealmInfo = {
     /* .pRealmsData = */ nullptr
 };
 
+D2BnNewsTableStrc g_nNewsMaxCacheSize = {
+    /* .nCapacity = */ 0,
+    /* .nCount = */ 0,
+    /* .pEntries = */ nullptr,
+    /* .nGrowStep = */ 0
+};
+
 char lpFileName_00881c58[260] = {
     0,
     0,
@@ -2822,9 +2829,6 @@ uint32_t g_nBNetThreadInitFlag = 0;
 uint32_t g_pfnNewsChannelCallback = 0;
 pfnVoidNoArgCallback g_pfnMotdCallback = (pfnVoidNoArgCallback)0;
 pfnVoidNoArgCallback g_pfnNewsCallback = (pfnVoidNoArgCallback)0;
-uint32_t g_nNewsMaxCacheSize = 0;
-uint32_t g_nNewsEntryCount = 0;
-void * gpBNetNewsCache = 0;
 uint32_t g_nFirstUnreadNewsIndex = 0;
 uint32_t g_dwNewsTimestamp = 0;
 int gnNetworkSendState = 0;

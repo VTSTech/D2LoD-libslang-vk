@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "D2Common/DUNGEON/Dungeon.h"
+#include "D2Game/Objects/Objects.h"
 
 // Forward declarations
 struct D2DrlgRoomCoordsStrc;

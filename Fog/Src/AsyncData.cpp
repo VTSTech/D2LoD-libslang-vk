@@ -6,6 +6,7 @@
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/D2ArchiveStrc.h"
+#include "Storm/D2AsyncDataStrc.h"
 #include "Storm/D2MPQFileStrc.h"
 #include "Storm/Source/SFile.h"
 #include "globals/globals.h"
@@ -67,7 +68,7 @@ void __fastcall STRUCT_AllocAsyncData(int32_t nEnable) {
     int nSlotOffset = 0;
     do {
       HANDLE hEvent;
-      /* LPCSTR lpName for CreateEventA */ /* BOOL bInitialState for CreateEventA */ /* BOOL bManualReset for CreateEventA */ /* LPSECURITY_ATTRIBUTES lpEventAttributes for CreateEventA */ pSlot = (void*)((int)pD2AsyncDataStrc->pHandle + nSlotOffset);
+      /* LPCSTR lpName for CreateEventA */ /* BOOL bInitialState for CreateEventA */ /* BOOL bManualReset for CreateEventA */ /* LPSECURITY_ATTRIBUTES lpEventAttributes for CreateEventA */ pSlot = (void*)((uintptr_t)&pD2AsyncDataStrc->aSlots[0].hEvent + nSlotOffset);
       hEvent = CreateEventA((LPSECURITY_ATTRIBUTES)0x0, 1, 0, (LPCSTR)0x0);
       nSlotOffset += 0xc;
       *(HANDLE*)pSlot = hEvent;
@@ -88,7 +89,7 @@ void __stdcall STRUCT_FreeAsyncData() {
       pMemoryToFree = pD2AsyncDataStrc;
       if (gnAsyncDataHandleBufferSize) {
         do {
-          pSlot = (void*)((int)pMemoryToFree->pHandle + nSlotOffset);
+          pSlot = (void*)((uintptr_t)&pMemoryToFree->aSlots[0].hEvent + nSlotOffset);
           if (pSlot && *(HANDLE*)pSlot) {
             /* HANDLE hObject for CloseHandle */ CloseHandle(*(HANDLE*)pSlot);
             pMemoryToFree = pD2AsyncDataStrc;
@@ -114,11 +115,11 @@ void __fastcall ASYNCDATA_CancelAndCleanup(D2AsyncData_Line0x128 * pAsyncData) {
       return;
     }
 
-    D2AsyncDataStrc* pDVar1 = pAsyncData->pSlot;
+    D2AsyncDataSlotStrc* pDVar1 = pAsyncData->pSlot;
     if (pDVar1) {
-      /* HANDLE hEvent for ResetEvent */ ResetEvent(pDVar1->pHandle[0]);
-      pDVar1->pHandle[1] = (HANDLE*)0x1;
-      pDVar1->pHandle[2] = 0;
+      /* HANDLE hEvent for ResetEvent */ ResetEvent(pDVar1->hEvent);
+      pDVar1->bFree = 1;
+      pDVar1->pRequest = 0;
       pAsyncData->pSlot = 0;
     }
     if (pAsyncData->pFile) {
@@ -141,24 +142,24 @@ void __fastcall ASYNCDATA_CancelAndCleanup(D2AsyncData_Line0x128 * pAsyncData) {
     pAsyncData->tCallback.nResultSize = 0;
 }
 
-D2AsyncDataStrc * __stdcall ASYNCDATA_AllocSlot() {
-    D2AsyncDataStrc* pCandidateSlot;
+D2AsyncDataSlotStrc * __stdcall ASYNCDATA_AllocSlot() {
+    D2AsyncDataSlotStrc* pCandidateSlot;
     int nByteOffset = 0;
     if (!gbAsyncDataInitialized) {
       return nullptr;
     }
 
     uint32_t nSlotIndex = 0;
-    HANDLE** pSlot = pD2AsyncDataStrc->pHandle;
+    D2AsyncDataSlotStrc* pSlot = pD2AsyncDataStrc->aSlots;
     if (gnAsyncDataHandleBufferSize) {
       do {
-        if (pSlot[1]) {
-          pSlot[1] = 0;
-          return (D2AsyncDataStrc*)pSlot;
+        if (pSlot->bFree) {
+          pSlot->bFree = 0;
+          return pSlot;
         }
 
         nSlotIndex++;
-        pSlot += 3;
+        pSlot++;
       } while (nSlotIndex < gnAsyncDataHandleBufferSize);
     }
 
@@ -166,11 +167,11 @@ D2AsyncDataStrc * __stdcall ASYNCDATA_AllocSlot() {
     if (gnAsyncDataHandleBufferSize) {
       DWORD dwWaitResult;
       do {
-        pCandidateSlot = (D2AsyncDataStrc*)((int)pD2AsyncDataStrc->pHandle + nByteOffset);
-        /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ dwWaitResult = WaitForSingleObject(*(HANDLE*)((int)pD2AsyncDataStrc->pHandle + nByteOffset), 0);
+        pCandidateSlot = (D2AsyncDataSlotStrc*)((uintptr_t)&pD2AsyncDataStrc->aSlots[0].hEvent + nByteOffset);
+        /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ dwWaitResult = WaitForSingleObject(*(HANDLE*)((uintptr_t)&pD2AsyncDataStrc->aSlots[0].hEvent + nByteOffset), 0);
         if (!dwWaitResult) {
-          ASYNCDATA_CancelAndCleanup((D2AsyncData_Line0x128*)pCandidateSlot->pHandle[2]);
-          pCandidateSlot->pHandle[1] = 0;
+          ASYNCDATA_CancelAndCleanup(pCandidateSlot->pRequest);
+          pCandidateSlot->bFree = 0;
           return pCandidateSlot;
         }
 
@@ -182,17 +183,17 @@ D2AsyncDataStrc * __stdcall ASYNCDATA_AllocSlot() {
       return nullptr;
     }
 
-    /* LPCSTR lpName for CreateEventA */ /* BOOL bInitialState for CreateEventA */ /* BOOL bManualReset for CreateEventA */ /* LPSECURITY_ATTRIBUTES lpEventAttributes for CreateEventA */ pSlot = pD2AsyncDataStrc->pHandle + gnAsyncDataHandleBufferSize * 3;
+    D2AsyncDataSlotStrc* pDVar1 = pD2AsyncDataStrc->aSlots + gnAsyncDataHandleBufferSize;
     gnAsyncDataHandleBufferSize++;
     HANDLE hEvent = CreateEventA((LPSECURITY_ATTRIBUTES)0x0, 1, 0, (LPCSTR)0x0);
-    *pSlot = (HANDLE*)hEvent;
-    pSlot[1] = 0;
-    return (D2AsyncDataStrc*)pSlot;
+    pDVar1->hEvent = hEvent;
+    pDVar1->bFree = 0;
+    return pDVar1;
 }
 
 D2AsyncData_Line0x128 * __fastcall STRUCT_AllocAsyncData_Line0x128(D2PoolManagerStrc * pMemory, char * szText1, int32_t bAsync, uint32_t nFileOffset, size_t nReadSize, void * pReadBuffer, D2AsyncDataCallbackStrc * pCallback, int nPriority, char * szText2, int32_t nParam) {
     DWORD nSeekResult;
-    D2AsyncDataStrc* pSlot;
+    D2AsyncDataSlotStrc* pSlot;
     int i;
     D2AsyncDataCallbackStrc* pCallbackTable;
     D2AsyncDataCallbackStrc* pCallbackDst;
@@ -249,8 +250,8 @@ D2AsyncData_Line0x128 * __fastcall STRUCT_AllocAsyncData_Line0x128(D2PoolManager
       pSlot = ASYNCDATA_AllocSlot();
       pAsyncData->pSlot = pSlot;
       if (pSlot) {
-        pSlot->pHandle[2] = (HANDLE*)&pAsyncData->pFile;
-        pAsyncData->tOverlapped.hEvent = pAsyncData->pSlot->pHandle[0];
+        pSlot->pRequest = pAsyncData;
+        pAsyncData->tOverlapped.hEvent = pAsyncData->pSlot->hEvent;
         pFileHandle = pAsyncData->pFile;
         pAsyncData->tOverlapped.Offset = nFileOffset;
         Source::SFile::ERRORMANAGER_FReadFile(pFileHandle, pAsyncData->pReadBuffer, pAsyncData->nReadSize, nullptr, &pAsyncData->tOverlapped, (D2StormAsyncCompletionStrc*)pCallbackTable, nPriority);
@@ -283,7 +284,7 @@ uint32_t __fastcall ASYNCDATA_IsComplete(D2AsyncData_Line0x128 * pAsyncData) {
       return pAsyncData->nFlags & 1;
     }
 
-    DWORD dwWaitResult = WaitForSingleObject(pAsyncData->pSlot->pHandle[0], 0);
+    DWORD dwWaitResult = WaitForSingleObject(pAsyncData->pSlot->hEvent, 0);
     if (dwWaitResult) {
       return pAsyncData->nFlags & 1;
     }
@@ -388,7 +389,7 @@ void __fastcall ASYNCDATA_WaitForCompletion(D2AsyncData_Line0x128 * pAsyncData) 
       }
 
       Storm::Source::SFile::SFILE_SetRequestPriorityByBuffer(pAsyncData->pReadBuffer, 1);
-      /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ dwWaitResult = WaitForSingleObject(pAsyncData->pSlot->pHandle[0], -1);
+      /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ dwWaitResult = WaitForSingleObject(pAsyncData->pSlot->hEvent, -1);
       if (!dwWaitResult) {
         ASYNCDATA_CancelAndCleanup(pAsyncData);
         return;
@@ -482,7 +483,7 @@ void __fastcall ASYNCDATA_Free(D2AsyncData_Line0x128 * pAsyncData) {
         bIsComplete = ASYNCDATA_IsComplete(pAsyncData);
         if (!bIsComplete) {
           Storm::Source::SFile::SFILE_CancelAsyncRequestNoReturn((int32_t)pAsyncData->pReadBuffer);
-          /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ WaitForSingleObject(pAsyncData->pSlot->pHandle[0], -1);
+          /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ WaitForSingleObject(pAsyncData->pSlot->hEvent, -1);
           ASYNCDATA_CancelAndCleanup(pAsyncData);
         }
         if (pAsyncData->nFlags & 2) {

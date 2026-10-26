@@ -4,11 +4,11 @@
  */
 
 #include "globals/globals.h"
-#include "D2Client/D2ClientStrc.h"
 #include "D2Launch/CharSel.h"
 #include "D2Launch/D2Launch.h"
 #include "D2Launch/Launcher.h"
 #include "D2Launch/MainMenus.h"
+#include "Fog/Save.h"
 
 
 // =============================================================================

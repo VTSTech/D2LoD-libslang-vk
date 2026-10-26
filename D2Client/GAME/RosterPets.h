@@ -11,7 +11,7 @@
 // Forward declarations
 struct D2PetTypeTxt;
 struct D2RosterMercArg;
-struct D2SeedStrc;
+struct D2RosterPetSeedStrc;
 struct D2UnitStrc;
 typedef int eD2LevelId;
 
@@ -32,7 +32,7 @@ void __fastcall AddRosterPetMerc(DWORD nRosterGUID, int32_t nOwnerGUID, int32_t 
 void __fastcall RemoveRosterPet(int32_t nRosterGUID);
 // Returns the ownership relation of a roster pet to the local player: 0=not found or different party, 1=owned by local player, 2=owned by same-party member, 3=pet type lacks the party-share flag (nFlags&0x10==0) or skill out of range. Looks up the pet by nRosterGUID, checks PetType txt flags, then compares party IDs.
 int __fastcall ROSTER_GetPetOwnershipRelation(int32_t nRosterGUID);
-struct D2SeedStrc * __fastcall GetSeed(int32_t nRosterGUID);
+struct D2RosterPetSeedStrc * __fastcall GetSeed(int32_t nRosterGUID);
 // Returns 1 (hostile) or 0 (friendly) for two units. If pRosterUnit is a roster pet, hostility is determined by whether pUnit is the pet's owner (0) or not (delegates to CheckRostersArePartied). For non-pet units, returns 1 unless both are monsters that are allies via IsAllyOf. Null unit arguments always yield hostile.
 uint32_t __fastcall ROSTER_AreUnitsHostile(struct D2UnitStrc * pUnit, struct D2UnitStrc * pRosterUnit);
 int32_t __fastcall CountRostersForUnitFilterBySkill(struct D2UnitStrc * pUnit, int32_t nSkillId);

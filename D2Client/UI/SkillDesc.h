@@ -419,6 +419,23 @@ struct D2MonSoundsTxt {
     /* 0x90 */ int CvtSk3;
 };
 
+struct D2MonStatsInitStrc {
+    /* 0x00 */ int nMinHP;
+    /* 0x04 */ int nMaxHP;
+    /* 0x08 */ int nAC;
+    /* 0x0C */ int nTH; // to-hit, rewritten by each attack group (flags 0x8/0x10/0x20)
+    /* 0x10 */ int nExp;
+    /* 0x14 */ int nA1MinD;
+    /* 0x18 */ int nA1MaxD;
+    /* 0x1C */ int nA2MinD;
+    /* 0x20 */ int nA2MaxD;
+    /* 0x24 */ int nS1MinD;
+    /* 0x28 */ int nS1MaxD;
+    /* 0x2C */ int nElMinD;
+    /* 0x30 */ int nElMaxD;
+    /* 0x34 */ int nElDur;
+};
+
 struct D2MonTypeTxt {
     /* 0x00 */ short type;
     /* 0x02 */ short equiv1;
@@ -644,16 +661,6 @@ struct D2SkillsPerClassCounter {
     /* 0x10 */ int Barbarian;
     /* 0x14 */ int Druid;
     /* 0x18 */ int Assassin;
-};
-
-struct D2SkillsPerClassStrc {
-    /* 0x00 */ short Amazon;
-    /* 0x02 */ short Sorceress;
-    /* 0x04 */ short Necromancer;
-    /* 0x06 */ short Paladin;
-    /* 0x08 */ short Barbarian;
-    /* 0x0A */ short Druid;
-    /* 0x0C */ short Assassin;
 };
 
 struct D2SoundsTxtSmall {
@@ -1075,7 +1082,7 @@ struct __attribute__((packed)) D2DataTableTxtStrc {
     /* 0xBA0 */ int nTxtSkillsCount;
     /* 0xBA4 */ struct D2SkillsPerClassCounter * pSkillsPerClassCounter;
     /* 0xBA8 */ int nSkillCountMaxPerClass;
-    /* 0xBAC */ struct D2SkillsPerClassStrc * pSkillsPerClassStrc;
+    /* 0xBAC */ int16_t * pSkillsPerClassStrc;
     /* 0xBB0 */ int nPassiveSkillsCount;
     /* 0xBB4 */ struct D2PassiveSkillsPerClassStrc * pPassiveSkillsPerClassStrc;
     /* 0xBB8 */ struct D2TxtLinkStrc * pTxtOverlayLink;

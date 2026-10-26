@@ -8,6 +8,7 @@
 #include "D2Client/D2AutomapCellStrc.h"
 #include "D2Client/D2AutomapLayerStrc.h"
 #include "D2Client/D2ClientStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2RosterStrc.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/GAME/Game/Game.h"
@@ -62,13 +63,13 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinFont.h"
+#include "D2Win/Src/D2WinImage.h"
 #include "D2Win/Src/D2WinPalette.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/D2PoolManagerStrc.h"
@@ -1636,32 +1637,18 @@ void __stdcall AUTOMAP_RevealTownCallback(eD2LevelId eLevel, uint32_t nCellNo, i
 
 // Recursively draws automap cell tree using AVL node traversal. Applies fade effects, draws tiles with alpha based on game state. Checks viewport clipping and player proximity for highlight.
 void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtxStrc * apDC6Layers) {
-    // Frame slots -44..-4 are ONE object: &nClipLeft is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nClipLeft;
-      int nClipRight;
-      int nClipTop;
-      int nClipBottom;
-      int nPlayerScreenY;
-      D2AutomapDrawCtxStrc* apDC6LayersSaved;
-      int nCellScreenY;
-      int nCellScreenX;
-      D2AutomapCellStrc* pCellCur;
-      int nDrawMode;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 40, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int32_t eFade;
     D2UnitStrc* pPlayer;
     int nHalfWidth;
+    int nParam1;
     int nScreenX;
     int nBorderOffsetX;
     int nScreenY;
     int nHalfHeight;
     int nScreenY2;
     D2GfxDataStrc sGfxData;
-    __frame0.apDC6LayersSaved = apDC6Layers;
+    D2GfxTileRectStrc sClipRect;
+    int32_t nDrawMode;
     do {
       uint32_t eBorderType;
       if (!pCell) {
@@ -1669,7 +1656,6 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
       }
 
       nBorderOffsetX = 0;
-      __frame0.pCellCur = pCell;
       eBorderType = Path::DRAW_GetTypeOfBorder();
       if (eBorderType == 1) {
         nBorderOffsetX = -((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2);
@@ -1677,19 +1663,18 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
         nBorderOffsetX = (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
       }
 
-      __frame0.nCellScreenX = pCell->xPixel * 10 / nAutoMapZoomDivisor - nAutoMapScrollX;
-      nScreenY = __frame0.pCellCur->yPixel * 10 / nAutoMapZoomDivisor - nAutoMapScrollY;
-      __frame0.nCellScreenY = nScreenY;
+      nParam1 = pCell->xPixel * 10 / nAutoMapZoomDivisor - nAutoMapScrollX;
+      nScreenY = pCell->yPixel * 10 / nAutoMapZoomDivisor - nAutoMapScrollY;
       if (apDC6Layers->nClipTop <= nScreenY) {
-        AUTOMAP_DrawCellTree(__frame0.pCellCur->pLess, apDC6Layers);
+        AUTOMAP_DrawCellTree(pCell->pLess, apDC6Layers);
         if (apDC6Layers->nClipTop <= nScreenY) {
           if (apDC6Layers->nClipBottom < nScreenY) {
             return;
           }
-          if (apDC6Layers->nClipLeft <= __frame0.nCellScreenX && __frame0.nCellScreenX <= apDC6Layers->nClipRight) {
-            __frame0.nDrawMode = 5;
+          if (apDC6Layers->nClipLeft <= nParam1 && nParam1 <= apDC6Layers->nClipRight) {
+            nDrawMode = 5;
             memset(&sGfxData, 0, 0x48);
-            sGfxData.nFrameNumber = (int)__frame0.pCellCur->nCellNo;
+            sGfxData.nFrameNumber = (int)pCell->nCellNo;
             sGfxData.pDC6 = apDC6Layers->pDC6;
             sGfxData.nDirection = 0;
             eFade = AUTOMAP_GetFade();
@@ -1697,20 +1682,17 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
               case 1:
                 {
                   if (apDC6Layers->pDC6 == pAutoMapDC6[0] && !MiniMapType) {
-                    nScreenX = apDC6Layers->nOffsetX + __frame0.nCellScreenX;
+                    nScreenX = apDC6Layers->nOffsetX + nParam1;
                     nScreenY2 = apDC6Layers->nOffsetY + nScreenY;
                     nHalfHeight = WindowSizeY / 2;
-                    __frame0.nPlayerScreenY = nHalfHeight - 10;
                     nHalfWidth = WindowSizeX / 2;
-                    nScreenY = __frame0.nCellScreenY;
-                    apDC6Layers = __frame0.apDC6LayersSaved;
                     if (nHalfWidth - 0x8c + nBorderOffsetX <= nScreenX && nScreenX <= nHalfWidth + 0x8c + nBorderOffsetX && nHalfHeight - 0x96 <= nScreenY2 && nScreenY2 <= nHalfHeight + 0x82) {
                       nBorderOffsetX = nHalfWidth - nScreenX + nBorderOffsetX;
                       if (nBorderOffsetX < 0) {
                         nBorderOffsetX = -nBorderOffsetX;
                       }
 
-                      nScreenY2 = __frame0.nPlayerScreenY - nScreenY2;
+                      nScreenY2 = nHalfHeight - 10 - nScreenY2;
                       if (nScreenY2 < 0) {
                         nScreenY2 = -nScreenY2;
                       }
@@ -1723,13 +1705,11 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
                       nScreenY2 /= 2;
                       if (nScreenY2 < 0x96) {
                         eFade = AUTOMAP_GetFade();
-                        __frame0.nDrawMode = (eFade != 2) + 1;
-                        nScreenY = __frame0.nCellScreenY;
-                        apDC6Layers = __frame0.apDC6LayersSaved;
+                        nDrawMode = (eFade != 2) + 1;
                         if (nScreenY2 < 100) {
-                          __frame0.nDrawMode = 1;
+                          nDrawMode = 1;
                           if (nScreenY2 < 0x32) {
-                            __frame0.nDrawMode = 0;
+                            nDrawMode = 0;
                           }
                         }
                       }
@@ -1740,7 +1720,7 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
                 }
               case 2:
                 {
-                  __frame0.nDrawMode = 1;
+                  nDrawMode = 1;
                   break;
                 }
               case 3:
@@ -1748,11 +1728,11 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
                   pPlayer = UNIT::Player::GetPlayerUnit_UI();
                   if (pPlayer->nAct == ACT_I || pPlayer->nAct == ACT_III) {
                     if (MiniMapType == 1) {
-                      __frame0.nDrawMode = 1;
+                      nDrawMode = 1;
                       break;
                     }
 
-                    __frame0.nDrawMode = 2;
+                    nDrawMode = 2;
                   }
 
                   break;
@@ -1761,24 +1741,24 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
 
             if (MiniMapType == 1) {
               if (!AutoMapLeft) {
-                __frame0.nClipLeft = ScreenSizeX - 0x119;
-                __frame0.nClipTop = 0x39;
+                sClipRect.nX0 = ScreenSizeX - 0x119;
+                sClipRect.nY0 = 0x39;
               } else {
-                __frame0.nClipLeft = 0;
+                sClipRect.nX0 = 0;
                 eBorderType = Hireables::HIREABLE_IsNotInMercPurchaseMode();
-                __frame0.nClipTop = eBorderType ? 0x4b : -0x15;
+                sClipRect.nY0 = eBorderType ? 0x4b : -0x15;
               }
 
-              __frame0.nClipRight = __frame0.nClipLeft + 0x117;
-              __frame0.nClipBottom = __frame0.nClipTop + 0xe1;
+              sClipRect.nX1 = sClipRect.nX0 + 0x117;
+              sClipRect.nY1 = sClipRect.nY0 + 0xe1;
             } else {
-              __frame0.nClipRight = ScreenSizeX - 1;
-              __frame0.nClipBottom = ScreenSizeY - 1;
-              __frame0.nClipLeft = 0;
-              __frame0.nClipTop = 0;
+              sClipRect.nX1 = ScreenSizeX - 1;
+              sClipRect.nY1 = ScreenSizeY - 1;
+              sClipRect.nX0 = 0;
+              sClipRect.nY0 = 0;
             }
 
-            /* Draws all non units (so walls and stuff) */ D2gfx::D2GFX::D2GFX_DrawSprite6(&sGfxData, __frame0.nCellScreenX, nScreenY, &__frame0.nClipLeft, __frame0.nDrawMode);
+            /* Draws all non units (so walls and stuff) */ D2gfx::D2GFX::D2GFX_DrawSprite6(&sGfxData, nParam1, nScreenY, &sClipRect, nDrawMode);
           }
         }
       }
@@ -1786,7 +1766,7 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
         return;
       }
 
-      pCell = __frame0.pCellCur->pMore;
+      pCell = pCell->pMore;
     } while (true);
 }
 

@@ -373,7 +373,7 @@ void __fastcall DrawFloorTile(D2DrlgTileDataStrc * pTileData, void * pParam, int
     D2gfx::D2GFX::D2GFX_DrawGroundTile(pTileFirst, pLightEx, nScreenX, nScreenY, nWorldX, nWorldY, 0xff, nScreenPanels, pParam);
     if (pTileOther->nFlags & 2) {
       nRenderMode = Seed::RollBetweenMinAndMax(pFloor->nRollSeed, 0, 1000);
-      if (*(int*)&pFloor->bWeatherSplashEnabled && nRenderMode < pFloor->uWeatherRelated) {
+      if (pFloor->bWeatherSplashEnabled && nRenderMode < pFloor->uWeatherRelated) {
         D2Client::Draw::Weather::WEATHER_SpawnSplash(nScreenX, nScreenY, nWorldX << 0x10, nWorldY << 0x10);
       }
       if (pFloor->nRecordingRelated && nRenderMode < 100) {
@@ -432,7 +432,7 @@ void __fastcall DrawFloorByViewAndFloor(D2GameViewStrc * pGameView, D2DrawFloorS
     uint32_t bIsPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
     pDrawFloor->bIsPerspective = bIsPerspective;
     uint32_t nFrameIdx = Game::gnRecordingIndex();
-    *(uint32_t*)&pDrawFloor->bWeatherSplashEnabled = 0;
+    pDrawFloor->bWeatherSplashEnabled = 0;
     pDrawFloor->nRecordingRelated = 0;
     float fVar1 = D2Client::Draw::Weather::WEATHER_FloatPassthrough();
     pDrawFloor->uWeatherRelated = (int)(fVar1 * 1000.0);
@@ -463,7 +463,7 @@ void __fastcall DrawFloorByViewAndFloor(D2GameViewStrc * pGameView, D2DrawFloorS
     if (pDrawFloor->nLastSplashFrame + 3 < nFrameIdx) {
       pDrawFloor->nLastSplashFrame = nFrameIdx;
       if (pDrawFloor->uWeatherRelated) {
-        *(uint32_t*)&pDrawFloor->bWeatherSplashEnabled = 1;
+        pDrawFloor->bWeatherSplashEnabled = 1;
       }
     }
 
@@ -689,9 +689,6 @@ void __fastcall dFloorDraw(D2GameViewStrc * pGameView) {
     /* .field3_0x3 = */ 0,
     /* .bIsPerspective = */ 0,
     /* .bWeatherSplashEnabled = */ 0,
-    /* .field6_0x9 = */ 0,
-    /* .field7_0xa = */ 0,
-    /* .field8_0xb = */ 0,
     /* .nRecordingRelated = */ 0,
     /* .uWeatherRelated = */ 0,
     /* .nLastSplashFrame = */ 0,

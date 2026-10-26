@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <cstddef>
 #include "d2_platform.h"
+#include "Bnclient/BnSend.h"
 #include "Bnclient/SRP.h"
 #include "Bnclient/net_sid.h"
 #include "D2CMP/Draw.h"
@@ -19,7 +20,6 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Cursor.h"
 #include "D2Client/D2BNetGatewayAccessStr.h"
-#include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GSPacketSrv0x2A.h"
 #include "D2Client/D2GfxMemoryStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
@@ -48,6 +48,7 @@
 #include "D2Client/UI/QuestLog.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/SpellSel.h"
+#include "D2Client/UI/Text.h"
 #include "D2Client/UI/UseItem.h"
 #include "D2Client/UI/Waypoint.h"
 #include "D2Client/UI/npcmenu.h"
@@ -63,7 +64,6 @@
 #include "D2Common/COMPOSIT/Composit.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
-#include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgLevelDataList.h"
 #include "D2Common/Drlg/D2DrlgReplaceRoomStrc.h"
 #include "D2Common/Drlg/Drlg.h"
@@ -82,17 +82,15 @@
 #include "D2Game/GAME/Task.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Monster/AI/Baal.h"
-#include "D2Game/Monster/Create.h"
+#include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/PlayerMsg.h"
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/SKILLS/Items.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/sunitproxy.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Glide/glFloorCache.h"
 #include "D2Glide/glSubtileCache.h"
-#include "D2Glide/glTextureCache.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Launch/CharSel.h"
@@ -108,6 +106,7 @@
 #include "Fog/Engine/Application.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Source/SSComp.h"
 #include "Fog/Src/LogManager.h"
@@ -116,7 +115,8 @@
 #include "Storm/H/HeapManager.h"
 #include "Storm/H/Storm.h"
 #include "Storm/Source/SCMD.h"
-#include "Storm/Source/SFile.h"
+#include "Storm/Source/SErr.h"
+#include "Storm/Source/SSystem.h"
 #include "Storm/_unnamespaced.h"
 #include "Storm/H/stpl.h"
 
@@ -150,6 +150,7 @@ struct D2BattleNetEventCallbackTable;
 struct D2BeltsTxt;
 struct D2BitBufferStrc;
 struct D2BnCacheFileHeaderStrc;
+struct D2BnNewsTableStrc;
 struct D2BodyLocsTxt;
 struct D2BooksTableStrc;
 struct D2BooksTxt;
@@ -163,6 +164,7 @@ struct D2ClassIconWithNameStrc;
 struct D2ClientGameDataStrc;
 struct D2ClientSoundChannelStrc;
 struct D2ClientStrc;
+struct D2ClientTimerStrc;
 struct D2CodecFrameComponentStrc;
 struct D2CofCacheStrc;
 struct D2ColorsTxt;
@@ -174,6 +176,7 @@ struct D2ConfigControlDescStrc;
 struct D2ControlMsg;
 struct D2ControlStrc;
 struct D2CoordStrc;
+struct D2CrashReportStrc;
 struct D2CubeMainTxt;
 struct D2CursorDataStrc;
 struct D2D3DDeviceInfoStrc;
@@ -210,6 +213,7 @@ struct D2GFXWindowPlacementStrc;
 struct D2GSPacketSrv0x27_TextStrc;
 struct D2GSPacketSrv0x2A;
 struct D2GamePalShiftGreenBloodStrc;
+struct D2GameRecordFileHeaderStrc;
 struct D2GameRecordStrc;
 struct D2GameViewStrc;
 struct D2Game_Line0x546 {
@@ -226,6 +230,7 @@ struct D2GfxHelperStrc;
 struct D2GfxMemoryStrc;
 struct D2GfxSettingsStrc;
 struct D2GlideVertexStrc;
+struct D2GlideVertexTexCacheBlockStrc;
 struct D2GlideWallCornerStrc;
 struct D2GridScreenCoordinates;
 struct D2GroundItemLabelStrc;
@@ -370,18 +375,18 @@ struct D2SFileSignatureKeyStrc;
 struct D2SLogStrc;
 struct D2SSCompDeflateBlockEntryStrc;
 struct D2SaveFileHeaderStrc;
+struct D2ScreenMessageListStrc;
 struct D2SeedStrc;
 struct D2SetItemsTxt;
 struct D2SetsTxt;
 struct D2SetsTxtFStrc;
-struct D2ShrinesTableStrc;
+struct D2ShrinesTableEntryStrc;
 struct D2ShrinesTxt;
 struct D2SkillCalcTxt;
 struct D2SkillDescTxt;
 struct D2SkillStrc;
 struct D2SkillsHeaderTxt;
 struct D2SkillsPerClassCounter;
-struct D2SkillsPerClassStrc;
 struct D2SkillsTxt;
 struct D2SoundChannelNodeStrc;
 struct D2SoundChannelStrc;
@@ -441,7 +446,7 @@ struct D3DFloorCacheStrc;
 struct D3DSubtileCacheNodeStrc;
 struct D3DSubtileCacheStrc;
 struct D3DTextureCacheNodeStrc;
-struct D3DTextureCacheStrc;
+struct D3DTextureCacheSetStrc;
 struct DC6;
 struct DC6Block;
 struct EditBoxWrapper;
@@ -451,7 +456,6 @@ struct GlFloorCacheNodeStrc;
 struct GlFloorCacheStrc;
 struct GlSubtileCacheNodeStrc;
 struct GlSubtileCacheStrc;
-struct GlTextureCacheStrc;
 struct HeapManager;
 struct IDirect3DDevice;
 struct IDirect3DInterface7;
@@ -470,6 +474,7 @@ struct IDirectSoundBuffer;
 struct IKsPropertySet;
 struct IgnoreList;
 struct ListBoxWrapper;
+struct SErrAppFatalContextStrc;
 struct SGAMEDATA;
 struct SMemHeapStatsStrc;
 struct ScreenMessage_t;
@@ -574,7 +579,7 @@ typedef int (__fastcall *fnSendLogonRequest)(char * szUser, char * szPass);
 typedef int (__fastcall *fnSendNewsInfo)(uint32_t dw1, uint32_t dw2);
 typedef int (__fastcall *fnSendQueryAdURL)(uint32_t dwParam);
 typedef int (__fastcall *fpMissileSrvDoFuncData)(D2UnitStrc * pUnit, void * pContext);
-typedef int (__fastcall *pfnFogExceptionFilter)(void * pExceptionReport, void * pUserContext);
+typedef int (__fastcall *pfnFogExceptionFilter)(D2CrashReportStrc * pExceptionReport, void * pUserContext);
 typedef int (__fastcall *pfnSkillCalcOp)(int32_t nOperand1, int32_t nOperand2, uint32_t nOperand3, void * pContext);
 typedef int (__fastcall *pfnTextScrollComplete)(void * pUserParam, uint32_t nReason, void * pDismissCallback);
 typedef int (__stdcall *ChatDlgCallback)(uint32_t dwParam);
@@ -1015,9 +1020,7 @@ struct __attribute__((packed)) D2UIConfigTabEntryStrc {
 };
 
 struct D2UIFlagDescStrc {
-    /* 0x00 */ uint8_t aHeader[84]; // not yet modelled
-    /* 0x54 */ uint32_t nDismissMode; // 0=ignore 1=close 2=block 4=close NPC; read by UI_ToggleMiniPanel and UI_HandleKeyInputAndDismiss
-    /* 0x58 */ uint8_t aTail[64]; // not yet modelled
+    /* 0x00 */ uint32_t anDismissMode[38]; // indexed by eD2UIvars; old nDismissMode@0x54 is anDismissMode[0x15]
 };
 
 struct D2UIFlagStrc {
@@ -1089,6 +1092,12 @@ struct D2ZlibExtraLBitsBlOrderStrc {
     /* 0x00 */ int extra_lbits[29]; // zlib trees.c extra_lbits[LENGTH_CODES]
     /* 0x74 */ uint8_t bl_order[19]; // zlib trees.c bl_order[BL_CODES]; build_bl_tree reads it at base-1..-3 folded
     /* 0x87 */ uint8_t pad; // alignment padding before extra_dbits
+};
+
+struct __attribute__((packed)) D3DTextureCacheSetStrc {
+    /* 0x00 */ D3DTextureCacheStrc aCaches[3]; // mip levels 1..3, indexed [iMip-1]
+    /* 0x54 */ IDirect3DTexture2 * apSpriteTextures[3]; // [iMip-1]
+    /* 0x60 */ IDirectDrawSurface7 * apSpriteSurfaces[3]; // [iMip-1]
 };
 
 struct DSCAPS {
@@ -1164,33 +1173,6 @@ struct __attribute__((packed)) D2ShrinesTableEntryStrc {
     /* 0x00 */ void (__fastcall *fpShrineHandler)(D2ObjectOperateFnArg *, D2ShrinesTxt *);
     /* 0x04 */ eD2UnitStat eStat;
     /* 0x08 */ eD2States nState;
-};
-
-struct __attribute__((packed)) D2ShrinesTableStrc {
-    /* 0x000 */ D2ShrinesTableEntryStrc None;
-    /* 0x00C */ D2ShrinesTableEntryStrc Refill;
-    /* 0x018 */ D2ShrinesTableEntryStrc HealthBoost;
-    /* 0x024 */ D2ShrinesTableEntryStrc ManaBoost;
-    /* 0x030 */ D2ShrinesTableEntryStrc HealthExchange;
-    /* 0x03C */ D2ShrinesTableEntryStrc ManaExchange;
-    /* 0x048 */ D2ShrinesTableEntryStrc ArmorBoost;
-    /* 0x054 */ D2ShrinesTableEntryStrc CombatBoost;
-    /* 0x060 */ D2ShrinesTableEntryStrc ResistFireBoost;
-    /* 0x06C */ D2ShrinesTableEntryStrc ResistColdBoost;
-    /* 0x078 */ D2ShrinesTableEntryStrc ResistLightningBoost;
-    /* 0x084 */ D2ShrinesTableEntryStrc ResistPoisonBoost;
-    /* 0x090 */ D2ShrinesTableEntryStrc SkillBoost;
-    /* 0x09C */ D2ShrinesTableEntryStrc RechargeBoost;
-    /* 0x0A8 */ D2ShrinesTableEntryStrc StaminaBoost;
-    /* 0x0B4 */ D2ShrinesTableEntryStrc ExperienceBoost;
-    /* 0x0C0 */ D2ShrinesTableEntryStrc ShrineOfEnirhs;
-    /* 0x0CC */ D2ShrinesTableEntryStrc PortalShrine;
-    /* 0x0D8 */ D2ShrinesTableEntryStrc GemShrine;
-    /* 0x0E4 */ D2ShrinesTableEntryStrc StormShrine;
-    /* 0x0F0 */ D2ShrinesTableEntryStrc WarpingShrine;
-    /* 0x0FC */ D2ShrinesTableEntryStrc ExplodingShrine;
-    /* 0x108 */ D2ShrinesTableEntryStrc PoisonShrine;
-    /* 0x114 */ D2ShrinesTableEntryStrc Terminator; // All-zero entry past the last shrine type (SHRINE_POISON=22); no handler, eStat -1, no state.
 };
 
 // =============================================================================
@@ -1341,12 +1323,12 @@ extern uint8_t gabWardenEmbeddedModuleHash[16];
 extern uint8_t gabWardenModuleRc4Key[16];
 // NOT a pool manager: .rdata string pool starting with "end". D2PoolManagerStrc (6092 B, correct type, correctly applied at 00800000 and 0088cadc) was misapplied here
 extern char gTxtCompilationMemPool[4];
-extern uint8_t DAT_006d912c;
-extern uint8_t DAT_006d9150;
-extern uint8_t DAT_006d9160;
-extern uint8_t DAT_006d9174;
-extern uint8_t DAT_006d9188;
-extern uint8_t DAT_006d919c;
+extern char s_D2X_OUT__s_BIK_006d912c[15];
+extern char s_ACT04END_s_BIK_006d9150[15];
+extern char s_ACT04START_s_BIK_006d9160[17];
+extern char s_ACT03START_s_BIK_006d9174[17];
+extern char s_ACT02START_s_BIK_006d9188[17];
+extern char s_d2intro_s_bik_006d919c[14];
 // param_2 parameter of wsprintfA
 extern char param_2_006d9be8[4];
 // param_2 parameter of wsprintfA
@@ -1438,7 +1420,7 @@ extern uint32_t gaStartingLevelByAct[5];
 extern uint32_t PlayerMultiplyer[9];
 extern uint32_t PlayerMultiplyer2[9];
 extern D2PlayerModeFnPairStrc gaPlayerModeMoveFuncs[20];
-extern D2ShrinesTableStrc OBJECTSHRINEFUNCTION;
+extern D2ShrinesTableEntryStrc OBJECTSHRINEFUNCTION[24];
 extern int gaMissileOffsets_LightningUniqueY[4];
 extern uint32_t gnAuraDamageScale_ManaAbsorb[3];
 extern uint8_t BYTE_ARRAY_006e3138[80];
@@ -1658,6 +1640,7 @@ extern FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e950;
 extern FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e980;
 extern char gszOogLevelRestrictionText[4];
 extern char gszOogMaxPlayersText[4];
+extern int32_t gnPendingGameInfoCharIndex;
 extern uint32_t gnCurrentChannelContextId;
 // COM callback dispatch table — 24 entries (indices 0x00–0x17). Indexed by COM event type code. See ComCallback.cpp ~L1065: (*gaComCallbackDispatch[eventType])(a, b)
 extern pfnComCallback gaComCallbackDispatch[24];
@@ -2047,7 +2030,7 @@ extern int gaCompWeaponClassByCodeIndex[14];
 extern int gaCompWeaponClassCodeMap[26];
 extern unsigned int gnCompWeaponClassCodeMapCount;
 extern uint32_t gnGlideTextureMode;
-extern int gaPerspectiveImageSizeTable[8];
+extern int gaPerspectiveImageSizeTable[14];
 extern GrTexInfo gTexInfoDebugFontGlide;
 extern void * gapGlideStripVertexPtrsA[10];
 extern void * gapGlideStripVertexPtrsB[10];
@@ -2385,9 +2368,7 @@ extern uint32_t gnSSystemOption1;
 extern uint32_t gnSSystemWaveBufferSize;
 extern uint32_t gnSSystemAsyncReadSize;
 extern uint32_t gbCompressionDebugOutput;
-extern uint32_t gpSSystemThreadContextCallback;
-extern uint32_t gnSSystemThreadContextParam;
-extern uint32_t gnSSystemThreadContextThreadId;
+extern SErrAppFatalContextStrc gpSSystemThreadContextCallback;
 // lpCriticalSection parameter of InitializeCriticalSection
 // lpCriticalSection parameter of LeaveCriticalSection
 // lpCriticalSection parameter of EnterCriticalSection
@@ -2920,9 +2901,7 @@ extern uint32_t gnCameraWorldDeltaX;
 extern uint32_t gnCameraWorldDeltaY;
 extern uint32_t gbMinimapClickValid;
 // Load screen timer duration in ms (paired with gLoadTimerStartTick).
-extern int gLoadTimerDurationMs;
-// Load screen timer start tick (paired with gLoadTimerDurationMs).
-extern int gLoadTimerStartTick;
+extern D2ClientTimerStrc gLoadTimerDurationMs;
 extern TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> gQServerGameState;
 // NAME IS WRONG - this is the accelerator table, not a "loaded" flag. It was typed `bool` while all
 // three of its accesses are dword: CLIENT_LoadLNG stores LoadAcceleratorsA(ghLngLibrary,0x64) here,
@@ -2933,6 +2912,8 @@ extern HMODULE ghLngLibrary;
 // lpLibFileName parameter of LoadLibraryExA
 extern char lpLibFileName_007a0710[260];
 extern D2GameRecordStrc gsGameRecordContext;
+// lpBuffer parameter of ReadFile
+extern D2GameRecordFileHeaderStrc lpBuffer_007a2768;
 extern uint32_t gdwQuestResurrectDismissThrottle;
 extern DC6 * DC6_EnteredAreaName;
 extern DC6 * pDC6_Frame;
@@ -3091,7 +3072,7 @@ extern int gnLightmapWorldRefreshFlag;
 extern int gnLightmapBufferState;
 extern int gnLightmapWorldMaxX;
 extern int gnLightmapWorldMaxY;
-extern uint32_t gnLightmapInterpolationState[256];
+extern uint32_t gnLightmapInterpolationState[257];
 extern D2LightMapCellStrc gaLightMapCells[2304];
 extern D2LightMapCellStrc gLightmapCellData[2304];
 extern D2LightMapCellStrc gLightmapCellDataRed[2304];
@@ -3316,11 +3297,9 @@ extern uint32_t gbTextScrollBoxActive;
 extern uint32_t gbTextStaticPopupActive;
 extern uint32_t gpTextStaticPopupBox;
 extern int gaTextStaticPopupRect;
-extern ScreenMessage_t * ScreenMessagesMaybe;
-extern uint16_t gnTextChatMessageCount;
-extern ScreenMessage_t * ScreenPartyMessages;
-extern uint16_t gnTextPartyMessageCount;
-extern ScreenMessage_t * AllMessagesMaybe;
+extern D2ScreenMessageListStrc ScreenMessagesMaybe;
+extern D2ScreenMessageListStrc ScreenPartyMessages;
+extern D2ScreenMessageListStrc AllMessagesMaybe;
 extern uint32_t gnTextDisplayMode;
 extern uint32_t gbTextScrollBoxVisible;
 extern uint32_t gnTextNpcGuid;
@@ -3725,31 +3704,7 @@ extern uint32_t gbGlideInScene;
 extern uint32_t gbGlidePerspectiveMode;
 extern uint32_t gnGlideSpriteSecondaryTMUEnabled;
 extern uint32_t gnGlideTMUIndex;
-extern int gGlideVertex0;
-extern float gfGlideQuadZ0;
-extern uint32_t gnGlideVertexColor;
-extern float gfGlideVertex0OOW;
-extern float gfGlideVertex0S;
-extern double gfGlideVertex0T;
-extern float gfGlideVertex0X;
-extern float gfGlideQuadZ1;
-extern float gfGlideVertex0Color;
-extern float gfGlideVertex1OOW;
-extern float gfGlideVertex1S;
-extern double gfGlideVertex1T;
-extern float gfGlidePaletteTableOffset;
-extern float gfGlideVertex1Y;
-extern float gfGlideVertex2Color;
-extern float gfGlideVertex3OOW;
-extern float gfGlideVertex3S;
-extern float gfGlideVertex3T;
-extern float gfGlideVertex2X;
-extern float gfGlideVertex2Y;
-extern float gfGlideVertex1Color;
-extern float gfGlideVertex3Color;
-extern int gnGlideAlphaBlendDst;
-extern int gnGlideAlphaBlendSrc;
-extern GlTextureCacheStrc gGlideSmallTextureCache[3];
+extern D2GlideVertexTexCacheBlockStrc gGlideVertex0;
 extern void * gpGlideSpriteBuffer;
 extern void * gpGlideSpritePixelBuffer;
 extern uint32_t gaGlideColorDebugGradientIndices[1024];
@@ -3786,14 +3741,7 @@ extern void * gpGlideDebugFontTexture;
 extern uint32_t gnGlideDebugFontTMU;
 extern int * gpnLightmapRowPointers;
 extern D2GlideVertexStrc gaGlidePerspectiveVertices[15];
-extern int gGlidePerspectiveVertexBuffer;
-extern float gfGlideWallVertexYMin;
-extern float gfGlideWallVertex2X;
-extern float gfGlideWallVertexYMid;
-extern float gfGlideWallVertexYMax;
-extern float gfGlideWallVertex3Y;
-extern float gfGlideWallVertex4X;
-extern float gfGlideWallVertex4Y;
+extern D2GlideVertexStrc gGlidePerspectiveVertexBuffer[4];
 extern D2GlideVertexStrc gaGlideGroundTileVertices[36];
 // @data gapGlideGroundStripVertexPtrs
 // @wasnamed gapGlideTileVertexPtrs
@@ -3953,9 +3901,7 @@ extern uint32_t g_nBNetThreadInitFlag;
 extern uint32_t g_pfnNewsChannelCallback;
 extern pfnVoidNoArgCallback g_pfnMotdCallback;
 extern pfnVoidNoArgCallback g_pfnNewsCallback;
-extern uint32_t g_nNewsMaxCacheSize;
-extern uint32_t g_nNewsEntryCount;
-extern void * gpBNetNewsCache;
+extern D2BnNewsTableStrc g_nNewsMaxCacheSize;
 extern uint32_t g_nFirstUnreadNewsIndex;
 extern uint32_t g_dwNewsTimestamp;
 extern int gnNetworkSendState;
@@ -4246,9 +4192,7 @@ extern unsigned int g_nBytesPerPixel;
 extern HWND ghD3DEnumWindowHandle;
 extern unsigned int gnDirect3DDeviceCount;
 extern unsigned int g_bPerspectiveMode;
-extern D3DTextureCacheStrc gD3DGenericTextureCache[3];
-extern IDirect3DTexture2 * gpD3DSpriteSystemTexture0[3];
-extern IDirectDrawSurface7 * gpD3DSpriteSystemSurface0[3];
+extern D3DTextureCacheSetStrc gD3DGenericTextureCache;
 extern void * gpD3DTextureSpritePoolMemory0;
 extern void * gpD3DTextureSpritePoolMemory1;
 extern IDirect3DVertexBuffer * g_pD3DSpriteQuadVB;
@@ -5303,7 +5247,6 @@ extern unsigned int g_bCutscenePlaying;
 // (classified static-local by xref count, but named in other bodies too)
 // =============================================================================
 
-extern uint16_t gnPendingGameInfoCharIndex;
 extern eD2PlayerClassID eD2PlayerClassID_00712f00;
 extern bool gbPanelClickProcessed;
 extern uint8_t gbCdCheckPassed;

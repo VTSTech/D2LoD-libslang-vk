@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
+#include "Storm/Source/SSystem.h"
 
 // Forward declarations
 struct D2StormListHead;
@@ -14,6 +15,12 @@ struct D2StormListHead;
 #define RECON_FPTD_pfnStormMsgIdleCallback
 typedef int (__stdcall *pfnStormMsgIdleCallback)(int nIdleIteration);
 #endif
+
+// Data types
+struct __attribute__((packed)) StormWndRecStrc {
+    /* 0x00 */ StormLinkStrc link;
+    /* 0x08 */ HWND hWnd;
+};
 
 namespace Storm::WindowHandle {
 
@@ -38,7 +45,7 @@ int * * __fastcall WND_AllocRecord(int32_t nMode, int32_t nSize, uint32_t dwFlag
 int * __fastcall WND_UnlinkAndFreeRecord(uint8_t byFreeFlags, int * pRecord);
 // @blizzard AddWindow (SMSG.CPP)
 void __stdcall SMSG_AddWindow(uint32_t hWnd);
-uint32_t __fastcall WND_RemoveAndFreeRecord(void * pListHead, int * pRecord);
+uint32_t __fastcall WND_RemoveAndFreeRecord(void * pListHead, struct StormWndRecStrc * pRecord);
 // @blizzard FindWindow (SMSG.CPP)
 uint32_t __fastcall SMSG_FindWindow(int32_t nHandle);
 // @blizzard DeleteWindow (SMSG.CPP)
