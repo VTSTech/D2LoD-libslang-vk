@@ -9,6 +9,7 @@
 #include "D2Client/D2DialogStrc.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Client/D2LightMapStrc.h"
+#include "D2Client/Draw/LightDiag.h"
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Engine.h"
 #include "D2Client/Engine/Gfx.h"
@@ -1788,6 +1789,19 @@ int32_t __fastcall SEED_RollRange(D2SeedStrc * pSeed, int32_t nMin, int32_t nMax
 }
 
 void __stdcall OBJECT_SetLightRGB(uint8_t byRed, uint8_t byGreen, uint8_t byBlue, uint16_t nRadius, D2UnitStrc * pUnit) {
+    // [glide fix 13] capture real object lights (radius != 0) with the raw
+    // compiled objects.txt row bytes around Red@0x164/Green@0x165/Blue@0x166
+    // so the gold-drop blue-channel divergence can be attributed to the txt
+    // parse vs the downstream lightmap in one dump round.
+    if (nRadius) {
+      const void * pTxtRow = nullptr;
+      if (pUnit && pUnit->eUnitType == UNIT_OBJECT && pUnit->pUnitData.pUnitDataObject && pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine) {
+        pTxtRow = (const void *)((const uint8_t *)pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine + 0x160);
+      }
+
+      D2Client::Draw::LightDiag::NoteObjectLight(pUnit ? (int)pUnit->nClassId : -1, byRed, byGreen, byBlue, nRadius, pTxtRow);
+    }
+
     D2LightMapStrc* pLightMap = pUnit->uSideData.pClientSide.pLight;
     if (!nRadius) {
       if (pLightMap) {

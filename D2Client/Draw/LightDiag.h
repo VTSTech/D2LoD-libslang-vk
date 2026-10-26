@@ -11,7 +11,8 @@
 // dumps that field plus every input stage, once, to d2light-diag.txt.
 //
 // Zero-cost after the dump: every entry point returns immediately once
-// s_bDumped is set. Captures run for at most 2 frames after world entry.
+// s_bDumped is set. The dump fires at in-world frame 90 (fix 13: object
+// lights register during world init; the cell snapshot stays frame 1).
 
 #pragma once
 
@@ -29,5 +30,29 @@ void __stdcall NoteUnitSample(int nEntryX, int nEntryY, uint32_t nPackedLightCol
 // Called after the first outdoor GetIntensityFlagsForTile fill (Draw.cpp).
 // Records the tile's world coords and the 64-entry D2GfxLightExStrc grid.
 void __stdcall NoteGroundGrid(int nWorldX, int nWorldY, const void * pLightGrid);
+
+// [glide fix 13] Called at the head of AllocLightMap (LightMap.cpp). Records
+// every light-source color request (player / monster / missile / object) with
+// the unit identity and the raw nRed/nGreen/nBlue the caller passed. First 32
+// calls only; disarmed once the dump is written.
+//
+// Purpose: the 535f2aa wrapper A/B logs (mobs-drops, 2026-10-25 20:04 retail
+// vs 22:19 rebuilt) show the rebuilt tree submitting tinted-sprite vertex
+// colors with the BLUE channel zeroed — the gold-drop quad (tex 64x32 at
+// screen (193,490)) carries 0xffc7b300 rebuilt vs 0xffc7b377 retail, same
+// texture, rect, s/t and blend. The whole glide-side chain is
+// channel-symmetric (verified by code audit + the fix-8 dump), so the loss
+// sits in the client light data. These captures pin WHICH stage drops blue:
+// AllocLightMap inputs = the colors after txt parsing and before the map.
+void __stdcall NoteLightSource(int nUnitType, int nClassId, int nLightType, int nDiameter,
+                               uint8_t nGamma, uint8_t nRed, uint8_t nGreen, uint8_t nBlue);
+
+// [glide fix 13] Called at the head of OBJECT_SetLightRGB (D2Client.cpp) for
+// radius != 0 only (real lights: campfires, braziers, torches). Records the
+// parsed objects.txt light color AND the raw compiled-row bytes 0x160..0x16F
+// (Red@0x164 Green@0x165 Blue@0x166) so a column-mapping defect in the
+// compiled table is visible directly in the dump. First 16 calls only.
+void __stdcall NoteObjectLight(int nClassId, uint8_t byRed, uint8_t byGreen, uint8_t byBlue,
+                               uint32_t nRadius, const void * pTxtRowBytes);
 
 } // namespace D2Client::Draw::LightDiag

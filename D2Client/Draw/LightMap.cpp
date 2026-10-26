@@ -60,6 +60,8 @@ namespace D2Client::Draw::LightMap {
 static uint8_t gnLightmapInterpDirX;
 
 D2LightMapStrc * __fastcall AllocLightMap(D2UnitStrc * pUnit, int32_t nLightType, int32_t nDiameter, uint8_t nGamma, uint8_t nRed, uint8_t nGreen, uint8_t nBlue) {
+    LightDiag::NoteLightSource(pUnit ? (int)pUnit->eUnitType : -1, pUnit ? (int)pUnit->nClassId : -1, nLightType, nDiameter, nGamma, nRed, nGreen, nBlue); // [glide fix 13]
+
     // Static local variables (originally global data)
     static int nLightMapSize;
 
