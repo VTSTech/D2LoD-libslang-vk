@@ -1,6 +1,8 @@
 # vanilla-plus — handoff for future work
 
-*Written 2026-10-26 at the close of the glide-renderer defect series (fixes 1–13, PR #6 at 10 commits, all investigations closed and field-verified). Audience: the next engineer or agent picking up vanilla-plus work with zero conversation context. The master journal behind this doc is `/home/z/my-project/worklog.md` (Task IDs 1–22); when this doc and the worklog disagree, the worklog wins.*
+*Written 2026-10-26 at the close of the glide-renderer defect series (fixes 1–13, PR #6 at 10 commits, all investigations closed and field-verified). Audience: the next engineer or agent picking up vanilla-plus work with zero conversation context. The master journal behind this doc is `/home/z/my-project/worklog.md` (rev-1 Tasks 1–22 were lost in the 2026-10-26 sandbox reset; the journal was re-initialized — its Task 1 is the remote-state verification this rev is based on); when this doc and the worklog disagree, the worklog wins.*
+
+*Rev 2 (2026-10-26, later same day): §2 rewritten for the remote-repo state — the fix chain now lives on the public remote and the full fix-chain hash map is recorded; PR #6's verified live state moved to §9.1 (the updated body was never applied); §10 is now a build spec (prior tooling lost); §12's grep gates corrected against the actual in-tree marker text; §13 refreshed for the clean re-cloned sandbox. This file is committed in-tree at the tip (`03705cf`).*
 
 ---
 
@@ -22,16 +24,39 @@ Root pattern behind all eleven PR defects: labels adjacent in the original `.dat
 
 ## 2. Branch / commit topology
 
-- **Authoritative trees live on the user's machines**, not in this sandbox. This sandbox's clone (`/home/z/my-project/D2LoD-libslang-vk`) is a *forensics copy*:
-  - `HEAD = c607f7f` — **stale, pre-fix-1**. Never treat it as current.
-  - Working tree = c607f7f **+ partial integration**: fix-9 (`gnLightmapInterpolationState[257]` in `globals/globals.h:3094` + `globals/D2Client.cpp`), LightDiag v2 module + hooks (`D2Client/Draw/LightMap.cpp:63` NoteLightSource, `D2Client/D2Client.cpp:1802` NoteObjectLight, `D2Client/GAME/Draw.cpp` ×3), ShadowDiag module files. **`D2Glide/Renderer/Glide.cpp` itself is stale** (145 925 B, no fix markers) — the authoritative Glide.cpp lineage is only in overlay zips / user commits.
-  - ~1137 pre-existing modified files in the worktree. **Do not revert, clean, or "fix" them.**
-- **`vanilla-plus`** (user side): carries the whole fix chain as commits named `vanilla-plus fix N: ...` / `glide fix N`. Verified hash anchors:
-  - `642711a` = tip after fixes 7–9 (= PR commit 6, CI build `d2s-642711a`). Glide.cpp here = 163 371 B. **This is the reference base for all fix-10-era forensics.**
-  - `440c5f8` = CI build carrying PR commit 9 (shadow spans) — the field-verified shadow build (`d2s-440c5f8`).
-  - Intermediate hashes `fdfdd17` (fix 1) … `642711a` live in the user's `git log`; see worklog Tasks 14–19 for per-fix detail.
-- **`pr2/glide-renderer-fixes`** (user side): the PR #6 branch (`jaenster/redivivus`). PR body = `/home/z/my-project/download/pr6-updated-body.md` (apply with `gh pr edit 6 --repo jaenster/redivivus --body-file pr6-updated-body.md` — **no gh CLI/token in this sandbox**, the user runs it or edits on the web).
-- Note: pr2's Glide.cpp text has **drifted from vanilla-plus's** (jaenster revision: reworded comments, ~2441 lines). Overlay scripts therefore assert *per-anchor* uniqueness, never whole-file equality, across the two tips.
+- **The authoritative tree is now the public remote**: `origin = https://github.com/VTSTech/D2LoD-libslang-vk` (public repo, default branch `main`). **`vanilla-plus` carries the entire fix chain plus this file**; tip at rev-2 time = `03705cf` ("Create handoff.md"). A fresh clone is clean and complete — verified 2026-10-26: `[glide fix 9]` falloff `[257]` at `globals/globals.h:3094`, the fix-10 u32-store block at `D2Glide/Renderer/Glide.cpp:3522`, the `[vanilla-plus fix 13]` span block at `Glide.cpp:1221`, ShadowDiag + LightDiag v2 modules in tree, `Glide.cpp` = 165 953 B.
+- Remote branches / tags (verified against origin 2026-10-26):
+  - `vanilla-plus` = `03705cf` — the game-source line; everything below hangs off it.
+  - `main` = `fd236ce` — pre-fix-chain baseline, ancestor of vanilla-plus.
+  - `pr2/glide-renderer-fixes` = `31acdac` ("vanilla-plus fix 13") — in-repo mirror of the PR #6 line; its own revised text (drift note below).
+  - `libslang-vk` = `3a52553` (tip titled `0.4.5`) — the **glide3xvk wrapper line** (§1's logging ICD; module `535f2aa` is its parent). Tags `0.3.1`, `0.4.2`–`0.4.4` sit on this lineage.
+  - `PR1-Bnclient-signer-verify-crash-fix` = `449d0a2` — early crash-triage-era side branch off `1b24c75` (tag `0.4.1`, a shared early commit); **not merged** into vanilla-plus.
+- **Full fix-chain hash map** — previously only in the user's local `git log`, now durable (vanilla-plus first-parent, all 2026-10-25):
+
+  | fix | commit | subject | note |
+  |---|---|---|---|
+  | 1 | `fdfdd17` | vanilla-plus fix | texture-cache phantom structs |
+  | 2 | `870031f` | vanilla-plus fix 2 | 1-based size class |
+  | 3 | `179dcf9` | vanilla-plus fix 3 | EnsureCapacity result |
+  | 4 | `6878d9d` | vanilla-plus fix 4 | stale sprite-header slots |
+  | 5 | `d4deaa3` + `9884942` | vanilla-plus fix 5 (two commits) | scattered fan vertices |
+  | 6 | `fa1fa3a` | vanilla-plus fix 6 | fan slot order + portrait spans |
+  | 7 | `77fd651` | glide fix 7 | wall/shadow tile fans |
+  | — | `b4c705e` | Update build.yml | CI tweak, no code |
+  | 8 | `c2512b2` | glide fix 8 | LightDiag v1 (diagnostic) |
+  | 9 | `642711a` | glide fix 9 | falloff `[257]` — CI build `d2s-642711a`; **reference base for fix-10-era forensics** (Glide.cpp = 163 371 B here) |
+  | 10 | `6feb86f` | glide fix 10 | ground-argb u32 stores |
+  | 11 | `b478f2b` | glide fix 11 | ShadowDiag (diagnostic) |
+  | 12 | `7e07380` | restore glide fix 10 | fix-11 drop-in regression restore |
+  | 13s | `440c5f8` | vanilla-plus fix 13 | shadow spans — CI build `d2s-440c5f8`, field-verified |
+  | 13l | `1a180d1` | glide fix 13 | LightDiag v2 (diagnostic) |
+  | — | `03705cf` | Create handoff.md | this file |
+
+  (The PR #6 "commit N" numbering for this table lives in the collision table below.)
+- CI (GitHub Actions `.github/workflows/build.yml`): green on `440c5f8` and `1a180d1` (runs completed 2026-10-26 UTC; 46 runs total at rev-2 time). No run observed for the docs-only `03705cf`. Still ships `d2s-<sha>.exe` + `d2-map-<sha>.map`.
+- **Sandbox reset (2026-10-26, after rev 1 was written)**: the prior session's local artifacts are gone — worklog Tasks 1–22, `scripts/` overlay builders + diag decoders, `download/pr6-updated-body.md`, `work/` forensic areas, `upload/` zips. The worklog was re-initialized; §10's tooling table is now a *build spec*, not an inventory. Rev-1's forensics-copy notes (HEAD `c607f7f`, ~1137 dirty files) are historical only — `c607f7f` is simply the last pre-fix-chain commit (the bundle-merge point).
+- **`pr2/glide-renderer-fixes` / PR #6** (on `jaenster/redivivus`): verified live state in §9.1. Key facts: PR head = `c65fa93` = the pr2-line `vanilla-plus fix 6` commit; **the live PR body is still the original five-defect text** — the finalized 11-defect body was never applied, and its source file was lost in the sandbox reset (§9.1).
+- Note: pr2's Glide.cpp text has **drifted from vanilla-plus's** (jaenster revision: reworded comments, ~2441 lines). Overlay scripts therefore assert *per-anchor* uniqueness, never whole-file equality, across the two lines.
 
 ### Naming collision — read before confusing yourself
 
@@ -124,7 +149,7 @@ QA gauntlet (all must be green before shipping):
 
 ## 9. Open / parked items (nothing urgent, nothing hidden)
 
-1. **PR #6 merge watch** — 10 commits, body finalized (`pr6-updated-body.md`), no outstanding work; user applies the body.
+1. **PR #6 merge watch — real work outstanding (verified 2026-10-26 via GitHub API).** State **open**, not merged; head `pr2/glide-renderer-fixes` @ `c65fa93` (the pr2-line fix-6 commit), base `main`, 3 commits / 3 files / +448/−76, `mergeable_state: unstable`, last updated 2026-10-25T20:26Z. **The live body is still the original five-defect text** — the finalized 11-defect/10-commit body was never applied, and `download/pr6-updated-body.md` was lost in the sandbox reset, so the body must be **regenerated first** (source material: §2's hash map + collision table, §3's eleven defects, §4 verification status) before `gh pr edit 6 --repo jaenster/redivivus --body-file ...` (no gh CLI/token in this sandbox — the user runs it or edits on the web). Also decide whether the PR head should be advanced past fix 6: fixes 7–13 exist on `vanilla-plus` and the pr2 mirror (`31acdac`) but not as PR-visible commits.
 2. **Diag-hook cleanup commit** — see §8; pending user decision.
 3. **Garbage-dword `grConstantColorValue` upper bytes** — memory-layout noise; ignore unless it ever reaches a draw.
 4. **Second-order shadow-capture oddities** — same-frame different-crc decodes (class 36 frame 1/10 pairs), empty frame-0 decodes (class 37 frame 0 = 0/4096 vs frame 1 = 1051). Now interpretable with correct spans if anyone cares.
@@ -148,7 +173,7 @@ QA gauntlet (all must be green before shipping):
 | `vertex_scatter_audit.py` | defect-5 vertex-block audit |
 | `resolve_map*.py` | CI linker-map symbolization |
 
-Forensic extraction areas live under `/home/z/my-project/work/` (fix11regress, fix12, fix11diag, shadow-verif, light-verif, logdiff*, wrapper/…). Original user uploads land in `/home/z/my-project/upload/`.
+**Rev-2 note:** every script above was lost in the 2026-10-26 sandbox reset — the table is now a *build spec* (recreate on demand per the Script Persistence Rule; the dump formats survive in §8 and in the in-tree modules `ShadowDiag.{h,cpp}` / `LightDiag.{h,cpp}`). Likewise `work/` (fix11regress, fix12, fix11diag, shadow-verif, light-verif, logdiff*, wrapper/…) and `upload/` start empty in a fresh sandbox; re-create extraction areas as needed.
 
 ## 11. Field-validation loop (how work gets done)
 
@@ -164,8 +189,8 @@ Forensic extraction areas live under `/home/z/my-project/work/` (fix11regress, f
 | Symptom | First check |
 |---|---|
 | Black light cores / black unit silhouettes | falloff table still `[257]`? (`globals/globals.h:3094`) |
-| Light radius / torch discoloration | `grep -c "glide fix 10" D2Glide/Renderer/Glide.cpp` — expect 9; 0 = the fix-11-style regression again (apply §7 patch-first rules) |
-| Every unit shadow is a solid blob / samples (0,0) | `grep -c "glide fix 13" D2Glide/Renderer/Glide.cpp`; then a fresh `d2shadow-diag.txt` — aspect<0 records must show s 0..64/0..128, t 0..256 |
+| Light radius / torch discoloration | `grep -n "glide fix 10" D2Glide/Renderer/Glide.cpp` — exactly one block comment (~3522) naming the nine u32 stores; confirm the nine `*(uint32_t*)&pfVertexSlot[...]` writes beneath it. Missing = the fix-11-style regression again (apply §7 patch-first rules). (Rev-2: rev 1 said "expect 9" — that counted the stores, not marker lines.) |
+| Every unit shadow is a solid blob / samples (0,0) | `grep -n "vanilla-plus fix 13" D2Glide/Renderer/Glide.cpp` — block comment at ~1221 (DrawShadowQuad). (Rev-2: the marker is `[vanilla-plus fix 13]`, not `glide fix 13` — rev 1's gate string returned 0 on a healthy tree.) Then a fresh `d2shadow-diag.txt` — aspect<0 records must show s 0..64/0..128, t 0..256 |
 | `0xc1` halt at boot/menu | texture cache (defects 1–4); check promote bails in bootlog |
 | Halt `0x112` at end-of-loading | `GLSUBTILE_EnsureCapacity` return capture (defect 8) |
 | Black-triangle grid on title screen | fan slot order (defect 6) — do *not* blame the wrapper (that attribution was retracted) |
@@ -176,6 +201,7 @@ Forensic extraction areas live under `/home/z/my-project/work/` (fix11regress, f
 
 - No `gh` CLI/token — PR body edits are handed to the user.
 - `git apply` needs `--no-index` and `GIT_CEILING_DIRECTORIES=/home/z/my-project` (the clone has no clean parent boundary).
-- Use `rg --hidden` for repo sweeps; ~1137 modified files in the clone are pre-existing — hands off.
+- Use `rg --hidden` for repo sweeps. The rev-2 clone is **clean** (`03705cf`, 0 dirty files) — a dirty worktree now means *new* local work: inspect it, don't blanket-revert.
+- The sandbox resets between sessions (the 2026-10-26 reset lost the rev-1 worklog, scripts/, download zips, work/, upload/ — §2). Persist anything load-bearing in the repo itself; that is why this handoff is committed in-tree.
 - Script Persistence Rule: scripts >10 lines go to `scripts/` and get edited in place on failure.
 - User timezone America/Toronto; session language English; delivery zips always to `/home/z/my-project/download/`.
