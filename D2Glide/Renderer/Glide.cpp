@@ -1218,10 +1218,35 @@ void __stdcall RENDERER_GLIDE_DrawShadowQuad(int32_t nParam1, int32_t nParam2, i
     int nTexHeight;
     int nScreenXBase;
     int nScreenXCenter;
-    float fTexS0 = (float)gaPerspectiveImageSizeTable[*(int*)(nParam3 + 0x34) * 2] * *(float*)(nParam3 + 0x20);
-    float fTexS1 = (float)gaPerspectiveImageSizeTable[*(int*)(nParam3 + 0x34) * 2] * *(float*)(nParam3 + 0x24);
-    float fTexT0 = (float)gaPerspectiveImageSizeTable[*(int*)(nParam3 + 0x34) * 2 + 1] * *(float*)(nParam3 + 0x28);
-    float fTexT1 = (float)gaPerspectiveImageSizeTable[*(int*)(nParam3 + 0x34) * 2 + 1] * *(float*)(nParam3 + 0x2c);
+    // [vanilla-plus fix 13] The glide shape class (nAspect) is NEGATIVE for
+    // portrait textures (1:2 / 1:4 tall - most unit shadows), so the raw
+    // gaPerspectiveImageSizeTable[nAspect * 2] reads below indexed BACKWARD
+    // out of the array: in the original binary the words before the table
+    // made those reads land on usable span values, in the rebuild they read
+    // .data zeros and every portrait shadow submitted s/t = 0 on all four
+    // fan vertices (d2shadow-diag.txt: 15 of 24 captured quads, every
+    // aspect<0 record) - the shadow then samples texel (0,0) across its
+    // whole footprint. Same disease fix 6 repaired in DrawPalettedQuad and
+    // DrawPerspectiveImage (same struct, same table; its comment already
+    // noted "DrawShadowQuad still spells that read out"). Compute the
+    // portrait spans from the pow2 dims like fix 6: S = nTexWidth *
+    // 2^(8-lod), T = nTexHeight * 2^(8-lod) (T = 256 for every portrait
+    // class); the law reproduces every real non-negative table entry
+    // (32x32 lod5 -> 256/256, 16x8 lod4 -> 256/128, 128x64 lod7 -> 256/128).
+    GlideTexInfoStrc * pTexInfo = (GlideTexInfoStrc *)(uintptr_t)nParam3;
+    float fSpanS, fSpanT;
+    if (pTexInfo->nAspect < 0) {
+        const float fLodScale = (float)(1 << (8 - pTexInfo->nLodLevel));
+        fSpanS = (float)pTexInfo->nTexWidth * fLodScale;
+        fSpanT = (float)pTexInfo->nTexHeight * fLodScale;
+    } else {
+        fSpanS = (float)gaPerspectiveImageSizeTable[pTexInfo->nAspect * 2];
+        fSpanT = (float)gaPerspectiveImageSizeTable[pTexInfo->nAspect * 2 + 1];
+    }
+    float fTexS0 = fSpanS * pTexInfo->fScale0;
+    float fTexS1 = fSpanS * pTexInfo->fTexS0;
+    float fTexT0 = fSpanT * pTexInfo->fTexT0;
+    float fTexT1 = fSpanT * pTexInfo->fTexS1;
     BOOL bPerspectiveEnabled = RENDERER_GLIDE_IsPerspectiveEnabled();
     if (!bPerspectiveEnabled) {
       nTexWidth = *(int*)(nParam3 + 4);
