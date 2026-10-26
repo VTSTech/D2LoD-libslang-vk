@@ -372,37 +372,44 @@ void __fastcall D2MEM_VirtualFree(LPVOID pParam) {
     /* DWORD dwFreeType for VirtualFree */ /* SIZE_T dwSize for VirtualFree */ /* LPVOID lpAddress for VirtualFree */ VirtualFree(pParam, 0, 0x8000);
 }
 
-void __fastcall D2MEM_CopyRows(D2CharSelCompStrc * pCharSelComp, uint32_t * pSrc, int32_t nDstStride, int32_t nSrcStride, int32_t nRows, uint32_t nBytesPerRow) {
+// D2MEM_CopyRows copies nRows rows of nBytesPerRow bytes from pSrc to pDst,
+// byte tail first, then whole DWORDs, then skips (stride - width) on each
+// buffer. The generator typed the first parameter D2CharSelCompStrc * and
+// walked the cursor through the nFlags (0x00) / nAnimSpeed (0x04) member
+// ladder, which mangles to a name no caller references; the header declares
+// the raw char * contract the D2CMP tile callers use, so the body now walks a
+// plain char cursor. Same instructions either way.
+void __fastcall D2MEM_CopyRows(char * pCharSelComp, uint32_t * pSrc, int32_t nDstStride, int32_t nSrcStride, int32_t nRows, uint32_t nBytesPerRow) {
     do {
       uint32_t nRemainder;
       nRemainder = nBytesPerRow & 3;
       if (nRemainder) {
         if (nRemainder == 1) {
-          *(char*)&pCharSelComp->nFlags = (char)*pSrc;
-          pCharSelComp = (D2CharSelCompStrc*)((uintptr_t)&pCharSelComp->nFlags + 1);
+          *pCharSelComp = (char)*pSrc;
+          pCharSelComp += 1;
           pSrc = (uint32_t*)((int)pSrc + 1);
         } else if (nRemainder == 2) {
-          *(char*)&pCharSelComp->nFlags = (char)*pSrc;
-          *(uint8_t*)((uintptr_t)&pCharSelComp->nFlags + 1) = *(uint8_t*)((int)pSrc + 1);
-          pCharSelComp = (D2CharSelCompStrc*)((uintptr_t)&pCharSelComp->nFlags + 2);
+          *pCharSelComp = (char)*pSrc;
+          *(uint8_t*)(pCharSelComp + 1) = *(uint8_t*)((int)pSrc + 1);
+          pCharSelComp += 2;
           pSrc = (uint32_t*)((int)pSrc + 2);
         } else {
-          *(char*)&pCharSelComp->nFlags = (char)*pSrc;
-          *(uint8_t*)((uintptr_t)&pCharSelComp->nFlags + 1) = *(uint8_t*)((int)pSrc + 1);
-          *(uint8_t*)((uintptr_t)&pCharSelComp->nFlags + 2) = *(uint8_t*)((int)pSrc + 2);
-          pCharSelComp = (D2CharSelCompStrc*)((uintptr_t)&pCharSelComp->nFlags + 3);
+          *pCharSelComp = (char)*pSrc;
+          *(uint8_t*)(pCharSelComp + 1) = *(uint8_t*)((int)pSrc + 1);
+          *(uint8_t*)(pCharSelComp + 2) = *(uint8_t*)((int)pSrc + 2);
+          pCharSelComp += 3;
           pSrc = (uint32_t*)((int)pSrc + 3);
         }
       }
 
       for (nRemainder = nBytesPerRow >> 2; nRemainder; nRemainder--) {
-        pCharSelComp->nFlags = *pSrc;
+        *(uint32_t *)pCharSelComp = *pSrc;
         pSrc++;
-        pCharSelComp = (D2CharSelCompStrc*)&pCharSelComp->nAnimSpeed;
+        pCharSelComp += 4;
       }
 
       pSrc = (uint32_t*)((int)pSrc + (nSrcStride - nBytesPerRow));
-      pCharSelComp = (D2CharSelCompStrc*)((int)pCharSelComp + (nDstStride - nBytesPerRow));
+      pCharSelComp += (nDstStride - nBytesPerRow);
       nRows--;
     } while (nRows);
 }
