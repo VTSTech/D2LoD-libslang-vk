@@ -79,6 +79,7 @@ void __stdcall SOUND_ResetAmbientSoundFlags() {
 }
 
 void __fastcall SOUND_SetMusicEnabled(int32_t nEnabled) {
+    D2BOOT_MarkFmt("[sounddiag] SetMusicEnabled(%d)", nEnabled); // [sounddiag]
     if (nEnabled && !gnMusicEnabled) {
       SOUND_ResetAmbientSoundFlags();
       gbSoundFastPathActive = 1;
@@ -120,6 +121,7 @@ void __stdcall SOUND_FadeOutMusic() {
 }
 
 void __stdcall SOUND_PlayNextAmbientSound() {
+    { static int s_nAmbTick = 0; if (s_nAmbTick++ < 10) D2BOOT_MarkFmt("[sounddiag] ambient tick#%u: entries=%u buf=%p fast=%u", s_nAmbTick, gaAmbientSoundFlags, (void*)gpMusicStreamBuffer, gbSoundFastPathActive); } // [sounddiag]
     uint32_t dwVolume;
     int* pAmbientEntry;
     BOOL BVar1;
@@ -210,6 +212,7 @@ void __stdcall SOUND_PlayNextAmbientSound() {
           dwVolume = D2SoundSmp::SOUNDSMP_IsStreaming(gpMusicStreamBuffer);
           nAmbientCount = gaAmbientSoundFlags;
           if (!dwVolume && szSoundFile) {
+            { static int s_nAmbOpen = 0; if (s_nAmbOpen++ < 10) D2BOOT_MarkFmt("[sounddiag] ambient open: %s vol=%u", szSoundFile, dwVolume); } // [sounddiag]
             D2SoundSmp::SOUNDSMP_Reset(gpMusicStreamBuffer);
             D2SoundSmp::SOUNDSMP_SetVolume(gpMusicStreamBuffer, 0x6e);
             BVar1 = D2SoundSmp::SOUNDSMP_OpenAndStreamFile((int**)gpMusicStreamBuffer, szSoundFile, 0, 0);
@@ -259,6 +262,7 @@ void __stdcall SOUND_LoadRegistrySettings() {
 
     D2BOOT_MarkFmt("[sounddiag] registry: mixer=%u master=%u music=%u bias=%u npc=%u", g_nSoundMixerType, g_nSoundMasterVolume, g_nSoundMusicVolume, g_nSoundPositionalBias, g_nSoundNpcSpeech); // [sounddiag]
     bReadMasterVol = Storm::Source::SReg::SRegLoadValue("Diablo II", "Options Music", 0, (int32_t*)&dwRegValue);
+    D2BOOT_MarkFmt("[sounddiag] optmusic reg: found=%d val=%u (current=%u)", bReadMasterVol, dwRegValue, g_nSoundOptionsMusic); // [sounddiag]
     if (!(bReadMasterVol && dwRegValue < 2)) {
       return;
     }
@@ -317,6 +321,7 @@ int32_t __fastcall SOUND_SetNpcSpeech(int32_t nParam) {
 }
 
 int __stdcall SOUND_GetOptionsMusic() {
+    { static int s_nOptMusic = 0; if (s_nOptMusic++ < 8) D2BOOT_MarkFmt("[sounddiag] GetOptionsMusic -> %u", g_nSoundOptionsMusic); } // [sounddiag]
     return g_nSoundOptionsMusic;
 }
 

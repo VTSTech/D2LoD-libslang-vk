@@ -399,6 +399,7 @@ BOOL __fastcall SOUNDSMP_OpenAndStreamFile(int * * ppnParam, char * szText, int3
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gSoundSmpCs);
     BOOL pStreamHandle = Storm::Source::SFile::SFileDdaBeginEx(pArchive, (uint32_t)ppnParam[1], bIsLooping ? 0x40000 : 0, nLooping * 4, 0x7fffffff, 0x7fffffff, (IDirectSoundBuffer*)*ppnParam);
+    { static int s_nOpenOk = 0; if (s_nOpenOk++ < 6) D2BOOT_MarkFmt("[sounddiag] stream OPEN: %s -> dda=%d", szText ? szText : "?", (int)pStreamHandle); } // [sounddiag]
     if (pStreamHandle) {
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ ppnParam[0x12] = (int*)pArchive;
       ppnParam[7] = (int*)0x1;
@@ -636,6 +637,7 @@ DWORD __stdcall D2SOUNDSMP_SoundUpdateThreadProc(void * lpThreadParam) {
       /* HWND hWnd for IsIconic */ gbWindowIsMinimized = IsIconic(hWnd);
       bMusicOn = D2SoundFast::SOUND_GetMusicEnabled();
       ppSoundSmp = gpSoundSampleList;
+      { static int s_nTick = 0; if (s_nTick++ % 40 == 0 && s_nTick <= 960) D2BOOT_MarkFmt("[sounddiag] tick#%u: enabled=%u buf=%p", s_nTick, bMusicOn, (void*)gpMusicStreamBuffer); } // [sounddiag]
       if (bMusicOn) {
         bMusicOn = D2SoundFast::SOUND_IsAmbientStreaming();
         ppSoundSmp = gpSoundSampleList;
@@ -723,6 +725,7 @@ DWORD __stdcall D2SOUNDSMP_SoundUpdateThreadProc(void * lpThreadParam) {
         } else {
           bMusicOn = Storm::Source::SFile::SFileDdaGetPos(ppnParam->pStreamFile, &__frame0.nStreamOffsetBytes, &__frame0.nStreamSizeBytes);
           if (!bMusicOn) {
+            { static int s_nGetPos = 0; if (s_nGetPos++ < 4) D2BOOT_Mark("[sounddiag] dda getpos FALSE -> cancel stream"); } // [sounddiag]
             if (!ppnParam->pDSBuffer) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x292);
               exit(-1);

@@ -70,6 +70,15 @@ Copy `d2.exe` next to the original `Game.exe` in a 1.14d install and run
 `d2.exe -w`. Works with the `libslang-vk` overlay: drop that overlay's
 `glide3x.dll` in the same folder as usual.
 
+On Windows the same build runs natively - `tools/win11-build.ps1` sets up
+MSYS2's i686 toolchain (first run: winget + pacman, one-time), then
+configures, builds, runs the CI gates (32-bit PE, map) and strips a
+`d2s-<id>.exe`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\win11-build.ps1 -Clean -DeployTo "C:\Games\Diablo II"
+```
+
 ## Crash triage protocol
 
 The glide-crash class that motivated the fix chain (fixes 1–13) is closed, but the
