@@ -13,6 +13,7 @@
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
 #include "D2Common/Chat.h"
+#include "D2Common/DATATBLS/DropDiag.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2DynamicPathStrc.h"
@@ -177,6 +178,7 @@ void __stdcall SERVER_ITEM_DecideDrops(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
               }
             }
 
+            D2Common::DATATBLS::DropDiag::NoteVictimDrop(pUnit->nClassId, nSelectedTC_00, nVictimLevel, bIsItemFindDrop); // [dropdiag v1]
             ITEMS::Items::Drop::SERVER_ITEM_RollItemAndGetTreasureClass(pGame, pUnit, pUnitKill->pAttacker, nSelectedTC_00, ITEMTYPE_None1, nVictimLevel, bIsItemFindDrop, nullptr, nullptr, 0);
             return;
           }

@@ -14,6 +14,7 @@
 #include "D2Client/UNIT/Object.h"
 #include "D2Client/Units.h"
 #include "D2Common/Chat.h"
+#include "D2Common/DATATBLS/DropDiag.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -3661,9 +3662,12 @@ D2UnitStrc * * __fastcall RollChestDrops(D2ObjectOperateFnArg * pUnitKill, eD2It
             return nullptr;
           }
 
+          D2Common::DATATBLS::DropDiag::NoteChestRoll(pUnitKill->sArg.pVictim ? pUnitKill->sArg.pVictim->nClassId : -1, pTreasure, nVictimLevel); // [dropdiag v1]
+
           memset(nResultsItemSize, 0, 4 * sizeof(nResultsItemSize[0]));
           memset(aResultsItemList, 0, 6 * sizeof(aResultsItemList[0]));
           ITEMS::Items::Drop::SERVER_ITEM_RollItemToDrop(pGame, pUnitKill->sArg.pVictim, pUnitKill->pAttacker, pTreasure, eItemType, nVictimLevel, 0, aResultsItemList, (D2ItemsTxt*)nResultsItemSize, 6, (uint16_t*)nVictimLevel, (uint32_t)pGame, pSeedExtra);
+          D2Common::DATATBLS::DropDiag::NoteChestRollResult(pTreasure, (void * const *)aResultsItemList, 6); // [dropdiag v1]
           return (D2UnitStrc**)aResultsItemList[0];
         }
 

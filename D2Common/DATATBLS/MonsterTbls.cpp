@@ -15,6 +15,7 @@
 #include "D2Common/D2StatListExStrc.h"
 #include "D2Common/DATATBLS/AnimTbls.h"
 #include "D2Common/DATATBLS/DataTbls.h"
+#include "D2Common/DATATBLS/DropDiag.h"
 #include "D2Common/DATATBLS/ItemTbls.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
@@ -1958,6 +1959,7 @@ void __stdcall TC_GenerateAutoItemTypeTreasureClasses() {
       } while ((int)nRecordId < iVar1);
     }
 
+    DropDiag::NoteAutoItemTypesGenerated(); // [dropdiag v1]
     Fog::Debug::GuardStack();
 }
 
@@ -2409,6 +2411,7 @@ void __stdcall TXT_AllocTxt_TreasureClassEx(D2PoolManagerStrc * pMemory) {
       } while (nIndex < nTxtTreasureClassExSize);
     }
 
+    DropDiag::NoteTreasureClassExLoaded(nTxtTreasureClassExSize); // [dropdiag v1]
     DataTbls::UnloadBin(pTxtTreasureClassEx);
 }
 
@@ -5725,6 +5728,7 @@ void __stdcall TXT_AllocItemDropData(D2PoolManagerStrc * pMemory) {
     TC_GenerateAutoItemTypeTreasureClasses();
     TXT_AllocTxt_TreasureClassEx(pMemory);
     TXT_AllocParsedTreasureClassDiffActChestABC();
+    DropDiag::NoteDropTablesInitialized(); // [dropdiag v1]
     if (0xfffe >= sgtDataTable.nParsedTreasureClassSize) {
       return;
     }

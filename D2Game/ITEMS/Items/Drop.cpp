@@ -15,6 +15,7 @@
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
 #include "D2Common/Collision.h"
+#include "D2Common/DATATBLS/DropDiag.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
@@ -3980,6 +3981,7 @@ void __fastcall SERVER_ITEM_RollItemToDrop(::SGAMEDATA * pGame, D2UnitStrc * pUn
                     }
 
                     pCreatedItem = ITEMGEN_CreateItemFromClassIdAndQuality(nRolledItemClassId, eRolledQuality, pUnit, pGame, eRolledQuality, nQuantity, nDropFlags);
+                    D2Common::DATATBLS::DropDiag::NoteItemGen(nRolledItemClassId, eRolledQuality, pCreatedItem, nQuantity, nDropFlags); // [dropdiag v1]
                     if (pCreatedItem) {
                       nNearbyPlayerCount = D2Common::ITEMS::Items::ITEMS_IsA(pCreatedItem, ITEMTYPE_Gold);
                       if (nNearbyPlayerCount && pNestedTC->pEntries[nEntryIdx].nItemLinkNodeId) {
@@ -4186,6 +4188,7 @@ void __fastcall SERVER_ITEM_RollItemAndGetTreasureClass(::SGAMEDATA * pGame, D2U
     }
 
     D2ParsedTreasureClassStrc* pTreasure = D2Common::DATATBLS::MonsterTbls::TC_GetParsedTreasureClassByLevel(nSelectedTC, (int32_t)pnMonsterLevel);
+    D2Common::DATATBLS::DropDiag::NoteRollLookup(nSelectedTC, (int)(uintptr_t)pnMonsterLevel, pTreasure); // [dropdiag v1]
     if (!pTreasure) {
       return;
     }
