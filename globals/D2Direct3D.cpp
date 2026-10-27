@@ -76554,14 +76554,6 @@ int gnD3DTextureCacheCount = 0; D2_GLOBAL_GUARD(gnD3DTextureCacheCount, "gnD3DTe
 unsigned int g_bDeviceInitialized = {}; D2_GLOBAL_GUARD(g_bDeviceInitialized, "g_bDeviceInitialized");
 int g_bCutsceneModeActive = 0; D2_GLOBAL_GUARD(g_bCutsceneModeActive, "g_bCutsceneModeActive");
 // also labelled: g_pD3DPerspectiveSurface
-// Uninitialized data (BSS)
-// =============================================================================
-
-uint8_t gsD3DAdapterGuid;
-uint8_t GlobalGreen;
-uint8_t GlobalBlue;
-uint8_t GlobalRed;
-=======
 BOOL g_bD3DCoreInitialized = 0; D2_GLOBAL_GUARD(g_bD3DCoreInitialized, "g_bD3DCoreInitialized");
 unsigned int g_bSupportsTextureCachingInternal = {}; D2_GLOBAL_GUARD(g_bSupportsTextureCachingInternal, "g_bSupportsTextureCachingInternal");
 unsigned int g_nCurrentTextureOpMode = {}; D2_GLOBAL_GUARD(g_nCurrentTextureOpMode, "g_nCurrentTextureOpMode");
