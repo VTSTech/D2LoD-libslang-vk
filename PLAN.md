@@ -1,11 +1,15 @@
 # PLAN.md — libslang-vk Integration (D2LoD-libslang-vk)
 
-> Status: v3, 2026-10-26. **The d2.exe source line is `vanilla-plus`** — upstream `main`
-> (eef5f2c) is merged, the glide fix chain (1–13) is closed and field-verified, drops and
-> the Act 5 snow hang are fixed (see `VANILLA-PLUS.md` + `handoff.md`). **The wrapper line
-> `libslang-vk` is at 0.4.5** with P1–P3 delivered and packaging partially done (per-phase
-> status in §5). The §2 build baseline is CI-verified now (the sandbox toolchain recipe is
-> historical). Owner: VTSTech. Agent session log: `/home/z/my-project/worklog.md`.
+> Status: v4, 2026-10-27. **The d2.exe source line is `vanilla-plus`** — upstream `main`
+> (eef5f2c) is merged; the glide fix chain (1–13), the drops fix (14) and the sound series
+> (15–16, defects 12+13) are closed and field-verified; the sound fixes are upstreamed as
+> jaenster/redivivus **PR #10** (open, merge-clean); the first public release
+> **`D2LoD-Vanilla-Plus-0.0.1`** is built from `4857c30` (see `VANILLA-PLUS.md` +
+> `handoff.md`). **The wrapper line `libslang-vk` is at 0.4.5** with P1–P3 delivered and
+> packaging partially done (per-phase status in §5). **CI is retired** — all builds run
+> locally on the Win11 box (`tools/build-local-win11.ps1`); the sandbox holds no toolchain
+> (§2). Owner: VTSTech. Agent session log: `/home/z/my-project/worklog.md`.
+> Live task list: `handoff.md` §9.
 > **All integration work happens on the `libslang-vk` branch (see §0); all d2.exe fixes
 > happen on `vanilla-plus`.**
 
@@ -19,17 +23,16 @@ Lesson learned from the DevilutionX fork: feature commits landed straight on
 | Branch | Role |
 |---|---|
 | [`main`](https://github.com/VTSTech/D2LoD-libslang-vk) | Redivivus baseline (`fd236ce`), kept close to upstream; no feature work lands here. |
-| [`vanilla-plus`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/vanilla-plus) | **The d2.exe source line.** All game-source crash fixes (glide fix chain 1–13, drops fix 14) plus the bootlog/diagnostic work: `[d2boot]` boot trace, `support/d2_boot.{h,cpp}`, VEH `d2crash-*.txt` reporter, signature-verification fixes (`Bnclient/Bnclient.cpp` CERT_INFO + direct handle cleanup). Merged with upstream `main` (`eef5f2c`). CI ships `d2s-<sha>.exe` + `d2-map-<sha>.map`. |
-| [`jaenster-main`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/jaenster-main) | Clean upstream-tracking line with the CI artifact split: `d2-<sha>` (fat, crash triage) + `d2-stripped-<sha>` (play). |
+| [`vanilla-plus`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/vanilla-plus) | **The d2.exe source line.** All game-source fixes (glide chain 1–13, drops 14, sound 15–16) plus the bootlog/diagnostic work: `[d2boot]` boot trace, `support/d2_boot.{h,cpp}`, VEH `d2crash-*.txt` reporter, signature-verification fixes (`Bnclient/Bnclient.cpp` CERT_INFO + direct handle cleanup). Merged with upstream `main` (`eef5f2c`). Tip `4857c30` = release `D2LoD-Vanilla-Plus-0.0.1`. Builds are local on Win11: `tools/build-local-win11.ps1` → fat `d2.exe` + stripped `d2s-<sha>.exe` + DWARF map. |
+| [`pr2/glide-renderer-fixes`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr2/glide-renderer-fixes) · [`pr3/mobs-drop-items`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr3/mobs-drop-items) · [`pr4/sound-except-intro`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr4/sound-except-intro) | Upstream-PR lines — what is proposed to jaenster/redivivus: PR #6 head (glide, `c65fa93`), drops, and the sound series (**upstream PR #10**, 3 commits on `eef5f2c`). The old [`jaenster-main`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/jaenster-main) CI-split line is retired (superseded by the merge era — `HISTORY.md` H2). |
 | [`libslang-vk`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/libslang-vk) | **Active development line — all glide3x / Vulkan / libslang-vk integration work happens here.** Wrapper tip `0.4.5` (`3a52553`). |
 
 Rules:
 
 - Every phase below (P1–P5) commits to `libslang-vk` only.
 - `main` receives changes only via PR (`libslang-vk` → `main`) at stable
-  milestones; upstream-able diagnostics (bootlog, crash reporter) are best
-  proposed against upstream `main` directly (the jaenster-main line exists to
-  prove them in isolation first).
+  milestones; upstream-able fixes travel as a format-patch series onto
+  upstream `main` (the route proven on sound PR #10 — `handoff.md` §7).
 - The glide3x DLL lands as a new `glide3xvk/` subtree (§4), so the branch diff
   stays reviewable.
 
@@ -52,27 +55,21 @@ beyond what the Glide surface requires.
 
 ## 2. Where we are (baseline)
 
-**Update 2026-10-26:** the authoritative toolchain is now **CI** — every push builds with
-`i686-w64-mingw32-g++ (GCC) 13-win32` over 514 TUs, strict `-std=c++17`, zero
-`-fpermissive`, and ships artifacts (`d2s` + linker map on vanilla-plus; `d2` fat +
-stripped on jaenster-main). The sandbox recipe below is historical: the sandbox resets
-between sessions and the deb-extract toolchain is gone; recreate on demand if a local
-cross-build is ever needed again.
-
-The untouched fork builds clean in the agent sandbox. This matters because every
-phase below compiles against this exact toolchain.
+**Update 2026-10-27:** **CI is retired** (chronic 15-minute apt step-cap timeouts and a
+corrupted snapshot killed it after the merge era — `HISTORY.md` H2; `build.yml` is parked
+at the last working version `5931e15`, historical, not load-bearing). The authoritative
+build is **VTSTech's Win11 box** via `tools/build-local-win11.ps1` (consolidated by fix
+15): strict `-std=c++17`, zero `-fpermissive`, fat `d2.exe` + stripped `d2s-<sha>.exe` +
+DWARF linker map (still produced for crash symbolization). The agent sandbox holds **no
+mingw toolchain and no apt rights** — sandbox QA is diff review, patch round-trips and
+anchor-grep gates; the local Win11 build is the compile gate for everything.
 
 | Item | Value |
 |---|---|
-| Build output | `build/d2.exe`, `pei-i386`, 347,992,478 bytes (-g, no -O, per project policy) |
-| Toolchain | g++-mingw-w64-i686 **13.3.0-9ubuntu1+26.6** (the exact CI set), binutils-mingw-w64-i686 2.43.1, mingw-w64 runtime 13.0.0 |
-| Verify | 0 compile errors over 510 TUs; 0× `-fpermissive`; imports `msvcrt.dll`, `ddraw.dll` as expected |
-| Sandbox recipe (no sudo) | debs from `archive.ubuntu.com` pool → `dpkg -x` into `~/.local/opt/mingw-root` → wrapper scripts (`d2w-gcc` = `i686-w64-mingw32-gcc-posix --sysroot=...`) → configure with `-DD2_TOOL_PREFIX=d2w-` |
-| Why not llvm-mingw | clang 23 rejects the tree: mingw-w64 header drift (`_EXCEPTION_DISPOSITION` enum vs project `typedef int`, missing `threadlocinfo`). GNU/CI headers avoid all of it; zero source drift. |
-
-The toolchain lives at `/home/z/.local/opt/` (venv: cmake 4.4.4 + ninja; llvm-mingw
-20261020 kept as fallback). VTSTech's Ubuntu 26.04 VM can use the same deb-extract
-recipe or plain `apt install g++-mingw-w64-i686`.
+| Build output | `build/d2.exe`, `pei-i386` (-g, no -O, per project policy; ~348 MB unstripped) |
+| Toolchain | `i686-w64-mingw32-g++` (GCC 13-win32) over ~514 TUs, GNU mingw-w64 headers — the same set CI used |
+| Why not llvm-mingw | clang 23 rejects the game tree: mingw-w64 header drift (`_EXCEPTION_DISPOSITION` enum vs project `typedef int`, missing `threadlocinfo`). GNU headers avoid all of it; zero source drift. Our DLL (`glide3xvk`) is a separate target and may use llvm-mingw freely. |
+| Sandbox recipe | historical (deb-extract into `~/.local/opt/mingw-root`) — `HISTORY.md` H7; recreate on demand only |
 
 ---
 
@@ -190,19 +187,25 @@ vkQueuePresentKHR(...);
 
 ## 5. Work breakdown
 
-**Phase status (2026-10-26):**
+**Phase status (2026-10-27):**
 
 | Phase | Status |
 |---|---|
 | P1 — Skeleton DLL + Vulkan bootstrap | **Done** — `glide3xvk` boots the game to the menu; proven on real hardware; the libslang-vk i686 spike resolved on the gcc path. |
 | P2 — Glide raster core | **Done** — palette-indexed textures, combine/alpha pipeline variants, fans/quads, LFB, cutscenes render in-game (0.4.x line). |
 | P3 — libslang-vk preset chain | **Done** — the 0.4.5 wrapper carries window presets, the slang chain, controller support and base_res (tip `3a52553`). |
-| P4 — Hardening + packaging | **Partial** — drop-in zips exist; the d2crash + wrapper ring-buffer hook and a CI export-check for the DLL are still open. |
+| P4 — Hardening + packaging | **Partial** — release `D2LoD-Vanilla-Plus-0.0.1` ships the drop-in (`Glide3xVK 0.4.5`); still open: the d2crash + wrapper ring-buffer hook and an export-check gate for the DLL (was a CI step — re-home as a local-build check). |
 | P5 — Stretch | Open. |
 
-The d2.exe side of the house moved in parallel: the glide fix chain (fixes 1–13) that
-de-risked P2's assumptions about what the game actually submits is closed and
-field-verified on `vanilla-plus` (see `handoff.md`).
+The d2.exe side of the house moved in parallel and is fully green: the glide fix chain
+(1–13) that de-risked P2's assumptions about what the game actually submits, the drops
+fix (14), and the sound series (15–16 — dead-hwnd music binding, Ghidra FP bit-pattern
+constants, float-storage punning of integer out params) are all closed and
+field-verified on `vanilla-plus`. The sound series is upstreamed as jaenster/redivivus
+**PR #10** (watch item: its body still needs a `Fixes #N` line); first public release
+**`D2LoD-Vanilla-Plus-0.0.1`** is built from `4857c30` (known issue: fullscreen
+Direct3D broken — `-3dfx` fullscreen and `-w` work in all modes). Live task list:
+`handoff.md` §9.
 
 ### P1 — Skeleton DLL + Vulkan bootstrap  *(de-risk first)*
 Deliver `glide3x.dll` that loads in the game, opens a swapchain, clears black,
@@ -290,13 +293,15 @@ The payoff. Everything above already runs through our swapchain.
 
 ## 7. Test plan
 
-- **Sandbox (agent):** full build per phase; export-table verification
-  (`objdump -p glide3x.dll`); headless slangvk smoke (lavapipe per
-  `libslang-vk/benchmarks/README.md` recipe) running a preset over a captured
-  D2 frame from the corpus; parse bench over the 2,658-preset pack already in
-  place from the libslang-vk benchmark session.
-- **VTSTech VM (Ubuntu 26.04, VirtualBox):** build parity; wine smoke test
-  optional (Vulkan via lavapipe) — menus only.
+- **Sandbox (agent):** static QA only — patch round-trips, anchor-grep gates,
+  diff review, export-table reads of DLLs the user supplies. No local build
+  (no mingw, no apt; recreate per `HISTORY.md` H7 only if a sandbox build
+  becomes unavoidable). The headless slangvk smoke (lavapipe per
+  `libslang-vk/benchmarks/README.md`) and the 2,658-preset corpus parse bench
+  are recreate-on-demand for wrapper work.
+- **VTSTech VM (Ubuntu 26.04, VirtualBox):** optional cross-build parity
+  (`apt install g++-mingw-w64-i686`) and a wine smoke test (Vulkan via
+  lavapipe) — menus only.
 - **Real hardware (Win11 + RX 560):** the authoritative pass per phase exit
   criteria; frame-time capture at 640x480→1440p; preset sweep with the corpus.
 
@@ -310,3 +315,7 @@ The payoff. Everything above already runs through our swapchain.
   `D2Client/Renderer/Renderer.h` (renderer contract typedefs).
 - chocolate-doom-vk, DevilutionX-libslang-vk: house precedents for the present-pass
   pattern and preset UX.
+- House state docs: `VANILLA-PLUS.md` (branch charter), `handoff.md` (current state +
+  live tasks) + `HISTORY.md` (closed record), `/home/z/my-project/worklog.md` (journal).
+- Upstream: jaenster/redivivus PR #10 (sound series — open, merge-clean at filing);
+  fork release `D2LoD-Vanilla-Plus-0.0.1`.
