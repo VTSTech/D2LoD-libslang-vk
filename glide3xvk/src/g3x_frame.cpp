@@ -1122,6 +1122,12 @@ bool g3x_frame_present() {
     g3x_vk_present_extent(&ext_w, &ext_h);
     if (!ext_w || !ext_h || !s_px) return false;
 
+    // 0.4.6: Shift+V conf panel poll — on the present seam like the overlay
+    // itself, and UNCONDITIONALLY (the F11/F12 slang hotkeys only poll while
+    // a chain filters frames; the conf panel also covers the controller=/
+    // window= options that matter without one).
+    g3x_slang_conf_panel_poll();
+
     // P3: preset-chain path. The chain receives the gamma-corrected NATIVE
     // game resolution (no pre-scaling) so the preset's own scaling algorithms
     // see the true source size — 640x480 in, big-window out is the P3 exit

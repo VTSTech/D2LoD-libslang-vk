@@ -47,6 +47,14 @@ unsigned s_toast_len   = 0;
 bool     s_toast_on    = false;
 unsigned s_toast_frames = 0;
 
+// 0.4.6: the Shift+V conf panel. Lines are pushed pre-formatted by g3x_slang
+// (it owns the conf parser and the live hotkey state); this module stores,
+// toggles and draws. Hidden + empty until the first toggle-on.
+char     s_conf_panel[G3XVK_CONF_PANEL_MAX_LINES][G3XVK_CONF_PANEL_LINE_CAP + 1];
+unsigned s_conf_lens[G3XVK_CONF_PANEL_MAX_LINES] = {};
+unsigned s_conf_count   = 0;
+bool     s_conf_visible = false;
+
 const uint8_t* glyph_of(char c) {
     unsigned char uc = (unsigned char)c;
     if (uc < G3X_FONT8X8_FIRST || uc >= G3X_FONT8X8_FIRST + G3X_FONT8X8_COUNT)
@@ -119,6 +127,26 @@ void g3x_overlay_toast(const char* text) {
     s_toast_frames = 120;                        // ~2s at 60fps, ~4s at D2's 30
 }
 
+void g3x_overlay_conf_panel_set(const char* const* lines, unsigned count) {
+    s_conf_count = 0;
+    if (!lines) return;
+    for (unsigned i = 0; i < count && i < G3XVK_CONF_PANEL_MAX_LINES; ++i) {
+        const char* src = lines[i];
+        if (!src) continue;
+        unsigned n = 0;
+        while (src[n] && n < G3XVK_CONF_PANEL_LINE_CAP) {
+            s_conf_panel[s_conf_count][n] = src[n];
+            ++n;
+        }
+        s_conf_panel[s_conf_count][n] = '\0';
+        s_conf_lens[s_conf_count] = n;
+        ++s_conf_count;
+    }
+}
+
+void g3x_overlay_conf_panel_toggle()    { s_conf_visible = !s_conf_visible; }
+bool g3x_overlay_conf_panel_visible()   { return s_conf_visible; }
+
 void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     if (!s_enabled || !bgra || w < 8 || h < 8) return;
 
@@ -166,4 +194,40 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
         draw_line(bgra, w, h, tx, ty + step, s_shader, s_shader_len);
     if (three)
         draw_line(bgra, w, h, tx, ty + step * 2, s_toast, s_toast_len);
+
+    // 3. 0.4.6: the Shift+V conf panel — a LEFT-edge box (the tag owns the
+    // top-right; the game's /fps readout the very top-left corner, so the
+    // panel starts one line below it at y=20). Same backdrop + font + shadow
+    // as the tag box; independent of the toast (both boxes can be up at
+    // once). Drawn only while visible, with content, and with the overlay
+    // enabled at all (overlay=0 in the ini = no overlay boxes).
+    if (!s_conf_visible || !s_conf_count) return;
+
+    const unsigned ppad = 3, pox = 4, poy = 20, pstep = 10;
+    unsigned pmax = 0;
+    for (unsigned i = 0; i < s_conf_count; ++i)
+        if (s_conf_lens[i] > pmax) pmax = s_conf_lens[i];
+    unsigned pbw = pmax * 8 + ppad * 2;
+    unsigned pbh = 8 + (s_conf_count - 1) * pstep + ppad * 2;
+    if (pox + pbw + 4 > w)                       // keep a 4px right margin
+        pbw = (w > pox + 4) ? w - pox - 4 : 0;
+    if (poy + pbh > h)                           // tiny present targets
+        pbh = (h > poy) ? h - poy : 0;
+    if (!pbw || !pbh) return;
+
+    for (unsigned y = poy; y < poy + pbh; ++y) {
+        uint8_t* row = bgra + (size_t)y * w * 4;
+        for (unsigned x = pox; x < pox + pbw; ++x) {
+            uint8_t* p = row + (size_t)x * 4;
+            p[0] = (uint8_t)((p[0] * 89) >> 8);   // B
+            p[1] = (uint8_t)((p[1] * 89) >> 8);   // G
+            p[2] = (uint8_t)((p[2] * 89) >> 8);   // R
+            p[3] = 0xFF;
+        }
+    }
+
+    const unsigned ptx = pox + ppad, pty = poy + ppad;
+    for (unsigned i = 0; i < s_conf_count; ++i)
+        draw_line(bgra, w, h, ptx, pty + i * pstep,
+                  s_conf_panel[i], s_conf_lens[i]);
 }

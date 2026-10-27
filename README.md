@@ -51,6 +51,16 @@ resolution — is the same one proven in
   render finer. Toast feedback in the overlay, logged, session-only; both also
   settable via the new `aspect=` / `base_res=` conf keys (see the
   [d2slangvk.conf reference](#d2slangvkconf-reference) below).
+- **Shift+V conf panel (0.4.5)**: press **Shift+V** in-game to toggle an
+  overlay panel on the left edge (below the game's `/fps` line) listing every
+  `d2slangvk.conf` option as currently resolved — preset, scale, vsync,
+  aspect/base_res (the live F11/F12 picks annotated with their `file:` values
+  when they differ), window/borderless and the full controller block with the
+  same defaults the modules apply. Re-read from disk each time it opens (the
+  file is the truth — even with no chain running, where the present-path hot
+  reload never fires), and refreshed live while it is up: conf hot-reloads and
+  F11/F12 presses update it in place. Works with or without a preset chain;
+  `overlay=0` in glide3xvk.ini hides it with the rest of the overlay.
 - **Window size presets (0.4.5)**: `window=native|240p|480p|576p|720p|768p|1080p|desktop|WxH`
   and `borderless=0|1` in `d2slangvk.conf` size the OS window the game presents
   into — canonical sizes (240p=320x240 ... 1080p=1920x1080; `desktop` =
@@ -123,7 +133,8 @@ No build required:
    `d2slangvk.conf` beside `Game.exe`, uncomment a `preset=` line, and every
    frame runs through that slang shader — hot-reload mid-game, `fit`/`integer`/
    `stretch` scaling, `aspect=`/`base_res=` geometry, F11/F12 live hotkeys,
-   unfiltered fallback on any failure. No conf = the exact 0.3.x behavior.
+   Shift+V conf panel, unfiltered fallback on any failure. No conf = the exact
+   0.3.x behavior.
    Every accepted value is documented in the
    [d2slangvk.conf reference](#d2slangvkconf-reference) below.
 4. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
@@ -201,13 +212,20 @@ base_res=1x
 ### Hotkeys (in-game, 0.4.3 + 0.4.5)
 
 While the game window has focus — the same scheme as Chocolate-Doom-VK
-(both require a chain to be filtering frames):
+(F11/F12 require a chain to be filtering frames; Shift+V works always):
 
 - **F11** — cycle content aspect: `4:3 -> 16:10 -> 16:9 -> auto -> ...`
 - **F12** — cycle shader base resolution: `1x -> 2x -> 3x -> 4x -> 1x`
+- **Shift+V** (0.4.5) — toggle the conf panel: a box on the left edge listing
+  every `d2slangvk.conf` option as currently resolved (defaults filled in;
+  the F11/F12 session picks annotated `file: ...` when they differ). Re-read
+  from disk every time it opens, refreshed live on conf hot-reload and
+  F11/F12 presses while it is up. Works with or without a chain — the
+  `window=` / `controller=` options matter without one. Press again to hide.
 
 Each press shows a toast line in the overlay box (`aspect 16:9`,
-`shader base 2x`) for ~2 seconds and logs a `slang: F11/F12 ...` line. All
+`shader base 2x`, `conf overlay on`) for ~2 seconds and logs a
+`slang: F11/F12 ...` / `overlay: conf panel ...` line. All
 picks are **session-only**: they are never written back to `d2slangvk.conf`,
 and a conf hot-reload snaps them back to whatever the file says. The window
 presets have **no hotkey** by design — F10 is a game skill-slot bind and the

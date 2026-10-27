@@ -46,9 +46,9 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `src/glide_exports.cpp` | All 45 exports with exact signatures; the game-contract entry points (`grGet(0xF)`, `grSstWinOpen`, ini reading, session banner) |
 | `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam; 0.4.5: the texture table is O(1) (open-addressing hash + monotonic alloc cursor + same-texture rebind fast-out) |
 | `src/g3x_state.{h,cpp}` | Glide state tracking (grChromakey/grColorCombine/... current values) |
-| `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, and since 0.4.3 a transient toast line for the F11/F12 hotkeys |
+| `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, since 0.4.3 a transient toast line for the F11/F12 hotkeys, and since 0.4.5 the toggleable **Shift+V conf panel** on the left edge (storage + drawing; the content comes pre-formatted from g3x_slang) |
 | `src/g3x_drivertag.{h,cpp}` | 0.4.1–0.4.3: repointed the game's `"Video: Glide"` renderer-name string at our tag. **Removed in 0.4.5** (field call: the /fps tag must stay the game's own; the DLL is now strictly read-only toward Game.exe) — pending `git rm` of the two files |
-| `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf` (`preset`/`scale`/`vsync`/`aspect`/`base_res`/`window`/`borderless`), owns the input image + preset + chain, hot-reloads on file change, polls the F11/F12 hotkeys on the present path, fails soft to the unfiltered path |
+| `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf` (`preset`/`scale`/`vsync`/`aspect`/`base_res`/`window`/`borderless`), owns the input image + preset + chain, hot-reloads on file change, polls the F11/F12 hotkeys on the present path plus the Shift+V conf-panel toggle on EVERY present (chain or no chain; it formats and pushes the panel's lines from a fresh conf parse + the live hotkey state), fails soft to the unfiltered path |
 | `src/g3x_window.{h,cpp}` | 0.4.5: present-window presets + DPI awareness — sizes the game's own HWND to a `window=` preset (canonical sizes, `desktop`, `WxH`), config-only (applies at every renderer (re)open + conf hot-reload; no hotkey — F10 is a game skill-slot bind), reverts cleanly to the game's own window; pure table/parse lives inline in the header (host-tested), the Win32 apply runs inside `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` |
 | `src/g3x_controller.{h,cpp}` | 0.4.5 (experimental): controller support — a background XInput poller (pad 0, ~125 Hz, own thread; zero present-path cost) injects ordinary mouse/keyboard via SendInput (left stick = walk: cursor + auto-held LMB; right stick = fine aim at `controller_aimsens` speed; LT = LMB, RT = RMB, A = hold Shift+LMB attack-in-place combo, B = Alt hold, X = Space, Y = I, D-pad = belt 1-4, LB/RB = C/T, L3 = R run/walk, Start = Esc, Back = Tab), gated on game-window focus, everything held released on focus loss/disable/shutdown; cursor-home (0.4.5 field round 2): the walk-release cursor position becomes the player anchor (D2 walks end standing at the cursor — self-correcting) and a 0.4s quiet dwell parks the cursor back on it, so stick motion always emanates from the player; opt-in via `controller=` + `controller_sens=` + `controller_aimsens=` + `controller_deadzone=` + `controller_moveclick=` + `controller_home=`, hot-reloaded from the conf; XInput loaded dynamically (no new imports); pure core (bind table with multi-step combos, stick curve, desired-state diff step) inline in the header, host-tested (scripts/ctrltest.cpp) |
 | `presets/` | Two starter presets (scanline, sharpen — MIT, ours) + `d2slangvk.conf.sample` |
@@ -62,7 +62,7 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `BUILD-32BIT.md` | **P1 spike notes**: building libslang-vk itself as i686 Windows |
 | `FIELD-TEST.md` | The field log: per-round builds, diagnostics, and results on a vanilla retail 1.14d install |
 
-## The version stamp (0.4.1) + the overlay's shader line (0.4.2) + hotkey toasts (0.4.3)
+## The version stamp (0.4.1) + the overlay's shader line (0.4.2) + hotkey toasts (0.4.3) + the conf panel (0.4.5)
 
 The primary stamp is the game's own debug line: the `/fps` block ends with
 `Video: Glide` (a hardcoded string drawn at fixed game coords, decompiled
@@ -123,6 +123,29 @@ lives entirely outside the present path (no grBufferSwap hook, no toast race),
 and disabling or closing the renderer logs `controller: off (...)` after
 releasing everything held. Focus loss releases too — after alt-tabbing back,
 re-press a pad button if a held action did not resume.
+
+The **Shift+V conf panel (0.4.5)** is the overlay's first toggleable box: a
+left-edge sibling of the tag box (same 8x8 font, backdrop and shadow; it
+starts one line below the game's `/fps` readout, which owns the very top-left
+corner) listing every `d2slangvk.conf` option as resolved. The split of
+responsibilities keeps each module honest: g3x_overlay only stores, toggles
+and draws (it stays windows.h-free and host-testable); g3x_slang owns the
+content — a fresh parse of the conf from disk on every open (file is the
+truth, and this works with the chain OFF, where the present-path hot-reload
+probe never runs), the module defaults filled in the way their consumers
+apply them (`g3x_ctrl_conf_fixup` for the controller floats, empty
+`window=` = native), and the two hotkey-cycled options shown at their live
+value with a `file: ...` annotation when an F11/F12 pick differs from the
+conf. While the panel is up it refreshes itself: conf hot-reloads (via
+`reread_conf`) and F11/F12 presses re-push the lines, so what it shows is
+never stale. The toggle polls on the present seam (g3x_frame_present) with
+the same focus rule as F11/F12 — presses made while another window is
+foreground never toggle — and honors the `overlay=` ini switch. The same
+round also fixed the 8x8 font's 'm': DejaVu Sans Mono Bold's triple-stem 'm'
+collapsed to a solid block under the box filter, and the panel's controller
+keys (`aimsens` / `moveclick` / `home`) were the first overlay text to expose
+it — the generator (`scripts/gen_font8x8.py`) now hand-draws 'm' alongside
+the descender overrides.
 
 ## The preset chain (P3, 0.4.0)
 

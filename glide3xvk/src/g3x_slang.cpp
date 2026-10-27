@@ -198,6 +198,7 @@ void g3x_slang_swapchain_resized(unsigned, unsigned, int) {}
 bool g3x_slang_active() { return s_stub_active; }
 int  g3x_slang_vsync_pref() { return -1; }
 void g3x_slang_hotkeys_poll() {}
+void g3x_slang_conf_panel_poll() {}   // Win32 key polling is real-build only
 
 bool g3x_slang_present(const uint8_t* bgra, unsigned w, unsigned h) {
     if (!s_stub_active || !s_stub_present || !bgra || !w || !h) return false;
@@ -238,6 +239,12 @@ static void overlay_shader_line(const char* path_or_null) {
     g3x_overlay_set_shader(base);
 }
 
+// 0.4.6 Shift+V conf panel (defined near the hotkeys below); reread_conf
+// refreshes the panel when it is open so the file-is-truth rule shows up
+// live on it too.
+static void conf_panel_refresh();
+static void conf_panel_refresh_if_visible();
+
 static slangvk_device* s_dev      = nullptr;   // adopted context
 static slangvk_preset* s_preset   = nullptr;
 static slangvk_chain*  s_chain    = nullptr;
@@ -262,6 +269,9 @@ static uint64_t     s_preset_mtime = 0;
 static int          s_aspect_live = G3XSLANG_ASPECT_AUTO;
 static int          s_base_live   = 1;
 static bool         s_prev_f11 = false, s_prev_f12 = false;
+
+// 0.4.6: Shift+V edge latch for the conf panel (same scheme as F11/F12).
+static bool         s_prev_shiftv = false;
 
 // 0.4.3: the shader base resolution's upscaled input image (game res x
 // s_base_live). The game frame is uploaded to s_img exactly as before, then
@@ -444,6 +454,7 @@ static void reread_conf() {
         s_preset_mtime = 0;                      // force preset reload
         reload_preset_and_chain("conf");
     }
+    conf_panel_refresh_if_visible();             // panel open = keep it current
 }
 
 // ---- hot reload ------------------------------------------------------------
@@ -493,6 +504,7 @@ void g3x_slang_hotkeys_poll() {
         char msg[32];
         std::snprintf(msg, sizeof(msg), "aspect %s", aspect_name(s_aspect_live));
         g3x_overlay_toast(msg);
+        conf_panel_refresh_if_visible();         // live marker moves with it
     }
     if (f12 && !s_prev_f12) {
         s_base_live = (s_base_live >= 4) ? 1 : s_base_live + 1;
@@ -501,9 +513,131 @@ void g3x_slang_hotkeys_poll() {
         char msg[32];
         std::snprintf(msg, sizeof(msg), "shader base %dx", s_base_live);
         g3x_overlay_toast(msg);
+        conf_panel_refresh_if_visible();
     }
     s_prev_f11 = f11;
     s_prev_f12 = f12;
+}
+
+// ---- 0.4.6 Shift+V conf panel ----------------------------------------------
+
+// Rebuilds the overlay panel's lines. ALWAYS re-parses d2slangvk.conf from
+// disk (the file is the truth — this runs even when no chain is live and the
+// present-path hot-reload probe is parked), fills in the module defaults the
+// way the consumers do (g3x_ctrl_conf_fixup for the controller floats, the
+// window= empty-string-means-native rule), then marks the two hotkey-cycled
+// options with their session value and, when it differs, what the file says.
+// 15 lines fit the overlay panel's 18-line budget with room to spare.
+static void conf_panel_refresh() {
+    char path[MAX_PATH];
+    bool have_file = false;
+    G3xSlangConf c;
+    if (conf_path_of(path, sizeof(path))) {
+        char* text = read_text_file(path, nullptr);
+        if (text) {
+            g3x_slang_conf_parse(text, &c);
+            HeapFree(GetProcessHeap(), 0, text);
+            have_file = true;
+        }
+    }
+    if (!have_file) {                            // no file = the reread_conf defaults
+        std::memset(&c, 0, sizeof(c));
+        c.scale    = G3XSLANG_SCALE_FIT;
+        c.vsync    = -1;
+        c.aspect   = G3XSLANG_ASPECT_AUTO;
+        c.base_res = 1;
+    }
+
+    char lines[G3XVK_CONF_PANEL_MAX_LINES][G3XVK_CONF_PANEL_LINE_CAP + 1];
+    const char* ptrs[G3XVK_CONF_PANEL_MAX_LINES];
+    unsigned n = 0;
+    auto add = [&]() -> char* {
+        if (n >= G3XVK_CONF_PANEL_MAX_LINES)       // fail-soft: exactly 15 pushes
+            return lines[G3XVK_CONF_PANEL_MAX_LINES - 1];
+        ptrs[n] = lines[n];
+        return lines[n++];
+    };
+
+    std::snprintf(add(), sizeof(lines[0]), "d2slangvk.conf%s",
+                  have_file ? " [slangvk]" : " (none)");
+
+    const char* pb = c.preset;                   // basename: the 8px-column
+    for (const char* p = c.preset; *p; ++p)      // panel has no room for paths
+        if (*p == '/' || *p == '\\') pb = p + 1;
+    std::snprintf(add(), sizeof(lines[0]), "preset               %.48s",
+                  pb[0] ? pb : "(none)");
+    std::snprintf(add(), sizeof(lines[0]), "scale                %s",
+                  scale_name(c.scale));
+    std::snprintf(add(), sizeof(lines[0]), "vsync                %s",
+                  c.vsync == 0 ? "off" : c.vsync == 1 ? "on" : "auto");
+    if (s_aspect_live != c.aspect)
+        std::snprintf(add(), sizeof(lines[0]), "aspect               %s (file: %s)",
+                      aspect_name(s_aspect_live), aspect_name(c.aspect));
+    else
+        std::snprintf(add(), sizeof(lines[0]), "aspect               %s",
+                      aspect_name(s_aspect_live));
+    if (s_base_live != c.base_res)
+        std::snprintf(add(), sizeof(lines[0]), "base_res             %dx (file: %dx)",
+                      s_base_live, c.base_res);
+    else
+        std::snprintf(add(), sizeof(lines[0]), "base_res             %dx", s_base_live);
+    std::snprintf(add(), sizeof(lines[0]), "window               %.24s",
+                  c.window[0] ? c.window : "native");
+    std::snprintf(add(), sizeof(lines[0]), "borderless           %s",
+                  c.borderless ? "on" : "off");
+    std::snprintf(add(), sizeof(lines[0]), "controller           %s",
+                  c.controller ? "on" : "off");
+    float sens = c.controller_sens;              // g3x_ctrl_conf_fixup's table
+    if (sens <= 0.0f) sens = 1.0f;
+    if (sens > 16.0f) sens = 16.0f;
+    std::snprintf(add(), sizeof(lines[0]), "controller_sens      %.2f", sens);
+    float aimsens = c.controller_aimsens;
+    if (aimsens <= 0.0f) aimsens = 0.35f;
+    if (aimsens < 0.05f) aimsens = 0.05f;
+    if (aimsens > 4.0f)  aimsens = 4.0f;
+    std::snprintf(add(), sizeof(lines[0]), "controller_aimsens   %.2f", aimsens);
+    int dz = c.controller_deadzone;
+    if (dz <= 0) dz = 15;
+    if (dz > 80) dz = 80;
+    std::snprintf(add(), sizeof(lines[0]), "controller_deadzone  %d%%", dz);
+    std::snprintf(add(), sizeof(lines[0]), "controller_moveclick %s",
+                  c.controller_moveclick < 0 ? "off" : "on");
+    std::snprintf(add(), sizeof(lines[0]), "controller_home      %s",
+                  c.controller_home < 0 ? "off" : "on");
+    std::snprintf(add(), sizeof(lines[0]), "[Shift+V] hides this panel");
+
+    g3x_overlay_conf_panel_set(ptrs, n);
+}
+
+static void conf_panel_refresh_if_visible() {
+    if (g3x_overlay_conf_panel_visible()) conf_panel_refresh();
+}
+
+// Edge-polled from the present path (g3x_frame_present) on every frame, so
+// the panel works with no chain active — the F11/F12 gate lives in
+// g3x_slang_present, this one is its always-on sibling. Same focus rule:
+// presses made while another window is foreground never toggle.
+void g3x_slang_conf_panel_poll() {
+    if (GetForegroundWindow() != g_vk.hwnd) {
+        s_prev_shiftv = false;                   // don't queue presses made elsewhere
+        return;
+    }
+    const bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+    const bool v     = (GetAsyncKeyState(0x56 /* 'V' */) & 0x8000) != 0;
+    const bool down  = shift && v;
+    if (down && !s_prev_shiftv) {
+        if (g3x_overlay_conf_panel_visible()) {
+            g3x_overlay_conf_panel_toggle();
+            g3x_overlay_toast("conf overlay off");
+            g3x_log("overlay: conf panel off (Shift+V)");
+        } else {
+            conf_panel_refresh();
+            g3x_overlay_conf_panel_toggle();
+            g3x_overlay_toast("conf overlay on");
+            g3x_log("overlay: conf panel on (Shift+V)");
+        }
+    }
+    s_prev_shiftv = down;
 }
 
 // ---- public API ------------------------------------------------------------

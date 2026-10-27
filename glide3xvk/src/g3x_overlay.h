@@ -41,7 +41,7 @@
 // Release version of this glide3xvk build. Shown by the overlay, printed by
 // the session banner and reported through grGetString(GR_RENDERER). Bump on
 // every field-delivered change set.
-#define G3XVK_VERSION "0.4.5"
+#define G3XVK_VERSION "0.4.6"
 
 // Render the tag into a BGRA8 buffer (w*h*4 bytes, stride = w*4). Safe to call
 // with any buffer size; the box anchors 4px from the right/top edge and clamps
@@ -67,6 +67,34 @@ void g3x_overlay_toast(const char* text);
 
 // On/off switch. glide_exports wires [glide3xvk] overlay=0/1 to this; with no
 // ini key the value is auto — on (the box is the version stamp since the
-// drivertag patch was removed).
+// drivertag patch was removed). Hides the conf panel too (overlay=0 means no
+// overlay boxes at all).
 void g3x_overlay_set_enabled(bool on);
 bool g3x_overlay_enabled();
+
+// ---- 0.4.6: the Shift+V conf panel -----------------------------------------
+//
+// A toggleable box on the LEFT edge (the tag box owns the top-right, the
+// game's /fps line the very top-left — the panel starts one line below it)
+// listing the current d2slangvk.conf options as resolved. Content is owned
+// by g3x_slang (it has the parser, the live F11/F12 state and the conf
+// path): it formats the lines and pushes them here; this module only stores,
+// toggles and draws. Same look as the tag box — 65%-black backdrop, 8x8 font
+// with 1px drop shadow — so the two boxes read as one system.
+//
+// Capacity limits, shared with the formatter (it sizes its buffers to these;
+// the setter silently clamps anything past them).
+enum {
+    G3XVK_CONF_PANEL_MAX_LINES = 18,
+    G3XVK_CONF_PANEL_LINE_CAP  = 72
+};
+
+// Replace the panel's line set (copied; each line clamped to LINE_CAP, the
+// list to MAX_LINES). NULL/0 clears the content (panel then draws nothing
+// even while visible).
+void g3x_overlay_conf_panel_set(const char* const* lines, unsigned count);
+
+// Show/hide. Toggle is an explicit user action (Shift+V); the panel stays up
+// across conf reloads and window (re)opens until toggled off.
+void g3x_overlay_conf_panel_toggle();
+bool g3x_overlay_conf_panel_visible();
