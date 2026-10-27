@@ -176,7 +176,11 @@ void __fastcall SOUNDSMP_SetVolume(D2SoundSmpStrc * ppSoundSmp, int nVolume) {
     nErrorAddr = (int)((1.0 - (float)ppSoundSmp->fEaxObstruction) * (float)nErrorAddr);
     apply_volume:
     fVar1 = SOUNDSMP_ClampVolume(0.0, 255.0, (float)nErrorAddr);
-    if ((int)fVar1 <= 0 && nVolume != 0) { static int s_nSilentVolR3 = 0; if (s_nSilentVolR3++ < 8) D2BOOT_MarkFmt("[sounddiag] SetVolume SILENT: d2vol=%u glob=%u eaxX1000=%d", (unsigned)nVolume, (unsigned)gnSoundGlobalVolume, (int)(ppSoundSmp->fEaxObstruction * 1000.0f)); } // [sounddiag]
+    // [sounddiag] R4: ClampVolume converts the linear 0..255 value to DirectSound attenuation
+    // (-10000..0, where 0 = FULL volume), so the old "(int)fVar1 <= 0" test fired on EVERY call -
+    // round-3's "SetVolume SILENT: d2vol=255 glob=255" lines were full-volume, not silence.
+    // Trap on the LINEAR value instead: real silence is linear <= 0 while the game asked for > 0.
+    if (nErrorAddr <= 0 && nVolume != 0) { static int s_nSilentVolR3 = 0; if (s_nSilentVolR3++ < 8) D2BOOT_MarkFmt("[sounddiag] SetVolume SILENT: d2vol=%u glob=%u eaxX1000=%d lin=%d buf=%08x", (unsigned)nVolume, (unsigned)gnSoundGlobalVolume, (int)(ppSoundSmp->fEaxObstruction * 1000.0f), nErrorAddr, (unsigned)(size_t)ppSoundSmp->pDSBuffer); } // [sounddiag]
     ppSoundSmp->pDSBuffer->lpVtbl->SetVolume(ppSoundSmp->pDSBuffer, (int)fVar1);
 }
 

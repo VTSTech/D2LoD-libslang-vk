@@ -168,6 +168,10 @@ void __stdcall SOUND_InitDirectSound() {
       return;
     }
 
+    // [sounddiag] R4: record the focus binding. GetHwnd() must be the real game window here - if it
+    // is 0 (window created later than expected), every secondary buffer is treated as unfocused.
+    D2BOOT_MarkFmt("[sounddiag] SetCooperativeLevel OK hwnd=%p level=%u", (void*)hWnd, dwCoopLevel); // [sounddiag]
+
     tPrimaryBufferDesc.dwReserved = 0;
     tPrimaryBufferDesc.dwSize = 0x14;
     tPrimaryBufferDesc.dwFlags = 1;

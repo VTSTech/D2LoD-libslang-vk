@@ -393,6 +393,10 @@ void SFILE_HandleAsyncReadError(D2StormAsyncOpStrc * pAsyncOp) {
 
       { static int s_nFillR3 = 0; if (s_nFillR3++ < 6 && nBytesRead >= 4) { short nPcmL = ((const short*)*ppLockedBuffer)[0]; short nPcmR = ((const short*)*ppLockedBuffer)[1]; D2BOOT_MarkFmt("[sounddiag] fill#%u: copy=%u lock=%u pcm=%d,%d", s_nFillR3, nCopyBytes, nBytesRead, (int)nPcmL, (int)nPcmR); } } // [sounddiag]
       pAsyncOp->pStream->lpVtbl->Unlock(pAsyncOp->pStream, *ppLockedBuffer, nBytesRead, nullptr, 0);
+      // [sounddiag] R4: prove the PCM actually landed in the ring at the position being played.
+      // Round-3 proved the copy succeeded (nonzero pcm) but never read the buffer back; a discarded
+      // Unlock would look identical in every other marker while the cursor marches over zeros.
+      { static int s_nReadbackR4 = 0; if (s_nReadbackR4++ < 6) { void* pRB = nullptr; DWORD nRB = 0; HRESULT nRBHr = pAsyncOp->pStream->lpVtbl->Lock(pAsyncOp->pStream, pAsyncOp->nStreamPos, 4, &pRB, &nRB, nullptr, nullptr, 0); if (nRBHr >= 0 && nRB >= 4) { D2BOOT_MarkFmt("[sounddiag] readback#%u pos=%u pcm=%d,%d", s_nReadbackR4, (unsigned)pAsyncOp->nStreamPos, (int)((const short*)pRB)[0], (int)((const short*)pRB)[1]); pAsyncOp->pStream->lpVtbl->Unlock(pAsyncOp->pStream, pRB, nRB, nullptr, 0); } else { D2BOOT_MarkFmt("[sounddiag] readback#%u pos=%u LOCK hr=%08x nRB=%u", s_nReadbackR4, (unsigned)pAsyncOp->nStreamPos, (unsigned)nRBHr, (unsigned)nRB); } } } // [sounddiag]
       pAsyncOp->pParentStream->nBytePos = nBytesRead - pAsyncOp->pParentStream->nDataChunkOffset + pAsyncOp->nFilePos;
       pParentStream = pAsyncOp->pParentStream;
       if (pParentStream->nDataChunkSize < pParentStream->nBytePos) {
@@ -3910,7 +3914,7 @@ void __stdcall SFILE_ProcessAsyncRequests() {
         if (pRequest->nStreamType == 2) {
           nStreamPos = SFILE_GetStreamPosition(pRequest);
           nChunkSize = gnSFileWaveStreamBufferSize;
-          { static uint32_t s_dwLastFeedR3 = 0; DWORD dwNowR3 = GetTickCount(); if (dwNowR3 - s_dwLastFeedR3 >= 1000) { s_dwLastFeedR3 = dwNowR3; DWORD dwStR3 = 0; pRequest->pStream->lpVtbl->GetStatus(pRequest->pStream, &dwStR3); D2BOOT_MarkFmt("[sounddiag] feed: play=%d write=%u cur=%u byte=%u type=%u st=%08x", nStreamPos, pRequest->nWritePos, pRequest->nCurrentPos, pRequest->nBytePos, pRequest->nStreamType, dwStR3); } } // [sounddiag]
+          { static uint32_t s_dwLastFeedR3 = 0; DWORD dwNowR3 = GetTickCount(); if (dwNowR3 - s_dwLastFeedR3 >= 1000) { s_dwLastFeedR3 = dwNowR3; DWORD dwStR3 = 0; pRequest->pStream->lpVtbl->GetStatus(pRequest->pStream, &dwStR3); long nVolR3 = 0; HRESULT nVolHrR3 = pRequest->pStream->lpVtbl->GetVolume(pRequest->pStream, &nVolR3); D2BOOT_MarkFmt("[sounddiag] feed: play=%d write=%u cur=%u byte=%u type=%u st=%08x vol=%ld volHr=%08x", nStreamPos, pRequest->nWritePos, pRequest->nCurrentPos, pRequest->nBytePos, pRequest->nStreamType, dwStR3, nVolR3, (unsigned)nVolHrR3); } } // [sounddiag]
           if (nStreamPos != -1 && gnSFileWaveStreamBufferSize <= (uint32_t)(nStreamPos - pRequest->nWritePos) % pRequest->nBufferSize) {
             nChunkSize = pRequest->nBufferSize - pRequest->nWritePos;
             if (gnSFileWaveStreamBufferSize < nChunkSize) {
