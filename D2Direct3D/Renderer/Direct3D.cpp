@@ -2466,6 +2466,21 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
     if (nMode == 4) {
       nMipIdx = 1;
     }
+    // [vanilla-plus fix 21] Mirror of glide fix 3 (field-verified in the glide
+    // series): the per-frame descriptor slots live in a non-zeroing/recycled
+    // pool, so a first-use header can carry pool garbage in the size-class
+    // slot. The old exact-zero test skipped the size recompute for any garbage
+    // value, and the class flows straight into &aCaches[class - 1] — for
+    // garbage > 3 that walks off the 3-entry array into the packed struct's
+    // apSpriteTextures/apSpriteSurfaces and beyond. A pointer-shaped pFreeHead
+    // there is non-null (no halt 0xd7), nUsedCount != nMaxNodes (no early
+    // out), and the bogus "node" read lands on aliased memory whose +0x10 is
+    // zero -> the field HALT line=365 (0x16d) at the first sprite upload.
+    // Treat an out-of-range class like an unset one (zero the slot) so the
+    // recompute below sticks, instead of skipping the upload forever.
+    if (*(int*)(pbSrcPixel + nMipIdx * 8) < 1 || 3 < *(int*)(pbSrcPixel + nMipIdx * 8)) {
+      *(uint32_t*)(pbSrcPixel + nMipIdx * 8) = 0;
+    }
     if (!*(int*)(pbSrcPixel + nMipIdx * 8)) {
       iMipLevel = pTexInfo->nWidth;
       if (iMipLevel < 0x21 && pTexInfo->nHeight < 0x21) {
@@ -2486,6 +2501,22 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
     // [vanilla-plus fix 20] real seeded pools, not the DAT_00970eac phantom region
     D3DTextureCacheStrc* pCache = &gD3DGenericTextureCache.aCaches[iMipLevel - 1];
     D3DTextureCacheNodeStrc* pCacheNodeBase = pCache->pNodeBuffer;
+    // [vanilla-plus fix 21] Mirror of glide fix 2: a recycled sprite header can
+    // inherit a stale node index — the sprite-free callback clears the node's
+    // tile backpointer but never the header slots. A stale index would be
+    // dereferenced unchecked below (or trip the 0x164/0x165 bounds halts).
+    // Validate the slot against the node's own backpointers (+4 block ptr,
+    // +8 mip idx — written by this very function, so a legit palette-change
+    // re-upload matches by construction) and the pool bound (hardened beyond
+    // glide, which read unbounded); on mismatch drop the slot and allocate
+    // fresh. Bound check first: it gates the backpointer dereference.
+    if (*piVar2) {
+      if ((uint32_t)(*piVar2 - 1) >= (uint32_t)pCache->nMaxNodes
+        || *(int*)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 4) != pbSrcPixel
+        || *(int*)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 8) != nMipIdx) {
+        *piVar2 = 0;
+      }
+    }
     if (*piVar2 && (*(uint8_t**)(*piVar2 * 0x20 - 0x14 + pCacheNodeBase) == pPalette || nMode == 4)) {
       d3dTextureCache::D3DTEXCACHE_InvalidateByIndex(pCache, *piVar2);
       dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*piVar2 * 0x20 + pCacheNodeBase - 0xc));
