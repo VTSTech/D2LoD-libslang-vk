@@ -181,7 +181,13 @@ void __fastcall SOUNDSMP_SetVolume(D2SoundSmpStrc * ppSoundSmp, int nVolume) {
     // round-3's "SetVolume SILENT: d2vol=255 glob=255" lines were full-volume, not silence.
     // Trap on the LINEAR value instead: real silence is linear <= 0 while the game asked for > 0.
     if (nErrorAddr <= 0 && nVolume != 0) { static int s_nSilentVolR3 = 0; if (s_nSilentVolR3++ < 8) D2BOOT_MarkFmt("[sounddiag] SetVolume SILENT: d2vol=%u glob=%u eaxX1000=%d lin=%d buf=%08x", (unsigned)nVolume, (unsigned)gnSoundGlobalVolume, (int)(ppSoundSmp->fEaxObstruction * 1000.0f), nErrorAddr, (unsigned)(size_t)ppSoundSmp->pDSBuffer); } // [sounddiag]
-    ppSoundSmp->pDSBuffer->lpVtbl->SetVolume(ppSoundSmp->pDSBuffer, (int)fVar1);
+    HRESULT nSetVolHrR5 = ppSoundSmp->pDSBuffer->lpVtbl->SetVolume(ppSoundSmp->pDSBuffer, (int)fVar1);
+    // [sounddiag] R5: log EVERY SetVolume for the first 48 calls (value, linear, attenuation,
+    // buffer, HRESULT, return address resolvable via d2exe.map). The R4 readback proved the
+    // DDA music buffer sits at -10000 from its first feed even though the open sequence calls
+    // SetVolume(0xff) then SetVolume(0x6e) right before DdaBeginEx - so either one of those
+    // HRESULTs fails or an unaccounted writer exists. This log settles which.
+    { static int s_nVolLogR5 = 0; if (s_nVolLogR5++ < 48) D2BOOT_MarkFmt("[sounddiag] SetVolume#%u: vol=%d glob=%u lin=%d att=%d buf=%08x hr=%08x from=%08x", s_nVolLogR5, nVolume, (unsigned)gnSoundGlobalVolume, nErrorAddr, (int)fVar1, (unsigned)(size_t)ppSoundSmp->pDSBuffer, (unsigned)nSetVolHrR5, (unsigned)(uintptr_t)__builtin_return_address(0)); } // [sounddiag]
 }
 
 // Returns pSoundSmp->nVolume, the value SOUNDSMP_SetVolume stores; halts (line 740) on NULL.
@@ -409,6 +415,11 @@ BOOL __fastcall SOUNDSMP_OpenAndStreamFile(int * * ppnParam, char * szText, int3
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ ppnParam[0x12] = (int*)pArchive;
       ppnParam[7] = (int*)0x1;
       ppnParam[0xc] = (int*)-1;
+      // [sounddiag] R5: read the DDA buffer volume back IMMEDIATELY after a successful open.
+      // The open sequence is Reset(SetVolume 0xff) -> SetVolume(0x6e) -> this call, so the
+      // buffer should hold ~-730 (fixed curve) right here. If it already reads -10000 the
+      // silencer acted inside the open window; if 0/-730, it acts between here and the feed.
+      { D2SoundSmpStrc* pObjR5 = (D2SoundSmpStrc*)ppnParam; long nVolR5 = 0; HRESULT nVolHrR5 = -1; if (pObjR5->pDSBuffer) { nVolHrR5 = pObjR5->pDSBuffer->lpVtbl->GetVolume(pObjR5->pDSBuffer, &nVolR5); } D2BOOT_MarkFmt("[sounddiag] post-open GetVolume: open=%d vol=%ld hr=%08x buf=%08x", (int)pStreamHandle, nVolR5, (unsigned)nVolHrR5, (unsigned)(size_t)pObjR5->pDSBuffer); } // [sounddiag]
       LeaveCriticalSection(&gSoundSmpCs);
       return 1;
     }
@@ -590,6 +601,9 @@ void __fastcall SOUNDSMP_Reset(D2SoundSmpStrc * pSoundSmp) {
 
         SOUNDSMP_SetEaxObstruction(pSoundSmp, 0.0);
         SOUNDSMP_SetVolume(pSoundSmp, 0xff);
+        // [sounddiag] R5: which Reset branch ran, and what the buffer volume ACTUALLY is
+        // after the SetVolume(0xff) - catches a failed SetVolume or a stale/reused buffer.
+        { long nVolR5 = 0; HRESULT nVolHrR5 = -1; if (pSoundSmp->pDSBuffer) { nVolHrR5 = pSoundSmp->pDSBuffer->lpVtbl->GetVolume(pSoundSmp->pDSBuffer, &nVolR5); } D2BOOT_MarkFmt("[sounddiag] post-reset GetVolume: hwacc=%u nVol=%d vol=%ld hr=%08x buf=%08x", (unsigned)DVar1, (int)pSoundSmp->nVolume, nVolR5, (unsigned)nVolHrR5, (unsigned)(size_t)pSoundSmp->pDSBuffer); } // [sounddiag]
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&gSoundSmpCs);
         return;
       }
@@ -805,7 +819,12 @@ float __stdcall SOUNDSMP_ClampVolume(float fValue, float fParam2, float fParam3)
     }
 
     fVar1 = CRT_CILog10((fVar2 + (long double)fValue) / fVar3);
-    return (float)(fVar1 * (long double)(double)-0x3f60c00000000000);
+    // R5 fix: the recovered constant -0x3f60c00000000000 (-0.00341796875) cannot be right -
+    // the exact inverse of this curve, ClampAttenuation below, divides by 0x409f40000000000
+    // (2000.0). With -0.00342, every nonzero volume collapses to (int)-0.001 = 0 (FULL) and
+    // only 0 maps to -10000: the whole curve degenerates to binary full/silent. Restore the
+    // -2000.0 scale so 20*log10 amplitude semantics hold (255->0, 110->-730, 0->-10000).
+    return (float)(fVar1 * -2000.0);
 }
 
 float __stdcall SOUNDSMP_ClampAttenuation(float fParam) {
