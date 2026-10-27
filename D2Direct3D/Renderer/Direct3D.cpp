@@ -4980,16 +4980,21 @@ void __stdcall RENDERER_D3D_InitGroundTileCache() {
         puDestIndex = g_aD3DGroundTileStripIndices; // [vanilla-plus fix 24] real 65-word array (was the 2-byte phantom)
         psIndexBuf = local_9c;
         iRow = 5;
+        // [vanilla-plus fix 25] The merge spliced upstream's decompiled band loop
+        // (written against the &phantom anchor, which sat 12 words INTO the table)
+        // onto this base-pointer init: bands 1-5 wrote words [-12..52], spilling
+        // 12 words before the array and leaving words 53..64 stale/zero.
+        // DrawIndexedPrimitiveVB then consumed garbage indices for every trailing
+        // band -> evenly spaced diagonal black bars over the perspective floor.
+        // Restore the fix-24 loop: fill words [0..64] from the array base.
         do {
-          *(uint32_t*)(puDestIndex - 0xc) = *(uint32_t*)psIndexBuf;
-          *(uint32_t*)(puDestIndex - 10) = *(uint32_t*)(psIndexBuf + 2);
-          *(uint32_t*)(puDestIndex - 8) = *(uint32_t*)(psIndexBuf + 4);
-          *(uint32_t*)(puDestIndex - 6) = *(uint32_t*)(psIndexBuf + 6);
-          *(uint32_t*)(puDestIndex - 4) = *(uint32_t*)(psIndexBuf + 8);
-          *(uint32_t*)(puDestIndex - 2) = *(uint32_t*)(psIndexBuf + 10);
-          *puDestIndex = puDestIndex[-1];
-          puDestIndex += 0xd;
-          psIndexBuf += 0xc;
+          for (int nPairIdx = 0; nPairIdx < 12; nPairIdx++) {
+            puDestIndex[nPairIdx] = (uint16_t)psIndexBuf[nPairIdx];
+          }
+
+          puDestIndex[12] = puDestIndex[11];
+          puDestIndex += 13;
+          psIndexBuf += 12;
           iRow--;
         } while (iRow);
 
