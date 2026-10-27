@@ -41,6 +41,22 @@ GUID IID_IDirectDraw7 = {
     /* .Data4 = */ { 0x8c, 'J', '\x00', 0xc0, 'O', 0xd9, '0', 0xc5 }
 };
 
+// [vanilla-plus fix 17] Restored 16-byte IID_IDirectDrawGammaControl. The Ghidra
+// export truncated it to a 1-byte "uint8_t = 0x3e" static inside
+// RENDERER_D3D_InitializeDevice, so the fullscreen D3D init passed a 1-byte
+// object as the QueryInterface riid; the DD7 primary surface rejected it with
+// DDERR_INVALIDPARAMS (0x80070057) — FOG log 2026-10-27 "***** DirectDraw error:
+// Failed to get gamma control interface!" — aborting RENDERER_D3D_InitializeDevice
+// and surfacing as retail's "Error 25: A critical error has occurred while
+// initializing Direct3D" on every non-3dfx fullscreen boot. First byte 0x3e
+// matches the exported remnant.
+GUID IID_IDirectDrawGammaControl = {
+    /* .Data1 = */ 0x69c11c3e,
+    /* .Data2 = */ 0xb14b,
+    /* .Data3 = */ 0x11d1,
+    /* .Data4 = */ { 0x9f, 0x93, 0x00, 0xa0, 0xc9, 0x0d, 0x32, 0xcb }
+};
+
 uint16_t gaD3DPerspectiveStripIndices[22] = {
     0x0,
     0x1,

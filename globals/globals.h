@@ -1520,6 +1520,7 @@ extern GUID gIID_IDirect3DSurface;
 extern GUID IID_IDirect3DHALDevice;
 extern GUID D3DGuid;
 extern GUID IID_IDirectDraw7;
+extern GUID IID_IDirectDrawGammaControl; // [vanilla-plus fix 17] restored 16-byte IID (was a 1-byte export remnant)
 // lpMultiByteStr parameter of MultiByteToWideChar
 extern char lpMultiByteStr_006ff97c[2];
 // lpSubBlock parameter of VerQueryValueA

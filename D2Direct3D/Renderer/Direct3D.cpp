@@ -1874,7 +1874,9 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
 
 BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWnd) {
     // Static local variables (originally global data)
-    static uint8_t gszRendererD3DDeviceInitializationCode = 0x3e;
+    // [vanilla-plus fix 17] gszRendererD3DDeviceInitializationCode (uint8_t = 0x3e)
+    // removed — it was the Ghidra export's 1-byte remnant of the 16-byte
+    // IID_IDirectDrawGammaControl, now defined properly in globals/D2Direct3D.cpp.
     static unsigned int gdwD3DTextureAvailableMemory;
     static int bD3DDeviceInitialized;
     static unsigned int gdwD3DLocalTextureAvailableMemory;
@@ -1940,20 +1942,32 @@ BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWnd) {
     nResult = g_pD3DSurfaceBackbuffer->lpVtbl->GetAttachedSurface(g_pD3DSurfaceBackbuffer, &iidData2, (void**)&D3DSurfaceSecondary);
     if (!nResult) {
       if (gnD3DTextureCapFlags & 0x10) {
-        nResult = g_pD3DSurfaceBackbuffer->lpVtbl->QueryInterface(g_pD3DSurfaceBackbuffer, (GUID*)&gszRendererD3DDeviceInitializationCode, (void**)&g_pDDGammaControl);
+        // [vanilla-plus fix 17] riid was (GUID*)&gszRendererD3DDeviceInitializationCode
+        // — a 1-byte truncated IID; the DD7 primary-surface QueryInterface returned
+        // DDERR_INVALIDPARAMS (FOG log 2026-10-27 "Failed to get gamma control
+        // interface!"), killing every non-3dfx fullscreen boot with retail's
+        // "Error 25" banner (D2GFX_Release, ghWndMain singlet).
+        // [vanilla-plus fix 18] With the restored IID the QI STILL returned
+        // DDERR_INVALIDPARAMS on the field box (FOG log 2026-10-27 13:12) —
+        // emulated DD7 on modern display stacks can refuse gamma control on a
+        // FRONTBUFFER|FLIP|COMPLEX|3DDEVICE|VIDEOMEMORY flip chain even when the
+        // registry dwFlags cap bit 0x10 (Diablo II\VideoConfig, read at :1846)
+        // advertises it. Retail treats both gamma steps as fatal and dies here;
+        // we degrade gracefully instead: log, leave g_pDDGammaControl null, keep
+        // booting. Every consumer is already null-safe — the brightness ramp
+        // path early-returns at :833 and the release path skips restore at
+        // :719 — so the only observable loss is an inert brightness slider.
+        nResult = g_pD3DSurfaceBackbuffer->lpVtbl->QueryInterface(g_pD3DSurfaceBackbuffer, &IID_IDirectDrawGammaControl, (void**)&g_pDDGammaControl);
         if (nResult) {
-          DIRECTD3D_LogError("Failed to get gamma control interface!", nResult);
-          RENDERER_D3D_ReleaseDevice();
-          gnGlideWindowHandle = 0;
-          return 0;
-        }
-
-        nResult = g_pDDGammaControl->lpVtbl->GetGammaRamp(g_pDDGammaControl, 0, g_OriginalGammaRamp);
-        if (nResult) {
-          DIRECTD3D_LogError("Failed to get original gamma ramp", nResult);
-          RENDERER_D3D_ReleaseDevice();
-          gnGlideWindowHandle = 0;
-          return 0;
+          DIRECTD3D_LogError("Failed to get gamma control interface - continuing without hardware gamma", nResult);
+          g_pDDGammaControl = 0;
+        } else {
+          nResult = g_pDDGammaControl->lpVtbl->GetGammaRamp(g_pDDGammaControl, 0, g_OriginalGammaRamp);
+          if (nResult) {
+            DIRECTD3D_LogError("Failed to get original gamma ramp - continuing without hardware gamma", nResult);
+            g_pDDGammaControl->lpVtbl->Release(g_pDDGammaControl);
+            g_pDDGammaControl = 0;
+          }
         }
       }
 
