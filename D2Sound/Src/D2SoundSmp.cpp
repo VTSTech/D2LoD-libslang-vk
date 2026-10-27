@@ -39,7 +39,7 @@ namespace D2Sound::Src::D2SoundSmp {
 
 static int gnSoundFrequency_22kHz = 0x40000000;
 static long long gnSoundQuality_Low = 0x42c80000;
-static long long gnSoundAttenuation_Max = 0x3f1a36e2e0000000;
+static long long gnSoundAttenuation_Max = 0x3f1a36e2e0000000; // R6: unused; hex is the FP bit-pattern of double 0.0001, NOT an integer - see ClampVolume R6 note
 
 // @sourcefile .\Src\D2SoundSmp.cpp
 D2SoundSmpStrc * __fastcall CallSounds(uint32_t nSoundFlags, uint32_t dwSampleParam) {
@@ -803,12 +803,12 @@ float SOUNDSMP_LinearToLogNoParam(float fValue, float fValue2) {
 // No register arguments: EAX is first written by FNSTSW AX at 00516607 and only carries the x87 status word (1.14d asm).
 float __stdcall SOUNDSMP_ClampVolume(float fValue, float fParam2, float fParam3) {
     long double fVar1 = (long double)fParam3;
-    if (fVar1 <= (long double)fValue + (long double)(double)0x3f1a36e2e0000000) {
+    if (fVar1 <= (long double)fValue + (long double)0.0001) {
       return -10000.0;
     }
 
     long double fVar2 = (long double)fParam2;
-    long double fVar3 = fVar2 - (long double)(double)0x3f1a36e2e0000000;
+    long double fVar3 = fVar2 - (long double)0.0001;
     if (fVar3 < fVar1 != (fVar3 == fVar1)) {
       return 0.0;
     }
@@ -819,24 +819,26 @@ float __stdcall SOUNDSMP_ClampVolume(float fValue, float fParam2, float fParam3)
     }
 
     fVar1 = CRT_CILog10((fVar2 + (long double)fValue) / fVar3);
-    // R5 fix: the recovered constant -0x3f60c00000000000 (-0.00341796875) cannot be right -
-    // the exact inverse of this curve, ClampAttenuation below, divides by 0x409f40000000000
-    // (2000.0). With -0.00342, every nonzero volume collapses to (int)-0.001 = 0 (FULL) and
-    // only 0 maps to -10000: the whole curve degenerates to binary full/silent. Restore the
-    // -2000.0 scale so 20*log10 amplitude semantics hold (255->0, 110->-730, 0->-10000).
+    // R6 fix (title-music root cause): Ghidra pseudocode prints FP constants as their
+    // IEEE-754 BIT patterns; ported verbatim they became hex INTEGER literals. The
+    // epsilons above (0x3f1a36e2e0000000 = the double 0.0001) evaluated to ~7.3e19, so
+    // the min-clamp returned -10000 (DSBVOLUME_MIN) for EVERY input and every DDA buffer
+    // sat pinned silent (log: lin=255 att=-10000, lin=110 att=-10000). The R5 -2000.0
+    // scale fix sat behind that clamp and never executed. Curve now matches 1.14d
+    // FUN_005165f0 (20*log10 amplitude dB): 255->0, 110->-730, 0->-10000.
     return (float)(fVar1 * -2000.0);
 }
 
 float __stdcall SOUNDSMP_ClampAttenuation(float fParam) {
     long double fVar1 = (long double)fParam;
-    if ((long double)0.0 < fVar1 + (long double)(double)0x3f1a36e2e0000000) {
+    if ((long double)0.0 < fVar1 + (long double)0.0001) {
       return 1.0;
     }
-    if (fVar1 - (long double)(double)0x3f1a36e2e0000000 < (long double)(double)-0x3f3c780000000000) {
+    if (fVar1 - (long double)0.0001 < (long double)-10000.0) {
       return 0.0;
     }
 
-    fVar1 = CRT_CIPow((long double)10.0, fVar1 / (long double)(double)0x409f400000000000);
+    fVar1 = CRT_CIPow((long double)10.0, fVar1 / (long double)2000.0);
     return (float)fVar1;
 }
 
