@@ -3146,10 +3146,21 @@ void __stdcall D2GFX_InitializeWindowSize() {
     __frame0_t __frame0;
     __frame0.nContrast = eRendererMode != RENDERER_Glide ? 100 : 0;
     Storm::Source::SReg::SRegLoadValue("Diablo II", "Contrast", 0, (int32_t*)&__frame0.nContrast);
+    // [vanilla-plus fix 15] The esc-menu contrast slider used to save out-of-range
+    // "Contrast" registry values (mis-decompiled UI_SLIDER_GetValueFromPosition).
+    // D2Glide::SetGamma consumes this value as a [0,100] percentage and
+    // FOG_FillArrayWithRandomInts halts (halt line 16) on anything larger — killing
+    // every -3dfx boot in this exe AND in retail Game.exe (shared registry value).
+    // Clamp pre-existing poison here so a boot can never trip it again.
+    if (__frame0.nContrast > 100) {
+      D2BOOT_MarkFmt("vidinit: registry Contrast=%u out of range -> clamped to 100", (unsigned)__frame0.nContrast); // [viddiag]
+      __frame0.nContrast = 100;
+    }
     D2GFX_SetOption(0xb, __frame0.nContrast);
     __frame0.dwGamma = 0x9b;
     Storm::Source::SReg::SRegLoadValue("Diablo II", "Gamma", 0, (int32_t*)&__frame0.dwGamma);
     D2GFXRenderedData.nGamma = __frame0.dwGamma;
+    D2BOOT_MarkFmt("vidinit: renderer=%d contrast=%u gamma=%u", (int)eRendererMode, (unsigned)__frame0.nContrast, (unsigned)__frame0.dwGamma); // [viddiag]
     D2GFX_SetGamma(__frame0.dwGamma);
 }
 

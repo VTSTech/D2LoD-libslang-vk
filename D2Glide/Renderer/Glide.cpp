@@ -31,6 +31,7 @@
 #include "Storm/Source/SBMP.h"
 #include "Storm/Source/SFile.h"
 #include "globals/globals.h"
+#include "support/d2_boot.h" // [viddiag]
 #include "D2CMP/tagPALETTEENTRY.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -97,6 +98,18 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
     FxU32 FVar1;
     D2FloatIntUnion fGammaVal;
     FxU32 nTableSize;
+    // [vanilla-plus fix 15] This global actually carries the video-options CONTRAST
+    // weight (written by SetOption(0xb, ...)); the decompiler named it gbWINDOWED.
+    // The windowed branch below feeds it to FOG_FillArrayWithRandomInts as a [0,100]
+    // percentage, and FOG halts (halt line 16) on anything larger. An out-of-range
+    // registry "Contrast" (planted by the mis-decompiled esc-menu slider) therefore
+    // halted every -3dfx boot. Clamp the weight so the halt is unreachable; the
+    // registry/source clamps upstream make this a second line of defense.
+    uint32_t nContrastWeight = gbWINDOWED;
+    D2BOOT_MarkFmt("glide SetGamma: nGamma=%d contrastWeight=%u", nGamma, (unsigned)nContrastWeight); // [viddiag]
+    if (nContrastWeight > 100) {
+      nContrastWeight = 100;
+    }
     if (gbWINDOWED < 1) {
       fGammaVal.fValue = (float)nGamma / 100.0;
       FVar1 = (*GLIDEDLL_guGammaCorrectionRGB_12)(fGammaVal.fValue, fGammaVal.fValue, fGammaVal.fValue);
@@ -110,7 +123,8 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
         FVar1 = 0;
         if (nGrGetResult) {
           pGammaTable = (FxU32*)Storm::SMem::SMemAlloc(nTableSize * 4, ".\\Src\\glCore.cpp", 0x42f, 0);
-          Fog::Src::DataArrays::FOG_FillArrayWithRandomInts(nGamma, pGammaTable, (double)gbWINDOWED, (uint32_t*)0x4, nTableSize, (1 << ((uint8_t)fGammaVal.nValue & 0x1f)) - 1);
+          D2BOOT_MarkFmt("glide SetGamma: tableSize=%u maxBits=%08x (windowed branch)", (unsigned)nTableSize, (unsigned)fGammaVal.nValue); // [viddiag]
+          Fog::Src::DataArrays::FOG_FillArrayWithRandomInts(nGamma, pGammaTable, (double)nContrastWeight, (uint32_t*)0x4, nTableSize, (1 << ((uint8_t)fGammaVal.nValue & 0x1f)) - 1);
           (*GLIDEDLL_grLoadGammaTable_16)(nTableSize, pGammaTable, pGammaTable, pGammaTable);
           nFreeResult = Storm::SMem::SMemFree(pGammaTable, ".\\Src\\glCore.cpp", 0x43a, 0);
           return nFreeResult;
