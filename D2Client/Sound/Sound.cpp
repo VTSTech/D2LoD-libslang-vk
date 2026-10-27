@@ -6147,6 +6147,8 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
       bMenuPaused = false;
     }
 
+    { static int s_nR8Mc = 0; if (s_nR8Mc++ < 3000 && (s_nR8Mc % 25) == 0) D2BOOT_MarkFmt("[sounddiag] menucheck: gtype=%d esc=%d cfg=%d paused=%d lcv=%d rcv=%d", (int)eGameType, (int)UI::ui::UI_GetFlag(UI_ESCMENU), (int)UI::ui::UI_GetFlag(UI_CONFIG), (int)bMenuPaused, (int)nSoundVolumeLeftChannel, (int)nSoundVolumeRightChannel); } // [sounddiag] R8: menu-duck inputs - bMenuPaused stuck true ramps nSoundVolumeLeftChannel to 0, muting every non-reserved sid
+
     __frame0.fClosestDist.fValue = 0.0;
     puSortHead = gpActiveSoundChannelsHead;
     do {

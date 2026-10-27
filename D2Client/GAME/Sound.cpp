@@ -429,6 +429,8 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
     fFalloffMin = D2Client::Sound::SoundHdr::SOUNDHDR_GetFalloffMin(*(int32_t*)(nSoundDescOffset + 4));
     float fFalloffMax;
     fFalloffMax = D2Client::Sound::SoundHdr::SOUNDHDR_GetFalloffMax(*(int32_t*)(nSoundDescOffset + 4));
+    float fFalloffMinR8 = fFalloffMin; // [sounddiag] R8: preserve pristine falloff getters' results (the falloff block mutates fFalloffMax)
+    float fFalloffMaxR8 = fFalloffMax; // [sounddiag] R8
     int nTmpCalc;
     nTmpCalc = *(int*)(nSoundDescOffset + 0x1c);
     if (pSoundsTxtLine->Music_Vol) {
@@ -520,6 +522,7 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
     }
 
     float fVar1 = _Utils::CalculateHypotenuse(*(float*)(nSoundDescSaved + 0xc), *(float*)(nSoundDescSaved + 0x10));
+    float fDistR8 = fVar1; // [sounddiag] R8: pre-falloff distance snapshot
     nSoundDescOffset = (int)fVolume;
     if (fFalloffMin < fVar1) {
       fVar1 = fFalloffMax - fVar1;
@@ -528,14 +531,27 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
     }
 
     nSoundDescOffset = (int)((uint32_t)pSoundsTxtLine->Volume * nSoundDescOffset) / 0xff;
-    { static int s_nR7Upd = 0; if (s_nR7Upd++ < 40) D2BOOT_MarkFmt("[sounddiag] updchan: sid=%d b1c=%d b20=%08x b38=%d mvol=%u solo=%u svol=%u fmin=%.0f fmax=%.0f vol=%d ch=%08x", (int)*(int32_t*)(nSoundDescSaved+4), (int)*(int*)(nSoundDescSaved+0x1c), (unsigned)*(uint32_t*)(nSoundDescSaved+0x20), (int)*(int*)(nSoundDescSaved+0x38), (unsigned)pSoundsTxtLine->Music_Vol, (unsigned)pSoundsTxtLine->Solo, (unsigned)pSoundsTxtLine->Volume, (double)fFalloffMin, (double)fFalloffMax, (int)nSoundDescOffset, (unsigned)(uintptr_t)*pSoundChannel); } // [sounddiag]
+    { static int s_nR8Upd = 0; if (s_nR8Upd++ < 60) D2BOOT_MarkFmt("[sounddiag] updchan: sid=%d b1c=%d b20=%08x b38=%d mvol=%u solo=%u svol=%u vol=%d mv=%d muv=%d lcv=%d rcv=%d fvol=%08x fmn=%08x fmx=%08x dst=%08x falloffcol=%d ch=%08x", (int)*(int32_t*)(nSoundDescSaved+4), (int)*(int*)(nSoundDescSaved+0x1c), (unsigned)*(uint32_t*)(nSoundDescSaved+0x20), (int)*(int*)(nSoundDescSaved+0x38), (unsigned)pSoundsTxtLine->Music_Vol, (unsigned)pSoundsTxtLine->Solo, (unsigned)pSoundsTxtLine->Volume, (int)nSoundDescOffset, (int)D2Sound::Src::D2SoundFast::SOUND_GetMasterVolume(), (int)D2Sound::Src::D2SoundFast::SOUND_GetMusicVolume(), (int)nSoundVolumeLeftChannel, (int)nSoundVolumeRightChannel, (unsigned)d2_bits_of(fVolume), (unsigned)d2_bits_of(fFalloffMinR8), (unsigned)d2_bits_of(fFalloffMaxR8), (unsigned)d2_bits_of(fDistR8), (int)pSoundsTxtLine->Falloff, (unsigned)(uintptr_t)*pSoundChannel); } // [sounddiag] R8: %f unsupported by D2BOOT_MarkFmt (R7 printed 'f') - floats now as IEEE bits; mv/muv = master/music percents, lcv/rcv = menu-duck/solo-duck percents, fvol = pre-falloff volume bits
     fEaxObstruction = *(float*)(nSoundDescSaved + 0xc) * 0.003125;
     pChannelEntry = (int*)d2_bits_of(*(float*)(nSoundDescSaved + 0x10) * 0.003125);
     pSoundsTxtLine = (D2SoundsTxt*)d2_bits_of(*(float*)(nSoundDescSaved + 0x14) * 0.003125);
     if (!pSoundChannel[1]) {
-      D2Sound::Src::D2SoundSmp::SOUNDSMP_CalculateVolumeAndPan((uint32_t*)&fFalloffMin, (uint32_t*)&fFalloffMax, fEaxObstruction, (float)d2_bits_to_float(pChannelEntry), (float)d2_bits_to_float(pSoundsTxtLine));
-      D2Sound::Src::D2SoundSmp::SOUNDSMP_SetPan((D2SoundSmpStrc*)*pSoundChannel, (int32_t)fFalloffMax);
-      nSoundDescOffset = (int)fFalloffMin * nSoundDescOffset / 0xff;
+      // [vanilla-plus fix 16] Defect 13 root cause (SFX silent, music OK). SOUNDSMP_CalculateVolumeAndPan
+      // writes its OUT params as 32-bit INTEGERS (volume 0..255, pan 0..255), but this block received
+      // them through (uint32_t*)&fFalloffMin / &fFalloffMax - the storage of two float locals - and then
+      // read the results back AS FLOATS: (int32_t)fFalloffMax for SetPan, and (int)fFalloffMin for the
+      // volume multiply below. Any CalcVol in 0..255 has IEEE bits 0x00000000-0x000000FF, which
+      // reinterpret as a subnormal float (~1e-43); the float->int conversion truncates that to 0, so
+      // nSoundDescOffset became 0 for EVERY sound that runs this block -> SOUNDSMP_SetVolume(0) ->
+      // att=-10000 -> silent buffer. Music-flagged channels (pSoundChannel[1] != 0) skip this block
+      // entirely, which is why music survived (R8 log: sid=4673 landed att=-1348 while sid=4325 landed
+      // att=-10000 through the identical open path). Retail reads these out params as plain integers.
+      uint32_t nCalcVolume = 0;
+      uint32_t nCalcPan = 0;
+      D2Sound::Src::D2SoundSmp::SOUNDSMP_CalculateVolumeAndPan(&nCalcVolume, &nCalcPan, fEaxObstruction, (float)d2_bits_to_float(pChannelEntry), (float)d2_bits_to_float(pSoundsTxtLine));
+      { static int s_nR9Calc = 0; if (s_nR9Calc++ < 60) D2BOOT_MarkFmt("[sounddiag] calc: sid=%d slot1=%08x dx=%08x dy=%08x dz=%08x calcvol=%u calcpan=%u prevol=%d final=%d ch=%08x", (int)*(int32_t*)(nSoundDescSaved+4), (unsigned)pSoundChannel[1], d2_bits_of(fEaxObstruction), (unsigned)pChannelEntry, (unsigned)pSoundsTxtLine, (unsigned)nCalcVolume, (unsigned)nCalcPan, (int)nSoundDescOffset, (int)((uint32_t)nCalcVolume * nSoundDescOffset / 0xff), (unsigned)(uintptr_t)*pSoundChannel); } // [sounddiag] R9: CalculateVolumeAndPan in/out - verifies fix 16 (calcvol=255 near listener, final=prevol when healthy)
+      D2Sound::Src::D2SoundSmp::SOUNDSMP_SetPan((D2SoundSmpStrc*)*pSoundChannel, (int32_t)nCalcPan);
+      nSoundDescOffset = (int)nCalcVolume * nSoundDescOffset / 0xff;
     }
     if (*(uint8_t*)(pSoundChannel + 1) & 2) {
       D2Sound::Src::D2SoundSmp::SOUNDSMP_Set3DPosition((D2SoundSmpStrc*)*pSoundChannel, fEaxObstruction, (float)d2_bits_to_float(pChannelEntry), (float)d2_bits_to_float(pSoundsTxtLine));

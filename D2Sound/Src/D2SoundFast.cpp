@@ -286,6 +286,7 @@ int __stdcall SOUND_GetMasterVolume() {
 
 int32_t __fastcall SOUND_SetMasterVolume(int32_t nVolume) {
     Storm::Source::SReg::SRegSaveValue("Diablo II", "Master Volume", 0, nVolume);
+    { static int s_nR8Smv = 0; if (s_nR8Smv++ < 40) D2BOOT_MarkFmt("[sounddiag] setmastervol: vol=%d from=%08x", (int)nVolume, (unsigned)(uintptr_t)__builtin_return_address(0)); } // [sounddiag] R8: catches every master-percent writer (registry load path excluded - it assigns directly); from= resolvable via d2.map
     g_nSoundMasterVolume = nVolume;
     return nVolume;
 }
@@ -296,6 +297,7 @@ int __stdcall SOUND_GetMusicVolume() {
 
 int32_t __fastcall SOUND_SetMusicVolume(int32_t nVolume) {
     Storm::Source::SReg::SRegSaveValue("Diablo II", "Music Volume", 0, nVolume);
+    { static int s_nR8Smuv = 0; if (s_nR8Smuv++ < 40) D2BOOT_MarkFmt("[sounddiag] setmusicvol: vol=%d from=%08x", (int)nVolume, (unsigned)(uintptr_t)__builtin_return_address(0)); } // [sounddiag] R8
     g_nSoundMusicVolume = nVolume;
     return nVolume;
 }

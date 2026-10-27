@@ -180,14 +180,14 @@ void __fastcall SOUNDSMP_SetVolume(D2SoundSmpStrc * ppSoundSmp, int nVolume) {
     // (-10000..0, where 0 = FULL volume), so the old "(int)fVar1 <= 0" test fired on EVERY call -
     // round-3's "SetVolume SILENT: d2vol=255 glob=255" lines were full-volume, not silence.
     // Trap on the LINEAR value instead: real silence is linear <= 0 while the game asked for > 0.
-    if (nErrorAddr <= 0 && nVolume != 0) { static int s_nSilentVolR3 = 0; if (s_nSilentVolR3++ < 8) D2BOOT_MarkFmt("[sounddiag] SetVolume SILENT: d2vol=%u glob=%u eaxX1000=%d lin=%d buf=%08x", (unsigned)nVolume, (unsigned)gnSoundGlobalVolume, (int)(ppSoundSmp->fEaxObstruction * 1000.0f), nErrorAddr, (unsigned)(size_t)ppSoundSmp->pDSBuffer); } // [sounddiag]
+    if (nErrorAddr <= 0 && nVolume != 0) { static int s_nSilentVolR3 = 0; if (s_nSilentVolR3++ < 200) D2BOOT_MarkFmt("[sounddiag] SetVolume SILENT: d2vol=%u glob=%u eaxX1000=%d lin=%d buf=%08x", (unsigned)nVolume, (unsigned)gnSoundGlobalVolume, (int)(ppSoundSmp->fEaxObstruction * 1000.0f), nErrorAddr, (unsigned)(size_t)ppSoundSmp->pDSBuffer); } // [sounddiag] R9: cap 8->200 - R8's 8 slots were burned by menu-mute music before the first SFX apply
     HRESULT nSetVolHrR5 = ppSoundSmp->pDSBuffer->lpVtbl->SetVolume(ppSoundSmp->pDSBuffer, (int)fVar1);
     // [sounddiag] R5: log EVERY SetVolume for the first 48 calls (value, linear, attenuation,
     // buffer, HRESULT, return address resolvable via d2exe.map). The R4 readback proved the
     // DDA music buffer sits at -10000 from its first feed even though the open sequence calls
     // SetVolume(0xff) then SetVolume(0x6e) right before DdaBeginEx - so either one of those
     // HRESULTs fails or an unaccounted writer exists. This log settles which.
-    { static int s_nVolLogR5 = 0; if (s_nVolLogR5++ < 48) D2BOOT_MarkFmt("[sounddiag] SetVolume#%u: vol=%d glob=%u lin=%d att=%d buf=%08x hr=%08x from=%08x", s_nVolLogR5, nVolume, (unsigned)gnSoundGlobalVolume, nErrorAddr, (int)fVar1, (unsigned)(size_t)ppSoundSmp->pDSBuffer, (unsigned)nSetVolHrR5, (unsigned)(uintptr_t)__builtin_return_address(0)); } // [sounddiag]
+    { static int s_nVolLogR5 = 0; if (s_nVolLogR5++ < 400) { long nGotVolR9 = 0; if (ppSoundSmp->pDSBuffer) { ppSoundSmp->pDSBuffer->lpVtbl->GetVolume(ppSoundSmp->pDSBuffer, &nGotVolR9); } D2BOOT_MarkFmt("[sounddiag] SetVolume#%u: vol=%d glob=%u lin=%d att=%d got=%ld buf=%08x hr=%08x from=%08x", s_nVolLogR5, nVolume, (unsigned)gnSoundGlobalVolume, nErrorAddr, (int)fVar1, nGotVolR9, (unsigned)(size_t)ppSoundSmp->pDSBuffer, (unsigned)nSetVolHrR5, (unsigned)(uintptr_t)__builtin_return_address(0)); } } // [sounddiag] R9: cap 48->400 (R8's slots burned before first SFX) + post-apply GetVolume readback got= (att==got proves the buffer holds what we set)
 }
 
 // Returns pSoundSmp->nVolume, the value SOUNDSMP_SetVolume stores; halts (line 740) on NULL.
