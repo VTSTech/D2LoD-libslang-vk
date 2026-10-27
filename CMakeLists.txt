@@ -153,9 +153,9 @@ endif()
 
 # ---------------------------------------------------------------------------
 # Crash reports (support/d2_crash.cpp) symbolise the stack from this build's own
-# DWARF with libbacktrace, vendored as C. The report names the build, so the git
-# describe of the tree is baked in at configure time; only d2_crash.cpp sees it,
-# so a new commit recompiles that one file.
+# DWARF with libbacktrace, vendored as C. The report names the build, so the
+# short commit hash of the tree is baked in at configure time; only d2_crash.cpp
+# sees it, so a new commit recompiles that one file.
 # ---------------------------------------------------------------------------
 add_library(d2_backtrace STATIC
     thirdparty/libbacktrace/alloc.c
@@ -176,7 +176,7 @@ endif()
 target_link_libraries(d2 PRIVATE d2_backtrace)
 
 if(NOT REDIVIVUS_BUILD_ID)
-    execute_process(COMMAND git describe --always --dirty --tags
+    execute_process(COMMAND git rev-parse --short HEAD
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         OUTPUT_VARIABLE REDIVIVUS_BUILD_ID OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET RESULT_VARIABLE _describe_rc)
