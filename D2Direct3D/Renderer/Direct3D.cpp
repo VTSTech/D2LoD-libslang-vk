@@ -79,7 +79,17 @@ typedef HRESULT (__stdcall *D3DVB_Lock)(void * This, DWORD dwFlags, void * * lpl
 
 namespace D2Direct3D::Renderer {
 
-static uint8_t gpD3DGroundTileVertexBuffer;
+// [vanilla-plus fix 24] Real ground-tile index arrays. The Ghidra export
+// split the retail index buffer into three under-extent phantom statics: a
+// 1-byte "gpD3DGroundTileVertexBuffer" that the draw read 130 bytes of index
+// words from, a 2-byte "gaD3DGroundTileIndexBuffer" that the prefill overran
+// by 129 bytes, and "gdwRendererMode" (=0x50000, i.e. WORDs [0,5] - the
+// verbatim first half of the low-quality fan list). Prefill filled one
+// label, the draw read another, so DrawIndexedPrimitiveVB consumed garbage
+// indices and the ground drew nothing (black) while sprites (DrawPrimitive)
+// and the GDI windowed path stayed correct.
+static WORD g_aD3DGroundTileStripIndices[65];               // 5 strip bands x 13 words
+static WORD g_aD3DGroundTileFanIndices[4] = {0, 5, 35, 28}; // low-quality fan: [0,5] verbatim from the retail dword 0x00050000; [35,28] = the two remaining updated vertices (v0,v5,v35,v28) in diamond-perimeter fan order
 
 // Not a CRT/unit function: its ONLY xref is the
 // PUSH at 006b4aff feeding IDirect3DDevice3::EnumTextureFormats in Direct3DCallBack, so it is the
@@ -4422,10 +4432,8 @@ BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int nPosX, int nPos
     return BVar1;
 }
 
-// Creates ground tile vertex buffer (6x6 grid = 36 vertices) and index buffer (60 indices for 5x5 tile strips) for perspective tile rendering. Calculates texture coordinates based on window dimensions (gnD3DTextureCacheBlockSize, gnD3DTextureCacheCount). Each vertex has position adjustment flags at corners (±1 in X/Y) for isometric diamond shape. Index buffer stored at gaD3DGroundTileIndexBuffer.
+// Creates ground tile vertex buffer (6x6 grid = 36 vertices) and index buffer (65 indices = 5 strip bands x 13 words for the 5x5 tile strips) for perspective tile rendering. Calculates texture coordinates based on window dimensions (gnD3DTextureCacheBlockSize, gnD3DTextureCacheCount). Each vertex has position adjustment flags at corners (±1 in X/Y) for isometric diamond shape. Index buffer stored at g_aD3DGroundTileStripIndices [vanilla-plus fix 24].
 void __stdcall RENDERER_D3D_InitGroundTileCache() {
-    // Static local variables (originally global data)
-    static unsigned short gaD3DGroundTileIndexBuffer;
 
     // Frame slots -12..-4 are ONE object: &pLockedVB is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -4517,19 +4525,23 @@ void __stdcall RENDERER_D3D_InitGroundTileCache() {
           iRow++;
         } while (iRow < 5);
 
-        puDestIndex = &gaD3DGroundTileIndexBuffer;
+        // [vanilla-plus fix 24] Fill the REAL strip index array. The old
+        // decompiled copy loop wrote through a 2-byte phantom static (129-byte
+        // overrun) while the draw read a different 1-byte phantom - net effect:
+        // DrawIndexedPrimitiveVB consumed garbage indices -> black ground.
+        // Content = 5 bands x (12 pair words [c, c+6] from the local build
+        // above + 1 trailing duplicate = the odd-parity band join).
+        puDestIndex = g_aD3DGroundTileStripIndices;
         psIndexBuf = local_9c;
         iRow = 5;
         do {
-          *(uint32_t*)(puDestIndex - 0xc) = *(uint32_t*)psIndexBuf;
-          *(uint32_t*)(puDestIndex - 10) = *(uint32_t*)(psIndexBuf + 2);
-          *(uint32_t*)(puDestIndex - 8) = *(uint32_t*)(psIndexBuf + 4);
-          *(uint32_t*)(puDestIndex - 6) = *(uint32_t*)(psIndexBuf + 6);
-          *(uint32_t*)(puDestIndex - 4) = *(uint32_t*)(psIndexBuf + 8);
-          *(uint32_t*)(puDestIndex - 2) = *(uint32_t*)(psIndexBuf + 10);
-          *puDestIndex = puDestIndex[-1];
-          puDestIndex += 0xd;
-          psIndexBuf += 0xc;
+          for (int nPairIdx = 0; nPairIdx < 12; nPairIdx++) {
+            puDestIndex[nPairIdx] = (uint16_t)psIndexBuf[nPairIdx];
+          }
+
+          puDestIndex[12] = puDestIndex[11];
+          puDestIndex += 13;
+          psIndexBuf += 12;
           iRow--;
         } while (iRow);
 
@@ -4553,8 +4565,6 @@ void __stdcall RENDERER_D3D_ReleaseGroundTileCache() {
 }
 
 void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc * pLight, int nPosX, int nPosY, int nWorldXpos, int nWorldYpos, uint32_t nAlpha, int nScreenPanels, void * pTileData) {
-    // Static local variables (originally global data)
-    static uint32_t gdwRendererMode = 0x50000;
 
     DWORD DVar2;
     uint32_t* lpwIndices;
@@ -4641,7 +4651,7 @@ void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
       }
 
       dwIndexCount = 0x41;
-      lpwIndices = (uint32_t*)&gpD3DGroundTileVertexBuffer;
+      lpwIndices = (uint32_t*)g_aD3DGroundTileStripIndices; // [vanilla-plus fix 24] real array (was the 1-byte phantom gpD3DGroundTileVertexBuffer)
       DVar2 = 5;
     } else {
       DVar2 = (*pVBLockFn)(g_pD3DGroundTileVB, 0x21, (void**)&nAlpha, nullptr);
@@ -4675,7 +4685,7 @@ void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
       }
 
       dwIndexCount = 4;
-      lpwIndices = &gdwRendererMode;
+      lpwIndices = (uint32_t*)g_aD3DGroundTileFanIndices; // [vanilla-plus fix 24] real fan list (was the gdwRendererMode phantom)
       DVar2 = 6;
     }
 

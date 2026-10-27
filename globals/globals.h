@@ -3589,7 +3589,7 @@ extern D2FogArchiveStrc * MPQ_d2Xvideo;
 extern D2FogArchiveStrc * MPQ_patch_d2;
 extern D2FogArchiveStrc * MPQ_d2exp;
 extern uint32_t gnPaletteGammaShiftState;
-extern uint32_t gnPaletteIndexCounter;
+extern uint8_t gnPaletteIndexCounter[40]; // [vanilla-plus fix 24] true extent: LoadPaletteFiles writes 40B (9 PALETTEENTRY + 1 triple); the old 4B uint32_t let the write overrun into gPaletteAct1[0..35]
 extern uint8_t gPaletteTransposeBase[3328];
 extern uint8_t gPaletteMenuInGame[256];
 // byte[0x8000] = 128 palettes x 256. memcpy(0x7d6468, src, 0x8000) at D2WINPAL_LoadPaletteFiles 004fb2c5..004fb2e8. Stride 0x100 from D2WINPAL_GetActPalettePointer (SHL EAX,8 / ADD EAX,0x7d6468 at 004fb0c2). Ends exactly at gPaletteAct2 (007de468).

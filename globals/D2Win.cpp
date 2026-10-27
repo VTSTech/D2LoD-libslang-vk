@@ -251269,7 +251269,17 @@ D2FogArchiveStrc * MPQ_d2Xvideo = 0;
 D2FogArchiveStrc * MPQ_patch_d2 = 0;
 D2FogArchiveStrc * MPQ_d2exp = 0;
 uint32_t gnPaletteGammaShiftState = 0;
-uint32_t gnPaletteIndexCounter = 0;
+// [vanilla-plus fix 24] TRUE extent = 40 bytes: D2WINPAL_LoadPaletteFiles
+// writes 9 PALETTEENTRY (36B) + 1 manual triple (4B) here (D2WinPalette.cpp).
+// The old uint32_t (4B) declaration made the remaining 36B of that write
+// overrun into gPaletteAct1[0..35] - the act1 plane-0 remap entries 0-8 got
+// overwritten with the text-color RGB triples (bytes read as remap indices),
+// tinting any OOG/act1 sprite whose pixels resolve through those entries.
+// This is also the prime suspect for the char-select "Expansion Character"
+// green->purple report and the earlier glide "discolored text items" sighting.
+// Consumers (palette table slot 0x45, read as bytes at n*3) are unaffected:
+// the memory content is the same verbatim PL2 copy either way.
+uint8_t gnPaletteIndexCounter[40] = {};
 uint8_t gPaletteAct1[196608] = {};
 uint32_t gbGammaShiftActive = 0;
 unsigned int gdwPaletteShiftStartTick = {};
