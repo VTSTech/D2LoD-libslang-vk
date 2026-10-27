@@ -127,7 +127,7 @@ int g3x_slang_vsync_pref();
 // d2slangvk.conf; a conf reload resets them to the file's values).
 void g3x_slang_hotkeys_poll();
 
-// 0.4.6 Shift+V conf panel, polled from the present path on EVERY frame —
+// 0.4.5 Shift+V conf panel, polled from the present path on EVERY frame —
 // unlike F11/F12 this works with no chain active (the controller=/window=
 // options matter there too). A press toggles the overlay's left-edge panel
 // listing the resolved d2slangvk.conf values (defaults filled in, live
@@ -135,6 +135,10 @@ void g3x_slang_hotkeys_poll();
 // re-read from disk at every open — the file is the truth — and refreshed
 // while visible whenever the conf hot-reloads or an F11/F12 press lands.
 // Honors the [glide3xvk] overlay= ini switch (overlay=0 = no overlay boxes).
+// 0.4.6: with the panel up, Up/Down move a green selection cursor through
+// the option lines (header and hint footer skipped; clamped at the ends, no
+// wrap; each move re-parses the conf). While the panel is hidden the arrow
+// keys are untouched — the game keeps them.
 void g3x_slang_conf_panel_poll();
 
 #ifndef G3XVK_HAVE_SLANGVK

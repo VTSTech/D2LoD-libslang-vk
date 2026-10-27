@@ -72,7 +72,7 @@ void g3x_overlay_toast(const char* text);
 void g3x_overlay_set_enabled(bool on);
 bool g3x_overlay_enabled();
 
-// ---- 0.4.6: the Shift+V conf panel -----------------------------------------
+// ---- 0.4.5: the Shift+V conf panel -----------------------------------------
 //
 // A toggleable box on the LEFT edge (the tag box owns the top-right, the
 // game's /fps line the very top-left — the panel starts one line below it)
@@ -98,3 +98,14 @@ void g3x_overlay_conf_panel_set(const char* const* lines, unsigned count);
 // across conf reloads and window (re)opens until toggled off.
 void g3x_overlay_conf_panel_toggle();
 bool g3x_overlay_conf_panel_visible();
+
+// 0.4.6: the arrow-key selection cursor. line indexes the CURRENT panel
+// lines as pushed by g3x_overlay_conf_panel_set (0 = the first line); -1 =
+// no highlight. The selected line draws as a dim-green row band with the
+// glyphs in bright green — a menu cursor against the white text. Up/Down
+// handling lives in g3x_slang's conf-panel poll (it knows which lines are
+// options); this module only stores and paints. Out-of-range values draw
+// nothing, so an index that goes stale between a refresh and the next push
+// can never scribble outside the box.
+void g3x_overlay_conf_panel_set_selected(int line);
+int  g3x_overlay_conf_panel_selected();

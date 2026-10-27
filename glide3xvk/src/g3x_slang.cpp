@@ -239,7 +239,7 @@ static void overlay_shader_line(const char* path_or_null) {
     g3x_overlay_set_shader(base);
 }
 
-// 0.4.6 Shift+V conf panel (defined near the hotkeys below); reread_conf
+// 0.4.5 Shift+V conf panel (defined near the hotkeys below); reread_conf
 // refreshes the panel when it is open so the file-is-truth rule shows up
 // live on it too.
 static void conf_panel_refresh();
@@ -270,8 +270,20 @@ static int          s_aspect_live = G3XSLANG_ASPECT_AUTO;
 static int          s_base_live   = 1;
 static bool         s_prev_f11 = false, s_prev_f12 = false;
 
-// 0.4.6: Shift+V edge latch for the conf panel (same scheme as F11/F12).
+// 0.4.5: Shift+V edge latch for the conf panel (same scheme as F11/F12).
 static bool         s_prev_shiftv = false;
+
+// 0.4.6 nav: the panel's arrow-key selection. s_conf_sel indexes the OPTION
+// lines of the pushed list (1..n-2 — the "d2slangvk.conf" header and the
+// hint footer are not selectable), s_conf_opt_count is what the last
+// conf_panel_refresh pushed, and s_conf_sel_key is the selected option's
+// key ("aspect", "controller_sens", ...) captured at refresh time so the
+// poll's log line can name it without re-parsing. The Up/Down edge latches
+// follow the same scheme as Shift+V/F11/F12.
+static int          s_conf_sel       = 0;
+static unsigned     s_conf_opt_count = 0;
+static char         s_conf_sel_key[24];
+static bool         s_prev_up = false, s_prev_down = false;
 
 // 0.4.3: the shader base resolution's upscaled input image (game res x
 // s_base_live). The game frame is uploaded to s_img exactly as before, then
@@ -604,9 +616,32 @@ static void conf_panel_refresh() {
                   c.controller_moveclick < 0 ? "off" : "on");
     std::snprintf(add(), sizeof(lines[0]), "controller_home      %s",
                   c.controller_home < 0 ? "off" : "on");
-    std::snprintf(add(), sizeof(lines[0]), "[Shift+V] hides this panel");
+    std::snprintf(add(), sizeof(lines[0]), "[Up/Down] select - [Shift+V] hide");
+
+    // 0.4.6 nav: the option lines sit between the header (line 0) and the
+    // hint footer (the last line). Clamp the cursor to that range so a
+    // refresh can never leave it pointing at the header, the footer or past
+    // the end (the formatter's shape is fixed today, but this stays correct
+    // if it ever isn't), then capture the selected option's key for the
+    // poll's log line.
+    s_conf_opt_count = (n >= 3) ? n - 2 : 0;
+    if (s_conf_sel < 0) s_conf_sel = 0;
+    if ((unsigned)s_conf_sel >= s_conf_opt_count)
+        s_conf_sel = s_conf_opt_count ? (int)s_conf_opt_count - 1 : 0;
+    s_conf_sel_key[0] = '\0';
+    if (s_conf_opt_count) {
+        const char* ln = lines[s_conf_sel + 1];
+        unsigned k = 0;
+        while (ln[k] && ln[k] != ' ' && k < sizeof(s_conf_sel_key) - 1) {
+            s_conf_sel_key[k] = ln[k];
+            ++k;
+        }
+        s_conf_sel_key[k] = '\0';
+    }
 
     g3x_overlay_conf_panel_set(ptrs, n);
+    g3x_overlay_conf_panel_set_selected(
+        s_conf_opt_count ? s_conf_sel + 1 : -1);   // +1: skip the header
 }
 
 static void conf_panel_refresh_if_visible() {
@@ -620,6 +655,8 @@ static void conf_panel_refresh_if_visible() {
 void g3x_slang_conf_panel_poll() {
     if (GetForegroundWindow() != g_vk.hwnd) {
         s_prev_shiftv = false;                   // don't queue presses made elsewhere
+        s_prev_up    = false;
+        s_prev_down  = false;
         return;
     }
     const bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
@@ -638,6 +675,33 @@ void g3x_slang_conf_panel_poll() {
         }
     }
     s_prev_shiftv = down;
+
+    // 0.4.6: Up/Down move the green selection cursor while the panel is up.
+    // Same focus rule (unfocused presses are latched off above), edge-latch
+    // like every other hotkey here, clamped at the ends — no wrap: the top
+    // and bottom options sit one press away from the conf's first/last key,
+    // and a wrap on a list this short reads as a glitch. Each actual move
+    // re-runs conf_panel_refresh, so the cursor rides a fresh parse (the
+    // file-is-truth rule holds even for selection redraws) and the panel
+    // picks up any conf edit that landed since the last refresh. The arrows
+    // are untouched while the panel is hidden — the game keeps them.
+    const bool up   = (GetAsyncKeyState(VK_UP) & 0x8000) != 0;
+    const bool down2 = (GetAsyncKeyState(VK_DOWN) & 0x8000) != 0;
+    if (g3x_overlay_conf_panel_visible()) {
+        if (up && !s_prev_up && s_conf_opt_count && s_conf_sel > 0) {
+            --s_conf_sel;
+            conf_panel_refresh();
+            g3x_log("overlay: conf panel sel %s", s_conf_sel_key);
+        }
+        if (down2 && !s_prev_down && s_conf_opt_count &&
+            (unsigned)s_conf_sel < s_conf_opt_count - 1) {
+            ++s_conf_sel;
+            conf_panel_refresh();
+            g3x_log("overlay: conf panel sel %s", s_conf_sel_key);
+        }
+    }
+    s_prev_up   = up;
+    s_prev_down = down2;
 }
 
 // ---- public API ------------------------------------------------------------

@@ -47,13 +47,32 @@ unsigned s_toast_len   = 0;
 bool     s_toast_on    = false;
 unsigned s_toast_frames = 0;
 
-// 0.4.6: the Shift+V conf panel. Lines are pushed pre-formatted by g3x_slang
+// 0.4.5: the Shift+V conf panel. Lines are pushed pre-formatted by g3x_slang
 // (it owns the conf parser and the live hotkey state); this module stores,
-// toggles and draws. Hidden + empty until the first toggle-on.
+// toggles and draws. Hidden + empty until the first toggle-on. (Version
+// note: the panel originally carried a temporary 0.4.6 label, but 0.4.5 was
+// never tagged before the release that shipped the panel — the panel is the
+// 0.4.5 addendum, and 0.4.6 is the arrow-key selection on top of it.)
 char     s_conf_panel[G3XVK_CONF_PANEL_MAX_LINES][G3XVK_CONF_PANEL_LINE_CAP + 1];
 unsigned s_conf_lens[G3XVK_CONF_PANEL_MAX_LINES] = {};
 unsigned s_conf_count   = 0;
 bool     s_conf_visible = false;
+
+// 0.4.6: the arrow-key selection cursor — an index into s_conf_panel, -1 =
+// none. The Up/Down handling lives in g3x_slang's conf-panel poll (it knows
+// which lines are options); a refresh re-pushes the lines and re-points the
+// cursor, so the two setters move together. Draw-time range checks make any
+// stale index harmless.
+int      s_conf_sel     = -1;
+
+// The selection highlight color: glyphs in bright green (#20FF20-ish) over a
+// dim-green band — the same hue D2's own UI uses for selected text, and the
+// only non-white/non-black ink the overlay has ever used, so the cursor
+// reads instantly as "the thing the arrows move".
+const uint8_t k_sel_b = 0x20, k_sel_g = 0xFF, k_sel_r = 0x20;
+// The band: the darkened backdrop gains this much green on the selected row
+// (34 ≈ 13%), clamped — visible on the near-black box without washing out.
+const unsigned k_sel_band = 34;
 
 const uint8_t* glyph_of(char c) {
     unsigned char uc = (unsigned char)c;
@@ -62,10 +81,12 @@ const uint8_t* glyph_of(char c) {
     return g3x_font8x8[uc - G3X_FONT8X8_FIRST];
 }
 
-// One line of glyphs: pass 0 = 1px drop shadow (+1,+1, black), pass 1 = white
-// text. Shared by the tag line and the shader line.
+// One line of glyphs: pass 0 = 1px drop shadow (+1,+1, black), pass 1 = text
+// in the given color (white everywhere except the panel's selection cursor).
+// Shared by the tag line, the shader line, the toast and the conf panel.
 void draw_line(uint8_t* bgra, unsigned w, unsigned h,
-               unsigned tx, unsigned ty, const char* text, unsigned len) {
+               unsigned tx, unsigned ty, const char* text, unsigned len,
+               uint8_t cb, uint8_t cg, uint8_t cr) {
     for (unsigned pass = 0; pass < 2; ++pass) {
         unsigned cx = tx;
         for (unsigned i = 0; i < len; ++i, cx += 8) {
@@ -81,8 +102,8 @@ void draw_line(uint8_t* bgra, unsigned w, unsigned h,
                     const unsigned pxx = cx + b + (pass ? 0u : 1u);
                     if (pxx >= w) continue;
                     uint8_t* p = row + (size_t)pxx * 4;
-                    if (pass) { p[0] = 0xFF; p[1] = 0xFF; p[2] = 0xFF; }
-                    else      { p[0] = 0x00; p[1] = 0x00; p[2] = 0x00; }
+                    if (pass) { p[0] = cb;    p[1] = cg;    p[2] = cr; }
+                    else      { p[0] = 0x00;  p[1] = 0x00;  p[2] = 0x00; }
                     p[3] = 0xFF;
                 }
             }
@@ -147,6 +168,9 @@ void g3x_overlay_conf_panel_set(const char* const* lines, unsigned count) {
 void g3x_overlay_conf_panel_toggle()    { s_conf_visible = !s_conf_visible; }
 bool g3x_overlay_conf_panel_visible()   { return s_conf_visible; }
 
+void g3x_overlay_conf_panel_set_selected(int line) { s_conf_sel = line; }
+int  g3x_overlay_conf_panel_selected()             { return s_conf_sel; }
+
 void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     if (!s_enabled || !bgra || w < 8 || h < 8) return;
 
@@ -189,18 +213,22 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
 
     // 2. glyphs.
     const unsigned tx = ox + pad, ty = oy + pad;
-    draw_line(bgra, w, h, tx, ty, s_tag.text, s_tag.len);
+    draw_line(bgra, w, h, tx, ty, s_tag.text, s_tag.len, 0xFF, 0xFF, 0xFF);
     if (two)
-        draw_line(bgra, w, h, tx, ty + step, s_shader, s_shader_len);
+        draw_line(bgra, w, h, tx, ty + step, s_shader, s_shader_len, 0xFF, 0xFF, 0xFF);
     if (three)
-        draw_line(bgra, w, h, tx, ty + step * 2, s_toast, s_toast_len);
+        draw_line(bgra, w, h, tx, ty + step * 2, s_toast, s_toast_len, 0xFF, 0xFF, 0xFF);
 
-    // 3. 0.4.6: the Shift+V conf panel — a LEFT-edge box (the tag owns the
+    // 3. 0.4.5: the Shift+V conf panel — a LEFT-edge box (the tag owns the
     // top-right; the game's /fps readout the very top-left corner, so the
     // panel starts one line below it at y=20). Same backdrop + font + shadow
     // as the tag box; independent of the toast (both boxes can be up at
     // once). Drawn only while visible, with content, and with the overlay
     // enabled at all (overlay=0 in the ini = no overlay boxes).
+    // 0.4.6 nav: the line at s_conf_sel (if any) draws as the arrow-key
+    // cursor — a dim-green band across the box on that row, glyphs in bright
+    // green. g3x_slang moves the cursor; this module only paints it, and a
+    // stale index just paints nothing.
     if (!s_conf_visible || !s_conf_count) return;
 
     const unsigned ppad = 3, pox = 4, poy = 20, pstep = 10;
@@ -215,6 +243,10 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
         pbh = (h > poy) ? h - poy : 0;
     if (!pbw || !pbh) return;
 
+    const bool     sel_on = s_conf_sel >= 0 && (unsigned)s_conf_sel < s_conf_count;
+    const unsigned sel_y0 = sel_on ? poy + ppad + (unsigned)s_conf_sel * pstep : 0;
+    const unsigned sel_y1 = sel_y0 + 8;          // one glyph cell tall
+
     for (unsigned y = poy; y < poy + pbh; ++y) {
         uint8_t* row = bgra + (size_t)y * w * 4;
         for (unsigned x = pox; x < pox + pbw; ++x) {
@@ -222,12 +254,21 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
             p[0] = (uint8_t)((p[0] * 89) >> 8);   // B
             p[1] = (uint8_t)((p[1] * 89) >> 8);   // G
             p[2] = (uint8_t)((p[2] * 89) >> 8);   // R
+            if (sel_on && y >= sel_y0 && y < sel_y1 &&
+                x > pox && x < pox + pbw - 1) {   // the cursor band (1px inset)
+                const unsigned g = p[1] + k_sel_band;
+                p[1] = (uint8_t)(g > 255 ? 255 : g);
+            }
             p[3] = 0xFF;
         }
     }
 
     const unsigned ptx = pox + ppad, pty = poy + ppad;
-    for (unsigned i = 0; i < s_conf_count; ++i)
+    for (unsigned i = 0; i < s_conf_count; ++i) {
+        const bool sel = sel_on && (int)i == s_conf_sel;
         draw_line(bgra, w, h, ptx, pty + i * pstep,
-                  s_conf_panel[i], s_conf_lens[i]);
+                  s_conf_panel[i], s_conf_lens[i],
+                  sel ? k_sel_b : 0xFF, sel ? k_sel_g : 0xFF,
+                  sel ? k_sel_r : 0xFF);
+    }
 }
