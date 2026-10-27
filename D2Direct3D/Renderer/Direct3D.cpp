@@ -33,6 +33,7 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/_unnamespaced.h"
+#include "support/d2_boot.h"
 #include "globals/globals.h"
 #include "Bnclient/BNGatewayAccess.h"
 #include "Fog/Debug.h"
