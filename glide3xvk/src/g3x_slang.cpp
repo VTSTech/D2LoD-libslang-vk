@@ -14,6 +14,9 @@
 #if !defined(_WIN32)
 #include <strings.h>
 #define _strnicmp strncasecmp
+#ifndef _stricmp
+#define _stricmp strcasecmp         // browser-page active-preset match
+#endif
 #endif
 
 // ---------------------------------------------------------------------------
@@ -311,6 +314,56 @@ std::string g3x_slang_conf_rewrite_text(const char* text,
     return out;
 }
 
+// ---- 0.4.5 preset browser page builder (portable; see g3x_slang.h) ---------
+//
+// Shape: "presets (N)[ - dir]" header, up to (max_lines - 2) rows of the
+// entry window, "[Up/Down] select - [Enter] load - [Esc] back" footer. The
+// window only ever scrolls as far as the cursor needs — the caller keeps
+// *top between calls, so the view never jumps while the cursor stays inside
+// it. Entry 0 is "(none)"; the conf's current preset basename is starred so
+// the green cursor row and the actually-loaded preset stay distinguishable
+// when they differ.
+unsigned g3x_slang_browser_page(char (*lines)[G3XSLANG_BROWSER_LINE_CAP],
+                                unsigned max_lines,
+                                const char* const* names, unsigned count,
+                                const char* active_basename,
+                                const char* dir_display,
+                                int* sel, unsigned* top, int* selected_out) {
+    if (selected_out) *selected_out = -1;
+    if (!lines || !sel || !top || max_lines < 3) return 0;
+    if (!names) count = 0;
+
+    const unsigned total = count + 1;              // entry 0 = "(none)"
+    const unsigned body  = max_lines - 2;          // header + footer rows
+
+    int s = *sel;
+    if (s < 0) s = 0;
+    if (s >= (int)total) s = (int)total - 1;
+    unsigned t = *top;
+    if (t > (unsigned)s) t = (unsigned)s;
+    if ((unsigned)s - t >= body) t = (unsigned)s - body + 1;
+    *sel = s;
+    *top = t;
+
+    unsigned n = 0;
+    std::snprintf(lines[n++], G3XSLANG_BROWSER_LINE_CAP, "presets (%u)%s%.40s",
+                  count, (dir_display && dir_display[0]) ? " - " : "",
+                  dir_display ? dir_display : "");
+    for (unsigned i = 0; i < body && t + i < total; ++i) {
+        const unsigned e    = t + i;
+        const char*    nm   = e ? names[e - 1] : "(none)";
+        const bool     live = e ? (active_basename && active_basename[0] &&
+                                   _stricmp(active_basename, nm) == 0)
+                                : !(active_basename && active_basename[0]);
+        std::snprintf(lines[n++], G3XSLANG_BROWSER_LINE_CAP, "%s%.61s",
+                      live ? "* " : "  ", nm ? nm : "");
+    }
+    std::snprintf(lines[n++], G3XSLANG_BROWSER_LINE_CAP,
+                  "[Up/Down] select - [Enter] load - [Esc] back");
+    if (selected_out) *selected_out = 1 + (int)((unsigned)s - t);
+    return n;
+}
+
 // ---------------------------------------------------------------------------
 // Stub build (no libslang-vk checkout): same API, always inactive.
 // ---------------------------------------------------------------------------
@@ -417,6 +470,17 @@ static unsigned     s_conf_opt_count = 0;
 static char         s_conf_sel_key[24];
 static bool         s_prev_up = false, s_prev_down = false;
 static bool         s_prev_left = false, s_prev_right = false;
+
+// 0.4.5 preset browser (Enter on the preset row): the game dir's *.slangp
+// list with the cursor (0 = "(none)", 1.. = the scanned names) and the
+// scroll top. Scanned fresh at every open — the dir listing is read with
+// the same file-is-truth rule as the conf.
+static bool         s_browser_open = false;
+static int          s_browser_sel  = 0;
+static unsigned     s_browser_top  = 0;
+static unsigned     s_browser_cnt  = 0;
+static char         s_browser_names[32][64];
+static bool         s_prev_enter = false, s_prev_esc = false;
 
 // 0.4.3: the shader base resolution's upscaled input image (game res x
 // s_base_live). The game frame is uploaded to s_img exactly as before, then
@@ -666,42 +730,74 @@ void g3x_slang_hotkeys_poll() {
 
 // ---- 0.4.5 Shift+V conf panel ----------------------------------------------
 
+// The panel's file-is-truth opening move, shared by the refresh, the
+// Left/Right editor and the preset browser's cursor start: read + parse
+// d2slangvk.conf fresh; a missing/unreadable file falls back to the
+// reread_conf defaults (returns false, the call sites' old "have_file").
+static bool conf_parse_fresh(G3xSlangConf* c) {
+    char path[MAX_PATH];
+    if (conf_path_of(path, sizeof(path))) {
+        char* text = read_text_file(path, nullptr);
+        if (text) {
+            g3x_slang_conf_parse(text, c);
+            HeapFree(GetProcessHeap(), 0, text);
+            return true;
+        }
+    }
+    std::memset(c, 0, sizeof(*c));
+    c->scale    = G3XSLANG_SCALE_FIT;
+    c->vsync    = -1;
+    c->aspect   = G3XSLANG_ASPECT_AUTO;
+    c->base_res = 1;
+    return false;
+}
+
 // Rebuilds the overlay panel's lines. ALWAYS re-parses d2slangvk.conf from
 // disk (the file is the truth — this runs even when no chain is live and the
 // present-path hot-reload probe is parked), fills in the module defaults the
 // way the consumers do (g3x_ctrl_conf_fixup for the controller floats, the
 // window= empty-string-means-native rule), then marks the two hotkey-cycled
 // options with their session value and, when it differs, what the file says.
-// 15 lines fit the overlay panel's 18-line budget with room to spare.
+// 0.4.5: with controller= off the sub-options are inert, so their rows are
+// skipped (10 lines); with it on the full 15 fit the overlay panel's 18-line
+// budget with room to spare. While the preset browser is open this renders
+// the browser page instead (the file's preset basename still stars the live
+// entry) and the option-page cursor state freezes.
 static void conf_panel_refresh() {
-    char path[MAX_PATH];
-    bool have_file = false;
     G3xSlangConf c;
-    if (conf_path_of(path, sizeof(path))) {
-        char* text = read_text_file(path, nullptr);
-        if (text) {
-            g3x_slang_conf_parse(text, &c);
-            HeapFree(GetProcessHeap(), 0, text);
-            have_file = true;
-        }
-    }
-    if (!have_file) {                            // no file = the reread_conf defaults
-        std::memset(&c, 0, sizeof(c));
-        c.scale    = G3XSLANG_SCALE_FIT;
-        c.vsync    = -1;
-        c.aspect   = G3XSLANG_ASPECT_AUTO;
-        c.base_res = 1;
-    }
+    const bool have_file = conf_parse_fresh(&c);
 
     char lines[G3XVK_CONF_PANEL_MAX_LINES][G3XVK_CONF_PANEL_LINE_CAP + 1];
     const char* ptrs[G3XVK_CONF_PANEL_MAX_LINES];
     unsigned n = 0;
     auto add = [&]() -> char* {
-        if (n >= G3XVK_CONF_PANEL_MAX_LINES)       // fail-soft: exactly 15 pushes
+        if (n >= G3XVK_CONF_PANEL_MAX_LINES)       // fail-soft: page never overflows
             return lines[G3XVK_CONF_PANEL_MAX_LINES - 1];
         ptrs[n] = lines[n];
         return lines[n++];
     };
+
+    // 0.4.5 preset browser open = this refresh renders the browser page (the
+    // same panel widget, the game dir's preset list instead of the options).
+    // Early out BEFORE the main page's cursor clamp/capture below — that
+    // state is frozen while the browser is up and must never be re-derived
+    // from browser lines. Enter/Esc/Up/Down while the browser is up are the
+    // poll's business.
+    if (s_browser_open) {
+        const char* np[32];
+        for (unsigned i = 0; i < s_browser_cnt; ++i) np[i] = s_browser_names[i];
+        const char* ab = c.preset;                 // basename: panel shows no paths
+        for (const char* p = c.preset; *p; ++p)
+            if (*p == '/' || *p == '\\') ab = p + 1;
+        int sel_line = -1;
+        n = g3x_slang_browser_page(lines, G3XVK_CONF_PANEL_MAX_LINES, np,
+                                   s_browser_cnt, ab, s_exe_dir,
+                                   &s_browser_sel, &s_browser_top, &sel_line);
+        for (unsigned i = 0; i < n; ++i) ptrs[i] = lines[i];
+        g3x_overlay_conf_panel_set(ptrs, n);
+        g3x_overlay_conf_panel_set_selected(sel_line);
+        return;
+    }
 
     std::snprintf(add(), sizeof(lines[0]), "d2slangvk.conf%s",
                   have_file ? " [slangvk]" : " (none)");
@@ -732,25 +828,29 @@ static void conf_panel_refresh() {
                   c.borderless ? "on" : "off");
     std::snprintf(add(), sizeof(lines[0]), "controller           %s",
                   c.controller ? "on" : "off");
-    float sens = c.controller_sens;              // g3x_ctrl_conf_fixup's table
-    if (sens <= 0.0f) sens = 1.0f;
-    if (sens > 16.0f) sens = 16.0f;
-    std::snprintf(add(), sizeof(lines[0]), "controller_sens      %.2f", sens);
-    float aimsens = c.controller_aimsens;
-    if (aimsens <= 0.0f) aimsens = 0.35f;
-    if (aimsens < 0.05f) aimsens = 0.05f;
-    if (aimsens > 4.0f)  aimsens = 4.0f;
-    std::snprintf(add(), sizeof(lines[0]), "controller_aimsens   %.2f", aimsens);
-    int dz = c.controller_deadzone;
-    if (dz <= 0) dz = 15;
-    if (dz > 80) dz = 80;
-    std::snprintf(add(), sizeof(lines[0]), "controller_deadzone  %d%%", dz);
-    std::snprintf(add(), sizeof(lines[0]), "controller_moveclick %s",
-                  c.controller_moveclick < 0 ? "off" : "on");
-    std::snprintf(add(), sizeof(lines[0]), "controller_home      %s",
-                  c.controller_home < 0 ? "off" : "on");
-    std::snprintf(add(), sizeof(lines[0]),
-                  "[Up/Down] select - [Left/Right] change - [Shift+V] hide");
+    if (c.controller) {                          // 0.4.5: master switch off = the
+                                                 // sub-options are inert; hide
+                                                 // them until it is back on
+        float sens = c.controller_sens;          // g3x_ctrl_conf_fixup's table
+        if (sens <= 0.0f) sens = 1.0f;
+        if (sens > 16.0f) sens = 16.0f;
+        std::snprintf(add(), sizeof(lines[0]), "controller_sens      %.2f", sens);
+        float aimsens = c.controller_aimsens;
+        if (aimsens <= 0.0f) aimsens = 0.35f;
+        if (aimsens < 0.05f) aimsens = 0.05f;
+        if (aimsens > 4.0f)  aimsens = 4.0f;
+        std::snprintf(add(), sizeof(lines[0]), "controller_aimsens   %.2f", aimsens);
+        int dz = c.controller_deadzone;
+        if (dz <= 0) dz = 15;
+        if (dz > 80) dz = 80;
+        std::snprintf(add(), sizeof(lines[0]), "controller_deadzone  %d%%", dz);
+        std::snprintf(add(), sizeof(lines[0]), "controller_moveclick %s",
+                      c.controller_moveclick < 0 ? "off" : "on");
+        std::snprintf(add(), sizeof(lines[0]), "controller_home      %s",
+                      c.controller_home < 0 ? "off" : "on");
+    }
+    char* footer = add();                        // text set below, after the
+                                                 // cursor's key is captured
 
     // 0.4.5 nav: the option lines sit between the header (line 0) and the
     // hint footer (the last line). Clamp the cursor to that range so a
@@ -772,6 +872,13 @@ static void conf_panel_refresh() {
         }
         s_conf_sel_key[k] = '\0';
     }
+
+    // 0.4.5: the footer hints the cursor row's extra action — on the preset
+    // row Enter opens the preset browser (the game dir's *.slangp list).
+    std::snprintf(footer, sizeof(lines[0]), "%s",
+                  !_stricmp(s_conf_sel_key, "preset")
+                      ? "[Up/Down] select - [Left/Right] cycle - [Enter] list - [Shift+V] hide"
+                      : "[Up/Down] select - [Left/Right] change - [Shift+V] hide");
 
     g3x_overlay_conf_panel_set(ptrs, n);
     g3x_overlay_conf_panel_set_selected(
@@ -860,23 +967,7 @@ static bool conf_panel_edit(int dir, char* desc, size_t desc_cap) {
     dir = dir < 0 ? -1 : 1;
 
     G3xSlangConf c;
-    bool have_file = false;
-    char path[MAX_PATH];
-    if (conf_path_of(path, sizeof(path))) {
-        char* text = read_text_file(path, nullptr);
-        if (text) {
-            g3x_slang_conf_parse(text, &c);
-            HeapFree(GetProcessHeap(), 0, text);
-            have_file = true;
-        }
-    }
-    if (!have_file) {                          // same defaults reread_conf uses
-        std::memset(&c, 0, sizeof(c));
-        c.scale    = G3XSLANG_SCALE_FIT;
-        c.vsync    = -1;
-        c.aspect   = G3XSLANG_ASPECT_AUTO;
-        c.base_res = 1;
-    }
+    conf_parse_fresh(&c);                      // same opening move as the refresh
 
     const char* key = s_conf_sel_key;
     char val[560];                             // preset= caps at 48 in the panel,
@@ -987,6 +1078,72 @@ static bool conf_panel_edit(int dir, char* desc, size_t desc_cap) {
     return conf_write_key(key, val);
 }
 
+// ---- 0.4.5 preset browser (Enter on the panel's preset row) ----------------
+
+// Opens the browser page: scans the game dir fresh (the listing is read like
+// the conf — at open), and the cursor starts on the conf's current preset, or
+// on "(none)" when there is none / it is not in the dir. An empty dir is a
+// toast, not an empty page — there is nothing useful to show or pick.
+static void conf_panel_browser_open() {
+    char names[32][64];
+    unsigned cnt = 0;
+    if (!scan_presets(names, 32, &cnt) || !cnt) {
+        g3x_overlay_toast("no .slangp in game dir");
+        g3x_log("overlay: preset browser empty (no .slangp in game dir)");
+        return;
+    }
+    for (unsigned i = 0; i < cnt; ++i)
+        std::snprintf(s_browser_names[i], sizeof(s_browser_names[0]), "%s",
+                      names[i]);
+    s_browser_cnt = cnt;
+
+    G3xSlangConf c;                            // cursor starts on the live preset
+    conf_parse_fresh(&c);
+    const char* cur = c.preset;                // basename: what the panel shows
+    for (const char* q = c.preset; *q; ++q)
+        if (*q == '/' || *q == '\\') cur = q + 1;
+    s_browser_sel = 0;
+    if (cur[0]) {
+        for (unsigned i = 0; i < cnt; ++i)
+            if (!_stricmp(cur, s_browser_names[i])) {
+                s_browser_sel = (int)i + 1;
+                break;
+            }
+    }
+    s_browser_top  = 0;
+    s_browser_open = true;
+    conf_panel_refresh();                      // renders the page, clamps the view
+    char msg[40];
+    std::snprintf(msg, sizeof(msg), "presets: %u", cnt);
+    g3x_overlay_toast(msg);
+    g3x_log("overlay: preset browser open (%u found)", cnt);
+}
+
+// Enter in the browser: write the highlighted entry into preset= (the same
+// surgical single-key write the Left/Right cycling uses; "(none)" writes an
+// empty value, i.e. the key present but blank) and hand the change to
+// reread_conf — which reloads the chain on a real change and lands the panel
+// back on the option page (the browser closes first). Selecting the
+// already-active preset rewrites the same value: the reload is skipped by
+// the mtime logic, the toast still confirms.
+static void conf_panel_browser_load() {
+    char val[64] = "";
+    if (s_browser_sel > 0 && (unsigned)s_browser_sel <= s_browser_cnt)
+        std::snprintf(val, sizeof(val), "%s", s_browser_names[s_browser_sel - 1]);
+    char desc[64];
+    std::snprintf(desc, sizeof(desc), "%.44s", val[0] ? val : "(none)");
+    if (conf_write_key("preset", val)) {
+        s_browser_open = false;
+        reread_conf();                         // file-is-truth: reload + refresh
+        char msg[80];
+        std::snprintf(msg, sizeof(msg), "preset %s", desc);
+        g3x_overlay_toast(msg);
+        g3x_log("overlay: conf preset = %s", desc);
+    } else {
+        g3x_log("overlay: conf preset unchanged (write failed)");
+    }
+}
+
 // Edge-polled from the present path (g3x_frame_present) on every frame, so
 // the panel works with no chain active — the F11/F12 gate lives in
 // g3x_slang_present, this one is its always-on sibling. Same focus rule:
@@ -998,6 +1155,8 @@ void g3x_slang_conf_panel_poll() {
         s_prev_down   = false;
         s_prev_left   = false;
         s_prev_right  = false;
+        s_prev_enter  = false;
+        s_prev_esc    = false;
         return;
     }
     const bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
@@ -1005,7 +1164,8 @@ void g3x_slang_conf_panel_poll() {
     const bool down  = shift && v;
     if (down && !s_prev_shiftv) {
         if (g3x_overlay_conf_panel_visible()) {
-            g3x_overlay_conf_panel_toggle();
+            s_browser_open = false;              // hide resets the browser too:
+            g3x_overlay_conf_panel_toggle();     // reopen lands on the option page
             g3x_overlay_toast("conf overlay off");
             g3x_log("overlay: conf panel off (Shift+V)");
         } else {
@@ -1029,20 +1189,66 @@ void g3x_slang_conf_panel_poll() {
     const bool up   = (GetAsyncKeyState(VK_UP) & 0x8000) != 0;
     const bool down2 = (GetAsyncKeyState(VK_DOWN) & 0x8000) != 0;
     if (g3x_overlay_conf_panel_visible()) {
-        if (up && !s_prev_up && s_conf_opt_count && s_conf_sel > 0) {
-            --s_conf_sel;
-            conf_panel_refresh();
-            g3x_log("overlay: conf panel sel %s", s_conf_sel_key);
-        }
-        if (down2 && !s_prev_down && s_conf_opt_count &&
-            (unsigned)s_conf_sel < s_conf_opt_count - 1) {
-            ++s_conf_sel;
-            conf_panel_refresh();
-            g3x_log("overlay: conf panel sel %s", s_conf_sel_key);
+        if (s_browser_open) {
+            // Browser up: the arrows move the preset list cursor — clamped,
+            // no wrap, same feel as the option list. Each move re-renders
+            // (the starred live entry and the scroll view follow).
+            const unsigned total = s_browser_cnt + 1;
+            if (up && !s_prev_up && s_browser_sel > 0) {
+                --s_browser_sel;
+                conf_panel_refresh();
+                g3x_log("overlay: preset browser sel %s",
+                        s_browser_sel ? s_browser_names[s_browser_sel - 1]
+                                      : "(none)");
+            }
+            if (down2 && !s_prev_down && (unsigned)s_browser_sel < total - 1) {
+                ++s_browser_sel;
+                conf_panel_refresh();
+                g3x_log("overlay: preset browser sel %s",
+                        s_browser_sel ? s_browser_names[s_browser_sel - 1]
+                                      : "(none)");
+            }
+        } else {
+            if (up && !s_prev_up && s_conf_opt_count && s_conf_sel > 0) {
+                --s_conf_sel;
+                conf_panel_refresh();
+                g3x_log("overlay: conf panel sel %s", s_conf_sel_key);
+            }
+            if (down2 && !s_prev_down && s_conf_opt_count &&
+                (unsigned)s_conf_sel < s_conf_opt_count - 1) {
+                ++s_conf_sel;
+                conf_panel_refresh();
+                g3x_log("overlay: conf panel sel %s", s_conf_sel_key);
+            }
         }
     }
     s_prev_up   = up;
     s_prev_down = down2;
+
+    // 0.4.5: Enter on the preset row opens the preset browser; in the
+    // browser Enter LOADS the highlighted preset and Esc goes back to the
+    // option page. Same focus rule and edge latches as the other panel keys
+    // (Enter and Esc also reach the game, like every polled key here — the
+    // panel is a read/write view, not an input grab).
+    const bool enter = (GetAsyncKeyState(VK_RETURN) & 0x8000) != 0;
+    const bool esc   = (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
+    if (g3x_overlay_conf_panel_visible()) {
+        if (enter && !s_prev_enter) {
+            if (s_browser_open) {
+                conf_panel_browser_load();
+            } else if (s_conf_opt_count &&
+                       !_stricmp(s_conf_sel_key, "preset")) {
+                conf_panel_browser_open();
+            }
+        }
+        if (esc && !s_prev_esc && s_browser_open) {
+            s_browser_open = false;
+            conf_panel_refresh();
+            g3x_log("overlay: preset browser back");
+        }
+    }
+    s_prev_enter = enter;
+    s_prev_esc   = esc;
 
     // 0.4.5: Left/Right CHANGE the selected option. Each press is one step
     // (enum neighbor, +/- one increment, or a toggle — conf_panel_edit's
@@ -1051,10 +1257,11 @@ void g3x_slang_conf_panel_poll() {
     // takes: the panel re-reads the file it just wrote, aspect/base_res
     // snap live, and the window/controller/slang consumers pick the file up
     // on their own mtime probes. Same focus rule and edge latches as
-    // Up/Down; the arrows stay the game's while the panel is hidden.
+    // Up/Down; the arrows stay the game's while the panel is hidden, and
+    // they are inert while the browser is up (the option page is frozen).
     const bool lft   = (GetAsyncKeyState(VK_LEFT)  & 0x8000) != 0;
     const bool rgt   = (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0;
-    if (g3x_overlay_conf_panel_visible()) {
+    if (g3x_overlay_conf_panel_visible() && !s_browser_open) {
         int dir = 0;
         if (rgt && !s_prev_right) dir = 1;
         else if (lft && !s_prev_left) dir = -1;

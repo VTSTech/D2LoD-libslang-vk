@@ -257,7 +257,8 @@ never tagged before)
   currently resolved — preset (basename), scale, vsync, aspect and base_res
   at their live F11/F12 session values with a `file: ...` annotation when
   they differ from the conf, window, borderless, and the controller block
-  (sens/aimsens/deadzone/moveclick/home) with the same defaults their
+  (sens/aimsens/deadzone/moveclick/home — listed only while the controller
+  master switch is on) with the same defaults their
   consumers apply (`g3x_ctrl_conf_fixup`, empty `window=` = native). The
   content is re-parsed from disk on every open — the file is the truth, and
   unlike the F11/F12 hotkeys the toggle polls on EVERY present
@@ -300,8 +301,26 @@ never tagged before)
   (`overlay: conf aspect = 16:9`); a list end, an empty preset dir or a
   failed write touches nothing and logs why. Same focus rule and edge
   latches as every hotkey here; while the panel is hidden the arrow keys
-  are untouched — the game keeps them. The footer hint now reads
-  `[Up/Down] select - [Left/Right] change - [Shift+V] hide`.
+  are untouched — the game keeps them. The footer hint reads
+  `[Up/Down] select - [Left/Right] change - [Shift+V] hide` (on the preset
+  row: `... [Left/Right] cycle - [Enter] list ...`).
+- **Conf panel: controller-off hiding + preset browser** (g3x_slang): with
+  `controller=0` the controller sub-options are inert, so the panel skips
+  their rows — the `controller off` row itself stays (Left/Right switches
+  it back on, which re-lists the sub-options on the spot). And **Enter** on
+  the preset row opens the preset browser: the game dir's `*.slangp` list
+  rendered in the panel itself — a `presets (N) - <dir>` header, the conf's
+  current preset starred (`* `), `(none)` at the front, up to 16 rows on
+  screen with a scroll window that follows the cursor. **Up/Down** move the
+  green cursor through it, **Enter** loads the highlighted preset (the
+  same surgical `preset=` write + conf hot-reload path as the Left/Right
+  cycling — a real change rebuilds the chain live, re-picking the same
+  preset is a no-op rewrite that still confirms via toast), and **Esc**
+  goes back to the option page (Shift+V hides everything and resets the
+  browser; Left/Right are inert while the browser is up). The browser
+  scans the game dir fresh at every open; an empty dir toasts
+  `no .slangp in game dir` instead of opening an empty page. Logs
+  `overlay: preset browser ...` lines to match.
 
 ### Fixed (0.4.5 addendum)
 

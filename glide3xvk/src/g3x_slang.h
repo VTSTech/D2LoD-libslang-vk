@@ -143,7 +143,38 @@ void g3x_slang_hotkeys_poll();
 // rewrite (comments/spacing/order survive) and pushed through the normal
 // conf machinery, so it lands live like a hand edit of the file. While the
 // panel is hidden the arrow keys are untouched — the game keeps them.
+// 0.4.5: the controller sub-options (sens/aimsens/deadzone/moveclick/home)
+// are only listed while controller= is on — with the master switch off they
+// are inert, so the panel hides them until it is back on. And Enter on the
+// preset row opens the preset browser: the game dir's *.slangp list (cursor
+// starts on the conf's current preset), Up/Down move, Enter loads the
+// highlighted preset through the same write-conf + hot-reload path as the
+// Left/Right cycling, and Esc goes back to the option list.
 void g3x_slang_conf_panel_poll();
+
+// ---- 0.4.5 preset browser (portable seam) ----------------------------------
+
+// Line stride of the browser page buffers: the conf panel's line cap
+// (G3XVK_CONF_PANEL_LINE_CAP in g3x_overlay.h) plus the NUL. A plain number
+// here so this header stays overlay-free (the stub build compiles without it).
+enum { G3XSLANG_BROWSER_LINE_CAP = 73 };
+
+// Pure page builder for the preset browser — Enter on the panel's preset row.
+// Renders into lines[][G3XSLANG_BROWSER_LINE_CAP]: a "presets (N) - dir"
+// header (dir_display empty/NULL drops the " - dir" part), up to
+// (max_lines - 2) list rows and a hint footer. Entry 0 is "(none)" (an empty
+// preset=), entries 1..count are the scanned file names; the entry matching
+// active_basename (""/NULL = none) is marked "* ". *sel/*top are in/out:
+// sel clamps into [0, count] (0 = none), top scrolls so the cursor stays on
+// screen. Returns the pushed line count; *selected_out (when non-NULL) gets
+// the green-cursor line index for g3x_overlay_conf_panel_set_selected, or -1
+// when nothing was pushed (degenerate arguments).
+unsigned g3x_slang_browser_page(char (*lines)[G3XSLANG_BROWSER_LINE_CAP],
+                                unsigned max_lines,
+                                const char* const* names, unsigned count,
+                                const char* active_basename,
+                                const char* dir_display,
+                                int* sel, unsigned* top, int* selected_out);
 
 #ifndef G3XVK_HAVE_SLANGVK
 // Stub-build test hooks (host tests only; not compiled into the real DLL).

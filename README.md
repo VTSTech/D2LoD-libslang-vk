@@ -68,7 +68,13 @@ resolution — is the same one proven in
   the change lands live like a hand edit): preset cycles the game dir's
   `*.slangp` files, scale/vsync/aspect/base_res/window step their token
   lists, the toggles flip, controller_sens/aimsens/deadzone step and clamp
-  exactly like their conf fixups.
+  exactly like their conf fixups. With `controller=0` the controller
+  sub-options are inert, so the panel skips their rows (`controller off`
+  itself stays — Left/Right re-enables it, which re-lists them). **Enter**
+  on the preset row opens the preset browser: the game dir's `*.slangp`
+  list in the panel (current preset starred, `(none)` at the front,
+  scrolling), **Up/Down** to move, **Enter** loads the highlighted preset
+  live, **Esc** goes back to the option list.
 - **Window size presets (0.4.5)**: `window=native|240p|480p|576p|720p|768p|1080p|desktop|WxH`
   and `borderless=0|1` in `d2slangvk.conf` size the OS window the game presents
   into — canonical sizes (240p=320x240 ... 1080p=1920x1080; `desktop` =
@@ -238,7 +244,15 @@ While the game window has focus — the same scheme as Chocolate-Doom-VK
   option: one press = one step, written straight into `d2slangvk.conf` and
   applied live through the normal conf hot-reload path (see the Shift+V
   bullet above for the per-option steps). List ends, an empty preset dir
-  and failed writes touch nothing and are logged.
+  and failed writes touch nothing and are logged. Inert while the preset
+  browser is open.
+- **Enter** (0.4.5) — while the conf panel is up and the cursor sits on the
+  preset row, open the preset browser: the game dir's `*.slangp` files
+  listed in the panel (`presets (N) - <dir>`, current preset starred,
+  `(none)` first), **Up/Down** move the cursor, **Enter** loads the
+  highlighted preset through the same write-conf + hot-reload path as the
+  Left/Right cycling (the chain rebuilds live), **Esc** goes back to the
+  option page. An empty game dir toasts instead of opening the page.
 
 Each press shows a toast line in the overlay box (`aspect 16:9`,
 `shader base 2x`, `conf overlay on`) for ~2 seconds and logs a
