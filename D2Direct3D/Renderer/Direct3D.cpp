@@ -33,6 +33,7 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/_unnamespaced.h"
+#include "support/d2_boot.h" // [vanilla-plus fix 22] halt-site state dumps + free-callback hardening reports
 #include "globals/globals.h"
 #include "Bnclient/BNGatewayAccess.h"
 #include "Fog/Debug.h"
@@ -2364,24 +2365,67 @@ void __stdcall RENDERER_D3D_ReleaseTexturePools() {
     } while (iVar1 < 0xc);
 }
 
-void __fastcall D3D_PixelDataFreeCallback_ClearCacheNodes(int * pCacheIndices) {
-    if (-1 < *pCacheIndices - 1 && -1 < pCacheIndices[1] - 1) {
-      gD3DGenericTextureCache.aCaches[*pCacheIndices - 1].pNodeBuffer[pCacheIndices[1] - 1].pAssociatedTilePtr = 0;
-    }
-    if (-1 < pCacheIndices[2] - 1 && -1 < pCacheIndices[3] - 1) {
-      gD3DGenericTextureCache.aCaches[pCacheIndices[2] - 1].pNodeBuffer[pCacheIndices[3] - 1].pAssociatedTilePtr = 0;
-    }
-    if (-1 < pCacheIndices[4] - 1 && -1 < pCacheIndices[5] - 1) {
-      gD3DGenericTextureCache.aCaches[pCacheIndices[4] - 1].pNodeBuffer[pCacheIndices[5] - 1].pAssociatedTilePtr = 0;
-    }
-    if (-1 < pCacheIndices[6] - 1 && -1 < pCacheIndices[7] - 1) {
-      gD3DGenericTextureCache.aCaches[pCacheIndices[6] - 1].pNodeBuffer[pCacheIndices[7] - 1].pAssociatedTilePtr = 0;
-    }
-    if (!(-1 < pCacheIndices[8] - 1 && -1 < pCacheIndices[9] - 1)) {
+// [vanilla-plus fix 22] Validated twin of one free-callback slot clear. The
+// retail callback validated each [class, nodeIdx] pair with only a signed
+// >=1 test and then wrote
+// aCaches[class-1].pNodeBuffer[idx-1].pAssociatedTilePtr = 0 with NO class
+// range check, NO idx upper bound and NO owner match:
+//   * class > 3 indexes past aCaches[0..2] into unrelated globals;
+//   * idx > nMaxNodes indexes past the node buffer -> unbounded wild write;
+//   * a stale/garbage pair cleared SOME OTHER sprite's live node backpointer
+//     (the round-8/9 audit-noted residual).
+// Descriptors are memset at DC6 load (FixupPointersAndPrepare), but pairs 0
+// and 4 are never written by the upload path, and DCC combined-blob frames
+// (CELCMP_SerializeCelFileToMemory) carry 0x23-byte headers in non-memset
+// memory, so structural/pixel bytes can be read as [class, idx] pairs here.
+// Rounds 8-9 field evidence: HALT 0x16d fires on pool state the read-side
+// guards make impossible -> an unbounded WRITE side is the remaining family
+// member. Discipline (mirror of the upload path's fix-21 gates): range-check
+// the pair, then require the node's own +4 backpointer to name THIS
+// descriptor (that field is written by UploadTextureToCache and by nothing
+// else, so a legit free always matches). Legit frees behave exactly as
+// retail; garbage pairs are skipped, and the first of each dangerous shape
+// is reported to the boot log. Glide's twin callback stays as delivered by
+// glide fix 2 (field-verified working renderer - deliberately untouched).
+static void D3DTEXCACHE_ClearCacheNodeSlot(int32_t nClass, int32_t nNodeIdx, int32_t* pOwnerDescriptor) {
+    static BOOL s_bWarnedBadClass = FALSE;
+    static BOOL s_bWarnedBadIndex = FALSE;
+    static BOOL s_bWarnedForeignNode = FALSE;
+    if (nClass < 1 || 3 < nClass) {
+      if (!s_bWarnedBadClass && (nClass || nNodeIdx)) {
+        s_bWarnedBadClass = TRUE;
+        D2BOOT_MarkFmt("fix22: free-callback skipped out-of-range class=%d idx=%d (was a wild write)", nClass, nNodeIdx); // [d2boot]
+      }
       return;
     }
 
-    gD3DGenericTextureCache.aCaches[pCacheIndices[8] - 1].pNodeBuffer[pCacheIndices[9] - 1].pAssociatedTilePtr = 0;
+    D3DTextureCacheStrc* pCache = &gD3DGenericTextureCache.aCaches[nClass - 1];
+    if (!pCache->pNodeBuffer || nNodeIdx < 1 || pCache->nMaxNodes < nNodeIdx) {
+      if (!s_bWarnedBadIndex && nNodeIdx) {
+        s_bWarnedBadIndex = TRUE;
+        D2BOOT_MarkFmt("fix22: free-callback skipped out-of-bounds idx=%d class=%d max=%d (was a wild write)", nNodeIdx, nClass, pCache->nMaxNodes); // [d2boot]
+      }
+      return;
+    }
+
+    D3DTextureCacheNodeStrc* pNode = &pCache->pNodeBuffer[nNodeIdx - 1];
+    if ((uintptr_t)pNode->pAssociatedTilePtr != (uintptr_t)pOwnerDescriptor) {
+      if (!s_bWarnedForeignNode && nNodeIdx) {
+        s_bWarnedForeignNode = TRUE;
+        D2BOOT_MarkFmt("fix22: free-callback skipped foreign node class=%d idx=%d (stale/garbage pair)", nClass, nNodeIdx); // [d2boot]
+      }
+      return;
+    }
+
+    pNode->pAssociatedTilePtr = 0;
+}
+
+void __fastcall D3D_PixelDataFreeCallback_ClearCacheNodes(int * pCacheIndices) {
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[0], pCacheIndices[1], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[2], pCacheIndices[3], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[4], pCacheIndices[5], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[6], pCacheIndices[7], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[8], pCacheIndices[9], pCacheIndices);
 }
 
 BOOL __stdcall RENDERER_D3D_ExtractSpriteInfo(D2GfxDataStrc * pSprite, D2D3DSpriteInfoStrc * pOutput) {
@@ -2422,6 +2466,43 @@ void __stdcall RENDERER_D3D_CalculateTextureSize(D2D3DSpriteInfoStrc * pStruct) 
     pStruct->nTexArea = pStruct->nTexHeight * pStruct->nTexWidth;
 }
 
+// [vanilla-plus fix 22] Halt-site state dump for the texture-cache upload
+// path. The round-9 audit proved the read-side paths cannot produce a zero
+// node surface post-fix-21 (seeder surfaces every free-list node, alloc/
+// evict/invalidate never clear +0x10, gates validate every cached slot),
+// yet the field hits HALT 0x16d on the first sprite upload - so the failing
+// premise is a runtime state fact this dump names directly (pool identity,
+// seed level, bookkeeping coherence, node contents) instead of another blind
+// fix round. Fired immediately before every halt in UploadTextureToCache;
+// pure logging, no control flow.
+static void RENDERER_D3D_UploadHaltDump(const char* szSite, D2D3DSpriteInfoStrc* pTexInfo, int32_t nMode, int32_t nMipIdx, int32_t nClass, int32_t nNodeIdx, D3DTextureCacheStrc* pCache) {
+    D2BOOT_MarkFmt("upload-halt %s: mode=%d mip=%d class=%d node=%d w=%d h=%d area=%u", // [d2boot]
+      szSite, nMode, nMipIdx, nClass, nNodeIdx,
+      pTexInfo ? pTexInfo->nWidth : -1, pTexInfo ? pTexInfo->nHeight : -1,
+      pTexInfo ? (unsigned)pTexInfo->nTexArea : 0u);
+    if (!pCache) {
+      return;
+    }
+
+    D2BOOT_MarkFmt("upload-halt %s: pool=%p max=%d used=%d freeHead=%p freeTail=%p usedHead=%p usedTail=%p nodes=%p", // [d2boot]
+      szSite, (void*)pCache, pCache->nMaxNodes, pCache->nUsedCount,
+      (void*)pCache->pFreeHead, (void*)pCache->pFreeTail,
+      (void*)pCache->pUsedHead, (void*)pCache->pUsedTail, (void*)pCache->pNodeBuffer);
+    if (pCache->pNodeBuffer && 1 <= nNodeIdx && nNodeIdx <= pCache->nMaxNodes) {
+      D3DTextureCacheNodeStrc* pNode = &pCache->pNodeBuffer[nNodeIdx - 1];
+      D2BOOT_MarkFmt("upload-halt %s: node[%d] pos=%d tile=%p mip=%p pal=%p surf=%p tex=%p next=%p prev=%p", // [d2boot]
+        szSite, nNodeIdx, pNode->nIndex, pNode->pAssociatedTilePtr, pNode->field_0x08,
+        pNode->field_0x0C, (void*)pNode->pSurface, (void*)pNode->pTexture,
+        (void*)pNode->pNext, (void*)pNode->pPrev);
+    }
+
+    if (1 <= nClass && nClass <= 3) {
+      D2BOOT_MarkFmt("upload-halt %s: spriteTex[class-1]=%p spriteTex[class+2]=%p", // [d2boot]
+        szSite, (void*)gD3DGenericTextureCache.apSpriteTextures[nClass - 1],
+        (void*)gD3DGenericTextureCache.apSpriteTextures[nClass + 2]);
+    }
+}
+
 // Direct3D texture cache: uploads a DC6 frame to video memory. Determines mipmap level based on size, allocates cache slot, renders frame to memory surface, copies to texture via LockRect/memcpy, and sets as active texture.
 int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
     // [vanilla-plus fix 20] The Ghidra export rendered retail's contiguous
@@ -2457,6 +2538,7 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
     int32_t nErrorLine;
     DC6Block* nParam = pTexInfo->pSprite->pDC6Block;
     if (!nParam) {
+      RENDERER_D3D_UploadHaltDump("nullblock", pTexInfo, nMode, nMode, -1, 0, nullptr); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
       exit(-1);
     }
@@ -2497,6 +2579,7 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
     }
 
     iMipLevel = *(int*)(pbSrcPixel + nMipIdx * 8);
+    int32_t nClassSlot = iMipLevel; // [vanilla-plus fix 22] capture for halt dumps (iMipLevel is reused below)
     int* piVar2 = (int*)(pbSrcPixel + 4 + nMipIdx * 8);
     // [vanilla-plus fix 20] real seeded pools, not the DAT_00970eac phantom region
     D3DTextureCacheStrc* pCache = &gD3DGenericTextureCache.aCaches[iMipLevel - 1];
@@ -2517,9 +2600,20 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
         *piVar2 = 0;
       }
     }
-    if (*piVar2 && (*(uint8_t**)(*piVar2 * 0x20 - 0x14 + pCacheNodeBase) == pPalette || nMode == 4)) {
+    // [vanilla-plus fix 23] Byte-exact node+0xC stored-palette compare. The
+    // old form added the raw byte offset (idx*0x20 - 0x14) directly to the
+    // typed node pointer (stride 0x20), so the address was scaled by 0x20 —
+    // never the stored palette, so legit
+    // palette-match reuse never fired. Glide compiles the identical
+    // transcription byte-exact only because its pNodes is typed uint8_t*
+    // (D2Client/Renderer/Glide.h:36); this header types the base as the node
+    // struct, so every raw-offset site here MUST go through (uint8_t*).
+    if (*piVar2 && (*(uint8_t**)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 0xC) == pPalette || nMode == 4)) {
       d3dTextureCache::D3DTEXCACHE_InvalidateByIndex(pCache, *piVar2);
-      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*piVar2 * 0x20 + pCacheNodeBase - 0xc));
+      // [vanilla-plus fix 23] byte-exact node+0x14 pTexture (old form was
+      // scaled by 0x20 -> would hand SetTexture a garbage pointer on the
+      // first mode-4 re-upload).
+      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 0x14));
       if (!dwHResult) {
         return 1;
       }
@@ -2538,23 +2632,37 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
     void* pMemPool = gpD3DTextureSpritePoolMemory0;
     int iVar1 = *piVar2 - 1;
     if (iVar1 < 0) {
+      RENDERER_D3D_UploadHaltDump("0x164-node0", pTexInfo, nMode, nMipIdx, nClassSlot, 0, pCache); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x164);
       exit(-1);
     } else if (iVar1 < pCache->nMaxNodes) {
       iCacheNodeIdx = *piVar2 * 0x20;
-      iVar1 = *(int*)(iCacheNodeIdx - 0x10 + pCacheNodeBase);
+      // [vanilla-plus fix 23] THE round-10 root cause (HALT 0x16d at the 7th
+      // sprite upload). The old read added the raw byte offset
+      // (iCacheNodeIdx - 0x10) directly to the typed node pointer, so the C
+      // type system scaled it: read address = base + (idx*0x20 -
+      // 0x10) * 0x20. For idx 1..6 that address lands on other seeded nodes'
+      // nIndex (non-zero -> false pass, why six uploads succeeded silently);
+      // at idx=7 it reads base + 0x1A00 = 0x3E0 bytes past the 178*0x20 node
+      // buffer -> 0 -> "null surface" halt on a node the fix-22 dump proved
+      // fully seeded (surf=0E0B8A18 tex=0FA87324, pool bookkeeping exact).
+      // Rewritten to the byte-exact form the fix-21 validation already uses.
+      iVar1 = *(int*)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 0x10);
       iMipLevel = iCacheNodeIdx - 0x20 + (int)pCacheNodeBase;
       pbPixelData = (uint8_t*)gpD3DTextureSpritePoolMemory0;
       *(int*)(iMipLevel + 4) = pbSrcPixel;
       *(int*)(iMipLevel + 8) = nMipIdx;
       *(uint8_t**)(iMipLevel + 0xc) = (uint8_t*)pPalette;
       if (!iVar1) {
+        RENDERER_D3D_UploadHaltDump("0x16d-surface", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16d);
         exit(-1);
       } else if (!*(int*)(iMipLevel + 0x14)) {
+        RENDERER_D3D_UploadHaltDump("0x16e-texture", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16e);
         exit(-1);
       } else if (!pMemPool) {
+        RENDERER_D3D_UploadHaltDump("0x171-poolmem", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x171);
         exit(-1);
       } else if (pTexInfo->nTexArea < 0x10001) {
@@ -2586,10 +2694,12 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
             D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, 1 - pTexInfo->nOffsetX, pTexInfo->nTexHeight - pTexInfo->nOffsetY - 2, 0, 0, (BYTE*)pMemPool, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, nullptr);
           pbPixelData = (uint8_t*)gpD3DTextureSpritePoolMemory1;
           if (!gpD3DTextureSpritePoolMemory1) {
+            RENDERER_D3D_UploadHaltDump("0x19a-poolmem1", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19a);
             exit(-1);
           }
           if (0x10000 < pTexInfo->nTexArea) {
+            RENDERER_D3D_UploadHaltDump("0x19b-area1", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19b);
             exit(-1);
           }
@@ -2617,9 +2727,11 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
         }
 
         if (!pDestSurface_00) {
+          RENDERER_D3D_UploadHaltDump("0x1b4-destsurf", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b4);
           exit(-1);
         } else if (!lpD3DTexture_00) {
+          RENDERER_D3D_UploadHaltDump("0x1b5-d3dtex", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b5);
           exit(-1);
         } else {
@@ -2650,14 +2762,17 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
             return 1;
           }
 
+          RENDERER_D3D_UploadHaltDump("0x1c0-lockflags", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c0);
           exit(-1);
         }
       } else {
+        RENDERER_D3D_UploadHaltDump("0x172-area", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x172);
         exit(-1);
       }
     } else {
+      RENDERER_D3D_UploadHaltDump("0x165-idxbound", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x165);
       exit(-1);
     }

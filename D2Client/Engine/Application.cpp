@@ -54,6 +54,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     /* Here it assign global D2Application mode then param is used as variable to
                          determine renderer */ geD2ApplicationMode = eD2ApplicationModeAndRenderer;
     D2BOOT_MarkFmt("ApplicationMain enter (mode=%d)", (int)geD2ApplicationMode); // [d2boot]
+    D2BOOT_Mark("vanilla-plus fixset through fix 23"); // [d2boot] build self-identification (local builds do not always rotate the commit hash)
     __frame0.bSoundInit = 0;
     Fog::Source::SFile::SFILE_InitializeFileSystem((uint32_t)pD2IniData->bDIRECT, 0);
     D2BOOT_Mark("SFile filesystem init ok"); // [d2boot]
