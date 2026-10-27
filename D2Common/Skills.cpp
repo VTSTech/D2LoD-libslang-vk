@@ -107,35 +107,36 @@ int32_t __fastcall SKILLS_CalcSkillParam(eD2Skills eSkill, int32_t nParam) {
 }
 
 // Gets or allocates a stat list associated with a given state on a unit. If arg1 is nonzero and no stat list exists for the state, allocates one and attaches it. If arg1 is zero, frees the existing stat list for that state.
-D2PoolManagerStrc * __stdcall SKILLS_GetOrAllocStateStatList(int32_t bAlloc, D2UnitStrc * pUnit, eD2States eState) {
+D2StatListExStrc * __stdcall SKILLS_GetOrAllocStateStatList(int32_t bAlloc, D2UnitStrc * pUnit, eD2States eState) {
+    eD2UnitType eUnitType;
     int32_t nUnitGUID;
-    D2PoolManagerStrc* pStateStatList = (D2PoolManagerStrc*)Stats::StatsEx::GetStatsByState(pUnit, eState);
+    D2StatListExStrc* pStateStatList = Stats::StatsEx::GetStatsByState(pUnit, eState);
     if (bAlloc) {
-      eD2UnitType eUnitType;
+      D2PoolManagerStrc* pMemory;
       if (pStateStatList) {
         return pStateStatList;
       }
       if (!pUnit) {
         nUnitGUID = -1;
         eUnitType = UNIT_COUNT;
-        pStateStatList = 0;
+        pMemory = 0;
       } else {
         nUnitGUID = pUnit->nUnitGUID;
         eUnitType = pUnit->eUnitType;
-        pStateStatList = pUnit->pMemory;
+        pMemory = pUnit->pMemory;
       }
 
-      pStateStatList = (D2PoolManagerStrc*)Stats::StatsEx::AllocStatList(pStateStatList, 0, 0, eUnitType, nUnitGUID);
-      Stats::StatsEx::SetState((D2StatListExStrc*)pStateStatList, eState);
-      Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit, (D2StatListExStrc*)pStateStatList, 1);
+      pStateStatList = (D2StatListExStrc*)Stats::StatsEx::AllocStatList(pMemory, 0, 0, eUnitType, nUnitGUID);
+      Stats::StatsEx::SetState(pStateStatList, eState);
+      Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit, pStateStatList, 1);
       return pStateStatList;
     }
     if (!pStateStatList) {
       return nullptr;
     }
 
-    Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, (D2StatListExStrc*)pStateStatList);
-    Stats::StatsEx::FreeStatList((D2StatListStrc*)pStateStatList);
+    Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStateStatList);
+    Stats::StatsEx::FreeStatList(&pStateStatList->sStatList);
     return nullptr;
 }
 
@@ -1626,11 +1627,11 @@ int __stdcall SKILLS_ValidateAnimModeForMonster(int32_t eAnimMode, int32_t nMonI
     0xc,
     0xe,
     0xd
-};
+}; D2_STATIC_GUARD(gdwAnimModeValidFlagsTable, "D2Common::Skills::SKILLS_ValidateAnimModeForMonster::gdwAnimModeValidFlagsTable");
 
     int nMonStats2Id;
     uint32_t uAnimFlag = gdwAnimModeValidFlagsTable[eAnimMode];
-    while (nMonId < 0 || sgptDataTable->nTxtMonStatsSize <= nMonId || (nMonStats2Id = (int)sgptDataTable->pTxtMonStats[nMonId].MonStatsEx , nMonStats2Id < 0) || sgptDataTable->nTxtMonStatsExSize <= nMonStats2Id || !(sgptDataTable->pTxtMonStatsEx + nMonStats2Id) || !((uint32_t)sgptDataTable->pTxtMonStatsEx[nMonStats2Id].aCompCodes[((int)uAnimFlag >> 3) + 0xca] & gadwBitMasks[uAnimFlag & 7])) {
+    while (nMonId < 0 || sgptDataTable->nTxtMonStatsSize <= nMonId || (nMonStats2Id = (int)sgptDataTable->pTxtMonStats[nMonId].MonStatsEx , nMonStats2Id < 0) || sgptDataTable->nTxtMonStatsExSize <= nMonStats2Id || !(sgptDataTable->pTxtMonStatsEx + nMonStats2Id) || !((uint32_t)sgptDataTable->pTxtMonStatsEx[nMonStats2Id].mDT[(int)uAnimFlag >> 3] & gadwBitMasks[uAnimFlag & 7])) {
       switch (uAnimFlag) {
         case 1:
           return uAnimFlag;
@@ -2078,18 +2079,18 @@ uint32_t __stdcall SKILLS_HasLineOfSightToUnit(LONG lParam1, LONG lParam2, D2Uni
 }
 
 int32_t __stdcall SKILLS_CalculateManaCostShifted(int32_t eSkillId, int32_t nSkillLevel) {
-    int32_t nManaCost;
+    int32_t nLine;
     if (-1 < eSkillId && eSkillId < sgptDataTable->nTxtSkillsCount) {
       D2SkillsTxt* pSkillsTxt;
       pSkillsTxt = sgptDataTable->pTxtSkills + eSkillId;
       if (pSkillsTxt) {
-        nManaCost = (int)pSkillsTxt->lvlmana * (nSkillLevel - 1) + (int)pSkillsTxt->mana << ((uint8_t)pSkillsTxt->manashift & 0x1f) >> 8;
-        if (nManaCost >= 0) {
-          return nManaCost;
+        nLine = (int)pSkillsTxt->lvlmana * (nSkillLevel - 1) + (int)pSkillsTxt->mana << ((uint8_t)pSkillsTxt->manashift & 0x1f) >> 8;
+        if (nLine >= 0) {
+          return nLine;
         }
 
-        nManaCost = 0;
-        return nManaCost;
+        nLine = 0;
+        return nLine;
       }
     }
 
@@ -2189,8 +2190,8 @@ uint32_t __stdcall SKILL_FindTeleportPosition(D2UnitStrc * pUnit, D2UnitStrc * p
     bool bInMeleeRange;
     uint32_t nDestX;
     uint32_t nRawTargetY;
-    int32_t nTmpCalc;
     int32_t nCasterX;
+    int32_t eCollisionFlag;
     POINT ptFreeCoord;
     int32_t nCasterY;
     LONG nUnit2;
@@ -2255,15 +2256,14 @@ uint32_t __stdcall SKILL_FindTeleportPosition(D2UnitStrc * pUnit, D2UnitStrc * p
     }
 
     eD2CollisionShapeType nType = PATH::DynamicPath::GetUnitWidth(pCaster);
-    nTmpCalc = Collision::CheckCollision_BlockPlayer_Type((D2RoomStrc*)pUnit, nX, nDestY, nType, 0x1c09);
-    if (nTmpCalc) {
-      int32_t eCollisionFlag;
+    int32_t iVar1 = Collision::CheckCollision_BlockPlayer_Type((D2RoomStrc*)pUnit, nX, nDestY, nType, 0x1c09);
+    if (iVar1) {
       _bInMeleeRange = 0;
       eCollisionFlag = 0x1c09;
       ptFreeCoord.x = ptFreeCoord.y;
       ptFreeCoord.y = nRawTargetY;
-      nTmpCalc = Units::GetUnitSizeX(pCaster);
-      pUnit = (D2UnitStrc*)Collision::GetFreeCoordinates_WithNeighboorRooms((D2RoomStrc*)pUnit, &ptFreeCoord, nTmpCalc, eCollisionFlag, _bInMeleeRange);
+      iVar1 = Units::GetUnitSizeX(pCaster);
+      pUnit = (D2UnitStrc*)Collision::GetFreeCoordinates_WithNeighboorRooms((D2RoomStrc*)pUnit, &ptFreeCoord, iVar1, eCollisionFlag, _bInMeleeRange);
       nDestY = ptFreeCoord.y;
       nX = ptFreeCoord.x;
       if (!pUnit) {
@@ -3006,7 +3006,7 @@ void __stdcall SKILLS_UpdatePassiveSkillStats(D2UnitStrc * pUnit, eD2Skills eSki
       int32_t nSkillLvl;
       if (pPassiveCalcPtr->aurastate < 1 || (eState = DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, (int)pPassiveCalcPtr->aurastate) , eState == STATE_none)) {
         nSkillLvl = D2Common::Skills::GetSkillLevel(pUnit, pSkill, 1);
-        pPassiveStatList = (D2StatListExStrc*)SKILLS_GetOrAllocStateStatList(nSkillLvl, pUnit, (int)pPassiveCalcPtr->passivestate);
+        pPassiveStatList = SKILLS_GetOrAllocStateStatList(nSkillLvl, pUnit, (int)pPassiveCalcPtr->passivestate);
         if (!pPassiveStatList) {
           return;
         }
@@ -3390,7 +3390,7 @@ void __stdcall thunk_SKILLS_AddOrRemoveItemSkill(D2UnitStrc * pUnit, int32_t nPa
 
 // Returns nonzero if pUnit has sufficient mana (or HP under Blood Mana state) to cast pSkillStrc. Computes effective skill level, applies lvlmana+mana formula with manashift, checks STATE_blood_mana; special-cases charged skills (nCharges) and Berserk (stat cost flag 0x200 bit 3). Returns 0 or 1.
 BOOL SKILLS_HasEnoughManaForSkill(D2SkillStrc * pSkillStrc, D2UnitStrc * pUnitStrc) {
-    int32_t nSkillLevel;
+    int32_t pSkillTxt;
     int32_t nClampedLevel;
     eD2States eVenomState;
     int32_t nCurrentStatValue;
@@ -3416,8 +3416,8 @@ BOOL SKILLS_HasEnoughManaForSkill(D2SkillStrc * pSkillStrc, D2UnitStrc * pUnitSt
         nLevelBonusCalc = SKILL_GetLevelBonus(pSkillStrc, pUnitStrc);
         nEffectiveLevel = iVar1 + nLevelBonusCalc;
         pMaxLevelEntry = (int)nEffectiveLevel < 1 ? 0 : nEffectiveLevel;
-        nSkillLevel = DATATBLS::DataTbls::TXT_Experience_GetMaxLevel(0);
-        if (nSkillLevel <= (int)pMaxLevelEntry) {
+        pSkillTxt = DATATBLS::DataTbls::TXT_Experience_GetMaxLevel(0);
+        if (pSkillTxt <= (int)pMaxLevelEntry) {
           pMaxLevelEntry = DATATBLS::DataTbls::TXT_Experience_GetMaxLevel(0);
         }
       }

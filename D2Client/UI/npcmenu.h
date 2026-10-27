@@ -12,7 +12,6 @@
 struct D2BitBufferStrc;
 struct D2GSPacketSrv0x2A;
 struct D2GSPacketSrv0x91;
-struct D2InventoryStrc;
 struct D2UnitStrc;
 struct EHExceptionRecord;
 struct EHRegistrationNode;
@@ -129,7 +128,7 @@ void __fastcall NPCMENU_OnItemUnequip(int32_t nUnitGUID);
 void __fastcall NPCMENU_OnItemPutInContainer(int32_t nUnitGUID);
 void __fastcall NPCMENU_OnItemPutInBelt(int32_t nUnitGUID);
 void __fastcall NPCMENU_OnItemInShop(int32_t nUnitGUID);
-BOOL __fastcall NPCMENU_CalculateItemTransactionCost(struct D2UnitStrc * pUnit, int32_t nTransactionMode, struct D2InventoryStrc * pInventory, uint16_t * pszBuffer, int32_t nBufferMaxLen);
+BOOL __fastcall NPCMENU_CalculateItemTransactionCost(struct D2UnitStrc * pUnit, int32_t nTransactionMode, int * pInventory, uint16_t * pszBuffer, int32_t nBufferMaxLen);
 uint32_t __stdcall NPCMENU_IsShopActive();
 int32_t NPCMENU_FindMenuIndexByNpcId(int32_t nParam);
 BOOL __stdcall NPCMENU_ConfirmTransactionCallback();

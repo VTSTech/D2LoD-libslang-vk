@@ -76,7 +76,7 @@ typedef void (__fastcall *pfnMCPGameListEntry)(uint32_t nEntryField0, uint32_t n
 
 namespace D2Multi::ChatDlg {
 
-static char gaChatDlgHistoryBuffer_1__0_[10][256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static char gaChatDlgHistoryBuffer_1__0_[10][256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; D2_STATIC_GUARD(gaChatDlgHistoryBuffer_1__0_, "D2Multi::ChatDlg::gaChatDlgHistoryBuffer_1__0_");
 
 // OnPress of the chat-lobby user-list page-back button gpCtlLobbyUserListPrevPageButton: COMCALLBACK_ScrollChannelUserList(-10); returns 1.
 // Provenance: asm 0043d9e0 (RET 4); fpOnPressCallback of form record 0070d060 (FORM_Button), created in CHATDLG_CreateAllForms at 0043fce8.
@@ -1065,7 +1065,7 @@ void __stdcall SafeDefaultChannel(char * pszChannel) {
 
 void __stdcall CHATDLG_DestroyAllForms() {
     // Static local variables (originally global data)
-    static D2ControlStrc * gpChatDlgMainControl;
+    static D2ControlStrc * gpChatDlgMainControl; D2_STATIC_GUARD_BSS(gpChatDlgMainControl, "D2Multi::ChatDlg::CHATDLG_DestroyAllForms::gpChatDlgMainControl");
 
     OOGUtilities::OOGUTIL_UpdateGameListFilter();
     OOGUtilities::UIMENU_DestroyLobbyAndJoinGameForms();
@@ -1240,9 +1240,9 @@ void __stdcall CHATDLG_CreateAllForms() {
 
 // Battle.net game creation and joining functions - handle both realm and open bnet modes
 uint32_t __fastcall OOGMENU_CreateGame(mcp0x03data * pMcpData, char * szServerIp) {
+    void* nAddress;
     int32_t nHasPeer;
     uint16_t* pwszError;
-    int32_t nLine;
     uint16_t nReqId;
     char cCur;
     ChatDlg::CHATDLG_DestroyAllForms();
@@ -1316,9 +1316,9 @@ uint32_t __fastcall OOGMENU_CreateGame(mcp0x03data * pMcpData, char * szServerIp
 
 // Battle.net game creation and joining functions - handle both realm and open bnet modes
 void __fastcall OOGMENU_JoinGame(int16_t nJoinId, char * szGameName, char * szPassword, char * szServerIp) {
+    void* nAddress;
     int32_t nHasPeer;
     uint16_t* pwszError;
-    int32_t nLine;
     char cCur;
     gpChatFormList = (void*)0x2;
     ChatDlg::CHATDLG_DestroyAllForms();
@@ -1480,7 +1480,7 @@ BOOL __stdcall CHATDLG_UpdateChatRoomList() {
 // Provenance: 1.14d asm 00440350, called as fpOnPress by D2WinTimer DrawEx 004fd8d2.
 BOOL __stdcall CHATDLG_OnTimerRequestLadderData(D2ControlMsg * pControlMsg) {
     // Static local variables (originally global data)
-    static uint32_t gnChatRoomListPrevSelectedBase = -0x1;
+    static uint32_t gnChatRoomListPrevSelectedBase = -0x1; D2_STATIC_GUARD(gnChatRoomListPrevSelectedBase, "D2Multi::ChatDlg::CHATDLG_OnTimerRequestLadderData::gnChatRoomListPrevSelectedBase");
 
     DWORD DVar1 = GetTickCount();
     if (!(gdwLadderRankRequestTimeout < DVar1 && g_pLadderBoardTextBox)) {
@@ -1505,7 +1505,7 @@ BOOL __stdcall CHATDLG_OnTimerRequestLadderData(D2ControlMsg * pControlMsg) {
 // Updates ladder board display after player click - renders rank cells with class colors and experience
 void __fastcall CHATDLG_HandleChatListClick(int32_t nStartRank, int32_t nRankCount, int32_t nEntryIndex, char nFilterMode, int32_t nLadderData) {
     // Static local variables (originally global data)
-    static char * gaszPlayerClassTokens[7] = { s_ama_006d5564, s_sor_006d5568, s_nec_006d556c, s_pal_006d5570, s_bar_006d5574, s_dru_006d5578, s_asn_006d557c };
+    static char * gaszPlayerClassTokens[7] = { s_ama_006d5564, s_sor_006d5568, s_nec_006d556c, s_pal_006d5570, s_bar_006d5574, s_dru_006d5578, s_asn_006d557c }; D2_STATIC_GUARD(gaszPlayerClassTokens, "D2Multi::ChatDlg::CHATDLG_HandleChatListClick::gaszPlayerClassTokens");
 
     int nCmp;
     char* pbCopySrc;
@@ -1588,7 +1588,7 @@ void __fastcall CHATDLG_HandleChatListClick(int32_t nStartRank, int32_t nRankCou
       __itoa(nNextRank, szNumBuf, 10);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, szNumBuf, nStartRank, 0);
       sRowBuf.szName[0] = '\0';
-      pbCopySrc = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass((void*)(dwCharStats & 0xf), dwCharStats >> 8 & 0x1f, dwCharStats & 0x20, dwCharStats & 0x40);
+      pbCopySrc = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass(dwCharStats & 0xf, dwCharStats >> 8 & 0x1f, dwCharStats & 0x20, dwCharStats & 0x40);
       pbName = pbEntry;
       pbCopyDst = pbCopySrc;
       if (pbCopySrc) {
@@ -1597,7 +1597,7 @@ void __fastcall CHATDLG_HandleChatListClick(int32_t nStartRank, int32_t nRankCou
 
       strcat(sRowBuf.szName, (char*)pbEntry);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, sRowBuf.szName, nStartRank, 1);
-      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, gaszPlayerClassTokens[(int)(dwCharStats & 0xf)], nStartRank, 2);
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, gaszPlayerClassTokens[dwCharStats & 0xf], nStartRank, 2);
       __itoa((int)dwCharStats >> 0x10 & 0xff, szNumBuf, 10);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, szNumBuf, nStartRank, 3);
       pcScratch = &sRowBuf;

@@ -44,7 +44,7 @@ void DRLGMAZE_ReplaceSewerRooms(D2DrlgLevelStrc * pDrlgLevelStrc) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_ACT3_SEWERS_REPLACE_ONE, "D2Common::Drlg::Maze::Act3::Sewers::DRLGMAZE_ReplaceSewerRooms::DRLG_ACT3_SEWERS_REPLACE_ONE");
     static D2DrlgReplaceRoomStrc DRLG_ACT3_SEWERS_REPLACE_TWO[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x2c8,
@@ -70,7 +70,7 @@ void DRLGMAZE_ReplaceSewerRooms(D2DrlgLevelStrc * pDrlgLevelStrc) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_ACT3_SEWERS_REPLACE_TWO, "D2Common::Drlg::Maze::Act3::Sewers::DRLGMAZE_ReplaceSewerRooms::DRLG_ACT3_SEWERS_REPLACE_TWO");
 
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pDrlgLevelStrc->sSeed);
     pDrlgLevelStrc->sSeed = sNewSeed;

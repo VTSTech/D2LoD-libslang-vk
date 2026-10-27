@@ -45,11 +45,7 @@ struct D2QuestDataA1Q4SubStrc {
     /* 0x3B */ uint8_t bNpcDialogState2;
     /* 0x3C */ int32_t nCairnAnimState;
     /* 0x40 */ uint32_t nStonesUnitGUID; // Cairn Stones object GUID used for red-portal placement; Q04_SpawnTristramPortal FindUnitFromTable(UNIT_OBJECT)
-    /* 0x44 */ uint8_t bPortalSpawnPending; // Red Tristram portal spawn pending; cleared by Q04_SpawnTristramPortal on spawn/abort
-    /* 0x45 */ uint8_t bPortalOpened; // Red Tristram portal successfully opened; set by Q04_SpawnTristramPortal
-    /* 0x46 */ uint8_t field_0x46;
-    /* 0x47 */ uint8_t field_0x47;
-    /* 0x48 */ uint8_t field_0x48;
+    /* 0x44 */ uint8_t bPortalSpawnPending[5]; // Red Tristram portal spawn pending; cleared by Q04_SpawnTristramPortal on spawn/abort
     /* 0x49 */ bool bPortalArmed;
     /* 0x4A */ bool bStonesRolled;
     /* 0x4B */ uint8_t bRewardReady;
@@ -57,14 +53,8 @@ struct D2QuestDataA1Q4SubStrc {
     /* 0x4D */ uint8_t field_0x4D;
     /* 0x4E */ bool bPortalSpawned;
     /* 0x4F */ bool bAllStonesActivated;
-    /* 0x50 */ uint8_t field_0x50;
-    /* 0x51 */ uint8_t field_0x51;
-    /* 0x52 */ uint8_t field_0x52;
-    /* 0x53 */ uint8_t field_0x53;
-    /* 0x54 */ uint8_t field_0x54;
-    /* 0x55 */ uint8_t field_0x55;
-    /* 0x56 */ uint8_t field_0x56;
-    /* 0x57 */ uint8_t field_0x57;
+    /* 0x50 */ int field_0x50;
+    /* 0x54 */ int field_0x54;
     /* 0x58 */ uint8_t bCairnObjectSaved;
     /* 0x59 */ uint8_t field_0x59;
     /* 0x5A */ uint8_t field_0x5A;
@@ -74,22 +64,13 @@ struct D2QuestDataA1Q4SubStrc {
     /* 0x61 */ uint8_t field_0x61;
     /* 0x62 */ uint8_t field_0x62;
     /* 0x63 */ uint8_t field_0x63;
-    /* 0x64 */ uint8_t nRewardRetryCount; // Anchor of a 4-byte counter (0x64-0x67). Q04_Callback_11 (0x592250) decrements *(int*)&field_0x64 when ITEM_RewardItemInInventory fails to grant the Deciphered scroll. Type left as byte; only the anchor is named.
-    /* 0x65 */ uint8_t field_0x65;
-    /* 0x66 */ uint8_t field_0x66;
-    /* 0x67 */ uint8_t field_0x67;
+    /* 0x64 */ int nRewardRetryCount; // Anchor of a 4-byte counter (0x64-0x67). Q04_Callback_11 (0x592250) decrements *(int*)&field_0x64 when ITEM_RewardItemInInventory fails to grant the Deciphered scroll. Type left as byte; only the anchor is named.
     /* 0x68 */ uint8_t field_0x68;
     /* 0x69 */ uint8_t field_0x69;
     /* 0x6A */ uint8_t field_0x6A;
     /* 0x6B */ uint8_t field_0x6B;
-    /* 0x6C */ uint8_t field_0x6C;
-    /* 0x6D */ uint8_t field_0x6D;
-    /* 0x6E */ uint8_t field_0x6E;
-    /* 0x6F */ uint8_t field_0x6F;
-    /* 0x70 */ uint8_t field_0x70;
-    /* 0x71 */ uint8_t field_0x71;
-    /* 0x72 */ uint8_t field_0x72;
-    /* 0x73 */ uint8_t field_0x73;
+    /* 0x6C */ int field_0x6C;
+    /* 0x70 */ int field_0x70;
     /* 0x74 */ int32_t nShieldsRemaining; // 10-20 shields to drop from Griswold
     /* 0x78 */ bool bShieldDropActive; // Shield reward drops have started
     /* 0x79 */ uint8_t bTristramInitialized;

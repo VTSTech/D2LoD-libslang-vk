@@ -92,7 +92,7 @@ void SRP_ExtractSessionKeyBytes(void * pThis, void * pDst, uint32_t nBytes) {
 
 void __stdcall SRP_ComputePasswordHash(void * pParam, char * szText1, char * szText2, int * pnParam) {
     // Static local variables (originally global data)
-    static uint32_t g_pColonSeparator = 0x6e03e0;
+    static char * g_pColonSeparator = (char *)&s_ColonSeparator; D2_STATIC_GUARD(g_pColonSeparator, "Bnclient::SRP::SRP_ComputePasswordHash::g_pColonSeparator");
 
     uint32_t sha1Ctx[23];
     uint8_t hashBuf[20];
@@ -100,8 +100,8 @@ void __stdcall SRP_ComputePasswordHash(void * pParam, char * szText1, char * szT
     SHA::SHA1_Init(sha1Ctx);
     uint32_t nStrLen = Storm::Source::SSTR::SStrLen(szText1);
     SHA::SHA1_Update(sha1Ctx, szText1, nStrLen);
-    nStrLen = Storm::Source::SSTR::SStrLen((char*)g_pColonSeparator);
-    SHA::SHA1_Update(sha1Ctx, (void*)g_pColonSeparator, nStrLen);
+    nStrLen = Storm::Source::SSTR::SStrLen(g_pColonSeparator);
+    SHA::SHA1_Update(sha1Ctx, g_pColonSeparator, nStrLen);
     nStrLen = Storm::Source::SSTR::SStrLen(szText2);
     SHA::SHA1_Update(sha1Ctx, szText2, nStrLen);
     SHA::SHA1_Final(hashBuf, sha1Ctx);

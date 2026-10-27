@@ -31,16 +31,16 @@ typedef int32_t (__fastcall *pfnTextMessageCompare)(uint16_t * pnCodeA, uint16_t
 namespace D2Common::Text {
 
 // @sourcefile .\Text\Text.cpp
-void TEXT_FreeAllMessages(D2PoolManagerStrc * * ppPoolManager) {
-    D2PoolManagerStrc* pMemoryToFree = ppPoolManager[2];
+void TEXT_FreeAllMessages(D2GSPacketSrv0x27_TextStrc * ppPoolManager) {
+    D2GSPacketSrv0x27_EntryStrc* pMemoryToFree = ppPoolManager->pMessage;
     while (pMemoryToFree) {
-      D2PoolManagerStrc* pNext;
-      pNext = (D2PoolManagerStrc*)pMemoryToFree->pSync.LockCount;
-      D2_FREE_POOL(*ppPoolManager, pMemoryToFree);
+      D2GSPacketSrv0x27_EntryStrc* pNext;
+      pNext = pMemoryToFree->pPrev;
+      D2_FREE_POOL(ppPoolManager->pMemory, pMemoryToFree);
       pMemoryToFree = pNext;
     }
 
-    *(uint16_t*)(ppPoolManager + 1) = 0;
+    ppPoolManager->nCount = 0;
 }
 
 // @sourcefile .\Text\Text.cpp
@@ -69,31 +69,31 @@ void __stdcall AddNewGossipText(D2GSPacketSrv0x27_TextStrc * pGossipText, int32_
 }
 
 // @sourcefile .\Text\Text.cpp
-void __stdcall TEXT_RemoveMessageById(D2PoolManagerStrc * * ppPoolManager, int16_t nParam) {
-    D2PoolManagerStrc* pMemoryToFree = ppPoolManager[2];
-    D2PoolManagerStrc* pDVar2 = 0;
+void __stdcall TEXT_RemoveMessageById(D2GSPacketSrv0x27_TextStrc * ppPoolManager, int16_t nParam) {
+    D2GSPacketSrv0x27_EntryStrc* pMemoryToFree = ppPoolManager->pMessage;
+    D2GSPacketSrv0x27_EntryStrc* pDVar2 = 0;
     if (!pMemoryToFree) {
       return;
     }
 
-    while ((short int)pMemoryToFree->nPoolId != nParam) {
-      D2PoolManagerStrc* pNext;
-      pNext = (D2PoolManagerStrc*)pMemoryToFree->pSync.LockCount;
+    while (pMemoryToFree->nMessage != nParam) {
+      D2GSPacketSrv0x27_EntryStrc** ppDVar1;
+      ppDVar1 = &pMemoryToFree->pPrev;
       pDVar2 = pMemoryToFree;
-      pMemoryToFree = pNext;
-      if (!pNext) {
+      pMemoryToFree = *ppDVar1;
+      if (!*ppDVar1) {
         return;
       }
     }
 
     if (!pDVar2) {
-      ppPoolManager[2] = (D2PoolManagerStrc*)pMemoryToFree->pSync.LockCount;
+      ppPoolManager->pMessage = pMemoryToFree->pPrev;
     } else {
-      pDVar2->pSync.LockCount = pMemoryToFree->pSync.LockCount;
+      pDVar2->pPrev = pMemoryToFree->pPrev;
     }
 
-    D2_FREE_POOL(*ppPoolManager, pMemoryToFree);
-    (*(short int*)(ppPoolManager + 1))--;
+    D2_FREE_POOL(ppPoolManager->pMemory, pMemoryToFree);
+    ppPoolManager->nCount--;
 }
 
 int32_t __stdcall TEXT_CountMessagesOfType2(D2GSPacketSrv0x27_TextStrc * pMsgList) {
@@ -180,7 +180,7 @@ void __stdcall StoreMessages(D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x27_Text,
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x10c);
       exit(-1);
     } else {
-      TEXT_FreeAllMessages(&pGSPacketSrv0x27_Text->pMemory);
+      TEXT_FreeAllMessages(pGSPacketSrv0x27_Text);
       if (*pPacketData < 8) {
         pGSPacketSrv0x27_Text = 0;
         pCurPacket = (short int*)pPacketData;

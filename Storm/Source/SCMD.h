@@ -12,7 +12,6 @@
 // Forward declarations
 struct D2GameNpcStrc;
 struct D2StormListHead;
-struct D2UnitDataClientSide;
 struct D2UnitDataMonsterStrc;
 struct SCMD;
 #ifndef RECON_FPTD_SCMDCALLBACK
@@ -74,7 +73,7 @@ void SCMD_MoveToList(::SCMD * pThis, ::SCMD * pNode, int nParam, ::SCMD * pScmd)
 uint32_t SCMD_GetNextOffset(::SCMD * pThis, ::SCMD * pNode);
 void SCMD_UnlinkNode(::SCMD * pThis, ::SCMD * pNode);
 // @blizzard FindFlagDef (SCMD.CPP)
-int __stdcall SCMD_FindFlagDef(struct D2UnitDataClientSide * cmdList, char * str, int minLen);
+struct StormCmdArgDefStrc * __stdcall SCMD_FindFlagDef(struct StormCmdArgDefStrc * cmdList, char * str, int minLen);
 uint32_t SCMD_GetHandler(::SCMD * pThis, int nNodeOffset);
 void __fastcall SCMD_ClearList(struct D2StormListHead * nListPtr);
 void __fastcall SCMD_ClearAll(struct D2StormListHead * nListPtr);

@@ -9,7 +9,6 @@
 #include "D2Common/DATATBLS/ObjectTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
-#include "D2Common/Drlg/D2DrlgCoordsStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/D2DrlgRoomCoordsStrc.h"
 #include "D2Common/Unit/D2UnitStrc.h"
@@ -28,10 +27,10 @@
 namespace D2Game::Objects::ArmorWeapon {
 
 // Populates a room region with armor/weapon rack objects of the given nRackType. Uses the game's control seed to pick a rack variant (even/odd), looks up the Objects.txt entry for size, then sweeps the DRLG coordinate space (horizontally for even variant, vertically for odd) calling ROOM_CheckSpawnCollision and CreateUnit at each valid grid position. Aborts with a fatal error if pRoom is null at spawn time.
-void __stdcall Roll(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgCoordsStrc * pDrlgCoords, int32_t nRackType) {
+void __stdcall Roll(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgRoomCoordsStrc * pDrlgCoords, int32_t nRackType) {
     // Static local variables (originally global data)
-    static int RackType[4] = { 0x68, 0x69, 0x6a, 0x6b };
-    static int RackTypeCount = 0x2;
+    static int RackType[4] = { 0x68, 0x69, 0x6a, 0x6b }; D2_STATIC_GUARD(RackType, "D2Game::Objects::ArmorWeapon::Roll::RackType");
+    static int RackTypeCount = 0x2; D2_STATIC_GUARD(RackTypeCount, "D2Game::Objects::ArmorWeapon::Roll::RackTypeCount");
 
     BOOL nCollisionResultX;
     D2CoordStrc sSpawnCoord;
@@ -45,16 +44,16 @@ void __stdcall Roll(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgCoordsStrc * 
     int iVar3 = (DVar2.nSeedLow & 1) + nRackType * 2;
     D2ObjectsTxt* pDVar4 = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(RackType[iVar3]);
     uint32_t nObjSizeX = pDVar4->SizeX;
-    int iVar6 = pDrlgCoords->WorldPosition.x;
-    int iVar1 = pDrlgCoords->WorldPosition.y;
-    int nXEnd = pDrlgCoords->WorldSize.x - nObjSizeX;
+    int iVar6 = pDrlgCoords->dwXStart;
+    int iVar1 = pDrlgCoords->dwYStart;
+    int nXEnd = pDrlgCoords->dwXSize - nObjSizeX;
     uint32_t nObjSizeY = pDVar4->SizeY;
-    uint32_t uVar5 = pDrlgCoords->WorldSize.y - nObjSizeY + iVar1;
+    uint32_t uVar5 = pDrlgCoords->dwYSize - nObjSizeY + iVar1;
     if (!((uint64_t)d2_bits_of(DVar2) & 1)) {
       sSpawnCoord.nY = iVar1 + 1;
-      for (uVar5 = pDrlgCoords->WorldPosition.x + nObjSizeX; uVar5 < (uint32_t)(nXEnd + iVar6); uVar5 += nObjSizeX * 2) {
+      for (uVar5 = pDrlgCoords->dwXStart + nObjSizeX; uVar5 < (uint32_t)(nXEnd + iVar6); uVar5 += nObjSizeX * 2) {
         sSpawnCoord.nX = uVar5;
-        nCollisionResultX = ROOM_CheckSpawnCollision(pRoom, pDVar4->SizeY, &sSpawnCoord.nX, nObjSizeX, (int*)pDrlgCoords);
+        nCollisionResultX = ROOM_CheckSpawnCollision(pRoom, pDVar4->SizeY, &sSpawnCoord.nX, nObjSizeX, &pDrlgCoords->dwXStart);
         if (nCollisionResultX == 1) {
           if (!pRoom) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb12);
@@ -68,13 +67,13 @@ void __stdcall Roll(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgCoordsStrc * 
       }
     } else {
       uint32_t nCurY;
-      iVar6 = pDrlgCoords->WorldPosition.x + 1;
+      iVar6 = pDrlgCoords->dwXStart + 1;
       nCurY = iVar1 + nObjSizeY;
       sSpawnCoord.nX = iVar6;
       if (nCurY < uVar5) {
         do {
           sSpawnCoord.nY = nCurY;
-          nCollisionResultX = ROOM_CheckSpawnCollision(pRoom, nObjSizeY, &sSpawnCoord.nX, pDVar4->SizeX, (int*)pDrlgCoords);
+          nCollisionResultX = ROOM_CheckSpawnCollision(pRoom, nObjSizeY, &sSpawnCoord.nX, pDVar4->SizeX, &pDrlgCoords->dwXStart);
           if (nCollisionResultX == 1) {
             if (!pRoom) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb25);
@@ -95,12 +94,12 @@ void __stdcall Roll(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgCoordsStrc * 
 }
 
 int32_t __fastcall RollArmorStand(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgRoomCoordsStrc * pDrlgCoords) {
-    Roll(pGame, pRoom, (D2DrlgCoordsStrc*)pDrlgCoords, 0);
+    Roll(pGame, pRoom, pDrlgCoords, 0);
     return 1;
 }
 
 int32_t __fastcall RollWeaponRack(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgRoomCoordsStrc * pDrlgCoords) {
-    Roll(pGame, pRoom, (D2DrlgCoordsStrc*)pDrlgCoords, 1);
+    Roll(pGame, pRoom, pDrlgCoords, 1);
     return 1;
 }
 

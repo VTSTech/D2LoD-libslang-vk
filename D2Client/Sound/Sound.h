@@ -10,15 +10,65 @@
 
 // Forward declarations
 struct D2EscMenuItemStrc;
+struct D2MPQFileStrc;
 struct D2UIMouseMsgStrc;
 struct D2UnitDataItemStrc;
 struct D2UnitStrc;
+struct IDirectSoundBuffer;
 typedef int eD2LevelId;
 typedef int eD2Sounds;
+#ifndef RECON_FPTD_DS3DB_SetMaxDistance
+#define RECON_FPTD_DS3DB_SetMaxDistance
+typedef HRESULT (__stdcall *DS3DB_SetMaxDistance)(void * This, float flMaxDistance, DWORD dwApply);
+#endif
+#ifndef RECON_FPTD_DS3DB_SetMinDistance
+#define RECON_FPTD_DS3DB_SetMinDistance
+typedef HRESULT (__stdcall *DS3DB_SetMinDistance)(void * This, float flMinDistance, DWORD dwApply);
+#endif
+#ifndef RECON_FPTD_DS3DB_SetPosition
+#define RECON_FPTD_DS3DB_SetPosition
+typedef HRESULT (__stdcall *DS3DB_SetPosition)(void * This, float x, float y, float z, DWORD dwApply);
+#endif
+#ifndef RECON_FPTD_IUnknown_AddRef
+#define RECON_FPTD_IUnknown_AddRef
+typedef ULONG (__stdcall *IUnknown_AddRef)(void * This);
+#endif
+#ifndef RECON_FPTD_IUnknown_QueryInterface
+#define RECON_FPTD_IUnknown_QueryInterface
+typedef HRESULT (__stdcall *IUnknown_QueryInterface)(void * This, GUID * riid, void * * ppvObject);
+#endif
+#ifndef RECON_FPTD_IUnknown_Release
+#define RECON_FPTD_IUnknown_Release
+typedef ULONG (__stdcall *IUnknown_Release)(void * This);
+#endif
+#ifndef RECON_FPTD_KSPS_QuerySupport
+#define RECON_FPTD_KSPS_QuerySupport
+typedef HRESULT (__stdcall *KSPS_QuerySupport)(void * This, void * rguidPropSet, ULONG ulId, ULONG * pulTypeSupport);
+#endif
+#ifndef RECON_FPTD_KSPS_Set
+#define RECON_FPTD_KSPS_Set
+typedef HRESULT (__stdcall *KSPS_Set)(void * This, void * rguidPropSet, ULONG ulId, void * pInstanceData, ULONG ulInstanceLength, void * pPropertyData, ULONG ulDataLength);
+#endif
 
+struct D2SoundSmpStrc;
 struct D2SoundChannelStrc;
+struct IDirectSound3DBuffer;
+struct IKsPropertySet;
+struct IDirectSound3DBufferVtbl;
+struct IKsPropertySetVtbl;
 
 // Data types
+struct D2ClientSoundChannelStrc {
+    /* 0x00 */ struct D2SoundSmpStrc * pSoundSmp; // sample instance
+    /* 0x04 */ int32_t nChannelType; // 0/1/2/6 speaker-config channel type
+    /* 0x08 */ struct D2SoundChannelStrc * pActiveSound; // active sound request; +4 sound id, +0x2c/+0x30 state, +0x34 priority, +0x41 stream progress
+    /* 0x0C */ uint32_t field_0x0c;
+    /* 0x10 */ uint32_t field_0x10;
+    /* 0x14 */ uint32_t field_0x14;
+    /* 0x18 */ uint32_t field_0x18;
+    /* 0x1C */ uint32_t field_0x1c;
+};
+
 struct D2SoundChannelNodeStrc {
     /* 0x00 */ struct D2SoundChannelStrc * pChannel; // the channel record this node holds
     /* 0x04 */ struct D2SoundChannelNodeStrc * pNext; // next node in the active-channel list
@@ -36,7 +86,7 @@ struct __attribute__((packed)) D2SoundChannelStrc {
     /* 0x20 */ int nUnitDistance; // unit distance (pChannel[8])
     /* 0x24 */ int nParam; // extra param (pChannel[9])
     /* 0x28 */ int * pGlobal3Ref; // ptr to global3 timing struct (checked non-null + [4]!=0)
-    /* 0x2C */ uint32_t undefined_0x2c; // unknown
+    /* 0x2C */ struct D2ClientSoundChannelStrc * undefined_0x2c; // unknown
     /* 0x30 */ int nPlayMode; // 1=streaming
     /* 0x34 */ int nScheduledTime; // global3+delay scheduled start time (pChannel[0xd])
     /* 0x38 */ int nVolume; // volume (pChannel[0xe])
@@ -75,6 +125,33 @@ struct D2SoundEnvironTxt {
     /* 0x54 */ int EAX_Air_Absorb;
 };
 
+struct D2SoundSmpStrc {
+    /* 0x00 */ struct IDirectSoundBuffer * pDSBuffer; // IDirectSoundBuffer
+    /* 0x04 */ int32_t nBufSize; // total DirectSound buffer size in bytes
+    /* 0x08 */ int32_t nHalfBufSize; // half buffer size
+    /* 0x0C */ struct IDirectSound3DBuffer * pDS3DBuffer; // IDirectSound3DBuffer (stereo only)
+    /* 0x10 */ struct IKsPropertySet * pEaxInterface; // IKsPropertySet (EAX), QI'd from pDS3DBuffer
+    /* 0x14 */ uint8_t * pPcmData; // pointer to PCM source data
+    /* 0x18 */ int32_t nPcmSize; // PCM data size in bytes
+    /* 0x1C */ int32_t bIsPlaying; // non-zero if buffer is currently playing
+    /* 0x20 */ uint32_t field_08; // unknown
+    /* 0x24 */ int32_t nWritePos; // current write position
+    /* 0x28 */ int32_t bLoaded; // non-zero if wav data loaded into buffer
+    /* 0x2C */ int32_t bAtEnd; // non-zero if playback reached end
+    /* 0x30 */ int32_t nLoopEnd; // loop end offset (0xFFFFFFFF = no loop)
+    /* 0x34 */ int32_t dwFlags; // creation flags (bit0=stereo, bit1=3D, bit2=EAX)
+    /* 0x38 */ int32_t nVolume; // current volume level
+    /* 0x3C */ uint32_t fEaxObstruction; // EAX obstruction level (float). SOUNDSMP_SetEaxObstruction stores fParam here and, at EAX quality 2, sets gEAXPropertyGuid_Obstruction with (1.0-fParam) clamped 0..1; SOUNDSMP_SetVolume attenuates by (1 - this)
+    /* 0x40 */ int bLooping; // was pDS3DBufferAlt; never called through - zeroed by SOUNDSMP_Reset, gates write-pos wraparound in SOUNDSMP_WriteToBuffer
+    /* 0x44 */ int32_t nMinBufSize; // minimum buffer size threshold
+    /* 0x48 */ struct D2MPQFileStrc * pStreamFile; // SFile async-stream handle; SFILE_CancelAsyncRequestsForHandle/CloseFileWrapper/GetStreamInfo
+    /* 0x4C */ uint32_t field_0x4c; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
+    /* 0x50 */ int32_t field_0x50; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
+    /* 0x54 */ int32_t field_0x54; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
+    /* 0x58 */ int32_t field_0x58; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
+    /* 0x5C */ int32_t field_0x5c; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
+};
+
 struct __attribute__((packed)) D2SoundsTxt {
     /* 0x00 */ char Filename[60];
     /* 0x3C */ uint8_t Volume;
@@ -108,6 +185,47 @@ struct __attribute__((packed)) D2SoundsTxt {
     /* 0x82 */ void * pAsyncData; // struct D2AsyncData_Line0x128* while async load in flight
     /* 0x86 */ int32_t nLoadState; // 0=unloaded 1=async-loading 2=loaded
     /* 0x8A */ int32_t nRefCount; // Active channel reference count
+};
+
+struct IDirectSound3DBuffer {
+    /* 0x00 */ struct IDirectSound3DBufferVtbl * lpVtbl;
+};
+
+struct IDirectSound3DBufferVtbl {
+    /* 0x00 */ HRESULT (__stdcall *QueryInterface)(void *, GUID *, void * *);
+    /* 0x04 */ ULONG (__stdcall *AddRef)(void *);
+    /* 0x08 */ ULONG (__stdcall *Release)(void *);
+    /* 0x0C */ void * GetAllParameters;
+    /* 0x10 */ void * GetConeAngles;
+    /* 0x14 */ void * GetConeOrientation;
+    /* 0x18 */ void * GetConeOutsideVolume;
+    /* 0x1C */ void * GetMaxDistance;
+    /* 0x20 */ void * GetMinDistance;
+    /* 0x24 */ void * GetMode;
+    /* 0x28 */ void * GetPosition;
+    /* 0x2C */ void * GetVelocity;
+    /* 0x30 */ void * SetAllParameters;
+    /* 0x34 */ void * SetConeAngles;
+    /* 0x38 */ void * SetConeOrientation;
+    /* 0x3C */ void * SetConeOutsideVolume;
+    /* 0x40 */ HRESULT (__stdcall *SetMaxDistance)(void *, float, DWORD);
+    /* 0x44 */ HRESULT (__stdcall *SetMinDistance)(void *, float, DWORD);
+    /* 0x48 */ void * SetMode;
+    /* 0x4C */ HRESULT (__stdcall *SetPosition)(void *, float, float, float, DWORD);
+    /* 0x50 */ void * SetVelocity;
+};
+
+struct IKsPropertySet {
+    /* 0x00 */ struct IKsPropertySetVtbl * lpVtbl;
+};
+
+struct IKsPropertySetVtbl {
+    /* 0x00 */ HRESULT (__stdcall *QueryInterface)(void *, GUID *, void * *);
+    /* 0x04 */ ULONG (__stdcall *AddRef)(void *);
+    /* 0x08 */ ULONG (__stdcall *Release)(void *);
+    /* 0x0C */ void * Get;
+    /* 0x10 */ HRESULT (__stdcall *Set)(void *, void *, ULONG, void *, ULONG, void *, ULONG);
+    /* 0x14 */ HRESULT (__stdcall *QuerySupport)(void *, void *, ULONG, ULONG *);
 };
 
 namespace D2Client::Sound {

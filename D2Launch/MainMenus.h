@@ -74,7 +74,7 @@ struct __attribute__((packed)) FORMS_PredefinedFormStrc {
     /* 0x04 */ int aParams[4];
     /* 0x14 */ int32_t nExtraParam; // AnimImage = D2WinAnimImage nStaticFrameDelay (40 ms units; records 0xb2/0xb3 give 1); struct DC6* for ImageEx; Button = hotkey virtual-key code passed as D2WinButton nHotkeyVK (0xd VK_RETURN on OK buttons, 0x1b VK_ESCAPE on Cancel/back buttons, 0x26/0x28 arrow keys, 0 = none); generic int for others
     /* 0x18 */ int nLabelAsLocaleStringId;
-    /* 0x1C */ struct DC6 * pDC6;
+    /* 0x1C */ struct DC6 * * pDC6;
     /* 0x20 */ BOOL (__stdcall *fpOnPressCallback)(struct D2ControlMsg *);
     /* 0x24 */ void * pTypeArg1; // Constructor argument whose meaning depends on neD2FormType (FORMS_CreateAnyForm): EditBox = fpD2WinEditBoxSubmit* submit callback (e.g. OOGUTIL_SendChatMessageWide); Image = struct D2WinImageHitArea*; AnimImage = FORMS_AnimFrameStrc[5] state table, D2WinAnimImage pAnimFrames (e.g. gaCharSelectAnimFramesAmazon); TextBox = int[3] scrollbar geometry x,y,height (gaMultiTextBoxScrollbarGeom*); Button = initial image index 0/2/4/6 (D2WinButton nCurrentImageIndex); List = item array. Unused (0) for the other types.
     /* 0x28 */ void * pTypeArg2; // Constructor argument whose meaning depends on neD2FormType (FORMS_CreateAnyForm): EditBox = font id pair (gaMenuFormFontParams*); Image = Key* handler; AnimImage = fpD2WinAnimImageNotify* (e.g. MAINMENU_SetAmazonDescription); TextBox = font params (gaMenuFormFontParams*/gaMultiFormFontParams*); Button = Mouse* hover callback (e.g. MAINMENU_DisableControlIfDataNonZero); List = font id pointer; AccountList = font data. Unused (0) for the other types.

@@ -20,9 +20,9 @@ D2GfxSettingsStrc D2GFXRenderedData = {
     /* .nGamma = */ 0x9b,
     /* .bVSync = */ 0x1,
     /* .bBlendedShadows = */ 0x1
-};
+}; D2_GLOBAL_GUARD(D2GFXRenderedData, "D2GFXRenderedData");
 
-eD2RendererMode eRendererMode = 0;
+eD2RendererMode eRendererMode = 0; D2_GLOBAL_GUARD(eRendererMode, "eRendererMode");
 
 D2GFXWindowPlacementStrc gaD2GFXWindowPlacements[4] = {
     {
@@ -113,26 +113,26 @@ D2GFXWindowPlacementStrc gaD2GFXWindowPlacements[4] = {
             }
         }
     }
-};
+}; D2_GLOBAL_GUARD(gaD2GFXWindowPlacements, "gaD2GFXWindowPlacements");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-BOOL bAspect = 0x1;
-uint32_t IsOSCursorVisible = 0x1;
-uint32_t gnD2GFX_ActiveScaleFactor = 0x100;
-HINSTANCE hInstance = 0;
-BOOL bD2GFX_Windowed = 0;
-uint32_t nResolutionMode = 0;
-HWND hwndD2GFX_Window = 0;
-D2RendererFunctionsStrc * RENDERER_CurrentRenderedFunctions = 0;
-int32_t nWindowSizeY = 0;
-uint32_t ghWndMain = 0;
-uint32_t D2GFX_EndCutSceneCurrentState = 0;
-uint32_t D2GFX_EndCutScene = 0;
-int nD2GFX_PerspectiveScaleY = 0;
-int32_t nD2GFX_PerspectiveScaleX = 0;
+BOOL bAspect = 0x1; D2_GLOBAL_GUARD(bAspect, "bAspect");
+uint32_t IsOSCursorVisible = 0x1; D2_GLOBAL_GUARD(IsOSCursorVisible, "IsOSCursorVisible");
+uint32_t gnD2GFX_ActiveScaleFactor = 0x100; D2_GLOBAL_GUARD(gnD2GFX_ActiveScaleFactor, "gnD2GFX_ActiveScaleFactor");
+HINSTANCE hInstance = 0; D2_GLOBAL_GUARD(hInstance, "hInstance");
+BOOL bD2GFX_Windowed = 0; D2_GLOBAL_GUARD(bD2GFX_Windowed, "bD2GFX_Windowed");
+uint32_t nResolutionMode = 0; D2_GLOBAL_GUARD(nResolutionMode, "nResolutionMode");
+HWND hwndD2GFX_Window = 0; D2_GLOBAL_GUARD(hwndD2GFX_Window, "hwndD2GFX_Window");
+D2RendererFunctionsStrc * RENDERER_CurrentRenderedFunctions = 0; D2_GLOBAL_GUARD(RENDERER_CurrentRenderedFunctions, "RENDERER_CurrentRenderedFunctions");
+int32_t nWindowSizeY = 0; D2_GLOBAL_GUARD(nWindowSizeY, "nWindowSizeY");
+uint32_t ghWndMain = 0; D2_GLOBAL_GUARD(ghWndMain, "ghWndMain");
+uint32_t D2GFX_EndCutSceneCurrentState = 0; D2_GLOBAL_GUARD(D2GFX_EndCutSceneCurrentState, "D2GFX_EndCutSceneCurrentState");
+uint32_t D2GFX_EndCutScene = 0; D2_GLOBAL_GUARD(D2GFX_EndCutScene, "D2GFX_EndCutScene");
+int nD2GFX_PerspectiveScaleY = 0; D2_GLOBAL_GUARD(nD2GFX_PerspectiveScaleY, "nD2GFX_PerspectiveScaleY");
+int32_t nD2GFX_PerspectiveScaleX = 0; D2_GLOBAL_GUARD(nD2GFX_PerspectiveScaleX, "nD2GFX_PerspectiveScaleX");
 
 namespace D2Common::Drlg::Maze {
 
@@ -462,10 +462,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -473,6 +469,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

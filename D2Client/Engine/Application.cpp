@@ -32,8 +32,8 @@ namespace D2Client::Engine::Application {
 // Main app init. Client path loads MPQ data/media, sets renderer/window, optional keyhook, sound/gamma/vsync, then loops ApplicationRunCurrentMode until exit. On exit unloads MPQs and cleans up.
 int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData, eD2RendererMode eD2ApplicationModeAndRenderer) {
     // Static local variables (originally global data)
-    static uint32_t gbEnableKeyhookDll = 0x0;
-    static HMODULE ghKeyhookDll = (HMODULE)0x00000000;
+    static uint32_t gbEnableKeyhookDll = 0x0; D2_STATIC_GUARD(gbEnableKeyhookDll, "D2Client::Engine::Application::ApplicationMain::gbEnableKeyhookDll");
+    static HMODULE ghKeyhookDll = (HMODULE)0x00000000; D2_STATIC_GUARD(ghKeyhookDll, "D2Client::Engine::Application::ApplicationMain::ghKeyhookDll");
 
     // Frame slots -16..-4 are ONE object: &nFixedAspectRatio is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.

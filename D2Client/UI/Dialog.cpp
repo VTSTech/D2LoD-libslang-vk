@@ -22,7 +22,7 @@
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/Storm.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Launch/MainMenus.h"
 
@@ -80,11 +80,11 @@ void __stdcall INPUT_DialogClickHandler(D2UIMouseMsgStrc * pMsg) {
 
 void __stdcall INPUT_DialogMouseUp(D2UIMouseMsgStrc * pMsg) {
     fpDialogFunc pfVar1;
-    int32_t nHitIndex;
     int iVar2;
     DWORD dwTickCount;
     D2DialogSubStrc* pSubEntry;
     bool bDrawModeWasActive;
+    int32_t nLine;
     D2DialogStrc* pDialog = gpDialogActual;
     uint16_t wMouseX = pMsg->uLParam.sMousePos.nMouseY;
     uint16_t wMouseY = pMsg->uLParam.sMousePos.nMouseX;
@@ -127,8 +127,8 @@ void __stdcall INPUT_DialogMouseUp(D2UIMouseMsgStrc * pMsg) {
         return;
       }
 
-      nHitIndex = ui::DIALOG_HandleMouseUpEvent(pDialog, pMsg);
-      if (pDialog->nHighlightFrame != nHitIndex || nHitIndex < 0 || pDialog->nSubCounter <= nHitIndex || (pfVar1 = pDialog->aStringData[pDialog->nSelectedLine].fpOnClick , !pfVar1)) {
+      nLine = ui::DIALOG_HandleMouseUpEvent(pDialog, pMsg);
+      if (pDialog->nHighlightFrame != nLine || nLine < 0 || pDialog->nSubCounter <= nLine || (pfVar1 = pDialog->aStringData[pDialog->nSelectedLine].fpOnClick , !pfVar1)) {
         pDialog->nDrawMode = 0;
         return;
       }
@@ -277,9 +277,9 @@ void __stdcall INPUT_DialogEscapeKey(D2UIMouseMsgStrc * pMsg) {
 }
 
 void __stdcall INPUT_DialogMouseWheel(D2UIMouseMsgStrc * pMsg) {
-    int32_t nScrollDir;
     int nSubResult;
     int nScrollTicks;
+    int32_t nErrorCode;
     int nScrollSign;
     D2DialogSubStrc* pDialogSub;
     D2DialogStrc* pDialog = gpDialogActual;
@@ -305,12 +305,12 @@ void __stdcall INPUT_DialogMouseWheel(D2UIMouseMsgStrc * pMsg) {
         }
 
         if (nScrollTicks - nScrollSign < 1) {
-          nScrollDir = 1;
+          nErrorCode = 1;
         } else {
-          nScrollDir = -1;
+          nErrorCode = -1;
         }
 
-        ui::UI_ScrollNpcMenuList(nScrollDir, pDialog);
+        ui::UI_ScrollNpcMenuList(nErrorCode, pDialog);
       }
     }
 
@@ -653,7 +653,7 @@ void __stdcall DIALOG_RegisterHandler() {
 
 D2DialogStrc * __fastcall AllocDialogStrcWithBackground(int32_t nX, int32_t nY, fpDialogFunc nfpDialogFunc, int32_t fpDialogFunc2, int32_t nParam1, int32_t nParam2) {
     // Static local variables (originally global data)
-    static char * gaszDialogBackgroundNames[1] = { s_dialogbackground_00727498 };
+    static char * gaszDialogBackgroundNames[1] = { s_dialogbackground_00727498 }; D2_STATIC_GUARD(gaszDialogBackgroundNames, "D2Client::UI::Dialog::AllocDialogStrcWithBackground::gaszDialogBackgroundNames");
 
     int32_t nHandler;
     char szBgPath[260];
@@ -835,7 +835,7 @@ void __stdcall FreeDialogStrc() {
 
 void __fastcall DIALOG_DrawBackground(D2DialogStrc * pDialog) {
     // Static local variables (originally global data)
-    static int32_t gpDialogBackgroundDC6;
+    static int32_t gpDialogBackgroundDC6; D2_STATIC_GUARD_BSS(gpDialogBackgroundDC6, "D2Client::UI::Dialog::DIALOG_DrawBackground::gpDialogBackgroundDC6");
 
     int nBottom;
     int32_t* piStringData;
@@ -980,7 +980,7 @@ void DIALOG_CenterStringLine(D2DialogStrc * pDialog, int32_t nIndex) {
 
 void __fastcall DIALOG_RecalculateLayout(D2DialogStrc * pDialog) {
     int32_t nFont;
-    int32_t nTextWidth;
+    int nXOrigin;
     int32_t* piStringEntry;
     int iVar1;
     int nLineCount;
@@ -992,7 +992,7 @@ void __fastcall DIALOG_RecalculateLayout(D2DialogStrc * pDialog) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x59f);
       exit(-1);
     } else {
-      int nXOrigin;
+      int32_t nTextWidth;
       nFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
       nNonClickableCount = 0;
       nLineCount = 0;

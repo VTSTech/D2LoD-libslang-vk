@@ -2,7 +2,6 @@
 
 #include "D2Game/Quests/QUESTS/A2Q6.h"
 #include "D2Client/D2ClientStrc.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/Units.h"
 #include "D2Common/D2BitBufferStrc.h"
@@ -18,6 +17,7 @@
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Drlg/Maze/Act2.h"
 #include "D2Common/QuestRecord.h"
+#include "D2Common/Text.h"
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Common/Units.h"
@@ -100,13 +100,13 @@ void __fastcall Q14_OnPlayerJoinNoop(::SGAMEDATA * pGame, D2QuestDataStrc * pQue
 // A2Q6 "The Seven Tombs" — gossip/talk callback (state 0). Builds the NPC dialogue line shown when the player talks to Atma(0xc9)/Drognan(0xd2)/Cain(0xfb)/Tyrael(0xb1) etc. Reads the player's TheSevenTombs quest-record bits (JustCompleted/Step0x03/0x04 + per-NPC Step0x06..0x11 "already-talked" flags) plus nStateFlag to pick which gossip message index to display. Read-only w.r.t. quest state (only GetQuestState + GetQuestRecordState for TheArcaneSanctuary). Quest flow: TheSevenTombs is the Act2 finale — talk Jerhyn, kill Duriel, free Tyrael; completing opens Act3.
 void __fastcall Q14_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static uint32_t gdwQ12QuestStateMessages[6] = { 0xffffffff, 0x0, 0x1, 0x2, 0x3, 0x4 };
+    static uint32_t gdwQ12QuestStateMessages[6] = { 0xffffffff, 0x0, 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gdwQ12QuestStateMessages, "D2Game::Quests::QUESTS::A2Q6::Q14_Callback00_NpcActivate::gdwQ12QuestStateMessages");
 
     BOOL bJustCompleted;
     int nArcaneSanctuaryJustCompleted;
     uint32_t nMessageIndexMaybe;
     int nTargetClassId;
-    D2GossipTextStrc* pTextControl;
+    D2GSPacketSrv0x27_TextStrc* pTextControl;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
@@ -505,7 +505,7 @@ bool __fastcall Q14_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
 // A2Q6 "The Seven Tombs" — main NPC-dialogue (state 0xb) driver, the quest's spine. Cain(0xfb)/msg 0x12e: spawns the Lut Gholein town portal (Tyrael's), sets nStateFlag 4, then runs CheckDurielLairAndComplete+PropagateRewardToParty+SetCannotComplete to finalize. Jerhyn(0xc9): msg 0x1ae sets flag 2 and kicks TheTaintedSun's sequence filter (opens the seven tombs storyline); msg 0x1ba (requires record Step0x03) advances record Step0x03->Step0x04 and sets flag 5. Drognan(0xd2)/msg 0x1c2 (requires Step0x04 + TheHoradricStaff Completed): strips the staff/viper/shaft quest items, and if JustCompleted writes the game-wide TheSevenTombs record + broadcasts state 0xd + marks record Completed + clears Step0x04 + records the finishing player GUID. switch(msg): 0x1bc/0x1bd/0x1be/0x1bf/0x1c1/0x1c4 set the per-NPC "talked" record bits Step0x09/06/07/0x11/08/0x10.
 void __fastcall Q14_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int32_t nPlayerY;
-    int32_t nPlayerX;
+    D2RoomStrc* pRoom;
     BOOL bPortalSpawned;
     D2QuestDataStrc* pTaintedSunData;
     eD2LevelId eLevel;
@@ -518,7 +518,7 @@ void __fastcall Q14_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2QuestDataA2Q6Strc* pSpecificData = pQuestData->pQuestSpecificData.pA2Q6;
     if (nNpcNo == 0xfb) {
-      D2RoomStrc* pRoom;
+      int32_t nPlayerX;
       if (pQuestData->bIsNotIntroduction && nMessageIndex == 0x12e && !pSpecificData->bTyraelPortalSpawnLock) {
         bPortalSpawned = 0;
         nPortalClassId = 0x3b;
@@ -832,7 +832,7 @@ void __fastcall Q14_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     if (0x22 < nLevelId - 0x28U) {
       return;
     }
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x28) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x28) {
       QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
     }
     if (!pQuestData->bIsNotIntroduction) {

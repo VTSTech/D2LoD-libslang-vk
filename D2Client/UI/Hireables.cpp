@@ -48,8 +48,8 @@
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SReg.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Common/ITEMS/ItemMods.h"
@@ -1067,6 +1067,6 @@ namespace D2Client::UI::Hireables {
 
 // Initialized scalars
 
-D2HireablesListStrc * gpHireablesList = 0;
+D2HireablesListStrc * gpHireablesList = 0; D2_GLOBAL_GUARD(gpHireablesList, "D2Client::UI::Hireables::gpHireablesList");
 
 } // namespace D2Client::UI::Hireables

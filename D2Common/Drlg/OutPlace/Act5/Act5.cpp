@@ -52,7 +52,7 @@ void DRLGOUTROOM_PlaceAct5SpecialPresets(D2DrlgLevelStrc * pLevel) {
         /* .nLvlPrestVert = */ 0x3d9,
         /* .nLvlPrestHorz = */ 0x3da
     }
-};
+}; D2_STATIC_GUARD(gaAct5SpecialPresetTable_0, "D2Common::Drlg::OutPlace::Act5::DRLGOUTROOM_PlaceAct5SpecialPresets::gaAct5SpecialPresetTable_0");
 
     int nY;
     int nX;
@@ -291,9 +291,9 @@ void DRLGOUTROOM_PlaceAct5SecondaryBorder(D2DrlgLevelStrc * pLevel) {
 // Places random scenery presets for Act5 outdoor levels from static table.
 void __stdcall DRLGOUTROOM_PlaceAct5SceneryPresets(D2DrlgLevelStrc * pLevel) {
     BOOL bSuccess;
-    int32_t nType;
     int nCount;
     int32_t nPresetId;
+    int32_t nErrCode;
     int nHeight;
     nHeight = pLevel->sCoordinatesAndSize.WorldSize.y;
     int* pTableEntry;
@@ -308,11 +308,11 @@ void __stdcall DRLGOUTROOM_PlaceAct5SceneryPresets(D2DrlgLevelStrc * pLevel) {
           nPresetId = pTableEntry[1];
         }
 
-        nType = pTableEntry[2];
+        nErrCode = pTableEntry[2];
         nCount = 0;
         if (0 < pTableEntry[4]) {
           do {
-            bSuccess = Outdoors::SpawnOutdoorLevelPreset(pLevel, nPresetId, nType, 0, '\x0f');
+            bSuccess = Outdoors::SpawnOutdoorLevelPreset(pLevel, nPresetId, nErrCode, 0, '\x0f');
             nCount++;
           } while (nCount < pTableEntry[4]);
 
@@ -336,10 +336,10 @@ void __stdcall DRLGOUTROOM_PlaceAct5SceneryPresets(D2DrlgLevelStrc * pLevel) {
 
 // Places random decorative presets in Act 5 Bloody Foothills (level 0x6F). Tries up to 90 random positions to place up to 3 presets on empty grid cells, using seed-based random offsets and grid wrapping.
 void DRLGOUTPLACE_PlaceAct5BloodyFoothillsRandomPresets(D2DrlgLevelStrc * pLevel) {
-    int32_t nPresetId;
     uint32_t nGridX;
     uint32_t nGridY;
     int32_t nPresetCoord;
+    int32_t iVar2;
     int nGridWidth;
     int nY;
     int nAttempts;
@@ -424,9 +424,9 @@ void DRLGOUTPLACE_PlaceAct5BloodyFoothillsRandomPresets(D2DrlgLevelStrc * pLevel
 
               nGridWidth = (int)(nXIter + nStartX * 2) % nGridWidth;
               nY = (int)(nAttempts + nStartY * 2) % pLevelData->nGridCoordsHeight;
-              nPresetId = Outdoors::DRLGOUTDOOR_GetPresetCoordFromGrid(pLevel, nGridWidth, nY);
-              if (nPresetId - 0x393U < 8) {
-                Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nGridWidth, nY, nPresetId + 0x10, -1, 0);
+              iVar2 = Outdoors::DRLGOUTDOOR_GetPresetCoordFromGrid(pLevel, nGridWidth, nY);
+              if (iVar2 - 0x393U < 8) {
+                Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nGridWidth, nY, iVar2 + 0x10, -1, 0);
                 nPlacedCount++;
               }
 

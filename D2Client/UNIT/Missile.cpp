@@ -2122,7 +2122,7 @@ void __fastcall MISSILE_CreateRadialBurst(D2UnitStrc * pUnit, eMissilesId nMissi
     0x1,
     0x2,
     0x2
-};
+}; D2_STATIC_GUARD(gaRadialBurstMissileSpreadConst2, "D2Client::UNIT::Missile::MISSILE_CreateRadialBurst::gaRadialBurstMissileSpreadConst2");
     static int gaRadialBurstMissileSpreadY[16] = {
     0x0,
     0x1,
@@ -2140,7 +2140,7 @@ void __fastcall MISSILE_CreateRadialBurst(D2UnitStrc * pUnit, eMissilesId nMissi
     -0x2,
     -0x2,
     -0x1
-};
+}; D2_STATIC_GUARD(gaRadialBurstMissileSpreadY, "D2Client::UNIT::Missile::MISSILE_CreateRadialBurst::gaRadialBurstMissileSpreadY");
 
     D2MissilesTxt* pMissileTxt;
     D2SkillArgStrc sSkillArg;
@@ -2213,8 +2213,8 @@ void __fastcall MISSILE_CreateRadialBurst(D2UnitStrc * pUnit, eMissilesId nMissi
 // Client-side hit function for missile type 064 (spread sub-missile fan). On valid owner/missile/CltHitSubMissile1, spawns up to 8 sub-missiles using fixed offset tables (gaSubMissileOffsets_Clt064 / gaSubMissileSpread_Clt064), stepping by HitPar1*4 bytes per iteration. Sets TargetX/TargetY on each spawned missile to the corresponding spread vector. Always returns 1.
 int32_t __fastcall MISSILE_CltHitFn64_Unused(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
     // Static local variables (originally global data)
-    static int gaSubMissileSpread_Clt064[8] = { 0x0, 0x10, 0x10, 0x10, 0x0, -0x10, -0x10, -0x10 };
-    static int gaSubMissileOffsets_Clt064[8] = { 0x10, 0x10, 0x0, -0x10, -0x10, -0x10, 0x0, 0x10 };
+    static int gaSubMissileSpread_Clt064[8] = { 0x0, 0x10, 0x10, 0x10, 0x0, -0x10, -0x10, -0x10 }; D2_STATIC_GUARD(gaSubMissileSpread_Clt064, "D2Client::UNIT::Missile::MISSILE_CltHitFn64_Unused::gaSubMissileSpread_Clt064");
+    static int gaSubMissileOffsets_Clt064[8] = { 0x10, 0x10, 0x0, -0x10, -0x10, -0x10, 0x0, 0x10 }; D2_STATIC_GUARD(gaSubMissileOffsets_Clt064, "D2Client::UNIT::Missile::MISSILE_CltHitFn64_Unused::gaSubMissileOffsets_Clt064");
 
     D2SkillArgStrc sSkillArg;
     sSkillArg.pOwner = Player::MISSILE_GetOwnerUnit(pUnit);
@@ -2479,8 +2479,8 @@ int32_t __fastcall MISSILE_CltHitFn12_ImmolationArrow(D2UnitStrc * pUnit, D2Unit
 // Client hit-function for missile class 014. On impact: spawns CltHitSubMissile1 if defined; then for CltHitSubMissile2 rolls pUnit's seed to pick a spread pattern index (0–2), iterates the pattern array (gaSubMissileSpread_Clt014 / gaMissileHitFunc014SpreadData), spawning sub-missiles with randomised direction offsets (±0–7 octants) around the impact point. Always returns 1.
 int32_t __fastcall MISSILE_CltHitFn14_IceShatter(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
     // Static local variables (originally global data)
-    static int gnMissileMovementSpeedByType[8] = { 0x0, 0x1, 0x1, 0x1, 0x0, -0x1, -0x1, -0x1 };
-    static int gnMissileCollisionOffsetByType[8] = { 0x1, 0x1, 0x0, -0x1, -0x1, -0x1, 0x0, 0x1 };
+    static int gnMissileMovementSpeedByType[8] = { 0x0, 0x1, 0x1, 0x1, 0x0, -0x1, -0x1, -0x1 }; D2_STATIC_GUARD(gnMissileMovementSpeedByType, "D2Client::UNIT::Missile::MISSILE_CltHitFn14_IceShatter::gnMissileMovementSpeedByType");
+    static int gnMissileCollisionOffsetByType[8] = { 0x1, 0x1, 0x0, -0x1, -0x1, -0x1, 0x0, 0x1 }; D2_STATIC_GUARD(gnMissileCollisionOffsetByType, "D2Client::UNIT::Missile::MISSILE_CltHitFn14_IceShatter::gnMissileCollisionOffsetByType");
     static int gaSubMissileSpread_Clt014[16] = {
     0x4,
     0x0,
@@ -2498,7 +2498,7 @@ int32_t __fastcall MISSILE_CltHitFn14_IceShatter(D2UnitStrc * pUnit, D2UnitStrc 
     0x5,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gaSubMissileSpread_Clt014, "D2Client::UNIT::Missile::MISSILE_CltHitFn14_IceShatter::gaSubMissileSpread_Clt014");
 
     int32_t nSkillLevel;
     eD2Skills eSkill;
@@ -2671,7 +2671,7 @@ int32_t __fastcall MISSILE_CltHitFn18_MeteorCenter(D2UnitStrc * pUnit, D2UnitStr
     -0x3,
     -0x3,
     -0x2
-};
+}; D2_STATIC_GUARD(gaSubMissileSpreadX_Clt018, "D2Client::UNIT::Missile::MISSILE_CltHitFn18_MeteorCenter::gaSubMissileSpreadX_Clt018");
     static int gaSubMissileSpreadY_Clt018[18] = {
     0x2,
     -0x2,
@@ -2691,9 +2691,9 @@ int32_t __fastcall MISSILE_CltHitFn18_MeteorCenter(D2UnitStrc * pUnit, D2UnitStr
     0x1,
     0x3,
     0x4
-};
-    static int gaMissileHitFunc018SpreadY[5] = { 0x0, 0x0, 0x4, 0x0, -0x4 };
-    static int gaMissileHitFunc018SpreadX[5] = { 0x0, 0x4, 0x0, -0x4, 0x0 };
+}; D2_STATIC_GUARD(gaSubMissileSpreadY_Clt018, "D2Client::UNIT::Missile::MISSILE_CltHitFn18_MeteorCenter::gaSubMissileSpreadY_Clt018");
+    static int gaMissileHitFunc018SpreadY[5] = { 0x0, 0x0, 0x4, 0x0, -0x4 }; D2_STATIC_GUARD(gaMissileHitFunc018SpreadY, "D2Client::UNIT::Missile::MISSILE_CltHitFn18_MeteorCenter::gaMissileHitFunc018SpreadY");
+    static int gaMissileHitFunc018SpreadX[5] = { 0x0, 0x4, 0x0, -0x4, 0x0 }; D2_STATIC_GUARD(gaMissileHitFunc018SpreadX, "D2Client::UNIT::Missile::MISSILE_CltHitFn18_MeteorCenter::gaMissileHitFunc018SpreadX");
 
     D2SkillsTxt* pSkillTxt;
     uint32_t nSpawnIdx;
@@ -2901,7 +2901,14 @@ BOOL __fastcall MISSILE_SkillFuncCreateAtTarget(D2fpSkillFuncArg * pArg, D2UnitS
 
 // Client-side missile hit handler (index 025). On hit, iterates all units within an aura-radius around the missile's position and spawns a sub-missile (CltHitSubMissile1) at each valid target. Radius and count are computed from the owning skill's aurarangecalc/calc[0]; aurafilter defaults to 0xa783 if not set in SkillsTxt.
 int32_t __fastcall MISSILE_CltHitFn25_LightningFury(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
-    D2fpSkillFuncSub sSkillFunc;
+    // Frame slots -52..-44 are ONE object: &sSkillFunc is passed out and the callee reaches the rest by byte offset.
+    // Separate locals let the compiler reorder them, so the run is one struct.
+    struct __frame0_t {
+      D2UnitStrc* sSkillFunc;
+      D2UnitStrc* local_30;
+    };
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    __frame0_t __frame0;
     if (!pUnit) {
       return 1;
     }
@@ -2944,11 +2951,11 @@ int32_t __fastcall MISSILE_CltHitFn25_LightningFury(D2UnitStrc * pUnit, D2UnitSt
       }
     }
 
-    sSkillFunc.nTargetLimit = pMissileTxt->cHitPar2;
-    if (sSkillFunc.nTargetLimit < 1) {
-      sSkillFunc.nTargetLimit = D2Common::Skills::D2GetSkillCalc(pOwner, pSkillTxt->calc[0], eSkill, nSkillLevel);
-      if (sSkillFunc.nTargetLimit < 1) {
-        sSkillFunc.nTargetLimit = 1;
+    int local_24 = pMissileTxt->cHitPar2;
+    if (local_24 < 1) {
+      local_24 = D2Common::Skills::D2GetSkillCalc(pOwner, pSkillTxt->calc[0], eSkill, nSkillLevel);
+      if (local_24 < 1) {
+        local_24 = 1;
       }
     }
 
@@ -2957,12 +2964,12 @@ int32_t __fastcall MISSILE_CltHitFn25_LightningFury(D2UnitStrc * pUnit, D2UnitSt
       nAuraFilter = 0xa783;
     }
 
-    sSkillFunc.pMissile = pMissileUnit;
-    sSkillFunc.nSkillLevel = nSkillLevel;
-    sSkillFunc.eSkillNo = eSkill;
-    sSkillFunc.nMissileTxtNo = (eMissilesId)pMissileTxt->CltHitSubMissile1;
-    sSkillFunc.pOwner = pOwner;
-    SKILLS::Skills::SKILL_ForEachUnitInRadius(pOwner, nPosX, nPosY, nClassId, nAuraFilter, MISSILE_SkillFuncCreateAtTarget, &sSkillFunc, 1);
+    __frame0.local_30 = pMissileUnit;
+    int32_t local_28 = nSkillLevel;
+    eD2Skills local_2c = eSkill;
+    int local_20 = (int)pMissileTxt->CltHitSubMissile1;
+    __frame0.sSkillFunc = pOwner;
+    SKILLS::Skills::SKILL_ForEachUnitInRadius(pOwner, nPosX, nPosY, nClassId, nAuraFilter, MISSILE_SkillFuncCreateAtTarget, &__frame0.sSkillFunc, 1);
     return 1;
 }
 
@@ -3004,7 +3011,14 @@ BOOL __fastcall MISSILE_SkillFuncCreateAtTargetB(D2fpSkillFuncArg * pArg, D2Unit
 
 // Client-side missile hit function for missile class 026 (aura/nova sub-missile explosion). Resolves the missile's owner and skill, looks up the target unit by GUID/type stored in missile target fields, then calls SKILL_ForEachUnitInRadius with MISSILE_SkillFuncCreateAtTargetB to spawn hit sub-missiles around the impact point. Always returns 1.
 int32_t __fastcall MISSILE_CltHitFn26_FistOfHeavensDelay(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
-    D2fpSkillFuncSub sSkillFunc;
+    // Frame slots -52..-44 are ONE object: &sSkillFunc is passed out and the callee reaches the rest by byte offset.
+    // Separate locals let the compiler reorder them, so the run is one struct.
+    struct __frame0_t {
+      D2UnitStrc* sSkillFunc;
+      D2UnitStrc* local_30;
+    };
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    __frame0_t __frame0;
     if (!pUnit) {
       return 1;
     }
@@ -3061,20 +3075,20 @@ int32_t __fastcall MISSILE_CltHitFn26_FistOfHeavensDelay(D2UnitStrc * pUnit, D2U
       nAuraFilter = 0xa683;
     }
 
-    sSkillFunc.eSkillNo = eSkill;
-    sSkillFunc.nSkillLevel = nSkillLevel;
-    sSkillFunc.pOwner = pOwner;
-    sSkillFunc.nMissileTxtNo = (eMissilesId)pMissileTxt->CltHitSubMissile1;
-    sSkillFunc.pMissile = pUnit;
-    SKILLS::Skills::SKILL_ForEachUnitInRadius(pOwner, nPosX, nPosY, nClassId, nAuraFilter, MISSILE_SkillFuncCreateAtTargetB, &sSkillFunc, 0);
+    eD2Skills local_2c = eSkill;
+    int32_t local_28 = nSkillLevel;
+    __frame0.sSkillFunc = pOwner;
+    int local_20 = (int)pMissileTxt->CltHitSubMissile1;
+    __frame0.local_30 = pUnit;
+    SKILLS::Skills::SKILL_ForEachUnitInRadius(pOwner, nPosX, nPosY, nClassId, nAuraFilter, MISSILE_SkillFuncCreateAtTargetB, &__frame0.sSkillFunc, 0);
     return 1;
 }
 
 // Spawns 8 (or fewer, step-controlled) directional missiles of type nMissileId from pUnit2's position, owned by pUnit. Iterates ga8DirectionalMissileSpreadX/Y offset tables stepping by nStep*4 bytes (up to 8 entries = 0x20 bytes). Sets velocity override from MissilesTxt[nMissileId].Param1<<7 and nSubLoopMult=level-1. Returns 1 on success, 0 if nMissileId is out of range.
 uint32_t __fastcall MISSILE_Create8DirectionalClient(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, eMissilesId nMissileId, eD2Skills eSkill, int32_t nSkillLevel, int32_t nStep) {
     // Static local variables (originally global data)
-    static int ga8DirectionalMissileSpreadY[8] = { 0x0, 0x2, 0x2, 0x2, 0x0, -0x2, -0x2, -0x2 };
-    static int ga8DirectionalMissileSpreadX[8] = { 0x2, 0x2, 0x0, -0x2, -0x2, -0x2, 0x0, 0x2 };
+    static int ga8DirectionalMissileSpreadY[8] = { 0x0, 0x2, 0x2, 0x2, 0x0, -0x2, -0x2, -0x2 }; D2_STATIC_GUARD(ga8DirectionalMissileSpreadY, "D2Client::UNIT::Missile::MISSILE_Create8DirectionalClient::ga8DirectionalMissileSpreadY");
+    static int ga8DirectionalMissileSpreadX[8] = { 0x2, 0x2, 0x0, -0x2, -0x2, -0x2, 0x0, 0x2 }; D2_STATIC_GUARD(ga8DirectionalMissileSpreadX, "D2Client::UNIT::Missile::MISSILE_Create8DirectionalClient::ga8DirectionalMissileSpreadX");
 
     D2SkillArgStrc sSkillArg;
     if (!(-1 < (int)nMissileId && (int)nMissileId < sgptDataTable->nTxtMissilesSize)) {
@@ -3479,7 +3493,7 @@ int32_t __fastcall MISSILE_CltHitFn30_FrozenOrb(D2UnitStrc * pUnit, D2UnitStrc *
     0xff,
     0xff,
     0xff
-};
+}; D2_STATIC_GUARD(gaSubMissileSpreadY_Clt030, "D2Client::UNIT::Missile::MISSILE_CltHitFn30_FrozenOrb::gaSubMissileSpreadY_Clt030");
     static uint8_t gaSubMissileSpreadX_Clt030[256] = {
     0x1e,
     0x0,
@@ -3737,7 +3751,7 @@ int32_t __fastcall MISSILE_CltHitFn30_FrozenOrb(D2UnitStrc * pUnit, D2UnitStrc *
     0x0,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gaSubMissileSpreadX_Clt030, "D2Client::UNIT::Missile::MISSILE_CltHitFn30_FrozenOrb::gaSubMissileSpreadX_Clt030");
 
     D2SkillArgStrc sSkillArg;
     if (!pUnit) {
@@ -4047,7 +4061,7 @@ int32_t __fastcall MISSILE_CltHitFn04_Unused(D2UnitStrc * pUnit, D2UnitStrc * pT
     0xff,
     0xff,
     0xff
-};
+}; D2_STATIC_GUARD(gaSubMissileSpreadY_Clt004, "D2Client::UNIT::Missile::MISSILE_CltHitFn04_Unused::gaSubMissileSpreadY_Clt004");
     static uint8_t gaSubMissileSpreadX_Clt004[256] = {
     0x1e,
     0x0,
@@ -4305,7 +4319,7 @@ int32_t __fastcall MISSILE_CltHitFn04_Unused(D2UnitStrc * pUnit, D2UnitStrc * pT
     0x0,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gaSubMissileSpreadX_Clt004, "D2Client::UNIT::Missile::MISSILE_CltHitFn04_Unused::gaSubMissileSpreadX_Clt004");
 
     D2SkillArgStrc sSkillArg;
     if (!pUnit) {
@@ -4455,7 +4469,7 @@ int32_t __fastcall MISSILE_CltHitFn33_MephistoFlyingRocks(D2UnitStrc * pUnit, D2
 // Client-side hit function for missile type 036 (wall-collision area effect). Returns 0 if a real target was hit (pTarget != null). If no target, checks for wall/player-blocking collision (CheckCollision_BlockAll_Width with COLLISION_UNIT_SIZE_BIG) at missile position; if no collision, spawns an area-of-effect burst via MISSILE_SpawnAreaOfEffect using MissilesTxt.Param1 as the radius. Always returns 1.
 int32_t __fastcall MISSILE_CltHitFn36_HellMeteorDown(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
     // Static local variables (originally global data)
-    static uint8_t gaMissile036_AoeSpawnData = 0x45;
+    static char gaMissile036_AoeSpawnData[2] = { 'E', '\x00' }; D2_STATIC_GUARD(gaMissile036_AoeSpawnData, "D2Client::UNIT::Missile::MISSILE_CltHitFn36_HellMeteorDown::gaMissile036_AoeSpawnData");
 
     int32_t nPosY;
     int32_t nPosX;
@@ -4494,7 +4508,7 @@ int32_t __fastcall MISSILE_CltHitFn36_HellMeteorDown(D2UnitStrc * pUnit, D2UnitS
       return 1;
     }
 
-    MISSILE_SpawnAreaOfEffect(pUnit, (int32_t*)&gaMissile036_AoeSpawnData, 3, sgptDataTable->pTxtMissiles[nClassId].Param1, 0x19, 0x4b);
+    MISSILE_SpawnAreaOfEffect(pUnit, (int32_t*)gaMissile036_AoeSpawnData, 3, sgptDataTable->pTxtMissiles[nClassId].Param1, 0x19, 0x4b);
     return 1;
 }
 
@@ -4606,7 +4620,7 @@ void __stdcall MISSILE_CreateFlyingRockDebris(D2UnitStrc * pMissileUnit, int32_t
     0x1,
     0x3,
     0x4
-};
+}; D2_STATIC_GUARD(gaRockDebrisSpreadConstY, "D2Client::UNIT::Missile::MISSILE_CreateFlyingRockDebris::gaRockDebrisSpreadConstY");
     static int gaRockDebrisSpreadTableX[18] = {
     -0x2,
     -0x2,
@@ -4626,7 +4640,7 @@ void __stdcall MISSILE_CreateFlyingRockDebris(D2UnitStrc * pMissileUnit, int32_t
     -0x3,
     -0x3,
     -0x2
-};
+}; D2_STATIC_GUARD(gaRockDebrisSpreadTableX, "D2Client::UNIT::Missile::MISSILE_CreateFlyingRockDebris::gaRockDebrisSpreadTableX");
 
     uint32_t nRandVal;
     int nTargetY;
@@ -6144,7 +6158,7 @@ int32_t __fastcall MISSILE_CltHitFn63_BaalTauntPoison(D2UnitStrc * pUnit, D2Unit
 // Client-side per-frame update for a missile unit. Looks up the unit's Missiles.txt row by classId; on invalid row removes the missile client-side. Applies light flicker, resolves the owning room (falling back to a nearby room from the unit's path X/Y), and removes the missile if it is in town and the flags2 town-allowed bit (0x4) is clear. Finally dispatches to the missile's CltDoFunc handler via the MISSILESCLTDOFUNCS table.
 void __fastcall MISSILE_ClientFrameUpdate(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static int MISSILESCLTDOFUNCS_SIZE = 0x5b;
+    static int MISSILESCLTDOFUNCS_SIZE = 0x5b; D2_STATIC_GUARD(MISSILESCLTDOFUNCS_SIZE, "D2Client::UNIT::Missile::MISSILE_ClientFrameUpdate::MISSILESCLTDOFUNCS_SIZE");
     static D2MissileCltDoFunc MISSILESCLTDOFUNCS[91] = {
     nullptr,
     &D2Client::UNIT::Missile::MISSILE_CltDoFn01_BasicMissile,
@@ -6237,7 +6251,7 @@ void __fastcall MISSILE_ClientFrameUpdate(D2UnitStrc * pUnit) {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(MISSILESCLTDOFUNCS, "D2Client::UNIT::Missile::MISSILE_ClientFrameUpdate::MISSILESCLTDOFUNCS");
 
     D2MissilesTxt* pMissileTxt;
     int nPosY;
@@ -6293,7 +6307,7 @@ void __fastcall MISSILE_ClientFrameUpdate(D2UnitStrc * pUnit) {
 // Client-side missile collision/explosion resolver. Given the missile pUnit and an optional pTarget (NULL = environment/wall hit), looks up the missile's MissilesTxt row and runs hit logic: enforces NextHit/justhit dedup, owner/CollideFriend interaction checks, and pierce decrement (item_pierce stat / STATE_pierce). On a real hit it fires the per-missile CltHitFunc callback, plays HitSound, and spawns the ExplosionMissile child (positioning it at the missile, stopping it, and setting its facing direction). Stops the travel sound, validates the light map, and removes the missile from the client/server object table when its lifetime ends. Returns the spawned explosion unit (or NULL). __fastcall.
 D2UnitStrc * __fastcall MISSILE_ClientHitExplode(D2UnitStrc * pUnit, D2UnitStrc * pTarget, int32_t bForceExplode) {
     // Static local variables (originally global data)
-    static int MISSILESCLTHITFUNCS_SIZE = 0x51;
+    static int MISSILESCLTHITFUNCS_SIZE = 0x51; D2_STATIC_GUARD(MISSILESCLTHITFUNCS_SIZE, "D2Client::UNIT::Missile::MISSILE_ClientHitExplode::MISSILESCLTHITFUNCS_SIZE");
     static D2MissileCltHitFunc MISSILESCLTHITFUNCS[81] = {
     nullptr,
     &D2Client::UNIT::Missile::MISSILE_CltHitFn01_FireExplosion,
@@ -6376,7 +6390,7 @@ D2UnitStrc * __fastcall MISSILE_ClientHitExplode(D2UnitStrc * pUnit, D2UnitStrc 
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(MISSILESCLTHITFUNCS, "D2Client::UNIT::Missile::MISSILE_ClientHitExplode::MISSILESCLTHITFUNCS");
 
     int iVar1;
     eD2States eState;
@@ -6563,7 +6577,6 @@ void __fastcall MISSILE_CltDoFn01_BasicMissile(D2UnitStrc * pUnit) {
     int32_t nActivateFrame;
     BOOL bIsStopped;
     uint32_t nAtEndOfCycle;
-    D2DynamicPathStrc* pExternalPath;
     D2UnitStrc* pOwner;
     D2RoomStrc* pRoom;
     uint32_t eAnimMode;
@@ -6650,8 +6663,8 @@ void __fastcall MISSILE_CltDoFn01_BasicMissile(D2UnitStrc * pUnit) {
       pCurDynPath = pUnit->pPath.pDynamicPath;
       nCurFrame = D2Common::PATH::DynamicPath::GetVelocity(pCurDynPath);
       if (nCurFrame) {
-        pExternalPath = (D2DynamicPathStrc*)GAME::Game::GetStepsOfMissileMovement();
-        D2Common::PATH::Path::PATH_AdvanceUnitAlongPath(pUnit, pExternalPath);
+        nAtEndOfCycle = GAME::Game::GetStepsOfMissileMovement();
+        D2Common::PATH::Path::PATH_AdvanceUnitAlongPath(pUnit, nAtEndOfCycle);
       }
 
       nCurFrame = D2Common::Units::Missile::GetCurrentFrame(pUnit);
@@ -7906,7 +7919,7 @@ void __fastcall MISSILE_CltDoFn19_FrozenOrb(D2UnitStrc * pUnit) {
     0xff,
     0xff,
     0xff
-};
+}; D2_STATIC_GUARD(gnMissileSpreadTableX, "D2Client::UNIT::Missile::MISSILE_CltDoFn19_FrozenOrb::gnMissileSpreadTableX");
     static uint8_t gnMissileSpreadTableY[256] = {
     0x1e,
     0x0,
@@ -8164,7 +8177,7 @@ void __fastcall MISSILE_CltDoFn19_FrozenOrb(D2UnitStrc * pUnit) {
     0x0,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gnMissileSpreadTableY, "D2Client::UNIT::Missile::MISSILE_CltDoFn19_FrozenOrb::gnMissileSpreadTableY");
 
     D2UnitStrc* pOwner;
     int32_t nRemainingFrames;
@@ -8710,8 +8723,8 @@ void __fastcall MISSILE_CltDoFn27_BossFireWallMaker(D2UnitStrc * pUnit) {
 // Client-side tick for a burst/spread missile (e.g. multi-bolt). When remaining frames == CltParam1, resolves the owner unit, then fires 4 sub-missiles (CltSubMissile1) in a cross pattern defined by gaMissile028SpreadTableX/Y, each offset from the owner's current position. Falls through to CltDoFunc_001; removes client-side if txt or CltSubMissile1 invalid.
 void __fastcall MISSILE_CltDoFn28_MephistoDoNotDraw(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static int gaMissile028SpreadTableY[4] = { 0x0, -0x1, 0x0, 0x1 };
-    static int gaMissile028SpreadTableX[4] = { -0x1, 0x0, 0x1, 0x0 };
+    static int gaMissile028SpreadTableY[4] = { 0x0, -0x1, 0x0, 0x1 }; D2_STATIC_GUARD(gaMissile028SpreadTableY, "D2Client::UNIT::Missile::MISSILE_CltDoFn28_MephistoDoNotDraw::gaMissile028SpreadTableY");
+    static int gaMissile028SpreadTableX[4] = { -0x1, 0x0, 0x1, 0x0 }; D2_STATIC_GUARD(gaMissile028SpreadTableX, "D2Client::UNIT::Missile::MISSILE_CltDoFn28_MephistoDoNotDraw::gaMissile028SpreadTableX");
 
     D2UnitStrc* pOwner;
     int32_t nRemainingFrames;
@@ -9749,7 +9762,7 @@ void __fastcall MISSILE_CltDoFn31_HoradricStaff(D2UnitStrc * pUnit) {
         /* .nOffsetY = */ 0x2,
         /* .nDirection = */ 0x1f
     }
-};
+}; D2_STATIC_GUARD(gaMissile031SpreadRangeData, "D2Client::UNIT::Missile::MISSILE_CltDoFn31_HoradricStaff::gaMissile031SpreadRangeData");
 
     int32_t nLevel;
     eD2Skills eSkillId;
@@ -10006,7 +10019,7 @@ void __fastcall MISSILE_CltDoFn33_TaintedSunControl(D2UnitStrc * pUnit) {
     0x0,
     0x64,
     0x0
-};
+}; D2_STATIC_GUARD(gaMissile033AngleLookupTableY, "D2Client::UNIT::Missile::MISSILE_CltDoFn33_TaintedSunControl::gaMissile033AngleLookupTableY");
 
     int nAbsOffset;
     int nAbsOffsetY;
@@ -10317,7 +10330,7 @@ void __fastcall MISSILE_CltDoFn36_DurielDeathControl(D2UnitStrc * pUnit) {
     0xaf,
     0x5,
     0x1
-};
+}; D2_STATIC_GUARD(gaMissile036ClientSpreadData, "D2Client::UNIT::Missile::MISSILE_CltDoFn36_DurielDeathControl::gaMissile036ClientSpreadData");
 
     D2SeedStrc DVar1;
     D2SkillArgStrc sSkillArg;
@@ -10555,7 +10568,7 @@ static D2BaalFxSpiritSpawnStrc gaBaalFxSpiritSpawnSchedule[5] = {
         /* .nSpawnInterval = */ 0x40,
         /* .bSpawnSpirit = */ 0x0
     }
-};
+}; D2_STATIC_GUARD(gaBaalFxSpiritSpawnSchedule, "D2Client::UNIT::Missile::MISSILE_CltDoFn64_BaalFxControl::gaBaalFxSpiritSpawnSchedule");
 
     int nPosXTmp;
     int32_t nSkillLevel;

@@ -33,7 +33,7 @@ typedef BOOL (*fpRequiredUserAction)();
 
 namespace D2Win::Src::D2WinArchive {
 
-static D2FogArchiveStrc * MPQ_d2kfixup_mpq = 0;
+static D2FogArchiveStrc * MPQ_d2kfixup_mpq = 0; D2_STATIC_GUARD(MPQ_d2kfixup_mpq, "D2Win::Src::D2WinArchive::MPQ_d2kfixup_mpq");
 
 // @sourcefile .\Src\D2WinArchive.cpp
 DC6 * __fastcall IMAGE_LoadDC6(char * szFilename, BOOL bUseDccExtension) {
@@ -77,7 +77,7 @@ DC6 * __fastcall IMAGE_LoadDC6(char * szFilename, BOOL bUseDccExtension) {
 }
 
 // @sourcefile .\Src\D2WinArchive.cpp
-int * __fastcall D2WINARCHIVE_LoadImageFromArchive(char * szText, size_t * pnSize, DC6 * pDC6) {
+int * __fastcall D2WINARCHIVE_LoadImageFromArchive(char * szText, uint32_t * pnSize, DC6 * pDC6) {
     uint32_t nCopyCount;
     char* pSrcRead;
     char local_108[260];

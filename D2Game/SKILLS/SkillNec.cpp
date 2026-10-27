@@ -1971,7 +1971,7 @@ BOOL __fastcall Skills_SrvDoFunc_060_SummonBoneWall(::SGAMEDATA * pGame, D2UnitS
       return 1;
     }
 
-    short int nSrvMissileId = pSkillsTxt->srvmissilea;
+    short int nSrvMissileId = pSkillsTxt->srvmissile[1];
     if (!(-1 < nSrvMissileId && (int)nSrvMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 1;
     }
@@ -1982,7 +1982,7 @@ BOOL __fastcall Skills_SrvDoFunc_060_SummonBoneWall(::SGAMEDATA * pGame, D2UnitS
     sSkillArg.nFlags = 0x21;
     sSkillArg.nY = nCursorYRaw;
     sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillsTxt->srvmissilea;
+    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillsTxt->srvmissile[1];
     sSkillArg.pOwner = pUnit;
     nRadius = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
     int iVar1 = nRadius - nTargetX;
@@ -2079,7 +2079,7 @@ BOOL __fastcall Skills_SrvDoFunc_062_BonePrison(::SGAMEDATA * pGame, D2UnitStrc 
     -0x4,
     -0x4,
     -0x3
-};
+}; D2_STATIC_GUARD(gaMissileOffsets_BoneStructure, "D2Game::SKILLS::SkillNec::Skills_SrvDoFunc_062_BonePrison::gaMissileOffsets_BoneStructure");
     static int gnSkillMissileSubCount_BoneStructure[12] = {
     -0x4,
     -0x4,
@@ -2093,7 +2093,7 @@ BOOL __fastcall Skills_SrvDoFunc_062_BonePrison(::SGAMEDATA * pGame, D2UnitStrc 
     -0x1,
     0x1,
     -0x3
-};
+}; D2_STATIC_GUARD(gnSkillMissileSubCount_BoneStructure, "D2Game::SKILLS::SkillNec::Skills_SrvDoFunc_062_BonePrison::gnSkillMissileSubCount_BoneStructure");
 
     eD2UnitType eOwnerType;
     int32_t nOwnerGUID;
@@ -2167,7 +2167,7 @@ BOOL __fastcall Skills_SrvDoFunc_063_PoisonExplosion(::SGAMEDATA * pGame, D2Unit
     if (eSkill == SKILL_Attack) {
       return 0;
     }
-    if (pSkillsTxt->srvmissilea < 0 || sgptDataTable->nTxtMissilesSize <= (int)pSkillsTxt->srvmissilea) {
+    if (pSkillsTxt->srvmissile[1] < 0 || sgptDataTable->nTxtMissilesSize <= (int)pSkillsTxt->srvmissile[1]) {
       return 1;
     }
 
@@ -2183,7 +2183,7 @@ BOOL __fastcall Skills_SrvDoFunc_063_PoisonExplosion(::SGAMEDATA * pGame, D2Unit
 
     D2Common::DATATBLS::ItemStats::SetState(pCorpseTarget, STATE_corpse_noselect, 1);
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pCorpseTarget);
-    MISSILES::MissilesMode::MISSILES_SpawnRadialPattern(pGame, pUnit, pCorpseTarget, (int)pSkillsTxt->srvmissilea, eSkill, nSkillLvl, 0, 2, 0);
+    MISSILES::MissilesMode::MISSILES_SpawnRadialPattern(pGame, pUnit, pCorpseTarget, (int)pSkillsTxt->srvmissile[1], eSkill, nSkillLvl, 0, 2, 0);
     return 1;
 }
 

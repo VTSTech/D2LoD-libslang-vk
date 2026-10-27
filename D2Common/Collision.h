@@ -9,7 +9,6 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2DrlgActStrc;
 struct D2DrlgTileDataStrc;
 struct D2PoolManagerStrc;
 struct D2RoomCollisionGridStrc;
@@ -59,7 +58,7 @@ void __stdcall TileLibrary_SetupCollision(struct D2DrlgTileDataStrc * pTileData,
 void __fastcall TileLibrary_UpdateCollision(struct D2RoomStrc * pRoom, struct D2DrlgTileDataStrc * pTileData, struct D2TileLibraryEntryStrc * pTileLibraryEntry);
 // Allocates and populates the collision grid (D2RoomCollisionGridStrc) for pRoom from the server memory pool. Copies room coordinates into the grid header, zeroes the map, then calls TileLibrary_SetupCollision for floor, wall, and roof tile layers of each adjacent room. Side effect: sets the collision grid pointer in pRoom via DRLGROOM_SetCollisionGridInRoom.
 // @sourcefile .\COLLISN\Collisn.cpp
-void __fastcall AllocRoomCollisionGrid(struct D2DrlgActStrc * pMemPool, struct D2RoomStrc * pRoom);
+void __fastcall AllocRoomCollisionGrid(struct D2PoolManagerStrc * pMemPool, struct D2RoomStrc * pRoom);
 // @sourcefile .\COLLISN\Collisn.cpp
 void __fastcall FreeRoomCollisionGrid(struct D2PoolManagerStrc * pMemory, struct D2RoomStrc * pRoom);
 eCollisionFlags __stdcall COLLISN_CheckCellMask_RegArgs(struct D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t eCollisionFlag);

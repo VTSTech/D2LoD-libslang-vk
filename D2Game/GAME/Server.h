@@ -16,7 +16,6 @@ struct D2ClientStrc;
 struct D2GSMsg67GameLogonSPStrc;
 struct D2GSMsg6CUploadSaveStrc;
 struct D2PoolManagerStrc;
-struct D2QServerStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
@@ -392,7 +391,7 @@ BOOL __stdcall QSERVER_ExportGameStats(uint16_t nServerId, struct D2QServerGameS
 int32_t __stdcall QSERVER_FillServerTokenArray(uint16_t * pOutArray, int32_t nMaxCount);
 int32_t __stdcall GetUnitCountByServerId(uint16_t nServerId);
 // Exports up to nMaxCount unit type+mode records into pOutBuffer from the game currently assigned to nServerId. Looks up the game token via DATA_LastGameServer[nServerId] under the global hash lock, locks the game, then iterates all 128 player-unit buckets calling GetTypeAndMode for each unit (output stride 0x34 bytes). Returns the number of units exported. Used by external server-management queries.
-int32_t __stdcall QSERVER_ExportUnitListByServerId(uint16_t nServerId, void * pOutBuffer, int32_t nMaxCount);
+int32_t __stdcall QSERVER_ExportUnitListByServerId(uint32_t nServerId, void * pOutBuffer, int32_t nMaxCount);
 // Dead/unused server-side helper that resolves a game token from a global server table, locks the game, selects one of the five unit-type hash-bucket arrays (player/monster/object/missile/item) by nUnitId, iterates all 128 buckets tracking statistics via GAME_TrackGameStatistics, then invokes a per-unit-type callback from PFN_UnitTypeToName_ARRAY. Not reachable in shipping 1.14d; retained for reference.
 void __stdcall Unused_GetUnitList(struct D2UnitStrc * * ppUnitArray, int32_t nParam, int32_t nUnitId, int * pGameStats, int32_t nGameId);
 // Searches the game on nServerId for nCount specific units identified by (pClassIds[i], pOutBuffer[i]) pairs and exports their type+mode into pUnitTypes (stride 0xd). Uses FindUnitFromTable for each entry; non-player hits additionally call a PFN_UnitTypeToName_ARRAY dispatch. Returns the count of units found. Counterpart to QSERVER_ExportUnitListByServerId for targeted rather than bulk export.
@@ -445,7 +444,7 @@ void __stdcall QSERVER_DisconnectClientFromGame(uint32_t nClientId);
 // Graceful player disconnect: saves all players (unless BNet with incomplete save), sends state 5 (leaving), sends pending save data (0xB3 for LAN/Open), sends state 6 (terminated), sends 0xB0 ConnectionTerminated, broadcasts 0x5A PlayerLeave event. If all clients gone, loops until empty. Sleeps 100ms for LAN/Open before closing socket.
 void __fastcall NET_D2GS_SERVER_LeaveServer(uint32_t nClientId, int32_t bBroadcastLeave);
 // Removes a client from the server by token, cleaning up their connection state.
-void __fastcall LeaveServer(struct D2QServerStrc * pQServer, uint32_t nClientToken);
+void __fastcall LeaveServer(::SGAMEDATA * pQServer, uint32_t nClientToken);
 void __stdcall QSERVER_InitializeServerState();
 // Callback invoked when the character-server (CS) delivers save data for a joining client (JOIN step 3). Accumulates chunked save data; on completion with nCsResult==0 stores file-time fields into pClient and sends state-command 2 to advance the join sequence. On CS error or stale pClientContainer, triggers disconnect.
 // @sourcefile .\GAME\Game.cpp

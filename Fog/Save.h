@@ -10,6 +10,15 @@
 #include "Bnclient/net_sid.h"
 
 // Data types
+struct D2MercSaveDataStrc {
+    /* 0x00 */ uint32_t dwFlags;
+    /* 0x04 */ uint32_t dwSeed;
+    /* 0x08 */ uint16_t wNameIndex;
+    /* 0x0A */ uint16_t wHirelingId;
+    /* 0x0C */ uint32_t dwExperience;
+    /* 0x10 */ uint32_t adwUnknown10[4];
+};
+
 struct D2SaveHandSkillStrc {
     D2SaveHandSkillStrc() = default;
     D2SaveHandSkillStrc(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
@@ -85,12 +94,7 @@ struct D2SaveFileHeaderStrc {
     /* 0x98 */ char pAppearance2[16];
     /* 0xA8 */ uint8_t pDifficulty[3];
     /* 0xAB */ int nInitSeed;
-    /* 0xAF */ int nMercFlags;
-    /* 0xB3 */ int nMercSeed;
-    /* 0xB7 */ short nMercNameId;
-    /* 0xB9 */ short nMercType;
-    /* 0xBB */ int nMercExperience;
-    /* 0xBF */ int nMercReserved[4]; // Reserved merc block padding (copied by LoadMerc but never written by SaveMercData)
+    /* 0xAF */ D2MercSaveDataStrc sMerc; // Reserved merc block padding (copied by LoadMerc but never written by SaveMercData)
     /* 0xCF */ uint8_t nGuildInfo[3];
     /* 0xD2 */ uint8_t nReserved[125]; // Unused header padding bytes (zeroed on save, never read)
 };

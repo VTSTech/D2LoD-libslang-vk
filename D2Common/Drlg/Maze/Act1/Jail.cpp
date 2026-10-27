@@ -44,7 +44,7 @@ void RollRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCatacombsRollRooms_E, "D2Common::Drlg::Maze::Act1::Jail::RollRooms::gaDrlgCatacombsRollRooms_E");
     static D2DrlgReplaceRoomStrc gaDrlgCatacombsRollRooms_A[4] = {
     {
         /* .nSourceLevelPrestId = */ 0xd5,
@@ -70,7 +70,7 @@ void RollRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCatacombsRollRooms_A, "D2Common::Drlg::Maze::Act1::Jail::RollRooms::gaDrlgCatacombsRollRooms_A");
     static D2DrlgReplaceRoomStrc gaDrlgCatacombsRollRooms_B[4] = {
     {
         /* .nSourceLevelPrestId = */ 0xd5,
@@ -96,7 +96,7 @@ void RollRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCatacombsRollRooms_B, "D2Common::Drlg::Maze::Act1::Jail::RollRooms::gaDrlgCatacombsRollRooms_B");
     static D2DrlgReplaceRoomStrc gaDrlgCatacombsRollRooms_C[4] = {
     {
         /* .nSourceLevelPrestId = */ 0xd5,
@@ -122,7 +122,7 @@ void RollRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCatacombsRollRooms_C, "D2Common::Drlg::Maze::Act1::Jail::RollRooms::gaDrlgCatacombsRollRooms_C");
     static D2DrlgReplaceRoomStrc gaDrlgCatacombsRollRooms_D[4] = {
     {
         /* .nSourceLevelPrestId = */ 0xd5,
@@ -148,7 +148,7 @@ void RollRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCatacombsRollRooms_D, "D2Common::Drlg::Maze::Act1::Jail::RollRooms::gaDrlgCatacombsRollRooms_D");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
     pLevel->sSeed = DVar1;

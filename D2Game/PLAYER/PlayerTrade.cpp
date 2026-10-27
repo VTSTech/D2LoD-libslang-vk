@@ -824,7 +824,7 @@ BOOL __fastcall CUBE_SpecialOutput_Unused3(::SGAMEDATA * pGame, D2UnitStrc * pUn
 // @sourcefile .\PLAYER\PlrTrade.cpp
 void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2CubeMainTxt * pRecipe, D2CubeSetupStrc * pMatchedItems, uint32_t nUnused) {
     // Static local variables (originally global data)
-    static D2CubeSpecialOutput CUBESPECIALOUTPUT[4] = { nullptr, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_CowPortalRecipe, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_Unused2, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_Unused3 };
+    static D2CubeSpecialOutput CUBESPECIALOUTPUT[4] = { nullptr, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_CowPortalRecipe, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_Unused2, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_Unused3 }; D2_STATIC_GUARD(CUBESPECIALOUTPUT, "D2Game::PLAYER::PlayerTrade::CUBE_GenerateOutput::CUBESPECIALOUTPUT");
 
     uint8_t byOutputType;
     uint16_t uVar1;
@@ -1325,7 +1325,7 @@ void __stdcall GetDateUnused(int * pnParam) {
 // Server-side Horadric Cube recipe engine. Counts items currently in the player's cube, then scans every CubMain.txt recipe checking gating conditions: enabled (or debug-allow-disabled), expansion/version, ladder-only vs SP, min difficulty, required class, exact input count. Recipes with nOp 1-2 add calendar gates (day-of-month range, day-of-week); nOp 3-14 add a player-stat threshold compared (</>/==) against nValue right-shifted by the stat's valshift, where the stat is read three different ways (3-6 GetStatUnsignedValue, 7-10 SERVER_GetUnitStat, 11-14 STATLIST_GetStatBonusFromLists). On the first recipe whose gates pass AND whose item inputs validate (CUBE_ValidateRecipeInputs), calls CUBE_GenerateOutput to consume inputs and produce the result, then returns. No-op if player null or cube empty.
 void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc * pPlayer) {
     // Static local variables (originally global data)
-    static bool gbCubeAllowDisabledRecipes;
+    static bool gbCubeAllowDisabledRecipes; D2_STATIC_GUARD_BSS(gbCubeAllowDisabledRecipes, "D2Game::PLAYER::PlayerTrade::CUBE_MatchAndExecuteRecipe::gbCubeAllowDisabledRecipes");
 
     bool _bValidInputs;
     bool bValidInputs;
@@ -1631,7 +1631,7 @@ bool InitCopyInventoryForTrade(::SGAMEDATA * pGame, D2UnitStrc * pUnitStrc) {
     D2InventoryStrc* pCopyInventory = PlayerSave::GetCopyInventory(pGame, pUnitStrc, (uint16_t*)pSaveBuffer, 0x2000, 0, 0, 0);
     pCopy->pCopyInventory = (int32_t)pCopyInventory;
     if ((int)pCopyInventory < 1) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x809);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x809);
       exit(-1);
     }
 
@@ -1690,7 +1690,7 @@ void __fastcall TRADE_RestoreInventoryFromBackup(::SGAMEDATA * pGame, D2UnitStrc
     D2UnknownStructure0x18* pTradeCopy;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     if (!pPlayerData) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x880);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x880);
       exit(-1);
     } else {
       int iInvPage;
@@ -1714,7 +1714,7 @@ void __fastcall TRADE_RestoreInventoryFromBackup(::SGAMEDATA * pGame, D2UnitStrc
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x888);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x888);
       exit(-1);
     }
 }

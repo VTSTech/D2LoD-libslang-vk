@@ -573,10 +573,10 @@ BOOL __fastcall Skills_SrvDoFunc_008_MultipleShot(::SGAMEDATA * pGame, D2UnitStr
     SkillsServer::SKILLS_NormalizeDirectionPerp(&nDirX, &nDirY);
     nTargetX -= (int)(nDirX * nArrowSpread) / 2;
     nTargetY -= (int)(nDirY * nArrowSpread) / 2;
-    eMissileId = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     nWeaponClass = D2Common::Units::GetWeaponClass(pUnit);
-    if (nWeaponClass != 1 && -1 < pSkillTxt->srvmissileb) {
-      eMissileId = (eMissilesId)pSkillTxt->srvmissileb;
+    if (nWeaponClass != 1 && -1 < pSkillTxt->srvmissile[2]) {
+      eMissileId = (eMissilesId)pSkillTxt->srvmissile[2];
     }
     if ((int)eMissileId < 0) {
       return 0;
@@ -677,10 +677,10 @@ BOOL __fastcall Skills_SrvDoFunc_010_GuidedArrowLaunch(::SGAMEDATA * pGame, D2Un
     }
 
     int32_t nUnitX = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[0], eSkill, nSkillLvl);
-    eMissilesId eMissileId = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     uint32_t nWeaponClass = D2Common::Units::GetWeaponClass(pUnit);
-    if (nWeaponClass != 1 && -1 < pSkillTxt->srvmissileb) {
-      eMissileId = (eMissilesId)pSkillTxt->srvmissileb;
+    if (nWeaponClass != 1 && -1 < pSkillTxt->srvmissile[2]) {
+      eMissileId = (eMissilesId)pSkillTxt->srvmissile[2];
     }
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
@@ -854,10 +854,10 @@ BOOL __fastcall Skills_SrvDoFunc_012_StrafeContinue(::SGAMEDATA * pGame, D2UnitS
     uint32_t nCursorX = 0;
     uint32_t nCursorY = 0;
     SkillsServer::SKILLS_GetTargetOrCursorPos(pGameSave, pUnit, &nCursorX, &nCursorY);
-    eMissileId = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     nTargetGUID = D2Common::Units::GetWeaponClass(pUnit);
-    if (nTargetGUID != 1 && -1 < pSkillTxt->srvmissileb) {
-      eMissileId = (eMissilesId)pSkillTxt->srvmissileb;
+    if (nTargetGUID != 1 && -1 < pSkillTxt->srvmissile[2]) {
+      eMissileId = (eMissilesId)pSkillTxt->srvmissile[2];
     }
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;

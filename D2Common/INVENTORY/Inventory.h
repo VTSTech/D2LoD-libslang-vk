@@ -11,6 +11,7 @@
 // Forward declarations
 struct D2InventoryGridInfoStrc;
 struct D2InventoryStrc;
+struct D2ItemInventoryNodeStrc;
 struct D2PoolManagerStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
@@ -78,18 +79,6 @@ struct D2InventorySizesStrc {
 struct D2InventoryToBeUpdatedStrc {
     /* 0x00 */ uint32_t nUnitGuid;
     /* 0x04 */ struct D2InventoryToBeUpdatedStrc * pNext;
-};
-
-struct __attribute__((packed)) D2ItemInventoryNodeStrc {
-    /* 0x00 */ struct D2InventoryStrc * pInventory; // Socketed items inventory
-    /* 0x04 */ struct D2UnitStrc * pPrevItem; // Previous item in linked list
-    /* 0x08 */ struct D2UnitStrc * pNextItem; // Next item in linked list
-    /* 0x0C */ eD2InventoryGrid eInventoryGrid; // Grid type
-    /* 0x0D */ eD2InventoryGridType eInventoryGridType; // Grid subtype
-    /* 0x0E */ uint8_t unk0xE;
-    /* 0x0F */ uint8_t unk0xF;
-    /* 0x10 */ struct D2UnitStrc * pPrevItemInPage; // Previous item in page linked list
-    /* 0x14 */ struct D2UnitStrc * pNextItemInPage; // Next item in page linked list
 };
 
 struct __attribute__((packed)) D2InventoryBodyStrc {
@@ -226,7 +215,7 @@ void __stdcall FreeUpdatesFromInventory(struct D2InventoryStrc * pInventory);
 BOOL __stdcall SERVER_IsInToBeUpdatedList(struct D2InventoryStrc * pInventory, int32_t nParam);
 // @sourcefile .\INVENTORY\Inventory.cpp
 void __stdcall UpsertToUpdateList(struct D2InventoryStrc * pInventory, struct D2UnitStrc * pItem);
-int32_t __stdcall GetNextUpdate(struct D2InventoryToBeUpdatedStrc * pUpdate);
+struct D2InventoryToBeUpdatedStrc * __stdcall GetNextUpdate(struct D2InventoryToBeUpdatedStrc * pUpdate);
 uint32_t __stdcall GetUpdatesUUid(struct D2InventoryToBeUpdatedStrc * pInventoryToBeUpdated);
 int32_t __stdcall ITEM_ItemsInItem(struct D2InventoryStrc * pInventory);
 // Walks the inventory item list and returns the first item matching nItemType (via IsOfType). If pAfterItem is non-null, skips items until that item is found, then continues searching from the next grid. Validates inventory magic signature before iterating. Returns NULL if the inventory is invalid, the type is not found, or iteration detects a corrupt chain.

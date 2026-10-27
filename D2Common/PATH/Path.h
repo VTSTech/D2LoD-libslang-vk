@@ -48,7 +48,7 @@ void __stdcall PATH_SetPathTarget(struct D2UnitStrc * pUnit, struct D2UnitStrc *
 // Advances a dynamic path one sub-tile step. Calls PATH_ComputeDirectMovementVector to get the delta, adds it to the current sub-tile position, then calls PATH_TraceCollisionPath if the integer tile cell changed. On collision: if a mover monster owns the path, calls PATH_RecalculatePath; otherwise snaps direction registers. Writes the new sub-tile X/Y into pnOutX[0]/[1]. Returns true if the path is still in motion, false if stopped or collided without rerouting.
 bool __stdcall PATH_ComputeMovementStep(uint32_t * pnOutX, uint32_t * pnOutY, struct D2DynamicPathStrc * pSkillsTxt);
 void PATH_ResetPathState(struct D2DynamicPathStrc * pDynamicPath);
-BOOL __stdcall PATH_AdvanceUnitAlongPath(struct D2UnitStrc * pUnit, struct D2DynamicPathStrc * pExternalPath);
+BOOL __stdcall PATH_AdvanceUnitAlongPath(struct D2UnitStrc * pUnit, int pExternalPath);
 // Commits a unit's collision footprint to its new tile position. Depending on path flags and whether nTargetPos is zero: removes, updates, or width-updates collision via the appropriate Collision helper; sets the room-change flag if the room changed; calls DRLGPATH_SetPathPosition to record the new fixed-point coordinates; and for non-zero targets validates the destination room (fatal error if none found). Resets path state afterward. Returns 1.
 BOOL __stdcall PATH_MoveUnitToPosition(struct D2RoomStrc * pRoom, uint32_t nTargetPos, struct D2DynamicPathStrc * pPath);
 void __stdcall PATH_MoveObjectToPosition(struct D2RoomStrc * pRoom, uint32_t nTargetPos, uint32_t * pPath);

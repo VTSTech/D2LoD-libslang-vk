@@ -183,7 +183,7 @@ D2UnitStrc * __stdcall SUNITINACTIVE_RestoreInactiveItem(::SGAMEDATA * pGame, D2
       D2Common::ITEMS::Items::ExtractItemDetails(pbSerializedData, nBytesRemaining, 1, &local_2c);
       pUnit_00 = ITEMS::Items::Drop::ITEM_CreateFromSaveData(pGame, nullptr, pbSerializedData, nBytesRemaining, 1, &local_2c, &nItemDataSize, 0x60);
       if (!pUnit_00) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x10c);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x10c);
         exit(-1);
       }
 
@@ -681,7 +681,7 @@ void __stdcall SUNITINACTIVE_DeactivateMonster(::SGAMEDATA * pGame, D2UnitStrc *
     pInactiveRec->nHitpoints = nTmpVal;
     eD2LevelId eLevelId = D2Game::Monster::GetMonsterArea(pUnit);
     pInactiveRec->eLevelId = eLevelId;
-    uint8_t* pbyUModList = (uint8_t*)Monsters::GetMonUModList(pUnit);
+    uint8_t* pbyUModList = Monsters::GetMonUModList(pUnit);
     if (pbyUModList) {
       pInactiveRec->nMonUMods[0] = *pbyUModList;
       pInactiveRec->nMonUMods[1] = pbyUModList[1];
@@ -889,7 +889,7 @@ void __stdcall SUNITINACTIVE_RoomInitMonsters(::SGAMEDATA * pGame, D2RoomStrc * 
               }
 
               pbyClassId = pInactiveMonRec->nMonUMods;
-              pbyPosX = (uint8_t*)Monsters::GetMonUModList(pSpawnedMonster);
+              pbyPosX = Monsters::GetMonUModList(pSpawnedMonster);
               if (pbyPosX) {
                 nSpawnFlags = 9;
                 do {
@@ -947,10 +947,10 @@ BOOL __fastcall SUNITINACTIVE_CheckDeadMonsterAtCoords(::SGAMEDATA * pGame, D2Ro
     D2InactiveMonsterRecordStrc* pInactiveMonster;
     D2UnitStrc* pUnit;
     if (!pGame) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6da);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x6da);
       exit(-1);
     } else if (!pRoom) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6db);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x6db);
       exit(-1);
     } else {
       if (nPosX && nPosY) {
@@ -982,7 +982,7 @@ BOOL __fastcall SUNITINACTIVE_CheckDeadMonsterAtCoords(::SGAMEDATA * pGame, D2Ro
         return 0;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6dc);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x6dc);
       exit(-1);
     }
 }
@@ -1025,9 +1025,9 @@ void __fastcall SUNITINACTIVE_RoomInit(::SGAMEDATA * pGame, D2RoomStrc * pRoom) 
     uint8_t bObjectMode;
     ::SGAMEDATA* pRespawnFrame;
     D2ShrinesTxt* pShrineTxtRec;
+    int32_t iVar1;
     int nGrowStepsElapsed;
     uint32_t dwDefaultSize;
-    int32_t nObjSize;
     uint32_t eActNo;
     D2UnitStrc* pUnit;
     int nRemainingGrowSteps;
@@ -1056,7 +1056,7 @@ void __fastcall SUNITINACTIVE_RoomInit(::SGAMEDATA * pGame, D2RoomStrc * pRoom) 
       pUnit = 0;
       if (!(pCurUnitRecord->eUnitFlagsEx & 0x100U)) {
         if (pObjTxtLine != (D2ObjectsTxt*)0x1) {
-          pUnit = (D2UnitStrc*)SUnit::SpawnUnitByType(pGame, pRoom, (eD2UnitType)pObjTxtLine, pCurUnitRecord->nClassId, pCurUnitRecord->nPosX, pCurUnitRecord->nPosY, pCurUnitRecord->eAnimMode.ePlayerMode, pCurUnitRecord->eUnitFlags);
+          pUnit = SUnit::SpawnUnitByType(pGame, pRoom, (eD2UnitType)pObjTxtLine, pCurUnitRecord->nClassId, pCurUnitRecord->nPosX, pCurUnitRecord->nPosY, pCurUnitRecord->eAnimMode.ePlayerMode, pCurUnitRecord->eUnitFlags);
         }
         if (pObjTxtLine == (D2ObjectsTxt*)0x2) {
           if (!pUnit) {
@@ -1074,8 +1074,8 @@ void __fastcall SUNITINACTIVE_RoomInit(::SGAMEDATA * pGame, D2RoomStrc * pRoom) 
                 pUnit->dwDropItemCode = pCurUnitRecord->nLevelId;
               }
             } else {
-              nObjSize = Objects::OBJECT_GetDoubledTxtSize((int32_t)pObjTxtGrowable);
-              byMaxStage = (uint8_t)nObjSize;
+              iVar1 = Objects::OBJECT_GetDoubledTxtSize((int32_t)pObjTxtGrowable);
+              byMaxStage = (uint8_t)iVar1;
               if (pCurUnitRecord->field_0x28 < byMaxStage) {
                 pObjTxtLine = (D2ObjectsTxt*)pObjTxtGrowable->Parm[0];
                 if (!pObjTxtLine) {

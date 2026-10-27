@@ -16,6 +16,7 @@ struct D2RoomStrc;
 struct D2SkillListStrc;
 struct D2SkillStrc;
 struct D2SkillsTxt;
+struct D2StatListExStrc;
 struct D2UnitStrc;
 typedef int eD2ElementalDamageTypeDWORD;
 typedef int eD2Skills;
@@ -36,7 +37,7 @@ namespace D2Common::Skills {
 // Calculates a skill parameter value using Param[6] and Param[7] from SkillsTxt. Formula: (level - 1) * Param[7] + Param[6]. Returns 0 if skill ID or level is invalid.
 int32_t __fastcall SKILLS_CalcSkillParam(eD2Skills eSkill, int32_t nParam);
 // Gets or allocates a stat list associated with a given state on a unit. If arg1 is nonzero and no stat list exists for the state, allocates one and attaches it. If arg1 is zero, frees the existing stat list for that state.
-struct D2PoolManagerStrc * __stdcall SKILLS_GetOrAllocStateStatList(int32_t bAlloc, struct D2UnitStrc * pUnit, eD2States eState);
+struct D2StatListExStrc * __stdcall SKILLS_GetOrAllocStateStatList(int32_t bAlloc, struct D2UnitStrc * pUnit, eD2States eState);
 // Returns the passivestate field from D2SkillsTxt for the given skill ID. Returns 0 if invalid or no passive state.
 int TXT_Skills_GetPassiveState(int nSkillId);
 int __fastcall SKILLS_Min(int nParam1, int nParam2, uint32_t dwParam3, uint32_t dwParam4);

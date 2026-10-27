@@ -45,7 +45,7 @@ void __stdcall AllocParticle(D2UnitStrc * pUnit) {
     if (!pParticle) {
       pParticle = D2_NEW(D2ParticleStrc);
       if (!pParticle) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4a);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x4a);
         exit(-1);
       }
     }
@@ -307,7 +307,7 @@ void __stdcall PARTICLE_UpdatePosition(D2UnitStrc * pUnit) {
           bySpriteLayer = '\x0e';
         } else if (eUnitType == UNIT_MISSILE) {
           if (pOwner->eUnitType != UNIT_MONSTER) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1a9);
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x1a9);
             exit(-1);
           }
           if (pOwner->eAnimMode.ePlayerMode == Death) {

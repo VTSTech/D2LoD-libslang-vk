@@ -109,7 +109,7 @@ namespace D2Game::Monster::AI {
 int32_t __fastcall GetDistanceBetween(struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther);
 void __fastcall AI_Fn1_None(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);
 void __fastcall AI_Fn1_Idle(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);
-uint32_t __fastcall AI_FindClosestAllyOfSameType(int nUnusedCtx, struct D2UnitStrc * pUnit, struct D2UnitStrc * pCandidate, struct D2UnitStrc * * ppBestResult);
+uint32_t __fastcall AI_FindClosestAllyOfSameType(int nUnusedCtx, struct D2UnitStrc * pUnit, struct D2UnitStrc * pCandidate, struct D2MonsterAiParameterStruct * ppBestResult);
 uint32_t __fastcall ReturnFirstArgument(uint32_t * pdwParam);
 void __fastcall SetDwArgsIfNotNeg0x29a(struct D2AiGeneralStrc * pMonsterAi, int32_t dwArg0, int32_t dwArg1, int32_t dwArg2);
 uint32_t AI_CanApplyColdState(void * pThis, eD2States eState, int32_t nParam);
@@ -173,7 +173,7 @@ uint32_t __fastcall AI_ForEachFn05_ScanTargetsByThreat(::SGAMEDATA * pGame, stru
 uint32_t __fastcall AI_ForEachFn06_NearestTargetByThreat(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther, struct D2UnitStrc * * ppResults);
 uint32_t __fastcall AI_ForEachFn07_AltHighThreatTarget(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther, struct D2UnitStrc * * ppResults);
 uint32_t __fastcall AI_ForEachFn11_AltHittableTarget(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther, struct D2UnitStrc * * ppResults);
-uint32_t __fastcall AI_ForEachFn08_NearestClosedDoor(uint32_t dwParam, int * pnParam, struct D2UnitStrc * pUnit, struct D2UnitStrc * * ppResults);
+uint32_t __fastcall AI_ForEachFn08_NearestClosedDoor(uint32_t dwParam, int * pnParam, struct D2UnitStrc * pUnit, struct D2MonsterAiParameterStruct * ppResults);
 int __fastcall AI_ForEachFn09_FindOwnMinionCorpse(uint32_t dwParam, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther, struct D2UnitStrc * * ppResults);
 uint32_t __fastcall AI_ForEachFn12_CountClassInRange(uint32_t dwParam, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther, int * pCountBuf);
 uint32_t __stdcall ForEachCallOther(::SGAMEDATA * pGame, struct D2MonsterAiParameterStruct * pParams, fpMonsterAiForEach pFunc, struct D2UnitStrc * pUnit);

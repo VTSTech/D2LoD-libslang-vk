@@ -33,7 +33,7 @@ void __fastcall GFX_SetOverlayFrame(struct D2UnitStrc * pUnit, int32_t nOverlayI
 void __fastcall GFX_DrawOverlayOnUnit(struct D2UnitStrc * pUnit, int32_t nOverlayId, int32_t nScreenX, int32_t nScreenY);
 void __stdcall DRAW_UNIT_States(struct D2UnitStrc * pUnit, int32_t nBlendMode, int32_t bSecondPass, int32_t nScreenX, int32_t nScreenY, int32_t bRaiseY);
 void __stdcall DRAW_UNIT_States_HaltTail(int nLine);
-int32_t __fastcall GFX_GetGfxInfoCofData(struct D2UnitStrc * pUnit, int32_t pAnimMode);
+uint8_t * __fastcall GFX_GetGfxInfoCofData(struct D2UnitStrc * pUnit, int32_t pAnimMode);
 struct D2GfxInfoUnkStrc * __fastcall GFX_FindGfxInfoByModeAndWeapon(struct D2UnitStrc * pUnit, int32_t nWeaponParam, int nAnimMode);
 // @sourcefile .\ENGINE\Gfx.cpp
 BOOL GFX_FreeGfxInfoEntry(struct D2UnitStrc * pUnit, struct D2GfxInfoUnkStrc * pGfxInfoUnk);

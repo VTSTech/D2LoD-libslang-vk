@@ -18,7 +18,6 @@ struct D2DrlgLevelWarpCoordinatesStrc;
 struct D2DrlgRoomCoordsStrc;
 struct D2DrlgStrc;
 struct D2DrlgTileDataStrc;
-struct D2GameViewStrc;
 struct D2LvlWarpTxt;
 struct D2PoolManagerStrc;
 struct D2PresetUnitStrc;
@@ -83,14 +82,14 @@ struct D2RoomStrc * __fastcall DRLGROOM_AllocRoomStrc(struct D2PoolManagerStrc *
 void __stdcall DRLGROOM_UpdateRoomsNearAndCount(struct D2PoolManagerStrc * pMemory, struct D2RoomStrc * pRoom);
 // Allocates and initialises a D2RoomStrc (0x80 bytes) from the act memory pool. Copies coordinate data from pDrlgCoords, seeds the RNG with nInitSeed/0x29A, links the room into the act's room list, marks the act dirty, sets pRoomEx back-pointer, updates neighbour counts, allocates the collision grid, and fires the act callback if set. Halts if pDrlgAct is null.
 // @sourcefile .\DUNGEON\Dungeon.cpp
-struct D2RoomStrc * __fastcall AllocRoom(struct D2DrlgActStrc * pDrlgAct, struct D2RoomExStrc * pRoomEx, struct D2DrlgCoordsStrc * pDrlgCoords, struct D2DrlgRoomTilesStrc * pRoomTiles, int32_t nInitSeed, int32_t eFlags);
+struct D2RoomStrc * __fastcall AllocRoom(struct D2DrlgActStrc * pDrlgAct, struct D2RoomExStrc * pRoomEx, struct D2DrlgRoomCoordsStrc * pDrlgCoords, struct D2DrlgRoomTilesStrc * pRoomTiles, int32_t nInitSeed, int32_t eFlags);
 uint32_t __stdcall DoRoomsTouchOrOverlap(struct D2RoomStrc * pRoom, struct D2RoomStrc * pRoom2);
 BOOL __stdcall AreTileCoordinatesInsideRoom(struct D2RoomStrc * pRoom, int32_t nX, int32_t nY);
 // Determines the shape/orientation of a room based on its tile coordinates. Returns 0 (invalid), 1 (zero width), 2 (mirrored width), 3 (zero height), or 4 (normal).
 int32_t __stdcall DRLGROOM_GetRoomShape(struct D2RoomStrc * pRoom, int32_t nMode);
 int32_t __stdcall FindRoomByTileCoordinates(struct D2DrlgActStrc * pDrlgAct, int32_t nX, int32_t nY);
 int32_t __stdcall GetAdjacentRoomByCoordinates(struct D2RoomStrc * pRoom, int32_t nX, int32_t nY);
-void __stdcall CallRoomCallback(struct D2RoomStrc * pRoom, ROOMCALLBACKFN pfnRoomCallback, struct D2GameViewStrc * pArgs);
+void __stdcall CallRoomCallback(struct D2RoomStrc * pRoom, ROOMCALLBACKFN pfnRoomCallback, void * pArgs);
 // NOTE: Callee-saved register params inferred (medium confidence): param_ebx (EBX): DWORD
 int32_t * __stdcall DRLGROOM_GetMinimapRect(uint32_t nLine, struct D2RoomStrc * dwParam2, int32_t * dwParam3);
 void __stdcall GetSubtileRect(struct D2RoomStrc * pRoom, RECT * pRect);

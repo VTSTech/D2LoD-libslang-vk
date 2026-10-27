@@ -262,7 +262,7 @@ uint16_t __stdcall STRTABLE_FindStringByKey(uint16_t * * ppHashTable, uint8_t * 
 
 uint32_t __stdcall STRTABLE_LookupString(uint8_t * pbParam, uint16_t * * ppwszText) {
     // Static local variables (originally global data)
-    static uint16_t gwStrTableLanguageCode;
+    static uint16_t gwStrTableLanguageCode; D2_STATIC_GUARD_BSS(gwStrTableLanguageCode, "D2Lang::StrTable::strtable::STRTABLE_LookupString::gwStrTableLanguageCode");
 
     uint32_t nBaseResult;
     uint16_t* pTranslated;
@@ -454,8 +454,8 @@ uint32_t __fastcall STRTABLE_GetLanguageId(char * szText) {
 // @sourcefile .\StrTable\strtable.cpp
 uint32_t __stdcall MISC_GetLanguageCode() {
     // Static local variables (originally global data)
-    static uint32_t gnLanguageCode;
-    static uint8_t gbLanguageCodeCached;
+    static uint32_t gnLanguageCode; D2_STATIC_GUARD_BSS(gnLanguageCode, "D2Lang::StrTable::strtable::MISC_GetLanguageCode::gnLanguageCode");
+    static uint8_t gbLanguageCodeCached; D2_STATIC_GUARD_BSS(gbLanguageCodeCached, "D2Lang::StrTable::strtable::MISC_GetLanguageCode::gbLanguageCodeCached");
 
     if (gbLanguageCodeCached != '\0') {
       return gnLanguageCode;
@@ -734,7 +734,7 @@ uint32_t __stdcall STRTABLE_GetRegistryLanguage() {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gszRegistryLanguage, "D2Lang::StrTable::strtable::STRTABLE_GetRegistryLanguage::gszRegistryLanguage");
 
     // Frame slots -16..-8 are ONE object: &dwType is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.

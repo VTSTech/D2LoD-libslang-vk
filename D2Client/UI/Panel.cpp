@@ -60,8 +60,8 @@
 #include "Fog/File.h"
 #include "Fog/Fog.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SReg.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Common/Drlg/Drlg.h"
@@ -77,30 +77,9 @@
 
 namespace D2Client::UI::Panel {
 
-static bool gbPanelClickProcessed = true;
-static uint32_t gaaBeltSlotHotkeyCommands[19] = {
-    0x17,
-    0x18,
-    0x19,
-    0x1a,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c
-};
-static bool gbPanelLeftBeltArrowClicked = 0;
-static uint8_t gbPanelRightBeltArrowClicked;
+static bool gbPanelClickProcessed = true; D2_STATIC_GUARD(gbPanelClickProcessed, "D2Client::UI::Panel::gbPanelClickProcessed");
+static uint32_t gaaBeltSlotHotkeyCommands[4] = { 0x17, 0x18, 0x19, 0x1a }; D2_STATIC_GUARD(gaaBeltSlotHotkeyCommands, "D2Client::UI::Panel::gaaBeltSlotHotkeyCommands");
+static bool gbPanelLeftBeltArrowClicked = 0; D2_STATIC_GUARD(gbPanelLeftBeltArrowClicked, "D2Client::UI::Panel::gbPanelLeftBeltArrowClicked");
 
 // JMP thunk
 void __stdcall thunk_CMD_UseBeltSlot1() {
@@ -292,7 +271,7 @@ void __fastcall SPELLSEL_DrawSkillIcon(D2UnitStrc * pUnit, D2SkillStrc * pSkill,
       return;
     }
 
-    DC6* pSkillIconDC6 = (DC6*)SpellSel::ARCHIVE_LoadSpellsClassSkillicon(&pSkillTxt->skill);
+    DC6* pSkillIconDC6 = SpellSel::ARCHIVE_LoadSpellsClassSkillicon(&pSkillTxt->skill);
     GLOBALPALLETE ePalette = SpellSel::SPELLSEL_GetSkillPalette(pUnit, pSkill);
     if (!pSkillTxt->InTown) {
       D2RoomStrc* pRoom;
@@ -861,11 +840,12 @@ int __stdcall PANEL_CheckBeltUseBlocked() {
 }
 
 void __stdcall PANEL_DrawExperienceBar() {
-    // Frame -136..-4 is ONE Ghidra variable the decompiler printed as 2 locals.
+    // Frame -136..-4 is ONE Ghidra variable the decompiler printed as 3 locals.
     // Separate locals let the compiler reorder them, so the pieces are one struct.
     struct __frame0_t {
       uint16_t auCostScratchBuf;
-      uint8_t auStack_86[130];
+      uint8_t auStack_86[126];
+      int iStack_8;
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 132, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
@@ -941,7 +921,7 @@ void __stdcall PANEL_DrawExperienceBar() {
     if (bIsMagicOrBetter) {
       __frame0.auCostScratchBuf = L'\0';
       Fog::File::CONTAINER_InitializeBuffer(__frame0.auStack_86, 2, 0x3f, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-      bIsMagicOrBetter = npcmenu::NPCMENU_CalculateItemTransactionCost(gpPanelBeltHoverItem, 1, (D2InventoryStrc*)(__frame0.auStack_86 + 0x7e), &__frame0.auCostScratchBuf, 0x40);
+      bIsMagicOrBetter = npcmenu::NPCMENU_CalculateItemTransactionCost(gpPanelBeltHoverItem, 1, &__frame0.iStack_8, &__frame0.auCostScratchBuf, 0x40);
       if (bIsMagicOrBetter && __frame0.auCostScratchBuf != L'\0') {
         pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
         D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, pwszStr);
@@ -1044,16 +1024,16 @@ void __stdcall Draw_EquipmentNeedToRepairBody_1(int32_t bIsLeftSide, int32_t nSl
 
 void __stdcall DRAW_EquipmentNeedArrows() {
     // Static local variables (originally global data)
-    static uint32_t gaInventoryWarningBodyLocs[2] = { 0x4, 0x5 };
-    static unsigned int gnInventoryWarningSlotCount = 0x2;
+    static uint32_t gaInventoryWarningBodyLocs[2] = { 0x4, 0x5 }; D2_STATIC_GUARD(gaInventoryWarningBodyLocs, "D2Client::UI::Panel::DRAW_EquipmentNeedArrows::gaInventoryWarningBodyLocs");
+    static unsigned int gnInventoryWarningSlotCount = 0x2; D2_STATIC_GUARD(gnInventoryWarningSlotCount, "D2Client::UI::Panel::DRAW_EquipmentNeedArrows::gnInventoryWarningSlotCount");
     static int gaInventoryWarningItems_nWarningKind_col[5][5] = {
     { 0x1, 0x0, 0x32, 0x19, 0xa },
     { 0x2, 0x3, 0xf, 0xa, 0x5 },
     { 0x3, 0x6, 0x5, 0x4, 0x2 },
     { 0x4, 0x9, 0xf, 0xa, 0x5 },
     { 0x5, 0xc, 0x5, 0x4, 0x2 }
-};
-    static unsigned int gnInventoryWarningItemCount = 0x5;
+}; D2_STATIC_GUARD(gaInventoryWarningItems_nWarningKind_col, "D2Client::UI::Panel::DRAW_EquipmentNeedArrows::gaInventoryWarningItems_nWarningKind_col");
+    static unsigned int gnInventoryWarningItemCount = 0x5; D2_STATIC_GUARD(gnInventoryWarningItemCount, "D2Client::UI::Panel::DRAW_EquipmentNeedArrows::gnInventoryWarningItemCount");
 
     bool bVar1;
     eInventoryPage eCarriedItemPage;
@@ -1169,7 +1149,7 @@ void __stdcall DRAW_EquipmentNeedArrows() {
 
 void __stdcall Draw_EquipmentNeedToRepairBody() {
     // Static local variables (originally global data)
-    static int gaBodySlotLocTable[7] = { 0x1, 0x3, 0x8, 0x9, 0xa, 0x4, 0x5 };
+    static int gaBodySlotLocTable[7] = { 0x1, 0x3, 0x8, 0x9, 0xa, 0x4, 0x5 }; D2_STATIC_GUARD(gaBodySlotLocTable, "D2Client::UI::Panel::Draw_EquipmentNeedToRepairBody::gaBodySlotLocTable");
 
     uint32_t bHasDurability;
     BOOL BVar1;
@@ -1595,8 +1575,8 @@ BOOL __fastcall PANEL_CheckEquipmentClickable(D2ItemsTxt * pItemTxt, D2UnitStrc 
 }
 
 void __stdcall ClickBeltRight(uint32_t nBeltSlot, D2UnitStrc * pUnit, D2InventoryStrc * pInventory, int32_t bToMercenary) {
+    uint32_t bIsPotionType;
     D2GridScreenCoordinates sGridCoords;
-    int32_t nErrorLine;
     BOOL bClickable = GAME::Game::CLIENT_CheckExpansion();
     if (!bClickable) {
       bToMercenary = 0;
@@ -1613,8 +1593,8 @@ void __stdcall ClickBeltRight(uint32_t nBeltSlot, D2UnitStrc * pUnit, D2Inventor
     }
 
     bClickable = GAME::Game::CLIENT_CheckExpansion();
-    int32_t nMercGUID = D2Common::Units::GetInventoryPage(pUnit, 0, bClickable);
-    D2Common::DATATBLS::TokTbls::GetGridDimensions(nMercGUID, nScreenMode, &sGridCoords);
+    int32_t nErrorLine = D2Common::Units::GetInventoryPage(pUnit, 0, bClickable);
+    D2Common::DATATBLS::TokTbls::GetGridDimensions(nErrorLine, nScreenMode, &sGridCoords);
     pItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemInBeltSlot(pInventory, nBeltSlot);
     if (!pItem) {
       return;
@@ -1639,33 +1619,32 @@ void __stdcall ClickBeltRight(uint32_t nBeltSlot, D2UnitStrc * pUnit, D2Inventor
     GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT(0x26, pItem->nUnitGUID, bToMercenary, 0);
     UNIT::ITEM_RemoveClientSide(pItem);
     if (bToMercenary) {
-      uint32_t bIsPotionType;
-      nMercGUID = GAME::RosterPets::GetRosterPetGUID(pUnit, 7, 0);
-      if (nMercGUID != -1) {
+      nErrorLine = GAME::RosterPets::GetRosterPetGUID(pUnit, 7, 0);
+      if (nErrorLine != -1) {
         bIsPotionType = D2Common::ITEMS::Items::ITEMS_IsA(pItem, ITEMTYPE_HealingPotion);
         if (!bIsPotionType) {
           bIsPotionType = D2Common::ITEMS::Items::ITEMS_IsA(pItem, ITEMTYPE_ThawingPotion);
           if (!bIsPotionType) {
             bIsPotionType = D2Common::ITEMS::Items::ITEMS_IsA(pItem, ITEMTYPE_AntidotePotion);
             if (!bIsPotionType) {
-              UNIT::UnitSnd::UNITSND_PlaySoundForMercenary(nMercGUID, '\x01', 0x55);
+              UNIT::UnitSnd::UNITSND_PlaySoundForMercenary(nErrorLine, '\x01', 0x55);
               gpPanelBeltSlot = 0;
               return;
             }
           }
         }
 
-        UNIT::UnitSnd::UNITSND_PlaySoundForMercenary(nMercGUID, '\x01', 0x54);
+        UNIT::UnitSnd::UNITSND_PlaySoundForMercenary(nErrorLine, '\x01', 0x54);
         gpPanelBeltSlot = 0;
         return;
       }
     }
 
     int32_t nSoundArg3 = 0;
+    int32_t nVolume = 0;
     nErrorLine = 0;
-    nMercGUID = 0;
     eD2Sounds nSoundId = UNIT::ITEM_PlayItemUseSound(pItem);
-    Sound::SOUND_PlaySound(nSoundId, nullptr, nMercGUID, nErrorLine, nSoundArg3);
+    Sound::SOUND_PlaySound(nSoundId, nullptr, nErrorLine, nVolume, nSoundArg3);
     gpPanelBeltSlot = 0;
 }
 
@@ -2056,8 +2035,8 @@ void __stdcall PANEL_DrawBottomPanel() {
 
 void __stdcall DRAW_UI_BordersAndOrbsAndFillers() {
     // Static local variables (originally global data)
-    static bool gbPanelBorderDrawn;
-    static uint32_t gpPanelBorderImage;
+    static bool gbPanelBorderDrawn; D2_STATIC_GUARD_BSS(gbPanelBorderDrawn, "D2Client::UI::Panel::DRAW_UI_BordersAndOrbsAndFillers::gbPanelBorderDrawn");
+    static uint32_t gpPanelBorderImage; D2_STATIC_GUARD_BSS(gpPanelBorderImage, "D2Client::UI::Panel::DRAW_UI_BordersAndOrbsAndFillers::gpPanelBorderImage");
 
     eD2LevelId eRoomLevelId;
     eD2RendererMode eRendererMode = D2gfx::D2GFX::D2GFX_GetRendererMode();
@@ -2152,7 +2131,10 @@ void __stdcall INPUT_PanelLeftClickDown(D2UIMouseMsgStrc * pMsg) {
         }
       } else {
         gpPanelClickedButton = 1;
-        gbPanelRightBeltArrowClicked = 1;
+        gbPanelRightBeltArrowClicked[0] = 1;
+        gbPanelRightBeltArrowClicked[1] = 0;
+        gbPanelRightBeltArrowClicked[2] = 0;
+        gbPanelRightBeltArrowClicked[3] = 0;
       }
 
       consume_panel_click:
@@ -2166,7 +2148,7 @@ void __stdcall INPUT_PanelLeftClickDown(D2UIMouseMsgStrc * pMsg) {
 
 void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
     // Static local variables (originally global data)
-    static uint32_t gpPanelMenuButtonState;
+    static uint32_t gpPanelMenuButtonState; D2_STATIC_GUARD_BSS(gpPanelMenuButtonState, "D2Client::UI::Panel::INPUT_PanelLeftClickUp::gpPanelMenuButtonState");
 
     uint32_t bIsDead;
     int iVar1;
@@ -2179,7 +2161,7 @@ void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
     int32_t nMouseX = (int32_t)pMsg->uLParam.sMousePos.nMouseX;
     int32_t nMouseY = (int32_t)pMsg->uLParam.sMousePos.nMouseY;
-    gbPanelRightBeltArrowClicked = 0;
+    memset(gbPanelRightBeltArrowClicked, 0, 4 * sizeof(gbPanelRightBeltArrowClicked[0]));
     gbPanelLeftBeltArrowClicked = 0;
     if (!gpPanelClickedButton) {
       if (nMouseX - 0x75U < 0x31 && ScreenSizeY - 0x30 <= nMouseY && nMouseY <= ScreenSizeY || ScreenSizeX - 0xa5 <= nMouseX && nMouseX <= ScreenSizeX - 0x75 && ScreenSizeY - 0x30 <= nMouseY && nMouseY <= ScreenSizeY) {

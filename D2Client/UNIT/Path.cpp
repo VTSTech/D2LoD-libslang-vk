@@ -227,7 +227,7 @@ uint32_t __fastcall PATH_StepAndCreateTrailEffects(D2UnitStrc * pUnit) {
       SKILLS::SkillsMon::SKILLSMON_CltCreateSpiderLay(pUnit);
     }
 
-    D2DynamicPathStrc* pExternalPath = (D2DynamicPathStrc*)GAME::Game::GetStepsOfMissileMovement();
+    uint32_t pExternalPath = GAME::Game::GetStepsOfMissileMovement();
     BOOL bPathAdvanced = D2Common::PATH::Path::PATH_AdvanceUnitAlongPath(pUnit, pExternalPath);
     return (uint32_t)!bPathAdvanced;
 }

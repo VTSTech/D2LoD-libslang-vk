@@ -2,10 +2,10 @@
 
 #include "Storm/Source/SEVT.h"
 #include "Fog/Engine/Application.h"
-#include "Storm/H/Storm.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 
@@ -532,7 +532,7 @@ int __stdcall SEvtBreakHandlerChain(void * pUnderMouse) {
 // @former-name SEVT_DispatchWindowMessage (invented. Its caller WND_DispatchWindowMessage 00420b00 is the Windows-message layer; this is not.)
 BOOL __stdcall SEvtDispatch(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey, void * pData) {
     // Static local variables (originally global data)
-    static LONG * lpAddend_007792fc;
+    static LONG * lpAddend_007792fc; D2_STATIC_GUARD_BSS(lpAddend_007792fc, "Storm::Source::SEVT::SEvtDispatch::lpAddend_007792fc");
 
     int* pBreakCmd;
     uint32_t* pEventEntry;

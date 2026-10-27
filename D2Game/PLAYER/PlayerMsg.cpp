@@ -434,10 +434,10 @@ uint8_t GetHPRegen(D2UnitStrc * pUnit) {
     }
 
     ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    D2StatListExStrc* pStatListFullPtr = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pHpPotStatList);
+    int pStatListFullPtr = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pHpPotStatList);
     int nGameFrame = pGame->dwGameFrame;
     int nHpRegen = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pHpPotStatList, UNITSTAT_hpregen, 0);
-    uint8_t byPct = (uint8_t)((nHpRegen * ((int)pStatListFullPtr - nGameFrame) + nHP >> 8) * 100 / (nMaxHp >> 8));
+    uint8_t byPct = (uint8_t)((nHpRegen * (pStatListFullPtr - nGameFrame) + nHP >> 8) * 100 / (nMaxHp >> 8));
     if (100 >= byPct) {
       return byPct;
     }
@@ -449,8 +449,8 @@ uint8_t GetHPRegen(D2UnitStrc * pUnit) {
 uint8_t GetMPRegen(D2UnitStrc * pUnit) {
     int nMana = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
     int32_t nMaxMana = D2Common::Stats::StatsEx::GetTxtMaxMana(pUnit);
-    D2StatListExStrc* pManaPotStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_manapot);
-    if (!pManaPotStatList) {
+    D2StatListExStrc* pStatListMana = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_manapot);
+    if (!pStatListMana) {
       return 0;
     }
     if (!nMaxMana) {
@@ -481,8 +481,8 @@ uint8_t GetMPRegen(D2UnitStrc * pUnit) {
     nManaRegenBase = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_manarecoverybonus, 0);
     int nManaRecoveryBonus = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_manarecovery, 0);
     ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    pManaPotStatList = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pManaPotStatList);
-    uint8_t byPct = (uint8_t)((((int)pManaPotStatList - pGame->dwGameFrame) * (nManaRecoveryBonus + (nManaRegenBase + 100) * nManaRegenDivisor / 100) + nMana) * 100 / nMaxMana);
+    int pManaPotStatList = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pStatListMana);
+    uint8_t byPct = (uint8_t)(((pManaPotStatList - pGame->dwGameFrame) * (nManaRecoveryBonus + (nManaRegenBase + 100) * nManaRegenDivisor / 100) + nMana) * 100 / nMaxMana);
     if (100 >= byPct) {
       return byPct;
     }
@@ -629,7 +629,7 @@ BOOL __fastcall NET_D2GS_SERVER_Send_LifeManaStaminaLocationUpdate(D2UnitStrc * 
 
 void __fastcall SendInitUpdateAttributes(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
     // Static local variables (originally global data)
-    static eD2UnitStat geInitAttrStatFirst[6] = { UNITSTAT_velocitypercent, UNITSTAT_attackrate, UNITSTAT_level, UNITSTAT_strength, UNITSTAT_dexterity, -1 };
+    static eD2UnitStat geInitAttrStatFirst[6] = { UNITSTAT_velocitypercent, UNITSTAT_attackrate, UNITSTAT_level, UNITSTAT_strength, UNITSTAT_dexterity, -1 }; D2_STATIC_GUARD(geInitAttrStatFirst, "D2Game::PLAYER::PlayerMsg::SendInitUpdateAttributes::geInitAttrStatFirst");
 
     uint32_t nStatValue;
     D2UnitStrc* pClientUnit = GAME::Clients::CLIENTS_GetControlUnit(pClient, 0);
@@ -1031,7 +1031,7 @@ eD2ServerIncomingStatus ItemBelongsToInventoryOf(void * pThis, D2UnitStrc * pPla
 
 // Validates that an item (by GID) is accessible to the acting player for an interaction. Looks up the item unit; for ground/dropped states (Death/Neutral/Walk/GetHit modes) delegates to ItemIsOfPlayerAndNotOnCursor. For the Run mode (item on ground in another act area) calls IsOtherAct and CheckIfCoordsAreInRange (range 10). Returns 0 on success or a non-zero eD2ServerIncomingStatus error code (SERVERSTATUS_BAD_TARGET if item not found).
 uint32_t __stdcall IsAccessableCheck(DWORD nItemGid, ::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    int32_t nErrOrCoordX;
+    int32_t iVar1;
     eD2ServerIncomingStatus nResult;
     int32_t nErrOrCoordY;
     if (!pGame) {
@@ -1062,9 +1062,9 @@ uint32_t __stdcall IsAccessableCheck(DWORD nItemGid, ::SGAMEDATA * pGame, D2Unit
         case eD2PlayerAnimMode_ns::Run:
           nResult = IsOtherAct(pItem, pUnit);
         if (nResult == SERVERSTATUS_OK) {
-          nErrOrCoordX = D2Client::Units::GetXPosFromDynamicPathUnit(pItem);
-          nErrOrCoordY = D2Client::Units::GetYPosFromDynamicPathUnit(pItem);
-          nResult = CheckIfCoordsAreInRange(pUnit, 10, (uint16_t)nErrOrCoordX, (uint16_t)nErrOrCoordY);
+          nErrOrCoordY = D2Client::Units::GetXPosFromDynamicPathUnit(pItem);
+          iVar1 = D2Client::Units::GetYPosFromDynamicPathUnit(pItem);
+          nResult = CheckIfCoordsAreInRange(pUnit, 10, (uint16_t)nErrOrCoordY, (uint16_t)iVar1);
           if (nResult != SERVERSTATUS_OK) {
             return nResult;
           }
@@ -2534,7 +2534,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x1E_EquipToWeaponSwap(::SGAMEDATA * pGa
 
     DWORD dwParam = pPacket->dwItemGUID;
     eD2BodyLoc eTargetBodyLoc = (eD2BodyLoc)pPacket->dwBeltSlot;
-    D2UnitStrc* pSwappedOutItem = (D2UnitStrc*)pGame;
+    int pSwappedOutItem = (int)pGame;
     eD2ServerIncomingStatus eStatus = SERVER_IsItemOnCursor(pGame, pUnit, dwParam);
     if (eStatus != SERVERSTATUS_OK) {
       return (eD2ServerIncomingStatus)eStatus;
@@ -2558,7 +2558,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x1E_EquipToWeaponSwap(::SGAMEDATA * pGa
     uint32_t bCanMoveItem = Player::CheckItemMovePermission(pGame, pUnit, pItem);
     if (bCanMoveItem) {
       BOOL nResult;
-      nResult = ITEMS::ItemMode::ITEMMODE_EquipItemToBodyLoc(pGame, pUnit, dwParam, eTargetBodyLoc, (::SGAMEDATA*)&pSwappedOutItem);
+      nResult = ITEMS::ItemMode::ITEMMODE_EquipItemToBodyLoc(pGame, pUnit, dwParam, eTargetBodyLoc, &pSwappedOutItem);
       if (!nResult && pSwappedOutItem) {
         return SERVERSTATUS_BAD_PARAMS;
       }
@@ -3962,7 +3962,7 @@ BOOL __stdcall RelocateAndApplySyncWarp(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
         /* .nChancePct = */ 0x19,
         /* .nOffset = */ 0x1194
     }
-};
+}; D2_STATIC_GUARD(gaWarpOffsetTable, "D2Game::PLAYER::PlayerMsg::RelocateAndApplySyncWarp::gaWarpOffsetTable");
 
     int iVar3;
     eD2UnitType eUnitType;
@@ -4016,12 +4016,12 @@ BOOL __stdcall RelocateAndApplySyncWarp(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 // Client-to-server position sync correction. When client detects desync with server position, sends [x:u16, y:u16]. Distance 15-45: validates walkable path then relocates instantly via SUNIT_RelocateUnit. Distance 5-14 or 46+: falls through to normal walk/run. Distance 0-4: rejected. On BNet, rate-limited: 5+ sync warps in 90 seconds triggers randomized lockout (50% 60s, 25% 2min, 25% 3min) via STATE_sync_warped.
 // @sourcefile .\PLAYER\PlrMsg.cpp
 eD2ServerIncomingStatus __fastcall SCMD_0x5F_SyncPosition(::SGAMEDATA * pGame, D2UnitStrc * pUnit, char * pPacket, size_t nSize) {
-    int32_t nDistance;
     BOOL bDead;
     eD2States eSyncWarpState;
     uint32_t bPathReachable;
     D2UnitStrc* pTarget;
     eD2PlayerAnimMode eAnimMode;
+    int32_t nErrLine;
     if (nSize != 5) {
       return SERVERSTATUS_BAD_PARAMS;
     }
@@ -4041,13 +4041,13 @@ eD2ServerIncomingStatus __fastcall SCMD_0x5F_SyncPosition(::SGAMEDATA * pGame, D
         return SERVERSTATUS_OK;
       }
 
-      nDistance = D2Common::Collision::GetDistanceToXY(pUnit, nX, nY);
-      if (4 >= nDistance) {
+      nErrLine = D2Common::Collision::GetDistanceToXY(pUnit, nX, nY);
+      if (4 >= nErrLine) {
         return SERVERSTATUS_OK;
       }
 
       eSyncWarpState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_sync_warped);
-      if (eSyncWarpState == STATE_none && nDistance - 0xfU < 0x1f) {
+      if (eSyncWarpState == STATE_none && nErrLine - 0xfU < 0x1f) {
         bPathReachable = ValidateSyncWarpPath(pGame, pUnit, nY, nX);
         if (bPathReachable) {
           bDead = RelocateAndApplySyncWarp(pGame, pUnit, nX, nY);
@@ -4103,27 +4103,18 @@ eD2ServerIncomingStatus __fastcall SCMD_0x60_WeaponSwap(::SGAMEDATA * pGame, D2U
 
 // Server-side: equips an item onto a hireling/mercenary, swapping out whatever it currently has in the matching body location(s). Expansion-only (returns 3 in classic). pUnit=owning player, pUnit1=item to equip, pUnit2=merc, pGame=game. Resolves the item's BodyLoc1/BodyLoc2; for Iron Wolf mercs (classId 0x167) a shield routes to the secondary slot. If a slot is occupied, validates the new item's equip requirements (ITEM_CheckEquipRequirements): on success it removes the old item to the player's cursor and unequips it; on failure it returns the old item to the merc's inventory and aborts. Then clones the new item onto the merc, equips it via SERVER_EquipItemToBodyLoc, refreshes stats, fires PERIODICSTATS/STATREGEN timer triggers, and schedules a follow-up event. Returns 1 on a completed swap, 0 on no-op/abort, 3 in classic. Side effects: item clone/free, inventory mutation, stat recalc, event scheduling.
 BOOL __stdcall MERC_SwapEquippedItem(D2UnitStrc * pUnit, D2UnitStrc * pUnit1, ::SGAMEDATA * pGame, D2UnitStrc * pUnit2) {
-    // Frame slots -28..-8 are ONE object: &bEquipOk is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      bool bEquipOk;
-      uint8_t __pad1[3];
-      D2UnitStrc* pClonedNewItemLocal;
-      D2InventoryStrc* pPlayerInv;
-      D2UnitStrc* pItemAtBodyLoc;
-      D2InventoryStrc* pMercInventory;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     DWORD dwOldItemGUID;
+    uint32_t bEquipOk;
+    D2UnitStrc* pClonedNewItemLocal;
     eD2BodyLoc eBodyLoc1;
     eD2BodyLoc eBodyLoc2;
     if (!pGame->bExpansion) {
       return 3;
     }
 
-    __frame0.pPlayerInv = pUnit->pInventory;
-    if (!__frame0.pPlayerInv) {
+    D2InventoryStrc* pPlayerInv;
+    pPlayerInv = pUnit->pInventory;
+    if (!pPlayerInv) {
       return 0;
     }
     if (!pUnit2->pInventory) {
@@ -4136,43 +4127,45 @@ BOOL __stdcall MERC_SwapEquippedItem(D2UnitStrc * pUnit, D2UnitStrc * pUnit1, ::
       return 0;
     }
 
-    __frame0.pMercInventory = pInventory;
+    D2InventoryStrc* pMercInventory;
+    pMercInventory = pInventory;
     D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_BodyLoc1andBodyLoc2(pUnit1, &eBodyLoc1, &eBodyLoc2);
-    __frame0.pItemAtBodyLoc = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, (uint32_t)eBodyLoc1);
+    D2UnitStrc* pItemAtBodyLoc;
+    pItemAtBodyLoc = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, (uint32_t)eBodyLoc1);
     D2UnitStrc* pItemSlot2;
     pItemSlot2 = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, (uint32_t)eBodyLoc2);
     D2UnitStrc* pClonedOldItem;
-    pClonedOldItem = __frame0.pItemAtBodyLoc;
+    pClonedOldItem = pItemAtBodyLoc;
     /* Iron wolf, merc */ if (pUnit2->nClassId == 0x167) {
       uint32_t bIsShield;
       bIsShield = D2Common::ITEMS::Items::ITEMS_IsA(pUnit1, ITEMTYPE_Shield);
-      pClonedOldItem = __frame0.pItemAtBodyLoc;
+      pClonedOldItem = pItemAtBodyLoc;
       if (bIsShield) {
         pClonedOldItem = pItemSlot2;
         eBodyLoc1 = eBodyLoc2;
       }
     }
 
-    __frame0.pItemAtBodyLoc = (D2UnitStrc*)(uint32_t)eBodyLoc1;
+    pItemAtBodyLoc = (D2UnitStrc*)(uint32_t)eBodyLoc1;
     if (!pClonedOldItem) {
       equip_new_item:
-      __frame0.pClonedNewItemLocal = ITEMS::Items::Drop::ITEM_CloneFromSerializedData(pGame, pUnit1, pUnit2, 1);
-      D2Common::Units::SetupUpdateFlag(__frame0.pClonedNewItemLocal, 4);
-      __frame0.pMercInventory = (D2InventoryStrc*)pUnit1->nUnitGUID;
-      GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit2, UNITEVENTCALLBACK_PERIODICSTATS, (int32_t)__frame0.pMercInventory);
-      GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_PERIODICSTATS, (int32_t)__frame0.pMercInventory);
-      if (!__frame0.pClonedNewItemLocal) {
+      pClonedNewItemLocal = ITEMS::Items::Drop::ITEM_CloneFromSerializedData(pGame, pUnit1, pUnit2, 1);
+      D2Common::Units::SetupUpdateFlag(pClonedNewItemLocal, 4);
+      pMercInventory = (D2InventoryStrc*)pUnit1->nUnitGUID;
+      GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit2, UNITEVENTCALLBACK_PERIODICSTATS, (int32_t)pMercInventory);
+      GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_PERIODICSTATS, (int32_t)pMercInventory);
+      if (!pClonedNewItemLocal) {
         dwOldItemGUID = -1;
       } else {
-        dwOldItemGUID = __frame0.pClonedNewItemLocal->nUnitGUID;
+        dwOldItemGUID = pClonedNewItemLocal->nUnitGUID;
       }
 
-      ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit2, dwOldItemGUID, (eD2BodyLoc)(uintptr_t)__frame0.pItemAtBodyLoc, 1, (uint32_t*)&__frame0.bEquipOk);
+      ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit2, dwOldItemGUID, (eD2BodyLoc)(uintptr_t)pItemAtBodyLoc, 1, &bEquipOk);
       ITEMS::ItemMode::ToCursorItem(pGame, pUnit, pUnit1);
-      D2Common::INVENTORY::Inventory::CopyInventoryOfPlayerOrFree(__frame0.pPlayerInv, nullptr);
+      D2Common::INVENTORY::Inventory::CopyInventoryOfPlayerOrFree(pPlayerInv, nullptr);
       if (pClonedOldItem) {
         pClonedOldItem = ITEMS::Items::Drop::ITEM_CloneFromSerializedData(pGame, pClonedOldItem, pUnit, 1);
-        D2Common::INVENTORY::Inventory::CopyInventoryOfPlayerOrFree(__frame0.pPlayerInv, pClonedOldItem);
+        D2Common::INVENTORY::Inventory::CopyInventoryOfPlayerOrFree(pPlayerInv, pClonedOldItem);
         ITEMS::ItemMode::ITEMMODE_ApplyQuestReward(pGame, pUnit, pClonedOldItem);
       }
 
@@ -4183,26 +4176,26 @@ BOOL __stdcall MERC_SwapEquippedItem(D2UnitStrc * pUnit, D2UnitStrc * pUnit1, ::
       return 1;
     }
 
-    pItemSlot2 = D2Common::INVENTORY::Inventory::ItemBelongsToInventoryOfPlayer(__frame0.pMercInventory, pClonedOldItem);
+    pItemSlot2 = D2Common::INVENTORY::Inventory::ItemBelongsToInventoryOfPlayer(pMercInventory, pClonedOldItem);
     if (pClonedOldItem != pItemSlot2) {
       return 0;
     }
 
-    D2Common::INVENTORY::Inventory::NullSub_2Arg(__frame0.pMercInventory, (uint32_t)__frame0.pItemAtBodyLoc);
+    D2Common::INVENTORY::Inventory::NullSub_2Arg(pMercInventory, (uint32_t)pItemAtBodyLoc);
     ITEMS::ItemMode::ITEMMODE_UnequipItemStats(pGame, pClonedOldItem, pUnit2, 0, 0);
     ITEMS::ItemMode::ITEMS_RecalcAndRefreshInventory(pGame, pUnit2, 0, 0);
     BOOL bMeetsEquipReqs = D2Common::ITEMS::Items::ITEM_CheckEquipRequirements(pUnit1, pUnit2, 0, nullptr, nullptr, nullptr);
     if (bMeetsEquipReqs) {
       D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pClonedOldItem, ITEMCMD_BODYLOC_TAKE_ITEM, 1);
-      D2Common::INVENTORY::Inventory::UpsertToUpdateList(__frame0.pMercInventory, pClonedOldItem);
+      D2Common::INVENTORY::Inventory::UpsertToUpdateList(pMercInventory, pClonedOldItem);
       D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pClonedOldItem, ITEMFLAG_REMOVED, 1);
       D2Common::Units::RefreshInventory(pUnit2, 1);
       goto equip_new_item;
     }
 
-    D2Common::INVENTORY::Inventory::INVENTORY_GetItemAtBodyLoc(__frame0.pMercInventory, pClonedOldItem, (int32_t)__frame0.pItemAtBodyLoc);
-    D2Common::INVENTORY::Inventory::PutItemInInventory(__frame0.pMercInventory, pClonedOldItem, 3);
-    D2Common::ITEMS::Items::SetBodyLoc(pClonedOldItem, (eD2BodyLoc)(uintptr_t)__frame0.pItemAtBodyLoc);
+    D2Common::INVENTORY::Inventory::INVENTORY_GetItemAtBodyLoc(pMercInventory, pClonedOldItem, (int32_t)pItemAtBodyLoc);
+    D2Common::INVENTORY::Inventory::PutItemInInventory(pMercInventory, pClonedOldItem, 3);
+    D2Common::ITEMS::Items::SetBodyLoc(pClonedOldItem, (eD2BodyLoc)(uintptr_t)pItemAtBodyLoc);
     D2Common::Units::SetupUpdateFlag(pClonedOldItem, 1);
     D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pClonedOldItem, INVPAGE_None);
     ITEMS::ItemMode::ITEMMODE_AddStatsList_ForMercSwap((uint32_t)pGame, pClonedOldItem, pUnit2, 0);
@@ -4423,9 +4416,9 @@ eD2ServerIncomingStatus __fastcall SCMD_0x61_MercEquipItem(::SGAMEDATA * pGame, 
 eD2ServerIncomingStatus __fastcall SCMD_0x63_ItemToBeltAuto(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2GSPacketClt0x63_ItemToBeltAuto * pPacket, size_t nSize) {
     bool bIsBeltable;
     BOOL bFoundSlot;
-    int32_t nErrAddr;
     D2UnitStrc* pItemInInv;
     int32_t nItemPosY;
+    int32_t nY;
     int32_t nItemX;
     D2ClientStrc* pClient;
     uint32_t nGridIndex;
@@ -4490,9 +4483,9 @@ eD2ServerIncomingStatus __fastcall SCMD_0x63_ItemToBeltAuto(::SGAMEDATA * pGame,
               invPage = (eInventoryPage)nItemPosY;
               nDbgParam = 0;
               nItemPosY = nPrevInvPage;
-              nErrAddr = D2Client::Units::GetYPosFromDynamicPathUnit(pItem);
+              nY = D2Client::Units::GetYPosFromDynamicPathUnit(pItem);
               nItemX = D2Client::Units::GetXPosFromDynamicPathUnit(pItem);
-              D2Common::INVENTORY::Inventory::UnusedDebug(".\\PLAYER\\PlrMsg.cpp", 0x1830, pInventory, nItemX, nErrAddr, invPage, nDbgParam, nItemPosY);
+              D2Common::INVENTORY::Inventory::UnusedDebug(".\\PLAYER\\PlrMsg.cpp", 0x1830, pInventory, nItemX, nY, invPage, nDbgParam, nItemPosY);
               D2Common::ITEMS::Items::ITEM_SetItemData_ePreviousPage(pItem, (uint8_t)nPrevInvPage);
               D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pItem, INVPAGE_None);
               itemFlagMask = ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD);
@@ -4604,7 +4597,6 @@ eD2ServerIncomingStatus __fastcall NET_D2GS_SERVER_HandleIncomingPacketAfterClie
 void __fastcall PLAYERMSG_BroadcastPlayerSlain(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pVictim) {
     bool bIsChampion;
     int16_t nBossNo;
-    int32_t nAddress;
     D2UnitStrc* pOwnerUnit;
     D2ClientStrc* pClient;
     char* szCharName;
@@ -4612,6 +4604,7 @@ void __fastcall PLAYERMSG_BroadcastPlayerSlain(::SGAMEDATA * pGame, D2UnitStrc *
     eD2UnitType eKillerType;
     D2Packet0x5aEventStructure packet0x5a;
     char szKillerNameTmp[16];
+    int32_t nLine;
     uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (pVictim && pVictim->eUnitType == UNIT_PLAYER) {
       if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
@@ -4652,10 +4645,10 @@ void __fastcall PLAYERMSG_BroadcastPlayerSlain(::SGAMEDATA * pGame, D2UnitStrc *
         eKillerType = pUnit->eUnitType;
       }
       if (eKillerType == UNIT_PLAYER) {
-        nAddress = 0x10;
+        nLine = 0x10;
         pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PlrMsg.cpp", 0x19db);
         szCharName = GAME::Clients::GetCharName(pClient);
-        Storm::Source::SSTR::SStrCopy(szKillerNameTmp, szCharName, nAddress);
+        Storm::Source::SSTR::SStrCopy(szKillerNameTmp, szCharName, nLine);
         pVictimNameEnd = Storm::Source::SSTR::SStrLen(szKillerNameTmp);
         if (pVictimNameEnd) {
           Storm::Source::SSTR::SStrCopy(packet0x5a.szName2, szKillerNameTmp, 0x10);

@@ -148,26 +148,27 @@ void __fastcall SUNITPROXY_AddItemToNpcProxy(D2UnitStrc * pNpcUnit, ::SGAMEDATA 
 
 // @sourcefile .\UNIT\sunitproxy.cpp
 void SUNITPROXY_InitNpcTradeItems(int32_t nParam1, ::SGAMEDATA * pGame, void * * pParam) {
+    void* nNpcTradeIdx;
     if (0x10 < nParam1) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa4);
       exit(-1);
     }
 
     pParam[1] = (void*)gaNpcItemTables[nParam1].nTradeCount;
-    void* pAllocBuffer = D2_ALLOC_POOL(pGame->pMemoryPool, gaNpcItemTables[nParam1].nTradeCount * 0xc);
-    *pParam = pAllocBuffer;
-    memcpy(pAllocBuffer, gaNpcItemTables[nParam1].pTradeItems, gaNpcItemTables[nParam1].nTradeCount * 0xc);
+    nNpcTradeIdx = D2_ALLOC_POOL(pGame->pMemoryPool, gaNpcItemTables[nParam1].nTradeCount * 0xc);
+    *pParam = nNpcTradeIdx;
+    memcpy(nNpcTradeIdx, gaNpcItemTables[nParam1].pTradeItems, gaNpcItemTables[nParam1].nTradeCount * 0xc);
     pParam[3] = (void*)gaNpcItemTables[nParam1].nQuestCount;
-    pAllocBuffer = D2_ALLOC_POOL(pGame->pMemoryPool, gaNpcItemTables[nParam1].nQuestCount * 4);
-    pParam[2] = pAllocBuffer;
-    memcpy(pAllocBuffer, gaNpcItemTables[nParam1].pQuestItems, gaNpcItemTables[nParam1].nQuestCount * 4);
+    nNpcTradeIdx = D2_ALLOC_POOL(pGame->pMemoryPool, gaNpcItemTables[nParam1].nQuestCount * 4);
+    pParam[2] = nNpcTradeIdx;
+    memcpy(nNpcTradeIdx, gaNpcItemTables[nParam1].pQuestItems, gaNpcItemTables[nParam1].nQuestCount * 4);
 }
 
 // Server-side init of the game's NPC control table. Allocates the D2GameNpcControlStrc and its 0x1100-byte NPC array from the game pool, seeds its RNG from the game seed, and iterates every monstats.txt row: for each monster flagged as an NPC (npc bit), allocates a player-style inventory, assigns a control-table slot (max 64, halts via ErrorManager if exceeded), and copies init data (flags/name) from the static gpNpcControlInitTable. For trade-enabled NPCs (flag==1) it dispatches on monster id to SUNITPROXY_InitNpcTradeItems with the per-vendor store index and marks the slot tradeable/repair. Stores the result in pGame->pNpcControl. __fastcall(pGame).
 // @sourcefile .\UNIT\sunitproxy.cpp
 void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
     // Static local variables (originally global data)
-    static int gnNpcControlInitCount = 0x2b;
+    static int gnNpcControlInitCount = 0x2b; D2_STATIC_GUARD(gnNpcControlInitCount, "D2Game::UNIT::sunitproxy::SUNITPROXY_AllocNpcControl::gnNpcControlInitCount");
     static D2NpcControlInitStrc gaNpcControlInitTable[43] = {
     {
         /* .nMonStatsId = */ 0x94,
@@ -470,7 +471,7 @@ void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
         /* .nName = */ 0x0,
         /* .nPad = */ 0x0
     }
-};
+}; D2_STATIC_GUARD(gaNpcControlInitTable, "D2Game::UNIT::sunitproxy::SUNITPROXY_AllocNpcControl::gaNpcControlInitTable");
 
     D2InventoryStrc* pNpcInventory;
     int nControlTableIdx;
@@ -1002,8 +1003,8 @@ D2InventoryStrc * __fastcall SUNITPROXY_GetNpcInventory(::SGAMEDATA * pGame, int
     return pNpc->pInventory;
 }
 
-int32_t __fastcall SUNITPROXY_GetNpcControl(::SGAMEDATA * pGame) {
-    return (uintptr_t)&pGame->pNpcControl->sSeed;
+D2SeedStrc * __fastcall SUNITPROXY_GetNpcControl(::SGAMEDATA * pGame) {
+    return &pGame->pNpcControl->sSeed;
 }
 
 // Server-side: removes a player (identified by pUnit->nUnitGUID, or -1 if null) from an NPC's proxy list and interaction list. Frees inventory items and the inventory struct if a proxy inventory existed, then frees the proxy and interaction list nodes from the game memory pool.

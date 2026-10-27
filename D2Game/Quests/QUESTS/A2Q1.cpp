@@ -33,7 +33,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -240,7 +240,7 @@ void __fastcall Q09_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // A2Q1 callback[0]: pick which gossip/quest-log line Atma speaks. Reads JustCompleted/Completed/RewardAwaits for the player. If RewardAwaits -> line 3 (come collect the book). Else if this player already participated in the kill -> line 4. Else, if not Completed and nStateFlag in 1..3 (or JustCompleted), looks up gdwQ09QuestStateMessages[nStateFlag] and, if valid (<9, !=0xffffffff), speaks that intro/progress line. AddGossipMessageOnMonster renders the chosen line.
 void __fastcall Q09_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ09QuestStateMessages[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x0 };
+    static int32_t gdwQ09QuestStateMessages[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x0 }; D2_STATIC_GUARD(gdwQ09QuestStateMessages, "D2Game::Quests::QUESTS::A2Q1::Q09_Callback00_NpcActivate::gdwQ09QuestStateMessages");
 
     int32_t nPlayerGUID;
     int32_t nTargetClassIdLocal = !pQuestArgs->pTarget ? -1 : pQuestArgs->pTarget->nClassId;
@@ -475,7 +475,7 @@ void __fastcall Q09_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 
 // A2Q1 callback[3]: Atma introduction-reply handler. Triggered when the gossip control id == 0x28 (player finished Atma's intro speech). Removes the player from the pending-gossip GUID list. If quest is at nStateFlag==2 (introduced) and not yet Completed/RewardAwaits, advances to nStateFlag 3 (objective active: go kill Radament) and mirrors state into all players' records via Q09_UpdateQuestRecord.
 void __fastcall Q09_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GossipTextStrc*)0x28) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GSPacketSrv0x27_TextStrc*)0x28) {
       return;
     }
 

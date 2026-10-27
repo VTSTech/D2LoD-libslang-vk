@@ -321,7 +321,7 @@ void COMCALLBACK_HandleBannerAdFile(uint32_t * pBannerAdData) {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(lpFileName_00798e30, "D2Multi::ComCallback::COMCALLBACK_HandleBannerAdFile::lpFileName_00798e30");
 
     char* pszExtension;
     int nExtChar;
@@ -1063,7 +1063,7 @@ BOOL __stdcall COMCALLBACK_ValidateGameJoinability() {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gbChannelUserCountFormatPadding, "D2Multi::ComCallback::COMCALLBACK_ValidateGameJoinability::gbChannelUserCountFormatPadding");
 
     uint32_t msgBuffer[72];
     int nMsgType;
@@ -1934,7 +1934,7 @@ void __fastcall COMCALLBACK_ScrollChannelUserList(int32_t nScrollDelta) {
 
 BOOL __stdcall COMCALLBACK_HandleUserListClick(int * pnClickMsg) {
     // Static local variables (originally global data)
-    static char gbLastChatSendTickPadding;
+    static char gbLastChatSendTickPadding; D2_STATIC_GUARD_BSS(gbLastChatSendTickPadding, "D2Multi::ComCallback::COMCALLBACK_HandleUserListClick::gbLastChatSendTickPadding");
 
     int nIndex;
     char* pbScanName;
@@ -2115,7 +2115,7 @@ uint32_t __stdcall COMCALLBACK_HandleGameListError2(D2ControlMsg * pControlMsg) 
 // Creates or updates Battle.net channel user entry. If user doesn't exist in list, allocates D2ChannelUserStrc (180 bytes), copies username and character data, creates character composite sprite with class/items/level, randomizes animation frame, formats display name, appends to linked list, increments channel user count, formats channel title "Channel Name (N)" as Unicode, displays in chat window, sorts list, and updates UI. If user exists, updates via COMCALLBACK_AddUserToChannelList instead.
 D2ChannelUserStrc * __stdcall COMCALLBACK_CreateChannelUserEntry(char * szUsername, uint32_t * pCharDataAndItems, uint32_t dwStatusFlags) {
     // Static local variables (originally global data)
-    static uint32_t gbChannelUserSeedInitialized;
+    static uint32_t gbChannelUserSeedInitialized; D2_STATIC_GUARD_BSS(gbChannelUserSeedInitialized, "D2Multi::ComCallback::COMCALLBACK_CreateChannelUserEntry::gbChannelUserSeedInitialized");
 
     char cVar1;
     char* pszNameScan;

@@ -337,7 +337,7 @@ uint8_t __fastcall Q24_TimerCallback_SpawnPortals(::SGAMEDATA * pGame, D2QuestDa
     0x0,
     -0x3,
     0x3
-};
+}; D2_STATIC_GUARD(gnA3Q7ArchonState2, "D2Game::Quests::QUESTS::A3Q7::Q24_TimerCallback_SpawnPortals::gnA3Q7ArchonState2");
 
     D2UnitStrc* pDVar5;
     uint32_t uVar2;

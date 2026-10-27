@@ -115,7 +115,7 @@ void D2WINTEXTBOX_ComputeLineSpacingForLanguage(int32_t nFontIndex) {
 
 // @sourcefile .\Src\D2WinTextBox.cpp
 void __fastcall D2WINTEXTBOX_ClearAllLines(::D2WinTextBox * pTextBox) {
-    int nColIdx;
+    void* nErrorCode;
     void* pMemoryToFree;
     void* pNextLineNode;
     if (!pTextBox) {
@@ -126,12 +126,13 @@ void __fastcall D2WINTEXTBOX_ClearAllLines(::D2WinTextBox * pTextBox) {
       exit(-1);
     }
 
-    void* pMemoryToFree_00 = (void*)pTextBox->sStyleControl.dwState;
-    while (pMemoryToFree_00) {
-      pNextLineNode = *(void**)((int)pMemoryToFree_00 + 0x1c);
+    nErrorCode = (void*)pTextBox->sStyleControl.dwState;
+    while (nErrorCode) {
+      int nColIdx;
+      pNextLineNode = *(void**)((int)nErrorCode + 0x1c);
       nColIdx = 0;
       do {
-        pMemoryToFree = *(void**)((int)pMemoryToFree_00 + nColIdx * 4);
+        pMemoryToFree = *(void**)((int)nErrorCode + nColIdx * 4);
         if (pMemoryToFree) {
           D2_FREE(pMemoryToFree);
         }
@@ -139,8 +140,8 @@ void __fastcall D2WINTEXTBOX_ClearAllLines(::D2WinTextBox * pTextBox) {
         nColIdx++;
       } while (nColIdx < 5);
 
-      D2_FREE(pMemoryToFree_00);
-      pMemoryToFree_00 = pNextLineNode;
+      D2_FREE(nErrorCode);
+      nErrorCode = pNextLineNode;
     }
 
     pTextBox->sStyleControl.dwPosY = 0;
@@ -168,11 +169,11 @@ void __fastcall D2WINTEXTBOX_SetLinePadding(::D2WinTextBox * pnTextBox, int32_t 
 
 // @sourcefile .\Src\D2WinTextBox.cpp
 void __fastcall D2WINTEXTBOX_SetLineCellTextW(::D2WinTextBox * pnTextBox, uint16_t * wszText, int32_t nRow, int32_t nCol) {
-    int32_t nStrLen;
     int nLineNode;
     uint16_t* wszAllocDst;
     int nCurLineNode;
     uint16_t wszLocalBuf[1024];
+    int32_t nLine;
     int32_t nLine_00;
     int32_t nZero;
     if (!pnTextBox) {
@@ -203,9 +204,9 @@ void __fastcall D2WINTEXTBOX_SetLineCellTextW(::D2WinTextBox * pnTextBox, uint16
         }
 
         nZero = 0;
-        nStrLen = 0x210;
+        nLine = 0x210;
         nLine_00 = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLocalBuf);
-        wszAllocDst = (uint16_t*)Fog::Memory::AllocClientMemory(nLine_00 * 2 + 2, ".\\Src\\D2WinTextBox.cpp", nStrLen, nZero);
+        wszAllocDst = (uint16_t*)Fog::Memory::AllocClientMemory(nLine_00 * 2 + 2, ".\\Src\\D2WinTextBox.cpp", nLine, nZero);
         *(uint16_t**)(nCurLineNode + nCol * 4) = (uint16_t*)wszAllocDst;
         D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszAllocDst, wszLocalBuf);
         return;
@@ -221,10 +222,10 @@ void __fastcall D2WINTEXTBOX_SetLineCellTextW(::D2WinTextBox * pnTextBox, uint16
 
 // @sourcefile .\Src\D2WinTextBox.cpp
 void __fastcall D2WINTEXTBOX_ClearLineRow(::D2WinTextBox * pnParam, int32_t nRow) {
+    void* nErrorAddr;
     int pCurLineNode;
     int32_t nErrorLine;
     int nLineCount;
-    void* pMemoryToFree;
     if (pnParam && pnParam->sControl.neD2FormType == FORM_TextBox && nRow <= pnParam->sStyleControl.dwSizeX) {
       int nCurNode;
       pCurLineNode = pnParam->sStyleControl.dwState;
@@ -246,9 +247,9 @@ void __fastcall D2WINTEXTBOX_ClearLineRow(::D2WinTextBox * pnParam, int32_t nRow
         if (nCurNode == nRow) {
           nCurNode = 0;
           do {
-            pMemoryToFree = *(void**)(pCurLineNode + nCurNode * 4);
-            if (pMemoryToFree) {
-              D2_FREE(pMemoryToFree);
+            nErrorAddr = *(void**)(pCurLineNode + nCurNode * 4);
+            if (nErrorAddr) {
+              D2_FREE(nErrorAddr);
               *(uint32_t*)(pCurLineNode + nCurNode * 4) = 0;
             }
 
@@ -1334,9 +1335,9 @@ void __fastcall FORMS_DestroyD2WinTextBox(::D2WinTextBox * pWinTextBox) {
 BOOL __fastcall SetText(::D2WinTextBox * pTextBox, uint16_t * szText, int32_t nLineStyle, bool bIndent, int nAlignment) {
     bool _uResult;
     bool uResult;
+    void* nPixelWidth;
     int32_t nStrLen;
     int32_t nMaxWidth;
-    void* pAllocedText;
     int nVisibleLines;
     int32_t wDestination;
     uint16_t* pszTrimmed;
@@ -1400,9 +1401,9 @@ BOOL __fastcall SetText(::D2WinTextBox * pTextBox, uint16_t * szText, int32_t nL
         if (nAlignment == 2) {
           nSourceLine = 0x161;
           nMaxWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pszTrimmed);
-          pAllocedText = Fog::Memory::AllocClientMemory(nMaxWidth * 2 + 0xc, ".\\Src\\D2WinTextBox.cpp", nSourceLine, nStrLen);
-          *pLineEntry = (int)pAllocedText;
-          *(uint16_t*)((int)pAllocedText + 8) = 0x20;
+          nPixelWidth = Fog::Memory::AllocClientMemory(nMaxWidth * 2 + 0xc, ".\\Src\\D2WinTextBox.cpp", nSourceLine, nStrLen);
+          *pLineEntry = (int)nPixelWidth;
+          *(uint16_t*)((int)nPixelWidth + 8) = 0x20;
           *(uint16_t*)(*pLineEntry + 6) = *(uint16_t*)(*pLineEntry + 8);
           *(uint16_t*)(*pLineEntry + 4) = *(uint16_t*)(*pLineEntry + 6);
           *(uint16_t*)(*pLineEntry + 2) = *(uint16_t*)(*pLineEntry + 4);

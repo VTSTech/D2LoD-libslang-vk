@@ -15,7 +15,7 @@
 #include "D2Win/Src/D2WinFont.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/SMem.h"
-#include "Storm/H/Storm.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Launch/MainMenus.h"
 
@@ -27,9 +27,9 @@ namespace D2Client::UI::ControlConfig {
 // Control config mouse handler. Tracks g_nControlConfigMouseButtonState array for each UI region (scroll up/down, list drag, buttons). Dispatches scroll/selection based on mouse state. Main mouse logic for config UI.
 void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouseYStack) {
     // Static local variables (originally global data)
-    static int32_t gnUICtrlConfigHoveredControl;
-    static bool gbUICtrlConfigNeedRefresh;
-    static bool gbUICtrlConfigPendingKey;
+    static int32_t gnUICtrlConfigHoveredControl; D2_STATIC_GUARD_BSS(gnUICtrlConfigHoveredControl, "D2Client::UI::ControlConfig::UI_UpdateConfigControlsState::gnUICtrlConfigHoveredControl");
+    static bool gbUICtrlConfigNeedRefresh; D2_STATIC_GUARD_BSS(gbUICtrlConfigNeedRefresh, "D2Client::UI::ControlConfig::UI_UpdateConfigControlsState::gbUICtrlConfigNeedRefresh");
+    static bool gbUICtrlConfigPendingKey; D2_STATIC_GUARD_BSS(gbUICtrlConfigPendingKey, "D2Client::UI::ControlConfig::UI_UpdateConfigControlsState::gbUICtrlConfigPendingKey");
 
     uint32_t* piVar1;
     uint32_t dwNowTick;
@@ -353,9 +353,9 @@ void __fastcall CONTROLCONFIG_OnToggleUI(int32_t nParam) {
 
 void __stdcall DRAW_ConfigControlsMenu() {
     // Static local variables (originally global data)
-    static int gnUICtrlConfigAnimationFrame;
-    static int gnUICtrlConfigLastMouseY;
-    static int gnUICtrlConfigLastMouseX;
+    static int gnUICtrlConfigAnimationFrame; D2_STATIC_GUARD_BSS(gnUICtrlConfigAnimationFrame, "D2Client::UI::ControlConfig::DRAW_ConfigControlsMenu::gnUICtrlConfigAnimationFrame");
+    static int gnUICtrlConfigLastMouseY; D2_STATIC_GUARD_BSS(gnUICtrlConfigLastMouseY, "D2Client::UI::ControlConfig::DRAW_ConfigControlsMenu::gnUICtrlConfigLastMouseY");
+    static int gnUICtrlConfigLastMouseX; D2_STATIC_GUARD_BSS(gnUICtrlConfigLastMouseX, "D2Client::UI::ControlConfig::DRAW_ConfigControlsMenu::gnUICtrlConfigLastMouseX");
 
     int nTmpWidth;
     uint16_t* pwLocaleStr;

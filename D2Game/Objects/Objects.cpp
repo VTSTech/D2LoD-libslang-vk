@@ -126,9 +126,9 @@ D2UnitStrc * __fastcall MakeRandomShrine(::SGAMEDATA * pGame, D2RoomStrc * pRoom
     0x88,
     0xe,
     0xe
-};
+}; D2_STATIC_GUARD(aOBJECTCLASSID, "D2Game::Objects::MakeRandomShrine::aOBJECTCLASSID");
 
-    int32_t nShrineId;
+    int32_t nLine;
     if (5 < nMonStatsId - 0x23eU) {
       return nullptr;
     }
@@ -141,13 +141,13 @@ D2UnitStrc * __fastcall MakeRandomShrine(::SGAMEDATA * pGame, D2RoomStrc * pRoom
 
     D2UnitStrc* pUnit = UNIT::SUnit::CreateUnit(UNIT_OBJECT, aOBJECTCLASSID[nObjClassOffset - 0x6ba], nPosX, nPosY, pGame, pRoom, 1, bUseMonStats, nullptr);
     uint32_t nRandOffset = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, aOBJECTCLASSID[nObjClassOffset - 0x6b8] - aOBJECTCLASSID[nObjClassOffset - 0x6b9]);
-    nShrineId = nRandOffset + aOBJECTCLASSID[nObjClassOffset - 0x6b9];
-    if (nShrineId == 5 || nShrineId == 4) {
-      nShrineId = 2;
+    nLine = nRandOffset + aOBJECTCLASSID[nObjClassOffset - 0x6b9];
+    if (nLine == 5 || nLine == 4) {
+      nLine = 2;
     }
 
-    pUnit->pUnitData.pUnitDataPlayer->szCharName[4] = (char)nShrineId;
-    D2ShrinesTxt* pShrinesTxt = D2Common::DATATBLS::ObjectTbls::TXT_Shrines_GetLine(nShrineId);
+    pUnit->pUnitData.pUnitDataPlayer->szCharName[4] = (char)nLine;
+    D2ShrinesTxt* pShrinesTxt = D2Common::DATATBLS::ObjectTbls::TXT_Shrines_GetLine(nLine);
     D2Common::Units::SetShrineTxtRecordInObjectData(pUnit, pShrinesTxt);
     return pUnit;
 }
@@ -158,6 +158,7 @@ D2UnitStrc * __fastcall MakeRandomChest(::SGAMEDATA * pGame, D2RoomStrc * pRoom,
     uint32_t nSeedLow;
     int32_t nChestId;
     int32_t nSeedHigh;
+    int32_t aDefaultChestIds[13];
     int32_t aChestIdTable[4];
     D2SeedStrc seedTmp;
     int64_t ullSeedProduct;
@@ -191,7 +192,6 @@ D2UnitStrc * __fastcall MakeRandomChest(::SGAMEDATA * pGame, D2RoomStrc * pRoom,
         nChestId = aChestIdTable[(nSeedLow2 & 1) + 2];
       }
     } else {
-      int32_t aDefaultChestIds[13];
       if (neAct != ACT_III) {
         seedTmp = D2_SEED_NEXT(*pCtrlSeed);
         *pCtrlSeed = seedTmp;
@@ -306,8 +306,8 @@ D2UnitStrc * __fastcall SERVER_InitUnitObject(::SGAMEDATA * pGame, D2RoomStrc * 
     &D2Game::Objects::MakeRandomSparklyChest,
     &D2Game::Objects::MakeRandomChest,
     &D2Game::Objects::OBJECT_CreateTombPortal
-};
-    static uint32_t gnObjectSpawnChanceInitVal = 0x9;
+}; D2_STATIC_GUARD(RandomObjectsInit, "D2Game::Objects::SERVER_InitUnitObject::RandomObjectsInit");
+    static uint32_t gnObjectSpawnChanceInitVal = 0x9; D2_STATIC_GUARD(gnObjectSpawnChanceInitVal, "D2Game::Objects::SERVER_InitUnitObject::gnObjectSpawnChanceInitVal");
 
     if (nMonStatsId < 0x23e) {
       return nullptr;
@@ -437,7 +437,7 @@ void __fastcall OBJECT_InitializeObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     &D2Game::Quests::QUESTS::A5Q6::Objects_InitFn77,
     &D2Game::Quests::QUESTS::A4Q3::Objects_InitFn78,
     &D2Game::Quests::QUESTS::A5Q6::Objects_InitFn79
-};
+}; D2_STATIC_GUARD(OBJECTSINITFN, "D2Game::Objects::OBJECT_InitializeObject::OBJECTSINITFN");
 
     BOOL bBadCodePtr;
     uint32_t nPreOpSeedRoll;
@@ -1352,24 +1352,24 @@ D2UnitStrc * __stdcall OBJECT_PlaceAtBiasedPosition(::SGAMEDATA * pGame, int32_t
 // Level-generation object populator: randomly scatters a class of decorative/destructible objects (barrels id3, racks id0x59, light id4, urns id0xd0/0xd1, etc.) across a DRLG room. Rolls the per-room spawn chance (nChancePercent) off the object control seed; if it passes, computes a target count from room area * nDensity, then repeatedly picks random in-room tiles, checks ROOM_CheckSpawnCollision, and CreateUnit(UNIT_OBJECT) the chosen class id from the per-type id table. Supports chaining/clustering extra objects around the first via direction-offset spread. Server-side, called during room realization. No return.
 void __fastcall Objects_PopulateFn1(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint8_t nDensity, int32_t nObjectClassId, uint16_t nChancePercent) {
     // Static local variables (originally global data)
-    static int gdwObjectSpawnChance1[3] = { 0x4f, 0x35, 0x1 };
-    static int gnObjectSpawnChanceCount[2] = { 0x3, 0x1c };
-    static int gdwObjectSpawnChance2[2] = { 0x59, 0x11c };
-    static int gdwObjectSpawnChance3[2] = { 0xd0, 0xd1 };
-    static uint32_t gaObjectBarrelClassIds = 0x3;
-    static uint32_t gnObjectClassIdBarrel = 0x2;
-    static uint32_t gaObjectSpawnRackIds = 0x2;
-    static uint32_t gnObjectSpawnRackCount = 0x2;
+    static int gdwObjectSpawnChance1[3] = { 0x4f, 0x35, 0x1 }; D2_STATIC_GUARD(gdwObjectSpawnChance1, "D2Game::Objects::Objects_PopulateFn1::gdwObjectSpawnChance1");
+    static int gnObjectSpawnChanceCount[2] = { 0x3, 0x1c }; D2_STATIC_GUARD(gnObjectSpawnChanceCount, "D2Game::Objects::Objects_PopulateFn1::gnObjectSpawnChanceCount");
+    static int gdwObjectSpawnChance2[2] = { 0x59, 0x11c }; D2_STATIC_GUARD(gdwObjectSpawnChance2, "D2Game::Objects::Objects_PopulateFn1::gdwObjectSpawnChance2");
+    static int gdwObjectSpawnChance3[2] = { 0xd0, 0xd1 }; D2_STATIC_GUARD(gdwObjectSpawnChance3, "D2Game::Objects::Objects_PopulateFn1::gdwObjectSpawnChance3");
+    static uint32_t gaObjectBarrelClassIds = 0x3; D2_STATIC_GUARD(gaObjectBarrelClassIds, "D2Game::Objects::Objects_PopulateFn1::gaObjectBarrelClassIds");
+    static uint32_t gnObjectClassIdBarrel = 0x2; D2_STATIC_GUARD(gnObjectClassIdBarrel, "D2Game::Objects::Objects_PopulateFn1::gnObjectClassIdBarrel");
+    static uint32_t gaObjectSpawnRackIds = 0x2; D2_STATIC_GUARD(gaObjectSpawnRackIds, "D2Game::Objects::Objects_PopulateFn1::gaObjectSpawnRackIds");
+    static uint32_t gnObjectSpawnRackCount = 0x2; D2_STATIC_GUARD(gnObjectSpawnRackCount, "D2Game::Objects::Objects_PopulateFn1::gnObjectSpawnRackCount");
 
     uint8_t _nDensity;
     int iVar4;
     BOOL BVar5;
-    int32_t nAddress;
     int nXRange;
     uint32_t uVar6;
     uint32_t nRandVal;
     uint32_t uRandSpread;
     bool bSimpleCollision;
+    int32_t iVar7;
     D2DrlgRoomCoordsStrc sRoomCoords;
     uint32_t nSeedHighTmp0;
     uint32_t nSeedHighTmp1;
@@ -1459,7 +1459,7 @@ void __fastcall Objects_PopulateFn1(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uin
       }
 
       nXRange = sRoomCoords.dwXSize - iVar1;
-      nAddress = pObjClassIdTable[nRandVal];
+      iVar7 = pObjClassIdTable[nRandVal];
       nRandVal = nXRange - 1;
       if ((int)nRandVal < 1) {
         nRandVal = 0;
@@ -1498,7 +1498,7 @@ void __fastcall Objects_PopulateFn1(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uin
           exit(-1);
         }
 
-        UNIT::SUnit::CreateUnit(UNIT_OBJECT, nAddress, nCurX, nCurY, pGame, pRoom, 1, 0, nullptr);
+        UNIT::SUnit::CreateUnit(UNIT_OBJECT, iVar7, nCurX, nCurY, pGame, pRoom, 1, 0, nullptr);
         nChainLen = 1;
         _nDensity = 1;
         extend_cluster:
@@ -1635,7 +1635,7 @@ D2UnitStrc * __stdcall OBJECT_SpawnBonusChest(::SGAMEDATA * pGame, D2UnitStrc * 
 // DRLG room object-population spawner (object placement function variant 7). Uses the per-game object-control seed (GetObjectControlSeed) so spawns are deterministic. Rolls nChancePercent to decide whether to spawn at all; if so, picks a random spawn-offset group, reads the target object's SizeX/SizeY from ObjectsTxt, and tries up to 8 random positions within the room rectangle (DRLGROOM_GetRoomCoordinates) checking ROOM_CheckSpawnCollision. On a clear position it iterates the chosen offset table and, per slot, creates a UNIT_OBJECT (random class 0x39/0x3a) via CreateUnit and seeds a bonus chest (OBJECT_SpawnBonusChest). Halts (ERROR) on null room. Side-effecting; no return.
 void __fastcall Objects_PopulateFn7(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint8_t nDensity, int32_t nObjectClassId, uint16_t nChancePercent) {
     // Static local variables (originally global data)
-    static uint32_t gnObjectSpawnGroupCount = 0x4;
+    static uint32_t gnObjectSpawnGroupCount = 0x4; D2_STATIC_GUARD(gnObjectSpawnGroupCount, "D2Game::Objects::Objects_PopulateFn7::gnObjectSpawnGroupCount");
 
     // Frame slots -44..-4 are ONE object: &nOffsetX is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -1852,8 +1852,8 @@ void __fastcall Objects_PopulateFn8(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uin
     D2DrlgRoomCoordsStrc sRoomCoords;
     ::SGAMEDATA* pGameSave = pGame;
     eD2LevelId eLevelId = D2Common::DUNGEON::Dungeon::GetLevelIdFromPopulatedRoom(pRoom);
-    int32_t nQuestStatus = ObjectsRgn::QUEST_GetLevelQuestStatus(pGame, eLevelId);
-    if ((char)nQuestStatus != '\0') {
+    int32_t nErrLine = ObjectsRgn::QUEST_GetLevelQuestStatus(pGame, eLevelId);
+    if ((char)nErrLine != '\0') {
       return;
     }
     if (0x80 < nDensity) {
@@ -2458,7 +2458,7 @@ BOOL __stdcall OBJECT_PopulateRoomSpecialObjects(::SGAMEDATA * pGame, int32_t nP
 // Populates a room with objects drawn from the level's ObjGrp/ObjPrb table entries. For each of up to 8 group slots, rolls the room seed, checks spawn density constraints, then picks one object from the group's weighted probability list and invokes its PopulateFn dispatch (via OBJECTSPOPULATEFN table). Falls through special-object population first via OBJECT_PopulateRoomSpecialObjects.
 void __fastcall OBJECT_PopulateRoomObjects(::SGAMEDATA * pGame, D2RoomStrc * pRoom) {
     // Static local variables (originally global data)
-    static uint8_t gbObjectPopulateInitialized = 0x2;
+    static uint8_t gbObjectPopulateInitialized = 0x2; D2_STATIC_GUARD(gbObjectPopulateInitialized, "D2Game::Objects::OBJECT_PopulateRoomObjects::gbObjectPopulateInitialized");
 
     D2ObjectRngStrc* pObjRng;
     D2ObjectsTxt* pObjectsTxt;
@@ -2555,7 +2555,7 @@ void __fastcall OBJECT_PopulateRoomObjects(::SGAMEDATA * pGame, D2RoomStrc * pRo
 
 void __fastcall OBJECT_CallPopulateFn(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int32_t nObjectClassId) {
     // Static local variables (originally global data)
-    static uint8_t gbObjectInitTableSetup = 0x40;
+    static uint8_t gbObjectInitTableSetup = 0x40; D2_STATIC_GUARD(gbObjectInitTableSetup, "D2Game::Objects::OBJECT_CallPopulateFn::gbObjectInitTableSetup");
 
     bool _bBadCodePtr;
     bool bBadCodePtr;

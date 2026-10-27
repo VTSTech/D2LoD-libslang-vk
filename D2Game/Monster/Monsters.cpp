@@ -136,12 +136,12 @@ int32_t __fastcall GetUmodConstant(int32_t nUmodId) {
     return sgptDataTable->pTxtMonUmod[nUmodId].constants;
 }
 
-int32_t __fastcall GetMonUModList(D2UnitStrc * pUnit) {
+uint8_t * __fastcall GetMonUModList(D2UnitStrc * pUnit) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
-      return 0;
+      return nullptr;
     }
 
-    return (int32_t)pUnit->pUnitData.pUnitDataPlayer->pWaypoint;
+    return (uint8_t*)pUnit->pUnitData.pUnitDataPlayer->pWaypoint;
 }
 
 // 2022.01.09 - dzik
@@ -785,7 +785,7 @@ void __fastcall UMOD_DispatchInitFunction(D2UnitStrc * pUnit, int32_t nParam, BO
 // Applies all active MonUMod enchantment init functions to a monster unit. First, if nParam2 is nonzero, spawns minions via MONSTER_SpawnMinionsForBoss. Then iterates the global gnEnchantmentEffectOffset table, calling each non-null aUmodInitTable entry and dispatching to minions via UMOD_DispatchInitFunction. Finally, iterates the unit's own MonUModList (up to 9 slots) repeating the same init + dispatch for each assigned enchantment ID.
 void __stdcall UMOD_ApplyEnchantmentsToMonster(int32_t nParam1, D2RoomCoordListStrc * pCoordList, ::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam2, int32_t nParam3) {
     // Static local variables (originally global data)
-    static int gnEnchantmentEffectOffset_Lightning[4] = { 0x1, 0x2, 0x3, 0x4 };
+    static int gnEnchantmentEffectOffset_Lightning[4] = { 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gnEnchantmentEffectOffset_Lightning, "D2Game::Monsters::UMOD_ApplyEnchantmentsToMonster::gnEnchantmentEffectOffset_Lightning");
 
     int32_t nUmodIdUnsigned;
     if (nParam2) {
@@ -1173,7 +1173,7 @@ void __fastcall MONSTER_ShadowDeathNova(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 // Server-side: emits the radial lightning-bolt nova fired by a lightning-enchanted unique monster (e.g. on death/trigger). When bShouldTrigger is set and at least 10 game frames have passed since the last burst (stored in the monster's data field), sets the monster's lightning-enchant flag bit, records the current game frame, computes skill level = unit level/2 (min 1), then builds a D2SkillArgStrc at the unit's position and spawns MISSILE_Lightunique charged bolts using SKILL_InitChargedBoltPath. Offsets are taken from the gnElementalDamageScale_LightningUnique / gnEnchantmentApplyScale_Lightning tables (4 directions x 2 bolts each). If <10 frames elapsed it instead clears the enchant flag bit and returns. No return value.
 void __fastcall MONSTER_LightningUniqueDeathBolts(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwUnused1, int32_t bShouldTrigger) {
     // Static local variables (originally global data)
-    static int gaMissileOffsets_LightningUniqueX[4] = { 0x0, 0x1, 0x0, -0x1 };
+    static int gaMissileOffsets_LightningUniqueX[4] = { 0x0, 0x1, 0x0, -0x1 }; D2_STATIC_GUARD(gaMissileOffsets_LightningUniqueX, "D2Game::Monsters::MONSTER_LightningUniqueDeathBolts::gaMissileOffsets_LightningUniqueX");
 
     int nSkillLevel;
     D2SkillArgStrc sSkillArg;
@@ -1423,8 +1423,8 @@ void __fastcall MONSTER_ScaleMissileDamageByOwner(::SGAMEDATA * pGame, D2UnitStr
 // Spawns the Burning Dead Archer / Afflicted bug-lightning death-bolt salvo on unit death. Fires 4 directional pairs (8 total) of MISSILE_Buglightning using offsets from gaMissileOffsets_BugLightningX/Y, with SKILL_InitChargedBoltPath as the init callback. Level is taken from UNITSTAT_level; dwUnused1/dwUnused2 are ignored (death-event signature padding).
 void __fastcall MONSTER_BugLightningDeathBolts(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwUnused1, uint32_t dwUnused2) {
     // Static local variables (originally global data)
-    static int gaMissileOffsets_BugLightningY[4] = { -0x1, 0x0, 0x1, 0x0 };
-    static int gaMissileOffsets_BugLightningX[4] = { 0x0, 0x1, 0x0, -0x1 };
+    static int gaMissileOffsets_BugLightningY[4] = { -0x1, 0x0, 0x1, 0x0 }; D2_STATIC_GUARD(gaMissileOffsets_BugLightningY, "D2Game::Monsters::MONSTER_BugLightningDeathBolts::gaMissileOffsets_BugLightningY");
+    static int gaMissileOffsets_BugLightningX[4] = { 0x0, 0x1, 0x0, -0x1 }; D2_STATIC_GUARD(gaMissileOffsets_BugLightningX, "D2Game::Monsters::MONSTER_BugLightningDeathBolts::gaMissileOffsets_BugLightningX");
 
     int nPosX;
     int nPosY;
@@ -1509,7 +1509,7 @@ void __fastcall UMOD_SetRandomElementalDamage(int32_t nModifierLevel, D2UnitStrc
     0x39,
     0x3a,
     0x3b
-};
+}; D2_STATIC_GUARD(gaMissileOffsets_ColdMinion, "D2Game::Monsters::UMOD_SetRandomElementalDamage::gaMissileOffsets_ColdMinion");
 
     if (!bShouldTrigger) {
       return;
@@ -1532,9 +1532,9 @@ void __fastcall UMOD_SetRandomElementalForMissile(int32_t nModifierLevel, D2Unit
 // Server-side tick handler: when bShouldTrigger is set, rolls the unit's seed for a chance (>29/100) to find a player target, picks the first occupied belt slot, clones the item via serialized data, finds a drop spot near the owner, drops the clone, then consumes and removes the original belt item and re-sorts the belt column.
 void __fastcall MONSTER_StealPotionFromBelt(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwUnused1, int32_t bShouldTrigger) {
     D2UnitStrc* pBeltItem;
-    int32_t nBeltItemX;
     POINT ptOwnerPos;
     POINT ptDropPos;
+    int32_t nErrorLine;
     if (!bShouldTrigger) {
       return;
     }
@@ -1589,9 +1589,9 @@ void __fastcall MONSTER_StealPotionFromBelt(::SGAMEDATA * pGame, D2UnitStrc * pU
 
     D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pClonedItem, ITEMFLAG_NEW, 1);
     ITEMS::Items::Drop::DropItem(pGameLocal, (int32_t)pTargetPlayer, pClonedItem, (D2RoomStrc*)pGameTemp, ptDropPos.x, ptDropPos.y);
-    nBeltItemX = D2Client::Units::GetXPosFromDynamicPathUnit(pBeltItem);
+    nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pBeltItem);
     ITEMS::ItemMode::ITEMMODE_ConsumeItemAndRemove(pGameLocal, pTargetPlayer, pBeltItem);
-    ITEMS::ItemMode::ITEMMODE_SortBeltColumn(pGameLocal, pTargetPlayer, (uint8_t)nBeltItemX);
+    ITEMS::ItemMode::ITEMMODE_SortBeltColumn(pGameLocal, pTargetPlayer, (uint8_t)nErrorLine);
 }
 
 // Routes a monster's death event to its boss-specific handler based on nClassId. Handles Bloodraven (ranged special), Radament (ring attack), Mephisto (death missile), Izual (melee skill), Andariel (ranged short), Overseer (ranged normal), Uber Mephisto/Baal/Diablo (loot drop check), and no-op uber variants. Only triggers the handler if the unit is actually in Death anim mode (except Overseer/Uber which check null too).
@@ -2665,7 +2665,7 @@ D2UnitStrc * __fastcall SPAWN_UniqueMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
       return nullptr;
     }
 
-    uint8_t* pUModList = (uint8_t*)D2Game::Monsters::GetMonUModList(pUnit);
+    uint8_t* pUModList = D2Game::Monsters::GetMonUModList(pUnit);
     if (!pUModList) {
       Fog::Debug::GuardStack();
       return pUnit;
@@ -2858,7 +2858,7 @@ int32_t __fastcall MONSTER_CalculateCorpseBombDamage(int32_t nParam1, int32_t nP
     0x28,
     0x30,
     0x38
-};
+}; D2_STATIC_GUARD(gnCorpseBombDamageScaleByDifficulty, "D2Game::Monsters::MONSTER_CalculateCorpseBombDamage::gnCorpseBombDamageScaleByDifficulty");
 
     if (!(*(char*)(nParam1 + 0x6d) != '\0' && 1 < nParam2)) {
       return 0;

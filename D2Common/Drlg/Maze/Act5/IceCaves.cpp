@@ -44,7 +44,7 @@ void ReplaceRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_ICECAVES_REPLACE_ONE, "D2Common::Drlg::Maze::Act5::IceCaves::ReplaceRooms::DRLG_ICECAVES_REPLACE_ONE");
     static D2DrlgReplaceRoomStrc DRLG_ICECAVES_REPLACE_TWO[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x3f2,
@@ -70,7 +70,7 @@ void ReplaceRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_ICECAVES_REPLACE_TWO, "D2Common::Drlg::Maze::Act5::IceCaves::ReplaceRooms::DRLG_ICECAVES_REPLACE_TWO");
     static D2DrlgReplaceRoomStrc DRLG_ICECAVES_REPLACE_THREE[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x3f2,
@@ -96,7 +96,7 @@ void ReplaceRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_ICECAVES_REPLACE_THREE, "D2Common::Drlg::Maze::Act5::IceCaves::ReplaceRooms::DRLG_ICECAVES_REPLACE_THREE");
     static D2DrlgReplaceRoomStrc DRLG_ICECAVES_REPLACE_FOUR[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x3f2,
@@ -122,7 +122,7 @@ void ReplaceRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_ICECAVES_REPLACE_FOUR, "D2Common::Drlg::Maze::Act5::IceCaves::ReplaceRooms::DRLG_ICECAVES_REPLACE_FOUR");
     static D2DrlgReplaceRoomStrc DRLG_ICECAVES_REPLACE_FIVE[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x3f2,
@@ -148,7 +148,7 @@ void ReplaceRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_ICECAVES_REPLACE_FIVE, "D2Common::Drlg::Maze::Act5::IceCaves::ReplaceRooms::DRLG_ICECAVES_REPLACE_FIVE");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
     pLevel->sSeed = DVar1;

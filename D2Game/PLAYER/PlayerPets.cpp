@@ -107,7 +107,7 @@ void KillHandlerPet(DWORD nUid, ::SGAMEDATA * pGame) {
       return;
     }
     if (pUnit->eUnitFlagsEx >> 8 & 1) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a);
       exit(-1);
     }
 
@@ -415,8 +415,8 @@ int32_t __fastcall GetOwnersPetType(D2UnitStrc * pUnit, int32_t nUnitGUID) {
 
 // Searches the owner player's pet list for a pet whose GUID matches pPetUnit, clears its active flag, captures its class ID / seed / name ID / pet-type index, then calls SUnit::IterateAllUnits with SummonAndAssign to re-spawn it. Returns 1 if the pet was found and a resummon was triggered, 0 if pPetUnit is not in the pet list or the player has no pet data.
 void __fastcall PETS_ResummonPetByUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pPetUnit) {
-    int32_t nErrorAddress;
     D2PetStrc* pPetListEntry;
+    int32_t nPetUnitGUID;
     D2PetArgStrc sPetArgs;
     D2PetStrc* pPetEntry;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
@@ -441,8 +441,8 @@ void __fastcall PETS_ResummonPetByUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
         pPetListEntry = (D2PetStrc*)&pDVar1->pPetList[nPetListOffset].pPets;
         if (pPetListEntry) {
           for (pPetEntry = *(D2PetStrc**)pPetListEntry; pPetEntry; pPetEntry = pPetEntry->pNext) {
-            nErrorAddress = D2Client::UNIT::GetGUID(pPetUnit);
-            if (pPetEntry->nPetGUID == nErrorAddress) {
+            nPetUnitGUID = D2Client::UNIT::GetGUID(pPetUnit);
+            if (pPetEntry->nPetGUID == nPetUnitGUID) {
               *(uint32_t*)pPetEntry &= -2;
               sPetArgs.nPetGUID = pPetEntry->nPetGUID;
               sPetArgs.nUnused18 = 0;
@@ -577,7 +577,7 @@ void __stdcall ROOM_SpawnPetsFromSaveData(D2RoomStrc * pRoom, uint16_t wPosX, ::
 }
 
 // Iterates every live pet unit across all pet-type lists for a player and invokes pfnCallback(pPetUnit, pCallbackArg) for each. Resolves GUIDs to actual D2UnitStrc pointers via FindUnitFromTable; skips flagged-dead nodes (bit 0 set). Validates the callback pointer with IsBadCodePtr and halts if invalid.
-void __fastcall PetsForEach(::SGAMEDATA * pGame, D2UnitStrc * pUnit, pfnPetForEachCallback pfnCallback, D2UnitStrc * pCallbackArg) {
+void __fastcall PetsForEach(::SGAMEDATA * pGame, D2UnitStrc * pUnit, pfnPetForEachCallback pfnCallback, void * pCallbackArg) {
     uint32_t* pPetListHead;
     D2UnitStrc* pPetUnit;
     uint8_t* pCurPetNode;
@@ -747,8 +747,8 @@ uint32_t __fastcall PETS_HasMercenary(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 }
 
 void __fastcall RemovePetByGuidAndNotify(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, DWORD nPetGUID, BOOL bKillHandler) {
-    int32_t nPetType;
     DWORD nIterArgs[7];
+    int32_t nErrLine;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pPlayer);
     if (!pPlayerData) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x276);
@@ -760,19 +760,19 @@ void __fastcall RemovePetByGuidAndNotify(::SGAMEDATA * pGame, D2UnitStrc * pPlay
       return;
     }
 
-    nPetType = GetOwnersPetType(pPlayer, nPetGUID);
-    if (!nPetType) {
+    nErrLine = GetOwnersPetType(pPlayer, nPetGUID);
+    if (!nErrLine) {
       if (bKillHandler) {
         KillHandlerPet(nPetGUID, pGame);
       }
-    } else if (nPetType < 0) {
+    } else if (nErrLine < 0) {
       return;
     }
-    if (!(nPetType < sgptDataTable->nTxtPetTypeSize && pPets->pPetList + nPetType)) {
+    if (!(nErrLine < sgptDataTable->nTxtPetTypeSize && pPets->pPetList + nErrLine)) {
       return;
     }
 
-    KillingPets(nPetGUID, pPets->pPetList + nPetType, bKillHandler, pGame);
+    KillingPets(nPetGUID, pPets->pPetList + nErrLine, bKillHandler, pGame);
     memset(nIterArgs + 1, 0, 6 * sizeof(nIterArgs[0]));
     nIterArgs[0] = nPetGUID;
     UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)Send0x7aSummonLog, nIterArgs);
@@ -781,11 +781,11 @@ void __fastcall RemovePetByGuidAndNotify(::SGAMEDATA * pGame, D2UnitStrc * pPlay
 // Removes a pet (by its unit pointer) from a player's pet tracking data on death/dismissal. For non-merc pets calls RemovePetByGuidAndNotify; for all types marks the node dead (bit 0), computes revive cost and sends a 0x9B MercReviveCost packet to the owner, then broadcasts 0x7A to all units to remove the summon log entry.
 // @sourcefile .\PLAYER\PlayerPets.cpp
 void __fastcall SERVERUNIT_RemovePetFromUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pPet) {
-    int32_t nPetType;
     uint32_t nReviveCost;
     D2ClientStrc* pClient;
     DWORD nPetGUID;
     DWORD nIterArgs[7];
+    int32_t nErrLine;
     D2PetStrc* pPetNode;
     ::SGAMEDATA* pGameSaved = pGame;
     D2UnitStrc* pUnitSaved = pUnit;
@@ -805,15 +805,15 @@ void __fastcall SERVERUNIT_RemovePetFromUnit(::SGAMEDATA * pGame, D2UnitStrc * p
       return;
     }
 
-    nPetType = GetOwnersPetType(pUnit, nPetGUID);
-    if (nPetType != 7) {
+    nErrLine = GetOwnersPetType(pUnit, nPetGUID);
+    if (nErrLine != 7) {
       RemovePetByGuidAndNotify(pGameSaved, pUnitSaved, nPetGUID, 0);
     }
-    if (!(-1 < nPetType && nPetType < sgptDataTable->nTxtPetTypeSize)) {
+    if (!(-1 < nErrLine && nErrLine < sgptDataTable->nTxtPetTypeSize)) {
       return;
     }
 
-    D2PetListStrc* pDVar1 = pPets->pPetList + nPetType;
+    D2PetListStrc* pDVar1 = pPets->pPetList + nErrLine;
     if (!pDVar1) {
       return;
     }
@@ -835,8 +835,8 @@ void __fastcall SERVERUNIT_RemovePetFromUnit(::SGAMEDATA * pGame, D2UnitStrc * p
 
 // Called when a pet dies. Looks up the dead pet's GUID from pKillData, removes it from the owner's pet list via RemovePetByGuidAndNotify (unless pet type 7), then returns non-null if the GUID still appears in the pet list (i.e. was tracked). Returns null if owner has no pet data or no pets of that type.
 D2UnitDataPlayerPetsStrc * __fastcall PETS_HandleDeadPet(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2MonsterKillStrc * pKillData) {
-    int32_t nPetType;
     DWORD nPetGUID;
+    int32_t nErrLine;
     D2PetStrc* pPetNode;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     if (!pPlayerData) {
@@ -854,15 +854,15 @@ D2UnitDataPlayerPetsStrc * __fastcall PETS_HandleDeadPet(::SGAMEDATA * pGame, D2
       return nullptr;
     }
 
-    nPetType = GetOwnersPetType(pUnit, nPetGUID);
-    if (nPetType != 7) {
+    nErrLine = GetOwnersPetType(pUnit, nPetGUID);
+    if (nErrLine != 7) {
       RemovePetByGuidAndNotify(pGame, pUnit, nPetGUID, 0);
     }
-    if (!(-1 < nPetType && nPetType < sgptDataTable->nTxtPetTypeSize)) {
+    if (!(-1 < nErrLine && nErrLine < sgptDataTable->nTxtPetTypeSize)) {
       return nullptr;
     }
 
-    D2PetListStrc* paPetList = pPets->pPetList + nPetType;
+    D2PetListStrc* paPetList = pPets->pPetList + nErrLine;
     if (!paPetList) {
       return nullptr;
     }

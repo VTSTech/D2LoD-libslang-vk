@@ -373,7 +373,7 @@ int32_t __fastcall DRLGOUTDOOR_GetAdjacentLevelVisMask(D2DrlgLevelStrc * pLevel,
 // Given a vertex position on the outdoor level grid, determines which edge direction it lies on (N/S/E/W corner), then searches the level's orthogonal link list for a matching neighbor in that direction whose world-coordinate bounds contain the vertex. If found and the link type is 0, returns the adjacent level's visibility mask via DRLGOUTDOOR_GetAdjacentLevelVisMask; otherwise returns 0.
 int32_t __fastcall GetOutLinkVisFlag(D2DrlgLevelStrc * pLevel, D2DrlgVertexStrc * pDrlgVertex) {
     // Static local variables (originally global data)
-    static int gnOutdoorsGridHeightByLevel[8] = { -0x4, 0x4, 0x4, -0x4, 0xc, 0x4, 0x4, 0xc };
+    static int gnOutdoorsGridHeightByLevel[8] = { -0x4, 0x4, 0x4, -0x4, 0xc, 0x4, 0x4, 0xc }; D2_STATIC_GUARD(gnOutdoorsGridHeightByLevel, "D2Common::Drlg::Outdoors::GetOutLinkVisFlag::gnOutdoorsGridHeightByLevel");
 
     BOOL bInBounds;
     int nGridWidth;
@@ -807,8 +807,8 @@ BOOL __fastcall SpawnOutdoorLevelPreset(D2DrlgLevelStrc * pLevel, int32_t nLevel
 // DRLG outdoor generator: tries to place a single outdoor level preset (DS1, nLvlPrestId) at a random valid cell of the level grid, with seed nRand. Builds a shuffled (Fisher-Yates, level-seeded) list of interior grid cells (grid minus a 2-cell border), then scans cells whose grid-flags have the high bit set, testing up to 8 sub-offsets (from gaOutdoorsGridWidthByLevel tables) via TestOutdoorLevelPreset; on the first cell that passes it spawns via SpawnOutdoorLevelPresetEx and returns TRUE. If no shuffled cell works, falls back to SpawnOutdoorLevelPreset and returns its result. Mutates pLevel->sSeed.
 BOOL __fastcall SpawnRandomOutdoorDS1(D2DrlgLevelStrc * pLevel, int32_t nLvlPrestId, int32_t nRand) {
     // Static local variables (originally global data)
-    static uint8_t gaOutdoorsGridWidthByLevel_2[8] = { 0x0, 0xff, 0x1, 0x0, 0xff, 0x1, 0xff, 0x1 };
-    static uint8_t gaOutdoorsGridWidthByLevel_0[8] = { 0xff, 0x0, 0x0, 0x1, 0xff, 0x1, 0x1, 0xff };
+    static uint8_t gaOutdoorsGridWidthByLevel_2[8] = { 0x0, 0xff, 0x1, 0x0, 0xff, 0x1, 0xff, 0x1 }; D2_STATIC_GUARD(gaOutdoorsGridWidthByLevel_2, "D2Common::Drlg::Outdoors::SpawnRandomOutdoorDS1::gaOutdoorsGridWidthByLevel_2");
+    static uint8_t gaOutdoorsGridWidthByLevel_0[8] = { 0xff, 0x0, 0x0, 0x1, 0xff, 0x1, 0x1, 0xff }; D2_STATIC_GUARD(gaOutdoorsGridWidthByLevel_0, "D2Common::Drlg::Outdoors::SpawnRandomOutdoorDS1::gaOutdoorsGridWidthByLevel_0");
 
     int nCellY;
     BOOL bCanPlace;
@@ -1472,7 +1472,7 @@ void BuildChaosSanctuary(D2DrlgLevelStrc * pLevel) {
     0x359,
     0x344,
     0x344
-};
+}; D2_STATIC_GUARD(aChaosSanctuaryPresets, "D2Common::Drlg::Outdoors::BuildChaosSanctuary::aChaosSanctuaryPresets");
 
     uint32_t nPresetIdx = 0;
     do {

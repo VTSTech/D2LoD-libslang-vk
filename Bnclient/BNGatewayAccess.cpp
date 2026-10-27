@@ -13,7 +13,6 @@
 #include "globals/globals.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Game/Objects/ObjectsRgn.h"
-#include "Storm/D2ArchiveStrc.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -189,27 +188,27 @@ void __stdcall SetCurGateway(int32_t nParam1, int32_t nParam2) {
 // An "Override.." value name sets bIsOverride=1 @0x51827f.
 // @sourcefile .\BNetGW.cpp
 void GetGatewayList(void * pThis, char * szText) {
-    bool _bRegReadResult;
     bool bRegReadResult;
     uint32_t* dwRegDataSize;
+    int32_t nLine;
     char* pDataCursor = szText;
     if (*(int*)((int)pThis + 0x10)) {
       dwRegDataSize = (uint32_t*)pThis;
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x146);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x146);
       exit(-1);
     }
 
     dwRegDataSize = 0;
-    _bRegReadResult = Storm::Source::SReg::SRegLoadData((uint32_t*)"Configuration", szText, 0x82, (LPBYTE)0x0, 0, &dwRegDataSize);
-    if (!(_bRegReadResult && dwRegDataSize)) {
+    nLine = Storm::Source::SReg::SRegLoadData((uint32_t*)"Configuration", szText, 0x82, (LPBYTE)0x0, 0, &dwRegDataSize);
+    if (!(nLine && dwRegDataSize)) {
       return;
     }
 
     *(uint32_t**)((int)pThis + 0x14) = (uint32_t*)dwRegDataSize;
     LPBYTE pGatewayBuf = (LPBYTE)Storm::SMem::SMemAlloc((uint32_t)dwRegDataSize, ".\\BNetGW.cpp", 0x156, 0);
     *(LPBYTE*)((int)pThis + 0x10) = pGatewayBuf;
-    _bRegReadResult = Storm::Source::SReg::SRegLoadData((uint32_t*)"Configuration", pDataCursor, 0x82, pGatewayBuf, *(DWORD*)((int)pThis + 0x14), nullptr);
-    if (!_bRegReadResult) {
+    nLine = Storm::Source::SReg::SRegLoadData((uint32_t*)"Configuration", pDataCursor, 0x82, pGatewayBuf, *(DWORD*)((int)pThis + 0x14), nullptr);
+    if (!nLine) {
       Storm::SMem::SMemFree(*(void**)((int)pThis + 0x10), ".\\BNetGW.cpp", 0x15e, 0);
       *(uint32_t*)((int)pThis + 0x10) = 0;
       *(uint32_t*)((int)pThis + 0x14) = 0;
@@ -245,7 +244,7 @@ void __fastcall GetBattlenetRealmsList(int32_t nGatewayAccess) {
     bool _bFileLoaded;
     bool bFileLoaded;
     DWORD dwFileSize = 0;
-    _bFileLoaded = Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)"Data\\Global\\Realms.bin", (void**)(nGatewayAccess + 0x20), &dwFileSize, 0, 0);
+    _bFileLoaded = Storm::Source::SFile::SFileLoadFile("Data\\Global\\Realms.bin", (void**)(nGatewayAccess + 0x20), &dwFileSize, 0, 0);
     if (_bFileLoaded) {
       return;
     }
@@ -259,7 +258,7 @@ uint32_t * __stdcall WritingDefaultGatewayList(DWORD * pdwFileSize) {
     bool bFileLoaded;
     uint32_t* pFileData;
     DWORD dwFileSize = 0;
-    _bFileLoaded = Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)"DATA\\GLOBAL\\gateways.txt", (void**)&pFileData, &dwFileSize, 0, 0);
+    _bFileLoaded = Storm::Source::SFile::SFileLoadFile("DATA\\GLOBAL\\gateways.txt", (void**)&pFileData, &dwFileSize, 0, 0);
     if (!_bFileLoaded) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1f9);
       exit(-1);

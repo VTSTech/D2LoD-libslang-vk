@@ -48,7 +48,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
@@ -140,7 +139,7 @@ void __fastcall INTERACT_AnyObject(uint16_t eUnitType, DWORD nUnitGUID) {
             aSkillCastMsg[1] = -1;
             aSkillCastMsg[2] = 2;
             aSkillCastMsg[3] = nUnitGUID;
-            SKILLS::Skills::SKILLS_CltStartSkillCast((D2DynamicPathStrc*)pPlayerUnit_lcl, aSkillCastMsg);
+            SKILLS::Skills::SKILLS_CltStartSkillCast(pPlayerUnit_lcl, aSkillCastMsg);
           }
 
           GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x13, eUnitType_00, nUnitGUID);
@@ -461,7 +460,6 @@ void __fastcall UNITMODE_SendWalkToPosition(D2UnitStrc * pUnit, int32_t nTargetX
 void __fastcall UNITMODE_ExecuteSkillAction(eD2UnitModeAction nActionType, D2UnitStrc * pUnit, int32_t nTargetOrX, int32_t nTargetGUIDOrY, uint32_t dwUnused) {
     D2UnitStrc* pItemUnit;
     D2SkillStrc* pSkill;
-    int32_t nMessageId;
     D2ServerMessageHandleStrc msgSkillId;
     int32_t nAction;
     int32_t nLine;
@@ -480,37 +478,37 @@ void __fastcall UNITMODE_ExecuteSkillAction(eD2UnitModeAction nActionType, D2Uni
     msgSkillId.nItemId = nTargetGUIDOrY;
     switch (nActionType) {
       case UNITMODEACTION_INTERACT:
-        nMessageId = 1;
+        nLine = 1;
       if (pUnit && pUnit->eUnitType == UNIT_PLAYER && pUnit->pUnitData.pUnitDataPlayer && pUnit->pUnitData.pUnitDataPlayer->eQueuedSkillId == 0x13) {
         return;
       }
 
       break;
       case UNITMODEACTION_ATTACK:
-        nMessageId = 0;
+        nLine = 0;
       break;
       case UNITMODEACTION_INTERACT_ALT:
-        nMessageId = 0x17;
+        nLine = 0x17;
       if (pUnit && pUnit->eUnitType == UNIT_PLAYER && pUnit->pUnitData.pUnitDataPlayer && pUnit->pUnitData.pUnitDataPlayer->eQueuedSkillId == 0x13) {
         return;
       }
 
       break;
       case UNITMODEACTION_ATTACK_ALT:
-        nMessageId = 0x18;
+        nLine = 0x18;
       break;
       case UNITMODEACTION_LEFTSKILL_COORD:
 
       case UNITMODEACTION_LEFTSKILL_COORD2:
-        nMessageId = 0x32c;
+        nLine = 0x32c;
       szFile = ".\\UNIT\\UnitMode.cpp";
       pSkill = D2Common::Units::GetLeftSkill(pUnit);
-      msgSkillId.nSkillId = D2Common::Skills::GetSkillId(pSkill, szFile, nMessageId);
+      msgSkillId.nSkillId = D2Common::Skills::GetSkillId(pSkill, szFile, nLine);
       pSkill = D2Common::Units::GetLeftSkill(pUnit);
       msgSkillId.nItemId = D2Common::Skills::GetOwnerGUID(pSkill);
       msgSkillId.nTargetUnitType = nTargetOrX;
       msgSkillId.nTargetUnitId = nTargetGUIDOrY;
-      nMessageId = 0x15;
+      nLine = 0x15;
       break;
       case UNITMODEACTION_LEFTSKILL_UNIT:
 
@@ -519,15 +517,15 @@ void __fastcall UNITMODE_ExecuteSkillAction(eD2UnitModeAction nActionType, D2Uni
       case UNITMODEACTION_LEFTSKILL_UNIT3:
 
       case UNITMODEACTION_LEFTSKILL_UNIT4:
-        nMessageId = 0x336;
+        nLine = 0x336;
       szFile = ".\\UNIT\\UnitMode.cpp";
       pSkill = D2Common::Units::GetLeftSkill(pUnit);
-      msgSkillId.nSkillId = D2Common::Skills::GetSkillId(pSkill, szFile, nMessageId);
+      msgSkillId.nSkillId = D2Common::Skills::GetSkillId(pSkill, szFile, nLine);
       pSkill = D2Common::Units::GetLeftSkill(pUnit);
       msgSkillId.nItemId = D2Common::Skills::GetOwnerGUID(pSkill);
       msgSkillId.nTargetUnitType = nTargetOrX;
       msgSkillId.nTargetUnitId = nTargetGUIDOrY;
-      nMessageId = 0x16;
+      nLine = 0x16;
       break;
       default:
         {
@@ -537,15 +535,15 @@ void __fastcall UNITMODE_ExecuteSkillAction(eD2UnitModeAction nActionType, D2Uni
       case UNITMODEACTION_RIGHTSKILL_COORD:
 
       case UNITMODEACTION_RIGHTSKILL_COORD2:
-        nMessageId = 0x33e;
+        nLine = 0x33e;
       szFile = ".\\UNIT\\UnitMode.cpp";
       pSkill = D2Common::Units::GetRightSkill(pUnit);
-      msgSkillId.nSkillId = D2Common::Skills::GetSkillId(pSkill, szFile, nMessageId);
+      msgSkillId.nSkillId = D2Common::Skills::GetSkillId(pSkill, szFile, nLine);
       pSkill = D2Common::Units::GetRightSkill(pUnit);
       msgSkillId.nItemId = D2Common::Skills::GetOwnerGUID(pSkill);
       msgSkillId.nTargetUnitType = nTargetOrX;
       msgSkillId.nTargetUnitId = nTargetGUIDOrY;
-      nMessageId = 0x15;
+      nLine = 0x15;
       break;
       case UNITMODEACTION_RIGHTSKILL_UNIT:
 
@@ -554,13 +552,13 @@ void __fastcall UNITMODE_ExecuteSkillAction(eD2UnitModeAction nActionType, D2Uni
       case UNITMODEACTION_RIGHTSKILL_UNIT3:
 
       case UNITMODEACTION_RIGHTSKILL_UNIT4:
-        nMessageId = 0x348;
+        nLine = 0x348;
       szFile = ".\\UNIT\\UnitMode.cpp";
       pSkill = D2Common::Units::GetRightSkill(pUnit);
-      msgSkillId.nSkillId = D2Common::Skills::GetSkillId(pSkill, szFile, nMessageId);
+      msgSkillId.nSkillId = D2Common::Skills::GetSkillId(pSkill, szFile, nLine);
       pSkill = D2Common::Units::GetRightSkill(pUnit);
       msgSkillId.nItemId = D2Common::Skills::GetOwnerGUID(pSkill);
-      nMessageId = 0x16;
+      nLine = 0x16;
       msgSkillId.nTargetUnitType = nTargetOrX;
       msgSkillId.nTargetUnitId = nTargetGUIDOrY;
       break;
@@ -568,11 +566,12 @@ void __fastcall UNITMODE_ExecuteSkillAction(eD2UnitModeAction nActionType, D2Uni
         if (nTargetOrX == 4 && (pItemUnit = Player::UNITS_FindClientSideUnit(nTargetGUIDOrY, UNIT_ITEM) , pItemUnit != 0) && pItemUnit->eUnitType == UNIT_ITEM && (bCanProceed = CheckFlags(pItemUnit, UNITFLAG_TARGETABLE) , !bCanProceed)) {
           return;
         }
-      nMessageId = 2;
+      nLine = 2;
     }
 
-    BOOL nMsgResult = HandleMessage(nMessageId, pUnit, &msgSkillId, 0);
+    BOOL nMsgResult = HandleMessage(nLine, pUnit, &msgSkillId, 0);
     if (nMsgResult) {
+      int32_t nLayer;
       switch (nActionType) {
         case UNITMODEACTION_LEFTSKILL_COORD:
 
@@ -597,9 +596,9 @@ void __fastcall UNITMODE_ExecuteSkillAction(eD2UnitModeAction nActionType, D2Uni
         case UNITMODEACTION_RIGHTSKILL_UNIT3:
 
         case UNITMODEACTION_RIGHTSKILL_UNIT4:
-          nLine = 0;
-        nMessageId = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0);
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, nMessageId + 1, nLine);
+          nLayer = 0;
+        nLine = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, nLine + 1, nLayer);
       }
 
       ClickWithSkillOnUnitOrCoord(nActionType, nTargetOrX, nTargetGUIDOrY, dwUnused);

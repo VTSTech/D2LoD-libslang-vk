@@ -390,7 +390,7 @@ int32_t __fastcall MONREGION_RollRandomMonsterType(::SGAMEDATA * pGame, D2Monste
 
 int * __fastcall RollRoomSeed(D2RoomStrc * pRoom) {
     // Static local variables (originally global data)
-    static void* gapSkillDispatchTableBase = (void*)&gaSkillLevelCaps;
+    static void* gapSkillDispatchTableBase = (void*)&gaSkillLevelCaps; D2_STATIC_GUARD(gapSkillDispatchTableBase, "D2Game::SKILLS::SkillItem::RollRoomSeed::gapSkillDispatchTableBase");
 
     D2SeedStrc* pSeed = !pRoom ? 0 : &pRoom->sSeed;
     *pSeed = D2_SEED_NEXT(*pSeed);
@@ -643,7 +643,6 @@ BOOL __fastcall ITEM_ApplyConsumableEffects(::SGAMEDATA * pGame, D2UnitStrc * pU
     int nBuffRemainingFrames;
     nBuffRemainingFrames = 0;
     if (0 < (int)nItemClassId) {
-      D2StatListExStrc* pStatListExpireFrame;
       if ((int)eState < 1) {
         return 0;
       }
@@ -653,8 +652,8 @@ BOOL __fastcall ITEM_ApplyConsumableEffects(::SGAMEDATA * pGame, D2UnitStrc * pU
 
       pActiveStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, eState);
       if (pActiveStatList) {
-        pStatListExpireFrame = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pActiveStatList);
-        nBuffRemainingFrames = (int)pStatListExpireFrame - pGame->dwGameFrame;
+        nBuffRemainingFrames = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pActiveStatList);
+        nBuffRemainingFrames -= pGame->dwGameFrame;
       }
     }
 
@@ -780,7 +779,6 @@ BOOL __fastcall ITEM_ApplyConsumableEffects(::SGAMEDATA * pGame, D2UnitStrc * pU
 // Applies a consumable/charm item's regen-and-stat effects to a unit. Reads the item's ItemsTxt (state + up to 3 stat entries), scales each value by valshift (mana/hp regen pre-shifted by 8), and either adds the stat instantly (clamped to its maxstat) or, for timed buffs, allocates/refreshes a state stat-list on the unit averaging the new value with any remaining buff. Player hitpoint/hpregen gains route through BloodGolemLifeLeech; on hp change for players, sends a 0xAB hp-percent update packet. Server-side. Returns bApplied: TRUE if any stat was applied (EAX from [EBP-0x1c] at 005beaa6).
 BOOL __fastcall ITEM_ApplyConsumableEffectsSimple(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pItem, D2UnitStrc * pTarget, int nX, int nY, eD2Skills eSkill) {
     uint32_t nItemClassId;
-    D2ItemStatCostTxt* pStatCost;
     uint32_t nStatValue;
     int nCurStatVal;
     int32_t nOwnerGUID;
@@ -805,7 +803,6 @@ BOOL __fastcall ITEM_ApplyConsumableEffectsSimple(::SGAMEDATA * pGame, D2UnitStr
     D2StatListExStrc* pActiveStatList = 0;
     int nBuffRemainingFrames = 0;
     if (0 < (int)nItemClassId) {
-      D2StatListExStrc* pStatListExpireFrame;
       if ((int)eState < 1) {
         return 0;
       }
@@ -815,14 +812,15 @@ BOOL __fastcall ITEM_ApplyConsumableEffectsSimple(::SGAMEDATA * pGame, D2UnitStr
 
       pActiveStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, eState);
       if (pActiveStatList) {
-        pStatListExpireFrame = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pActiveStatList);
-        nBuffRemainingFrames = (int)pStatListExpireFrame - pGame->dwGameFrame;
+        nBuffRemainingFrames = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pActiveStatList);
+        nBuffRemainingFrames -= pGame->dwGameFrame;
       }
     }
 
     BOOL bApplied = 0;
     bool bHpModified = false;
     for (iStatEntry = 0; iStatEntry < 3; iStatEntry++) {
+      D2ItemStatCostTxt* pStatCost;
       eUnitStat = (eD2UnitStat)*(short int*)(pItemTxt->szSetInvFile + iStatEntry * 2 + 0x3e);
       if ((int)eUnitStat < 0 || sgptDataTable->nTxtItemStatCostSize <= (int)eUnitStat) {
         break;
@@ -923,7 +921,6 @@ BOOL __fastcall ITEM_ApplyPercentRestoration(::SGAMEDATA * pGame, D2UnitStrc * p
     int32_t nOwnerGUID;
     eD2UnitType eUnitType;
     int pExpireFrame;
-    eD2UnitStat eUnitStat;
     D2ItemStatCostTxt* pStatCost;
     int iStatSlot;
     int32_t nStatScaled;
@@ -943,7 +940,6 @@ BOOL __fastcall ITEM_ApplyPercentRestoration(::SGAMEDATA * pGame, D2UnitStrc * p
     D2StatListExStrc* pActiveStatList = 0;
     int nBuffRemainingFrames = 0;
     if (0 < (int)nItemDuration) {
-      D2StatListExStrc* pStatListExpireFrame;
       if ((int)eState < 1) {
         return 0;
       }
@@ -953,14 +949,15 @@ BOOL __fastcall ITEM_ApplyPercentRestoration(::SGAMEDATA * pGame, D2UnitStrc * p
 
       pActiveStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, eState);
       if (pActiveStatList) {
-        pStatListExpireFrame = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pActiveStatList);
-        nBuffRemainingFrames = (int)pStatListExpireFrame - pGame->dwGameFrame;
+        nBuffRemainingFrames = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pActiveStatList);
+        nBuffRemainingFrames -= pGame->dwGameFrame;
       }
     }
 
     BOOL bApplied = 0;
     bool bHpModified = false;
     for (iStatSlot = 0; iStatSlot <= 2; iStatSlot++) {
+      eD2UnitStat eUnitStat;
       eUnitStat = (eD2UnitStat)*(short int*)(pItemTxt->szSetInvFile + iStatSlot * 2 + 0x3e);
       if (-1 < (int)eUnitStat && (int)eUnitStat < sgptDataTable->nTxtItemStatCostSize) {
         pStatCost = sgptDataTable->pTxtItemStatCost + eUnitStat;
@@ -1076,7 +1073,7 @@ BOOL __fastcall ITEM_ApplyTimedBuffStats(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     D2StatListExStrc* pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, eState);
     if (pStatList) {
       D2StatListExStrc* pStatListExpireFrame;
-      pStatListExpireFrame = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pStatList);
+      pStatListExpireFrame = (D2StatListExStrc*)D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pStatList);
       nPrevBuffFrames = (int)pStatListExpireFrame - pGame->dwGameFrame;
     }
 
@@ -1287,7 +1284,7 @@ BOOL __fastcall SKILLITEM_CastExplosivePotionSkill(::SGAMEDATA * pGame, D2UnitSt
 // @sourcefile .\SKILLS\SkillItem.cpp
 int32_t __fastcall SKILLITEM_DispatchItemSpell(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pItem, D2UnitStrc * pTarget, int32_t nX, int32_t nY) {
     // Static local variables (originally global data)
-    static int ITEMSPELLFUNCS_SIZE = 0x1f;
+    static int ITEMSPELLFUNCS_SIZE = 0x1f; D2_STATIC_GUARD(ITEMSPELLFUNCS_SIZE, "D2Game::SKILLS::SkillItem::SKILLITEM_DispatchItemSpell::ITEMSPELLFUNCS_SIZE");
 
     bool _bIsBookOrScrollType;
     bool _bHasCursorFlag;
@@ -2346,7 +2343,7 @@ BOOL __fastcall ITEMEVENT_LaunchMissileOnOwner(::SGAMEDATA * pGame, uint32_t nUn
       return 0;
     }
 
-    eMissilesId eMissileIdA = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissilesId eMissileIdA = (eMissilesId)pSkillTxt->srvmissile[1];
     if (!(-1 < (int)eMissileIdA && (int)eMissileIdA < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }

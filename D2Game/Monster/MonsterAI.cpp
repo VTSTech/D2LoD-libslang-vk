@@ -60,6 +60,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Common/Units/Missile.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -448,8 +449,8 @@ void __fastcall NpcState_MoveState0To1(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 }
 
 void __fastcall NpcState_MoveState1To2(D2UnitStrc * pNpc, D2UnitStrc * pUnit) {
-    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMonster ? 0 : pNpc->pUnitData.pUnitDataMonster->pMonsterAi;
-    D2MonsterAiSubStrc* pAiSub = pMonsterAi->pAiSub;
+    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMissile ? 0 : (D2MonsterAiStrc*)pNpc->pUnitData.pUnitDataMissile->unk0x30;
+    D2MonsterAiSubStrc* pAiSub = (D2MonsterAiSubStrc*)((D2MissileStreamStrc*)pMonsterAi)->pStream;
     if (!pAiSub) {
       return;
     }
@@ -469,8 +470,8 @@ void __fastcall NpcState_MoveState1To2(D2UnitStrc * pNpc, D2UnitStrc * pUnit) {
 }
 
 uint32_t __fastcall NpcStateIs2(D2UnitStrc * pNpc, D2UnitStrc * pPlayer) {
-    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMonster ? 0 : pNpc->pUnitData.pUnitDataMonster->pMonsterAi;
-    D2MonsterAiSubStrc* pAiSub = pMonsterAi->pAiSub;
+    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMissile ? 0 : (D2MonsterAiStrc*)pNpc->pUnitData.pUnitDataMissile->unk0x30;
+    D2MonsterAiSubStrc* pAiSub = (D2MonsterAiSubStrc*)((D2MissileStreamStrc*)pMonsterAi)->pStream;
     while (true) {
       if (!pAiSub) {
         return 0;

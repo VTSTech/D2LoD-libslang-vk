@@ -125,7 +125,7 @@ ARGLIST gaClientCmdLineArgs[8] = {
         /* .szName = */ gszCmdLineSwitchP,
         /* .pfnCallback = */ &D2Client::ClientModeInGame::CmdLine_EnableRecording
     }
-};
+}; D2_GLOBAL_GUARD(gaClientCmdLineArgs, "gaClientCmdLineArgs");
 
 D2UIFlagInitStrc g_UIFlagInitDrawMouseDown[4] = {
     {
@@ -148,7 +148,7 @@ D2UIFlagInitStrc g_UIFlagInitDrawMouseDown[4] = {
         /* .nMessageOrKeyCode = */ 0x204,
         /* .pfHandler = */ &D2Client::UI::Panel::INPUT_PanelRightClick
     }
-};
+}; D2_GLOBAL_GUARD(g_UIFlagInitDrawMouseDown, "g_UIFlagInitDrawMouseDown");
 
 D2UIFlagInitStrc gUIFlagDrawConsoleInit[4] = {
     {
@@ -171,7 +171,7 @@ D2UIFlagInitStrc gUIFlagDrawConsoleInit[4] = {
         /* .nMessageOrKeyCode = */ 0x200,
         /* .pfHandler = */ &D2Client::UI::Inv::INV_HandleMouseMove
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawConsoleInit, "gUIFlagDrawConsoleInit");
 
 D2UIFlagInitStrc gUIFlagDrawTownInit[2] = {
     {
@@ -184,13 +184,13 @@ D2UIFlagInitStrc gUIFlagDrawTownInit[2] = {
         /* .nMessageOrKeyCode = */ 0x202,
         /* .pfHandler = */ &D2Client::UI::SpellSel::ClickOnScreenSkillWindow
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawTownInit, "gUIFlagDrawTownInit");
 
 D2UIFlagInitStrc gUIFlagDrawMercInit = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x201,
     /* .pfHandler = */ &D2Client::UI::SpellSel::INPUT_SpellSelectClick
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawMercInit, "gUIFlagDrawMercInit");
 
 D2UIFlagInitStrc gUIFlagDrawSkillInit[2] = {
     {
@@ -203,7 +203,7 @@ D2UIFlagInitStrc gUIFlagDrawSkillInit[2] = {
         /* .nMessageOrKeyCode = */ 0x202,
         /* .pfHandler = */ &D2Client::UI::ui::INPUT_StatScreenMouseUp
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawSkillInit, "gUIFlagDrawSkillInit");
 
 D2UIFlagInitStrc gUIFlagDrawAreaInit[2] = {
     {
@@ -216,13 +216,13 @@ D2UIFlagInitStrc gUIFlagDrawAreaInit[2] = {
         /* .nMessageOrKeyCode = */ 0x202,
         /* .pfHandler = */ &D2Client::UI::ui::INPUT_StatScreenButtonUp
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawAreaInit, "gUIFlagDrawAreaInit");
 
 D2UIFlagInitStrc gUIFlagDrawExperienceInit = {
     /* .eEventType = */ 0x3,
     /* .nMessageOrKeyCode = */ 0x7a,
     /* .pfHandler = */ &D2Client::UI::Hireables::INPUT_HireableInteract
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawExperienceInit, "gUIFlagDrawExperienceInit");
 
 D2UIFlagInitStrc gUIFlagDrawHealthInit[2] = {
     {
@@ -235,13 +235,13 @@ D2UIFlagInitStrc gUIFlagDrawHealthInit[2] = {
         /* .nMessageOrKeyCode = */ 0x202,
         /* .pfHandler = */ &D2Client::UI::ui::INPUT_SkillTreeButtonUp
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawHealthInit, "gUIFlagDrawHealthInit");
 
 D2UIFlagInitStrc gUIFlagDrawPanelInit = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x20a,
     /* .pfHandler = */ &D2Client::UI::ui::INPUT_SkillTreeScroll
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawPanelInit, "gUIFlagDrawPanelInit");
 
 D2UIFlagInitStrc gUIFlagDrawManufactureInit[7] = {
     {
@@ -279,7 +279,7 @@ D2UIFlagInitStrc gUIFlagDrawManufactureInit[7] = {
         /* .nMessageOrKeyCode = */ 0xd,
         /* .pfHandler = */ &D2Client::UI::EscMenu::INPUT_EscMenuExecuteSelection
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawManufactureInit, "gUIFlagDrawManufactureInit");
 
 D2UIFlagInitStrc gaUIFlagInitTable[22] = {
     {
@@ -392,7 +392,7 @@ D2UIFlagInitStrc gaUIFlagInitTable[22] = {
         /* .nMessageOrKeyCode = */ 0x202,
         /* .pfHandler = */ &D2Client::UI::QuestLog::QUESTLOG_OnButtonMouseUp
     }
-};
+}; D2_GLOBAL_GUARD(gaUIFlagInitTable, "gaUIFlagInitTable");
 
 D2UIFlagInitStrc gaUIFlagInitQuestScrollHandlers[2] = {
     {
@@ -405,7 +405,7 @@ D2UIFlagInitStrc gaUIFlagInitQuestScrollHandlers[2] = {
         /* .nMessageOrKeyCode = */ 0x204,
         /* .pfHandler = */ &D2Client::UI::Text::TEXT_OnClickCloseQuestScroll
     }
-};
+}; D2_GLOBAL_GUARD(gaUIFlagInitQuestScrollHandlers, "gaUIFlagInitQuestScrollHandlers");
 
 D2UIFlagInitStrc gUIFlagDrawMapInit[5] = {
     {
@@ -433,7 +433,7 @@ D2UIFlagInitStrc gUIFlagDrawMapInit[5] = {
         /* .nMessageOrKeyCode = */ 0x102,
         /* .pfHandler = */ &D2Client::UI::Waypoint::INPUT_WaypointTravel
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawMapInit, "gUIFlagDrawMapInit");
 
 D2UIFlagInitStrc g_UIFlagInitDrawUnknown[2] = {
     {
@@ -446,7 +446,7 @@ D2UIFlagInitStrc g_UIFlagInitDrawUnknown[2] = {
         /* .nMessageOrKeyCode = */ 0x202,
         /* .pfHandler = */ &D2Client::UI::MiniPanel::INPUT_MiniPanelMouseUp
     }
-};
+}; D2_GLOBAL_GUARD(g_UIFlagInitDrawUnknown, "g_UIFlagInitDrawUnknown");
 
 D2UIFlagInitStrc gUIFlagDrawLevelInit[2] = {
     {
@@ -459,7 +459,7 @@ D2UIFlagInitStrc gUIFlagDrawLevelInit[2] = {
         /* .nMessageOrKeyCode = */ 0x202,
         /* .pfHandler = */ &D2Client::UI::Party::INPUT_PartyScreenMouseUp
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawLevelInit, "gUIFlagDrawLevelInit");
 
 D2UIFlagInitStrc gsUIDrawFlagInit0[5] = {
     {
@@ -487,7 +487,7 @@ D2UIFlagInitStrc gsUIDrawFlagInit0[5] = {
         /* .nMessageOrKeyCode = */ 0x102,
         /* .pfHandler = */ &HELP_MiniPanelKeyNoOp
     }
-};
+}; D2_GLOBAL_GUARD(gsUIDrawFlagInit0, "gsUIDrawFlagInit0");
 
 D2UIFlagInitStrc gsUIDrawFlagInit1[2] = {
     {
@@ -500,7 +500,7 @@ D2UIFlagInitStrc gsUIDrawFlagInit1[2] = {
         /* .nMessageOrKeyCode = */ 0x202,
         /* .pfHandler = */ &D2Client::UI::Help::INPUT_HelpScrollButtonUp
     }
-};
+}; D2_GLOBAL_GUARD(gsUIDrawFlagInit1, "gsUIDrawFlagInit1");
 
 D2UIFlagInitStrc g_UIFlagInitDrawPanel2[3] = {
     {
@@ -518,7 +518,7 @@ D2UIFlagInitStrc g_UIFlagInitDrawPanel2[3] = {
         /* .nMessageOrKeyCode = */ 0x204,
         /* .pfHandler = */ &D2Client::UI::Hireables::INPUT_HireableLongPress
     }
-};
+}; D2_GLOBAL_GUARD(g_UIFlagInitDrawPanel2, "g_UIFlagInitDrawPanel2");
 
 D2UIFlagInitStrc g_UIFlagInitDrawPanel3[3] = {
     {
@@ -536,7 +536,7 @@ D2UIFlagInitStrc g_UIFlagInitDrawPanel3[3] = {
         /* .nMessageOrKeyCode = */ 0x200,
         /* .pfHandler = */ &D2Client::UI::Inv::INV_HandleMercInvMouseMove
     }
-};
+}; D2_GLOBAL_GUARD(g_UIFlagInitDrawPanel3, "g_UIFlagInitDrawPanel3");
 
 D2UIFlagInitStrc g_UIFlagInitDrawPanel4[2] = {
     {
@@ -549,38 +549,66 @@ D2UIFlagInitStrc g_UIFlagInitDrawPanel4[2] = {
         /* .nMessageOrKeyCode = */ 0x200,
         /* .pfHandler = */ &INV_PanelKeyNoOp
     }
-};
+}; D2_GLOBAL_GUARD(g_UIFlagInitDrawPanel4, "g_UIFlagInitDrawPanel4");
 
-char param_2_006d6454[3] = { '%', 'i', '\x00' };
+char param_2_006d6454[3] = { '%', 'i', '\x00' }; D2_GLOBAL_GUARD(param_2_006d6454, "param_2_006d6454");
 
-int gaAutomapXMarkerPolyline[26] = {
-    0x0,
-    -0x1,
-    0x2,
-    -0x2,
-    0x4,
-    -0x1,
-    0x2,
-    0x0,
-    0x4,
-    0x1,
-    0x2,
-    0x2,
-    0x0,
-    0x1,
-    -0x2,
-    0x2,
-    -0x4,
-    0x1,
-    -0x2,
-    0x0,
-    -0x4,
-    -0x1,
-    -0x2,
-    -0x2,
-    0x0,
-    -0x1
-};
+POINT gaAutomapXMarkerPolyline[13] = {
+    {
+        /* .x = */ 0x0,
+        /* .y = */ -0x1
+    },
+    {
+        /* .x = */ 0x2,
+        /* .y = */ -0x2
+    },
+    {
+        /* .x = */ 0x4,
+        /* .y = */ -0x1
+    },
+    {
+        /* .x = */ 0x2,
+        /* .y = */ 0x0
+    },
+    {
+        /* .x = */ 0x4,
+        /* .y = */ 0x1
+    },
+    {
+        /* .x = */ 0x2,
+        /* .y = */ 0x2
+    },
+    {
+        /* .x = */ 0x0,
+        /* .y = */ 0x1
+    },
+    {
+        /* .x = */ -0x2,
+        /* .y = */ 0x2
+    },
+    {
+        /* .x = */ -0x4,
+        /* .y = */ 0x1
+    },
+    {
+        /* .x = */ -0x2,
+        /* .y = */ 0x0
+    },
+    {
+        /* .x = */ -0x4,
+        /* .y = */ -0x1
+    },
+    {
+        /* .x = */ -0x2,
+        /* .y = */ -0x2
+    },
+    {
+        /* .x = */ 0x0,
+        /* .y = */ -0x1
+    }
+}; D2_GLOBAL_GUARD(gaAutomapXMarkerPolyline, "gaAutomapXMarkerPolyline");
+
+char cChatCmdSlash[2] = { '/', '\x00' }; D2_GLOBAL_GUARD(cChatCmdSlash, "cChatCmdSlash");
 
 // also labelled: gQServerClientConnection
 uint8_t gabWardenEmbeddedModuleHash[16] = {
@@ -600,7 +628,7 @@ uint8_t gabWardenEmbeddedModuleHash[16] = {
     0x4c,
     0x4b,
     0x5c
-};
+}; D2_GLOBAL_GUARD(gabWardenEmbeddedModuleHash, "gabWardenEmbeddedModuleHash");
 
 uint8_t gabWardenModuleRc4Key[16] = {
     0x58,
@@ -619,11 +647,11 @@ uint8_t gabWardenModuleRc4Key[16] = {
     0xd7,
     0xd4,
     0xb0
-};
+}; D2_GLOBAL_GUARD(gabWardenModuleRc4Key, "gabWardenModuleRc4Key");
 
-char param_2_006d9be8[4] = { '%', 'l', 'd', '\x00' };
+char param_2_006d9be8[4] = { '%', 'l', 'd', '\x00' }; D2_GLOBAL_GUARD(param_2_006d9be8, "param_2_006d9be8");
 
-char param_2_006da0cc[4] = { '%', '2', 'u', '\x00' };
+char param_2_006da0cc[4] = { '%', '2', 'u', '\x00' }; D2_GLOBAL_GUARD(param_2_006da0cc, "param_2_006da0cc");
 
 D2MonMsgAnimModeStrc gaMonMsgAnimModeTable[30] = {
     {
@@ -746,7 +774,7 @@ D2MonMsgAnimModeStrc gaMonMsgAnimModeTable[30] = {
         /* .eMode = */ eD2MonsterAnimMode_ns::Skill4,
         /* .bCheckMoveFlag = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaMonMsgAnimModeTable, "gaMonMsgAnimModeTable");
 
 uint8_t ganMissileRingSinOffsets[256] = {
     0x0,
@@ -1005,7 +1033,7 @@ uint8_t ganMissileRingSinOffsets[256] = {
     0xff,
     0xff,
     0xff
-};
+}; D2_GLOBAL_GUARD(ganMissileRingSinOffsets, "ganMissileRingSinOffsets");
 
 uint8_t ganMissileRingCosOffsets[256] = {
     0x1e,
@@ -1264,9 +1292,9 @@ uint8_t ganMissileRingCosOffsets[256] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(ganMissileRingCosOffsets, "ganMissileRingCosOffsets");
 
-int gnPaladinSkillIndexTable[8] = { 0x0, -0x1, -0x2, -0x1, 0x0, 0x1, 0x2, 0x1 };
+int gnPaladinSkillIndexTable[8] = { 0x0, -0x1, -0x2, -0x1, 0x0, 0x1, 0x2, 0x1 }; D2_GLOBAL_GUARD(gnPaladinSkillIndexTable, "gnPaladinSkillIndexTable");
 
 D2Missile032SpreadStrc gaMissile032SpreadConstData[6] = {
     {
@@ -1299,7 +1327,7 @@ D2Missile032SpreadStrc gaMissile032SpreadConstData[6] = {
         /* .nModulus = */ 0x64,
         /* .nTargetX = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gaMissile032SpreadConstData, "gaMissile032SpreadConstData");
 
 int gnIntensityTableModes[10] = {
     0x0,
@@ -1312,11 +1340,11 @@ int gnIntensityTableModes[10] = {
     0x6,
     0x6,
     0x6
-};
+}; D2_GLOBAL_GUARD(gnIntensityTableModes, "gnIntensityTableModes");
 
-eD2States gaeSetBonusStates[6] = { STATE_itemset1, STATE_itemset2, STATE_itemset3, STATE_itemset4, STATE_itemset5, STATE_itemset6 };
+eD2States gaeSetBonusStates[6] = { STATE_itemset1, STATE_itemset2, STATE_itemset3, STATE_itemset4, STATE_itemset5, STATE_itemset6 }; D2_GLOBAL_GUARD(gaeSetBonusStates, "gaeSetBonusStates");
 
-eD2ClientAppMode gdwAppMode = APPMODE_SAVE;
+eD2ClientAppMode gdwAppMode = APPMODE_SAVE; D2_GLOBAL_GUARD(gdwAppMode, "gdwAppMode");
 
 char string_IpAddressTcpIp[24] = {
     '2',
@@ -1343,7 +1371,7 @@ char string_IpAddressTcpIp[24] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(string_IpAddressTcpIp, "string_IpAddressTcpIp");
 
 char string_IpaddressGameserverBattlenet[24] = {
     '2',
@@ -1370,13 +1398,13 @@ char string_IpaddressGameserverBattlenet[24] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(string_IpaddressGameserverBattlenet, "string_IpaddressGameserverBattlenet");
 
 D2UIFlagInitStrc g_UIFlagInitGameDataPanel1 = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x20a,
     /* .pfHandler = */ &D2Client::GAME::Game::INPUT_HandleMouseWheel
-};
+}; D2_GLOBAL_GUARD(g_UIFlagInitGameDataPanel1, "g_UIFlagInitGameDataPanel1");
 
 D2UIFlagInitStrc g_UIFlagInitGameDataPanel2[2] = {
     {
@@ -1389,7 +1417,7 @@ D2UIFlagInitStrc g_UIFlagInitGameDataPanel2[2] = {
         /* .nMessageOrKeyCode = */ 0x207,
         /* .pfHandler = */ &D2Client::GAME::Game::INPUT_HandleScrollUp
     }
-};
+}; D2_GLOBAL_GUARD(g_UIFlagInitGameDataPanel2, "g_UIFlagInitGameDataPanel2");
 
 D2UIFlagInitStrc g_UIFlagInitGameDataPanel3[2] = {
     {
@@ -1402,7 +1430,7 @@ D2UIFlagInitStrc g_UIFlagInitGameDataPanel3[2] = {
         /* .nMessageOrKeyCode = */ 0x20c,
         /* .pfHandler = */ &D2Client::GAME::Game::INPUT_HandleScrollToEnd
     }
-};
+}; D2_GLOBAL_GUARD(g_UIFlagInitGameDataPanel3, "g_UIFlagInitGameDataPanel3");
 
 D2UIFlagInitStrc gaUIFlagInitMessageHandlers[4] = {
     {
@@ -1425,7 +1453,7 @@ D2UIFlagInitStrc gaUIFlagInitMessageHandlers[4] = {
         /* .nMessageOrKeyCode = */ 0x9ca4,
         /* .pfHandler = */ (fnD2InitUIFlagFunction)&D2Client::_Message::MESSAGE_OnClose
     }
-};
+}; D2_GLOBAL_GUARD(gaUIFlagInitMessageHandlers, "gaUIFlagInitMessageHandlers");
 
 D2UIFlagInitStrc gaUIFlagInitNpcShopHandlers[8] = {
     {
@@ -1468,7 +1496,7 @@ D2UIFlagInitStrc gaUIFlagInitNpcShopHandlers[8] = {
         /* .nMessageOrKeyCode = */ 0x57,
         /* .pfHandler = */ &D2Client::UI::Inv::INPUT_WeaponSwap
     }
-};
+}; D2_GLOBAL_GUARD(gaUIFlagInitNpcShopHandlers, "gaUIFlagInitNpcShopHandlers");
 
 D2UIFlagInitStrc gUIFlagDrawGoldInit[7] = {
     {
@@ -1506,7 +1534,7 @@ D2UIFlagInitStrc gUIFlagDrawGoldInit[7] = {
         /* .nMessageOrKeyCode = */ 0x1b,
         /* .pfHandler = */ &D2Client::UI::QuestLog::QUESTLOG_OnCloseClick
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawGoldInit, "gUIFlagDrawGoldInit");
 
 D2UIFlagInitStrc gUIFlagDrawInventoryInit[13] = {
     {
@@ -1574,7 +1602,7 @@ D2UIFlagInitStrc gUIFlagDrawInventoryInit[13] = {
         /* .nMessageOrKeyCode = */ 0x57,
         /* .pfHandler = */ &D2Client::UI::Inv::INPUT_WeaponSwap
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawInventoryInit, "gUIFlagDrawInventoryInit");
 
 D2UIFlagInitStrc gUIFlagDrawInfoInit[8] = {
     {
@@ -1617,7 +1645,7 @@ D2UIFlagInitStrc gUIFlagDrawInfoInit[8] = {
         /* .nMessageOrKeyCode = */ 0x57,
         /* .pfHandler = */ &D2Client::UI::Inv::INPUT_WeaponSwap
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagDrawInfoInit, "gUIFlagDrawInfoInit");
 
 D2UIFlagInitStrc gaUIFlagInitCubeHandlers[7] = {
     {
@@ -1655,7 +1683,7 @@ D2UIFlagInitStrc gaUIFlagInitCubeHandlers[7] = {
         /* .nMessageOrKeyCode = */ 0xd,
         /* .pfHandler = */ &D2Client::UI::Inv::INV_HandleShopEnterKey
     }
-};
+}; D2_GLOBAL_GUARD(gaUIFlagInitCubeHandlers, "gaUIFlagInitCubeHandlers");
 
 D2UIFlagInitStrc g_UIFlagInitDrawPanel1[2] = {
     {
@@ -1668,7 +1696,7 @@ D2UIFlagInitStrc g_UIFlagInitDrawPanel1[2] = {
         /* .nMessageOrKeyCode = */ 0x20,
         /* .pfHandler = */ &D2Client::UI::Draw::DRAW_PfHandlerCallback_CloseActivePanels
     }
-};
+}; D2_GLOBAL_GUARD(g_UIFlagInitDrawPanel1, "g_UIFlagInitDrawPanel1");
 
 D2UIFlagDescStrc * gUIFlagDismissModeTable[38] = {
     gaUIFlagDescsClient,
@@ -1709,7 +1737,7 @@ D2UIFlagDescStrc * gUIFlagDismissModeTable[38] = {
     (D2UIFlagDescStrc*)&gaUIFlagDescsClient[2].anDismissMode[0],
     (D2UIFlagDescStrc*)&gaUIFlagDescs[36].anDismissMode[0],
     (D2UIFlagDescStrc*)&gaUIFlagDescs[37].anDismissMode[0]
-};
+}; D2_GLOBAL_GUARD(gUIFlagDismissModeTable, "gUIFlagDismissModeTable");
 
 char s___AUTALLOCREC___00711480[16] = {
     '.',
@@ -1728,7 +1756,7 @@ char s___AUTALLOCREC___00711480[16] = {
     '@',
     '@',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUTALLOCREC___00711480, "s___AUTALLOCREC___00711480");
 
 D2NET_CLIENT_D2GS_ServerToClient NET_D2GS_CLIENT_INCOMING[175] = {
     {
@@ -2606,7 +2634,7 @@ D2NET_CLIENT_D2GS_ServerToClient NET_D2GS_CLIENT_INCOMING[175] = {
         /* .nExpectedSize = */ -0x1,
         /* .fpIncomingHandlerUnit = */ nullptr
     }
-};
+}; D2_GLOBAL_GUARD(NET_D2GS_CLIENT_INCOMING, "NET_D2GS_CLIENT_INCOMING");
 
 D2UIFlagInitStrc gsUIEngineFlagInit[4] = {
     {
@@ -2629,7 +2657,7 @@ D2UIFlagInitStrc gsUIEngineFlagInit[4] = {
         /* .nMessageOrKeyCode = */ 0xd,
         /* .pfHandler = */ &D2Client::Engine::INPUT_CharScreenOkForce
     }
-};
+}; D2_GLOBAL_GUARD(gsUIEngineFlagInit, "gsUIEngineFlagInit");
 
 D2UIFlagInitStrc gsUIEngineFlagInit2[4] = {
     {
@@ -2652,7 +2680,7 @@ D2UIFlagInitStrc gsUIEngineFlagInit2[4] = {
         /* .nMessageOrKeyCode = */ 0xd,
         /* .pfHandler = */ &D2Client::Engine::INPUT_CharScreenDualButtonForce
     }
-};
+}; D2_GLOBAL_GUARD(gsUIEngineFlagInit2, "gsUIEngineFlagInit2");
 
 D2UIFlagInitStrc gUIFlagGeneralInit[3] = {
     {
@@ -2670,7 +2698,7 @@ D2UIFlagInitStrc gUIFlagGeneralInit[3] = {
         /* .nMessageOrKeyCode = */ 0x202,
         /* .pfHandler = */ &D2Client::UI::ui::UI_HandleCursorMouseUp
     }
-};
+}; D2_GLOBAL_GUARD(gUIFlagGeneralInit, "gUIFlagGeneralInit");
 
 D2CursorDataStrc CursorData[7] = {
     {
@@ -2736,7 +2764,7 @@ D2CursorDataStrc CursorData[7] = {
         /* .pFunction = */ &D2Client::UI::ui::UI_DrawCursorIcon,
         /* .szCursorname = */ s_buysell_006d6b50
     }
-};
+}; D2_GLOBAL_GUARD(CursorData, "CursorData");
 
 int gaKeyBindingsDefault[285] = {
     0x0,
@@ -3024,7 +3052,7 @@ int gaKeyBindingsDefault[285] = {
     0x380000,
     -0x10000,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaKeyBindingsDefault, "gaKeyBindingsDefault");
 
 D2UIFlagInitStrc gsUICmdTblFlagInit[4] = {
     {
@@ -3047,7 +3075,7 @@ D2UIFlagInitStrc gsUICmdTblFlagInit[4] = {
         /* .nMessageOrKeyCode = */ 0x105,
         /* .pfHandler = */ &D2Client::UI::CmdTbl::INPUT_DispatchKeyCommand
     }
-};
+}; D2_GLOBAL_GUARD(gsUICmdTblFlagInit, "gsUICmdTblFlagInit");
 
 uint32_t gaMonsterModePrecacheEntries[15] = {
     0xc,
@@ -3065,21 +3093,21 @@ uint32_t gaMonsterModePrecacheEntries[15] = {
     0x9,
     0xa,
     0xb
-};
+}; D2_GLOBAL_GUARD(gaMonsterModePrecacheEntries, "gaMonsterModePrecacheEntries");
 
-eD2ArenaFlags CLIENT_ArenaFlags = ARENAFLAG_ClientUpdate;
+eD2ArenaFlags CLIENT_ArenaFlags = ARENAFLAG_ClientUpdate; D2_GLOBAL_GUARD(CLIENT_ArenaFlags, "CLIENT_ArenaFlags");
 
 D2UIFlagInitStrc gUIFlagChatInit = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x102,
     /* .pfHandler = */ &D2Client::UI::Chat::INPUT_HandleChatCharInput
-};
+}; D2_GLOBAL_GUARD(gUIFlagChatInit, "gUIFlagChatInit");
 
 D2UIFlagInitStrc g_UIFlagInitChatPanel = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x282,
     /* .pfHandler = */ &D2Client::UI::Chat::INPUT_HandleIMENotify
-};
+}; D2_GLOBAL_GUARD(g_UIFlagInitChatPanel, "g_UIFlagInitChatPanel");
 
 D2EscMenuHeaderStrc gEscMenuHeaderInitData = {
     /* .nItemCount = */ 0x3,
@@ -3087,7 +3115,7 @@ D2EscMenuHeaderStrc gEscMenuHeaderInitData = {
     /* .nRowHeight = */ 0x27,
     /* .nStarOffset = */ 0x33,
     /* .nBarYOffset = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gEscMenuHeaderInitData, "gEscMenuHeaderInitData");
 
 D2EscMenuUIFlagStrc gaEscMenuUIFlags[38] = {
     {
@@ -3280,7 +3308,7 @@ D2EscMenuUIFlagStrc gaEscMenuUIFlags[38] = {
         /* .nHideable = */ 0x0,
         /* .nSavedState = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gaEscMenuUIFlags, "gaEscMenuUIFlags");
 
 D2EscMenuItemStrc gaEscMenuMainTable[3] = {
     {
@@ -7255,7 +7283,7 @@ D2EscMenuItemStrc gaEscMenuMainTable[3] = {
         /* .pDC6Main = */ nullptr,
         /* .pDC6SubImages = */ { nullptr, nullptr, nullptr, nullptr }
     }
-};
+}; D2_GLOBAL_GUARD(gaEscMenuMainTable, "gaEscMenuMainTable");
 
 D2EscMenuHeaderStrc gaEscMenuHeaderOptions = {
     /* .nItemCount = */ 0x5,
@@ -7263,7 +7291,7 @@ D2EscMenuHeaderStrc gaEscMenuHeaderOptions = {
     /* .nRowHeight = */ 0x27,
     /* .nStarOffset = */ 0x33,
     /* .nBarYOffset = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gaEscMenuHeaderOptions, "gaEscMenuHeaderOptions");
 
 D2EscMenuHeaderStrc gaEscMenuHeaderSaveExit = {
     /* .nItemCount = */ 0x8,
@@ -7271,7 +7299,7 @@ D2EscMenuHeaderStrc gaEscMenuHeaderSaveExit = {
     /* .nRowHeight = */ 0x22,
     /* .nStarOffset = */ 0x31,
     /* .nBarYOffset = */ 0x24
-};
+}; D2_GLOBAL_GUARD(gaEscMenuHeaderSaveExit, "gaEscMenuHeaderSaveExit");
 
 D2EscMenuItemStrc gaEscMenuOptionsTable[5] = {
     {
@@ -13894,7 +13922,7 @@ D2EscMenuItemStrc gaEscMenuOptionsTable[5] = {
         /* .pDC6Main = */ nullptr,
         /* .pDC6SubImages = */ { nullptr, nullptr, nullptr, nullptr }
     }
-};
+}; D2_GLOBAL_GUARD(gaEscMenuOptionsTable, "gaEscMenuOptionsTable");
 
 D2EscMenuItemStrc gaEscMenuSaveExitTable[8] = {
     {
@@ -24489,7 +24517,7 @@ D2EscMenuItemStrc gaEscMenuSaveExitTable[8] = {
         /* .pDC6Main = */ nullptr,
         /* .pDC6SubImages = */ { nullptr, nullptr, nullptr, nullptr }
     }
-};
+}; D2_GLOBAL_GUARD(gaEscMenuSaveExitTable, "gaEscMenuSaveExitTable");
 
 D2EscMenuHeaderStrc gaEscMenuHeaderSwitchClass = {
     /* .nItemCount = */ 0x7,
@@ -24497,7 +24525,7 @@ D2EscMenuHeaderStrc gaEscMenuHeaderSwitchClass = {
     /* .nRowHeight = */ 0x22,
     /* .nStarOffset = */ 0x31,
     /* .nBarYOffset = */ 0x24
-};
+}; D2_GLOBAL_GUARD(gaEscMenuHeaderSwitchClass, "gaEscMenuHeaderSwitchClass");
 
 D2EscMenuHeaderStrc gaEscMenuHeaderDeleteChar = {
     /* .nItemCount = */ 0x8,
@@ -24505,7 +24533,7 @@ D2EscMenuHeaderStrc gaEscMenuHeaderDeleteChar = {
     /* .nRowHeight = */ 0x22,
     /* .nStarOffset = */ 0x31,
     /* .nBarYOffset = */ 0x24
-};
+}; D2_GLOBAL_GUARD(gaEscMenuHeaderDeleteChar, "gaEscMenuHeaderDeleteChar");
 
 D2EscMenuHeaderStrc gaEscMenuHeaderExpansionOptions = {
     /* .nItemCount = */ 0x6,
@@ -24513,7 +24541,7 @@ D2EscMenuHeaderStrc gaEscMenuHeaderExpansionOptions = {
     /* .nRowHeight = */ 0x22,
     /* .nStarOffset = */ 0x31,
     /* .nBarYOffset = */ 0x24
-};
+}; D2_GLOBAL_GUARD(gaEscMenuHeaderExpansionOptions, "gaEscMenuHeaderExpansionOptions");
 
 D2EscMenuHeaderStrc gaEscMenuHeaderExpansionSaveExit = {
     /* .nItemCount = */ 0x7,
@@ -24521,7 +24549,7 @@ D2EscMenuHeaderStrc gaEscMenuHeaderExpansionSaveExit = {
     /* .nRowHeight = */ 0x22,
     /* .nStarOffset = */ 0x31,
     /* .nBarYOffset = */ 0x24
-};
+}; D2_GLOBAL_GUARD(gaEscMenuHeaderExpansionSaveExit, "gaEscMenuHeaderExpansionSaveExit");
 
 D2EscMenuItemStrc gaEscMenuClassicSaveExitTable[6] = {
     {
@@ -32468,7 +32496,7 @@ D2EscMenuItemStrc gaEscMenuClassicSaveExitTable[6] = {
         /* .pDC6Main = */ nullptr,
         /* .pDC6SubImages = */ { nullptr, nullptr, nullptr, nullptr }
     }
-};
+}; D2_GLOBAL_GUARD(gaEscMenuClassicSaveExitTable, "gaEscMenuClassicSaveExitTable");
 
 D2EscMenuItemStrc gaEscMenuExpansionSaveExitTable[7] = {
     {
@@ -41739,7 +41767,7 @@ D2EscMenuItemStrc gaEscMenuExpansionSaveExitTable[7] = {
         /* .pDC6Main = */ nullptr,
         /* .pDC6SubImages = */ { nullptr, nullptr, nullptr, nullptr }
     }
-};
+}; D2_GLOBAL_GUARD(gaEscMenuExpansionSaveExitTable, "gaEscMenuExpansionSaveExitTable");
 
 D2CutsceneDescStrc gdwSoundHeaderCacheIndex[8] = {
     {
@@ -41798,7 +41826,7 @@ D2CutsceneDescStrc gdwSoundHeaderCacheIndex[8] = {
         /* .bCharacterAnimationPlayed = */ 0x1,
         /* .pad = */ { 0x0, 0x0 }
     }
-};
+}; D2_GLOBAL_GUARD(gdwSoundHeaderCacheIndex, "gdwSoundHeaderCacheIndex");
 
 D2NpcShopTabStrc gaNpcShopTabs[4] = {
     {
@@ -41829,126 +41857,28 @@ D2NpcShopTabStrc gaNpcShopTabs[4] = {
         /* .nSelected = */ 0x0,
         /* .nHasItems = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcShopTabs, "gaNpcShopTabs");
 
-uint32_t gaNpcShopButtonTable[4][27] = {
-    {
-        0x4,
-        0xffffffff,
-        0x111,
-        0x0,
-        0x0,
-        0x0,
-        0xa9,
-        0x111,
-        0x0,
-        0x0,
-        0xa9,
-        0xdd,
-        0x111,
-        0x0,
-        0x74,
-        0xa9,
-        0xdd,
-        0x111,
-        0x0,
-        0x78,
-        0xfe,
-        0x0,
-        0xd,
-        0x0,
-        0xaf,
-        0xfe,
-        0x0
-    },
-    {
-        0xc,
-        0x0,
-        0x131,
-        0xfe,
-        0x0,
-        0x1e,
-        0x0,
-        0x9a,
-        0x11a,
-        0x30,
-        0x0,
-        0x0,
-        0x9a,
-        0x132,
-        0x30,
-        0x2,
-        0x0,
-        0x9a,
-        0x14a,
-        0x30,
-        0x15,
-        0x0,
-        0x9a,
-        0x162,
-        0x30,
-        0x1f,
-        0x0
-    },
-    {
-        0x135,
-        0x11a,
-        0x30,
-        0x27,
-        0x0,
-        0x135,
-        0x132,
-        0x30,
-        0x2b,
-        0x0,
-        0x135,
-        0x14a,
-        0x30,
-        0x29,
-        0x0,
-        0x135,
-        0x162,
-        0x30,
-        0x2d,
-        0xd2,
-        0x131,
-        0xd7,
-        0x0,
-        0x6,
-        0x6cc81c,
-        0x6cc814,
-        0x6cc80c
-    },
-    {
-        0x6cc804,
-        0x6cc7f8,
-        0x6cc7f0,
-        0x6cc7e4,
-        0x6cc7dc,
-        0x6cc7c8,
-        0x6cc7b4,
-        0x6cc7ac,
-        0x6cc7a4,
-        0x6cc788,
-        0x6cc780,
-        0x6cc77c,
-        0x6cc81c,
-        0x6cc814,
-        0x6cc80c,
-        0x6cc804,
-        0x6cc7f8,
-        0x6cc7f0,
-        0x6cc7e4,
-        0x6cc7dc,
-        0x6cc7c8,
-        0x6cc7b4,
-        0x6cc7ac,
-        0x6cc7a4,
-        0x6cc788,
-        0x6cc780,
-        0x6cc77c
-    }
-};
+uint32_t gaNpcShopButtonTable[2] = { 0x4, 0xffffffff }; D2_GLOBAL_GUARD(gaNpcShopButtonTable, "gaNpcShopButtonTable");
+
+int NPCButtonArray[16] = {
+    0x111,
+    0x0,
+    0x0,
+    0x0,
+    0xa9,
+    0x111,
+    0x0,
+    0x0,
+    0xa9,
+    0xdd,
+    0x111,
+    0x0,
+    0x74,
+    0xa9,
+    0xdd,
+    0x111
+}; D2_GLOBAL_GUARD(NPCButtonArray, "NPCButtonArray");
 
 int gaWaypointRowLayout[55] = {
     0x5,
@@ -42006,13 +41936,45 @@ int gaWaypointRowLayout[55] = {
     0x16c,
     0x11,
     0x15d
-};
+}; D2_GLOBAL_GUARD(gaWaypointRowLayout, "gaWaypointRowLayout");
 
-D2UIFlagInitStrc gsUITextFlagInit = {
-    /* .eEventType = */ 0x0,
-    /* .nMessageOrKeyCode = */ 0x205,
-    /* .pfHandler = */ &D2Client::UI::Text::TEXT_OnClickCloseNpcDialog
-};
+D2UIFlagInitStrc gsUITextFlagInit[7] = {
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x205,
+        /* .pfHandler = */ &D2Client::UI::Text::TEXT_OnClickCloseNpcDialog
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x204,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextClickHandler
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x201,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextClickHandler
+    },
+    {
+        /* .eEventType = */ 0x3,
+        /* .nMessageOrKeyCode = */ 0x1b,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextDismiss
+    },
+    {
+        /* .eEventType = */ 0x3,
+        /* .nMessageOrKeyCode = */ 0x20,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextDismiss
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x102,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextKeyHandler
+    },
+    {
+        /* .eEventType = */ 0x0,
+        /* .nMessageOrKeyCode = */ 0x104,
+        /* .pfHandler = */ &D2Client::UI::Text::INPUT_TextKeyFilter
+    }
+}; D2_GLOBAL_GUARD(gsUITextFlagInit, "gsUITextFlagInit");
 
 // also labelled: gaQuestIconData_SevenTombs
 uint16_t gaQuestDescData_SevenTombs[32] = {
@@ -42048,7 +42010,7 @@ uint16_t gaQuestDescData_SevenTombs[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_SevenTombs, "gaQuestDescData_SevenTombs");
 
 // also labelled: gaQuestIconData_DenOfEvil
 uint16_t gaQuestDescData_FallenAngel[32] = {
@@ -42084,7 +42046,7 @@ uint16_t gaQuestDescData_FallenAngel[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_FallenAngel, "gaQuestDescData_FallenAngel");
 
 // also labelled: gQuestLogEntryPopulateFlag
 uint16_t gaQuestDescData_SiegeOnHarrogath[32] = {
@@ -42120,7 +42082,7 @@ uint16_t gaQuestDescData_SiegeOnHarrogath[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_SiegeOnHarrogath, "gaQuestDescData_SiegeOnHarrogath");
 
 D2QuestIconsPositionningStrc gaQuestIconPositions[6] = {
     {
@@ -42159,7 +42121,7 @@ D2QuestIconsPositionningStrc gaQuestIconPositions[6] = {
         /* .nClickAreaX = */ 0xe0,
         /* .nClickAreaY = */ 0xa3
     }
-};
+}; D2_GLOBAL_GUARD(gaQuestIconPositions, "gaQuestIconPositions");
 
 D2QuestLogInfoStrc gaQuestInfoTable[41] = {
     {
@@ -42531,7 +42493,7 @@ D2QuestLogInfoStrc gaQuestInfoTable[41] = {
         /* .nStringIndex = */ 0x24,
         /* .nQuestId = */ 0x28
     }
-};
+}; D2_GLOBAL_GUARD(gaQuestInfoTable, "gaQuestInfoTable");
 
 D2QuestLogPanelRectStrc gaQuestLogPanelRects[4] = {
     {
@@ -42562,7 +42524,7 @@ D2QuestLogPanelRectStrc gaQuestLogPanelRects[4] = {
         /* .nBottom = */ 0x0,
         /* .nTextY = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gaQuestLogPanelRects, "gaQuestLogPanelRects");
 
 D2ConfigControlDescStrc gaConfigControlBindings[51] = {
     {
@@ -42820,7 +42782,7 @@ D2ConfigControlDescStrc gaConfigControlBindings[51] = {
         /* .wStrId = */ 0xf8d,
         /* ._pad = */ { '\x00', '\x00', '\x00', '\x00' }
     }
-};
+}; D2_GLOBAL_GUARD(gaConfigControlBindings, "gaConfigControlBindings");
 
 D2UIConfigTabEntryStrc g_UIConfigTabTable[3] = {
     {
@@ -42892,102 +42854,139 @@ D2UIConfigTabEntryStrc g_UIConfigTabTable[3] = {
             '\x00'
         }
     }
-};
+}; D2_GLOBAL_GUARD(g_UIConfigTabTable, "g_UIConfigTabTable");
 
 D2UIFlagInitStrc gsUIFlagInit1 = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x207,
     /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigMouseClick
-};
+}; D2_GLOBAL_GUARD(gsUIFlagInit1, "gsUIFlagInit1");
 
 D2UIFlagInitStrc gsUIFlagInit0 = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x201,
     /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigScreenOpen
-};
+}; D2_GLOBAL_GUARD(gsUIFlagInit0, "gsUIFlagInit0");
 
 D2UIFlagInitStrc gsUIFlagInit2 = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x20b,
     /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigMouseButtonHandler
-};
+}; D2_GLOBAL_GUARD(gsUIFlagInit2, "gsUIFlagInit2");
 
 D2UIFlagInitStrc gsUIFlagInit3 = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x20a,
     /* .pfHandler = */ &D2Client::UI::ui::INPUT_ConfigMouseWheelScroll
-};
+}; D2_GLOBAL_GUARD(gsUIFlagInit3, "gsUIFlagInit3");
 
-int gaStatDescRows[68] = {
-    0xb,
-    0x2c,
-    0x34,
-    0x60fd9,
-    0x410000,
-    0x2c0000,
-    0xb40000,
-    0xfda0000,
-    0xb,
-    0xc1,
-    0x2c,
-    0x134,
-    0xb0fdb,
-    0xa0000,
-    0x610000,
-    0x490000,
-    0xfdc0000,
-    0x9,
-    0xa,
-    0xa0,
-    0x49,
-    0xa0fde,
-    0xae0000,
-    0xcf0000,
-    0x10c0000,
-    0xfe00000,
-    0x8,
-    0xa,
-    0xf5,
-    0x49,
-    0x90fe2,
-    0xae0000,
-    0xf50000,
-    0xe40000,
-    0xfe30000,
-    0x8,
-    0xae,
-    0x10d,
-    0xe4,
-    0x50fe4,
-    0xa0000,
-    0x1330000,
-    0x490000,
-    0xfe50000,
-    0x7,
-    0xae,
-    0x133,
-    0xe4,
-    0x50fe6,
-    0xbe0000,
-    0x15a0000,
-    0x10c0000,
-    0xfe70000,
-    0x5,
-    0xbe,
-    0x172,
-    0x10c,
-    0x50fe8,
-    0xbe0000,
-    0x18b0000,
-    0x10c0000,
-    0xfe90000,
-    0xa,
-    0xbe,
-    0x1a3,
-    0x10c,
-    0x70fea,
-    0x0
-};
+D2StatDescRowStrc gaStatDescRows[15] = {
+    {
+        /* .nX1 = */ 0xb,
+        /* .nY = */ 0x2c,
+        /* .nX2 = */ 0x34,
+        /* .nStringId = */ 0xfd9,
+        /* .nTextWidth = */ 0x6
+    },
+    {
+        /* .nX1 = */ 0x41,
+        /* .nY = */ 0x2c,
+        /* .nX2 = */ 0xb4,
+        /* .nStringId = */ 0xfda,
+        /* .nTextWidth = */ 0xb
+    },
+    {
+        /* .nX1 = */ 0xc1,
+        /* .nY = */ 0x2c,
+        /* .nX2 = */ 0x134,
+        /* .nStringId = */ 0xfdb,
+        /* .nTextWidth = */ 0xb
+    },
+    {
+        /* .nX1 = */ 0xa,
+        /* .nY = */ 0x61,
+        /* .nX2 = */ 0x49,
+        /* .nStringId = */ 0xfdc,
+        /* .nTextWidth = */ 0x9
+    },
+    {
+        /* .nX1 = */ 0xa,
+        /* .nY = */ 0xa0,
+        /* .nX2 = */ 0x49,
+        /* .nStringId = */ 0xfde,
+        /* .nTextWidth = */ 0xa
+    },
+    {
+        /* .nX1 = */ 0xae,
+        /* .nY = */ 0xcf,
+        /* .nX2 = */ 0x10c,
+        /* .nStringId = */ 0xfe0,
+        /* .nTextWidth = */ 0x8
+    },
+    {
+        /* .nX1 = */ 0xa,
+        /* .nY = */ 0xf5,
+        /* .nX2 = */ 0x49,
+        /* .nStringId = */ 0xfe2,
+        /* .nTextWidth = */ 0x9
+    },
+    {
+        /* .nX1 = */ 0xae,
+        /* .nY = */ 0xf5,
+        /* .nX2 = */ 0xe4,
+        /* .nStringId = */ 0xfe3,
+        /* .nTextWidth = */ 0x8
+    },
+    {
+        /* .nX1 = */ 0xae,
+        /* .nY = */ 0x10d,
+        /* .nX2 = */ 0xe4,
+        /* .nStringId = */ 0xfe4,
+        /* .nTextWidth = */ 0x5
+    },
+    {
+        /* .nX1 = */ 0xa,
+        /* .nY = */ 0x133,
+        /* .nX2 = */ 0x49,
+        /* .nStringId = */ 0xfe5,
+        /* .nTextWidth = */ 0x7
+    },
+    {
+        /* .nX1 = */ 0xae,
+        /* .nY = */ 0x133,
+        /* .nX2 = */ 0xe4,
+        /* .nStringId = */ 0xfe6,
+        /* .nTextWidth = */ 0x5
+    },
+    {
+        /* .nX1 = */ 0xbe,
+        /* .nY = */ 0x15a,
+        /* .nX2 = */ 0x10c,
+        /* .nStringId = */ 0xfe7,
+        /* .nTextWidth = */ 0x5
+    },
+    {
+        /* .nX1 = */ 0xbe,
+        /* .nY = */ 0x172,
+        /* .nX2 = */ 0x10c,
+        /* .nStringId = */ 0xfe8,
+        /* .nTextWidth = */ 0x5
+    },
+    {
+        /* .nX1 = */ 0xbe,
+        /* .nY = */ 0x18b,
+        /* .nX2 = */ 0x10c,
+        /* .nStringId = */ 0xfe9,
+        /* .nTextWidth = */ 0xa
+    },
+    {
+        /* .nX1 = */ 0xbe,
+        /* .nY = */ 0x1a3,
+        /* .nX2 = */ 0x10c,
+        /* .nStringId = */ 0xfea,
+        /* .nTextWidth = */ 0x7
+    }
+}; D2_GLOBAL_GUARD(gaStatDescRows, "gaStatDescRows");
 
 D2StatScreenButtonStrc gaStatScreenButtons[4] = {
     {
@@ -43014,7 +43013,7 @@ D2StatScreenButtonStrc gaStatScreenButtons[4] = {
         /* .bHitTest = */ 0x0,
         /* .nStatId = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaStatScreenButtons, "gaStatScreenButtons");
 
 char * gaLanguageNames_00724a80[15] = {
     s_English_006cc81c,
@@ -43032,7 +43031,7 @@ char * gaLanguageNames_00724a80[15] = {
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
     (char*)0x006cc77c
-};
+}; D2_GLOBAL_GUARD(gaLanguageNames_00724a80, "gaLanguageNames_00724a80");
 
 D2ClassIconWithNameStrc pSpellsClassSkillicon[7] = {
     {
@@ -43063,7 +43062,7 @@ D2ClassIconWithNameStrc pSpellsClassSkillicon[7] = {
         /* .pD2Archive = */ nullptr,
         /* .szSpelliconPath = */ "Spells\\AsSkillicon"
     }
-};
+}; D2_GLOBAL_GUARD(pSpellsClassSkillicon, "pSpellsClassSkillicon");
 
 D2ClassIconWithNameStrc pSpellsClassSkilltree[7] = {
     {
@@ -43094,7 +43093,7 @@ D2ClassIconWithNameStrc pSpellsClassSkilltree[7] = {
         /* .pD2Archive = */ nullptr,
         /* .szSpelliconPath = */ "Spells\\skltree_i_back"
     }
-};
+}; D2_GLOBAL_GUARD(pSpellsClassSkilltree, "pSpellsClassSkilltree");
 
 // also labelled: gaNpcDialogOptionData_725cb0
 D2SpeechBankStrc gaNpcSpeechBank_725cb0[10] = {
@@ -43168,7 +43167,7 @@ D2SpeechBankStrc gaNpcSpeechBank_725cb0[10] = {
         /* .eQuest = */ QUEST_AbleGoToAct3,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcSpeechBank_725cb0, "gaNpcSpeechBank_725cb0");
 
 D2NPCSpeechStrc D2NPCSpeech[46] = {
     {
@@ -43723,13 +43722,13 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .bNoIntro = */ false,
         /* .bGreeting = */ true
     }
-};
+}; D2_GLOBAL_GUARD(D2NPCSpeech, "D2NPCSpeech");
 
 D2UIFlagInitStrc g_UIFlagInitDialogMouseWheel = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x20a,
     /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogMouseWheel
-};
+}; D2_GLOBAL_GUARD(g_UIFlagInitDialogMouseWheel, "g_UIFlagInitDialogMouseWheel");
 
 D2UIFlagInitStrc gsUIDialogFlagInit[14] = {
     {
@@ -43802,9 +43801,9 @@ D2UIFlagInitStrc gsUIDialogFlagInit[14] = {
         /* .nMessageOrKeyCode = */ 0x200,
         /* .pfHandler = */ &D2Client::UI::Dialog::INPUT_DialogClickHandler
     }
-};
+}; D2_GLOBAL_GUARD(gsUIDialogFlagInit, "gsUIDialogFlagInit");
 
-uint16_t gaButtonDescriptors[4] = { 0x10, 0xd49, 0xa, 0x102e };
+uint16_t gaButtonDescriptors[4] = { 0x10, 0xd49, 0xa, 0x102e }; D2_GLOBAL_GUARD(gaButtonDescriptors, "gaButtonDescriptors");
 
 fnObjectClientFn gpObjectClientFunctionDispatchTable[19] = {
     nullptr,
@@ -43826,7 +43825,7 @@ fnObjectClientFn gpObjectClientFunctionDispatchTable[19] = {
     &D2Client::UNIT::Object::OBJECT_ClientFn_OperateToOpened,
     &D2Client::UNIT::Object::OBJECT_ClientFn_Zoo,
     &D2Client::UNIT::Object::OBJECT_ClientFn_ZooKeeper
-};
+}; D2_GLOBAL_GUARD(gpObjectClientFunctionDispatchTable, "gpObjectClientFunctionDispatchTable");
 
 // also labelled: gaNpcCashTabs_nTooltipStringId_col
 D2NpcCashTabStrc gaNpcCashTabs[2] = {
@@ -43858,13 +43857,13 @@ D2NpcCashTabStrc gaNpcCashTabs[2] = {
         /* .nHitTestState = */ 0x0,
         /* .bVisible = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcCashTabs, "gaNpcCashTabs");
 
 D2UIFlagInitStrc gUIFlagMapInit = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x202,
     /* .pfHandler = */ &D2Client::UI::ui::INPUT_GambleRepairClick
-};
+}; D2_GLOBAL_GUARD(gUIFlagMapInit, "gUIFlagMapInit");
 
 D2SkillCltDoFunc SKILLCLTDOFUNCS[130] = {
     nullptr,
@@ -43997,7 +43996,7 @@ D2SkillCltDoFunc SKILLCLTDOFUNCS[130] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(SKILLCLTDOFUNCS, "SKILLCLTDOFUNCS");
 
 int gaUnitSoundTable[28] = {
     0x0,
@@ -44028,7 +44027,7 @@ int gaUnitSoundTable[28] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaUnitSoundTable, "gaUnitSoundTable");
 
 eD2Sounds gaUnitSoundTableModeChange[12] = {
     SOUND_NONE,
@@ -44043,9 +44042,9 @@ eD2Sounds gaUnitSoundTableModeChange[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(gaUnitSoundTableModeChange, "gaUnitSoundTableModeChange");
 
-int * gaUnitSoundTableByClassId[7] = { (int*)&bUnitSoundTableInit, (int*)&gaUnitSoundIdsSorceress, (int*)&gaUnitSoundIdsNecromancer, (int*)&gaUnitSoundIdsPaladin, (int*)&gaUnitSoundIdsBarbarian, (int*)&gaUnitSoundIdsDruid, (int*)&gaUnitSoundIdsAssassin };
+int * gaUnitSoundTableByClassId[7] = { (int*)&bUnitSoundTableInit, (int*)&gaUnitSoundIdsSorceress, (int*)&gaUnitSoundIdsNecromancer, (int*)&gaUnitSoundIdsPaladin, (int*)&gaUnitSoundIdsBarbarian, (int*)&gaUnitSoundIdsDruid, (int*)&gaUnitSoundIdsAssassin }; D2_GLOBAL_GUARD(gaUnitSoundTableByClassId, "gaUnitSoundTableByClassId");
 
 int gaAmbientMusicLevelSetTable[168] = {
     0x11,
@@ -44216,7 +44215,7 @@ int gaAmbientMusicLevelSetTable[168] = {
     0x0,
     0x24,
     0x4f
-};
+}; D2_GLOBAL_GUARD(gaAmbientMusicLevelSetTable, "gaAmbientMusicLevelSetTable");
 
 D2MissileSrvDoFuncData MISSILECLTCOLLIDEFUNCS[9] = {
     {
@@ -44255,7 +44254,7 @@ D2MissileSrvDoFuncData MISSILECLTCOLLIDEFUNCS[9] = {
         /* .pFunction = */ (fpMissileSrvDoFuncData)&D2Client::UNIT::Missile::Missiles_SrvDoFuncData_03,
         /* .nFlags = */ 0x185
     }
-};
+}; D2_GLOBAL_GUARD(MISSILECLTCOLLIDEFUNCS, "MISSILECLTCOLLIDEFUNCS");
 
 int32_t aIntensityTable_Mode0[120] = {
     0x0,
@@ -44378,7 +44377,7 @@ int32_t aIntensityTable_Mode0[120] = {
     -0x3,
     0x2,
     -0x5
-};
+}; D2_GLOBAL_GUARD(aIntensityTable_Mode0, "aIntensityTable_Mode0");
 
 int32_t aIntensityTable_Mode1[120] = {
     0x0,
@@ -44501,7 +44500,7 @@ int32_t aIntensityTable_Mode1[120] = {
     -0x3,
     -0x2,
     -0x5
-};
+}; D2_GLOBAL_GUARD(aIntensityTable_Mode1, "aIntensityTable_Mode1");
 
 D2SkillDescDamageFunc gapSkillDamageDescFuncTable[36] = {
     nullptr,
@@ -44540,7 +44539,7 @@ D2SkillDescDamageFunc gapSkillDamageDescFuncTable[36] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(gapSkillDamageDescFuncTable, "gapSkillDamageDescFuncTable");
 
 D2SkillDescAttackFunc gpSkillDescAttackFuncTable[18] = {
     nullptr,
@@ -44561,9 +44560,9 @@ D2SkillDescAttackFunc gpSkillDescAttackFuncTable[18] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(gpSkillDescAttackFuncTable, "gpSkillDescAttackFuncTable");
 
-int32_t gaSkillDescLayoutPositions[130] = {
+int32_t gaSkillDescLayoutPositions[36] = {
     0xa2,
     0x5d,
     0x102,
@@ -44599,102 +44598,8 @@ int32_t gaSkillDescLayoutPositions[130] = {
     0x10e,
     0x10e,
     0xb8,
-    0x136,
-    0x2,
-    -0x6,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c,
-    0xf,
-    0x2,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c
-};
+    0x136
+}; D2_GLOBAL_GUARD(gaSkillDescLayoutPositions, "gaSkillDescLayoutPositions");
 
 short gnNpcMenuQuestIdTable[256] = {
     0x0,
@@ -44953,9 +44858,9 @@ short gnNpcMenuQuestIdTable[256] = {
     0xdd,
     0xde,
     0x9f
-};
+}; D2_GLOBAL_GUARD(gnNpcMenuQuestIdTable, "gnNpcMenuQuestIdTable");
 
-eD2ClientAppMode gClientAppModeQueue[4] = { 0, 0, 0, 0 };
+eD2ClientAppMode gClientAppModeQueue[5] = { 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gClientAppModeQueue, "gClientAppModeQueue");
 
 // also labelled: lpCriticalSection_QSERVERLoopRelated, lpCriticalSection_007a0468
 _RTL_CRITICAL_SECTION gHostGameStateCs = {
@@ -44965,7 +44870,7 @@ _RTL_CRITICAL_SECTION gHostGameStateCs = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(gHostGameStateCs, "gHostGameStateCs");
 
 D2ClientGameDataStrc gClientGameData = {
     /* .nZeroHead = */ 0,
@@ -45000,7 +44905,7 @@ D2ClientGameDataStrc gClientGameData = {
     /* .CLIENT_bExpansion = */ 0,
     /* .CLIENT_bLadder = */ 0,
     /* .gnGameDataValue04fc = */ 0
-};
+}; D2_GLOBAL_GUARD(gClientGameData, "gClientGameData");
 
 char RealmName[32] = {
     0,
@@ -45035,9 +44940,9 @@ char RealmName[32] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(RealmName, "RealmName");
 
-eD2PlayerClassID nD2PlayerClassID = 0;
+eD2PlayerClassID nD2PlayerClassID = 0; D2_GLOBAL_GUARD(nD2PlayerClassID, "nD2PlayerClassID");
 
 char CLIENT_GameName[20] = {
     0,
@@ -45060,7 +44965,7 @@ char CLIENT_GameName[20] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(CLIENT_GameName, "CLIENT_GameName");
 
 D2EndGameUiState gEndGameUiState = {
     /* .showCongrats = */ 0,
@@ -45069,22 +44974,22 @@ D2EndGameUiState gEndGameUiState = {
     /* ._pad1 = */ { 0, 0, 0 },
     /* .congratzOkClicked = */ 0,
     /* ._pad2 = */ { 0, 0, 0 }
-};
+}; D2_GLOBAL_GUARD(gEndGameUiState, "gEndGameUiState");
 
-eD2GSGameType eD2GSGameType_007a0610 = 0;
+eD2GSGameType eD2GSGameType_007a0610 = 0; D2_GLOBAL_GUARD(eD2GSGameType_007a0610, "eD2GSGameType_007a0610");
 
 D2ExitCutsceneState gExitCutsceneState = {
     /* .pendingCutsceneId = */ 0,
     /* .cutscenePlayed = */ 0,
     /* ._pad0 = */ { 0, 0, 0 }
-};
+}; D2_GLOBAL_GUARD(gExitCutsceneState, "gExitCutsceneState");
 
 D2ClientTimerStrc gLoadTimerDurationMs = {
     /* .dwStartTick = */ 0,
     /* .dwDurationMs = */ 0
-};
+}; D2_GLOBAL_GUARD(gLoadTimerDurationMs, "gLoadTimerDurationMs");
 
-HACCEL gbLanguageDllLoaded = nullptr;
+HACCEL gbLanguageDllLoaded = nullptr; D2_GLOBAL_GUARD(gbLanguageDllLoaded, "gbLanguageDllLoaded");
 
 char lpLibFileName_007a0710[260] = {
     0,
@@ -45347,7 +45252,7 @@ char lpLibFileName_007a0710[260] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(lpLibFileName_007a0710, "lpLibFileName_007a0710");
 
 D2GameRecordStrc gsGameRecordContext = {
     /* .pEntry = */ {
@@ -48355,7 +48260,7 @@ D2GameRecordStrc gsGameRecordContext = {
     /* .nEntrySize = */ 0,
     /* .nPlaybackIndex = */ 0,
     /* .pNext = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gsGameRecordContext, "gsGameRecordContext");
 
 D2GameRecordFileHeaderStrc lpBuffer_007a2768 = {
     /* .nVersion = */ 0,
@@ -48363,7 +48268,7 @@ D2GameRecordFileHeaderStrc lpBuffer_007a2768 = {
     /* .nLastBlockEntries = */ 0,
     /* .nStepCount = */ 0,
     /* .dwSeed = */ 0
-};
+}; D2_GLOBAL_GUARD(lpBuffer_007a2768, "lpBuffer_007a2768");
 
 D2UIFlagStrc GFX_bShowUIFlag = {
     /* .Game = */ 0,
@@ -48404,7 +48309,7 @@ D2UIFlagStrc GFX_bShowUIFlag = {
     /* .HireIcons = */ 0,
     /* .MercMenu = */ 0,
     /* .UnusedScroll = */ 0
-};
+}; D2_GLOBAL_GUARD(GFX_bShowUIFlag, "GFX_bShowUIFlag");
 
 D2UIFlagDescStrc gaUIFlagDescsClient[3] = {
     {
@@ -48533,7 +48438,7 @@ D2UIFlagDescStrc gaUIFlagDescsClient[3] = {
             0
         }
     }
-};
+}; D2_GLOBAL_GUARD(gaUIFlagDescsClient, "gaUIFlagDescsClient");
 
 uint32_t gnAutoMapCellPriority[2048] = {
     0,
@@ -50584,269 +50489,1573 @@ uint32_t gnAutoMapCellPriority[2048] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gnAutoMapCellPriority, "gnAutoMapCellPriority");
 
-D2UnitStrc * ClientSideUnitHashTables[128][6] = {
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
-};
+D2UnitStrc * ClientSideUnitHashTables[6][128] = {
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    },
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    },
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    },
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    },
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    },
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    }
+}; D2_GLOBAL_GUARD(ClientSideUnitHashTables, "ClientSideUnitHashTables");
 
-D2UnitStrc * ServerSideUnitHashTables[128][6] = {
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr },
-    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
-};
+D2UnitStrc * ServerSideUnitHashTables[6][128] = {
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    },
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    },
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    },
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    },
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    },
+    {
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
+    }
+}; D2_GLOBAL_GUARD(ServerSideUnitHashTables, "ServerSideUnitHashTables");
 
 D2KeyBindStrc gaKeyBindingsBackup[114] = {
     {
@@ -51419,7 +52628,7 @@ D2KeyBindStrc gaKeyBindingsBackup[114] = {
         /* .wKeyCode = */ 0,
         /* .nSlot = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaKeyBindingsBackup, "gaKeyBindingsBackup");
 
 D2KeyBindStrc g_KeyBindingsTable[114] = {
     {
@@ -51992,7 +53201,7 @@ D2KeyBindStrc g_KeyBindingsTable[114] = {
         /* .wKeyCode = */ 0,
         /* .nSlot = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(g_KeyBindingsTable, "g_KeyBindingsTable");
 
 D2ClientLightPulseStrc gRoomLightPulse = {
     /* .bRoomLightPulseActive = */ 0,
@@ -52009,9 +53218,9 @@ D2ClientLightPulseStrc gRoomLightPulse = {
     /* .nSinOffset = */ 0,
     /* .eLevelId = */ 0,
     /* .bApplied = */ 0
-};
+}; D2_GLOBAL_GUARD(gRoomLightPulse, "gRoomLightPulse");
 
-D2UnitStrc * gaActiveUnitSlots[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+D2UnitStrc * gaActiveUnitSlots[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }; D2_GLOBAL_GUARD(gaActiveUnitSlots, "gaActiveUnitSlots");
 
 D2ClientSpriteLoadStatusStrc gaSpriteLoadStatusTable[7] = {
     {
@@ -52336,7 +53545,7 @@ D2ClientSpriteLoadStatusStrc gaSpriteLoadStatusTable[7] = {
             0
         }
     }
-};
+}; D2_GLOBAL_GUARD(gaSpriteLoadStatusTable, "gaSpriteLoadStatusTable");
 
 D2CofCacheStrc gMonsterCofCache = {
     /* .nFrameCount = */ 0,
@@ -52856,7 +54065,7 @@ D2CofCacheStrc gMonsterCofCache = {
         nullptr,
         nullptr
     }
-};
+}; D2_GLOBAL_GUARD(gMonsterCofCache, "gMonsterCofCache");
 
 D2CofCacheStrc gPlayerCofCache = {
     /* .nFrameCount = */ 0,
@@ -53376,11 +54585,11 @@ D2CofCacheStrc gPlayerCofCache = {
         nullptr,
         nullptr
     }
-};
+}; D2_GLOBAL_GUARD(gPlayerCofCache, "gPlayerCofCache");
 
-int DC6_UncompOverlays_bubble_FrameCount[4] = { 0, 0, 0, 0 };
+int DC6_UncompOverlays_bubble_FrameCount[4] = { 0, 0, 0, 0 }; D2_GLOBAL_GUARD(DC6_UncompOverlays_bubble_FrameCount, "DC6_UncompOverlays_bubble_FrameCount");
 
-DC6 * DC6_UncompOverlays_bubble[4] = { nullptr, nullptr, nullptr, nullptr };
+DC6 * DC6_UncompOverlays_bubble[4] = { nullptr, nullptr, nullptr, nullptr }; D2_GLOBAL_GUARD(DC6_UncompOverlays_bubble, "DC6_UncompOverlays_bubble");
 
 char gWeatherPaletteRain1Colors[12] = {
     0,
@@ -53395,11 +54604,11 @@ char gWeatherPaletteRain1Colors[12] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gWeatherPaletteRain1Colors, "gWeatherPaletteRain1Colors");
 
-int gnWeatherRainTimingMin[4] = { 0, 0, 0, 0 };
+int gnWeatherRainTimingMin[4] = { 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gnWeatherRainTimingMin, "gnWeatherRainTimingMin");
 
-int gnWeatherRainParticleTimingMs[2] = { 0, 0 };
+int gnWeatherRainParticleTimingMs[2] = { 0, 0 }; D2_GLOBAL_GUARD(gnWeatherRainParticleTimingMs, "gnWeatherRainParticleTimingMs");
 
 char gWeatherPaletteDayColors[12] = {
     0,
@@ -53414,7 +54623,7 @@ char gWeatherPaletteDayColors[12] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gWeatherPaletteDayColors, "gWeatherPaletteDayColors");
 
 char gWeatherPaletteLightingNightColors[12] = {
     0,
@@ -53429,7 +54638,7 @@ char gWeatherPaletteLightingNightColors[12] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gWeatherPaletteLightingNightColors, "gWeatherPaletteLightingNightColors");
 
 char gWeatherPaletteMudDuskColors[12] = {
     0,
@@ -53444,11 +54653,11 @@ char gWeatherPaletteMudDuskColors[12] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gWeatherPaletteMudDuskColors, "gWeatherPaletteMudDuskColors");
 
-DC6 * DC6_UncompOverlays_Rain[4] = { nullptr, nullptr, nullptr, nullptr };
+DC6 * DC6_UncompOverlays_Rain[4] = { nullptr, nullptr, nullptr, nullptr }; D2_GLOBAL_GUARD(DC6_UncompOverlays_Rain, "DC6_UncompOverlays_Rain");
 
-int DC6_UncompOverlays_Rain_FrameCount[4] = { 0, 0, 0, 0 };
+int DC6_UncompOverlays_Rain_FrameCount[4] = { 0, 0, 0, 0 }; D2_GLOBAL_GUARD(DC6_UncompOverlays_Rain_FrameCount, "DC6_UncompOverlays_Rain_FrameCount");
 
 char gWeatherPaletteLightingSoftwareColors[12] = {
     0,
@@ -53463,7 +54672,7 @@ char gWeatherPaletteLightingSoftwareColors[12] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gWeatherPaletteLightingSoftwareColors, "gWeatherPaletteLightingSoftwareColors");
 
 uint32_t gLightMapBuffer[4096] = {
     0,
@@ -57562,7 +58771,7 @@ uint32_t gLightMapBuffer[4096] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gLightMapBuffer, "gLightMapBuffer");
 
 uint32_t gaLightmapInterpBuffer[4096] = {
     0,
@@ -61661,7 +62870,7 @@ uint32_t gaLightmapInterpBuffer[4096] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaLightmapInterpBuffer, "gaLightmapInterpBuffer");
 
 uint32_t gnLightmapInterpolationState[257] = { // [glide fix 9] [256] -> [257]: VIEW_Init writes indices 2..0x100 and AddLightToCell reads index newIntensity+1 (up to 0x100 for saturated cells)
     0,
@@ -61920,7 +63129,7 @@ uint32_t gnLightmapInterpolationState[257] = { // [glide fix 9] [256] -> [257]: 
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gnLightmapInterpolationState, "gnLightmapInterpolationState");
 
 D2LightMapCellStrc gaLightMapCells[2304] = {
     {
@@ -78051,7 +79260,7 @@ D2LightMapCellStrc gaLightMapCells[2304] = {
         /* .nGreen = */ 0,
         /* .nBlue = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaLightMapCells, "gaLightMapCells");
 
 uint8_t gaArcaneStarColors[256] = {
     0,
@@ -78310,7 +79519,7 @@ uint8_t gaArcaneStarColors[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaArcaneStarColors, "gaArcaneStarColors");
 
 int32_t gaArcaneStarYPos[256] = {
     0,
@@ -78569,7 +79778,7 @@ int32_t gaArcaneStarYPos[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaArcaneStarYPos, "gaArcaneStarYPos");
 
 uint8_t gPaletteTransitionTable[12544] = {
     0,
@@ -91116,9 +92325,9 @@ uint8_t gPaletteTransitionTable[12544] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gPaletteTransitionTable, "gPaletteTransitionTable");
 
-uint8_t gaArcaneStarColorTable[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+uint8_t gaArcaneStarColorTable[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gaArcaneStarColorTable, "gaArcaneStarColorTable");
 
 int32_t gaArcaneStarXPos[256] = {
     0,
@@ -91377,7 +92586,7 @@ int32_t gaArcaneStarXPos[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaArcaneStarXPos, "gaArcaneStarXPos");
 
 int32_t gaArcaneStarXVelocity[256] = {
     0,
@@ -91636,7 +92845,7 @@ int32_t gaArcaneStarXVelocity[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaArcaneStarXVelocity, "gaArcaneStarXVelocity");
 
 uint8_t PalShift_RandTransform[7680] = {
     0,
@@ -99319,19 +100528,19 @@ uint8_t PalShift_RandTransform[7680] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(PalShift_RandTransform, "PalShift_RandTransform");
 
-LPCANDIDATELIST gpIMECandidateList = nullptr;
+LPCANDIDATELIST gpIMECandidateList = nullptr; D2_GLOBAL_GUARD(gpIMECandidateList, "gpIMECandidateList");
 
-uint32_t gnMiniPanelButtonX[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+uint32_t gnMiniPanelButtonX[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gnMiniPanelButtonX, "gnMiniPanelButtonX");
 
-uint32_t gnMiniPanelButtonY[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+uint32_t gnMiniPanelButtonY[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gnMiniPanelButtonY, "gnMiniPanelButtonY");
 
-uint32_t gnMiniPanelButtonFrame[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+uint32_t gnMiniPanelButtonFrame[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gnMiniPanelButtonFrame, "gnMiniPanelButtonFrame");
 
-uint32_t gnMiniPanelButtonState[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+uint32_t gnMiniPanelButtonState[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gnMiniPanelButtonState, "gnMiniPanelButtonState");
 
-uint32_t gnMiniPanelButtonState6[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+uint32_t gnMiniPanelButtonState6[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gnMiniPanelButtonState6, "gnMiniPanelButtonState6");
 
 D2NpcShopButtonStrc gaNpcShopButtons[4] = {
     {
@@ -99366,7 +100575,7 @@ D2NpcShopButtonStrc gaNpcShopButtons[4] = {
         /* .wCurrentSelection = */ 0,
         /* .nIconId = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcShopButtons, "gaNpcShopButtons");
 
 D2InventoryEntryStrc gaPlayerBodySlotScreenCoords[11] = {
     {
@@ -99468,7 +100677,7 @@ D2InventoryEntryStrc gaPlayerBodySlotScreenCoords[11] = {
         /* .nHeight = */ 0,
         /* .wPad = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaPlayerBodySlotScreenCoords, "gaPlayerBodySlotScreenCoords");
 
 D2InventoryEntryStrc gaHirelingBodySlotScreenCoords[11] = {
     {
@@ -99570,14 +100779,14 @@ D2InventoryEntryStrc gaHirelingBodySlotScreenCoords[11] = {
         /* .nHeight = */ 0,
         /* .wPad = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaHirelingBodySlotScreenCoords, "gaHirelingBodySlotScreenCoords");
 
 RGBQUAD nColor = {
     /* .rgbBlue = */ 0,
     /* .rgbGreen = */ 0,
     /* .rgbRed = */ 0,
     /* .rgbReserved = */ 0
-};
+}; D2_GLOBAL_GUARD(nColor, "nColor");
 
 uint8_t gaPanelImageLoadFlags[48] = {
     0,
@@ -99628,13 +100837,28 @@ uint8_t gaPanelImageLoadFlags[48] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaPanelImageLoadFlags, "gaPanelImageLoadFlags");
 
-uint8_t gaPanelBeltColors[4] = { 0, 0, 0, 0 };
+uint8_t gaPanelBeltColors[4] = { 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gaPanelBeltColors, "gaPanelBeltColors");
 
-uint8_t gaPanelStatColors[4] = { 0, 0, 0, 0 };
+uint8_t gbPanelRightBeltArrowClicked[12] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+}; D2_GLOBAL_GUARD(gbPanelRightBeltArrowClicked, "gbPanelRightBeltArrowClicked");
 
-uint8_t gaPanelBeltArrowsNeeded[6] = { 0, 0, 0, 0, 0, 0 };
+uint8_t gaPanelStatColors[4] = { 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gaPanelStatColors, "gaPanelStatColors");
+
+uint8_t gaPanelBeltArrowsNeeded[6] = { 0, 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gaPanelBeltArrowsNeeded, "gaPanelBeltArrowsNeeded");
 
 D2WaypointListEntryStrc gaWaypointListEntries[9] = {
     {
@@ -99673,9 +100897,9 @@ D2WaypointListEntryStrc gaWaypointListEntries[9] = {
         /* .eLevelId = */ 0,
         /* .bActivated = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaWaypointListEntries, "gaWaypointListEntries");
 
-uint16_t gnQuestScrollLine[6] = { 0, 0, 0, 0, 0, 0 };
+uint16_t gnQuestScrollLine[6] = { 0, 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gnQuestScrollLine, "gnQuestScrollLine");
 
 RECT gnTextBoxExclusionLeft[16] = {
     {
@@ -99774,37 +100998,37 @@ RECT gnTextBoxExclusionLeft[16] = {
         /* .right = */ 0,
         /* .bottom = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gnTextBoxExclusionLeft, "gnTextBoxExclusionLeft");
 
 D2ScreenMessageListStrc ScreenMessagesMaybe = {
     /* .pHead = */ nullptr,
     /* .nCount = */ 0
-};
+}; D2_GLOBAL_GUARD(ScreenMessagesMaybe, "ScreenMessagesMaybe");
 
 D2ScreenMessageListStrc ScreenPartyMessages = {
     /* .pHead = */ nullptr,
     /* .nCount = */ 0
-};
+}; D2_GLOBAL_GUARD(ScreenPartyMessages, "ScreenPartyMessages");
 
 D2ScreenMessageListStrc AllMessagesMaybe = {
     /* .pHead = */ nullptr,
     /* .nCount = */ 0
-};
+}; D2_GLOBAL_GUARD(AllMessagesMaybe, "AllMessagesMaybe");
 
 RECT lprcTextOverheadRect = {
     /* .left = */ 0,
     /* .top = */ 0,
     /* .right = */ 0,
     /* .bottom = */ 0
-};
+}; D2_GLOBAL_GUARD(lprcTextOverheadRect, "lprcTextOverheadRect");
 
-int gQuestLogSelectedQuestByAct[5] = { 0, 0, 0, 0, 0 };
+int gQuestLogSelectedQuestByAct[5] = { 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gQuestLogSelectedQuestByAct, "gQuestLogSelectedQuestByAct");
 
-int gaControlConfigRegionMouseState[7] = { 0, 0, 0, 0, 0, 0, 0 };
+int gaControlConfigRegionMouseState[7] = { 0, 0, 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gaControlConfigRegionMouseState, "gaControlConfigRegionMouseState");
 
-uint64_t gbUIGoldStashMode = 0;
+uint64_t gbUIGoldStashMode = 0; D2_GLOBAL_GUARD(gbUIGoldStashMode, "gbUIGoldStashMode");
 
-uint64_t gbUIStatWindowDrawFlag = 0;
+uint64_t gbUIStatWindowDrawFlag = 0; D2_GLOBAL_GUARD(gbUIStatWindowDrawFlag, "gbUIStatWindowDrawFlag");
 
 D2SpellSelGridRegionStrc gSpellSelGridRegion = {
     /* .aSkillGrid = */ {
@@ -100057,7 +101281,7 @@ D2SpellSelGridRegionStrc gSpellSelGridRegion = {
     },
     /* .sGridIndex = */ { 0, 0, 0, 0, 0 },
     /* .pad_3c0 = */ { 0, 0, 0 }
-};
+}; D2_GLOBAL_GUARD(gSpellSelGridRegion, "gSpellSelGridRegion");
 
 int gSpellSelectionSkillIDs[16] = {
     0,
@@ -100076,7 +101300,7 @@ int gSpellSelectionSkillIDs[16] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gSpellSelectionSkillIDs, "gSpellSelectionSkillIDs");
 
 int32_t gSpellSelLeftSkillBindings[16] = {
     0,
@@ -100095,7 +101319,7 @@ int32_t gSpellSelLeftSkillBindings[16] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gSpellSelLeftSkillBindings, "gSpellSelLeftSkillBindings");
 
 int gSpellSelRightSkillBindings[16] = {
     0,
@@ -100114,7 +101338,7 @@ int gSpellSelRightSkillBindings[16] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gSpellSelRightSkillBindings, "gSpellSelRightSkillBindings");
 
 int gbSpellSelSkillTreeNodeHovered[128] = {
     0,
@@ -100245,7 +101469,7 @@ int gbSpellSelSkillTreeNodeHovered[128] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gbSpellSelSkillTreeNodeHovered, "gbSpellSelSkillTreeNodeHovered");
 
 int gaSpellSelSkillTreeState[128] = {
     0,
@@ -100376,7 +101600,7 @@ int gaSpellSelSkillTreeState[128] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaSpellSelSkillTreeState, "gaSpellSelSkillTreeState");
 
 D2GSPacketSrv0x2A D2GSPacketSrv0x2A_007c0d87 = {
     /* .nPacketId = */ 0,
@@ -100388,7 +101612,7 @@ D2GSPacketSrv0x2A D2GSPacketSrv0x2A_007c0d87 = {
     /* .field6_0x6 = */ 0,
     /* .nUnitGUID = */ 0,
     /* .nGold = */ 0
-};
+}; D2_GLOBAL_GUARD(D2GSPacketSrv0x2A_007c0d87, "D2GSPacketSrv0x2A_007c0d87");
 
 short gaNpcMenuHandledMessageIds[9] = {
     0,
@@ -100400,7 +101624,7 @@ short gaNpcMenuHandledMessageIds[9] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaNpcMenuHandledMessageIds, "gaNpcMenuHandledMessageIds");
 
 uint8_t aQuestAvailabilityPacket[37] = {
     0,
@@ -100440,7 +101664,7 @@ uint8_t aQuestAvailabilityPacket[37] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(aQuestAvailabilityPacket, "aQuestAvailabilityPacket");
 
 D2GroundItemLabelStrc gaGroundItemLabels[32] = {
     {
@@ -104923,7 +106147,7 @@ D2GroundItemLabelStrc gaGroundItemLabels[32] = {
         /* .nDrawPosition = */ 0,
         /* .nTextColor = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaGroundItemLabels, "gaGroundItemLabels");
 
 uint8_t gaLevelAmbientMusicPlayedFlags[4096] = {
     0,
@@ -109022,7 +110246,7 @@ uint8_t gaLevelAmbientMusicPlayedFlags[4096] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaLevelAmbientMusicPlayedFlags, "gaLevelAmbientMusicPlayedFlags");
 
 int gPlrModeTokens[20] = {
     0,
@@ -109045,7 +110269,7 @@ int gPlrModeTokens[20] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gPlrModeTokens, "gPlrModeTokens");
 
 int gTxtCompositTokens[16] = {
     0,
@@ -109064,9 +110288,9 @@ int gTxtCompositTokens[16] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gTxtCompositTokens, "gTxtCompositTokens");
 
-int gObjModeTokens[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+int gObjModeTokens[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gObjModeTokens, "gObjModeTokens");
 
 int gMonModeTokens[16] = {
     0,
@@ -109085,9 +110309,9 @@ int gMonModeTokens[16] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gMonModeTokens, "gMonModeTokens");
 
-int gArmTypeTokens[3] = { 0, 0, 0 };
+int gArmTypeTokens[3] = { 0, 0, 0 }; D2_GLOBAL_GUARD(gArmTypeTokens, "gArmTypeTokens");
 
 D2ClientSoundChannelStrc gaSoundChannels[16] = {
     {
@@ -109250,7 +110474,7 @@ D2ClientSoundChannelStrc gaSoundChannels[16] = {
         /* .field_0x18 = */ 0,
         /* .field_0x1c = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaSoundChannels, "gaSoundChannels");
 
 int32_t gaYBufferRowOffsets[732] = {
     0,
@@ -109985,565 +111209,562 @@ int32_t gaYBufferRowOffsets[732] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaYBufferRowOffsets, "gaYBufferRowOffsets");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int cChatCmdExclaim = 0x21;
-BOOL gbQuitGame = 0x1;
-uint32_t gnPrimaryClickState = 0x10;
-int gnMouseButtonEventState = 0x10;
-int gnActTransitionFadeFrames = 0x1;
-D2GameRecordStrc * gpCurrentGameRecord = (D2GameRecordStrc *)&gsGameRecordContext;
-uint32_t gnLastMouseButtonEventType = 0x1;
-int nHealthBarScreenX = -0x1;
-int gnMercenaryHealthBarScreenY = -0x1;
-int gnUIFlagCount = 0x26;
-uint32_t gbCursorAnimationPending = 0x1;
-int nAutoMapZoomDivisor = 0xa;
-uint32_t nNextGUID = 0x1;
-uint32_t gnSelectConstant13_X = 0x13;
-uint32_t gnSelectConstant13_Y = 0x13;
-int gnCursorDataCount = 0x7;
-D2CmdBindingStrc gaCmdHandlerTable[57] = {};
-uint32_t gnDenOfEvilLightTimerTick = -0x1;
-uint32_t gnDiabloSpawnLightTimer = -0x1;
-uint32_t gnQuestMonsterUnitId = -0x1;
-uint32_t gnMonsterModePrecacheCount = 0xf;
-uint32_t gnBlizzardSoundPlayed = 0x1;
-uint32_t gbLightmapColorEnabled = 0x1;
-D2SeedStrc * gpArcaneStarsSeed = (D2SeedStrc *)&gaSpriteArcaneStarYOffset;
-int gnChatHistoryReadIndex = 0x7;
-uint32_t gnChatHistoryWriteIndex = 0x7;
-uint32_t gpWardenModuleParam = -0x1;
-uint32_t gnInventoryActiveUnitId = 0x1;
-int gnItemDescTitleMaxWidth = 0x1;
-int gaInventoryItemSlots = -0x1;
-int gaInventoryState = -0x1;
-int nInventoryContextMode = -0x1;
-int32_t pInventoryContextUi = -0x1;
-int32_t gpInventoryContextUi = -0x1;
-int gaInventorySelectState = -0x1;
-uint32_t gnStashNpcGuid = -0x1;
-uint32_t gnHirelingLArmSlotImageOffsetY = 0x2;
-uint32_t gnHirelingLArmSlotImageOffsetX = -0x2;
-uint32_t gnHirelingHeadSlotImageOffsetY = 0x0;
-uint32_t gnInvMercWeaponSlot2ImageOffsetY = -0x1;
-uint32_t gnHirelingRArmSlotImageOffsetX = 0x0;
-uint32_t gnHirelingRArmSlotImageOffsetY = -0x2;
-uint32_t gnInvLArmSlotImageOffsetX = 0x0;
-uint32_t gnInvLArmSlotImageOffsetY = -0x2;
-uint32_t AmountOfNPCTabs = 0x4;
-uint32_t CurrentNpcButtonSelection = 0x3;
-int gnBeltPanelState = 0x2;
-int32_t gnBeltSlotUnderCursor = -0x1;
-int gnBeltTooltipX = -0x1;
-int gnBeltTooltipY = -0x1;
-unsigned int gnScrollingTextBoxTopY = 0xc;
-D2ConfigControlDescStrc * gpStatDescriptorTable = (D2ConfigControlDescStrc *)&gaConfigControlBindings;
-int nConfigControlSelected = 0x1;
-uint32_t gnConfigBindingFirstClick = 0x1;
-int nSkillTreeActiveTab = 0x1;
-int gnSkillTreeHighlightIndex = 0x1;
-int D2NPCSpeechCount = 0x2e;
-int nSoundVolumeLeftChannel = 0x64;
-int nSoundVolumeRightChannel = 0x64;
-int nCashDisplayItemCount = 0x2;
-int SKILLCLTDOFUNCS_SIZE = 0x82;
-uint32_t gnLightmapQualityLastCheck = 0x1;
-uint32_t gnDialogDataInitialized = 0x1;
-HMODULE HMODULE_007a0318 = 0;
-D2IniConfigStrc * D2IniData_client = 0;
-uint32_t gnClientAppModeQueueState = 0;
-uint32_t gClientAppModeQueueCounter = 0;
-uint32_t gbQServerRunning = 0;
-unsigned int gdwLastPacketActivityTick = {};
-uint32_t gnClientModeInitValue = 0;
-unsigned int gdwQServerStartTime = {};
-short gnTcpIpJoinId = 0;
-int gConnectLongTimeoutStartTick = 0;
-HANDLE HostGameThread = 0;
-uint32_t gnTcpIpComInt = 0;
-uint32_t gnConnectionRefusedReason = 0;
-D2BNetClientCallbacksStrc * gpBNetClientCallbacks = 0;
-int gConnectShortTimeoutStartTick = 0;
-uint32_t gbBloodFlag = 0;
-D2EndGameUiState gShowEndGameCutscene = {};
-D2EndGameUiState gCongratzOkClicked = {};
-uint8_t CLIENT_nDifficulty = 0;
-uint8_t gBetaScreenIndex = 0;
-uint8_t gbActInitExpansionFlag = 0;
-int D2GS_Connected = 0;
-int ServerLoadingComplete = 0;
-BOOL D2CLIENT_ExitVar3 = 0;
-bool gLevelLoadInProgress = 0;
-D2ExitCutsceneState gExitCutscenePlayed = {};
-D2DrlgActStrc * sgpDrlgAct = 0;
-D2Game_Line0x546 * D2GameGame0x546 = 0;
-uint32_t gnWeatherOverlayActId = 0;
-uint32_t ExitingGame = 0;
-uint32_t EnteringGame = 0;
-uint32_t gQueuedPrimaryClick = 0;
-int gQueuedSecondaryClick = 0;
-uint32_t gbMouseButtonEventPending = 0;
-bool gRunKeyDown = 0;
-int gClickModifierDown = 0;
-uint32_t gnQueuedPrimaryClickX = 0;
-uint32_t gnQueuedSecondaryClickX = 0;
-BOOL D2CLIENT_ExitVar2 = 0;
-uint32_t gnCameraWorldDeltaX = 0;
-uint32_t gnCameraWorldDeltaY = 0;
-uint32_t gbMinimapClickValid = 0;
-HMODULE ghLngLibrary = 0;
-uint32_t gdwQuestResurrectDismissThrottle = 0;
-DC6 * DC6_EnteredAreaName = 0;
-DC6 * pDC6_Frame = 0;
-uint32_t gnGoldDialogTransactionType = 0;
-SpinnerWrapper * gpCurrentDialog = 0;
-EditBoxWrapper * gpDialogDefaultActionCallback = 0;
-ButtonWrapper * gpUiGoldTransactionDialog = 0;
-ButtonWrapper * gpUiGoldDialogCancelButton = 0;
-uint32_t gbKeyConfigModeActiveInDialog = 0;
-uint32_t gbLoadScreenLevelLoadInProgress = 0;
+int cChatCmdExclaim = 0x21; D2_GLOBAL_GUARD(cChatCmdExclaim, "cChatCmdExclaim");
+BOOL gbQuitGame = 0x1; D2_GLOBAL_GUARD(gbQuitGame, "gbQuitGame");
+uint32_t gnPrimaryClickState = 0x10; D2_GLOBAL_GUARD(gnPrimaryClickState, "gnPrimaryClickState");
+int gnMouseButtonEventState = 0x10; D2_GLOBAL_GUARD(gnMouseButtonEventState, "gnMouseButtonEventState");
+int gnActTransitionFadeFrames = 0x1; D2_GLOBAL_GUARD(gnActTransitionFadeFrames, "gnActTransitionFadeFrames");
+D2GameRecordStrc * gpCurrentGameRecord = (D2GameRecordStrc *)&gsGameRecordContext; D2_GLOBAL_GUARD(gpCurrentGameRecord, "gpCurrentGameRecord");
+uint32_t gnLastMouseButtonEventType = 0x1; D2_GLOBAL_GUARD(gnLastMouseButtonEventType, "gnLastMouseButtonEventType");
+int nHealthBarScreenX = -0x1; D2_GLOBAL_GUARD(nHealthBarScreenX, "nHealthBarScreenX");
+int gnMercenaryHealthBarScreenY = -0x1; D2_GLOBAL_GUARD(gnMercenaryHealthBarScreenY, "gnMercenaryHealthBarScreenY");
+int gnUIFlagCount = 0x26; D2_GLOBAL_GUARD(gnUIFlagCount, "gnUIFlagCount");
+uint32_t gbCursorAnimationPending = 0x1; D2_GLOBAL_GUARD(gbCursorAnimationPending, "gbCursorAnimationPending");
+int nAutoMapZoomDivisor = 0xa; D2_GLOBAL_GUARD(nAutoMapZoomDivisor, "nAutoMapZoomDivisor");
+uint32_t nNextGUID = 0x1; D2_GLOBAL_GUARD(nNextGUID, "nNextGUID");
+uint32_t gnSelectConstant13_X = 0x13; D2_GLOBAL_GUARD(gnSelectConstant13_X, "gnSelectConstant13_X");
+uint32_t gnSelectConstant13_Y = 0x13; D2_GLOBAL_GUARD(gnSelectConstant13_Y, "gnSelectConstant13_Y");
+int gnCursorDataCount = 0x7; D2_GLOBAL_GUARD(gnCursorDataCount, "gnCursorDataCount");
+D2CmdBindingStrc gaCmdHandlerTable[57] = {}; D2_GLOBAL_GUARD(gaCmdHandlerTable, "gaCmdHandlerTable");
+uint32_t gnDenOfEvilLightTimerTick = -0x1; D2_GLOBAL_GUARD(gnDenOfEvilLightTimerTick, "gnDenOfEvilLightTimerTick");
+uint32_t gnDiabloSpawnLightTimer = -0x1; D2_GLOBAL_GUARD(gnDiabloSpawnLightTimer, "gnDiabloSpawnLightTimer");
+uint32_t gnQuestMonsterUnitId = -0x1; D2_GLOBAL_GUARD(gnQuestMonsterUnitId, "gnQuestMonsterUnitId");
+uint32_t gnMonsterModePrecacheCount = 0xf; D2_GLOBAL_GUARD(gnMonsterModePrecacheCount, "gnMonsterModePrecacheCount");
+uint32_t gnBlizzardSoundPlayed = 0x1; D2_GLOBAL_GUARD(gnBlizzardSoundPlayed, "gnBlizzardSoundPlayed");
+uint32_t gbLightmapColorEnabled = 0x1; D2_GLOBAL_GUARD(gbLightmapColorEnabled, "gbLightmapColorEnabled");
+D2SeedStrc * gpArcaneStarsSeed = (D2SeedStrc *)&gaSpriteArcaneStarYOffset; D2_GLOBAL_GUARD(gpArcaneStarsSeed, "gpArcaneStarsSeed");
+int gnChatHistoryReadIndex = 0x7; D2_GLOBAL_GUARD(gnChatHistoryReadIndex, "gnChatHistoryReadIndex");
+uint32_t gnChatHistoryWriteIndex = 0x7; D2_GLOBAL_GUARD(gnChatHistoryWriteIndex, "gnChatHistoryWriteIndex");
+uint32_t gpWardenModuleParam = -0x1; D2_GLOBAL_GUARD(gpWardenModuleParam, "gpWardenModuleParam");
+uint32_t gnInventoryActiveUnitId = 0x1; D2_GLOBAL_GUARD(gnInventoryActiveUnitId, "gnInventoryActiveUnitId");
+int gnItemDescTitleMaxWidth = 0x1; D2_GLOBAL_GUARD(gnItemDescTitleMaxWidth, "gnItemDescTitleMaxWidth");
+int gaInventoryItemSlots = -0x1; D2_GLOBAL_GUARD(gaInventoryItemSlots, "gaInventoryItemSlots");
+int gaInventoryState = -0x1; D2_GLOBAL_GUARD(gaInventoryState, "gaInventoryState");
+int nInventoryContextMode = -0x1; D2_GLOBAL_GUARD(nInventoryContextMode, "nInventoryContextMode");
+int32_t pInventoryContextUi = -0x1; D2_GLOBAL_GUARD(pInventoryContextUi, "pInventoryContextUi");
+int32_t gpInventoryContextUi = -0x1; D2_GLOBAL_GUARD(gpInventoryContextUi, "gpInventoryContextUi");
+int gaInventorySelectState = -0x1; D2_GLOBAL_GUARD(gaInventorySelectState, "gaInventorySelectState");
+uint32_t gnStashNpcGuid = -0x1; D2_GLOBAL_GUARD(gnStashNpcGuid, "gnStashNpcGuid");
+uint32_t gnHirelingLArmSlotImageOffsetY = 0x2; D2_GLOBAL_GUARD(gnHirelingLArmSlotImageOffsetY, "gnHirelingLArmSlotImageOffsetY");
+uint32_t gnHirelingLArmSlotImageOffsetX = -0x2; D2_GLOBAL_GUARD(gnHirelingLArmSlotImageOffsetX, "gnHirelingLArmSlotImageOffsetX");
+uint32_t gnHirelingHeadSlotImageOffsetY = 0x0; D2_GLOBAL_GUARD(gnHirelingHeadSlotImageOffsetY, "gnHirelingHeadSlotImageOffsetY");
+uint32_t gnInvMercWeaponSlot2ImageOffsetY = -0x1; D2_GLOBAL_GUARD(gnInvMercWeaponSlot2ImageOffsetY, "gnInvMercWeaponSlot2ImageOffsetY");
+uint32_t gnHirelingRArmSlotImageOffsetX = 0x0; D2_GLOBAL_GUARD(gnHirelingRArmSlotImageOffsetX, "gnHirelingRArmSlotImageOffsetX");
+uint32_t gnHirelingRArmSlotImageOffsetY = -0x2; D2_GLOBAL_GUARD(gnHirelingRArmSlotImageOffsetY, "gnHirelingRArmSlotImageOffsetY");
+uint32_t gnInvLArmSlotImageOffsetX = 0x0; D2_GLOBAL_GUARD(gnInvLArmSlotImageOffsetX, "gnInvLArmSlotImageOffsetX");
+uint32_t gnInvLArmSlotImageOffsetY = -0x2; D2_GLOBAL_GUARD(gnInvLArmSlotImageOffsetY, "gnInvLArmSlotImageOffsetY");
+uint32_t AmountOfNPCTabs = 0x4; D2_GLOBAL_GUARD(AmountOfNPCTabs, "AmountOfNPCTabs");
+uint32_t CurrentNpcButtonSelection = 0x3; D2_GLOBAL_GUARD(CurrentNpcButtonSelection, "CurrentNpcButtonSelection");
+int gnBeltPanelState = 0x2; D2_GLOBAL_GUARD(gnBeltPanelState, "gnBeltPanelState");
+int32_t gnBeltSlotUnderCursor = -0x1; D2_GLOBAL_GUARD(gnBeltSlotUnderCursor, "gnBeltSlotUnderCursor");
+int gnBeltTooltipX = -0x1; D2_GLOBAL_GUARD(gnBeltTooltipX, "gnBeltTooltipX");
+int gnBeltTooltipY = -0x1; D2_GLOBAL_GUARD(gnBeltTooltipY, "gnBeltTooltipY");
+unsigned int gnScrollingTextBoxTopY = 0xc; D2_GLOBAL_GUARD(gnScrollingTextBoxTopY, "gnScrollingTextBoxTopY");
+D2ConfigControlDescStrc * gpStatDescriptorTable = (D2ConfigControlDescStrc *)&gaConfigControlBindings; D2_GLOBAL_GUARD(gpStatDescriptorTable, "gpStatDescriptorTable");
+int nConfigControlSelected = 0x1; D2_GLOBAL_GUARD(nConfigControlSelected, "nConfigControlSelected");
+uint32_t gnConfigBindingFirstClick = 0x1; D2_GLOBAL_GUARD(gnConfigBindingFirstClick, "gnConfigBindingFirstClick");
+int nSkillTreeActiveTab = 0x1; D2_GLOBAL_GUARD(nSkillTreeActiveTab, "nSkillTreeActiveTab");
+int gnSkillTreeHighlightIndex = 0x1; D2_GLOBAL_GUARD(gnSkillTreeHighlightIndex, "gnSkillTreeHighlightIndex");
+int D2NPCSpeechCount = 0x2e; D2_GLOBAL_GUARD(D2NPCSpeechCount, "D2NPCSpeechCount");
+int nSoundVolumeLeftChannel = 0x64; D2_GLOBAL_GUARD(nSoundVolumeLeftChannel, "nSoundVolumeLeftChannel");
+int nSoundVolumeRightChannel = 0x64; D2_GLOBAL_GUARD(nSoundVolumeRightChannel, "nSoundVolumeRightChannel");
+int nCashDisplayItemCount = 0x2; D2_GLOBAL_GUARD(nCashDisplayItemCount, "nCashDisplayItemCount");
+int SKILLCLTDOFUNCS_SIZE = 0x82; D2_GLOBAL_GUARD(SKILLCLTDOFUNCS_SIZE, "SKILLCLTDOFUNCS_SIZE");
+uint32_t gnLightmapQualityLastCheck = 0x1; D2_GLOBAL_GUARD(gnLightmapQualityLastCheck, "gnLightmapQualityLastCheck");
+uint32_t gnDialogDataInitialized = 0x1; D2_GLOBAL_GUARD(gnDialogDataInitialized, "gnDialogDataInitialized");
+D2IniConfigStrc * D2IniData_client = 0; D2_GLOBAL_GUARD(D2IniData_client, "D2IniData_client");
+uint32_t gnClientAppModeQueueState = 0; D2_GLOBAL_GUARD(gnClientAppModeQueueState, "gnClientAppModeQueueState");
+uint32_t gClientAppModeQueueCounter = 0; D2_GLOBAL_GUARD(gClientAppModeQueueCounter, "gClientAppModeQueueCounter");
+uint32_t gbQServerRunning = 0; D2_GLOBAL_GUARD(gbQServerRunning, "gbQServerRunning");
+unsigned int gdwLastPacketActivityTick = {}; D2_GLOBAL_GUARD(gdwLastPacketActivityTick, "gdwLastPacketActivityTick");
+uint32_t gnClientModeInitValue = 0; D2_GLOBAL_GUARD(gnClientModeInitValue, "gnClientModeInitValue");
+unsigned int gdwQServerStartTime = {}; D2_GLOBAL_GUARD(gdwQServerStartTime, "gdwQServerStartTime");
+short gnTcpIpJoinId = 0; D2_GLOBAL_GUARD(gnTcpIpJoinId, "gnTcpIpJoinId");
+int gConnectLongTimeoutStartTick = 0; D2_GLOBAL_GUARD(gConnectLongTimeoutStartTick, "gConnectLongTimeoutStartTick");
+HANDLE HostGameThread = 0; D2_GLOBAL_GUARD(HostGameThread, "HostGameThread");
+uint32_t gnTcpIpComInt = 0; D2_GLOBAL_GUARD(gnTcpIpComInt, "gnTcpIpComInt");
+uint32_t gnConnectionRefusedReason = 0; D2_GLOBAL_GUARD(gnConnectionRefusedReason, "gnConnectionRefusedReason");
+D2BNetClientCallbacksStrc * gpBNetClientCallbacks = 0; D2_GLOBAL_GUARD(gpBNetClientCallbacks, "gpBNetClientCallbacks");
+int gConnectShortTimeoutStartTick = 0; D2_GLOBAL_GUARD(gConnectShortTimeoutStartTick, "gConnectShortTimeoutStartTick");
+uint32_t gbBloodFlag = 0; D2_GLOBAL_GUARD(gbBloodFlag, "gbBloodFlag");
+D2EndGameUiState gShowEndGameCutscene = {}; D2_GLOBAL_GUARD(gShowEndGameCutscene, "gShowEndGameCutscene");
+D2EndGameUiState gCongratzOkClicked = {}; D2_GLOBAL_GUARD(gCongratzOkClicked, "gCongratzOkClicked");
+uint8_t CLIENT_nDifficulty = 0; D2_GLOBAL_GUARD(CLIENT_nDifficulty, "CLIENT_nDifficulty");
+uint8_t gBetaScreenIndex = 0; D2_GLOBAL_GUARD(gBetaScreenIndex, "gBetaScreenIndex");
+uint8_t gbActInitExpansionFlag = 0; D2_GLOBAL_GUARD(gbActInitExpansionFlag, "gbActInitExpansionFlag");
+int D2GS_Connected = 0; D2_GLOBAL_GUARD(D2GS_Connected, "D2GS_Connected");
+int ServerLoadingComplete = 0; D2_GLOBAL_GUARD(ServerLoadingComplete, "ServerLoadingComplete");
+BOOL D2CLIENT_ExitVar3 = 0; D2_GLOBAL_GUARD(D2CLIENT_ExitVar3, "D2CLIENT_ExitVar3");
+bool gLevelLoadInProgress = 0; D2_GLOBAL_GUARD(gLevelLoadInProgress, "gLevelLoadInProgress");
+D2ExitCutsceneState gExitCutscenePlayed = {}; D2_GLOBAL_GUARD(gExitCutscenePlayed, "gExitCutscenePlayed");
+D2DrlgActStrc * sgpDrlgAct = 0; D2_GLOBAL_GUARD(sgpDrlgAct, "sgpDrlgAct");
+D2Game_Line0x546 * D2GameGame0x546 = 0; D2_GLOBAL_GUARD(D2GameGame0x546, "D2GameGame0x546");
+uint32_t gnWeatherOverlayActId = 0; D2_GLOBAL_GUARD(gnWeatherOverlayActId, "gnWeatherOverlayActId");
+uint32_t ExitingGame = 0; D2_GLOBAL_GUARD(ExitingGame, "ExitingGame");
+uint32_t EnteringGame = 0; D2_GLOBAL_GUARD(EnteringGame, "EnteringGame");
+uint32_t gQueuedPrimaryClick = 0; D2_GLOBAL_GUARD(gQueuedPrimaryClick, "gQueuedPrimaryClick");
+int gQueuedSecondaryClick = 0; D2_GLOBAL_GUARD(gQueuedSecondaryClick, "gQueuedSecondaryClick");
+uint32_t gbMouseButtonEventPending = 0; D2_GLOBAL_GUARD(gbMouseButtonEventPending, "gbMouseButtonEventPending");
+bool gRunKeyDown = 0; D2_GLOBAL_GUARD(gRunKeyDown, "gRunKeyDown");
+int gClickModifierDown = 0; D2_GLOBAL_GUARD(gClickModifierDown, "gClickModifierDown");
+uint32_t gnQueuedPrimaryClickX = 0; D2_GLOBAL_GUARD(gnQueuedPrimaryClickX, "gnQueuedPrimaryClickX");
+uint32_t gnQueuedSecondaryClickX = 0; D2_GLOBAL_GUARD(gnQueuedSecondaryClickX, "gnQueuedSecondaryClickX");
+BOOL D2CLIENT_ExitVar2 = 0; D2_GLOBAL_GUARD(D2CLIENT_ExitVar2, "D2CLIENT_ExitVar2");
+uint32_t gnCameraWorldDeltaX = 0; D2_GLOBAL_GUARD(gnCameraWorldDeltaX, "gnCameraWorldDeltaX");
+uint32_t gnCameraWorldDeltaY = 0; D2_GLOBAL_GUARD(gnCameraWorldDeltaY, "gnCameraWorldDeltaY");
+uint32_t gbMinimapClickValid = 0; D2_GLOBAL_GUARD(gbMinimapClickValid, "gbMinimapClickValid");
+HMODULE ghLngLibrary = 0; D2_GLOBAL_GUARD(ghLngLibrary, "ghLngLibrary");
+uint32_t gdwQuestResurrectDismissThrottle = 0; D2_GLOBAL_GUARD(gdwQuestResurrectDismissThrottle, "gdwQuestResurrectDismissThrottle");
+DC6 * DC6_EnteredAreaName = 0; D2_GLOBAL_GUARD(DC6_EnteredAreaName, "DC6_EnteredAreaName");
+DC6 * pDC6_Frame = 0; D2_GLOBAL_GUARD(pDC6_Frame, "pDC6_Frame");
+uint32_t gnGoldDialogTransactionType = 0; D2_GLOBAL_GUARD(gnGoldDialogTransactionType, "gnGoldDialogTransactionType");
+SpinnerWrapper * gpCurrentDialog = 0; D2_GLOBAL_GUARD(gpCurrentDialog, "gpCurrentDialog");
+EditBoxWrapper * gpDialogDefaultActionCallback = 0; D2_GLOBAL_GUARD(gpDialogDefaultActionCallback, "gpDialogDefaultActionCallback");
+ButtonWrapper * gpUiGoldTransactionDialog = 0; D2_GLOBAL_GUARD(gpUiGoldTransactionDialog, "gpUiGoldTransactionDialog");
+ButtonWrapper * gpUiGoldDialogCancelButton = 0; D2_GLOBAL_GUARD(gpUiGoldDialogCancelButton, "gpUiGoldDialogCancelButton");
+uint32_t gbKeyConfigModeActiveInDialog = 0; D2_GLOBAL_GUARD(gbKeyConfigModeActiveInDialog, "gbKeyConfigModeActiveInDialog");
+uint32_t gbLoadScreenLevelLoadInProgress = 0; D2_GLOBAL_GUARD(gbLoadScreenLevelLoadInProgress, "gbLoadScreenLevelLoadInProgress");
 // also labelled: g_nMouseX
-int gnPanelOffsetX = 0;
+int gnPanelOffsetX = 0; D2_GLOBAL_GUARD(gnPanelOffsetX, "gnPanelOffsetX");
 // also labelled: g_nMouseY
-int gnPanelOffsetY = 0;
-uint32_t gnLastOpenPanelId = 0;
-DC6 * gpUiCursorFocus16DC6 = 0;
-DC6 * pUi_Panel_buysellbtn = 0;
-DC6 * gnLoadedActIndex = 0;
-int nLoadedActNo = 0;
-DC6 * gpDC6YouDiedHardcoreImage = 0;
-DC6 * gpDC6DeathInstructionImage = 0;
-uint32_t gnGoldDialogTransactionMode = 0;
-uint32_t gnLoadScreenAnimFrame = 0;
-uint32_t gnImmunityText2Color = 0;
-uint32_t gnTooltipScreenX = 0;
-uint32_t gnTooltipScreenY = 0;
-int gnTooltipHpBarValue = 0;
-uint32_t gnImmunityText1Color = 0;
-int nAutoMapScrollX = 0;
-int nAutoMapScrollY = 0;
-uint32_t bAutoMapRevealAll = 0;
-uint32_t nAutoMapRevealDelay = 0;
-uint8_t nAutoMapColorSelf = 0;
-uint8_t nAutoMapColorHostile = 0;
-uint8_t nAutoMapColorCorpse = 0;
-uint8_t nAutoMapColorParty = 0;
-uint8_t nAutoMapColorMerc = 0;
-uint8_t nAutoMapColorPartyPet = 0;
-uint8_t nAutoMapColorNPC = 0;
-uint8_t nAutoMapColorShrine = 0;
-uint32_t MouseYOffset = 0;
-uint32_t MouseXOffset = 0;
-uint32_t gnBorderType = 0;
-uint32_t MouseYRelatedB = 0;
-uint32_t nScreenMode = 0;
-size_t nD2PacketsClientBufferSize = 0;
-uint32_t gbConnectionLost = 0;
-D2ArchiveStrc * IMG_popupok_DiscPrompt = 0;
-D2ArchiveStrc * IMG_okcancelbtn = 0;
-D2ArchiveStrc * IMG_popupok_ConnLost = 0;
-uint32_t gnCharScreenInputState = 0;
-uint32_t gnCharScreenOkButtonPressed = 0;
-uint32_t gnConnectionLostScreenState = 0;
-uint32_t gbCharScreenOkPressed = 0;
-uint32_t gbCharScreenOkButtonConfirmed = 0;
-uint32_t gbCharScreenCancelPressed = 0;
-BOOL BOOL_007a5260 = 0;
-BOOL bRecursionClick = 0;
-D2UnitStrc * ClientSideUnitHashTables_64__0_[128][6] = {};
-D2UnitStrc * pPlayerUnit = 0;
-uint32_t gnSelectExclusionRectLeft = 0;
-uint32_t gnSelectExclusionRectTop = 0;
-uint32_t gnSelectExclusionRectRight = 0;
-uint32_t gnSelectExclusionRectBottom = 0;
-uint32_t gbSuppressItemSelection = 0;
-uint32_t gbSelectExclusionActive = 0;
-int MouseY = 0;
-uint32_t MouseX = 0;
-uint32_t gnCursorType = 0;
-D2UnitStrc * pCursorItem = 0;
-int32_t gCursorAnimationFrame = 0;
-uint32_t gnCursorAnimStartTick = 0;
-int ItemTypeOnHand = 0;
+int gnPanelOffsetY = 0; D2_GLOBAL_GUARD(gnPanelOffsetY, "gnPanelOffsetY");
+uint32_t gnLastOpenPanelId = 0; D2_GLOBAL_GUARD(gnLastOpenPanelId, "gnLastOpenPanelId");
+DC6 * gpUiCursorFocus16DC6 = 0; D2_GLOBAL_GUARD(gpUiCursorFocus16DC6, "gpUiCursorFocus16DC6");
+DC6 * pUi_Panel_buysellbtn = 0; D2_GLOBAL_GUARD(pUi_Panel_buysellbtn, "pUi_Panel_buysellbtn");
+DC6 * gnLoadedActIndex = 0; D2_GLOBAL_GUARD(gnLoadedActIndex, "gnLoadedActIndex");
+int nLoadedActNo = 0; D2_GLOBAL_GUARD(nLoadedActNo, "nLoadedActNo");
+DC6 * gpDC6YouDiedHardcoreImage = 0; D2_GLOBAL_GUARD(gpDC6YouDiedHardcoreImage, "gpDC6YouDiedHardcoreImage");
+DC6 * gpDC6DeathInstructionImage = 0; D2_GLOBAL_GUARD(gpDC6DeathInstructionImage, "gpDC6DeathInstructionImage");
+uint32_t gnGoldDialogTransactionMode = 0; D2_GLOBAL_GUARD(gnGoldDialogTransactionMode, "gnGoldDialogTransactionMode");
+uint32_t gnLoadScreenAnimFrame = 0; D2_GLOBAL_GUARD(gnLoadScreenAnimFrame, "gnLoadScreenAnimFrame");
+uint32_t gnImmunityText2Color = 0; D2_GLOBAL_GUARD(gnImmunityText2Color, "gnImmunityText2Color");
+uint32_t gnTooltipScreenX = 0; D2_GLOBAL_GUARD(gnTooltipScreenX, "gnTooltipScreenX");
+uint32_t gnTooltipScreenY = 0; D2_GLOBAL_GUARD(gnTooltipScreenY, "gnTooltipScreenY");
+int gnTooltipHpBarValue = 0; D2_GLOBAL_GUARD(gnTooltipHpBarValue, "gnTooltipHpBarValue");
+uint32_t gnImmunityText1Color = 0; D2_GLOBAL_GUARD(gnImmunityText1Color, "gnImmunityText1Color");
+int nAutoMapScrollX = 0; D2_GLOBAL_GUARD(nAutoMapScrollX, "nAutoMapScrollX");
+int nAutoMapScrollY = 0; D2_GLOBAL_GUARD(nAutoMapScrollY, "nAutoMapScrollY");
+uint32_t bAutoMapRevealAll = 0; D2_GLOBAL_GUARD(bAutoMapRevealAll, "bAutoMapRevealAll");
+uint32_t nAutoMapRevealDelay = 0; D2_GLOBAL_GUARD(nAutoMapRevealDelay, "nAutoMapRevealDelay");
+uint8_t nAutoMapColorSelf = 0; D2_GLOBAL_GUARD(nAutoMapColorSelf, "nAutoMapColorSelf");
+uint8_t nAutoMapColorHostile = 0; D2_GLOBAL_GUARD(nAutoMapColorHostile, "nAutoMapColorHostile");
+uint8_t nAutoMapColorCorpse = 0; D2_GLOBAL_GUARD(nAutoMapColorCorpse, "nAutoMapColorCorpse");
+uint8_t nAutoMapColorParty = 0; D2_GLOBAL_GUARD(nAutoMapColorParty, "nAutoMapColorParty");
+uint8_t nAutoMapColorMerc = 0; D2_GLOBAL_GUARD(nAutoMapColorMerc, "nAutoMapColorMerc");
+uint8_t nAutoMapColorPartyPet = 0; D2_GLOBAL_GUARD(nAutoMapColorPartyPet, "nAutoMapColorPartyPet");
+uint8_t nAutoMapColorNPC = 0; D2_GLOBAL_GUARD(nAutoMapColorNPC, "nAutoMapColorNPC");
+uint8_t nAutoMapColorShrine = 0; D2_GLOBAL_GUARD(nAutoMapColorShrine, "nAutoMapColorShrine");
+uint32_t MouseYOffset = 0; D2_GLOBAL_GUARD(MouseYOffset, "MouseYOffset");
+uint32_t MouseXOffset = 0; D2_GLOBAL_GUARD(MouseXOffset, "MouseXOffset");
+uint32_t gnBorderType = 0; D2_GLOBAL_GUARD(gnBorderType, "gnBorderType");
+uint32_t MouseYRelatedB = 0; D2_GLOBAL_GUARD(MouseYRelatedB, "MouseYRelatedB");
+uint32_t nScreenMode = 0; D2_GLOBAL_GUARD(nScreenMode, "nScreenMode");
+size_t nD2PacketsClientBufferSize = 0; D2_GLOBAL_GUARD(nD2PacketsClientBufferSize, "nD2PacketsClientBufferSize");
+uint32_t gbConnectionLost = 0; D2_GLOBAL_GUARD(gbConnectionLost, "gbConnectionLost");
+D2ArchiveStrc * IMG_popupok_DiscPrompt = 0; D2_GLOBAL_GUARD(IMG_popupok_DiscPrompt, "IMG_popupok_DiscPrompt");
+D2ArchiveStrc * IMG_okcancelbtn = 0; D2_GLOBAL_GUARD(IMG_okcancelbtn, "IMG_okcancelbtn");
+D2ArchiveStrc * IMG_popupok_ConnLost = 0; D2_GLOBAL_GUARD(IMG_popupok_ConnLost, "IMG_popupok_ConnLost");
+uint32_t gnCharScreenInputState = 0; D2_GLOBAL_GUARD(gnCharScreenInputState, "gnCharScreenInputState");
+uint32_t gnCharScreenOkButtonPressed = 0; D2_GLOBAL_GUARD(gnCharScreenOkButtonPressed, "gnCharScreenOkButtonPressed");
+uint32_t gnConnectionLostScreenState = 0; D2_GLOBAL_GUARD(gnConnectionLostScreenState, "gnConnectionLostScreenState");
+uint32_t gbCharScreenOkPressed = 0; D2_GLOBAL_GUARD(gbCharScreenOkPressed, "gbCharScreenOkPressed");
+uint32_t gbCharScreenOkButtonConfirmed = 0; D2_GLOBAL_GUARD(gbCharScreenOkButtonConfirmed, "gbCharScreenOkButtonConfirmed");
+uint32_t gbCharScreenCancelPressed = 0; D2_GLOBAL_GUARD(gbCharScreenCancelPressed, "gbCharScreenCancelPressed");
+BOOL BOOL_007a5260 = 0; D2_GLOBAL_GUARD(BOOL_007a5260, "BOOL_007a5260");
+BOOL bRecursionClick = 0; D2_GLOBAL_GUARD(bRecursionClick, "bRecursionClick");
+D2UnitStrc * ClientSideUnitHashTables_3__0_[6][128] = {}; D2_GLOBAL_GUARD(ClientSideUnitHashTables_3__0_, "ClientSideUnitHashTables_3__0_");
+D2UnitStrc * pPlayerUnit = 0; D2_GLOBAL_GUARD(pPlayerUnit, "pPlayerUnit");
+uint32_t gnSelectExclusionRectLeft = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectLeft, "gnSelectExclusionRectLeft");
+uint32_t gnSelectExclusionRectTop = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectTop, "gnSelectExclusionRectTop");
+uint32_t gnSelectExclusionRectRight = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectRight, "gnSelectExclusionRectRight");
+uint32_t gnSelectExclusionRectBottom = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectBottom, "gnSelectExclusionRectBottom");
+uint32_t gbSuppressItemSelection = 0; D2_GLOBAL_GUARD(gbSuppressItemSelection, "gbSuppressItemSelection");
+uint32_t gbSelectExclusionActive = 0; D2_GLOBAL_GUARD(gbSelectExclusionActive, "gbSelectExclusionActive");
+int MouseY = 0; D2_GLOBAL_GUARD(MouseY, "MouseY");
+uint32_t MouseX = 0; D2_GLOBAL_GUARD(MouseX, "MouseX");
+uint32_t gnCursorType = 0; D2_GLOBAL_GUARD(gnCursorType, "gnCursorType");
+D2UnitStrc * pCursorItem = 0; D2_GLOBAL_GUARD(pCursorItem, "pCursorItem");
+int32_t gCursorAnimationFrame = 0; D2_GLOBAL_GUARD(gCursorAnimationFrame, "gCursorAnimationFrame");
+uint32_t gnCursorAnimStartTick = 0; D2_GLOBAL_GUARD(gnCursorAnimStartTick, "gnCursorAnimStartTick");
+int ItemTypeOnHand = 0; D2_GLOBAL_GUARD(ItemTypeOnHand, "ItemTypeOnHand");
 // also labelled: gnPacketSendCount_0x69
-unsigned int gnD2GSBytesSentTotal = {};
+unsigned int gnD2GSBytesSentTotal = {}; D2_GLOBAL_GUARD(gnD2GSBytesSentTotal, "gnD2GSBytesSentTotal");
 // also labelled: gbNetworkPacketSyncFlag
-uint32_t gnD2GSPacketsSentTotal = 0;
-int gnCursorInitialized = 0;
-pfnVoidNoArgCallback gpfnMouseLeftButtonHandler = (pfnVoidNoArgCallback)0;
-pfnVoidNoArgCallback gpfnMouseRightButtonHandler = (pfnVoidNoArgCallback)0;
-pfnVoidNoArgCallback gpfnMouseMiddleButtonHandler = (pfnVoidNoArgCallback)0;
-pfnVoidNoArgCallback gpfnScrollUpButtonHandler = (pfnVoidNoArgCallback)0;
-pfnVoidNoArgCallback gpfnScrollDownButtonHandler = (pfnVoidNoArgCallback)0;
-pfnVoidNoArgCallback gpfnMouseLeftButtonAltHandler = (pfnVoidNoArgCallback)0;
-pfnVoidNoArgCallback gpfnMouseRightButtonAltHandler = (pfnVoidNoArgCallback)0;
-pfnVoidNoArgCallback gpfnMouseMiddleButtonAltHandler = (pfnVoidNoArgCallback)0;
-BOOL DenOfEvilLight = 0;
-uint32_t gnDiabloSpawnLightActive = 0;
+uint32_t gnD2GSPacketsSentTotal = 0; D2_GLOBAL_GUARD(gnD2GSPacketsSentTotal, "gnD2GSPacketsSentTotal");
+int gnCursorInitialized = 0; D2_GLOBAL_GUARD(gnCursorInitialized, "gnCursorInitialized");
+pfnVoidNoArgCallback gpfnMouseLeftButtonHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseLeftButtonHandler, "gpfnMouseLeftButtonHandler");
+pfnVoidNoArgCallback gpfnMouseRightButtonHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseRightButtonHandler, "gpfnMouseRightButtonHandler");
+pfnVoidNoArgCallback gpfnMouseMiddleButtonHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseMiddleButtonHandler, "gpfnMouseMiddleButtonHandler");
+pfnVoidNoArgCallback gpfnScrollUpButtonHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnScrollUpButtonHandler, "gpfnScrollUpButtonHandler");
+pfnVoidNoArgCallback gpfnScrollDownButtonHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnScrollDownButtonHandler, "gpfnScrollDownButtonHandler");
+pfnVoidNoArgCallback gpfnMouseLeftButtonAltHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseLeftButtonAltHandler, "gpfnMouseLeftButtonAltHandler");
+pfnVoidNoArgCallback gpfnMouseRightButtonAltHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseRightButtonAltHandler, "gpfnMouseRightButtonAltHandler");
+pfnVoidNoArgCallback gpfnMouseMiddleButtonAltHandler = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnMouseMiddleButtonAltHandler, "gpfnMouseMiddleButtonAltHandler");
+unsigned int gbKeyBindingsEnabled = {}; D2_GLOBAL_GUARD(gbKeyBindingsEnabled, "gbKeyBindingsEnabled");
+unsigned int gbKeyConfigModeActive = {}; D2_GLOBAL_GUARD(gbKeyConfigModeActive, "gbKeyConfigModeActive");
+BOOL DenOfEvilLight = 0; D2_GLOBAL_GUARD(DenOfEvilLight, "DenOfEvilLight");
+uint32_t gnDiabloSpawnLightActive = 0; D2_GLOBAL_GUARD(gnDiabloSpawnLightActive, "gnDiabloSpawnLightActive");
 // also labelled: SecondsUntilGameEnds
-int32_t gnGameEndTime = 0;
-uint32_t gbWorldstoneShouldShake = 0;
-D2MonsterCofStatusEntryStrc * g_pMonsterSpriteCofStatusTable = 0;
-int gnGfxThrottleUpdateFrame = 0;
-uint32_t gbCofCacheLRUEnabled = 0;
-int gnGfxSystemFlags = 0;
-int gnGfxThrottleUpdateFrameCountDynamic = 0;
-int gnGfxDirectionCountCache = 0;
-int gnWeatherTransitionCountdown = 0;
-int gnWeatherTransitionState = 0;
-int gnWeatherTransitionInitialized = 0;
-int gnWeatherParticleState = 0;
-int gnWeatherRngCountdown = 0;
-uint32_t gbWeatherTransitionTriggered = 0;
-int gnWeatherRngParam = 0;
-int gnWeatherTransitionProgress = 0;
-int gnWeatherFrameIndex = 0;
-int nWeatherParticleCountAct5 = 0;
-int gnWeatherAct5ParticleCount = 0;
-int gnWeatherStateAct5 = 0;
-int gnWeatherTransitionLock = 0;
-int gnWeatherCurrentTransitionState = 0;
-uint32_t gnLightmapInterpDirY = 0;
-uint32_t gnLightmapInterpSubdivRatio = 0;
-int gnLightmapWorldRefreshFlag = 0;
-int gnLightmapBufferState = 0;
-int gnLightmapWorldMaxX = 0;
-int gnLightmapWorldMaxY = 0;
-D2LightMapCellStrc gLightmapCellData[2304] = {};
-D2LightMapCellStrc gLightmapCellDataRed[2304] = {};
-D2LightMapCellStrc gLightmapCellDataGreen[2304] = {};
-D2LightMapCellStrc gLightmapCellDataBlue[2304] = {};
-int nScaleFactor = 0;
-uint32_t gnLastLightmapUpdateFrame = 0;
-DC6 * gpAncientsBgDC6 = 0;
-DC6 * gnDrawBackgroundRenderOffset = 0;
-void * gpMonsterPalShiftList = 0;
-void * gpPalShiftEntryListHead = 0;
-int gbPalShiftRandTransformLoaded = 0;
-D2GamePalShiftGreenBloodStrc * PalShift_GreenBlood = 0;
-uint32_t fps = 0;
-uint32_t gbFPSStatsEnabled = 0;
-uint32_t gbHideExtendedFPSStats = 0;
-uint32_t gnLoadingProgressRatio = 0;
-uint32_t gnChatHistoryScrollIndex = 0;
-char gaIMECompositionBuffer = 0;
-char gaChatInputBuffer = 0;
-uint8_t gbChatInputEnabled = 0;
-uint16_t gnChatHistoryFillCount = 0;
-uint32_t gnChatInputTextCursorPosition = 0;
-uint32_t gnChatInputTextLength = 0;
-uint32_t gnIMEInputMode = 0;
-int gnEscMenuSelectedIndex = 0;
-D2EscMenuHeaderStrc * gpEscMenuItemCount = 0;
-D2EscMenuItemStrc * gpEscMenuCurrentTable = 0;
-uint32_t gbEscMenuSliderDragging = 0;
-uint32_t gnEscMenuSliderValue = 0;
-DC6 * gpEscMenuOptBarDC6 = 0;
-DC6 * gpEscMenuOptBarCDC6 = 0;
-DC6 * gpEscMenuOptSkullDC6 = 0;
-int SizeCurrentSelectedEscMenuItem = 0;
-DC6 * gpMiniPanelBackgroundDC6 = 0;
-DC6 * gpMiniPanelButtonsDC6 = 0;
-uint32_t gnMiniPanelRightScreen = 0;
-uint32_t gnMiniPanelLeftScreen = 0;
-uint32_t gnMiniPanelMouseOverButton = 0;
-uint32_t gbMiniPanelSinglePlayer = 0;
-uint32_t gnMiniPanelHoverState = 0;
-void * gpWardenResponseData = 0;
-uint32_t gnWardenResponseSize = 0;
-D2WardenModuleStrc * gpWardenActiveModule = 0;
-D2WardenModuleStrc * gpWardenPendingModule = 0;
-D2BNetClientCallbacksStrc * sgpUnknownSequence = 0;
-void * pSoundChannelDataArray = 0;
-D2SoundsTxt * pTxtSounds = 0;
-uint32_t nTxtSoundsSize = 0;
-D2SoundEnvironTxt * pTxtSoundEnviron = 0;
-uint32_t nTxtSoundEnvironSize = 0;
-uint32_t gpSoundHdrGlobal = 0;
-uint32_t gnSoundIdRangeMax = 0;
-uint32_t gnCurrentGameAudioVolume = 0;
-unsigned int gdwLastSoundAsyncLoadTick = {};
-int gnSoundEvictedAudioVolume = 0;
-uint32_t gnSoundAsyncLoadCount = 0;
-uint32_t gnSoundBufferMaxBytes = 0;
-uint32_t gnSoundBufferBytesLoaded = 0;
-char gbCutsceneActive = 0;
-uint8_t gbLoggerStateInactive = 0;
-uint8_t gbItemDescDirtyFlag = 0;
-unsigned short geCutsceneCurrentSoundId = {};
-unsigned int gdwInvLastActionTickCount = {};
-int gnInvMouseX = 0;
-DC6 * gpInvShopTabImage = 0;
-uint32_t gpInvCursorItem = 0;
-int gbInvNpcScreenCoordsInitialized = 0;
-uint32_t gpInvItemUnderCursor = 0;
-uint32_t gbInvBodySlotUnderCursorExists = 0;
-BOOL DrawShopRelated = 0;
-int g_nCurrentInventoryPage = 0;
-D2UnitStrc * pItemToDescribe = 0;
-D2UnitStrc * gpInvHoveredItem = 0;
-uint8_t CurrentInventoryPage = 0;
-uint8_t TypeOfShopMaybe = 0;
-uint32_t gnInvShopPage = 0;
-uint32_t gbInvNeedsRefresh = 0;
-uint32_t gpInvCubeImage1 = 0;
-uint32_t gpInvCubeImage2 = 0;
-uint32_t gpInvCubeImage3 = 0;
-DC6 * gpInvCubeImage4 = 0;
-uint32_t gnInvBodySlotUnderCursor = 0;
-DC6 * UI_GFX = 0;
-DC6 * gpInvShopTab1Image = 0;
-DC6 * gpInvStashImage1 = 0;
-DC6 * gpInvCubeBgImage = 0;
-DC6 * gpInvGoldCoinImage = 0;
-DC6 * gpInvShopTab2Image = 0;
-DC6 * gpInvStashImage2 = 0;
-int gnInvShopButton = 0;
-uint32_t gnInvShopButton2 = 0;
-uint32_t gbInvGambleMode = 0;
-uint32_t gbInvExpansionTabVisible = 0;
-uint32_t gnInvCubeCloseClickState = 0;
-uint32_t gnInvCubeTransmuteClickState = 0;
-uint32_t gbInvTradeWindowOpen = 0;
-uint32_t gbInvTradeWindowOpen2 = 0;
-uint32_t gbTradeConfirmationPending = 0;
-uint32_t gbInvTradeAcceptClicked = 0;
-uint32_t gbInventoryDragInProgress = 0;
-uint32_t gbInvTradeCancelClicked = 0;
-uint32_t gpInvItemDescPending = 0;
-uint32_t gbInvGoldDialogOpen = 0;
-uint32_t gnInvInventoryGold = 0;
-uint32_t gnInvStashGold = 0;
-uint32_t gbInvStashPageOpen = 0;
-uint32_t gbInvStashDepositClicked = 0;
-uint32_t gbInvCubePageOpen = 0;
-uint32_t gbInvCubeTransmuteClicked = 0;
-uint32_t gbInvCubePageOpen2 = 0;
-uint32_t gbInvCubeWithdrawClicked = 0;
-DC6 * gpInvMercHelmetSlotImage = 0;
-DC6 * gpInvMercArmorSlotImage = 0;
-DC6 * gpInvMercWeaponSlotImage1 = 0;
-DC6 * gpInvMercWeaponSlotImage2 = 0;
-DC6 * gpInvBodySlotImage1 = 0;
-DC6 * gpInvBodySlotImage2 = 0;
-DC6 * gpInvBodySlotImage3 = 0;
-DC6 * gpInvBodySlotImage4 = 0;
-DC6 * gpInvMercBodyImage = 0;
-DC6 * gpInvCubeRecipeScrollImage = 0;
-uint32_t gbInvPanelButtonPressed = 0;
-int gnInvMouseY = 0;
-uint32_t gShopTradeUIState = 0;
-uint32_t gnInvMercBodySlot2 = 0;
-uint32_t gbInvRecipeScrollOpen = 0;
-uint32_t gnHireDisplayMode = 0;
-uint32_t gpHireHoverUnit = 0;
-uint32_t gnHireIconDrawX = 0;
-uint32_t gnHireIconHoverX = 0;
-uint32_t gnHireIconHoverY = 0;
-uint8_t gbHireIconsVisible = 0;
-uint32_t gnHireIconHoverIndex = 0;
-uint32_t gpHelpCloseButton = 0;
-uint32_t gpHelpScrollButtonDown = 0;
-uint32_t gpHelpScrollButtonUp = 0;
-uint32_t gpPanelBeltSlot = 0;
-uint32_t gnPanelBeltRowsExpanded = 0;
-uint32_t gbPanelBeltAnimating = 0;
-uint32_t gbPanelBeltSlotHovered = 0;
-uint32_t gpPanelClickedButton = 0;
-D2UnitStrc * gpPanelBeltHoverItem = 0;
-D2UnitStrc * gpPanelBeltLastHoverItem = 0;
-uint8_t gbPanelStaminaColorBlue = 0;
-uint8_t gbPanelGoldColorGreen = 0;
-uint32_t gpPanelMenuButton = 0;
-uint32_t gpPanelRunButton = 0;
-uint8_t gbPanelStaminaColorRed = 0;
-int gpPartyAcceptButton = 0;
-int32_t gpWaypointButtonHover = 0;
-uint8_t gbWaypointButtonPressed = 0;
-uint32_t ClickingDownOnWaypointEntry = 0;
-DC6 * WaypointWayGateBackGround = 0;
-DC6 * WaypointWayGateTabs = 0;
-DC6 * WaypointWaygateIcons = 0;
-uint32_t WaypointCurrentSelectedAct = 0;
-uint32_t MaximumAmountOfWaypointInSelectedAct = 0;
-uint32_t NoOtherWaypointAvailableBool = 0;
-D2TextBoxStrc * gpTextScrollingBox = 0;
-D2TextBoxStrc * gpStaticTextPopup = 0;
-uint32_t gdwTextPopupExpireTime = 0;
-ListBoxWrapper * gpTextMessageLogHead = 0;
-uint32_t gbTextScrollBoxAnimating = 0;
-uint32_t gbTextScrollBoxActive = 0;
-uint32_t gbTextStaticPopupActive = 0;
-uint32_t gpTextStaticPopupBox = 0;
-int gaTextStaticPopupRect = 0;
-uint32_t gnTextDisplayMode = 0;
-uint32_t gbTextScrollBoxVisible = 0;
-uint32_t gnTextNpcGuid = 0;
-uint32_t gpOverHeadUnitGUID = 0;
-uint32_t gnTextNpcInteractGuid = 0;
-uint32_t gnTextOverheadCounter = 0;
-uint16_t gnTextScrollBoxWidth = 0;
-uint32_t gbTextOverheadActive = 0;
-void * gpQuestScrollTextBlock = 0;
-unsigned int gbTextNpcMenuActive = {};
-uint32_t gpTextScrollBoxImage = 0;
-uint32_t gnTextScrollBoxHeight = 0;
-uint8_t gbTextNpcMenuSelection = 0;
-uint32_t gnTextNpcMenuIndex = 0;
-uint32_t gpTextDismissCallback = 0;
-uint32_t gpTextScrollBoxBuffer = 0;
-D2GSPacketSrv0x27_TextStrc * gpOverHeadStrc = 0;
-uint32_t gpQuestScrollUI = 0;
-pfnTextScrollComplete gpTextScrollCompleteCallback = (pfnTextScrollComplete)0;
-void * gpTextScrollCompleteParam = 0;
-uint32_t gpTextScrollBoxDC6 = 0;
-DC6 * gpQuestScrollImageTop = 0;
-DC6 * gpQuestScrollImageBottom = 0;
-DC6 * gpQuestScrollImageBg = 0;
-uint32_t gbTextEventHandlersRegistered = 0;
-int gnUICtrlConfigTotalRows = 0;
-uint32_t gnUICtrlConfigScrollMaxLines = 0;
-uint32_t gnUICtrlConfigColumnWidth = 0;
-uint32_t gnUICtrlConfigMouseButtonState = 0;
-uint32_t gnUICtrlConfigButton3State = 0;
-uint32_t gnUICtrlConfigScrollOffset = 0;
-uint8_t g_ControlConfigUIState = 0;
-int gnUICtrlConfigActiveButton = 0;
-bool gbUICtrlConfigKeyBindMode = 0;
-DC6 * gpUICtrlConfigScrollbarDC6 = 0;
-int gnUICtrlConfigPendingKeyStrId = 0;
-unsigned int gdwUICtrlConfigKeyBindTimestamp = {};
-DC6 * gpUIStatLevelUpPanelImages = 0;
-DC6 * gpUIStatLevelUpButtonImages = 0;
-D2ArchiveStrc * gpSpellSelSkillIconDC6 = 0;
-uint32_t BooleanWaitingForSkillingMaybe = 0;
-uint32_t gnSpellSelSkillTreeOffsetY = 0;
-uint32_t gnSpellSelSkillTreeClickY = 0;
-uint8_t gnSpellSelTabHighlightColor = 0;
-uint32_t gnNpcMenuMercHireCost1 = 0;
-uint32_t gnNpcMenuMercHireCost2 = 0;
-uint8_t gbNpcMenuInitialized = 0;
-uint8_t gnNpcMenuActiveMode = 0;
-uint8_t gbNpcMenuRandomDialogSeed = 0;
-int PLAYER_CurrentGold = 0;
-uint16_t gnNpcMenuRepairCostGold = 0;
-int16_t gnNpcMenuTradeActionGold = 0;
-uint16_t gnNpcMenuScrollCompleteMode = 0;
+int32_t gnGameEndTime = 0; D2_GLOBAL_GUARD(gnGameEndTime, "gnGameEndTime");
+uint32_t gbWorldstoneShouldShake = 0; D2_GLOBAL_GUARD(gbWorldstoneShouldShake, "gbWorldstoneShouldShake");
+D2MonsterCofStatusEntryStrc * g_pMonsterSpriteCofStatusTable = 0; D2_GLOBAL_GUARD(g_pMonsterSpriteCofStatusTable, "g_pMonsterSpriteCofStatusTable");
+int gnGfxThrottleUpdateFrame = 0; D2_GLOBAL_GUARD(gnGfxThrottleUpdateFrame, "gnGfxThrottleUpdateFrame");
+uint32_t gbCofCacheLRUEnabled = 0; D2_GLOBAL_GUARD(gbCofCacheLRUEnabled, "gbCofCacheLRUEnabled");
+int gnGfxSystemFlags = 0; D2_GLOBAL_GUARD(gnGfxSystemFlags, "gnGfxSystemFlags");
+int gnGfxThrottleUpdateFrameCountDynamic = 0; D2_GLOBAL_GUARD(gnGfxThrottleUpdateFrameCountDynamic, "gnGfxThrottleUpdateFrameCountDynamic");
+int gnGfxDirectionCountCache = 0; D2_GLOBAL_GUARD(gnGfxDirectionCountCache, "gnGfxDirectionCountCache");
+int gnWeatherTransitionCountdown = 0; D2_GLOBAL_GUARD(gnWeatherTransitionCountdown, "gnWeatherTransitionCountdown");
+int gnWeatherTransitionState = 0; D2_GLOBAL_GUARD(gnWeatherTransitionState, "gnWeatherTransitionState");
+int gnWeatherTransitionInitialized = 0; D2_GLOBAL_GUARD(gnWeatherTransitionInitialized, "gnWeatherTransitionInitialized");
+int gnWeatherParticleState = 0; D2_GLOBAL_GUARD(gnWeatherParticleState, "gnWeatherParticleState");
+int gnWeatherRngCountdown = 0; D2_GLOBAL_GUARD(gnWeatherRngCountdown, "gnWeatherRngCountdown");
+uint32_t gbWeatherTransitionTriggered = 0; D2_GLOBAL_GUARD(gbWeatherTransitionTriggered, "gbWeatherTransitionTriggered");
+int gnWeatherRngParam = 0; D2_GLOBAL_GUARD(gnWeatherRngParam, "gnWeatherRngParam");
+int gnWeatherTransitionProgress = 0; D2_GLOBAL_GUARD(gnWeatherTransitionProgress, "gnWeatherTransitionProgress");
+int gnWeatherFrameIndex = 0; D2_GLOBAL_GUARD(gnWeatherFrameIndex, "gnWeatherFrameIndex");
+int nWeatherParticleCountAct5 = 0; D2_GLOBAL_GUARD(nWeatherParticleCountAct5, "nWeatherParticleCountAct5");
+int gnWeatherAct5ParticleCount = 0; D2_GLOBAL_GUARD(gnWeatherAct5ParticleCount, "gnWeatherAct5ParticleCount");
+int gnWeatherStateAct5 = 0; D2_GLOBAL_GUARD(gnWeatherStateAct5, "gnWeatherStateAct5");
+int gnWeatherTransitionLock = 0; D2_GLOBAL_GUARD(gnWeatherTransitionLock, "gnWeatherTransitionLock");
+int gnWeatherCurrentTransitionState = 0; D2_GLOBAL_GUARD(gnWeatherCurrentTransitionState, "gnWeatherCurrentTransitionState");
+uint32_t gnLightmapInterpDirY = 0; D2_GLOBAL_GUARD(gnLightmapInterpDirY, "gnLightmapInterpDirY");
+uint32_t gnLightmapInterpSubdivRatio = 0; D2_GLOBAL_GUARD(gnLightmapInterpSubdivRatio, "gnLightmapInterpSubdivRatio");
+unsigned int gnLightmapInterpDirX = {}; D2_GLOBAL_GUARD(gnLightmapInterpDirX, "gnLightmapInterpDirX");
+int gnLightmapWorldRefreshFlag = 0; D2_GLOBAL_GUARD(gnLightmapWorldRefreshFlag, "gnLightmapWorldRefreshFlag");
+int gnLightmapBufferState = 0; D2_GLOBAL_GUARD(gnLightmapBufferState, "gnLightmapBufferState");
+int gnLightmapWorldMaxX = 0; D2_GLOBAL_GUARD(gnLightmapWorldMaxX, "gnLightmapWorldMaxX");
+int gnLightmapWorldMaxY = 0; D2_GLOBAL_GUARD(gnLightmapWorldMaxY, "gnLightmapWorldMaxY");
+D2LightMapCellStrc gLightmapCellData[2304] = {}; D2_GLOBAL_GUARD(gLightmapCellData, "gLightmapCellData");
+D2LightMapCellStrc gLightmapCellDataRed[2304] = {}; D2_GLOBAL_GUARD(gLightmapCellDataRed, "gLightmapCellDataRed");
+D2LightMapCellStrc gLightmapCellDataGreen[2304] = {}; D2_GLOBAL_GUARD(gLightmapCellDataGreen, "gLightmapCellDataGreen");
+D2LightMapCellStrc gLightmapCellDataBlue[2304] = {}; D2_GLOBAL_GUARD(gLightmapCellDataBlue, "gLightmapCellDataBlue");
+int nScaleFactor = 0; D2_GLOBAL_GUARD(nScaleFactor, "nScaleFactor");
+uint32_t gnLastLightmapUpdateFrame = 0; D2_GLOBAL_GUARD(gnLastLightmapUpdateFrame, "gnLastLightmapUpdateFrame");
+DC6 * gpAncientsBgDC6 = 0; D2_GLOBAL_GUARD(gpAncientsBgDC6, "gpAncientsBgDC6");
+DC6 * gnDrawBackgroundRenderOffset = 0; D2_GLOBAL_GUARD(gnDrawBackgroundRenderOffset, "gnDrawBackgroundRenderOffset");
+void * gpMonsterPalShiftList = 0; D2_GLOBAL_GUARD(gpMonsterPalShiftList, "gpMonsterPalShiftList");
+void * gpPalShiftEntryListHead = 0; D2_GLOBAL_GUARD(gpPalShiftEntryListHead, "gpPalShiftEntryListHead");
+int gbPalShiftRandTransformLoaded = 0; D2_GLOBAL_GUARD(gbPalShiftRandTransformLoaded, "gbPalShiftRandTransformLoaded");
+D2GamePalShiftGreenBloodStrc * PalShift_GreenBlood = 0; D2_GLOBAL_GUARD(PalShift_GreenBlood, "PalShift_GreenBlood");
+uint32_t fps = 0; D2_GLOBAL_GUARD(fps, "fps");
+uint32_t gbFPSStatsEnabled = 0; D2_GLOBAL_GUARD(gbFPSStatsEnabled, "gbFPSStatsEnabled");
+uint32_t gbHideExtendedFPSStats = 0; D2_GLOBAL_GUARD(gbHideExtendedFPSStats, "gbHideExtendedFPSStats");
+uint32_t gnLoadingProgressRatio = 0; D2_GLOBAL_GUARD(gnLoadingProgressRatio, "gnLoadingProgressRatio");
+uint32_t gnChatHistoryScrollIndex = 0; D2_GLOBAL_GUARD(gnChatHistoryScrollIndex, "gnChatHistoryScrollIndex");
+char gaIMECompositionBuffer = 0; D2_GLOBAL_GUARD(gaIMECompositionBuffer, "gaIMECompositionBuffer");
+char gaChatInputBuffer = 0; D2_GLOBAL_GUARD(gaChatInputBuffer, "gaChatInputBuffer");
+uint8_t gbChatInputEnabled = 0; D2_GLOBAL_GUARD(gbChatInputEnabled, "gbChatInputEnabled");
+uint16_t gnChatHistoryFillCount = 0; D2_GLOBAL_GUARD(gnChatHistoryFillCount, "gnChatHistoryFillCount");
+uint32_t gnChatInputTextCursorPosition = 0; D2_GLOBAL_GUARD(gnChatInputTextCursorPosition, "gnChatInputTextCursorPosition");
+uint32_t gnChatInputTextLength = 0; D2_GLOBAL_GUARD(gnChatInputTextLength, "gnChatInputTextLength");
+uint32_t gnIMEInputMode = 0; D2_GLOBAL_GUARD(gnIMEInputMode, "gnIMEInputMode");
+int gnEscMenuSelectedIndex = 0; D2_GLOBAL_GUARD(gnEscMenuSelectedIndex, "gnEscMenuSelectedIndex");
+D2EscMenuHeaderStrc * gpEscMenuItemCount = 0; D2_GLOBAL_GUARD(gpEscMenuItemCount, "gpEscMenuItemCount");
+D2EscMenuItemStrc * gpEscMenuCurrentTable = 0; D2_GLOBAL_GUARD(gpEscMenuCurrentTable, "gpEscMenuCurrentTable");
+uint32_t gbEscMenuSliderDragging = 0; D2_GLOBAL_GUARD(gbEscMenuSliderDragging, "gbEscMenuSliderDragging");
+uint32_t gnEscMenuSliderValue = 0; D2_GLOBAL_GUARD(gnEscMenuSliderValue, "gnEscMenuSliderValue");
+DC6 * gpEscMenuOptBarDC6 = 0; D2_GLOBAL_GUARD(gpEscMenuOptBarDC6, "gpEscMenuOptBarDC6");
+DC6 * gpEscMenuOptBarCDC6 = 0; D2_GLOBAL_GUARD(gpEscMenuOptBarCDC6, "gpEscMenuOptBarCDC6");
+DC6 * gpEscMenuOptSkullDC6 = 0; D2_GLOBAL_GUARD(gpEscMenuOptSkullDC6, "gpEscMenuOptSkullDC6");
+int SizeCurrentSelectedEscMenuItem = 0; D2_GLOBAL_GUARD(SizeCurrentSelectedEscMenuItem, "SizeCurrentSelectedEscMenuItem");
+DC6 * gpMiniPanelBackgroundDC6 = 0; D2_GLOBAL_GUARD(gpMiniPanelBackgroundDC6, "gpMiniPanelBackgroundDC6");
+DC6 * gpMiniPanelButtonsDC6 = 0; D2_GLOBAL_GUARD(gpMiniPanelButtonsDC6, "gpMiniPanelButtonsDC6");
+uint32_t gnMiniPanelRightScreen = 0; D2_GLOBAL_GUARD(gnMiniPanelRightScreen, "gnMiniPanelRightScreen");
+uint32_t gnMiniPanelLeftScreen = 0; D2_GLOBAL_GUARD(gnMiniPanelLeftScreen, "gnMiniPanelLeftScreen");
+uint32_t gnMiniPanelMouseOverButton = 0; D2_GLOBAL_GUARD(gnMiniPanelMouseOverButton, "gnMiniPanelMouseOverButton");
+uint32_t gbMiniPanelSinglePlayer = 0; D2_GLOBAL_GUARD(gbMiniPanelSinglePlayer, "gbMiniPanelSinglePlayer");
+uint32_t gnMiniPanelHoverState = 0; D2_GLOBAL_GUARD(gnMiniPanelHoverState, "gnMiniPanelHoverState");
+void * gpWardenResponseData = 0; D2_GLOBAL_GUARD(gpWardenResponseData, "gpWardenResponseData");
+uint32_t gnWardenResponseSize = 0; D2_GLOBAL_GUARD(gnWardenResponseSize, "gnWardenResponseSize");
+D2WardenModuleStrc * gpWardenActiveModule = 0; D2_GLOBAL_GUARD(gpWardenActiveModule, "gpWardenActiveModule");
+D2WardenModuleStrc * gpWardenPendingModule = 0; D2_GLOBAL_GUARD(gpWardenPendingModule, "gpWardenPendingModule");
+D2BNetClientCallbacksStrc * sgpUnknownSequence = 0; D2_GLOBAL_GUARD(sgpUnknownSequence, "sgpUnknownSequence");
+void * pSoundChannelDataArray = 0; D2_GLOBAL_GUARD(pSoundChannelDataArray, "pSoundChannelDataArray");
+D2SoundsTxt * pTxtSounds = 0; D2_GLOBAL_GUARD(pTxtSounds, "pTxtSounds");
+uint32_t nTxtSoundsSize = 0; D2_GLOBAL_GUARD(nTxtSoundsSize, "nTxtSoundsSize");
+D2SoundEnvironTxt * pTxtSoundEnviron = 0; D2_GLOBAL_GUARD(pTxtSoundEnviron, "pTxtSoundEnviron");
+uint32_t nTxtSoundEnvironSize = 0; D2_GLOBAL_GUARD(nTxtSoundEnvironSize, "nTxtSoundEnvironSize");
+uint32_t gpSoundHdrGlobal = 0; D2_GLOBAL_GUARD(gpSoundHdrGlobal, "gpSoundHdrGlobal");
+uint32_t gnSoundIdRangeMax = 0; D2_GLOBAL_GUARD(gnSoundIdRangeMax, "gnSoundIdRangeMax");
+uint32_t gnCurrentGameAudioVolume = 0; D2_GLOBAL_GUARD(gnCurrentGameAudioVolume, "gnCurrentGameAudioVolume");
+unsigned int gdwLastSoundAsyncLoadTick = {}; D2_GLOBAL_GUARD(gdwLastSoundAsyncLoadTick, "gdwLastSoundAsyncLoadTick");
+int gnSoundEvictedAudioVolume = 0; D2_GLOBAL_GUARD(gnSoundEvictedAudioVolume, "gnSoundEvictedAudioVolume");
+uint32_t gnSoundAsyncLoadCount = 0; D2_GLOBAL_GUARD(gnSoundAsyncLoadCount, "gnSoundAsyncLoadCount");
+uint32_t gnSoundBufferMaxBytes = 0; D2_GLOBAL_GUARD(gnSoundBufferMaxBytes, "gnSoundBufferMaxBytes");
+uint32_t gnSoundBufferBytesLoaded = 0; D2_GLOBAL_GUARD(gnSoundBufferBytesLoaded, "gnSoundBufferBytesLoaded");
+char gbCutsceneActive = 0; D2_GLOBAL_GUARD(gbCutsceneActive, "gbCutsceneActive");
+uint8_t gbLoggerStateInactive = 0; D2_GLOBAL_GUARD(gbLoggerStateInactive, "gbLoggerStateInactive");
+uint8_t gbItemDescDirtyFlag = 0; D2_GLOBAL_GUARD(gbItemDescDirtyFlag, "gbItemDescDirtyFlag");
+unsigned short geCutsceneCurrentSoundId = {}; D2_GLOBAL_GUARD(geCutsceneCurrentSoundId, "geCutsceneCurrentSoundId");
+unsigned int gdwInvLastActionTickCount = {}; D2_GLOBAL_GUARD(gdwInvLastActionTickCount, "gdwInvLastActionTickCount");
+int gnInvMouseX = 0; D2_GLOBAL_GUARD(gnInvMouseX, "gnInvMouseX");
+DC6 * gpInvShopTabImage = 0; D2_GLOBAL_GUARD(gpInvShopTabImage, "gpInvShopTabImage");
+uint32_t gpInvCursorItem = 0; D2_GLOBAL_GUARD(gpInvCursorItem, "gpInvCursorItem");
+int gbInvNpcScreenCoordsInitialized = 0; D2_GLOBAL_GUARD(gbInvNpcScreenCoordsInitialized, "gbInvNpcScreenCoordsInitialized");
+uint32_t gpInvItemUnderCursor = 0; D2_GLOBAL_GUARD(gpInvItemUnderCursor, "gpInvItemUnderCursor");
+uint32_t gbInvBodySlotUnderCursorExists = 0; D2_GLOBAL_GUARD(gbInvBodySlotUnderCursorExists, "gbInvBodySlotUnderCursorExists");
+BOOL DrawShopRelated = 0; D2_GLOBAL_GUARD(DrawShopRelated, "DrawShopRelated");
+int g_nCurrentInventoryPage = 0; D2_GLOBAL_GUARD(g_nCurrentInventoryPage, "g_nCurrentInventoryPage");
+D2UnitStrc * pItemToDescribe = 0; D2_GLOBAL_GUARD(pItemToDescribe, "pItemToDescribe");
+D2UnitStrc * gpInvHoveredItem = 0; D2_GLOBAL_GUARD(gpInvHoveredItem, "gpInvHoveredItem");
+uint8_t CurrentInventoryPage = 0; D2_GLOBAL_GUARD(CurrentInventoryPage, "CurrentInventoryPage");
+uint8_t TypeOfShopMaybe = 0; D2_GLOBAL_GUARD(TypeOfShopMaybe, "TypeOfShopMaybe");
+uint32_t gnInvShopPage = 0; D2_GLOBAL_GUARD(gnInvShopPage, "gnInvShopPage");
+uint32_t gbInvNeedsRefresh = 0; D2_GLOBAL_GUARD(gbInvNeedsRefresh, "gbInvNeedsRefresh");
+uint32_t gpInvCubeImage1 = 0; D2_GLOBAL_GUARD(gpInvCubeImage1, "gpInvCubeImage1");
+uint32_t gpInvCubeImage2 = 0; D2_GLOBAL_GUARD(gpInvCubeImage2, "gpInvCubeImage2");
+uint32_t gpInvCubeImage3 = 0; D2_GLOBAL_GUARD(gpInvCubeImage3, "gpInvCubeImage3");
+DC6 * gpInvCubeImage4 = 0; D2_GLOBAL_GUARD(gpInvCubeImage4, "gpInvCubeImage4");
+uint32_t gnInvBodySlotUnderCursor = 0; D2_GLOBAL_GUARD(gnInvBodySlotUnderCursor, "gnInvBodySlotUnderCursor");
+DC6 * UI_GFX = 0; D2_GLOBAL_GUARD(UI_GFX, "UI_GFX");
+DC6 * gpInvShopTab1Image = 0; D2_GLOBAL_GUARD(gpInvShopTab1Image, "gpInvShopTab1Image");
+DC6 * gpInvStashImage1 = 0; D2_GLOBAL_GUARD(gpInvStashImage1, "gpInvStashImage1");
+DC6 * gpInvCubeBgImage = 0; D2_GLOBAL_GUARD(gpInvCubeBgImage, "gpInvCubeBgImage");
+DC6 * gpInvGoldCoinImage = 0; D2_GLOBAL_GUARD(gpInvGoldCoinImage, "gpInvGoldCoinImage");
+DC6 * gpInvShopTab2Image = 0; D2_GLOBAL_GUARD(gpInvShopTab2Image, "gpInvShopTab2Image");
+DC6 * gpInvStashImage2 = 0; D2_GLOBAL_GUARD(gpInvStashImage2, "gpInvStashImage2");
+int gnInvShopButton = 0; D2_GLOBAL_GUARD(gnInvShopButton, "gnInvShopButton");
+uint32_t gnInvShopButton2 = 0; D2_GLOBAL_GUARD(gnInvShopButton2, "gnInvShopButton2");
+uint32_t gbInvGambleMode = 0; D2_GLOBAL_GUARD(gbInvGambleMode, "gbInvGambleMode");
+uint32_t gbInvExpansionTabVisible = 0; D2_GLOBAL_GUARD(gbInvExpansionTabVisible, "gbInvExpansionTabVisible");
+uint32_t gnInvCubeCloseClickState = 0; D2_GLOBAL_GUARD(gnInvCubeCloseClickState, "gnInvCubeCloseClickState");
+uint32_t gnInvCubeTransmuteClickState = 0; D2_GLOBAL_GUARD(gnInvCubeTransmuteClickState, "gnInvCubeTransmuteClickState");
+uint32_t gbInvTradeWindowOpen = 0; D2_GLOBAL_GUARD(gbInvTradeWindowOpen, "gbInvTradeWindowOpen");
+uint32_t gbInvTradeWindowOpen2 = 0; D2_GLOBAL_GUARD(gbInvTradeWindowOpen2, "gbInvTradeWindowOpen2");
+uint32_t gbTradeConfirmationPending = 0; D2_GLOBAL_GUARD(gbTradeConfirmationPending, "gbTradeConfirmationPending");
+uint32_t gbInvTradeAcceptClicked = 0; D2_GLOBAL_GUARD(gbInvTradeAcceptClicked, "gbInvTradeAcceptClicked");
+uint32_t gbInventoryDragInProgress = 0; D2_GLOBAL_GUARD(gbInventoryDragInProgress, "gbInventoryDragInProgress");
+uint32_t gbInvTradeCancelClicked = 0; D2_GLOBAL_GUARD(gbInvTradeCancelClicked, "gbInvTradeCancelClicked");
+uint32_t gpInvItemDescPending = 0; D2_GLOBAL_GUARD(gpInvItemDescPending, "gpInvItemDescPending");
+uint32_t gbInvGoldDialogOpen = 0; D2_GLOBAL_GUARD(gbInvGoldDialogOpen, "gbInvGoldDialogOpen");
+uint32_t gnInvInventoryGold = 0; D2_GLOBAL_GUARD(gnInvInventoryGold, "gnInvInventoryGold");
+uint32_t gnInvStashGold = 0; D2_GLOBAL_GUARD(gnInvStashGold, "gnInvStashGold");
+uint32_t gbInvStashPageOpen = 0; D2_GLOBAL_GUARD(gbInvStashPageOpen, "gbInvStashPageOpen");
+uint32_t gbInvStashDepositClicked = 0; D2_GLOBAL_GUARD(gbInvStashDepositClicked, "gbInvStashDepositClicked");
+uint32_t gbInvCubePageOpen = 0; D2_GLOBAL_GUARD(gbInvCubePageOpen, "gbInvCubePageOpen");
+uint32_t gbInvCubeTransmuteClicked = 0; D2_GLOBAL_GUARD(gbInvCubeTransmuteClicked, "gbInvCubeTransmuteClicked");
+uint32_t gbInvCubePageOpen2 = 0; D2_GLOBAL_GUARD(gbInvCubePageOpen2, "gbInvCubePageOpen2");
+uint32_t gbInvCubeWithdrawClicked = 0; D2_GLOBAL_GUARD(gbInvCubeWithdrawClicked, "gbInvCubeWithdrawClicked");
+DC6 * gpInvMercHelmetSlotImage = 0; D2_GLOBAL_GUARD(gpInvMercHelmetSlotImage, "gpInvMercHelmetSlotImage");
+DC6 * gpInvMercArmorSlotImage = 0; D2_GLOBAL_GUARD(gpInvMercArmorSlotImage, "gpInvMercArmorSlotImage");
+DC6 * gpInvMercWeaponSlotImage1 = 0; D2_GLOBAL_GUARD(gpInvMercWeaponSlotImage1, "gpInvMercWeaponSlotImage1");
+DC6 * gpInvMercWeaponSlotImage2 = 0; D2_GLOBAL_GUARD(gpInvMercWeaponSlotImage2, "gpInvMercWeaponSlotImage2");
+DC6 * gpInvBodySlotImage1 = 0; D2_GLOBAL_GUARD(gpInvBodySlotImage1, "gpInvBodySlotImage1");
+DC6 * gpInvBodySlotImage2 = 0; D2_GLOBAL_GUARD(gpInvBodySlotImage2, "gpInvBodySlotImage2");
+DC6 * gpInvBodySlotImage3 = 0; D2_GLOBAL_GUARD(gpInvBodySlotImage3, "gpInvBodySlotImage3");
+DC6 * gpInvBodySlotImage4 = 0; D2_GLOBAL_GUARD(gpInvBodySlotImage4, "gpInvBodySlotImage4");
+DC6 * gpInvMercBodyImage = 0; D2_GLOBAL_GUARD(gpInvMercBodyImage, "gpInvMercBodyImage");
+DC6 * gpInvCubeRecipeScrollImage = 0; D2_GLOBAL_GUARD(gpInvCubeRecipeScrollImage, "gpInvCubeRecipeScrollImage");
+uint32_t gbInvPanelButtonPressed = 0; D2_GLOBAL_GUARD(gbInvPanelButtonPressed, "gbInvPanelButtonPressed");
+int gnInvMouseY = 0; D2_GLOBAL_GUARD(gnInvMouseY, "gnInvMouseY");
+uint32_t gShopTradeUIState = 0; D2_GLOBAL_GUARD(gShopTradeUIState, "gShopTradeUIState");
+uint32_t gnInvMercBodySlot2 = 0; D2_GLOBAL_GUARD(gnInvMercBodySlot2, "gnInvMercBodySlot2");
+uint32_t gbInvRecipeScrollOpen = 0; D2_GLOBAL_GUARD(gbInvRecipeScrollOpen, "gbInvRecipeScrollOpen");
+uint32_t gnHireDisplayMode = 0; D2_GLOBAL_GUARD(gnHireDisplayMode, "gnHireDisplayMode");
+uint32_t gpHireHoverUnit = 0; D2_GLOBAL_GUARD(gpHireHoverUnit, "gpHireHoverUnit");
+uint32_t gnHireIconDrawX = 0; D2_GLOBAL_GUARD(gnHireIconDrawX, "gnHireIconDrawX");
+uint32_t gnHireIconHoverX = 0; D2_GLOBAL_GUARD(gnHireIconHoverX, "gnHireIconHoverX");
+uint32_t gnHireIconHoverY = 0; D2_GLOBAL_GUARD(gnHireIconHoverY, "gnHireIconHoverY");
+uint8_t gbHireIconsVisible = 0; D2_GLOBAL_GUARD(gbHireIconsVisible, "gbHireIconsVisible");
+uint32_t gnHireIconHoverIndex = 0; D2_GLOBAL_GUARD(gnHireIconHoverIndex, "gnHireIconHoverIndex");
+uint32_t gpHelpCloseButton = 0; D2_GLOBAL_GUARD(gpHelpCloseButton, "gpHelpCloseButton");
+uint32_t gpHelpScrollButtonDown = 0; D2_GLOBAL_GUARD(gpHelpScrollButtonDown, "gpHelpScrollButtonDown");
+uint32_t gpHelpScrollButtonUp = 0; D2_GLOBAL_GUARD(gpHelpScrollButtonUp, "gpHelpScrollButtonUp");
+uint32_t gpPanelBeltSlot = 0; D2_GLOBAL_GUARD(gpPanelBeltSlot, "gpPanelBeltSlot");
+uint32_t gnPanelBeltRowsExpanded = 0; D2_GLOBAL_GUARD(gnPanelBeltRowsExpanded, "gnPanelBeltRowsExpanded");
+uint32_t gbPanelBeltAnimating = 0; D2_GLOBAL_GUARD(gbPanelBeltAnimating, "gbPanelBeltAnimating");
+uint32_t gbPanelBeltSlotHovered = 0; D2_GLOBAL_GUARD(gbPanelBeltSlotHovered, "gbPanelBeltSlotHovered");
+uint32_t gpPanelClickedButton = 0; D2_GLOBAL_GUARD(gpPanelClickedButton, "gpPanelClickedButton");
+D2UnitStrc * gpPanelBeltHoverItem = 0; D2_GLOBAL_GUARD(gpPanelBeltHoverItem, "gpPanelBeltHoverItem");
+D2UnitStrc * gpPanelBeltLastHoverItem = 0; D2_GLOBAL_GUARD(gpPanelBeltLastHoverItem, "gpPanelBeltLastHoverItem");
+uint8_t gbPanelStaminaColorBlue = 0; D2_GLOBAL_GUARD(gbPanelStaminaColorBlue, "gbPanelStaminaColorBlue");
+uint8_t gbPanelGoldColorGreen = 0; D2_GLOBAL_GUARD(gbPanelGoldColorGreen, "gbPanelGoldColorGreen");
+uint32_t gpPanelMenuButton = 0; D2_GLOBAL_GUARD(gpPanelMenuButton, "gpPanelMenuButton");
+uint32_t gpPanelRunButton = 0; D2_GLOBAL_GUARD(gpPanelRunButton, "gpPanelRunButton");
+uint8_t gbPanelStaminaColorRed = 0; D2_GLOBAL_GUARD(gbPanelStaminaColorRed, "gbPanelStaminaColorRed");
+int gpPartyAcceptButton = 0; D2_GLOBAL_GUARD(gpPartyAcceptButton, "gpPartyAcceptButton");
+int32_t gpWaypointButtonHover = 0; D2_GLOBAL_GUARD(gpWaypointButtonHover, "gpWaypointButtonHover");
+uint8_t gbWaypointButtonPressed = 0; D2_GLOBAL_GUARD(gbWaypointButtonPressed, "gbWaypointButtonPressed");
+uint32_t ClickingDownOnWaypointEntry = 0; D2_GLOBAL_GUARD(ClickingDownOnWaypointEntry, "ClickingDownOnWaypointEntry");
+DC6 * WaypointWayGateBackGround = 0; D2_GLOBAL_GUARD(WaypointWayGateBackGround, "WaypointWayGateBackGround");
+DC6 * WaypointWayGateTabs = 0; D2_GLOBAL_GUARD(WaypointWayGateTabs, "WaypointWayGateTabs");
+DC6 * WaypointWaygateIcons = 0; D2_GLOBAL_GUARD(WaypointWaygateIcons, "WaypointWaygateIcons");
+uint32_t WaypointCurrentSelectedAct = 0; D2_GLOBAL_GUARD(WaypointCurrentSelectedAct, "WaypointCurrentSelectedAct");
+uint32_t MaximumAmountOfWaypointInSelectedAct = 0; D2_GLOBAL_GUARD(MaximumAmountOfWaypointInSelectedAct, "MaximumAmountOfWaypointInSelectedAct");
+uint32_t NoOtherWaypointAvailableBool = 0; D2_GLOBAL_GUARD(NoOtherWaypointAvailableBool, "NoOtherWaypointAvailableBool");
+D2TextBoxStrc * gpTextScrollingBox = 0; D2_GLOBAL_GUARD(gpTextScrollingBox, "gpTextScrollingBox");
+D2TextBoxStrc * gpStaticTextPopup = 0; D2_GLOBAL_GUARD(gpStaticTextPopup, "gpStaticTextPopup");
+uint32_t gdwTextPopupExpireTime = 0; D2_GLOBAL_GUARD(gdwTextPopupExpireTime, "gdwTextPopupExpireTime");
+ListBoxWrapper * gpTextMessageLogHead = 0; D2_GLOBAL_GUARD(gpTextMessageLogHead, "gpTextMessageLogHead");
+uint32_t gbTextScrollBoxAnimating = 0; D2_GLOBAL_GUARD(gbTextScrollBoxAnimating, "gbTextScrollBoxAnimating");
+uint32_t gbTextScrollBoxActive = 0; D2_GLOBAL_GUARD(gbTextScrollBoxActive, "gbTextScrollBoxActive");
+uint32_t gbTextStaticPopupActive = 0; D2_GLOBAL_GUARD(gbTextStaticPopupActive, "gbTextStaticPopupActive");
+uint32_t gpTextStaticPopupBox = 0; D2_GLOBAL_GUARD(gpTextStaticPopupBox, "gpTextStaticPopupBox");
+int gaTextStaticPopupRect = 0; D2_GLOBAL_GUARD(gaTextStaticPopupRect, "gaTextStaticPopupRect");
+uint32_t gnTextDisplayMode = 0; D2_GLOBAL_GUARD(gnTextDisplayMode, "gnTextDisplayMode");
+uint32_t gbTextScrollBoxVisible = 0; D2_GLOBAL_GUARD(gbTextScrollBoxVisible, "gbTextScrollBoxVisible");
+uint32_t gnTextNpcGuid = 0; D2_GLOBAL_GUARD(gnTextNpcGuid, "gnTextNpcGuid");
+uint32_t gpOverHeadUnitGUID = 0; D2_GLOBAL_GUARD(gpOverHeadUnitGUID, "gpOverHeadUnitGUID");
+uint32_t gnTextNpcInteractGuid = 0; D2_GLOBAL_GUARD(gnTextNpcInteractGuid, "gnTextNpcInteractGuid");
+uint32_t gnTextOverheadCounter = 0; D2_GLOBAL_GUARD(gnTextOverheadCounter, "gnTextOverheadCounter");
+uint16_t gnTextScrollBoxWidth = 0; D2_GLOBAL_GUARD(gnTextScrollBoxWidth, "gnTextScrollBoxWidth");
+uint32_t gbTextOverheadActive = 0; D2_GLOBAL_GUARD(gbTextOverheadActive, "gbTextOverheadActive");
+void * gpQuestScrollTextBlock = 0; D2_GLOBAL_GUARD(gpQuestScrollTextBlock, "gpQuestScrollTextBlock");
+unsigned int gbTextNpcMenuActive = {}; D2_GLOBAL_GUARD(gbTextNpcMenuActive, "gbTextNpcMenuActive");
+uint32_t gpTextScrollBoxImage = 0; D2_GLOBAL_GUARD(gpTextScrollBoxImage, "gpTextScrollBoxImage");
+uint32_t gnTextScrollBoxHeight = 0; D2_GLOBAL_GUARD(gnTextScrollBoxHeight, "gnTextScrollBoxHeight");
+uint8_t gbTextNpcMenuSelection = 0; D2_GLOBAL_GUARD(gbTextNpcMenuSelection, "gbTextNpcMenuSelection");
+uint32_t gnTextNpcMenuIndex = 0; D2_GLOBAL_GUARD(gnTextNpcMenuIndex, "gnTextNpcMenuIndex");
+uint32_t gpTextDismissCallback = 0; D2_GLOBAL_GUARD(gpTextDismissCallback, "gpTextDismissCallback");
+uint32_t gpTextScrollBoxBuffer = 0; D2_GLOBAL_GUARD(gpTextScrollBoxBuffer, "gpTextScrollBoxBuffer");
+D2GSPacketSrv0x27_TextStrc * gpOverHeadStrc = 0; D2_GLOBAL_GUARD(gpOverHeadStrc, "gpOverHeadStrc");
+uint32_t gpQuestScrollUI = 0; D2_GLOBAL_GUARD(gpQuestScrollUI, "gpQuestScrollUI");
+pfnTextScrollComplete gpTextScrollCompleteCallback = (pfnTextScrollComplete)0; D2_GLOBAL_GUARD(gpTextScrollCompleteCallback, "gpTextScrollCompleteCallback");
+void * gpTextScrollCompleteParam = 0; D2_GLOBAL_GUARD(gpTextScrollCompleteParam, "gpTextScrollCompleteParam");
+uint32_t gpTextScrollBoxDC6 = 0; D2_GLOBAL_GUARD(gpTextScrollBoxDC6, "gpTextScrollBoxDC6");
+DC6 * gpQuestScrollImageTop = 0; D2_GLOBAL_GUARD(gpQuestScrollImageTop, "gpQuestScrollImageTop");
+DC6 * gpQuestScrollImageBottom = 0; D2_GLOBAL_GUARD(gpQuestScrollImageBottom, "gpQuestScrollImageBottom");
+DC6 * gpQuestScrollImageBg = 0; D2_GLOBAL_GUARD(gpQuestScrollImageBg, "gpQuestScrollImageBg");
+uint32_t gbTextEventHandlersRegistered = 0; D2_GLOBAL_GUARD(gbTextEventHandlersRegistered, "gbTextEventHandlersRegistered");
+int gnUICtrlConfigTotalRows = 0; D2_GLOBAL_GUARD(gnUICtrlConfigTotalRows, "gnUICtrlConfigTotalRows");
+uint32_t gnUICtrlConfigScrollMaxLines = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollMaxLines, "gnUICtrlConfigScrollMaxLines");
+uint32_t gnUICtrlConfigColumnWidth = 0; D2_GLOBAL_GUARD(gnUICtrlConfigColumnWidth, "gnUICtrlConfigColumnWidth");
+uint32_t gnUICtrlConfigMouseButtonState = 0; D2_GLOBAL_GUARD(gnUICtrlConfigMouseButtonState, "gnUICtrlConfigMouseButtonState");
+uint32_t gnUICtrlConfigButton3State = 0; D2_GLOBAL_GUARD(gnUICtrlConfigButton3State, "gnUICtrlConfigButton3State");
+uint32_t gnUICtrlConfigScrollOffset = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollOffset, "gnUICtrlConfigScrollOffset");
+uint8_t g_ControlConfigUIState = 0; D2_GLOBAL_GUARD(g_ControlConfigUIState, "g_ControlConfigUIState");
+int gnUICtrlConfigActiveButton = 0; D2_GLOBAL_GUARD(gnUICtrlConfigActiveButton, "gnUICtrlConfigActiveButton");
+bool gbUICtrlConfigKeyBindMode = 0; D2_GLOBAL_GUARD(gbUICtrlConfigKeyBindMode, "gbUICtrlConfigKeyBindMode");
+DC6 * gpUICtrlConfigScrollbarDC6 = 0; D2_GLOBAL_GUARD(gpUICtrlConfigScrollbarDC6, "gpUICtrlConfigScrollbarDC6");
+int gnUICtrlConfigPendingKeyStrId = 0; D2_GLOBAL_GUARD(gnUICtrlConfigPendingKeyStrId, "gnUICtrlConfigPendingKeyStrId");
+unsigned int gdwUICtrlConfigKeyBindTimestamp = {}; D2_GLOBAL_GUARD(gdwUICtrlConfigKeyBindTimestamp, "gdwUICtrlConfigKeyBindTimestamp");
+DC6 * gpUIStatLevelUpPanelImages = 0; D2_GLOBAL_GUARD(gpUIStatLevelUpPanelImages, "gpUIStatLevelUpPanelImages");
+DC6 * gpUIStatLevelUpButtonImages = 0; D2_GLOBAL_GUARD(gpUIStatLevelUpButtonImages, "gpUIStatLevelUpButtonImages");
+DC6 * gpSpellSelSkillIconDC6 = 0; D2_GLOBAL_GUARD(gpSpellSelSkillIconDC6, "gpSpellSelSkillIconDC6");
+unsigned int gbSpellSelMouseHandFlag = {}; D2_GLOBAL_GUARD(gbSpellSelMouseHandFlag, "gbSpellSelMouseHandFlag");
+uint32_t BooleanWaitingForSkillingMaybe = 0; D2_GLOBAL_GUARD(BooleanWaitingForSkillingMaybe, "BooleanWaitingForSkillingMaybe");
+uint32_t gnSpellSelSkillTreeOffsetY = 0; D2_GLOBAL_GUARD(gnSpellSelSkillTreeOffsetY, "gnSpellSelSkillTreeOffsetY");
+uint32_t gnSpellSelSkillTreeClickY = 0; D2_GLOBAL_GUARD(gnSpellSelSkillTreeClickY, "gnSpellSelSkillTreeClickY");
+uint8_t gnSpellSelTabHighlightColor = 0; D2_GLOBAL_GUARD(gnSpellSelTabHighlightColor, "gnSpellSelTabHighlightColor");
+uint32_t gnNpcMenuMercHireCost1 = 0; D2_GLOBAL_GUARD(gnNpcMenuMercHireCost1, "gnNpcMenuMercHireCost1");
+uint32_t gnNpcMenuMercHireCost2 = 0; D2_GLOBAL_GUARD(gnNpcMenuMercHireCost2, "gnNpcMenuMercHireCost2");
+uint8_t gbNpcMenuInitialized = 0; D2_GLOBAL_GUARD(gbNpcMenuInitialized, "gbNpcMenuInitialized");
+uint8_t gnNpcMenuActiveMode = 0; D2_GLOBAL_GUARD(gnNpcMenuActiveMode, "gnNpcMenuActiveMode");
+uint8_t gbNpcMenuRandomDialogSeed = 0; D2_GLOBAL_GUARD(gbNpcMenuRandomDialogSeed, "gbNpcMenuRandomDialogSeed");
+int PLAYER_CurrentGold = 0; D2_GLOBAL_GUARD(PLAYER_CurrentGold, "PLAYER_CurrentGold");
+uint16_t gnNpcMenuRepairCostGold = 0; D2_GLOBAL_GUARD(gnNpcMenuRepairCostGold, "gnNpcMenuRepairCostGold");
+int16_t gnNpcMenuTradeActionGold = 0; D2_GLOBAL_GUARD(gnNpcMenuTradeActionGold, "gnNpcMenuTradeActionGold");
+uint16_t gnNpcMenuScrollCompleteMode = 0; D2_GLOBAL_GUARD(gnNpcMenuScrollCompleteMode, "gnNpcMenuScrollCompleteMode");
 // also labelled: g_nNpcTradeMenuState
-D2NPCSpeechStrc * gpNpcCurrentSpeech = 0;
-uint32_t gnNpcMenuCainIdentifyGUID = 0;
-uint32_t gnNpcMenuTransactionType = 0;
-uint32_t gnNpcMenuPreviousGold = 0;
-D2BitBufferStrc * gpNpcMenuBitBuffer = 0;
-D2BitBufferStrc * gpNpcMenuDialogOptions = 0;
-uint32_t gnNpcMenuCurrentNpcClassId = 0;
-uint32_t gnNpcMenuCurrentNpcGUID = 0;
-uint32_t gnNpcMenuLastTransactionGold = 0;
-uint32_t nTransactionCost = 0;
-ListBoxWrapper * gpNpcMenuMercListBox = 0;
-uint32_t gnNpcMenuActiveContainer = 0;
-uint16_t gnNpcMenuScrollMessageHead = 0;
-uint32_t gnNpcMenuShopMode = 0;
-uint32_t gnNpcMenuNpcSoundIndex = 0;
-uint32_t gnNpcMenuNpcClassId = 0;
-uint32_t gnNpcMenuDialogX = 0;
-uint32_t gnNpcMenuDialogY = 0;
-DC6 * gpNpcMenuShopInventoryDC6 = 0;
-DC6 * gpNpcMenuShopInventoryBuffer = 0;
-D2UnitStrc * gpNpcShopOwnerUnit = 0;
-short gbNpcMenuShopOpened = 0;
-uint8_t gnNpcMenuMercListCount = 0;
-uint8_t gbNpcMenuTransactionPending = 0;
-uint32_t gnNpcMenuTransactionItemGUID = 0;
-uint32_t gnNpcMenuShopTransactionCost = 0;
-unsigned int gdwNpcMenuLastClickTimestamp = {};
-int32_t gnDialogStructAllocCount = 0;
-uint32_t gnTradeGoldUpdateBuffer = 0;
-uint16_t gnTradePlayerGoldAmount = 0;
-uint16_t gnTradePartnerGoldAmount = 0;
-uint32_t gdwTradeThrottleTimestamp = 0;
-bool gbTradeResetFlag = 0;
-uint32_t gnTradeAcceptedFlags = 0;
-int32_t g_nTradeWindowState = 0;
-uint8_t gbTradeWindowOpen = 0;
-BOOL bReceivedQuestAvailabilityPacket = 0;
-D2SoundChannelNodeStrc * gpActiveSoundChannelsHead = 0;
-uint32_t gnSoundChannelCount = 0;
-uint32_t gpSoundChannelsArray = 0;
-uint32_t gbSoundChaosEnabled = 0;
-DC6 * gpMessageLogDC6 = 0;
-uint32_t nHoradricCubeUIState = 0;
-int gnPlayerCashDisplay = 0;
-int gnNpcShopSecondActiveTab = 0;
-uint32_t gnNpcShopActiveTab = 0;
-uint32_t gnCursorItemUnitId = 0;
-uint32_t gnTextSystemInitFlag = 0;
-DC6 * gpUpgradeMenuDC6 = 0;
-DC6 * gpHoradricBackgroundDC6 = 0;
-int gItemDrawFlags = 0;
-short gnWeaponHandClassId_Right = 0;
-short gnWeaponHandClassId_Left = 0;
-int gnSoundLastInitTick = 0;
-uint32_t gdwSoundChannelIndex = 0;
-uint32_t gnSoundInitCooldown = 0;
-unsigned int gnSoundLastPlayerAnimModeTime = {};
-unsigned short geSoundLastPlayerAnimMode = {};
-uint32_t gdwWarpFadeExpireTime = 0;
-unsigned int gdwAmbientMusicLevelChangeTick = {};
-unsigned int gdwAmbientMusicRestartTick = {};
-uint32_t geAmbientMusicLevelId = 0;
-uint32_t gdwAmbientMusicChangeTime = 0;
-uint32_t gbSoundSequenceActive = 0;
-uint32_t geSoundSequenceSoundId = 0;
-uint32_t gnSoundSequenceResumeIndex = 0;
-uint32_t gbPendingSoundSequencePlay = 0;
-uint32_t geDelayedSoundId = 0;
-uint32_t gnDelayedSoundPlayIndex = 0;
-uint32_t gbPendingDelayedSoundPlay = 0;
-uint32_t gnSoundSequenceEndIndex = 0;
-uint32_t geLastAmbientMusicLevelId = 0;
-int UNIT_CenterXCoordsDiv5 = 0;
-int gnPlayerTileGridIndex = 0;
-int UNIT_CenterYCoordsDiv5 = 0;
-uint32_t BackgroundSoundsActive = 0;
-LONG * lpAddend_007c8a74 = 0;
-BOOL pAudioMixerInterface = 0;
-int32_t int32_t_007c8c7c = 0;
-uint32_t gnActiveSoundChannelCount = 0;
-void * pAudioDeviceContext = 0;
-uint32_t gnSoundChannelIndex = 0;
-uint32_t gnSoundChannelPlaybackState = 0;
-int32_t int32_t_007c8c90 = 0;
-int32_t int32_t_007c8c94 = 0;
-int32_t int32_t_007c8c98 = 0;
-int gnTileClipXMax = 0;
-int gnTileClipYMin = 0;
-int gnTileInnerClipYMax = 0;
-int gnTileInnerClipXMin = 0;
-int gnMinTileScreenY = 0;
-int gnTileClipLeft = 0;
-int gnTileInnerClipYMinRow = 0;
-int gnTileInnerClipYMin = 0;
-int gnTileInnerClipXMax_b = 0;
-int gnMinTileDrawY = 0;
-int gnMinTileScreenY_b = 0;
-int gnTileClipRight = 0;
-uint32_t gnBinkDDrawYOffset = 0;
-uint32_t gnBinkDDrawXOffset = 0;
-void * gpBinkVideoDirectDraw = 0;
-uint32_t gnBinkDDrawSurfaceType = 0;
-uint32_t g_bBinkDDrawVideoQuitRequested = 0;
-
-// =============================================================================
-// Uninitialized data (BSS)
-// =============================================================================
-
-uint8_t cChatCmdSlash;
+D2NPCSpeechStrc * gpNpcCurrentSpeech = 0; D2_GLOBAL_GUARD(gpNpcCurrentSpeech, "gpNpcCurrentSpeech");
+uint32_t gnNpcMenuCainIdentifyGUID = 0; D2_GLOBAL_GUARD(gnNpcMenuCainIdentifyGUID, "gnNpcMenuCainIdentifyGUID");
+uint32_t gnNpcMenuTransactionType = 0; D2_GLOBAL_GUARD(gnNpcMenuTransactionType, "gnNpcMenuTransactionType");
+uint32_t gnNpcMenuPreviousGold = 0; D2_GLOBAL_GUARD(gnNpcMenuPreviousGold, "gnNpcMenuPreviousGold");
+D2BitBufferStrc * gpNpcMenuBitBuffer = 0; D2_GLOBAL_GUARD(gpNpcMenuBitBuffer, "gpNpcMenuBitBuffer");
+D2BitBufferStrc * gpNpcMenuDialogOptions = 0; D2_GLOBAL_GUARD(gpNpcMenuDialogOptions, "gpNpcMenuDialogOptions");
+uint32_t gnNpcMenuCurrentNpcClassId = 0; D2_GLOBAL_GUARD(gnNpcMenuCurrentNpcClassId, "gnNpcMenuCurrentNpcClassId");
+uint32_t gnNpcMenuCurrentNpcGUID = 0; D2_GLOBAL_GUARD(gnNpcMenuCurrentNpcGUID, "gnNpcMenuCurrentNpcGUID");
+uint32_t gnNpcMenuLastTransactionGold = 0; D2_GLOBAL_GUARD(gnNpcMenuLastTransactionGold, "gnNpcMenuLastTransactionGold");
+uint32_t nTransactionCost = 0; D2_GLOBAL_GUARD(nTransactionCost, "nTransactionCost");
+ListBoxWrapper * gpNpcMenuMercListBox = 0; D2_GLOBAL_GUARD(gpNpcMenuMercListBox, "gpNpcMenuMercListBox");
+uint32_t gnNpcMenuActiveContainer = 0; D2_GLOBAL_GUARD(gnNpcMenuActiveContainer, "gnNpcMenuActiveContainer");
+uint16_t gnNpcMenuScrollMessageHead = 0; D2_GLOBAL_GUARD(gnNpcMenuScrollMessageHead, "gnNpcMenuScrollMessageHead");
+uint32_t gnNpcMenuShopMode = 0; D2_GLOBAL_GUARD(gnNpcMenuShopMode, "gnNpcMenuShopMode");
+uint32_t gnNpcMenuNpcSoundIndex = 0; D2_GLOBAL_GUARD(gnNpcMenuNpcSoundIndex, "gnNpcMenuNpcSoundIndex");
+uint32_t gnNpcMenuNpcClassId = 0; D2_GLOBAL_GUARD(gnNpcMenuNpcClassId, "gnNpcMenuNpcClassId");
+uint32_t gnNpcMenuDialogX = 0; D2_GLOBAL_GUARD(gnNpcMenuDialogX, "gnNpcMenuDialogX");
+uint32_t gnNpcMenuDialogY = 0; D2_GLOBAL_GUARD(gnNpcMenuDialogY, "gnNpcMenuDialogY");
+DC6 * gpNpcMenuShopInventoryDC6 = 0; D2_GLOBAL_GUARD(gpNpcMenuShopInventoryDC6, "gpNpcMenuShopInventoryDC6");
+DC6 * gpNpcMenuShopInventoryBuffer = 0; D2_GLOBAL_GUARD(gpNpcMenuShopInventoryBuffer, "gpNpcMenuShopInventoryBuffer");
+D2UnitStrc * gpNpcShopOwnerUnit = 0; D2_GLOBAL_GUARD(gpNpcShopOwnerUnit, "gpNpcShopOwnerUnit");
+short gbNpcMenuShopOpened = 0; D2_GLOBAL_GUARD(gbNpcMenuShopOpened, "gbNpcMenuShopOpened");
+uint8_t gnNpcMenuMercListCount = 0; D2_GLOBAL_GUARD(gnNpcMenuMercListCount, "gnNpcMenuMercListCount");
+uint8_t gbNpcMenuTransactionPending = 0; D2_GLOBAL_GUARD(gbNpcMenuTransactionPending, "gbNpcMenuTransactionPending");
+uint32_t gnNpcMenuTransactionItemGUID = 0; D2_GLOBAL_GUARD(gnNpcMenuTransactionItemGUID, "gnNpcMenuTransactionItemGUID");
+uint32_t gnNpcMenuShopTransactionCost = 0; D2_GLOBAL_GUARD(gnNpcMenuShopTransactionCost, "gnNpcMenuShopTransactionCost");
+unsigned int gdwNpcMenuLastClickTimestamp = {}; D2_GLOBAL_GUARD(gdwNpcMenuLastClickTimestamp, "gdwNpcMenuLastClickTimestamp");
+int32_t gnDialogStructAllocCount = 0; D2_GLOBAL_GUARD(gnDialogStructAllocCount, "gnDialogStructAllocCount");
+uint32_t gnTradeGoldUpdateBuffer = 0; D2_GLOBAL_GUARD(gnTradeGoldUpdateBuffer, "gnTradeGoldUpdateBuffer");
+uint16_t gnTradePlayerGoldAmount = 0; D2_GLOBAL_GUARD(gnTradePlayerGoldAmount, "gnTradePlayerGoldAmount");
+uint16_t gnTradePartnerGoldAmount = 0; D2_GLOBAL_GUARD(gnTradePartnerGoldAmount, "gnTradePartnerGoldAmount");
+uint32_t gdwTradeThrottleTimestamp = 0; D2_GLOBAL_GUARD(gdwTradeThrottleTimestamp, "gdwTradeThrottleTimestamp");
+bool gbTradeResetFlag = 0; D2_GLOBAL_GUARD(gbTradeResetFlag, "gbTradeResetFlag");
+uint32_t gnTradeAcceptedFlags = 0; D2_GLOBAL_GUARD(gnTradeAcceptedFlags, "gnTradeAcceptedFlags");
+int32_t g_nTradeWindowState = 0; D2_GLOBAL_GUARD(g_nTradeWindowState, "g_nTradeWindowState");
+uint8_t gbTradeWindowOpen = 0; D2_GLOBAL_GUARD(gbTradeWindowOpen, "gbTradeWindowOpen");
+BOOL bReceivedQuestAvailabilityPacket = 0; D2_GLOBAL_GUARD(bReceivedQuestAvailabilityPacket, "bReceivedQuestAvailabilityPacket");
+D2SoundChannelNodeStrc * gpActiveSoundChannelsHead = 0; D2_GLOBAL_GUARD(gpActiveSoundChannelsHead, "gpActiveSoundChannelsHead");
+uint32_t gnSoundChannelCount = 0; D2_GLOBAL_GUARD(gnSoundChannelCount, "gnSoundChannelCount");
+uint32_t gpSoundChannelsArray = 0; D2_GLOBAL_GUARD(gpSoundChannelsArray, "gpSoundChannelsArray");
+uint32_t gbSoundChaosEnabled = 0; D2_GLOBAL_GUARD(gbSoundChaosEnabled, "gbSoundChaosEnabled");
+DC6 * gpMessageLogDC6 = 0; D2_GLOBAL_GUARD(gpMessageLogDC6, "gpMessageLogDC6");
+uint32_t nHoradricCubeUIState = 0; D2_GLOBAL_GUARD(nHoradricCubeUIState, "nHoradricCubeUIState");
+int gnPlayerCashDisplay = 0; D2_GLOBAL_GUARD(gnPlayerCashDisplay, "gnPlayerCashDisplay");
+int gnNpcShopSecondActiveTab = 0; D2_GLOBAL_GUARD(gnNpcShopSecondActiveTab, "gnNpcShopSecondActiveTab");
+uint32_t gnNpcShopActiveTab = 0; D2_GLOBAL_GUARD(gnNpcShopActiveTab, "gnNpcShopActiveTab");
+uint32_t gnCursorItemUnitId = 0; D2_GLOBAL_GUARD(gnCursorItemUnitId, "gnCursorItemUnitId");
+uint32_t gnTextSystemInitFlag = 0; D2_GLOBAL_GUARD(gnTextSystemInitFlag, "gnTextSystemInitFlag");
+DC6 * gpUpgradeMenuDC6 = 0; D2_GLOBAL_GUARD(gpUpgradeMenuDC6, "gpUpgradeMenuDC6");
+DC6 * gpHoradricBackgroundDC6 = 0; D2_GLOBAL_GUARD(gpHoradricBackgroundDC6, "gpHoradricBackgroundDC6");
+int gItemDrawFlags = 0; D2_GLOBAL_GUARD(gItemDrawFlags, "gItemDrawFlags");
+short gnWeaponHandClassId_Right = 0; D2_GLOBAL_GUARD(gnWeaponHandClassId_Right, "gnWeaponHandClassId_Right");
+short gnWeaponHandClassId_Left = 0; D2_GLOBAL_GUARD(gnWeaponHandClassId_Left, "gnWeaponHandClassId_Left");
+int gnSoundLastInitTick = 0; D2_GLOBAL_GUARD(gnSoundLastInitTick, "gnSoundLastInitTick");
+uint32_t gdwSoundChannelIndex = 0; D2_GLOBAL_GUARD(gdwSoundChannelIndex, "gdwSoundChannelIndex");
+uint32_t gnSoundInitCooldown = 0; D2_GLOBAL_GUARD(gnSoundInitCooldown, "gnSoundInitCooldown");
+unsigned int gnSoundLastPlayerAnimModeTime = {}; D2_GLOBAL_GUARD(gnSoundLastPlayerAnimModeTime, "gnSoundLastPlayerAnimModeTime");
+unsigned short geSoundLastPlayerAnimMode = {}; D2_GLOBAL_GUARD(geSoundLastPlayerAnimMode, "geSoundLastPlayerAnimMode");
+uint32_t gdwWarpFadeExpireTime = 0; D2_GLOBAL_GUARD(gdwWarpFadeExpireTime, "gdwWarpFadeExpireTime");
+unsigned int gdwAmbientMusicLevelChangeTick = {}; D2_GLOBAL_GUARD(gdwAmbientMusicLevelChangeTick, "gdwAmbientMusicLevelChangeTick");
+unsigned int gdwAmbientMusicRestartTick = {}; D2_GLOBAL_GUARD(gdwAmbientMusicRestartTick, "gdwAmbientMusicRestartTick");
+uint32_t geAmbientMusicLevelId = 0; D2_GLOBAL_GUARD(geAmbientMusicLevelId, "geAmbientMusicLevelId");
+uint32_t gdwAmbientMusicChangeTime = 0; D2_GLOBAL_GUARD(gdwAmbientMusicChangeTime, "gdwAmbientMusicChangeTime");
+uint32_t gbSoundSequenceActive = 0; D2_GLOBAL_GUARD(gbSoundSequenceActive, "gbSoundSequenceActive");
+uint32_t geSoundSequenceSoundId = 0; D2_GLOBAL_GUARD(geSoundSequenceSoundId, "geSoundSequenceSoundId");
+uint32_t gnSoundSequenceResumeIndex = 0; D2_GLOBAL_GUARD(gnSoundSequenceResumeIndex, "gnSoundSequenceResumeIndex");
+uint32_t gbPendingSoundSequencePlay = 0; D2_GLOBAL_GUARD(gbPendingSoundSequencePlay, "gbPendingSoundSequencePlay");
+uint32_t geDelayedSoundId = 0; D2_GLOBAL_GUARD(geDelayedSoundId, "geDelayedSoundId");
+uint32_t gnDelayedSoundPlayIndex = 0; D2_GLOBAL_GUARD(gnDelayedSoundPlayIndex, "gnDelayedSoundPlayIndex");
+uint32_t gbPendingDelayedSoundPlay = 0; D2_GLOBAL_GUARD(gbPendingDelayedSoundPlay, "gbPendingDelayedSoundPlay");
+uint32_t gnSoundSequenceEndIndex = 0; D2_GLOBAL_GUARD(gnSoundSequenceEndIndex, "gnSoundSequenceEndIndex");
+uint32_t geLastAmbientMusicLevelId = 0; D2_GLOBAL_GUARD(geLastAmbientMusicLevelId, "geLastAmbientMusicLevelId");
+int UNIT_CenterXCoordsDiv5 = 0; D2_GLOBAL_GUARD(UNIT_CenterXCoordsDiv5, "UNIT_CenterXCoordsDiv5");
+int gnPlayerTileGridIndex = 0; D2_GLOBAL_GUARD(gnPlayerTileGridIndex, "gnPlayerTileGridIndex");
+int UNIT_CenterYCoordsDiv5 = 0; D2_GLOBAL_GUARD(UNIT_CenterYCoordsDiv5, "UNIT_CenterYCoordsDiv5");
+uint32_t BackgroundSoundsActive = 0; D2_GLOBAL_GUARD(BackgroundSoundsActive, "BackgroundSoundsActive");
+LONG * lpAddend_007c8a74 = 0; D2_GLOBAL_GUARD(lpAddend_007c8a74, "lpAddend_007c8a74");
+BOOL pAudioMixerInterface = 0; D2_GLOBAL_GUARD(pAudioMixerInterface, "pAudioMixerInterface");
+int32_t int32_t_007c8c7c = 0; D2_GLOBAL_GUARD(int32_t_007c8c7c, "int32_t_007c8c7c");
+uint32_t gnActiveSoundChannelCount = 0; D2_GLOBAL_GUARD(gnActiveSoundChannelCount, "gnActiveSoundChannelCount");
+void * pAudioDeviceContext = 0; D2_GLOBAL_GUARD(pAudioDeviceContext, "pAudioDeviceContext");
+uint32_t gnSoundChannelIndex = 0; D2_GLOBAL_GUARD(gnSoundChannelIndex, "gnSoundChannelIndex");
+uint32_t gnSoundChannelPlaybackState = 0; D2_GLOBAL_GUARD(gnSoundChannelPlaybackState, "gnSoundChannelPlaybackState");
+int32_t int32_t_007c8c90 = 0; D2_GLOBAL_GUARD(int32_t_007c8c90, "int32_t_007c8c90");
+int32_t int32_t_007c8c94 = 0; D2_GLOBAL_GUARD(int32_t_007c8c94, "int32_t_007c8c94");
+int32_t int32_t_007c8c98 = 0; D2_GLOBAL_GUARD(int32_t_007c8c98, "int32_t_007c8c98");
+int gnTileClipXMax = 0; D2_GLOBAL_GUARD(gnTileClipXMax, "gnTileClipXMax");
+int gnTileClipYMin = 0; D2_GLOBAL_GUARD(gnTileClipYMin, "gnTileClipYMin");
+int gnTileInnerClipYMax = 0; D2_GLOBAL_GUARD(gnTileInnerClipYMax, "gnTileInnerClipYMax");
+int gnTileInnerClipXMin = 0; D2_GLOBAL_GUARD(gnTileInnerClipXMin, "gnTileInnerClipXMin");
+int gnMinTileScreenY = 0; D2_GLOBAL_GUARD(gnMinTileScreenY, "gnMinTileScreenY");
+int gnTileClipLeft = 0; D2_GLOBAL_GUARD(gnTileClipLeft, "gnTileClipLeft");
+int gnTileInnerClipYMinRow = 0; D2_GLOBAL_GUARD(gnTileInnerClipYMinRow, "gnTileInnerClipYMinRow");
+int gnTileInnerClipYMin = 0; D2_GLOBAL_GUARD(gnTileInnerClipYMin, "gnTileInnerClipYMin");
+int gnTileInnerClipXMax_b = 0; D2_GLOBAL_GUARD(gnTileInnerClipXMax_b, "gnTileInnerClipXMax_b");
+int gnMinTileDrawY = 0; D2_GLOBAL_GUARD(gnMinTileDrawY, "gnMinTileDrawY");
+int gnMinTileScreenY_b = 0; D2_GLOBAL_GUARD(gnMinTileScreenY_b, "gnMinTileScreenY_b");
+int gnTileClipRight = 0; D2_GLOBAL_GUARD(gnTileClipRight, "gnTileClipRight");
+uint32_t gnBinkDDrawYOffset = 0; D2_GLOBAL_GUARD(gnBinkDDrawYOffset, "gnBinkDDrawYOffset");
+uint32_t gnBinkDDrawXOffset = 0; D2_GLOBAL_GUARD(gnBinkDDrawXOffset, "gnBinkDDrawXOffset");
+void * gpBinkVideoDirectDraw = 0; D2_GLOBAL_GUARD(gpBinkVideoDirectDraw, "gpBinkVideoDirectDraw");
+uint32_t gnBinkDDrawSurfaceType = 0; D2_GLOBAL_GUARD(gnBinkDDrawSurfaceType, "gnBinkDDrawSurfaceType");
+uint32_t g_bBinkDDrawVideoQuitRequested = 0; D2_GLOBAL_GUARD(g_bBinkDDrawVideoQuitRequested, "g_bBinkDDrawVideoQuitRequested");
 
 namespace D2Common::Drlg::Maze {
 
@@ -110559,7 +111780,7 @@ namespace D2Client::Warden::NWardenClient {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-void * vftable[7] = { (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall };
+void * vftable[7] = { (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall }; D2_GLOBAL_GUARD(vftable, "D2Client::Warden::NWardenClient::vftable");
 
 } // namespace D2Client::Warden::NWardenClient
 
@@ -110569,7 +111790,7 @@ namespace D2Client::Warden {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-void * vftable[7] = { (void*)&D2Client::Warden::SendPacket, (void*)&D2Client::Warden::CheckModule, (void*)&D2Client::Warden::LoadModule, (void*)&D2Client::Warden::AllocateMemory, (void*)&D2Client::Warden::FreeMemory, (void*)&D2Client::Warden::SetRC4Data, (void*)&D2Client::Warden::GetRC4Data };
+void * vftable[7] = { (void*)&D2Client::Warden::SendPacket, (void*)&D2Client::Warden::CheckModule, (void*)&D2Client::Warden::LoadModule, (void*)&D2Client::Warden::AllocateMemory, (void*)&D2Client::Warden::FreeMemory, (void*)&D2Client::Warden::SetRC4Data, (void*)&D2Client::Warden::GetRC4Data }; D2_GLOBAL_GUARD(vftable, "D2Client::Warden::vftable");
 
 } // namespace D2Client::Warden
 
@@ -110592,7 +111813,7 @@ void * vftable[12] = {
     (void*)&__purecall,
     (void*)&__purecall,
     (void*)&__purecall
-};
+}; D2_GLOBAL_GUARD(vftable, "D2Client::UI::vftable");
 
 } // namespace D2Client::UI
 
@@ -110616,7 +111837,7 @@ void * vftable[13] = {
     (void*)&D2Client::UI::Button::ButtonImplementation::OnLeftArrow,
     (void*)&D2Client::UI::Button::ButtonImplementation::GetValue,
     (void*)&D2Client::UI::Button::ButtonImplementation::SetAccelerator
-};
+}; D2_GLOBAL_GUARD(vftable, "D2Client::UI::Button::ButtonImplementation::vftable");
 
 } // namespace D2Client::UI::Button::ButtonImplementation
 
@@ -110640,7 +111861,7 @@ void * vftable[13] = {
     (void*)&D2Client::UI::Button::ButtonWrapper::OnLeftArrow,
     (void*)&D2Client::UI::Button::ButtonWrapper::GetValue,
     (void*)&D2Client::UI::Button::ButtonWrapper::SetAccelerator
-};
+}; D2_GLOBAL_GUARD(vftable, "D2Client::UI::Button::ButtonWrapper::vftable");
 
 } // namespace D2Client::UI::Button::ButtonWrapper
 
@@ -110670,7 +111891,7 @@ void * vftable[19] = {
     (void*)&D2Client::UI::Editbox::EditBoxImplementation::SetWidth,
     (void*)&D2Client::UI::Editbox::EditBoxImplementation::SetKeyRepeat,
     (void*)&D2Client::UI::Editbox::EditBoxImplementation::SetNumericOnly
-};
+}; D2_GLOBAL_GUARD(vftable, "D2Client::UI::Editbox::EditBoxImplementation::vftable");
 
 } // namespace D2Client::UI::Editbox::EditBoxImplementation
 
@@ -110700,7 +111921,7 @@ void * vftable[19] = {
     (void*)&D2Client::UI::Editbox::EditBoxWrapper::SetWidth,
     (void*)&D2Client::UI::Editbox::EditBoxWrapper::SetKeyRepeat,
     (void*)&D2Client::UI::Editbox::EditBoxWrapper::SetNumericOnly
-};
+}; D2_GLOBAL_GUARD(vftable, "D2Client::UI::Editbox::EditBoxWrapper::vftable");
 
 } // namespace D2Client::UI::Editbox::EditBoxWrapper
 
@@ -110724,7 +111945,7 @@ void * vftable[13] = {
     (void*)&D2Client::UI::Spinner::SpinnerImplementation::OnLeftArrow,
     (void*)&D2Client::UI::Spinner::SpinnerImplementation::GetValue,
     (void*)&D2Client::UI::Spinner::SpinnerImplementation::GetRepeatDelta
-};
+}; D2_GLOBAL_GUARD(vftable, "D2Client::UI::Spinner::SpinnerImplementation::vftable");
 
 } // namespace D2Client::UI::Spinner::SpinnerImplementation
 
@@ -110748,7 +111969,7 @@ void * vftable[13] = {
     (void*)&D2Client::UI::Spinner::SpinnerWrapper::OnLeftArrow,
     (void*)&D2Client::UI::Spinner::SpinnerWrapper::GetValue,
     (void*)&D2Client::UI::Spinner::SpinnerWrapper::GetRepeatDelta
-};
+}; D2_GLOBAL_GUARD(vftable, "D2Client::UI::Spinner::SpinnerWrapper::vftable");
 
 } // namespace D2Client::UI::Spinner::SpinnerWrapper
 
@@ -110920,13 +112141,13 @@ D2ShrineDispatchEntryStrc aShrineDispatchTable[23] = {
         /* .nOverlayIdInactive = */ -0x1,
         /* .nSoundId = */ 0xa6e
     }
-};
+}; D2_GLOBAL_GUARD(aShrineDispatchTable, "D2Client::UNIT::Object::aShrineDispatchTable");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int nShrineDispatchTableSize = 0x17;
+int nShrineDispatchTableSize = 0x17; D2_GLOBAL_GUARD(nShrineDispatchTableSize, "D2Client::UNIT::Object::nShrineDispatchTableSize");
 
 } // namespace D2Client::UNIT::Object
 
@@ -110953,7 +112174,7 @@ void * vftable[16] = {
     (void*)&D2Client::UI::ListBox::ListBoxWrapper::GetItemUserData,
     (void*)&D2Client::UI::ListBox::ListBoxWrapper::GetItemCount,
     (void*)&D2Client::UI::ListBox::ListBoxWrapper::Clear
-};
+}; D2_GLOBAL_GUARD(vftable, "D2Client::UI::ListBox::ListBoxWrapper::vftable");
 
 } // namespace D2Client::UI::ListBox::ListBoxWrapper
 
@@ -110980,7 +112201,7 @@ void * vftable[16] = {
     (void*)&D2Client::UI::ListBox::ListBoxImplementation::GetItemCount,
     (void*)&D2Client::UI::ListBox::ListBoxImplementation::Clear,
     (void*)&D2Client::UI::ListBox::ListBoxImplementation::AddItem
-};
+}; D2_GLOBAL_GUARD(vftable, "D2Client::UI::ListBox::ListBoxImplementation::vftable");
 
 } // namespace D2Client::UI::ListBox::ListBoxImplementation
 
@@ -111058,36 +112279,36 @@ namespace D2Client::UI::Automap {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-DC6 * pAutoMapDC6[4] = { nullptr, nullptr, nullptr, nullptr };
+DC6 * pAutoMapDC6[4] = { nullptr, nullptr, nullptr, nullptr }; D2_GLOBAL_GUARD(pAutoMapDC6, "D2Client::UI::Automap::pAutoMapDC6");
 
-int nAutoMapDC6FrameCount[4] = { 0, 0, 0, 0 };
+int nAutoMapDC6FrameCount[4] = { 0, 0, 0, 0 }; D2_GLOBAL_GUARD(nAutoMapDC6FrameCount, "D2Client::UI::Automap::nAutoMapDC6FrameCount");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int nAutoMapCenters = 0x1;
-int nAutoMapParty = 0x1;
-uint32_t AutoMapPartyNames = 0x1;
-uint32_t MiniMapType = 0;
-void * pClientAutomapCellActual = 0;
-size_t nAutomapCellListSize = 0;
-D2AutomapLayerStrc * sgpAutomapLayer = 0;
-D2AutomapLayerStrc * sgpAutomapLayerEx = 0;
-int AutoMapMoveX = 0;
-int AutoMapMoveY = 0;
-int nAutoMapFade = 0;
-BOOL bAutoMapFade = 0;
-int AUTOMAP_TextHeightOffset = 0;
-int gnAutomapClipLeft = 0;
-int gnAutomapClipTop = 0;
-int gnAutomapClipRight = 0;
-int gnAutomapClipBottom = 0;
-int nAutomapCenterY = 0;
-int gnAutomapCenterX = 0;
-int AutoMapLeft = 0;
-uint32_t AutoMapLeft2 = 0;
-uint32_t AutoMapLeft3 = 0;
+int nAutoMapCenters = 0x1; D2_GLOBAL_GUARD(nAutoMapCenters, "D2Client::UI::Automap::nAutoMapCenters");
+int nAutoMapParty = 0x1; D2_GLOBAL_GUARD(nAutoMapParty, "D2Client::UI::Automap::nAutoMapParty");
+uint32_t AutoMapPartyNames = 0x1; D2_GLOBAL_GUARD(AutoMapPartyNames, "D2Client::UI::Automap::AutoMapPartyNames");
+uint32_t MiniMapType = 0; D2_GLOBAL_GUARD(MiniMapType, "D2Client::UI::Automap::MiniMapType");
+void * pClientAutomapCellActual = 0; D2_GLOBAL_GUARD(pClientAutomapCellActual, "D2Client::UI::Automap::pClientAutomapCellActual");
+size_t nAutomapCellListSize = 0; D2_GLOBAL_GUARD(nAutomapCellListSize, "D2Client::UI::Automap::nAutomapCellListSize");
+D2AutomapLayerStrc * sgpAutomapLayer = 0; D2_GLOBAL_GUARD(sgpAutomapLayer, "D2Client::UI::Automap::sgpAutomapLayer");
+D2AutomapLayerStrc * sgpAutomapLayerEx = 0; D2_GLOBAL_GUARD(sgpAutomapLayerEx, "D2Client::UI::Automap::sgpAutomapLayerEx");
+int AutoMapMoveX = 0; D2_GLOBAL_GUARD(AutoMapMoveX, "D2Client::UI::Automap::AutoMapMoveX");
+int AutoMapMoveY = 0; D2_GLOBAL_GUARD(AutoMapMoveY, "D2Client::UI::Automap::AutoMapMoveY");
+int nAutoMapFade = 0; D2_GLOBAL_GUARD(nAutoMapFade, "D2Client::UI::Automap::nAutoMapFade");
+BOOL bAutoMapFade = 0; D2_GLOBAL_GUARD(bAutoMapFade, "D2Client::UI::Automap::bAutoMapFade");
+int AUTOMAP_TextHeightOffset = 0; D2_GLOBAL_GUARD(AUTOMAP_TextHeightOffset, "D2Client::UI::Automap::AUTOMAP_TextHeightOffset");
+int gnAutomapClipLeft = 0; D2_GLOBAL_GUARD(gnAutomapClipLeft, "D2Client::UI::Automap::gnAutomapClipLeft");
+int gnAutomapClipTop = 0; D2_GLOBAL_GUARD(gnAutomapClipTop, "D2Client::UI::Automap::gnAutomapClipTop");
+int gnAutomapClipRight = 0; D2_GLOBAL_GUARD(gnAutomapClipRight, "D2Client::UI::Automap::gnAutomapClipRight");
+int gnAutomapClipBottom = 0; D2_GLOBAL_GUARD(gnAutomapClipBottom, "D2Client::UI::Automap::gnAutomapClipBottom");
+int nAutomapCenterY = 0; D2_GLOBAL_GUARD(nAutomapCenterY, "D2Client::UI::Automap::nAutomapCenterY");
+int gnAutomapCenterX = 0; D2_GLOBAL_GUARD(gnAutomapCenterX, "D2Client::UI::Automap::gnAutomapCenterX");
+int AutoMapLeft = 0; D2_GLOBAL_GUARD(AutoMapLeft, "D2Client::UI::Automap::AutoMapLeft");
+uint32_t AutoMapLeft2 = 0; D2_GLOBAL_GUARD(AutoMapLeft2, "D2Client::UI::Automap::AutoMapLeft2");
+uint32_t AutoMapLeft3 = 0; D2_GLOBAL_GUARD(AutoMapLeft3, "D2Client::UI::Automap::AutoMapLeft3");
 
 } // namespace D2Client::UI::Automap
 
@@ -111097,7 +112318,7 @@ namespace D2Game::GAME::Rendering {
 // Initialized scalars
 // =============================================================================
 
-uint32_t CurrentRendingEngine = 0x3;
+uint32_t CurrentRendingEngine = 0x3; D2_GLOBAL_GUARD(CurrentRendingEngine, "D2Game::GAME::Rendering::CurrentRendingEngine");
 
 } // namespace D2Game::GAME::Rendering
 
@@ -111107,11 +112328,11 @@ namespace D2Client::UI::Help {
 // Initialized scalars
 // =============================================================================
 
-BOOL bSeenHelpMenu = -0x1;
-DC6 * pHelpBorder = 0;
-DC6 * HelpWhiteBullet = 0;
-DC6 * HelpYellowBullet = 0;
-int32_t gbMiniPanel = 0;
+BOOL bSeenHelpMenu = -0x1; D2_GLOBAL_GUARD(bSeenHelpMenu, "D2Client::UI::Help::bSeenHelpMenu");
+DC6 * pHelpBorder = 0; D2_GLOBAL_GUARD(pHelpBorder, "D2Client::UI::Help::pHelpBorder");
+DC6 * HelpWhiteBullet = 0; D2_GLOBAL_GUARD(HelpWhiteBullet, "D2Client::UI::Help::HelpWhiteBullet");
+DC6 * HelpYellowBullet = 0; D2_GLOBAL_GUARD(HelpYellowBullet, "D2Client::UI::Help::HelpYellowBullet");
+int32_t gbMiniPanel = 0; D2_GLOBAL_GUARD(gbMiniPanel, "D2Client::UI::Help::gbMiniPanel");
 
 } // namespace D2Client::UI::Help
 
@@ -111121,7 +112342,7 @@ namespace D2Client::UI::npcmenu {
 // Initialized scalars
 // =============================================================================
 
-short nMercNameId = -0x1;
+short nMercNameId = -0x1; D2_GLOBAL_GUARD(nMercNameId, "D2Client::UI::npcmenu::nMercNameId");
 
 } // namespace D2Client::UI::npcmenu
 
@@ -111468,13 +112689,13 @@ struct D2NpcMenuOptions D2NpcMenuOptions[48] = {
         /* .nOptionCallback = */ { &D2Client::UI::npcmenu::NPCMENU_TalkOptionCallback, nullptr, nullptr, nullptr, nullptr },
         /* .bEnabled = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2NpcMenuOptions, "D2Client::NPC::D2NpcMenuOptions");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int D2NpcMenuOptionsCount = 0x30;
+int D2NpcMenuOptionsCount = 0x30; D2_GLOBAL_GUARD(D2NpcMenuOptionsCount, "D2Client::NPC::D2NpcMenuOptionsCount");
 
 } // namespace D2Client::NPC
 
@@ -112058,7 +113279,7 @@ eD2Sounds * gaUnitSoundTableByClassIdExtra[573] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(gaUnitSoundTableByClassIdExtra, "D2Client::UNIT::UnitSnd::gaUnitSoundTableByClassIdExtra");
 
 } // namespace D2Client::UNIT::UnitSnd
 
@@ -112068,7 +113289,7 @@ namespace D2Client::UI::ui {
 // Initialized scalars
 // =============================================================================
 
-DC6 * gpDC6CursorIcon = 0;
+DC6 * gpDC6CursorIcon = 0; D2_GLOBAL_GUARD(gpDC6CursorIcon, "D2Client::UI::ui::gpDC6CursorIcon");
 
 } // namespace D2Client::UI::ui
 
@@ -112238,9 +113459,9 @@ namespace D2Client::Waypoint {
 // Initialized scalars
 // =============================================================================
 
-int32_t nWaypointSignature = 0;
-D2WaypointStrc * pWaypoint = 0;
-bool bNeedAllocation = 0;
+int32_t nWaypointSignature = 0; D2_GLOBAL_GUARD(nWaypointSignature, "D2Client::Waypoint::nWaypointSignature");
+D2WaypointStrc * pWaypoint = 0; D2_GLOBAL_GUARD(pWaypoint, "D2Client::Waypoint::pWaypoint");
+bool bNeedAllocation = 0; D2_GLOBAL_GUARD(bNeedAllocation, "D2Client::Waypoint::bNeedAllocation");
 
 } // namespace D2Client::Waypoint
 
@@ -112255,6 +113476,14 @@ namespace Fog::Memory {
 namespace Fog::Debug {
 
 } // namespace Fog::Debug
+
+namespace D2Client::MCP {
+
+} // namespace D2Client::MCP
+
+namespace D2Client::Bnet {
+
+} // namespace D2Client::Bnet
 
 namespace D2Game::Save {
 
@@ -112280,25 +113509,16 @@ char szSaveCharacterName[16] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(szSaveCharacterName, "D2Game::Save::szSaveCharacterName");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-char gbSaveKeyBindingsFlag = 0;
-uint8_t * pRawSaveBuffer = 0;
-uint32_t nRawSaveBufferSize = 0;
+uint8_t * pRawSaveBuffer = 0; D2_GLOBAL_GUARD(pRawSaveBuffer, "D2Game::Save::pRawSaveBuffer");
+uint32_t nRawSaveBufferSize = 0; D2_GLOBAL_GUARD(nRawSaveBufferSize, "D2Game::Save::nRawSaveBufferSize");
 
 } // namespace D2Game::Save
-
-namespace D2Client::MCP {
-
-} // namespace D2Client::MCP
-
-namespace D2Client::Bnet {
-
-} // namespace D2Client::Bnet
 
 namespace D2Game::GameData {
 
@@ -112306,7 +113526,7 @@ namespace D2Game::GameData {
 // Initialized scalars
 // =============================================================================
 
-uint32_t gnAlwaysRun = 0;
+uint32_t gnAlwaysRun = 0; D2_GLOBAL_GUARD(gnAlwaysRun, "D2Game::GameData::gnAlwaysRun");
 
 } // namespace D2Game::GameData
 
@@ -112316,11 +113536,11 @@ namespace D2Client::GAME::Record {
 // Initialized scalars
 // =============================================================================
 
-RecordCleanupFn CleanUpFn = (RecordCleanupFn)0;
-uint32_t NotRecording = 0;
-BOOL SettedUp = 0;
-BOOL gbIsRecording = 0;
-BOOL gbIsPlaybackActive = 0;
+RecordCleanupFn CleanUpFn = (RecordCleanupFn)0; D2_GLOBAL_GUARD(CleanUpFn, "D2Client::GAME::Record::CleanUpFn");
+uint32_t NotRecording = 0; D2_GLOBAL_GUARD(NotRecording, "D2Client::GAME::Record::NotRecording");
+BOOL SettedUp = 0; D2_GLOBAL_GUARD(SettedUp, "D2Client::GAME::Record::SettedUp");
+BOOL gbIsRecording = 0; D2_GLOBAL_GUARD(gbIsRecording, "D2Client::GAME::Record::gbIsRecording");
+BOOL gbIsPlaybackActive = 0; D2_GLOBAL_GUARD(gbIsPlaybackActive, "D2Client::GAME::Record::gbIsPlaybackActive");
 
 } // namespace D2Client::GAME::Record
 
@@ -112330,24 +113550,24 @@ namespace D2Client::UI::Dialog {
 // Initialized scalars
 // =============================================================================
 
-D2DialogStrc * gpDialog = 0;
-D2DialogStrc * DialogHandle = 0;
-D2DialogStrc * gpNpcTransactionConfirmDialog = 0;
-D2DialogStrc * gpNpcTradeErrorDialog = 0;
+D2DialogStrc * gpDialog = 0; D2_GLOBAL_GUARD(gpDialog, "D2Client::UI::Dialog::gpDialog");
+D2DialogStrc * DialogHandle = 0; D2_GLOBAL_GUARD(DialogHandle, "D2Client::UI::Dialog::DialogHandle");
+D2DialogStrc * gpNpcTransactionConfirmDialog = 0; D2_GLOBAL_GUARD(gpNpcTransactionConfirmDialog, "D2Client::UI::Dialog::gpNpcTransactionConfirmDialog");
+D2DialogStrc * gpNpcTradeErrorDialog = 0; D2_GLOBAL_GUARD(gpNpcTradeErrorDialog, "D2Client::UI::Dialog::gpNpcTradeErrorDialog");
 // also labelled: gpNpcHireMercDialog
-D2DialogStrc * gpNpcTransactionWaitDialog = 0;
-D2DialogStrc * gpNpcInteractionDialog = 0;
-D2DialogStrc * gpNpcGossipDialog = 0;
+D2DialogStrc * gpNpcTransactionWaitDialog = 0; D2_GLOBAL_GUARD(gpNpcTransactionWaitDialog, "D2Client::UI::Dialog::gpNpcTransactionWaitDialog");
+D2DialogStrc * gpNpcInteractionDialog = 0; D2_GLOBAL_GUARD(gpNpcInteractionDialog, "D2Client::UI::Dialog::gpNpcInteractionDialog");
+D2DialogStrc * gpNpcGossipDialog = 0; D2_GLOBAL_GUARD(gpNpcGossipDialog, "D2Client::UI::Dialog::gpNpcGossipDialog");
 // also labelled: gpNpcRepairDialog
-D2DialogStrc * gpNpcActionConfirmDialog = 0;
-D2DialogStrc * gpNpcMercListDialog = 0;
-D2DialogStrc * gpNpcMainMenuDialog = 0;
-int32_t gnDialogCounter = 0;
-D2DialogStrc * gpDialogActual = 0;
-uint32_t gnDialogCounter_b = 0;
-D2DialogStrc * gpTradeAgreeDialog = 0;
-D2DialogStrc * gpTradeCancelDialog = 0;
-D2DialogStrc * gpHoradricCubeDialog = 0;
+D2DialogStrc * gpNpcActionConfirmDialog = 0; D2_GLOBAL_GUARD(gpNpcActionConfirmDialog, "D2Client::UI::Dialog::gpNpcActionConfirmDialog");
+D2DialogStrc * gpNpcMercListDialog = 0; D2_GLOBAL_GUARD(gpNpcMercListDialog, "D2Client::UI::Dialog::gpNpcMercListDialog");
+D2DialogStrc * gpNpcMainMenuDialog = 0; D2_GLOBAL_GUARD(gpNpcMainMenuDialog, "D2Client::UI::Dialog::gpNpcMainMenuDialog");
+int32_t gnDialogCounter = 0; D2_GLOBAL_GUARD(gnDialogCounter, "D2Client::UI::Dialog::gnDialogCounter");
+D2DialogStrc * gpDialogActual = 0; D2_GLOBAL_GUARD(gpDialogActual, "D2Client::UI::Dialog::gpDialogActual");
+uint32_t gnDialogCounter_b = 0; D2_GLOBAL_GUARD(gnDialogCounter_b, "D2Client::UI::Dialog::gnDialogCounter_b");
+D2DialogStrc * gpTradeAgreeDialog = 0; D2_GLOBAL_GUARD(gpTradeAgreeDialog, "D2Client::UI::Dialog::gpTradeAgreeDialog");
+D2DialogStrc * gpTradeCancelDialog = 0; D2_GLOBAL_GUARD(gpTradeCancelDialog, "D2Client::UI::Dialog::gpTradeCancelDialog");
+D2DialogStrc * gpHoradricCubeDialog = 0; D2_GLOBAL_GUARD(gpHoradricCubeDialog, "D2Client::UI::Dialog::gpHoradricCubeDialog");
 
 } // namespace D2Client::UI::Dialog
 
@@ -112357,15 +113577,15 @@ namespace D2Client::_Selection {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-eD2UnitType eSelectedUnitType = 0;
+eD2UnitType eSelectedUnitType = 0; D2_GLOBAL_GUARD(eSelectedUnitType, "D2Client::_Selection::eSelectedUnitType");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int nSelectedUnitGUID = 0;
-BOOL bHasSelectedUnit = 0;
-BOOL bCanSelectUnit = 0;
+int nSelectedUnitGUID = 0; D2_GLOBAL_GUARD(nSelectedUnitGUID, "D2Client::_Selection::nSelectedUnitGUID");
+BOOL bHasSelectedUnit = 0; D2_GLOBAL_GUARD(bHasSelectedUnit, "D2Client::_Selection::bHasSelectedUnit");
+BOOL bCanSelectUnit = 0; D2_GLOBAL_GUARD(bCanSelectUnit, "D2Client::_Selection::bCanSelectUnit");
 
 } // namespace D2Client::_Selection
 
@@ -112375,13 +113595,13 @@ namespace D2Client::Cursor {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-DC6 * pCursorsDC6[7] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+DC6 * pCursorsDC6[7] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }; D2_GLOBAL_GUARD(pCursorsDC6, "D2Client::Cursor::pCursorsDC6");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int nCursorDataIndex = 0;
+int nCursorDataIndex = 0; D2_GLOBAL_GUARD(nCursorDataIndex, "D2Client::Cursor::nCursorDataIndex");
 
 } // namespace D2Client::Cursor
 
@@ -112391,15 +113611,15 @@ namespace D2Client::Draw::Weather {
 // Initialized scalars
 // =============================================================================
 
-int gnWeatherRngRangeMax = 0;
-int gnWeatherRngRangeMaxAct5 = 0;
-int gnWeatherOffsetXModulo = 0;
-int gnWeatherParticleOffsetYModulo = 0;
-int gnWeatherRngRangeMin = 0;
-int gnWeatherRngRangeMinAct5 = 0;
-D2DataArrayStrc * pEnvironmentSplashes = 0;
-D2DataArrayStrc * pEnvironmentBubbles = 0;
-D2DataArrayStrc * pEnvironmentParticles = 0;
+int gnWeatherRngRangeMax = 0; D2_GLOBAL_GUARD(gnWeatherRngRangeMax, "D2Client::Draw::Weather::gnWeatherRngRangeMax");
+int gnWeatherRngRangeMaxAct5 = 0; D2_GLOBAL_GUARD(gnWeatherRngRangeMaxAct5, "D2Client::Draw::Weather::gnWeatherRngRangeMaxAct5");
+int gnWeatherOffsetXModulo = 0; D2_GLOBAL_GUARD(gnWeatherOffsetXModulo, "D2Client::Draw::Weather::gnWeatherOffsetXModulo");
+int gnWeatherParticleOffsetYModulo = 0; D2_GLOBAL_GUARD(gnWeatherParticleOffsetYModulo, "D2Client::Draw::Weather::gnWeatherParticleOffsetYModulo");
+int gnWeatherRngRangeMin = 0; D2_GLOBAL_GUARD(gnWeatherRngRangeMin, "D2Client::Draw::Weather::gnWeatherRngRangeMin");
+int gnWeatherRngRangeMinAct5 = 0; D2_GLOBAL_GUARD(gnWeatherRngRangeMinAct5, "D2Client::Draw::Weather::gnWeatherRngRangeMinAct5");
+D2DataArrayStrc * pEnvironmentSplashes = 0; D2_GLOBAL_GUARD(pEnvironmentSplashes, "D2Client::Draw::Weather::pEnvironmentSplashes");
+D2DataArrayStrc * pEnvironmentBubbles = 0; D2_GLOBAL_GUARD(pEnvironmentBubbles, "D2Client::Draw::Weather::pEnvironmentBubbles");
+D2DataArrayStrc * pEnvironmentParticles = 0; D2_GLOBAL_GUARD(pEnvironmentParticles, "D2Client::Draw::Weather::pEnvironmentParticles");
 
 } // namespace D2Client::Draw::Weather
 
@@ -112409,7 +113629,7 @@ namespace D2Client::Draw::LightMap {
 // Initialized scalars
 // =============================================================================
 
-D2LightMapStrc * gpLightMap = 0;
+D2LightMapStrc * gpLightMap = 0; D2_GLOBAL_GUARD(gpLightMap, "D2Client::Draw::LightMap::gpLightMap");
 
 } // namespace D2Client::Draw::LightMap
 
@@ -112419,19 +113639,19 @@ namespace D2Client::GAME::View {
 // Initialized scalars
 // =============================================================================
 
-uint32_t SHAKE_StartTickcount = 0;
-uint32_t SHAKE_Arg3 = 0;
-uint32_t SHAKE_Arg1 = 0;
-uint32_t SHAKE_Arg2 = 0;
-uint32_t SHAKE_OFFSET_Y = 0;
-int gnSoundShakeVolume = 0;
-uint32_t SHAKE_Amplitude = 0;
-uint32_t SHAKE_OFFSET_X = 0;
-uint8_t * * gpViewPalPointerTable32x8 = 0;
-uint8_t * gpViewPalByteTable32x16 = 0;
-uint8_t * gpViewPalByteTable16x32 = 0;
-uint8_t * * gpViewPalPointerTable32x32 = 0;
-uint8_t * gpViewPalByteTable32x40 = 0;
+uint32_t SHAKE_StartTickcount = 0; D2_GLOBAL_GUARD(SHAKE_StartTickcount, "D2Client::GAME::View::SHAKE_StartTickcount");
+uint32_t SHAKE_Arg3 = 0; D2_GLOBAL_GUARD(SHAKE_Arg3, "D2Client::GAME::View::SHAKE_Arg3");
+uint32_t SHAKE_Arg1 = 0; D2_GLOBAL_GUARD(SHAKE_Arg1, "D2Client::GAME::View::SHAKE_Arg1");
+uint32_t SHAKE_Arg2 = 0; D2_GLOBAL_GUARD(SHAKE_Arg2, "D2Client::GAME::View::SHAKE_Arg2");
+uint32_t SHAKE_OFFSET_Y = 0; D2_GLOBAL_GUARD(SHAKE_OFFSET_Y, "D2Client::GAME::View::SHAKE_OFFSET_Y");
+int gnSoundShakeVolume = 0; D2_GLOBAL_GUARD(gnSoundShakeVolume, "D2Client::GAME::View::gnSoundShakeVolume");
+uint32_t SHAKE_Amplitude = 0; D2_GLOBAL_GUARD(SHAKE_Amplitude, "D2Client::GAME::View::SHAKE_Amplitude");
+uint32_t SHAKE_OFFSET_X = 0; D2_GLOBAL_GUARD(SHAKE_OFFSET_X, "D2Client::GAME::View::SHAKE_OFFSET_X");
+uint8_t * * gpViewPalPointerTable32x8 = 0; D2_GLOBAL_GUARD(gpViewPalPointerTable32x8, "D2Client::GAME::View::gpViewPalPointerTable32x8");
+uint8_t * gpViewPalByteTable32x16 = 0; D2_GLOBAL_GUARD(gpViewPalByteTable32x16, "D2Client::GAME::View::gpViewPalByteTable32x16");
+uint8_t * gpViewPalByteTable16x32 = 0; D2_GLOBAL_GUARD(gpViewPalByteTable16x32, "D2Client::GAME::View::gpViewPalByteTable16x32");
+uint8_t * * gpViewPalPointerTable32x32 = 0; D2_GLOBAL_GUARD(gpViewPalPointerTable32x32, "D2Client::GAME::View::gpViewPalPointerTable32x32");
+uint8_t * gpViewPalByteTable32x40 = 0; D2_GLOBAL_GUARD(gpViewPalByteTable32x40, "D2Client::GAME::View::gpViewPalByteTable32x40");
 
 } // namespace D2Client::GAME::View
 
@@ -112441,7 +113661,7 @@ namespace D2Client::GAME::RosterPets {
 // Initialized scalars
 // =============================================================================
 
-D2RosterPetStrc * pRosterPet = 0;
+D2RosterPetStrc * pRosterPet = 0; D2_GLOBAL_GUARD(pRosterPet, "D2Client::GAME::RosterPets::pRosterPet");
 
 } // namespace D2Client::GAME::RosterPets
 
@@ -112451,9 +113671,9 @@ namespace D2Client::GAME::Roster {
 // Initialized scalars
 // =============================================================================
 
-D2RosterStrc * gpRosterPlayers = 0;
-D2RosterStrc * gpRosterOther = 0;
-D2RosterPartyListStrc * pRosterPartyList = 0;
+D2RosterStrc * gpRosterPlayers = 0; D2_GLOBAL_GUARD(gpRosterPlayers, "D2Client::GAME::Roster::gpRosterPlayers");
+D2RosterStrc * gpRosterOther = 0; D2_GLOBAL_GUARD(gpRosterOther, "D2Client::GAME::Roster::gpRosterOther");
+D2RosterPartyListStrc * pRosterPartyList = 0; D2_GLOBAL_GUARD(pRosterPartyList, "D2Client::GAME::Roster::pRosterPartyList");
 
 } // namespace D2Client::GAME::Roster
 
@@ -112474,7 +113694,7 @@ D2GridScreenCoordinates pTradePage2GridScreenCoordinates = {
     /* .nCellWidth = */ 0,
     /* .nCellHeight = */ 0,
     /* .pad_16 = */ 0
-};
+}; D2_GLOBAL_GUARD(pTradePage2GridScreenCoordinates, "D2Client::UI::Inv::pTradePage2GridScreenCoordinates");
 
 D2GridScreenCoordinates pBigBankPageGridScreenCoordinates = {
     /* .nGridCols = */ 0,
@@ -112487,9 +113707,9 @@ D2GridScreenCoordinates pBigBankPageGridScreenCoordinates = {
     /* .nCellWidth = */ 0,
     /* .nCellHeight = */ 0,
     /* .pad_16 = */ 0
-};
+}; D2_GLOBAL_GUARD(pBigBankPageGridScreenCoordinates, "D2Client::UI::Inv::pBigBankPageGridScreenCoordinates");
 
-uint8_t gaInvHighlightColors[5] = { 0, 0, 0, 0, 0 };
+uint8_t gaInvHighlightColors[5] = { 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gaInvHighlightColors, "D2Client::UI::Inv::gaInvHighlightColors");
 
 D2GridScreenCoordinates pTradePage1GridScreenCoordinates = {
     /* .nGridCols = */ 0,
@@ -112502,7 +113722,7 @@ D2GridScreenCoordinates pTradePage1GridScreenCoordinates = {
     /* .nCellWidth = */ 0,
     /* .nCellHeight = */ 0,
     /* .pad_16 = */ 0
-};
+}; D2_GLOBAL_GUARD(pTradePage1GridScreenCoordinates, "D2Client::UI::Inv::pTradePage1GridScreenCoordinates");
 
 D2GridScreenCoordinates pBankPageGridScreenCoordinates = {
     /* .nGridCols = */ 0,
@@ -112515,7 +113735,7 @@ D2GridScreenCoordinates pBankPageGridScreenCoordinates = {
     /* .nCellWidth = */ 0,
     /* .nCellHeight = */ 0,
     /* .pad_16 = */ 0
-};
+}; D2_GLOBAL_GUARD(pBankPageGridScreenCoordinates, "D2Client::UI::Inv::pBankPageGridScreenCoordinates");
 
 D2GridScreenCoordinates pNpcInventoryGridScreenCoordinates = {
     /* .nGridCols = */ 0,
@@ -112528,7 +113748,7 @@ D2GridScreenCoordinates pNpcInventoryGridScreenCoordinates = {
     /* .nCellWidth = */ 0,
     /* .nCellHeight = */ 0,
     /* .pad_16 = */ 0
-};
+}; D2_GLOBAL_GUARD(pNpcInventoryGridScreenCoordinates, "D2Client::UI::Inv::pNpcInventoryGridScreenCoordinates");
 
 D2GridScreenCoordinates pTransmogrifyBoxGridScreenCoordinates = {
     /* .nGridCols = */ 0,
@@ -112541,7 +113761,7 @@ D2GridScreenCoordinates pTransmogrifyBoxGridScreenCoordinates = {
     /* .nCellWidth = */ 0,
     /* .nCellHeight = */ 0,
     /* .pad_16 = */ 0
-};
+}; D2_GLOBAL_GUARD(pTransmogrifyBoxGridScreenCoordinates, "D2Client::UI::Inv::pTransmogrifyBoxGridScreenCoordinates");
 
 D2GridScreenCoordinates pInventoryGridScreenCoordinated = {
     /* .nGridCols = */ 0,
@@ -112554,7 +113774,7 @@ D2GridScreenCoordinates pInventoryGridScreenCoordinated = {
     /* .nCellWidth = */ 0,
     /* .nCellHeight = */ 0,
     /* .pad_16 = */ 0
-};
+}; D2_GLOBAL_GUARD(pInventoryGridScreenCoordinated, "D2Client::UI::Inv::pInventoryGridScreenCoordinated");
 
 D2GridScreenCoordinates pHirelingGridScreenCoordinates = {
     /* .nGridCols = */ 0,
@@ -112567,7 +113787,7 @@ D2GridScreenCoordinates pHirelingGridScreenCoordinates = {
     /* .nCellWidth = */ 0,
     /* .nCellHeight = */ 0,
     /* .pad_16 = */ 0
-};
+}; D2_GLOBAL_GUARD(pHirelingGridScreenCoordinates, "D2Client::UI::Inv::pHirelingGridScreenCoordinates");
 
 } // namespace D2Client::UI::Inv
 
@@ -112577,16 +113797,16 @@ namespace D2Client::UI::Hireables {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-DC6 * ClassIcons[7] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+DC6 * ClassIcons[7] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }; D2_GLOBAL_GUARD(ClassIcons, "D2Client::UI::Hireables::ClassIcons");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-uint8_t HealthBarGreen = 0;
-uint8_t HealthBarYellowish = 0;
-uint8_t HealthBarRed = 0;
-bool HealthBarColorsInitialized = 0;
+uint8_t HealthBarGreen = 0; D2_GLOBAL_GUARD(HealthBarGreen, "D2Client::UI::Hireables::HealthBarGreen");
+uint8_t HealthBarYellowish = 0; D2_GLOBAL_GUARD(HealthBarYellowish, "D2Client::UI::Hireables::HealthBarYellowish");
+uint8_t HealthBarRed = 0; D2_GLOBAL_GUARD(HealthBarRed, "D2Client::UI::Hireables::HealthBarRed");
+bool HealthBarColorsInitialized = 0; D2_GLOBAL_GUARD(HealthBarColorsInitialized, "D2Client::UI::Hireables::HealthBarColorsInitialized");
 
 } // namespace D2Client::UI::Hireables
 
@@ -112596,25 +113816,25 @@ namespace D2Client::UI::Panel {
 // Initialized scalars
 // =============================================================================
 
-DC6 * runbutton = 0;
-DC6 * ctrlpnl_popbelt = 0;
-DC6 * GemSocket = 0;
-DC6 * _00BorderFrame = 0;
-DC6 * CtrlPnl7 = 0;
-DC6 * skillpoints = 0;
-DC6 * Invwarn = 0;
-DC6 * hostilepic = 0;
-DC6 * menupanel = 0;
-DC6 * DuroIcon = 0;
-DC6 * InvChar = 0;
-DC6 * Hlthmana = 0;
-DC6 * menubutton = 0;
-DC6 * _00CtrlPnl7 = 0;
-DC6 * Arrow = 0;
-DC6 * btn = 0;
-DC6 * overlap = 0;
-BOOL bShowHpText = 0;
-BOOL bShowmpText = 0;
+DC6 * runbutton = 0; D2_GLOBAL_GUARD(runbutton, "D2Client::UI::Panel::runbutton");
+DC6 * ctrlpnl_popbelt = 0; D2_GLOBAL_GUARD(ctrlpnl_popbelt, "D2Client::UI::Panel::ctrlpnl_popbelt");
+DC6 * GemSocket = 0; D2_GLOBAL_GUARD(GemSocket, "D2Client::UI::Panel::GemSocket");
+DC6 * _00BorderFrame = 0; D2_GLOBAL_GUARD(_00BorderFrame, "D2Client::UI::Panel::_00BorderFrame");
+DC6 * CtrlPnl7 = 0; D2_GLOBAL_GUARD(CtrlPnl7, "D2Client::UI::Panel::CtrlPnl7");
+DC6 * skillpoints = 0; D2_GLOBAL_GUARD(skillpoints, "D2Client::UI::Panel::skillpoints");
+DC6 * Invwarn = 0; D2_GLOBAL_GUARD(Invwarn, "D2Client::UI::Panel::Invwarn");
+DC6 * hostilepic = 0; D2_GLOBAL_GUARD(hostilepic, "D2Client::UI::Panel::hostilepic");
+DC6 * menupanel = 0; D2_GLOBAL_GUARD(menupanel, "D2Client::UI::Panel::menupanel");
+DC6 * DuroIcon = 0; D2_GLOBAL_GUARD(DuroIcon, "D2Client::UI::Panel::DuroIcon");
+DC6 * InvChar = 0; D2_GLOBAL_GUARD(InvChar, "D2Client::UI::Panel::InvChar");
+DC6 * Hlthmana = 0; D2_GLOBAL_GUARD(Hlthmana, "D2Client::UI::Panel::Hlthmana");
+DC6 * menubutton = 0; D2_GLOBAL_GUARD(menubutton, "D2Client::UI::Panel::menubutton");
+DC6 * _00CtrlPnl7 = 0; D2_GLOBAL_GUARD(_00CtrlPnl7, "D2Client::UI::Panel::_00CtrlPnl7");
+DC6 * Arrow = 0; D2_GLOBAL_GUARD(Arrow, "D2Client::UI::Panel::Arrow");
+DC6 * btn = 0; D2_GLOBAL_GUARD(btn, "D2Client::UI::Panel::btn");
+DC6 * overlap = 0; D2_GLOBAL_GUARD(overlap, "D2Client::UI::Panel::overlap");
+BOOL bShowHpText = 0; D2_GLOBAL_GUARD(bShowHpText, "D2Client::UI::Panel::bShowHpText");
+BOOL bShowmpText = 0; D2_GLOBAL_GUARD(bShowmpText, "D2Client::UI::Panel::bShowmpText");
 
 } // namespace D2Client::UI::Panel
 
@@ -112624,13 +113844,13 @@ namespace D2Client::UI::Party {
 // Initialized scalars
 // =============================================================================
 
-D2UiPartyStrc * pUiParty = 0;
-DC6 * pMenu_party = 0;
-DC6 * pMenu_partybuttons = 0;
-DC6 * pMenu_partyboxes = 0;
-DC6 * pPanel_inv_goldbtn = 0;
-DC6 * pMenu_partybar = 0;
-uint8_t cRed = 0;
+D2UiPartyStrc * pUiParty = 0; D2_GLOBAL_GUARD(pUiParty, "D2Client::UI::Party::pUiParty");
+DC6 * pMenu_party = 0; D2_GLOBAL_GUARD(pMenu_party, "D2Client::UI::Party::pMenu_party");
+DC6 * pMenu_partybuttons = 0; D2_GLOBAL_GUARD(pMenu_partybuttons, "D2Client::UI::Party::pMenu_partybuttons");
+DC6 * pMenu_partyboxes = 0; D2_GLOBAL_GUARD(pMenu_partyboxes, "D2Client::UI::Party::pMenu_partyboxes");
+DC6 * pPanel_inv_goldbtn = 0; D2_GLOBAL_GUARD(pPanel_inv_goldbtn, "D2Client::UI::Party::pPanel_inv_goldbtn");
+DC6 * pMenu_partybar = 0; D2_GLOBAL_GUARD(pMenu_partybar, "D2Client::UI::Party::pMenu_partybar");
+uint8_t cRed = 0; D2_GLOBAL_GUARD(cRed, "D2Client::UI::Party::cRed");
 
 } // namespace D2Client::UI::Party
 
@@ -112641,15 +113861,15 @@ namespace D2Client::_Interaction {
 // =============================================================================
 
 // also labelled: nUnknownUiRelatedMaybe
-eD2NpcUiState geNpcUiState = 0;
+eD2NpcUiState geNpcUiState = 0; D2_GLOBAL_GUARD(geNpcUiState, "D2Client::_Interaction::geNpcUiState");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int nCurrentInteractedNpcGUID = 0;
-BOOL bInteractingWithNpc = 0;
-int nCurrentInteractedNpcClassId = 0;
+int nCurrentInteractedNpcGUID = 0; D2_GLOBAL_GUARD(nCurrentInteractedNpcGUID, "D2Client::_Interaction::nCurrentInteractedNpcGUID");
+BOOL bInteractingWithNpc = 0; D2_GLOBAL_GUARD(bInteractingWithNpc, "D2Client::_Interaction::bInteractingWithNpc");
+int nCurrentInteractedNpcClassId = 0; D2_GLOBAL_GUARD(nCurrentInteractedNpcClassId, "D2Client::_Interaction::nCurrentInteractedNpcClassId");
 
 } // namespace D2Client::_Interaction
 
@@ -112740,13 +113960,13 @@ struct D2MercForHire D2MercForHire[10] = {
         /* .bActive = */ 0,
         /* .field5_0xc = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(D2MercForHire, "D2Client::Merc::D2MercForHire");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int nMercReviveCost = 0;
+int nMercReviveCost = 0; D2_GLOBAL_GUARD(nMercReviveCost, "D2Client::Merc::nMercReviveCost");
 
 } // namespace D2Client::Merc
 

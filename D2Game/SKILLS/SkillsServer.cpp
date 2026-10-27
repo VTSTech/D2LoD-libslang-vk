@@ -851,7 +851,7 @@ D2UnitFindDataStrc * __fastcall SKILLS_FindUnitsInRange(int32_t nParam1, D2UnitS
     sUnitFindArg.nDistance = nRange;
     sUnitFindArg.pAttacker = pUnit;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::Units::UnitFinds::InitializeUnitFindData(*(::SGAMEDATA**)(nParam1 + 0x1c), pUnitFindData, pRoom, nX, nY, nRange, nullptr, &sUnitFindArg);
+    D2Common::Units::UnitFinds::InitializeUnitFindData(*(D2PoolManagerStrc**)(nParam1 + 0x1c), pUnitFindData, pRoom, nX, nY, nRange, nullptr, &sUnitFindArg);
     D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(pUnitFindData);
     return pUnitFindData;
 }
@@ -1162,7 +1162,7 @@ void __fastcall SKILLS_SetSkillDataByEType(D2UnitStrc * pUnitStrc, uint32_t nUni
 // Accumulates one elemental damage component (fire/lightning/magic/cold/poison/life-leech/mana-leech/stam-leech/stun/burn/freeze) into a D2DamageStrc event for pUnit. If eSkillType is unkwn5, rolls pUnit's seed to pick a random element from geSkillETypeTable and writes the resolved type back via pnParam. Sets dwHitClass and optionally outputs a hit-SFX id to pdwHitSfxOut.
 void __fastcall SERVER_AppendDamageToUnitEvent(D2UnitStrc * pUnit, D2DamageStrc * pEvent, eSkillEType eSkillType, int32_t randomizeValue, int32_t nDuration, uint32_t * pdwHitSfxOut, int * pnParam) {
     // Static local variables (originally global data)
-    static int geSkillETypeTable[4] = { 0x1, 0x2, 0x4, 0x5 };
+    static int geSkillETypeTable[4] = { 0x1, 0x2, 0x4, 0x5 }; D2_STATIC_GUARD(geSkillETypeTable, "D2Game::SKILLS::SkillsServer::SERVER_AppendDamageToUnitEvent::geSkillETypeTable");
 
     if (eSkillType == unkwn5) {
       D2SeedStrc sRolledSeed;
@@ -1924,7 +1924,7 @@ void __fastcall SKILLS_CreateMissileRing(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     0x0,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(ganMissileRingCosTable, "D2Game::SKILLS::SkillsServer::SKILLS_CreateMissileRing::ganMissileRingCosTable");
     static uint8_t ganMissileRingYOffsets[256] = {
     0x0,
     0x0,
@@ -2182,7 +2182,7 @@ void __fastcall SKILLS_CreateMissileRing(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     0xff,
     0xff,
     0xff
-};
+}; D2_STATIC_GUARD(ganMissileRingYOffsets, "D2Game::SKILLS::SkillsServer::SKILLS_CreateMissileRing::ganMissileRingYOffsets");
 
     D2SkillArgStrc sSkillArg;
     memset(&sSkillArg, 0, 0x5c);
@@ -2226,12 +2226,12 @@ void __fastcall SKILLS_CreateMissileRing(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 // Spawns a star-pattern burst of missiles for skills like Meteor/Nova rings. Fires one central missile offset (+14,-14), then iterates ring rows (up to 7 rings, 5 missiles per ring) using gaSkillMissileStarOffsets lookup tables to compute symmetric X/Y offsets, calling CreatingMissile for each. Halts with an unrecoverable error if nMissileCount exceeds the supported ring table size.
 void __fastcall SKILLS_CreateMissileStar(::SGAMEDATA * pGame, int32_t nMissileCount, D2SkillArgStrc * pSkillArg) {
     // Static local variables (originally global data)
-    static int gnSkillMissileOffset_SkillStar2[8] = { 0x0, 0x0, 0x14, -0x14, 0xe, 0xe, -0xe, -0xe };
-    static int gnSkillMissileOffset_SkillStar1[8] = { 0x14, -0x14, 0x0, 0x0, 0xe, -0xe, -0xe, 0xe };
-    static int gaSkillMissileStarOffsets_1[7] = { 0x8, 0x2, 0xb, 0x4, 0xd, 0x6, 0x9 };
-    static int gaSkillMissileStarOffsets_2[4] = { -0x1, -0x1, 0x1, 0x1 };
-    static int gaSkillMissileStarOffsets_3[7] = { 0x12, 0x14, 0x11, 0x14, 0xf, 0x13, 0x12 };
-    static int gaSkillMissileStarOffsets_4[4] = { -0x1, 0x1, 0x1, -0x1 };
+    static int gnSkillMissileOffset_SkillStar2[8] = { 0x0, 0x0, 0x14, -0x14, 0xe, 0xe, -0xe, -0xe }; D2_STATIC_GUARD(gnSkillMissileOffset_SkillStar2, "D2Game::SKILLS::SkillsServer::SKILLS_CreateMissileStar::gnSkillMissileOffset_SkillStar2");
+    static int gnSkillMissileOffset_SkillStar1[8] = { 0x14, -0x14, 0x0, 0x0, 0xe, -0xe, -0xe, 0xe }; D2_STATIC_GUARD(gnSkillMissileOffset_SkillStar1, "D2Game::SKILLS::SkillsServer::SKILLS_CreateMissileStar::gnSkillMissileOffset_SkillStar1");
+    static int gaSkillMissileStarOffsets_1[7] = { 0x8, 0x2, 0xb, 0x4, 0xd, 0x6, 0x9 }; D2_STATIC_GUARD(gaSkillMissileStarOffsets_1, "D2Game::SKILLS::SkillsServer::SKILLS_CreateMissileStar::gaSkillMissileStarOffsets_1");
+    static int gaSkillMissileStarOffsets_2[4] = { -0x1, -0x1, 0x1, 0x1 }; D2_STATIC_GUARD(gaSkillMissileStarOffsets_2, "D2Game::SKILLS::SkillsServer::SKILLS_CreateMissileStar::gaSkillMissileStarOffsets_2");
+    static int gaSkillMissileStarOffsets_3[7] = { 0x12, 0x14, 0x11, 0x14, 0xf, 0x13, 0x12 }; D2_STATIC_GUARD(gaSkillMissileStarOffsets_3, "D2Game::SKILLS::SkillsServer::SKILLS_CreateMissileStar::gaSkillMissileStarOffsets_3");
+    static int gaSkillMissileStarOffsets_4[4] = { -0x1, 0x1, 0x1, -0x1 }; D2_STATIC_GUARD(gaSkillMissileStarOffsets_4, "D2Game::SKILLS::SkillsServer::SKILLS_CreateMissileStar::gaSkillMissileStarOffsets_4");
 
     int iRingCol;
     D2SkillArgStrc* pSkillArgCopy = pSkillArg;
@@ -2551,7 +2551,7 @@ void __fastcall SKILLS_ForEachUnitInRangeCallback(::SGAMEDATA * pGame, int32_t n
     D2UnitStrc* pUnit_00 = pUnit;
     ::SGAMEDATA* pGameCopy = pGame;
     if (!ppfnProc) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
       exit(-1);
     }
 
@@ -2574,11 +2574,11 @@ void __fastcall SKILLS_ForEachUnitInRangeCallback(::SGAMEDATA * pGame, int32_t n
       return;
     }
 
-    D2Common::Units::UnitFinds::InitializeUnitFindData((::SGAMEDATA*)pGameCopy->pMemoryPool, &sUnitFindData, pRoom, (int32_t)pTargetX, nCursorYPos, nDistance, nullptr, &sUnitFindArg);
+    D2Common::Units::UnitFinds::InitializeUnitFindData(pGameCopy->pMemoryPool, &sUnitFindData, pRoom, (int32_t)pTargetX, nCursorYPos, nDistance, nullptr, &sUnitFindArg);
     D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&sUnitFindData);
     /* FARPROC lpfn for IsBadCodePtr */ _bIsBadCode = IsBadCodePtr((FARPROC)ppfnProc);
     if (_bIsBadCode) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1061);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x1061);
       exit(-1);
     }
 
@@ -2605,7 +2605,7 @@ void __fastcall SKILLS_ForEachUnitBaalWave(::SGAMEDATA * pGame, D2BaalWaveParamS
     D2UnitFindDataStrc sParam;
     int iUnit;
     if (!pBaalWaveParam) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x10b8);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x10b8);
       exit(-1);
     } else {
       int32_t nX_00;
@@ -2629,12 +2629,12 @@ void __fastcall SKILLS_ForEachUnitBaalWave(::SGAMEDATA * pGame, D2BaalWaveParamS
           return;
         }
 
-        D2Common::Units::UnitFinds::InitializeUnitFindData((::SGAMEDATA*)pGame->pMemoryPool, &sParam, pRoom, pBaalWaveParam->nX, pBaalWaveParam->nY, nDistance, nullptr, &sSkillParam);
+        D2Common::Units::UnitFinds::InitializeUnitFindData(pGame->pMemoryPool, &sParam, pRoom, pBaalWaveParam->nX, pBaalWaveParam->nY, nDistance, nullptr, &sSkillParam);
         sParam.nFlags = pBaalWaveParam->nUnitFindFlags;
         D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&sParam);
         /* FARPROC lpfn for IsBadCodePtr */ _bIsBadCode = IsBadCodePtr((FARPROC)pBaalWaveParam->fpFunction);
         if (_bIsBadCode) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x10db);
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x10db);
           exit(-1);
         }
 
@@ -2650,7 +2650,7 @@ void __fastcall SKILLS_ForEachUnitBaalWave(::SGAMEDATA * pGame, D2BaalWaveParamS
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x10b9);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x10b9);
       exit(-1);
     }
 }
@@ -2918,7 +2918,7 @@ D2UnitStrc * __fastcall SKILLS_FindNearbyCorpse(D2UnitStrc * pUnit, D2UnitStrc *
     UNITFINDTEST fpCorpseTestCallback = (UNITFINDTEST)SKILLS_UnitFindTestCallback;
     int32_t nCorpseRadius = 10;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit2);
-    D2Common::Units::UnitFinds::InitializeUnitFindData((::SGAMEDATA*)pGame->pMemoryPool, &local_34, pRoom, nX, nY, nCorpseRadius, fpCorpseTestCallback, pFindArgPtr);
+    D2Common::Units::UnitFinds::InitializeUnitFindData(pGame->pMemoryPool, &local_34, pRoom, nX, nY, nCorpseRadius, fpCorpseTestCallback, pFindArgPtr);
     D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&local_34);
     D2UnitStrc* pFoundCorpse = 0;
     if (local_34.nCountedUnits) {
@@ -3120,7 +3120,7 @@ D2SUnitEventStrc * __fastcall D2SetAuraEvent(::SGAMEDATA * pGame, D2UnitStrc * p
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(ITEMSTATCOST_ITEMEVENTFUNC, "D2Game::SKILLS::SkillsServer::D2SetAuraEvent::ITEMSTATCOST_ITEMEVENTFUNC");
 
     if (!(nItemEventFuncId < 0x32 && ITEMSTATCOST_ITEMEVENTFUNC[nItemEventFuncId])) {
       return nullptr;
@@ -4051,7 +4051,7 @@ int32_t __fastcall SKILL_SpawnMissileFunction(::SGAMEDATA * pGame, D2UnitStrc * 
     if (SKILLSRVDOFUNCS[nSkillLevel]) {
       nResult = (*SKILLSRVDOFUNCS[nSkillLevel])(_pGame, pUnit, eSkill, nSkillLvl);
     }
-    if (pSkillsTxt->srvmissile < 0 || (pMissileTxt = D2Client::GetMissleById((int)pSkillsTxt->srvmissile) , !pMissileTxt)) {
+    if (pSkillsTxt->srvmissile[0] < 0 || (pMissileTxt = D2Client::GetMissleById((int)pSkillsTxt->srvmissile[0]) , !pMissileTxt)) {
       if (!nResult) {
         return 0;
       }
@@ -4079,10 +4079,10 @@ int32_t __fastcall SKILL_SpawnMissileFunction(::SGAMEDATA * pGame, D2UnitStrc * 
         }
       }
       if (!pSkillsTxt->lob) {
-        CreatingAMissile(_pGame, (int)pSkillsTxt->srvmissile, pUnit, eSkill, nSkillLvl, nOffsetX, nOffsetY, nResult, nMissileDestY, 0);
+        CreatingAMissile(_pGame, (int)pSkillsTxt->srvmissile[0], pUnit, eSkill, nSkillLvl, nOffsetX, nOffsetY, nResult, nMissileDestY, 0);
         nResult = 1;
       } else {
-        SKILLS_CreateMissileFromUnit(_pGame, (int)pSkillsTxt->srvmissile, pUnit, eSkill, nSkillLvl, nOffsetX, nOffsetY, nResult, nMissileDestY, 0);
+        SKILLS_CreateMissileFromUnit(_pGame, (int)pSkillsTxt->srvmissile[0], pUnit, eSkill, nSkillLvl, nOffsetX, nOffsetY, nResult, nMissileDestY, 0);
         nResult = 1;
       }
     }

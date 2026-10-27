@@ -33,20 +33,20 @@
 
 namespace D2Common::Txt::Cube {
 
-static uint8_t gaCubeRecipeItemTypeFlags_25 = 0x65;
-static uint8_t gaCubeRecipeItemTypeFlags_24 = 0x65;
-static uint8_t gaCubeRecipeItemTypeFlags_21 = 0x65;
-static uint8_t gaCubeRecipeItemTypeFlags_18 = 0x74;
-static uint8_t gaCubeRecipeItemTypeFlags_17 = 0x63;
-static uint8_t gaCubeRecipeItemTypeFlags_16 = 0x75;
-static uint8_t gaCubeRecipeItemTypeFlags_15 = 0x72;
-static uint8_t gaCubeRecipeItemTypeFlags_14 = 0x6d;
-static uint8_t gaCubeRecipeItemTypeFlags_13 = 0x68;
-static uint8_t gaCubeRecipeItemTypeFlags_12 = 0x6e;
-static uint8_t gaCubeRecipeItemTypeFlags_11 = 0x6c;
-static uint8_t gaCubeRecipeItemTypeFlags_10 = 0x71;
-static char gaCubeRecipeItemTypeFlags_9[3] = { '=', ',', '\x00' };
-static char gaCubeRecipeItemTypeFlags_7[2] = { ',', '\x00' };
+static uint8_t gaCubeRecipeItemTypeFlags_25 = 0x65; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_25, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_25");
+static uint8_t gaCubeRecipeItemTypeFlags_24 = 0x65; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_24, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_24");
+static uint8_t gaCubeRecipeItemTypeFlags_21 = 0x65; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_21, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_21");
+static uint8_t gaCubeRecipeItemTypeFlags_18 = 0x74; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_18, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_18");
+static uint8_t gaCubeRecipeItemTypeFlags_17 = 0x63; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_17, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_17");
+static uint8_t gaCubeRecipeItemTypeFlags_16 = 0x75; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_16, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_16");
+static uint8_t gaCubeRecipeItemTypeFlags_15 = 0x72; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_15, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_15");
+static uint8_t gaCubeRecipeItemTypeFlags_14 = 0x6d; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_14, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_14");
+static uint8_t gaCubeRecipeItemTypeFlags_13 = 0x68; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_13, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_13");
+static uint8_t gaCubeRecipeItemTypeFlags_12 = 0x6e; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_12, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_12");
+static uint8_t gaCubeRecipeItemTypeFlags_11 = 0x6c; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_11, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_11");
+static uint8_t gaCubeRecipeItemTypeFlags_10 = 0x71; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_10, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_10");
+static char gaCubeRecipeItemTypeFlags_9[3] = { '=', ',', '\x00' }; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_9, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_9");
+static char gaCubeRecipeItemTypeFlags_7[2] = { ',', '\x00' }; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_7, "D2Common::Txt::Cube::gaCubeRecipeItemTypeFlags_7");
 
 // Pads item code strings with spaces to 4 characters. Copies input string to output buffer and fills remaining characters with spaces (0x20). Used when parsing cube recipe item codes from CubMain.txt to normalize them for comparison.
 void CUBE_PadItemCodeString(char * szText1, char * szText2) {
@@ -104,7 +104,7 @@ int32_t CUBE_TokenizeAndParseInt(char * szText, char * * ppszText) {
 // Parses one cube-recipe input-item token from cubemain.txt into a D2CubeInputStrc. Strips quotes, splits the leading code on the type-flag delimiters, and resolves it in order: "any" (wildcard, classid 0xffff), an item-type via GetClassIdFromName, an item code via ConvertItemCodeToClassIdAndGetItemsTxtLine, else a unique/set item by link-table lookup (sets quality 7/5 and nUniqueItemId). Then iterates the remaining comma/flag-separated tokens setting nQuality (low/nor/hiq/mag/set/rar/uni/crf/tmp = 1..9), quantity ("qty"=N), and the wFlagsAndUpgrade bitmask (nos/sock/noe/eth/upg/bas/exc/eli/nru). Returns 1 on success, 0 if the code cannot be resolved. Custom convention: pszField in EAX, pInput on stack.
 void __stdcall CUBE_ParseInputItem(char * pszField, D2CubeInputStrc * pInput) {
     // Static local variables (originally global data)
-    static int gaCubeRecipeItemTypeFlags_8 = 0x796e61;
+    static int gaCubeRecipeItemTypeFlags_8 = 0x796e61; D2_STATIC_GUARD(gaCubeRecipeItemTypeFlags_8, "D2Common::Txt::Cube::CUBE_ParseInputItem::gaCubeRecipeItemTypeFlags_8");
 
     int32_t nClassId;
     D2ItemsTxt* pItemsTxt;

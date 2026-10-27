@@ -256,7 +256,7 @@ void PlaceCliffs(D2DrlgLevelStrc * pLevel) {
     0x2,
     0x4,
     0x8
-};
+}; D2_STATIC_GUARD(gaCliffWallGridOffsets, "D2Common::Drlg::OutDesr::PlaceCliffs::gaCliffWallGridOffsets");
 
     D2SeedStrc sNextSeed = D2_SEED_NEXT(pLevel->sSeed);
     pLevel->sSeed = sNextSeed;
@@ -270,21 +270,21 @@ void PlaceCliffs(D2DrlgLevelStrc * pLevel) {
 }
 
 void __fastcall AddExits(D2DrlgLevelStrc * pLevel) {
-    int32_t nExitPresetId;
+    int32_t nLine;
     switch (pLevel->eD2LevelId) {
       case 0x29:
 
       case 0x2a:
-        nExitPresetId = 0x184;
+        nLine = 0x184;
       break;
       case 0x2b:
-        nExitPresetId = 0x186;
+        nLine = 0x186;
       break;
       case 0x2c:
-        nExitPresetId = 0x19c;
+        nLine = 0x19c;
       break;
       case 0x2d:
-        nExitPresetId = 0x185;
+        nLine = 0x185;
       break;
       default:
         {
@@ -293,7 +293,7 @@ void __fastcall AddExits(D2DrlgLevelStrc * pLevel) {
         }
     }
 
-    BOOL bSpawnResult = Outdoors::SpawnOutdoorLevelPreset(pLevel, nExitPresetId, -1, 0, '\x0f');
+    BOOL bSpawnResult = Outdoors::SpawnOutdoorLevelPreset(pLevel, nLine, -1, 0, '\x0f');
     if (bSpawnResult) {
       return;
     }

@@ -126,15 +126,15 @@ void __fastcall FORMS_DestroyD2WinImageEx(::D2WinImageEx * pWinImageEx) {
 // Sets nFrame (+0x40), clamped to [0, IMAGE_GetFramesCount(pCellFile)-1]; halts unless the control type is 2 (image); returns TRUE.
 // The asm clamps the argument and stores it to [ESI+0x40] (004fd156).
 BOOL __stdcall D2WINIMAGE_SetFrame(::D2WinImage * pImage, int32_t nFrame) {
-    int32_t nErrAddr;
+    int32_t nLine;
     if (pImage->sControl.neD2FormType != FORM_Image) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8b);
       exit(-1);
     }
 
-    nErrAddr = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(pImage->sControl.pDC6);
-    if (nErrAddr - 1 < nFrame) {
-      nFrame = nErrAddr - 1;
+    nLine = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(pImage->sControl.pDC6);
+    if (nLine - 1 < nFrame) {
+      nFrame = nLine - 1;
     }
     if (nFrame < 0) {
       nFrame = 0;
@@ -157,14 +157,14 @@ BOOL __stdcall D2WINIMAGE_SetDrawModeSolid(::D2WinImage * pImage, DRAWMODE eDraw
 }
 
 int __stdcall D2WINIMAGE_StopAnimation(int * pImage) {
-    int32_t nAddress;
+    int32_t nLine;
     if (*pImage != 2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa9);
       exit(-1);
     }
 
-    nAddress = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount((DC6*)pImage[1]);
-    return nAddress;
+    nLine = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount((DC6*)pImage[1]);
+    return nLine;
 }
 
 BOOL __fastcall Draw(::D2WinImage * pImage) {
@@ -174,7 +174,7 @@ BOOL __fastcall Draw(::D2WinImage * pImage) {
     int nTileRowCount;
     int nTileDrawY;
     if (pImage->sControl.neD2FormType != FORM_Image) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0xb6);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0xb6);
       exit(-1);
     }
 

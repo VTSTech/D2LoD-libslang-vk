@@ -25,7 +25,7 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
+#include "D2Common/Text.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -121,7 +121,7 @@ void __fastcall Q37_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       return;
     }
 
-    D2GossipTextStrc* sTextMessage = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
+    D2GSPacketSrv0x27_TextStrc* sTextMessage = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
     if (nPlayerClassId == nCharClass) {
       AddGossipMessageOnMonster(pQuestData, sTextMessage, nMonStatsId, 1);
       return;

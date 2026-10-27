@@ -8,6 +8,7 @@
 #include <cstdarg>
 #include "d2_platform.h"
 #include "D2Common/D2SeedStrc.h"
+#include "D2Common/Unit/D2UnitDataItemStrc.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Objects/Objects.h"
 
@@ -16,8 +17,8 @@ struct D2AiGeneralStrc;
 struct D2BitBufferStrc;
 struct D2CUnitEventStrc;
 struct D2ClientStrc;
-struct D2InventoryStrc;
 struct D2LightMapStrc;
+struct D2MissileStreamStrc;
 struct D2MonStatsTxt;
 struct D2PartyDataStrc;
 struct D2RoomStrc;
@@ -32,7 +33,6 @@ struct D2UnitStrc;
 struct D2UnknownStructure0x18;
 struct D2WaypointStrc;
 struct SGAMEDATA;
-typedef int eD2ItemCmd;
 typedef int eD2ItemFlag;
 typedef int eD2ItemQuality;
 typedef int eD2LevelId;
@@ -40,9 +40,6 @@ typedef int eD2Skills;
 typedef int eD2UnitStat;
 typedef int eD2UnitType;
 typedef int eSkillEType;
-typedef uint8_t eD2BodyLoc;
-typedef uint8_t eD2InventoryGrid;
-typedef uint8_t eD2InventoryGridType;
 typedef uint8_t eInventoryPage;
 
 // Data types
@@ -111,15 +108,7 @@ struct D2UnitDataItemStrc {
     /* 0x49 */ bool bVariant; // Item variant flag
     /* 0x4A */ char szPlayerName[16]; // Player name (for ears/personalized items)
     /* 0x5A */ int16_t wRuneWordIndex; // Runeword ID
-    /* 0x5C */ struct D2InventoryStrc * pInventory; // Socketed items inventory
-    /* 0x60 */ struct D2UnitStrc * pPrevItem; // Previous item in linked list
-    /* 0x64 */ struct D2UnitStrc * pNextItem; // Next item in linked list
-    /* 0x68 */ eD2InventoryGrid eInventoryGrid; // Grid type
-    /* 0x69 */ eD2InventoryGridType eInventoryGridType; // Grid subtype
-    /* 0x6A */ uint8_t unk0x6A;
-    /* 0x6B */ uint8_t unk0x6B;
-    /* 0x6C */ struct D2UnitStrc * pPrevItemInPage; // Previous item in page linked list
-    /* 0x70 */ struct D2UnitStrc * pNextItemInPage; // Next item in page linked list
+    /* 0x5C */ D2ItemInventoryNodeStrc sInvNode; // Socketed items inventory
 };
 #pragma pack(pop)
 
@@ -139,7 +128,7 @@ struct __attribute__((packed)) D2UnitDataMissileStrc {
     /* 0x24 */ int32_t nTargetGUID; // GUID of the target unit
     /* 0x28 */ int nHomeStatus; // Homing status
     /* 0x2C */ int sCoords; // Target/origin coordinates (packed short x,y)
-    /* 0x30 */ int unk0x30; // Unknown last field
+    /* 0x30 */ struct D2MissileStreamStrc * unk0x30; // Unknown last field
 };
 
 struct __attribute__((packed)) D2UnitDataMonsterStrc {

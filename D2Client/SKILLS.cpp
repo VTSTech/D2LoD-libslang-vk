@@ -202,8 +202,8 @@ BOOL __fastcall Skills_CltDoFunc_BaalCorpseExplosion(D2UnitStrc * pUnit, eD2Skil
 // Spawns a single directed missile as part of a multi-missile/spread skill effect. Advances the owner unit's RNG seed to pick one of 8 directional offsets (gnSkillBaseTableIndex/Offset), derives the spawn X/Y from the owner's static or dynamic path position, and selects a missile id from a 3-entry table at nParam1+0xEA/0xEC/0xEE (seed-randomized choice). Builds a zeroed D2SkillArgStrc, calls MakeMissile, then sets a seed-derived Z position (via D2GetSkillCalc + UNIT_GetModuloFromSeed) and the missile target X/Y to the owner's current position. No return value; nParam1 points to the skill/missile parameter record.
 void __stdcall SKILLSCLT_CreateMultiMissileDirected(int32_t nParam1, eD2Skills eSkill, int32_t nParam2, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static int gnSkillBaseTableOffset[8] = { 0x7, 0x5, 0x0, -0x5, -0x7, -0x5, 0x0, 0x5 };
-    static int gnSkillBaseTableIndex[8] = { 0x0, 0x5, 0x7, 0x5, 0x0, -0x5, -0x7, -0x5 };
+    static int gnSkillBaseTableOffset[8] = { 0x7, 0x5, 0x0, -0x5, -0x7, -0x5, 0x0, 0x5 }; D2_STATIC_GUARD(gnSkillBaseTableOffset, "D2Client::SKILLS::SKILLSCLT_CreateMultiMissileDirected::gnSkillBaseTableOffset");
+    static int gnSkillBaseTableIndex[8] = { 0x0, 0x5, 0x7, 0x5, 0x0, -0x5, -0x7, -0x5 }; D2_STATIC_GUARD(gnSkillBaseTableIndex, "D2Client::SKILLS::SKILLSCLT_CreateMultiMissileDirected::gnSkillBaseTableIndex");
 
     int nUnitY;
     D2SkillArgStrc sSkillArg;
@@ -426,8 +426,8 @@ BOOL __fastcall Skills_CltDoFunc_DualMissileWithZ(D2UnitStrc * pUnit, eD2Skills 
     sSkillArg.nSkillLevel = nSkillLvl;
     int nCalcC = nCalcB;
     sSkillArg.eSkillNo = eSkill;
-    if (-1 < pSkillTxt->cltmissilea) {
-      sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissilea;
+    if (-1 < pSkillTxt->cltmissile[1]) {
+      sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[1];
       pMissile = UNIT::Missile::MakeMissile(&sSkillArg);
       nCalcC = nCalcB;
       if (pMissile) {
@@ -436,11 +436,11 @@ BOOL __fastcall Skills_CltDoFunc_DualMissileWithZ(D2UnitStrc * pUnit, eD2Skills 
         Engine::Particle::SetOffsetVector(pMissile, -nAuraRange, 0, -nCalcB, 1);
       }
     }
-    if (-1 >= pSkillTxt->cltmissileb) {
+    if (-1 >= pSkillTxt->cltmissile[2]) {
       return 1;
     }
 
-    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissileb;
+    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[2];
     pMissile = UNIT::Missile::MakeMissile(&sSkillArg);
     if (!pMissile) {
       return 1;
@@ -477,17 +477,17 @@ BOOL __fastcall Skills_CltDoFunc_DualMissileAtCoords(D2UnitStrc * pUnit, eD2Skil
     sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.pOwner = pUnit;
     sSkillArg.eSkillNo = eSkill;
-    if (-1 < pSkillTxt->cltmissilea) {
-      sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissilea;
+    if (-1 < pSkillTxt->cltmissile[1]) {
+      sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[1];
       if ((int)sSkillArg.nMissileTxtNo < sgptDataTable->nTxtMissilesSize) {
         UNIT::Missile::MakeMissile(&sSkillArg);
       }
     }
-    if (-1 >= pSkillTxt->cltmissileb) {
+    if (-1 >= pSkillTxt->cltmissile[2]) {
       return 1;
     }
 
-    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissileb;
+    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[2];
     if ((int)sSkillArg.nMissileTxtNo >= sgptDataTable->nTxtMissilesSize) {
       return 1;
     }
@@ -637,7 +637,7 @@ void __fastcall SKILLSCLT_SetMissilePathAndCalc(D2UnitStrc * pUnit, int32_t nIni
 }
 
 // Client-side missile spread fan: spawns nCount-indexed missiles for skill eSkill arranged via gnMissileSpreadTableX_Alt/Y_Alt offsets (stepped by nSkillLevel). Builds a zeroed D2SkillArgStrc (owner=pTargetUnit, target X/Y, missile txt id, flags=3, callback SKILLSCLT_SetMissilePathAndCalc), advances a 64-bit LCG seed per missile, calls MakeMissile then SetTargetX with GetSkilParam1+1. Display/prediction only; no server damage.
-void __stdcall SKILLSCLT_CltCreateMissileAtTarget(uint32_t dwSeed, D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit, uint8_t * pMissileId, int32_t nX, int32_t nY, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCount) {
+void __stdcall SKILLSCLT_CltCreateMissileAtTarget(uint32_t dwSeed, uint32_t pUnit, D2UnitStrc * pTargetUnit, uint8_t * pMissileId, int32_t nX, int32_t nY, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCount) {
     // Static local variables (originally global data)
     static uint8_t gnMissileSpreadTableX_Alt[256] = {
     0x1e,
@@ -896,7 +896,7 @@ void __stdcall SKILLSCLT_CltCreateMissileAtTarget(uint32_t dwSeed, D2UnitStrc * 
     0x0,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gnMissileSpreadTableX_Alt, "D2Client::SKILLS::SKILLSCLT_CltCreateMissileAtTarget::gnMissileSpreadTableX_Alt");
     static uint8_t gnMissileSpreadTableY_Alt[256] = {
     0x0,
     0x0,
@@ -1154,11 +1154,11 @@ void __stdcall SKILLSCLT_CltCreateMissileAtTarget(uint32_t dwSeed, D2UnitStrc * 
     0xff,
     0xff,
     0xff
-};
+}; D2_STATIC_GUARD(gnMissileSpreadTableY_Alt, "D2Client::SKILLS::SKILLSCLT_CltCreateMissileAtTarget::gnMissileSpreadTableY_Alt");
 
     int32_t nSkillParam1;
     D2SkillArgStrc sSkillArg;
-    uint64_t ullSeedPair = (uint64_t)((uint64_t)(uint32_t)0x29a << 32 | (uint64_t)(uint32_t)(uintptr_t)pUnit);
+    uint64_t ullSeedPair = (uint64_t)((uint64_t)(uint32_t)0x29a << 32 | (uint64_t)(uint32_t)pUnit);
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nX = nX;
     sSkillArg.pOwner = pTargetUnit;
@@ -1185,8 +1185,10 @@ void __stdcall SKILLSCLT_CltCreateMissileAtTarget(uint32_t dwSeed, D2UnitStrc * 
 // Builds a serpentine (weaving) pre-computed path for a missile unit, used by skills like Guided Arrow. Caps the path at 0x4D frames, sets path type 10, then for each frame advances the direction by a randomly-seeded amplitude and sign (flipping every gapSkillDamageDescFuncTable[0x89] frames), samples gnSkillSynergiesTableIndex/Offset for X/Y deltas, and writes each resulting (nX, nY) into the missile's path-point array via GetPathPoint.
 void __fastcall SKILLSCLT_SetMissilePathExtended(D2UnitStrc * pUnit, int32_t nInitSeed) {
     // Static local variables (originally global data)
-    static int gnSkillSynergiesTableOffset[8] = { 0x0, 0x2, 0x2, 0x2, 0x0, -0x2, -0x2, -0x2 };
-    static int gnSkillSynergiesTableIndex[8] = { 0x2, 0x2, 0x0, -0x2, -0x2, -0x2, 0x0, 0x2 };
+    static int gnSkillSynergiesTableOffset[8] = { 0x0, 0x2, 0x2, 0x2, 0x0, -0x2, -0x2, -0x2 }; D2_STATIC_GUARD(gnSkillSynergiesTableOffset, "D2Client::SKILLS::SKILLSCLT_SetMissilePathExtended::gnSkillSynergiesTableOffset");
+    static int gnSkillSynergiesTableIndex[8] = { 0x2, 0x2, 0x0, -0x2, -0x2, -0x2, 0x0, 0x2 }; D2_STATIC_GUARD(gnSkillSynergiesTableIndex, "D2Client::SKILLS::SKILLSCLT_SetMissilePathExtended::gnSkillSynergiesTableIndex");
+    static int32_t gnSkillDescLayoutPos_0072d98c = 0xf; D2_STATIC_GUARD(gnSkillDescLayoutPos_0072d98c, "D2Client::SKILLS::SKILLSCLT_SetMissilePathExtended::gnSkillDescLayoutPos_0072d98c");
+    static int32_t gnSkillDescLayoutPos_0072d990 = 0x2; D2_STATIC_GUARD(gnSkillDescLayoutPos_0072d990, "D2Client::SKILLS::SKILLSCLT_SetMissilePathExtended::gnSkillDescLayoutPos_0072d990");
 
     int nSerpentineSign;
     int nPathFrameIdx;
@@ -1240,7 +1242,7 @@ void __fastcall SKILLSCLT_SetMissilePathExtended(D2UnitStrc * pUnit, int32_t nIn
     nSerpentineSign = ullSeedTemp & 1 ? 0x1 : -0x1;
     sSeedNext = D2_SEED_NEXT_VAL(ullSeedTemp);
     *pUnitSeed = sSeedNext;
-    nSerpentineAmp = sSeedNext.nSeedLow + (int)(((uint64_t)d2_bits_of(sSeedNext) & 0xffffffff) / 3) * -3 + gaSkillDescLayoutPositions[0x54];
+    nSerpentineAmp = sSeedNext.nSeedLow + (int)(((uint64_t)d2_bits_of(sSeedNext) & 0xffffffff) / 3) * -3 + gnSkillDescLayoutPos_0072d990;
     nPathFrameIdx = 0;
     if (0 < nTotalFrames) {
       do {
@@ -1250,11 +1252,11 @@ void __fastcall SKILLSCLT_SetMissilePathExtended(D2UnitStrc * pUnit, int32_t nIn
         nCurY += gnSkillSynergiesTableOffset[nSP1Y & 0xff];
         pPathPoints[nPathFrameIdx].nX = (uint16_t)nCurX;
         pPathPoints[nPathFrameIdx].nY = (uint16_t)nCurY;
-        if (!(nPathFrameIdx % gaSkillDescLayoutPositions[0x53])) {
+        if (!(nPathFrameIdx % gnSkillDescLayoutPos_0072d98c)) {
           nSerpentineSign = -nSerpentineSign;
           sSeedNext = D2_SEED_NEXT(*pUnitSeed);
           *pUnitSeed = sSeedNext;
-          nSerpentineAmp = sSeedNext.nSeedLow % 3 + gaSkillDescLayoutPositions[0x54];
+          nSerpentineAmp = sSeedNext.nSeedLow % 3 + gnSkillDescLayoutPos_0072d990;
         }
 
         nPathFrameIdx++;
@@ -1524,7 +1526,7 @@ void __stdcall SKILLS_CltCreateMissileSpreadAtTarget_ExtendedPath(uint32_t dwSee
     0x0,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gnMissileSpreadTableX_Alt2, "D2Client::SKILLS::SKILLS_CltCreateMissileSpreadAtTarget_ExtendedPath::gnMissileSpreadTableX_Alt2");
     static uint8_t gnMissileSpreadTableY_Alt2[256] = {
     0x0,
     0x0,
@@ -1782,7 +1784,7 @@ void __stdcall SKILLS_CltCreateMissileSpreadAtTarget_ExtendedPath(uint32_t dwSee
     0xff,
     0xff,
     0xff
-};
+}; D2_STATIC_GUARD(gnMissileSpreadTableY_Alt2, "D2Client::SKILLS::SKILLS_CltCreateMissileSpreadAtTarget_ExtendedPath::gnMissileSpreadTableY_Alt2");
 
     int32_t nSkillParam1;
     D2SkillArgStrc sSkillArg;
@@ -1855,7 +1857,7 @@ BOOL __fastcall Skills_CltDoFunc_AuraLevel_CltCreateMissileAtTarget(D2UnitStrc *
       nPrgCalc = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt[eSkill].aurarangecalc, eSkill, nSkillLvl);
     }
 
-    D2UnitStrc* pOwnerUnit = (D2UnitStrc*)pUnit->nInitSeed;
+    uint32_t pOwnerUnit = pUnit->nInitSeed;
     int32_t nTargetX = Units::GetXPosFromDynamicPathUnit(pTargetUnit);
     int32_t nTargetY = Units::GetYPosFromDynamicPathUnit(pTargetUnit);
     SKILLSCLT_CltCreateMissileAtTarget(nMissileId, pOwnerUnit, pUnit, (uint8_t*)nMissileId, nTargetX, nTargetY, nSkillLvl, nPrgCalc, eSkill);

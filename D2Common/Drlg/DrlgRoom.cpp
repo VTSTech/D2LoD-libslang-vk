@@ -7,6 +7,7 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Common/D2InventoryStrc.h"
+#include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SeedStrc.h"
@@ -76,7 +77,7 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2PresetUnitStrc) == 0x20, "D2_NEW(
 namespace D2Common::Drlg::DrlgRoom {
 
 // Find destination room via warp tile links: scan src room's tile grid for a tile whose shadow level id matches eLevel, then follow its room link and locate the reverse link tile to fetch orth pointer and destination RoomEx. Initializes destination room on demand.
-D2RoomStrc * __fastcall DRLGWARP_GetWarpDestinationRoom(D2RoomExStrc * pRoomEx, eD2LevelId eLevel, D2DrlgOrthStrc * * ppOrth, D2RoomExStrc * * ppRoomEx) {
+D2RoomStrc * __fastcall DRLGWARP_GetWarpDestinationRoom(D2RoomExStrc * pRoomEx, eD2LevelId eLevel, int * ppOrth, D2LvlWarpTxt * * ppRoomEx) {
     D2DrlgRoomExRoomTileNodeStrc* pDVar1 = pRoomEx->pRoomTileNodes;
     while (true) {
       if (!pDVar1) {
@@ -97,8 +98,8 @@ D2RoomStrc * __fastcall DRLGWARP_GetWarpDestinationRoom(D2RoomExStrc * pRoomEx, 
 
     do {
       if (pTileGrid->pRoomEx == pRoomEx) {
-        *ppOrth = (D2DrlgOrthStrc*)pTileGrid->pLvlWarpTxt->Id;
-        *ppRoomEx = (D2RoomExStrc*)pTileGrid->pLvlWarpTxt;
+        *ppOrth = pTileGrid->pLvlWarpTxt->Id;
+        *ppRoomEx = pTileGrid->pLvlWarpTxt;
         if (pDestRoomEx->pRoom) {
           return pDestRoomEx->pRoom;
         }
@@ -215,7 +216,7 @@ D2RoomExStrc * __fastcall DRLGSPAWN_GetRandomPresetSpawnPoint(int32_t nSpawnType
     0x4,
     0x0,
     0x5
-};
+}; D2_STATIC_GUARD(gaSpawnPointGroupTable, "D2Common::Drlg::DrlgRoom::DRLGSPAWN_GetRandomPresetSpawnPoint::gaSpawnPointGroupTable");
 
     int nSpawnPointIdx;
     int* pnSpawnType;
@@ -804,11 +805,11 @@ BOOL __fastcall DRLGORTH_CompareByDirectionAndCoord(D2DrlgOrthStrc * pOrth1, D2D
     return 0;
 }
 
-void __stdcall DRLGROOMEX_ReplaceSub00(D2RoomExStrc * pRoomEx, D2DrlgOrthStrc * pOrth) {
+void __stdcall DRLGROOMEX_ReplaceSub00(D2DrlgOrthStrc * * pRoomEx, D2DrlgOrthStrc * pOrth) {
     BOOL bShouldInsertBefore;
-    D2DrlgOrthStrc* pOrthPrev = pRoomEx->pOrth;
+    D2DrlgOrthStrc* pOrthPrev = *pRoomEx;
     if (!pOrthPrev) {
-      pRoomEx->pOrth = pOrth;
+      *pRoomEx = pOrth;
       return;
     }
 
@@ -817,7 +818,7 @@ void __stdcall DRLGROOMEX_ReplaceSub00(D2RoomExStrc * pRoomEx, D2DrlgOrthStrc * 
       bShouldInsertBefore = DRLGORTH_CompareByDirectionAndCoord(pOrth, pOrthPrev);
       if (bShouldInsertBefore) {
         pOrth->pNext = pOrthPrev;
-        pRoomEx->pOrth = pOrth;
+        *pRoomEx = pOrth;
         return;
       }
     } else {
@@ -841,7 +842,7 @@ void __stdcall DRLGROOMEX_ReplaceSub00(D2RoomExStrc * pRoomEx, D2DrlgOrthStrc * 
 
 // Allocates a D2DrlgOrthStrc (nType=0, level link) connecting pRoomEx to another level. The orth node stores pLevel pointer, direction, and a pointer to the level's sCoordinatesAndSize. Inserts into pRoomEx->pOrth sorted linked list via DRLGROOMEX_ReplaceSub00.
 // @sourcefile .\DRLG\DrlgRoom.cpp
-void __fastcall AllocDrlgOrth(D2RoomExStrc * pRoomEx, D2DrlgLevelStrc * pLevel, eDrlgDirection neDrlgDirection, BOOL bIsDrlgTypePresetArea) {
+void __fastcall AllocDrlgOrth(D2DrlgOrthStrc * * pRoomEx, D2DrlgLevelStrc * pLevel, eDrlgDirection neDrlgDirection, BOOL bIsDrlgTypePresetArea) {
     D2DrlgOrthStrc* pOrth = D2_NEW_POOL(pLevel->pDrlg->pMemoryPool, D2DrlgOrthStrc);
     pOrth->pNext = 0;
     pOrth->pLink.pLevel = pLevel;
@@ -1046,8 +1047,8 @@ eD2LevelId __fastcall GetLevelId(D2RoomExStrc * pRoomEx) {
 }
 
 eD2LevelId __fastcall DRLGWARP_GetWarpDestinationLevel(D2RoomExStrc * pRoomEx, eD2LevelId eLevel) {
-    D2DrlgOrthStrc* pOrth;
-    D2RoomExStrc* pRoomExDest;
+    int pOrth;
+    D2LvlWarpTxt* pRoomExDest;
     D2RoomStrc* pRoom = DRLGWARP_GetWarpDestinationRoom(pRoomEx, eLevel, &pOrth, &pRoomExDest);
     if (!pRoom) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x25c);

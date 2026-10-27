@@ -37,7 +37,7 @@ typedef BOOL (__fastcall *Draw)(D2ControlStrc * pControl);
 namespace D2Win::Src::D2WinSmack {
 
 // Calculates title prefix index based on character class and gender. Used for cinematics and titles. Class < 4 maps to index 0, < 8 to 1, < 12 to 2, else 3. If bIsExpansion non-zero and index > 0, adds 3.
-char * __stdcall D2WINSMACK_GetTitlePrefixIndexFromClass(void * pUnused, int32_t nClass, int32_t bHasModifier, int32_t bIsExpansion) {
+char * __stdcall D2WINSMACK_GetTitlePrefixIndexFromClass(int pUnused, int32_t nClass, int32_t bHasModifier, int32_t bIsExpansion) {
     uint32_t nTitleIndex;
     bool bSignedGreaterOrEqual;
     if (!bIsExpansion) {
@@ -69,7 +69,7 @@ char * __stdcall D2WINSMACK_GetTitlePrefixIndexFromClass(void * pUnused, int32_t
     if (bHasModifier && nTitleIndex) {
       nTitleIndex += 3;
     }
-    char* pszTitlePrefix = D2Comp::D2COMP_GetTitlePrefix((uint32_t)pUnused, nTitleIndex, bIsExpansion);
+    char* pszTitlePrefix = D2Comp::D2COMP_GetTitlePrefix(pUnused, nTitleIndex, bIsExpansion);
     return pszTitlePrefix;
 }
 

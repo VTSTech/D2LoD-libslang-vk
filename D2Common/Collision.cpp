@@ -8,6 +8,7 @@
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
 #include "D2Common/D2InventoryStrc.h"
+#include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
@@ -17,7 +18,6 @@
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/D2DrlgRoomCoordsStrc.h"
-#include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Common/Drlg/D2DrlgTileDataStrc.h"
 #include "D2Common/Drlg/Transform.h"
 #include "D2Common/PATH/DynamicPath.h"
@@ -127,7 +127,7 @@ int32_t __stdcall GetDistanceBetweenUnits(D2UnitStrc * pUnit, D2UnitStrc * pUnit
     0x9,
     0xa,
     0xb
-};
+}; D2_STATIC_GUARD(gnCollisionGridMaxNodes, "D2Common::Collision::GetDistanceBetweenUnits::gnCollisionGridMaxNodes");
 
     int nTargetX;
     int32_t nSizeUnit2;
@@ -949,7 +949,7 @@ void __fastcall TileLibrary_UpdateCollision(D2RoomStrc * pRoom, D2DrlgTileDataSt
 
 // Allocates and populates the collision grid (D2RoomCollisionGridStrc) for pRoom from the server memory pool. Copies room coordinates into the grid header, zeroes the map, then calls TileLibrary_SetupCollision for floor, wall, and roof tile layers of each adjacent room. Side effect: sets the collision grid pointer in pRoom via DRLGROOM_SetCollisionGridInRoom.
 // @sourcefile .\COLLISN\Collisn.cpp
-void __fastcall AllocRoomCollisionGrid(D2DrlgActStrc * pMemPool, D2RoomStrc * pRoom) {
+void __fastcall AllocRoomCollisionGrid(D2PoolManagerStrc * pMemPool, D2RoomStrc * pRoom) {
     D2DrlgTileDataStrc* pTileData;
     int nRoomsNearIndex;
     D2DrlgRoomCoordsStrc sRoomCoords;
@@ -963,7 +963,7 @@ void __fastcall AllocRoomCollisionGrid(D2DrlgActStrc * pMemPool, D2RoomStrc * pR
     D2RoomStrc* pRoomSaved = pRoom;
     DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &sRoomCoords);
     int nRoomCoordsCount = sRoomCoords.dwYSize * sRoomCoords.dwXSize;
-    D2RoomCollisionGridStrc* pCollisionMapNew = (D2RoomCollisionGridStrc*)D2_ALLOC_POOL((D2PoolManagerStrc*)pMemPool, (nRoomCoordsCount + 0x12 + sRoomCoords.dwYSize * 2) * 2);
+    D2RoomCollisionGridStrc* pCollisionMapNew = (D2RoomCollisionGridStrc*)D2_ALLOC_POOL(pMemPool, (nRoomCoordsCount + 0x12 + sRoomCoords.dwYSize * 2) * 2);
     D2RoomStrc* pRoomAdj = pRoomSaved;
     D2DrlgRoomCoordsStrc* pCoordsIter = &sRoomCoords;
     int* pCollisionMapWriter = (int*)pCollisionMapNew;

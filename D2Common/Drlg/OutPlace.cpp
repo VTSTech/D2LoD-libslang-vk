@@ -175,7 +175,7 @@ void __fastcall PlaceAct1245OutdoorBorders(D2DrlgLevelStrc * pLevel) {
     0x176,
     0x176,
     0x177
-};
+}; D2_STATIC_GUARD(gnOutPlaceGridHeightByAct, "D2Common::Drlg::OutPlace::PlaceAct1245OutdoorBorders::gnOutPlaceGridHeightByAct");
 
     uint32_t nRoadType;
     uint32_t nRoadTypeB;

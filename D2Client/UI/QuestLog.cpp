@@ -50,8 +50,8 @@
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SReg.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Launch/MainMenus.h"
 
@@ -119,7 +119,7 @@ void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
     D2BitBufferStrc* pBitBuffer;
     pBitBuffer = npcmenu::GetQuestInfo();
     D2BitBufferStrc* pBitBuffer_00;
-    pBitBuffer_00 = (D2BitBufferStrc*)npcmenu::Merc::NPCMENU_GetMercHireCost();
+    pBitBuffer_00 = npcmenu::Merc::NPCMENU_GetMercHireCost();
     bool bQuestActive;
     bQuestActive = gQuestLog.abQuestUnknownArray1[nActIndex];
     pEntry->bQuestActive = bQuestActive;
@@ -1318,7 +1318,7 @@ void __stdcall QUESTLOG_LoadQuestIconsForAct(uint32_t nActIndex, int32_t bResetS
     s_a5q4_006da1fc,
     s_a5q5_006da1f4,
     s_a5q6_006da1ec
-};
+}; D2_STATIC_GUARD(gaszQuestIconNames, "D2Client::UI::QuestLog::QUESTLOG_LoadQuestIconsForAct::gaszQuestIconNames");
     static int gaQuestLogActIconRange[10] = {
     0x0,
     0x5,
@@ -1330,7 +1330,7 @@ void __stdcall QUESTLOG_LoadQuestIconsForAct(uint32_t nActIndex, int32_t bResetS
     0x14,
     0x15,
     0x1a
-};
+}; D2_STATIC_GUARD(gaQuestLogActIconRange, "D2Client::UI::QuestLog::QUESTLOG_LoadQuestIconsForAct::gaQuestLogActIconRange");
 
     DC6* pIconImage;
     int32_t* pQuestEntryBuf;
@@ -1473,13 +1473,13 @@ void __stdcall GameOverWtf() {
 // Draws quest log UI. Uses gQuestIconsPerActTable to map act to quest icon ranges, draws quest list with completion status, highlights selected quest. Main rendering loop for quest UI panel.
 void __stdcall DRAW_UI_Quest() {
     // Static local variables (originally global data)
-    static int gQuestUIDescInitE = 0x10e;
-    static uint32_t gQuestUIDescInitD = 0x10;
-    static uint32_t gQuestUIDescInitC = 0xf8;
-    static uint32_t gQuestUIDescInitB = -0x1;
-    static uint8_t gQuestUIDescInitA = -0x1;
-    static uint32_t gnQuestLogUnknownField;
-    static bool gbQuestLogDrawFlag;
+    static int gQuestUIDescInitE = 0x10e; D2_STATIC_GUARD(gQuestUIDescInitE, "D2Client::UI::QuestLog::DRAW_UI_Quest::gQuestUIDescInitE");
+    static uint32_t gQuestUIDescInitD = 0x10; D2_STATIC_GUARD(gQuestUIDescInitD, "D2Client::UI::QuestLog::DRAW_UI_Quest::gQuestUIDescInitD");
+    static uint32_t gQuestUIDescInitC = 0xf8; D2_STATIC_GUARD(gQuestUIDescInitC, "D2Client::UI::QuestLog::DRAW_UI_Quest::gQuestUIDescInitC");
+    static uint32_t gQuestUIDescInitB = -0x1; D2_STATIC_GUARD(gQuestUIDescInitB, "D2Client::UI::QuestLog::DRAW_UI_Quest::gQuestUIDescInitB");
+    static unsigned int gQuestUIDescInitA = 0xffffffff; D2_STATIC_GUARD(gQuestUIDescInitA, "D2Client::UI::QuestLog::DRAW_UI_Quest::gQuestUIDescInitA");
+    static uint32_t gnQuestLogUnknownField; D2_STATIC_GUARD_BSS(gnQuestLogUnknownField, "D2Client::UI::QuestLog::DRAW_UI_Quest::gnQuestLogUnknownField");
+    static bool gbQuestLogDrawFlag; D2_STATIC_GUARD_BSS(gbQuestLogDrawFlag, "D2Client::UI::QuestLog::DRAW_UI_Quest::gbQuestLogDrawFlag");
 
     uint8_t bInvDescDirty;
     D2BitBufferStrc* pQuestInfo;
@@ -1980,6 +1980,7 @@ void __stdcall QUESTLOG_OnButtonMouseUp(D2UIMouseMsgStrc * pMsg) {
 
 // Checks quest availability by index. Scans gQuestIconsPerActTable to map index to quest ID, validates quest state (not just completed, reward awaits, can complete). Returns 1 if quest is available for interaction.
 BOOL __fastcall QUESTLOG_IsQuestAvailableForInteraction(int32_t nQuestIconIndex) {
+    int iVar1;
     D2QuestLogEntryStrc byQuestEntryHdr;
     uint32_t bQuestAvail = GetQuestAvailabilityByIndex(0, nQuestIconIndex);
     if (!bQuestAvail) {
@@ -1999,43 +2000,43 @@ BOOL __fastcall QUESTLOG_IsQuestAvailableForInteraction(int32_t nQuestIconIndex)
       return 0;
     }
 
-    int nMercHireCost = npcmenu::Merc::NPCMENU_GetMercHireCost();
+    D2BitBufferStrc* nMercHireCost = npcmenu::Merc::NPCMENU_GetMercHireCost();
     if (!nMercHireCost) {
       return 0;
     }
 
     eD2QuestState eQuestStateArg = QUESTSTATE_JustCompleted;
     eD2Quests eQuestIdArg = eQuestIdFromIcon;
-    D2BitBufferStrc* pQuestRecord = (D2BitBufferStrc*)npcmenu::Merc::NPCMENU_GetMercHireCost();
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, eQuestIdArg, eQuestStateArg);
+    nMercHireCost = npcmenu::Merc::NPCMENU_GetMercHireCost();
+    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(nMercHireCost, eQuestIdArg, eQuestStateArg);
     if (bQuestState) {
       return 0;
     }
 
-    pQuestRecord = npcmenu::GetQuestInfo();
-    if (!pQuestRecord) {
+    nMercHireCost = npcmenu::GetQuestInfo();
+    if (!nMercHireCost) {
       return 0;
     }
 
     eD2QuestState eQueryState = QUESTSTATE_RewardAwaits;
     eD2Quests eQuestIdCheckArg = eQuestIdFromIcon;
-    pQuestRecord = npcmenu::GetQuestInfo();
-    eQueryState = D2Common::QuestRecord::GetQuestState(pQuestRecord, eQuestIdCheckArg, eQueryState);
+    nMercHireCost = npcmenu::GetQuestInfo();
+    eQueryState = D2Common::QuestRecord::GetQuestState(nMercHireCost, eQuestIdCheckArg, eQueryState);
     if (eQueryState != QUESTSTATE_Completed) {
       return 0;
     }
 
     eQuestIdCheckArg = eQuestIdFromIcon;
-    pQuestRecord = npcmenu::GetQuestInfo();
-    bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, eQuestIdCheckArg, eQueryState);
+    nMercHireCost = npcmenu::GetQuestInfo();
+    bQuestState = D2Common::QuestRecord::GetQuestState(nMercHireCost, eQuestIdCheckArg, eQueryState);
     if (bQuestState) {
       return 0;
     }
 
     eQueryState = QUESTSTATE_CannotCompleteQuestInGame;
     eQuestIdCheckArg = eQuestIdFromIcon;
-    pQuestRecord = npcmenu::GetQuestInfo();
-    bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, eQuestIdCheckArg, eQueryState);
+    nMercHireCost = npcmenu::GetQuestInfo();
+    bQuestState = D2Common::QuestRecord::GetQuestState(nMercHireCost, eQuestIdCheckArg, eQueryState);
     if (bQuestState) {
       return 0;
     }
@@ -2044,7 +2045,7 @@ BOOL __fastcall QUESTLOG_IsQuestAvailableForInteraction(int32_t nQuestIconIndex)
     }
 
     uint16_t* pQuestEntryInit = byQuestEntryHdr.wszDescription;
-    for (nMercHireCost = 0x96; nMercHireCost; nMercHireCost--) {
+    for (iVar1 = 0x96; iVar1; iVar1--) {
       pQuestEntryInit[0] = L'\0';
       pQuestEntryInit[1] = L'\0';
       pQuestEntryInit += 2;

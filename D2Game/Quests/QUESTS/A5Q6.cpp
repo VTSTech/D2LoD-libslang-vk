@@ -251,7 +251,7 @@ void __fastcall Q36_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // A5Q6 Eve of Destruction. Main NPC gossip-menu dispatcher (state-fn slot 0). Picks which conversation menu an act-V NPC offers based on quest progress. Two regimes: (a) target class 0x219..0x21b (the Ancients statues, gated on A5Q5 Rite-of-Passage having spawned & cleared them) -> offer post-Ancients gossip; (b) otherwise switch on the player's per-state quest-record bits. Before completion: index gdwQuestCallbackAddressQ36[nStateFlag]. After Completed: per-NPC-class jump table reading Step0x04..Step0x09/JustCompleted to choose the right "talk about killing Baal" line. Pure dialog selection (AddGossipMessageOnMonster); does not mutate quest state.
 void __fastcall Q36_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQuestCallbackAddressQ36[6] = { -0x1, -0x1, -0x1, 0x0, 0x1, 0x2 };
+    static int32_t gdwQuestCallbackAddressQ36[6] = { -0x1, -0x1, -0x1, 0x0, 0x1, 0x2 }; D2_STATIC_GUARD(gdwQuestCallbackAddressQ36, "D2Game::Quests::QUESTS::A5Q6::Q36_Callback00_NpcActivate::gdwQuestCallbackAddressQ36");
 
     bool _bQuestState;
     bool bQuestState;
@@ -690,7 +690,7 @@ void __fastcall Q36_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     bool bQuestState;
     ::SGAMEDATA* pGame;
     D2BitBufferStrc* pBitBuffer;
-    D2GossipTextStrc* pTextControl = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
+    D2GossipTextStrc* pTextControl = (D2GossipTextStrc*)pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
     int nIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
     if (nIndex == 0x6d) {
       Q36_SendQuestSpecialPacket(pQuestArgs->pPlayer, pQuestArgs->pGame);

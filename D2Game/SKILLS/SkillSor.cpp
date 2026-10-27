@@ -74,7 +74,6 @@
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Game/D2Game.h"
-#include "D2Game/Objects/Objects.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -250,7 +249,7 @@ BOOL __fastcall SKILLSOR_SrvStFn11_InfernoChannel(::SGAMEDATA * pGame, D2UnitStr
       }
     }
 
-    eMissilesId eSrvMissileId = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissilesId eSrvMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     if (!(-1 < (int)eSrvMissileId && (int)eSrvMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -532,7 +531,7 @@ BOOL __fastcall Skills_SrvDoFunc_019_Inferno(::SGAMEDATA * pGame, D2UnitStrc * p
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -723,7 +722,7 @@ BOOL __fastcall Skills_SrvDoFunc_021_Telekenis(::SGAMEDATA * pGame, D2UnitStrc *
       UNIT::SUnitDmg::SERVER_GetHitCalculation(pGameHit, pUnit, pTarget, &sDamage);
       return 1;
       case UNIT_OBJECT:
-        Objects::ObjectsMode::InteractWithObject(__frame0.pGameSaved, pUnit, pTarget->eUnitType, pTarget->nUnitGUID, (D2ObjectsTxt*)&__frame0.nInteractOut);
+        Objects::ObjectsMode::InteractWithObject(__frame0.pGameSaved, pUnit, pTarget->eUnitType, pTarget->nUnitGUID, &__frame0.nInteractOut);
       break;
       case UNIT_ITEM:
         nRandRoll = D2Common::ITEMS::Items::ITEMS_IsA(pTarget, ITEMTYPE_Scroll);
@@ -864,7 +863,7 @@ void __fastcall BlazePath(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       return;
     }
 
-    eMissilesId eSrvMissileId = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissilesId eSrvMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     if (!(-1 < (int)eSrvMissileId && (int)eSrvMissileId < pDataTable->nTxtMissilesSize)) {
       return;
     }
@@ -901,7 +900,7 @@ BOOL __fastcall Skills_SrvDoFunc_024_FireWall(::SGAMEDATA * pGame, D2UnitStrc * 
       return 0;
     }
 
-    eMissilesId eSrvMissileId = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissilesId eSrvMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     if (!(-1 < (int)eSrvMissileId && (int)eSrvMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -946,7 +945,7 @@ BOOL __fastcall Skills_SrvDoFunc_024_FireWall(::SGAMEDATA * pGame, D2UnitStrc * 
     sSkillArg.nUnitY = nTargetY - (nUnitX - nTargetX);
     sSkillArg.nUnitX = nUnitY - nTargetY + nTargetX;
     MISSILES::Missiles::CreatingMissile(pGame, &sSkillArg);
-    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->srvmissileb;
+    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->srvmissile[2];
     if (!(-1 < (int)sSkillArg.nMissileTxtNo && (int)sSkillArg.nMissileTxtNo < sgptDataTable->nTxtMissilesSize)) {
       return 1;
     }
@@ -1055,7 +1054,7 @@ BOOL __fastcall Skills_SrvDoFunc_026_ChainLighting(::SGAMEDATA * pGame, D2UnitSt
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -1084,7 +1083,7 @@ BOOL __fastcall Skills_SrvDoFunc_151_FireDirectionalMissile(::SGAMEDATA * pGame,
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -1148,7 +1147,7 @@ BOOL __fastcall Skills_SrvDoFunc_028_Meteor_Blizzard(::SGAMEDATA * pGame, D2Unit
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -1208,7 +1207,7 @@ BOOL __fastcall Skills_SrvDoFunc_029_ThunderStorm(::SGAMEDATA * pGame, D2UnitStr
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)pDVar1->srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)pDVar1->srvmissile[1];
     if ((int)eMissileId < 0) {
       return 0;
     }
@@ -1307,7 +1306,7 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
         /* .nDamageFieldOffset = */ 0x40,
         /* .bSecondary = */ 0x1
     }
-};
+}; D2_STATIC_GUARD(gnAuraManaAbsorbIndex, "D2Game::SKILLS::SkillSor::ITEMEVENT_SorAuraManaAbsorb::gnAuraManaAbsorbIndex");
 
     uint32_t bIsMerc;
     int32_t nAbsorbAmt;
@@ -1402,7 +1401,7 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
 // Server-side skill DoFunc 144 (Hydra). Spawns the 3 Hydra heads for caster pUnit. Validates the skill row, resolves the summon monster class via SKILLS_GetSummonMonsterClassId and the pettype, finds the cast target/cursor position and a valid (non-town) room nearby. If the caster is a mercenary it retargets to the merc's owner. Computes the Hydra lifetime (TXT_Skills_GetSkillRange + current game frame) and a per-head skill calc (petmax), then loops 3 times creating a summon via SKILL_CreateSummon at offsets from gnSkillMissileCount_Hydra / gnAuraDamageScale_ManaAbsorb, assigning each its skill (SetSkill), summon buffs, an expiry timer (SetDwArgsIfNotNeg0x29a), and alignment inherited from a monster caster. Returns TRUE if at least one head was created, else FALSE.
 BOOL __fastcall Skills_SrvDoFunc_144_Hydra(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills iHydraIdx, int32_t nSkillLvl) {
     // Static local variables (originally global data)
-    static uint32_t gnSkillMissileCount_Hydra[3] = { 0xffffffff, 0x0, 0x1 };
+    static uint32_t gnSkillMissileCount_Hydra[3] = { 0xffffffff, 0x0, 0x1 }; D2_STATIC_GUARD(gnSkillMissileCount_Hydra, "D2Game::SKILLS::SkillSor::Skills_SrvDoFunc_144_Hydra::gnSkillMissileCount_Hydra");
 
     bool _bGotTarget;
     bool bGotTarget;

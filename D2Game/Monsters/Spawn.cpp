@@ -1034,14 +1034,14 @@ void __fastcall MONSTER_SpawnRoomMonsters(::SGAMEDATA * pGame, D2RoomStrc * pRoo
 // Initializes a wandering monster in pRoom for the given level. Looks up act-specific wandering monster params (gaActWanderingMonsterParams), picks a random class ID from the act's pool using the room seed, finds a valid position, spawns the monster as Neutral, registers it in the game target table (slot 8), and increments pMonsterRegion->nMonsterCounter. No-ops if act >= 5 or the monster count param is 0.
 void __stdcall MONSTER_InitWanderingMonsterRegion(D2MonsterRegionStrc * pMonsterRegion, ::SGAMEDATA * pGame, D2LevelsTxt * pLevelsTxt, D2RoomStrc * pRoom) {
     // Static local variables (originally global data)
-    static int32_t int32_t_00731b2c = 0x10e;
+    static int gaWanderingMonsterClassIds[1] = { 0x10e }; D2_STATIC_GUARD(gaWanderingMonsterClassIds, "D2Game::Monsters::Spawn::MONSTER_InitWanderingMonsterRegion::gaWanderingMonsterClassIds");
     static int8_t gaActWanderingMonsterParams[5][2] = {
     { '\x00', '\x01' },
     { '\x00', '\x00' },
     { '\x00', '\x00' },
     { '\x00', '\x00' },
     { '\x00', '\x00' }
-};
+}; D2_STATIC_GUARD(gaActWanderingMonsterParams, "D2Game::Monsters::Spawn::MONSTER_InitWanderingMonsterRegion::gaActWanderingMonsterParams");
 
     D2SeedStrc* pSeed;
     int32_t nX;
@@ -1062,7 +1062,7 @@ void __stdcall MONSTER_InitWanderingMonsterRegion(D2MonsterRegionStrc * pMonster
     }
 
     uint32_t nWanderingClassId = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, (uint32_t)(uint8_t)gaActWanderingMonsterParams[byAct][1]);
-    nWanderingClassId = (&int32_t_00731b2c)[nWanderingClassId + byMonBaseOffset];
+    nWanderingClassId = gaWanderingMonsterClassIds[nWanderingClassId + byMonBaseOffset];
     BOOL bFoundPos = SPAWN_FindRandomPositionForMonster(pGame, pRoom, nullptr, nWanderingClassId, &nX, &nY, 0);
     if (!bFoundPos) {
       return;

@@ -13,6 +13,7 @@ struct D2ClientStrc;
 struct D2InventoryStrc;
 struct D2MonsterAiStrc;
 struct D2PoolManagerStrc;
+struct D2SeedStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
 typedef int eD2LevelId;
@@ -116,7 +117,7 @@ void __fastcall SUNITPROXY_RefreshGambleForAllNpcs(::SGAMEDATA * pThis, int32_t 
 // @sourcefile .\UNIT\sunitproxy.cpp
 void __fastcall SUNITPROXY_ProcessNpcItemQueue(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 struct D2InventoryStrc * __fastcall SUNITPROXY_GetNpcInventory(::SGAMEDATA * pGame, int32_t nNpcClassId);
-int32_t __fastcall SUNITPROXY_GetNpcControl(::SGAMEDATA * pGame);
+struct D2SeedStrc * __fastcall SUNITPROXY_GetNpcControl(::SGAMEDATA * pGame);
 // Server-side: removes a player (identified by pUnit->nUnitGUID, or -1 if null) from an NPC's proxy list and interaction list. Frees inventory items and the inventory struct if a proxy inventory existed, then frees the proxy and interaction list nodes from the game memory pool.
 // @sourcefile .\UNIT\sunitproxy.cpp
 void __fastcall SUNITPROXY_RemovePlayerFromNpc(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2PoolManagerStrc * pMemory);

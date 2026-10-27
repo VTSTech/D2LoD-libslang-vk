@@ -44,7 +44,7 @@ void Lair(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgLairReplacements_B, "D2Common::Drlg::Maze::Act2::Lair::gaDrlgLairReplacements_B");
     static D2DrlgReplaceRoomStrc gaDrlgLairReplacements_A[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x1e9,
@@ -70,19 +70,19 @@ void Lair(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgLairReplacements_A, "D2Common::Drlg::Maze::Act2::Lair::gaDrlgLairReplacements_A");
     static D2DrlgReplaceRoomStrc D2DrlgReplaceRoomStrc_006f00d8 = {
     /* .nSourceLevelPrestId = */ 0x1e2,
     /* .nDestLevelPrestId = */ 0x1f9,
     /* .nDestPickedFile = */ -0x1,
     /* .nDirection = */ 0x2
-};
+}; D2_STATIC_GUARD(D2DrlgReplaceRoomStrc_006f00d8, "D2Common::Drlg::Maze::Act2::Lair::D2DrlgReplaceRoomStrc_006f00d8");
     static D2DrlgReplaceRoomStrc D2DrlgReplaceRoomStrc_006f00e8 = {
     /* .nSourceLevelPrestId = */ 0x1e5,
     /* .nDestLevelPrestId = */ 0x1fd,
     /* .nDestPickedFile = */ -0x1,
     /* .nDirection = */ 0x1
-};
+}; D2_STATIC_GUARD(D2DrlgReplaceRoomStrc_006f00e8, "D2Common::Drlg::Maze::Act2::Lair::D2DrlgReplaceRoomStrc_006f00e8");
 
     D2DrlgReplaceRoomStrc* pReplaceEntry;
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);

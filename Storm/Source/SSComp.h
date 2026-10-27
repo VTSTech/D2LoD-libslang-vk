@@ -29,7 +29,7 @@ struct D2BitStreamWriterStrc {
 
 struct D2CompressHuffNodeStrc {
     /* 0x00 */ struct D2CompressHuffNodeStrc * pNext; // next sibling in sorted list (or 0)
-    /* 0x04 */ int nPrevOffset; // encoded back-link: if negative, ~value is absolute ptr; else relative offset from pNext to prev->pNext
+    /* 0x04 */ struct D2CompressHuffNodeStrc * nPrevOffset; // encoded back-link: if negative, ~value is absolute ptr; else relative offset from pNext to prev->pNext
     /* 0x08 */ int nSymbol; // symbol value (0..0x101)
     /* 0x0C */ uint32_t nWeight; // Huffman frequency/weight
     /* 0x10 */ struct D2CompressHuffNodeStrc * pParent; // parent node in Huffman tree

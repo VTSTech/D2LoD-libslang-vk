@@ -696,12 +696,12 @@ void __fastcall PLRSKILLS_StateSetFn10_Redeemed(D2UnitStrc * pUnit, eD2States eS
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillTxt && -1 < pSkillTxt->cltmissilea && (int)pSkillTxt->cltmissilea < sgptDataTable->nTxtMissilesSize)) {
+    if (!(pSkillTxt && -1 < pSkillTxt->cltmissile[1] && (int)pSkillTxt->cltmissile[1] < sgptDataTable->nTxtMissilesSize)) {
       return;
     }
 
     memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissilea;
+    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[1];
     sSkillArg.eSkillNo = (eD2Skills)pDVar1->skill;
     sSkillArg.nSkillLevel = 1;
     sSkillArg.pOwner = pUnit;
@@ -1306,7 +1306,7 @@ void __fastcall PLRSKILLS_RemoveStateFromUnit(D2UnitStrc * pUnit, eD2States eSta
 }
 
 // @sourcefile .\UNIT\PlrSkills.cpp
-D2UnitStrc * __fastcall NET_D2GS_CLIENT_HandleAddSTatUnit(D2UnitStrc * pUnit, D2StatListExStrc * pStatList, D2UnitDataUnion * param_1, eD2UnitStat eUnitStat, eD2Skills eSkill, uint32_t nParam) {
+D2StatListExStrc * __fastcall NET_D2GS_CLIENT_HandleAddSTatUnit(D2UnitStrc * pUnit, D2StatListExStrc * pStatList, D2UnitDataUnion * param_1, eD2UnitStat eUnitStat, eD2Skills eSkill, uint32_t nParam) {
     if (!pUnit) {
       return nullptr;
     }
@@ -1318,7 +1318,7 @@ D2UnitStrc * __fastcall NET_D2GS_CLIENT_HandleAddSTatUnit(D2UnitStrc * pUnit, D2
     if (!pStatList) {
       int nBaseStatVal;
       pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (eD2States)param_1);
-      if (!(D2UnitStrc*)pStatList) {
+      if (!pStatList) {
         pStatList = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(nullptr, 0, 0, pUnit->eUnitType, pUnit->nUnitGUID);
         D2Common::Stats::StatsEx::SetState(pStatList, (eD2States)param_1);
         D2Common::Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit, pStatList, 1);
@@ -1333,14 +1333,14 @@ D2UnitStrc * __fastcall NET_D2GS_CLIENT_HandleAddSTatUnit(D2UnitStrc * pUnit, D2
     if (eUnitStat == UNITSTAT_alignment) {
       Player::CLIENT_UpdateMonsterAllegiance(pUnit, byOldAlignment, (char)eSkill);
     } else if ((int)eUnitStat < 0) {
-      return (D2UnitStrc*)pStatList;
+      return pStatList;
     }
     if (!((int)eUnitStat < sgptDataTable->nTxtItemStatCostSize && sgptDataTable->pTxtItemStatCost + eUnitStat && sgptDataTable->pTxtItemStatCost[eUnitStat].dwItemStatFlags & ITEMSTATCOSTFLAG_UPDATEANIMRATE)) {
-      return (D2UnitStrc*)pStatList;
+      return pStatList;
     }
 
     D2Common::Units::UpdateAnimSpeed(pUnit, ".\\UNIT\\PlrSkills.cpp", 0x5d2);
-    return (D2UnitStrc*)pStatList;
+    return pStatList;
 }
 
 // Invokes the state's setfunc dispatch table entry (STATESSETFUNC[]) and attaches a client state event handler with modifier skill/level stats. Guards: pUnit non-null, eState in bounds, notondead check vs unit type/mode.
@@ -1379,7 +1379,7 @@ void __fastcall STATES_DispatchSetFunc(D2UnitStrc * pUnit, eD2States eState) {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(STATESSETFUNC, "D2Client::UNIT::PlrSkills::STATES_DispatchSetFunc::STATESSETFUNC");
 
     if (!(pUnit && -1 < (int)eState && (int)eState < sgptDataTable->nTxtStatesSize)) {
       return;
@@ -1442,7 +1442,7 @@ void __fastcall STATES_DispatchRemFunc(D2UnitStrc * pUnit, eD2States eState) {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(STATESREMFUNC, "D2Client::UNIT::PlrSkills::STATES_DispatchRemFunc::STATESREMFUNC");
 
     if (!(pUnit && -1 < (int)eState && (int)eState < sgptDataTable->nTxtStatesSize)) {
       return;

@@ -30,7 +30,6 @@
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Common/Units.h"
-#include "D2Common/Units/MissileStream.h"
 #include "D2Game/D2MissileDamageDataStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
@@ -48,7 +47,6 @@
 #include "globals/globals.h"
 #include "D2Common/D2Common.h"
 #include "D2Common/ITEMS/ItemMods.h"
-#include "D2Game/Monster/Monsters.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -365,11 +363,11 @@ void __stdcall SetAnimSpeed(D2UnitStrc * pUnit, int32_t nAnimSpeed) {
 }
 
 void __fastcall SetStream(D2UnitStrc * pUnit, D2MissileStreamStrc * pStream) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MISSILE && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MISSILE && pUnit->pUnitData.pUnitDataMissile)) {
       return;
     }
 
-    pUnit->pUnitData.pUnitDataMonster->pMonsterAi = (D2MonsterAiStrc*)pStream;
+    pUnit->pUnitData.pUnitDataMissile->unk0x30 = pStream;
 }
 
 D2MissileStreamStrc * __fastcall GetStream(D2UnitStrc * pUnit) {
@@ -1082,8 +1080,8 @@ uint32_t __stdcall MISSILE_EvalMissileCalc(D2UnitStrc * pMissile, D2UnitStrc * p
         /* .pfnMethod = */ (pfnSkillCalcOp)&D2Common::Units::Missile::GetSpecialParamValueForSkillMissile,
         /* .nArgCount = */ 0x2
     }
-};
-    static int32_t gnMissileCalcMethodCount = 0x4;
+}; D2_STATIC_GUARD(gaMissileCalcMethods, "D2Common::Units::Missile::MISSILE_EvalMissileCalc::gaMissileCalcMethods");
+    static int32_t gnMissileCalcMethodCount = 0x4; D2_STATIC_GUARD(gnMissileCalcMethodCount, "D2Common::Units::Missile::MISSILE_EvalMissileCalc::gnMissileCalcMethodCount");
 
     D2MissileCalcContextStrc sCalcCtx;
     if (pMissile) {

@@ -152,7 +152,7 @@ uint32_t __fastcall deflateEnd(z_stream * pStream);
 uint32_t __fastcall deflateCopy(z_stream * pDestStream, z_stream * pSrcStream);
 uint32_t __fastcall read_buf(z_stream * pStream, uint8_t * pBuf, uint32_t nSize);
 void lm_init(deflate_state * pDeflateState);
-char * __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDeflateState);
+uint32_t __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDeflateState);
 void fill_window(deflate_state * pDeflateState);
 int32_t __fastcall deflate_stored(deflate_state * pDeflateState, int32_t nFlush);
 // zlib deflate_fast() - hash-chain matching, single pass compression strategy

@@ -126,7 +126,7 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnve
     int nReason;
     int bServerValidRequest;
     uint32_t bAllowed;
-    int32_t bReturn1Result;
+    void* bReturn1Result;
     BOOL bFindMeCheckResult;
     D2ClientStrc* pClient;
     char szCharName[52];

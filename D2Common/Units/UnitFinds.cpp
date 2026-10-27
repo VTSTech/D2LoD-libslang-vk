@@ -3,7 +3,6 @@
 #include "D2Common/Units/UnitFinds.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
-#include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/UNIT.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -22,9 +21,7 @@
 #include "D2Common/Units.h"
 #include "D2Game/D2UnitFindDataStrc.h"
 #include "D2Game/GAME/Event.h"
-#include "D2Game/GAME/Targets.h"
 #include "D2Game/UNIT/SUnit.h"
-#include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
@@ -274,20 +271,20 @@ void ExpandUnitFinds(D2UnitFindDataStrc * pUnitFindData, D2UnitStrc * pUnit) {
 }
 
 // @sourcefile .\UNITS\UnitFinds.cpp
-void __stdcall InitializeUnitFindData(::SGAMEDATA * pMemPool, D2UnitFindDataStrc * pUnitFindData, D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t nDistance, UNITFINDTEST nfpUnitTest, D2UnitFindArgStrc * pUnitFindArg) {
+void __stdcall InitializeUnitFindData(D2PoolManagerStrc * pMemPool, D2UnitFindDataStrc * pUnitFindData, D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t nDistance, UNITFINDTEST nfpUnitTest, D2UnitFindArgStrc * pUnitFindArg) {
     if (!pUnitFindData) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe2);
       exit(-1);
     } else {
       D2UnitFindsStrc* pInitArray;
-      pInitArray = D2_NEW_POOL((D2PoolManagerStrc*)pMemPool, D2UnitFindsStrc);
+      pInitArray = D2_NEW_POOL(pMemPool, D2UnitFindsStrc);
       pUnitFindData->pUnitsArray = pInitArray;
       if (pInitArray) {
         memset(pInitArray, 0, 0x3c);
         pUnitFindData->pRoom = pRoom;
         pUnitFindData->nX = nX;
         pUnitFindData->nY = nY;
-        pUnitFindData->pMemory = (D2PoolManagerStrc*)pMemPool;
+        pUnitFindData->pMemory = pMemPool;
         pUnitFindData->nUnitFindsSize = 0xf;
         pUnitFindData->nCountedUnits = 0;
         pUnitFindData->nFlags = 0;
@@ -482,7 +479,7 @@ int32_t __stdcall UNITFINDS_FindCullRange(D2UnitFindDataStrc * pUnitFindData) {
     D2UnitStrc* pUnit;
     D2UnitFindDataStrc* pFindData = pUnitFindData;
     if (!pUnitFindData) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int)Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
       exit(-1);
     }
 
@@ -525,7 +522,7 @@ int32_t __stdcall UNITFINDS_FindCullRange(D2UnitFindDataStrc * pUnitFindData) {
               } else {
                 /* FARPROC lpfn for IsBadCodePtr */ bBadPtr = IsBadCodePtr((FARPROC)pFindData->fpUnitTest);
                 if (bBadPtr) {
-                  Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13e);
+                  Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int)Fog::Src::ErrorManager::GetInstructionPointer(), 0x13e);
                   exit(-1);
                 }
 

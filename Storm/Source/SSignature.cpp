@@ -310,15 +310,15 @@ void __fastcall Sha1_Pump(uint32_t * pHashState, uint8_t * pBuffer) {
     uint32_t dwB;
     uint32_t uVar4;
     uint32_t dwTmp10;
-    uint32_t aScheduleHead[10];
-    uint32_t dwScheduleBase;
+    uint32_t auStack_194[10];
+    uint32_t uStack_16c;
     uint32_t aMsgSchedule[80];
     uint8_t byMsgByte0e;
     uint8_t byMsgByte10;
     int nIndex = 0;
     do {
       nIndex2 = nIndex + 4;
-      (&dwScheduleBase)[nIndex2] = (uint32_t)((uint32_t)((uint32_t)((uint32_t)(uint16_t)((uint16_t)(uint8_t)*pBuffer << 8 | (uint16_t)(uint8_t)pBuffer[1]) << 8 | (uint32_t)(uint8_t)pBuffer[2]) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pBuffer[3]);
+      (&uStack_16c)[nIndex2] = (uint32_t)((uint32_t)((uint32_t)((uint32_t)(uint16_t)((uint16_t)(uint8_t)*pBuffer << 8 | (uint16_t)(uint8_t)pBuffer[1]) << 8 | (uint32_t)(uint8_t)pBuffer[2]) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pBuffer[3]);
       byMsgByte10 = pBuffer[10];
       aMsgSchedule[nIndex + 1] = (uint32_t)((uint32_t)((uint32_t)((uint32_t)(uint16_t)((uint16_t)(uint8_t)pBuffer[4] << 8 | (uint16_t)(uint8_t)pBuffer[5]) << 8 | (uint32_t)(uint8_t)pBuffer[6]) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pBuffer[7]);
       byMsgByte0e = pBuffer[0xe];
@@ -328,7 +328,7 @@ void __fastcall Sha1_Pump(uint32_t * pHashState, uint8_t * pBuffer) {
       pBuffer += 0x10;
     } while (nIndex2 < 0x10);
 
-    uint32_t* pSchedule = aScheduleHead + nIndex2;
+    uint32_t* pSchedule = auStack_194 + nIndex2;
     do {
       nIndex2++;
       dwB = pSchedule[0xb] ^ pSchedule[6] ^ pSchedule[-2] ^ *pSchedule;
@@ -562,7 +562,7 @@ int __fastcall Sha1_Finalize(uint8_t * pDigest, D2Sha1ContextStrc * pCtx) {
     0x0,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gaSha1PaddingBlock, "Storm::Source::SSignature::Sha1_Finalize::gaSha1PaddingBlock");
 
     // Frame slots -16..-4 are ONE object: &byLen7 is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.

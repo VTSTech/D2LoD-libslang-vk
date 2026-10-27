@@ -51,7 +51,7 @@ DC6 * __fastcall IMAGE_LoadDC6Ex(char * szFilename, BOOL bUseDccExtension) {
 
     int32_t nSrcLine = 0x53;
     char* szSrcFile = ".\\CORE\\ARCHIVE.CPP";
-    size_t* pnFileSize = 0;
+    uint32_t* pnFileSize = 0;
     for (nWordsLeft = (int)pszExtTail - (int)szExtension & 3; nWordsLeft; nWordsLeft--) {
       *pszNameEnd = *pszExtSrc;
       pszExtSrc++;
@@ -66,7 +66,7 @@ DC6 * __fastcall IMAGE_LoadDC6Ex(char * szFilename, BOOL bUseDccExtension) {
 }
 
 // @sourcefile .\CORE\ARCHIVE.CPP
-DC6 * __fastcall IMAGE_LoadWeatherDC6ToPointer(char * szFilename, size_t * pnSize, DC6 * pDC6) {
+DC6 * __fastcall IMAGE_LoadWeatherDC6ToPointer(char * szFilename, uint32_t * pnSize, DC6 * pDC6) {
     uint32_t nWordsLeft;
     char* pszExtSrc;
     char aFullName[260];

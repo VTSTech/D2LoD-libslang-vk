@@ -45,8 +45,8 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataPlayerInteractedNPCStrc) 
 
 namespace D2Game::PLAYER::PlayerIntro {
 
-static int gaNPCSpokenBitIndexMap_0__1_[35][2] = { 0 };
-static int gaNPCSpokenBitIndexMap_1__0_[35][2] = { 0 };
+static int gaNPCSpokenBitIndexMap_0__1_[35][2] = { 0 }; D2_STATIC_GUARD(gaNPCSpokenBitIndexMap_0__1_, "D2Game::PLAYER::PlayerIntro::gaNPCSpokenBitIndexMap_0__1_");
+static int gaNPCSpokenBitIndexMap_1__0_[35][2] = { 0 }; D2_STATIC_GUARD(gaNPCSpokenBitIndexMap_1__0_, "D2Game::PLAYER::PlayerIntro::gaNPCSpokenBitIndexMap_1__0_");
 
 void __fastcall PLAYER_SetSpokenWithNPC(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, int32_t nMonStatsId) {
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);

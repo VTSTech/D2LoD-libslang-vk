@@ -4,7 +4,6 @@
 #include "../../support/d2_trace.h"
 #include "D2CMP/SRC/TileProjects.h"
 #include "D2Client/D2ClientStrc.h"
-#include "D2Client/D2GameViewStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/View.h"
 #include "D2Client/SKILLS/SkillsPal.h"
@@ -149,7 +148,7 @@ D2UnitStrc * __stdcall TakeStairsInternal(D2RoomStrc * pRoom, eD2LevelId eLevelI
       exit(-1);
     } else {
       D2RoomStrc* pDVar2;
-      pDVar2 = Drlg::DrlgRoom::DRLGWARP_GetWarpDestinationRoom(pRoom->pRoomEx, eLevelId, (D2DrlgOrthStrc**)&pRoom, (D2RoomExStrc**)&eLevelId);
+      pDVar2 = Drlg::DrlgRoom::DRLGWARP_GetWarpDestinationRoom(pRoom->pRoomEx, eLevelId, (int*)&pRoom, (D2LvlWarpTxt**)&eLevelId);
       if (pDVar2) {
         for (pDVar1 = pDVar2->pUnitList; pDVar1 && (pDVar1->eUnitType != UNIT_WARP || (D2RoomStrc*)pDVar1->nClassId != pRoom); pDVar1 = pDVar1->pRoomNext) {}
 
@@ -281,7 +280,7 @@ void __stdcall DRLGROOM_UpdateRoomsNearAndCount(D2PoolManagerStrc * pMemory, D2R
 
 // Allocates and initialises a D2RoomStrc (0x80 bytes) from the act memory pool. Copies coordinate data from pDrlgCoords, seeds the RNG with nInitSeed/0x29A, links the room into the act's room list, marks the act dirty, sets pRoomEx back-pointer, updates neighbour counts, allocates the collision grid, and fires the act callback if set. Halts if pDrlgAct is null.
 // @sourcefile .\DUNGEON\Dungeon.cpp
-D2RoomStrc * __fastcall AllocRoom(D2DrlgActStrc * pDrlgAct, D2RoomExStrc * pRoomEx, D2DrlgCoordsStrc * pDrlgCoords, D2DrlgRoomTilesStrc * pRoomTiles, int32_t nInitSeed, int32_t eFlags) {
+D2RoomStrc * __fastcall AllocRoom(D2DrlgActStrc * pDrlgAct, D2RoomExStrc * pRoomEx, D2DrlgRoomCoordsStrc * pDrlgCoords, D2DrlgRoomTilesStrc * pRoomTiles, int32_t nInitSeed, int32_t eFlags) {
     int i;
     if (!pDrlgAct) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x119);
@@ -296,8 +295,8 @@ D2RoomStrc * __fastcall AllocRoom(D2DrlgActStrc * pDrlgAct, D2RoomExStrc * pRoom
     pDrlgRoom->pRoomEx = pRoomEx;
     D2DrlgRoomCoordsStrc* pDestCoords = &pDrlgRoom->sCoords;
     for (i = 8; i; i--) {
-      pDestCoords->dwXStart = pDrlgCoords->WorldPosition.x;
-      pDrlgCoords = (D2DrlgCoordsStrc*)&pDrlgCoords->WorldPosition.y;
+      pDestCoords->dwXStart = pDrlgCoords->dwXStart;
+      pDrlgCoords = (D2DrlgRoomCoordsStrc*)&pDrlgCoords->dwYStart;
       pDestCoords = (D2DrlgRoomCoordsStrc*)&pDestCoords->dwYStart;
     }
 
@@ -308,7 +307,7 @@ D2RoomStrc * __fastcall AllocRoom(D2DrlgActStrc * pDrlgAct, D2RoomExStrc * pRoom
     pDrlgRoom->pDrlgAct = pDrlgAct;
     Drlg::DrlgRoom::SetRoom(pRoomEx, pDrlgRoom);
     DRLGROOM_UpdateRoomsNearAndCount(pDrlgAct->pMemory, pDrlgRoom);
-    Collision::AllocRoomCollisionGrid((D2DrlgActStrc*)pDrlgAct->pMemory, pDrlgRoom);
+    Collision::AllocRoomCollisionGrid(pDrlgAct->pMemory, pDrlgRoom);
     if (!pDrlgAct->pCallback) {
       return pDrlgRoom;
     }
@@ -450,7 +449,7 @@ int32_t __stdcall GetAdjacentRoomByCoordinates(D2RoomStrc * pRoom, int32_t nX, i
     return 0;
 }
 
-void __stdcall CallRoomCallback(D2RoomStrc * pRoom, ROOMCALLBACKFN pfnRoomCallback, D2GameViewStrc * pArgs) {
+void __stdcall CallRoomCallback(D2RoomStrc * pRoom, ROOMCALLBACKFN pfnRoomCallback, void * pArgs) {
     uint32_t nRoomIdx;
     if (!pRoom) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c0);
@@ -654,7 +653,7 @@ D2UnitStrc * * __fastcall DRLGROOM_GetUnitUpdateListFromRoom(D2RoomStrc * pRoom,
 
 D2PresetUnitStrc * __stdcall GetPresetUnitsFromRoom(D2RoomStrc * pRoom) {
     if (!pRoom) {
-      /* Result of ROOMEX is returned */ Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 699);
+      /* Result of ROOMEX is returned */ Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 699);
       exit(-1);
     }
 
@@ -1365,7 +1364,7 @@ BOOL __stdcall DRLGROOM_IsUpdateLocked(D2RoomStrc * pRoom) {
 
 eD2LevelId __stdcall GetTownLevelIdFromActNo(uint8_t nAct) {
     // Static local variables (originally global data)
-    static eD2LevelId gaTownLevelIdByAct[5] = { LEVEL_RogueEncampment, LEVEL_LutGholein, LEVEL_KurastDocktown, LEVEL_ThePandemoniumFortress, LEVEL_Harrogath };
+    static eD2LevelId gaTownLevelIdByAct[5] = { LEVEL_RogueEncampment, LEVEL_LutGholein, LEVEL_KurastDocktown, LEVEL_ThePandemoniumFortress, LEVEL_Harrogath }; D2_STATIC_GUARD(gaTownLevelIdByAct, "D2Common::DUNGEON::Dungeon::GetTownLevelIdFromActNo::gaTownLevelIdByAct");
 
     if (4 >= nAct) {
       return gaTownLevelIdByAct[nAct];

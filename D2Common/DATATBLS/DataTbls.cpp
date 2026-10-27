@@ -80,8 +80,20 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2SkillsPerClassCounter) == 0x1c, "
 
 namespace D2Common::DATATBLS::DataTbls {
 
-static uint8_t gszMissileNameFormat;
-static uint8_t gszTxtEventsTableName;
+static char gszMissileNameFormat[11] = {
+    'm',
+    'i',
+    's',
+    's',
+    'i',
+    'l',
+    'e',
+    ' ',
+    '%',
+    'd',
+    '\x00'
+}; D2_STATIC_GUARD(gszMissileNameFormat, "D2Common::DATATBLS::DataTbls::gszMissileNameFormat");
+static char gszTxtEventsTableName[7] = { 's', 'k', 'i', 'l', 'l', 's', '\x00' }; D2_STATIC_GUARD(gszTxtEventsTableName, "D2Common::DATATBLS::DataTbls::gszTxtEventsTableName");
 
 BOOL __fastcall CheckIfFileExists(D2PoolManagerStrc * pMemory, char * szFilename, D2MPQFileStrc * * ppFile, BOOL bDontLogError) {
     BOOL bFileExists;
@@ -511,10 +523,6 @@ void GetMissileClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
 }
 
 char * __stdcall GetUnitClassIdToName(D2UnitStrc * pUnit, char * szResult, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t gszInvalidUnitText = 0x49;
-    static uint8_t gszNullUnitText = 0x4e;
-
     *szResult = '\0';
     if (pUnit) {
       switch (pUnit->eUnitType) {
@@ -534,19 +542,16 @@ char * __stdcall GetUnitClassIdToName(D2UnitStrc * pUnit, char * szResult, size_
           GetItemClassIdToName(pUnit->nClassId, szResult, nSize);
         return szResult;
         default:
-          printf(szResult, &gszInvalidUnitText);
+          printf(szResult, "Invalid Unit");
         return szResult;
       }
     }
 
-    printf(szResult, &gszNullUnitText);
+    printf(szResult, "NULL Unit");
     return szResult;
 }
 
 char * __stdcall GetNameByClassIdAndType(eD2UnitType eUnitType, int16_t nClassId, char * szResult, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t gszInvalidUnitTypeText = 0x49;
-
     *szResult = '\0';
     switch (eUnitType) {
       case UNIT_PLAYER:
@@ -569,7 +574,7 @@ char * __stdcall GetNameByClassIdAndType(eD2UnitType eUnitType, int16_t nClassId
         GetItemClassIdToName((int)nClassId, szResult, nSize);
       return szResult;
       default:
-        printf(szResult, &gszInvalidUnitTypeText);
+        printf(szResult, "Invalid Unit Type");
     }
 
     return szResult;
@@ -590,7 +595,7 @@ void __stdcall StoreDataTables(uint32_t szFileName, D2InventoryToBeUpdatedStrc *
 }
 
 // @sourcefile .\DATATBLS\DataTbls.cpp
-D2ArchiveStrc * __fastcall ARCHIVE_LoadDataTables(D2PoolManagerStrc * pMemory, char * szTableName, char * szExtension, size_t * pSize, char * szFile, int32_t nLine) {
+D2ArchiveStrc * __fastcall ARCHIVE_LoadDataTables(D2PoolManagerStrc * pMemory, char * szTableName, char * szExtension, uint32_t * pSize, char * szFile, int32_t nLine) {
     char szFilePath[260];
     uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFilePath, "%s\\%s%s", "DATA\\GLOBAL\\EXCEL", szTableName, szExtension);

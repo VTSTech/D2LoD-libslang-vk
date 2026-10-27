@@ -87,8 +87,7 @@ BOOL __fastcall D2WINANIMIMAGE_TryAdvanceToPlaying(::D2WinAnimImage * pAnimImage
 }
 
 BOOL __fastcall DrawAnim(::D2WinAnimImage * pAnimImage) {
-    int32_t nErrorAddr;
-    int32_t nOffsetY;
+    int32_t nOffsetX;
     D2GfxDataStrc sGfxData;
     int nPosX;
     int nPosY;
@@ -114,9 +113,9 @@ BOOL __fastcall DrawAnim(::D2WinAnimImage * pAnimImage) {
     nPosY = pAnimImage->sControl.dwPosY;
     int32_t local_14 = D2CMP::SRC::CelCmp::GetDC6Width(pDC6Block);
     int32_t nDC6Height = D2CMP::SRC::CelCmp::GetDC6Height(pDC6Block);
-    nErrorAddr = D2CMP::SRC::CelCmp::GetDC6OffsetX(pDC6Block);
-    nOffsetY = D2CMP::SRC::CelCmp::GetDC6OffsetY(pDC6Block);
-    if (!(nPosX <= nMouseX - nErrorAddr && nPosY - nDC6Height <= nMouseY - nOffsetY && nMouseX - nErrorAddr < local_14 + nPosX && nMouseY - nOffsetY < nPosY)) {
+    nOffsetX = D2CMP::SRC::CelCmp::GetDC6OffsetX(pDC6Block);
+    int32_t nOffsetY = D2CMP::SRC::CelCmp::GetDC6OffsetY(pDC6Block);
+    if (!(nPosX <= nMouseX - nOffsetX && nPosY - nDC6Height <= nMouseY - nOffsetY && nMouseX - nOffsetX < local_14 + nPosX && nMouseY - nOffsetY < nPosY)) {
       return 0;
     }
 
@@ -198,13 +197,14 @@ BOOL D2WINANIMIMAGE_UpdateFrame(::D2WinAnimImage * pAnimImage) {
 }
 
 BOOL __fastcall Draw(::D2WinAnimImage * pAnimImage) {
-    int32_t nErrorAddr;
+    DC6Block* pFirstDC6Block;
     int pDC6Block;
     DWORD dwTick;
     DRAWMODE nDrawMode;
     D2GfxDataStrc sGfxData;
     DRAWMODE eOverlayDrawMode;
     int nFrameCount;
+    int32_t nLine;
     uint32_t* pOverlayEntry;
     if (pAnimImage->sControl.neD2FormType != FORM_Image) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf9);
@@ -224,7 +224,6 @@ BOOL __fastcall Draw(::D2WinAnimImage * pAnimImage) {
     DC6* pDC6 = 0;
     DC6* pOverlayDC6 = 0;
     if (!eFrameType) {
-      DC6Block* pFirstDC6Block;
       pDC6 = pAnimImage->sControl.pDC6;
       pOverlayDC6 = 0;
       nDrawMode = pAnimImage->eDrawMode;
@@ -234,10 +233,10 @@ BOOL __fastcall Draw(::D2WinAnimImage * pAnimImage) {
       sGfxData.nFrameNumber = 0;
       sGfxData.pDC6 = pDC6;
       pFirstDC6Block = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockFromGfxData(&sGfxData);
-      nErrorAddr = D2CMP::SRC::CelCmp::GetDC6OffsetY(pFirstDC6Block);
-      nPosY -= nErrorAddr;
-      nErrorAddr = D2CMP::SRC::CelCmp::GetDC6OffsetX(pFirstDC6Block);
-      nPosX -= nErrorAddr;
+      nLine = D2CMP::SRC::CelCmp::GetDC6OffsetY(pFirstDC6Block);
+      nPosY -= nLine;
+      nLine = D2CMP::SRC::CelCmp::GetDC6OffsetX(pFirstDC6Block);
+      nPosX -= nLine;
       eOverlayDrawMode = nDrawMode;
     } else {
       pOverlayEntry = (uint32_t*)eFrameType[pAnimImage->nAnimState].ppBaseImage;

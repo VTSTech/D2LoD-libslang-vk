@@ -11,7 +11,6 @@
 #include "D2Common/DATATBLS/LvlTbls.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
-#include "D2Game/PLAYER/PlayerSave2.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
@@ -38,7 +37,7 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2WaypointStrc) == 0x10, "D2_NEW(D2
 
 namespace D2Common::Waypoints {
 
-static uint16_t aaWaypointsBitMasks_0__1_[112][2] = { 0 };
+static uint16_t aaWaypointsBitMasks_0__1_[112][2] = { 0 }; D2_STATIC_GUARD(aaWaypointsBitMasks_0__1_, "D2Common::Waypoints::aaWaypointsBitMasks_0__1_");
 
 BOOL __stdcall FindLevelIdByWaypointId(uint16_t nWaypointId, eD2LevelId * pLevelId) {
     *pLevelId = LEVEL_None;
@@ -183,7 +182,7 @@ void __stdcall CopyWaypointBits(D2WaypointStrc * pWaypoint, uint8_t * nWaypointB
     /* Sets 1st Waypoint always available */ pWaypoint->aWaypointBits[D2Client::Waypoint::aaWaypointsBitMasks[0][0] - 1] |= D2Client::Waypoint::aaWaypointsBitMasks[0][1];
 }
 
-void __stdcall CopyWaypoint(D2WaypointStrc * pWaypoint, D2SaveWaypointListEntryStrc * pEntry) {
+void __stdcall CopyWaypoint(D2WaypointStrc * pWaypoint, D2WaypointStrc * pEntry) {
     uint16_t nSignature = pWaypoint->nSignature;
     if (nSignature != 0x102) {
       if (nSignature && nSignature != 0x101) {
@@ -195,11 +194,11 @@ void __stdcall CopyWaypoint(D2WaypointStrc * pWaypoint, D2SaveWaypointListEntryS
     }
 
     nSignature = pWaypoint->aWaypointBits[0];
-    pEntry->pWaypoints.nSignature = pWaypoint->nSignature;
-    pEntry->pWaypoints.aWaypointBits[0] = nSignature;
-    *(uint32_t*)(pEntry->pWaypoints.aWaypointBits + 1) = *(uint32_t*)(pWaypoint->aWaypointBits + 1);
-    *(uint32_t*)(pEntry->pWaypoints.aWaypointBits + 3) = *(uint32_t*)(pWaypoint->aWaypointBits + 3);
-    *(uint32_t*)(pEntry->pWaypoints.aWaypointBits + 5) = *(uint32_t*)(pWaypoint->aWaypointBits + 5);
+    pEntry->nSignature = pWaypoint->nSignature;
+    pEntry->aWaypointBits[0] = nSignature;
+    *(uint32_t*)(pEntry->aWaypointBits + 1) = *(uint32_t*)(pWaypoint->aWaypointBits + 1);
+    *(uint32_t*)(pEntry->aWaypointBits + 3) = *(uint32_t*)(pWaypoint->aWaypointBits + 3);
+    *(uint32_t*)(pEntry->aWaypointBits + 5) = *(uint32_t*)(pWaypoint->aWaypointBits + 5);
 }
 
 } // namespace D2Common::Waypoints

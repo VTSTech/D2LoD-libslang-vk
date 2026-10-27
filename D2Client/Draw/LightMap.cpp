@@ -26,8 +26,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
@@ -57,13 +55,11 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2LightMapStrc) == 0x34, "D2_NEW(D2
 
 namespace D2Client::Draw::LightMap {
 
-static uint8_t gnLightmapInterpDirX;
-
 D2LightMapStrc * __fastcall AllocLightMap(D2UnitStrc * pUnit, int32_t nLightType, int32_t nDiameter, uint8_t nGamma, uint8_t nRed, uint8_t nGreen, uint8_t nBlue) {
     LightDiag::NoteLightSource(pUnit ? (int)pUnit->eUnitType : -1, pUnit ? (int)pUnit->nClassId : -1, nLightType, nDiameter, nGamma, nRed, nGreen, nBlue); // [glide fix 13]
 
     // Static local variables (originally global data)
-    static int nLightMapSize;
+    static int nLightMapSize; D2_STATIC_GUARD_BSS(nLightMapSize, "D2Client::Draw::LightMap::AllocLightMap::nLightMapSize");
 
     DWORD nUnitGUID;
     int* pPixelMap;
@@ -191,7 +187,7 @@ void __fastcall SetRGB(D2LightMapStrc * pLightMap, uint8_t nRed, uint8_t nGreen,
 
 void __fastcall FreeLightMap(D2LightMapStrc * pLightMap) {
     // Static local variables (originally global data)
-    static int nFreedLightMapsCounter;
+    static int nFreedLightMapsCounter; D2_STATIC_GUARD_BSS(nFreedLightMapsCounter, "D2Client::Draw::LightMap::FreeLightMap::nFreedLightMapsCounter");
 
     if (!pLightMap) {
       return;
@@ -1151,8 +1147,8 @@ void __stdcall LIGHTMAP_BuildCollisionFlags() {
 
 int __stdcall LIGHTMAP_GetQualityLevel() {
     // Static local variables (originally global data)
-    static unsigned int gdwLightmapQualityLastCheck;
-    static int gnLightmapQualityLevel;
+    static unsigned int gdwLightmapQualityLastCheck; D2_STATIC_GUARD_BSS(gdwLightmapQualityLastCheck, "D2Client::Draw::LightMap::LIGHTMAP_GetQualityLevel::gdwLightmapQualityLastCheck");
+    static int gnLightmapQualityLevel; D2_STATIC_GUARD_BSS(gnLightmapQualityLevel, "D2Client::Draw::LightMap::LIGHTMAP_GetQualityLevel::gnLightmapQualityLevel");
 
     uint32_t dwTickCount;
     int nQualityLevel;
@@ -1212,7 +1208,7 @@ int __stdcall LIGHTMAP_GetQualityLevel() {
 // Rebuilds the lightmap for the box +/-0x18 around the UI player, then updates every live light.
 void __stdcall dLightMapUpdate() {
     // Static local variables (originally global data)
-    static int gnActiveLightMapCount;
+    static int gnActiveLightMapCount; D2_STATIC_GUARD_BSS(gnActiveLightMapCount, "D2Client::Draw::LightMap::dLightMapUpdate::gnActiveLightMapCount");
 
     int nPlayerX;
     int nQualityLevel;

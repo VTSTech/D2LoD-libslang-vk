@@ -33,7 +33,6 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/_unnamespaced.h"
-#include "support/d2_boot.h" // [vanilla-plus fix 22] halt-site state dumps + free-callback hardening reports
 #include "globals/globals.h"
 #include "Bnclient/BNGatewayAccess.h"
 #include "Fog/Debug.h"
@@ -79,15 +78,14 @@ typedef HRESULT (__stdcall *D3DVB_Lock)(void * This, DWORD dwFlags, void * * lpl
 
 namespace D2Direct3D::Renderer {
 
-// [vanilla-plus fix 24] Real ground-tile index arrays. The Ghidra export
-// split the retail index buffer into three under-extent phantom statics: a
-// 1-byte "gpD3DGroundTileVertexBuffer" that the draw read 130 bytes of index
-// words from, a 2-byte "gaD3DGroundTileIndexBuffer" that the prefill overran
-// by 129 bytes, and "gdwRendererMode" (=0x50000, i.e. WORDs [0,5] - the
-// verbatim first half of the low-quality fan list). Prefill filled one
-// label, the draw read another, so DrawIndexedPrimitiveVB consumed garbage
-// indices and the ground drew nothing (black) while sprites (DrawPrimitive)
-// and the GDI windowed path stayed correct.
+// [vanilla-plus fix 24, ported onto ad964f3] Real ground-tile index arrays. The
+// Ghidra export split the retail index buffer into three under-extent phantom
+// statics (a 1-byte gpD3DGroundTileVertexBuffer the draw read 130 bytes of index
+// words from, a 2-byte gaD3DGroundTileIndexBuffer the prefill overran by 129
+// bytes, and gdwRendererMode = WORDs [0,5]). Prefill filled one label, the draw
+// read another -> DrawIndexedPrimitiveVB consumed garbage indices -> black
+// ground (D3D fullscreen only). Ported: ad964f3 re-typed the phantoms but kept
+// them under-extent.
 static WORD g_aD3DGroundTileStripIndices[65];               // 5 strip bands x 13 words
 static WORD g_aD3DGroundTileFanIndices[4] = {0, 5, 35, 28}; // low-quality fan: [0,5] verbatim from the retail dword 0x00050000; [35,28] = the two remaining updated vertices (v0,v5,v35,v28) in diamond-perimeter fan order
 
@@ -96,15 +94,7 @@ static WORD g_aD3DGroundTileFanIndices[4] = {0, 5, 35, 28}; // low-quality fan: 
 // D3DEnumPixelFormatsCallback. Parameter 1 is an LPDDPIXELFORMAT; parameter 2 is the device-caps flag word, and the 0x200 bit
 // it sets is the one Direct3DCallBack tests for "Supports 1555 textures".
 HRESULT __stdcall D3D_EnumTextureFormatsCallback(void * lpDDPixFmt, DWORD * pnDeviceFlags) {
-    // Static local variables (originally global data)
-    static uint32_t gdwUnitSfxStartLightDefault = 0x41;
-    static uint32_t gdwUnitSfxFlagDefault = 0x10;
-    static uint32_t gnUnitSfxModeDefault = 0x7c00;
-    static uint32_t gpUnitSfxDataDefault = 0x3e0;
-    static uint32_t gdwUnitSfxTicksDefault = 0x1f;
-    static uint32_t gdwUnitSfxAsyncTicksDefault = 0x8000;
-
-    if (!(pnDeviceFlags && *(int*)((int)lpDDPixFmt + 4) == gdwUnitSfxStartLightDefault && *(int*)((int)lpDDPixFmt + 0xc) == gdwUnitSfxFlagDefault && *(int*)((int)lpDDPixFmt + 0x10) == gnUnitSfxModeDefault && *(int*)((int)lpDDPixFmt + 0x14) == gpUnitSfxDataDefault && *(int*)((int)lpDDPixFmt + 0x18) == gdwUnitSfxTicksDefault && *(int*)((int)lpDDPixFmt + 0x1c) == gdwUnitSfxAsyncTicksDefault)) {
+    if (!(pnDeviceFlags && *(uint32_t*)((int)lpDDPixFmt + 4) == gsD3DTextureDescTemplate[1] && *(uint32_t*)((int)lpDDPixFmt + 0xc) == gsD3DTextureDescTemplate[3] && *(uint32_t*)((int)lpDDPixFmt + 0x10) == gsD3DTextureDescTemplate[4] && *(uint32_t*)((int)lpDDPixFmt + 0x14) == gsD3DTextureDescTemplate[5] && *(uint32_t*)((int)lpDDPixFmt + 0x18) == gsD3DTextureDescTemplate[6] && *(uint32_t*)((int)lpDDPixFmt + 0x1c) == gsD3DTextureDescTemplate[7])) {
       return 1;
     }
 
@@ -647,8 +637,8 @@ void __stdcall RENDERER_D3D_AllocateTextureCaches() {
       }
     }
     if (!g_bPerspectiveMode) {
-      gnTextureMemoryUsageBytes = 0;
-      gnGlideSubtileCacheMemBytes = 0;
+      gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = 0;
+      gnTextureMemoryUsageBytes.nGlideSubtileCacheMemBytes = 0;
       nSmackerBase = RENDERER_D3D_CreateSmackerSurfaces(0);
       nGenericNodeBytes = RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache.aCaches, nSmackerBase, (uSmallCacheAlloc - nSmackerBase) * 0x46 / 100 + nSmackerBase, 0x100, 0x100);
       nGenericCacheEnd = gD3DGenericTextureCache.aCaches[0].nMaxNodes * g_nBytesPerPixel;
@@ -675,20 +665,20 @@ void __stdcall RENDERER_D3D_AllocateTextureCaches() {
       }
 
       nGenericNodeBytes = RENDERER_D3D_InitializeFontSystem(0);
-      gnTextureMemoryUsageBytes = uSubtileCacheAlloc;
+      gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = uSubtileCacheAlloc;
       nSmackerBase = d3dFloorCache::D3DFLOOR_Initialize(&gD3DFloorTextureCache, nGenericNodeBytes, uSubtileCacheAlloc + nGenericNodeBytes, nSmackerBase * 2);
-      gnGlideSubtileCacheMemBytes = uVideoMemBudget;
+      gnTextureMemoryUsageBytes.nGlideSubtileCacheMemBytes = uVideoMemBudget;
       nSmackerBase = d3dSubtileCache::D3DSUBTILE_Initialize(&gD3DSubtileTextureCache, nSmackerBase, uVideoMemBudget + nSmackerBase, 0x800);
       nGenericNodeBytes = RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache.aCaches, nSmackerBase, (uSmallCacheAlloc - nSmackerBase) * 0x14 / 100 + nSmackerBase, 0x100, 0x100);
       nGenericCacheEnd = gD3DGenericTextureCache.aCaches[0].nMaxNodes * g_nBytesPerPixel;
       uSubtileCacheAlloc = (uint32_t)((uint64_t)((uSmallCacheAlloc - nSmackerBase) * 0x4b) * 0x51eb851f >> 0x20);
     }
 
-    gnGlideSmallTextureCacheMemBytes = nGenericCacheEnd * 0x10000;
+    gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = nGenericCacheEnd * 0x10000;
     nSmackerBase = RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache.aCaches + 1, nGenericNodeBytes, (uSubtileCacheAlloc >> 5) + nSmackerBase, 0x80, 0x80);
-    gnGlideMediumTextureCacheMemBytes = gD3DGenericTextureCache.aCaches[1].nMaxNodes * g_nBytesPerPixel * 0x4000;
+    gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gD3DGenericTextureCache.aCaches[1].nMaxNodes * g_nBytesPerPixel * 0x4000;
     RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache.aCaches + 2, nSmackerBase, uSmallCacheAlloc, 0x20, 0x20);
-    gnGlideLargeTextureCacheMemBytes = gD3DGenericTextureCache.aCaches[2].nMaxNodes * g_nBytesPerPixel * 0x400;
+    gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gD3DGenericTextureCache.aCaches[2].nMaxNodes * g_nBytesPerPixel * 0x400;
     RENDERER_D3D_InitializeTexturePools();
     D2CMP::SRC::CelCmp::GFX_SetSpriteCacheMaxSize((size_t)(uintptr_t)d3dFloorCache::D3D_InvalidateTileCachesForEntry);
 }
@@ -710,7 +700,7 @@ void __stdcall RENDERER_D3D_FreeTextureCaches() {
 
 void __stdcall RENDERER_D3D_ReleaseDevice() {
     // Static local variables (originally global data)
-    static IDirectDrawSurface7 * g_pD3DSurfacePrimary;
+    static IDirectDrawSurface7 * g_pD3DSurfacePrimary; D2_STATIC_GUARD_BSS(g_pD3DSurfacePrimary, "D2Direct3D::Renderer::RENDERER_D3D_ReleaseDevice::g_pD3DSurfacePrimary");
 
     if (!g_bDeviceInitialized) {
       return;
@@ -916,7 +906,7 @@ int32_t __fastcall RENDERER_D3D_CreateSystemMemoryTexture(IDirectDrawSurface7 * 
     memset(&ddSurfaceDesc.dwFlags, 0, 0x78);
     ddSurfaceDesc.dwFlags = 0x1007;
     ddSurfaceDesc.dwCaps = 0x840;
-    DWORD* pSrcTemplate = (DWORD*)&gsD3DTextureDescTemplate;
+    uint32_t* pSrcTemplate = gsD3DTextureDescTemplate;
     DWORD* pDstPixelFormat = ddSurfaceDesc.ddpfPixelFormat;
     for (nCopyCount = 8; nCopyCount; nCopyCount--) {
       *pDstPixelFormat = *pSrcTemplate;
@@ -1181,10 +1171,10 @@ void __fastcall RENDERER_DIRECT3D_ErrorLog(char * szText, DWORD dwParam) {
 
 HRESULT __stdcall RENDERER_D3D_EnumDisplayModeCallback(int * pDisplayModeDesc, int pModeList) {
     // Static local variables (originally global data)
-    static uint32_t gnD3DEnumDisplayModeCacheWidth = 0x280;
-    static uint32_t gnD3DEnumDisplayModeCacheHeight = 0x320;
-    static uint32_t gnD3DEnumDisplayModeCacheFormat = 0x1e0;
-    static uint32_t gnD3DEnumDisplayModeCacheRefreshRate = 0x258;
+    static uint32_t gnD3DEnumDisplayModeCacheWidth = 0x280; D2_STATIC_GUARD(gnD3DEnumDisplayModeCacheWidth, "D2Direct3D::Renderer::RENDERER_D3D_EnumDisplayModeCallback::gnD3DEnumDisplayModeCacheWidth");
+    static uint32_t gnD3DEnumDisplayModeCacheHeight = 0x320; D2_STATIC_GUARD(gnD3DEnumDisplayModeCacheHeight, "D2Direct3D::Renderer::RENDERER_D3D_EnumDisplayModeCallback::gnD3DEnumDisplayModeCacheHeight");
+    static uint32_t gnD3DEnumDisplayModeCacheFormat = 0x1e0; D2_STATIC_GUARD(gnD3DEnumDisplayModeCacheFormat, "D2Direct3D::Renderer::RENDERER_D3D_EnumDisplayModeCallback::gnD3DEnumDisplayModeCacheFormat");
+    static uint32_t gnD3DEnumDisplayModeCacheRefreshRate = 0x258; D2_STATIC_GUARD(gnD3DEnumDisplayModeCacheRefreshRate, "D2Direct3D::Renderer::RENDERER_D3D_EnumDisplayModeCallback::gnD3DEnumDisplayModeCacheRefreshRate");
 
     // Frame slots -16..-4 are ONE object: &pTestSurface is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -1322,8 +1312,8 @@ HRESULT __stdcall RENDERER_D3D_EnumDisplayModeCallback(int * pDisplayModeDesc, i
 
 BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char * lpDriverName, void * lpContext) {
     // Static local variables (originally global data)
-    static int gnD3DBytesPerPixelDevice1;
-    static int gnD3DBytesPerPixelDevice0;
+    static int gnD3DBytesPerPixelDevice1; D2_STATIC_GUARD_BSS(gnD3DBytesPerPixelDevice1, "D2Direct3D::Renderer::Direct3DCallBack::gnD3DBytesPerPixelDevice1");
+    static int gnD3DBytesPerPixelDevice0; D2_STATIC_GUARD_BSS(gnD3DBytesPerPixelDevice0, "D2Direct3D::Renderer::Direct3DCallBack::gnD3DBytesPerPixelDevice0");
 
     // Frame slots -36..-12 are ONE object: &pPrimarySurface is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -1470,7 +1460,7 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                 goto ReleaseD3DInterfacesCleanup;
               }
 
-              nDisplayModeIndex = nDeviceNameOffset + 0x9707e8 + gD3DDeviceBlock0[uVar3].nModeCount * 0x14;
+              nDisplayModeIndex = nDeviceNameOffset + (intptr_t)&gD3DDeviceBlock0[0].dwTextureMemFree + gD3DDeviceBlock0[uVar3].nModeCount * 0x14;
               hResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(g_pDirectDraw7, *(DWORD*)(nDisplayModeIndex + 8), *(DWORD*)(nDisplayModeIndex + 0xc), *(DWORD*)(nDisplayModeIndex + 4), *(DWORD*)(nDeviceNameOffset + (int)((char*)&gD3DDeviceBlock0 + 312) + gD3DDeviceBlock0[uVar3].nModeCount * 0x14), 0);
               if (!hResult) {
                 nSurfDescSize.dwSize = 0x7c;
@@ -1827,18 +1817,277 @@ void * __stdcall Catch_All_006b4d4b() {
 
 BOOL __fastcall Initialize(HINSTANCE hInstance) {
     // Static local variables (originally global data)
-    // [vanilla-plus fix 19d] was a 1-byte static; the SRegLoadString below caps the
-    // write at 0x100 bytes and retail itself writes "DeviceName" under VideoConfig
-    // (SaveDeviceConfigToRegistry, :585-606), so from the second D3D boot onward the
-    // load overran this byte by up to 255 bytes (§1 extent family, fix 19b sibling).
-    // The string is only an existence probe — the buffer is never read back — but the
-    // overrun was real. Restored to the 0x100 extent the call site promises.
-    static uint8_t gD3DAdapterInfoBuffer[0x100];
-    static unsigned int gpD3DDevice8;
-    static unsigned int gnD3DAdapterIndex;
+    static uint8_t gD3DAdapterInfoBuffer[264] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+}; D2_STATIC_GUARD(gD3DAdapterInfoBuffer, "D2Direct3D::Renderer::Initialize::gD3DAdapterInfoBuffer");
+    static unsigned int gpD3DDevice8; D2_STATIC_GUARD_BSS(gpD3DDevice8, "D2Direct3D::Renderer::Initialize::gpD3DDevice8");
+    static unsigned int gnD3DAdapterIndex; D2_STATIC_GUARD_BSS(gnD3DAdapterIndex, "D2Direct3D::Renderer::Initialize::gnD3DAdapterIndex");
 
-    int32_t nDeviceNameLoaded;
     int iVar1;
+    int32_t iVar2;
     char szRegPath[22];
     uint32_t* pnGuidSize;
     uint32_t pSFileGlobal = Fog::Source::SFile::SFILE_GetGlobalPointer();
@@ -1858,8 +2107,8 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
 
     gnD3DAdapterIndex = 1;
     do {
-      nDeviceNameLoaded = Storm::Source::SReg::SRegLoadString(szRegPath, "DeviceName", 0, (LPSTR)&gD3DAdapterInfoBuffer, 0x100);
-      if (nDeviceNameLoaded) {
+      iVar2 = Storm::Source::SReg::SRegLoadString(szRegPath, "DeviceName", 0, (LPSTR)gD3DAdapterInfoBuffer, 0x100);
+      if (iVar2) {
         iVar1 = Storm::Source::SReg::SRegLoadValue(szRegPath, "dwFlags", 0, (int32_t*)&gnD3DTextureCapFlags);
         if (iVar1) {
           if (gnD3DTextureCapFlags & 1) {
@@ -1867,12 +2116,8 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
           }
 
           pnGuidSize = (uint32_t*)0x10;
-          // [vanilla-plus fix 19c] the bare &gsD3DAdapterGuid was uint8_t* while the
-          // global was a 1-byte scalar; since fix 19b it is uint8_t[16], so &array is
-          // uint8_t(*)[16] and no longer converts to LPBYTE (field build error).
-          // Cast the decayed array pointer explicitly — same address, same 16 bytes.
-          nDeviceNameLoaded = Storm::Source::SReg::SRegLoadData((uint32_t*)szRegPath, "GUID", 0, (LPBYTE)gsD3DAdapterGuid, 0x10, &pnGuidSize);
-          if (!nDeviceNameLoaded) {
+          iVar2 = Storm::Source::SReg::SRegLoadData((uint32_t*)szRegPath, "GUID", 0, (LPBYTE)&gsD3DAdapterGuid, 0x10, &pnGuidSize);
+          if (!iVar2) {
             return 0;
           }
           if (pnGuidSize == (uint32_t*)0x10) {
@@ -1895,13 +2140,284 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
 
 BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWnd) {
     // Static local variables (originally global data)
-    // [vanilla-plus fix 17] gszRendererD3DDeviceInitializationCode (uint8_t = 0x3e)
-    // removed — it was the Ghidra export's 1-byte remnant of the 16-byte
-    // IID_IDirectDrawGammaControl, now defined properly in globals/D2Direct3D.cpp.
-    static unsigned int gdwD3DTextureAvailableMemory;
-    static int bD3DDeviceInitialized;
-    static unsigned int gdwD3DLocalTextureAvailableMemory;
-    static unsigned int gdwD3DAgpTextureAvailableMemory;
+    static uint8_t gszRendererD3DDeviceInitializationCode[272] = {
+    0x3e,
+    0x1c,
+    0xc1,
+    0x69,
+    0x6b,
+    0xb4,
+    0xd1,
+    0x11,
+    0xad,
+    0x7a,
+    0x0,
+    0xc0,
+    0x4f,
+    0xc2,
+    0x9b,
+    0x4e,
+    0xe0,
+    0xe,
+    0x9f,
+    0x4b,
+    0x7e,
+    0xd,
+    0xd0,
+    0x11,
+    0x9b,
+    0x6,
+    0x0,
+    0xa0,
+    0xc9,
+    0x3,
+    0xa3,
+    0xb8,
+    0x85,
+    0xdb,
+    0x14,
+    0x6c,
+    0x33,
+    0xa7,
+    0xce,
+    0x11,
+    0xa5,
+    0x21,
+    0x0,
+    0x20,
+    0xaf,
+    0xb,
+    0xe5,
+    0x60,
+    0x84,
+    0xdb,
+    0x14,
+    0x6c,
+    0x33,
+    0xa7,
+    0xce,
+    0x11,
+    0xa5,
+    0x21,
+    0x0,
+    0x20,
+    0xaf,
+    0xb,
+    0xe5,
+    0x60,
+    0x7e,
+    0x47,
+    0x3c,
+    0xc0,
+    0x19,
+    0x65,
+    0xd1,
+    0x11,
+    0x8c,
+    0x52,
+    0x0,
+    0xc0,
+    0x4f,
+    0xd9,
+    0x30,
+    0xc5,
+    0x1e,
+    0x1f,
+    0x19,
+    0x51,
+    0x2b,
+    0x4f,
+    0xd1,
+    0x11,
+    0x8c,
+    0xc3,
+    0x0,
+    0xa0,
+    0xc9,
+    0x6,
+    0x29,
+    0xa8,
+    0xfc,
+    0x7f,
+    0xc,
+    0x73,
+    0x47,
+    0x53,
+    0xd1,
+    0x11,
+    0x8c,
+    0x4d,
+    0x0,
+    0xc0,
+    0x4f,
+    0xd9,
+    0x30,
+    0xc5,
+    0x46,
+    0xbc,
+    0x43,
+    0xe0,
+    0x17,
+    0x53,
+    0xd1,
+    0x11,
+    0x8c,
+    0x4d,
+    0x0,
+    0xc0,
+    0x4f,
+    0xd9,
+    0x30,
+    0xc5,
+    0x88,
+    0xc4,
+    0xb2,
+    0x89,
+    0xf4,
+    0x4a,
+    0xd1,
+    0x11,
+    0x8c,
+    0x4c,
+    0x0,
+    0xc0,
+    0x4f,
+    0xd9,
+    0x30,
+    0xc5,
+    0x90,
+    0x47,
+    0xdc,
+    0xb9,
+    0xf1,
+    0x4a,
+    0xd1,
+    0x11,
+    0x8c,
+    0x4c,
+    0x0,
+    0xc0,
+    0x4f,
+    0xd9,
+    0x30,
+    0xc5,
+    0x96,
+    0x8e,
+    0xab,
+    0x1b,
+    0xfe,
+    0x9c,
+    0xe3,
+    0x4c,
+    0xbc,
+    0x72,
+    0xd7,
+    0xe9,
+    0xe9,
+    0x9a,
+    0x21,
+    0x75,
+    0x80,
+    0x5a,
+    0x67,
+    0x6,
+    0x9b,
+    0x3b,
+    0xd2,
+    0x11,
+    0xb9,
+    0x2f,
+    0x0,
+    0x60,
+    0x97,
+    0x97,
+    0xea,
+    0x5b,
+    0x30,
+    0x86,
+    0x2b,
+    0xb,
+    0x35,
+    0xad,
+    0xd0,
+    0x11,
+    0x8e,
+    0xa6,
+    0x0,
+    0x60,
+    0x97,
+    0x97,
+    0xea,
+    0x5b,
+    0x0,
+    0x4e,
+    0x4,
+    0xda,
+    0xb2,
+    0x69,
+    0xd0,
+    0x11,
+    0xa1,
+    0xd5,
+    0x0,
+    0xaa,
+    0x0,
+    0xb8,
+    0xdf,
+    0xbb,
+    0x85,
+    0x58,
+    0x80,
+    0x57,
+    0xec,
+    0x6e,
+    0xcf,
+    0x11,
+    0x94,
+    0x41,
+    0xa8,
+    0x23,
+    0x3,
+    0xc1,
+    0xe,
+    0x27,
+    0x81,
+    0xdb,
+    0x14,
+    0x6c,
+    0x33,
+    0xa7,
+    0xce,
+    0x11,
+    0xa5,
+    0x21,
+    0x0,
+    0x20,
+    0xaf,
+    0xb,
+    0xe5,
+    0x60,
+    0xc0,
+    0x5e,
+    0xe6,
+    0x15,
+    0x9c,
+    0x3b,
+    0xd2,
+    0x11,
+    0xb9,
+    0x2f,
+    0x0,
+    0x60,
+    0x97,
+    0x97,
+    0xea,
+    0x5b
+}; D2_STATIC_GUARD(gszRendererD3DDeviceInitializationCode, "D2Direct3D::Renderer::RENDERER_D3D_InitializeDevice::gszRendererD3DDeviceInitializationCode");
+    static unsigned int gdwD3DTextureAvailableMemory; D2_STATIC_GUARD_BSS(gdwD3DTextureAvailableMemory, "D2Direct3D::Renderer::RENDERER_D3D_InitializeDevice::gdwD3DTextureAvailableMemory");
+    static int bD3DDeviceInitialized; D2_STATIC_GUARD_BSS(bD3DDeviceInitialized, "D2Direct3D::Renderer::RENDERER_D3D_InitializeDevice::bD3DDeviceInitialized");
+    static unsigned int gdwD3DLocalTextureAvailableMemory; D2_STATIC_GUARD_BSS(gdwD3DLocalTextureAvailableMemory, "D2Direct3D::Renderer::RENDERER_D3D_InitializeDevice::gdwD3DLocalTextureAvailableMemory");
+    static unsigned int gdwD3DAgpTextureAvailableMemory; D2_STATIC_GUARD_BSS(gdwD3DAgpTextureAvailableMemory, "D2Direct3D::Renderer::RENDERER_D3D_InitializeDevice::gdwD3DAgpTextureAvailableMemory");
 
     char* szErrorMsg;
     DDSURFACEDESC2 ddsurfacedesc;
@@ -1963,22 +2479,16 @@ BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWnd) {
     nResult = g_pD3DSurfaceBackbuffer->lpVtbl->GetAttachedSurface(g_pD3DSurfaceBackbuffer, &iidData2, (void**)&D3DSurfaceSecondary);
     if (!nResult) {
       if (gnD3DTextureCapFlags & 0x10) {
-        // [vanilla-plus fix 17] riid was (GUID*)&gszRendererD3DDeviceInitializationCode
-        // — a 1-byte truncated IID; the DD7 primary-surface QueryInterface returned
-        // DDERR_INVALIDPARAMS (FOG log 2026-10-27 "Failed to get gamma control
-        // interface!"), killing every non-3dfx fullscreen boot with retail's
-        // "Error 25" banner (D2GFX_Release, ghWndMain singlet).
-        // [vanilla-plus fix 18] With the restored IID the QI STILL returned
-        // DDERR_INVALIDPARAMS on the field box (FOG log 2026-10-27 13:12) —
-        // emulated DD7 on modern display stacks can refuse gamma control on a
-        // FRONTBUFFER|FLIP|COMPLEX|3DDEVICE|VIDEOMEMORY flip chain even when the
-        // registry dwFlags cap bit 0x10 (Diablo II\VideoConfig, read at :1846)
-        // advertises it. Retail treats both gamma steps as fatal and dies here;
-        // we degrade gracefully instead: log, leave g_pDDGammaControl null, keep
-        // booting. Every consumer is already null-safe — the brightness ramp
-        // path early-returns at :833 and the release path skips restore at
-        // :719 — so the only observable loss is an inert brightness slider.
-        nResult = g_pD3DSurfaceBackbuffer->lpVtbl->QueryInterface(g_pD3DSurfaceBackbuffer, &IID_IDirectDrawGammaControl, (void**)&g_pDDGammaControl);
+        // [vanilla-plus fix 18, ported onto ad964f3] ad964f3 restored the full
+        // 16-byte gamma IID (first 16 bytes of gszRendererD3DDeviceInitializationCode),
+        // superseding fix 17. Kept: fix 18 - on the field box the emulated DD7
+        // flip chain STILL refuses gamma QI/GetGammaRamp even with the correct
+        // IID (DDERR_INVALIDPARAMS, FOG log 2026-10-27 13:12). Retail treats both
+        // steps as fatal and dies with "Error 25"; we degrade gracefully instead:
+        // log, leave g_pDDGammaControl null, keep booting. Consumers are
+        // null-safe (brightness ramp early-returns; release skips ramp restore);
+        // the only observable loss is an inert brightness slider.
+        nResult = g_pD3DSurfaceBackbuffer->lpVtbl->QueryInterface(g_pD3DSurfaceBackbuffer, (GUID*)gszRendererD3DDeviceInitializationCode, (void**)&g_pDDGammaControl);
         if (nResult) {
           DIRECTD3D_LogError("Failed to get gamma control interface - continuing without hardware gamma", nResult);
           g_pDDGammaControl = 0;
@@ -2253,7 +2763,7 @@ BOOL __fastcall RENDERER_D3D_CreateSurfaceWithTexture(IDirectDrawSurface7 * * pd
     memset(&ddsdSize.dwFlags, 0, 0x78);
     ddsdSize.dwFlags = 0x1007;
     ddsdSize.ddsCapsRest[0] = 0x80;
-    DWORD* pDstPixelFmt = (DWORD*)&gsD3DTextureDescTemplate;
+    uint32_t* pDstPixelFmt = gsD3DTextureDescTemplate;
     DWORD* pSrcTemplate = ddsdSize.ddpfPixelFormat;
     for (iLoop = 8; iLoop; iLoop--) {
       *pSrcTemplate = *pDstPixelFmt;
@@ -2290,7 +2800,7 @@ void thunk_Release() {
 }
 
 BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc * pHelpers) {
-    _GUID* lpGUID;
+    GUID* lpGUID;
     uint8_t ddDeviceIdentifier[2128];
     IDirectDraw1* lpDD = 0;
     if (g_bD3DCoreInitialized) {
@@ -2298,7 +2808,7 @@ BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc
       exit(-1);
     }
     if (!(gnD3DTextureCapFlags & 1)) {
-      lpGUID = (_GUID*)&gsD3DAdapterGuid;
+      lpGUID = &gsD3DAdapterGuid;
     } else {
       lpGUID = 0;
     }
@@ -2375,28 +2885,17 @@ void __stdcall RENDERER_D3D_ReleaseTexturePools() {
     } while (iVar1 < 0xc);
 }
 
-// [vanilla-plus fix 22] Validated twin of one free-callback slot clear. The
-// retail callback validated each [class, nodeIdx] pair with only a signed
-// >=1 test and then wrote
-// aCaches[class-1].pNodeBuffer[idx-1].pAssociatedTilePtr = 0 with NO class
-// range check, NO idx upper bound and NO owner match:
-//   * class > 3 indexes past aCaches[0..2] into unrelated globals;
-//   * idx > nMaxNodes indexes past the node buffer -> unbounded wild write;
-//   * a stale/garbage pair cleared SOME OTHER sprite's live node backpointer
-//     (the round-8/9 audit-noted residual).
-// Descriptors are memset at DC6 load (FixupPointersAndPrepare), but pairs 0
-// and 4 are never written by the upload path, and DCC combined-blob frames
-// (CELCMP_SerializeCelFileToMemory) carry 0x23-byte headers in non-memset
-// memory, so structural/pixel bytes can be read as [class, idx] pairs here.
-// Rounds 8-9 field evidence: HALT 0x16d fires on pool state the read-side
-// guards make impossible -> an unbounded WRITE side is the remaining family
-// member. Discipline (mirror of the upload path's fix-21 gates): range-check
-// the pair, then require the node's own +4 backpointer to name THIS
-// descriptor (that field is written by UploadTextureToCache and by nothing
-// else, so a legit free always matches). Legit frees behave exactly as
-// retail; garbage pairs are skipped, and the first of each dangerous shape
-// is reported to the boot log. Glide's twin callback stays as delivered by
-// glide fix 2 (field-verified working renderer - deliberately untouched).
+// [vanilla-plus fix 22, ported onto ad964f3] The callback's per-pair guard had
+// only signed >=1 tests: no class range check, no idx upper bound vs the pool,
+// no owner match - a garbage [class, idx] pair from the recycled descriptor
+// pool wild-writes pAssociatedTilePtr past the node buffer or clears a FOREIGN
+// node's backpointer. Discipline (mirror of the upload path's fix-21 gates):
+// range-check the pair, then require the node's own +4 backpointer to name
+// THIS descriptor (written by UploadTextureToCache and nothing else, so a
+// legit free always matches). Legit frees behave exactly as retail; garbage
+// pairs are skipped and the first of each dangerous shape is reported to the
+// boot log. Glide's twin callback stays as delivered by glide fix 2
+// (field-verified working renderer - deliberately untouched).
 static void D3DTEXCACHE_ClearCacheNodeSlot(int32_t nClass, int32_t nNodeIdx, int32_t* pOwnerDescriptor) {
     static BOOL s_bWarnedBadClass = FALSE;
     static BOOL s_bWarnedBadIndex = FALSE;
@@ -2437,7 +2936,6 @@ void __fastcall D3D_PixelDataFreeCallback_ClearCacheNodes(int * pCacheIndices) {
     D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[6], pCacheIndices[7], pCacheIndices);
     D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[8], pCacheIndices[9], pCacheIndices);
 }
-
 BOOL __stdcall RENDERER_D3D_ExtractSpriteInfo(D2GfxDataStrc * pSprite, D2D3DSpriteInfoStrc * pOutput) {
     int bSpriteLoaded = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(pSprite, 0, 1);
     if (!bSpriteLoaded) {
@@ -2476,15 +2974,11 @@ void __stdcall RENDERER_D3D_CalculateTextureSize(D2D3DSpriteInfoStrc * pStruct) 
     pStruct->nTexArea = pStruct->nTexHeight * pStruct->nTexWidth;
 }
 
-// [vanilla-plus fix 22] Halt-site state dump for the texture-cache upload
-// path. The round-9 audit proved the read-side paths cannot produce a zero
-// node surface post-fix-21 (seeder surfaces every free-list node, alloc/
-// evict/invalidate never clear +0x10, gates validate every cached slot),
-// yet the field hits HALT 0x16d on the first sprite upload - so the failing
-// premise is a runtime state fact this dump names directly (pool identity,
-// seed level, bookkeeping coherence, node contents) instead of another blind
-// fix round. Fired immediately before every halt in UploadTextureToCache;
-// pure logging, no control flow.
+// [vanilla-plus fix 22] Self-reporting upload path: before every halt site in
+// UploadTextureToCache, dump mode/mip/class/node + pool identity/bookkeeping +
+// the full node + the apSpriteTex lines to d2boot.log, so a recurring halt
+// names its failing premise from the log alone (this is what decided round 10
+// and rooted fix 23). Zero behavior change when nothing halts.
 static void RENDERER_D3D_UploadHaltDump(const char* szSite, D2D3DSpriteInfoStrc* pTexInfo, int32_t nMode, int32_t nMipIdx, int32_t nClass, int32_t nNodeIdx, D3DTextureCacheStrc* pCache) {
     D2BOOT_MarkFmt("upload-halt %s: mode=%d mip=%d class=%d node=%d w=%d h=%d area=%u", // [d2boot]
       szSite, nMode, nMipIdx, nClass, nNodeIdx,
@@ -2515,26 +3009,7 @@ static void RENDERER_D3D_UploadHaltDump(const char* szSite, D2D3DSpriteInfoStrc*
 
 // Direct3D texture cache: uploads a DC6 frame to video memory. Determines mipmap level based on size, allocates cache slot, renders frame to memory surface, copies to texture via LockRect/memcpy, and sets as active texture.
 int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
-    // [vanilla-plus fix 20] The Ghidra export rendered retail's contiguous
-    // cache-struct array (image 0x970eac — three 0x1c-byte D3DTextureCacheStrc at
-    // stride 0x1c, with the per-class pNodeBuffer fields readable at image
-    // 0x970ec4, stride 0x1c) as two PHANTOM locals — static uint8_t DAT_00970eac
-    // (1 byte) + static int INT_00970ec4 (4 bytes) — and this upload path then
-    // computed its cache pointer by raw arithmetic off them (&DAT_00970eac +
-    // class*0x1c, (&INT_00970ec4)[class*7]). Those phantom bytes are NOT the
-    // object RENDERER_D3D_InitializeTextureCachePool seeds
-    // (gD3DGenericTextureCache.aCaches[0..2]): the first DC6-sprite upload read an
-    // unseeded struct — garbage nMaxNodes != nUsedCount, pFreeHead = null — and
-    // D3DTEXCACHE_AllocateNodeFromFreeList hit its HALT 0xd7 (retail line 215).
-    // Field signature: HALT line=215 (0xd7) ~5s into the fullscreen-D3D intro =
-    // the first logo boundary = first sprite upload; Smacker frames do not use
-    // this path, which is why the video itself played fine. Fixed by addressing
-    // the real pools: class 1/2/3 -> aCaches[0/1/2] (0x100/0x80/0x20 — the same
-    // trio InitializeTexturePools creates at :3142-3152), the same mapping the
-    // ClearCacheNodes callback already uses (aCaches[class-1], :2369-2384).
-
     uint8_t* pBVar3;
-    int32_t iVar4;
     DWORD dwHResult;
     int iCacheNodeIdx;
     uint8_t* pbOutlinePixel;
@@ -2546,9 +3021,10 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
     char cPixel;
     int iMipLevel;
     int32_t nErrorLine;
+    void* pMemPool;
     DC6Block* nParam = pTexInfo->pSprite->pDC6Block;
     if (!nParam) {
-      RENDERER_D3D_UploadHaltDump("nullblock", pTexInfo, nMode, nMode, -1, 0, nullptr); // [vanilla-plus fix 22]
+            RENDERER_D3D_UploadHaltDump("nullblock", pTexInfo, nMode, nMode, -1, 0, nullptr); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
       exit(-1);
     }
@@ -2558,18 +3034,15 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
     if (nMode == 4) {
       nMipIdx = 1;
     }
-    // [vanilla-plus fix 21] Mirror of glide fix 3 (field-verified in the glide
-    // series): the per-frame descriptor slots live in a non-zeroing/recycled
-    // pool, so a first-use header can carry pool garbage in the size-class
-    // slot. The old exact-zero test skipped the size recompute for any garbage
-    // value, and the class flows straight into &aCaches[class - 1] — for
-    // garbage > 3 that walks off the 3-entry array into the packed struct's
-    // apSpriteTextures/apSpriteSurfaces and beyond. A pointer-shaped pFreeHead
-    // there is non-null (no halt 0xd7), nUsedCount != nMaxNodes (no early
-    // out), and the bogus "node" read lands on aliased memory whose +0x10 is
-    // zero -> the field HALT line=365 (0x16d) at the first sprite upload.
-    // Treat an out-of-range class like an unset one (zero the slot) so the
-    // recompute below sticks, instead of skipping the upload forever.
+    // [vanilla-plus fix 21, ported onto ad964f3] Mirror of glide fix 3
+    // (field-verified in the glide series): the per-frame descriptor slots live
+    // in a non-zeroing/recycled pool, so a first-use header can carry pool
+    // garbage in the size-class slot. The exact-zero test below still skips the
+    // recompute for any garbage NONZERO value, and ad964f3's class flows into
+    // (cache - 0x1c + class*0x1c) - for garbage > 3 that walks off aCaches[0..2]
+    // into the packed struct's apSpriteTextures/apSpriteSurfaces. Treat an
+    // out-of-range class like an unset one (zero the slot) so the recompute
+    // below sticks, instead of skipping the upload forever.
     if (*(int*)(pbSrcPixel + nMipIdx * 8) < 1 || 3 < *(int*)(pbSrcPixel + nMipIdx * 8)) {
       *(uint32_t*)(pbSrcPixel + nMipIdx * 8) = 0;
     }
@@ -2589,20 +3062,17 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
     }
 
     iMipLevel = *(int*)(pbSrcPixel + nMipIdx * 8);
-    int32_t nClassSlot = iMipLevel; // [vanilla-plus fix 22] capture for halt dumps (iMipLevel is reused below)
     int* piVar2 = (int*)(pbSrcPixel + 4 + nMipIdx * 8);
-    // [vanilla-plus fix 20] real seeded pools, not the DAT_00970eac phantom region
-    D3DTextureCacheStrc* pCache = &gD3DGenericTextureCache.aCaches[iMipLevel - 1];
+    D3DTextureCacheStrc* pCache = (D3DTextureCacheStrc*)((uint8_t*)&gD3DGenericTextureCache - 0x1c + iMipLevel * 0x1c);
     D3DTextureCacheNodeStrc* pCacheNodeBase = pCache->pNodeBuffer;
-    // [vanilla-plus fix 21] Mirror of glide fix 2: a recycled sprite header can
-    // inherit a stale node index — the sprite-free callback clears the node's
-    // tile backpointer but never the header slots. A stale index would be
-    // dereferenced unchecked below (or trip the 0x164/0x165 bounds halts).
+    int32_t nClassSlot = iMipLevel; // [vanilla-plus fix 22] capture for halt dumps (iMipLevel is reused below)
+    // [vanilla-plus fix 21, ported onto ad964f3] Mirror of glide fix 2: a
+    // recycled sprite header can inherit a stale node index - the sprite-free
+    // callback clears the node's tile backpointer but never the header slots.
     // Validate the slot against the node's own backpointers (+4 block ptr,
-    // +8 mip idx — written by this very function, so a legit palette-change
-    // re-upload matches by construction) and the pool bound (hardened beyond
-    // glide, which read unbounded); on mismatch drop the slot and allocate
-    // fresh. Bound check first: it gates the backpointer dereference.
+    // +8 mip idx - written by this very function, so a legit palette-change
+    // re-upload matches by construction) and the pool bound. On mismatch drop
+    // the slot and allocate fresh. Bound check first: it gates the deref.
     if (*piVar2) {
       if ((uint32_t)(*piVar2 - 1) >= (uint32_t)pCache->nMaxNodes
         || *(int*)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 4) != pbSrcPixel
@@ -2610,20 +3080,9 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
         *piVar2 = 0;
       }
     }
-    // [vanilla-plus fix 23] Byte-exact node+0xC stored-palette compare. The
-    // old form added the raw byte offset (idx*0x20 - 0x14) directly to the
-    // typed node pointer (stride 0x20), so the address was scaled by 0x20 —
-    // never the stored palette, so legit
-    // palette-match reuse never fired. Glide compiles the identical
-    // transcription byte-exact only because its pNodes is typed uint8_t*
-    // (D2Client/Renderer/Glide.h:36); this header types the base as the node
-    // struct, so every raw-offset site here MUST go through (uint8_t*).
-    if (*piVar2 && (*(uint8_t**)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 0xC) == pPalette || nMode == 4)) {
+    if (*piVar2 && (*(uint8_t**)(*piVar2 * 0x20 - 0x14 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7]) == pPalette || nMode == 4)) {
       d3dTextureCache::D3DTEXCACHE_InvalidateByIndex(pCache, *piVar2);
-      // [vanilla-plus fix 23] byte-exact node+0x14 pTexture (old form was
-      // scaled by 0x20 -> would hand SetTexture a garbage pointer on the
-      // first mode-4 re-upload).
-      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 0x14));
+      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*piVar2 * 0x20 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7] - 0xc));
       if (!dwHResult) {
         return 1;
       }
@@ -2635,45 +3094,36 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
     IDirectDrawSurface7* pDestSurface_00 = (IDirectDrawSurface7*)gD3DGenericTextureCache.apSpriteTextures[iMipLevel + 2];
     IDirect3DTexture2* lpD3DTexture_00 = gD3DGenericTextureCache.apSpriteTextures[iMipLevel - 1];
     if (!*piVar2) {
+      int32_t iVar4;
       iVar4 = d3dTextureCache::D3DTEXCACHE_EnsureAvailableNode(pCache);
       *piVar2 = iVar4;
     }
 
-    void* pMemPool = gpD3DTextureSpritePoolMemory0;
+    pMemPool = gpD3DTextureSpritePoolMemory0;
     int iVar1 = *piVar2 - 1;
     if (iVar1 < 0) {
-      RENDERER_D3D_UploadHaltDump("0x164-node0", pTexInfo, nMode, nMipIdx, nClassSlot, 0, pCache); // [vanilla-plus fix 22]
+            RENDERER_D3D_UploadHaltDump("0x164-node0", pTexInfo, nMode, nMipIdx, nClassSlot, 0, pCache); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x164);
       exit(-1);
     } else if (iVar1 < pCache->nMaxNodes) {
       iCacheNodeIdx = *piVar2 * 0x20;
-      // [vanilla-plus fix 23] THE round-10 root cause (HALT 0x16d at the 7th
-      // sprite upload). The old read added the raw byte offset
-      // (iCacheNodeIdx - 0x10) directly to the typed node pointer, so the C
-      // type system scaled it: read address = base + (idx*0x20 -
-      // 0x10) * 0x20. For idx 1..6 that address lands on other seeded nodes'
-      // nIndex (non-zero -> false pass, why six uploads succeeded silently);
-      // at idx=7 it reads base + 0x1A00 = 0x3E0 bytes past the 178*0x20 node
-      // buffer -> 0 -> "null surface" halt on a node the fix-22 dump proved
-      // fully seeded (surf=0E0B8A18 tex=0FA87324, pool bookkeeping exact).
-      // Rewritten to the byte-exact form the fix-21 validation already uses.
-      iVar1 = *(int*)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 0x10);
-      iMipLevel = iCacheNodeIdx - 0x20 + (int)pCacheNodeBase;
+      iVar1 = *(int*)(iCacheNodeIdx - 0x10 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7]);
+      iMipLevel = iCacheNodeIdx - 0x20 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7];
       pbPixelData = (uint8_t*)gpD3DTextureSpritePoolMemory0;
       *(int*)(iMipLevel + 4) = pbSrcPixel;
       *(int*)(iMipLevel + 8) = nMipIdx;
       *(uint8_t**)(iMipLevel + 0xc) = (uint8_t*)pPalette;
       if (!iVar1) {
-        RENDERER_D3D_UploadHaltDump("0x16d-surface", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16d);
+              RENDERER_D3D_UploadHaltDump("0x16d-surface", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16d);
         exit(-1);
       } else if (!*(int*)(iMipLevel + 0x14)) {
-        RENDERER_D3D_UploadHaltDump("0x16e-texture", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16e);
+              RENDERER_D3D_UploadHaltDump("0x16e-texture", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16e);
         exit(-1);
       } else if (!pMemPool) {
-        RENDERER_D3D_UploadHaltDump("0x171-poolmem", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x171);
+              RENDERER_D3D_UploadHaltDump("0x171-poolmem", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x171);
         exit(-1);
       } else if (pTexInfo->nTexArea < 0x10001) {
         memset(pMemPool, 0, pTexInfo->nTexArea);
@@ -2704,13 +3154,13 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
             D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, 1 - pTexInfo->nOffsetX, pTexInfo->nTexHeight - pTexInfo->nOffsetY - 2, 0, 0, (BYTE*)pMemPool, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, nullptr);
           pbPixelData = (uint8_t*)gpD3DTextureSpritePoolMemory1;
           if (!gpD3DTextureSpritePoolMemory1) {
-            RENDERER_D3D_UploadHaltDump("0x19a-poolmem1", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19a);
+                  RENDERER_D3D_UploadHaltDump("0x19a-poolmem1", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19a);
             exit(-1);
           }
           if (0x10000 < pTexInfo->nTexArea) {
-            RENDERER_D3D_UploadHaltDump("0x19b-area1", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19b);
+                  RENDERER_D3D_UploadHaltDump("0x19b-area1", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19b);
             exit(-1);
           }
 
@@ -2737,12 +3187,12 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
         }
 
         if (!pDestSurface_00) {
-          RENDERER_D3D_UploadHaltDump("0x1b4-destsurf", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b4);
+                RENDERER_D3D_UploadHaltDump("0x1b4-destsurf", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b4);
           exit(-1);
         } else if (!lpD3DTexture_00) {
-          RENDERER_D3D_UploadHaltDump("0x1b5-d3dtex", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b5);
+                RENDERER_D3D_UploadHaltDump("0x1b5-d3dtex", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b5);
           exit(-1);
         } else {
           sSurfaceDesc.dwSize = 0x7c;
@@ -2772,17 +3222,17 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
             return 1;
           }
 
-          RENDERER_D3D_UploadHaltDump("0x1c0-lockflags", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c0);
+                RENDERER_D3D_UploadHaltDump("0x1c0-lockflags", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c0);
           exit(-1);
         }
       } else {
-        RENDERER_D3D_UploadHaltDump("0x172-area", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x172);
+              RENDERER_D3D_UploadHaltDump("0x172-area", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x172);
         exit(-1);
       }
     } else {
-      RENDERER_D3D_UploadHaltDump("0x165-idxbound", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+            RENDERER_D3D_UploadHaltDump("0x165-idxbound", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x165);
       exit(-1);
     }
@@ -3375,8 +3825,8 @@ void __stdcall RENDERER_D3D_ReleaseFontTextures() {
 
 void __stdcall RENDERER_D3D_CreateFontTextures() {
     // Static local variables (originally global data)
-    static uint32_t gnD3DFontTextColor = 0xffffff;
-    static COLORREF gnD3DFontBkColor = 0;
+    static uint32_t gnD3DFontTextColor = 0xffffff; D2_STATIC_GUARD(gnD3DFontTextColor, "D2Direct3D::Renderer::RENDERER_D3D_CreateFontTextures::gnD3DFontTextColor");
+    static COLORREF gnD3DFontBkColor = 0; D2_STATIC_GUARD(gnD3DFontBkColor, "D2Direct3D::Renderer::RENDERER_D3D_CreateFontTextures::gnD3DFontBkColor");
 
     // Frame slots -28..-4 are ONE object: &pMemoryTexture is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -3536,26 +3986,26 @@ void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int nPosX, int n
 
 int __fastcall RENDERER_D3D_InitializeFontSystem(int nBaseOffset) {
     // Static local variables (originally global data)
-    static float gfD3DFontVertex0W;
-    static float gfD3DFontVertex0RHW;
-    static unsigned int gnD3DFontVertex0Diffuse;
-    static float gfD3DFontVertex0U;
-    static float gfD3DFontVertex0V;
-    static float gfD3DFontVertex1Z;
-    static float gfD3DFontVertex1RHW;
-    static unsigned int gnD3DFontVertex1Diffuse;
-    static float gfD3DFontVertex1X;
-    static float gfD3DFontVertex1U;
-    static float gfD3DFontVertex2Z;
-    static float gfD3DFontVertex2RHW;
-    static unsigned int gnD3DFontVertex2Diffuse;
-    static float gfD3DFontVertex2U;
-    static float gfD3DFontVertex2V;
-    static float gfD3DFontVertex3Z;
-    static float gfD3DFontVertex3RHW;
-    static unsigned int gnD3DFontVertex3Diffuse;
-    static float gfD3DFontVertex3U;
-    static float gfD3DFontVertex3V;
+    static float gfD3DFontVertex0W; D2_STATIC_GUARD_BSS(gfD3DFontVertex0W, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex0W");
+    static float gfD3DFontVertex0RHW; D2_STATIC_GUARD_BSS(gfD3DFontVertex0RHW, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex0RHW");
+    static unsigned int gnD3DFontVertex0Diffuse; D2_STATIC_GUARD_BSS(gnD3DFontVertex0Diffuse, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gnD3DFontVertex0Diffuse");
+    static float gfD3DFontVertex0U; D2_STATIC_GUARD_BSS(gfD3DFontVertex0U, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex0U");
+    static float gfD3DFontVertex0V; D2_STATIC_GUARD_BSS(gfD3DFontVertex0V, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex0V");
+    static float gfD3DFontVertex1Z; D2_STATIC_GUARD_BSS(gfD3DFontVertex1Z, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex1Z");
+    static float gfD3DFontVertex1RHW; D2_STATIC_GUARD_BSS(gfD3DFontVertex1RHW, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex1RHW");
+    static unsigned int gnD3DFontVertex1Diffuse; D2_STATIC_GUARD_BSS(gnD3DFontVertex1Diffuse, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gnD3DFontVertex1Diffuse");
+    static float gfD3DFontVertex1X; D2_STATIC_GUARD_BSS(gfD3DFontVertex1X, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex1X");
+    static float gfD3DFontVertex1U; D2_STATIC_GUARD_BSS(gfD3DFontVertex1U, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex1U");
+    static float gfD3DFontVertex2Z; D2_STATIC_GUARD_BSS(gfD3DFontVertex2Z, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex2Z");
+    static float gfD3DFontVertex2RHW; D2_STATIC_GUARD_BSS(gfD3DFontVertex2RHW, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex2RHW");
+    static unsigned int gnD3DFontVertex2Diffuse; D2_STATIC_GUARD_BSS(gnD3DFontVertex2Diffuse, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gnD3DFontVertex2Diffuse");
+    static float gfD3DFontVertex2U; D2_STATIC_GUARD_BSS(gfD3DFontVertex2U, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex2U");
+    static float gfD3DFontVertex2V; D2_STATIC_GUARD_BSS(gfD3DFontVertex2V, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex2V");
+    static float gfD3DFontVertex3Z; D2_STATIC_GUARD_BSS(gfD3DFontVertex3Z, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex3Z");
+    static float gfD3DFontVertex3RHW; D2_STATIC_GUARD_BSS(gfD3DFontVertex3RHW, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex3RHW");
+    static unsigned int gnD3DFontVertex3Diffuse; D2_STATIC_GUARD_BSS(gnD3DFontVertex3Diffuse, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gnD3DFontVertex3Diffuse");
+    static float gfD3DFontVertex3U; D2_STATIC_GUARD_BSS(gfD3DFontVertex3U, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex3U");
+    static float gfD3DFontVertex3V; D2_STATIC_GUARD_BSS(gfD3DFontVertex3V, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex3V");
 
     RENDERER_D3D_CreateFontTextures();
     gD3DFontVertex0 = 0;
@@ -4432,8 +4882,9 @@ BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int nPosX, int nPos
     return BVar1;
 }
 
-// Creates ground tile vertex buffer (6x6 grid = 36 vertices) and index buffer (65 indices = 5 strip bands x 13 words for the 5x5 tile strips) for perspective tile rendering. Calculates texture coordinates based on window dimensions (gnD3DTextureCacheBlockSize, gnD3DTextureCacheCount). Each vertex has position adjustment flags at corners (±1 in X/Y) for isometric diamond shape. Index buffer stored at g_aD3DGroundTileStripIndices [vanilla-plus fix 24].
+// Creates ground tile vertex buffer (6x6 grid = 36 vertices) and index buffer (60 indices for 5x5 tile strips) for perspective tile rendering. Calculates texture coordinates based on window dimensions (gnD3DTextureCacheBlockSize, gnD3DTextureCacheCount). Each vertex has position adjustment flags at corners (±1 in X/Y) for isometric diamond shape. Index buffer stored at g_aD3DGroundTileStripIndices [vanilla-plus fix 24].
 void __stdcall RENDERER_D3D_InitGroundTileCache() {
+    // Static local variables (originally global data)
 
     // Frame slots -12..-4 are ONE object: &pLockedVB is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -4525,23 +4976,19 @@ void __stdcall RENDERER_D3D_InitGroundTileCache() {
           iRow++;
         } while (iRow < 5);
 
-        // [vanilla-plus fix 24] Fill the REAL strip index array. The old
-        // decompiled copy loop wrote through a 2-byte phantom static (129-byte
-        // overrun) while the draw read a different 1-byte phantom - net effect:
-        // DrawIndexedPrimitiveVB consumed garbage indices -> black ground.
-        // Content = 5 bands x (12 pair words [c, c+6] from the local build
-        // above + 1 trailing duplicate = the odd-parity band join).
-        puDestIndex = g_aD3DGroundTileStripIndices;
+        puDestIndex = g_aD3DGroundTileStripIndices; // [vanilla-plus fix 24] real 65-word array (was the 2-byte phantom)
         psIndexBuf = local_9c;
         iRow = 5;
         do {
-          for (int nPairIdx = 0; nPairIdx < 12; nPairIdx++) {
-            puDestIndex[nPairIdx] = (uint16_t)psIndexBuf[nPairIdx];
-          }
-
-          puDestIndex[12] = puDestIndex[11];
-          puDestIndex += 13;
-          psIndexBuf += 12;
+          *(uint32_t*)(puDestIndex - 0xc) = *(uint32_t*)psIndexBuf;
+          *(uint32_t*)(puDestIndex - 10) = *(uint32_t*)(psIndexBuf + 2);
+          *(uint32_t*)(puDestIndex - 8) = *(uint32_t*)(psIndexBuf + 4);
+          *(uint32_t*)(puDestIndex - 6) = *(uint32_t*)(psIndexBuf + 6);
+          *(uint32_t*)(puDestIndex - 4) = *(uint32_t*)(psIndexBuf + 8);
+          *(uint32_t*)(puDestIndex - 2) = *(uint32_t*)(psIndexBuf + 10);
+          *puDestIndex = puDestIndex[-1];
+          puDestIndex += 0xd;
+          psIndexBuf += 0xc;
           iRow--;
         } while (iRow);
 
@@ -4565,6 +5012,7 @@ void __stdcall RENDERER_D3D_ReleaseGroundTileCache() {
 }
 
 void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc * pLight, int nPosX, int nPosY, int nWorldXpos, int nWorldYpos, uint32_t nAlpha, int nScreenPanels, void * pTileData) {
+    // Static local variables (originally global data)
 
     DWORD DVar2;
     uint32_t* lpwIndices;
@@ -4651,8 +5099,8 @@ void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
       }
 
       dwIndexCount = 0x41;
-      lpwIndices = (uint32_t*)g_aD3DGroundTileStripIndices; // [vanilla-plus fix 24] real array (was the 1-byte phantom gpD3DGroundTileVertexBuffer)
       DVar2 = 5;
+      lpwIndices = (uint32_t*)g_aD3DGroundTileStripIndices; // [vanilla-plus fix 24] real array (was the 1-byte phantom)
     } else {
       DVar2 = (*pVBLockFn)(g_pD3DGroundTileVB, 0x21, (void**)&nAlpha, nullptr);
       if (DVar2) {
@@ -4685,7 +5133,7 @@ void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
       }
 
       dwIndexCount = 4;
-      lpwIndices = (uint32_t*)g_aD3DGroundTileFanIndices; // [vanilla-plus fix 24] real fan list (was the gdwRendererMode phantom)
+      lpwIndices = (uint32_t*)g_aD3DGroundTileFanIndices; // [vanilla-plus fix 24] real 4-word fan (was the 0x50000 phantom dword)
       DVar2 = 6;
     }
 
@@ -4800,10 +5248,10 @@ void SetDefaultPerspectiveFactor() {
 // Initializes Smacker video subsystem. Allocates 64KB decode buffer at pSmackerDecodeBuffer, clears it to zero. Sets 4 corner vertex colors to 0xFFFFFFFF (white with full alpha) at offsets 0x00989760, 0x00989780, 0x009897a0, 0x009897c0.
 void __stdcall RENDERER_D3D_InitSmackerVertexBuffer() {
     // Static local variables (originally global data)
-    static unsigned int gdwD3DSmackerVertex1Color;
-    static unsigned int gdwD3DSmackerVertex2Color;
-    static unsigned int gdwD3DSmackerVertex3Color;
-    static unsigned int gdwD3DSmackerVertex4Color;
+    static unsigned int gdwD3DSmackerVertex1Color; D2_STATIC_GUARD_BSS(gdwD3DSmackerVertex1Color, "D2Direct3D::Renderer::RENDERER_D3D_InitSmackerVertexBuffer::gdwD3DSmackerVertex1Color");
+    static unsigned int gdwD3DSmackerVertex2Color; D2_STATIC_GUARD_BSS(gdwD3DSmackerVertex2Color, "D2Direct3D::Renderer::RENDERER_D3D_InitSmackerVertexBuffer::gdwD3DSmackerVertex2Color");
+    static unsigned int gdwD3DSmackerVertex3Color; D2_STATIC_GUARD_BSS(gdwD3DSmackerVertex3Color, "D2Direct3D::Renderer::RENDERER_D3D_InitSmackerVertexBuffer::gdwD3DSmackerVertex3Color");
+    static unsigned int gdwD3DSmackerVertex4Color; D2_STATIC_GUARD_BSS(gdwD3DSmackerVertex4Color, "D2Direct3D::Renderer::RENDERER_D3D_InitSmackerVertexBuffer::gdwD3DSmackerVertex4Color");
 
     gdwD3DSmackerVertex1Color = -1;
     gdwD3DSmackerVertex2Color = -1;
@@ -4918,30 +5366,30 @@ void __stdcall RENDERER_D3D_ResetSmackerSurfaces() {
 // Blits decoded Smacker video frame to screen. Renders two textured quads: top 256x256 section uses first texture pair (gpD3DSmackerVideoTexture0), bottom section (256 to nHeight) uses second pair (gpD3DSmackerVideoTexture1). Texture V coordinate for bottom quad calculated as (nHeight-256)/256 for proper scaling. Sets blend mode 1, enables lighting and texture stage 0 before rendering.
 void RENDERER_D3D_BlitSmackerFrame(int nHeight, D2SmackerContextStrc * pSurface, int nOffset) {
     // Static local variables (originally global data)
-    static int gaD3DSmackerVertices;
-    static float gfD3DSmackerVertex0Y;
-    static float gfD3DSmackerVertex0V;
-    static float gfD3DSmackerVertex1W_a;
-    static float gfD3DSmackerVertex1U;
-    static float gfD3DSmackerVertex1V;
-    static float gfD3DSmackerVertex1X_b;
-    static float gfD3DSmackerVertex1Y_b;
-    static float gfD3DSmackerVertex1Z;
-    static float gfD3DSmackerVertex1W;
-    static float gfD3DSmackerVertex2W_b;
-    static float gfD3DSmackerVertex2Z_b;
-    static float gfD3DSmackerVertex2X;
-    static float gfD3DSmackerVertex2Y;
-    static float gfD3DSmackerVertex2U;
-    static float gfD3DSmackerVertex2W_a;
-    static float gfD3DSmackerVertex2V;
-    static float gfD3DSmackerVertex2W;
-    static float gfD3DSmackerVertex1X_quad2;
-    static float gfD3DSmackerVertex1Y_quad2;
-    static float gfD3DSmackerVertex1Z_quad2;
-    static float gfD3DSmackerVertex1U_quad2;
-    static int gnD3DSmackerVertex2V_bottom;
-    static float gfD3DSmackerVertex2Rhw;
+    static int gaD3DSmackerVertices; D2_STATIC_GUARD_BSS(gaD3DSmackerVertices, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gaD3DSmackerVertices");
+    static float gfD3DSmackerVertex0Y; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex0Y, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex0Y");
+    static float gfD3DSmackerVertex0V; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex0V, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex0V");
+    static float gfD3DSmackerVertex1W_a; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1W_a, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1W_a");
+    static float gfD3DSmackerVertex1U; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1U, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1U");
+    static float gfD3DSmackerVertex1V; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1V, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1V");
+    static float gfD3DSmackerVertex1X_b; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1X_b, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1X_b");
+    static float gfD3DSmackerVertex1Y_b; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1Y_b, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1Y_b");
+    static float gfD3DSmackerVertex1Z; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1Z, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1Z");
+    static float gfD3DSmackerVertex1W; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1W, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1W");
+    static float gfD3DSmackerVertex2W_b; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2W_b, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2W_b");
+    static float gfD3DSmackerVertex2Z_b; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2Z_b, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2Z_b");
+    static float gfD3DSmackerVertex2X; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2X, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2X");
+    static float gfD3DSmackerVertex2Y; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2Y, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2Y");
+    static float gfD3DSmackerVertex2U; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2U, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2U");
+    static float gfD3DSmackerVertex2W_a; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2W_a, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2W_a");
+    static float gfD3DSmackerVertex2V; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2V, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2V");
+    static float gfD3DSmackerVertex2W; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2W, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2W");
+    static float gfD3DSmackerVertex1X_quad2; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1X_quad2, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1X_quad2");
+    static float gfD3DSmackerVertex1Y_quad2; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1Y_quad2, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1Y_quad2");
+    static float gfD3DSmackerVertex1Z_quad2; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1Z_quad2, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1Z_quad2");
+    static float gfD3DSmackerVertex1U_quad2; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1U_quad2, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1U_quad2");
+    static int gnD3DSmackerVertex2V_bottom; D2_STATIC_GUARD_BSS(gnD3DSmackerVertex2V_bottom, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gnD3DSmackerVertex2V_bottom");
+    static float gfD3DSmackerVertex2Rhw; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2Rhw, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2Rhw");
 
     int nSurfaceY = pSurface->nY;
     RENDERER_D3D_SetBlendMode(1);
@@ -5062,7 +5510,6 @@ void __stdcall RENDERER_D3D_PresentSmackerFrame() {
 
 void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, int nVersion) {
     void* nResult;
-    uint32_t bFileLoaded;
     int nPixelCol;
     uint16_t* pIndexedPixels;
     uint8_t* pOutputPixel;
@@ -5089,6 +5536,7 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
 
     pBuffer->eMode = (char)nVersion;
     if ((char)nVersion == 'p') {
+      uint32_t bFileLoaded;
       nVersion = 0;
       nFileSize = 0;
       bFileLoaded = Storm::Source::SFile::SFileLoadFileEx(nullptr, (uint32_t*)szSmacker, (void**)&nVersion, &nFileSize, 0, 3, 0);

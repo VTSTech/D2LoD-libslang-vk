@@ -34,7 +34,7 @@ option(REDIVIVUS_PERMISSIVE
 option(REDIVIVUS_DEV
     "Development build: per-call tracing and the in-process control channel, which listens on an unauthenticated TCP port." OFF)
 option(REDIVIVUS_LOUD
-    "Loud build: 0xFE-filled locals, stack canaries and array index checks that report at the defect (support/d2_loud.cpp). Not for release." OFF)
+    "Loud build: 0xFE-filled locals, stack canaries, array index checks and guard zones between globals that report at the defect (support/d2_loud.cpp). Not for release." OFF)
 option(REDIVIVUS_LOUD_STACK_PROTECTOR
     "With REDIVIVUS_LOUD: also -fstack-protector-strong (fatal on a smashed canary). OFF gives the playable loud build." ON)
 option(REDIVIVUS_LEAN
@@ -144,6 +144,9 @@ if(REDIVIVUS_LOUD)
     else()
         set(D2_LOUD_FLAGS -ftrivial-auto-var-init=pattern -fsanitize=bounds-strict)
     endif()
+    # Guard zones between globals (D2_GLOBAL_GUARD in d2_platform.h): definitions keep
+    # source order, and an all-zero initializer stays in .data beside its guard.
+    list(APPEND D2_LOUD_FLAGS -DREDIVIVUS_LOUD_GUARDS -fno-toplevel-reorder -fno-zero-initialized-in-bss)
     foreach(src IN LISTS D2_SOURCES)
         if(src MATCHES "\\.cpp$" AND NOT src MATCHES "/support/d2_(loud|crash)\\.cpp$")
             set_property(SOURCE "${src}" APPEND PROPERTY COMPILE_OPTIONS ${D2_LOUD_FLAGS})

@@ -61,7 +61,7 @@ void GFXUTIL_SetItemGfxFile(struct D2GfxDataStrc * pGfxData, struct D2UnitStrc *
 int32_t GFXUTIL_GetOverlayNumDirections(int32_t nParam);
 int32_t GFXUTIL_GetBodyLocWeaponToken(int32_t nBodyLoc, struct D2UnitStrc * pUnit);
 int32_t __stdcall GFXUTIL_GetNumDirectionsForUnit(struct D2UnitStrc * pUnit, eD2UnitType eUnitType, int32_t nMode, int32_t nClassId);
-int32_t __fastcall GFXUTIL_Identity(int32_t dwParam);
+void * __fastcall GFXUTIL_Identity(void * dwParam);
 uint32_t __fastcall GFXUTIL_GetCofFrameCount(uint8_t * pbParam, uint32_t nParam);
 uint32_t __fastcall GFXUTIL_GetCofAnimSpeed(uint8_t * pbParam, uint32_t nParam);
 uint32_t __fastcall GFXUTIL_GetCofDirection(uint8_t * pbParam, uint32_t nParam);

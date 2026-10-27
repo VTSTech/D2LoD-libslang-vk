@@ -21,7 +21,7 @@ void __stdcall CloseProfCore() {
 
 void __fastcall PROFCORE_RegisterSlot(uint32_t nSlotId, uint8_t * pSlotData, uint32_t dwFlags) {
     // Static local variables (originally global data)
-    static fpProfCoreRegisterSlotCb gpfnProfCoreRegisterCallback;
+    static fpProfCoreRegisterSlotCb gpfnProfCoreRegisterCallback; D2_STATIC_GUARD_BSS(gpfnProfCoreRegisterCallback, "D2Common::Logging::ProfCore::PROFCORE_RegisterSlot::gpfnProfCoreRegisterCallback");
 
     fpProfCoreRegisterSlotCb pfnCallback = gpfnProfCoreRegisterCallback;
     bool bHasCallback = gpfnProfCoreRegisterCallback != 0;

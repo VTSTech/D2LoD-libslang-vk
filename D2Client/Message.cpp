@@ -69,7 +69,7 @@ int32_t __fastcall MessageGameLoop(::fpGameLoopFunction nfpGameLoopFunction) {
       // Once a game is entered the engine runs this loop instead, so the channel went
       // silent exactly when there was something worth looking at - and a run that had
       // reached town was indistinguishable from one that had died.
-      D2CONTROL_Pump();
+      D2CONTROL_Pump(); D2LOUD_GuardPump();   // loud build: also walks the guard zones between globals
       BOOL bHasMessage;
       /* UINT wRemoveMsg for PeekMessageA */ /* UINT wMsgFilterMax for PeekMessageA */ /* UINT wMsgFilterMin for PeekMessageA */ /* HWND hWnd for PeekMessageA */ /* LPMSG lpMsg for PeekMessageA */ bHasMessage = PeekMessageA(&msg, (HWND)0x0, 0, 0, 0);
       if (!bHasMessage) {

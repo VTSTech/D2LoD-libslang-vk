@@ -31,8 +31,8 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -217,7 +217,7 @@ void __fastcall Q03_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // Q03_Callback_00 (A1Q3) — state-0 / gossip-icon handler. Decides which gossip line Charsi (0x9a) shows. If quest not Completed (or JustCompleted) and player lacks the Malus: show the nStateFlag-indexed intro line (via gdwQuestCallbackAddressQ39 lookup, skipping flag 4). If player HAS the Malus and is level >=8 and not Completed: show the "return the Malus" line (index 3). Read-only on quest record.
 void __fastcall Q03_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQuestCallbackAddressQ39[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 };
+    static int32_t gdwQuestCallbackAddressQ39[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gdwQuestCallbackAddressQ39, "D2Game::Quests::QUESTS::A1Q3::Q03_Callback00_NpcActivate::gdwQuestCallbackAddressQ39");
 
     int32_t nPlayerLevel2;
     int32_t nTargetClassId;
@@ -291,7 +291,7 @@ void __fastcall Q03_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     ::SGAMEDATA* pGame;
     if (pQuestData->bIsNotIntroduction) {
       D2BitBufferStrc* pBitBuffer;
-      if (!(pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x1 && pQuestData->nStateFlag == 2)) {
+      if (!(pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x1 && pQuestData->nStateFlag == 2)) {
         return;
       }
 

@@ -338,9 +338,9 @@ uint32_t __stdcall BNDOWNLOAD_HasPatchFilename() {
     return (uint32_t)(lpFileName_00881c58[0] != '\0');
 }
 
-BOOL __stdcall BnetDownloadFile(SOCKET hSocket, char * szText, FILETIME * pTimestamp, int32_t nProgressMode, uint8_t bWriteFlags, LPCVOID * ppOutBuffer, uint32_t nFileSize) {
+BOOL __stdcall BnetDownloadFile(SOCKET hSocket, char * szText, FILETIME * pTimestamp, int32_t nProgressMode, uint8_t bWriteFlags, uint8_t * * ppOutBuffer, uint32_t nFileSize) {
     int nRecvResult;
-    void* pRecvBuf = Storm::SMem::SMemAlloc(nFileSize, ".\\BnDownload.cpp", 0x385, 8);
+    uint8_t* pRecvBuf = (uint8_t*)Storm::SMem::SMemAlloc(nFileSize, ".\\BnDownload.cpp", 0x385, 8);
     uint32_t nBytesReceived = 0;
     *ppOutBuffer = pRecvBuf;
     if (nFileSize) {
@@ -351,10 +351,10 @@ BOOL __stdcall BnetDownloadFile(SOCKET hSocket, char * szText, FILETIME * pTimes
           len = 0x5b4;
         }
 
-        /* int flags for recv */ /* int len for recv */ /* char * buf for recv */ /* SOCKET s for recv */ nRecvResult = recv(hSocket, (char*)((int)*ppOutBuffer + nBytesReceived), len, 0);
+        /* int flags for recv */ /* int len for recv */ /* char * buf for recv */ /* SOCKET s for recv */ nRecvResult = recv(hSocket, (char*)(*ppOutBuffer + nBytesReceived), len, 0);
         if (nRecvResult == -1 || nRecvResult < 1 || gbBnetDownloadCancelFlag) {
-          Storm::SMem::SMemFree((void*)*ppOutBuffer, ".\\BnDownload.cpp", 0x38f, 0);
-          *ppOutBuffer = (LPCVOID)0x0;
+          Storm::SMem::SMemFree(*ppOutBuffer, ".\\BnDownload.cpp", 0x38f, 0);
+          *ppOutBuffer = 0;
           Debug::DEBUG_UnusedDebugFunction("<ERROR: Failed to recv file  %s in DOWNLOADTOANY, filebytes = %ld, currpos = %ld, bytes = %d");
           return 0;
         }
@@ -366,13 +366,13 @@ BOOL __stdcall BnetDownloadFile(SOCKET hSocket, char * szText, FILETIME * pTimes
       } while (nBytesReceived < nFileSize);
     }
     if (bWriteFlags & 1) {
-      Cache::CACHE_WriteData(szText, *ppOutBuffer, nFileSize, (uint32_t*)&pTimestamp->dwLowDateTime, 0x13c680, 0x278d00);
+      Cache::CACHE_WriteData(szText, (LPCVOID)*ppOutBuffer, nFileSize, (uint32_t*)&pTimestamp->dwLowDateTime, 0x13c680, 0x278d00);
     }
     if (!(bWriteFlags & 2)) {
       return 1;
     }
 
-    BNDOWNLOAD_WriteFileWithTimestamp(szText, *ppOutBuffer, nFileSize, pTimestamp);
+    BNDOWNLOAD_WriteFileWithTimestamp(szText, (LPCVOID)*ppOutBuffer, nFileSize, pTimestamp);
     return 1;
 }
 
@@ -476,7 +476,6 @@ void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut) {
     static_assert(sizeof(void*) != 4 || sizeof(__frame3_t) == 776, "frame group __frame3_t must reproduce the Ghidra frame layout");
     __frame3_t __frame3;
     uint8_t* pBVar1;
-    int32_t nCmpResult;
     int bArchiveOpened;
     DWORD nSize;
     char* pcFileListPtr;
@@ -484,6 +483,7 @@ void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut) {
     uint32_t nLineOffset;
     char* pListCursor;
     D2MPQFileStrc* pcStrLenResult;
+    int32_t nErrorLine;
     __frame0.pOpenFileOut = pResultOut;
     if (!pResultOut) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4b5);
@@ -509,8 +509,8 @@ void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut) {
     *pbArchivePath = '\0';
     __frame1.cRegistryValue = '\0';
     memset(__frame1.szRegistryValueTail, 0, 0x3ff);
-    nCmpResult = Storm::Source::SReg::SRegLoadData((uint32_t*)"Patch", "Patches", 2, &__frame1.cRegistryValue, 0x3fe, nullptr);
-    if (!nCmpResult || __frame1.cRegistryValue == '\0') {
+    nErrorLine = Storm::Source::SReg::SRegLoadData((uint32_t*)"Patch", "Patches", 2, &__frame1.cRegistryValue, 0x3fe, nullptr);
+    if (!nErrorLine || __frame1.cRegistryValue == '\0') {
       *pResultOut = 0;
       Fog::Debug::GuardStack();
       return;
@@ -688,15 +688,22 @@ int __fastcall BNDOWNLOAD_ApplyPrepatch(uint32_t * pdwParam) {
 }
 
 uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
-    // Frame slots -1396..-1380 are ONE object: &nSockAddrLen is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -1396..-1356 are ONE object: &nSockAddrLen is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       int nSockAddrLen;
       uint32_t nKeepAlive;
       uint32_t nRecvTimeout;
       int nRetryCount;
+      uint8_t* pFileData;
+      uint32_t nResponseSize;
+      D2BnetDownloadStateStrc* pDownloadCtx;
+      char* pcCurrentIp;
+      void* pResponseBuf;
+      uint8_t __pad36[3];
+      char bReqType;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 40, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     u_short nPort;
     char* pcToken;
@@ -705,21 +712,15 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
     BOOL BVar1;
     DWORD nCachedSize;
     int32_t bRecvFileOk;
-    uint32_t nResponseSize;
-    char bReqType;
     SOCKET hSocketCopy;
     sockaddr sSockAddr;
     char BnetIp[256];
     char szDnsResult[512];
     D2BnetDownloadStateStrc* pDownloadCtxCopy;
-    D2BnetDownloadStateStrc* pDownloadCtx;
-    pDownloadCtx = (D2BnetDownloadStateStrc*)lpThreadParam;
-    LPCVOID pFileData;
-    pFileData = 0;
-    void* pResponseBuf;
-    pResponseBuf = 0;
-    char* pcCurrentIp;
-    pcCurrentIp = 0;
+    __frame0.pDownloadCtx = (D2BnetDownloadStateStrc*)lpThreadParam;
+    __frame0.pFileData = 0;
+    __frame0.pResponseBuf = 0;
+    __frame0.pcCurrentIp = 0;
     __frame0.nRetryCount = 0;
     szDnsResult[0] = '\0';
     gbBnetDownloadCancelFlag = 0;
@@ -734,7 +735,7 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
       sSockAddr.sa_family = 2;
       sSockAddr.sa_data[0] = '\0';
       sSockAddr.sa_data[1] = '\0';
-      pcCurrentIp = pcToken;
+      __frame0.pcCurrentIp = pcToken;
       nPort = ntohs(0x17e0);
       /* char * cp for inet_addr */ sSockAddr.sa_data[0] = (char)nPort;
       sSockAddr.sa_data[1] = (char)(nPort >> 8);
@@ -761,9 +762,9 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
         setsockopt(hSocket, 0xffff, 8, (char*)&__frame0.nKeepAlive, 4);
         /* int optlen for setsockopt */ /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ __frame0.nRecvTimeout = 15000;
         setsockopt(hSocket, 0xffff, 0x1006, (char*)&__frame0.nRecvTimeout, 4);
-        /* int flags for send */ /* int len for send */ /* char * buf for send */ /* SOCKET s for send */ bReqType = '\x02';
-        nConnResult = send(hSocket, &bReqType, 1, 0);
-        pDownloadCtxCopy = pDownloadCtx;
+        /* int flags for send */ /* int len for send */ /* char * buf for send */ /* SOCKET s for send */ __frame0.bReqType = '\x02';
+        nConnResult = send(hSocket, &__frame0.bReqType, 1, 0);
+        pDownloadCtxCopy = __frame0.pDownloadCtx;
         if (nConnResult == 1) {
           pcToken = szRequestBuf;
           for (nConnResult = 0x8c; nConnResult; nConnResult--) {
@@ -772,12 +773,12 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
             pcToken += 4;
           }
 
-          /* int flags for send */ /* int len for send */ /* char * buf for send */ /* SOCKET s for send */ nSockResult = send(hSocket, szRequestBuf, (uint32_t)pDownloadCtx->nSendSize, 0);
+          /* int flags for send */ /* int len for send */ /* char * buf for send */ /* SOCKET s for send */ nSockResult = send(hSocket, szRequestBuf, (uint32_t)__frame0.pDownloadCtx->nSendSize, 0);
           if (nSockResult == pDownloadCtxCopy->nSendSize) {
-            nResponseSize = 0;
+            __frame0.nResponseSize = 0;
             nSockResult = 0;
             do {
-              /* int flags for recv */ /* int len for recv */ /* char * buf for recv */ /* SOCKET s for recv */ nConnResult = recv(hSocket, (char*)((uintptr_t)&nResponseSize + nSockResult), 4 - nSockResult, 0);
+              /* int flags for recv */ /* int len for recv */ /* char * buf for recv */ /* SOCKET s for recv */ nConnResult = recv(hSocket, (char*)((uintptr_t)&__frame0.nResponseSize + nSockResult), 4 - nSockResult, 0);
               if (nConnResult == -1 || nConnResult < 1) {
                 goto request_failed;
               }
@@ -785,19 +786,19 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
               nSockResult += nConnResult;
             } while (nSockResult < 4);
 
-            if (0xff < nResponseSize) {
+            if (0xff < __frame0.nResponseSize) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ee);
               exit(-1);
             }
 
-            pServerResp = Storm::SMem::SMemAlloc(nResponseSize, ".\\BnDownload.cpp", 0x2ef, 0);
-            pResponseBuf = pServerResp;
+            pServerResp = Storm::SMem::SMemAlloc(__frame0.nResponseSize, ".\\BnDownload.cpp", 0x2ef, 0);
+            __frame0.pResponseBuf = pServerResp;
             if (!pServerResp) {
               break;
             }
 
-            BVar1 = NET_RecvExact(hSocket, (int)pServerResp + 4, nResponseSize - 4);
-            pDownloadCtxCopy = pDownloadCtx;
+            BVar1 = NET_RecvExact(hSocket, (int)pServerResp + 4, __frame0.nResponseSize - 4);
+            pDownloadCtxCopy = __frame0.pDownloadCtx;
             if (!BVar1) {
               Debug::DEBUG_UnusedDebugFunction("ERROR: Failed recv from BNET for download.");
               hSocket = hSocketCopy;
@@ -808,13 +809,13 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
               hSocket = hSocketCopy;
               break;
             }
-            if (pDownloadCtx->nFileType == 2) {
+            if (__frame0.pDownloadCtx->nFileType == 2) {
               nCachedSize = BNDOWNLOAD_GetCachedFileSize((LPCSTR)((int)pServerResp + 0x18), (FILETIME*)((int)pServerResp + 0x10));
               if (nCachedSize != pDownloadCtxCopy->nCachedFileSize) {
                 pDownloadCtxCopy->nCachedFileSize = nCachedSize;
                 Fog::Src::Safesock::closeSocket(hSocketCopy);
                 Storm::SMem::SMemFree(pServerResp, ".\\BnDownload.cpp", 0x311, 0);
-                pResponseBuf = 0;
+                __frame0.pResponseBuf = 0;
                 goto retry_with_new_socket;
               }
               if (gbBnetDownloadCancelFlag) {
@@ -826,7 +827,7 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
             if (pDownloadCtxCopy->nFileType == 2) {
               bRecvFileOk = BNDOWNLOAD_RecvFileFromSocket((LPCSTR)((int)pServerResp + 0x18), hSocketCopy, pDownloadCtxCopy->nCachedFileSize, *(uint32_t*)((int)pServerResp + 4), pDownloadCtxCopy->nConnMode, (FILETIME*)((int)pServerResp + 0x10));
               if (bRecvFileOk) {
-                NET_BNFTP_CLIENT_ProcessFile(*(uint32_t*)((int)pServerResp + 8), pDownloadCtxCopy->nConnMode, *(FILETIME**)((int)pServerResp + 0xc), (LPCSTR)((int)pServerResp + 0x10), (char*)((int)pServerResp + 0x18), (uint32_t*)pDownloadCtxCopy->szOutputPath, (size_t)pFileData, *(int32_t*)((int)pServerResp + 4), 0);
+                NET_BNFTP_CLIENT_ProcessFile(*(uint32_t*)((int)pServerResp + 8), pDownloadCtxCopy->nConnMode, *(FILETIME**)((int)pServerResp + 0xc), (LPCSTR)((int)pServerResp + 0x10), (char*)((int)pServerResp + 0x18), (uint32_t*)pDownloadCtxCopy->szOutputPath, (size_t)__frame0.pFileData, *(int32_t*)((int)pServerResp + 4), 0);
                 hSocket = hSocketCopy;
                 break;
               }
@@ -840,9 +841,9 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
               Storm::SMem::SMemFree(pServerResp, ".\\BnDownload.cpp", 0x331, 0);
               pcToken = "WARNING: Failed to save to disk.";
             } else {
-              BVar1 = BnetDownloadFile(hSocketCopy, (char*)((int)pServerResp + 0x18), (FILETIME*)((int)pServerResp + 0x10), pDownloadCtxCopy->nConnMode, (uint8_t)pDownloadCtxCopy->nFileType, &pFileData, *(uint32_t*)((int)pServerResp + 4));
+              BVar1 = BnetDownloadFile(hSocketCopy, (char*)((int)pServerResp + 0x18), (FILETIME*)((int)pServerResp + 0x10), pDownloadCtxCopy->nConnMode, (uint8_t)pDownloadCtxCopy->nFileType, &__frame0.pFileData, *(uint32_t*)((int)pServerResp + 4));
               if (BVar1) {
-                NET_BNFTP_CLIENT_ProcessFile(*(uint32_t*)((int)pServerResp + 8), pDownloadCtxCopy->nConnMode, *(FILETIME**)((int)pServerResp + 0xc), (LPCSTR)((int)pServerResp + 0x10), (char*)((int)pServerResp + 0x18), (uint32_t*)pDownloadCtxCopy->szOutputPath, (size_t)pFileData, *(int32_t*)((int)pServerResp + 4), 0);
+                NET_BNFTP_CLIENT_ProcessFile(*(uint32_t*)((int)pServerResp + 8), pDownloadCtxCopy->nConnMode, *(FILETIME**)((int)pServerResp + 0xc), (LPCSTR)((int)pServerResp + 0x10), (char*)((int)pServerResp + 0x18), (uint32_t*)pDownloadCtxCopy->szOutputPath, (size_t)__frame0.pFileData, *(int32_t*)((int)pServerResp + 4), 0);
                 hSocket = hSocketCopy;
                 break;
               }
@@ -857,7 +858,7 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
               pcToken = "ERROR: Failed to copy file.";
             }
 
-            pResponseBuf = 0;
+            __frame0.pResponseBuf = 0;
             Debug::DEBUG_UnusedDebugFunction(pcToken);
             goto retry_with_new_socket;
           }
@@ -884,36 +885,36 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
       Debug::DEBUG_UnusedDebugFunction("WARNING: Failed to connect to download port. Retrying...");
       /* DWORD dwMilliseconds for Sleep */ Sleep(1000);
       if (szDnsResult[0] != '\0') {
-        if (!pcCurrentIp) {
+        if (!__frame0.pcCurrentIp) {
           pcToken = szDnsResult;
         } else {
           pcToken = 0;
         }
 
-        pcCurrentIp = strtok(pcToken, " ,;");
+        __frame0.pcCurrentIp = strtok(pcToken, " ,;");
       }
 
       hSocket = hSocketCopy;
-      if (!pcCurrentIp) {
+      if (!__frame0.pcCurrentIp) {
         break;
       }
 
-      /* char * cp for inet_addr */ *(uint32_t*)((char*)&sSockAddr.sa_data + 2) = inet_addr(pcCurrentIp);
+      /* char * cp for inet_addr */ *(uint32_t*)((char*)&sSockAddr.sa_data + 2) = inet_addr(__frame0.pcCurrentIp);
       retry_with_new_socket:
       /* int protocol for socket */ /* int type for socket */ /* int af for socket */ hSocket = socket(2, 1, 0);
-      lpThreadParam = (void*)pDownloadCtx;
+      lpThreadParam = (void*)__frame0.pDownloadCtx;
     } while (true);
 
-    pDownloadCtxCopy = pDownloadCtx;
-    nConnResult = pDownloadCtx->nConnMode;
+    pDownloadCtxCopy = __frame0.pDownloadCtx;
+    nConnResult = __frame0.pDownloadCtx->nConnMode;
     if (hSocket != -1) {
       Fog::Src::Safesock::closeSocket(hSocket);
     }
-    if (pFileData) {
-      Storm::SMem::SMemFree((void*)pFileData, ".\\BnDownload.cpp", 0x366, 0);
+    if (__frame0.pFileData) {
+      Storm::SMem::SMemFree(__frame0.pFileData, ".\\BnDownload.cpp", 0x366, 0);
     }
-    if (pResponseBuf) {
-      Storm::SMem::SMemFree(pResponseBuf, ".\\BnDownload.cpp", 0x367, 0);
+    if (__frame0.pResponseBuf) {
+      Storm::SMem::SMemFree(__frame0.pResponseBuf, ".\\BnDownload.cpp", 0x367, 0);
     }
 
     Storm::SMem::SMemFree(pDownloadCtxCopy, ".\\BnDownload.cpp", 0x368, 0);
@@ -1200,7 +1201,7 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
                   goto log_extrawork_error;
                 }
 
-                bOpened = Storm::Source::SFile::SFileReadFile(__frame1.archiveFileCtx, &__frame1.byVersionByte, 1, (size_t*)&FStack_1224.dwHighDateTime, 0);
+                bOpened = Storm::Source::SFile::SFileReadFile(__frame1.archiveFileCtx, &__frame1.byVersionByte, 1, (uint32_t*)&FStack_1224.dwHighDateTime, 0);
                 if (!bOpened) {
                   pDestPtr = "<ERROR: Failed to read game locale file!>";
                   goto log_extrawork_error;

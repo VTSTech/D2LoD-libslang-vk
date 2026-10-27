@@ -68,8 +68,6 @@
 #include "globals/globals.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Game/Ai/D2AiGeneralStrc.h"
-#include "D2Game/D2QuestDataStrc.h"
-#include "D2Game/Quests/QUESTS.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -189,7 +187,7 @@ BOOL __fastcall SKILLBAR_SrvStFn33_TargetRevivableCorpse(::SGAMEDATA * pGame, D2
 // Resolves the Lightning Fury bolt-count offset for the Find Potion item-code table. Determines act from the unit's room level, rolls the unit's RNG seed mod 100, compares against SkilParam2/SkilParam3 thresholds to pick bolt-count offset (0/1/2), and returns the corresponding entry from gaMapAiDirectionHandlersPtr table indexed by [act*3 + offset]. Returns 0 if out of bounds.
 uint32_t __stdcall SKILLAMZ_CreateLightningFuryBolts(int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static uint32_t gnLightningFuryBoltCount = 0xf;
+    static uint32_t gnLightningFuryBoltCount = 0xf; D2_STATIC_GUARD(gnLightningFuryBoltCount, "D2Game::SKILLS::SkillBar::SKILLAMZ_CreateLightningFuryBolts::gnLightningFuryBoltCount");
     static uint32_t gaAmzLightningFuryBoltTable[15][3] = {
     { 0x20327068, 0x2032706d, 0x20737672 },
     { 0x20337068, 0x2033706d, 0x20737672 },
@@ -206,7 +204,7 @@ uint32_t __stdcall SKILLAMZ_CreateLightningFuryBolts(int32_t nParam1, int32_t nP
     { 0x20357068, 0x2035706d, 0x206c7672 },
     { 0x20357068, 0x2035706d, 0x206c7672 },
     { 0x20357068, 0x2035706d, 0x206c7672 }
-};
+}; D2_STATIC_GUARD(gaAmzLightningFuryBoltTable, "D2Game::SKILLS::SkillBar::SKILLAMZ_CreateLightningFuryBolts::gaAmzLightningFuryBoltTable");
 
     int nBoltCountOffset;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
@@ -379,8 +377,8 @@ BOOL __fastcall Skills_SrvDoFunc_070_DoubleSwing(::SGAMEDATA * pGame, D2UnitStrc
 }
 
 BOOL __fastcall SKILL_CheckCorpseCanBeConsumed(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    eD2UnitType eMonsterUnitType;
-    eD2QuestsInternal eMonsterQuestId;
+    int eMonsterUnitType;
+    uint32_t eMonsterQuestId;
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return 0;
     }
@@ -395,8 +393,8 @@ BOOL __fastcall SKILL_CheckCorpseCanBeConsumed(::SGAMEDATA * pGame, D2UnitStrc *
       return 0;
     }
 
-    Ai::AiGeneral::GetMonsterNameAndAi(pUnit, (D2QuestDataStrc*)&eMonsterQuestId, (D2UnitStrc*)&eMonsterUnitType);
-    if (!(eMonsterQuestId == ~QUESTINT_SpokeToWarriv || eMonsterUnitType != UNIT_PLAYER)) {
+    Ai::AiGeneral::GetMonsterNameAndAi(pUnit, &eMonsterQuestId, &eMonsterUnitType);
+    if (!(eMonsterQuestId == -1 || eMonsterUnitType)) {
       return 0;
     }
 
@@ -645,17 +643,17 @@ BOOL __fastcall Skills_SrvDoFunc_075_GrimWard(::SGAMEDATA * pGame, D2UnitStrc * 
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)pSkillsTxt->srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillsTxt->srvmissile[1];
     D2MonStats2Txt* pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit_00->nClassId);
     if (!pMonStats2) {
       return 0;
     }
     if (!pMonStats2->large) {
       if (pMonStats2->isSmall) {
-        eMissileId = (eMissilesId)pSkillsTxt->srvmissileb;
+        eMissileId = (eMissilesId)pSkillsTxt->srvmissile[2];
       }
     } else {
-      eMissileId = (eMissilesId)pSkillsTxt->srvmissilec;
+      eMissileId = (eMissilesId)pSkillsTxt->srvmissile[3];
     }
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;

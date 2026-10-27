@@ -3,7 +3,6 @@
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Client/Archive.h"
 #include "D2Client/D2ClientStrc.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -31,6 +30,7 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Stats/StatsEx.h"
+#include "D2Common/Text.h"
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Common/Units.h"
@@ -463,7 +463,7 @@ void __fastcall Q33_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
             /* .nPriceCount = */ 0x7
         }
     }
-};
+}; D2_STATIC_GUARD(D2Quest33RewardListStrc_NIGHTMARE, "D2Game::Quests::QUESTS::A5Q3::Q33_Callback11_ScrollMessage::D2Quest33RewardListStrc_NIGHTMARE");
     static D2Quest33RewardListStrc D2Quest33RewardListStrc_HELL = {
     /* .sClassRewads = */ {
         {
@@ -495,7 +495,7 @@ void __fastcall Q33_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
             /* .nPriceCount = */ 0x7
         }
     }
-};
+}; D2_STATIC_GUARD(D2Quest33RewardListStrc_HELL, "D2Game::Quests::QUESTS::A5Q3::Q33_Callback11_ScrollMessage::D2Quest33RewardListStrc_HELL");
     static D2Quest33RewardListStrc D2Quest33RewardListStrc_NORMAL = {
     /* .sClassRewads = */ {
         {
@@ -527,7 +527,7 @@ void __fastcall Q33_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
             /* .nPriceCount = */ 0x7
         }
     }
-};
+}; D2_STATIC_GUARD(D2Quest33RewardListStrc_NORMAL, "D2Game::Quests::QUESTS::A5Q3::Q33_Callback11_ScrollMessage::D2Quest33RewardListStrc_NORMAL");
 
     D2UnitStrc* pQuestSpecificData;
     D2ClientStrc* pClient;
@@ -802,7 +802,7 @@ BOOL __fastcall Q33_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 // If RewardAwaits: Anya(0x200) gated on !Step0x09, Malah(0x201) gated on Step0x08, default gossip idx 5.
 void __fastcall Q33_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQuestCallbackAddressQ33[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5 };
+    static int32_t gdwQuestCallbackAddressQ33[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5 }; D2_STATIC_GUARD(gdwQuestCallbackAddressQ33, "D2Game::Quests::QUESTS::A5Q3::Q33_Callback00_NpcActivate::gdwQuestCallbackAddressQ33");
 
     BOOL bQuestStateResult;
     D2MonsterKillStrc sKillInfo;
@@ -943,7 +943,7 @@ void __fastcall Q33_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     D2BitBufferStrc* pQuestRecord;
     int nNpcIndex;
     nNpcIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    D2GossipTextStrc* pTextControl;
+    D2GSPacketSrv0x27_TextStrc* pTextControl;
     pTextControl = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
     if (nNpcIndex == 0x70) {
       if (!pQuestData->bIsNotIntroduction || pQuestData->nStateFlag) {
@@ -974,7 +974,7 @@ void __fastcall Q33_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     cleanup_monsters:
     Q33_CleanupQuestMonsters(pQuestData);
     check_town_and_temple:
-    if (pTextControl == (D2GossipTextStrc*)0x6d && (QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs) , pQuestData->nStateFlag == 2)) {
+    if (pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x6d && (QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs) , pQuestData->nStateFlag == 2)) {
       pGame = pQuestArgs->pGame;
       pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
       pQuestRecord = pPlayerData->pQuestRecord[pGame->nDifficulty];
@@ -1343,7 +1343,7 @@ void __fastcall Q33_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q33_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q33_Callback13_PlayerStartedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xe] = Q33_Callback14_PlayerJoinedGame;
-    pQuestData->pNpcMessages = &A5Q3::aNpcGossipData;
+    pQuestData->pNpcMessages = A5Q3::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q3Strc* pQuestSpecificData = D2_NEW_POOL(pGameTmp->pMemoryPool, D2QuestDataA5Q3Strc);

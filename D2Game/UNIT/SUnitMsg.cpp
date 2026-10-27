@@ -89,7 +89,7 @@ typedef void (__fastcall *fnUpdateGameInformation)(int nCharClassId, int nLevelD
 
 namespace D2Game::UNIT::SUnitMsg {
 
-static uint32_t gaStartingLevelByAct_act5[5] = { 0 };
+static uint32_t gaStartingLevelByAct_act5[5] = { 0 }; D2_STATIC_GUARD(gaStartingLevelByAct_act5, "D2Game::UNIT::SUnitMsg::gaStartingLevelByAct_act5");
 
 void __stdcall PLAYER_SetStartingLevelForAct(uint8_t nAct, ::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     uint32_t uVar1 = (uint32_t)nAct;
@@ -365,7 +365,7 @@ BOOL __fastcall PLAYER_AssignStatPoint(D2UnitStrc * pUnit, uint32_t eStatType) {
 
 // Send all active buff/debuff states for unit to client. Iterates state flags, encodes state list via bit buffer with per-state stat lists using ItemStatCost config. Sends via 0xA8 opcode.
 void __fastcall PLAYER_SendStateListToClient(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
-    void* _Src;
+    int* _Src;
     int nFlagDwordCount;
     uint32_t nSetBitIdx;
     int32_t nBitPos;
@@ -397,7 +397,7 @@ void __fastcall PLAYER_SendStateListToClient(D2UnitStrc * pUnit, D2ClientStrc * 
     D2UnitStrc* pUnitSaved = pUnit;
     if (pUnit && pClient) {
       uint32_t uVar1;
-      _Src = (void*)D2Common::DATATBLS::ItemStats::thunk_UNIT_GetStateList_StateFlags(pUnit);
+      _Src = D2Common::DATATBLS::ItemStats::thunk_UNIT_GetStateList_StateFlags(pUnit);
       nFlagDwordCount = sgptDataTable->nTxtStatesSize + 0x1f;
       nFlagDwordCount = (int)(nFlagDwordCount + (nFlagDwordCount >> 0x1f & 0x1fU)) >> 5;
       nStateFlagDwordCount = nFlagDwordCount;

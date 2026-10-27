@@ -451,7 +451,7 @@ bool DEBUG_EnumerateModulesViaToolhelp32(int * pModuleList) {
 
 bool __fastcall DEBUG_EnumerateModulesViaPEB(int * pnParam) {
     // Static local variables (originally global data)
-    static void * ProcessEnvironmentBlock = (void *)0x00000000;
+    static void * ProcessEnvironmentBlock = (void *)0x00000000; D2_STATIC_GUARD(ProcessEnvironmentBlock, "Fog::Engine::Application::DEBUG_EnumerateModulesViaPEB::ProcessEnvironmentBlock");
 
     void* pSavedEsp;
     EH4_EXCEPTION_REGISTRATION tSehFrame;
@@ -934,7 +934,7 @@ int __fastcall INI_ParseCommandLineArg(uint8_t * pbArgName, char * szCmdLine, in
     int nNameLen = 0;
     int32_t nConfigIdx = -1;
     if (0xff < nCmdLen) {
-      Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x103);
+      Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(DWORD)Src::ErrorManager::GetInstructionPointer(), 0x103);
       exit(-1);
     }
     if (0 < nCmdLen) {
@@ -1099,8 +1099,8 @@ int32_t __stdcall ApplicationRunCurrentMode(D2IniConfigStrc * pD2IniData) {
         /* .pfnInit = */ &D2Client::ClientModeInGame::AppModeClientInit,
         /* .pfnShutdown = */ &D2Client::ClientModeInGame::AppModeClientShutdown
     }
-};
-    static fnAppModeRun * CurrentApplication = (fnAppModeRun *)0x00000000;
+}; D2_STATIC_GUARD(ApplicationBootstrapArray, "Fog::Engine::Application::ApplicationRunCurrentMode::ApplicationBootstrapArray");
+    static fnAppModeRun * CurrentApplication = (fnAppModeRun *)0x00000000; D2_STATIC_GUARD(CurrentApplication, "Fog::Engine::Application::ApplicationRunCurrentMode::CurrentApplication");
 
     int32_t modeResult;
     if (4 < (uint32_t)(geD2ApplicationMode - APPMODE_client)) {
@@ -1261,7 +1261,7 @@ uint32_t __stdcall ERRORMANAGER_TryGetProcAddress(HMODULE hModule, FARPROC * ppf
 // @sourcefile .\Main.cpp
 void __stdcall CLIENT_CheckIfApplicationModeIsInCommandLineAndSetItToArgument(eD2ApplicationMode * eAppMode, char * szText) {
     // Static local variables (originally global data)
-    static uint32_t gApplicationModeCommandLineArgumentArray[6] = { (uint32_t)(uintptr_t)s_modstate0_006cc928, (uint32_t)(uintptr_t)s_client_006cc920, (uint32_t)(uintptr_t)s_server_006cc918, (uint32_t)(uintptr_t)s_multiplayer_006cc90c, (uint32_t)(uintptr_t)s_launcher_006cc900, (uint32_t)(uintptr_t)s_expand_006cc8f8 };
+    static char * gApplicationModeCommandLineArgumentArray[6] = { s_modstate0_006cc928, s_client_006cc920, s_server_006cc918, s_multiplayer_006cc90c, s_launcher_006cc900, s_expand_006cc8f8 }; D2_STATIC_GUARD(gApplicationModeCommandLineArgumentArray, "Fog::Engine::Application::CLIENT_CheckIfApplicationModeIsInCommandLineAndSetItToArgument::gApplicationModeCommandLineArgumentArray");
 
     char* pszModeStrEnd;
     int nStrCmp;
@@ -1276,7 +1276,7 @@ void __stdcall CLIENT_CheckIfApplicationModeIsInCommandLineAndSetItToArgument(eD
       eD2ApplicationMode eMode;
       eMode = APPMODE_mode0;
       do {
-        pszModeStr = (char*)gApplicationModeCommandLineArgumentArray[eMode];
+        pszModeStr = gApplicationModeCommandLineArgumentArray[eMode];
         pszModeStrEnd = pszModeStr;
         pszModeStrEnd = pszModeStrEnd + strlen(pszModeStrEnd) + 1;
         nStrCmp = strncmp(pszCmdToken, pszModeStr, (int)pszModeStrEnd - (int)(pszModeStr + 1));
@@ -1296,7 +1296,7 @@ void __stdcall CLIENT_CheckIfApplicationModeIsInCommandLineAndSetItToArgument(eD
 // lpHandlerProc parameter of RegisterServiceCtrlHandlerA
 void __stdcall ERRORMANAGER_ServiceControlHandler(int32_t nServiceControl) {
     // Static local variables (originally global data)
-    static bool gbApplicationModeCommandLineArgumentFound = true;
+    static bool gbApplicationModeCommandLineArgumentFound = true; D2_STATIC_GUARD(gbApplicationModeCommandLineArgumentFound, "Fog::Engine::Application::ERRORMANAGER_ServiceControlHandler::gbApplicationModeCommandLineArgumentFound");
 
     if (nServiceControl != 1) {
       if (nServiceControl == 4) {
@@ -1362,7 +1362,7 @@ void __fastcall PreInitApplication(int32_t argc, char * * argv) {
 // WinMain: decide server/service vs client, load advapi, then PreInitApplication.
 int32_t __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int32_t nShowCmd) {
     // Static local variables (originally global data)
-    static BOOL WinMain_nShowCmd = 0x0;
+    static BOOL WinMain_nShowCmd = 0x0; D2_STATIC_GUARD(WinMain_nShowCmd, "Fog::Engine::Application::WinMain::WinMain_nShowCmd");
 
     char* aszArgv[2];
     WinMain_hInstance = hInstance;
@@ -1385,7 +1385,7 @@ int32_t __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lp
 
 uint32_t __stdcall PATH_GetKnownFolderPath(LPSTR szOutPath, int32_t nBufferSize) {
     // Static local variables (originally global data)
-    static GUID GUID_006cca6c = {} /* 4c5c32ff-bb9d-43b0-b5b4-2d72e54eaaa4 */;
+    static GUID GUID_006cca6c = {} /* 4c5c32ff-bb9d-43b0-b5b4-2d72e54eaaa4 */; D2_STATIC_GUARD(GUID_006cca6c, "Fog::Engine::Application::PATH_GetKnownFolderPath::GUID_006cca6c");
 
     LPWSTR pwszKnownPath;
     HMODULE hModule = GetModuleHandleA("Shell32.dll");

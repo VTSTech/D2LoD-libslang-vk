@@ -40,10 +40,10 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/QuestLog.h"
 #include "D2Common/Drlg/Drlg.h"
+#include "D2Common/Text.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -376,7 +376,7 @@ void __fastcall Q05_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 // A1Q5 (Forgotten Tower) NPC-talk gossip callback (handler slot 0). Only runs once the quest intro is past. Looks up the talking player's quest record for QUEST_ForgottenTower (Completed/JustCompleted), and resolves the target NPC class id and player GUID. Scans the quest-specific per-player GUID lists to pick which gossip line to play, then calls AddGossipMessageOnMonster to make the NPC speak the appropriate line (completion line, or the initial-mask line from gdwQuestDataIntialMask indexed by stateFlag). Pure dialog selection; no quest-state mutation.
 void __fastcall Q05_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQuestDataIntialMask[6] = { -0x1, -0x1, 0x0, 0x1, 0x2, 0x3 };
+    static int32_t gdwQuestDataIntialMask[6] = { -0x1, -0x1, 0x0, 0x1, 0x2, 0x3 }; D2_STATIC_GUARD(gdwQuestDataIntialMask, "D2Game::Quests::QUESTS::A1Q5::Q05_Callback00_NpcActivate::gdwQuestDataIntialMask");
 
     int i;
     int32_t* pListEntry;
@@ -655,7 +655,7 @@ void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     if (!pQuestData->bIsNotIntroduction) {
       D2UnitDataPlayerStrc* pPlayerData;
       handle_left_town:
-      if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x1) {
+      if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x1) {
         if (pQuestData->nStateFlag == 2) {
           pGame = pQuestArgs->pGame;
           pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
@@ -954,7 +954,7 @@ void __fastcall Q05_TriggerCountessDeathEffect(D2QuestDataStrc * pQuestData, D2U
 void __fastcall Q05_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     short int nRewardPlayerCount;
     D2QuestDataA1Q5Strc* pA1Q5Data = pQuestData->pQuestSpecificData.pA1Q5;
-    D2Common::Units::GetCoords(pQuestArgs->pTarget, (POINT*)&pA1Q5Data->nCountessDeathX);
+    D2Common::Units::GetCoords(pQuestArgs->pTarget, &pA1Q5Data->ptCountessDeath);
     if (pQuestData->bIsNotIntroduction) {
       eD2Quests nQuestId;
       QUEST_DebugPrint(pQuestData->pGame, "Finished quest", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x3b1);

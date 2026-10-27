@@ -39,7 +39,7 @@ void DRLGMAZE_GenerateRiverOfFlames(D2DrlgLevelStrc * pDrlgLevelStrc) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x0
     }
-};
+}; D2_STATIC_GUARD(gaDrlgRiverOfFlamesReplacements, "D2Common::Drlg::Maze::Act4::RiverOfFlames::DRLGMAZE_GenerateRiverOfFlames::gaDrlgRiverOfFlamesReplacements");
 
     D2DrlgPresetRoomStrc* pRoomExDataInner;
     LONG* pWorldPosY;
@@ -87,7 +87,7 @@ void DRLGMAZE_GenerateRiverOfFlames(D2DrlgLevelStrc * pDrlgLevelStrc) {
       pRoomExDataInner->nPickedFile = -1;
     }
 
-    DrlgRoom::AllocDrlgOrth(pNewRoom, pChaosLevel, DIRECTION_NORTHEAST, 0);
+    DrlgRoom::AllocDrlgOrth(&pNewRoom->pOrth, pChaosLevel, DIRECTION_NORTHEAST, 0);
     fReplaceResult = pChaosLevel->sCoordinatesAndSize.WorldSize.y;
     int nRoomPosY = pNewRoom->sCoords.WorldPosition.y;
     int nRoomSizeX = pNewRoom->sCoords.WorldSize.x;

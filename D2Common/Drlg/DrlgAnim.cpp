@@ -2,6 +2,7 @@
 
 #include "D2Common/Drlg/DrlgAnim.h"
 #include "D2CMP/DUNGEON/Dungeon.h"
+#include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
@@ -20,6 +21,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
+#include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgCoordsStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Game/Objects/ObjectsRgn.h"
@@ -41,6 +43,7 @@ namespace D2Common::Drlg::DrlgAnim {
 
 // Scans every cell in the room's grid, looks up the tile in all tile projects, and for any tile whose library flags include bit 0x100 (animated) adds (matchCount-1) to the floor, wall, or roof animated tile counters in pRoomTiles and sets the animated-room flag 0x8000000 on pRoomEx.
 void __fastcall DRLGROOMTILE_CountAnimTilesFromGrid(D2RoomExStrc * pRoomEx, D2DrlgGridStrc * pGrid, D2DrlgGridStrc * pOrientGrid, D2DrlgCoordStrc * pUnused, int nKillEdgeX, int nKillEdgeY) {
+    int* piVar1;
     uint32_t nGridFlags;
     D2DrlgCoordStrc* pOrientation;
     uint32_t nMatchCount;
@@ -86,12 +89,15 @@ void __fastcall DRLGROOMTILE_CountAnimTilesFromGrid(D2RoomExStrc * pRoomEx, D2Dr
                 nCellY = nMatchCount - 1;
                 if (!(nGridFlags & 2)) {
                   if (!(nGridFlags & 1)) {
-                    pTileGrid->nRoofTilesMax += nCellY;
+                    piVar1 = &pTileGrid->sRoomTiles.nRoofTilesCount;
+                    *piVar1 += nCellY;
                   } else {
-                    pTileGrid->nWallTilesMax += nCellY;
+                    piVar1 = &pTileGrid->sRoomTiles.nWallTilesCount;
+                    *piVar1 += nCellY;
                   }
                 } else {
-                  pTileGrid->nFloorTilesMax += nCellY;
+                  piVar1 = &pTileGrid->sRoomTiles.nFloorTilesCount;
+                  *piVar1 += nCellY;
                 }
 
                 pRoomExCtx->eRoomExFlags |= 0x8000000;
@@ -287,9 +293,9 @@ void __fastcall DRLGANIM_AllocAnimatedTiles(D2DrlgGridStrc * pGrids, D2RoomExStr
 // Wrapper calling DRLGANIM_AllocAnimatedTiles for wall/floor/shadow.
 void __fastcall DRLGROOMTILE_AllocAnimTiles(D2RoomExStrc * pRoomEx, int nFrameStep, D2DrlgGridStrc * pWallGrids, int nUnused1, D2DrlgGridStrc * pFloorGrids, int nUnused2, D2DrlgGridStrc * pRoofGrids) {
     D2DrlgTileGridStrc* pTileGrid = pRoomEx->pRoomTiles;
-    DRLGANIM_AllocAnimatedTiles(pWallGrids, pRoomEx, nFrameStep, pTileGrid->pWallTiles, pTileGrid->nWalls);
-    DRLGANIM_AllocAnimatedTiles(pFloorGrids, pRoomEx, nFrameStep, pTileGrid->pFloorTiles, pTileGrid->nFloors);
-    DRLGANIM_AllocAnimatedTiles(pRoofGrids, pRoomEx, nFrameStep, pTileGrid->pRoofTiles, pTileGrid->nShadows);
+    DRLGANIM_AllocAnimatedTiles(pWallGrids, pRoomEx, nFrameStep, pTileGrid->sRoomTiles.pWallTiles, pTileGrid->nWalls);
+    DRLGANIM_AllocAnimatedTiles(pFloorGrids, pRoomEx, nFrameStep, pTileGrid->sRoomTiles.pFloorTiles, pTileGrid->nFloors);
+    DRLGANIM_AllocAnimatedTiles(pRoofGrids, pRoomEx, nFrameStep, pTileGrid->sRoomTiles.pRoofTiles, pTileGrid->nShadows);
 }
 
 // Returns the tile orientation value for a given animation index by indexing the static gnDrlgAnimFrameCounter lookup table. Maps DS1 animation indices to their corresponding DRLG orientation constants.
@@ -338,7 +344,7 @@ int __fastcall DRLGANIM_GetOrientationFromIndex(int nAnimIndex) {
     0x12,
     0x13,
     0x14
-};
+}; D2_STATIC_GUARD(gnDrlgAnimFrameCounter, "D2Common::Drlg::DrlgAnim::DRLGANIM_GetOrientationFromIndex::gnDrlgAnimFrameCounter");
 
     return gnDrlgAnimFrameCounter[nAnimIndex];
 }

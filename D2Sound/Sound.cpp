@@ -2,6 +2,7 @@
 
 #include "D2Sound/Sound.h"
 #include "D2Client/GAME/Sound.h"
+#include "D2Client/Sound/Sound.h"
 #include "D2Direct3D/Renderer/Direct3D.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Glide/Renderer/Glide.h"
@@ -125,7 +126,7 @@ void __stdcall SOUND_InitDirectSound() {
     /* .dwPlayCpuOverheadSwBuffers = */ 0,
     /* .dwReserved1 = */ 0,
     /* .dwReserved2 = */ 0
-};
+}; D2_STATIC_GUARD(gDSoundCapsBuffer, "D2Sound::Sound::SOUND_InitDirectSound::gDSoundCapsBuffer");
 
     char* szErrorMsg;
     BOOL BVar2;
@@ -375,7 +376,7 @@ int * SOUND_GetAmbientSoundEntry(int32_t nIndex) {
 
 void __fastcall SOUND_InitMusicBuffer(uint32_t dwHwnd) {
     // Static local variables (originally global data)
-    static uint32_t gnMusicBufferSize;
+    static uint32_t gnMusicBufferSize; D2_STATIC_GUARD_BSS(gnMusicBufferSize, "D2Sound::Sound::SOUND_InitMusicBuffer::gnMusicBufferSize");
 
     gnMusicBufferSize = dwHwnd;
     IDirectSound* pArchive = SOUND_GetSpeakerConfigFlag();

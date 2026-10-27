@@ -80,7 +80,7 @@ uint32_t __stdcall GetErrorState();
 // @sourcefile .\Src\ErrorManager.cpp
 char * __fastcall StripPathPrefixToRelative(char * szText);
 // Returns the caller's return address, i.e. the instruction pointer of the call site. Body is MOV EAX,[ESP]; RET - it reads the return address off the stack and returns it. Takes NO arguments: the RET (not RET 4) leaves the caller's stack untouched, and the DWORD after the call is the __LINE__ value the caller pushed for the assert/halt call that follows. Fog ordinal #10265 @ RVA 0x8090.
-int32_t __stdcall GetInstructionPointer();
+void * __stdcall GetInstructionPointer();
 // Formats debug output with optional timestamp and outputs to debugger/log. Supports flags: 0x04=prepend timestamp (HH:MM:SS.mmm format via GetLocalTime), 0x02=skip OutputDebugStringA, 0x01=write to LOG category via LogManager, 0x18=check CapsLock state. Uses a 4096-byte buffer for vsnprintf formatting with varargs, appending formatted text after timestamp if present.
 void __stdcall FormatDebugOutput(uint8_t bFlags, va_list vaArgs, char * szText);
 void OutputDebugStringSimple(char * szText, ...);
@@ -122,7 +122,7 @@ BOOL __fastcall CheckErrorDuringError(char * szText, int32_t nLine, char * szRea
 void FOG_ErrorHandler(eFOG_ErrorType eErrorType, char * szFile, int32_t nLine, char * szReasonFormat, ...);
 void ERROR_UnrecoverableInternalError_AssertionFailure(char * szUnused, int32_t nAddress, int32_t nLine);
 // Tail-calls FOG_ErrorHandler(ERROR_Halt=6, "", nLine, "Unrecoverable internal error %08x", nAddress). Byte-identical to ERROR_UnrecoverableInternalError_AssertionFailure (00408a30, type 5) and _Warning (00408a90, type 7) apart from the error-type immediate, so the three share one parameter layout. Arg 2 is the call-site instruction pointer produced by GetInstructionPointer (00408090), NOT a line number; arg 3 is __LINE__. Arg 1 is the assertion message, stripped to "" (0x6cc837) in this release build and ignored by the body, which substitutes that same empty string for FOG_ErrorHandler's szFile. __cdecl: call sites clean 12 bytes with ADD ESP,0xC. Fog ordinal #10024 @ RVA 0x8A60.
-void ERROR_UnrecoverableInternalError_Halt(char * szMessage, int32_t nAddress, int32_t nLine);
+void ERROR_UnrecoverableInternalError_Halt(char * szMessage, void * nAddress, int32_t nLine);
 void ERROR_UnrecoverableInternalError_Warning(char * szUnused, int32_t nAddress, int32_t nLine);
 void ERROR_DeadlockedThread(DWORD pThread, int32_t nTicks);
 void ERROR_UnrecoverableInternalError_Any(eFOG_ErrorType eErrorType, uint32_t dwParam, int32_t nAddress, int32_t nLine);

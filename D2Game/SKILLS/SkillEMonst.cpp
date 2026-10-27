@@ -189,7 +189,7 @@ BOOL __fastcall Skills_SrvDoFunc_126_ImpInferno(::SGAMEDATA * pGame, D2UnitStrc 
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)pSkillRecord->srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillRecord->srvmissile[1];
     if (!(0 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -561,8 +561,8 @@ BOOL __fastcall SKILLEMONST_SrvStFn61_SelfResurrect(::SGAMEDATA * pGame, D2UnitS
 
 void __stdcall SKILLSOR_GetMeteorSubMissileCount(eMissilesId pParam, eD2Skills eSkill, int32_t nSkillLvl, ::SGAMEDATA * pGame, int32_t nCount, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static int gnSkillOffset_Sorceress_Fireball[4] = { 0x0, 0x0, 0x1, -0x1 };
-    static int gnSkillOffset_Sorceress_Meteor[4] = { 0x1, -0x1, 0x0, 0x0 };
+    static int gnSkillOffset_Sorceress_Fireball[4] = { 0x0, 0x0, 0x1, -0x1 }; D2_STATIC_GUARD(gnSkillOffset_Sorceress_Fireball, "D2Game::SKILLS::SkillEMonst::SKILLSOR_GetMeteorSubMissileCount::gnSkillOffset_Sorceress_Fireball");
+    static int gnSkillOffset_Sorceress_Meteor[4] = { 0x1, -0x1, 0x0, 0x0 }; D2_STATIC_GUARD(gnSkillOffset_Sorceress_Meteor, "D2Game::SKILLS::SkillEMonst::SKILLSOR_GetMeteorSubMissileCount::gnSkillOffset_Sorceress_Meteor");
 
     bool _bGotTargetPos;
     bool bGotTargetPos;
@@ -603,7 +603,7 @@ BOOL __fastcall Skills_SrvDoFunc_130_SpawnSubMissiles(::SGAMEDATA * pGame, D2Uni
       return 0;
     }
 
-    int32_t nSrvMissileId = (int32_t)pSkillRecord->srvmissilea;
+    int32_t nSrvMissileId = (int32_t)pSkillRecord->srvmissile[1];
     if (!(0 < nSrvMissileId && nSrvMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -757,7 +757,7 @@ BOOL __fastcall Skills_SrvDoFunc_132_FireClassUpgradedMissile(::SGAMEDATA * pGam
       return 0;
     }
 
-    int nBaseMissileId = (int)sgptDataTable->pTxtSkills[eSkill].srvmissilea;
+    int nBaseMissileId = (int)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
     if (!(0 < nBaseMissileId && nBaseMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -878,7 +878,7 @@ BOOL __fastcall Skills_SrvDoFunc_134_AreaExplosionAttack(::SGAMEDATA * pGame, D2
     }
 
     D2SkillsTxt* pSkillRecord = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillRecord && 0 < pSkillRecord->srvmissilea && (int)pSkillRecord->srvmissilea < sgptDataTable->nTxtMissilesSize)) {
+    if (!(pSkillRecord && 0 < pSkillRecord->srvmissile[1] && (int)pSkillRecord->srvmissile[1] < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
     if (pUnit) {
@@ -982,7 +982,7 @@ BOOL __fastcall Skills_SrvDoFunc_136_FireSpeedScaledMissile(::SGAMEDATA * pGame,
       return 0;
     }
 
-    eMissilesId nMissileTxtNo = (eMissilesId)pSkillRecord->srvmissilea;
+    eMissilesId nMissileTxtNo = (eMissilesId)pSkillRecord->srvmissile[1];
     if ((int)nMissileTxtNo < 1 || sgptDataTable->nTxtMissilesSize <= (int)nMissileTxtNo) {
       return 0;
     }
@@ -1072,7 +1072,7 @@ BOOL __fastcall Skills_SrvDoFunc_138_FirePerpendicularMissileLine(::SGAMEDATA * 
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)pSkillRecord->srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillRecord->srvmissile[1];
     if (!(0 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -1128,7 +1128,7 @@ BOOL __fastcall Skills_SrvDoFunc_139_FireOrthogonalMissile(::SGAMEDATA * pGame, 
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
     if (!(0 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -1163,7 +1163,7 @@ BOOL __fastcall SKILLEMONST_SrvStFn63_CorpseCycler(::SGAMEDATA * pGame, D2UnitSt
       return 0;
     }
 
-    eMissilesId eMissileTxtNo = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissilea;
+    eMissilesId eMissileTxtNo = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
     if (!(0 < (int)eMissileTxtNo && (int)eMissileTxtNo < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -1430,7 +1430,7 @@ D2UnitStrc * __fastcall SKILLEMONST_FindNearbyCorpse(::SGAMEDATA * pGame, D2Unit
     sUnitFindArg.nFlags = 0x1002;
     sUnitFindArg.pAttacker = pUnit;
     sUnitFindArg.nX = nX;
-    D2Common::Units::UnitFinds::InitializeUnitFindData((::SGAMEDATA*)pGameLocal->pMemoryPool, &sUnitFindData, pCurrentRoom, nX, sUnitFindArg.nY, nSearchRadius, nullptr, &sUnitFindArg);
+    D2Common::Units::UnitFinds::InitializeUnitFindData(pGameLocal->pMemoryPool, &sUnitFindData, pCurrentRoom, nX, sUnitFindArg.nY, nSearchRadius, nullptr, &sUnitFindArg);
     D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&sUnitFindData);
     int32_t nCandidateIdx = 0;
     if (0 < sUnitFindData.nCountedUnits) {

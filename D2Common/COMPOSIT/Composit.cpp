@@ -104,7 +104,7 @@ int COMPOSIT_GetItemTypeIndex(int32_t iItemType) {
         /* .iItemType = */ { 'h', 't', '2', ' ' },
         /* .nWeaponClassIndex = */ 0xd
     }
-};
+}; D2_STATIC_GUARD(gaCompositItemTypeMap, "D2Common::COMPOSIT::Composit::COMPOSIT_GetItemTypeIndex::gaCompositItemTypeMap");
 
     int i = 0;
     do {
@@ -350,10 +350,24 @@ uint32_t __stdcall COMPOSIT_GetBodyPartTransform(eD2BodyLocDWORD nBodyIndex, uin
 // Builds the .COF animation filename for a composite-rendered unit (player/monster/object) into szOutCofPath via wsprintfA. Selects the type token, mode token and weapon-class token based on nCompType: 0=player (plrtype/plrmode txt tokens, plus weapon-class resolution and player composite overrides), 1=monster (monstats Code + monmode token, compositeDeath flag handling, monster overrides), 2=object (objtype/objmode tokens). Each 4-char token is space-stripped (0x20 bytes blanked). Calls COMPOSIT_ResolveWeaponClass to fill *pOutWeaponClass (the hth/1hs/2hs etc. weapon-class code). bBuildFullPath selects a directory-prefixed format string vs a bare one. pInventory supplies equipped-weapon info for class resolution. Writes the path string; no return.
 void __stdcall COMPOSIT_BuildCofPath(D2UnitStrc * pUnit, uint32_t nPlrClass, uint32_t nItemCode, uint32_t nCompType, D2InventoryStrc * pInventory, LPSTR szOutCofPath, int32_t * pOutWeaponClass, int32_t bBuildFullPath, uint32_t bSpecialHandling) {
     // Static local variables (originally global data)
-    static uint32_t gaPlayerCompositeOverrideGfx[4] = { 0x20206867, 0x12, 0x20206867, 0x13 };
-    static uint32_t gnPlayerCompositeOverrideCount = 0x2;
-    static uint32_t gaMonsterCompositeOverrideGfx[2] = { 0x20206867, 0xd };
-    static uint32_t gnMonsterCompositeOverrideCount = 0x1;
+    static D2CofPathOverrideStrc gaPlayerCompositeOverrideGfx[2] = {
+    {
+        /* .dwToken = */ 0x20206867,
+        /* .nMode = */ 0x12
+    },
+    {
+        /* .dwToken = */ 0x20206867,
+        /* .nMode = */ 0x13
+    }
+}; D2_STATIC_GUARD(gaPlayerCompositeOverrideGfx, "D2Common::COMPOSIT::Composit::COMPOSIT_BuildCofPath::gaPlayerCompositeOverrideGfx");
+    static uint32_t gnPlayerCompositeOverrideCount = 0x2; D2_STATIC_GUARD(gnPlayerCompositeOverrideCount, "D2Common::COMPOSIT::Composit::COMPOSIT_BuildCofPath::gnPlayerCompositeOverrideCount");
+    static D2CofPathOverrideStrc gaMonsterCompositeOverrideGfx[1] = {
+    {
+        /* .dwToken = */ 0x20206867,
+        /* .nMode = */ 0xd
+    }
+}; D2_STATIC_GUARD(gaMonsterCompositeOverrideGfx, "D2Common::COMPOSIT::Composit::COMPOSIT_BuildCofPath::gaMonsterCompositeOverrideGfx");
+    static uint32_t gnMonsterCompositeOverrideCount = 0x1; D2_STATIC_GUARD(gnMonsterCompositeOverrideCount, "D2Common::COMPOSIT::Composit::COMPOSIT_BuildCofPath::gnMonsterCompositeOverrideCount");
 
     uint8_t byRawTokenChar2;
     uint8_t byRawTokenChar1;
@@ -403,8 +417,8 @@ void __stdcall COMPOSIT_BuildCofPath(D2UnitStrc * pUnit, uint32_t nPlrClass, uin
       i = 0;
       if (gnPlayerCompositeOverrideCount) {
         do {
-          if (nResolvedClass == gaPlayerCompositeOverrideGfx[i * 2 + 1]) {
-            nMonModeItemCode = gaPlayerCompositeOverrideGfx[i * 2];
+          if (nResolvedClass == gaPlayerCompositeOverrideGfx[i].nMode) {
+            nMonModeItemCode = gaPlayerCompositeOverrideGfx[i].dwToken;
           }
 
           i++;
@@ -469,8 +483,8 @@ void __stdcall COMPOSIT_BuildCofPath(D2UnitStrc * pUnit, uint32_t nPlrClass, uin
       i = 0;
       if (gnMonsterCompositeOverrideCount) {
         do {
-          if (nResolvedClass == gaMonsterCompositeOverrideGfx[i * 2 + 1]) {
-            dwModeToken = gaMonsterCompositeOverrideGfx[i * 2];
+          if (nResolvedClass == gaMonsterCompositeOverrideGfx[i].nMode) {
+            dwModeToken = gaMonsterCompositeOverrideGfx[i].dwToken;
           }
 
           i++;

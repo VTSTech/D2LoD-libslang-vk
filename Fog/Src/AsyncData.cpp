@@ -10,7 +10,7 @@
 #include "Storm/D2MPQFileStrc.h"
 #include "Storm/Source/SFile.h"
 #include "globals/globals.h"
-#include "Storm/H/Storm.h"
+#include "Storm/Storm.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

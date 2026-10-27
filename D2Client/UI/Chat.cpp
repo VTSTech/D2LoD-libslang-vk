@@ -32,9 +32,9 @@
 #include "Fog/File.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
-#include "Storm/H/Storm.h"
 #include "Storm/MessageStrc.h"
 #include "Storm/Source/SSTR.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Launch/MainMenus.h"
@@ -435,9 +435,9 @@ int32_t __stdcall CHAT_CompareCaseInsensitive(char * szText1, char * szText2) {
 
 void CHAT_DrawCursor(int32_t nPosY, int32_t nPosX, int32_t nColor) {
     // Static local variables (originally global data)
-    static uint16_t gnIMECursorBlinkDuration = 0x1f4;
-    static uint32_t gnIMECursorVisible = 0x1;
-    static unsigned int gnIMECursorBlinkTime;
+    static uint16_t gnIMECursorBlinkDuration = 0x1f4; D2_STATIC_GUARD(gnIMECursorBlinkDuration, "D2Client::UI::Chat::CHAT_DrawCursor::gnIMECursorBlinkDuration");
+    static uint32_t gnIMECursorVisible = 0x1; D2_STATIC_GUARD(gnIMECursorVisible, "D2Client::UI::Chat::CHAT_DrawCursor::gnIMECursorVisible");
+    static unsigned int gnIMECursorBlinkTime; D2_STATIC_GUARD_BSS(gnIMECursorBlinkTime, "D2Client::UI::Chat::CHAT_DrawCursor::gnIMECursorBlinkTime");
 
     BOOL bMultiLineCenter;
     if (gnIMECursorVisible == 1) {
@@ -756,7 +756,7 @@ BOOL __stdcall CHAT_ParseCommand(char * * ppszText, uint8_t * pbCommandType, cha
     // Static local variables (originally global data)
     static D2ChatCommandStrc gaChatCommandTable[3] = {
     {
-        /* .pszCommand = */ (char*)&cChatCmdSlash,
+        /* .pszCommand = */ cChatCmdSlash,
         /* .nCommandType = */ 0x3,
         /* .bTakesParameter = */ 0x0,
         /* .bAllowedInSinglePlayer = */ 0x0
@@ -773,7 +773,7 @@ BOOL __stdcall CHAT_ParseCommand(char * * ppszText, uint8_t * pbCommandType, cha
         /* .bTakesParameter = */ 0x1,
         /* .bAllowedInSinglePlayer = */ 0x0
     }
-};
+}; D2_STATIC_GUARD(gaChatCommandTable, "D2Client::UI::Chat::CHAT_ParseCommand::gaChatCommandTable");
 
     eD2GSGameType eGameType;
     int32_t nCompareResult;
@@ -1114,7 +1114,7 @@ BOOL CHAT_HandleResignCommand(char * szCommandName, char * szInput) {
 
 BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szCommandName, char * szInput) {
     // Static local variables (originally global data)
-    static char gszChatWhisperTargetName[2] = " ";
+    static char gszChatWhisperTargetName[2] = " "; D2_STATIC_GUARD(gszChatWhisperTargetName, "D2Client::UI::Chat::CHAT_HandleWhisperCommand::gszChatWhisperTargetName");
 
     D2BNetClientCallbacksStrc* pCallbacks;
     char* pdwMsgDst;

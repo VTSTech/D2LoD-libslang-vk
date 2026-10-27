@@ -7,92 +7,24 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "D2Common/ITEMS/ItemMods.h"
 
 // Forward declarations
 struct D2BooksTableStrc;
+struct D2GambleTableStrc;
+struct D2GemsTxt;
+struct D2ItemRatioTxt;
 struct D2ItemsTableStrc;
 struct D2ItemsTxt;
+struct D2LowQualityItemsTableStrc;
+struct D2LowQualityItemsTxt;
 struct D2MagicAffixTableStrc;
 struct D2MagicAffixTxt;
 struct D2PoolManagerStrc;
+struct D2QualityItemsTableStrc;
+struct D2QualityItemsTxt;
 struct D2RareAffixTableStrc;
-
-// Data types
-struct D2GemsTxt {
-    /* 0x00 */ char name[32]; // d2bs binfields FIELDTYPE_ASCII
-    /* 0x20 */ char letter[6]; // d2bs binfields FIELDTYPE_ASCII
-    /* 0x26 */ uint8_t field_0x26;
-    /* 0x27 */ uint8_t field_0x27;
-    /* 0x28 */ int code; // d2bs binfields FIELDTYPE_CODE_INT
-    /* 0x2C */ uint8_t field_0x2c;
-    /* 0x2D */ uint8_t field_0x2d;
-    /* 0x2E */ char nummods; // d2bs binfields FIELDTYPE_CHAR
-    /* 0x2F */ char transform; // d2bs binfields FIELDTYPE_CHAR
-    /* 0x30 */ int weaponmod1code; // d2bs binfields FIELDTYPE_NAME_INT
-    /* 0x34 */ int weaponmod1param; // d2bs binfields FIELDTYPE_LINKER_INT
-    /* 0x38 */ int weaponmod1min; // d2bs binfields FIELDTYPE_INT
-    /* 0x3C */ int weaponmod1max; // d2bs binfields FIELDTYPE_INT
-    /* 0x40 */ int weaponmod2code; // d2bs binfields FIELDTYPE_NAME_INT
-    /* 0x44 */ int weaponmod2param; // d2bs binfields FIELDTYPE_LINKER_INT
-    /* 0x48 */ int weaponmod2min; // d2bs binfields FIELDTYPE_INT
-    /* 0x4C */ int weaponmod2max; // d2bs binfields FIELDTYPE_INT
-    /* 0x50 */ int weaponmod3code; // d2bs binfields FIELDTYPE_NAME_INT
-    /* 0x54 */ int weaponmod3param; // d2bs binfields FIELDTYPE_LINKER_INT
-    /* 0x58 */ int weaponmod3min; // d2bs binfields FIELDTYPE_INT
-    /* 0x5C */ int weaponmod3max; // d2bs binfields FIELDTYPE_INT
-    /* 0x60 */ int helmmod1code; // d2bs binfields FIELDTYPE_NAME_INT
-    /* 0x64 */ int helmmod1param; // d2bs binfields FIELDTYPE_LINKER_INT
-    /* 0x68 */ int helmmod1min; // d2bs binfields FIELDTYPE_INT
-    /* 0x6C */ int helmmod1max; // d2bs binfields FIELDTYPE_INT
-    /* 0x70 */ int helmmod2code; // d2bs binfields FIELDTYPE_NAME_INT
-    /* 0x74 */ int helmmod2param; // d2bs binfields FIELDTYPE_LINKER_INT
-    /* 0x78 */ int helmmod2min; // d2bs binfields FIELDTYPE_INT
-    /* 0x7C */ int helmmod2max; // d2bs binfields FIELDTYPE_INT
-    /* 0x80 */ int helmmod3code; // d2bs binfields FIELDTYPE_NAME_INT
-    /* 0x84 */ int helmmod3param; // d2bs binfields FIELDTYPE_LINKER_INT
-    /* 0x88 */ int helmmod3min; // d2bs binfields FIELDTYPE_INT
-    /* 0x8C */ int helmmod3max; // d2bs binfields FIELDTYPE_INT
-    /* 0x90 */ int shieldmod1code; // d2bs binfields FIELDTYPE_NAME_INT
-    /* 0x94 */ int shieldmod1param; // d2bs binfields FIELDTYPE_LINKER_INT
-    /* 0x98 */ int shieldmod1min; // d2bs binfields FIELDTYPE_INT
-    /* 0x9C */ int shieldmod1max; // d2bs binfields FIELDTYPE_INT
-    /* 0xA0 */ int shieldmod2code; // d2bs binfields FIELDTYPE_NAME_INT
-    /* 0xA4 */ int shieldmod2param; // d2bs binfields FIELDTYPE_LINKER_INT
-    /* 0xA8 */ int shieldmod2min; // d2bs binfields FIELDTYPE_INT
-    /* 0xAC */ int shieldmod2max; // d2bs binfields FIELDTYPE_INT
-    /* 0xB0 */ int shieldmod3code; // d2bs binfields FIELDTYPE_NAME_INT
-    /* 0xB4 */ int shieldmod3param; // d2bs binfields FIELDTYPE_LINKER_INT
-    /* 0xB8 */ int shieldmod3min; // d2bs binfields FIELDTYPE_INT
-    /* 0xBC */ int shieldmod3max; // d2bs binfields FIELDTYPE_INT
-};
-
-struct D2LowQualityItemsTxt {
-    /* 0x00 */ char Name[32]; // d2bs binfields FIELDTYPE_ASCII
-    /* 0x20 */ uint16_t wNameStringId;
-};
-
-struct __attribute__((packed)) D2QualityItemsTxt {
-    /* 0x00 */ bool armor;
-    /* 0x01 */ bool weapon;
-    /* 0x02 */ bool shield;
-    /* 0x03 */ bool scepter;
-    /* 0x04 */ bool wand;
-    /* 0x05 */ bool staff;
-    /* 0x06 */ bool bow;
-    /* 0x07 */ bool boots;
-    /* 0x08 */ bool gloves;
-    /* 0x09 */ bool belt;
-    /* 0x0A */ uint8_t nummods;
-    /* 0x0B */ uint8_t field_0xb;
-    /* 0x0C */ D2MagixAffixModStrc mod[2];
-    /* 0x2C */ char effect1[32];
-    /* 0x4C */ char effect2[32];
-    /* 0x6C */ uint8_t field_0x6c;
-    /* 0x6D */ uint8_t field_0x6d;
-    /* 0x6E */ uint8_t field_0x6e;
-    /* 0x6F */ uint8_t field_0x6f;
-};
+struct D2RareAffixTxt;
+struct D2RunesTxtTableStrc;
 
 namespace D2Common::DATATBLS::ItemTbls {
 
@@ -131,7 +63,7 @@ void __stdcall ITEMTBLS_FreeRareAffixes();
 // Ghidra had only the first dword named (nTxtRareAffixesSize) and this returned &that, so every caller reached the other three fields as [1]/[2]/[3] off an int*. The emitter then produced four independent C++ globals whose relative layout the linker chooses freely, and GetMaxToRoll read pRareAffixTableInfo[2] as a row pointer when it was really whatever the linker put next - 0x7D on the recompiled build. Opening a merchant's window generates the vendor stock, which rolls rare affixes, so the first click on TRADE/REPAIR faulted in ITEMMOD_CanApplyAffix reading *(uint16_t*)(0x7D + 0xe).
 struct D2RareAffixTableStrc * __stdcall TXT_RareAffixes_GetTableInfo();
 // Returns rare affix group line for given 1-based index (72 bytes/entry). Used for rare item name generation (GetItemName).
-int32_t __stdcall TXT_RareAffixes_GetLine(int32_t nIndex);
+struct D2RareAffixTxt * __stdcall TXT_RareAffixes_GetLine(int32_t nIndex);
 // Loads and compiles uniqueitems.txt into sgtDataTable.pTxtUniqueItems (record stride 0x14C). Builds the column-binding descriptor: index, version, enabled/ladder/nolimit/carry1 bit flags, code (item base), rarity, lvl, lvl req, chr/inv transform colors, flippyfile/invfile graphics, cost mult/add, drop/use sounds, and the 12 prop/par/min/max modifier groups (props linked to the Properties table, par parsed via ITEMTBLS_ParseSkillMonTypeOrStateId). Creates the unique-items txt-link, calls CompileTxt, and error-halts if more than 0x7FFE rows. Then for each record: writes its sequential index, parses the index string field, and resolves the display-name string-table id (defaulting to 0x1507 if not found). __stdcall(void). Side effect: populates the global unique-items data table.
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __stdcall TXT_AllocTxt_uniqueitems();
@@ -144,14 +76,14 @@ void __stdcall ITEMTBLS_FreeSetsAndSetItems();
 void __fastcall TXT_AllocTxt_qualityitems(struct D2PoolManagerStrc * pMemory);
 void __stdcall thunk_UnloadBin_Lvl();
 // Returns pointer to nTxtQualityItemsSize global. Used for unique/set item lookup.
-int * __stdcall TXT_QualityItems_GetTableInfo();
+struct D2QualityItemsTableStrc * __stdcall TXT_QualityItems_GetTableInfo();
 // Returns D2QualityItemsTxt* for given index. Used for unique/set item table lookup.
 struct D2QualityItemsTxt * __stdcall TXT_QualityItems_GetLine(int32_t nIndex);
 // Compiles the gems.txt data table into the runtime pTxtGems array via CompileTxt with a 42-field schema (gem name/letter/code plus weapon/helm/shield mod triplets). For each row, resolves the 3-char gem letter code to a string-table index (STRTABLE_LookupString) stored at +0x2c, and links each gem to its owning item record: writes 0xFFFFFFFF placeholder gem-offset into the item's szCode area (+0x70) and sets sgpTxtItems[code].dwGemOffset to the gem's row index. Called once during item data-table init.
 void __fastcall TXT_AllocTxt_gems(struct D2PoolManagerStrc * pMemory);
 void __stdcall thunk_UnloadBin_LvlType();
 // Returns gem/rune table line for given index (192 bytes/entry). Used for socketed item property application.
-int32_t __stdcall TXT_Gems_GetLine(int32_t nIndex);
+struct D2GemsTxt * __stdcall TXT_Gems_GetLine(int32_t nIndex);
 // Defines the binary field schema for books.txt (name/KEY_WORD, scrollspellcode/RAW4, bookspellcode/RAW4, pSpell/INT, scrollskill/NAME_INT, bookskill/NAME_INT, spellicon/CHAR, basecost/INT, costpercharge/INT) and calls CompileTxt to parse it into pTxtBooks. In: pMemory pool.
 void __fastcall TXT_AllocTxt_books(struct D2PoolManagerStrc * pMemory);
 void __stdcall thunk_UnloadBin_LvlWarp();
@@ -163,14 +95,14 @@ void * __stdcall TXT_Books_GetLine(int32_t nIndex);
 void __fastcall TXT_AllocTxt_lowqualityitems(struct D2PoolManagerStrc * pMemory);
 void __stdcall thunk_UnloadBin_LvlPrest();
 // Returns pointer to nTxtLowQualityItemsSize global. Used for crude/damaged quality item lookup.
-int * __stdcall TXT_LowQualityItems_GetTableInfo();
+struct D2LowQualityItemsTableStrc * __stdcall TXT_LowQualityItems_GetTableInfo();
 // Returns low quality item table line for given index (34 bytes/entry). Used for crude/damaged quality application.
-int32_t __stdcall TXT_LowQualityItems_GetLine(int32_t nIndex);
+struct D2LowQualityItemsTxt * __stdcall TXT_LowQualityItems_GetLine(int32_t nIndex);
 // Loads and compiles the ItemRatio.txt data table. Builds a D2BinFieldInputStrc field-definition array (Version, Uber, Class Specific, then Unique/Rare/Set/Magic/HiQuality/Normal drop-chance + Divisor + Min columns at their struct offsets) and passes it to DataTbls::CompileTxt with row size 0x44, storing the parsed table into the global pTxtItemRatio and its row count into nTxtItemRatioSize. Allocates from the supplied D2PoolManagerStrc. Called once during data-table init.
 void __fastcall TXT_AllocTxt_itemratio(struct D2PoolManagerStrc * pMemory);
 void __stdcall thunk_UnloadBin_LvlMaze();
 // QualityRatio.txt row lookup. Returns quality upgrade chance ratios for treasure class calculations. Used by ITEM_RollItemQuality to apply TC quality bonuses during quality cascade.
-int32_t __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint32_t dwUnused, uint16_t nQualityTier);
+struct D2ItemRatioTxt * __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint32_t dwUnused, uint16_t nQualityTier);
 int SORT_ItemDescPriority(LPCVOID pParam1, LPCVOID pParam2);
 // Builds the itemstatcost.txt field-descriptor array (52 columns) and compiles it into the in-memory ItemStatCost table via DataTbls::CompileTxt (record size 0x144), enforcing a max of 0x1FF stats (fatal error otherwise). Then post-processes op-relationships: clears each stat's aOpBaseDependents arrays to -1, derives the charged-skill-level bit count (clamped 1..8, default 6) and its mask, and for every stat with an op walks its op-base/op-stat references to populate the dependency graph (aOpBaseDependents, aOpRelations, bHasOpBaseDependencies/bHasOp4Or5Dependency flags) plus special-case stat flag bits. Finally collects stats with a nonzero descpriority, qsorts them via SORT_ItemDescPriority, and allocates/stores the sorted pItemStatCostDescPriority list. __fastcall, pMemory in ECX.
 // @sourcefile .\DATATBLS\ItemTbls.cpp
@@ -187,7 +119,7 @@ int TXT_Gamble_SortFunction(LPCVOID pParam1, LPCVOID pParam2);
 void __fastcall TXT_AllocTxt_gamble(struct D2PoolManagerStrc * pMemory);
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __stdcall FreeGambleTable();
-int * __stdcall GetGambleTableSize();
+struct D2GambleTableStrc * __stdcall GetGambleTableSize();
 // Breadth-first traversal of the itemtypes.txt equiv1/equiv2 parent-type tree to test whether nItemTypeId is a subtype of nTargetTypeId. Returns 1 if nTargetTypeId &lt; 1 (wildcard), 1 if target found in the type hierarchy, 0 if out-of-range or stack depth exceeds 124. Used by item-type membership checks.
 BOOL ITEMTBLS_CheckItemTypeRecursive(int32_t nItemTypeId, int32_t nTargetTypeId);
 // Loads and compiles the itemtypes.txt data table at startup. Builds the 36-entry field-definition array (code/equiv1-2/bodyloc/shoots/quiver/maxsock/class/storepage/invgfx1-6/etc., with code/bodyloc/class/storepage columns linked to their lookup tables), creates the itemtypes TxtLink, and calls CompileTxt to populate sgtDataTable.pTxtItemTypes (record size 0xE4) and its row count. Then allocates and fills pTxtItemTypesUnknown, a per-type bitmap (ceil(count/32) dwords per type) where bit j is set if type j is a recursive subtype of type i (via ITEMTBLS_CheckItemTypeRecursive), giving fast item-type ancestry tests.
@@ -200,7 +132,7 @@ BOOL __stdcall ITEMTBLS_CheckIfDataFileExists(char * szFileExt, struct D2PoolMan
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __fastcall TXT_AllocTxt_runes(struct D2PoolManagerStrc * pMemory);
 void __stdcall ITEMTBLS_FreeRunes();
-int * __stdcall TXT_GetRuneTableSize();
+struct D2RunesTxtTableStrc * __stdcall TXT_GetRuneTableSize();
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __stdcall ITEMTBLS_CopyRunewordRecord(int32_t nRunewordId, char * pSourceRecord);
 int32_t __stdcall ITEMTBLS_GetRunewordTxtRecord(int32_t nRunewordId);

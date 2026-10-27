@@ -66,11 +66,11 @@ void InitDrlgAct(::SGAMEDATA * pGame, char nActNo) {
 void __fastcall CLIENT_WarpToAct(::SGAMEDATA * pGame, D2ClientStrc * pClient, eD2LevelId eLevel, int32_t param_1) {
     D2DrlgActStrc** ppDVar1;
     uint16_t wPosY;
-    int32_t nErrorAddr;
     D2UnitStrc* pUnit;
     D2RoomStrc* pSpawnRoom;
     D2RoomStrc* pRoom;
     BOOL bCollisionOk;
+    int32_t eCollisionFlag;
     POINT ptSpawnPos;
     D2DrlgActStrc** ppSpawnActOut;
     int nSpawnX;
@@ -108,11 +108,11 @@ void __fastcall CLIENT_WarpToAct(::SGAMEDATA * pGame, D2ClientStrc * pClient, eD
         }
 
         nSearchRadius = 5;
-        nErrorAddr = 0x1c89;
+        eCollisionFlag = 0x1c89;
         ptSpawnPos.x = nSpawnX;
         ptSpawnPos.y = nSpawnY;
         nErrorLine = D2Common::Units::GetUnitSizeX(pUnit);
-        pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithIncrementValue(pSpawnRoom, &ptSpawnPos, nErrorLine, nErrorAddr, nSearchRadius);
+        pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithIncrementValue(pSpawnRoom, &ptSpawnPos, nErrorLine, eCollisionFlag, nSearchRadius);
         if (!pSpawnRoom) {
           return;
         }

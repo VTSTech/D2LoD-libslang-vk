@@ -18,7 +18,7 @@ void DEBUG_LogFormattedMessage(void * pThis, char * szMessage) {
 
 void __fastcall DEBUG_SetLoggingFlag(int dwParam) {
     // Static local variables (originally global data)
-    static int g_nDebugLoggingFlag;
+    static int g_nDebugLoggingFlag; D2_STATIC_GUARD_BSS(g_nDebugLoggingFlag, "Bnclient::Debug::DEBUG_SetLoggingFlag::g_nDebugLoggingFlag");
 
     g_nDebugLoggingFlag = dwParam;
 }

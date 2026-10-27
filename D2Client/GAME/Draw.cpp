@@ -18,6 +18,7 @@
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Common/D2InventoryStrc.h"
+#include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SeedStrc.h"
@@ -301,11 +302,12 @@ void __stdcall DRAW_CalcRoofLightPerspective(uint8_t * nRow, int32_t nTileX, int
 
 // Renders a single floor tile during the game draw pass. Skips tiles with flags 0x408 (hidden/special) or outside the extended view rect, and skips non-zero-orientation tiles. Computes a per-tile light intensity array (8x8 for software render, 6x6 for 3D) via GetIntensityFlagsForTile or DRAW_CalcRoofLight* variants (ortho vs perspective, normal vs grid-lit). Calls D2GFX_DrawGroundTile to blit. For wet-floor tiles (flag 0x2) may spawn weather splashes or bubbles via WEATHER_Spawn*. Updates tile visibility bounds after drawing.
 void __fastcall DrawFloorTile(D2DrlgTileDataStrc * pTileData, void * pParam, int32_t nScreenX, int32_t nScreenY, int32_t nWorldX, int32_t nWorldY, D2DrawFloorStrc * pFloor) {
-    int32_t nRenderMode;
     D2GfxLightExStrc* pLightEx;
+    int nColIter;
     uint32_t nScreenPanels;
     D2GfxLightExStrc aFloorLightGrid8x8[64];
     D2GfxLightExStrc aFloorLightGrid6x6[36];
+    int32_t nErrorLine;
     D2TileLibraryEntryStrc* pTileFirst;
     if (pTileData->nFlags & 0x408U) {
       return;
@@ -329,7 +331,6 @@ void __fastcall DrawFloorTile(D2DrlgTileDataStrc * pTileData, void * pParam, int
     /* Note that these are all direct drawing, no shading. Color intensity is just
                          set here for shading with direct 3d or opengl (which is not supported in self
                          version of the game) */ if (nRowY < 4) {
-      int nColIter;
       pLightEx = aFloorLightGrid8x8;
       if (!(pTileOther->nFlags & 0x100U)) {
         GetIntensityFlagsForTile(nWorldX, nWorldY, 0, pLightEx);
@@ -374,11 +375,11 @@ void __fastcall DrawFloorTile(D2DrlgTileDataStrc * pTileData, void * pParam, int
 
     D2gfx::D2GFX::D2GFX_DrawGroundTile(pTileFirst, pLightEx, nScreenX, nScreenY, nWorldX, nWorldY, 0xff, nScreenPanels, pParam);
     if (pTileOther->nFlags & 2) {
-      nRenderMode = Seed::RollBetweenMinAndMax(pFloor->nRollSeed, 0, 1000);
-      if (pFloor->bWeatherSplashEnabled && nRenderMode < pFloor->uWeatherRelated) {
+      nErrorLine = Seed::RollBetweenMinAndMax(pFloor->nRollSeed, 0, 1000);
+      if (pFloor->bWeatherSplashEnabled && nErrorLine < pFloor->uWeatherRelated) {
         D2Client::Draw::Weather::WEATHER_SpawnSplash(nScreenX, nScreenY, nWorldX << 0x10, nWorldY << 0x10);
       }
-      if (pFloor->nRecordingRelated && nRenderMode < 100) {
+      if (pFloor->nRecordingRelated && nErrorLine < 100) {
         D2Client::Draw::Weather::WEATHER_SpawnBubble(nScreenX, nScreenY, nWorldX << 0x10, nWorldY << 0x10);
       }
     }
@@ -388,8 +389,8 @@ void __fastcall DrawFloorTile(D2DrlgTileDataStrc * pTileData, void * pParam, int
 
 void __fastcall DRAW_DrawEdgeFloorTile(int32_t nWorldX, int32_t nParam, D2DrawFloorStrc * pDrawFloor) {
     D2DrlgTileDataStrc* pTileData;
-    int32_t nWorldY = nParam;
-    int32_t nErrLine = nWorldX;
+    int32_t nWorldY_00 = nParam;
+    int32_t nWorldY = nWorldX;
     int32_t nScreenX = nWorldX;
     nWorldX = nParam + 5;
     D2Common::Drlg::Transform::CoordsMapToScreen(&nScreenX, &nWorldX);
@@ -406,7 +407,7 @@ void __fastcall DRAW_DrawEdgeFloorTile(int32_t nWorldX, int32_t nParam, D2DrawFl
       return;
     }
 
-    DrawFloorTile(pTileData, (void*)0x1, nScreenX, nWorldX, nErrLine, nWorldY, pDrawFloor);
+    DrawFloorTile(pTileData, (void*)0x1, nScreenX, nWorldX, nWorldY, nWorldY_00, pDrawFloor);
 }
 
 void __fastcall DrawSubTile(int32_t nTileX, int32_t nParam1, int32_t nParam2, int32_t nParam3, D2DrawFloorStrc * pDrawFloor) {
@@ -421,9 +422,9 @@ void __fastcall DrawSubTile(int32_t nTileX, int32_t nParam1, int32_t nParam2, in
 void __fastcall DrawFloorByViewAndFloor(D2GameViewStrc * pGameView, D2DrawFloorStrc * pDrawFloor) {
     eD2LevelId eLevelId;
     D2LevelsTxt* pLevelTxt;
+    void* nErrLine;
     D2DrlgTileDataStrc* pTile;
     int nPlayerY;
-    void* pDrawEdge;
     int bDrawEdges;
     D2DrlgRoomCoordsStrc sRoomCoords;
     int nRoomCount;
@@ -503,14 +504,14 @@ void __fastcall DrawFloorByViewAndFloor(D2GameViewStrc * pGameView, D2DrawFloorS
         D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(ppRooms[nRoomIdx], &sRoomCoords);
         pGameView = (D2GameViewStrc*)0x1;
         do {
-          if (bNoFilter || (pDrawEdge = (void*)0x1 , pGameView != (D2GameViewStrc*)0x1)) {
-            pDrawEdge = 0;
+          if (bNoFilter || (nErrLine = (void*)0x1 , pGameView != (D2GameViewStrc*)0x1)) {
+            nErrLine = 0;
           }
 
           pTile = D2Common::DUNGEON::Dungeon::DRLGROOM_GetFloorTilesFromRoom(ppRooms[nRoomIdx], &nTileCount);
           for (; nTileCount; nTileCount--) {
             if ((D2GameViewStrc*)((uint32_t)pTile->nFlags >> 0xe & 7) == pGameView) {
-              DrawFloorTile(pTile, pDrawEdge, pDrawFloor->nX + pTile->nScreenX, pTile->nScreenY + pDrawFloor->nY, sRoomCoords.dwXStart + pTile->nPosX * 5, sRoomCoords.dwYStart + pTile->nPosY * 5, pDrawFloor);
+              DrawFloorTile(pTile, nErrLine, pDrawFloor->nX + pTile->nScreenX, pTile->nScreenY + pDrawFloor->nY, sRoomCoords.dwXStart + pTile->nPosX * 5, sRoomCoords.dwYStart + pTile->nPosY * 5, pDrawFloor);
             }
 
             pTile++;
@@ -705,7 +706,7 @@ void __fastcall dFloorDraw(D2GameViewStrc * pGameView) {
     /* .nMaxTileY = */ 0,
     /* .nX = */ 0,
     /* .nY = */ 0
-};
+}; D2_STATIC_GUARD(D2DrawFloorStrc_007c8a28, "D2Client::GAME::Draw::dFloorDraw::D2DrawFloorStrc_007c8a28");
 
     DrawFloorByViewAndFloor(pGameView, &D2DrawFloorStrc_007c8a28);
 }
@@ -720,10 +721,10 @@ void __fastcall dFloorDraw(D2GameViewStrc * pGameView) {
 // Per-frame refresh of the global wall/tile light colour and intensity from the current act, overridden by the player's room when the room carries its own colour.
 void __stdcall dInitWallDraw() {
     // Static local variables (originally global data)
-    static uint8_t gLightBlue;
-    static uint8_t gLightGreen;
-    static uint8_t gLightIntensity;
-    static uint8_t gLightRed;
+    static uint8_t gLightBlue; D2_STATIC_GUARD_BSS(gLightBlue, "D2Client::GAME::Draw::dInitWallDraw::gLightBlue");
+    static uint8_t gLightGreen; D2_STATIC_GUARD_BSS(gLightGreen, "D2Client::GAME::Draw::dInitWallDraw::gLightGreen");
+    static uint8_t gLightIntensity; D2_STATIC_GUARD_BSS(gLightIntensity, "D2Client::GAME::Draw::dInitWallDraw::gLightIntensity");
+    static uint8_t gLightRed; D2_STATIC_GUARD_BSS(gLightRed, "D2Client::GAME::Draw::dInitWallDraw::gLightRed");
 
     D2ColorInfo roomColor;
     D2Common::Environment::DRLGENV_GetLightColorFromAct(sgpDrlgAct, &gLightRed, &gLightGreen, &gLightBlue);
@@ -839,7 +840,7 @@ void __stdcall WALL2_DrawUnderFloorTiles(D2GameViewStrc * pViewData, D2Wall2Cell
 // Draws all wall tiles in DRLG with alpha blending. Iterates wall tile linked list, applies alpha fading effects, checks viewport clipping, calls D2GFX_DrawTransWallTile for blended tiles.
 void __stdcall WALL2_DrawWallTilesWithAlpha(D2Wall2CellStrc * pWall2Cell, uint32_t eRenderPass, D2GameViewStrc * pCameraView) {
     uint8_t byMaskedIntensity;
-    int32_t nScreenX;
+    int32_t nPosX;
     D2GfxLightStrc sLight;
     int32_t nScreenY;
     int32_t* piVar1;
@@ -917,16 +918,16 @@ void __stdcall WALL2_DrawWallTilesWithAlpha(D2Wall2CellStrc * pWall2Cell, uint32
           nAlpha = pTileEntry->nCurrentAlpha;
           dwAlphaByte = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&dwAlphaByte + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)nAlpha);
           if (!bIsPerspective) {
-            nScreenX = pCameraView->pView.left - pCameraView->nCenterX + pTileEntry->nScreenX;
+            nPosX = pCameraView->pView.left - pCameraView->nCenterX + pTileEntry->nScreenX;
             nScreenY = pTileEntry->nScreenY - pCameraView->nCenterY + pCameraView->pView.top;
           } else {
-            nScreenX = pWallTileNode->nX;
+            nPosX = pWallTileNode->nX;
             nScreenY = pWallTileNode->nY;
           }
           if (nAlpha == 0xff) {
-            nFadeCalc = D2gfx::D2GFX::D2GFX_DrawWallTile(pTileEntry->pTileLibraryEntry, nScreenX, nScreenY, aWallLightSamples, nBorderType);
+            nFadeCalc = D2gfx::D2GFX::D2GFX_DrawWallTile(pTileEntry->pTileLibraryEntry, nPosX, nScreenY, aWallLightSamples, nBorderType);
           } else {
-            nFadeCalc = D2gfx::D2GFX::D2GFX_DrawTransWallTile(pTileEntry->pTileLibraryEntry, nScreenX, nScreenY, aWallLightSamples, nBorderType, nAlpha);
+            nFadeCalc = D2gfx::D2GFX::D2GFX_DrawTransWallTile(pTileEntry->pTileLibraryEntry, nPosX, nScreenY, aWallLightSamples, nBorderType, nAlpha);
           }
           if (nFadeCalc) {
             pTileEntry->nFlags |= 0x20000;
@@ -939,7 +940,8 @@ void __stdcall WALL2_DrawWallTilesWithAlpha(D2Wall2CellStrc * pWall2Cell, uint32
       nErrLineOrAddr = 0xf9;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrLineOrAddr);
+    void* nScreenX = Fog::Src::ErrorManager::GetInstructionPointer();
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", nScreenX, nErrLineOrAddr);
     exit(-1);
 }
 

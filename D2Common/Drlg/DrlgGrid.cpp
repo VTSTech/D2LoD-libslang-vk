@@ -29,7 +29,7 @@ namespace D2Common::Drlg::DrlgGrid {
 // Recursive 4-directional flood-fill on grid cells.
 void __fastcall DRLGGRID_FloodFillGridCoords(int * pFloodFillContext, int nX, int nY, int nDirection) {
     // Static local variables (originally global data)
-    static int gaFloodFillDirDeltaX[8] = { 0x1, 0x0, 0x0, 0x1, -0x1, 0x0, 0x0, -0x1 };
+    static int gaFloodFillDirDeltaX[8] = { 0x1, 0x0, 0x0, 0x1, -0x1, 0x0, 0x0, -0x1 }; D2_STATIC_GUARD(gaFloodFillDirDeltaX, "D2Common::Drlg::DrlgGrid::DRLGGRID_FloodFillGridCoords::gaFloodFillDirDeltaX");
     static uint32_t gdwDrlgGridCellCount[25] = {
     0x0,
     0x5,
@@ -56,7 +56,7 @@ void __fastcall DRLGGRID_FloodFillGridCoords(int * pFloodFillContext, int nX, in
     0x1f,
     0x1f,
     0x0
-};
+}; D2_STATIC_GUARD(gdwDrlgGridCellCount, "D2Common::Drlg::DrlgGrid::DRLGGRID_FloodFillGridCoords::gdwDrlgGridCellCount");
     static int gnDrlgGridMaxDepth[20] = {
     -0x1,
     0x0,
@@ -78,7 +78,7 @@ void __fastcall DRLGGRID_FloodFillGridCoords(int * pFloodFillContext, int nX, in
     0x0,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gnDrlgGridMaxDepth, "D2Common::Drlg::DrlgGrid::DRLGGRID_FloodFillGridCoords::gnDrlgGridMaxDepth");
 
     bool _bInBounds;
     bool _bOrientGridValid;

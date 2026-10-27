@@ -39,8 +39,8 @@
 #include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/Quests/QUESTS/A2Q7.h"
 #include "D2Game/Quests/QUESTS/A4Q2.h"
@@ -798,7 +798,7 @@ void __fastcall Q19_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       return;
     }
     if (!pQuestData->nStateFlag || (bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_KhalimsWill, QUESTSTATE_Step0x02) , bQuestState != 0)) {
-      D2GossipTextStrc* sTextMessage;
+      D2GSPacketSrv0x27_TextStrc* sTextMessage;
       nKhalimPartsHeld = 0;
       bHasWill = false;
       bHasFlail = false;
@@ -979,7 +979,7 @@ void __fastcall Q19_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->bIsActive = true;
     pQuestData->nStateFlagPrev = 1;
     ::SGAMEDATA* pQuestDataInternal = pQuestData->pGame;
-    pQuestData->pNpcMessages = &A3Q2::aNpcGossipData;
+    pQuestData->pNpcMessages = A3Q2::aNpcGossipData;
     pQuestData->nStateFlag = 0;
     pQuestData->nQuestIdReal = QUEST_KhalimsWill;
     pQuestData->nInitNo = 0;

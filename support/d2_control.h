@@ -10,6 +10,9 @@
 // only in a REDIVIVUS_DEV build. Otherwise both calls compile to nothing.
 #pragma once
 
+// The loud build's per-frame guard walk rides on the same two pump sites.
+#include "support/d2_loud.h"
+
 #ifdef REDIVIVUS_DEV
 // Start the listener. Safe to call more than once; only the first call binds.
 extern "C" void D2CONTROL_Start(void);

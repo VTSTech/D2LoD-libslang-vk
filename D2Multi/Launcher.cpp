@@ -41,8 +41,8 @@ namespace D2Multi::Launcher {
 // App mode multiplayer init: stash module handle and return pointer to fAPPMODE_multiplayer_ReturnAppMode_Caller.
 fnAppModeRun * __fastcall AppModeMultiplayerInit(HMODULE hModule) {
     // Static local variables (originally global data)
-    static fnAppModeRun gpfnMultiplayerAppModeRun = &D2Multi::OOGUtilities::fAPPMODE_multiplayer_ReturnAppMode_Caller;
-    static HMODULE gbChatRoomListUIActive;
+    static fnAppModeRun gpfnMultiplayerAppModeRun = &D2Multi::OOGUtilities::fAPPMODE_multiplayer_ReturnAppMode_Caller; D2_STATIC_GUARD(gpfnMultiplayerAppModeRun, "D2Multi::Launcher::AppModeMultiplayerInit::gpfnMultiplayerAppModeRun");
+    static HMODULE gbChatRoomListUIActive; D2_STATIC_GUARD_BSS(gbChatRoomListUIActive, "D2Multi::Launcher::AppModeMultiplayerInit::gbChatRoomListUIActive");
 
     gbChatRoomListUIActive = hModule;
     return &gpfnMultiplayerAppModeRun;
@@ -176,7 +176,7 @@ void __stdcall IMAGE_LoadPredefinedImagesExEx() {
 
 void __stdcall LAUNCHER_FreeLauncherImages() {
     // Static local variables (originally global data)
-    static DC6 * gpDC6Unidentified_0077bc24;
+    static DC6 * gpDC6Unidentified_0077bc24; D2_STATIC_GUARD_BSS(gpDC6Unidentified_0077bc24, "D2Multi::Launcher::LAUNCHER_FreeLauncherImages::gpDC6Unidentified_0077bc24");
 
     if (gpDC6PopUpLargest2) {
       D2Win::Src::D2WinArchive::IMAGE_FreeImage(gpDC6PopUpLargest2);
@@ -589,7 +589,7 @@ void __stdcall UIMENU_CantTestItBeacuseItCrash() {
 
     sLevelLineText.szNameAndTitle[0] = '\0';
     eD2PlayerStatus ePlayerStatus = D2IniData_multiplayer->eCTEMP_eD2PlayerStatus;
-    char* pszTitlePrefix = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass((void*)(uint32_t)D2IniData_multiplayer->eCTEMP_eD2PlayerClassID, ePlayerStatus >> 8 & 0x1f, ePlayerStatus & 4, ePlayerStatus & 0x20);
+    char* pszTitlePrefix = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass((uint32_t)D2IniData_multiplayer->eCTEMP_eD2PlayerClassID, ePlayerStatus >> 8 & 0x1f, ePlayerStatus & 4, ePlayerStatus & 0x20);
     char* pszDst = pszTitlePrefix;
     if (pszTitlePrefix) {
       strcat(sLevelLineText.szNameAndTitle, pszTitlePrefix);

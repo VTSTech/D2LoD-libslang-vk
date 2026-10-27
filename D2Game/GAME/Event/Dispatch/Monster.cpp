@@ -103,13 +103,13 @@ void __stdcall SERVER_ITEM_DecideDrops(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     uint16_t nSelectedTC_00;
     int nMonClassId;
     if (!pUnit) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x194);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x194);
       exit(-1);
     } else {
       D2RoomStrc* pDrlgRoom;
       pDrlgRoom = D2Common::Units::UNITS_GetRoom(pUnit);
       if (!pDrlgRoom) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x196);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x196);
         exit(-1);
       } else {
         nLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pDrlgRoom);
@@ -183,7 +183,7 @@ void __stdcall SERVER_ITEM_DecideDrops(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
           }
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x19a);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x19a);
         exit(-1);
       }
     }
@@ -199,7 +199,7 @@ void __fastcall DropItemForVictim_Unused(::SGAMEDATA * pGame, D2ObjectOperateFnA
     eCollisionFlags eCollisionFlag;
     D2UnitStrc* pVictim = pUnitKill->sArg.pVictim;
     if (!pVictim) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ed);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ed);
       exit(-1);
     } else {
       eCollisionFlags eCollision;
@@ -207,7 +207,7 @@ void __fastcall DropItemForVictim_Unused(::SGAMEDATA * pGame, D2ObjectOperateFnA
         return;
       }
       /* bonewall */ if (pVictim->nClassId == 0x158) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1f8);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x1f8);
         exit(-1);
       } else {
         eCollisionFlag = COLLISION_ITEMS;
@@ -221,7 +221,7 @@ void __fastcall DropItemForVictim_Unused(::SGAMEDATA * pGame, D2ObjectOperateFnA
 
         pFreeCoordRoom = D2Common::Units::UNITS_GetRoom(pVictim);
         if (!pFreeCoordRoom) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ff);
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ff);
           exit(-1);
         } else {
           pVictimMonStats = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(pVictim->nClassId);
@@ -230,7 +230,7 @@ void __fastcall DropItemForVictim_Unused(::SGAMEDATA * pGame, D2ObjectOperateFnA
             return;
           }
 
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x204);
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x204);
           exit(-1);
         }
       }
@@ -433,7 +433,7 @@ uint32_t MONSTER_HasAnimModeSequence(D2UnitStrc * pUnit, eD2MonsterAnimMode eAni
         /* .nAltFlags = */ 0x0,
         /* .bHasMonStats = */ 0x0
     }
-};
+}; D2_STATIC_GUARD(gnMonsterAnimModeSequenceFlags, "D2Game::GAME::Event::Dispatch::Monster::MONSTER_HasAnimModeSequence::gnMonsterAnimModeSequenceFlags");
 
     if (!(pUnit && (int)eAnimMode < 0x10)) {
       return 0;
@@ -450,7 +450,7 @@ uint32_t MONSTER_HasAnimModeSequence(D2UnitStrc * pUnit, eD2MonsterAnimMode eAni
       return 0;
     }
 
-    return (uint32_t)pMonStats2->aCompCodes[((int)eAnimMode >> 3) + 0xde] & gadwBitMasks[eAnimMode & eD2MonsterAnimMode_ns::Cast];
+    return (uint32_t)pMonStats2->A1mv[(int)eAnimMode >> 3] & gadwBitMasks[eAnimMode & eD2MonsterAnimMode_ns::Cast];
 }
 
 // Spawns a burst of missiles from a Sand Maggot (BaseId 0x3f) monster. Temporarily clears the unit's path target, seeds an RNG from the unit GUID, then fires a number of missiles (from MonStats TreasureClass field scaled by difficulty) each at a randomly perturbed ±5-tile offset around the target or saved path SP1 position. Restores the original path target after the loop.
@@ -1239,7 +1239,7 @@ D2AiDispatchCallbacksStrc * __fastcall GetDropHandler(D2UnitStrc * pUnit, uint32
         /* .pFn3 = */ &D2Game::GAME::Event::Dispatch::Monster::MONSTER_EndOfFrameAiDispatch,
         /* .bBool = */ 0x1
     }
-};
+}; D2_STATIC_GUARD(DropHandlerArray, "D2Game::GAME::Event::Dispatch::Monster::GetDropHandler::DropHandlerArray");
 
     eD2MonsterClassId nClassId;
     if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
@@ -1574,7 +1574,7 @@ void __fastcall BarbFindItemSkill(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Uni
 // Clears uninterruptable state and resets to neutral on completion
 void __fastcall MONSTER_EndOfFrameAiDispatch(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static uint8_t UnknownModeValueArray[76] = {
+    static uint8_t UnknownModeValueArray[16] = {
     0x0,
     0x0,
     0x1,
@@ -1590,68 +1590,8 @@ void __fastcall MONSTER_EndOfFrameAiDispatch(::SGAMEDATA * pGame, D2UnitStrc * p
     0x0,
     0x0,
     0x0,
-    0x1,
-    0x1c,
-    0xc8,
-    0x6c,
-    0x0,
-    0x14,
-    0xc8,
-    0x6c,
-    0x0,
-    0xc,
-    0xc8,
-    0x6c,
-    0x0,
-    0x4,
-    0xc8,
-    0x6c,
-    0x0,
-    0xf8,
-    0xc7,
-    0x6c,
-    0x0,
-    0xf0,
-    0xc7,
-    0x6c,
-    0x0,
-    0xe4,
-    0xc7,
-    0x6c,
-    0x0,
-    0xdc,
-    0xc7,
-    0x6c,
-    0x0,
-    0xc8,
-    0xc7,
-    0x6c,
-    0x0,
-    0xb4,
-    0xc7,
-    0x6c,
-    0x0,
-    0xac,
-    0xc7,
-    0x6c,
-    0x0,
-    0xa4,
-    0xc7,
-    0x6c,
-    0x0,
-    0x88,
-    0xc7,
-    0x6c,
-    0x0,
-    0x80,
-    0xc7,
-    0x6c,
-    0x0,
-    0x7c,
-    0xc7,
-    0x6c,
-    0x0
-};
+    0x1
+}; D2_STATIC_GUARD(UnknownModeValueArray, "D2Game::GAME::Event::Dispatch::Monster::MONSTER_EndOfFrameAiDispatch::UnknownModeValueArray");
 
     bool _bIsModeZeroDeath;
     bool bIsModeZeroDeath;
@@ -1840,7 +1780,7 @@ void __fastcall MonsterKilledBySystem(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       D2MonStats2Txt* pMonStats2;
       pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit->nClassId);
       byAnimMode2 = 'd';
-      if (pMonStats2 && pMonStats2->S1mv) {
+      if (pMonStats2 && pMonStats2->A1mv[1] & (uint8_t)1) {
         byAnimMode2 = 'e';
       }
     }
@@ -1881,7 +1821,7 @@ void __fastcall MonsterKilledByTarget(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       D2MonStats2Txt* pMonStats2;
       pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit->nClassId);
       byAnimMode2 = 'd';
-      if (pMonStats2 && pMonStats2->S1mv) {
+      if (pMonStats2 && pMonStats2->A1mv[1] & (uint8_t)1) {
         byAnimMode2 = 'e';
       }
     }

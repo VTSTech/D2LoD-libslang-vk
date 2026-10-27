@@ -40,7 +40,7 @@ int32_t ReplaceRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x3
     }
-};
+}; D2_STATIC_GUARD(gaDrlgRoomReplacementsA, "D2Common::Drlg::Maze::Act5::Temple::ReplaceRooms::gaDrlgRoomReplacementsA");
     static D2DrlgReplaceRoomStrc gaDrlgRoomReplacementsB[3] = {
     {
         /* .nSourceLevelPrestId = */ 0x412,
@@ -60,7 +60,7 @@ int32_t ReplaceRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x3
     }
-};
+}; D2_STATIC_GUARD(gaDrlgRoomReplacementsB, "D2Common::Drlg::Maze::Act5::Temple::ReplaceRooms::gaDrlgRoomReplacementsB");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
     int32_t nRetValAfterA = (int32_t)(((uint64_t)d2_bits_of(DVar1) & 0xffffffff) * 0xaaaaaaab);

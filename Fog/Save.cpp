@@ -286,7 +286,7 @@ int32_t __stdcall SAVE_CalculateChecksum(uint8_t * pbData, int32_t nSize) {
     0x7,
     0x7,
     0x8
-};
+}; D2_STATIC_GUARD(gnGameSaveDataVersion, "Fog::Save::SAVE_CalculateChecksum::gnGameSaveDataVersion");
 
     uint8_t* pbEnd = pbData + nSize;
     int nChecksum = 0;

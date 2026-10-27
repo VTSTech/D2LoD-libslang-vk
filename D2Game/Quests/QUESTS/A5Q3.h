@@ -22,7 +22,7 @@ struct D2PathPosStrc;
 
 // Data types
 struct D2MapAIStrc {
-    /* 0x00 */ size_t nSize;
+    /* 0x00 */ int nSize;
     /* 0x04 */ struct D2PathPosStrc * pPosition;
 };
 

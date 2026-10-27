@@ -311,7 +311,7 @@ BOOL __stdcall SKILLPAL_ReducePoisonAndCurseDuration(::SGAMEDATA * pGame, D2Unit
       pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_poison);
       if (pStatList) {
         nGameFrame = pGame->dwGameFrame;
-        nPoisonExpire = (int32_t)D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pStatList);
+        nPoisonExpire = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pStatList);
         nGameFrame2 = D2Client::Stats::D2ApplyPercent(nPoisonExpire - nGameFrame, nParam, 100);
         nNewPoisonExpire = nGameFrame2 + nGameFrame;
         D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatList, nNewPoisonExpire);
@@ -334,7 +334,7 @@ BOOL __stdcall SKILLPAL_ReducePoisonAndCurseDuration(::SGAMEDATA * pGame, D2Unit
           bIsCurseState = D2Common::DATATBLS::ItemStats::ITEMSTATS_CheckStateFlagArray12(eState);
           if (bIsCurseState) {
             nGameFrame = pGame->dwGameFrame;
-            nCurseExpire = (int32_t)D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pStatList);
+            nCurseExpire = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pStatList);
             nGameFrame2 = D2Client::Stats::D2ApplyPercent(nCurseExpire - nGameFrame, nParam, 100);
             nNewCurseExpire = nGameFrame2 + nGameFrame;
             D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatList, nNewCurseExpire);

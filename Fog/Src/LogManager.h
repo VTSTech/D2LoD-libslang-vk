@@ -48,7 +48,7 @@ void __stdcall LOGMANAGER_UnwindDestructor_NoOp();
 // so the parameter is void* - the specific type cannot be carried through the generic helper.
 void __fastcall InitCriticalSection(void * pElement);
 void __fastcall InitLogFilePathPointers(uint8_t * * pPathPtrArray, uint32_t nCount);
-int __fastcall OpenLogFileWithTimestamp(char * szFilePrefix, LPSYSTEMTIME pSystemTime, char * szOpenMode, uint32_t * pbIsNewFile, char * szOutPath, int32_t nOutPathLen);
+FILE * __fastcall OpenLogFileWithTimestamp(char * szFilePrefix, LPSYSTEMTIME pSystemTime, char * szOpenMode, uint32_t * pbIsNewFile, char * szOutPath, int32_t nOutPathLen);
 // Writes the header of a newly opened log file: a rule, the computer name and the date from pTime, and a closing rule.
 void __fastcall WriteLogFileHeader(FILE * pFile, SYSTEMTIME * pTime);
 // Writes the realm-startup banner to a log file: a rule, the computer name and the local time, and a closing rule.

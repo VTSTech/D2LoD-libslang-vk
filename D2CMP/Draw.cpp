@@ -21,13 +21,13 @@ typedef uint8_t (__stdcall *pfnRGBToPaletteIndex)(uint8_t nRed, uint8_t nGreen, 
 namespace D2CMP::Draw {
 
 // also labelled: gWpnClass_w_WeaponClass5
-static double gdConst360 = 360;
+static double gdConst360 = 360; D2_STATIC_GUARD(gdConst360, "D2CMP::Draw::gdConst360");
 // also labelled: gWpnClass_w_WeaponClass4
-static double gdConst60 = 60;
+static double gdConst60 = 60; D2_STATIC_GUARD(gdConst60, "D2CMP::Draw::gdConst60");
 // also labelled: gMercenary_t_TownEnumValue2
-static double gdConst0_2 = 0.200000002980232;
-static D2PaletteEntryStrc bTransparentColorEnabled1[256] = { {} };
-static D2PaletteEntryStrc bTransparentColorEnabled0[256] = { {} };
+static double gdConst0_2 = 0.200000002980232; D2_STATIC_GUARD(gdConst0_2, "D2CMP::Draw::gdConst0_2");
+static D2PaletteEntryStrc bTransparentColorEnabled1[256] = { {} }; D2_STATIC_GUARD(bTransparentColorEnabled1, "D2CMP::Draw::bTransparentColorEnabled1");
+static D2PaletteEntryStrc bTransparentColorEnabled0[256] = { {} }; D2_STATIC_GUARD(bTransparentColorEnabled0, "D2CMP::Draw::bTransparentColorEnabled0");
 
 void __fastcall DRAW_ConvertPaletteRGBtoHSL(D2HSLColorStrc * pHSLOut, uint8_t * pRGBIn) {
     double dVar2;
@@ -1061,7 +1061,7 @@ BOOL __stdcall DRAW_InitPalette(LPCSTR szPaletteFile, int nStartIndex, int nEndI
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(lpBuffer_008e8d28, "D2CMP::Draw::DRAW_InitPalette::lpBuffer_008e8d28");
 
     uint8_t byPaletteValue;
     int iVar1;
@@ -1881,12 +1881,46 @@ void DRAW_BuildBrightenLightnessTable(D2HSLColorStrc * pHSLPalette, LPPALETTEENT
 
 LPPALETTEENTRY __stdcall DRAW_BuildAllPaletteTables(tagPALETTEENTRY * pPaletteEntry) {
     // Static local variables (originally global data)
-    static tagPALETTEENTRY gpPaletteArray = {
-    /* .peRed = */ 0xff,
-    /* .peGreen = */ 0xff,
-    /* .peBlue = */ 0xff,
-    /* .peFlags = */ 0xff
-};
+    static uint8_t gpPaletteArray[38] = {
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0x4d,
+    0x4d,
+    0x0,
+    0xff,
+    0x0,
+    0x69,
+    0x69,
+    0xff,
+    0xc7,
+    0xb3,
+    0x77,
+    0x69,
+    0x69,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0xd0,
+    0xc2,
+    0x7d,
+    0xff,
+    0xa8,
+    0x0,
+    0xff,
+    0xff,
+    0x64,
+    0x0,
+    0x80,
+    0x0,
+    0xae,
+    0x0,
+    0xff,
+    0x0,
+    0xc8
+}; D2_STATIC_GUARD(gpPaletteArray, "D2CMP::Draw::DRAW_BuildAllPaletteTables::gpPaletteArray");
 
     int iEntry;
     D2HSLColorStrc ahslColors[256];
@@ -1913,7 +1947,7 @@ LPPALETTEENTRY __stdcall DRAW_BuildAllPaletteTables(tagPALETTEENTRY * pPaletteEn
     DRAW_BuildHSLTransformTables(pPaletteData, (LPPALETTEENTRY)ahslColors);
     DRAW_BuildBrightenLightnessTable(ahslColors, pPaletteData);
     DRAW_BuildScreenBlendAndDesatTable(pPaletteData);
-    tagPALETTEENTRY* ptSrcEntry = &gpPaletteArray;
+    tagPALETTEENTRY* ptSrcEntry = (tagPALETTEENTRY*)gpPaletteArray;
     ptDstEntry = pPaletteData + 0x1ad80;
     for (iEntry = 9; iEntry; iEntry--) {
       *ptDstEntry = *ptSrcEntry;

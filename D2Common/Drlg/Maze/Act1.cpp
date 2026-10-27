@@ -44,7 +44,7 @@ void Caves(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCavesReplacements_A, "D2Common::Drlg::Maze::Act1::Caves::gaDrlgCavesReplacements_A");
     static D2DrlgReplaceRoomStrc gaDrlgCavesReplacements_B[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x3c,
@@ -70,7 +70,7 @@ void Caves(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCavesReplacements_B, "D2Common::Drlg::Maze::Act1::Caves::gaDrlgCavesReplacements_B");
     static D2DrlgReplaceRoomStrc gaDrlgCavesReplacements_C[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x3c,
@@ -96,7 +96,7 @@ void Caves(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCavesReplacements_C, "D2Common::Drlg::Maze::Act1::Caves::gaDrlgCavesReplacements_C");
     static D2DrlgReplaceRoomStrc gaDrlgCavesReplacements_D[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x3c,
@@ -122,7 +122,7 @@ void Caves(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCavesReplacements_D, "D2Common::Drlg::Maze::Act1::Caves::gaDrlgCavesReplacements_D");
     static D2DrlgReplaceRoomStrc gaDrlgCavesReplacements_E[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x3c,
@@ -148,7 +148,7 @@ void Caves(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCavesReplacements_E, "D2Common::Drlg::Maze::Act1::Caves::gaDrlgCavesReplacements_E");
 
     D2DrlgReplaceRoomStrc* pReplaceTable;
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
@@ -200,7 +200,7 @@ void Crypt(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCryptReplacements_A, "D2Common::Drlg::Maze::Act1::Crypt::gaDrlgCryptReplacements_A");
     static D2DrlgReplaceRoomStrc gaDrlgCryptReplacements_B[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x74,
@@ -226,7 +226,7 @@ void Crypt(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCryptReplacements_B, "D2Common::Drlg::Maze::Act1::Crypt::gaDrlgCryptReplacements_B");
     static D2DrlgReplaceRoomStrc gaDrlgCryptReplacements_C[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x74,
@@ -252,7 +252,7 @@ void Crypt(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCryptReplacements_C, "D2Common::Drlg::Maze::Act1::Crypt::gaDrlgCryptReplacements_C");
     static D2DrlgReplaceRoomStrc gaDrlgCryptReplacements_D[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x74,
@@ -278,7 +278,7 @@ void Crypt(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCryptReplacements_D, "D2Common::Drlg::Maze::Act1::Crypt::gaDrlgCryptReplacements_D");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
     pLevel->sSeed = DVar1;

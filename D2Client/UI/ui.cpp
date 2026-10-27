@@ -104,11 +104,11 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
-#include "Storm/H/Storm.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
+#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Button/ButtonWrapper.h"
@@ -149,9 +149,9 @@ typedef int (__fastcall *pfnTextScrollComplete)(void * pUserParam, uint32_t nRea
 
 namespace D2Client::UI::ui {
 
-static bool gbUIStatButtonHovered = 0;
-static bool gbUISkillButtonHovered = 0;
-static bool gbUIStatScreenMouseDown = 0;
+static bool gbUIStatButtonHovered = 0; D2_STATIC_GUARD(gbUIStatButtonHovered, "D2Client::UI::ui::gbUIStatButtonHovered");
+static bool gbUISkillButtonHovered = 0; D2_STATIC_GUARD(gbUISkillButtonHovered, "D2Client::UI::ui::gbUISkillButtonHovered");
+static bool gbUIStatScreenMouseDown = 0; D2_STATIC_GUARD(gbUIStatScreenMouseDown, "D2Client::UI::ui::gbUIStatScreenMouseDown");
 
 void __stdcall INPUT_ClearChatMessages(D2UIMouseMsgStrc * pMsg) {
     Text::TEXT_ClearChatMessages();
@@ -278,7 +278,7 @@ uint16_t * __fastcall UI_AppendColorCodeToString(uint16_t * wszText, char cParam
 
 uint16_t * __fastcall UI_RemoveColorCodesFromString(uint16_t * wszText) {
     uint16_t* wszMatch;
-    int32_t nMatchLength;
+    int32_t iVar1;
     int32_t nLength = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
     if (nLength < 500) {
       uint16_t* wszColorCode;
@@ -286,8 +286,8 @@ uint16_t * __fastcall UI_RemoveColorCodesFromString(uint16_t * wszText) {
       nLength = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszColorCode);
       wszMatch = (uint16_t*)D2Lang::Unicode::UNISYS::UNICODE_FindSubstring((uint16_t*)wszText, (uint16_t*)wszColorCode);
       while (wszMatch && wszMatch[nLength] != L'\0') {
-        nMatchLength = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszMatch);
-        memmove(wszMatch, wszMatch + nLength + 1, (nMatchLength - nLength) * 2);
+        iVar1 = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszMatch);
+        memmove(wszMatch, wszMatch + nLength + 1, (iVar1 - nLength) * 2);
         wszMatch = (uint16_t*)D2Lang::Unicode::UNISYS::UNICODE_FindSubstring((uint16_t*)wszText, (uint16_t*)wszColorCode);
       }
 
@@ -386,7 +386,7 @@ BOOL __fastcall UI_GetUniqueMonsterName(D2UnitStrc * pUnit, uint16_t nNameMode) 
       return 0;
     }
 
-    gnMonsterHealthBarValue = 0;
+    gnMonsterHealthBarValue[0] = 0;
     bHasInteract = UNIT::Monster::IsMonsterUnique(pUnit);
     if (!bHasInteract) {
       int32_t iVar1;
@@ -396,7 +396,7 @@ BOOL __fastcall UI_GetUniqueMonsterName(D2UnitStrc * pUnit, uint16_t nNameMode) 
       }
     }
 
-    UNIT::Monster::MONSTER_BuildUniqueName(pUnit, (uint16_t*)&gnMonsterHealthBarValue, 0x100, nNameMode);
+    UNIT::Monster::MONSTER_BuildUniqueName(pUnit, (uint16_t*)gnMonsterHealthBarValue, 0x100, nNameMode);
     return 1;
 }
 
@@ -484,7 +484,7 @@ void UI_BuildUberBossImmunityString(D2UnitStrc * pUnit) {
         /* .nStringId = */ 0x2764,
         /* .nColor = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaUberBossImmunities, "D2Client::UI::ui::UI_BuildUberBossImmunityString::gaUberBossImmunities");
 
     int nResist;
     bool bHasPrevious;
@@ -949,7 +949,7 @@ void __stdcall UI_DrawStoredTooltip() {
 
 void __stdcall DRAW_UI_DeathMessage() {
     // Static local variables (originally global data)
-    static bool gbDeathMessageActive;
+    static bool gbDeathMessageActive; D2_STATIC_GUARD_BSS(gbDeathMessageActive, "D2Client::UI::ui::DRAW_UI_DeathMessage::gbDeathMessageActive");
 
     uint8_t nGameDifficulty;
     int nGoldLost;
@@ -1092,11 +1092,11 @@ void __fastcall UI_DrawPlayerNameOverhead(D2UnitStrc * pUnit) {
 
 void __stdcall UI_DrawPlayerStateOverlays() {
     // Static local variables (originally global data)
-    static int gaAutoMapRenderingLayerVisibilityArray3 = 0x40;
-    static int gaAutoMapRenderingLayerVisibilityArray2 = 0x94;
-    static uint8_t gaAutoMapRenderingLayerVisibilityArray1 = 0x40;
-    static uint32_t gnLastPacketTickTimestamp;
-    static uint32_t gnStateOverlayXSpacing;
+    static int gaAutoMapRenderingLayerVisibilityArray3 = 0x40; D2_STATIC_GUARD(gaAutoMapRenderingLayerVisibilityArray3, "D2Client::UI::ui::UI_DrawPlayerStateOverlays::gaAutoMapRenderingLayerVisibilityArray3");
+    static int gaAutoMapRenderingLayerVisibilityArray2 = 0x94; D2_STATIC_GUARD(gaAutoMapRenderingLayerVisibilityArray2, "D2Client::UI::ui::UI_DrawPlayerStateOverlays::gaAutoMapRenderingLayerVisibilityArray2");
+    static unsigned int gaAutoMapRenderingLayerVisibilityArray1 = 0x40; D2_STATIC_GUARD(gaAutoMapRenderingLayerVisibilityArray1, "D2Client::UI::ui::UI_DrawPlayerStateOverlays::gaAutoMapRenderingLayerVisibilityArray1");
+    static uint32_t gnLastPacketTickTimestamp; D2_STATIC_GUARD_BSS(gnLastPacketTickTimestamp, "D2Client::UI::ui::UI_DrawPlayerStateOverlays::gnLastPacketTickTimestamp");
+    static uint32_t gnStateOverlayXSpacing; D2_STATIC_GUARD_BSS(gnStateOverlayXSpacing, "D2Client::UI::ui::UI_DrawPlayerStateOverlays::gnStateOverlayXSpacing");
 
     D2StatListExStrc* pStatList;
     D2StatesTxt* pStateTxt;
@@ -1478,7 +1478,7 @@ void __stdcall UI_DrawArenaKillCount() {
 
 void __stdcall UI_DrawPartyRoster() {
     // Static local variables (originally global data)
-    static uint32_t gnPartyRosterRowHeight = 0x13;
+    static uint32_t gnPartyRosterRowHeight = 0x13; D2_STATIC_GUARD(gnPartyRosterRowHeight, "D2Client::UI::ui::UI_DrawPartyRoster::gnPartyRosterRowHeight");
 
     uint16_t wPartyId;
     char* pszRosterName;
@@ -2144,7 +2144,7 @@ D2UnitStrc * __stdcall GetCursorItem() {
 
 void __fastcall UI_InitializeCursor(int32_t nCursorType) {
     // Static local variables (originally global data)
-    static uint32_t gwCursorAnimUnknownField;
+    static uint32_t gwCursorAnimUnknownField; D2_STATIC_GUARD_BSS(gwCursorAnimUnknownField, "D2Client::UI::ui::UI_InitializeCursor::gwCursorAnimUnknownField");
 
     char szPath[80];
     int32_t nEventCount = 3;
@@ -2256,7 +2256,7 @@ void __stdcall UI_AnimateCursorBackward() {
 
 void __stdcall UI_UpdateCursorAnimation() {
     // Static local variables (originally global data)
-    static uint32_t gdwCursorAnimLastTick;
+    static uint32_t gdwCursorAnimLastTick; D2_STATIC_GUARD_BSS(gdwCursorAnimLastTick, "D2Client::UI::ui::UI_UpdateCursorAnimation::gdwCursorAnimLastTick");
 
     DWORD dwTickCount = GetTickCount();
     if (gnCursorDataCount == 7) {
@@ -2362,10 +2362,11 @@ void __stdcall DrawCursor() {
 
 void __stdcall UI_DrawCursorWithItem() {
     // Static local variables (originally global data)
-    static uint32_t gnCursorClipHeight;
-    static uint32_t gnCursorItemAnimDrawOffset;
+    static uint32_t gnCursorClipHeight; D2_STATIC_GUARD_BSS(gnCursorClipHeight, "D2Client::UI::ui::UI_DrawCursorWithItem::gnCursorClipHeight");
+    static uint32_t gnCursorItemAnimDrawOffset; D2_STATIC_GUARD_BSS(gnCursorItemAnimDrawOffset, "D2Client::UI::ui::UI_DrawCursorWithItem::gnCursorItemAnimDrawOffset");
 
     int32_t nClampedY;
+    uint32_t nDimension;
     int nMaxX;
     int nPositionX;
     D2GfxDataStrc sGfxData;
@@ -2405,7 +2406,6 @@ void __stdcall UI_DrawCursorWithItem() {
         UI_UpdateCursorAnimation();
       }
     } else {
-      uint32_t nDimension;
       memset(&sGfxData, 0, 0x48);
       nClampedY = DC6_AssignParams(&sGfxData, pUnit, nullptr, 0, 0, &nOutValue, '\x01', (D2UnitStrc*)-1);
       if (nClampedY) {
@@ -2915,7 +2915,7 @@ void __stdcall UI_InitializeStatDescriptionPointers() {
         /* .wStrId = */ 0xf8d,
         /* ._pad = */ { '\x00', '\x00', '\x00', '\x00' }
     }
-};
+}; D2_STATIC_GUARD(gaConfigControlBindingsExpansion, "D2Client::UI::ui::UI_InitializeStatDescriptionPointers::gaConfigControlBindingsExpansion");
 
     BOOL bIsExpansion = GAME::Game::CLIENT_CheckExpansion();
     if (bIsExpansion) {
@@ -4345,10 +4345,11 @@ int32_t UI_GetStatDescriptionStringId(int32_t nUnit) {
 }
 
 void __fastcall DRAW_UI_StatWindow_III(int32_t nX, int32_t nY, int32_t nValue) {
-    int32_t iVar1;
+    uint16_t* wszFmt;
     int iClearIdx;
     uint16_t wszMessage[128];
     int nWeaponClass;
+    int32_t nErrorLine;
     if (nValue < 5) {
       nValue = 5;
     } else if (0x5f < nValue) {
@@ -4386,12 +4387,11 @@ void __fastcall DRAW_UI_StatWindow_III(int32_t nX, int32_t nY, int32_t nValue) {
       exit(-1);
     }
 
-    iVar1 = nValue;
+    nErrorLine = nValue;
     pwszClear = D2Lang::StrTable::strtable::GetLocaleString(pMonStatsTxt->NameStr);
     if (!(uint16_t*)nBlockRateOrDescStrId) {
-      uint16_t* wszFmt;
       wszFmt = D2Lang::StrTable::strtable::GetLocaleString(0x2778);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszMessage, wszFmt, (uint16_t*)pwszClear, iVar1);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszMessage, wszFmt, (uint16_t*)pwszClear, nErrorLine);
     } else {
       pwszClear = D2Lang::StrTable::strtable::GetLocaleString(0x2779);
       D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszMessage, pwszClear, (uint16_t*)nBlockRateOrDescStrId, nValue);
@@ -4785,11 +4785,11 @@ void __stdcall UI_PrecomputeStatDescriptionWidths() {
     uint32_t nOffset = 0;
     do {
       uint16_t* wszString;
-      wszString = D2Lang::StrTable::strtable::GetLocaleString(*(uint16_t*)((int)gaStatDescRows + nOffset + 0xc));
+      wszString = D2Lang::StrTable::strtable::GetLocaleString(gaStatDescRows[nOffset].nStringId);
       nStrWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszString);
-      *(int32_t*)((int)gaStatDescRows + nOffset + 0xe) = nStrWidth;
-      nOffset += 0x12;
-    } while (nOffset < 0x10e);
+      gaStatDescRows[nOffset].nTextWidth = nStrWidth;
+      nOffset++;
+    } while (nOffset < 15);
 }
 
 void __stdcall CHAR_FreePanelAssets_NoOp() {
@@ -4811,7 +4811,7 @@ void __stdcall DRAW_UI_StatWindow_II(int32_t bUpperEnabled, int32_t bLowerEnable
     0x8f,
     0x9f,
     0x9b
-};
+}; D2_STATIC_GUARD(gaStatWindowRowLayout, "D2Client::UI::ui::DRAW_UI_StatWindow_II::gaStatWindowRowLayout");
 
     int nBtnIndex;
     uint16_t wszMonNameTooltip[128];
@@ -4991,7 +4991,7 @@ void __stdcall DRAW_UI_StatWindow_I() {
         /* .nX2 = */ 0x133,
         /* .nStatId = */ 0x2d
     }
-};
+}; D2_STATIC_GUARD(gaStatPanelRows, "D2Client::UI::ui::DRAW_UI_StatWindow_I::gaStatPanelRows");
 
     char cVar1;
     uint8_t bVar2;
@@ -5123,11 +5123,11 @@ void __stdcall DRAW_UI_StatWindow_I() {
       }
 
       nWStrBufLen = 99;
-      nStatPts2 = D2Lang::StrTable::strtable::GetLocaleString(*(uint16_t*)((int)gaStatDescRows + (int)pCharStatsTxtOrFont + 0xcU));
+      nStatPts2 = D2Lang::StrTable::strtable::GetLocaleString(*(uint16_t*)((uintptr_t)&gaStatDescRows[0].nStringId + (int)pCharStatsTxtOrFont));
       D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszStatDescBuf, nStatPts2, nWStrBufLen);
-      nDrawX = *(int*)((int)gaStatDescRows + (int)pCharStatsTxtOrFont) + gnPanelOffsetX;
-      nWidth = *(int*)((int)gaStatDescRows + (int)pCharStatsTxtOrFont + 8U) + gnPanelOffsetX;
-      nDrawY = *(int*)((int)gaStatDescRows + (int)pCharStatsTxtOrFont + 4U) + gnPanelOffsetY - 0x1e0 + ScreenSizeY;
+      nDrawX = *(int*)((uintptr_t)&gaStatDescRows[0].nX1 + (int)pCharStatsTxtOrFont) + gnPanelOffsetX;
+      nWidth = *(int*)((uintptr_t)&gaStatDescRows[0].nX2 + (int)pCharStatsTxtOrFont) + gnPanelOffsetX;
+      nDrawY = *(int*)((uintptr_t)&gaStatDescRows[0].nY + (int)pCharStatsTxtOrFont) + gnPanelOffsetY - 0x1e0 + ScreenSizeY;
       nStatPts2 = wszStatDescBuf;
       wszStatDescBuf[99] = L'\0';
       iVar8 = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(nStatPts2);
@@ -5503,12 +5503,13 @@ void __stdcall DRAW_UI_StatWindow_I() {
 void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnitGUID, char * pQuestBuffer, int32_t nActionType) {
     short int nMessage;
     D2GSPacketSrv0x27_TextStrc* pOverheadTextPtr;
-    int32_t nMonStatsId;
     BOOL bMonInteractFlag;
     D2UnitStrc* pPlayerUnit_lcl;
+    uint32_t dwNextMsgType1;
     uint16_t wMsgType0;
     uint32_t dwMsgType;
     bool bInteractableSideNpc;
+    int32_t nLine;
     int nNpcClassId2;
     short int wMsgType1;
     if (nUpdateType == 6) {
@@ -5551,9 +5552,9 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
     }
 
     dwMsgType = D2Common::Text::OVERHEAD_GetMessageType0(pOverheadTextPtr, 0);
-    nMonStatsId = pNpcUnit->nClassId;
-    bMonInteractFlag = DataTbls::MonsterTbls::TXT_MonStats_GetFlagsByBitOffset(nMonStatsId, interact);
-    if (bMonInteractFlag && nMonStatsId != 0x219 && nMonStatsId != 0x21a && nMonStatsId != 0x21b && nMonStatsId != 0x20f) {
+    nLine = pNpcUnit->nClassId;
+    bMonInteractFlag = DataTbls::MonsterTbls::TXT_MonStats_GetFlagsByBitOffset(nLine, interact);
+    if (bMonInteractFlag && nLine != 0x219 && nLine != 0x21a && nLine != 0x21b && nLine != 0x20f) {
       UNIT::CUnit::FacePlayer(pNpcUnit);
     }
 
@@ -5571,7 +5572,6 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
     wMsgType0 = (uint16_t)dwMsgType;
     gnNpcMenuScrollMessageHead = 0;
     if (wMsgType0 != 0xffff) {
-      uint32_t dwNextMsgType1;
       Draw::UI_CloseActivePanels(0, 0);
       gnNpcMenuRepairCostGold = wMsgType0;
       Text::TEXT_ShowNpcDialog(pNpcUnit, wMsgType0, 1);
@@ -5690,17 +5690,17 @@ int32_t DIALOG_HandleMouseUpEvent(D2DialogStrc * pDialog, D2UIMouseMsgStrc * pMs
 }
 
 int __stdcall DIALOG_HandleMouseDownEvent(D2DialogStrc * pDialog, D2UIMouseMsgStrc * pMsg) {
-    int32_t nHitIndex;
+    int32_t nErrorLine;
     if (!pDialog) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe1);
       exit(-1);
     }
 
     int nPrevHighlight = pDialog->nSelectedLine;
-    nHitIndex = DIALOG_HandleMouseUpEvent(pDialog, pMsg);
-    pDialog->nSelectedLine = nHitIndex;
-    pDialog->nHighlightFrame = nHitIndex;
-    if (!(nHitIndex != nPrevHighlight && nHitIndex != -1)) {
+    nErrorLine = DIALOG_HandleMouseUpEvent(pDialog, pMsg);
+    pDialog->nSelectedLine = nErrorLine;
+    pDialog->nHighlightFrame = nErrorLine;
+    if (!(nErrorLine != nPrevHighlight && nErrorLine != -1)) {
       return 0;
     }
 
@@ -5963,7 +5963,7 @@ void __stdcall DRAW_UI_CASH() {
         return;
       }
 
-      GFXUTIL_GetOverlayDimensions(pUnit, 0, 0, (D2InventoryStrc*)&nItemWidth, &nItemHeightPx);
+      GFXUTIL_GetOverlayDimensions(pUnit, 0, 0, &nItemWidth, &nItemHeightPx);
       D2Common::Units::SetupUpdateFlag(pUnit, 0);
       nYOffset = 0;
       if (nItemHeightPx < 0x70) {

@@ -12,15 +12,15 @@
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-char gaLangAbbreviation_ChineseTraditional[4] = { 'R', 'U', 'S', '\x00' };
+char gaLangAbbreviation_ChineseTraditional[4] = { 'R', 'U', 'S', '\x00' }; D2_GLOBAL_GUARD(gaLangAbbreviation_ChineseTraditional, "gaLangAbbreviation_ChineseTraditional");
 
-char gaLangAbbreviation_Japanese[4] = { 'P', 'O', 'L', '\x00' };
+char gaLangAbbreviation_Japanese[4] = { 'P', 'O', 'L', '\x00' }; D2_GLOBAL_GUARD(gaLangAbbreviation_Japanese, "gaLangAbbreviation_Japanese");
 
-char gaLangAbbreviation_Korean[4] = { 'K', 'O', 'R', '\x00' };
+char gaLangAbbreviation_Korean[4] = { 'K', 'O', 'R', '\x00' }; D2_GLOBAL_GUARD(gaLangAbbreviation_Korean, "gaLangAbbreviation_Korean");
 
-char gaLangAbbreviation_Cyrillic[4] = { 'J', 'P', 'N', '\x00' };
+char gaLangAbbreviation_Cyrillic[4] = { 'J', 'P', 'N', '\x00' }; D2_GLOBAL_GUARD(gaLangAbbreviation_Cyrillic, "gaLangAbbreviation_Cyrillic");
 
-char gaLangNameFormat_Nominative[4] = { 'U', 'S', 'A', '\x00' };
+char gaLangNameFormat_Nominative[4] = { 'U', 'S', 'A', '\x00' }; D2_GLOBAL_GUARD(gaLangNameFormat_Nominative, "gaLangNameFormat_Nominative");
 
 uint16_t gwStrTableDefaultEncoding[256] = {
     0x0,
@@ -279,7 +279,7 @@ uint16_t gwStrTableDefaultEncoding[256] = {
     0x3eb2,
     0xed1,
     0x1ef0
-};
+}; D2_GLOBAL_GUARD(gwStrTableDefaultEncoding, "gwStrTableDefaultEncoding");
 
 D2LangTableEntryStrc gaLanguageTable[13] = {
     {
@@ -386,7 +386,7 @@ D2LangTableEntryStrc gaLanguageTable[13] = {
         /* .szLangTag = */ { 'R', 'K', 'o', 'k' },
         /* .dwLangId = */ 0xc
     }
-};
+}; D2_GLOBAL_GUARD(gaLanguageTable, "gaLanguageTable");
 
 D2Utf8DecodeRowStrc gaUtf8DecodeTable[7] = {
     {
@@ -445,32 +445,32 @@ D2Utf8DecodeRowStrc gaUtf8DecodeTable[7] = {
         /* .dwCodePointMask = */ 0x0,
         /* .dwMinValue = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gaUtf8DecodeTable, "gaUtf8DecodeTable");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-uint16_t gcAbbrevKilSymbol = 0x4b;
-uint16_t gcAbbrevMilSymbol = 0x4d;
-uint16_t gcAbbrevBilSymbol = 0x42;
-uint16_t gcAbbrevTrilSymbol = 0x54;
-void * gpUntranslatedStringCacheHead = 0;
-D2StringTableTblFileStrc * gpStringTableBase = 0;
-uint16_t * * gpStringIndexBase = 0;
-uint16_t * * gpStringIndexPatchD2 = 0;
-uint16_t * * gpStringIndexExpansion = 0;
-uint16_t * gpStringBufferBase = 0;
-uint16_t * gpStringBufferPatchD2 = 0;
-uint16_t * gpStringBufferExpansion = 0;
-D2StringTableTblFileStrc * gpStringTablePatchD2 = 0;
-D2StringTableTblFileStrc * gpStringTableExpansion = 0;
-int gnStringTableRefCount = 0;
-uint16_t gnUnicodeKamapEntryCount = 0;
-uint8_t gnUnicodeKamapGroupCount = 0;
-void * gpUnicodeKamapToCodeTable = 0;
-void * g_pUnicodeKamapTable = 0;
-uint16_t * gpUnicodeCodeToMapTable = 0;
+uint16_t gcAbbrevKilSymbol = 0x4b; D2_GLOBAL_GUARD(gcAbbrevKilSymbol, "gcAbbrevKilSymbol");
+uint16_t gcAbbrevMilSymbol = 0x4d; D2_GLOBAL_GUARD(gcAbbrevMilSymbol, "gcAbbrevMilSymbol");
+uint16_t gcAbbrevBilSymbol = 0x42; D2_GLOBAL_GUARD(gcAbbrevBilSymbol, "gcAbbrevBilSymbol");
+uint16_t gcAbbrevTrilSymbol = 0x54; D2_GLOBAL_GUARD(gcAbbrevTrilSymbol, "gcAbbrevTrilSymbol");
+void * gpUntranslatedStringCacheHead = 0; D2_GLOBAL_GUARD(gpUntranslatedStringCacheHead, "gpUntranslatedStringCacheHead");
+D2StringTableTblFileStrc * gpStringTableBase = 0; D2_GLOBAL_GUARD(gpStringTableBase, "gpStringTableBase");
+uint16_t * * gpStringIndexBase = 0; D2_GLOBAL_GUARD(gpStringIndexBase, "gpStringIndexBase");
+uint16_t * * gpStringIndexPatchD2 = 0; D2_GLOBAL_GUARD(gpStringIndexPatchD2, "gpStringIndexPatchD2");
+uint16_t * * gpStringIndexExpansion = 0; D2_GLOBAL_GUARD(gpStringIndexExpansion, "gpStringIndexExpansion");
+uint16_t * gpStringBufferBase = 0; D2_GLOBAL_GUARD(gpStringBufferBase, "gpStringBufferBase");
+uint16_t * gpStringBufferPatchD2 = 0; D2_GLOBAL_GUARD(gpStringBufferPatchD2, "gpStringBufferPatchD2");
+uint16_t * gpStringBufferExpansion = 0; D2_GLOBAL_GUARD(gpStringBufferExpansion, "gpStringBufferExpansion");
+D2StringTableTblFileStrc * gpStringTablePatchD2 = 0; D2_GLOBAL_GUARD(gpStringTablePatchD2, "gpStringTablePatchD2");
+D2StringTableTblFileStrc * gpStringTableExpansion = 0; D2_GLOBAL_GUARD(gpStringTableExpansion, "gpStringTableExpansion");
+int gnStringTableRefCount = 0; D2_GLOBAL_GUARD(gnStringTableRefCount, "gnStringTableRefCount");
+uint16_t gnUnicodeKamapEntryCount = 0; D2_GLOBAL_GUARD(gnUnicodeKamapEntryCount, "gnUnicodeKamapEntryCount");
+uint8_t gnUnicodeKamapGroupCount = 0; D2_GLOBAL_GUARD(gnUnicodeKamapGroupCount, "gnUnicodeKamapGroupCount");
+void * gpUnicodeKamapToCodeTable = 0; D2_GLOBAL_GUARD(gpUnicodeKamapToCodeTable, "gpUnicodeKamapToCodeTable");
+void * g_pUnicodeKamapTable = 0; D2_GLOBAL_GUARD(g_pUnicodeKamapTable, "g_pUnicodeKamapTable");
+uint16_t * gpUnicodeCodeToMapTable = 0; D2_GLOBAL_GUARD(gpUnicodeCodeToMapTable, "gpUnicodeCodeToMapTable");
 
 namespace D2Common::Drlg::Maze {
 
@@ -800,10 +800,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -811,6 +807,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

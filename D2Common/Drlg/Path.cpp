@@ -763,7 +763,7 @@ int __fastcall DRLGPATH_CalcDirectionVector(POINT * pPoint, uint32_t * pnParam, 
         /* .nY = */ 0xb50,
         /* .nDirIndex = */ 0x7
     }
-};
+}; D2_STATIC_GUARD(gaPathDirectionVectors, "D2Common::Drlg::Path::DRLGPATH_CalcDirectionVector::gaPathDirectionVectors");
 
     int nRatioIndex;
     uint32_t nMinXfp;
@@ -1487,7 +1487,7 @@ int32_t __stdcall DRLGPATH_GetWeightedDistancePacked(uint32_t nParam1, uint32_t 
     0x9,
     0xa,
     0xb
-};
+}; D2_STATIC_GUARD(gaPathWeightTable, "D2Common::Drlg::Path::DRLGPATH_GetWeightedDistancePacked::gaPathWeightTable");
 
     int nAbsDX = (nParam1 & 0xffff) - (nParam2 & 0xffff);
     if (nAbsDX < 0) {
@@ -1549,7 +1549,7 @@ BOOL __stdcall DRLGPATH_FindNonBlockedDirectionFromTriplet(uint32_t nPackedPos, 
       nErrLine = 0x4c;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrLine);
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), nErrLine);
     exit(-1);
 }
 
@@ -1583,7 +1583,7 @@ BOOL __stdcall DRLGPATH_RaycastCollisionLine(int * pVelocity, uint32_t nParam, u
         nFpSrcX = -nVelY;
       }
       if (nFpSrcX <= 0) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6e);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x6e);
         exit(-1);
       }
     }
@@ -1638,14 +1638,14 @@ BOOL __stdcall DRLGPATH_RaycastCollisionLine(int * pVelocity, uint32_t nParam, u
       }
     }
     if (!(short int)nPackedDst) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xab);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xab);
       exit(-1);
     } else {
       if (*(uint16_t*)((char*)&nPackedDst + 2)) {
         return 1;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xac);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xac);
       exit(-1);
     }
 }
@@ -2282,20 +2282,21 @@ int32_t DRLGPATH_ExtractPathFromResult(int32_t nPathCtx, int32_t nCurNode) {
       return 0;
     }
 
-    memcpy(pWaypointDst, &pWaypointDst - nWaypointCount, nWaypointCount * 4);
+    memcpy(pWaypointDst, (void**)(aWaypointStack + 78) - nWaypointCount, nWaypointCount * 4);
     return nWaypointCount;
 }
 
 // Top-level A* pathfinding function for PathTypeFunc_00. Initializes the search grid, computes initial heuristic, then iteratively expands the search with increasing cost limits. Extracts and returns the found path length (0 if no path found).
 int32_t __fastcall DRLGPATH_FindPathAStar(D2DrlgRoomCoordsStrc * pRoomCoords, D2PathTypeArg * pPathTypeArg) {
     short int sVar1;
-    int32_t nErrorAddr;
     uint32_t nCostLimit;
     uint32_t nInitCostClamped;
     D2DrlgRoomAStarNodeStrc* pFoundNode;
+    D2DrlgAStarContextStrc* pDVar2;
     D2DrlgAStarContextStrc sAStarCtx;
     D2DrlgRoomAStarNodeStrc sStartNode;
     uint32_t nCostMax;
+    int32_t nErrorLine;
     if (50000 < pRoomCoords->dwXSize * pRoomCoords->dwYSize) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x171);
       exit(-1);
@@ -2353,7 +2354,6 @@ int32_t __fastcall DRLGPATH_FindPathAStar(D2DrlgRoomCoordsStrc * pRoomCoords, D2
     }
 
     do {
-      D2DrlgAStarContextStrc* pDVar2;
       pFoundNode = &sStartNode;
       pDVar2 = &sAStarCtx;
       for (nPathLength = 7; pDVar2 = (D2DrlgAStarContextStrc*)pDVar2->aNodes , nPathLength != 0; nPathLength--) {
@@ -2367,18 +2367,18 @@ int32_t __fastcall DRLGPATH_FindPathAStar(D2DrlgRoomCoordsStrc * pRoomCoords, D2
       nCostLimit += 5;
     } while ((pFoundNode || true) && !pFoundNode && (int)nCostLimit < (int)nCostMax);
 
-    nErrorAddr = 0;
+    nErrorLine = 0;
     if (!pFoundNode) {
-      return nErrorAddr;
+      return nErrorLine;
     }
 
-    nErrorAddr = DRLGPATH_ExtractPathFromResult((int32_t)pPathTypeArg, (int32_t)pFoundNode);
-    if (0x4d >= nErrorAddr) {
-      return nErrorAddr;
+    nErrorLine = DRLGPATH_ExtractPathFromResult((int32_t)pPathTypeArg, (int32_t)pFoundNode);
+    if (0x4d >= nErrorLine) {
+      return nErrorLine;
     }
 
-    nErrorAddr = 0;
-    return nErrorAddr;
+    nErrorLine = 0;
+    return nErrorLine;
 }
 
 // Alternate simple distance heuristic between two packed coordinates. Same formula as DRLGPATH_GetSimpleDistancePacked but used by the secondary A* pathfinder (PathTypeFunc_01).
@@ -3061,7 +3061,7 @@ BOOL DRLGPATH_TryStepWithFallbackDirections(D2PathTypeArg * pPathTypeArg, int * 
     0x0,
     -0x1,
     -0x1
-};
+}; D2_STATIC_GUARD(gnPathDirectionTripletXOffsets, "D2Common::Drlg::Path::DRLGPATH_TryStepWithFallbackDirections::gnPathDirectionTripletXOffsets");
 
     uint16_t wNextY;
     int32_t iVar2;
@@ -3113,7 +3113,7 @@ BOOL DRLGPATH_TryStepWithFallbackDirections(D2PathTypeArg * pPathTypeArg, int * 
       return (uint32_t)!iVar3;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x122);
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x122);
     exit(-1);
 }
 
@@ -3147,7 +3147,7 @@ int32_t __fastcall DRLGPATH_FindPathDualScan(uint32_t * pPathGrid, int32_t nGrid
     0x4,
     0x4,
     0x6
-};
+}; D2_STATIC_GUARD(gaPathDualScanDirTableY_B, "D2Common::Drlg::Path::DRLGPATH_FindPathDualScan::gaPathDualScanDirTableY_B");
     static int gaPathDualScanDirTableX_B[16] = {
     0x2,
     0x2,
@@ -3165,7 +3165,7 @@ int32_t __fastcall DRLGPATH_FindPathDualScan(uint32_t * pPathGrid, int32_t nGrid
     0x6,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gaPathDualScanDirTableX_B, "D2Common::Drlg::Path::DRLGPATH_FindPathDualScan::gaPathDualScanDirTableX_B");
     static int gaPathDualScanDirTableY_A[16] = {
     0x2,
     0x2,
@@ -3183,7 +3183,7 @@ int32_t __fastcall DRLGPATH_FindPathDualScan(uint32_t * pPathGrid, int32_t nGrid
     0x6,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gaPathDualScanDirTableY_A, "D2Common::Drlg::Path::DRLGPATH_FindPathDualScan::gaPathDualScanDirTableY_A");
     static int gaPathDualScanDirTableX_A[16] = {
     0x6,
     0x6,
@@ -3201,7 +3201,7 @@ int32_t __fastcall DRLGPATH_FindPathDualScan(uint32_t * pPathGrid, int32_t nGrid
     0x2,
     0x4,
     0x4
-};
+}; D2_STATIC_GUARD(gaPathDualScanDirTableX_A, "D2Common::Drlg::Path::DRLGPATH_FindPathDualScan::gaPathDualScanDirTableX_A");
 
     BOOL BVar3;
     uint32_t nNextPosPacked;
@@ -3279,7 +3279,7 @@ int32_t __fastcall DRLGPATH_FindPathDualScan(uint32_t * pPathGrid, int32_t nGrid
               iVar4 = iVar4 - 1 + *pStartX;
               if (iVar4 < *pStartY && pDVar5->sCurPos.nX == *(uint16_t*)(nGridSize + iVar4 * 4) && pDVar5->sCurPos.nY == *(uint16_t*)(nGridSize + 2 + iVar4 * 4)) {
                 if (nEndX <= pDVar5->nWaypointCount) {
-                  Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1bb);
+                  Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x1bb);
                   exit(-1);
                 }
 

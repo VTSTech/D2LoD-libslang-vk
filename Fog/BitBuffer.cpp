@@ -243,7 +243,7 @@ void __stdcall WriteValueToBitBuffer(D2BitBufferStrc * pBitBuffer, int32_t nValu
 
 int32_t __stdcall Read(D2BitBufferStrc * pBitBuffer, int32_t nSize) {
     // Static local variables (originally global data)
-    static int gbGameSaveFileMarker[3] = { -0x7030101, -0x7f3f1f10, 0x0 };
+    static int gbGameSaveFileMarker[3] = { -0x7030101, -0x7f3f1f10, 0x0 }; D2_STATIC_GUARD(gbGameSaveFileMarker, "Fog::BitBuffer::Read::gbGameSaveFileMarker");
 
     uint8_t byMask;
     uint32_t dwBitMask;

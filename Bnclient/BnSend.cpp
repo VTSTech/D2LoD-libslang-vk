@@ -251,7 +251,7 @@ void NET_SID_CLIENT_Send_0x06_StartVersioning() {
           return;
         }
 
-        BNSEND_SendRawBytes(&gaBnSendRawBytesHeader, 2);
+        BNSEND_SendRawBytes(gaBnSendRawBytesHeader, 2);
         NET_SID_CLIENT_Send_0x07_ReportVersion(__frame0.dwExeVerOut, __frame0.dwExeChecksum, (char*)&__frame0.cExeInfoFirst);
         _net_sid::NET_SID_CLIENT_WaitForPacketId(7);
       }
@@ -620,7 +620,7 @@ void __fastcall BNSEND_StoreUserProfileData(uint8_t * pbProfileData, size_t nDat
 // SID_LOGONREALMEX (0x3E) client request sender. Computes double-SHA1 password hash for realm logon. Packet format: (DWORD)ClientToken, (BYTE[20])PasswordHash, (STRING)RealmName. Hash computed as SHA1(SHA1(ClientToken, ServerToken, Password)). Sends request, waits for 0x3E response containing MCP server connection info. Increments gnBNetRealmClientToken client token counter.
 void * __fastcall NET_SID_CLIENT_Send_0x3E_LogonRealmEx(char * szRealmName, char * szPassword) {
     // Static local variables (originally global data)
-    static uint32_t gnBNetRealmClientToken;
+    static uint32_t gnBNetRealmClientToken; D2_STATIC_GUARD_BSS(gnBNetRealmClientToken, "Bnclient::BnSend::NET_SID_CLIENT_Send_0x3E_LogonRealmEx::gnBNetRealmClientToken");
 
     uint32_t uVar1;
     int32_t nSendLen;
@@ -852,8 +852,8 @@ void __fastcall NET_SID_CLIENT_Send_0x59_SetEmail(char * szText) {
 }
 
 BOOL __fastcall NET_SID_CLIENT_Send_0x5A_ResetPassword(char * szText1, char * szText2) {
-    int32_t nErrorAddr;
     uint32_t nLen2;
+    int32_t iVar1;
     uint32_t _Size;
     uint32_t _Size_00;
     char szPacketBuf[512];
@@ -873,9 +873,9 @@ BOOL __fastcall NET_SID_CLIENT_Send_0x5A_ResetPassword(char * szText1, char * sz
         _Size = nLen2 + 1;
         if (_Size < 0x101) {
           memcpy(szPacketBuf + nLen1 + 1, szText2, _Size);
-          nErrorAddr = NET_SID_CLIENT_Send(0x5a, szPacketBuf, _Size + _Size_00);
+          iVar1 = NET_SID_CLIENT_Send(0x5a, szPacketBuf, _Size + _Size_00);
           Fog::Debug::GuardStack();
-          return (uint32_t)(-1 < nErrorAddr);
+          return (uint32_t)(-1 < iVar1);
         }
 
         nErrorLine = 0x588;
@@ -889,8 +889,8 @@ BOOL __fastcall NET_SID_CLIENT_Send_0x5A_ResetPassword(char * szText1, char * sz
 }
 
 BOOL __fastcall NET_SID_CLIENT_Send_0x5B_ChangeEmail(char * szText1, char * szText2, char * szNewEmail) {
-    int32_t nErrorAddr;
     uint32_t nLen2;
+    int32_t iVar1;
     uint32_t _Size;
     uint32_t _Size_00;
     uint32_t _Size_01;
@@ -915,9 +915,9 @@ BOOL __fastcall NET_SID_CLIENT_Send_0x5B_ChangeEmail(char * szText1, char * szTe
           _Size_01 = nLen2 + 1;
           if (_Size_01 < 0x101) {
             memcpy(szPacketBuf + nLen1 + 1 + _Size_00, szNewEmail, _Size_01);
-            nErrorAddr = NET_SID_CLIENT_Send(0x5b, szPacketBuf, _Size_01 + _Size_00 + _Size);
+            iVar1 = NET_SID_CLIENT_Send(0x5b, szPacketBuf, _Size_01 + _Size_00 + _Size);
             Fog::Debug::GuardStack();
-            return (uint32_t)(-1 < nErrorAddr);
+            return (uint32_t)(-1 < iVar1);
           }
 
           nErrorLine = 0x5b4;
@@ -992,16 +992,16 @@ BOOL __stdcall D2CheckExpansionGame() {
 // lpStartAddress parameter of CreateThread
 DWORD __stdcall GetDnsResults(void * lpThreadParam) {
     // Static local variables (originally global data)
-    static uint32_t gInAddrBnetLookupAddr;
-    static char * gInAddrBnetLookupAddrList;
-    static uint32_t g_nBNetLookupAddrPad;
+    static uint32_t gInAddrBnetLookupAddr; D2_STATIC_GUARD_BSS(gInAddrBnetLookupAddr, "Bnclient::BnSend::GetDnsResults::gInAddrBnetLookupAddr");
+    static char * gInAddrBnetLookupAddrList; D2_STATIC_GUARD_BSS(gInAddrBnetLookupAddrList, "Bnclient::BnSend::GetDnsResults::gInAddrBnetLookupAddrList");
+    static uint32_t g_nBNetLookupAddrPad; D2_STATIC_GUARD_BSS(g_nBNetLookupAddrPad, "Bnclient::BnSend::GetDnsResults::g_nBNetLookupAddrPad");
     static hostent gsHostentBnetLookup = {
     /* .h_name = */ nullptr,
     /* .h_aliases = */ nullptr,
     /* .h_addrtype = */ 0,
     /* .h_length = */ 0,
     /* .h_addr_list = */ nullptr
-};
+}; D2_STATIC_GUARD(gsHostentBnetLookup, "Bnclient::BnSend::GetDnsResults::gsHostentBnetLookup");
 
     int nRandIdx;
     char* szAddrStr;
@@ -1102,8 +1102,8 @@ DWORD __stdcall GetDnsResults(void * lpThreadParam) {
 
 void __fastcall GetDnsRecordSync(char * * ppszDnsOutput, int nDnsThreadParam2) {
     // Static local variables (originally global data)
-    static LPVOID lpParameter_00881be8;
-    static int g_nDnsThreadParam2;
+    static LPVOID lpParameter_00881be8; D2_STATIC_GUARD_BSS(lpParameter_00881be8, "Bnclient::BnSend::GetDnsRecordSync::lpParameter_00881be8");
+    static int g_nDnsThreadParam2; D2_STATIC_GUARD_BSS(g_nDnsThreadParam2, "Bnclient::BnSend::GetDnsRecordSync::g_nDnsThreadParam2");
 
     /* DWORD dwMilliseconds for Sleep */ g_nBNetConnectionState = 1;
     char** dwThreadId = ppszDnsOutput;
@@ -2117,8 +2117,8 @@ int __stdcall BattleConnectFastest() {
     0,
     0,
     0
-};
-    static char * EntireDnsRecordOfServers;
+}; D2_STATIC_GUARD(RealmDNS, "Bnclient::BnSend::BattleConnectFastest::RealmDNS");
+    static char * EntireDnsRecordOfServers; D2_STATIC_GUARD_BSS(EntireDnsRecordOfServers, "Bnclient::BnSend::BattleConnectFastest::EntireDnsRecordOfServers");
 
     Debug::DEBUG_UnusedDebugFunction("BattleConnectFastest()");
     LONG lInterlockedResult = InterlockedIncrement((LONG*)&Destination_00881c00);
@@ -2241,8 +2241,8 @@ DWORD __stdcall BNNEWS_RoundUpToMultiple(DWORD dwValue, DWORD dwMultiple) {
 
 // @sourcefile .\BNNews.cpp
 void __stdcall BNNEWS_SaveToCache() {
+    void* nErrorAddr;
     char* pStrScan;
-    uint32_t nEntryIndex;
     char* pEntryText;
     int nEntryDiff;
     _SYSTEMTIME stSystemTime;
@@ -2261,6 +2261,7 @@ void __stdcall BNNEWS_SaveToCache() {
     size_t nTotalSize = 8;
     size_t nAccumSize = 8;
     if (g_nFirstUnreadNewsIndex < g_nNewsMaxCacheSize.nCount) {
+      uint32_t nEntryIndex;
       pEntryText = (char*)(g_nFirstUnreadNewsIndex * 0x408 + 8 + (int)g_nNewsMaxCacheSize.pEntries);
       nEntryIndex = g_nFirstUnreadNewsIndex;
       do {
@@ -2288,16 +2289,15 @@ void __stdcall BNNEWS_SaveToCache() {
     pMemoryToFree[1] = ftWriteTime.dwHighDateTime;
     uint32_t* pWritePtr = pMemoryToFree + 2;
     if (g_nFirstUnreadNewsIndex < nUnreadCount) {
-      void* pvVar1;
       nEntryDiff = g_nFirstUnreadNewsIndex * 0x408;
       pStrScanEnd = (char*)(nUnreadCount - g_nFirstUnreadNewsIndex);
       do {
-        pvVar1 = g_nNewsMaxCacheSize.pEntries;
+        nErrorAddr = g_nNewsMaxCacheSize.pEntries;
         pEntryText = (char*)((int)g_nNewsMaxCacheSize.pEntries + nEntryDiff + 8);
         *pWritePtr = *(uint32_t*)((int)g_nNewsMaxCacheSize.pEntries + nEntryDiff + 4);
         pStrScan = pEntryText;
         pStrScan = pStrScan + strlen(pStrScan) + 1;
-        nTextLen = (int)pStrScan - ((int)pvVar1 + nEntryDiff + 9);
+        nTextLen = (int)pStrScan - ((int)nErrorAddr + nEntryDiff + 9);
         nDestOffset = 4 - (int)pEntryText;
         do {
           cStrChar = *pEntryText;
@@ -3021,7 +3021,7 @@ void BNSEND_CalculateCDKeyChecksum(uint32_t unused, char * szCDKey, uint32_t * p
     0xff,
     0xff,
     0xff
-};
+}; D2_STATIC_GUARD(gaCDKeyCharLookup, "Bnclient::BnSend::BNSEND_CalculateCDKeyChecksum::gaCDKeyCharLookup");
 
     uint8_t bHexChar;
     uint32_t nHighNibble;
@@ -3211,7 +3211,7 @@ int32_t __stdcall BNSEND_PrepareCDKeyHash(uint32_t nToken, uint32_t nServerToken
 
 void __stdcall NET_SID_CLIENT_Send_0x42_CDKey3() {
     // Static local variables (originally global data)
-    static uint32_t gnBNetCDKeyHashSize;
+    static uint32_t gnBNetCDKeyHashSize; D2_STATIC_GUARD_BSS(gnBNetCDKeyHashSize, "Bnclient::BnSend::NET_SID_CLIENT_Send_0x42_CDKey3::gnBNetCDKeyHashSize");
 
     DWORD dwTickCount;
     BOOL bIsExpansion;

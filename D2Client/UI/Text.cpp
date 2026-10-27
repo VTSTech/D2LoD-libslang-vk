@@ -72,11 +72,11 @@
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/Storm.h"
 #include "Storm/MessageStrc.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "Bnclient/BNGatewayAccess.h"
 #include "D2Client/UI/Automap.h"
@@ -123,9 +123,9 @@ typedef void (__fastcall *fnUnitIterCallback)(void * pUnit);
 
 namespace D2Client::UI::Text {
 
-static RECT gnTextBoxExclusionTop[16] = { 0 };
-static RECT gnTextBoxExclusionRight[16] = { 0 };
-static RECT gnTextBoxExclusionBottom[16] = { 0 };
+static RECT gnTextBoxExclusionTop[16] = { 0 }; D2_STATIC_GUARD(gnTextBoxExclusionTop, "D2Client::UI::Text::gnTextBoxExclusionTop");
+static RECT gnTextBoxExclusionRight[16] = { 0 }; D2_STATIC_GUARD(gnTextBoxExclusionRight, "D2Client::UI::Text::gnTextBoxExclusionRight");
+static RECT gnTextBoxExclusionBottom[16] = { 0 }; D2_STATIC_GUARD(gnTextBoxExclusionBottom, "D2Client::UI::Text::gnTextBoxExclusionBottom");
 
 // JMP thunk
 void __stdcall thunk_TEXT_ClearChatMessages() {
@@ -274,7 +274,7 @@ void __fastcall TEXT_SetTextDisplayMode(int32_t nParam) {
 
 BOOL TEXT_DrawScrollingTextBox(uint16_t * * ppwszText) {
     // Static local variables (originally global data)
-    static uint32_t gnTextScrollBoxLineHeight;
+    static uint32_t gnTextScrollBoxLineHeight; D2_STATIC_GUARD_BSS(gnTextScrollBoxLineHeight, "D2Client::UI::Text::TEXT_DrawScrollingTextBox::gnTextScrollBoxLineHeight");
 
     uint16_t* pTmpLine;
     int nYTop;
@@ -803,8 +803,8 @@ void __stdcall TEXT_DrawPartyMessages() {
 
 uint32_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount, RECT * pRect, uint32_t nDefaultResult) {
     // Static local variables (originally global data)
-    static uint32_t gaTextNonOverlapRects[8] = { 0x1, 0x1, 0xffffffff, 0x1, 0x1, 0xffffffff, 0xffffffff, 0xffffffff };
-    static uint32_t gnTextNonOverlapRectCount = 0x8;
+    static uint32_t gaTextNonOverlapRects[8] = { 0x1, 0x1, 0xffffffff, 0x1, 0x1, 0xffffffff, 0xffffffff, 0xffffffff }; D2_STATIC_GUARD(gaTextNonOverlapRects, "D2Client::UI::Text::TEXT_FindNonOverlappingRect::gaTextNonOverlapRects");
+    static uint32_t gnTextNonOverlapRectCount = 0x8; D2_STATIC_GUARD(gnTextNonOverlapRectCount, "D2Client::UI::Text::TEXT_FindNonOverlappingRect::gnTextNonOverlapRectCount");
 
     int i;
     int32_t nRemaining;
@@ -3965,8 +3965,8 @@ uint16_t * __fastcall TEXT_LookupSoundStringIndex(uint16_t nSoundId) {
         /* .nSoundId = */ 0x4ed4,
         /* .nStringKey = */ 0x5871
     }
-};
-    static uint32_t gSoundStringLookupPrevIdx = 0x20f;
+}; D2_STATIC_GUARD(gaSoundStringKeys, "D2Client::UI::Text::TEXT_LookupSoundStringIndex::gaSoundStringKeys");
+    static uint32_t gSoundStringLookupPrevIdx = 0x20f; D2_STATIC_GUARD(gSoundStringLookupPrevIdx, "D2Client::UI::Text::TEXT_LookupSoundStringIndex::gSoundStringLookupPrevIdx");
 
     int nIdx;
     uint16_t* pWVar1;
@@ -4020,7 +4020,7 @@ void __stdcall TEXT_CloseScrollingText() {
       nHandlerCount = 7;
       gbTextEventHandlersRegistered = 0;
       hWnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, &gsUITextFlagInit, nHandlerCount);
+      _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUITextFlagInit, nHandlerCount);
     }
     if (!gpTextScrollBoxImage) {
       return;
@@ -4069,7 +4069,7 @@ void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
     0xde,
     0x4b,
     0x68
-};
+}; D2_STATIC_GUARD(gaTextDrawAnimPos, "D2Client::UI::Text::TEXT_DrawQuestScrollAnimation::gaTextDrawAnimPos");
     static int gaTextAnimBounds[10] = {
     0x12f,
     0xa1,
@@ -4081,10 +4081,10 @@ void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
     0xee,
     0xd3,
     0xa2
-};
-    static uint32_t gaQuestScrollFrameDelay[5] = { 0x0, 0xc, 0x18, 0x24, 0x30 };
-    static uint32_t gnQuestScrollAnimFrame;
-    static uint32_t gnQuestScrollAnimMaxFrame;
+}; D2_STATIC_GUARD(gaTextAnimBounds, "D2Client::UI::Text::TEXT_DrawQuestScrollAnimation::gaTextAnimBounds");
+    static uint32_t gaQuestScrollFrameDelay[5] = { 0x0, 0xc, 0x18, 0x24, 0x30 }; D2_STATIC_GUARD(gaQuestScrollFrameDelay, "D2Client::UI::Text::TEXT_DrawQuestScrollAnimation::gaQuestScrollFrameDelay");
+    static uint32_t gnQuestScrollAnimFrame; D2_STATIC_GUARD_BSS(gnQuestScrollAnimFrame, "D2Client::UI::Text::TEXT_DrawQuestScrollAnimation::gnQuestScrollAnimFrame");
+    static uint32_t gnQuestScrollAnimMaxFrame; D2_STATIC_GUARD_BSS(gnQuestScrollAnimMaxFrame, "D2Client::UI::Text::TEXT_DrawQuestScrollAnimation::gnQuestScrollAnimMaxFrame");
 
     // Frame slots -408..-4 are ONE object: &byPathPad is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -4256,7 +4256,7 @@ void __fastcall TEXT_HandleScrollLinePacket(uint8_t * pPacket) {
 
 void __fastcall TEXT_OpenQuestScroll(int32_t pUnit, int32_t pTextBlock) {
     // Static local variables (originally global data)
-    static int gaQuestScrollRect;
+    static int gaQuestScrollRect; D2_STATIC_GUARD_BSS(gaQuestScrollRect, "D2Client::UI::Text::TEXT_OpenQuestScroll::gaQuestScrollRect");
 
     gpQuestScrollTextBlock = (void*)pTextBlock;
     Draw::SetUIFlag(UI_QUESTSCROLL, UI_TOGGLE, 0);
@@ -4893,7 +4893,7 @@ void __fastcall TEXT_SetUnitOverheadFromSoundTable(D2UnitStrc * pUnitAnim, uint3
     0x55f10d47,
     0x55ff0d48,
     0x56140d49
-};
+}; D2_STATIC_GUARD(gnTextAnimState, "D2Client::UI::Text::TEXT_SetUnitOverheadFromSoundTable::gnTextAnimState");
     static uint16_t gaSoundStringLookup[12] = {
     0x1207,
     0x58a9,
@@ -4907,7 +4907,7 @@ void __fastcall TEXT_SetUnitOverheadFromSoundTable(D2UnitStrc * pUnitAnim, uint3
     0x43f,
     0x120b,
     0x43f
-};
+}; D2_STATIC_GUARD(gaSoundStringLookup, "D2Client::UI::Text::TEXT_SetUnitOverheadFromSoundTable::gaSoundStringLookup");
 
     uint32_t nTableIdx;
     uint32_t dwScratch2;
@@ -5247,7 +5247,7 @@ int __stdcall TEXT_UpdateScrollingText(int32_t bClose, void * pParam) {
       nCount = 7;
       gbTextEventHandlersRegistered = 0;
       pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, &gsUITextFlagInit, nCount);
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nCount);
       return 0;
     }
 
@@ -5269,11 +5269,11 @@ void __stdcall TEXT_CloseNpcInteraction() {
 }
 
 int __stdcall TEXT_HandleEscapeKey() {
-    int32_t nHandlerCount;
+    int iVar1;
     HWND pHwnd;
+    int32_t nLine;
     gbTextScrollBoxAnimating = 1;
     if (gnTextNpcInteractGuid || gbTextScrollBoxActive == 1) {
-      int iVar1;
       if (!gpTextScrollCompleteCallback) {
         if (!gnTextNpcInteractGuid) {
           TEXT_CloseScrollingText();
@@ -5297,10 +5297,10 @@ int __stdcall TEXT_HandleEscapeKey() {
 
       gnTextNpcInteractGuid = 0;
       if (gbTextEventHandlersRegistered == 1) {
-        nHandlerCount = 7;
+        nLine = 7;
         gbTextEventHandlersRegistered = 0;
         pHwnd = D2gfx::D2GFX::GetHwnd();
-        _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, &gsUITextFlagInit, nHandlerCount);
+        _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nLine);
       }
 
       gpTextDismissCallback = 0;
@@ -5508,7 +5508,7 @@ void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView, void 
     int nViewBottom;
     int nCenterX;
     int nCenterY;
-    int32_t nHandlers;
+    int32_t nErrorLine;
     gnTextOverheadCounter++;
     int nVisibleCount = 0;
     GAME::View::VIEW_GetViewRect(pGameView, &nViewLeft, &nViewTop, &nViewRight, &nViewBottom);
@@ -5542,10 +5542,10 @@ void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView, void 
 
         TEXT_CloseNpcInteraction();
         if (gbTextEventHandlersRegistered == 1) {
-          nHandlers = 7;
+          nErrorLine = 7;
           gbTextEventHandlersRegistered = 0;
           pHwnd = D2gfx::D2GFX::GetHwnd();
-          _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, &gsUITextFlagInit, nHandlers);
+          _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nErrorLine);
         }
       }
     }
@@ -5573,10 +5573,10 @@ void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView, void 
       gbTextScrollBoxAnimating = 1;
       gbTextScrollBoxActive = 0;
       if (gbTextEventHandlersRegistered == 1) {
-        nHandlers = 7;
+        nErrorLine = 7;
         gbTextEventHandlersRegistered = 0;
         pHwnd = D2gfx::D2GFX::GetHwnd();
-        _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, &gsUITextFlagInit, nHandlers);
+        _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nErrorLine);
       }
     }
 
@@ -5595,8 +5595,8 @@ void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView, void 
 
 void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t nParam, uint32_t dwUnused) {
     D2UnitStrc* pNpcUnit;
+    int32_t nVolume;
     RECT nExclusionXOff;
-    int32_t nErrLine;
     int32_t nHandlers;
     gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;
     gnTextScrollBoxHeight = 0;
@@ -5672,10 +5672,10 @@ void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t nParam, uint32_t
     if (nSoundId != SOUND_NONE) {
       UNIT::UnitSnd::UNITSND_StopAllSkillSounds(pUnit);
       nHandlers = 0;
-      nErrLine = 0;
+      nVolume = 0;
       nPrevFont = 5;
       pNpcUnit = UNIT::Player::GetPlayerUnit_UI();
-      gpTextScrollBoxBuffer = Sound::SOUND_PlaySound(nSoundId, pNpcUnit, nPrevFont, nErrLine, nHandlers);
+      gpTextScrollBoxBuffer = Sound::SOUND_PlaySound(nSoundId, pNpcUnit, nPrevFont, nVolume, nHandlers);
       gpTextScrollBoxDC6 = nSoundId;
     }
 
@@ -5690,14 +5690,14 @@ void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t nParam, uint32_t
     gbTextNpcMenuActive = GetTickCount();
     nPrevFont = 7;
     HWND pHwnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, &gsUITextFlagInit, nPrevFont);
+    _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nPrevFont);
 }
 
 void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t bShowImage) {
     HWND pHwnd;
     D2UnitStrc* pUnit;
+    int32_t nVolume;
     RECT nExclusionLeft;
-    int32_t nErrLine;
     int32_t nHandlers;
     if (nParam2) {
       gnScrollingTextBoxTopY = 0x105 - gnPanelOffsetY;
@@ -5755,16 +5755,16 @@ void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t
       gbTextNpcMenuActive = GetTickCount();
       nPrevFont = 7;
       pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, &gsUITextFlagInit, nPrevFont);
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nPrevFont);
     }
 
     eD2Sounds nSoundId = UI_GetDialogLineCount(nParam);
     if (nSoundId != SOUND_NONE) {
       nHandlers = 0;
-      nErrLine = 0;
+      nVolume = 0;
       nPrevFont = 5;
       pUnit = UNIT::Player::GetPlayerUnit_UI();
-      gpTextScrollBoxBuffer = Sound::SOUND_PlaySound(nSoundId, pUnit, nPrevFont, nErrLine, nHandlers);
+      gpTextScrollBoxBuffer = Sound::SOUND_PlaySound(nSoundId, pUnit, nPrevFont, nVolume, nHandlers);
       gpTextScrollBoxDC6 = nSoundId;
     }
     if (!((nParam == 0x7f || nParam == 0x4e22 || nParam == 0x4ec9 || nParam == 0x4ea3 || nParam == 0x18c) && bShowImage)) {
@@ -5776,7 +5776,7 @@ void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t
 
 void __fastcall TEXT_ShowStaticTextPopup(uint16_t nParam) {
     // Static local variables (originally global data)
-    static uint8_t gnTextStaticPopupHeight;
+    static unsigned int gnTextStaticPopupHeight; D2_STATIC_GUARD_BSS(gnTextStaticPopupHeight, "D2Client::UI::Text::TEXT_ShowStaticTextPopup::gnTextStaticPopupHeight");
 
     D2TextBoxStrc* ppTextBox = gpStaticTextPopup;
     if (gpStaticTextPopup) {
@@ -5803,13 +5803,13 @@ void __fastcall TEXT_ShowStaticTextPopup(uint16_t nParam) {
     gdwTextPopupExpireTime = dwTickCount + (nSavedFont + 0x19) * 200;
     gpTextStaticPopupBox = 1;
     gbTextStaticPopupActive = 1;
-    gnTextStaticPopupHeight = 100 - (uint32_t)(gpStaticTextPopup->nHeight >> 2);
+    gnTextStaticPopupHeight = 100 - (gpStaticTextPopup->nHeight >> 2);
     gaTextStaticPopupRect = 0x140 - (uint32_t)(gpStaticTextPopup->nWidth >> 1);
 }
 
 void __fastcall TEXT_HandleOverheadTextPacket(D2GSPacketSrv0x27 * pPacket) {
     // Static local variables (originally global data)
-    static short gpOverHeadUnitClassId;
+    static short gpOverHeadUnitClassId; D2_STATIC_GUARD_BSS(gpOverHeadUnitClassId, "D2Client::UI::Text::TEXT_HandleOverheadTextPacket::gpOverHeadUnitClassId");
 
     D2UnitStrc* pUnit;
     char szMsgBuffer[20];

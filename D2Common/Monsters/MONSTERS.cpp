@@ -85,7 +85,7 @@ eMissilesId __stdcall MONSTER_GetMissileForAnimEvent(D2UnitStrc * pUnit, int32_t
     0x0,
     0x48,
     0x0
-};
+}; D2_STATIC_GUARD(aMonstatsIndexUnknown, "D2Common::Monsters::MONSTERS::MONSTER_GetMissileForAnimEvent::aMonstatsIndexUnknown");
 
     eD2MonsterAnimMode eAnimMode;
     int nPrevFrameShifted;
@@ -166,7 +166,7 @@ uint32_t __stdcall MONSTERS_GetGfxOffsetTable1(uint8_t bParam) {
     0xe0e0d0d,
     0xf0f0e0e,
     0xf0f
-};
+}; D2_STATIC_GUARD(gaMonsterGfxOffsetTable3, "D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable1::gaMonsterGfxOffsetTable3");
 
     return (uint32_t)*(uint8_t*)((int)gaMonsterGfxOffsetTable3 + (uint32_t)bParam);
 }
@@ -190,7 +190,7 @@ uint32_t __stdcall MONSTERS_GetGfxOffsetTable2(uint8_t bParam) {
     0x7070707,
     0x7070707,
     0x0
-};
+}; D2_STATIC_GUARD(gaMonsterGfxOffsetTable2, "D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2::gaMonsterGfxOffsetTable2");
 
     return (uint32_t)*(uint8_t*)((int)gaMonsterGfxOffsetTable2 + (uint32_t)bParam);
 }
@@ -198,87 +198,9 @@ uint32_t __stdcall MONSTERS_GetGfxOffsetTable2(uint8_t bParam) {
 // Returns the byte value at index bParam in gaMonsterGfxOffsetTable1 (the third monster graphics direction-offset table). Used to map an animation direction index to a table-specific graphics offset byte.
 uint32_t __stdcall MONSTERS_GetGfxOffsetTable3(uint8_t bParam) {
     // Static local variables (originally global data)
-    static int gaMonsterGfxOffsetTable1[77] = {
-    0x1c140c04,
-    0x3c342c24,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c
-};
+    static uint8_t gaMonsterGfxOffsetTable1[8] = { 0x4, 0xc, 0x14, 0x1c, 0x24, 0x2c, 0x34, 0x3c }; D2_STATIC_GUARD(gaMonsterGfxOffsetTable1, "D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable3::gaMonsterGfxOffsetTable1");
 
-    return (uint32_t)*(uint8_t*)((int)gaMonsterGfxOffsetTable1 + (uint32_t)bParam);
+    return (uint32_t)gaMonsterGfxOffsetTable1[bParam];
 }
 
 void __stdcall MONSTERS_GetCompositeDimensions(uint8_t bParam, int * pnParam1, int * pnParam2) {
@@ -316,7 +238,7 @@ void __stdcall MONSTERS_GetCompositeDimensions(uint8_t bParam, int * pnParam1, i
     0x3,
     0x0,
     -0x3
-};
+}; D2_STATIC_GUARD(SBYTE_ARRAY_006ea978, "D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions::SBYTE_ARRAY_006ea978");
     static int8_t SBYTE_ARRAY_006ea998[32] = {
     0x0,
     -0x1,
@@ -350,7 +272,7 @@ void __stdcall MONSTERS_GetCompositeDimensions(uint8_t bParam, int * pnParam1, i
     0x3,
     0x3,
     0x3
-};
+}; D2_STATIC_GUARD(SBYTE_ARRAY_006ea998, "D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions::SBYTE_ARRAY_006ea998");
 
     *pnParam1 = (int)SBYTE_ARRAY_006ea998[bParam];
     *pnParam2 = (int)SBYTE_ARRAY_006ea978[bParam];
@@ -669,7 +591,7 @@ void __stdcall MONSTERS_GetUpgradeSkillsAndCount(D2UnitStrc * pUnit, uint32_t * 
         /* .dwFlags = */ 0xffffffff,
         /* .dwValidFlags = */ 0x0
     }
-};
+}; D2_STATIC_GUARD(gdwMonStatAnimFlagsTable, "D2Common::Monsters::MONSTERS::MONSTERS_GetUpgradeSkillsAndCount::gdwMonStatAnimFlagsTable");
 
     if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 700);
@@ -722,7 +644,7 @@ void __stdcall MONSTER_ApplyDifficultyScaling(D2UnitStrc * pUnit, int32_t nParam
     { 0x7, 0x1, 0x2, 0x1, 0x2 },
     { 0x1f, 0xa, 0xc, 0xa, 0xc },
     { 0xd, 0xa, 0x11, 0xa, 0x1a }
-};
+}; D2_STATIC_GUARD(gMonLvl_U_UniqueMonsterLevelChance2, "D2Common::Monsters::MONSTERS::MONSTER_ApplyDifficultyScaling::gMonLvl_U_UniqueMonsterLevelChance2");
 
     uint32_t nDivisor;
     int32_t nValue;
@@ -765,7 +687,6 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
     eD2MonsterClassId nMonStatsId;
     D2RoomStrc* pMonRoom;
     uint32_t nPosX;
-    int32_t iVar1;
     uint32_t nPosJitter;
     int32_t nSpawnMonId;
     int nClassId;
@@ -794,12 +715,12 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
           switch (nBaseId) {
             case MonsterUnitMinionSpawner:
               DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nMonStatsId, nullptr, (eD2Skills*)&pUnit);
-            iVar1 = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x1c5 < sgptDataTable->nTxtMonStatsSize ? 0x1c5 : -1, (int32_t)pUnit);
-            *pnMonId = iVar1;
+            nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x1c5 < sgptDataTable->nTxtMonStatsSize ? 0x1c5 : -1, (int32_t)pUnit);
+            *pnMonId = nErrorLine;
             nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
             *pnPosX = nPosX;
-            iVar1 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
-            *pnPosY = iVar1 + 3;
+            nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
+            *pnPosY = nErrorLine + 3;
             *pdwSpawnMode = 1;
             return;
             case MonsterUnitNihlathakNPC:
@@ -811,22 +732,22 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
                 Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
                 exit(-1);
               }
-            iVar1 = (*pfnCallback)(pUnit);
-            *pnMonId = iVar1;
-            iVar1 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
-            *pnPosX = iVar1 + 2;
-            iVar1 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
-            *pnPosY = iVar1 + 2;
+            nErrorLine = (*pfnCallback)(pUnit);
+            *pnMonId = nErrorLine;
+            nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
+            *pnPosX = nErrorLine + 2;
+            nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
+            *pnPosY = nErrorLine + 2;
             *pdwSpawnMode = 1;
             return;
             case MonsterUnitAncientStatue1:
               DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nMonStatsId, nullptr, (eD2Skills*)&pUnit);
-            iVar1 = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x21c < sgptDataTable->nTxtMonStatsSize ? 0x21c : -1, (int32_t)pUnit);
-            *pnMonId = iVar1;
+            nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x21c < sgptDataTable->nTxtMonStatsSize ? 0x21c : -1, (int32_t)pUnit);
+            *pnMonId = nErrorLine;
             nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
             *pnPosX = nPosX;
-            iVar1 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
-            *pnPosY = iVar1 + 2;
+            nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
+            *pnPosY = nErrorLine + 2;
             *pdwSpawnMode = 1;
             DATATBLS::ItemStats::SetState(pUnitIn, STATE_invis, 1);
             return;
@@ -834,24 +755,24 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
               pSeed = &pUnit->sSeed;
             if (*pnMonId == (0x23a < nMonStatsTblSize ? 0x23a : -1)) {
               nPosJitter = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 0x18);
-              iVar1 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
-              *pnPosX = nPosJitter - 0xc + iVar1;
+              nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
+              *pnPosX = nPosJitter - 0xc + nErrorLine;
               nPosJitter = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 0x18);
-              iVar1 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
-              *pnPosY = nPosJitter - 0xc + iVar1;
+              nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
+              *pnPosY = nPosJitter - 0xc + nErrorLine;
               *pdwSpawnMode = 1;
               return;
             }
 
             nRandVal = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 2);
-            iVar1 = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x232 < nMonStatsTblSize ? 0x232 : -1, nRandVal + nRandSeed);
-            *pnMonId = iVar1;
+            nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x232 < nMonStatsTblSize ? 0x232 : -1, nRandVal + nRandSeed);
+            *pnMonId = nErrorLine;
             nPosJitter = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 0x18);
-            iVar1 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
-            *pnPosX = nPosJitter - 0xc + iVar1;
+            nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
+            *pnPosX = nPosJitter - 0xc + nErrorLine;
             nPosJitter = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 0x18);
-            iVar1 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
-            *pnPosY = nPosJitter - 0xc + iVar1;
+            nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
+            *pnPosY = nPosJitter - 0xc + nErrorLine;
             *pdwSpawnMode = 4;
             return;
           }
@@ -891,28 +812,28 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
     switch (nBaseId) {
       case MonsterUnitFoulCrowNest:
         if (!pUnit) {
-          iVar1 = -1;
+          nErrorLine = -1;
         } else {
-          iVar1 = pUnit->nClassId;
+          nErrorLine = pUnit->nClassId;
         }
-      DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(iVar1, nullptr, (eD2Skills*)&pUnit);
-      iVar1 = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0xf < sgptDataTable->nTxtMonStatsSize ? 0xf : -1, (int32_t)pUnit);
-      *pnMonId = iVar1;
+      DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nErrorLine, nullptr, (eD2Skills*)&pUnit);
+      nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0xf < sgptDataTable->nTxtMonStatsSize ? 0xf : -1, (int32_t)pUnit);
+      *pnMonId = nErrorLine;
       nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
       *pnPosX = nPosX;
-      iVar1 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
-      *pnPosY = iVar1 + 3;
+      nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
+      *pnPosY = nErrorLine + 3;
       *pdwSpawnMode = 1;
       return;
       case MonsterUnitMummyGenerator:
         nClassId = 0x60 < sgptDataTable->nTxtMonStatsSize ? 0x60 : -1;
       pMonRoom = Units::UNITS_GetRoom(pUnit);
-      iVar1 = GetMonsterBaseId(pMonRoom, nClassId);
-      *pnMonId = iVar1;
+      nErrorLine = GetMonsterBaseId(pMonRoom, nClassId);
+      *pnMonId = nErrorLine;
       nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
       *pnPosX = nPosX;
-      iVar1 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
-      *pnPosY = iVar1 + 2;
+      nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
+      *pnPosY = nErrorLine + 2;
       *pdwSpawnMode = 1;
       return;
       case MonsterUnitBloodraven:
@@ -926,28 +847,28 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
       return;
       case MonsterUnitSandMaggotQueen:
         if (!pUnit) {
-          iVar1 = -1;
+          nErrorLine = -1;
         } else {
-          iVar1 = pUnit->nClassId;
+          nErrorLine = pUnit->nClassId;
         }
-      DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(iVar1, nullptr, (eD2Skills*)&pUnit);
-      iVar1 = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x44 < sgptDataTable->nTxtMonStatsSize ? 0x44 : -1, (int32_t)pUnit);
-      *pnMonId = iVar1;
-      iVar1 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
-      *pnPosX = iVar1 + 8;
+      DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nErrorLine, nullptr, (eD2Skills*)&pUnit);
+      nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x44 < sgptDataTable->nTxtMonStatsSize ? 0x44 : -1, (int32_t)pUnit);
+      *pnMonId = nErrorLine;
+      nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
+      *pnPosX = nErrorLine + 8;
       nPosX = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
       *pnPosY = nPosX;
       *pdwSpawnMode = 8;
       return;
       case MonsterUnitFleshSpawner1:
         if (!pUnit) {
-          iVar1 = -1;
+          nErrorLine = -1;
         } else {
-          iVar1 = pUnit->nClassId;
+          nErrorLine = pUnit->nClassId;
         }
-      DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(iVar1, nullptr, (eD2Skills*)&pUnit);
-      iVar1 = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x12d < sgptDataTable->nTxtMonStatsSize ? 0x12d : -1, (int32_t)pUnit);
-      *pnMonId = iVar1;
+      DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nErrorLine, nullptr, (eD2Skills*)&pUnit);
+      nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x12d < sgptDataTable->nTxtMonStatsSize ? 0x12d : -1, (int32_t)pUnit);
+      *pnMonId = nErrorLine;
       pDynamicPath = pUnitIn->pPath.pDynamicPath;
       nPosJitter = PATH::DynamicPath::GetXSP1(pDynamicPath);
       *pnPosX = nPosJitter;

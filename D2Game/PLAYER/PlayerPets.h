@@ -84,7 +84,7 @@ void __stdcall PLAYERPETS_FreeAllPetsInList(struct D2PetListStrc * pParam, ::SGA
 void __stdcall PETS_TeleportToRoom(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, uint16_t wPosX, uint16_t wPosY, struct D2RoomStrc * pRoom);
 void __stdcall ROOM_SpawnPetsFromSaveData(struct D2RoomStrc * pRoom, uint16_t wPosX, ::SGAMEDATA * pGame, uint8_t * * pbParam, uint16_t wPosY);
 // Iterates every live pet unit across all pet-type lists for a player and invokes pfnCallback(pPetUnit, pCallbackArg) for each. Resolves GUIDs to actual D2UnitStrc pointers via FindUnitFromTable; skips flagged-dead nodes (bit 0 set). Validates the callback pointer with IsBadCodePtr and halts if invalid.
-void __fastcall PetsForEach(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, pfnPetForEachCallback pfnCallback, struct D2UnitStrc * pCallbackArg);
+void __fastcall PetsForEach(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, pfnPetForEachCallback pfnCallback, void * pCallbackArg);
 struct D2UnitStrc * __fastcall SERVER_GetUnitPetByTypeId(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, ePetType nePetType, int32_t bIncludeDead);
 int32_t __fastcall PETS_GetTotalPetCount(struct D2UnitStrc * pUnit);
 // Sends the full pet roster of a player unit to a client. For each live pet across all type lists: mercs (type 7) get a 0x81 AssignMerc packet (with seed and name ID); all other pets get a 0x7A SummonLog packet. Used on game join or area transition to synchronise the client's summon display.

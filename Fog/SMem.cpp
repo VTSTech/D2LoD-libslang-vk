@@ -273,7 +273,7 @@ int32_t __stdcall SMemSizeClassBucketLookup(uint32_t nAllocSize) {
     0x0,
     0x1,
     0x0
-};
+}; D2_STATIC_GUARD(g_SMemSizeClassTable, "Fog::SMem::SMemSizeClassBucketLookup::g_SMemSizeClassTable");
 
     if (!nAllocSize) {
       return -1;
@@ -298,8 +298,8 @@ int32_t __stdcall SMemSizeClassBucketLookup(uint32_t nAllocSize) {
 
 void __stdcall SMemInitPerfCounters() {
     // Static local variables (originally global data)
-    static uint32_t gnSMemPerfTicksPerMicrosecond;
-    static uint32_t gnSMemPerfTicksPerMillisecond;
+    static uint32_t gnSMemPerfTicksPerMicrosecond; D2_STATIC_GUARD_BSS(gnSMemPerfTicksPerMicrosecond, "Fog::SMem::SMemInitPerfCounters::gnSMemPerfTicksPerMicrosecond");
+    static uint32_t gnSMemPerfTicksPerMillisecond; D2_STATIC_GUARD_BSS(gnSMemPerfTicksPerMillisecond, "Fog::SMem::SMemInitPerfCounters::gnSMemPerfTicksPerMillisecond");
 
     LARGE_INTEGER liFrequency;
     /* LARGE_INTEGER * lpFrequency for QueryPerformanceFrequency */ QueryPerformanceFrequency(&liFrequency);
@@ -313,7 +313,7 @@ void __stdcall SMemInitPerfCounters() {
 
 void __stdcall SMemResetHeapStats() {
     // Static local variables (originally global data)
-    static uint32_t g_SMemHeapStatsCount;
+    static uint32_t g_SMemHeapStatsCount; D2_STATIC_GUARD_BSS(g_SMemHeapStatsCount, "Fog::SMem::SMemResetHeapStats::g_SMemHeapStatsCount");
 
     int nStatsRemaining;
     if (g_SMemHeapStatsCount) {
@@ -595,7 +595,7 @@ uint32_t __stdcall HashForName(char * szText) {
     0x3eb2,
     0xed1,
     0x1ef0
-};
+}; D2_STATIC_GUARD(gwSMemAllocDebugFlags, "Fog::SMem::HashForName::gwSMemAllocDebugFlags");
 
     uint32_t uHashAccum = 0xffff;
     uint16_t wHash = 0xffff;
@@ -920,7 +920,7 @@ void __fastcall SMemStringToUppercase(char * szText, int32_t nMaxLen) {
     0xfd,
     0xfe,
     0xff
-};
+}; D2_STATIC_GUARD(g_SMemUppercaseTable, "Fog::SMem::SMemStringToUppercase::g_SMemUppercaseTable");
 
     uint8_t cCurChar = *szText;
     uint8_t* pbVar1 = (uint8_t*)(szText + nMaxLen);

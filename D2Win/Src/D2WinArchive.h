@@ -23,7 +23,7 @@ namespace D2Win::Src::D2WinArchive {
 // @sourcefile .\Src\D2WinArchive.cpp
 struct DC6 * __fastcall IMAGE_LoadDC6(char * szFilename, BOOL bUseDccExtension);
 // @sourcefile .\Src\D2WinArchive.cpp
-int * __fastcall D2WINARCHIVE_LoadImageFromArchive(char * szText, size_t * pnSize, struct DC6 * pDC6);
+int * __fastcall D2WINARCHIVE_LoadImageFromArchive(char * szText, uint32_t * pnSize, struct DC6 * pDC6);
 // @sourcefile .\Src\D2WinArchive.cpp
 void __fastcall IMAGE_FreeImage(struct DC6 * pDC6);
 BOOL MessageBoxA_InsertExpansionDisc();

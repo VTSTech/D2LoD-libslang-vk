@@ -2,8 +2,6 @@
 
 #include "Storm/Source/SCMD.h"
 #include "D2Client/ClientModeInGame.h"
-#include "D2Client/D2LightMapStrc.h"
-#include "D2Client/UNIT/CUnitEvent.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MonStatsTxt.h"
 #include "D2Common/Unit/Unit.h"
@@ -12,12 +10,12 @@
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/UNIT/sunitproxy.h"
 #include "Fog/Debug.h"
-#include "Storm/H/Storm.h"
 #include "Storm/SCMD.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 
@@ -49,7 +47,7 @@ static char gszSCMD_Delim_1[9] = {
     '\x0d',
     '\x1a',
     '\x00'
-};
+}; D2_STATIC_GUARD(gszSCMD_Delim_1, "Storm::Source::gszSCMD_Delim_1");
 
 // Parses command-line boolean argument with optional +/- prefix. Updates bitmask in cmdDef based on flags (sets bits on +/true, clears bits on -/false). Also updates external bitmask pointer if provided.
 // @blizzard ConvertBool (SCMD.CPP)
@@ -331,34 +329,34 @@ void SCMD_UnlinkNode(::SCMD * pThis, ::SCMD * pNode) {
 }
 
 // @blizzard FindFlagDef (SCMD.CPP)
-int __stdcall SCMD_FindFlagDef(D2UnitDataClientSide * cmdList, char * str, int minLen) {
+StormCmdArgDefStrc * __stdcall SCMD_FindFlagDef(StormCmdArgDefStrc * cmdList, char * str, int minLen) {
     int nCmpResult;
     uint32_t pcStrEnd = SSTR::SStrLen(str);
-    uint32_t uBestLen = minLen - 1;
-    D2UnitDataClientSide* pUnitDataClientSide = 0;
+    int uBestLen = minLen - 1;
+    StormCmdArgDefStrc* pMinLen = 0;
     do {
       size_t nCmdLen;
       if (!cmdList) {
-        return (int)pUnitDataClientSide;
+        return pMinLen;
       }
 
-      nCmdLen = cmdList->dwSfxStepTicks;
-      if ((int)uBestLen < (int)nCmdLen && (int)nCmdLen <= (int)pcStrEnd) {
-        if (!(cmdList->nPaletteIndex & 0x100U)) {
-          nCmpResult = __strnicmp((char*)&cmdList->nSfxMode, str, nCmdLen);
+      nCmdLen = cmdList->nTextLen;
+      if (uBestLen < (int)nCmdLen && (int)nCmdLen <= (int)pcStrEnd) {
+        if (!(cmdList->nArgTypeFlags & 0x100)) {
+          nCmpResult = __strnicmp(cmdList->szName, str, nCmdLen);
         } else {
-          nCmpResult = strncmp((char*)&cmdList->nSfxMode, str, nCmdLen);
+          nCmpResult = strncmp(cmdList->szName, str, nCmdLen);
         }
         if (!nCmpResult) {
-          uBestLen = cmdList->dwSfxStepTicks;
-          pUnitDataClientSide = cmdList;
+          uBestLen = cmdList->nTextLen;
+          pMinLen = cmdList;
         }
       }
 
-      cmdList = (D2UnitDataClientSide*)cmdList->dwStartLight;
+      cmdList = cmdList->pNext;
     } while (0 < (int)cmdList);
 
-    return (int)pUnitDataClientSide;
+    return pMinLen;
 }
 
 uint32_t SCMD_GetHandler(::SCMD * pThis, int nNodeOffset) {
@@ -749,7 +747,7 @@ BOOL SCMD_ProcessCurrentFlag(int * * pCmdCtx, char * szArgLine, int * outConsume
       }
 
       *outConsumed = iVar1;
-      cmdDef = (int*)SCMD_FindFlagDef((D2UnitDataClientSide*)((int)((StormCmdArgDefStrc*)cmdDef)->pNext < 1 ? 0 : (uint32_t)((StormCmdArgDefStrc*)cmdDef)->pNext), (char*)(pCmdCtx + 1), (int)pCmdCtx[5]);
+      cmdDef = (int*)SCMD_FindFlagDef((StormCmdArgDefStrc*)((int)((StormCmdArgDefStrc*)cmdDef)->pNext < 1 ? 0 : (uint32_t)((StormCmdArgDefStrc*)cmdDef)->pNext), (char*)(pCmdCtx + 1), (int)pCmdCtx[5]);
     } while (cmdDef);
 
     return 1;
@@ -764,7 +762,7 @@ BOOL __fastcall SCMD_ProcessFlags(pfnSCmdErrorCallback pfnErrorCallback, char * 
     char* szArgLine;
     uint32_t uVar3;
     int* piVar4;
-    int* pCmdEntry;
+    StormCmdArgDefStrc* pCmdEntry;
     int nConsumed;
     int nMatchLen;
     char szMatchBuf[256];
@@ -792,10 +790,10 @@ BOOL __fastcall SCMD_ProcessFlags(pfnSCmdErrorCallback pfnErrorCallback, char * 
           uVar3 = uVar1 - 1;
           if ((int)(szMatchBuf + nMatchNameLen + uVar3) < 0x100) {
             SSTR::SStrCopy(szMatchBuf + (uVar1 - 1), szText, 0x100);
-            pCmdEntry = (int*)SCMD_FindFlagDef((D2UnitDataClientSide*)(gStormCmdListHeadSlash.pNext < 1 ? 0 : gStormCmdListHeadSlash.pNext), szMatchBuf, 0);
+            pCmdEntry = SCMD_FindFlagDef((StormCmdArgDefStrc*)(gStormCmdListHeadSlash.pNext < 1 ? 0 : gStormCmdListHeadSlash.pNext), szMatchBuf, 0);
             nMatchNameLen = nMatchLen;
             if (pCmdEntry) {
-              piVar4 = (int*)pCmdEntry[8];
+              piVar4 = (int*)pCmdEntry->nTextLen;
               szMatchBuf[(int)piVar4] = '\0';
               goto process_matched_flag;
             }
@@ -821,10 +819,10 @@ BOOL __fastcall SCMD_ProcessFlags(pfnSCmdErrorCallback pfnErrorCallback, char * 
         szArgLine++;
       }
 
-      *pCmdCtx = pCmdEntry;
+      *pCmdCtx = (int*)pCmdEntry;
       pCmdCtx[5] = piVar4;
       SSTR::SStrCopy((char*)(pCmdCtx + 1), szMatchBuf, 0x7fffffff);
-      if (*szArgLine == '\0' && pCmdEntry[2] & 0x30000U) {
+      if (*szArgLine == '\0' && pCmdEntry->nArgTypeFlags & 0x30000) {
         break;
       }
 

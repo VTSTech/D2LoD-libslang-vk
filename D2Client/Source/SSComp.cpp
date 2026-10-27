@@ -487,7 +487,7 @@ static uint16_t gaZlibLengthBaseTable[31] = {
     0x102,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gaZlibLengthBaseTable, "D2Client::Source::SSComp::ZLIB_InflateTable::gaZlibLengthBaseTable");
     // also labelled: nZlibInflateTable_MaxCodeWords
 static uint16_t gaZlibLengthExtraBitsTable[31] = {
     0x10,
@@ -521,7 +521,7 @@ static uint16_t gaZlibLengthExtraBitsTable[31] = {
     0x10,
     0x48,
     0x4e
-};
+}; D2_STATIC_GUARD(gaZlibLengthExtraBitsTable, "D2Client::Source::SSComp::ZLIB_InflateTable::gaZlibLengthExtraBitsTable");
     static uint16_t gaZlibDistBaseTable[32] = {
     0x1,
     0x2,
@@ -555,7 +555,7 @@ static uint16_t gaZlibLengthExtraBitsTable[31] = {
     0x6001,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gaZlibDistBaseTable, "D2Client::Source::SSComp::ZLIB_InflateTable::gaZlibDistBaseTable");
     static uint16_t gaZlibDistExtraBitsTable[32] = {
     0x10,
     0x10,
@@ -589,7 +589,7 @@ static uint16_t gaZlibLengthExtraBitsTable[31] = {
     0x1d,
     0x40,
     0x40
-};
+}; D2_STATIC_GUARD(gaZlibDistExtraBitsTable, "D2Client::Source::SSComp::ZLIB_InflateTable::gaZlibDistExtraBitsTable");
 
     uint16_t uVar1;
     uint8_t byOpBits;

@@ -134,7 +134,7 @@ BOOL __fastcall OBJOP_DetonateExplosiveBarrel(struct D2ObjectOperateFnArg * pOpe
 BOOL __fastcall OBJOP_ActivateSimple(struct D2ObjectOperateFnArg * pOperation);
 BOOL __fastcall OBJOP_ActivateNoOp(struct D2ObjectOperateFnArg * pOperation);
 // Server entry-point for a player interacting with a world object. Looks up the object unit by nUnitId/pUId, reads its ObjectsTxt record, and guards against interaction while the player is trading, has interact state set, or is holding a cursor item (except for class 0x10b). Dispatches to OBJECTSOPERATEFN[pTxt->OperateFn] with a fully populated D2ObjectOperateFnArg. Skips classes 0x79, 0x7a, and 0x16. Halts with an unrecoverable error if OperateFn >= 0x65.
-BOOL __fastcall InteractWithObject(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t nUnitId, DWORD pUId, struct D2ObjectsTxt * pTxt);
+BOOL __fastcall InteractWithObject(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t nUnitId, DWORD pUId, int * pTxt);
 ::SGAMEDATA * __fastcall Interact(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t nObjectType, DWORD nGid);
 void OBJECT_UpdateCollisionOnModeChange(void * pThis, DWORD nGid);
 BOOL __fastcall OBJOP_A2Q2_ArcaneGateLevelTransition(struct D2ObjectOperateFnArg * pOperation);

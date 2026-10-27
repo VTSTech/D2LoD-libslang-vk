@@ -672,7 +672,7 @@ uint32_t ROOM_IsPointInRadius(D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_
 }
 
 // Iterates all units in adjacent rooms within nRadius of (nCenterX, nCenterY) and invokes fpCallback for each valid target. Builds a room list via DRLGROOM_GetAdjacentRoomsList, skips town rooms if nTargetFlags has bit 0x2000, filters by distance-squared, calls SKILL_ValidateTarget with nTargetFlags, optionally skips aura-immune monsters (bExcludeAuraImmune), and passes a D2fpSkillFuncArg to the callback. Accumulates hit count in sCallbackArg.nSize.
-void __fastcall SKILL_ForEachUnitInRadius(D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, uint32_t nTargetFlags, fpSkillsFunc fpCallback, D2fpSkillFuncSub * pCallbackData, int32_t bExcludeAuraImmune) {
+void __fastcall SKILL_ForEachUnitInRadius(D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, uint32_t nTargetFlags, fpSkillsFunc fpCallback, void * pCallbackData, int32_t bExcludeAuraImmune) {
     D2UnitStrc* pUnit2;
     uint32_t bInRadius;
     int nUnitY;
@@ -699,7 +699,7 @@ void __fastcall SKILL_ForEachUnitInRadius(D2UnitStrc * pUnit, int32_t nCenterX, 
       nTargetFlags = 0x583;
     }
 
-    sCallbackArg.pSub = pCallbackData;
+    sCallbackArg.pSub = (D2fpSkillFuncSub*)pCallbackData;
     sCallbackArg.nRadiusSq = nRadius * nRadius;
     sCallbackArg.nSize = 0;
     sCallbackArg.pUnit = pUnit;
@@ -757,7 +757,7 @@ void __fastcall SKILL_ForEachUnitInRadius(D2UnitStrc * pUnit, int32_t nCenterX, 
         }
       }
 
-      pCallbackData = (D2fpSkillFuncSub*)((uintptr_t)&pCallbackData->pOwner + 1);
+      pCallbackData = (void*)((int)pCallbackData + 1);
     } while ((uintptr_t)pCallbackData < (uint32_t)sCallbackArg.nRoomCount);
 }
 
@@ -767,9 +767,9 @@ BOOL __fastcall SKILLS_RadiusCallback_IncrementCounter(D2fpSkillFuncArg * pFuncA
 }
 
 D2UnitStrc * __fastcall SKILL_FindClosestTarget(D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, uint32_t nTargetFlags) {
-    D2UnitStrc* pClosestTarget = 0;
-    SKILL_ForEachUnitInRadius(pUnit, nCenterX, nCenterY, nRadius, nTargetFlags | 0xa783, SKILLS_RadiusCallback_IncrementCounter, (D2fpSkillFuncSub*)&pClosestTarget, 0);
-    return pClosestTarget;
+    int pClosestTarget = 0;
+    SKILL_ForEachUnitInRadius(pUnit, nCenterX, nCenterY, nRadius, nTargetFlags | 0xa783, SKILLS_RadiusCallback_IncrementCounter, &pClosestTarget, 0);
+    return (D2UnitStrc*)pClosestTarget;
 }
 
 BOOL __fastcall SKILLS_RadiusCallback_FindMinMaxGUID(D2fpSkillFuncArg * pFuncArg, D2UnitStrc * pUnit) {
@@ -807,7 +807,7 @@ D2UnitStrc * __fastcall SKILL_FindClosestTargetWithStats(D2UnitStrc * pUnit, int
       nTargetFlags = 0x583;
     }
 
-    SKILL_ForEachUnitInRadius(pUnit, nCenterX, nCenterY, nRadius, nTargetFlags | 0xa280, SKILLS_RadiusCallback_FindMinMaxGUID, (D2fpSkillFuncSub*)&callbackData, 0);
+    SKILL_ForEachUnitInRadius(pUnit, nCenterX, nCenterY, nRadius, nTargetFlags | 0xa280, SKILLS_RadiusCallback_FindMinMaxGUID, &callbackData, 0);
     if (!callbackData.pNextUnit) {
       callbackData.pNextUnit = callbackData.pWrapUnit;
     }
@@ -930,7 +930,7 @@ BOOL __fastcall Skills_CltDoFunc_Bow_ThrowItem(D2UnitStrc * pUnit, eD2Skills eSk
 // @sourcefile .\SKILLS\Skills.cpp
 int32_t __stdcall SKILLS_CastSkillClient(eD2Skills eSkill, D2UnitStrc * pUnit, int32_t nOwnerGUID, uint32_t nSkillLevel) {
     // Static local variables (originally global data)
-    static int SKILLCLTSTFUNCS_SIZE = 0x46;
+    static int SKILLCLTSTFUNCS_SIZE = 0x46; D2_STATIC_GUARD(SKILLCLTSTFUNCS_SIZE, "D2Client::SKILLS::Skills::SKILLS_CastSkillClient::SKILLCLTSTFUNCS_SIZE");
     static D2SkillCltStFunc SKILLCLTSTFUNCS[70] = {
     nullptr,
     (D2SkillCltStFunc)&D2Client::SKILLS::Skills::Skills_CltStFunc_CheckThrowableAmmoOrWeapon,
@@ -1002,7 +1002,7 @@ int32_t __stdcall SKILLS_CastSkillClient(eD2Skills eSkill, D2UnitStrc * pUnit, i
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(SKILLCLTSTFUNCS, "D2Client::SKILLS::Skills::SKILLS_CastSkillClient::SKILLCLTSTFUNCS");
 
     eCollisionFlags eLoSCollisionType;
     int32_t iVar1;
@@ -1232,16 +1232,16 @@ int32_t __stdcall SKILLS_CastSkillClient(eD2Skills eSkill, D2UnitStrc * pUnit, i
         Engine::Gfx::GFX_AddOverlayToUnit(pUnit, eCastOverlayId, 2, 0, 0, 0, 0, 0);
       }
     }
-    if (!(eSkillResult != SKILL_Attack && 0 < pSkillTxt->cltmissile)) {
+    if (!(eSkillResult != SKILL_Attack && 0 < pSkillTxt->cltmissile[0])) {
       return eSkillResult;
     }
 
-    AssignProperLight(pUnit, (int)pSkillTxt->cltmissile);
+    AssignProperLight(pUnit, (int)pSkillTxt->cltmissile[0]);
     return eSkillResult;
 }
 
-int32_t __fastcall SKILLS_CastSkillClientArgsReversed(short * pArg1, int32_t nArg2, D2DynamicPathStrc * pUnit, eD2Skills eSkill) {
-    int32_t iVar1 = SKILLS_CastSkillClient(eSkill, (D2UnitStrc*)pUnit, nArg2, (uint32_t)pArg1);
+int32_t __fastcall SKILLS_CastSkillClientArgsReversed(short * pArg1, int32_t nArg2, D2UnitStrc * pUnit, eD2Skills eSkill) {
+    int32_t iVar1 = SKILLS_CastSkillClient(eSkill, pUnit, nArg2, (uint32_t)pArg1);
     return iVar1;
 }
 
@@ -1282,7 +1282,7 @@ uint32_t __fastcall SKILL_ExecuteClientDoFunc(D2UnitStrc * pUnit, eD2Skills eSki
     eSkillId = eSkill;
     D2UnitStrc* pUnitSaved;
     pUnitSaved = pUnit;
-    if (0 < pSkillTxt->cltmissile) {
+    if (0 < pSkillTxt->cltmissile[0]) {
       int32_t nUnitOffsetX;
       nTargetCoordX = 0;
       nTargetCoordY = 0;
@@ -1306,9 +1306,9 @@ uint32_t __fastcall SKILL_ExecuteClientDoFunc(D2UnitStrc * pUnit, eD2Skills eSki
         }
       }
       if (!pSkillTxt->lob) {
-        pMissileUnit = Skills::MakeMissile((int)pSkillTxt->cltmissile, pUnitSaved, eSkillId, nSkillLevel, nTargetX, nTargetY, nOffsetX, nOffsetY);
+        pMissileUnit = Skills::MakeMissile((int)pSkillTxt->cltmissile[0], pUnitSaved, eSkillId, nSkillLevel, nTargetX, nTargetY, nOffsetX, nOffsetY);
       } else {
-        pMissileUnit = UNIT::Missile::MISSILE_CreateFromUnitWithOffset(pUnitSaved, (int)pSkillTxt->cltmissile, nTargetX, nTargetY, nOffsetX, nOffsetY, eSkillId, nSkillLevel, 0);
+        pMissileUnit = UNIT::Missile::MISSILE_CreateFromUnitWithOffset(pUnitSaved, (int)pSkillTxt->cltmissile[0], nTargetX, nTargetY, nOffsetX, nOffsetY, eSkillId, nSkillLevel, 0);
       }
       if (pMissileUnit) {
         bFired = 1;
@@ -1539,12 +1539,12 @@ void __fastcall SKILL_ExecuteClientProgressWithAura(D2UnitStrc * pUnit, D2UnitSt
       D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pAuraStatList, (int)pSkillTxt->aurastat[0], nProgressIndex, 0);
     }
     if (-1 < pSkillTxt->cltprgfunc[nProgressIndex - 1] && pSkillTxt->cltprgfunc[nProgressIndex - 1] < SKILLCLTDOFUNCS_SIZE) {
-      if (0 < pSkillTxt->cltmissile) {
+      if (0 < pSkillTxt->cltmissile[0]) {
         if (!pSkillTxt->lob) {
-          MakeMissileAtSkillTarget(pUnit, (int)pSkillTxt->cltmissile, eSkill, nSkillLevel);
+          MakeMissileAtSkillTarget(pUnit, (int)pSkillTxt->cltmissile[0], eSkill, nSkillLevel);
         } else {
           GetCooordinates(pUnit, (int32_t*)&pUnitArg2Saved, (int32_t*)&pAuraStatList);
-          UNIT::Missile::MISSILE_CreateFromUnitWithOffset(pUnit, (int)pSkillTxt->cltmissile, 0, 0, (uint32_t)pUnitArg2Saved, (uint32_t)pAuraStatList, eSkill, nSkillLevel, 0);
+          UNIT::Missile::MISSILE_CreateFromUnitWithOffset(pUnit, (int)pSkillTxt->cltmissile[0], 0, 0, (uint32_t)pUnitArg2Saved, (uint32_t)pAuraStatList, eSkill, nSkillLevel, 0);
         }
 
         pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
@@ -1634,22 +1634,22 @@ void __stdcall SKILLS_HandleDualWieldWeaponSwap(int * pSwapState, D2UnitStrc * p
 }
 
 // @sourcefile .\SKILLS\Skills.cpp
-int32_t __fastcall SKILLS_CltStartSkillCast(D2DynamicPathStrc * pDynamicPath, int * pnParam) {
-    BOOL bCanDualWield = D2Common::Units::CanDualWield((D2UnitStrc*)pDynamicPath);
-    if (bCanDualWield && (!pDynamicPath || pDynamicPath->Coords.tFixed.x != 1)) {
-      SKILLS_HandleDualWieldWeaponSwap(pnParam, (D2UnitStrc*)pDynamicPath);
+int32_t __fastcall SKILLS_CltStartSkillCast(D2UnitStrc * pDynamicPath, int * pnParam) {
+    BOOL bCanDualWield = D2Common::Units::CanDualWield(pDynamicPath);
+    if (bCanDualWield && (!pDynamicPath || pDynamicPath->eUnitType != UNIT_MONSTER)) {
+      SKILLS_HandleDualWieldWeaponSwap(pnParam, pDynamicPath);
     }
 
     D2UnitStrc* pFoundTarget = UNIT::Player::UNITS_FindClientSideUnit(pnParam[3], pnParam[2]);
     if (pFoundTarget) {
       int32_t nCastResult;
-      D2Common::Units::SetTargetUnitForDynamicUnit((D2UnitStrc*)pDynamicPath, pFoundTarget);
-      UNIT::CUnit::FaceTarget((D2UnitStrc*)pDynamicPath, 0);
-      nCastResult = SKILLS_CastSkillClient(*pnParam, (D2UnitStrc*)pDynamicPath, pnParam[1], pnParam[4]);
+      D2Common::Units::SetTargetUnitForDynamicUnit(pDynamicPath, pFoundTarget);
+      UNIT::CUnit::FaceTarget(pDynamicPath, 0);
+      nCastResult = SKILLS_CastSkillClient(*pnParam, pDynamicPath, pnParam[1], pnParam[4]);
       return nCastResult;
     }
 
-    UNIT::UnitMode::HandleMessage(7, (D2UnitStrc*)pDynamicPath, nullptr, 0);
+    UNIT::UnitMode::HandleMessage(7, pDynamicPath, nullptr, 0);
     D2Common::Logging::LOGGING_LogLine(1, 2, 4, 0x40, ".\\SKILLS\\Skills.cpp", 0x7c2, "StartsStartSkillID - Invalid Target");
     return 0;
 }
@@ -1786,12 +1786,12 @@ void __fastcall SKILL_SpawnMissilesAtTarget(D2UnitStrc * pUnit, D2UnitStrc * pUn
 // Emits a spiral grid pattern of missiles whose count is driven by nSkillLevel (each level adds 5 ring slots, capped at 8 rings or halts with error 0x848). Fires a fixed outer missile first, then iterates through gaSkillSpiralGridOffsets tables, spawning pairs of missiles per grid step and decrementing a remaining-count. Used for skills like Frozen Orb inner grid.
 void __fastcall SKILLS_CreateMissileSpiralGrid(int32_t nSkillLevel, D2SkillArgStrc * pSkillArg) {
     // Static local variables (originally global data)
-    static int gaSpiralGridOffsetTableY[8] = { 0x0, 0x0, 0x14, -0x14, 0xe, 0xe, -0xe, -0xe };
-    static int gaSpiralGridOffsetTableX[8] = { 0x14, -0x14, 0x0, 0x0, 0xe, -0xe, -0xe, 0xe };
-    static int gaSkillSpiralGridOffsets_0[7] = { 0x8, 0x2, 0xb, 0x4, 0xd, 0x6, 0x9 };
-    static int gaSkillSpiralGridOffsets_1[4] = { -0x1, -0x1, 0x1, 0x1 };
-    static int gaSkillSpiralGridOffsets_2[7] = { 0x12, 0x14, 0x11, 0x14, 0xf, 0x13, 0x12 };
-    static int gaSkillSpiralGridOffsets_3[4] = { -0x1, 0x1, 0x1, -0x1 };
+    static int gaSpiralGridOffsetTableY[8] = { 0x0, 0x0, 0x14, -0x14, 0xe, 0xe, -0xe, -0xe }; D2_STATIC_GUARD(gaSpiralGridOffsetTableY, "D2Client::SKILLS::Skills::SKILLS_CreateMissileSpiralGrid::gaSpiralGridOffsetTableY");
+    static int gaSpiralGridOffsetTableX[8] = { 0x14, -0x14, 0x0, 0x0, 0xe, -0xe, -0xe, 0xe }; D2_STATIC_GUARD(gaSpiralGridOffsetTableX, "D2Client::SKILLS::Skills::SKILLS_CreateMissileSpiralGrid::gaSpiralGridOffsetTableX");
+    static int gaSkillSpiralGridOffsets_0[7] = { 0x8, 0x2, 0xb, 0x4, 0xd, 0x6, 0x9 }; D2_STATIC_GUARD(gaSkillSpiralGridOffsets_0, "D2Client::SKILLS::Skills::SKILLS_CreateMissileSpiralGrid::gaSkillSpiralGridOffsets_0");
+    static int gaSkillSpiralGridOffsets_1[4] = { -0x1, -0x1, 0x1, 0x1 }; D2_STATIC_GUARD(gaSkillSpiralGridOffsets_1, "D2Client::SKILLS::Skills::SKILLS_CreateMissileSpiralGrid::gaSkillSpiralGridOffsets_1");
+    static int gaSkillSpiralGridOffsets_2[7] = { 0x12, 0x14, 0x11, 0x14, 0xf, 0x13, 0x12 }; D2_STATIC_GUARD(gaSkillSpiralGridOffsets_2, "D2Client::SKILLS::Skills::SKILLS_CreateMissileSpiralGrid::gaSkillSpiralGridOffsets_2");
+    static int gaSkillSpiralGridOffsets_3[4] = { -0x1, 0x1, 0x1, -0x1 }; D2_STATIC_GUARD(gaSkillSpiralGridOffsets_3, "D2Client::SKILLS::Skills::SKILLS_CreateMissileSpiralGrid::gaSkillSpiralGridOffsets_3");
 
     int nGridOffset;
     int nRingsRemaining = nSkillLevel - 1;
@@ -2309,7 +2309,7 @@ void __fastcall SKILLS_CltAllocStatListForSkill(D2UnitStrc * pUnit, int32_t nAtt
 
 D2CUnitEventStrc * __fastcall AttachClientStateHandler(D2UnitStrc * pUnit, D2UnitStrc * nParam1, int32_t nMsgParam1, int32_t nMsgParam2, uint32_t nHandlerIdx, int32_t nParam2, int32_t nParam3) {
     // Static local variables (originally global data)
-    static fnCUnitEventCallback STATESCLTEVENTFUNC[2] = { nullptr, (fnCUnitEventCallback)&D2Client::SKILLS::SkillsSor::SKILLSSOR_StateCltEventFn01_ChillingArmor };
+    static fnCUnitEventCallback STATESCLTEVENTFUNC[2] = { nullptr, (fnCUnitEventCallback)&D2Client::SKILLS::SkillsSor::SKILLSSOR_StateCltEventFn01_ChillingArmor }; D2_STATIC_GUARD(STATESCLTEVENTFUNC, "D2Client::SKILLS::Skills::AttachClientStateHandler::STATESCLTEVENTFUNC");
 
     if (!(nHandlerIdx < 2 && STATESCLTEVENTFUNC[nHandlerIdx])) {
       return nullptr;

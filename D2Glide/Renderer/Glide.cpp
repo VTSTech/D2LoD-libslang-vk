@@ -57,7 +57,7 @@ typedef void (__stdcall *fnBinkFrameCallback)();
 
 namespace D2Glide::Renderer::Glide {
 
-static uint8_t gnFontKerningTracking;
+static uint8_t gnFontKerningTracking = 0x0; D2_STATIC_GUARD(gnFontKerningTracking, "D2Glide::Renderer::Glide::gnFontKerningTracking");
 
 void ClearCaches() {
     glFloorCache::GLFLOOR_Destroy(&gGlideFloorTextureCache.dwEntrySize, nullptr);
@@ -306,7 +306,7 @@ void __fastcall SetPaletteTable(BYTE * * ppPaletteTable) {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(gaGlidePaletteTableData, "D2Glide::Renderer::Glide::SetPaletteTable::gaGlidePaletteTableData");
 
     int nCount;
     uint8_t** pDst = gaGlidePaletteTableData;
@@ -432,7 +432,7 @@ void __fastcall RENDERER_GLIDE_SetTextureFiltering(int32_t nParam) {
 }
 
 int * GetRenderStatistics() {
-    return &gnTextureMemoryUsageBytes;
+    return &gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes;
 }
 
 BOOL __stdcall RENDERER_GLIDE_IsPerspectiveMode() {
@@ -441,8 +441,8 @@ BOOL __stdcall RENDERER_GLIDE_IsPerspectiveMode() {
 
 BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
     // Static local variables (originally global data)
-    static uint32_t gnGlideTexMemBaseAddress[3] = { 0, 0, 0 };
-    static uint32_t gnGlideTextureMemoryMax[3] = { 0, 0, 0 };
+    static uint32_t gnGlideTexMemBaseAddress[3] = { 0, 0, 0 }; D2_STATIC_GUARD(gnGlideTexMemBaseAddress, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitTextureMemory::gnGlideTexMemBaseAddress");
+    static uint32_t gnGlideTextureMemoryMax[3] = { 0, 0, 0 }; D2_STATIC_GUARD(gnGlideTextureMemoryMax, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitTextureMemory::gnGlideTextureMemoryMax");
 
     FxU32 nTexMemAddr;
     int32_t iVar2;
@@ -493,18 +493,18 @@ BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
           nTotalTexMem = gnGlideTextureMemoryMax[0] - nCacheEnd;
           if (gnGlideTextureMemoryUsed < 2) {
             nVramStart = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache, nCacheEnd, (uint32_t)(nTotalTexMem * 0x32) / 100 + nCacheEnd, nLargeTexSize);
-            gnGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
+            gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
             nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 1, nVramStart, (uint32_t)(nTotalTexMem * 0x4b) / 100 + nCacheEnd, nMedTexSize);
-            gnGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
+            gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
             glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 2, nCacheEnd, gnGlideTextureMemoryMax[0], nSmallTexSize);
-            gnGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
+            gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
           } else {
             nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 1, nCacheEnd, (uint32_t)(nTotalTexMem * 0x32) / 100 + nCacheEnd, nMedTexSize);
-            gnGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
+            gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
             glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 2, nCacheEnd, gnGlideTextureMemoryMax[0], nSmallTexSize);
-            gnGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
+            gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
             glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache, gnGlideTexMemBaseAddress[1], gnGlideTextureMemoryMax[1], nLargeTexSize);
-            gnGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
+            gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
           }
         }
       } else {
@@ -523,9 +523,9 @@ BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
         nCacheEnd = nMaskTmp + iVar2;
         nMaskTmp = gnGlideTextureMemoryMax[0] - nCacheEnd;
         if (gnGlideTextureMemoryUsed < 2) {
-          gnTextureMemoryUsageBytes = nMaskTmp >> 1;
-          if (0x2fffff < (uint32_t)gnTextureMemoryUsageBytes) {
-            gnTextureMemoryUsageBytes = 0x300000;
+          gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = nMaskTmp >> 1;
+          if (0x2fffff < (uint32_t)gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes) {
+            gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = 0x300000;
           }
 
           nMaskTmp >>= 2;
@@ -533,17 +533,17 @@ BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
             nMaskTmp = 0x100000;
           }
 
-          nCacheEnd = glFloorCache::GLFLOOR_Initialize(&gGlideFloorTextureCache, nCacheEnd, gnTextureMemoryUsageBytes + nCacheEnd, nFloorTexSize);
-          gnGlideSubtileCacheMemBytes = nMaskTmp;
+          nCacheEnd = glFloorCache::GLFLOOR_Initialize(&gGlideFloorTextureCache, nCacheEnd, gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes + nCacheEnd, nFloorTexSize);
+          gnTextureMemoryUsageBytes.nGlideSubtileCacheMemBytes = nMaskTmp;
           nMaskTmp = glSubtileCache::GLSUBTILE_Initialize(&gGlideSubtileTextureCache, nCacheEnd, nMaskTmp + nCacheEnd, nSubtileTexSize);
         } else {
-          gnTextureMemoryUsageBytes = nMaskTmp * 3 >> 2;
-          if ((uint32_t)gnTextureMemoryUsageBytes < 0x1ccccc) {
-            gnTextureMemoryUsageBytes = 0x1ccccc;
+          gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = nMaskTmp * 3 >> 2;
+          if ((uint32_t)gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes < 0x1ccccc) {
+            gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = 0x1ccccc;
           }
 
-          nCacheEnd = glFloorCache::GLFLOOR_Initialize(&gGlideFloorTextureCache, nCacheEnd, gnTextureMemoryUsageBytes + nCacheEnd, nFloorTexSize);
-          gnGlideSubtileCacheMemBytes = gnGlideTextureMemoryMax[0] - nCacheEnd;
+          nCacheEnd = glFloorCache::GLFLOOR_Initialize(&gGlideFloorTextureCache, nCacheEnd, gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes + nCacheEnd, nFloorTexSize);
+          gnTextureMemoryUsageBytes.nGlideSubtileCacheMemBytes = gnGlideTextureMemoryMax[0] - nCacheEnd;
           nMaskTmp = glSubtileCache::GLSUBTILE_Initialize(&gGlideSubtileTextureCache, nCacheEnd, gnGlideTextureMemoryMax[0], nSubtileTexSize);
         }
         if (1 < gnGlideTextureMemoryUsed) {
@@ -553,11 +553,11 @@ BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
         nSecondaryTMUFlag = (uint32_t)(1 < gnGlideTextureMemoryUsed);
         uVar1 = gnGlideTextureMemoryMax[nSecondaryTMUFlag];
         nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache, nMaskTmp, (uVar1 - nMaskTmp) * 0x19 / 100 + nMaskTmp, nLargeTexSize);
-        gnGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
+        gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
         nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 1, nCacheEnd, (uVar1 - nMaskTmp) * 0x41 / 100 + nMaskTmp, nMedTexSize);
-        gnGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
+        gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
         glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 2, nCacheEnd, gnGlideTextureMemoryMax[nSecondaryTMUFlag], nSmallTexSize);
-        gnGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
+        gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
       }
 
       RENDERER_GLIDE_InitSpriteCache();
@@ -615,9 +615,9 @@ void __fastcall PlayCutScene(char * szFile, int32_t nResolutionMode, void * fpFr
 
 BOOL RENDERER_GLIDE_InitWindow(int32_t nParam, FxU32 nParam2) {
     // Static local variables (originally global data)
-    static uint32_t gnGlideRendererInitialized = 0x1;
-    static int gnGlideRefreshRate640;
-    static int gnGlideRefreshRate800;
+    static uint32_t gnGlideRendererInitialized = 0x1; D2_STATIC_GUARD(gnGlideRendererInitialized, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitWindow::gnGlideRendererInitialized");
+    static int gnGlideRefreshRate640; D2_STATIC_GUARD_BSS(gnGlideRefreshRate640, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitWindow::gnGlideRefreshRate640");
+    static int gnGlideRefreshRate800; D2_STATIC_GUARD_BSS(gnGlideRefreshRate800, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitWindow::gnGlideRefreshRate800");
 
     // Frame slots -16..-8 are ONE object: &nIsDebugHardware is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -901,8 +901,8 @@ int RENDERER_GLIDE_GetSpriteMetadata(D2GfxDataStrc * pGfxData, uint32_t * * ppMe
 
 void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
     // Static local variables (originally global data)
-    static int gnGlideCacheSizeB[4] = { 0x0, -0x1, -0x2, -0x3 };
-    static int gnGlideCacheSizeA[4] = { 0x0, 0x1, 0x2, 0x3 };
+    static int gnGlideCacheSizeB[4] = { 0x0, -0x1, -0x2, -0x3 }; D2_STATIC_GUARD(gnGlideCacheSizeB, "D2Glide::Renderer::Glide::RENDERER_GLIDE_CalculateTextureSize::gnGlideCacheSizeB");
+    static int gnGlideCacheSizeA[4] = { 0x0, 0x1, 0x2, 0x3 }; D2_STATIC_GUARD(gnGlideCacheSizeA, "D2Glide::Renderer::Glide::RENDERER_GLIDE_CalculateTextureSize::gnGlideCacheSizeA");
 
     uint32_t nTexHeightPow2;
     uint32_t nTexWidthPow2;
@@ -1026,6 +1026,7 @@ void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
 
 // Glide texture cache: uploads a DC6 frame to video memory. Determines LOD level based on texture size, allocates cache slot, renders frame to buffer, encrypts with hash, and downloads to TMU via grTexDownloadMipMap.
 int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
+    void* nErrorAddress;
     uint8_t* pbyPalettePixel;
     FxU32 startAddress;
     int nSpriteBufferPtr;
@@ -1033,7 +1034,7 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
     GrTexInfo grTexInfo;
     char byPixel;
     int32_t nErrorLine;
-    int32_t nErrorAddress = nMode;
+    int32_t iVar2 = nMode;
     DC6Block* nParam = pTexInfo->pSprite->pDC6Block;
     if (!nParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
@@ -1108,7 +1109,7 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
       }
     }
     grTexInfo.largeLodLog2 = grTexInfo.smallLodLog2;
-    if (nNewCacheNode && (*(uint8_t**)(gGlideVertex0.aTextureCache[nSpriteBufferPtr - 1].pNodes + nNewCacheNode * 0x1c - 0xc) == pPalette || nErrorAddress == 4)) {
+    if (nNewCacheNode && (*(uint8_t**)(gGlideVertex0.aTextureCache[nSpriteBufferPtr - 1].pNodes + nNewCacheNode * 0x1c - 0xc) == pPalette || iVar2 == 4)) {
       glTextureCache::GLTEXCACHE_PromoteNodeToMRU(gGlideVertex0.aTextureCache + nSpriteBufferPtr - 1, *pnCacheEntryIndex);
       startAddress = *(FxU32*)(gGlideVertex0.aTextureCache[nSpriteBufferPtr - 1].pNodes + *pnCacheEntryIndex * 0x1c - 0x18);
       (*GLIDEDLL_grTexSource_16)(gnGlideTMUIndex, startAddress, 3, &grTexInfo);
@@ -1123,7 +1124,7 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
     *(FxU32*)(gGlideVertex0.aTextureCache[nSpriteBufferPtr - 1].pNodes + *pnCacheEntryIndex * 0x1c - 0x14) = nTexStartAddress;
     *(int32_t*)(gGlideVertex0.aTextureCache[nSpriteBufferPtr - 1].pNodes + *pnCacheEntryIndex * 0x1c - 0x10) = nMode;
     *(uint8_t**)(gGlideVertex0.aTextureCache[nSpriteBufferPtr - 1].pNodes + *pnCacheEntryIndex * 0x1c - 0xc) = (uint8_t*)pPalette;
-    void* pvVar2 = gpGlideSpriteBuffer;
+    nErrorAddress = gpGlideSpriteBuffer;
     nTexStartAddress = *(FxU32*)(gGlideVertex0.aTextureCache[nSpriteBufferPtr - 1].pNodes + *pnCacheEntryIndex * 0x1c - 0x18);
     if (!gpGlideSpriteBuffer) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x184);
@@ -1136,10 +1137,10 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
           case 1:
 
           case 4:
-            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, -pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 1, 0, 0, (BYTE*)pvVar2, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, pPalette);
+            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, -pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 1, 0, 0, (BYTE*)nErrorAddress, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, pPalette);
           break;
           case 2:
-            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, -pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 1, 0, 0, (BYTE*)pvVar2, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, pPalette);
+            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, -pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 1, 0, 0, (BYTE*)nErrorAddress, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, pPalette);
           pBVar1 = gpPaletteTable[0x46];
           nSpriteBufferPtr = 0;
           pbyPalettePixel = (uint8_t*)gpGlideSpriteBuffer;
@@ -1156,8 +1157,8 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
 
           break;
           case 3:
-            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, 1 - pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 2, 0, 0, (BYTE*)pvVar2, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, nullptr);
-          pvVar2 = gpGlideSpritePixelBuffer;
+            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, 1 - pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 2, 0, 0, (BYTE*)nErrorAddress, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, nullptr);
+          nErrorAddress = gpGlideSpritePixelBuffer;
           if (!gpGlideSpritePixelBuffer) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ad);
             exit(-1);
@@ -1170,7 +1171,7 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
           memset(gpGlideSpritePixelBuffer, 0, pTexInfo->nTexArea);
           nNewCacheNode = pTexInfo->nTexWidth;
           pSrcPixelRow = (char*)(nNewCacheNode + (int)gpGlideSpriteBuffer);
-          nSpriteBufferPtr = nNewCacheNode + (int)pvVar2;
+          nSpriteBufferPtr = nNewCacheNode + (int)nErrorAddress;
           nMode = pTexInfo->nTexArea + nNewCacheNode * -2;
           if (0 < nMode) {
             do {
@@ -1188,7 +1189,7 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
             } while (nMode);
           }
 
-          grTexInfo.data = pvVar2;
+          grTexInfo.data = nErrorAddress;
         }
 
         (*GLIDEDLL_grTexDownloadMipMap_16)(gnGlideTMUIndex, nTexStartAddress, 3, &grTexInfo);
@@ -1786,19 +1787,19 @@ void __stdcall RENDERER_GLIDE_InitSpriteCache() {
 
 int32_t __fastcall RENDERER_GLIDE_InitDebugFont(FxU32 nParam2, int32_t nParam) {
     // Static local variables (originally global data)
-    static unsigned int gfGlideDebugFontVertex0ARGB;
-    static float gfGlideDebugFontVertex0OOW;
-    static double gfGlideDebugFontVertex0T = 0;
-    static unsigned int gfGlideDebugFontVertex1ARGB;
-    static float gfGlideDebugFontVertex1OOW;
-    static float gfGlideDebugFontVertex1S;
-    static float gfGlideDebugFontVertex1T;
-    static unsigned int gfGlideDebugFontVertex2ARGB;
-    static float gfGlideDebugFontVertex2OOW;
-    static float gfGlideDebugFontVertex2X;
-    static unsigned int gfGlideDebugFontVertex3ARGB;
-    static float gfGlideDebugFontVertex3OOW;
-    static double gfGlideDebugFontVertex3Y = 0;
+    static unsigned int gfGlideDebugFontVertex0ARGB; D2_STATIC_GUARD_BSS(gfGlideDebugFontVertex0ARGB, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex0ARGB");
+    static float gfGlideDebugFontVertex0OOW; D2_STATIC_GUARD_BSS(gfGlideDebugFontVertex0OOW, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex0OOW");
+    static double gfGlideDebugFontVertex0T = 0; D2_STATIC_GUARD(gfGlideDebugFontVertex0T, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex0T");
+    static unsigned int gfGlideDebugFontVertex1ARGB; D2_STATIC_GUARD_BSS(gfGlideDebugFontVertex1ARGB, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex1ARGB");
+    static float gfGlideDebugFontVertex1OOW; D2_STATIC_GUARD_BSS(gfGlideDebugFontVertex1OOW, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex1OOW");
+    static float gfGlideDebugFontVertex1S; D2_STATIC_GUARD_BSS(gfGlideDebugFontVertex1S, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex1S");
+    static float gfGlideDebugFontVertex1T; D2_STATIC_GUARD_BSS(gfGlideDebugFontVertex1T, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex1T");
+    static unsigned int gfGlideDebugFontVertex2ARGB; D2_STATIC_GUARD_BSS(gfGlideDebugFontVertex2ARGB, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex2ARGB");
+    static float gfGlideDebugFontVertex2OOW; D2_STATIC_GUARD_BSS(gfGlideDebugFontVertex2OOW, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex2OOW");
+    static float gfGlideDebugFontVertex2X; D2_STATIC_GUARD_BSS(gfGlideDebugFontVertex2X, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex2X");
+    static unsigned int gfGlideDebugFontVertex3ARGB; D2_STATIC_GUARD_BSS(gfGlideDebugFontVertex3ARGB, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex3ARGB");
+    static float gfGlideDebugFontVertex3OOW; D2_STATIC_GUARD_BSS(gfGlideDebugFontVertex3OOW, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex3OOW");
+    static double gfGlideDebugFontVertex3Y = 0; D2_STATIC_GUARD(gfGlideDebugFontVertex3Y, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitDebugFont::gfGlideDebugFontVertex3Y");
 
     int nCopyCount;
     uint32_t* pDstTexel;
@@ -1867,8 +1868,8 @@ int32_t __fastcall RENDERER_GLIDE_InitDebugFont(FxU32 nParam2, int32_t nParam) {
 
 void __stdcall RENDERER_GLIDE_GenerateDebugFont() {
     // Static local variables (originally global data)
-    static uint32_t gnGlideDebugFontTextureHandle = 0xffffff;
-    static COLORREF gnGlideDebugFontBkColor = 0;
+    static uint32_t gnGlideDebugFontTextureHandle = 0xffffff; D2_STATIC_GUARD(gnGlideDebugFontTextureHandle, "D2Glide::Renderer::Glide::RENDERER_GLIDE_GenerateDebugFont::gnGlideDebugFontTextureHandle");
+    static COLORREF gnGlideDebugFontBkColor = 0; D2_STATIC_GUARD(gnGlideDebugFontBkColor, "D2Glide::Renderer::Glide::RENDERER_GLIDE_GenerateDebugFont::gnGlideDebugFontBkColor");
 
     COLORREF dwPixelColor;
     uint8_t* pTexel;
@@ -1988,8 +1989,8 @@ void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_lis
 
 void RENDERER_GLIDE_DrawLightRadialPoints(int32_t nParam1, GrColor_t nColor, int32_t nParam2) {
     // Static local variables (originally global data)
-    static int gnGlideRadialLightPtr2[8] = { 0x1, 0x2, 0x0, 0x1, 0x2, 0x3, 0x1, 0x2 };
-    static int gnGlideRadialLightPtr[8] = { 0x0, 0x0, 0x1, 0x1, 0x1, 0x1, 0x2, 0x2 };
+    static int gnGlideRadialLightPtr2[8] = { 0x1, 0x2, 0x0, 0x1, 0x2, 0x3, 0x1, 0x2 }; D2_STATIC_GUARD(gnGlideRadialLightPtr2, "D2Glide::Renderer::Glide::RENDERER_GLIDE_DrawLightRadialPoints::gnGlideRadialLightPtr2");
+    static int gnGlideRadialLightPtr[8] = { 0x0, 0x0, 0x1, 0x1, 0x1, 0x1, 0x2, 0x2 }; D2_STATIC_GUARD(gnGlideRadialLightPtr, "D2Glide::Renderer::Glide::RENDERER_GLIDE_DrawLightRadialPoints::gnGlideRadialLightPtr");
 
     D2GlideVertexStrc fPointX;
     (*GLIDEDLL_grConstantColorValue_4)(nColor);
@@ -2023,7 +2024,7 @@ void __stdcall RENDERER_GLIDE_DrawLightGradient() {
     0xffffff00,
     0xffffff00,
     0x0
-};
+}; D2_STATIC_GUARD(gColorDebugGradientGlide, "D2Glide::Renderer::Glide::RENDERER_GLIDE_DrawLightGradient::gColorDebugGradientGlide");
 
     int nCurX;
     int nColCount;
@@ -2085,8 +2086,8 @@ void __stdcall RENDERER_GLIDE_DrawLightMap() {
 
 void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int32_t nPosX, int32_t nPosY) {
     // Static local variables (originally global data)
-    static int gnDrawLightSavedPosX;
-    static int gnDrawLightSavedPosY;
+    static int gnDrawLightSavedPosX; D2_STATIC_GUARD_BSS(gnDrawLightSavedPosX, "D2Glide::Renderer::Glide::DrawLight::gnDrawLightSavedPosX");
+    static int gnDrawLightSavedPosY; D2_STATIC_GUARD_BSS(gnDrawLightSavedPosY, "D2Glide::Renderer::Glide::DrawLight::gnDrawLightSavedPosY");
 
     gnDrawLightSavedPosX = nPosX;
     gnDrawLightSavedPosY = nPosY;
@@ -2467,7 +2468,7 @@ void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode, RECT 
 
 void __stdcall RENDERER_GLIDE_InitPerspectiveTables() {
     // Static local variables (originally global data)
-    static uint32_t gbGlidePerspectiveTablesInitialized;
+    static uint32_t gbGlidePerspectiveTablesInitialized; D2_STATIC_GUARD_BSS(gbGlidePerspectiveTablesInitialized, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitPerspectiveTables::gbGlidePerspectiveTablesInitialized");
 
     int nCol;
     int nTexCoordX;
@@ -2984,7 +2985,7 @@ void RENDERER_GLIDE_InitGroundTileVertices() {
 BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc * pLight, int32_t nPosX, int32_t nPosY, int32_t nWorldXpos, int32_t nWorldYpos, BYTE nAlpha, int32_t nScreenPanels, void * pTileData) {
     D2Glide::Renderer::ShadowDiag::NoteWorldFrame(); // [glide fix 11] in-world marker: ground tiles only draw once the world is up
     // Static local variables (originally global data)
-    static void * gapGlideGroundQuadCornerPtrs[4] = { (void*)gaGlideGroundTileVertices, (void*)&gaGlideGroundTileVertices[5].fX, (void*)&gaGlideGroundTileVertices[35].fX, (void*)&gaGlideGroundTileVertices[30].fX };
+    static void * gapGlideGroundQuadCornerPtrs[4] = { (void*)gaGlideGroundTileVertices, (void*)&gaGlideGroundTileVertices[5].fX, (void*)&gaGlideGroundTileVertices[35].fX, (void*)&gaGlideGroundTileVertices[30].fX }; D2_STATIC_GUARD(gapGlideGroundQuadCornerPtrs, "D2Glide::Renderer::Glide::DrawGroundTile::gapGlideGroundQuadCornerPtrs");
 
     uint8_t _nAlpha;
     uint8_t byIntensity;
@@ -3218,10 +3219,10 @@ void SetDefaultPerspectiveFactor() {
 // @sourcefile .\Src\glSmack.cpp
 void __stdcall GLSMACK_AllocBuffers() {
     // Static local variables (originally global data)
-    static unsigned int gfGlideSmackerVertex0Oow;
-    static unsigned int gfGlideSmackerVertex1Oow;
-    static unsigned int gfGlideSmackerVertex2Oow;
-    static unsigned int gfGlideSmackerVertex3Oow;
+    static unsigned int gfGlideSmackerVertex0Oow; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex0Oow, "D2Glide::Renderer::Glide::GLSMACK_AllocBuffers::gfGlideSmackerVertex0Oow");
+    static unsigned int gfGlideSmackerVertex1Oow; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex1Oow, "D2Glide::Renderer::Glide::GLSMACK_AllocBuffers::gfGlideSmackerVertex1Oow");
+    static unsigned int gfGlideSmackerVertex2Oow; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex2Oow, "D2Glide::Renderer::Glide::GLSMACK_AllocBuffers::gfGlideSmackerVertex2Oow");
+    static unsigned int gfGlideSmackerVertex3Oow; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex3Oow, "D2Glide::Renderer::Glide::GLSMACK_AllocBuffers::gfGlideSmackerVertex3Oow");
 
     gfGlideSmackerVertex0Oow = -1;
     gfGlideSmackerVertex1Oow = -1;
@@ -3332,26 +3333,26 @@ void __stdcall GLSMACK_UploadTextures() {
 
 void __stdcall GLSMACK_DrawSmackerQuad(D2SmackerContextStrc * pSmackerData, int32_t nOffsetY, int32_t nAlpha) {
     // Static local variables (originally global data)
-    static int gaGlideSmackerVertices;
-    static float gfGlideSmackerVertex1Y;
-    static float gfGlideSmackerVertex0W;
-    static float gfGlideSmackerVertex1X2;
-    static double gfGlideSmackerVertex1Oow2 = 0;
-    static float gfGlideSmackerVertex1Y_b;
-    static float gfGlideSmackerVertex3X;
-    static float gfGlideSmackerVertex1Alpha;
-    static float gfGlideSmackerVertex1Oow_b;
-    static double gfGlideSmackerVertex2Y = 0;
-    static float gfGlideSmackerVertex2X;
-    static float gfGlideSmackerVertex3Y;
-    static float gfGlideSmackerVertex2Oow_b;
-    static float gfGlideSmackerVertex2Alpha;
-    static double gfGlideSmackerVertex3Alpha = 0;
-    static float gfGlideSmackerVertex4Y;
-    static float gfGlideSmackerVertex4X;
-    static float gfGlideSmackerVertex3Oow_b;
-    static float gfGlideSmackerVertex4Alpha;
-    static double gfGlideSmackerVertex4Oow = 0;
+    static int gaGlideSmackerVertices; D2_STATIC_GUARD_BSS(gaGlideSmackerVertices, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gaGlideSmackerVertices");
+    static float gfGlideSmackerVertex1Y; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex1Y, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex1Y");
+    static float gfGlideSmackerVertex0W; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex0W, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex0W");
+    static float gfGlideSmackerVertex1X2; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex1X2, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex1X2");
+    static double gfGlideSmackerVertex1Oow2 = 0; D2_STATIC_GUARD(gfGlideSmackerVertex1Oow2, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex1Oow2");
+    static float gfGlideSmackerVertex1Y_b; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex1Y_b, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex1Y_b");
+    static float gfGlideSmackerVertex3X; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex3X, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex3X");
+    static float gfGlideSmackerVertex1Alpha; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex1Alpha, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex1Alpha");
+    static float gfGlideSmackerVertex1Oow_b; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex1Oow_b, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex1Oow_b");
+    static double gfGlideSmackerVertex2Y = 0; D2_STATIC_GUARD(gfGlideSmackerVertex2Y, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex2Y");
+    static float gfGlideSmackerVertex2X; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex2X, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex2X");
+    static float gfGlideSmackerVertex3Y; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex3Y, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex3Y");
+    static float gfGlideSmackerVertex2Oow_b; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex2Oow_b, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex2Oow_b");
+    static float gfGlideSmackerVertex2Alpha; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex2Alpha, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex2Alpha");
+    static double gfGlideSmackerVertex3Alpha = 0; D2_STATIC_GUARD(gfGlideSmackerVertex3Alpha, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex3Alpha");
+    static float gfGlideSmackerVertex4Y; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex4Y, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex4Y");
+    static float gfGlideSmackerVertex4X; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex4X, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex4X");
+    static float gfGlideSmackerVertex3Oow_b; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex3Oow_b, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex3Oow_b");
+    static float gfGlideSmackerVertex4Alpha; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex4Alpha, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex4Alpha");
+    static double gfGlideSmackerVertex4Oow = 0; D2_STATIC_GUARD(gfGlideSmackerVertex4Oow, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex4Oow");
 
     RENDERER_GLIDE_SetColorCombine(1);
     RENDERER_GLIDE_SetAlphaBlendMode(1);
@@ -3417,7 +3418,7 @@ void __stdcall GLSMACK_DrawSmackerQuad(D2SmackerContextStrc * pSmackerData, int3
 
 // @sourcefile .\Src\glSmack.cpp
 void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, int32_t nVersion) {
-    // Frame slots -1812..-12 are ONE object: &byPalette0 is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -1812..-4 are ONE object: &byPalette0 is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       uint8_t byPalette0;
@@ -3425,17 +3426,15 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
       uint8_t abImgBuf[1024];
       uint32_t nImgBpp;
       uint32_t nImgHeight;
+      uint32_t nImgWidth;
+      DWORD dwFileSize;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1800, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1808, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    void* pvVar1;
-    uint32_t bFileLoadOk;
-    int iVar2;
+    void* nSmackHandle;
+    int iVar1;
     uint8_t* pPalDst;
-    size_t nRowStride;
     int nRowIdx;
-    size_t nImgWidth;
-    DWORD dwFileSize;
     if (!gpGlideSmackerTexBuf2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8e);
       exit(-1);
@@ -3450,32 +3449,33 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
 
     pBuffer->eMode = (char)nVersion;
     if ((char)nVersion == 'p') {
+      uint32_t bFileLoadOk;
       nVersion = 0;
-      dwFileSize = 0;
-      bFileLoadOk = Storm::Source::SFile::SFileLoadFileEx(nullptr, (uint32_t*)szSmacker, (void**)&nVersion, &dwFileSize, 0, 3, 0);
+      __frame0.dwFileSize = 0;
+      bFileLoadOk = Storm::Source::SFile::SFileLoadFileEx(nullptr, (uint32_t*)szSmacker, (void**)&nVersion, &__frame0.dwFileSize, 0, 3, 0);
       if (bFileLoadOk && nVersion) {
-        iVar2 = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, dwFileSize, __frame0.abImgBuf, *gpGlideSmackerTexBuf2, 0x6db0, &nImgWidth, &__frame0.nImgHeight, &__frame0.nImgBpp);
+        iVar1 = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, __frame0.dwFileSize, __frame0.abImgBuf, *gpGlideSmackerTexBuf2, 0x6db0, &__frame0.nImgWidth, &__frame0.nImgHeight, &__frame0.nImgBpp);
         Storm::SMem::SMemFree((void*)nVersion, ".\\Src\\glSmack.cpp", 0xdb, 0);
-        nRowStride = nImgWidth;
-        if (iVar2 && nImgWidth == 0x1d4 && __frame0.nImgHeight == 0x3c && __frame0.nImgBpp == 8) {
-          iVar2 = 0;
+        bFileLoadOk = __frame0.nImgWidth;
+        if (iVar1 && __frame0.nImgWidth == 0x1d4 && __frame0.nImgHeight == 0x3c && __frame0.nImgBpp == 8) {
+          iVar1 = 0;
           pPalDst = __frame0.abPalBuf;
           do {
-            pPalDst[-1] = __frame0.abImgBuf[iVar2 * 4];
-            *pPalDst = __frame0.abImgBuf[iVar2 * 4 + 1];
-            pPalDst[1] = __frame0.abImgBuf[iVar2 * 4 + 2];
-            iVar2++;
+            pPalDst[-1] = __frame0.abImgBuf[iVar1 * 4];
+            *pPalDst = __frame0.abImgBuf[iVar1 * 4 + 1];
+            pPalDst[1] = __frame0.abImgBuf[iVar1 * 4 + 2];
+            iVar1++;
             pPalDst += 3;
-          } while (iVar2 < 0x100);
+          } while (iVar1 < 0x100);
 
           nRowIdx = 0x3b;
-          iVar2 = 0x7600;
+          iVar1 = 0x7600;
           do {
-            memmove(*gpGlideSmackerTexBuf2 + iVar2, *gpGlideSmackerTexBuf2 + nRowIdx * nRowStride, nRowStride);
-            iVar2 += -0x200;
+            memmove(*gpGlideSmackerTexBuf2 + iVar1, *gpGlideSmackerTexBuf2 + nRowIdx * bFileLoadOk, bFileLoadOk);
+            iVar1 += -0x200;
             nRowIdx--;
-            nRowStride = nImgWidth;
-          } while (0 < iVar2);
+            bFileLoadOk = __frame0.nImgWidth;
+          } while (0 < iVar1);
 
           GLSMACK_ConvertPaletteToRGB565(&__frame0.byPalette0);
           GLSMACK_UploadTextures();
@@ -3490,10 +3490,10 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
         return;
       }
 
-      pvVar1 = (void*)SmackOpen(szSmacker, 0xfe000, -1);
-      pBuffer->hSmack = pvVar1;
-      if (pvVar1) {
-        SmackToBuffer(pvVar1, 0, 0, 0x200, 0x40, gpGlideSmackerTexBuf2, 0);
+      nSmackHandle = (void*)SmackOpen(szSmacker, 0xfe000, -1);
+      pBuffer->hSmack = nSmackHandle;
+      if (nSmackHandle) {
+        SmackToBuffer(nSmackHandle, 0, 0, 0x200, 0x40, gpGlideSmackerTexBuf2, 0);
         return;
       }
     }

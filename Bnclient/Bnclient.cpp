@@ -13,11 +13,11 @@
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/D2Srp.h"
-#include "Storm/H/Storm.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSComp.h"
 #include "Storm/Source/SSTR.h"
+#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "support/d2_boot.h" // [d2boot]
 #include "globals/globals.h"
@@ -36,7 +36,7 @@ namespace Bnclient {
 // NOTE: Return type changed void→char (1 callers, MEDIUM confidence)
 char __fastcall D2FILE_VerifyFileSignature(LPCSTR szText) {
     // Static local variables (originally global data)
-    static LPCSTR gnFileSignatureResult = (LPCSTR)s_Blizzard_Entertainment__Inc__006deb80;
+    static LPCSTR gnFileSignatureResult = (LPCSTR)s_Blizzard_Entertainment__Inc__006deb80; D2_STATIC_GUARD(gnFileSignatureResult, "Bnclient::D2FILE_VerifyFileSignature::gnFileSignatureResult");
 
     bool bVar1;
     char cVar2;
@@ -134,7 +134,36 @@ int32_t __fastcall D2FILE_VerifySignatureWinTrust(LPCSTR szText) {
 // Extracts signer organization from signed file's certificate. Converts file path to wide char, queries certificate store, retrieves X.509 certificate, extracts organization field (OID 2.5.4.10), converts back to ANSI.
 bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, int32_t nOrgMaxLen) {
     // Static local variables (originally global data)
-    static uint8_t gszFileSignerOrganizationAttribute = -0x2;
+    static uint8_t gszFileSignerOrganizationAttribute[28] = {
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x40,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xf3,
+    0x7d,
+    0x51,
+    0x0
+}; D2_STATIC_GUARD(gszFileSignerOrganizationAttribute, "Bnclient::D2FILE_GetSignerOrganization::gszFileSignerOrganizationAttribute");
 
     DWORD nNameLen;
     int nAnsiLen;
@@ -144,7 +173,7 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     uint32_t dwSignerSubject;
     uint32_t dwSignerIssuer;
     SIZE_T nMsgInfoSize;
-    uint8_t* local_8 = &gszFileSignerOrganizationAttribute;
+    uint8_t* local_8 = gszFileSignerOrganizationAttribute;
     uint32_t dwSehHandlerAddr = 0x517c3f;
     /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ if (!(szFilePath && *szFilePath != '\0')) {
       return false;
@@ -330,10 +359,10 @@ void CACHE_EncryptBlock(uint32_t nParam1, uint32_t nParam2, uint32_t * pnParam) 
 
 LPFILETIME * CACHE_GetFileTime(uint32_t nParam) {
     // Static local variables (originally global data)
-    static LPFILETIME lpFileTime_008818ac;
-    static int gnCacheFileTimeHigh;
-    static uint32_t gdwCacheLastTickCount;
-    static uint32_t gnCacheLastFileTimeParam;
+    static LPFILETIME lpFileTime_008818ac; D2_STATIC_GUARD_BSS(lpFileTime_008818ac, "Bnclient::CACHE_GetFileTime::lpFileTime_008818ac");
+    static int gnCacheFileTimeHigh; D2_STATIC_GUARD_BSS(gnCacheFileTimeHigh, "Bnclient::CACHE_GetFileTime::gnCacheFileTimeHigh");
+    static uint32_t gdwCacheLastTickCount; D2_STATIC_GUARD_BSS(gdwCacheLastTickCount, "Bnclient::CACHE_GetFileTime::gdwCacheLastTickCount");
+    static uint32_t gnCacheLastFileTimeParam; D2_STATIC_GUARD_BSS(gnCacheLastFileTimeParam, "Bnclient::CACHE_GetFileTime::gnCacheLastFileTimeParam");
 
     _SYSTEMTIME sSystemTime;
     if (nParam == gnCacheLastFileTimeParam) {

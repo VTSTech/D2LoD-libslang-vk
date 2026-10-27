@@ -5,6 +5,7 @@
 #include "D2CMP/SRC/LRUCache.h"
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Common/Collision.h"
+#include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
@@ -26,6 +27,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/D2SeedStrc.h"
+#include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgCoordsStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
 
@@ -57,37 +59,40 @@ namespace D2Common::Drlg::RoomTile {
 // Shrinks/reallocs tile data array.
 // @sourcefile .\DRLG\RoomTile.cpp
 void __fastcall DRLGROOMTILE_CompactTileDataArray(D2RoomExStrc * pRoomEx) {
-    int nTileOffset;
+    D2DrlgTileDataStrc* pReallocated;
     D2PoolManagerStrc* pMemory = pRoomEx->pLevel->pDrlg->pMemoryPool;
     D2DrlgTileGridStrc* pTileGrid = pRoomEx->pRoomTiles;
     int nRoofCount = pTileGrid->nShadows;
     if (nRoofCount) {
-      D2DrlgTileDataStrc* pReallocated;
-      if (nRoofCount >= pTileGrid->nRoofTilesMax) {
+      int nTileOffset;
+      if (nRoofCount >= pTileGrid->sRoomTiles.nRoofTilesCount) {
         return;
       }
 
-      pReallocated = (D2DrlgTileDataStrc*)D2_REALLOC_POOL(pMemory, pTileGrid->pRoofTiles, nRoofCount * 0x30);
-      pTileGrid->pRoofTiles = pReallocated;
+      pReallocated = (D2DrlgTileDataStrc*)D2_REALLOC_POOL(pMemory, pTileGrid->sRoomTiles.pRoofTiles, nRoofCount * 0x30);
+      pTileGrid->sRoomTiles.pRoofTiles = pReallocated;
       nRoofCount = 0;
       if (pTileGrid->nShadows != 1 && -1 < pTileGrid->nShadows - 1) {
         nTileOffset = 0;
         do {
-          *(int*)&pTileGrid->pRoofTiles[nRoofCount].pNext = (uintptr_t)&pTileGrid->pRoofTiles[1].nScreenX + nTileOffset;
+          pReallocated = pTileGrid->sRoomTiles.pRoofTiles;
+          *(int*)&pReallocated[nRoofCount].pNext = (uintptr_t)&pReallocated[1].nScreenX + nTileOffset;
           nRoofCount++;
           nTileOffset += 0x30;
         } while (nRoofCount < pTileGrid->nShadows - 1);
       }
 
-      pTileGrid->pRoofTiles[nRoofCount].pNext = 0;
-      pTileGrid->nRoofTilesMax = pTileGrid->nShadows;
+      pTileGrid->sRoomTiles.pRoofTiles[nRoofCount].pNext = 0;
+      pTileGrid->sRoomTiles.nRoofTilesCount = pTileGrid->nShadows;
       return;
     }
-    if (pTileGrid->pRoofTiles) {
-      D2_FREE_POOL(pMemory, pTileGrid->pRoofTiles);
+
+    pReallocated = pTileGrid->sRoomTiles.pRoofTiles;
+    if (pReallocated) {
+      D2_FREE_POOL(pMemory, pReallocated);
     }
 
-    pTileGrid->pRoofTiles = 0;
+    pTileGrid->sRoomTiles.pRoofTiles = 0;
 }
 
 // Returns the warp direction byte based on the tile orientation. Returns 0x72 for orientation 0xb (special case), or 0x6c otherwise. From RoomTile.cpp.
@@ -194,7 +199,7 @@ void __stdcall DRLGROOMTILE_SetupWarpTile(D2RoomExStrc * pRoomExStrc, D2DrlgTile
 // Initializes the warp-tile cache entries for a room tile. Extracts the warp destination index from the packed tile flags, locates the matching warp-cache entry via the tile data list, sets the warp direction, then appends up to 4 floor tile entries (one per warp sub-position using gaWarpTileOffsetX/Y) into the room's tile grid and links them into the warp cache. Sets the 0x800000 room flag to mark warp cache as initialized.
 void __stdcall DRLGROOMTILE_InitWarpCacheTiles(uint32_t nPackedTileFlags, D2RoomExStrc * dwParam2, int32_t dwParam3, int32_t dwParam4, int32_t dwParam5) {
     // Static local variables (originally global data)
-    static int gaWarpTileOffsetY[8] = { 0x0, 0x0, 0x1, 0x0, 0x0, 0x1, 0x1, 0x1 };
+    static int gaWarpTileOffsetY[8] = { 0x0, 0x0, 0x1, 0x0, 0x0, 0x1, 0x1, 0x1 }; D2_STATIC_GUARD(gaWarpTileOffsetY, "D2Common::Drlg::RoomTile::DRLGROOMTILE_InitWarpCacheTiles::gaWarpTileOffsetY");
 
     int nTileLibIdx;
     D2DrlgTileDataStrc** pTileListHead;
@@ -232,7 +237,7 @@ void __stdcall DRLGROOMTILE_InitWarpCacheTiles(uint32_t nPackedTileFlags, D2Room
       pDVar1 = dwParam2->pRoomTiles;
       nFloorTileIter = gaWarpTileOffsetY[nWarpSubIdx * 2 + 1];
       nOffsetY = gaWarpTileOffsetY[nWarpSubIdx * 2];
-      pTileData = pDVar1->pFloorTiles + pDVar1->nFloors;
+      pTileData = pDVar1->sRoomTiles.pFloorTiles + pDVar1->nFloors;
       pTileListHead = &pWarpCacheIter->pTileListClearedOnSelect;
       if (!pTileListHead) {
         pTileData->pNext = 0;
@@ -247,7 +252,7 @@ void __stdcall DRLGROOMTILE_InitWarpCacheTiles(uint32_t nPackedTileFlags, D2Room
       nWarpSubIdx++;
     } while ((int)nWarpSubIdx < 4);
 
-    pTileData = dwParam2->pRoomTiles->pFloorTiles;
+    pTileData = dwParam2->pRoomTiles->sRoomTiles.pFloorTiles;
     nFloorTileIter = 0;
     if (0 >= dwParam2->pRoomTiles->nFloors) {
       return;
@@ -447,7 +452,7 @@ void __stdcall DRLGROOMTILE_UpdateTileType(D2DrlgTileDataStrc * pTileData, D2Roo
     0x1,
     0x2,
     0x7
-};
+}; D2_STATIC_GUARD(gnRoomTileMappingTransitionByType, "D2Common::Drlg::RoomTile::DRLGROOMTILE_UpdateTileType::gnRoomTileMappingTransitionByType");
     static int gnRoomTileMappingByTypeAndLayer[20] = {
     -0x1,
     0x0,
@@ -469,7 +474,7 @@ void __stdcall DRLGROOMTILE_UpdateTileType(D2DrlgTileDataStrc * pTileData, D2Roo
     -0x1,
     -0x1,
     -0x1
-};
+}; D2_STATIC_GUARD(gnRoomTileMappingByTypeAndLayer, "D2Common::Drlg::RoomTile::DRLGROOMTILE_UpdateTileType::gnRoomTileMappingByTypeAndLayer");
 
     D2DrlgTileLinkStrc* pTileLink;
     int32_t nTileIndex;
@@ -642,19 +647,17 @@ void __stdcall DRLGROOMTILE_ProcessTile(eD2GridCellFlags nFlags, D2RoomExStrc * 
 
     D2DrlgTileGridStrc* pTileGrid;
     pTileGrid = pRoom->pRoomTiles;
-    int nFloorCount;
-    nFloorCount = pTileGrid->nFloors;
-    D2DrlgTileDataStrc* pFloorTile;
-    pFloorTile = pTileGrid->pFloorTiles;
-    pFloorTile[nFloorCount].pNext = 0;
+    D2DrlgTileDataStrc* pActSub18;
+    pActSub18 = pTileGrid->sRoomTiles.pFloorTiles + pTileGrid->nFloors;
+    pActSub18->pNext = 0;
     pTileGrid->nFloors++;
-    DRLGROOMTILE_FillTileData(pRoom, pFloorTile + nFloorCount, nX, nSizeMaybe, nGridFlags, nTileLibEntry);
+    DRLGROOMTILE_FillTileData(pRoom, pActSub18, nX, nSizeMaybe, nGridFlags, nTileLibEntry);
     add_wall_and_shadow:
     if ((nFlags & CELLFLAGS_0x01) != CELLFLAGS_NONE) {
       nTileLibEntry = DRLG_FindHTile(pRoom, nOtherFlags, nFlags);
-      pFloorTile = DRLGROOMTILE_CreateWallTileData(pRoom, nullptr, nX, nSizeMaybe, nFlags, nTileLibEntry, nOtherFlags);
+      pActSub18 = DRLGROOMTILE_CreateWallTileData(pRoom, nullptr, nX, nSizeMaybe, nFlags, nTileLibEntry, nOtherFlags);
       if ((nOtherFlags == (CELLFLAGS_0x08 | CELLFLAGS_0x02 | CELLFLAGS_0x01) || nOtherFlags == (CELLFLAGS_0x08 | CELLFLAGS_0x02)) && pRoom->pLevel->eD2LevelId != 0x85) {
-        DRLGROOMTILE_SetupWarpTile(pRoom, pFloorTile, nFlags, nOtherFlags);
+        DRLGROOMTILE_SetupWarpTile(pRoom, pActSub18, nFlags, nOtherFlags);
       }
     }
     if ((nFlags & CELLFLAGS_0x8000000) == CELLFLAGS_NONE) {
@@ -701,6 +704,7 @@ void __fastcall InitRoomTiles(D2RoomExStrc * pRoomEx, D2DrlgGridStrc * pGrid, D2
 
 // Counts wall/floor/shadow tiles from grid flags.
 void __fastcall DRLGROOMTILE_CountTilesFromGrid(D2RoomExStrc * pRoomEx, D2DrlgGridStrc * pGrid, int bCountFloors, int bKillEdgeX, int bKillEdgeY) {
+    int* piVar1;
     int32_t nCellFlagsOffset;
     BOOL bIsInside;
     int nWorldPosX = pRoomEx->sCoords.WorldPosition.x;
@@ -720,13 +724,16 @@ void __fastcall DRLGROOMTILE_CountTilesFromGrid(D2RoomExStrc * pRoomEx, D2DrlgGr
         do {
           nCellFlagsOffset = DrlgGrid::GetOffset(pGrid, nX, bKillEdgeX);
           if (*(uint8_t*)nCellFlagsOffset & 1) {
-            pTileGrid->nWallTilesMax++;
+            piVar1 = &pTileGrid->sRoomTiles.nWallTilesCount;
+            (*piVar1)++;
           }
           if (*(uint8_t*)nCellFlagsOffset & 2 || bCountFloors && (bIsInside = DrlgRoom::AreXYInsideCoordinates(&pRoomEx->sCoords, nX + nWorldPosX, bKillEdgeX + nWorldPosY) , bIsInside != 0)) {
-            pTileGrid->nFloorTilesMax++;
+            piVar1 = &pTileGrid->sRoomTiles.nFloorTilesCount;
+            (*piVar1)++;
           }
           if (*(uint32_t*)nCellFlagsOffset & 0x8000000) {
-            pTileGrid->nRoofTilesMax++;
+            piVar1 = &pTileGrid->sRoomTiles.nRoofTilesCount;
+            (*piVar1)++;
           }
 
           nX++;
@@ -756,15 +763,15 @@ void __fastcall DRLGROOMTILE_CountWallTilesFromGrid(D2RoomExStrc * pRoomEx, D2Dr
         do {
           nTileType = DrlgGrid::GetGridFlags(pOrientGrid, nColIdx, nY);
           if (nTileType == 3) {
-            pnTileCounter = &pTileGrid->nWallTilesMax;
+            pnTileCounter = &pTileGrid->sRoomTiles.nWallTilesCount;
             (*pnTileCounter)++;
           } else if (nTileType - 10U < 2) {
             nTileType = DrlgGrid::GetGridFlags(pFloorGrid, nColIdx, nY);
             if (-1 < nTileType) {
-              pnTileCounter = &pTileGrid->nWallTilesMax;
+              pnTileCounter = &pTileGrid->sRoomTiles.nWallTilesCount;
               (*pnTileCounter)++;
             } else {
-              pnTileCounter = &pTileGrid->nFloorTilesMax;
+              pnTileCounter = &pTileGrid->sRoomTiles.nFloorTilesCount;
               *pnTileCounter += 6;
             }
           }
@@ -820,25 +827,30 @@ void __fastcall DRLGROOMTILE_AllocRoomTileGrid(D2RoomExStrc * pRoomEx) {
 void __fastcall DRLGROOMTILE_AllocTileDataArrays(D2RoomExStrc * pRoomEx) {
     D2DrlgTileDataStrc* pWallTiles;
     D2DrlgTileGridStrc* pTileGrid = pRoomEx->pRoomTiles;
+    int nSize = pTileGrid->sRoomTiles.nFloorTilesCount;
     D2PoolManagerStrc* pMemory = pRoomEx->pLevel->pDrlg->pMemoryPool;
-    if (pTileGrid->nFloorTilesMax) {
+    if (nSize) {
       D2DrlgTileDataStrc* pFloorTiles;
-      pFloorTiles = (D2DrlgTileDataStrc*)D2_ALLOC_POOL(pMemory, pTileGrid->nFloorTilesMax * 0x30);
-      pTileGrid->pFloorTiles = pFloorTiles;
-      memset(pFloorTiles, 0, pTileGrid->nFloorTilesMax * 0x30);
+      pFloorTiles = (D2DrlgTileDataStrc*)D2_ALLOC_POOL(pMemory, nSize * 0x30);
+      pTileGrid->sRoomTiles.pFloorTiles = pFloorTiles;
+      memset(pFloorTiles, 0, pTileGrid->sRoomTiles.nFloorTilesCount * 0x30);
     }
-    if (pTileGrid->nWallTilesMax) {
-      pWallTiles = (D2DrlgTileDataStrc*)D2_ALLOC_POOL(pMemory, pTileGrid->nWallTilesMax * 0x30);
-      pTileGrid->pWallTiles = pWallTiles;
-      memset(pWallTiles, 0, pTileGrid->nWallTilesMax * 0x30);
+
+    nSize = pTileGrid->sRoomTiles.nWallTilesCount;
+    if (nSize) {
+      pWallTiles = (D2DrlgTileDataStrc*)D2_ALLOC_POOL(pMemory, nSize * 0x30);
+      pTileGrid->sRoomTiles.pWallTiles = pWallTiles;
+      memset(pWallTiles, 0, pTileGrid->sRoomTiles.nWallTilesCount * 0x30);
     }
-    if (!(pTileGrid->nRoofTilesMax && !pTileGrid->pRoofTiles)) {
+
+    nSize = pTileGrid->sRoomTiles.nRoofTilesCount;
+    if (!(nSize && !pTileGrid->sRoomTiles.pRoofTiles)) {
       return;
     }
 
-    D2DrlgTileDataStrc* pRoofTiles = (D2DrlgTileDataStrc*)D2_ALLOC_POOL(pMemory, pTileGrid->nRoofTilesMax * 0x30);
-    pTileGrid->pRoofTiles = pRoofTiles;
-    memset(pRoofTiles, 0, pTileGrid->nRoofTilesMax * 0x30);
+    D2DrlgTileDataStrc* pRoofTiles = (D2DrlgTileDataStrc*)D2_ALLOC_POOL(pMemory, nSize * 0x30);
+    pTileGrid->sRoomTiles.pRoofTiles = pRoofTiles;
+    memset(pRoofTiles, 0, pTileGrid->sRoomTiles.nRoofTilesCount * 0x30);
 }
 
 // Grows tile data array capacity via realloc.
@@ -848,43 +860,49 @@ void __fastcall DRLGROOMTILE_GrowTileDataArray(D2PoolManagerStrc * pMemory, D2Dr
       return;
     }
 
-    D2DrlgTileDataStrc* pReallocated = (D2DrlgTileDataStrc*)D2_REALLOC_POOL(pMemory, pTileGrid->pRoofTiles, (pTileGrid->nRoofTilesMax + nAdditionalTiles) * 0x30);
-    pTileGrid->pRoofTiles = pReallocated;
+    D2DrlgTileDataStrc* pReallocated = (D2DrlgTileDataStrc*)D2_REALLOC_POOL(pMemory, pTileGrid->sRoomTiles.pRoofTiles, (pTileGrid->sRoomTiles.nRoofTilesCount + nAdditionalTiles) * 0x30);
+    pTileGrid->sRoomTiles.pRoofTiles = pReallocated;
     int nIndex = 0;
     if (pTileGrid->nShadows != 1 && -1 < pTileGrid->nShadows - 1) {
       int nByteOffset;
       nByteOffset = 0;
       do {
-        *(int*)((uintptr_t)&pTileGrid->pRoofTiles->pNext + nByteOffset) = (uintptr_t)&pTileGrid->pRoofTiles[1].nScreenX + nByteOffset;
+        pReallocated = pTileGrid->sRoomTiles.pRoofTiles;
+        *(int*)((uintptr_t)&pReallocated->pNext + nByteOffset) = (uintptr_t)&pReallocated[1].nScreenX + nByteOffset;
         nIndex++;
         nByteOffset += 0x30;
       } while (nIndex < pTileGrid->nShadows - 1);
     }
 
-    pTileGrid->pRoofTiles[nIndex].pNext = 0;
-    pTileGrid->nRoofTilesMax += nAdditionalTiles;
+    pTileGrid->sRoomTiles.pRoofTiles[nIndex].pNext = 0;
+    int* piVar1 = &pTileGrid->sRoomTiles.nRoofTilesCount;
+    *piVar1 += nAdditionalTiles;
 }
 
 // NOTE: Callee-saved register params inferred (medium confidence): pPoolManagerStrc (EDI): D2PoolManagerStrc*
 // @sourcefile .\DRLG\RoomTile.cpp
 void DRLGROOMTILE_FreeTileArrays(D2RoomExStrc * pLevelCtx, D2PoolManagerStrc * pPoolManagerStrc) {
     D2DrlgTileGridStrc* pTileGrid = pLevelCtx->pRoomTiles;
-    if (!(pTileGrid && &pTileGrid->pWallTiles)) {
+    if (!(pTileGrid && &pTileGrid->sRoomTiles)) {
       return;
     }
 
-    D2DrlgTileDataStrc* pFloorTiles = pTileGrid->pWallTiles;
+    D2DrlgTileDataStrc* pFloorTiles = pTileGrid->sRoomTiles.pWallTiles;
     if (pFloorTiles) {
       D2_FREE_POOL(pPoolManagerStrc, pFloorTiles);
     }
-    if (pTileGrid->pFloorTiles) {
-      D2_FREE_POOL(pPoolManagerStrc, pTileGrid->pFloorTiles);
+
+    pFloorTiles = pTileGrid->sRoomTiles.pFloorTiles;
+    if (pFloorTiles) {
+      D2_FREE_POOL(pPoolManagerStrc, pFloorTiles);
     }
-    if (!pTileGrid->pRoofTiles) {
+
+    pFloorTiles = pTileGrid->sRoomTiles.pRoofTiles;
+    if (!pFloorTiles) {
       return;
     }
 
-    D2_FREE_POOL(pPoolManagerStrc, pTileGrid->pRoofTiles);
+    D2_FREE_POOL(pPoolManagerStrc, pFloorTiles);
 }
 
 // @sourcefile .\DRLG\RoomTile.cpp

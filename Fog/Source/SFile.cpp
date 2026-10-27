@@ -8,11 +8,11 @@
 #include "Fog/Src/Safesock.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 
@@ -21,8 +21,8 @@
 
 namespace Fog::Source::SFile {
 
-static double gdFogJulianDaysPerYear = 365.25;
-static double gdFogJulianDaysPerMonth = 30.6001000000000;
+static double gdFogJulianDaysPerYear = 365.25; D2_STATIC_GUARD(gdFogJulianDaysPerYear, "Fog::Source::SFile::gdFogJulianDaysPerYear");
+static double gdFogJulianDaysPerMonth = 30.6001000000000; D2_STATIC_GUARD(gdFogJulianDaysPerMonth, "Fog::Source::SFile::gdFogJulianDaysPerMonth");
 
 void __fastcall SFILE_InitializeFileSystem(BOOL bResult, uint32_t dwParam) {
     uint32_t dwSysOptionBuf[2];
@@ -48,7 +48,7 @@ void __fastcall ERRORMANAGER_FCloseFile(D2MPQFileStrc * pMPQFile) {
 }
 
 // NOTE: Register params: pFileHandle (ECX): D2MPQFileStrc *, pOutputBuffer (EDX): void *
-int __fastcall ERRORMANAGER_FReadFile(D2MPQFileStrc * pFileHandle, void * pOutputBuffer, uint32_t nBytesToRead, size_t * pBytesRead, LPOVERLAPPED lpOverlapped, D2StormAsyncCompletionStrc * pCompletion, int dwReadFlags) {
+int __fastcall ERRORMANAGER_FReadFile(D2MPQFileStrc * pFileHandle, void * pOutputBuffer, uint32_t nBytesToRead, uint32_t * pBytesRead, LPOVERLAPPED lpOverlapped, D2StormAsyncCompletionStrc * pCompletion, int dwReadFlags) {
     int iVar1 = Storm::Source::SFile::SFileReadFileEx2(pFileHandle, pOutputBuffer, nBytesToRead, pBytesRead, lpOverlapped, dwReadFlags, pCompletion);
     return iVar1;
 }

@@ -13,7 +13,6 @@ struct D2AiCmdArgumentsStrc;
 struct D2AiGeneralStrc;
 struct D2MapAIStrc;
 struct D2MonsterAiCmdStrc;
-struct D2QuestDataStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
 typedef int eD2UnitType;
@@ -52,7 +51,7 @@ void __fastcall CreateAiCmdAndFill(::SGAMEDATA * pGame, struct D2UnitStrc * pmon
 struct D2MonsterAiCmdStrc * __fastcall AI_CreateCmdIfNotExists(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int nId, int32_t nId2);
 struct D2MapAIStrc * * __stdcall GetMonsterMapAi(struct D2UnitStrc * pMonster);
 void __fastcall AssignMinionOwner(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nOwnerGUID, eD2UnitType eOwnerType, int32_t nParam, BOOL bTransferBoss);
-void __fastcall GetMonsterNameAndAi(struct D2UnitStrc * pUnit, struct D2QuestDataStrc * pMonsterName, struct D2UnitStrc * pMonsterAi);
+void __fastcall GetMonsterNameAndAi(struct D2UnitStrc * pUnit, uint32_t * pMonsterName, int * pMonsterAi);
 // Returns the owner unit for a monster. Walks pMonsterData->pAiGeneral->pGame to call FindUnitFromTable with the owner's type and GUID.
 struct D2UnitStrc * __fastcall GetOwnerUnit(struct D2UnitStrc * pUnit);
 // @sourcefile .\Ai\AiGeneral.cpp
@@ -66,7 +65,7 @@ void __fastcall FreeAiOfMinionsLessSafe(struct D2UnitStrc * pUnit);
 // @sourcefile .\Ai\AiGeneral.cpp
 void __fastcall ClearMinionList(::SGAMEDATA * pGame, struct D2MonsterDataMinionList * pMinionList);
 // Iterates all minions in pUnit's owner's pMinionList and calls pfnProc(pArgument) for each resolved minion unit. Validates pfnProc via IsBadCodePtr first — halts with an unrecoverable error if the pointer is bad. Traverses owner->pMinionList and calls the callback only when the minion unit resolves successfully.
-void __fastcall CallForEachMinion(struct D2UnitStrc * pUnit, void * pContext, struct D2UnitStrc * pArgument, pfnMinionForEachCallback pfnProc);
+void __fastcall CallForEachMinion(struct D2UnitStrc * pUnit, void * pContext, void * pArgument, pfnMinionForEachCallback pfnProc);
 void __fastcall GetAndRemoveMinionList(struct D2UnitStrc * pUnit, int * pOwnerId, eD2UnitType * pType, uint32_t * nFlagBit1, uint32_t * nFlagBit2, struct D2MonsterDataMinionList * * pMinionList);
 void __fastcall ReplaceMinionList(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nUnitGUID, eD2UnitType eUnitType, int32_t nParam, BOOL bTransferBoss, struct D2MonsterDataMinionList * pMinionList);
 // Wires a newly joined monster into an existing AI minion group. Scans pTargetAi's minionList for the first live monster, promotes it to group leader (sets AI flags 1+2, eOwnerTypeEx/nOwnerGUIDEx), updates pOwner's AI back-link to point at the leader, calls AddMinionToList for the leader+owner pair, then iterates all remaining minion-list entries and chains each live non-leader monster to the leader via AddMinionToList.

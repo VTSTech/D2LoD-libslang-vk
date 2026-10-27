@@ -10,8 +10,6 @@
 #include "Bnclient/SRP.h"
 #include "D2Client/net_sid.h"
 #include "D2Lang/StrTable/strtable.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "Fog/Debug.h"
 #include "Fog/Fog.h"
 #include "Fog/SMem.h"
@@ -29,15 +27,11 @@
 #include "D2Client/UI/Chat.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Net/sockaddr.h"
-#include "Storm/D2ArchiveStrc.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
 namespace Bnclient::_net_sid {
-
-static uint8_t gbCDKeyValidationSuccess;
-static uint8_t gbAuthChangeProofComplete;
 
 int __fastcall NET_SID_CLIENT_GetStateAndClear(int * pOutState) {
     if (!pOutState) {
@@ -295,30 +289,21 @@ BOOL __fastcall NET_SID_CLIENT_IncomingReturn(char * pBytes, size_t nSize) {
 
 // SID_CREATEACCOUNT (0x2A) response handler. Legacy account creation result. Receives (DWORD)Status where 0=success, 1=name too short, 2=invalid characters, 3=prohibited word, 4=already exists, 5=still processing. Stores status in global g_dwSIDCreateAccountStatus.
 BOOL __fastcall NET_SID_CLIENT_Incoming_CreateAccount(char * pBytes, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t g_dwSIDCreateAccountStatus;
-
-    g_dwSIDCreateAccountStatus = *(uint32_t*)pBytes;
+    g_SIDPacketResponseFlags[0x2a] = *(uint32_t*)pBytes;
     return 1;
 }
 
 // SID_CREATEACCOUNT2 (0x3D) response handler. Enhanced account creation result. Receives (DWORD)Status (same codes as 0x2A). Stores status in g_nSIDResponseCount2 and sets gbSIDCreateAccount2Complete=1 to signal completion.
 BOOL __fastcall NET_SID_CLIENT_Incoming_CreateAccount2(char * pBytes, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t gbSIDCreateAccount2Complete;
-
     g_nSIDResponseCount2 = *(uint32_t*)pBytes;
-    gbSIDCreateAccount2Complete = 1;
+    g_SIDPacketResponseFlags[0x3d] = 1;
     return 1;
 }
 
 // SID_CHANGEPASSWORD (0x31) response handler. Password change result. Receives (DWORD)Status where 0=success, non-zero=failure. Stores status in g_nSIDResponseCount1, sets gbSIDChangePasswordComplete=1 completion flag. On success, routes to BnMessQueue state 0xe.
 BOOL __fastcall NET_SID_CLIENT_Incoming_ChangePassword(char * pBytes, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t gbSIDChangePasswordComplete;
-
     g_nSIDResponseCount1 = *(int*)pBytes;
-    gbSIDChangePasswordComplete = 1;
+    g_SIDPacketResponseFlags[0x31] = 1;
     if (g_nSIDResponseCount1) {
       return 1;
     }
@@ -360,14 +345,11 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_LogonChallenge(char * pBytes, size_t nSi
 // BATTLE.NET SID_STARTADVEX3 (0x1C) HANDLER
 // Receives game creation/start result from Battle.net server. The 4-byte status code indicates success (0) or various failure reasons (name taken, invalid settings, etc.). On success, sets global flag at 0x00882318 to signal the connection state machine to proceed with game join sequence.
 BOOL __fastcall NET_SID_CLIENT_Incoming_StartAdvEx3(char * pBytes, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t g_bGameCreationSuccess;
-
     if (*(int*)pBytes) {
       return 1;
     }
 
-    g_bGameCreationSuccess = 1;
+    g_SIDPacketResponseFlags[0x1c] = 1;
     return 1;
 }
 
@@ -412,9 +394,6 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_LogonResponse2(char * pBytes, size_t nSi
 
 // SID_REPORTVERSION (0x07) response handler. Version check result from server. Receives (DWORD)Result where 0=banned, 1=outdated (needs patch), 2=current version OK, 3=must reinstall. For result==1, extracts (STRING)PatchURL and initiates BNDOWNLOAD (mode 0x80000002, type 2). Stores patch path in registry key "Patches". Sets gbSIDVersionCheckComplete flag: 0=needs update, 1=current.
 BOOL __fastcall NET_SID_CLIENT_Incoming_ReportVersion(char * pBytes, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t gbSIDVersionCheckComplete;
-
     uint8_t* pszPatchURL;
     uint32_t dwVersionResult = *(uint32_t*)pBytes;
     if (dwVersionResult && dwVersionResult < 4) {
@@ -430,18 +409,18 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_ReportVersion(char * pBytes, size_t nSiz
       ftDownloadTime.dwLowDateTime = 0;
       ftDownloadTime.dwHighDateTime = 0;
       BnDownload::BNDOWNLOAD_InitiateFileDownload((D2BnetDownloadStateStrc*)0x80000002, 2, 0, 0, &ftDownloadTime, (char*)pszPatchURL, nullptr);
-      gbSIDVersionCheckComplete = 0;
+      g_SIDPacketResponseFlags[7] = 0;
       Bnet::BnetLog_WriteLine("downloading upgrade");
       return 1;
     }
     if (dwVersionResult == 2) {
-      gbSIDVersionCheckComplete = 1;
+      g_SIDPacketResponseFlags[7] = 1;
       Bnet::BnetLog_WriteLine("user has latest version");
       return 1;
     }
 
     BNMESSQUEUE_SetStateIfZero(1);
-    gbSIDVersionCheckComplete = 0;
+    g_SIDPacketResponseFlags[7] = 0;
     if (dwVersionResult == 3) {
       Bnet::BnetLog_WriteLine("User must reinstall and patch");
       return 1;
@@ -477,14 +456,14 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_Ping(char * pBytes, size_t nSize) {
 // SID_CDKEY3 (0x42) response handler. CD key validation result. Receives (DWORD)Result where 0=accepted, 3=invalid key, 4=key in use by (STRING)Username, 5=banned key, 6=wrong product. Stores result in gnCDKey3ValidationResult. For result==4, copies username to gszCDKeyInUseByUsername buffer (256 bytes) and routes to BnMessQueue state. Sets gbCDKeyValidationSuccess=1 on success.
 BOOL __fastcall NET_SID_CLIENT_Incoming_CDKey3(char * pBytes, size_t nSize) {
     // Static local variables (originally global data)
-    static unsigned int gnCDKey3ValidationResult;
+    static unsigned int gnCDKey3ValidationResult; D2_STATIC_GUARD_BSS(gnCDKey3ValidationResult, "Bnclient::_net_sid::NET_SID_CLIENT_Incoming_CDKey3::gnCDKey3ValidationResult");
 
     gnCDKey3ValidationResult = *(uint32_t*)pBytes;
     gszCDKeyInUseByUsername[0] = '\0';
-    gbCDKeyValidationSuccess = 0;
+    g_SIDPacketResponseFlags[0x42] = 0;
     switch (gnCDKey3ValidationResult) {
       case 0:
-        gbCDKeyValidationSuccess = 1;
+        g_SIDPacketResponseFlags[0x42] = 1;
       return 1;
       case 3:
         SID_SetStateFlag1(3);
@@ -662,9 +641,6 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthInfo(SID_S2C_AuthInfo * pPacketData,
 // Key status: 0x200=invalid, 0x201=in use, 0x202=disabled, 0x203=wrong product
 // Initiates MPQ patch download for upgrade paths or sets login state for authentication flow.
 BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketData, size_t nPacketSize) {
-    // Static local variables (originally global data)
-    static bool gbAuthCheckVersionValid;
-
     // Frame slots -264..-4 are ONE object: &szPatchFilename is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -707,7 +683,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketDat
       }
 
       gszCDKeyInUseByUsername[0] = '\0';
-      gbCDKeyValidationSuccess = 0;
+      g_SIDPacketResponseFlags[0x42] = 0;
       Storm::Source::SReg::SRegSaveData((uint32_t*)"Patch", "Patches", 0x82, (uint8_t*)"", 1);
       if (dwResultCode < 0x201) {
         if (dwResultCode == 0x200) {
@@ -718,14 +694,14 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketDat
             case 0x101:
               {
                 BNMESSQUEUE_SetStateIfZero(1);
-                gbAuthCheckVersionValid = 0;
+                g_SIDPacketResponseFlags[0x51] = 0;
                 Debug::DEBUG_UnusedDebugFunction("User has unknown version");
                 break;
               }
             case 0:
               {
-                gbCDKeyValidationSuccess = 1;
-                gbAuthCheckVersionValid = 1;
+                g_SIDPacketResponseFlags[0x42] = 1;
+                g_SIDPacketResponseFlags[0x51] = 1;
                 Debug::DEBUG_UnusedDebugFunction("User has latest version and a valid cdkey");
                 break;
               }
@@ -738,14 +714,14 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketDat
                 szAdditionalInfo.dwLowDateTime = 0;
                 szAdditionalInfo.dwHighDateTime = 0;
                 BnDownload::BNDOWNLOAD_InitiateFileDownload((D2BnetDownloadStateStrc*)0x80000002, 2, 0, 0, &szAdditionalInfo, (char*)&__frame0.szPatchFilename, nullptr);
-                gbAuthCheckVersionValid = 0;
+                g_SIDPacketResponseFlags[0x51] = 0;
                 Debug::DEBUG_UnusedDebugFunction("Downloading Upgrade");
                 break;
               }
           }
         } else if (dwResultCode == 0x102) {
           BNMESSQUEUE_SetStateIfZero(1);
-          gbAuthCheckVersionValid = 0;
+          g_SIDPacketResponseFlags[0x51] = 0;
           Debug::DEBUG_UnusedDebugFunction("User must revert to an older version");
         }
       } else {
@@ -790,9 +766,6 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketDat
 // 9=profanity filter, 10=no alphabetic chars, 11=adjacent punctuation, 12=too much punctuation
 // Sets global g_nSIDResponseCount2 to map status to UI error message display.
 BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountCreate(char * pPacketData, size_t nPacketSize) {
-    // Static local variables (originally global data)
-    static uint8_t gbSIDAccountCreateComplete;
-
     char* szErrorMessage;
     if (nPacketSize < 4) {
       Debug::DEBUG_UnusedDebugFunction("INVALID: AuthAccountCreate");
@@ -838,7 +811,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountCreate(char * pPacketData, si
     }
 
     Debug::DEBUG_UnusedDebugFunction(szErrorMessage);
-    gbSIDAccountCreateComplete = 1;
+    g_SIDPacketResponseFlags[0x52] = 1;
     return 1;
 }
 
@@ -981,7 +954,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountChangeProof(char * pPacketDat
       bProofValid = NET_SID_CLIENT_VerifyServerProof(pPacketData + 4);
       if (bProofValid) {
         Debug::DEBUG_UnusedDebugFunction("Change Proof success");
-        gbAuthChangeProofComplete = 1;
+        g_SIDPacketResponseFlags[0x55] = 1;
         return 1;
       }
 
@@ -989,7 +962,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountChangeProof(char * pPacketDat
     } else {
       if (dwStatusCode == 2) {
         Debug::DEBUG_UnusedDebugFunction("Change Proof failed: Invalid password");
-        gbAuthChangeProofComplete = 1;
+        g_SIDPacketResponseFlags[0x55] = 1;
         BNMESSQUEUE_SetStateIfZero(0xe);
         return 1;
       }
@@ -1052,7 +1025,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountUpgradeProof(char * pPacketDa
       Debug::DEBUG_UnusedDebugFunction("Upgrade Proof success, password changed");
       NET_SID_ClearSrpPassword();
       g_nSIDResponseCount1 = 0;
-      gbAuthChangeProofComplete = 1;
+      g_SIDPacketResponseFlags[0x55] = 1;
       return 1;
     }
     if (*(int*)pPacketData != 2) {
@@ -1073,7 +1046,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountUpgradeProof(char * pPacketDa
     Debug::DEBUG_UnusedDebugFunction("Upgrade Proof Failed: Invalid password during change");
     NET_SID_ClearSrpPassword();
     g_nSIDResponseCount1 = 2;
-    gbAuthChangeProofComplete = 1;
+    g_SIDPacketResponseFlags[0x55] = 1;
     BNMESSQUEUE_SetStateIfZero(0xe);
     return 1;
 }
@@ -1210,7 +1183,7 @@ BOOL __fastcall NET_SID_CLIENT_IncomingPacketHandler(uint8_t nPacketId, char * p
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(NET_SID_CLIENT_INCOMING, "Bnclient::_net_sid::NET_SID_CLIENT_IncomingPacketHandler::NET_SID_CLIENT_INCOMING");
 
     BOOL bResult = 0;
     if (nPacketId >= 0x5e) {
@@ -1234,8 +1207,8 @@ __time32_t __stdcall NET_SID_GetTime32_00521b40(__time32_t * pTime) {
 // Initializes the SRP context by calling SRP_SetParameters with the Battle.net N (safe prime) and g (generator) values, then seeds the RNG with GetTickCount() for ephemeral key generation. Must be called before any SRP logon/create/change flow.
 void __stdcall NET_SID_CLIENT_InitializeSRP() {
     // Static local variables (originally global data)
-    static int gabSrpGeneratorG = 0x2f;
-    static uint32_t gnSrpGeneratorGLen = 0x1;
+    static int gabSrpGeneratorG = 0x2f; D2_STATIC_GUARD(gabSrpGeneratorG, "Bnclient::_net_sid::NET_SID_CLIENT_InitializeSRP::gabSrpGeneratorG");
+    static uint32_t gnSrpGeneratorGLen = 0x1; D2_STATIC_GUARD(gnSrpGeneratorGLen, "Bnclient::_net_sid::NET_SID_CLIENT_InitializeSRP::gnSrpGeneratorGLen");
     static uint8_t gabSrpModulusN[32] = {
     0x87,
     0xc7,
@@ -1269,8 +1242,8 @@ void __stdcall NET_SID_CLIENT_InitializeSRP() {
     0x1a,
     0xff,
     0xf8
-};
-    static uint32_t gnSrpModulusNLen = 0x20;
+}; D2_STATIC_GUARD(gabSrpModulusN, "Bnclient::_net_sid::NET_SID_CLIENT_InitializeSRP::gabSrpModulusN");
+    static uint32_t gnSrpModulusNLen = 0x20; D2_STATIC_GUARD(gnSrpModulusNLen, "Bnclient::_net_sid::NET_SID_CLIENT_InitializeSRP::gnSrpModulusNLen");
 
     SRP::SRP_SetParameters(&g_pSrpContext, gnSrpGeneratorGLen, (uint8_t*)&gabSrpGeneratorG, gnSrpModulusNLen, gabSrpModulusN);
     DWORD dwTickCount = GetTickCount();
@@ -1380,7 +1353,7 @@ void __stdcall NET_SID_CLIENT_Send_0x50_AuthInfo() {
 // SID_AUTH_CHECK containing version/key validation results.
 int32_t __stdcall NET_SID_CLIENT_Send_0x51_AuthCheck() {
     // Static local variables (originally global data)
-    static uint32_t g_dwCdKeyClientToken;
+    static uint32_t g_dwCdKeyClientToken; D2_STATIC_GUARD_BSS(g_dwCdKeyClientToken, "Bnclient::_net_sid::NET_SID_CLIENT_Send_0x51_AuthCheck::g_dwCdKeyClientToken");
 
     BOOL bIsExpansion;
     char* pPacketEnd;
@@ -1914,7 +1887,7 @@ void __fastcall NET_SID_CLIENT_ExpandCdKeyToBase5(int32_t pCdKeyString, int32_t 
     0xff,
     0xff,
     0xff
-};
+}; D2_STATIC_GUARD(g_CdKeyCharToDigitTable, "Bnclient::_net_sid::NET_SID_CLIENT_ExpandCdKeyToBase5::g_CdKeyCharToDigitTable");
 
     uint32_t nextInIdx;
     uint8_t digitValue;
@@ -2463,7 +2436,7 @@ int32_t NET_SID_CLIENT_DecodeAndValidateBuffer(int * pnParam, uint32_t nParam) {
 uint32_t * NET_SID_CLIENT_LoadAndDecodeCDKeyFile(uint32_t * pnParam, DWORD * dwParam) {
     *dwParam = 0x400;
     uint32_t* pLoadedKeyBuf = pnParam;
-    Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)pnParam, (void**)&pLoadedKeyBuf, dwParam, 1, 0);
+    Storm::Source::SFile::SFileLoadFile((char*)pnParam, (void**)&pLoadedKeyBuf, dwParam, 1, 0);
     if (!(pLoadedKeyBuf && *dwParam)) {
       return nullptr;
     }
@@ -2482,9 +2455,9 @@ uint32_t * NET_SID_CLIENT_LoadAndDecodeCDKeyFile(uint32_t * pnParam, DWORD * dwP
 
 void __stdcall DecodeAndLoadKeys() {
     // Static local variables (originally global data)
-    static uint32_t g_dwCdKeyClassicSize;
-    static uint32_t g_dwCdKeyOwnerSize;
-    static uint32_t g_dwCdKeyExpansionSize;
+    static uint32_t g_dwCdKeyClassicSize; D2_STATIC_GUARD_BSS(g_dwCdKeyClassicSize, "Bnclient::_net_sid::DecodeAndLoadKeys::g_dwCdKeyClassicSize");
+    static uint32_t g_dwCdKeyOwnerSize; D2_STATIC_GUARD_BSS(g_dwCdKeyOwnerSize, "Bnclient::_net_sid::DecodeAndLoadKeys::g_dwCdKeyOwnerSize");
+    static uint32_t g_dwCdKeyExpansionSize; D2_STATIC_GUARD_BSS(g_dwCdKeyExpansionSize, "Bnclient::_net_sid::DecodeAndLoadKeys::g_dwCdKeyExpansionSize");
 
     int32_t bDecodeResultClassic;
     int* pKeyBuf;
@@ -2528,7 +2501,7 @@ void __stdcall DecodeAndLoadKeys() {
 
       szFileName[nXorByteIdx + 1] = '\0';
       g_dwCdKeyClassicSize = 0x400;
-      Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyClassicSize, 1, 0);
+      Storm::Source::SFile::SFileLoadFile(szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyClassicSize, 1, 0);
       if (pFileBuf && g_dwCdKeyClassicSize) {
         bDecodeResultClassic = NET_SID_CLIENT_DecodeAndValidateBuffer(pFileBuf, g_dwCdKeyClassicSize);
         pKeyClassicBuf = (uint32_t*)pFileBuf;
@@ -2547,7 +2520,7 @@ void __stdcall DecodeAndLoadKeys() {
     D2Client::_CdKey::KeyClassic = (char*)pKeyClassicBuf;
     sprintf(szFileName, "%s\\%s.clh", "font", "font");
     g_dwCdKeyOwnerSize = 0x400;
-    Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyOwnerSize, 1, 0);
+    Storm::Source::SFile::SFileLoadFile(szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyOwnerSize, 1, 0);
     if (!pFileBuf || !g_dwCdKeyOwnerSize) {
       pKeyBuf = 0;
     } else {
@@ -2582,7 +2555,7 @@ void __stdcall DecodeAndLoadKeys() {
       szFileName[nXorByteIdx + 1] = '\0';
       g_dwCdKeyOwnerSize = 0x400;
       D2Client::_CdKey::KeyOwner = (char*)pKeyBuf;
-      Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyOwnerSize, 1, 0);
+      Storm::Source::SFile::SFileLoadFile(szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyOwnerSize, 1, 0);
       if (pFileBuf && g_dwCdKeyOwnerSize) {
         bDecodeResultClassic = NET_SID_CLIENT_DecodeAndValidateBuffer(pFileBuf, g_dwCdKeyOwnerSize);
         pKeyBuf = pFileBuf;
@@ -2624,7 +2597,7 @@ void __stdcall DecodeAndLoadKeys() {
 
       szFileName[nXorByteIdx + 1] = '\0';
       g_dwCdKeyExpansionSize = 0x400;
-      Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyExpansionSize, 1, 0);
+      Storm::Source::SFile::SFileLoadFile(szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyExpansionSize, 1, 0);
       if (pFileBuf && g_dwCdKeyExpansionSize) {
         bDecodeResultClassic = NET_SID_CLIENT_DecodeAndValidateBuffer(pFileBuf, g_dwCdKeyExpansionSize);
         pKeyBuf = pFileBuf;

@@ -2,7 +2,6 @@
 
 #include "D2Game/Quests/QUESTS/A1Q2.h"
 #include "D2Client/D2ClientStrc.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -14,6 +13,7 @@
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/QuestRecord.h"
+#include "D2Common/Text.h"
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Common/Units.h"
@@ -160,7 +160,7 @@ void __fastcall Q02_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
 // A1Q2 (Sisters' Burial Grounds) NPC-gossip callback slot 0xb, handling Kashya (NPC 0x96). Msg 0x51: player accepts the quest — sets bAcceptedQuest, advances stateFlag to 2, re-syncs all players' journal steps via Q02_SyncQuestStepToPlayer, sends gossip packet. Msg 0x5c: reward turn-in — only if RewardAwaits; broadcasts JustCompleted state, marks Completed, clears RewardAwaits, records the player GUID, and calls HireMercFromNpc(0x96) to grant the rogue mercenary reward.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q2.cpp
 void __fastcall Q02_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    int32_t nErrorAddr;
+    int32_t nLine;
     short int sVar1 = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     short int nQuestMsg = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
@@ -205,12 +205,12 @@ void __fastcall Q02_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
                          it's claimed */ D2Common::QuestRecord::UnsetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
     QUEST_SendQuestInfoToUnit(pQuestData->pGame, pQuestArgs->pPlayer);
     if (!pQuestArgs->pPlayer) {
-      nErrorAddr = -1;
+      nLine = -1;
     } else {
-      nErrorAddr = pQuestArgs->pPlayer->nUnitGUID;
+      nLine = pQuestArgs->pPlayer->nUnitGUID;
     }
 
-    QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nErrorAddr);
+    QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nLine);
     /* HireMercFromNpc(npc 0x96=Kashya): grant the rogue mercenary -- the A1Q2
                          reward */ UNIT::SUNITNPC::HireMercFromNpc(pQuestData->pGame, pQuestArgs->pPlayer, 0x96);
     QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
@@ -225,7 +225,7 @@ void __fastcall Q02_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // State ids: 0=Completed, 1=RewardAwaits.
 void __fastcall Q02_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQuestCallbackAddressQ38[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 };
+    static int32_t gdwQuestCallbackAddressQ38[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gdwQuestCallbackAddressQ38, "D2Game::Quests::QUESTS::A1Q2::Q02_Callback00_NpcActivate::gdwQuestCallbackAddressQ38");
 
     int32_t nPlayerId;
     int32_t iTargetId = !pQuestArgs->pTarget ? -1 : pQuestArgs->pTarget->nClassId;
@@ -459,7 +459,7 @@ void __fastcall Q02_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 // A1Q2 Sisters' Burial Grounds, state-fn slot 3. Handles area-entry trigger (index 0x11): if quest introduced and nStateFlag&lt;3, advances nStateFlag to 3 and broadcasts state 2 (Q02_NotifyQuestStateToPlayer), then syncs step bits to all players. Also handles player-leaves path (pTextControl==1): removes player from participant list and, if nStateFlag==2 and not Completed/RewardAwaits, advances nStateFlag to 3 and resyncs steps.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q2.cpp
 void __fastcall Q02_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    D2GossipTextStrc* pTextControl;
+    D2GSPacketSrv0x27_TextStrc* pTextControl;
     pTextControl = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
     if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 0x11 && pQuestData->bIsNotIntroduction) {
       bool bStateFlagLow;
@@ -476,7 +476,7 @@ void __fastcall Q02_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         goto sync_quest_step;
       }
     }
-    if (pTextControl != (D2GossipTextStrc*)0x1) {
+    if (pTextControl != (D2GSPacketSrv0x27_TextStrc*)0x1) {
       return;
     }
 

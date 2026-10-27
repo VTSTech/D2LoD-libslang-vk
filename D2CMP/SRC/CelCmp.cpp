@@ -55,7 +55,7 @@ uint32_t __stdcall CELCMP_GetDirectionFrameTableIndex(int32_t nFrameIndex, uint3
 
 uint32_t __stdcall CELCMP_GetPaletteShiftValue(uint32_t nPaletteIndex, uint32_t nBitsPerPixel, int32_t nSrcBitsPerPixel, int32_t bIsHigherPalette) {
     // Static local variables (originally global data)
-    static uint8_t BYTE_ARRAY_006e5da0[8] = { 0x1, 0x1, 0x3, 0x3, 0x5, 0x5, 0x7, 0x7 };
+    static uint8_t BYTE_ARRAY_006e5da0[8] = { 0x1, 0x1, 0x3, 0x3, 0x5, 0x5, 0x7, 0x7 }; D2_STATIC_GUARD(BYTE_ARRAY_006e5da0, "D2CMP::SRC::CelCmp::CELCMP_GetPaletteShiftValue::BYTE_ARRAY_006e5da0");
     static uint8_t BYTE_ARRAY_006e5da8[16] = {
     0x0,
     0x0,
@@ -73,8 +73,8 @@ uint32_t __stdcall CELCMP_GetPaletteShiftValue(uint32_t nPaletteIndex, uint32_t 
     0xc,
     0xe,
     0xe
-};
-    static uint8_t BYTE_ARRAY_006e5db8[8] = { 0x3, 0x3, 0x5, 0x5, 0x7, 0x7, 0x1, 0x1 };
+}; D2_STATIC_GUARD(BYTE_ARRAY_006e5da8, "D2CMP::SRC::CelCmp::CELCMP_GetPaletteShiftValue::BYTE_ARRAY_006e5da8");
+    static uint8_t BYTE_ARRAY_006e5db8[8] = { 0x3, 0x3, 0x5, 0x5, 0x7, 0x7, 0x1, 0x1 }; D2_STATIC_GUARD(BYTE_ARRAY_006e5db8, "D2CMP::SRC::CelCmp::CELCMP_GetPaletteShiftValue::BYTE_ARRAY_006e5db8");
     static uint8_t BYTE_ARRAY_006e5dc0[16] = {
     0x2,
     0x2,
@@ -92,7 +92,7 @@ uint32_t __stdcall CELCMP_GetPaletteShiftValue(uint32_t nPaletteIndex, uint32_t 
     0xe,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(BYTE_ARRAY_006e5dc0, "D2CMP::SRC::CelCmp::CELCMP_GetPaletteShiftValue::BYTE_ARRAY_006e5dc0");
 
     if (nBitsPerPixel <= nPaletteIndex) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1a0);
@@ -640,7 +640,7 @@ uint32_t __stdcall CELCMP_GetFrameDecodeHandlerForward(uint32_t nParam1, uint32_
     0x0,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gdwCelCmpCacheSize, "D2CMP::SRC::CelCmp::CELCMP_GetFrameDecodeHandlerForward::gdwCelCmpCacheSize");
 
     uint32_t dwPopTmp1;
     uint32_t dwPopTmp2;
@@ -1184,7 +1184,7 @@ uint32_t __stdcall CELCMP_GetFrameDecodeHandlerReverse(uint32_t nParam1, uint32_
     0x3d,
     0x3e,
     0x3f
-};
+}; D2_STATIC_GUARD(gdwCelCmpCompressionBuffer, "D2CMP::SRC::CelCmp::CELCMP_GetFrameDecodeHandlerReverse::gdwCelCmpCompressionBuffer");
 
     uint32_t dwPopTmp1;
     uint32_t dwPopTmp2;
@@ -1224,7 +1224,7 @@ void __stdcall CELCMP_ValidateCelFilePointer(int32_t nParam, uint32_t dwParam) {
 
 uint32_t __stdcall CELCMP_AllocateDecodedCelFile(int32_t nParam, uint32_t * pdwParam, uint32_t dwParam1, uint32_t dwParam2) {
     // Static local variables (originally global data)
-    static fpCelAllocDecodedByFormat gapfnCelAllocDecodedByFormat[2] = { (fpCelAllocDecodedByFormat)&D2CMP::SRC::FastCmp::FASTCMP_ConvertDCCWithPaletteRemap, nullptr };
+    static fpCelAllocDecodedByFormat gapfnCelAllocDecodedByFormat[2] = { (fpCelAllocDecodedByFormat)&D2CMP::SRC::FastCmp::FASTCMP_ConvertDCCWithPaletteRemap, nullptr }; D2_STATIC_GUARD(gapfnCelAllocDecodedByFormat, "D2CMP::SRC::CelCmp::CELCMP_AllocateDecodedCelFile::gapfnCelAllocDecodedByFormat");
 
     if (!(*(uint8_t*)(nParam + 4) & 4)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ad);
@@ -1439,6 +1439,7 @@ uint32_t __stdcall CELCMP_SerializeCelFileToMemory(uint32_t * pDCCSrc, uint32_t 
 }
 
 void __stdcall CELCMP_FixupPointersAndPrepare(DC6 * pDC6, DC6 * * ppDC6Out, char * szFile, int32_t nLine, int32_t nExpectedFormat, char * szName) {
+    void* nErrorAddr;
     if (!pDC6) {
       return;
     }
@@ -1463,17 +1464,17 @@ void __stdcall CELCMP_FixupPointersAndPrepare(DC6 * pDC6, DC6 * * ppDC6Out, char
 
     size_t nAllocSize = pDC6->nDirections * pDC6->nFrames * 0x2c;
     pDC6->nFlags = nFrameIndex | 2;
-    void* pBlockPool = D2_ALLOC(nAllocSize);
-    memset(pBlockPool, 0, nAllocSize);
+    nErrorAddr = D2_ALLOC(nAllocSize);
+    memset(nErrorAddr, 0, nAllocSize);
     if (pDC6->nDirections * pDC6->nFrames) {
       DC6* pFrameIter;
       pFrameIter = pDC6 + 1;
       nFrameIndex = 0;
       do {
         pFrameIter->nVersion = (int)(pDC6->nTerm + pFrameIter->nVersion - 0xc);
-        *(void**)(pFrameIter->nVersion + 0x18) = (void*)pBlockPool;
+        *(void**)(pFrameIter->nVersion + 0x18) = (void*)nErrorAddr;
         nFrameIndex++;
-        pBlockPool = (void*)((int)pBlockPool + 0x2c);
+        nErrorAddr = (void*)((int)nErrorAddr + 0x2c);
         pFrameIter = (DC6*)&pFrameIter->nFlags;
       } while (nFrameIndex < (uint32_t)(pDC6->nDirections * pDC6->nFrames));
     }
@@ -1492,7 +1493,7 @@ void __stdcall CELCMP_FreeCelFileMemory(void * pCelFile) {
 
 void __stdcall CELCMP_InvokeFormatSpecificCleanup(int32_t nParam, BYTE * dwParam) {
     // Static local variables (originally global data)
-    static fpCelRemapFrameByFormat gapfnCelRemapFrameByFormat[2] = { &D2CMP::SRC::FastCmp::FASTCMP_RemapFramePaletteIndices, nullptr };
+    static fpCelRemapFrameByFormat gapfnCelRemapFrameByFormat[2] = { &D2CMP::SRC::FastCmp::FASTCMP_RemapFramePaletteIndices, nullptr }; D2_STATIC_GUARD(gapfnCelRemapFrameByFormat, "D2CMP::SRC::CelCmp::CELCMP_InvokeFormatSpecificCleanup::gapfnCelRemapFrameByFormat");
 
     uint32_t iFrame;
     if (nParam) {
@@ -1797,19 +1798,19 @@ pfnCelPixelDataFree __stdcall CELCMP_GetPixelDataFreeCallback() {
 }
 
 void __stdcall DeleteCellFile(DC6 * pDC6) {
+    void* nAddress;
     pfnCelPixelDataFree pfnFreeCallback;
     uint32_t nFrameIndex;
     DC6* pBlockIter;
     int32_t nLine;
-    void* pMemoryToFree;
     if (!pDC6) {
       return;
     }
     if (pDC6->nVersion == 6) {
       int* pPixelData;
-      pMemoryToFree = *(void**)(pDC6[1].nVersion + 0x18);
+      nAddress = *(void**)(pDC6[1].nVersion + 0x18);
       pBlockIter = pDC6 + 1;
-      if (pMemoryToFree) {
+      if (nAddress) {
         nFrameIndex = 0;
         pfnFreeCallback = gpCelPixelDataFreeCallback;
         if (pDC6->nFrames * pDC6->nDirections) {
@@ -1831,7 +1832,7 @@ void __stdcall DeleteCellFile(DC6 * pDC6) {
           } while (nFrameIndex < (uint32_t)(pDC6->nFrames * pDC6->nDirections));
         }
 
-        D2_FREE(pMemoryToFree);
+        D2_FREE(nAddress);
         return;
       }
 
@@ -1982,7 +1983,7 @@ void __stdcall CELCMP_FreeCachedCelFrame(uint32_t nParam) {
 
 uint32_t __stdcall CELCMP_CreateCelFileFromCache(uint32_t nParam, uint32_t * pdwParam) {
     // Static local variables (originally global data)
-    static fpCelDecodeCachedByFormat gapfnCelDecodeCachedByFormat[2] = { &D2CMP::SRC::FastCmp::FASTCMP_DecompressRLEWithPaletteConversion, nullptr };
+    static fpCelDecodeCachedByFormat gapfnCelDecodeCachedByFormat[2] = { &D2CMP::SRC::FastCmp::FASTCMP_DecompressRLEWithPaletteConversion, nullptr }; D2_STATIC_GUARD(gapfnCelDecodeCachedByFormat, "D2CMP::SRC::CelCmp::CELCMP_CreateCelFileFromCache::gapfnCelDecodeCachedByFormat");
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gCelCmpCacheHandler.tSync.m_critsect);
     int bLockAcquired = -1;

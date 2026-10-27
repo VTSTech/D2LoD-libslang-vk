@@ -54,9 +54,9 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Common/Text.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -488,7 +488,7 @@ void __fastcall Q35_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // A5Q5 (Rite of Passage) gossip/log driver, handler index 0. Pre-completion: if NPC is an Ancient (class 0x219–0x21b) and reward not pending, queues gossip line 4; then looks up a state-flag-indexed gossip line from gdwQuestCallbackAddressQ35 and queues it. Post-completion: per recognized NPC (Larzuk/Drehya/Malah/Qualkhek/Cain) checks a per-NPC talk step-flag; not yet talked → line 5, already talked + JustCompleted → line 3.
 void __fastcall Q35_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQuestCallbackAddressQ35[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x0 };
+    static int32_t gdwQuestCallbackAddressQ35[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x0 }; D2_STATIC_GUARD(gdwQuestCallbackAddressQ35, "D2Game::Quests::QUESTS::A5Q5::Q35_Callback00_NpcActivate::gdwQuestCallbackAddressQ35");
 
     eD2MonsterClassId nNpcId;
     eD2QuestState eQuestState;
@@ -687,7 +687,7 @@ BOOL __fastcall Q35_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 
 // A5Q5 (Rite of Passage) per-player completion callback, called after all three Ancients are killed. For each eligible player (level ≥ (difficulty+1)*20, standing in LEVEL_ArreatSummit, not already Completed): sets JustCompleted and Completed in the QuestRecord, awards XP via RewardExperienceFromAncients, then propagates completion to all party members via Q35_SetCompleteForPartyMember.
 BOOL __fastcall Q35_OnAncientsDefeated(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    int32_t nPlayerLevel;
+    int32_t nAssertLine;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     if (!pRoom) {
       return 0;
@@ -699,8 +699,8 @@ BOOL __fastcall Q35_OnAncientsDefeated(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
       exit(-1);
     }
 
-    nPlayerLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
-    if ((int)((pGame->nDifficulty + 1) * 0x14) > nPlayerLevel) {
+    nAssertLine = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
+    if ((int)((pGame->nDifficulty + 1) * 0x14) > nAssertLine) {
       return 0;
     }
 
@@ -871,7 +871,7 @@ void __fastcall Q35_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     nLevelId = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
     D2QuestDataA5Q5Strc* pQuestSpecificData;
     pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x6d) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x6d) {
       D2UnitDataPlayerStrc* pPlayerData;
       QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
       if (!pQuestData->bIsNotIntroduction) {
@@ -996,7 +996,7 @@ void __fastcall Q35_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q35_Callback02_NpcDeactivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q35_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q35_Callback13_PlayerStartedGame;
-    pQuestData->pNpcMessages = &A5Q5::aNpcGossipData;
+    pQuestData->pNpcMessages = A5Q5::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q5Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA5Q5Strc);

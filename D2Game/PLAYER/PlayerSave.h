@@ -87,6 +87,13 @@ struct __attribute__((packed)) D2OldSaveHeaderStrc {
     /* 0x81 */ uint8_t byInitSeedByte;
 };
 
+struct __attribute__((packed)) D2SaveFileQuestsStrc {
+    /* 0x00 */ int nMagic;
+    /* 0x04 */ int nVersion;
+    /* 0x08 */ short nSize;
+    /* 0x0A */ char pActQuests[3][96];
+};
+
 namespace D2Game::PLAYER::PlayerSave {
 
 // Function declarations
@@ -100,7 +107,7 @@ int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, struct D2Uni
 int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pSourceItem, int32_t eBodyLocation);
 // Server-side: re-instates one saved item onto a loaded player during character load. Recreates the item via PLRSAVE_CreateItemFromSaveData, then by the item's animMode places it: Death=drop to ground at recorded pos (SERVER_ItemToInventory); Neutral=equip to its saved body-loc (validates via INVENTORY_GetItemAtBodyLoc, puts in inv slot 3, or 4 for swapped weapon set, clears TARGETABLE/ISRESURRECT, refreshes inv, fires QUEST_OnItemPickedUp); TownWalk=nest into a container item (PutItemInItem). Returns 0 on success, 0xd on any failure. Writes the placed item back into pGame2->nToken (container cursor) and the storage-type byte into *pnParam.
 // @sourcefile .\PLAYER\PlrSave.cpp
-int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, struct D2UnknownItemRelatedStruct * pItemUnknownStructure, ::SGAMEDATA * pGame2, uint32_t * pnParam, struct D2UnitStrc * pUnit);
+int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, struct D2UnknownItemRelatedStruct * pItemUnknownStructure, struct D2UnitStrc * * pGame2, uint32_t * pnParam, struct D2UnitStrc * pUnit);
 // Restores an item from a save onto a body location.
 // @sourcefile .\PLAYER\PlrSave.cpp
 int __stdcall PLRSAVE_RestoreItemToBodyLoc(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, struct D2UnitStrc * pUnit2, int32_t nParam);
@@ -165,7 +172,7 @@ int32_t __fastcall CLIENT_ReadAndLoadSaveFile(struct D2ClientStrc * pClient, str
 int32_t __fastcall CLIENT_LoadPlayerFromDisk(::SGAMEDATA * pGame, uint32_t dwParam1, char * szText, struct D2ClientStrc * pClient, struct D2UnitStrc * pOutUnitHolder, uint32_t dwParam2, uint32_t nX, uint32_t nY);
 int32_t __stdcall CLIENT_LoadPlayerFromNetworkSave(::SGAMEDATA * pGame, struct D2ClientStrc * pClient, struct D2UnitStrc * * ppUnit, uint32_t dwParam1, uint32_t dwParam2, uint32_t dwParam3);
 // Loads player from save or creates new character. Dispatches to disk loader (SP/LAN), network loader (BNet), or fresh character creator based on game type and bLoadFromSave. After unit creation, updates passive skills and returns status. Called during join flow before placing unit in world.
-BOOL __fastcall CLIENT_LoadOrCreatePlayerUnit(::SGAMEDATA * pGame, struct D2ClientStrc * pClient, struct D2ClientStrc * pClientCharName, BOOL bLoadFromSave, struct D2UnitStrc * ppUnitOut, uint32_t pRoomOrNull, uint32_t nX, uint32_t nY);
+BOOL __fastcall CLIENT_LoadOrCreatePlayerUnit(::SGAMEDATA * pGame, struct D2ClientStrc * pClient, struct D2ClientStrc * pClientCharName, BOOL bLoadFromSave, struct D2UnitStrc * * ppUnitOut, uint32_t pRoomOrNull, uint32_t nX, uint32_t nY);
 void __stdcall WapperSaveGameAllGameTypes(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, char * szText);
 
 } // namespace D2Game::PLAYER::PlayerSave

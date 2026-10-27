@@ -15,7 +15,9 @@ struct D2UnitStrc;
 typedef int eD2Skills;
 
 struct D2BooksTxt;
+struct D2LowQualityItemsTxt;
 struct D2MagicAffixTxt;
+struct D2QualityItemsTxt;
 struct D2RareAffixTxt;
 
 // Data types
@@ -35,6 +37,16 @@ struct D2BooksTxt {
     /* 0x14 */ int costpercharge; // d2bs binfields FIELDTYPE_INT
     /* 0x18 */ char scrollspellcode[4]; // d2bs binfields FIELDTYPE_RAW4
     /* 0x1C */ char bookspellcode[4]; // d2bs binfields FIELDTYPE_RAW4
+};
+
+struct D2LowQualityItemsTableStrc {
+    /* 0x00 */ int nSize;
+    /* 0x04 */ struct D2LowQualityItemsTxt * pTable;
+};
+
+struct D2LowQualityItemsTxt {
+    /* 0x00 */ char Name[32]; // d2bs binfields FIELDTYPE_ASCII
+    /* 0x20 */ uint16_t wNameStringId;
 };
 
 struct D2MagicAffixTableStrc {
@@ -70,6 +82,33 @@ struct __attribute__((packed)) D2MagicAffixTxt {
     /* 0x84 */ int divide;
     /* 0x88 */ int multiply;
     /* 0x8C */ int add;
+};
+
+struct D2QualityItemsTableStrc {
+    /* 0x00 */ int nSize;
+    /* 0x04 */ struct D2QualityItemsTxt * pTable;
+};
+
+struct __attribute__((packed)) D2QualityItemsTxt {
+    /* 0x00 */ bool armor;
+    /* 0x01 */ bool weapon;
+    /* 0x02 */ bool shield;
+    /* 0x03 */ bool scepter;
+    /* 0x04 */ bool wand;
+    /* 0x05 */ bool staff;
+    /* 0x06 */ bool bow;
+    /* 0x07 */ bool boots;
+    /* 0x08 */ bool gloves;
+    /* 0x09 */ bool belt;
+    /* 0x0A */ uint8_t nummods;
+    /* 0x0B */ uint8_t field_0xb;
+    /* 0x0C */ D2MagixAffixModStrc mod[2];
+    /* 0x2C */ char effect1[32];
+    /* 0x4C */ char effect2[32];
+    /* 0x6C */ uint8_t field_0x6c;
+    /* 0x6D */ uint8_t field_0x6d;
+    /* 0x6E */ uint8_t field_0x6e;
+    /* 0x6F */ uint8_t field_0x6f;
 };
 
 struct D2RareAffixTableStrc {

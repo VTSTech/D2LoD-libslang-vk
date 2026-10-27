@@ -50,7 +50,7 @@ void ReplaceAreas(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgReplaceAreas_A, "D2Common::Drlg::Maze::Act2::Tombs::ReplaceAreas::gaDrlgReplaceAreas_A");
     static D2DrlgReplaceRoomStrc gaDrlgReplaceAreas_B[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x1a5,
@@ -76,7 +76,7 @@ void ReplaceAreas(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgReplaceAreas_B, "D2Common::Drlg::Maze::Act2::Tombs::ReplaceAreas::gaDrlgReplaceAreas_B");
     static D2DrlgReplaceRoomStrc gaDrlgAreaReplacementsB[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x1a5,
@@ -102,7 +102,7 @@ void ReplaceAreas(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgAreaReplacementsB, "D2Common::Drlg::Maze::Act2::Tombs::ReplaceAreas::gaDrlgAreaReplacementsB");
     static D2DrlgReplaceRoomStrc gaDrlgReplaceAreas_C[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x1a5,
@@ -128,7 +128,7 @@ void ReplaceAreas(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgReplaceAreas_C, "D2Common::Drlg::Maze::Act2::Tombs::ReplaceAreas::gaDrlgReplaceAreas_C");
     static D2DrlgReplaceRoomStrc gaDrlgReplaceAreas_D[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x1a5,
@@ -154,7 +154,7 @@ void ReplaceAreas(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgReplaceAreas_D, "D2Common::Drlg::Maze::Act2::Tombs::ReplaceAreas::gaDrlgReplaceAreas_D");
     static D2DrlgReplaceRoomStrc gaDrlgReplaceAreas_E[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x1a5,
@@ -180,7 +180,7 @@ void ReplaceAreas(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgReplaceAreas_E, "D2Common::Drlg::Maze::Act2::Tombs::ReplaceAreas::gaDrlgReplaceAreas_E");
     static D2DrlgReplaceRoomStrc gaDrlgReplaceAreas_F[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x1a5,
@@ -206,7 +206,7 @@ void ReplaceAreas(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgReplaceAreas_F, "D2Common::Drlg::Maze::Act2::Tombs::ReplaceAreas::gaDrlgReplaceAreas_F");
     static D2DrlgReplaceRoomStrc gaDrlgReplaceAreas_G[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x1a5,
@@ -232,7 +232,7 @@ void ReplaceAreas(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgReplaceAreas_G, "D2Common::Drlg::Maze::Act2::Tombs::ReplaceAreas::gaDrlgReplaceAreas_G");
 
     uint32_t nRoll;
     int32_t nErrorLine;

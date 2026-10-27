@@ -85,7 +85,7 @@ void SMEM_FatalError(uint32_t * pnName, uint32_t nErrorCode, int32_t nSourceLine
 // @blizzard GetHandleByCaller (SMEM.CPP)
 uint32_t SMEM_GetHandleByCaller(int * pnName, uint32_t nNameLen);
 // @blizzard LockHeapByBlockPtr (SMEM.CPP)
-int32_t __stdcall SMEM_LockHeapByBlockPtr(uint32_t * pnOutBucket, struct D2FogHeapBlockHdrStrc * pBlockHdr);
+struct D2FogHeapDescStrc * __stdcall SMEM_LockHeapByBlockPtr(uint32_t * pnOutBucket, struct D2FogHeapBlockHdrStrc * pBlockHdr);
 // @blizzard Warning (SMEM.CPP)
 void __stdcall SMEM_Warning(uint32_t * pnName, int32_t nSourceLine, DWORD dwErrorCode);
 // @blizzard UnlockHeap (SMEM.CPP)
@@ -113,7 +113,7 @@ void __stdcall SMemSetDebugFlags(uint32_t nParam, uint8_t bParam);
 // @blizzard CombineFreeBlocks (SMEM.CPP)
 void SMEM_CombineFreeBlocks(struct D2FogHeapDescStrc * pHeap);
 // @blizzard DestroyHeap (SMEM.CPP)
-int __fastcall SMEM_DestroyHeap(LPVOID * ppHeap);
+LPVOID * __fastcall SMEM_DestroyHeap(LPVOID * ppHeap);
 // @blizzard FreeEmptyHeaps (SMEM.CPP)
 void __stdcall SMEM_FreeEmptyHeaps();
 // Grow, shrink or merge a heap block in place. The heap descriptor arrives in EAX.

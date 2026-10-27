@@ -79,7 +79,7 @@ struct __attribute__((packed)) D2FogDebugModuleEntryStrc {
 struct D2FogModuleNodeStrc {
     /* 0x000 */ char szModulePath[260]; // GetModuleFileNameExA / MODULEENTRY32.szExePath copy
     /* 0x104 */ char szModuleName[256]; // GetModuleBaseNameA / szModule copy at +0x104
-    /* 0x204 */ uint32_t dwBaseAddress; // module base; list is kept sorted ascending by it
+    /* 0x204 */ BYTE * dwBaseAddress; // module base; list is kept sorted ascending by it
     /* 0x208 */ uint32_t dwSize; // module image size
     /* 0x20C */ struct D2FogModuleNodeStrc * pNext; // next module (+0x20c)
 };
@@ -131,6 +131,19 @@ struct __attribute__((packed)) IMAGEHLP_LINE64 {
     /* 0x08 */ DWORD LineNumber;
     /* 0x0C */ char * FileName;
     /* 0x10 */ ULONGLONG Address;
+};
+
+struct IMAGEHLP_MODULE {
+    /* 0x000 */ DWORD SizeOfStruct;
+    /* 0x004 */ DWORD BaseOfImage;
+    /* 0x008 */ DWORD ImageSize;
+    /* 0x00C */ DWORD TimeDateStamp;
+    /* 0x010 */ DWORD CheckSum;
+    /* 0x014 */ DWORD NumSyms;
+    /* 0x018 */ DWORD SymType; // SYM_TYPE
+    /* 0x01C */ char ModuleName[32];
+    /* 0x03C */ char ImageName[256];
+    /* 0x13C */ char LoadedImageName[256];
 };
 
 struct __attribute__((packed)) IMAGEHLP_MODULE64 {

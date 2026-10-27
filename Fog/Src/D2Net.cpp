@@ -142,7 +142,7 @@ uint8_t * __fastcall NET_D2GS_CLIENT_DecompressPacket(char * pBuffer, size_t nBu
     0x1fff,
     0x3fff,
     0x7fff
-};
+}; D2_STATIC_GUARD(gadwHuffmanBitMasks, "Fog::Src::D2Net::NET_D2GS_CLIENT_DecompressPacket::gadwHuffmanBitMasks");
 
     uint8_t byEntryLen;
     uint32_t uBitBuffer = 0;

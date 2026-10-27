@@ -72,7 +72,6 @@
 #include "D2Common/Drlg/Path.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Environment.h"
-#include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
@@ -114,9 +113,9 @@
 #include "Fog/Src/LogManager.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Client/UI/MiniPanel.h"
@@ -154,7 +153,7 @@ typedef void (__stdcall *fnBinkFrameCallback)();
 
 namespace D2Client {
 
-static eD2PlayerClassID eD2PlayerClassID_00712f00 = CLASS_SORCERESS;
+static eD2PlayerClassID eD2PlayerClassID_00712f00 = CLASS_SORCERESS; D2_STATIC_GUARD(eD2PlayerClassID_00712f00, "D2Client::eD2PlayerClassID_00712f00");
 
 // @sourcefile .\CORE\WINMAIN.CPP
 BOOL __stdcall WINMAIN_TestMemoryAccess(CMDPARAMS * pParams, char * szCmdLine) {
@@ -1001,7 +1000,7 @@ void __fastcall CLIENT_ToggleDefaultActiveFlag(int32_t bSet) {
 
 uint32_t __stdcall ROSTER_GetArenaKillCountGlobal() {
     // Static local variables (originally global data)
-    static uint32_t gaChattablePlayers = 0x3;
+    static uint32_t gaChattablePlayers = 0x3; D2_STATIC_GUARD(gaChattablePlayers, "D2Client::ROSTER_GetArenaKillCountGlobal::gaChattablePlayers");
 
     return gaChattablePlayers;
 }
@@ -1224,13 +1223,14 @@ void __fastcall UNITMODE_ExecuteDeferredAction(D2UnitStrc * pUnit) {
 }
 
 void SOUNDHDR_CompleteAsyncLoad(int32_t pSoundHdr) {
+    void* nAddress;
     if (*(int*)(pSoundHdr + 0x86) != 1) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x40);
       exit(-1);
     }
 
-    void* pResult = Fog::Src::AsyncData::ASYNCDATA_GetResult(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
-    *(void**)(pSoundHdr + 0x6c) = (void*)pResult;
+    nAddress = Fog::Src::AsyncData::ASYNCDATA_GetResult(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
+    *(void**)(pSoundHdr + 0x6c) = (void*)nAddress;
     size_t nReadSize = Fog::Src::AsyncData::ASYNCDATA_GetReadSize(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
     *(size_t*)(pSoundHdr + 0x70) = nReadSize;
     *(uint32_t*)(pSoundHdr + 0x86) = 2;
@@ -1247,10 +1247,9 @@ void SOUNDHDR_CompleteAsyncLoad(int32_t pSoundHdr) {
 // here.
 void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
     // Static local variables (originally global data)
-    static uint32_t gnCutsceneCount = 0x8;
-    static uint8_t bExitCutsceneActive;
+    static uint32_t gnCutsceneCount = 0x8; D2_STATIC_GUARD(gnCutsceneCount, "D2Client::ExitGamePlayCutScene::gnCutsceneCount");
+    static uint8_t bExitCutsceneActive; D2_STATIC_GUARD_BSS(bExitCutsceneActive, "D2Client::ExitGamePlayCutScene::bExitCutsceneActive");
 
-    int32_t nExitCode;
     char* pszSrcName;
     char* pPathCursor;
     HANDLE hFile;
@@ -1267,6 +1266,7 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
     int bVideoLoaded;
     void* pfFrame;
     char cChar;
+    int32_t nErrorLine;
     int nCurrentCutsceneId;
     nCurrentCutsceneId = nCutsceneId;
     if (gnCutsceneCount <= nCutsceneId) {
@@ -1330,7 +1330,7 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
       GAME::Game::SetPendingExitCutsceneId(0);
       gbCutsceneActive = '\0';
       GAME::Game::SetExitCutscenePlayed();
-      nExitCode = nExitCodeEcx3;
+      nErrorLine = nExitCodeEcx3;
     } else {
       if (nCurrentCutsceneId == 6) {
         bConnectionLost = 1;
@@ -1435,10 +1435,10 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
       }
 
       gbCutsceneActive = '\0';
-      nExitCode = nExitCodeEcx2;
+      nErrorLine = nExitCodeEcx2;
     }
 
-    GAME::Game::D2CLIENT_ExitGame(nExitCode);
+    GAME::Game::D2CLIENT_ExitGame(nErrorLine);
     reload_media_mpqs:
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles((::fpRequiredUserAction)(bool (*)())Engine::fpRequiredUserAction, (::fpRequiredUserAction)LOADER_RunInsertDiscPopup, 0, D2IniData_client);
@@ -1826,9 +1826,9 @@ BOOL __fastcall OBJECT_CheckAutoLight(D2UnitStrc * pUnit, int32_t bSkipCofLoad) 
       return 0;
     }
 
-    int32_t nErrAddr = D2Common::Environment::DRLGENV_GetPeriodOfDayFromAct(sgpDrlgAct, nullptr);
-    if (nErrAddr) {
-      if (nErrAddr - 1U < 3) {
+    int32_t nPeriodOfDay = D2Common::Environment::DRLGENV_GetPeriodOfDayFromAct(sgpDrlgAct, nullptr);
+    if (nPeriodOfDay) {
+      if (nPeriodOfDay - 1U < 3) {
         if (pUnit->eAnimMode.ePlayerMode == Death) {
           pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Neutral;
           if (!bSkipCofLoad) {
@@ -2052,7 +2052,7 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
 
         do {
           if (0xf < *pCofEntry) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3fb);
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x3fb);
             exit(-1);
           }
           if (*pCofEntry == byColorIdx) {
@@ -2082,10 +2082,10 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
             Engine::GfxUtil::GFXUTIL_PadTokenString((char*)(nMonStatsTxt + 5), (char*)&nAnimMode);
             pGfxData->nWeaponClass = nAnimMode;
             if (!pGfxData->nCompositToken) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x425);
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x425);
               exit(-1);
             } else if (!pGfxData->nUnitToken) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x426);
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x426);
               exit(-1);
             } else {
               if (nAnimMode) {
@@ -2100,7 +2100,7 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
                 return 1;
               }
 
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x427);
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x427);
               exit(-1);
             }
           }
@@ -2115,7 +2115,7 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
       nErrorLine = 0x3f0;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
     exit(-1);
 }
 
@@ -2204,7 +2204,7 @@ int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(D2UnitStrc * pUnit, int32_t pOve
     return sGfxData.nFrameCount << 8;
 }
 
-void __fastcall GFXUTIL_GetOverlayDimensions(D2UnitStrc * pUnit, int nPaletteShift, uint32_t nAnimMode, D2InventoryStrc * pOutWidth, uint32_t * pdwParam) {
+void __fastcall GFXUTIL_GetOverlayDimensions(D2UnitStrc * pUnit, int nPaletteShift, uint32_t nAnimMode, uint32_t * pOutWidth, uint32_t * pdwParam) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
     sGfxData.nFrameNumber = nAnimMode;
@@ -2221,10 +2221,10 @@ void __fastcall GFXUTIL_GetOverlayDimensions(D2UnitStrc * pUnit, int nPaletteShi
       return;
     }
 
-    int32_t iVar1 = D2CMP::SRC::CelCmp::GetDC6Width(sGfxData.pDC6Block);
-    pOutWidth->nSignatureMagic = iVar1;
-    iVar1 = D2CMP::SRC::CelCmp::GetDC6Height(sGfxData.pDC6Block);
-    *pdwParam = iVar1;
+    uint32_t uVar1 = D2CMP::SRC::CelCmp::GetDC6Width(sGfxData.pDC6Block);
+    *pOutWidth = uVar1;
+    int32_t iVar2 = D2CMP::SRC::CelCmp::GetDC6Height(sGfxData.pDC6Block);
+    *pdwParam = iVar2;
 }
 
 uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(D2UnitStrc * pUnit, int32_t nParam, int32_t nWorldY) {
@@ -4093,7 +4093,7 @@ int32_t __fastcall UI_GetDialogLineCount(int16_t nParam) {
     0x4ecf,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gnUIDialogLineCountA, "D2Client::UI_GetDialogLineCount::gnUIDialogLineCountA");
 
     if (!gnDialogDataInitialized) {
       return 0;
@@ -4409,8 +4409,8 @@ void __stdcall BINK_RenderVideoFrame() {
 
 void __fastcall BINK_PlayVideoFile(char * szFileName, int32_t nParam, fnBinkFrameCallback pfnFrameCallback) {
     // Static local variables (originally global data)
-    static uint32_t gbBinkDDrawVideoExitRequested;
-    static unsigned int gdwBinkVideoLastClickTick;
+    static uint32_t gbBinkDDrawVideoExitRequested; D2_STATIC_GUARD_BSS(gbBinkDDrawVideoExitRequested, "D2Client::BINK_PlayVideoFile::gbBinkDDrawVideoExitRequested");
+    static unsigned int gdwBinkVideoLastClickTick; D2_STATIC_GUARD_BSS(gdwBinkVideoLastClickTick, "D2Client::BINK_PlayVideoFile::gdwBinkVideoLastClickTick");
 
     DWORD dwCurrentTick;
     int nBinkWaitResult;

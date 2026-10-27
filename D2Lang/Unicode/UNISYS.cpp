@@ -802,7 +802,7 @@ bool UNICODE_CheckLeadingPunctuation(char * pszTable, uint16_t * wszText) {
 
 void __fastcall UNICODE_FormatPossessiveName(uint16_t * wszText1, uint16_t * wszText2, uint16_t * wszSuffix, int32_t nMaxChars, int32_t nLang) {
     // Static local variables (originally global data)
-    static int gnUIMinWidth = 0x7a73;
+    static int gnUIMinWidth = 0x7a73; D2_STATIC_GUARD(gnUIMinWidth, "D2Lang::Unicode::UNISYS::UNICODE_FormatPossessiveName::gnUIMinWidth");
 
     char* pszSuffix;
     int iVar1;
@@ -1085,7 +1085,7 @@ void __fastcall UNICODE_LoadKamapFile(D2PoolManagerStrc * pMemory, char * szFile
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(szUnicodeKamapVersion, "D2Lang::Unicode::UNISYS::UNICODE_LoadKamapFile::szUnicodeKamapVersion");
 
     uint8_t szVersionBuf[40];
     uint8_t cTmp;

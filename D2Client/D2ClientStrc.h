@@ -93,8 +93,7 @@ struct D2ClientStrc {
     /* 0x184 */ int nSaveCurrentSize;
     /* 0x188 */ int nFileSize;
     /* 0x18C */ void * pSavePacketList;
-    /* 0x190 */ FILETIME * pFileTime;
-    /* 0x194 */ int unk0x194;
+    /* 0x190 */ FILETIME ftFileTime;
     /* 0x198 */ int nAttachedUnitType;
     /* 0x19C */ int dwAttachedUnitGUID;
     /* 0x1A0 */ int unk0x1A0;

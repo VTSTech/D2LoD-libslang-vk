@@ -47,7 +47,7 @@ void __stdcall D2WINPALETTE_LoadPalettes() {
     aPaletteTable[0x42] = gPaletteAct5;
     aPaletteTable[0x43] = gPaletteActNeutral;
     aPaletteTable[0x44] = gPaletteUnits;
-    aPaletteTable[0x45] = &gnPaletteIndexCounter;
+    aPaletteTable[0x45] = gnPaletteIndexCounter;
     aPaletteTable[0x46] = gPaletteMenuInGame;
     aPaletteTable[0x47] = gPaletteDataMenuInGame;
     D2gfx::D2GFX::D2GFX_SetPaletteTable((BYTE**)aPaletteTable);
@@ -115,7 +115,7 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
     uint32_t nText1;
     int nSrcLine = 99;
     char* szSrcFile = ".\\Src\\D2WinPalette.cpp";
-    size_t* pFileSize = 0;
+    uint32_t* pFileSize = 0;
     D2PoolManagerStrc* pDatFileData = D2WinArchive::ReturnZero();
     void* pDatFileHandle = Fog::Archive::D2FILE_AllocAndLoadD2File(pDatFileData, szText1, pFileSize, szSrcFile, nSrcLine);
     uint32_t nPaletteIdx = 0;
@@ -161,7 +161,7 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
     }
 
     pSrcArchive = pMemoryToFree + 0x1ad80;
-    pDstIndexCounter = (PALETTEENTRY*)&gnPaletteIndexCounter;
+    pDstIndexCounter = (PALETTEENTRY*)gnPaletteIndexCounter;
     for (nCount = 9; nCount; nCount--) {
       *pDstIndexCounter = *pSrcArchive;
       pSrcArchive++;

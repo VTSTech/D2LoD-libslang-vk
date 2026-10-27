@@ -67,8 +67,6 @@
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/SMem.h"
 #include "globals/globals.h"
@@ -647,29 +645,29 @@ int32_t __fastcall SKILLASS_GetChargeUpMissile(D2UnitStrc * pUnit, int32_t nSkil
       return -1;
     }
     if (!pSkillTxt->progressive) {
-      return (int)pSkillTxt->srvmissilea;
+      return (int)pSkillTxt->srvmissile[1];
     }
 
     short int eAuraState = pSkillTxt->aurastate;
     if (!(-1 < eAuraState && (int)eAuraState < sgptDataTable->nTxtStatesSize && -1 < pSkillTxt->aurastat[0] && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize)) {
-      return (int)pSkillTxt->srvmissilea;
+      return (int)pSkillTxt->srvmissile[1];
     }
 
     D2StatListExStrc* pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (int)eAuraState);
     if (!pStatList) {
-      return (int)pSkillTxt->srvmissilea;
+      return (int)pSkillTxt->srvmissile[1];
     }
 
     int nChargeLevel = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, (int)pSkillTxt->aurastat[0], 0);
     if (1 >= nChargeLevel) {
-      return (int)pSkillTxt->srvmissilea;
+      return (int)pSkillTxt->srvmissile[1];
     }
     if (2 >= nChargeLevel) {
-      return (int)pSkillTxt->aurastat[nChargeLevel - 7];
+      return (int)pSkillTxt->srvmissile[nChargeLevel];
     }
 
     nChargeLevel = 3;
-    return (int)pSkillTxt->aurastat[nChargeLevel - 7];
+    return (int)pSkillTxt->srvmissile[nChargeLevel];
 }
 
 // Returns the charge-level-indexed prgcalc value for a charge-up skill. If the skill has the charge-up flag (bit 2) and a valid aurastate with an active stat list, selects prgcalc[0..2] by clamped charge level (1/2/3); otherwise falls back to prgcalc[0]. Returns 0 if skill id is out of range.
@@ -1006,10 +1004,10 @@ void __fastcall SKILLASS_SpawnMissileRing(uint32_t dwParam, D2UnitStrc * pUnit, 
 // Builds the spiral flight path for an Assassin missile unit (e.g. trap/blade projectiles). Clamps total frames to 0x4D, seeds the unit's PRNG from nParam (high word 0x29a), sets path type 10, and steps a turning angle around the unit's facing direction: each frame advances the direction by a seed-derived angle step (turn direction flips every gnSpiralMissileBaseOffset frames), looks up per-direction X/Y deltas via gnSkillAssTableIndexBySkill/OffsetBySkill, and writes the accumulated position into the dynamic path's PathPoints. Sets the final point count. Mutates pUnit->sSeed.
 void __fastcall SKILLASS_BuildSpiralMissilePath(D2UnitStrc * pUnit, int32_t nParam) {
     // Static local variables (originally global data)
-    static int gnSkillAssTableOffsetBySkill[8] = { 0x0, 0x2, 0x2, 0x2, 0x0, -0x2, -0x2, -0x2 };
-    static int gnSkillAssTableIndexBySkill[8] = { 0x2, 0x2, 0x0, -0x2, -0x2, -0x2, 0x0, 0x2 };
-    static uint32_t gnSpiralMissileBaseOffset = 0xf;
-    static uint8_t gnSpiralMissileBaseOffset_b = 0x2;
+    static int gnSkillAssTableOffsetBySkill[8] = { 0x0, 0x2, 0x2, 0x2, 0x0, -0x2, -0x2, -0x2 }; D2_STATIC_GUARD(gnSkillAssTableOffsetBySkill, "D2Game::SKILLS::SkillAss::SKILLASS_BuildSpiralMissilePath::gnSkillAssTableOffsetBySkill");
+    static int gnSkillAssTableIndexBySkill[8] = { 0x2, 0x2, 0x0, -0x2, -0x2, -0x2, 0x0, 0x2 }; D2_STATIC_GUARD(gnSkillAssTableIndexBySkill, "D2Game::SKILLS::SkillAss::SKILLASS_BuildSpiralMissilePath::gnSkillAssTableIndexBySkill");
+    static uint32_t gnSpiralMissileBaseOffset = 0xf; D2_STATIC_GUARD(gnSpiralMissileBaseOffset, "D2Game::SKILLS::SkillAss::SKILLASS_BuildSpiralMissilePath::gnSpiralMissileBaseOffset");
+    static unsigned int gnSpiralMissileBaseOffset_b = 0x2; D2_STATIC_GUARD(gnSpiralMissileBaseOffset_b, "D2Game::SKILLS::SkillAss::SKILLASS_BuildSpiralMissilePath::gnSpiralMissileBaseOffset_b");
 
     int32_t nSpiralTurnDir;
     int32_t nFrameIdx;
@@ -2241,7 +2239,7 @@ void __fastcall SKILLASS_ClearAllChargeUpStates(D2UnitStrc * pUnit) {
       return;
     }
 
-    void* pStateFlags = (void*)D2Common::DATATBLS::ItemStats::thunk_UNIT_GetStateList_StateFlags(pUnit);
+    int* pStateFlags = D2Common::DATATBLS::ItemStats::thunk_UNIT_GetStateList_StateFlags(pUnit);
     int nStateWordCount = sgptDataTable->nTxtStatesSize + 0x1f;
     nStateWordCount = (int)(nStateWordCount + (nStateWordCount >> 0x1f & 0x1fU)) >> 5;
     memcpy(aStateBitWords, pStateFlags, nStateWordCount * 4);

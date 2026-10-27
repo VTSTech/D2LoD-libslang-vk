@@ -108,7 +108,7 @@ void __fastcall Q14_SendTombLevelInfo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 // Q14 helper: returns the next "arcane" object classId to spawn (Tal Rasha sarcophagus/orifice decoy set: 0x133..0x139). On first call lazily fills a 6-entry ring (skipping the index matching the real tomb level), then cycles through it round-robin. Returns 0x133 if no tomb level is set yet. No quest-state transition.
 uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassId(D2QuestDataStrc * pQuestData) {
     // Static local variables (originally global data)
-    static uint32_t gaArkaneThingIdTable[7] = { 0x139, 0x138, 0x134, 0x136, 0x137, 0x135, 0x133 };
+    static uint32_t gaArkaneThingIdTable[7] = { 0x139, 0x138, 0x134, 0x136, 0x137, 0x135, 0x133 }; D2_STATIC_GUARD(gaArkaneThingIdTable, "D2Game::Quests::QUESTS::A2Q7::A2Q6_GetNextFalseTombPortalClassId::gaArkaneThingIdTable");
 
     int32_t* pnDecoyRingEntry;
     int nDecoysPlaced;

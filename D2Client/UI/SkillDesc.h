@@ -14,7 +14,6 @@
 // Forward declarations
 struct D2DifficultyLevelsTxt;
 struct D2LvlPrestTxt;
-struct D2MagicAffixTxt;
 struct D2MissilesTxt;
 struct D2MonSeqTxt;
 struct D2MonStats2Txt;
@@ -133,6 +132,21 @@ struct D2EventsTxt {
 struct D2ExperienceTxt {
     /* 0x00 */ int Class[7];
     /* 0x1C */ int ExpRatio;
+};
+
+struct __attribute__((packed)) D2GemsTxt {
+    /* 0x00 */ char name[32]; // d2bs binfields FIELDTYPE_ASCII
+    /* 0x20 */ char letter[6]; // d2bs binfields FIELDTYPE_ASCII
+    /* 0x26 */ uint8_t field_0x26;
+    /* 0x27 */ uint8_t field_0x27;
+    /* 0x28 */ int code; // d2bs binfields FIELDTYPE_CODE_INT
+    /* 0x2C */ uint8_t field_0x2c;
+    /* 0x2D */ uint8_t field_0x2d;
+    /* 0x2E */ char nummods; // d2bs binfields FIELDTYPE_CHAR
+    /* 0x2F */ char transform; // d2bs binfields FIELDTYPE_CHAR
+    /* 0x30 */ D2MagixAffixModStrc aWeaponMods[3]; // d2bs binfields FIELDTYPE_NAME_INT
+    /* 0x60 */ D2MagixAffixModStrc aHelmMods[3]; // d2bs binfields FIELDTYPE_NAME_INT
+    /* 0x90 */ D2MagixAffixModStrc aShieldMods[3]; // d2bs binfields FIELDTYPE_NAME_INT
 };
 
 struct D2HireDescTxt {
@@ -1162,8 +1176,8 @@ void __fastcall SKILLDESC_BuildStatBuffDesc(struct D2UnitStrc * pUnit, uint16_t 
 void __fastcall SKILLDESC_AppendStatBuffText(struct D2UnitStrc * pUnit, uint16_t * wszOutputBuffer, int32_t nMaxBufferSize, int32_t bAppendNewline, uint16_t * wszPrefixText);
 void __fastcall SKILLDESC_AppendItemBuffText(struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, uint16_t * wszOutputBuffer, int32_t nMaxBufferSize);
 void __fastcall SKILLDESC_AppendSetBonusTextByStateValue(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, uint16_t * wszOutputBuffer, int32_t nMaxBufferSize);
-uint16_t * __fastcall SKILLDESC_FormatMagicPrefixDesc(struct D2UnitStrc * pUnit, struct D2MagicAffixTxt * pD2MagicAffixTxt, uint32_t nMagicAffixId, uint16_t * wszText1, int32_t nMaxBufferSize, uint16_t * wszText2);
-uint16_t * __fastcall SKILLDESC_FormatMagicSuffixDesc(struct D2UnitStrc * pUnit, struct D2MagicAffixTxt * pD2MagicAffixTxt, uint32_t nMagicAffixId, uint16_t * wszText1, int32_t nMaxBufferSize, uint16_t * wszText2);
+uint16_t * __fastcall SKILLDESC_FormatMagicPrefixDesc(struct D2UnitStrc * pUnit, struct D2GemsTxt * pD2MagicAffixTxt, uint32_t nMagicAffixId, uint16_t * wszText1, int32_t nMaxBufferSize, uint16_t * wszText2);
+uint16_t * __fastcall SKILLDESC_FormatMagicSuffixDesc(struct D2UnitStrc * pUnit, struct D2GemsTxt * pD2MagicAffixTxt, uint32_t nMagicAffixId, uint16_t * wszText1, int32_t nMaxBufferSize, uint16_t * wszText2);
 void __fastcall SKILLDESC_BuildMagicAffixDesc(struct D2UnitStrc * pUnit, uint16_t * wszText, int32_t nMaxBufferSize);
 int32_t __fastcall GetSkillParam4(eD2Skills eSkill);
 uint16_t __fastcall SKILLDESC_GetStatNameString(int32_t nSkillId, int32_t nStatOffset);
@@ -1219,7 +1233,7 @@ void __stdcall SKILLDESC_DrawElemDamageWithRange(struct D2UnitStrc * pUnit, int 
 void __stdcall SKILLDESC_DrawDamageNumbers(int32_t nParam1, int32_t nParam2, int32_t nColor, int32_t nYOffset, int32_t nParam3, int32_t nParam4);
 void __fastcall SKILLDESC_DrawTwoLineText(uint16_t * wszText1, uint16_t * wszText2, int32_t nXLeft, int32_t nYBase, int32_t nParam1, int32_t nParam2, int32_t nParam3);
 void __stdcall SKILLDESC_DrawSingleNumber(int32_t nColorIdx, int32_t nScreenX, int32_t nScreenY, int32_t nScreenZ, int32_t nValue);
-void __stdcall SKILLDESC_DrawSkillDmgPhysical(int32_t pSkillRecord, struct D2UnitStrc * pUnit, int32_t nItemClassId, pfnSkillDescWeaponDmgCalc pfnCalcWeaponDmg, int32_t nExtraFlags, struct D2UnitStrc * pCompareUnit, int32_t nScreenX, int32_t nScreenY, int32_t nScreenZ, int32_t nElemDmg, short * pnDamageRange);
+void __stdcall SKILLDESC_DrawSkillDmgPhysical(int32_t pSkillRecord, struct D2UnitStrc * pUnit, int32_t nItemClassId, pfnSkillDescWeaponDmgCalc pfnCalcWeaponDmg, int32_t nExtraFlags, int pCompareUnit, int32_t nScreenX, int32_t nScreenY, int32_t nScreenZ, int32_t nElemDmg, short * pnDamageRange);
 void __fastcall SKILLDESC_DrawSkillDmgElemental(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nXLeft, int32_t nY, int32_t nXRight);
 // @sourcefile .\UI\SkillDesc.cpp
 void __fastcall SKILLDESC_DrawSkillDmgWithElem(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nXLeft, int32_t nY, int32_t nXRight);

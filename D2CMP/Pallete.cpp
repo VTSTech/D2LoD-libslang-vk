@@ -124,7 +124,7 @@ void __stdcall PALETTE_InitItemPalettes() {
 
 void __stdcall PALETTE_SetAct(int32_t nParam) {
     // Static local variables (originally global data)
-    static uint32_t nPalleteAct = 0x1;
+    static uint32_t nPalleteAct = 0x1; D2_STATIC_GUARD(nPalleteAct, "D2CMP::Pallete::PALETTE_SetAct::nPalleteAct");
 
     if (nParam - 1U >= 5) {
       return;
@@ -880,7 +880,7 @@ uint32_t __stdcall PALETTE_GetColorShiftIndex(int32_t nParam, uint32_t nParam2) 
     0x3e,
     0x1f,
     0x3f
-};
+}; D2_STATIC_GUARD(gdwPaletteTableSize, "D2CMP::Pallete::PALETTE_GetColorShiftIndex::gdwPaletteTableSize");
 
     int32_t nLowestBit = D2MEM_FindLowestSetBit(nParam2);
     return gdwPaletteTableSize[nLowestBit * 0x20 + nParam];

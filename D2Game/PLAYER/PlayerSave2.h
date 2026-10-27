@@ -12,6 +12,7 @@
 
 // Forward declarations
 struct D2ClientStrc;
+struct D2MercSaveDataStrc;
 struct D2SaveFileHeaderStrc;
 struct D2SaveHotKeyStrc;
 struct D2UnitStrc;
@@ -19,27 +20,11 @@ struct SGAMEDATA;
 typedef int eD2Skills;
 
 // Data types
-struct D2MercSaveDataStrc {
-    /* 0x00 */ uint32_t dwFlags;
-    /* 0x04 */ uint32_t dwSeed;
-    /* 0x08 */ uint16_t wNameIndex;
-    /* 0x0A */ uint16_t wHirelingId;
-    /* 0x0C */ uint32_t dwExperience;
-    /* 0x10 */ uint32_t adwUnknown10[4];
-};
-
 struct __attribute__((packed)) D2SaveFileNpcStrc {
     /* 0x00 */ short szMagic;
     /* 0x02 */ short nSize;
     /* 0x04 */ uint8_t pActNpcData[3][8];
     /* 0x1C */ uint8_t pActNpcBitInfo[3][8];
-};
-
-struct __attribute__((packed)) D2SaveFileQuestsStrc {
-    /* 0x00 */ int nMagic;
-    /* 0x04 */ int nVersion;
-    /* 0x08 */ short nSize;
-    /* 0x0A */ char pActQuests[3][96];
 };
 
 struct __attribute__((packed)) D2SaveWaypointListEntryStrc {

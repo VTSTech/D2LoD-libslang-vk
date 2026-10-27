@@ -1080,7 +1080,7 @@ static uint32_t gadwQServerPrefixMasks[33] = {
     0xfcffffff,
     0xfeffffff,
     0xffffffff
-};
+}; D2_STATIC_GUARD(gadwQServerPrefixMasks, "Fog::Src::MatchesGameTokenFilter::gadwQServerPrefixMasks");
 
     int nFilterIndex = 0;
     if (0 >= pQServer->nGameTokenFilterCount) {

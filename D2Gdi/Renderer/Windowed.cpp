@@ -408,7 +408,7 @@ void __fastcall RENDERER_WINDOWED_GetFramebufferInfo(uint32_t * ppvBitsOut, uint
 // Windowed renderer: returns palette pointer for the specified render mode. Reads from gpPaletteTable offsets 0x0-0x10C based on the nDrawMode index (0-6).
 BYTE * __fastcall RENDERER_WINDOWED_GetPalettePointer(int nDrawMode, uint32_t * pdwStateOut) {
     // Static local variables (originally global data)
-    static uint32_t gdwWindowedRendererState[8] = { 0x2, 0x2, 0x2, 0x1, 0x1, 0x0, 0x1, 0x0 };
+    static uint32_t gdwWindowedRendererState[8] = { 0x2, 0x2, 0x2, 0x1, 0x1, 0x0, 0x1, 0x0 }; D2_STATIC_GUARD(gdwWindowedRendererState, "D2Gdi::Renderer::Windowed::RENDERER_WINDOWED_GetPalettePointer::gdwWindowedRendererState");
 
     *pdwStateOut = gdwWindowedRendererState[nDrawMode];
     switch (nDrawMode) {
@@ -708,8 +708,8 @@ void __stdcall RENDERER_WINDOWED_DestroyDebugFont() {
 
 void __fastcall DrawString(int nPosX, int nPosY, char * szFormat, va_list va) {
     // Static local variables (originally global data)
-    static uint32_t gGlideDebugCharGfxHandle = 0xffffff;
-    static uint32_t gnSmackerGlideXOffset;
+    static uint32_t gGlideDebugCharGfxHandle = 0xffffff; D2_STATIC_GUARD(gGlideDebugCharGfxHandle, "D2Gdi::Renderer::Windowed::DrawString::gGlideDebugCharGfxHandle");
+    static uint32_t gnSmackerGlideXOffset; D2_STATIC_GUARD_BSS(gnSmackerGlideXOffset, "D2Gdi::Renderer::Windowed::DrawString::gnSmackerGlideXOffset");
 
     char szFormatted[512];
     tagRECT sTextRect;

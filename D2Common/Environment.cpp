@@ -35,7 +35,7 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2DrlgEnvironmentStrc) == 0x38, "D2
 
 namespace D2Common::Environment {
 
-static char s_ENVIRONMENT_Env_cpp = '.';
+static char s_ENVIRONMENT_Env_cpp = '.'; D2_STATIC_GUARD(s_ENVIRONMENT_Env_cpp, "D2Common::Environment::s_ENVIRONMENT_Env_cpp");
 
 // Per-tick update of the environment's global light intensity (nGlobalLightIntensity). Act 3 (Hell): clamps intensity toward a level-specific cap (Pandemonium=0x80, Outer Steppes=0x40, etc.) by ±1 per tick, resets to cap if it reaches 0. Other acts: during eclipse, ramps down toward 0x20 by 8 per tick; otherwise computes a day/night cosine curve and scales between day and night light values from the environment txt, capped at 0xFF (0xAA in Act 4). Special case: Arreat Summit is fixed at 200.
 void DRLGENV_UpdateLightIntensity(eD2LevelId eLevel, D2DrlgEnvironmentStrc * pDrlgEnvironment, int32_t nActNo) {
@@ -136,8 +136,8 @@ void __stdcall DRLGENV_UpdateLightColor(int32_t nActNo, D2DrlgEnvironmentStrc * 
       pDataCurrent = (D2DrlgActEnvironmentData*)(aENVIRONMENTDATA1 + nTimeIndex * 3);
       pDataNext = (D2DrlgActEnvironmentData*)(aENVIRONMENTDATA1 + nNextTimeIndex * 3);
     } else {
-      pDataCurrent = (D2DrlgActEnvironmentData*)(aENVIRONMENTDATA2 + nTimeIndex * 3);
-      pDataNext = (D2DrlgActEnvironmentData*)(aENVIRONMENTDATA2 + nNextTimeIndex * 3);
+      pDataCurrent = aENVIRONMENTDATA2 + nTimeIndex;
+      pDataNext = aENVIRONMENTDATA2 + nNextTimeIndex;
     }
 
     nTimeIndex = pDataCurrent->nLenght * pDrlgEnvironment->nTimeRate;
@@ -156,15 +156,15 @@ void __stdcall DRLGENV_UpdateLightColor(int32_t nActNo, D2DrlgEnvironmentStrc * 
 
 // Initializes a DRLG environment cycle from the current time index. Sets the environment data type and tick count from lookup tables, using eclipse-specific tables when pEclipse is active.
 void DRLGENV_InitEnvironmentCycle(D2DrlgEnvironmentStrc * pDrlgEnvironment) {
-    int nTimeIdx = pDrlgEnvironment->nTimeIndex;
+    int iVar1 = pDrlgEnvironment->nTimeIndex;
     if (!pDrlgEnvironment->bEclipse) {
-      pDrlgEnvironment->nEnvironmentData = aENVIRONMENTDATA1[nTimeIdx * 3 + 1];
-      pDrlgEnvironment->nTicks = pDrlgEnvironment->nTimeRate * aENVIRONMENTDATA1[nTimeIdx * 3];
+      pDrlgEnvironment->nEnvironmentData = aENVIRONMENTDATA1[iVar1 * 3 + 1];
+      pDrlgEnvironment->nTicks = pDrlgEnvironment->nTimeRate * aENVIRONMENTDATA1[iVar1 * 3];
       return;
     }
 
-    pDrlgEnvironment->nEnvironmentData = aENVIRONMENTDATA2[nTimeIdx * 3 + 1];
-    pDrlgEnvironment->nTicks = pDrlgEnvironment->nTimeRate * aENVIRONMENTDATA2[nTimeIdx * 3];
+    pDrlgEnvironment->nEnvironmentData = aENVIRONMENTDATA2[iVar1].nEnvData;
+    pDrlgEnvironment->nTicks = pDrlgEnvironment->nTimeRate * aENVIRONMENTDATA2[iVar1].nLenght;
 }
 
 D2DrlgEnvironmentStrc * __fastcall DRLGENV_AllocEnvironment(D2PoolManagerStrc * pMemory) {
@@ -173,13 +173,13 @@ D2DrlgEnvironmentStrc * __fastcall DRLGENV_AllocEnvironment(D2PoolManagerStrc * 
     pEnv->nTimeIndex = 2;
     uint32_t nTimeRate = gnTimeRates[pEnv->nTimeRateIndex];
     pEnv->nTimeRate = nTimeRate;
-    uint32_t* puVar1 = aENVIRONMENTDATA1;
+    D2DrlgActEnvironmentData* pDataTable = (D2DrlgActEnvironmentData*)(aENVIRONMENTDATA1 + 6);
     if (pEnv->bEclipse) {
-      puVar1 = aENVIRONMENTDATA2;
+      pDataTable = aENVIRONMENTDATA2 + 2;
     }
 
-    pEnv->nEnvironmentData = (puVar1 + 6)[1];
-    pEnv->nTicks = nTimeRate * puVar1[6];
+    pEnv->nEnvironmentData = pDataTable->nEnvData;
+    pEnv->nTicks = nTimeRate * pDataTable->nLenght;
     DRLGENV_UpdateLightIntensity(LEVEL_None, pEnv, 0);
     DRLGENV_UpdateLightColor(0, pEnv);
     pEnv->nUnused = 0;
@@ -231,7 +231,7 @@ D2DrlgEnvironmentStrc * DRLGENV_UpdateEnvironmentCycle(D2DrlgEnvironmentStrc * p
     } else if (nActNo == 3) {
       pNextData = aENVIRONMENTDATA3 + nNextTimeIndex;
     } else {
-      pNextData = (D2DrlgActEnvironmentData*)(aENVIRONMENTDATA2 + nNextTimeIndex * 3);
+      pNextData = aENVIRONMENTDATA2 + nNextTimeIndex;
     }
     if (pNextData->nLenght * nTicks >= pEnvironment->nTicks) {
       return pEnvironment;
@@ -249,8 +249,8 @@ D2DrlgEnvironmentStrc * DRLGENV_UpdateEnvironmentCycle(D2DrlgEnvironmentStrc * p
       return pEnvironment;
     }
 
-    pEnvironment->nEnvironmentData = aENVIRONMENTDATA2[nTimeIndexPlus1 * 3 + 1];
-    pEnvironment->nTicks = aENVIRONMENTDATA2[nTimeIndexPlus1 * 3] * nTicks;
+    pEnvironment->nEnvironmentData = aENVIRONMENTDATA2[nTimeIndexPlus1].nEnvData;
+    pEnvironment->nTicks = aENVIRONMENTDATA2[nTimeIndexPlus1].nLenght * nTicks;
     return pEnvironment;
 }
 
@@ -258,8 +258,8 @@ D2DrlgEnvironmentStrc * DRLGENV_UpdateEnvironmentCycle(D2DrlgEnvironmentStrc * p
 BOOL __stdcall DRLGENV_UpdatePeriodOfDay(D2DrlgActStrc * pDrlgAct, D2RoomStrc * pRoom) {
     char eActNoByte;
     DWORD dwActNo;
+    int nTicksWithBias;
     uint32_t* pNextEnvData;
-    int nTimeIndex;
     D2DrlgEnvironmentStrc* pEnv;
     pEnv = DUNGEON::Dungeon::DRLGENV_GetEnvironmentFromAct(pDrlgAct);
     int nPrevEnvironmentData;
@@ -278,7 +278,6 @@ BOOL __stdcall DRLGENV_UpdatePeriodOfDay(D2DrlgActStrc * pDrlgAct, D2RoomStrc * 
     int bIsEclipse;
     bIsEclipse = pEnv->bEclipse;
     if (!bIsEclipse) {
-      int nTicksWithBias;
       if (dwActNo == 3) {
         nTicksWithBias = nTimeRateLocal + 0xf;
       } else {
@@ -308,21 +307,22 @@ BOOL __stdcall DRLGENV_UpdatePeriodOfDay(D2DrlgActStrc * pDrlgAct, D2RoomStrc * 
     } else if (dwActNo == 3) {
       pNextEnvData = (uint32_t*)(aENVIRONMENTDATA3 + nNextTimeIndex);
     } else {
-      pNextEnvData = aENVIRONMENTDATA2 + nNextTimeIndex * 3;
+      pNextEnvData = (uint32_t*)(aENVIRONMENTDATA2 + nNextTimeIndex);
     }
     if ((int)(*pNextEnvData * nTimeRateLocal) < pEnv->nTicks) {
+      int iVar1;
       pEnv->nTimeIndex = nNextTimeIndexWrapped;
       if (5 < nNextTimeIndexWrapped) {
         pEnv->nTimeIndex = 0;
       }
 
-      nTimeIndex = pEnv->nTimeIndex;
+      iVar1 = pEnv->nTimeIndex;
       if (!bIsEclipse) {
-        pEnv->nEnvironmentData = aENVIRONMENTDATA1[nTimeIndex * 3 + 1];
-        pEnv->nTicks = aENVIRONMENTDATA1[nTimeIndex * 3] * nTimeRateLocal;
+        pEnv->nEnvironmentData = aENVIRONMENTDATA1[iVar1 * 3 + 1];
+        pEnv->nTicks = aENVIRONMENTDATA1[iVar1 * 3] * nTimeRateLocal;
       } else {
-        pEnv->nEnvironmentData = aENVIRONMENTDATA2[nTimeIndex * 3 + 1];
-        pEnv->nTicks = aENVIRONMENTDATA2[nTimeIndex * 3] * nTimeRateLocal;
+        pEnv->nEnvironmentData = aENVIRONMENTDATA2[iVar1].nEnvData;
+        pEnv->nTicks = aENVIRONMENTDATA2[iVar1].nLenght * nTimeRateLocal;
       }
     }
 
@@ -386,7 +386,7 @@ BOOL __stdcall DRLGENV_UpdateCycleIndex(D2DrlgActStrc * pDrlgAct, int32_t nActNo
     } else if (nActNo == 3) {
       pNextData = aENVIRONMENTDATA3 + nNextIndex;
     } else {
-      pNextData = (D2DrlgActEnvironmentData*)(aENVIRONMENTDATA2 + nNextIndex * 3);
+      pNextData = aENVIRONMENTDATA2 + nNextIndex;
     }
     if (pNextData->nLenght * nTimeRate < pEnv->nTicks) {
       pEnv->nTimeIndex = nTimeIndexPlus1;
@@ -399,8 +399,8 @@ BOOL __stdcall DRLGENV_UpdateCycleIndex(D2DrlgActStrc * pDrlgAct, int32_t nActNo
         pEnv->nEnvironmentData = aENVIRONMENTDATA1[nTimeIndexPlus1 * 3 + 1];
         pEnv->nTicks = aENVIRONMENTDATA1[nTimeIndexPlus1 * 3] * nTimeRate;
       } else {
-        pEnv->nEnvironmentData = aENVIRONMENTDATA2[nTimeIndexPlus1 * 3 + 1];
-        pEnv->nTicks = aENVIRONMENTDATA2[nTimeIndexPlus1 * 3] * nTimeRate;
+        pEnv->nEnvironmentData = aENVIRONMENTDATA2[nTimeIndexPlus1].nEnvData;
+        pEnv->nTicks = aENVIRONMENTDATA2[nTimeIndexPlus1].nLenght * nTimeRate;
       }
     }
     if (pEnv->nTimeRate) {
@@ -473,20 +473,20 @@ int32_t __stdcall DRLGENV_GetUnusedMember(D2DrlgActStrc * pDrlgAct) {
 }
 
 void __stdcall DRLGENV_NextEnvCycle(D2DrlgActStrc * pDrlgAct, D2RoomStrc * pRoom) {
-    uint32_t* puVar1;
+    D2DrlgActEnvironmentData* pDVar1;
     D2DrlgEnvironmentStrc* pEnv = DUNGEON::Dungeon::DRLGENV_GetEnvironmentFromAct(pDrlgAct);
     pEnv->nTimeIndex++;
     if (5 < pEnv->nTimeIndex) {
       pEnv->nTimeIndex = 0;
     }
     if (!pEnv->bEclipse) {
-      puVar1 = aENVIRONMENTDATA1 + pEnv->nTimeIndex * 3;
+      pDVar1 = (D2DrlgActEnvironmentData*)(aENVIRONMENTDATA1 + pEnv->nTimeIndex * 3);
     } else {
-      puVar1 = aENVIRONMENTDATA2 + pEnv->nTimeIndex * 3;
+      pDVar1 = aENVIRONMENTDATA2 + pEnv->nTimeIndex;
     }
 
-    pEnv->nEnvironmentData = puVar1[1];
-    pEnv->nTicks = pEnv->nTimeRate * *puVar1;
+    pEnv->nEnvironmentData = pDVar1->nEnvData;
+    pEnv->nTicks = pEnv->nTimeRate * pDVar1->nLenght;
     eD2LevelId nDrlgAct = (eD2LevelId)0x0;
     if (pRoom) {
       nDrlgAct = DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
@@ -512,7 +512,7 @@ int32_t __stdcall DRLGENV_GetCycleIndexFromAct(D2DrlgActStrc * pDrlgAct) {
 // Sets the time-of-day state (nIndex 0–5, nAngle ticks) and eclipse flag in the act's D2DrlgEnvironmentStrc, then updates ambient light intensity and color. Selects ENVIRONMENTDATA1 or ENVIRONMENTDATA2 based on bEclipse. Applies Act 4-specific global light color override. Halts with an internal error if nIndex or nAngle are out of range.
 void __stdcall DRLGENV_InitializeEnvironment(D2DrlgActStrc * pDrlgAct, D2RoomStrc * pRoom, int32_t nIndex, int32_t nAngle, BOOL bEclipse) {
     eAct eActNo;
-    uint32_t* puVar1;
+    D2DrlgActEnvironmentData* pDVar1;
     uint32_t nActNo;
     eD2LevelId nDrlgAct;
     D2DrlgEnvironmentStrc* pEnv = DUNGEON::Dungeon::DRLGENV_GetEnvironmentFromAct(pDrlgAct);
@@ -528,12 +528,12 @@ void __stdcall DRLGENV_InitializeEnvironment(D2DrlgActStrc * pDrlgAct, D2RoomStr
         pEnv->nTimeIndex = nIndex;
         pEnv->nTicks = nAngle;
         if (!bEclipse) {
-          puVar1 = aENVIRONMENTDATA1 + nIndex * 3;
+          pDVar1 = (D2DrlgActEnvironmentData*)(aENVIRONMENTDATA1 + nIndex * 3);
         } else {
-          puVar1 = aENVIRONMENTDATA2 + nIndex * 3;
+          pDVar1 = aENVIRONMENTDATA2 + nIndex;
         }
 
-        pEnv->nEnvironmentData = puVar1[1];
+        pEnv->nEnvironmentData = pDVar1->nEnvData;
         nDrlgAct = (eD2LevelId)0x0;
         if (pRoom) {
           nDrlgAct = DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
@@ -587,7 +587,7 @@ int32_t __stdcall DRLGENV_GetTimeRateFromAct(D2DrlgActStrc * pDrlgAct) {
 }
 
 void __stdcall DRLGENV_SetNextTimeRate(D2DrlgActStrc * pDrlgAct, D2RoomStrc * pRoom) {
-    uint32_t* puVar1;
+    D2DrlgActEnvironmentData* pDVar1;
     D2DrlgEnvironmentStrc* pEnv = DUNGEON::Dungeon::DRLGENV_GetEnvironmentFromAct(pDrlgAct);
     pEnv->nTimeRateIndex++;
     if (2 < pEnv->nTimeRateIndex) {
@@ -597,13 +597,13 @@ void __stdcall DRLGENV_SetNextTimeRate(D2DrlgActStrc * pDrlgAct, D2RoomStrc * pR
     uint32_t nTimeRate = gnTimeRates[pEnv->nTimeRateIndex];
     pEnv->nTimeRate = nTimeRate;
     if (!pEnv->bEclipse) {
-      puVar1 = aENVIRONMENTDATA1 + pEnv->nTimeIndex * 3;
+      pDVar1 = (D2DrlgActEnvironmentData*)(aENVIRONMENTDATA1 + pEnv->nTimeIndex * 3);
     } else {
-      puVar1 = aENVIRONMENTDATA2 + pEnv->nTimeIndex * 3;
+      pDVar1 = aENVIRONMENTDATA2 + pEnv->nTimeIndex;
     }
 
-    pEnv->nEnvironmentData = puVar1[1];
-    pEnv->nTicks = *puVar1 * nTimeRate;
+    pEnv->nEnvironmentData = pDVar1->nEnvData;
+    pEnv->nTicks = pDVar1->nLenght * nTimeRate;
     eD2LevelId nDrlgAct = (eD2LevelId)0x0;
     if (pRoom) {
       nDrlgAct = DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
@@ -628,7 +628,7 @@ void __stdcall DRLGENV_TaintedSunBegin(D2DrlgActStrc * pDrlgAct) {
     pEnv = DUNGEON::Dungeon::DRLGENV_GetEnvironmentFromAct(pDrlgAct);
     pEnv->nTimeIndex = 0;
     pEnv->nTicks = 0;
-    pEnv->nEnvironmentData = aENVIRONMENTDATA2[1];
+    pEnv->nEnvironmentData = aENVIRONMENTDATA2[0].nEnvData;
     eAct eActNo = Drlg::GetActNoFromLevelNumber(LEVEL_None);
     uint32_t nActNo = (uint32_t)eActNo;
     DRLGENV_UpdateLightIntensity(LEVEL_None, pEnv, nActNo);

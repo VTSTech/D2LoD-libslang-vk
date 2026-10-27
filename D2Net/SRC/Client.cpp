@@ -70,10 +70,10 @@ int32_t __stdcall NET_CLIENT_GetConnectionTimeout() {
 DWORD __stdcall CLIENT_ServerConnectionThread_lpStartAddress(void * lpThreadParam) {
     // Static local variables (originally global data)
     // also labelled: sockaddr_in
-static sockaddr * name_00882b38;
-    static int nClientSockAddrIn;
-    static int gnClientSockAddrPadding0;
-    static int gnClientSockAddrPadding1;
+static sockaddr * name_00882b38; D2_STATIC_GUARD_BSS(name_00882b38, "D2Net::SRC::Client::CLIENT_ServerConnectionThread_lpStartAddress::name_00882b38");
+    static int nClientSockAddrIn; D2_STATIC_GUARD_BSS(nClientSockAddrIn, "D2Net::SRC::Client::CLIENT_ServerConnectionThread_lpStartAddress::nClientSockAddrIn");
+    static int gnClientSockAddrPadding0; D2_STATIC_GUARD_BSS(gnClientSockAddrPadding0, "D2Net::SRC::Client::CLIENT_ServerConnectionThread_lpStartAddress::gnClientSockAddrPadding0");
+    static int gnClientSockAddrPadding1; D2_STATIC_GUARD_BSS(gnClientSockAddrPadding1, "D2Net::SRC::Client::CLIENT_ServerConnectionThread_lpStartAddress::gnClientSockAddrPadding1");
     static WSADATA gWSAData = {
     /* .wVersion = */ 0,
     /* .wHighVersion = */ 0,
@@ -470,7 +470,7 @@ static sockaddr * name_00882b38;
     /* .iMaxSockets = */ 0,
     /* .iMaxUdpDg = */ 0,
     /* .lpVendorInfo = */ nullptr
-};
+}; D2_STATIC_GUARD(gWSAData, "D2Net::SRC::Client::CLIENT_ServerConnectionThread_lpStartAddress::gWSAData");
 
     /* LPWSADATA lpWSAData for WSAStartup */ /* WORD wVersionRequired for WSAStartup */ gbClientConnectionShutdown = 0;
     WSAStartup(0x101, &gWSAData);
@@ -841,7 +841,7 @@ void __fastcall NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket(char * pByte
       }
 
       pNewPacket = D2_NEW(D2OnePacketClientStrc);
-      nSizeResult = ::D2Net::Game::Server::NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(pBytes, pBytesSize, (size_t*)&nPacketSize);
+      nSizeResult = ::D2Net::Game::Server::NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(pBytes, pBytesSize, (uint32_t*)&nPacketSize);
       if (!nSizeResult) {
         return;
       }

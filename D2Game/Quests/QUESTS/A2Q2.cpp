@@ -40,8 +40,8 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/GAME/Server.h"
 #include "D2Game/Quests/QUESTS/A2Q1.h"
@@ -443,7 +443,7 @@ void __fastcall Q10_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 // Q10_Callback_03. Gossip sub-event handler: when the text-control id == 0x28,
 // removes the player from the quest GUID participation list. No QuestRecord writes.
 void __fastcall Q10_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GossipTextStrc*)0x28) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GSPacketSrv0x27_TextStrc*)0x28) {
       return;
     }
 
@@ -1054,7 +1054,7 @@ void __fastcall Q10_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
 //  [0xe]=Callback_14 (item gained). Sets nStateFlagPrev=0xd initial. No QuestRecord I/O.
 void __fastcall Q10_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
-    pQuestData->pNpcMessages = &A2Q2::aNpcGossipData;
+    pQuestData->pNpcMessages = A2Q2::aNpcGossipData;
     pQuestData->bIsActive = true;
     D2QuestDataA2Q2Strc* pQuestSpecificData = D2_NEW_POOL(pQuestData->pGame->pMemoryPool, D2QuestDataA2Q2Strc);
     pQuestData->pQuestSpecificData.pA2Q2 = pQuestSpecificData;

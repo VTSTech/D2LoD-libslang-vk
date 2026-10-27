@@ -253,7 +253,7 @@ void __fastcall PLAYER_MoveToLocationWithTimeout(::SGAMEDATA * pGame, D2UnitStrc
 
 // @sourcefile .\PLAYER\Player.cpp
 uint32_t __stdcall PLAYER_PlaceItemInInventory(::SGAMEDATA * pGame, int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
-    int32_t nItemGUID;
+    int32_t nItemX;
     int bItemPlaced;
     int32_t bPlaced;
     int32_t nErrorLine;
@@ -262,15 +262,15 @@ uint32_t __stdcall PLAYER_PlaceItemInInventory(::SGAMEDATA * pGame, int32_t nPar
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb4);
       exit(-1);
     } else {
-      int32_t nItemX;
+      int32_t nItemY;
       if (pUnit) {
         D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit2, INVPAGE_INVENTORY);
         nErrorLine = pUnit2->nUnitGUID;
         pInventory = 0;
         bPlaced = 1;
-        nItemGUID = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit2);
+        nItemY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit2);
         nItemX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit2);
-        bItemPlaced = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\Player.cpp", 0xba, pGame, pUnit, nErrorLine, nItemX, nItemGUID, nParam, bPlaced, pInventory);
+        bItemPlaced = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\Player.cpp", 0xba, pGame, pUnit, nErrorLine, nItemX, nItemY, nParam, bPlaced, pInventory);
         return (uint32_t)(bItemPlaced != 0);
       }
 
@@ -379,11 +379,11 @@ void __fastcall PLAYER_CreateStarterItems(::SGAMEDATA * pGame, D2UnitStrc * pUni
     D2UnitStrc* pNewItem;
     uint32_t bIsQuiver;
     BOOL nBeltResult;
-    int32_t nStatSubIndex;
     eD2UnitStat eUnitStat;
     eD2UnitStat eStatId;
     eD2UnitType eItemUnitType;
     int32_t nLine;
+    int32_t nStatValue;
     ::SGAMEDATA* pGameLocal;
     D2ItemsTxt* pItemsTxt;
     pItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(*pnParam, &__frame0.nItemTxtLine);
@@ -408,14 +408,14 @@ void __fastcall PLAYER_CreateStarterItems(::SGAMEDATA * pGame, D2UnitStrc * pUni
           bIsQuiver = D2Common::ITEMS::Items::ITEMS_IsA(pNewItem, ITEMTYPE_BowQuiver);
           nLine = 0;
           if (!bIsQuiver) {
-            nStatSubIndex = D2Common::Stats::StatsEx::GetTxtMaxDurability(pNewItem);
+            nStatValue = D2Common::Stats::StatsEx::GetTxtMaxDurability(pNewItem);
             eUnitStat = UNITSTAT_durability;
           } else {
-            nStatSubIndex = 0xfa;
+            nStatValue = 0xfa;
             eUnitStat = UNITSTAT_quantity;
           }
 
-          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, eUnitStat, nStatSubIndex, nLine);
+          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, eUnitStat, nStatValue, nLine);
           bIsQuiver = D2Common::ITEMS::Items::ITEMS_IsA(pNewItem, ITEMTYPE_BowQuiver);
           if (bIsQuiver) {
             nLine = 100;
@@ -428,18 +428,18 @@ void __fastcall PLAYER_CreateStarterItems(::SGAMEDATA * pGame, D2UnitStrc * pUni
           }
 
           bIsQuiver = D2Common::ITEMS::Items::ITEMS_IsA(pNewItem, ITEMTYPE_BowQuiver);
-          nStatSubIndex = 0;
+          nStatValue = 0;
           if (!bIsQuiver) {
             nLine = D2Common::Stats::StatsEx::GetTxtMaxDurability(pNewItem);
             eStatId = UNITSTAT_durability;
           } else {
             nLine = 0xfa;
             set_quiver_quantity:
-            nStatSubIndex = 0;
+            nStatValue = 0;
             eStatId = UNITSTAT_quantity;
           }
 
-          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, eStatId, nLine, nStatSubIndex);
+          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, eStatId, nLine, nStatValue);
         }
       } else {
         if (!pNewItem) {
@@ -496,29 +496,29 @@ void __fastcall PLAYER_CreateAllStarterItems(D2UnitStrc * pUnit, ::SGAMEDATA * p
 }
 
 void __fastcall PLAYER_SendAllItemsToClient(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
-    int32_t nAddress;
     D2UnitStrc* pItem;
+    D2UnitStrc* pCarriedItem;
     D2UnitStrc* pOwnerUnit;
+    int32_t nLine;
     if (!pUnit->pInventory) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x187);
       exit(-1);
     }
 
     for (pItem = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pUnit->pInventory); pItem; pItem = D2Common::INVENTORY::Inventory::INVENTORY_GetNextItem(pItem)) {
-      D2UnitStrc* pCarriedItem;
       pCarriedItem = D2Common::INVENTORY::Inventory::GetCarriedItem(pItem);
-      nAddress = D2Common::INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pItem);
-      if (nAddress == 3) {
+      nLine = D2Common::INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pItem);
+      if (nLine == 3) {
         GAME::SCmd::Send0x9DItemEquip(pClient, pUnit, pCarriedItem, ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD));
       } else {
         pOwnerUnit = GAME::Clients::CLIENTS_GetControlUnit(pClient, 0);
-        if (pUnit == pOwnerUnit && (nAddress = D2Common::INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pItem) , nAddress == 1)) {
+        if (pUnit == pOwnerUnit && (nLine = D2Common::INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pItem) , nLine == 1)) {
           GAME::SCmd::Send0x9CItemPutInContainer(pClient, pUnit, pCarriedItem, ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD));
         } else {
           pOwnerUnit = GAME::Clients::CLIENTS_GetControlUnit(pClient, 0);
           if (pUnit == pOwnerUnit) {
-            nAddress = D2Common::INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pItem);
-            if (nAddress == 2) {
+            nLine = D2Common::INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pItem);
+            if (nLine == 2) {
               GAME::SCmd::Send0x9CItemPutInBelt(pClient, pUnit, pCarriedItem, ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD));
             }
           }
@@ -647,7 +647,7 @@ void __fastcall PLAYER_CancelInteraction(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 }
 
 void __fastcall PLAYER_PlaceCorpse(::SGAMEDATA * pGame, D2RoomStrc * pRoom, DWORD dwPlayerId, POINT * pPoint) {
-    int32_t nAddress;
+    int32_t nLine;
     if (!pRoom) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x21f);
       exit(-1);
@@ -668,12 +668,12 @@ void __fastcall PLAYER_PlaceCorpse(::SGAMEDATA * pGame, D2RoomStrc * pRoom, DWOR
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_STATREGEN, 0);
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_TRAP, 0);
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_FREEHOVER, 0);
-    nAddress = D2Common::INVENTORY::Inventory::INVENTORY_GetCursorItemGUID(pUnit->pInventory);
-    if (nAddress == -1) {
+    nLine = D2Common::INVENTORY::Inventory::INVENTORY_GetCursorItemGUID(pUnit->pInventory);
+    if (nLine == -1) {
       return;
     }
 
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x8E_CorpseAssign_Sender(pGame, nAddress, dwPlayerId, 1);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x8E_CorpseAssign_Sender(pGame, nLine, dwPlayerId, 1);
 }
 
 void __fastcall PLAYER_SetUniqueId(D2UnitStrc * pUnit, uint32_t dwUniqueId) {

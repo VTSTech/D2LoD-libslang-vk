@@ -9,6 +9,7 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2GemsTxt;
 struct D2MagicAffixTxt;
 struct D2StatListExStrc;
 struct D2UnitStrc;
@@ -42,7 +43,7 @@ struct D2MagixAffixModStrc * TXT_magixaffixes_GetModEntry(struct D2MagicAffixTxt
 // Returns pTxtLine + 0xc + nMod * 0x10 (nMod in EAX, the line in ECX); halts (ItemMods.cpp line 129, nMod < MAX_UNIQUE_ITEM_PROPERTIES && nMod >= 0) when nMod >= 12.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 void * __stdcall TXT_UniqueItems_GetModEntry(void * pTxtLine, uint32_t nMod);
-int32_t ITEMMOD_GetMaxLevelAtIndex(struct D2MagicAffixTxt * pMagixAffixLine, uint32_t nIndex, uint32_t nParam);
+int32_t ITEMMOD_GetMaxLevelAtIndex(struct D2GemsTxt * pMagixAffixLine, uint32_t nIndex, uint32_t nParam);
 // Retrieves a specific property modifier from an affix line. Rolls property values based on min/max ranges and returns property code, parameter, and calculated value.
 int32_t ITEMMOD_GetPropertyFromAffix(struct D2MagicAffixTxt * pMagicAffixLine, uint32_t nParam, uint32_t nNumber, uint32_t nSelector);
 void __stdcall ITEMMODS_GetQualityMinMax(uint32_t nPackedQuality, uint32_t * pnParam1, uint32_t * pnParam2);

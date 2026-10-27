@@ -466,7 +466,7 @@ void __stdcall SBigToBinaryArray(struct BigData * pBigData, void * pDestArray, i
 // @renamed-from SBIG_ExportBytesLimited (2026-08-28, Storm PowerPC oracle pass 4)
 // @oracle Mac PPC 1.10b Storm -- PPC SBigToBinaryBuffer -> 10098f00, 192B: .ToBinary + BlockMoveData into a caller buffer. 1.14d: 4 args, BigBuffer_ToBinary then STORM_Memcpy. The memcpy is the discriminator against the Array and Ptr forms.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.
-void __stdcall SBigToBinaryBuffer(struct BigData * pBigData, void * pDest, uint32_t nMaxBytes, size_t * pnSize);
+void __stdcall SBigToBinaryBuffer(struct BigData * pBigData, void * pDest, uint32_t nMaxBytes, uint32_t * pnSize);
 // @renamed-from SBIG_GetExportBufferPtr (2026-08-28, Storm PowerPC oracle pass 4)
 // @oracle Mac PPC 1.10b Storm -- PPC SBigToBinaryPtr -> 10098e70, 144B: .ToBinary and nothing else, returns the internal pointer. 1.14d: calls BigBuffer_ToBinary only.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.

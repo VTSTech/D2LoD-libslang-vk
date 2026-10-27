@@ -16,14 +16,14 @@ GUID gIID_IDirectSound3DBuffer = {
     /* .Data2 = */ 0x4981,
     /* .Data3 = */ 0x11ce,
     /* .Data4 = */ { 0xa5, '!', '\x00', ' ', 0xaf, '\x0b', 0xe5, '`' }
-};
+}; D2_GLOBAL_GUARD(gIID_IDirectSound3DBuffer, "gIID_IDirectSound3DBuffer");
 
 GUID gIID_IKsPropertySet = {
     /* .Data1 = */ 0x31efac30,
     /* .Data2 = */ 0x515c,
     /* .Data3 = */ 0x11d0,
     /* .Data4 = */ { 0xa9, 0xaa, '\x00', 0xaa, '\x00', 'a', 0xbe, 0x93 }
-};
+}; D2_GLOBAL_GUARD(gIID_IKsPropertySet, "gIID_IKsPropertySet");
 
 uint8_t gEAXPropertyGuid_Reserved2[16] = {
     0xa8,
@@ -42,7 +42,26 @@ uint8_t gEAXPropertyGuid_Reserved2[16] = {
     0xd8,
     0xc7,
     0x22
-};
+}; D2_GLOBAL_GUARD(gEAXPropertyGuid_Reserved2, "gEAXPropertyGuid_Reserved2");
+
+uint8_t gEAXPropertyGuid_Obstruction[16] = {
+    0xa7,
+    0xa6,
+    0x6,
+    0x3,
+    0x24,
+    0xb2,
+    0xd2,
+    0x11,
+    0x99,
+    0xe5,
+    0x0,
+    0x0,
+    0xe8,
+    0xd8,
+    0xc7,
+    0x22
+}; D2_GLOBAL_GUARD(gEAXPropertyGuid_Obstruction, "gEAXPropertyGuid_Obstruction");
 
 uint8_t gEAXPropertyGuid_Reserved1[16] = {
     0xc1,
@@ -61,7 +80,19 @@ uint8_t gEAXPropertyGuid_Reserved1[16] = {
     0x54,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gEAXPropertyGuid_Reserved1, "gEAXPropertyGuid_Reserved1");
+
+uint8_t gaEAXPropertyGuid_ObstructionParams[9] = {
+    0xc0,
+    0x6f,
+    0x4e,
+    0x4a,
+    0x41,
+    0xc3,
+    0xd1,
+    0x11,
+    0xb7
+}; D2_GLOBAL_GUARD(gaEAXPropertyGuid_ObstructionParams, "gaEAXPropertyGuid_ObstructionParams");
 
 int gAmbientSoundTable[16] = {
     (int)(uintptr_t)s_data_global_music_common_options__006dea54,
@@ -80,7 +111,7 @@ int gAmbientSoundTable[16] = {
     0x0,
     (int)(uintptr_t)s_data_global_music_act3_kurastsewe_006de950,
     0x0
-};
+}; D2_GLOBAL_GUARD(gAmbientSoundTable, "gAmbientSoundTable");
 
 int gaAmbientSoundEntryTable[16] = {
     (int)(uintptr_t)s_data_global_music_introedit_wav_006de930,
@@ -99,7 +130,7 @@ int gaAmbientSoundEntryTable[16] = {
     0x0,
     (int)(uintptr_t)s_data_global_music_act4_diablo_wav_006de858,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaAmbientSoundEntryTable, "gaAmbientSoundEntryTable");
 
 // also labelled: lpCriticalSection_SoundPlay, lpCriticalSection_0088174c
 _RTL_CRITICAL_SECTION gSoundSmpCs = {
@@ -109,7 +140,7 @@ _RTL_CRITICAL_SECTION gSoundSmpCs = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(gSoundSmpCs, "gSoundSmpCs");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_008817c4 = {
     /* .DebugInfo = */ nullptr,
@@ -118,59 +149,52 @@ _RTL_CRITICAL_SECTION lpCriticalSection_008817c4 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_008817c4, "lpCriticalSection_008817c4");
 
-D2SoundSmpStrc * gpaSoundEffectBuffers[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+D2SoundSmpStrc * gpaSoundEffectBuffers[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }; D2_GLOBAL_GUARD(gpaSoundEffectBuffers, "gpaSoundEffectBuffers");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-uint32_t gnSoundHardwareAcceleration = 0x1;
-int gaAmbientSoundFlags = 0x8;
-uint32_t gnAmbientSoundCount = 0x8;
-uint32_t gnSoundGlobalVolume = 0xff;
-IKsPropertySet * gpDirectSoundEAXInterface = 0;
-HWND g_hwndSoundWindow = 0;
-IDirectSound3DBuffer * gpEAXInterface1 = 0;
-IDirectSoundBuffer * gpEAXInterface2 = 0;
-IDirectSoundBuffer * gpDSoundPrimaryBuffer = 0;
-uint32_t gnDirectSoundInitialized = 0;
-IDirectSound * gnDirectSoundInitStatus = 0;
-uint32_t gnDSoundPrimaryBufferDelay = 0;
-uint32_t gnSound3DLoudness = 0;
-int gnSoundQualityMode = 0;
-uint32_t g_bEAXEnabled = 0;
-uint32_t gbDirectSoundCritSecInitialized = 0;
-uint32_t g_bSoundDriverScanComplete = 0;
-uint32_t gbDirectSoundDelayWorkaround = 0;
-uint32_t gbHasLegacyEMU10K1Driver = 0;
-uint32_t gbHasLegacySoundDriverCrlds3d = 0;
-uint32_t LanguageCode = 0;
-D2SoundSmpStrc * gpMusicStreamBuffer = 0;
-uint32_t gnMusicEnabled = 0;
-uint32_t gbSoundFastPathActive = 0;
-uint32_t gnAmbientSoundLanguageCode = 0;
-uint32_t gbAmbientSoundLangInitialized = 0;
-uint32_t g_nSoundMixerType = 0;
-uint32_t g_nSoundMasterVolume = 0;
-uint32_t g_nSoundMusicVolume = 0;
-uint32_t g_nSoundPositionalBias = 0;
-uint32_t g_nSoundNpcSpeech = 0;
-uint32_t g_nSoundOptionsMusic = 0;
-uint32_t gnSoundEffectSampleCount = 0;
-void * gpWavFileCacheListHead = 0;
-uint32_t g_nSoundSampleParam = 0;
-int * gpSoundSampleList = 0;
-HANDLE ghSoundThreadStopEvent = 0;
-HANDLE ghSoundThread = 0;
-
-// =============================================================================
-// Uninitialized data (BSS)
-// =============================================================================
-
-uint8_t gEAXPropertyGuid_Obstruction;
-uint8_t gaEAXPropertyGuid_ObstructionParams;
+uint32_t gnSoundHardwareAcceleration = 0x1; D2_GLOBAL_GUARD(gnSoundHardwareAcceleration, "gnSoundHardwareAcceleration");
+int gaAmbientSoundFlags = 0x8; D2_GLOBAL_GUARD(gaAmbientSoundFlags, "gaAmbientSoundFlags");
+uint32_t gnAmbientSoundCount = 0x8; D2_GLOBAL_GUARD(gnAmbientSoundCount, "gnAmbientSoundCount");
+uint32_t gnSoundGlobalVolume = 0xff; D2_GLOBAL_GUARD(gnSoundGlobalVolume, "gnSoundGlobalVolume");
+IKsPropertySet * gpDirectSoundEAXInterface = 0; D2_GLOBAL_GUARD(gpDirectSoundEAXInterface, "gpDirectSoundEAXInterface");
+HWND g_hwndSoundWindow = 0; D2_GLOBAL_GUARD(g_hwndSoundWindow, "g_hwndSoundWindow");
+IDirectSound3DBuffer * gpEAXInterface1 = 0; D2_GLOBAL_GUARD(gpEAXInterface1, "gpEAXInterface1");
+IDirectSoundBuffer * gpEAXInterface2 = 0; D2_GLOBAL_GUARD(gpEAXInterface2, "gpEAXInterface2");
+IDirectSoundBuffer * gpDSoundPrimaryBuffer = 0; D2_GLOBAL_GUARD(gpDSoundPrimaryBuffer, "gpDSoundPrimaryBuffer");
+uint32_t gnDirectSoundInitialized = 0; D2_GLOBAL_GUARD(gnDirectSoundInitialized, "gnDirectSoundInitialized");
+IDirectSound * gnDirectSoundInitStatus = 0; D2_GLOBAL_GUARD(gnDirectSoundInitStatus, "gnDirectSoundInitStatus");
+uint32_t gnDSoundPrimaryBufferDelay = 0; D2_GLOBAL_GUARD(gnDSoundPrimaryBufferDelay, "gnDSoundPrimaryBufferDelay");
+uint32_t gnSound3DLoudness = 0; D2_GLOBAL_GUARD(gnSound3DLoudness, "gnSound3DLoudness");
+int gnSoundQualityMode = 0; D2_GLOBAL_GUARD(gnSoundQualityMode, "gnSoundQualityMode");
+uint32_t g_bEAXEnabled = 0; D2_GLOBAL_GUARD(g_bEAXEnabled, "g_bEAXEnabled");
+uint32_t gbDirectSoundCritSecInitialized = 0; D2_GLOBAL_GUARD(gbDirectSoundCritSecInitialized, "gbDirectSoundCritSecInitialized");
+uint32_t g_bSoundDriverScanComplete = 0; D2_GLOBAL_GUARD(g_bSoundDriverScanComplete, "g_bSoundDriverScanComplete");
+uint32_t gbDirectSoundDelayWorkaround = 0; D2_GLOBAL_GUARD(gbDirectSoundDelayWorkaround, "gbDirectSoundDelayWorkaround");
+uint32_t gbHasLegacyEMU10K1Driver = 0; D2_GLOBAL_GUARD(gbHasLegacyEMU10K1Driver, "gbHasLegacyEMU10K1Driver");
+uint32_t gbHasLegacySoundDriverCrlds3d = 0; D2_GLOBAL_GUARD(gbHasLegacySoundDriverCrlds3d, "gbHasLegacySoundDriverCrlds3d");
+uint32_t LanguageCode = 0; D2_GLOBAL_GUARD(LanguageCode, "LanguageCode");
+D2SoundSmpStrc * gpMusicStreamBuffer = 0; D2_GLOBAL_GUARD(gpMusicStreamBuffer, "gpMusicStreamBuffer");
+uint32_t gnMusicEnabled = 0; D2_GLOBAL_GUARD(gnMusicEnabled, "gnMusicEnabled");
+uint32_t gbSoundFastPathActive = 0; D2_GLOBAL_GUARD(gbSoundFastPathActive, "gbSoundFastPathActive");
+uint32_t gnAmbientSoundLanguageCode = 0; D2_GLOBAL_GUARD(gnAmbientSoundLanguageCode, "gnAmbientSoundLanguageCode");
+uint32_t gbAmbientSoundLangInitialized = 0; D2_GLOBAL_GUARD(gbAmbientSoundLangInitialized, "gbAmbientSoundLangInitialized");
+uint32_t g_nSoundMixerType = 0; D2_GLOBAL_GUARD(g_nSoundMixerType, "g_nSoundMixerType");
+uint32_t g_nSoundMasterVolume = 0; D2_GLOBAL_GUARD(g_nSoundMasterVolume, "g_nSoundMasterVolume");
+uint32_t g_nSoundMusicVolume = 0; D2_GLOBAL_GUARD(g_nSoundMusicVolume, "g_nSoundMusicVolume");
+uint32_t g_nSoundPositionalBias = 0; D2_GLOBAL_GUARD(g_nSoundPositionalBias, "g_nSoundPositionalBias");
+uint32_t g_nSoundNpcSpeech = 0; D2_GLOBAL_GUARD(g_nSoundNpcSpeech, "g_nSoundNpcSpeech");
+uint32_t g_nSoundOptionsMusic = 0; D2_GLOBAL_GUARD(g_nSoundOptionsMusic, "g_nSoundOptionsMusic");
+uint32_t gnSoundEffectSampleCount = 0; D2_GLOBAL_GUARD(gnSoundEffectSampleCount, "gnSoundEffectSampleCount");
+void * gpWavFileCacheListHead = 0; D2_GLOBAL_GUARD(gpWavFileCacheListHead, "gpWavFileCacheListHead");
+uint32_t g_nSoundSampleParam = 0; D2_GLOBAL_GUARD(g_nSoundSampleParam, "g_nSoundSampleParam");
+int * gpSoundSampleList = 0; D2_GLOBAL_GUARD(gpSoundSampleList, "gpSoundSampleList");
+HANDLE ghSoundThreadStopEvent = 0; D2_GLOBAL_GUARD(ghSoundThreadStopEvent, "ghSoundThreadStopEvent");
+HANDLE ghSoundThread = 0; D2_GLOBAL_GUARD(ghSoundThread, "ghSoundThread");
 
 namespace D2Common::Drlg::Maze {
 
@@ -500,10 +524,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -511,6 +531,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

@@ -47,26 +47,26 @@ namespace D2Common::DATATBLS::FieldTbls {
 // @sourcefile .\DATATBLS\FieldTbls.cpp
 void __stdcall FIELDTBLS_InitFieldData(D2ExpFieldFileStrc * pArchive, uint32_t dwUnused) {
     // Static local variables (originally global data)
-    static int gnFieldDataTableDirectionOffset0;
-    static int gnFieldStepOffset_N;
-    static int gnFieldStepOffset_S;
-    static int gnFieldStepOffset_SW;
-    static int gnFieldStepOffset_SE;
-    static int gnFieldStepOffset_SE2;
-    static int gnFieldStepOffset_E;
-    static int gnFieldStepOffset_NW;
-    static int gnFieldStepOffset_NE;
+    static int gnFieldDataTableDirectionOffset0; D2_STATIC_GUARD_BSS(gnFieldDataTableDirectionOffset0, "D2Common::DATATBLS::FieldTbls::FIELDTBLS_InitFieldData::gnFieldDataTableDirectionOffset0");
+    static int gnFieldStepOffset_N; D2_STATIC_GUARD_BSS(gnFieldStepOffset_N, "D2Common::DATATBLS::FieldTbls::FIELDTBLS_InitFieldData::gnFieldStepOffset_N");
+    static int gnFieldStepOffset_S; D2_STATIC_GUARD_BSS(gnFieldStepOffset_S, "D2Common::DATATBLS::FieldTbls::FIELDTBLS_InitFieldData::gnFieldStepOffset_S");
+    static int gnFieldStepOffset_SW; D2_STATIC_GUARD_BSS(gnFieldStepOffset_SW, "D2Common::DATATBLS::FieldTbls::FIELDTBLS_InitFieldData::gnFieldStepOffset_SW");
+    static int gnFieldStepOffset_SE; D2_STATIC_GUARD_BSS(gnFieldStepOffset_SE, "D2Common::DATATBLS::FieldTbls::FIELDTBLS_InitFieldData::gnFieldStepOffset_SE");
+    static int gnFieldStepOffset_SE2; D2_STATIC_GUARD_BSS(gnFieldStepOffset_SE2, "D2Common::DATATBLS::FieldTbls::FIELDTBLS_InitFieldData::gnFieldStepOffset_SE2");
+    static int gnFieldStepOffset_E; D2_STATIC_GUARD_BSS(gnFieldStepOffset_E, "D2Common::DATATBLS::FieldTbls::FIELDTBLS_InitFieldData::gnFieldStepOffset_E");
+    static int gnFieldStepOffset_NW; D2_STATIC_GUARD_BSS(gnFieldStepOffset_NW, "D2Common::DATATBLS::FieldTbls::FIELDTBLS_InitFieldData::gnFieldStepOffset_NW");
+    static int gnFieldStepOffset_NE; D2_STATIC_GUARD_BSS(gnFieldStepOffset_NE, "D2Common::DATATBLS::FieldTbls::FIELDTBLS_InitFieldData::gnFieldStepOffset_NE");
 
     uint32_t nHeight = pArchive->nHeight;
     uint32_t nWidth = pArchive->nWidth;
     size_t nAllocSize = nWidth * nHeight;
-    void* pFieldData = D2_ALLOC_POOL(nullptr, nAllocSize);
-    if (!pFieldData) {
+    void* nErrAddress = D2_ALLOC_POOL(nullptr, nAllocSize);
+    if (!nErrAddress) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x40);
       exit(-1);
     }
 
-    memcpy(pFieldData, pArchive + 1, nAllocSize);
+    memcpy(nErrAddress, pArchive + 1, nAllocSize);
     gnFieldDataTableDirectionOffset0 = gaFieldStepDeltaY[0] * nWidth + gaFieldStepDeltaX[0];
     gnFieldStepOffset_N = gaFieldStepDeltaY[1] * nWidth + gaFieldStepDeltaX[1];
     gnFieldTableHalfWidth = (int)nWidth >> 1;
@@ -78,7 +78,7 @@ void __stdcall FIELDTBLS_InitFieldData(D2ExpFieldFileStrc * pArchive, uint32_t d
     gnFieldStepOffset_NE = gaFieldStepDeltaY[8] * nWidth + gaFieldStepDeltaX[8];
     gnFieldStepOffset_NW = gaFieldStepDeltaY[7] * nWidth + gaFieldStepDeltaX[7];
     gnFieldTableHalfHeight = (int)nHeight >> 1;
-    gpFieldDataTable = pFieldData;
+    gpFieldDataTable = nErrAddress;
     gnFieldDataTableWidth = nWidth;
     gnFieldDataTableHeight = nHeight;
     gnFieldDataTableSize = nAllocSize;

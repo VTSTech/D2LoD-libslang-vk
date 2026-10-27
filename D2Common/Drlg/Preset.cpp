@@ -12,6 +12,7 @@
 #include "D2Client/UNIT/Monster.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2MonStatsTxt.h"
+#include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SeedStrc.h"
@@ -104,7 +105,7 @@ namespace D2Common::Drlg::Preset {
 // @sourcefile .\DRLG\Preset.cpp
 void __fastcall ParsePresetsOfDrlgFile(D2DrlgFileStrc * pFile, D2PoolManagerStrc * pMemory, char * pBuffer) {
     // Static local variables (originally global data)
-    static char * gpD2DrlgFileBuffer = (char *)&s_HDM_006ee7c0;
+    static char * gpD2DrlgFileBuffer = (char *)&s_HDM_006ee7c0; D2_STATIC_GUARD(gpD2DrlgFileBuffer, "D2Common::Drlg::Preset::ParsePresetsOfDrlgFile::gpD2DrlgFileBuffer");
 
     // Frame slots -16..-4 are ONE object: &szItemCode is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -115,7 +116,7 @@ void __fastcall ParsePresetsOfDrlgFile(D2DrlgFileStrc * pFile, D2PoolManagerStrc
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    size_t* psVar1;
+    uint32_t* puVar1;
     int nStrLen;
     int nCharLower;
     D2MonPresetTxt* pMonPresetTxt;
@@ -127,7 +128,6 @@ void __fastcall ParsePresetsOfDrlgFile(D2DrlgFileStrc * pFile, D2PoolManagerStrc
     D2PathPosStrc* pDVar2;
     uint32_t* pMonStatCheck;
     uint32_t* pCursor;
-    size_t* psVar3;
     uint32_t i;
     int* pPathEntry;
     char* pClassId;
@@ -425,44 +425,43 @@ void __fastcall ParsePresetsOfDrlgFile(D2DrlgFileStrc * pFile, D2PoolManagerStrc
     }
 
     nUnitCount = *pCursor2;
-    size_t* psVar4;
-    psVar4 = pCursor2 + 1;
+    pCursor2++;
     if (0 >= (int)nUnitCount) {
       return;
     }
 
     do {
-      pClassId = (char*)*psVar4;
-      psVar3 = psVar4 + 1;
-      psVar1 = psVar4 + 2;
-      psVar4 += 3;
+      pClassId = (char*)*pCursor2;
+      pCursor = pCursor2 + 1;
+      puVar1 = pCursor2 + 2;
+      pCursor2 += 3;
       if (pClassId) {
         for (pPreset = pFile->pPresetUnit; pPreset; pPreset = pPreset->pPresetUnitNext) {
-          if (pPreset->nPosX == *psVar3 && pPreset->nPosY == *psVar1) {
+          if (pPreset->nPosX == *pCursor && pPreset->nPosY == *puVar1) {
             pPathNodes = D2_NEW_POOL(nullptr, D2MapAIStrc);
             pPreset->pMapAI = pPathNodes;
             pDVar2 = (D2PathPosStrc*)D2_ALLOC_POOL(nullptr, (int)pClassId * 0xc);
             pPreset->pMapAI->pPosition = pDVar2;
-            pPreset->pMapAI->nSize = (size_t)pClassId;
+            pPreset->pMapAI->nSize = (int)pClassId;
             if (0 < (int)pClassId) {
               nStrLen = 0;
-              psVar3 = psVar4;
+              pCursor = pCursor2;
               pBuffer = pClassId;
               do {
-                *(size_t*)((uintptr_t)&pPreset->pMapAI->pPosition->nXpos + nStrLen) = *psVar3;
-                *(size_t*)((uintptr_t)&pPreset->pMapAI->pPosition->nYpos + nStrLen) = psVar3[1];
+                *(uint32_t*)((uintptr_t)&pPreset->pMapAI->pPosition->nXpos + nStrLen) = *pCursor;
+                *(uint32_t*)((uintptr_t)&pPreset->pMapAI->pPosition->nYpos + nStrLen) = pCursor[1];
                 pDVar2 = pPreset->pMapAI->pPosition;
-                psVar4 = psVar3 + 2;
+                pCursor2 = pCursor + 2;
                 if (__frame0.nDs1Version < 0xf) {
                   *(uint32_t*)((uintptr_t)&pDVar2->nDirection + nStrLen) = 1;
                 } else {
-                  *(size_t*)((uintptr_t)&pDVar2->nDirection + nStrLen) = *psVar4;
-                  psVar4 = psVar3 + 3;
+                  *(uint32_t*)((uintptr_t)&pDVar2->nDirection + nStrLen) = *pCursor2;
+                  pCursor2 = pCursor + 3;
                 }
 
                 nStrLen += 0xc;
                 pBuffer--;
-                psVar3 = psVar4;
+                pCursor = pCursor2;
               } while (pBuffer);
 
               pBuffer = 0;
@@ -472,9 +471,9 @@ void __fastcall ParsePresetsOfDrlgFile(D2DrlgFileStrc * pFile, D2PoolManagerStrc
           }
         }
 
-        psVar4 += (int)pClassId * 2;
+        pCursor2 += (int)pClassId * 2;
         if (0xe < __frame0.nDs1Version) {
-          psVar4 += (int)pClassId;
+          pCursor2 += (int)pClassId;
         }
       }
 
@@ -537,7 +536,7 @@ D2MapAIStrc * __fastcall DRLGPRESET_CopyMapAI(D2PoolManagerStrc * pMemory, D2Map
     D2MapAIStrc* pNewMapAI = D2_NEW_POOL(pMemory, D2MapAIStrc);
     pNewMapAI->nSize = 0;
     pNewMapAI->pPosition = 0;
-    size_t nMode = pSrcMapAI->nSize;
+    int nMode = pSrcMapAI->nSize;
     pNewMapAI->nSize = nMode;
     D2PathPosStrc* pData = (D2PathPosStrc*)D2_ALLOC_POOL(pMemory, nMode * 0xc);
     pNewMapAI->pPosition = pData;
@@ -1095,9 +1094,9 @@ void __fastcall DRLGROOMEX_InitializePresetRoom(D2RoomExStrc * pRoomEx) {
     }
 
     D2DrlgTileGridStrc* pRoomTiles = pRoomEx->pRoomTiles;
-    pRoomTiles->nWallTilesMax = pRoomTiles->nWalls;
-    pRoomTiles->nFloorTilesMax = pRoomTiles->nFloors;
-    pRoomTiles->nRoofTilesMax = pRoomTiles->nShadows;
+    pRoomTiles->sRoomTiles.nWallTilesCount = pRoomTiles->nWalls;
+    pRoomTiles->sRoomTiles.nFloorTilesCount = pRoomTiles->nFloors;
+    pRoomTiles->sRoomTiles.nRoofTilesCount = pRoomTiles->nShadows;
     if (!pPresetRoom->pMap->pTxtLevelPrest->Logicals) {
       DrlgLogic::AllocDrlgCoordList(pRoomEx);
     } else {
@@ -1263,12 +1262,12 @@ void __stdcall DRLGPRESET_UpdatePopTiles(int nTickCount, D2RoomExStrc * pRoomEx,
       searchBox.WorldSize.x = pPopLocation->WorldSize.x + 2;
       searchBox.WorldSize.y = pPopLocation->WorldSize.y + 2;
       searchBox.WorldPosition.y = pPopLocation->WorldPosition.y - 1;
-      nTileCount = pRoomEx->pRoomTiles->nWallTilesMax;
+      nTileCount = pRoomEx->pRoomTiles->sRoomTiles.nWallTilesCount;
       if (0 >= nTileCount) {
         return;
       }
 
-      pTileFlags = &pRoomEx->pRoomTiles->pWallTiles->nFlags;
+      pTileFlags = &pRoomEx->pRoomTiles->sRoomTiles.pWallTiles->nFlags;
       do {
         if (!(*pTileFlags & 0x200U) || (_bInside = DrlgRoom::AreXYInsideCoordinates(&searchBox, pTileFlags[-3] + pRoomEx->sCoords.WorldPosition.x, pTileFlags[-2] + pRoomEx->sCoords.WorldPosition.y) , !_bInside)) {
           if (!(*pTileFlags & 0x100U)) {
@@ -1504,7 +1503,7 @@ D2PresetUnitStrc * __fastcall CopyPresetUnit(D2PoolManagerStrc * pMemory, D2Pres
       pCoordField = &pNewPreset->pMapAI->pPosition[pathIndex].nYpos;
       *pCoordField += nY;
       pathIndex++;
-    } while (pathIndex < pNewPreset->pMapAI->nSize);
+    } while (pathIndex < (uint32_t)pNewPreset->pMapAI->nSize);
 
     return pNewPreset;
 }

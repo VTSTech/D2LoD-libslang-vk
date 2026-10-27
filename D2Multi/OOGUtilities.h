@@ -12,9 +12,9 @@
 // Forward declarations
 struct D2ControlMsg;
 struct D2IniConfigStrc;
-#ifndef RECON_FPTD_Draw
-#define RECON_FPTD_Draw
-typedef BOOL (__fastcall *Draw)(struct D2ControlStrc * pControl);
+#ifndef RECON_FPTD_Mouse
+#define RECON_FPTD_Mouse
+typedef BOOL (__stdcall *Mouse)(struct D2ControlMsg * pControlMsg);
 #endif
 
 struct D2WinButton;
@@ -90,7 +90,7 @@ struct __attribute__((packed)) D2WinButton {
     /* 0x060 */ int nFontId; // Font ID for label text rendering
     /* 0x064 */ uint16_t wszLabel[256]; // Wide-char label text buffer (512 bytes, set via SetTextWithFont or SetLocalizedTextWithFont)
     /* 0x264 */ int nTextColor; // Text color index for label rendering
-    /* 0x268 */ BOOL (__fastcall *fpHoverCallback)(struct D2ControlStrc *); // Optional callback invoked each frame when mouse is over button
+    /* 0x268 */ BOOL (__stdcall *fpHoverCallback)(struct D2ControlMsg *); // Optional callback invoked each frame when mouse is over button
     /* 0x26C */ int bMouseOver; // Bool: 1 if mouse is currently over button, updated each Draw frame
     /* 0x270 */ uint16_t nHotkeyStringId; // String table ID for hotkey label (rendered below main label when flag bit6 set)
     /* 0x272 */ uint8_t _pad626[2];

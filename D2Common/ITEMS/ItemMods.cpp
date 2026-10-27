@@ -68,11 +68,11 @@ void * __stdcall TXT_UniqueItems_GetModEntry(void * pTxtLine, uint32_t nMod) {
     exit(-1);
 }
 
-int32_t ITEMMOD_GetMaxLevelAtIndex(D2MagicAffixTxt * pMagixAffixLine, uint32_t nIndex, uint32_t nParam) {
+int32_t ITEMMOD_GetMaxLevelAtIndex(D2GemsTxt * pMagixAffixLine, uint32_t nIndex, uint32_t nParam) {
     D2MagixAffixModStrc* pModPtrTable[3];
-    pModPtrTable[0] = (D2MagixAffixModStrc*)&pMagixAffixLine->mod[0].max;
-    pModPtrTable[1] = (D2MagixAffixModStrc*)&pMagixAffixLine->maxlevel;
-    pModPtrTable[2] = (D2MagixAffixModStrc*)(pMagixAffixLine + 1);
+    pModPtrTable[0] = pMagixAffixLine->aWeaponMods;
+    pModPtrTable[1] = pMagixAffixLine->aHelmMods;
+    pModPtrTable[2] = pMagixAffixLine->aShieldMods;
     if (nIndex < 3) {
       if (nParam < 3) {
         return (int32_t)(pModPtrTable[nIndex] + nParam);
@@ -104,7 +104,7 @@ int32_t ITEMMOD_GetPropertyFromAffix(D2MagicAffixTxt * pMagicAffixLine, uint32_t
       case 2:
 
       case 5:
-        nMaxLevel = ITEMMOD_GetMaxLevelAtIndex(pMagicAffixLine, nParam, nNumber);
+        nMaxLevel = ITEMMOD_GetMaxLevelAtIndex((D2GemsTxt*)pMagicAffixLine, nParam, nNumber);
       return nMaxLevel;
       case 3:
 
@@ -789,13 +789,13 @@ int32_t __fastcall PropertyFunc_AllMaxResistances(int32_t nType, D2UnitStrc * pU
 
 // Item-property callback that rolls and applies minimum-damage stats (UNITSTAT_mindamage, UNITSTAT_secondary_mindamage, UNITSTAT_item_throw_mindamage) to a unit. Reads min/max range from pPropData[8/12], rolls a random value in [min,max] via RANDOM_RandomNumberSelector on the item seed (range is exclusive for older item versions). Looks up the item's Items.txt row to decide which damage stats apply: one-hand vs. two-hand min damage are written separately for weapons; throw-min is applied for throwable weapons or non-weapons. Calls PropertyFunc_SimpleStat for each applicable stat. Halts with an internal error if pPropData is null.
 int32_t __fastcall PropertyFunc_MinDamage(int32_t nType, D2UnitStrc * pUnit, D2UnitStrc * pItemUnit, D2SetsTxtFStrc * pProperty, eD2UnitStat eStatCode, int32_t nParam2, int32_t nParam3, uint32_t nParam, int32_t nContext) {
-    int32_t nErrAddress;
     D2SeedStrc* pSeed;
     D2ItemsTxt* pDVar4;
     uint32_t nRolled;
     D2SetsTxtFStrc* nRangeLow;
     int32_t nRangeB;
     D2SetsTxtFStrc* nRangeA;
+    int32_t nErrLine;
     int32_t nProperty;
     if (pProperty) {
       int16_t wItemVersion;
@@ -842,7 +842,7 @@ int32_t __fastcall PropertyFunc_MinDamage(int32_t nType, D2UnitStrc * pUnit, D2U
       }
 
       nRolled = Items::ITEMS_IsA(pItemUnit, ITEMTYPE_Weapon);
-      if (!(!nRolled || (nErrAddress = Items::ITEM_GetTxtItemTypes_throwable(pItemUnit) , nErrAddress != 0))) {
+      if (!(!nRolled || (nErrLine = Items::ITEM_GetTxtItemTypes_throwable(pItemUnit) , nErrLine != 0))) {
         return 1;
       }
 
@@ -873,13 +873,13 @@ int32_t __fastcall PropertyFunc_MinDamage(int32_t nType, D2UnitStrc * pUnit, D2U
 // Min/Max damage properties typically appear together on affixes like
 // "Sharp" (+min/max damage) or "Jagged" (+min/max damage).
 int32_t __fastcall PropertyFunc_MaxDamage(int32_t nType, D2UnitStrc * pUnit, D2UnitStrc * pItemUnit, D2SetsTxtFStrc * pProperty, eD2UnitStat eStatCode, int32_t nParam2, int32_t nParam3, uint32_t nParam, int32_t nContext) {
-    int32_t nErrAddress;
     D2SeedStrc* pSeed;
     D2ItemsTxt* pDVar4;
     uint32_t nRolled;
     D2SetsTxtFStrc* nRangeLow;
     int32_t nRangeB;
     D2SetsTxtFStrc* nRangeA;
+    int32_t nErrLine;
     int32_t nProperty;
     if (pProperty) {
       int16_t wItemVersion;
@@ -926,7 +926,7 @@ int32_t __fastcall PropertyFunc_MaxDamage(int32_t nType, D2UnitStrc * pUnit, D2U
       }
 
       nRolled = Items::ITEMS_IsA(pItemUnit, ITEMTYPE_Weapon);
-      if (!(!nRolled || (nErrAddress = Items::ITEM_GetTxtItemTypes_throwable(pItemUnit) , nErrAddress != 0))) {
+      if (!(!nRolled || (nErrLine = Items::ITEM_GetTxtItemTypes_throwable(pItemUnit) , nErrLine != 0))) {
         return 1;
       }
 
@@ -961,10 +961,10 @@ int32_t __fastcall PropertyFunc_MaxDamage(int32_t nType, D2UnitStrc * pUnit, D2U
 // The param=0xFFFFFFFF in dispatch table signals "no stat ID" - the function
 // calculates which stats to modify internally based on weapon type.
 int32_t __fastcall PropertyFunc_EnhancedDamage(int32_t nType, D2UnitStrc * pUnit, D2UnitStrc * pItemUnit, D2SetsTxtFStrc * pProperty, eD2UnitStat eStatCode, int32_t nParam2, int32_t nParam3, uint32_t nParam, int32_t nContext) {
-    int32_t nErrAddress;
     D2SeedStrc* pSeed;
     D2ItemsTxt* pItemsTxt;
     uint32_t nRolled;
+    int32_t iVar1;
     D2SetsTxtFStrc* nRangeLow;
     uint32_t nBaseMaxDam;
     int32_t nRangeHigh;
@@ -1029,8 +1029,8 @@ int32_t __fastcall PropertyFunc_EnhancedDamage(int32_t nType, D2UnitStrc * pUnit
           PropertyFunc_SimpleStat(nType, pUnit, 1, nParam2, 0, nParam3, pItemUnit, UNITSTAT_secondary_maxdamage, nParam);
         }
 
-        nErrAddress = Items::ITEM_GetTxtItemTypes_throwable(pItemUnit);
-        if (!nErrAddress) {
+        iVar1 = Items::ITEM_GetTxtItemTypes_throwable(pItemUnit);
+        if (!iVar1) {
           return eStatCode;
         }
 
@@ -1243,9 +1243,9 @@ int32_t __fastcall PropertyFunc_MinMaxDamagePair(int32_t nType, D2UnitStrc * pUn
     uint32_t bIsWeapon;
     uint32_t bIsWeaponForSecondary;
     D2StatListExStrc* pStatList;
-    int32_t nCallerAddress;
     int nMinStatValue;
     int nBaseValue;
+    int32_t nErrorLine;
     eD2UnitStat eMinStat = eStatCode;
     int32_t nMinVal = pProperty->fmin;
     eD2UnitStat eStatType = eStatCode + UNITSTAT_energy;
@@ -1282,8 +1282,8 @@ int32_t __fastcall PropertyFunc_MinMaxDamagePair(int32_t nType, D2UnitStrc * pUn
         pUnit = pItemInventory;
       }
 
-      nCallerAddress = Items::ITEM_GetTxtItemTypes_throwable(pItemUnit);
-      if (nCallerAddress) {
+      nErrorLine = Items::ITEM_GetTxtItemTypes_throwable(pItemUnit);
+      if (nErrorLine) {
         PropertyFunc_SimpleStat(nRemoveMode, pUnit, nMinVal, nParam2, 0, nParam3, pItemUnit, UNITSTAT_item_throw_mindamage, nMaxVal);
         PropertyFunc_SimpleStat(nRemoveMode, pItemInventory, (int32_t)pProperty, nParam2, 0, nParam3, pItemUnit, UNITSTAT_item_throw_maxdamage, nMaxVal);
         return 1;
@@ -1550,7 +1550,7 @@ int32_t __fastcall PropertyFunc_SimpleStatWithRoll(int32_t nType, D2UnitStrc * p
 }
 
 void __stdcall ITEMMOD_ApplyEtherealBonus(D2UnitStrc * pUnit) {
-    int32_t nStatResult;
+    int32_t iVar1;
     int32_t nTempStat;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x706);
@@ -1559,30 +1559,30 @@ void __stdcall ITEMMOD_ApplyEtherealBonus(D2UnitStrc * pUnit) {
 
     Items::ITEM_EditItemData_eItemFlag(pUnit, ITEMFLAG_ETHEREAL, 1);
     uint32_t bIsWeapon = Items::ITEMS_IsA(pUnit, ITEMTYPE_Weapon);
-    nStatResult = 0;
+    nTempStat = 0;
     if (bIsWeapon) {
-      nTempStat = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_mindamage, 0);
-      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mindamage, nTempStat * 3 / 2, nStatResult);
-      nTempStat = 0;
-      nStatResult = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_maxdamage, 0);
-      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxdamage, nStatResult * 3 / 2, nTempStat);
-      nTempStat = 0;
-      nStatResult = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_secondary_mindamage, 0);
-      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_mindamage, nStatResult * 3 / 2, nTempStat);
-      nTempStat = 0;
-      nStatResult = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, 0);
-      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, nStatResult * 3 / 2, nTempStat);
-      nTempStat = 0;
-      nStatResult = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, 0);
-      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, nStatResult * 3 / 2, nTempStat);
-      nTempStat = 0;
-      nStatResult = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_item_throw_maxdamage, 0);
-      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_maxdamage, nStatResult * 3 / 2, nTempStat);
+      iVar1 = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_mindamage, 0);
+      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mindamage, iVar1 * 3 / 2, nTempStat);
+      iVar1 = 0;
+      nTempStat = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_maxdamage, 0);
+      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxdamage, nTempStat * 3 / 2, iVar1);
+      iVar1 = 0;
+      nTempStat = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_secondary_mindamage, 0);
+      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_mindamage, nTempStat * 3 / 2, iVar1);
+      iVar1 = 0;
+      nTempStat = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, 0);
+      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, nTempStat * 3 / 2, iVar1);
+      iVar1 = 0;
+      nTempStat = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, 0);
+      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, nTempStat * 3 / 2, iVar1);
+      iVar1 = 0;
+      nTempStat = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_item_throw_maxdamage, 0);
+      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_maxdamage, nTempStat * 3 / 2, iVar1);
       return;
     }
 
-    nTempStat = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_armorclass, 0);
-    Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_armorclass, nTempStat * 3 / 2, nStatResult);
+    iVar1 = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_armorclass, 0);
+    Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_armorclass, iVar1 * 3 / 2, nTempStat);
 }
 
 // Returns 1 if the given automod entry (nParam points to an AutomagicTxt record) can be applied to pUnit. Rejects stackable items, throwables, items without inventory slots, and items whose type matches the automod's exclusion list; passes only if the item type matches at least one inclusion entry.
@@ -1763,8 +1763,8 @@ uint32_t __stdcall ITEMMOD_MatchesRepairType(D2UnitStrc * pUnit, char * szRepair
 
 void __stdcall ITEMMOD_RollGemRuneType(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static uint32_t gaGemRuneTypeIds[6] = { 0x0, 0x1, 0x2, 0x3, 0x9, 0x7 };
-    static uint32_t gaGemRuneTypeTable = 0x6;
+    static uint32_t gaGemRuneTypeIds[6] = { 0x0, 0x1, 0x2, 0x3, 0x9, 0x7 }; D2_STATIC_GUARD(gaGemRuneTypeIds, "D2Common::ITEMS::ItemMods::ITEMMOD_RollGemRuneType::gaGemRuneTypeIds");
+    static uint32_t gaGemRuneTypeTable = 0x6; D2_STATIC_GUARD(gaGemRuneTypeTable, "D2Common::ITEMS::ItemMods::ITEMMOD_RollGemRuneType::gaGemRuneTypeTable");
 
     D2SeedStrc seedAdvanced;
     uint32_t nTableSize = gaGemRuneTypeTable;
@@ -2584,7 +2584,7 @@ uint32_t __fastcall ITEMPROP_ApplyEthereal(uint32_t dwParam1, D2UnitStrc * pUnit
 // Already-documented (existing description is accurate and detailed — expansion property pipeline iterating up to 7 func slots from D2PropertiesTxt).
 void __stdcall ITEMMOD_ApplyPropertyToUnitStatsExpansion(uint32_t dwParam1, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, uint32_t dwParam2, uint32_t dwParam3, uint32_t dwParam4, D2SetsTxtFStrc * pSetsTxtF, int32_t nParam, uint32_t nParam2, uint32_t dwParam5) {
     // Static local variables (originally global data)
-    static int PropertiesFuncCount = 0x25;
+    static int PropertiesFuncCount = 0x25; D2_STATIC_GUARD(PropertiesFuncCount, "D2Common::ITEMS::ItemMods::ITEMMOD_ApplyPropertyToUnitStatsExpansion::PropertiesFuncCount");
 
     if (!pSetsTxtF) {
       return;
@@ -3600,7 +3600,7 @@ void __stdcall ITEMMOD_ApplyPropertyToUnitStats(uint32_t dwParam1, D2UnitStrc * 
         /* .pfnHandler = */ &D2Common::ITEMS::ItemMods::PropertyFunc_Charges,
         /* .nStatCode = */ 0xcc
     }
-};
+}; D2_STATIC_GUARD(gaPropertyFuncTable, "D2Common::ITEMS::ItemMods::ITEMMOD_ApplyPropertyToUnitStats::gaPropertyFuncTable");
 
     int16_t wPropCode = Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (wPropCode) {
@@ -3625,8 +3625,8 @@ void __stdcall ITEMMOD_ApplyPropertyToUnitStats(uint32_t dwParam1, D2UnitStrc * 
 // Applies socketed-item / affix property modifiers onto a unit's stat list, dispatched by dwParam1 (property source: 0/2/5=3 props, 1=2 props from a magic affix via ITEMMOD_GetPropertyFromAffix; 3=unique item's 12 sEntry props; 4=set item's sEntry props plus the 10 partial-set bonus entries from sEntryEx keyed by item version). For affix cases it loops over the affix's property list, stopping at a negative fcode, calling ITEMMOD_ApplyPropertyToUnitStats for each. pUnit is the item being applied; pUnit2 the affected owner unit. No return value.
 void __stdcall ApplyRuneAndGemStats(uint32_t dwParam1, D2UnitStrc * pUnit2, D2UnitStrc * pUnit, D2MagicAffixTxt * pMagicAffixLine, uint32_t nParam, uint32_t dwParam2) {
     // Static local variables (originally global data)
-    static int gnPropertyFunctionIndexByCode[7] = { 0x0, 0x0, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9 };
-    static uint32_t gdwPropertyFunctionCountByVersion[7] = { 0x40, 0x40, 0x2040, 0x2040, 0x2040, 0x2040, 0x2040 };
+    static int gnPropertyFunctionIndexByCode[7] = { 0x0, 0x0, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9 }; D2_STATIC_GUARD(gnPropertyFunctionIndexByCode, "D2Common::ITEMS::ItemMods::ApplyRuneAndGemStats::gnPropertyFunctionIndexByCode");
+    static uint32_t gdwPropertyFunctionCountByVersion[7] = { 0x40, 0x40, 0x2040, 0x2040, 0x2040, 0x2040, 0x2040 }; D2_STATIC_GUARD(gdwPropertyFunctionCountByVersion, "D2Common::ITEMS::ItemMods::ApplyRuneAndGemStats::gdwPropertyFunctionCountByVersion");
 
     int16_t wItemVersion;
     D2UniqueItemsTxt* pUniqueLine;
@@ -3825,7 +3825,7 @@ void __fastcall ITEMMOD_ApplySetBonuses(D2UnitStrc * pUnit, D2UnitStrc * pUnit2,
     0x5,
     0x5,
     0x6
-};
+}; D2_STATIC_GUARD(gnPropertyBaseValueByCode, "D2Common::ITEMS::ItemMods::ITEMMOD_ApplySetBonuses::gnPropertyBaseValueByCode");
 
     int nMaxBonusCount;
     if (!(nApplyFlags && pUnit2 && pUnit2->eUnitType == UNIT_ITEM)) {

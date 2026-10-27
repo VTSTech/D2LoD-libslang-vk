@@ -39,7 +39,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/Storm.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Common/Drlg/Drlg.h"
@@ -541,7 +541,7 @@ void __stdcall UI_DrawPartyAcceptButton() {
 
 void __stdcall SetEachPlayerRosterGlobalPartyId() {
     // Static local variables (originally global data)
-    static int gaEachplayerRosterPartyId[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    static int gaEachplayerRosterPartyId[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; D2_STATIC_GUARD(gaEachplayerRosterPartyId, "D2Client::UI::Party::SetEachPlayerRosterGlobalPartyId::gaEachplayerRosterPartyId");
 
     int* pPartyId;
     D2RosterStrc* pRoster = GAME::Roster::GetNextRosterPlayer(nullptr);
@@ -812,45 +812,10 @@ void __stdcall UI_DrawPartyButtonTextWithTooltip(uint16_t nLocaleId1, uint16_t n
 
 void ROSTER_DrawPlayerTooltip(D2RosterStrc * pRoster) {
     // Static local variables (originally global data)
-    static short gawRosterTooltipOffsetX[4] = { 0x2783, 0x277f, 0x2781, 0x277e };
-    static short gawRosterTooltipOffsetY[4] = { 0x2783, 0x2780, 0x2782, 0x277e };
-    static uint16_t gwRosterCountMax[4] = { 0x2789, 0x2787, 0x2785, 0x2784 };
-    static uint16_t gwRosterSizeMax[34] = {
-    0x2789,
-    0x2788,
-    0x2786,
-    0x2784,
-    0xc81c,
-    0x6c,
-    0xc814,
-    0x6c,
-    0xc80c,
-    0x6c,
-    0xc804,
-    0x6c,
-    0xc7f8,
-    0x6c,
-    0xc7f0,
-    0x6c,
-    0xc7e4,
-    0x6c,
-    0xc7dc,
-    0x6c,
-    0xc7c8,
-    0x6c,
-    0xc7b4,
-    0x6c,
-    0xc7ac,
-    0x6c,
-    0xc7a4,
-    0x6c,
-    0xc788,
-    0x6c,
-    0xc780,
-    0x6c,
-    0xc77c,
-    0x6c
-};
+    static short gawRosterTooltipOffsetX[4] = { 0x2783, 0x277f, 0x2781, 0x277e }; D2_STATIC_GUARD(gawRosterTooltipOffsetX, "D2Client::UI::Party::ROSTER_DrawPlayerTooltip::gawRosterTooltipOffsetX");
+    static short gawRosterTooltipOffsetY[4] = { 0x2783, 0x2780, 0x2782, 0x277e }; D2_STATIC_GUARD(gawRosterTooltipOffsetY, "D2Client::UI::Party::ROSTER_DrawPlayerTooltip::gawRosterTooltipOffsetY");
+    static uint16_t gwRosterCountMax[4] = { 0x2789, 0x2787, 0x2785, 0x2784 }; D2_STATIC_GUARD(gwRosterCountMax, "D2Client::UI::Party::ROSTER_DrawPlayerTooltip::gwRosterCountMax");
+    static uint16_t gwRosterSizeMax[4] = { 0x2789, 0x2788, 0x2786, 0x2784 }; D2_STATIC_GUARD(gwRosterSizeMax, "D2Client::UI::Party::ROSTER_DrawPlayerTooltip::gwRosterSizeMax");
 
     uint16_t* pFormat;
     int bOutHostile;

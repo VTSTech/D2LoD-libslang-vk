@@ -3,11 +3,11 @@
 #include "Storm/WindowHandle.h"
 #include "D2Client/Message.h"
 #include "D2Client/UI/Inv.h"
-#include "Storm/H/Storm.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SEVT.h"
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Launch/MainMenus.h"
 

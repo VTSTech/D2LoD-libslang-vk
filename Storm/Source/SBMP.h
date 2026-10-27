@@ -9,7 +9,7 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2PoolManagerStrc;
+struct D2MPQFileStrc;
 #ifndef RECON_FPTD_pfnSBmpAllocCallback
 #define RECON_FPTD_pfnSBmpAllocCallback
 typedef void * (__stdcall *pfnSBmpAllocCallback)(uint32_t nSize);
@@ -107,7 +107,7 @@ BOOL SBMP_DecodeTGAPalette(struct D2TgaHeaderStrc * pHeader, int nPaletteDataSiz
 BOOL __fastcall SBMP_DecodeTGAPixels(uint8_t * pSrcData, uint8_t * pTgaHeader, int nSrcDataSize, uint8_t * pDstPixels, int nMaxBytes);
 // Reads Targa (.tga) image file from MPQ into memory. Validates TGA header, extracts width/height/bpp, reads palette (if present), and decodes pixel data (uncompressed or RLE-compressed).
 // @sourcefile .\SOURCE\SBMP.CPP
-int __fastcall SBMP_ReadTGA(struct D2PoolManagerStrc * hFile, uint32_t * pWidth, void * palette, uint8_t * pixels, int nMaxPixelBytes, uint32_t * pHeight, uint32_t * pBpp);
+int __fastcall SBMP_ReadTGA(struct D2MPQFileStrc * hFile, uint32_t * pWidth, void * palette, uint8_t * pixels, int nMaxPixelBytes, uint32_t * pHeight, uint32_t * pBpp);
 int __stdcall SBMP_LoadFromMemory(uint8_t * pData, uint32_t dataSize, uint32_t * pPaletteOut, uint8_t * pixels, int nMaxPixelBytes, uint32_t * pWidth, uint32_t * pHeight, uint32_t * pBpp);
 int SBMP_WriteTGA(void * pPixels, void * hFile, int nPalettePtr, int width, int height, int bpp, uint32_t stride);
 // @blizzard FlipImage (SBMP.CPP)
@@ -129,7 +129,7 @@ char * __stdcall SBMP_FindExtension(char * path);
 // @blizzard DetermineImageType (SBMP.CPP)
 int SBMP_DetermineImageType(short magic);
 // @blizzard DecodeBmpFile (SBMP.CPP)
-int SBMP_DecodeBmpFile(int * pWidth, void * palette, struct D2PoolManagerStrc * hFile, void * pixels, int nDstStride, int * pHeight, uint32_t * pBpp);
+int SBMP_DecodeBmpFile(int * pWidth, void * palette, struct D2MPQFileStrc * hFile, void * pixels, int nDstStride, int * pHeight, uint32_t * pBpp);
 // Load a BMP from a raw in-memory file blob; pData points at the BITMAPFILEHEADER (14 bytes) followed immediately by BITMAPINFOHEADER and palette/pixel data
 // @blizzard DecodeBmpMem (SBMP.CPP)
 int __fastcall SBMP_DecodeBmpMem(int * pWidth, int * pHeight, uint32_t * pBpp, uint8_t * pData, int palette, void * pixels, int dstSize);
@@ -144,7 +144,7 @@ int __fastcall SBMP_CompressGifImage(int nSrcLen, uint8_t * pSrcPixels, int pDst
 // @blizzard EncodeGif256File (SBMP.CPP)
 int SBMP_EncodeGif256File(int width, void * hFile, int palette, uint8_t * pixels, int height);
 // @blizzard DecodePcxFile (SBMP.CPP)
-int __fastcall SBMP_DecodePcxFile(struct D2PoolManagerStrc * hFile, uint8_t * pixels, int * pHeight, int palette, int nParam, uint32_t * pWidth, int * pBpp);
+int __fastcall SBMP_DecodePcxFile(struct D2MPQFileStrc * hFile, uint8_t * pixels, int * pHeight, int palette, int nParam, uint32_t * pWidth, int * pBpp);
 // @blizzard DecodePcxMem (SBMP.CPP)
 int SBMP_DecodePcxMem(uint32_t * pWidth, void * gifData, int dataSize, int palette, uint8_t * pixels, int dstSize, int * pHeight, int * pBpp);
 // Decodes an image already held in memory. With nFormat 0 it sniffs the first two bytes via SBMP_DetectFormat, then dispatches to SBMP_LoadBMPFromMemory / SBMP_LoadGIFFromMemory / SBMP_LoadFromMemory (TGA).

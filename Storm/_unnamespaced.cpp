@@ -35,11 +35,11 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "Bnclient/BnDownload.h"
 #include "Bnclient/BnSend.h"
@@ -214,7 +214,7 @@ void __fastcall D2FILE_SeekFile(D2PoolManagerStrc * pMemory, D2MPQFileStrc * pFi
 
 // Reads nBytesToRead from an open MPQ file into pBuffer and halts if the handle is null or the read is short. ESI is callee-saved scratch (00516f98 PUSH ESI, 00516f99 MOV ESI,EDX), not an argument. Each halt pushes its __LINE__ (0x87 at 00516fa5, 0x8f at 00516fef, 0x92 at 00517000) and enters the shared tail D2FILE_ReadFile_HaltTail at 00516faa.
 void __fastcall D2FILE_ReadFile(D2PoolManagerStrc * pMemory, D2MPQFileStrc * pFile, void * pBuffer, uint32_t nBytesToRead) {
-    size_t nBytesRead;
+    uint32_t nBytesRead;
     char szArchivePath[260];
     uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (!pFile) {
@@ -561,7 +561,7 @@ uint32_t __fastcall FOG_ParseFieldValue(char * szText, char * * ppszCursor, int 
     0x0,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gaCharTypeFlags, "FOG_ParseFieldValue::gaCharTypeFlags");
 
     bool uResult;
     uint32_t uVar1;
@@ -702,14 +702,14 @@ void StaticInit_6ca940() {
 
 void StaticInit_6ca960() {
     // Static local variables (originally global data)
-    static char gbChatMultiplayerUIActive;
+    static char gbChatMultiplayerUIActive; D2_STATIC_GUARD_BSS(gbChatMultiplayerUIActive, "StaticInit_6ca960::gbChatMultiplayerUIActive");
 
     gbChatMultiplayerUIActive = Storm::Source::SSTR::SStrHash("Header", 0, 0);
 }
 
 void StaticInit_6ca980() {
     // Static local variables (originally global data)
-    static char gbChatLobbyInitialize;
+    static char gbChatLobbyInitialize; D2_STATIC_GUARD_BSS(gbChatLobbyInitialize, "StaticInit_6ca980::gbChatLobbyInitialize");
 
     gbChatLobbyInitialize = Storm::Source::SSTR::SStrHash("Game Time", 0, 0);
 }
@@ -721,7 +721,7 @@ void StaticInit_6ca9a0() {
 void StaticInit_6ca9b0() {
     // Static local variables (originally global data)
     // also labelled: gbCmdLineCaptionPadding
-static LPCSTR gpszDiabloIICaptionCopy;
+static LPCSTR gpszDiabloIICaptionCopy; D2_STATIC_GUARD_BSS(gpszDiabloIICaptionCopy, "StaticInit_6ca9b0::gpszDiabloIICaptionCopy");
 
     gpszDiabloIICaptionCopy = gpszDiabloIICaption;
 }
@@ -767,7 +767,7 @@ void StaticInit_6caa50() {
 
 void StaticInit_6caa70() {
     int nWordsRemaining;
-    uint16_t* pHealthBarBuf = &gnMonsterHealthBarValue;
+    uint16_t* pHealthBarBuf = gnMonsterHealthBarValue;
     for (nWordsRemaining = 0x80; nWordsRemaining; nWordsRemaining--) {
       pHealthBarBuf[0] = 0;
       pHealthBarBuf[1] = 0;
@@ -785,8 +785,8 @@ void StaticInit_6caaa0() {
 
 void StaticInit_6caab0() {
     // Static local variables (originally global data)
-    static uint32_t gaKeyBindingDefaultArray = 0x1;
-    static int INT_007a6b0c;
+    static uint32_t gaKeyBindingDefaultArray = 0x1; D2_STATIC_GUARD(gaKeyBindingDefaultArray, "StaticInit_6caab0::gaKeyBindingDefaultArray");
+    static int INT_007a6b0c; D2_STATIC_GUARD_BSS(INT_007a6b0c, "StaticInit_6caab0::INT_007a6b0c");
 
     INT_007a6b0c = (int)(1000 / (int64_t)gaKeyBindingDefaultArray);
 }
@@ -826,10 +826,10 @@ void StaticInit_6cab90() {
 
 void StaticInit_6cabf0() {
     int nDwordsRemaining;
-    uint32_t* pInvRecipeBuf = &gpInvRecipeScrollImage;
+    uint8_t* pInvRecipeBuf = gpInvRecipeScrollImage;
     for (nDwordsRemaining = 0x800; nDwordsRemaining; nDwordsRemaining--) {
-      *pInvRecipeBuf = 0;
-      pInvRecipeBuf++;
+      memset(pInvRecipeBuf, 0, 4 * sizeof(pInvRecipeBuf[0]));
+      pInvRecipeBuf += 4;
     }
 }
 
@@ -891,7 +891,7 @@ void StaticInit_6cade0() {
 
 void StaticInit_6cadf0() {
     // Static local variables (originally global data)
-    static char * fnCursorVisibilityHook = s_Diablo_II_006cc8b8;
+    static char * fnCursorVisibilityHook = s_Diablo_II_006cc8b8; D2_STATIC_GUARD(fnCursorVisibilityHook, "StaticInit_6cadf0::fnCursorVisibilityHook");
 
     gpszWindowClassName = fnCursorVisibilityHook;
 }

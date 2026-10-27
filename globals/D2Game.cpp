@@ -475,11 +475,11 @@ D2NET_SERVER_D2GS_ClientToServer NET_D2GS_SERVER_INCOMING[103] = {
         /* .fpHandler = */ (D2NET_SERVER_CLTtoD2GS)&D2Game::PLAYER::PlayerMsg::PLRMSG_Cmd0x66_WardenResponse_ReturnOk,
         /* .field1_0x4 = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(NET_D2GS_SERVER_INCOMING, "NET_D2GS_SERVER_INCOMING");
 
-int ganUnitHashTableBaseOffsets[6] = { 0x1120, 0x1320, 0x1520, 0x1920, 0x1720, 0x0 };
+int ganUnitHashTableBaseOffsets[6] = { 0x1120, 0x1320, 0x1520, 0x1920, 0x1720, 0x0 }; D2_GLOBAL_GUARD(ganUnitHashTableBaseOffsets, "ganUnitHashTableBaseOffsets");
 
-uint32_t gaStartingLevelByAct[5] = { 0x1, 0xf, 0x14, 0x1a, 0x20 };
+uint32_t gaStartingLevelByAct[5] = { 0x1, 0xf, 0x14, 0x1a, 0x20 }; D2_GLOBAL_GUARD(gaStartingLevelByAct, "gaStartingLevelByAct");
 
 uint32_t PlayerMultiplyer[9] = {
     0x0,
@@ -491,7 +491,7 @@ uint32_t PlayerMultiplyer[9] = {
     0xfa,
     0x12c,
     0x15e
-};
+}; D2_GLOBAL_GUARD(PlayerMultiplyer, "PlayerMultiplyer");
 
 uint32_t PlayerMultiplyer2[9] = {
     0x0,
@@ -503,7 +503,7 @@ uint32_t PlayerMultiplyer2[9] = {
     0xfa,
     0x12c,
     0x15e
-};
+}; D2_GLOBAL_GUARD(PlayerMultiplyer2, "PlayerMultiplyer2");
 
 D2PlayerModeFnPairStrc gaPlayerModeMoveFuncs[20] = {
     {
@@ -586,7 +586,7 @@ D2PlayerModeFnPairStrc gaPlayerModeMoveFuncs[20] = {
         /* .pfnMoveToLocation = */ &D2Game::PLAYER::PlayerModes::PLRMODES_SetMoveTargetPosition,
         /* .pfnStartMode = */ &D2Game::PLAYER::PlayerModes::PLRMODES_SetTargetAndStartPath
     }
-};
+}; D2_GLOBAL_GUARD(gaPlayerModeMoveFuncs, "gaPlayerModeMoveFuncs");
 
 D2ShrinesTableEntryStrc OBJECTSHRINEFUNCTION[24] = {
     {
@@ -709,11 +709,11 @@ D2ShrinesTableEntryStrc OBJECTSHRINEFUNCTION[24] = {
         /* .eStat = */ -1,
         /* .nState = */ STATE_none
     }
-};
+}; D2_GLOBAL_GUARD(OBJECTSHRINEFUNCTION, "OBJECTSHRINEFUNCTION");
 
-int gaMissileOffsets_LightningUniqueY[4] = { -0x1, 0x0, 0x1, 0x0 };
+int gaMissileOffsets_LightningUniqueY[4] = { -0x1, 0x0, 0x1, 0x0 }; D2_GLOBAL_GUARD(gaMissileOffsets_LightningUniqueY, "gaMissileOffsets_LightningUniqueY");
 
-uint32_t gnAuraDamageScale_ManaAbsorb[3] = { 0xffffffff, 0x0, 0xffffffff };
+uint32_t gnAuraDamageScale_ManaAbsorb[3] = { 0xffffffff, 0x0, 0xffffffff }; D2_GLOBAL_GUARD(gnAuraDamageScale_ManaAbsorb, "gnAuraDamageScale_ManaAbsorb");
 
 uint8_t BYTE_ARRAY_006e3138[80] = {
     0xa,
@@ -796,11 +796,11 @@ uint8_t BYTE_ARRAY_006e3138[80] = {
     0x17,
     0x8,
     0x18
-};
+}; D2_GLOBAL_GUARD(BYTE_ARRAY_006e3138, "BYTE_ARRAY_006e3138");
 
-D2UnitIdToNameFunc PFN_UnitTypeCallbackTable[5] = { &D2Game::GAME::Server::_TableNullSub25, &D2Game::GAME::Server::MonsterIdToName, &D2Game::GAME::Server::ObjectIdToName, &D2Game::GAME::Server::ItemIdToName, &D2Game::GAME::Server::MissileIdToname };
+D2UnitIdToNameFunc PFN_UnitTypeCallbackTable[5] = { &D2Game::GAME::Server::_TableNullSub25, &D2Game::GAME::Server::MonsterIdToName, &D2Game::GAME::Server::ObjectIdToName, &D2Game::GAME::Server::ItemIdToName, &D2Game::GAME::Server::MissileIdToname }; D2_GLOBAL_GUARD(PFN_UnitTypeCallbackTable, "PFN_UnitTypeCallbackTable");
 
-int NPCINTRO_ListAct1[6] = { 0x94, 0x9a, 0x96, 0x93, 0x9b, 0x109 };
+int NPCINTRO_ListAct1[6] = { 0x94, 0x9a, 0x96, 0x93, 0x9b, 0x109 }; D2_GLOBAL_GUARD(NPCINTRO_ListAct1, "NPCINTRO_ListAct1");
 
 int NPCINTRO_ListAct2[11] = {
     0xaf,
@@ -814,11 +814,11 @@ int NPCINTRO_ListAct2[11] = {
     0xc6,
     0xc7,
     0xf4
-};
+}; D2_GLOBAL_GUARD(NPCINTRO_ListAct2, "NPCINTRO_ListAct2");
 
-int NPCINTRO_ListAct3[7] = { 0xf5, 0xfc, 0xfd, 0xfe, 0xff, 0x108, 0x129 };
+int NPCINTRO_ListAct3[7] = { 0xf5, 0xfc, 0xfd, 0xfe, 0xff, 0x108, 0x129 }; D2_GLOBAL_GUARD(NPCINTRO_ListAct3, "NPCINTRO_ListAct3");
 
-int NPCINTRO_ListAct5[7] = { 0x208, 0x209, 0x1ff, 0x200, 0x201, 0x202, 0x203 };
+int NPCINTRO_ListAct5[7] = { 0x208, 0x209, 0x1ff, 0x200, 0x201, 0x202, 0x203 }; D2_GLOBAL_GUARD(NPCINTRO_ListAct5, "NPCINTRO_ListAct5");
 
 D2PlayerModeNetMsgStrc gaPlayerModeNetMsgTable[20] = {
     {
@@ -921,11 +921,11 @@ D2PlayerModeNetMsgStrc gaPlayerModeNetMsgTable[20] = {
         /* .nMoveModeByte = */ 0x14,
         /* .nObjModeByte = */ 0x14
     }
-};
+}; D2_GLOBAL_GUARD(gaPlayerModeNetMsgTable, "gaPlayerModeNetMsgTable");
 
-int gnDirectionXOffsets[8] = { -0x1, 0x0, 0x1, -0x1, 0x1, -0x1, 0x0, 0x1 };
+int gnDirectionXOffsets[8] = { -0x1, 0x0, 0x1, -0x1, 0x1, -0x1, 0x0, 0x1 }; D2_GLOBAL_GUARD(gnDirectionXOffsets, "gnDirectionXOffsets");
 
-int gnDirectionYOffsets[8] = { -0x1, -0x1, -0x1, 0x0, 0x0, 0x1, 0x1, 0x1 };
+int gnDirectionYOffsets[8] = { -0x1, -0x1, -0x1, 0x0, 0x0, 0x1, 0x1, 0x1 }; D2_GLOBAL_GUARD(gnDirectionYOffsets, "gnDirectionYOffsets");
 
 D2ObjectPopulateFnFunc OBJECTSPOPULATEFN[10] = {
     nullptr,
@@ -938,9 +938,9 @@ D2ObjectPopulateFnFunc OBJECTSPOPULATEFN[10] = {
     (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn7,
     (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn8,
     (D2ObjectPopulateFnFunc)&D2Game::Objects::Objects_PopulateFn9
-};
+}; D2_GLOBAL_GUARD(OBJECTSPOPULATEFN, "OBJECTSPOPULATEFN");
 
-int gaObjectSpawnChanceTbl[5] = { 0x4, 0x9, 0x34, 0x5e, 0x5f };
+int gaObjectSpawnChanceTbl[5] = { 0x4, 0x9, 0x34, 0x5e, 0x5f }; D2_GLOBAL_GUARD(gaObjectSpawnChanceTbl, "gaObjectSpawnChanceTbl");
 
 D2ObjectPopulateEntryStrc gaObjectPopulateTable[7] = {
     {
@@ -971,7 +971,7 @@ D2ObjectPopulateEntryStrc gaObjectPopulateTable[7] = {
         /* .nEnabled = */ 0x1,
         /* .pfnPopulate = */ &D2Game::Objects::ArmorWeapon::RollWeaponRack
     }
-};
+}; D2_GLOBAL_GUARD(gaObjectPopulateTable, "gaObjectPopulateTable");
 
 D2ObjectSpawnOffsetGroupStrc gaObjectSpawnOffsetTables[4] = {
     {
@@ -990,7 +990,7 @@ D2ObjectSpawnOffsetGroupStrc gaObjectSpawnOffsetTables[4] = {
         /* .pOffsets = */ (int*)&gaObjectSpawnOffsetGroup0[35],
         /* .nCount = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gaObjectSpawnOffsetTables, "gaObjectSpawnOffsetTables");
 
 D2SkillSrvStFunc SKILLSRVSTFUNCS[91] = {
     nullptr,
@@ -1084,7 +1084,7 @@ D2SkillSrvStFunc SKILLSRVSTFUNCS[91] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(SKILLSRVSTFUNCS, "SKILLSRVSTFUNCS");
 
 D2SkillSrvDoFunc SKILLSRVDOFUNCS[191] = {
     nullptr,
@@ -1278,7 +1278,7 @@ D2SkillSrvDoFunc SKILLSRVDOFUNCS[191] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(SKILLSRVDOFUNCS, "SKILLSRVDOFUNCS");
 
 int gaNPCSpokenBitIndexMap[35][2] = {
     { -0x1, 0x0 },
@@ -1316,7 +1316,7 @@ int gaNPCSpokenBitIndexMap[35][2] = {
     { 0x202, 0x20 },
     { 0x203, 0x21 },
     { 0x208, 0x22 }
-};
+}; D2_GLOBAL_GUARD(gaNPCSpokenBitIndexMap, "gaNPCSpokenBitIndexMap");
 
 PFN_ObjectOperateCallback gapObjectOperateCallbacks[10] = {
     nullptr,
@@ -1329,7 +1329,7 @@ PFN_ObjectOperateCallback gapObjectOperateCallbacks[10] = {
     &D2Game::Objects::ObjectsMode::OBJMODE_SpawnCompanionChests,
     &D2Game::Objects::ObjectsMode::OBJMODE_SpawnRandomMonsters,
     &D2Game::Objects::ObjectsMode::OBJMODE_SpawnRandomMonsters
-};
+}; D2_GLOBAL_GUARD(gapObjectOperateCallbacks, "gapObjectOperateCallbacks");
 
 D2ObjectOperateFnFunc OBJECTSOPERATEFN[101] = {
     nullptr,
@@ -1433,7 +1433,7 @@ D2ObjectOperateFnFunc OBJECTSOPERATEFN[101] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(OBJECTSOPERATEFN, "OBJECTSOPERATEFN");
 
 D2MonsterUModHandlerRowStrc g_MonsterUModHandlerTable[43] = {
     {
@@ -1780,7 +1780,7 @@ D2MonsterUModHandlerRowStrc g_MonsterUModHandlerTable[43] = {
         /* .pfnHandler4 = */ nullptr,
         /* .pfnHandlerInit = */ nullptr
     }
-};
+}; D2_GLOBAL_GUARD(g_MonsterUModHandlerTable, "g_MonsterUModHandlerTable");
 
 D2MissileSrvDoFuncData gaMissileSrvDoFuncTable[9] = {
     {
@@ -1819,7 +1819,7 @@ D2MissileSrvDoFuncData gaMissileSrvDoFuncTable[9] = {
         /* .pFunction = */ (fpMissileSrvDoFuncData)&D2Game::MISSILES::MissilesMode::SrvDoFunc::fpMissileSrvDoFuncData_PlayerOrMonster,
         /* .nFlags = */ 0x185
     }
-};
+}; D2_GLOBAL_GUARD(gaMissileSrvDoFuncTable, "gaMissileSrvDoFuncTable");
 
 D2MissileSrvHitFunc MISSILESSRVHITFUNCS[71] = {
     nullptr,
@@ -1893,7 +1893,7 @@ D2MissileSrvHitFunc MISSILESSRVHITFUNCS[71] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(MISSILESSRVHITFUNCS, "MISSILESSRVHITFUNCS");
 
 D2MissileSrvDmgFunc MISSILESSRVDMGFUNCS[31] = {
     nullptr,
@@ -1927,7 +1927,70 @@ D2MissileSrvDmgFunc MISSILESSRVDMGFUNCS[31] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(MISSILESSRVDMGFUNCS, "MISSILESSRVDMGFUNCS");
+
+uint8_t gaSkillLevelCaps[60] = {
+    0x4,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x2,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0x2,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0
+}; D2_GLOBAL_GUARD(gaSkillLevelCaps, "gaSkillLevelCaps");
 
 D2ItemSpellStrc ITEMSPELLFUNCS[31] = {
     {
@@ -2054,7 +2117,7 @@ D2ItemSpellStrc ITEMSPELLFUNCS[31] = {
         /* .pSpellInit = */ nullptr,
         /* .pSpellDestroy = */ nullptr
     }
-};
+}; D2_GLOBAL_GUARD(ITEMSPELLFUNCS, "ITEMSPELLFUNCS");
 
 // also labelled: lpCritical_GenerateToken, lpCriticalSection_00882d18
 _RTL_CRITICAL_SECTION gQServerGameListCs = {
@@ -2064,7 +2127,7 @@ _RTL_CRITICAL_SECTION gQServerGameListCs = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(gQServerGameListCs, "gQServerGameListCs");
 
 SGAMEDATA * gaQServerGameByToken[1025] = {
     nullptr,
@@ -3092,7 +3155,7 @@ SGAMEDATA * gaQServerGameByToken[1025] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(gaQServerGameByToken, "gaQServerGameByToken");
 
 D2NpcItemTablesStrc gaNpcItemTables[17] = {
     {
@@ -3197,7 +3260,7 @@ D2NpcItemTablesStrc gaNpcItemTables[17] = {
         /* .pQuestItems = */ nullptr,
         /* .nQuestCount = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcItemTables, "gaNpcItemTables");
 
 uint8_t gbaNpcItemTableBuilt[17] = {
     0,
@@ -3217,7 +3280,7 @@ uint8_t gbaNpcItemTableBuilt[17] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gbaNpcItemTableBuilt, "gbaNpcItemTableBuilt");
 
 D2ClientStrc * QServerClientBucketByName[256] = {
     nullptr,
@@ -3476,7 +3539,7 @@ D2ClientStrc * QServerClientBucketByName[256] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(QServerClientBucketByName, "QServerClientBucketByName");
 
 D2ClientStrc * QServerClientBucketById[256] = {
     nullptr,
@@ -3735,7 +3798,7 @@ D2ClientStrc * QServerClientBucketById[256] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(QServerClientBucketById, "QServerClientBucketById");
 
 // also labelled: lpCriticalSection_008846a8
 CRITICAL_SECTION gQServerClientByIdCs = {
@@ -3745,7 +3808,7 @@ CRITICAL_SECTION gQServerClientByIdCs = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(gQServerClientByIdCs, "gQServerClientByIdCs");
 
 // also labelled: lpCriticalSection_008846c0
 CRITICAL_SECTION gQServerClientByNameCs = {
@@ -3755,7 +3818,7 @@ CRITICAL_SECTION gQServerClientByNameCs = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(gQServerClientByNameCs, "gQServerClientByNameCs");
 
 D2UniqueCandidatePoolStrc gUniqueCandidatePool = {
     /* .nGoldCodeInitFlag = */ 0,
@@ -20146,7 +20209,7 @@ D2UniqueCandidatePoolStrc gUniqueCandidatePool = {
             /* .nCumulativeWeight = */ 0
         }
     }
-};
+}; D2_GLOBAL_GUARD(gUniqueCandidatePool, "gUniqueCandidatePool");
 
 D2TaskQueueSlotStrc * gaTaskQueueHeadArray[32] = {
     nullptr,
@@ -20181,60 +20244,54 @@ D2TaskQueueSlotStrc * gaTaskQueueHeadArray[32] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(gaTaskQueueHeadArray, "gaTaskQueueHeadArray");
 
 // also labelled: gpTaskQueueListHead, gppTaskQueueHead
 D2LinkNodeStrc gsTaskQueueListHead = {
     /* .pNext = */ nullptr,
     /* .pPrev = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gsTaskQueueListHead, "gsTaskQueueListHead");
 
 // also labelled: lpFrequency_0088c790
-LARGE_INTEGER gnPerformanceFrequency = {};
+LARGE_INTEGER gnPerformanceFrequency = {}; D2_GLOBAL_GUARD(gnPerformanceFrequency, "gnPerformanceFrequency");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-unsigned short QServerNextToken = 0x1;
-uint32_t GameSeed = -0x1;
-uint32_t dwCycleLastSecond = 0x19;
-BOOL DontNoSafeGameBool = 0x1;
-uint32_t gpInactiveMonsterStateFlagSentinel = 0xdeaddead;
-uint32_t gnMonsterStateFlagMask1 = 0x1;
-uint32_t gnMonsterStateFlagMask2 = 0x2;
-uint8_t gbQuestReconnectMode = 0x1;
-int nQuestDataExtendedSize = 0x25;
-uint32_t gnObjectClassIdLight = 0x5;
-uint32_t gnActCount = 0x5;
-int gnNPCSpokenBitIndexMapCount = 0x23;
-int gnObjectOperateCallbackCount = 0xa;
-int SHRINESCOUNT = 0x18;
-int MISSILESSRVHITFUNCS_SIZE = 0x47;
-TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> * gpQServerGameState = 0;
-int StartingAct = 0;
-uint32_t maxMemoryUsage = 0;
-int gbQServerSendPlayerPos = 0;
-D2BattleNetEventCallbackTable * BattleNetServerService = 0;
-BOOL IsBattleNetServer = 0;
+unsigned short QServerNextToken = 0x1; D2_GLOBAL_GUARD(QServerNextToken, "QServerNextToken");
+uint32_t GameSeed = -0x1; D2_GLOBAL_GUARD(GameSeed, "GameSeed");
+uint32_t dwCycleLastSecond = 0x19; D2_GLOBAL_GUARD(dwCycleLastSecond, "dwCycleLastSecond");
+BOOL DontNoSafeGameBool = 0x1; D2_GLOBAL_GUARD(DontNoSafeGameBool, "DontNoSafeGameBool");
+uint32_t gpInactiveMonsterStateFlagSentinel = 0xdeaddead; D2_GLOBAL_GUARD(gpInactiveMonsterStateFlagSentinel, "gpInactiveMonsterStateFlagSentinel");
+uint32_t gnMonsterStateFlagMask1 = 0x1; D2_GLOBAL_GUARD(gnMonsterStateFlagMask1, "gnMonsterStateFlagMask1");
+uint32_t gnMonsterStateFlagMask2 = 0x2; D2_GLOBAL_GUARD(gnMonsterStateFlagMask2, "gnMonsterStateFlagMask2");
+uint8_t gbQuestReconnectMode = 0x1; D2_GLOBAL_GUARD(gbQuestReconnectMode, "gbQuestReconnectMode");
+int nQuestDataExtendedSize = 0x25; D2_GLOBAL_GUARD(nQuestDataExtendedSize, "nQuestDataExtendedSize");
+uint32_t gnObjectClassIdLight = 0x5; D2_GLOBAL_GUARD(gnObjectClassIdLight, "gnObjectClassIdLight");
+uint32_t gnActCount = 0x5; D2_GLOBAL_GUARD(gnActCount, "gnActCount");
+int gnNPCSpokenBitIndexMapCount = 0x23; D2_GLOBAL_GUARD(gnNPCSpokenBitIndexMapCount, "gnNPCSpokenBitIndexMapCount");
+int gnObjectOperateCallbackCount = 0xa; D2_GLOBAL_GUARD(gnObjectOperateCallbackCount, "gnObjectOperateCallbackCount");
+int SHRINESCOUNT = 0x18; D2_GLOBAL_GUARD(SHRINESCOUNT, "SHRINESCOUNT");
+int MISSILESSRVHITFUNCS_SIZE = 0x47; D2_GLOBAL_GUARD(MISSILESSRVHITFUNCS_SIZE, "MISSILESSRVHITFUNCS_SIZE");
+TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> * gpQServerGameState = 0; D2_GLOBAL_GUARD(gpQServerGameState, "gpQServerGameState");
+int StartingAct = 0; D2_GLOBAL_GUARD(StartingAct, "StartingAct");
+uint32_t maxMemoryUsage = 0; D2_GLOBAL_GUARD(maxMemoryUsage, "maxMemoryUsage");
+int gbQServerSendPlayerPos = 0; D2_GLOBAL_GUARD(gbQServerSendPlayerPos, "gbQServerSendPlayerPos");
+D2BattleNetEventCallbackTable * BattleNetServerService = 0; D2_GLOBAL_GUARD(BattleNetServerService, "BattleNetServerService");
+BOOL IsBattleNetServer = 0; D2_GLOBAL_GUARD(IsBattleNetServer, "IsBattleNetServer");
 // also labelled: nCOMMAND_playersX
-uint32_t PlayerCountOverride = 0;
-uint32_t gptItemCodeArmor = 0;
-uint32_t gptItemCodeSwordType = 0;
-int gQServerClientTablesInitialized = 0;
-BOOL DEBUGPRINT = 0;
-uint32_t g_bWhisperSquelched = 0;
-uint32_t g_bWhisperDelivered = 0;
-uint32_t gnTaskQueueSlotCounter = 0;
-uint32_t gnTaskQueueTailIndex = 0;
-uint32_t gbPerformanceCounterAvailable = 0;
-uint32_t gnMonsterSpawnTotalCount = 0;
-
-// =============================================================================
-// Uninitialized data (BSS)
-// =============================================================================
-
-uint8_t gaSkillLevelCaps;
+uint32_t PlayerCountOverride = 0; D2_GLOBAL_GUARD(PlayerCountOverride, "PlayerCountOverride");
+uint32_t gptItemCodeArmor = 0; D2_GLOBAL_GUARD(gptItemCodeArmor, "gptItemCodeArmor");
+uint32_t gptItemCodeSwordType = 0; D2_GLOBAL_GUARD(gptItemCodeSwordType, "gptItemCodeSwordType");
+int gQServerClientTablesInitialized = 0; D2_GLOBAL_GUARD(gQServerClientTablesInitialized, "gQServerClientTablesInitialized");
+BOOL DEBUGPRINT = 0; D2_GLOBAL_GUARD(DEBUGPRINT, "DEBUGPRINT");
+uint32_t g_bWhisperSquelched = 0; D2_GLOBAL_GUARD(g_bWhisperSquelched, "g_bWhisperSquelched");
+uint32_t g_bWhisperDelivered = 0; D2_GLOBAL_GUARD(g_bWhisperDelivered, "g_bWhisperDelivered");
+uint32_t gnTaskQueueSlotCounter = 0; D2_GLOBAL_GUARD(gnTaskQueueSlotCounter, "gnTaskQueueSlotCounter");
+uint32_t gnTaskQueueTailIndex = 0; D2_GLOBAL_GUARD(gnTaskQueueTailIndex, "gnTaskQueueTailIndex");
+uint32_t gbPerformanceCounterAvailable = 0; D2_GLOBAL_GUARD(gbPerformanceCounterAvailable, "gbPerformanceCounterAvailable");
+uint32_t gnMonsterSpawnTotalCount = 0; D2_GLOBAL_GUARD(gnMonsterSpawnTotalCount, "gnMonsterSpawnTotalCount");
 
 namespace D2Common::Drlg::Maze {
 
@@ -20302,7 +20359,7 @@ namespace D2Game::GAME::Event::Dispatch {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-int aTimerIndexUnitTypeLookupTable[6] = { 0x0, 0x1, 0x3, 0x2, 0x4, -0x1 };
+int aTimerIndexUnitTypeLookupTable[6] = { 0x0, 0x1, 0x3, 0x2, 0x4, -0x1 }; D2_GLOBAL_GUARD(aTimerIndexUnitTypeLookupTable, "D2Game::GAME::Event::Dispatch::aTimerIndexUnitTypeLookupTable");
 
 D2TimerTypeMethodsStrc pTimerMethods = {
     /* .fpFunctionByType = */ {
@@ -20322,7 +20379,7 @@ D2TimerTypeMethodsStrc pTimerMethods = {
         nullptr,
         nullptr
     }
-};
+}; D2_GLOBAL_GUARD(pTimerMethods, "D2Game::GAME::Event::Dispatch::pTimerMethods");
 
 } // namespace D2Game::GAME::Event::Dispatch
 
@@ -20350,7 +20407,7 @@ D2TimerTypeMethodsExStrc pTimerMethods = {
         (fpTimerFunctionEx)&D2Game::PLAYER::PlayerTrade::PLRTRADE_ProcessTradeStateTick,
         nullptr
     }
-};
+}; D2_GLOBAL_GUARD(pTimerMethods, "D2Game::GAME::Event::Dispatch::Player::pTimerMethods");
 
 } // namespace D2Game::GAME::Event::Dispatch::Player
 
@@ -20378,7 +20435,7 @@ D2TimerTypeMethodsStrc pTimerMethods = {
         nullptr,
         nullptr
     }
-};
+}; D2_GLOBAL_GUARD(pTimerMethods, "D2Game::GAME::Event::Dispatch::Object::pTimerMethods");
 
 } // namespace D2Game::GAME::Event::Dispatch::Object
 
@@ -20406,7 +20463,7 @@ D2TimerTypeMethodsExStrc pTimerMethods = {
         nullptr,
         nullptr
     }
-};
+}; D2_GLOBAL_GUARD(pTimerMethods, "D2Game::GAME::Event::Dispatch::Monster::pTimerMethods");
 
 } // namespace D2Game::GAME::Event::Dispatch::Monster
 
@@ -20592,7 +20649,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x5
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::Quest40::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::Quest40
 
@@ -20702,7 +20759,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A5Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A5Q1
 
@@ -20712,107 +20769,1220 @@ namespace D2Game::Quests::QUESTS::A5Q2 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x203,
-            /* .nStringIndex = */ 0x4e80,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[12] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e80,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
         },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        }
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
-};
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4e84,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e82,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4e83,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e85,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e86,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e81,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4e8b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e89,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4e8a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e8c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e8d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e87,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4e91,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e8f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4e90,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e92,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e93,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e8e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4e91,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e8f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4e90,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e92,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e93,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e8e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e88,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    }
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A5Q2::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A5Q2
 
@@ -20822,107 +21992,1018 @@ namespace D2Game::Quests::QUESTS::A5Q3 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x201,
-            /* .nStringIndex = */ 0x4e94,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[10] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e94,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
         },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        }
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
-};
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4e97,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e96,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e95,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e98,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e99,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4e9c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4e9b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e9a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x202,
+                /* .nStringIndex = */ 0x4e9d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4e9e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ea1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4ea0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x20f,
+                /* .nStringIndex = */ 0x4ea3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4e9f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4ea2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ea1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4ea0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4ea2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x3
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ea6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4ea5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4ea8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4ea4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4ea7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ea6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4ea5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4ea8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4ea4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4ea7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    }
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A5Q3::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A5Q3
 
@@ -21032,7 +23113,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A5Q4::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A5Q4
 
@@ -21042,107 +23123,917 @@ namespace D2Game::Quests::QUESTS::A5Q5 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x203,
-            /* .nStringIndex = */ 0x4eb9,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[9] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4eb9,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
         },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        }
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
-};
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ebd,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4ebb,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4ebe,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4eba,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4ebc,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ec2,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4ec0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4ec1,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4ec3,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4ebf,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ec7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4ec5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4ec6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4ec8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4ec4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x219,
+                /* .nStringIndex = */ 0x4e22,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x21a,
+                /* .nStringIndex = */ 0x4e22,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x21b,
+                /* .nStringIndex = */ 0x4e22,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x3
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x1ff,
+                /* .nStringIndex = */ 0x4ec7,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x208,
+                /* .nStringIndex = */ 0x4ec5,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x200,
+                /* .nStringIndex = */ 0x4ec6,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x201,
+                /* .nStringIndex = */ 0x4ec8,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x203,
+                /* .nStringIndex = */ 0x4ec4,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    }
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A5Q5::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A5Q5
 
@@ -21252,7 +24143,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x5
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A5Q6::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A5Q6
 
@@ -21362,7 +24253,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x4
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::Quest37::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::Quest37
 
@@ -21472,7 +24363,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q0::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q0
 
@@ -21582,7 +24473,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q1
 
@@ -21692,7 +24583,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q2::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q2
 
@@ -21802,7 +24693,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q3::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q3
 
@@ -21812,107 +24703,1119 @@ namespace D2Game::Quests::QUESTS::A1Q4 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x94,
-            /* .nStringIndex = */ 0x61,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[11] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x61,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
         },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        }
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
-};
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x63,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x62,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x64,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x66,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x65,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x69,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x6b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x67,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x68,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x6a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x6c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x6f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x6d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x70,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x6e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x71,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x74,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x72,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x75,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x73,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x77,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9b,
+                /* .nStringIndex = */ 0x7a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x9a,
+                /* .nStringIndex = */ 0x79,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0x7b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x76,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x78,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x6
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0x7d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0x7b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x76,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x93,
+                /* .nStringIndex = */ 0x78,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x3
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x109,
+                /* .nStringIndex = */ 0x7d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x92,
+                /* .nStringIndex = */ 0x7c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    }
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q4::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q4
 
@@ -22022,7 +25925,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x6
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q5::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q5
 
@@ -22132,7 +26035,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q6::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q6
 
@@ -22242,7 +26145,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q7::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q7
 
@@ -22352,7 +26255,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x9
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::Quest38::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::Quest38
 
@@ -22462,7 +26365,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q0::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q0
 
@@ -22572,7 +26475,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q1
 
@@ -22582,107 +26485,1119 @@ namespace D2Game::Quests::QUESTS::A2Q2 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xf4,
-            /* .nStringIndex = */ 0x14f,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+D2NPCMessageTableStrc aNpcGossipData[11] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x14f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
         },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        }
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
-};
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x150,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x151,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x152,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x153,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x153,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x14f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x150,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x151,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x152,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    }
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q2::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q2
 
@@ -22792,7 +27707,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0xb
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q3::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q3
 
@@ -22802,107 +27717,1220 @@ namespace D2Game::Quests::QUESTS::A2Q4 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xb1,
-            /* .nStringIndex = */ 0x175,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[12] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x175,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
         },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        }
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
-};
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x175,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x179,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x2
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x17c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x17d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x177,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x178,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x17f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x17e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x17a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x179,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x180,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x17b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x176,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0xb
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x189,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x18a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x183,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x181,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x184,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x182,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x185,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x18b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x188,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x187,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x186,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0xb
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x196,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x193,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x18d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x190,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x18e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x18f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x195,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x197,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x192,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x191,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x194,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0xb
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xaf,
+                /* .nStringIndex = */ 0x193,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc6,
+                /* .nStringIndex = */ 0x18d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc7,
+                /* .nStringIndex = */ 0x190,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc9,
+                /* .nStringIndex = */ 0x18e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb1,
+                /* .nStringIndex = */ 0x18f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xca,
+                /* .nStringIndex = */ 0x195,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf4,
+                /* .nStringIndex = */ 0x197,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xd2,
+                /* .nStringIndex = */ 0x192,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xc8,
+                /* .nStringIndex = */ 0x191,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xb2,
+                /* .nStringIndex = */ 0x194,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0xa
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x14b,
+                /* .nStringIndex = */ 0xb9,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x14b,
+                /* .nStringIndex = */ 0xba,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x14b,
+                /* .nStringIndex = */ 0xbb,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x14b,
+                /* .nStringIndex = */ 0xbc,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x14b,
+                /* .nStringIndex = */ 0xbd,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    }
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q4::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q4
 
@@ -23012,7 +29040,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0xb
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q5::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q5
 
@@ -23122,7 +29150,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q6::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q6
 
@@ -23232,7 +29260,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q7::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q7
 
@@ -23342,7 +29370,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q8::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q8
 
@@ -23396,7 +29424,7 @@ fpUmodInit aUmodInitTable[43] = {
     nullptr,
     &D2Game::Monsters::Umod::MONUMOD_SetEventTimer,
     nullptr
-};
+}; D2_GLOBAL_GUARD(aUmodInitTable, "D2Common::Monsters::MONSTERS::Umod::aUmodInitTable");
 
 } // namespace D2Common::Monsters::MONSTERS::Umod
 
@@ -23506,7 +29534,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A4Q0::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A4Q0
 
@@ -23616,7 +29644,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A4Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A4Q1
 
@@ -23726,7 +29754,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A4Q2::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A4Q2
 
@@ -23836,7 +29864,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A4Q3::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A4Q3
 
@@ -23946,7 +29974,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A4Q4::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A4Q4
 
@@ -24056,7 +30084,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x6
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::Quest39::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::Quest39
 
@@ -24166,7 +30194,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q0::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q0
 
@@ -24276,7 +30304,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q1
 
@@ -24286,107 +30314,1321 @@ namespace D2Game::Quests::QUESTS::A3Q2 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xf5,
-            /* .nStringIndex = */ 0x21f,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[13] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x21f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
         },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        }
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
-};
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x221,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x220,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x222,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x223,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x224,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x21f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x221,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x220,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x222,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x223,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x224,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    }
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q2::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q2
 
@@ -24496,7 +31738,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q3::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q3
 
@@ -24506,107 +31748,917 @@ namespace D2Game::Quests::QUESTS::A3Q4 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xf5,
-            /* .nStringIndex = */ 0x20f,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+D2NPCMessageTableStrc aNpcGossipData[9] = {
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x20f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x210,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
         },
-        {
-            /* .nMonStatsId = */ 0xfc,
-            /* .nStringIndex = */ 0x210,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x2
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        },
-        {
-            /* .nMonStatsId = */ 0x0,
-            /* .nStringIndex = */ 0x0,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
-        }
+        /* .nMessagesCount = */ 0x2
     },
-    /* .nMessagesCount = */ 0x2
-};
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x211,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x213,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x216,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x212,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x214,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x215,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x213,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x214,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x215,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x3
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x216,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x217,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfd,
+                /* .nStringIndex = */ 0x218,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x219,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x4
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x21a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x21b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x21c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x21d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x4
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xfe,
+                /* .nStringIndex = */ 0x21a,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x108,
+                /* .nStringIndex = */ 0x21b,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x21c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xff,
+                /* .nStringIndex = */ 0x21d,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x129,
+                /* .nStringIndex = */ 0x21e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x5
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xf5,
+                /* .nStringIndex = */ 0x20f,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0xfc,
+                /* .nStringIndex = */ 0x210,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x2
+    },
+    {
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ -0x1,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x2
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {
+                /* .nMonStatsId = */ 0x0,
+                /* .nStringIndex = */ 0x0,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            }
+        },
+        /* .nMessagesCount = */ 0x0
+    }
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q4::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q4
 
@@ -24716,7 +32768,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q5::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q5
 
@@ -24826,7 +32878,7 @@ D2NPCMessageTableStrc aNpcGossipData = {
         }
     },
     /* .nMessagesCount = */ 0x1
-};
+}; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A3Q6::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A3Q6
 
@@ -24846,10 +32898,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -24857,6 +32905,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

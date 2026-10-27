@@ -53,8 +53,8 @@ void __stdcall D3D_RenderBinkVideoFrame() {
 
 void __fastcall D3D_PlayBinkVideo(char * szVideoPath, int nAudioMode, fnBinkFrameCallback pfnCallback) {
     // Static local variables (originally global data)
-    static uint32_t gbBinkVideoExitProcess;
-    static unsigned int gdwBinkVideoClickTime;
+    static uint32_t gbBinkVideoExitProcess; D2_STATIC_GUARD_BSS(gbBinkVideoExitProcess, "Fog::d3dFloorCache::D3D_PlayBinkVideo::gbBinkVideoExitProcess");
+    static unsigned int gdwBinkVideoClickTime; D2_STATIC_GUARD_BSS(gdwBinkVideoClickTime, "Fog::d3dFloorCache::D3D_PlayBinkVideo::gdwBinkVideoClickTime");
 
     uint32_t dwTickNow;
     int nBinkWaitResult;

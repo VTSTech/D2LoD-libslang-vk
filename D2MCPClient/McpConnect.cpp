@@ -135,14 +135,14 @@ void __stdcall MCPSTATE_SetCreateGameSuccess(uint32_t dwParam) {
 
 void __stdcall MCPSTATE_SetListGameSuccess(uint32_t dwParam) {
     // Static local variables (originally global data)
-    static uint32_t g_bMCPListGameSuccess;
+    static uint32_t g_bMCPListGameSuccess; D2_STATIC_GUARD_BSS(g_bMCPListGameSuccess, "D2MCPClient::McpConnect::MCPSTATE_SetListGameSuccess::g_bMCPListGameSuccess");
 
     g_bMCPListGameSuccess = dwParam;
 }
 
 void __stdcall MCPSTATE_SetCharDeleteSuccess(uint32_t dwParam) {
     // Static local variables (originally global data)
-    static uint32_t g_bMCPCharDeleteSuccess;
+    static uint32_t g_bMCPCharDeleteSuccess; D2_STATIC_GUARD_BSS(g_bMCPCharDeleteSuccess, "D2MCPClient::McpConnect::MCPSTATE_SetCharDeleteSuccess::g_bMCPCharDeleteSuccess");
 
     g_bMCPCharDeleteSuccess = dwParam;
 }
@@ -152,14 +152,14 @@ uint32_t __stdcall MCPCONNECT_GetGameNameAndPassword(int32_t pGameNameOut, int32
     char* pSrc = g_szMCPGameName;
     do {
       ch = *pSrc;
-      pSrc[pGameNameOut - 0x799294] = ch;
+      pSrc[pGameNameOut - (intptr_t)&g_szMCPGameName] = ch;
       pSrc++;
     } while (ch != '\0');
 
     pSrc = g_szMCPGamePassword;
     do {
       ch = *pSrc;
-      pSrc[pPasswordOut - 0x798f60] = ch;
+      pSrc[pPasswordOut - (intptr_t)&g_szMCPGamePassword] = ch;
       pSrc++;
     } while (ch != '\0');
 
@@ -195,7 +195,7 @@ void __stdcall MCPCONNECT_ClearCharSelectBuffer() {
 
 void __stdcall MCPSTATE_SetCharUpgradeSuccess(uint32_t dwParam) {
     // Static local variables (originally global data)
-    static uint32_t g_bMCPCharUpgradeSuccess;
+    static uint32_t g_bMCPCharUpgradeSuccess; D2_STATIC_GUARD_BSS(g_bMCPCharUpgradeSuccess, "D2MCPClient::McpConnect::MCPSTATE_SetCharUpgradeSuccess::g_bMCPCharUpgradeSuccess");
 
     g_bMCPCharUpgradeSuccess = dwParam;
 }
@@ -206,7 +206,7 @@ void __stdcall MCPSTATE_SetCharCreateSuccess(uint32_t dwParam) {
 
 void __stdcall MCPSTATE_SetD2GSConnectReady(uint32_t dwParam) {
     // Static local variables (originally global data)
-    static uint32_t g_bMCPD2GSConnectReady;
+    static uint32_t g_bMCPD2GSConnectReady; D2_STATIC_GUARD_BSS(g_bMCPD2GSConnectReady, "D2MCPClient::McpConnect::MCPSTATE_SetD2GSConnectReady::g_bMCPD2GSConnectReady");
 
     g_bMCPD2GSConnectReady = dwParam;
 }
@@ -364,14 +364,10 @@ void __stdcall McpConnectionLoop(int * pnParam) {
 
 // lpStartAddress parameter of CreateThread
 uint32_t __stdcall ThreadHandler() {
-    // Static local variables (originally global data)
-    static unsigned int gdwMCPListGamePadding2;
-    static unsigned int gdwMCPListGamePadding1;
-
     char bySendByte;
-    char* szIpAddress = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)gdwMCPListGamePadding2);
+    char* szIpAddress = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)*(uint32_t*)((char*)&gMCPConnectionState + 16));
     D2Client::MCP::D2GSJoinResult = 0;
-    D2QSSocketStrc* NET_MCP_CLIENT_D2QSSocket = Fog::Src::D2QSSocket::STRUCT_D2QSSocket_Init(szIpAddress, gdwMCPListGamePadding1, "clt->mcp");
+    D2QSSocketStrc* NET_MCP_CLIENT_D2QSSocket = Fog::Src::D2QSSocket::STRUCT_D2QSSocket_Init(szIpAddress, *(uint32_t*)((char*)&gMCPConnectionState + 20), "clt->mcp");
     D2Client::MCP::MCPD2QSSocket = NET_MCP_CLIENT_D2QSSocket;
     QSSOCKET_SetCallbackHandler1(NET_MCP_CLIENT_D2QSSocket, (void*)D2Client::Net::MCP::MCPCONNECT_SocketCallback_Dispatch, nullptr);
     Fog::Src::D2QSSocket::NET_MCP_CLIENT_CreateConnectionThread(NET_MCP_CLIENT_D2QSSocket);
@@ -388,7 +384,7 @@ uint32_t __stdcall ThreadHandler() {
 
         bySendByte = '\x01';
         Fog::Src::D2QSSocket::QSSOCKET_SendWithTimeout(NET_MCP_CLIENT_D2QSSocket, &bySendByte, 1);
-        McpConnectionLoop((int*)&gMCPConnectionState);
+        McpConnectionLoop((int*)gMCPConnectionState);
         return (uint32_t)!D2Client::MCP::D2GSJoinResult;
       }
     }
@@ -404,7 +400,7 @@ void __stdcall MCPCONNECT_CreateThread(uint32_t * pSrcState) {
     }
 
     uint32_t* pSrcCursor = pSrcState;
-    uint32_t* pdwDest = &gMCPConnectionState;
+    uint32_t* pdwDest = (uint32_t*)gMCPConnectionState;
     /* LPDWORD lpThreadId for CreateThread */ /* DWORD dwCreationFlags for CreateThread */ /* LPVOID lpParameter for CreateThread */ /* LPTHREAD_START_ROUTINE lpStartAddress for CreateThread */ /* SIZE_T dwStackSize for CreateThread */ for (nCopyCount = 0x52; nCopyCount; nCopyCount--) {
       *pdwDest = *pSrcCursor;
       pSrcCursor++;
@@ -437,9 +433,9 @@ char * __stdcall STRING_GetStringLength(char * szText, char * * ppszText, char *
 }
 
 int32_t __fastcall NET_MCP_CLIENT_Send_0x01_StartUp(int * pnParam) {
-    int32_t nAddress;
     MCPPacketClt0x01 mcp0x01;
     uint8_t payloadBuffer[1027];
+    int32_t nLine;
     SetD2GSJoinResult(0);
     mcp0x01.MCPCookie = *pnParam;
     mcp0x01.MCPStatus = pnParam[1];
@@ -465,8 +461,8 @@ int32_t __fastcall NET_MCP_CLIENT_Send_0x01_StartUp(int * pnParam) {
       exit(-1);
     }
 
-    nAddress = Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &mcp0x01.nPacketId, (uint16_t)(uintptr_t)(pStrLen + 0x41));
-    return nAddress;
+    nLine = Fog::Src::D2QSSocket::NET_MCP_CLIENT_Send(D2Client::MCP::MCPD2QSSocket, &mcp0x01.nPacketId, (uint16_t)(uintptr_t)(pStrLen + 0x41));
+    return nLine;
 }
 
 void __fastcall NET_MCP_CLIENT_Send_0x02_CharCreate(char * szCharName, DWORD dwCharClassFlags, uint32_t dwUnused) {
@@ -479,7 +475,7 @@ void __fastcall NET_MCP_CLIENT_Send_0x02_CharCreate(char * szCharName, DWORD dwC
     mcp0x02.dwCharClass = dwCharClassFlags;
     STRING_GetStringLength(szCharName, &pStrLen, (char*)0x400, (int32_t)mcp0x02.szCharName);
     if ((char*)0xfffe < pStrLen + 7) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x7e);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x7e);
       exit(-1);
     }
 
@@ -840,7 +836,7 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x06(char * pBytes, size_t nSize) {
     char* pszSrc = pBytes + 0x2f;
     char* pszScan = pszSrc;
     pszScan = pszScan + strlen(pszScan) + 1;
-    nCopyOffset = 0x799134 - (int)pszSrc;
+    nCopyOffset = (intptr_t)&g_CharSelectBuffer.szGameDescription - (int)pszSrc;
     do {
       cByte = *pszSrc;
       pszSrc[nCopyOffset] = cByte;
@@ -877,7 +873,7 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x06(char * pBytes, size_t nSize) {
 
 BOOL __fastcall NET_MCP_CLIENT_Incoming0x08(char * pBytes, size_t nSize) {
     // Static local variables (originally global data)
-    static pfnVoidNoArgCallback g_pfnMCPCallback1;
+    static pfnVoidNoArgCallback g_pfnMCPCallback1; D2_STATIC_GUARD_BSS(g_pfnMCPCallback1, "D2MCPClient::McpConnect::NET_MCP_CLIENT_Incoming0x08::g_pfnMCPCallback1");
 
     if (!g_pfnMCPCallback1) {
       return 1;
@@ -889,7 +885,7 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x08(char * pBytes, size_t nSize) {
 
 BOOL __fastcall NET_MCP_CLIENT_Incoming0x09(char * pBytes, size_t nSize) {
     // Static local variables (originally global data)
-    static pfnVoidNoArgCallback g_pfnMCPCallback2;
+    static pfnVoidNoArgCallback g_pfnMCPCallback2; D2_STATIC_GUARD_BSS(g_pfnMCPCallback2, "D2MCPClient::McpConnect::NET_MCP_CLIENT_Incoming0x09::g_pfnMCPCallback2");
 
     if (!g_pfnMCPCallback2) {
       return 1;
@@ -979,13 +975,12 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x10(char * pBytes, size_t nSize) {
 
 BOOL __fastcall NET_MCP_CLIENT_Incoming0x11(char * pBytes, size_t nSize) {
     // Static local variables (originally global data)
-    static int gnMCPGameListWriteOffset;
-    static unsigned int gnMCPGameListBufferSize;
-    static uint32_t gMCPGameListBuffer;
+    static int gnMCPGameListWriteOffset; D2_STATIC_GUARD_BSS(gnMCPGameListWriteOffset, "D2MCPClient::McpConnect::NET_MCP_CLIENT_Incoming0x11::gnMCPGameListWriteOffset");
+    static unsigned int gnMCPGameListBufferSize; D2_STATIC_GUARD_BSS(gnMCPGameListBufferSize, "D2MCPClient::McpConnect::NET_MCP_CLIENT_Incoming0x11::gnMCPGameListBufferSize");
 
     uint32_t nEntryField2;
     uint32_t local_c;
-    uint32_t* pnEntry = &gMCPGameListBuffer;
+    uint32_t* pnEntry = (uint32_t*)gMCPGameListBuffer;
     if (nSize < 8) {
       return 0;
     }
@@ -1014,7 +1009,7 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x11(char * pBytes, size_t nSize) {
       return 0;
     }
 
-    memcpy((void*)((uintptr_t)&gMCPGameListBuffer + gnMCPGameListWriteOffset), pBytes + 8, (uint32_t)uVar1);
+    memcpy(gMCPGameListBuffer + gnMCPGameListWriteOffset, pBytes + 8, (uint32_t)uVar1);
     gnMCPGameListWriteOffset = nWriteEndOffset;
     if ((int)nRemaining > (int)nWriteEndOffset) {
       return 1;
@@ -1106,7 +1101,7 @@ BOOL __fastcall HandleIncomingPacket(char * pBytes, size_t nSize) {
     &D2MCPClient::McpConnect::NET_MCP_CLIENT_Incoming0x17,
     &D2MCPClient::McpConnect::NET_MCP_CLIENT_Incoming0x18,
     &D2MCPClient::McpConnect::NET_MCP_CLIENT_Incoming0x19
-};
+}; D2_STATIC_GUARD(INCOMING, "D2MCPClient::McpConnect::HandleIncomingPacket::INCOMING");
 
     BOOL bResult = 0;
     if (!nSize) {
@@ -1125,7 +1120,7 @@ BOOL __fastcall HandleIncomingPacket(char * pBytes, size_t nSize) {
 
 void __stdcall MCPCONNECT_SanitizeWideString(uint16_t * wszText) {
     uint16_t* wszMatch;
-    int32_t nRemainingLen;
+    int32_t iVar1;
     int32_t nLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
     if (nLen < 500) {
       uint16_t* wszToken;
@@ -1133,8 +1128,8 @@ void __stdcall MCPCONNECT_SanitizeWideString(uint16_t * wszText) {
       nLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszToken);
       wszMatch = (uint16_t*)D2Lang::Unicode::UNISYS::UNICODE_FindSubstring((uint16_t*)wszText, (uint16_t*)wszToken);
       while (wszMatch && wszMatch[nLen] != L'\0') {
-        nRemainingLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszMatch);
-        memmove(wszMatch, wszMatch + nLen + 1, (nRemainingLen - nLen) * 2);
+        iVar1 = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszMatch);
+        memmove(wszMatch, wszMatch + nLen + 1, (iVar1 - nLen) * 2);
         wszMatch = (uint16_t*)D2Lang::Unicode::UNISYS::UNICODE_FindSubstring((uint16_t*)wszText, (uint16_t*)wszToken);
       }
 

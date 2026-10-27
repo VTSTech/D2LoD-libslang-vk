@@ -184,7 +184,7 @@ namespace Fog::Debug {
 // Loads dbghelp.dll once and resolves its 64-bit symbol APIs into globals. Returns true when the library is (already) loaded and every API resolved, in AL.
 bool __stdcall DEBUG_LoadDbgHelp64Apis() {
     // Static local variables (originally global data)
-    static pfnSymEnumerateModules64 pSymEnumerateModules64;
+    static pfnSymEnumerateModules64 pSymEnumerateModules64; D2_STATIC_GUARD_BSS(pSymEnumerateModules64, "Fog::Debug::DEBUG_LoadDbgHelp64Apis::pSymEnumerateModules64");
 
     if (hDbgHelpDll) {
       return true;
@@ -825,8 +825,8 @@ bool __fastcall CrashDumpWriterThread(LPCSTR szDumpPath, char * pExceptionPtrs, 
 
 void __stdcall InitializeDebugSubsystem() {
     // Static local variables (originally global data)
-    static HANDLE hDebugThread;
-    static LPDWORD lpThreadId_00992b0c;
+    static HANDLE hDebugThread; D2_STATIC_GUARD_BSS(hDebugThread, "Fog::Debug::InitializeDebugSubsystem::hDebugThread");
+    static LPDWORD lpThreadId_00992b0c; D2_STATIC_GUARD_BSS(lpThreadId_00992b0c, "Fog::Debug::InitializeDebugSubsystem::lpThreadId_00992b0c");
 
     /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ InitializeCriticalSection(&lpCriticalSection_0098a6f0);
     /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ InitializeCriticalSection(&lpCriticalSection_0098a6c4);
@@ -1190,7 +1190,7 @@ D2FogModuleNodeStrc * __stdcall EnumerateModulesToolhelp32(uint32_t dwProcessId)
         pszCopySrc++;
       } while (chCopy != '\0');
 
-      pModuleNode->dwBaseAddress = (uint32_t)tModuleEntry.modBaseAddr;
+      pModuleNode->dwBaseAddress = tModuleEntry.modBaseAddr;
       pModuleNode->pNext = pModuleListHead;
       pModuleNode->dwSize = tModuleEntry.modBaseSize;
       pPrevModule = 0;
@@ -1315,7 +1315,7 @@ D2FogModuleNodeStrc * __stdcall EnumerateModulesPsapi(HANDLE hProcess) {
               pszCopySrc++;
             } while (chCopy != '\0');
 
-            pModuleNode->dwBaseAddress = (uint32_t)sModuleInfo.lpBaseOfDll;
+            pModuleNode->dwBaseAddress = (BYTE*)sModuleInfo.lpBaseOfDll;
             pModuleNode->pNext = pModuleListHead;
             pModuleNode->dwSize = sModuleInfo.SizeOfImage;
             pPrevModule = 0;
@@ -1380,7 +1380,7 @@ D2FogModuleNodeStrc * __fastcall FindModuleContainingAddress(uint32_t nAddress, 
       if (!pModuleList) {
         return nullptr;
       }
-      if (pModuleList->dwBaseAddress <= nAddress && nAddress < pModuleList->dwSize + pModuleList->dwBaseAddress) {
+      if ((uintptr_t)pModuleList->dwBaseAddress <= nAddress && nAddress < (uintptr_t)(pModuleList->dwBaseAddress + pModuleList->dwSize)) {
         break;
       }
 
@@ -1482,7 +1482,7 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
           pcVar4 = pcVar4 + strlen(pcVar4) + 1;
           Storm::Source::SSTR::SStrPrintf(__frame1.szHexLine + ((int)pcVar4 - (int)(__frame1.szHexLine + 1)), 0x100 - ((int)pcVar4 - (int)(__frame1.szHexLine + 1)), " %02X%02X%02X%02X", (uint32_t)*(uint8_t*)((int)pStackPtr + iVar2), (uint32_t)*(uint8_t*)((int)pStackPtr + iVar2 + 1), (uint32_t)*(uint8_t*)((int)pStackPtr + iVar2 + 2), (uint32_t)*(uint8_t*)((int)pStackPtr + iVar2 + 3));
           for (pDVar1 = pModuleListIter; pDVar1; pDVar1 = pDVar1->pNext) {
-            if (pDVar1->dwBaseAddress <= *(uint32_t*)((int)pStackPtr + iVar2) && *(uint32_t*)((int)pStackPtr + iVar2) < pDVar1->dwSize + pDVar1->dwBaseAddress) {
+            if (pDVar1->dwBaseAddress <= *(uint8_t**)((int)pStackPtr + iVar2) && *(uint8_t**)((int)pStackPtr + iVar2) < pDVar1->dwBaseAddress + pDVar1->dwSize) {
               pEipModule = (D2FogModuleNodeStrc*)0x1;
               iVar2 += 4;
               goto emit_line;
@@ -1533,7 +1533,7 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
             Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x3a5);
             exit(-1);
           }
-          if ((uint8_t*)pDVar1->dwBaseAddress <= pAsciiOut && pAsciiOut < (uint8_t*)pDVar1->dwBaseAddress + pDVar1->dwSize) {
+          if (pDVar1->dwBaseAddress <= pAsciiOut && pAsciiOut < pDVar1->dwBaseAddress + pDVar1->dwSize) {
             break;
           }
 
@@ -1571,7 +1571,7 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
 
 D2FogModuleNodeStrc * __stdcall LoadSymbolsForAllModules(HANDLE hProcess, uint32_t dwProcessId) {
     // Static local variables (originally global data)
-    static uint32_t gnSymbolLoadState;
+    static uint32_t gnSymbolLoadState; D2_STATIC_GUARD_BSS(gnSymbolLoadState, "Fog::Debug::LoadSymbolsForAllModules::gnSymbolLoadState");
 
     int iVar1;
     D2FogModuleNodeStrc* pszCopySrc;
@@ -1608,7 +1608,7 @@ D2FogModuleNodeStrc * __stdcall LoadSymbolsForAllModules(HANDLE hProcess, uint32
         pcVar2++;
       } while (chCopy != '\0');
 
-      dwLastError = (*pSymLoadModule)(hProcess, (HANDLE)0x0, szModulePath, szModuleName, pCurModule->dwBaseAddress, pCurModule->dwSize);
+      dwLastError = (*pSymLoadModule)(hProcess, (HANDLE)0x0, szModulePath, szModuleName, (DWORD)pCurModule->dwBaseAddress, pCurModule->dwSize);
       if (!gnSymbolLoadState) {
         if (!dwLastError) {
           pcVar2 = szModuleName;
@@ -5830,7 +5830,7 @@ int __stdcall InitializeSymbolsWithRefcount() {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(szDbgSymbolSearchPath, "Fog::Debug::InitializeSymbolsWithRefcount::szDbgSymbolSearchPath");
 
     HANDLE hProcess;
     BOOL BVar1;
@@ -5916,7 +5916,7 @@ int __fastcall CleanupSymbolsWithRefcount(int32_t bForceCleanup) {
 
 BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, CONTEXT * pContext) {
     // Static local variables (originally global data)
-    static uint32_t gnStackWalkInProgress;
+    static uint32_t gnStackWalkInProgress; D2_STATIC_GUARD_BSS(gnStackWalkInProgress, "Fog::Debug::QuickStackWalkWithSymbols::gnStackWalkInProgress");
 
     // Frame -1120..-956 is ONE object: a call writes 164 literal bytes starting at &stackFrame.
     // Separate locals let the compiler reorder them, and the write would run off the frame.
@@ -5950,22 +5950,16 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 40, "frame group __frame1_t must reproduce the Ghidra frame layout");
     __frame1_t __frame1;
-    // Frame slots -868..-860 are ONE object: &nSymOffset is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -868..-8 are ONE object: &nSymOffset is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame2_t {
       int nSymOffset;
       uint32_t nFrameIdx;
+      IMAGEHLP_MODULE moduleInfo;
+      D2ImagehlpSymbolBufStrc sSymbol;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame2_t) == 8, "frame group __frame2_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame2_t) == 860, "frame group __frame2_t must reproduce the Ghidra frame layout");
     __frame2_t __frame2;
-    // Frame -860..-288 is ONE object: a call writes 572 literal bytes starting at &moduleInfo.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame3_t {
-      uint32_t moduleInfo[7];
-      char szModuleName[544];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame3_t) == 572, "frame group __frame3_t must reproduce the Ghidra frame layout");
-    __frame3_t __frame3;
     uint32_t nStrLen;
     bool bCarry;
     char* pszRelFileName;
@@ -5973,7 +5967,6 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
     ULONGLONG qwModInfoCycles;
     ULONGLONG qwFmtCycles;
     char* pszSymName;
-    D2ImagehlpSymbolBufStrc sSymbol;
     HANDLE hProcessCur;
     __frame1.pContextCopy = pContext;
     HANDLE hThread = hProcess;
@@ -6009,8 +6002,8 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
     __frame0.nAddrPCMode = 3;
     __frame0.nAddrFrameMode = 3;
     __frame0.nAddrStackMode = 3;
-    sSymbol.SizeOfStruct = 0x18;
-    sSymbol.MaxNameLength = 0x100;
+    __frame2.sSymbol.SizeOfStruct = 0x18;
+    __frame2.sSymbol.MaxNameLength = 0x100;
     __frame1.nSymLookupFails = 0;
     __frame2.nFrameIdx = 0;
     do {
@@ -6038,12 +6031,12 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
         __frame1.pszFileName = 0;
         __frame1.nLineAddr = 0;
         __frame1.nLineStructSize = 0x14;
-        BVar1 = (*pSymGetSymFromAddr)(hCurrentProcess, __frame0.stackFrame[0], &__frame2.nSymOffset, &sSymbol);
+        BVar1 = (*pSymGetSymFromAddr)(hCurrentProcess, __frame0.stackFrame[0], &__frame2.nSymOffset, &__frame2.sSymbol);
         if (!BVar1) {
           __frame1.nSymLookupFails++;
           pszSymName = "unknown";
         } else {
-          pszSymName = sSymbol.Name;
+          pszSymName = __frame2.sSymbol.Name;
           __frame1.nLineNumber = __frame2.nSymOffset;
           BVar1 = GetSourceLineWithRetry(hProcessCur, __frame0.stackFrame[0], &__frame1.nLineNumber, &__frame1.nLineStructSize);
           nCycleSample = __frame1.nLineCycleSample;
@@ -6055,22 +6048,22 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
         bCarry = (uint32_t)((uint32_t)qwSymCycles + (uint32_t)nCycleSample) < (uint32_t)qwSymCycles;
         *(uint32_t*)(char*)&qwSymCycles = (uint32_t)qwSymCycles + nCycleSample;
         *(uint32_t*)((char*)&qwSymCycles + 4) = *(uint32_t*)((char*)&qwSymCycles + 4) + nCycleSample + (uint32_t)bCarry;
-        memset(__frame3.moduleInfo, 0, 0x23c);
-        __frame3.moduleInfo[0] = 0x23c;
-        BVar1 = (*pSymGetModuleInfo)(hCurrentProcess, __frame0.stackFrame[0], __frame3.moduleInfo);
+        memset(&__frame2.moduleInfo, 0, 0x23c);
+        __frame2.moduleInfo.SizeOfStruct = 0x23c;
+        BVar1 = (*pSymGetModuleInfo)(hCurrentProcess, __frame0.stackFrame[0], &__frame2.moduleInfo);
         if (!BVar1) {
           GetLastError();
-          __frame3.szModuleName[0] = '\0';
+          __frame2.moduleInfo.ModuleName[0] = '\0';
         }
 
         bCarry = (uint32_t)((uint32_t)qwModInfoCycles + (uint32_t)nCycleSample) < (uint32_t)qwModInfoCycles;
         *(uint32_t*)(char*)&qwModInfoCycles = (uint32_t)qwModInfoCycles + nCycleSample;
         *(uint32_t*)((char*)&qwModInfoCycles + 4) = *(uint32_t*)((char*)&qwModInfoCycles + 4) + nCycleSample + (uint32_t)bCarry;
         if (!__frame1.bHasLineInfo) {
-          Src::LogManager::LOGMANAGER_TraceToModuleLog(__frame1.szLogCategory, "    %08X  %s!%s+%04X", __frame0.stackFrame[0], __frame3.szModuleName, pszSymName);
+          Src::LogManager::LOGMANAGER_TraceToModuleLog(__frame1.szLogCategory, "    %08X  %s!%s+%04X", __frame0.stackFrame[0], __frame2.moduleInfo.ModuleName, pszSymName);
         } else {
           pszRelFileName = Src::ErrorManager::StripPathPrefixToRelative(__frame1.pszFileName);
-          nStrLen = Storm::Source::SSTR::SStrLen(__frame3.szModuleName);
+          nStrLen = Storm::Source::SSTR::SStrLen(__frame2.moduleInfo.ModuleName);
           __frame1.nLineNumber = 0x28 - nStrLen;
           nStrLen = Storm::Source::SSTR::SStrLen(pszSymName);
           bOk = __frame1.nLineNumber - nStrLen;
@@ -6078,7 +6071,7 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
             bOk = 1;
           }
 
-          Src::LogManager::LOGMANAGER_TraceToModuleLog(__frame1.szLogCategory, "    %08X  %s!%s+%04X  %*s%s,%d", __frame0.stackFrame[0], __frame3.szModuleName, pszSymName, __frame2.nSymOffset, bOk, " ", pszRelFileName);
+          Src::LogManager::LOGMANAGER_TraceToModuleLog(__frame1.szLogCategory, "    %08X  %s!%s+%04X  %*s%s,%d", __frame0.stackFrame[0], __frame2.moduleInfo.ModuleName, pszSymName, __frame2.nSymOffset, bOk, " ", pszRelFileName);
         }
       }
 
@@ -6439,9 +6432,9 @@ void HandleExceptionWithStackDump(uint32_t dwUnused, _EXCEPTION_POINTERS * pExce
 
 BOOL __stdcall DEBUG_LoadStackCrawlDbgHelp() {
     // Static local variables (originally global data)
-    static pfnSymUnloadModule pSymUnloadModule;
-    static pfnUnDecorateSymbolName pUnDecorateSymbolName;
-    static pfnMiniDumpWriteDump pMiniDumpWriteDump;
+    static pfnSymUnloadModule pSymUnloadModule; D2_STATIC_GUARD_BSS(pSymUnloadModule, "Fog::Debug::DEBUG_LoadStackCrawlDbgHelp::pSymUnloadModule");
+    static pfnUnDecorateSymbolName pUnDecorateSymbolName; D2_STATIC_GUARD_BSS(pUnDecorateSymbolName, "Fog::Debug::DEBUG_LoadStackCrawlDbgHelp::pUnDecorateSymbolName");
+    static pfnMiniDumpWriteDump pMiniDumpWriteDump; D2_STATIC_GUARD_BSS(pMiniDumpWriteDump, "Fog::Debug::DEBUG_LoadStackCrawlDbgHelp::pMiniDumpWriteDump");
 
     if (bBetterStackCrawls) {
       return 1;

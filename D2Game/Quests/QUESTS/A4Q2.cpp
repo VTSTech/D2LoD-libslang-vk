@@ -49,13 +49,12 @@
 #include "Fog/SMem.h"
 #include "Fog/Save.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/Quests/QUESTS/A4Q1.h"
-#include "Fog/Src/QServer/QServer.h"
 #include "Fog/Src/Safesock.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -327,7 +326,7 @@ void __fastcall Q27_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // [A4Q3 Terror's End] Gossip-text builder (callback slot 0x00). Reads QUEST_TerrorsEnd states (Completed/JustCompleted + per-NPC steps 0x06-0x09) plus internal nStateFlag and emits the appropriate Tyrael(0x16f)/Hadriel(0xf6) gossip line for the current quest stage. Classic vs expansion paths differ.
 void __fastcall Q27_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ14QuestStateMessages[5] = { -0x1, 0x0, 0x1, -0x1, -0x1 };
+    static int32_t gdwQ14QuestStateMessages[5] = { -0x1, 0x0, 0x1, -0x1, -0x1 }; D2_STATIC_GUARD(gdwQ14QuestStateMessages, "D2Game::Quests::QUESTS::A4Q2::Q27_Callback00_NpcActivate::gdwQ14QuestStateMessages");
 
     bool bCompletedB;
     bool bJustCompletedB;
@@ -569,7 +568,7 @@ uint8_t __fastcall QuitGameAfterDia(::SGAMEDATA * pGame, D2QuestDataStrc * pQues
             return '\x01';
           }
 
-          GAME::Server::LeaveServer((D2QServerStrc*)pGame, 0);
+          GAME::Server::LeaveServer(pGame, 0);
           return '\x01';
         }
       }
@@ -710,7 +709,7 @@ void __fastcall Q27_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     D2UnitDataPlayerStrc* pDVar2;
     BOOL BVar3;
     int nDialogIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x67 && pQuestData->nStateFlag == 2) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x67 && pQuestData->nStateFlag == 2) {
       ::SGAMEDATA* pSVar1;
       pSVar1 = pQuestArgs->pGame;
       pDVar2 = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);

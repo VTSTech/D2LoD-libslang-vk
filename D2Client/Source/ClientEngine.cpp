@@ -492,8 +492,8 @@ void __fastcall HandleIncoming0x89(int32_t nEventId) {
     &D2Client::Source::ClientEngine::CLIENT_QuestEvent_NihlathakTransformation,
     nullptr,
     &D2Client::Source::ClientEngine::CLIENT_QuestEvent_WorldstoneShake
-};
-    static uint32_t gdwDenOfEvilEventFlags;
+}; D2_STATIC_GUARD(CLIENT_QuestEventHandlers, "D2Client::Source::ClientEngine::HandleIncoming0x89::CLIENT_QuestEventHandlers");
+    static uint32_t gdwDenOfEvilEventFlags; D2_STATIC_GUARD_BSS(gdwDenOfEvilEventFlags, "D2Client::Source::ClientEngine::HandleIncoming0x89::gdwDenOfEvilEventFlags");
 
     if (nEventId < 0x20) {
       if (nEventId < 0x14) {
@@ -920,7 +920,7 @@ void __stdcall ClientLight_UpdateLightTimers() {
 
 void __fastcall CLIENT_CheckWorldstoneShake(D2RoomStrc * pRoom) {
     // Static local variables (originally global data)
-    static uint32_t gbWorldstoneShakeFired;
+    static uint32_t gbWorldstoneShakeFired; D2_STATIC_GUARD_BSS(gbWorldstoneShakeFired, "D2Client::Source::ClientEngine::CLIENT_CheckWorldstoneShake::gbWorldstoneShakeFired");
 
     if (!pRoom) {
       return;
@@ -1024,7 +1024,7 @@ uint32_t __fastcall GetSomeMonsterStatFlag(int32_t nMonsterClassId, uint32_t nSt
       return 0;
     }
 
-    return (uint32_t)sgptDataTable->pTxtMonStatsEx[nMonStatsExIndex].aCompCodes[((int)nStatBitIndex >> 3) + 0xca] & gadwBitMasks[nStatBitIndex & 7];
+    return (uint32_t)sgptDataTable->pTxtMonStatsEx[nMonStatsExIndex].mDT[(int)nStatBitIndex >> 3] & gadwBitMasks[nStatBitIndex & 7];
 }
 
 void __stdcall ROOM_FindSpawnPositionForMonster(D2RoomStrc * pRoom, int32_t nMonsterClassId, uint32_t * pSeed) {
@@ -1685,7 +1685,7 @@ void CLIENT_MonsterIdleApproach(D2UnitStrc * pUnit) {
       return;
     }
 
-    int* pnAiData = (int*)UNIT::Monster::MONSTER_GetAiDataPtr(pUnit);
+    int* pnAiData = UNIT::Monster::MONSTER_GetAiDataPtr(pUnit);
     if (!pnAiData) {
       return;
     }
@@ -1837,7 +1837,7 @@ void __stdcall CLIENT_MonsterAi_CorpseSeekerBehavior(uint32_t nTargetDistance, D
       CLIENT_ForEachUnitInAdjacentRooms(pUnit, &__frame0.pCorpsePoint, &__frame0.nClosestDist, (fnRoomUnitScanCallback)CLIENT_FindNearbyCorpseCallback);
     }
 
-    int* pnAiData = (int*)UNIT::Monster::MONSTER_GetAiDataPtr(pUnit);
+    int* pnAiData = UNIT::Monster::MONSTER_GetAiDataPtr(pUnit);
     if (pnAiData) {
       if (!__frame0.pCorpsePoint || nTargetDistance < 8) {
         if (!*pnAiData) {

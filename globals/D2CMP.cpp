@@ -5,6 +5,7 @@
 
 #include "globals/globals.h"
 #include "D2CMP/Draw.h"
+#include "D2CMP/SRC/Codec.h"
 #include "D2CMP/SRC/FastCmp.h"
 #include "D2CMP/SRC/LRUCache.h"
 #include "D2Client/D2GfxMemoryStrc.h"
@@ -15,11 +16,11 @@
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-char gszExtDc6[5] = { '.', 'd', 'c', '6', '\x00' };
+char gszExtDc6[5] = { '.', 'd', 'c', '6', '\x00' }; D2_GLOBAL_GUARD(gszExtDc6, "gszExtDc6");
 
-char gszExtDcc[5] = { '.', 'd', 'c', 'c', '\x00' };
+char gszExtDcc[5] = { '.', 'd', 'c', 'c', '\x00' }; D2_GLOBAL_GUARD(gszExtDcc, "gszExtDcc");
 
-fpCelDrawFrameByFormat gaaCelDrawFuncTable[2] = { &D2CMP::SRC::FastCmp::FASTCMP_DecompressRLEDispatcher, nullptr };
+fpCelDrawFrameByFormat gaaCelDrawFuncTable[2] = { &D2CMP::SRC::FastCmp::FASTCMP_DecompressRLEDispatcher, nullptr }; D2_GLOBAL_GUARD(gaaCelDrawFuncTable, "gaaCelDrawFuncTable");
 
 uint32_t gaCelCmpDirectionLookupByDirectionAndFrame[512] = {
     0x0,
@@ -534,7 +535,7 @@ uint32_t gaCelCmpDirectionLookupByDirectionAndFrame[512] = {
     0x3e,
     0x1f,
     0x3f
-};
+}; D2_GLOBAL_GUARD(gaCelCmpDirectionLookupByDirectionAndFrame, "gaCelCmpDirectionLookupByDirectionAndFrame");
 
 uint32_t g_aCodecBitMaskLookupTable[48] = {
     0x0,
@@ -585,7 +586,7 @@ uint32_t g_aCodecBitMaskLookupTable[48] = {
     0x20000000,
     0x40000000,
     0x80000000
-};
+}; D2_GLOBAL_GUARD(g_aCodecBitMaskLookupTable, "g_aCodecBitMaskLookupTable");
 
 int32_t gaCodecLookupTable[33] = {
     0x0,
@@ -621,7 +622,7 @@ int32_t gaCodecLookupTable[33] = {
     0x3fffffff,
     0x7fffffff,
     -0x1
-};
+}; D2_GLOBAL_GUARD(gaCodecLookupTable, "gaCodecLookupTable");
 
 uint32_t gdwD2CMPCodecTab1[32] = {
     0xffffffff,
@@ -656,7 +657,7 @@ uint32_t gdwD2CMPCodecTab1[32] = {
     0xe0000000,
     0xc0000000,
     0x80000000
-};
+}; D2_GLOBAL_GUARD(gdwD2CMPCodecTab1, "gdwD2CMPCodecTab1");
 
 D2LRUCacheStrc gSpriteCacheLru = {
     /* .pAllocator = */ nullptr,
@@ -672,7 +673,7 @@ D2LRUCacheStrc gSpriteCacheLru = {
     /* .pfnFreeEntry = */ nullptr,
     /* .nMissCount = */ 0,
     /* .nHitCount = */ 0
-};
+}; D2_GLOBAL_GUARD(gSpriteCacheLru, "gSpriteCacheLru");
 
 BYTE gaCelDataHashTable[4096] = {
     0,
@@ -4771,7 +4772,7 @@ BYTE gaCelDataHashTable[4096] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaCelDataHashTable, "gaCelDataHashTable");
 
 D2LRUCacheStrc gCelDataCacheLru = {
     /* .pAllocator = */ nullptr,
@@ -4787,7 +4788,7 @@ D2LRUCacheStrc gCelDataCacheLru = {
     /* .pfnFreeEntry = */ nullptr,
     /* .nMissCount = */ 0,
     /* .nHitCount = */ 0
-};
+}; D2_GLOBAL_GUARD(gCelDataCacheLru, "gCelDataCacheLru");
 
 BYTE gaGfxHashTable[65536] = {
     0,
@@ -70326,11 +70327,11 @@ BYTE gaGfxHashTable[65536] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaGfxHashTable, "gaGfxHashTable");
 
 D2GfxMemoryStrc D2GfxMemoryStrc_0089db60 = {
     /* .pMemory = */ nullptr,
-    /* .pMaxMemory = */ nullptr,
+    /* .pMaxMemory = */ 0,
     /* .nUsedMemory = */ 0,
     /* .nCounter = */ 0,
     /* .pSpriteCache = */ nullptr,
@@ -70351,7 +70352,7 @@ D2GfxMemoryStrc D2GfxMemoryStrc_0089db60 = {
     },
     /* .nTotalAllocs = */ 0,
     /* .nAllocations = */ 0
-};
+}; D2_GLOBAL_GUARD(D2GfxMemoryStrc_0089db60, "D2GfxMemoryStrc_0089db60");
 
 uint32_t gaColorDistanceLookupTable[512] = {
     0,
@@ -70866,7 +70867,7 @@ uint32_t gaColorDistanceLookupTable[512] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaColorDistanceLookupTable, "gaColorDistanceLookupTable");
 
 uint8_t gaPaletteMaskData[256] = {
     0,
@@ -71125,7 +71126,7 @@ uint8_t gaPaletteMaskData[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaPaletteMaskData, "gaPaletteMaskData");
 
 D2PaletteEntryStrc gaGlobalPaletteRed[256] = {
     {
@@ -72664,7 +72665,7 @@ D2PaletteEntryStrc gaGlobalPaletteRed[256] = {
         /* .b = */ 0,
         /* .a = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaGlobalPaletteRed, "gaGlobalPaletteRed");
 
 int32_t gnFastCmpEffectMapMaxRow[80] = {
     0,
@@ -72747,7 +72748,7 @@ int32_t gnFastCmpEffectMapMaxRow[80] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gnFastCmpEffectMapMaxRow, "gnFastCmpEffectMapMaxRow");
 
 int32_t gnFastCmpEffectMapMinRow[80] = {
     0,
@@ -72830,7 +72831,7 @@ int32_t gnFastCmpEffectMapMinRow[80] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gnFastCmpEffectMapMinRow, "gnFastCmpEffectMapMinRow");
 
 uint32_t gaFastCmpEffectPixelOffsetTable[6400] = {
     0,
@@ -79233,7 +79234,7 @@ uint32_t gaFastCmpEffectPixelOffsetTable[6400] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaFastCmpEffectPixelOffsetTable, "gaFastCmpEffectPixelOffsetTable");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_008f03cc = {
     /* .DebugInfo = */ nullptr,
@@ -79242,33 +79243,33 @@ _RTL_CRITICAL_SECTION lpCriticalSection_008f03cc = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_008f03cc, "lpCriticalSection_008f03cc");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-uint32_t bUseCompressedData = 0x1;
-void* gpszExtDcc = (void*)&gszExtDcc;
-void* gpszExtDc6 = (void*)&gszExtDc6;
-int gbSpriteCacheLruInitialized = 0;
-void * gpSpriteCachePoolManager = 0;
-pfnLruFreeEntry gpfnSpriteCacheFreeEntry = (pfnLruFreeEntry)0;
-uint32_t gbSpriteCacheConversionEnabled = 0;
+uint32_t bUseCompressedData = 0x1; D2_GLOBAL_GUARD(bUseCompressedData, "bUseCompressedData");
+void* gpszExtDcc = (void*)&gszExtDcc; D2_GLOBAL_GUARD(gpszExtDcc, "gpszExtDcc");
+void* gpszExtDc6 = (void*)&gszExtDc6; D2_GLOBAL_GUARD(gpszExtDc6, "gpszExtDc6");
+int gbSpriteCacheLruInitialized = 0; D2_GLOBAL_GUARD(gbSpriteCacheLruInitialized, "gbSpriteCacheLruInitialized");
+void * gpSpriteCachePoolManager = 0; D2_GLOBAL_GUARD(gpSpriteCachePoolManager, "gpSpriteCachePoolManager");
+pfnLruFreeEntry gpfnSpriteCacheFreeEntry = (pfnLruFreeEntry)0; D2_GLOBAL_GUARD(gpfnSpriteCacheFreeEntry, "gpfnSpriteCacheFreeEntry");
+uint32_t gbSpriteCacheConversionEnabled = 0; D2_GLOBAL_GUARD(gbSpriteCacheConversionEnabled, "gbSpriteCacheConversionEnabled");
 // also labelled: gpPaletteCacheHead
-D2TileProjectStrc * gpTileProjectListHead = 0;
-uint8_t gaItemPaletteData[241920] = {};
-pfnCelPixelDataFree gpCelPixelDataFreeCallback = (pfnCelPixelDataFree)0;
-uint32_t gbTransparentColorEnabled = 0;
-uint32_t gnPaletteMaxIndex = 0;
-uint32_t gnPaletteColorDepth = 0;
-uint32_t gbPaletteLoaded = 0;
-uint32_t gnDrawTransparentColorRGB = 0;
-uint32_t gbBlackColorIsTransparent = 0;
-uint32_t gbPaletteMaskEnabled = 0;
-LONG * lpAddend_008f03e4 = 0;
-uint8_t gaCodecFrameWorkBuffer2[262144] = {};
-uint8_t gaCodecFrameDecodeBuffer[112500] = {};
+D2TileProjectStrc * gpTileProjectListHead = 0; D2_GLOBAL_GUARD(gpTileProjectListHead, "gpTileProjectListHead");
+uint8_t gaItemPaletteData[241920] = {}; D2_GLOBAL_GUARD(gaItemPaletteData, "gaItemPaletteData");
+pfnCelPixelDataFree gpCelPixelDataFreeCallback = (pfnCelPixelDataFree)0; D2_GLOBAL_GUARD(gpCelPixelDataFreeCallback, "gpCelPixelDataFreeCallback");
+uint32_t gbTransparentColorEnabled = 0; D2_GLOBAL_GUARD(gbTransparentColorEnabled, "gbTransparentColorEnabled");
+uint32_t gnPaletteMaxIndex = 0; D2_GLOBAL_GUARD(gnPaletteMaxIndex, "gnPaletteMaxIndex");
+uint32_t gnPaletteColorDepth = 0; D2_GLOBAL_GUARD(gnPaletteColorDepth, "gnPaletteColorDepth");
+uint32_t gbPaletteLoaded = 0; D2_GLOBAL_GUARD(gbPaletteLoaded, "gbPaletteLoaded");
+uint32_t gnDrawTransparentColorRGB = 0; D2_GLOBAL_GUARD(gnDrawTransparentColorRGB, "gnDrawTransparentColorRGB");
+uint32_t gbBlackColorIsTransparent = 0; D2_GLOBAL_GUARD(gbBlackColorIsTransparent, "gbBlackColorIsTransparent");
+uint32_t gbPaletteMaskEnabled = 0; D2_GLOBAL_GUARD(gbPaletteMaskEnabled, "gbPaletteMaskEnabled");
+LONG * lpAddend_008f03e4 = 0; D2_GLOBAL_GUARD(lpAddend_008f03e4, "lpAddend_008f03e4");
+uint8_t gaCodecFrameWorkBuffer2[262144] = {}; D2_GLOBAL_GUARD(gaCodecFrameWorkBuffer2, "gaCodecFrameWorkBuffer2");
+D2CodecPixelBufferEntryStrc gaCodecFrameDecodeBuffer[5625] = {}; D2_GLOBAL_GUARD(gaCodecFrameDecodeBuffer, "gaCodecFrameDecodeBuffer");
 
 namespace D2Common::Drlg::Maze {
 
@@ -79598,10 +79599,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -79609,6 +79606,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

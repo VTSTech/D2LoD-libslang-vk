@@ -141,14 +141,15 @@ BOOL PATH_FindAlternateAroundObstacle(D2PathTypeArg * pPathState) {
     -0x1,
     0x1,
     -0x1
-};
+}; D2_STATIC_GUARD(gnObstacleAvoidanceXOffsets, "D2Common::PATH::Path::PATH_FindAlternateAroundObstacle::gnObstacleAvoidanceXOffsets");
 
     uint32_t nParam;
     uint32_t nPackedSrc;
     uint32_t nParam_00;
     uint16_t nAltX;
-    int32_t nAddress;
+    int32_t iVar4;
     uint16_t nAltY;
+    uint32_t nDirTriplet[3];
     int32_t anDirections[3];
     uint32_t nPackedCurXY;
     uint32_t nCollType;
@@ -174,7 +175,7 @@ BOOL PATH_FindAlternateAroundObstacle(D2PathTypeArg * pPathState) {
     pRoom = pPathState->pRoom;
     eD2CollisionShapeType nType;
     nType = pPathState->nUnitWidth;
-    nAddress = pPathState->nCollisionPattern;
+    nLine = pPathState->nCollisionPattern;
     uint16_t nCurY;
     nCurY = pPathState->pCoords.nPosY;
     if (!pDVar3) {
@@ -197,7 +198,6 @@ BOOL PATH_FindAlternateAroundObstacle(D2PathTypeArg * pPathState) {
     uint16_t nTerAltY;
     nTerAltY = nCurY;
     while (true) {
-      uint32_t nDirTriplet[3];
       if (uVar2 == nCurX && uVar1 == nCurY) {
         return 0;
       }
@@ -205,8 +205,8 @@ BOOL PATH_FindAlternateAroundObstacle(D2PathTypeArg * pPathState) {
       nCurY += (short int)gnObstacleAvoidanceXOffsets[anDirections[0] * 2 + 1];
       nCurX += (short int)gnObstacleAvoidanceXOffsets[anDirections[0] * 2];
       nPackedCurXY = (uint32_t)((uint32_t)(uint16_t)nCurY << 16 | (uint32_t)(uint16_t)nCurX);
-      nLine = Collision::CheckCollision_BlockPlayer_Type(pRoom, (uint32_t)nCurX, (uint32_t)nCurY, nType, nAddress);
-      if (!nLine) {
+      iVar4 = Collision::CheckCollision_BlockPlayer_Type(pRoom, (uint32_t)nCurX, (uint32_t)nCurY, nType, nLine);
+      if (!iVar4) {
         pPathState->pCoords.nOffsetY = nCurX;
         pPathState->pCoords.nPosY = nCurY;
         nAltY = nCurY;
@@ -216,19 +216,19 @@ BOOL PATH_FindAlternateAroundObstacle(D2PathTypeArg * pPathState) {
 
       nSecAltX += (short int)gnObstacleAvoidanceXOffsets[anDirections[1] * 2];
       nSecAltY += (short int)gnObstacleAvoidanceXOffsets[anDirections[1] * 2 + 1];
-      nLine = Collision::CheckCollision_BlockPlayer_Type(pRoom, (uint32_t)nSecAltX, (uint32_t)nSecAltY, nType, nAddress);
+      iVar4 = Collision::CheckCollision_BlockPlayer_Type(pRoom, (uint32_t)nSecAltX, (uint32_t)nSecAltY, nType, nLine);
       nAltY = nSecAltY;
       nAltX = nSecAltX;
-      if (!nLine) {
+      if (!iVar4) {
         break;
       }
       if (anDirections[2] != 0xff) {
         nTerAltX += (short int)gnObstacleAvoidanceXOffsets[anDirections[2] * 2];
         nAltY = nTerAltY + (short int)gnObstacleAvoidanceXOffsets[anDirections[2] * 2 + 1];
-        nLine = Collision::CheckCollision_BlockPlayer_Type(pRoom, (uint32_t)nTerAltX, (uint32_t)nAltY, nType, nAddress);
+        iVar4 = Collision::CheckCollision_BlockPlayer_Type(pRoom, (uint32_t)nTerAltX, (uint32_t)nAltY, nType, nLine);
         nTerAltY = nAltY;
         nAltX = nTerAltX;
-        if (!nLine) {
+        if (!iVar4) {
           break;
         }
       }
@@ -734,7 +734,7 @@ void PATH_ResetPathState(D2DynamicPathStrc * pDynamicPath) {
     pDynamicPath->nVelocityY = 0;
 }
 
-BOOL __stdcall PATH_AdvanceUnitAlongPath(D2UnitStrc * pUnit, D2DynamicPathStrc * pExternalPath) {
+BOOL __stdcall PATH_AdvanceUnitAlongPath(D2UnitStrc * pUnit, int pExternalPath) {
     uint32_t nTargetReached;
     uint32_t nPathFlags;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
@@ -749,7 +749,7 @@ BOOL __stdcall PATH_AdvanceUnitAlongPath(D2UnitStrc * pUnit, D2DynamicPathStrc *
     }
     if (nPathFlags & 0x20 && 0 < pDynamicPath->dwPathPoints && pDynamicPath->dwVelocity && (nPathFlags & 0x40000 || (nTargetReached = PATH_CheckIfTargetReached(pDynamicPath) , nTargetReached != 0)) && pDynamicPath->nPathPointIndex < pDynamicPath->dwPathPoints) {
       D2CoordStrc sNewPos;
-      PATH_UpdateVelocityWithAcceleration((int32_t)pExternalPath, pDynamicPath);
+      PATH_UpdateVelocityWithAcceleration(pExternalPath, pDynamicPath);
       if (pDynamicPath->nVelocityX || pDynamicPath->nVelocityY) {
         PATH_ComputeMovementStep((uint32_t*)&sNewPos, (uint32_t*)&pUnit, pDynamicPath);
         Drlg::Path::DRLGPATH_SetPathPosition(sNewPos.nX, sNewPos.nY, nullptr, pDynamicPath);

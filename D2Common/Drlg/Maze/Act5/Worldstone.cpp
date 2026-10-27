@@ -44,7 +44,7 @@ void PutRedNextLevelAreasInPlace(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_WORLDSTONE_REPLACEMENT, "D2Common::Drlg::Maze::Act5::Worldstone::PutRedNextLevelAreasInPlace::DRLG_WORLDSTONE_REPLACEMENT");
     static D2DrlgReplaceRoomStrc DRLG_WORLDSTONE_WAYPOINT_ROOMS[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x42a,
@@ -70,7 +70,7 @@ void PutRedNextLevelAreasInPlace(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_WORLDSTONE_WAYPOINT_ROOMS, "D2Common::Drlg::Maze::Act5::Worldstone::PutRedNextLevelAreasInPlace::DRLG_WORLDSTONE_WAYPOINT_ROOMS");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
     pLevel->sSeed = DVar1;

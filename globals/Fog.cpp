@@ -8,8 +8,8 @@
 #include "Fog/D2MemoryManagerStrc.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/LogManager.h"
-#include "Storm/H/Storm.h"
 #include "Storm/SMem.h"
+#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 
 
@@ -17,7 +17,7 @@
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-char cLogFileReadMode[2] = { 'r', '\x00' };
+char cLogFileReadMode[2] = { 'r', '\x00' }; D2_GLOBAL_GUARD(cLogFileReadMode, "cLogFileReadMode");
 
 uint32_t gdwBitBufferSeed[9] = {
     0x0,
@@ -29,7 +29,7 @@ uint32_t gdwBitBufferSeed[9] = {
     0x3f,
     0x7f,
     0xff
-};
+}; D2_GLOBAL_GUARD(gdwBitBufferSeed, "gdwBitBufferSeed");
 
 D2IniConfigValuesStrc D2IniConfigValues[58] = {
     {
@@ -612,7 +612,7 @@ D2IniConfigValuesStrc D2IniConfigValues[58] = {
         /* .nOffset = */ 0x224,
         /* .nDefaultValue = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2IniConfigValues, "D2IniConfigValues");
 
 _SERVICE_STATUS lpServiceStatus_007065fc = {
     /* .dwServiceType = */ 0x10,
@@ -622,7 +622,7 @@ _SERVICE_STATUS lpServiceStatus_007065fc = {
     /* .dwServiceSpecificExitCode = */ 0x0,
     /* .dwCheckPoint = */ 0x0,
     /* .dwWaitHint = */ 0x0
-};
+}; D2_GLOBAL_GUARD(lpServiceStatus_007065fc, "lpServiceStatus_007065fc");
 
 char * gaErrorTypeNames[12] = {
     s_No_Error_006ccbc8,
@@ -637,7 +637,7 @@ char * gaErrorTypeNames[12] = {
     s_Registry_Error_006ccb40,
     s_Deadlock_006ccb34,
     (char*)0x006ccb30
-};
+}; D2_GLOBAL_GUARD(gaErrorTypeNames, "gaErrorTypeNames");
 
 uint8_t gabHuffmanCodeLengths[256] = {
     0x1,
@@ -896,7 +896,7 @@ uint8_t gabHuffmanCodeLengths[256] = {
     0xb,
     0xb,
     0x6
-};
+}; D2_GLOBAL_GUARD(gabHuffmanCodeLengths, "gabHuffmanCodeLengths");
 
 float sinTable_f32[512] = {
     0.0,
@@ -1411,7 +1411,7 @@ float sinTable_f32[512] = {
     -0.03680705,
     -0.02454105,
     -0.01227136
-};
+}; D2_GLOBAL_GUARD(sinTable_f32, "sinTable_f32");
 
 char gszLogFilePath[260] = {
     'D',
@@ -1674,7 +1674,7 @@ char gszLogFilePath[260] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(gszLogFilePath, "gszLogFilePath");
 
 char s___AUMessage_LogManager___00708124[28] = {
     '.',
@@ -1705,9 +1705,9 @@ char s___AUMessage_LogManager___00708124[28] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUMessage_LogManager___00708124, "s___AUMessage_LogManager___00708124");
 
-SERVICE_STATUS_HANDLE ghServiceCtrlHandler = nullptr;
+SERVICE_STATUS_HANDLE ghServiceCtrlHandler = nullptr; D2_GLOBAL_GUARD(ghServiceCtrlHandler, "ghServiceCtrlHandler");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0074c830 = {
     /* .DebugInfo = */ nullptr,
@@ -1716,7 +1716,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_0074c830 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0x0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_0074c830, "lpCriticalSection_0074c830");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0074d848 = {
     /* .DebugInfo = */ nullptr,
@@ -1725,7 +1725,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_0074d848 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_0074d848, "lpCriticalSection_0074d848");
 
 _SYSTEM_INFO gSystemInfo = {
     /* .u = */ {},
@@ -1738,7 +1738,7 @@ _SYSTEM_INFO gSystemInfo = {
     /* .dwAllocationGranularity = */ 0,
     /* .wProcessorLevel = */ 0,
     /* .wProcessorRevision = */ 0
-};
+}; D2_GLOBAL_GUARD(gSystemInfo, "gSystemInfo");
 
 char gszCrashReportProcessPath[2048] = {
     0,
@@ -3789,7 +3789,7 @@ char gszCrashReportProcessPath[2048] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gszCrashReportProcessPath, "gszCrashReportProcessPath");
 
 uint32_t gaHuffmanFastDecodeTable[256] = {
     0,
@@ -4048,7 +4048,7 @@ uint32_t gaHuffmanFastDecodeTable[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaHuffmanFastDecodeTable, "gaHuffmanFastDecodeTable");
 
 uint8_t gabHuffmanNextTable[256] = {
     0,
@@ -4307,7 +4307,7 @@ uint8_t gabHuffmanNextTable[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gabHuffmanNextTable, "gabHuffmanNextTable");
 
 uint64_t gaServerSentPacketByteCounts[256] = {
     0,
@@ -4566,16 +4566,16 @@ uint64_t gaServerSentPacketByteCounts[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaServerSentPacketByteCounts, "gaServerSentPacketByteCounts");
 
 // also labelled: gnPacketLogWriteOffset0, gnPacketLogWriteOffset1
-unsigned long long gnSentPacketRawBytes = 0;
+unsigned long long gnSentPacketRawBytes = 0; D2_GLOBAL_GUARD(gnSentPacketRawBytes, "gnSentPacketRawBytes");
 
 // also labelled: gnPacketLogWriteOffset2, gnPacketLogWriteOffset3
-unsigned long long gnSentPacketWireBytes = 0;
+unsigned long long gnSentPacketWireBytes = 0; D2_GLOBAL_GUARD(gnSentPacketWireBytes, "gnSentPacketWireBytes");
 
 // also labelled: gdwPacketLogSequenceNum, gnPacketLogSequenceNumHigh
-unsigned long long gnSentPacketHeaderBytes = 0;
+unsigned long long gnSentPacketHeaderBytes = 0; D2_GLOBAL_GUARD(gnSentPacketHeaderBytes, "gnSentPacketHeaderBytes");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0075cfbc = {
     /* .DebugInfo = */ nullptr,
@@ -4584,7 +4584,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_0075cfbc = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_0075cfbc, "lpCriticalSection_0075cfbc");
 
 char cp_0075d040[256] = {
     0,
@@ -4843,7 +4843,7 @@ char cp_0075d040[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(cp_0075d040, "cp_0075d040");
 
 char gLogFileNameArray[20][16] = {
     {
@@ -5206,7 +5206,7 @@ char gLogFileNameArray[20][16] = {
         0,
         0
     }
-};
+}; D2_GLOBAL_GUARD(gLogFileNameArray, "gLogFileNameArray");
 
 _SYSTEMTIME gLogRealmStartupLocalTime = {
     /* .wYear = */ 0,
@@ -5217,7 +5217,7 @@ _SYSTEMTIME gLogRealmStartupLocalTime = {
     /* .wMinute = */ 0,
     /* .wSecond = */ 0,
     /* .wMilliseconds = */ 0
-};
+}; D2_GLOBAL_GUARD(gLogRealmStartupLocalTime, "gLogRealmStartupLocalTime");
 
 int gLogFileSlotMutex[20] = {
     0,
@@ -5240,7 +5240,7 @@ int gLogFileSlotMutex[20] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gLogFileSlotMutex, "gLogFileSlotMutex");
 
 uint32_t gLogFileLastAccessTimeArray[20] = {
     0,
@@ -5263,7 +5263,7 @@ uint32_t gLogFileLastAccessTimeArray[20] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gLogFileLastAccessTimeArray, "gLogFileLastAccessTimeArray");
 
 char gLogFilePathArray[20][260] = {
     {
@@ -10506,7 +10506,7 @@ char gLogFilePathArray[20][260] = {
         0,
         0
     }
-};
+}; D2_GLOBAL_GUARD(gLogFilePathArray, "gLogFilePathArray");
 
 FILE * globalOpenFileHandleArray[20] = {
     nullptr,
@@ -10529,7 +10529,7 @@ FILE * globalOpenFileHandleArray[20] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(globalOpenFileHandleArray, "globalOpenFileHandleArray");
 
 uint32_t gLogFileLastWriteTimeArray[20] = {
     0,
@@ -10552,18 +10552,18 @@ uint32_t gLogFileLastWriteTimeArray[20] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gLogFileLastWriteTimeArray, "gLogFileLastWriteTimeArray");
 
 D2StormListHead gLogMessageQueueHead = {
     /* .nLinkOffset = */ 0,
     /* .pPrevLink = */ nullptr,
     /* .pNext = */ 0
-};
+}; D2_GLOBAL_GUARD(gLogMessageQueueHead, "gLogMessageQueueHead");
 
 D2HighResTimestampStrc gHighResTimerInitTimestamp = {
     /* .nSeconds = */ 0,
     /* .dwTick = */ 0
-};
+}; D2_GLOBAL_GUARD(gHighResTimerInitTimestamp, "gHighResTimerInitTimestamp");
 
 CRITICAL_SECTION gHighResTimerCS = {
     /* .DebugInfo = */ nullptr,
@@ -10572,7 +10572,7 @@ CRITICAL_SECTION gHighResTimerCS = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(gHighResTimerCS, "gHighResTimerCS");
 
 char gszSystemGlobalString[1024] = {
     0,
@@ -11599,7 +11599,7 @@ char gszSystemGlobalString[1024] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gszSystemGlobalString, "gszSystemGlobalString");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0098a6c4 = {
     /* .DebugInfo = */ nullptr,
@@ -11608,7 +11608,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_0098a6c4 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_0098a6c4, "lpCriticalSection_0098a6c4");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0098a6f0 = {
     /* .DebugInfo = */ nullptr,
@@ -11617,7 +11617,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_0098a6f0 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_0098a6f0, "lpCriticalSection_0098a6f0");
 
 char szCustomSymbolSearchPath[32768] = {
     0,
@@ -44388,7 +44388,7 @@ char szCustomSymbolSearchPath[32768] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(szCustomSymbolSearchPath, "szCustomSymbolSearchPath");
 
 char gszCrashLogTempDir[1024] = {
     0,
@@ -45415,7 +45415,7 @@ char gszCrashLogTempDir[1024] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gszCrashLogTempDir, "gszCrashLogTempDir");
 
 uint32_t gaEnumProcessModuleHandles[1028] = {
     0,
@@ -46446,83 +46446,83 @@ uint32_t gaEnumProcessModuleHandles[1028] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaEnumProcessModuleHandles, "gaEnumProcessModuleHandles");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-_SERVICE_STATUS gszCommandLineLocaleCode = {};
-uint32_t gpServerMemHeap = 0x1;
-uint32_t gnExcelRecordFieldNotFound = 0x6ccb30;
-uint32_t nTokenBucketMask = 0xf;
-uint32_t gnQServerIpConnCountModulo = 0x11;
-uint32_t gnQServerHacklistBucketCount = 0x1;
-HANDLE ghCurrentProcessHandle = INVALID_HANDLE_VALUE;
-HINSTANCE WinMain_hInstance = (HINSTANCE)0x00000000;
-BOOL D2Ini_bUseDirect = 0x0;
-uint32_t g_nProjectId = 0;
-char * szProduct = 0;
-char * g_szApplicationName = 0;
-char * g_szModuleName = 0;
-char * g_szMilestone = 0;
-char * g_szBuildNumber = 0;
-char * g_szPlatform = 0;
-char * g_szPrimaryAssignment = 0;
-char * g_szAssignments = 0;
-int gbSystemInfoInitialized = 0;
-uint32_t g_eOSType = 0;
-int fGameVersion = 0;
-uint32_t g_dwTotalPhysicalMemory = 0;
-uint32_t g_dwErrorState = 0;
-uint32_t gbFogErrorManagerInitialized = 0;
+_SERVICE_STATUS gszCommandLineLocaleCode = {}; D2_GLOBAL_GUARD(gszCommandLineLocaleCode, "gszCommandLineLocaleCode");
+uint32_t gpServerMemHeap = 0x1; D2_GLOBAL_GUARD(gpServerMemHeap, "gpServerMemHeap");
+char * gnExcelRecordFieldNotFound = (char *)0x006ccb30; D2_GLOBAL_GUARD(gnExcelRecordFieldNotFound, "gnExcelRecordFieldNotFound");
+uint32_t nTokenBucketMask = 0xf; D2_GLOBAL_GUARD(nTokenBucketMask, "nTokenBucketMask");
+uint32_t gnQServerIpConnCountModulo = 0x11; D2_GLOBAL_GUARD(gnQServerIpConnCountModulo, "gnQServerIpConnCountModulo");
+uint32_t gnQServerHacklistBucketCount = 0x1; D2_GLOBAL_GUARD(gnQServerHacklistBucketCount, "gnQServerHacklistBucketCount");
+HANDLE ghCurrentProcessHandle = INVALID_HANDLE_VALUE; D2_GLOBAL_GUARD(ghCurrentProcessHandle, "ghCurrentProcessHandle");
+HINSTANCE WinMain_hInstance = (HINSTANCE)0x00000000; D2_GLOBAL_GUARD(WinMain_hInstance, "WinMain_hInstance");
+BOOL D2Ini_bUseDirect = 0x0; D2_GLOBAL_GUARD(D2Ini_bUseDirect, "D2Ini_bUseDirect");
+uint32_t g_nProjectId = 0; D2_GLOBAL_GUARD(g_nProjectId, "g_nProjectId");
+char * szProduct = 0; D2_GLOBAL_GUARD(szProduct, "szProduct");
+char * g_szApplicationName = 0; D2_GLOBAL_GUARD(g_szApplicationName, "g_szApplicationName");
+char * g_szModuleName = 0; D2_GLOBAL_GUARD(g_szModuleName, "g_szModuleName");
+char * g_szMilestone = 0; D2_GLOBAL_GUARD(g_szMilestone, "g_szMilestone");
+char * g_szBuildNumber = 0; D2_GLOBAL_GUARD(g_szBuildNumber, "g_szBuildNumber");
+char * g_szPlatform = 0; D2_GLOBAL_GUARD(g_szPlatform, "g_szPlatform");
+char * g_szPrimaryAssignment = 0; D2_GLOBAL_GUARD(g_szPrimaryAssignment, "g_szPrimaryAssignment");
+char * g_szAssignments = 0; D2_GLOBAL_GUARD(g_szAssignments, "g_szAssignments");
+int gbSystemInfoInitialized = 0; D2_GLOBAL_GUARD(gbSystemInfoInitialized, "gbSystemInfoInitialized");
+uint32_t g_eOSType = 0; D2_GLOBAL_GUARD(g_eOSType, "g_eOSType");
+int fGameVersion = 0; D2_GLOBAL_GUARD(fGameVersion, "fGameVersion");
+uint32_t g_dwTotalPhysicalMemory = 0; D2_GLOBAL_GUARD(g_dwTotalPhysicalMemory, "g_dwTotalPhysicalMemory");
+uint32_t g_dwErrorState = 0; D2_GLOBAL_GUARD(g_dwErrorState, "g_dwErrorState");
+uint32_t gbFogErrorManagerInitialized = 0; D2_GLOBAL_GUARD(gbFogErrorManagerInitialized, "gbFogErrorManagerInitialized");
 // also labelled: gpAsyncDataQueueBuffer
-int gnAsyncDataPriorityDeferDepth = 0;
+int gnAsyncDataPriorityDeferDepth = 0; D2_GLOBAL_GUARD(gnAsyncDataPriorityDeferDepth, "gnAsyncDataPriorityDeferDepth");
 // also labelled: gpAsyncDataLoadBuffer
-D2AsyncData_Line0x128 * gpAsyncDataDeferredList = 0;
-uint32_t gbAsyncDataInitialized = 0;
-uint32_t gnAsyncDataHandleBufferSize = 0;
-D2AsyncDataStrc * pD2AsyncDataStrc = 0;
-uint32_t gnDbgSymInitRefcount = 0;
-int gLogMessageQueueCount = 0;
-int gLogMessageQueueTotalBytes = 0;
-HANDLE gLogWriterThreadHandle = 0;
-uint32_t gLogManagerInitialized = 0;
-uint32_t gLogWriterThreadStopFlag = 0;
-LPDWORD gLogWriterThreadId = 0;
-SMemHeapStatsStrc gaSMemHeapStats[4096] = {};
-int g_SMemLastTickCount = 0;
-uint32_t gnD3DBinkVideoYOffset = 0;
-uint32_t gnD3DBinkVideoXOffset = 0;
-void * gpBinkVideoD3D = 0;
-uint32_t gnBinkDDSurfaceType = 0;
-uint32_t gbBinkVideoShouldStop = 0;
-uint32_t gbQServerUseDedicatedIoWorkers = 0;
-unsigned int gdwHacklistLastLogTime = {};
-HMODULE hDbgHelpDll = 0;
-pfnSymGetModuleInfo64 pSymGetModuleInfo64 = (pfnSymGetModuleInfo64)0;
-pfnSymGetSymFromAddr64 pSymGetSymFromAddr64 = (pfnSymGetSymFromAddr64)0;
-pfnSymSetSearchPath pSymSetSearchPath = (pfnSymSetSearchPath)0;
-pfnSymUnloadModule64 pSymUnloadModule64 = (pfnSymUnloadModule64)0;
-pfnSymFunctionTableAccess64 pSymFunctionTableAccess64 = (pfnSymFunctionTableAccess64)0;
-pfnSymGetModuleBase64 pSymGetModuleBase64 = (pfnSymGetModuleBase64)0;
-pfnStackWalk64 pStackWalk64 = (pfnStackWalk64)0;
-pfnEnumerateLoadedModules64 pEnumerateLoadedModules64 = (pfnEnumerateLoadedModules64)0;
-pfnSymInitialize pSymInitializeApi = (pfnSymInitialize)0;
-pfnSymGetOptions pSymGetOptionsApi = (pfnSymGetOptions)0;
-uint8_t bDebugSymbolsInitialized = 0;
-uint8_t bEnableCrashDumps = 0;
-pfnSymSetOptions pSymSetOptionsApi = (pfnSymSetOptions)0;
-pfnSymCleanup pSymCleanupApi = (pfnSymCleanup)0;
-HANDLE hCrashDumpCompleteEvent = 0;
-HANDLE hCrashDumpRequestEvent = 0;
-pfnSymLoadModule64 pSymLoadModule64 = (pfnSymLoadModule64)0;
-pfnMiniDumpWriteDump pMiniDumpWriteDumpApi = (pfnMiniDumpWriteDump)0;
-void * pCrashDumpInfo = 0;
-pfnSymGetLineFromAddr64 pSymGetLineFromAddr64 = (pfnSymGetLineFromAddr64)0;
-pfnSymFindFileInPath pSymFindFileInPath = (pfnSymFindFileInPath)0;
-pfnFogExceptionFilter gpCurrentExceptionFilter = (pfnFogExceptionFilter)0;
-void * gpCurrentExceptionContext = 0;
+D2AsyncData_Line0x128 * gpAsyncDataDeferredList = 0; D2_GLOBAL_GUARD(gpAsyncDataDeferredList, "gpAsyncDataDeferredList");
+uint32_t gbAsyncDataInitialized = 0; D2_GLOBAL_GUARD(gbAsyncDataInitialized, "gbAsyncDataInitialized");
+uint32_t gnAsyncDataHandleBufferSize = 0; D2_GLOBAL_GUARD(gnAsyncDataHandleBufferSize, "gnAsyncDataHandleBufferSize");
+D2AsyncDataStrc * pD2AsyncDataStrc = 0; D2_GLOBAL_GUARD(pD2AsyncDataStrc, "pD2AsyncDataStrc");
+uint32_t gnDbgSymInitRefcount = 0; D2_GLOBAL_GUARD(gnDbgSymInitRefcount, "gnDbgSymInitRefcount");
+int gLogMessageQueueCount = 0; D2_GLOBAL_GUARD(gLogMessageQueueCount, "gLogMessageQueueCount");
+int gLogMessageQueueTotalBytes = 0; D2_GLOBAL_GUARD(gLogMessageQueueTotalBytes, "gLogMessageQueueTotalBytes");
+HANDLE gLogWriterThreadHandle = 0; D2_GLOBAL_GUARD(gLogWriterThreadHandle, "gLogWriterThreadHandle");
+uint32_t gLogManagerInitialized = 0; D2_GLOBAL_GUARD(gLogManagerInitialized, "gLogManagerInitialized");
+uint32_t gLogWriterThreadStopFlag = 0; D2_GLOBAL_GUARD(gLogWriterThreadStopFlag, "gLogWriterThreadStopFlag");
+LPDWORD gLogWriterThreadId = 0; D2_GLOBAL_GUARD(gLogWriterThreadId, "gLogWriterThreadId");
+SMemHeapStatsStrc gaSMemHeapStats[4096] = {}; D2_GLOBAL_GUARD(gaSMemHeapStats, "gaSMemHeapStats");
+int g_SMemLastTickCount = 0; D2_GLOBAL_GUARD(g_SMemLastTickCount, "g_SMemLastTickCount");
+uint32_t gnD3DBinkVideoYOffset = 0; D2_GLOBAL_GUARD(gnD3DBinkVideoYOffset, "gnD3DBinkVideoYOffset");
+uint32_t gnD3DBinkVideoXOffset = 0; D2_GLOBAL_GUARD(gnD3DBinkVideoXOffset, "gnD3DBinkVideoXOffset");
+void * gpBinkVideoD3D = 0; D2_GLOBAL_GUARD(gpBinkVideoD3D, "gpBinkVideoD3D");
+uint32_t gnBinkDDSurfaceType = 0; D2_GLOBAL_GUARD(gnBinkDDSurfaceType, "gnBinkDDSurfaceType");
+uint32_t gbBinkVideoShouldStop = 0; D2_GLOBAL_GUARD(gbBinkVideoShouldStop, "gbBinkVideoShouldStop");
+uint32_t gbQServerUseDedicatedIoWorkers = 0; D2_GLOBAL_GUARD(gbQServerUseDedicatedIoWorkers, "gbQServerUseDedicatedIoWorkers");
+unsigned int gdwHacklistLastLogTime = {}; D2_GLOBAL_GUARD(gdwHacklistLastLogTime, "gdwHacklistLastLogTime");
+HMODULE hDbgHelpDll = 0; D2_GLOBAL_GUARD(hDbgHelpDll, "hDbgHelpDll");
+pfnSymGetModuleInfo64 pSymGetModuleInfo64 = (pfnSymGetModuleInfo64)0; D2_GLOBAL_GUARD(pSymGetModuleInfo64, "pSymGetModuleInfo64");
+pfnSymGetSymFromAddr64 pSymGetSymFromAddr64 = (pfnSymGetSymFromAddr64)0; D2_GLOBAL_GUARD(pSymGetSymFromAddr64, "pSymGetSymFromAddr64");
+pfnSymSetSearchPath pSymSetSearchPath = (pfnSymSetSearchPath)0; D2_GLOBAL_GUARD(pSymSetSearchPath, "pSymSetSearchPath");
+pfnSymUnloadModule64 pSymUnloadModule64 = (pfnSymUnloadModule64)0; D2_GLOBAL_GUARD(pSymUnloadModule64, "pSymUnloadModule64");
+pfnSymFunctionTableAccess64 pSymFunctionTableAccess64 = (pfnSymFunctionTableAccess64)0; D2_GLOBAL_GUARD(pSymFunctionTableAccess64, "pSymFunctionTableAccess64");
+pfnSymGetModuleBase64 pSymGetModuleBase64 = (pfnSymGetModuleBase64)0; D2_GLOBAL_GUARD(pSymGetModuleBase64, "pSymGetModuleBase64");
+pfnStackWalk64 pStackWalk64 = (pfnStackWalk64)0; D2_GLOBAL_GUARD(pStackWalk64, "pStackWalk64");
+pfnEnumerateLoadedModules64 pEnumerateLoadedModules64 = (pfnEnumerateLoadedModules64)0; D2_GLOBAL_GUARD(pEnumerateLoadedModules64, "pEnumerateLoadedModules64");
+pfnSymInitialize pSymInitializeApi = (pfnSymInitialize)0; D2_GLOBAL_GUARD(pSymInitializeApi, "pSymInitializeApi");
+pfnSymGetOptions pSymGetOptionsApi = (pfnSymGetOptions)0; D2_GLOBAL_GUARD(pSymGetOptionsApi, "pSymGetOptionsApi");
+uint8_t bDebugSymbolsInitialized = 0; D2_GLOBAL_GUARD(bDebugSymbolsInitialized, "bDebugSymbolsInitialized");
+uint8_t bEnableCrashDumps = 0; D2_GLOBAL_GUARD(bEnableCrashDumps, "bEnableCrashDumps");
+pfnSymSetOptions pSymSetOptionsApi = (pfnSymSetOptions)0; D2_GLOBAL_GUARD(pSymSetOptionsApi, "pSymSetOptionsApi");
+pfnSymCleanup pSymCleanupApi = (pfnSymCleanup)0; D2_GLOBAL_GUARD(pSymCleanupApi, "pSymCleanupApi");
+HANDLE hCrashDumpCompleteEvent = 0; D2_GLOBAL_GUARD(hCrashDumpCompleteEvent, "hCrashDumpCompleteEvent");
+HANDLE hCrashDumpRequestEvent = 0; D2_GLOBAL_GUARD(hCrashDumpRequestEvent, "hCrashDumpRequestEvent");
+pfnSymLoadModule64 pSymLoadModule64 = (pfnSymLoadModule64)0; D2_GLOBAL_GUARD(pSymLoadModule64, "pSymLoadModule64");
+pfnMiniDumpWriteDump pMiniDumpWriteDumpApi = (pfnMiniDumpWriteDump)0; D2_GLOBAL_GUARD(pMiniDumpWriteDumpApi, "pMiniDumpWriteDumpApi");
+void * pCrashDumpInfo = 0; D2_GLOBAL_GUARD(pCrashDumpInfo, "pCrashDumpInfo");
+pfnSymGetLineFromAddr64 pSymGetLineFromAddr64 = (pfnSymGetLineFromAddr64)0; D2_GLOBAL_GUARD(pSymGetLineFromAddr64, "pSymGetLineFromAddr64");
+pfnSymFindFileInPath pSymFindFileInPath = (pfnSymFindFileInPath)0; D2_GLOBAL_GUARD(pSymFindFileInPath, "pSymFindFileInPath");
+pfnFogExceptionFilter gpCurrentExceptionFilter = (pfnFogExceptionFilter)0; D2_GLOBAL_GUARD(gpCurrentExceptionFilter, "gpCurrentExceptionFilter");
+void * gpCurrentExceptionContext = 0; D2_GLOBAL_GUARD(gpCurrentExceptionContext, "gpCurrentExceptionContext");
 
 namespace D2Common::Drlg::Maze {
 
@@ -46622,7 +46622,7 @@ namespace Fog::_3rdparty::crashy {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-void * vftable[1] = { (void*)&Fog::_3rdparty::crashy::ScalarDeletingDestructor };
+void * vftable[1] = { (void*)&Fog::_3rdparty::crashy::ScalarDeletingDestructor }; D2_GLOBAL_GUARD(vftable, "Fog::_3rdparty::crashy::vftable");
 
 } // namespace Fog::_3rdparty::crashy
 
@@ -60607,7 +60607,7 @@ D2MemoryManagerStrc pGlobalPoolSystem = {
     /* .nManagers = */ 0,
     /* .nManagerIndex = */ { 0, 0, 0, 0, 0, 0, 0, 0 },
     /* .nFreeManagerIndex = */ 0
-};
+}; D2_GLOBAL_GUARD(pGlobalPoolSystem, "Fog::Memory::pGlobalPoolSystem");
 
 } // namespace Fog::Memory
 
@@ -60617,25 +60617,21 @@ namespace Fog::Debug {
 // Initialized scalars
 // =============================================================================
 
-HMODULE pDbgHelpOrImageHlp = 0;
-pfnSymCleanup pSymCleanup = (pfnSymCleanup)0;
-pfnSymFunctionTableAccess pSymFunctionTableAccess = (pfnSymFunctionTableAccess)0;
-pfnSymGetLineFromAddr pSymGetLineFromAddr = (pfnSymGetLineFromAddr)0;
-pfnSymGetModuleBase pSymGetModuleBase = (pfnSymGetModuleBase)0;
-pfnSymGetModuleInfo pSymGetModuleInfo = (pfnSymGetModuleInfo)0;
-pfnSymGetOptions pSymGetOptions = (pfnSymGetOptions)0;
-pfnSymGetSymFromAddr pSymGetSymFromAddr = (pfnSymGetSymFromAddr)0;
-pfnSymInitialize pSymInitialize = (pfnSymInitialize)0;
-pfnSymLoadModule pSymLoadModule = (pfnSymLoadModule)0;
-pfnSymSetOptions pSymSetOptions = (pfnSymSetOptions)0;
-pfnStackWalk pStackWalk = (pfnStackWalk)0;
-BOOL bBetterStackCrawls = 0;
+HMODULE pDbgHelpOrImageHlp = 0; D2_GLOBAL_GUARD(pDbgHelpOrImageHlp, "Fog::Debug::pDbgHelpOrImageHlp");
+pfnSymCleanup pSymCleanup = (pfnSymCleanup)0; D2_GLOBAL_GUARD(pSymCleanup, "Fog::Debug::pSymCleanup");
+pfnSymFunctionTableAccess pSymFunctionTableAccess = (pfnSymFunctionTableAccess)0; D2_GLOBAL_GUARD(pSymFunctionTableAccess, "Fog::Debug::pSymFunctionTableAccess");
+pfnSymGetLineFromAddr pSymGetLineFromAddr = (pfnSymGetLineFromAddr)0; D2_GLOBAL_GUARD(pSymGetLineFromAddr, "Fog::Debug::pSymGetLineFromAddr");
+pfnSymGetModuleBase pSymGetModuleBase = (pfnSymGetModuleBase)0; D2_GLOBAL_GUARD(pSymGetModuleBase, "Fog::Debug::pSymGetModuleBase");
+pfnSymGetModuleInfo pSymGetModuleInfo = (pfnSymGetModuleInfo)0; D2_GLOBAL_GUARD(pSymGetModuleInfo, "Fog::Debug::pSymGetModuleInfo");
+pfnSymGetOptions pSymGetOptions = (pfnSymGetOptions)0; D2_GLOBAL_GUARD(pSymGetOptions, "Fog::Debug::pSymGetOptions");
+pfnSymGetSymFromAddr pSymGetSymFromAddr = (pfnSymGetSymFromAddr)0; D2_GLOBAL_GUARD(pSymGetSymFromAddr, "Fog::Debug::pSymGetSymFromAddr");
+pfnSymInitialize pSymInitialize = (pfnSymInitialize)0; D2_GLOBAL_GUARD(pSymInitialize, "Fog::Debug::pSymInitialize");
+pfnSymLoadModule pSymLoadModule = (pfnSymLoadModule)0; D2_GLOBAL_GUARD(pSymLoadModule, "Fog::Debug::pSymLoadModule");
+pfnSymSetOptions pSymSetOptions = (pfnSymSetOptions)0; D2_GLOBAL_GUARD(pSymSetOptions, "Fog::Debug::pSymSetOptions");
+pfnStackWalk pStackWalk = (pfnStackWalk)0; D2_GLOBAL_GUARD(pStackWalk, "Fog::Debug::pStackWalk");
+BOOL bBetterStackCrawls = 0; D2_GLOBAL_GUARD(bBetterStackCrawls, "Fog::Debug::bBetterStackCrawls");
 
 } // namespace Fog::Debug
-
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
 
 namespace D2Client::MCP {
 
@@ -60644,6 +60640,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

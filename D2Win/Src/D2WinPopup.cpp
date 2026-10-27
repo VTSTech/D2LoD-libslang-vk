@@ -70,8 +70,8 @@ BOOL __stdcall D2WINPOPUP_IsActiveAndVisible() {
 
 // Adds a message entry to the popup. Validates message count (max 8), copies 132-byte message data into next slot, calculates text width using font 1, updates popup width/height. Returns TRUE on success.
 uint32_t __stdcall D2WINPOPUP_AddMessage(D2WinPopupEntry * pnParam) {
-    int32_t nNewWidth;
     int nCopyCount;
+    int32_t nLine;
     ::D2WinPopup* pPopup = gpD2WinPopupControl;
     if (gpD2WinPopupControl->sControl.neD2FormType != FORM_Popup) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x74);
@@ -90,14 +90,14 @@ uint32_t __stdcall D2WINPOPUP_AddMessage(D2WinPopupEntry * pnParam) {
     }
 
     D2WinFont::SetAndReturnLastFont(1);
-    nNewWidth = D2WinFont::DRAW_text0(pnParam->wszText);
+    nLine = D2WinFont::DRAW_text0(pnParam->wszText);
     nCopyCount = pPopup->sControl.dwSizeX;
-    if (nNewWidth < nCopyCount) {
-      nNewWidth = nCopyCount;
+    if (nLine < nCopyCount) {
+      nLine = nCopyCount;
     }
 
     pPopup->nMessageCount++;
-    pPopup->sControl.dwSizeX = nNewWidth;
+    pPopup->sControl.dwSizeX = nLine;
     pPopup->sControl.dwSizeY = pPopup->nMessageCount * 0x14;
     return 1;
 }
@@ -147,7 +147,7 @@ BOOL __fastcall DrawEx(::D2WinPopup * pPopup) {
 }
 
 BOOL __fastcall Draw(::D2WinPopup * pPopup) {
-    int32_t nBgColor;
+    int32_t nBgColorVal;
     RECT sPopupRect;
     DWORD dwFillColor;
     if (pPopup->sControl.neD2FormType != FORM_Popup) {
@@ -160,8 +160,8 @@ BOOL __fastcall Draw(::D2WinPopup * pPopup) {
       return 0;
     }
 
-    nBgColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x3f, 0x3f, 0x3f);
-    dwFillColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&dwFillColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nBgColor);
+    nBgColorVal = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x3f, 0x3f, 0x3f);
+    dwFillColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&dwFillColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nBgColorVal);
     sPopupRect.right = pPopup->sControl.dwPosX;
     sPopupRect.left = sPopupRect.right - 5;
     int nMsgIdx = pPopup->sControl.dwPosY;

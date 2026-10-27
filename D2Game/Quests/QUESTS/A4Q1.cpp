@@ -32,8 +32,8 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "Fog/Src/Safesock.h"
 
@@ -158,10 +158,10 @@ BOOL __fastcall Q26_PlayerNotifyCompleted(::SGAMEDATA * pGame, D2UnitStrc * pUni
 void __fastcall Q26_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     bool _bRewardOrCompletion;
     bool bRewardOrCompletion;
-    int32_t nPlayerGUID;
     bool bBadCodePtr;
     bool bJustCompleted;
     bool bRewardAwaits;
+    int32_t nErrorLine;
     D2QuestDataA4Q1Strc* pA2Q4Data = pQuestData->pQuestSpecificData.pA4Q1;
     ::SGAMEDATA* pGame = pQuestData->pGame;
     short int sNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
@@ -209,12 +209,12 @@ void __fastcall Q26_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
           D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pQuestArgs->pPlayer, UNITSTAT_newskills, 2, 0);
           SendQuestState(pQuestArgs->pPlayer, 0x16);
           if (!pQuestArgs->pPlayer) {
-            nPlayerGUID = -1;
+            nErrorLine = -1;
           } else {
-            nPlayerGUID = pQuestArgs->pPlayer->nUnitGUID;
+            nErrorLine = pQuestArgs->pPlayer->nUnitGUID;
           }
 
-          QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nPlayerGUID);
+          QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nErrorLine);
           QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
           return;
         }
@@ -234,7 +234,7 @@ void __fastcall Q26_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // Q26_Callback_00 — gossip-text selector (handler[0]). Chooses which Fallen Angel gossip line an NPC speaks based on quest state. Izual-spirit (0x196) before Step0x05 -> msg 3. RewardAwaits -> msg 3. Already-participated player -> msg 4. Else, before completion/intro, picks msg from gdwQ15QuestStateMessages[stateflag] (0xFFFFFFFF = stay silent). Emits via AddGossipMessageOnMonster.
 void __fastcall Q26_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ15QuestStateMessages[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 };
+    static int32_t gdwQ15QuestStateMessages[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gdwQ15QuestStateMessages, "D2Game::Quests::QUESTS::A4Q1::Q26_Callback00_NpcActivate::gdwQ15QuestStateMessages");
 
     BOOL bJustCompleted;
     bool bStep0x05;
@@ -303,6 +303,8 @@ void __fastcall Q26_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 
 // Q26_QuestUpdate_SpawnIzual — deferred quest timer (added in Callback_08). If stateflag just reached 4 (and prev wasn't 4/0xd), broadcast stateflag 3. Then, if a spawn was queued, spawn Izual's monster (classId 0x196) at the recorded subtile coords in Act4 (pAct[3]); tries skill-variant ids 1/3/5. Materializes the actual Izual demon unit for the kill.
 uint8_t __fastcall Q26_QuestUpdate_SpawnIzual(::SGAMEDATA * pGame, D2QuestDataStrc * pQuestData) {
+    int32_t nX;
+    D2RoomStrc* pRoom;
     D2UnitStrc* pIzualUnit;
     D2QuestDataA4Q1Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA4Q1;
     if (pQuestData->nStateFlag == 4 && pQuestData->nStateFlagPrev != 4 && pQuestData->nStateFlagPrev != 0xd) {
@@ -310,15 +312,17 @@ uint8_t __fastcall Q26_QuestUpdate_SpawnIzual(::SGAMEDATA * pGame, D2QuestDataSt
       QUEST_SetStateAndBroadcast(pQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q26_PlayerNotifyCompleted, true);
     }
     if (pQuestSpecificData->bIzualLocationSet) {
-      D2RoomStrc* pRoom;
+      int32_t nY;
+      nY = pQuestSpecificData->ptIzualDeath.y;
+      nX = pQuestSpecificData->ptIzualDeath.x;
       pQuestSpecificData->bIzualLocationSet = 0;
-      pRoom = D2Common::DUNGEON::Dungeon::FindRoomBySubtileCoordinates(pGame->pAct[3], pQuestSpecificData->nIzualDeathX, pQuestSpecificData->nIzualDeathY);
+      pRoom = D2Common::DUNGEON::Dungeon::FindRoomBySubtileCoordinates(pGame->pAct[3], nX, nY);
       if (pRoom) {
-        pIzualUnit = Monster::Create::SpawnMonsterAtRoomPos(pGame, pRoom, pQuestSpecificData->nIzualDeathX, pQuestSpecificData->nIzualDeathY, 0x196, eD2MonsterAnimMode_ns::Skill1, -1, 0);
+        pIzualUnit = Monster::Create::SpawnMonsterAtRoomPos(pGame, pRoom, pQuestSpecificData->ptIzualDeath.x, pQuestSpecificData->ptIzualDeath.y, 0x196, eD2MonsterAnimMode_ns::Skill1, -1, 0);
         if (!pIzualUnit) {
-          pIzualUnit = Monster::Create::SpawnMonsterAtRoomPos(pGame, pRoom, pQuestSpecificData->nIzualDeathX, pQuestSpecificData->nIzualDeathY, 0x196, eD2MonsterAnimMode_ns::Skill1, 3, 0);
+          pIzualUnit = Monster::Create::SpawnMonsterAtRoomPos(pGame, pRoom, pQuestSpecificData->ptIzualDeath.x, pQuestSpecificData->ptIzualDeath.y, 0x196, eD2MonsterAnimMode_ns::Skill1, 3, 0);
           if (!pIzualUnit) {
-            Monster::Create::SpawnMonsterAtRoomPos(pGame, pRoom, pQuestSpecificData->nIzualDeathX, pQuestSpecificData->nIzualDeathY, 0x196, eD2MonsterAnimMode_ns::Skill1, 5, 0);
+            Monster::Create::SpawnMonsterAtRoomPos(pGame, pRoom, pQuestSpecificData->ptIzualDeath.x, pQuestSpecificData->ptIzualDeath.y, 0x196, eD2MonsterAnimMode_ns::Skill1, 5, 0);
           }
         }
       }
@@ -424,7 +428,7 @@ void __fastcall Q26_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
       }
 
       pA4Q1Data->bIzualLocationSet = 1;
-      D2Common::Units::GetCoords(pQuestArgs->pTarget, (POINT*)&pA4Q1Data->nIzualDeathX);
+      D2Common::Units::GetCoords(pQuestArgs->pTarget, &pA4Q1Data->ptIzualDeath);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)Q26_PlayerCheckNearIzual);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)Q26_PropagateCompletionToParty);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)Q26_PartyMember_SetCannotComplete);
@@ -440,7 +444,7 @@ void __fastcall Q26_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 // Q26_Callback_03 — object/portal interaction handler (handler[3]). On the relevant object (id 0x67), remove player from list; if stateflag==2 and quest not Completed, advance stateflag->3 (Jerhyn portal opened path), resync all players, and if first time (prev stateflag 0) broadcast stateflag 1. Drives progression after the Jerhyn red-portal step.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q1.cpp
 void __fastcall Q26_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GossipTextStrc*)0x67) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GSPacketSrv0x27_TextStrc*)0x67) {
       return;
     }
 
@@ -549,8 +553,8 @@ void __fastcall Q26_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->fpSequenceFilter = (QUESTSEQ)Q26_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_SpokeToTyrael;
     pQuestSpecificData->field_0x00 = 0;
-    pQuestSpecificData->nIzualDeathX = 0;
-    pQuestSpecificData->nIzualDeathY = 0;
+    pQuestSpecificData->ptIzualDeath.x = 0;
+    pQuestSpecificData->ptIzualDeath.y = 0;
     pQuestSpecificData->bHasStep4 = 0;
     pQuestSpecificData->bSpawnTimerAdded = 0;
     pQuestSpecificData->field_0x0E = 0;

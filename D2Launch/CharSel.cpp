@@ -175,7 +175,7 @@ char * __stdcall GetPreferedRealm() {
 
 uint32_t CHARSEL_IsBetaRealm(uint16_t * wszText) {
     // Static local variables (originally global data)
-    static uint8_t gbBetaRealmNamesInitialized;
+    static uint8_t gbBetaRealmNamesInitialized; D2_STATIC_GUARD_BSS(gbBetaRealmNamesInitialized, "D2Launch::CharSel::CHARSEL_IsBetaRealm::gbBetaRealmNamesInitialized");
 
     char szName[11];
     if (gbBetaRealmNamesInitialized == '\0') {
@@ -381,7 +381,7 @@ void __stdcall DRAW_LocalCharsInSelectionScreen() {
             pwszLocaleStr += 2;
           }
 
-          pcSrc = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass((void*)(uint32_t)ePlayerClass, pDVar1->nCharacterFlags >> 8 & 0x1f, wCharFlags & 4, pDVar1->nCharacterFlags & 0x20);
+          pcSrc = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass((uint32_t)ePlayerClass, pDVar1->nCharacterFlags >> 8 & 0x1f, wCharFlags & 4, pDVar1->nCharacterFlags & 0x20);
           pDVar2 = pDVar1;
           if (pcSrc) {
             D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsi(gaCharSelScreenSlotControls[nCharacterIndex], pcSrc, (wCharFlags & 4 ? -3 : 0) + 4);
@@ -472,7 +472,6 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
     char* pcSrc;
     uint16_t* pArgs;
     uint16_t wExpireStrIndex;
-    int32_t nErrorAddress;
     uint32_t nCopyDwords;
     char* pcCopySrc;
     D2CharSelStrc* pCharNameSrc;
@@ -483,6 +482,7 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
     uint16_t wszLevelStr[10];
     uint8_t byTextColor;
     char cChar;
+    int32_t nHaltLine;
     char* pcNextChar;
     ::D2WinTextBox** ppSlotTextBox;
     uint16_t wCharFlags;
@@ -534,29 +534,29 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
           D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gpControlCharSelArrows, 1);
           nLoopIdx = 0;
           byTextColor = 0;
-          nErrorAddress = 1;
+          nHaltLine = 1;
           ppSlotTextBox = gaCharSelScreenSlotControls + nCharIndex;
           pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1419);
-          D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nErrorAddress, (bool)byTextColor, nLoopIdx);
+          D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nHaltLine, (bool)byTextColor, nLoopIdx);
           if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET && gnCharSelLoadedCharCount) {
             nCharIndex = 0;
             bVar2 = false;
-            nErrorAddress = 0;
+            nHaltLine = 0;
             pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1416);
-            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nErrorAddress, bVar2, nCharIndex);
+            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nHaltLine, bVar2, nCharIndex);
             nCharIndex = 0;
             bVar2 = false;
-            nErrorAddress = 0;
+            nHaltLine = 0;
             pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1417);
-            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nErrorAddress, bVar2, nCharIndex);
+            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nHaltLine, bVar2, nCharIndex);
             nSlotBoxY += 0x5d;
             nCharIndex = nNavigationIndex;
           } else {
             nCharIndex = 0;
             bVar2 = false;
-            nErrorAddress = 0;
+            nHaltLine = 0;
             pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1418);
-            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nErrorAddress, bVar2, nCharIndex);
+            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nHaltLine, bVar2, nCharIndex);
             D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, (uint16_t*)pCharEntry->szCommandStringTable, 0, false, 0);
             nSlotBoxY += 0x5d;
             nCharIndex = nNavigationIndex;
@@ -576,9 +576,9 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
           if (pCharEntry->nEntryType == 2) {
             nLoopIdx = 0;
             bVar2 = false;
-            nErrorAddress = 1;
+            nHaltLine = 1;
             pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b3b);
-            D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], pwszLocaleStr, nErrorAddress, bVar2, nLoopIdx);
+            D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], pwszLocaleStr, nHaltLine, bVar2, nLoopIdx);
             nSlotBoxY += 0x5d;
             nCharIndex = nNavigationIndex;
           } else {
@@ -595,7 +595,7 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
               pwszLocaleStr += 2;
             }
 
-            pcCopySrc = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass((void*)(uint32_t)pCharEntry->ePlayerClassID, pCharEntry->nCharacterFlags >> 8 & 0x1f, wCharFlags & 4, pCharEntry->nCharacterFlags & 0x20);
+            pcCopySrc = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass((uint32_t)pCharEntry->ePlayerClassID, pCharEntry->nCharacterFlags >> 8 & 0x1f, wCharFlags & 4, pCharEntry->nCharacterFlags & 0x20);
             pcSrc = pcCopySrc;
             pCharNameSrc = pCharEntry;
             if (pcCopySrc) {
@@ -674,21 +674,21 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
             if (pCharEntry->nCharacterFlags & 0x20) {
               nLoopIdx = 0;
               bVar2 = false;
-              nErrorAddress = 2;
+              nHaltLine = 2;
               pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b45);
-              D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], pwszLocaleStr, nErrorAddress, bVar2, nLoopIdx);
+              D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], pwszLocaleStr, nHaltLine, bVar2, nLoopIdx);
             }
             if (pCharEntry->bAct) {
               nLoopIdx = 0;
               bVar2 = false;
-              nErrorAddress = 4;
+              nHaltLine = 4;
               pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2aaf);
-              D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], pwszLocaleStr, nErrorAddress, bVar2, nLoopIdx);
+              D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], pwszLocaleStr, nHaltLine, bVar2, nLoopIdx);
             }
 
             pArgs = (uint16_t*)CHARSEL_GetDaysUntilExpiry(pCharEntry->dwRealmParam);
             if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET && pArgs < (unsigned short*)(void*)0x3d) {
-              nErrorAddress = 1;
+              nHaltLine = 1;
               if (!pArgs) {
                 wExpireStrIndex = 0x2b7e;
               } else if (pArgs < (uint16_t*)0x2) {
@@ -696,13 +696,13 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
               } else {
                 wExpireStrIndex = 0x2b7d;
                 if ((uint16_t*)0xe < pArgs) {
-                  nErrorAddress = 0;
+                  nHaltLine = 0;
                 }
               }
 
               pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(wExpireStrIndex);
               D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, sLineBuf.wszLineBuf, pwszLocaleStr, pArgs);
-              D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], sLineBuf.wszLineBuf, nErrorAddress, false, 0);
+              D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], sLineBuf.wszLineBuf, nHaltLine, false, 0);
             }
 
             nSlotBoxY += 0x5d;
@@ -725,6 +725,7 @@ BOOL __stdcall SAVEFILE_ParseSaveData(char * szRealmName, char * szCharacterName
     D2CharSelCompStrc* pCharSelComp;
     BOOL BVar6;
     uint8_t* pbCur;
+    D2CharSelStrc* pListCur;
     char local_104[256];
     D2CharSelStrc* pNewCharSel;
     pNewCharSel = D2_NEW(D2CharSelStrc);
@@ -869,7 +870,6 @@ BOOL __stdcall SAVEFILE_ParseSaveData(char * szRealmName, char * szCharacterName
     D2CharSelStrc* pListIter;
     pListIter = D2Client::CharScreen::D2CharSelStrcFirst;
     if (D2Client::CharScreen::D2CharSelStrcFirst) {
-      D2CharSelStrc* pListCur;
       BVar6 = Fog::D2CheckExpansionGame();
       if (!BVar6) {
         pListPrev = pListIter->pNext;
@@ -1203,8 +1203,8 @@ void __stdcall CHARSEL_EnumerateLocalSaves() {
     0,
     0,
     0
-};
-    static int gnLocalSaveFileCount;
+}; D2_STATIC_GUARD(gszLocalSaveFilenameBuffer, "D2Launch::CharSel::CHARSEL_EnumerateLocalSaves::gszLocalSaveFilenameBuffer");
+    static int gnLocalSaveFileCount; D2_STATIC_GUARD_BSS(gnLocalSaveFileCount, "D2Launch::CharSel::CHARSEL_EnumerateLocalSaves::gnLocalSaveFileCount");
 
     FILETIME ftLastWriteTime;
     char* pszNameSrc;

@@ -9,11 +9,11 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2PoolManagerStrc;
 struct D2RoomStrc;
 struct D2UnitFindArgStrc;
 struct D2UnitFindDataStrc;
 struct D2UnitStrc;
-struct SGAMEDATA;
 typedef int eD2UnitType;
 #ifndef RECON_FPTD_UNITFINDTEST
 #define RECON_FPTD_UNITFINDTEST
@@ -39,7 +39,7 @@ struct D2UnitStrc * __stdcall GetNearestTestedUnit(struct D2UnitStrc * pUnit, in
 // @sourcefile .\UNITS\UnitFinds.cpp
 void ExpandUnitFinds(struct D2UnitFindDataStrc * pUnitFindData, struct D2UnitStrc * pUnit);
 // @sourcefile .\UNITS\UnitFinds.cpp
-void __stdcall InitializeUnitFindData(::SGAMEDATA * pMemPool, struct D2UnitFindDataStrc * pUnitFindData, struct D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t nDistance, UNITFINDTEST nfpUnitTest, struct D2UnitFindArgStrc * pUnitFindArg);
+void __stdcall InitializeUnitFindData(struct D2PoolManagerStrc * pMemPool, struct D2UnitFindDataStrc * pUnitFindData, struct D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t nDistance, UNITFINDTEST nfpUnitTest, struct D2UnitFindArgStrc * pUnitFindArg);
 // @sourcefile .\UNITS\UnitFinds.cpp
 void __stdcall FreeUnitFindData(struct D2UnitFindDataStrc * pUnitFindData);
 // Predicate callback for the unit-find / nearby-unit search system. Tests one candidate pUnit against the search criteria in pUnitFindArg (center nX/nY, radius nDistance, type/state bitmask nFlags). Rejects on: result array full; out of squared range; unit type not enabled by flags; wrong life/death state (flag 0x1000 inverts to require dead); monster undead-only filter (4); missile non-targetable; not attackable (high bit) / not valid target (0x400); in-town exclusion (0x100); and a line-of-sight wall check (0x200) stepping cells via FIELDTBLS_StepFieldTowardsPoint + CheckCollision_BlockPlayerMissile. Optionally invokes a custom fpUnitTest (0x800). On pass, increments pUnitFindArg->nIndex and returns 1; else 0.

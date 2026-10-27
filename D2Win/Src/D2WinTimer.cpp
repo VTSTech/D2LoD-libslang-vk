@@ -77,7 +77,7 @@ BOOL __fastcall DrawEx(::D2WinTimer * pTimer) {
 
 int __fastcall D2WINTIMER_GetElapsed(::D2WinTimer * pTimer) {
     // Static local variables (originally global data)
-    static uint32_t gnTimerNextFireTick;
+    static uint32_t gnTimerNextFireTick; D2_STATIC_GUARD_BSS(gnTimerNextFireTick, "D2Win::Src::D2WinTimer::D2WINTIMER_GetElapsed::gnTimerNextFireTick");
 
     D2ControlMsg pCallbackArg;
     if (pTimer->sControl.neD2FormType != FORM_Timer) {

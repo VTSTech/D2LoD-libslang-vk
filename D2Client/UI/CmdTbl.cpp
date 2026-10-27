@@ -18,8 +18,6 @@
 #include "D2Client/UNIT/UnitMode.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Lang/StrTable/strtable.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinArchive.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/Archive.h"
@@ -28,7 +26,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/Storm.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Common/Drlg/Drlg.h"
@@ -54,10 +52,8 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2CmdTbl_Line0x50f) == 0x47a, "D2_N
 
 namespace D2Client::UI::CmdTbl {
 
-static D2CmdBindingStrc gnCmdTableMax[57] = { {} };
-static pfnVoidNoArgCallback gpKeyBindingsTableEnd = (pfnVoidNoArgCallback)0;
-static uint8_t gbKeyBindingsEnabled;
-static uint8_t gbKeyConfigModeActive;
+static D2CmdBindingStrc gnCmdTableMax[57] = { {} }; D2_STATIC_GUARD(gnCmdTableMax, "D2Client::UI::CmdTbl::gnCmdTableMax");
+static pfnVoidNoArgCallback gpKeyBindingsTableEnd = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpKeyBindingsTableEnd, "D2Client::UI::CmdTbl::gpKeyBindingsTableEnd");
 
 void __stdcall CMD_ToggleRunMode() {
     GAME::Game::SetRunKeyDown(1);
@@ -357,7 +353,7 @@ void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
     int nLine;
     nLine = 0x51e;
     pScan = ".\\UI\\CmdTbl.cpp";
-    size_t* pFileSize;
+    uint32_t* pFileSize;
     pFileSize = 0;
     D2PoolManagerStrc* pMPQ;
     pMPQ = D2Win::Src::D2WinArchive::ReturnZero();
@@ -1255,8 +1251,8 @@ void __fastcall CMD_ToggleKeyConfigMode(int32_t nEnable, int32_t bUpdateUIHandle
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x101,
     /* .pfHandler = */ &D2Client::UI::CmdTbl::INPUT_DispatchKeyCommand
-};
-    static uint8_t gbNormalUIHandlersRegistered;
+}; D2_STATIC_GUARD(gUIFlagCmdTableInit, "D2Client::UI::CmdTbl::CMD_ToggleKeyConfigMode::gUIFlagCmdTableInit");
+    static unsigned int gbNormalUIHandlersRegistered; D2_STATIC_GUARD_BSS(gbNormalUIHandlersRegistered, "D2Client::UI::CmdTbl::CMD_ToggleKeyConfigMode::gbNormalUIHandlersRegistered");
 
     HWND hWnd;
     int32_t nHandlerCount;

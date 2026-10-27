@@ -446,7 +446,7 @@ void __fastcall SHA1_Update(uint32_t * pnParam, void * pParam, uint32_t nByteLen
 
 void __fastcall SHA1_Final(uint8_t * pHashOut, uint32_t * pShaCtx) {
     // Static local variables (originally global data)
-    static uint8_t gaSHA1FinalData = -0x80;
+    static uint8_t gaSHA1FinalData[4] = { 0x80, 0x0, 0x0, 0x0 }; D2_STATIC_GUARD(gaSHA1FinalData, "Bnclient::SHA::SHA1_Final::gaSHA1FinalData");
 
     uint8_t abLengthBE[8];
     uint32_t uVar1 = pShaCtx[6];
@@ -459,10 +459,10 @@ void __fastcall SHA1_Final(uint8_t * pHashOut, uint32_t * pShaCtx) {
     abLengthBE[5] = (uint8_t)(dwBitLen2 >> 0x10);
     abLengthBE[6] = (uint8_t)(dwBitLen2 >> 8);
     abLengthBE[7] = (uint8_t)dwBitLen2;
-    SHA1_Update(pShaCtx, &gaSHA1FinalData, 1);
+    SHA1_Update(pShaCtx, gaSHA1FinalData, 1);
     uVar1 = pShaCtx[5];
     while ((uVar1 & 0x1f8) != 0x1c0) {
-      SHA1_Update(pShaCtx, &gaBnSendRawBytesHeader, 1);
+      SHA1_Update(pShaCtx, gaBnSendRawBytesHeader, 1);
       uVar1 = pShaCtx[5];
     }
 

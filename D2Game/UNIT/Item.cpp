@@ -256,7 +256,7 @@ void __fastcall SendUpdatedItemsToClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit
             exit(-1);
           }
 
-          for (pInventoryToBeUpdated = D2Common::INVENTORY::Inventory::GetUpdates(pItem->pInventory); pInventoryToBeUpdated; pInventoryToBeUpdated = (D2InventoryToBeUpdatedStrc*)D2Common::INVENTORY::Inventory::GetNextUpdate(pInventoryToBeUpdated)) {
+          for (pInventoryToBeUpdated = D2Common::INVENTORY::Inventory::GetUpdates(pItem->pInventory); pInventoryToBeUpdated; pInventoryToBeUpdated = D2Common::INVENTORY::Inventory::GetNextUpdate(pInventoryToBeUpdated)) {
             dwItemGUID = D2Common::INVENTORY::Inventory::GetUpdatesUUid(pInventoryToBeUpdated);
             pSocketedItem = SUnit::FindUnitFromTable(pGame, UNIT_ITEM, dwItemGUID);
             if (pSocketedItem) {
@@ -266,7 +266,7 @@ void __fastcall SendUpdatedItemsToClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit
         }
       }
 
-      pUpdates = (D2InventoryToBeUpdatedStrc*)D2Common::INVENTORY::Inventory::GetNextUpdate(pUpdates);
+      pUpdates = D2Common::INVENTORY::Inventory::GetNextUpdate(pUpdates);
     } while (pUpdates);
 
     dwItemGUID = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pUnit);
@@ -280,8 +280,8 @@ void __fastcall SendUpdatedItemsToClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 
 void __fastcall ITEM_ClearFlagsAndCommands(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static uint32_t gaItemClearFlagTable[8] = { 0x20, 0x2, 0x8, 0x80, 0x40, 0x1, 0x200, 0x40000 };
-    static uint32_t gnItemClearFlagCount = 0x8;
+    static uint32_t gaItemClearFlagTable[8] = { 0x20, 0x2, 0x8, 0x80, 0x40, 0x1, 0x200, 0x40000 }; D2_STATIC_GUARD(gaItemClearFlagTable, "D2Game::UNIT::ITEM_ClearFlagsAndCommands::gaItemClearFlagTable");
+    static uint32_t gnItemClearFlagCount = 0x8; D2_STATIC_GUARD(gnItemClearFlagCount, "D2Game::UNIT::ITEM_ClearFlagsAndCommands::gnItemClearFlagCount");
     static uint32_t gaItemClearCommandTable[21] = {
     0x2,
     0x4,
@@ -304,8 +304,8 @@ void __fastcall ITEM_ClearFlagsAndCommands(::SGAMEDATA * pGameStrc, D2UnitStrc *
     0x80000,
     0x100000,
     0x200000
-};
-    static uint32_t gnItemClearCommandCount = 0x15;
+}; D2_STATIC_GUARD(gaItemClearCommandTable, "D2Game::UNIT::ITEM_ClearFlagsAndCommands::gaItemClearCommandTable");
+    static uint32_t gnItemClearCommandCount = 0x15; D2_STATIC_GUARD(gnItemClearCommandCount, "D2Game::UNIT::ITEM_ClearFlagsAndCommands::gnItemClearCommandCount");
 
     if (pUnit) {
       pUnit->eUnitFlagsEx &= ~(UNITFLAGEX_ITEMINIT | UNITFLAGEX_ISVENDORITEM);
@@ -345,7 +345,7 @@ BOOL __fastcall ITEM_HasPendingInventoryUpdates(::SGAMEDATA * pGame, D2UnitStrc 
 
       dwFindGUID = D2Common::INVENTORY::Inventory::GetUpdatesUUid(pUpdateEntry);
       pFoundItem = SUnit::FindUnitFromTable(pGame, UNIT_ITEM, dwFindGUID);
-      pUpdateEntry = (D2InventoryToBeUpdatedStrc*)D2Common::INVENTORY::Inventory::GetNextUpdate(pUpdateEntry);
+      pUpdateEntry = D2Common::INVENTORY::Inventory::GetNextUpdate(pUpdateEntry);
     } while (!pFoundItem);
 
     return 1;
@@ -394,7 +394,7 @@ void __fastcall ITEM_ProcessInventoryUpdates(::SGAMEDATA * pGame, D2UnitStrc * p
               exit(-1);
             }
 
-            for (pInventoryToBeUpdated = D2Common::INVENTORY::Inventory::GetUpdates(pSubInventory); pInventoryToBeUpdated; pInventoryToBeUpdated = (D2InventoryToBeUpdatedStrc*)D2Common::INVENTORY::Inventory::GetNextUpdate(pInventoryToBeUpdated)) {
+            for (pInventoryToBeUpdated = D2Common::INVENTORY::Inventory::GetUpdates(pSubInventory); pInventoryToBeUpdated; pInventoryToBeUpdated = D2Common::INVENTORY::Inventory::GetNextUpdate(pInventoryToBeUpdated)) {
               dwFindGUID = D2Common::INVENTORY::Inventory::GetUpdatesUUid(pInventoryToBeUpdated);
               pSocketedItem = SUnit::FindUnitFromTable(pGame, UNIT_ITEM, dwFindGUID);
               if (pSocketedItem) {
@@ -411,7 +411,7 @@ void __fastcall ITEM_ProcessInventoryUpdates(::SGAMEDATA * pGame, D2UnitStrc * p
           }
         }
 
-        pUpdateEntry = (D2InventoryToBeUpdatedStrc*)D2Common::INVENTORY::Inventory::GetNextUpdate(pUpdateEntry);
+        pUpdateEntry = D2Common::INVENTORY::Inventory::GetNextUpdate(pUpdateEntry);
       } while (pUpdateEntry);
 
       D2Common::INVENTORY::Inventory::FreeUpdatesFromInventory(pInventory);
@@ -562,9 +562,8 @@ void __fastcall MONSTER_SendUpdateToClient(::SGAMEDATA * pGame, D2UnitStrc * pUn
     0x0,
     0x17,
     0x18
-};
+}; D2_STATIC_GUARD(gaUnitModeUpdateFields, "D2Game::UNIT::MONSTER_SendUpdateToClient::gaUnitModeUpdateFields");
 
-    int32_t nTmp;
     BOOL nPosTmp;
     D2SkillStrc* pSkill;
     int bIsNear;
@@ -572,6 +571,7 @@ void __fastcall MONSTER_SendUpdateToClient(::SGAMEDATA * pGame, D2UnitStrc * pUn
     uint32_t nMonsterGUID;
     int32_t nTmp2;
     uint16_t wTargetX;
+    int32_t nLayer;
     uint8_t byMoveParam2;
     uint8_t nPacketId;
     uint8_t byDistance;
@@ -653,9 +653,9 @@ void __fastcall MONSTER_SendUpdateToClient(::SGAMEDATA * pGame, D2UnitStrc * pUn
         wTargetX = (uint16_t)nTmp2;
         nTmp2 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
         GAME::SCmd::NET_D2GS_SERVER_Send_0x6D_UNITCHANGE_MONSTERNEUTRAL(pClientSide, nTargetY, (uint16_t)nTmp2, wTargetX, uVar1);
-        nTmp = 0;
+        nLayer = 0;
         nTmp2 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0);
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, nTmp2 + 1, nTmp);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, nTmp2 + 1, nLayer);
         return;
       }
       if (eAnimMode == Knockback) {

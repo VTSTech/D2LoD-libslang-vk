@@ -34,8 +34,8 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/D2QuestGUIDStrc.h"
 
@@ -168,7 +168,7 @@ void __fastcall DeactivateRespecQuest(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 // - Gossip msg 0x4c (player returns for the reward, only if RewardAwaits is set): if also JustCompleted and not yet at state 5, finalizes the quest (runs the sequence filter to unlock the next quest, broadcasts final state 0x0d). Then on the player's record it sets QUESTSTATE_Completed, clears QUESTSTATE_RewardAwaits, and on the Respec sub-quest sets JustCompleted+RewardAwaits, clears the Den step sub-states, and grants the actual reward: STATLIST_AddUnitStat(UNITSTAT_newskills, +1) -- the free skill point Akara gives for clearing the Den. Records the player GUID and sends the gossip packet.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q1.cpp
 void __fastcall Q01_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    int32_t nErrorAddr;
+    int32_t nLine;
     short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2QuestDataA1Q1Strc* pQuestDataA1Q1 = pQuestData->pQuestSpecificData.pA1Q1;
     if (pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo != 0x94) {
@@ -225,12 +225,12 @@ void __fastcall Q01_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     /* STATLIST_AddUnitStat(UNITSTAT_newskills, +1) -- the Den-of-Evil reward: Akara
                          grants one free skill point */ D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pQuestArgs->pPlayer, UNITSTAT_newskills, 1, 0);
     if (!pQuestArgs->pPlayer) {
-      nErrorAddr = -1;
+      nLine = -1;
     } else {
-      nErrorAddr = pQuestArgs->pPlayer->nUnitGUID;
+      nLine = pQuestArgs->pPlayer->nUnitGUID;
     }
 
-    QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nErrorAddr);
+    QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nLine);
     QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
 }
 
@@ -238,7 +238,7 @@ void __fastcall Q01_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // If RewardAwaits is set -> message index 3 (the "return to Akara for your reward" line). Otherwise: if the player has not participated and the quest is not completed/too-far-along, it maps the server quest flag (nStateFlag) through gdwQuestCallbackAddressQ37[] to pick the intro/progress message index; -1 (or >7) means "say nothing". Participants get the generic message 4. Final line is rendered via AddGossipMessageOnMonster.
 void __fastcall Q01_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQuestCallbackAddressQ37[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 };
+    static int32_t gdwQuestCallbackAddressQ37[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gdwQuestCallbackAddressQ37, "D2Game::Quests::QUESTS::A1Q1::Q01_Callback00_NpcActivate::gdwQuestCallbackAddressQ37");
 
     int32_t iTargetClassId;
     uint32_t nMessageIndex;
@@ -400,6 +400,7 @@ uint8_t __fastcall Q01_TimerNotifyCompletion(::SGAMEDATA * pGame, D2QuestDataStr
 // A1Q1 (Den of Evil) state-8 callback (Q01_Callback_08) -- the core monster-kill / clear-detection handler, fired on monster-death events in the Den. Looks up the Den-of-Evil monster region, recomputes nDenMonstersLeftToKillCount = dwMonSpawnCount - dwMonKillCount, and records the participating player's GUID. When every Den room is populated AND dwMonKillCount == dwMonSpawnCount (all monsters dead = Den cleared), it: logs "Finished quest", advances server quest flag to 4, sets QUESTSTATE_JustCompleted on the quest record, runs QUEST_SetSuccessFinishStates, and iterates all players to propagate the reward (Q01_PropagateRewardToParty -> party gets the skill point), mark non-participants CannotCompleteQuestInGame (Q01_SetCannotCompleteInGame), and play the completion sound (Q01_PlayCompletionSound); then arms Q01_TimerNotifyCompletion to broadcast final state 5. If not fully cleared but <6 monsters remain (or coming back from flag 4 with >5 left) it sets the "almost done" UI flag (eFlags=0x20) and re-broadcasts state 4.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q1.cpp
 void __fastcall Q01_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
+    BOOL BVar1;
     int32_t nPopulatedRooms;
     eD2Quests eDenQuestId;
     if (!pQuestData->bIsNotIntroduction) {
@@ -415,7 +416,6 @@ void __fastcall Q01_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 
     pQuestGUID->nDenMonstersLeftToKillCount = pMonsterRegion->dwMonSpawnCount - pMonsterRegion->dwMonKillCount;
     if (pQuestArgs->pPlayer) {
-      BOOL BVar1;
       nPopulatedRooms = pQuestArgs->pPlayer->nUnitGUID;
       BVar1 = QUESTGUID_SearchForValueInIntArray32(&pQuestGUID->sQuestGUID, nPopulatedRooms);
       if (!BVar1) {
@@ -495,7 +495,7 @@ void __fastcall Q01_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q01_SyncQuestStepToPlayer);
         return;
       }
-    } else if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x1 && (QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs) , pQuestData->nStateFlag == 2)) {
+    } else if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x1 && (QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs) , pQuestData->nStateFlag == 2)) {
       pGame = pQuestArgs->pGame;
       pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
       pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];

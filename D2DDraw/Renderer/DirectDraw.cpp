@@ -59,7 +59,7 @@ typedef void (__stdcall *fnBinkFrameCallback)();
 
 namespace D2DDraw::Renderer::DirectDraw {
 
-static bool gbDDrawPaletteSet = 0;
+static bool gbDDrawPaletteSet = 0; D2_STATIC_GUARD(gbDDrawPaletteSet, "D2DDraw::Renderer::DirectDraw::gbDDrawPaletteSet");
 
 BOOL __fastcall Initialize(HINSTANCE hInstance) {
     // Static local variables (originally global data)
@@ -320,12 +320,13 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
     0,
     0,
     0
-};
-    static int g_bDDrawGammaInitialized;
+}; D2_STATIC_GUARD(gszRendererDeviceName, "D2DDraw::Renderer::DirectDraw::Initialize::gszRendererDeviceName");
+    static int g_bDDrawGammaInitialized; D2_STATIC_GUARD_BSS(g_bDDrawGammaInitialized, "D2DDraw::Renderer::DirectDraw::Initialize::g_bDDrawGammaInitialized");
 
-    int32_t bRegReadOk;
     int bRegFlagsOk;
     char szRegKey[22];
+    uint32_t* pGuidSize;
+    int32_t nLine;
     uint32_t pSFileGlobal = Fog::Source::SFile::SFILE_GetGlobalPointer();
     if (!pSFileGlobal) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6f);
@@ -336,9 +337,8 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
     }
 
     memcpy(szRegKey, "Diablo II\\VideoConfig", 0x16);
-    bRegReadOk = Storm::Source::SReg::SRegLoadString(szRegKey, "DeviceName", 0, gszRendererDeviceName, 0x100);
-    if (bRegReadOk) {
-      uint32_t* pGuidSize;
+    nLine = Storm::Source::SReg::SRegLoadString(szRegKey, "DeviceName", 0, gszRendererDeviceName, 0x100);
+    if (nLine) {
       bRegFlagsOk = Storm::Source::SReg::SRegLoadValue(szRegKey, "dwFlags", 0, (int32_t*)&gdwDDrawInitFlags);
       if (bRegFlagsOk) {
         if (gdwDDrawInitFlags & 1) {
@@ -346,8 +346,8 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
         }
 
         pGuidSize = (uint32_t*)0x10;
-        bRegReadOk = Storm::Source::SReg::SRegLoadData((uint32_t*)szRegKey, "GUID", 0, (LPBYTE)&gGlideOpenWindowConfig, 0x10, &pGuidSize);
-        if (bRegReadOk && pGuidSize == (uint32_t*)0x10) {
+        nLine = Storm::Source::SReg::SRegLoadData((uint32_t*)szRegKey, "GUID", 0, (LPBYTE)&gGlideOpenWindowConfig, 0x10, &pGuidSize);
+        if (nLine && pGuidSize == (uint32_t*)0x10) {
           return 1;
         }
       }
@@ -503,7 +503,7 @@ void __fastcall SetPaletteTable(BYTE * * ppPaletteTable) {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(gaPaletteTableLocal, "D2DDraw::Renderer::DirectDraw::SetPaletteTable::gaPaletteTableLocal");
 
     int nCount;
     uint8_t** pDst = gaPaletteTableLocal;
@@ -925,8 +925,8 @@ void __fastcall DirectDrawErrorHandler(char * szContext, int32_t nErrorCode) {
 
 BOOL InternalOpenWindow(int32_t nResolutionMode) {
     // Static local variables (originally global data)
-    static uint32_t gdwDirectDrawPaletteSizes[4] = { 0x280, 0x320, 0x320, 0x0 };
-    static uint32_t gdwDirectDrawSurfaceWidths[4] = { 0x1e0, 0x258, 0x258, 0x0 };
+    static uint32_t gdwDirectDrawPaletteSizes[4] = { 0x280, 0x320, 0x320, 0x0 }; D2_STATIC_GUARD(gdwDirectDrawPaletteSizes, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawPaletteSizes");
+    static uint32_t gdwDirectDrawSurfaceWidths[4] = { 0x1e0, 0x258, 0x258, 0x0 }; D2_STATIC_GUARD(gdwDirectDrawSurfaceWidths, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawSurfaceWidths");
 
     char* szErrorMsg;
     DDSURFACEDESC ddSurfDesc;
@@ -1031,8 +1031,9 @@ BOOL InternalOpenWindow(int32_t nResolutionMode) {
 }
 
 BOOL __stdcall InternalCutsceneWindow() {
-    int32_t nHResult;
     char* szErrorMsg;
+    DDSURFACEDESC ddSurfDesc;
+    int32_t nLine;
     if (gbDDrawWindowInitialized) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26a);
       exit(-1);
@@ -1051,15 +1052,14 @@ BOOL __stdcall InternalCutsceneWindow() {
       nBitDepth = 0x20;
     }
 
-    nHResult = pWindowHandleBuffer->lpVtbl->SetDisplayMode(pWindowHandleBuffer, 0x280, 0x1e0, nBitDepth);
-    if (!nHResult) {
-      DDSURFACEDESC ddSurfDesc;
+    nLine = pWindowHandleBuffer->lpVtbl->SetDisplayMode(pWindowHandleBuffer, 0x280, 0x1e0, nBitDepth);
+    if (!nLine) {
       ddSurfDesc.dwSize = 0x6c;
       memset(&ddSurfDesc.dwFlags, 0, 0x68);
       ddSurfDesc.dwFlags = 1;
       ddSurfDesc.ddsCaps = 0x4200;
-      nHResult = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
-      if (!nHResult) {
+      nLine = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
+      if (!nLine) {
         gbDDrawWindowInitialized = 1;
         gbDDrawPaletteSet = 1;
         return 1;
@@ -1070,7 +1070,7 @@ BOOL __stdcall InternalCutsceneWindow() {
       szErrorMsg = "SetDisplayMode failed!";
     }
 
-    DirectDrawErrorHandler(szErrorMsg, nHResult);
+    DirectDrawErrorHandler(szErrorMsg, nLine);
     Fog::Src::LogManager::LOGFILE_WriteStringToFile("Opening DirectDraw window for cutscenes failed!");
     return 0;
 }
@@ -1326,7 +1326,7 @@ BOOL __fastcall ResizeWindow(HWND hWnd, BOOL bForceResize) {
 // @sourcefile .\Src\ddCore.cpp
 void Release() {
     // Static local variables (originally global data)
-    static IUnknown * gpDDrawComObject;
+    static IUnknown * gpDDrawComObject; D2_STATIC_GUARD_BSS(gpDDrawComObject, "D2DDraw::Renderer::DirectDraw::Release::gpDDrawComObject");
 
     if (!gnDDrawSurfaceHeight) {
       return;
@@ -1415,7 +1415,7 @@ BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc
 // DirectDraw renderer: returns palette pointer for the specified render mode. Reads from gpPaletteTable offsets 0x0-0x10C based on the nPaletteMode index (0-6).
 BYTE * __fastcall RENDERER_DIRECTDRAW_GetPalettePointer(int32_t nPaletteMode, uint32_t * pnOutHeight) {
     // Static local variables (originally global data)
-    static uint32_t gdwDirectDrawSurfaceHeights[8] = { 0x2, 0x2, 0x2, 0x1, 0x1, 0x0, 0x1, 0x0 };
+    static uint32_t gdwDirectDrawSurfaceHeights[8] = { 0x2, 0x2, 0x2, 0x1, 0x1, 0x0, 0x1, 0x0 }; D2_STATIC_GUARD(gdwDirectDrawSurfaceHeights, "D2DDraw::Renderer::DirectDraw::RENDERER_DIRECTDRAW_GetPalettePointer::gdwDirectDrawSurfaceHeights");
 
     *pnOutHeight = gdwDirectDrawSurfaceHeights[nPaletteMode];
     switch (nPaletteMode) {
@@ -1709,8 +1709,8 @@ void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int32_t nPosX, int32
 // @sourcefile .\Src\ddDebugFont.cpp
 void __stdcall D2ddDebugFont_Alloc() {
     // Static local variables (originally global data)
-    static uint32_t gnD2ddDebugFontTextColor = 0xffffff;
-    static COLORREF gnD2ddDebugFontBkColor = 0;
+    static uint32_t gnD2ddDebugFontTextColor = 0xffffff; D2_STATIC_GUARD(gnD2ddDebugFontTextColor, "D2DDraw::Renderer::DirectDraw::D2ddDebugFont_Alloc::gnD2ddDebugFontTextColor");
+    static COLORREF gnD2ddDebugFontBkColor = 0; D2_STATIC_GUARD(gnD2ddDebugFontBkColor, "D2DDraw::Renderer::DirectDraw::D2ddDebugFont_Alloc::gnD2ddDebugFontBkColor");
 
     COLORREF CVar1;
     int x;

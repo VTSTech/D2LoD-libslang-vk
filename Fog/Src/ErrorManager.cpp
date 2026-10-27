@@ -108,7 +108,7 @@ void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
     (char*)0x006cc77c
-};
+}; D2_STATIC_GUARD(gaLanguageNames, "Fog::Src::ErrorManager::WriteCrashReportProcessInfo::gaLanguageNames");
 
     uint8_t* szPath;
     char* szProcessName;
@@ -297,7 +297,7 @@ uint32_t __stdcall GetErrorState() {
 // @sourcefile .\Src\ErrorManager.cpp
 char * __fastcall StripPathPrefixToRelative(char * szText) {
     // Static local variables (originally global data)
-    static uint32_t g_nPathStripOffset;
+    static uint32_t g_nPathStripOffset; D2_STATIC_GUARD_BSS(g_nPathStripOffset, "Fog::Src::ErrorManager::StripPathPrefixToRelative::g_nPathStripOffset");
 
     uint32_t pResult;
     if (!g_nPathStripOffset) {
@@ -322,7 +322,7 @@ char * __fastcall StripPathPrefixToRelative(char * szText) {
 
 // Returns the caller's return address, i.e. the instruction pointer of the call site. Body is MOV EAX,[ESP]; RET - it reads the return address off the stack and returns it. Takes NO arguments: the RET (not RET 4) leaves the caller's stack untouched, and the DWORD after the call is the __LINE__ value the caller pushed for the assert/halt call that follows. Fog ordinal #10265 @ RVA 0x8090.
 // [override: replace]
-__attribute__((noinline)) int32_t __stdcall GetInstructionPointer() {
+__attribute__((noinline)) void * __stdcall GetInstructionPointer() {
     // Hand-supplied body. Ghidra address 00408090.
     //
     //   00408090  MOV EAX,[ESP]   ; this call's return address
@@ -330,7 +330,7 @@ __attribute__((noinline)) int32_t __stdcall GetInstructionPointer() {
     //
     // The address of the instruction after the call in the caller. Declared noinline: inlined,
     // __builtin_return_address(0) would be the CALLER's return address instead.
-    return (int32_t)(uintptr_t)__builtin_return_address(0);
+    return __builtin_return_address(0);
 }
 
 // Formats debug output with optional timestamp and outputs to debugger/log. Supports flags: 0x04=prepend timestamp (HH:MM:SS.mmm format via GetLocalTime), 0x02=skip OutputDebugStringA, 0x01=write to LOG category via LogManager, 0x18=check CapsLock state. Uses a 4096-byte buffer for vsnprintf formatting with varargs, appending formatted text after timestamp if present.
@@ -411,7 +411,7 @@ void __stdcall FormatDebugOutputLogOnly(char * szText, char firstArg) {
 // compares that EAX at 00403f28 and 00403f2f, matching the pfnFogExceptionFilter slot.
 int __fastcall DumpLog(D2CrashReportStrc * pCrashInfo, void * pUserContext) {
     // Static local variables (originally global data)
-    static int32_t lpAddend_007076b8 = -0x1;
+    static int32_t lpAddend_007076b8 = -0x1; D2_STATIC_GUARD(lpAddend_007076b8, "Fog::Src::ErrorManager::DumpLog::lpAddend_007076b8");
 
     int8_t iVar1;
     bool bMinidumpCreated;
@@ -532,7 +532,7 @@ int __fastcall DumpLog(D2CrashReportStrc * pCrashInfo, void * pUserContext) {
 // the slot is void - EAX at the epilogue is left over from FILETOOLS_SafeCloseFile.
 void __fastcall CRASH_FillupCrashTxt(char * szSummary, char * szReason, char * * ppszAttachPaths, uint32_t nAttachPathCount, uint32_t nLineNumber, bool bSilentFlag) {
     // Static local variables (originally global data)
-    static int32_t lpAddend_007076bc = -0x1;
+    static int32_t lpAddend_007076bc = -0x1; D2_STATIC_GUARD(lpAddend_007076bc, "Fog::Src::ErrorManager::CRASH_FillupCrashTxt::lpAddend_007076bc");
 
     // Frame slots -16..-4 are ONE object: &pPrevSehFrame is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -686,7 +686,7 @@ void ERROR_UnrecoverableInternalError_AssertionFailure(char * szUnused, int32_t 
 }
 
 // Tail-calls FOG_ErrorHandler(ERROR_Halt=6, "", nLine, "Unrecoverable internal error %08x", nAddress). Byte-identical to ERROR_UnrecoverableInternalError_AssertionFailure (00408a30, type 5) and _Warning (00408a90, type 7) apart from the error-type immediate, so the three share one parameter layout. Arg 2 is the call-site instruction pointer produced by GetInstructionPointer (00408090), NOT a line number; arg 3 is __LINE__. Arg 1 is the assertion message, stripped to "" (0x6cc837) in this release build and ignored by the body, which substitutes that same empty string for FOG_ErrorHandler's szFile. __cdecl: call sites clean 12 bytes with ADD ESP,0xC. Fog ordinal #10024 @ RVA 0x8A60.
-void ERROR_UnrecoverableInternalError_Halt(char * szMessage, int32_t nAddress, int32_t nLine) {
+void ERROR_UnrecoverableInternalError_Halt(char * szMessage, void * nAddress, int32_t nLine) {
     // The halt is marked "does not return" but every path through FOG_ErrorHandler and
     // CRASH_FillupCrashTxt returns, here and in the original - what terminates the real
     // game is the Blizzard error dialog inside ErrorReportingLaunch, which this build has
@@ -694,12 +694,12 @@ void ERROR_UnrecoverableInternalError_Halt(char * szMessage, int32_t nAddress, i
     // means GCC's fall-off-the-end ud2 and a C000001D three frames from the assert that
     // actually fired. Naming the line here is what makes an assert readable at all.
     D2TraceFmt("HALT line=%d (0x%x) addr=%08X ra=%08X", nLine, nLine,
-               (unsigned)nAddress, (unsigned)(uintptr_t)__builtin_return_address(0));
+               (unsigned)(uintptr_t)nAddress, (unsigned)(uintptr_t)__builtin_return_address(0));
     D2BOOT_MarkFmt("HALT line=%d (0x%x) addr=%08X", nLine, nLine, (unsigned)nAddress); // [d2boot]
     // ra as a module RVA: the absolute value is useless across runs because the image is
     // relocated, and every attempt to place a halt has started by guessing the load base.
     // The crash report (support/d2_crash.cpp) records the halt and the halting stack.
-    D2CRASH_ReportHalt(nLine, (unsigned)nAddress);
+    D2CRASH_ReportHalt(nLine, (unsigned)(uintptr_t)nAddress);
     Safesock::WSACleanup();
     FOG_ErrorHandler(ERROR_Halt, "", nLine, "Unrecoverable internal error %08x", nAddress);
     LogManager::ExitOrCrashCleanUpJmp();
@@ -742,7 +742,7 @@ void __stdcall ShowUnrecoverableErrorDialog(int32_t nParam, char * szText, int n
       LogManager::LogWithCategory("", "%s", szFormattedMessageBuffer);
     }
     if (!szSourceFile) {
-      int32_t pszRelative3;
+      void* pszRelative3;
       pszRelative3 = GetInstructionPointer();
       Safesock::WSACleanup();
       FOG_ErrorHandler(ERROR_Halt, "", 0x8de, "Unrecoverable internal error %08x", pszRelative3, dwParam);
@@ -4880,7 +4880,7 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gszFogCrashReportCustomMessage, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gszFogCrashReportCustomMessage");
     static char gszFogVersionString[16] = {
     0,
     0,
@@ -4898,9 +4898,9 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
     0,
     0,
     0
-};
-    static bool gbFogErrorManagerPadding;
-    static uint64_t gFogMemoryPoolPadding = 0;
+}; D2_STATIC_GUARD(gszFogVersionString, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gszFogVersionString");
+    static bool gbFogErrorManagerPadding; D2_STATIC_GUARD_BSS(gbFogErrorManagerPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gbFogErrorManagerPadding");
+    static uint64_t gFogMemoryPoolPadding = 0; D2_STATIC_GUARD(gFogMemoryPoolPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gFogMemoryPoolPadding");
 
     // Frame slots -4108..-8 are ONE object: &local_100c is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -4911,7 +4911,7 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 4100, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     uint32_t uCookie;
-    int32_t nBadAddr;
+    void* nBadAddr;
     if (!gbFogErrorManagerInitialized) {
       int iBitIdx;
       _3rdparty::crashy::thunk_InitializeDebugSubsystem();

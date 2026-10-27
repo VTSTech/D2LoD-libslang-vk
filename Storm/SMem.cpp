@@ -30,11 +30,11 @@ void SMEM_FatalError(uint32_t * pnName, uint32_t nErrorCode, int32_t nSourceLine
 // @blizzard GetHandleByCaller (SMEM.CPP)
 uint32_t SMEM_GetHandleByCaller(int * pnName, uint32_t nNameLen) {
     // Static local variables (originally global data)
-    static uint32_t gdwSMemLastHashedHeapKey = 0x1;
-    static uint32_t g_SMemCachedHeapNameHash;
-    static uint32_t g_SMemCachedHeapNameVersion;
-    static uint32_t g_SMemCachedHeapNameLength;
-    static void * g_SMemCachedHeapNamePtr;
+    static uint32_t gdwSMemLastHashedHeapKey = 0x1; D2_STATIC_GUARD(gdwSMemLastHashedHeapKey, "Storm::SMem::SMEM_GetHandleByCaller::gdwSMemLastHashedHeapKey");
+    static uint32_t g_SMemCachedHeapNameHash; D2_STATIC_GUARD_BSS(g_SMemCachedHeapNameHash, "Storm::SMem::SMEM_GetHandleByCaller::g_SMemCachedHeapNameHash");
+    static uint32_t g_SMemCachedHeapNameVersion; D2_STATIC_GUARD_BSS(g_SMemCachedHeapNameVersion, "Storm::SMem::SMEM_GetHandleByCaller::g_SMemCachedHeapNameVersion");
+    static uint32_t g_SMemCachedHeapNameLength; D2_STATIC_GUARD_BSS(g_SMemCachedHeapNameLength, "Storm::SMem::SMEM_GetHandleByCaller::g_SMemCachedHeapNameLength");
+    static void * g_SMemCachedHeapNamePtr; D2_STATIC_GUARD_BSS(g_SMemCachedHeapNamePtr, "Storm::SMem::SMEM_GetHandleByCaller::g_SMemCachedHeapNamePtr");
 
     int nNameVersion;
     uint32_t uHash = 0;
@@ -66,10 +66,10 @@ uint32_t SMEM_GetHandleByCaller(int * pnName, uint32_t nNameLen) {
 }
 
 // @blizzard LockHeapByBlockPtr (SMEM.CPP)
-int32_t __stdcall SMEM_LockHeapByBlockPtr(uint32_t * pnOutBucket, D2FogHeapBlockHdrStrc * pBlockHdr) {
-    int nHeapDescOffset = (uint32_t)(uint16_t)pBlockHdr->dwHeapSignature * 0x10000;
-    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(DebugMemoryCriticalSection + *(int*)(nHeapDescOffset + 8));
-    *pnOutBucket = *(uint32_t*)(nHeapDescOffset + 8);
+D2FogHeapDescStrc * __stdcall SMEM_LockHeapByBlockPtr(uint32_t * pnOutBucket, D2FogHeapBlockHdrStrc * pBlockHdr) {
+    D2FogHeapDescStrc* nHeapDescOffset = (D2FogHeapDescStrc*)((uint32_t)(uint16_t)pBlockHdr->dwHeapSignature * 0x10000);
+    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(DebugMemoryCriticalSection + nHeapDescOffset->nBucketIndex);
+    *pnOutBucket = nHeapDescOffset->nBucketIndex;
     return nHeapDescOffset;
 }
 
@@ -468,7 +468,7 @@ void SMEM_CombineFreeBlocks(D2FogHeapDescStrc * pHeap) {
 }
 
 // @blizzard DestroyHeap (SMEM.CPP)
-int __fastcall SMEM_DestroyHeap(LPVOID * ppHeap) {
+LPVOID * __fastcall SMEM_DestroyHeap(LPVOID * ppHeap) {
     D2FogHeapBlockHdrStrc* pNextBlock;
     char szErrorMsg[200];
     D2FogHeapDescStrc* pHeap;
@@ -501,13 +501,13 @@ int __fastcall SMEM_DestroyHeap(LPVOID * ppHeap) {
 
       if (byLeakFlags) {
         Fog::Debug::GuardStack();
-        return (int)nHeap;
+        return (LPVOID*)&nHeap->pNext;
       }
     }
 
     SMEM_FreeHeap(ppHeap);
     Fog::Debug::GuardStack();
-    return (int)ppHeap;
+    return ppHeap;
 }
 
 // @blizzard FreeEmptyHeaps (SMEM.CPP)
@@ -673,7 +673,7 @@ uint32_t __stdcall SMemDestroy() {
 
           SMEM_FreeHeap(ppHeapLink);
         } else {
-          ppHeapLink = (LPVOID*)SMEM_DestroyHeap(ppHeapLink);
+          ppHeapLink = SMEM_DestroyHeap(ppHeapLink);
         }
 
         pHeap = *ppHeapLink;
@@ -970,7 +970,7 @@ int32_t __stdcall SMemGetSize(int32_t pObject, uint32_t * pnFile, int32_t nSize)
 
 uint32_t __stdcall SMemHeapCreate(int32_t nReserved, uint32_t nMaxSize, uint32_t dwParam) {
     // Static local variables (originally global data)
-    static uint32_t gnSMemHeapIdCounter = -0x80000000;
+    static uint32_t gnSMemHeapIdCounter = -0x80000000; D2_STATIC_GUARD(gnSMemHeapIdCounter, "Storm::SMem::SMemHeapCreate::gnSMemHeapIdCounter");
 
     uint32_t nHeapId;
     uint32_t* pHeap;
@@ -1052,7 +1052,7 @@ int32_t __stdcall SMemHeapDestroy(LPVOID nHeapId) {
       do {
         if (pCurHeap[1] == nHeapId) {
           nDestroyed = 1;
-          pCurHeap = (LPVOID*)SMEM_DestroyHeap(ppPrevLink);
+          pCurHeap = SMEM_DestroyHeap(ppPrevLink);
         }
 
         ppNextHeapIter = (LPVOID*)*pCurHeap;
@@ -1090,7 +1090,7 @@ uint32_t __stdcall SMemHeapFree(int32_t nHeapId, uint32_t dwFlags, void * pObjec
       return 0;
     }
 
-    D2FogHeapDescStrc* pHeap = (D2FogHeapDescStrc*)SMEM_LockHeapByBlockPtr((uint32_t*)&pObject, pBlock);
+    D2FogHeapDescStrc* pHeap = SMEM_LockHeapByBlockPtr((uint32_t*)&pObject, pBlock);
     SMEM_SatisfyFreeRequest(pObjectSaved, pHeap, pBlock);
     if (pObject == (void*)-1) {
       return (uint32_t)(pHeap != 0);
@@ -1490,7 +1490,7 @@ uint32_t * __stdcall SMemHeapAlloc(uint32_t nHeapId, uint32_t nSize, uint32_t dw
 
 // @blizzard SMemHeapReAlloc (Storm assert string)
 uint32_t * __stdcall SMemHeapReAlloc(uint32_t nHeapId, uint32_t nSize, uint32_t * pBlock, uint32_t dwFlags) {
-    uint32_t* pHeap;
+    D2FogHeapDescStrc* pHeap;
     D2FogHeapBlockHdrStrc* pBlockHeader;
     if (!g_SMemInitialized) {
       SMemInitialize();
@@ -1512,8 +1512,8 @@ uint32_t * __stdcall SMemHeapReAlloc(uint32_t nHeapId, uint32_t nSize, uint32_t 
           return nullptr;
         }
 
-        pHeap = (uint32_t*)SMEM_LockHeapByBlockPtr(&nHeapId, pBlockHeader);
-        pResult = SMemReallocCore((int*)&nHeapId, pHeap, pResult, &pBlockHeader->wBlockSize, (uint8_t)nSize, dwFlags);
+        pHeap = SMEM_LockHeapByBlockPtr(&nHeapId, pBlockHeader);
+        pResult = SMemReallocCore((int*)&nHeapId, (uint32_t*)pHeap, pResult, &pBlockHeader->wBlockSize, (uint8_t)nSize, dwFlags);
         SMEM_UnlockHeap((int*)&nHeapId);
         return pResult;
       }
@@ -1525,7 +1525,8 @@ uint32_t * __stdcall SMemHeapReAlloc(uint32_t nHeapId, uint32_t nSize, uint32_t 
 
 // @blizzard SMemReAlloc (Storm assert string)
 uint32_t * __stdcall SMemReAlloc(uint32_t * pBlock, uint32_t nSize, char * szSourceFile, int32_t nSourceLine, uint32_t dwFlags) {
-    uint32_t* pHeap;
+    D2FogHeapDescStrc* pHeap;
+    uint32_t* pResult;
     D2FogHeapBlockHdrStrc* pBlockHdr;
     if (!g_SMemInitialized) {
       SMemInitialize();
@@ -1544,19 +1545,19 @@ uint32_t * __stdcall SMemReAlloc(uint32_t * pBlock, uint32_t nSize, char * szSou
           pBlockHdr = (D2FogHeapBlockHdrStrc*)pBlock[-3];
         }
 
-        pHeap = (uint32_t*)SMEM_LockHeapByBlockPtr((uint32_t*)&szSourceFile, pBlockHdr);
-        pHeap = SMemReallocCore((int*)&szSourceFile, pHeap, pBlock, &pBlockHdr->wBlockSize, (uint8_t)dwFlags, nSize);
+        pHeap = SMEM_LockHeapByBlockPtr((uint32_t*)&szSourceFile, pBlockHdr);
+        pResult = SMemReallocCore((int*)&szSourceFile, (uint32_t*)pHeap, pBlock, &pBlockHdr->wBlockSize, (uint8_t)dwFlags, nSize);
         if (szSourceFile == (char*)-1) {
-          return pHeap;
+          return pResult;
         }
 
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(DebugMemoryCriticalSection + (int)szSourceFile);
-        return pHeap;
+        return pResult;
       }
     }
 
-    pHeap = (uint32_t*)SMemAlloc(nSize, szSourceFile, nLine, dwFlags);
-    return pHeap;
+    pResult = (uint32_t*)SMemAlloc(nSize, szSourceFile, nLine, dwFlags);
+    return pResult;
 }
 
 } // namespace Storm::SMem

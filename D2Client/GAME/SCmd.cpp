@@ -768,7 +768,6 @@ void __fastcall SCMD_Rcv0x14_Ignore(char * pBytes) {
 // D2Common::Unit::CUnit::CLIENT_TeleportUnitToPosition(pUnit, nX, nY, byFlag) - a warp to an X/Y.
 // It warps ANY unit type, branching on UNIT_PLAYER vs UNIT_MONSTER for the collision pattern.
 void __fastcall NET_D2GS_CLIENT_Incoming0x15_WarpXY(char * pBytes) {
-    int32_t nResult;
     uint16_t nY = *(uint16_t*)(pBytes + 8);
     uint16_t nX = *(uint16_t*)(pBytes + 6);
     D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(*(int32_t*)(pBytes + 2), (eD2UnitType)(uint8_t)pBytes[1]);
@@ -806,7 +805,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x15_WarpXY(char * pBytes) {
     }
 
     pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    nResult = D2Common::DUNGEON::Dungeon::Return0(pRoom);
+    int32_t nResult = D2Common::DUNGEON::Dungeon::Return0(pRoom);
     if (nResult) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x81e);
       exit(-1);
@@ -1730,14 +1729,14 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x92_CLEARINVENTORY(char * pBytes) {
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x5F_PORTALFLAGS(char * pBytes) {
-    int32_t nPortalFlags = *(int32_t*)(pBytes + 1);
+    int32_t nLine = *(int32_t*)(pBytes + 1);
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_Net();
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd15);
       exit(-1);
     }
 
-    D2Common::Units::SetPlayerPortalFlags(pUnit, nPortalFlags);
+    D2Common::Units::SetPlayerPortalFlags(pUnit, nLine);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x60_SETWARPDEST(char * pBytes) {
@@ -2215,7 +2214,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xA8_UNITSTATE_ONVAL_EX(char * pBytes) {
         eSkill = Fog::BitBuffer::ReadUnsigned(&bitBuffer, (uint32_t)nSendBits);
       }
 
-      pStatList = (D2StatListExStrc*)UNIT::PlrSkills::NET_D2GS_CLIENT_HandleAddSTatUnit(pUnit, pStatList, (D2UnitDataUnion*)eStateCopy, eUnitStat, eSkill, nStatParam);
+      pStatList = UNIT::PlrSkills::NET_D2GS_CLIENT_HandleAddSTatUnit(pUnit, pStatList, (D2UnitDataUnion*)eStateCopy, eUnitStat, eSkill, nStatParam);
       eUnitStat = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 9);
       eState = eStateCopy;
       pFoundUnit = pUnit;
@@ -2290,7 +2289,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAA_UNITSTATE_ALL_EX(char * pBytes) {
             eSkill = Fog::BitBuffer::ReadUnsigned(&bitBuffer, (uint32_t)nSendBits);
           }
 
-          pStatList = (D2StatListExStrc*)UNIT::PlrSkills::NET_D2GS_CLIENT_HandleAddSTatUnit(pFoundUnit, pStatList, (D2UnitDataUnion*)eStateCopy, eUnitStat, eSkill, nStatParam);
+          pStatList = UNIT::PlrSkills::NET_D2GS_CLIENT_HandleAddSTatUnit(pFoundUnit, pStatList, (D2UnitDataUnion*)eStateCopy, eUnitStat, eSkill, nStatParam);
           eUnitStat = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 9);
           pUnit = pFoundUnit;
           eState = eStateCopy;
@@ -2632,10 +2631,10 @@ void __stdcall NET_D2GS_CLIENT_PutIncomingBytesIntoServerCmdStructure(size_t nEx
 // Special decode: 0x18 (HP), 0x95/0x96 (Mana/Stamina)
 void __fastcall NET_D2GS_CLIENT_PacketHandle_to0xAF(char * pBytes, size_t nSize) {
     // Static local variables (originally global data)
-    static uint32_t gbyLastProcessedPacketId;
-    static uint32_t gnTotalPacketBytesProcessed;
-    static int gnNetPacketZeroSizeCount;
-    static uint8_t gnOversizedPacketCount;
+    static uint32_t gbyLastProcessedPacketId; D2_STATIC_GUARD_BSS(gbyLastProcessedPacketId, "D2Client::GAME::SCmd::NET_D2GS_CLIENT_PacketHandle_to0xAF::gbyLastProcessedPacketId");
+    static uint32_t gnTotalPacketBytesProcessed; D2_STATIC_GUARD_BSS(gnTotalPacketBytesProcessed, "D2Client::GAME::SCmd::NET_D2GS_CLIENT_PacketHandle_to0xAF::gnTotalPacketBytesProcessed");
+    static int gnNetPacketZeroSizeCount; D2_STATIC_GUARD_BSS(gnNetPacketZeroSizeCount, "D2Client::GAME::SCmd::NET_D2GS_CLIENT_PacketHandle_to0xAF::gnNetPacketZeroSizeCount");
+    static unsigned int gnOversizedPacketCount; D2_STATIC_GUARD_BSS(gnOversizedPacketCount, "D2Client::GAME::SCmd::NET_D2GS_CLIENT_PacketHandle_to0xAF::gnOversizedPacketCount");
 
     D2UnitStrc* pUnit;
     uint32_t uVar1;
@@ -2780,7 +2779,7 @@ void __fastcall SCMD_ProcessIncomingPacketBuffer(D2UnitStrc * pUnit) {
       uint8_t bVar1;
       do {
         pBytes = (uint8_t*)(pServerCmd->aBuffers + nD2PacketsClientBufferSize * nBufferIndex);
-        nPacketSize = D2Net::Game::Server::NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize((char*)pBytes, nD2PacketsClientBufferSize, (size_t*)nVariableSize);
+        nPacketSize = D2Net::Game::Server::NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize((char*)pBytes, nD2PacketsClientBufferSize, (uint32_t*)nVariableSize);
         if (!nPacketSize) {
           return;
         }

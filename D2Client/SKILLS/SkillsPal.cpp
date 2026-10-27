@@ -75,7 +75,7 @@ int32_t __fastcall SKILLS_GetManaCostMultiplier(int32_t nParam) {
 // Client DoFunc for Paladin Zeal directional offset missile. Determines the firing direction quadrant from the unit's movement direction (or a random quadrant if stationary), applies a random ±1 offset from gnPaladinSkillIndexTable/gnPaladinSkillOffsetTable, then spawns a missile of the skill's cltmissilea type (offset by a calc-driven random variant) at the computed position. Returns 1 on success, 0 if skill/missile data is invalid or no confirmed target.
 BOOL __fastcall Skills_CltDoFunc_Pal_Zeal_DirOffsetMissile(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     // Static local variables (originally global data)
-    static int gnPaladinSkillOffsetTable[8] = { 0x2, 0x1, 0x0, -0x1, -0x2, -0x1, 0x0, 0x1 };
+    static int gnPaladinSkillOffsetTable[8] = { 0x2, 0x1, 0x0, -0x1, -0x2, -0x1, 0x0, 0x1 }; D2_STATIC_GUARD(gnPaladinSkillOffsetTable, "D2Client::SKILLS::SkillsPal::Skills_CltDoFunc_Pal_Zeal_DirOffsetMissile::gnPaladinSkillOffsetTable");
 
     uint32_t nDirQuadrant;
     if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
@@ -87,7 +87,7 @@ BOOL __fastcall Skills_CltDoFunc_Pal_Zeal_DirOffsetMissile(D2UnitStrc * pUnit, e
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -664,7 +664,7 @@ void __fastcall SKILL_StopAndClearUninterruptable(D2UnitStrc * pUnit, eD2Skills 
 
 BOOL __fastcall Skills_CltDoFunc_Pal_RateThrottledBloodParticles(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     // Static local variables (originally global data)
-    static uint32_t gdwBloodParticleThrottleNextTick;
+    static uint32_t gdwBloodParticleThrottleNextTick; D2_STATIC_GUARD_BSS(gdwBloodParticleThrottleNextTick, "D2Client::SKILLS::SkillsPal::Skills_CltDoFunc_Pal_RateThrottledBloodParticles::gdwBloodParticleThrottleNextTick");
 
     uint32_t nCurrentTick = GAME::Game::GetEntryIndex();
     if (gdwBloodParticleThrottleNextTick >= nCurrentTick) {
@@ -721,7 +721,7 @@ void __fastcall SKILL_ExecuteItemCast(D2UnitStrc * pUnit, eD2Skills eSkill, shor
         }
       }
 
-      bCastSucceeded = Skills::SKILLS_CastSkillClientArgsReversed(pDoFuncData, -1, (D2DynamicPathStrc*)pUnit, eSkill);
+      bCastSucceeded = Skills::SKILLS_CastSkillClientArgsReversed(pDoFuncData, -1, pUnit, eSkill);
       if (!bCastSucceeded) {
         goto restore_caster_state;
       }

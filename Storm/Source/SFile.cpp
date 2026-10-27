@@ -10,7 +10,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
-#include "Storm/H/Storm.h"
 #include "Storm/H/stpl.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SErr.h"
@@ -18,6 +17,7 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSignature.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
@@ -77,8 +77,8 @@ typedef _EXCEPTION_DISPOSITION (*pfnEHHandlerRoutine)(EHExceptionRecord * pExcep
 
 namespace Storm::Source::SFile {
 
-static char cSFileVerifyOpcode2[3] = { '\\', '\\', '\x00' };
-static char cSFileVerifyOpcode[3] = { ':', '\\', '\x00' };
+static char cSFileVerifyOpcode2[3] = { '\\', '\\', '\x00' }; D2_STATIC_GUARD(cSFileVerifyOpcode2, "Storm::Source::SFile::cSFileVerifyOpcode2");
+static char cSFileVerifyOpcode[3] = { ':', '\\', '\x00' }; D2_STATIC_GUARD(cSFileVerifyOpcode, "Storm::Source::SFile::cSFileVerifyOpcode");
 
 // Initializes a 4-element stream buffer structure by copying 4 sequential parameters into consecutive fields (param1→field[0], param2→field[1], param3→field[2], param4→field[3]). Used for stream buffer initialization in custom calling convention (ECX register for destination pointer).
 void __fastcall SFILE_SetStreamBuffer4(uint32_t pVal0, uint32_t pVal1, uint32_t pVal2, uint32_t pVal3, uint32_t * pdwParam) {
@@ -817,8 +817,8 @@ uint32_t __stdcall SFILE_VerifyFileChecksum(D2ArchiveStrc * pArchive, uint32_t *
     0x7e,
     0x6,
     0xb1
-};
-    static uint8_t gaSFileSignatureRsaExponent[4] = { 0x1, 0x0, 0x1, 0x0 };
+}; D2_STATIC_GUARD(gaSFileSignatureRsaModulus, "Storm::Source::SFile::SFILE_VerifyFileChecksum::gaSFileSignatureRsaModulus");
+    static uint8_t gaSFileSignatureRsaExponent[4] = { 0x1, 0x0, 0x1, 0x0 }; D2_STATIC_GUARD(gaSFileSignatureRsaExponent, "Storm::Source::SFile::SFILE_VerifyFileChecksum::gaSFileSignatureRsaExponent");
 
     uint32_t iVar3;
     BOOL bReadOk;
@@ -1078,7 +1078,7 @@ int32_t __stdcall SFileGetBasePath(char * szText, int32_t nMaxLength) {
     return 1;
 }
 
-int32_t __stdcall SFILE_GetFileTime(D2ArchiveStrc * pArchive, void * pParam) {
+int32_t __stdcall SFILE_GetFileTime(D2MPQFileStrc * pArchive, void * pParam) {
     void* pParamSaved = pParam;
     if (!pParam) {
       SErr::SErrSetLastError(0x57);
@@ -1087,7 +1087,7 @@ int32_t __stdcall SFILE_GetFileTime(D2ArchiveStrc * pArchive, void * pParam) {
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ *(uint32_t*)pParam = 0;
     EnterCriticalSection(&lpCriticalSection_00779068);
-    int bIsValidHandle = SFILE_CheckFileHandle((D2MPQFileStrc*)pArchive, (D2MPQFileStrc**)&pParam);
+    int bIsValidHandle = SFILE_CheckFileHandle(pArchive, (D2MPQFileStrc**)&pParam);
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ if (!bIsValidHandle) {
       LeaveCriticalSection(&lpCriticalSection_00779068);
       return 0;
@@ -1173,7 +1173,7 @@ int __stdcall SFileGetFileName(D2MPQFileStrc * pFile, char * szText, int32_t nBu
 // @wasnamed SFILE_GetArchiveListFile
 // Copies an open file's name into the caller's buffer, preferring the alternate name at +0x10c.
 // @oracle-note 2026-08-28 pass 4. NOT SFileGetFileName - that is 00416230, settled because D2's PowerPC binary imports SFileGetFileName by name and 00416230 is the only file-name getter 1.14d D2 code calls (D2FILE_GetFileSize / SeekFile / ReadFile). This one has zero callers and returns the +0x10c alias when set, falling back to +8; it is the internal variant. Storm's 337-name export table has exactly one file-name getter, so this is not an export. Left descriptively named.
-int __stdcall SFILE_CopyFileRecordNameOrAlias(D2ArchiveStrc * pArchive, void * pParam, int32_t nParam) {
+int __stdcall SFILE_CopyFileRecordNameOrAlias(D2MPQFileStrc * pArchive, void * pParam, int32_t nParam) {
     char* szBufferInput;
     void* pParamSaved = pParam;
     if (!pParam) {
@@ -1183,7 +1183,7 @@ int __stdcall SFILE_CopyFileRecordNameOrAlias(D2ArchiveStrc * pArchive, void * p
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ *(uint8_t*)pParam = 0;
     EnterCriticalSection(&lpCriticalSection_00779068);
-    int bIsValidHandle = SFILE_CheckFileHandle((D2MPQFileStrc*)pArchive, (D2MPQFileStrc**)&pParam);
+    int bIsValidHandle = SFILE_CheckFileHandle(pArchive, (D2MPQFileStrc**)&pParam);
     if (!bIsValidHandle) {
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00779068);
       return 0;
@@ -1209,14 +1209,14 @@ int __stdcall SFILE_CopyFileRecordNameOrAlias(D2ArchiveStrc * pArchive, void * p
 // record into.
 // @wasnamed SFILE_GetArchiveName
 // Returns the stored (compressed) size of a file that lives in an archive, else 0; writes 0 to the high-dword out parameter.
-int __stdcall SFileGetFileCompressedSize(D2ArchiveStrc * pArchive, void * pParam) {
+int __stdcall SFileGetFileCompressedSize(D2MPQFileStrc * pArchive, void * pParam) {
     int pArchiveName = 0;
     if (pParam) {
       *(uint32_t*)pParam = 0;
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00779068);
-    int bIsValidHandle = SFILE_CheckFileHandle((D2MPQFileStrc*)pArchive, (D2MPQFileStrc**)&pParam);
+    int bIsValidHandle = SFILE_CheckFileHandle(pArchive, (D2MPQFileStrc**)&pParam);
     if (bIsValidHandle && *(int*)((int)pParam + 0x110) == -1) {
       pArchiveName = *(int*)(*(int*)((int)pParam + 0x118) + 4);
     }
@@ -1251,7 +1251,7 @@ DWORD __stdcall SFileGetFileSize(D2MPQFileStrc * pMPQFile, LPDWORD pdwParam) {
     return dwFileSize;
 }
 
-int __stdcall SFILE_GetFileTimestamp(D2ArchiveStrc * pArchive, LPFILETIME pFileTime) {
+int __stdcall SFILE_GetFileTimestamp(D2MPQFileStrc * pArchive, LPFILETIME pFileTime) {
     LPFILETIME ftLastWrite = pFileTime;
     if (!pFileTime) {
       SErr::SErrSetLastError(0x57);
@@ -1259,7 +1259,7 @@ int __stdcall SFILE_GetFileTimestamp(D2ArchiveStrc * pArchive, LPFILETIME pFileT
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00779068);
-    int bIsValidHandle = SFILE_CheckFileHandle((D2MPQFileStrc*)pArchive, (D2MPQFileStrc**)&pFileTime);
+    int bIsValidHandle = SFILE_CheckFileHandle(pArchive, (D2MPQFileStrc**)&pFileTime);
     LPFILETIME pMPQFileSaved = pFileTime;
     if (!bIsValidHandle) {
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00779068);
@@ -3166,7 +3166,7 @@ D2MPQFileStrc * __fastcall SFILE_AllocFileRecord(int * * ppArchive, int32_t nIns
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_STATIC_GUARD(sRTTI_FILEREC_AllocTag, "Storm::Source::SFile::SFILE_AllocFileRecord::sRTTI_FILEREC_AllocTag");
 
     D2MPQFileStrc* ppFileRecord = (D2MPQFileStrc*)SMem::SMemAlloc(nExtraSize + 0x158, sRTTI_FILEREC_AllocTag, -2, nFlags | 8);
     if (!ppFileRecord) {
@@ -3374,7 +3374,7 @@ int __stdcall SFILE_EnumFilesInternal(D2ArchiveStrc * pArchive, char * szText, v
 // @blizzard SFileOpenFileEx (SFILE.CPP)
 int __stdcall SFileOpenFileEx(D2ArchiveStrc * pArchive, char * szFileName, uint32_t dwFlags, void * * phFile) {
     // Static local variables (originally global data)
-    static char gbSFileStreamCallbackPending;
+    static char gbSFileStreamCallbackPending; D2_STATIC_GUARD_BSS(gbSFileStreamCallbackPending, "Storm::Source::SFile::SFileOpenFileEx::gbSFileStreamCallbackPending");
 
     uint32_t* puVar1;
     int nOpenResult;
@@ -3558,7 +3558,7 @@ D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord4(int * * ppArchive, int32_t n
 // @blizzard IssueRequest (SFILE.CPP)
 D2StormAsyncOpStrc * __stdcall SFILE_IssueRequest(uint32_t nFileOffset, uint32_t pChunkWritePtr, uint32_t pReadBufferBase, IDirectSoundBuffer * pStream, uint32_t pUserCtx2, D2StormAudioStreamRec * pParentStream, uint32_t nChunkSize, int32_t nTimeoutMs, uint32_t bUrgent, HANDLE hCompletionEvent, uint32_t bQueueImmediately, int32_t bIsLastChunk, D2StormAsyncCompletionStrc * pCompletion, D2MPQFileStrc * pMPQFile) {
     int bArgsValid;
-    uint32_t pPrevBack;
+    D2StormAsyncOpStrc* pPrevBack;
     D2StormAsyncOpStrc* pRequest = 0;
     if (!pChunkWritePtr && !pStream) {
       bArgsValid = 0;
@@ -3585,19 +3585,19 @@ D2StormAsyncOpStrc * __stdcall SFILE_IssueRequest(uint32_t nFileOffset, uint32_t
       uint32_t* pPrevSlot;
       pPrevBack = pNewNode->pNext;
       if ((int)pPrevBack < 0) {
-        pPrevSlot = (uint32_t*)~pPrevBack;
+        pPrevSlot = (uint32_t*)~(uint32_t)pPrevBack;
       } else {
-        pPrevSlot = (uint32_t*)((int)pNewNode + (pPrevBack - pNextNode->pNext));
+        pPrevSlot = (uint32_t*)((int)pPrevBack + ((int)pNewNode - (int)pNextNode->pNext));
       }
 
       *pPrevSlot = (uint32_t)(uintptr_t)pNextNode;
-      ((StormLinkStrc*)pNewNode->pPrevLink)->pNext = pNewNode->pNext;
+      ((StormLinkStrc*)pNewNode->pPrevLink)->pNext = (int)pNewNode->pNext;
       pNewNode->pPrevLink = 0;
       pNewNode->pNext = 0;
     }
 
     pNewNode->pPrevLink = (uint32_t)(uintptr_t)gSFileAsyncReqQueue.pPrevLink;
-    pNewNode->pNext = gSFileAsyncReqQueue.pPrevLink->pNext;
+    pNewNode->pNext = (D2StormAsyncOpStrc*)gSFileAsyncReqQueue.pPrevLink->pNext;
     gSFileAsyncReqQueue.pPrevLink->pNext = (int)pRequest;
     gSFileAsyncReqQueue.pPrevLink = (StormLinkStrc*)pNewNode;
     pRequest->hCompletionEvent = hCompletionEvent;
@@ -3765,9 +3765,9 @@ int __stdcall SFileCloseArchive(D2ArchiveStrc * pArchive) {
           }
         }
       } else {
-        nValid = SFILE_CheckFileHandle((D2MPQFileStrc*)pArchive->bDontCloseHandle, (D2MPQFileStrc**)&pArchive);
+        nValid = SFILE_CheckFileHandle(pArchive->bDontCloseHandle, (D2MPQFileStrc**)&pArchive);
         if (nValid) {
-          SFileCloseFile((D2MPQFileStrc*)pObject->bDontCloseHandle);
+          SFileCloseFile(pObject->bDontCloseHandle);
         }
       }
     }
@@ -4040,7 +4040,7 @@ BOOL __stdcall SFileDdaDestroy() {
 // Takes a D2StormAsyncOpStrc: drops the request's references to its file record (+0xc) and parent audio stream (+0x30), freeing either at zero, then unlinks the request from its list. Provenance: 1.14d asm 0041a04a/0041a077.
 void __fastcall SFILE_ReleaseAsyncRequest(D2StormAsyncOpStrc * pAsyncOp) {
     uint32_t* pAudioRefCount;
-    uint32_t pPrev;
+    D2StormAsyncOpStrc* pPrev;
     pfnEHHandlerRoutine pExceptionHandler = __GSHandlerCheck_EH_6c9ec8;
     void* local_10 = ExceptionList;
     ExceptionList = &local_10;
@@ -4070,13 +4070,13 @@ void __fastcall SFILE_ReleaseAsyncRequest(D2StormAsyncOpStrc * pAsyncOp) {
       int* pPrevSlot;
       pPrev = pAsyncOp->pNext;
       if ((int)pPrev < 0) {
-        pPrevSlot = (int*)~pPrev;
+        pPrevSlot = (int*)~(uint32_t)pPrev;
       } else {
-        pPrevSlot = (int*)((int)pAsyncOp + (pPrev - *(int*)(pLinkedRecord + 4)));
+        pPrevSlot = (int*)((int)pPrev + ((int)pAsyncOp - *(int*)(pLinkedRecord + 4)));
       }
 
       *pPrevSlot = pLinkedRecord;
-      *(uint32_t*)(pAsyncOp->pPrevLink + 4) = pAsyncOp->pNext;
+      *(D2StormAsyncOpStrc**)(pAsyncOp->pPrevLink + 4) = pAsyncOp->pNext;
       pAsyncOp->pPrevLink = 0;
       pAsyncOp->pNext = 0;
     }
@@ -4188,10 +4188,10 @@ int __fastcall SFILE_DeleteAsyncRequestGetNext(int32_t pListContext, D2StormAsyn
       pPrev = (D2StormAsyncOpStrc*)(pListContext + 4);
     }
 
-    uint32_t uVar1 = pPrev->pNext;
+    pPrev = pPrev->pNext;
     SFILE_ReleaseAsyncRequest(pAsyncOp);
     SMem::SMemFree(pAsyncOp, sRTTI_REQUEST_AllocTag, -2, 0);
-    return (int)uVar1 < 1 ? 0 : uVar1;
+    return (int)pPrev < 1 ? 0 : (uint32_t)pPrev;
 }
 
 int __stdcall SFILE_CancelAsyncRequest(int32_t hFileHandle, D2MPQFileStrc * pMPQFile) {
@@ -4214,7 +4214,7 @@ int __stdcall SFILE_CancelAsyncRequest(int32_t hFileHandle, D2MPQFileStrc * pMPQ
           pRequest = (D2StormAsyncOpStrc*)&gSFileAsyncReqQueue.pPrevLink;
         }
 
-        pRequest = (D2StormAsyncOpStrc*)pRequest->pNext;
+        pRequest = pRequest->pNext;
       } else {
         nCancelled = 1;
         if (pRequest->hCompletionEvent) {
@@ -4250,7 +4250,7 @@ int __stdcall SFILE_CancelAsyncRequest(int32_t hFileHandle, D2MPQFileStrc * pMPQ
           pNotifyNodeOk->hEvent = pRequest->hCompletionEvent;
         }
 
-        pPrevRequest = (D2StormAsyncOpStrc*)pRequest->pNext;
+        pPrevRequest = pRequest->pNext;
         SFILE_ReleaseAsyncRequest(pRequest);
         SMem::SMemFree(pRequest, sRTTI_REQUEST_AllocTag, -2, 0);
         pRequest = (D2StormAsyncOpStrc*)((int)pPrevRequest < 1 ? 0 : (uint32_t)pPrevRequest);
@@ -4371,15 +4371,15 @@ DWORD __stdcall SFILE_CdThreadProc(void * lpThreadParam) {
         nFileHandle = pSelectedRequest->pPrevLink;
         gpCurrentAsyncIORequest = pSelectedRequest;
         if (nFileHandle) {
-          nThrottleDelay = pSelectedRequest->pNext;
-          if ((int)nThrottleDelay < 0) {
-            pCancelledRequest = (int*)~nThrottleDelay;
+          pDVar2 = pSelectedRequest->pNext;
+          if ((int)pDVar2 < 0) {
+            pCancelledRequest = (int*)~(uint32_t)pDVar2;
           } else {
-            pCancelledRequest = (int*)((int)pSelectedRequest + (nThrottleDelay - *(int*)(nFileHandle + 4)));
+            pCancelledRequest = (int*)((int)pDVar2 + ((int)pSelectedRequest - *(int*)(nFileHandle + 4)));
           }
 
           *pCancelledRequest = nFileHandle;
-          *(uint32_t*)(pSelectedRequest->pPrevLink + 4) = pSelectedRequest->pNext;
+          *(D2StormAsyncOpStrc**)(pSelectedRequest->pPrevLink + 4) = pSelectedRequest->pNext;
           pSelectedRequest->pPrevLink = 0;
           pSelectedRequest->pNext = 0;
         }
@@ -4470,7 +4470,7 @@ DWORD __stdcall SFILE_CdThreadProc(void * lpThreadParam) {
 // @blizzard CreateCdThread (SFILE.CPP)
 void __stdcall SFILE_CreateCdThread() {
     // Static local variables (originally global data)
-    static LPDWORD lpThreadId_00779040;
+    static LPDWORD lpThreadId_00779040; D2_STATIC_GUARD_BSS(lpThreadId_00779040, "Storm::Source::SFile::SFILE_CreateCdThread::lpThreadId_00779040");
 
     if (ghAsyncIOThread) {
       return;
@@ -4593,7 +4593,7 @@ void __stdcall SFILE_SetRequestPriorityByBuffer(void * pReadBuffer, int nPriorit
 
 // Synchronous or async file read from Storm archive - handles large files with chunked I/O
 // @blizzard SFileReadFileEx2 (Storm 1.10b PPC)
-int __stdcall SFileReadFileEx2(D2MPQFileStrc * pFileHandle, void * pOutputBuffer, uint32_t nBytesToRead, size_t * pBytesRead, LPOVERLAPPED lpOverlapped, int dwReadFlags, D2StormAsyncCompletionStrc * pCompletion) {
+int __stdcall SFileReadFileEx2(D2MPQFileStrc * pFileHandle, void * pOutputBuffer, uint32_t nBytesToRead, uint32_t * pBytesRead, LPOVERLAPPED lpOverlapped, int dwReadFlags, D2StormAsyncCompletionStrc * pCompletion) {
     uint32_t nChunkBytes;
     D2MPQFileStrc* pDVar1;
     D2MPQFileStrc* nActualBytesRead;
@@ -4751,7 +4751,7 @@ int __stdcall SFileReadFileEx2(D2MPQFileStrc * pFileHandle, void * pOutputBuffer
         pValidatedFile->nFilePos = (uint32_t)(nActualBytesRead->szFileName + (pValidatedFile->nFilePos - 8));
       }
       if (pBytesRead) {
-        *pBytesRead = (size_t)(nActualBytesRead->szFileName + (*pBytesRead - 8));
+        *pBytesRead = (uint32_t)(nActualBytesRead->szFileName + (*pBytesRead - 8));
       }
       if (nActualBytesRead != (D2MPQFileStrc*)nBytesToRead) {
         SErr::SErrSetLastError(0x26);
@@ -4856,7 +4856,7 @@ uint32_t __stdcall SFileLoadFileEx2(D2ArchiveStrc * pArchive, uint32_t * pFileHa
 }
 
 // @blizzard SFileReadFile (SFILE.CPP)
-int __stdcall SFileReadFile(D2MPQFileStrc * pMPQFile, void * pOutputBuffer, uint32_t nBytesToRead, size_t * pnSize, int32_t pAsyncReadCtx) {
+int __stdcall SFileReadFile(D2MPQFileStrc * pMPQFile, void * pOutputBuffer, uint32_t nBytesToRead, uint32_t * pnSize, int32_t pAsyncReadCtx) {
     int nResult = SFileReadFileEx2(pMPQFile, pOutputBuffer, nBytesToRead, pnSize, (LPOVERLAPPED)pAsyncReadCtx, 0, nullptr);
     return nResult;
 }
@@ -5146,7 +5146,7 @@ BOOL __stdcall SFileDdaBeginEx(D2MPQFileStrc * hFile, uint32_t dwBufferBytes, ui
 // @wasnamed SFILE_LoadFileToMemory
 // @basis behaviour-confirmed as part of a three-way arity lock. The real API has exactly one 5/7/8-parameter family: SFileLoadFile(filename, buffer, bytes, extrabytes, callback) = 5, SFileLoadFileEx(archive, filename, buffer, bytes, extrabytes, flags, callback) = 7, SFileLoadFileEx2(... , readflags) = 8. This is the 5-parameter member; it forwards to the 8-parameter worker with archive = NULL, flags = SFILE_GetOpenFlags() and readflags = 0, which is exactly the set of defaults the 5-parameter signature implies. Note its first parameter is the FILENAME - it is currently mistyped D2ArchiveStrc *, and lands in the worker's filename slot.
 // @seealso SFileLoadFileEx 0041b680, SFileLoadFileEx2 0041af60
-uint32_t __stdcall SFileLoadFile(D2ArchiveStrc * pArchive, void * * ppOutBuffer, DWORD * pdwOutSize, size_t nSize, int32_t nReadCtx) {
+uint32_t __stdcall SFileLoadFile(char * pArchive, void * * ppOutBuffer, DWORD * pdwOutSize, size_t nSize, int32_t nReadCtx) {
     int nReadFlags = 0;
     uint32_t nOpenFlags = SFILE_GetOpenFlags();
     nOpenFlags = SFileLoadFileEx2(nullptr, (uint32_t*)pArchive, ppOutBuffer, pdwOutSize, nSize, nOpenFlags, nReadCtx, nReadFlags);
@@ -5450,7 +5450,7 @@ void __stdcall SFILE_OpenNestedArchive(int32_t nParentArchive, char * szFileName
       pArchive->pMpqFileRecord = (D2MPQFileStrc*)pUserData;
       pArchive->nPriority = 0;
       pArchive->nRefCount = 1;
-      pArchive->bDontCloseHandle = (int)__frame0.pBlockInfo;
+      pArchive->bDontCloseHandle = __frame0.pBlockInfo;
       pHeaderBuf = (D2MPQHeaderStrc*)SMem::SMemAlloc(0x20, ".\\SOURCE\\SFILE.CPP", 0x11ad, 0);
       pArchive->pMpqHeader = pHeaderBuf;
       pArchive->nArchiveOffset = pOpenedFile->pBlockEntry->dwFilePos;
@@ -5726,7 +5726,7 @@ void __fastcall CRC32_UpdateCRC(uint8_t * pbData, int32_t nLength, uint32_t * pd
     0xc30c8ea1,
     0x5a05df1b,
     0x2d02ef8d
-};
+}; D2_STATIC_GUARD(gdwSFileCompressionMethod, "Storm::Source::SFile::CRC32_UpdateCRC::gdwSFileCompressionMethod");
 
     uint32_t dwCrc = 0;
     if (pdwCrc) {
@@ -7838,7 +7838,7 @@ uint32_t __fastcall CRC32_Calculate(uint8_t * pbData, int nLen) {
     0x11cf33ad,
     0x6f81,
     0x6e1520c0
-};
+}; D2_STATIC_GUARD(CRC32_LookupTable, "Storm::Source::SFile::CRC32_Calculate::CRC32_LookupTable");
 
     if (!nLen) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x40);

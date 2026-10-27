@@ -104,7 +104,7 @@
 
 namespace D2Client::UI::Draw {
 
-static bool gbAutomapPanelOpened = 0;
+static bool gbAutomapPanelOpened = 0; D2_STATIC_GUARD(gbAutomapPanelOpened, "D2Client::UI::Draw::gbAutomapPanelOpened");
 
 void __stdcall PALETTE_LoadLoadingScreenPalette() {
     char acStack_20c[260];
@@ -120,7 +120,7 @@ void __fastcall SetActNo(int32_t nParam) {
 
 void __stdcall CleanupAfterLoadingAct() {
     // Static local variables (originally global data)
-    static bool gbCleanupAfterLoadingActFlag;
+    static bool gbCleanupAfterLoadingActFlag; D2_STATIC_GUARD_BSS(gbCleanupAfterLoadingActFlag, "D2Client::UI::Draw::CleanupAfterLoadingAct::gbCleanupAfterLoadingActFlag");
 
     if (gnLoadedActIndex) {
       Core::Archive::DC6_FreeAndDelete(gnLoadedActIndex);
@@ -151,7 +151,7 @@ int32_t __stdcall DRAW_GetLastPanelId() {
 
 BOOL __stdcall DRAW_CheckTickRateLimiter() {
     // Static local variables (originally global data)
-    static unsigned int gdwLastDrawTickTimestamp;
+    static unsigned int gdwLastDrawTickTimestamp; D2_STATIC_GUARD_BSS(gdwLastDrawTickTimestamp, "D2Client::UI::Draw::DRAW_CheckTickRateLimiter::gdwLastDrawTickTimestamp");
 
     DWORD dwNow = GetTickCount();
     if (0x32 >= dwNow - gdwLastDrawTickTimestamp) {
@@ -236,7 +236,7 @@ void __stdcall DRAW_MonsterUnderCursorImmunites() {
     uint32_t nFontHeight = D2Win::Src::D2WinFont::D2WINFONT_GetCurrentFontHeight();
     int32_t nY = nFontHeight + 0x27;
     DRAW_CenteredText(6, nY, gnImmunityText1Color, (uint16_t*)gU16ImmunityStringBuffer1);
-    if (gU16ImmunityStringBuffer1[0] || gnMonsterHealthBarValue) {
+    if (gU16ImmunityStringBuffer1[0] || gnMonsterHealthBarValue[0]) {
       nFontHeight = D2Win::Src::D2WinFont::D2WINFONT_GetCurrentFontHeight();
       nY += nFontHeight;
     }
@@ -357,7 +357,7 @@ void __fastcall DRAW_MonsterHealthBar(D2UnitStrc * pUnit) {
         nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszNameBuf);
         D2Win::Src::D2WinFont::D2WINFONT_SetTooltipAttributesWithCustomField(wszNameBuf, (anViewportBounds[0] + anViewportBounds[2] >> 1) - (nTextWidth >> 1), 0x20, nNameColor, 0, nHpBarValue);
         if (bIsMercenary) {
-          gnMonsterHealthBarValue = 0;
+          gnMonsterHealthBarValue[0] = 0;
           D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
           return;
         }
@@ -408,7 +408,7 @@ void __fastcall DRAW_MonsterHealthBar(D2UnitStrc * pUnit) {
         return;
       }
     } else {
-      gnMonsterHealthBarValue = 0;
+      gnMonsterHealthBarValue[0] = 0;
       bResult = npcmenu::GetInteractedUnitGuid(&bIsMercenary);
       if (!bResult) {
         nResult = Text::TEXT_IsScrollingTextActive();
@@ -532,7 +532,7 @@ void __fastcall DRAW_UnitUnderMouse(D2UnitStrc * pUnit) {
         if (!pMonStats) {
           gU16ImmunityStringBuffer2[0] = 0;
           gU16ImmunityStringBuffer1[0] = 0;
-          gnMonsterHealthBarValue = 0;
+          gnMonsterHealthBarValue[0] = 0;
           return;
         }
 
@@ -564,7 +564,7 @@ void __fastcall DRAW_UnitUnderMouse(D2UnitStrc * pUnit) {
       ui::UI_ShowMonsterNameBar(0, pUnit);
       gU16ImmunityStringBuffer1[0] = 0;
       gU16ImmunityStringBuffer2[0] = 0;
-      gnMonsterHealthBarValue = 0;
+      gnMonsterHealthBarValue[0] = 0;
       return;
       case UNIT_OBJECT:
         Fog::File::CONTAINER_InitializeBuffer(__frame0.wszObjBuf, 2, 0x80, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
@@ -668,7 +668,7 @@ void __fastcall DRAW_UnitUnderMouse(D2UnitStrc * pUnit) {
 }
 
 void __stdcall DRAW_UnitUModsUnderCursor() {
-    int32_t nNameLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength((uint16_t*)&gnMonsterHealthBarValue);
+    int32_t nNameLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength((uint16_t*)gnMonsterHealthBarValue);
     if (!nNameLen) {
       return;
     }
@@ -690,7 +690,7 @@ void __stdcall DRAW_UnitUModsUnderCursor() {
     }
 
     uint32_t nFontHeight = D2Win::Src::D2WinFont::D2WINFONT_GetCurrentFontHeight();
-    DRAW_CenteredText(6, nFontHeight + 0x27, dwColor, (uint16_t*)&gnMonsterHealthBarValue);
+    DRAW_CenteredText(6, nFontHeight + 0x27, dwColor, (uint16_t*)gnMonsterHealthBarValue);
 }
 
 void __stdcall DRAW_Overlay_EnteringAreaX() {
@@ -706,14 +706,14 @@ void __stdcall DRAW_Overlay_EnteringAreaX() {
         /* .nQuestId = */ 0x5,
         /* .szDC6Name = */ { 'A', '1', 'Q', '5', '\x00' }
     }
-};
-    static int gnQuestAreaIntroCount = 0x2;
-    static uint32_t gnAreaNameCurrentLevelId;
+}; D2_STATIC_GUARD(gnQuestAreaIntroLevelId_0, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gnQuestAreaIntroLevelId_0");
+    static int gnQuestAreaIntroCount = 0x2; D2_STATIC_GUARD(gnQuestAreaIntroCount, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gnQuestAreaIntroCount");
+    static uint32_t gnAreaNameCurrentLevelId; D2_STATIC_GUARD_BSS(gnAreaNameCurrentLevelId, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gnAreaNameCurrentLevelId");
     static D2ClientTimerStrc gnAreaNameOverlay = {
     /* .dwStartTick = */ 0,
     /* .dwDurationMs = */ 0
-};
-    static bool gbAreaNameOverlayInitialized;
+}; D2_STATIC_GUARD(gnAreaNameOverlay, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gnAreaNameOverlay");
+    static bool gbAreaNameOverlayInitialized; D2_STATIC_GUARD_BSS(gbAreaNameOverlayInitialized, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gbAreaNameOverlayInitialized");
 
     eD2LevelId eRoomLevel;
     uint32_t uResult;
@@ -809,7 +809,7 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
     /* .nHandlerIdx_Cmd2C_Exp = */ 0x7,
     /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
     /* .pHandlers = */ gaUIFlagInitNpcShopHandlers
-};
+}; D2_STATIC_GUARD(gnUIFlagShopKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagShopKeyBindings");
     static D2UIKeyBindingSetStrc gnUIFlagQuestScreenKeyBindings = {
     /* .nHandlerIdx_Cmd26_Exp = */ 0x5,
     /* .nHandlerIdx_Cmd16_Exp = */ -0x1,
@@ -820,7 +820,7 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
     /* .nHandlerIdx_Cmd2C_Exp = */ -0x1,
     /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
     /* .pHandlers = */ gUIFlagDrawGoldInit
-};
+}; D2_STATIC_GUARD(gnUIFlagQuestScreenKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagQuestScreenKeyBindings");
     static D2UIKeyBindingSetStrc gnUIFlagTradeKeyBindings = {
     /* .nHandlerIdx_Cmd26_Exp = */ 0x5,
     /* .nHandlerIdx_Cmd16_Exp = */ 0x7,
@@ -831,7 +831,7 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
     /* .nHandlerIdx_Cmd2C_Exp = */ 0xc,
     /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
     /* .pHandlers = */ gUIFlagDrawInventoryInit
-};
+}; D2_STATIC_GUARD(gnUIFlagTradeKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagTradeKeyBindings");
     static D2UIKeyBindingSetStrc gnUIFlagStashKeyBindings = {
     /* .nHandlerIdx_Cmd26_Exp = */ 0x4,
     /* .nHandlerIdx_Cmd16_Exp = */ -0x1,
@@ -842,7 +842,7 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
     /* .nHandlerIdx_Cmd2C_Exp = */ 0x7,
     /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
     /* .pHandlers = */ gUIFlagDrawInfoInit
-};
+}; D2_STATIC_GUARD(gnUIFlagStashKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagStashKeyBindings");
     static D2UIKeyBindingSetStrc gnUIFlagCubeKeyBindings = {
     /* .nHandlerIdx_Cmd26_Exp = */ 0x4,
     /* .nHandlerIdx_Cmd16_Exp = */ -0x1,
@@ -853,7 +853,7 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
     /* .nHandlerIdx_Cmd2C_Exp = */ -0x1,
     /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
     /* .pHandlers = */ gaUIFlagInitCubeHandlers
-};
+}; D2_STATIC_GUARD(gnUIFlagCubeKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagCubeKeyBindings");
     static D2UIKeyBindingSetStrc gnUIFlagBeltKeyBindings = {
     /* .nHandlerIdx_Cmd26_Exp = */ 0x0,
     /* .nHandlerIdx_Cmd16_Exp = */ -0x1,
@@ -864,7 +864,7 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
     /* .nHandlerIdx_Cmd2C_Exp = */ -0x1,
     /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
     /* .pHandlers = */ g_UIFlagInitDrawPanel1
-};
+}; D2_STATIC_GUARD(gnUIFlagBeltKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagBeltKeyBindings");
 
     HWND pHwnd;
     int32_t nHandlerCount;
@@ -1500,7 +1500,7 @@ BOOL __fastcall UI_CloseActivePanels(int32_t bForceAutomap, int32_t bAdjustMouse
     0x0,
     0x1,
     0x1
-};
+}; D2_STATIC_GUARD(gnUICloseActivePanelsFlag, "D2Client::UI::Draw::UI_CloseActivePanels::gnUICloseActivePanelsFlag");
 
     int iVar1;
     int nMouseY;
@@ -1627,8 +1627,8 @@ void __stdcall LoadingsScreen() {
 
 void __fastcall Draw_UI_LoadGame(int32_t bAdvanceFrame) {
     // Static local variables (originally global data)
-    static uint8_t gbLoadBarColorInitialized;
-    static uint8_t gbLoadBarOutlineColor;
+    static uint8_t gbLoadBarColorInitialized; D2_STATIC_GUARD_BSS(gbLoadBarColorInitialized, "D2Client::UI::Draw::Draw_UI_LoadGame::gbLoadBarColorInitialized");
+    static uint8_t gbLoadBarOutlineColor; D2_STATIC_GUARD_BSS(gbLoadBarOutlineColor, "D2Client::UI::Draw::Draw_UI_LoadGame::gbLoadBarOutlineColor");
 
     int nSizeX;
     D2GfxDataStrc sLoadGfx;
@@ -1693,11 +1693,12 @@ void __fastcall Draw_UI_LoadGame(int32_t bAdvanceFrame) {
 void __stdcall UI_ToggleMiniPanel() {
     bool _bRegistryRead;
     bool bRegistryRead;
-    int32_t nHandlerCount;
+    uint32_t bScrollActive;
     HWND pHwnd;
     eD2UIvars eUI;
     int32_t nInteractGuid;
     int nMiniPanelRegVal;
+    int32_t nLine;
     _bRegistryRead = Storm::Source::SReg::SRegLoadValue("Diablo II", "Mini Panel", 1, &nMiniPanelRegVal);
     BOOL bWasMiniPanelOpen = GFX_bShowUIFlag.MiniPanel;
     if (_bRegistryRead && nMiniPanelRegVal) {
@@ -1713,7 +1714,6 @@ void __stdcall UI_ToggleMiniPanel() {
       exit(-1);
     }
     if (!GFX_bShowUIFlag.MiniPanel) {
-      uint32_t bScrollActive;
       bScrollActive = Text::TEXT_IsScrollingTextActive();
       if (bScrollActive) {
         return;
@@ -1750,17 +1750,17 @@ void __stdcall UI_ToggleMiniPanel() {
     }
     if (!bWasMiniPanelOpen) {
       if (GFX_bShowUIFlag.MiniPanel) {
-        nHandlerCount = 2;
+        nLine = 2;
         pHwnd = D2gfx::D2GFX::GetHwnd();
-        _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawUnknown, nHandlerCount);
+        _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawUnknown, nLine);
         ui::GetMouseX();
         ui::GetMouseY();
         return;
       }
     } else if (!GFX_bShowUIFlag.MiniPanel) {
-      nHandlerCount = 2;
+      nLine = 2;
       pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawUnknown, nHandlerCount);
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawUnknown, nLine);
     }
 
     ui::GetMouseX();
@@ -1960,7 +1960,8 @@ void __stdcall InitializeUI() {
 }
 
 void __stdcall FreeDraw() {
-    int32_t nHandlerCount;
+    HWND pHwnd;
+    int32_t nLine;
     BOOL bWasGameUiOpen = GFX_bShowUIFlag.Game;
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     if (bIsExpansion) {
@@ -1974,10 +1975,9 @@ void __stdcall FreeDraw() {
     UNIT::Player::GetPlayerUnit_UI();
     GFX_bShowUIFlag.Game = 0;
     if (bWasGameUiOpen) {
-      HWND pHwnd;
-      nHandlerCount = 4;
+      nLine = 4;
       pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawMouseDown, nHandlerCount);
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawMouseDown, nLine);
     }
 
     ui::GetMouseX();
@@ -2037,11 +2037,11 @@ void __stdcall FreeDraw() {
 // GFX_bShowUIFlag controls visibility. UI drawn in screen space (not world).
 void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
     uint32_t eBorderType;
-    int32_t nHandlerCount;
     int bIsActive;
     HWND pHwnd;
     eD2GSGameType eGameType;
     eD2UIvars eUIIndex;
+    int32_t iVar1;
     int32_t nInteractGuid;
     BOOL bWasHelpOpen;
     if (GFX_bShowUIFlag.StatusArea) {
@@ -2213,15 +2213,15 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
         }
         if (!bWasHelpOpen) {
           if (GFX_bShowUIFlag.HelpMenu) {
-            nHandlerCount = 5;
+            iVar1 = 5;
             pHwnd = D2gfx::D2GFX::GetHwnd();
-            _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit0, nHandlerCount);
+            _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit0, iVar1);
           }
         } else if (!GFX_bShowUIFlag.HelpMenu) {
           Help::HELP_HideMiniPanel();
-          nHandlerCount = 5;
+          iVar1 = 5;
           pHwnd = D2gfx::D2GFX::GetHwnd();
-          _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit0, nHandlerCount);
+          _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit0, iVar1);
         }
 
         ui::GetMouseX();

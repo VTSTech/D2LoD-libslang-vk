@@ -28,6 +28,7 @@
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2MonStatsTxt.h"
+#include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SkillsTxt.h"
@@ -128,10 +129,10 @@ void __stdcall AUTOMAP_OnKeyDownEnd_NoOp(D2UIMouseMsgStrc * pMsg) {
 
 void __stdcall AUTOMAP_SetupPosition() {
     // Static local variables (originally global data)
-    static int gnAutomapPanelOffsetX;
-    static int gnAutomapPanelOffsetY;
-    static int gnAutomapCachedAutoMapLeft;
-    static int gnAutomapCachedMercPurchaseMode;
+    static int gnAutomapPanelOffsetX; D2_STATIC_GUARD_BSS(gnAutomapPanelOffsetX, "D2Client::UI::Automap::AUTOMAP_SetupPosition::gnAutomapPanelOffsetX");
+    static int gnAutomapPanelOffsetY; D2_STATIC_GUARD_BSS(gnAutomapPanelOffsetY, "D2Client::UI::Automap::AUTOMAP_SetupPosition::gnAutomapPanelOffsetY");
+    static int gnAutomapCachedAutoMapLeft; D2_STATIC_GUARD_BSS(gnAutomapCachedAutoMapLeft, "D2Client::UI::Automap::AUTOMAP_SetupPosition::gnAutomapCachedAutoMapLeft");
+    static int gnAutomapCachedMercPurchaseMode; D2_STATIC_GUARD_BSS(gnAutomapCachedMercPurchaseMode, "D2Client::UI::Automap::AUTOMAP_SetupPosition::gnAutomapCachedMercPurchaseMode");
 
     uint32_t bNotMercPurchase = Hireables::HIREABLE_IsNotInMercPurchaseMode();
     if (gnAutomapCachedMercPurchaseMode != bNotMercPurchase && MiniMapType == 1) {
@@ -759,84 +760,77 @@ HANDLE __stdcall AUTOMAP_GetMapFileHandle() {
 }
 
 void AUTOMAP_SaveLayerToFile(D2AutomapFileEntryStrc * pEntry) {
-    // Frame -416..-16 is ONE object: a call writes 400 literal bytes starting at &dwHeader.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      DWORD dwHeader;
-      uint8_t aLayerOffsets[396];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 400, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     // Frame slots -16..-4 are ONE object: &dwFileSize is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame1_t {
+    struct __frame0_t {
       DWORD dwFileSize;
       int nEntryOffset;
       DWORD dwBytesTransferred;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 12, "frame group __frame1_t must reproduce the Ghidra frame layout");
-    __frame1_t __frame1;
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    __frame0_t __frame0;
+    int dwHeader[100];
     HANDLE hFile = AUTOMAP_GetMapFileHandle();
     if (hFile == (HANDLE)-1) {
       return;
     }
 
-    __frame0.dwHeader = 0;
-    memset(__frame0.aLayerOffsets, 0, 0x18c);
-    __frame1.dwBytesTransferred = 0;
-    Fog::Source::SFile::thunk_ReadFile(hFile, &__frame0.dwHeader, 400, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
-    if (__frame1.dwBytesTransferred != 400) {
-      memset(&__frame0.dwHeader, 0, 400);
+    dwHeader[0] = 0;
+    memset(dwHeader + 1, 0, 0x18c);
+    __frame0.dwBytesTransferred = 0;
+    Fog::Source::SFile::thunk_ReadFile(hFile, dwHeader, 400, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
+    if (__frame0.dwBytesTransferred != 400) {
+      memset(dwHeader, 0, 400);
       Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, 0, (PLONG)0x0, 0);
-      Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&__frame0.dwHeader, 400, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
+      Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)dwHeader, 400, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
     }
 
-    __frame1.nEntryOffset = *(int*)(__frame0.aLayerOffsets + pEntry->nLayer * 4 - 4);
-    __frame1.dwFileSize = GetFileSize(hFile, (LPDWORD)0x0);
-    if (!__frame1.nEntryOffset) {
-      *(DWORD*)(__frame0.aLayerOffsets + pEntry->nLayer * 4 - 4) = __frame1.dwFileSize;
+    __frame0.nEntryOffset = dwHeader[pEntry->nLayer];
+    __frame0.dwFileSize = GetFileSize(hFile, (LPDWORD)0x0);
+    if (!__frame0.nEntryOffset) {
+      dwHeader[pEntry->nLayer] = __frame0.dwFileSize;
     } else {
       int nPrevEntryOffset;
       do {
-        Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, __frame1.nEntryOffset, (PLONG)0x0, 0);
-        nPrevEntryOffset = __frame1.nEntryOffset;
-        Fog::Source::SFile::thunk_ReadFile(hFile, &__frame1.nEntryOffset, 4, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
-      } while (__frame1.nEntryOffset);
+        Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, __frame0.nEntryOffset, (PLONG)0x0, 0);
+        nPrevEntryOffset = __frame0.nEntryOffset;
+        Fog::Source::SFile::thunk_ReadFile(hFile, &__frame0.nEntryOffset, 4, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
+      } while (__frame0.nEntryOffset);
 
       Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, nPrevEntryOffset, (PLONG)0x0, 0);
-      Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&__frame1.dwFileSize, 4, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
+      Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&__frame0.dwFileSize, 4, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
     }
 
     Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, 0, (PLONG)0x0, 0);
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&__frame0.dwHeader, 400, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
-    Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, __frame1.dwFileSize, (PLONG)0x0, 0);
-    __frame1.dwFileSize = 0;
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&__frame1.dwFileSize, 4, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)pEntry, 4, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->nTileCount, 4, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->nMapType, 4, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->dwFloorDataSize, 4, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->dwWallDataSize, 4, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->dwObjectDataSize, 4, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->dwExtraDataSize, 4, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)dwHeader, 400, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, __frame0.dwFileSize, (PLONG)0x0, 0);
+    __frame0.dwFileSize = 0;
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&__frame0.dwFileSize, 4, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)pEntry, 4, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->nTileCount, 4, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->nMapType, 4, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->dwFloorDataSize, 4, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->dwWallDataSize, 4, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->dwObjectDataSize, 4, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&pEntry->dwExtraDataSize, 4, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
     DWORD nNumberOfBytesToWrite = pEntry->dwFloorDataSize;
     if (nNumberOfBytesToWrite) {
-      Fog::Source::SFile::thunk_WriteFile(hFile, pEntry->pFloorData, nNumberOfBytesToWrite, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
+      Fog::Source::SFile::thunk_WriteFile(hFile, pEntry->pFloorData, nNumberOfBytesToWrite, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
     }
     if (pEntry->dwWallDataSize) {
-      Fog::Source::SFile::thunk_WriteFile(hFile, pEntry->pWallData, pEntry->dwWallDataSize, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
+      Fog::Source::SFile::thunk_WriteFile(hFile, pEntry->pWallData, pEntry->dwWallDataSize, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
     }
     if (pEntry->dwObjectDataSize) {
-      Fog::Source::SFile::thunk_WriteFile(hFile, pEntry->pObjectData, pEntry->dwObjectDataSize, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
+      Fog::Source::SFile::thunk_WriteFile(hFile, pEntry->pObjectData, pEntry->dwObjectDataSize, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
     }
     if (pEntry->dwExtraDataSize) {
-      Fog::Source::SFile::thunk_WriteFile(hFile, pEntry->pExtraData, pEntry->dwExtraDataSize, &__frame1.dwBytesTransferred, (LPOVERLAPPED)0x0);
+      Fog::Source::SFile::thunk_WriteFile(hFile, pEntry->pExtraData, pEntry->dwExtraDataSize, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
     }
 
     Fog::Source::SFile::SFILE_Win32CloseHandle(hFile);
 }
 
-void __fastcall AUTOMAP_CalcCellTreeSize(D2AutomapCellStrc * pAutomapCell, size_t * nSize) {
+void __fastcall AUTOMAP_CalcCellTreeSize(D2AutomapCellStrc * pAutomapCell, uint32_t * nSize) {
     for (; pAutomapCell; pAutomapCell = pAutomapCell->pMore) {
       AUTOMAP_CalcCellTreeSize(pAutomapCell->pLess, nSize);
       if (!*(int*)pAutomapCell) {
@@ -965,7 +959,7 @@ void __stdcall AUTOMAP_FreeCurrentLayerCells() {
     pSavedLayer->pExtras = 0;
 }
 
-void __stdcall AUTOMAP_InvalidateLayerEntry(int32_t nEntryOffset, HANDLE hFile, LPCVOID pLayerOffsets) {
+void __stdcall AUTOMAP_InvalidateLayerEntry(int32_t nEntryOffset, HANDLE hFile, uint32_t * pLayerOffsets) {
     DWORD dwBytesWritten = 0;
     if (nEntryOffset) {
       Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, nEntryOffset, (PLONG)0x0, 0);
@@ -974,9 +968,9 @@ void __stdcall AUTOMAP_InvalidateLayerEntry(int32_t nEntryOffset, HANDLE hFile, 
       return;
     }
 
-    *(uint32_t*)((int)pLayerOffsets + sgpAutomapLayerEx->nLayer * 4) = 0;
+    pLayerOffsets[sgpAutomapLayerEx->nLayer] = 0;
     Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, 0, (PLONG)0x0, 0);
-    Fog::Source::SFile::thunk_WriteFile(hFile, pLayerOffsets, 400, &dwBytesWritten, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)pLayerOffsets, 400, &dwBytesWritten, (LPOVERLAPPED)0x0);
 }
 
 // @sourcefile .\UI\automap.cpp
@@ -984,7 +978,7 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
     // Frame -480..-80 is ONE object: a call writes 400 literal bytes starting at &nNextFilePos.
     // Separate locals let the compiler reorder them, and the write would run off the frame.
     struct __frame0_t {
-      int nNextFilePos;
+      uint32_t nNextFilePos;
       uint8_t aLayerOffsets[396];
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 400, "frame group __frame0_t must reproduce the Ghidra frame layout");
@@ -1001,7 +995,7 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 24, "frame group __frame1_t must reproduce the Ghidra frame layout");
     __frame1_t __frame1;
-    D2AutomapCellStrc* pCell;
+    void* nErrorAddress;
     uint32_t nWordCount;
     D2AutomapCellStrc** ppTreeRoot;
     D2AutomapCellStrc** ppDVar1;
@@ -1024,7 +1018,7 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
     DWORD dwBytesRead = 0;
     Fog::Source::SFile::thunk_ReadFile(hMapFile, &__frame0.nNextFilePos, 400, &dwBytesRead, (LPOVERLAPPED)0x0);
     if (dwBytesRead == 400) {
-      void* pCellData;
+      D2AutomapCellStrc* pCell;
       __frame1.nNextPos = *(int*)(__frame0.aLayerOffsets + sgpAutomapLayerEx->nLayer * 4 - 4);
       __frame1.nCellIndex = 0;
       nCurrentEntryPos = __frame1.nCellIndex;
@@ -1055,15 +1049,15 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
         Fog::Source::SFile::thunk_ReadFile(hMapFile, &sFileEntry.dwObjectDataSize, 4, &dwBytesRead, (LPOVERLAPPED)0x0);
         Fog::Source::SFile::thunk_ReadFile(hMapFile, &sFileEntry.dwExtraDataSize, 4, &dwBytesRead, (LPOVERLAPPED)0x0);
         if (sFileEntry.nLayer != sgpAutomapLayerEx->nLayer) {
-          AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hMapFile, (LPCVOID)&__frame0.nNextFilePos);
+          AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hMapFile, &__frame0.nNextFilePos);
           Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
           return;
         }
         if (sFileEntry.dwFloorDataSize) {
-          pCellData = D2_ALLOC(sFileEntry.dwFloorDataSize);
+          nErrorAddress = D2_ALLOC(sFileEntry.dwFloorDataSize);
           nWordCount = sFileEntry.dwFloorDataSize >> 1;
           __frame1.nWordLimit = nWordCount;
-          Fog::Source::SFile::thunk_ReadFile(hFileHandle, pCellData, sFileEntry.dwFloorDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
+          Fog::Source::SFile::thunk_ReadFile(hFileHandle, nErrorAddress, sFileEntry.dwFloorDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
           if (dwBytesRead != sFileEntry.dwFloorDataSize) {
             // A hard crash between the header write and the data writes in
             // AUTOMAP_SaveLayerToFile, or an entry written by an older build,
@@ -1080,14 +1074,14 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           nWordIndex = 0;
           if (nWordCount) {
             do {
-              wCellNo = *(uint16_t*)((int)pCellData + nWordIndex * 2);
+              wCellNo = *(uint16_t*)((int)nErrorAddress + nWordIndex * 2);
               if (nAutoMapDC6FrameCount[0] <= (short int)wCellNo) {
-                AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, (LPCVOID)&__frame0.nNextFilePos);
+                AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, &__frame0.nNextFilePos);
                 break;
               }
 
-              __frame1.nYPixel = (uint32_t)*(uint16_t*)((int)pCellData + nWordIndex * 2 + 4);
-              __frame1.nXPixel = (uint32_t)*(uint16_t*)((int)pCellData + nWordIndex * 2 + 2);
+              __frame1.nYPixel = (uint32_t)*(uint16_t*)((int)nErrorAddress + nWordIndex * 2 + 4);
+              __frame1.nXPixel = (uint32_t)*(uint16_t*)((int)nErrorAddress + nWordIndex * 2 + 2);
               __frame1.nCellNo = (uint32_t)wCellNo;
               ppTreeRoot = &sgpAutomapLayerEx->pFloors;
               pCell = AUTOMAP_AllocCell();
@@ -1100,14 +1094,14 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
             } while (nWordIndex < __frame1.nWordLimit);
           }
 
-          D2_FREE(pCellData);
+          D2_FREE(nErrorAddress);
           hMapFile = hFileHandle;
         }
         if (sFileEntry.dwWallDataSize) {
-          pCellData = D2_ALLOC(sFileEntry.dwWallDataSize);
+          nErrorAddress = D2_ALLOC(sFileEntry.dwWallDataSize);
           nWordCount = sFileEntry.dwWallDataSize >> 1;
           __frame1.nWordLimit = nWordCount;
-          Fog::Source::SFile::thunk_ReadFile(hFileHandle, pCellData, sFileEntry.dwWallDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
+          Fog::Source::SFile::thunk_ReadFile(hFileHandle, nErrorAddress, sFileEntry.dwWallDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
           if (dwBytesRead != sFileEntry.dwWallDataSize) {
             // Same stale-entry tolerance as the floor read above.
             D2_FREE(pCellData);
@@ -1119,14 +1113,14 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           nWordIndex = 0;
           if (nWordCount) {
             do {
-              wCellNo = *(uint16_t*)((int)pCellData + nWordIndex * 2);
+              wCellNo = *(uint16_t*)((int)nErrorAddress + nWordIndex * 2);
               if (nAutoMapDC6FrameCount[0] <= (short int)wCellNo) {
-                AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, (LPCVOID)&__frame0.nNextFilePos);
+                AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, &__frame0.nNextFilePos);
                 break;
               }
 
-              __frame1.nCellNo = (uint32_t)*(uint16_t*)((int)pCellData + nWordIndex * 2 + 4);
-              __frame1.nXPixel = (uint32_t)*(uint16_t*)((int)pCellData + nWordIndex * 2 + 2);
+              __frame1.nCellNo = (uint32_t)*(uint16_t*)((int)nErrorAddress + nWordIndex * 2 + 4);
+              __frame1.nXPixel = (uint32_t)*(uint16_t*)((int)nErrorAddress + nWordIndex * 2 + 2);
               __frame1.nYPixel = (uint32_t)wCellNo;
               ppDVar1 = &sgpAutomapLayerEx->pWalls;
               pCell = AUTOMAP_AllocCell();
@@ -1139,15 +1133,15 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
             } while (nWordIndex < __frame1.nWordLimit);
           }
 
-          D2_FREE(pCellData);
+          D2_FREE(nErrorAddress);
           hMapFile = hFileHandle;
         }
         if (sFileEntry.dwObjectDataSize) {
           if (sFileEntry.nMapType == D2GameGame0x546->nAutomap) {
-            pCellData = D2_ALLOC(sFileEntry.dwObjectDataSize);
+            nErrorAddress = D2_ALLOC(sFileEntry.dwObjectDataSize);
             nWordCount = sFileEntry.dwObjectDataSize >> 1;
             __frame1.nWordLimit = nWordCount;
-            Fog::Source::SFile::thunk_ReadFile(hFileHandle, pCellData, sFileEntry.dwObjectDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
+            Fog::Source::SFile::thunk_ReadFile(hFileHandle, nErrorAddress, sFileEntry.dwObjectDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
             if (dwBytesRead != sFileEntry.dwObjectDataSize) {
               // Same stale-entry tolerance as the floor read above.
               D2_FREE(pCellData);
@@ -1159,14 +1153,14 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
             nWordIndex = 0;
             if (nWordCount) {
               do {
-                wCellNo = *(uint16_t*)((int)pCellData + nWordIndex * 2);
+                wCellNo = *(uint16_t*)((int)nErrorAddress + nWordIndex * 2);
                 if (nAutoMapDC6FrameCount[0] <= (short int)wCellNo) {
-                  AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, (LPCVOID)&__frame0.nNextFilePos);
+                  AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, &__frame0.nNextFilePos);
                   break;
                 }
 
-                __frame1.nCellNo = (uint32_t)*(uint16_t*)((int)pCellData + nWordIndex * 2 + 4);
-                __frame1.nXPixel = (uint32_t)*(uint16_t*)((int)pCellData + nWordIndex * 2 + 2);
+                __frame1.nCellNo = (uint32_t)*(uint16_t*)((int)nErrorAddress + nWordIndex * 2 + 4);
+                __frame1.nXPixel = (uint32_t)*(uint16_t*)((int)nErrorAddress + nWordIndex * 2 + 2);
                 __frame1.nYPixel = (uint32_t)wCellNo;
                 ppDVar1 = &sgpAutomapLayerEx->pObjects;
                 pCell = AUTOMAP_AllocCell();
@@ -1179,7 +1173,7 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
               } while (nWordIndex < __frame1.nWordLimit);
             }
 
-            D2_FREE(pCellData);
+            D2_FREE(nErrorAddress);
             hMapFile = hFileHandle;
           } else {
             Fog::Source::SFile::SFILE_Win32SetFilePointer(hMapFile, sFileEntry.dwObjectDataSize, (PLONG)0x0, 1);
@@ -1188,10 +1182,10 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
 
         nCurrentEntryPos = __frame1.nNextPos;
         if (sFileEntry.dwExtraDataSize) {
-          pCellData = D2_ALLOC(sFileEntry.dwExtraDataSize);
+          nErrorAddress = D2_ALLOC(sFileEntry.dwExtraDataSize);
           nWordCount = sFileEntry.dwExtraDataSize >> 1;
           __frame1.nWordLimit = nWordCount;
-          Fog::Source::SFile::thunk_ReadFile(hFileHandle, pCellData, sFileEntry.dwExtraDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
+          Fog::Source::SFile::thunk_ReadFile(hFileHandle, nErrorAddress, sFileEntry.dwExtraDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
           if (dwBytesRead != sFileEntry.dwExtraDataSize) {
             // Same stale-entry tolerance as the floor read above.
             D2_FREE(pCellData);
@@ -1203,14 +1197,14 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           nWordIndex = 0;
           if (nWordCount) {
             do {
-              wCellNo = *(uint16_t*)((int)pCellData + nWordIndex * 2);
+              wCellNo = *(uint16_t*)((int)nErrorAddress + nWordIndex * 2);
               if (nAutoMapDC6FrameCount[sFileEntry.nTileCount] <= (int)(short int)wCellNo) {
-                AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, (LPCVOID)&__frame0.nNextFilePos);
+                AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, &__frame0.nNextFilePos);
                 break;
               }
 
-              __frame1.nCellNo = (uint32_t)*(uint16_t*)((int)pCellData + nWordIndex * 2 + 4);
-              __frame1.nXPixel = (uint32_t)*(uint16_t*)((int)pCellData + nWordIndex * 2 + 2);
+              __frame1.nCellNo = (uint32_t)*(uint16_t*)((int)nErrorAddress + nWordIndex * 2 + 4);
+              __frame1.nXPixel = (uint32_t)*(uint16_t*)((int)nErrorAddress + nWordIndex * 2 + 2);
               __frame1.nYPixel = (uint32_t)wCellNo;
               ppDVar1 = &sgpAutomapLayerEx->pExtras;
               pCell = AUTOMAP_AllocCell();
@@ -1223,7 +1217,7 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
             } while (nWordIndex < __frame1.nWordLimit);
           }
 
-          D2_FREE(pCellData);
+          D2_FREE(nErrorAddress);
           hMapFile = hFileHandle;
           nCurrentEntryPos = __frame1.nNextPos;
         }
@@ -1417,12 +1411,11 @@ void __stdcall AUTOMAP_RevealRoom(D2RoomStrc * pRoom, int32_t bForceReveal, D2Au
 // @blizzard AutoMapUpdate
 void __stdcall AUTOMAP_Update() {
     // Static local variables (originally global data)
-    static int nAutoMapLastPlayerY;
-    static int nAutoMapPlayerTargetY;
-    static int nAutoMapLastPlayerX;
-    static int nAutoMapPlayerTargetX;
+    static int nAutoMapLastPlayerY; D2_STATIC_GUARD_BSS(nAutoMapLastPlayerY, "D2Client::UI::Automap::AUTOMAP_Update::nAutoMapLastPlayerY");
+    static int nAutoMapPlayerTargetY; D2_STATIC_GUARD_BSS(nAutoMapPlayerTargetY, "D2Client::UI::Automap::AUTOMAP_Update::nAutoMapPlayerTargetY");
+    static int nAutoMapLastPlayerX; D2_STATIC_GUARD_BSS(nAutoMapLastPlayerX, "D2Client::UI::Automap::AUTOMAP_Update::nAutoMapLastPlayerX");
+    static int nAutoMapPlayerTargetX; D2_STATIC_GUARD_BSS(nAutoMapPlayerTargetX, "D2Client::UI::Automap::AUTOMAP_Update::nAutoMapPlayerTargetX");
 
-    int32_t nLayer;
     D2RoomStrc* pRoom;
     eD2LevelId eLevelId;
     D2LevelDefsTxt* pLevelDefs;
@@ -1431,6 +1424,7 @@ void __stdcall AUTOMAP_Update() {
     uint32_t i;
     uint32_t nRoomCount;
     D2RoomStrc** papRooms;
+    int32_t nErrorLine;
     if (nAutoMapRevealDelay) {
       nAutoMapRevealDelay--;
       return;
@@ -1471,8 +1465,8 @@ void __stdcall AUTOMAP_Update() {
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &papRooms, (int*)&nRoomCount);
       eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
       pLevelDefs = D2Common::DATATBLS::LvlTbls::TXT_LevelDefs_GetLine(eLevelId);
-      nLayer = pLevelDefs->Layer;
-      pAutomapLayer = AUTOMAP_AddLayer(nLayer);
+      nErrorLine = pLevelDefs->Layer;
+      pAutomapLayer = AUTOMAP_AddLayer(nErrorLine);
       i = 0;
       if (!nRoomCount) {
         return;
@@ -1481,7 +1475,7 @@ void __stdcall AUTOMAP_Update() {
       do {
         eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(papRooms[i]);
         pLevelDefs = D2Common::DATATBLS::LvlTbls::TXT_LevelDefs_GetLine(eLevelId);
-        if (nLayer == pLevelDefs->Layer) {
+        if (nErrorLine == pLevelDefs->Layer) {
           AUTOMAP_RevealRoom(papRooms[i], 0, pAutomapLayer);
         }
 
@@ -1527,7 +1521,7 @@ void __stdcall AUTOMAP_RevealTownCallback(eD2LevelId eLevel, uint32_t nCellNo, i
     0x24,
     0x27,
     -0x1
-};
+}; D2_STATIC_GUARD(gaLuthGoleinTownCells, "D2Client::UI::Automap::AUTOMAP_RevealTownCallback::gaLuthGoleinTownCells");
 
     uint32_t* pnSkipCells;
     int nPixelY;
@@ -1796,8 +1790,8 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
 // Source: .\\UI\\automap.cpp
 void __stdcall AUTOMAP_DrawMap() {
     // Static local variables (originally global data)
-    static int nAutoMapScreenOffsetX;
-    static int nAutoMapViewCenterY;
+    static int nAutoMapScreenOffsetX; D2_STATIC_GUARD_BSS(nAutoMapScreenOffsetX, "D2Client::UI::Automap::AUTOMAP_DrawMap::nAutoMapScreenOffsetX");
+    static int nAutoMapViewCenterY; D2_STATIC_GUARD_BSS(nAutoMapViewCenterY, "D2Client::UI::Automap::AUTOMAP_DrawMap::nAutoMapViewCenterY");
 
     D2AutomapDrawCtxStrc pDC6;
     uint8_t* fSavedFlag;
@@ -2444,7 +2438,7 @@ void __stdcall AUTOMAP_Init() {
     0x11,
     0x216,
     0x11
-};
+}; D2_STATIC_GUARD(gnAutoMapInitialZoomLevel, "D2Client::UI::Automap::AUTOMAP_Init::gnAutoMapInitialZoomLevel");
 
     int nCellId;
     uint32_t* pPriorityValue;
@@ -2530,9 +2524,9 @@ void __stdcall AUTOMAP_Free() {
 // Source: .\\UI\\automap.cpp
 void __stdcall AUTOMAP_InitPaletteColors() {
     // Static local variables (originally global data)
-    static uint8_t nAutoMapColorGray;
-    static uint8_t nAutoMapColorPortal;
-    static short nAutoMapColorGreen;
+    static uint8_t nAutoMapColorGray; D2_STATIC_GUARD_BSS(nAutoMapColorGray, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorGray");
+    static uint8_t nAutoMapColorPortal; D2_STATIC_GUARD_BSS(nAutoMapColorPortal, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorPortal");
+    static short nAutoMapColorGreen; D2_STATIC_GUARD_BSS(nAutoMapColorGreen, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorGreen");
 
     int32_t nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
     nAutoMapColorSelf = (uint8_t)nColorIndex;
@@ -2608,9 +2602,9 @@ void __stdcall AUTOMAP_DrawXMarker(int32_t nX, DWORD nColor, int32_t nY) {
 
     uint32_t nOffset = 0;
     do {
-      D2gfx::D2GFX::D2GFX_DrawLine(nX + *(int*)((int)gaAutomapXMarkerPolyline + nOffset) * 2, nY + *(int*)((int)gaAutomapXMarkerPolyline + nOffset + 4) * 2, nX + *(int*)((int)gaAutomapXMarkerPolyline + nOffset + 8) * 2, nY + *(int*)((int)gaAutomapXMarkerPolyline + nOffset + 0xc) * 2, nColor, 0xff);
-      nOffset += 8;
-    } while (nOffset < 0x60);
+      D2gfx::D2GFX::D2GFX_DrawLine(nX + (int)gaAutomapXMarkerPolyline[nOffset].x * 2, nY + (int)gaAutomapXMarkerPolyline[nOffset].y * 2, nX + (int)gaAutomapXMarkerPolyline[nOffset + 1].x * 2, nY + (int)gaAutomapXMarkerPolyline[nOffset + 1].y * 2, nColor, 0xff);
+      nOffset++;
+    } while (nOffset < 12);
 }
 
 // AUTOMAP_DrawUnitMarker - Draws an X marker and optional name for a unit on the automap.
@@ -2803,9 +2797,9 @@ void AUTOMAP_DrawPartyMember(D2RosterStrc * pRoster) {
 
     uint32_t nOffset = 0;
     do {
-      D2gfx::D2GFX::D2GFX_DrawLine(nScreenX + *(int*)((int)gaAutomapXMarkerPolyline + nOffset) * 2, nScreenY + *(int*)((int)gaAutomapXMarkerPolyline + nOffset + 4) * 2, nScreenX + *(int*)((int)gaAutomapXMarkerPolyline + nOffset + 8) * 2, nScreenY + *(int*)((int)gaAutomapXMarkerPolyline + nOffset + 0xc) * 2, (uint32_t)nAutoMapColorParty, 0xff);
-      nOffset += 8;
-    } while (nOffset < 0x60);
+      D2gfx::D2GFX::D2GFX_DrawLine(nScreenX + (int)gaAutomapXMarkerPolyline[nOffset].x * 2, nScreenY + (int)gaAutomapXMarkerPolyline[nOffset].y * 2, nScreenX + (int)gaAutomapXMarkerPolyline[nOffset + 1].x * 2, nScreenY + (int)gaAutomapXMarkerPolyline[nOffset + 1].y * 2, (uint32_t)nAutoMapColorParty, 0xff);
+      nOffset++;
+    } while (nOffset < 12);
 
     if (!AutoMapPartyNames) {
       return;
@@ -2924,6 +2918,6 @@ namespace D2Client::UI::Automap {
 
 // Initialized scalars
 
-D2AutomapStrc * sgpAutomapCellList = 0;
+D2AutomapStrc * sgpAutomapCellList = 0; D2_GLOBAL_GUARD(sgpAutomapCellList, "D2Client::UI::Automap::sgpAutomapCellList");
 
 } // namespace D2Client::UI::Automap

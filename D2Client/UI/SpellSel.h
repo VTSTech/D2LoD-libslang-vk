@@ -9,7 +9,6 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2ArchiveStrc;
 struct D2SkillStrc;
 struct D2SkillsTxt;
 struct D2UIMouseMsgStrc;
@@ -20,7 +19,7 @@ typedef int eD2Skills;
 
 // Data types
 struct __attribute__((packed)) D2ClassIconWithNameStrc {
-    /* 0x00 */ struct D2ArchiveStrc * pD2Archive;
+    /* 0x00 */ struct DC6 * pD2Archive;
     /* 0x04 */ char szSpelliconPath[30];
 };
 
@@ -43,7 +42,7 @@ namespace D2Client::UI::SpellSel {
 // Function declarations
 void __stdcall SPELLSEL_Initialize();
 void __stdcall SPELLSEL_Cleanup();
-struct D2ArchiveStrc * __fastcall ARCHIVE_LoadSpellsClassSkillicon(short * pSkillId);
+struct DC6 * __fastcall ARCHIVE_LoadSpellsClassSkillicon(short * pSkillId);
 void __fastcall SPELLSEL_SetMouseHandFlag(uint32_t dwParam);
 uint32_t __stdcall SPELLSEL_IsMouseInRect(int32_t nWidth, int32_t nHeight, int32_t nRectX, int32_t nRectY);
 int32_t __fastcall SPELLSEL_GetSkillPalette(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill);

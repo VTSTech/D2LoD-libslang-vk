@@ -79,7 +79,7 @@ D2RoomExStrc * __stdcall DRLGMAZE_PickRoomPreset(D2RoomExStrc * pRoomEx, int dwP
     { 0x0, 0x0 },
     { 0x0, 0x0 },
     { 0x0, 0x0 }
-};
+}; D2_STATIC_GUARD(gaMazePresetLookupExt, "D2Common::Drlg::Maze::DRLGMAZE_PickRoomPreset::gaMazePresetLookupExt");
     static int gaMazePresetLookup[16][3] = {
     { 0x0, 0x0, 0x0 },
     { 0x0, 0x0, 0x0 },
@@ -97,7 +97,7 @@ D2RoomExStrc * __stdcall DRLGMAZE_PickRoomPreset(D2RoomExStrc * pRoomEx, int dwP
     { 0x0, 0x0, 0x0 },
     { 0x0, 0x0, 0x0 },
     { 0x0, 0x0, 0x0 }
-};
+}; D2_STATIC_GUARD(gaMazePresetLookup, "D2Common::Drlg::Maze::DRLGMAZE_PickRoomPreset::gaMazePresetLookup");
 
     bool _bIsSingleFile;
     D2DrlgPresetRoomStrc* pDVar1;
@@ -674,7 +674,7 @@ void SetupBaalChamber(D2DrlgLevelStrc * pLevel) {
     0x420,
     0x2,
     0x1
-};
+}; D2_STATIC_GUARD(gaBaalChamberPresets, "D2Common::Drlg::Maze::SetupBaalChamber::gaBaalChamberPresets");
 
     D2RoomExStrc* pSourceRoom = pLevel->pRoomExFirst;
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pSourceRoom->sSeed);
@@ -710,7 +710,7 @@ void __stdcall GenerateWolrdstoneAndTombs(D2DrlgLevelStrc * pLevel) {
         /* .nX = */ 0x1bd,
         /* .nY = */ 0x432
     }
-};
+}; D2_STATIC_GUARD(gnMazeRoomCountX, "D2Common::Drlg::Maze::GenerateWolrdstoneAndTombs::gnMazeRoomCountX");
 
     D2DrlgPresetRoomStrc* pDVar1;
     int bReplaceResult;
@@ -1171,7 +1171,7 @@ void __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
       break;
       default:
         {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x883);
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x883);
           exit(-1);
         }
       case 7:
@@ -1249,7 +1249,7 @@ void __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
           pSearchRoom = pLevel->pRoomExFirst;
           while (true) {
             if (!pSearchRoom) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x84a);
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x84a);
               exit(-1);
             }
 
@@ -1306,7 +1306,7 @@ void __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
         }
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x849);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x849);
       exit(-1);
       case 0x20:
         /* Temples picker */ DRLGMAZE_BuildRoomGrid(2, pLevel);
@@ -1318,7 +1318,7 @@ void __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
         case LEVEL_FrozenRiver:
           {
             if (!pLevel->pRoomExFirst) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x85e);
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x85e);
               exit(-1);
             }
 
@@ -1381,7 +1381,7 @@ void __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
     }
 
     return;
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x883);
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x883);
     exit(-1);
 }
 

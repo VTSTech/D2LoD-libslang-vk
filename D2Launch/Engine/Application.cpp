@@ -274,7 +274,7 @@ void __fastcall D2INIT_CheckCommandLineOrLoadItFromRegistry(char * * ppszText) {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_STATIC_GUARD(REGISTRY_CmdLine, "D2Launch::Engine::Application::D2INIT_CheckCommandLineOrLoadItFromRegistry::REGISTRY_CmdLine");
 
     // Frame slots -2060..-8 are ONE object: &pUseCmdLine is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.

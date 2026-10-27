@@ -7,9 +7,9 @@
 #include "Fog/Source/SSComp.h"
 #include "Storm/3rdparty/zlib/deflate.h"
 #include "Storm/3rdparty/zlib/trees.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSComp.h"
+#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 
 
@@ -50,7 +50,7 @@ int gnSSCompDeflateFlags[32] = {
     0x6,
     -0x1,
     0x8
-};
+}; D2_GLOBAL_GUARD(gnSSCompDeflateFlags, "gnSSCompDeflateFlags");
 
 uint32_t gdwADPCMCoefficient[89] = {
     0x7,
@@ -142,7 +142,7 @@ uint32_t gdwADPCMCoefficient[89] = {
     0x69ce,
     0x7462,
     0x7fff
-};
+}; D2_GLOBAL_GUARD(gdwADPCMCoefficient, "gdwADPCMCoefficient");
 
 SCompCodecEntryStrc paSCompDecompressCodecTable[5] = {
     {
@@ -165,7 +165,7 @@ SCompCodecEntryStrc paSCompDecompressCodecTable[5] = {
         /* .dwMethodMask = */ 0x8,
         /* .pfnCodec = */ &Storm::Source::SSComp::SCOMP_PkwareDecompress
     }
-};
+}; D2_GLOBAL_GUARD(paSCompDecompressCodecTable, "paSCompDecompressCodecTable");
 
 D2SSCompDeflateBlockEntryStrc gaSSCompDeflateBlockTable[10] = {
     {
@@ -238,7 +238,7 @@ D2SSCompDeflateBlockEntryStrc gaSSCompDeflateBlockTable[10] = {
         /* .nMaxChain = */ 0x1000,
         /* .pfnDeflateBlock = */ &Storm::_3rdparty::zlib::deflate::deflate_slow
     }
-};
+}; D2_GLOBAL_GUARD(gaSSCompDeflateBlockTable, "gaSSCompDeflateBlockTable");
 
 ZlibHuffCode gaZlibInflateTableMid[512] = {
     {
@@ -2801,7 +2801,7 @@ ZlibHuffCode gaZlibInflateTableMid[512] = {
         /* .bits = */ '\x09',
         /* .val = */ 0xff
     }
-};
+}; D2_GLOBAL_GUARD(gaZlibInflateTableMid, "gaZlibInflateTableMid");
 
 ZlibHuffCode gaZlibInflateTableStart[32] = {
     {
@@ -2964,7 +2964,7 @@ ZlibHuffCode gaZlibInflateTableStart[32] = {
         /* .bits = */ '\x05',
         /* .val = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gaZlibInflateTableStart, "gaZlibInflateTableStart");
 
 // also labelled: gnSSCompLZHBufferState, gaZlibBlTreeCodeOrderMinus3, cZlibBuildBlTree_0
 D2ZlibExtraLBitsBlOrderStrc gZlibExtraLBitsBlOrder = {
@@ -3021,7 +3021,7 @@ D2ZlibExtraLBitsBlOrderStrc gZlibExtraLBitsBlOrder = {
         0xf
     },
     /* .pad = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gZlibExtraLBitsBlOrder, "gZlibExtraLBitsBlOrder");
 
 // also labelled: gnSSCompLZHCompressedSize
 int gaZlibExtraDBits[30] = {
@@ -3055,7 +3055,7 @@ int gaZlibExtraDBits[30] = {
     0xc,
     0xd,
     0xd
-};
+}; D2_GLOBAL_GUARD(gaZlibExtraDBits, "gaZlibExtraDBits");
 
 // also labelled: gnSSCompBLZCompressedSize
 ct_data gaZlibStaticLTree[288] = {
@@ -4211,7 +4211,7 @@ ct_data gaZlibStaticLTree[288] = {
         /* .fc = */ 0xe3,
         /* .dl = */ 0x8
     }
-};
+}; D2_GLOBAL_GUARD(gaZlibStaticLTree, "gaZlibStaticLTree");
 
 // also labelled: gnSSCompPHDCompressedSize, gaZlibDistCodeMinus1
 D2ZlibStaticDTreeDistCodeStrc gZlibStaticDTreeDistCode = {
@@ -4851,7 +4851,7 @@ D2ZlibStaticDTreeDistCodeStrc gZlibStaticDTreeDistCode = {
         0x1d,
         0x1d
     }
-};
+}; D2_GLOBAL_GUARD(gZlibStaticDTreeDistCode, "gZlibStaticDTreeDistCode");
 
 uint8_t gaZlibLengthCodeTable[256] = {
     0x0,
@@ -5110,7 +5110,7 @@ uint8_t gaZlibLengthCodeTable[256] = {
     0x1b,
     0x1b,
     0x1c
-};
+}; D2_GLOBAL_GUARD(gaZlibLengthCodeTable, "gaZlibLengthCodeTable");
 
 uint32_t gdwCrc32Table0[256] = {
     0x0,
@@ -5369,7 +5369,7 @@ uint32_t gdwCrc32Table0[256] = {
     0xc30c8ea1,
     0x5a05df1b,
     0x2d02ef8d
-};
+}; D2_GLOBAL_GUARD(gdwCrc32Table0, "gdwCrc32Table0");
 
 uint32_t gdwCrc32Table5[256] = {
     0x0,
@@ -5628,11 +5628,11 @@ uint32_t gdwCrc32Table5[256] = {
     0x7ace0c74,
     0x9461b966,
     0xf10605de
-};
+}; D2_GLOBAL_GUARD(gdwCrc32Table5, "gdwCrc32Table5");
 
-int gdwUTF8ConversionTab[6] = { 0x0, 0x3080, 0xe2080, 0x3c82080, -0x5f7df80, -0x7df7df80 };
+int gdwUTF8ConversionTab[6] = { 0x0, 0x3080, 0xe2080, 0x3c82080, -0x5f7df80, -0x7df7df80 }; D2_GLOBAL_GUARD(gdwUTF8ConversionTab, "gdwUTF8ConversionTab");
 
-int gaUTF8ByteCountTable[72] = {
+uint8_t gaUTF8ByteCountTable[256] = {
     0x0,
     0x0,
     0x0,
@@ -5681,31 +5681,215 @@ int gaUTF8ByteCountTable[72] = {
     0x0,
     0x0,
     0x0,
-    0x1010101,
-    0x1010101,
-    0x1010101,
-    0x1010101,
-    0x1010101,
-    0x1010101,
-    0x1010101,
-    0x1010101,
-    0x2020202,
-    0x2020202,
-    0x2020202,
-    0x2020202,
-    0x3030303,
-    0x3030303,
-    0x4040404,
-    0x5050505,
     0x0,
     0x0,
-    0xc0,
-    0xe0,
-    0xf0,
-    0xf8,
-    0xfc,
-    0x0
-};
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x2,
+    0x3,
+    0x3,
+    0x3,
+    0x3,
+    0x3,
+    0x3,
+    0x3,
+    0x3,
+    0x4,
+    0x4,
+    0x4,
+    0x4,
+    0x5,
+    0x5,
+    0x5,
+    0x5
+}; D2_GLOBAL_GUARD(gaUTF8ByteCountTable, "gaUTF8ByteCountTable");
 
 uint16_t gszUnicodeLatin1_1[256] = {
     0x0,
@@ -5964,7 +6148,7 @@ uint16_t gszUnicodeLatin1_1[256] = {
     0xfd,
     0xfe,
     0xff
-};
+}; D2_GLOBAL_GUARD(gszUnicodeLatin1_1, "gszUnicodeLatin1_1");
 
 uint16_t gszUnicodeLatin2_1[256] = {
     0x0,
@@ -6223,7 +6407,7 @@ uint16_t gszUnicodeLatin2_1[256] = {
     0x2dd,
     0x2db,
     0x2c7
-};
+}; D2_GLOBAL_GUARD(gszUnicodeLatin2_1, "gszUnicodeLatin2_1");
 
 uint16_t gszUnicodeKorean_1[256] = {
     0x0,
@@ -6482,37 +6666,37 @@ uint16_t gszUnicodeKorean_1[256] = {
     0xb2,
     0x25a0,
     0xa0
-};
+}; D2_GLOBAL_GUARD(gszUnicodeKorean_1, "gszUnicodeKorean_1");
 
 D2StormListHead gMpqArchiveList = {
     /* .nLinkOffset = */ 0x0,
     /* .pPrevLink = */ (StormLinkStrc*)&gMpqArchiveList.pPrevLink,
     /* .pNext = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gMpqArchiveList, "gMpqArchiveList");
 
 D2StormListHead gSFileAsyncReqQueue = {
     /* .nLinkOffset = */ 0x0,
     /* .pPrevLink = */ (StormLinkStrc*)&gSFileAsyncReqQueue.pPrevLink,
     /* .pNext = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gSFileAsyncReqQueue, "gSFileAsyncReqQueue");
 
 D2StormListHead gSFileOpenFileList = {
     /* .nLinkOffset = */ 0x0,
     /* .pPrevLink = */ (StormLinkStrc*)&gSFileOpenFileList.pPrevLink,
     /* .pNext = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gSFileOpenFileList, "gSFileOpenFileList");
 
 D2StormListHead gSFileAudioStreamList = {
     /* .nLinkOffset = */ 0x0,
     /* .pPrevLink = */ (StormLinkStrc*)&gSFileAudioStreamList.pPrevLink,
     /* .pNext = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gSFileAudioStreamList, "gSFileAudioStreamList");
 
 D2StormListHead gSFileStreamRecordList = {
     /* .nLinkOffset = */ 0x0,
     /* .pPrevLink = */ (StormLinkStrc*)&gSFileStreamRecordList.pPrevLink,
     /* .pNext = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gSFileStreamRecordList, "gSFileStreamRecordList");
 
 char sRTTI_ARCHIVEREC_AllocTag[32] = {
     '.',
@@ -6547,7 +6731,7 @@ char sRTTI_ARCHIVEREC_AllocTag[32] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(sRTTI_ARCHIVEREC_AllocTag, "sRTTI_ARCHIVEREC_AllocTag");
 
 char sRTTI_EVENTREC_AllocTag[16] = {
     '.',
@@ -6566,7 +6750,7 @@ char sRTTI_EVENTREC_AllocTag[16] = {
     '@',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(sRTTI_EVENTREC_AllocTag, "sRTTI_EVENTREC_AllocTag");
 
 char sRTTI_REQUEST_AllocTag[16] = {
     '.',
@@ -6585,7 +6769,7 @@ char sRTTI_REQUEST_AllocTag[16] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(sRTTI_REQUEST_AllocTag, "sRTTI_REQUEST_AllocTag");
 
 char sRTTI_AUDIOSTREAM_AllocTag[20] = {
     '.',
@@ -6608,13 +6792,13 @@ char sRTTI_AUDIOSTREAM_AllocTag[20] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(sRTTI_AUDIOSTREAM_AllocTag, "sRTTI_AUDIOSTREAM_AllocTag");
 
 D2StormListHead gnStormErrorCallbackCount = {
     /* .nLinkOffset = */ 0x0,
     /* .pPrevLink = */ (StormLinkStrc*)&gnStormErrorCallbackCount.pPrevLink,
     /* .pNext = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gnStormErrorCallbackCount, "gnStormErrorCallbackCount");
 
 char gszSSystemListAllocTag[14] = {
     '.',
@@ -6631,7 +6815,7 @@ char gszSSystemListAllocTag[14] = {
     '@',
     '@',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(gszSSystemListAllocTag, "gszSSystemListAllocTag");
 
 char s___AUWNDREC___00708850[16] = {
     '.',
@@ -6650,19 +6834,19 @@ char s___AUWNDREC___00708850[16] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUWNDREC___00708850, "s___AUWNDREC___00708850");
 
 D2StormListHead gpWndTrackingListHead = {
     /* .nLinkOffset = */ 0x0,
     /* .pPrevLink = */ (StormLinkStrc*)&gpWndTrackingListHead.pPrevLink,
     /* .pNext = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gpWndTrackingListHead, "gpWndTrackingListHead");
 
-char s__I_00708874[4] = { '.', 'I', '\x00', '\x00' };
+char s__I_00708874[4] = { '.', 'I', '\x00', '\x00' }; D2_GLOBAL_GUARD(s__I_00708874, "s__I_00708874");
 
-char s__E_00708880[4] = { '.', 'E', '\x00', '\x00' };
+char s__E_00708880[4] = { '.', 'E', '\x00', '\x00' }; D2_GLOBAL_GUARD(s__E_00708880, "s__E_00708880");
 
-char s__D_0070888c[4] = { '.', 'D', '\x00', '\x00' };
+char s__D_0070888c[4] = { '.', 'D', '\x00', '\x00' }; D2_GLOBAL_GUARD(s__D_0070888c, "s__D_0070888c");
 
 char s___AUBREAKCMD___007088d8[16] = {
     '.',
@@ -6681,13 +6865,13 @@ char s___AUBREAKCMD___007088d8[16] = {
     '@',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUBREAKCMD___007088d8, "s___AUBREAKCMD___007088d8");
 
 D2StormListHead gpSevtBreakCmdListHead = {
     /* .nLinkOffset = */ 0x0,
     /* .pPrevLink = */ (StormLinkStrc*)&gpSevtBreakCmdListHead.pPrevLink,
     /* .pNext = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gpSevtBreakCmdListHead, "gpSevtBreakCmdListHead");
 
 char s___AUTMESSAGESOURCE___0072f9fc[24] = {
     '.',
@@ -6714,7 +6898,7 @@ char s___AUTMESSAGESOURCE___0072f9fc[24] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUTMESSAGESOURCE___0072f9fc, "s___AUTMESSAGESOURCE___0072f9fc");
 
 uint8_t gaCRT_PKWareLitLenBitsTableC[256] = {
     0xb,
@@ -6973,7 +7157,7 @@ uint8_t gaCRT_PKWareLitLenBitsTableC[256] = {
     0xd,
     0xd,
     0xd
-};
+}; D2_GLOBAL_GUARD(gaCRT_PKWareLitLenBitsTableC, "gaCRT_PKWareLitLenBitsTableC");
 
 char s___AUCMDDEF___0074c47c[16] = {
     '.',
@@ -6992,19 +7176,19 @@ char s___AUCMDDEF___0074c47c[16] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUCMDDEF___0074c47c, "s___AUCMDDEF___0074c47c");
 
 D2StormListHead gStormCmdListHeadBackslash = {
     /* .nLinkOffset = */ 0x0,
     /* .pPrevLink = */ (StormLinkStrc*)&gStormCmdListHeadBackslash.pPrevLink,
     /* .pNext = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gStormCmdListHeadBackslash, "gStormCmdListHeadBackslash");
 
 D2StormListHead gStormCmdListHeadSlash = {
     /* .nLinkOffset = */ 0x0,
     /* .pPrevLink = */ (StormLinkStrc*)&gStormCmdListHeadSlash.pPrevLink,
     /* .pNext = */ 0x0
-};
+}; D2_GLOBAL_GUARD(gStormCmdListHeadSlash, "gStormCmdListHeadSlash");
 
 int g_SMemHeapCleanupFlags[256] = {
     0,
@@ -7263,7 +7447,7 @@ int g_SMemHeapCleanupFlags[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(g_SMemHeapCleanupFlags, "g_SMemHeapCleanupFlags");
 
 double gdPow10Table[200] = {
     0,
@@ -7466,7 +7650,7 @@ double gdPow10Table[200] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gdPow10Table, "gdPow10Table");
 
 char szSFileBasePath[260] = {
     0,
@@ -7729,13 +7913,13 @@ char szSFileBasePath[260] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(szSFileBasePath, "szSFileBasePath");
 
 SErrAppFatalContextStrc gpSSystemThreadContextCallback = {
     /* .pfnCallback = */ nullptr,
     /* .nParam = */ 0,
     /* .dwThreadId = */ 0
-};
+}; D2_GLOBAL_GUARD(gpSSystemThreadContextCallback, "gpSSystemThreadContextCallback");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_007790cc = {
     /* .DebugInfo = */ nullptr,
@@ -7744,7 +7928,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_007790cc = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_007790cc, "lpCriticalSection_007790cc");
 
 CRITICAL_SECTION gaSLogCritSect[4] = {
     {
@@ -7779,61 +7963,61 @@ CRITICAL_SECTION gaSLogCritSect[4] = {
         /* .LockSemaphore = */ nullptr,
         /* .SpinCount = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaSLogCritSect, "gaSLogCritSect");
 
-D2SLogStrc * gaSLogHead[4] = { nullptr, nullptr, nullptr, nullptr };
+D2SLogStrc * gaSLogHead[4] = { nullptr, nullptr, nullptr, nullptr }; D2_GLOBAL_GUARD(gaSLogHead, "gaSLogHead");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-uint32_t gnSFileDataChunkSize = 0x20000;
-uint32_t gnSFileReadErrorMode = 0x2;
-uint32_t gbSFileSeekOptimization = 0x1;
-uint32_t g_SMemPageSize = 0;
-uint32_t ProtectMemory = 0;
-uint32_t g_SMemUnknownFlag = 0;
-uint32_t DebugMemory = 0;
-void * g_SMemPendingCleanupHeap = 0;
-uint32_t g_SMemDebugFillEnabled = 0;
-uint32_t g_SMemInitialized = 0;
-unsigned int guStringAlignmentTemp = {};
-uint32_t gbSStrConversionTablesInitialized = 0;
-IDirectSound * g_pDirectSound = 0;
-uint32_t gbAsyncIOWorkerShutdown = 0;
-D2StormAsyncOpStrc * gpCurrentAsyncIORequest = 0;
-pfnSFileReadError pfnSFileReadErrorHandler = (pfnSFileReadError)0;
-HANDLE ghAsyncIOThread = 0;
-uint32_t gnSFileWaveStreamBufferSize = 0;
-void * gpSFileExplodeWorkBuffer = 0;
-uint32_t gbSFileAsyncIOShutdown = 0;
-void * g_pStormMpqCryptTable = 0;
-uint32_t gnSFileAsyncBudgetBytesPerSec = 0;
-void * ghAsyncIOCompletionPort = 0;
-HANDLE ghAsyncIOEvent = 0;
-uint32_t gnSFileDirectAccessFlags = 0;
-uint16_t gnSFileSearchLocale = 0;
-uint8_t gnSFileSearchHashOffset = 0;
-pfnSFileOpenCallback fpSFileOpenCallback = (pfnSFileOpenCallback)0;
-void * gpSFileOpenCallbackParam = 0;
-uint32_t gnSSystemOption3 = 0;
-uint32_t gnSSystemOption1 = 0;
-uint32_t gnSSystemWaveBufferSize = 0;
-uint32_t gnSSystemAsyncReadSize = 0;
-uint32_t gbCompressionDebugOutput = 0;
-void * gpErrorModuleList = 0;
-uint32_t gbFormatErrorModulesInitialized = 0;
-uint32_t gbSSystemShutdownInProgress = 0;
-uint32_t dwLastErrorCode = 0;
-pfnBlizzardError pfnBlizzardErrorCallback = (pfnBlizzardError)0;
-void * gpScompTempBuffer = 0;
-uint32_t gnScompTempBufferOwnerThreadId = 0;
-uint32_t gpActiveWindow = 0;
-uint32_t gnSevtSnapshotActive = 0;
-void * gpEventHashBuckets = 0;
-void * gaEventRegistryHead = 0;
-uint32_t gnSevtRegisteredEventCount = 0;
-uint32_t gbScmdHasPriorityCommand = 0;
+uint32_t gnSFileDataChunkSize = 0x20000; D2_GLOBAL_GUARD(gnSFileDataChunkSize, "gnSFileDataChunkSize");
+uint32_t gnSFileReadErrorMode = 0x2; D2_GLOBAL_GUARD(gnSFileReadErrorMode, "gnSFileReadErrorMode");
+uint32_t gbSFileSeekOptimization = 0x1; D2_GLOBAL_GUARD(gbSFileSeekOptimization, "gbSFileSeekOptimization");
+uint32_t g_SMemPageSize = 0; D2_GLOBAL_GUARD(g_SMemPageSize, "g_SMemPageSize");
+uint32_t ProtectMemory = 0; D2_GLOBAL_GUARD(ProtectMemory, "ProtectMemory");
+uint32_t g_SMemUnknownFlag = 0; D2_GLOBAL_GUARD(g_SMemUnknownFlag, "g_SMemUnknownFlag");
+uint32_t DebugMemory = 0; D2_GLOBAL_GUARD(DebugMemory, "DebugMemory");
+void * g_SMemPendingCleanupHeap = 0; D2_GLOBAL_GUARD(g_SMemPendingCleanupHeap, "g_SMemPendingCleanupHeap");
+uint32_t g_SMemDebugFillEnabled = 0; D2_GLOBAL_GUARD(g_SMemDebugFillEnabled, "g_SMemDebugFillEnabled");
+uint32_t g_SMemInitialized = 0; D2_GLOBAL_GUARD(g_SMemInitialized, "g_SMemInitialized");
+unsigned int guStringAlignmentTemp = {}; D2_GLOBAL_GUARD(guStringAlignmentTemp, "guStringAlignmentTemp");
+uint32_t gbSStrConversionTablesInitialized = 0; D2_GLOBAL_GUARD(gbSStrConversionTablesInitialized, "gbSStrConversionTablesInitialized");
+IDirectSound * g_pDirectSound = 0; D2_GLOBAL_GUARD(g_pDirectSound, "g_pDirectSound");
+uint32_t gbAsyncIOWorkerShutdown = 0; D2_GLOBAL_GUARD(gbAsyncIOWorkerShutdown, "gbAsyncIOWorkerShutdown");
+D2StormAsyncOpStrc * gpCurrentAsyncIORequest = 0; D2_GLOBAL_GUARD(gpCurrentAsyncIORequest, "gpCurrentAsyncIORequest");
+pfnSFileReadError pfnSFileReadErrorHandler = (pfnSFileReadError)0; D2_GLOBAL_GUARD(pfnSFileReadErrorHandler, "pfnSFileReadErrorHandler");
+HANDLE ghAsyncIOThread = 0; D2_GLOBAL_GUARD(ghAsyncIOThread, "ghAsyncIOThread");
+uint32_t gnSFileWaveStreamBufferSize = 0; D2_GLOBAL_GUARD(gnSFileWaveStreamBufferSize, "gnSFileWaveStreamBufferSize");
+void * gpSFileExplodeWorkBuffer = 0; D2_GLOBAL_GUARD(gpSFileExplodeWorkBuffer, "gpSFileExplodeWorkBuffer");
+uint32_t gbSFileAsyncIOShutdown = 0; D2_GLOBAL_GUARD(gbSFileAsyncIOShutdown, "gbSFileAsyncIOShutdown");
+void * g_pStormMpqCryptTable = 0; D2_GLOBAL_GUARD(g_pStormMpqCryptTable, "g_pStormMpqCryptTable");
+uint32_t gnSFileAsyncBudgetBytesPerSec = 0; D2_GLOBAL_GUARD(gnSFileAsyncBudgetBytesPerSec, "gnSFileAsyncBudgetBytesPerSec");
+void * ghAsyncIOCompletionPort = 0; D2_GLOBAL_GUARD(ghAsyncIOCompletionPort, "ghAsyncIOCompletionPort");
+HANDLE ghAsyncIOEvent = 0; D2_GLOBAL_GUARD(ghAsyncIOEvent, "ghAsyncIOEvent");
+uint32_t gnSFileDirectAccessFlags = 0; D2_GLOBAL_GUARD(gnSFileDirectAccessFlags, "gnSFileDirectAccessFlags");
+uint16_t gnSFileSearchLocale = 0; D2_GLOBAL_GUARD(gnSFileSearchLocale, "gnSFileSearchLocale");
+uint8_t gnSFileSearchHashOffset = 0; D2_GLOBAL_GUARD(gnSFileSearchHashOffset, "gnSFileSearchHashOffset");
+pfnSFileOpenCallback fpSFileOpenCallback = (pfnSFileOpenCallback)0; D2_GLOBAL_GUARD(fpSFileOpenCallback, "fpSFileOpenCallback");
+void * gpSFileOpenCallbackParam = 0; D2_GLOBAL_GUARD(gpSFileOpenCallbackParam, "gpSFileOpenCallbackParam");
+uint32_t gnSSystemOption3 = 0; D2_GLOBAL_GUARD(gnSSystemOption3, "gnSSystemOption3");
+uint32_t gnSSystemOption1 = 0; D2_GLOBAL_GUARD(gnSSystemOption1, "gnSSystemOption1");
+uint32_t gnSSystemWaveBufferSize = 0; D2_GLOBAL_GUARD(gnSSystemWaveBufferSize, "gnSSystemWaveBufferSize");
+uint32_t gnSSystemAsyncReadSize = 0; D2_GLOBAL_GUARD(gnSSystemAsyncReadSize, "gnSSystemAsyncReadSize");
+uint32_t gbCompressionDebugOutput = 0; D2_GLOBAL_GUARD(gbCompressionDebugOutput, "gbCompressionDebugOutput");
+void * gpErrorModuleList = 0; D2_GLOBAL_GUARD(gpErrorModuleList, "gpErrorModuleList");
+uint32_t gbFormatErrorModulesInitialized = 0; D2_GLOBAL_GUARD(gbFormatErrorModulesInitialized, "gbFormatErrorModulesInitialized");
+uint32_t gbSSystemShutdownInProgress = 0; D2_GLOBAL_GUARD(gbSSystemShutdownInProgress, "gbSSystemShutdownInProgress");
+uint32_t dwLastErrorCode = 0; D2_GLOBAL_GUARD(dwLastErrorCode, "dwLastErrorCode");
+pfnBlizzardError pfnBlizzardErrorCallback = (pfnBlizzardError)0; D2_GLOBAL_GUARD(pfnBlizzardErrorCallback, "pfnBlizzardErrorCallback");
+void * gpScompTempBuffer = 0; D2_GLOBAL_GUARD(gpScompTempBuffer, "gpScompTempBuffer");
+uint32_t gnScompTempBufferOwnerThreadId = 0; D2_GLOBAL_GUARD(gnScompTempBufferOwnerThreadId, "gnScompTempBufferOwnerThreadId");
+uint32_t gpActiveWindow = 0; D2_GLOBAL_GUARD(gpActiveWindow, "gpActiveWindow");
+uint32_t gnSevtSnapshotActive = 0; D2_GLOBAL_GUARD(gnSevtSnapshotActive, "gnSevtSnapshotActive");
+void * gpEventHashBuckets = 0; D2_GLOBAL_GUARD(gpEventHashBuckets, "gpEventHashBuckets");
+void * gaEventRegistryHead = 0; D2_GLOBAL_GUARD(gaEventRegistryHead, "gaEventRegistryHead");
+uint32_t gnSevtRegisteredEventCount = 0; D2_GLOBAL_GUARD(gnSevtRegisteredEventCount, "gnSevtRegisteredEventCount");
+uint32_t gbScmdHasPriorityCommand = 0; D2_GLOBAL_GUARD(gbScmdHasPriorityCommand, "gbScmdHasPriorityCommand");
 
 namespace D2Common::Drlg::Maze {
 
@@ -8163,10 +8347,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -8174,6 +8354,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

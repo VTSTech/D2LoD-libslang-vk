@@ -29,8 +29,6 @@
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Lang/StrTable/strtable.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Debug.h"
 #include "Fog/Fog.h"
@@ -60,9 +58,8 @@
 
 namespace D2Common::DATATBLS::MonsterTbls {
 
-static uint8_t gDelim_A_Act;
-static uint8_t gDelim_n_NpcClass;
-static uint8_t gnAutoItemTypeTCCount;
+static unsigned int gDelim_A_Act = 0x4341; D2_STATIC_GUARD(gDelim_A_Act, "D2Common::DATATBLS::MonsterTbls::gDelim_A_Act");
+static char gDelim_n_NpcClass[4] = { 'n', 'p', 'c', '\x00' }; D2_STATIC_GUARD(gDelim_n_NpcClass, "D2Common::DATATBLS::MonsterTbls::gDelim_n_NpcClass");
 
 void FilterNameString(char * szText1, char * szText2) {
     char cChar;
@@ -1903,7 +1900,7 @@ void __stdcall TC_GenerateAutoItemTypeTreasureClasses() {
           break;
         }
         if (szItemTypeCode[0x1d] != '\0') {
-          gnAutoItemTypeTCCount++;
+          *(uint16_t*)(char*)&gnAutoItemTypeTCCount = (short int)gnAutoItemTypeTCCount + 1;
           nLevelStep = 3;
           do {
             nTCLinkIdx = Fog::Src::Excel::FOG_GetTxtLinkRecord(sgtDataTable.pTxtItemTypesLink, nRecordId, szTCLinkCode);
@@ -5487,7 +5484,6 @@ D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTableByIndex(int32_t nIndex) {
 
 // Loads and compiles the MonEquip.txt data table at startup. Declares the column schema (monster link, level, oninit, three item/loc/mod triplets with BodyLocs/Items excel linkers) and calls CompileTxt to allocate sgtDataTable.pTxtMonEquip (record size 0x1c). Halts with fatal error 0xd1c if the row count overflows 0x7fff. Post-processes: back-links each MonStats row to its first MonEquip row (nMonEquipId) and validates each equipment slot's loc and item code (blanks slots whose item name isn't a valid excel class id). Side effects only; no return.
 void __fastcall TXT_AllocTxt_MonEquip(D2PoolManagerStrc * pMemory) {
-    int32_t nItemClassId;
     int nMonStatIdx;
     short int* pMonStatEntry;
     short int* pLocSlot;
@@ -5495,6 +5491,7 @@ void __fastcall TXT_AllocTxt_MonEquip(D2PoolManagerStrc * pMemory) {
     D2BinFieldInputStrc monequip[13];
     int nSlotLoop;
     int nEquipRow;
+    int32_t nErrCode;
     char* pMonStatsCode;
     monequip[0].eType = FIELDTYPE_NAME_SHORT;
     monequip[4].nOffset = 0x14;
@@ -5594,7 +5591,7 @@ void __fastcall TXT_AllocTxt_MonEquip(D2PoolManagerStrc * pMemory) {
             puVar4 = (uint32_t*)(pMonStatEntry + 4);
             nSlotLoop = 3;
             do {
-              if ((char)*pLocSlot < '\x01' || '\n' < (char)*pLocSlot || *puVar4 != 0x20202020 && (nItemClassId = Fog::Src::Excel::GetClassIdFromName(sgptDataTable->sTxtItemsLink, *puVar4, 1) , nItemClassId < 0)) {
+              if ((char)*pLocSlot < '\x01' || '\n' < (char)*pLocSlot || *puVar4 != 0x20202020 && (nErrCode = Fog::Src::Excel::GetClassIdFromName(sgptDataTable->sTxtItemsLink, *puVar4, 1) , nErrCode < 0)) {
                 *(char*)pLocSlot = '\0';
               }
 
@@ -5679,8 +5676,8 @@ void __stdcall MONSTERTBLS_FreeMonUModTxt() {
 // Populates sgtDataTable.pParsedTreasureClassDiffActChestABC by looking up each "Act N&lt;diff&gt; Chest &lt;A|B|C&gt;" TreasureClass name (formatted via sprintf) in the treasure-class link table for all 3 difficulties × 5 acts × 3 chest types (A/B/C). Stores a pointer to the resolved D2ParsedTreasureClassStrc or NULL for each slot.
 void __stdcall TXT_AllocParsedTreasureClassDiffActChestABC() {
     // Static local variables (originally global data)
-    static char * gaszTreasureClassChestColumnNames[3] = { &CHAR_A_006ed5ac, &CHAR_B_006ed5b0, &CHAR_C_006ed5b4 };
-    static void * gapTreasureClassChestParsedData[3] = { (void*)lpDefault_006cc837, (void *)s___N__006ed59c, (void *)s___H__006ed5a4 };
+    static char * gaszTreasureClassChestColumnNames[3] = { s_A_006ed5ac, s_B_006ed5b0, s_C_006ed5b4 }; D2_STATIC_GUARD(gaszTreasureClassChestColumnNames, "D2Common::DATATBLS::MonsterTbls::TXT_AllocParsedTreasureClassDiffActChestABC::gaszTreasureClassChestColumnNames");
+    static void * gapTreasureClassChestParsedData[3] = { (void*)lpDefault_006cc837, (void *)s___N__006ed59c, (void *)s___H__006ed5a4 }; D2_STATIC_GUARD(gapTreasureClassChestParsedData, "D2Common::DATATBLS::MonsterTbls::TXT_AllocParsedTreasureClassDiffActChestABC::gapTreasureClassChestParsedData");
 
     int nActNum;
     int32_t nTCIdx;

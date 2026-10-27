@@ -125,7 +125,7 @@ BOOL PLRMODES_CanInterruptCurrentMode(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, u
     0x1,
     0x1,
     0x0
-};
+}; D2_STATIC_GUARD(PLRMODES_CanInterruptCaseIndex, "D2Game::PLAYER::PlayerModes::PLRMODES_CanInterruptCurrentMode::PLRMODES_CanInterruptCaseIndex");
 
     D2UnitStrc* pCursorItem_lcl;
     int32_t iVar1;
@@ -305,10 +305,10 @@ int32_t __fastcall PLRMODES_ModeCallback_Neutral(::SGAMEDATA * pGame, D2UnitStrc
 
 // Begins a player movement path and transitions animation mode. Restores velocity/path type, then normalises the requested mode: Run falls back to Walk if stamina is 0; Walk/TownWalk are promoted to TownWalk when in town; KnockBack sets path type 8 and distance 5. Calculates the path; if path has waypoints, calls FreeCombatAndChangeAnimMode + clears anim timers; otherwise falls back to idle mode.
 void __stdcall PLRMODES_StartPathAndChangeMode(::SGAMEDATA * pGame, eD2PlayerAnimMode dwParam, D2UnitStrc * pUnit) {
-    int32_t nErrorAddress;
     int nStamina;
     D2RoomStrc* pRoom;
     BOOL bInTown;
+    int32_t nErrorLine;
     if (!pGame) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x138);
       exit(-1);
@@ -337,8 +337,8 @@ void __stdcall PLRMODES_StartPathAndChangeMode(::SGAMEDATA * pGame, eD2PlayerAni
 
     D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
     D2Common::Units::SetCurrentSkill(pUnit, nullptr);
-    nErrorAddress = D2Common::PATH::DynamicPath::GetPathPointsSize(pDynamicPath);
-    if (nErrorAddress) {
+    nErrorLine = D2Common::PATH::DynamicPath::GetPathPointsSize(pDynamicPath);
+    if (nErrorLine) {
       UNIT::SUnit::FreeCombatAndChangeAnimMode(pGame, pUnit, dwParam);
       UNIT::SUnit::UNITS_ClearAnimTimerEvents(pGame, pUnit);
       UNIT::SUnit::UNITS_ClearAnimAndTriggerEndAnim(pGame, pUnit);
@@ -476,7 +476,7 @@ void __stdcall PLRMODES_UnequipAndPrepareItemForDrop(::SGAMEDATA * pGame, D2Unit
     D2Common::INVENTORY::Inventory::INVENTORY_SwapPrimaryWeaponOnRemoval(pInventory, pUnit2);
     D2UnitStrc* pOwnerUnit = D2Common::INVENTORY::Inventory::ItemBelongsToInventoryOfPlayer(pInventory, pUnit2);
     if (!pOwnerUnit) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x25d);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x25d);
       exit(-1);
     } else {
       eD2ItemTypes eItemType;
@@ -504,7 +504,7 @@ void __stdcall PLRMODES_UnequipAndPrepareItemForDrop(::SGAMEDATA * pGame, D2Unit
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x25e);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x25e);
       exit(-1);
     }
 }
@@ -1811,7 +1811,7 @@ void __fastcall PLRMODES_ProcessPlayerMode(::SGAMEDATA * pGame, D2UnitStrc * pUn
     &D2Game::PLAYER::PlayerModes::PLRMODES_ModeCallback_DeathDead,
     &D2Game::PLAYER::PlayerModes::PLRMODES_ModeCallback_AttackSkill,
     &D2Game::PLAYER::PlayerModes::PLRMODES_ModeCallback_WalkRunBlock
-};
+}; D2_STATIC_GUARD(gaPlayerModeCallbacks, "D2Game::PLAYER::PlayerModes::PLRMODES_ProcessPlayerMode::gaPlayerModeCallbacks");
 
     int nCallbackResult;
     int nAnimMode = !pUnit ? 0 : pUnit->eAnimMode.ePlayerMode;

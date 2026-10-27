@@ -49,6 +49,33 @@ typedef void* _locale_t;
 // Ghidra decompiler pseudo-operations (no instruction-level C spelling)
 static inline bool D2_IsNaN(double x) { return x != x; }
 
+// Guard zones between globals (the loud build; see support/d2_loud.cpp). The generator
+// emits one of these after every data definition; without REDIVIVUS_LOUD_GUARDS they are
+// empty. The fill reads as 0xD2A5D2A5: negative as any signed width, a kernel-half pointer.
+#ifdef REDIVIVUS_LOUD_GUARDS
+#include <type_traits>
+struct D2GuardEntry {
+  const void* pOwner;
+  uint32_t nOwnerSize;
+  const unsigned char* pGuard;
+  const char* pszName;
+};
+typedef unsigned char D2GuardBytes[32];
+#define D2_GUARD_FILL {0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2,0xA5,0xD2}
+#define D2_GUARD_TYPE(ident) std::conditional<std::is_const<std::remove_all_extents<decltype(ident)>::type>::value, const D2GuardBytes, D2GuardBytes>::type
+#define D2_GUARD_ENTRY(ident, qname) static const D2GuardEntry d2guardent_##ident __attribute__((used, section(".d2grd$m"))) = { (const void*)&ident, (uint32_t)sizeof(ident), d2guard_##ident, qname }
+#define D2_GUARD_ENTRY_Z(ident, qname) static const D2GuardEntry d2guardentz_##ident __attribute__((used, section(".d2grd$m"))) = { (const void*)&ident, (uint32_t)sizeof(ident), d2guardz_##ident, qname }
+#define D2_GLOBAL_GUARD(ident, qname) extern D2_GUARD_TYPE(ident) d2guard_##ident; D2_GUARD_TYPE(ident) d2guard_##ident __attribute__((used, aligned(1))) = D2_GUARD_FILL; D2_GUARD_ENTRY(ident, qname); D2GuardBytes d2guardz_##ident __attribute__((used, aligned(1))); D2_GUARD_ENTRY_Z(ident, qname)
+#define D2_GLOBAL_GUARD_BSS(ident, qname) D2GuardBytes d2guard_##ident __attribute__((used, aligned(1))); D2_GUARD_ENTRY(ident, qname)
+#define D2_STATIC_GUARD(ident, qname) static D2_GUARD_TYPE(ident) d2guard_##ident __attribute__((used, aligned(1))) = D2_GUARD_FILL; D2_GUARD_ENTRY(ident, qname); static D2GuardBytes d2guardz_##ident __attribute__((used, aligned(1))); D2_GUARD_ENTRY_Z(ident, qname)
+#define D2_STATIC_GUARD_BSS(ident, qname) static D2GuardBytes d2guard_##ident __attribute__((used, aligned(1))); D2_GUARD_ENTRY(ident, qname)
+#else
+#define D2_GLOBAL_GUARD(ident, qname)
+#define D2_GLOBAL_GUARD_BSS(ident, qname)
+#define D2_STATIC_GUARD(ident, qname)
+#define D2_STATIC_GUARD_BSS(ident, qname)
+#endif
+
 // Ghidra models CPUID as one pseudo-op per leaf, each returning a pointer to
 // the four result registers, read back as *(uint32_t*)(r + 0|4|8|0xc).
 static inline int D2_Cpuid(uint32_t nLeaf) {

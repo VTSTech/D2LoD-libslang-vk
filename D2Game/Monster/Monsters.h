@@ -58,7 +58,7 @@ namespace D2Game::Monsters {
 struct D2MonLvlTxt * __fastcall GetMonLvlTxt(int32_t nMonLvlId);
 uint32_t __fastcall MONSTER_CheckMonTypeHasFlag(struct D2UnitStrc * pUnit, int32_t nMonTypeFlag);
 int32_t __fastcall GetUmodConstant(int32_t nUmodId);
-int32_t __fastcall GetMonUModList(struct D2UnitStrc * pUnit);
+uint8_t * __fastcall GetMonUModList(struct D2UnitStrc * pUnit);
 // 2022.01.09 - dzik
 uint16_t __fastcall GetNameSeed(struct D2UnitStrc * pUnit);
 // 2022.01.09 - dzik

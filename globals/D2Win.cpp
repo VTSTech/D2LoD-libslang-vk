@@ -181,7 +181,7 @@ D2WinWndHandlerStrc gaUIWindowHandlers[33] = {
         /* .nMessage = */ 0x20a,
         /* .pfnCallback = */ &D2Win::Src::D2WinMain::INPUT_FormMouseWheel
     }
-};
+}; D2_GLOBAL_GUARD(gaUIWindowHandlers, "gaUIWindowHandlers");
 
 uint32_t gaCompCharClassTokens[25] = {
     0x20204d41,
@@ -209,7 +209,7 @@ uint32_t gaCompCharClassTokens[25] = {
     0x2020304f,
     0x20204354,
     0x20204f52
-};
+}; D2_GLOBAL_GUARD(gaCompCharClassTokens, "gaCompCharClassTokens");
 
 uint32_t gaCompAnimModeTokens[20] = {
     0x20205444,
@@ -232,7 +232,7 @@ uint32_t gaCompAnimModeTokens[20] = {
     0x20204444,
     0x20204847,
     0x20204847
-};
+}; D2_GLOBAL_GUARD(gaCompAnimModeTokens, "gaCompAnimModeTokens");
 
 uint32_t gaCompWeaponClassTokens[15] = {
     0x0,
@@ -250,7 +250,7 @@ uint32_t gaCompWeaponClassTokens[15] = {
     0x20747331,
     0x20317468,
     0x20327468
-};
+}; D2_GLOBAL_GUARD(gaCompWeaponClassTokens, "gaCompWeaponClassTokens");
 
 D2CompCharacterCompositeItemStrc gaCompDefaultCompositeItems[283] = {
     {
@@ -1668,7 +1668,7 @@ D2CompCharacterCompositeItemStrc gaCompDefaultCompositeItems[283] = {
         /* .nWeaponClass = */ 0x4,
         /* .nItemTypeIndex = */ 0x24
     }
-};
+}; D2_GLOBAL_GUARD(gaCompDefaultCompositeItems, "gaCompDefaultCompositeItems");
 
 // also labelled: gaItemTypeColorByQuality
 int gaCompWeaponClassByCodeIndex[14] = {
@@ -1686,7 +1686,7 @@ int gaCompWeaponClassByCodeIndex[14] = {
     0xc,
     0xd,
     0xe
-};
+}; D2_GLOBAL_GUARD(gaCompWeaponClassByCodeIndex, "gaCompWeaponClassByCodeIndex");
 
 // also labelled: gaD2CompItemColorMappingKeys
 int gaCompWeaponClassCodeMap[26] = {
@@ -1716,9 +1716,56 @@ int gaCompWeaponClassCodeMap[26] = {
     0xc,
     0x20327468,
     0xd
-};
+}; D2_GLOBAL_GUARD(gaCompWeaponClassCodeMap, "gaCompWeaponClassCodeMap");
 
-eD2RendererMode D2GFX_eRendererMode = 0;
+eD2RendererMode D2GFX_eRendererMode = 0; D2_GLOBAL_GUARD(D2GFX_eRendererMode, "D2GFX_eRendererMode");
+
+// [vanilla-plus fix 24, merged] TRUE extent = 39 bytes: D2WINPAL_LoadPaletteFiles
+// writes 9 PALETTEENTRY (36B) + 1 manual RGB triple (3B) here (D2WinPalette.cpp ~:163-174);
+// the peFlags 4th byte of the 10th slot is never written (merge correction of the earlier
+// 40B note - the write overran a 4B uint32_t decl into gPaletteAct1[0..35], tinting act1
+// plane-0 remap entries 0-8; extent now exact and guarded).
+uint8_t gnPaletteIndexCounter[39] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+}; D2_GLOBAL_GUARD(gnPaletteIndexCounter, "gnPaletteIndexCounter");
 
 uint8_t gPaletteTransposeBase[3328] = {
     0,
@@ -5049,7 +5096,7 @@ uint8_t gPaletteTransposeBase[3328] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gPaletteTransposeBase, "gPaletteTransposeBase");
 
 uint8_t gPaletteMenuInGame[256] = {
     0,
@@ -5308,7 +5355,7 @@ uint8_t gPaletteMenuInGame[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gPaletteMenuInGame, "gPaletteMenuInGame");
 
 uint8_t gPaletteAct1Outdoor[32768] = {
     0,
@@ -38079,7 +38126,7 @@ uint8_t gPaletteAct1Outdoor[32768] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gPaletteAct1Outdoor, "gPaletteAct1Outdoor");
 
 uint8_t gPaletteAct2[65536] = {
     0,
@@ -103618,7 +103665,7 @@ uint8_t gPaletteAct2[65536] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gPaletteAct2, "gPaletteAct2");
 
 uint8_t gPaletteUnits[256] = {
     0,
@@ -103877,7 +103924,7 @@ uint8_t gPaletteUnits[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gPaletteUnits, "gPaletteUnits");
 
 uint8_t gPaletteDataMenuInGame[256] = {
     0,
@@ -104136,7 +104183,7 @@ uint8_t gPaletteDataMenuInGame[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gPaletteDataMenuInGame, "gPaletteDataMenuInGame");
 
 PALETTEENTRY MostLikelyCurrentPalletePtr[256] = {
     {
@@ -105675,7 +105722,7 @@ PALETTEENTRY MostLikelyCurrentPalletePtr[256] = {
         /* .peBlue = */ 0,
         /* .peFlags = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(MostLikelyCurrentPalletePtr, "MostLikelyCurrentPalletePtr");
 
 uint8_t gPaletteDataBase[12544] = {
     0,
@@ -118222,7 +118269,7 @@ uint8_t gPaletteDataBase[12544] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gPaletteDataBase, "gPaletteDataBase");
 
 uint8_t gPaletteAct5[65536] = {
     0,
@@ -183761,7 +183808,7 @@ uint8_t gPaletteAct5[65536] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gPaletteAct5, "gPaletteAct5");
 
 uint8_t gPaletteActNeutral[65536] = {
     0,
@@ -249300,7 +249347,7 @@ uint8_t gPaletteActNeutral[65536] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gPaletteActNeutral, "gPaletteActNeutral");
 
 D2FontCacheEntryStrc gaFontCache[14] = {
     {
@@ -249401,7 +249448,7 @@ D2FontCacheEntryStrc gaFontCache[14] = {
         /* .pGlyphs = */ nullptr,
         /* .dwLRUTimestamp = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaFontCache, "gaFontCache");
 
 uint8_t gaGlideEmblemPrimaryColorTableEntries[12] = {
     0,
@@ -249416,7 +249463,7 @@ uint8_t gaGlideEmblemPrimaryColorTableEntries[12] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaGlideEmblemPrimaryColorTableEntries, "gaGlideEmblemPrimaryColorTableEntries");
 
 D2CompCharacterCompositeItemStrc gaCompCharacterCompositeItems[255] = {
     {
@@ -250694,7 +250741,7 @@ D2CompCharacterCompositeItemStrc gaCompCharacterCompositeItems[255] = {
         /* .nWeaponClass = */ 0,
         /* .nItemTypeIndex = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaCompCharacterCompositeItems, "gaCompCharacterCompositeItems");
 
 // also labelled: gpItemTypeHierarchy
 int gaCompTwoHandedWeaponClass[255] = {
@@ -250953,7 +251000,7 @@ int gaCompTwoHandedWeaponClass[255] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaCompTwoHandedWeaponClass, "gaCompTwoHandedWeaponClass");
 
 uint8_t gaGlideEmblemSecondaryColorTableEntries[12] = {
     0,
@@ -250968,7 +251015,7 @@ uint8_t gaGlideEmblemSecondaryColorTableEntries[12] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaGlideEmblemSecondaryColorTableEntries, "gaGlideEmblemSecondaryColorTableEntries");
 
 char gpSmackerVideoBuffer[260] = {
     0,
@@ -251231,81 +251278,70 @@ char gpSmackerVideoBuffer[260] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gpSmackerVideoBuffer, "gpSmackerVideoBuffer");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-uint32_t gbCursorVisible = 0x1;
-uint32_t gbWindowIsActive = 0x1;
-uint32_t gbMessageLoopActive = 0x1;
-uint32_t gbPaletteGammaShiftEnabled = 0x1;
-uint32_t gnTextBoxLineSpacing = 0x4;
-int32_t gnLastUsedFontId = 0x1;
-uint32_t gnFontIdSmall = 0x10;
-uint32_t gnFontIdLarge = 0x11;
-uint32_t gnFontIdBody = 0x3;
-uint32_t gnD2CompCOFLayerCount = 0x14;
+uint32_t gbCursorVisible = 0x1; D2_GLOBAL_GUARD(gbCursorVisible, "gbCursorVisible");
+uint32_t gbWindowIsActive = 0x1; D2_GLOBAL_GUARD(gbWindowIsActive, "gbWindowIsActive");
+uint32_t gbMessageLoopActive = 0x1; D2_GLOBAL_GUARD(gbMessageLoopActive, "gbMessageLoopActive");
+uint32_t gbPaletteGammaShiftEnabled = 0x1; D2_GLOBAL_GUARD(gbPaletteGammaShiftEnabled, "gbPaletteGammaShiftEnabled");
+uint32_t gnTextBoxLineSpacing = 0x4; D2_GLOBAL_GUARD(gnTextBoxLineSpacing, "gnTextBoxLineSpacing");
+int32_t gnLastUsedFontId = 0x1; D2_GLOBAL_GUARD(gnLastUsedFontId, "gnLastUsedFontId");
+uint32_t gnFontIdSmall = 0x10; D2_GLOBAL_GUARD(gnFontIdSmall, "gnFontIdSmall");
+uint32_t gnFontIdLarge = 0x11; D2_GLOBAL_GUARD(gnFontIdLarge, "gnFontIdLarge");
+uint32_t gnFontIdBody = 0x3; D2_GLOBAL_GUARD(gnFontIdBody, "gnFontIdBody");
+uint32_t gnD2CompCOFLayerCount = 0x14; D2_GLOBAL_GUARD(gnD2CompCOFLayerCount, "gnD2CompCOFLayerCount");
 // also labelled: gnD2CompItemColorMappingCount
-unsigned int gnCompWeaponClassCodeMapCount = 0xd;
-DC6 * gpCursorDC6 = 0;
-uint32_t gnWinMainState = 0;
-uint32_t gbFormActivated = 0;
-uint32_t gbMouseInWindow = 0;
-uint32_t ghwndMsgHook = 0;
-unsigned int gdwLastScreenshotTick = {};
-D2FogArchiveStrc * MPQ_d2Xmusic = 0;
-D2FogArchiveStrc * MPQ_d2sfx = 0;
-D2FogArchiveStrc * MPQ_d2delta = 0;
-D2FogArchiveStrc * MPQ_d2char = 0;
-D2FogArchiveStrc * MPQ_d2video = 0;
-D2FogArchiveStrc * MPQ_d2Xtalk = 0;
-D2FogArchiveStrc * MPQ_d2data = 0;
-D2FogArchiveStrc * MPQ_d2kfixup = 0;
-D2FogArchiveStrc * MPQ_d2speech = 0;
-D2FogArchiveStrc * MPQ_d2music = 0;
-D2FogArchiveStrc * MPQ_d2Xvideo = 0;
-D2FogArchiveStrc * MPQ_patch_d2 = 0;
-D2FogArchiveStrc * MPQ_d2exp = 0;
-uint32_t gnPaletteGammaShiftState = 0;
-// [vanilla-plus fix 24] TRUE extent = 40 bytes: D2WINPAL_LoadPaletteFiles
-// writes 9 PALETTEENTRY (36B) + 1 manual triple (4B) here (D2WinPalette.cpp).
-// The old uint32_t (4B) declaration made the remaining 36B of that write
-// overrun into gPaletteAct1[0..35] - the act1 plane-0 remap entries 0-8 got
-// overwritten with the text-color RGB triples (bytes read as remap indices),
-// tinting any OOG/act1 sprite whose pixels resolve through those entries.
-// This is also the prime suspect for the char-select "Expansion Character"
-// green->purple report and the earlier glide "discolored text items" sighting.
-// Consumers (palette table slot 0x45, read as bytes at n*3) are unaffected:
-// the memory content is the same verbatim PL2 copy either way.
-uint8_t gnPaletteIndexCounter[40] = {};
-uint8_t gPaletteAct1[196608] = {};
-uint32_t gbGammaShiftActive = 0;
-unsigned int gdwPaletteShiftStartTick = {};
-uint32_t gbCompactLineSpacingMode = 0;
-DC6 * * gppDC6FontCache = 0;
-pfnFontGetGlyphEntry gpfnFontGetCharWidth = (pfnFontGetGlyphEntry)0;
-DC6 * gpMonsterIndicatorDC6 = 0;
-uint8_t gcTooltipBarColor = 0;
-uint8_t gbFontIsKoreanChatMode = 0;
-uint32_t nD2CompItemsSize = 0;
-void * pD2CompItems = 0;
-uint8_t gaItemPaletteTransformData[241920] = {};
-D2TxtLinkStrc * gnItemTypesCacheHandle = 0;
-void * gpItemTypesTxt = 0;
-size_t gnD2CompCompressionBufferSize = 0;
-int gnMaxCharacters = 0;
-D2CharSelCompStrc * gpCompositeUnitListHead = 0;
-void * gpCOFCacheHead = 0;
-DC6 * gpUniqueCursorDC6 = 0;
-uint32_t gnUniqueCursorMaxFrames = 0;
-DC6 * gpPentaSpinCursorDC6 = 0;
-uint32_t gnPentaSpinCursorMaxFrames = 0;
-uint8_t gbSmackerVideoFlags = 0;
-uint32_t gbSmackerKeepTempFile = 0;
-DC6 * gpPentSpinCursorDC6 = 0;
-D2WinPopup * gpD2WinPopupControl = 0;
+unsigned int gnCompWeaponClassCodeMapCount = 0xd; D2_GLOBAL_GUARD(gnCompWeaponClassCodeMapCount, "gnCompWeaponClassCodeMapCount");
+DC6 * gpCursorDC6 = 0; D2_GLOBAL_GUARD(gpCursorDC6, "gpCursorDC6");
+uint32_t gnWinMainState = 0; D2_GLOBAL_GUARD(gnWinMainState, "gnWinMainState");
+uint32_t gbFormActivated = 0; D2_GLOBAL_GUARD(gbFormActivated, "gbFormActivated");
+uint32_t gbMouseInWindow = 0; D2_GLOBAL_GUARD(gbMouseInWindow, "gbMouseInWindow");
+uint32_t ghwndMsgHook = 0; D2_GLOBAL_GUARD(ghwndMsgHook, "ghwndMsgHook");
+unsigned int gdwLastScreenshotTick = {}; D2_GLOBAL_GUARD(gdwLastScreenshotTick, "gdwLastScreenshotTick");
+D2FogArchiveStrc * MPQ_d2Xmusic = 0; D2_GLOBAL_GUARD(MPQ_d2Xmusic, "MPQ_d2Xmusic");
+D2FogArchiveStrc * MPQ_d2sfx = 0; D2_GLOBAL_GUARD(MPQ_d2sfx, "MPQ_d2sfx");
+D2FogArchiveStrc * MPQ_d2delta = 0; D2_GLOBAL_GUARD(MPQ_d2delta, "MPQ_d2delta");
+D2FogArchiveStrc * MPQ_d2char = 0; D2_GLOBAL_GUARD(MPQ_d2char, "MPQ_d2char");
+D2FogArchiveStrc * MPQ_d2video = 0; D2_GLOBAL_GUARD(MPQ_d2video, "MPQ_d2video");
+D2FogArchiveStrc * MPQ_d2Xtalk = 0; D2_GLOBAL_GUARD(MPQ_d2Xtalk, "MPQ_d2Xtalk");
+D2FogArchiveStrc * MPQ_d2data = 0; D2_GLOBAL_GUARD(MPQ_d2data, "MPQ_d2data");
+D2FogArchiveStrc * MPQ_d2kfixup = 0; D2_GLOBAL_GUARD(MPQ_d2kfixup, "MPQ_d2kfixup");
+D2FogArchiveStrc * MPQ_d2speech = 0; D2_GLOBAL_GUARD(MPQ_d2speech, "MPQ_d2speech");
+D2FogArchiveStrc * MPQ_d2music = 0; D2_GLOBAL_GUARD(MPQ_d2music, "MPQ_d2music");
+D2FogArchiveStrc * MPQ_d2Xvideo = 0; D2_GLOBAL_GUARD(MPQ_d2Xvideo, "MPQ_d2Xvideo");
+D2FogArchiveStrc * MPQ_patch_d2 = 0; D2_GLOBAL_GUARD(MPQ_patch_d2, "MPQ_patch_d2");
+D2FogArchiveStrc * MPQ_d2exp = 0; D2_GLOBAL_GUARD(MPQ_d2exp, "MPQ_d2exp");
+uint32_t gnPaletteGammaShiftState = 0; D2_GLOBAL_GUARD(gnPaletteGammaShiftState, "gnPaletteGammaShiftState");
+uint8_t gPaletteAct1[196608] = {}; D2_GLOBAL_GUARD(gPaletteAct1, "gPaletteAct1");
+uint32_t gbGammaShiftActive = 0; D2_GLOBAL_GUARD(gbGammaShiftActive, "gbGammaShiftActive");
+unsigned int gdwPaletteShiftStartTick = {}; D2_GLOBAL_GUARD(gdwPaletteShiftStartTick, "gdwPaletteShiftStartTick");
+uint32_t gbCompactLineSpacingMode = 0; D2_GLOBAL_GUARD(gbCompactLineSpacingMode, "gbCompactLineSpacingMode");
+DC6 * * gppDC6FontCache = 0; D2_GLOBAL_GUARD(gppDC6FontCache, "gppDC6FontCache");
+pfnFontGetGlyphEntry gpfnFontGetCharWidth = (pfnFontGetGlyphEntry)0; D2_GLOBAL_GUARD(gpfnFontGetCharWidth, "gpfnFontGetCharWidth");
+DC6 * gpMonsterIndicatorDC6 = 0; D2_GLOBAL_GUARD(gpMonsterIndicatorDC6, "gpMonsterIndicatorDC6");
+uint8_t gcTooltipBarColor = 0; D2_GLOBAL_GUARD(gcTooltipBarColor, "gcTooltipBarColor");
+uint8_t gbFontIsKoreanChatMode = 0; D2_GLOBAL_GUARD(gbFontIsKoreanChatMode, "gbFontIsKoreanChatMode");
+uint32_t nD2CompItemsSize = 0; D2_GLOBAL_GUARD(nD2CompItemsSize, "nD2CompItemsSize");
+void * pD2CompItems = 0; D2_GLOBAL_GUARD(pD2CompItems, "pD2CompItems");
+uint8_t gaItemPaletteTransformData[241920] = {}; D2_GLOBAL_GUARD(gaItemPaletteTransformData, "gaItemPaletteTransformData");
+D2TxtLinkStrc * gnItemTypesCacheHandle = 0; D2_GLOBAL_GUARD(gnItemTypesCacheHandle, "gnItemTypesCacheHandle");
+void * gpItemTypesTxt = 0; D2_GLOBAL_GUARD(gpItemTypesTxt, "gpItemTypesTxt");
+size_t gnD2CompCompressionBufferSize = 0; D2_GLOBAL_GUARD(gnD2CompCompressionBufferSize, "gnD2CompCompressionBufferSize");
+int gnMaxCharacters = 0; D2_GLOBAL_GUARD(gnMaxCharacters, "gnMaxCharacters");
+D2CharSelCompStrc * gpCompositeUnitListHead = 0; D2_GLOBAL_GUARD(gpCompositeUnitListHead, "gpCompositeUnitListHead");
+void * gpCOFCacheHead = 0; D2_GLOBAL_GUARD(gpCOFCacheHead, "gpCOFCacheHead");
+DC6 * gpUniqueCursorDC6 = 0; D2_GLOBAL_GUARD(gpUniqueCursorDC6, "gpUniqueCursorDC6");
+uint32_t gnUniqueCursorMaxFrames = 0; D2_GLOBAL_GUARD(gnUniqueCursorMaxFrames, "gnUniqueCursorMaxFrames");
+DC6 * gpPentaSpinCursorDC6 = 0; D2_GLOBAL_GUARD(gpPentaSpinCursorDC6, "gpPentaSpinCursorDC6");
+uint32_t gnPentaSpinCursorMaxFrames = 0; D2_GLOBAL_GUARD(gnPentaSpinCursorMaxFrames, "gnPentaSpinCursorMaxFrames");
+uint8_t gbSmackerVideoFlags = 0; D2_GLOBAL_GUARD(gbSmackerVideoFlags, "gbSmackerVideoFlags");
+uint32_t gbSmackerKeepTempFile = 0; D2_GLOBAL_GUARD(gbSmackerKeepTempFile, "gbSmackerKeepTempFile");
+DC6 * gpPentSpinCursorDC6 = 0; D2_GLOBAL_GUARD(gpPentSpinCursorDC6, "gpPentSpinCursorDC6");
+D2WinPopup * gpD2WinPopupControl = 0; D2_GLOBAL_GUARD(gpD2WinPopupControl, "gpD2WinPopupControl");
 
 namespace D2Common::Drlg::Maze {
 
@@ -251384,11 +251420,11 @@ void * aFontNames[14] = {
     (void *)s_FontExocet8_006dc8f4,
     (void *)s_ReallyTheLastSucker_006dc8e0,
     (void *)s_FontInGameChat_006dc8d0
-};
+}; D2_GLOBAL_GUARD(aFontNames, "D2Win::_FONT::aFontNames");
 
-char szKOR[4] = { 'K', 'O', 'R', '\\' };
+char szKOR[4] = { 'K', 'O', 'R', '\\' }; D2_GLOBAL_GUARD(szKOR, "D2Win::_FONT::szKOR");
 
-char sLanguageCode[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+char sLanguageCode[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; D2_GLOBAL_GUARD(sLanguageCode, "D2Win::_FONT::sLanguageCode");
 
 } // namespace D2Win::_FONT
 
@@ -251660,10 +251696,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -251671,6 +251703,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 
@@ -251742,8 +251778,8 @@ namespace D2Client::Mouse {
 // Initialized scalars
 // =============================================================================
 
-int nPosX = 0;
-int nPosY = 0;
+int nPosX = 0; D2_GLOBAL_GUARD(nPosX, "D2Client::Mouse::nPosX");
+int nPosY = 0; D2_GLOBAL_GUARD(nPosY, "D2Client::Mouse::nPosY");
 
 } // namespace D2Client::Mouse
 

@@ -58,8 +58,8 @@ typedef void (__stdcall *pfnUIMenuInstance)();
 
 namespace D2Launch::Launcher {
 
-static char * gpszPaletteSkyDat[4] = { 0 };
-static char * gpszPaletteSkyPl2[4] = { 0 };
+static char * gpszPaletteSkyDat[4] = { 0 }; D2_STATIC_GUARD(gpszPaletteSkyDat, "D2Launch::Launcher::gpszPaletteSkyDat");
+static char * gpszPaletteSkyPl2[4] = { 0 }; D2_STATIC_GUARD(gpszPaletteSkyPl2, "D2Launch::Launcher::gpszPaletteSkyPl2");
 
 void __stdcall CHARSEL_ResetCharListUI() {
     BOOL bDownArrowVisible = D2Client::CharScreen::TotalCurrentChars < 1 || D2Client::CharScreen::nSelectedCharIndex <= gnCharSelLoadMoreEntryIndex ? 0 : 1;
@@ -159,7 +159,7 @@ BOOL __stdcall CHARSEL_OpenRealmChangeDialog(D2ControlMsg * pControlMsg) {
 
 BOOL __stdcall CHARSEL_HandleCharListClick(D2ControlMsg * pControlMsg) {
     // Static local variables (originally global data)
-    static unsigned int gdwLastCharListClickTick;
+    static unsigned int gdwLastCharListClickTick; D2_STATIC_GUARD_BSS(gdwLastCharListClickTick, "D2Launch::Launcher::CHARSEL_HandleCharListClick::gdwLastCharListClickTick");
 
     BOOL bIsExpansion;
     if (gnCharSelSelectedIndex) {
@@ -855,7 +855,7 @@ void __stdcall LAUNCHER_DisconnectFromBnet() {
 // Displays out-of-game error/message dialogs. Error code determines which localized string to show. Custom data used for character names or custom messages.
 int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     // Static local variables (originally global data)
-    static uint32_t gnBnetAccountLoginFailCount = 0x1;
+    static uint32_t gnBnetAccountLoginFailCount = 0x1; D2_STATIC_GUARD(gnBnetAccountLoginFailCount, "D2Launch::Launcher::ShowOogErrorDialog::gnBnetAccountLoginFailCount");
     static char gszOogLastIniStringCache[16] = {
     0,
     0,
@@ -873,7 +873,7 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gszOogLastIniStringCache, "D2Launch::Launcher::ShowOogErrorDialog::gszOogLastIniStringCache");
 
     int32_t nErrorAddress;
     int nTitleStrId;
@@ -1135,7 +1135,7 @@ void __fastcall LAUNCHER_ShowOogErrorDialog_ForEnterEmail(eOogErrorCode eErrorCo
 
 uint32_t __stdcall CLIENT_ConnectToBattleNet() {
     // Static local variables (originally global data)
-    static uint32_t gnBNetConnectInProgress;
+    static uint32_t gnBNetConnectInProgress; D2_STATIC_GUARD_BSS(gnBNetConnectInProgress, "D2Launch::Launcher::CLIENT_ConnectToBattleNet::gnBNetConnectInProgress");
 
     uint32_t nErrorResult;
     int nResult;
@@ -1552,7 +1552,7 @@ uint32_t __fastcall LAUNCHER_LoadCharacterAppearanceFromD2s(char * szCharacterNa
     uint32_t nResult;
     nResult = 0;
     if (*szCharacterName == '\0') {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe9);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xe9);
       exit(-1);
     }
 

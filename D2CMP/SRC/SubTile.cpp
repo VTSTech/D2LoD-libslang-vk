@@ -147,7 +147,7 @@ void __fastcall SUBTILE_AllocAndCompress(uint32_t * pRawData, int bIsRaw) {
 
 void __fastcall SUBTILE_ConvertToIndexed(uint32_t * pDstFrame, uint32_t * pSrcFrame, uint32_t dwColorKey, pfnRGBToPaletteIndex pfnGetPaletteIndex) {
     uint8_t cIndexed;
-    void* pIndexedBuf;
+    void* nErrorAddr;
     uint8_t* pSrcRGB;
     uint8_t* pDstIdx;
     int i;
@@ -174,10 +174,10 @@ void __fastcall SUBTILE_ConvertToIndexed(uint32_t * pDstFrame, uint32_t * pSrcFr
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8e);
         exit(-1);
       } else if (nAllocSize < 0x10000) {
-        pIndexedBuf = D2_ALLOC(nAllocSize);
-        pDstFrame[4] = (uint32_t)(uintptr_t)pIndexedBuf;
-        if (pIndexedBuf) {
-          memset(pIndexedBuf, 0, nAllocSize);
+        nErrorAddr = D2_ALLOC(nAllocSize);
+        pDstFrame[4] = (uint32_t)(uintptr_t)nErrorAddr;
+        if (nErrorAddr) {
+          memset(nErrorAddr, 0, nAllocSize);
           *(uint16_t*)(pDstFrame + 2) |= 1;
           *(short int*)((int)pDstFrame + 10) = (short int)nAllocSize;
           pDstIdx = (uint8_t*)pSrcFrame[4];
@@ -286,8 +286,8 @@ BOOL SUBTILE_CheckIfIsometricEmpty(int32_t pSubTileData) {
 }
 
 void __stdcall SUBTILE_CompressIsometricShape(int32_t pSubTileEntry, char * pPixelData) {
+    void* nErrorAddr;
     int nNonZeroLen;
-    void* pFinalBuf;
     char* pSrc;
     char* pRowEnd;
     char* pDst;
@@ -351,12 +351,12 @@ void __stdcall SUBTILE_CompressIsometricShape(int32_t pSubTileEntry, char * pPix
 
       nAllocSize = (int)pDst - (int)pWorkBuf;
       if ((int)nAllocSize < 0x10000) {
-        pFinalBuf = D2_ALLOC(nAllocSize);
-        if (pFinalBuf) {
-          memset(pFinalBuf, 0, nAllocSize);
-          memcpy(pFinalBuf, pWorkBuf, nAllocSize);
+        nErrorAddr = D2_ALLOC(nAllocSize);
+        if (nErrorAddr) {
+          memset(nErrorAddr, 0, nAllocSize);
+          memcpy(nErrorAddr, pWorkBuf, nAllocSize);
           *(uint16_t*)(pSubTileEntry + 8) |= 5;
-          *(void**)(pSubTileEntry + 0x10) = (void*)pFinalBuf;
+          *(void**)(pSubTileEntry + 0x10) = (void*)nErrorAddr;
           *(short int*)(pSubTileEntry + 10) = (short int)nAllocSize;
           D2_FREE(pWorkBuf);
           return;
@@ -372,17 +372,17 @@ void __stdcall SUBTILE_CompressIsometricShape(int32_t pSubTileEntry, char * pPix
 }
 
 void __stdcall SUBTILE_ExtractIsometricPixels(int32_t pSubTileEntry, int32_t pSrcPixelData) {
-    void* pPixelBuf = D2_ALLOC(0x100);
-    if (!pPixelBuf) {
+    void* nErrorAddr = D2_ALLOC(0x100);
+    if (!nErrorAddr) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x186);
       exit(-1);
     }
 
-    memset(pPixelBuf, 0, 0x100);
+    memset(nErrorAddr, 0, 0x100);
     int iRow = 0;
     int nXOff = 0xe;
     size_t nRowWidth = 4;
-    void* pDst = pPixelBuf;
+    void* pDst = nErrorAddr;
     do {
       memcpy(pDst, (void*)(nXOff + pSrcPixelData), nRowWidth);
       pSrcPixelData += 0x20;
@@ -400,7 +400,7 @@ void __stdcall SUBTILE_ExtractIsometricPixels(int32_t pSubTileEntry, int32_t pSr
 
     *(uint16_t*)(pSubTileEntry + 8) = 1;
     *(uint16_t*)(pSubTileEntry + 10) = 0x100;
-    *(void**)(pSubTileEntry + 0x10) = (void*)pPixelBuf;
+    *(void**)(pSubTileEntry + 0x10) = (void*)nErrorAddr;
 }
 
 void __stdcall SUBTILE_CompressWithColorKey(pfnRGBToPaletteIndex pfnGetPaletteIndex, int pSrcSubTile, int pDstSubTile, uint32_t dwColorKey) {

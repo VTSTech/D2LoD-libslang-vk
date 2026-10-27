@@ -12,6 +12,15 @@
 // logged, the crash report is written, and the process ends; a frame whose canary is
 // gone has a return address that cannot be trusted.
 //
+// Guard zones: the generator follows every global and static datum with a 32-byte
+// pattern (D2_GLOBAL_GUARD and friends in d2_platform.h, REDIVIVUS_LOUD_GUARDS) and an
+// entry in the .d2grd section. D2LOUD_GuardPump walks them from the message loops, at
+// most once per 40 ms, and once more at exit; a damaged guard is logged once as
+//   D2GUARD <owner> +<offset into the owner> bytes=<the 32 guard bytes> frame=<walk> next=<next global>
+// to this report and to the trace (d2trace.log). D2_GUARD_HALT=1 makes the first hit
+// fatal (crash report, process ends); D2_GUARD_WATCH=<owner name> arms a hardware write
+// watch on that owner's guard on the game thread, so the trace names the writing EIP.
+//
 // Everything goes to d2loud-YYYYMMDD-HHMMSS.txt next to the exe (%TEMP% when that
 // folder is not writable). The game thread only records the site and walks the EBP
 // chain; a worker thread formats and symbolises it with libbacktrace, so the first
@@ -25,6 +34,7 @@
 #include <string.h>
 
 #include "thirdparty/libbacktrace/backtrace.h"
+#include "support/d2_trace.h"
 
 #ifndef REDIVIVUS_BUILD_ID
 #define REDIVIVUS_BUILD_ID "unknown"
@@ -276,7 +286,7 @@ int WalkStack(DWORD dwFirst, DWORD dwEbp, DWORD* pFrames) {
 // The queue between the reporting threads and the worker. A spin lock, because
 // it needs no initialisation: a check can fire from any constructor.
 // ---------------------------------------------------------------------------
-enum ReportKind { REPORT_BOUNDS, REPORT_BOUNDS_ABORT, REPORT_STACK_SMASH };
+enum ReportKind { REPORT_BOUNDS, REPORT_BOUNDS_ABORT, REPORT_STACK_SMASH, REPORT_GUARD, REPORT_GUARD_LAYOUT };
 
 struct Report {
     ReportKind eKind;
@@ -289,7 +299,101 @@ struct Report {
     SYSTEMTIME st;
     int nFrames;
     DWORD aFrames[MAX_FRAMES];
+    // REPORT_GUARD: the entry, the walk that saw it, and the guard bytes as found.
+    // REPORT_GUARD_LAYOUT: nGuard misplaced guards, the first at nIndex.
+    int nGuard;
+    unsigned nWalk;
+    unsigned char abGuard[32];
 };
+
+// ---------------------------------------------------------------------------
+// Guard zones between globals. The generator emits, after every data definition,
+// a 32-byte guard and a {owner, size, guard, name} entry in .d2grd$m (the macros
+// are in d2_platform.h). The linker sorts .d2grd$a < $m < $z, so the two markers
+// below bracket every entry in the exe.
+// ---------------------------------------------------------------------------
+struct GuardEntry {
+    const void* pOwner;
+    unsigned nOwnerSize;
+    const unsigned char* pGuard;
+    const char* pszName;
+};
+const int GUARD_BYTES = 32;
+const GuardEntry g_guardFirst __attribute__((used, section(".d2grd$a"))) = { 0, 0, 0, 0 };
+const GuardEntry g_guardLast __attribute__((used, section(".d2grd$z"))) = { 0, 0, 0, 0 };
+
+// The fill the macros use: 0xA5 0xD2 repeated, 0xD2A5D2A5 as a dword.
+inline unsigned char GuardFill(int i) { return (i & 1) ? 0xD2 : 0xA5; }
+
+const GuardEntry* g_pGuards = 0;      // the entries, in link order
+int g_nGuards = 0;
+int* g_pnByOwner = 0;                 // entry indexes sorted by owner address
+int* g_pnRankOf = 0;                  // entry index -> position in g_pnByOwner
+volatile LONG* g_pnGuardHit = 0;      // per entry: 1 once reported
+volatile LONG g_nGuardsDamaged = 0;
+int g_nGuardsMisplaced = 0;
+volatile LONG g_nGuardInit = 0;       // 0 none, 1 running, 2 done
+
+int GuardCount() { return g_nGuards; }
+
+const GuardEntry& Guard(int i) { return g_pGuards[i]; }
+
+// The datum that follows guard i in memory: the next owner by address.
+const GuardEntry* NextOwner(int i) {
+    int nRank = g_pnRankOf ? g_pnRankOf[i] : -1;
+    if (nRank < 0 || nRank + 1 >= g_nGuards) return 0;
+    return &g_pGuards[g_pnByOwner[nRank + 1]];
+}
+
+int FirstDamaged(const unsigned char* pBytes) {
+    for (int i = 0; i < GUARD_BYTES; ++i)
+        if (pBytes[i] != GuardFill(i)) return i;
+    return -1;
+}
+
+// The one-line form, shared by the report and the trace:
+//   D2GUARD <owner> +<offset into owner> bytes=<32 bytes> frame=<walk> next=<next global>
+void FormatGuardHit(const Report& r, char* pszOut, int nCap) {
+    const GuardEntry& e = Guard(r.nGuard);
+    int nFirst = FirstDamaged(r.abGuard);
+    char szBytes[GUARD_BYTES * 3 + 1];
+    for (int i = 0; i < GUARD_BYTES; ++i) wsprintfA(szBytes + i * 3, "%02X ", r.abGuard[i]);
+    szBytes[GUARD_BYTES * 3 - 1] = 0;
+    const GuardEntry* pNext = NextOwner(r.nGuard);
+    _snprintf(pszOut, nCap, "D2GUARD %s +%u bytes=%s frame=%u next=%s", e.pszName,
+              (unsigned)((e.pGuard - (const unsigned char*)e.pOwner) + (nFirst < 0 ? 0 : nFirst)), szBytes, r.nWalk,
+              pNext ? pNext->pszName : "(none)");
+    pszOut[nCap - 1] = 0;
+}
+
+void WriteGuardDetail(const Report& r) {
+    const GuardEntry& e = Guard(r.nGuard);
+    int nDamaged = 0;
+    for (int i = 0; i < GUARD_BYTES; ++i) nDamaged += r.abGuard[i] != GuardFill(i);
+    int nFirst = FirstDamaged(r.abGuard);
+    char szOwner[MAX_PATH + 40];
+    ModuleOffset((DWORD)(UINT_PTR)e.pOwner, szOwner);
+    Out("  GLOBAL OVERRUN: %d of the %d guard bytes after %s were changed, the first at "
+        "+%u from the owner's start.\r\n", nDamaged, GUARD_BYTES, e.pszName,
+        (unsigned)((e.pGuard - (const unsigned char*)e.pOwner) + (nFirst < 0 ? 0 : nFirst)));
+    Out("  owner %s (%u bytes, declared size), guard at owner+%ld\r\n", szOwner, e.nOwnerSize,
+        (long)(e.pGuard - (const unsigned char*)e.pOwner));
+    const GuardEntry* pNext = NextOwner(r.nGuard);
+    if (pNext)
+        Out("  next global %s at owner+%ld (%u bytes): it holds whatever ran past the guard\r\n",
+            pNext->pszName, (long)((const unsigned char*)pNext->pOwner - (const unsigned char*)e.pOwner),
+            pNext->nOwnerSize);
+    Out("  seen by guard walk %u; the walk before it found the guard intact. The owner is most\r\n"
+        "  likely typed too small in Ghidra, or its writer runs past it.\r\n", r.nWalk);
+}
+
+void WriteGuardLayout(const Report& r) {
+    const GuardEntry& e = Guard((int)r.nIndex);
+    Out("  GUARD LAYOUT: %d of %d guarded globals have no guard within 16 bytes after them,\r\n"
+        "  so an overrun of those is not seen. First: %s (owner %p, %u bytes, "
+        "guard at owner%+ld)\r\n", r.nGuard, g_nGuards, e.pszName, e.pOwner, e.nOwnerSize,
+        (long)(e.pGuard - (const unsigned char*)e.pOwner));
+}
 
 const int QUEUE_SIZE = 256;
 Report g_aQueue[QUEUE_SIZE];
@@ -362,6 +466,8 @@ void WriteHeader() {
     Out("Checks:    -fsanitize=bounds-strict (logged once per site, game continues), "
         "-fstack-protector-strong (fatal), -ftrivial-auto-var-init=pattern (0xFE)\r\n\r\n");
 #endif
+    Out("Guards:    %d guard zones of 32 bytes after the globals, walked every 40 ms of the "
+        "message loop (frame = walk number) and at exit\r\n\r\n", GuardCount());
     FlushFileBuffers(g_hFile);
 }
 
@@ -378,6 +484,19 @@ void WriteReport(const Report& r) {
     Out("[%u] %04u-%02u-%02u %02u:%02u:%02u  thread %lu\r\n", r.nOrdinal, r.st.wYear,
         r.st.wMonth, r.st.wDay, r.st.wHour, r.st.wMinute, r.st.wSecond,
         (unsigned long)r.dwThread);
+    if (r.eKind == REPORT_GUARD) {
+        char szLine[512];
+        FormatGuardHit(r, szLine, sizeof(szLine));
+        Out("  %s\r\n", szLine);
+        WriteGuardDetail(r);
+        Out("\r\n");
+        return;
+    }
+    if (r.eKind == REPORT_GUARD_LAYOUT) {
+        WriteGuardLayout(r);
+        Out("\r\n");
+        return;
+    }
     if (r.eKind == REPORT_STACK_SMASH) {
         Out("  STACK SMASHED: a write ran past a local array and over the frame's canary.\r\n");
         Out("  The function that returns through frame #0 below owns the smashed frame.\r\n");
@@ -430,6 +549,8 @@ void EnsureWorker() {
 
 volatile LONG g_nOrdinal = 0;
 
+unsigned Push(Report& r);
+
 // Queue one report. Returns its ordinal, or 0 when the queue was full.
 unsigned Enqueue(ReportKind eKind, const UbsanOutOfBoundsData* pData, UbsanValueHandle hIndex,
                  DWORD dwSite, DWORD dwEbp) {
@@ -454,7 +575,11 @@ unsigned Enqueue(ReportKind eKind, const UbsanOutOfBoundsData* pData, UbsanValue
     r.dwThread = GetCurrentThreadId();
     GetLocalTime(&r.st);
     r.nFrames = WalkStack(dwSite, dwEbp, r.aFrames);
+    return Push(r);
+}
 
+// Queue a filled-in report. Returns its ordinal, or 0 when the queue was full.
+unsigned Push(Report& r) {
     EnsureWorker();
     unsigned nOrdinal = 0;
     Lock();
@@ -489,16 +614,192 @@ __attribute__((noreturn)) void FatalHandOff(DWORD dwSite) {
     for (;;) Sleep(INFINITE);
 }
 
+// ---------------------------------------------------------------------------
+// The guard walk.
+// ---------------------------------------------------------------------------
+bool EnvSet(const char* pszName, char* pszValue, DWORD nCap) {
+    DWORD n = GetEnvironmentVariableA(pszName, pszValue, nCap);
+    return n > 0 && n < nCap;
+}
+
+bool g_bGuardHalt = false;
+char g_szGuardWatch[256];
+
+// Collect the entries, fill the zero-initialised guards (the .bss ones), order the
+// owners by address for the "next global" column, and check that every guard sits
+// directly after its owner. Runs once, on the first walk.
+void GuardInit() {
+    if (g_nGuardInit == 2) return;
+    if (InterlockedCompareExchange(&g_nGuardInit, 1, 0) != 0) {
+        while (g_nGuardInit != 2) Sleep(0);
+        return;
+    }
+    InitExe();
+    char szValue[16];
+    g_bGuardHalt = EnvSet("D2_GUARD_HALT", szValue, sizeof(szValue)) && szValue[0] == '1';
+    if (!EnvSet("D2_GUARD_WATCH", g_szGuardWatch, sizeof(g_szGuardWatch))) g_szGuardWatch[0] = 0;
+
+    // Pointer arithmetic between two distinct objects, done on integers on purpose.
+    UINT_PTR uFirst = (UINT_PTR)&g_guardFirst + sizeof(GuardEntry);
+    UINT_PTR uLast = (UINT_PTR)&g_guardLast;
+    int nAll = uLast > uFirst ? (int)((uLast - uFirst) / sizeof(GuardEntry)) : 0;
+    const GuardEntry* pAll = (const GuardEntry*)uFirst;
+    HANDLE hHeap = GetProcessHeap();
+    GuardEntry* pCopy = nAll ? (GuardEntry*)HeapAlloc(hHeap, 0, nAll * sizeof(GuardEntry)) : 0;
+    int n = 0;
+    for (int i = 0; pCopy && i < nAll; ++i)
+        if (pAll[i].pGuard && pAll[i].pOwner) pCopy[n++] = pAll[i];
+    g_pGuards = pCopy;
+    g_nGuards = n;
+    if (n) {
+        g_pnByOwner = (int*)HeapAlloc(hHeap, 0, n * sizeof(int));
+        g_pnRankOf = (int*)HeapAlloc(hHeap, 0, n * sizeof(int));
+        g_pnGuardHit = (volatile LONG*)HeapAlloc(hHeap, HEAP_ZERO_MEMORY, n * sizeof(LONG));
+    }
+    if (!g_pnByOwner || !g_pnRankOf || !g_pnGuardHit) {
+        g_nGuards = 0;
+        InterlockedExchange(&g_nGuardInit, 2);
+        return;
+    }
+
+    // A .bss guard starts as zeroes; give it the fill. The others already hold it.
+    for (int i = 0; i < n; ++i) {
+        unsigned char* p = (unsigned char*)pCopy[i].pGuard;
+        bool bZero = true;
+        for (int b = 0; b < GUARD_BYTES && bZero; ++b) bZero = p[b] == 0;
+        if (bZero)
+            for (int b = 0; b < GUARD_BYTES; ++b) p[b] = GuardFill(b);
+        g_pnByOwner[i] = i;
+    }
+    // Order by owner, and for one owner by how far its guard sits past the owner's end
+    // (a guard before the end counts as infinitely far). An initialised owner carries
+    // two guards, one in .data and one zero-filled, because a non-constant initializer
+    // puts the owner in .bss; the nearer one is the one that guards it.
+    struct Key {
+        static UINT_PTR Gap(const GuardEntry& e) {
+            UINT_PTR uEnd = (UINT_PTR)e.pOwner + e.nOwnerSize;
+            return (UINT_PTR)e.pGuard >= uEnd ? (UINT_PTR)e.pGuard - uEnd : ~(UINT_PTR)0;
+        }
+        static bool Less(const GuardEntry& a, const GuardEntry& b) {
+            if (a.pOwner != b.pOwner) return (UINT_PTR)a.pOwner < (UINT_PTR)b.pOwner;
+            return Gap(a) < Gap(b);
+        }
+    };
+    for (int nGap = n / 2; nGap > 0; nGap /= 2)    // shell sort: a few thousand, once
+        for (int i = nGap; i < n; ++i) {
+            int v = g_pnByOwner[i];
+            int j = i;
+            for (; j >= nGap && Key::Less(pCopy[v], pCopy[g_pnByOwner[j - nGap]]); j -= nGap)
+                g_pnByOwner[j] = g_pnByOwner[j - nGap];
+            g_pnByOwner[j] = v;
+        }
+    GuardEntry* pKept = (GuardEntry*)HeapAlloc(hHeap, 0, n * sizeof(GuardEntry));
+    int nKept = 0;
+    for (int i = 0; pKept && i < n; ++i) {
+        const GuardEntry& e = pCopy[g_pnByOwner[i]];
+        if (nKept && pKept[nKept - 1].pOwner == e.pOwner) continue;
+        pKept[nKept++] = e;
+    }
+    if (pKept) {
+        g_pGuards = pKept;
+        g_nGuards = n = nKept;
+    }
+    int nMisplaced = 0, nFirstMisplaced = -1, nNear = 0;
+    for (int i = 0; i < n; ++i) {
+        g_pnByOwner[i] = i;
+        g_pnRankOf[i] = i;
+        UINT_PTR uGap = Key::Gap(g_pGuards[i]);
+        if (uGap == 0) continue;
+        // A function-local static with a first-call initializer has its 8-byte init
+        // flag between it and the guard: covered, with a gap.
+        if (uGap <= 16) { ++nNear; continue; }
+        if (nFirstMisplaced < 0) nFirstMisplaced = i;
+        ++nMisplaced;
+    }
+    g_nGuardsMisplaced = nMisplaced;
+
+    D2TraceFmt("D2GUARD armed: %d guarded globals, %d guard(s) up to 16 bytes past the owner, "
+               "%d not after their owner%s%s", n, nNear, nMisplaced,
+               g_bGuardHalt ? ", halt on first hit" : "",
+               g_szGuardWatch[0] ? ", write watch requested" : "");
+    if (nMisplaced) {
+        Report r;
+        memset(&r, 0, sizeof(r));
+        r.eKind = REPORT_GUARD_LAYOUT;
+        r.nGuard = nMisplaced;
+        r.nIndex = nFirstMisplaced;
+        r.dwThread = GetCurrentThreadId();
+        GetLocalTime(&r.st);
+        Push(r);
+    }
+    InterlockedExchange(&g_nGuardInit, 2);
+}
+
+volatile LONG g_nGuardWalks = 0;
+volatile LONG g_nGuardWalkLock = 0;
+
+// One walk over every guard. Each damaged guard is reported once.
+void GuardWalk() {
+    GuardInit();
+    if (!g_nGuards) return;
+    if (InterlockedCompareExchange(&g_nGuardWalkLock, 1, 0) != 0) return;
+    unsigned nWalk = (unsigned)InterlockedIncrement(&g_nGuardWalks);
+    bool bHalt = false;
+    for (int i = 0; i < g_nGuards; ++i) {
+        const unsigned char* p = g_pGuards[i].pGuard;
+        if (FirstDamaged(p) < 0 || g_pnGuardHit[i]) continue;
+        if (InterlockedExchange(&g_pnGuardHit[i], 1)) continue;
+        InterlockedIncrement(&g_nGuardsDamaged);
+        Report r;
+        memset(&r, 0, sizeof(r));
+        r.eKind = REPORT_GUARD;
+        r.nGuard = i;
+        r.nWalk = nWalk;
+        memcpy(r.abGuard, p, GUARD_BYTES);
+        r.dwThread = GetCurrentThreadId();
+        GetLocalTime(&r.st);
+        char szLine[512];
+        FormatGuardHit(r, szLine, sizeof(szLine));
+        D2Trace(szLine);
+        Push(r);
+        bHalt = bHalt || g_bGuardHalt;
+    }
+    InterlockedExchange(&g_nGuardWalkLock, 0);
+    if (bHalt) FatalHandOff((DWORD)(UINT_PTR)__builtin_return_address(0));
+}
+
+// D2_GUARD_WATCH: a hardware write watch on one owner's guard. Debug registers are
+// per thread, so it is armed from the first pump, on the game thread.
+void GuardArmWatch() {
+    if (!g_szGuardWatch[0]) return;
+    for (int i = 0; i < g_nGuards; ++i) {
+        const char* pszName = g_pGuards[i].pszName;
+        const char* pszTail = pszName;
+        for (const char* q = pszName; *q; ++q)
+            if (q[0] == ':' && q[1] == ':') pszTail = q + 2;
+        if (lstrcmpA(pszName, g_szGuardWatch) && lstrcmpA(pszTail, g_szGuardWatch)) continue;
+        UINT_PTR u = ((UINT_PTR)g_pGuards[i].pGuard + 3) & ~(UINT_PTR)3;
+        D2TraceFmt("D2GUARD watch on the guard of %s at %p", pszName, (void*)u);
+        D2TRACE_WatchWrite((void*)u);
+        return;
+    }
+    D2TraceFmt("D2GUARD watch: no guarded global named %s", g_szGuardWatch);
+}
+
 // At a normal exit: how often each reported site fired in all.
 // Best effort - a process ended by ExitProcess never gets here.
 struct LoudSummary {
     ~LoudSummary() {
+        // A last walk: an overrun after the final frame is still reported.
+        if (g_nGuardInit == 2) GuardWalk();
         if (!g_nQueued) return;
         Drain(5000);
         if (g_nQueueLock || g_hFile == INVALID_HANDLE_VALUE) return;
         Out("Summary: %ld site(s) reported, %ld report(s) dropped (queue full), "
             "%ld site(s) not tracked (table full)\r\n",
             (long)g_nSites, (long)g_nDropped, (long)g_nSitesLost);
+        Out("Guards: %ld of %d damaged over %ld walk(s), %d misplaced\r\n",
+            (long)g_nGuardsDamaged, g_nGuards, (long)g_nGuardWalks, g_nGuardsMisplaced);
         for (int i = 0; i < SITE_SLOTS; ++i) {
             const UbsanOutOfBoundsData* d = (const UbsanOutOfBoundsData*)g_apSite[i];
             if (!d) continue;
@@ -540,4 +841,19 @@ extern "C" __attribute__((noinline, noreturn)) void __stack_chk_fail(void) {
     DWORD dwSite = (DWORD)(UINT_PTR)__builtin_return_address(0);
     Enqueue(REPORT_STACK_SMASH, 0, 0, dwSite, (DWORD)(UINT_PTR)__builtin_frame_address(1));
     FatalHandOff(dwSite);
+}
+
+// Called from the game's two message loops (D2Win MessagePump, D2Client
+// MessageGameLoop) on the game thread. Walks the guards at most once per 40 ms.
+extern "C" void D2LOUD_GuardPump(void) {
+    static DWORD s_dwLast = 0;
+    static bool s_bWatchArmed = false;
+    DWORD dwNow = GetTickCount();
+    if (s_dwLast && dwNow - s_dwLast < 40) return;
+    s_dwLast = dwNow ? dwNow : 1;
+    GuardWalk();
+    if (!s_bWatchArmed) {
+        s_bWatchArmed = true;
+        GuardArmWatch();
+    }
 }

@@ -285,10 +285,10 @@ BOOL __fastcall Skills_CltDoFunc_Ama_MultiShotArrows(D2UnitStrc * pUnit, eD2Skil
       return 0;
     }
 
-    eMissilesId eCltMissileId = (eMissilesId)pSkillTxt->cltmissilea;
+    eMissilesId eCltMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
     uint32_t nWeaponClass = D2Common::Units::GetWeaponClass(pUnit);
-    if (nWeaponClass != 1 && -1 < pSkillTxt->cltmissileb) {
-      eCltMissileId = (eMissilesId)pSkillTxt->cltmissileb;
+    if (nWeaponClass != 1 && -1 < pSkillTxt->cltmissile[2]) {
+      eCltMissileId = (eMissilesId)pSkillTxt->cltmissile[2];
     }
     if (!(-1 < (int)eCltMissileId && (int)eCltMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
@@ -480,9 +480,9 @@ BOOL __fastcall Skills_CltDoFunc_Ama_Strafe(D2UnitStrc * pUnit, eD2Skills eSkill
       return 0;
     }
 
-    nPrevTargetGUID = (eMissilesId)pSkillsTxt->cltmissilea;
+    nPrevTargetGUID = (eMissilesId)pSkillsTxt->cltmissile[1];
     uint32_t nWeaponClass = D2Common::Units::GetWeaponClass(pUnit);
-    if (nWeaponClass == 1 || (eVar1 = (int)pSkillsTxt->cltmissileb , pSkillsTxt->cltmissileb < 0)) {
+    if (nWeaponClass == 1 || (eVar1 = (int)pSkillsTxt->cltmissile[2] , pSkillsTxt->cltmissile[2] < 0)) {
       eVar1 = nPrevTargetGUID;
     }
     if (!(-1 < (int)eVar1 && (int)eVar1 < sgptDataTable->nTxtMissilesSize)) {

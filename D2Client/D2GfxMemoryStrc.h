@@ -21,7 +21,7 @@ struct D2SpriteCache;
 // Data types
 struct __attribute__((packed)) D2GfxMemoryStrc {
     /* 0x00 */ struct D2PoolManagerStrc * pMemory;
-    /* 0x04 */ void * pMaxMemory; // Upper memory bound; AllocEntry2 checks: usedMemory+request <= pMaxMemory
+    /* 0x04 */ uint32_t pMaxMemory; // Upper memory bound; AllocEntry2 checks: usedMemory+request <= pMaxMemory
     /* 0x08 */ uint32_t nUsedMemory; // Current used memory in bytes; FreeMemory adjusts this under critical section
     /* 0x0C */ int nCounter; // Number of allocated entries (max 0x1400); incremented by Query, decremented by EvictEntry
     /* 0x10 */ struct D2SpriteCache * pSpriteCache;

@@ -89,7 +89,7 @@ struct __attribute__((packed)) D2ResistTableEntry {
     /* 0x18 */ int nDisplayIndex; // element/display index
     /* 0x1C */ int nFlag7; // skip-when-attacker-monster flag
     /* 0x20 */ int nEnabled; // entry-enabled flag
-    /* 0x24 */ int nEventId; // log/event id
+    /* 0x24 */ char * nEventId; // log/event id
     /* 0x28 */ int field_28; // byte flag (low byte used)
 };
 

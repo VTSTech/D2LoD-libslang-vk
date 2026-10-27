@@ -3,7 +3,6 @@
 #include "D2Game/Quests/QUESTS/A2Q3.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -18,6 +17,7 @@
 #include "D2Common/Environment.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/QuestRecord.h"
+#include "D2Common/Text.h"
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Common/Units.h"
@@ -218,7 +218,7 @@ bool __fastcall Q11_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 // quest not Completed and stateFlag<=3. AddGossipMessageOnMonster shows the chosen line. Read-only on record.
 void __fastcall Q11_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ10QuestStateMessages[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x0 };
+    static int32_t gdwQ10QuestStateMessages[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x0 }; D2_STATIC_GUARD(gdwQ10QuestStateMessages, "D2Game::Quests::QUESTS::A2Q3::Q11_Callback00_NpcActivate::gdwQ10QuestStateMessages");
 
     int32_t nPlayerGUID;
     uint32_t nMessageIndexMaybe;
@@ -787,7 +787,7 @@ void __fastcall Q11_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     ::SGAMEDATA* pGame;
     uint32_t nMsgIndex = (uint32_t)(uint16_t)pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     if (nMsgIndex == 0x15c) {
-      if (pQuestData->bIsNotIntroduction && pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0xb1) {
+      if (pQuestData->bIsNotIntroduction && pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0xb1) {
         if (pQuestData->nStateFlagPrev == 1) {
           pQuestData->nQuestPacketFlags = '\0';
           QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)Q11_NotifyTaintedSunComplete, false);
@@ -861,7 +861,7 @@ void __stdcall Q11_StartDarknessTimer(uint8_t * pQuestData) {
 // clear bAcceptedQuest. On gossip control 0x28: remove player from GUID list and bump stateFlag 2->3. No record reads.
 void __fastcall Q11_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int nLevelIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    D2GossipTextStrc* pSpecificData = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
+    D2GSPacketSrv0x27_TextStrc* pSpecificData = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
     D2QuestDataA2Q3Strc* pGossipControl = pQuestData->pQuestSpecificData.pA2Q3;
     if ((nLevelIndex == 0x2c || nLevelIndex == 0x2d) && !pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
       Q11_StartDarknessTimer((uint8_t*)pQuestData);
@@ -874,7 +874,7 @@ void __fastcall Q11_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         pGossipControl->bViperAmuletInitPending = false;
       }
     }
-    if (pSpecificData != (D2GossipTextStrc*)0x28) {
+    if (pSpecificData != (D2GSPacketSrv0x27_TextStrc*)0x28) {
       return;
     }
 

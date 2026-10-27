@@ -1271,7 +1271,7 @@ BOOL __fastcall SERVER_IsPlayerCharacterInGame(char * szText1, char * szText2) {
 int __fastcall CLIENT_AccumulateSaveData(uint32_t nClientId, void * buffer, size_t size, size_t nTotalSize, uint32_t dwSaveFlags, uint32_t dwParam1, uint32_t dwParam2) {
     bool _bComplete;
     D2SaveFileHeaderStrc* pSaveBuffer;
-    void* pSavePacketList;
+    void* nAddress;
     bool bComplete;
     _bComplete = 0;
     if (!gQServerClientTablesInitialized) {
@@ -1302,8 +1302,8 @@ int __fastcall CLIENT_AccumulateSaveData(uint32_t nClientId, void * buffer, size
         pClient->dwSave = dwSaveFlags;
         if (pClient->nSaveOpenSize == nTotalSize) {
           pClient->fClientFlags |= 8;
-          pSavePacketList = (void*)PLAYER::PlayerSave::PLAYERSAVE_CRC32MissileTable((D2MissilesTxt*)pClient->pSaveGame, pClient->nSaveOpenSize);
-          pClient->pSavePacketList = pSavePacketList;
+          nAddress = (void*)PLAYER::PlayerSave::PLAYERSAVE_CRC32MissileTable((D2MissilesTxt*)pClient->pSaveGame, pClient->nSaveOpenSize);
+          pClient->pSavePacketList = nAddress;
           _bComplete = 1;
         }
 
@@ -1657,9 +1657,9 @@ int __fastcall CLIENT_GetLangId(D2ClientStrc * pClient) {
 
 // Places player unit into the game world (state 3→waiting rooms). Spawns unit at town coordinates (or provided room), sends ReassignPlayer packet, loads corpses from inventory (resurrects mercs or places corpse objects), restores iron golem from save if present. Core of server-side join flow after character load.
 void __stdcall CLIENT_PlacePlayerInRoom(D2ClientStrc * pClient, D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgActStrc * pDrlgAct, ::SGAMEDATA * pSpawnXY, uint32_t nUnused) {
-    int32_t nErrorAddr;
     eD2LevelId eLevelId;
     uint32_t dwCorpseGUID;
+    D2RoomStrc** pCorpsePlayerData;
     D2UnitStrc* pUnit_00;
     uint32_t nSpawnUnitSizeX;
     D2RoomStrc* pCorpseRoom;
@@ -1667,6 +1667,7 @@ void __stdcall CLIENT_PlacePlayerInRoom(D2ClientStrc * pClient, D2UnitStrc * pUn
     D2DrlgRoomCoordsStrc sRoomCoords;
     POINT ptCorpsePos;
     D2DrlgActStrc* pDrlgActSpawn;
+    int32_t nErrorLine;
     ::SGAMEDATA* pGameOrig = pGame;
     if (!(pGame && pUnit && pClient)) {
       return;
@@ -1699,15 +1700,14 @@ void __stdcall CLIENT_PlacePlayerInRoom(D2ClientStrc * pClient, D2UnitStrc * pUn
     SCmd::NET_D2GS_SERVER_Send_0x7E_LoadMonsterCof(pClient);
     pRoom = (D2RoomStrc*)D2Common::INVENTORY::Inventory::INVENTORY_GetCorpse(pUnit->pInventory);
     while (pRoom) {
-      D2RoomStrc** pCorpsePlayerData;
       dwCorpseGUID = D2Common::INVENTORY::Inventory::ROOMCORPSE_GetGUID((D2CorpseStrc*)pRoom);
       pCorpsePlayerData = D2Common::INVENTORY::Inventory::CORPSE_GetData(pRoom);
       if (!pCorpsePlayerData) {
-        nErrorAddr = D2Common::INVENTORY::Inventory::CORPSE_GetMercClassId((int32_t)pRoom);
+        nErrorLine = D2Common::INVENTORY::Inventory::CORPSE_GetMercClassId((int32_t)pRoom);
         pRoom = (D2RoomStrc*)D2Common::INVENTORY::Inventory::INVENTORY_GetNextCorpse((D2CorpseStrc*)pRoom);
         D2Common::INVENTORY::Inventory::INVENTORY_RemoveCorpse(pUnit->pInventory, dwCorpseGUID, 0);
-        if (dwCorpseGUID && (uint16_t)nErrorAddr) {
-          UNIT::SUNITNPC::CreateMerc(pGameOrig, pUnit, (uint16_t)nErrorAddr, dwCorpseGUID, 0xffff, 0, 0);
+        if (dwCorpseGUID && (uint16_t)nErrorLine) {
+          UNIT::SUNITNPC::CreateMerc(pGameOrig, pUnit, (uint16_t)nErrorLine, dwCorpseGUID, 0xffff, 0, 0);
         }
       } else {
         pUnit_00 = UNIT::SUnit::FindUnitFromTable(pGameOrig, UNIT_PLAYER, dwCorpseGUID);
@@ -1737,10 +1737,10 @@ void __stdcall CLIENT_PlacePlayerInRoom(D2ClientStrc * pClient, D2UnitStrc * pUn
       pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_IronGolem, pUnit);
       if (pSkill) {
         pDrlgAct = (D2DrlgActStrc*)D2Common::Skills::GetSkillLevel(pUnit, pSkill, 1);
-        nErrorAddr = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-        D2Common::Units::SetXForStaticUnit((D2UnitStrc*)pRoom, nErrorAddr);
-        nErrorAddr = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-        D2Common::Units::SetYForStaticUnit((D2UnitStrc*)pRoom, nErrorAddr);
+        nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+        D2Common::Units::SetXForStaticUnit((D2UnitStrc*)pRoom, nErrorLine);
+        nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+        D2Common::Units::SetYForStaticUnit((D2UnitStrc*)pRoom, nErrorLine);
         D2Common::Units::SetTargetUnitForDynamicUnit(pUnit, (D2UnitStrc*)pRoom);
         SKILLS::SkillsServer::SKILL_SpawnMissileFunction(pGameOrig, pUnit, SKILL_IronGolem, (int32_t)pDrlgAct, 1, 0, 0);
       }
@@ -1783,7 +1783,7 @@ int32_t __fastcall CLIENT_LoadCharacterAndSendGameData(D2ClientStrc * pClient, :
           return 0x18;
         }
 
-        bLoadError = PLAYER::PlayerSave::CLIENT_LoadOrCreatePlayerUnit(pGame, pClient, (D2ClientStrc*)pClient->szCharName, bLoadFromSave, (D2UnitStrc*)&pPlayerUnitOut, (uint32_t)pRoom, nX, nY);
+        bLoadError = PLAYER::PlayerSave::CLIENT_LoadOrCreatePlayerUnit(pGame, pClient, (D2ClientStrc*)pClient->szCharName, bLoadFromSave, &pPlayerUnitOut, (uint32_t)pRoom, nX, nY);
         if (bLoadError) {
           szErrorName = "nError";
           bLoadErrorSave = bLoadError;
@@ -2221,7 +2221,7 @@ void __fastcall CleanUpClient(::SGAMEDATA * pGame, uint32_t nClientId, int32_t b
             nExpHi = 0;
             nNameHashBucket = 0;
             nStrCmp = 0;
-            BattleNetServerService->fpLeaveGame(nStrCmp, nNameHashBucket, nExpHi, nExpHiShift, (int)wCharLevel, pRemovedClient->szCharName, (uint8_t*)&pRemovedClient->nStartSkill, pClientNode_00, 0, 0, pRemovedClient->szAccName, dwRealmToken, 0, 0, 0, 0, 0, (uint8_t*)&pRemovedClient->pFileTime);
+            BattleNetServerService->fpLeaveGame(nStrCmp, nNameHashBucket, nExpHi, nExpHiShift, (int)wCharLevel, pRemovedClient->szCharName, (uint8_t*)&pRemovedClient->nStartSkill, pClientNode_00, 0, 0, pRemovedClient->szAccName, dwRealmToken, 0, 0, 0, 0, 0, (uint8_t*)&pRemovedClient->ftFileTime);
           }
         }
       } else {
@@ -2253,7 +2253,7 @@ void __fastcall CleanUpClient(::SGAMEDATA * pGame, uint32_t nClientId, int32_t b
             dwRealmToken = (uint32_t)pRemovedClient->pClientContainer;
             pClientNode_00 = (uint8_t*)pRemovedClient->dwSave;
             wCharLevel = pRemovedClient->nCharacterStatus;
-            BattleNetServerService->fpLeaveGame(nStrCmp, nNameHashBucket, nExpHi, nExpHiShift, (int)wCharLevel, pRemovedClient->szCharName, (uint8_t*)&pRemovedClient->nStartSkill, pClientNode_00, 0, 0, pRemovedClient->szAccName, dwRealmToken, 0, 0, 0, 0, 0, (uint8_t*)&pRemovedClient->pFileTime);
+            BattleNetServerService->fpLeaveGame(nStrCmp, nNameHashBucket, nExpHi, nExpHiShift, (int)wCharLevel, pRemovedClient->szCharName, (uint8_t*)&pRemovedClient->nStartSkill, pClientNode_00, 0, 0, pRemovedClient->szAccName, dwRealmToken, 0, 0, 0, 0, 0, (uint8_t*)&pRemovedClient->ftFileTime);
           }
         }
       }

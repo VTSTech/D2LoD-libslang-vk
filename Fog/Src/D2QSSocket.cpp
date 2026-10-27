@@ -14,7 +14,6 @@
 #include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
-#include "Fog/D2PoolManagerStrc.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -99,16 +98,16 @@ int __stdcall ProcessReceivedData(D2QSSocketStrc * pQServerStrc, void * pBuffer,
     uint32_t uVar3;
     size_t _Size;
     uint16_t wPacketSize;
-    void* _Src = pBuffer;
+    void* pvVar4 = pBuffer;
     do {
       int iVar1;
-      wPacketSize = *(uint16_t*)(pQServerStrc->nSizeFieldOffset + (int)_Src);
+      wPacketSize = *(uint16_t*)(pQServerStrc->nSizeFieldOffset + (int)pvVar4);
       uVar3 = (uint32_t)wPacketSize;
       iVar2 = pQServerStrc->nHeaderSize;
-      iVar1 = (int)pBuffer + (nBufferSize - (int)_Src);
+      iVar1 = (int)pBuffer + (nBufferSize - (int)pvVar4);
       if (iVar1 < iVar2 || iVar1 < (int)uVar3) {
-        _Size = (int)pBuffer + (nBufferSize - (int)_Src);
-        memcpy(pBuffer, _Src, _Size);
+        _Size = (int)pBuffer + (nBufferSize - (int)pvVar4);
+        memcpy(pBuffer, pvVar4, _Size);
         return _Size;
       }
       if (0x2063 < uVar3) {
@@ -117,7 +116,7 @@ int __stdcall ProcessReceivedData(D2QSSocketStrc * pQServerStrc, void * pBuffer,
       }
 
       wMsgSize = wPacketSize - (short int)iVar2;
-      pParam = (void*)(iVar2 + (int)_Src);
+      pParam = (void*)(iVar2 + (int)pvVar4);
       if (!pQServerStrc->pfnPacketHandler) {
         D2QSQueue::FOG_EnqueueMessage(&pQServerStrc->aQueue, pParam, wMsgSize);
         /* HANDLE hEvent for SetEvent */ SetEvent(pQServerStrc->pEvent);
@@ -131,18 +130,18 @@ int __stdcall ProcessReceivedData(D2QSSocketStrc * pQServerStrc, void * pBuffer,
         iVar2 = pQServerStrc->pfnPacketHandler(pQServerStrc->pHandlerContext);
         if (!iVar2) {
           if (0 < pQServerStrc->nSizeFieldOffset) {
-            pParam = _Src;
+            pParam = pvVar4;
             wMsgSize = wPacketSize;
           }
 
           D2QSQueue::FOG_EnqueueMessage(&pQServerStrc->aQueue, pParam, wMsgSize);
           /* HANDLE hEvent for SetEvent */ SetEvent(pQServerStrc->pEvent);
-          _Src = (void*)((int)_Src + uVar3);
+          pvVar4 = (void*)((int)pvVar4 + uVar3);
           continue;
         }
       }
 
-      _Src = (void*)((int)_Src + uVar3);
+      pvVar4 = (void*)((int)pvVar4 + uVar3);
     } while (true);
 }
 
@@ -374,7 +373,7 @@ void __stdcall FreeD2QSSocket(D2QSSocketStrc * pSocket) {
     }
 
     QSSOCKET_BlockSocket(pSocket);
-    D2QSQueue::Free((D2PoolManagerStrc*)&pSocket->aQueue);
+    D2QSQueue::Free(&pSocket->aQueue);
     D2NetDataStrc* pNetData = pSocket->pSafesock;
     if (pNetData && pNetData->hSocketThread) {
       Safesock::Free(pNetData);

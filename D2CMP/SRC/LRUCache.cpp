@@ -91,7 +91,7 @@ D2LRUCacheNodeStrc * LRUCACHE_PopOldest(D2LRUCacheStrc * pCache) {
 }
 
 void LRUCACHE_Unlink(D2LRUCacheNodeStrc * pNode, D2LRUCacheStrc * pCache) {
-    int32_t pPrev;
+    void* pPrev;
     if (!pCache->pLRUHead) {
       return;
     }
@@ -272,7 +272,7 @@ void __fastcall LRUCACHE_FreeAll(D2LRUCacheStrc * pCache) {
 
 // @sourcefile .\SRC\LRUCache.cpp
 D2LRUCacheNodeStrc * __fastcall LRUCACHE_GetOrAlloc(D2LRUCacheStrc * pCache, uint32_t nEntrySize, void * pUserData) {
-    void* pAllocBuf;
+    void* nAddress;
     if (nEntrySize < pCache->dwBufSize) {
       D2LRUCacheNodeStrc* ppAllocEntry;
       pCache->nMissCount++;
@@ -283,9 +283,9 @@ D2LRUCacheNodeStrc * __fastcall LRUCACHE_GetOrAlloc(D2LRUCacheStrc * pCache, uin
         ppAllocEntry = LRUCACHE_AllocEntry(pCache, nEntrySize);
       }
 
-      pAllocBuf = D2_ALLOC_POOL((D2PoolManagerStrc*)pCache->pAllocator, nEntrySize);
-      ppAllocEntry->pBuf = pAllocBuf;
-      if (pAllocBuf) {
+      nAddress = D2_ALLOC_POOL((D2PoolManagerStrc*)pCache->pAllocator, nEntrySize);
+      ppAllocEntry->pBuf = nAddress;
+      if (nAddress) {
         ppAllocEntry->nBufSize = nEntrySize;
         ppAllocEntry->pUserData = pUserData;
         return ppAllocEntry;

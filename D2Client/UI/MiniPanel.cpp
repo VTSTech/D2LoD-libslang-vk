@@ -32,8 +32,8 @@
 #include "D2gfx/D2GFX.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/File.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SReg.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -404,7 +404,7 @@ void MINIPANEL_HandleButtonClick(int32_t nButtonId) {
 
 void __stdcall INPUT_MiniPanelMouseUp(D2UIMouseMsgStrc * pMsg) {
     // Static local variables (originally global data)
-    static uint32_t gnMiniPanelClickedButton;
+    static uint32_t gnMiniPanelClickedButton; D2_STATIC_GUARD_BSS(gnMiniPanelClickedButton, "D2Client::UI::MiniPanel::INPUT_MiniPanelMouseUp::gnMiniPanelClickedButton");
 
     uint32_t bBeltHover;
     eD2UnitType eUnitType;

@@ -1412,21 +1412,21 @@ BOOL __stdcall SCMD_DispatchUnitPartyData(D2UnitStrc * pUnit, int32_t nUnitLife,
 // If target is player and > 50 units away, appends 0x90 (automap position: GUID, X, Y).
 // Dual-packet system for efficiency: nearby allies get minimal update, distant players get automap sync.
 void __fastcall NET_D2GS_SERVER_Send_0x7F_AllyPartyInfo_0x90_PartyAutoMapInfo(D2ClientStrc * pClient, D2UnitStrc * pUnit) {
-    int32_t nLifePct;
     uint8_t aPacket[13];
+    int32_t nErrLineOrAddr;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x72a);
       exit(-1);
     }
 
-    nLifePct = D2Common::Units::GetCurrentLifePercentage(pUnit);
+    nErrLineOrAddr = D2Common::Units::GetCurrentLifePercentage(pUnit);
     aPacket[1] = pUnit->eUnitType == UNIT_PLAYER;
     aPacket[8] = 0;
     aPacket[9] = 0;
     aPacket[0] = 0x7f;
     *(uint32_t*)((char*)&aPacket + 4) = pUnit->nUnitGUID;
-    *(uint16_t*)((char*)&aPacket + 2) = (uint16_t)nLifePct;
-    if (0xfffe < nLifePct) {
+    *(uint16_t*)((char*)&aPacket + 2) = (uint16_t)nErrLineOrAddr;
+    if (0xfffe < nErrLineOrAddr) {
       aPacket[2] = 0xff;
       aPacket[3] = 0xff;
     }
@@ -1437,7 +1437,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x7F_AllyPartyInfo_0x90_PartyAutoMapInfo(D2
     aPacket[8] = (uint8_t)eLevelRaw;
     aPacket[9] = (uint8_t)(eLevelRaw >> 8);
     D2UnitStrc* pPlayer = Clients::CLIENTS_GetControlUnit(pClient, 0);
-    BOOL bPartyDataChanged = SCMD_DispatchUnitPartyData(pPlayer, nLifePct, eLevel, pUnit);
+    BOOL bPartyDataChanged = SCMD_DispatchUnitPartyData(pPlayer, nErrLineOrAddr, eLevel, pUnit);
     if (bPartyDataChanged) {
       SCMD_QueuePacketForClient(aPacket, 10, pClient);
     }
@@ -1446,8 +1446,8 @@ void __fastcall NET_D2GS_SERVER_Send_0x7F_AllyPartyInfo_0x90_PartyAutoMapInfo(D2
     }
 
     pPlayer = Clients::CLIENTS_GetControlUnit(pClient, 0);
-    nLifePct = D2Common::Collision::GetCollisionDistance(pPlayer, pUnit);
-    if (0x32 >= nLifePct) {
+    nErrLineOrAddr = D2Common::Collision::GetCollisionDistance(pPlayer, pUnit);
+    if (0x32 >= nErrLineOrAddr) {
       return;
     }
 
@@ -1457,13 +1457,13 @@ void __fastcall NET_D2GS_SERVER_Send_0x7F_AllyPartyInfo_0x90_PartyAutoMapInfo(D2
     aPacket[1] = (uint8_t)uVar1;
     *(uint16_t*)((char*)&aPacket + 2) = (uint16_t)(uVar1 >> 8);
     *(uint32_t*)((char*)&aPacket + 4) = uVar1 >> 0x18;
-    nLifePct = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-    d2_store24((char*)&aPacket + 5, (uint32_t)nLifePct & 0xffffffu);
-    aPacket[8] = (uint8_t)((uint32_t)nLifePct >> 0x18);
-    nLifePct = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-    aPacket[9] = (uint8_t)nLifePct;
-    *(uint16_t*)((char*)&aPacket + 10) = (uint16_t)((uint32_t)nLifePct >> 8);
-    aPacket[0xc] = (uint8_t)((uint32_t)nLifePct >> 0x18);
+    nErrLineOrAddr = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+    d2_store24((char*)&aPacket + 5, (uint32_t)nErrLineOrAddr & 0xffffffu);
+    aPacket[8] = (uint8_t)((uint32_t)nErrLineOrAddr >> 0x18);
+    nErrLineOrAddr = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+    aPacket[9] = (uint8_t)nErrLineOrAddr;
+    *(uint16_t*)((char*)&aPacket + 10) = (uint16_t)((uint32_t)nErrLineOrAddr >> 8);
+    aPacket[0xc] = (uint8_t)((uint32_t)nErrLineOrAddr >> 0x18);
     SCMD_QueuePacketForClient(aPacket, 0xd, pClient);
 }
 
@@ -2361,6 +2361,7 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
     uint16_t wNameSeed;
     int32_t nScratch;
     uint32_t nComponentData;
+    uint8_t* pbVar2;
     D2UnitStrc* pOwner;
     uint32_t nStatIndex;
     D2StatListExStrc* pStatListEx;
@@ -2475,15 +2476,15 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
           Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (int)nBossNo, nScratch);
         }
 
-        nScratch = Monsters::GetMonUModList(pUnit);
-        if (nScratch) {
+        pbVar2 = Monsters::GetMonUModList(pUnit);
+        if (pbVar2) {
           nIndex = 0;
           do {
-            if (!*(uint8_t*)(nIndex + nScratch)) {
+            if (!pbVar2[nIndex]) {
               break;
             }
 
-            Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (uint32_t)*(uint8_t*)(nIndex + nScratch), 8);
+            Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (uint32_t)pbVar2[nIndex], 8);
             nIndex++;
           } while (nIndex < 9);
         }

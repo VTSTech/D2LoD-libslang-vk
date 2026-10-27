@@ -7,10 +7,10 @@
 #include "Fog/SMem.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/Storm.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "support/d2_boot.h" // [d2boot]
 #include "compiler/compiler.h"
@@ -40,8 +40,8 @@ typedef BOOL (__stdcall *pfnGetDiskFreeSpaceEx)(LPCSTR lpDirectoryName, void * l
 
 namespace Fog::Src::LogManager {
 
-static char gLogFileNameArray_0__1_[20][16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-static char gLogFileNameArray_0__2_[20][16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static char gLogFileNameArray_0__1_[20][16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; D2_STATIC_GUARD(gLogFileNameArray_0__1_, "Fog::Src::LogManager::gLogFileNameArray_0__1_");
+static char gLogFileNameArray_0__2_[20][16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; D2_STATIC_GUARD(gLogFileNameArray_0__2_, "Fog::Src::LogManager::gLogFileNameArray_0__2_");
 
 int __stdcall DetectCpuVendor() {
     char szCpuVendor[16];
@@ -409,7 +409,7 @@ uint32_t __fastcall DispatchCpuidCall(int32_t nParam) {
 
 void __stdcall LogCpuInfo() {
     // Static local variables (originally global data)
-    static char * gaCpuVendorNames[5] = { s_Unknown_006cc780, s_Intel_006cdebc, s_AMD_006cdeb8, s_Cyrix_006cdeb0, nullptr };
+    static char * gaCpuVendorNames[5] = { s_Unknown_006cc780, s_Intel_006cdebc, s_AMD_006cdeb8, s_Cyrix_006cdeb0, nullptr }; D2_STATIC_GUARD(gaCpuVendorNames, "Fog::Src::LogManager::LogCpuInfo::gaCpuVendorNames");
 
     uint32_t nVersionLow;
     uint32_t nModel;
@@ -486,7 +486,7 @@ void __fastcall InitLogFilePathPointers(uint8_t * * pPathPtrArray, uint32_t nCou
     } while (nIndex < nCount);
 }
 
-int __fastcall OpenLogFileWithTimestamp(char * szFilePrefix, LPSYSTEMTIME pSystemTime, char * szOpenMode, uint32_t * pbIsNewFile, char * szOutPath, int32_t nOutPathLen) {
+FILE * __fastcall OpenLogFileWithTimestamp(char * szFilePrefix, LPSYSTEMTIME pSystemTime, char * szOpenMode, uint32_t * pbIsNewFile, char * szOutPath, int32_t nOutPathLen) {
     FILE* pFile;
     char szLogFilePath[260];
     uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
@@ -508,7 +508,7 @@ int __fastcall OpenLogFileWithTimestamp(char * szFilePrefix, LPSYSTEMTIME pSyste
 
     pFile = fopen(szLogFilePath, szOpenMode);
     Debug::GuardStack();
-    return (int)pFile;
+    return pFile;
 }
 
 // Writes the header of a newly opened log file: a rule, the computer name and the date from pTime, and a closing rule.
@@ -663,7 +663,7 @@ FILE * __fastcall FindOrOpenLogFileSlot(uint8_t * szFileName, uint32_t * pnSlotI
       pSearchName++;
     } while (byChar);
 
-    pOpenedFile = (FILE*)OpenLogFileWithTimestamp((char*)szFileName, &localTime, "a", (uint32_t*)&nIsNewFile, gLogFilePathArray[nSlot], 0x104);
+    pOpenedFile = OpenLogFileWithTimestamp((char*)szFileName, &localTime, "a", (uint32_t*)&nIsNewFile, gLogFilePathArray[nSlot], 0x104);
     globalOpenFileHandleArray[nSlot] = pOpenedFile;
     gLogFileLastWriteTimeArray[nSlot] = dwNow;
     gLogFileLastAccessTimeArray[nSlot] = dwNow;
@@ -948,7 +948,7 @@ long __fastcall GetLogFileSize(uint8_t * szFileName) {
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gLogFileCS);
     CloseLogFileByName(szFileName);
     long int nFileSize = 0;
-    FILE* pFile = (FILE*)OpenLogFileWithTimestamp((char*)szFileName, &localTime, "r", nullptr, nullptr, 0);
+    FILE* pFile = OpenLogFileWithTimestamp((char*)szFileName, &localTime, "r", nullptr, nullptr, 0);
     if (pFile) {
       fseek(pFile, 0, 2);
       nFileSize = ftell(pFile);
@@ -968,7 +968,7 @@ char * __fastcall ReadLogFileRange(uint8_t * szFileName, int32_t nStartOffset, i
     memset(pBuffer, 0, nAllocSize);
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gLogFileCS);
     CloseLogFileByName(szFileName);
-    FILE* pFile = (FILE*)OpenLogFileWithTimestamp((char*)szFileName, &localTime, "r", nullptr, nullptr, 0);
+    FILE* pFile = OpenLogFileWithTimestamp((char*)szFileName, &localTime, "r", nullptr, nullptr, 0);
     if (pFile) {
       int nSeekResult;
       nSeekResult = fseek(pFile, nSavedStart, 0);
@@ -1083,7 +1083,7 @@ void __stdcall ExitOrCrashCleanUpJmp() {
 
 void __stdcall DeleteOldLogFiles() {
     // Static local variables (originally global data)
-    static uint32_t gLogCleanupLastTickCount;
+    static uint32_t gLogCleanupLastTickCount; D2_STATIC_GUARD_BSS(gLogCleanupLastTickCount, "Fog::Src::LogManager::DeleteOldLogFiles::gLogCleanupLastTickCount");
 
     DWORD dwTickCount;
     HANDLE hFindFile;

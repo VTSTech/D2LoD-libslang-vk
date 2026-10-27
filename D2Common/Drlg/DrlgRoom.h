@@ -70,7 +70,7 @@ namespace D2Common::Drlg::DrlgRoom {
 
 // Function declarations
 // Find destination room via warp tile links: scan src room's tile grid for a tile whose shadow level id matches eLevel, then follow its room link and locate the reverse link tile to fetch orth pointer and destination RoomEx. Initializes destination room on demand.
-struct D2RoomStrc * __fastcall DRLGWARP_GetWarpDestinationRoom(struct D2RoomExStrc * pRoomEx, eD2LevelId eLevel, struct D2DrlgOrthStrc * * ppOrth, struct D2RoomExStrc * * ppRoomEx);
+struct D2RoomStrc * __fastcall DRLGWARP_GetWarpDestinationRoom(struct D2RoomExStrc * pRoomEx, eD2LevelId eLevel, int * ppOrth, struct D2LvlWarpTxt * * ppRoomEx);
 // Iterates all warp tiles in a room (linked list at offset 0x4c)
 // and sets each tile's select value (offset 0x8) to nSelectValue.
 // Called by DRLGROOM_SetWarpTileSelect.
@@ -136,10 +136,10 @@ void __fastcall DRLGROOMEX_FindReplaceAndFreeSub00VsTargetRoomEx(struct D2PoolMa
 void __fastcall DRLGROOMEX_FindReplaceAndFreeSub00ForBothRoomEx(struct D2PoolManagerStrc * pMemory, struct D2RoomExStrc * pRoomEx, struct D2RoomExStrc * pDrlgRoomExB);
 // Sorting comparator: compares orths by direction first, then by coordinate for that direction.
 BOOL __fastcall DRLGORTH_CompareByDirectionAndCoord(struct D2DrlgOrthStrc * pOrth1, struct D2DrlgOrthStrc * pOrth2);
-void __stdcall DRLGROOMEX_ReplaceSub00(struct D2RoomExStrc * pRoomEx, struct D2DrlgOrthStrc * pOrth);
+void __stdcall DRLGROOMEX_ReplaceSub00(struct D2DrlgOrthStrc * * pRoomEx, struct D2DrlgOrthStrc * pOrth);
 // Allocates a D2DrlgOrthStrc (nType=0, level link) connecting pRoomEx to another level. The orth node stores pLevel pointer, direction, and a pointer to the level's sCoordinatesAndSize. Inserts into pRoomEx->pOrth sorted linked list via DRLGROOMEX_ReplaceSub00.
 // @sourcefile .\DRLG\DrlgRoom.cpp
-void __fastcall AllocDrlgOrth(struct D2RoomExStrc * pRoomEx, struct D2DrlgLevelStrc * pLevel, eDrlgDirection neDrlgDirection, BOOL bIsDrlgTypePresetArea);
+void __fastcall AllocDrlgOrth(struct D2DrlgOrthStrc * * pRoomEx, struct D2DrlgLevelStrc * pLevel, eDrlgDirection neDrlgDirection, BOOL bIsDrlgTypePresetArea);
 BOOL __fastcall DRLGCOORDS_IsWithinDistance(struct D2DrlgCoordsStrc * pCoords, struct D2DrlgCoordsStrc * pCoords2, int32_t nSize, int * nX, int * nY);
 int __fastcall DRLGROOM_CoordsWithinDistance(struct D2DrlgCoordsStrc * pCoords1, struct D2DrlgCoordsStrc * pCoords2, int32_t nDistance);
 // Returns true if two DRLG room coordinate rects are adjacent or overlapping within nMaxDist tiles. When nMaxDist==0, tests for direct overlap; when nMaxDist>0, accepts rooms separated by up to that many tiles in exactly one axis while touching in the other. Used by DefineRoomsNear and DRLGROOMEX_LinkNearRoomByDirection to find spatially neighbouring rooms.

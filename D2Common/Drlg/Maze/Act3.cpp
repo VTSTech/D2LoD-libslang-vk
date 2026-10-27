@@ -44,7 +44,7 @@ void DungeonRoll(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_ACT3_DUNGEON_PRESETS, "D2Common::Drlg::Maze::Act3::DungeonRoll::DRLG_ACT3_DUNGEON_PRESETS");
     static D2DrlgReplaceRoomStrc DRLG_ACT3_DUNGEON_PRESETS2[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x2a0,
@@ -70,7 +70,7 @@ void DungeonRoll(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_ACT3_DUNGEON_PRESETS2, "D2Common::Drlg::Maze::Act3::DungeonRoll::DRLG_ACT3_DUNGEON_PRESETS2");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
     pLevel->sSeed = DVar1;

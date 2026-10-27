@@ -103,7 +103,7 @@ void __fastcall NET_D2GS_CLIENT_Send_0x6B(char * pBytes) {
 // Client-side keep-alive ping sender. Throttled to once per 5 seconds (gdwLastPingSentTick). Computes an anti-cheat/Warden checksum by reading 2 bytes each from two offsets in a named module via ReadProcessMemory; sends packet 0x6D containing the current tick, the computed checksum (obfuscated), and half the game data delay. Updates gnPacketSendCount_0x69 and _gbNetworkPacketSyncFlag after send.
 void __stdcall NET_D2GS_CLIENT_Send_0x6D_PING() {
     // Static local variables (originally global data)
-    static unsigned int gdwLastPingSentTick;
+    static unsigned int gdwLastPingSentTick; D2_STATIC_GUARD_BSS(gdwLastPingSentTick, "D2Client::GAME::Msg::NET_D2GS_CLIENT_Send_0x6D_PING::gdwLastPingSentTick");
 
     HANDLE hProcess;
     BOOL bReadOk;
@@ -879,8 +879,8 @@ void __stdcall NET_D2GS_CLIENT_Send(uint8_t * pBytes, int32_t nSize) {
     0,
     0,
     0
-};
-    static unsigned int gdwLastPacketSendTick;
+}; D2_STATIC_GUARD(gaLastSentPacketBuffer, "D2Client::GAME::Msg::NET_D2GS_CLIENT_Send::gaLastSentPacketBuffer");
+    static unsigned int gdwLastPacketSendTick; D2_STATIC_GUARD_BSS(gdwLastPacketSendTick, "D2Client::GAME::Msg::NET_D2GS_CLIENT_Send::gdwLastPacketSendTick");
 
     uint32_t nRemaining;
     int nCmpResult;

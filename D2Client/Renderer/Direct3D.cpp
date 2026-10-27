@@ -162,7 +162,7 @@ static BYTE * gaGlidePaletteTable[72] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(gaGlidePaletteTable, "D2Client::Renderer::SetPaletteTable::gaGlidePaletteTable");
 
     int nEntriesRemaining;
     uint8_t** pDestPaletteEntry = gaGlidePaletteTable;
@@ -216,7 +216,7 @@ void __fastcall RENDERER_D3D_ConvertPalettedTo32Bit(uint8_t * pSrc8Bit, uint32_t
 }
 
 int * GetRenderStatistics() {
-    return &gnTextureMemoryUsageBytes;
+    return &gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes;
 }
 
 BOOL ActivateWindow() {

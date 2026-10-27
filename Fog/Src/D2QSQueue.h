@@ -9,7 +9,6 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2PoolManagerStrc;
 struct D2QSQueueStrc;
 
 // Data types
@@ -23,7 +22,7 @@ namespace Fog::Src::D2QSQueue {
 
 // Function declarations
 void __fastcall D2QSQUEUE_Initialize(struct D2QSQueueStrc * pdwParam);
-void __fastcall Free(struct D2PoolManagerStrc * pPoolManager);
+void __fastcall Free(struct D2QSQueueStrc * pPoolManager);
 uint32_t __fastcall GetAddress(uint32_t * pdwParam);
 void __fastcall FOG_EnqueueMessage(struct D2QSQueueStrc * pClientSideData, void * pParam, uint16_t wMsgSize);
 uint32_t __fastcall D2QSQUEUE_Dequeue(struct D2QSQueueStrc * pdwParam, void * pParam, int nMaxSize);

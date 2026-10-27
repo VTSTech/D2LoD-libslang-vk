@@ -168,19 +168,20 @@ void __fastcall SaveMercData(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SaveFile
       return;
     }
 
-    pSaveHeader->nMercSeed = pPetData->nSeed;
-    pSaveHeader->nMercNameId = (short int)pPetData->nNameId;
-    pSaveHeader->nMercType = (short int)pPetData->nType;
-    nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMerc, UNITSTAT_experience, 0);
-    pSaveHeader->nMercExperience = nStatValue;
-    pSaveHeader->nMercFlags = 0;
-    pSaveHeader->nMercNameId -= pHirelingTxt->nNameFirst;
+    pSaveHeader->sMerc.dwSeed = pPetData->nSeed;
+    pSaveHeader->sMerc.wNameIndex = (uint16_t)pPetData->nNameId;
+    pSaveHeader->sMerc.wHirelingId = (uint16_t)pPetData->nType;
+    uint32_t uVar2 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMerc, UNITSTAT_experience, 0);
+    pSaveHeader->sMerc.dwExperience = uVar2;
+    pSaveHeader->sMerc.dwFlags = 0;
+    uint16_t* puVar1 = &pSaveHeader->sMerc.wNameIndex;
+    *puVar1 -= pHirelingTxt->nNameFirst;
     bIsDead = UNIT::SUnit::CheckForModeZeroDeath(pMerc);
     if (!bIsDead) {
       return;
     }
 
-    pSaveHeader->nMercFlags |= 0x10000;
+    pSaveHeader->sMerc.dwFlags |= 0x10000;
 }
 
 // Serializes the fixed 0x14f-byte .d2s save-file header for a player into the caller's output buffer (pStartAddress..pEndAddress). Builds a D2SaveFileHeaderStrc: magic 0xAA55AA55, file version 0x60, char name, character-status flags (sets expansion 0x20 and non-SP 0x40 bits), class id, level, create/current time, init seed, the 16 hotkey skill/item bindings, left/right/swap-hand skill+item indices, per-difficulty current act (|0x80), 0xFF-filled appearance arrays (filled by SaveCharAppearance), merc data, and guild rank. Then memcpy's the header (0x14f bytes) to the buffer and advances *pStartAddress by 0x14f. Returns a Fog::GuardStack value; bails (returns guard 2) if client/name/length invalid, or if the buffer is too small.
@@ -435,7 +436,7 @@ int32_t __fastcall SaveWaypoints(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD 
     D2WaypointStrc** ppWaypoint = pPlayerData->pWaypoint;
     int i = 3;
     do {
-      D2Common::Waypoints::CopyWaypoint(*ppWaypoint, pEntry);
+      D2Common::Waypoints::CopyWaypoint(*ppWaypoint, &pEntry->pWaypoints);
       ppWaypoint++;
       pEntry++;
       i--;
@@ -881,7 +882,7 @@ int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint32_t dwCharacterStatus
       LONG nFiletimeCmpResult;
       BattleNetServerService->fpGetDatabaseFileTime();
       if (dwCharacterStatus & 0x40) {
-        /* FILETIME * lpFileTime2 for CompareFileTime */ /* FILETIME * lpFileTime1 for CompareFileTime */ nFiletimeCmpResult = CompareFileTime((FILETIME*)&pClient->pFileTime, &ftDatabase);
+        /* FILETIME * lpFileTime2 for CompareFileTime */ /* FILETIME * lpFileTime1 for CompareFileTime */ nFiletimeCmpResult = CompareFileTime(&pClient->ftFileTime, &ftDatabase);
         if (0 < nFiletimeCmpResult) {
           if (pGame->eGameType == GAMETYPE_SINGLEPLAYER) {
             return 0x19;
@@ -1892,7 +1893,7 @@ int32_t __fastcall PLAYERSAVE_LoadModernFormat(::SGAMEDATA * pGame, D2ClientStrc
     0xe,
     0x1a,
     0x19
-};
+}; D2_STATIC_GUARD(gdwPlayerSaveVersion, "D2Game::PLAYER::PlayerSave2::PLAYERSAVE_LoadModernFormat::gdwPlayerSaveVersion");
 
     int nLoadError;
     uint32_t nNewCharError;
@@ -1945,7 +1946,7 @@ int32_t __fastcall PLAYERSAVE_LoadModernFormat(::SGAMEDATA * pGame, D2ClientStrc
                   nLoadError = PLRSAVE_LoadCorpseFromBuffer(pGame, pUnit, (D2UnitStrc**)&pReadPos, (D2UnitStrc*)pBufEnd, dwParam, &nSubError);
                   bIsFatalError = nLoadError < 0;
                   if (!nLoadError) {
-                    pMerc = LoadMerc(pGame, pUnit, (D2MercSaveDataStrc*)&pSaveHeader->nMercFlags, dwParam);
+                    pMerc = LoadMerc(pGame, pUnit, &pSaveHeader->sMerc, dwParam);
                     nLoadError = LoadMerc2(pGame, pMerc, (D2UnitStrc**)&pReadPos, (D2UnitStrc*)pBufEnd, dwParam, &nSubError);
                     bIsFatalError = nLoadError < 0;
                     if (!nLoadError) {

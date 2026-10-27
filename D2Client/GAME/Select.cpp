@@ -84,13 +84,14 @@ int __stdcall SELECT_GetConstant13_Y() {
 // Client-side unit-selection setter (__fastcall via EAX:pUnit). Updates D2Client::_Selection state to the hovered/clicked pUnit. Handles NPC overhead-text menu selection, deselect of a previously selected warp (UpdateWarpRoomDeselect), and per-type selection effects: monster (caches attackable non-NPC monster class into gnSelectConstant13_X/Y), object door (debounced 500ms, sends 'AoF'/0x3d highlight-door packet to GS via NET_D2GS_CLIENT_Send_INT), and warp (UpdateWarpRoomSelect + view dirty flag). No return; mutates global selection state and may emit a network message.
 void SetSelectedUnit_I(D2UnitStrc * pUnit) {
     D2UnitStrc* pLookupUnit;
-    int32_t nMonClassId;
     D2RoomStrc* pRoom;
     BOOL bIsDoor;
     DWORD dwTickCount;
+    D2MonStatsTxt* pMonStats;
     D2MonStats2Txt* pMonStats2;
     char szDebugString[512];
     int nDoorUnitGUID;
+    int32_t nErrorLine;
     eD2LevelId nWarpClassId;
     if (_Selection::bCanSelectUnit) {
       return;
@@ -142,16 +143,15 @@ void SetSelectedUnit_I(D2UnitStrc * pUnit) {
     _Selection::nSelectedUnitGUID = pUnit->nUnitGUID;
     _Selection::bHasSelectedUnit = 1;
     if (_Selection::eSelectedUnitType == UNIT_MONSTER) {
-      D2MonStatsTxt* pMonStats;
       if (!bSameUnitAsLast) {
-        nMonClassId = pUnit->nClassId;
-        pMonStats = DataTbls::MonsterTbls::TXT_MonStats_GetLine(nMonClassId);
+        nErrorLine = pUnit->nClassId;
+        pMonStats = DataTbls::MonsterTbls::TXT_MonStats_GetLine(nErrorLine);
         if (pMonStats) {
-          pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nMonClassId);
+          pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nErrorLine);
           if (pMonStats2 && !pMonStats->npc && pMonStats->Align != '\x01' && pMonStats2->isAtt) {
-            gnSelectConstant13_X = nMonClassId;
+            gnSelectConstant13_X = nErrorLine;
             if (!pMonStats2->inert) {
-              gnSelectConstant13_Y = nMonClassId;
+              gnSelectConstant13_Y = nErrorLine;
             }
           }
         }
@@ -514,9 +514,9 @@ int __fastcall UnitIsOfTypeMonster(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
 // Scans the direction-offset table (gnGameSelectPathState/gnGameSelectGameState) starting from the player's current facing direction to find an interactable unit (monster, object, or NPC) in that direction. Checks collision, unit type, MonStats2 flags (e.g. selectable), and CanInteractWith. Returns the first matching D2UnitStrc* and registers it as the player's dynamic-path target, or null if none found within the table bounds.
 D2UnitStrc * __stdcall SELECT_FindTargetInFacingDirection(D2UnitStrc * pPlayerUnit_lcl, int pSkillsTxt) {
     // Static local variables (originally global data)
-    static int gnGameSelectGameState[8] = { 0x3, 0x2, 0x0, -0x2, -0x3, -0x2, 0x0, 0x2 };
-    static int gnGameSelectPathState[8] = { 0x0, -0x2, -0x3, -0x2, 0x0, 0x2, 0x3, 0x2 };
-    static int32_t gaTargetSelectionAngleTable[5] = { 0x0, -0x1, 0x1, -0x2, 0x2 };
+    static int gnGameSelectGameState[8] = { 0x3, 0x2, 0x0, -0x2, -0x3, -0x2, 0x0, 0x2 }; D2_STATIC_GUARD(gnGameSelectGameState, "D2Client::GAME::Select::SELECT_FindTargetInFacingDirection::gnGameSelectGameState");
+    static int gnGameSelectPathState[8] = { 0x0, -0x2, -0x3, -0x2, 0x0, 0x2, 0x3, 0x2 }; D2_STATIC_GUARD(gnGameSelectPathState, "D2Client::GAME::Select::SELECT_FindTargetInFacingDirection::gnGameSelectPathState");
+    static int32_t gaTargetSelectionAngleTable[5] = { 0x0, -0x1, 0x1, -0x2, 0x2 }; D2_STATIC_GUARD(gaTargetSelectionAngleTable, "D2Client::GAME::Select::SELECT_FindTargetInFacingDirection::gaTargetSelectionAngleTable");
 
     int nUnitX;
     int nUnitY;
@@ -754,9 +754,9 @@ void __fastcall SELECT_UpdateUnitSelection(D2UnitStrc * pUnit) {
 // Client-side hover/selection update: recomputes which unit the cursor is over. No-op while bCanSelectUnit lock is set. Reads mouse via SELECT_HandleMouseInput; if the currently selected unit still passes HitTestScreen it is kept. Otherwise scans the player's room plus adjacent rooms, hit-testing every candidate and choosing the best by per-unit-type priority (gnSelectTimeout), with special handling: skips items when suppressed, demotes dead monsters and attached-state monsters, resolves OBJECT vs door occlusion (SELECT_IsUnitBehindDoor / SELECT_IsDoorBlockingUnit), and breaks ties by squared distance to the player. Commits the winner via SetSelectedUnit_I. Resets the warp double-click id when the player changes room.
 void __stdcall SELECT_UpdateSelectedUnit() {
     // Static local variables (originally global data)
-    static int gnSelectTimeout[6] = { 0x0, 0x0, -0x6, 0x0, -0x4, 0x0 };
-    static int gnSelectedUnitId;
-    static void * gpSelectLastPlayerRoom;
+    static int gnSelectTimeout[6] = { 0x0, 0x0, -0x6, 0x0, -0x4, 0x0 }; D2_STATIC_GUARD(gnSelectTimeout, "D2Client::GAME::Select::SELECT_UpdateSelectedUnit::gnSelectTimeout");
+    static int gnSelectedUnitId; D2_STATIC_GUARD_BSS(gnSelectedUnitId, "D2Client::GAME::Select::SELECT_UpdateSelectedUnit::gnSelectedUnitId");
+    static void * gpSelectLastPlayerRoom; D2_STATIC_GUARD_BSS(gpSelectLastPlayerRoom, "D2Client::GAME::Select::SELECT_UpdateSelectedUnit::gpSelectLastPlayerRoom");
 
     uint32_t bHitTest;
     int nIsActive;

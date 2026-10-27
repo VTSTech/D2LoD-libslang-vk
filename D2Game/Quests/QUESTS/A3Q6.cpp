@@ -40,8 +40,8 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/Monster/AI/AI.h"
 
@@ -263,7 +263,7 @@ BOOL __fastcall Q23_PlayerNotifyCompleted(::SGAMEDATA * pGame, D2UnitStrc * pUni
 // "go kill Mephisto" / "you've done it" dialog depending on progress.
 void __fastcall Q23_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ20QuestStateMessages[8] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 };
+    static int32_t gdwQ20QuestStateMessages[8] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 }; D2_STATIC_GUARD(gdwQ20QuestStateMessages, "D2Game::Quests::QUESTS::A3Q6::Q23_Callback00_NpcActivate::gdwQ20QuestStateMessages");
 
     bool _bStep11;
     bool _bCompleted;
@@ -357,7 +357,7 @@ void __fastcall Q23_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     ::SGAMEDATA* pGame;
     int nLamEsenDone2;
     nLamEsenDone2 = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x4b) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x4b) {
       D2BitBufferStrc* pBitBuffer;
       QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
       if (1 < pQuestData->nStateFlag && pQuestData->nStateFlag < 4) {

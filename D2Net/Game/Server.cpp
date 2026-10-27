@@ -341,10 +341,9 @@ int __stdcall WSAGetLastError() {
 }
 
 // Determines the expected wire size of an inbound D2GS client packet. Reads opcode = pBytes[0]; if 0 bytes or opcode > 0xB4 returns 0 (invalid). Looks up NET_D2GS_CLIENT_INCOMING_SIZE[opcode] into *pExpectedSize: 0 = unknown (return 0), positive = fixed size (return 1). A negative (sentinel) table entry means variable-length: switches on opcode to compute the true size from header fields (e.g. 0x16/0x5b ushort@+1, 0x3e byte@+1, 0xae clamped ushort+3, 0xaf name-length, 0x94 (count+2)*3, 0x26 three SSTR string lengths). Returns 1 if the size was resolved (and the full packet is present in pBytesSize), 0 if truncated/invalid.
-size_t __fastcall NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(char * pBytes, size_t pBytesSize, size_t * pExpectedSize) {
+size_t __fastcall NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(char * pBytes, size_t pBytesSize, uint32_t * pExpectedSize) {
     uint16_t wRawLen;
     uint32_t nStrLen1;
-    uint32_t nStrLen2;
     char* pcStrBase;
     if (!pBytesSize) {
       return 0;
@@ -355,12 +354,12 @@ size_t __fastcall NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(
       return 0;
     }
 
-    size_t nTableSize = NET_D2GS_CLIENT_INCOMING_SIZE[byOpcode];
-    *pExpectedSize = nTableSize;
-    if (!nTableSize) {
+    uint32_t nStrLen2 = NET_D2GS_CLIENT_INCOMING_SIZE[byOpcode];
+    *pExpectedSize = nStrLen2;
+    if (!nStrLen2) {
       return 0;
     }
-    if (-1 < (int)nTableSize) {
+    if (-1 < (int)nStrLen2) {
       return 1;
     }
 
@@ -383,9 +382,9 @@ size_t __fastcall NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(
           if ((int)(nStrLen1 + 0xb) <= (int)pBytesSize) {
             nStrLen2 = Storm::Source::SSTR::SStrLen(pcStrBase);
             nStrLen2 = Storm::Source::SSTR::SStrLen(pcStrBase + nStrLen2 + 1);
-            nTableSize = nStrLen1 + 0xc + nStrLen2;
-            if ((int)nTableSize <= (int)pBytesSize) {
-              *pExpectedSize = nTableSize;
+            nStrLen2 = nStrLen1 + 0xc + nStrLen2;
+            if ((int)nStrLen2 <= (int)pBytesSize) {
+              *pExpectedSize = nStrLen2;
               return 1;
             }
           }
@@ -405,8 +404,8 @@ size_t __fastcall NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(
       break;
       case 0x94:
         if (8 < pBytesSize) {
-          nTableSize = ((uint8_t)pBytes[1] + 2) * 3;
-          *pExpectedSize = nTableSize;
+          nStrLen2 = ((uint8_t)pBytes[1] + 2) * 3;
+          *pExpectedSize = nStrLen2;
           return 1;
         }
       break;
@@ -597,7 +596,7 @@ int32_t __fastcall NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize
     0x1,
     0x0,
     0x1
-};
+}; D2_STATIC_GUARD(NET_D2GS_CLIENT_OUTGOING_SIZE, "D2Net::Game::Server::NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize::NET_D2GS_CLIENT_OUTGOING_SIZE");
 
     char* pcVar1;
     uint16_t wRawLen;

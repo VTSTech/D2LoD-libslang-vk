@@ -94,8 +94,7 @@ struct __attribute__((packed)) D2QuestDataA1Q4Strc {
     /* 0x014 */ int32_t field_0x14;
     /* 0x018 */ D2QuestDataA1Q4SubStrc sSub; // Cairn stones, tree, portal state
     /* 0x098 */ int32_t field_0x98;
-    /* 0x09C */ int32_t nCainPosX;
-    /* 0x0A0 */ int32_t nCainPosY;
+    /* 0x09C */ POINT ptCainPos;
     /* 0x0A4 */ int32_t nCageObjectGUID;
     /* 0x0A8 */ int32_t nPortalX;
     /* 0x0AC */ int32_t nPortalY;
@@ -111,20 +110,12 @@ struct __attribute__((packed)) D2QuestDataA1Q5Strc {
     /* 0x034 */ int32_t aPlayersForRewardGUIDs[12]; // Player GUIDs eligible for reward (primary list)
     /* 0x064 */ uint16_t nPlayersForRewardCount; // Number of players for reward; unsigned word: every read is MOVZX (Q05_Callback00_NpcActivate 00594c50)
     /* 0x066 */ int16_t field_0x66;
-    /* 0x068 */ int32_t nCountessChestGUID_0; // Countess chest object GUID [0]; array base at +0x68 iterated by Q05_SpawnCountessDeathEffect
-    /* 0x06C */ int32_t nCountessChestGUID_1;
-    /* 0x070 */ int32_t nCountessChestGUID_2;
-    /* 0x074 */ int32_t nCountessChestGUID_3;
-    /* 0x078 */ int32_t nCountessChestGUID_4;
-    /* 0x07C */ int32_t nCountessChestGUID_5;
-    /* 0x080 */ int32_t nCountessChestGUID_6;
-    /* 0x084 */ int32_t nCountessChestGUID_7;
+    /* 0x068 */ int32_t nCountessChestGUID_0[8]; // Countess chest object GUID [0]; array base at +0x68 iterated by Q05_SpawnCountessDeathEffect
     /* 0x088 */ int16_t nCountessChestCount; // Count of valid chest GUIDs; checked as ushort gate in Q05_SpawnCountessDeathEffect
     /* 0x08A */ uint8_t field_0x8a;
     /* 0x08B */ uint8_t field_0x8b;
     /* 0x08C */ D2QuestGUIDStrc sQuestGUID; // Main quest player tracking
-    /* 0x110 */ int32_t nCountessDeathX; // X coordinate of Countess death location
-    /* 0x114 */ int32_t nCountessDeathY; // Y coordinate of Countess death location
+    /* 0x110 */ POINT ptCountessDeath; // X coordinate of Countess death location
     /* 0x118 */ bool bRewardDistributed; // Set after rewards given to players
     /* 0x119 */ bool bDeathEffectPlayed; // Countess death visual effect played
     /* 0x11A */ bool bQuestCompleted; // Quest completion flag
@@ -496,10 +487,9 @@ struct D2QuestDataA3Q7Strc {
     /* 0x10 */ int32_t nDarkWandererGUID; // GUID of Dark Wanderer monster unit for portal spawning
 };
 
-struct D2QuestDataA4Q1Strc {
+struct __attribute__((packed)) D2QuestDataA4Q1Strc {
     /* 0x00 */ int field_0x00; // unused/reserved
-    /* 0x04 */ int nIzualDeathX; // Izual death X coord (POINT.x)
-    /* 0x08 */ int nIzualDeathY; // Izual death Y coord (POINT.y)
+    /* 0x04 */ POINT ptIzualDeath; // Izual death X coord (POINT.x)
     /* 0x0C */ uint8_t bHasStep4; // Set when QUESTSTATE_Step0x04
     /* 0x0D */ uint8_t bSpawnTimerAdded; // Guard against duplicate spawn timer
     /* 0x0E */ uint8_t field_0x0E; // padding

@@ -92,10 +92,9 @@ typedef BOOL (*fpRequiredUserAction)();
 
 namespace D2Launch::MainMenus {
 
-static char dwIntroFrameRate_24_36[8] = { "640x146" };
-static char dwIntroFrameRate_29_32[8] = { "640x292" };
-static uint8_t gbCdCheckPassed;
-static bool gbBNetConnectionProgressFlag = 0;
+static char dwIntroFrameRate_24_36[8] = { "640x146" }; D2_STATIC_GUARD(dwIntroFrameRate_24_36, "D2Launch::MainMenus::dwIntroFrameRate_24_36");
+static char dwIntroFrameRate_29_32[8] = { "640x292" }; D2_STATIC_GUARD(dwIntroFrameRate_29_32, "D2Launch::MainMenus::dwIntroFrameRate_29_32");
+static bool gbBNetConnectionProgressFlag = 0; D2_STATIC_GUARD(gbBNetConnectionProgressFlag, "D2Launch::MainMenus::gbBNetConnectionProgressFlag");
 
 void __fastcall MAINMENU_SetGlobalValue1(pfnUIMenuInstance pfnMenuInstance) {
     gpCurrentUIMenuInstance = pfnMenuInstance;
@@ -259,7 +258,7 @@ void __stdcall IMAGE_LoadPredefinedImages() {
 
 void __stdcall IMAGE_FreePredefinedImages() {
     // Static local variables (originally global data)
-    static DC6 * gpDC6FrontEndTitle;
+    static DC6 * gpDC6FrontEndTitle; D2_STATIC_GUARD_BSS(gpDC6FrontEndTitle, "D2Launch::MainMenus::IMAGE_FreePredefinedImages::gpDC6FrontEndTitle");
 
     DC6** ppImageClass;
     DC6** ppImageExp;
@@ -446,8 +445,8 @@ D2ControlStrc * __fastcall FORMS_CreateAnyFormFromListExEx(int32_t nParam) {
 
 void __stdcall FORMS_DestroyLists() {
     // Static local variables (originally global data)
-    static int gbMainMenuStateTransition;
-    static int gbMainMenuFormsDestroyInProgress;
+    static int gbMainMenuStateTransition; D2_STATIC_GUARD_BSS(gbMainMenuStateTransition, "D2Launch::MainMenus::FORMS_DestroyLists::gbMainMenuStateTransition");
+    static int gbMainMenuFormsDestroyInProgress; D2_STATIC_GUARD_BSS(gbMainMenuFormsDestroyInProgress, "D2Launch::MainMenus::FORMS_DestroyLists::gbMainMenuFormsDestroyInProgress");
 
     D2ControlStrc** ppForm;
     int i = 0;
@@ -490,9 +489,9 @@ void __fastcall STRING_ZeroOneWCHAR(void * pBuffer) {
 }
 
 void __fastcall MAINMENU_CreateMessageBox(uint16_t * wszText1, uint16_t * wszText2, int32_t nButton1LabelId, int32_t nButton2LabelId, OnPress pfnOnPress1, OnPress pfnOnPress2, int32_t nParam1, int32_t nParam2) {
-    int32_t nFormIndex;
     D2ControlStrc* pForm;
     ::D2WinTextBox* pTextBox;
+    int32_t nLine;
     if (!nButton1LabelId) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x746);
       exit(-1);
@@ -517,7 +516,7 @@ void __fastcall MAINMENU_CreateMessageBox(uint16_t * wszText1, uint16_t * wszTex
       }
 
       gaPredefinedForms[0x11a].fpOnPressCallback = pfnOnPress1;
-      nFormIndex = 0x11a;
+      nLine = 0x11a;
     } else {
       if (nButtonCount != 2) {
         goto add_text_boxes;
@@ -534,10 +533,10 @@ void __fastcall MAINMENU_CreateMessageBox(uint16_t * wszText1, uint16_t * wszTex
       gaPredefinedForms[0x11c].nExtraParam = nParam1 ? 0x1b : 0;
       gaPredefinedForms[0x11c].nLabelAsLocaleStringId = nButton2LabelId;
       gaPredefinedForms[0x11c].fpOnPressCallback = pfnOnPress2;
-      nFormIndex = 0x11c;
+      nLine = 0x11c;
     }
 
-    pForm = FORMS_CreateAnyFormFromList(nFormIndex);
+    pForm = FORMS_CreateAnyFormFromList(nLine);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pForm, 1);
     add_text_boxes:
     if (wszText1) {
@@ -1103,7 +1102,7 @@ BOOL __stdcall MAINMENU_OnPressCreateBattleNetAccount(D2ControlMsg * pControlMsg
 }
 
 void __stdcall MAINMENU_ScrollListExUp(D2ControlMsg * pControlMsg) {
-    int32_t nScrollPos;
+    int32_t nLine;
     ::D2WinTextBox* ppForm;
     int i = 0;
     if (-1 < FORMS_nListExExCount) {
@@ -1119,12 +1118,12 @@ void __stdcall MAINMENU_ScrollListExUp(D2ControlMsg * pControlMsg) {
       } while (i <= FORMS_nListExExCount);
 
       if (ppForm) {
-        nScrollPos = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(ppForm);
-        if (0 >= nScrollPos) {
+        nLine = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(ppForm);
+        if (0 >= nLine) {
           return;
         }
 
-        D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(ppForm, nScrollPos - 1);
+        D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(ppForm, nLine - 1);
         return;
       }
     }
@@ -1134,7 +1133,7 @@ void __stdcall MAINMENU_ScrollListExUp(D2ControlMsg * pControlMsg) {
 }
 
 BOOL __stdcall MAINMENU_ScrollListExDown(D2ControlMsg * pControlMsg) {
-    int32_t nScrollPos;
+    int32_t nLine;
     ::D2WinTextBox* ppForm;
     int i = 0;
     if (-1 < FORMS_nListExExCount) {
@@ -1150,8 +1149,8 @@ BOOL __stdcall MAINMENU_ScrollListExDown(D2ControlMsg * pControlMsg) {
       } while (i <= FORMS_nListExExCount);
 
       if (ppForm) {
-        nScrollPos = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(ppForm);
-        D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(ppForm, nScrollPos + 1);
+        nLine = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetScrollPosition(ppForm);
+        D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(ppForm, nLine + 1);
         return 1;
       }
     }
@@ -1656,12 +1655,13 @@ void __stdcall MAINMENU_SyncCreditsColumns() {
 
 // @sourcefile .\Src\MainMenus.cpp
 void __stdcall MAINMENU_DisplayCredits() {
-    int32_t nLen;
     int i;
     ::D2WinTextBox* pTargetBox;
     uint32_t nRemaining;
     uint16_t awLineBuf[1024];
+    uint16_t awCol2[256];
     uint16_t awCol1[256];
+    int32_t nLine;
     uint32_t nCharCount = 0;
     uint16_t* pwCursor = MAINMENU_LoadCreditsFile(&nCharCount);
     uint16_t* bCopied1 = awLineBuf;
@@ -1687,7 +1687,6 @@ void __stdcall MAINMENU_DisplayCredits() {
     } while (i);
 
     do {
-      uint16_t awCol2[256];
       if (!nRemaining) {
         MAINMENU_AppendCreditsEnd();
         D2_FREE(pwTextBuf);
@@ -1703,9 +1702,9 @@ void __stdcall MAINMENU_DisplayCredits() {
           D2Win::Src::D2WinTextBox::SetText(gpMainMenuCreditsLineTextBox, awLineBuf, 1, false, 0);
         }
 
-        nLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(awLineBuf);
-        nRemaining -= nLen + 2;
-        pwCursor = pwCursor + 1 + nLen + 2;
+        nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(awLineBuf);
+        nRemaining -= nLine + 2;
+        pwCursor = pwCursor + 1 + nLine + 2;
       } else {
         do {
           if (!nRemaining) {
@@ -1730,18 +1729,18 @@ void __stdcall MAINMENU_DisplayCredits() {
           awCol2[0] = L'\0';
           if ((uint16_t)*pwCursor < 0x80 && (i = isalpha((int)(char)*pwCursor) , i != 0) && (bCopied1 = D2Lang::Unicode::UNISYS::STRING_CopyWideString(awLineBuf, pwCursor) , bCopied1 != 0)) {
             D2Lang::Unicode::UNISYS::STRING_CopyWideString(awCol1, awLineBuf);
-            nLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(awLineBuf);
-            nRemaining -= nLen + 2;
-            pwCursor = pwCursor + nLen + 2;
+            nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(awLineBuf);
+            nRemaining -= nLine + 2;
+            pwCursor = pwCursor + nLine + 2;
             if (nRemaining && *pwCursor != L'*') {
               bCopied1 = D2Lang::Unicode::UNISYS::STRING_CopyWideString(awLineBuf, pwCursor);
               if (!bCopied1) {
                 nRemaining = 0;
               } else {
                 D2Lang::Unicode::UNISYS::STRING_CopyWideString(awCol2, awLineBuf);
-                nLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(awLineBuf);
-                nRemaining -= nLen + 2;
-                pwCursor = pwCursor + nLen + 2;
+                nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(awLineBuf);
+                nRemaining -= nLine + 2;
+                pwCursor = pwCursor + nLine + 2;
               }
             }
           } else {
@@ -1767,7 +1766,7 @@ void __stdcall MAINMENU_DisplayCredits() {
 
 BOOL __stdcall MAINMENU_InitCreditsScreen(D2ControlMsg * pControlMsg) {
     // Static local variables (originally global data)
-    static D2ControlStrc * gpMainMenuCreditTimerControl;
+    static D2ControlStrc * gpMainMenuCreditTimerControl; D2_STATIC_GUARD_BSS(gpMainMenuCreditTimerControl, "D2Launch::MainMenus::MAINMENU_InitCreditsScreen::gpMainMenuCreditTimerControl");
 
     int32_t nParam;
     FORMS_DestroyLists();
@@ -2061,13 +2060,13 @@ void __stdcall UIMENU_PleaseInsertCinematicDiscWithCancelAndNotWorkingOkButtons(
 
 bool fpRequiredUserAction() {
     // Static local variables (originally global data)
-    static int fpLoadVideoMpqCallback;
+    static int fpLoadVideoMpqCallback; D2_STATIC_GUARD_BSS(fpLoadVideoMpqCallback, "D2Launch::MainMenus::fpRequiredUserAction::fpLoadVideoMpqCallback");
 
     UIMENU_PleaseInsertCinematicDiscWithCancelAndNotWorkingOkButtons();
     gbCinematicsMenuShown = 0;
     ::fpInsertPlayCd = 0;
     fpLoadVideoMpqCallback = (int)D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles;
-    gbCdCheckPassed = 1;
+    gbCdCheckPassed[0] = 1;
     D2Win::Src::D2WinMain::MessagePump(MAINMENU_PollDisconnectFlagPump);
     FORMS_DestroyList();
     return (uint8_t)(uint32_t)::fpInsertPlayCd;
@@ -2081,9 +2080,9 @@ BOOL __stdcall MAINMENU_OnPressTcpIpOptions(D2ControlMsg * pControlMsg) {
 
 uint32_t __fastcall MAINMENU_DetectDoubleClick(D2ControlMsg * pMsg) {
     // Static local variables (originally global data)
-    static int gnDoubleClickLastX;
-    static int gnDoubleClickLastY;
-    static unsigned int gdwDoubleClickLastTickCount;
+    static int gnDoubleClickLastX; D2_STATIC_GUARD_BSS(gnDoubleClickLastX, "D2Launch::MainMenus::MAINMENU_DetectDoubleClick::gnDoubleClickLastX");
+    static int gnDoubleClickLastY; D2_STATIC_GUARD_BSS(gnDoubleClickLastY, "D2Launch::MainMenus::MAINMENU_DetectDoubleClick::gnDoubleClickLastY");
+    static unsigned int gdwDoubleClickLastTickCount; D2_STATIC_GUARD_BSS(gdwDoubleClickLastTickCount, "D2Launch::MainMenus::MAINMENU_DetectDoubleClick::gdwDoubleClickLastTickCount");
 
     tagPOINT cursorPos;
     uint32_t bIsDoubleClick = (uint32_t)(pMsg->uMsg == 0x201);
@@ -2169,7 +2168,7 @@ BOOL __stdcall MAINMENU_CleanupSoundAndClearMessageLoop(D2ControlMsg * pControlM
 
 int __stdcall MAINMENU_HandleNetworkPacket(int nFrameIndex) {
     // Static local variables (originally global data)
-    static uint32_t gnBnetConnectionSuccessFlag;
+    static uint32_t gnBnetConnectionSuccessFlag; D2_STATIC_GUARD_BSS(gnBnetConnectionSuccessFlag, "D2Launch::MainMenus::MAINMENU_HandleNetworkPacket::gnBnetConnectionSuccessFlag");
 
     char szPacketBuffer[512];
     size_t nPacketSize;
@@ -3409,7 +3408,7 @@ int __stdcall ClickOnClassCreate(D2ControlMsg * pControlMsg) {
 // @sourcefile .\Src\MainMenus.cpp
 void __stdcall MAINMENU_QueryAndBuildRealmList() {
     // Static local variables (originally global data)
-    static uint32_t gpRealmQueryResultBuffer;
+    static uint32_t gpRealmQueryResultBuffer; D2_STATIC_GUARD_BSS(gpRealmQueryResultBuffer, "D2Launch::MainMenus::MAINMENU_QueryAndBuildRealmList::gpRealmQueryResultBuffer");
 
     D2BNetRealmEntryStrc** pRealmArray;
     D2BNetRealmEntryStrc* pRealmEntry;
@@ -3507,7 +3506,7 @@ BOOL fpInsertPlayCd() {
     gbCinematicsMenuShown = 0;
     ::fpInsertPlayCd = 0;
     fpLoadAllMediaMpqCallback = (int)D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles;
-    gbCdCheckPassed = 0;
+    gbCdCheckPassed[0] = 0;
     D2Win::Src::D2WinMain::MessagePump(MAINMENU_PollDisconnectFlagPump);
     FORMS_DestroyList();
     return ::fpInsertPlayCd;
@@ -3518,7 +3517,7 @@ BOOL fpInsertExpansionCd() {
     gbCinematicsMenuShown = 0;
     ::fpInsertPlayCd = 0;
     fpLoadAllMediaMpqCallback = (int)D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles;
-    gbCdCheckPassed = 0;
+    gbCdCheckPassed[0] = 0;
     D2Win::Src::D2WinMain::MessagePump(MAINMENU_PollDisconnectFlagPump);
     FORMS_DestroyList();
     return ::fpInsertPlayCd;
@@ -4155,10 +4154,11 @@ BOOL __stdcall MAINMENU_OnPressCancelTermsOfServiceDownload(D2ControlMsg * pCont
 }
 
 void __stdcall PlaysBlizzardNorthCutScene() {
-    int32_t nCutSceneMode;
+    D2ArchiveStrc* pBnetRegEntry;
     BOOL bIsExpansion;
     uint32_t bBnetIpFlag;
     D2ArchiveStrc* pVideoArchive;
+    int32_t nLine;
     char* szBlizNorthVideo;
     if (D2IniData_launcher->padding_0x35F[0]) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8d4);
@@ -4170,19 +4170,18 @@ void __stdcall PlaysBlizzardNorthCutScene() {
     GetAndDispatchAllPossible();
     DWORD bCutSceneStarted = D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
     if (bCutSceneStarted) {
-      D2ArchiveStrc* pBnetRegEntry;
       bIsExpansion = Fog::Src::LogManager::GetLoggerState_Stub();
       if (!bIsExpansion) {
         D2gfx::D2GFX::D2GFX_PlayCutScene("Data\\Local\\Video\\New_BLIZ640x480.bik", 0, nullptr);
-        nCutSceneMode = 0;
+        nLine = 0;
         szBlizNorthVideo = "Data\\Local\\Video\\BlizNorth640x480.bik";
       } else {
         D2gfx::D2GFX::D2GFX_PlayCutScene("Data\\Local\\Video\\New_BLIZ640x240.bik", 2, nullptr);
-        nCutSceneMode = 2;
+        nLine = 2;
         szBlizNorthVideo = "Data\\Local\\Video\\BlizNorth640x240.bik";
       }
 
-      D2gfx::D2GFX::D2GFX_PlayCutScene(szBlizNorthVideo, nCutSceneMode, nullptr);
+      D2gfx::D2GFX::D2GFX_PlayCutScene(szBlizNorthVideo, nLine, nullptr);
       pBnetRegEntry = (D2ArchiveStrc*)MAINMENU_ReadBattleNetRegistry();
       if (!pBnetRegEntry) {
         pVideoArchive = pBnetRegEntry;
@@ -4860,7 +4859,7 @@ BOOL __stdcall MAINMENU_OnPressCreateHeroSinglePlayer(D2ControlMsg * pControlMsg
 
 void __stdcall UIMENU_ConfirmCreateCharacter() {
     // Static local variables (originally global data)
-    static char gbCreateCharDialogShown;
+    static char gbCreateCharDialogShown; D2_STATIC_GUARD_BSS(gbCreateCharDialogShown, "D2Launch::MainMenus::UIMENU_ConfirmCreateCharacter::gbCreateCharDialogShown");
 
     uint16_t* wszCharName;
     char szCharNameUtf8[256];

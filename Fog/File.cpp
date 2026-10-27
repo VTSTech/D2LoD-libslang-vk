@@ -403,7 +403,7 @@ LONG __stdcall ERRORMANAGER_UnhandledExceptionFilter(_EXCEPTION_POINTERS * pExce
 
 void __fastcall CRASH_SetExceptionHandler(pfnFogExceptionFilter pfnFilter, void * pContext, uint32_t nUnused) {
     // Static local variables (originally global data)
-    static LPTOP_LEVEL_EXCEPTION_FILTER gpPreviousExceptionFilter = nullptr;
+    static LPTOP_LEVEL_EXCEPTION_FILTER gpPreviousExceptionFilter = nullptr; D2_STATIC_GUARD(gpPreviousExceptionFilter, "Fog::File::CRASH_SetExceptionHandler::gpPreviousExceptionFilter");
 
     gpCurrentExceptionFilter = pfnFilter;
     gpCurrentExceptionContext = pContext;

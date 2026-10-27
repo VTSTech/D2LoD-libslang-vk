@@ -37,9 +37,8 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
-#include "D2Game/D2QuestGUIDStrc.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -100,7 +99,7 @@ void __fastcall Objects_InitFn47(D2ObjectInitFnArg * pInitArg) {
     int i = 0;
     if (nChestCount) {
       int32_t* pListEntry;
-      pListEntry = &pQuestSpecific->nCountessChestGUID_0;
+      pListEntry = pQuestSpecific->nCountessChestGUID_0;
       do {
         if (*pListEntry == nObjectGUID) {
           return;
@@ -111,7 +110,7 @@ void __fastcall Objects_InitFn47(D2ObjectInitFnArg * pInitArg) {
       } while (i < (int)(uint32_t)(uint16_t)pQuestSpecific->nCountessChestCount);
     }
     if (nChestCount < 8) {
-      pQuestSpecific->sQuestGUID.aPlayerGUID[nChestCount - 9] = nObjectGUID;
+      pQuestSpecific->nCountessChestGUID_0[nChestCount] = nObjectGUID;
       pQuestSpecific->nCountessChestCount++;
     }
 
@@ -270,7 +269,7 @@ void __fastcall Q06_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // A1Q6 gossip-text builder (state slot 0). Reads player quest record (Completed/JustCompleted/RewardAwaits) and target NPC (Cain 0x109 / Akara 0x94 / Kashya 0x96), then picks which gossip line to queue via AddGossipMessageOnMonster: msg 3 if player already in that NPC's done-list, msg 4 if quest finished/participated, else maps server stateFlag through gdwQuestCallbackAddressQ41[] to a line index. Read-only on quest state; chooses dialogue.
 void __fastcall Q06_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQuestCallbackAddressQ41[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x0 };
+    static int32_t gdwQuestCallbackAddressQ41[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x0 }; D2_STATIC_GUARD(gdwQuestCallbackAddressQ41, "D2Game::Quests::QUESTS::A1Q6::Q06_Callback00_NpcActivate::gdwQuestCallbackAddressQ41");
 
     BOOL bFound;
     int nPlayerGUIDLocal;
@@ -358,7 +357,7 @@ void __fastcall Q06_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         QUEST_SetStateFlag(pQuestData, 5, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q6.cpp", 0x187);
         return;
       }
-      if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GossipTextStrc*)0x1) {
+      if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GSPacketSrv0x27_TextStrc*)0x1) {
         return;
       }
 
@@ -616,8 +615,8 @@ uint8_t __fastcall Q06_QuestUpdate(::SGAMEDATA * pGame, D2QuestDataStrc * pQuest
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q6.cpp
 void __fastcall Q06_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static uint32_t gaNpcGossipData_Q37[7] = { 0x20766367, 0x20726367, 0x20626367, 0x20796367, 0x20676367, 0x20776367, 0x20636b73 };
-    static uint32_t gaNpcGossipData_Q06[7] = { 0x20767367, 0x20727367, 0x20627367, 0x20797367, 0x20677367, 0x20777367, 0x20756b73 };
+    static uint32_t gaNpcGossipData_Q37[7] = { 0x20766367, 0x20726367, 0x20626367, 0x20796367, 0x20676367, 0x20776367, 0x20636b73 }; D2_STATIC_GUARD(gaNpcGossipData_Q37, "D2Game::Quests::QUESTS::A1Q6::Q06_Callback08_MonsterKilled::gaNpcGossipData_Q37");
+    static uint32_t gaNpcGossipData_Q06[7] = { 0x20767367, 0x20727367, 0x20627367, 0x20797367, 0x20677367, 0x20777367, 0x20756b73 }; D2_STATIC_GUARD(gaNpcGossipData_Q06, "D2Game::Quests::QUESTS::A1Q6::Q06_Callback08_MonsterKilled::gaNpcGossipData_Q06");
 
     BOOL bQuestState;
     D2UnitDataPlayerStrc* pPlayerData2nd;

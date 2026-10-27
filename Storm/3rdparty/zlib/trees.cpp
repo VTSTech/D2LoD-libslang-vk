@@ -759,7 +759,7 @@ static int gaZlibBaseLength[29] = {
     0xc0,
     0xe0,
     0x0
-};
+}; D2_STATIC_GUARD(gaZlibBaseLength, "Storm::_3rdparty::zlib::trees::compress_block::gaZlibBaseLength");
     // also labelled: gnSSCompBLZBufferState
 static int gaZlibBaseDist[30] = {
     0x0,
@@ -792,7 +792,7 @@ static int gaZlibBaseDist[30] = {
     0x3000,
     0x4000,
     0x6000
-};
+}; D2_STATIC_GUARD(gaZlibBaseDist, "Storm::_3rdparty::zlib::trees::compress_block::gaZlibBaseDist");
 
     int nBitCount;
     uint32_t nCodeLen;
@@ -1065,7 +1065,7 @@ static static_tree_desc gZlibStaticLDesc = {
     /* .extra_base = */ 0x101,
     /* .elems = */ 0x11e,
     /* .max_length = */ 0xf
-};
+}; D2_STATIC_GUARD(gZlibStaticLDesc, "Storm::_3rdparty::zlib::trees::_tr_init::gZlibStaticLDesc");
     // also labelled: gaZlibTreeDistanceExtraCodeLengths
 static static_tree_desc gZlibStaticDDesc = {
     /* .static_tree = */ (ct_data*)&gZlibStaticDTreeDistCode,
@@ -1073,7 +1073,7 @@ static static_tree_desc gZlibStaticDDesc = {
     /* .extra_base = */ 0x0,
     /* .elems = */ 0x1e,
     /* .max_length = */ 0xf
-};
+}; D2_STATIC_GUARD(gZlibStaticDDesc, "Storm::_3rdparty::zlib::trees::_tr_init::gZlibStaticDDesc");
     // also labelled: gbZlibTreeInitializationFlag
 static static_tree_desc gZlibStaticBlDesc = {
     /* .static_tree = */ nullptr,
@@ -1081,7 +1081,7 @@ static static_tree_desc gZlibStaticBlDesc = {
     /* .extra_base = */ 0x0,
     /* .elems = */ 0x13,
     /* .max_length = */ 0x7
-};
+}; D2_STATIC_GUARD(gZlibStaticBlDesc, "Storm::_3rdparty::zlib::trees::_tr_init::gZlibStaticBlDesc");
 
     pDeflateState->l_desc.dyn_tree = pDeflateState->dyn_ltree;
     pDeflateState->bl_desc.dyn_tree = pDeflateState->bl_tree;

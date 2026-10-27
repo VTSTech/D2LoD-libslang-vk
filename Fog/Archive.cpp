@@ -35,7 +35,7 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2FogArchiveStrc) == 0x108, "D2_NEW
 namespace Fog::Archive {
 
 // @sourcefile .\SRC\Archive.cpp
-void * __fastcall D2FILE_AllocAndLoadD2File(D2PoolManagerStrc * pMemory, char * szFilename, size_t * pSize, char * szFile, int32_t nLine) {
+void * __fastcall D2FILE_AllocAndLoadD2File(D2PoolManagerStrc * pMemory, char * szFilename, uint32_t * pSize, char * szFile, int32_t nLine) {
     // Frame slots -12..-4 are ONE object: &dwFileSizeOut is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {

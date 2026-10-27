@@ -11,7 +11,6 @@
 
 // Forward declarations
 struct D2MissileDamageDataStrc;
-struct D2MissileStreamStrc;
 struct D2UnitStrc;
 typedef int eD2Skills;
 
@@ -33,6 +32,11 @@ struct D2MissileRandCalcStrc {
     /* 0x18 */ int field6_0x18; // calc VM scratch (unidentified)
     /* 0x1C */ int field7_0x1c; // calc VM scratch (unidentified)
     /* 0x20 */ D2SeedStrc pSeed;
+};
+
+struct D2MissileStreamStrc {
+    /* 0x00 */ int * pStream;
+    /* 0x04 */ int nStreamSize;
 };
 
 namespace D2Common::Units::Missile {

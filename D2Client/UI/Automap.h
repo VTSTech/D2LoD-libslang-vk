@@ -143,13 +143,13 @@ void __stdcall AUTOMAP_AddCellByCoords(int16_t nCellNo, int16_t nPixelX, int16_t
 void __stdcall AUTOMAP_AddCellForUnit(int32_t nParam, struct D2AutomapCellStrc * pAutomapCell, struct D2UnitStrc * pUnit);
 HANDLE __stdcall AUTOMAP_GetMapFileHandle();
 void AUTOMAP_SaveLayerToFile(struct D2AutomapFileEntryStrc * pEntry);
-void __fastcall AUTOMAP_CalcCellTreeSize(struct D2AutomapCellStrc * pAutomapCell, size_t * nSize);
+void __fastcall AUTOMAP_CalcCellTreeSize(struct D2AutomapCellStrc * pAutomapCell, uint32_t * nSize);
 void __fastcall AUTOMAP_SerializeCellTree(struct D2AutomapCellStrc * pAutomapCell);
 // @sourcefile .\UI\automap.cpp
 void __stdcall AUTOMAP_SaveCurrentLayer();
 // @sourcefile .\UI\automap.cpp
 void __stdcall AUTOMAP_FreeCurrentLayerCells();
-void __stdcall AUTOMAP_InvalidateLayerEntry(int32_t nEntryOffset, HANDLE hFile, LPCVOID pLayerOffsets);
+void __stdcall AUTOMAP_InvalidateLayerEntry(int32_t nEntryOffset, HANDLE hFile, uint32_t * pLayerOffsets);
 // @sourcefile .\UI\automap.cpp
 void __stdcall AUTOMAP_LoadLayerFromFile();
 void __stdcall AUTOMAP_SwitchLayer(struct D2AutomapLayerStrc * pAutomapLayer);

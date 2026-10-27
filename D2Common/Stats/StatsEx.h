@@ -40,7 +40,7 @@ namespace D2Common::Stats::StatsEx {
 // Function declarations
 int32_t STATLIST_BinarySearchInsertPos(int32_t nParam, int * pnParam);
 int32_t __stdcall STATLIST_BinarySearchStatInfoArray(int32_t nParam, struct D2StatInfoStrc * pStatInfo);
-int __stdcall STATLIST_InsertStatIntoArray(void * * pParam, int32_t nParam, struct D2StatListExStrc * pStatList);
+struct D2StatStrc * __stdcall STATLIST_InsertStatIntoArray(struct D2StatInfoStrc * pParam, int32_t nParam, struct D2PoolManagerStrc * pStatList);
 void __stdcall STATLIST_RemoveStatFromArray(struct D2PoolManagerStrc * pPoolManager1, struct D2StatStrc * pStat, struct D2PoolManagerStrc * pPoolManager2, void * * pParam);
 int32_t STATLIST_BinarySearchChangedInsertPos(struct D2ChangedStatArrayStrc * pStatInfo, int32_t nParam);
 // Records a changed stat into the D2StatListExStrc dirty-tracking array so it can be saved later. Guards: only runs if the stat-list has the dirty-tracking flag (bit 31), skips volatile stats (hp/mana/stamina/exp/gold), skips stats not in ItemStatCost or lacking the SAVED flag. Finds the sorted insertion position via binary search; if the changed-stat array is full, reallocates it (+4 slots via Fog ReAllocServerMemory). Shifts existing entries and inserts the shifted-stat id, then increments wCount.
@@ -65,7 +65,7 @@ int32_t __stdcall GetOwnerGUID(struct D2StatListExStrc * pStatList);
 void __stdcall SetState(struct D2StatListExStrc * pStatsEx, eD2States eState);
 eD2States __stdcall GetState(struct D2StatListExStrc * pStatList);
 void __stdcall SetTimeout_WithFlag(struct D2StatListExStrc * pStatList, int32_t nTimeout);
-struct D2StatListExStrc * __stdcall STATLIST_GetFullListFromStatList(struct D2StatListExStrc * pStatList);
+int __stdcall STATLIST_GetFullListFromStatList(struct D2StatListExStrc * pStatList);
 int32_t __stdcall STATLIST_GetStatFromBaseArray(struct D2StatListExStrc * pStatList, eD2UnitStat eUnitStat, uint32_t nParam);
 int32_t __stdcall SERVER_GetUnitStat(struct D2UnitStrc * pUnit, eD2UnitStat eUnitStat, uint32_t nParam);
 int32_t __stdcall STATLIST_GetMinimalStatValueShifted(struct D2StatListExStrc * pStatsEx, eD2UnitStat eUnitStat, uint32_t nParam);
@@ -117,7 +117,7 @@ int32_t __stdcall GetTxtThrowMaxDamage(struct D2UnitStrc * pUnit);
 int32_t __stdcall GetTxtThrowMinDamage(struct D2UnitStrc * pUnit);
 int32_t __stdcall GetTxtArmorClass(struct D2UnitStrc * pUnit);
 int32_t __stdcall STATLIST_GetStatForDamageCalc(struct D2UnitStrc * pUnit2, struct D2UnitStrc * pUnit, eD2UnitStat eUnitStat);
-struct D2StatListExStrc * __stdcall STATLIST_GetFullListPtr(struct D2StatListExStrc * pStatList);
+int __stdcall STATLIST_GetFullListPtr(struct D2StatListExStrc * pStatList);
 void __stdcall STATSEX_SetStatListTimeout(struct D2StatListExStrc * pStatList, int32_t nParam);
 void __stdcall SetSkillId(struct D2StatListExStrc * pStatsEx, eD2Skills eSkill);
 eD2Skills __stdcall GetSkillId(struct D2StatListExStrc * pStatList);

@@ -78,7 +78,26 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataObjectStrc) == 0x38, "D2_
 
 namespace D2Client::UNIT::Object {
 
-static uint8_t cObjectDataPeriod;
+static char cObjectDataPeriod[18] = {
+    '.',
+    '\\',
+    'U',
+    'N',
+    'I',
+    'T',
+    '\\',
+    'O',
+    'b',
+    'j',
+    'e',
+    'c',
+    't',
+    '.',
+    'c',
+    'p',
+    'p',
+    '\x00'
+}; D2_STATIC_GUARD(cObjectDataPeriod, "D2Client::UNIT::Object::cObjectDataPeriod");
 
 // Initialises a newly-created object unit: allocates and zeroes a D2UnitDataObjectStrc, links the Objects.txt record, sets UNITFLAG_TARGETABLE/CANBEATTACKED/PREDRAW/DRAWSHADOW from txt flags for the initial anim mode, initialises the static collision path, adds the unit to the room, and sets up auto-lighting (or explicit RGB light from txt). Special-cases class 0x3B (town portal) and 0x3C (portal to Tristram/Stony Field) to store the destination level id.
 void __fastcall AllocObjectData(D2UnitStrc * pUnit, D2RoomStrc * pRoom, int32_t nXPos, int32_t nYPos, int32_t nClassId, int32_t nInitMode) {
@@ -364,10 +383,11 @@ void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
 
 // Sets an object unit's animation mode and recomputes its collision/targetable/shadow state (used for portals and other interactive objects). nNewAnimMode (0..7) selects the new ObjectAnimMode; handles special transitions (open<->close, death->operate) using the ObjectsTxt FrameCnt/Start frame tables. Toggles UNITFLAG_TARGETABLE from bTargetable, blocks or removes the unit's collision path on the relevant mode changes, reloads the unit COF, sets the starting GFX frame, and finally sets/clears UNITFLAG_DRAWSHADOW from the ObjectsTxt BlocksLight table for the current mode. Halts if nNewAnimMode > 7.
 void __stdcall OBJECT_HandlePortalOpen(int32_t bTargetable, int32_t nNewAnimMode, D2UnitStrc * pUnit) {
-    int32_t nErrAddr;
     int32_t nErrLine;
+    D2RoomStrc* pRoom;
     eD2ObjectAnimMode eCurAnimMode;
     uint8_t byStartFrame;
+    int32_t iVar5;
     D2ObjectsTxt* pTxtLine;
     pTxtLine = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
     if (7 < nNewAnimMode) {
@@ -375,16 +395,15 @@ void __stdcall OBJECT_HandlePortalOpen(int32_t bTargetable, int32_t nNewAnimMode
       exit(-1);
     }
     if (!nNewAnimMode) {
-      D2RoomStrc* pRoom;
       if (pUnit->eAnimMode.ePlayerMode == Walk && pTxtLine->FrameCnt[3] != 0x100) {
         pUnit->nGfxCurrentFrame = (uint32_t)pTxtLine->Start[0];
         D2Common::Units::SetupUpdateFlag(pUnit, 3);
         Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
         pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
-        nErrAddr = Units::GetYPosFromDynamicPathUnit(pUnit);
+        iVar5 = Units::GetYPosFromDynamicPathUnit(pUnit);
         nErrLine = Units::GetXPosFromDynamicPathUnit(pUnit);
         pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-        D2Common::Units::BlockCollisionPath(pUnit, pRoom, nErrLine, nErrAddr);
+        D2Common::Units::BlockCollisionPath(pUnit, pRoom, nErrLine, iVar5);
         goto update_shadow;
       }
 
@@ -401,10 +420,10 @@ void __stdcall OBJECT_HandlePortalOpen(int32_t bTargetable, int32_t nNewAnimMode
             D2Common::Units::RemoveCollision_Vector(pUnit);
           }
         } else if (!nNewAnimMode && eCurAnimMode != eD2ObjectAnimMode_ns::Neutral) {
-          nErrAddr = Units::GetYPosFromDynamicPathUnit(pUnit);
+          iVar5 = Units::GetYPosFromDynamicPathUnit(pUnit);
           nErrLine = Units::GetXPosFromDynamicPathUnit(pUnit);
           pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-          D2Common::Units::BlockCollisionPath(pUnit, pRoom, nErrLine, nErrAddr);
+          D2Common::Units::BlockCollisionPath(pUnit, pRoom, nErrLine, iVar5);
         }
 
         D2Common::Units::SetupUpdateFlag(pUnit, nNewAnimMode);

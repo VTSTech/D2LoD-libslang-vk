@@ -40,10 +40,6 @@ typedef BOOL (__stdcall *OnPress)(D2ControlMsg * pControlMsg);
 #define RECON_FPTD_Draw
 typedef BOOL (__fastcall *Draw)(D2ControlStrc * pControl);
 #endif
-#ifndef RECON_FPTD_Mouse
-#define RECON_FPTD_Mouse
-typedef BOOL (__stdcall *Mouse)(D2ControlMsg * pControlMsg);
-#endif
 
 namespace D2Win::Src::D2WinScrollbar {
 
@@ -284,19 +280,19 @@ BOOL __stdcall Push(D2ControlMsg * pScrollbar) {
     return bOnPressResult;
 }
 
-BOOL __stdcall Mouse(::D2WinScrollbar * pScrollbar) {
-    int* pCtrl = (int*)pScrollbar->sControl.neD2FormType;
-    if (*pCtrl != 5) {
+BOOL __stdcall Mouse(D2ControlMsg * pScrollbar) {
+    D2ControlStrc* pDVar1 = pScrollbar->pControl;
+    if (pDVar1->neD2FormType != FORM_Scrollbar) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b0);
       exit(-1);
     }
-    if (!pCtrl[0x10] && !pCtrl[0x11] && !pCtrl[0x16]) {
+    if (!pDVar1[1].neD2FormType && !pDVar1[1].pDC6 && !pDVar1[1].dwSizeY) {
       return 0;
     }
 
-    pCtrl[0x10] = 0;
-    pCtrl[0x11] = 0;
-    pCtrl[0x16] = 0;
+    pDVar1[1].neD2FormType = 0;
+    pDVar1[1].pDC6 = 0;
+    pDVar1[1].dwSizeY = 0;
     return 1;
 }
 
@@ -378,7 +374,7 @@ BOOL __fastcall Draw(::D2WinScrollbar * pScrollbar) {
     pNewScrollbar->sControl.fpDraw = (::Draw)(BOOL (__fastcall *)(::D2WinScrollbar*))D2WinScrollbar::Draw;
     pNewScrollbar->sControl.pNext = 0;
     pNewScrollbar->sControl.fpPush = D2WinScrollbar::Push;
-    pNewScrollbar->sControl.fpMouse = (::Mouse)(BOOL (__stdcall *)(::D2WinScrollbar*))D2WinScrollbar::Mouse;
+    pNewScrollbar->sControl.fpMouse = D2WinScrollbar::Mouse;
     pNewScrollbar->sControl.fpListCheck = 0;
     pNewScrollbar->sControl.fpKey = 0;
     pNewScrollbar->sControl.fpOnPress = pfnOnPress;

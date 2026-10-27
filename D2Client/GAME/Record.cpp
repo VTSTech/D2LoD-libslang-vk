@@ -288,6 +288,7 @@ void __stdcall StopRecordingSetFlags() {
 
 // Playback driver called each game step. While IsPlaybackActive and the record list is valid, it reads the current entry index (GetEntryIndex), replays all pending D2GameRecordEntryStrc entries whose nGameIndex <= current index via GAME_ReplayRecordedWindowMessage, advances the read cursor, and chains to the next block in the linked list when a block is exhausted. Stops playback when all recorded entries have been consumed.
 void __stdcall RecordCurrentStep() {
+    D2GameRecordStrc* pBlock;
     D2GameRecordStrc* pNextBlock;
     if (!(gbIsPlaybackActive && gpCurrentGameRecord)) {
       return;
@@ -314,7 +315,6 @@ void __stdcall RecordCurrentStep() {
     }
 
     while (true) {
-      D2GameRecordStrc* pBlock;
       GAME_ReplayRecordedWindowMessage(pEntry);
       pBlock = gpCurrentGameRecord;
       gpCurrentGameRecord->nPlaybackIndex++;

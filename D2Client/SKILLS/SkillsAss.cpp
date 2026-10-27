@@ -155,29 +155,29 @@ int32_t __fastcall SKILLSASS_GetCltMissileByAuraLevel(D2UnitStrc * pUnit, int32_
       return -1;
     }
     if (!pSkillTxt->progressive) {
-      return (int)pSkillTxt->cltmissilea;
+      return (int)pSkillTxt->cltmissile[1];
     }
 
     short int sAuraState = pSkillTxt->aurastate;
     if (!(-1 < sAuraState && (int)sAuraState < sgptDataTable->nTxtStatesSize && -1 < pSkillTxt->aurastat[0] && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize)) {
-      return (int)pSkillTxt->cltmissilea;
+      return (int)pSkillTxt->cltmissile[1];
     }
 
     D2StatListExStrc* pStatListEx = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (int)sAuraState);
     if (!pStatListEx) {
-      return (int)pSkillTxt->cltmissilea;
+      return (int)pSkillTxt->cltmissile[1];
     }
 
     int nAuraStatVal = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatListEx, (int)pSkillTxt->aurastat[0], 0);
     if (1 >= nAuraStatVal) {
-      return (int)pSkillTxt->cltmissilea;
+      return (int)pSkillTxt->cltmissile[1];
     }
     if (2 >= nAuraStatVal) {
-      return (int)pSkillTxt->cltprgfunc[nAuraStatVal - 7];
+      return (int)pSkillTxt->cltmissile[nAuraStatVal];
     }
 
     nAuraStatVal = 3;
-    return (int)pSkillTxt->cltprgfunc[nAuraStatVal - 7];
+    return (int)pSkillTxt->cltmissile[nAuraStatVal];
 }
 
 // Assassin skill helper: returns the appropriate progressive-calc value (prgcalc[0..2]) for a charge-up/aura skill based on the current aura level stored in the active state's aurastat[0]. If the skill is not an aura (flags bit 2 clear) or the state is absent, falls back to prgcalc[0].
@@ -448,8 +448,8 @@ BOOL __fastcall Skills_CltDoFunc_Ass_AuraLevel_StreamMissile(D2UnitStrc * pUnit,
       return 0;
     }
 
-    short int sCltMissileA = pSkillTxt->cltmissilea;
-    if (!(-1 < sCltMissileA && -1 < pSkillTxt->cltmissileb)) {
+    short int sCltMissileA = pSkillTxt->cltmissile[1];
+    if (!(-1 < sCltMissileA && -1 < pSkillTxt->cltmissile[2])) {
       return 0;
     }
 
@@ -467,7 +467,7 @@ BOOL __fastcall Skills_CltDoFunc_Ass_AuraLevel_StreamMissile(D2UnitStrc * pUnit,
       return 1;
     }
 
-    D2Common::Units::Missile::SetStreamMissile(pMissileUnit, pSkillTxt->cltmissileb);
+    D2Common::Units::Missile::SetStreamMissile(pMissileUnit, pSkillTxt->cltmissile[2]);
     D2Common::Units::Missile::SetStreamRange(pMissileUnit, (int16_t)nAuraRange);
     return 1;
 }

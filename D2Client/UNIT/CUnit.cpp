@@ -118,15 +118,15 @@ typedef void (__fastcall *fnUnitIterCallback)(void * pUnit);
 
 namespace D2Client::UNIT::CUnit {
 
-static D2UnitStrc * ClientSideUnitHashTables_21__2_[128][6] = { 0 };
-static D2UnitStrc * ClientSideUnitHashTables_21__3_[128][6] = { 0 };
-static D2UnitStrc * ClientSideUnitHashTables_42__4_[128][6] = { 0 };
-static D2UnitStrc * ServerSideUnitHashTables_0__1_[128][6] = { 0 };
-static D2UnitStrc * ServerSideUnitHashTables_21__2_[128][6] = { 0 };
-static D2UnitStrc * ServerSideUnitHashTables_21__3_[128][6] = { 0 };
-static D2UnitStrc * ServerSideUnitHashTables_42__4_[128][6] = { 0 };
-static D2UnitStrc * ServerSideUnitHashTables_64__0_[128][6] = { 0 };
-static D2UnitStrc * ServerSideUnitHashTables_85__2_[128][6] = { 0 };
+static D2UnitStrc * ClientSideUnitHashTables_1__0_[6][128] = { 0 }; D2_STATIC_GUARD(ClientSideUnitHashTables_1__0_, "D2Client::UNIT::CUnit::ClientSideUnitHashTables_1__0_");
+static D2UnitStrc * ClientSideUnitHashTables_1__1_[6][128] = { 0 }; D2_STATIC_GUARD(ClientSideUnitHashTables_1__1_, "D2Client::UNIT::CUnit::ClientSideUnitHashTables_1__1_");
+static D2UnitStrc * ClientSideUnitHashTables_2__0_[6][128] = { 0 }; D2_STATIC_GUARD(ClientSideUnitHashTables_2__0_, "D2Client::UNIT::CUnit::ClientSideUnitHashTables_2__0_");
+static D2UnitStrc * ServerSideUnitHashTables_0__1_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_0__1_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_0__1_");
+static D2UnitStrc * ServerSideUnitHashTables_1__0_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_1__0_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_1__0_");
+static D2UnitStrc * ServerSideUnitHashTables_1__1_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_1__1_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_1__1_");
+static D2UnitStrc * ServerSideUnitHashTables_2__0_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_2__0_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_2__0_");
+static D2UnitStrc * ServerSideUnitHashTables_3__0_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_3__0_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_3__0_");
+static D2UnitStrc * ServerSideUnitHashTables_4__0_[6][128] = { 0 }; D2_STATIC_GUARD(ServerSideUnitHashTables_4__0_, "D2Client::UNIT::CUnit::ServerSideUnitHashTables_4__0_");
 
 // Thunk callback for CUNIT_IterateHashTableWithCallback. Receives unit pointer in ECX and forwards to STATLIST_ClearChangedStatFlags. Called at end of CLIENT_UpdateUnitGfxState to clear changed-stat dirty flags on all client-side units (players, missiles, server units).
 void __fastcall CLIENT_ClearChangedStatFlags_Thunk(D2UnitStrc * pUnit) {
@@ -151,14 +151,14 @@ void __fastcall SetGfxSequenceData(D2UnitStrc * pUnit, DWORD dwParam) {
 }
 
 int32_t __fastcall GetGfxSequenceData(D2UnitStrc * pUnit) {
-    int32_t nResult;
+    int32_t nLine;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x56c);
       exit(-1);
     }
 
-    nResult = Engine::GfxInfo::GFX_GetCofDataFlags(pUnit->pGfxInfo);
-    return nResult;
+    nLine = Engine::GfxInfo::GFX_GetCofDataFlags(pUnit->pGfxInfo);
+    return nLine;
 }
 
 void __fastcall SetPalShiftIndex(D2UnitStrc * pUnit, int32_t nPalShiftIndex) {
@@ -171,14 +171,14 @@ void __fastcall SetPalShiftIndex(D2UnitStrc * pUnit, int32_t nPalShiftIndex) {
 }
 
 int32_t __fastcall GetPalShiftIndex(D2UnitStrc * pUnit) {
-    int32_t nResult;
+    int32_t nLine;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x57e);
       exit(-1);
     }
 
-    nResult = Engine::GfxInfo::GFX_GetPalShiftIndex(pUnit->pGfxInfo);
-    return nResult;
+    nLine = Engine::GfxInfo::GFX_GetPalShiftIndex(pUnit->pGfxInfo);
+    return nLine;
 }
 
 // Tests whether screen point (nClickX, nClickY) falls within the clickable bounding box of a warp unit. Fetches the room's shadow/bounds data, transforms the warp's map position to screen coords, and returns 1 if the point is inside the bounds rectangle defined by pShadowBounds[1..4]. Halts fatally if called on a non-UNIT_WARP unit.
@@ -266,7 +266,6 @@ uint32_t __stdcall CUNIT_CalculateSpriteBounds(uint32_t nFrame, uint32_t nAnimMo
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     D2GfxDataStrc spriteParams;
-    int32_t nTargetCoord;
     BOOL nWidth = Units::GFXUTIL_UnitHasAnimMode(pUnit, nAnimMode);
     if (!nWidth) {
       return 0;
@@ -297,13 +296,13 @@ uint32_t __stdcall CUNIT_CalculateSpriteBounds(uint32_t nFrame, uint32_t nAnimMo
     }
 
     nOffset = D2CMP::SRC::CelCmp::GetDC6OffsetX(spriteParams.pDC6Block);
-    nTargetCoord = D2Common::Units::GetTargetX(pUnit);
-    *pBoundsRect = nTargetCoord + nOffset - 0xc;
+    int32_t iVar1 = D2Common::Units::GetTargetX(pUnit);
+    *pBoundsRect = iVar1 + nOffset - 0xc;
     nOffset = D2CMP::SRC::CelCmp::GetDC6Width(spriteParams.pDC6Block);
     pBoundsRect[2] = nOffset + 0x18 + *pBoundsRect;
     nOffset = D2CMP::SRC::CelCmp::GetDC6OffsetY(spriteParams.pDC6Block);
-    nTargetCoord = D2Common::Units::GetTargetY(pUnit);
-    nScreenTop = nOffset + 0xc + nTargetCoord;
+    iVar1 = D2Common::Units::GetTargetY(pUnit);
+    nScreenTop = nOffset + 0xc + iVar1;
     pBoundsRect[1] = nScreenTop;
     nOffset = D2CMP::SRC::CelCmp::GetDC6Height(__frame0.pDC6Block2);
     int nScreenBottom = nScreenTop - nOffset - 0x18;
@@ -323,20 +322,20 @@ uint32_t __stdcall CUNIT_CalculateSpriteBounds(uint32_t nFrame, uint32_t nAnimMo
     }
 
     nOffset = Engine::Particle::PARTICLE_GetX(pUnit);
-    nTargetCoord = Engine::Particle::PARTICLE_GetY(pUnit);
+    iVar1 = Engine::Particle::PARTICLE_GetY(pUnit);
     int32_t nScreenZ = Engine::Particle::PARTICLE_GetScreenZ(pUnit);
     *pBoundsRect += nOffset;
     pBoundsRect[2] += nOffset;
-    pBoundsRect[1] = pBoundsRect[1] + nTargetCoord + nScreenZ;
-    pBoundsRect[3] = pBoundsRect[3] + nTargetCoord + nScreenZ;
+    pBoundsRect[1] = pBoundsRect[1] + iVar1 + nScreenZ;
+    pBoundsRect[3] = pBoundsRect[3] + iVar1 + nScreenZ;
     return 1;
 }
 
 // Calls the skill's SelectProc handler with ECX = pUnit (the caster, loaded at 004642e7) and EDX = pTargetUnit, which is never written here and reaches the handler unchanged (1.14d asm).
 uint32_t __stdcall SKILL_ExecuteSelectProc(D2UnitStrc * pUnit, eD2Skills eSkill, D2UnitStrc * pTargetUnit) {
     // Static local variables (originally global data)
-    static SkillSelectProcFn g_aSkillSelectProcHandlers[7] = { nullptr, &D2Client::SKILL_SelectProc_IsSelectableCorpse2, &D2Client::SKILL_SelectProc_IsCorpseConsumableBasic, &D2Client::SKILL_SelectProc_IsConvertibleCorpse, &D2Client::SKILL_SelectProc_IsCorpseValidForRevive, &D2Client::SKILL_SelectProc_IsSelectableCorpse, &D2Client::SKILL_SelectProc_CanReviveMonster };
-    static uint32_t g_nSkillSelectProcCount = 0x7;
+    static SkillSelectProcFn g_aSkillSelectProcHandlers[7] = { nullptr, &D2Client::SKILL_SelectProc_IsSelectableCorpse2, &D2Client::SKILL_SelectProc_IsCorpseConsumableBasic, &D2Client::SKILL_SelectProc_IsConvertibleCorpse, &D2Client::SKILL_SelectProc_IsCorpseValidForRevive, &D2Client::SKILL_SelectProc_IsSelectableCorpse, &D2Client::SKILL_SelectProc_CanReviveMonster }; D2_STATIC_GUARD(g_aSkillSelectProcHandlers, "D2Client::UNIT::CUnit::SKILL_ExecuteSelectProc::g_aSkillSelectProcHandlers");
+    static uint32_t g_nSkillSelectProcCount = 0x7; D2_STATIC_GUARD(g_nSkillSelectProcCount, "D2Client::UNIT::CUnit::SKILL_ExecuteSelectProc::g_nSkillSelectProcCount");
 
     if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
       return 0;
@@ -408,13 +407,13 @@ BOOL __fastcall CUNIT_IsPlayerOrMonster(D2UnitStrc * pUnit) {
 }
 
 void __fastcall SetTargetByTypeAndGUID(D2UnitStrc * pUnit, eD2UnitType eUnitType, int32_t nTargetGUID) {
-    D2UnitStrc* pTargetUnit = Player::FindUnit(nTargetGUID, (D2UnitStrc**)((int)ServerSideUnitHashTables + eUnitType * 0x200), eUnitType, nTargetGUID & 0x7f);
+    D2UnitStrc* pTargetUnit = Player::FindUnit(nTargetGUID, ServerSideUnitHashTables[eUnitType], eUnitType, nTargetGUID & 0x7f);
     D2Common::Units::SetTargetUnitForDynamicUnit(pUnit, pTargetUnit);
 }
 
 void __fastcall FacePlayer(D2UnitStrc * pUnit) {
-    int32_t nTargetX;
     int nTargetY;
+    int32_t nTargetX_00;
     D2UnitStrc* pPlayer = pPlayerUnit;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     if (!pDynamicPath) {
@@ -435,8 +434,8 @@ void __fastcall FacePlayer(D2UnitStrc * pUnit) {
     eUnitType = pPlayer->eUnitType;
     if (eUnitType != UNIT_OBJECT && ((int)eUnitType < 4 || 5 < (int)eUnitType)) {
       if (pPlayer->pPath.pDynamicPath) {
-        nTargetX = D2Common::PATH::DynamicPath::GetXPos(pPlayer->pPath.pDynamicPath);
-        D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pDynamicPath, nTargetX, nTargetY, 0);
+        nTargetX_00 = D2Common::PATH::DynamicPath::GetXPos(pPlayer->pPath.pDynamicPath);
+        D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pDynamicPath, nTargetX_00, nTargetY, 0);
         return;
       }
 
@@ -449,8 +448,8 @@ void __fastcall FacePlayer(D2UnitStrc * pUnit) {
 
 // Rotates the local player unit to face pUnit when the player is in Neutral or TownNeutral anim mode. Reads pUnit's position (static or dynamic path) and calls PATH_SetDirectionToTarget on the player's dynamic path. No-ops if the player is moving or has no dynamic path (halts fatally on null path).
 void __fastcall CLIENT_TurnPlayerToFaceUnit(D2UnitStrc * pUnit) {
-    int32_t nTargetX;
     int nTargetY;
+    int32_t nTargetX_00;
     if (!(pPlayerUnit && (pPlayerUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral || pPlayerUnit->eAnimMode.ePlayerMode == TownNeutral))) {
       return;
     }
@@ -473,8 +472,8 @@ void __fastcall CLIENT_TurnPlayerToFaceUnit(D2UnitStrc * pUnit) {
     eUnitType = pUnit->eUnitType;
     if (eUnitType != UNIT_OBJECT && ((int)eUnitType < 4 || 5 < (int)eUnitType)) {
       if (pUnit->pPath.pDynamicPath) {
-        nTargetX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
-        D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pDynamicPath, nTargetX, nTargetY, 0);
+        nTargetX_00 = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+        D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pDynamicPath, nTargetX_00, nTargetY, 0);
         return;
       }
 
@@ -585,7 +584,7 @@ D2RoomStrc * __stdcall GetCurrentRoom() {
 // On period-of-day change, refresh object auto-light state across object lists.
 void __stdcall UpdateObjectAutoLightOnPeriodChange() {
     // Static local variables (originally global data)
-    static uint32_t gnCachedPeriodOfDay;
+    static uint32_t gnCachedPeriodOfDay; D2_STATIC_GUARD_BSS(gnCachedPeriodOfDay, "D2Client::UNIT::CUnit::UpdateObjectAutoLightOnPeriodChange::gnCachedPeriodOfDay");
 
     D2UnitStrc* pNextObject;
     D2UnitStrc* pObject;
@@ -594,7 +593,7 @@ void __stdcall UpdateObjectAutoLightOnPeriodChange() {
       return;
     }
 
-    D2UnitStrc** ppObjListBucket = ServerSideUnitHashTables[0x2a] + 4;
+    D2UnitStrc** ppObjListBucket = ServerSideUnitHashTables[2];
     gnCachedPeriodOfDay = nPeriodOfDay;
     do {
       pObject = *ppObjListBucket;
@@ -612,7 +611,7 @@ void __stdcall UpdateObjectAutoLightOnPeriodChange() {
       ppObjListBucket++;
     } while ((int)ppObjListBucket < (uintptr_t)((char*)&ServerSideUnitHashTables + 1536));
 
-    D2UnitStrc** ppDynamicLightObjBucket = ClientSideUnitHashTables[0x2a] + 4;
+    D2UnitStrc** ppDynamicLightObjBucket = ClientSideUnitHashTables[2];
     do {
       pObject = *ppDynamicLightObjBucket;
       while (pObject) {
@@ -766,7 +765,7 @@ void __fastcall CUNIT_IterateMissilesWithCallback(fnUnitIterCallback pfnCallback
       exit(-1);
     }
 
-    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[0x15] + 2, pfnCallback);
+    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[1], pfnCallback);
 }
 
 void __fastcall CUNIT_IterateItemsWithCallback(fnUnitIterCallback pfnCallback) {
@@ -775,7 +774,7 @@ void __fastcall CUNIT_IterateItemsWithCallback(fnUnitIterCallback pfnCallback) {
       exit(-1);
     }
 
-    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[0x2a] + 4, pfnCallback);
+    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[2], pfnCallback);
 }
 
 D2UnitStrc * CUNIT_IterateUntilWarp(int * pnParam) {
@@ -808,7 +807,6 @@ uint16_t * __fastcall ROOM_GetWarpDestinationName(D2RoomStrc * pRoom, D2UnitStrc
 // [override: patch]
 uint16_t * __fastcall GetName(D2UnitStrc * pUnit) {
     uint16_t nStrId;
-    int32_t nLen;
     D2RoomStrc* pRoom;
     D2UnitStrc* pWarpUnit;
     BOOL bIsShrine;
@@ -822,6 +820,7 @@ uint16_t * __fastcall GetName(D2UnitStrc * pUnit) {
     uint32_t nAdjacentCount;
     eD2PlayerAnimMode eAnimMode;
     D2ObjectsTxt* pObjectsTxt;
+    int32_t nLine;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x99d);
       exit(-1);
@@ -830,8 +829,8 @@ uint16_t * __fastcall GetName(D2UnitStrc * pUnit) {
     switch (pUnit->eUnitType) {
       case UNIT_MONSTER:
         pwszName = (uint16_t*)Player::PLAYER_GetMonsterOwnerId(pUnit);
-      nLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszName);
-      if (nLen) {
+      nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszName);
+      if (nLine) {
         return pwszName;
       }
 
@@ -977,7 +976,7 @@ uint32_t __stdcall CUNIT_IsItemInUnitInventory(D2UnitStrc * pExcludeUnit, D2Unit
 uint32_t __stdcall CUNIT_IsItemInAnyInventory(D2UnitStrc * pExcludeUnit, D2UnitStrc * pUnit) {
     uint32_t bFound;
     D2UnitStrc* pUnitIter;
-    D2UnitStrc* (*ppUnitTable)[6] = ServerSideUnitHashTables;
+    D2UnitStrc* (*ppUnitTable)[128] = ServerSideUnitHashTables;
     int nTable = 0;
     do {
       int nBucket;
@@ -994,7 +993,7 @@ uint32_t __stdcall CUNIT_IsItemInAnyInventory(D2UnitStrc * pExcludeUnit, D2UnitS
       } while (nBucket < 0x80);
 
       nTable++;
-      ppUnitTable = (D2UnitStrc* (*)[6])((char*)&ServerSideUnitHashTables + 512);
+      ppUnitTable = (D2UnitStrc* (*)[128])((char*)&ServerSideUnitHashTables + 512);
     } while (nTable < 2);
 
     return 0;
@@ -1593,7 +1592,7 @@ void FreeAny(D2UnitStrc * pUnit) {
 // Frees every unit in all server-side and client-side unit hash tables (128 buckets each, all 5 unit types), following gFreeUnitsOrder. Calls FreeAny on each unit and clears the bucket entry. Called during game teardown.
 void __stdcall FreeAllUnits() {
     // Static local variables (originally global data)
-    static eD2UnitType gFreeUnitsOrder[6] = { UNIT_MONSTER, UNIT_PLAYER, UNIT_OBJECT, UNIT_MISSILE, UNIT_ITEM, UNIT_WARP };
+    static eD2UnitType gFreeUnitsOrder[6] = { UNIT_MONSTER, UNIT_PLAYER, UNIT_OBJECT, UNIT_MISSILE, UNIT_ITEM, UNIT_WARP }; D2_STATIC_GUARD(gFreeUnitsOrder, "D2Client::UNIT::CUnit::FreeAllUnits::gFreeUnitsOrder");
 
     int nTableOffset;
     int nBucket;
@@ -1609,7 +1608,7 @@ void __stdcall FreeAllUnits() {
           pNextUnit = pUnit->pListNext;
           FreeAny(pUnit);
           nTableOffset = *pFreeOrder * 0x80;
-          *(D2UnitStrc**)((int)ServerSideUnitHashTables + (nTableOffset + nBucket) * 4) = (D2UnitStrc*)pNextUnit;
+          ServerSideUnitHashTables[*pFreeOrder][nBucket] = pNextUnit;
           pUnit = pNextUnit;
         }
 
@@ -1629,7 +1628,7 @@ void __stdcall FreeAllUnits() {
           pNextUnit = pUnit->pListNext;
           FreeAny(pUnit);
           nTableOffset = *pFreeOrder * 0x80;
-          *(D2UnitStrc**)((int)ClientSideUnitHashTables + (nTableOffset + nBucket) * 4) = (D2UnitStrc*)pNextUnit;
+          ClientSideUnitHashTables[*pFreeOrder][nBucket] = pNextUnit;
           pUnit = pNextUnit;
         }
 
@@ -1643,56 +1642,55 @@ void __stdcall FreeAllUnits() {
 // Client-side per-frame graphics update: iterates all client unit hash tables (objects, missiles, players, items) calling CLIENT_UpdateUnitFrame, then clears changed-stat flags on selected units/items/players. In singleplayer, also syncs server-side path data to client for players and missiles.
 void __stdcall CLIENT_UpdateUnitGfxState() {
     D2UnitStrc* pTmp;
-    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[0x40], (fnUnitIterCallback)Path::CLIENT_UpdateUnitFrame);
-    Player::CUNIT_UpdateClientFramesAndAI(ClientSideUnitHashTables[0x40]);
-    Player::CUNIT_UpdateClientFramesAndAI(ClientSideUnitHashTables[0x2a] + 4);
+    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[3], (fnUnitIterCallback)Path::CLIENT_UpdateUnitFrame);
+    Player::CUNIT_UpdateClientFramesAndAI(ClientSideUnitHashTables[3]);
+    Player::CUNIT_UpdateClientFramesAndAI(ClientSideUnitHashTables[2]);
     Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[0], (fnUnitIterCallback)Path::CLIENT_UpdateUnitFrame);
-    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[0x15] + 2, (fnUnitIterCallback)Path::CLIENT_UpdateUnitFrame);
-    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[0x2a] + 4, (fnUnitIterCallback)Path::CLIENT_UpdateUnitFrame);
-    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[0x55] + 2, (fnUnitIterCallback)Path::CLIENT_UpdateUnitFrame);
-    Player::CUNIT_UpdateClientFramesAndAI(ClientSideUnitHashTables[0x15] + 2);
-    D2UnitStrc** ppBucket = ClientSideUnitHashTables[0x15] + 2;
+    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[1], (fnUnitIterCallback)Path::CLIENT_UpdateUnitFrame);
+    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[2], (fnUnitIterCallback)Path::CLIENT_UpdateUnitFrame);
+    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[4], (fnUnitIterCallback)Path::CLIENT_UpdateUnitFrame);
+    Player::CUNIT_UpdateClientFramesAndAI(ClientSideUnitHashTables[1]);
+    D2UnitStrc** ppBucket = ClientSideUnitHashTables[1];
     do {
       for (pTmp = *ppBucket; pTmp; pTmp = pTmp->pListNext) {}
 
       ppBucket++;
     } while ((int)ppBucket < (uintptr_t)((char*)&ClientSideUnitHashTables + 1024));
 
-    ppBucket = ServerSideUnitHashTables[0x55] + 2;
+    ppBucket = ServerSideUnitHashTables[4];
     do {
       for (pTmp = *ppBucket; pTmp; pTmp = pTmp->pListNext) {}
 
       ppBucket++;
     } while ((int)ppBucket < (uintptr_t)((char*)&ServerSideUnitHashTables + 2560));
 
-    D2UnitStrc* (*papDVar1)[6] = ServerSideUnitHashTables;
+    D2UnitStrc* (*papDVar1)[128] = ServerSideUnitHashTables;
     do {
       for (pTmp = (*papDVar1)[0]; pTmp; pTmp = pTmp->pListNext) {}
 
-      papDVar1 = (D2UnitStrc* (*)[6])((int)papDVar1 + 4);
+      papDVar1 = (D2UnitStrc* (*)[128])((int)papDVar1 + 4);
     } while ((int)papDVar1 < (uintptr_t)((char*)&ServerSideUnitHashTables + 512));
 
-    ppBucket = ServerSideUnitHashTables[0x15] + 2;
+    ppBucket = ServerSideUnitHashTables[1];
     do {
       for (pTmp = *ppBucket; pTmp; pTmp = pTmp->pListNext) {}
 
       ppBucket++;
     } while ((int)ppBucket < (uintptr_t)((char*)&ServerSideUnitHashTables + 1024));
 
-    Player::CUNIT_IterateHashTableWithCallback(ClientSideUnitHashTables[0x15] + 2, (fnUnitIterCallback)CLIENT_ClearChangedStatFlags_Thunk);
-    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[0x55] + 2, (fnUnitIterCallback)CLIENT_ClearChangedStatFlags_Thunk);
+    Player::CUNIT_IterateHashTableWithCallback(ClientSideUnitHashTables[1], (fnUnitIterCallback)CLIENT_ClearChangedStatFlags_Thunk);
+    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[4], (fnUnitIterCallback)CLIENT_ClearChangedStatFlags_Thunk);
     Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[0], (fnUnitIterCallback)CLIENT_ClearChangedStatFlags_Thunk);
     if (eD2GSGameType_007a0610 != GAMETYPE_SINGLEPLAYER) {
       return;
     }
 
     Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[0], (fnUnitIterCallback)CLIENT_SyncPathFromServer);
-    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[0x15] + 2, (fnUnitIterCallback)CLIENT_SyncPathFromServer);
+    Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[1], (fnUnitIterCallback)CLIENT_SyncPathFromServer);
 }
 
 void __fastcall FaceTarget(D2UnitStrc * pUnit, int32_t nParam) {
     int32_t nTargetY;
-    int32_t nTargetX;
     Path::ConfirmTarget(pUnit);
     if (!pUnit->pPath.pDynamicPath) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x946);
@@ -1711,7 +1709,7 @@ void __fastcall FaceTarget(D2UnitStrc * pUnit, int32_t nParam) {
     }
 
     nTargetY = Units::GetYPosFromDynamicPathUnit(pTarget);
-    nTargetX = Units::GetXPosFromDynamicPathUnit(pTarget);
+    int32_t nTargetX = Units::GetXPosFromDynamicPathUnit(pTarget);
     D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pDynamicPath, nTargetX, nTargetY, nParam);
 }
 
@@ -1875,11 +1873,11 @@ void RemoveObject(int32_t nIndex, D2UnitStrc * * ppUnitTable, eD2UnitType eUnitT
 }
 
 void RemoveObjectFromServerObjectTable(eD2UnitType eUnitType, uint32_t nUnitGUID) {
-    CUnit::RemoveObject(nUnitGUID & 0x7f, (D2UnitStrc**)((int)ServerSideUnitHashTables + eUnitType * 0x200), eUnitType, nUnitGUID);
+    CUnit::RemoveObject(nUnitGUID & 0x7f, ServerSideUnitHashTables[eUnitType], eUnitType, nUnitGUID);
 }
 
 void __fastcall UNITS_RemoveFromClientHashTable(uint32_t dwUnitGUID, int32_t nUnitType) {
-    CUnit::RemoveObject(dwUnitGUID & 0x7f, (D2UnitStrc**)((int)ClientSideUnitHashTables + nUnitType * 0x200), nUnitType, dwUnitGUID);
+    CUnit::RemoveObject(dwUnitGUID & 0x7f, ClientSideUnitHashTables[nUnitType], nUnitType, dwUnitGUID);
 }
 
 // Inserts a newly allocated unit into the server-side hash table. If insertion fails due to a GUID collision, evicts the existing unit and retries. If the retry also fails, frees pUnit and returns null. Returns pUnit on success.
@@ -1889,14 +1887,14 @@ D2UnitStrc * FinalizeCreation(D2UnitStrc * pUnit) {
       return pUnit;
     }
 
-    D2UnitStrc* pExisting = Player::FindUnit(pUnit->nUnitGUID, (D2UnitStrc**)((int)ServerSideUnitHashTables + pUnit->eUnitType * 0x200), pUnit->eUnitType, pUnit->nUnitGUID & 0x7f);
+    D2UnitStrc* pExisting = Player::FindUnit(pUnit->nUnitGUID, ServerSideUnitHashTables[pUnit->eUnitType], pUnit->eUnitType, pUnit->nUnitGUID & 0x7f);
     if (pExisting == pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c6);
       exit(-1);
     }
     if (pExisting) {
-      D2UnitStrc* (*papDVar1)[6] = !(pExisting->eUnitFlags >> 0x15 & 1) ? ServerSideUnitHashTables : ClientSideUnitHashTables;
-      CUnit::RemoveObject(pExisting->nUnitGUID & 0x7f, (D2UnitStrc**)((int)papDVar1 + pExisting->eUnitType * 0x200), pExisting->eUnitType, pExisting->nUnitGUID);
+      D2UnitStrc* (*papDVar1)[128] = !(pExisting->eUnitFlags >> 0x15 & 1) ? ServerSideUnitHashTables : ClientSideUnitHashTables;
+      CUnit::RemoveObject(pExisting->nUnitGUID & 0x7f, papDVar1[pExisting->eUnitType], pExisting->eUnitType, pExisting->nUnitGUID);
       bInserted = Player::InsertIntoHashTable(pUnit);
       if (bInserted) {
         return pUnit;
@@ -2107,7 +2105,7 @@ D2UnitStrc * __fastcall UNIT_CreateMonster(D2CreateMonsterUnitStrc * pCreateData
     uint32_t nPalShiftIdx = pCreateData->nUnitGUID;
     uint32_t nDifficulty = GAME::RosterPets::GetRosterPetGUID(pPlayerUnit, 7, 1);
     if (nPalShiftIdx == nDifficulty) {
-      pUnit = Player::FindUnit(nPalShiftIdx, ServerSideUnitHashTables[0x15] + 2, UNIT_MONSTER, nPalShiftIdx & 0x7f);
+      pUnit = Player::FindUnit(nPalShiftIdx, ServerSideUnitHashTables[1], UNIT_MONSTER, nPalShiftIdx & 0x7f);
       if (pUnit) {
         Engine::GfxInfo::FreeGfxInfo(pUnit);
         GAME::Wall2::WALL2_InitUnitGfx(pUnit);
@@ -2209,9 +2207,9 @@ D2UnitStrc * __fastcall UNIT_CreateMonster(D2CreateMonsterUnitStrc * pCreateData
         pMonStats2Diff = sgptDataTable->pTxtMonStatsEx + iVar2;
         if (pMonStats2Diff) {
           bVar1 = GAME::Game::GetDificulity();
-          if (pMonStats2Diff->aCompCodes[bVar1 + 0xfc]) {
+          if (pMonStats2Diff->byUtrans[bVar1]) {
             bVar1 = GAME::Game::GetDificulity();
-            nPalShiftIdx = (uint32_t)pMonStats2Diff->aCompCodes[bVar1 + 0xfc];
+            nPalShiftIdx = (uint32_t)pMonStats2Diff->byUtrans[bVar1];
             if (nPalShiftIdx == 0xff) {
               uMercType = GAME::RosterPets::ROSTER_IsUnitHostileToPlayer(pUnit);
               nPalShiftIdx = (uint32_t)!uMercType;
@@ -2414,8 +2412,8 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
     pObjectsTxt = 0;
     int32_t nScreenX;
     nScreenX = D2Common::Units::GetTargetX(pUnit);
-    int32_t nScreenY;
-    nScreenY = D2Common::Units::GetTargetY(pUnit);
+    int32_t nOriginY;
+    nOriginY = D2Common::Units::GetTargetY(pUnit);
     switch (eUnitType) {
       case UNIT_PLAYER:
         goto check_gfx_bounds;
@@ -2424,7 +2422,7 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
       if (pMonStats2->noGfxHitTest) {
         rcBounds.left = pMonStats2->nHtLeft + nScreenX;
         rcBounds.right = pMonStats2->nHtWidth + rcBounds.left;
-        rcBounds.top = pMonStats2->nHtTop + nScreenY;
+        rcBounds.top = pMonStats2->nHtTop + nOriginY;
         rcBounds.bottom = pMonStats2->nHtHeight + rcBounds.top;
         /* POINT pt for PtInRect */ pt.y = nClickY;
         pt.x = nClickXSaved;
@@ -2433,7 +2431,7 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
       }
 
       check_gfx_bounds:
-      bInRect = Engine::Gfx::GFX_IsUnitInsideBounds(pUnit, nScreenX, nScreenY, nClickXSaved, nClickY);
+      bInRect = Engine::Gfx::GFX_IsUnitInsideBounds(pUnit, nScreenX, nOriginY, nClickXSaved, nClickY);
       if (!bInRect) {
         return 0;
       }
@@ -2441,7 +2439,7 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
       break;
       case UNIT_OBJECT:
         pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nClassId);
-      bInRect = Engine::Gfx::GFX_IsUnitInsideBounds(pUnit, nScreenX, nScreenY, nClickXSaved, nClickY);
+      bInRect = Engine::Gfx::GFX_IsUnitInsideBounds(pUnit, nScreenX, nOriginY, nClickXSaved, nClickY);
       if (!bInRect && !pObjectsTxt->IsDoor && !pObjectsTxt->CollisionSubst) {
         return 0;
       }
@@ -2557,7 +2555,7 @@ void __fastcall CleanupInventory(D2UnitStrc * pUnit, int32_t bCheckInventory) {
 
       pNextItem = D2Common::INVENTORY::Inventory::INVENTORY_GetNextItem(pItem);
       nItemGUID = D2Common::INVENTORY::Inventory::ITEM_GetGUID(pItem);
-      for (pHashItem = ServerSideUnitHashTables[0x55][(nItemGUID & 0x7f) + 2]; pItem = pNextItem , pHashItem != 0; pHashItem = pHashItem->pListNext) {
+      for (pHashItem = ServerSideUnitHashTables[4][nItemGUID & 0x7f]; pItem = pNextItem , pHashItem != 0; pHashItem = pHashItem->pListNext) {
         if (pHashItem->nUnitGUID == nItemGUID) {
           if (pHashItem->eUnitType != UNIT_ITEM) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a);
@@ -2571,7 +2569,7 @@ void __fastcall CleanupInventory(D2UnitStrc * pUnit, int32_t bCheckInventory) {
               exit(-1);
             }
 
-            CUnit::RemoveObject(pHashItem->nUnitGUID & 0x7f, (D2UnitStrc**)((int)ServerSideUnitHashTables + pHashItem->eUnitType * 0x200), pHashItem->eUnitType, pHashItem->nUnitGUID);
+            CUnit::RemoveObject(pHashItem->nUnitGUID & 0x7f, ServerSideUnitHashTables[pHashItem->eUnitType], pHashItem->eUnitType, pHashItem->nUnitGUID);
           } else {
             pHashItem = D2Common::INVENTORY::Inventory::ItemBelongsToInventoryOfPlayer(pInventory, pHashItem);
             if (!pHashItem) {

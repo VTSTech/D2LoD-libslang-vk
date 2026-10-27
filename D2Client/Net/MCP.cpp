@@ -38,7 +38,7 @@ BOOL __fastcall MCPCONNECT_SocketCallback_Dispatch(uint8_t * pPacketBuf, int nPa
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(gaMcpSocketCallbackHandlers, "D2Client::Net::MCP::MCPCONNECT_SocketCallback_Dispatch::gaMcpSocketCallbackHandlers");
 
     BOOL BVar1 = 0;
     if (!nPacketSize) {

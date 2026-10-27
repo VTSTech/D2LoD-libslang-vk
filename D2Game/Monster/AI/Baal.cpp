@@ -87,7 +87,7 @@ static char gszSrcFileAiBaal[16] = {
     'p',
     'p',
     '\x00'
-};
+}; D2_STATIC_GUARD(gszSrcFileAiBaal, "D2Game::Monster::AI::Baal::gszSrcFileAiBaal");
 
 uint32_t __fastcall AI_Baal_IsPortalInRange(uint32_t dwParam, D2UnitStrc * pUnit, D2UnitStrc * portal, D2MonsterAiParameterStruct * pAiParam) {
     if (!(portal && portal->eUnitType == UNIT_OBJECT && portal->nClassId == 0x233)) {
@@ -323,13 +323,13 @@ D2UnitStrc * __stdcall SelectTargetBaal(::SGAMEDATA * pGame, int * pnParam1, int
 }
 
 uint32_t __fastcall AI_BAAL_IsUnitInRange(D2UnitStrc * pUnit, int * pnParam) {
-    int32_t nX;
+    uint32_t nDist;
     int32_t nLine;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11d);
       exit(-1);
     } else {
-      uint32_t nDist;
+      int32_t nX;
       if (pnParam) {
         if (pUnit->nAct != *(eAct*)(pnParam + 6)) {
           return 0;
@@ -877,20 +877,26 @@ bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, D2UnitStr
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
+    // Frame slots -20..-4 are ONE object: &nPowerfulSkillCount is passed out and the callee reaches the rest by byte offset.
+    // Separate locals let the compiler reorder them, so the run is one struct.
+    struct __frame1_t {
+      int nPowerfulSkillCount;
+      uint32_t nSpawnYOut;
+      uint32_t pMemoryTmp;
+      int nTargetX;
+    };
+    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 16, "frame group __frame1_t must reproduce the Ghidra frame layout");
+    __frame1_t __frame1;
     D2DynamicPathStrc* pDynamicPath;
     int32_t nOwnerGuid;
     eD2UnitType eOwnerType;
-    uint32_t nSpawnYOut;
-    D2PoolManagerStrc* pMemoryTmp;
-    int nTargetX;
     int32_t nStatLayer;
     int nPosY;
     nPosY = 0;
-    eD2UnitType nPowerfulSkillCount;
-    nPowerfulSkillCount = UNIT_PLAYER;
+    __frame1.nPowerfulSkillCount = 0;
     __frame0.nSeedMulHi = (uint32_t)pUnit;
-    Ai::AiGeneral::CallForEachMinion(pUnit, &__frame0.nSeedMulHi, (D2UnitStrc*)&nPowerfulSkillCount, (pfnMinionForEachCallback)AI_BAAL_CountPowerfulSkills);
-    if (nPowerfulSkillCount != UNIT_PLAYER) {
+    Ai::AiGeneral::CallForEachMinion(pUnit, &__frame0.nSeedMulHi, &__frame1.nPowerfulSkillCount, (pfnMinionForEachCallback)AI_BAAL_CountPowerfulSkills);
+    if (__frame1.nPowerfulSkillCount) {
       return false;
     }
 
@@ -907,12 +913,12 @@ bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, D2UnitStr
     eD2MonsterAnimMode eSpawnAnimMode;
     eSpawnAnimMode = eD2MonsterAnimMode_ns::Neutral;
     __frame0.nCloneClassId = 0x23a < sgptDataTable->nTxtMonStatsSize ? 0x23a : -1;
-    D2Common::Monsters::MONSTERS::MONSTER_GetSpawnParameters(pUnit, (int*)&__frame0.nCloneClassId, (uint32_t*)&pMemoryTmp, &nSpawnYOut, (uint32_t*)&eSpawnAnimMode, (uint32_t)pGame->nDifficulty, nullptr);
+    D2Common::Monsters::MONSTERS::MONSTER_GetSpawnParameters(pUnit, (int*)&__frame0.nCloneClassId, &__frame1.pMemoryTmp, &__frame1.nSpawnYOut, (uint32_t*)&eSpawnAnimMode, (uint32_t)pGame->nDifficulty, nullptr);
     pTargetUnit = UNIT::SUnit::GetTargetEx(pGame, pUnit);
     if (!pTargetUnit) {
       eOwnerType = pUnit->eUnitType;
       if (eOwnerType == UNIT_OBJECT || 3 < (int)eOwnerType && (int)eOwnerType < 6) {
-        nTargetX = pUnit->pPath.pStaticPath->nPosX;
+        __frame1.nTargetX = pUnit->pPath.pStaticPath->nPosX;
         goto spawn_near_center;
       }
 
@@ -920,16 +926,16 @@ bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, D2UnitStr
     } else {
       eOwnerType = pTargetUnit->eUnitType;
       if (eOwnerType == UNIT_OBJECT || 3 < (int)eOwnerType && (int)eOwnerType < 6) {
-        nTargetX = pTargetUnit->pPath.pStaticPath->nPosX;
+        __frame1.nTargetX = pTargetUnit->pPath.pStaticPath->nPosX;
         goto spawn_near_center;
       }
 
       pDynamicPath = pTargetUnit->pPath.pDynamicPath;
     }
     if (!pDynamicPath) {
-      nTargetX = 0;
+      __frame1.nTargetX = 0;
     } else {
-      nTargetX = D2Common::PATH::DynamicPath::GetXPos(pDynamicPath);
+      __frame1.nTargetX = D2Common::PATH::DynamicPath::GetXPos(pDynamicPath);
     }
 
     spawn_near_center:
@@ -949,21 +955,21 @@ bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, D2UnitStr
       }
     }
     uint64_t uSeedRollX = (uint64_t)pUnit->sSeed.nSeedLow * 0x6ac690c5 + (uint64_t)pUnit->sSeed.nSeedHigh;
-    pMemoryTmp = (D2PoolManagerStrc*)((int)uSeedRollX + (int)((uSeedRollX & 0xffffffff) / 0x18) * -0x18 - 0xc + nTargetX);
+    __frame1.pMemoryTmp = (int)uSeedRollX + (int)((uSeedRollX & 0xffffffff) / 0x18) * -0x18 - 0xc + __frame1.nTargetX;
     D2SeedStrc sNewSeed = D2_SEED_NEXT_VAL(uSeedRollX);
     pUnit->sSeed = sNewSeed;
     uint32_t nSpawnYJitter = sNewSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 0x18) * -0x18 - 0xc + nPosY;
-    nSpawnYOut = nSpawnYJitter;
+    __frame1.nSpawnYOut = nSpawnYJitter;
     D2RoomStrc* pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pSpawnRoom, (int32_t)pMemoryTmp, nSpawnYJitter);
+    pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pSpawnRoom, __frame1.pMemoryTmp, nSpawnYJitter);
     if (!pSpawnRoom) {
       return false;
     }
 
-    nSpawnYJitter = nSpawnYOut;
+    nSpawnYJitter = __frame1.nSpawnYOut;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, (int32_t)pMemoryTmp, nSpawnYJitter);
-    pTargetUnit = Create::SpawnMonsterAtRoomPos(pGame, pSpawnRoom, (int32_t)pMemoryTmp, nSpawnYOut, __frame0.nCloneClassId, eSpawnAnimMode, -1, 0);
+    D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, __frame1.pMemoryTmp, nSpawnYJitter);
+    pTargetUnit = Create::SpawnMonsterAtRoomPos(pGame, pSpawnRoom, __frame1.pMemoryTmp, __frame1.nSpawnYOut, __frame0.nCloneClassId, eSpawnAnimMode, -1, 0);
     if (!pTargetUnit) {
       return false;
     }

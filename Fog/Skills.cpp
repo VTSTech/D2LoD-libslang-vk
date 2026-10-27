@@ -820,7 +820,7 @@ uint8_t * __stdcall SKILLS_EmitFormulaBytecode(uint8_t * pWritePtr, uint8_t * pO
     0x15,
     0x16,
     0x0
-};
+}; D2_STATIC_GUARD(BYTE_ARRAY_006fc874, "Fog::Skills::SKILLS_EmitFormulaBytecode::BYTE_ARRAY_006fc874");
 
     int nPrecedence;
     int nWriteOffset;

@@ -39,7 +39,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
-#include "Storm/H/Storm.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/QuestLog.h"
 #include "D2Launch/MainMenus.h"
@@ -306,7 +306,7 @@ void __stdcall WAYPOINT_PopulateList() {
     0x0,
     0xff,
     0x0
-};
+}; D2_STATIC_GUARD(gaWaypointVisited, "D2Client::UI::Waypoint::WAYPOINT_PopulateList::gaWaypointVisited");
 
     BOOL bFound;
     uint8_t byMaxId;

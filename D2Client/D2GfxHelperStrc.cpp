@@ -3,8 +3,6 @@
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/D2GFX.h"
 #include "D2Client/D2GfxSettingsStrc.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
@@ -15,10 +13,10 @@
 namespace D2Client {
 
 void __fastcall fpDrawVisTile(uint8_t * pbTileData, int32_t nScreenX, int32_t nScreenY) {
+    void* nErrorAddr;
     uint32_t nClipRight;
     uint32_t nClipLeft;
     uint32_t nRunLen;
-    void* pDst;
     int nRowsLeft;
     uint8_t bySkip;
     if (!(gnMinTileDrawY <= nScreenY && nScreenY < gnTileClipYMin && gnTileInnerClipXMin <= nScreenX && nScreenX < gnTileInnerClipYMin)) {
@@ -42,9 +40,9 @@ void __fastcall fpDrawVisTile(uint8_t * pbTileData, int32_t nScreenX, int32_t nS
           nDstRowPtr = nScreenY + gRenderBufferPitch;
           nScreenY = nDstRowPtr;
         } else {
-          pDst = (void*)(nDstRowPtr + (uint32_t)bySkip);
-          memcpy(pDst, pbTileData, nRunLen);
-          nDstRowPtr = (int)pDst + nRunLen;
+          nErrorAddr = (void*)(nDstRowPtr + (uint32_t)bySkip);
+          memcpy(nErrorAddr, pbTileData, nRunLen);
+          nDstRowPtr = (int)nErrorAddr + nRunLen;
           pbTileData += nRunLen;
         }
       } while (nRowsLeft);
@@ -181,6 +179,7 @@ void __fastcall fpDrawWallTile(uint8_t * pTileData, int32_t nScreenX, int32_t nS
 
 void __fastcall fpDrawBlendedVisTile(uint8_t * pTileData, int32_t nScreenX, int32_t nScreenY, int32_t nLightVal) {
     uint8_t* nBlendTableBase;
+    uint32_t nSkip;
     uint32_t nClipRight;
     uint8_t* pbClipSrc;
     uint32_t nClipLeft;
@@ -189,7 +188,7 @@ void __fastcall fpDrawBlendedVisTile(uint8_t * pTileData, int32_t nScreenX, int3
     uint8_t* pbRunEnd;
     uint32_t nRunLen;
     uint8_t bySkipCount;
-    int32_t nCurRow = nScreenY;
+    int32_t nErrorLine = nScreenY;
     if ((uint8_t)nLightVal < 0xc0) {
       if ((uint8_t)nLightVal < 0x80) {
         if ((uint8_t)nLightVal < 0x40) {
@@ -237,27 +236,26 @@ void __fastcall fpDrawBlendedVisTile(uint8_t * pTileData, int32_t nScreenX, int3
     }
 
     nScreenY = 0;
-    int nRowIdx = nCurRow;
+    int nRowIdx = nErrorLine;
     pDst = pRowDst;
     uint8_t* pRowBase = pRowDst;
     do {
-      uint32_t nSkip;
       nSkip = (uint32_t)*pTileData;
       nRunLen = (uint32_t)pTileData[1];
       pbRunEnd = pTileData + 2;
       if (!nSkip && !nRunLen) {
         nScreenY++;
-        nRowIdx = nCurRow + 1;
+        nRowIdx = nErrorLine + 1;
         pRowNext = pRowDst + gRenderBufferPitch;
         pTileData = pbRunEnd;
-        nCurRow = nRowIdx;
+        nErrorLine = nRowIdx;
         pRowDst = pRowNext;
         pRowBase = pRowNext;
       } else {
-        if (gnMinTileScreenY <= nCurRow) {
+        if (gnMinTileScreenY <= nErrorLine) {
           return;
         }
-        if (nCurRow < gnMinTileScreenY_b) {
+        if (nErrorLine < gnMinTileScreenY_b) {
           pRowNext = pDst + nRunLen + nSkip;
           pTileData = pbRunEnd + nRunLen;
         } else {
@@ -271,7 +269,7 @@ void __fastcall fpDrawBlendedVisTile(uint8_t * pTileData, int32_t nScreenX, int3
             nClipRight = nRunLen;
           }
 
-          nCurRow = nRowIdx;
+          nErrorLine = nRowIdx;
           pRowDst = pRowBase;
           if (0 < (int)(nClipRight - nClipLeft)) {
             pbRunEnd += nClipLeft;
@@ -518,10 +516,10 @@ void __fastcall D2GFXHELPER_DrawGroundTileWithPerspectiveLight(D2GroundSubTileSt
 
 void __fastcall fpFillYBufferTable(void * ppvBits, int32_t nWidth, int32_t nHeight, int32_t a4) {
     // Static local variables (originally global data)
-    static uint32_t fnFillYTableCookie = -0x1;
-    static uint8_t gnRenderSurfaceHeight;
-    static uint32_t gnFillYBufferCookie;
-    static uint32_t gnLastRenderBufferWidth;
+    static uint32_t fnFillYTableCookie = -0x1; D2_STATIC_GUARD(fnFillYTableCookie, "D2Client::fpFillYBufferTable::fnFillYTableCookie");
+    static unsigned int gnRenderSurfaceHeight; D2_STATIC_GUARD_BSS(gnRenderSurfaceHeight, "D2Client::fpFillYBufferTable::gnRenderSurfaceHeight");
+    static uint32_t gnFillYBufferCookie; D2_STATIC_GUARD_BSS(gnFillYBufferCookie, "D2Client::fpFillYBufferTable::gnFillYBufferCookie");
+    static uint32_t gnLastRenderBufferWidth; D2_STATIC_GUARD_BSS(gnLastRenderBufferWidth, "D2Client::fpFillYBufferTable::gnLastRenderBufferWidth");
 
     gnRenderSurfaceHeight = nHeight;
     gnFillYBufferCookie = a4;
