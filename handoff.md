@@ -1,6 +1,6 @@
 # vanilla-plus — handoff for future work
 
-*Rev 7 (2026-10-27): **restructure.** Everything historical — the closed glide-era and sound-era narratives, retired infrastructure, deep diagnostic specs, closed investigations, archived micro-items, full delivery texts — moved verbatim to **[`HISTORY.md`](HISTORY.md)** (sections H1–H8) and referenced from here. This file now carries only what current/upcoming tasks need. State at rev 7: the glide series (fixes 1–14) and the sound series (fixes 15–16, defects 12+13) are closed and field-verified; the sound fixes are upstreamed as **jaenster/redivivus PR #10** (open, merge-clean); the first public release **`D2LoD-Vanilla-Plus-0.0.1`** is out, built from `4857c30`. Revision history rev 1–6 verbatim: HISTORY.md §H1. Companion journal: `/home/z/my-project/worklog.md` — when this doc and the worklog disagree, the worklog wins.*
+*Rev 8 (2026-10-27): **upstream wind-down.** The `Fixes #N` gap on PR #10 is closed (user added the line). **PR #6 (glide) was closed by jaenster** with a per-defect verdict: confirmed defects were fixed **in the Ghidra database** and ship with the next export (§3ter) — the PR-body-regeneration task is MOOT. New headline watch item: **the next upstream Ghidra export** (merge plan + fixes-2/4 re-verification there). State: the glide series (fixes 1–14) and the sound series (fixes 15–16, defects 12+13) are closed and field-verified; the sound fixes are upstreamed as **jaenster/redivivus PR #10** (open, merge-clean, `Fixes #N` in place); the first public release **`D2LoD-Vanilla-Plus-0.0.1`** is out, built from `4857c30`. Docs-only commits after it: `5546a00` (rev 7), `a95bdad` (PLAN v4). Rev-7 restructure note: everything historical — closed glide-era and sound-era narratives, retired infrastructure, deep diagnostic specs, closed investigations, archived micro-items, full delivery texts — lives in **[`HISTORY.md`](HISTORY.md)** (H1–H8). Revision history rev 1–7 verbatim: HISTORY.md §H1. Companion journal: `/home/z/my-project/worklog.md` — when this doc and the worklog disagree, the worklog wins.*
 
 ---
 
@@ -20,11 +20,11 @@ Vanilla-plus is the **game-source line** of VTSTech/D2LoD-libslang-vk: the recov
 
 ## 2. Branch / commit topology (current)
 
-- `origin` = https://github.com/VTSTech/D2LoD-libslang-vk (public fork, default branch `main` = pre-fix-chain baseline `fd236ce`). **`vanilla-plus` carries the entire fix chain plus this file.** Tip at rev-7 time = **`4857c30`** ("cleanup diag", 2026-10-27) — also the build of public release **`D2LoD-Vanilla-Plus-0.0.1`** (asset `D2-LoD-Vanilla-Plus-0.0.1.7z`; notes: Redivivus + audio fixes + Glide3xVK 0.4.5; known issue: **fullscreen Direct3D does not work**, `-3dfx` fullscreen OK, `-w` works in all modes).
+- `origin` = https://github.com/VTSTech/D2LoD-libslang-vk (public fork, default branch `main` = pre-fix-chain baseline `fd236ce`). **`vanilla-plus` carries the entire fix chain plus this file.** Tip at rev-8 time = **`a95bdad`** (docs-only on top of **`4857c30`** "cleanup diag", 2026-10-27 — the build of public release **`D2LoD-Vanilla-Plus-0.0.1`**; asset `D2-LoD-Vanilla-Plus-0.0.1.7z`; notes: Redivivus + audio fixes + Glide3xVK 0.4.5; known issue: **fullscreen Direct3D does not work**, `-3dfx` fullscreen OK, `-w` works in all modes).
 - `upstream` = https://github.com/jaenster/redivivus — **`upstream/main` = `eef5f2c`** (the regeneration; merged into vanilla-plus at `cf36935`).
-- **Upstream PR #10** (the sound fixes): "Sound: only the intro video had audio — …", head `VTSTech:pr4/sound-except-intro` → base `upstream main` @ `eef5f2c`, 3 commits / 3 files, `mergeable_state: clean` at filing (2026-10-27). **GAP: body lacks its `Fixes #N` line** — re-add it (issue number to confirm) or close the companion issue manually on merge.
-- Active branches of record: `vanilla-plus` (game-source line), `main` (fork baseline), `pr2/glide-renderer-fixes` (= `31acdac`, mirror of the PR #6 line), `pr3/mobs-drop-items`, `pr4/sound-except-intro` (= `4857c30` content on `eef5f2c`, the PR #10 head), `libslang-vk` (glide3xvk wrapper line, tags 0.3.1–0.4.5). Retired branches and the twin-commit story: HISTORY H2.
-- **Full fix-chain hash map** (source material for the PR #6 body task — do not move to HISTORY until that lands):
+- **Upstream PR #10** (the sound fixes): "Sound: only the intro video had audio — …", head `VTSTech:pr4/sound-except-intro` (tip **`b0c250c`**, the 3 `git am`-ed patches `5c75b10`/`e614f5e`/`b0c250c` on `eef5f2c`) → base `upstream main` @ `eef5f2c`, 3 commits / 3 files, `mergeable_state: clean` at filing (2026-10-27). **`Fixes #N` added 2026-10-27 (rev 8)** — merging now auto-closes the companion issue. Watch: maintainer review on the `SetPan`/bit-pattern details.
+- Active branches of record: `vanilla-plus` (game-source line), `main` (fork baseline), `pr2/glide-renderer-fixes` (= `31acdac`, mirror of the **closed** PR #6 line — historical), `pr3/mobs-drop-items`, `pr4/sound-except-intro` (= 4857c30 content on `eef5f2c` + the 3 sound commits, tip `b0c250c` — the PR #10 head), `libslang-vk` (glide3xvk wrapper line, tags 0.3.1–0.4.5). Retired branches and the twin-commit story: HISTORY H2.
+- **Full fix-chain hash map** (kept as the fix-chain record; PR #6 is closed, so this now feeds the **next-export merge plan** — §3ter):
 
   | fix | commit | subject | note |
   |---|---|---|---|
@@ -69,7 +69,7 @@ Vanilla-plus is the **game-source line** of VTSTech/D2LoD-libslang-vk: the recov
   Yes, "fix 13" names two different overlays (`pr2-glide-fix13-shadowspan-overlay.zip` / `pr2-glide-fix13-lightcolordiag-overlay.zip`).
 - Note: pr2's Glide.cpp text has **drifted from vanilla-plus's** (jaenster revision, ~2441 lines). Overlay scripts therefore assert *per-anchor* uniqueness, never whole-file equality, across the two lines.
 
-## 3. The eleven defects (root causes, one line each) — source material for the PR #6 body
+## 3. The eleven defects (root causes, one line each) — the fix-chain record (upstream verdict: §3ter)
 
 1. **Phantom texture-cache structs** — function-local statics `gGlideSmallTextureCacheBase`/`gnGlideState` were `.data` labels adjacent to `gGlideSmallTextureCache[3]`; rebuilt they're unrelated 4-byte objects → every upload addressed a phantom → `0xc1` halt (`-3dfx` launcher crash, issue #5).
 2. **1-based size class as 0-based index** — class 3 indexed one `0x20` struct past `cache[3]`. Clamped + decremented.
@@ -89,7 +89,25 @@ Vanilla-plus is the **game-source line** of VTSTech/D2LoD-libslang-vk: the recov
 - **Defect 13 (NPC/monster/player SFX silent)** — CLOSED, fix 16 `9c8beb9`: `SOUND_UpdateChannelParams` reads `SOUNDSMP_CalculateVolumeAndPan`'s integer out params as `uint32_t` (was float-storage punning → subnormal truncation → vol 0 → att=-10000). Music channels skip that block — the observed music-vs-SFX split. Field-verified.
 - **Upstreamed** as jaenster/redivivus **PR #10** (3 commits, self-contained comments; upstream additionally lacked the `-2000.0` scale fix). **SMP layer exonerated against retail decompiles — do not re-audit.** sounddiag retired (HISTORY H4).
 
-## 4. Verification status (all green as of rev 7)
+### 3ter. Upstream verdict on the glide defects — PR #6 closed by jaenster (2026-10-27)
+
+jaenster reviewed the glide defects against 1.14d and fixed the confirmed ones **in the Ghidra database** rather than merging the C++ — the next regen emits the right code (fixes at the source of truth, no regen conflicts). His verdict, mapped to the §3 defect numbering:
+
+| Defects | Verdict (jaenster, 2026-10-27) |
+|---|---|
+| 1, 6/11, 9, 10 | **Confirmed, fixed in Ghidra**: the vertex block and the texture caches as one object; the span table as one `int[14]`; the falloff table with 257 entries; the ground vertex colour as an integer store. |
+| 3, 5, 7, 8 | **Already fixed** in Ghidra after the tree the PR was worked from (`eef5f2c`). |
+| 2 | **Rejected**: 1.14d uses the 1-based size class directly; the `− 1` only undid a rebase from the same patch. |
+| 4 | **Rejected**: 1.14d has no slot check there — the original's behaviour is kept. |
+
+Implications for vanilla-plus:
+
+- The hand fixes for defects 1, 3, 5, 6/7/8, 9, 10/11 will be **superseded (or conflict) when the next upstream export lands**. Merge plan: take upstream's regen, drop the matching hand fixes, re-run the §12 gate set + the §11 field loop.
+- **Defects 2 and 4: vanilla-plus keeps its fixes until proven unnecessary.** jaenster's verdicts describe the Ghidra *source*; the crashes those two fixes address are relink-layout phenomena (adjacency/scattering after relink) — a retail-faithful regen can still relink differently. Re-verify empirically post-export before dropping.
+- jaenster invited **issues with retail captures** if Glide misbehaves post-export — the logging-wrapper dumps + the ShadowDiag/LightDiag capture method are the standing asset for that.
+- PR #6 closure kills the body-regeneration task and the pr2-branch advancement decision; `pr2/glide-renderer-fixes` stays as a historical mirror.
+
+## 4. Verification status (all green as of rev 8)
 
 - Fixes 1–8 field-verified (launcher crash gone; title/select/loading render; in-world tiles, rain/fire/glow correct; end-of-loading halt gone).
 - Fix 9 field-verified on `d2s-642711a` (silhouettes gone under night/storm).
@@ -128,10 +146,10 @@ Vanilla-plus is the **game-source line** of VTSTech/D2LoD-libslang-vk: the recov
 
 ## 9. Current / upcoming tasks (the live list)
 
-1. **Upstream PR #10 watch** (jaenster/redivivus, sound fixes). GAP: re-add `Fixes #N` to the PR body (confirm the issue number) or close the issue manually on merge. Watch for maintainer review on the `SetPan`/bit-pattern details.
-2. **PR #6 body regeneration** (jaenster/redivivus — glide-renderer PR, state open/unstable, live body still the original five-defect text; head `c65fa93`, base `main`). Source material: §2 hash map + collision table, §3 eleven defects, §4 verification. Then decide whether to advance the PR head past fix 6 (fixes 7–13 exist on `vanilla-plus` + pr2 mirror `31acdac` but not as PR-visible commits). No gh CLI/token in the sandbox — user runs `gh pr edit 6 --repo jaenster/redivivus --body-file ...` or edits on the web.
+1. **Upstream PR #10 watch** (jaenster/redivivus, sound fixes). `Fixes #N` is in place (rev 8) — merging auto-closes the companion issue. Watch for maintainer review on the `SetPan`/bit-pattern details.
+2. **Next upstream Ghidra export watch** (new at rev 8): jaenster fixed glide defects 1, 6/11, 9, 10 in the Ghidra DB (PR #6 closed — §3ter) and they ship with the next export. When it lands: merge into vanilla-plus, expect the matching hand fixes to be superseded/conflicting, **re-verify the defect-2 and defect-4 fixes empirically before dropping** (relink-layout phenomena), re-run the §12 gates + §11 field loop. Post-export Glide misbehaviour → new upstream issue with retail captures (jaenster's explicit ask).
 3. **Task C (gameplay, unparked — awaiting user go)**: Z-key camera zoom + Shift equipment-compare. Loop per §11.
-4. **Offered, not requested**: (a) `-3dfx` Contrast/SetGamma boot-halt clamp as an upstream 4th patch (fix exists in fix 15, `04cea73`); (b) **fullscreen Direct3D regression** (release 0.0.1 known issue — not yet diagnosed; `-3dfx` fullscreen and `-w` work); (c) ShadowDiag/LightDiag/DropDiag strip-or-env-gate.
+4. **Offered, not requested**: (a) `-3dfx` Contrast/SetGamma boot-halt clamp as an upstream patch (fix exists in fix 15, `04cea73`; PR #10 is sound-only, so this would be a separate proposal — hold or propose post-export); (b) **fullscreen Direct3D regression** (release 0.0.1 known issue — not yet diagnosed; `-3dfx` fullscreen and `-w` work); (c) ShadowDiag/LightDiag/DropDiag strip-or-env-gate.
 5. **Watch item**: `SOUNDSMP_SetPan` right-branch negation vs retail vtable+0x40 (stereo position only; identify the retail owner before touching — HISTORY H3).
 
 ## 10. Tooling

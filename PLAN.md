@@ -24,7 +24,7 @@ Lesson learned from the DevilutionX fork: feature commits landed straight on
 |---|---|
 | [`main`](https://github.com/VTSTech/D2LoD-libslang-vk) | Redivivus baseline (`fd236ce`), kept close to upstream; no feature work lands here. |
 | [`vanilla-plus`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/vanilla-plus) | **The d2.exe source line.** All game-source fixes (glide chain 1–13, drops 14, sound 15–16) plus the bootlog/diagnostic work: `[d2boot]` boot trace, `support/d2_boot.{h,cpp}`, VEH `d2crash-*.txt` reporter, signature-verification fixes (`Bnclient/Bnclient.cpp` CERT_INFO + direct handle cleanup). Merged with upstream `main` (`eef5f2c`). Tip `4857c30` = release `D2LoD-Vanilla-Plus-0.0.1`. Builds are local on Win11: `tools/build-local-win11.ps1` → fat `d2.exe` + stripped `d2s-<sha>.exe` + DWARF map. |
-| [`pr2/glide-renderer-fixes`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr2/glide-renderer-fixes) · [`pr3/mobs-drop-items`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr3/mobs-drop-items) · [`pr4/sound-except-intro`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr4/sound-except-intro) | Upstream-PR lines — what is proposed to jaenster/redivivus: PR #6 head (glide, `c65fa93`), drops, and the sound series (**upstream PR #10**, 3 commits on `eef5f2c`). The old [`jaenster-main`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/jaenster-main) CI-split line is retired (superseded by the merge era — `HISTORY.md` H2). |
+| [`pr2/glide-renderer-fixes`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr2/glide-renderer-fixes) · [`pr3/mobs-drop-items`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr3/mobs-drop-items) · [`pr4/sound-except-intro`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr4/sound-except-intro) | Upstream-PR lines — what was proposed to jaenster/redivivus: PR #6 (glide, **closed by the maintainer 2026-10-27** — confirmed defects fixed in the Ghidra DB, land via the next export), drops, and the sound series (**upstream PR #10**, open, `Fixes #N` in place). The old [`jaenster-main`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/jaenster-main) CI-split line is retired (superseded by the merge era — `HISTORY.md` H2). |
 | [`libslang-vk`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/libslang-vk) | **Active development line — all glide3x / Vulkan / libslang-vk integration work happens here.** Wrapper tip `0.4.5` (`3a52553`). |
 
 Rules:
@@ -202,7 +202,10 @@ The d2.exe side of the house moved in parallel and is fully green: the glide fix
 fix (14), and the sound series (15–16 — dead-hwnd music binding, Ghidra FP bit-pattern
 constants, float-storage punning of integer out params) are all closed and
 field-verified on `vanilla-plus`. The sound series is upstreamed as jaenster/redivivus
-**PR #10** (watch item: its body still needs a `Fixes #N` line); first public release
+**PR #10** (open; `Fixes #N` in place); PR #6 (the glide chain) was **closed by the
+maintainer** — the confirmed defects were fixed in the Ghidra DB and arrive with the
+next upstream export (vanilla-plus holds its defect-2/defect-4 fixes until post-export
+re-verification). First public release
 **`D2LoD-Vanilla-Plus-0.0.1`** is built from `4857c30` (known issue: fullscreen
 Direct3D broken — `-3dfx` fullscreen and `-w` work in all modes). Live task list:
 `handoff.md` §9.
@@ -317,5 +320,6 @@ The payoff. Everything above already runs through our swapchain.
   pattern and preset UX.
 - House state docs: `VANILLA-PLUS.md` (branch charter), `handoff.md` (current state +
   live tasks) + `HISTORY.md` (closed record), `/home/z/my-project/worklog.md` (journal).
-- Upstream: jaenster/redivivus PR #10 (sound series — open, merge-clean at filing);
-  fork release `D2LoD-Vanilla-Plus-0.0.1`.
+- Upstream: jaenster/redivivus PR #10 (sound series — open, `Fixes #N` in place);
+  PR #6 (glide) closed by the maintainer 2026-10-27 — defect fixes return via the next
+  Ghidra export; fork release `D2LoD-Vanilla-Plus-0.0.1`.
