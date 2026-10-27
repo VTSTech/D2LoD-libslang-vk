@@ -2424,9 +2424,23 @@ void __stdcall RENDERER_D3D_CalculateTextureSize(D2D3DSpriteInfoStrc * pStruct) 
 
 // Direct3D texture cache: uploads a DC6 frame to video memory. Determines mipmap level based on size, allocates cache slot, renders frame to memory surface, copies to texture via LockRect/memcpy, and sets as active texture.
 int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
-    // Static local variables (originally global data)
-    static uint8_t DAT_00970eac;
-    static int INT_00970ec4;
+    // [vanilla-plus fix 20] The Ghidra export rendered retail's contiguous
+    // cache-struct array (image 0x970eac — three 0x1c-byte D3DTextureCacheStrc at
+    // stride 0x1c, with the per-class pNodeBuffer fields readable at image
+    // 0x970ec4, stride 0x1c) as two PHANTOM locals — static uint8_t DAT_00970eac
+    // (1 byte) + static int INT_00970ec4 (4 bytes) — and this upload path then
+    // computed its cache pointer by raw arithmetic off them (&DAT_00970eac +
+    // class*0x1c, (&INT_00970ec4)[class*7]). Those phantom bytes are NOT the
+    // object RENDERER_D3D_InitializeTextureCachePool seeds
+    // (gD3DGenericTextureCache.aCaches[0..2]): the first DC6-sprite upload read an
+    // unseeded struct — garbage nMaxNodes != nUsedCount, pFreeHead = null — and
+    // D3DTEXCACHE_AllocateNodeFromFreeList hit its HALT 0xd7 (retail line 215).
+    // Field signature: HALT line=215 (0xd7) ~5s into the fullscreen-D3D intro =
+    // the first logo boundary = first sprite upload; Smacker frames do not use
+    // this path, which is why the video itself played fine. Fixed by addressing
+    // the real pools: class 1/2/3 -> aCaches[0/1/2] (0x100/0x80/0x20 — the same
+    // trio InitializeTexturePools creates at :3142-3152), the same mapping the
+    // ClearCacheNodes callback already uses (aCaches[class-1], :2369-2384).
 
     uint8_t* pBVar3;
     int32_t iVar4;
@@ -2469,10 +2483,12 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
 
     iMipLevel = *(int*)(pbSrcPixel + nMipIdx * 8);
     int* piVar2 = (int*)(pbSrcPixel + 4 + nMipIdx * 8);
-    D3DTextureCacheStrc* pCache = (D3DTextureCacheStrc*)(&DAT_00970eac + iMipLevel * 0x1c);
-    if (*piVar2 && (*(uint8_t**)(*piVar2 * 0x20 - 0x14 + (&INT_00970ec4)[iMipLevel * 7]) == pPalette || nMode == 4)) {
+    // [vanilla-plus fix 20] real seeded pools, not the DAT_00970eac phantom region
+    D3DTextureCacheStrc* pCache = &gD3DGenericTextureCache.aCaches[iMipLevel - 1];
+    D3DTextureCacheNodeStrc* pCacheNodeBase = pCache->pNodeBuffer;
+    if (*piVar2 && (*(uint8_t**)(*piVar2 * 0x20 - 0x14 + pCacheNodeBase) == pPalette || nMode == 4)) {
       d3dTextureCache::D3DTEXCACHE_InvalidateByIndex(pCache, *piVar2);
-      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*piVar2 * 0x20 + (&INT_00970ec4)[iMipLevel * 7] - 0xc));
+      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*piVar2 * 0x20 + pCacheNodeBase - 0xc));
       if (!dwHResult) {
         return 1;
       }
@@ -2495,8 +2511,8 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
       exit(-1);
     } else if (iVar1 < pCache->nMaxNodes) {
       iCacheNodeIdx = *piVar2 * 0x20;
-      iVar1 = *(int*)(iCacheNodeIdx - 0x10 + (&INT_00970ec4)[iMipLevel * 7]);
-      iMipLevel = iCacheNodeIdx - 0x20 + (&INT_00970ec4)[iMipLevel * 7];
+      iVar1 = *(int*)(iCacheNodeIdx - 0x10 + pCacheNodeBase);
+      iMipLevel = iCacheNodeIdx - 0x20 + (int)pCacheNodeBase;
       pbPixelData = (uint8_t*)gpD3DTextureSpritePoolMemory0;
       *(int*)(iMipLevel + 4) = pbSrcPixel;
       *(int*)(iMipLevel + 8) = nMipIdx;
