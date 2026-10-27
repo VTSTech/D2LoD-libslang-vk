@@ -19,6 +19,32 @@ The code is machine-generated from a reverse-engineered database and then correc
 hand where needed. It is not the original source: the names, types and structure are
 reconstructions, and some functions read like a decompiler wrote them, because one did.
 
+## This fork
+
+This repository is VTSTech's working fork of
+[jaenster/redivivus](https://github.com/jaenster/redivivus). Upstream `main` is merged
+in as it moves; work is organized into branch lines:
+
+| Branch | What it is | Docs |
+|---|---|---|
+| `main` | The default line: the Redivivus base kept deliberately close to upstream, plus boot and diagnostic support (`[d2boot]` boot trace, the VEH `d2crash-*.txt` reporter). No feature work lands here. | [`PLAN.md`](PLAN.md) |
+| `vanilla-plus` | **The game-source line**: crash fixes and opt-in improvements made directly in the recovered source, kept merged with upstream and always ahead of it. | [`VANILLA-PLUS.md`](VANILLA-PLUS.md) (charter) · [`handoff.md`](handoff.md) (engineering handoff) · [`PLAN.md`](PLAN.md) |
+| `libslang-vk` | The `glide3xvk` wrapper line: a `glide3x.dll` that renders Glide on Vulkan and threads the final frame through libretro `.slangp` shader presets. It ships on its own, touches no game code, and overlays on top of whatever `d2.exe` is running. | [`PLAN.md`](PLAN.md) |
+| `jaenster-main` | A clean line tracking upstream with the CI artifact split: fat `d2.exe` for crash triage, `d2-stripped.exe` for play. | — |
+| `PR1-Bnclient-signer-verify-crash-fix` | Fix line: the Battle.net client signature-verification crash fix, built on the spell/hit-damage and summon fixes. | — |
+| `pr2/glide-renderer-fixes` | Fix line: the glide defect series (fixes 1–13): launcher crash, title-screen black triangles, end-of-loading halt, black light cores and unit silhouettes, light-radius discoloration, shadow blobbing. Since absorbed upstream. | — |
+| `pr3/mobs-drop-items` | Fix line: the drops fix (fix 14): monsters drop items again, and the Act 5 snow hang is gone. Since absorbed upstream. | — |
+| `pr4/sound-except-intro` | Fix line: the sound patch series: DirectSound initialized with the game window instead of the `bSOUNDBKG` ini bool, restored volume-clamp scales, integer volume/pan out-params. In-game audio works; intro audio is still silent. | — |
+
+The fix lines each isolate one class of fix on top of `main` so it can be reviewed and
+cleanly contributed upstream; once upstream's regeneration absorbs a fix, its branch
+remains as the record of how it was found.
+
+CI (`.github/workflows/build.yml`) runs `tools/check-build.sh` on every push and uploads
+workflow artifacts: `d2-<sha>.exe` here and on `jaenster-main` (which also uploads a
+stripped copy for play), and `d2s-<sha>.exe` plus the linker map `d2-map-<sha>` on
+`vanilla-plus` (the map is load-bearing for crash symbolization).
+
 ## The same idea as Devilution
 
 [Devilution](https://github.com/diasurgical/devilution) did this for the first Diablo: it
@@ -92,7 +118,9 @@ cmake --build build
 ```
 
 That produces `build/d2.exe`, a 32-bit Windows executable. `tools/check-build.sh` does
-the same from a clean clone and checks the result; CI runs it on every push.
+the same from a clean clone and checks the result; CI runs it on every push and uploads
+the exe as a workflow artifact — grab one from the Actions tab instead of building
+locally.
 
 ## Run
 
