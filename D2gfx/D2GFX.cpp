@@ -3153,14 +3153,12 @@ void __stdcall D2GFX_InitializeWindowSize() {
     // every -3dfx boot in this exe AND in retail Game.exe (shared registry value).
     // Clamp pre-existing poison here so a boot can never trip it again.
     if (__frame0.nContrast > 100) {
-      D2BOOT_MarkFmt("vidinit: registry Contrast=%u out of range -> clamped to 100", (unsigned)__frame0.nContrast); // [viddiag]
       __frame0.nContrast = 100;
     }
     D2GFX_SetOption(0xb, __frame0.nContrast);
     __frame0.dwGamma = 0x9b;
     Storm::Source::SReg::SRegLoadValue("Diablo II", "Gamma", 0, (int32_t*)&__frame0.dwGamma);
     D2GFXRenderedData.nGamma = __frame0.dwGamma;
-    D2BOOT_MarkFmt("vidinit: renderer=%d contrast=%u gamma=%u", (int)eRendererMode, (unsigned)__frame0.nContrast, (unsigned)__frame0.dwGamma); // [viddiag]
     D2GFX_SetGamma(__frame0.dwGamma);
 }
 

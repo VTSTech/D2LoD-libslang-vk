@@ -31,7 +31,6 @@
 #include "Storm/Source/SBMP.h"
 #include "Storm/Source/SFile.h"
 #include "globals/globals.h"
-#include "support/d2_boot.h" // [viddiag]
 #include "D2CMP/tagPALETTEENTRY.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -106,7 +105,6 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
     // halted every -3dfx boot. Clamp the weight so the halt is unreachable; the
     // registry/source clamps upstream make this a second line of defense.
     uint32_t nContrastWeight = gbWINDOWED;
-    D2BOOT_MarkFmt("glide SetGamma: nGamma=%d contrastWeight=%u", nGamma, (unsigned)nContrastWeight); // [viddiag]
     if (nContrastWeight > 100) {
       nContrastWeight = 100;
     }
@@ -123,7 +121,6 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
         FVar1 = 0;
         if (nGrGetResult) {
           pGammaTable = (FxU32*)Storm::SMem::SMemAlloc(nTableSize * 4, ".\\Src\\glCore.cpp", 0x42f, 0);
-          D2BOOT_MarkFmt("glide SetGamma: tableSize=%u maxBits=%08x (windowed branch)", (unsigned)nTableSize, (unsigned)fGammaVal.nValue); // [viddiag]
           Fog::Src::DataArrays::FOG_FillArrayWithRandomInts(nGamma, pGammaTable, (double)nContrastWeight, (uint32_t*)0x4, nTableSize, (1 << ((uint8_t)fGammaVal.nValue & 0x1f)) - 1);
           (*GLIDEDLL_grLoadGammaTable_16)(nTableSize, pGammaTable, pGammaTable, pGammaTable);
           nFreeResult = Storm::SMem::SMemFree(pGammaTable, ".\\Src\\glCore.cpp", 0x43a, 0);

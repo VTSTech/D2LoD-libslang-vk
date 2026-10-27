@@ -36,7 +36,6 @@
 #include "Storm/MessageStrc.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
-#include "support/d2_boot.h" // [viddiag]
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Launch/MainMenus.h"
 

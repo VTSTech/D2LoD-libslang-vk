@@ -9,8 +9,8 @@
 
 static HANDLE g_hBootLog = INVALID_HANDLE_VALUE;
 static char g_szBootLogPath[MAX_PATH] = "(unopened)";
-static CRITICAL_SECTION g_csBootLog; // [sounddiag] sound thread marks too now
-static BOOL g_bBootLogCsReady = FALSE; // [sounddiag]
+static CRITICAL_SECTION g_csBootLog; // serialized: marks come from several threads
+static BOOL g_bBootLogCsReady = FALSE;
 
 static void BootLogOpen() {
     if (g_hBootLog != INVALID_HANDLE_VALUE) return;
@@ -36,7 +36,7 @@ static void BootLogOpen() {
 }
 
 static void BootLogWrite(const char* pszLine) {
-    // [sounddiag] serialized: marks now come from the sound thread as well.
+    // Serialized: marks come from several threads (render, sound, main).
     if (g_bBootLogCsReady) EnterCriticalSection(&g_csBootLog);
     BootLogOpen();
     if (g_hBootLog != INVALID_HANDLE_VALUE) {
@@ -76,8 +76,8 @@ extern "C" void D2BOOT_Fail(const char* pszStage) {
 __attribute__((init_priority(130))) static struct D2BootInit {
     D2BootInit() {
         BootLogOpen();
-        InitializeCriticalSection(&g_csBootLog); // [sounddiag] before any marks can race
-        g_bBootLogCsReady = TRUE; // [sounddiag]
+        InitializeCriticalSection(&g_csBootLog); // before any marks can race
+        g_bBootLogCsReady = TRUE;
         char szLine[MAX_PATH + 64];
         wsprintfA(szLine, "static-init ok (CRT + globals); log = %s", g_szBootLogPath);
         BootLogWrite(szLine);

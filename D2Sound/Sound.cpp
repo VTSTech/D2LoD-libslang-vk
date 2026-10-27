@@ -16,8 +16,6 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "support/d2_boot.h" // [sounddiag]
-#include "support/d2_boot.h" // [sounddiag]
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -149,7 +147,6 @@ void __stdcall SOUND_InitDirectSound() {
     gbDirectSoundCritSecInitialized = 1;
     int hResultCall = DirectSoundCreate(0, &gnDirectSoundInitStatus, 0);
     if (hResultCall < 0) {
-      D2BOOT_MarkFmt("[sounddiag] DirectSoundCreate FAILED hr=%08x", (unsigned)hResultCall); // [sounddiag]
       szErrorMsg = SOUND_GetDirectSoundErrorString(hResultCall);
       Fog::Src::LogManager::LOGFILE_WriteStringToFile("DirectSound error: %s returned on DirectSoundCreate", szErrorMsg);
       SOUND_ShutdownDirectSound();
@@ -161,16 +158,11 @@ void __stdcall SOUND_InitDirectSound() {
     HWND hWnd = D2gfx::D2GFX::GetHwnd();
     HRESULT hResultDSCall = pIVar1->SetCooperativeLevel(gnDirectSoundInitStatus, hWnd, dwCoopLevel);
     if (hResultDSCall < 0) {
-      D2BOOT_MarkFmt("[sounddiag] SetCooperativeLevel FAILED hr=%08x hwnd=%p", (unsigned)hResultDSCall, (void*)hWnd); // [sounddiag]
       szErrorMsg = SOUND_GetDirectSoundErrorString(hResultDSCall);
       Fog::Src::LogManager::LOGFILE_WriteStringToFile("DirectSound error: %s returned on SetCooperativeLevel", szErrorMsg);
       SOUND_ShutdownDirectSound();
       return;
     }
-
-    // [sounddiag] R4: record the focus binding. GetHwnd() must be the real game window here - if it
-    // is 0 (window created later than expected), every secondary buffer is treated as unfocused.
-    D2BOOT_MarkFmt("[sounddiag] SetCooperativeLevel OK hwnd=%p level=%u", (void*)hWnd, dwCoopLevel); // [sounddiag]
 
     tPrimaryBufferDesc.dwReserved = 0;
     tPrimaryBufferDesc.dwSize = 0x14;
@@ -185,7 +177,6 @@ void __stdcall SOUND_InitDirectSound() {
     if (hResultDSCall < 0) {
       szErrorMsg = SOUND_GetDirectSoundErrorString(hResultDSCall);
       Fog::Src::LogManager::LOGFILE_WriteStringToFile("........DirectSound progress: %s returned on failed CreateSoundBuffer", szErrorMsg);
-      D2BOOT_MarkFmt("[sounddiag] primary CreateSoundBuffer FAILED hr=%08x", (unsigned)hResultDSCall); // [sounddiag]
       SOUND_ShutdownDirectSound();
       return;
     }
@@ -195,13 +186,11 @@ void __stdcall SOUND_InitDirectSound() {
     if (hResultDSCall < 0) {
       szErrorMsg = SOUND_GetDirectSoundErrorString(hResultDSCall);
       Fog::Src::LogManager::LOGFILE_WriteStringToFile("........DirectSound progress: %s returned on failed GetCaps", szErrorMsg);
-      D2BOOT_MarkFmt("[sounddiag] GetCaps FAILED hr=%08x", (unsigned)hResultDSCall); // [sounddiag]
       SOUND_ShutdownDirectSound();
       return;
     }
     if (gnDSoundPrimaryBufferDelay && gDSoundCapsBuffer.dwMaxHw3DAllBuffers < 0x10) {
       Fog::Src::LogManager::LOGFILE_WriteStringToFile("........DirectSound progress: %d buffers available is less than min needed %d buffers for 3d sound", gDSoundCapsBuffer.dwMaxHw3DAllBuffers, 0x10);
-      D2BOOT_MarkFmt("[sounddiag] 3D buffers too low: %u", (unsigned)gDSoundCapsBuffer.dwMaxHw3DAllBuffers); // [sounddiag]
       SOUND_ShutdownDirectSound();
       return;
     }
@@ -217,7 +206,6 @@ void __stdcall SOUND_InitDirectSound() {
     if (hResultDSCall < 0) {
       szErrorMsg = SOUND_GetDirectSoundErrorString(hResultDSCall);
       Fog::Src::LogManager::LOGFILE_WriteStringToFile("........DirectSound progress: %s returned on failed SetFormat", szErrorMsg);
-      D2BOOT_MarkFmt("[sounddiag] SetFormat FAILED hr=%08x", (unsigned)hResultDSCall); // [sounddiag]
       gpDSoundPrimaryBuffer->lpVtbl->Release(gpDSoundPrimaryBuffer);
       SOUND_ShutdownDirectSound();
       return;
@@ -241,7 +229,6 @@ void __stdcall SOUND_InitDirectSound() {
               SOUND_ReleaseEAXInterfaces();
               if (!gnSoundQualityMode) {
                 Fog::Src::LogManager::LOGFILE_WriteStringToFile("........DirectSound progress: Unsupported EAX or EAX emulation");
-                D2BOOT_Mark("[sounddiag] EAX unsupported -> attempt abandoned (fallback next)"); // [sounddiag]
                 SOUND_ShutdownDirectSound();
                 return;
               }
@@ -268,7 +255,6 @@ void __stdcall SOUND_InitDirectSound() {
     Src::D2SoundFast::SOUND_LoadRegistrySettings();
     Src::D2SoundSmp::SOUNDSMP_SetGlobalVolume(0xff);
     gnDirectSoundInitialized = 1;
-    D2BOOT_MarkFmt("[sounddiag] DirectSound init OK quality=%u", gnSoundQualityMode); // [sounddiag]
 }
 
 void __fastcall SOUND_Initialize(uint32_t dwLanguageCode, HWND hWnd) {
@@ -290,7 +276,6 @@ void __fastcall SOUND_Initialize(uint32_t dwLanguageCode, HWND hWnd) {
     g_bSoundDriverScanComplete = 0;
     g_hwndSoundWindow = hWnd;
     LanguageCode = dwLanguageCode;
-    D2BOOT_MarkFmt("[sounddiag] init enter lang=%u hwnd=%p", dwLanguageCode, (void*)hWnd); // [sounddiag]
     DirectSoundEnumerateA(SOUND_DetectLegacySoundDrivers, 0);
     if (gbHasLegacyEMU10K1Driver) {
       /* UINT uSize for GetWindowsDirectoryA */ /* LPSTR lpBuffer for GetWindowsDirectoryA */ GetWindowsDirectoryA(szWindowsDir, 0x104);
@@ -341,32 +326,25 @@ void __fastcall SOUND_Initialize(uint32_t dwLanguageCode, HWND hWnd) {
 
     gnDSoundPrimaryBufferDelay = 1;
     gnSound3DLoudness = 1;
-    D2BOOT_Mark("[sounddiag] attempt 1 (3d=1 delay=1)"); // [sounddiag]
     SOUND_InitDirectSound();
-    D2BOOT_MarkFmt("[sounddiag] attempt 1 -> initialized=%u", gnDirectSoundInitialized); // [sounddiag]
     if (gnDirectSoundInitialized) {
       return;
     }
 
     gnDSoundPrimaryBufferDelay = 1;
     gnSound3DLoudness = 0;
-    D2BOOT_Mark("[sounddiag] attempt 2 (3d=0 delay=1)"); // [sounddiag]
     SOUND_InitDirectSound();
-    D2BOOT_MarkFmt("[sounddiag] attempt 2 -> initialized=%u", gnDirectSoundInitialized); // [sounddiag]
     if (gnDirectSoundInitialized) {
       return;
     }
 
     gnDSoundPrimaryBufferDelay = 0;
     gnSound3DLoudness = 0;
-    D2BOOT_Mark("[sounddiag] attempt 3 (3d=0 delay=0)"); // [sounddiag]
     SOUND_InitDirectSound();
-    D2BOOT_MarkFmt("[sounddiag] attempt 3 -> initialized=%u", gnDirectSoundInitialized); // [sounddiag]
     if (gnDirectSoundInitialized) {
       return;
     }
 
-    D2BOOT_Mark("[sounddiag] ALL DirectSound attempts FAILED"); // [sounddiag]
     Fog::Src::LogManager::LOGFILE_WriteStringToFile("\tCouldn\'t initialize DirectSound");
 }
 
