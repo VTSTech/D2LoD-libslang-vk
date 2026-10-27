@@ -1065,8 +1065,8 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
             // The cache entry is disposable: drop this layer's chain the way
             // the layer-mismatch path does and keep playing instead of
             // halting. The next AUTOMAP_SaveCurrentLayer rebuilds the chain.
-            D2_FREE(pCellData);
-            AUTOMAP_InvalidateLayerEntry(0, hMapFile, (LPCVOID)&__frame0.nNextFilePos);
+            D2_FREE(nErrorAddress);
+            AUTOMAP_InvalidateLayerEntry(0, hMapFile, &__frame0.nNextFilePos);
             Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
             return;
           }
@@ -1104,8 +1104,8 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           Fog::Source::SFile::thunk_ReadFile(hFileHandle, nErrorAddress, sFileEntry.dwWallDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
           if (dwBytesRead != sFileEntry.dwWallDataSize) {
             // Same stale-entry tolerance as the floor read above.
-            D2_FREE(pCellData);
-            AUTOMAP_InvalidateLayerEntry(0, hMapFile, (LPCVOID)&__frame0.nNextFilePos);
+            D2_FREE(nErrorAddress);
+            AUTOMAP_InvalidateLayerEntry(0, hMapFile, &__frame0.nNextFilePos);
             Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
             return;
           }
@@ -1144,8 +1144,8 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
             Fog::Source::SFile::thunk_ReadFile(hFileHandle, nErrorAddress, sFileEntry.dwObjectDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
             if (dwBytesRead != sFileEntry.dwObjectDataSize) {
               // Same stale-entry tolerance as the floor read above.
-              D2_FREE(pCellData);
-              AUTOMAP_InvalidateLayerEntry(0, hMapFile, (LPCVOID)&__frame0.nNextFilePos);
+              D2_FREE(nErrorAddress);
+              AUTOMAP_InvalidateLayerEntry(0, hMapFile, &__frame0.nNextFilePos);
               Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
               return;
             }
@@ -1188,8 +1188,8 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           Fog::Source::SFile::thunk_ReadFile(hFileHandle, nErrorAddress, sFileEntry.dwExtraDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
           if (dwBytesRead != sFileEntry.dwExtraDataSize) {
             // Same stale-entry tolerance as the floor read above.
-            D2_FREE(pCellData);
-            AUTOMAP_InvalidateLayerEntry(0, hMapFile, (LPCVOID)&__frame0.nNextFilePos);
+            D2_FREE(nErrorAddress);
+            AUTOMAP_InvalidateLayerEntry(0, hMapFile, &__frame0.nNextFilePos);
             Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
             return;
           }
