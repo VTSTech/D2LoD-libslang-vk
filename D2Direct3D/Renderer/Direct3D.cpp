@@ -1816,7 +1816,13 @@ void * __stdcall Catch_All_006b4d4b() {
 
 BOOL __fastcall Initialize(HINSTANCE hInstance) {
     // Static local variables (originally global data)
-    static uint8_t gD3DAdapterInfoBuffer;
+    // [vanilla-plus fix 19d] was a 1-byte static; the SRegLoadString below caps the
+    // write at 0x100 bytes and retail itself writes "DeviceName" under VideoConfig
+    // (SaveDeviceConfigToRegistry, :585-606), so from the second D3D boot onward the
+    // load overran this byte by up to 255 bytes (§1 extent family, fix 19b sibling).
+    // The string is only an existence probe — the buffer is never read back — but the
+    // overrun was real. Restored to the 0x100 extent the call site promises.
+    static uint8_t gD3DAdapterInfoBuffer[0x100];
     static unsigned int gpD3DDevice8;
     static unsigned int gnD3DAdapterIndex;
 
@@ -1850,7 +1856,11 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
           }
 
           pnGuidSize = (uint32_t*)0x10;
-          nDeviceNameLoaded = Storm::Source::SReg::SRegLoadData((uint32_t*)szRegPath, "GUID", 0, &gsD3DAdapterGuid, 0x10, &pnGuidSize);
+          // [vanilla-plus fix 19c] the bare &gsD3DAdapterGuid was uint8_t* while the
+          // global was a 1-byte scalar; since fix 19b it is uint8_t[16], so &array is
+          // uint8_t(*)[16] and no longer converts to LPBYTE (field build error).
+          // Cast the decayed array pointer explicitly — same address, same 16 bytes.
+          nDeviceNameLoaded = Storm::Source::SReg::SRegLoadData((uint32_t*)szRegPath, "GUID", 0, (LPBYTE)gsD3DAdapterGuid, 0x10, &pnGuidSize);
           if (!nDeviceNameLoaded) {
             return 0;
           }

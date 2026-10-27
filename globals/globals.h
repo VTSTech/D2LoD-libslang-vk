@@ -2228,7 +2228,7 @@ extern uint8_t gabyFxamClassOffset[16];
 extern uint8_t gaCRT_FPremData_3;
 extern uint8_t gaCRT_PKWareLitLenBitsTableC[256];
 extern BOOL BOOL_0074c020;
-extern uint32_t gsD3DTextureDescTemplate;
+extern uint32_t gsD3DTextureDescTemplate[8]; // [vanilla-plus fix 19] true 32-byte DDPIXELFORMAT extent (was a 4-byte scalar; trailing 7 DWORDs were linker garbage)
 extern uint16_t gaD3DPerspectiveStripIndices[22];
 extern D2D3DTileCornerStrc gaD3DWallCornerTable[60];
 extern uint32_t gnExcelRecordFieldNotFound;
@@ -4156,7 +4156,7 @@ extern unsigned int gnFieldTableHalfHeight;
 extern unsigned int gdwDrlgLevelPlacementFlags;
 extern unsigned int UINT_0096d6a8;
 extern HeapManager gpHeapManager;
-extern uint8_t gsD3DAdapterGuid;
+extern uint8_t gsD3DAdapterGuid[16]; // [vanilla-plus fix 19] true 16-byte extent (was 1 byte; registry GUID load spilled into GlobalGreen/Blue/Red)
 extern unsigned int g_nVideoMemoryTotal;
 extern unsigned int g_nVideoMemoryFree;
 extern unsigned int gnD3DTextureCacheBlockSize;

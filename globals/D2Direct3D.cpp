@@ -76538,7 +76538,33 @@ IDirect3DTexture2 * gpD3DSmackerVideoTexture0[2] = { nullptr, nullptr };
 // Initialized scalars
 // =============================================================================
 
-uint32_t gsD3DTextureDescTemplate = 0x20;
+// [vanilla-plus fix 19] Restored the 32-byte DDPIXELFORMAT template. The Ghidra
+// export kept only the first DWORD (dwSize = 0x20) and typed it uint32_t, but
+// BOTH texture-creation helpers copy EIGHT DWORDs from its address:
+//   RENDERER_D3D_CreateSystemMemoryTexture (Direct3D.cpp:908)
+//   RENDERER_D3D_CreateSurfaceWithTexture  (Direct3D.cpp:2235)
+// In the rebuild the trailing 7 DWORDs were whatever the linker placed after
+// the 4-byte object, so every D3D texture CreateSurface received a garbage
+// pixel format and failed. First consumer in a fullscreen boot = font system
+// (InitializeFontSystem -> CreateFontTextures), whose ignored
+// CreateSystemMemoryTexture return left pMemorySurface = 0 -> Lock through
+// null -> C0000005 read of 0 (d2crash 2026-10-27 13:33,
+// RENDERER_D3D_CreateFontTextures+0x219; symbolized by user's d2exe.map).
+// Values corroborated in-tree, twice: D3D_EnumTextureFormatsCallback checks
+// the same fields (+4=0x41 DDPF_RGB|DDPF_ALPHAPIXELS, +0xC=16bpp, +0x10=0x7C00,
+// +0x14=0x3E0, +0x18=0x1F, +0x1C=0x8000) as its "supported format" predicate,
+// and the g_Palette16Bit packer emits A1R5G5B5 (three 5-bit channels with
+// rounding + MSB alpha). Retail carries A1R5G5B5 .data here.
+uint32_t gsD3DTextureDescTemplate[8] = {
+    0x00000020,  // dwSize            = sizeof(DDPIXELFORMAT)
+    0x00000041,  // dwFlags           = DDPF_RGB | DDPF_ALPHAPIXELS
+    0x00000000,  // dwFourCC          = none
+    0x00000010,  // dwRGBBitCount     = 16
+    0x00007c00,  // dwRBitMask        = A1R5G5B5 red
+    0x000003e0,  // dwGBitMask        = green
+    0x0000001f,  // dwBBitMask        = blue
+    0x00008000   // dwRGBAlphaBitMask = alpha
+};
 unsigned int g_nVideoMemoryTotal = {};
 unsigned int g_nVideoMemoryFree = {};
 unsigned int gnD3DTextureCacheBlockSize = {};
@@ -76587,7 +76613,14 @@ IDirect3DTexture2 * gpD3DSubtileMemoryTexture = 0;
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t gsD3DAdapterGuid;
+// [vanilla-plus fix 19] True 16-byte extent. The export typed it as a 1-byte
+// scalar, but SRegLoadData("Diablo II\\VideoConfig", "GUID") writes 16 bytes
+// here every D3D boot (Direct3D.cpp:1853) and DirectDrawCreate consumes it as
+// a full GUID (Direct3D.cpp:2280, when dwFlags bit0 is clear). As a 1-byte
+// object the write spilled 15 bytes into the adjacent BSS globals
+// GlobalGreen/GlobalBlue/GlobalRed — the D3D vertex-lighting tint state used
+// at Direct3D.cpp:4534-4540 — corrupting lighting with registry GUID bytes.
+uint8_t gsD3DAdapterGuid[16];
 uint8_t GlobalGreen;
 uint8_t GlobalBlue;
 uint8_t GlobalRed;
