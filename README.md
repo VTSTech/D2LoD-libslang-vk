@@ -24,7 +24,7 @@ resolution — is the same one proven in
 (Diablo/Hellfire) and
 [chocolate-doom-vk](https://github.com/VTSTech/chocolate-doom-vk) (Doom).
 
-## Status — 0.4.6
+## Status — 0.4.5
 
 - The full game renders correctly through the Vulkan swapchain: menu, world, units,
   UI, shadows, text, cutscenes (field-verified rounds 4–12 on real hardware; see
@@ -60,8 +60,15 @@ resolution — is the same one proven in
   file is the truth — even with no chain running, where the present-path hot
   reload never fires), and refreshed live while it is up: conf hot-reloads and
   F11/F12 presses update it in place. Works with or without a preset chain;
-  `overlay=0` in glide3xvk.ini hides it with the rest of the overlay. Since
-  0.4.6, **Up/Down** move a green selection cursor through its option lines.
+  `overlay=0` in glide3xvk.ini hides it with the rest of the overlay.
+  **Up/Down** move a green selection cursor through its option lines, and
+  **Left/Right** change the selected option — one press = one step written
+  straight into `d2slangvk.conf` (a surgical single-key rewrite that keeps
+  comments, spacing and key order; every consumer hot-reloads the file, so
+  the change lands live like a hand edit): preset cycles the game dir's
+  `*.slangp` files, scale/vsync/aspect/base_res/window step their token
+  lists, the toggles flip, controller_sens/aimsens/deadzone step and clamp
+  exactly like their conf fixups.
 - **Window size presets (0.4.5)**: `window=native|240p|480p|576p|720p|768p|1080p|desktop|WxH`
   and `borderless=0|1` in `d2slangvk.conf` size the OS window the game presents
   into — canonical sizes (240p=320x240 ... 1080p=1920x1080; `desktop` =
@@ -141,7 +148,7 @@ No build required:
 4. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
 
 A healthy run looks like: the menu renders, play works, and `glide3x.log` beside the
-exe carries the session banner (`glide3xvk 0.4.6 <build-id>`), periodic `frame N:`
+exe carries the session banner (`glide3xvk 0.4.5 <build-id>`), periodic `frame N:`
 summaries, and a clean exit summary on shutdown. With a preset configured, the log
 adds `slang: chain ready '<preset>' ...` and per-event slang lines; without one, it
 says so once. If 32-bit Vulkan is unavailable
@@ -210,7 +217,7 @@ aspect=auto
 base_res=1x
 ```
 
-### Hotkeys (in-game, 0.4.3 + 0.4.6)
+### Hotkeys (in-game, 0.4.3 + 0.4.5)
 
 While the game window has focus — the same scheme as Chocolate-Doom-VK
 (F11/F12 require a chain to be filtering frames; Shift+V works always):
@@ -223,18 +230,25 @@ While the game window has focus — the same scheme as Chocolate-Doom-VK
   from disk every time it opens, refreshed live on conf hot-reload and
   F11/F12 presses while it is up. Works with or without a chain — the
   `window=` / `controller=` options matter without one. Press again to hide.
-- **Up/Down** (0.4.6) — while the conf panel is up, move its green selection
+- **Up/Down** (0.4.5) — while the conf panel is up, move its green selection
   cursor through the option lines (clamped at the ends; every move re-parses
   the conf and is logged). While the panel is hidden the arrow keys are
   untouched — the game keeps them.
+- **Left/Right** (0.4.5) — while the conf panel is up, change the selected
+  option: one press = one step, written straight into `d2slangvk.conf` and
+  applied live through the normal conf hot-reload path (see the Shift+V
+  bullet above for the per-option steps). List ends, an empty preset dir
+  and failed writes touch nothing and are logged.
 
 Each press shows a toast line in the overlay box (`aspect 16:9`,
 `shader base 2x`, `conf overlay on`) for ~2 seconds and logs a
-`slang: F11/F12 ...` / `overlay: conf panel ...` line. All
-picks are **session-only**: they are never written back to `d2slangvk.conf`,
-and a conf hot-reload snaps them back to whatever the file says. The window
-presets have **no hotkey** by design — F10 is a game skill-slot bind and the
-wrapper must not steal game keys; edit `window=` in the conf instead.
+`slang: F11/F12 ...` / `overlay: conf panel ...` line. The F11/F12 picks
+are **session-only**: they are never written back to `d2slangvk.conf`, and
+a conf hot-reload snaps them back to whatever the file says. The panel's
+Left/Right edits are the opposite — they write the file, which is what makes
+them live for every consumer. The window presets have **no hotkey** by
+design — F10 is a game skill-slot bind and the wrapper must not steal game
+keys; the panel's window row (or the conf itself) is the way to change them.
 
 ## Build from source
 

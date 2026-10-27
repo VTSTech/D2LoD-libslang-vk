@@ -7,34 +7,6 @@ Format follows Keep a Changelog. Where a field round already ran, entries cite w
 glide3x.log showed on real hardware (RX 560, Vulkan 1.3, windowed). Commit refs are on
 branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
 
-## [0.4.6] - 2026-10-28 (conf panel arrow-key selection)
-
-No field round yet — code + host-verified only (panel + selection checks,
-ASan/UBSan clean).
-
-### Added
-
-- **Conf panel selection** (g3x_overlay + g3x_slang): while the Shift+V
-  panel (the 0.4.5 addendum below) is up, **Up/Down** move a green selection
-  cursor through the option lines — the selected row draws as a dim-green
-  band with bright-green glyphs (`#20FF20`-ish) against the white text, a
-  menu cursor in the same hue D2's own UI uses for picked text. The
-  `d2slangvk.conf` header line and the hint footer are not selectable; the
-  cursor clamps at the ends (no wrap — on a 13-option list a wrap reads as a
-  glitch); each actual move re-parses the conf (the file-is-truth rule holds
-  for selection redraws too, and the panel picks up any conf edit that
-  landed since the last refresh). Same focus rule as every hotkey here
-  (presses made in another window never move it), edge-latched like
-  Shift+V/F11/F12, and each move logs `overlay: conf panel sel <key>`. While
-  the panel is hidden the arrow keys are untouched — the game keeps them.
-  The footer hint now reads `[Up/Down] select - [Shift+V] hide`.
-
-Version note: the Shift+V panel was developed under a temporary 0.4.6 label,
-but 0.4.5 was never tagged before the release that shipped it — the panel is
-documented as the 0.4.5 addendum below, and 0.4.6 is this selection set.
-Builds from this tree report `glide3xvk 0.4.6` in the overlay tag box and
-through `grGetString(GR_RENDERER)`.
-
 ## [0.4.5] - 2026-10-25 (controller support + cursor-home; window presets config-only; CPU raster perf round 1)
 
 Field triggers: the 0.4.3 full-screen field log (round-17 build, crtglow_lanczos
@@ -294,9 +266,42 @@ never tagged before)
   hot-reloads and F11/F12 presses. Same focus rule as F11/F12 (presses made
   in another window never toggle), same fail-soft look (65%-black backdrop,
   8x8 font, drop shadow), honors the `[glide3xvk] overlay=` ini switch, and
-  toasts + logs on toggle (`overlay: conf panel on/off (Shift+V)`). The
-  0.4.6 selection set on top of it adds **Up/Down** arrow navigation with a
-  green cursor — see [0.4.6] above.
+  toasts + logs on toggle (`overlay: conf panel on/off (Shift+V)`).
+- **Conf panel arrows: selection + value editing** (g3x_overlay +
+  g3x_slang): while the panel is up, **Up/Down** move a green selection
+  cursor through the option lines — the selected row draws as a dim-green
+  band with bright-green glyphs (`#20FF20`-ish) against the white text, a
+  menu cursor in the same hue D2's own UI uses for picked text. The
+  `d2slangvk.conf` header line and the hint footer are not selectable; the
+  cursor clamps at the ends (no wrap — on a 13-option list a wrap reads as a
+  glitch); each move re-parses the conf (the file-is-truth rule holds for
+  selection redraws too, and the panel picks up any conf edit that landed
+  since the last refresh) and logs `overlay: conf panel sel <key>`.
+  **Left/Right** change the selected option: one press = one step, written
+  straight into `d2slangvk.conf` and pushed through the normal conf
+  machinery, so it lands live exactly like a hand edit — aspect/base_res
+  snap on the spot, scale reads per frame, vsync at the next swapchain
+  (re)creation, window/borderless/controller on their own mtime probes.
+  The write is surgical (g3x_slang_conf_rewrite_text, host-tested):
+  comments, blank lines, spacing, key order and line endings survive
+  byte-for-byte; only the edited key's assignment changes (every duplicate
+  of it — the parser is last-one-wins); same-line comments are kept; a
+  missing key is appended at the end of the `[slangvk]` section, a missing
+  section or conf is synthesized. The steps mirror the consumers' own
+  fixups, so what the arrows write is always a value the parser accepts:
+  preset cycles the game dir's `*.slangp` files (sorted, `(none)` at the
+  front; subdir/absolute presets stay file-edit-only), scale
+  fit/stretch/integer, vsync auto/off/on, aspect auto/4:3/16:10/16:9 (the
+  F11 order), base_res 1x-4x, window native/240p/480p/576p/720p/768p/
+  1080p/desktop (the preset table; `WxH` stays file-edit-only),
+  borderless/controller/moveclick/home toggle, controller_sens 0.25 steps
+  (0.25-16), controller_aimsens 0.05 steps (0.05-4), controller_deadzone
+  5% steps (1-80). Every change toasts (`aspect 16:9`) and logs
+  (`overlay: conf aspect = 16:9`); a list end, an empty preset dir or a
+  failed write touches nothing and logs why. Same focus rule and edge
+  latches as every hotkey here; while the panel is hidden the arrow keys
+  are untouched — the game keeps them. The footer hint now reads
+  `[Up/Down] select - [Left/Right] change - [Shift+V] hide`.
 
 ### Fixed (0.4.5 addendum)
 

@@ -1122,7 +1122,7 @@ bool g3x_frame_present() {
     g3x_vk_present_extent(&ext_w, &ext_h);
     if (!ext_w || !ext_h || !s_px) return false;
 
-    // 0.4.6: Shift+V conf panel poll — on the present seam like the overlay
+    // 0.4.5: Shift+V conf panel poll — on the present seam like the overlay
     // itself, and UNCONDITIONALLY (the F11/F12 slang hotkeys only poll while
     // a chain filters frames; the conf panel also covers the controller=/
     // window= options that matter without one).

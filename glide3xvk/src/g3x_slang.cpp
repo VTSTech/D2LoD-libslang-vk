@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>            // atof/atoi (controller_sens/deadzone)
 #include <cstring>
+#include <string>             // g3x_slang_conf_rewrite_text (0.4.5 panel edits)
 
 // The portable logic below (parser + rect math) also compiles on the Linux
 // host-test toolchain, where the MSVC CRT name does not exist.
@@ -180,6 +181,136 @@ G3xSlangRect g3x_slang_aspect_rect(int aspect, unsigned out_w, unsigned out_h) {
     return r;
 }
 
+// ---- 0.4.5 conf-panel value editing -----------------------------------------
+//
+// The conf panel's Left/Right keys change the selected option by WRITING the
+// new value back to d2slangvk.conf — a surgical single-key rewrite that
+// keeps the file the user owns: comments, blank lines, spacing, key order
+// and line endings all survive byte-for-byte; only the edited key's
+// assignment changes. The pure line engine here takes the file text and
+// returns the rewritten text; conf_write_key (real build, below) wraps it
+// with file I/O. External linkage is deliberate — this is the host-test seam
+// (scripts/test_conf_edit.cpp); it is not in the public header.
+//
+// Rules (mirroring the parser):
+//   - assignments only count inside [slangvk] (case-insensitive, exact name)
+//   - a key matches only when the WHOLE key equals the wanted name — the
+//     prefix trap (controller= vs controller_sens=) must not fire
+//   - commented-out assignments ('; key=...') are comments, not assignments;
+//     they are left alone
+//   - EVERY assignment of the key in the section becomes the new value (the
+//     parser is last-one-wins, so leaving a later stray would undo the edit
+//     on the next read)
+//   - same-line trailing comments survive the rewrite
+//   - a key not present is inserted at the end of the [slangvk] section
+//     (after its last non-blank line, before trailing blanks / the next
+//     header; right after the header itself when the section is empty); a
+//     missing section — or missing text — appends/synthesizes one
+//   - the original EOL style (\r\n, \n, lone \r) is preserved per line; new
+//     lines use \r\n (the conf is a Windows file)
+std::string g3x_slang_conf_rewrite_text(const char* text,
+                                        const char* key, const char* value) {
+    if (!key || !key[0] || !value) return text ? text : "";
+
+    char pair[640];
+    std::snprintf(pair, sizeof(pair), "%s=%s", key, value);
+    const size_t klen = std::strlen(key);
+
+    std::string out;
+    const size_t tlen = text ? std::strlen(text) : 0;
+    out.reserve(tlen + sizeof(pair) + 32);
+
+    bool   in_sec = false, found = false, have_sec = false;
+    size_t ins_at = 0;          // end-of-section insert point (a line boundary)
+
+    const char* p = text ? text : "";
+    while (*p) {
+        const char* line = p;
+        while (*p && *p != '\n' && *p != '\r') ++p;
+        const size_t llen = (size_t)(p - line);
+
+        // comment-stripped, trimmed working copy (the parser's rules)
+        char work[640];
+        size_t n = 0;
+        for (size_t i = 0; i < llen && n + 1 < sizeof(work); ++i) {
+            const char c = line[i];
+            if (c == ';' || c == '#') break;
+            work[n++] = c;
+        }
+        work[n] = '\0';
+        char* s = work;
+        while (*s == ' ' || *s == '\t') ++s;
+        size_t sl = std::strlen(s);
+        while (sl && (s[sl - 1] == ' ' || s[sl - 1] == '\t')) s[--sl] = '\0';
+
+        bool hit    = false;
+        bool is_hdr = s[0] == '[';
+        if (is_hdr) {
+            const char* close = std::strchr(s, ']');
+            in_sec = close && _strnicmp(s, "[slangvk]", (size_t)(close - s)) == 0
+                     && (size_t)(close - s) == 8;
+            if (in_sec) have_sec = true;     // remember: a section exists
+        } else if (in_sec && s[0]) {
+            char* eq = std::strchr(s, '=');
+            if (eq) {
+                *eq = '\0';
+                size_t kl = (size_t)(eq - s);
+                while (kl && (s[kl - 1] == ' ' || s[kl - 1] == '\t')) s[--kl] = '\0';
+                hit = kl == klen && _strnicmp(s, key, klen) == 0;
+            }
+        }
+
+        if (hit) {
+            out += pair;
+            for (size_t i = 0; i < llen; ++i)    // keep a same-line comment
+                if (line[i] == ';' || line[i] == '#') {
+                    out += ' ';
+                    out.append(line + i, llen - i);
+                    break;
+                }
+            found = true;
+        } else {
+            out.append(line, llen);
+        }
+        // EOL run, verbatim (\r\n / \n / lone \r; runs of both count as one)
+        const char* run = p;
+        while (*p == '\r' || *p == '\n') out += *p++;
+
+        // insert-point bookkeeping, after the line landed: a [slangvk] header
+        // opens the section (insert right under it in an empty section), and
+        // every non-blank in-section line moves the point past itself + its
+        // FIRST line terminator — so a blank line carried by the same run (the
+        // parser-style walk swallows "\r\n\r\n" into one run) never drags the
+        // insert past it: the key lands where a hand edit would put it
+        if (in_sec && (is_hdr || s[0])) {
+            const size_t run_len = (size_t)(p - run);
+            size_t t = 1;
+            if (run_len >= 2 && ((run[0] == '\r' && run[1] == '\n') ||
+                                 (run[0] == '\n' && run[1] == '\r'))) t = 2;
+            ins_at = out.size() - run_len + t;
+        }
+    }
+
+    if (!found) {
+        std::string add;
+        if (!have_sec) {                     // no [slangvk] anywhere: append one
+            if (out.empty()) add += "[slangvk]\r\n";       // synthesize the file
+            else             add += "\r\n[slangvk]\r\n";   // section at EOF
+            add += pair;
+            add += "\r\n";
+            out += add;
+        } else {
+            if (ins_at > out.size()) ins_at = out.size();
+            if (ins_at > 0 && out[ins_at - 1] != '\n' && out[ins_at - 1] != '\r')
+                add += "\r\n";               // file ends mid-line (no newline)
+            add += pair;
+            add += "\r\n";
+            out.insert(ins_at, add);         // end of the LAST [slangvk] section
+        }
+    }
+    return out;
+}
+
 // ---------------------------------------------------------------------------
 // Stub build (no libslang-vk checkout): same API, always inactive.
 // ---------------------------------------------------------------------------
@@ -221,6 +352,7 @@ const uint8_t* g3x_slang_test_last_frame(unsigned* w, unsigned* h) {
 
 #include "vk_backend.h"          // windows.h + the g3x_vk_slang_* services
 #include "g3x_overlay.h"         // 0.4.2: the active-shader line on the overlay
+#include "g3x_window.h"          // 0.4.5: the window= preset table (Left/Right cycling)
 
 #include <volk.h>                // vulkan.h with VK_NO_PROTOTYPES (auto-defined)
 #include <slangvk/c.h>           // the C API (POD only — fine from C++17)
@@ -273,17 +405,18 @@ static bool         s_prev_f11 = false, s_prev_f12 = false;
 // 0.4.5: Shift+V edge latch for the conf panel (same scheme as F11/F12).
 static bool         s_prev_shiftv = false;
 
-// 0.4.6 nav: the panel's arrow-key selection. s_conf_sel indexes the OPTION
+// 0.4.5 nav: the panel's arrow-key selection. s_conf_sel indexes the OPTION
 // lines of the pushed list (1..n-2 — the "d2slangvk.conf" header and the
 // hint footer are not selectable), s_conf_opt_count is what the last
 // conf_panel_refresh pushed, and s_conf_sel_key is the selected option's
 // key ("aspect", "controller_sens", ...) captured at refresh time so the
-// poll's log line can name it without re-parsing. The Up/Down edge latches
-// follow the same scheme as Shift+V/F11/F12.
+// poll and the editor can name it without re-parsing. The Up/Down/Left/
+// Right edge latches follow the same scheme as Shift+V/F11/F12.
 static int          s_conf_sel       = 0;
 static unsigned     s_conf_opt_count = 0;
 static char         s_conf_sel_key[24];
 static bool         s_prev_up = false, s_prev_down = false;
+static bool         s_prev_left = false, s_prev_right = false;
 
 // 0.4.3: the shader base resolution's upscaled input image (game res x
 // s_base_live). The game frame is uploaded to s_img exactly as before, then
@@ -531,7 +664,7 @@ void g3x_slang_hotkeys_poll() {
     s_prev_f12 = f12;
 }
 
-// ---- 0.4.6 Shift+V conf panel ----------------------------------------------
+// ---- 0.4.5 Shift+V conf panel ----------------------------------------------
 
 // Rebuilds the overlay panel's lines. ALWAYS re-parses d2slangvk.conf from
 // disk (the file is the truth — this runs even when no chain is live and the
@@ -616,9 +749,10 @@ static void conf_panel_refresh() {
                   c.controller_moveclick < 0 ? "off" : "on");
     std::snprintf(add(), sizeof(lines[0]), "controller_home      %s",
                   c.controller_home < 0 ? "off" : "on");
-    std::snprintf(add(), sizeof(lines[0]), "[Up/Down] select - [Shift+V] hide");
+    std::snprintf(add(), sizeof(lines[0]),
+                  "[Up/Down] select - [Left/Right] change - [Shift+V] hide");
 
-    // 0.4.6 nav: the option lines sit between the header (line 0) and the
+    // 0.4.5 nav: the option lines sit between the header (line 0) and the
     // hint footer (the last line). Clamp the cursor to that range so a
     // refresh can never leave it pointing at the header, the footer or past
     // the end (the formatter's shape is fixed today, but this stays correct
@@ -648,6 +782,211 @@ static void conf_panel_refresh_if_visible() {
     if (g3x_overlay_conf_panel_visible()) conf_panel_refresh();
 }
 
+// ---- 0.4.5 value editing (Left/Right on the selected option) ----------------
+
+// Lists the game dir's *.slangp presets (sorted, case-insensitive) for the
+// preset row's Left/Right cycling. The conf's preset= resolves relative
+// paths against this dir, so a scanned basename round-trips through the
+// parser exactly. Subdirectory presets stay file-edit-only — the panel
+// shows basenames only anyway (an 8px-column list has no room for paths).
+static bool scan_presets(char (*names)[64], unsigned max, unsigned* count) {
+    *count = 0;
+    if (!s_exe_dir[0] && !exe_dir_of(s_exe_dir, sizeof(s_exe_dir))) return false;
+    char pat[MAX_PATH];
+    std::snprintf(pat, sizeof(pat), "%s\\*.slangp", s_exe_dir);
+    WIN32_FIND_DATAA fd{};
+    HANDLE h = FindFirstFileA(pat, &fd);
+    if (h == INVALID_HANDLE_VALUE) return true;    // none found is not an error
+    do {
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+        if (*count >= max) break;
+        std::snprintf(names[*count], 64, "%s", fd.cFileName);
+        unsigned i = (*count)++;                   // insertion sort, ci-order
+        while (i && _stricmp(names[i], names[i - 1]) < 0) {
+            char tmp[64];
+            std::memcpy(tmp, names[i], sizeof(tmp));
+            std::memcpy(names[i], names[i - 1], sizeof(tmp));
+            std::memcpy(names[i - 1], tmp, sizeof(tmp));
+            --i;
+        }
+    } while (FindNextFileA(h, &fd));
+    FindClose(h);
+    return true;
+}
+
+// File I/O around g3x_slang_conf_rewrite_text: read d2slangvk.conf, rewrite
+// <key>=<value>, write the result back whole. CREATE_ALWAYS truncates in one
+// call and FILE_SHARE_READ keeps the other conf readers (window/controller
+// ticks, our own hot-reload probe) able to open the file meanwhile — they
+// re-probe mtime and take the change as a normal on-disk edit, which is
+// exactly the live-apply path this feature rides.
+static bool conf_write_key(const char* key, const char* value) {
+    if (!key || !key[0] || !value) return false;
+    char path[MAX_PATH];
+    if (!conf_path_of(path, sizeof(path))) return false;
+
+    char* text = read_text_file(path, nullptr);    // no file yet = synthesized
+    std::string out = g3x_slang_conf_rewrite_text(text, key, value);
+    if (text) HeapFree(GetProcessHeap(), 0, text);
+    if (out.empty()) return false;                 // rewrite never returns empty
+
+    HANDLE h = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ, nullptr,
+                           CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (h == INVALID_HANDLE_VALUE) return false;
+    DWORD wrote = 0;
+    const BOOL ok = WriteFile(h, out.data(), (DWORD)out.size(), &wrote, nullptr);
+    CloseHandle(h);
+    return ok && wrote == (DWORD)out.size();
+}
+
+// One Left/Right step on the selected option. Reads + parses the conf fresh
+// (the file is the truth — the same opening move as conf_panel_refresh, and
+// the panel's display lags at most one refresh behind the file), picks the
+// neighbor value for the selected key, and writes it back with the surgical
+// single-key rewrite. Returns false (nothing touched) at a list end, when
+// there is nothing to cycle (no .slangp files in the game dir), or when the
+// write fails. On success *desc carries the new value's display text for
+// the toast/log; the caller then runs reread_conf(), which routes the edit
+// through the exact machinery a hand edit takes — aspect/base_res snap
+// immediately (the session values re-sync to the file), scale is read per
+// frame, vsync at the next swapchain (re)creation, and window=/borderless=/
+// controller= on their own mtime probes (32nd frame / ~2 s). Steps and
+// clamps mirror the consumers' own fixups (g3x_ctrl_conf_fixup, the parser's
+// token lists, the window preset table), so what the arrows write is always
+// a value the parser accepts and the panel displays.
+static bool conf_panel_edit(int dir, char* desc, size_t desc_cap) {
+    if (desc && desc_cap) desc[0] = '\0';
+    if (!dir || !s_conf_opt_count || !s_conf_sel_key[0]) return false;
+    dir = dir < 0 ? -1 : 1;
+
+    G3xSlangConf c;
+    bool have_file = false;
+    char path[MAX_PATH];
+    if (conf_path_of(path, sizeof(path))) {
+        char* text = read_text_file(path, nullptr);
+        if (text) {
+            g3x_slang_conf_parse(text, &c);
+            HeapFree(GetProcessHeap(), 0, text);
+            have_file = true;
+        }
+    }
+    if (!have_file) {                          // same defaults reread_conf uses
+        std::memset(&c, 0, sizeof(c));
+        c.scale    = G3XSLANG_SCALE_FIT;
+        c.vsync    = -1;
+        c.aspect   = G3XSLANG_ASPECT_AUTO;
+        c.base_res = 1;
+    }
+
+    const char* key = s_conf_sel_key;
+    char val[560];                             // preset= caps at 48 in the panel,
+    val[0] = '\0';                             // 512 in the struct; both fit
+
+    if (!_stricmp(key, "preset")) {
+        char names[32][64];
+        unsigned cnt = 0;
+        if (!scan_presets(names, 32, &cnt) || !cnt) return false;
+        const char* cur = c.preset;            // basename: what the panel shows
+        for (const char* q = c.preset; *q; ++q)
+            if (*q == '/' || *q == '\\') cur = q + 1;
+        int idx = -1;
+        for (unsigned i = 0; i < cnt; ++i)
+            if (!_stricmp(cur, names[i])) { idx = (int)i; break; }
+        const int nx = idx + dir;              // -1 = "(none)", the list front
+        if (nx < -1 || nx >= (int)cnt) return false;
+        if (nx >= 0) std::snprintf(val, sizeof(val), "%s", names[nx]);
+        std::snprintf(desc, desc_cap, "%.44s", nx < 0 ? "(none)" : names[nx]);
+    } else if (!_stricmp(key, "scale")) {
+        static const char* const kScale[3] = { "fit", "stretch", "integer" };
+        int i = c.scale;
+        if (i < 0 || i > 2) i = G3XSLANG_SCALE_FIT;
+        const int nx = i + dir;
+        if (nx < 0 || nx > 2) return false;
+        std::snprintf(val, sizeof(val), "%s", kScale[nx]);
+        std::snprintf(desc, desc_cap, "%s", kScale[nx]);
+    } else if (!_stricmp(key, "vsync")) {
+        int i = c.vsync;                       // -1 auto, 0 off, 1 on
+        if (i < -1 || i > 1) i = -1;
+        const int nx = i + dir;
+        if (nx < -1 || nx > 1) return false;
+        std::snprintf(val, sizeof(val), "%s", nx < 0 ? "" : nx ? "1" : "0");
+        std::snprintf(desc, desc_cap, "%s", nx < 0 ? "auto" : nx ? "on" : "off");
+    } else if (!_stricmp(key, "aspect")) {
+        int i = c.aspect;
+        if (i < 0 || i >= G3XSLANG_ASPECT_COUNT) i = G3XSLANG_ASPECT_AUTO;
+        const int nx = i + dir;
+        if (nx < 0 || nx >= G3XSLANG_ASPECT_COUNT) return false;
+        std::snprintf(val, sizeof(val), "%s", aspect_name(nx));
+        std::snprintf(desc, desc_cap, "%s", aspect_name(nx));
+    } else if (!_stricmp(key, "base_res")) {
+        int i = c.base_res;
+        if (i < 1 || i > 4) i = 1;
+        const int nx = i + dir;
+        if (nx < 1 || nx > 4) return false;
+        std::snprintf(val, sizeof(val), "%dx", nx);
+        std::snprintf(desc, desc_cap, "%dx", nx);
+    } else if (!_stricmp(key, "window")) {
+        int i = g3x_window_preset_index(c.window[0] ? c.window : "native");
+        if (i < 0) i = 0;                      // WxH/junk arrows from native
+        unsigned cnt = 0;
+        const G3xWindowPreset* t = g3x_window_preset_table(&cnt);
+        const int nx = i + dir;
+        if (nx < 0 || nx >= (int)cnt) return false;
+        std::snprintf(val, sizeof(val), "%s", t[nx].name);
+        std::snprintf(desc, desc_cap, "%s", t[nx].name);
+    } else if (!_stricmp(key, "borderless")) {
+        std::snprintf(val, sizeof(val), "%d", c.borderless ? 0 : 1);
+        std::snprintf(desc, desc_cap, "%s", c.borderless ? "off" : "on");
+    } else if (!_stricmp(key, "controller")) {
+        std::snprintf(val, sizeof(val), "%d", c.controller ? 0 : 1);
+        std::snprintf(desc, desc_cap, "%s", c.controller ? "off" : "on");
+    } else if (!_stricmp(key, "controller_sens")) {
+        float v = c.controller_sens;           // g3x_ctrl_conf_fixup's rules
+        if (v <= 0.0f) v = 1.0f;
+        if (v > 16.0f) v = 16.0f;
+        float nv = v + 0.25f * dir;
+        if (nv < 0.25f) nv = 0.25f;
+        if (nv > 16.0f) nv = 16.0f;
+        if (nv == v) return false;
+        std::snprintf(val, sizeof(val), "%.2f", nv);
+        std::snprintf(desc, desc_cap, "%.2f", nv);
+    } else if (!_stricmp(key, "controller_aimsens")) {
+        float v = c.controller_aimsens;
+        if (v <= 0.0f) v = 0.35f;
+        if (v < 0.05f) v = 0.05f;
+        if (v > 4.0f)  v = 4.0f;
+        float nv = v + 0.05f * dir;
+        if (nv < 0.05f) nv = 0.05f;
+        if (nv > 4.0f)  nv = 4.0f;
+        if (nv == v) return false;
+        std::snprintf(val, sizeof(val), "%.2f", nv);
+        std::snprintf(desc, desc_cap, "%.2f", nv);
+    } else if (!_stricmp(key, "controller_deadzone")) {
+        int v = c.controller_deadzone;
+        if (v <= 0) v = 15;
+        if (v < 1)  v = 1;
+        if (v > 80) v = 80;
+        int nv = v + 5 * dir;
+        if (nv < 1)  nv = 1;
+        if (nv > 80) nv = 80;
+        if (nv == v) return false;
+        std::snprintf(val, sizeof(val), "%d", nv);
+        std::snprintf(desc, desc_cap, "%d%%", nv);
+    } else if (!_stricmp(key, "controller_moveclick")) {
+        const int nx = c.controller_moveclick < 0 ? 1 : 0;   // toggles
+        std::snprintf(val, sizeof(val), "%d", nx);
+        std::snprintf(desc, desc_cap, "%s", nx ? "on" : "off");
+    } else if (!_stricmp(key, "controller_home")) {
+        const int nx = c.controller_home < 0 ? 1 : 0;
+        std::snprintf(val, sizeof(val), "%d", nx);
+        std::snprintf(desc, desc_cap, "%s", nx ? "on" : "off");
+    } else {
+        return false;                          // unknown option: nothing to edit
+    }
+
+    return conf_write_key(key, val);
+}
+
 // Edge-polled from the present path (g3x_frame_present) on every frame, so
 // the panel works with no chain active — the F11/F12 gate lives in
 // g3x_slang_present, this one is its always-on sibling. Same focus rule:
@@ -655,8 +994,10 @@ static void conf_panel_refresh_if_visible() {
 void g3x_slang_conf_panel_poll() {
     if (GetForegroundWindow() != g_vk.hwnd) {
         s_prev_shiftv = false;                   // don't queue presses made elsewhere
-        s_prev_up    = false;
-        s_prev_down  = false;
+        s_prev_up     = false;
+        s_prev_down   = false;
+        s_prev_left   = false;
+        s_prev_right  = false;
         return;
     }
     const bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
@@ -676,7 +1017,7 @@ void g3x_slang_conf_panel_poll() {
     }
     s_prev_shiftv = down;
 
-    // 0.4.6: Up/Down move the green selection cursor while the panel is up.
+    // 0.4.5: Up/Down move the green selection cursor while the panel is up.
     // Same focus rule (unfocused presses are latched off above), edge-latch
     // like every other hotkey here, clamped at the ends — no wrap: the top
     // and bottom options sit one press away from the conf's first/last key,
@@ -702,6 +1043,38 @@ void g3x_slang_conf_panel_poll() {
     }
     s_prev_up   = up;
     s_prev_down = down2;
+
+    // 0.4.5: Left/Right CHANGE the selected option. Each press is one step
+    // (enum neighbor, +/- one increment, or a toggle — conf_panel_edit's
+    // rules) written straight into d2slangvk.conf, then pushed through
+    // reread_conf() so the change lands via the exact path a hand edit
+    // takes: the panel re-reads the file it just wrote, aspect/base_res
+    // snap live, and the window/controller/slang consumers pick the file up
+    // on their own mtime probes. Same focus rule and edge latches as
+    // Up/Down; the arrows stay the game's while the panel is hidden.
+    const bool lft   = (GetAsyncKeyState(VK_LEFT)  & 0x8000) != 0;
+    const bool rgt   = (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0;
+    if (g3x_overlay_conf_panel_visible()) {
+        int dir = 0;
+        if (rgt && !s_prev_right) dir = 1;
+        else if (lft && !s_prev_left) dir = -1;
+        if (dir) {
+            char desc[64];
+            if (conf_panel_edit(dir, desc, sizeof(desc))) {
+                reread_conf();               // file-is-truth: reparse + refresh,
+                                             // snap aspect/base, reload on preset=
+                char msg[80];
+                std::snprintf(msg, sizeof(msg), "%s %s", s_conf_sel_key, desc);
+                g3x_overlay_toast(msg);
+                g3x_log("overlay: conf %s = %s", s_conf_sel_key, desc);
+            } else {
+                g3x_log("overlay: conf %s unchanged (list end / nothing to cycle / write failed)",
+                        s_conf_sel_key);
+            }
+        }
+    }
+    s_prev_left  = lft;
+    s_prev_right = rgt;
 }
 
 // ---- public API ------------------------------------------------------------

@@ -41,7 +41,7 @@
 // Release version of this glide3xvk build. Shown by the overlay, printed by
 // the session banner and reported through grGetString(GR_RENDERER). Bump on
 // every field-delivered change set.
-#define G3XVK_VERSION "0.4.6"
+#define G3XVK_VERSION "0.4.5"
 
 // Render the tag into a BGRA8 buffer (w*h*4 bytes, stride = w*4). Safe to call
 // with any buffer size; the box anchors 4px from the right/top edge and clamps
@@ -99,7 +99,7 @@ void g3x_overlay_conf_panel_set(const char* const* lines, unsigned count);
 void g3x_overlay_conf_panel_toggle();
 bool g3x_overlay_conf_panel_visible();
 
-// 0.4.6: the arrow-key selection cursor. line indexes the CURRENT panel
+// 0.4.5: the arrow-key selection cursor. line indexes the CURRENT panel
 // lines as pushed by g3x_overlay_conf_panel_set (0 = the first line); -1 =
 // no highlight. The selected line draws as a dim-green row band with the
 // glyphs in bright green — a menu cursor against the white text. Up/Down

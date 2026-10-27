@@ -135,10 +135,14 @@ void g3x_slang_hotkeys_poll();
 // re-read from disk at every open — the file is the truth — and refreshed
 // while visible whenever the conf hot-reloads or an F11/F12 press lands.
 // Honors the [glide3xvk] overlay= ini switch (overlay=0 = no overlay boxes).
-// 0.4.6: with the panel up, Up/Down move a green selection cursor through
+// 0.4.5: with the panel up, Up/Down move a green selection cursor through
 // the option lines (header and hint footer skipped; clamped at the ends, no
-// wrap; each move re-parses the conf). While the panel is hidden the arrow
-// keys are untouched — the game keeps them.
+// wrap; each move re-parses the conf), and Left/Right CHANGE the selected
+// option: one press = one step (enum neighbor, +/- one increment, or a
+// toggle), written straight into d2slangvk.conf as a surgical single-key
+// rewrite (comments/spacing/order survive) and pushed through the normal
+// conf machinery, so it lands live like a hand edit of the file. While the
+// panel is hidden the arrow keys are untouched — the game keeps them.
 void g3x_slang_conf_panel_poll();
 
 #ifndef G3XVK_HAVE_SLANGVK

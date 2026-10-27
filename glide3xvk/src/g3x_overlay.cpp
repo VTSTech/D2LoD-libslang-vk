@@ -49,20 +49,17 @@ unsigned s_toast_frames = 0;
 
 // 0.4.5: the Shift+V conf panel. Lines are pushed pre-formatted by g3x_slang
 // (it owns the conf parser and the live hotkey state); this module stores,
-// toggles and draws. Hidden + empty until the first toggle-on. (Version
-// note: the panel originally carried a temporary 0.4.6 label, but 0.4.5 was
-// never tagged before the release that shipped the panel — the panel is the
-// 0.4.5 addendum, and 0.4.6 is the arrow-key selection on top of it.)
+// toggles and draws. Hidden + empty until the first toggle-on.
 char     s_conf_panel[G3XVK_CONF_PANEL_MAX_LINES][G3XVK_CONF_PANEL_LINE_CAP + 1];
 unsigned s_conf_lens[G3XVK_CONF_PANEL_MAX_LINES] = {};
 unsigned s_conf_count   = 0;
 bool     s_conf_visible = false;
 
-// 0.4.6: the arrow-key selection cursor — an index into s_conf_panel, -1 =
-// none. The Up/Down handling lives in g3x_slang's conf-panel poll (it knows
-// which lines are options); a refresh re-pushes the lines and re-points the
-// cursor, so the two setters move together. Draw-time range checks make any
-// stale index harmless.
+// 0.4.5: the arrow-key selection cursor — an index into s_conf_panel, -1 =
+// none. The arrow handling (Up/Down selection, Left/Right value edits) lives
+// in g3x_slang's conf-panel poll (it knows which lines are options); a
+// refresh re-pushes the lines and re-points the cursor, so the two setters
+// move together. Draw-time range checks make any stale index harmless.
 int      s_conf_sel     = -1;
 
 // The selection highlight color: glyphs in bright green (#20FF20-ish) over a
@@ -225,7 +222,7 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     // as the tag box; independent of the toast (both boxes can be up at
     // once). Drawn only while visible, with content, and with the overlay
     // enabled at all (overlay=0 in the ini = no overlay boxes).
-    // 0.4.6 nav: the line at s_conf_sel (if any) draws as the arrow-key
+    // 0.4.5 nav: the line at s_conf_sel (if any) draws as the arrow-key
     // cursor — a dim-green band across the box on that row, glyphs in bright
     // green. g3x_slang moves the cursor; this module only paints it, and a
     // stale index just paints nothing.
