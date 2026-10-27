@@ -528,6 +528,7 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
     }
 
     nSoundDescOffset = (int)((uint32_t)pSoundsTxtLine->Volume * nSoundDescOffset) / 0xff;
+    { static int s_nR7Upd = 0; if (s_nR7Upd++ < 40) D2BOOT_MarkFmt("[sounddiag] updchan: sid=%d b1c=%d b20=%08x b38=%d mvol=%u solo=%u svol=%u fmin=%.0f fmax=%.0f vol=%d ch=%08x", (int)*(int32_t*)(nSoundDescSaved+4), (int)*(int*)(nSoundDescSaved+0x1c), (unsigned)*(uint32_t*)(nSoundDescSaved+0x20), (int)*(int*)(nSoundDescSaved+0x38), (unsigned)pSoundsTxtLine->Music_Vol, (unsigned)pSoundsTxtLine->Solo, (unsigned)pSoundsTxtLine->Volume, (double)fFalloffMin, (double)fFalloffMax, (int)nSoundDescOffset, (unsigned)(uintptr_t)*pSoundChannel); } // [sounddiag]
     fEaxObstruction = *(float*)(nSoundDescSaved + 0xc) * 0.003125;
     pChannelEntry = (int*)d2_bits_of(*(float*)(nSoundDescSaved + 0x10) * 0.003125);
     pSoundsTxtLine = (D2SoundsTxt*)d2_bits_of(*(float*)(nSoundDescSaved + 0x14) * 0.003125);
@@ -656,6 +657,7 @@ D2PoolManagerStrc * * __fastcall SOUND_PlaySoundWithPanning(D2SoundChannelStrc *
     pSoundsTxtLine->aRecentSoundHistory[1] = pSoundsTxtLine->aRecentSoundHistory[0];
     pSoundsTxtLine->aRecentSoundHistory[0] = pMemory->nSoundId;
     if (!((pSoundTxt->Stream || pSoundTxt->nLoadState == 2 || (D2Client::Sound::SoundHdr::SOUNDHDR_LoadSoundFile(pMemory->nSoundId, (uint32_t)!pSoundTxt->Async_Only, 0) , pSoundTxt->nLoadState == 2)) && !pSoundTxt->bFileNotFound)) {
+      { static int s_nR7Lf = 0; if (s_nR7Lf++ < 20) D2BOOT_MarkFmt("[sounddiag] playsfx loadfail: sid=%d stream=%u ls=%d fnf=%u", (int)pMemory->nSoundId, (unsigned)pSoundTxt->Stream, (int)pSoundTxt->nLoadState, (unsigned)pSoundTxt->bFileNotFound); } // [sounddiag]
       return nullptr;
     }
 
@@ -675,6 +677,7 @@ D2PoolManagerStrc * * __fastcall SOUND_PlaySoundWithPanning(D2SoundChannelStrc *
 
     D2PoolManagerStrc** ppChannel = (D2PoolManagerStrc**)SOUND_FindAvailableChannel((uint32_t)pMemory, pPlayingChannel);
     if (!ppChannel) {
+      { static int s_nR7Nc = 0; if (s_nR7Nc++ < 20) D2BOOT_MarkFmt("[sounddiag] playsfx nochannel: sid=%d", (int)pMemory->nSoundId); } // [sounddiag]
       return nullptr;
     }
 
@@ -687,6 +690,7 @@ D2PoolManagerStrc * * __fastcall SOUND_PlaySoundWithPanning(D2SoundChannelStrc *
 
       BVar1 = D2Sound::Src::D2SoundSmp::SOUNDSMP_LoadWavDataIntoBuffer((D2SoundSmpStrc*)*ppChannel, (int*)pSoundTxt->pSoundDataBuffer, pSoundTxt->nSoundDataBytes);
       if (!BVar1) {
+        { static int s_nR7Wf = 0; if (s_nR7Wf++ < 20) D2BOOT_MarkFmt("[sounddiag] playsfx wavfail: sid=%d bytes=%u", (int)pMemory->nSoundId, (unsigned)pSoundTxt->nSoundDataBytes); } // [sounddiag]
         return nullptr;
       }
     }
