@@ -57,5 +57,5 @@
     "lord-of-destruction",
     "1.14d"
   ],
-  "notes": "This is the actual 1.14d Game.exe (classic and LoD are both in there) turned back into C++, and you can build it and play single player. It still crashes now and then, and Battle.net doesn't work yet. We don't edit the generated code by hand much; if something's wrong we fix it in Ghidra or in the generator and regenerate. The percentage is how much of the original code comes out byte for byte the same when compiled with MSVC 2005."
+  "notes": "Work on this started in 2021; the public repo is a fresh history from 2026. This is the actual 1.14d Game.exe (classic and LoD are both in there) turned back into C++, and you can build it and play single player. It still crashes now and then, and Battle.net doesn't work yet. We don't edit the generated code by hand much; if something's wrong we fix it in Ghidra or in the generator and regenerate. The percentage is how much of the original code comes out byte for byte the same when compiled with MSVC 2005."
 }
