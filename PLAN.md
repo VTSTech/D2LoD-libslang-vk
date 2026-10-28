@@ -1,6 +1,6 @@
 # PLAN.md — libslang-vk Integration (D2LoD-libslang-vk)
 
-> Status: v5, 2026-10-28. **The d2.exe source line is `vanilla-plus`** — upstream `main`
+> Status: v5, 2026-10-28. **The d2.exe source line is fork `main`** (the former `vanilla-plus` branch, repo default since the 2026-10-28 restructure) — upstream `main`
 > (eef5f2c) is merged; the glide fix chain (1–13), the drops fix (14) and the sound series
 > (15–16, defects 12+13) are closed and field-verified; the sound fixes are upstreamed as
 > jaenster/redivivus **PR #10** (open, merge-clean); the fullscreen-D3D recovery (fixes 17–27)

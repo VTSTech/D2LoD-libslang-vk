@@ -185,7 +185,7 @@ cannot be attributed.
   (linker map, load-bearing for crash symbolization). (CI was retired 2026-10-27 per
   HISTORY H2 and re-enabled 2026-10-28 — green on the 0.0.2 tag.)
 - Transfer: the agent sandbox has no push credentials, so fixes travel as **git
-  bundles** — user side: `git fetch <file>.bundle vanilla-plus && git merge
+  bundles** — user side: `git fetch <file>.bundle main && git merge
   --ff-only FETCH_HEAD`, then push. Overlay zips remain the fallback for
   file-level application to a non-git tree.
 - Local recon (llvm-mingw / clang 23): CMake configure is clean with
