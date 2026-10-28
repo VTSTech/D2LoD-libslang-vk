@@ -160,20 +160,25 @@ branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
 - **Overlay: the running game exe + its patch version** (g3x_hostver +
   g3x_overlay + glide_exports): the tag box gains a line directly under the
   build stamp naming the host — `d2.exe 1.14d` — detected once per process at
-  the first `grSstWinOpen` and fail-soft end to end. Tier 1 reads the exe's
-  VERSIONINFO resource and maps the Blizzard-stamped `dwFileVersion` pair to
-  the community patch names via d2dx's field-tested table (`1.0.9.22`=1.09d,
-  `1.0.10.9`=1.10, `1.0.12.49`=1.12, `1.0.13.60`=1.13c, `1.0.13.64`=1.13d,
-  `1.14.3.68`=1.14b, `1.14.3.71`=1.14d); an unmapped pair shows the dotted
-  value (`Game.exe v1.0.13.55`), and a build with no resource at all (this
-  repo's own CMake-built d2.exe) falls back to its PE `TimeDateStamp`
-  (`d2.exe [PE 3A5D2B1F]`) or just the exe name. The raw evidence is always
-  logged (`hostver: ... (ver= ms= ls= pe= size=)`), so an unmapped build can
-  be named later by quoting its log line. New module `g3x_hostver` (pure
-  table/PE-parse/format host-tested in scripts/test_hostver.cpp, 46 checks
-  under ASan+UBSan; Win32 pass fakecheck type-checked); glide3x links the
-  system version import lib. No game-side changes — the DLL stays strictly
-  read-only toward Game.exe.  
+  the first `grSstWinOpen` and fail-soft end to end. The primary identifier
+  is a zlib-compatible CRC-32 of the exe file on disk (chunked read through
+  a static buffer): a hit in the known-build table names the exact binary
+  outright and outranks the resource tiers (`Game.exe Retail 1.14d` — the
+  bytes are ground truth), an unknown one is the raw-hex fallback
+  (`d2.exe [CRC 3A5D2B1F]`) for builds with no version resource (this
+  repo's own CMake-built d2.exe) or just the exe name. Tier 2 reads the
+  exe's VERSIONINFO resource and maps the Blizzard-stamped `dwFileVersion`
+  pair to the community patch names via d2dx's field-tested table
+  (`1.0.9.22`=1.09d, `1.0.10.9`=1.10, `1.0.12.49`=1.12, `1.0.13.60`=1.13c,
+  `1.0.13.64`=1.13d, `1.14.3.68`=1.14b, `1.14.3.71`=1.14d); an unmapped
+  pair shows the dotted value (`Game.exe v1.0.13.55`). Both tables grow
+  from the field: the raw evidence is always logged (`hostver: ... (ver=
+  ms= ls= crc= bytes=)`), so an unmapped build can be named later by
+  quoting its log line. New module `g3x_hostver` (pure tables/CRC/format
+  host-tested in scripts/test_hostver.cpp, 47 checks under ASan+UBSan;
+  Win32 pass fakecheck type-checked); glide3x links the system version
+  import lib. No game-side changes — the DLL stays strictly read-only
+  toward Game.exe.
 
 
 ### Fixed
@@ -203,8 +208,7 @@ branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
   `controller_home`) exposed it. `scripts/gen_font8x8.py` now hand-draws 'm'
   alongside the g/p/q/j descender overrides (1px stems 3 columns apart, 1px
   top bar, x-height body rows 2-7, in the style of the generated 'n'); the
-  header was regenerated — every other glyph byte-identical.  
-
+  header was regenerated — every other glyph byte-identical.
 
 ## [0.4.4] - 2026-10-25 (CPU raster perf round 1 — x87 off the hot path)
 

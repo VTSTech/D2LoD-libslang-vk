@@ -47,14 +47,16 @@ resolution — is the same one proven in
 - **The overlay names the running game exe (0.4.5 addendum)**: detected once
   per process at the first window open, the box's line under the tag shows
   which `Game.exe`/`d2.exe` the wrapper is inside and its classic-D2 patch —
-  `d2.exe 1.14d` when the exe's VERSIONINFO resource maps (the Blizzard-stamped
-  `1.0.9.22` / `1.0.10.9` / `1.0.12.49` / `1.0.13.60` / `1.0.13.64` / `1.14.3.68`
-  / `1.14.3.71` pairs, the same field-tested table d2dx uses), the dotted
-  resource value (`Game.exe v1.0.13.55`) when it does not, or the exe's PE
-  `TimeDateStamp` (`d2.exe [PE 3A5D2B1F]`) for builds with no version resource
-  at all — this repo's own CMake-built d2.exe among them. Detection never
-  touches the game: fail-soft, and the raw values land in `glide3x.log` either
-  way.
+  `Game.exe Retail 1.14d` when the exe's CRC-32 is in the known-build table
+  (a content fingerprint that outranks the resource tiers: the bytes are
+  ground truth), `d2.exe 1.14d` when the exe's VERSIONINFO resource maps (the
+  Blizzard-stamped `1.0.9.22` / `1.0.10.9` / `1.0.12.49` / `1.0.13.60` /
+  `1.0.13.64` / `1.14.3.68` / `1.14.3.71` pairs, the same field-tested table
+  d2dx uses), the dotted resource value (`Game.exe v1.0.13.55`) when it does
+  not, or the exe's CRC-32 (`d2.exe [CRC 3A5D2B1F]`) for unknown builds with
+  no version resource at all — this repo's own CMake-built d2.exe among them.
+  Detection never touches the game: fail-soft, and the raw values land in
+  `glide3x.log` either way.
 - **Chocolate-Doom-VK-style hotkeys (0.4.3)**: in-game **F11** cycles the
   content aspect (`4:3 -> 16:10 -> 16:9 -> auto`) and **F12** cycles the shader
   base resolution (`1x -> 2x -> 3x -> 4x`) — the frame is linearly upscaled N-x

@@ -11,9 +11,10 @@
 // tag alone (the clean P2 baseline look).
 //
 // Host-version line — since the 0.4.5 addendum the box also names the exe
-// it is running inside ("d2.exe 1.14d", "Game.exe v1.0.13.55",
-// "d2.exe [PE 3A5D2B1F]"), detected once per process by g3x_hostver at the
-// first grSstWinOpen. Absent until detection reports something.
+// it is running inside ("Game.exe Retail 1.14d", "d2.exe 1.14d",
+// "Game.exe v1.0.13.55", "d2.exe [CRC 3A5D2B1F]"), detected once per process
+// by g3x_hostver at the first grSstWinOpen. Absent until detection reports
+// something.
 //
 // Bottom line — since 0.4.5 the box always ends with the repo credit,
 // "GitHub: VTSTech/D2LoD-libslang-vk" — the one overlay line that never
@@ -79,7 +80,8 @@ void g3x_overlay_set_shader(const char* name);
 void g3x_overlay_toast(const char* text);
 
 // 0.4.5 addendum: the running game exe + detected classic-D2 patch —
-// "d2.exe 1.14d", "Game.exe v1.0.13.55", "d2.exe [PE 3A5D2B1F]" — composed
+// "Game.exe Retail 1.14d", "d2.exe 1.14d", "Game.exe v1.0.13.55",
+// "d2.exe [CRC 3A5D2B1F]" — composed
 // by g3x_hostver and pushed once per process from grSstWinOpen. Drawn
 // directly below the tag line (the two identity lines sit together; the
 // shader line and toast move down one step). NULL/empty hides the line and

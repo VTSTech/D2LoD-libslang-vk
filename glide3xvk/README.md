@@ -49,7 +49,7 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, since 0.4.3 a transient toast line for the F11/F12 hotkeys, since the 0.4.5 addendum the toggleable **Shift+V conf panel** on the left edge (storage + drawing; the content comes pre-formatted from g3x_slang) with its green arrow-key selection cursor, since the same addendum a permanent bottom line — the repo credit `GitHub: VTSTech/D2LoD-libslang-vk` — and (0.4.5 addendum) the host-exe version line pushed by g3x_hostver, drawn directly below the tag |
 | `src/g3x_drivertag.{h,cpp}` | 0.4.1–0.4.3: repointed the game's `"Video: Glide"` renderer-name string at our tag. **Removed in 0.4.5** (field call: the /fps tag must stay the game's own; the DLL is now strictly read-only toward Game.exe) — pending `git rm` of the two files |
 | `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf` (`preset`/`scale`/`vsync`/`aspect`/`base_res`/`window`/`borderless`), owns the input image + preset + chain, hot-reloads on file change, polls the F11/F12 hotkeys on the present path plus the Shift+V conf-panel toggle on EVERY present (chain or no chain; it formats and pushes the panel's lines from a fresh conf parse + the live hotkey state) with the panel's Up/Down selection, Left/Right value editing and the Left/Right preset browser over the current preset's folder subtree — recursed to any depth, rows stored as the relative paths `preset=` accepts (0.4.5: the edit is a surgical single-key conf rewrite — `g3x_slang_conf_rewrite_text`, host-tested — pushed through the normal conf machinery, so it lands live), fails soft to the unfiltered path |
-| `src/g3x_hostver.{h,cpp}` | 0.4.5 addendum: identifies the running game exe for the overlay's tag box — reads the host process's VERSIONINFO resource (GetFileVersionInfo/VerQueryValue, the Blizzard-stamped `dwFileVersion` pair mapped to the community patch names via the field-tested d2dx table: 1.09d/1.10/1.12/1.13c/1.13d/1.14b/1.14d) with the mapped image's PE headers (`TimeDateStamp`/`SizeOfImage`, first page only) as the fallback for resource-less builds; runs once per process from grSstWinOpen, fail-soft, evidence always logged. Pure logic (table, PE walk, line format) is windows.h-free and host-tested (scripts/test_hostver.cpp); the Win32 pass sits under `_WIN32` and is fakecheck type-checked |
+| `src/g3x_hostver.{h,cpp}` | 0.4.5 addendum: identifies the running game exe for the overlay's tag box — computes a zlib-compatible CRC-32 of the exe file on disk (a content fingerprint, stable across rebuilds where a link timestamp is not), checks it against the known-build table (a hit names the binary outright, e.g. `Game.exe Retail 1.14d`), then falls back through the host process's VERSIONINFO resource (GetFileVersionInfo/VerQueryValue, the Blizzard-stamped `dwFileVersion` pair mapped to the community patch names via the field-tested d2dx table: 1.09d/1.10/1.12/1.13c/1.13d/1.14b/1.14d) and the raw fingerprint (`d2.exe [CRC 3A5D2B1F]`); runs once per process from grSstWinOpen, fail-soft, evidence always logged. Pure logic (tables, CRC-32, line format) is windows.h-free and host-tested (scripts/test_hostver.cpp); the Win32 pass sits under `_WIN32` and is fakecheck type-checked |
 | `src/g3x_window.{h,cpp}` | 0.4.5: present-window presets + DPI awareness — sizes the game's own HWND to a `window=` preset (canonical sizes, `desktop`, `WxH`), config-only (applies at every renderer (re)open + conf hot-reload; no hotkey — F10 is a game skill-slot bind), reverts cleanly to the game's own window; pure table/parse lives inline in the header (host-tested), the Win32 apply runs inside `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` |
 | `src/g3x_controller.{h,cpp}` | 0.4.5 (experimental): controller support — a background XInput poller (pad 0, ~125 Hz, own thread; zero present-path cost) injects ordinary mouse/keyboard via SendInput (left stick = walk: cursor + auto-held LMB; right stick = fine aim at `controller_aimsens` speed; LT = LMB, RT = RMB, A = hold Shift+LMB attack-in-place combo, B = Alt hold, X = Space, Y = I, D-pad = belt 1-4, LB/RB = C/T, L3 = R run/walk, Start = Esc, Back = Tab), gated on game-window focus, everything held released on focus loss/disable/shutdown; cursor-home (0.4.5 field round 2): the walk-release cursor position becomes the player anchor (D2 walks end standing at the cursor — self-correcting) and a 0.4s quiet dwell parks the cursor back on it, so stick motion always emanates from the player; opt-in via `controller=` + `controller_sens=` + `controller_aimsens=` + `controller_deadzone=` + `controller_moveclick=` + `controller_home=`, hot-reloaded from the conf; XInput loaded dynamically (no new imports); pure core (bind table with multi-step combos, stick curve, desired-state diff step) inline in the header, host-tested (scripts/ctrltest.cpp) |
 | `presets/` | Two starter presets (scanline, sharpen — MIT, ours) + `d2slangvk.conf.sample` |
@@ -103,15 +103,21 @@ ships in-tree now.
 Since the 0.4.5 addendum the box also **names the exe it is running inside**:
 `g3x_hostver` detects the host once per process at the first `grSstWinOpen`
 (the same seam that reads `overlay=`) and pushes a line drawn directly below
-the tag — `d2.exe 1.14d` when the exe's VERSIONINFO resource maps to a known
-patch, the dotted resource value (`Game.exe v1.0.13.55`) when it does not, or
-`d2.exe [PE 3A5D2B1F]` (the PE `TimeDateStamp`) for builds with no version
-resource at all, this repo's own CMake-built d2.exe among them. The mapping
-table is d2dx's field-tested set (`1.0.9.22`=1.09d, `1.0.10.9`=1.10,
-`1.0.12.49`=1.12, `1.0.13.60`=1.13c, `1.0.13.64`=1.13d, `1.14.3.68`=1.14b,
-`1.14.3.71`=1.14d); every step is fail-soft and the raw evidence (`ms`/`ls`/
-`pe`/`size`) always lands in `glide3x.log`, so an unmapped build just needs
-its log line quoted to extend the table. The shader line and toast shift down
+the tag. The primary identifier is a zlib-compatible **CRC-32 of the exe
+file on disk** — a content fingerprint, stable across rebuilds where a link
+timestamp is not: a hit in the known-build table names the binary outright
+(`Game.exe Retail 1.14d`), an unknown one shows the raw hex
+(`d2.exe [CRC 3A5D2B1F]`) for resource-less builds, this repo's own
+CMake-built d2.exe among them. Between the two sit the VERSIONINFO tiers —
+`d2.exe 1.14d` when the exe's resource maps to a known patch, the dotted
+value (`Game.exe v1.0.13.55`) when it does not. Both name sources are
+field-extensible: the patch table is d2dx's field-tested set
+(`1.0.9.22`=1.09d, `1.0.10.9`=1.10, `1.0.12.49`=1.12, `1.0.13.60`=1.13c,
+`1.0.13.64`=1.13d, `1.14.3.68`=1.14b, `1.14.3.71`=1.14d), and the CRC table
+grows from the evidence line every run logs (`ms`/`ls`/`crc`/`bytes`) —
+quote the log line and the table gets the entry, so the exact binary gets
+named from then on. A known CRC outranks the resource tiers: the bytes are
+ground truth. Every step is fail-soft; the shader line and toast shift down
 one row while the hostver line shows.
 
 Since 0.4.3 the box also carries a **transient third line** when a hotkey

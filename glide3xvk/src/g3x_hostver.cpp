@@ -32,57 +32,77 @@ const char* g3x_hostver_patch_name(unsigned ver_ms, unsigned ver_ls) {
     return nullptr;
 }
 
-// Minimal bounds-checked walk over a mapped PE image: 'MZ' DOS header ->
-// e_lfanew -> 'PE\0\0' -> COFF file header (TimeDateStamp) -> optional
-// header (SizeOfImage, at offset 56 in both PE32 and PE32+). Only the first
-// page of the image is touched when the caller passes cap = 0x1000 — the
-// headers always live there.
-int g3x_hostver_parse_pe(const uint8_t* image, size_t cap,
-                         uint32_t* stamp_out, uint32_t* image_size_out) {
-    if (!image || cap < 0x40) return 0;
-    if (image[0] != 'M' || image[1] != 'Z') return 0;          // e_magic
-    const uint32_t e_lfanew =
-        (uint32_t)image[0x3C]       | ((uint32_t)image[0x3D] << 8) |
-        ((uint32_t)image[0x3E] << 16) | ((uint32_t)image[0x3F] << 24);
-    // NT signature (4) + COFF file header (20; TimeDateStamp at +4) +
-    // optional header through SizeOfImage (+56..+59): 24 + 60 bytes.
-    if (e_lfanew < 0x40 || (size_t)e_lfanew + 24 + 60 > cap) return 0;
-    const uint8_t* nt = image + e_lfanew;
-    if (nt[0] != 'P' || nt[1] != 'E' || nt[2] != '\0' || nt[3] != '\0')
-        return 0;
-    const uint32_t stamp =
-        (uint32_t)nt[8]  | ((uint32_t)nt[9]  << 8) |
-        ((uint32_t)nt[10] << 16) | ((uint32_t)nt[11] << 24);
-    const uint8_t* opt = nt + 24;
-    const uint32_t image_size =
-        (uint32_t)opt[56] | ((uint32_t)opt[57] << 8) |
-        ((uint32_t)opt[58] << 16) | ((uint32_t)opt[59] << 24);
-    if (stamp_out)      *stamp_out      = stamp;
-    if (image_size_out) *image_size_out = image_size;
-    return 1;
+// Known-build CRC-32 table — the content-fingerprint counterpart to the
+// patch table above. Entries come from the field: the hostver log line's
+// crc=/bytes= values quoted back to us become rows here, and the overlay
+// then names that exact binary instead of showing raw hex. Size is kept as
+// a comment (the CRC alone identifies the build; the log carries bytes=).
+const char* g3x_hostver_crc_name(uint32_t crc) {
+    static const struct { uint32_t crc; const char* name; } kTable[] = {
+        { 0x4F393243u, "Retail 1.14d" },  // Game.exe, 3618792 bytes (3533 KiB)
+    };
+    for (const auto& e : kTable)
+        if (e.crc == crc)
+            return e.name;
+    return nullptr;
+}
+
+// CRC-32/ISO-HDLC, the reflected 0xEDB88320 variant every zip tool and
+// python's zlib.crc32 report. The 256-entry table is derived on first use
+// rather than shipped: eight shifts per byte once per process beats 1 KiB
+// of static tables in a DLL that may never compute a CRC at all.
+uint32_t g3x_hostver_crc32_update(uint32_t state, const uint8_t* data, size_t len) {
+    static uint32_t table[256];
+    static int have_table = 0;
+    if (!have_table) {
+        for (uint32_t i = 0; i < 256; ++i) {
+            uint32_t c = i;
+            for (int k = 0; k < 8; ++k)
+                c = (c & 1u) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
+            table[i] = c;
+        }
+        have_table = 1;
+    }
+    uint32_t c = state;
+    for (size_t i = 0; i < len; ++i)
+        c = table[(c ^ data[i]) & 0xFFu] ^ (c >> 8);
+    return c;
+}
+
+uint32_t g3x_hostver_crc32_final(uint32_t state) {
+    return state ^ 0xFFFFFFFFu;
+}
+
+uint32_t g3x_hostver_crc32(const uint8_t* data, size_t len) {
+    return g3x_hostver_crc32_final(
+        g3x_hostver_crc32_update(G3X_HOSTVER_CRC32_INIT, data, len));
 }
 
 unsigned g3x_hostver_format(char* out, unsigned cap,
                             const char* exe_basename,
-                            int has_version, unsigned ver_ms, unsigned ver_ls,
-                            uint32_t stamp, uint32_t image_size) {
-    (void)image_size;   // logged by the caller; reserved for future tables
+                            uint32_t crc, int has_crc,
+                            int has_version, unsigned ver_ms, unsigned ver_ls) {
     if (!out || cap == 0) return 0;
     out[0] = '\0';
     if (!exe_basename || !exe_basename[0]) return 0;
 
     int n;
-    const char* patch = has_version ? g3x_hostver_patch_name(ver_ms, ver_ls)
-                                    : nullptr;
-    if (patch) {
+    // A known CRC outranks the resource tiers: the file's bytes are ground
+    // truth even when its metadata is stale or missing.
+    const char* known = has_crc ? g3x_hostver_crc_name(crc) : nullptr;
+    const char* patch = (!known && has_version)
+                            ? g3x_hostver_patch_name(ver_ms, ver_ls) : nullptr;
+    if (known) {
+        n = std::snprintf(out, cap, "%s %s", exe_basename, known);
+    } else if (patch) {
         n = std::snprintf(out, cap, "%s %s", exe_basename, patch);
     } else if (has_version) {
         n = std::snprintf(out, cap, "%s v%u.%u.%u.%u", exe_basename,
                           ver_ms >> 16, ver_ms & 0xFFFFu,
                           ver_ls >> 16, ver_ls & 0xFFFFu);
-    } else if (stamp) {
-        n = std::snprintf(out, cap, "%s [PE %08X]",
-                          exe_basename, (unsigned)stamp);
+    } else if (has_crc) {
+        n = std::snprintf(out, cap, "%s [CRC %08X]",
+                          exe_basename, (unsigned)crc);
     } else {
         n = std::snprintf(out, cap, "%s", exe_basename);
     }
@@ -137,22 +157,47 @@ void g3x_hostver_detect_push() {
         }
     }
 
-    // Tier 2: the PE headers of the mapped image — the fallback for builds
-    // with no version resource (this repo's own CMake-built d2.exe among
-    // them). Only the always-mapped first page is read.
-    uint32_t stamp = 0, image_size = 0;
-    const HMODULE img = GetModuleHandleA(nullptr);
-    if (img)
-        g3x_hostver_parse_pe((const uint8_t*)img, 0x1000, &stamp, &image_size);
+    // Tier 2: CRC-32 of the exe file on disk — the content fingerprint that
+    // feeds the known-build table (a hit names the binary outright) and the
+    // raw-hex fallback for builds with no version resource. Unlike a link
+    // timestamp it is stable across rebuilds of the same bytes, and the
+    // loader's read lock is no obstacle for a plain GENERIC_READ open.
+    // Chunked through a static buffer, so multi-MB exes never touch the heap.
+    uint32_t crc = 0;
+    int has_crc = 0;
+    unsigned bytes = 0;
+    if (base[0]) {
+        const HANDLE f = CreateFileA(path, GENERIC_READ,
+                                     FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                     nullptr, OPEN_EXISTING,
+                                     FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (f != INVALID_HANDLE_VALUE) {
+            static unsigned char buf[65536];
+            uint32_t st = G3X_HOSTVER_CRC32_INIT;
+            DWORD got = 0;
+            int ok = 1;
+            for (;;) {
+                if (!ReadFile(f, buf, sizeof(buf), &got, nullptr)) { ok = 0; break; }
+                if (got == 0) break;
+                st = g3x_hostver_crc32_update(st, buf, got);
+                bytes += (unsigned)got;
+            }
+            if (ok) {
+                crc = g3x_hostver_crc32_final(st);
+                has_crc = 1;
+            }
+            CloseHandle(f);
+        }
+    }
 
     char line[64];
-    g3x_hostver_format(line, sizeof(line), base, has_version, ms, ls,
-                       stamp, image_size);
+    g3x_hostver_format(line, sizeof(line), base, crc, has_crc,
+                       has_version, ms, ls);
     if (line[0]) {
         g3x_overlay_set_hostver(line);
-        g3x_log("hostver: %s (ver=%d ms=0x%08X ls=0x%08X pe=0x%08X size=%u)",
+        g3x_log("hostver: %s (ver=%d ms=0x%08X ls=0x%08X crc=0x%08X bytes=%u)",
                 line, has_version, (unsigned)ms, (unsigned)ls,
-                (unsigned)stamp, (unsigned)image_size);
+                (unsigned)crc, bytes);
     } else {
         g3x_log("hostver: exe name unreadable - overlay line skipped");
     }
