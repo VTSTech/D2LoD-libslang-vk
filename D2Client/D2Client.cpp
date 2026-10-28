@@ -838,7 +838,16 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         "; Ground-item labels on the Alt key:\r\n"
         ";   0 = hold Alt to show labels         (vanilla behavior)\r\n"
         ";   1 = press Alt once to toggle labels (D2R \"Show Items: Toggle\")\r\n"
-        "alt_toggle=0\r\n";
+        "alt_toggle=0\r\n"
+        "\r\n"
+        "; Save file location (single-player):\r\n"
+        ";   0 = retail resolution: the registry save path if one is set,\r\n"
+        ";       else the system Saved Games location\r\n"
+        ";   1 = keep saves in the game folder, .\\save next to this file\r\n"
+        ";       (the folder is created on demand, the registry is not\r\n"
+        ";       touched, and existing saves are not migrated - copy your\r\n"
+        ";       .d2s/.d2x/.key/.map files over to keep them)\r\n"
+        "portable_save=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) {

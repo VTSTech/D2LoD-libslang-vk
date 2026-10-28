@@ -377,7 +377,101 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
     return 1;
 }
 
+// [vanilla-plus portable-save] d2vp.ini [features] portable_save=1 pins
+// single-player saves to "<exe folder>\save" instead of the registry-resolved
+// save location (the "Save Path"/migrated registry value, falling back to the
+// Known-Folder path). Every save-path consumer routes through
+// GetAndCreateSavePath (.d2s/.d2x/.key/.map, character enumeration, realm
+// lock, automap .map), so one hook covers them all. Missing ini file, section
+// or key, or a garbage value = 0 = retail resolution byte-for-byte (Principle
+// 1: opt-in, config-gated). The flag is polled with the same ~2 s GetTickCount
+// cadence as the client's alt_toggle wrapper; the exe-anchored directory
+// string is resolved once per process. The client boot hook already creates a
+// missing d2vp.ini before any save-path consumer runs, so no EnsureIni here -
+// Fog must not depend on D2Client. In portable mode the registry is never
+// written: no migration pass, no "Save Path" churn, retail values untouched.
+static int gbPortableSaveDirBuilt = 0;
+static int gbPortableSaveMode = 0;
+static DWORD dwPortableSaveLastCheck = 0;
+static char szPortableSaveDir[260]; // "<exe dir>save" (no trailing backslash)
+
+// Poll d2vp.ini [features] portable_save (at most every 2000 ms). The ini
+// path is anchored to the exe directory; without a usable exe directory the
+// answer is 0 so every caller keeps retail behavior.
+static int PORTABLESAVE_Active() {
+    DWORD dwNow = GetTickCount();
+    if (!dwPortableSaveLastCheck || dwNow - dwPortableSaveLastCheck >= 2000) {
+      char szExeDir[260];
+      char szIniPath[272];
+      uint32_t nDirLen = 0;
+      dwPortableSaveLastCheck = dwNow;
+      if (SFILE_GetExecutableDirectory(szExeDir, 260)) {
+        nDirLen = Storm::Source::SSTR::SStrLen(szExeDir);
+      }
+      if (nDirLen && szExeDir[nDirLen - 1] == '\\') {
+        Storm::Source::SSTR::SStrCopy(szIniPath, szExeDir, 272);
+        Storm::Source::SSTR::SStrPack(szIniPath, "d2vp.ini", 272);
+        // Missing file/section/key or a non-numeric value returns the 0
+        // default = retail save resolution.
+        gbPortableSaveMode = GetPrivateProfileIntA("features", "portable_save", 0, szIniPath) ? 1 : 0;
+      } else {
+        gbPortableSaveMode = 0;
+      }
+    }
+    return gbPortableSaveMode;
+}
+
+// Copy the cached "<exe folder>\save" path into pBuffer. The directory is
+// resolved on first use; the unreachable dir-less exe case refuses (caller
+// falls back to retail resolution). Trailing-backslash fixup and directory
+// creation stay with the caller, mirroring the retail tail of
+// GetAndCreateSavePath.
+static int PORTABLESAVE_BuildSavePath(char * pBuffer, size_t nSize) {
+    if (!gbPortableSaveDirBuilt) {
+      char szExeDir[260];
+      if (SFILE_GetExecutableDirectory(szExeDir, 260)) {
+        uint32_t nDirLen = Storm::Source::SSTR::SStrLen(szExeDir);
+        if (nDirLen && szExeDir[nDirLen - 1] == '\\') {
+          Storm::Source::SSTR::SStrCopy(szPortableSaveDir, szExeDir, 260);
+          Storm::Source::SSTR::SStrPack(szPortableSaveDir, "save", 260);
+          gbPortableSaveDirBuilt = 1;
+        }
+      }
+      if (!gbPortableSaveDirBuilt) {
+        gbPortableSaveMode = 0; // unreachable anchor: stay retail
+      }
+    }
+    if (!gbPortableSaveDirBuilt) {
+      return 0;
+    }
+
+    Storm::Source::SSTR::SStrCopy(pBuffer, szPortableSaveDir, (int32_t)nSize);
+    return 1;
+}
+
 void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
+    // [vanilla-plus portable-save] opt-in redirect; everything below is
+    // retail: registry save-path lookup, one-time migration from the old
+    // "Save Path", Known-Folder fallback, backslash fixup + mkdir.
+    if (PORTABLESAVE_Active() && PORTABLESAVE_BuildSavePath(pBuffer, nSize)) {
+      if (nSize) {
+        uint32_t nPathLen = Storm::Source::SSTR::SStrLen(pBuffer);
+        if (!nPathLen || pBuffer[nPathLen - 1] != '\\') {
+          if (nPathLen + 1 == nSize) {
+            Debug::GuardStack();
+            return;
+          }
+
+          pBuffer[nPathLen] = '\\';
+          pBuffer[nPathLen + 1] = '\0';
+        }
+      }
+
+      SafeCreateDirectoryTree(pBuffer);
+      Debug::GuardStack();
+      return;
+    }
+
     DWORD dwAttributes;
     char* pcLen;
     int nMoveResult;

@@ -83,6 +83,20 @@ each can be fixed, replaced and released independently.
   at startup with a documented all-defaults template — one attempt per
   process, never overwrites an existing file, silently skipped if the
   directory is unwritable (delete it and a fresh copy returns next start).
+- **Portable saves** — single-player save files (`.d2s`/`.d2x`/`.key`/`.map`)
+  are read and written from `<game folder>\save` (the folder `d2vp.ini` lives
+  in, resolved once from the exe location) instead of the registry-resolved
+  save path — retail reads a registry save-path value first, so a stale value
+  from an old install pins saves to e.g. `F:\Diablo II\Save` forever; without
+  one, retail falls back to the system Saved Games location. **Default OFF**:
+  set `[features] portable_save=1` in `d2vp.ini` (hot-re-read at most every
+  2 s). The save folder is created on demand; in portable mode the registry is
+  never written (no migration pass, retail values untouched) and existing
+  saves are NOT auto-copied — move your `.d2s`/`.d2x`/`.key`/`.map` files over
+  once to keep characters (the ini template says the same). Missing
+  ini/section/key or a garbage value = vanilla resolution byte-for-byte. All
+  save-path consumers (character list, saves, realm lock, automap) share one
+  choke point (`GetAndCreateSavePath`), so the single hook covers everything.
 
 ## Build
 
@@ -141,8 +155,9 @@ cannot be attributed.
    note any game-side differences vs original Game.exe. (0.0.2 bundles Glide3xVK 0.4.5
    and is field-played daily; remaining deltas land as issues.)
 3. **Vanilla-plus improvements** — **started**: the alt-key item-label toggle
-   (config-gated, default off) shipped in 0.0.2. Candidates discussed per issue;
-   nothing lands without a config gate.
+   (config-gated, default off) shipped in 0.0.2; the portable-save option
+   (`[features] portable_save`) landed post-0.0.2. Candidates discussed per
+   issue; nothing lands without a config gate.
 
 ## Build notes
 
