@@ -1,6 +1,6 @@
 # FEATURES.md — D2R backport slate (vanilla-plus)
 
-*v2, 2026-10-29. Row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
+*v3, 2026-10-29. Row 9 (`shared_stash`) added from an owner suggestion — side-file design, `.d2s`/`.d2x` untouched. Row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
 classic-D2 modding scene (PD2, BH/slashdiablo maphack, Sting's hackmap, d2dx). Ranked
 **low-risk first** per owner call. **Code-only** per charter Principle 4: no MPQ/data
 edits, no new assets — every feature is pure code + a `d2vp.ini` gate. Hook sites below
@@ -40,9 +40,10 @@ Every slate row must satisfy all of these before it ships:
 | 6 | Auto gold pickup | Loot | D2R "Gold Pickup" gameplay option | M | Med | `auto_gold` |
 | 7 | Automap scale + position | HUD | D2R larger overlay map | M | Med | `automap_scale` |
 | 8 | Quick-cast keys | Controls | D2R-adjacent (PD2 quick cast) | M–L | Med–High | `quick_cast` |
+| 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | `shared_stash` |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
-the slate's head, not new scope. Rows 1–8 are the new candidates.
+the slate's head, not new scope. Rows 1–9 are the new candidates.
 
 ---
 
@@ -198,11 +199,53 @@ the slate's head, not new scope. Rows 1–8 are the new candidates.
 
 ---
 
+### 9. Shared side-file stash — `[features] shared_stash`
+
+- **Behavior (owner suggestion, 2026-10-29 — not a D2R option)**: an in-game stash
+  shared across all single-player characters — deposit/withdraw between saves without
+  GoMule/ATMA muling or a second client. **No `.d2s`/`.d2x` layout change**: items only
+  move in/out of the existing container lists, which the format already supports (a
+  char that never touched the stash is just an empty list). The stash contents live in
+  their own **mini save** — versioned header + checksum, atomic write + `.bak` — that
+  retail ignores. PlugY ships the same idea as save-dir side files.
+- **Proposed**: gate `shared_stash`: `0` = vanilla; `1` = the stash panel gains a
+  shared mode toggled by a hotkey while the panel is open (registration via the row-28
+  `CmdTbl` path) — same grid UI, different backing container, a small text caption
+  marks the mode (row-1 text helpers, no new assets). Deposits/withdrawals are
+  server-side container-to-container **moves** (SP is in-process) using the existing
+  D2Common inventory ops; the side file is written on change (or at save time — verify
+  the hook) and re-read when the stash opens.
+- **Candidate regions**: container ops `D2Common/INVENTORY/Inventory.*`
+  (`INVENTORY_AppendItemToList`, `INVENTORY_PlaceItemInGrid`,
+  `INVENTORY_FindFirstEmptySlot`, inventory-create family — the stash page is already
+  "just" an inventory container per the recovered header docs); item bit
+  pack/unpack in `D2Common/ITEMS/Items.*` (anchors live deeper — `Items.h` exports
+  only `FreeItems` per the fix-14 map); file IO + save dir through the
+  `GetAndCreateSavePath` choke-point family (`D2Game/PLAYER/PlayerSave.cpp`,
+  `D2Launch/CharSel.cpp`, Fog `SFile`); stash panel + click handling
+  `D2Client/UI/Inv.cpp`; hotkey registration `D2Client/UI/CmdTbl.cpp` (row-28
+  proven).
+- **Contract note (needs owner sign-off)**: not display- or input-only — items move
+  between characters, so this is an explicit amendment to rule 5's spirit. It honors
+  rule 5's letter (`.d2s`/`.d2x` byte-compatible) and cannot duplicate items (single
+  move path, server-side). Deleting the side file deletes its items — document in the
+  ini template comment.
+- **Risk**: Med–High — item loss/duplication is the worst bug class in the game.
+  Mitigations: move semantics only, atomic write + backup, versioned header +
+  checksum, and a dedicated §11 mule round-trip test (deposit → save → crash-kill →
+  reload → withdraw). Effort **L** — the biggest row on the slate, alongside row 8;
+  schedule after the draw-only rows have hardened the gate/overlay patterns.
+- **Exit**: deposit on char A, save, load char B, withdraw — item stats/quality/
+  sockets bit-identical (ATMA export compare), no dupes or losses on crash-kill
+  during save, retail ignores the side file, `0` = vanilla.
+
+---
+
 ## Dropped candidates (and why)
 
 | Candidate | Verdict | Reason |
 |---|---|---|
-| Expanded stash pages | **Dropped** | Save-format hazard (`.d2x` layout + inventory grid realloc); D2R did it with new UI + data. Revisit only if upstream ever blesses save-format work. |
+| Expanded stash pages | **Dropped** | Save-format hazard (`.d2x` layout + inventory grid realloc); D2R did it with new UI + data. Revisit only if upstream ever blesses save-format work. The **side-file shared stash** — no `.d2x` change — is scoped separately as row 9. |
 | Socketing / unsocketing QoL recipes | **Dropped** | Cube recipes are data tables (`Txt/Cube.cpp` reads bins) — violates code-only. |
 | Personal loot | **Dropped** | Multiplayer concept; charter is single-player focus. |
 | Loot filter | **Parked** | Its own project (filter language + UI + config surface) — PD2 ships BH wholesale; would dominate the roadmap. Not a "backport", a subsystem. |
@@ -226,7 +269,8 @@ the slate's head, not new scope. Rows 1–8 are the new candidates.
 - Prior art: [Project Diablo 2 patch notes](https://wiki.projectdiablo2.com/wiki/Patch_Notes)
   (quick cast, auto gold, buff timers, area-level display), slashdiablo maphack (BH),
   Sting's hackmap config surface, bayaraa/d2dx (renderer-side QoL precedents).
-- Owner suggestions: transparent bottom bar (2026-10-29 — explicit no-parity row).
+- Owner suggestions: transparent bottom bar (2026-10-29 — explicit no-parity row);
+  shared side-file stash (2026-10-29 — no-parity row, PlugY-style side file).
 - Engine grounding: Phrozen Keep draw-mode documentation (25%/50% stipple, color
   blends; 1.10/1.13-era threads) — the paletted transparency family row 4 mode 2 uses.
 - In-tree grounding: handoff.md rows 28–31 (the feature-era map), fix-14 Drop.cpp map;
