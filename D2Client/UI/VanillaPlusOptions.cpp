@@ -19,9 +19,10 @@
 //      stack-smashing bug hiding behind the fallback path.
 // The retail esc-menu loop already invokes a per-row fpDrawCallback every
 // frame (ESCMENU_DrawMenu, before the row's image draw), so the label is now
-// rendered there with DRAW_text (font 0xd, the ControlConfig row font) - the
-// same retail text path the page itself uses. The row's fpInitCallback still
-// seeds pDC6Main, but only with the field-proven 8x8 blank placeholder:
+// rendered there with DRAW_text (font 2, Font30 - the family the retail row
+// label images are rendered in; see the tunables block). The row's
+// fpInitCallback still seeds pDC6Main, but only with the field-proven 8x8
+// blank placeholder:
 // type-0 rows draw pDC6Main unconditionally (a null pointer would halt the
 // draw), and the blank frame is exactly the image the first field build drew
 // invisibly-but-safely. Same allocator + CELCMP_FixupPointersAndPrepare
@@ -77,10 +78,27 @@ namespace D2Client::UI::VanillaPlus {
 // Esc-menu row band. The retail draw loop bottom-anchors every row image at
 // nItemBottomY = nRowTop + nRowHeight; DC6 draws (font glyph frames included)
 // extend upward from the y passed to the renderer, i.e. the y passed to
-// DRAW_text is the text baseline. The label baseline is inset from the band
-// bottom so the text sits visually centered in the 0x27 band (tunable).
-static const int VPLABEL_BASELINE_INSET = 8;
-static const uint16_t VPLABEL_FONT_ID = 0xd;       // ControlConfig's row font
+// DRAW_text is the glyph-cell bottom (descent included). The label baseline
+// is inset from the band bottom so the text sits visually centered in the
+// 0x27 band (tunable).
+//
+// Field-QA (2026-10-29, rev4): the first Route B build used font 0xd
+// (FontInGameChat - the chat console font, ~10 px cell) and the label rendered
+// at roughly 1/3 the height of the neighboring rows - the retail rows are DC6
+// label images in the big menu-font family (same look as the esc-menu main
+// items), not chat-size text. Font30 (aFontNames[2], 30 px cell) is that
+// family's in-tree handle, so the row label uses it. The 0x27 band fits the
+// 30 px cell with inset 4 (cell spans rowTop+5 .. rowTop+35, 'p' descender
+// included); the Vanilla+ page below keeps 0xd on purpose - it mirrors the
+// retail ControlConfig page, which is drawn entirely in FontInGameChat.
+static const int VPLABEL_BASELINE_INSET = 4;
+static const uint16_t VPLABEL_FONT_ID = 2;         // Font30 - retail row-label family
+
+// The Vanilla+ page itself is a ControlConfig mirror and keeps ControlConfig's
+// own font (FontInGameChat) - its 0x1a row bands are sized for it. Deliberately
+// separate from VPLABEL_FONT_ID so the esc-menu row and the page can't drag
+// each other's metrics around.
+static const uint16_t VPPAGE_FONT_ID = 0xd;        // FontInGameChat - ControlConfig's font
 
 // Page layout (mirrors the ControlConfig panel box for a familiar look).
 static const int VPPAGE_BOX_WIDTH = 0x26c;
@@ -231,12 +249,12 @@ void __fastcall ESCMENU_InitVanillaPlusLabel(D2EscMenuItemStrc * pItem, D2UIMous
     VPLABEL_BuildBlankPlaceholder(&pItem->pDC6Main);
 }
 
-// Row draw callback (fpDrawCallback), invoked by ESCMENU_DrawMenu every frame
+// Row draw callback (fpDrawCallback), invoked by DRAW_EscMenu every frame
 // before the row's image draw. Renders the label through the retail text path
-// (DRAW_text, font 0xd) instead of a synthesized DC6. Geometry mirrors the
-// ESCMENU_DrawMenu per-item formula so the text lands in the same band the
-// retail images bottom-anchor into; DRAW_text's y is the baseline (DC6 frames
-// draw upward from y), hence the small inset above the band bottom.
+// (DRAW_text, font 2 = Font30) instead of a synthesized DC6. Geometry mirrors
+// the DRAW_EscMenu per-item formula so the text lands in the same band the
+// retail images bottom-anchor into; DRAW_text's y is the glyph-cell bottom
+// (DC6 frames draw upward from y), hence the small inset above the band bottom.
 void __fastcall VANILLAPLUS_DrawRowLabel(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     (void)pMsg;
     if (!pItem) {
@@ -385,7 +403,7 @@ void __stdcall DRAW_VanillaPlusOptions() {
     int nBoxY = 0;
     VPPAGE_GetBoxOrigin(&nBoxX, &nBoxY);
 
-    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(VPLABEL_FONT_ID);
+    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(VPPAGE_FONT_ID);
 
     // Panel: the ControlConfig box geometry, so the page reads as a sibling.
     Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nBoxX, nBoxY, VPPAGE_BOX_WIDTH, VPPAGE_BOX_HEIGHT, 0, DRAW_TRANSPARENT);

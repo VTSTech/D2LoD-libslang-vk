@@ -338,3 +338,46 @@ also re-type-checks the new `fpDrawCallback` pointer against the verbatim
 re-check: label visible + legible, no cursor lock, toggle round-trip, Esc
 round-trip, clean shutdown free (the placeholder exercises the same retail
 free path).
+
+## 10. Field-QA revision (rev D, 2026-10-29) — label size fix
+
+Field round 2 on the rev-3 overlay: **"label shows, but the text is ~10% the
+size of the neighboring rows; cursor unlocked"** — Route B itself confirmed
+healthy (draw hook, placeholder, input batch all good), one residual defect:
+the label font.
+
+Root cause: `VPLABEL_FONT_ID` was 0xd = `aFontNames[13]` = **FontInGameChat**
+(the chat console font, ~10 px cell) — correct for the page, which mirrors
+ControlConfig (drawn entirely in FontInGameChat), but wrong beside the esc-menu
+rows: the retail neighbors (`SoundOptions` / `VideoOptions` /
+`AutoMapOptions` / `CfgOptions` / `Previous`) are DC6 label *images* in the
+big menu-font family — the same look as the esc-menu main items. Chat-size
+text next to those images reads as a small fraction of their height.
+
+Fix: the row label switches to font 2 = `aFontNames[2]` = **Font30** (30 px
+cell), the family those label images belong to. Geometry: the 0x27 band fits
+the 30 px cell with `VPLABEL_BASELINE_INSET` 8 → 4 (cell spans
+rowTop+5 .. rowTop+35, 'p' descender included — `DRAW_text` y is the glyph
+cell bottom, descent included). Blast-radius guard: the page keeps 0xd via a
+new dedicated constant `VPPAGE_FONT_ID` — the constants are deliberately split
+so the two surfaces can't drag each other's metrics (the page's 0x1a row bands
+cannot fit a 30 px cell; unifying them would have broken the page while fixing
+the row).
+
+In-tree evidence trail: `aFontNames[14]` (globals/D2Win.cpp) maps 13 →
+FontInGameChat and 2 → Font30; `SetAndReturnLastFont(2)` lazy-loads
+`DATA\LOCAL\Font\<lang>\Font30.dc6/.tbl` through the standard font cache (no
+new machinery, every locale ships Font30). Bonus finding while auditing the
+retail draw: `IMAGE_DrawDC6ImageOnScreen`'s 4th argument is an ALIGN MODE
+(1 = center the frames' total width on x, 2 = right-anchor), **not** a frame
+index — so the 1-frame 8x8 placeholder is safe by construction (type-0 rows
+draw it centered and transparent).
+
+### 10.1 Verification
+
+Sandbox: extracted-verbatim harness re-run green (the font constants live
+inside the extracted namespace body). Real gate: owner llvm-mingw i686
+rebuild, then field round 3: label height visually matches the neighboring
+rows (640x480 and 800x600), vertical centering acceptable, the Vanilla+ page
+still renders ControlConfig-styled (unchanged), and every round-2 behavior
+stays green (live cursor, toggle round-trips, Esc round-trip, clean shutdown).
