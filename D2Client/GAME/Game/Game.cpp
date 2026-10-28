@@ -482,7 +482,17 @@ void __stdcall HandleMouseButtonEvent(int32_t pMouseEvent) {
     SHORT keyState;
     gnLastMouseButtonEventType = *(uint32_t*)(pMouseEvent + 8);
     if (*(int*)(pMouseEvent + 8)) {
-      UI::Draw::SetUIFlag(UI_HOLDALT, UI_RESET, 0);
+      // [vanilla-plus alt-toggle] This non-zero-event branch (message code
+      // 0x1c registration) fires on clicks AND app-activation. Vanilla uses
+      // it to clear Alt labels on click-while-holding. In toggle mode the
+      // flag converges to the latch instead: latched labels survive clicks,
+      // and an activation after a stuck Alt (lost keyup across alt-tab)
+      // heals to a sane state in both directions.
+      if (ALTTOGGLE_Active()) {
+        UI::Draw::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
+      } else {
+        UI::Draw::SetUIFlag(UI_HOLDALT, UI_RESET, 0);
+      }
       gClickModifierDown = 0;
       Select::ClearSelectedUnit();
       D2Win::Src::D2WinPalette::D2WINPALETTE_SetPaletteIndex(0);

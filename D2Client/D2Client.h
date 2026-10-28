@@ -110,6 +110,14 @@ void __stdcall CMD_SetHoldAlt();
 void __stdcall CMD_StopRun();
 void __stdcall CMD_ClearClickModifier();
 void __stdcall CMD_ReleaseHoldAltAndClearSelection();
+// [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle
+// (D2R "Show Items: Toggle" parity). d2vp.ini next to d2.exe,
+// [features] alt_toggle=0|1 - default/missing file/missing key/garbage = 0
+// = vanilla hold-Alt behavior byte-for-byte.
+BOOL __stdcall ALTTOGGLE_Active();   // config: toggle mode on?
+BOOL __stdcall ALTTOGGLE_Latched();  // current latch value
+void __stdcall ALTTOGGLE_Flip();     // keydown: latch = !latch
+void __stdcall ALTTOGGLE_Reset();    // InitializeUI: latch = FALSE
 // Validates whether a command can be bound to mouse buttons (0x103-0x104). Returns false if command handler exists and button is left/right click, true otherwise. Used during key binding setup to prevent invalid mouse button assignments.
 BOOL CMD_ValidateMouseButtonBinding(int32_t nCmdIndex, uint16_t * pErrorCode, uint32_t nMouseButton);
 int32_t SORT_CompareInts(int * pA, int * pB);

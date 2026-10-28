@@ -59,6 +59,16 @@ each can be fixed, replaced and released independently.
    user's own 1.14d install. Single-player focus; Battle.net is out of scope
    until upstream recovers it.
 
+## Features (opt-in, config-gated)
+
+- **Alt-key item-label toggle** (D2R "Show Items: Toggle" parity) — each full
+  Alt press flips ground-item labels on/off instead of hold-to-show. Latched
+  labels survive clicks, walking and attacking; overhead player names follow
+  the toggle; entering a game starts with labels off. **Default OFF**: set
+  `[features] alt_toggle=1` in `d2vp.ini` next to `d2.exe` (missing
+  file/section/key/garbage value = vanilla hold-Alt behavior byte-for-byte;
+  the key is hot-re-read at most every 2 s).
+
 ## Build
 
 ```sh

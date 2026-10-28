@@ -1806,6 +1806,9 @@ void __stdcall InitializeUI() {
     GFX_bShowUIFlag.ConfigControls = 0;
     GFX_bShowUIFlag.NpcShop = 0;
     GFX_bShowUIFlag.AltShowItems = 0;
+    // [vanilla-plus alt-toggle] wholesale UI reset drops the latch too, so
+    // entering a game starts with labels off (vanilla parity).
+    ALTTOGGLE_Reset();
     GFX_bShowUIFlag.Cash = 0;
     GFX_bShowUIFlag.Quest = 0;
     GFX_bShowUIFlag.PartyPane = 0;

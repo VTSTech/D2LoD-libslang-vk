@@ -784,7 +784,68 @@ void __stdcall thunk_NET_D2GS_CLIENT_Send_SHORT_LeftSkillOnLocEx() {
     GAME::Msg::NET_D2GS_CLIENT_Send_SHORT('?', 0x20);
 }
 
+// [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle
+// (D2R "Show Items: Toggle" parity). d2vp.ini next to d2.exe:
+//   [features]
+//   alt_toggle=1
+// Default/missing file/missing section/missing key/garbage value = 0 =
+// vanilla hold-Alt behavior byte-for-byte (Principle 1: opt-in, config-gated).
+// The ini is re-checked at most every 2000 ms via GetTickCount, mirroring the
+// wrapper's ~2 s conf hot-reload cadence. Auto-repeat never reaches the
+// handlers (CmdTbl.cpp filters lParam bit 30 upstream), so the keydown
+// handler fires exactly once per physical press.
+static int gbAltToggleMode = 0;
+static int gbAltLatched = 0;
+static DWORD dwAltToggleLastCheck = 0;
+
+BOOL __stdcall ALTTOGGLE_Active() {
+    DWORD dwNow = GetTickCount();
+    if (!dwAltToggleLastCheck || dwNow - dwAltToggleLastCheck >= 2000) {
+        char szIniPath[260];
+        dwAltToggleLastCheck = dwNow;
+        szIniPath[0] = '\0';
+        DWORD dwLen = GetModuleFileNameA(nullptr, szIniPath, 240);
+        if (dwLen && dwLen < 240) {
+            char* pSlash = strrchr(szIniPath, '\\');
+            if (pSlash) {
+                pSlash[1] = '\0';
+            } else {
+                szIniPath[0] = '\0';
+            }
+            lstrcatA(szIniPath, "d2vp.ini");
+            // GetPrivateProfileIntA: missing file/section/key or a non-numeric
+            // value all return the 0 default = vanilla hold mode.
+            gbAltToggleMode = GetPrivateProfileIntA("features", "alt_toggle", 0, szIniPath) ? 1 : 0;
+        } else {
+            gbAltToggleMode = 0;
+        }
+    }
+    return gbAltToggleMode;
+}
+
+BOOL __stdcall ALTTOGGLE_Latched() {
+    return gbAltLatched;
+}
+
+void __stdcall ALTTOGGLE_Flip() {
+    if (ALTTOGGLE_Active()) {
+        gbAltLatched = !gbAltLatched;
+    }
+}
+
+void __stdcall ALTTOGGLE_Reset() {
+    gbAltLatched = 0;
+}
+
 void __stdcall CMD_SetHoldAlt() {
+    // [vanilla-plus alt-toggle] In toggle mode a full Alt press flips the
+    // latch; keyup then re-asserts the flag from the latch (heals a stuck
+    // Alt after a lost keyup across alt-tab). Hold mode: vanilla byte path.
+    if (ALTTOGGLE_Active()) {
+        ALTTOGGLE_Flip();
+        UI::Draw::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
+        return;
+    }
     UI::Draw::SetUIFlag(UI_HOLDALT, UI_SET, 0);
 }
 
@@ -811,6 +872,14 @@ void __stdcall CMD_ClearClickModifier() {
 }
 
 void __stdcall CMD_ReleaseHoldAltAndClearSelection() {
+    // [vanilla-plus alt-toggle] Toggle mode: converge the flag to the latch
+    // (labels persist across the key-up; a lost keyup can never strand the
+    // flag). Hold mode: vanilla byte path.
+    if (ALTTOGGLE_Active()) {
+        UI::Draw::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
+        GAME::Select::ClearSelectedUnit();
+        return;
+    }
     UI::Draw::SetUIFlag(UI_HOLDALT, UI_RESET, 0);
     GAME::Select::ClearSelectedUnit();
 }
