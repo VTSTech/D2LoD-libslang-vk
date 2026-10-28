@@ -3348,6 +3348,23 @@ void __stdcall RENDERER_DIRECT3D_DrawPalettedQuad(D2D3DSpriteInfoStrc * pTexture
     } else {
       uint8_t* pPaletteEntry;
       pPaletteEntry = gpPaletteTable[0x45] + nParam4 * 3;
+      // [vanilla-plus fix 26 diag B] Once per color slot: dump the diffuse
+      // triple actually consumed plus the table identity. H16-c proved a hue
+      // rotation cannot come from this multiply - so if probe A showed healthy
+      // triples but this probe shows a wrong RGB or a table pointer that is
+      // not &gnPaletteIndexCounter, the fault is wiring or a post-load clobber
+      // (then cross-read the D2GUARD lines). Pure logging, no control flow.
+      {
+        static uint32_t s_dwPal26BDumpedSlots = 0;
+        if (!(s_dwPal26BDumpedSlots & (1u << (nParam4 & 0x1f)))) {
+          s_dwPal26BDumpedSlots |= 1u << (nParam4 & 0x1f);
+          D2BOOT_MarkFmt("pal26B slot=%d tbl=%p exp=%p rgb=%02X %02X %02X",
+            nParam4, (void*)gpPaletteTable[0x45], (void*)gnPaletteIndexCounter,
+            (unsigned)(uint8_t)pPaletteEntry[0], (unsigned)(uint8_t)pPaletteEntry[1],
+            (unsigned)(uint8_t)pPaletteEntry[2]);
+        }
+      }
+
       pVertexData[4] = (float)(uint32_t)((uint32_t)((uint32_t)((uint32_t)(uint16_t)((uint16_t)(uint8_t)nAlpha << 8 | (uint16_t)(uint8_t)*pPaletteEntry) << 8 | (uint32_t)(uint8_t)gpPaletteTable[0x45][nParam4 * 3 + 1]) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pPaletteEntry[2]);
     }
 

@@ -7,6 +7,7 @@
 #include "D2Glide/Renderer/Glide.h"
 #include "globals/globals.h"
 #include "D2CMP/tagPALETTEENTRY.h"
+#include "support/d2_boot.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -84,6 +85,27 @@ void __fastcall SetPalette(LPPALETTEENTRY pPalette) {
       pPal16Bit++;
       pSrcEntry += 4;
     } while ((int)pDst32 < (uintptr_t)((char*)&g_Palette32Bit + sizeof(g_Palette32Bit)));
+
+    // [vanilla-plus fix 26 diag C] Once per palette load (capped): snapshot
+    // eight sentinel g_Palette32Bit entries right after the rebuild. The OOG
+    // text hue-rotation family (purple "Expansion Character", teal copyright)
+    // is arithmetically upstream of the diffuse multiply (H16-c), i.e. in the
+    // glyph texel conversion this LUT drives. A family signature here (which
+    // palette the D3D LUT actually holds at each load, and whether the white
+    // ramp entries are white) decides between stale-LUT, wrong-palette-source
+    // and LUT-content corruption in ONE boot log. Pure logging, no control
+    // flow, retail byte behavior unchanged.
+    static int s_nPal26CLoadCount = 0;
+    if (s_nPal26CLoadCount < 12) {
+      s_nPal26CLoadCount++;
+      D2BOOT_MarkFmt(
+        "pal26C load#%d lut32[000]=%06X [010]=%06X [020]=%06X [040]=%06X [080]=%06X [0C0]=%06X [0F0]=%06X [0FF]=%06X",
+        s_nPal26CLoadCount,
+        (unsigned)(g_Palette32Bit[0x00] & 0xffffff), (unsigned)(g_Palette32Bit[0x10] & 0xffffff),
+        (unsigned)(g_Palette32Bit[0x20] & 0xffffff), (unsigned)(g_Palette32Bit[0x40] & 0xffffff),
+        (unsigned)(g_Palette32Bit[0x80] & 0xffffff), (unsigned)(g_Palette32Bit[0xC0] & 0xffffff),
+        (unsigned)(g_Palette32Bit[0xF0] & 0xffffff), (unsigned)(g_Palette32Bit[0xFF] & 0xffffff));
+    }
 }
 
 void __fastcall SetPaletteTable(BYTE * * ppPaletteTable) {
