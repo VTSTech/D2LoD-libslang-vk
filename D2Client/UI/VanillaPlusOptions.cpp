@@ -28,6 +28,7 @@
 #include "D2Client/D2Client.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Message.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Draw.h"
 #include "D2Client/UI/EscMenu.h"

@@ -119,6 +119,7 @@
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSystem.h"
 #include "Storm/Storm.h"
+#include "Storm/SMem.h" // vanilla-plus: non-WIN _SYSTEM_INFO owner (globals.h: gSystemInfo extern)
 #include "Storm/_unnamespaced.h"
 #include "Storm/H/stpl.h"
 
@@ -1776,7 +1777,7 @@ extern D2EscMenuUIFlagStrc gaEscMenuUIFlags[38];
 extern D2EscMenuItemStrc gaEscMenuMainTable[3];
 extern D2EscMenuHeaderStrc gaEscMenuHeaderOptions;
 extern D2EscMenuHeaderStrc gaEscMenuHeaderSaveExit;
-extern D2EscMenuItemStrc gaEscMenuOptionsTable[5];
+extern D2EscMenuItemStrc gaEscMenuOptionsTable[6];
 extern D2EscMenuItemStrc gaEscMenuSaveExitTable[8];
 extern D2EscMenuHeaderStrc gaEscMenuHeaderSwitchClass;
 extern D2EscMenuHeaderStrc gaEscMenuHeaderDeleteChar;

@@ -54,6 +54,7 @@
 #include "D2Client/UI/Spinner/SpinnerWrapper.h"
 #include "D2Client/UI/Text.h"
 #include "D2Client/UI/UseItem.h"
+#include "D2Client/UI/VanillaPlusOptions.h" // vanilla-plus (row 10): table row callbacks live in this namespace
 #include "D2Client/UI/Waypoint.h"
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/npcmenu/Merc.h"
