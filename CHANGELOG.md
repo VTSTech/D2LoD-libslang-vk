@@ -7,24 +7,11 @@ Format follows Keep a Changelog. Where a field round already ran, entries cite w
 glide3x.log showed on real hardware (RX 560, Vulkan 1.3, windowed). Commit refs are on
 branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
 
-## [0.4.5] - 2026-10-25 (controller support + cursor-home; window presets config-only; CPU raster perf round 1)
-
-Field triggers: the 0.4.3 full-screen field log (round-17 build, crtglow_lanczos
-7-pass chain) showed avg=51.6 ms ≈ 19 fps in-game @ 800x600 — the frame line
-mix (152 fans + 170 strips + 142 RGB565 quads per frame, fill=0) pointed at
-CPU raster + texture-table upkeep as the budget, not the chain or the game.
-Later field rounds drove the controller work: a pad map for D2, then (once
-stick-walking worked) the cursor-home model — "when no analog input, put the
-cursor on the player and hide it, then when the analog moves, it's from
-player position and when analog stops, it's back to player position".
-Field round 3 verdict (after testing the shipped build): kept, but as an
-experimental feature — the direction is right yet "it still doesn't quite
-work right" in play, so the whole controller module now ships flagged
-experimental in the docs while it waits for another tuning pass.
+## [0.4.5] - 2026-10-25
 
 ### Added
 
-- **Controller support** (g3x_controller): opt-in gamepad play via input
+- **Experimental Controller support** (g3x_controller): opt-in gamepad play via input
   injection — the wrapper polls pad 0 through XInput on its own background
   thread (~125 Hz, smooth regardless of the game's 25 Hz tick) and injects
   ordinary mouse/keyboard events (SendInput), so the game just sees a normal
@@ -82,6 +69,149 @@ experimental in the docs while it waits for another tuning pass.
   Field round 3 (verdict on the shipped build): experimental — the anchor
   model helps but is not fully dialed in; docs now flag the module as such
   and the escape hatch is documented everywhere.
+
+### Changed
+
+- **Shift+V conf panel** (g3x_overlay + g3x_slang): press **Shift+V** in-game
+  to toggle an overlay panel on the left edge (below the game's `/fps` line;
+  the tag box keeps the top-right) listing every `d2slangvk.conf` option as
+  currently resolved — preset (basename), scale, vsync, aspect and base_res
+  at their live F11/F12 session values with a `file: ...` annotation when
+  they differ from the conf, window, borderless, and the controller block
+  (sens/aimsens/deadzone/moveclick/home — listed only while the controller
+  master switch is on) with the same defaults their
+  consumers apply (`g3x_ctrl_conf_fixup`, empty `window=` = native). The
+  content is re-parsed from disk on every open — the file is the truth, and
+  unlike the F11/F12 hotkeys the toggle polls on EVERY present
+  (g3x_frame_present), so it works with the chain off, where the present-path
+  hot-reload probe never runs. While up, the panel refreshes on conf
+  hot-reloads and F11/F12 presses. Same focus rule as F11/F12 (presses made
+  in another window never toggle), same fail-soft look (65%-black backdrop,
+  8x8 font, drop shadow), honors the `[glide3xvk] overlay=` ini switch, and
+  toasts + logs on toggle (`overlay: conf panel on/off (Shift+V)`).
+- **Conf panel arrows: selection + value editing** (g3x_overlay +
+  g3x_slang): while the panel is up, **Up/Down** move a green selection
+  cursor through the option lines — the selected row draws as a dim-green
+  band with bright-green glyphs (`#20FF20`-ish) against the white text, a
+  menu cursor in the same hue D2's own UI uses for picked text. The
+  `d2slangvk.conf` header line and the hint footer are not selectable; the
+  cursor clamps at the ends (no wrap — on a 13-option list a wrap reads as a
+  glitch); each move re-parses the conf (the file-is-truth rule holds for
+  selection redraws too, and the panel picks up any conf edit that landed
+  since the last refresh) and logs `overlay: conf panel sel <key>`.
+  **Left/Right** change the selected option: one press = one step, written
+  straight into `d2slangvk.conf` and pushed through the normal conf
+  machinery, so it lands live exactly like a hand edit — aspect/base_res
+  snap on the spot, scale reads per frame, vsync at the next swapchain
+  (re)creation, window/borderless/controller on their own mtime probes.
+  The write is surgical (g3x_slang_conf_rewrite_text, host-tested):
+  comments, blank lines, spacing, key order and line endings survive
+  byte-for-byte; only the edited key's assignment changes (every duplicate
+  of it — the parser is last-one-wins); same-line comments are kept; a
+  missing key is appended at the end of the `[slangvk]` section, a missing
+  section or conf is synthesized. The steps mirror the consumers' own
+  fixups, so what the arrows write is always a value the parser accepts:
+  preset cycles the game dir's `*.slangp` files (sorted, `(none)` at the
+  front; subdir/absolute presets stay file-edit-only), scale
+  fit/stretch/integer, vsync auto/off/on, aspect auto/4:3/16:10/16:9 (the
+  F11 order), base_res 1x-4x, window native/240p/480p/576p/720p/768p/
+  1080p/desktop (the preset table; `WxH` stays file-edit-only),
+  borderless/controller/moveclick/home toggle, controller_sens 0.25 steps
+  (0.25-16), controller_aimsens 0.05 steps (0.05-4), controller_deadzone
+  5% steps (1-80). Every change toasts (`aspect 16:9`) and logs
+  (`overlay: conf aspect = 16:9`); a list end, an empty preset dir or a
+  failed write touches nothing and logs why. Same focus rule and edge
+  latches as every hotkey here; while the panel is hidden the arrow keys
+  are untouched — the game keeps them. The footer hint reads
+  `[Up/Down] select - [Left/Right] change - [Shift+V] hide` (on the preset
+  row: `... [Left/Right] list ...`).
+- **Conf panel: controller-off hiding + preset browser** (g3x_slang): with
+  `controller=0` the controller sub-options are inert, so the panel skips
+  their rows — the `controller off` row itself stays (Left/Right switches
+  it back on, which re-lists the sub-options on the spot). And **Left/Right**
+  on the preset row open the preset browser over the **current preset's
+  folder subtree**: the scan root follows `preset=`'s dir component
+  (`presets\crt.slangp` lists the `presets` tree; a bare/empty/absolute
+  `preset=` lists the game dir tree) and the walk recurses to any depth —
+  shader collections nest deeper than two folders — with the rows stored
+  exactly as `preset=` accepts them (`presets\xbr.slangp`,
+  `shaders\crt\royale\kurozumi.slangp` — a pick resolves back to the very
+  file listed).
+  Page shape: a `presets (N) - <dir>` header (the scan root), the
+  conf's current preset starred (`* `), `(none)` at the front, up to 16 rows
+  on screen with a scroll window that follows the cursor. **Up/Down** move
+  the green cursor through it, **Right** loads the highlighted preset (the
+  same surgical `preset=` write + conf hot-reload path as the value
+  edits — a real change rebuilds the chain live, re-picking the same
+  preset is a no-op rewrite that still confirms via toast), and **Left**
+  goes back to the option page (Shift+V hides everything and resets the
+  browser). The browser is deliberately Enter/Esc-free — Enter reaches the
+  game's chat box and Esc its menu, and a GetAsyncKeyState poll cannot
+  swallow either, so Left/Right do double duty (open from the preset row,
+  then load/back while it is up). The tree is scanned fresh at every
+  open; an empty tree toasts `no .slangp under <folder>` instead of opening
+  an empty page. Logs `overlay: preset browser ...` lines to match.
+- **Overlay: repo credit line** (g3x_overlay): the tag box ends with a
+  permanent bottom line — `GitHub: VTSTech/D2LoD-libslang-vk` — the one
+  overlay line that never clears (shader line) and never expires (toast),
+  so every screenshot the overlay stamps also names the project's home.
+  The conf panel draws before the tag box, so the stamp wins any overlap on
+  tiny present targets.
+- **Overlay: the running game exe + its patch version** (g3x_hostver +
+  g3x_overlay + glide_exports): the tag box gains a line directly under the
+  build stamp naming the host — `d2.exe 1.14d` — detected once per process at
+  the first `grSstWinOpen` and fail-soft end to end. Tier 1 reads the exe's
+  VERSIONINFO resource and maps the Blizzard-stamped `dwFileVersion` pair to
+  the community patch names via d2dx's field-tested table (`1.0.9.22`=1.09d,
+  `1.0.10.9`=1.10, `1.0.12.49`=1.12, `1.0.13.60`=1.13c, `1.0.13.64`=1.13d,
+  `1.14.3.68`=1.14b, `1.14.3.71`=1.14d); an unmapped pair shows the dotted
+  value (`Game.exe v1.0.13.55`), and a build with no resource at all (this
+  repo's own CMake-built d2.exe) falls back to its PE `TimeDateStamp`
+  (`d2.exe [PE 3A5D2B1F]`) or just the exe name. The raw evidence is always
+  logged (`hostver: ... (ver= ms= ls= pe= size=)`), so an unmapped build can
+  be named later by quoting its log line. New module `g3x_hostver` (pure
+  table/PE-parse/format host-tested in scripts/test_hostver.cpp, 46 checks
+  under ASan+UBSan; Win32 pass fakecheck type-checked); glide3x links the
+  system version import lib. No game-side changes — the DLL stays strictly
+  read-only toward Game.exe.  
+
+
+### Fixed
+
+- **Flicker investigation closed by the config-only switch (field
+  confirmation):** the "constantly resizing the frame" turbulence reported
+  on the F10 builds (b6c5bce log: 20 applies = 20 clean one-shot swap
+  recreates, no storms — the wrapper's per-frame path was never the
+  culprit) rode on the live hotkey apply cycle itself (SetWindowPos +
+  same-frame swapchain recreate + chain retarget + toast at the menu's
+  cadence). Field-verified after the F10 removal: resizing via `window=` in
+  the conf — applied at renderer open and on the quiet ~32-frame mtime
+  hot-reload — changes the running size with **no flicker**. Config-only
+  presets are therefore also the flicker fix; any future live-resize
+  feature must solve the apply-cycle turbulence first.
+- Conf-panel/browser toasts were invisible while no preset was loaded: the
+  overlay's optional toast line required the active-shader line to be up
+  (`three = two && s_toast_on`), so e.g. the browser's `no .slangp ...`
+  toast never drew in exactly the situation that produced it — the field
+  report of "never seeing" the empty-folder toast. The toast now draws
+  whether or not a shader line is up; the tag box's credit line stays the
+  bottom row either way.
+- The 8x8 overlay font's 'm' rendered as a solid block: DejaVu Sans Mono
+  Bold's triple-stem 'm' collapses under the 4x-box-filter at 8px, and no
+  overlay string until now contained a lowercase 'm'. The Shift+V panel's
+  controller keys (`controller_aimsens` / `controller_moveclick` /
+  `controller_home`) exposed it. `scripts/gen_font8x8.py` now hand-draws 'm'
+  alongside the g/p/q/j descender overrides (1px stems 3 columns apart, 1px
+  top bar, x-height body rows 2-7, in the style of the generated 'n'); the
+  header was regenerated — every other glyph byte-identical.  
+
+
+## [0.4.4] - 2026-10-25 (CPU raster perf round 1 — x87 off the hot path)
+
+Field trigger: the 0.4.3 full-screen field log (round-17 build, crtglow_lanczos
+7-pass chain) showed avg=51.6 ms ≈ 19 fps in-game @ 800x600 — the frame line
+mix (152 fans + 170 strips + 142 RGB565 quads per frame, fill=0) pointed at
+CPU raster + texture-table upkeep as the budget, not the chain or the game.
 
 ### Changed
 
@@ -209,17 +339,6 @@ experimental in the docs while it waits for another tuning pass.
   here). One-line type fix; downstream uses are only `== 0` / `== 2`
   compares, so no behavior change. Full rebuild + link verified locally
   (45/45 Glide exports match D2Client/Renderer/Glide.cpp).
-- **Flicker investigation closed by the config-only switch (field
-  confirmation):** the "constantly resizing the frame" turbulence reported
-  on the F10 builds (b6c5bce log: 20 applies = 20 clean one-shot swap
-  recreates, no storms — the wrapper's per-frame path was never the
-  culprit) rode on the live hotkey apply cycle itself (SetWindowPos +
-  same-frame swapchain recreate + chain retarget + toast at the menu's
-  cadence). Field-verified after the F10 removal: resizing via `window=` in
-  the conf — applied at renderer open and on the quiet ~32-frame mtime
-  hot-reload — changes the running size with **no flicker**. Config-only
-  presets are therefore also the flicker fix; any future live-resize
-  feature must solve the apply-cycle turbulence first.
 
 ### Validated
 
@@ -237,141 +356,7 @@ experimental in the docs while it waits for another tuning pass.
   chroma toggles, 5 blend classes, full-screen fills, points/lines, gamma
   swings, palette epoch bumps, rebind storms, 8600-key table-full stress —
   produces the identical present-buffer FNV hash and counters before/after.
-- Host controller-core test (scripts/ctrltest.cpp, agent-side): 240/240 —
-  conf fixups (defaults/clamps, aimsens, moveclick/home normalization), bind-table
-  shape (unique masks, valid steps, documented map v2 incl. the A combo and
-  trigger pseudo-binds), stick response (deadzone, squared curve, normalized
-  diagonals, pad y convention), LT/RT click edges with threshold, A combo
-  press/release order, THE stick-walk x A-combo interaction (one LMB, Shift
-  only on A release, walk LMB persists), stick-walk arming after release_all,
-  Y/X tap walks (no auto-repeat window), 15-event flood with cap, release_all
-  idempotence + ghost-free re-press semantics, NULL tolerance (incl. conf).
-  wintest regression still 40/40.
-
-### Added (0.4.5 addendum — the first 0.4.5 release ships these; 0.4.5 was
-never tagged before)
-
-- **Shift+V conf panel** (g3x_overlay + g3x_slang): press **Shift+V** in-game
-  to toggle an overlay panel on the left edge (below the game's `/fps` line;
-  the tag box keeps the top-right) listing every `d2slangvk.conf` option as
-  currently resolved — preset (basename), scale, vsync, aspect and base_res
-  at their live F11/F12 session values with a `file: ...` annotation when
-  they differ from the conf, window, borderless, and the controller block
-  (sens/aimsens/deadzone/moveclick/home — listed only while the controller
-  master switch is on) with the same defaults their
-  consumers apply (`g3x_ctrl_conf_fixup`, empty `window=` = native). The
-  content is re-parsed from disk on every open — the file is the truth, and
-  unlike the F11/F12 hotkeys the toggle polls on EVERY present
-  (g3x_frame_present), so it works with the chain off, where the present-path
-  hot-reload probe never runs. While up, the panel refreshes on conf
-  hot-reloads and F11/F12 presses. Same focus rule as F11/F12 (presses made
-  in another window never toggle), same fail-soft look (65%-black backdrop,
-  8x8 font, drop shadow), honors the `[glide3xvk] overlay=` ini switch, and
-  toasts + logs on toggle (`overlay: conf panel on/off (Shift+V)`).
-- **Conf panel arrows: selection + value editing** (g3x_overlay +
-  g3x_slang): while the panel is up, **Up/Down** move a green selection
-  cursor through the option lines — the selected row draws as a dim-green
-  band with bright-green glyphs (`#20FF20`-ish) against the white text, a
-  menu cursor in the same hue D2's own UI uses for picked text. The
-  `d2slangvk.conf` header line and the hint footer are not selectable; the
-  cursor clamps at the ends (no wrap — on a 13-option list a wrap reads as a
-  glitch); each move re-parses the conf (the file-is-truth rule holds for
-  selection redraws too, and the panel picks up any conf edit that landed
-  since the last refresh) and logs `overlay: conf panel sel <key>`.
-  **Left/Right** change the selected option: one press = one step, written
-  straight into `d2slangvk.conf` and pushed through the normal conf
-  machinery, so it lands live exactly like a hand edit — aspect/base_res
-  snap on the spot, scale reads per frame, vsync at the next swapchain
-  (re)creation, window/borderless/controller on their own mtime probes.
-  The write is surgical (g3x_slang_conf_rewrite_text, host-tested):
-  comments, blank lines, spacing, key order and line endings survive
-  byte-for-byte; only the edited key's assignment changes (every duplicate
-  of it — the parser is last-one-wins); same-line comments are kept; a
-  missing key is appended at the end of the `[slangvk]` section, a missing
-  section or conf is synthesized. The steps mirror the consumers' own
-  fixups, so what the arrows write is always a value the parser accepts:
-  preset cycles the game dir's `*.slangp` files (sorted, `(none)` at the
-  front; subdir/absolute presets stay file-edit-only), scale
-  fit/stretch/integer, vsync auto/off/on, aspect auto/4:3/16:10/16:9 (the
-  F11 order), base_res 1x-4x, window native/240p/480p/576p/720p/768p/
-  1080p/desktop (the preset table; `WxH` stays file-edit-only),
-  borderless/controller/moveclick/home toggle, controller_sens 0.25 steps
-  (0.25-16), controller_aimsens 0.05 steps (0.05-4), controller_deadzone
-  5% steps (1-80). Every change toasts (`aspect 16:9`) and logs
-  (`overlay: conf aspect = 16:9`); a list end, an empty preset dir or a
-  failed write touches nothing and logs why. Same focus rule and edge
-  latches as every hotkey here; while the panel is hidden the arrow keys
-  are untouched — the game keeps them. The footer hint reads
-  `[Up/Down] select - [Left/Right] change - [Shift+V] hide` (on the preset
-  row: `... [Left/Right] list ...`).
-- **Conf panel: controller-off hiding + preset browser** (g3x_slang): with
-  `controller=0` the controller sub-options are inert, so the panel skips
-  their rows — the `controller off` row itself stays (Left/Right switches
-  it back on, which re-lists the sub-options on the spot). And **Left/Right**
-  on the preset row open the preset browser over the **current preset's
-  folder subtree**: the scan root follows `preset=`'s dir component
-  (`presets\crt.slangp` lists the `presets` tree; a bare/empty/absolute
-  `preset=` lists the game dir tree) and the walk recurses to any depth —
-  shader collections nest deeper than two folders — with the rows stored
-  exactly as `preset=` accepts them (`presets\xbr.slangp`,
-  `shaders\crt\royale\kurozumi.slangp` — a pick resolves back to the very
-  file listed).
-  Page shape: a `presets (N) - <dir>` header (the scan root), the
-  conf's current preset starred (`* `), `(none)` at the front, up to 16 rows
-  on screen with a scroll window that follows the cursor. **Up/Down** move
-  the green cursor through it, **Right** loads the highlighted preset (the
-  same surgical `preset=` write + conf hot-reload path as the value
-  edits — a real change rebuilds the chain live, re-picking the same
-  preset is a no-op rewrite that still confirms via toast), and **Left**
-  goes back to the option page (Shift+V hides everything and resets the
-  browser). The browser is deliberately Enter/Esc-free — Enter reaches the
-  game's chat box and Esc its menu, and a GetAsyncKeyState poll cannot
-  swallow either, so Left/Right do double duty (open from the preset row,
-  then load/back while it is up). The tree is scanned fresh at every
-  open; an empty tree toasts `no .slangp under <folder>` instead of opening
-  an empty page. Logs `overlay: preset browser ...` lines to match.
-- **Overlay: repo credit line** (g3x_overlay): the tag box ends with a
-  permanent bottom line — `GitHub: VTSTech/D2LoD-libslang-vk` — the one
-  overlay line that never clears (shader line) and never expires (toast),
-  so every screenshot the overlay stamps also names the project's home.
-  The conf panel draws before the tag box, so the stamp wins any overlap on
-  tiny present targets.
-- **Overlay: the running game exe + its patch version** (g3x_hostver +
-  g3x_overlay + glide_exports): the tag box gains a line directly under the
-  build stamp naming the host — `d2.exe 1.14d` — detected once per process at
-  the first `grSstWinOpen` and fail-soft end to end. Tier 1 reads the exe's
-  VERSIONINFO resource and maps the Blizzard-stamped `dwFileVersion` pair to
-  the community patch names via d2dx's field-tested table (`1.0.9.22`=1.09d,
-  `1.0.10.9`=1.10, `1.0.12.49`=1.12, `1.0.13.60`=1.13c, `1.0.13.64`=1.13d,
-  `1.14.3.68`=1.14b, `1.14.3.71`=1.14d); an unmapped pair shows the dotted
-  value (`Game.exe v1.0.13.55`), and a build with no resource at all (this
-  repo's own CMake-built d2.exe) falls back to its PE `TimeDateStamp`
-  (`d2.exe [PE 3A5D2B1F]`) or just the exe name. The raw evidence is always
-  logged (`hostver: ... (ver= ms= ls= pe= size=)`), so an unmapped build can
-  be named later by quoting its log line. New module `g3x_hostver` (pure
-  table/PE-parse/format host-tested in scripts/test_hostver.cpp, 46 checks
-  under ASan+UBSan; Win32 pass fakecheck type-checked); glide3x links the
-  system version import lib. No game-side changes — the DLL stays strictly
-  read-only toward Game.exe.
-
-### Fixed (0.4.5 addendum)
-
-- Conf-panel/browser toasts were invisible while no preset was loaded: the
-  overlay's optional toast line required the active-shader line to be up
-  (`three = two && s_toast_on`), so e.g. the browser's `no .slangp ...`
-  toast never drew in exactly the situation that produced it — the field
-  report of "never seeing" the empty-folder toast. The toast now draws
-  whether or not a shader line is up; the tag box's credit line stays the
-  bottom row either way.
-- The 8x8 overlay font's 'm' rendered as a solid block: DejaVu Sans Mono
-  Bold's triple-stem 'm' collapses under the 4x-box-filter at 8px, and no
-  overlay string until now contained a lowercase 'm'. The Shift+V panel's
-  controller keys (`controller_aimsens` / `controller_moveclick` /
-  `controller_home`) exposed it. `scripts/gen_font8x8.py` now hand-draws 'm'
-  alongside the g/p/q/j descender overrides (1px stems 3 columns apart, 1px
-  top bar, x-height body rows 2-7, in the style of the generated 'n'); the
-  header was regenerated — every other glyph byte-identical.
-
+  
 ## [0.4.3] - 2026-10-24 (F11/F12 hotkeys + the full d2slangvk.conf reference)
 
 The user asked for Chocolate-Doom-VK's hotkey scheme here (the other
