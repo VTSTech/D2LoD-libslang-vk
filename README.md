@@ -1,8 +1,12 @@
 # Redivivus
 
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/MHK2Dg9)
+[![redivivus.app](https://img.shields.io/badge/redivivus.app-site-8f2b2b)](https://redivivus.app)
 
 Diablo II: Lord of Destruction 1.14d, recovered as C++ source that builds.
+
+The Ghidra databases behind the tree, 1.14d Windows and Mac, are open to read for anyone
+with an AI agent; see [Contributing](#contributing).
 
 *Redivivus* is Latin for a thing restored to life. This is not a reimplementation that
 behaves like the game. It is the shipped `Game.exe`, taken apart function by function,
