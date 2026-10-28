@@ -303,24 +303,30 @@ never tagged before)
   latches as every hotkey here; while the panel is hidden the arrow keys
   are untouched — the game keeps them. The footer hint reads
   `[Up/Down] select - [Left/Right] change - [Shift+V] hide` (on the preset
-  row: `... [Left/Right] cycle - [Enter] list ...`).
+  row: `... [Left/Right] list ...`).
 - **Conf panel: controller-off hiding + preset browser** (g3x_slang): with
   `controller=0` the controller sub-options are inert, so the panel skips
   their rows — the `controller off` row itself stays (Left/Right switches
-  it back on, which re-lists the sub-options on the spot). And **Enter** on
-  the preset row opens the preset browser: the game dir's `*.slangp` list
-  rendered in the panel itself — a `presets (N) - <dir>` header, the conf's
-  current preset starred (`* `), `(none)` at the front, up to 16 rows on
-  screen with a scroll window that follows the cursor. **Up/Down** move the
-  green cursor through it, **Enter** loads the highlighted preset (the
-  same surgical `preset=` write + conf hot-reload path as the Left/Right
-  cycling — a real change rebuilds the chain live, re-picking the same
-  preset is a no-op rewrite that still confirms via toast), and **Esc**
+  it back on, which re-lists the sub-options on the spot). And **Left/Right**
+  on the preset row open the preset browser over the **current preset's
+  folder**: the scan follows `preset=`'s dir component (`presets\crt.slangp`
+  lists the `presets` folder; a bare/empty/absolute `preset=` lists the game
+  dir) and the rows are stored exactly as `preset=` accepts them
+  (`presets\xbr.slangp` — a pick resolves back to the very file listed).
+  Page shape: a `presets (N) - <dir>` header (the scanned folder), the
+  conf's current preset starred (`* `), `(none)` at the front, up to 16 rows
+  on screen with a scroll window that follows the cursor. **Up/Down** move
+  the green cursor through it, **Right** loads the highlighted preset (the
+  same surgical `preset=` write + conf hot-reload path as the value
+  edits — a real change rebuilds the chain live, re-picking the same
+  preset is a no-op rewrite that still confirms via toast), and **Left**
   goes back to the option page (Shift+V hides everything and resets the
-  browser; Left/Right are inert while the browser is up). The browser
-  scans the game dir fresh at every open; an empty dir toasts
-  `no .slangp in game dir` instead of opening an empty page. Logs
-  `overlay: preset browser ...` lines to match.
+  browser). The browser is deliberately Enter/Esc-free — Enter reaches the
+  game's chat box and Esc its menu, and a GetAsyncKeyState poll cannot
+  swallow either, so Left/Right do double duty (open from the preset row,
+  then load/back while it is up). The folder is scanned fresh at every
+  open; an empty folder toasts `no .slangp in <folder>` instead of opening
+  an empty page. Logs `overlay: preset browser ...` lines to match.
 
 ### Fixed (0.4.5 addendum)
 

@@ -145,11 +145,18 @@ void g3x_slang_hotkeys_poll();
 // panel is hidden the arrow keys are untouched — the game keeps them.
 // 0.4.5: the controller sub-options (sens/aimsens/deadzone/moveclick/home)
 // are only listed while controller= is on — with the master switch off they
-// are inert, so the panel hides them until it is back on. And Enter on the
-// preset row opens the preset browser: the game dir's *.slangp list (cursor
-// starts on the conf's current preset), Up/Down move, Enter loads the
-// highlighted preset through the same write-conf + hot-reload path as the
-// Left/Right cycling, and Esc goes back to the option list.
+// are inert, so the panel hides them until it is back on. And Left/Right on
+// the preset row open the preset browser: the *.slangp list of the CURRENT
+// preset's folder — the dir component of preset= ("presets" for
+// "presets\crt.slangp"), or the game dir itself when preset= is empty, a
+// bare basename, or absolute — with the rows stored as the relative paths
+// preset= accepts (a subdir pick writes "presets\name.slangp" and resolves
+// back to the very file listed). The cursor starts on the conf's current
+// preset, Up/Down move, Right loads the highlighted preset through the same
+// write-conf + hot-reload path as the other rows' value edits, and Left
+// goes back to the option list. Enter and Esc are never asked for — they
+// reach the game's chat box and its menu, and a GetAsyncKeyState poll
+// cannot swallow them.
 void g3x_slang_conf_panel_poll();
 
 // ---- 0.4.5 preset browser (portable seam) ----------------------------------
@@ -159,12 +166,15 @@ void g3x_slang_conf_panel_poll();
 // here so this header stays overlay-free (the stub build compiles without it).
 enum { G3XSLANG_BROWSER_LINE_CAP = 73 };
 
-// Pure page builder for the preset browser — Enter on the panel's preset row.
+// Pure page builder for the preset browser — Left/Right on the preset row.
 // Renders into lines[][G3XSLANG_BROWSER_LINE_CAP]: a "presets (N) - dir"
 // header (dir_display empty/NULL drops the " - dir" part), up to
 // (max_lines - 2) list rows and a hint footer. Entry 0 is "(none)" (an empty
-// preset=), entries 1..count are the scanned file names; the entry matching
-// active_basename (""/NULL = none) is marked "* ". *sel/*top are in/out:
+// preset=), entries 1..count are the scanned names — bare basenames for a
+// game-dir scan, "subdir\name" relative paths when the browser lists the
+// current preset's folder; the entry matching active (the live preset=
+// value with '/' folded to '\\', full relative path, ""/NULL = none) is
+// marked "* ". *sel/*top are in/out:
 // sel clamps into [0, count] (0 = none), top scrolls so the cursor stays on
 // screen. Returns the pushed line count; *selected_out (when non-NULL) gets
 // the green-cursor line index for g3x_overlay_conf_panel_set_selected, or -1
@@ -172,7 +182,7 @@ enum { G3XSLANG_BROWSER_LINE_CAP = 73 };
 unsigned g3x_slang_browser_page(char (*lines)[G3XSLANG_BROWSER_LINE_CAP],
                                 unsigned max_lines,
                                 const char* const* names, unsigned count,
-                                const char* active_basename,
+                                const char* active,
                                 const char* dir_display,
                                 int* sel, unsigned* top, int* selected_out);
 

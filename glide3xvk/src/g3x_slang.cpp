@@ -317,16 +317,17 @@ std::string g3x_slang_conf_rewrite_text(const char* text,
 // ---- 0.4.5 preset browser page builder (portable; see g3x_slang.h) ---------
 //
 // Shape: "presets (N)[ - dir]" header, up to (max_lines - 2) rows of the
-// entry window, "[Up/Down] select - [Enter] load - [Esc] back" footer. The
+// entry window, "[Up/Down] select - [Right] load - [Left] back" footer. The
 // window only ever scrolls as far as the cursor needs — the caller keeps
 // *top between calls, so the view never jumps while the cursor stays inside
-// it. Entry 0 is "(none)"; the conf's current preset basename is starred so
-// the green cursor row and the actually-loaded preset stay distinguishable
-// when they differ.
+// it. Entry 0 is "(none)"; the conf's current preset value (the full
+// relative path as preset= wants it — '\' separators; a bare basename for
+// game-dir scans) is starred so the green cursor row and the
+// actually-loaded preset stay distinguishable when they differ.
 unsigned g3x_slang_browser_page(char (*lines)[G3XSLANG_BROWSER_LINE_CAP],
                                 unsigned max_lines,
                                 const char* const* names, unsigned count,
-                                const char* active_basename,
+                                const char* active,
                                 const char* dir_display,
                                 int* sel, unsigned* top, int* selected_out) {
     if (selected_out) *selected_out = -1;
@@ -352,14 +353,14 @@ unsigned g3x_slang_browser_page(char (*lines)[G3XSLANG_BROWSER_LINE_CAP],
     for (unsigned i = 0; i < body && t + i < total; ++i) {
         const unsigned e    = t + i;
         const char*    nm   = e ? names[e - 1] : "(none)";
-        const bool     live = e ? (active_basename && active_basename[0] &&
-                                   _stricmp(active_basename, nm) == 0)
-                                : !(active_basename && active_basename[0]);
+        const bool     live = e ? (active && active[0] &&
+                                   _stricmp(active, nm) == 0)
+                                : !(active && active[0]);
         std::snprintf(lines[n++], G3XSLANG_BROWSER_LINE_CAP, "%s%.61s",
                       live ? "* " : "  ", nm ? nm : "");
     }
     std::snprintf(lines[n++], G3XSLANG_BROWSER_LINE_CAP,
-                  "[Up/Down] select - [Enter] load - [Esc] back");
+                  "[Up/Down] select - [Right] load - [Left] back");
     if (selected_out) *selected_out = 1 + (int)((unsigned)s - t);
     return n;
 }
@@ -471,16 +472,51 @@ static char         s_conf_sel_key[24];
 static bool         s_prev_up = false, s_prev_down = false;
 static bool         s_prev_left = false, s_prev_right = false;
 
-// 0.4.5 preset browser (Enter on the preset row): the game dir's *.slangp
-// list with the cursor (0 = "(none)", 1.. = the scanned names) and the
-// scroll top. Scanned fresh at every open — the dir listing is read with
+// 0.4.5 preset browser (Left/Right on the preset row): the current preset's
+// folder's *.slangp list — the dir component of preset= ("presets" for
+// "presets\crt.slangp"), or the game dir itself when preset= is empty, a
+// bare basename, or absolute (see preset_rel_dir). The cursor (0 = "(none)",
+// 1.. = the scanned names, stored as the relative paths preset= accepts) and
+// the scroll top. Scanned fresh at every open — the dir listing is read with
 // the same file-is-truth rule as the conf.
 static bool         s_browser_open = false;
 static int          s_browser_sel  = 0;
 static unsigned     s_browser_top  = 0;
 static unsigned     s_browser_cnt  = 0;
 static char         s_browser_names[32][64];
-static bool         s_prev_enter = false, s_prev_esc = false;
+static char         s_browser_dir[MAX_PATH];   // full scan dir, page header
+
+// preset= writes and the FindFirstFileA scan share one separator ('\'), so
+// the browser's star match is a plain _stricmp on the normalized live value
+// below: a copy of the conf's preset with '/' folded to '\'.
+static void norm_preset_slash(const char* in, char* out, size_t cap) {
+    if (!out || !cap) return;
+    size_t n = 0;
+    if (in)
+        for (; in[n] && n + 1 < cap; ++n)
+            out[n] = (in[n] == '/') ? '\\' : in[n];
+    out[n] = '\0';
+}
+
+// The current preset's folder as a relative subdir ("presets"), or "" when
+// preset= is empty, a bare basename, or absolute — the same three-way split
+// resolve_preset_path makes, because the browser's entries are relative
+// paths by contract (an absolute dir would need absolute rows that cannot
+// round-trip inside the 64-byte name slots). An over-long dir component
+// falls back the same way.
+static void preset_rel_dir(const char* preset, char* out, size_t cap) {
+    if (!out || !cap) return;
+    out[0] = '\0';
+    if (!preset || !preset[0]) return;
+    if (preset[1] == ':' || preset[0] == '\\' || preset[0] == '/') return;
+    const char* last = nullptr;
+    for (const char* p = preset; *p; ++p)
+        if (*p == '/' || *p == '\\') last = p;
+    if (!last) return;                          // bare basename -> game dir
+    if ((size_t)(last - preset) >= cap) return; // cannot happen at preset[512]
+    std::memcpy(out, preset, (size_t)(last - preset));
+    out[last - preset] = '\0';
+}
 
 // 0.4.3: the shader base resolution's upscaled input image (game res x
 // s_base_live). The game frame is uploaded to s_img exactly as before, then
@@ -778,20 +814,20 @@ static void conf_panel_refresh() {
     };
 
     // 0.4.5 preset browser open = this refresh renders the browser page (the
-    // same panel widget, the game dir's preset list instead of the options).
-    // Early out BEFORE the main page's cursor clamp/capture below — that
-    // state is frozen while the browser is up and must never be re-derived
-    // from browser lines. Enter/Esc/Up/Down while the browser is up are the
-    // poll's business.
+    // same panel widget, the current preset's folder's list instead of the
+    // options). Early out BEFORE the main page's cursor clamp/capture below —
+    // that state is frozen while the browser is up and must never be
+    // re-derived from browser lines. Right/Left/Up/Down while the browser is
+    // up are the poll's business.
     if (s_browser_open) {
         const char* np[32];
         for (unsigned i = 0; i < s_browser_cnt; ++i) np[i] = s_browser_names[i];
-        const char* ab = c.preset;                 // basename: panel shows no paths
-        for (const char* p = c.preset; *p; ++p)
-            if (*p == '/' || *p == '\\') ab = p + 1;
+        char abn[512];                         // the live preset= value with
+        norm_preset_slash(c.preset, abn,       // '\' separators, so the star
+                          sizeof(abn));        // match hits subdir rows too
         int sel_line = -1;
         n = g3x_slang_browser_page(lines, G3XVK_CONF_PANEL_MAX_LINES, np,
-                                   s_browser_cnt, ab, s_exe_dir,
+                                   s_browser_cnt, abn, s_browser_dir,
                                    &s_browser_sel, &s_browser_top, &sel_line);
         for (unsigned i = 0; i < n; ++i) ptrs[i] = lines[i];
         g3x_overlay_conf_panel_set(ptrs, n);
@@ -874,10 +910,11 @@ static void conf_panel_refresh() {
     }
 
     // 0.4.5: the footer hints the cursor row's extra action — on the preset
-    // row Enter opens the preset browser (the game dir's *.slangp list).
+    // row Left/Right opens the preset browser (the game dir's *.slangp list;
+    // Enter is never asked for — it reaches the game's chat box).
     std::snprintf(footer, sizeof(lines[0]), "%s",
                   !_stricmp(s_conf_sel_key, "preset")
-                      ? "[Up/Down] select - [Left/Right] cycle - [Enter] list - [Shift+V] hide"
+                      ? "[Up/Down] select - [Left/Right] list - [Shift+V] hide"
                       : "[Up/Down] select - [Left/Right] change - [Shift+V] hide");
 
     g3x_overlay_conf_panel_set(ptrs, n);
@@ -891,23 +928,35 @@ static void conf_panel_refresh_if_visible() {
 
 // ---- 0.4.5 value editing (Left/Right on the selected option) ----------------
 
-// Lists the game dir's *.slangp presets (sorted, case-insensitive) for the
-// preset row's Left/Right cycling. The conf's preset= resolves relative
-// paths against this dir, so a scanned basename round-trips through the
-// parser exactly. Subdirectory presets stay file-edit-only — the panel
-// shows basenames only anyway (an 8px-column list has no room for paths).
-static bool scan_presets(char (*names)[64], unsigned max, unsigned* count) {
+// Lists the *.slangp presets in the browser's scan dir (sorted,
+// case-insensitively). rel_dir is the current preset's folder as a relative
+// subdir ("presets") or "" for the game dir itself; the stored names are
+// exactly what preset= accepts — bare basenames for the game dir,
+// "<subdir>\<name>" rows for a subdir scan — resolve_preset_path turns them
+// back into the very files that were listed, so a pick round-trips
+// byte-for-byte. Rows that do not fit the 64-byte name slots are skipped
+// (a truncated path could not round-trip).
+static bool scan_presets(const char* rel_dir, char (*names)[64],
+                         unsigned max, unsigned* count) {
     *count = 0;
+    if (!names || !count || !max) return false;
+    if (!rel_dir) rel_dir = "";
     if (!s_exe_dir[0] && !exe_dir_of(s_exe_dir, sizeof(s_exe_dir))) return false;
     char pat[MAX_PATH];
-    std::snprintf(pat, sizeof(pat), "%s\\*.slangp", s_exe_dir);
+    if (rel_dir[0])
+        std::snprintf(pat, sizeof(pat), "%s\\%s\\*.slangp", s_exe_dir, rel_dir);
+    else
+        std::snprintf(pat, sizeof(pat), "%s\\*.slangp", s_exe_dir);
     WIN32_FIND_DATAA fd{};
     HANDLE h = FindFirstFileA(pat, &fd);
     if (h == INVALID_HANDLE_VALUE) return true;    // none found is not an error
     do {
         if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
         if (*count >= max) break;
-        std::snprintf(names[*count], 64, "%s", fd.cFileName);
+        const int wr = rel_dir[0]
+            ? std::snprintf(names[*count], 64, "%s\\%s", rel_dir, fd.cFileName)
+            : std::snprintf(names[*count], 64, "%s", fd.cFileName);
+        if (wr < 0 || wr >= 64) continue;          // not round-trippable
         unsigned i = (*count)++;                   // insertion sort, ci-order
         while (i && _stricmp(names[i], names[i - 1]) < 0) {
             char tmp[64];
@@ -976,7 +1025,9 @@ static bool conf_panel_edit(int dir, char* desc, size_t desc_cap) {
     if (!_stricmp(key, "preset")) {
         char names[32][64];
         unsigned cnt = 0;
-        if (!scan_presets(names, 32, &cnt) || !cnt) return false;
+        // game-dir cycle (the browser owns the preset row today; kept so the
+        // editor still names a value if that routing ever changes)
+        if (!scan_presets("", names, 32, &cnt) || !cnt) return false;
         const char* cur = c.preset;            // basename: what the panel shows
         for (const char* q = c.preset; *q; ++q)
             if (*q == '/' || *q == '\\') cur = q + 1;
@@ -1078,18 +1129,35 @@ static bool conf_panel_edit(int dir, char* desc, size_t desc_cap) {
     return conf_write_key(key, val);
 }
 
-// ---- 0.4.5 preset browser (Enter on the panel's preset row) ----------------
+// ---- 0.4.5 preset browser (Left/Right on the panel's preset row) -----------
 
-// Opens the browser page: scans the game dir fresh (the listing is read like
-// the conf — at open), and the cursor starts on the conf's current preset, or
-// on "(none)" when there is none / it is not in the dir. An empty dir is a
-// toast, not an empty page — there is nothing useful to show or pick.
+// Opens the browser page over the CURRENT preset's folder: the dir component
+// of preset= ("presets" for "presets\crt.slangp"), or the game dir itself
+// when preset= is empty, a bare basename, or absolute (preset_rel_dir). The
+// listing is scanned fresh at every open — the same file-is-truth rule as
+// the conf — and stored as the relative paths preset= accepts. The cursor
+// starts on the conf's current preset (matched on the '\'-normalized value),
+// or on "(none)" when there is none / it is not in the folder. An empty
+// folder is a toast naming it, not an empty page — there is nothing useful
+// to show or pick.
 static void conf_panel_browser_open() {
+    G3xSlangConf c;
+    conf_parse_fresh(&c);
+
+    char rel[MAX_PATH];
+    preset_rel_dir(c.preset, rel, sizeof(rel));
+
     char names[32][64];
     unsigned cnt = 0;
-    if (!scan_presets(names, 32, &cnt) || !cnt) {
-        g3x_overlay_toast("no .slangp in game dir");
-        g3x_log("overlay: preset browser empty (no .slangp in game dir)");
+    if (!scan_presets(rel, names, 32, &cnt) || !cnt) {
+        char msg[80];
+        if (rel[0])
+            std::snprintf(msg, sizeof(msg), "no .slangp in %.60s", rel);
+        else
+            std::snprintf(msg, sizeof(msg), "no .slangp in game dir");
+        g3x_overlay_toast(msg);
+        g3x_log("overlay: preset browser empty (no .slangp in %s)",
+                rel[0] ? rel : "game dir");
         return;
     }
     for (unsigned i = 0; i < cnt; ++i)
@@ -1097,11 +1165,15 @@ static void conf_panel_browser_open() {
                       names[i]);
     s_browser_cnt = cnt;
 
-    G3xSlangConf c;                            // cursor starts on the live preset
-    conf_parse_fresh(&c);
-    const char* cur = c.preset;                // basename: what the panel shows
-    for (const char* q = c.preset; *q; ++q)
-        if (*q == '/' || *q == '\\') cur = q + 1;
+    if (rel[0])                                // full scan dir for the header
+        std::snprintf(s_browser_dir, sizeof(s_browser_dir), "%s\\%s",
+                      s_exe_dir, rel);
+    else
+        std::snprintf(s_browser_dir, sizeof(s_browser_dir), "%s", s_exe_dir);
+
+    char cur[512];                             // live value, '\' separators —
+    norm_preset_slash(c.preset, cur,           // matches subdir rows too
+                      sizeof(cur));
     s_browser_sel = 0;
     if (cur[0]) {
         for (unsigned i = 0; i < cnt; ++i)
@@ -1116,11 +1188,12 @@ static void conf_panel_browser_open() {
     char msg[40];
     std::snprintf(msg, sizeof(msg), "presets: %u", cnt);
     g3x_overlay_toast(msg);
-    g3x_log("overlay: preset browser open (%u found)", cnt);
+    g3x_log("overlay: preset browser open (%u found%s%s)", cnt,
+            rel[0] ? " in " : "", rel[0] ? rel : "");
 }
 
-// Enter in the browser: write the highlighted entry into preset= (the same
-// surgical single-key write the Left/Right cycling uses; "(none)" writes an
+// Right in the browser: write the highlighted entry into preset= (the same
+// surgical single-key write the other rows' value edits use; "(none)" writes an
 // empty value, i.e. the key present but blank) and hand the change to
 // reread_conf — which reloads the chain on a real change and lands the panel
 // back on the option page (the browser closes first). Selecting the
@@ -1155,8 +1228,6 @@ void g3x_slang_conf_panel_poll() {
         s_prev_down   = false;
         s_prev_left   = false;
         s_prev_right  = false;
-        s_prev_enter  = false;
-        s_prev_esc    = false;
         return;
     }
     const bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
@@ -1225,31 +1296,6 @@ void g3x_slang_conf_panel_poll() {
     s_prev_up   = up;
     s_prev_down = down2;
 
-    // 0.4.5: Enter on the preset row opens the preset browser; in the
-    // browser Enter LOADS the highlighted preset and Esc goes back to the
-    // option page. Same focus rule and edge latches as the other panel keys
-    // (Enter and Esc also reach the game, like every polled key here — the
-    // panel is a read/write view, not an input grab).
-    const bool enter = (GetAsyncKeyState(VK_RETURN) & 0x8000) != 0;
-    const bool esc   = (GetAsyncKeyState(VK_ESCAPE) & 0x8000) != 0;
-    if (g3x_overlay_conf_panel_visible()) {
-        if (enter && !s_prev_enter) {
-            if (s_browser_open) {
-                conf_panel_browser_load();
-            } else if (s_conf_opt_count &&
-                       !_stricmp(s_conf_sel_key, "preset")) {
-                conf_panel_browser_open();
-            }
-        }
-        if (esc && !s_prev_esc && s_browser_open) {
-            s_browser_open = false;
-            conf_panel_refresh();
-            g3x_log("overlay: preset browser back");
-        }
-    }
-    s_prev_enter = enter;
-    s_prev_esc   = esc;
-
     // 0.4.5: Left/Right CHANGE the selected option. Each press is one step
     // (enum neighbor, +/- one increment, or a toggle — conf_panel_edit's
     // rules) written straight into d2slangvk.conf, then pushed through
@@ -1257,26 +1303,48 @@ void g3x_slang_conf_panel_poll() {
     // takes: the panel re-reads the file it just wrote, aspect/base_res
     // snap live, and the window/controller/slang consumers pick the file up
     // on their own mtime probes. Same focus rule and edge latches as
-    // Up/Down; the arrows stay the game's while the panel is hidden, and
-    // they are inert while the browser is up (the option page is frozen).
+    // Up/Down; the arrows stay the game's while the panel is hidden.
+    //
+    // The preset row is the exception: there Left/Right open the preset
+    // browser instead of stepping a value (cycling one file per press could
+    // not show what is available). Inside the browser the same two keys
+    // become its buttons — Right loads the highlighted entry, Left goes
+    // back to the option page — so the browser is fully Enter-free: Enter
+    // reaches the game's chat box and Esc reaches its menu, and neither can
+    // be swallowed by a GetAsyncKeyState poll.
     const bool lft   = (GetAsyncKeyState(VK_LEFT)  & 0x8000) != 0;
     const bool rgt   = (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0;
-    if (g3x_overlay_conf_panel_visible() && !s_browser_open) {
-        int dir = 0;
-        if (rgt && !s_prev_right) dir = 1;
-        else if (lft && !s_prev_left) dir = -1;
-        if (dir) {
-            char desc[64];
-            if (conf_panel_edit(dir, desc, sizeof(desc))) {
-                reread_conf();               // file-is-truth: reparse + refresh,
-                                             // snap aspect/base, reload on preset=
-                char msg[80];
-                std::snprintf(msg, sizeof(msg), "%s %s", s_conf_sel_key, desc);
-                g3x_overlay_toast(msg);
-                g3x_log("overlay: conf %s = %s", s_conf_sel_key, desc);
-            } else {
-                g3x_log("overlay: conf %s unchanged (list end / nothing to cycle / write failed)",
-                        s_conf_sel_key);
+    if (g3x_overlay_conf_panel_visible()) {
+        if (s_browser_open) {
+            if (rgt && !s_prev_right)
+                conf_panel_browser_load();
+            if (lft && !s_prev_left) {
+                s_browser_open = false;
+                conf_panel_refresh();
+                g3x_log("overlay: preset browser back");
+            }
+        } else {
+            int dir = 0;
+            if (rgt && !s_prev_right) dir = 1;
+            else if (lft && !s_prev_left) dir = -1;
+            if (dir) {
+                if (s_conf_opt_count && !_stricmp(s_conf_sel_key, "preset")) {
+                    conf_panel_browser_open();   // the preset row's L/R = the
+                                                 // list, not a value step
+                } else {
+                    char desc[64];
+                    if (conf_panel_edit(dir, desc, sizeof(desc))) {
+                        reread_conf();           // file-is-truth: reparse + refresh,
+                                                 // snap aspect/base, reload on preset=
+                        char msg[80];
+                        std::snprintf(msg, sizeof(msg), "%s %s", s_conf_sel_key, desc);
+                        g3x_overlay_toast(msg);
+                        g3x_log("overlay: conf %s = %s", s_conf_sel_key, desc);
+                    } else {
+                        g3x_log("overlay: conf %s unchanged (list end / nothing to cycle / write failed)",
+                                s_conf_sel_key);
+                    }
+                }
             }
         }
     }

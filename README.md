@@ -65,16 +65,16 @@ resolution — is the same one proven in
   **Left/Right** change the selected option — one press = one step written
   straight into `d2slangvk.conf` (a surgical single-key rewrite that keeps
   comments, spacing and key order; every consumer hot-reloads the file, so
-  the change lands live like a hand edit): preset cycles the game dir's
-  `*.slangp` files, scale/vsync/aspect/base_res/window step their token
+  the change lands live like a hand edit): preset opens the preset browser
+  (below), scale/vsync/aspect/base_res/window step their token
   lists, the toggles flip, controller_sens/aimsens/deadzone step and clamp
   exactly like their conf fixups. With `controller=0` the controller
   sub-options are inert, so the panel skips their rows (`controller off`
-  itself stays — Left/Right re-enables it, which re-lists them). **Enter**
-  on the preset row opens the preset browser: the game dir's `*.slangp`
-  list in the panel (current preset starred, `(none)` at the front,
-  scrolling), **Up/Down** to move, **Enter** loads the highlighted preset
-  live, **Esc** goes back to the option list.
+  itself stays — Left/Right re-enables it, which re-lists them). **Left/Right**
+  on the preset row opens the preset browser: the `*.slangp` list of the
+  current preset's folder in the panel (current preset starred, `(none)` at
+  the front, scrolling), **Up/Down** to move, **Right** loads the highlighted
+  preset live, **Left** goes back to the option list.
 - **Window size presets (0.4.5)**: `window=native|240p|480p|576p|720p|768p|1080p|desktop|WxH`
   and `borderless=0|1` in `d2slangvk.conf` size the OS window the game presents
   into — canonical sizes (240p=320x240 ... 1080p=1920x1080; `desktop` =
@@ -244,15 +244,24 @@ While the game window has focus — the same scheme as Chocolate-Doom-VK
   option: one press = one step, written straight into `d2slangvk.conf` and
   applied live through the normal conf hot-reload path (see the Shift+V
   bullet above for the per-option steps). List ends, an empty preset dir
-  and failed writes touch nothing and are logged. Inert while the preset
-  browser is open.
-- **Enter** (0.4.5) — while the conf panel is up and the cursor sits on the
-  preset row, open the preset browser: the game dir's `*.slangp` files
-  listed in the panel (`presets (N) - <dir>`, current preset starred,
-  `(none)` first), **Up/Down** move the cursor, **Enter** loads the
+  and failed writes touch nothing and are logged. On the preset row they
+  open the preset browser instead (below); inside the browser **Right**
+  loads and **Left** backs out.
+- **Preset browser** (0.4.5) — while the conf panel is up and the cursor
+  sits on the preset row, **Left/Right** open it: the `*.slangp` files of
+  the **current preset's folder** listed in the panel (`presets (N) - <dir>`,
+  current preset starred, `(none)` first). The scan follows `preset=`: a
+  value with a subfolder (`presets\crt.slangp`) lists that folder and shows
+  `presets\...` rows — a pick writes the same relative path back, so it
+  resolves to the very file listed; a bare or empty `preset=` scans the
+  game dir itself (an absolute `preset=` too — browser rows are relative
+  paths by contract). **Up/Down** move the cursor, **Right** loads the
   highlighted preset through the same write-conf + hot-reload path as the
-  Left/Right cycling (the chain rebuilds live), **Esc** goes back to the
-  option page. An empty game dir toasts instead of opening the page.
+  value edits (the chain rebuilds live), **Left** goes back to the
+  option page. An empty folder toasts `no .slangp in <folder>` instead of
+  opening the page. The browser never asks for **Enter** or **Esc** — those
+  reach the game's chat box and its menu, and a polled hotkey cannot
+  swallow them.
 
 Each press shows a toast line in the overlay box (`aspect 16:9`,
 `shader base 2x`, `conf overlay on`) for ~2 seconds and logs a
