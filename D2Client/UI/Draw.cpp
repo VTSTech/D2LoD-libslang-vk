@@ -2234,6 +2234,10 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
       draw_help_menu:
       Help::DrawBackgroundHelpMenu();
     }
+    // [vanilla-plus auto-gold] Walk-over gold pickup trigger. Per frame, in
+    // the same stage as the label renderer but OUTSIDE its AltShowItems
+    // gate; inert (0 sends) unless [features] auto_gold=1 in d2vp.ini.
+    AUTO_GOLD_Tick();
     if (GFX_bShowUIFlag.AltShowItems) {
       eBorderType = Path::DRAW_GetTypeOfBorder();
       if (eBorderType != 3) {

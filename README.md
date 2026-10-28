@@ -1,7 +1,7 @@
 # D2LoD Vanilla+
 
-[![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/MHK2Dg9)
-[![Vanilla+ Discord](https://img.shields.io/badge/Vanilla%2B%20Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/XcJ8mSCNZ)
+[![Redivivus Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/MHK2Dg9)
+[![VTSTech Discord](https://img.shields.io/badge/Vanilla%2B%20Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/XcJ8mSCNZ)
 
 **D2LoD Vanilla+** is a ready-to-play Windows build of Diablo II: Lord of Destruction
 1.14d, compiled from the recovered source in this repository and shipped as release 7z's

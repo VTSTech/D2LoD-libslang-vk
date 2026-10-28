@@ -53,6 +53,7 @@
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/UNIT/UnitMode.h"
 #include "D2Client/Warden/WardenClient.h"
+#include "D2Common/Collision.h" // [vanilla-plus auto-gold] GetDistanceBetweenUnits
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
@@ -849,7 +850,15 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         ";       (the folder is created on demand, the registry is not\r\n"
         ";       touched, and existing saves are not migrated - copy your\r\n"
         ";       .d2s/.d2x/.key/.map files over to keep them)\r\n"
-        "portable_save=0\r\n";
+        "portable_save=0\r\n"
+        "\r\n"
+        "; Auto gold pickup (single-player focused):\r\n"
+        ";   0 = off                                 (vanilla behavior)\r\n"
+        ";   1 = walk over gold piles to pick them up. Uses the exact\r\n"
+        ";       same server path as clicking the pile; never moves\r\n"
+        ";       your character; disabled while attacking/casting;\r\n"
+        ";       gold never sits on the cursor\r\n"
+        "auto_gold=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) {
@@ -923,6 +932,146 @@ void __stdcall ALTTOGGLE_Reset() {
 // an item's label or sprite picks the item up).
 BOOL __stdcall ALTTOGGLE_LabelClickThrough() {
     return ALTTOGGLE_Active() && ALTTOGGLE_Latched();
+}
+
+// ===== [vanilla-plus auto-gold] =============================================
+// D2R "Gold Pickup" parity. While [features] auto_gold=1 in d2vp.ini, gold
+// piles near the player are picked up through the exact click path -
+// INTERACT_AnyObject(UNIT_ITEM) sends the same 0x16 packet a click sends, and
+// unmodified D2Game code answers with its own immediate SERVER_PickToInventory
+// (gold-to-stat with retail cap semantics). Strict radius + collision parity:
+// a pile is fired only when GetDistanceBetweenUnits < 5 AND
+// TestCollisionBetweenInteractingUnits(0x804) is clear - the exact condition
+// under which the server ITEM branch (PlayerMsg.cpp) picks instantly, so a
+// fire can NEVER start the retail walk-to-item mode (the character is never
+// moved by this feature). Combat guard: nothing fires outside
+// Neutral/TownNeutral/Walk/Run, so attack/cast/gethit/block/sequence/
+// knockback/dead frames never touch it. Missing/garbage/0 ini = 0 sends =
+// vanilla byte-for-byte (charter rule 1). Single-player focused; the 0x16
+// flow itself is untouched retail.
+
+static int gbAutoGoldMode = 0;
+static DWORD dwAutoGoldLastCheck = 0;   // 2 s ini re-read gate (row-28 pattern)
+static DWORD dwAutoGoldLastScan = 0;    // 200 ms scan floor (UnitMode throttle style)
+
+// Per-pile fire dedupe: 16-entry ring of (GUID, last fired tick). Keeps a
+// pile that cannot be removed (gold cap full, removal in flight) from being
+// re-fired on every 200 ms scan while the player stands inside the radius.
+// Client-side only - no retail unit field is ever written.
+static DWORD gdwAutoGoldRingGuid[16];
+static DWORD gdwAutoGoldRingTick[16];
+static int gnAutoGoldRingNext = 0;
+
+BOOL __stdcall AUTO_GOLD_Active() {
+    DWORD dwNow = GetTickCount();
+    if (!dwAutoGoldLastCheck || dwNow - dwAutoGoldLastCheck >= 2000) {
+        char szIniPath[260];
+        dwAutoGoldLastCheck = dwNow;
+        if (ALTTOGGLE_BuildIniPath(szIniPath)) {
+            ALTTOGGLE_EnsureIni();
+            // Missing file/section/key or a non-numeric value = 0 = vanilla.
+            gbAutoGoldMode = GetPrivateProfileIntA("features", "auto_gold", 0, szIniPath) ? 1 : 0;
+        } else {
+            gbAutoGoldMode = 0;
+        }
+    }
+    return gbAutoGoldMode;
+}
+
+// Per-frame trigger, called from DRAW_UI (UI/Draw.cpp). Guards in order; any
+// fail = return with zero sends.
+void __stdcall AUTO_GOLD_Tick() {
+    D2RoomStrc** ppRooms;
+    D2RoomStrc* pScanRoom;
+    D2RoomStrc* pPlayerRoom;
+    D2UnitStrc* pItem;
+    D2UnitStrc* pPlayer;
+    DWORD dwNow;
+    DWORD dwGUID;
+    int nRoomCount;
+    int nRing;
+    int i;
+    BOOL bFired;
+
+    if (!AUTO_GOLD_Active()) {
+        return;
+    }
+    pPlayer = UNIT::Player::GetPlayerUnit_UI();
+    if (!pPlayer) {
+        return;
+    }
+    // Combat guard: fire only from idle/walk modes.
+    switch (pPlayer->eAnimMode.ePlayerMode) {
+      case eD2PlayerAnimMode_ns::Neutral:
+      case eD2PlayerAnimMode_ns::TownNeutral:
+      case eD2PlayerAnimMode_ns::Walk:
+      case eD2PlayerAnimMode_ns::Run:
+        break;
+      default:
+        return;
+    }
+    dwNow = GetTickCount();
+    if (dwAutoGoldLastScan && dwNow - dwAutoGoldLastScan < 200) {
+        return;   // scan throttle
+    }
+    dwAutoGoldLastScan = dwNow;
+    pPlayerRoom = D2Common::Units::UNITS_GetRoom(pPlayer);
+    if (!pPlayerRoom) {
+        return;
+    }
+    // Ground-item scan model of the label renderer (ShowItems): the player's
+    // room plus its adjacent rooms, each room's pUnitList chain.
+    ppRooms = nullptr;
+    nRoomCount = 0;
+    D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pPlayerRoom, &ppRooms, &nRoomCount);
+    if (!ppRooms || !nRoomCount) {
+        return;
+    }
+    for (i = 0; i < nRoomCount; ++i) {
+      pScanRoom = ppRooms[i];
+      if (!pScanRoom) {
+        continue;
+      }
+      for (pItem = pScanRoom->pUnitList; pItem; pItem = pItem->pRoomNext) {
+        if (pItem->eUnitType != UNIT_ITEM) {
+          continue;
+        }
+        if (!(pItem->eUnitFlagsEx >> 7 & 1)) {
+          continue;   // not lying on the ground
+        }
+        if (pItem->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Run) {
+          continue;   // ground-mode check (CUnit.cpp precedent)
+        }
+        if (D2Common::ITEMS::Items::ITEM_GetItemsTxt_szCode(pItem) != 0x20646c67) {
+          continue;   // items.txt 4cc 'gld ' - gold piles only
+        }
+        // Strict radius: 5 is the server's own instant-pick distance.
+        if (D2Common::Collision::GetDistanceBetweenUnits(pPlayer, pItem) >= 5) {
+          continue;
+        }
+        // The server's own collision test in the same branch: with < 5 and a
+        // clear 0x804 test the server always answers with an immediate pick,
+        // so firing can never start its walk-to-item mode.
+        if (D2Common::Units::TestCollisionBetweenInteractingUnits(pPlayer, pItem, 0x804)) {
+          continue;
+        }
+        dwGUID = (DWORD)pItem->nUnitGUID;
+        bFired = FALSE;
+        for (nRing = 0; nRing < 16; ++nRing) {
+          if (gdwAutoGoldRingGuid[nRing] == dwGUID && dwNow - gdwAutoGoldRingTick[nRing] < 1000) {
+            bFired = TRUE;
+            break;
+          }
+        }
+        if (bFired) {
+          continue;
+        }
+        gdwAutoGoldRingGuid[gnAutoGoldRingNext] = dwGUID;
+        gdwAutoGoldRingTick[gnAutoGoldRingNext] = dwNow;
+        gnAutoGoldRingNext = (gnAutoGoldRingNext + 1) & 15;
+        UNIT::UnitMode::INTERACT_AnyObject(UNIT_ITEM, dwGUID);   // the click path (0x16)
+      }
+    }
 }
 
 void __stdcall CMD_SetHoldAlt() {

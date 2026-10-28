@@ -129,6 +129,15 @@ void __stdcall ALTTOGGLE_EnsureIni(); // create d2vp.ini template if missing
 // item up. D2R "Show Items: Toggle" parity: labels stay up, clicks still
 // attack/interact.
 BOOL __stdcall ALTTOGGLE_LabelClickThrough();
+// [vanilla-plus auto-gold] Config-gated walk-over gold pickup (D2R "Gold
+// Pickup" parity). d2vp.ini next to d2.exe, [features] auto_gold=0|1 -
+// default/missing file/missing key/garbage = 0 = vanilla byte-for-byte.
+// While on, gold piles inside the server's own instant-pick radius are
+// picked up through the literal click path (client 0x16 -> unmodified
+// D2Game pick code); suppressed in combat modes; a fire can never start
+// the retail walk-to-item mode (strict radius + collision parity).
+BOOL __stdcall AUTO_GOLD_Active();   // config: auto_gold on?
+void __stdcall AUTO_GOLD_Tick();     // per-frame trigger, called from DRAW_UI
 // Validates whether a command can be bound to mouse buttons (0x103-0x104). Returns false if command handler exists and button is left/right click, true otherwise. Used during key binding setup to prevent invalid mouse button assignments.
 BOOL CMD_ValidateMouseButtonBinding(int32_t nCmdIndex, uint16_t * pErrorCode, uint32_t nMouseButton);
 int32_t SORT_CompareInts(int * pA, int * pB);

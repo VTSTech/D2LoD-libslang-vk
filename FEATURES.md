@@ -167,10 +167,18 @@ the slate's head, not new scope. Rows 1–9 are the new candidates.
   reused untouched — effective risk Low–Med.)*
 - **Exit**: walk-over picks gold exactly like click (full-inventory: pile stays),
   items untouched, `0` = vanilla.
-- **Draft**: `DRAFT_auto_gold.md` (v1, 2026-10-29) — tree-verify pass complete:
+- **Draft**: `DRAFT_auto_gold.md` (v2, 2026-10-29) — tree-verify pass complete:
   **zero D2Game/D2Common edits** (the 0x16 interact flow already does
-  walk-then-pick server-side); client-only trigger in 3 TUs; two owner questions
-  open (pickup radius, combat guard).
+  walk-then-pick server-side); client-only trigger in 3 TUs. Owner decisions
+  2026-10-29: **strict radius** — fire only at `< 5`, the server's own instant-pick
+  distance, mirrored together with the server's `0x804` collision test, so a fire
+  can NEVER start retail's walk-to-item (the character is never moved) — and
+  **combat guard on** — fires only from Neutral/TownNeutral/Walk/Run.
+  **Implemented** (uncommitted): `D2Client.cpp` (gate + per-frame tick + dedupe
+  ring + ini template block), `D2Client.h` (2 decls), `UI/Draw.cpp` (1 call line
+  in `DRAW_UI`, outside the AltShowItems gate). Sandbox syntax-verified against
+  the real signatures; field QA (V2/V3/V5/V6) + llvm-mingw build = user's Win11
+  gate.
 
 ### 7. Automap scale + position — `[features] automap_scale`
 

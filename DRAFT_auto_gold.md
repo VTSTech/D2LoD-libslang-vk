@@ -1,7 +1,10 @@
-# DRAFT_auto_gold.md — slate row 6 implementation draft (v1, 2026-10-29)
+# DRAFT_auto_gold.md — slate row 6 implementation draft (v2, 2026-10-29)
 
-*Status: Task-C-style tree-verify pass **complete**. Awaiting owner go — then one
-implementation round per handoff §11 (tree-verify → implement → QA → land). Charter:
+*Status: **IMPLEMENTED** (uncommitted, 2026-10-29). Tree-verify pass complete;
+owner decisions recorded (§6 → both recommended options); code landed in 3
+client TUs + ini template; syntax-verified via a signature-mirror harness
+(sandbox has no mingw — the user's Win11 build is the compile gate). Remaining:
+field QA V2/V3/V5/V6 + full build + land per handoff §7. Charter:
 VANILLA-PLUS.md. Slate: FEATURES.md row 6. Delivery conventions: handoff §7.*
 
 **Headline of the pass: this feature needs ZERO changes to D2Game or D2Common.**
@@ -42,9 +45,9 @@ in order; any fail = return, zero sends:
 
 1. `AUTO_GOLD_Active()`
 2. player unit + player room exist (`Player::GetPlayerUnit_UI`, `UNITS_GetRoom`)
-3. player anim mode ∈ {Neutral, TownNeutral, Walk, Run} — **never fire mid-attack/
-   cast/gethit/dead** (A5-mode precedent `eAnimMode.ePlayerMode`; exact enum names
-   pinned at impl, V4). Combat stays untouched by construction.
+3. player anim mode ∈ {Neutral(1), TownNeutral(5), Walk(2), Run(3)} — **never fire
+   mid-attack/cast/gethit/block/sequence/knockback/dead** (V4 pinned 2026-10-29
+   from d2_enums.h:5339-5360). Combat stays untouched by construction.
 4. scan throttle: static `dwLastScan`, 200 ms floor (A7 style)
 
 Scan = A5 model: player room + adjacent rooms, walk `pUnitList`; an item qualifies iff
@@ -54,13 +57,18 @@ our trigger TU). Then:
 
 - `nDist = D2Common::Collision::GetDistanceBetweenUnits(pPlayer, pItem)` — helper
   already linked into 6+ client TUs (Player.cpp:1053 etc.), no new deps.
-- fire only when **`nDist < 5`** — the server's own instant-pick radius (A2), so every
-  fired request completes immediately and NEVER starts a retail walk (no movement
-  hijack, no fighting the player's path).
+- fire only when **`nDist < 5`** — the server's own instant-pick radius (A2) —
+  **AND** `D2Common::Units::TestCollisionBetweenInteractingUnits(pPlayer, pItem,
+  0x804)` is clear (v2 amendment: the exact second condition the server's ITEM
+  branch checks before instant-picking; client-linkable, 6 precedents in
+  D2Client/UNIT/Player.cpp:1011-1391). Mirroring BOTH conditions means the server
+  ALWAYS answers a fired 0x16 with immediate `SERVER_PickToInventory` — NEVER the
+  walk-to-item mode (no movement hijack, no fighting the player's path, even for
+  gold behind a wall/ledge inside the radius).
 - per-item dedupe: client-side 16-entry ring buffer of `(dwUnitGUID, GetTickCount)`
   stamps; skip if same GUID stamped < 1000 ms ago. **No writes to any retail unit
   field** (the A7 field is readable precedent, not a write target).
-- action: `UnitMode::INTERACT_AnyObject(4, pItem->dwUnitGUID)` — the literal click
+- action: `UnitMode::INTERACT_AnyObject(UNIT_ITEM /*4*/, pItem->nUnitGUID)` — the literal click
   path (A1). One send per qualifying pile per frame at most; ring buffer caps bursts.
 
 ### D3 — What is explicitly NOT changed
@@ -85,14 +93,21 @@ SP-focused; the ini comment says exactly that.
 
 ## 4. Impl-round verify items (V1–V5)
 
-- **V1** Read the gold branches of `SERVER_PickToInventory` / `SERVER_PickToCursor`
-  (`D2Game/ITEMS/ItemMode.cpp` + PlayerMsg.cpp) — confirm gold→stat conversion and
-  that no item-path code reads a field we might have been tempted to write (ring
-  buffer makes this moot, but read anyway).
+- **V1** ✅ DONE 2026-10-29: `ItemMode.cpp:948-986` (inside SERVER_PickToInventory)
+  is the gold→stat core — STATSEX_GetCurrentStat(UNITSTAT_gold) on player+pile,
+  cap clamp (remainder behavior read), STATLIST_AddUnitStat, then
+  `UNIT::Party::ChangeGoldForPlayer` broadcast. Bonus: the 9-byte 0x16 always
+  carries bSetting=0 server-side (SCMD_0x16 at PlayerMsg.cpp:2208 calls
+  SERVER_InteractOrPick(bSetting=0)), so our path structurally lands in
+  PickToInventory — the cursor branch is unreachable for auto-gold. No writes
+  needed anywhere.
 - **V2** Field: drop a pile larger than remaining gold cap → behavior must match a
   click on the same pile, frame-for-frame observable.
 - **V3** Field: walk over gold with inventory open → gold to stat, nothing on cursor.
-- **V4** Pin client-side `eAnimMode` names for guard 3 from Player.cpp usage.
+- **V4** ✅ DONE 2026-10-29: `eD2PlayerAnimMode_ns` constants pinned
+  (d2_enums.h:5339-5360: Death=0, Neutral=1, Walk=2, Run=3, GetHit=4,
+  TownNeutral=5, …, Dead=17, Sequence=18, KnockBack=19). Code uses qualified
+  names (D2Client.cpp:950 precedent).
 - **V5** Field: flip `auto_gold` 1→0 mid-game → picks stop ≤ 2 s; flip 0→1 → start.
 
 ## 5. TU list, QA, delivery
@@ -100,16 +115,22 @@ SP-focused; the ini comment says exactly that.
 - **Touched TUs (3)**: `D2Client/D2Client.cpp` (gate + tick + ring buffer + template
   block), `D2Client/D2Client.h` (2 decls), `D2Client/UI/Draw.cpp` (1 call line in
   `DRAW_UI`). Nothing else compiles differently.
-- **QA**: per-TU llvm-mingw i686 compile + full build gate (Win11 / CI) + §11 field
-  loop (V2/V3/V5 scenarios + row-31 click-through regression check: clicking gold
-  still works with `alt_toggle=1`); A/B `auto_gold=0` = vanilla.
+- **QA**: sandbox syntax-verified 2026-10-29 via signature-mirror harness
+  (`g++ -fsyntax-only -Wall -Wextra` → PASS; scripts/auto_gold_syntax_check.cpp;
+  stubs mirror Units.h:60/148, Collision.h:40, Dungeon.h:77, Items.h:178,
+  UnitMode.h:21, Player.h:172, D2UnitStrc.h fields). Real gate remains: per-TU
+  llvm-mingw i686 compile + full build (Win11 / CI). §11 field loop: V2/V3/V5/V6
+  scenarios + row-31 click-through regression check (clicking gold still works
+  with `alt_toggle=1`); A/B `auto_gold=0` = vanilla.
+- **V6** (added v2) Field: gold behind a wall/ledge within distance 5 → NOT
+  picked and NO walk started (collision parity suppresses the fire).
 - **Land**: patch-first per §7 (unique anchors per site: A1/A6/A8 sites are all
   single-grep-gate), ledger row 33 + worklog entry, release note at next tag.
 
-## 6. Open questions for the owner (one-word answers fine)
+## 6. Owner decisions (2026-10-29) — both recommended options
 
-1. **Radius**: strict `< 5` instant-pick only (recommended — zero movement
-   interference), or a wider radius that lets retail's own walk-to-item finish the
-   pickup (D2R-er "vacuum" feel, but the character detours toward gold)?
-2. **Combat guard**: skip picking while attacking/casting (recommended — combat
-   untouchable), or pick regardless like D2R does?
+1. **Radius**: **strict** — `< 5` instant-pick only, plus the mirrored 0x804
+   collision test (D2 v2 amendment). Zero movement interference; the character
+   is never moved by this feature.
+2. **Combat guard**: **on** — fires only from Neutral/TownNeutral/Walk/Run;
+   attacking/casting/gethit/block/sequence/knockback/dead frames suppress.
