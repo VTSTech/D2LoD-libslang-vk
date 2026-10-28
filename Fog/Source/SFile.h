@@ -73,6 +73,9 @@ bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen);
 int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot);
 void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize);
 int32_t __fastcall SFILE_CalculateBufferOffset(int32_t pThis, int32_t nBufferOffset);
+// [vanilla-plus options page] bust the portable_save 2 s hot-read cache (called
+// from D2Client's D2VP_ConfigReloaded after a page toggle write).
+void __stdcall PORTABLESAVE_FlushConfig();
 char * ERRORMANAGER_SprintfToBuffer(char * szText1, char * szText2, ...);
 char * ERRORMANAGER_SnprintfTerminated(char * szText1, size_t nSize, char * szText2, ...);
 uint32_t __stdcall SFILE_GetGlobalPointer();

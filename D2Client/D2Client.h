@@ -138,6 +138,12 @@ BOOL __stdcall ALTTOGGLE_LabelClickThrough();
 // the retail walk-to-item mode (strict radius + collision parity).
 BOOL __stdcall AUTO_GOLD_Active();   // config: auto_gold on?
 void __stdcall AUTO_GOLD_Tick();     // per-frame trigger, called from DRAW_UI
+// [vanilla-plus options page] d2vp.ini feature-toggle bridge (row 10). The
+// page reads/flips the same [features] keys the gates consume; writes use
+// WritePrivateProfileStringA and flush every gate's 2 s hot-read cache.
+int __stdcall D2VP_GetFeatureToggle(const char* szKey);   // 0 = off/missing/garbage
+void __stdcall D2VP_SetFeatureToggle(const char* szKey, int nValue); // write + flush
+void __stdcall D2VP_ConfigReloaded();                     // bust all 2 s gate caches
 // Validates whether a command can be bound to mouse buttons (0x103-0x104). Returns false if command handler exists and button is left/right click, true otherwise. Used during key binding setup to prevent invalid mouse button assignments.
 BOOL CMD_ValidateMouseButtonBinding(int32_t nCmdIndex, uint16_t * pErrorCode, uint32_t nMouseButton);
 int32_t SORT_CompareInts(int * pA, int * pB);

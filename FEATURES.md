@@ -41,6 +41,7 @@ Every slate row must satisfy all of these before it ships:
 | 7 | Automap scale + position | HUD | D2R larger overlay map | M | Med | `automap_scale` |
 | 8 | Quick-cast keys | Controls | D2R-adjacent (PD2 quick cast) | M–L | Med–High | `quick_cast` |
 | 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | `shared_stash` |
+| 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med | **Implemented** (sandbox-verified 2026-10-29; land: ledger row 34) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
 the slate's head, not new scope. Rows 1–9 are the new candidates.
@@ -255,6 +256,36 @@ the slate's head, not new scope. Rows 1–9 are the new candidates.
 - **Exit**: deposit on char A, save, load char B, withdraw — item stats/quality/
   sockets bit-identical (ATMA export compare), no dupes or losses on crash-kill
   during save, retail ignores the side file, `0` = vanilla.
+
+### 10. Vanilla+ Options menu page — settings UI (not gated)
+
+- **Behavior (owner suggestion, 2026-10-29)**: a "Vanilla+ Options" row on the Esc
+  Options page (directly above "Previous Menu") opening a ControlConfig-style text
+  screen with one toggle row per shipped `[features]` key (`alt_toggle`,
+  `auto_gold`, `portable_save`; grows as slate rows land). Click = flip + write
+  `d2vp.ini` (`WritePrivateProfileStringA`, first ini writer in tree) + flush the
+  2 s gate caches, so changes apply same-frame instead of on the next ini edit.
+- **Tree-verify complete (2026-10-29, draft anchor map)**: the Esc-menu loader
+  **skips rows with an empty image path** (no asset needed for the row itself), and
+  the row label is a **runtime-synthesized DC6** (Route A, owner-called): raw
+  file-shaped image → retail `CELCMP_FixupPointersAndPrepare` → freed by the retail
+  `DC6_FreeAndDelete` — no shipped assets, no loader edits, free-path compatible by
+  construction. Page mirrors ControlConfig (`UI_CONFIG` precedent: escmenu row click
+  swaps to a font-text screen). UI-flag store is a hard-asserted 38-slot array —
+  `UI_VANILLAPLUS = 38` needs a 4-site mechanical extension (struct member, count
+  assert, GetUIFlag bound, dismiss table).
+- **Draft**: `DRAFT_vanilla_plus_options.md` (v1→v2, 2026-10-29) — 12 anchors,
+  grep gates, V1–V6; owner decisions recorded: Route A + above-Previous placement.
+- **Implemented (2026-10-29, draft v2 §7–§8)**: Route A synthesis + page +
+  `UI_VANILLAPLUS = 38` extension landed across 11 retail files + 2 new TUs
+  (`D2Client/UI/VanillaPlusOptions.{h,cpp}`). V1–V5 pins resolved (DC6Block =
+  frame header, bottom-anchored draw, glyph source = font DC6 frames, same
+  allocator pair, dismiss-table growth zero-fills). Sandbox harness (verbatim
+  extraction, `g++ -fsyntax-only`) + 12 grep gates green; field loop V6 + real
+  llvm-mingw gate pending (owner).
+- **Risk**: Med. The synthesized-DC6 bridge is the only novel piece (V1–V3 pins);
+  everything else mirrors proven in-tree patterns. Zero D2Game/D2Common edits, no
+  loader edits, all retail rows byte-identical.
 
 ---
 

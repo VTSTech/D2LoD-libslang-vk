@@ -14397,6 +14397,11 @@ constexpr eD2UIvars UI_HELPSCREENBTN = 34;
 constexpr eD2UIvars UI_HIREICONS = 35;
 constexpr eD2UIvars UI_MERCINV = 36;
 constexpr eD2UIvars UI_RECIPESCROLL = 37;
+// vanilla-plus: "Vanilla+ Options" page flag (FEATURES.md row 10). Flag 38
+// extends the retail 0..37 range: the stores/loops that were sized 38 grow by
+// one (D2UIFlagStrc member, anDismissMode column, gUIFlagDismissModeTable
+// entry, gnUIFlagCount) - see DRAFT_vanilla_plus_options.md section A8.
+constexpr eD2UIvars UI_VANILLAPLUS = 38;
 }
 using eD2UIvars_ns::UI_GAME;
 using eD2UIvars_ns::UI_INVENTORY;
@@ -14435,6 +14440,7 @@ using eD2UIvars_ns::UI_HELPSCREENBTN;
 using eD2UIvars_ns::UI_HIREICONS;
 using eD2UIvars_ns::UI_MERCINV;
 using eD2UIvars_ns::UI_RECIPESCROLL;
+using eD2UIvars_ns::UI_VANILLAPLUS;
 
 typedef int eD2UIvarsSetType;
 namespace eD2UIvarsSetType_ns {

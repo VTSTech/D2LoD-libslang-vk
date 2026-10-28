@@ -449,6 +449,14 @@ static int PORTABLESAVE_BuildSavePath(char * pBuffer, size_t nSize) {
     return 1;
 }
 
+// [vanilla-plus options page] Bust the portable_save 2 s hot-read cache so
+// the next PORTABLESAVE_Active() poll re-reads d2vp.ini. Called from
+// D2Client's D2VP_ConfigReloaded after a page toggle write. Exported (non-
+// static) for that bridge only; no other behavior changes.
+void __stdcall PORTABLESAVE_FlushConfig() {
+    dwPortableSaveLastCheck = 0;
+}
+
 void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
     // [vanilla-plus portable-save] opt-in redirect; everything below is
     // retail: registry save-path lookup, one-time migration from the old

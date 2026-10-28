@@ -41,6 +41,7 @@
 #include "D2Client/UI/Party.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Client/UI/VanillaPlusOptions.h"
 #include "D2Client/UI/ShowItems.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/SpellSel.h"
@@ -950,6 +951,9 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
         ControlConfig::CONTROLCONFIG_OnToggleUI(1);
       DRAW_RegisterDrawHandlers();
       return;
+      case UI_VANILLAPLUS: // vanilla-plus (row 10): register the page's mouse/Esc handlers (UI_CONFIG shape)
+        VanillaPlus::VANILLAPLUS_OnToggleUI(1);
+      return;
       case UI_NPCSHOP:
         CmdTbl::CMD_ToggleKeyConfigMode(2, 1);
       Inv::SelectDefaultTabForNPC();
@@ -1148,6 +1152,9 @@ void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
       _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitTable + 5, nHandlerCount);
       ControlConfig::CONTROLCONFIG_OnToggleUI(0);
       return;
+      case UI_VANILLAPLUS: // vanilla-plus (row 10): unregister the page's handlers
+        VanillaPlus::VANILLAPLUS_OnToggleUI(0);
+      return;
       case UI_NPCSHOP:
         nHandlerCount = 8;
       pHwnd = D2gfx::D2GFX::GetHwnd();
@@ -1272,7 +1279,7 @@ void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
 
 DWORD __fastcall SetUIFlag(eD2UIvars eUI, eD2UIvarsSetType neD2UIvarsSetType, DWORD bAdjustMouse) {
     int iVar1;
-    if (UI_RECIPESCROLL < eUI) {
+    if (UI_VANILLAPLUS < eUI) { // vanilla-plus: bound UI_RECIPESCROLL(37) -> UI_VANILLAPLUS(38)
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13fb);
       exit(-1);
     }
@@ -1709,7 +1716,7 @@ void __stdcall UI_ToggleMiniPanel() {
     if (bIsExpansion) {
       GAME::Game::CLIENT_CheckExpansion();
     }
-    if (gnUIFlagCount != 0x26) {
+    if (gnUIFlagCount != 0x27) { // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1397);
       exit(-1);
     }
@@ -1838,7 +1845,7 @@ void __stdcall InitializeUI() {
     if (bResult) {
       GAME::Game::CLIENT_CheckExpansion();
     }
-    if (gnUIFlagCount == 0x26) {
+    if (gnUIFlagCount == 0x27) { // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
       uint32_t bScrollActive;
       bScrollActive = Text::TEXT_IsScrollingTextActive();
       if (!bScrollActive) {
@@ -1892,7 +1899,7 @@ void __stdcall InitializeUI() {
       if (bResult2) {
         GAME::Game::CLIENT_CheckExpansion();
       }
-      if (gnUIFlagCount == 0x26) {
+      if (gnUIFlagCount == 0x27) { // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
         bScrollActive = Text::TEXT_IsScrollingTextActive();
         if (!bScrollActive) {
           eUI = UI_GAME;
@@ -1970,7 +1977,7 @@ void __stdcall FreeDraw() {
     if (bIsExpansion) {
       GAME::Game::CLIENT_CheckExpansion();
     }
-    if (gnUIFlagCount != 0x26) {
+    if (gnUIFlagCount != 0x27) { // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1397);
       exit(-1);
     }
@@ -2069,6 +2076,9 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
     }
     /* Render Key Assigment menu */ if (GFX_bShowUIFlag.ConfigControls) {
       ControlConfig::DRAW_ConfigControlsMenu();
+    }
+    /* Render Vanilla+ Options menu */ if (GFX_bShowUIFlag.VanillaPlus) { // vanilla-plus (row 10)
+      VanillaPlus::DRAW_VanillaPlusOptions();
     }
 
     D2UnitStrc* pUnit;
@@ -2175,7 +2185,7 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
       if (bIsExpansion) {
         GAME::Game::CLIENT_CheckExpansion();
       }
-      if (gnUIFlagCount != 0x26) {
+      if (gnUIFlagCount != 0x27) { // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1397);
         exit(-1);
       }

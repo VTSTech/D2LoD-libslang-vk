@@ -1074,6 +1074,49 @@ void __stdcall AUTO_GOLD_Tick() {
     }
 }
 
+// ===== [vanilla-plus options page] d2vp.ini feature toggle bridge ===========
+// The "Vanilla+ Options" page (D2Client/UI/VanillaPlusOptions.cpp) reads and
+// flips the same [features] keys the gates consume. Reads go through the
+// gate's own accessor path (path builder + template ensure + 0 default);
+// writes go through WritePrivateProfileStringA - the first ini writer in the
+// tree - and end with D2VP_ConfigReloaded() so every 2 s hot-read gate sees
+// the change on its very next poll (same frame for the draw, <= 1 frame for
+// auto_gold, next save-path resolution for portable_save). A failed write is
+// silently ignored: the gates keep reading whatever the file still says,
+// exactly like an external editor that lost a race.
+
+int __stdcall D2VP_GetFeatureToggle(const char* szKey) {
+    char szIniPath[260];
+    ALTTOGGLE_EnsureIni();
+    if (!szKey || !ALTTOGGLE_BuildIniPath(szIniPath)) {
+        return 0;
+    }
+    // Missing file/section/key or a non-numeric value = 0 = vanilla.
+    return GetPrivateProfileIntA("features", szKey, 0, szIniPath) ? 1 : 0;
+}
+
+void __stdcall D2VP_SetFeatureToggle(const char* szKey, int nValue) {
+    char szIniPath[260];
+    char szValue[2];
+    if (!szKey || !ALTTOGGLE_BuildIniPath(szIniPath)) {
+        return;
+    }
+    ALTTOGGLE_EnsureIni();
+    szValue[0] = nValue ? '1' : '0';
+    szValue[1] = '\0';
+    WritePrivateProfileStringA("features", szKey, szValue, szIniPath);
+    D2VP_ConfigReloaded();
+}
+
+// Bust every gate's 2 s hot-read cache so the next poll re-reads d2vp.ini.
+// Called by D2VP_SetFeatureToggle after each write; exported for future
+// tooling (console commands, external reload hooks).
+void __stdcall D2VP_ConfigReloaded() {
+    dwAltToggleLastCheck = 0;     // next ALTTOGGLE_Active() re-reads alt_toggle
+    dwAutoGoldLastCheck = 0;      // next AUTO_GOLD_Active() re-reads auto_gold
+    Fog::Source::SFile::PORTABLESAVE_FlushConfig(); // next save-path poll re-reads portable_save
+}
+
 void __stdcall CMD_SetHoldAlt() {
     // [vanilla-plus alt-toggle] In toggle mode a full Alt press flips the
     // latch; keyup then re-asserts the flag from the latch (heals a stuck
