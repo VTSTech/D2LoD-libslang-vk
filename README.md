@@ -1,12 +1,16 @@
-# Redivivus
+# D2LoD Vanilla+
 
 [![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/MHK2Dg9)
+[![Vanilla+ Discord](https://img.shields.io/badge/Vanilla%2B%20Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/XcJ8mSCNZ)
 
-Diablo II: Lord of Destruction 1.14d, recovered as C++ source that builds.
-
-*Redivivus* is Latin for a thing restored to life. This is not a reimplementation that
-behaves like the game. It is the shipped `Game.exe`, taken apart function by function,
-turned back into source code, and compiled into a working executable again.
+**D2LoD Vanilla+** is a ready-to-play Windows build of Diablo II: Lord of Destruction
+1.14d, compiled from the recovered source in this repository and shipped as release 7z's
+bundled with a Vulkan render wrapper (`glide3x.dll`). The base is
+[jaenster's Redivivus](https://github.com/jaenster/redivivus) — the shipped `Game.exe`
+taken apart function by function and turned back into C++ that builds — plus this fork's
+growing set of crash fixes and opt-in quality-of-life features. Vanilla comes first: with
+no config file the game behaves like retail, and every extra (Alt-key item labels,
+portable saves, more as they land) ships OFF and is enabled in `d2vp.ini`.
 
 It is the **whole** game. Up to 1.13 Diablo II shipped as a small `Game.exe` plus a dozen
 DLLs (`D2Client`, `D2Common`, `D2Game`, `D2Win`, `D2gfx`, `Storm`, `Fog`, ...). Patch 1.14
@@ -47,7 +51,8 @@ its own releases separately.
 [Devilution](https://github.com/diasurgical/devilution) did this for the first Diablo: it
 reconstructed the shipped `Diablo.exe` as source code that builds, and
 [DevilutionX](https://github.com/diasurgical/DevilutionX) grew from it into the port many
-people play Diablo with today. Redivivus is the same concept for Diablo II.
+people play Diablo with today. Redivivus — the recovered-source base of this fork — is
+the same concept for Diablo II.
 
 Two things differ:
 
