@@ -42,6 +42,7 @@ const char* g3x_hostver_crc_name(uint32_t crc) {
         { 0x4F393243u, "Retail 1.14d" },   // Game.exe, 3618792 bytes (3533 KiB)
         { 0x1706E55Au, "Vanilla+ 0.0.1" }, // d2s-4857c30.exe, 23550478 bytes (22 MiB)
         { 0xFE4CDB1Au, "Vanilla+ 0.0.2" }, // d2s-9cf9f69.exe, 23575054 bytes (22 MiB)
+        { 0xA3F924DCu, "Vanilla+ 0.0.3" }, // d2s-569fc5c.exe, 23665152 bytes (22 MiB)
     };
     for (const auto& e : kTable)
         if (e.crc == crc)
