@@ -1,15 +1,17 @@
 # Vanilla-Plus — VTSTech's custom Diablo II, built on Redivivus
 
-This branch is the **game-source line**: improvements over vanilla Diablo II
-1.14d made directly in the recovered source, on top of
+This branch (repo default, `main`) is the **game-source line**: improvements over vanilla
+Diablo II 1.14d made directly in the recovered source, on top of
 [jaenster/redivivus](https://github.com/jaenster/redivivus) (`Game.exe`
 recovered function-by-function as C++ that builds). It is kept deliberately
-clean of the glide3x→Vulkan wrapper work — that lives on the `libslang-vk`
+clean of the glide3x→Vulkan wrapper work — that lives on the `Glide3xVK`
 branch of [VTSTech/D2LoD-libslang-vk](https://github.com/VTSTech/D2LoD-libslang-vk)
-and overlays on top of whatever `d2.exe` is running.
+and overlays on top of whatever `d2.exe` is running. (Branch history: the
+restructure on 2026-10-28 moved the former `vanilla-plus` branch to `main` and
+renamed `libslang-vk` → `Glide3xVK`.)
 
-**Latest release: [`D2LoD-Vanilla-Plus-0.0.2`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.2)**
-(2026-10-28, from `9cf9f69`) — one 7z with the client, the Glide3xVK 0.4.5 wrapper and
+**Latest release: [`D2LoD-Vanilla-Plus-0.0.3`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.3)**
+(2026-10-28, from `569fc5c`) — one 7z with the client, the Glide3xVK 0.4.5 wrapper and
 launcher/debug scripts.
 
 ## The two layers
@@ -20,7 +22,7 @@ launcher/debug scripts.
 |            fixes/improvements, built with mingw i686)    |
 +----------------------------------------------------------+
 |  glide3x.dll                                             |
-|  (libslang-vk branch: glide3xvk wrapper — Vulkan render, |
+|  (Glide3xVK branch: glide3xvk wrapper — Vulkan render,   |
 |   slang shader chain, window presets, controller, ...)   |
 +----------------------------------------------------------+
 |  your own Diablo II: LoD 1.14d install (MPQs + keys)     |
@@ -47,13 +49,25 @@ each can be fixed, replaced and released independently.
   H9–H18): the Error 25 boot failure, the texture-pipeline boot halts, black ground,
   diagonal bars, and wrong UI text hues are all gone under any act palette.
 - **First opt-in feature shipped**: the alt-key item-label toggle — press Alt once to
-  flip ground-item labels (D2R "Show Items: Toggle" parity). Gated behind
+  flip ground-item labels (D2R "Show Items: Toggle" parity). While labels are
+  latched on, clicking still attacks, moves and interacts normally, and clicking an
+  item's label or sprite picks the item up. Gated behind
   `[features] alt_toggle` in `d2vp.ini`, which the client auto-creates with documented
   defaults; default off = vanilla byte-for-byte (see Features below).
 - **Releases**: `D2LoD-Vanilla-Plus-0.0.1` (`4857c30`) → `D2LoD-Vanilla-Plus-0.0.2`
-  (`9cf9f69`). CI (mingw-i686) is back in service and green on the 0.0.2 tag.
+  (`9cf9f69`) → **`D2LoD-Vanilla-Plus-0.0.3` (`569fc5c`, 2026-10-28)**. CI (mingw-i686)
+  is back in service and green on the release tags.
+- **0.0.3 ships**: portable saves (`[features] portable_save`), the
+  alt-toggle click-through fix (latched labels no longer eat clicks), and quiet
+  diagnostics — the fix-26/27 `pal26*` probe family is retired (it made
+  `d2boot.log` grow during play), so `d2boot.log` only gains boot marks and
+  failure records, never gameplay output. Boot banner self-identifies
+  `vanilla-plus 0.0.3` in the log header.
 - Diagnostics (`ShadowDiag`, `LightDiag v2`, `DropDiag v2.1`, `[d2boot]` boot marks, D3D
   upload-halt dumps) stay in-tree, zero cost when idle, armed for the next regression.
+  **`d2boot.log` contract (since `f10b5ff`)**: boot milestones + `D2BOOT_Fail` /
+  upload-halt crash triage + fix22 warn-once guards only — zero writes during
+  normal play; the file appends across sessions so the pre-crash trail survives.
 
 ## Principles
 
@@ -75,7 +89,11 @@ each can be fixed, replaced and released independently.
 
 - **Alt-key item-label toggle** (D2R "Show Items: Toggle" parity) — each full
   Alt press flips ground-item labels on/off instead of hold-to-show. Latched
-  labels survive clicks, walking and attacking; overhead player names follow
+  labels survive clicks, walking and attacking; with labels latched on, hover
+  and clicks use the normal selection machinery — attacks, interactions and
+  movement work exactly as with labels off, and clicking an item's label or
+  sprite picks the item up (vanilla hold-Alt keeps its retail click-through
+  quirks untouched); overhead player names follow
   the toggle; entering a game starts with labels off. **Default OFF**: set
   `[features] alt_toggle=1` in `d2vp.ini` next to `d2.exe` (missing
   file/section/key/garbage value = vanilla hold-Alt behavior byte-for-byte;
@@ -106,7 +124,7 @@ cmake --build build          # -> build/d2.exe
 ```
 
 Copy `d2.exe` next to the original `Game.exe` in a 1.14d install and run
-`d2.exe -w`. Works with the `libslang-vk` overlay: drop that overlay's
+`d2.exe -w`. Works with the `Glide3xVK` overlay: drop that overlay's
 `glide3x.dll` in the same folder as usual.
 
 On Windows the same build runs natively - `tools/win11-build.ps1` sets up
@@ -133,7 +151,7 @@ correctly, collect **both** reports from one repro:
 Decision rule:
 
 - faulting frame in `glide3xvk` / `vk_backend` / slang chain -> wrapper issue,
-  fix on `libslang-vk`;
+  fix on `Glide3xVK`;
 - faulting frame in `D2*` / `Storm` / `Fog` source with a d2crash report ->
   game-source issue: minimize the repro, check upstream issues, then either
   report upstream (reconstruction bug) or fix here (vanilla-plus behavior);

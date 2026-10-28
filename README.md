@@ -27,17 +27,17 @@ in as it moves; work is organized into three lines:
 
 | Branch | What it is | Docs |
 |---|---|---|
-| `vanilla-plus` | **The game-source line**: crash fixes and opt-in improvements made directly in the recovered source, kept merged with upstream `main`. | [`VANILLA-PLUS.md`](VANILLA-PLUS.md) (charter) · [`handoff.md`](handoff.md) (engineering handoff) · [`PLAN.md`](PLAN.md) |
-| `libslang-vk` | The `glide3xvk` wrapper line: a `glide3x.dll` that renders Glide on Vulkan and threads the final frame through libretro `.slangp` shader presets. | [`PLAN.md`](PLAN.md) |
+| `main` | **The game-source line**: crash fixes and opt-in improvements made directly in the recovered source, kept merged with upstream `main`. (This was the `vanilla-plus` branch before the 2026-10-28 restructure; the old fork baseline `main` is retired.) | [`VANILLA-PLUS.md`](VANILLA-PLUS.md) (charter) · [`handoff.md`](handoff.md) (engineering handoff) · [`PLAN.md`](PLAN.md) |
+| `Glide3xVK` | The `glide3xvk` wrapper line: a `glide3x.dll` that renders Glide on Vulkan and threads the final frame through libretro `.slangp` shader presets. (Branch was `libslang-vk` before the restructure.) | [`PLAN.md`](PLAN.md) |
 | `jaenster-main` | A clean line tracking upstream with the CI artifact split: fat `d2.exe` for crash triage, `d2-stripped.exe` for play. | — |
 
 CI (`.github/workflows/build.yml`) runs `tools/check-build.sh` on every push and uploads
-workflow artifacts: `d2s-<sha>.exe` + `d2-map-<sha>.map` on `vanilla-plus` (the linker map
+workflow artifacts: `d2s-<sha>.exe` + `d2-map-<sha>.map` on `main` (the linker map
 is load-bearing for crash symbolization), `d2-<sha>.exe` + `d2-stripped-<sha>.exe` on
 `jaenster-main`.
 
-Prebuilt releases: [`D2LoD-Vanilla-Plus-0.0.2`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.2)
-ships a 7z bundling the rebuilt client (`d2s-9cf9f69.exe`), the `glide3x.dll` Vulkan
+Prebuilt releases: [`D2LoD-Vanilla-Plus-0.0.3`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.3)
+ships a 7z bundling the rebuilt client (`d2s-569fc5c.exe`), the `glide3x.dll` Vulkan
 wrapper (Glide3xVK 0.4.5) and launcher/debug scripts — extract into a 1.14d install
 (see the release notes or [`VANILLA-PLUS.md`](VANILLA-PLUS.md)). The wrapper line tags
 its own releases separately.
@@ -124,9 +124,9 @@ artifacts — grab one from the Actions tab instead of building locally.
 Two ways:
 
 - **From a release** (recommended for play): extract the
-  [`D2LoD-Vanilla-Plus-0.0.2.7z`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.2)
-  into your Diablo II folder, run `Launch.cmd` once (downloads the libretro slang shader
-  pack), then `install_shaders.cmd` to start the game with the Vulkan wrapper.
+  [`D2LoD-Vanilla-Plus-0.0.3.7z`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.3)
+  into your Diablo II folder, run `Launch.cmd` to start the game with the Vulkan
+  wrapper, and run `install_shaders.cmd` once for the libretro slang shader pack.
 - **From a build**: copy `d2.exe` into your Diablo II folder, next to the original
   `Game.exe`, and start it from there:
 
