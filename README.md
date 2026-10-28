@@ -147,6 +147,17 @@ is regenerated, so a fix that belongs in the reverse-engineering (a wrong type, 
 parameter) is best reported as an issue with the evidence; it will land upstream and
 survive the next regeneration.
 
+With an AI agent you can read the Ghidra databases behind the tree (1.14d Windows and Mac)
+through a read-only MCP server, and report such fixes with the evidence. In Claude Code:
+
+```
+claude plugin marketplace add jaenster/redivivus
+claude plugin install redivivus@redivivus
+```
+
+The plugin brings the MCP server and the house rules; sign in with GitHub from `/mcp`. Other
+agents: see https://redivivus.app/agent-setup/prompt.md
+
 ## Credits
 
 - Much of the 1.14d reverse-engineering comes from [blizzhackers](https://blizzhackers.dev),

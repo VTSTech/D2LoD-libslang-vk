@@ -1,0 +1,9 @@
+{
+  "name": "redivivus",
+  "description": "The Redivivus MCP server (read-only Ghidra for Diablo II 1.14d Windows and Mac) and the house rules for proposing changes.",
+  "version": "0.1.0",
+  "mcpServers": "./.mcp.json",
+  "homepage": "https://redivivus.app/",
+  "repository": "https://github.com/jaenster/redivivus",
+  "keywords": ["diablo2", "reverse-engineering", "ghidra", "mcp"]
+}

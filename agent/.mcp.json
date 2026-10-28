@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "redivivus": {
+      "type": "http",
+      "url": "https://ghidra.redivivus.app/mcp"
+    }
+  }
+}
