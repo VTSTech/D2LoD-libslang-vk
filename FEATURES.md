@@ -163,8 +163,14 @@ the slate's head, not new scope. Rows 1–9 are the new candidates.
 - **Prior art**: D2R official; PD2 ("Improved auto gold pickup"); PlugY-era plugins.
 - **Risk**: touches the gameplay pickup path — the first slate row that is not
   draw/input-only; still no balance surface (gold is currency, not stats). Med.
+  *(Revised by the draft: the trigger is client-only and the server 0x16 flow is
+  reused untouched — effective risk Low–Med.)*
 - **Exit**: walk-over picks gold exactly like click (full-inventory: pile stays),
   items untouched, `0` = vanilla.
+- **Draft**: `DRAFT_auto_gold.md` (v1, 2026-10-29) — tree-verify pass complete:
+  **zero D2Game/D2Common edits** (the 0x16 interact flow already does
+  walk-then-pick server-side); client-only trigger in 3 TUs; two owner questions
+  open (pickup radius, combat guard).
 
 ### 7. Automap scale + position — `[features] automap_scale`
 
