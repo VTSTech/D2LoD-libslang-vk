@@ -7,6 +7,7 @@
 #include "D2Glide/Renderer/Glide.h"
 #include "globals/globals.h"
 #include "D2CMP/tagPALETTEENTRY.h"
+#include "support/d2_boot.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -84,6 +85,11 @@ void __fastcall SetPalette(LPPALETTEENTRY pPalette) {
       pPal16Bit++;
       pSrcEntry += 4;
     } while ((int)pDst32 < (uintptr_t)((char*)&g_Palette32Bit + sizeof(g_Palette32Bit)));
+
+    // [vanilla-plus fix 26 diag C probe retired in 0.0.3: the capped 12-load
+    // LUT sentinel snapshot served its purpose (fix 27 field-verified) and is
+    // gone; d2boot.log no longer records palette rebuilds. Pure logging was
+    // removed, retail byte behavior unchanged.]
 }
 
 void __fastcall SetPaletteTable(BYTE * * ppPaletteTable) {
@@ -162,7 +168,7 @@ static BYTE * gaGlidePaletteTable[72] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(gaGlidePaletteTable, "D2Client::Renderer::SetPaletteTable::gaGlidePaletteTable");
 
     int nEntriesRemaining;
     uint8_t** pDestPaletteEntry = gaGlidePaletteTable;
@@ -216,7 +222,7 @@ void __fastcall RENDERER_D3D_ConvertPalettedTo32Bit(uint8_t * pSrc8Bit, uint32_t
 }
 
 int * GetRenderStatistics() {
-    return &gnTextureMemoryUsageBytes;
+    return &gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes;
 }
 
 BOOL ActivateWindow() {

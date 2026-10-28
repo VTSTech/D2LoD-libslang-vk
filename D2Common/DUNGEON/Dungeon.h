@@ -9,6 +9,7 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2CoordStrc;
 struct D2DrlgActStrc;
 struct D2DrlgCoordsStrc;
 struct D2DrlgDeleteStrc;
@@ -17,7 +18,6 @@ struct D2DrlgLevelWarpCoordinatesStrc;
 struct D2DrlgRoomCoordsStrc;
 struct D2DrlgStrc;
 struct D2DrlgTileDataStrc;
-struct D2GameViewStrc;
 struct D2LvlWarpTxt;
 struct D2PoolManagerStrc;
 struct D2PresetUnitStrc;
@@ -47,16 +47,6 @@ typedef void (__stdcall *fTownAutoMap)(eD2LevelId eD2LevelId, int FileIndex, int
 #endif
 
 // Data types
-struct D2CoordStrc {
-    D2CoordStrc() = default;
-    D2CoordStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
-    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2CoordStrc(int a0, int a1) : nX(a0), nY(a1) {}
-
-    /* 0x00 */ int nX;
-    /* 0x04 */ int nY;
-};
-
 struct D2DrlgRoomTilesStrc {
     /* 0x00 */ struct D2DrlgTileDataStrc * pWallTiles; // Wall tile data array (each element 0x30 bytes)
     /* 0x04 */ int nWallTilesCount; // Number of wall tiles allocated
@@ -92,14 +82,14 @@ struct D2RoomStrc * __fastcall DRLGROOM_AllocRoomStrc(struct D2PoolManagerStrc *
 void __stdcall DRLGROOM_UpdateRoomsNearAndCount(struct D2PoolManagerStrc * pMemory, struct D2RoomStrc * pRoom);
 // Allocates and initialises a D2RoomStrc (0x80 bytes) from the act memory pool. Copies coordinate data from pDrlgCoords, seeds the RNG with nInitSeed/0x29A, links the room into the act's room list, marks the act dirty, sets pRoomEx back-pointer, updates neighbour counts, allocates the collision grid, and fires the act callback if set. Halts if pDrlgAct is null.
 // @sourcefile .\DUNGEON\Dungeon.cpp
-struct D2RoomStrc * __fastcall AllocRoom(struct D2DrlgActStrc * pDrlgAct, struct D2RoomExStrc * pRoomEx, struct D2DrlgCoordsStrc * pDrlgCoords, struct D2DrlgRoomTilesStrc * pRoomTiles, int32_t nInitSeed, int32_t eFlags);
+struct D2RoomStrc * __fastcall AllocRoom(struct D2DrlgActStrc * pDrlgAct, struct D2RoomExStrc * pRoomEx, struct D2DrlgRoomCoordsStrc * pDrlgCoords, struct D2DrlgRoomTilesStrc * pRoomTiles, int32_t nInitSeed, int32_t eFlags);
 uint32_t __stdcall DoRoomsTouchOrOverlap(struct D2RoomStrc * pRoom, struct D2RoomStrc * pRoom2);
 BOOL __stdcall AreTileCoordinatesInsideRoom(struct D2RoomStrc * pRoom, int32_t nX, int32_t nY);
 // Determines the shape/orientation of a room based on its tile coordinates. Returns 0 (invalid), 1 (zero width), 2 (mirrored width), 3 (zero height), or 4 (normal).
 int32_t __stdcall DRLGROOM_GetRoomShape(struct D2RoomStrc * pRoom, int32_t nMode);
 int32_t __stdcall FindRoomByTileCoordinates(struct D2DrlgActStrc * pDrlgAct, int32_t nX, int32_t nY);
 int32_t __stdcall GetAdjacentRoomByCoordinates(struct D2RoomStrc * pRoom, int32_t nX, int32_t nY);
-void __stdcall CallRoomCallback(struct D2RoomStrc * pRoom, ROOMCALLBACKFN pfnRoomCallback, struct D2GameViewStrc * pArgs);
+void __stdcall CallRoomCallback(struct D2RoomStrc * pRoom, ROOMCALLBACKFN pfnRoomCallback, void * pArgs);
 // NOTE: Callee-saved register params inferred (medium confidence): param_ebx (EBX): DWORD
 int32_t * __stdcall DRLGROOM_GetMinimapRect(uint32_t nLine, struct D2RoomStrc * dwParam2, int32_t * dwParam3);
 void __stdcall GetSubtileRect(struct D2RoomStrc * pRoom, RECT * pRect);
@@ -128,7 +118,7 @@ eD2LevelId __stdcall DRLGROOM_GetLevelIdFromRoom(struct D2RoomStrc * pRoom);
 eD2LevelId __stdcall GetWarpDestinationLevel(struct D2RoomStrc * pRoom, eD2LevelId eLevel);
 eD2LevelId __stdcall GetLevelIdFromPopulatedRoom(struct D2RoomStrc * pRoom);
 BOOL __stdcall HasWaypoint(struct D2RoomStrc * pRoom);
-void __stdcall GetPickedLevelPrestFilePathFromRoom(struct D2RoomStrc * pRoom);
+char * __stdcall GetPickedLevelPrestFilePathFromRoom(struct D2RoomStrc * pRoom);
 // @sourcefile .\DUNGEON\Dungeon.cpp
 void __stdcall AllocDrlgDelete(struct D2RoomStrc * pRoom, eD2UnitType eUnitType, int32_t nUnitGUID);
 // @sourcefile .\DUNGEON\Dungeon.cpp
@@ -138,7 +128,7 @@ struct D2DrlgDeleteStrc * __stdcall GetDrlgDeleteFromRoom(struct D2RoomStrc * pR
 struct D2RoomStrc * __stdcall DRLGROOM_GetActMiscSubA0FromAct(struct D2DrlgActStrc * pDrlgAct);
 // Gets ActMiscSubA0 data for a specific room by extracting pRoomEx from pRoom and calling DRLGROOMEX_GetSubA0ForRoom.
 struct D2RoomStrc * __stdcall DRLGROOM_GetActMiscSubA0FromRoom(struct D2DrlgActStrc * pDrlgAct, struct D2RoomStrc * pRoom);
-int __stdcall DRLGROOM_TestRoomCanUntile(struct D2DrlgActStrc * pDrlgAct, struct D2RoomStrc * pRoom);
+BOOL __stdcall DRLGROOM_TestRoomCanUntile(struct D2DrlgActStrc * pDrlgAct, struct D2RoomStrc * pRoom);
 uint32_t __stdcall Is0x44Above2(struct D2RoomStrc * pRoom);
 // Checks if all near rooms in pRoom's adjacency list have the active flag (0x1) set, and that the count matches the RoomEx near count. Used by SendPacketsToClients.
 BOOL __stdcall DRLGROOM_AreAllNearRoomsActive(struct D2RoomStrc * pRoom);
@@ -256,11 +246,11 @@ void __stdcall DRLGROOMEX_UpdateClientRoomExActivation(struct D2DrlgStrc * pDrlg
 // eLevel in ESI: returns 0 when LEVEL_CheckIfLevelIsTown(eLevel), else eLevel != LEVEL_ArreatSummit (0x78).
 // Provenance: asm 0061ba10..0061ba26 (RET), aligned entry after padding; unreferenced in 1.14d.
 BOOL __stdcall LEVEL_IsNotTownAndNotArreatSummit(eD2LevelId eLevel);
-bool __fastcall RoomEx_method_0(struct D2RoomExStrc * pRoomEx);
+BOOL __fastcall RoomEx_method_0(struct D2RoomExStrc * pRoomEx);
 void __fastcall ToggleHasPortalFlag(struct D2RoomExStrc * pRoomEx, BOOL bReset);
 char __fastcall Get0x44FromRoomEx(struct D2RoomExStrc * pRoomEx);
 // Demotes a RoomEx to priority 2, then activates it if its init ref count is non-zero. Used to transition a RoomEx from a higher priority to the activation-ready state.
-uint32_t DRLGROOMEX_DemoteAndActivate(struct D2RoomExStrc * pRoomExStrc);
+void DRLGROOMEX_DemoteAndActivate(struct D2RoomExStrc * pRoomExStrc);
 // Conditionally demotes a RoomEx to priority 2 if tile data (flag 0x1000000) and presets (type 2 + flag 0x2000000) are already initialized, and current priority is above 2. Then activates if init ref count is non-zero.
 void __fastcall DRLGROOMEX_DemoteIfReady(struct D2RoomExStrc * pRoomEx);
 void __fastcall thunk_DRLGROOMEX_ActivateRoomEx(struct D2RoomExStrc * pRoomEx);

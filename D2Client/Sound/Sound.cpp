@@ -155,7 +155,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -180,7 +180,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -205,7 +205,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -230,7 +230,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -255,7 +255,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -280,7 +280,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -305,7 +305,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -330,7 +330,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -355,7 +355,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -380,7 +380,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -405,7 +405,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -430,7 +430,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -455,7 +455,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -480,7 +480,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -505,7 +505,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -530,7 +530,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -555,7 +555,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -580,7 +580,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -605,7 +605,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -630,7 +630,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -655,7 +655,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -680,7 +680,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -705,7 +705,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -730,7 +730,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -755,7 +755,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -780,7 +780,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -805,7 +805,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -830,7 +830,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -855,7 +855,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -880,7 +880,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -905,7 +905,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -930,7 +930,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -955,7 +955,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -980,7 +980,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1005,7 +1005,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1030,7 +1030,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1055,7 +1055,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1080,7 +1080,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1105,7 +1105,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1130,7 +1130,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1155,7 +1155,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1180,7 +1180,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1205,7 +1205,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1230,7 +1230,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1255,7 +1255,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1280,7 +1280,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1305,7 +1305,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1330,7 +1330,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1355,7 +1355,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1380,7 +1380,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1405,7 +1405,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1430,7 +1430,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1455,7 +1455,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1480,7 +1480,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1505,7 +1505,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1530,7 +1530,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1555,7 +1555,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1580,7 +1580,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1605,7 +1605,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1630,7 +1630,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1655,7 +1655,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1680,7 +1680,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1705,7 +1705,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1730,7 +1730,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1755,7 +1755,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1780,7 +1780,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1805,7 +1805,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1830,7 +1830,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1855,7 +1855,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1880,7 +1880,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1905,7 +1905,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1930,7 +1930,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1955,7 +1955,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -1980,7 +1980,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2005,7 +2005,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2030,7 +2030,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2055,7 +2055,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2080,7 +2080,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2105,7 +2105,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2130,7 +2130,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2155,7 +2155,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2180,7 +2180,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2205,7 +2205,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2230,7 +2230,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2255,7 +2255,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2280,7 +2280,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2305,7 +2305,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2330,7 +2330,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2355,7 +2355,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2380,7 +2380,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2405,7 +2405,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2430,7 +2430,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2455,7 +2455,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2480,7 +2480,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2505,7 +2505,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2530,7 +2530,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2555,7 +2555,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2580,7 +2580,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2605,7 +2605,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2630,7 +2630,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2655,7 +2655,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2680,7 +2680,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2705,7 +2705,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2730,7 +2730,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2755,7 +2755,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2780,7 +2780,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2805,7 +2805,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2830,7 +2830,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2855,7 +2855,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2880,7 +2880,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2905,7 +2905,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2930,7 +2930,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2955,7 +2955,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -2980,7 +2980,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3005,7 +3005,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3030,7 +3030,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3055,7 +3055,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3080,7 +3080,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3105,7 +3105,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3130,7 +3130,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3155,7 +3155,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3180,7 +3180,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3205,7 +3205,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3230,7 +3230,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3255,7 +3255,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3280,7 +3280,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3305,7 +3305,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3330,7 +3330,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3355,7 +3355,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3380,7 +3380,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3405,7 +3405,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3430,7 +3430,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3455,7 +3455,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3480,7 +3480,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3505,7 +3505,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3530,7 +3530,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3555,7 +3555,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3580,7 +3580,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3605,7 +3605,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3630,7 +3630,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3655,7 +3655,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3680,7 +3680,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3705,7 +3705,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3730,7 +3730,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3755,7 +3755,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3780,7 +3780,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3805,7 +3805,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3830,7 +3830,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3855,7 +3855,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3880,7 +3880,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3905,7 +3905,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3930,7 +3930,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3955,7 +3955,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -3980,7 +3980,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4005,7 +4005,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4030,7 +4030,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4055,7 +4055,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4080,7 +4080,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4105,7 +4105,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4130,7 +4130,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4155,7 +4155,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4180,7 +4180,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4205,7 +4205,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4230,7 +4230,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4255,7 +4255,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4280,7 +4280,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4305,7 +4305,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4330,7 +4330,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4355,7 +4355,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4380,7 +4380,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4405,7 +4405,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4430,7 +4430,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4455,7 +4455,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4480,7 +4480,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4505,7 +4505,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4530,7 +4530,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4555,7 +4555,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4580,7 +4580,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4605,7 +4605,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4630,7 +4630,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4655,7 +4655,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4680,7 +4680,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4705,7 +4705,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4730,7 +4730,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4755,7 +4755,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4780,7 +4780,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4805,7 +4805,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4830,7 +4830,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4855,7 +4855,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4880,7 +4880,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4905,7 +4905,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4930,7 +4930,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4955,7 +4955,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -4980,7 +4980,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -5005,7 +5005,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -5030,7 +5030,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -5055,7 +5055,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -5080,7 +5080,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -5105,7 +5105,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -5130,7 +5130,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nUnitDistance = */ 0,
         /* .nParam = */ 0,
         /* .pGlobal3Ref = */ nullptr,
-        /* .undefined_0x2c = */ 0,
+        /* .undefined_0x2c = */ nullptr,
         /* .nPlayMode = */ 0,
         /* .nScheduledTime = */ 0,
         /* .nVolume = */ 0,
@@ -5143,7 +5143,7 @@ int * __stdcall SOUND_GetChannelArray() {
         /* .nFadeStartTime = */ 0,
         /* .nFadeEndTime = */ 0
     }
-};
+}; D2_STATIC_GUARD(gaSoundChannelPool, "D2Client::Sound::SOUND_GetChannelArray::gaSoundChannelPool");
 
     D2SoundChannelStrc* pChannel = gaSoundChannelPool;
     do {
@@ -5166,7 +5166,7 @@ int * __stdcall SOUND_GetChannelArray() {
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 void __stdcall SOUNDINST_StopChannel(int * pSoundInst) {
     if (pSoundInst[0xc] == 1) {
-      GAME::Sound::SOUND_StopAndDetach((int**)pSoundInst[0xb]);
+      GAME::Sound::SOUND_StopAndDetach((D2ClientSoundChannelStrc*)pSoundInst[0xb]);
     }
     if (!pSoundInst[0xb]) {
       return;
@@ -5189,7 +5189,7 @@ void SOUND_ReleaseChannel(D2SoundChannelStrc * pdwParam) {
 
     D2Sound::D2SoundUntil::SOUNDUTIL_FreeLinkedList(&pdwParam->pGlobal3Ref);
     if (pdwParam->nPlayMode == 1) {
-      GAME::Sound::SOUND_StopAndDetach((int**)pdwParam->undefined_0x2c);
+      GAME::Sound::SOUND_StopAndDetach(pdwParam->undefined_0x2c);
     }
     if (pdwParam->undefined_0x2c) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x93);
@@ -5216,7 +5216,7 @@ uint32_t __fastcall SOUND_GetSoundId(int32_t nChannelHandle) {
 
 int __fastcall SOUND_GetSoundByIndex(int32_t nChannelHandle) {
     uint32_t bIsActive;
-    int** pSoundHandle;
+    D2ClientSoundChannelStrc* pSoundHandle;
     D2SoundChannelNodeStrc* pDVar1 = gpActiveSoundChannelsHead;
     if (!nChannelHandle) {
       return 0;
@@ -5224,7 +5224,7 @@ int __fastcall SOUND_GetSoundByIndex(int32_t nChannelHandle) {
 
     for (; pDVar1; pDVar1 = pDVar1->pNext) {
       if (pDVar1->pChannel->nChannelHandle == nChannelHandle) {
-        pSoundHandle = (int**)pDVar1->pChannel->undefined_0x2c;
+        pSoundHandle = pDVar1->pChannel->undefined_0x2c;
         if (!pSoundHandle) {
           return 0;
         }
@@ -5234,7 +5234,7 @@ int __fastcall SOUND_GetSoundByIndex(int32_t nChannelHandle) {
           return 0;
         }
 
-        bIsActive = GAME::Sound::SOUND_GetPlaybackStatus(pSoundHandle);
+        bIsActive = GAME::Sound::SOUND_GetPlaybackStatus((int**)pSoundHandle);
         if (bIsActive) {
           return 1;
         }
@@ -5413,16 +5413,7 @@ void SOUND_Calculate3DPosition(float * pfPosition, D2SoundChannelStrc * pChannel
 }
 
 void __fastcall SOUND_PlayEnvironmentSound(int32_t nSoundId, int32_t nPosX, int32_t nPosY, int32_t nPosZ) {
-    // Frame slots -20..-4 are ONE object: &fPosX is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      float fPosX;
-      float fPosY;
-      float fPosZ;
-      int32_t nChanHandle;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    float afPosition[3];
     if (!nSoundId) {
       return;
     }
@@ -5441,11 +5432,10 @@ void __fastcall SOUND_PlayEnvironmentSound(int32_t nSoundId, int32_t nPosX, int3
       }
     }
 
-    __frame0.fPosX = (float)nPosX;
-    __frame0.fPosY = (float)nPosY;
-    __frame0.fPosZ = (float)nPosZ + 640.0;
-    __frame0.nChanHandle = nPosX;
-    SOUND_Calculate3DPosition(&__frame0.fPosX, pChannel->pChannel);
+    afPosition[0] = (float)nPosX;
+    afPosition[1] = (float)nPosY;
+    afPosition[2] = (float)nPosZ + 640.0;
+    SOUND_Calculate3DPosition(afPosition, pChannel->pChannel);
 }
 
 int __fastcall SOUND_PlaySound(eD2Sounds nSoundId, D2UnitStrc * pUnit, int32_t nDelay, int32_t nVolume, int32_t nParam) {
@@ -5649,7 +5639,7 @@ void __stdcall SOUND_ResumeAll() {
 
 uint32_t __fastcall SOUND_GetCurrentMusic(int32_t nSoundId) {
     uint32_t nStreamProgress;
-    int* pChan;
+    D2ClientSoundChannelStrc* pChan;
     D2SoundChannelNodeStrc* pDVar1 = gpActiveSoundChannelsHead;
     if (!nSoundId) {
       return 0;
@@ -5657,7 +5647,7 @@ uint32_t __fastcall SOUND_GetCurrentMusic(int32_t nSoundId) {
 
     for (; pDVar1; pDVar1 = pDVar1->pNext) {
       if (pDVar1->pChannel->nChannelHandle == nSoundId) {
-        pChan = (int*)pDVar1->pChannel->undefined_0x2c;
+        pChan = pDVar1->pChannel->undefined_0x2c;
         if (pChan) {
           nStreamProgress = GAME::Sound::SOUND_GetStreamProgress(pChan);
           return nStreamProgress;
@@ -5671,35 +5661,35 @@ uint32_t __fastcall SOUND_GetCurrentMusic(int32_t nSoundId) {
     return 0;
 }
 
-bool __fastcall SOUND_IsChannelAvailable(uint32_t pChanA, uint32_t pChanB, int32_t nParam1, int32_t nParam2) {
+BOOL __fastcall SOUND_IsChannelAvailable(uint32_t pChanA, uint32_t pChanB, int32_t nParam1, int32_t nParam2) {
     if (*(uint8_t*)(pChanB + 0x3c) < *(uint8_t*)(pChanA + 0x3c)) {
-      return true;
+      return 1;
     }
     if (*(uint8_t*)(pChanA + 0x3c) < *(uint8_t*)(pChanB + 0x3c)) {
-      return false;
+      return 0;
     }
     if (nParam1) {
       if (*(float*)(pChanA + 0x18) < *(float*)(pChanB + 0x18)) {
-        return true;
+        return 1;
       }
       if (*(float*)(pChanB + 0x18) < *(float*)(pChanA + 0x18)) {
-        return false;
+        return 0;
       }
     }
     if (!nParam2) {
-      return pChanB < pChanA;
+      return (uint32_t)(pChanB < pChanA);
     }
 
     uint32_t nStartTick1 = *(uint32_t*)(pChanA + 0x34);
     uint32_t nStartTick2 = *(uint32_t*)(pChanB + 0x34);
     if (nStartTick1 >= nStartTick2 && nStartTick1 != nStartTick2) {
-      return true;
+      return 1;
     }
     if (nStartTick1 >= nStartTick2) {
-      return pChanB < pChanA;
+      return (uint32_t)(pChanB < pChanA);
     }
 
-    return false;
+    return 0;
 }
 
 uint32_t __fastcall SOUND_FindChannelForSound(int32_t nSoundId) {
@@ -5806,17 +5796,14 @@ void __fastcall SOUND_StopChannelGracefully(int32_t nSoundId, int32_t nFadeTarge
 
 void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
     // Static local variables (originally global data)
-    static uint32_t gnSoundVolumeUpdateFrame;
+    static uint32_t gnSoundVolumeUpdateFrame; D2_STATIC_GUARD_BSS(gnSoundVolumeUpdateFrame, "D2Client::Sound::SOUND_UpdateAllChannels::gnSoundVolumeUpdateFrame");
 
-    // Frame slots -80..-4 are ONE object: &fBestDir1 is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -68..-4 are ONE object: &fDir1 is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
-      float fBestDir1;
-      float fDirY;
-      uint32_t fDirZ;
       float fDir1;
       float fDirX2;
-      uint32_t fDirX3;
+      float fDirX3;
       D2SoundChannelStrc* pChanEntrySave;
       uint32_t bMasterVolOn;
       D2FloatIntUnion fClosestDist;
@@ -5831,7 +5818,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
       int* pFreeChannelList;
       D2SoundsTxt* pSoundsTxtLocal;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 76, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 64, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     D2SoundChannelNodeStrc* pDVar1;
     D2UnitStrc* pUnit_00;
@@ -5842,7 +5829,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
     uint32_t uVar2;
     D2SoundEnvironTxt* pSoundEnvTxt;
     D2UnitStrc* pUnit;
-    D2PoolManagerStrc** ppStreamHandle;
+    D2ClientSoundChannelStrc* ppStreamHandle;
     BOOL bUiFlag;
     D2SoundChannelStrc* pTrackedUnit;
     D2SoundChannelStrc* pChanEntry;
@@ -5853,7 +5840,6 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
     bool bMenuPaused;
     D2SoundChannelStrc* nSortDataB;
     int* pFreeList;
-    int** ppActiveStream;
     if (!gnSoundChannelCount) {
       return;
     }
@@ -5900,7 +5886,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
           pTrackedUnit->nPlayMode = 2;
         }
         if (pTrackedUnit->nPlayMode == 1) {
-          GAME::Sound::SOUND_StopAndDetach((int**)pTrackedUnit->undefined_0x2c);
+          GAME::Sound::SOUND_StopAndDetach(pTrackedUnit->undefined_0x2c);
           if (pTrackedUnit->undefined_0x2c) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x93);
             exit(-1);
@@ -5913,6 +5899,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
     nFadeVolStart = D2Sound::Src::D2SoundFast::SOUND_GetMasterVolume();
     __frame0.bMasterVolOn = (uint32_t)(0 < nFadeVolStart);
     for (__frame0.pSortedFlag = gpActiveSoundChannelsHead; __frame0.pSortedFlag; __frame0.pSortedFlag = __frame0.pSortedFlag->pNext) {
+      float afSoundDir[3];
       pChanEntry = __frame0.pSortedFlag->pChannel;
       __frame0.pChanEntrySave = pChanEntry;
       pSoundsTxt = DataTbls::TXT_sounds_GetLineBySoundId(pChanEntry->nSoundId);
@@ -5949,10 +5936,10 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
           __frame0.pClosestUnit = 0;
           __frame0.fDirX2 = 0.0;
           __frame0.nUnitCount = 0;
-          __frame0.fDirX3 = 0;
-          __frame0.fBestDir1 = 0.0;
-          __frame0.fDirY = 0.0;
-          __frame0.fDirZ = 0;
+          __frame0.fDirX3 = 0.0;
+          afSoundDir[0] = 0.0;
+          afSoundDir[1] = 0.0;
+          afSoundDir[2] = 0.0;
           __frame0.fClosestDist.fValue = -1.0;
           __frame0.fIndoorsSum = 0.0;
           __frame0.pUnitListLocal = pChanEntry->pGlobal3Ref;
@@ -5966,9 +5953,9 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
             SOUND_CalculateUnitDirection(pUnit_00, pChanEntry->nSoundId, &__frame0.fDir1);
             __frame0.fUnitDistSmooth = _Utils::CalculateHypotenusePowered(__frame0.fDir1, __frame0.fDirX2);
             if (!__frame0.pClosestUnit || __frame0.fUnitDistSmooth < __frame0.fClosestDist.fValue) {
-              __frame0.fBestDir1 = __frame0.fDir1;
-              __frame0.fDirY = __frame0.fDirX2;
-              __frame0.fDirZ = __frame0.fDirX3;
+              afSoundDir[0] = __frame0.fDir1;
+              afSoundDir[1] = __frame0.fDirX2;
+              afSoundDir[2] = __frame0.fDirX3;
               __frame0.fClosestDist.fValue = __frame0.fUnitDistSmooth;
               __frame0.pClosestUnit = pUnit_00;
             }
@@ -6006,7 +5993,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
             __frame0.nUnitCount++;
           } while (__frame0.pUnitListLocal);
 
-          SOUND_Calculate3DPosition(&__frame0.fBestDir1, pChanEntry);
+          SOUND_Calculate3DPosition(afSoundDir, pChanEntry);
           __frame0.fClosestDist.fValue = __frame0.fIndoorsSum / (float)__frame0.nUnitCount;
           fIndoorsSmoothed = (float)pChanEntry->nUnitDistance;
           if (__frame0.fClosestDist.fValue <= (float)pChanEntry->nUnitDistance) {
@@ -6100,7 +6087,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
             }
 
             ppStreamHandle = GAME::Sound::SOUND_PlaySoundWithPanning(pChanEntry);
-            pChanEntry->undefined_0x2c = (uint32_t)(uintptr_t)ppStreamHandle;
+            pChanEntry->undefined_0x2c = ppStreamHandle;
             if (ppStreamHandle) {
               pChanEntry->nPlayMode = 1;
               if (nGlobal3OrSortA) {
@@ -6121,19 +6108,19 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
 
         pSoundsTxt = __frame0.pSoundsTxtLocal;
         if (pChanEntry->nPlayMode == 1) {
-          ppActiveStream = (int**)pChanEntry->undefined_0x2c;
-          if (!ppActiveStream) {
+          ppStreamHandle = pChanEntry->undefined_0x2c;
+          if (!ppStreamHandle) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3f3);
             exit(-1);
           }
           if (__frame0.pSoundsTxtLocal->Duration && (uint32_t)(uint16_t)__frame0.pSoundsTxtLocal->Duration < __frame0.pFrameTime - pChanEntry->nScheduledTime || !__frame0.bVolumeEnabled || (float)d2_bits_to_float(__frame0.pClosestUnit) < pChanEntry->fPanResult) {
-            GAME::Sound::SOUND_StopAndDetach(ppActiveStream);
+            GAME::Sound::SOUND_StopAndDetach(ppStreamHandle);
             if (pChanEntry->undefined_0x2c) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x93);
               exit(-1);
             }
           } else {
-            GAME::Sound::SOUND_UpdateChannelParams((int*)ppActiveStream);
+            GAME::Sound::SOUND_UpdateChannelParams((int*)ppStreamHandle);
             if (pSoundsTxt->nLoadState == 2) {
               SoundHdr::SOUNDHDR_UpdateLRUTimestamp(pChanEntry->nSoundId);
             }

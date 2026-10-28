@@ -4,6 +4,7 @@
 #include "D2Client/UI/Waypoint.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2ClientStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/Sound/Sound.h"
@@ -30,7 +31,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
@@ -39,7 +39,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
-#include "Storm/H/Storm.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/QuestLog.h"
 #include "D2Launch/MainMenus.h"
@@ -306,7 +306,7 @@ void __stdcall WAYPOINT_PopulateList() {
     0x0,
     0xff,
     0x0
-};
+}; D2_STATIC_GUARD(gaWaypointVisited, "D2Client::UI::Waypoint::WAYPOINT_PopulateList::gaWaypointVisited");
 
     BOOL bFound;
     uint8_t byMaxId;

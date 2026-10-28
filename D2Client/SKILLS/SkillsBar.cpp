@@ -33,6 +33,7 @@
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
+#include "D2Common/Drlg/Path.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/PATH/DynamicPath.h"
@@ -255,17 +256,17 @@ BOOL __fastcall Skills_CltDoFunc_Bar_Whirlwind_CorpseExplosion(D2UnitStrc * pUni
       return 0;
     }
 
-    eMissilesId eCorpseMissile = (eMissilesId)pSkillTxt->cltmissilea;
+    eMissilesId eCorpseMissile = (eMissilesId)pSkillTxt->cltmissile[1];
     D2MonStats2Txt* pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pTarget->nClassId);
     if (!pMonStats2) {
       return 0;
     }
     if (!pMonStats2->large) {
       if (pMonStats2->isSmall) {
-        eCorpseMissile = (eMissilesId)pSkillTxt->cltmissileb;
+        eCorpseMissile = (eMissilesId)pSkillTxt->cltmissile[2];
       }
     } else {
-      eCorpseMissile = (eMissilesId)pSkillTxt->cltmissilec;
+      eCorpseMissile = (eMissilesId)pSkillTxt->cltmissile[3];
     }
     if (!(-1 < (int)eCorpseMissile && (int)eCorpseMissile < sgptDataTable->nTxtMissilesSize)) {
       return 0;
@@ -612,7 +613,7 @@ void __fastcall SKILL_CreateLeapArcParticle(D2UnitStrc * pUnit, D2SkillStrc * pS
         /* .nSlope = */ -0x48,
         /* .nIntercept = */ 0x4c8
     }
-};
+}; D2_STATIC_GUARD(gaLeapArcParticleOffsetZ, "D2Client::SKILLS::SkillsBar::SKILL_CreateLeapArcParticle::gaLeapArcParticleOffsetZ");
 
     if (!pSkill) {
       return;
@@ -1266,8 +1267,8 @@ BOOL __fastcall Skills_CltStFunc_CalcLeapDestViaPathfind(D2UnitStrc * pUnit, eD2
       D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pServerPath, 0x401);
       nLine = D2Common::PATH::DynamicPath::GetPathPoint(pServerPath, &pPathPoints);
       if (nLine) {
-        nSrcX = (uint32_t)(uint16_t)pPathPoints[nLine - 1].nX;
-        nSrcY = (uint32_t)(uint16_t)pPathPoints[nLine - 1].nY;
+        nSrcX = (uint32_t)pPathPoints[nLine - 1].nX;
+        nSrcY = (uint32_t)pPathPoints[nLine - 1].nY;
         nType = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
         nSkillFlags = nSrcX;
         nDestY = nSrcY;

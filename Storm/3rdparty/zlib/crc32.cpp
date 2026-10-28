@@ -271,7 +271,7 @@ uint32_t crc32_little(uint8_t * pbBuf, uint32_t nLen, uint32_t nCrc) {
     0xa1129ff0,
     0x8a3fcc33,
     0x9324fd72
-};
+}; D2_STATIC_GUARD(gdwCrc32Table1, "Storm::_3rdparty::zlib::crc32::crc32_little::gdwCrc32Table1");
     static uint32_t gdwCrc32Table2[256] = {
     0x0,
     0x1c26a37,
@@ -529,7 +529,7 @@ uint32_t crc32_little(uint8_t * pbBuf, uint32_t nLen, uint32_t nCrc) {
     0xbd1ce083,
     0xbf5a5eda,
     0xbe9834ed
-};
+}; D2_STATIC_GUARD(gdwCrc32Table2, "Storm::_3rdparty::zlib::crc32::crc32_little::gdwCrc32Table2");
     static uint32_t gdwCrc32Table3[256] = {
     0x0,
     0xb8bc6765,
@@ -787,7 +787,7 @@ uint32_t crc32_little(uint8_t * pbBuf, uint32_t nLen, uint32_t nCrc) {
     0x740cce7a,
     0x66b96194,
     0xde0506f1
-};
+}; D2_STATIC_GUARD(gdwCrc32Table3, "Storm::_3rdparty::zlib::crc32::crc32_little::gdwCrc32Table3");
 
     uint32_t nBlockCount;
     uint32_t nCrcAcc = ~nCrc;
@@ -1094,7 +1094,7 @@ int32_t __stdcall crc32_big(uint32_t nLength, uint32_t dwInitialCrc, uint8_t * p
     0xa18e0cc3,
     0x1bdf055a,
     0x8def022d
-};
+}; D2_STATIC_GUARD(gdwCrc32TableBase, "Storm::_3rdparty::zlib::crc32::crc32_big::gdwCrc32TableBase");
     static uint32_t gdwCrc32Table3_b[256] = {
     0x0,
     0x41311b19,
@@ -1352,7 +1352,7 @@ int32_t __stdcall crc32_big(uint32_t nLength, uint32_t dwInitialCrc, uint8_t * p
     0xf09f12a1,
     0x33cc3f8a,
     0x72fd2493
-};
+}; D2_STATIC_GUARD(gdwCrc32Table3_b, "Storm::_3rdparty::zlib::crc32::crc32_big::gdwCrc32Table3_b");
     static uint32_t gdwCrc32Table4[256] = {
     0x0,
     0x376ac201,
@@ -1610,7 +1610,7 @@ int32_t __stdcall crc32_big(uint32_t nLength, uint32_t dwInitialCrc, uint8_t * p
     0x83e01cbd,
     0xda5e5abf,
     0xed3498be
-};
+}; D2_STATIC_GUARD(gdwCrc32Table4, "Storm::_3rdparty::zlib::crc32::crc32_big::gdwCrc32Table4");
 
     uint32_t nBlockCount;
     uint32_t dwCrc = ~(((dwInitialCrc & 0xff00) + dwInitialCrc * 0x10000) * 0x100 + (dwInitialCrc >> 0x10 & 0xff) * 0x100 + (dwInitialCrc >> 0x18));

@@ -33,7 +33,7 @@ uint32_t __stdcall SELECT_IsDoorBlockingUnit(struct D2UnitStrc * pUnit, struct D
 uint32_t __stdcall SELECT_IsUnitBehindDoor(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 int32_t SELECT_GetDistanceSquared(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 void __fastcall SELECT_SetPetSeedTimestamp(int32_t bEnabled, struct D2UnitStrc * pUnit, int32_t nTimestamp);
-void __fastcall SELECT_SetExclusionRect(uint32_t * pRect);
+void __fastcall SELECT_SetExclusionRect(RECT * pRect);
 // Finds the closest valid target unit within a 9-tile radius around a given (X,Y) coordinate, for the server-side skill targeting system. Handles Iron Golem specially (ignores non-socketed metal items, excludes quest items). For each candidate it calls HitTestScreen and GetDistanceToXY, returning the nearest hit. Writes the resolved X/Y back into pX/pY. pSkillsTxt.flags4 bit-0 controls whether an already-active target is accepted immediately.
 // @sourcefile .\GAME\Select.cpp
 struct D2UnitStrc * __stdcall SKILL_FindTargetInRange(struct D2SkillStrc * pSkill, struct D2UnitStrc * pUnit, int * pX, int * pY, struct D2SkillsTxt * pSkillsTxt);

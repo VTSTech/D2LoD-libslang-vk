@@ -36,7 +36,7 @@ struct __attribute__((packed)) D2ArchiveStrc {
     /* 0x140 */ struct D2MPQHashEntryStrc * pHashTable; // hash table, dwHashTableSize entries of 16 bytes
     /* 0x144 */ uint32_t nHashTableSize; // Number of entries in hash table (used for modulo lookup)
     /* 0x148 */ int nRefCount;
-    /* 0x14C */ int bDontCloseHandle;
+    /* 0x14C */ struct D2MPQFileStrc * bDontCloseHandle;
     /* 0x150 */ struct D2ArchiveStrc * pBaseArchive;
     /* 0x154 */ char szInternalPrefix[260];
     /* 0x258 */ int nPriority;

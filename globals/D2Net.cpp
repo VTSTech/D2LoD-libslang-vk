@@ -194,7 +194,7 @@ int NET_D2GS_CLIENT_INCOMING_SIZE[181] = {
     0x35,
     -0x1,
     0x5
-};
+}; D2_GLOBAL_GUARD(NET_D2GS_CLIENT_INCOMING_SIZE, "NET_D2GS_CLIENT_INCOMING_SIZE");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_00882ce8 = {
     /* .DebugInfo = */ nullptr,
@@ -203,25 +203,25 @@ _RTL_CRITICAL_SECTION lpCriticalSection_00882ce8 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_00882ce8, "lpCriticalSection_00882ce8");
 
-eD2GSConnectionType nD2GSConnectionType = 0;
+eD2GSConnectionType nD2GSConnectionType = 0; D2_GLOBAL_GUARD(nD2GSConnectionType, "nD2GSConnectionType");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-uint32_t CLIENT_SocketToServer = -0x1;
-LPDWORD lpThreadId_00882b30 = 0;
-D2PacketsClientStrc * pD2PacketsClientBuffer = 0;
-HANDLE hClientConnectionThread = 0;
-D2OnePacketClientStrc * pD2PacketClient_from_0xAF = 0;
-HANDLE SERVER_THREAD = 0;
-D2OnePacketClientStrc * pD2PacketClient_to_0xAE = 0;
-uint32_t gbClientConnectionShutdown = 0;
-int gnNetConnectionTimeoutMs = 0;
-D2QServerStrc * pQServer = 0;
-uint32_t gnDefaultClientGameToken = 0;
+uint32_t CLIENT_SocketToServer = -0x1; D2_GLOBAL_GUARD(CLIENT_SocketToServer, "CLIENT_SocketToServer");
+LPDWORD lpThreadId_00882b30 = 0; D2_GLOBAL_GUARD(lpThreadId_00882b30, "lpThreadId_00882b30");
+D2PacketsClientStrc * pD2PacketsClientBuffer = 0; D2_GLOBAL_GUARD(pD2PacketsClientBuffer, "pD2PacketsClientBuffer");
+HANDLE hClientConnectionThread = 0; D2_GLOBAL_GUARD(hClientConnectionThread, "hClientConnectionThread");
+D2OnePacketClientStrc * pD2PacketClient_from_0xAF = 0; D2_GLOBAL_GUARD(pD2PacketClient_from_0xAF, "pD2PacketClient_from_0xAF");
+HANDLE SERVER_THREAD = 0; D2_GLOBAL_GUARD(SERVER_THREAD, "SERVER_THREAD");
+D2OnePacketClientStrc * pD2PacketClient_to_0xAE = 0; D2_GLOBAL_GUARD(pD2PacketClient_to_0xAE, "pD2PacketClient_to_0xAE");
+uint32_t gbClientConnectionShutdown = 0; D2_GLOBAL_GUARD(gbClientConnectionShutdown, "gbClientConnectionShutdown");
+int gnNetConnectionTimeoutMs = 0; D2_GLOBAL_GUARD(gnNetConnectionTimeoutMs, "gnNetConnectionTimeoutMs");
+D2QServerStrc * pQServer = 0; D2_GLOBAL_GUARD(pQServer, "pQServer");
+uint32_t gnDefaultClientGameToken = 0; D2_GLOBAL_GUARD(gnDefaultClientGameToken, "gnDefaultClientGameToken");
 
 namespace D2Common::Drlg::Maze {
 
@@ -551,10 +551,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -562,6 +558,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

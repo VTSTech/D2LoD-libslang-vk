@@ -524,7 +524,7 @@ void __fastcall AuraEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
         /* .nSkillLevelDiv = */ 0x1,
         /* .eSkill = */ SKILL_Thorns
     }
-};
+}; D2_STATIC_GUARD(gaAuraEnchantedTable, "D2Game::Monsters::Umod::AuraEnchanted::gaAuraEnchantedTable");
 
     uint16_t wNameSeed;
     D2SeedStrc sNameSeed;

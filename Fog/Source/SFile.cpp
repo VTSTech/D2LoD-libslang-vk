@@ -8,11 +8,11 @@
 #include "Fog/Src/Safesock.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 
@@ -21,8 +21,8 @@
 
 namespace Fog::Source::SFile {
 
-static double gdFogJulianDaysPerYear = 365.25;
-static double gdFogJulianDaysPerMonth = 30.6001000000000;
+static double gdFogJulianDaysPerYear = 365.25; D2_STATIC_GUARD(gdFogJulianDaysPerYear, "Fog::Source::SFile::gdFogJulianDaysPerYear");
+static double gdFogJulianDaysPerMonth = 30.6001000000000; D2_STATIC_GUARD(gdFogJulianDaysPerMonth, "Fog::Source::SFile::gdFogJulianDaysPerMonth");
 
 void __fastcall SFILE_InitializeFileSystem(BOOL bResult, uint32_t dwParam) {
     uint32_t dwSysOptionBuf[2];
@@ -48,7 +48,7 @@ void __fastcall ERRORMANAGER_FCloseFile(D2MPQFileStrc * pMPQFile) {
 }
 
 // NOTE: Register params: pFileHandle (ECX): D2MPQFileStrc *, pOutputBuffer (EDX): void *
-int __fastcall ERRORMANAGER_FReadFile(D2MPQFileStrc * pFileHandle, void * pOutputBuffer, uint32_t nBytesToRead, size_t * pBytesRead, LPOVERLAPPED lpOverlapped, D2StormAsyncCompletionStrc * pCompletion, int dwReadFlags) {
+int __fastcall ERRORMANAGER_FReadFile(D2MPQFileStrc * pFileHandle, void * pOutputBuffer, uint32_t nBytesToRead, uint32_t * pBytesRead, LPOVERLAPPED lpOverlapped, D2StormAsyncCompletionStrc * pCompletion, int dwReadFlags) {
     int iVar1 = Storm::Source::SFile::SFileReadFileEx2(pFileHandle, pOutputBuffer, nBytesToRead, pBytesRead, lpOverlapped, dwReadFlags, pCompletion);
     return iVar1;
 }
@@ -297,7 +297,6 @@ bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
 }
 
 int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) {
-    uint32_t uVar1;
     size_t nSrcGlobLen;
     size_t nDstDirLen;
     HANDLE hFindFile;
@@ -305,15 +304,14 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
     bool bDotMatch;
     uint32_t nRecursiveResult;
     _WIN32_FIND_DATAA findData;
-    char szDstPath[260];   // the SStrPrintf below writes 260
+    char szDstPath[260];
     char szSrcPath[260];
-    char szDstDir[261];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    Storm::Source::SSTR::SStrCopy(szDstDir + 1, (char*)szDstRoot, 0x7fffffff);
-    char* pcVar8 = strrchr(szDstDir + 1, 0x5c);
+    char szDstDir[260];
+    Storm::Source::SSTR::SStrCopy(szDstDir, (char*)szDstRoot, 0x7fffffff);
+    char* pcVar8 = strrchr(szDstDir, 0x5c);
     char cSaved2 = pcVar8[1];
     pcVar8[1] = '\0';
-    SafeCreateDirectoryTree(szDstDir + 1);
+    SafeCreateDirectoryTree(szDstDir);
     /* LPCSTR lpNewFileName for MoveFileA */ /* LPCSTR lpExistingFileName for MoveFileA */ pcVar8[1] = cSaved2;
     BOOL bSuccess = MoveFileA(szSrcRoot, szDstRoot);
     if (bSuccess) {
@@ -328,6 +326,7 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
       return 2 - (uint32_t)(dwAttributes != 2);
     }
     /* LPCSTR lpFileName for GetFileAttributesA */ if (dwAttributes & 0x10) {
+      uint32_t uVar1;
       dwAttributes = GetFileAttributesA(szDstRoot);
       if (dwAttributes & 0x10) {
         if (dwAttributes == -1) {
@@ -337,28 +336,28 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
             return 1;
           }
 
-          uVar1 = Storm::Source::SSTR::SStrLen(szDstDir + 1);
-          if ((!uVar1 || szDstDir[uVar1] != '\\') && uVar1 != 0x103) {
-            szDstDir[uVar1 + 1] = '\\';
-            szDstDir[uVar1 + 2] = '\0';
+          uVar1 = Storm::Source::SSTR::SStrLen(szDstDir);
+          if ((!uVar1 || szSrcPath[uVar1 + 0x103] != '\\') && uVar1 != 0x103) {
+            szDstDir[uVar1] = '\\';
+            szDstDir[uVar1 + 1] = '\0';
           }
 
-          SafeCreateDirectoryTree(szDstDir + 1);
+          SafeCreateDirectoryTree(szDstDir);
         }
 
         nRecursiveResult = 0;
-        nSrcGlobLen = Storm::Source::SSTR::SStrPrintf(szSrcPath + 1, 0x104, "%s\\*", szSrcRoot);
+        nSrcGlobLen = Storm::Source::SSTR::SStrPrintf(szSrcPath, 0x104, "%s\\*", szSrcRoot);
         nDstDirLen = Storm::Source::SSTR::SStrPrintf(szDstPath, 0x104, "%s\\", szDstRoot);
-        /* LPWIN32_FIND_DATAA lpFindFileData for FindFirstFileA */ /* LPCSTR lpFileName for FindFirstFileA */ hFindFile = FindFirstFileA(szSrcPath + 1, &findData);
+        /* LPWIN32_FIND_DATAA lpFindFileData for FindFirstFileA */ /* LPCSTR lpFileName for FindFirstFileA */ hFindFile = FindFirstFileA(szSrcPath, &findData);
         if (hFindFile != (HANDLE)-1) {
           do {
             bDotMatch = !strcmp(findData.cFileName, ".");
             if (!bDotMatch) {
               bDotMatch = !strcmp(findData.cFileName, "..");
               if (!bDotMatch) {
-                Storm::Source::SSTR::SStrCopy(szSrcPath + nSrcGlobLen, findData.cFileName, 0x104 - (nSrcGlobLen - 1));
+                Storm::Source::SSTR::SStrCopy(szDstPath + nSrcGlobLen + 0x103, findData.cFileName, 0x104 - (nSrcGlobLen - 1));
                 Storm::Source::SSTR::SStrCopy(szDstPath + nDstDirLen, findData.cFileName, 0x104 - nDstDirLen);
-                nSubDirResult = SFILE_MoveDirectoryRecursive(szSrcPath + 1, szDstPath);
+                nSubDirResult = SFILE_MoveDirectoryRecursive(szSrcPath, szDstPath);
                 nRecursiveResult |= nSubDirResult;
               }
             }
@@ -378,22 +377,113 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
     return 1;
 }
 
+// [vanilla-plus portable-save] d2vp.ini [features] portable_save=1 pins
+// single-player saves to "<exe folder>\save" instead of the registry-resolved
+// save location (the "Save Path"/migrated registry value, falling back to the
+// Known-Folder path). Every save-path consumer routes through
+// GetAndCreateSavePath (.d2s/.d2x/.key/.map, character enumeration, realm
+// lock, automap .map), so one hook covers them all. Missing ini file, section
+// or key, or a garbage value = 0 = retail resolution byte-for-byte (Principle
+// 1: opt-in, config-gated). The flag is polled with the same ~2 s GetTickCount
+// cadence as the client's alt_toggle wrapper; the exe-anchored directory
+// string is resolved once per process. The client boot hook already creates a
+// missing d2vp.ini before any save-path consumer runs, so no EnsureIni here -
+// Fog must not depend on D2Client. In portable mode the registry is never
+// written: no migration pass, no "Save Path" churn, retail values untouched.
+static int gbPortableSaveDirBuilt = 0;
+static int gbPortableSaveMode = 0;
+static DWORD dwPortableSaveLastCheck = 0;
+static char szPortableSaveDir[260]; // "<exe dir>save" (no trailing backslash)
+
+// Poll d2vp.ini [features] portable_save (at most every 2000 ms). The ini
+// path is anchored to the exe directory; without a usable exe directory the
+// answer is 0 so every caller keeps retail behavior.
+static int PORTABLESAVE_Active() {
+    DWORD dwNow = GetTickCount();
+    if (!dwPortableSaveLastCheck || dwNow - dwPortableSaveLastCheck >= 2000) {
+      char szExeDir[260];
+      char szIniPath[272];
+      uint32_t nDirLen = 0;
+      dwPortableSaveLastCheck = dwNow;
+      if (SFILE_GetExecutableDirectory(szExeDir, 260)) {
+        nDirLen = Storm::Source::SSTR::SStrLen(szExeDir);
+      }
+      if (nDirLen && szExeDir[nDirLen - 1] == '\\') {
+        Storm::Source::SSTR::SStrCopy(szIniPath, szExeDir, 272);
+        Storm::Source::SSTR::SStrPack(szIniPath, "d2vp.ini", 272);
+        // Missing file/section/key or a non-numeric value returns the 0
+        // default = retail save resolution.
+        gbPortableSaveMode = GetPrivateProfileIntA("features", "portable_save", 0, szIniPath) ? 1 : 0;
+      } else {
+        gbPortableSaveMode = 0;
+      }
+    }
+    return gbPortableSaveMode;
+}
+
+// Copy the cached "<exe folder>\save" path into pBuffer. The directory is
+// resolved on first use; the unreachable dir-less exe case refuses (caller
+// falls back to retail resolution). Trailing-backslash fixup and directory
+// creation stay with the caller, mirroring the retail tail of
+// GetAndCreateSavePath.
+static int PORTABLESAVE_BuildSavePath(char * pBuffer, size_t nSize) {
+    if (!gbPortableSaveDirBuilt) {
+      char szExeDir[260];
+      if (SFILE_GetExecutableDirectory(szExeDir, 260)) {
+        uint32_t nDirLen = Storm::Source::SSTR::SStrLen(szExeDir);
+        if (nDirLen && szExeDir[nDirLen - 1] == '\\') {
+          Storm::Source::SSTR::SStrCopy(szPortableSaveDir, szExeDir, 260);
+          Storm::Source::SSTR::SStrPack(szPortableSaveDir, "save", 260);
+          gbPortableSaveDirBuilt = 1;
+        }
+      }
+      if (!gbPortableSaveDirBuilt) {
+        gbPortableSaveMode = 0; // unreachable anchor: stay retail
+      }
+    }
+    if (!gbPortableSaveDirBuilt) {
+      return 0;
+    }
+
+    Storm::Source::SSTR::SStrCopy(pBuffer, szPortableSaveDir, (int32_t)nSize);
+    return 1;
+}
+
 void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
-    bool bGotSavePath;
+    // [vanilla-plus portable-save] opt-in redirect; everything below is
+    // retail: registry save-path lookup, one-time migration from the old
+    // "Save Path", Known-Folder fallback, backslash fixup + mkdir.
+    if (PORTABLESAVE_Active() && PORTABLESAVE_BuildSavePath(pBuffer, nSize)) {
+      if (nSize) {
+        uint32_t nPathLen = Storm::Source::SSTR::SStrLen(pBuffer);
+        if (!nPathLen || pBuffer[nPathLen - 1] != '\\') {
+          if (nPathLen + 1 == nSize) {
+            Debug::GuardStack();
+            return;
+          }
+
+          pBuffer[nPathLen] = '\\';
+          pBuffer[nPathLen + 1] = '\0';
+        }
+      }
+
+      SafeCreateDirectoryTree(pBuffer);
+      Debug::GuardStack();
+      return;
+    }
+
     DWORD dwAttributes;
     char* pcLen;
     int nMoveResult;
     uint32_t uVar1;
-    char szOldSavePath[259];
-    char szNewSavePath[261];
+    char szOldSavePath[260];
+    char szNewSavePath[260];
     char cChar;
-    char* szBufferInput;
-    uint32_t local_8;
-    local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     *pBuffer = '\0';
     int32_t bRead;
     bRead = Storm::Source::SReg::SRegLoadString("Diablo II", "%s%s.d2s", 1, pBuffer, nSize);
     if (!bRead) {
+      bool bGotSavePath;
       dwAttributes = GetLastError();
       if (dwAttributes == 2) {
         bRead = Storm::Source::SReg::SRegLoadString("Diablo II", "Save Path", 0, szOldSavePath, 0x104);
@@ -406,23 +496,23 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
 
           /* LPCSTR lpFileName for GetFileAttributesA */ dwAttributes = GetFileAttributesA(szOldSavePath);
           if (dwAttributes != -1 && dwAttributes & 0x10) {
-            bGotSavePath = SFILE_GetSaveGamePath((LPSTR)((int)szNewSavePath + 1U), 0x104);
+            bGotSavePath = SFILE_GetSaveGamePath(szNewSavePath, 0x104);
             if (bGotSavePath) {
-              nMoveResult = SFILE_MoveDirectoryRecursive(szOldSavePath, (LPCSTR)((int)szNewSavePath + 1U));
+              nMoveResult = SFILE_MoveDirectoryRecursive(szOldSavePath, szNewSavePath);
               if (nMoveResult == 1) {
-                szBufferInput = szOldSavePath;
+                pcLen = szOldSavePath;
               } else {
-                uVar1 = Storm::Source::SSTR::SStrLen((char*)((int)szNewSavePath + 1));
-                if ((!uVar1 || szNewSavePath[uVar1] != '\\') && uVar1 != 0x103) {
-                  szNewSavePath[uVar1 + 1] = 0x5c;
-                  szNewSavePath[uVar1 + 2] = 0;
+                uVar1 = Storm::Source::SSTR::SStrLen(szNewSavePath);
+                if ((!uVar1 || szOldSavePath[uVar1 + 0x103] != '\\') && uVar1 != 0x103) {
+                  szNewSavePath[uVar1] = '\\';
+                  szNewSavePath[uVar1 + 1] = '\0';
                 }
 
-                Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "%s%s.d2s", 1, (char*)((int)szNewSavePath + 1));
-                szBufferInput = (char*)((int)szNewSavePath + 1);
+                Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "%s%s.d2s", 1, szNewSavePath);
+                pcLen = szNewSavePath;
               }
 
-              Storm::Source::SSTR::SStrCopy(pBuffer, szBufferInput, nSize);
+              Storm::Source::SSTR::SStrCopy(pBuffer, pcLen, nSize);
             }
           }
         }

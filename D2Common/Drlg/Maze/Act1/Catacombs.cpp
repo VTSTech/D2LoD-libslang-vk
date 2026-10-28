@@ -213,7 +213,7 @@ void DRLGMAZE_ReplaceCatacombsRooms(D2DrlgLevelStrc * pDrlgLevelStrc) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCatacombsReplacements_A, "D2Common::Drlg::Maze::Act1::Catacombs::DRLGMAZE_ReplaceCatacombsRooms::gaDrlgCatacombsReplacements_A");
     static D2DrlgReplaceRoomStrc gaDrlgCatacombsReplacements_B[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x109,
@@ -239,7 +239,7 @@ void DRLGMAZE_ReplaceCatacombsRooms(D2DrlgLevelStrc * pDrlgLevelStrc) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgCatacombsReplacements_B, "D2Common::Drlg::Maze::Act1::Catacombs::DRLGMAZE_ReplaceCatacombsRooms::gaDrlgCatacombsReplacements_B");
 
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pDrlgLevelStrc->sSeed);
     pDrlgLevelStrc->sSeed = sNewSeed;

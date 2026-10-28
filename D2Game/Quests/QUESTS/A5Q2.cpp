@@ -31,6 +31,7 @@
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
+#include "D2Game/Quests/QUESTS/A4Q2.h"
 #include "D2Game/UNIT/Party.h"
 #include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -38,13 +39,15 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/D2QuestGUIDStrc.h"
+#include "D2Game/Monster/AI/AI.h"
 #include "Fog/Src/Safesock.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -158,27 +161,20 @@ BOOL __fastcall Q32_UpdateQuestStep(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q2.cpp
 void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static uint32_t aQ32RewardItemCodes[3] = { 0x20373072, 0x20383072, 0x20393072 };
+    static uint32_t aQ32RewardItemCodes[3] = { 0x20373072, 0x20383072, 0x20393072 }; D2_STATIC_GUARD(aQ32RewardItemCodes, "D2Game::Quests::QUESTS::A5Q2::Q32_Callback11_ScrollMessage::aQ32RewardItemCodes");
 
-    // Frame slots -24..-4 are ONE object: &pBitBuffer2 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      D2BitBufferStrc* pBitBuffer2;
-      uint16_t wQuestStatePacket;
-      uint8_t __pad6[2];
-      D2QuestDataA5Q2Strc* pA5Q2DataRaw;
-      uint32_t nRewardCount;
-      uint8_t __pad16[3];
-      bool bRewardGranted;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    int32_t nPlayerGUID;
+    uint32_t pBitBuffer_00;
+    BOOL bQuestState;
     D2UnitStrc* pRewardItem;
     D2ClientStrc* pClient;
     int iRewardIdx;
-    __frame0.nRewardCount = (uint32_t)(uint16_t)pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
-    __frame0.pA5Q2DataRaw = pQuestData->pQuestSpecificData.pA5Q2;
+    D2GSPacketSrv0x5D pBitBuffer2;
+    D2QuestDataA5Q2Strc* pA5Q2DataRaw;
+    int nRewardCount;
+    bool bRewardGranted;
+    int32_t nErrorLine;
+    short int sVar1 = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    D2QuestDataA1Q1Strc* pDVar2 = pQuestData->pQuestSpecificData.pA1Q1;
     if (pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo != 0x203) {
       return;
     }
@@ -186,14 +182,14 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     ::SGAMEDATA* pGame = pQuestData->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-    __frame0.pBitBuffer2 = pBitBuffer;
-    if ((short int)__frame0.nRewardCount == 0x4e80) {
-      __frame0.pA5Q2DataRaw->bQuestCompleted = 1;
+    *(uint32_t*)(char*)&pBitBuffer2 = (uint32_t)(uintptr_t)pBitBuffer;
+    if (sVar1 == 0x4e80) {
+      pDVar2->bQuestCompleted = true;
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q2.cpp", 0x100);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q32_UpdateQuestStep);
     } else {
-      BOOL bQuestState;
-      if ((short int)__frame0.nRewardCount != 0x4e8e) {
+      bool bVar3;
+      if (sVar1 != 0x4e8e) {
         return;
       }
 
@@ -202,7 +198,7 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         return;
       }
 
-      __frame0.bRewardGranted = false;
+      bVar3 = false;
       /* GetQuestState(JustCompleted=0xd): just-rescued self game -> run sequence
                          filter, broadcast 0xd, detach handler[2] once */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
       if (bQuestState) {
@@ -222,47 +218,50 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         pQuestData->sStateFunctions.fpQuestStateHandler[2] = (QUESTCALLBACKFN)0x0;
       }
 
-      __frame0.nRewardCount = 3;
+      nRewardCount = 3;
       /* GetQuestState(Step0x06): middle survival tier set -> grant 2 reward shields
                          (else default 3) */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_Step0x06);
       if (!bQuestState) {
         /* GetQuestState(Step0x07): lowest survival tier set -> grant 1 reward shield */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_Step0x07);
         if (bQuestState) {
-          __frame0.nRewardCount = 1;
+          nRewardCount = 1;
         }
       } else {
-        __frame0.nRewardCount = 2;
+        nRewardCount = 2;
       }
 
       iRewardIdx = 0;
-      if (0 < (int)__frame0.nRewardCount) {
+      if (nRewardCount) {
         do {
           pRewardItem = ITEM_RewardItemInInventory(pQuestArgs->pGame, pQuestArgs->pPlayer, aQ32RewardItemCodes[iRewardIdx], 0, QUALITY_NORMAL, 1);
-          pBitBuffer = __frame0.pBitBuffer2;
+          pBitBuffer_00 = *(uint32_t*)(char*)&pBitBuffer2;
           if (pRewardItem) {
-            __frame0.bRewardGranted = true;
+            bVar3 = true;
           }
 
           iRewardIdx++;
-        } while (iRewardIdx < (int)__frame0.nRewardCount);
+        } while (iRewardIdx < nRewardCount);
 
-        if (__frame0.bRewardGranted) {
-          /* SetQuestState(Completed=0): reward taken -> quest finished */ D2Common::QuestRecord::SetQuestState(__frame0.pBitBuffer2, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
+        if (bVar3) {
+          /* SetQuestState(Completed=0): reward taken -> quest finished */ D2Common::QuestRecord::SetQuestState((D2BitBufferStrc*)*(uint32_t*)(char*)&pBitBuffer2, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
           /* UnsetQuestState(RewardAwaits=1): clear pending-reward flag now that reward
-                         was granted */ D2Common::QuestRecord::UnsetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+                         was granted */ D2Common::QuestRecord::UnsetQuestState((D2BitBufferStrc*)pBitBuffer_00, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
           /* UnsetQuestStepStates(0x65c3e0): clear all transient Step0x02..0x07 progress
-                         bits on completion */ D2Common::QuestRecord::UnsetQuestStepStates(pBitBuffer, pQuestData->nQuestIdReal);
+                         bits on completion */ D2Common::QuestRecord::UnsetQuestStepStates((D2BitBufferStrc*)pBitBuffer_00, pQuestData->nQuestIdReal);
           if (!pQuestArgs->pPlayer) {
-            nPlayerGUID = -1;
+            nErrorLine = -1;
           } else {
-            nPlayerGUID = pQuestArgs->pPlayer->nUnitGUID;
+            nErrorLine = pQuestArgs->pPlayer->nUnitGUID;
           }
 
-          QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nPlayerGUID);
-          __frame0.wQuestStatePacket = 0;
-          __frame0.pBitBuffer2 = (D2BitBufferStrc*)0x2205d;
+          QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nErrorLine);
+          pBitBuffer2.nExtra = 0;
+          pBitBuffer2.nPacketId = ']';
+          pBitBuffer2.nQuestId = ' ';
+          pBitBuffer2.nAlertFlags = '\x02';
+          pBitBuffer2.nFilterStatus = '\0';
           pClient = UNIT::SUnit::SUNIT_GetClient(pQuestArgs->pPlayer, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q2.cpp", 0x14e);
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, (uint8_t*)&__frame0.pBitBuffer2);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, &pBitBuffer2);
         }
       }
     }
@@ -316,7 +315,7 @@ void __fastcall Q32_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     0x20393272,
     0x20303372,
     0x20313372
-};
+}; D2_STATIC_GUARD(gdwQuestCallbackAddressQ32, "D2Game::Quests::QUESTS::A5Q2::Q32_Callback00_NpcActivate::gdwQuestCallbackAddressQ32");
 
     int nNPCClassId;
     uint32_t nGossipLineIdx;
@@ -634,7 +633,7 @@ void __fastcall Q32_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q32_UpdateQuestStep);
       return;
     }
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GossipTextStrc*)0x6d) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GSPacketSrv0x27_TextStrc*)0x6d) {
       return;
     }
 
@@ -799,7 +798,7 @@ void __fastcall Q32_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q32_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q32_Callback13_PlayerStartedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xe] = Q32_Callback14_PlayerJoinedGame;
-    pQuestData->pNpcMessages = &A5Q2::aNpcGossipData;
+    pQuestData->pNpcMessages = A5Q2::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q2Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA5Q2Strc);
@@ -1178,7 +1177,7 @@ int32_t __fastcall Q32_GetRemainingPrisonersCount(D2QuestDataStrc * pQuestData) 
 // portal (>5 sets the 'arrived' flag field_0x10B) then update mode 3, Run->update mode 4. Re-arms the timer
 // (SetEvent +0x19 frames) until the prisoner reaches the portal. No QuestRecord access.
 void __fastcall Q32_PrisonerTimerCallback(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
-    eD2PlayerAnimMode eAnimMode;
+    eD2MonsterAnimMode eAnimMode;
     int nUnitGUID;
     int32_t nNewAnimMode;
     if (!pUnit) {
@@ -1206,7 +1205,7 @@ void __fastcall Q32_PrisonerTimerCallback(D2QuestDataStrc * pQuestData, D2UnitSt
     } else {
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode == eD2PlayerAnimMode_ns::Neutral) {
+    if (eAnimMode == eD2MonsterAnimMode_ns::Neutral) {
       nNewAnimMode = 2;
     } else if (eAnimMode == Walk) {
       if (pA5Q2Data->abGroupWussiesKilled[nPrisonerGroupIdx] == 1) {
@@ -1221,7 +1220,7 @@ void __fastcall Q32_PrisonerTimerCallback(D2QuestDataStrc * pQuestData, D2UnitSt
 
       nNewAnimMode = 3;
     } else {
-      if (eAnimMode != eD2PlayerAnimMode_ns::Run) {
+      if (eAnimMode != eD2MonsterAnimMode_ns::GetHit) {
         goto rearm_timer;
       }
 

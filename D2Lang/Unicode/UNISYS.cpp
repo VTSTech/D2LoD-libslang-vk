@@ -641,7 +641,7 @@ void __fastcall STRING_ConvertCharToWchar(uint16_t * pwszBuffer, char * pszBuffe
     Fog::Debug::GuardStack();
 }
 
-void __fastcall STRING_CopyCharToWCharWithSetMaxSize(uint16_t * pDestination, char * szSource, int32_t nSize) {
+uint16_t * __fastcall STRING_CopyCharToWCharWithSetMaxSize(uint16_t * pDestination, char * szSource, int32_t nSize) {
     int i = 0;
     if (0 < nSize) {
       do {
@@ -655,10 +655,11 @@ void __fastcall STRING_CopyCharToWCharWithSetMaxSize(uint16_t * pDestination, ch
     }
     if (szSource[i] == '\0') {
       pDestination[i] = L'\0';
-      return;
+      return pDestination;
     }
 
     pDestination[i - 1] = L'\0';
+    return pDestination;
 }
 
 char * __fastcall UNICODE_WideToMultiByte(char * pszDst, uint16_t * pwszSrc, int32_t nSize) {
@@ -801,16 +802,14 @@ bool UNICODE_CheckLeadingPunctuation(char * pszTable, uint16_t * wszText) {
 
 void __fastcall UNICODE_FormatPossessiveName(uint16_t * wszText1, uint16_t * wszText2, uint16_t * wszSuffix, int32_t nMaxChars, int32_t nLang) {
     // Static local variables (originally global data)
-    static int gnUIMinWidth = 0x7a73;
+    static int gnUIMinWidth = 0x7a73; D2_STATIC_GUARD(gnUIMinWidth, "D2Lang::Unicode::UNISYS::UNICODE_FormatPossessiveName::gnUIMinWidth");
 
     char* pszSuffix;
     int iVar1;
     uint16_t* pWszSuffix;
-    uint8_t byTmp;
-    uint16_t wTmp;
+    uint16_t* pwszText;
     uint16_t wszScratch[14];
-    char szSuffix2[4];
-    char szSuffix[4];
+    char szSuffix[12];
     uint8_t bTmp;
     char cTmp;
     int32_t nLen2;
@@ -898,39 +897,39 @@ void __fastcall UNICODE_FormatPossessiveName(uint16_t * wszText1, uint16_t * wsz
           STRING_CopyWideString(wszText1, wszText2);
         bIsPunct = UNICODE_CheckLeadingPunctuation("s", wszText2);
         if (bIsPunct) {
-          szSuffix2[0] = '\'';
-          szSuffix2[1] = ' ';
-          szSuffix2[2] = '\0';
+          szSuffix[0] = '\'';
+          szSuffix[1] = ' ';
+          szSuffix[2] = '\0';
         } else {
-          memcpy(szSuffix2, "\'s ", 4);
+          memcpy(szSuffix, "\'s ", 4);
         }
 
-        pszSuffix = szSuffix2;
+        pszSuffix = szSuffix;
         pszSuffix = pszSuffix + strlen(pszSuffix) + 1;
         goto append_possessive_suffix;
         case 1:
           STRING_CopyWideString(wszText1, wszSuffix);
-        memcpy(szSuffix2, " de ", 4);
-        pszSuffix = szSuffix2;
+        memcpy(szSuffix, " de ", 5);
+        pszSuffix = szSuffix;
         pszSuffix = pszSuffix + strlen(pszSuffix) + 1;
         break;
         case 2:
           STRING_CopyWideString(wszText1, wszText2);
         bIsPunct = UNICODE_CheckLeadingPunctuation((char*)&gnUIMinWidth, wszText2);
         if (bIsPunct) {
-          szSuffix2[0] = '\'';
-          szSuffix2[1] = ' ';
-          szSuffix2[2] = '\0';
+          szSuffix[0] = '\'';
+          szSuffix[1] = ' ';
+          szSuffix[2] = '\0';
         } else {
-          szSuffix2[0] = 's';
-          szSuffix2[1] = ' ';
-          szSuffix2[2] = '\0';
+          szSuffix[0] = 's';
+          szSuffix[1] = ' ';
+          szSuffix[2] = '\0';
         }
 
-        pszSuffix = szSuffix2;
+        pszSuffix = szSuffix;
         pszSuffix = pszSuffix + strlen(pszSuffix) + 1;
         append_possessive_suffix:
-        STRING_CopyCharToWCharWithSetMaxSize(wszScratch + 4, szSuffix2, (int)pszSuffix - (int)(szSuffix2 + 1));
+        STRING_CopyCharToWCharWithSetMaxSize(wszScratch + 4, szSuffix, (int)pszSuffix - (int)(szSuffix + 1));
         pWszSuffix = wszScratch + 4;
         append_joiner:
         AppendToBuffer(wszText1, pWszSuffix);
@@ -939,20 +938,20 @@ void __fastcall UNICODE_FormatPossessiveName(uint16_t * wszText1, uint16_t * wsz
           STRING_CopyWideString(wszText1, wszSuffix);
         bIsPunct = UNICODE_CheckTrailingPunctuation("aeiou", (uint16_t*)wszText2);
         if (bIsPunct) {
-          memcpy(szSuffix2, " d\'", 4);
+          memcpy(szSuffix, " d\'", 4);
         } else {
-          memcpy(szSuffix2, " de ", 4);
+          memcpy(szSuffix, " de ", 5);
         }
 
-        pszSuffix = szSuffix2;
+        pszSuffix = szSuffix;
         pszSuffix = pszSuffix + strlen(pszSuffix) + 1;
         break;
         default:
           goto default_case;
         case 5:
           STRING_CopyWideString(wszText1, wszSuffix);
-        pszSuffix = szSuffix2;
-        memcpy(szSuffix2, " di ", 4);
+        memcpy(szSuffix, " di ", 5);
+        pszSuffix = szSuffix;
         pszSuffix = pszSuffix + strlen(pszSuffix) + 1;
         break;
         case 10:
@@ -971,7 +970,7 @@ void __fastcall UNICODE_FormatPossessiveName(uint16_t * wszText1, uint16_t * wsz
         goto append_last_part;
       }
 
-      STRING_CopyCharToWCharWithSetMaxSize(wszScratch + 4, szSuffix2, (int)pszSuffix - (int)(szSuffix2 + 1));
+      STRING_CopyCharToWCharWithSetMaxSize(wszScratch + 4, szSuffix, (int)pszSuffix - (int)(szSuffix + 1));
       AppendToBuffer(wszText1, wszScratch + 4);
       wszSuffix = wszText2;
       append_last_part:
@@ -1006,7 +1005,7 @@ uint32_t UNICODE_CheckByteInRange(void * pThis, uint8_t byValue) {
     return 1;
 }
 
-int32_t __fastcall UNICODE_IsControlChar(uint32_t unused, uint8_t byChar) {
+int32_t UNICODE_IsControlChar(uint8_t byChar) {
     int32_t i = 0;
     if (0x1f >= byChar) {
       return i;
@@ -1086,7 +1085,7 @@ void __fastcall UNICODE_LoadKamapFile(D2PoolManagerStrc * pMemory, char * szFile
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(szUnicodeKamapVersion, "D2Lang::Unicode::UNISYS::UNICODE_LoadKamapFile::szUnicodeKamapVersion");
 
     uint8_t szVersionBuf[40];
     uint8_t cTmp;
@@ -1253,40 +1252,37 @@ uint32_t UNICODE_BinarySearchKamap(uint16_t wChar) {
 }
 
 uint16_t * __fastcall UNICODE_ConvertMultiByteToWide(uint16_t * wszText, uint8_t * pbParam, int32_t nSize) {
+    uint16_t* pFallbackResult;
     int32_t nIsControl;
     uint32_t nMappedCode;
     uint32_t nTmpEcx;
     uint32_t nCodePoint;
-    uint16_t* pWszNext;
-    pWszNext = wszText;
-    uint16_t wCharLo;
     uint16_t wChar;
     if (!gpUnicodeCodeToMapTable) {
-      uint16_t* pFallbackResult;
-      STRING_CopyCharToWCharWithSetMaxSize(wszText, (char*)pbParam, nSize);
+      pFallbackResult = STRING_CopyCharToWCharWithSetMaxSize(wszText, (char*)pbParam, nSize);
       return pFallbackResult;
     }
 
     int i;
     i = 0;
-    uint16_t* pWszCur;
-    pWszCur = wszText;
     uint8_t* pbCur;
     pbCur = pbParam;
     if (0 < nSize) {
+      uint8_t byChar;
       do {
-        if (!*pbCur) {
+        byChar = *pbCur;
+        if (!byChar) {
           goto terminate_output;
         }
 
-        nIsControl = UNICODE_IsControlChar((uint32_t)pWszCur, *pbCur);
+        nIsControl = UNICODE_IsControlChar(byChar);
         if (!nIsControl) {
-          wChar = wCharLo & 0xff;
+          wChar = (uint16_t)byChar;
           pbParam = pbCur + 1;
           nCodePoint = nTmpEcx;
         } else {
           pbParam = pbCur + 2;
-          wChar = (uint16_t)(uint16_t)(uint8_t)pbCur[1];
+          wChar = (uint16_t)((uint16_t)(uint8_t)byChar << 8 | (uint16_t)(uint8_t)pbCur[1]);
           nCodePoint = (uint32_t)wChar;
         }
 
@@ -1298,7 +1294,6 @@ uint16_t * __fastcall UNICODE_ConvertMultiByteToWide(uint16_t * wszText, uint8_t
         }
 
         i++;
-        pWszCur = pWszNext;
         pbCur = pbParam;
       } while (i < nSize);
     }
@@ -1316,14 +1311,10 @@ uint16_t * __fastcall UNICODE_ConvertMultiByteToWide(uint16_t * wszText, uint8_t
 uint8_t * __fastcall UNICODE_ConvertWideToMultiByte(uint8_t * pParam, uint16_t * nParam, int32_t nSize) {
     uint16_t* pFoundEntry;
     int32_t nIsControl;
-    int32_t nEcxSave;
-    uint8_t abSearchKey[2];
-    uint16_t wCharBuf;
-    uint16_t* pArgSave;
+    uint16_t awSearchKey[2];
     uint16_t wChar;
     if (!gpUnicodeKamapToCodeTable) {
       char* pFallbackResult;
-      pArgSave = nParam;
       pFallbackResult = UNICODE_WideToMultiByte((char*)pParam, nParam, nSize);
       return (uint8_t*)pFallbackResult;
     }
@@ -1336,13 +1327,10 @@ uint8_t * __fastcall UNICODE_ConvertWideToMultiByte(uint8_t * pParam, uint16_t *
         if (!wChar) {
           goto terminate_output;
         }
-
-        nIsControl = nSize;
-        pArgSave = nParam;
         if (wChar < 0x20) {
           store_multibyte_char:
           {
-            if (wChar & 0xff00 || (nIsControl = UNICODE_IsControlChar(nIsControl, (uint8_t)wChar) , nIsControl != 0)) {
+            if (wChar & 0xff00 || (nIsControl = UNICODE_IsControlChar((uint8_t)wChar) , nIsControl != 0)) {
               pParam[i] = (char)(wChar >> 8);
               i++;
             }
@@ -1351,16 +1339,15 @@ uint8_t * __fastcall UNICODE_ConvertWideToMultiByte(uint8_t * pParam, uint16_t *
             i++;
           }
         } else {
-          wCharBuf = wChar;
-          pFoundEntry = (uint16_t*)bsearch(abSearchKey, gpUnicodeKamapToCodeTable, (uint32_t)gnUnicodeKamapEntryCount, 4, UNICODE_CompareKamapEntry);
+          awSearchKey[1] = wChar;
+          pFoundEntry = (uint16_t*)bsearch(awSearchKey, gpUnicodeKamapToCodeTable, (uint32_t)gnUnicodeKamapEntryCount, 4, UNICODE_CompareKamapEntry);
           if (pFoundEntry) {
             wChar = *pFoundEntry;
-            nIsControl = nEcxSave;
             goto store_multibyte_char;
           }
         }
 
-        nParam = pArgSave + 1;
+        nParam++;
       } while (i < nSize);
     }
     if (*nParam) {
@@ -1378,14 +1365,7 @@ int32_t __fastcall UNICODE_GetMultiByteLength(uint16_t * wszText, int32_t nParam
     int32_t nByteLen;
     uint16_t* pFoundEntry;
     int32_t nIsControl;
-    uint16_t* nEcxSave;
-    nEcxSave = wszText;
-    uint16_t* pWszEcxSave;
-    pWszEcxSave = wszText;
-    uint16_t wCharBuf;
     uint16_t wChar;
-    uint16_t* pWszSave;
-    pWszSave = wszText;
     if (!gpUnicodeKamapToCodeTable) {
       nByteLen = STRING_GetWideStringLength(wszText);
       return nByteLen;
@@ -1399,24 +1379,23 @@ int32_t __fastcall UNICODE_GetMultiByteLength(uint16_t * wszText, int32_t nParam
     }
 
     do {
-      uint8_t abSearchKey[2];
-      wChar = pWszSave[i];
+      uint16_t awSearchKey[2];
+      wChar = wszText[i];
       if (wChar == L'\0') {
         return nByteLen;
       }
       if ((uint16_t)wChar < 0x20) {
         count_char_bytes:
         {
-          if (!(wChar & 0xff00U) && (nIsControl = UNICODE_IsControlChar((uint32_t)wszText, (uint8_t)wChar) , wszText = pWszEcxSave , !nIsControl)) {
+          if (!(wChar & 0xff00U) && (nIsControl = UNICODE_IsControlChar((uint8_t)wChar) , !nIsControl)) {
             nByteLen++;
           } else {
             nByteLen += 2;
           }
         }
       } else {
-        wCharBuf = wChar;
-        pFoundEntry = (uint16_t*)bsearch(abSearchKey, gpUnicodeKamapToCodeTable, (uint32_t)gnUnicodeKamapEntryCount, 4, UNICODE_CompareKamapEntry);
-        wszText = nEcxSave;
+        awSearchKey[1] = wChar;
+        pFoundEntry = (uint16_t*)bsearch(awSearchKey, gpUnicodeKamapToCodeTable, (uint32_t)gnUnicodeKamapEntryCount, 4, UNICODE_CompareKamapEntry);
         if (pFoundEntry) {
           wChar = *pFoundEntry;
           goto count_char_bytes;
@@ -1430,18 +1409,16 @@ int32_t __fastcall UNICODE_GetMultiByteLength(uint16_t * wszText, int32_t nParam
 }
 
 char * __fastcall UNICODE_GetWideCharCount(char * szText, char * szSourceFile) {
-    char* pszEnd;
-    char* pszEcxSave = szText;
+    char* pszCount;
     char cTmp;
     if (!gpUnicodeCodeToMapTable) {
-      pszEnd = szText + 1;
+      pszCount = szText + 1;
       szText = szText + strlen(szText) + 1;
-      return szText - (int)pszEnd;
+      return szText - (int)pszCount;
     }
 
-    char* pszCount = 0;
+    pszCount = 0;
     int i = 0;
-    pszEnd = szText;
     if (0 >= (int)szSourceFile) {
       return pszCount;
     }
@@ -1452,7 +1429,7 @@ char * __fastcall UNICODE_GetWideCharCount(char * szText, char * szSourceFile) {
         return pszCount;
       }
 
-      nIsControl = UNICODE_IsControlChar((uint32_t)pszEnd, szText[i]);
+      nIsControl = UNICODE_IsControlChar(szText[i]);
       if (!nIsControl) {
         i++;
       } else {
@@ -1460,7 +1437,6 @@ char * __fastcall UNICODE_GetWideCharCount(char * szText, char * szSourceFile) {
       }
 
       pszCount++;
-      pszEnd = pszEcxSave;
     } while (i < (int)szSourceFile);
 
     return pszCount;

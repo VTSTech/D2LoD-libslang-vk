@@ -31,8 +31,8 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -217,7 +217,7 @@ void __fastcall Q03_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // Q03_Callback_00 (A1Q3) — state-0 / gossip-icon handler. Decides which gossip line Charsi (0x9a) shows. If quest not Completed (or JustCompleted) and player lacks the Malus: show the nStateFlag-indexed intro line (via gdwQuestCallbackAddressQ39 lookup, skipping flag 4). If player HAS the Malus and is level >=8 and not Completed: show the "return the Malus" line (index 3). Read-only on quest record.
 void __fastcall Q03_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQuestCallbackAddressQ39[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 };
+    static int32_t gdwQuestCallbackAddressQ39[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gdwQuestCallbackAddressQ39, "D2Game::Quests::QUESTS::A1Q3::Q03_Callback00_NpcActivate::gdwQuestCallbackAddressQ39");
 
     int32_t nPlayerLevel2;
     int32_t nTargetClassId;
@@ -291,7 +291,7 @@ void __fastcall Q03_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     ::SGAMEDATA* pGame;
     if (pQuestData->bIsNotIntroduction) {
       D2BitBufferStrc* pBitBuffer;
-      if (!(pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x1 && pQuestData->nStateFlag == 2)) {
+      if (!(pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x1 && pQuestData->nStateFlag == 2)) {
         return;
       }
 
@@ -338,7 +338,7 @@ bool __stdcall MallusHandler(D2QuestDataStrc * pQuestData) {
     QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x1c8);
     pQuestData->nQuestPacketFlags = '\x01';
     QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q03_NpcGossipHandler, true);
-    *(uint8_t*)&pA1Q3Data->field_0x08 = 0;
+    pA1Q3Data->field_0x08 = '\0';
     if (!pA1Q3Data->bMalusTaken) {
       return true;
     }
@@ -430,7 +430,7 @@ void __fastcall Q03_Callback06_Unused(D2QuestDataStrc * pQuestData, D2QuestArgSt
 // Already documented.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q3.cpp
 BOOL __fastcall OBJOP_A1Q3_DenOfEvil_CheckCompletion(D2ObjectOperateFnArg * pOperation) {
-    eD2PlayerAnimMode ePlayerAnimMode;
+    eD2ObjectAnimMode ePlayerAnimMode;
     D2ObjectOperateFnArg* pOperationLocal = pOperation;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_ToolsOfTheTrade);
     if (!pQuestData) {
@@ -439,7 +439,7 @@ BOOL __fastcall OBJOP_A1Q3_DenOfEvil_CheckCompletion(D2ObjectOperateFnArg * pOpe
 
     D2UnitStrc* pDVar2 = pOperation->sArg.pVictim;
     if (!pDVar2) {
-      ePlayerAnimMode = Death;
+      ePlayerAnimMode = eD2ObjectAnimMode_ns::Neutral;
     } else {
       ePlayerAnimMode = pDVar2->eAnimMode.ePlayerMode;
     }
@@ -448,7 +448,7 @@ BOOL __fastcall OBJOP_A1Q3_DenOfEvil_CheckCompletion(D2ObjectOperateFnArg * pOpe
       UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
       return 0;
     }
-    if (ePlayerAnimMode != Death) {
+    if (ePlayerAnimMode != eD2ObjectAnimMode_ns::Neutral) {
       return 0;
     }
 
@@ -715,10 +715,10 @@ void __fastcall Q03_InitData(D2QuestDataStrc * pQuestData) {
     memset(pQuestSpecificData, 0, 0xa4);
     pQuestSpecificData->field_0x00 = 0;
     pQuestSpecificData->nMalusGUID = 0;
-    *(uint8_t*)&pQuestSpecificData->field_0x10 = 0;
+    pQuestSpecificData->field_0x10 = '\0';
     pQuestSpecificData->field_0x12 = 0;
     pQuestSpecificData->bMalusTaken = false;
-    *(uint8_t*)&pQuestSpecificData->field_0x08 = 0;
+    pQuestSpecificData->field_0x08 = '\0';
     pQuestSpecificData->bCharsiNotified = 0;
     pQuestSpecificData->bQuestAccepted = 0;
     pQuestSpecificData->nMalusMode = 0;

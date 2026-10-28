@@ -262,7 +262,7 @@ uint16_t __stdcall STRTABLE_FindStringByKey(uint16_t * * ppHashTable, uint8_t * 
 
 uint32_t __stdcall STRTABLE_LookupString(uint8_t * pbParam, uint16_t * * ppwszText) {
     // Static local variables (originally global data)
-    static uint16_t gwStrTableLanguageCode;
+    static uint16_t gwStrTableLanguageCode; D2_STATIC_GUARD_BSS(gwStrTableLanguageCode, "D2Lang::StrTable::strtable::STRTABLE_LookupString::gwStrTableLanguageCode");
 
     uint32_t nBaseResult;
     uint16_t* pTranslated;
@@ -454,8 +454,8 @@ uint32_t __fastcall STRTABLE_GetLanguageId(char * szText) {
 // @sourcefile .\StrTable\strtable.cpp
 uint32_t __stdcall MISC_GetLanguageCode() {
     // Static local variables (originally global data)
-    static uint32_t gnLanguageCode;
-    static uint8_t gbLanguageCodeCached;
+    static uint32_t gnLanguageCode; D2_STATIC_GUARD_BSS(gnLanguageCode, "D2Lang::StrTable::strtable::MISC_GetLanguageCode::gnLanguageCode");
+    static uint8_t gbLanguageCodeCached; D2_STATIC_GUARD_BSS(gbLanguageCodeCached, "D2Lang::StrTable::strtable::MISC_GetLanguageCode::gbLanguageCodeCached");
 
     if (gbLanguageCodeCached != '\0') {
       return gnLanguageCode;
@@ -734,7 +734,7 @@ uint32_t __stdcall STRTABLE_GetRegistryLanguage() {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gszRegistryLanguage, "D2Lang::StrTable::strtable::STRTABLE_GetRegistryLanguage::gszRegistryLanguage");
 
     // Frame slots -16..-8 are ONE object: &dwType is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -895,21 +895,12 @@ void __stdcall STRTABLE_FormatNumber(uint16_t * wszText, uint32_t nValue, int32_
 }
 
 void __stdcall STRTABLE_FormatInt64(uint16_t * wszText, int32_t nParam1, int32_t nParam2, int32_t nParam3) {
-    // Frame slots -76..-4 are ONE object: &wcFallback is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint16_t wcFallback;
-      uint8_t __pad2[1];
-      char szDigitBuf[65];
-      uint32_t dwStackCookie;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 72, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int nOutPos;
     int nOutPos2;
     bool bNeedNeg;
+    uint16_t wszFallback[2];
+    char szDigitBuf[64];
     char cChar;
-    __frame0.dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int nCommaCounter = 0;
     if (nParam3 < 3) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x519);
@@ -924,20 +915,21 @@ void __stdcall STRTABLE_FormatInt64(uint16_t * wszText, int32_t nParam1, int32_t
       nParam2 = -(nParam2 + (uint32_t)bNeedNeg);
     }
 
-    __i64toa((uint64_t)((uint64_t)(uint32_t)nParam2 << 32 | (uint64_t)(uint32_t)nParam1), __frame0.szDigitBuf + 1, 10);
-    char* pcDigit = __frame0.szDigitBuf + 1;
+    __i64toa((uint64_t)((uint64_t)(uint32_t)nParam2 << 32 | (uint64_t)(uint32_t)nParam1), szDigitBuf, 10);
+    char* pcDigit = szDigitBuf;
     pcDigit = pcDigit + strlen(pcDigit) + 1;
-    int nDigitCount = (int)pcDigit - (int)(__frame0.szDigitBuf + 2);
+    int nDigitCount = (int)pcDigit - (int)(szDigitBuf + 1);
     if (nDigitCount) {
+      int iVar1;
       nOutPos = (nDigitCount - 1) / 3 + nDigitCount;
       if (0 < nOutPos && nOutPos < nParam3 - 1) {
         wszText[nOutPos] = L'\0';
         while (nOutPos) {
-          pcDigit = __frame0.szDigitBuf + nDigitCount;
+          iVar1 = nDigitCount + 3;
           nDigitCount--;
           nOutPos2 = nOutPos - 1;
           nCommaCounter++;
-          wszText[nOutPos2] = (short int)*pcDigit;
+          wszText[nOutPos2] = (short int)*(char*)((int)wszFallback + iVar1);
           if (2 < nCommaCounter) {
             nCommaCounter = 0;
             if (0 < nOutPos2) {
@@ -958,31 +950,20 @@ void __stdcall STRTABLE_FormatInt64(uint16_t * wszText, int32_t nParam1, int32_t
       }
     }
 
-    __frame0.wcFallback = L'\0';
-    char cStack_4a = '\0';
-    __frame0.szDigitBuf[0] = '\0';
-    UTF8_ConvertToWideChar(&__frame0.wcFallback, "*", 2);
-    Unicode::UNISYS::STRING_CopyWideString(wszText, &__frame0.wcFallback);
+    wszFallback[0] = L'\0';
+    wszFallback[1] = L'\0';
+    UTF8_ConvertToWideChar(wszFallback, "*", 2);
+    Unicode::UNISYS::STRING_CopyWideString(wszText, wszFallback);
     Fog::Debug::GuardStack();
 }
 
 void __stdcall STRTABLE_FormatUInt64WithAbbrev(uint16_t * wszText, uint32_t dwParam1, uint32_t dwParam2, int32_t nParam) {
-    // Frame slots -76..-4 are ONE object: &wcFallback is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint16_t wcFallback;
-      uint8_t __pad2[1];
-      char szDigitBuf[65];
-      uint32_t dwStackCookie;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 72, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    int nOutPos;
+    int pcVar4;
     uint16_t wAbbrevChar;
     int nMagnitude;
-    char cStack_4a;
+    uint16_t wszFallback[2];
+    char szDigitBuf[64];
     char cChar;
-    __frame0.dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int nCommaCounter;
     nCommaCounter = 0;
     if (nParam < 3) {
@@ -990,20 +971,20 @@ void __stdcall STRTABLE_FormatUInt64WithAbbrev(uint16_t * wszText, uint32_t dwPa
       exit(-1);
     }
 
-    __ui64toa((uint64_t)((uint64_t)(uint32_t)dwParam2 << 32 | (uint64_t)(uint32_t)dwParam1), __frame0.szDigitBuf + 1, 10);
+    __ui64toa((uint64_t)((uint64_t)(uint32_t)dwParam2 << 32 | (uint64_t)(uint32_t)dwParam1), szDigitBuf, 10);
     char* pcDigit;
-    pcDigit = __frame0.szDigitBuf + 1;
+    pcDigit = szDigitBuf;
     pcDigit = pcDigit + strlen(pcDigit) + 1;
     int nDigitCount;
-    nDigitCount = (int)pcDigit - (int)(__frame0.szDigitBuf + 2);
+    nDigitCount = (int)pcDigit - (int)(szDigitBuf + 1);
     if (!nDigitCount) {
       write_placeholder:
-      __frame0.wcFallback = L'\0';
-      cStack_4a = '\0';
-      __frame0.szDigitBuf[0] = '\0';
-      UTF8_ConvertToWideChar(&__frame0.wcFallback, "*", 2);
-      Unicode::UNISYS::STRING_CopyWideString(wszText, &__frame0.wcFallback);
+      wszFallback[0] = L'\0';
+      wszFallback[1] = L'\0';
+      UTF8_ConvertToWideChar(wszFallback, "*", 2);
+      Unicode::UNISYS::STRING_CopyWideString(wszText, wszFallback);
     } else {
+      int nOutPos;
       nMagnitude = (nDigitCount - 1) / 3 - 1;
       if (nMagnitude < 4) {
         if (nMagnitude < 0) {
@@ -1044,20 +1025,20 @@ void __stdcall STRTABLE_FormatUInt64WithAbbrev(uint16_t * wszText, uint32_t dwPa
       write_digits:
       if (nDigitCount) {
         while (nOutPos) {
-          pcDigit = __frame0.szDigitBuf + nDigitCount;
+          nMagnitude = nDigitCount + 3;
           nDigitCount--;
-          nMagnitude = nOutPos - 1;
+          pcVar4 = nOutPos - 1;
           nCommaCounter++;
-          wszText[nMagnitude] = (short int)*pcDigit;
+          wszText[pcVar4] = (short int)*(char*)((int)wszFallback + nMagnitude);
           if (2 < nCommaCounter) {
             nCommaCounter = 0;
-            if (0 < nMagnitude) {
-              nMagnitude = nOutPos - 2;
-              wszText[nMagnitude] = L',';
+            if (0 < pcVar4) {
+              pcVar4 = nOutPos - 2;
+              wszText[pcVar4] = L',';
             }
           }
 
-          nOutPos = nMagnitude;
+          nOutPos = pcVar4;
           if (!nDigitCount) {
             Fog::Debug::GuardStack();
             return;
@@ -1172,6 +1153,7 @@ uint16_t * __fastcall STRTABLE_LoadStringTableFile(char * szFileName) {
 int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szText, int32_t isXpac) {
     int i;
     char* pszUtf8Chars;
+    char* pcVar1;
     uint32_t dwEcxOut;
     uint32_t dwEcxOut2;
     uint32_t dwEcxOut3;
@@ -1181,9 +1163,7 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
     char szPathBuf[260];
     char szFormatBuf[260];
     char szFontDir[32];
-    char cCurChar;
     int* pnEntryCount2;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (gpStringTableBase) {
       gnStringTableRefCount++;
       Fog::Debug::GuardStack();
@@ -1192,6 +1172,7 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
     if (!szText) {
       TABLES_GetLangAbbreviation(l, 0);
     } else {
+      char cCurChar;
       i = -(int)szText;
       do {
         cCurChar = *szText;
@@ -1237,14 +1218,14 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
     gpStringIndexBase = (uint16_t**)D2_ALLOC(pTblFile->nNodeCount * 4);
     memset(gpStringIndexBase, 0, *pEntryData * 4);
     gnStringTableRefCount++;
-    char* nWideCharCount = 0;
+    int32_t nWideCharCount = 0;
     uint16_t* j = &gpStringTableBase[1].wCRC + pTblFile->wIndexCount;
     int* nEntryIdx = 0;
     if (0 < *pEntryData) {
       puEntryHdr = (uint16_t*)((int)j + 0xf);
       do {
         pszUtf8Chars = Unicode::UNISYS::UNICODE_GetWideCharCount((char*)((uintptr_t)&gpStringTableBase->wCRC + *(int*)(puEntryHdr - 2)), (char*)(uint32_t)*puEntryHdr);
-        nWideCharCount = nWideCharCount + 1 + (int)pszUtf8Chars;
+        nWideCharCount = (int32_t)((char*)(nWideCharCount + 1) + (int)pszUtf8Chars);
         nEntryIdx = (int*)((int)nEntryIdx + 1);
         puEntryHdr = (uint16_t*)((int)puEntryHdr + 0x11);
       } while ((int)nEntryIdx < *pEntryData);
@@ -1253,20 +1234,20 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
     /* TEMP EXPERIMENT: does the conversion loop write past this buffer? If the
        pool smear disappears with slack, the two-pass sizing is off. Not a fix. */
     POOLPROBE("before-widebuf-alloc");
-    gpStringBufferBase = (uint16_t*)D2_ALLOC((int)nWideCharCount * 2 + 0x10000);
+    gpStringBufferBase = (uint16_t*)D2_ALLOC(nWideCharCount * 2 + 0x10000);
     nEntryIdx = 0;
     uint16_t* k = gpStringBufferBase;
     if (0 < *pEntryData) {
       j = (uint16_t*)((int)j + 0xf);
       do {
         gpStringIndexBase[(int)nEntryIdx] = k;
-        pszUtf8Chars = (char*)((uintptr_t)&gpStringTableBase->wCRC + *(int*)(j - 2));
-        nWideCharCount = Unicode::UNISYS::UNICODE_GetWideCharCount(pszUtf8Chars, (char*)(uint32_t)*j);
+        pcVar1 = (char*)((uintptr_t)&gpStringTableBase->wCRC + *(int*)(j - 2));
+        pszUtf8Chars = Unicode::UNISYS::UNICODE_GetWideCharCount(pcVar1, (char*)(uint32_t)*j);
         pnEntryCount2 = nEntryIdx;
-        UTF8_ConvertToWideChar(gpStringIndexBase[(int)nEntryIdx], pszUtf8Chars, (int32_t)(nWideCharCount + 1));
+        UTF8_ConvertToWideChar(gpStringIndexBase[(int)nEntryIdx], pcVar1, (int32_t)(pszUtf8Chars + 1));
         j = (uint16_t*)((int)j + 0x11);
         nEntryIdx = (int*)((int)pnEntryCount2 + 1);
-        k += (int)(nWideCharCount + 1);
+        k += (int)(pszUtf8Chars + 1);
       } while ((int)nEntryIdx < *pEntryData);
     }
 
@@ -1284,12 +1265,12 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
       nEntryIdx = &gpStringTablePatchD2->nNodeCount;
       i = 0;
       j = &gpStringTablePatchD2[1].wCRC + gpStringTablePatchD2->wIndexCount;
-      nWideCharCount = 0;
+      pszUtf8Chars = 0;
       if (0 < *nEntryIdx) {
         puEntryHdr = (uint16_t*)((int)j + 0xf);
         do {
-          pszUtf8Chars = Unicode::UNISYS::UNICODE_GetWideCharCount((char*)((uintptr_t)&gpStringTablePatchD2->wCRC + *(int*)(puEntryHdr - 2)), (char*)(uint32_t)*puEntryHdr);
-          nWideCharCount = nWideCharCount + 1 + (int)pszUtf8Chars;
+          pcVar1 = Unicode::UNISYS::UNICODE_GetWideCharCount((char*)((uintptr_t)&gpStringTablePatchD2->wCRC + *(int*)(puEntryHdr - 2)), (char*)(uint32_t)*puEntryHdr);
+          pszUtf8Chars = pszUtf8Chars + 1 + (int)pcVar1;
           i++;
           puEntryHdr = (uint16_t*)((int)puEntryHdr + 0x11);
         } while (i < *nEntryIdx);
@@ -1297,7 +1278,7 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
 
       pEntryData = nEntryIdx;
     POOLPROBE("patch-count-loop-done");
-      gpStringBufferPatchD2 = (uint16_t*)D2_ALLOC((int)nWideCharCount * 2);
+      gpStringBufferPatchD2 = (uint16_t*)D2_ALLOC((int)pszUtf8Chars * 2);
       i = 0;
       k = gpStringBufferPatchD2;
       if (0 < *pEntryData) {
@@ -1305,11 +1286,11 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
         do {
           gpStringIndexPatchD2[i] = k;
           pEntryData = (int*)((uintptr_t)&gpStringTablePatchD2->wCRC + *(int*)(j - 2));
-          nWideCharCount = Unicode::UNISYS::UNICODE_GetWideCharCount((char*)pEntryData, (char*)(uint32_t)*j);
-          UTF8_ConvertToWideChar(gpStringIndexPatchD2[i], (char*)pEntryData, (int32_t)(nWideCharCount + 1));
+          pszUtf8Chars = Unicode::UNISYS::UNICODE_GetWideCharCount((char*)pEntryData, (char*)(uint32_t)*j);
+          UTF8_ConvertToWideChar(gpStringIndexPatchD2[i], (char*)pEntryData, (int32_t)(pszUtf8Chars + 1));
           j = (uint16_t*)((int)j + 0x11);
           i++;
-          k += (int)(nWideCharCount + 1);
+          k += (int)(pszUtf8Chars + 1);
         } while (i < *nEntryIdx);
       }
       if (isXpac) {
@@ -1329,20 +1310,20 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
         nEntryIdx = &gpStringTableExpansion->nNodeCount;
         i = 0;
         j = &gpStringTableExpansion[1].wCRC + gpStringTableExpansion->wIndexCount;
-        nWideCharCount = 0;
+        pszUtf8Chars = 0;
         if (0 < *nEntryIdx) {
           puEntryHdr = (uint16_t*)((int)j + 0xf);
           do {
-            pszUtf8Chars = Unicode::UNISYS::UNICODE_GetWideCharCount((char*)((uintptr_t)&gpStringTableExpansion->wCRC + *(int*)(puEntryHdr - 2)), (char*)(uint32_t)*puEntryHdr);
+            pcVar1 = Unicode::UNISYS::UNICODE_GetWideCharCount((char*)((uintptr_t)&gpStringTableExpansion->wCRC + *(int*)(puEntryHdr - 2)), (char*)(uint32_t)*puEntryHdr);
             i++;
             puEntryHdr = (uint16_t*)((int)puEntryHdr + 0x11);
-            nWideCharCount = nWideCharCount + 1 + (int)pszUtf8Chars;
+            pszUtf8Chars = pszUtf8Chars + 1 + (int)pcVar1;
           } while (i < *nEntryIdx);
         }
 
         pEntryData = nEntryIdx;
     POOLPROBE("expansion-count-loop-done");
-        gpStringBufferExpansion = (uint16_t*)D2_ALLOC((int)nWideCharCount * 2);
+        gpStringBufferExpansion = (uint16_t*)D2_ALLOC((int)pszUtf8Chars * 2);
         i = 0;
         k = gpStringBufferExpansion;
         if (0 < *pEntryData) {
@@ -1350,11 +1331,11 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
           do {
             gpStringIndexExpansion[i] = k;
             pEntryData = (int*)((uintptr_t)&gpStringTableExpansion->wCRC + *(int*)(j - 2));
-            nWideCharCount = Unicode::UNISYS::UNICODE_GetWideCharCount((char*)pEntryData, (char*)(uint32_t)*j);
-            UTF8_ConvertToWideChar(gpStringIndexExpansion[i], (char*)pEntryData, (int32_t)(nWideCharCount + 1));
+            pszUtf8Chars = Unicode::UNISYS::UNICODE_GetWideCharCount((char*)pEntryData, (char*)(uint32_t)*j);
+            UTF8_ConvertToWideChar(gpStringIndexExpansion[i], (char*)pEntryData, (int32_t)(pszUtf8Chars + 1));
             j = (uint16_t*)((int)j + 0x11);
             i++;
-            k += (int)(nWideCharCount + 1);
+            k += (int)(pszUtf8Chars + 1);
           } while (i < *nEntryIdx);
         }
       }

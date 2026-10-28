@@ -3,6 +3,7 @@
 #include "D2Client/Engine/GfxUtil.h"
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/D2Client.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxInfoStrc.h"
 #include "D2Client/DataTbls.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
@@ -40,7 +41,6 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2gfx/D2GFX.h"
@@ -65,7 +65,7 @@
 
 namespace D2Client::Engine::GfxUtil {
 
-void GFXUTIL_PadTokenString(uint32_t dwParam, char * szText1, char * szText2) {
+void GFXUTIL_PadTokenString(char * szText1, char * szText2) {
     if (*szText1 == '\0') {
       memcpy(szText2, "    ", 4);
       return;
@@ -109,7 +109,7 @@ void __stdcall InitializeModeTokens() {
       D2CompositTxt* pCompositTxt;
       pCompositTxt = D2Common::DATATBLS::TokTbls::TxtCompositGetLine(nIndex);
       if (!pCompositTxt) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x36);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x36);
         exit(-1);
       }
 
@@ -122,7 +122,7 @@ void __stdcall InitializeModeTokens() {
     do {
       pPlrModeTxt = D2Common::DATATBLS::TokTbls::TxtGetPlrTypeModeLine(nIndex2, 1);
       if (!pPlrModeTxt) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3f);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x3f);
         exit(-1);
       }
 
@@ -135,7 +135,7 @@ void __stdcall InitializeModeTokens() {
     do {
       pMonModeTxt = D2Common::DATATBLS::TokTbls::TxtGetMonModeLine(uVar1, 1);
       if (!pMonModeTxt) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x48);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x48);
         exit(-1);
       }
 
@@ -148,7 +148,7 @@ void __stdcall InitializeModeTokens() {
     do {
       pObjTypeTxt = D2Common::DATATBLS::TokTbls::TxtGetObjTypeModeLine(uVar1, 1);
       if (!pObjTypeTxt) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x51);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x51);
         exit(-1);
       }
 
@@ -173,7 +173,7 @@ void __stdcall InitializeModeTokens() {
       }
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a);
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a);
     exit(-1);
 }
 
@@ -194,7 +194,7 @@ void __stdcall GFXUTIL_SetMissileCelFile(D2GfxDataStrc * pGfxData, D2UnitStrc * 
 void __fastcall AllocGfxUtil(void * * pParam, uint32_t dwParam, uint32_t dwValue1, uint32_t dwValue2, int * pnParam1, int * pnParam2) {
     uint32_t* pNode = (uint32_t*)D2_ALLOC(0x10);
     if (!pNode) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x81);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x81);
       exit(-1);
     }
 
@@ -524,7 +524,7 @@ int32_t __stdcall GFXUTIL_GetNumDirectionsForUnit(D2UnitStrc * pUnit, eD2UnitTyp
       case UNIT_MONSTER:
         pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
       if (pMonStats2) {
-        uVar1 = (uint32_t)pMonStats2->aCompCodes[nMode + 0xce];
+        uVar1 = (uint32_t)pMonStats2->byDirDT[nMode];
         if (uVar1 == 8) {
           nModeStatus = Gfx::GFX_GetModeStatusEntry(nClassId);
           if (nModeStatus && !*(int*)(nModeStatus + nMode * 4)) {
@@ -548,7 +548,7 @@ int32_t __stdcall GFXUTIL_GetNumDirectionsForUnit(D2UnitStrc * pUnit, eD2UnitTyp
     return uVar1;
 }
 
-int32_t __fastcall GFXUTIL_Identity(int32_t dwParam) {
+void * __fastcall GFXUTIL_Identity(void * dwParam) {
     return dwParam;
 }
 
@@ -886,7 +886,7 @@ uint8_t * __fastcall GFXUTIL_GetItemColorForBodyLoc(D2UnitStrc * pUnit, int32_t 
       return nullptr;
     }
 
-    uint8_t* pColor = (uint8_t*)D2Common::ITEMS::Items::GetItemColor(pUnit, pUnit_00, &byColorScratch, 0);
+    uint8_t* pColor = D2Common::ITEMS::Items::GetItemColor(pUnit, pUnit_00, &byColorScratch, 0);
     if (!pColor) {
       return pDefaultColor;
     }
@@ -960,7 +960,7 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(D2UnitStrc * pUnit, uint
     }
 
     int nAnimMode = Source::ClientEngine::CLIENT_GetEffectiveAnimMode(pUnit);
-    uint8_t* pCofData = (uint8_t*)GfxInfo::GFX_GetGfxInfoCofData(pUnit, nAnimMode);
+    uint8_t* pCofData = GfxInfo::GFX_GetGfxInfoCofData(pUnit, nAnimMode);
     if (!pCofData) {
       return 0;
     }
@@ -1030,13 +1030,13 @@ BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUn
 
       case UNIT_OBJECT:
         *pOutItemClassId = -1;
-      pEffectiveMode = (D2UnitStrc*)Gfx::CLIENT_GetEffectiveInventory(pUnit, (D2UnitStrc*)&pEffectiveMode);
+      pEffectiveMode = (D2UnitStrc*)Gfx::CLIENT_GetEffectiveInventory(pUnit, (int*)&pEffectiveMode);
       pGfxData->nCompositToken = gTxtCompositTokens[pGfxData->nComponentType];
       nComponentIdx = D2Common::COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, (D2InventoryStrc*)pEffectiveMode, &nWeaponClass, pGfxData->nMode, 0);
       pGfxData->nWeaponClass = nComponentIdx;
       pGfxInfo = GfxInfo::GFX_FindGfxInfoByModeAndWeapon(pUnit, nComponentIdx, pGfxData->nMode);
       if (pGfxInfo || (pGfxInfoFallback = Gfx::GFX_EnsureUnitCofLoaded(pUnit, pGfxData->nWeaponClass, pGfxData->nMode) , pGfxInfoFallback != 0)) {
-        pCofData = (uint8_t*)GfxInfo::GFX_GetGfxInfoCofData(pUnit, pGfxData->nMode);
+        pCofData = GfxInfo::GFX_GetGfxInfoCofData(pUnit, pGfxData->nMode);
         if (pCofData) {
           pGfxInfoStrc = UNIT::CUnit::GetGfxInfo(pUnit);
           if (pGfxInfoStrc) {
@@ -1057,23 +1057,16 @@ BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUn
                       byPaletteIdx = nPaletteIdx;
                       if (!iVar3 || iVar3 == 0xc) {
                         BVar1 = UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(pGfxData->nClassId, compositeDeath);
-                        nArmTypeIndex = nWeaponClassId2;
                         if (BVar1) {
                           pDVar2 = D2Common::DATATBLS::OverlayTbls::MONSTER_GetComponentOverlay(pUnit, (uint32_t)byComponentType, (uint32_t)byPaletteIdx);
                           pGfxData->nArmorToken = (int)pDVar2;
-                          nArmTypeIndex = nWeaponClassId3;
                         }
                       } else {
                         pOverlay = D2Common::DATATBLS::OverlayTbls::MONSTER_GetComponentOverlay(pUnit, (uint32_t)byComponentType, (uint32_t)nPaletteIdx);
                         pGfxData->nArmorToken = (int)pOverlay;
-                        nArmTypeIndex = nWeaponClassId;
                       }
-                    } else {
-                      nArmTypeIndex = eEffectiveUnitType - UNIT_OBJECT;
-                      if (!nArmTypeIndex) {
-                        nArmTypeIndex = pGfxData->nMode;
-                        pGfxData->nModeToken = gObjModeTokens[nArmTypeIndex];
-                      }
+                    } else if (eEffectiveUnitType == UNIT_OBJECT) {
+                      pGfxData->nModeToken = gObjModeTokens[pGfxData->nMode];
                     }
 
                     goto finalize_gfx_tokens;
@@ -1097,8 +1090,7 @@ BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUn
                     fUnitToken = GFXUTIL_GetBodyLocWeaponToken((uint32_t)pGfxData->nComponentType, pUnit);
                     pDVar2 = pEffectiveMode;
                     pGfxData->nArmorToken = fUnitToken;
-                    nArmTypeIndex = nWeaponClassId6;
-                    if (!pEffectiveMode || fUnitToken || (BVar1 = D2Common::ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pEffectiveMode) , nArmTypeIndex = nWeaponClassId7 , !BVar1)) {
+                    if (!pEffectiveMode || fUnitToken || (BVar1 = D2Common::ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pEffectiveMode) , !BVar1)) {
                       if (pGfxData->nArmorToken) {
                         goto finalize_gfx_tokens;
                       }
@@ -1107,17 +1099,12 @@ BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUn
                     } else {
                       fUnitToken = D2Common::ITEMS::Items::ITEM_GetItemsTxt_dwAlternateGfxIfExists(pDVar2);
                       pGfxData->nArmorToken = fUnitToken;
-                      nArmTypeIndex = nWeaponClassId8;
                     }
+                  } else if (pGfxData->nMode == 0x11 || !pGfxData->nMode) {
+                    pGfxData->nArmorToken = 0x2074696c;
                   } else {
-                    nArmTypeIndex = nWeaponClassId4;
-                    if (pGfxData->nMode == 0x11 || !pGfxData->nMode) {
-                      pGfxData->nArmorToken = 0x2074696c;
-                    } else {
-                      nArmTypeIndex = D2Common::COMPOSIT::Composit::COMPOSIT_GetBodyPartTransform((eD2BodyLocDWORD)pGfxData->nComponentType, aArmorTokens);
-                      pGfxData->nArmorToken = gArmTypeTokens[nArmTypeIndex];
-                      nArmTypeIndex = nWeaponClassId5;
-                    }
+                    nArmTypeIndex = D2Common::COMPOSIT::Composit::COMPOSIT_GetBodyPartTransform((eD2BodyLocDWORD)pGfxData->nComponentType, aArmorTokens);
+                    pGfxData->nArmorToken = gArmTypeTokens[nArmTypeIndex];
                   }
                   if (!pGfxData->nArmorToken) {
                     return 0;
@@ -1125,7 +1112,7 @@ BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUn
 
                   finalize_gfx_tokens:
                   pEffectiveMode = 0;
-                  GFXUTIL_PadTokenString(nArmTypeIndex, (char*)(nEffectiveClassId + 5), (char*)&pEffectiveMode);
+                  GFXUTIL_PadTokenString((char*)(nEffectiveClassId + 5), (char*)&pEffectiveMode);
                   pGfxData->nWeaponClass = (int)pEffectiveMode;
                   if (!pGfxData->nCompositToken) {
                     return 0;

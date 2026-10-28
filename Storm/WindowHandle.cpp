@@ -3,11 +3,11 @@
 #include "Storm/WindowHandle.h"
 #include "D2Client/Message.h"
 #include "D2Client/UI/Inv.h"
-#include "Storm/H/Storm.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SEVT.h"
 #include "Storm/Source/SErr.h"
-#include "Storm/Source/SFile.h"
+#include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Launch/MainMenus.h"
 
@@ -286,22 +286,22 @@ int * __fastcall WND_UnlinkAndFreeRecord(uint8_t byFreeFlags, int * pRecord) {
 
 // @blizzard AddWindow (SMSG.CPP)
 void __stdcall SMSG_AddWindow(uint32_t hWnd) {
-    StormLinkStrc* pEntry;
+    StormWndRecStrc* pEntry;
     uint32_t nOffset;
-    StormLinkStrc* pRecord = (StormLinkStrc*)SMem::SMemAlloc(0xc, s___AUWNDREC___00708850, -2, 8);
+    StormWndRecStrc* pRecord = (StormWndRecStrc*)SMem::SMemAlloc(0xc, s___AUWNDREC___00708850, -2, 8);
     if (!pRecord) {
       pEntry = 0;
-      pRecord = (StormLinkStrc*)&gpWndTrackingListHead.pPrevLink;
+      pRecord = (StormWndRecStrc*)&gpWndTrackingListHead.pPrevLink;
     } else {
-      pRecord->pPrevLink = 0;
-      pRecord->pNext = 0;
+      pRecord->link.pPrevLink = 0;
+      pRecord->link.pNext = 0;
       pEntry = pRecord;
     }
 
-    StormLinkStrc* nNext = pRecord->pPrevLink;
+    StormLinkStrc* nNext = pRecord->link.pPrevLink;
     if (nNext) {
       int* pBacklink;
-      nOffset = pRecord->pNext;
+      nOffset = pRecord->link.pNext;
       if ((int)nOffset < 0) {
         pBacklink = (int*)~nOffset;
       } else {
@@ -309,39 +309,40 @@ void __stdcall SMSG_AddWindow(uint32_t hWnd) {
       }
 
       *pBacklink = (int)nNext;
-      pRecord->pPrevLink->pNext = pRecord->pNext;
-      pRecord->pPrevLink = 0;
-      pRecord->pNext = 0;
+      pRecord->link.pPrevLink->pNext = pRecord->link.pNext;
+      pRecord->link.pPrevLink = 0;
+      pRecord->link.pNext = 0;
     }
 
-    pRecord->pPrevLink = gpWndTrackingListHead.pPrevLink;
-    pRecord->pNext = gpWndTrackingListHead.pPrevLink->pNext;
+    pRecord->link.pPrevLink = gpWndTrackingListHead.pPrevLink;
+    pRecord->link.pNext = gpWndTrackingListHead.pPrevLink->pNext;
     gpWndTrackingListHead.pPrevLink->pNext = (int)pEntry;
-    gpWndTrackingListHead.pPrevLink = pRecord;
-    pEntry[1].pPrevLink = (StormLinkStrc*)hWnd;
+    gpWndTrackingListHead.pPrevLink = &pRecord->link;
+    pEntry->hWnd = (HWND)hWnd;
 }
 
-uint32_t __fastcall WND_RemoveAndFreeRecord(void * pListHead, int * pRecord) {
-    int* pBacklink = pRecord;
+uint32_t __fastcall WND_RemoveAndFreeRecord(void * pListHead, StormWndRecStrc * pRecord) {
+    uint32_t nOffset;
+    StormWndRecStrc* pSVar1 = pRecord;
     if (!pRecord) {
-      pBacklink = (int*)((int)pListHead + 4);
+      pSVar1 = (StormWndRecStrc*)((int)pListHead + 4);
     }
 
-    uint32_t nResult = pBacklink[1];
-    int nNext = *pRecord;
+    uint32_t nResult = pSVar1->link.pNext;
+    StormLinkStrc* nNext = pRecord->link.pPrevLink;
     if (nNext) {
-      uint32_t nOffset;
-      nOffset = pRecord[1];
+      int* pBacklink;
+      nOffset = pRecord->link.pNext;
       if ((int)nOffset < 0) {
         pBacklink = (int*)~nOffset;
       } else {
-        pBacklink = (int*)((int)pRecord + (nOffset - *(int*)(nNext + 4)));
+        pBacklink = (int*)((int)pRecord + (nOffset - nNext->pNext));
       }
 
-      *pBacklink = nNext;
-      *(int*)(*pRecord + 4) = pRecord[1];
-      *pRecord = 0;
-      pRecord[1] = 0;
+      *pBacklink = (int)nNext;
+      pRecord->link.pPrevLink->pNext = pRecord->link.pNext;
+      pRecord->link.pPrevLink = 0;
+      pRecord->link.pNext = 0;
     }
 
     SMem::SMemFree(pRecord, s___AUWNDREC___00708850, -2, 0);
@@ -371,7 +372,7 @@ void SMSG_DeleteWindow(uint32_t hWnd) {
       gpActiveWindow = 0;
     }
 
-    int* pRecord = (int*)SMSG_FindWindow(hWnd);
+    StormWndRecStrc* pRecord = (StormWndRecStrc*)SMSG_FindWindow(hWnd);
     if (!pRecord) {
       return;
     }

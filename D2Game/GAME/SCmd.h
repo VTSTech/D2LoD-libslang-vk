@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
+#include "D2Common/D2WaypointStrc.h"
 
 // Forward declarations
 struct D2BitBufferStrc;
@@ -15,7 +16,11 @@ struct D2GSPacketClt0x89;
 struct D2GSPacketSrv0x26;
 struct D2GSPacketSrv0x27;
 struct D2GSPacketSrv0x4E;
+struct D2GSPacketSrv0x50;
 struct D2GSPacketSrv0x53;
+struct D2GSPacketSrv0x58;
+struct D2GSPacketSrv0x5D;
+struct D2GSPacketSrv0x73;
 struct D2GSPacketSrv0x91;
 struct D2Packet0x5aEventStructure;
 struct D2UnitStrc;
@@ -36,21 +41,33 @@ struct __attribute__((packed)) D2GSPacketSrv0x22_0x23 {
     /* 0x0B */ uint8_t bBody;
 };
 
-struct __attribute__((packed)) D2GSPacketSrv0x3F {
-    D2GSPacketSrv0x3F() = default;
-    D2GSPacketSrv0x3F(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+struct __attribute__((packed)) D2GSPacketSrv0x2C {
+    D2GSPacketSrv0x2C() = default;
+    D2GSPacketSrv0x2C(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2GSPacketSrv0x3F(uint8_t a0, uint8_t a1, uint32_t a2, int16_t a3) : nPacketId(a0), nItemSlot(a1), nUnitGUID(a2), nSkillId(a3) {}
+    D2GSPacketSrv0x2C(uint8_t a0, uint8_t a1, int32_t a2, uint16_t a3) : nPacketId(a0), nUnitType(a1), nUnitGUID(a2), nSoundId(a3) {}
 
-    /* 0x00 */ uint8_t nPacketId;
-    /* 0x01 */ uint8_t nItemSlot; // 0xff when the unit GUID is used
-    /* 0x02 */ uint32_t nUnitGUID;
-    /* 0x06 */ int16_t nSkillId;
+    /* 0x00 */ uint8_t nPacketId; // 0x2C
+    /* 0x01 */ uint8_t nUnitType; // [pUnit]
+    /* 0x02 */ int32_t nUnitGUID; // [pUnit+0xc]
+    /* 0x06 */ uint16_t nSoundId; // word [pUnit+0x6e]
 };
 
 struct D2GSPacketSrv0x5E {
     /* 0x00 */ uint8_t nPacketId;
     /* 0x01 */ bool nAvailableQuest[37];
+};
+
+struct __attribute__((packed)) D2GSPacketSrv0x63 {
+    /* 0x00 */ uint8_t nPacketId; // 0x63
+    /* 0x01 */ int32_t nUnitGUID;
+    /* 0x05 */ D2WaypointStrc sWaypoints;
+};
+
+struct __attribute__((packed)) D2GSPacketSrv0x78 {
+    /* 0x00 */ uint8_t nPacketId; // 0x78
+    /* 0x01 */ char szName[16];
+    /* 0x11 */ int32_t nUnitGUID;
 };
 
 struct D2GSPacketSrv0x7B {
@@ -65,11 +82,29 @@ struct D2GSPacketSrv0x7B {
     /* 0x04 */ uint32_t dwHotkeyArg;
 };
 
+struct D2GSPacketSrv0x84 {
+    /* 0x00 */ uint8_t nPacketId; // 0x84
+    /* 0x01 */ uint8_t nFlag; // DL
+    /* 0x02 */ uint8_t aData[402];
+};
+
+struct __attribute__((packed)) D2GSPacketSrv0x8A {
+    /* 0x00 */ uint8_t nPacketId; // 0x8A
+    /* 0x01 */ uint8_t nUnitType; // 1
+    /* 0x02 */ uint32_t nUnitGUID; // unaligned
+};
+
 struct __attribute__((packed)) D2GSPacketSrv0x8C {
     /* 0x00 */ uint8_t nPacketId; // Packet opcode (0x8C)
     /* 0x01 */ uint32_t nUnitGUID; // GUID of the player whose relationship list entry this is
     /* 0x05 */ uint32_t nOtherUnitGUID; // GUID of the player the entry refers to
     /* 0x09 */ uint16_t wRelationFlags; // D2UnitPlayerListStrc.nRelationshipFlags (low word)
+};
+
+struct __attribute__((packed)) D2GSPacketSrv0x8D {
+    /* 0x00 */ uint8_t nPacketId; // 0x8D
+    /* 0x01 */ int32_t nUnitGUID; // [pUnit+0xc] or -1
+    /* 0x05 */ int16_t nPartyId;
 };
 
 struct __attribute__((packed)) D2GSPacketSrv0x98 {
@@ -85,6 +120,32 @@ struct D2GSPacketSrv0x9C {
     /* 0x03 */ uint8_t nCategory;
     /* 0x04 */ int nItemGUID;
     /* 0x08 */ char aBitStream[244];
+};
+
+struct __attribute__((packed)) D2GSPacketSrv0x9D {
+    /* 0x00 */ uint8_t nPacketId; // 0x9D
+    /* 0x01 */ uint8_t nAction; // byte stack arg
+    /* 0x02 */ uint8_t nPacketSize;
+    /* 0x03 */ uint8_t nComponent;
+    /* 0x04 */ int32_t nItemGUID; // [pItem+0xc] or -1
+    /* 0x08 */ uint8_t nOwnerUnitType; // [pOwner] or 6
+    /* 0x09 */ int32_t nOwnerGUID; // [pOwner+0xc] or -1
+    /* 0x0D */ uint8_t aBitStream[244];
+};
+
+struct __attribute__((packed)) D2GSPacketSrv0xAE {
+    /* 0x00 */ uint8_t nPacketId; // 0xAE
+    /* 0x01 */ uint16_t nDataSize; // word SI
+    /* 0x03 */ uint8_t aData[509];
+};
+
+struct __attribute__((packed)) D2GSPacketSrvTextData {
+    /* 0x00 */ uint8_t nPacketId; // 0x83 or 0x88
+    /* 0x01 */ char szText[4]; // unbounded strcpy in the original
+    /* 0x05 */ uint16_t nFlag;
+    /* 0x07 */ uint16_t nDataLen;
+    /* 0x09 */ uint16_t nParam;
+    /* 0x0B */ uint8_t aData[401];
 };
 
 namespace D2Game::GAME::SCmd {
@@ -185,7 +246,7 @@ void __fastcall SCMD_QueueThreeBytePacket(struct D2ClientStrc * pClient, uint8_t
 void __fastcall NET_D2GS_SERVER_Send_0x5B_PlayerJoin(struct D2ClientStrc * pClient, struct D2UnitStrc * pUnit, struct D2ClientStrc * pOtherClient);
 void __fastcall NET_D2GS_SERVER_Send_0x5C_REMOVECLIENT(struct D2ClientStrc * pClient, uint32_t dwLeavingPlayerGUID);
 void __fastcall NET_D2GS_SERVER_Send_0x77_TRADEREQUEST(struct D2ClientStrc * pClient, uint8_t byTradeAction);
-void __fastcall NET_D2GS_SERVER_Send_0x78_TRADENAME(struct D2ClientStrc * pClient, uint32_t * pPacketData);
+void __fastcall NET_D2GS_SERVER_Send_0x78_TRADENAME(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x78 * pPacketData);
 // Server-to-client summon log update. Opcode 0x7A.
 void __fastcall NET_D2GS_SERVER_Send_0x7A_UPDATEPET(struct D2ClientStrc * pClient, uint8_t bParam, uint8_t nUnitType, uint32_t dwGUID, uint32_t dwMercGUID, uint16_t wExperience);
 void NET_D2GS_SERVER_Send_0x81_UPDATEPETPARAMS(void * pThis, uint8_t byAction, uint32_t dwPetGUID, uint32_t dwMercUnitGUID, uint16_t wMercType, uint32_t dwOwnerUnitGUID, uint32_t dwMercExperience);
@@ -236,11 +297,11 @@ void __fastcall NET_D2GS_SERVER_Send_0x4C_UnitCastSkill_Target_0x4D_UnitCastSkil
 void __fastcall NET_D2GS_SERVER_Send_0x28_PlayerQuestInfo(struct D2ClientStrc * pClient, uint8_t nPacketId, uint32_t nUpdateType, uint32_t nUnitGUID, struct D2BitBufferStrc * pBitBuffer, uint8_t nActionType);
 void __fastcall NET_D2GS_SERVER_Send_0x62_INTERACTION_STOP(struct D2ClientStrc * pClient, uint8_t nPacketId, char eUnitType, int32_t nMonsterGUID, uint32_t dwParam5);
 void __fastcall NET_D2GS_SERVER_Send_0x29_GAMEQUESTRECORD(struct D2ClientStrc * pClient, uint8_t * pPacket);
-void __fastcall NET_D2GS_SERVER_Send_0x5D_QuestState(struct D2ClientStrc * pClient, uint8_t * pbParam);
+void __fastcall NET_D2GS_SERVER_Send_0x5D_QuestState(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x5D * pPacket);
 void __fastcall NET_D2GS_SERVER_Send_0x2A_NpcTransaction(struct D2ClientStrc * pClient, uint8_t nPacketid, uint8_t nResult, int32_t nGold, int32_t nUnitGUID, uint8_t nTradeType);
-void __fastcall NET_D2GS_SERVER_Send_0x2C_PlaySound(struct D2ClientStrc * pClient, uint32_t * pdwParam);
+void __fastcall NET_D2GS_SERVER_Send_0x2C_PlaySound(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x2C * pPacket);
 void __fastcall NET_D2GS_SERVER_Send_0x4E_ADDTOMERCENARYLIST(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x4E * pPacket);
-void __fastcall NET_D2GS_SERVER_Send_0x50_QuestSpecial(struct D2ClientStrc * pClient, uint32_t * pdwParam);
+void __fastcall NET_D2GS_SERVER_Send_0x50_QuestSpecial(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x50 * pPacket);
 void __fastcall NET_D2GS_SERVER_Send_0x5E_QUESTPICKS(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x5E * pPacket0x5E);
 void __fastcall NET_D2GS_SERVER_Send_0x52_PlayerQuestLog(struct D2ClientStrc * pClient, uint8_t * pPacket);
 // Blizzard packet name SCMD_UNIT_DOOVERLAY. This function's only two callers are both
@@ -251,15 +312,15 @@ void __fastcall NET_D2GS_SERVER_Send_0x52_PlayerQuestLog(struct D2ClientStrc * p
 // duration; not established.
 void __fastcall NET_D2GS_SERVER_Send_0x11_UnitDoOverlay(struct D2ClientStrc * pClient, uint8_t byKillFlags, uint32_t dwKilledUnitGUID_in, uint16_t wKillParam);
 void __fastcall NET_D2GS_SERVER_Send_0x57_CHANGEMONSTERUNIT(struct D2ClientStrc * pClient, uint32_t dwParam, uint8_t byNpcClassOrType, uint16_t wNpcCodeParam, uint16_t wParam1, uint16_t wParam2, uint16_t wParam3);
-void __fastcall NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(struct D2ClientStrc * pClient, uint32_t * pdwParam);
+void __fastcall NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x58 * pPacket);
 void __fastcall NET_D2GS_SERVER_Send_0x60_SETWARPDEST(struct D2ClientStrc * pClient, struct D2UnitStrc * pUnit);
 void __fastcall NET_D2GS_SERVER_Send_0x61_CanGoToAct(struct D2ClientStrc * pClient, uint8_t nAct);
-void __fastcall NET_D2GS_SERVER_Send_0x63_WAYPOINTLIST(struct D2ClientStrc * pClient, uint32_t * pWaypointData);
+void __fastcall NET_D2GS_SERVER_Send_0x63_WAYPOINTLIST(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x63 * pWaypointData);
 void __fastcall NET_D2GS_SERVER_Send_0x65_SCORE_UPDATE(struct D2ClientStrc * pClient, uint32_t nUnitGUID, uint16_t wKillCountArg);
 // Body is only the halt at line 2740.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 void __stdcall SCMD_Unused_HaltLine2740();
-void __fastcall NET_D2GS_SERVER_Send_0x73_MissileData(struct D2ClientStrc * pClient, uint32_t * pMissileData);
+void __fastcall NET_D2GS_SERVER_Send_0x73_MissileData(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x73 * pMissileData);
 void __fastcall NET_D2GS_SERVER_Send_0x74_SYNCHDEADBODY(struct D2ClientStrc * pClient, struct D2UnitStrc * pOwnerUnit, struct D2UnitStrc * pCorpseUnit, uint8_t byCorpseFlagArg);
 // @sourcefile .\GAME\SCmd.cpp
 void __fastcall NET_D2GS_SERVER_Send_0x75_UPDATEROSTER(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTargetUnit);
@@ -285,7 +346,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x8E_LINKDEADBODY_Argument(::SGAMEDATA * pG
 void __fastcall NET_D2GS_SERVER_Send_0x8E_CorpseAssign_Sender(::SGAMEDATA * pGame, int32_t nUnitGUID, int32_t nCorpseGUID, uint8_t byCorpseFlagArg);
 void __fastcall NET_D2GS_SERVER_Send_0x8E_CorpseAssign(struct D2ClientStrc * pClient, uint32_t dwUnitGUID_param, uint32_t dwCorpseGUIDArg, uint8_t byCorpseFlagArg);
 void __fastcall NET_D2GS_SERVER_Send_0x89_QUESTEVENTTRIGGER(struct D2ClientStrc * pClient, struct D2GSPacketClt0x89 * pPacket0x89);
-void __fastcall NET_D2GS_SERVER_Send_0x8A_NpcWantsInteract(struct D2ClientStrc * pClient, uint32_t * pPacketData);
+void __fastcall NET_D2GS_SERVER_Send_0x8A_NpcWantsInteract(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x8A * pPacket);
 void __fastcall NET_D2GS_SERVER_Send_0x8F_HEARTBEAT_PING(struct D2ClientStrc * pClient);
 void __fastcall NET_D2GS_SERVER_Send_0x91_WELCOME_BACK(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x91 * pD2GSPacketSrv0x91);
 void __fastcall NET_D2GS_SERVER_Send_0x98_SETSPAWNERMONSTER(struct D2ClientStrc * pClient, uint32_t nUnitGUID, uint16_t wWaypointData);

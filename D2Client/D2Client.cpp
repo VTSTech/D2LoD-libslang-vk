@@ -7,8 +7,10 @@
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2DialogStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Client/D2LightMapStrc.h"
+#include "D2Client/Draw/LightDiag.h"
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Engine.h"
 #include "D2Client/Engine/Gfx.h"
@@ -52,7 +54,6 @@
 #include "D2Client/UNIT/UnitMode.h"
 #include "D2Client/Warden/WardenClient.h"
 #include "D2Common/D2BitBufferStrc.h"
-#include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2MonStatsTxt.h"
@@ -68,9 +69,9 @@
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
+#include "D2Common/Drlg/Path.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Environment.h"
-#include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
@@ -90,7 +91,6 @@
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/MainMenus.h"
@@ -113,9 +113,9 @@
 #include "Fog/Src/LogManager.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Client/UI/MiniPanel.h"
@@ -153,7 +153,7 @@ typedef void (__stdcall *fnBinkFrameCallback)();
 
 namespace D2Client {
 
-static eD2PlayerClassID eD2PlayerClassID_00712f00 = CLASS_SORCERESS;
+static eD2PlayerClassID eD2PlayerClassID_00712f00 = CLASS_SORCERESS; D2_STATIC_GUARD(eD2PlayerClassID_00712f00, "D2Client::eD2PlayerClassID_00712f00");
 
 // @sourcefile .\CORE\WINMAIN.CPP
 BOOL __stdcall WINMAIN_TestMemoryAccess(CMDPARAMS * pParams, char * szCmdLine) {
@@ -784,7 +784,156 @@ void __stdcall thunk_NET_D2GS_CLIENT_Send_SHORT_LeftSkillOnLocEx() {
     GAME::Msg::NET_D2GS_CLIENT_Send_SHORT('?', 0x20);
 }
 
+// [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle
+// (D2R "Show Items: Toggle" parity). d2vp.ini next to d2.exe:
+//   [features]
+//   alt_toggle=1
+// Default/missing file/missing section/missing key/garbage value = 0 =
+// vanilla hold-Alt behavior byte-for-byte (Principle 1: opt-in, config-gated).
+// The ini is re-checked at most every 2000 ms via GetTickCount, mirroring the
+// wrapper's ~2 s conf hot-reload cadence. A missing d2vp.ini is created with
+// a documented all-defaults template: once per process at client boot
+// (ApplicationMain) and lazily before the first config read, so the opt-in
+// keys are discoverable without reading any docs. Auto-repeat never reaches
+// the handlers (CmdTbl.cpp filters lParam bit 30 upstream), so the keydown
+// handler fires exactly once per physical press.
+static int gbAltToggleMode = 0;
+static int gbAltLatched = 0;
+static DWORD dwAltToggleLastCheck = 0;
+static int gbAltIniAttempted = 0;
+
+// Resolve "<exe dir>\d2vp.ini". GetModuleFileNameA always yields a fully
+// qualified path; refuse the (unreachable) dir-less case rather than fall
+// back to a CWD-relative file.
+static BOOL ALTTOGGLE_BuildIniPath(char* szIniPath) {
+    szIniPath[0] = '\0';
+    DWORD dwLen = GetModuleFileNameA(nullptr, szIniPath, 240);
+    if (!dwLen || dwLen >= 240) {
+        return FALSE;
+    }
+    char* pSlash = strrchr(szIniPath, '\\');
+    if (!pSlash) {
+        return FALSE;
+    }
+    pSlash[1] = '\0';
+    lstrcatA(szIniPath, "d2vp.ini");
+    return TRUE;
+}
+
+// Best-effort template write. CREATE_NEW so a file that appears between the
+// existence check and the create is never clobbered; any failure (read-only
+// dir, AV lock, invalid path) stays silent - GetPrivateProfileIntA then keeps
+// returning the vanilla defaults, exactly like a missing file. Even a partial
+// write is safe: whatever GetPrivateProfileIntA can parse is a default.
+static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
+    static const char szTemplate[] =
+        "; d2vp.ini - vanilla-plus client options (auto-created by d2.exe)\r\n"
+        ";\r\n"
+        "; Missing file, section or key, or a garbage value, always falls back\r\n"
+        "; to vanilla behavior. The file is re-read at most every 2 seconds\r\n"
+        "; while the game runs. Delete this file and a fresh copy is written\r\n"
+        "; on the next game start.\r\n"
+        "\r\n"
+        "[features]\r\n"
+        "; Ground-item labels on the Alt key:\r\n"
+        ";   0 = hold Alt to show labels         (vanilla behavior)\r\n"
+        ";   1 = press Alt once to toggle labels (D2R \"Show Items: Toggle\")\r\n"
+        "; While labels are toggled on, clicking still attacks, moves and\r\n"
+        "; interacts normally; clicking an item's label picks the item up.\r\n"
+        "alt_toggle=0\r\n"
+        "\r\n"
+        "; Save file location (single-player):\r\n"
+        ";   0 = retail resolution: the registry save path if one is set,\r\n"
+        ";       else the system Saved Games location\r\n"
+        ";   1 = keep saves in the game folder, .\\save next to this file\r\n"
+        ";       (the folder is created on demand, the registry is not\r\n"
+        ";       touched, and existing saves are not migrated - copy your\r\n"
+        ";       .d2s/.d2x/.key/.map files over to keep them)\r\n"
+        "portable_save=0\r\n";
+    HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
+                               FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        return;
+    }
+    DWORD dwWritten = 0;
+    WriteFile(hFile, szTemplate, (DWORD)(sizeof(szTemplate) - 1), &dwWritten, nullptr);
+    CloseHandle(hFile);
+}
+
+// Create d2vp.ini with documented defaults when none exists. At most one
+// attempt per process: a file deleted while the game runs is recreated on
+// the next game start, and a failed create (read-only dir) is not retried
+// every 2 s.
+void __stdcall ALTTOGGLE_EnsureIni() {
+    if (gbAltIniAttempted) {
+        return;
+    }
+    gbAltIniAttempted = 1;
+    char szIniPath[260];
+    if (!ALTTOGGLE_BuildIniPath(szIniPath)) {
+        return;
+    }
+    if (GetFileAttributesA(szIniPath) != INVALID_FILE_ATTRIBUTES) {
+        return; // exists (or exists-but-inaccessible: never overwrite)
+    }
+    ALTTOGGLE_WriteIniTemplate(szIniPath);
+}
+
+BOOL __stdcall ALTTOGGLE_Active() {
+    DWORD dwNow = GetTickCount();
+    if (!dwAltToggleLastCheck || dwNow - dwAltToggleLastCheck >= 2000) {
+        char szIniPath[260];
+        dwAltToggleLastCheck = dwNow;
+        if (ALTTOGGLE_BuildIniPath(szIniPath)) {
+            // The first config read can precede the boot hook in odd flows
+            // (e.g. non-interactive modes): create the template here too,
+            // before the read, so the read always sees a parseable file.
+            ALTTOGGLE_EnsureIni();
+            // GetPrivateProfileIntA: missing file/section/key or a non-numeric
+            // value all return the 0 default = vanilla hold mode.
+            gbAltToggleMode = GetPrivateProfileIntA("features", "alt_toggle", 0, szIniPath) ? 1 : 0;
+        } else {
+            gbAltToggleMode = 0;
+        }
+    }
+    return gbAltToggleMode;
+}
+
+BOOL __stdcall ALTTOGGLE_Latched() {
+    return gbAltLatched;
+}
+
+void __stdcall ALTTOGGLE_Flip() {
+    if (ALTTOGGLE_Active()) {
+        gbAltLatched = !gbAltLatched;
+    }
+}
+
+void __stdcall ALTTOGGLE_Reset() {
+    gbAltLatched = 0;
+}
+
+// [vanilla-plus alt-toggle] True while labels are shown by the toggle latch
+// (never true in hold mode). Vanilla's ground-label renderer (DRAW_AltItems)
+// clears the selected unit every frame the cursor is not over a label, which
+// turns every click into a walk while labels are on screen - survivable for a
+// momentary Alt hold, fatal for a latched toggle. Toggle-latch mode hands
+// selection back to the normal hover machinery instead (D2R "Show Items:
+// Toggle" parity: labels stay up, clicks still attack/interact, and clicking
+// an item's label or sprite picks the item up).
+BOOL __stdcall ALTTOGGLE_LabelClickThrough() {
+    return ALTTOGGLE_Active() && ALTTOGGLE_Latched();
+}
+
 void __stdcall CMD_SetHoldAlt() {
+    // [vanilla-plus alt-toggle] In toggle mode a full Alt press flips the
+    // latch; keyup then re-asserts the flag from the latch (heals a stuck
+    // Alt after a lost keyup across alt-tab). Hold mode: vanilla byte path.
+    if (ALTTOGGLE_Active()) {
+        ALTTOGGLE_Flip();
+        UI::Draw::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
+        return;
+    }
     UI::Draw::SetUIFlag(UI_HOLDALT, UI_SET, 0);
 }
 
@@ -811,6 +960,14 @@ void __stdcall CMD_ClearClickModifier() {
 }
 
 void __stdcall CMD_ReleaseHoldAltAndClearSelection() {
+    // [vanilla-plus alt-toggle] Toggle mode: converge the flag to the latch
+    // (labels persist across the key-up; a lost keyup can never strand the
+    // flag). Hold mode: vanilla byte path.
+    if (ALTTOGGLE_Active()) {
+        UI::Draw::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
+        GAME::Select::ClearSelectedUnit();
+        return;
+    }
     UI::Draw::SetUIFlag(UI_HOLDALT, UI_RESET, 0);
     GAME::Select::ClearSelectedUnit();
 }
@@ -1000,7 +1157,7 @@ void __fastcall CLIENT_ToggleDefaultActiveFlag(int32_t bSet) {
 
 uint32_t __stdcall ROSTER_GetArenaKillCountGlobal() {
     // Static local variables (originally global data)
-    static uint32_t gaChattablePlayers = 0x3;
+    static uint32_t gaChattablePlayers = 0x3; D2_STATIC_GUARD(gaChattablePlayers, "D2Client::ROSTER_GetArenaKillCountGlobal::gaChattablePlayers");
 
     return gaChattablePlayers;
 }
@@ -1143,11 +1300,10 @@ void __fastcall AUTOMAP_UpdatePartyNamesCallback(D2EscMenuItemStrc * pItem, D2UI
 }
 
 BOOL __stdcall UNITMODE_TryInteractWithObject(D2UnitStrc * pUnit, D2PathPointStrc pathPoint, int32_t nActionType, D2UnitStrc * pTargetUnit, int32_t nTargetGUID) {
-    uint32_t byInRangeHi;
     if (pTargetUnit && pTargetUnit->eUnitFlags >> 1 & 1) {
-      bool bInRange;
-      bInRange = UNIT::UnitMode::UNITMODE_IsTargetInActionRange(pTargetUnit, pUnit, nActionType);
-      if (!(uint32_t)((uint32_t)((uint32_t)byInRangeHi & 0xffffffu) << 8 | (uint32_t)(uint8_t)bInRange)) {
+      BOOL BVar1;
+      BVar1 = UNIT::UnitMode::UNITMODE_IsTargetInActionRange(pTargetUnit, pUnit, nActionType);
+      if (!BVar1) {
         return 1;
       }
 
@@ -1224,13 +1380,14 @@ void __fastcall UNITMODE_ExecuteDeferredAction(D2UnitStrc * pUnit) {
 }
 
 void SOUNDHDR_CompleteAsyncLoad(int32_t pSoundHdr) {
+    void* nAddress;
     if (*(int*)(pSoundHdr + 0x86) != 1) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x40);
       exit(-1);
     }
 
-    void* pResult = Fog::Src::AsyncData::ASYNCDATA_GetResult(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
-    *(void**)(pSoundHdr + 0x6c) = (void*)pResult;
+    nAddress = Fog::Src::AsyncData::ASYNCDATA_GetResult(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
+    *(void**)(pSoundHdr + 0x6c) = (void*)nAddress;
     size_t nReadSize = Fog::Src::AsyncData::ASYNCDATA_GetReadSize(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
     *(size_t*)(pSoundHdr + 0x70) = nReadSize;
     *(uint32_t*)(pSoundHdr + 0x86) = 2;
@@ -1247,10 +1404,9 @@ void SOUNDHDR_CompleteAsyncLoad(int32_t pSoundHdr) {
 // here.
 void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
     // Static local variables (originally global data)
-    static uint32_t gnCutsceneCount = 0x8;
-    static uint8_t bExitCutsceneActive;
+    static uint32_t gnCutsceneCount = 0x8; D2_STATIC_GUARD(gnCutsceneCount, "D2Client::ExitGamePlayCutScene::gnCutsceneCount");
+    static uint8_t bExitCutsceneActive; D2_STATIC_GUARD_BSS(bExitCutsceneActive, "D2Client::ExitGamePlayCutScene::bExitCutsceneActive");
 
-    int32_t nExitCode;
     char* pszSrcName;
     char* pPathCursor;
     HANDLE hFile;
@@ -1267,6 +1423,7 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
     int bVideoLoaded;
     void* pfFrame;
     char cChar;
+    int32_t nErrorLine;
     int nCurrentCutsceneId;
     nCurrentCutsceneId = nCutsceneId;
     if (gnCutsceneCount <= nCutsceneId) {
@@ -1330,7 +1487,7 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
       GAME::Game::SetPendingExitCutsceneId(0);
       gbCutsceneActive = '\0';
       GAME::Game::SetExitCutscenePlayed();
-      nExitCode = nExitCodeEcx3;
+      nErrorLine = nExitCodeEcx3;
     } else {
       if (nCurrentCutsceneId == 6) {
         bConnectionLost = 1;
@@ -1435,10 +1592,10 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
       }
 
       gbCutsceneActive = '\0';
-      nExitCode = nExitCodeEcx2;
+      nErrorLine = nExitCodeEcx2;
     }
 
-    GAME::Game::D2CLIENT_ExitGame(nExitCode);
+    GAME::Game::D2CLIENT_ExitGame(nErrorLine);
     reload_media_mpqs:
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles((::fpRequiredUserAction)(bool (*)())Engine::fpRequiredUserAction, (::fpRequiredUserAction)LOADER_RunInsertDiscPopup, 0, D2IniData_client);
@@ -1701,23 +1858,23 @@ void __stdcall SHOP_CleanupAssets() {
     UI::ui::UI_CloseTradeWindow(0);
 }
 
-void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(int32_t nParam) {
-    switch (*(uint16_t*)(nParam + 1)) {
+void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(D2GSPacketSrv0x50 * pPacket) {
+    switch (pPacket->nMessageType) {
       case 1:
-        UI::QuestLog::QUESTLOG_HandleSpecialPacket(nParam);
+        UI::QuestLog::QUESTLOG_HandleSpecialPacket((int32_t)pPacket);
       return;
       case 2:
-        UI::npcmenu::Merc::NPCMENU_SetSelectedMercIndex(*(int16_t*)(nParam + 3));
+        UI::npcmenu::Merc::NPCMENU_SetSelectedMercIndex(pPacket->aPayload[0]);
       return;
       case 3:
 
       case 6:
-        UI::npcmenu::NPCMENU_SetTransactionMode(nParam);
+        UI::npcmenu::NPCMENU_SetTransactionMode((int32_t)pPacket);
       return;
       case 4:
 
       case 0xd:
-        UI::Text::TEXT_HandleScrollLinePacket((uint8_t*)nParam);
+        UI::Text::TEXT_HandleScrollLinePacket(&pPacket->nPacketId);
       return;
       case 0x17:
         GAME::Msg::NET_D2GS_CLIENT_Send_0x69();
@@ -1726,7 +1883,7 @@ void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(int32_t nParam) {
       GAME::Game::D2CLIENT_SetExitVar3ToTrue();
       return;
       case 0x24:
-        UI::QuestLog::QUESTLOG_SetZooSpawnFlag((uint32_t)*(uint16_t*)(nParam + 3));
+        UI::QuestLog::QUESTLOG_SetZooSpawnFlag((uint32_t)pPacket->aPayload[0]);
       return;
     }
 }
@@ -1788,6 +1945,19 @@ int32_t __fastcall SEED_RollRange(D2SeedStrc * pSeed, int32_t nMin, int32_t nMax
 }
 
 void __stdcall OBJECT_SetLightRGB(uint8_t byRed, uint8_t byGreen, uint8_t byBlue, uint16_t nRadius, D2UnitStrc * pUnit) {
+    // [glide fix 13] capture real object lights (radius != 0) with the raw
+    // compiled objects.txt row bytes around Red@0x164/Green@0x165/Blue@0x166
+    // so the gold-drop blue-channel divergence can be attributed to the txt
+    // parse vs the downstream lightmap in one dump round.
+    if (nRadius) {
+      const void * pTxtRow = nullptr;
+      if (pUnit && pUnit->eUnitType == UNIT_OBJECT && pUnit->pUnitData.pUnitDataObject && pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine) {
+        pTxtRow = (const void *)((const uint8_t *)pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine + 0x160);
+      }
+
+      D2Client::Draw::LightDiag::NoteObjectLight(pUnit ? (int)pUnit->nClassId : -1, byRed, byGreen, byBlue, nRadius, pTxtRow);
+    }
+
     D2LightMapStrc* pLightMap = pUnit->uSideData.pClientSide.pLight;
     if (!nRadius) {
       if (pLightMap) {
@@ -1813,9 +1983,9 @@ BOOL __fastcall OBJECT_CheckAutoLight(D2UnitStrc * pUnit, int32_t bSkipCofLoad) 
       return 0;
     }
 
-    int32_t nErrAddr = D2Common::Environment::DRLGENV_GetPeriodOfDayFromAct(sgpDrlgAct, nullptr);
-    if (nErrAddr) {
-      if (nErrAddr - 1U < 3) {
+    int32_t nPeriodOfDay = D2Common::Environment::DRLGENV_GetPeriodOfDayFromAct(sgpDrlgAct, nullptr);
+    if (nPeriodOfDay) {
+      if (nPeriodOfDay - 1U < 3) {
         if (pUnit->eAnimMode.ePlayerMode == Death) {
           pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Neutral;
           if (!bSkipCofLoad) {
@@ -2009,9 +2179,6 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
     bool _bCompositeDeath;
     bool bCompositeDeath;
     int nOverlay;
-    uint32_t nPaddedToken;
-    uint32_t nPaddedToken2;
-    uint32_t dwParam;
     uint32_t nComponentIdx;
     uint32_t nVariantIdx;
     uint8_t* pCofEntry;
@@ -2042,7 +2209,7 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
 
         do {
           if (0xf < *pCofEntry) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3fb);
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x3fb);
             exit(-1);
           }
           if (*pCofEntry == byColorIdx) {
@@ -2057,28 +2224,25 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
             nMonStatsTxt = (int)pCofEntry;
             if (!nAnimMode || nAnimMode == 0xc) {
               _bCompositeDeath = UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(nMonStatsId, compositeDeath);
-              dwParam = nPaddedToken;
               if (_bCompositeDeath) {
                 nVariantIdx = nComponentTable >> 0x18;
                 nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
                 pGfxData->nArmorToken = nOverlay;
-                dwParam = nPaddedToken2;
               }
             } else {
               nVariantIdx = (uint32_t)byColorVariant;
               nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
               pGfxData->nArmorToken = nOverlay;
-              dwParam = nPaddedToken2;
             }
 
             nAnimMode = 0;
-            Engine::GfxUtil::GFXUTIL_PadTokenString(dwParam, (char*)(nMonStatsTxt + 5), (char*)&nAnimMode);
+            Engine::GfxUtil::GFXUTIL_PadTokenString((char*)(nMonStatsTxt + 5), (char*)&nAnimMode);
             pGfxData->nWeaponClass = nAnimMode;
             if (!pGfxData->nCompositToken) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x425);
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x425);
               exit(-1);
             } else if (!pGfxData->nUnitToken) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x426);
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x426);
               exit(-1);
             } else {
               if (nAnimMode) {
@@ -2093,7 +2257,7 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
                 return 1;
               }
 
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x427);
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x427);
               exit(-1);
             }
           }
@@ -2108,7 +2272,7 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
       nErrorLine = 0x3f0;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
     exit(-1);
 }
 
@@ -2197,7 +2361,7 @@ int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(D2UnitStrc * pUnit, int32_t pOve
     return sGfxData.nFrameCount << 8;
 }
 
-void __fastcall GFXUTIL_GetOverlayDimensions(D2UnitStrc * pUnit, int nPaletteShift, uint32_t nAnimMode, D2InventoryStrc * pOutWidth, uint32_t * pdwParam) {
+void __fastcall GFXUTIL_GetOverlayDimensions(D2UnitStrc * pUnit, int nPaletteShift, uint32_t nAnimMode, uint32_t * pOutWidth, uint32_t * pdwParam) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
     sGfxData.nFrameNumber = nAnimMode;
@@ -2214,10 +2378,10 @@ void __fastcall GFXUTIL_GetOverlayDimensions(D2UnitStrc * pUnit, int nPaletteShi
       return;
     }
 
-    int32_t iVar1 = D2CMP::SRC::CelCmp::GetDC6Width(sGfxData.pDC6Block);
-    pOutWidth->nSignatureMagic = iVar1;
-    iVar1 = D2CMP::SRC::CelCmp::GetDC6Height(sGfxData.pDC6Block);
-    *pdwParam = iVar1;
+    uint32_t uVar1 = D2CMP::SRC::CelCmp::GetDC6Width(sGfxData.pDC6Block);
+    *pOutWidth = uVar1;
+    int32_t iVar2 = D2CMP::SRC::CelCmp::GetDC6Height(sGfxData.pDC6Block);
+    *pdwParam = iVar2;
 }
 
 uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(D2UnitStrc * pUnit, int32_t nParam, int32_t nWorldY) {
@@ -4086,7 +4250,7 @@ int32_t __fastcall UI_GetDialogLineCount(int16_t nParam) {
     0x4ecf,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(gnUIDialogLineCountA, "D2Client::UI_GetDialogLineCount::gnUIDialogLineCountA");
 
     if (!gnDialogDataInitialized) {
       return 0;
@@ -4402,8 +4566,8 @@ void __stdcall BINK_RenderVideoFrame() {
 
 void __fastcall BINK_PlayVideoFile(char * szFileName, int32_t nParam, fnBinkFrameCallback pfnFrameCallback) {
     // Static local variables (originally global data)
-    static uint32_t gbBinkDDrawVideoExitRequested;
-    static unsigned int gdwBinkVideoLastClickTick;
+    static uint32_t gbBinkDDrawVideoExitRequested; D2_STATIC_GUARD_BSS(gbBinkDDrawVideoExitRequested, "D2Client::BINK_PlayVideoFile::gbBinkDDrawVideoExitRequested");
+    static unsigned int gdwBinkVideoLastClickTick; D2_STATIC_GUARD_BSS(gdwBinkVideoLastClickTick, "D2Client::BINK_PlayVideoFile::gdwBinkVideoLastClickTick");
 
     DWORD dwCurrentTick;
     int nBinkWaitResult;

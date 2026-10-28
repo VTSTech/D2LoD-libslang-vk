@@ -274,33 +274,37 @@ void __fastcall D2INIT_CheckCommandLineOrLoadItFromRegistry(char * * ppszText) {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_STATIC_GUARD(REGISTRY_CmdLine, "D2Launch::Engine::Application::D2INIT_CheckCommandLineOrLoadItFromRegistry::REGISTRY_CmdLine");
 
+    // Frame slots -2060..-8 are ONE object: &pUseCmdLine is passed out and the callee reaches the rest by byte offset.
+    // Separate locals let the compiler reorder them, so the run is one struct.
+    struct __frame0_t {
+      int32_t pUseCmdLine;
+      char szCmdLineBuf[2048];
+    };
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 2052, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    __frame0_t __frame0;
     char* pszCmdLineScan;
-    char szCmdLineBuf[2048];
     char cChar;
-    uint32_t dwSecurityCookie;
-    dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* pcVar2;
     pcVar2 = *ppszText;
-    int32_t pUseCmdLine;
-    pUseCmdLine = 0;
+    __frame0.pUseCmdLine = 0;
     if (!pcVar2 || (pszCmdLineScan = pcVar2 , (pszCmdLineScan = pszCmdLineScan + strlen(pszCmdLineScan) + 1 , pszCmdLineScan == pcVar2 + 1))) {
-      Storm::Source::SReg::SRegLoadValue("Diablo II", "UseCmdLine", 0, &pUseCmdLine);
-      if (pUseCmdLine) {
+      Storm::Source::SReg::SRegLoadValue("Diablo II", "UseCmdLine", 0, &__frame0.pUseCmdLine);
+      if (__frame0.pUseCmdLine) {
         Storm::Source::SReg::SRegLoadString("Diablo II", "CmdLine", 0, REGISTRY_CmdLine, 0x400);
         *ppszText = REGISTRY_CmdLine;
         goto finalize_cmd_line;
       }
 
-      memcpy(szCmdLineBuf, "-skiptobnet", 0xc);
+      memcpy(__frame0.szCmdLineBuf, "-skiptobnet", 0xc);
     } else {
-      sprintf(szCmdLineBuf, "%s -skiptobnet", pcVar2);
+      sprintf(__frame0.szCmdLineBuf, "%s -skiptobnet", pcVar2);
     }
 
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "CmdLine", 0, szCmdLineBuf);
+    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "CmdLine", 0, __frame0.szCmdLineBuf);
     finalize_cmd_line:
-    pUseCmdLine = 0;
+    __frame0.pUseCmdLine = 0;
     Storm::Source::SReg::SRegSaveValue("Diablo II", "UseCmdLine", 0, 0);
     if (gnServiceRunning) {
       Storm::Source::SReg::SRegLoadString("Diablo II", "SvcCmdLine", 0, REGISTRY_CmdLine, 0x400);

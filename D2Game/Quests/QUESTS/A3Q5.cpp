@@ -42,9 +42,9 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/Quests/QUESTS/A3Q4.h"
 #include "Fog/Src/Safesock.h"
@@ -362,7 +362,7 @@ BOOL __fastcall Q22_PlayerNotifyCompleted(::SGAMEDATA * pGame, D2UnitStrc * pUni
 // Q22_Callback_00 (BLACKENED TEMPLE) — quest-state[0] gossip/menu handler. Picks which gossip line an NPC (target class) speaks based on quest progress. If the quest's nQuestIdReal record is NOT at Step0x04: when the quest is Completed it requires the player to have participated; for live nStateFlag>5 it shows line 6 only if a JustCompleted flag is pending; otherwise (intro stage, nStateFlag<=5) it maps nStateFlag through the gdwQ19QuestStateMessages[] table to a gossip line. If the record IS at Step0x04: shows line 5 unless Jerhyn/Ormus AI already active. Emits via AddGossipMessageOnMonster. Read-only quest-record probes.
 void __fastcall Q22_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ19QuestStateMessages[8] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 };
+    static int32_t gdwQ19QuestStateMessages[8] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 }; D2_STATIC_GUARD(gdwQ19QuestStateMessages, "D2Game::Quests::QUESTS::A3Q5::Q22_Callback00_NpcActivate::gdwQ19QuestStateMessages");
 
     int32_t nNPCClassId;
     uint32_t nGossipLineIdx;
@@ -446,12 +446,12 @@ void __fastcall Q22_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
 void __fastcall Q22_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int32_t nState;
     uint32_t nSourceLine;
-    D2GossipTextStrc* pDVar1 = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
+    D2GSPacketSrv0x27_TextStrc* pDVar1 = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
     if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 0x52 && pQuestData->bIsNotIntroduction && !pQuestData->nStateFlag) {
       pQuestData->nStateFlag = 1;
       pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q22_Callback02_NpcDeactivate;
     }
-    if (pDVar1 != (D2GossipTextStrc*)0x4b) {
+    if (pDVar1 != (D2GSPacketSrv0x27_TextStrc*)0x4b) {
       return;
     }
 
@@ -497,6 +497,7 @@ void __fastcall Q22_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     bool _bLamEsenDone;
     bool bLamEsenDone;
     int32_t nSetStateFlag;
+    uint32_t dwSrcLine;
     short int nNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
@@ -507,7 +508,6 @@ void __fastcall Q22_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
     if (nNPCNo == 0xff) {
-      uint32_t dwSrcLine;
       if (nMessageIndex != 0x252) {
         return;
       }
@@ -700,7 +700,7 @@ void __fastcall Q22_TrackCouncilKill(::SGAMEDATA * pGame, D2UnitStrc * pKillerUn
     nKillerCount = 0;
     if (0 < nKillerGUID) {
       int32_t* piGUIDSlot;
-      piGUIDSlot = &pQuestSpecificData->aCouncilKillerGUIDs_0;
+      piGUIDSlot = pQuestSpecificData->anCouncilKillerGUIDs;
       do {
         if (*piGUIDSlot == nLoopIdx) {
           return;
@@ -711,7 +711,7 @@ void __fastcall Q22_TrackCouncilKill(::SGAMEDATA * pGame, D2UnitStrc * pKillerUn
       } while (nKillerCount < nKillerGUID);
     }
 
-    (&pQuestSpecificData->aCouncilKillerGUIDs_0)[nKillerGUID] = nLoopIdx;
+    pQuestSpecificData->anCouncilKillerGUIDs[nKillerGUID] = nLoopIdx;
     pQuestSpecificData->nCouncilKillCount++;
     pQuestSpecificData->nCouncilKillsRemaining = pQuestSpecificData->nCouncilKillCount;
     if (pQuestData->nStateFlag < 2) {
@@ -853,7 +853,7 @@ BOOL __fastcall OBJOP_A3Q5_NihlathakAltarLaunchOrb(D2ObjectOperateFnArg * pOpera
     D2UnitDataPlayerStrc* pAttackerPlayerData;
     D2BitBufferStrc* pQuestBitBuffer;
     eD2QuestState eQuestState_00;
-    int32_t iVar1;
+    int32_t nClassId;
     D2ObjectsTxt* pObjectsTxt;
     eD2Quests nQuestId;
     D2QuestDataA3Q5Strc* pQuestSpecificData;
@@ -913,12 +913,12 @@ BOOL __fastcall OBJOP_A3Q5_NihlathakAltarLaunchOrb(D2ObjectOperateFnArg * pOpera
         D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
         pWeaponOrVictim = pOperation->sArg.pVictim;
         if (!pWeaponOrVictim) {
-          iVar1 = -1;
+          nClassId = -1;
         } else {
-          iVar1 = pWeaponOrVictim->nClassId;
+          nClassId = pWeaponOrVictim->nClassId;
         }
 
-        pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(iVar1);
+        pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nClassId);
         pGameInner = pOperation->sArg.pGame;
         GAME::Event::SetEvent(pGameInner, pOperation->sArg.pVictim, 1, (pObjectsTxt->FrameCnt[1] >> 8) + pGameInner->dwGameFrame, 0, 0);
         pQuestSpecificData->bJerhynAiActive = true;

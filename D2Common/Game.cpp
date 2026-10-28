@@ -35,10 +35,10 @@ void __stdcall BuildPacket0x27Messages(D2GSPacketSrv0x27_TextStrc * pTxtMsg, uin
     int nSlot;
     D2GSPacketSrv0x27_EntryStrc* pCurEntry;
     if (!pTxtMsg) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xed);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xed);
       exit(-1);
     } else if (!pOutMessageData) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xee);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xee);
       exit(-1);
     } else {
       *pOutMessageData = 0;
@@ -62,7 +62,7 @@ void __stdcall BuildPacket0x27Messages(D2GSPacketSrv0x27_TextStrc * pTxtMsg, uin
         pOutMessageData++;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf8);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xf8);
       exit(-1);
     }
 }

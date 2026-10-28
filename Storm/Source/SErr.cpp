@@ -4,12 +4,11 @@
 #include "Fog/3rdparty/crashy.h"
 #include "Fog/Debug.h"
 #include "Fog/Source/SFile.h"
-#include "Storm/H/Storm.h"
 #include "Storm/SMem.h"
-#include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "Storm/WindowHandle.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
@@ -102,7 +101,7 @@ LPSTR * SERR_GetString(int32_t nErrorIndex) {
     s_Press_OK_to_terminate_the_applica_006cf220,
     s_Do_you_wish_to_terminate_the_appl_006cf1f4,
     s_File___s_006cf1e8
-};
+}; D2_STATIC_GUARD(gaSErrMessageStrings, "Storm::Source::SErr::SERR_GetString::gaSErrMessageStrings");
     static char gszErrorStringBuffer[256] = {
     0,
     0,
@@ -360,7 +359,7 @@ LPSTR * SERR_GetString(int32_t nErrorIndex) {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gszErrorStringBuffer, "Storm::Source::SErr::SERR_GetString::gszErrorStringBuffer");
 
     int nLen = 0x100;
     char* pcVar1 = gszErrorStringBuffer;
@@ -383,7 +382,7 @@ LPSTR * SERR_GetString(int32_t nErrorIndex) {
 // @blizzard InternalEnterCriticalSection (SERR.CPP)
 void __stdcall SERR_InternalEnterCriticalSection() {
     // Static local variables (originally global data)
-    static int gnSErrCriticalSectionInitGuard = -0x1;
+    static int gnSErrCriticalSectionInitGuard = -0x1; D2_STATIC_GUARD(gnSErrCriticalSectionInitGuard, "Storm::Source::SErr::SERR_InternalEnterCriticalSection::gnSErrCriticalSectionInitGuard");
 
     LONG nRefCount = InterlockedIncrement((LONG*)&gnSErrCriticalSectionInitGuard);
     if (!nRefCount) {
@@ -445,11 +444,11 @@ BOOL __stdcall SERR_UndecorateObjectName(char * szMangled, int32_t nMaxLen, char
 // @was SSYSTEM_SetThreadContext (pass 6, 2026.08.28) - the old name also collided with the Win32 API SetThreadContext, which this is not.
 // @oracle Storm 1.10b PPC export SErrPrepareAppFatal, code vector 10015af0 (TVector 100cbe9c).
 // @oracle-basis Callee set {EnterCriticalSection, GetCurrentThreadId, LeaveCriticalSection} is exactly the oracle's and is unique among all 19 SErr exports and all 82 functions of this namespace - the only other GetCurrentThreadId user, SErrDisplayAppFatal 0041d160, additionally calls memset/vsprintf/DisplayError/ExitProcess. Arity 2 = 2 (PPC prologue saves r3 and r4 only).
-void __stdcall SErrPrepareAppFatal(uint32_t pfnCallback, uint32_t nCallbackParam) {
+void __stdcall SErrPrepareAppFatal(void * pfnCallback, uint32_t nCallbackParam) {
     SERR_InternalEnterCriticalSection();
-    gpSSystemThreadContextCallback = pfnCallback;
-    gnSSystemThreadContextParam = nCallbackParam;
-    gnSSystemThreadContextThreadId = GetCurrentThreadId();
+    gpSSystemThreadContextCallback.pfnCallback = pfnCallback;
+    gpSSystemThreadContextCallback.nParam = nCallbackParam;
+    gpSSystemThreadContextCallback.dwThreadId = GetCurrentThreadId();
     SERR_InternalLeaveCriticalSection();
 }
 
@@ -563,7 +562,7 @@ void __stdcall SErrRegisterHandler(pfnSErrDisplayCallback pfnCallback) {
       int32_t nListOffset;
       nListOffset = gnStormErrorCallbackCount.nLinkOffset;
       if (gnStormErrorCallbackCount.nLinkOffset < 0) {
-        nListOffset = 0x708424 - gnStormErrorCallbackCount.pPrevLink->pNext;
+        nListOffset = (intptr_t)&gnStormErrorCallbackCount.pPrevLink - gnStormErrorCallbackCount.pPrevLink->pNext;
       }
 
       pPrevSlot = (uint32_t*)(gnStormErrorCallbackCount.pNext + nListOffset);
@@ -581,7 +580,7 @@ void __stdcall SErrRegisterHandler(pfnSErrDisplayCallback pfnCallback) {
 // @oracle-basis Callee set, near-identical across the two builds and unique in both: GetModuleFileName, memset, FindFirstFile, FindClose, SStrCopy, SStrChrR, LoadString, SStrLen, OutputDebugString, SStrPrintf/wsprintf, IsWindow, IsWindowVisible, MessageBox, the error critical-section pair, SErrGetErrorStr, and the process-exit tail (ExitProcess on PPC / TerminateProcess here). Arity 6 = 6. It is the largest function of the module in both builds (2384 B PPC / 1198 B here). Nine callers spanning SMem, SFile and SSystem, which is the profile of Storm's central error reporter.
 int __stdcall SErrDisplayError(uint32_t nErrorCode, uint32_t * pStackTrace, int32_t nTraceFlags, uint8_t * pCustomMsg, int32_t nMessageFlags, UINT nExitCode) {
     // Static local variables (originally global data)
-    static uint32_t gbSSystemErrorDialogActive;
+    static uint32_t gbSSystemErrorDialogActive; D2_STATIC_GUARD_BSS(gbSSystemErrorDialogActive, "Storm::Source::SErr::SErrDisplayError::gbSSystemErrorDialogActive");
 
     // Frame slots -2396..-4 are ONE object: &nMsgBoxFlags is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -831,8 +830,8 @@ void SErrDisplayErrorFmt(uint32_t nErrorCode, uint32_t * pStackTrace, int32_t nT
 // @oracle-basis Callee set identical to the oracle's and distinctive: SRegLoadValue (a registry read is unique to this function in the whole module, in both builds), SStrPrintf, SErrDisplayError, OutputDebugString. Arity 2 = 2. The literal "handle never released" confirms the operation independently of the oracle.
 void __stdcall SErrReportNamedResourceLeak(char * szMessage, char * szText) {
     // Static local variables (originally global data)
-    static int gnDebugMemoryInitFlag;
-    static uint32_t gbDebugMemoryInitialized;
+    static int gnDebugMemoryInitFlag; D2_STATIC_GUARD_BSS(gnDebugMemoryInitFlag, "Storm::Source::SErr::SErrReportNamedResourceLeak::gnDebugMemoryInitFlag");
+    static uint32_t gbDebugMemoryInitialized; D2_STATIC_GUARD_BSS(gbDebugMemoryInitialized, "Storm::Source::SErr::SErrReportNamedResourceLeak::gbDebugMemoryInitialized");
 
     char szDebugOutput[200];
     uint32_t szFormatted[64];
@@ -886,13 +885,13 @@ void __stdcall SErrDisplayAppFatal(char * szText, ...) {
     uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     SERR_InternalEnterCriticalSection();
     DWORD dwCurrentThreadId_lcl = GetCurrentThreadId();
-    int32_t nSavedContextParam = gnSSystemThreadContextParam;
-    uint32_t* pSavedCallback = (uint32_t*)gpSSystemThreadContextCallback;
+    uint32_t nSavedContextParam = gpSSystemThreadContextCallback.nParam;
+    void* pSavedCallback = gpSSystemThreadContextCallback.pfnCallback;
     uint32_t* pContextCallback = 0;
-    int32_t nContextParam = 0;
-    if (gnSSystemThreadContextThreadId == dwCurrentThreadId_lcl) {
+    uint32_t nContextParam = 0;
+    if (gpSSystemThreadContextCallback.dwThreadId == dwCurrentThreadId_lcl) {
       SSystem::SMemZero(&gpSSystemThreadContextCallback, 0xc);
-      pContextCallback = pSavedCallback;
+      pContextCallback = (uint32_t*)pSavedCallback;
       nContextParam = nSavedContextParam;
     }
 

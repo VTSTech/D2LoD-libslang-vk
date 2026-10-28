@@ -13,7 +13,7 @@
 
 namespace Storm::Source::SSTR {
 
-static uint64_t cSStrAtoDecimalPoint = 0x41f0000000000000;
+static uint64_t cSStrAtoDecimalPoint = 0x41f0000000000000; D2_STATIC_GUARD(cSStrAtoDecimalPoint, "Storm::Source::SSTR::cSStrAtoDecimalPoint");
 
 // @oracle PPC Mac Storm 1.10b export table (337 named TVector symbols), the authoritative Storm API.
 // @oracle-signature SStrChr(const char *, char)
@@ -681,7 +681,7 @@ uint32_t __stdcall SStrHash(char * pszText, uint8_t bCaseSensitive, uint32_t nSe
     0xa39b0fa1,
     0x9797f25f,
     0xe4444563
-};
+}; D2_STATIC_GUARD(gnHashLowTable, "Storm::Source::SSTR::SStrHash::gnHashLowTable");
 
     uint32_t nChar;
     if (pszText) {
@@ -795,7 +795,7 @@ ULONGLONG __stdcall SSTR_HashString64(uint8_t * pszText, uint8_t bCaseSensitive,
         /* .dwHashLow = */ 0x61636542,
         /* .nHashHigh = */ 0x6f4893ca
     }
-};
+}; D2_STATIC_GUARD(gaHashSeedTable, "Storm::Source::SSTR::SSTR_HashString64::gaHashSeedTable");
 
     uint32_t nChar;
     int64_t nAccum64;
@@ -1772,7 +1772,7 @@ int __stdcall UTF16_ToUTF8(uint8_t * pbUTF8, int nOutMaxChars, uint16_t * pszUTF
         uCodepoint >>= 6;
         case 1:
           pOutCur--;
-        *pOutCur = *(uint8_t*)(gaUTF8ByteCountTable + iResult + 0x40) | (uint8_t)uCodepoint;
+        *pOutCur = *(uint8_t*)(gaUTF8LeadByteMarks + iResult) | (uint8_t)uCodepoint;
         default:
           pInCur += nPszUTF16Out;
         pInStart = pOutCur + iResult;
@@ -1821,7 +1821,7 @@ int __stdcall UTF8_CalculateUTF16Length(char * szText, int nMaxBytes, int * pnPa
       }
 
       cByte = *pEndInner;
-      uCodepoint = (uint32_t)*(uint8_t*)((int)gaUTF8ByteCountTable + (int)cByte);
+      uCodepoint = (uint32_t)gaUTF8ByteCountTable[cByte];
       if (pCur <= pEndInner + uCodepoint) {
         nUTF16Len = -1 - uCodepoint;
         break;
@@ -1895,7 +1895,7 @@ int __stdcall UTF8_ToUTF16(short * pszUTF16Out, int nOutMaxChars, uint8_t * pbUT
       uint32_t uByteCount;
       pbUTF8In = (uint8_t*)(pszUTF16Out + 1);
       do {
-        uByteCount = (uint32_t)*(uint8_t*)((int)gaUTF8ByteCountTable + (uint32_t)*pOutStart);
+        uByteCount = (uint32_t)gaUTF8ByteCountTable[*pOutStart];
         if (pOutCur <= pOutStart + uByteCount) {
           iAccum = -1 - uByteCount;
           goto report_counts;

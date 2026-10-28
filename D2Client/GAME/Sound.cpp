@@ -22,7 +22,6 @@
 #include "D2Sound/Src/D2SoundSmp.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
 #include "Storm/Source/SFile.h"
 #include "globals/globals.h"
@@ -65,7 +64,7 @@ void __fastcall SOUND_ParseStreamWavHeader(int32_t pSoundStream) {
     }
 
     uint32_t nBufSize = *(uint32_t*)(pSoundStream + 0x70);
-    int* pWavData = D2Sound::Src::D2SoundSmp::SOUNDSMP_ParseWavHeader(*(int**)(pSoundStream + 0x6c), &nBufSize, (short int*)&sWaveFormat);
+    int* pWavData = D2Sound::Src::D2SoundSmp::SOUNDSMP_ParseWavHeader(*(int**)(pSoundStream + 0x6c), &nBufSize, &sWaveFormat);
     if (pWavData && sWaveFormat.wBitsPerSample == 0x10 && sWaveFormat.nSamplesPerSec == 0x5622) {
       *(int**)(pSoundStream + 0x74) = (int*)pWavData;
       *(bool*)(pSoundStream + 0x50) = sWaveFormat.nChannels == 2;
@@ -79,28 +78,10 @@ void __fastcall SOUND_ParseStreamWavHeader(int32_t pSoundStream) {
 // Sets the EAX reverb environment for the current room if the active sound mixer supports 3D audio and the requested environment ID differs from the current one. Reads all EAX parameters (room volume, HF, decay, reflections, reverb, size, diffusion, air absorption, room rolloff) from the SoundEnvironTxt record for nEnvId, scales integer fields by /1000 to floats, and calls SOUND_ApplyEAXEnvironment. Updates gnCurrentEaxEnvironmentId.
 void __fastcall SOUND_SetEaxEnvironment(int32_t nEnvId) {
     // Static local variables (originally global data)
-    static uint32_t gnCurrentEaxEnvironmentId = -0x1;
+    static uint32_t gnCurrentEaxEnvironmentId = -0x1; D2_STATIC_GUARD(gnCurrentEaxEnvironmentId, "D2Client::GAME::Sound::SOUND_SetEaxEnvironment::gnCurrentEaxEnvironmentId");
 
-    // Frame slots -56..-4 are ONE object: &nEaxEnviron is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nEaxEnviron;
-      float fEnvSize;
-      float fEnvDiff;
-      int nRoomVol;
-      int nRoomHF;
-      float fDecayTime;
-      float fDecayHF;
-      int nReflect;
-      float fReflectDelay;
-      int nReverb;
-      float fRevDelay;
-      float fRoomRoll;
-      float fAirAbsorb;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 52, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     DWORD bHas3D;
+    D2SoundEaxEnvironStrc sEnviron;
     int nNewEnvId = gnCurrentEaxEnvironmentId;
     if (nEnvId != gnCurrentEaxEnvironmentId) {
       D2SoundEnvironTxt* pEnvTxt;
@@ -110,20 +91,20 @@ void __fastcall SOUND_SetEaxEnvironment(int32_t nEnvId) {
         bHas3D = D2Sound::SOUND_GetSound3DFlag();
         nNewEnvId = nEnvId;
         if (bHas3D) {
-          __frame0.nRoomVol = pEnvTxt->EAX_Room_Vol;
-          __frame0.nEaxEnviron = pEnvTxt->EAX_Environ;
-          __frame0.nRoomHF = pEnvTxt->EAX_Room_HF;
-          __frame0.fEnvSize = (float)pEnvTxt->EAX_Env_Size / 1000.0;
-          __frame0.nReverb = pEnvTxt->EAX_Reverb;
-          __frame0.nReflect = pEnvTxt->EAX_Reflect;
-          __frame0.fEnvDiff = (float)pEnvTxt->EAX_Env_Diff / 1000.0;
-          __frame0.fDecayTime = (float)pEnvTxt->EAX_Decay_Time / 1000.0;
-          __frame0.fDecayHF = (float)pEnvTxt->EAX_Decay_HF / 1000.0;
-          __frame0.fReflectDelay = (float)pEnvTxt->EAX_Reflect_Delay / 1000.0;
-          __frame0.fRevDelay = (float)pEnvTxt->EAX_Rev_Delay / 1000.0;
-          __frame0.fRoomRoll = (float)pEnvTxt->EAX_Room_Roll / 1000.0;
-          __frame0.fAirAbsorb = (float)pEnvTxt->EAX_Air_Absorb / 1000.0;
-          D2Sound::Sound::SOUND_ApplyEAXEnvironment((float)d2_bits_to_float(&__frame0.nEaxEnviron));
+          sEnviron.nRoom = pEnvTxt->EAX_Room_Vol;
+          sEnviron.nEnvironment = pEnvTxt->EAX_Environ;
+          sEnviron.nRoomHF = pEnvTxt->EAX_Room_HF;
+          sEnviron.fEnvSize = (float)pEnvTxt->EAX_Env_Size / 1000.0;
+          sEnviron.nReverb = pEnvTxt->EAX_Reverb;
+          sEnviron.nReflections = pEnvTxt->EAX_Reflect;
+          sEnviron.fEnvDiffusion = (float)pEnvTxt->EAX_Env_Diff / 1000.0;
+          sEnviron.fDecayTime = (float)pEnvTxt->EAX_Decay_Time / 1000.0;
+          sEnviron.fDecayHFRatio = (float)pEnvTxt->EAX_Decay_HF / 1000.0;
+          sEnviron.fReflectionsDelay = (float)pEnvTxt->EAX_Reflect_Delay / 1000.0;
+          sEnviron.fReverbDelay = (float)pEnvTxt->EAX_Rev_Delay / 1000.0;
+          sEnviron.fRoomRolloff = (float)pEnvTxt->EAX_Room_Roll / 1000.0;
+          sEnviron.fAirAbsorptionHF = (float)pEnvTxt->EAX_Air_Absorb / 1000.0;
+          D2Sound::Sound::SOUND_ApplyEAXEnvironment(&sEnviron);
           nNewEnvId = nEnvId;
         }
       }
@@ -146,23 +127,23 @@ void __fastcall SOUND_DetachUnit(int32_t pSoundEntry) {
     *(uint32_t*)(pSoundEntry + 8) = 0;
 }
 
-void __fastcall SOUND_StopAndDetach(int * * ppnParam) {
-    if ((D2SoundSmpStrc*)*ppnParam) {
+void __fastcall SOUND_StopAndDetach(D2ClientSoundChannelStrc * ppnParam) {
+    if (ppnParam->pSoundSmp) {
       uint32_t nStreamProgress;
-      if (ppnParam[2]) {
-        nStreamProgress = D2Sound::Src::D2SoundSmp::SOUNDSMP_GetStreamProgress((D2SoundSmpStrc*)*ppnParam);
-        *(uint32_t*)((int)ppnParam[2] + 0x41) = nStreamProgress;
+      if (ppnParam->pActiveSound) {
+        nStreamProgress = D2Sound::Src::D2SoundSmp::SOUNDSMP_GetStreamProgress(ppnParam->pSoundSmp);
+        *(uint32_t*)ppnParam->pActiveSound->undefined_0x41 = nStreamProgress;
       }
 
-      D2Sound::Src::D2SoundSmp::SOUNDSMP_Stop((D2SoundSmpStrc*)*ppnParam);
+      D2Sound::Src::D2SoundSmp::SOUNDSMP_Stop(ppnParam->pSoundSmp);
     }
-    if (!ppnParam[2]) {
+    if (!ppnParam->pActiveSound) {
       return;
     }
 
-    ppnParam[2][0xc] = 2;
-    ppnParam[2][0xb] = 0;
-    ppnParam[2] = 0;
+    ppnParam->pActiveSound->nPlayMode = 2;
+    ppnParam->pActiveSound->undefined_0x2c = 0;
+    ppnParam->pActiveSound = 0;
 }
 
 void __stdcall CleanUpGame() {
@@ -214,9 +195,9 @@ void __stdcall SOUND_UpdateNonLoopingStreams() {
         if (!pSoundsTxtLine->Loop) {
           bIsPlaying = D2Sound::Src::D2SoundSmp::SOUNDSMP_IsPlaying((D2SoundSmpStrc*)pChannelEntry[-2]);
           if (!bIsPlaying) {
-            bIsStreaming = D2Sound::Src::D2SoundSmp::SOUNDSMP_IsStreaming((D2SoundSmpStrc*)pChannelEntry[-2]);
+            bIsStreaming = D2Sound::Src::D2SoundSmp::SOUNDSMP_IsStreaming(((D2ClientSoundChannelStrc*)(pChannelEntry - 2))->pSoundSmp);
             if (bIsStreaming) {
-              SOUND_StopAndDetach((int**)(pChannelEntry - 2));
+              SOUND_StopAndDetach((D2ClientSoundChannelStrc*)(pChannelEntry - 2));
             }
             if (*pChannelEntry) {
               *(uint32_t*)(*pChannelEntry + 0x30) = 2;
@@ -231,8 +212,8 @@ void __stdcall SOUND_UpdateNonLoopingStreams() {
     } while ((int)pChannelEntry < (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
 }
 
-uint32_t __fastcall SOUND_GetStreamProgress(int * pnParam) {
-    uint32_t uVar1 = D2Sound::Src::D2SoundSmp::SOUNDSMP_GetStreamProgress((D2SoundSmpStrc*)*pnParam);
+uint32_t __fastcall SOUND_GetStreamProgress(D2ClientSoundChannelStrc * pnParam) {
+    uint32_t uVar1 = D2Sound::Src::D2SoundSmp::SOUNDSMP_GetStreamProgress(pnParam->pSoundSmp);
     return uVar1;
 }
 
@@ -261,25 +242,25 @@ uint32_t __stdcall SOUND_IsEaxMixerActive() {
 // Body continues at 004df9e6, the JNZ target of 004df9de - a branch, not a call. Ghidra had a CALL_RETURN flow override there and a separate function named 'SOUND_FindPlayingById'; that made EBP look like a parameter and turned this frame's locals into wild pointers.
 // Retired notes from 'SOUND_FindPlayingById':
 int * __fastcall SOUND_FindPlayingByIdSafe(int32_t nId) {
-    void* pvVar1;
+    D2SoundChannelStrc* pDVar1;
     if (!pAudioMixerInterface) {
       return nullptr;
     }
 
     D2ClientSoundChannelStrc* pDVar4 = 0;
-    void** ppvVar3 = &gaSoundChannels[0].pActiveSound;
+    D2SoundChannelStrc** ppDVar3 = &gaSoundChannels[0].pActiveSound;
     do {
       int32_t iVar2;
-      iVar2 = D2Sound::Src::D2SoundSmp::SOUNDSMP_IsPlaying(((D2ClientSoundChannelStrc*)(ppvVar3 - 2))->pSoundSmp);
+      iVar2 = D2Sound::Src::D2SoundSmp::SOUNDSMP_IsPlaying(((D2ClientSoundChannelStrc*)(ppDVar3 - 2))->pSoundSmp);
       if (iVar2) {
-        pvVar1 = *ppvVar3;
-        if (pvVar1 && *(int*)((int)pvVar1 + 4) == nId && (!pDVar4 || *(uint32_t*)((int)pvVar1 + 0x34) < *(uint32_t*)((int)pDVar4->pActiveSound + 0x34))) {
-          pDVar4 = (D2ClientSoundChannelStrc*)(ppvVar3 - 2);
+        pDVar1 = *ppDVar3;
+        if (pDVar1 && pDVar1->nSoundId == nId && (!pDVar4 || (uint32_t)pDVar1->nScheduledTime < (uint32_t)pDVar4->pActiveSound->nScheduledTime)) {
+          pDVar4 = (D2ClientSoundChannelStrc*)(ppDVar3 - 2);
         }
       }
 
-      ppvVar3 += 8;
-    } while ((int)ppvVar3 < (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
+      ppDVar3 += 8;
+    } while ((int)ppDVar3 < (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
 
     return (int*)pDVar4;
 }
@@ -351,18 +332,17 @@ BOOL SOUND_InitStreamChannels(int32_t nParam) {
 }
 
 // Finds a free or preemptable sound channel for playback. First scans the global sound instance pool for a channel matching pnParam (sound type/category) that is not currently playing and has no active sound. If none found, scans for the best occupied channel that can be preempted via SOUND_IsChannelAvailable; if preemptable, stops the current sample, saves its stream progress, marks the channel free, and returns it. Returns NULL if no channel is available.
-int * * __stdcall SOUND_FindAvailableChannel(uint32_t nParam, int * pnParam) {
-    bool bCanReplace;
+D2ClientSoundChannelStrc * __stdcall SOUND_FindAvailableChannel(uint32_t nParam, int pnParam) {
     int32_t bIsPlaying;
-    uint32_t uPad1;
+    BOOL BVar1;
     uint32_t nStreamProgress;
     D2ClientSoundChannelStrc* pBestChannel;
     pBestChannel = gaSoundChannels;
     do {
-      if (!pBestChannel->pActiveSound && (int*)pBestChannel->nChannelType == pnParam) {
+      if (!pBestChannel->pActiveSound && pBestChannel->nChannelType == pnParam) {
         bIsPlaying = D2Sound::Src::D2SoundSmp::SOUNDSMP_IsPlaying(pBestChannel->pSoundSmp);
         if (!bIsPlaying) {
-          return (int**)pBestChannel;
+          return pBestChannel;
         }
       }
 
@@ -370,14 +350,13 @@ int * * __stdcall SOUND_FindAvailableChannel(uint32_t nParam, int * pnParam) {
     } while ((int)pBestChannel < (uintptr_t)&gaSoundChannels[16]);
 
     pBestChannel = 0;
-    void** pChannelEntry;
+    D2SoundChannelStrc** pChannelEntry;
     pChannelEntry = &gaSoundChannels[0].pActiveSound;
     do {
-      uint32_t uPad0;
-      if (pChannelEntry[-1] == (void*)pnParam && *pChannelEntry) {
+      if (pChannelEntry[-1] == (D2SoundChannelStrc*)pnParam && *pChannelEntry) {
         if (pBestChannel) {
-          bCanReplace = D2Client::Sound::SOUND_IsChannelAvailable((uint32_t)pBestChannel->pActiveSound, (uint32_t)*pChannelEntry, 1, 1);
-          if (!(uint32_t)((uint32_t)((uint32_t)uPad0 & 0xffffffu) << 8 | (uint32_t)(uint8_t)bCanReplace)) {
+          BVar1 = D2Client::Sound::SOUND_IsChannelAvailable((uint32_t)pBestChannel->pActiveSound, (uint32_t)*pChannelEntry, 1, 1);
+          if (!BVar1) {
             goto next_channel;
           }
         }
@@ -392,26 +371,26 @@ int * * __stdcall SOUND_FindAvailableChannel(uint32_t nParam, int * pnParam) {
           return nullptr;
         }
 
-        bCanReplace = D2Client::Sound::SOUND_IsChannelAvailable(nParam, (uint32_t)pBestChannel->pActiveSound, 0, 0);
-        if (!(uint32_t)((uint32_t)((uint32_t)uPad1 & 0xffffffu) << 8 | (uint32_t)(uint8_t)bCanReplace)) {
+        BVar1 = D2Client::Sound::SOUND_IsChannelAvailable(nParam, (uint32_t)pBestChannel->pActiveSound, 0, 0);
+        if (!BVar1) {
           return nullptr;
         }
         if (pBestChannel->pSoundSmp) {
           if (pBestChannel->pActiveSound) {
             nStreamProgress = D2Sound::Src::D2SoundSmp::SOUNDSMP_GetStreamProgress(pBestChannel->pSoundSmp);
-            *(uint32_t*)((int)pBestChannel->pActiveSound + 0x41) = nStreamProgress;
+            *(uint32_t*)pBestChannel->pActiveSound->undefined_0x41 = nStreamProgress;
           }
 
           D2Sound::Src::D2SoundSmp::SOUNDSMP_Stop(pBestChannel->pSoundSmp);
         }
         if (!pBestChannel->pActiveSound) {
-          return (int**)pBestChannel;
+          return pBestChannel;
         }
 
-        *(uint32_t*)((int)pBestChannel->pActiveSound + 0x30) = 2;
-        *(uint32_t*)((int)pBestChannel->pActiveSound + 0x2c) = 0;
+        pBestChannel->pActiveSound->nPlayMode = 2;
+        pBestChannel->pActiveSound->undefined_0x2c = 0;
         pBestChannel->pActiveSound = 0;
-        return (int**)pBestChannel;
+        return pBestChannel;
       }
     } while (true);
 }
@@ -542,9 +521,21 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
     pChannelEntry = (int*)d2_bits_of(*(float*)(nSoundDescSaved + 0x10) * 0.003125);
     pSoundsTxtLine = (D2SoundsTxt*)d2_bits_of(*(float*)(nSoundDescSaved + 0x14) * 0.003125);
     if (!pSoundChannel[1]) {
-      D2Sound::Src::D2SoundSmp::SOUNDSMP_CalculateVolumeAndPan((uint32_t*)&fFalloffMin, (uint32_t*)&fFalloffMax, fEaxObstruction, (float)d2_bits_to_float(pChannelEntry), (float)d2_bits_to_float(pSoundsTxtLine));
-      D2Sound::Src::D2SoundSmp::SOUNDSMP_SetPan((D2SoundSmpStrc*)*pSoundChannel, (int32_t)fFalloffMax);
-      nSoundDescOffset = (int)fFalloffMin * nSoundDescOffset / 0xff;
+      // [vanilla-plus fix 16] Defect 13 root cause (SFX silent, music OK). SOUNDSMP_CalculateVolumeAndPan
+      // writes its OUT params as 32-bit INTEGERS (volume 0..255, pan 0..255), but this block received
+      // them through (uint32_t*)&fFalloffMin / &fFalloffMax - the storage of two float locals - and then
+      // read the results back AS FLOATS: (int32_t)fFalloffMax for SetPan, and (int)fFalloffMin for the
+      // volume multiply below. Any CalcVol in 0..255 has IEEE bits 0x00000000-0x000000FF, which
+      // reinterpret as a subnormal float (~1e-43); the float->int conversion truncates that to 0, so
+      // nSoundDescOffset became 0 for EVERY sound that runs this block -> SOUNDSMP_SetVolume(0) ->
+      // att=-10000 -> silent buffer. Music-flagged channels (pSoundChannel[1] != 0) skip this block
+      // entirely, which is why music survived (R8 log: sid=4673 landed att=-1348 while sid=4325 landed
+      // att=-10000 through the identical open path). Retail reads these out params as plain integers.
+      uint32_t nCalcVolume = 0;
+      uint32_t nCalcPan = 0;
+      D2Sound::Src::D2SoundSmp::SOUNDSMP_CalculateVolumeAndPan(&nCalcVolume, &nCalcPan, fEaxObstruction, (float)d2_bits_to_float(pChannelEntry), (float)d2_bits_to_float(pSoundsTxtLine));
+      D2Sound::Src::D2SoundSmp::SOUNDSMP_SetPan((D2SoundSmpStrc*)*pSoundChannel, (int32_t)nCalcPan);
+      nSoundDescOffset = (int)nCalcVolume * nSoundDescOffset / 0xff;
     }
     if (*(uint8_t*)(pSoundChannel + 1) & 2) {
       D2Sound::Src::D2SoundSmp::SOUNDSMP_Set3DPosition((D2SoundSmpStrc*)*pSoundChannel, fEaxObstruction, (float)d2_bits_to_float(pChannelEntry), (float)d2_bits_to_float(pSoundsTxtLine));
@@ -638,7 +629,7 @@ void __stdcall SOUND_ShutdownAudio_Thunk() {
 }
 
 // Plays a positioned (panned) sound effect using the game's channel system. Resolves the sound ID (randomizing from a group if flagged), checks for a duplicate already-playing instance, loads the sound file if needed, selects a mono/stereo/EAX channel, sets reverb and frequency, loads WAV data or opens a streaming file, and calls SOUNDSMP_Play/SOUNDSMP_OpenAndStreamFile. Returns the allocated channel slot on success, null on failure or if a duplicate throttle fires.
-D2PoolManagerStrc * * __fastcall SOUND_PlaySoundWithPanning(D2SoundChannelStrc * pMemory) {
+D2ClientSoundChannelStrc * __fastcall SOUND_PlaySoundWithPanning(D2SoundChannelStrc * pMemory) {
     int nResult;
     BOOL BVar1;
     char szSoundPath[80];
@@ -667,66 +658,66 @@ D2PoolManagerStrc * * __fastcall SOUND_PlaySoundWithPanning(D2SoundChannelStrc *
     }
 
     bool bStereo = pSoundTxt->Stereo != 0;
-    pPlayingChannel = (int*)(uint32_t)bStereo;
+    uint32_t pnParam = (uint32_t)bStereo;
     if (!bStereo) {
       nResult = D2Sound::Src::D2SoundFast::SOUND_GetSoundMixer();
       if (nResult == 1) {
-        pPlayingChannel = (int*)0x2;
+        pnParam = 2;
       }
 
       nResult = D2Sound::Src::D2SoundFast::SOUND_GetSoundMixer();
       if (nResult == 2) {
-        pPlayingChannel = (int*)((uint32_t)pPlayingChannel | 6);
+        pnParam |= 6;
       }
     }
 
-    D2PoolManagerStrc** ppChannel = (D2PoolManagerStrc**)SOUND_FindAvailableChannel((uint32_t)pMemory, pPlayingChannel);
+    D2ClientSoundChannelStrc* ppChannel = SOUND_FindAvailableChannel((uint32_t)pMemory, pnParam);
     if (!ppChannel) {
       return nullptr;
     }
 
-    D2Sound::Src::D2SoundSmp::SOUNDSMP_Reset((D2SoundSmpStrc*)*ppChannel);
+    D2Sound::Src::D2SoundSmp::SOUNDSMP_Reset(ppChannel->pSoundSmp);
     if (!pSoundTxt->Stream) {
-      D2Sound::Src::D2SoundSmp::SOUNDSMP_SetFrequency((int32_t)*ppChannel, (uint32_t)pSoundTxt->Loop);
+      D2Sound::Src::D2SoundSmp::SOUNDSMP_SetFrequency((int32_t)ppChannel->pSoundSmp, (uint32_t)pSoundTxt->Loop);
       if (pSoundTxt->nBlockCount == 1) {
-        D2Sound::Src::D2SoundSmp::SOUNDSMP_SetMinDistance((D2SoundSmpStrc*)*ppChannel, pSoundTxt->Block[0] * 2);
+        D2Sound::Src::D2SoundSmp::SOUNDSMP_SetMinDistance(ppChannel->pSoundSmp, pSoundTxt->Block[0] * 2);
       }
 
-      BVar1 = D2Sound::Src::D2SoundSmp::SOUNDSMP_LoadWavDataIntoBuffer((D2SoundSmpStrc*)*ppChannel, (int*)pSoundTxt->pSoundDataBuffer, pSoundTxt->nSoundDataBytes);
+      BVar1 = D2Sound::Src::D2SoundSmp::SOUNDSMP_LoadWavDataIntoBuffer(ppChannel->pSoundSmp, (int*)pSoundTxt->pSoundDataBuffer, pSoundTxt->nSoundDataBytes);
       if (!BVar1) {
         return nullptr;
       }
     }
 
-    ppChannel[2] = (D2PoolManagerStrc*)pSoundDesc;
-    if ((uint32_t)pPlayingChannel & 4) {
+    ppChannel->pActiveSound = pSoundDesc;
+    if (pnParam & 4) {
       if (!pSoundTxt->Reverb) {
         fReverbLevel = 0.0;
       } else {
         fReverbLevel = 1.0;
       }
 
-      D2Sound::Src::D2SoundSmp::SOUNDSMP_SetEaxRoomLevel((D2SoundSmpStrc*)*ppChannel, fReverbLevel);
+      D2Sound::Src::D2SoundSmp::SOUNDSMP_SetEaxRoomLevel(ppChannel->pSoundSmp, fReverbLevel);
     }
 
-    ppChannel[7] = 0;
-    ppChannel[6] = (D2PoolManagerStrc*)-1;
-    ppChannel[3] = 0;
-    ppChannel[4] = 0;
-    ppChannel[5] = 0;
+    ppChannel->field_0x1c = 0;
+    ppChannel->field_0x18 = -1;
+    ppChannel->field_0x0c = 0;
+    ppChannel->field_0x10 = 0;
+    ppChannel->field_0x14 = 0;
     SOUND_UpdateChannelParams((int*)ppChannel);
     D2SoundChannelStrc* pSoundDescBackup = pSoundDesc;
     if (!pSoundTxt->Stream) {
-      nResult = D2Sound::Src::D2SoundSmp::SOUNDSMP_Play((D2SoundSmpStrc*)*ppChannel);
+      nResult = D2Sound::Src::D2SoundSmp::SOUNDSMP_Play(ppChannel->pSoundSmp);
     } else {
       D2Client::Sound::SoundHdr::SOUNDHDR_BuildSoundPath(pSoundDesc->nSoundId, (uint32_t*)szSoundPath);
-      nResult = D2Sound::Src::D2SoundSmp::SOUNDSMP_OpenAndStreamFile((int**)*ppChannel, szSoundPath, pSoundDescBackup->nParam, (uint32_t)pSoundTxt->Loop);
+      nResult = D2Sound::Src::D2SoundSmp::SOUNDSMP_OpenAndStreamFile((int**)ppChannel->pSoundSmp, szSoundPath, pSoundDescBackup->nParam, (uint32_t)pSoundTxt->Loop);
     }
     if (nResult) {
       return ppChannel;
     }
 
-    ppChannel[2] = 0;
+    ppChannel->pActiveSound = 0;
     return nullptr;
 }
 
@@ -968,7 +959,7 @@ static D2NpcGreetingSoundsStrc gaNpcGreetingSounds[29] = {
         /* .nLastSoundId = */ 0x0,
         /* .nLastRecordingIdx = */ 0x0
     }
-};
+}; D2_STATIC_GUARD(gaNpcGreetingSounds, "D2Client::GAME::Sound::SOUND_GetNpcGreetingSounds::gaNpcGreetingSounds");
 
     if (!pUnit) {
       return nullptr;

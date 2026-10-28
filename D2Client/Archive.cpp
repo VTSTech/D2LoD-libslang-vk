@@ -21,17 +21,17 @@ bool ARCHIVE_WriteFormattedText(HANDLE hFile, char * pFormat, ...) {
     return bResult;
 }
 
-uint32_t __fastcall ARCHIVE_ComputeAddress(int * nBaseAddr, int * pNode) {
+uint32_t __fastcall ARCHIVE_ComputeAddress(int32_t nBaseAddr, int * pNode) {
     uint32_t nOffset = pNode[1];
     if ((int)nOffset < 0) {
       return ~nOffset;
     }
-    if ((int)nBaseAddr >= 0) {
-      return nOffset + (int)nBaseAddr;
+    if (nBaseAddr >= 0) {
+      return nOffset + nBaseAddr;
     }
 
-    nBaseAddr = (int*)((int)pNode - *(int*)(*pNode + 4));
-    return nOffset + (int)nBaseAddr;
+    nBaseAddr = (int)pNode - *(int*)(*pNode + 4);
+    return nOffset + nBaseAddr;
 }
 
 int32_t __fastcall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode) {

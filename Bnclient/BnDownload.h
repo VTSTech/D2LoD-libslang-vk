@@ -23,11 +23,17 @@ struct D2BnetDownloadStateStrc {
     /* 0x22C */ int nFileType; // file transfer type (2=direct recv; pDownloadCtx+0x116 as ushort* = byte 0x22c)
 };
 
+struct SID_C2S_ExtraWork {
+    /* 0x00 */ uint16_t wGameType;
+    /* 0x02 */ uint16_t wLength; // set to 4, then the ExtraWork callback may grow it
+    /* 0x04 */ uint8_t abWorkData[4096];
+};
+
 namespace Bnclient::BnDownload {
 
 // Function declarations
 void __stdcall BNDOWNLOAD_WriteFileWithTimestamp(LPCSTR pThis, LPCVOID param_1, DWORD dwParam, FILETIME * pFileTime);
-bool __stdcall NET_CopyDllFromArchive(struct D2ArchiveStrc * pArchive, char * pszSrcFileName, LPSTR szText);
+BOOL __stdcall NET_CopyDllFromArchive(struct D2ArchiveStrc * pArchive, char * pszSrcFileName, LPSTR szText);
 void __stdcall BNDOWNLOAD_SetCancelFlag();
 uint32_t __stdcall BNDOWNLOAD_HasActiveDownloads();
 BOOL __stdcall NET_RecvExact(SOCKET hSocket, int32_t pBuffer, uint32_t nLen);
@@ -42,7 +48,7 @@ void __fastcall BNDOWNLOAD_ResetState(int nResetValue);
 int __stdcall BNDOWNLOAD_GetProgress();
 void __fastcall BNDOWNLOAD_SetPatchFilename(char * szText);
 uint32_t __stdcall BNDOWNLOAD_HasPatchFilename();
-BOOL __stdcall BnetDownloadFile(SOCKET hSocket, char * szText, FILETIME * pTimestamp, int32_t nProgressMode, uint8_t bWriteFlags, LPCVOID * ppOutBuffer, uint32_t nFileSize);
+BOOL __stdcall BnetDownloadFile(SOCKET hSocket, char * szText, FILETIME * pTimestamp, int32_t nProgressMode, uint8_t bWriteFlags, uint8_t * * ppOutBuffer, uint32_t nFileSize);
 int32_t __stdcall BNDOWNLOAD_RecvFileFromSocket(LPCSTR pThis, SOCKET hSocket, uint32_t nOffset, uint32_t nTotalSize, int32_t nProgressMode, FILETIME * pFileTime);
 // Processes BNet prepatch.lst from downloaded MPQ archive - executes patches, extracts files, launches updates
 void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut);

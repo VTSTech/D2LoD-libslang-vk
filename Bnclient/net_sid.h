@@ -292,7 +292,7 @@ int __fastcall NET_SID_CLIENT_Send_0x52_AuthAccountCreate(char * pUsername, char
 int __fastcall NET_SID_CLIENT_Send_0x55_AuthAccountChange(char * pUsername, char * pOldPassword, char * pNewPassword);
 int32_t __fastcall NET_SID_CLIENT_Send_0x56_AuthAccountChangeProof(void * pSalt, void * pServerPublicKeyB);
 BOOL __fastcall NET_SID_CLIENT_Send_0x57_AuthAccountUpgrade(int32_t bIncrementFlag);
-void __stdcall NET_SID_CLIENT_Send_0x58_AuthAccountUpgradeProof();
+void __fastcall NET_SID_CLIENT_Send_0x58_AuthAccountUpgradeProof(uint32_t nServerToken);
 // Verifies the server's 20-byte SRP proof M2 = H(A, M1, K) against the locally computed expected value stored in g_srpCredentials. Called after receiving status 0 in the 0x54 logon proof response.
 int32_t __fastcall NET_SID_CLIENT_VerifyServerProof(void * pM2ServerProof);
 BOOL __stdcall NET_SID_CLIENT_GetSIDFlag2();

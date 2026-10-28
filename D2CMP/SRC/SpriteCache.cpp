@@ -7,11 +7,11 @@
 #include "D2CMP/SRC/GfxHash.h"
 #include "D2CMP/SRC/LRUCache.h"
 #include "D2CMP/SRC/Tilecmp.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/D2GfxMemoryStrc.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "Fog/D2PoolManagerStrc.h"
@@ -85,7 +85,7 @@ static char gszSrcFileSpriteCache[22] = {
     'p',
     'p',
     '\x00'
-};
+}; D2_STATIC_GUARD(gszSrcFileSpriteCache, "D2CMP::SRC::SpriteCache::gszSrcFileSpriteCache");
 
 void __stdcall SPRITECACHE_Init(BOOL bFreeAll) {
     if (gbSpriteCacheLruInitialized) {
@@ -208,7 +208,7 @@ void __stdcall GFX_InitLRUCache(D2PoolManagerStrc * pMemory, D2PoolManagerStrc *
 // @provenance 1.14d asm 005fe170; formerly named SPRITECACHE_Validate.
 void __fastcall SPRITECACHE_ReleaseHashEntry(int * pHashEntry) {
     // Static local variables (originally global data)
-    static pfnSpriteCacheValidate gpfnSpriteCacheValidateCallback;
+    static pfnSpriteCacheValidate gpfnSpriteCacheValidateCallback; D2_STATIC_GUARD_BSS(gpfnSpriteCacheValidateCallback, "D2CMP::SRC::SpriteCache::SPRITECACHE_ReleaseHashEntry::gpfnSpriteCacheValidateCallback");
 
     if (gpfnSpriteCacheValidateCallback) {
       uint32_t* puVar1;
@@ -482,22 +482,11 @@ BOOL SPRITECACHE_FindOrLoad(char * szText, D2GfxDataStrc * pGfxData) {
 }
 
 BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxData, LPSTR szText2) {
-    // Frame slots -12..-4 are ONE object: &byCharClass is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint8_t byCharClass;
-      uint8_t byArmorClass;
-      uint8_t byWeapon1;
-      uint8_t byWeapon2;
-      uint8_t byWeapon3;
-      uint8_t byToken1;
-      uint8_t byToken2;
-      uint8_t byToken3;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    int iVar2;
     int32_t nStrCmpResult;
     char* szBasePath;
+    char szToken0[4];
+    char szToken1[4];
     char* szFormat;
     int bUseCompressed;
     bUseCompressed = bUseCompressedData;
@@ -523,7 +512,7 @@ BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxData, LPST
         return 1;
       }
     } else {
-      int iVar1;
+      uint8_t bVar1;
       if (nSpriteType == UNIT_ITEM) {
         if (!pGfxData->szFilename) {
           *szText2 = '\0';
@@ -572,11 +561,11 @@ BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxData, LPST
           goto build_token_path;
         }
 
-        iVar1 = pGfxData->nClassId;
+        iVar2 = pGfxData->nClassId;
         szBasePath = "DATA\\GLOBAL\\MONSTERS";
-        if (iVar1 < 0x20a) {
-          if (iVar1 != 0x209) {
-            switch (iVar1) {
+        if (iVar2 < 0x20a) {
+          if (iVar2 != 0x209) {
+            switch (iVar2) {
               case 0xf2:
 
               case 0xfb:
@@ -594,7 +583,7 @@ BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxData, LPST
             }
           }
         } else {
-          switch (iVar1) {
+          switch (iVar2) {
             case 0x220:
 
             case 0x22f:
@@ -618,26 +607,26 @@ BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxData, LPST
 
         bUseCompressed = 0;
         build_token_path:
-        __frame0.byCharClass = (uint8_t)pGfxData->nUnitToken;
-        __frame0.byWeapon2 = 0;
-        __frame0.byToken3 = 0;
-        __frame0.byCharClass = __frame0.byCharClass == 0x20 ? 0 : __frame0.byCharClass;
-        __frame0.byArmorClass = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 1);
-        __frame0.byArmorClass = __frame0.byArmorClass == 0x20 ? 0 : __frame0.byArmorClass;
-        __frame0.byWeapon1 = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 2);
-        __frame0.byWeapon1 = __frame0.byWeapon1 == 0x20 ? 0 : __frame0.byWeapon1;
-        __frame0.byWeapon3 = (uint8_t)pGfxData->nCompositToken;
-        __frame0.byWeapon3 = __frame0.byWeapon3 == 0x20 ? 0 : __frame0.byWeapon3;
-        __frame0.byToken1 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 1);
-        __frame0.byToken1 = __frame0.byToken1 == 0x20 ? 0 : __frame0.byToken1;
-        __frame0.byToken2 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 2);
-        __frame0.byToken2 = __frame0.byToken2 == 0x20 ? 0 : __frame0.byToken2;
+        bVar1 = (uint8_t)pGfxData->nUnitToken;
+        szToken0[3] = '\0';
+        szToken1[3] = '\0';
+        szToken0[0] = bVar1 == 0x20 ? 0 : bVar1;
+        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 1);
+        szToken0[1] = bVar1 == 0x20 ? 0 : bVar1;
+        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 2);
+        szToken0[2] = bVar1 == 0x20 ? 0 : bVar1;
+        bVar1 = (uint8_t)pGfxData->nCompositToken;
+        szToken1[0] = bVar1 == 0x20 ? 0 : bVar1;
+        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 1);
+        szToken1[1] = bVar1 == 0x20 ? 0 : bVar1;
+        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 2);
+        szToken1[2] = bVar1 == 0x20 ? 0 : bVar1;
         if (!bUseCompressed) {
-          /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dc6", szBasePath, &__frame0.byCharClass, &__frame0.byWeapon3, szText);
+          /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dc6", szBasePath, szToken0, szToken1, szText);
           return 1;
         }
 
-        /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dcc", szBasePath, &__frame0.byCharClass, &__frame0.byWeapon3, szText);
+        /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dcc", szBasePath, szToken0, szToken1, szText);
         pGfxData->dwRenderFlags |= 1;
         return 1;
       }
@@ -17044,7 +17033,7 @@ D2CelFileCacheEntryStrc * __stdcall SPRITECACHE_LoadDCC(char * szText, char * sz
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gdwSpriteCacheThreshold, "D2CMP::SRC::SpriteCache::SPRITECACHE_LoadDCC::gdwSpriteCacheThreshold");
 
     // Frame slots -32..-4 are ONE object: &nFileVersion is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -17246,7 +17235,7 @@ DC6Block * SPRITECACHE_GetFrameBlock(D2CelCacheBlockStrc * pCacheBlock, D2GfxDat
 
 // @sourcefile .\SRC\SpriteCache.cpp
 void __stdcall SPRITECACHE_LoadAndCacheDC6(D2CelFileCacheEntryStrc * pCelEntry, D2GfxDataStrc * pGfxData, D2CelCacheBlockStrc * pCacheBlock) {
-    void* pFrameSlot;
+    void* nErrorLineResult;
     void* pFrameDataBase;
     int nFrameDataOffset;
     uint32_t nFrameIdx;
@@ -17257,8 +17246,8 @@ void __stdcall SPRITECACHE_LoadAndCacheDC6(D2CelFileCacheEntryStrc * pCelEntry, 
     uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (pGfxData && pCacheBlock && !(pCelEntry->dwCacheFlags & 1) && !pCacheBlock->tDecode.bFramesBuilt) {
       nAllocSize = (uint32_t)pCacheBlock->tDecode.nFramesPerDir * (uint32_t)pCacheBlock->tDecode.nDirCount * 0x2c;
-      pFrameSlot = D2_ALLOC_POOL(D2GfxMemoryStrc_0089db60.pMemory, nAllocSize);
-      memset(pFrameSlot, 0, nAllocSize);
+      nErrorLineResult = D2_ALLOC_POOL(D2GfxMemoryStrc_0089db60.pMemory, nAllocSize);
+      memset(nErrorLineResult, 0, nAllocSize);
       pFrameDataBase = Fog::Src::AsyncData::ASYNCDATA_GetResult(pCacheBlock->tDecode.pAsyncData);
       if (pFrameDataBase) {
         nFrameDataOffset = pCacheBlock->tDecode.aDirOffsets[pCacheBlock->tDecode.nStartDir];
@@ -17272,8 +17261,8 @@ void __stdcall SPRITECACHE_LoadAndCacheDC6(D2CelFileCacheEntryStrc * pCelEntry, 
               exit(-1);
             }
 
-            *(void**)(nFrameDataOffset + 0x18 + (int)pFrameDataBase) = (void*)pFrameSlot;
-            pFrameSlot = (void*)((int)pFrameSlot + 0x2c);
+            *(void**)(nFrameDataOffset + 0x18 + (int)pFrameDataBase) = (void*)nErrorLineResult;
+            nErrorLineResult = (void*)((int)nErrorLineResult + 0x2c);
             nFrameIdx++;
             nFrameDataOffset = nFrameDataOffset + 0x23 + *(int*)(nFrameDataOffset + 0x1c + (int)pFrameDataBase) + *(int*)(nFrameDataOffset + 0x14 + (int)pFrameDataBase);
           } while (nFrameIdx < (uint32_t)pCacheBlock->tDecode.nFramesPerDir * (uint32_t)pCacheBlock->tDecode.nDirCount);
@@ -17298,23 +17287,23 @@ uint32_t __stdcall SPRITECACHE_GetTotalEntries() {
     return nUsedMemory;
 }
 
-void * __stdcall SPRITECACHE_GetCacheSize() {
+uint32_t __stdcall SPRITECACHE_GetCacheSize() {
     return D2GfxMemoryStrc_0089db60.pMaxMemory;
 }
 
-BYTE * __stdcall SPRITECACHE_GetMaxSize() {
-    return (uint8_t*)gCelDataCacheLru.nBytesUsed;
+int __stdcall SPRITECACHE_GetMaxSize() {
+    return gCelDataCacheLru.nBytesUsed;
 }
 
-BYTE * __stdcall SPRITECACHE_GetCurrentSize() {
-    return (uint8_t*)gCelDataCacheLru.dwBufSize;
+uint32_t __stdcall SPRITECACHE_GetCurrentSize() {
+    return gCelDataCacheLru.dwBufSize;
 }
 
 // @sourcefile .\SRC\SpriteCache.cpp
 void __fastcall GFX_AllocSpriteCache(D2GfxMemoryStrc * pGfxMemory, D2PoolManagerStrc * pMemory, void * pMaxMemory, fnSpriteCacheEntryRelease pfnReleaseEntry) {
     int nSlotCheck;
     D2SpriteCache* pCurSpriteCache;
-    pGfxMemory->pMaxMemory = pMaxMemory;
+    pGfxMemory->pMaxMemory = (uint32_t)pMaxMemory;
     pGfxMemory->pfnReleaseEntry = pfnReleaseEntry;
     pGfxMemory->pMemory = pMemory;
     pGfxMemory->nUsedMemory = 0;
@@ -17430,47 +17419,47 @@ void __stdcall SPRITECACHE_EvictOldest(int32_t nParam1, int32_t nParam2, int32_t
     *(DWORD*)(nParam3 + 0x10) = dwTick;
 }
 
-int32_t __fastcall SPRITECACHE_AddToLRU(uint32_t dwParam, int32_t nParam, int32_t bPriority) {
-    int nLruHead;
-    uint32_t* pNextPtr;
-    int nNext;
+D2SpriteCacheEntryStrc * __fastcall SPRITECACHE_AddToLRU(uint32_t dwParam, D2GfxMemoryStrc * nParam, int32_t bPriority) {
+    D2SpriteCacheEntryStrc* nLruHead;
+    D2SpriteCacheEntryStrc** pNextPtr;
+    D2SpriteCacheEntryStrc* nNext;
     if (!bPriority) {
-      nLruHead = *(int*)(nParam + 0x14);
-      if (nLruHead && !(*(uint8_t*)(nLruHead + 0xc) & 2)) {
-        nNext = *(int*)(nLruHead + 0x14);
-        pNextPtr = (uint32_t*)(nLruHead + 0x14);
-        *(int*)(nParam + 0x14) = nNext;
+      nLruHead = nParam->pLruHead;
+      if (nLruHead && !(nLruHead->dwFlags & 2)) {
+        nNext = nLruHead->pNext;
+        pNextPtr = &nLruHead->pNext;
+        nParam->pLruHead = nNext;
         if (!nNext) {
-          *(uint32_t*)(nParam + 0x18) = 0;
+          nParam->pLruTail = 0;
           *pNextPtr = 0;
-          *(uint32_t*)(nLruHead + 0x18) = 0;
+          nLruHead->pPrev = 0;
           return nLruHead;
         }
 
         goto done;
       }
     } else {
-      nLruHead = *(int*)(nParam + 0x1c);
-      if (nLruHead && !(*(uint8_t*)(nLruHead + 0xc) & 2)) {
-        nNext = *(int*)(nLruHead + 0x14);
-        pNextPtr = (uint32_t*)(nLruHead + 0x14);
-        *(int*)(nParam + 0x1c) = nNext;
+      nLruHead = nParam->pPriorityLruHead;
+      if (nLruHead && !(nLruHead->dwFlags & 2)) {
+        nNext = nLruHead->pNext;
+        pNextPtr = &nLruHead->pNext;
+        nParam->pPriorityLruHead = nNext;
         if (!nNext) {
-          *(uint32_t*)(nParam + 0x20) = 0;
+          nParam->pPriorityLruTail = 0;
           *pNextPtr = 0;
-          *(uint32_t*)(nLruHead + 0x18) = 0;
+          nLruHead->pPrev = 0;
           return nLruHead;
         }
 
         done:
-        *(uint32_t*)(nNext + 0x18) = 0;
+        nNext->pPrev = 0;
         *pNextPtr = 0;
-        *(uint32_t*)(nLruHead + 0x18) = 0;
+        nLruHead->pPrev = 0;
         return nLruHead;
       }
     }
 
-    return 0;
+    return nullptr;
 }
 
 void SPRITECACHE_RemoveFromLRU(int32_t nParam1, int32_t nParam2) {
@@ -17641,11 +17630,11 @@ void __stdcall SPRITECACHE_CancelPendingLoads() {
     }
 }
 
-int32_t __stdcall SPRITECACHE_Query(int32_t nParam1, int32_t nParam2, D2GfxMemoryStrc * pGfxMemory) {
+D2SpriteCacheEntryStrc * __stdcall SPRITECACHE_Query(int32_t nParam1, int32_t nParam2, D2GfxMemoryStrc * pGfxMemory) {
     D2SpriteCacheEntryStrc* nNextNode;
     D2SpriteCacheEntryStrc* nEntry = 0;
     EnterCriticalSection(&pGfxMemory->lpCriticalSection);
-    if (pGfxMemory->nCounter != 0x1400 && (void*)(pGfxMemory->nUsedMemory + nParam1) <= pGfxMemory->pMaxMemory) {
+    if (pGfxMemory->nCounter != 0x1400 && pGfxMemory->nUsedMemory + nParam1 <= pGfxMemory->pMaxMemory) {
       nEntry = pGfxMemory->pFreeHead;
       if (!nEntry) {
         nEntry = 0;
@@ -17675,7 +17664,7 @@ int32_t __stdcall SPRITECACHE_Query(int32_t nParam1, int32_t nParam2, D2GfxMemor
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pGfxMemory->lpCriticalSection);
-    return (int32_t)nEntry;
+    return nEntry;
 }
 
 // @sourcefile .\SRC\SpriteCache.cpp
@@ -17715,7 +17704,7 @@ D2SpriteCacheEntryStrc * __fastcall SPRITECACHE_EvictEntry(D2GfxMemoryStrc * pGf
           }
         }
 
-        pCandidate = (D2SpriteCacheEntryStrc*)SPRITECACHE_AddToLRU((uint32_t)pDVar1, (int32_t)pGfxMemory, bPreferOld);
+        pCandidate = SPRITECACHE_AddToLRU((uint32_t)pDVar1, pGfxMemory, bPreferOld);
       }
       if (pCandidate && !(pCandidate->dwFlags & 2)) {
         release_entry:
@@ -17780,7 +17769,7 @@ void __fastcall SPRITECACHE_AllocateMemory(void * pCache, int32_t nParam2) {
 }
 
 void __fastcall SPRITECACHE_FreeMemory(D2GfxMemoryStrc * pGfxMemory, void * pParam, int32_t nFreedSize, uint32_t bEvictPriority) {
-    void* pvVar1;
+    uint32_t uVar1;
     CRITICAL_SECTION* lpCriticalSection = &pGfxMemory->lpCriticalSection;
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(lpCriticalSection);
     int nSize = *(int*)((int)pParam + 4);
@@ -17789,9 +17778,9 @@ void __fastcall SPRITECACHE_FreeMemory(D2GfxMemoryStrc * pGfxMemory, void * pPar
     nSize = nFreedSize + nSize;
     *(int*)((int)pParam + 4) = nSize;
     pGfxMemory->nUsedMemory += nSize;
-    pvVar1 = (void*)pGfxMemory->nUsedMemory;
+    uVar1 = pGfxMemory->nUsedMemory;
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
-    while (pGfxMemory->pMaxMemory < pvVar1) {
+    while (pGfxMemory->pMaxMemory < uVar1) {
       D2SpriteCacheEntryStrc* pUsedMemory;
       pUsedMemory = SPRITECACHE_EvictEntry(pGfxMemory, nullptr, bEvictPriority);
       if (!pUsedMemory) {
@@ -17803,7 +17792,7 @@ void __fastcall SPRITECACHE_FreeMemory(D2GfxMemoryStrc * pGfxMemory, void * pPar
       }
 
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(lpCriticalSection);
-      pvVar1 = (void*)pGfxMemory->nUsedMemory;
+      uVar1 = pGfxMemory->nUsedMemory;
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
     }
 
@@ -18066,17 +18055,16 @@ void __fastcall SPRITECACHE_ReleaseMemory(D2GfxMemoryStrc * pGfxMemory) {
 
 // @sourcefile .\SRC\SpriteCache.cpp
 void * * __fastcall SPRITECACHE_AllocEntry2(D2GfxMemoryStrc * pGfxMemory, void * pParam, void * pInitData, int32_t bPriority) {
+    void* nAddress;
     DWORD dwTickCount;
-    D2SpriteCacheEntryStrc* pEvicted;
-    void* pAllocBlock;
-    uint32_t dwPriorityTick;
-    if (pGfxMemory->pMaxMemory <= pParam) {
+    if ((void*)pGfxMemory->pMaxMemory <= pParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x941);
       exit(-1);
     }
 
     uint32_t dwOldestTick = 0;
     if (bPriority) {
+      uint32_t dwPriorityTick;
       if (pGfxMemory->pLruHead) {
         dwOldestTick = pGfxMemory->pLruHead->dwLastAccess;
       }
@@ -18088,22 +18076,22 @@ void * * __fastcall SPRITECACHE_AllocEntry2(D2GfxMemoryStrc * pGfxMemory, void *
       }
     }
 
-    void** ppAllocSlot = (void**)SPRITECACHE_Query((int32_t)pParam, bPriority, pGfxMemory);
+    D2SpriteCacheEntryStrc* pEvicted = SPRITECACHE_Query((int32_t)pParam, bPriority, pGfxMemory);
     while (true) {
-      if (ppAllocSlot) {
+      if (pEvicted) {
         if (!bPriority) {
-          ppAllocSlot[3] = (void*)((uint32_t)ppAllocSlot[3] & -2);
+          pEvicted->dwFlags &= -2;
         } else {
-          ppAllocSlot[3] = (void*)((uint32_t)ppAllocSlot[3] | 1);
+          pEvicted->dwFlags |= 1;
         }
 
-        pAllocBlock = D2_ALLOC_POOL(pGfxMemory->pMemory, (size_t)pParam);
-        *ppAllocSlot = pAllocBlock;
-        ppAllocSlot[1] = pParam;
-        ppAllocSlot[2] = pInitData;
+        nAddress = D2_ALLOC_POOL(pGfxMemory->pMemory, (size_t)pParam);
+        pEvicted->pData = nAddress;
+        pEvicted->nSize = (uint32_t)pParam;
+        pEvicted->pOwner = pInitData;
         pGfxMemory->nTotalAllocs++;
         pGfxMemory->nAllocations++;
-        return ppAllocSlot;
+        return &pEvicted->pData;
       }
       if (bPriority) {
         dwTickCount = GetTickCount();
@@ -18117,7 +18105,7 @@ void * * __fastcall SPRITECACHE_AllocEntry2(D2GfxMemoryStrc * pGfxMemory, void *
         break;
       }
 
-      ppAllocSlot = (void**)SPRITECACHE_Query((int32_t)pParam, bPriority, pGfxMemory);
+      pEvicted = SPRITECACHE_Query((int32_t)pParam, bPriority, pGfxMemory);
     }
 
     return nullptr;
@@ -18126,7 +18114,7 @@ void * * __fastcall SPRITECACHE_AllocEntry2(D2GfxMemoryStrc * pGfxMemory, void *
 // Initialises the sprite/CEL data cache. All four parameters are stack scalars, none a pointer: dwCacheBytes (0x800000) and dwUnitCacheBytes (0x7d000) are byte counts, the latter forwarded as a size to 00609020. dwAvailMemOverride, when 0, makes the function query system memory and apply SUB EAX,0xb00000 / CMP EAX,0x4000000. Typed as pointers, the 0x800000 byte count was emitted as a pointer into whatever object happened to contain that address.
 void __stdcall GFX_InitCelDataCache(uint32_t nFlags, uint32_t dwCacheBytes, uint32_t dwUnitCacheBytes, uint32_t dwAvailMemOverride) {
     // Static local variables (originally global data)
-    static uint32_t gnCelDataCacheInitFlag = 0x1000;
+    static uint32_t gnCelDataCacheInitFlag = 0x1000; D2_STATIC_GUARD(gnCelDataCacheInitFlag, "D2CMP::SRC::SpriteCache::GFX_InitCelDataCache::gnCelDataCacheInitFlag");
 
     CelCmp::GFX_InitGlobalCriticalSection();
     if (!dwAvailMemOverride) {
@@ -18323,7 +18311,7 @@ void __stdcall SPRITECACHE_LoadSpriteWithConversion(D2CelFileCacheEntryStrc * pC
 
 int __stdcall SPRITECACHE_GetOrLoadSprite(D2GfxDataStrc * pGfxData, int32_t bCheckOnly, int32_t nParam2) {
     // Static local variables (originally global data)
-    static uint32_t gbSpriteCachePaletteReloadNeeded;
+    static uint32_t gbSpriteCachePaletteReloadNeeded; D2_STATIC_GUARD_BSS(gbSpriteCachePaletteReloadNeeded, "D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite::gbSpriteCachePaletteReloadNeeded");
 
     DC6Block* pDC6BlockResult;
     uint32_t nPaletteShift;
@@ -18444,10 +18432,10 @@ int __stdcall SPRITECACHE_GetOrLoadSprite(D2GfxDataStrc * pGfxData, int32_t bChe
 
 // Server sprite precache sync. GuardStack tail confirms BOOL return: GuardStack(1) on two early-out success paths, GuardStack(nLoadResult) on the cache-and-load path, GuardStack(0) on failure.
 BOOL __stdcall SPRITECACHE_PrecacheSpriteSync(D2GfxDataStrc * pGfxData) {
-    int32_t nErrAddr;
     DC6Block* nDC6BlockResult;
+    int32_t iVar1;
     uint32_t nPaletteShift;
-    uint32_t uVar1;
+    uint32_t uVar2;
     BOOL nLoadResult;
     uint32_t nDirections;
     int nFrames;
@@ -18470,9 +18458,9 @@ BOOL __stdcall SPRITECACHE_PrecacheSpriteSync(D2GfxDataStrc * pGfxData) {
     if (pCodecHeader) {
       nFrames = 0;
       nDirections = 0;
-      nErrAddr = GfxHash::GFXHASH_FindEntryByGfxData(gaGfxHashTable, pGfxData, &nFrames, &nDirections, pCodecHeader);
-      if (nErrAddr) {
-        if (*(uint8_t*)(*(int*)(nErrAddr + 0x20) + 0x20) & 1) {
+      iVar1 = GfxHash::GFXHASH_FindEntryByGfxData(gaGfxHashTable, pGfxData, &nFrames, &nDirections, pCodecHeader);
+      if (iVar1) {
+        if (*(uint8_t*)(*(int*)(iVar1 + 0x20) + 0x20) & 1) {
           pGfxData->dwRenderFlags |= 4;
         }
 
@@ -18482,14 +18470,14 @@ BOOL __stdcall SPRITECACHE_PrecacheSpriteSync(D2GfxDataStrc * pGfxData) {
       if (1 < nDirections && nFrames && !(pCodecHeader->dwCacheFlags & 1)) {
         nPaletteShift = CelCmp::CELCMP_GetPaletteShiftValue(pGfxData->nDirection * pCodecHeader->nDirections >> 6, pCodecHeader->nDirections, nDirections, pGfxData->dwFlags & 4);
         if (pCodecHeader->nDirections < 2) {
-          uVar1 = 1;
+          uVar2 = 1;
         } else {
-          uVar1 = (nPaletteShift << 6) / pCodecHeader->nDirections;
+          uVar2 = (nPaletteShift << 6) / pCodecHeader->nDirections;
         }
 
-        pGfxData->nDirection = uVar1;
-        nErrAddr = GfxHash::GFXHASH_FindEntryByGfxData(gaGfxHashTable, pGfxData, &nFrames, &nDirections, pCodecHeader);
-        if (!nErrAddr) {
+        pGfxData->nDirection = uVar2;
+        iVar1 = GfxHash::GFXHASH_FindEntryByGfxData(gaGfxHashTable, pGfxData, &nFrames, &nDirections, pCodecHeader);
+        if (!iVar1) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7ab);
           exit(-1);
         }

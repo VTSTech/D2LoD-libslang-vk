@@ -4,6 +4,7 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/D2Client.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxInfoStrc.h"
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/Engine/GfxUtil.h"
@@ -39,7 +40,6 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinPalette.h"
@@ -123,22 +123,23 @@ void __stdcall GFX_RemoveOverlayFromUnit(D2UnitStrc * pUnit, int * pOverlay) {
 }
 
 BOOL __fastcall GFX_HasOverlayOfType(D2UnitStrc * pUnit, int32_t nOverlayType) {
+    void* nAddress;
     D2GfxInfoStrc* pGfxInfo = UNIT::CUnit::GetGfxInfo(pUnit);
     if (!pGfxInfo) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ea);
       exit(-1);
     }
 
-    void* pCur = pGfxInfo->pOverlayList;
+    nAddress = pGfxInfo->pOverlayList;
     while (true) {
-      if (!pCur) {
+      if (!nAddress) {
         return 0;
       }
-      if (*(int*)((int)pCur + 4) == nOverlayType) {
+      if (*(int*)((int)nAddress + 4) == nOverlayType) {
         break;
       }
 
-      pCur = *(void**)((int)pCur + 0xa4);
+      nAddress = *(void**)((int)nAddress + 0xa4);
     }
 
     return 1;
@@ -259,10 +260,11 @@ void __fastcall GFX_DrawOverlayOnUnit(D2UnitStrc * pUnit, int32_t nOverlayId, in
 
 void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t bSecondPass, int32_t nScreenX, int32_t nScreenY, int32_t bRaiseY) {
     uint8_t byDirection;
-    int32_t nTmpX;
     int32_t nOffset;
     BOOL BVar1;
     D2OverlayTxt* pOverlayTxt;
+    bool bShow;
+    int32_t iVar2;
     D2GfxDataStrc sGfxData;
     int32_t nDrawX;
     int nDrawY;
@@ -288,13 +290,13 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
     if (!pCur) {
       return;
     }
-    if (!bPerspective || pUnit && pUnit->eUnitType == UNIT_ITEM && (nTmpX = D2Common::Units::GetAnimOrSeqMode(pUnit) , nTmpX != 3)) {
-      nTmpX = D2Common::Units::GetTargetX(pUnit);
+    if (!bPerspective || pUnit && pUnit->eUnitType == UNIT_ITEM && (iVar2 = D2Common::Units::GetAnimOrSeqMode(pUnit) , iVar2 != 3)) {
+      iVar2 = D2Common::Units::GetTargetX(pUnit);
       nOffset = UI::Path::DRAW_GetWorldOffsetX();
-      nDrawX = nTmpX - nOffset;
-      nTmpX = D2Common::Units::GetTargetY(pUnit);
+      nDrawX = iVar2 - nOffset;
+      iVar2 = D2Common::Units::GetTargetY(pUnit);
       nOffset = UI::Path::DRAW_GetWorldOffsetY();
-      nDrawY = nTmpX - nOffset;
+      nDrawY = iVar2 - nOffset;
       if (pUnit && pUnit->eUnitType == UNIT_ITEM && nScreenX != -1 && nScreenY != -1) {
         nDrawX = nScreenX;
         nDrawY = nScreenY;
@@ -303,9 +305,9 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
       pAdjustY = &nScreenY;
       pAdjustX = &nScreenX;
       nTmpZ = 0;
-      nTmpX = D2Common::Units::GetPrecisionY(pUnit);
+      iVar2 = D2Common::Units::GetPrecisionY(pUnit);
       nOffset = D2Common::Units::GetPrecisionX(pUnit);
-      D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nOffset, nTmpX, nTmpZ, pAdjustX, pAdjustY);
+      D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nOffset, iVar2, nTmpZ, pAdjustX, pAdjustY);
       bPerspective = UI::Path::DRAW_GetTypeOfBorder();
       if (bPerspective == 1) {
         nScreenX -= (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
@@ -321,7 +323,7 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
     }
 
     draw_overlays:
-    nTmpX = Particle::PARTICLE_GetX(pUnit);
+    iVar2 = Particle::PARTICLE_GetX(pUnit);
     nOffset = Particle::PARTICLE_GetY(pUnit);
     nTmpZ = Particle::PARTICLE_GetScreenZ(pUnit);
     nDrawY = nDrawY + nOffset + nTmpZ;
@@ -330,7 +332,6 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
     }
 
     do {
-      bool bShow;
       bShow = true;
       if ((!pCur[0xd] || (bShow = bSecondPass != 0 , !pCur[0xd])) && bSecondPass) {
         bShow = false;
@@ -364,7 +365,7 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
             }
           }
 
-          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pCur[8] + nDrawX + nTmpX, pCur[9] + nDrawY, nBlendMode, (DRAWMODE)(uint8_t)pOverlayTxt->Trans, nullptr);
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pCur[8] + nDrawX + iVar2, pCur[9] + nDrawY, nBlendMode, (DRAWMODE)(uint8_t)pOverlayTxt->Trans, nullptr);
         }
       }
 
@@ -380,20 +381,20 @@ void __stdcall DRAW_UNIT_States_HaltTail(int nLine) {
     exit(-1);
 }
 
-int32_t __fastcall GFX_GetGfxInfoCofData(D2UnitStrc * pUnit, int32_t pAnimMode) {
+uint8_t * __fastcall GFX_GetGfxInfoCofData(D2UnitStrc * pUnit, int32_t pAnimMode) {
     D2GfxInfoUnkStrc* pCur;
     D2GfxInfoStrc* pGfxInfo = UNIT::CUnit::GetGfxInfo(pUnit);
     if (!pGfxInfo) {
-      return 0;
+      return nullptr;
     }
 
     for (pCur = pGfxInfo->pGfxInfoUnk; pCur; pCur = pCur->pNext) {
       if (pCur->nAnimMode == pAnimMode) {
-        return pCur->pCofDataArray[5];
+        return (uint8_t*)pCur->pCofDataArray[5];
       }
     }
 
-    return 0;
+    return nullptr;
 }
 
 D2GfxInfoUnkStrc * __fastcall GFX_FindGfxInfoByModeAndWeapon(D2UnitStrc * pUnit, int32_t nWeaponParam, int nAnimMode) {
@@ -460,14 +461,14 @@ BOOL GFX_FreeGfxInfoEntry(D2UnitStrc * pUnit, D2GfxInfoUnkStrc * pGfxInfoUnk) {
 }
 
 BOOL __stdcall GFX_FindOrEvictGfxInfoEntry(int32_t nWeaponParam, D2GfxInfoUnkStrc * * ppGfxInfoUnk, int * pnOutCofData, D2UnitStrc * pUnit, int nAnimMode) {
-    int32_t nLine;
+    BOOL bFreed;
     D2GfxInfoUnkStrc* pCur;
     D2GfxInfoStrc* pGfxInfo = UNIT::CUnit::GetGfxInfo(pUnit);
     if (!pGfxInfo) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3f0);
       exit(-1);
     } else {
-      BOOL bFreed;
+      uint8_t* pbVar1;
       if (nAnimMode == -1) {
         nAnimMode = Source::ClientEngine::CLIENT_GetEffectiveAnimMode(pUnit);
       }
@@ -490,8 +491,8 @@ BOOL __stdcall GFX_FindOrEvictGfxInfoEntry(int32_t nWeaponParam, D2GfxInfoUnkStr
       }
 
       *ppGfxInfoUnk = 0;
-      nLine = GFX_GetGfxInfoCofData(pUnit, nAnimMode);
-      *pnOutCofData = nLine;
+      pbVar1 = GFX_GetGfxInfoCofData(pUnit, nAnimMode);
+      *pnOutCofData = (int)pbVar1;
       bFreed = GFX_FreeGfxInfoEntry(pUnit, (D2GfxInfoUnkStrc*)pCur->pCofDataArray);
       if (bFreed) {
         return 1;
@@ -507,7 +508,6 @@ int __stdcall GFX_LoadCompositCof(int * pnOutCofData, uint32_t nAnimMode, D2Unit
     BOOL BVar1;
     D2InventoryStrc* pInventory;
     D2GfxInfoUnkStrc* pNewEntry;
-    int32_t nResult;
     eD2UnitType eUnitType;
     int* pCofData;
     D2CofCacheStrc* pTextureCache;
@@ -582,8 +582,8 @@ int __stdcall GFX_LoadCompositCof(int * pnOutCofData, uint32_t nAnimMode, D2Unit
       nAnimModeCopy = nAnimMode;
     }
 
-    nResult = GFX_GetGfxInfoCofData(pUnit, nAnimModeCopy);
-    return nResult;
+    uint8_t* pbVar2 = GFX_GetGfxInfoCofData(pUnit, nAnimModeCopy);
+    return (int)pbVar2;
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
@@ -810,16 +810,15 @@ void __fastcall GFX_FreeNonBaseGfxInfoEntries(D2UnitStrc * pUnit) {
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
-uint32_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
+uint8_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static uint8_t gbHealthBarColorGreen;
-    static uint8_t gbHealthBarColorYellow;
-    static uint8_t gbHealthBarColorRed;
-    static uint8_t gbHealthBarColorBlue;
-    static BOOL BOOL_007a8924;
+    static uint8_t gbHealthBarColorGreen; D2_STATIC_GUARD_BSS(gbHealthBarColorGreen, "D2Client::Engine::GfxInfo::GFX_GetUnitHealthBarColor::gbHealthBarColorGreen");
+    static uint8_t gbHealthBarColorYellow; D2_STATIC_GUARD_BSS(gbHealthBarColorYellow, "D2Client::Engine::GfxInfo::GFX_GetUnitHealthBarColor::gbHealthBarColorYellow");
+    static uint8_t gbHealthBarColorRed; D2_STATIC_GUARD_BSS(gbHealthBarColorRed, "D2Client::Engine::GfxInfo::GFX_GetUnitHealthBarColor::gbHealthBarColorRed");
+    static uint8_t gbHealthBarColorBlue; D2_STATIC_GUARD_BSS(gbHealthBarColorBlue, "D2Client::Engine::GfxInfo::GFX_GetUnitHealthBarColor::gbHealthBarColorBlue");
+    static BOOL BOOL_007a8924; D2_STATIC_GUARD_BSS(BOOL_007a8924, "D2Client::Engine::GfxInfo::GFX_GetUnitHealthBarColor::BOOL_007a8924");
 
     int32_t nColorIndex;
-    uint32_t nColorResult;
     D2MonStatsTxt* pMonStats;
     int nClassId;
     if (!BOOL_007a8924) {
@@ -844,9 +843,8 @@ uint32_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
 
     int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
     D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, &eUnitType, &nClassId, &nAnimMode, ".\\ENGINE\\Gfx.cpp", 0x991);
-    uint32_t dwColor = nColorResult;
     if (eUnitType != UNIT_MONSTER) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(dwColor >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorGreen);
+      return gbHealthBarColorGreen;
     }
     if (nClassId < 0 || sgptDataTable->nTxtMonStatsSize <= nClassId) {
       pMonStats = 0;
@@ -854,28 +852,24 @@ uint32_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
       pMonStats = sgptDataTable->pTxtMonStats + nClassId;
     }
     if (pMonStats->interact) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pMonStats >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorBlue);
+      return gbHealthBarColorBlue;
     }
 
     nColorIndex = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
-    dwColor = 0;
     if (!nColorIndex) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(dwColor >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorGreen);
+      return gbHealthBarColorGreen;
     }
 
     int nHpPercent = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
     nHpPercent = nHpPercent * 100 / nColorIndex;
-    uint32_t uVar1 = (uint32_t)((uint32_t)nHpPercent >> 8) & 0xffffffu;
     if (nHpPercent < 0x21) {
-      return (uint32_t)((uint32_t)((uint32_t)uVar1 & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorRed);
+      return gbHealthBarColorRed;
     }
-
-    dwColor = (uint32_t)((uint32_t)((uint32_t)uVar1 & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorYellow);
     if (nHpPercent >= 0x42) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(dwColor >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gbHealthBarColorGreen);
+      return gbHealthBarColorGreen;
     }
 
-    return dwColor;
+    return gbHealthBarColorYellow;
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp

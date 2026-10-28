@@ -18,9 +18,9 @@
 #include "D2Game/GAME/Clients.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/SCmd.h"
+#include "D2Game/GAME/Server.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/PLAYER/Player.h"
-#include "D2Game/PLAYER/PlayerMsg.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/UNIT/Party.h"
 #include "D2Game/UNIT/PlayerList.h"
@@ -30,10 +30,12 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Debug.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Objects/ObjectsRgn.h"
+#include "D2Game/PLAYER/PlayerMsg.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -506,7 +508,7 @@ eD2ServerIncomingStatus __fastcall PlayerScreen_DispatchAction(::SGAMEDATA * pGa
     (pfnPartyScreenAction)&D2Game::PLAYER::PlayerScreen::PARTYSCREEN_SetMutualPlayerRelationship,
     &D2Game::PLAYER::PlayerScreen::PARTYSCREEN_AcceptPartyInvite,
     (pfnPartyScreenAction)&D2Game::PLAYER::PlayerScreen::CallPlayerEventForEachPlayer
-};
+}; D2_STATIC_GUARD(g_PlayerScreenActionTable, "D2Game::PLAYER::PlayerScreen::PlayerScreen_DispatchAction::g_PlayerScreenActionTable");
 
     int nError = 0;
     D2UnitStrc* pActingUnit = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, dwTargetUnitId);

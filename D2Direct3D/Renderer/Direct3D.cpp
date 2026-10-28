@@ -4,6 +4,7 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/LRUCache.h"
 #include "D2CMP/SRC/SpriteCache.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
 #include "D2Client/Engine/Gfx.h"
@@ -32,6 +33,7 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/_unnamespaced.h"
+#include "support/d2_boot.h"
 #include "globals/globals.h"
 #include "Bnclient/BNGatewayAccess.h"
 #include "Fog/Debug.h"
@@ -77,22 +79,23 @@ typedef HRESULT (__stdcall *D3DVB_Lock)(void * This, DWORD dwFlags, void * * lpl
 
 namespace D2Direct3D::Renderer {
 
-static uint8_t gpD3DGroundTileVertexBuffer;
+// [vanilla-plus fix 24, ported onto ad964f3] Real ground-tile index arrays. The
+// Ghidra export split the retail index buffer into three under-extent phantom
+// statics (a 1-byte gpD3DGroundTileVertexBuffer the draw read 130 bytes of index
+// words from, a 2-byte gaD3DGroundTileIndexBuffer the prefill overran by 129
+// bytes, and gdwRendererMode = WORDs [0,5]). Prefill filled one label, the draw
+// read another -> DrawIndexedPrimitiveVB consumed garbage indices -> black
+// ground (D3D fullscreen only). Ported: ad964f3 re-typed the phantoms but kept
+// them under-extent.
+static WORD g_aD3DGroundTileStripIndices[65];               // 5 strip bands x 13 words
+static WORD g_aD3DGroundTileFanIndices[4] = {0, 5, 35, 28}; // low-quality fan: [0,5] verbatim from the retail dword 0x00050000; [35,28] = the two remaining updated vertices (v0,v5,v35,v28) in diamond-perimeter fan order
 
 // Not a CRT/unit function: its ONLY xref is the
 // PUSH at 006b4aff feeding IDirect3DDevice3::EnumTextureFormats in Direct3DCallBack, so it is the
 // D3DEnumPixelFormatsCallback. Parameter 1 is an LPDDPIXELFORMAT; parameter 2 is the device-caps flag word, and the 0x200 bit
 // it sets is the one Direct3DCallBack tests for "Supports 1555 textures".
 HRESULT __stdcall D3D_EnumTextureFormatsCallback(void * lpDDPixFmt, DWORD * pnDeviceFlags) {
-    // Static local variables (originally global data)
-    static uint32_t gdwUnitSfxStartLightDefault = 0x41;
-    static uint32_t gdwUnitSfxFlagDefault = 0x10;
-    static uint32_t gnUnitSfxModeDefault = 0x7c00;
-    static uint32_t gpUnitSfxDataDefault = 0x3e0;
-    static uint32_t gdwUnitSfxTicksDefault = 0x1f;
-    static uint32_t gdwUnitSfxAsyncTicksDefault = 0x8000;
-
-    if (!(pnDeviceFlags && *(int*)((int)lpDDPixFmt + 4) == gdwUnitSfxStartLightDefault && *(int*)((int)lpDDPixFmt + 0xc) == gdwUnitSfxFlagDefault && *(int*)((int)lpDDPixFmt + 0x10) == gnUnitSfxModeDefault && *(int*)((int)lpDDPixFmt + 0x14) == gpUnitSfxDataDefault && *(int*)((int)lpDDPixFmt + 0x18) == gdwUnitSfxTicksDefault && *(int*)((int)lpDDPixFmt + 0x1c) == gdwUnitSfxAsyncTicksDefault)) {
+    if (!(pnDeviceFlags && *(uint32_t*)((int)lpDDPixFmt + 4) == gsD3DTextureDescTemplate[1] && *(uint32_t*)((int)lpDDPixFmt + 0xc) == gsD3DTextureDescTemplate[3] && *(uint32_t*)((int)lpDDPixFmt + 0x10) == gsD3DTextureDescTemplate[4] && *(uint32_t*)((int)lpDDPixFmt + 0x14) == gsD3DTextureDescTemplate[5] && *(uint32_t*)((int)lpDDPixFmt + 0x18) == gsD3DTextureDescTemplate[6] && *(uint32_t*)((int)lpDDPixFmt + 0x1c) == gsD3DTextureDescTemplate[7])) {
       return 1;
     }
 
@@ -103,9 +106,9 @@ HRESULT __stdcall D3D_EnumTextureFormatsCallback(void * lpDDPixFmt, DWORD * pnDe
 void ClearCaches() {
     d3dFloorCache::D3DFLOOR_Free(&gD3DFloorTextureCache, 0);
     d3dSubtileCache::D3DSUBTILE_Free(&gD3DSubtileTextureCache, 0);
-    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache, 0);
-    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache + 1, 0);
-    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache + 2, 0);
+    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache.aCaches, 0);
+    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache.aCaches + 1, 0);
+    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache.aCaches + 2, 0);
 }
 
 uint32_t __fastcall PALETTE_GetColorByIndex(int nParam) {
@@ -635,11 +638,11 @@ void __stdcall RENDERER_D3D_AllocateTextureCaches() {
       }
     }
     if (!g_bPerspectiveMode) {
-      gnTextureMemoryUsageBytes = 0;
-      gnGlideSubtileCacheMemBytes = 0;
+      gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = 0;
+      gnTextureMemoryUsageBytes.nGlideSubtileCacheMemBytes = 0;
       nSmackerBase = RENDERER_D3D_CreateSmackerSurfaces(0);
-      nGenericNodeBytes = RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache, nSmackerBase, (uSmallCacheAlloc - nSmackerBase) * 0x46 / 100 + nSmackerBase, 0x100, 0x100);
-      nGenericCacheEnd = gD3DGenericTextureCache[0].nMaxNodes * g_nBytesPerPixel;
+      nGenericNodeBytes = RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache.aCaches, nSmackerBase, (uSmallCacheAlloc - nSmackerBase) * 0x46 / 100 + nSmackerBase, 0x100, 0x100);
+      nGenericCacheEnd = gD3DGenericTextureCache.aCaches[0].nMaxNodes * g_nBytesPerPixel;
       uSubtileCacheAlloc = (uint32_t)((uint64_t)((uSmallCacheAlloc - nSmackerBase) * 0x50) * 0x51eb851f >> 0x20);
     } else {
       uint32_t uVideoMemBudget;
@@ -663,20 +666,20 @@ void __stdcall RENDERER_D3D_AllocateTextureCaches() {
       }
 
       nGenericNodeBytes = RENDERER_D3D_InitializeFontSystem(0);
-      gnTextureMemoryUsageBytes = uSubtileCacheAlloc;
+      gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = uSubtileCacheAlloc;
       nSmackerBase = d3dFloorCache::D3DFLOOR_Initialize(&gD3DFloorTextureCache, nGenericNodeBytes, uSubtileCacheAlloc + nGenericNodeBytes, nSmackerBase * 2);
-      gnGlideSubtileCacheMemBytes = uVideoMemBudget;
+      gnTextureMemoryUsageBytes.nGlideSubtileCacheMemBytes = uVideoMemBudget;
       nSmackerBase = d3dSubtileCache::D3DSUBTILE_Initialize(&gD3DSubtileTextureCache, nSmackerBase, uVideoMemBudget + nSmackerBase, 0x800);
-      nGenericNodeBytes = RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache, nSmackerBase, (uSmallCacheAlloc - nSmackerBase) * 0x14 / 100 + nSmackerBase, 0x100, 0x100);
-      nGenericCacheEnd = gD3DGenericTextureCache[0].nMaxNodes * g_nBytesPerPixel;
+      nGenericNodeBytes = RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache.aCaches, nSmackerBase, (uSmallCacheAlloc - nSmackerBase) * 0x14 / 100 + nSmackerBase, 0x100, 0x100);
+      nGenericCacheEnd = gD3DGenericTextureCache.aCaches[0].nMaxNodes * g_nBytesPerPixel;
       uSubtileCacheAlloc = (uint32_t)((uint64_t)((uSmallCacheAlloc - nSmackerBase) * 0x4b) * 0x51eb851f >> 0x20);
     }
 
-    gnGlideSmallTextureCacheMemBytes = nGenericCacheEnd * 0x10000;
-    nSmackerBase = RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache + 1, nGenericNodeBytes, (uSubtileCacheAlloc >> 5) + nSmackerBase, 0x80, 0x80);
-    gnGlideMediumTextureCacheMemBytes = gD3DGenericTextureCache[1].nMaxNodes * g_nBytesPerPixel * 0x4000;
-    RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache + 2, nSmackerBase, uSmallCacheAlloc, 0x20, 0x20);
-    gnGlideLargeTextureCacheMemBytes = gD3DGenericTextureCache[2].nMaxNodes * g_nBytesPerPixel * 0x400;
+    gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = nGenericCacheEnd * 0x10000;
+    nSmackerBase = RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache.aCaches + 1, nGenericNodeBytes, (uSubtileCacheAlloc >> 5) + nSmackerBase, 0x80, 0x80);
+    gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gD3DGenericTextureCache.aCaches[1].nMaxNodes * g_nBytesPerPixel * 0x4000;
+    RENDERER_D3D_InitializeTextureCachePool(gD3DGenericTextureCache.aCaches + 2, nSmackerBase, uSmallCacheAlloc, 0x20, 0x20);
+    gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gD3DGenericTextureCache.aCaches[2].nMaxNodes * g_nBytesPerPixel * 0x400;
     RENDERER_D3D_InitializeTexturePools();
     D2CMP::SRC::CelCmp::GFX_SetSpriteCacheMaxSize((size_t)(uintptr_t)d3dFloorCache::D3D_InvalidateTileCachesForEntry);
 }
@@ -690,15 +693,15 @@ void __stdcall RENDERER_D3D_FreeTextureCaches() {
       d3dSubtileCache::D3DSUBTILE_Free(&gD3DSubtileTextureCache, 1);
     }
 
-    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache, 1);
-    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache + 1, 1);
-    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache + 2, 1);
+    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache.aCaches, 1);
+    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache.aCaches + 1, 1);
+    d3dTextureCache::D3DTEXCACHE_Free(gD3DGenericTextureCache.aCaches + 2, 1);
     RENDERER_D3D_ReleaseTexturePools();
 }
 
 void __stdcall RENDERER_D3D_ReleaseDevice() {
     // Static local variables (originally global data)
-    static IDirectDrawSurface7 * g_pD3DSurfacePrimary;
+    static IDirectDrawSurface7 * g_pD3DSurfacePrimary; D2_STATIC_GUARD_BSS(g_pD3DSurfacePrimary, "D2Direct3D::Renderer::RENDERER_D3D_ReleaseDevice::g_pD3DSurfacePrimary");
 
     if (!g_bDeviceInitialized) {
       return;
@@ -904,7 +907,7 @@ int32_t __fastcall RENDERER_D3D_CreateSystemMemoryTexture(IDirectDrawSurface7 * 
     memset(&ddSurfaceDesc.dwFlags, 0, 0x78);
     ddSurfaceDesc.dwFlags = 0x1007;
     ddSurfaceDesc.dwCaps = 0x840;
-    DWORD* pSrcTemplate = (DWORD*)&gsD3DTextureDescTemplate;
+    uint32_t* pSrcTemplate = gsD3DTextureDescTemplate;
     DWORD* pDstPixelFormat = ddSurfaceDesc.ddpfPixelFormat;
     for (nCopyCount = 8; nCopyCount; nCopyCount--) {
       *pDstPixelFormat = *pSrcTemplate;
@@ -1169,25 +1172,22 @@ void __fastcall RENDERER_DIRECT3D_ErrorLog(char * szText, DWORD dwParam) {
 
 HRESULT __stdcall RENDERER_D3D_EnumDisplayModeCallback(int * pDisplayModeDesc, int pModeList) {
     // Static local variables (originally global data)
-    static uint32_t gnD3DEnumDisplayModeCacheWidth = 0x280;
-    static uint32_t gnD3DEnumDisplayModeCacheHeight = 0x320;
-    static uint32_t gnD3DEnumDisplayModeCacheFormat = 0x1e0;
-    static uint32_t gnD3DEnumDisplayModeCacheRefreshRate = 0x258;
+    static uint32_t gnD3DEnumDisplayModeCacheWidth = 0x280; D2_STATIC_GUARD(gnD3DEnumDisplayModeCacheWidth, "D2Direct3D::Renderer::RENDERER_D3D_EnumDisplayModeCallback::gnD3DEnumDisplayModeCacheWidth");
+    static uint32_t gnD3DEnumDisplayModeCacheHeight = 0x320; D2_STATIC_GUARD(gnD3DEnumDisplayModeCacheHeight, "D2Direct3D::Renderer::RENDERER_D3D_EnumDisplayModeCallback::gnD3DEnumDisplayModeCacheHeight");
+    static uint32_t gnD3DEnumDisplayModeCacheFormat = 0x1e0; D2_STATIC_GUARD(gnD3DEnumDisplayModeCacheFormat, "D2Direct3D::Renderer::RENDERER_D3D_EnumDisplayModeCallback::gnD3DEnumDisplayModeCacheFormat");
+    static uint32_t gnD3DEnumDisplayModeCacheRefreshRate = 0x258; D2_STATIC_GUARD(gnD3DEnumDisplayModeCacheRefreshRate, "D2Direct3D::Renderer::RENDERER_D3D_EnumDisplayModeCallback::gnD3DEnumDisplayModeCacheRefreshRate");
 
-    // Frame slots -32..-4 are ONE object: &ddscaps2Caps is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -16..-4 are ONE object: &pTestSurface is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
-      uint32_t ddscaps2Caps;
-      uint32_t ddscaps2Caps2;
-      uint32_t ddscaps2Caps3;
-      uint32_t ddscaps2VidMemBytes;
       IDirectDrawSurface7* pTestSurface;
       IDirectDrawSurface7* pEnumBackbuffer;
       IDirect3DDevice* pTestDevice;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 28, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     DDSURFACEDESC2 nDDSurfDescSize;
+    DDSCAPS2 ddscaps2Caps;
     uint32_t* pModeEntry;
     uint32_t uModeFlags;
     uModeFlags = 0;
@@ -1264,11 +1264,11 @@ HRESULT __stdcall RENDERER_D3D_EnumDisplayModeCallback(int * pDisplayModeDesc, i
             goto release_test_objects;
           }
 
-          __frame0.ddscaps2Caps2 = 0;
-          __frame0.ddscaps2Caps3 = 0;
-          __frame0.ddscaps2VidMemBytes = 0;
-          __frame0.ddscaps2Caps = 4;
-          nDDCallResult = __frame0.pTestSurface->lpVtbl->GetAttachedSurface(__frame0.pTestSurface, &__frame0.ddscaps2Caps, (void**)&__frame0.pEnumBackbuffer);
+          ddscaps2Caps.dwCaps2 = 0;
+          ddscaps2Caps.dwCaps3 = 0;
+          ddscaps2Caps.dwCaps4 = 0;
+          ddscaps2Caps.dwCaps = 4;
+          nDDCallResult = __frame0.pTestSurface->lpVtbl->GetAttachedSurface(__frame0.pTestSurface, &ddscaps2Caps, (void**)&__frame0.pEnumBackbuffer);
           if (nDDCallResult) {
             DIRECTD3D_LogError("GetAttachedSurface (mode enumeration) failed!", nDDCallResult);
             goto release_test_objects;
@@ -1313,34 +1313,12 @@ HRESULT __stdcall RENDERER_D3D_EnumDisplayModeCallback(int * pDisplayModeDesc, i
 
 BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char * lpDriverName, void * lpContext) {
     // Static local variables (originally global data)
-    static int gnD3DBytesPerPixelDevice1;
-    static int gnD3DBytesPerPixelDevice0;
+    static int gnD3DBytesPerPixelDevice1; D2_STATIC_GUARD_BSS(gnD3DBytesPerPixelDevice1, "D2Direct3D::Renderer::Direct3DCallBack::gnD3DBytesPerPixelDevice1");
+    static int gnD3DBytesPerPixelDevice0; D2_STATIC_GUARD_BSS(gnD3DBytesPerPixelDevice0, "D2Direct3D::Renderer::Direct3DCallBack::gnD3DBytesPerPixelDevice0");
 
-    // Frame -824..-448 is ONE object: a call writes 376 literal bytes starting at &byDDCaps3DFlags.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      uint8_t byDDCaps3DFlags;
-      uint8_t __pad1[3];
-      uint32_t dwDDCaps2Flags;
-      uint8_t __pad8[48];
-      int32_t nVideoMemTotal;
-      uint32_t dwVideoMemFree;
-      uint8_t __pad64[312];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 376, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    // Frame slots -72..-12 are ONE object: &dwGetSurfCaps is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -36..-12 are ONE object: &pPrimarySurface is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame1_t {
-      uint32_t dwGetSurfCaps;
-      uint32_t dwGetSurfCaps2;
-      uint32_t dwGetSurfCaps3;
-      uint32_t dwGetSurfVidMem;
-      int nUIDisplayModeError;
-      uint32_t dwMemCapsFlags;
-      uint32_t dwMemCaps2;
-      uint32_t dwMemCaps3;
-      uint32_t dwMemCapsVolume;
+    struct __frame0_t {
       IDirectDrawSurface7* pPrimarySurface;
       IDirectDrawSurface7* pBackBufferSurface;
       IDirectDraw1* pDirectDraw1;
@@ -1348,18 +1326,21 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
       uint8_t* local_14;
       void* pPrevExceptionRecord;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 60, "frame group __frame1_t must reproduce the Ghidra frame layout");
-    __frame1_t __frame1;
-    uint16_t uVar1;
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 24, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    __frame0_t __frame0;
+    bool bVar1;
+    uint16_t uVar2;
     HRESULT hDeviceIdResult;
     int nDisplayModeIndex;
     char* pszErrorMsg;
     char* szDeviceNameDst;
     DDDEVICEIDENTIFIER2 sDeviceIdentifier;
     D3DDEVICEDESC sD3DHelDevDesc;
+    DDCAPS_DX7 nDDCapsSize;
     D3DDEVICEDESC sD3DHalDevDesc;
     DDSURFACEDESC2 nSurfDescSize;
-    bool bSupports24BitCutscene;
+    DDSCAPS2 dwGetSurfCaps;
+    DDSCAPS2 dwMemCapsFlags;
     bool bSupports32BitCutscene;
     bool bSupportsGameDisplayMode;
     bool bSupportsUIDisplayMode;
@@ -1373,24 +1354,23 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
     nExceptionState = -1;
     pfnEHHandlerRoutine pfnSehHandler;
     pfnSehHandler = D2Client::Renderer::SehHandler_6ca520;
-    __frame1.pPrevExceptionRecord = ExceptionList;
-    __frame1.pDirectDraw1 = 0;
-    uint32_t nDDCapsSize;
-    nDDCapsSize = 0x17c;
-    ExceptionList = &__frame1.pPrevExceptionRecord;
-    memset(&__frame0.byDDCaps3DFlags, 0, 0x178);
-    __frame1.pPrimarySurface = 0;
-    __frame1.pBackBufferSurface = 0;
-    __frame1.pEnumDevice = 0;
+    __frame0.pPrevExceptionRecord = ExceptionList;
+    __frame0.pDirectDraw1 = 0;
+    nDDCapsSize.dwSize = 0x17c;
+    ExceptionList = &__frame0.pPrevExceptionRecord;
+    memset(&nDDCapsSize.dwCaps, 0, 0x178);
+    __frame0.pPrimarySurface = 0;
+    __frame0.pBackBufferSurface = 0;
+    __frame0.pEnumDevice = 0;
     g_pDirectDraw7 = 0;
     g_pDirect3D7 = 0;
     nExceptionState = 0;
     Fog::Source::SFile::SFILE_GetGlobalPointer();
-    uint32_t uVar2;
-    uVar2 = gnDirect3DDeviceCount;
+    uint32_t uVar3;
+    uVar3 = gnDirect3DDeviceCount;
     if (1 < (int)gnDirect3DDeviceCount) {
       Fog::Src::LogManager::LOGFILE_WriteStringToFile("***** Exceeded Maximum Display Count (%d >= %d)", gnDirect3DDeviceCount, 2);
-      ExceptionList = __frame1.pPrevExceptionRecord;
+      ExceptionList = __frame0.pPrevExceptionRecord;
       return 0;
     }
 
@@ -1403,32 +1383,32 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
       pDeviceBlock->dwFlags |= 1;
     } else {
       pDeviceBlock->dwFlags &= -2;
-      gD3DDeviceBlock0[uVar2].guid.Data1 = lpGUID->Data1;
-      uVar1 = lpGUID->Data3;
-      gD3DDeviceBlock0[uVar2].guid.Data2 = lpGUID->Data2;
-      gD3DDeviceBlock0[uVar2].guid.Data3 = uVar1;
-      *(uint32_t*)gD3DDeviceBlock0[uVar2].guid.Data4 = *(uint32_t*)lpGUID->Data4;
-      *(uint32_t*)(gD3DDeviceBlock0[uVar2].guid.Data4 + 4) = *(uint32_t*)(lpGUID->Data4 + 4);
+      gD3DDeviceBlock0[uVar3].guid.Data1 = lpGUID->Data1;
+      uVar2 = lpGUID->Data3;
+      gD3DDeviceBlock0[uVar3].guid.Data2 = lpGUID->Data2;
+      gD3DDeviceBlock0[uVar3].guid.Data3 = uVar2;
+      *(uint32_t*)gD3DDeviceBlock0[uVar3].guid.Data4 = *(uint32_t*)lpGUID->Data4;
+      *(uint32_t*)(gD3DDeviceBlock0[uVar3].guid.Data4 + 4) = *(uint32_t*)(lpGUID->Data4 + 4);
     }
 
     DWORD hResult;
-    hResult = DirectDrawCreate(lpGUID, &__frame1.pDirectDraw1, nullptr);
+    hResult = DirectDrawCreate(lpGUID, &__frame0.pDirectDraw1, nullptr);
     if (!hResult) {
-      hResult = __frame1.pDirectDraw1->lpVtbl->QueryInterface((IDirectDraw*)__frame1.pDirectDraw1, (IID*)&IID_IDirectDraw7, (LPVOID*)&g_pDirectDraw7);
+      hResult = __frame0.pDirectDraw1->lpVtbl->QueryInterface((IDirectDraw*)__frame0.pDirectDraw1, (IID*)&IID_IDirectDraw7, (LPVOID*)&g_pDirectDraw7);
       if (!hResult) {
-        __frame1.pDirectDraw1->lpVtbl->Release((IDirectDraw*)__frame1.pDirectDraw1);
-        __frame1.pDirectDraw1 = 0;
+        __frame0.pDirectDraw1->lpVtbl->Release((IDirectDraw*)__frame0.pDirectDraw1);
+        __frame0.pDirectDraw1 = 0;
         hDeviceIdResult = g_pDirectDraw7->lpVtbl->GetDeviceIdentifier(g_pDirectDraw7, &sDeviceIdentifier, 0);
         if (!hDeviceIdResult) {
           lpDriverName = sDeviceIdentifier.szDescription;
         }
 
-        strncpy(gD3DDeviceBlock0[uVar2].szName, lpDriverName, 0x100);
+        strncpy(gD3DDeviceBlock0[uVar3].szName, lpDriverName, 0x100);
         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\tChecking capabilities of %s...");
         bSupportsUIDisplayMode = false;
         if (!hDeviceIdResult) {
-          gD3DDeviceBlock0[uVar2].dwVendorId = sDeviceIdentifier.dwVendorId;
-          gD3DDeviceBlock0[uVar2].dwDeviceId = sDeviceIdentifier.dwDeviceId;
+          gD3DDeviceBlock0[uVar3].dwVendorId = sDeviceIdentifier.dwVendorId;
+          gD3DDeviceBlock0[uVar3].dwDeviceId = sDeviceIdentifier.dwDeviceId;
           Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tVendorID = 0x%08x, DeviceID = 0x%08x", sDeviceIdentifier.dwVendorId);
         }
 
@@ -1438,16 +1418,15 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
           if (!hResult) {
             hResult = g_pDirectDraw7->lpVtbl->EnumDisplayModes(g_pDirectDraw7, 0, nullptr, pDeviceBlock, (void*)RENDERER_D3D_EnumDisplayModeCallback);
             if (!hResult) {
-              if (!gD3DDeviceBlock0[uVar2].nModeCount) {
+              if (!gD3DDeviceBlock0[uVar3].nModeCount) {
                 Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tCouldn\'t find any valid display modes.");
                 goto ReleaseD3DInterfacesCleanup;
               }
 
               bSupports32BitCutscene = false;
-              bSupports24BitCutscene = false;
+              bVar1 = false;
               bSupportsGameDisplayMode = false;
-              __frame1.nUIDisplayModeError = 0;
-              for (nDisplayModeIndex = 0; nDisplayModeIndex < gD3DDeviceBlock0[uVar2].nModeCount; nDisplayModeIndex++) {
+              for (nDisplayModeIndex = 0; nDisplayModeIndex < gD3DDeviceBlock0[uVar3].nModeCount; nDisplayModeIndex++) {
                 dwModeCapFlags = *(uint32_t*)(nDeviceNameOffset + (int)((char*)&gD3DDeviceBlock0 + 316) + nDisplayModeIndex * 0x14);
                 if (dwModeCapFlags & 4) {
                   bSupports32BitCutscene = true;
@@ -1456,7 +1435,7 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                   bSupportsUIDisplayMode = true;
                 }
                 if (dwModeCapFlags & 1) {
-                  bSupports24BitCutscene = true;
+                  bVar1 = true;
                 }
                 if (dwModeCapFlags & 2) {
                   bSupportsGameDisplayMode = true;
@@ -1471,61 +1450,58 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                 Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tSupports 24 bit cutscenes.");
                 pDeviceBlock->dwFlags |= 0x100;
               }
-
-              nDisplayModeIndex = __frame1.nUIDisplayModeError;
-              if (!bSupports24BitCutscene) {
+              if (!bVar1) {
                 Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tCouldn\'t find valid display mode for user interface screens.");
-                nDisplayModeIndex = 1;
               }
               if (!bSupportsGameDisplayMode) {
                 Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tCouldn\'t find valid display mode for game screens.");
                 goto ReleaseD3DInterfacesCleanup;
               }
-              if (nDisplayModeIndex) {
+              if (!bVar1) {
                 goto ReleaseD3DInterfacesCleanup;
               }
 
-              nDisplayModeIndex = nDeviceNameOffset + 0x9707e8 + gD3DDeviceBlock0[uVar2].nModeCount * 0x14;
-              hResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(g_pDirectDraw7, *(DWORD*)(nDisplayModeIndex + 8), *(DWORD*)(nDisplayModeIndex + 0xc), *(DWORD*)(nDisplayModeIndex + 4), *(DWORD*)(nDeviceNameOffset + (int)((char*)&gD3DDeviceBlock0 + 312) + gD3DDeviceBlock0[uVar2].nModeCount * 0x14), 0);
+              nDisplayModeIndex = nDeviceNameOffset + (intptr_t)&gD3DDeviceBlock0[0].dwTextureMemFree + gD3DDeviceBlock0[uVar3].nModeCount * 0x14;
+              hResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(g_pDirectDraw7, *(DWORD*)(nDisplayModeIndex + 8), *(DWORD*)(nDisplayModeIndex + 0xc), *(DWORD*)(nDisplayModeIndex + 4), *(DWORD*)(nDeviceNameOffset + (int)((char*)&gD3DDeviceBlock0 + 312) + gD3DDeviceBlock0[uVar3].nModeCount * 0x14), 0);
               if (!hResult) {
                 nSurfDescSize.dwSize = 0x7c;
                 memset(&nSurfDescSize.dwFlags, 0, 0x78);
                 nSurfDescSize.dwFlags = 0x21;
                 nSurfDescSize.dwCaps = 0x6218;
                 nSurfDescSize.dwBackBufferCount = 1;
-                hResult = g_pDirectDraw7->lpVtbl->CreateSurface(g_pDirectDraw7, &nSurfDescSize, (void**)&__frame1.pPrimarySurface, nullptr);
+                hResult = g_pDirectDraw7->lpVtbl->CreateSurface(g_pDirectDraw7, &nSurfDescSize, (void**)&__frame0.pPrimarySurface, nullptr);
                 if (!hResult) {
-                  __frame1.dwGetSurfCaps2 = 0;
-                  __frame1.dwGetSurfCaps3 = 0;
-                  __frame1.dwGetSurfVidMem = 0;
-                  __frame1.dwGetSurfCaps = 4;
-                  hResult = __frame1.pPrimarySurface->lpVtbl->GetAttachedSurface(__frame1.pPrimarySurface, &__frame1.dwGetSurfCaps, (void**)&__frame1.pBackBufferSurface);
+                  dwGetSurfCaps.dwCaps2 = 0;
+                  dwGetSurfCaps.dwCaps3 = 0;
+                  dwGetSurfCaps.dwCaps4 = 0;
+                  dwGetSurfCaps.dwCaps = 4;
+                  hResult = __frame0.pPrimarySurface->lpVtbl->GetAttachedSurface(__frame0.pPrimarySurface, &dwGetSurfCaps, (void**)&__frame0.pBackBufferSurface);
                   if (!hResult) {
                     hResult = g_pDirectDraw7->lpVtbl->GetCaps(g_pDirectDraw7, &nDDCapsSize, nullptr);
                     if (!hResult) {
-                      if (!(__frame0.byDDCaps3DFlags & 1)) {
+                      if (!((uint8_t)nDDCapsSize.dwCaps & 1)) {
                         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tDoesn\'t appear to support 3D.");
                         goto ReleaseD3DInterfacesCleanup;
                       }
-                      if (!(__frame0.dwDDCaps2Flags & 0x20000)) {
+                      if (!(nDDCapsSize.dwCaps2 & 0x20000)) {
                         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tDoesn\'t support gamma control.");
                       } else {
                         pDeviceBlock->dwFlags |= 0x10;
                       }
-                      if (__frame0.dwDDCaps2Flags & 0x100000) {
+                      if (nDDCapsSize.dwCaps2 & 0x100000) {
                         pDeviceBlock->dwFlags |= 0x20;
                         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tSupports gamma calibration.");
                       }
 
-                      g_pDirect3D7->lpVtbl->CreateDevice(g_pDirect3D7, &IID_IDirect3DHALDevice, __frame1.pBackBufferSurface, &__frame1.pEnumDevice, nullptr);
-                      if (!__frame1.pEnumDevice) {
+                      g_pDirect3D7->lpVtbl->CreateDevice(g_pDirect3D7, &IID_IDirect3DHALDevice, __frame0.pBackBufferSurface, &__frame0.pEnumDevice, nullptr);
+                      if (!__frame0.pEnumDevice) {
                         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tDoesn\'t appear to have hardware 3D support");
                         goto ReleaseD3DInterfacesCleanup;
                       }
 
                       sD3DHalDevDesc.dwSize = 0xfc;
                       sD3DHelDevDesc.dwSize = 0xfc;
-                      hResult = __frame1.pEnumDevice->lpVtbl->GetCaps(__frame1.pEnumDevice, &sD3DHalDevDesc, &sD3DHelDevDesc);
+                      hResult = __frame0.pEnumDevice->lpVtbl->GetCaps(__frame0.pEnumDevice, &sD3DHalDevDesc, &sD3DHelDevDesc);
                       if (hResult) {
                         RENDERER_DIRECT3D_ErrorLog("Failed to get D3D device caps", hResult);
                         goto ReleaseD3DInterfacesCleanup;
@@ -1555,26 +1531,26 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                         pDeviceBlock->dwFlags |= 8;
                       }
 
-                      fFreeBytes = (float)(int)__frame0.dwVideoMemFree;
-                      gD3DDeviceBlock0[uVar2].nVideoMemTotal = __frame0.nVideoMemTotal;
-                      gD3DDeviceBlock0[uVar2].dwVideoMemFree = __frame0.dwVideoMemFree;
-                      if ((int)__frame0.dwVideoMemFree < 0) {
+                      fFreeBytes = (float)(int)nDDCapsSize.dwVidMemFree;
+                      gD3DDeviceBlock0[uVar3].nVideoMemTotal = nDDCapsSize.dwVidMemTotal;
+                      gD3DDeviceBlock0[uVar3].dwVideoMemFree = nDDCapsSize.dwVidMemFree;
+                      if ((int)nDDCapsSize.dwVidMemFree < 0) {
                         fFreeBytes += 4.2949673e+09;
                       }
 
-                      fTotalBytes = (float)__frame0.nVideoMemTotal;
-                      if (__frame0.nVideoMemTotal < 0) {
+                      fTotalBytes = (float)(int)nDDCapsSize.dwVidMemTotal;
+                      if ((int)nDDCapsSize.dwVidMemTotal < 0) {
                         fTotalBytes += 4.2949673e+09;
                       }
 
                       Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tVideo Memory Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.536743e-07), (double)(fFreeBytes * 9.536743e-07));
-                      pdwTotalMemOut = &gD3DDeviceBlock0[uVar2].dwTextureMemFree;
-                      __frame1.dwMemCaps2 = 0;
-                      __frame1.dwMemCaps3 = 0;
-                      __frame1.dwMemCapsVolume = 0;
-                      ppMemInterface = &gD3DDeviceBlock0[uVar2].dwTextureMemTotal;
-                      __frame1.dwMemCapsFlags = 0x5000;
-                      hResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &__frame1.dwMemCapsFlags, (DWORD*)ppMemInterface, (DWORD*)pdwTotalMemOut);
+                      pdwTotalMemOut = &gD3DDeviceBlock0[uVar3].dwTextureMemFree;
+                      dwMemCapsFlags.dwCaps2 = 0;
+                      dwMemCapsFlags.dwCaps3 = 0;
+                      dwMemCapsFlags.dwCaps4 = 0;
+                      ppMemInterface = &gD3DDeviceBlock0[uVar3].dwTextureMemTotal;
+                      dwMemCapsFlags.dwCaps = 0x5000;
+                      hResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &dwMemCapsFlags, (DWORD*)ppMemInterface, (DWORD*)pdwTotalMemOut);
                       if (!hResult) {
                         fFreeBytes = (float)(int)*pdwTotalMemOut;
                         if ((int)*pdwTotalMemOut < 0) {
@@ -1587,13 +1563,13 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                         }
 
                         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tTexture Memory Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.536743e-07), (double)(fFreeBytes * 9.536743e-07));
-                        pdwTotalMemOut = &gD3DDeviceBlock0[uVar2].dwLocalMemFree;
-                        __frame1.dwMemCaps2 = 0;
-                        __frame1.dwMemCaps3 = 0;
-                        __frame1.dwMemCapsVolume = 0;
-                        ppMemInterface = &gD3DDeviceBlock0[uVar2].dwLocalMemTotal;
-                        __frame1.dwMemCapsFlags = 0x10005000;
-                        hResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &__frame1.dwMemCapsFlags, (DWORD*)ppMemInterface, (DWORD*)pdwTotalMemOut);
+                        pdwTotalMemOut = &gD3DDeviceBlock0[uVar3].dwLocalMemFree;
+                        dwMemCapsFlags.dwCaps2 = 0;
+                        dwMemCapsFlags.dwCaps3 = 0;
+                        dwMemCapsFlags.dwCaps4 = 0;
+                        ppMemInterface = &gD3DDeviceBlock0[uVar3].dwLocalMemTotal;
+                        dwMemCapsFlags.dwCaps = 0x10005000;
+                        hResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &dwMemCapsFlags, (DWORD*)ppMemInterface, (DWORD*)pdwTotalMemOut);
                         if (!hResult) {
                           fFreeBytes = (float)(int)*pdwTotalMemOut;
                           if ((int)*pdwTotalMemOut < 0) {
@@ -1606,17 +1582,17 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                           }
 
                           Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\t\tLocal Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.536743e-07), (double)(fFreeBytes * 9.536743e-07));
-                          if (!(__frame0.dwDDCaps2Flags & 0x200) || !(sD3DHalDevDesc.dwDevCaps & 0x1000)) {
+                          if (!(nDDCapsSize.dwCaps2 & 0x200) || !(sD3DHalDevDesc.dwDevCaps & 0x1000)) {
                             Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\t\tDoes not support texturing from AGP memory.");
                           } else {
                             pDeviceBlock->dwFlags |= 2;
-                            pdwTotalMemOut = &gD3DDeviceBlock0[uVar2].dwAgpMemFree;
-                            __frame1.dwMemCaps2 = 0;
-                            __frame1.dwMemCaps3 = 0;
-                            __frame1.dwMemCapsVolume = 0;
-                            ppMemInterface = &gD3DDeviceBlock0[uVar2].dwAgpMemTotal;
-                            __frame1.dwMemCapsFlags = 0x20005000;
-                            hResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &__frame1.dwMemCapsFlags, (DWORD*)ppMemInterface, (DWORD*)pdwTotalMemOut);
+                            pdwTotalMemOut = &gD3DDeviceBlock0[uVar3].dwAgpMemFree;
+                            dwMemCapsFlags.dwCaps2 = 0;
+                            dwMemCapsFlags.dwCaps3 = 0;
+                            dwMemCapsFlags.dwCaps4 = 0;
+                            ppMemInterface = &gD3DDeviceBlock0[uVar3].dwAgpMemTotal;
+                            dwMemCapsFlags.dwCaps = 0x20005000;
+                            hResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &dwMemCapsFlags, (DWORD*)ppMemInterface, (DWORD*)pdwTotalMemOut);
                             if (!hResult) {
                               fFreeBytes = (float)(int)*pdwTotalMemOut;
                               if ((int)*pdwTotalMemOut < 0) {
@@ -1634,7 +1610,7 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                             }
                           }
 
-                          hResult = __frame1.pEnumDevice->lpVtbl->EnumTextureFormats(__frame1.pEnumDevice, D3D_EnumTextureFormatsCallback, (DWORD*)&pDeviceBlock->dwFlags);
+                          hResult = __frame0.pEnumDevice->lpVtbl->EnumTextureFormats(__frame0.pEnumDevice, D3D_EnumTextureFormatsCallback, (DWORD*)&pDeviceBlock->dwFlags);
                           if (!hResult) {
                             if (!(pDeviceBlock->dwFlags & 0x200)) {
                               Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tDoes not support any of the necessary texture formats!");
@@ -1642,14 +1618,14 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                               Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tSupports 1555 textures.");
                               if (!gnDirect3DDeviceCount) {
                                 gdwD3DDeviceFlags[2].dwFlags = pDeviceBlock->dwFlags;
-                                gdwD3DDeviceFlags[2].guid.Data1 = gD3DDeviceBlock0[uVar2].guid.Data1;
-                                gdwD3DDeviceFlags[2].guid.Data2 = gD3DDeviceBlock0[uVar2].guid.Data2;
-                                gdwD3DDeviceFlags[2].guid.Data3 = gD3DDeviceBlock0[uVar2].guid.Data3;
-                                *(uint32_t*)((char*)&gdwD3DDeviceFlags[2].guid.Data4 + 4) = *(uint32_t*)(gD3DDeviceBlock0[uVar2].guid.Data4 + 4);
-                                *(uint32_t*)(char*)&gdwD3DDeviceFlags[2].guid.Data4 = *(uint32_t*)gD3DDeviceBlock0[uVar2].guid.Data4;
-                                gdwD3DDeviceFlags[2].dwDeviceId = gD3DDeviceBlock0[uVar2].dwDeviceId;
-                                gdwD3DDeviceFlags[2].dwVendorId = gD3DDeviceBlock0[uVar2].dwVendorId;
-                                szDeviceNameDst = gD3DDeviceBlock0[uVar2].szName;
+                                gdwD3DDeviceFlags[2].guid.Data1 = gD3DDeviceBlock0[uVar3].guid.Data1;
+                                gdwD3DDeviceFlags[2].guid.Data2 = gD3DDeviceBlock0[uVar3].guid.Data2;
+                                gdwD3DDeviceFlags[2].guid.Data3 = gD3DDeviceBlock0[uVar3].guid.Data3;
+                                *(uint32_t*)((char*)&gdwD3DDeviceFlags[2].guid.Data4 + 4) = *(uint32_t*)(gD3DDeviceBlock0[uVar3].guid.Data4 + 4);
+                                *(uint32_t*)(char*)&gdwD3DDeviceFlags[2].guid.Data4 = *(uint32_t*)gD3DDeviceBlock0[uVar3].guid.Data4;
+                                gdwD3DDeviceFlags[2].dwDeviceId = gD3DDeviceBlock0[uVar3].dwDeviceId;
+                                gdwD3DDeviceFlags[2].dwVendorId = gD3DDeviceBlock0[uVar3].dwVendorId;
+                                szDeviceNameDst = gD3DDeviceBlock0[uVar3].szName;
                                 pszErrorMsg = gdwD3DDeviceFlags[2].szName;
                                 do {
                                   cNameChar = *szDeviceNameDst;
@@ -1662,14 +1638,14 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                                 gnD3DBytesPerPixelDevice0 = 2;
                               } else if (gnDirect3DDeviceCount == 1) {
                                 gdwD3DDeviceFlags[3].dwFlags = pDeviceBlock->dwFlags;
-                                gdwD3DDeviceFlags[3].guid.Data1 = gD3DDeviceBlock0[uVar2].guid.Data1;
-                                gdwD3DDeviceFlags[3].guid.Data2 = gD3DDeviceBlock0[uVar2].guid.Data2;
-                                gdwD3DDeviceFlags[3].guid.Data3 = gD3DDeviceBlock0[uVar2].guid.Data3;
-                                *(uint32_t*)(char*)&gdwD3DDeviceFlags[3].guid.Data4 = *(uint32_t*)gD3DDeviceBlock0[uVar2].guid.Data4;
-                                *(uint32_t*)((char*)&gdwD3DDeviceFlags[3].guid.Data4 + 4) = *(uint32_t*)(gD3DDeviceBlock0[uVar2].guid.Data4 + 4);
-                                gdwD3DDeviceFlags[3].dwVendorId = gD3DDeviceBlock0[uVar2].dwVendorId;
-                                gdwD3DDeviceFlags[3].dwDeviceId = gD3DDeviceBlock0[uVar2].dwDeviceId;
-                                szDeviceNameDst = gD3DDeviceBlock0[uVar2].szName;
+                                gdwD3DDeviceFlags[3].guid.Data1 = gD3DDeviceBlock0[uVar3].guid.Data1;
+                                gdwD3DDeviceFlags[3].guid.Data2 = gD3DDeviceBlock0[uVar3].guid.Data2;
+                                gdwD3DDeviceFlags[3].guid.Data3 = gD3DDeviceBlock0[uVar3].guid.Data3;
+                                *(uint32_t*)(char*)&gdwD3DDeviceFlags[3].guid.Data4 = *(uint32_t*)gD3DDeviceBlock0[uVar3].guid.Data4;
+                                *(uint32_t*)((char*)&gdwD3DDeviceFlags[3].guid.Data4 + 4) = *(uint32_t*)(gD3DDeviceBlock0[uVar3].guid.Data4 + 4);
+                                gdwD3DDeviceFlags[3].dwVendorId = gD3DDeviceBlock0[uVar3].dwVendorId;
+                                gdwD3DDeviceFlags[3].dwDeviceId = gD3DDeviceBlock0[uVar3].dwDeviceId;
+                                szDeviceNameDst = gD3DDeviceBlock0[uVar3].szName;
                                 pszErrorMsg = gdwD3DDeviceFlags[3].szName;
                                 do {
                                   cNameChar = *szDeviceNameDst;
@@ -1728,16 +1704,16 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
     ReleaseD3DInterfacesCleanup:
     /* Cleanup: releases the device/interface objects; reached from 12 failure jumps
                          and the catch-all continuation. */ nExceptionState = 2;
-    if (__frame1.pEnumDevice) {
-      __frame1.pEnumDevice->lpVtbl->Release(__frame1.pEnumDevice);
-      __frame1.pEnumDevice = 0;
+    if (__frame0.pEnumDevice) {
+      __frame0.pEnumDevice->lpVtbl->Release(__frame0.pEnumDevice);
+      __frame0.pEnumDevice = 0;
     }
-    if (__frame1.pBackBufferSurface) {
-      __frame1.pBackBufferSurface = 0;
+    if (__frame0.pBackBufferSurface) {
+      __frame0.pBackBufferSurface = 0;
     }
-    if (__frame1.pPrimarySurface) {
-      __frame1.pPrimarySurface->lpVtbl->Release(__frame1.pPrimarySurface);
-      __frame1.pPrimarySurface = 0;
+    if (__frame0.pPrimarySurface) {
+      __frame0.pPrimarySurface->lpVtbl->Release(__frame0.pPrimarySurface);
+      __frame0.pPrimarySurface = 0;
     }
     if (g_pDirect3D7) {
       g_pDirect3D7->lpVtbl->Release(g_pDirect3D7);
@@ -1748,7 +1724,7 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
       g_pDirectDraw7 = 0;
     }
 
-    ExceptionList = __frame1.pPrevExceptionRecord;
+    ExceptionList = __frame0.pPrevExceptionRecord;
     return 1;
 }
 
@@ -1842,13 +1818,278 @@ void * __stdcall Catch_All_006b4d4b() {
 
 BOOL __fastcall Initialize(HINSTANCE hInstance) {
     // Static local variables (originally global data)
-    static uint8_t gD3DAdapterInfoBuffer;
-    static unsigned int gpD3DDevice8;
-    static unsigned int gnD3DAdapterIndex;
+    static uint8_t gD3DAdapterInfoBuffer[264] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+}; D2_STATIC_GUARD(gD3DAdapterInfoBuffer, "D2Direct3D::Renderer::Initialize::gD3DAdapterInfoBuffer");
+    static unsigned int gpD3DDevice8; D2_STATIC_GUARD_BSS(gpD3DDevice8, "D2Direct3D::Renderer::Initialize::gpD3DDevice8");
+    static unsigned int gnD3DAdapterIndex; D2_STATIC_GUARD_BSS(gnD3DAdapterIndex, "D2Direct3D::Renderer::Initialize::gnD3DAdapterIndex");
 
-    int32_t nDeviceNameLoaded;
     int iVar1;
-    char szRegPathHead[4];
+    int32_t iVar2;
+    char szRegPath[22];
     uint32_t* pnGuidSize;
     uint32_t pSFileGlobal = Fog::Source::SFile::SFILE_GetGlobalPointer();
     if (!pSFileGlobal) {
@@ -1859,7 +2100,7 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
       return 0;
     }
 
-    memcpy(szRegPathHead, "Diab", 4);
+    memcpy(szRegPath, "Diablo II\\VideoConfig", 0x16);
     if (gnD3DAdapterIndex && !gpD3DDevice8) {
       BootDirect3d(hInstance);
       gpD3DDevice8 = 1;
@@ -1867,17 +2108,17 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
 
     gnD3DAdapterIndex = 1;
     do {
-      nDeviceNameLoaded = Storm::Source::SReg::SRegLoadString(szRegPathHead, "DeviceName", 0, (LPSTR)&gD3DAdapterInfoBuffer, 0x100);
-      if (nDeviceNameLoaded) {
-        iVar1 = Storm::Source::SReg::SRegLoadValue(szRegPathHead, "dwFlags", 0, (int32_t*)&gnD3DTextureCapFlags);
+      iVar2 = Storm::Source::SReg::SRegLoadString(szRegPath, "DeviceName", 0, (LPSTR)gD3DAdapterInfoBuffer, 0x100);
+      if (iVar2) {
+        iVar1 = Storm::Source::SReg::SRegLoadValue(szRegPath, "dwFlags", 0, (int32_t*)&gnD3DTextureCapFlags);
         if (iVar1) {
           if (gnD3DTextureCapFlags & 1) {
             return 1;
           }
 
           pnGuidSize = (uint32_t*)0x10;
-          nDeviceNameLoaded = Storm::Source::SReg::SRegLoadData((uint32_t*)szRegPathHead, "GUID", 0, &gsD3DAdapterGuid, 0x10, &pnGuidSize);
-          if (!nDeviceNameLoaded) {
+          iVar2 = Storm::Source::SReg::SRegLoadData((uint32_t*)szRegPath, "GUID", 0, (LPBYTE)&gsD3DAdapterGuid, 0x10, &pnGuidSize);
+          if (!iVar2) {
             return 0;
           }
           if (pnGuidSize == (uint32_t*)0x10) {
@@ -1900,25 +2141,289 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
 
 BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWnd) {
     // Static local variables (originally global data)
-    static uint8_t gszRendererD3DDeviceInitializationCode = 0x3e;
-    static unsigned int gdwD3DTextureAvailableMemory;
-    static int bD3DDeviceInitialized;
-    static unsigned int gdwD3DLocalTextureAvailableMemory;
-    static unsigned int gdwD3DAgpTextureAvailableMemory;
+    static uint8_t gszRendererD3DDeviceInitializationCode[272] = {
+    0x3e,
+    0x1c,
+    0xc1,
+    0x69,
+    0x6b,
+    0xb4,
+    0xd1,
+    0x11,
+    0xad,
+    0x7a,
+    0x0,
+    0xc0,
+    0x4f,
+    0xc2,
+    0x9b,
+    0x4e,
+    0xe0,
+    0xe,
+    0x9f,
+    0x4b,
+    0x7e,
+    0xd,
+    0xd0,
+    0x11,
+    0x9b,
+    0x6,
+    0x0,
+    0xa0,
+    0xc9,
+    0x3,
+    0xa3,
+    0xb8,
+    0x85,
+    0xdb,
+    0x14,
+    0x6c,
+    0x33,
+    0xa7,
+    0xce,
+    0x11,
+    0xa5,
+    0x21,
+    0x0,
+    0x20,
+    0xaf,
+    0xb,
+    0xe5,
+    0x60,
+    0x84,
+    0xdb,
+    0x14,
+    0x6c,
+    0x33,
+    0xa7,
+    0xce,
+    0x11,
+    0xa5,
+    0x21,
+    0x0,
+    0x20,
+    0xaf,
+    0xb,
+    0xe5,
+    0x60,
+    0x7e,
+    0x47,
+    0x3c,
+    0xc0,
+    0x19,
+    0x65,
+    0xd1,
+    0x11,
+    0x8c,
+    0x52,
+    0x0,
+    0xc0,
+    0x4f,
+    0xd9,
+    0x30,
+    0xc5,
+    0x1e,
+    0x1f,
+    0x19,
+    0x51,
+    0x2b,
+    0x4f,
+    0xd1,
+    0x11,
+    0x8c,
+    0xc3,
+    0x0,
+    0xa0,
+    0xc9,
+    0x6,
+    0x29,
+    0xa8,
+    0xfc,
+    0x7f,
+    0xc,
+    0x73,
+    0x47,
+    0x53,
+    0xd1,
+    0x11,
+    0x8c,
+    0x4d,
+    0x0,
+    0xc0,
+    0x4f,
+    0xd9,
+    0x30,
+    0xc5,
+    0x46,
+    0xbc,
+    0x43,
+    0xe0,
+    0x17,
+    0x53,
+    0xd1,
+    0x11,
+    0x8c,
+    0x4d,
+    0x0,
+    0xc0,
+    0x4f,
+    0xd9,
+    0x30,
+    0xc5,
+    0x88,
+    0xc4,
+    0xb2,
+    0x89,
+    0xf4,
+    0x4a,
+    0xd1,
+    0x11,
+    0x8c,
+    0x4c,
+    0x0,
+    0xc0,
+    0x4f,
+    0xd9,
+    0x30,
+    0xc5,
+    0x90,
+    0x47,
+    0xdc,
+    0xb9,
+    0xf1,
+    0x4a,
+    0xd1,
+    0x11,
+    0x8c,
+    0x4c,
+    0x0,
+    0xc0,
+    0x4f,
+    0xd9,
+    0x30,
+    0xc5,
+    0x96,
+    0x8e,
+    0xab,
+    0x1b,
+    0xfe,
+    0x9c,
+    0xe3,
+    0x4c,
+    0xbc,
+    0x72,
+    0xd7,
+    0xe9,
+    0xe9,
+    0x9a,
+    0x21,
+    0x75,
+    0x80,
+    0x5a,
+    0x67,
+    0x6,
+    0x9b,
+    0x3b,
+    0xd2,
+    0x11,
+    0xb9,
+    0x2f,
+    0x0,
+    0x60,
+    0x97,
+    0x97,
+    0xea,
+    0x5b,
+    0x30,
+    0x86,
+    0x2b,
+    0xb,
+    0x35,
+    0xad,
+    0xd0,
+    0x11,
+    0x8e,
+    0xa6,
+    0x0,
+    0x60,
+    0x97,
+    0x97,
+    0xea,
+    0x5b,
+    0x0,
+    0x4e,
+    0x4,
+    0xda,
+    0xb2,
+    0x69,
+    0xd0,
+    0x11,
+    0xa1,
+    0xd5,
+    0x0,
+    0xaa,
+    0x0,
+    0xb8,
+    0xdf,
+    0xbb,
+    0x85,
+    0x58,
+    0x80,
+    0x57,
+    0xec,
+    0x6e,
+    0xcf,
+    0x11,
+    0x94,
+    0x41,
+    0xa8,
+    0x23,
+    0x3,
+    0xc1,
+    0xe,
+    0x27,
+    0x81,
+    0xdb,
+    0x14,
+    0x6c,
+    0x33,
+    0xa7,
+    0xce,
+    0x11,
+    0xa5,
+    0x21,
+    0x0,
+    0x20,
+    0xaf,
+    0xb,
+    0xe5,
+    0x60,
+    0xc0,
+    0x5e,
+    0xe6,
+    0x15,
+    0x9c,
+    0x3b,
+    0xd2,
+    0x11,
+    0xb9,
+    0x2f,
+    0x0,
+    0x60,
+    0x97,
+    0x97,
+    0xea,
+    0x5b
+}; D2_STATIC_GUARD(gszRendererD3DDeviceInitializationCode, "D2Direct3D::Renderer::RENDERER_D3D_InitializeDevice::gszRendererD3DDeviceInitializationCode");
+    static unsigned int gdwD3DTextureAvailableMemory; D2_STATIC_GUARD_BSS(gdwD3DTextureAvailableMemory, "D2Direct3D::Renderer::RENDERER_D3D_InitializeDevice::gdwD3DTextureAvailableMemory");
+    static int bD3DDeviceInitialized; D2_STATIC_GUARD_BSS(bD3DDeviceInitialized, "D2Direct3D::Renderer::RENDERER_D3D_InitializeDevice::bD3DDeviceInitialized");
+    static unsigned int gdwD3DLocalTextureAvailableMemory; D2_STATIC_GUARD_BSS(gdwD3DLocalTextureAvailableMemory, "D2Direct3D::Renderer::RENDERER_D3D_InitializeDevice::gdwD3DLocalTextureAvailableMemory");
+    static unsigned int gdwD3DAgpTextureAvailableMemory; D2_STATIC_GUARD_BSS(gdwD3DAgpTextureAvailableMemory, "D2Direct3D::Renderer::RENDERER_D3D_InitializeDevice::gdwD3DAgpTextureAvailableMemory");
 
-    // Frame slots -20..-4 are ONE object: &iidData2 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t iidData2;
-      uint32_t iidData3;
-      uint32_t iidData4a;
-      uint32_t iidData4b;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     char* szErrorMsg;
     DDSURFACEDESC2 ddsurfacedesc;
     D3DVIEWPORT sViewport;
+    DDSCAPS2 iidData2;
     if (g_bDeviceInitialized) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x50f);
       exit(-1);
@@ -1968,27 +2473,33 @@ BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWnd) {
       return 0;
     }
 
-    __frame0.iidData3 = 0;
-    __frame0.iidData4a = 0;
-    __frame0.iidData4b = 0;
-    __frame0.iidData2 = 4;
-    nResult = g_pD3DSurfaceBackbuffer->lpVtbl->GetAttachedSurface(g_pD3DSurfaceBackbuffer, &__frame0.iidData2, (void**)&D3DSurfaceSecondary);
+    iidData2.dwCaps2 = 0;
+    iidData2.dwCaps3 = 0;
+    iidData2.dwCaps4 = 0;
+    iidData2.dwCaps = 4;
+    nResult = g_pD3DSurfaceBackbuffer->lpVtbl->GetAttachedSurface(g_pD3DSurfaceBackbuffer, &iidData2, (void**)&D3DSurfaceSecondary);
     if (!nResult) {
       if (gnD3DTextureCapFlags & 0x10) {
-        nResult = g_pD3DSurfaceBackbuffer->lpVtbl->QueryInterface(g_pD3DSurfaceBackbuffer, (GUID*)&gszRendererD3DDeviceInitializationCode, (void**)&g_pDDGammaControl);
+        // [vanilla-plus fix 18, ported onto ad964f3] ad964f3 restored the full
+        // 16-byte gamma IID (first 16 bytes of gszRendererD3DDeviceInitializationCode),
+        // superseding fix 17. Kept: fix 18 - on the field box the emulated DD7
+        // flip chain STILL refuses gamma QI/GetGammaRamp even with the correct
+        // IID (DDERR_INVALIDPARAMS, FOG log 2026-10-27 13:12). Retail treats both
+        // steps as fatal and dies with "Error 25"; we degrade gracefully instead:
+        // log, leave g_pDDGammaControl null, keep booting. Consumers are
+        // null-safe (brightness ramp early-returns; release skips ramp restore);
+        // the only observable loss is an inert brightness slider.
+        nResult = g_pD3DSurfaceBackbuffer->lpVtbl->QueryInterface(g_pD3DSurfaceBackbuffer, (GUID*)gszRendererD3DDeviceInitializationCode, (void**)&g_pDDGammaControl);
         if (nResult) {
-          DIRECTD3D_LogError("Failed to get gamma control interface!", nResult);
-          RENDERER_D3D_ReleaseDevice();
-          gnGlideWindowHandle = 0;
-          return 0;
-        }
-
-        nResult = g_pDDGammaControl->lpVtbl->GetGammaRamp(g_pDDGammaControl, 0, g_OriginalGammaRamp);
-        if (nResult) {
-          DIRECTD3D_LogError("Failed to get original gamma ramp", nResult);
-          RENDERER_D3D_ReleaseDevice();
-          gnGlideWindowHandle = 0;
-          return 0;
+          DIRECTD3D_LogError("Failed to get gamma control interface - continuing without hardware gamma", nResult);
+          g_pDDGammaControl = 0;
+        } else {
+          nResult = g_pDDGammaControl->lpVtbl->GetGammaRamp(g_pDDGammaControl, 0, g_OriginalGammaRamp);
+          if (nResult) {
+            DIRECTD3D_LogError("Failed to get original gamma ramp - continuing without hardware gamma", nResult);
+            g_pDDGammaControl->lpVtbl->Release(g_pDDGammaControl);
+            g_pDDGammaControl = 0;
+          }
         }
       }
 
@@ -2022,29 +2533,29 @@ BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWnd) {
             if (!nResult) {
               nResult = g_pD3DDevice->lpVtbl->SetCurrentViewport(g_pD3DDevice, g_pD3DViewport);
               if (!nResult) {
-                __frame0.iidData3 = 0;
-                __frame0.iidData4a = 0;
-                __frame0.iidData4b = 0;
-                __frame0.iidData2 = 0x5000;
-                nResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &__frame0.iidData2, (DWORD*)&gdwD3DTextureAvailableMemory, (DWORD*)&bD3DDeviceInitialized);
+                iidData2.dwCaps2 = 0;
+                iidData2.dwCaps3 = 0;
+                iidData2.dwCaps4 = 0;
+                iidData2.dwCaps = 0x5000;
+                nResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &iidData2, (DWORD*)&gdwD3DTextureAvailableMemory, (DWORD*)&bD3DDeviceInitialized);
                 if (nResult) {
                   DIRECTD3D_LogError("Failed to get available texture memory", nResult);
                 }
 
-                __frame0.iidData3 = 0;
-                __frame0.iidData4a = 0;
-                __frame0.iidData4b = 0;
-                __frame0.iidData2 = 0x10005000;
-                nResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &__frame0.iidData2, (DWORD*)&gdwD3DLocalTextureAvailableMemory, (DWORD*)&g_nVideoMemoryTotal);
+                iidData2.dwCaps2 = 0;
+                iidData2.dwCaps3 = 0;
+                iidData2.dwCaps4 = 0;
+                iidData2.dwCaps = 0x10005000;
+                nResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &iidData2, (DWORD*)&gdwD3DLocalTextureAvailableMemory, (DWORD*)&g_nVideoMemoryTotal);
                 if (nResult) {
                   DIRECTD3D_LogError("Failed to get available local texture memory", nResult);
                 }
                 if (gnD3DTextureCapFlags & 2) {
-                  __frame0.iidData3 = 0;
-                  __frame0.iidData4a = 0;
-                  __frame0.iidData4b = 0;
-                  __frame0.iidData2 = 0x20005000;
-                  nResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &__frame0.iidData2, (DWORD*)&gdwD3DAgpTextureAvailableMemory, (DWORD*)&g_nVideoMemoryFree);
+                  iidData2.dwCaps2 = 0;
+                  iidData2.dwCaps3 = 0;
+                  iidData2.dwCaps4 = 0;
+                  iidData2.dwCaps = 0x20005000;
+                  nResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &iidData2, (DWORD*)&gdwD3DAgpTextureAvailableMemory, (DWORD*)&g_nVideoMemoryFree);
                   if (nResult) {
                     DIRECTD3D_LogError("Failed to get available AGP texture memory", nResult);
                   }
@@ -2253,7 +2764,7 @@ BOOL __fastcall RENDERER_D3D_CreateSurfaceWithTexture(IDirectDrawSurface7 * * pd
     memset(&ddsdSize.dwFlags, 0, 0x78);
     ddsdSize.dwFlags = 0x1007;
     ddsdSize.ddsCapsRest[0] = 0x80;
-    DWORD* pDstPixelFmt = (DWORD*)&gsD3DTextureDescTemplate;
+    uint32_t* pDstPixelFmt = gsD3DTextureDescTemplate;
     DWORD* pSrcTemplate = ddsdSize.ddpfPixelFormat;
     for (iLoop = 8; iLoop; iLoop--) {
       *pSrcTemplate = *pDstPixelFmt;
@@ -2290,7 +2801,7 @@ void thunk_Release() {
 }
 
 BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc * pHelpers) {
-    _GUID* lpGUID;
+    GUID* lpGUID;
     uint8_t ddDeviceIdentifier[2128];
     IDirectDraw1* lpDD = 0;
     if (g_bD3DCoreInitialized) {
@@ -2298,7 +2809,7 @@ BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc
       exit(-1);
     }
     if (!(gnD3DTextureCapFlags & 1)) {
-      lpGUID = (_GUID*)&gsD3DAdapterGuid;
+      lpGUID = &gsD3DAdapterGuid;
     } else {
       lpGUID = 0;
     }
@@ -2359,58 +2870,89 @@ void __stdcall RENDERER_D3D_ReleaseTexturePools() {
     int iVar1 = 0;
     do {
       IDirectDrawSurface7* pSpriteSurface;
-      pSpriteTexture = gpD3DSpriteSystemTexture0[iVar1];
+      pSpriteTexture = *(IDirect3DTexture2**)((int)gD3DGenericTextureCache.apSpriteTextures + iVar1);
       if (pSpriteTexture) {
         pSpriteTexture->lpVtbl->Release(pSpriteTexture);
-        *(uint32_t*)&gpD3DSpriteSystemTexture0[iVar1] = 0;
+        *(uint32_t*)((int)gD3DGenericTextureCache.apSpriteTextures + iVar1) = 0;
       }
 
-      pSpriteSurface = gpD3DSpriteSystemSurface0[iVar1];
+      pSpriteSurface = *(IDirectDrawSurface7**)((int)gD3DGenericTextureCache.apSpriteSurfaces + iVar1);
       if (pSpriteSurface) {
         pSpriteSurface->lpVtbl->Release(pSpriteSurface);
-        *(uint32_t*)&gpD3DSpriteSystemSurface0[iVar1] = 0;
+        *(uint32_t*)((int)gD3DGenericTextureCache.apSpriteSurfaces + iVar1) = 0;
       }
 
-      iVar1++;
-    } while (iVar1 < 3);
+      iVar1 += 4;
+    } while (iVar1 < 0xc);
 }
 
-void __fastcall D3D_PixelDataFreeCallback_ClearCacheNodes(int * pCacheIndices) {
-    if (-1 < *pCacheIndices - 1 && -1 < pCacheIndices[1] - 1) {
-      gD3DGenericTextureCache[*pCacheIndices - 1].pNodeBuffer[pCacheIndices[1] - 1].pAssociatedTilePtr = 0;
-    }
-    if (-1 < pCacheIndices[2] - 1 && -1 < pCacheIndices[3] - 1) {
-      gD3DGenericTextureCache[pCacheIndices[2] - 1].pNodeBuffer[pCacheIndices[3] - 1].pAssociatedTilePtr = 0;
-    }
-    if (-1 < pCacheIndices[4] - 1 && -1 < pCacheIndices[5] - 1) {
-      gD3DGenericTextureCache[pCacheIndices[4] - 1].pNodeBuffer[pCacheIndices[5] - 1].pAssociatedTilePtr = 0;
-    }
-    if (-1 < pCacheIndices[6] - 1 && -1 < pCacheIndices[7] - 1) {
-      gD3DGenericTextureCache[pCacheIndices[6] - 1].pNodeBuffer[pCacheIndices[7] - 1].pAssociatedTilePtr = 0;
-    }
-    if (!(-1 < pCacheIndices[8] - 1 && -1 < pCacheIndices[9] - 1)) {
+// [vanilla-plus fix 22, ported onto ad964f3] The callback's per-pair guard had
+// only signed >=1 tests: no class range check, no idx upper bound vs the pool,
+// no owner match - a garbage [class, idx] pair from the recycled descriptor
+// pool wild-writes pAssociatedTilePtr past the node buffer or clears a FOREIGN
+// node's backpointer. Discipline (mirror of the upload path's fix-21 gates):
+// range-check the pair, then require the node's own +4 backpointer to name
+// THIS descriptor (written by UploadTextureToCache and nothing else, so a
+// legit free always matches). Legit frees behave exactly as retail; garbage
+// pairs are skipped and the first of each dangerous shape is reported to the
+// boot log. Glide's twin callback stays as delivered by glide fix 2
+// (field-verified working renderer - deliberately untouched).
+static void D3DTEXCACHE_ClearCacheNodeSlot(int32_t nClass, int32_t nNodeIdx, int32_t* pOwnerDescriptor) {
+    static BOOL s_bWarnedBadClass = FALSE;
+    static BOOL s_bWarnedBadIndex = FALSE;
+    static BOOL s_bWarnedForeignNode = FALSE;
+    if (nClass < 1 || 3 < nClass) {
+      if (!s_bWarnedBadClass && (nClass || nNodeIdx)) {
+        s_bWarnedBadClass = TRUE;
+        D2BOOT_MarkFmt("fix22: free-callback skipped out-of-range class=%d idx=%d (was a wild write)", nClass, nNodeIdx); // [d2boot]
+      }
       return;
     }
 
-    gD3DGenericTextureCache[pCacheIndices[8] - 1].pNodeBuffer[pCacheIndices[9] - 1].pAssociatedTilePtr = 0;
+    D3DTextureCacheStrc* pCache = &gD3DGenericTextureCache.aCaches[nClass - 1];
+    if (!pCache->pNodeBuffer || nNodeIdx < 1 || pCache->nMaxNodes < nNodeIdx) {
+      if (!s_bWarnedBadIndex && nNodeIdx) {
+        s_bWarnedBadIndex = TRUE;
+        D2BOOT_MarkFmt("fix22: free-callback skipped out-of-bounds idx=%d class=%d max=%d (was a wild write)", nNodeIdx, nClass, pCache->nMaxNodes); // [d2boot]
+      }
+      return;
+    }
+
+    D3DTextureCacheNodeStrc* pNode = &pCache->pNodeBuffer[nNodeIdx - 1];
+    if ((uintptr_t)pNode->pAssociatedTilePtr != (uintptr_t)pOwnerDescriptor) {
+      if (!s_bWarnedForeignNode && nNodeIdx) {
+        s_bWarnedForeignNode = TRUE;
+        D2BOOT_MarkFmt("fix22: free-callback skipped foreign node class=%d idx=%d (stale/garbage pair)", nClass, nNodeIdx); // [d2boot]
+      }
+      return;
+    }
+
+    pNode->pAssociatedTilePtr = 0;
 }
 
-BOOL __stdcall RENDERER_D3D_ExtractSpriteInfo(D2GfxDataStrc * pSprite, int * pOutput) {
+void __fastcall D3D_PixelDataFreeCallback_ClearCacheNodes(int * pCacheIndices) {
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[0], pCacheIndices[1], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[2], pCacheIndices[3], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[4], pCacheIndices[5], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[6], pCacheIndices[7], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[8], pCacheIndices[9], pCacheIndices);
+}
+BOOL __stdcall RENDERER_D3D_ExtractSpriteInfo(D2GfxDataStrc * pSprite, D2D3DSpriteInfoStrc * pOutput) {
     int bSpriteLoaded = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(pSprite, 0, 1);
     if (!bSpriteLoaded) {
       return 0;
     }
     if (pSprite->pDC6Block) {
       int32_t iVar1;
-      *pOutput = (int)pSprite;
+      pOutput->pSprite = pSprite;
       iVar1 = D2CMP::SRC::CelCmp::GetDC6Width(pSprite->pDC6Block);
-      pOutput[1] = iVar1;
+      pOutput->nWidth = iVar1;
       iVar1 = D2CMP::SRC::CelCmp::GetDC6OffsetX(pSprite->pDC6Block);
-      pOutput[3] = iVar1;
+      pOutput->nOffsetX = iVar1;
       iVar1 = D2CMP::SRC::CelCmp::GetDC6Height(pSprite->pDC6Block);
-      pOutput[2] = iVar1;
+      pOutput->nHeight = iVar1;
       iVar1 = D2CMP::SRC::CelCmp::GetDC6OffsetY(pSprite->pDC6Block);
-      pOutput[4] = iVar1;
+      pOutput->nOffsetY = iVar1;
       return 1;
     }
 
@@ -2418,57 +2960,178 @@ BOOL __stdcall RENDERER_D3D_ExtractSpriteInfo(D2GfxDataStrc * pSprite, int * pOu
     return 0;
 }
 
-void __stdcall RENDERER_D3D_CalculateTextureSize(int * pStruct) {
-    int nWidth = pStruct[1];
+void __stdcall RENDERER_D3D_CalculateTextureSize(D2D3DSpriteInfoStrc * pStruct) {
+    int nWidth = pStruct->nWidth;
     int nTexDim = 0x20;
-    if (nWidth < 0x21 && pStruct[2] < 0x21 || (nTexDim = 0x80 , nWidth < 0x81 && pStruct[2] < 0x81) || (nTexDim = 0x100 , nWidth < 0x101 && pStruct[2] < 0x101)) {
-      pStruct[5] = nTexDim;
-      pStruct[6] = nTexDim;
+    if (nWidth < 0x21 && pStruct->nHeight < 0x21 || (nTexDim = 0x80 , nWidth < 0x81 && pStruct->nHeight < 0x81) || (nTexDim = 0x100 , nWidth < 0x101 && pStruct->nHeight < 0x101)) {
+      pStruct->nTexWidth = nTexDim;
+      pStruct->nTexHeight = nTexDim;
     }
 
-    pStruct[8] = 0;
-    pStruct[9] = 0x3f800000;
-    pStruct[0xb] = 0x3f800000;
-    pStruct[10] = 0;
-    pStruct[7] = pStruct[6] * pStruct[5];
+    pStruct->fU0 = 0.0;
+    pStruct->fU1 = 1.0;
+    pStruct->fV1 = 1.0;
+    pStruct->fV0 = 0.0;
+    pStruct->nTexArea = pStruct->nTexHeight * pStruct->nTexWidth;
+}
+
+// [vanilla-plus fix 22] Self-reporting upload path: before every halt site in
+// UploadTextureToCache, dump mode/mip/class/node + pool identity/bookkeeping +
+// the full node + the apSpriteTex lines to d2boot.log, so a recurring halt
+// names its failing premise from the log alone (this is what decided round 10
+// and rooted fix 23). Zero behavior change when nothing halts.
+static void RENDERER_D3D_UploadHaltDump(const char* szSite, D2D3DSpriteInfoStrc* pTexInfo, int32_t nMode, int32_t nMipIdx, int32_t nClass, int32_t nNodeIdx, D3DTextureCacheStrc* pCache) {
+    D2BOOT_MarkFmt("upload-halt %s: mode=%d mip=%d class=%d node=%d w=%d h=%d area=%u", // [d2boot]
+      szSite, nMode, nMipIdx, nClass, nNodeIdx,
+      pTexInfo ? pTexInfo->nWidth : -1, pTexInfo ? pTexInfo->nHeight : -1,
+      pTexInfo ? (unsigned)pTexInfo->nTexArea : 0u);
+    if (!pCache) {
+      return;
+    }
+
+    D2BOOT_MarkFmt("upload-halt %s: pool=%p max=%d used=%d freeHead=%p freeTail=%p usedHead=%p usedTail=%p nodes=%p", // [d2boot]
+      szSite, (void*)pCache, pCache->nMaxNodes, pCache->nUsedCount,
+      (void*)pCache->pFreeHead, (void*)pCache->pFreeTail,
+      (void*)pCache->pUsedHead, (void*)pCache->pUsedTail, (void*)pCache->pNodeBuffer);
+    if (pCache->pNodeBuffer && 1 <= nNodeIdx && nNodeIdx <= pCache->nMaxNodes) {
+      D3DTextureCacheNodeStrc* pNode = &pCache->pNodeBuffer[nNodeIdx - 1];
+      D2BOOT_MarkFmt("upload-halt %s: node[%d] pos=%d tile=%p mip=%p pal=%p surf=%p tex=%p next=%p prev=%p", // [d2boot]
+        szSite, nNodeIdx, pNode->nIndex, pNode->pAssociatedTilePtr, pNode->field_0x08,
+        pNode->field_0x0C, (void*)pNode->pSurface, (void*)pNode->pTexture,
+        (void*)pNode->pNext, (void*)pNode->pPrev);
+    }
+
+    if (1 <= nClass && nClass <= 3) {
+      D2BOOT_MarkFmt("upload-halt %s: spriteTex[class-1]=%p spriteTex[class+2]=%p", // [d2boot]
+        szSite, (void*)gD3DGenericTextureCache.apSpriteTextures[nClass - 1],
+        (void*)gD3DGenericTextureCache.apSpriteTextures[nClass + 2]);
+    }
 }
 
 // Direct3D texture cache: uploads a DC6 frame to video memory. Determines mipmap level based on size, allocates cache slot, renders frame to memory surface, copies to texture via LockRect/memcpy, and sets as active texture.
-int32_t RENDERER_DIRECT3D_UploadTextureToCache(int * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
-    // Static local variables (originally global data)
-    static uint8_t gpD3DTexCacheSlot0;
-    static int gnDirect3DDevice;
+// [vanilla-plus fix 27] Flush every cached texture that was baked through a
+// pl2 UI-transpose palette (gpPaletteTable[0x34..0x40], the 13 per-palette
+// text-color remaps consumed by DrawShiftedImage). Those palettes reload IN
+// PLACE on every palette load: the pointer stays stable while the contents
+// change, so the cache's pointer-identity check cannot see a palette change
+// and would keep serving texels baked under the previous palette family
+// forever (the same class as the pre-fix-27 never-rebake text defect).
+// Mirrors the eviction path: clear the sprite descriptor binding, unlink
+// from the used chain, push onto the free tail; surfaces stay allocated for
+// reuse so the re-bake costs only a decode + upload.
+static void RENDERER_D3D_FlushTransposedTextureNodes() {
+    uint8_t* pTransposeLo = (uint8_t*)gPaletteTransposeBase;
+    uint8_t* pTransposeHi = (uint8_t*)gPaletteTransposeBase + 0xD00;
+    for (int nClass = 0; nClass < 3; nClass++) {
+        D3DTextureCacheStrc* pCache = &gD3DGenericTextureCache.aCaches[nClass];
+        D3DTextureCacheNodeStrc* pNode = pCache->pUsedHead;
+        int nGuard = 0;
+        while (pNode && nGuard++ <= pCache->nMaxNodes) {
+            D3DTextureCacheNodeStrc* pNextNode = pNode->pNext;
+            uint8_t* pPal = (uint8_t*)pNode->field_0x0C;
+            if (pPal >= pTransposeLo && pPal < pTransposeHi) {
+                if (pNode->pAssociatedTilePtr) {
+                    *(uint32_t*)((int)pNode->pAssociatedTilePtr + (int)pNode->field_0x08 * 8) = 0;
+                    *(uint32_t*)((int)pNode->pAssociatedTilePtr + (int)pNode->field_0x08 * 8 + 4) = 0;
+                    pNode->pAssociatedTilePtr = nullptr;
+                }
+                if (pNode->pPrev) {
+                    pNode->pPrev->pNext = pNode->pNext;
+                } else {
+                    pCache->pUsedHead = pNode->pNext;
+                }
+                if (pNextNode) {
+                    pNextNode->pPrev = pNode->pPrev;
+                } else {
+                    pCache->pUsedTail = pNode->pPrev;
+                }
+                pNode->pNext = nullptr;
+                pNode->pPrev = nullptr;
+                if (!pCache->pFreeHead) {
+                    pCache->pFreeHead = pNode;
+                } else {
+                    pCache->pFreeTail->pNext = pNode;
+                    pNode->pPrev = pCache->pFreeTail;
+                }
+                pCache->pFreeTail = pNode;
+                pCache->nUsedCount--;
+            }
+            pNode = pNextNode;
+        }
+    }
+}
 
+// [vanilla-plus fix 27] Mixed stamp of family-discriminating g_Palette32Bit
+// sentinels. act1/sky share 0x20/0x40/0x80/0xC0 and differ only at 0xF0;
+// fechar differs at all of them; multiplicative mixing avoids trivial
+// aliasing between near-identical palettes.
+static uint32_t RENDERER_D3D_ComputeLutFamilyStamp() {
+    return g_Palette32Bit[0x20] * 0x9E3779B1u
+         ^ g_Palette32Bit[0x40] * 0x85EBCA77u
+         ^ g_Palette32Bit[0x80] * 0xC2B2AE3Du
+         ^ g_Palette32Bit[0xC0] * 0x27D4EB2Fu
+         ^ g_Palette32Bit[0xF0] * 0x165667B1u;
+}
+
+int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
     uint8_t* pBVar3;
-    int32_t iVar4;
     DWORD dwHResult;
     int iCacheNodeIdx;
     uint8_t* pbOutlinePixel;
     char* pcSrcPixel;
     DDSURFACEDESC2 sSurfaceDesc;
+    IDirect3DTexture2* lpD3DTexture;
     uint8_t* pbPixelData;
     IDirectDrawSurface7* pDestSurface;
     char cPixel;
     int iMipLevel;
     int32_t nErrorLine;
-    if (!*(int*)(*pTexInfo + 0x3c)) {
+    void* pMemPool;
+    DC6Block* nParam = pTexInfo->pSprite->pDC6Block;
+    if (!nParam) {
+            RENDERER_D3D_UploadHaltDump("nullblock", pTexInfo, nMode, nMode, -1, 0, nullptr); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
       exit(-1);
     }
 
-    int pbSrcPixel = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockPixelData(*(int*)(*pTexInfo + 0x3c));
+    int pbSrcPixel = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockPixelData((int32_t)nParam);
+    // [vanilla-plus fix 26 diag C captured nPal26DFrameKey here for the bake
+    // stamp; the probe is retired in 0.0.3, nothing else consumed the key.]
+    // [vanilla-plus fix 27] Drop transpose-baked nodes when the LUT family
+    // changes (see RENDERER_D3D_FlushTransposedTextureNodes). Runs before any
+    // cache lookup; identical reloads (same palette contents) are no-ops.
+    {
+        static uint32_t s_dwD3DLutFamilyStamp = 0xFFFFFFFFu;
+        uint32_t dwLutStamp = RENDERER_D3D_ComputeLutFamilyStamp();
+        if (dwLutStamp != s_dwD3DLutFamilyStamp) {
+            s_dwD3DLutFamilyStamp = dwLutStamp;
+            RENDERER_D3D_FlushTransposedTextureNodes();
+        }
+    }
     int nMipIdx = nMode;
     if (nMode == 4) {
       nMipIdx = 1;
     }
+    // [vanilla-plus fix 21, ported onto ad964f3] Mirror of glide fix 3
+    // (field-verified in the glide series): the per-frame descriptor slots live
+    // in a non-zeroing/recycled pool, so a first-use header can carry pool
+    // garbage in the size-class slot. The exact-zero test below still skips the
+    // recompute for any garbage NONZERO value, and ad964f3's class flows into
+    // (cache - 0x1c + class*0x1c) - for garbage > 3 that walks off aCaches[0..2]
+    // into the packed struct's apSpriteTextures/apSpriteSurfaces. Treat an
+    // out-of-range class like an unset one (zero the slot) so the recompute
+    // below sticks, instead of skipping the upload forever.
+    if (*(int*)(pbSrcPixel + nMipIdx * 8) < 1 || 3 < *(int*)(pbSrcPixel + nMipIdx * 8)) {
+      *(uint32_t*)(pbSrcPixel + nMipIdx * 8) = 0;
+    }
     if (!*(int*)(pbSrcPixel + nMipIdx * 8)) {
-      iMipLevel = pTexInfo[1];
-      if (iMipLevel < 0x21 && pTexInfo[2] < 0x21) {
+      iMipLevel = pTexInfo->nWidth;
+      if (iMipLevel < 0x21 && pTexInfo->nHeight < 0x21) {
         *(uint32_t*)(pbSrcPixel + nMipIdx * 8) = 3;
-      } else if (iMipLevel < 0x81 && pTexInfo[2] < 0x81) {
+      } else if (iMipLevel < 0x81 && pTexInfo->nHeight < 0x81) {
         *(uint32_t*)(pbSrcPixel + nMipIdx * 8) = 2;
       } else {
-        if (0x100 < iMipLevel || 0x100 < pTexInfo[2]) {
+        if (0x100 < iMipLevel || 0x100 < pTexInfo->nHeight) {
           return 0;
         }
 
@@ -2478,10 +3141,26 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(int * pTexInfo, BYTE * pPalette, 
 
     iMipLevel = *(int*)(pbSrcPixel + nMipIdx * 8);
     int* piVar2 = (int*)(pbSrcPixel + 4 + nMipIdx * 8);
-    D3DTextureCacheStrc* pCache = (D3DTextureCacheStrc*)(&gpD3DTexCacheSlot0 + iMipLevel * 0x1c);
-    if (*piVar2 && (*(uint8_t**)(*piVar2 * 0x20 - 0x14 + (&gnDirect3DDevice)[iMipLevel * 7]) == pPalette || nMode == 4)) {
+    D3DTextureCacheStrc* pCache = (D3DTextureCacheStrc*)((uint8_t*)&gD3DGenericTextureCache - 0x1c + iMipLevel * 0x1c);
+    D3DTextureCacheNodeStrc* pCacheNodeBase = pCache->pNodeBuffer;
+    int32_t nClassSlot = iMipLevel; // [vanilla-plus fix 22] capture for halt dumps (iMipLevel is reused below)
+    // [vanilla-plus fix 21, ported onto ad964f3] Mirror of glide fix 2: a
+    // recycled sprite header can inherit a stale node index - the sprite-free
+    // callback clears the node's tile backpointer but never the header slots.
+    // Validate the slot against the node's own backpointers (+4 block ptr,
+    // +8 mip idx - written by this very function, so a legit palette-change
+    // re-upload matches by construction) and the pool bound. On mismatch drop
+    // the slot and allocate fresh. Bound check first: it gates the deref.
+    if (*piVar2) {
+      if ((uint32_t)(*piVar2 - 1) >= (uint32_t)pCache->nMaxNodes
+        || *(int*)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 4) != pbSrcPixel
+        || *(int*)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 8) != nMipIdx) {
+        *piVar2 = 0;
+      }
+    }
+    if (*piVar2 && (*(uint8_t**)(*piVar2 * 0x20 - 0x14 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7]) == pPalette || nMode == 4)) {
       d3dTextureCache::D3DTEXCACHE_InvalidateByIndex(pCache, *piVar2);
-      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*piVar2 * 0x20 + (&gnDirect3DDevice)[iMipLevel * 7] - 0xc));
+      dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*piVar2 * 0x20 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7] - 0xc));
       if (!dwHResult) {
         return 1;
       }
@@ -2490,49 +3169,54 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(int * pTexInfo, BYTE * pPalette, 
       return 1;
     }
 
-    IDirectDrawSurface7* pDestSurface_00 = (IDirectDrawSurface7*)gpD3DSpriteSystemTexture0[iMipLevel + 2];
-    D3DTextureCacheNodeStrc* lpD3DTexture = (&gD3DGenericTextureCache[2].pNodeBuffer)[iMipLevel];
+    IDirectDrawSurface7* pDestSurface_00 = (IDirectDrawSurface7*)gD3DGenericTextureCache.apSpriteTextures[iMipLevel + 2];
+    IDirect3DTexture2* lpD3DTexture_00 = gD3DGenericTextureCache.apSpriteTextures[iMipLevel - 1];
     if (!*piVar2) {
+      int32_t iVar4;
       iVar4 = d3dTextureCache::D3DTEXCACHE_EnsureAvailableNode(pCache);
       *piVar2 = iVar4;
     }
 
-    void* pMemPool = gpD3DTextureSpritePoolMemory0;
+    pMemPool = gpD3DTextureSpritePoolMemory0;
     int iVar1 = *piVar2 - 1;
     if (iVar1 < 0) {
+            RENDERER_D3D_UploadHaltDump("0x164-node0", pTexInfo, nMode, nMipIdx, nClassSlot, 0, pCache); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x164);
       exit(-1);
     } else if (iVar1 < pCache->nMaxNodes) {
       iCacheNodeIdx = *piVar2 * 0x20;
-      iVar1 = *(int*)(iCacheNodeIdx - 0x10 + (&gnDirect3DDevice)[iMipLevel * 7]);
-      iMipLevel = iCacheNodeIdx - 0x20 + (&gnDirect3DDevice)[iMipLevel * 7];
+      iVar1 = *(int*)(iCacheNodeIdx - 0x10 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7]);
+      iMipLevel = iCacheNodeIdx - 0x20 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7];
       pbPixelData = (uint8_t*)gpD3DTextureSpritePoolMemory0;
       *(int*)(iMipLevel + 4) = pbSrcPixel;
       *(int*)(iMipLevel + 8) = nMipIdx;
       *(uint8_t**)(iMipLevel + 0xc) = (uint8_t*)pPalette;
       if (!iVar1) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16d);
+              RENDERER_D3D_UploadHaltDump("0x16d-surface", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16d);
         exit(-1);
       } else if (!*(int*)(iMipLevel + 0x14)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16e);
+              RENDERER_D3D_UploadHaltDump("0x16e-texture", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16e);
         exit(-1);
       } else if (!pMemPool) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x171);
+              RENDERER_D3D_UploadHaltDump("0x171-poolmem", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x171);
         exit(-1);
-      } else if (pTexInfo[7] < 0x10001) {
-        memset(pMemPool, 0, pTexInfo[7]);
+      } else if (pTexInfo->nTexArea < 0x10001) {
+        memset(pMemPool, 0, pTexInfo->nTexArea);
         switch (nMipIdx) {
           case 1:
 
           case 4:
-            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame((D2GfxDataStrc*)*pTexInfo, -pTexInfo[3], pTexInfo[6] - pTexInfo[4] - 1, 0, 0, (BYTE*)pMemPool, pTexInfo[6], pTexInfo[5], nullptr, nullptr, pPalette);
+            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, -pTexInfo->nOffsetX, pTexInfo->nTexHeight - pTexInfo->nOffsetY - 1, 0, 0, (BYTE*)pMemPool, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, pPalette);
           break;
           case 2:
-            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame((D2GfxDataStrc*)*pTexInfo, -pTexInfo[3], pTexInfo[6] - pTexInfo[4] - 1, 0, 0, (BYTE*)pMemPool, pTexInfo[6], pTexInfo[5], nullptr, nullptr, pPalette);
+            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, -pTexInfo->nOffsetX, pTexInfo->nTexHeight - pTexInfo->nOffsetY - 1, 0, 0, (BYTE*)pMemPool, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, pPalette);
           pBVar3 = gpPaletteTable[0x46];
           pbSrcPixel = 0;
           pbOutlinePixel = (uint8_t*)gpD3DTextureSpritePoolMemory0;
-          if (0 < pTexInfo[7]) {
+          if (0 < pTexInfo->nTexArea) {
             do {
               if (*pbOutlinePixel) {
                 *pbOutlinePixel = pBVar3[*pbOutlinePixel];
@@ -2540,36 +3224,38 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(int * pTexInfo, BYTE * pPalette, 
 
               pbSrcPixel++;
               pbOutlinePixel++;
-            } while (pbSrcPixel < pTexInfo[7]);
+            } while (pbSrcPixel < pTexInfo->nTexArea);
           }
 
           break;
           case 3:
-            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame((D2GfxDataStrc*)*pTexInfo, 1 - pTexInfo[3], pTexInfo[6] - pTexInfo[4] - 2, 0, 0, (BYTE*)pMemPool, pTexInfo[6], pTexInfo[5], nullptr, nullptr, nullptr);
+            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, 1 - pTexInfo->nOffsetX, pTexInfo->nTexHeight - pTexInfo->nOffsetY - 2, 0, 0, (BYTE*)pMemPool, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, nullptr);
           pbPixelData = (uint8_t*)gpD3DTextureSpritePoolMemory1;
           if (!gpD3DTextureSpritePoolMemory1) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19a);
+                  RENDERER_D3D_UploadHaltDump("0x19a-poolmem1", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19a);
             exit(-1);
           }
-          if (0x10000 < pTexInfo[7]) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19b);
+          if (0x10000 < pTexInfo->nTexArea) {
+                  RENDERER_D3D_UploadHaltDump("0x19b-area1", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19b);
             exit(-1);
           }
 
-          memset(gpD3DTextureSpritePoolMemory1, 0, pTexInfo[7]);
-          iVar1 = pTexInfo[5];
+          memset(gpD3DTextureSpritePoolMemory1, 0, pTexInfo->nTexArea);
+          iVar1 = pTexInfo->nTexWidth;
           pcSrcPixel = (char*)(iVar1 + (int)gpD3DTextureSpritePoolMemory0);
           pbSrcPixel = iVar1 + (int)pbPixelData;
-          pPalette = (uint8_t*)(pTexInfo[7] + iVar1 * -2);
+          pPalette = (uint8_t*)(pTexInfo->nTexArea + iVar1 * -2);
           if (0 < (int)pPalette) {
             do {
               cPixel = *pcSrcPixel;
               pcSrcPixel++;
               if (cPixel != '\0') {
-                *(uint8_t*)(pbSrcPixel - pTexInfo[5]) = nOutlineColor;
+                *(uint8_t*)(pbSrcPixel - pTexInfo->nTexWidth) = nOutlineColor;
                 *(uint8_t*)(pbSrcPixel - 1) = nOutlineColor;
                 *(uint8_t*)(pbSrcPixel + 1) = nOutlineColor;
-                *(uint8_t*)(pbSrcPixel + pTexInfo[5]) = nOutlineColor;
+                *(uint8_t*)(pbSrcPixel + pTexInfo->nTexWidth) = nOutlineColor;
               }
 
               pbSrcPixel++;
@@ -2579,10 +3265,12 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(int * pTexInfo, BYTE * pPalette, 
         }
 
         if (!pDestSurface_00) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b4);
+                RENDERER_D3D_UploadHaltDump("0x1b4-destsurf", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b4);
           exit(-1);
-        } else if (!lpD3DTexture) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b5);
+        } else if (!lpD3DTexture_00) {
+                RENDERER_D3D_UploadHaltDump("0x1b5-d3dtex", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b5);
           exit(-1);
         } else {
           sSurfaceDesc.dwSize = 0x7c;
@@ -2592,15 +3280,25 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(int * pTexInfo, BYTE * pPalette, 
             DIRECTD3D_LogError("Failed to lock memory surface", dwHResult);
           }
           if ((uint8_t)sSurfaceDesc.dwFlags & 8) {
-            RENDERER_D3D_ConvertPalettedTo16Bit(pbPixelData, (uint16_t*)sSurfaceDesc.lpSurface, pTexInfo[5], pTexInfo[6], sSurfaceDesc.lPitch >> 1, pTexInfo[6]);
+            // [vanilla-plus fix 26 diag B/C/D bake-stamp probe retired in
+            // 0.0.3: the per-frame-key dedupe table capped at 256 distinct
+            // DC6 frames, but gameplay churns through far more distinct
+            // frame descriptors (and evicted textures re-bake), so past the
+            // cap EVERY text/shifted upload wrote a bake line plus a
+            // synchronous FlushFileBuffers on the render thread - the
+            // "d2boot.log grows rapidly" field report. The stamp verified
+            // fix 27's pl2 UI-transpose bake discipline (field-verified:
+            // "Colors are correct in D3D fullscreen now!"); the probe is
+            // pure logging and its removal changes no retail behavior.]
+            RENDERER_D3D_ConvertPalettedTo16Bit(pbPixelData, (uint16_t*)sSurfaceDesc.lpSurface, pTexInfo->nTexWidth, pTexInfo->nTexHeight, sSurfaceDesc.lPitch >> 1, pTexInfo->nTexHeight);
             dwHResult = pDestSurface_00->lpVtbl->Unlock(pDestSurface_00, nullptr);
             if (dwHResult) {
               DIRECTD3D_LogError("Failed to unlock memory surface", dwHResult);
             }
             if (!(gnD3DTextureCapFlags & 0x400)) {
-              (*(dt_df2bbc22*)((char*)*(void**)(uintptr_t)*(int**)(iMipLevel + 0x14) + 20))(*(int**)(iMipLevel + 0x14), lpD3DTexture);
+              (*(dt_df2bbc22*)((char*)*(void**)(uintptr_t)*(int**)(iMipLevel + 0x14) + 20))(*(int**)(iMipLevel + 0x14), lpD3DTexture_00);
             } else {
-              RENDERER_D3D_CopySurfacePixels(*(IDirectDrawSurface7**)(iMipLevel + 0x10), pDestSurface_00, pTexInfo[6]);
+              RENDERER_D3D_CopySurfacePixels(*(IDirectDrawSurface7**)(iMipLevel + 0x10), pDestSurface_00, pTexInfo->nTexHeight);
             }
 
             dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(iMipLevel + 0x14));
@@ -2612,14 +3310,17 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(int * pTexInfo, BYTE * pPalette, 
             return 1;
           }
 
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c0);
+                RENDERER_D3D_UploadHaltDump("0x1c0-lockflags", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c0);
           exit(-1);
         }
       } else {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x172);
+              RENDERER_D3D_UploadHaltDump("0x172-area", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x172);
         exit(-1);
       }
     } else {
+            RENDERER_D3D_UploadHaltDump("0x165-idxbound", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x165);
       exit(-1);
     }
@@ -2699,19 +3400,19 @@ void __stdcall RENDERER_D3D_DrawShadowQuad(int * pTextureInfo, int nPosX, int nP
 }
 
 // Direct3D renderer: draws a textured quad with palette or solid color fill. Looks up RGB color from gpPaletteTable+0x114 palette based on nParam4 index.
-void __stdcall RENDERER_DIRECT3D_DrawPalettedQuad(int * pTextureInfo, int nPosX, int nPosY, uint32_t nColor, int nParam4, uint8_t nAlpha, int nParam6) {
+void __stdcall RENDERER_DIRECT3D_DrawPalettedQuad(D2D3DSpriteInfoStrc * pTextureInfo, int nPosX, int nPosY, uint32_t nColor, int nParam4, uint8_t nAlpha, int nParam6) {
     float* pVertexData;
     RENDERER_D3D_SetBlendMode(1);
     RENDERER_D3D_SetTextureFilterMode(1);
-    float fTexU0 = (float)pTextureInfo[8];
-    int nLockResult = pTextureInfo[3];
-    float fTexU1 = (float)pTextureInfo[9];
-    float fTexV0 = (float)pTextureInfo[10];
-    float fTexV1 = (float)pTextureInfo[0xb];
+    float fTexU0 = pTextureInfo->fU0;
+    int nLockResult = pTextureInfo->nOffsetX;
+    float fTexU1 = pTextureInfo->fU1;
+    float fTexV0 = pTextureInfo->fV0;
+    float fTexV1 = pTextureInfo->fV1;
     BOOL bPerspective = RENDERER_D3D_IsPerspectiveEnabled();
-    int nScaledOffsetX = pTextureInfo[5];
-    int nScaledHeight = pTextureInfo[6];
-    int nScaledWidth = pTextureInfo[4] - nScaledHeight;
+    int nScaledOffsetX = pTextureInfo->nTexWidth;
+    int nScaledHeight = pTextureInfo->nTexHeight;
+    int nScaledWidth = pTextureInfo->nOffsetY - nScaledHeight;
     if (bPerspective && g_aSmackerSurfaceArray != 0x100) {
       nLockResult = (int)(g_aSmackerSurfaceArray * nLockResult + (g_aSmackerSurfaceArray * nLockResult >> 0x1f & 0xffU)) >> 8;
       nScaledWidth = (int)(g_aSmackerSurfaceArray * nScaledWidth + (g_aSmackerSurfaceArray * nScaledWidth >> 0x1f & 0xffU)) >> 8;
@@ -2730,10 +3431,17 @@ void __stdcall RENDERER_DIRECT3D_DrawPalettedQuad(int * pTextureInfo, int nPosX,
 
     pVertexData += gd3dVertexBufferOffset * 8;
     if (!nParam4 && !nParam6) {
+      // [vanilla-plus fix 26 diag B pal26B2 solid-color probe retired in
+      // 0.0.3: 24-slot seen-color set served its purpose (fix 27
+      // field-verified); pure logging removed, retail behavior unchanged.]
       RENDERER_D3D_SetTextureStageColor(pVertexData, nColor, nAlpha);
     } else {
       uint8_t* pPaletteEntry;
       pPaletteEntry = gpPaletteTable[0x45] + nParam4 * 3;
+      // [vanilla-plus fix 26 diag B pal26B slot-probe retired in 0.0.3:
+      // once-per-slot diffuse dump served its purpose (fix 27
+      // field-verified); pure logging removed, retail behavior unchanged.]
+
       pVertexData[4] = (float)(uint32_t)((uint32_t)((uint32_t)((uint32_t)(uint16_t)((uint16_t)(uint8_t)nAlpha << 8 | (uint16_t)(uint8_t)*pPaletteEntry) << 8 | (uint32_t)(uint8_t)gpPaletteTable[0x45][nParam4 * 3 + 1]) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pPaletteEntry[2]);
     }
 
@@ -2809,81 +3517,73 @@ uint8_t __stdcall SetDrawModeAndGetAlpha(int nDrawMode) {
 
 // Stack-slot reuse: the nScreenMode slot first holds the clip bottom RENDERER_nWindowHeight - 0x2f (whole dword, 006b694e) that the quad's y coordinates are tested against; then its low byte holds the alpha returned by SetDrawModeAndGetAlpha(nDrawMode) (006b6999).
 void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwGamma, int nDrawMode, int nScreenMode, BYTE * pPalette) {
-    float* pfDst;
+    D2D3DVertexStrc* pfDst;
     float* pfSrc;
-    int spriteInfo[3];
-    int nSpriteOffsetX;
-    int nSpriteOffsetY;
-    int nSpriteWidth;
-    int nSpriteHeight;
-    uint32_t fTexU0;
-    uint32_t fTexU1;
-    uint32_t fTexV0;
-    uint32_t fTexV1;
-    float aQuadVertexData[6];
+    D2D3DSpriteInfoStrc spriteInfo;
+    D2D3DVertexStrc aQuadVertexData[4];
     int nAdjPosY;
     int nAdjPosXOut;
     float fHalfWidth;
-    BOOL nBaseX = RENDERER_D3D_ExtractSpriteInfo(pData, spriteInfo);
+    BOOL nBaseX = RENDERER_D3D_ExtractSpriteInfo(pData, &spriteInfo);
     if (!nBaseX) {
       return;
     }
 
-    RENDERER_D3D_CalculateTextureSize(spriteInfo);
-    int iVar3 = nPosX + nSpriteOffsetY * 0x1000 + nSpriteOffsetX * 0x800;
-    nPosY = nPosY + nSpriteOffsetY * 0x1000 + nSpriteOffsetX * -0x800;
-    int nAdjPosX = nPosY + nSpriteHeight * -0x1000;
-    Renderer::AdjustPerspectivePosition(iVar3 + nSpriteHeight * -0x1000, nAdjPosX, 0, &nAdjPosXOut, &nAdjPosY);
-    aQuadVertexData[0] = (float)nAdjPosXOut;
-    aQuadVertexData[1] = (float)nAdjPosY;
-    aQuadVertexData[2] = 0.5;
-    aQuadVertexData[3] = 1.0;
-    uint32_t fV0u = fTexU0;
-    uint32_t fV0v = fTexV0;
-    Renderer::AdjustPerspectivePosition(iVar3, nPosY, 0, &nAdjPosXOut, &nAdjPosY);
-    float fV1x = (float)nAdjPosXOut;
-    float fV1y = (float)nAdjPosY;
-    uint32_t fV0z = 0x3f000000;
-    uint32_t fV0rhw = 0x3f800000;
-    uint32_t fV1u = fTexU0;
-    uint32_t fV1v = fTexV1;
-    Renderer::AdjustPerspectivePosition(nSpriteWidth * 0x800 + iVar3, nPosY + nSpriteWidth * -0x800, 0, &nAdjPosXOut, &nAdjPosY);
-    float fV2x = (float)nAdjPosXOut;
-    float fV2y = (float)nAdjPosY;
-    uint32_t fV1z = 0x3f000000;
-    uint32_t fV1rhw = 0x3f800000;
-    uint32_t fV2u = fTexU1;
-    uint32_t fV2v = fTexV1;
-    Renderer::AdjustPerspectivePosition(nSpriteWidth * 0x800 + nSpriteHeight * -0x1000 + iVar3, nAdjPosX + nSpriteWidth * -0x800, 0, &nAdjPosXOut, &nAdjPosY);
-    float fV3x = (float)nAdjPosXOut;
-    float fV3y = (float)nAdjPosY;
-    uint32_t fV2z = 0x3f000000;
-    uint32_t fV2rhw = 0x3f800000;
-    uint32_t fV3u = fTexU1;
-    uint32_t fV3v = fTexV0;
+    RENDERER_D3D_CalculateTextureSize(&spriteInfo);
+    int nPosX_00 = nPosX + spriteInfo.nOffsetY * 0x1000 + spriteInfo.nOffsetX * 0x800;
+    nPosY = nPosY + spriteInfo.nOffsetY * 0x1000 + spriteInfo.nOffsetX * -0x800;
+    int iVar3 = nPosY + spriteInfo.nTexHeight * -0x1000;
+    Renderer::AdjustPerspectivePosition(nPosX_00 + spriteInfo.nTexHeight * -0x1000, iVar3, 0, &nAdjPosXOut, &nAdjPosY);
+    aQuadVertexData[0].fX = (float)nAdjPosXOut;
+    aQuadVertexData[0].fY = (float)nAdjPosY;
+    aQuadVertexData[0].fZ = 0.5;
+    aQuadVertexData[0].fRHW = 1.0;
+    aQuadVertexData[0].fU = spriteInfo.fU0;
+    aQuadVertexData[0].fV = spriteInfo.fV0;
+    Renderer::AdjustPerspectivePosition(nPosX_00, nPosY, 0, &nAdjPosXOut, &nAdjPosY);
+    aQuadVertexData[1].fX = (float)nAdjPosXOut;
+    aQuadVertexData[1].fY = (float)nAdjPosY;
+    aQuadVertexData[1].fZ = 0.5;
+    aQuadVertexData[1].fRHW = 1.0;
+    aQuadVertexData[1].fU = spriteInfo.fU0;
+    aQuadVertexData[1].fV = spriteInfo.fV1;
+    Renderer::AdjustPerspectivePosition(spriteInfo.nTexWidth * 0x800 + nPosX_00, nPosY + spriteInfo.nTexWidth * -0x800, 0, &nAdjPosXOut, &nAdjPosY);
+    aQuadVertexData[2].fX = (float)nAdjPosXOut;
+    aQuadVertexData[2].fY = (float)nAdjPosY;
+    aQuadVertexData[2].fZ = 0.5;
+    aQuadVertexData[2].fRHW = 1.0;
+    aQuadVertexData[2].fU = spriteInfo.fU1;
+    aQuadVertexData[2].fV = spriteInfo.fV1;
+    Renderer::AdjustPerspectivePosition(spriteInfo.nTexWidth * 0x800 + spriteInfo.nTexHeight * -0x1000 + nPosX_00, iVar3 + spriteInfo.nTexWidth * -0x800, 0, &nAdjPosXOut, &nAdjPosY);
+    aQuadVertexData[3].fX = (float)nAdjPosXOut;
+    aQuadVertexData[3].fY = (float)nAdjPosY;
+    aQuadVertexData[3].fZ = 0.5;
+    aQuadVertexData[3].fRHW = 1.0;
+    aQuadVertexData[3].fU = spriteInfo.fU1;
+    aQuadVertexData[3].fV = spriteInfo.fV0;
     if (nScreenMode == 1) {
       fHalfWidth = (float)((int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2);
-      aQuadVertexData[0] -= fHalfWidth;
-      fV1x -= fHalfWidth;
-      fV2x -= fHalfWidth;
-      fV3x -= fHalfWidth;
+      aQuadVertexData[0].fX -= fHalfWidth;
+      aQuadVertexData[1].fX -= fHalfWidth;
+      aQuadVertexData[2].fX -= fHalfWidth;
+      aQuadVertexData[3].fX -= fHalfWidth;
     } else if (nScreenMode == 2) {
       fHalfWidth = (float)((int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2);
-      aQuadVertexData[0] = fHalfWidth + aQuadVertexData[0];
-      fV1x = fHalfWidth + fV1x;
-      fV2x = fHalfWidth + fV2x;
-      fV3x = fHalfWidth + fV3x;
+      aQuadVertexData[0].fX = fHalfWidth + aQuadVertexData[0].fX;
+      aQuadVertexData[1].fX = fHalfWidth + aQuadVertexData[1].fX;
+      aQuadVertexData[2].fX = fHalfWidth + aQuadVertexData[2].fX;
+      aQuadVertexData[3].fX = fHalfWidth + aQuadVertexData[3].fX;
     }
 
     nScreenMode = RENDERER_nWindowHeight - 0x2f;
     nPosY = RENDERER_nWindowWidth;
-    if (!(0.0 <= aQuadVertexData[0] && aQuadVertexData[0] < (float)RENDERER_nWindowWidth && 0.0 <= aQuadVertexData[1] && aQuadVertexData[1] < (float)nScreenMode || 0.0 <= fV1x && fV1x < (float)RENDERER_nWindowWidth && 0.0 <= fV1y && fV1y < (float)nScreenMode || 0.0 <= fV2x && fV2x < (float)RENDERER_nWindowWidth && 0.0 <= fV2y && fV2y < (float)nScreenMode || 0.0 <= fV3x && fV3x < (float)RENDERER_nWindowWidth && 0.0 <= fV3y && fV3y < (float)nScreenMode)) {
+    if (!(0.0 <= aQuadVertexData[0].fX && aQuadVertexData[0].fX < (float)RENDERER_nWindowWidth && 0.0 <= aQuadVertexData[0].fY && aQuadVertexData[0].fY < (float)nScreenMode || 0.0 <= aQuadVertexData[1].fX && aQuadVertexData[1].fX < (float)RENDERER_nWindowWidth && 0.0 <= aQuadVertexData[1].fY && aQuadVertexData[1].fY < (float)nScreenMode || 0.0 <= aQuadVertexData[2].fX && aQuadVertexData[2].fX < (float)RENDERER_nWindowWidth && 0.0 <= aQuadVertexData[2].fY && aQuadVertexData[2].fY < (float)nScreenMode || 0.0 <= aQuadVertexData[3].fX && aQuadVertexData[3].fX < (float)RENDERER_nWindowWidth && 0.0 <= aQuadVertexData[3].fY && aQuadVertexData[3].fY < (float)nScreenMode)) {
       return;
     }
 
     uint8_t uVar1 = SetDrawModeAndGetAlpha(nDrawMode);
     nScreenMode = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nScreenMode + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)uVar1);
-    int32_t bTextureUploaded = RENDERER_DIRECT3D_UploadTextureToCache(spriteInfo, pPalette, 0, 1);
+    int32_t bTextureUploaded = RENDERER_DIRECT3D_UploadTextureToCache(&spriteInfo, pPalette, 0, 1);
     if (!bTextureUploaded) {
       return;
     }
@@ -2891,9 +3591,9 @@ void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int nPosX, int nPosY
     RENDERER_D3D_SetBlendMode(1);
     RENDERER_D3D_SetTextureFilterMode(1);
     RENDERER_D3D_SetTextureStageColor(aQuadVertexData, dwGamma, (char)nScreenMode);
-    uint32_t dwV0color = aQuadVertexData[4];
-    uint32_t dwV1color = aQuadVertexData[4];
-    uint32_t dwV2color = aQuadVertexData[4];
+    aQuadVertexData[1].dwDiffuse = aQuadVertexData[0].dwDiffuse;
+    aQuadVertexData[2].dwDiffuse = aQuadVertexData[0].dwDiffuse;
+    aQuadVertexData[3].dwDiffuse = aQuadVertexData[0].dwDiffuse;
     HRESULT HVar2 = g_pD3DSpriteQuadVB->lpVtbl->Lock(g_pD3DSpriteQuadVB, 0x21, (void**)&nPosY, nullptr);
     if (HVar2) {
       return;
@@ -2903,8 +3603,8 @@ void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int nPosX, int nPosY
     pfDst = aQuadVertexData;
     pfSrc = (float*)nPosY;
     for (iVar3 = 0x20; iVar3; iVar3--) {
-      *pfSrc = *pfDst;
-      pfDst++;
+      *pfSrc = pfDst->fX;
+      pfDst = (D2D3DVertexStrc*)&pfDst->fY;
       pfSrc++;
     }
 
@@ -2919,102 +3619,117 @@ void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int nPosX, int nPosY
 }
 
 BOOL __fastcall DrawImage(D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwGamma, int nDrawMode, BYTE * pPalette) {
-    int aSpriteInfo[11];
-    BOOL nExtractResult = RENDERER_D3D_ExtractSpriteInfo(pData, aSpriteInfo);
-    if (!(nExtractResult && aSpriteInfo[3] + nPosX <= RENDERER_nWindowWidth && -1 < aSpriteInfo[1] + aSpriteInfo[3] + nPosX && -1 < aSpriteInfo[4] + nPosY && aSpriteInfo[4] + nPosY - aSpriteInfo[2] < RENDERER_nWindowHeight)) {
+    D2D3DSpriteInfoStrc aSpriteInfo;
+    BOOL nExtractResult = RENDERER_D3D_ExtractSpriteInfo(pData, &aSpriteInfo);
+    if (!(nExtractResult && aSpriteInfo.nOffsetX + nPosX <= RENDERER_nWindowWidth && -1 < aSpriteInfo.nWidth + aSpriteInfo.nOffsetX + nPosX && -1 < aSpriteInfo.nOffsetY + nPosY && aSpriteInfo.nOffsetY + nPosY - aSpriteInfo.nHeight < RENDERER_nWindowHeight)) {
       return 0;
     }
 
-    RENDERER_D3D_CalculateTextureSize(aSpriteInfo);
+    RENDERER_D3D_CalculateTextureSize(&aSpriteInfo);
     uint8_t nAlpha = SetDrawModeAndGetAlpha(nDrawMode);
     int32_t iVar1 = 2;
     if (nDrawMode != 7) {
       iVar1 = 1;
     }
 
-    iVar1 = RENDERER_DIRECT3D_UploadTextureToCache(aSpriteInfo, pPalette, 0, iVar1);
+    iVar1 = RENDERER_DIRECT3D_UploadTextureToCache(&aSpriteInfo, pPalette, 0, iVar1);
     if (!iVar1) {
       return 1;
     }
 
-    RENDERER_DIRECT3D_DrawPalettedQuad(aSpriteInfo, nPosX, nPosY, dwGamma, 0, nAlpha, 0);
+    RENDERER_DIRECT3D_DrawPalettedQuad(&aSpriteInfo, nPosX, nPosY, dwGamma, 0, nAlpha, 0);
     return 1;
 }
 
 void __fastcall DrawShiftedImage(D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwGamma, int nDrawMode, int nGlobalPaletteShift) {
-    int aSpriteInfo[11];
-    BOOL nExtractResult = RENDERER_D3D_ExtractSpriteInfo(pData, aSpriteInfo);
-    if (!(nExtractResult && aSpriteInfo[3] + nPosX <= RENDERER_nWindowWidth && -1 < aSpriteInfo[1] + aSpriteInfo[3] + nPosX && -1 < aSpriteInfo[4] + nPosY && aSpriteInfo[4] + nPosY - aSpriteInfo[2] < RENDERER_nWindowHeight)) {
+    D2D3DSpriteInfoStrc aSpriteInfo;
+    BOOL nExtractResult = RENDERER_D3D_ExtractSpriteInfo(pData, &aSpriteInfo);
+    if (!(nExtractResult && aSpriteInfo.nOffsetX + nPosX <= RENDERER_nWindowWidth && -1 < aSpriteInfo.nWidth + aSpriteInfo.nOffsetX + nPosX && -1 < aSpriteInfo.nOffsetY + nPosY && aSpriteInfo.nOffsetY + nPosY - aSpriteInfo.nHeight < RENDERER_nWindowHeight)) {
       return;
     }
 
-    RENDERER_D3D_CalculateTextureSize(aSpriteInfo);
-    int32_t iVar1 = RENDERER_DIRECT3D_UploadTextureToCache(aSpriteInfo, nullptr, 0, 1);
+    RENDERER_D3D_CalculateTextureSize(&aSpriteInfo);
+    // [vanilla-plus fix 27] Bake shifted (text) glyphs through the pl2
+    // UI-transpose palette for this color slot, exactly like the GDI renderer
+    // (D2Gdi/Renderer/Windowed.cpp DrawShiftedImage:
+    // gpPaletteTable[nGlobalPaletteShift + 0x34]) and the DirectDraw renderer
+    // (D2DDraw/Renderer/DirectDraw.cpp: pShiftTable =
+    // gpPaletteTable[nGlobalPaletteShift + 0x34]). The 13 transpose palettes
+    // reload from every pal.pl2 and map the font's logical glyph indices onto
+    // the ACTIVE palette's physical text-color ramp, so text colors are
+    // correct under whichever palette family is live. The D3D path was the
+    // only renderer that skipped them: it baked raw glyph indices through
+    // g_Palette16Bit and leaned on the slot-0x45 diffuse multiply, which is
+    // only valid for white-ramp glyph bands and provably wrong for the fonts
+    // whose glyph pixels live in family-dependent bands (a green diffuse
+    // multiply can never yield the field-seen purple; H16-c).
+    BYTE* pBakePalette = nullptr;
+    if (nGlobalPaletteShift) {
+      pBakePalette = (BYTE*)gpPaletteTable[nGlobalPaletteShift + 0x34];
+    }
+    int32_t iVar1 = RENDERER_DIRECT3D_UploadTextureToCache(&aSpriteInfo, pBakePalette, 0, 1);
     if (!iVar1) {
       return;
     }
 
     uint8_t nAlpha = SetDrawModeAndGetAlpha(nDrawMode);
-    RENDERER_DIRECT3D_DrawPalettedQuad(aSpriteInfo, nPosX, nPosY, dwGamma, nGlobalPaletteShift, nAlpha, 0);
+    // Shift 0 at the quad: the transpose already resolved the glyph color at
+    // bake time, so the 0x45 diffuse multiply must not double-apply (GDI
+    // parity - no diffuse is added after the transpose remap).
+    RENDERER_DIRECT3D_DrawPalettedQuad(&aSpriteInfo, nPosX, nPosY, dwGamma, 0, nAlpha, 0);
 }
 
 void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int nPosX, int nPosY, int nSkipLines, int nDrawLines, int nDrawMode) {
-    uint8_t _byAlpha;
-    int spriteInfo[6];
-    int nSpriteHeight;
-    float fVCrop;
-    float fVOffset;
-    uint8_t byAlpha;
-    uint32_t uStack_7;
-    int nPosXSave = nPosX;
-    uint8_t uVar1 = SetDrawModeAndGetAlpha(nDrawMode);
-    _byAlpha = (uint32_t)((uint32_t)((uint32_t)uStack_7 & 0xffffffu) << 8 | (uint32_t)(uint8_t)uVar1);
-    BOOL nUploadResult = RENDERER_D3D_ExtractSpriteInfo(pData, spriteInfo);
+    float fVar1;
+    int iVar3;
+    D2D3DSpriteInfoStrc spriteInfo;
+    uint8_t nAlpha = SetDrawModeAndGetAlpha(nDrawMode);
+    BOOL nUploadResult = RENDERER_D3D_ExtractSpriteInfo(pData, &spriteInfo);
     if (!nUploadResult) {
       return;
     }
 
-    RENDERER_D3D_CalculateTextureSize(spriteInfo);
-    int32_t bTextureUploaded = RENDERER_DIRECT3D_UploadTextureToCache(spriteInfo, nullptr, 0, 1);
+    RENDERER_D3D_CalculateTextureSize(&spriteInfo);
+    int32_t bTextureUploaded = RENDERER_DIRECT3D_UploadTextureToCache(&spriteInfo, nullptr, 0, 1);
     if (!bTextureUploaded) {
       return;
     }
     if (!nSkipLines) {
-      fVCrop = (float)(nSpriteHeight - nDrawLines);
-      if (nSpriteHeight - nDrawLines < 0) {
-        fVCrop += 4.2949673e+09;
+      fVar1 = (float)(spriteInfo.nTexHeight - nDrawLines);
+      if (spriteInfo.nTexHeight - nDrawLines < 0) {
+        fVar1 += 4.2949673e+09;
       }
     } else {
-      int iVar2;
+      float fVar2;
       nPosY -= nSkipLines;
-      iVar2 = nSpriteHeight - nSkipLines;
-      fVCrop = (float)(iVar2 - nDrawLines);
-      if (iVar2 - nDrawLines < 0) {
-        fVCrop += 4.2949673e+09;
+      iVar3 = spriteInfo.nTexHeight - nSkipLines;
+      fVar1 = (float)(iVar3 - nDrawLines);
+      if (iVar3 - nDrawLines < 0) {
+        fVar1 += 4.2949673e+09;
       }
 
-      fVOffset = (float)iVar2;
-      if (iVar2 < 0) {
-        fVOffset += 4.2949673e+09;
+      fVar2 = (float)iVar3;
+      if (iVar3 < 0) {
+        fVar2 += 4.2949673e+09;
       }
 
-      fVOffset *= 1.0 / (float)nSpriteHeight;
+      spriteInfo.fV1 = fVar2 * (1.0 / (float)spriteInfo.nTexHeight);
     }
 
-    fVCrop = 1.0 / (float)nSpriteHeight * fVCrop;
-    nSpriteHeight = nDrawLines;
-    RENDERER_DIRECT3D_DrawPalettedQuad(spriteInfo, nPosXSave, nPosY, -1, 0, (uint8_t)_byAlpha, 0);
+    spriteInfo.fV0 = 1.0 / (float)spriteInfo.nTexHeight * fVar1;
+    spriteInfo.nTexHeight = nDrawLines;
+    RENDERER_DIRECT3D_DrawPalettedQuad(&spriteInfo, nPosX, nPosY, -1, 0, nAlpha, 0);
 }
 
-BOOL __fastcall RENDERER_D3D_ClipSpriteToRect(int * pClipResult, int * pSpriteInfo, int nPosX, int nPosY, uint32_t * pClipRect) {
+BOOL __fastcall RENDERER_D3D_ClipSpriteToRect(D2RenderClipOutStrc * pClipResult, int * pSpriteInfo, int nPosX, int nPosY, uint32_t * pClipRect) {
     int nSpriteLeft = nPosX + pSpriteInfo[3];
     int nSpriteW = pSpriteInfo[1];
     int nSpriteTop = nPosY + pSpriteInfo[4];
     int nSpriteH = pSpriteInfo[2];
-    pClipResult[3] = nSpriteH;
-    *pClipResult = 0;
-    pClipResult[1] = nSpriteW;
-    pClipResult[2] = 0;
+    pClipResult->nDrawHeight = nSpriteH;
+    pClipResult->nSkipLeft = 0;
+    pClipResult->nDrawWidth = nSpriteW;
+    pClipResult->nSkipTop = 0;
     uint32_t uClipTop = (int)*pClipRect < 1 ? 0 : *pClipRect;
     uint32_t uClipLeft = RENDERER_nWindowWidth;
     if ((int)pClipRect[1] < RENDERER_nWindowWidth) {
@@ -3033,26 +3748,26 @@ BOOL __fastcall RENDERER_D3D_ClipSpriteToRect(int * pClipResult, int * pSpriteIn
       return 1;
     }
     if (nSpriteLeft < (int)uClipTop) {
-      *pClipResult = uClipTop - nSpriteLeft;
+      pClipResult->nSkipLeft = uClipTop - nSpriteLeft;
     } else {
-      *pClipResult = 0;
+      pClipResult->nSkipLeft = 0;
     }
     if (nSpriteW + nSpriteLeft < (int)uClipLeft) {
-      pClipResult[1] = nSpriteW - *pClipResult;
+      pClipResult->nDrawWidth = nSpriteW - pClipResult->nSkipLeft;
     } else {
-      pClipResult[1] = uClipLeft - *pClipResult - nSpriteLeft;
+      pClipResult->nDrawWidth = uClipLeft - pClipResult->nSkipLeft - nSpriteLeft;
     }
     if ((int)uClipBottom < nSpriteTop) {
-      pClipResult[2] = nSpriteTop - uClipBottom - 1;
+      pClipResult->nSkipTop = nSpriteTop - uClipBottom - 1;
     } else {
-      pClipResult[2] = 0;
+      pClipResult->nSkipTop = 0;
     }
     if (nSpriteTop - nSpriteH < (int)uClipRight) {
-      pClipResult[3] = nSpriteTop - pClipResult[2] - uClipRight + 1;
+      pClipResult->nDrawHeight = nSpriteTop - pClipResult->nSkipTop - uClipRight + 1;
     } else {
-      pClipResult[3] = nSpriteH - pClipResult[2];
+      pClipResult->nDrawHeight = nSpriteH - pClipResult->nSkipTop;
     }
-    if (0 < pClipResult[3]) {
+    if (0 < pClipResult->nDrawHeight) {
       return 0;
     }
 
@@ -3062,76 +3777,57 @@ BOOL __fastcall RENDERER_D3D_ClipSpriteToRect(int * pClipResult, int * pSpriteIn
 }
 
 void __fastcall DrawClippedImage(D2GfxDataStrc * pData, int nPosX, int nPosY, void * pCropRect, int nDrawMode) {
-    // Frame slots -28..-12 are ONE object: &nClipLeft is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nClipLeft;
-      int nClipWidth;
-      int nClipTop;
-      int nClipHeight;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    uint8_t _byAlpha;
-    int iVar2;
-    int spriteInfo[5];
-    int nTexWidth;
-    int nTexHeight;
-    float fVStart;
-    uint8_t byAlpha;
-    uint32_t uStack_b;
-    D2GfxDataStrc* pDataSave = pData;
-    uint8_t uVar1 = SetDrawModeAndGetAlpha(nDrawMode);
-    _byAlpha = (uint32_t)((uint32_t)((uint32_t)uStack_b & 0xffffffu) << 8 | (uint32_t)(uint8_t)uVar1);
-    BOOL nResult = RENDERER_D3D_ExtractSpriteInfo(pDataSave, spriteInfo);
+    int iVar1;
+    D2D3DSpriteInfoStrc spriteInfo;
+    D2RenderClipOutStrc sClip;
+    uint8_t nAlpha = SetDrawModeAndGetAlpha(nDrawMode);
+    BOOL nResult = RENDERER_D3D_ExtractSpriteInfo(pData, &spriteInfo);
     if (!nResult) {
       return;
     }
 
-    RENDERER_D3D_CalculateTextureSize(spriteInfo);
-    int32_t bTextureUploaded = RENDERER_DIRECT3D_UploadTextureToCache(spriteInfo, nullptr, 0, 1);
+    RENDERER_D3D_CalculateTextureSize(&spriteInfo);
+    int32_t bTextureUploaded = RENDERER_DIRECT3D_UploadTextureToCache(&spriteInfo, nullptr, 0, 1);
     if (!bTextureUploaded) {
       return;
     }
 
-    nResult = RENDERER_D3D_ClipSpriteToRect(&__frame0.nClipLeft, spriteInfo, nPosX, nPosY, (uint32_t*)pCropRect);
+    nResult = RENDERER_D3D_ClipSpriteToRect(&sClip, (int*)&spriteInfo, nPosX, nPosY, (uint32_t*)pCropRect);
     if (nResult) {
       return;
     }
-    if (!__frame0.nClipTop) {
-      iVar2 = nTexHeight - __frame0.nClipHeight;
+    if (!sClip.nSkipTop) {
+      iVar1 = spriteInfo.nTexHeight - sClip.nDrawHeight;
     } else {
-      iVar2 = nTexHeight - __frame0.nClipHeight - __frame0.nClipTop;
-      nPosY -= __frame0.nClipTop;
-      fVStart = 1.0 / (float)nTexHeight * (float)(nTexHeight - __frame0.nClipTop);
+      iVar1 = spriteInfo.nTexHeight - sClip.nDrawHeight - sClip.nSkipTop;
+      nPosY -= sClip.nSkipTop;
+      spriteInfo.fV1 = 1.0 / (float)spriteInfo.nTexHeight * (float)(spriteInfo.nTexHeight - sClip.nSkipTop);
     }
 
-    float fVEnd = 1.0 / (float)nTexHeight * (float)iVar2;
-    nTexHeight = __frame0.nClipHeight;
-    iVar2 = __frame0.nClipWidth;
-    if (__frame0.nClipLeft) {
-      float fUStart;
-      nPosX += __frame0.nClipLeft;
-      fUStart = 1.0 / (float)nTexWidth * (float)__frame0.nClipLeft;
-      iVar2 = __frame0.nClipWidth + __frame0.nClipLeft;
+    spriteInfo.fV0 = 1.0 / (float)spriteInfo.nTexHeight * (float)iVar1;
+    spriteInfo.nTexHeight = sClip.nDrawHeight;
+    iVar1 = sClip.nDrawWidth;
+    if (sClip.nSkipLeft) {
+      nPosX += sClip.nSkipLeft;
+      spriteInfo.fU0 = 1.0 / (float)spriteInfo.nTexWidth * (float)sClip.nSkipLeft;
+      iVar1 = sClip.nDrawWidth + sClip.nSkipLeft;
     }
 
-    float fUEnd = 1.0 / (float)nTexWidth * (float)iVar2;
-    nTexWidth = __frame0.nClipWidth;
-    RENDERER_DIRECT3D_DrawPalettedQuad(spriteInfo, nPosX, nPosY, -1, 0, (uint8_t)_byAlpha, 0);
+    spriteInfo.fU1 = 1.0 / (float)spriteInfo.nTexWidth * (float)iVar1;
+    spriteInfo.nTexWidth = sClip.nDrawWidth;
+    RENDERER_DIRECT3D_DrawPalettedQuad(&spriteInfo, nPosX, nPosY, -1, 0, nAlpha, 0);
 }
 
 void __fastcall DrawShadow(D2GfxDataStrc * pData, int nPosX, int nPosY) {
-    int spriteInfo[12];
-    uint32_t uStack_7;
+    D2D3DSpriteInfoStrc spriteInfo;
     uint8_t byAlpha = 0xff;
-    BOOL bShadowBlend = RENDERER_D3D_ExtractSpriteInfo(pData, spriteInfo);
+    BOOL bShadowBlend = RENDERER_D3D_ExtractSpriteInfo(pData, &spriteInfo);
     if (!bShadowBlend) {
       return;
     }
 
-    RENDERER_D3D_CalculateTextureSize(spriteInfo);
-    int32_t bTextureUploaded = RENDERER_DIRECT3D_UploadTextureToCache(spriteInfo, nullptr, 0, 4);
+    RENDERER_D3D_CalculateTextureSize(&spriteInfo);
+    int32_t bTextureUploaded = RENDERER_DIRECT3D_UploadTextureToCache(&spriteInfo, nullptr, 0, 4);
     if (!bTextureUploaded) {
       return;
     }
@@ -3146,27 +3842,27 @@ void __fastcall DrawShadow(D2GfxDataStrc * pData, int nPosX, int nPosY) {
     }
 
     RENDERER_D3D_SetTextureFilterMode(1);
-    RENDERER_D3D_DrawShadowQuad(spriteInfo, nPosX, nPosY, byAlpha);
+    RENDERER_D3D_DrawShadowQuad((int*)&spriteInfo, nPosX, nPosY, byAlpha);
 }
 
 void __fastcall DrawImageFast(D2GfxDataStrc * pData, int nPosX, int nPosY, BYTE nPaletteIndex) {
     int32_t iVar1;
-    int aSpriteInfo[11];
+    D2D3DSpriteInfoStrc aSpriteInfo;
     SetBlendMode(4);
-    BOOL nExtractResult = RENDERER_D3D_ExtractSpriteInfo(pData, aSpriteInfo);
+    BOOL nExtractResult = RENDERER_D3D_ExtractSpriteInfo(pData, &aSpriteInfo);
     if (!nExtractResult) {
       return;
     }
 
-    aSpriteInfo[1] += 2;
-    aSpriteInfo[2] += 2;
-    RENDERER_D3D_CalculateTextureSize(aSpriteInfo);
-    iVar1 = RENDERER_DIRECT3D_UploadTextureToCache(aSpriteInfo, nullptr, nPaletteIndex, 3);
+    aSpriteInfo.nWidth += 2;
+    aSpriteInfo.nHeight += 2;
+    RENDERER_D3D_CalculateTextureSize(&aSpriteInfo);
+    iVar1 = RENDERER_DIRECT3D_UploadTextureToCache(&aSpriteInfo, nullptr, nPaletteIndex, 3);
     if (!iVar1) {
       return;
     }
 
-    RENDERER_DIRECT3D_DrawPalettedQuad(aSpriteInfo, nPosX - 1, nPosY + 1, -1, 0, 0x40, 1);
+    RENDERER_DIRECT3D_DrawPalettedQuad(&aSpriteInfo, nPosX - 1, nPosY + 1, -1, 0, 0x40, 1);
 }
 
 void __fastcall DebugFillBackBuffer(int nPosX, int nPosY) {
@@ -3174,39 +3870,30 @@ void __fastcall DebugFillBackBuffer(int nPosX, int nPosY) {
 }
 
 void __stdcall RENDERER_D3D_InitializeTexturePools() {
-    // Frame slots -20..-4 are ONE object: &vbDescSize is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t vbDescSize;
-      uint32_t vbDescCaps;
-      uint32_t vbDescFVF;
-      uint32_t vbDescNumVerts;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D3DVERTEXBUFFERDESC sVBDesc;
     int32_t nErrorLine;
     if (!gpD3DTextureSpritePoolMemory0) {
       DWORD dwParam;
       if (!gpD3DTextureSpritePoolMemory1) {
         gpD3DTextureSpritePoolMemory0 = D2_ALLOC(0x10000);
         gpD3DTextureSpritePoolMemory1 = D2_ALLOC(0x10000);
-        nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gpD3DSpriteSystemSurface0, gpD3DSpriteSystemTexture0, 0x100, 0x100);
+        nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gD3DGenericTextureCache.apSpriteSurfaces, gD3DGenericTextureCache.apSpriteTextures, 0x100, 0x100);
         if (!nErrorLine) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5e);
           exit(-1);
         } else {
-          nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gpD3DSpriteSystemSurface0 + 1, gpD3DSpriteSystemTexture0 + 1, 0x80, 0x80);
+          nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gD3DGenericTextureCache.apSpriteSurfaces + 1, gD3DGenericTextureCache.apSpriteTextures + 1, 0x80, 0x80);
           if (!nErrorLine) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x61);
             exit(-1);
           } else {
-            nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gpD3DSpriteSystemSurface0 + 2, gpD3DSpriteSystemTexture0 + 2, 0x20, 0x20);
+            nErrorLine = RENDERER_D3D_CreateSystemMemoryTexture(gD3DGenericTextureCache.apSpriteSurfaces + 2, gD3DGenericTextureCache.apSpriteTextures + 2, 0x20, 0x20);
             if (nErrorLine) {
-              __frame0.vbDescSize = 0x10;
-              __frame0.vbDescCaps = 0x10800;
-              __frame0.vbDescFVF = 0x1c4;
-              __frame0.vbDescNumVerts = 0x30;
-              dwParam = g_pDirect3D7->lpVtbl->CreateVertexBuffer(g_pDirect3D7, &__frame0.vbDescSize, &g_pD3DSpriteQuadVB, 4, nullptr);
+              sVBDesc.dwSize = 0x10;
+              sVBDesc.dwCaps = 0x10800;
+              sVBDesc.dwFVF = 0x1c4;
+              sVBDesc.dwNumVertices = 0x30;
+              dwParam = g_pDirect3D7->lpVtbl->CreateVertexBuffer(g_pDirect3D7, &sVBDesc, &g_pD3DSpriteQuadVB, 4, nullptr);
               if (dwParam) {
                 RENDERER_DIRECT3D_ErrorLog("CreateVertexBuffer failed!", dwParam);
                 return;
@@ -3254,8 +3941,8 @@ void __stdcall RENDERER_D3D_ReleaseFontTextures() {
 
 void __stdcall RENDERER_D3D_CreateFontTextures() {
     // Static local variables (originally global data)
-    static uint32_t gnD3DFontTextColor = 0xffffff;
-    static COLORREF gnD3DFontBkColor = 0;
+    static uint32_t gnD3DFontTextColor = 0xffffff; D2_STATIC_GUARD(gnD3DFontTextColor, "D2Direct3D::Renderer::RENDERER_D3D_CreateFontTextures::gnD3DFontTextColor");
+    static COLORREF gnD3DFontBkColor = 0; D2_STATIC_GUARD(gnD3DFontBkColor, "D2Direct3D::Renderer::RENDERER_D3D_CreateFontTextures::gnD3DFontBkColor");
 
     // Frame slots -28..-4 are ONE object: &pMemoryTexture is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -3415,26 +4102,26 @@ void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int nPosX, int n
 
 int __fastcall RENDERER_D3D_InitializeFontSystem(int nBaseOffset) {
     // Static local variables (originally global data)
-    static float gfD3DFontVertex0W;
-    static float gfD3DFontVertex0RHW;
-    static unsigned int gnD3DFontVertex0Diffuse;
-    static float gfD3DFontVertex0U;
-    static float gfD3DFontVertex0V;
-    static float gfD3DFontVertex1Z;
-    static float gfD3DFontVertex1RHW;
-    static unsigned int gnD3DFontVertex1Diffuse;
-    static float gfD3DFontVertex1X;
-    static float gfD3DFontVertex1U;
-    static float gfD3DFontVertex2Z;
-    static float gfD3DFontVertex2RHW;
-    static unsigned int gnD3DFontVertex2Diffuse;
-    static float gfD3DFontVertex2U;
-    static float gfD3DFontVertex2V;
-    static float gfD3DFontVertex3Z;
-    static float gfD3DFontVertex3RHW;
-    static unsigned int gnD3DFontVertex3Diffuse;
-    static float gfD3DFontVertex3U;
-    static float gfD3DFontVertex3V;
+    static float gfD3DFontVertex0W; D2_STATIC_GUARD_BSS(gfD3DFontVertex0W, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex0W");
+    static float gfD3DFontVertex0RHW; D2_STATIC_GUARD_BSS(gfD3DFontVertex0RHW, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex0RHW");
+    static unsigned int gnD3DFontVertex0Diffuse; D2_STATIC_GUARD_BSS(gnD3DFontVertex0Diffuse, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gnD3DFontVertex0Diffuse");
+    static float gfD3DFontVertex0U; D2_STATIC_GUARD_BSS(gfD3DFontVertex0U, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex0U");
+    static float gfD3DFontVertex0V; D2_STATIC_GUARD_BSS(gfD3DFontVertex0V, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex0V");
+    static float gfD3DFontVertex1Z; D2_STATIC_GUARD_BSS(gfD3DFontVertex1Z, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex1Z");
+    static float gfD3DFontVertex1RHW; D2_STATIC_GUARD_BSS(gfD3DFontVertex1RHW, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex1RHW");
+    static unsigned int gnD3DFontVertex1Diffuse; D2_STATIC_GUARD_BSS(gnD3DFontVertex1Diffuse, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gnD3DFontVertex1Diffuse");
+    static float gfD3DFontVertex1X; D2_STATIC_GUARD_BSS(gfD3DFontVertex1X, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex1X");
+    static float gfD3DFontVertex1U; D2_STATIC_GUARD_BSS(gfD3DFontVertex1U, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex1U");
+    static float gfD3DFontVertex2Z; D2_STATIC_GUARD_BSS(gfD3DFontVertex2Z, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex2Z");
+    static float gfD3DFontVertex2RHW; D2_STATIC_GUARD_BSS(gfD3DFontVertex2RHW, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex2RHW");
+    static unsigned int gnD3DFontVertex2Diffuse; D2_STATIC_GUARD_BSS(gnD3DFontVertex2Diffuse, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gnD3DFontVertex2Diffuse");
+    static float gfD3DFontVertex2U; D2_STATIC_GUARD_BSS(gfD3DFontVertex2U, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex2U");
+    static float gfD3DFontVertex2V; D2_STATIC_GUARD_BSS(gfD3DFontVertex2V, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex2V");
+    static float gfD3DFontVertex3Z; D2_STATIC_GUARD_BSS(gfD3DFontVertex3Z, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex3Z");
+    static float gfD3DFontVertex3RHW; D2_STATIC_GUARD_BSS(gfD3DFontVertex3RHW, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex3RHW");
+    static unsigned int gnD3DFontVertex3Diffuse; D2_STATIC_GUARD_BSS(gnD3DFontVertex3Diffuse, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gnD3DFontVertex3Diffuse");
+    static float gfD3DFontVertex3U; D2_STATIC_GUARD_BSS(gfD3DFontVertex3U, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex3U");
+    static float gfD3DFontVertex3V; D2_STATIC_GUARD_BSS(gfD3DFontVertex3V, "D2Direct3D::Renderer::RENDERER_D3D_InitializeFontSystem::gfD3DFontVertex3V");
 
     RENDERER_D3D_CreateFontTextures();
     gD3DFontVertex0 = 0;
@@ -3473,76 +4160,37 @@ BOOL __stdcall RENDERER_D3D_IsShadowBlendingEnabled() {
 }
 
 void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor, int nDrawMode) {
-    // Frame slots -140..-4 are ONE object: &fV0x is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      float fV0x;
-      float fV0y;
-      float fV0z;
-      float fV0rhw;
-      uint32_t dwV0color;
-      uint8_t __pad20[4];
-      float fV0u;
-      float fV0v;
-      float local_6c;
-      float fV1y;
-      float fV1z;
-      float fV1rhw;
-      uint32_t dwV1color;
-      uint8_t __pad52[4];
-      float fV1u;
-      float fV1v;
-      float fV2x;
-      float fV1x;
-      float fV2z;
-      float fV2rhw;
-      uint32_t dwV2color;
-      uint8_t __pad84[4];
-      float fV2u;
-      float fV2v;
-      float fV3x;
-      float fV2y;
-      float fV3z;
-      float fV3rhw;
-      uint32_t dwV3color;
-      uint8_t __pad116[4];
-      float fV3u;
-      float fV3v;
-      float fClampedLeftX;
-      float fClampedTopY;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 136, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D2D3DVertexStrc fV0x[4];
     uint32_t nClampedBottom = nXStart < 1 ? 0 : nXStart;
     uint32_t nClampedRight = RENDERER_nWindowWidth - 1;
-    __frame0.fClampedLeftX = (float)nClampedRight;
+    uint32_t uVar3 = nClampedRight;
     if ((int)nClampedBottom < (int)nClampedRight) {
-      __frame0.fClampedLeftX = (float)nClampedBottom;
+      uVar3 = nClampedBottom;
     }
 
     nClampedBottom = nXEnd < 1 ? 0 : nXEnd;
     if ((int)nClampedBottom < (int)nClampedRight) {
       nClampedRight = nClampedBottom;
     }
-    if (__frame0.fClampedLeftX == (float)nClampedRight) {
+    if (uVar3 == nClampedRight) {
       return;
     }
 
     nClampedBottom = RENDERER_nWindowHeight - 1;
     uint32_t nClampedLeft = nYStart < 1 ? 0 : nYStart;
-    __frame0.fClampedTopY = (float)nClampedBottom;
+    uint32_t uVar2 = nClampedBottom;
     if ((int)nClampedLeft < (int)nClampedBottom) {
-      __frame0.fClampedTopY = (float)nClampedLeft;
+      uVar2 = nClampedLeft;
     }
 
     nClampedLeft = nYEnd < 1 ? 0 : nYEnd;
     if ((int)nClampedLeft < (int)nClampedBottom) {
       nClampedBottom = nClampedLeft;
     }
-    if ((float)nClampedBottom == __frame0.fClampedTopY) {
+    if (nClampedBottom == uVar2) {
       return;
     }
-    if ((int)nClampedBottom < (int)__frame0.fClampedTopY) {
+    if ((int)nClampedBottom < (int)uVar2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2b);
       exit(-1);
     }
@@ -3550,133 +4198,92 @@ void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, 
     RENDERER_D3D_SetBlendMode(2);
     SetBlendMode(4);
     RENDERER_D3D_SetTextureFilterMode(1);
-    __frame0.fV0x = (float)(int)__frame0.fClampedLeftX;
-    __frame0.fV0y = (float)(int)__frame0.fClampedTopY;
-    __frame0.fV0z = 0.5;
-    __frame0.fV0rhw = 1.0;
-    __frame0.fV0u = 0.0;
-    __frame0.fV0v = 0.0;
-    __frame0.fV1y = (float)(int)nClampedBottom;
-    __frame0.fV1z = 0.5;
-    __frame0.fV1rhw = 1.0;
-    __frame0.fV1u = 0.0;
-    __frame0.fV1v = 0.0;
-    __frame0.fV2x = (float)(int)nClampedRight;
-    __frame0.fV2z = 0.5;
-    __frame0.fV3z = 0.5;
-    __frame0.fV2rhw = 1.0;
-    __frame0.fV3rhw = 1.0;
-    __frame0.fV2u = 0.0;
-    __frame0.fV2v = 0.0;
-    __frame0.fV3u = 0.0;
-    __frame0.fV3v = 0.0;
-    __frame0.local_6c = __frame0.fV0x;
-    __frame0.fV1x = __frame0.fV1y;
-    __frame0.fV3x = __frame0.fV2x;
-    __frame0.fV2y = __frame0.fV0y;
-    __frame0.fClampedLeftX = __frame0.fV0x;
-    __frame0.fClampedTopY = __frame0.fV0y;
+    fV0x[0].fX = (float)(int)uVar3;
+    fV0x[0].fY = (float)(int)uVar2;
+    fV0x[0].fZ = 0.5;
+    fV0x[0].fRHW = 1.0;
+    fV0x[0].fU = 0.0;
+    fV0x[0].fV = 0.0;
+    fV0x[1].fY = (float)(int)nClampedBottom;
+    fV0x[1].fZ = 0.5;
+    fV0x[1].fRHW = 1.0;
+    fV0x[1].fU = 0.0;
+    fV0x[1].fV = 0.0;
+    fV0x[2].fX = (float)(int)nClampedRight;
+    fV0x[2].fZ = 0.5;
+    fV0x[3].fZ = 0.5;
+    fV0x[2].fRHW = 1.0;
+    fV0x[3].fRHW = 1.0;
+    fV0x[2].fU = 0.0;
+    fV0x[2].fV = 0.0;
+    fV0x[3].fU = 0.0;
+    fV0x[3].fV = 0.0;
+    fV0x[1].fX = fV0x[0].fX;
+    fV0x[2].fY = fV0x[1].fY;
+    fV0x[3].fX = fV0x[2].fX;
+    fV0x[3].fY = fV0x[0].fY;
     uint32_t uVar1 = PALETTE_GetColorByIndex((uint32_t)dwColor);
-    __frame0.dwV0color = uVar1 & 0xffffff;
+    nClampedRight = uVar1 & 0xffffff;
     switch (nDrawMode) {
       case 0:
         {
-          __frame0.dwV0color |= 0x40000000;
+          fV0x[0].dwDiffuse = nClampedRight | 0x40000000;
           break;
         }
       case 1:
         {
-          __frame0.dwV0color |= 0x80000000;
+          fV0x[0].dwDiffuse = nClampedRight | 0x80000000;
           break;
         }
       case 2:
         {
-          __frame0.dwV0color |= 0xc0000000;
+          fV0x[0].dwDiffuse = nClampedRight | 0xc0000000;
           break;
         }
       default:
         {
-          __frame0.dwV0color |= -16777216;
+          fV0x[0].dwDiffuse = nClampedRight | -16777216;
         }
     }
 
-    __frame0.dwV1color = __frame0.dwV0color;
-    __frame0.dwV2color = __frame0.dwV0color;
-    __frame0.dwV3color = __frame0.dwV0color;
-    g_pD3DDevice->lpVtbl->DrawPrimitive(g_pD3DDevice, 6, 0x1c4, &__frame0.fV0x, 4, 0x1c);
+    fV0x[1].dwDiffuse = fV0x[0].dwDiffuse;
+    fV0x[2].dwDiffuse = fV0x[0].dwDiffuse;
+    fV0x[3].dwDiffuse = fV0x[0].dwDiffuse;
+    g_pD3DDevice->lpVtbl->DrawPrimitive(g_pD3DDevice, 6, 0x1c4, fV0x, 4, 0x1c);
 }
 
 void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha) {
-    // Frame slots -140..-4 are ONE object: &fV0x is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      float fV0x;
-      float fV0y;
-      float fV0z;
-      float fV0rhw;
-      uint32_t dwV0color;
-      uint8_t __pad20[4];
-      float fV0u;
-      float fV0v;
-      float local_6c;
-      float fV1y;
-      float fV1z;
-      float fV1rhw;
-      uint32_t dwV1color;
-      uint8_t __pad52[4];
-      float fV1u;
-      float fV1v;
-      float fV2x;
-      float fV1x;
-      float fV2z;
-      float fV2rhw;
-      uint32_t dwV2color;
-      uint8_t __pad84[4];
-      float fV2u;
-      float fV2v;
-      float fV3x;
-      float fV2y;
-      float fV3z;
-      float fV3rhw;
-      uint32_t dwV3color;
-      uint8_t __pad116[4];
-      float fV3u;
-      float fV3v;
-      float fClampedLeftX;
-      float fClampedTopY;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 136, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D2D3DVertexStrc fV0x[4];
     uint32_t nClampedBottom = nXStart < 1 ? 0 : nXStart;
     uint32_t dwRGBColor = RENDERER_nWindowWidth - 1;
-    __frame0.fClampedLeftX = (float)dwRGBColor;
+    uint32_t uVar3 = dwRGBColor;
     if ((int)nClampedBottom < (int)dwRGBColor) {
-      __frame0.fClampedLeftX = (float)nClampedBottom;
+      uVar3 = nClampedBottom;
     }
 
     nClampedBottom = nXEnd < 1 ? 0 : nXEnd;
     if ((int)nClampedBottom < (int)dwRGBColor) {
       dwRGBColor = nClampedBottom;
     }
-    if (__frame0.fClampedLeftX == (float)dwRGBColor) {
+    if (uVar3 == dwRGBColor) {
       return;
     }
 
     nClampedBottom = RENDERER_nWindowHeight - 1;
     uint32_t nClampedLeft = nYStart < 1 ? 0 : nYStart;
-    __frame0.fClampedTopY = (float)nClampedBottom;
+    uint32_t uVar2 = nClampedBottom;
     if ((int)nClampedLeft < (int)nClampedBottom) {
-      __frame0.fClampedTopY = (float)nClampedLeft;
+      uVar2 = nClampedLeft;
     }
 
     nClampedLeft = nYEnd < 1 ? 0 : nYEnd;
     if ((int)nClampedLeft < (int)nClampedBottom) {
       nClampedBottom = nClampedLeft;
     }
-    if ((float)nClampedBottom == __frame0.fClampedTopY) {
+    if (nClampedBottom == uVar2) {
       return;
     }
-    if ((int)nClampedBottom < (int)__frame0.fClampedTopY) {
+    if ((int)nClampedBottom < (int)uVar2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x68);
       exit(-1);
     }
@@ -3684,43 +4291,40 @@ void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEn
     RENDERER_D3D_SetBlendMode(2);
     SetBlendMode(4);
     RENDERER_D3D_SetTextureFilterMode(1);
-    __frame0.fV0x = (float)(int)__frame0.fClampedLeftX;
-    __frame0.fV0y = (float)(int)__frame0.fClampedTopY;
-    __frame0.fV0z = 0.5;
-    __frame0.fV0rhw = 1.0;
-    __frame0.fV0u = 0.0;
-    __frame0.fV0v = 0.0;
-    __frame0.fV1y = (float)(int)nClampedBottom;
-    __frame0.fV1z = 0.5;
-    __frame0.fV1rhw = 1.0;
-    __frame0.fV1u = 0.0;
-    __frame0.fV1v = 0.0;
-    __frame0.fV2x = (float)(int)dwRGBColor;
-    __frame0.fV2z = 0.5;
-    __frame0.fV3z = 0.5;
-    __frame0.fV2rhw = 1.0;
-    __frame0.fV3rhw = 1.0;
-    __frame0.fV2u = 0.0;
-    __frame0.fV2v = 0.0;
-    __frame0.fV3u = 0.0;
-    __frame0.fV3v = 0.0;
-    __frame0.local_6c = __frame0.fV0x;
-    __frame0.fV1x = __frame0.fV1y;
-    __frame0.fV3x = __frame0.fV2x;
-    __frame0.fV2y = __frame0.fV0y;
-    __frame0.fClampedLeftX = __frame0.fV0x;
-    __frame0.fClampedTopY = __frame0.fV0y;
+    fV0x[0].fX = (float)(int)uVar3;
+    fV0x[0].fY = (float)(int)uVar2;
+    fV0x[0].fZ = 0.5;
+    fV0x[0].fRHW = 1.0;
+    fV0x[0].fU = 0.0;
+    fV0x[0].fV = 0.0;
+    fV0x[1].fY = (float)(int)nClampedBottom;
+    fV0x[1].fZ = 0.5;
+    fV0x[1].fRHW = 1.0;
+    fV0x[1].fU = 0.0;
+    fV0x[1].fV = 0.0;
+    fV0x[2].fX = (float)(int)dwRGBColor;
+    fV0x[2].fZ = 0.5;
+    fV0x[3].fZ = 0.5;
+    fV0x[2].fRHW = 1.0;
+    fV0x[3].fRHW = 1.0;
+    fV0x[2].fU = 0.0;
+    fV0x[2].fV = 0.0;
+    fV0x[3].fU = 0.0;
+    fV0x[3].fV = 0.0;
+    fV0x[1].fX = fV0x[0].fX;
+    fV0x[2].fY = fV0x[1].fY;
+    fV0x[3].fX = fV0x[2].fX;
+    fV0x[3].fY = fV0x[0].fY;
     uint32_t uVar1 = PALETTE_GetColorByIndex(dwColor & 0xff);
-    __frame0.dwV0color = uVar1 & 0xffffff | (uint32_t)nAlpha << 0x18;
-    __frame0.dwV1color = __frame0.dwV0color;
-    __frame0.dwV2color = __frame0.dwV0color;
-    __frame0.dwV3color = __frame0.dwV0color;
-    g_pD3DDevice->lpVtbl->DrawPrimitive(g_pD3DDevice, 6, 0x1c4, &__frame0.fV0x, 4, 0x1c);
+    fV0x[0].dwDiffuse = uVar1 & 0xffffff | (uint32_t)nAlpha << 0x18;
+    fV0x[1].dwDiffuse = fV0x[0].dwDiffuse;
+    fV0x[2].dwDiffuse = fV0x[0].dwDiffuse;
+    fV0x[3].dwDiffuse = fV0x[0].dwDiffuse;
+    g_pD3DDevice->lpVtbl->DrawPrimitive(g_pD3DDevice, 6, 0x1c4, fV0x, 4, 0x1c);
 }
 
 void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha) {
-    D3DPRIMVERTEX v1;
-    D3DPRIMVERTEX v2;
+    D2D3DVertexStrc v1[2];
     if (!((-1 < nXEnd || -1 < nXStart) && (nXEnd < RENDERER_nWindowWidth || nXStart < RENDERER_nWindowWidth) && (-1 < nYEnd || -1 < nYStart) && (nYEnd < RENDERER_nWindowHeight || nYStart < RENDERER_nWindowHeight))) {
       return;
     }
@@ -3735,26 +4339,32 @@ void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD d
     }
 
     RENDERER_D3D_SetTextureFilterMode(1);
-    v2.color = dwRGBColor;
+    v1[1].dwDiffuse = dwRGBColor;
     if (nXStart == nXEnd && nYStart == nYEnd) {
-      v2.x = (float)nXStart;
-      v2.y = (float)nYStart;
-      v2.z = 0.5;
-      v2.rhw = 1.0;
-      g_pD3DDevice->lpVtbl->DrawPrimitive(g_pD3DDevice, 1, 0x1c4, &v2, 1, 0x1c);
+      v1[1].fX = (float)nXStart;
+      v1[1].fY = (float)nYStart;
+      v1[1].fZ = 0.5;
+      v1[1].fRHW = 1.0;
+      v1[1].fU = 0.0;
+      v1[1].fV = 0.0;
+      g_pD3DDevice->lpVtbl->DrawPrimitive(g_pD3DDevice, 1, 0x1c4, v1 + 1, 1, 0x1c);
       return;
     }
 
-    v1.x = (float)nXStart;
-    v1.y = (float)nYStart;
-    v1.z = 0.5;
-    v1.rhw = 1.0;
-    v2.x = (float)nXEnd;
-    v2.y = (float)nYEnd;
-    v2.z = 0.5;
-    v2.rhw = 1.0;
-    v1.color = dwRGBColor;
-    g_pD3DDevice->lpVtbl->DrawPrimitive(g_pD3DDevice, 2, 0x1c4, &v1, 2, 0x1c);
+    v1[0].fX = (float)nXStart;
+    v1[0].fY = (float)nYStart;
+    v1[0].fZ = 0.5;
+    v1[0].fRHW = 1.0;
+    v1[0].fU = 0.0;
+    v1[0].fV = 0.0;
+    v1[1].fX = (float)nXEnd;
+    v1[1].fY = (float)nYEnd;
+    v1[1].fZ = 0.5;
+    v1[1].fRHW = 1.0;
+    v1[1].fU = 0.0;
+    v1[1].fV = 0.0;
+    v1[0].dwDiffuse = dwRGBColor;
+    g_pD3DDevice->lpVtbl->DrawPrimitive(g_pD3DDevice, 2, 0x1c4, v1, 2, 0x1c);
 }
 
 void __fastcall DrawRect(RECT * pRect, DWORD nPaletteIndex) {
@@ -3879,48 +4489,39 @@ void __fastcall DrawSolidSquare(POINT * pPoint, BYTE nSize, BYTE nPaletteIndex) 
 }
 
 void __fastcall ClearScreen(BOOL bPartial) {
-    // Frame slots -20..-4 are ONE object: &nViewportLeft is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nViewportLeft;
-      int nViewportTop;
-      int nViewportRight;
-      int nViewportBottom;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    RECT nViewportLeft;
     if (gnD3DTextureCapFlags & 0x400) {
       RENDERER_D3D_ClearBackbuffer();
       return;
     }
 
-    __frame0.nViewportLeft = 0;
-    __frame0.nViewportTop = 0;
-    __frame0.nViewportBottom = RENDERER_nWindowHeight;
-    __frame0.nViewportRight = RENDERER_nWindowWidth;
-    g_pD3DViewport->lpVtbl->Clear2(g_pD3DViewport, 1, &__frame0.nViewportLeft, 1, -16777216, 0, 0);
+    nViewportLeft.left = 0;
+    nViewportLeft.top = 0;
+    nViewportLeft.bottom = RENDERER_nWindowHeight;
+    nViewportLeft.right = RENDERER_nWindowWidth;
+    g_pD3DViewport->lpVtbl->Clear2(g_pD3DViewport, 1, &nViewportLeft, 1, -16777216, 0, 0);
 }
 
 // Calculates viewport rectangle based on screen panel layout. nScreenPanels=0: full screen. nScreenPanels=1: left half. nScreenPanels=2: right half. When nParam1=0, adds 32-pixel border and adjusts for status bar (47 pixels). When nParam1=1, applies quarter-width offset for panel centering (stored in pOffset).
-void RENDERER_D3D_CalculateViewportRect(int * pRect, int nScreenPanels, int * pOffset, int nParam1) {
+void RENDERER_D3D_CalculateViewportRect(RECT * pRect, int nScreenPanels, int * pOffset, int nParam1) {
     if (!pRect) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x53);
       exit(-1);
     }
 
-    *pRect = 0;
-    pRect[2] = RENDERER_nWindowWidth;
-    pRect[1] = 0;
-    pRect[3] = RENDERER_nWindowHeight - 0x2f;
+    pRect->left = 0;
+    pRect->right = RENDERER_nWindowWidth;
+    pRect->top = 0;
+    pRect->bottom = RENDERER_nWindowHeight - 0x2f;
     if (!nParam1) {
-      pRect[3] += 0x20;
-      *pRect = -0x20;
+      pRect->bottom += 0x20;
+      pRect->left = -0x20;
       if (nScreenPanels == 1) {
-        pRect[2] -= RENDERER_nWindowWidth / 2;
+        pRect->right -= RENDERER_nWindowWidth / 2;
         return;
       }
       if (nScreenPanels == 2) {
-        *pRect = RENDERER_nWindowWidth / 2 - 0x20;
+        pRect->left = RENDERER_nWindowWidth / 2 - 0x20;
         return;
       }
     } else {
@@ -3933,12 +4534,12 @@ void RENDERER_D3D_CalculateViewportRect(int * pRect, int nScreenPanels, int * pO
       nQuarterWidth = (int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2;
       if (nScreenPanels == 1) {
         *pOffset = -nQuarterWidth;
-        pRect[2] -= nQuarterWidth;
-        *pRect += nQuarterWidth;
+        pRect->right -= nQuarterWidth;
+        pRect->left += nQuarterWidth;
       } else if (nScreenPanels == 2) {
         *pOffset = nQuarterWidth;
-        pRect[2] -= nQuarterWidth;
-        *pRect += nQuarterWidth;
+        pRect->right -= nQuarterWidth;
+        pRect->left += nQuarterWidth;
         return;
       }
     }
@@ -4062,99 +4663,80 @@ int32_t __fastcall RENDERER_D3D_BuildShadowTileVertices(D2TileLibraryEntryStrc *
 
 // Renders a shadow tile to texture with perspective projection in Direct3D. Calculates viewport bounds and renders textured quad with shadow blending.
 int __fastcall RENDERER_D3D_RenderShadowTileWithPerspective(D2TileLibraryEntryStrc * pTileEntry, int nTilePosX, int32_t nTilePosY, uint8_t bParam4, uint32_t dwParam5, int32_t nScreenSplitIndex) {
-    // Frame slots -64..-4 are ONE object: &nViewportLeft is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nViewportLeft;
-      int nViewportTop;
-      int nViewportRight;
-      int nViewportBottom;
-      int nFixedScreenXBase;
-      float fPanelOffset;
-      float fViewportLeftF;
-      int nSubtileIndex;
-      int nFixedScreenY;
-      int nPanelXOffset;
-      bool bRendered;
-      uint8_t __pad41[3];
-      int nFixedScreenX;
-      D2TileLibraryEntryStrc* pTileLibraryEntryPtr;
-      uint8_t __pad52[4];
-      int nScreenXAdj;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 60, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     bool _bRendered;
+    float fVar2;
     int nSubtileScreenY;
     D2D3DVertexStrc* pfVertex;
     int nVertexIter;
+    RECT nViewportLeft;
+    int nFixedScreenY;
+    bool bRendered;
+    int nFixedScreenX;
+    int nScreenXAdj;
     _bRendered = 0;
-    __frame0.nPanelXOffset = 0;
-    __frame0.pTileLibraryEntryPtr = pTileEntry;
-    RENDERER_D3D_CalculateViewportRect(&__frame0.nViewportLeft, nScreenSplitIndex, &__frame0.nPanelXOffset, 1);
+    int nPanelXOffset = 0;
+    D2TileLibraryEntryStrc* pTileLibraryEntryPtr = pTileEntry;
+    RENDERER_D3D_CalculateViewportRect(&nViewportLeft, nScreenSplitIndex, &nPanelXOffset, 1);
     int nFixedWorldY = nTilePosY * 0x2000;
-    int iVar1 = nTilePosX << 0xd;
-    __frame0.nSubtileIndex = 0;
+    int iVar3 = nTilePosX * 0x2000;
+    int nSubtileIndex = 0;
     int bRenderedAny = 0;
-    if (0 >= __frame0.pTileLibraryEntryPtr->nSubTiles) {
+    if (0 >= pTileLibraryEntryPtr->nSubTiles) {
       return bRenderedAny;
     }
 
-    __frame0.fViewportLeftF = (float)__frame0.nViewportLeft;
-    __frame0.nFixedScreenXBase = iVar1;
+    float fVar1 = (float)nViewportLeft.left;
     do {
       short int* psSubtileCoords;
-      psSubtileCoords = &__frame0.pTileLibraryEntryPtr->pSubTiles[__frame0.nSubtileIndex].nOffsetX;
+      psSubtileCoords = &pTileLibraryEntryPtr->pSubTiles[nSubtileIndex].nOffsetX;
       bRenderedAny = psSubtileCoords[1] + 0x60 >> 5;
       nSubtileScreenY = (int)*psSubtileCoords >> 5;
       nVertexIter = (nSubtileScreenY + bRenderedAny * 2) * 0x10000 - 0x38000;
       bRenderedAny = (bRenderedAny * 2 - nSubtileScreenY) * 0x10000 + 0x18000;
-      __frame0.nFixedScreenY = nFixedWorldY + bRenderedAny;
-      __frame0.nFixedScreenX = nVertexIter + iVar1;
-      Renderer::AdjustPerspectivePosition(__frame0.nFixedScreenX, __frame0.nFixedScreenY, 0, &__frame0.nScreenXAdj, &nScreenSplitIndex);
-      gaD3DPerspectiveStripVertices[0].fX = (float)__frame0.nScreenXAdj;
+      nFixedScreenX = nVertexIter + iVar3;
+      Renderer::AdjustPerspectivePosition(nFixedScreenX, nFixedWorldY + bRenderedAny, 0, &nScreenXAdj, &nScreenSplitIndex);
+      gaD3DPerspectiveStripVertices[0].fX = (float)nScreenXAdj;
       gaD3DPerspectiveStripVertices[0].fY = (float)nScreenSplitIndex;
-      Renderer::AdjustPerspectivePosition(iVar1 + 0x20000 + nVertexIter, nFixedWorldY + 0x20000 + bRenderedAny, 0, &__frame0.nScreenXAdj, &nScreenSplitIndex);
-      gaD3DPerspectiveStripVertices[0xc].fX = (float)__frame0.nScreenXAdj;
+      Renderer::AdjustPerspectivePosition(iVar3 + 0x20000 + nVertexIter, nFixedWorldY + 0x20000 + bRenderedAny, 0, &nScreenXAdj, &nScreenSplitIndex);
+      gaD3DPerspectiveStripVertices[0xc].fX = (float)nScreenXAdj;
       gaD3DPerspectiveStripVertices[0xc].fY = (float)nScreenSplitIndex;
-      Renderer::AdjustPerspectivePosition(iVar1 + 0x30000 + nVertexIter, nFixedWorldY + 0x10000 + bRenderedAny, 0, &__frame0.nScreenXAdj, &nScreenSplitIndex);
-      gaD3DPerspectiveStripVertices[0xe].fX = (float)__frame0.nScreenXAdj;
+      Renderer::AdjustPerspectivePosition(iVar3 + 0x30000 + nVertexIter, nFixedWorldY + 0x10000 + bRenderedAny, 0, &nScreenXAdj, &nScreenSplitIndex);
+      gaD3DPerspectiveStripVertices[0xe].fX = (float)nScreenXAdj;
       gaD3DPerspectiveStripVertices[0xe].fY = (float)nScreenSplitIndex;
-      Renderer::AdjustPerspectivePosition(iVar1 + 0x10000 + nVertexIter, nFixedWorldY - 0x10000 + bRenderedAny, 0, &__frame0.nScreenXAdj, &nScreenSplitIndex);
-      gaD3DPerspectiveStripVertices[2].fX = (float)__frame0.nScreenXAdj;
+      Renderer::AdjustPerspectivePosition(iVar3 + 0x10000 + nVertexIter, nFixedWorldY - 0x10000 + bRenderedAny, 0, &nScreenXAdj, &nScreenSplitIndex);
+      gaD3DPerspectiveStripVertices[2].fX = (float)nScreenXAdj;
       gaD3DPerspectiveStripVertices[2].fY = (float)nScreenSplitIndex;
-      if (__frame0.fViewportLeftF < gaD3DPerspectiveStripVertices[0].fX != (__frame0.fViewportLeftF == gaD3DPerspectiveStripVertices[0].fX) && gaD3DPerspectiveStripVertices[0].fX < (float)__frame0.nViewportRight && (float)__frame0.nViewportTop < gaD3DPerspectiveStripVertices[0].fY != ((float)__frame0.nViewportTop == gaD3DPerspectiveStripVertices[0].fY) && gaD3DPerspectiveStripVertices[0].fY < (float)__frame0.nViewportBottom || __frame0.fViewportLeftF <= gaD3DPerspectiveStripVertices[0xc].fX && gaD3DPerspectiveStripVertices[0xc].fX < (float)__frame0.nViewportRight && (float)__frame0.nViewportTop < gaD3DPerspectiveStripVertices[0xc].fY != ((float)__frame0.nViewportTop == gaD3DPerspectiveStripVertices[0xc].fY) && gaD3DPerspectiveStripVertices[0xc].fY < (float)__frame0.nViewportBottom || __frame0.fViewportLeftF <= gaD3DPerspectiveStripVertices[0xe].fX && gaD3DPerspectiveStripVertices[0xe].fX < (float)__frame0.nViewportRight && (float)__frame0.nViewportTop < gaD3DPerspectiveStripVertices[0xe].fY != ((float)__frame0.nViewportTop == gaD3DPerspectiveStripVertices[0xe].fY) && gaD3DPerspectiveStripVertices[0xe].fY < (float)__frame0.nViewportBottom || __frame0.fViewportLeftF <= gaD3DPerspectiveStripVertices[2].fX && gaD3DPerspectiveStripVertices[2].fX < (float)__frame0.nViewportRight && (float)__frame0.nViewportTop < gaD3DPerspectiveStripVertices[2].fY != ((float)__frame0.nViewportTop == gaD3DPerspectiveStripVertices[2].fY) && gaD3DPerspectiveStripVertices[2].fY < (float)__frame0.nViewportBottom) {
-        d3dFloorCache::D3D_RenderSubtileToTexture(&__frame0.pTileLibraryEntryPtr->pSubTiles[__frame0.nSubtileIndex]);
-        __frame0.fPanelOffset = (float)__frame0.nPanelXOffset;
+      if (fVar1 < gaD3DPerspectiveStripVertices[0].fX != (fVar1 == gaD3DPerspectiveStripVertices[0].fX) && gaD3DPerspectiveStripVertices[0].fX < (float)nViewportLeft.right && (float)nViewportLeft.top < gaD3DPerspectiveStripVertices[0].fY != ((float)nViewportLeft.top == gaD3DPerspectiveStripVertices[0].fY) && gaD3DPerspectiveStripVertices[0].fY < (float)nViewportLeft.bottom || fVar1 <= gaD3DPerspectiveStripVertices[0xc].fX && gaD3DPerspectiveStripVertices[0xc].fX < (float)nViewportLeft.right && (float)nViewportLeft.top < gaD3DPerspectiveStripVertices[0xc].fY != ((float)nViewportLeft.top == gaD3DPerspectiveStripVertices[0xc].fY) && gaD3DPerspectiveStripVertices[0xc].fY < (float)nViewportLeft.bottom || fVar1 <= gaD3DPerspectiveStripVertices[0xe].fX && gaD3DPerspectiveStripVertices[0xe].fX < (float)nViewportLeft.right && (float)nViewportLeft.top < gaD3DPerspectiveStripVertices[0xe].fY != ((float)nViewportLeft.top == gaD3DPerspectiveStripVertices[0xe].fY) && gaD3DPerspectiveStripVertices[0xe].fY < (float)nViewportLeft.bottom || fVar1 <= gaD3DPerspectiveStripVertices[2].fX && gaD3DPerspectiveStripVertices[2].fX < (float)nViewportLeft.right && (float)nViewportLeft.top < gaD3DPerspectiveStripVertices[2].fY != ((float)nViewportLeft.top == gaD3DPerspectiveStripVertices[2].fY) && gaD3DPerspectiveStripVertices[2].fY < (float)nViewportLeft.bottom) {
+        d3dFloorCache::D3D_RenderSubtileToTexture(&pTileLibraryEntryPtr->pSubTiles[nSubtileIndex]);
+        fVar2 = (float)nPanelXOffset;
         pfVertex = gaD3DPerspectiveStripVertices;
-        _bRendered = __frame0.nFixedScreenY;
+        _bRendered = nFixedWorldY + bRenderedAny;
         do {
-          __frame0.nFixedScreenY = 3;
+          nFixedScreenY = 3;
           bRenderedAny = _bRendered;
-          iVar1 = __frame0.nFixedScreenX;
+          nSubtileScreenY = nFixedScreenX;
           do {
-            Renderer::AdjustPerspectivePosition(iVar1, bRenderedAny, 0, &__frame0.nScreenXAdj, &nScreenSplitIndex);
+            Renderer::AdjustPerspectivePosition(nSubtileScreenY, bRenderedAny, 0, &nScreenXAdj, &nScreenSplitIndex);
             pfVertex->fY = (float)nScreenSplitIndex;
-            pfVertex->fX = (float)__frame0.nScreenXAdj + __frame0.fPanelOffset;
+            pfVertex->fX = (float)nScreenXAdj + fVar2;
             RENDERER_D3D_ApplyShadowTextureCoords(pfVertex, bParam4, (uint8_t)dwParam5);
             pfVertex++;
-            iVar1 += 0x8000;
+            nSubtileScreenY += 0x8000;
             bRenderedAny += -0x8000;
-            __frame0.nFixedScreenY--;
-          } while (__frame0.nFixedScreenY);
+            nFixedScreenY--;
+          } while (nFixedScreenY);
 
-          __frame0.nFixedScreenX += 0x8000;
+          nFixedScreenX += 0x8000;
           _bRendered += 0x8000;
         } while ((int)pfVertex < (uintptr_t)((char*)&gaD3DPerspectiveStripVertices + sizeof(gaD3DPerspectiveStripVertices)));
 
         g_pD3DDevice->lpVtbl->DrawIndexedPrimitive(g_pD3DDevice, 5, 0x1c4, gaD3DPerspectiveStripVertices, 0xf, gaD3DPerspectiveStripIndices, 0x16, 0x1c);
         _bRendered = 1;
-        iVar1 = __frame0.nFixedScreenXBase;
       }
 
-      __frame0.nSubtileIndex++;
+      nSubtileIndex++;
       bRenderedAny = _bRendered;
-    } while (__frame0.nSubtileIndex < __frame0.pTileLibraryEntryPtr->nSubTiles);
+    } while (nSubtileIndex < pTileLibraryEntryPtr->nSubTiles);
 
     return bRenderedAny;
 }
@@ -4250,21 +4832,12 @@ BOOL RENDERER_D3D_BuildWallTileVerticesNoPerspective(void * pThis, D2TileLibrary
 
 // Renders wall/ground tiles with full perspective transformation and vertex lighting. Builds 15-vertex triangle fan (4 corners + center + 10 edge midpoints) by transforming isometric coords (X,Y,Z) to screen space via AdjustPerspectivePosition. Applies per-vertex colors from pLightColors array (4 corner colors, center interpolated). Uses ground tile index table at 0x0074c100 to map tile type (0-9) and subtile (0-4) to 3D vertex offsets. Renders via DrawIndexedPrimitive with gaD3DPerspectiveStripIndices index buffer.
 BOOL __stdcall RENDERER_D3D_RenderWallTileWithPerspective(int nScreenPanels, D2TileLibraryEntryStrc * pTile, int nPosX, int nPosY, int pLightColors, uint8_t nAlpha) {
-    // Frame slots -100..-84 are ONE object: &nViewportLeft is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nViewportLeft;
-      int nViewportTop;
-      int nViewportRight;
-      int nViewportBottom;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     short int* psVar1;
     int nTileTableIdx;
     D2D3DVertexStrc* pfVertexOuter;
     int nFixedY0;
     D2D3DVertexStrc* pfVertex;
+    RECT nViewportLeft;
     uint32_t aVertexColors[4];
     int nMidY;
     int nX0;
@@ -4281,7 +4854,7 @@ BOOL __stdcall RENDERER_D3D_RenderWallTileWithPerspective(int nScreenPanels, D2T
     uint32_t nVertexColor;
     BOOL nMidZ = 0;
     int nPanelOffset = 0;
-    RENDERER_D3D_CalculateViewportRect(&__frame0.nViewportLeft, nScreenPanels, &nPanelOffset, 1);
+    RENDERER_D3D_CalculateViewportRect(&nViewportLeft, nScreenPanels, &nPanelOffset, 1);
     uint32_t nTileType = pTile->nDirection;
     if (9 < nTileType) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x213);
@@ -4325,8 +4898,8 @@ BOOL __stdcall RENDERER_D3D_RenderWallTileWithPerspective(int nScreenPanels, D2T
       Renderer::AdjustPerspectivePosition(nX1, nY1, nZ1, &nScreenX, &nScreenY);
       gaD3DPerspectiveStripVertices[2].fX = (float)nScreenX;
       gaD3DPerspectiveStripVertices[2].fY = (float)nScreenY;
-      fLayerIndex.fValue = (float)__frame0.nViewportLeft;
-      if (fLayerIndex.fValue < gaD3DPerspectiveStripVertices[0].fX != (fLayerIndex.fValue == gaD3DPerspectiveStripVertices[0].fX) && gaD3DPerspectiveStripVertices[0].fX < (float)__frame0.nViewportRight && (float)__frame0.nViewportTop < gaD3DPerspectiveStripVertices[0].fY != ((float)__frame0.nViewportTop == gaD3DPerspectiveStripVertices[0].fY) && gaD3DPerspectiveStripVertices[0].fY < (float)__frame0.nViewportBottom || fLayerIndex.fValue <= gaD3DPerspectiveStripVertices[0xc].fX && gaD3DPerspectiveStripVertices[0xc].fX < (float)__frame0.nViewportRight && (float)__frame0.nViewportTop < gaD3DPerspectiveStripVertices[0xc].fY != ((float)__frame0.nViewportTop == gaD3DPerspectiveStripVertices[0xc].fY) && gaD3DPerspectiveStripVertices[0xc].fY < (float)__frame0.nViewportBottom || fLayerIndex.fValue <= gaD3DPerspectiveStripVertices[0xe].fX && gaD3DPerspectiveStripVertices[0xe].fX < (float)__frame0.nViewportRight && (float)__frame0.nViewportTop < gaD3DPerspectiveStripVertices[0xe].fY != ((float)__frame0.nViewportTop == gaD3DPerspectiveStripVertices[0xe].fY) && gaD3DPerspectiveStripVertices[0xe].fY < (float)__frame0.nViewportBottom || fLayerIndex.fValue <= gaD3DPerspectiveStripVertices[2].fX && gaD3DPerspectiveStripVertices[2].fX < (float)__frame0.nViewportRight && (float)__frame0.nViewportTop < gaD3DPerspectiveStripVertices[2].fY != ((float)__frame0.nViewportTop == gaD3DPerspectiveStripVertices[2].fY) && gaD3DPerspectiveStripVertices[2].fY < (float)__frame0.nViewportBottom) {
+      fLayerIndex.fValue = (float)nViewportLeft.left;
+      if (fLayerIndex.fValue < gaD3DPerspectiveStripVertices[0].fX != (fLayerIndex.fValue == gaD3DPerspectiveStripVertices[0].fX) && gaD3DPerspectiveStripVertices[0].fX < (float)nViewportLeft.right && (float)nViewportLeft.top < gaD3DPerspectiveStripVertices[0].fY != ((float)nViewportLeft.top == gaD3DPerspectiveStripVertices[0].fY) && gaD3DPerspectiveStripVertices[0].fY < (float)nViewportLeft.bottom || fLayerIndex.fValue <= gaD3DPerspectiveStripVertices[0xc].fX && gaD3DPerspectiveStripVertices[0xc].fX < (float)nViewportLeft.right && (float)nViewportLeft.top < gaD3DPerspectiveStripVertices[0xc].fY != ((float)nViewportLeft.top == gaD3DPerspectiveStripVertices[0xc].fY) && gaD3DPerspectiveStripVertices[0xc].fY < (float)nViewportLeft.bottom || fLayerIndex.fValue <= gaD3DPerspectiveStripVertices[0xe].fX && gaD3DPerspectiveStripVertices[0xe].fX < (float)nViewportLeft.right && (float)nViewportLeft.top < gaD3DPerspectiveStripVertices[0xe].fY != ((float)nViewportLeft.top == gaD3DPerspectiveStripVertices[0xe].fY) && gaD3DPerspectiveStripVertices[0xe].fY < (float)nViewportLeft.bottom || fLayerIndex.fValue <= gaD3DPerspectiveStripVertices[2].fX && gaD3DPerspectiveStripVertices[2].fX < (float)nViewportLeft.right && (float)nViewportLeft.top < gaD3DPerspectiveStripVertices[2].fY != ((float)nViewportLeft.top == gaD3DPerspectiveStripVertices[2].fY) && gaD3DPerspectiveStripVertices[2].fY < (float)nViewportLeft.bottom) {
         aVertexColors[0] = *(uint32_t*)(pLightColors + (int)fSubtileIndex * 4);
         aVertexColors[2] = *(uint32_t*)(pLightColors + 4 + (int)fSubtileIndex * 4);
         nMidZ = nBias + nZ1 >> 1;
@@ -4425,80 +4998,75 @@ BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int nPosX, int nPos
     return BVar1;
 }
 
-// Creates ground tile vertex buffer (6x6 grid = 36 vertices) and index buffer (60 indices for 5x5 tile strips) for perspective tile rendering. Calculates texture coordinates based on window dimensions (gnD3DTextureCacheBlockSize, gnD3DTextureCacheCount). Each vertex has position adjustment flags at corners (±1 in X/Y) for isometric diamond shape. Index buffer stored at gaD3DGroundTileIndexBuffer.
+// Creates ground tile vertex buffer (6x6 grid = 36 vertices) and index buffer (60 indices for 5x5 tile strips) for perspective tile rendering. Calculates texture coordinates based on window dimensions (gnD3DTextureCacheBlockSize, gnD3DTextureCacheCount). Each vertex has position adjustment flags at corners (±1 in X/Y) for isometric diamond shape. Index buffer stored at g_aD3DGroundTileStripIndices [vanilla-plus fix 24].
 void __stdcall RENDERER_D3D_InitGroundTileCache() {
     // Static local variables (originally global data)
-    static unsigned short gaD3DGroundTileIndexBuffer;
 
-    // Frame slots -36..-4 are ONE object: &dwVBFlags is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -12..-4 are ONE object: &pLockedVB is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
-      uint32_t dwVBFlags;
-      uint32_t dwVBType;
-      uint32_t dwFVF;
-      uint32_t dwVBSize;
-      float fTexUScale;
-      D2FloatIntUnion fTexUStep;
       void* pLockedVB;
       float fTexVStep;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 32, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
+    int iCol;
     short int* psIndexBuf;
     uint16_t* puDestIndex;
     int nDiagDiff;
     int nAdjY;
     int iRow;
     short int local_9c[60];
+    D3DVERTEXBUFFERDESC sVBDesc;
+    D2FloatIntUnion fTexUStep;
     float fTexV;
     int nAdjX;
     short int sRowBase;
-    __frame0.dwVBFlags = 0x10;
-    __frame0.dwVBType = 0x10800;
-    __frame0.dwFVF = 0x1c4;
-    __frame0.dwVBSize = 0x24;
-    __frame0.fTexUStep.fValue = 160.0 / (float)(int)gnD3DTextureCacheBlockSize / 10.0;
+    float fVar1 = (float)(int)gnD3DTextureCacheBlockSize;
+    sVBDesc.dwSize = 0x10;
+    sVBDesc.dwCaps = 0x10800;
+    sVBDesc.dwFVF = 0x1c4;
+    sVBDesc.dwNumVertices = 0x24;
     __frame0.pLockedVB = (void*)d2_bits_of(80.0 / (float)gnD3DTextureCacheCount);
     __frame0.fTexVStep = (float)d2_bits_to_float(__frame0.pLockedVB) / 10.0;
-    DWORD dwHResult = g_pDirect3D7->lpVtbl->CreateVertexBuffer(g_pDirect3D7, &__frame0.dwVBFlags, &g_pD3DGroundTileVB, 4, nullptr);
+    DWORD dwHResult = g_pDirect3D7->lpVtbl->CreateVertexBuffer(g_pDirect3D7, &sVBDesc, &g_pD3DGroundTileVB, 4, nullptr);
     if (dwHResult) {
       RENDERER_DIRECT3D_ErrorLog("CreateVertexBuffer failed!", dwHResult);
       return;
     }
 
     dwHResult = g_pD3DGroundTileVB->lpVtbl->Lock(g_pD3DGroundTileVB, 0x21, &__frame0.pLockedVB, nullptr);
-    D2FloatIntUnion fTexUStepSaved = __frame0.fTexUStep;
     if (!dwHResult) {
-      int iCol;
+      float fVar2;
       iRow = 0;
       do {
         iCol = 0;
         do {
           nDiagDiff = 0;
-          __frame0.fTexUStep.fValue = 0.0;
+          fTexUStep.fValue = 0.0;
           if (!iCol) {
-            __frame0.fTexUStep.nValue = 1;
+            fTexUStep.nValue = 1;
             nDiagDiff = 1;
           } else if (iCol == 5) {
             nDiagDiff = -1;
-            __frame0.fTexUStep.nValue = -1;
+            fTexUStep.nValue = -1;
           }
           if (!iRow) {
             nDiagDiff--;
-            __frame0.fTexUStep.nValue++;
+            fTexUStep.nValue++;
           } else if (iRow == 5) {
             nDiagDiff++;
-            __frame0.fTexUStep.nValue--;
+            fTexUStep.nValue--;
           }
 
           nAdjY = iCol - iRow;
+          fVar2 = (float)(int)gnD3DTextureCacheBlockSize;
           nAdjX = iCol + iRow;
           iCol++;
-          __frame0.fTexUScale = (float)nAdjY * fTexUStepSaved.fValue + (float)(nDiagDiff + 0x50) / (float)(int)gnD3DTextureCacheBlockSize;
-          fTexV = (float)nAdjX * __frame0.fTexVStep + (float)__frame0.fTexUStep.nValue / (float)gnD3DTextureCacheCount;
+          fTexV = (float)nAdjX * __frame0.fTexVStep + (float)fTexUStep.nValue / (float)gnD3DTextureCacheCount;
           *(uint32_t*)((int)__frame0.pLockedVB + 8) = 0x3f000000;
           *(uint32_t*)((int)__frame0.pLockedVB + 0xc) = 0x3f800000;
-          *(float*)((int)__frame0.pLockedVB + 0x18) = __frame0.fTexUScale;
+          *(float*)((int)__frame0.pLockedVB + 0x18) = (float)nAdjY * (160.0 / fVar1 / 10.0) + (float)(nDiagDiff + 0x50) / fVar2;
           *(float*)((int)__frame0.pLockedVB + 0x1c) = fTexV;
           __frame0.pLockedVB = (void*)((int)__frame0.pLockedVB + 0x20);
         } while (iCol < 6);
@@ -4524,19 +5092,24 @@ void __stdcall RENDERER_D3D_InitGroundTileCache() {
           iRow++;
         } while (iRow < 5);
 
-        puDestIndex = &gaD3DGroundTileIndexBuffer;
+        puDestIndex = g_aD3DGroundTileStripIndices; // [vanilla-plus fix 24] real 65-word array (was the 2-byte phantom)
         psIndexBuf = local_9c;
         iRow = 5;
+        // [vanilla-plus fix 25] The merge spliced upstream's decompiled band loop
+        // (written against the &phantom anchor, which sat 12 words INTO the table)
+        // onto this base-pointer init: bands 1-5 wrote words [-12..52], spilling
+        // 12 words before the array and leaving words 53..64 stale/zero.
+        // DrawIndexedPrimitiveVB then consumed garbage indices for every trailing
+        // band -> evenly spaced diagonal black bars over the perspective floor.
+        // Restore the fix-24 loop: fill words [0..64] from the array base.
         do {
-          *(uint32_t*)(puDestIndex - 0xc) = *(uint32_t*)psIndexBuf;
-          *(uint32_t*)(puDestIndex - 10) = *(uint32_t*)(psIndexBuf + 2);
-          *(uint32_t*)(puDestIndex - 8) = *(uint32_t*)(psIndexBuf + 4);
-          *(uint32_t*)(puDestIndex - 6) = *(uint32_t*)(psIndexBuf + 6);
-          *(uint32_t*)(puDestIndex - 4) = *(uint32_t*)(psIndexBuf + 8);
-          *(uint32_t*)(puDestIndex - 2) = *(uint32_t*)(psIndexBuf + 10);
-          *puDestIndex = puDestIndex[-1];
-          puDestIndex += 0xd;
-          psIndexBuf += 0xc;
+          for (int nPairIdx = 0; nPairIdx < 12; nPairIdx++) {
+            puDestIndex[nPairIdx] = (uint16_t)psIndexBuf[nPairIdx];
+          }
+
+          puDestIndex[12] = puDestIndex[11];
+          puDestIndex += 13;
+          psIndexBuf += 12;
           iRow--;
         } while (iRow);
 
@@ -4561,7 +5134,6 @@ void __stdcall RENDERER_D3D_ReleaseGroundTileCache() {
 
 void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc * pLight, int nPosX, int nPosY, int nWorldXpos, int nWorldYpos, uint32_t nAlpha, int nScreenPanels, void * pTileData) {
     // Static local variables (originally global data)
-    static uint32_t gdwRendererMode = 0x50000;
 
     DWORD DVar2;
     uint32_t* lpwIndices;
@@ -4648,8 +5220,8 @@ void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
       }
 
       dwIndexCount = 0x41;
-      lpwIndices = (uint32_t*)&gpD3DGroundTileVertexBuffer;
       DVar2 = 5;
+      lpwIndices = (uint32_t*)g_aD3DGroundTileStripIndices; // [vanilla-plus fix 24] real array (was the 1-byte phantom)
     } else {
       DVar2 = (*pVBLockFn)(g_pD3DGroundTileVB, 0x21, (void**)&nAlpha, nullptr);
       if (DVar2) {
@@ -4682,7 +5254,7 @@ void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
       }
 
       dwIndexCount = 4;
-      lpwIndices = &gdwRendererMode;
+      lpwIndices = (uint32_t*)g_aD3DGroundTileFanIndices; // [vanilla-plus fix 24] real 4-word fan (was the 0x50000 phantom dword)
       DVar2 = 6;
     }
 
@@ -4797,10 +5369,10 @@ void SetDefaultPerspectiveFactor() {
 // Initializes Smacker video subsystem. Allocates 64KB decode buffer at pSmackerDecodeBuffer, clears it to zero. Sets 4 corner vertex colors to 0xFFFFFFFF (white with full alpha) at offsets 0x00989760, 0x00989780, 0x009897a0, 0x009897c0.
 void __stdcall RENDERER_D3D_InitSmackerVertexBuffer() {
     // Static local variables (originally global data)
-    static unsigned int gdwD3DSmackerVertex1Color;
-    static unsigned int gdwD3DSmackerVertex2Color;
-    static unsigned int gdwD3DSmackerVertex3Color;
-    static unsigned int gdwD3DSmackerVertex4Color;
+    static unsigned int gdwD3DSmackerVertex1Color; D2_STATIC_GUARD_BSS(gdwD3DSmackerVertex1Color, "D2Direct3D::Renderer::RENDERER_D3D_InitSmackerVertexBuffer::gdwD3DSmackerVertex1Color");
+    static unsigned int gdwD3DSmackerVertex2Color; D2_STATIC_GUARD_BSS(gdwD3DSmackerVertex2Color, "D2Direct3D::Renderer::RENDERER_D3D_InitSmackerVertexBuffer::gdwD3DSmackerVertex2Color");
+    static unsigned int gdwD3DSmackerVertex3Color; D2_STATIC_GUARD_BSS(gdwD3DSmackerVertex3Color, "D2Direct3D::Renderer::RENDERER_D3D_InitSmackerVertexBuffer::gdwD3DSmackerVertex3Color");
+    static unsigned int gdwD3DSmackerVertex4Color; D2_STATIC_GUARD_BSS(gdwD3DSmackerVertex4Color, "D2Direct3D::Renderer::RENDERER_D3D_InitSmackerVertexBuffer::gdwD3DSmackerVertex4Color");
 
     gdwD3DSmackerVertex1Color = -1;
     gdwD3DSmackerVertex2Color = -1;
@@ -4915,30 +5487,30 @@ void __stdcall RENDERER_D3D_ResetSmackerSurfaces() {
 // Blits decoded Smacker video frame to screen. Renders two textured quads: top 256x256 section uses first texture pair (gpD3DSmackerVideoTexture0), bottom section (256 to nHeight) uses second pair (gpD3DSmackerVideoTexture1). Texture V coordinate for bottom quad calculated as (nHeight-256)/256 for proper scaling. Sets blend mode 1, enables lighting and texture stage 0 before rendering.
 void RENDERER_D3D_BlitSmackerFrame(int nHeight, D2SmackerContextStrc * pSurface, int nOffset) {
     // Static local variables (originally global data)
-    static int gaD3DSmackerVertices;
-    static float gfD3DSmackerVertex0Y;
-    static float gfD3DSmackerVertex0V;
-    static float gfD3DSmackerVertex1W_a;
-    static float gfD3DSmackerVertex1U;
-    static float gfD3DSmackerVertex1V;
-    static float gfD3DSmackerVertex1X_b;
-    static float gfD3DSmackerVertex1Y_b;
-    static float gfD3DSmackerVertex1Z;
-    static float gfD3DSmackerVertex1W;
-    static float gfD3DSmackerVertex2W_b;
-    static float gfD3DSmackerVertex2Z_b;
-    static float gfD3DSmackerVertex2X;
-    static float gfD3DSmackerVertex2Y;
-    static float gfD3DSmackerVertex2U;
-    static float gfD3DSmackerVertex2W_a;
-    static float gfD3DSmackerVertex2V;
-    static float gfD3DSmackerVertex2W;
-    static float gfD3DSmackerVertex1X_quad2;
-    static float gfD3DSmackerVertex1Y_quad2;
-    static float gfD3DSmackerVertex1Z_quad2;
-    static float gfD3DSmackerVertex1U_quad2;
-    static int gnD3DSmackerVertex2V_bottom;
-    static float gfD3DSmackerVertex2Rhw;
+    static int gaD3DSmackerVertices; D2_STATIC_GUARD_BSS(gaD3DSmackerVertices, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gaD3DSmackerVertices");
+    static float gfD3DSmackerVertex0Y; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex0Y, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex0Y");
+    static float gfD3DSmackerVertex0V; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex0V, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex0V");
+    static float gfD3DSmackerVertex1W_a; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1W_a, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1W_a");
+    static float gfD3DSmackerVertex1U; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1U, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1U");
+    static float gfD3DSmackerVertex1V; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1V, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1V");
+    static float gfD3DSmackerVertex1X_b; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1X_b, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1X_b");
+    static float gfD3DSmackerVertex1Y_b; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1Y_b, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1Y_b");
+    static float gfD3DSmackerVertex1Z; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1Z, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1Z");
+    static float gfD3DSmackerVertex1W; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1W, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1W");
+    static float gfD3DSmackerVertex2W_b; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2W_b, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2W_b");
+    static float gfD3DSmackerVertex2Z_b; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2Z_b, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2Z_b");
+    static float gfD3DSmackerVertex2X; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2X, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2X");
+    static float gfD3DSmackerVertex2Y; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2Y, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2Y");
+    static float gfD3DSmackerVertex2U; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2U, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2U");
+    static float gfD3DSmackerVertex2W_a; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2W_a, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2W_a");
+    static float gfD3DSmackerVertex2V; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2V, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2V");
+    static float gfD3DSmackerVertex2W; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2W, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2W");
+    static float gfD3DSmackerVertex1X_quad2; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1X_quad2, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1X_quad2");
+    static float gfD3DSmackerVertex1Y_quad2; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1Y_quad2, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1Y_quad2");
+    static float gfD3DSmackerVertex1Z_quad2; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1Z_quad2, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1Z_quad2");
+    static float gfD3DSmackerVertex1U_quad2; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex1U_quad2, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex1U_quad2");
+    static int gnD3DSmackerVertex2V_bottom; D2_STATIC_GUARD_BSS(gnD3DSmackerVertex2V_bottom, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gnD3DSmackerVertex2V_bottom");
+    static float gfD3DSmackerVertex2Rhw; D2_STATIC_GUARD_BSS(gfD3DSmackerVertex2Rhw, "D2Direct3D::Renderer::RENDERER_D3D_BlitSmackerFrame::gfD3DSmackerVertex2Rhw");
 
     int nSurfaceY = pSurface->nY;
     RENDERER_D3D_SetBlendMode(1);
@@ -5059,7 +5631,6 @@ void __stdcall RENDERER_D3D_PresentSmackerFrame() {
 
 void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, int nVersion) {
     void* nResult;
-    uint32_t bFileLoaded;
     int nPixelCol;
     uint16_t* pIndexedPixels;
     uint8_t* pOutputPixel;
@@ -5086,6 +5657,7 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
 
     pBuffer->eMode = (char)nVersion;
     if ((char)nVersion == 'p') {
+      uint32_t bFileLoaded;
       nVersion = 0;
       nFileSize = 0;
       bFileLoaded = Storm::Source::SFile::SFileLoadFileEx(nullptr, (uint32_t*)szSmacker, (void**)&nVersion, &nFileSize, 0, 3, 0);
@@ -5239,8 +5811,8 @@ int __fastcall RENDERER_D3D_InitializeTextureCachePool(D3DTextureCacheStrc * pCa
     pCache->nUsedCount = 0;
     pCache->pUsedHead = 0;
     pCache->pUsedTail = 0;
-    pCache->pFreeHead = (uint8_t*)pCache->pNodeBuffer;
-    pCache->pFreeTail = (uint8_t*)(pCache->pNodeBuffer + pCache->nMaxNodes - 1);
+    pCache->pFreeHead = pCache->pNodeBuffer;
+    pCache->pFreeTail = pCache->pNodeBuffer + pCache->nMaxNodes - 1;
     return pCache->nMaxNodes * nBytesPerTexture + nBaseMemoryUsed;
 }
 

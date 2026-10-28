@@ -32,7 +32,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -72,7 +72,7 @@ bool __fastcall Q13_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 // A2Q5 "The Summoner" - state-0 gossip handler (sStateFunctions[0]). Picks which gossip line an Arcane Sanctuary NPC speaks based on quest progress. If RewardAwaits is set (Summoner dead, reward pending) -> always message index 1. Otherwise: if this player already participated -> index 2; else require quest introduced + active, bail if already Completed (and not JustCompleted), then index = gdwQ11QuestStateMessages[nStateFlag] (-1/0/1/2). No state mutation; read-only gossip selection.
 void __fastcall Q13_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ11QuestStateMessages[4] = { -0x1, 0x0, 0x1, 0x2 };
+    static int32_t gdwQ11QuestStateMessages[4] = { -0x1, 0x0, 0x1, 0x2 }; D2_STATIC_GUARD(gdwQ11QuestStateMessages, "D2Game::Quests::QUESTS::A2Q5::Q13_Callback00_NpcActivate::gdwQ11QuestStateMessages");
 
     BOOL BVar2;
     uint32_t nMessageIndexMaybe;
@@ -414,7 +414,7 @@ void __fastcall Q13_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 
 // A2Q5 "The Summoner" - state-3 handler (sStateFunctions[3]). When the quest is introduced and the gossip args indicate a player-leave condition (nIndex > 0x27, pTextControl == 0x28 sentinel), removes the player from the quest participation GUID list (QUESTGUID_RemovePlayerFromList). Cleanup when a participant departs.
 void __fastcall Q13_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (!(pQuestData->bIsNotIntroduction && 0x27 < pQuestArgs->sQuestArgs.sNpcActivate.nIndex && pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x28)) {
+    if (!(pQuestData->bIsNotIntroduction && 0x27 < pQuestArgs->sQuestArgs.sNpcActivate.nIndex && pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x28)) {
       return;
     }
 

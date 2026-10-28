@@ -10,8 +10,6 @@
 #include "Bnclient/SRP.h"
 #include "D2Client/net_sid.h"
 #include "D2Lang/StrTable/strtable.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "Fog/Debug.h"
 #include "Fog/Fog.h"
 #include "Fog/SMem.h"
@@ -29,15 +27,11 @@
 #include "D2Client/UI/Chat.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Net/sockaddr.h"
-#include "Storm/D2ArchiveStrc.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
 namespace Bnclient::_net_sid {
-
-static uint8_t gbCDKeyValidationSuccess;
-static uint8_t gbAuthChangeProofComplete;
 
 int __fastcall NET_SID_CLIENT_GetStateAndClear(int * pOutState) {
     if (!pOutState) {
@@ -84,127 +78,100 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_ChatEvent(char * pBytes, size_t nSize) {
 }
 
 void __fastcall SHA1_Hashing(uint32_t * pnParam) {
-    uint32_t nStateD;
+    uint32_t uVar1;
+    uint32_t uVar3;
     uint32_t nStateE;
-    uint32_t aSchedule[60];
-    uint32_t aScheduleHi[20];
-    uint32_t nStateDPrev;
+    uint32_t aW[80];
     uint8_t byRotAmount;
     uint32_t nRotatedLo;
-    uint32_t* pState = pnParam;
-    aSchedule[0] = pnParam[5];
-    aSchedule[2] = pnParam[7];
-    aSchedule[1] = pnParam[6];
-    aSchedule[3] = pnParam[8];
-    aSchedule[5] = pnParam[10];
-    aSchedule[4] = pnParam[9];
-    aSchedule[6] = pnParam[0xb];
-    aSchedule[8] = pnParam[0xd];
-    aSchedule[7] = pnParam[0xc];
-    aSchedule[9] = pnParam[0xe];
-    aSchedule[0xb] = pnParam[0x10];
-    aSchedule[10] = pnParam[0xf];
-    aSchedule[0xc] = pnParam[0x11];
-    aSchedule[0xe] = pnParam[0x13];
-    aSchedule[0xd] = pnParam[0x12];
-    aSchedule[0xf] = pnParam[0x14];
+    aW[0] = pnParam[5];
+    aW[2] = pnParam[7];
+    aW[1] = pnParam[6];
+    aW[3] = pnParam[8];
+    aW[5] = pnParam[10];
+    aW[4] = pnParam[9];
+    aW[6] = pnParam[0xb];
+    aW[8] = pnParam[0xd];
+    aW[7] = pnParam[0xc];
+    aW[9] = pnParam[0xe];
+    aW[0xb] = pnParam[0x10];
+    aW[10] = pnParam[0xf];
+    aW[0xc] = pnParam[0x11];
+    aW[0xe] = pnParam[0x13];
+    aW[0xd] = pnParam[0x12];
+    aW[0xf] = pnParam[0x14];
     int nExpandCount = 0x40;
-    uint32_t* pScheduleEntry = aSchedule + 2;
+    uint32_t* pScheduleEntry = aW + 2;
     do {
       byRotAmount = ((uint8_t)pScheduleEntry[0xb] ^ (uint8_t)pScheduleEntry[6] ^ (uint8_t)pScheduleEntry[-2] ^ (uint8_t)*pScheduleEntry) & 0x1f;
-      nStateDPrev = 1;
       nExpandCount--;
       pScheduleEntry[0xe] = 1 >> (0x20 - byRotAmount & 0x1f) | 1 << byRotAmount;
       pScheduleEntry++;
     } while (nExpandCount);
 
     uint32_t nStateA = *pnParam;
+    uint32_t nStateEPrev = pnParam[4];
     uint32_t nStateB = pnParam[1];
     uint32_t nStateC = pnParam[2];
-    uint32_t nStateEPrev = pState[4];
-    uint32_t nStateTmp = nStateA;
-    nStateDPrev = pnParam[3];
+    uint32_t nStateDPrev = pnParam[3];
     uint32_t nRound = 0;
     do {
-      nStateE = nStateDPrev;
-      nStateD = (nStateA << 5 | nStateA >> 0x1b) + (~nStateB & nStateDPrev | nStateC & nStateB) + aSchedule[nRound] + 0x5a827999 + nStateEPrev;
-      nStateEPrev = nStateDPrev;
+      nStateEPrev = (nStateA << 5 | nStateA >> 0x1b) + (~nStateB & nStateDPrev | nStateC & nStateB) + aW[nRound] + 0x5a827999 + nStateEPrev;
       nStateB = nStateB >> 2 | nStateB << 0x1e;
-      nStateTmp = nStateD;
-      nStateDPrev = nStateC;
-      nStateE = (nStateD * 0x20 | nStateD >> 0x1b) + (~nStateA & nStateC | nStateB & nStateA) + aSchedule[nRound + 1] + 0x5a827999 + nStateE;
+      nStateDPrev = (nStateEPrev * 0x20 | nStateEPrev >> 0x1b) + (~nStateA & nStateC | nStateB & nStateA) + aW[nRound + 1] + 0x5a827999 + nStateDPrev;
       nStateA = nStateA >> 2 | nStateA << 0x1e;
-      nStateEPrev = nStateC;
-      nStateTmp = nStateE;
-      nStateDPrev = nStateA;
-      nStateC = (nStateE * 0x20 | nStateE >> 0x1b) + (~nStateD & nStateB | nStateA & nStateD) + aSchedule[nRound + 2] + 0x5a827999 + nStateC;
-      nStateD = nStateD >> 2 | nStateD * 0x40000000;
-      nStateEPrev = nStateB;
-      nStateTmp = nStateC;
-      nStateDPrev = nStateD;
-      nStateB = (nStateC * 0x20 | nStateC >> 0x1b) + (~nStateE & nStateA | nStateD & nStateE) + aSchedule[nRound + 3] + 0x5a827999 + nStateB;
-      nStateDPrev = nStateE >> 2 | nStateE * 0x40000000;
-      nStateEPrev = nStateA;
-      nStateTmp = nStateB;
-      nStateB = nStateTmp;
-      nStateA = (nStateB * 0x20 | nStateB >> 0x1b) + (~nStateC & nStateD | nStateDPrev & nStateC) + aSchedule[nRound + 4] + 0x5a827999 + nStateA;
-      nStateEPrev = nStateD;
+      nStateC = (nStateDPrev * 0x20 | nStateDPrev >> 0x1b) + (~nStateEPrev & nStateB | nStateA & nStateEPrev) + aW[nRound + 2] + 0x5a827999 + nStateC;
+      nStateEPrev = nStateEPrev >> 2 | nStateEPrev * 0x40000000;
+      nStateB = (nStateC * 0x20 | nStateC >> 0x1b) + (~nStateDPrev & nStateA | nStateEPrev & nStateDPrev) + aW[nRound + 3] + 0x5a827999 + nStateB;
+      nStateDPrev = nStateDPrev >> 2 | nStateDPrev * 0x40000000;
+      nStateA = (nStateB * 0x20 | nStateB >> 0x1b) + (~nStateC & nStateEPrev | nStateDPrev & nStateC) + aW[nRound + 4] + 0x5a827999 + nStateA;
       nRound += 5;
       nStateC = nStateC >> 2 | nStateC * 0x40000000;
-      nStateTmp = nStateA;
     } while (nRound < 0x14);
 
-    nStateD = nStateB;
-    nStateE = nStateDPrev;
-    while (nRound < 0x28) {
-      nStateE = nStateC;
-      nStateD = nStateA;
-      nStateTmp = nStateEPrev;
-      pScheduleEntry = aSchedule + nRound;
-      nStateC = nStateB >> 2 | nStateB << 0x1e;
+    for (; nStateE = nStateDPrev , nRound < 0x28; nRound++) {
+      nRotatedLo = nStateB >> 2;
+      uVar1 = nStateB << 0x1e;
+      nStateE = (nStateA << 5 | nStateA >> 0x1b) + (nStateDPrev ^ nStateC ^ nStateB) + aW[nRound] + 0x6ed9eba1 + nStateEPrev;
       nStateEPrev = nStateDPrev;
-      nRound++;
-      nStateTmp = (nStateD << 5 | nStateD >> 0x1b) + (nStateDPrev ^ nStateE ^ nStateB) + *pScheduleEntry + 0x6ed9eba1 + nStateTmp;
-      nStateA = nStateTmp;
-      nStateB = nStateD;
-      nStateDPrev = nStateE;
-    }
-
-    for (; nStateB = nStateA , nRound < 0x3c; nRound++) {
-      uint32_t uVar1;
-      nExpandCount = (nStateB << 5 | nStateB >> 0x1b) + nStateEPrev;
-      nRotatedLo = nStateD >> 2;
-      uVar1 = nStateD << 0x1e;
-      nStateEPrev = nStateE;
+      nStateB = nStateA;
       nStateDPrev = nStateC;
-      nStateTmp = ((nStateC | nStateD) & nStateE | nStateC & nStateD) + aSchedule[nRound] - 0x70e44324 + nExpandCount;
-      nStateA = nStateTmp;
-      nStateD = nStateB;
+      nStateA = nStateE;
       nStateC = nRotatedLo | uVar1;
-      nStateE = nStateDPrev;
     }
 
-    nStateA = nStateD;
-    nStateTmp = nStateB;
-    nStateDPrev = nStateE;
-    while (nRound < 0x50) {
+    for (; nRound < 0x3c; nRound++) {
+      uint32_t uVar2;
+      uVar2 = (nStateC | nStateB) & nStateE;
+      uVar3 = nStateC & nStateB;
+      pScheduleEntry = aW + nRound;
+      nExpandCount = (nStateA << 5 | nStateA >> 0x1b) + nStateEPrev;
+      nRotatedLo = nStateB >> 2;
+      uVar1 = nStateB << 0x1e;
+      nStateEPrev = nStateE;
+      nStateB = nStateA;
       nStateE = nStateC;
-      nRotatedLo = nStateDPrev;
-      nStateA = nStateTmp;
-      nStateC = nStateD >> 2 | nStateD << 0x1e;
-      nStateB = (nStateDPrev ^ nStateE ^ nStateD) + aSchedule[nRound] - 0x359d3e2a + (nStateTmp << 5 | nStateTmp >> 0x1b) + nStateEPrev;
-      nRound++;
-      nStateDPrev = nStateE;
-      nStateTmp = nStateB;
-      nStateD = nStateA;
-      nStateEPrev = nRotatedLo;
+      nStateA = (uVar2 | uVar3) + *pScheduleEntry - 0x70e44324 + nExpandCount;
+      nStateC = nRotatedLo | uVar1;
     }
 
-    pState[1] += nStateA;
-    pState[2] += nStateC;
-    pState[3] += nStateE;
-    *pState += nStateB;
-    pState[4] += nStateEPrev;
+    uint32_t nStateTmp = nStateB;
+    while (nRound < 0x50) {
+      nStateDPrev = nStateE;
+      nStateTmp = nStateA;
+      nStateE = nStateC;
+      nStateC = nStateB >> 2 | nStateB << 0x1e;
+      nStateA = (nStateDPrev ^ nStateE ^ nStateB) + aW[nRound] - 0x359d3e2a + (nStateTmp << 5 | nStateTmp >> 0x1b) + nStateEPrev;
+      nRound++;
+      nStateB = nStateTmp;
+      nStateEPrev = nStateDPrev;
+    }
+
+    pnParam[1] += nStateTmp;
+    pnParam[2] += nStateC;
+    pnParam[3] += nStateE;
+    *pnParam += nStateA;
+    pnParam[4] += nStateEPrev;
 }
 
 void __fastcall SHA1(D2SHA1 * pOutput, char * szInput, size_t nInputSize) {
@@ -322,30 +289,21 @@ BOOL __fastcall NET_SID_CLIENT_IncomingReturn(char * pBytes, size_t nSize) {
 
 // SID_CREATEACCOUNT (0x2A) response handler. Legacy account creation result. Receives (DWORD)Status where 0=success, 1=name too short, 2=invalid characters, 3=prohibited word, 4=already exists, 5=still processing. Stores status in global g_dwSIDCreateAccountStatus.
 BOOL __fastcall NET_SID_CLIENT_Incoming_CreateAccount(char * pBytes, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t g_dwSIDCreateAccountStatus;
-
-    g_dwSIDCreateAccountStatus = *(uint32_t*)pBytes;
+    g_SIDPacketResponseFlags[0x2a] = *(uint32_t*)pBytes;
     return 1;
 }
 
 // SID_CREATEACCOUNT2 (0x3D) response handler. Enhanced account creation result. Receives (DWORD)Status (same codes as 0x2A). Stores status in g_nSIDResponseCount2 and sets gbSIDCreateAccount2Complete=1 to signal completion.
 BOOL __fastcall NET_SID_CLIENT_Incoming_CreateAccount2(char * pBytes, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t gbSIDCreateAccount2Complete;
-
     g_nSIDResponseCount2 = *(uint32_t*)pBytes;
-    gbSIDCreateAccount2Complete = 1;
+    g_SIDPacketResponseFlags[0x3d] = 1;
     return 1;
 }
 
 // SID_CHANGEPASSWORD (0x31) response handler. Password change result. Receives (DWORD)Status where 0=success, non-zero=failure. Stores status in g_nSIDResponseCount1, sets gbSIDChangePasswordComplete=1 completion flag. On success, routes to BnMessQueue state 0xe.
 BOOL __fastcall NET_SID_CLIENT_Incoming_ChangePassword(char * pBytes, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t gbSIDChangePasswordComplete;
-
     g_nSIDResponseCount1 = *(int*)pBytes;
-    gbSIDChangePasswordComplete = 1;
+    g_SIDPacketResponseFlags[0x31] = 1;
     if (g_nSIDResponseCount1) {
       return 1;
     }
@@ -387,14 +345,11 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_LogonChallenge(char * pBytes, size_t nSi
 // BATTLE.NET SID_STARTADVEX3 (0x1C) HANDLER
 // Receives game creation/start result from Battle.net server. The 4-byte status code indicates success (0) or various failure reasons (name taken, invalid settings, etc.). On success, sets global flag at 0x00882318 to signal the connection state machine to proceed with game join sequence.
 BOOL __fastcall NET_SID_CLIENT_Incoming_StartAdvEx3(char * pBytes, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t g_bGameCreationSuccess;
-
     if (*(int*)pBytes) {
       return 1;
     }
 
-    g_bGameCreationSuccess = 1;
+    g_SIDPacketResponseFlags[0x1c] = 1;
     return 1;
 }
 
@@ -439,9 +394,6 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_LogonResponse2(char * pBytes, size_t nSi
 
 // SID_REPORTVERSION (0x07) response handler. Version check result from server. Receives (DWORD)Result where 0=banned, 1=outdated (needs patch), 2=current version OK, 3=must reinstall. For result==1, extracts (STRING)PatchURL and initiates BNDOWNLOAD (mode 0x80000002, type 2). Stores patch path in registry key "Patches". Sets gbSIDVersionCheckComplete flag: 0=needs update, 1=current.
 BOOL __fastcall NET_SID_CLIENT_Incoming_ReportVersion(char * pBytes, size_t nSize) {
-    // Static local variables (originally global data)
-    static uint8_t gbSIDVersionCheckComplete;
-
     uint8_t* pszPatchURL;
     uint32_t dwVersionResult = *(uint32_t*)pBytes;
     if (dwVersionResult && dwVersionResult < 4) {
@@ -457,18 +409,18 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_ReportVersion(char * pBytes, size_t nSiz
       ftDownloadTime.dwLowDateTime = 0;
       ftDownloadTime.dwHighDateTime = 0;
       BnDownload::BNDOWNLOAD_InitiateFileDownload((D2BnetDownloadStateStrc*)0x80000002, 2, 0, 0, &ftDownloadTime, (char*)pszPatchURL, nullptr);
-      gbSIDVersionCheckComplete = 0;
+      g_SIDPacketResponseFlags[7] = 0;
       Bnet::BnetLog_WriteLine("downloading upgrade");
       return 1;
     }
     if (dwVersionResult == 2) {
-      gbSIDVersionCheckComplete = 1;
+      g_SIDPacketResponseFlags[7] = 1;
       Bnet::BnetLog_WriteLine("user has latest version");
       return 1;
     }
 
     BNMESSQUEUE_SetStateIfZero(1);
-    gbSIDVersionCheckComplete = 0;
+    g_SIDPacketResponseFlags[7] = 0;
     if (dwVersionResult == 3) {
       Bnet::BnetLog_WriteLine("User must reinstall and patch");
       return 1;
@@ -504,14 +456,14 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_Ping(char * pBytes, size_t nSize) {
 // SID_CDKEY3 (0x42) response handler. CD key validation result. Receives (DWORD)Result where 0=accepted, 3=invalid key, 4=key in use by (STRING)Username, 5=banned key, 6=wrong product. Stores result in gnCDKey3ValidationResult. For result==4, copies username to gszCDKeyInUseByUsername buffer (256 bytes) and routes to BnMessQueue state. Sets gbCDKeyValidationSuccess=1 on success.
 BOOL __fastcall NET_SID_CLIENT_Incoming_CDKey3(char * pBytes, size_t nSize) {
     // Static local variables (originally global data)
-    static unsigned int gnCDKey3ValidationResult;
+    static unsigned int gnCDKey3ValidationResult; D2_STATIC_GUARD_BSS(gnCDKey3ValidationResult, "Bnclient::_net_sid::NET_SID_CLIENT_Incoming_CDKey3::gnCDKey3ValidationResult");
 
     gnCDKey3ValidationResult = *(uint32_t*)pBytes;
     gszCDKeyInUseByUsername[0] = '\0';
-    gbCDKeyValidationSuccess = 0;
+    g_SIDPacketResponseFlags[0x42] = 0;
     switch (gnCDKey3ValidationResult) {
       case 0:
-        gbCDKeyValidationSuccess = 1;
+        g_SIDPacketResponseFlags[0x42] = 1;
       return 1;
       case 3:
         SID_SetStateFlag1(3);
@@ -610,7 +562,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_QueryRealms2(char * pBytes, size_t nSize
 // BATTLE.NET SID_QUERYADURL (0x41) HANDLER
 // Receives clicked banner ad URL response from Battle.net server. Stores the URL and associated CD key hash data via BNSEND_StoreCDKeyHashData for launching the user's web browser to the ad destination URL (typically external promotional pages or game downloads).
 BOOL __fastcall NET_SID_CLIENT_Incoming_QueryAdURL(char * pBytes, size_t nSize) {
-    BnSend::BNSEND_StoreCDKeyHashData((D2CDKeyHashStrc*)pBytes, nSize);
+    BnSend::BNSEND_StoreCDKeyHashData(pBytes, nSize);
     return 1;
 }
 
@@ -689,9 +641,6 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthInfo(SID_S2C_AuthInfo * pPacketData,
 // Key status: 0x200=invalid, 0x201=in use, 0x202=disabled, 0x203=wrong product
 // Initiates MPQ patch download for upgrade paths or sets login state for authentication flow.
 BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketData, size_t nPacketSize) {
-    // Static local variables (originally global data)
-    static bool gbAuthCheckVersionValid;
-
     // Frame slots -264..-4 are ONE object: &szPatchFilename is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -734,7 +683,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketDat
       }
 
       gszCDKeyInUseByUsername[0] = '\0';
-      gbCDKeyValidationSuccess = 0;
+      g_SIDPacketResponseFlags[0x42] = 0;
       Storm::Source::SReg::SRegSaveData((uint32_t*)"Patch", "Patches", 0x82, (uint8_t*)"", 1);
       if (dwResultCode < 0x201) {
         if (dwResultCode == 0x200) {
@@ -745,14 +694,14 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketDat
             case 0x101:
               {
                 BNMESSQUEUE_SetStateIfZero(1);
-                gbAuthCheckVersionValid = 0;
+                g_SIDPacketResponseFlags[0x51] = 0;
                 Debug::DEBUG_UnusedDebugFunction("User has unknown version");
                 break;
               }
             case 0:
               {
-                gbCDKeyValidationSuccess = 1;
-                gbAuthCheckVersionValid = 1;
+                g_SIDPacketResponseFlags[0x42] = 1;
+                g_SIDPacketResponseFlags[0x51] = 1;
                 Debug::DEBUG_UnusedDebugFunction("User has latest version and a valid cdkey");
                 break;
               }
@@ -765,14 +714,14 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketDat
                 szAdditionalInfo.dwLowDateTime = 0;
                 szAdditionalInfo.dwHighDateTime = 0;
                 BnDownload::BNDOWNLOAD_InitiateFileDownload((D2BnetDownloadStateStrc*)0x80000002, 2, 0, 0, &szAdditionalInfo, (char*)&__frame0.szPatchFilename, nullptr);
-                gbAuthCheckVersionValid = 0;
+                g_SIDPacketResponseFlags[0x51] = 0;
                 Debug::DEBUG_UnusedDebugFunction("Downloading Upgrade");
                 break;
               }
           }
         } else if (dwResultCode == 0x102) {
           BNMESSQUEUE_SetStateIfZero(1);
-          gbAuthCheckVersionValid = 0;
+          g_SIDPacketResponseFlags[0x51] = 0;
           Debug::DEBUG_UnusedDebugFunction("User must revert to an older version");
         }
       } else {
@@ -817,9 +766,6 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketDat
 // 9=profanity filter, 10=no alphabetic chars, 11=adjacent punctuation, 12=too much punctuation
 // Sets global g_nSIDResponseCount2 to map status to UI error message display.
 BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountCreate(char * pPacketData, size_t nPacketSize) {
-    // Static local variables (originally global data)
-    static uint8_t gbSIDAccountCreateComplete;
-
     char* szErrorMessage;
     if (nPacketSize < 4) {
       Debug::DEBUG_UnusedDebugFunction("INVALID: AuthAccountCreate");
@@ -865,7 +811,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountCreate(char * pPacketData, si
     }
 
     Debug::DEBUG_UnusedDebugFunction(szErrorMessage);
-    gbSIDAccountCreateComplete = 1;
+    g_SIDPacketResponseFlags[0x52] = 1;
     return 1;
 }
 
@@ -1008,7 +954,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountChangeProof(char * pPacketDat
       bProofValid = NET_SID_CLIENT_VerifyServerProof(pPacketData + 4);
       if (bProofValid) {
         Debug::DEBUG_UnusedDebugFunction("Change Proof success");
-        gbAuthChangeProofComplete = 1;
+        g_SIDPacketResponseFlags[0x55] = 1;
         return 1;
       }
 
@@ -1016,7 +962,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountChangeProof(char * pPacketDat
     } else {
       if (dwStatusCode == 2) {
         Debug::DEBUG_UnusedDebugFunction("Change Proof failed: Invalid password");
-        gbAuthChangeProofComplete = 1;
+        g_SIDPacketResponseFlags[0x55] = 1;
         BNMESSQUEUE_SetStateIfZero(0xe);
         return 1;
       }
@@ -1041,6 +987,8 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountUpgrade(char * pPacketData, s
       Debug::DEBUG_UnusedDebugFunction("INVALID: AuthAccountUpgrade");
       return 0;
     }
+
+    uint32_t nServerToken = *(uint32_t*)(pPacketData + 4);
     if (*(int*)pPacketData) {
       Debug::DEBUG_UnusedDebugFunction("Upgrade Failed: Unknown result");
       BNMESSQUEUE_SetStateIfZero(0x12);
@@ -1048,7 +996,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountUpgrade(char * pPacketData, s
     }
 
     Debug::DEBUG_UnusedDebugFunction("Upgrade requires proof");
-    NET_SID_CLIENT_Send_0x58_AuthAccountUpgradeProof();
+    NET_SID_CLIENT_Send_0x58_AuthAccountUpgradeProof(nServerToken);
     return 1;
 }
 
@@ -1077,7 +1025,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountUpgradeProof(char * pPacketDa
       Debug::DEBUG_UnusedDebugFunction("Upgrade Proof success, password changed");
       NET_SID_ClearSrpPassword();
       g_nSIDResponseCount1 = 0;
-      gbAuthChangeProofComplete = 1;
+      g_SIDPacketResponseFlags[0x55] = 1;
       return 1;
     }
     if (*(int*)pPacketData != 2) {
@@ -1098,7 +1046,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountUpgradeProof(char * pPacketDa
     Debug::DEBUG_UnusedDebugFunction("Upgrade Proof Failed: Invalid password during change");
     NET_SID_ClearSrpPassword();
     g_nSIDResponseCount1 = 2;
-    gbAuthChangeProofComplete = 1;
+    g_SIDPacketResponseFlags[0x55] = 1;
     BNMESSQUEUE_SetStateIfZero(0xe);
     return 1;
 }
@@ -1235,7 +1183,7 @@ BOOL __fastcall NET_SID_CLIENT_IncomingPacketHandler(uint8_t nPacketId, char * p
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(NET_SID_CLIENT_INCOMING, "Bnclient::_net_sid::NET_SID_CLIENT_IncomingPacketHandler::NET_SID_CLIENT_INCOMING");
 
     BOOL bResult = 0;
     if (nPacketId >= 0x5e) {
@@ -1259,8 +1207,8 @@ __time32_t __stdcall NET_SID_GetTime32_00521b40(__time32_t * pTime) {
 // Initializes the SRP context by calling SRP_SetParameters with the Battle.net N (safe prime) and g (generator) values, then seeds the RNG with GetTickCount() for ephemeral key generation. Must be called before any SRP logon/create/change flow.
 void __stdcall NET_SID_CLIENT_InitializeSRP() {
     // Static local variables (originally global data)
-    static int gabSrpGeneratorG = 0x2f;
-    static uint32_t gnSrpGeneratorGLen = 0x1;
+    static int gabSrpGeneratorG = 0x2f; D2_STATIC_GUARD(gabSrpGeneratorG, "Bnclient::_net_sid::NET_SID_CLIENT_InitializeSRP::gabSrpGeneratorG");
+    static uint32_t gnSrpGeneratorGLen = 0x1; D2_STATIC_GUARD(gnSrpGeneratorGLen, "Bnclient::_net_sid::NET_SID_CLIENT_InitializeSRP::gnSrpGeneratorGLen");
     static uint8_t gabSrpModulusN[32] = {
     0x87,
     0xc7,
@@ -1294,8 +1242,8 @@ void __stdcall NET_SID_CLIENT_InitializeSRP() {
     0x1a,
     0xff,
     0xf8
-};
-    static uint32_t gnSrpModulusNLen = 0x20;
+}; D2_STATIC_GUARD(gabSrpModulusN, "Bnclient::_net_sid::NET_SID_CLIENT_InitializeSRP::gabSrpModulusN");
+    static uint32_t gnSrpModulusNLen = 0x20; D2_STATIC_GUARD(gnSrpModulusNLen, "Bnclient::_net_sid::NET_SID_CLIENT_InitializeSRP::gnSrpModulusNLen");
 
     SRP::SRP_SetParameters(&g_pSrpContext, gnSrpGeneratorGLen, (uint8_t*)&gabSrpGeneratorG, gnSrpModulusNLen, gabSrpModulusN);
     DWORD dwTickCount = GetTickCount();
@@ -1405,7 +1353,7 @@ void __stdcall NET_SID_CLIENT_Send_0x50_AuthInfo() {
 // SID_AUTH_CHECK containing version/key validation results.
 int32_t __stdcall NET_SID_CLIENT_Send_0x51_AuthCheck() {
     // Static local variables (originally global data)
-    static uint32_t g_dwCdKeyClientToken;
+    static uint32_t g_dwCdKeyClientToken; D2_STATIC_GUARD_BSS(g_dwCdKeyClientToken, "Bnclient::_net_sid::NET_SID_CLIENT_Send_0x51_AuthCheck::g_dwCdKeyClientToken");
 
     BOOL bIsExpansion;
     char* pPacketEnd;
@@ -1592,28 +1540,35 @@ BOOL __fastcall NET_SID_CLIENT_Send_0x57_AuthAccountUpgrade(int32_t bIncrementFl
     return 1;
 }
 
-void __stdcall NET_SID_CLIENT_Send_0x58_AuthAccountUpgradeProof() {
-    // Frame slots -380..-4 are ONE object: &dwClientToken is passed out and the callee reaches the rest by byte offset.
+void __fastcall NET_SID_CLIENT_Send_0x58_AuthAccountUpgradeProof(uint32_t nServerToken) {
+    // Frame slots -380..-292 are ONE object: &dwClientToken is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       DWORD dwClientToken;
       D2SHA1 shaOldPasswordHash;
       uint8_t abSrpSaltCopy[64];
-      DWORD abUpgradeProofInput[2];
-      D2SHA1 shaUsernameHash;
-      char szUsernameLower[256];
-      uint32_t dwSecurityCookie;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 376, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 88, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    __frame0.dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    __frame0.abUpgradeProofInput[0] = GetTickCount();
-    uint32_t nLen = Storm::Source::SSTR::SStrCopy(__frame0.szUsernameLower, g_srpCredentials.szPassword, 0x100);
-    /* DWORD cchLength for CharLowerBuffA */ /* LPSTR lpsz for CharLowerBuffA */ CharLowerBuffA(__frame0.szUsernameLower, nLen);
-    uint32_t nInputSize = Storm::Source::SSTR::SStrLen(__frame0.szUsernameLower);
-    SHA1(&__frame0.shaUsernameHash, __frame0.szUsernameLower, nInputSize);
-    __frame0.dwClientToken = __frame0.abUpgradeProofInput[0];
-    SHA1(&__frame0.shaOldPasswordHash, (char*)__frame0.abUpgradeProofInput, 0x1c);
+    // Frame -292..-284 is ONE Ghidra variable the decompiler printed as 2 locals.
+    // Separate locals let the compiler reorder them, so the pieces are one struct.
+    struct __frame1_t {
+      DWORD abUpgradeProofInput;
+      uint32_t uStack_120;
+    };
+    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 8, "frame group __frame1_t must reproduce the Ghidra frame layout");
+    __frame1_t __frame1;
+    D2SHA1 shaUsernameHash;
+    char szUsernameLower[256];
+    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
+    __frame1.abUpgradeProofInput = GetTickCount();
+    __frame1.uStack_120 = nServerToken;
+    uint32_t nLen = Storm::Source::SSTR::SStrCopy(szUsernameLower, g_srpCredentials.szPassword, 0x100);
+    /* DWORD cchLength for CharLowerBuffA */ /* LPSTR lpsz for CharLowerBuffA */ CharLowerBuffA(szUsernameLower, nLen);
+    uint32_t nInputSize = Storm::Source::SSTR::SStrLen(szUsernameLower);
+    SHA1(&shaUsernameHash, szUsernameLower, nInputSize);
+    __frame0.dwClientToken = __frame1.abUpgradeProofInput;
+    SHA1(&__frame0.shaOldPasswordHash, (char*)&__frame1.abUpgradeProofInput, 0x1c);
     Storm::Source::SSystem::SMemCopy(__frame0.abSrpSaltCopy, &g_srpSaltVerifier, 0x40);
     Storm::Source::SSystem::SMemZero(&g_srpSaltVerifier, 0x40);
     BnSend::NET_SID_CLIENT_Send(0x58, (char*)&__frame0.dwClientToken, 0x58);
@@ -1932,7 +1887,7 @@ void __fastcall NET_SID_CLIENT_ExpandCdKeyToBase5(int32_t pCdKeyString, int32_t 
     0xff,
     0xff,
     0xff
-};
+}; D2_STATIC_GUARD(g_CdKeyCharToDigitTable, "Bnclient::_net_sid::NET_SID_CLIENT_ExpandCdKeyToBase5::g_CdKeyCharToDigitTable");
 
     uint32_t nextInIdx;
     uint8_t digitValue;
@@ -2235,8 +2190,8 @@ int32_t __fastcall NET_SID_CLIENT_DecodeCDKeyHash(int * pnParam, uint32_t nParam
     uint32_t* pDecBuf;
     uint32_t* pWorkBuf;
     uint32_t nBlockCounter;
-    uint32_t encWorkBlock;
-    uint32_t decWorkBlock;
+    uint8_t abEncBlock[64];
+    uint8_t abDecBlock[64];
     uint32_t shaState[5];
     uint8_t byDataByte;
     int nRoundKeyIdx;
@@ -2255,7 +2210,7 @@ int32_t __fastcall NET_SID_CLIENT_DecodeCDKeyHash(int * pnParam, uint32_t nParam
         nBlockCounter = 0;
         while (nAlignedLen) {
           pSrcCopyPtr = (uint32_t*)pnParam;
-          pEncWorkPtr = &encWorkBlock;
+          pEncWorkPtr = (uint32_t*)abEncBlock;
           for (nLoopIdx = 0x10; nLoopIdx; nLoopIdx--) {
             *pEncWorkPtr = *pSrcCopyPtr;
             pSrcCopyPtr++;
@@ -2266,12 +2221,12 @@ int32_t __fastcall NET_SID_CLIENT_DecodeCDKeyHash(int * pnParam, uint32_t nParam
           if (!(nBlockCounter & 7)) {
             nLoopIdx = 0;
             do {
-              NET_SID_CLIENT_IDEAEncryptDecrypt(0, (uint16_t*)((uintptr_t)&encWorkBlock + nLoopIdx), (short int*)((uintptr_t)&decWorkBlock + nLoopIdx));
+              NET_SID_CLIENT_IDEAEncryptDecrypt(0, (uint16_t*)(abEncBlock + nLoopIdx), (short int*)(abDecBlock + nLoopIdx));
               nLoopIdx += 8;
             } while (nLoopIdx < 0x40);
           } else {
-            pEncBuf = &encWorkBlock;
-            pDecBuf = &decWorkBlock;
+            pEncBuf = (uint32_t*)abEncBlock;
+            pDecBuf = (uint32_t*)abDecBlock;
             for (nLoopIdx = 0x10; nLoopIdx; nLoopIdx--) {
               *pDecBuf = *pEncBuf;
               pEncBuf++;
@@ -2282,23 +2237,23 @@ int32_t __fastcall NET_SID_CLIENT_DecodeCDKeyHash(int * pnParam, uint32_t nParam
           nKeyByteIdx = 0x3e;
           nLoopIdx = 0;
           do {
-            *(char*)((uintptr_t)&encWorkBlock + nLoopIdx) = *(char*)((uintptr_t)&decWorkBlock + nLoopIdx) - *(char*)((int)shaState + (nKeyByteIdx + 1) % 0x14);
-            *(char*)((uintptr_t)&encWorkBlock + nLoopIdx + 1) = *(char*)((uintptr_t)&decWorkBlock + nLoopIdx + 1) - *(char*)((int)shaState + nKeyByteIdx % 0x14);
-            *(char*)((uintptr_t)&encWorkBlock + nLoopIdx + 2) = *(char*)((uintptr_t)&decWorkBlock + nLoopIdx + 2) - *(char*)((int)shaState + (nKeyByteIdx - 1) % 0x14);
+            abEncBlock[nLoopIdx] = abDecBlock[nLoopIdx] - *(char*)((int)shaState + (nKeyByteIdx + 1) % 0x14);
+            abEncBlock[nLoopIdx + 1] = abDecBlock[nLoopIdx + 1] - *(char*)((int)shaState + nKeyByteIdx % 0x14);
+            abEncBlock[nLoopIdx + 2] = abDecBlock[nLoopIdx + 2] - *(char*)((int)shaState + (nKeyByteIdx - 1) % 0x14);
             nRoundKeyIdx = nKeyByteIdx - 2;
             nKeyByteIdx += -4;
-            *(char*)((uintptr_t)&encWorkBlock + nLoopIdx + 3) = *(char*)((uintptr_t)&decWorkBlock + nLoopIdx + 3) - *(char*)((int)shaState + nRoundKeyIdx % 0x14);
+            abEncBlock[nLoopIdx + 3] = abDecBlock[nLoopIdx + 3] - *(char*)((int)shaState + nRoundKeyIdx % 0x14);
             nLoopIdx += 4;
           } while (-2 < nKeyByteIdx);
 
           if (!(nBlockCounter & 0xf)) {
-            NET_SID_CLIENT_SHA1Compress(0, &encWorkBlock, nullptr);
+            NET_SID_CLIENT_SHA1Compress(0, (uint32_t*)abEncBlock, nullptr);
           }
 
           nBlockCounter++;
           nAlignedLen -= 0x40;
           pSrcCopyPtr = (uint32_t*)(pnParam + 0x10);
-          pInBufCopy = &encWorkBlock;
+          pInBufCopy = (uint32_t*)abEncBlock;
           pWorkBuf = (uint32_t*)pnParam;
           for (nLoopIdx = 0x10; pnParam = (int*)pSrcCopyPtr , nLoopIdx != 0; nLoopIdx--) {
             *pWorkBuf = *pInBufCopy;
@@ -2353,8 +2308,8 @@ void __fastcall NET_SID_CLIENT_EncodeBuffer(uint32_t * pdwParam, uint32_t nParam
     uint32_t* pNextSrcBlock;
     uint32_t nBlockCounter;
     uint32_t shaFinalState[5];
-    uint32_t plainWorkBlock;
-    uint32_t encWorkBlock;
+    uint8_t abPlainBlock[64];
+    uint8_t abEncBlock[64];
     uint32_t shaState[5];
     int32_t nLine;
     if (!pdwParam) {
@@ -2375,35 +2330,35 @@ void __fastcall NET_SID_CLIENT_EncodeBuffer(uint32_t * pdwParam, uint32_t nParam
             nChunkSize = 0x40;
           }
 
-          memcpy(&plainWorkBlock, pdwParam, nChunkSize);
+          memcpy(abPlainBlock, pdwParam, nChunkSize);
           if (nChunkSize < 0x40) {
-            memset((void*)((uintptr_t)&plainWorkBlock + nChunkSize), 0, 0x40 - nChunkSize);
+            memset(abPlainBlock + nChunkSize, 0, 0x40 - nChunkSize);
           }
 
           NET_SID_CLIENT_GetSHAState(0, shaState);
           if (!(nBlockCounter & 0xf)) {
-            NET_SID_CLIENT_SHA1Compress(0, &plainWorkBlock, nullptr);
+            NET_SID_CLIENT_SHA1Compress(0, (uint32_t*)abPlainBlock, nullptr);
           }
 
           nCopyCount = 0;
           do {
-            *(char*)((uintptr_t)&encWorkBlock + nCopyCount) = *(char*)((int)shaState + (0x3fU - nCopyCount) % 0x14) + *(char*)((uintptr_t)&plainWorkBlock + nCopyCount);
-            *(char*)((uintptr_t)&encWorkBlock + nCopyCount + 1) = *(char*)((int)shaState + (0x3eU - nCopyCount) % 0x14) + *(char*)((uintptr_t)&plainWorkBlock + nCopyCount + 1);
-            *(char*)((uintptr_t)&encWorkBlock + nCopyCount + 2) = *(char*)((int)shaState + (0x3dU - nCopyCount) % 0x14) + *(char*)((uintptr_t)&plainWorkBlock + nCopyCount + 2);
+            abEncBlock[nCopyCount] = *(char*)((int)shaState + (0x3fU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount];
+            abEncBlock[nCopyCount + 1] = *(char*)((int)shaState + (0x3eU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount + 1];
+            abEncBlock[nCopyCount + 2] = *(char*)((int)shaState + (0x3dU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount + 2];
             nKeyByteIdx = nCopyCount + 4;
-            *(char*)((uintptr_t)&encWorkBlock + nCopyCount + 3) = *(char*)((int)shaState + (0x3cU - nCopyCount) % 0x14) + *(char*)((uintptr_t)&plainWorkBlock + nCopyCount + 3);
+            abEncBlock[nCopyCount + 3] = *(char*)((int)shaState + (0x3cU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount + 3];
             nCopyCount = nKeyByteIdx;
           } while (nKeyByteIdx < 0x40);
 
           if (!(nBlockCounter & 7)) {
             nCopyCount = 0;
             do {
-              NET_SID_CLIENT_IDEAEncryptDecrypt(0, (uint16_t*)((uintptr_t)&encWorkBlock + nCopyCount), (short int*)((uintptr_t)&plainWorkBlock + nCopyCount));
+              NET_SID_CLIENT_IDEAEncryptDecrypt(0, (uint16_t*)(abEncBlock + nCopyCount), (short int*)(abPlainBlock + nCopyCount));
               nCopyCount += 8;
             } while (nCopyCount < 0x40);
           } else {
-            pSrcBlock = &encWorkBlock;
-            pDstBlock = &plainWorkBlock;
+            pSrcBlock = (uint32_t*)abEncBlock;
+            pDstBlock = (uint32_t*)abPlainBlock;
             for (nCopyCount = 0x10; nCopyCount; nCopyCount--) {
               *pDstBlock = *pSrcBlock;
               pSrcBlock++;
@@ -2414,7 +2369,7 @@ void __fastcall NET_SID_CLIENT_EncodeBuffer(uint32_t * pdwParam, uint32_t nParam
           puVar1 = pdwParam + 0x10;
           nBlockCounter++;
           nParam -= nChunkSize;
-          pDstPtr = &plainWorkBlock;
+          pDstPtr = (uint32_t*)abPlainBlock;
           pNextSrcBlock = pdwParam;
           for (nCopyCount = 0x10; pdwParam = puVar1 , nCopyCount != 0; nCopyCount--) {
             *pNextSrcBlock = *pDstPtr;
@@ -2481,7 +2436,7 @@ int32_t NET_SID_CLIENT_DecodeAndValidateBuffer(int * pnParam, uint32_t nParam) {
 uint32_t * NET_SID_CLIENT_LoadAndDecodeCDKeyFile(uint32_t * pnParam, DWORD * dwParam) {
     *dwParam = 0x400;
     uint32_t* pLoadedKeyBuf = pnParam;
-    Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)pnParam, (void**)&pLoadedKeyBuf, dwParam, 1, 0);
+    Storm::Source::SFile::SFileLoadFile((char*)pnParam, (void**)&pLoadedKeyBuf, dwParam, 1, 0);
     if (!(pLoadedKeyBuf && *dwParam)) {
       return nullptr;
     }
@@ -2500,24 +2455,22 @@ uint32_t * NET_SID_CLIENT_LoadAndDecodeCDKeyFile(uint32_t * pnParam, DWORD * dwP
 
 void __stdcall DecodeAndLoadKeys() {
     // Static local variables (originally global data)
-    static uint32_t g_dwCdKeyClassicSize;
-    static uint32_t g_dwCdKeyOwnerSize;
-    static uint32_t g_dwCdKeyExpansionSize;
+    static uint32_t g_dwCdKeyClassicSize; D2_STATIC_GUARD_BSS(g_dwCdKeyClassicSize, "Bnclient::_net_sid::DecodeAndLoadKeys::g_dwCdKeyClassicSize");
+    static uint32_t g_dwCdKeyOwnerSize; D2_STATIC_GUARD_BSS(g_dwCdKeyOwnerSize, "Bnclient::_net_sid::DecodeAndLoadKeys::g_dwCdKeyOwnerSize");
+    static uint32_t g_dwCdKeyExpansionSize; D2_STATIC_GUARD_BSS(g_dwCdKeyExpansionSize, "Bnclient::_net_sid::DecodeAndLoadKeys::g_dwCdKeyExpansionSize");
 
     int32_t bDecodeResultClassic;
     int* pKeyBuf;
     int nXorByteIdx;
-    char* pLoadedKeyBuf;
     uint8_t byXorStep;
+    uint8_t bVar1;
     uint32_t* pExpKeyPathSrc;
     uint32_t* pExpKeyBuf;
     int* pFileBuf;
     char szFileName[260];
     uint32_t aKeyPathTable[7];
-    uint8_t xorIdxTable[39];
+    uint8_t abPermuteIdx[38];
     int nPermuteOffset;
-    uint32_t dwStackCookie;
-    dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (D2Client::_CdKey::KeyClassic || D2Client::_CdKey::KeyOwner) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x213);
       exit(-1);
@@ -2533,53 +2486,22 @@ void __stdcall DecodeAndLoadKeys() {
       aKeyPathTable[3] = 0x6375736f;
       aKeyPathTable[4] = 0x67626c66;
       aKeyPathTable[5] = 0x2e5c74;
-      xorIdxTable[0] = 2;
-      xorIdxTable[1] = 0x10;
-      xorIdxTable[2] = 2;
-      xorIdxTable[3] = 0x11;
-      xorIdxTable[4] = 0xf;
-      xorIdxTable[5] = 0xd;
-      xorIdxTable[6] = 8;
-      xorIdxTable[7] = 0xe;
-      xorIdxTable[8] = 2;
-      xorIdxTable[9] = 0xd;
-      xorIdxTable[10] = 0x11;
-      xorIdxTable[0xb] = 9;
-      xorIdxTable[0xc] = 0xc;
-      xorIdxTable[0xd] = 3;
-      xorIdxTable[0xe] = 0x11;
-      xorIdxTable[0xf] = 0xb;
-      xorIdxTable[0x10] = 10;
-      xorIdxTable[0x11] = 7;
-      xorIdxTable[0x12] = 9;
-      xorIdxTable[0x13] = 8;
-      xorIdxTable[0x14] = 7;
-      xorIdxTable[0x15] = 0x11;
-      xorIdxTable[0x16] = 1;
-      xorIdxTable[0x17] = 2;
-      xorIdxTable[0x18] = 0;
-      xorIdxTable[0x19] = 6;
-      xorIdxTable[0x1a] = 5;
-      xorIdxTable[0x1b] = 4;
-      xorIdxTable[0x1c] = 3;
-      xorIdxTable[0x1d] = 0x12;
-      xorIdxTable[0x1e] = 1;
-      xorIdxTable[0x1f] = 2;
-      xorIdxTable[0x20] = 0;
-      xorIdxTable[0x21] = 0x13;
-      byXorStep = 4;
+      memcpy(abPermuteIdx, "\x04\x02\x10\x02\x11\x0f\r\b\x0e\x02\r\x11\t\f\x03\x11\v\n\a\t\b\a\x11\x01\x02", 0x1a);
+      memcpy(abPermuteIdx + 0x1a, "\x06\x05\x04\x03\x12\x01\x02", 8);
+      abPermuteIdx[0x22] = '\x13';
+      byXorStep = '\x04';
       nPermuteOffset = 0;
       do {
         nXorByteIdx = nPermuteOffset;
         nPermuteOffset = (int)(char)byXorStep;
-        byXorStep = xorIdxTable[nXorByteIdx];
+        byXorStep = abPermuteIdx[nXorByteIdx + 1];
         szFileName[nXorByteIdx] = *(char*)((int)aKeyPathTable + nPermuteOffset + 4);
         nPermuteOffset = nXorByteIdx + 1;
       } while ((char)byXorStep < '\x13');
 
       szFileName[nXorByteIdx + 1] = '\0';
       g_dwCdKeyClassicSize = 0x400;
-      Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyClassicSize, 1, 0);
+      Storm::Source::SFile::SFileLoadFile(szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyClassicSize, 1, 0);
       if (pFileBuf && g_dwCdKeyClassicSize) {
         bDecodeResultClassic = NET_SID_CLIENT_DecodeAndValidateBuffer(pFileBuf, g_dwCdKeyClassicSize);
         pKeyClassicBuf = (uint32_t*)pFileBuf;
@@ -2598,7 +2520,7 @@ void __stdcall DecodeAndLoadKeys() {
     D2Client::_CdKey::KeyClassic = (char*)pKeyClassicBuf;
     sprintf(szFileName, "%s\\%s.clh", "font", "font");
     g_dwCdKeyOwnerSize = 0x400;
-    Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyOwnerSize, 1, 0);
+    Storm::Source::SFile::SFileLoadFile(szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyOwnerSize, 1, 0);
     if (!pFileBuf || !g_dwCdKeyOwnerSize) {
       pKeyBuf = 0;
     } else {
@@ -2618,46 +2540,14 @@ void __stdcall DecodeAndLoadKeys() {
       aKeyPathTable[3] = 0x6375736f;
       aKeyPathTable[5] = 0x2e5c74;
       aKeyPathTable[4] = 0x67626c66;
-      xorIdxTable[0] = 2;
-      xorIdxTable[1] = 0x10;
-      xorIdxTable[2] = 2;
-      xorIdxTable[3] = 0x11;
-      xorIdxTable[4] = 0xf;
-      xorIdxTable[5] = 0xd;
-      xorIdxTable[6] = 8;
-      xorIdxTable[7] = 0xe;
-      xorIdxTable[8] = 2;
-      xorIdxTable[9] = 0xd;
-      xorIdxTable[10] = 0x11;
-      xorIdxTable[0xb] = 9;
-      xorIdxTable[0xc] = 0xc;
-      xorIdxTable[0xd] = 3;
-      xorIdxTable[0xe] = 0x11;
-      xorIdxTable[0xf] = 0xb;
-      xorIdxTable[0x10] = 10;
-      xorIdxTable[0x11] = 7;
-      xorIdxTable[0x12] = 9;
-      xorIdxTable[0x13] = 8;
-      xorIdxTable[0x14] = 7;
-      xorIdxTable[0x15] = 0x11;
-      xorIdxTable[0x16] = 0xb;
-      xorIdxTable[0x17] = 10;
-      xorIdxTable[0x18] = 7;
-      xorIdxTable[0x19] = 6;
-      xorIdxTable[0x1a] = 5;
-      xorIdxTable[0x1b] = 4;
-      xorIdxTable[0x1c] = 3;
-      xorIdxTable[0x1d] = 0x12;
-      xorIdxTable[0x1e] = 1;
-      xorIdxTable[0x1f] = 2;
-      xorIdxTable[0x20] = 0;
-      xorIdxTable[0x21] = 0x13;
-      byXorStep = 4;
+      memcpy(abPermuteIdx, "\x04\x02\x10\x02\x11\x0f\r\b\x0e\x02\r\x11\t\f\x03\x11\v\n\a\t\b\a\x11\v\n\a\x06\x05\x04\x03\x12\x01\x02", 0x22);
+      abPermuteIdx[0x22] = '\x13';
+      byXorStep = '\x04';
       nPermuteOffset = 0;
       do {
         nXorByteIdx = nPermuteOffset;
         nPermuteOffset = (int)(char)byXorStep;
-        byXorStep = xorIdxTable[nXorByteIdx];
+        byXorStep = abPermuteIdx[nXorByteIdx + 1];
         szFileName[nXorByteIdx] = *(char*)((int)aKeyPathTable + nPermuteOffset + 4);
         nPermuteOffset = nXorByteIdx + 1;
       } while ((char)byXorStep < '\x13');
@@ -2665,7 +2555,7 @@ void __stdcall DecodeAndLoadKeys() {
       szFileName[nXorByteIdx + 1] = '\0';
       g_dwCdKeyOwnerSize = 0x400;
       D2Client::_CdKey::KeyOwner = (char*)pKeyBuf;
-      Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyOwnerSize, 1, 0);
+      Storm::Source::SFile::SFileLoadFile(szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyOwnerSize, 1, 0);
       if (pFileBuf && g_dwCdKeyOwnerSize) {
         bDecodeResultClassic = NET_SID_CLIENT_DecodeAndValidateBuffer(pFileBuf, g_dwCdKeyOwnerSize);
         pKeyBuf = pFileBuf;
@@ -2695,55 +2585,19 @@ void __stdcall DecodeAndLoadKeys() {
       }
 
       *(short int*)pExpKeyBuf = (short int)*pExpKeyPathSrc;
-      xorIdxTable[0] = 2;
-      xorIdxTable[1] = 0x10;
-      xorIdxTable[2] = 2;
-      xorIdxTable[3] = 0x11;
-      xorIdxTable[4] = 0xf;
-      xorIdxTable[5] = 0xd;
-      xorIdxTable[6] = 8;
-      xorIdxTable[7] = 0xe;
-      xorIdxTable[8] = 2;
-      xorIdxTable[9] = 0xd;
-      xorIdxTable[10] = 0x11;
-      xorIdxTable[0xb] = 0xb;
-      xorIdxTable[0xc] = 0x17;
-      xorIdxTable[0xd] = 2;
-      xorIdxTable[0xe] = 7;
-      xorIdxTable[0xf] = 9;
-      xorIdxTable[0x10] = 0x11;
-      xorIdxTable[0x11] = 2;
-      xorIdxTable[0x12] = 0x13;
-      xorIdxTable[0x13] = 0x11;
-      xorIdxTable[0x14] = 0xb;
-      xorIdxTable[0x15] = 8;
-      xorIdxTable[0x16] = 0xc;
-      xorIdxTable[0x17] = 0x11;
-      xorIdxTable[0x18] = 2;
-      xorIdxTable[0x19] = 0x13;
-      xorIdxTable[0x1a] = 0xe;
-      xorIdxTable[0x1b] = 0xd;
-      xorIdxTable[0x1c] = 3;
-      xorIdxTable[0x1d] = 0xe;
-      xorIdxTable[0x1e] = 8;
-      xorIdxTable[0x1f] = 1;
-      xorIdxTable[0x20] = 0x12;
-      xorIdxTable[0x21] = 0xb;
-      xorIdxTable[0x22] = 8;
-      xorIdxTable[0x23] = 0xc;
-      xorIdxTable[0x24] = 0x27;
-      byXorStep = 4;
+      memcpy(abPermuteIdx, "\x04\x02\x10\x02\x11\x0f\r\b\x0e\x02\r\x11\v\x17\x02\a\t\x11\x02\x13\x11\v\b\f\x11\x02\x13\x0e\r\x03\x0e\b\x01\x12\v\b\f\'", 0x26);
+      bVar1 = 4;
       nPermuteOffset = 0;
       do {
         nXorByteIdx = nPermuteOffset;
-        szFileName[nXorByteIdx] = *(char*)((int)aKeyPathTable + (int)(char)byXorStep);
-        byXorStep = xorIdxTable[nXorByteIdx];
+        szFileName[nXorByteIdx] = *(char*)((int)aKeyPathTable + (int)(char)bVar1);
+        bVar1 = abPermuteIdx[nXorByteIdx + 1];
         nPermuteOffset = nXorByteIdx + 1;
-      } while (byXorStep < 0x1a);
+      } while (bVar1 < 0x1a);
 
       szFileName[nXorByteIdx + 1] = '\0';
       g_dwCdKeyExpansionSize = 0x400;
-      Storm::Source::SFile::SFileLoadFile((D2ArchiveStrc*)szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyExpansionSize, 1, 0);
+      Storm::Source::SFile::SFileLoadFile(szFileName, (void**)&pFileBuf, (DWORD*)&g_dwCdKeyExpansionSize, 1, 0);
       if (pFileBuf && g_dwCdKeyExpansionSize) {
         bDecodeResultClassic = NET_SID_CLIENT_DecodeAndValidateBuffer(pFileBuf, g_dwCdKeyExpansionSize);
         pKeyBuf = pFileBuf;
@@ -2762,6 +2616,7 @@ void __stdcall DecodeAndLoadKeys() {
     D2Client::_CdKey::KeyExpansion = (char*)pKeyBuf;
     g_dwProductId = 0;
     if (szFileName[0] != '\0') {
+      char* pLoadedKeyBuf;
       pLoadedKeyBuf = szFileName;
       do {
         *pLoadedKeyBuf = '\0';
@@ -3065,35 +2920,23 @@ void __fastcall NET_SID_CLIENT_IDEAExpandKey(uint16_t * pUserKey, uint16_t * pEx
 }
 
 void __fastcall NET_SID_CLIENT_IDEAInvertKey(uint16_t * pEncryptKey, uint16_t * pDecryptKey) {
-    // Frame slots -16..-4 are ONE object: &invKey0 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint16_t invKey0;
-      short int invKey1;
-      short int invKey2;
-      uint16_t invKey3;
-      uint32_t securityCookie;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint16_t* pReadKey;
     uint16_t* pTempWrite2;
-    short int negAddKey;
-    uint16_t tempInverted[48];
-    __frame0.securityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
+    uint16_t aInvKey[52];
     uint16_t subkey0 = *pEncryptKey;
     uint16_t subkey1 = pEncryptKey[2];
     uint16_t subkey2 = pEncryptKey[1];
     uint32_t invResult = D2Client::_net_sid::NET_SID_CLIENT_IDEAMultInverse((uint32_t)pEncryptKey[3]);
-    __frame0.invKey3 = (uint16_t)invResult;
-    __frame0.invKey1 = -subkey2;
-    __frame0.invKey2 = -subkey1;
+    aInvKey[0x33] = (uint16_t)invResult;
+    aInvKey[0x31] = -subkey2;
+    aInvKey[0x32] = -subkey1;
     invResult = D2Client::_net_sid::NET_SID_CLIENT_IDEAMultInverse((uint32_t)subkey0);
-    __frame0.invKey0 = (uint16_t)invResult;
+    aInvKey[0x30] = (uint16_t)invResult;
     int roundCounter = 7;
     uint16_t* pSrcKey = pEncryptKey + 4;
-    uint16_t* pWrite = &__frame0.invKey0;
+    uint16_t* pWrite = aInvKey + 0x30;
     do {
+      uint16_t negAddKey;
       pTempWrite2 = pWrite;
       pReadKey = pSrcKey;
       subkey0 = *pReadKey;
@@ -3103,12 +2946,12 @@ void __fastcall NET_SID_CLIENT_IDEAInvertKey(uint16_t * pEncryptKey, uint16_t * 
       pTempWrite2[-2] = subkey0;
       negAddKey = -pReadKey[4];
       invResult = D2Client::_net_sid::NET_SID_CLIENT_IDEAMultInverse((uint32_t)pReadKey[5]);
-      pTempWrite2[-3] = (short int)invResult;
+      pTempWrite2[-3] = (uint16_t)invResult;
       pTempWrite2[-4] = -subkey2;
       pTempWrite2[-5] = negAddKey;
       invResult = D2Client::_net_sid::NET_SID_CLIENT_IDEAMultInverse((uint32_t)subkey1);
       roundCounter--;
-      pTempWrite2[-6] = (short int)invResult;
+      pTempWrite2[-6] = (uint16_t)invResult;
       pSrcKey = pReadKey + 6;
       pWrite = pTempWrite2 - 6;
     } while (roundCounter);
@@ -3120,12 +2963,12 @@ void __fastcall NET_SID_CLIENT_IDEAInvertKey(uint16_t * pEncryptKey, uint16_t * 
     uint16_t subkey3 = pReadKey[0xb];
     pTempWrite2[-8] = subkey0;
     invResult = D2Client::_net_sid::NET_SID_CLIENT_IDEAMultInverse((uint32_t)subkey3);
-    pTempWrite2[-9] = (short int)invResult;
+    pTempWrite2[-9] = (uint16_t)invResult;
     pTempWrite2[-10] = -pReadKey[10];
     pTempWrite2[-0xb] = -subkey2;
     invResult = D2Client::_net_sid::NET_SID_CLIENT_IDEAMultInverse((uint32_t)subkey1);
-    pTempWrite2[-0xc] = (short int)invResult;
-    pWrite = tempInverted;
+    pTempWrite2[-0xc] = (uint16_t)invResult;
+    pWrite = aInvKey;
     int copyCounter = 0x34;
     uint16_t* pTempWrite = pDecryptKey;
     do {

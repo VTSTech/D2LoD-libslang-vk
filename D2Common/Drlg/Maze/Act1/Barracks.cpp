@@ -50,7 +50,7 @@ void __stdcall DRLGMAZE_GenerateBarracksLayout(D2DrlgLevelStrc * pDrlgLevelStrc)
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgBarracksReplacements_A, "D2Common::Drlg::Maze::Act1::Barracks::DRLGMAZE_GenerateBarracksLayout::gaDrlgBarracksReplacements_A");
     static D2DrlgReplaceRoomStrc gaDrlgBarracksReplacements_B[4] = {
     {
         /* .nSourceLevelPrestId = */ 0xaf,
@@ -76,8 +76,8 @@ void __stdcall DRLGMAZE_GenerateBarracksLayout(D2DrlgLevelStrc * pDrlgLevelStrc)
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
-    static fpDrlgMazeFindEdgeRoom gapfnBarracksFindEdgeRoom[3] = { &D2Common::Drlg::Maze::DRLGMAZE_FindRightMostRoom, &D2Common::Drlg::Maze::DRLGMAZE_FindBottomMostRoom, &D2Common::Drlg::Maze::DRLGMAZE_FindLeftMostRoom };
+}; D2_STATIC_GUARD(gaDrlgBarracksReplacements_B, "D2Common::Drlg::Maze::Act1::Barracks::DRLGMAZE_GenerateBarracksLayout::gaDrlgBarracksReplacements_B");
+    static fpDrlgMazeFindEdgeRoom gapfnBarracksFindEdgeRoom[3] = { &D2Common::Drlg::Maze::DRLGMAZE_FindRightMostRoom, &D2Common::Drlg::Maze::DRLGMAZE_FindBottomMostRoom, &D2Common::Drlg::Maze::DRLGMAZE_FindLeftMostRoom }; D2_STATIC_GUARD(gapfnBarracksFindEdgeRoom, "D2Common::Drlg::Maze::Act1::Barracks::DRLGMAZE_GenerateBarracksLayout::gapfnBarracksFindEdgeRoom");
 
     uint32_t nExitDir;
     D2DrlgReplaceRoomStrc* pReplaceData;
@@ -95,7 +95,7 @@ void __stdcall DRLGMAZE_GenerateBarracksLayout(D2DrlgLevelStrc * pDrlgLevelStrc)
       case 0:
         {
           pConnectorRoom = DRLGMAZE_AllocRoomExAndPickPreset(DIRECTION_SOUTHWEST, pJailRoom, 0xa7, 0, 1);
-          DrlgRoom::AllocDrlgOrth(pConnectorRoom, pBarracksLevel, DIRECTION_SOUTHWEST, 0);
+          DrlgRoom::AllocDrlgOrth(&pConnectorRoom->pOrth, pBarracksLevel, DIRECTION_SOUTHWEST, 0);
           nOffsetX -= pConnectorRoom->sCoords.WorldPosition.x + pLvlMazeTxt->SizeX;
           nOffsetY += pBarracksLevel->sCoordinatesAndSize.WorldSize.y / 2 - pConnectorRoom->sCoords.WorldPosition.y;
           break;
@@ -103,7 +103,7 @@ void __stdcall DRLGMAZE_GenerateBarracksLayout(D2DrlgLevelStrc * pDrlgLevelStrc)
       case 1:
         {
           pConnectorRoom = DRLGMAZE_AllocRoomExAndPickPreset(DIRECTION_NORTHWEST, pJailRoom, 0xa7, 1, 1);
-          DrlgRoom::AllocDrlgOrth(pConnectorRoom, pBarracksLevel, DIRECTION_NORTHWEST, 0);
+          DrlgRoom::AllocDrlgOrth(&pConnectorRoom->pOrth, pBarracksLevel, DIRECTION_NORTHWEST, 0);
           nOffsetX = nOffsetX - 6 + (pBarracksLevel->sCoordinatesAndSize.WorldSize.x / 2 - pConnectorRoom->sCoords.WorldPosition.x);
           nOffsetY -= pConnectorRoom->sCoords.WorldPosition.y + pLvlMazeTxt->SizeY;
           break;
@@ -111,7 +111,7 @@ void __stdcall DRLGMAZE_GenerateBarracksLayout(D2DrlgLevelStrc * pDrlgLevelStrc)
       case 2:
         {
           pConnectorRoom = DRLGMAZE_AllocRoomExAndPickPreset(DIRECTION_SOUTHEAST, pJailRoom, 0xa7, 2, 1);
-          DrlgRoom::AllocDrlgOrth(pConnectorRoom, pBarracksLevel, DIRECTION_SOUTHEAST, 0);
+          DrlgRoom::AllocDrlgOrth(&pConnectorRoom->pOrth, pBarracksLevel, DIRECTION_SOUTHEAST, 0);
           nOffsetX += pBarracksLevel->sCoordinatesAndSize.WorldSize.x - pConnectorRoom->sCoords.WorldPosition.x;
           nOffsetY = nOffsetY + 1 + (pBarracksLevel->sCoordinatesAndSize.WorldSize.y / 2 - pConnectorRoom->sCoords.WorldPosition.y);
           break;

@@ -173,6 +173,12 @@ void CollectFrames(const CONTEXT* pCtx) {
 // ---------------------------------------------------------------------------
 HANDLE g_hFile = INVALID_HANDLE_VALUE;
 
+// When no report file could be created, Out() routes every line into
+// d2boot.log instead, which is unbuffered and has already proven it reaches
+// disk from a dying process. Lines longer than ~600 chars are truncated by
+// the boot writer; every report line is far below that.
+bool g_bOutToBootLog = false;
+
 void Out(const char* pszFormat, ...) {
     static char s_szLine[1100];
     va_list args;
@@ -182,6 +188,8 @@ void Out(const char* pszFormat, ...) {
     DWORD dwWritten;
     if (n > 0 && g_hFile != INVALID_HANDLE_VALUE)
         WriteFile(g_hFile, s_szLine, (DWORD)n, &dwWritten, 0);
+    if (n > 0 && g_bOutToBootLog)
+        D2BOOT_Mark(s_szLine); // [d2boot] report-file fallback
 }
 
 const char* BaseName(const char* pszPath) {
@@ -233,11 +241,17 @@ bool OpenReport(const SYSTEMTIME& st) {
                 OutputDebugStringA("Redivivus crash report: ");
                 OutputDebugStringA(szPath);
                 OutputDebugStringA("\n");
+                D2BOOT_MarkFmt("crash report: writing %s", szPath); // [d2boot]
                 return true;
             }
-            if (GetLastError() != ERROR_FILE_EXISTS) break;
+            if (GetLastError() != ERROR_FILE_EXISTS) {
+                D2BOOT_MarkFmt("crash report: CreateFile failed (%s) gle=%lu", // [d2boot]
+                               szPath, (unsigned long)GetLastError());
+                break;
+            }
         }
     }
+    D2BOOT_Mark("crash report: no report file could be created - full report follows in d2boot.log"); // [d2boot]
     return false;
 }
 
@@ -396,7 +410,13 @@ void WriteReport(EXCEPTION_POINTERS* pExc, bool bForeign, DWORD dwThreadId,
                  const HaltInfo* pHalt = 0) {
     SYSTEMTIME st;
     GetLocalTime(&st);
-    if (!OpenReport(st)) return;
+    if (!g_szExePath[0]) {
+        // [d2crash] CrashInit normally fills this at static-init; one field
+        // report printed 'Exe:' empty, so repopulate here if needed.
+        DWORD n = GetModuleFileNameA(0, g_szExePath, MAX_PATH);
+        if (n == 0 || n >= MAX_PATH) g_szExePath[0] = 0;
+    }
+    if (!OpenReport(st)) g_bOutToBootLog = true; // the report still goes out, via d2boot.log
 
     const EXCEPTION_RECORD* pRec = pExc->ExceptionRecord;
     const CONTEXT* pCtx = pExc->ContextRecord;
@@ -478,6 +498,12 @@ void WriteReport(EXCEPTION_POINTERS* pExc, bool bForeign, DWORD dwThreadId,
     FlushFileBuffers(g_hFile);
     CloseHandle(g_hFile);
     g_hFile = INVALID_HANDLE_VALUE;
+    if (g_bOutToBootLog) {
+        g_bOutToBootLog = false;
+        D2BOOT_Mark("crash report: end of bootlog fallback report"); // [d2boot]
+    } else {
+        D2BOOT_Mark("crash report: written and closed"); // [d2boot]
+    }
 }
 
 // A stack overflow leaves the faulting thread only the reserved guarantee, too
@@ -507,27 +533,72 @@ LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
     D2BOOT_MarkFmt("VEH: fatal exception 0x%08X at addr %08X", // [d2boot]
                    (unsigned)dwCode, (unsigned)(UINT_PTR)pExc->ExceptionRecord->ExceptionAddress);
     // A fault while a report is being written (on any thread) is left alone.
-    if (InterlockedCompareExchange(&g_nBusy, 1, 0) != 0) return EXCEPTION_CONTINUE_SEARCH;
+    if (InterlockedCompareExchange(&g_nBusy, 1, 0) != 0) {
+        D2BOOT_Mark("VEH: report already in flight - no report for this fault"); // [d2boot]
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
 
     DWORD dwAddr = (DWORD)(UINT_PTR)pExc->ExceptionRecord->ExceptionAddress;
+    // The cached exe range is set once at static init. The 0x871CAB run proved it
+    // can be wrong at crash time: a fault plainly inside d2.exe (every frame
+    // dumped as d2.exe+... by the live-API path) was classified foreign, because
+    // this check compared against the cached g_dwExeLo. Re-derive the range from
+    // the live module handle on every fault, and say so when the cache drifted.
+    HMODULE hExeLive = GetModuleHandleA(0);
+    DWORD dwExeLoLive = (DWORD)(UINT_PTR)hExeLive;
+    if (g_dwExeLo != dwExeLoLive) {
+        D2BOOT_MarkFmt("VEH: exe range cache drifted: cached=%08X live=%08X - re-deriving", // [d2boot]
+                       (unsigned)g_dwExeLo, (unsigned)dwExeLoLive);
+        const IMAGE_NT_HEADERS* pNtLive =
+            (const IMAGE_NT_HEADERS*)((const char*)hExeLive + ((const IMAGE_DOS_HEADER*)hExeLive)->e_lfanew);
+        g_dwExeLo = dwExeLoLive;
+        g_dwExeHi = dwExeLoLive + pNtLive->OptionalHeader.SizeOfImage;
+    }
     HMODULE hMod = 0;
     bool bInModule = GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
                                         GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                                         (LPCSTR)(UINT_PTR)dwAddr, &hMod) != 0;
-    bool bForeign = bInModule && (DWORD)(UINT_PTR)hMod != g_dwExeLo;
+    bool bForeign = bInModule && (DWORD)(UINT_PTR)hMod != dwExeLoLive;
+    D2BOOT_MarkFmt("VEH: classify eip=%08X mod=%08X exe=%08X..%08X", // [d2boot]
+                   (unsigned)dwAddr, (unsigned)(UINT_PTR)hMod,
+                   (unsigned)g_dwExeLo, (unsigned)g_dwExeHi);
 
     CollectFrames(pExc->ContextRecord);
+    D2BOOT_MarkFmt("VEH: %s fault, %d frames collected", // [d2boot]
+                   bForeign ? "foreign-module" : "own-code", g_nFrames);
+    // The single most useful datum for an access violation: which address the
+    // faulting instruction touched, and whether it read, wrote or executed it.
+    // WriteReport prints this too, but the skip path previously printed nothing.
+    if (dwCode == 0xC0000005 && pExc->ExceptionRecord->NumberParameters >= 2) {
+        ULONG_PTR uOp = pExc->ExceptionRecord->ExceptionInformation[0];
+        D2BOOT_MarkFmt("VEH: AV %s at %08X (target of the faulting access)", // [d2boot]
+                       uOp == 0 ? "READ" : uOp == 1 ? "WRITE" : uOp == 8 ? "EXEC/DEP" : "ACCESS",
+                       (unsigned)pExc->ExceptionRecord->ExceptionInformation[1]);
+    }
     bool bReport;
     if (!bForeign) {
         bReport = InterlockedExchange(&g_nOwnReported, 1) == 0;
+        if (!bReport)
+            D2BOOT_Mark("VEH: own-code report skipped (own slot already used)"); // [d2boot]
     } else {
-        // A fault in another module counts only when our code is on the stack:
-        // a driver or overlay thread faulting on its own is not our crash.
-        bool bOursOnStack = false;
-        for (int i = 1; i < g_nFrames; ++i)
-            if (g_aFrames[i].dwAddr >= g_dwExeLo && g_aFrames[i].dwAddr < g_dwExeHi)
-                bOursOnStack = true;
-        bReport = bOursOnStack && InterlockedExchange(&g_nForeignReported, 1) == 0;
+        // Policy change after the 0x871CAB run: a foreign-module fault is now
+        // reported too (first one per process). The old rule - skip unless our
+        // frames are on the stack, then wait for the unhandled-exception filter
+        // - was tested in the wild and the filter never ran: three crashes in a
+        // row died with no report at all. An own-code crash still has its own
+        // slot, so a recovered foreign fault cannot eat the real report.
+        bReport = InterlockedExchange(&g_nForeignReported, 1) == 0;
+        if (!bReport)
+            D2BOOT_Mark("VEH: foreign report skipped (foreign slot already used)"); // [d2boot]
+    }
+    if (!bReport) {
+        // Even a skipped fault names its module: dump the frames as
+        // module+offset into the bootlog.
+        for (int i = 0; i < g_nFrames && i < 24; ++i) {
+            char szMod[MAX_PATH + 40];
+            ModuleOffset(g_aFrames[i].dwAddr, szMod);
+            D2BOOT_MarkFmt("VEH: frame #%-2d %s", i, szMod); // [d2boot]
+        }
     }
     if (bReport) {
         static ReportJob s_job;
@@ -544,6 +615,7 @@ LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
             ReportThread(&s_job);
         }
     }
+    D2BOOT_Mark("VEH: report attempt finished"); // [d2boot]
     InterlockedExchange(&g_nBusy, 0);
     // The game's own handling (Fog's crash dialog) still runs.
     return EXCEPTION_CONTINUE_SEARCH;
@@ -557,7 +629,11 @@ LONG CALLBACK CrashVectoredHandler(EXCEPTION_POINTERS* pExc) {
 // Writing the report takes the "own" slot: the fall-off-the-end ud2 that follows
 // a halt in a non-void caller is the same failure, and is not reported again.
 extern "C" __attribute__((noinline)) void D2CRASH_ReportHalt(int nLine, unsigned nAddress) {
-    if (InterlockedCompareExchange(&g_nBusy, 1, 0) != 0) return;
+    D2BOOT_MarkFmt("halt report: line=%d addr=%08X", nLine, nAddress); // [d2boot]
+    if (InterlockedCompareExchange(&g_nBusy, 1, 0) != 0) {
+        D2BOOT_Mark("halt report: skipped, another report is in flight"); // [d2boot]
+        return;
+    }
     if (InterlockedExchange(&g_nOwnReported, 1) == 0) {
         static CONTEXT s_ctx;
         static EXCEPTION_RECORD s_rec;
@@ -570,6 +646,32 @@ extern "C" __attribute__((noinline)) void D2CRASH_ReportHalt(int nLine, unsigned
         HaltInfo halt = { nLine, (DWORD)nAddress };
         WriteReport(&exc, false, GetCurrentThreadId(), &halt);
     }
+    InterlockedExchange(&g_nBusy, 0);
+}
+
+// Last-chance report: Fog's top-level filter (Fog/File.cpp,
+// ERRORMANAGER_UnhandledExceptionFilter) calls this right before it gives up
+// on an exception and the process dies. In the wild this filter has never been
+// observed to run (no TOPFILTER line on any crash so far), so the VEH now does
+// the reporting itself for both own-code and foreign faults; this stays as a
+// belt-and-suspenders path for a fault that slips past the VEH's FatalName
+// list. Same once-per-class slots as the VEH.
+extern "C" void D2CRASH_ReportUnhandled(void* pvExc) {
+    EXCEPTION_POINTERS* pExc = (EXCEPTION_POINTERS*)pvExc;
+    if (!pExc || !pExc->ExceptionRecord || !pExc->ContextRecord) return;
+    if (!FatalName(pExc->ExceptionRecord->ExceptionCode)) return;
+    if (InterlockedCompareExchange(&g_nBusy, 1, 0) != 0) return;
+    if (g_nOwnReported || InterlockedExchange(&g_nForeignReported, 1) != 0) {
+        D2BOOT_Mark("last-chance: skipped, a report already went out this process"); // [d2boot]
+        InterlockedExchange(&g_nBusy, 0);
+        return;
+    }
+    D2BOOT_MarkFmt("last-chance: unhandled %s at addr %08X - writing report", // [d2boot]
+                   FatalName(pExc->ExceptionRecord->ExceptionCode),
+                   (unsigned)(UINT_PTR)pExc->ExceptionRecord->ExceptionAddress);
+    CollectFrames(pExc->ContextRecord);
+    D2BOOT_MarkFmt("last-chance: %d frames collected", g_nFrames); // [d2boot]
+    WriteReport(pExc, true, GetCurrentThreadId());
     InterlockedExchange(&g_nBusy, 0);
 }
 

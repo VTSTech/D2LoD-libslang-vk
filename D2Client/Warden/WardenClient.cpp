@@ -79,13 +79,9 @@ void __stdcall WARDEN_ComputeModuleHash(char * szModuleName, int32_t pHashOut, u
     Storm::Source::SSignature::Sha1_Finalize((uint8_t*)pHashOut, &sha1Ctx);
 }
 
-//   pModulus: Stack[0xc]:4 (void *) - nKeySize bytes
-//   pExponent: Stack[0x10]:4 (void *)
-//   nExponentLen: Stack[0x14]:4 (uint32_t)
-//   nSigDataLen: Stack[0x18]:4 (uint32_t)
-//   nTotalLen: EAX:4 (uint32_t)
-// @sourcefile .\WARDEN\WardenClient.cpp
-bool __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName, int32_t pData, void * pModulus, void * pExponent, uint32_t nExponentLen, uint32_t nSigDataLen, uint32_t nTotalLen) {
+// Verifies a Warden module's RSA signature: checks the 'NGIS' tag at the end of the module, builds the expected padded SHA-1 hash of the module and its name, decrypts the trailing signature with the supplied modulus and exponent (SBigPowMod) and returns TRUE when the two match.
+// Source file WARDEN/WardenClient.cpp (__FILE__ literal, 4 sites).
+BOOL __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName, int32_t pData, void * pModulus, void * pExponent, uint32_t nExponentLen, uint32_t nSigDataLen, uint32_t nTotalLen) {
     // Frame slots -24..-4 are ONE object: &pExpectedHash is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -97,6 +93,7 @@ bool __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
+    void* nErrAddr;
     if (nTotalLen < nSigDataLen) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa3);
       exit(-1);
@@ -104,13 +101,13 @@ bool __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName
 
     uint32_t nSigOffset = nTotalLen - nKeySize - 4;
     if (nKeySize + 4 > nTotalLen) {
-      return false;
+      return 0;
     }
 
-    void* pSigBlob = (void*)(nSigOffset + pData);
-    Storm::Source::SSystem::SMemCopy(&__frame0.pExpectedHash, pSigBlob, 4);
+    nErrAddr = (void*)(nSigOffset + pData);
+    Storm::Source::SSystem::SMemCopy(&__frame0.pExpectedHash, nErrAddr, 4);
     if (__frame0.pExpectedHash != (uint8_t*)0x5349474e) {
-      return false;
+      return 0;
     }
 
     uint8_t* pHashBuf = (uint8_t*)Storm::SMem::SMemAlloc(nKeySize, ".\\WARDEN\\WardenClient.cpp", 0xab, 0);
@@ -119,7 +116,7 @@ bool __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName
     pHashBuf[nKeySize - 1] = '\v';
     WARDEN_ComputeModuleHash(szModuleName, (int32_t)pHashBuf, nSigDataLen, nSigOffset, (uint8_t*)pData);
     uint8_t* pDecryptedSig = (uint8_t*)Storm::SMem::SMemAlloc(nKeySize, ".\\WARDEN\\WardenClient.cpp", 0xb5, 0);
-    Storm::Source::SSystem::SMemCopy(pDecryptedSig, (void*)((int)pSigBlob + 4), nKeySize);
+    Storm::Source::SSystem::SMemCopy(pDecryptedSig, (void*)((int)nErrAddr + 4), nKeySize);
     Storm::Source::SBig::SBigNew(&__frame0.pBnResult);
     Storm::Source::SBig::SBigNew(&__frame0.pBnSig);
     Storm::Source::SBig::SBigNew(&__frame0.pBnExponent);
@@ -137,7 +134,7 @@ bool __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName
     Storm::Source::SBig::SBigDel(__frame0.pBnSig);
     Storm::Source::SBig::SBigDel(__frame0.pBnExponent);
     Storm::Source::SBig::SBigDel(__frame0.pBnModulus);
-    return (bool)('\x01' - (nCmpResult != 0));
+    return (uint32_t)!nCmpResult;
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
@@ -164,7 +161,7 @@ LPVOID * __fastcall WARDEN_DestroyModuleObject(uint8_t bFreeStruct, LPVOID * ppM
 // @sourcefile .\WARDEN\WardenClient.cpp
 BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Key, uint32_t nSize) {
     // Static local variables (originally global data)
-    static uint32_t gdwWardenModuleRsaExponent = 0x10001;
+    static uint32_t gdwWardenModuleRsaExponent = 0x10001; D2_STATIC_GUARD(gdwWardenModuleRsaExponent, "D2Client::Warden::WARDEN_DecryptAndLoadModule::gdwWardenModuleRsaExponent");
     static uint8_t gabWardenModuleRsaModulus[256] = {
     0x6b,
     0xce,
@@ -422,9 +419,8 @@ BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Key, uint
     0xf4,
     0xaf,
     0xc7
-};
+}; D2_STATIC_GUARD(gabWardenModuleRsaModulus, "D2Client::Warden::WARDEN_DecryptAndLoadModule::gabWardenModuleRsaModulus");
 
-    uint32_t byUnusedVar;
     int32_t nErrLine;
     D2WardenModuleStrc* ppModule;
     uint32_t bDecryptOk;
@@ -468,8 +464,8 @@ BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Key, uint
 
     WARDEN_RC4Init(&rc4State, (uint8_t*)pRc4Key, 0x10);
     WARDEN_RC4Decrypt(&rc4State, (int32_t)pDecrypted, nSize);
-    bool bSigValid = WARDEN_VerifyModuleSignature(0x100, szModuleName, (int32_t)pDecrypted, gabWardenModuleRsaModulus, &gdwWardenModuleRsaExponent, 4, 0, nSize);
-    if ((uint32_t)((uint32_t)((uint32_t)byUnusedVar & 0xffffffu) << 8 | (uint32_t)(uint8_t)bSigValid)) {
+    BOOL BVar1 = WARDEN_VerifyModuleSignature(0x100, szModuleName, (int32_t)pDecrypted, gabWardenModuleRsaModulus, &gdwWardenModuleRsaExponent, 4, 0, nSize);
+    if (BVar1) {
       uint32_t** pDecompressed;
       nDecompressedSize = *pDecrypted;
       pDecompressed = (uint32_t**)Storm::SMem::SMemAlloc(nDecompressedSize, ".\\WARDEN\\WardenClient.cpp", 0x182, 0);
@@ -532,7 +528,193 @@ BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Key, uint
 // Provenance: 1.14d asm 0047fee0 (callers 004803e4 MOV EBX,0x6d8768 and 00480027 MOV EBX,[EBP+8]).
 BOOL __stdcall WARDEN_ResolveAndLoadModule(void * pRc4Key, uint8_t * pModuleHash) {
     // Static local variables (originally global data)
-    static uint8_t gaWardenModuleLoadData = 0x1;
+    static uint8_t gaWardenModuleLoadData[185] = {
+    0x1,
+    0xee,
+    0xdb,
+    0x35,
+    0xef,
+    0x65,
+    0x51,
+    0x7f,
+    0xea,
+    0xba,
+    0x42,
+    0x1c,
+    0x6f,
+    0x96,
+    0xd7,
+    0x4b,
+    0xc8,
+    0x94,
+    0x18,
+    0x94,
+    0x7b,
+    0x6f,
+    0x2b,
+    0xf3,
+    0xb1,
+    0x5a,
+    0x8e,
+    0xc4,
+    0x62,
+    0xf6,
+    0xd8,
+    0xfb,
+    0x57,
+    0x85,
+    0xbd,
+    0x6,
+    0x29,
+    0x22,
+    0x69,
+    0xfc,
+    0x41,
+    0xe,
+    0x75,
+    0x5b,
+    0x2a,
+    0x74,
+    0x63,
+    0xda,
+    0x42,
+    0xb6,
+    0xc6,
+    0x7e,
+    0x2d,
+    0xda,
+    0xb3,
+    0x4,
+    0x64,
+    0xb1,
+    0x72,
+    0x58,
+    0x2b,
+    0x54,
+    0xe7,
+    0xb8,
+    0xbe,
+    0x42,
+    0x68,
+    0x6b,
+    0x59,
+    0x24,
+    0x5,
+    0xd2,
+    0xc1,
+    0x2e,
+    0x4d,
+    0x98,
+    0x5e,
+    0x17,
+    0x29,
+    0x13,
+    0x17,
+    0xa7,
+    0x28,
+    0x4d,
+    0x8f,
+    0x7a,
+    0x31,
+    0x93,
+    0x77,
+    0x31,
+    0xb6,
+    0xa8,
+    0x4a,
+    0xb6,
+    0x34,
+    0x67,
+    0x78,
+    0x37,
+    0x2b,
+    0x5f,
+    0x6d,
+    0x78,
+    0xe9,
+    0xa7,
+    0xf3,
+    0x84,
+    0xd3,
+    0x3c,
+    0x83,
+    0xf3,
+    0xc0,
+    0xb2,
+    0x4b,
+    0xa6,
+    0x64,
+    0x37,
+    0x1e,
+    0x12,
+    0x46,
+    0x15,
+    0x57,
+    0x62,
+    0xf7,
+    0x11,
+    0x17,
+    0x18,
+    0xcf,
+    0x8f,
+    0x9e,
+    0x54,
+    0x7,
+    0xd5,
+    0x28,
+    0x29,
+    0xfb,
+    0x26,
+    0x98,
+    0x35,
+    0x11,
+    0xc9,
+    0x5b,
+    0x21,
+    0x3,
+    0x1e,
+    0x45,
+    0x95,
+    0x30,
+    0x4f,
+    0x4a,
+    0xc4,
+    0xe6,
+    0xa6,
+    0xe7,
+    0x28,
+    0xe4,
+    0x0,
+    0x2a,
+    0x31,
+    0xe7,
+    0xc5,
+    0xa6,
+    0x81,
+    0xd4,
+    0xa6,
+    0x47,
+    0xfc,
+    0x40,
+    0x68,
+    0x76,
+    0x56,
+    0x8,
+    0xba,
+    0xe,
+    0x9c,
+    0xd2,
+    0x4a,
+    0x7a,
+    0x65,
+    0xa7,
+    0xd4,
+    0x71,
+    0x30,
+    0x64,
+    0x34,
+    0x17
+}; D2_STATIC_GUARD(gaWardenModuleLoadData, "D2Client::Warden::WARDEN_ResolveAndLoadModule::gaWardenModuleLoadData");
 
     // Frame -28..-12 is ONE Ghidra variable the decompiler printed as 2 locals.
     // Separate locals let the compiler reorder them, so the pieces are one struct.
@@ -554,7 +736,7 @@ BOOL __stdcall WARDEN_ResolveAndLoadModule(void * pRc4Key, uint8_t * pModuleHash
     char szModuleHashHex[32];
     int nCmpResult = Storm::Source::SSystem::SSYSTEM_MemCompare(pModuleHash, gabWardenEmbeddedModuleHash, 0x10);
     if (!nCmpResult) {
-      bCacheReadSuccess = WARDEN_DecryptAndLoadModule(&gaWardenModuleLoadData, gabWardenModuleRc4Key, 0x12b2);
+      bCacheReadSuccess = WARDEN_DecryptAndLoadModule(gaWardenModuleLoadData, gabWardenModuleRc4Key, 0x12b2);
       return bCacheReadSuccess;
     }
 
@@ -602,24 +784,23 @@ bool CheckModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pRc4Key) 
 }
 
 void LoadModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pData, uint32_t nSize) {
-    char szHexBuf;
-    char szExt[8];
+    char szModuleFile[40];
     _FILETIME fileTime;
     uint32_t i = 0;
-    char* pszHexCursor = &szHexBuf;
+    char* pszHexCursor = szModuleFile;
     do {
       sprintf(pszHexCursor, "%02x", (uint32_t)pModuleHash[i]);
       i++;
       pszHexCursor += 2;
     } while (i < 0x10);
 
-    Storm::Source::SSTR::SStrCopy(szExt, ".mod", 5);
+    Storm::Source::SSTR::SStrCopy(szModuleFile + 0x20, ".mod", 5);
     if (!sgpUnknownSequence) {
       return;
     }
 
     /* LPFILETIME lpSystemTimeAsFileTime for GetSystemTimeAsFileTime */ GetSystemTimeAsFileTime(&fileTime);
-    sgpUnknownSequence->pfnCacheWriteData(&szHexBuf, pData, nSize, (int*)&fileTime, -1, -1);
+    sgpUnknownSequence->pfnCacheWriteData(szModuleFile, pData, nSize, (int*)&fileTime, -1, -1);
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
@@ -693,7 +874,7 @@ void __fastcall WARDEN_ActivatePendingModule(uint32_t dwModuleParam) {
     // Static local variables (originally global data)
     static WardenClient gWardenClient = {
     /* ._vfptr = */ (WardenClientVtable*)&D2Client::Warden::vftable
-};
+}; D2_STATIC_GUARD(gWardenClient, "D2Client::Warden::WARDEN_ActivatePendingModule::gWardenClient");
 
     D2WardenModuleObjectStrc* pVtable;
     D2WardenModuleStrc* pModule;

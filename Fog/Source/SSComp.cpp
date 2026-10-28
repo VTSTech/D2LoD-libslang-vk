@@ -908,7 +908,7 @@ void __fastcall COMPRESS_BuildHuffmanDecodeTable(uint8_t * pCodeLengths) {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gaHuffmanDecodeBuffer, "Fog::Source::SSComp::COMPRESS_BuildHuffmanDecodeTable::gaHuffmanDecodeBuffer");
 
     uint32_t* pFillEntry;
     int nTmp;

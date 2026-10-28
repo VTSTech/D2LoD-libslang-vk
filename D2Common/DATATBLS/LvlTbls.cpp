@@ -72,7 +72,7 @@ static char gaAutomapTileNames[20][8] = {
     { 'r', 'd', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00' },
     { 'f', 'd', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00' },
     { 'f', 'i', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00' }
-};
+}; D2_STATIC_GUARD(gaAutomapTileNames, "D2Common::DATATBLS::LvlTbls::gaAutomapTileNames");
 
 // Builds the 142-column field-descriptor table for Levels.txt (palette/act/teleport flags, monster levels and densities per difficulty, object groups/probabilities, the mon/nmon/umon/cmon spawn lists and their counts, themes, sound env, waypoint, and the LevelName/LevelWarp/EntryFile strings) and compiles it into sgtDataTable.pTxtLevels via CompileTxt (row stride 0x220). Halts via Fog ErrorManager if more than 0x3ff levels. Post-compile per level row: converts LevelName/LevelWarp keys to wide strings via the string table, and counts the populated entries in the mon/nmon/umon lists (terminated by a negative id, max 0x19), storing the three counts in bytes preceding the mon array. __fastcall, pMemory = data-table pool. Called once at data-table load.
 void __fastcall TXT_AllocTxt_levels(D2PoolManagerStrc * pMemory) {
@@ -2130,7 +2130,7 @@ void __stdcall TXT_FreeTxt_LvlSub() {
       if (0 < nTxtLvlSubSize) {
         nByteOffset = 0;
         do {
-          Drlg::DRLGMAZE_FreeRoomPresetData((D2DrlgRoomExDataMazeStrc*)(sgpTxtLvlSub->File + nByteOffset - 4));
+          Drlg::DRLGMAZE_FreeRoomPresetData((D2LvlSubTxt*)(sgpTxtLvlSub->File + nByteOffset - 4));
           i++;
           nByteOffset += 0x15c;
         } while (i < nTxtLvlSubSize);
@@ -2871,7 +2871,7 @@ int32_t LVLTBLS_GetAutomapLevelId(char * szLevelName) {
         '\x00',
         '\x00'
     }
-};
+}; D2_STATIC_GUARD(gaAutomapLevelNames, "D2Common::DATATBLS::LvlTbls::LVLTBLS_GetAutomapLevelId::gaAutomapLevelNames");
 
     int nLevelId = 0;
     if (*szLevelName == '0') {
@@ -2931,7 +2931,7 @@ int32_t LVLTBLS_GetAutomapTileId(char * szTileName) {
 // @sourcefile .\DATATBLS\LvlTbls.cpp
 void __fastcall TXT_AllocTxt_automap(D2PoolManagerStrc * pMemory) {
     // Static local variables (originally global data)
-    static int nTxtAutoMapSize;
+    static int nTxtAutoMapSize; D2_STATIC_GUARD_BSS(nTxtAutoMapSize, "D2Common::DATATBLS::LvlTbls::TXT_AllocTxt_automap::nTxtAutoMapSize");
 
     int32_t nLevelType;
     int* pMiddlePointer;

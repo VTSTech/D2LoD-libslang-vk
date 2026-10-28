@@ -39,6 +39,11 @@ struct __attribute__((packed)) D2PartyDataStrc {
     /* 0x10 */ struct D2PartyDataStrc * pPrev;
 };
 
+struct D2PlayerHostileCheckArgStrc {
+    /* 0x00 */ BOOL bHostile;
+    /* 0x04 */ struct D2UnitStrc * pPlayer;
+};
+
 namespace D2Game::PLAYER::Player {
 
 // Function declarations
@@ -60,7 +65,7 @@ uint32_t __stdcall PLAYER_PlaceItemInBelt(::SGAMEDATA * pGame, int32_t nParam, s
 struct D2UnitStrc * __stdcall PLAYER_CreateRewardItemFromTemplate(int32_t nGamePtr, int32_t bNoSkill, int32_t nItemClassId, int32_t pTemplateTxt, struct D2UnitStrc * pUnit);
 // Server-side: grants a class's starting equipment loop from a starter-item template entry (pnParam: item code, body-loc, count byte at +5). For each of count copies it creates the item (PLAYER_CreateRewardItemFromTemplate), flags it ITEMFLAG_BEGINNER and sets its body-loc. Beltable items go to the belt (ITEM_TryPlaceInBelt, fallback to inventory). Non-beltable: if a body-loc is set it equips (PLAYER_EquipItemToBodyLoc, fallback inventory) else places in inventory; then seeds durability (or quantity 250 / charges 100 for bow-quiver ammo). Used during new-character creation. No return value.
 void __fastcall PLAYER_CreateStarterItems(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t eClassId, int32_t nDifficulty, uint32_t * pnParam);
-void __fastcall PLAYER_CreateAllStarterItems(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, uint32_t dwParam);
+void __fastcall PLAYER_CreateAllStarterItems(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, uint8_t byAct);
 void __fastcall PLAYER_SendAllItemsToClient(struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
 int32_t __fastcall GetPlayerTradeTickOrBusy(struct D2UnitStrc * pPlayer);
 void __fastcall PLAYER_ClearTradeTick(struct D2UnitStrc * pUnit);
@@ -97,10 +102,10 @@ void __stdcall PLAYER_ApplyGoldPenaltyOnDeath(::SGAMEDATA * pGame, struct D2Unit
 // @sourcefile .\PLAYER\Player.cpp
 void __stdcall EXP_ApplyDeathExpPenalty(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall PLAYER_HandleDeathPenalties(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pKillerUnit);
-void __fastcall PLAYER_CheckIsHostileToPlayer(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, bool * pbHostile);
-DWORD __fastcall PLAYER_CountPlayersWithFilter(::SGAMEDATA * pGame, int * pnFilter);
-void __fastcall PLAYER_CheckPlayerIsHostileToThis(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, bool * pbHostile);
-DWORD __fastcall PLAYER_CountPlayersWithFilter2(::SGAMEDATA * pGame, int * pnFilter);
+void __fastcall PLAYER_CheckIsHostileToPlayer(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2PlayerHostileCheckArgStrc * pbHostile);
+DWORD __fastcall PLAYER_CountPlayersWithFilter(::SGAMEDATA * pGame, struct D2UnitStrc * pnFilter);
+void __fastcall PLAYER_CheckPlayerIsHostileToThis(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2PlayerHostileCheckArgStrc * pbHostile);
+DWORD __fastcall PLAYER_CountPlayersWithFilter2(::SGAMEDATA * pGame, struct D2UnitStrc * pnFilter);
 // Returns the weapon unit the player should use when casting the current skill, respecting dual-wield and weapon-switch rules. For non-dual-wield classes returns the equipped primary weapon. For dual-wield capable classes dispatches on SkillsTxt.weapsel: 2=off-hand preference with main-hand fallback if no valid off-hand, 3=switch-state dependent (reads nSeqFrame weapon-switch bit), 4=no weapon (returns null), default/1=primary then off-hand fallback. Returns the equipped default if the resolved weapon is broken or disabled.
 struct D2UnitStrc * __fastcall PLAYER_GetActiveWeaponForSkill(struct D2UnitStrc * pUnit);
 // Recalculates active stat-list flags for dual-wield weapon slots on pUnit. If nParam is non-zero, deactivates stat lists for currently equipped and primary weapons (cleanup pass). Then, if the unit can dual-wield, activates the correct weapon's stat list based on the active-weapon-for-skill selection: primary-only, swap-only, or the dual-wield split. Uses STATLIST_SetItemStatActive(1=active, 0=inactive).

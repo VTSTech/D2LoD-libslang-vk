@@ -74,7 +74,7 @@ struct __attribute__((packed)) FORMS_PredefinedFormStrc {
     /* 0x04 */ int aParams[4];
     /* 0x14 */ int32_t nExtraParam; // AnimImage = D2WinAnimImage nStaticFrameDelay (40 ms units; records 0xb2/0xb3 give 1); struct DC6* for ImageEx; Button = hotkey virtual-key code passed as D2WinButton nHotkeyVK (0xd VK_RETURN on OK buttons, 0x1b VK_ESCAPE on Cancel/back buttons, 0x26/0x28 arrow keys, 0 = none); generic int for others
     /* 0x18 */ int nLabelAsLocaleStringId;
-    /* 0x1C */ struct DC6 * pDC6;
+    /* 0x1C */ struct DC6 * * pDC6;
     /* 0x20 */ BOOL (__stdcall *fpOnPressCallback)(struct D2ControlMsg *);
     /* 0x24 */ void * pTypeArg1; // Constructor argument whose meaning depends on neD2FormType (FORMS_CreateAnyForm): EditBox = fpD2WinEditBoxSubmit* submit callback (e.g. OOGUTIL_SendChatMessageWide); Image = struct D2WinImageHitArea*; AnimImage = FORMS_AnimFrameStrc[5] state table, D2WinAnimImage pAnimFrames (e.g. gaCharSelectAnimFramesAmazon); TextBox = int[3] scrollbar geometry x,y,height (gaMultiTextBoxScrollbarGeom*); Button = initial image index 0/2/4/6 (D2WinButton nCurrentImageIndex); List = item array. Unused (0) for the other types.
     /* 0x28 */ void * pTypeArg2; // Constructor argument whose meaning depends on neD2FormType (FORMS_CreateAnyForm): EditBox = font id pair (gaMenuFormFontParams*); Image = Key* handler; AnimImage = fpD2WinAnimImageNotify* (e.g. MAINMENU_SetAmazonDescription); TextBox = font params (gaMenuFormFontParams*/gaMultiFormFontParams*); Button = Mouse* hover callback (e.g. MAINMENU_DisableControlIfDataNonZero); List = font id pointer; AccountList = font data. Unused (0) for the other types.
@@ -146,7 +146,7 @@ uint32_t __stdcall MAINMENU_CheckBattleNetIPFlag();
 // Displays main menu screen before menu UI. Creates background forms with sky palette, retrieves copyright string (classic: 0x13f0, expansion: 0x557a), searches for year "2000"/"2001" and replaces with "2000 - 2016" to update copyright range, converts UTF8 to wide char, sets textbox text, hides cursor, and enables music if configured.
 void __stdcall UIMENU_MainScreenBeforeMenu();
 uint32_t __fastcall MAINMENU_CheckFileExists(char * szFileName);
-void MAINMENU_GetLocalizedFilePath(char * szPathFormat, char * szOutPath);
+void MAINMENU_GetLocalizedFilePath(char * szPathFormat, char * szOutPath, char * szResolution);
 void __stdcall MAINMENU_CloseAndLaunchCharSelect();
 int __stdcall MAINMENU_ValidateCharNameChar(::D2WinEditBox * pEditBox, int nTextLen, char * pKeyChar);
 // Edit-box key filter installed via D2WINEDITBOX_SetMaxLength @004fdad0 into D2WinEditBox+0x268 (fpFilterCallback, fpD2WinEditBoxFilter). Body is MOV EAX,1 / RET 0xc - accepts every character. Signature proven by RET 0xc (3 stack args, callee cleans) and by the funcdef of the slot it is stored into.

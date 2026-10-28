@@ -41,7 +41,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "Fog/Src/Safesock.h"
 
@@ -261,7 +261,7 @@ void __fastcall Q31_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // A5Q1 gossip-text builder (state 0). Picks which monster/NPC gossip line to add based on persisted state: if RewardAwaits(1) and NOT Step0x05(5) -> line 3 (claim reward); else if not Completed(0), progress<4 (or JustCompleted), intro shown -> map nStateFlag via table to a gossip index. Read-only on quest state.
 void __fastcall Q31_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQuestCallbackAddressQ31[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 };
+    static int32_t gdwQuestCallbackAddressQ31[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gdwQuestCallbackAddressQ31, "D2Game::Quests::QUESTS::A5Q1::Q31_Callback00_NpcActivate::gdwQuestCallbackAddressQ31");
 
     int32_t nNPCClassId;
     ::SGAMEDATA* pGame = pQuestData->pGame;
@@ -484,7 +484,7 @@ void __fastcall Q31_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q31_SyncQuestProgress);
         return;
       }
-    } else if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x6d) {
+    } else if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x6d) {
       QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
       if (pQuestData->nStateFlag == 2) {
         pGame = pQuestArgs->pGame;

@@ -95,7 +95,7 @@ int32_t MERC_GetWeaponAnimIndex(D2UnitStrc * pUnit) {
         /* .nAnimIndex = */ 0xd,
         /* .nWeaponClass = */ 0xd
     }
-};
+}; D2_STATIC_GUARD(gaMercWeaponAnimMap, "D2Common::Merc::MERC_GetWeaponAnimIndex::gaMercWeaponAnimMap");
 
     int nWeaponClass;
     COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, pUnit->pInventory, (uint32_t*)&nWeaponClass, -1, 1);
@@ -139,9 +139,10 @@ D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTable(D2UnitStrc * pUnit) {
     D2MonSeqMonsterTbls_ARRAY_007480e8,
     D2MonSeqMonsterTbls_ARRAY_007481f0,
     D2MonSeqMonsterTbls_ARRAY_00748310
-};
+}; D2_STATIC_GUARD(apFixedSequenceTable, "D2Common::Merc::GetMonsterSequenceTable::apFixedSequenceTable");
 
-    int32_t nWeaponAnimIndex;
+    int32_t nWeaponClass;
+    D2MonSeqMonsterTbls* pFixedSeqTable;
     D2SkillStrc* pCurSkill = Units::GetCurrentSkill(pUnit);
     if (!pCurSkill) {
       return nullptr;
@@ -159,27 +160,26 @@ D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTable(D2UnitStrc * pUnit) {
 
     D2MonSeqMonsterTbls* pSeqTable = 0;
     if (eUnitType == UNIT_PLAYER) {
-      D2MonSeqMonsterTbls* pFixedSeqTable;
       pFixedSeqTable = apFixedSequenceTable[nSequenceId];
-      nWeaponAnimIndex = MERC_GetWeaponAnimIndex(pUnit);
-      if (nWeaponAnimIndex != -1) {
-        return pFixedSeqTable + nWeaponAnimIndex;
+      nWeaponClass = MERC_GetWeaponAnimIndex(pUnit);
+      if (nWeaponClass != -1) {
+        return pFixedSeqTable + nWeaponClass;
       }
 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x533);
       exit(-1);
-      return pFixedSeqTable + nWeaponAnimIndex;
+      return pFixedSeqTable + nWeaponClass;
     }
     if (eUnitType != UNIT_MONSTER) {
       return pSeqTable;
     }
     if (!pUnit) {
-      nWeaponAnimIndex = -1;
+      nWeaponClass = -1;
     } else {
-      nWeaponAnimIndex = pUnit->nClassId;
+      nWeaponClass = pUnit->nClassId;
     }
 
-    D2MonStatsTxt* pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(nWeaponAnimIndex);
+    D2MonStatsTxt* pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(nWeaponClass);
     if (!pMonStatsTxt) {
       return pSeqTable;
     }
@@ -268,14 +268,14 @@ void __stdcall ANIM_GetEventFrame(int32_t pSeqData, int32_t nFrameIdx, uint32_t 
 // Deterministically rolls a hireling's combat stats from a seed. Inputs: nSeed (per-merc rng seed), pMercStats (in/out; nMercClass 0-3 selects merc type: Rogue/DesertMerc/IronWolf/Barbarian), nDifficulty (0-2). Seeds a D2SeedStrc and runs five RANDOM_RandomNumberSelector rolls indexing the merc data tables (secondary/tertiary/quaternary/quinary) to populate attack rating, defense, damage/armor bonuses, state(s) (nStateA for class<3 else nStateB), and quinary ability/secondary (sets nAbilityActiveFlag for ability ids 9-11). Finally applies the per-difficulty modifier table. Returns 1 on success, 0 if seed/ptr null, difficulty>=3, or merc class>=4.
 uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsStrc * pMercStats, uint8_t nDifficulty) {
     // Static local variables (originally global data)
-    static int gnMercAttackRatingBase[4] = { 0x0, 0x2, 0x4, 0x0 };
-    static uint32_t gnMercDamageVariance[5] = { 0x2, 0x2, 0x2, 0x0, 0x6 };
-    static int gnMercTertiaryDamageBase[4] = { 0x0, 0x2, 0x4, 0x0 };
-    static uint32_t gdwMercTertiaryDamageTable[5] = { 0x2, 0x2, 0x2, 0x0, 0x6 };
-    static int gnMercQuaternaryBase[4] = { 0x0, 0x2, 0x4, 0x0 };
-    static uint32_t gdwMercQuaternaryTable[5] = { 0x2, 0x2, 0x2, 0x0, 0xc };
-    static int gnMercCountMax[4] = { 0x0, 0x3, 0x6, 0x0 };
-    static uint32_t gdwMercQuinaryTable[4] = { 0x3, 0x3, 0x6, 0x0 };
+    static int gnMercAttackRatingBase[4] = { 0x0, 0x2, 0x4, 0x0 }; D2_STATIC_GUARD(gnMercAttackRatingBase, "D2Common::Merc::MERC_GenerateStatsFromSeed::gnMercAttackRatingBase");
+    static uint32_t gnMercDamageVariance[5] = { 0x2, 0x2, 0x2, 0x0, 0x6 }; D2_STATIC_GUARD(gnMercDamageVariance, "D2Common::Merc::MERC_GenerateStatsFromSeed::gnMercDamageVariance");
+    static int gnMercTertiaryDamageBase[4] = { 0x0, 0x2, 0x4, 0x0 }; D2_STATIC_GUARD(gnMercTertiaryDamageBase, "D2Common::Merc::MERC_GenerateStatsFromSeed::gnMercTertiaryDamageBase");
+    static uint32_t gdwMercTertiaryDamageTable[5] = { 0x2, 0x2, 0x2, 0x0, 0x6 }; D2_STATIC_GUARD(gdwMercTertiaryDamageTable, "D2Common::Merc::MERC_GenerateStatsFromSeed::gdwMercTertiaryDamageTable");
+    static int gnMercQuaternaryBase[4] = { 0x0, 0x2, 0x4, 0x0 }; D2_STATIC_GUARD(gnMercQuaternaryBase, "D2Common::Merc::MERC_GenerateStatsFromSeed::gnMercQuaternaryBase");
+    static uint32_t gdwMercQuaternaryTable[5] = { 0x2, 0x2, 0x2, 0x0, 0xc }; D2_STATIC_GUARD(gdwMercQuaternaryTable, "D2Common::Merc::MERC_GenerateStatsFromSeed::gdwMercQuaternaryTable");
+    static int gnMercCountMax[4] = { 0x0, 0x3, 0x6, 0x0 }; D2_STATIC_GUARD(gnMercCountMax, "D2Common::Merc::MERC_GenerateStatsFromSeed::gnMercCountMax");
+    static uint32_t gdwMercQuinaryTable[4] = { 0x3, 0x3, 0x6, 0x0 }; D2_STATIC_GUARD(gdwMercQuinaryTable, "D2Common::Merc::MERC_GenerateStatsFromSeed::gdwMercQuinaryTable");
     static D2MercBaseStrc gaMercBaseStats[4] = {
     {
         /* .nBaseAttackRating = */ 0x96,
@@ -293,7 +293,7 @@ uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsS
         /* .nBaseAttackRating = */ 0x0,
         /* .nBaseDefense = */ 0x0
     }
-};
+}; D2_STATIC_GUARD(gaMercBaseStats, "D2Common::Merc::MERC_GenerateStatsFromSeed::gaMercBaseStats");
     static D2MercSecondaryStrc gaMercSecondaryTable[6] = {
     {
         /* .nDamage = */ 0x0,
@@ -331,7 +331,7 @@ uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsS
         /* .nDefenseBonus = */ 0xaa,
         /* .nArmorBonus = */ 0x3
     }
-};
+}; D2_STATIC_GUARD(gaMercSecondaryTable, "D2Common::Merc::MERC_GenerateStatsFromSeed::gaMercSecondaryTable");
     static D2MercTertiaryStrc gaMercTertiaryTable[6] = {
     {
         /* .nArmor = */ 0x0,
@@ -369,7 +369,7 @@ uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsS
         /* .nDefenseBonus = */ 0x7d,
         /* .nArmorBonus = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaMercTertiaryTable, "D2Common::Merc::MERC_GenerateStatsFromSeed::gaMercTertiaryTable");
     static D2MercQuaternaryStrc gaMercQuaternaryTable[6] = {
     {
         /* .nState = */ 0x0,
@@ -419,7 +419,7 @@ uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsS
         /* .nHealthBonus = */ 0x0,
         /* .nDefenseBonus = */ 0x0
     }
-};
+}; D2_STATIC_GUARD(gaMercQuaternaryTable, "D2Common::Merc::MERC_GenerateStatsFromSeed::gaMercQuaternaryTable");
     static D2MercQuinaryStrc gaMercQuinaryTable[12] = {
     {
         /* .nAbility = */ 0x0,
@@ -505,7 +505,7 @@ uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsS
         /* .nSecondary = */ 0x3,
         0xd34
     }
-};
+}; D2_STATIC_GUARD(gaMercQuinaryTable, "D2Common::Merc::MERC_GenerateStatsFromSeed::gaMercQuinaryTable");
     static D2MercDifficultyStrc gaMercDifficultyTable[3] = {
     {
         /* .nExpModifier = */ 0x0,
@@ -534,7 +534,7 @@ uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsS
         /* .nLifeModifier = */ 0x5,
         /* .nDamageFinalMult = */ 0x3
     }
-};
+}; D2_STATIC_GUARD(gaMercDifficultyTable, "D2Common::Merc::MERC_GenerateStatsFromSeed::gaMercDifficultyTable");
 
     uint32_t nRandResult2;
     D2SeedStrc rollSeed;
@@ -624,7 +624,7 @@ uint16_t * __fastcall GetMercTypeString(uint32_t nIndex) {
     0xd31,
     0xd30,
     0xd2f
-};
+}; D2_STATIC_GUARD(aMercTypeLocaleStringIds, "D2Common::Merc::GetMercTypeString::aMercTypeLocaleStringIds");
 
     if (!(-1 < (int)nIndex && nIndex < 9 && aMercTypeLocaleStringIds[nIndex])) {
       return nullptr;

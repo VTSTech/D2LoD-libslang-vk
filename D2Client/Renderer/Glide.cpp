@@ -192,16 +192,16 @@ namespace D2Client::Renderer::Glide {
 
 BOOL __stdcall RENDERER_GLIDE_LoadLibrarySymbols() {
     // Static local variables (originally global data)
-    static grEnable GLIDEDLL_grEnable_4;
-    static grGetString GLIDEDLL_grGetString_4;
-    static grTexMipMapMode GLIDEDLL_grTexMipMapMode_12;
-    static grDisable GLIDEDLL_grDisable_4;
-    static grTexTextureMemRequired GLIDEDLL_grTexTextureMemRequired_8;
-    static grGetProcAddress GLIDEDLL_grGetProcAddress_4;
-    static grDrawTriangle GLIDEDLL_grDrawTriangle_12;
-    static grClipWindow GLIDEDLL_grClipWindow_16;
-    static grDepthBufferMode GLIDEDLL_grDepthBufferMode_4;
-    static grDepthBufferFunction GLIDEDLL_grDepthBufferFunction_4;
+    static grEnable GLIDEDLL_grEnable_4; D2_STATIC_GUARD_BSS(GLIDEDLL_grEnable_4, "D2Client::Renderer::Glide::RENDERER_GLIDE_LoadLibrarySymbols::GLIDEDLL_grEnable_4");
+    static grGetString GLIDEDLL_grGetString_4; D2_STATIC_GUARD_BSS(GLIDEDLL_grGetString_4, "D2Client::Renderer::Glide::RENDERER_GLIDE_LoadLibrarySymbols::GLIDEDLL_grGetString_4");
+    static grTexMipMapMode GLIDEDLL_grTexMipMapMode_12; D2_STATIC_GUARD_BSS(GLIDEDLL_grTexMipMapMode_12, "D2Client::Renderer::Glide::RENDERER_GLIDE_LoadLibrarySymbols::GLIDEDLL_grTexMipMapMode_12");
+    static grDisable GLIDEDLL_grDisable_4; D2_STATIC_GUARD_BSS(GLIDEDLL_grDisable_4, "D2Client::Renderer::Glide::RENDERER_GLIDE_LoadLibrarySymbols::GLIDEDLL_grDisable_4");
+    static grTexTextureMemRequired GLIDEDLL_grTexTextureMemRequired_8; D2_STATIC_GUARD_BSS(GLIDEDLL_grTexTextureMemRequired_8, "D2Client::Renderer::Glide::RENDERER_GLIDE_LoadLibrarySymbols::GLIDEDLL_grTexTextureMemRequired_8");
+    static grGetProcAddress GLIDEDLL_grGetProcAddress_4; D2_STATIC_GUARD_BSS(GLIDEDLL_grGetProcAddress_4, "D2Client::Renderer::Glide::RENDERER_GLIDE_LoadLibrarySymbols::GLIDEDLL_grGetProcAddress_4");
+    static grDrawTriangle GLIDEDLL_grDrawTriangle_12; D2_STATIC_GUARD_BSS(GLIDEDLL_grDrawTriangle_12, "D2Client::Renderer::Glide::RENDERER_GLIDE_LoadLibrarySymbols::GLIDEDLL_grDrawTriangle_12");
+    static grClipWindow GLIDEDLL_grClipWindow_16; D2_STATIC_GUARD_BSS(GLIDEDLL_grClipWindow_16, "D2Client::Renderer::Glide::RENDERER_GLIDE_LoadLibrarySymbols::GLIDEDLL_grClipWindow_16");
+    static grDepthBufferMode GLIDEDLL_grDepthBufferMode_4; D2_STATIC_GUARD_BSS(GLIDEDLL_grDepthBufferMode_4, "D2Client::Renderer::Glide::RENDERER_GLIDE_LoadLibrarySymbols::GLIDEDLL_grDepthBufferMode_4");
+    static grDepthBufferFunction GLIDEDLL_grDepthBufferFunction_4; D2_STATIC_GUARD_BSS(GLIDEDLL_grDepthBufferFunction_4, "D2Client::Renderer::Glide::RENDERER_GLIDE_LoadLibrarySymbols::GLIDEDLL_grDepthBufferFunction_4");
 
     /* LPCSTR lpLibFileName for LoadLibraryA */ lpGLIDE3x_dll = LoadLibraryA("glide3x.dll");
     if (!lpGLIDE3x_dll) {

@@ -2,6 +2,7 @@
 
 #include "D2Game/Quests/QUESTS/A2Q7.h"
 #include "D2Client/Archive.h"
+#include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/SKILLS/SkillsPal.h"
@@ -41,6 +42,7 @@
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/Objects/Objects.h"
+#include "D2Game/Objects/ObjectsMode.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
@@ -86,40 +88,29 @@ namespace D2Game::Quests::QUESTS::A2Q7 {
 
 // Q14 (The Seven Tombs / Act2 Q6). Sends packet 0x50 QuestSpecial type 0xd to the operating player's client: the offset (Tal Rasha tomb levelId - 0x42) of the true Horadric-orifice tomb, so the client can mark the correct tomb symbol on the map. Caches the chosen tombLevelId into A2Q6 quest-specific data. No quest-state transition.
 void __fastcall Q14_SendTombLevelInfo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    // Frame slots -24..-19 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byPacketId;
-      uint16_t wQuestSpecialType;
-      short int nTombOffset;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 5, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
+    D2GSPacketSrv0x50 sPacket;
     D2QuestDataStrc* pSevenTombsData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    __frame0.byPacketId = 0x50;
-    __frame0.wQuestSpecialType = 0xd;
+    sPacket.nPacketId = 'P';
+    sPacket.nMessageType = 0xd;
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x45f);
     eD2LevelId eTombLevel = D2Common::DUNGEON::Dungeon::GetHoradricStaffTombLevelId(pGame->pAct[1]);
     if (eTombLevel == LEVEL_None) {
-      __frame0.nTombOffset = 0;
+      sPacket.aPayload[0] = 0;
     } else {
-      __frame0.nTombOffset = (short int)eTombLevel - 0x42;
+      sPacket.aPayload[0] = (short int)eTombLevel - 0x42;
       pSevenTombsData->pQuestSpecificData.pA2Q6->nHoradricStaffTombLevelId = eTombLevel;
     }
 
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x50_QuestSpecial(pClient, (uint32_t*)&__frame0.byPacketId);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x50_QuestSpecial(pClient, &sPacket);
     Fog::Debug::GuardStack();
 }
 
 // Q14 helper: returns the next "arcane" object classId to spawn (Tal Rasha sarcophagus/orifice decoy set: 0x133..0x139). On first call lazily fills a 6-entry ring (skipping the index matching the real tomb level), then cycles through it round-robin. Returns 0x133 if no tomb level is set yet. No quest-state transition.
 uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassId(D2QuestDataStrc * pQuestData) {
     // Static local variables (originally global data)
-    static uint32_t gaArkaneThingIdTable[7] = { 0x139, 0x138, 0x134, 0x136, 0x137, 0x135, 0x133 };
+    static uint32_t gaArkaneThingIdTable[7] = { 0x139, 0x138, 0x134, 0x136, 0x137, 0x135, 0x133 }; D2_STATIC_GUARD(gaArkaneThingIdTable, "D2Game::Quests::QUESTS::A2Q7::A2Q6_GetNextFalseTombPortalClassId::gaArkaneThingIdTable");
 
-    int* pnDecoyRingEntry;
+    int32_t* pnDecoyRingEntry;
     int nDecoysPlaced;
     int nTombsLeft;
     eD2LevelId eTombLevel = D2Common::DUNGEON::Dungeon::GetHoradricStaffTombLevelId(pQuestData->pGame->pAct[1]);
@@ -128,12 +119,12 @@ uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassId(D2QuestDataStrc * pQuestD
     }
 
     D2QuestDataA2Q6Strc* pSpecificData = pQuestData->pQuestSpecificData.pA2Q6;
-    if ((char)pSpecificData->field_0x38 == '\0') {
+    if (pSpecificData->bFalseTombRingInit == '\0') {
       int iTomb;
       nDecoysPlaced = 0;
-      *(uint8_t*)&pSpecificData->field_0x38 = 1;
+      pSpecificData->bFalseTombRingInit = '\x01';
       iTomb = 0;
-      pnDecoyRingEntry = &pSpecificData->field_0x48;
+      pnDecoyRingEntry = pSpecificData->anFalseTombPortalClassId;
       nTombsLeft = 7;
       do {
         if (iTomb == eTombLevel - LEVEL_TalRashasTomb1) {
@@ -148,13 +139,12 @@ uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassId(D2QuestDataStrc * pQuestD
         nTombsLeft--;
       } while (nTombsLeft);
     }
-    if (*(short int*)((uintptr_t)&pSpecificData->field_0x38 + 2) == 6) {
-      *(uint16_t*)((uintptr_t)&pSpecificData->field_0x38 + 2) = 0;
+    if (pSpecificData->nFalseTombRingIndex == 6) {
+      pSpecificData->nFalseTombRingIndex = 0;
     }
 
-    uint16_t nRingIndex = *(uint16_t*)((uintptr_t)&pSpecificData->field_0x38 + 2);
-    uint32_t nClassId = (&pSpecificData->field_0x48)[nRingIndex];
-    *(uint16_t*)((uintptr_t)&pSpecificData->field_0x38 + 2) = nRingIndex + 1;
+    uint32_t nClassId = pSpecificData->anFalseTombPortalClassId[pSpecificData->nFalseTombRingIndex];
+    pSpecificData->nFalseTombRingIndex++;
     return nClassId;
 }
 
@@ -446,19 +436,9 @@ void __fastcall Q14_CompleteHoradricStaffOnPartyMember(::SGAMEDATA * pGame, D2Un
 
 // Q14 object OperateFn (OBJOP_A2Q7_OpenArcaneNpcTrade): player operates the Horadric orifice. If the object is closed (Death anim) and player not busy trading: if player holds the assembled Horadric Staff (item 'hsu '), set interact target + send packet 0x58 to open the staff-in-orifice UI; otherwise play the "can't do that" sound. Closes the interaction when the object returns to Neutral. No quest-record state change here (that happens in Q14_OnStaffUsedInOrifice).
 BOOL __fastcall OBJOP_A2Q7_OpenArcaneNpcTrade(D2ObjectOperateFnArg * pOperation) {
-    // Frame slots -12..-6 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byPacketId;
-      int nNpcGUID;
-      uint8_t byPad;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 6, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint32_t nOrificeGUID;
-    eD2PlayerAnimMode eOrificeAnimMode;
+    eD2ObjectAnimMode eOrificeAnimMode;
+    D2GSPacketSrv0x58 sPacket;
     D2QuestDataStrc* pSevenTombsData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TheSevenTombs);
     if (!pSevenTombsData) {
       return 0;
@@ -468,11 +448,11 @@ BOOL __fastcall OBJOP_A2Q7_OpenArcaneNpcTrade(D2ObjectOperateFnArg * pOperation)
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pOperation->pAttacker, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x635);
     D2UnitStrc* pInteractedNpc = pOperation->sArg.pVictim;
     if (!pInteractedNpc) {
-      eOrificeAnimMode = Death;
+      eOrificeAnimMode = eD2ObjectAnimMode_ns::Neutral;
     } else {
       eOrificeAnimMode = pInteractedNpc->eAnimMode.ePlayerMode;
     }
-    if (eOrificeAnimMode == Death) {
+    if (eOrificeAnimMode == eD2ObjectAnimMode_ns::Neutral) {
       int32_t bPlayerTradeBusy;
       bPlayerTradeBusy = PLAYER::Player::GetPlayerTradeTickOrBusy(pOperation->pAttacker);
       if (bPlayerTradeBusy == 1) {
@@ -491,22 +471,22 @@ BOOL __fastcall OBJOP_A2Q7_OpenArcaneNpcTrade(D2ObjectOperateFnArg * pOperation)
         UNIT::SUnit::SetInteractInfo(pOperation->pAttacker, UNIT_OBJECT, nOrificeGUID);
         D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
         pInteractedNpc = pOperation->sArg.pVictim;
-        __frame0.byPacketId = 0x58;
+        sPacket.nPacketId = 'X';
         if (!pInteractedNpc) {
-          __frame0.nNpcGUID = -1;
+          sPacket.nUnitGUID = -1;
         } else {
-          __frame0.nNpcGUID = pInteractedNpc->nUnitGUID;
+          sPacket.nUnitGUID = pInteractedNpc->nUnitGUID;
         }
 
-        __frame0.byPad = 0;
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, (uint32_t*)&__frame0.byPacketId);
+        sPacket.nUIType = '\0';
+        GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
         return 0;
       }
 
       UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
       return 1;
     }
-    if (!(eOrificeAnimMode == eD2PlayerAnimMode_ns::Neutral && pVictim == pInteractedNpc)) {
+    if (!(eOrificeAnimMode == Operating && pVictim == pInteractedNpc)) {
       return 0;
     }
 

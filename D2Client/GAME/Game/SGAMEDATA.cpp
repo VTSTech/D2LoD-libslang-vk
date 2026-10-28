@@ -26,6 +26,7 @@
 #include "D2Game/UNIT/sunitproxy.h"
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
+#include "Fog/Save.h"
 #include "Storm/H/stpl.h"
 #include "Storm/SMem.h"
 #include "globals/globals.h"
@@ -87,12 +88,12 @@ namespace D2Client::GAME::Game {
     pThis->bInitSeed = pSource->bInitSeed;
     pThis->pClient = pSource->pClient;
     pThis->nClientsCount = pSource->nClientsCount;
-    pThis->dwSpawnedPlayers = pSource->dwSpawnedPlayers;
-    pThis->dwSpawnedMonsters = pSource->dwSpawnedMonsters;
-    pThis->dwSpawnedObjects = pSource->dwSpawnedObjects;
-    pThis->dwSpawnedMissiles = pSource->dwSpawnedMissiles;
-    pThis->dwSpawnedItems = pSource->dwSpawnedItems;
-    pThis->dwSpawnedTiles = pSource->dwSpawnedTiles;
+    pThis->anUnitGuidCounters[0] = pSource->anUnitGuidCounters[0];
+    pThis->anUnitGuidCounters[1] = pSource->anUnitGuidCounters[1];
+    pThis->anUnitGuidCounters[2] = pSource->anUnitGuidCounters[2];
+    pThis->anUnitGuidCounters[3] = pSource->anUnitGuidCounters[3];
+    pThis->anUnitGuidCounters[4] = pSource->anUnitGuidCounters[4];
+    pThis->anUnitGuidCounters[5] = pSource->anUnitGuidCounters[5];
     pThis->dwGameFrame = pSource->dwGameFrame;
     pThis->dwCycleLastSecond = pSource->dwCycleLastSecond;
     pThis->dwCycleCount = pSource->dwCycleCount;

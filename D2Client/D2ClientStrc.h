@@ -7,15 +7,13 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "Bnclient/net_sid.h"
 
 // Forward declarations
 struct D2PacketListStrc;
 struct D2RoomStrc;
+struct D2SaveFileHeaderStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-
-struct D2SaveFileHeaderStrc;
 
 // Data types
 struct D2ClientHotKeyStrc {
@@ -28,6 +26,13 @@ struct D2ClientHotKeyStrc {
     /* 0x02 */ uint8_t byHand; // Skill hand/type: which weapon hand the skill is cast with (read into pSkillType by GetHotKey, stored @+2)
     /* 0x03 */ uint8_t field_0x3;
     /* 0x04 */ int nItemGUID;
+};
+
+struct __attribute__((packed)) D2ClientVisibilityEntryStrc {
+    /* 0x00 */ uint8_t nUnitType;
+    /* 0x01 */ uint32_t nUnitGUID;
+    /* 0x05 */ uint16_t nX;
+    /* 0x07 */ uint16_t nY;
 };
 
 struct D2PlayerBasicsData {
@@ -53,24 +58,11 @@ struct __attribute__((packed)) D2QServerClientStrcExt {
     /* 0x50 */ int nForceTimeoutDisconnect; // Set by CCmd case 0x70 when client should be force-disconnected by timeout loop
 };
 
-struct D2SaveHandSkillStrc {
-    D2SaveHandSkillStrc() = default;
-    D2SaveHandSkillStrc(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
-    operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
-    D2SaveHandSkillStrc(short a0, short a1) : nSkillId(a0), nItemIndex(a1) {}
-
-    /* 0x00 */ short nSkillId;
-    /* 0x02 */ short nItemIndex;
-};
-
-struct D2SaveHotKeyStrc {
-    D2SaveHotKeyStrc() = default;
-    D2SaveHotKeyStrc(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
-    operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
-    D2SaveHotKeyStrc(uint16_t a0, short a1) : nSkillIdAndHand(a0), nItemIndex(a1) {}
-
-    /* 0x00 */ uint16_t nSkillIdAndHand;
-    /* 0x02 */ short nItemIndex;
+struct __attribute__((packed)) D2ClientVisibilityBufferStrc {
+    /* 0x000 */ uint8_t abHeader[4];
+    /* 0x004 */ D2ClientVisibilityEntryStrc aEntries[55];
+    /* 0x1F3 */ uint8_t field_0x1f3;
+    /* 0x1F4 */ uint32_t nCount;
 };
 
 #pragma pack(push, 1)
@@ -101,8 +93,7 @@ struct D2ClientStrc {
     /* 0x184 */ int nSaveCurrentSize;
     /* 0x188 */ int nFileSize;
     /* 0x18C */ void * pSavePacketList;
-    /* 0x190 */ FILETIME * pFileTime;
-    /* 0x194 */ int unk0x194;
+    /* 0x190 */ FILETIME ftFileTime;
     /* 0x198 */ int nAttachedUnitType;
     /* 0x19C */ int dwAttachedUnitGUID;
     /* 0x1A0 */ int unk0x1A0;
@@ -117,7 +108,7 @@ struct D2ClientStrc {
     /* 0x1BC */ struct D2PacketListStrc * pPacketList;
     /* 0x1C0 */ struct D2PacketListStrc * pEmpty; // Free packet list pool
     /* 0x1C4 */ int dwPacketsInList;
-    /* 0x1C8 */ uint8_t nPacketBuffer[504]; // Packet dispatch buffer area
+    /* 0x1C8 */ D2ClientVisibilityBufferStrc nPacketBuffer; // Packet dispatch buffer area
     /* 0x3C0 */ int dwLastWarpFrame[5]; // Game frames of last 5 warps
     /* 0x3D4 */ int fClientFlags; // Bit0=loading,Bit3=saveReady,Bit5=unknown
     /* 0x3D8 */ int dwTimeOut; // GetTickCount()+180000 at creation
@@ -151,44 +142,5 @@ struct D2ClientStrc {
     /* 0x50C */ int dwLangId;
     /* 0x510 */ int unk0x510;
     /* 0x514 */ int unk0x514;
-};
-#pragma pack(pop)
-
-#pragma pack(push, 1)
-struct D2SaveFileHeaderStrc {
-    /* 0x00 */ uint32_t dwHeader;
-    /* 0x04 */ uint32_t dwFileVersion;
-    /* 0x08 */ uint32_t nFileSize; // total .d2s file size; file-bound (save header), 4 bytes on disk
-    /* 0x0C */ uint32_t dwChecksum;
-    /* 0x10 */ bool bWeaponSwapped;
-    /* 0x11 */ uint8_t field_0x11;
-    /* 0x12 */ uint8_t field_0x12;
-    /* 0x13 */ uint8_t field_0x13;
-    /* 0x14 */ char szCharacterName[16];
-    /* 0x24 */ uint32_t dwCharacterStatus;
-    /* 0x28 */ uint8_t nPlayerClassId;
-    /* 0x29 */ uint8_t nConst16;
-    /* 0x2A */ uint8_t nMaxSkillsCount;
-    /* 0x2B */ uint8_t bCharacterLevel;
-    /* 0x2C */ __time32_t nCreateTime;
-    /* 0x30 */ int nTime32;
-    /* 0x34 */ int nTimeEx;
-    /* 0x38 */ D2SaveHotKeyStrc pHotKeys[16];
-    /* 0x78 */ D2SaveHandSkillStrc pLeftHand;
-    /* 0x7C */ D2SaveHandSkillStrc pRightHand;
-    /* 0x80 */ D2SaveHandSkillStrc pLeftSwapHand;
-    /* 0x84 */ D2SaveHandSkillStrc pRightSwapHand;
-    /* 0x88 */ char pAppearance1[16];
-    /* 0x98 */ char pAppearance2[16];
-    /* 0xA8 */ uint8_t pDifficulty[3];
-    /* 0xAB */ int nInitSeed;
-    /* 0xAF */ int nMercFlags;
-    /* 0xB3 */ int nMercSeed;
-    /* 0xB7 */ short nMercNameId;
-    /* 0xB9 */ short nMercType;
-    /* 0xBB */ int nMercExperience;
-    /* 0xBF */ int nMercReserved[4]; // Reserved merc block padding (copied by LoadMerc but never written by SaveMercData)
-    /* 0xCF */ uint8_t nGuildInfo[3];
-    /* 0xD2 */ uint8_t nReserved[125]; // Unused header padding bytes (zeroed on save, never read)
 };
 #pragma pack(pop)

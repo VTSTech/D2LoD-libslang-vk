@@ -3,7 +3,7 @@
 #include "D2CMP/SRC/GfxHash.h"
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/SpriteCache.h"
-#include "D2Glide/Renderer/Glide.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "Fog/D2PoolManagerStrc.h"
@@ -37,9 +37,9 @@ namespace D2CMP::SRC::GfxHash {
 // async frame buffer (+0x20 -> tDecode) and the entry itself. The entry node struct (+0 hash, +0x20 cache block, +0x28/+0x2c links) is untyped.
 // @sourcefile .\SRC\GfxHash.cpp
 void __fastcall GFXHASH_UnlinkCacheEntry(int32_t pHashTable, D2PoolManagerStrc * pMemory, int * pEntry) {
-    int* pPixelData;
     pfnCelPixelDataFree pFreeCallback;
     int* pFrameData;
+    void* nErrAddress;
     int nFrameByteOffset;
     uint32_t nFrameIdx;
     if (*(int**)(pHashTable + 0x8000 + *pEntry * 4) == pEntry) {
@@ -49,7 +49,7 @@ void __fastcall GFXHASH_UnlinkCacheEntry(int32_t pHashTable, D2PoolManagerStrc *
     D2CelCacheBlockStrc* pCacheBlock = (D2CelCacheBlockStrc*)pEntry[8];
     D2AsyncData_Line0x128* pAsyncData = pCacheBlock->tDecode.pAsyncData;
     if (pAsyncData) {
-      void* pMemoryToFree;
+      int* pPixelData;
       if (pCacheBlock->tDecode.bFramesBuilt) {
         pFreeCallback = CelCmp::CELCMP_GetPixelDataFreeCallback();
         pFrameData = (int*)Fog::Src::AsyncData::ASYNCDATA_GetResult(pAsyncData);
@@ -58,7 +58,7 @@ void __fastcall GFXHASH_UnlinkCacheEntry(int32_t pHashTable, D2PoolManagerStrc *
           exit(-1);
         }
 
-        pMemoryToFree = (void*)pFrameData[6];
+        nErrAddress = (void*)pFrameData[6];
         nFrameByteOffset = 0;
         nFrameIdx = 0;
         if ((uint32_t)pCacheBlock->tDecode.nFramesPerDir * (uint32_t)pCacheBlock->tDecode.nDirCount) {
@@ -76,8 +76,8 @@ void __fastcall GFXHASH_UnlinkCacheEntry(int32_t pHashTable, D2PoolManagerStrc *
             nFrameIdx++;
           } while (nFrameIdx < (uint32_t)pCacheBlock->tDecode.nFramesPerDir * (uint32_t)pCacheBlock->tDecode.nDirCount);
         }
-        if (pMemoryToFree) {
-          D2_FREE_POOL(pMemory, pMemoryToFree);
+        if (nErrAddress) {
+          D2_FREE_POOL(pMemory, nErrAddress);
         }
       }
 

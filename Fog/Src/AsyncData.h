@@ -17,6 +17,8 @@ struct D2AsyncDataCallbackStrc;
 typedef uint32_t (__stdcall *pfnAsyncDataComplete)(void * pReadBuffer, size_t nReadSize, struct D2AsyncDataCallbackStrc * pCallback);
 #endif
 
+struct D2AsyncData_Line0x128;
+
 // Data types
 struct __attribute__((packed)) D2AsyncDataCallbackStrc {
     /* 0x00 */ uint32_t (__stdcall *pfnCallback)(void *, size_t, struct D2AsyncDataCallbackStrc *); // called with (pReadBuffer, nReadSize, &tCallback) when the read completes
@@ -25,8 +27,10 @@ struct __attribute__((packed)) D2AsyncDataCallbackStrc {
     /* 0x18 */ size_t nResultSize; // becomes nReadSize with pResultBuffer
 };
 
-struct D2AsyncDataStrc {
-    /* 0x00 */ HANDLE * pHandle[3072]; // PLACEHOLDER, not a real array: this is an unmodelled struct of 1024 x 3-dword records whose slots are heterogeneous - [0] is a struct D2MPQFileStrc* in one user and an event HANDLE from CreateEventA (0040a5f4) in another, [0x12] is a flags dword. Retyped to HANDLE[3072] on 2026-08-29 to fix the CreateEventA store and reverted: the element type is wrong either way and HANDLE* costs fewer casts downstream. The fix is to model the record, not to pick a better placeholder.
+struct __attribute__((packed)) D2AsyncDataSlotStrc {
+    /* 0x00 */ HANDLE hEvent;
+    /* 0x04 */ BOOL bFree;
+    /* 0x08 */ struct D2AsyncData_Line0x128 * pRequest;
 };
 
 struct __attribute__((packed)) D2AsyncData_Line0x128 {
@@ -34,7 +38,7 @@ struct __attribute__((packed)) D2AsyncData_Line0x128 {
     /* 0x04 */ struct D2PoolManagerStrc * pMemory;
     /* 0x08 */ _OVERLAPPED tOverlapped; // Offset = file position, hEvent = slot event (0040a77d/0040a787)
     /* 0x1C */ D2AsyncDataCallbackStrc tCallback; // copy of the caller's completion block
-    /* 0x38 */ struct D2AsyncDataStrc * pSlot;
+    /* 0x38 */ struct D2AsyncDataSlotStrc * pSlot;
     /* 0x3C */ void * pReadBuffer; // result/read buffer; ASYNCDATA_GetResult returns this. Also the key SFILE_SetRequestPriorityByBuffer matches against each Storm request's buffer base (request +0x24, SFILE_IssueRequest)
     /* 0x40 */ size_t nReadSize;
     /* 0x44 */ int nPriority; // Storm read priority, always <= 0 here (ASYNCDATA_SetPriority halts on > 0, 0040a88d); ASYNCDATA_WaitForCompletion passes 1 directly to SFILE_SetRequestPriorityByBuffer to mark the reads urgent.
@@ -49,7 +53,7 @@ namespace Fog::Src::AsyncData {
 void __fastcall STRUCT_AllocAsyncData(int32_t nEnable);
 void __stdcall STRUCT_FreeAsyncData();
 void __fastcall ASYNCDATA_CancelAndCleanup(struct D2AsyncData_Line0x128 * pAsyncData);
-struct D2AsyncDataStrc * __stdcall ASYNCDATA_AllocSlot();
+struct D2AsyncDataSlotStrc * __stdcall ASYNCDATA_AllocSlot();
 struct D2AsyncData_Line0x128 * __fastcall STRUCT_AllocAsyncData_Line0x128(struct D2PoolManagerStrc * pMemory, char * szText1, int32_t bAsync, uint32_t nFileOffset, size_t nReadSize, void * pReadBuffer, struct D2AsyncDataCallbackStrc * pCallback, int nPriority, char * szText2, int32_t nParam);
 uint32_t __fastcall ASYNCDATA_IsComplete(struct D2AsyncData_Line0x128 * pAsyncData);
 // Sets pAsyncData->nPriority (+0x44). Halts (AsyncData.cpp lines 0x1da/0x1db/0x1dc) on NULL, a bad 0x41737960 tag in nFlags, or nPriority > 0.

@@ -3,13 +3,12 @@
 #include "Storm/Source/SSystem.h"
 #include "Fog/3rdparty/crashy.h"
 #include "Fog/Engine/Application.h"
-#include "Storm/H/Storm.h"
 #include "Storm/H/stpl.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SErr.h"
-#include "Storm/Source/SFile.h"
 #include "Storm/Source/SSComp.h"
 #include "Storm/Source/SSTR.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -19,7 +18,7 @@ namespace Storm::Source::SSystem {
 
 uint32_t __stdcall SSYSTEM_Shutdown(uint32_t nShutdownCode) {
     // Static local variables (originally global data)
-    static pfnSSystemShutdown fpSSystemShutdownCallback;
+    static pfnSSystemShutdown fpSSystemShutdownCallback; D2_STATIC_GUARD_BSS(fpSSystemShutdownCallback, "Storm::Source::SSystem::SSYSTEM_Shutdown::fpSSystemShutdownCallback");
 
     SSYSTEM_SetShutdownFlag(1);
     SSComp::SLogFlushAll();

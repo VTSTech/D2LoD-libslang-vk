@@ -326,7 +326,7 @@ void Q04_SetCainUnitGUID(void * pThis, int32_t nCainGUID);
 // schedules the Rogue-guard despawn timer (Q04_TimerDespawnRogueGuards) or immediately
 // despawns guards (Q04_DespawnRogueGuards), and removes the inactive Cain placeholder.
 // Called from the force-start / debug-progress paths and Callback_03. No quest record bits.
-void __stdcall Q04_ActivateCairnStonesAndTree(char cParam1, char cParam2, struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit);
+void __stdcall Q04_ActivateCairnStonesAndTree(char cParam1, char cParam2, struct D2QuestDataStrc * pQuestData);
 // A1Q4 — Q04_ForceStartQuestProgression: one-shot (guarded by flag 0x65) debug/forced
 // advance that activates the quest objects (Q04_ActivateCairnStonesAndTree) and jumps the
 // step flag straight to 6 (Cain freed). Halts if quest data missing.

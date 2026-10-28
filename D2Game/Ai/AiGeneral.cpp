@@ -11,7 +11,6 @@
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Game/Ai/D2AiGeneralStrc.h"
-#include "D2Game/D2QuestDataStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -26,7 +25,6 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Game/Quests/QUESTS.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -404,17 +402,17 @@ void __fastcall AssignMinionOwner(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32
     pAiGeneral->pGame = pGame;
 }
 
-void __fastcall GetMonsterNameAndAi(D2UnitStrc * pUnit, D2QuestDataStrc * pMonsterName, D2UnitStrc * pMonsterAi) {
+void __fastcall GetMonsterNameAndAi(D2UnitStrc * pUnit, uint32_t * pMonsterName, int * pMonsterAi) {
     if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
       D2UnitDataMonsterStrc* pMonsterData = !pUnit->pUnitData.pUnitDataMonster ? 0 : (D2UnitDataMonsterStrc*)pUnit->pUnitData.pUnitDataMonster->pAiGeneral;
       if (pMonsterData->pAiGeneral) {
-        pMonsterName->nQuestNoInternal = (eD2QuestsInternal)d2_bits_of(pMonsterData->pPathParamOrName);
-        pMonsterAi->eUnitType = (eD2UnitType)pMonsterData->pMonsterAi;
+        *pMonsterName = (uint32_t)d2_bits_of(pMonsterData->pPathParamOrName);
+        *pMonsterAi = (int)pMonsterData->pMonsterAi;
         return;
       }
     }
 
-    pMonsterName->nQuestNoInternal = ~QUESTINT_SpokeToWarriv;
+    *pMonsterName = -1;
 }
 
 // Returns the owner unit for a monster. Walks pMonsterData->pAiGeneral->pGame to call FindUnitFromTable with the owner's type and GUID.
@@ -579,7 +577,7 @@ void __fastcall ClearMinionList(::SGAMEDATA * pGame, D2MonsterDataMinionList * p
 }
 
 // Iterates all minions in pUnit's owner's pMinionList and calls pfnProc(pArgument) for each resolved minion unit. Validates pfnProc via IsBadCodePtr first — halts with an unrecoverable error if the pointer is bad. Traverses owner->pMinionList and calls the callback only when the minion unit resolves successfully.
-void __fastcall CallForEachMinion(D2UnitStrc * pUnit, void * pContext, D2UnitStrc * pArgument, pfnMinionForEachCallback pfnProc) {
+void __fastcall CallForEachMinion(D2UnitStrc * pUnit, void * pContext, void * pArgument, pfnMinionForEachCallback pfnProc) {
     D2AiGeneralStrc* pOwnerAi;
     D2UnitStrc* pMinion;
     D2AiGeneralStrc* pAi;

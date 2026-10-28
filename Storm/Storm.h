@@ -7,11 +7,14 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "Storm/Source/SFile.h"
-#include "Storm/Source/SSComp.h"
+#include "Storm/Source/SSystem.h"
 
 // Forward declarations
+struct D2CompressEncoderStrc;
 struct D2MPQFileStrc;
+struct D2SLogStrc;
+struct D2StormAudioStreamRec;
+struct IDirectSoundBuffer;
 struct D2StormAsyncCompletionStrc;
 #ifndef RECON_FPTD_fnStormAsyncCompletion
 #define RECON_FPTD_fnStormAsyncCompletion
@@ -19,28 +22,13 @@ typedef uint32_t (__stdcall *fnStormAsyncCompletion)(void * pReadBuffer, uint32_
 #endif
 
 // Data types
-struct __attribute__((packed)) D2HuffmanContextStrc {
-    /* 0x0000 */ uint32_t nUnused0; // unused pad
-    /* 0x0004 */ int32_t nEpoch; // rebuild epoch; quick-table entries are invalid when their epoch != this
-    /* 0x0008 */ D2CompressHuffNodeStrc aNodes[515]; // 0x203 tree nodes at 0x18 bytes each (ends at 0x3050)
-    /* 0x3050 */ int32_t nFreeCount; // free-list count sentinel at 0x3050
-    /* 0x3054 */ int32_t nFreeListSelf; // free-list sentinel self-ptr at 0x3054
-    /* 0x3058 */ int32_t nFreeListBack; // free-list sentinel back-link ~self at 0x3058
-    /* 0x305C */ int32_t nActiveCount; // active-list count at 0x305C
-    /* 0x3060 */ int32_t nActiveListSelf; // active-list sentinel self-ptr at 0x3060
-    /* 0x3064 */ int32_t nActiveListBack; // active-list sentinel back-link ~self at 0x3064
-    /* 0x3068 */ int32_t nNodeCount; // nodes allocated so far at 0x3068
-    /* 0x306C */ struct D2CompressHuffNodeStrc * _pad306C[258]; // symbol-to-node lookup table (0x102 entries); same layout as D2CompressEncoderStrc.apSymbolNodes
-    /* 0x3474 */ uint32_t aQuickTable[96]; // 0x80 quick-decode entries × 3 dwords at 0x3474
-};
-
 struct D2StormAsyncCompletionStrc {
     /* 0x00 */ uint32_t (__stdcall *pfnComplete)(void *, uint32_t, struct D2StormAsyncCompletionStrc *); // called from SFILE_CdThreadProc @0041a7c6, callee pops 12 bytes
 };
 
 struct __attribute__((packed)) D2StormAsyncOpStrc {
     /* 0x00 */ uint32_t pPrevLink; // TSLink m_prevlink; the terminator's own address when empty
-    /* 0x04 */ uint32_t pNext; // TSLink m_next; negative = ~&terminator, end of list
+    /* 0x04 */ struct D2StormAsyncOpStrc * pNext; // TSLink m_next; negative = ~&terminator, end of list
     /* 0x08 */ HANDLE hCompletionEvent; // caller's completion event HANDLE; SetEvent on completion or cancellation
     /* 0x0C */ struct D2MPQFileStrc * pFile; // file record the request reads; SFILE_ReleaseFileHandle drops its nRefCount (+0x144) and frees it at 0 (asm 0041a04a)
     /* 0x10 */ int nFilePos; // base file position / chunk start offset
@@ -81,7 +69,7 @@ int32_t __fastcall HUFFMAN_GetNextNodeOrDefault(int32_t pThis, int32_t nChildOrD
 int32_t __fastcall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf);
 int * * __fastcall HUFFMAN_AllocateNode(int32_t pThis, int32_t nInsertMode);
 // Initialise a Huffman encoder/decoder context: zero all linked-list sentinels, set epoch to 1, clear node-count and quick-table epoch
-int32_t __fastcall HUFFMAN_InitContext(struct D2HuffmanContextStrc * pEncoder);
+int32_t __fastcall HUFFMAN_InitContext(struct D2CompressEncoderStrc * pEncoder);
 int __fastcall HUFFMAN_DecompressBlock(uint8_t * pDst, int32_t nDstMax, uint16_t * * pBitBuf, uint32_t * pDecoderCtx);
 int32_t __fastcall HUFFMAN_Constructor(int32_t nParam);
 int32_t __fastcall HUFFMAN_ConstructorWithTable(int32_t pHuffCtx);

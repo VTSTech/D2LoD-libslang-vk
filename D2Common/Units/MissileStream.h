@@ -23,12 +23,6 @@ typedef void (__fastcall *fpHit)(struct D2UnitStrc *, struct D2UnitStrc *);
 typedef void (__fastcall *fpUnknownMissileStream)(int);
 #endif
 
-// Data types
-struct D2MissileStreamStrc {
-    /* 0x00 */ int * pStream;
-    /* 0x04 */ int nStreamSize;
-};
-
 namespace D2Common::Units::MissileStream {
 
 // Function declarations

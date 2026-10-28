@@ -23,6 +23,7 @@
 #include "D2Client/UNIT/UnitSnd.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
+#include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
@@ -90,7 +91,7 @@ typedef BOOL (__stdcall *ROOMCALLBACKFN)(D2RoomStrc * pRoom, void * pArgs);
 
 namespace D2Client::GAME::Wall2 {
 
-static unsigned short geCutsceneAmbientMusicSoundId = {};
+static unsigned short geCutsceneAmbientMusicSoundId = {}; D2_STATIC_GUARD(geCutsceneAmbientMusicSoundId, "D2Client::GAME::Wall2::geCutsceneAmbientMusicSoundId");
 
 void __fastcall WALL2_InitUnitGfx(D2UnitStrc * pUnit) {
     int32_t nLine;
@@ -123,7 +124,6 @@ void __fastcall WALL2_InitUnitGfx(D2UnitStrc * pUnit) {
 
 // Debug visualisation: draws a screen-space diamond (4 lines, colour 0xFF blue) centred on pUnit's last-click screen coordinates, then renders a small solid rectangle at the unit's current world target position. Converts map coordinates to screen via CoordsMapToScreen and adjusts by world offsets. Halts with an internal error if pUnit is null.
 void __fastcall WALL2_DrawDebugUnitDiamond(D2UnitStrc * pUnit) {
-    int32_t nOffsetTmp;
     int32_t nErrLine;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x61);
@@ -135,49 +135,49 @@ void __fastcall WALL2_DrawDebugUnitDiamond(D2UnitStrc * pUnit) {
     D2Common::Drlg::Transform::CoordsMapToScreen((int32_t*)&nScreenX, (int32_t*)&nScreenY);
     DWORD dwColor1 = 0xff;
     DWORD dwColor2 = 0xff;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetY();
-    int nScreenY2 = nScreenY - nOffsetTmp + 8;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetX();
-    int nScreenX2 = nScreenX - nOffsetTmp + 0x10;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetY();
-    int nScreenXAdj = nScreenY - nOffsetTmp;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetX();
-    D2gfx::D2GFX::D2GFX_DrawLine(nScreenX - nOffsetTmp, nScreenXAdj, nScreenX2, nScreenY2, dwColor2, dwColor1);
-    dwColor1 = 0xff;
-    dwColor2 = 0xff;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetY();
-    nScreenY2 = nScreenY - nOffsetTmp + 8;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetX();
-    nScreenX2 = nScreenX - nOffsetTmp - 0x10;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetY();
-    nScreenXAdj = nScreenY - nOffsetTmp;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetX();
-    D2gfx::D2GFX::D2GFX_DrawLine(nScreenX - nOffsetTmp, nScreenXAdj, nScreenX2, nScreenY2, dwColor2, dwColor1);
-    dwColor1 = 0xff;
-    dwColor2 = 0xff;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetY();
-    nScreenY2 = nScreenY - nOffsetTmp + 0x10;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetX();
-    nScreenX2 = nScreenX - nOffsetTmp;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetY();
-    nScreenXAdj = nScreenY - nOffsetTmp + 8;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetX();
-    D2gfx::D2GFX::D2GFX_DrawLine(nScreenX - nOffsetTmp - 0x10, nScreenXAdj, nScreenX2, nScreenY2, dwColor2, dwColor1);
-    dwColor1 = 0xff;
-    dwColor2 = 0xff;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetY();
-    nScreenY2 = nScreenY - nOffsetTmp + 0x10;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetX();
-    nScreenX2 = nScreenX - nOffsetTmp;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetY();
-    nScreenXAdj = nScreenY - nOffsetTmp + 8;
-    nOffsetTmp = UI::Path::DRAW_GetWorldOffsetX();
-    D2gfx::D2GFX::D2GFX_DrawLine(nScreenX - nOffsetTmp + 0x10, nScreenXAdj, nScreenX2, nScreenY2, dwColor2, dwColor1);
-    nOffsetTmp = D2Common::Units::GetTargetX(pUnit);
+    nErrLine = UI::Path::DRAW_GetWorldOffsetY();
+    int nScreenY2 = nScreenY - nErrLine + 8;
     nErrLine = UI::Path::DRAW_GetWorldOffsetX();
+    int nScreenX2 = nScreenX - nErrLine + 0x10;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetY();
+    int nScreenXAdj = nScreenY - nErrLine;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetX();
+    D2gfx::D2GFX::D2GFX_DrawLine(nScreenX - nErrLine, nScreenXAdj, nScreenX2, nScreenY2, dwColor2, dwColor1);
+    dwColor1 = 0xff;
+    dwColor2 = 0xff;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetY();
+    nScreenY2 = nScreenY - nErrLine + 8;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetX();
+    nScreenX2 = nScreenX - nErrLine - 0x10;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetY();
+    nScreenXAdj = nScreenY - nErrLine;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetX();
+    D2gfx::D2GFX::D2GFX_DrawLine(nScreenX - nErrLine, nScreenXAdj, nScreenX2, nScreenY2, dwColor2, dwColor1);
+    dwColor1 = 0xff;
+    dwColor2 = 0xff;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetY();
+    nScreenY2 = nScreenY - nErrLine + 0x10;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetX();
+    nScreenX2 = nScreenX - nErrLine;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetY();
+    nScreenXAdj = nScreenY - nErrLine + 8;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetX();
+    D2gfx::D2GFX::D2GFX_DrawLine(nScreenX - nErrLine - 0x10, nScreenXAdj, nScreenX2, nScreenY2, dwColor2, dwColor1);
+    dwColor1 = 0xff;
+    dwColor2 = 0xff;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetY();
+    nScreenY2 = nScreenY - nErrLine + 0x10;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetX();
+    nScreenX2 = nScreenX - nErrLine;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetY();
+    nScreenXAdj = nScreenY - nErrLine + 8;
+    nErrLine = UI::Path::DRAW_GetWorldOffsetX();
+    D2gfx::D2GFX::D2GFX_DrawLine(nScreenX - nErrLine + 0x10, nScreenXAdj, nScreenX2, nScreenY2, dwColor2, dwColor1);
+    nErrLine = D2Common::Units::GetTargetX(pUnit);
+    int32_t iVar1 = UI::Path::DRAW_GetWorldOffsetX();
     int32_t nWorldOffsetTmp = D2Common::Units::GetTargetY(pUnit);
     int32_t nScreenYAdj = UI::Path::DRAW_GetWorldOffsetY();
-    D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nOffsetTmp - nErrLine, nWorldOffsetTmp - nScreenYAdj, nOffsetTmp - nErrLine + 4, nWorldOffsetTmp - nScreenYAdj + 4, 0xff, DRAW_SOLID);
+    D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nErrLine - iVar1, nWorldOffsetTmp - nScreenYAdj, nErrLine - iVar1 + 4, nWorldOffsetTmp - nScreenYAdj + 4, 0xff, DRAW_SOLID);
 }
 
 // Client-side LOS check for world rendering. pOtherUnit arrives in ESI: its only caller, DRAW_WORLD_Unit at 004dc7b0, takes the unit in ECX and moves it to ESI at 004dc7c0, so Ghidra modelled it as a local and the reconstruction read it uninitialised.
@@ -697,20 +697,20 @@ void WALL2_InsertUnitDrawBelow(D2Wall2DrawListStrc * pDrawList, D2UnitStrc * pUn
 // Returns true if a wall/roof tile occludes the player's screen position, used to decide whether to draw a tile transparently. Fast path: if precomputed occluder data is available (gbWall2UsePrecomputedOccluder), checks the tile grid bounds against gnPlayerTileGridIndex and the player's X/Y coords. Slow path: recomputes the tile's world-space bounding box from room origin + tile offset*5 and tests against UNIT_CenterXCoordsDiv5/UNIT_CenterYCoordsDiv5, then classifies by nTileType (1/4/5/7/8/10/12 = X-wall types; 2/3/6/7/9/11/12 = Y-wall types).
 int32_t __stdcall WALL2_IsTileOccludingPlayer(D2DrlgTileDataStrc * pTileData, D2RoomStrc * pRoom) {
     // Static local variables (originally global data)
-    static int gbWall2UsePrecomputedOccluder = 0x1;
+    static int gbWall2UsePrecomputedOccluder = 0x1; D2_STATIC_GUARD(gbWall2UsePrecomputedOccluder, "D2Client::GAME::Wall2::WALL2_IsTileOccludingPlayer::gbWall2UsePrecomputedOccluder");
 
     D2DrlgRoomCoordsStrc roomCoords;
     if (gbWall2UsePrecomputedOccluder) {
-      int* piVar1;
-      piVar1 = (int*)pTileData->nGridFlags;
-      if (!(piVar1 && piVar1[10] != gnPlayerTileGridIndex)) {
+      D2RoomCoordListStrc* pDVar1;
+      pDVar1 = pTileData->nGridFlags;
+      if (!(pDVar1 && pDVar1->nIndex != gnPlayerTileGridIndex)) {
         return 0;
       }
-      if (*piVar1 > UNIT_CenterXCoordsDiv5) {
+      if (pDVar1->pBox.nPosX > UNIT_CenterXCoordsDiv5) {
         return 1;
       }
 
-      return (uint32_t)(UNIT_CenterYCoordsDiv5 < piVar1[1]);
+      return (uint32_t)(UNIT_CenterYCoordsDiv5 < pDVar1->pBox.nPosY);
     }
 
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &roomCoords);
@@ -1115,56 +1115,46 @@ void __stdcall WALL2_InsertUnitShadowDraw(D2Wall2CellStrc * pWall2Cell, D2UnitSt
 }
 
 // Client-side draw-list builder for a single dungeon room within the wall2 (low-perspective wall/roof culling) view. Given pRoom and pnParam (game-view ptr + screen cull rectangle), early-rejects rooms outside the minimap rect, then walks the room's wall tiles and roof tiles: for each on-screen tile it computes iso grid coords (DRLG_OrthToIsoCoordsDiv160), clears the grid cell's dwFlags, and dispatches to WALL2_AddShadowPassTile/AddRoofTile/AddLowerWallTile/AddWallTile by tile type/flags. Then (when pnParam[6]==0) inserts each unit in the room into its grid cell (draw/draw-below/shadow) based on alive state and unit flags. Halts via Fog error if a unit's grid index is out of range. Always returns 1.
-BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, int * pnParam) {
-    // Frame slots -44..-4 are ONE object: &nMinimapLeft is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nMinimapLeft;
-      int nMinimapTop;
-      int nMinimapRight;
-      int nMinimapBottom;
-      D2TileLibraryEntryStrc* nIsoY2;
-      int nIsoX2;
-      int nIsoY;
-      int nIsoX;
-      uint32_t nTileCount;
-      uint32_t nTileIdx;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 40, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawContextStrc * pnParam) {
+    int nRoofHeightIdx2;
     BOOL bInDrawGrid;
     D2UnitStrc* pUnit;
     int nRoofHeightIdx;
+    RECT nMinimapLeft;
+    int nIsoY;
+    int nIsoX;
+    uint32_t nTileCount;
     uint32_t nGridDim;
     int32_t nLine;
     D2Wall2CellStrc* pGridCellVoid;
-    int* pParamTmp = pnParam;
+    D2TileLibraryEntryStrc* pTileLibEntry;
+    D2Wall2DrawContextStrc* pParamTmp = pnParam;
     D2RoomStrc* pRoomTmp = pRoom;
-    D2GameViewStrc* pGameView = (D2GameViewStrc*)*pnParam;
+    D2GameViewStrc* pGameView = pnParam->pGameView;
     D2Wall2DrawListStrc* pAllocBase = &pGameView->sWall2;
-    D2Common::DUNGEON::Dungeon::DRLGROOM_GetMinimapRect((uint32_t)pnParam, pRoom, &__frame0.nMinimapLeft);
-    if (!(__frame0.nMinimapLeft <= pParamTmp[3] && __frame0.nMinimapTop <= pParamTmp[4] + 400 && pParamTmp[1] - 200 <= __frame0.nMinimapRight && pParamTmp[2] <= __frame0.nMinimapBottom)) {
+    D2Common::DUNGEON::Dungeon::DRLGROOM_GetMinimapRect((uint32_t)pnParam, pRoom, (int32_t*)&nMinimapLeft.left);
+    if (!(nMinimapLeft.left <= pParamTmp->rcCull.right && nMinimapLeft.top <= pParamTmp->rcCull.bottom + 400 && pParamTmp->rcCull.left - 200 <= nMinimapLeft.right && pParamTmp->rcCull.top <= nMinimapLeft.bottom)) {
       return 1;
     }
 
-    D2DrlgTileDataStrc* pTileData = D2Common::DUNGEON::Dungeon::DRLGROOM_GetWallTilesFromRoom(pRoomTmp, (int*)&__frame0.nTileCount);
-    __frame0.nTileIdx = 0;
-    if (__frame0.nTileCount) {
+    D2DrlgTileDataStrc* pTileData = D2Common::DUNGEON::Dungeon::DRLGROOM_GetWallTilesFromRoom(pRoomTmp, (int*)&nTileCount);
+    uint32_t nTileIdx = 0;
+    if (nTileCount) {
       int nScreenYAdj;
       do {
-        __frame0.nIsoY2 = pTileData->pTileLibraryEntry;
-        __frame0.nIsoX2 = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetRoofHeightIndex((int32_t)__frame0.nIsoY2);
-        D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160(pTileData->nScreenX, pTileData->nScreenY, &__frame0.nIsoX, &__frame0.nIsoY);
-        nRoofHeightIdx = __frame0.nIsoY - 1;
-        __frame0.nIsoY = nRoofHeightIdx;
-        if (pTileData->nScreenX <= pnParam[3] && pnParam[1] <= pTileData->nScreenX + 0xa0) {
-          nScreenYAdj = pTileData->nScreenY - (uint32_t)(uint16_t)__frame0.nIsoY2->nRoofHeight;
-          if (__frame0.nIsoX2 + nScreenYAdj <= pnParam[4] && pnParam[2] <= nScreenYAdj - __frame0.nIsoX2) {
-            bInDrawGrid = WALL2_IsInDrawGrid(__frame0.nIsoX, nRoofHeightIdx, pAllocBase);
+        pTileLibEntry = pTileData->pTileLibraryEntry;
+        nRoofHeightIdx2 = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetRoofHeightIndex((int32_t)pTileLibEntry);
+        D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160(pTileData->nScreenX, pTileData->nScreenY, &nIsoX, &nIsoY);
+        nRoofHeightIdx = nIsoY - 1;
+        nIsoY = nRoofHeightIdx;
+        if (pTileData->nScreenX <= pnParam->rcCull.right && pnParam->rcCull.left <= pTileData->nScreenX + 0xa0) {
+          nScreenYAdj = pTileData->nScreenY - (uint32_t)(uint16_t)pTileLibEntry->nRoofHeight;
+          if (nRoofHeightIdx2 + nScreenYAdj <= pnParam->rcCull.bottom && pnParam->rcCull.top <= nScreenYAdj - nRoofHeightIdx2) {
+            bInDrawGrid = WALL2_IsInDrawGrid(nIsoX, nRoofHeightIdx, pAllocBase);
             if (bInDrawGrid) {
-              __frame0.nIsoY = nRoofHeightIdx - pGameView->sWall2.nWall2GridOriginY;
-              __frame0.nIsoX -= pGameView->sWall2.nWall2GridOriginX;
-              pGridCellVoid = pGameView->sWall2.pWall2 + pGameView->sWall2.nWall2GridDim * __frame0.nIsoY + __frame0.nIsoX;
+              nIsoY = nRoofHeightIdx - pGameView->sWall2.nWall2GridOriginY;
+              nIsoX -= pGameView->sWall2.nWall2GridOriginX;
+              pGridCellVoid = pGameView->sWall2.pWall2 + pGameView->sWall2.nWall2GridDim * nIsoY + nIsoX;
               pGridCellVoid->dwFlags = 0;
               if (!(pTileData->nFlags & 0x1c000U)) {
                 WALL2_AddShadowPassTile(pGridCellVoid, pRoom, pTileData, pAllocBase);
@@ -1179,46 +1169,46 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, int * pnParam)
           }
         }
 
-        __frame0.nTileIdx++;
+        nTileIdx++;
         pTileData++;
         pParamTmp = pnParam;
         pRoomTmp = pRoom;
-      } while (__frame0.nTileIdx < __frame0.nTileCount);
+      } while (nTileIdx < nTileCount);
     }
 
-    pTileData = D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoofTilesFromRoom(pRoomTmp, (int*)&__frame0.nTileCount);
-    __frame0.nTileIdx = 0;
-    if (__frame0.nTileCount) {
+    pTileData = D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoofTilesFromRoom(pRoomTmp, (int*)&nTileCount);
+    nTileIdx = 0;
+    if (nTileCount) {
       do {
-        __frame0.nIsoX2 = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetRoofHeightIndex((int32_t)pTileData->pTileLibraryEntry);
-        D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160(pTileData->nScreenX, pTileData->nScreenY, &__frame0.nIsoY, &__frame0.nIsoX);
-        nRoofHeightIdx = __frame0.nIsoX - 1;
-        __frame0.nIsoX = nRoofHeightIdx;
-        if (pTileData->nScreenX <= pnParam[3] && pnParam[1] <= pTileData->nScreenX + 0xa0 && __frame0.nIsoX2 + pTileData->nScreenY <= pnParam[4] && pnParam[2] <= pTileData->nScreenY - __frame0.nIsoX2) {
-          bInDrawGrid = WALL2_IsInDrawGrid(__frame0.nIsoY, nRoofHeightIdx, pAllocBase);
+        nRoofHeightIdx2 = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetRoofHeightIndex((int32_t)pTileData->pTileLibraryEntry);
+        D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160(pTileData->nScreenX, pTileData->nScreenY, &nIsoY, &nIsoX);
+        nRoofHeightIdx = nIsoX - 1;
+        nIsoX = nRoofHeightIdx;
+        if (pTileData->nScreenX <= pnParam->rcCull.right && pnParam->rcCull.left <= pTileData->nScreenX + 0xa0 && nRoofHeightIdx2 + pTileData->nScreenY <= pnParam->rcCull.bottom && pnParam->rcCull.top <= pTileData->nScreenY - nRoofHeightIdx2) {
+          bInDrawGrid = WALL2_IsInDrawGrid(nIsoY, nRoofHeightIdx, pAllocBase);
           if (bInDrawGrid) {
-            __frame0.nIsoX = nRoofHeightIdx - pGameView->sWall2.nWall2GridOriginY;
-            __frame0.nIsoY -= pGameView->sWall2.nWall2GridOriginX;
-            WALL2_AddShadowPassTile(pGameView->sWall2.pWall2 + pGameView->sWall2.nWall2GridDim * __frame0.nIsoX + __frame0.nIsoY, pRoom, pTileData, pAllocBase);
+            nIsoX = nRoofHeightIdx - pGameView->sWall2.nWall2GridOriginY;
+            nIsoY -= pGameView->sWall2.nWall2GridOriginX;
+            WALL2_AddShadowPassTile(pGameView->sWall2.pWall2 + pGameView->sWall2.nWall2GridDim * nIsoX + nIsoY, pRoom, pTileData, pAllocBase);
           }
         }
 
-        __frame0.nTileIdx++;
+        nTileIdx++;
         pTileData++;
         pParamTmp = pnParam;
         pRoomTmp = pRoom;
-      } while (__frame0.nTileIdx < __frame0.nTileCount);
+      } while (nTileIdx < nTileCount);
     }
-    if (pParamTmp[6]) {
+    if (pParamTmp->nTickCount) {
       return 1;
     }
 
     for (pUnit = D2Common::DUNGEON::Dungeon::DRLGROOM_GetFirstUnitInRoom(pRoomTmp); pUnit; pUnit = pUnit->pRoomNext) {
       pRoom = (D2RoomStrc*)D2Common::Units::GetTargetX(pUnit);
-      pnParam = (int*)D2Common::Units::GetTargetY(pUnit);
+      pnParam = (D2Wall2DrawContextStrc*)D2Common::Units::GetTargetY(pUnit);
       D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160((int32_t)pRoom, (int32_t)pnParam, (int32_t*)&pRoom, (int32_t*)&pnParam);
       pRoomTmp = (D2RoomStrc*)((int)pRoom - pGameView->sWall2.nWall2GridOriginX);
-      pParamTmp = (int*)((int)pnParam - pGameView->sWall2.nWall2GridOriginY);
+      pParamTmp = (D2Wall2DrawContextStrc*)((int)pnParam - pGameView->sWall2.nWall2GridOriginY);
       if (-1 < (int)pRoomTmp && -1 < (int)pParamTmp) {
         nGridDim = pGameView->sWall2.nWall2GridDim;
         if ((int)pRoomTmp < (int)nGridDim && (int)pParamTmp < (int)nGridDim) {
@@ -1257,10 +1247,10 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, int * pnParam)
 // Client render-prep: rebuilds the per-frame "wall2" tile/unit draw list for the given game view. Allocates the draw list, computes the visible screen rect (expanding by 0x30 in perspective mode) and caches it in the RECT_* globals, then resets the wall2 entry/alloc counters and zero-fills the grid cell array. Maps the view center to iso grid coords (DRLG_OrthToIsoCoordsDiv160), seeds each grid cell's iso row/col, caches the local player's tile coords (UNIT_CenterX/YCoordsDiv5, gnPlayerTileGridIndex), then walks the current room tree via CallRoomCallback(WALL2_CollectRoomTilesAndUnits) to gather drawable tiles/units. Halts via Fog error if the wall2 buffer or the player unit is missing. Side effects: mutates view draw-list fields and several render globals.
 void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nTickCount) {
     // Static local variables (originally global data)
-    static int RECT_left;
-    static int RECT_top;
-    static int RECT_right;
-    static int RECT_Bottom;
+    static int RECT_left; D2_STATIC_GUARD_BSS(RECT_left, "D2Client::GAME::Wall2::WALL2_BuildSceneDrawList::RECT_left");
+    static int RECT_top; D2_STATIC_GUARD_BSS(RECT_top, "D2Client::GAME::Wall2::WALL2_BuildSceneDrawList::RECT_top");
+    static int RECT_right; D2_STATIC_GUARD_BSS(RECT_right, "D2Client::GAME::Wall2::WALL2_BuildSceneDrawList::RECT_right");
+    static int RECT_Bottom; D2_STATIC_GUARD_BSS(RECT_Bottom, "D2Client::GAME::Wall2::WALL2_BuildSceneDrawList::RECT_Bottom");
 
     int yTop;
     D2UnitStrc* pUnit;
@@ -1314,8 +1304,8 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
           nGridColIdx = 0;
           if (pGameView->sWall2.nWall2GridDim) {
             do {
-              *(uint32_t*)&pGridCellIter->field_0x8 = nIsoY + nGridColIdx;
-              *(uint32_t*)&pGridCellIter->field_0xc = nIsoX + nGridRowIdx;
+              pGridCellIter->nGridIsoX = nIsoY + nGridColIdx;
+              pGridCellIter->nGridIsoY = nIsoX + nGridRowIdx;
               nGridColIdx++;
               pGridCellIter++;
             } while (nGridColIdx < pGameView->sWall2.nWall2GridDim);
@@ -1368,7 +1358,7 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
 
         pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
         gnPlayerTileGridIndex = D2Common::DUNGEON::Dungeon::GetGridIndex(pRoom, nPlayerY, nPlayerX);
-        D2Common::DUNGEON::Dungeon::CallRoomCallback(pGameViewLocal.pRoom, (ROOMCALLBACKFN)WALL2_CollectRoomTilesAndUnits, (D2GameViewStrc*)&pGameViewLocal);
+        D2Common::DUNGEON::Dungeon::CallRoomCallback(pGameViewLocal.pRoom, (ROOMCALLBACKFN)WALL2_CollectRoomTilesAndUnits, &pGameViewLocal);
         return;
       }
 

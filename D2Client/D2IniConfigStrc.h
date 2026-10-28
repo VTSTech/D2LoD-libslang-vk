@@ -304,10 +304,7 @@ struct D2CharSelSaveDataStrc {
 
 struct __attribute__((packed)) D2IniConfigStrc {
     /* 0x000 */ char bD2ExpMpqExistsOrLanugageCode[4];
-    /* 0x004 */ bool bCRASHAPP;
-    /* 0x005 */ uint8_t field_0x5;
-    /* 0x006 */ uint8_t field_0x6;
-    /* 0x007 */ uint8_t field_0x7;
+    /* 0x004 */ BOOL bCRASHAPP;
     /* 0x008 */ bool bWINDOW;
     /* 0x009 */ bool bASPECT;
     /* 0x00A */ bool b3DFX;

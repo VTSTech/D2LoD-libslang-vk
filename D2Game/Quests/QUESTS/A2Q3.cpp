@@ -3,7 +3,6 @@
 #include "D2Game/Quests/QUESTS/A2Q3.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -18,6 +17,7 @@
 #include "D2Common/Environment.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/QuestRecord.h"
+#include "D2Common/Text.h"
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Common/Units.h"
@@ -32,6 +32,7 @@
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
+#include "D2Game/Quests/QUESTS/A4Q2.h"
 #include "D2Game/UNIT/Party.h"
 #include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -43,7 +44,6 @@
 #include "globals/globals.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Game/D2Game.h"
-#include "D2Game/GAME/Server.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -153,36 +153,24 @@ BOOL __fastcall Q11_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUn
 // env packet (subcmd 5) to blot out the sun, then a 0x5D quest-state packet (quest 10, flag 0x10).
 // No quest-record access; pure client notification of the Tainted-Sun darkening.
 BOOL __fastcall Q11_SendDarknessPacket(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    // Frame slots -24..-14 are ONE object: &byCmd is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byCmd;
-      uint32_t nDarknessSubCmd;
-      uint32_t nDarknessParam;
-      uint8_t nActNo;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 10, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    uint8_t aQuestStatePacket[8];
+    D2GSPacketSrv0x53 sPacket53;
+    D2GSPacketSrv0x5D sPacket5D;
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q3.cpp", 0x142);
-    __frame0.nActNo = GAME::Clients::GetAct(pClient);
-    if (__frame0.nActNo != 1) {
+    sPacket53.bEclipse = GAME::Clients::GetAct(pClient);
+    if (sPacket53.bEclipse != 1) {
       return 0;
     }
 
-    __frame0.byCmd = 0x53;
-    __frame0.nDarknessSubCmd = 5;
-    __frame0.nDarknessParam = 0;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x53_ACTTIMEOFDAY(pClient, (D2GSPacketSrv0x53*)&__frame0.byCmd);
-    aQuestStatePacket[4] = 0;
-    aQuestStatePacket[5] = 0;
-    aQuestStatePacket[0] = 0x5d;
-    aQuestStatePacket[1] = 10;
-    aQuestStatePacket[2] = 0x10;
-    aQuestStatePacket[3] = 0;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, aQuestStatePacket);
+    sPacket53.nHeader = 'S';
+    sPacket53.nCycleIndex = 5;
+    sPacket53.nTicks = 0;
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x53_ACTTIMEOFDAY(pClient, &sPacket53);
+    sPacket5D.nExtra = 0;
+    sPacket5D.nPacketId = ']';
+    sPacket5D.nQuestId = '\n';
+    sPacket5D.nAlertFlags = '\x10';
+    sPacket5D.nFilterStatus = '\0';
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, &sPacket5D);
     return 0;
 }
 
@@ -190,29 +178,18 @@ BOOL __fastcall Q11_SendDarknessPacket(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 // "darkness" env packet (subcmd 2 = restore daylight) when the Tainted Sun Altar is destroyed.
 // No quest-record access; mirror of Q11_SendDarknessPacket that lifts the darkness.
 BOOL __fastcall Q11_SendSunRestoredPacket(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    // Frame slots -16..-6 are ONE object: &byCmd is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byCmd;
-      uint32_t nSunSubCmd;
-      uint32_t nSunParam;
-      uint8_t byPad;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 10, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D2GSPacketSrv0x53 sPacket;
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q3.cpp", 0x165);
     uint8_t nActNo = GAME::Clients::GetAct(pClient);
     if (nActNo != 1) {
       return 0;
     }
 
-    __frame0.byCmd = 0x53;
-    __frame0.nSunSubCmd = 2;
-    __frame0.nSunParam = 0;
-    __frame0.byPad = 0;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x53_ACTTIMEOFDAY(pClient, (D2GSPacketSrv0x53*)&__frame0.byCmd);
+    sPacket.nHeader = 'S';
+    sPacket.nCycleIndex = 2;
+    sPacket.nTicks = 0;
+    sPacket.bEclipse = '\0';
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x53_ACTTIMEOFDAY(pClient, &sPacket);
     return 0;
 }
 
@@ -241,7 +218,7 @@ bool __fastcall Q11_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 // quest not Completed and stateFlag<=3. AddGossipMessageOnMonster shows the chosen line. Read-only on record.
 void __fastcall Q11_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ10QuestStateMessages[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x0 };
+    static int32_t gdwQ10QuestStateMessages[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x0 }; D2_STATIC_GUARD(gdwQ10QuestStateMessages, "D2Game::Quests::QUESTS::A2Q3::Q11_Callback00_NpcActivate::gdwQ10QuestStateMessages");
 
     int32_t nPlayerGUID;
     uint32_t nMessageIndexMaybe;
@@ -437,20 +414,19 @@ BOOL __fastcall Q11_UpdateQuestRecord(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 // Q11_BeginTaintedSun; if it deferred (act not loaded, returns 0) sets the pending flag and sends a 0x5D
 // quest-state packet (quest 10, flag 1) to the interacting client; otherwise sets the darkened flag.
 void __stdcall Q11_OnPlayerInteract(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
-    uint8_t abyQuestStatePacket[8];
+    D2GSPacketSrv0x5D abyQuestStatePacket;
     D2QuestDataA2Q3Strc* pA2Q3Data = pQuestData->pQuestSpecificData.pA2Q3;
     bool bTaintedSunStarted = (bool)Q11_BeginTaintedSun(pQuestData);
     if (!bTaintedSunStarted) {
       D2ClientStrc* pClient;
       pA2Q3Data->bViperAmuletInitPending = true;
-      abyQuestStatePacket[4] = 0;
-      abyQuestStatePacket[5] = 0;
-      abyQuestStatePacket[0] = 0x5d;
-      abyQuestStatePacket[1] = 10;
-      abyQuestStatePacket[2] = 1;
-      abyQuestStatePacket[3] = 0;
+      abyQuestStatePacket.nExtra = 0;
+      abyQuestStatePacket.nPacketId = ']';
+      abyQuestStatePacket.nQuestId = '\n';
+      abyQuestStatePacket.nAlertFlags = '\x01';
+      abyQuestStatePacket.nFilterStatus = '\0';
       pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q3.cpp", 0x2e0);
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, abyQuestStatePacket);
+      GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, &abyQuestStatePacket);
       return;
     }
 
@@ -811,7 +787,7 @@ void __fastcall Q11_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     ::SGAMEDATA* pGame;
     uint32_t nMsgIndex = (uint32_t)(uint16_t)pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     if (nMsgIndex == 0x15c) {
-      if (pQuestData->bIsNotIntroduction && pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0xb1) {
+      if (pQuestData->bIsNotIntroduction && pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0xb1) {
         if (pQuestData->nStateFlagPrev == 1) {
           pQuestData->nQuestPacketFlags = '\0';
           QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)Q11_NotifyTaintedSunComplete, false);
@@ -885,7 +861,7 @@ void __stdcall Q11_StartDarknessTimer(uint8_t * pQuestData) {
 // clear bAcceptedQuest. On gossip control 0x28: remove player from GUID list and bump stateFlag 2->3. No record reads.
 void __fastcall Q11_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int nLevelIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    D2GossipTextStrc* pSpecificData = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
+    D2GSPacketSrv0x27_TextStrc* pSpecificData = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
     D2QuestDataA2Q3Strc* pGossipControl = pQuestData->pQuestSpecificData.pA2Q3;
     if ((nLevelIndex == 0x2c || nLevelIndex == 0x2d) && !pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
       Q11_StartDarknessTimer((uint8_t*)pQuestData);
@@ -898,7 +874,7 @@ void __fastcall Q11_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         pGossipControl->bViperAmuletInitPending = false;
       }
     }
-    if (pSpecificData != (D2GossipTextStrc*)0x28) {
+    if (pSpecificData != (D2GSPacketSrv0x27_TextStrc*)0x28) {
       return;
     }
 

@@ -31,8 +31,8 @@ struct D2TileCmpTileNodeStrc {
     /* 0x06 */ uint16_t wFlags; // Flags: bit0=transparent, bit13=valid (|=0x2001 in ExtractIsometricSubTile)
     /* 0x08 */ uint16_t wPixelSize; // Size of pixel buffer in bytes (0x600 for full 32x32 sub-tile)
     /* 0x0A */ uint16_t wUnk_0A;
-    /* 0x0C */ uint32_t pPixelBuf; // Pixel data buffer (0x600 bytes, freed by FreeTileNode)
-    /* 0x10 */ uint32_t pNext; // Next node in linked list (chain walked by FreeTileSet)
+    /* 0x0C */ uint8_t * pPixelBuf; // Pixel data buffer (0x600 bytes, freed by FreeTileNode)
+    /* 0x10 */ struct D2TileCmpTileNodeStrc * pNext; // Next node in linked list (chain walked by FreeTileSet)
 };
 
 struct D2TileCmpTileSetListStrc {
@@ -66,7 +66,7 @@ struct __attribute__((packed)) D2TileCmpTileSetStrc {
     /* 0x52 */ uint8_t field_0x52;
     /* 0x53 */ uint8_t field_0x53;
     /* 0x54 */ int nNodeCount; // Number of cached sub-tile nodes (+0x54, incremented by Generate25SubTiles)
-    /* 0x58 */ uint32_t pNodeHead; // Head of sub-tile node linked list (+0x58)
+    /* 0x58 */ struct D2TileCmpTileNodeStrc * pNodeHead; // Head of sub-tile node linked list (+0x58)
     /* 0x5C */ struct D2TileCmpTileSetStrc * pTileSetChain; // Next in tile-set chain (+0x5c, set by AddTileToSet)
 };
 

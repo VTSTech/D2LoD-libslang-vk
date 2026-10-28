@@ -4,10 +4,10 @@
 #include "support/d2_boot.h" // [d2boot]
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/D2ControlStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Message.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Inv.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Multi/OOGUtilities.h"
 #include "D2Sound/Src/D2SoundFast.h"
@@ -35,7 +35,7 @@
 #include "Fog/SMem.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/Storm.h"
+#include "Storm/Storm.h"
 #include "Storm/WindowHandle.h"
 #include "globals/globals.h"
 #include "support/d2_control.h"
@@ -255,7 +255,7 @@ D2ControlStrc * __stdcall FORMS_CreateAnyForm(FORMS_PredefinedFormStrc * pForm) 
     void* pSmack;
     ::D2WinProgressBar* pProgressBar;
     void* pAccountList;
-    DC6* pBackgroundDC6 = !pForm->pDC6 ? 0 : (DC6*)pForm->pDC6->nVersion;
+    DC6* pBackgroundDC6 = !pForm->pDC6 ? 0 : *pForm->pDC6;
     switch (pForm->neD2FormType) {
       case FORM_EditBox:
         pEditBox = D2WinEditBox::D2WinEditBox(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pForm->nExtraParam, pForm->nLabelAsLocaleStringId, pBackgroundDC6, (fpD2WinEditBoxSubmit)pForm->pTypeArg1, pForm->fpOnPressCallback, pForm->nFlagsOrType, (uint32_t*)pForm->pTypeArg2);
@@ -426,8 +426,8 @@ BOOL __stdcall D2WINMAIN_TestMouseInRect(RECT * pRect) {
 
 void __stdcall DrawCursorOOG() {
     // Static local variables (originally global data)
-    static int32_t gnCursorDrawPosX;
-    static uint32_t gnCursorDrawPosY;
+    static int32_t gnCursorDrawPosX; D2_STATIC_GUARD_BSS(gnCursorDrawPosX, "D2Win::Src::D2WinMain::DrawCursorOOG::gnCursorDrawPosX");
+    static uint32_t gnCursorDrawPosY; D2_STATIC_GUARD_BSS(gnCursorDrawPosY, "D2Win::Src::D2WinMain::DrawCursorOOG::gnCursorDrawPosY");
 
     D2GfxDataStrc sGfxData;
     int nMouseY = D2Client::Mouse::nPosY;
@@ -804,8 +804,8 @@ void __stdcall D2WIN_HandleSystemCommand(int32_t nParam) {
 
 void __stdcall D2WIN_HandleActivation(int32_t nParam) {
     // Static local variables (originally global data)
-    static uint32_t gnSavedMusicVolume;
-    static uint32_t gbWindowDeactivated;
+    static uint32_t gnSavedMusicVolume; D2_STATIC_GUARD_BSS(gnSavedMusicVolume, "D2Win::Src::D2WinMain::D2WIN_HandleActivation::gnSavedMusicVolume");
+    static uint32_t gbWindowDeactivated; D2_STATIC_GUARD_BSS(gbWindowDeactivated, "D2Win::Src::D2WinMain::D2WIN_HandleActivation::gbWindowDeactivated");
 
     gbWindowIsActive = (uint32_t)(*(int*)(nParam + 8) != 0);
     if (!*(int*)(nParam + 8)) {
@@ -853,7 +853,7 @@ void __stdcall D2WIN_HandleActivation(int32_t nParam) {
 // straight into JPEG_CORE_PROPERTIES.DIBBytes, so it is the pixel buffer; retyped uint8_t *.
 void __stdcall D2WIN_SaveScreenshotToFile(uint8_t * pDibBytes, LPCSTR szFileName, int32_t nWidth, int32_t nHeight) {
     // Static local variables (originally global data)
-    static uint32_t gnScreenshotSequenceIndex = 0x1;
+    static uint32_t gnScreenshotSequenceIndex = 0x1; D2_STATIC_GUARD(gnScreenshotSequenceIndex, "D2Win::Src::D2WinMain::D2WIN_SaveScreenshotToFile::gnScreenshotSequenceIndex");
 
     LPCSTR lpFileName;
     JPEG_CORE_PROPERTIES jpegProps;
@@ -1167,7 +1167,7 @@ void __stdcall MessagePump(pfnFramePump pfnFrameCallback) {
     uint32_t nBudgetAccum = 0;
     while (gbMessageLoopActive) {
       BOOL hasMessage;
-      D2CONTROL_Pump();   // in-process test channel: applies queued input on THIS thread
+      D2CONTROL_Pump(); D2LOUD_GuardPump();   // in-process test channel: applies queued input on THIS thread; loud build: walks the guard zones
       /* UINT wRemoveMsg for PeekMessageA */ /* UINT wMsgFilterMax for PeekMessageA */ /* UINT wMsgFilterMin for PeekMessageA */ /* HWND hWnd for PeekMessageA */ /* LPMSG lpMsg for PeekMessageA */ hasMessage = PeekMessageA(&windowMsg, (HWND)0x0, 0, 0, 0);
       if (!hasMessage) {
         TickCountA = GetTickCount();

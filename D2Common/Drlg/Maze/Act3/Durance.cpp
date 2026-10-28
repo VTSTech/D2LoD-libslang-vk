@@ -44,7 +44,7 @@ void ReplaceRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_DURA_ENTRY, "D2Common::Drlg::Maze::Act3::Durance::ReplaceRooms::DRLG_DURA_ENTRY");
     static D2DrlgReplaceRoomStrc DRLG_DURA_WAYPOINT[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x2f9,
@@ -70,7 +70,7 @@ void ReplaceRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_DURA_WAYPOINT, "D2Common::Drlg::Maze::Act3::Durance::ReplaceRooms::DRLG_DURA_WAYPOINT");
     static D2DrlgReplaceRoomStrc DRLG_DURA_EXIT[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x2f9,
@@ -96,7 +96,7 @@ void ReplaceRooms(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(DRLG_DURA_EXIT, "D2Common::Drlg::Maze::Act3::Durance::ReplaceRooms::DRLG_DURA_EXIT");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
     pLevel->sSeed = DVar1;

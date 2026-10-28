@@ -76,7 +76,7 @@ static RECT gWindowRect = {
     /* .top = */ 0,
     /* .right = */ 0,
     /* .bottom = */ 0
-};
+}; D2_STATIC_GUARD(gWindowRect, "D2Win::D2GFX::D2GFX_SetVideoMode::gWindowRect");
 
     if (!gnResolutionMode && !gWindowRect.right) {
       HWND hWndResult;

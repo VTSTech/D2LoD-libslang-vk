@@ -324,37 +324,36 @@ char * __stdcall NET_GetLocalIp() {
     SOCKET hSocket;
     int nNameLen;
     WSADATA wsaData;
-    sockaddr connectAddr;
-    uint8_t sLocalSockAddr[4];
-    _union_1226 uLocalInAddr;
+    sockaddr_in connectAddr;
+    sockaddr_in sLocalSockAddr;
     char szHostName[256];
     uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    /* LPWSADATA lpWSAData for WSAStartup */ /* WORD wVersionRequired for WSAStartup */ uLocalInAddr.S_addr = 0;
+    /* LPWSADATA lpWSAData for WSAStartup */ /* WORD wVersionRequired for WSAStartup */ sLocalSockAddr.sin_addr = 0;
     WSAStartup(0x101, &wsaData);
     int nResult = gethostname(szHostName, 0x100);
     /* char * name for gethostbyname */ if (nResult != -1) {
       pHostEnt = gethostbyname(szHostName);
       if (pHostEnt) {
-        uLocalInAddr = (_union_1226)*(_union_1226*)&((_union_1226*)*pHostEnt->h_addr_list)->S_un_b;
+        sLocalSockAddr.sin_addr = *(uint32_t*)*pHostEnt->h_addr_list;
       }
     }
-    /* int protocol for socket */ /* int type for socket */ /* int af for socket */ if (!uLocalInAddr.S_addr) {
+    /* int protocol for socket */ /* int type for socket */ /* int af for socket */ if (!sLocalSockAddr.sin_addr) {
       hSocket = socket(2, 2, 0);
       if (hSocket != -1) {
-        /* u_short netshort for ntohs */ connectAddr.sa_family = 2;
-        *(uint16_t*)(char*)&connectAddr.sa_data = ntohs(7);
-        /* char * cp for inet_addr */ *(uint32_t*)((char*)&connectAddr.sa_data + 2) = inet_addr("24.105.29.30");
-        /* int namelen for connect */ /* sockaddr * name for connect */ /* SOCKET s for connect */ nResult = connect(hSocket, &connectAddr, 0x10);
+        /* u_short netshort for ntohs */ connectAddr.sin_family = 2;
+        connectAddr.sin_port = ntohs(7);
+        /* char * cp for inet_addr */ connectAddr.sin_addr = inet_addr("24.105.29.30");
+        /* int namelen for connect */ /* sockaddr * name for connect */ /* SOCKET s for connect */ nResult = connect(hSocket, (sockaddr*)&connectAddr, 0x10);
         if (nResult != -1) {
           /* int * namelen for getsockname */ /* sockaddr * name for getsockname */ /* SOCKET s for getsockname */ nNameLen = 0x10;
-          getsockname(hSocket, (sockaddr*)sLocalSockAddr, &nNameLen);
+          getsockname(hSocket, (sockaddr*)&sLocalSockAddr, &nNameLen);
         }
 
         /* SOCKET s for closesocket */ closesocket(hSocket);
       }
     }
 
-    char* pcVar3 = inet_ntoa((in_addr)uLocalInAddr.S_un_b);
+    char* pcVar3 = inet_ntoa((in_addr)sLocalSockAddr.sin_addr);
     sprintf(cp_0075d040, "%s", pcVar3);
     WSACleanup();
     Debug::GuardStack();
@@ -396,7 +395,7 @@ char * __fastcall NET_MakeIPV4AddressHumanFriendly(in_addr sAddr) {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(szIPV4Address, "Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly::szIPV4Address");
 
     char cChar;
     char* pSrc = inet_ntoa(sAddr);

@@ -75,6 +75,7 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/ITEMS/ItemMods.h"
@@ -439,7 +440,7 @@ void __stdcall DAMAGE_ApplyCold(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc *
     bool _bCanShatter;
     bool bCanShatter;
     eD2UnitType eUnitType;
-    D2StatListExStrc* pExistingColdList;
+    int pExistingColdList;
     int32_t nAttackerGUID;
     int local_8;
     int32_t nMonClassId;
@@ -490,7 +491,7 @@ void __stdcall DAMAGE_ApplyCold(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc *
       D2Common::Units::UpdateAnimSpeed(pUnit2, ".\\UNIT\\SUnitDmg.cpp", 0x1dc);
     } else {
       pExistingColdList = D2Common::Stats::StatsEx::STATLIST_GetFullListFromStatList(pColdStatList);
-      if ((int)pExistingColdList < nExpireFrame) {
+      if (pExistingColdList < nExpireFrame) {
         D2Common::Stats::StatsEx::SetTimeout_WithFlag(pColdStatList, nExpireFrame);
         GAME::Event::SetEvent(pGame, pUnit2, 0xc, nExpireFrame, 0, 0);
       }
@@ -590,7 +591,7 @@ void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc
       D2Common::Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit2, pFreezeStatList, 1);
       nFreezeDelay = nFreezeExpireFrame;
     } else {
-      nFreezeDelay = (int32_t)D2Common::Stats::StatsEx::STATLIST_GetFullListFromStatList(pFreezeStatList);
+      nFreezeDelay = D2Common::Stats::StatsEx::STATLIST_GetFullListFromStatList(pFreezeStatList);
       if (nFreezeDelay < nFreezeExpireFrame) {
         D2Common::Stats::StatsEx::SetTimeout_WithFlag(pFreezeStatList, nFreezeExpireFrame);
         nFreezeDelay = nFreezeExpireFrame;
@@ -1154,11 +1155,11 @@ int32_t __stdcall DAMAGE_ApplyElementalDamageWithResist(D2DamageContext * pCtx, 
       nReducedDmg = D2Client::Stats::D2ApplyPercent(nReducedDmg, 100 - nResist, 100);
     }
 
-    nullsub_7Arg(pCtx->pDefender, nIncomingDmg, nResist, pCtx->anDamageReduction[pEntry->nDisplayIndex], nReducedDmg, pEntry->nEventId, (uint32_t)(uint8_t)pEntry->field_28);
+    nullsub_7Arg(pCtx->pDefender, nIncomingDmg, nResist, pCtx->anDamageReduction[pEntry->nDisplayIndex], nReducedDmg, (uint32_t)pEntry->nEventId, (uint32_t)(uint8_t)pEntry->field_28);
     int32_t nAbsorbed = nReducedDmg;
     if (!bBypass) {
       nAbsorbed = DAMAGE_AbsorbDamageByPercent(pCtx, pEntry, nReducedDmg);
-      nullsub_B(pCtx->pDefender, nReducedDmg - nAbsorbed, pEntry->nEventId);
+      nullsub_B(pCtx->pDefender, nReducedDmg - nAbsorbed, (uint32_t)pEntry->nEventId);
     }
 
     *(int32_t*)pDmgField = nAbsorbed;
@@ -1295,7 +1296,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x1,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ 0x6e1664,
+        /* .nEventId = */ (char *)0x006e1664,
         0x8
     },
     {
@@ -1308,7 +1309,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x2,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ 0x6e165c,
+        /* .nEventId = */ s_Fire_006e165c,
         0x8
     },
     {
@@ -1321,7 +1322,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x2,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ 0x6e1654,
+        /* .nEventId = */ (char *)0x006e1654,
         0x8
     },
     {
@@ -1334,7 +1335,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x2,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ 0x6e164c,
+        /* .nEventId = */ s_Cold_006e164c,
         0x8
     },
     {
@@ -1347,7 +1348,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x2,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ 0x6e1644,
+        /* .nEventId = */ (char *)0x006e1644,
         0x8
     },
     {
@@ -1360,7 +1361,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x0,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x0,
-        /* .nEventId = */ 0x6e163c,
+        /* .nEventId = */ s_CLen_006e163c,
         0x0
     },
     {
@@ -1373,7 +1374,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x0,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x0,
-        /* .nEventId = */ 0x6e1634,
+        /* .nEventId = */ s_FLen_006e1634,
         0x0
     },
     {
@@ -1386,7 +1387,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x0,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x0,
-        /* .nEventId = */ 0x6e162c,
+        /* .nEventId = */ s_PLen_006e162c,
         0x0
     },
     {
@@ -1399,7 +1400,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x0,
         /* .nFlag7 = */ 0x0,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ 0x6e1624,
+        /* .nEventId = */ (char *)0x006e1624,
         0x0
     },
     {
@@ -1412,7 +1413,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x0,
         /* .nFlag7 = */ 0x1,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ 0x6e161c,
+        /* .nEventId = */ (char *)0x006e161c,
         0x8
     },
     {
@@ -1425,7 +1426,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x0,
         /* .nFlag7 = */ 0x1,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ 0x6e1614,
+        /* .nEventId = */ s_Mana_006e1614,
         0x8
     },
     {
@@ -1438,10 +1439,10 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
         /* .nDisplayIndex = */ 0x0,
         /* .nFlag7 = */ 0x1,
         /* .nEnabled = */ 0x1,
-        /* .nEventId = */ 0x6e160c,
+        /* .nEventId = */ (char *)0x006e160c,
         0x8
     }
-};
+}; D2_STATIC_GUARD(gaDefenseReductionTable, "D2Game::UNIT::SUnitDmg::DAMAGE_ApplyDefensiveReduction::gaDefenseReductionTable");
 
     uint32_t nMercType;
     BOOL BVar1;
@@ -2112,8 +2113,8 @@ uint32_t DAMAGE_GetElementalDamageTypeFlags(uint32_t nParam, int32_t nParam2) {
     0x40,
     0x28,
     0x50
-};
-    static uint8_t gnElementalDamageTypeCallCount;
+}; D2_STATIC_GUARD(gaDamageTypeStatOffsets, "D2Game::UNIT::SUnitDmg::DAMAGE_GetElementalDamageTypeFlags::gaDamageTypeStatOffsets");
+    static uint8_t gnElementalDamageTypeCallCount; D2_STATIC_GUARD_BSS(gnElementalDamageTypeCallCount, "D2Game::UNIT::SUnitDmg::DAMAGE_GetElementalDamageTypeFlags::gnElementalDamageTypeCallCount");
 
     uint32_t uDmgTypeFlags = 0;
     uint32_t uDmgTypeIdx = gnElementalDamageTypeCallCount & 0x80000003;
@@ -2433,8 +2434,8 @@ void __stdcall DAMAGE_ReduceEquipmentDurability(::SGAMEDATA * pGame, D2UnitStrc 
     0x2,
     0xa,
     0x2
-};
-    static uint32_t gnArmorBodyLocCount = 0x7;
+}; D2_STATIC_GUARD(gaArmorDurabilityWeights, "D2Game::UNIT::SUnitDmg::DAMAGE_ReduceEquipmentDurability::gaArmorDurabilityWeights");
+    static uint32_t gnArmorBodyLocCount = 0x7; D2_STATIC_GUARD(gnArmorBodyLocCount, "D2Game::UNIT::SUnitDmg::DAMAGE_ReduceEquipmentDurability::gnArmorBodyLocCount");
 
     D2UnitStrc* pArmorUnit = pUnit;
     D2UnitStrc* pUnitResult;
@@ -2975,11 +2976,11 @@ uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, D2UnitStrc 
 }
 
 // Applies missile hit damage to all units within nRadius of (nCenterX,nCenterY) that pass targeting checks. Builds a UnitFind result set (flags nUnitFlags, default 0x583), skips the owner and owner-owner unless bHitOwner/bHitOwnerOwner are set, requires line-of-sight (COLLISION_LOS), optionally filters through pfnProc callback, then calls MISSMODE_ApplyMissileHitDamage for each hit. Returns 1 if any unit was hit, 0 otherwise.
-void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, int * pnParam, BOOL bHitOwner, BOOL bHitOwnerOwner, pfnAoEDamageFilter pfnProc, int32_t nUnitFlags) {
+void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, D2DamageStrc * pDamage, BOOL bHitOwner, BOOL bHitOwnerOwner, pfnAoEDamageFilter pfnProc, int32_t nUnitFlags) {
     BOOL bBadCodePtr;
     int32_t iVar1;
     int nCopyIdx;
-    int* pDmgSrc;
+    D2DamageStrc* pDmgSrc;
     D2DamageStrc* pDmgDst;
     D2DamageStrc sDamage;
     D2UnitFindArgStrc sUnitFindArg;
@@ -2999,7 +3000,7 @@ void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, D2UnitStrc *
     sUnitFindArg.nY = nCenterY;
     sUnitFindArg.nX = nCenterX;
     sUnitFindArg.nFlags = nUnitFlags;
-    D2Common::Units::UnitFinds::InitializeUnitFindData((::SGAMEDATA*)pGame->pMemoryPool, &sUnitFindData, pBestRoom, nCenterX, nCenterY, nRadius, nullptr, &sUnitFindArg);
+    D2Common::Units::UnitFinds::InitializeUnitFindData(pGame->pMemoryPool, &sUnitFindData, pBestRoom, nCenterX, nCenterY, nRadius, nullptr, &sUnitFindArg);
     D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&sUnitFindData);
     D2UnitStrc* pUnit_00 = SUnit::GetOwnerUnit(pGame, pUnit);
     if (!pUnit_00) {
@@ -3018,11 +3019,11 @@ void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, D2UnitStrc *
           if (bCanAttack) {
             bCanAttack = D2Common::Skills::SKILLS_HasLineOfSightToUnit(nCenterX, nCenterY, sUnitFindData.pUnitsArray->aFoundUnitsList[nUnitIdx], 0x805);
             if (bCanAttack) {
-              pDmgSrc = pnParam;
+              pDmgSrc = pDamage;
               pDmgDst = &sDamage;
               for (nCopyIdx = 0x1c; nCopyIdx; nCopyIdx--) {
-                pDmgDst->dwHitFlags = *pDmgSrc;
-                pDmgSrc++;
+                pDmgDst->dwHitFlags = pDmgSrc->dwHitFlags;
+                pDmgSrc = (D2DamageStrc*)&pDmgSrc->wResultFlags;
                 pDmgDst = (D2DamageStrc*)&pDmgDst->wResultFlags;
               }
 
@@ -3082,7 +3083,7 @@ int32_t EXPERIENCE_ApplyLevelDiffPenaulty(int32_t nExperience, int32_t nDefender
     0x6e,
     0x3d,
     0xd
-};
+}; D2_STATIC_GUARD(gaExperiencePenaultyHigherDefender, "D2Game::UNIT::SUnitDmg::EXPERIENCE_ApplyLevelDiffPenaulty::gaExperiencePenaultyHigherDefender");
     static int gaExperiencePenaultyHigherAttacker[11] = {
     0x100,
     0x100,
@@ -3095,7 +3096,7 @@ int32_t EXPERIENCE_ApplyLevelDiffPenaulty(int32_t nExperience, int32_t nDefender
     0x5c,
     0x26,
     0x5
-};
+}; D2_STATIC_GUARD(gaExperiencePenaultyHigherAttacker, "D2Game::UNIT::SUnitDmg::EXPERIENCE_ApplyLevelDiffPenaulty::gaExperiencePenaultyHigherAttacker");
 
     int nLevelDifference2;
     int nLevelDifference;

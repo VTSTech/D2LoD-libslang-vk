@@ -9,62 +9,11 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2MPQFileStrc;
-struct D2PoolManagerStrc;
+struct D2ClientSoundChannelStrc;
 struct D2SoundChannelStrc;
 struct D2UnitStrc;
-struct IDirectSoundBuffer;
-#ifndef RECON_FPTD_DS3DB_SetMaxDistance
-#define RECON_FPTD_DS3DB_SetMaxDistance
-typedef HRESULT (__stdcall *DS3DB_SetMaxDistance)(void * This, float flMaxDistance, DWORD dwApply);
-#endif
-#ifndef RECON_FPTD_DS3DB_SetMinDistance
-#define RECON_FPTD_DS3DB_SetMinDistance
-typedef HRESULT (__stdcall *DS3DB_SetMinDistance)(void * This, float flMinDistance, DWORD dwApply);
-#endif
-#ifndef RECON_FPTD_DS3DB_SetPosition
-#define RECON_FPTD_DS3DB_SetPosition
-typedef HRESULT (__stdcall *DS3DB_SetPosition)(void * This, float x, float y, float z, DWORD dwApply);
-#endif
-#ifndef RECON_FPTD_IUnknown_AddRef
-#define RECON_FPTD_IUnknown_AddRef
-typedef ULONG (__stdcall *IUnknown_AddRef)(void * This);
-#endif
-#ifndef RECON_FPTD_IUnknown_QueryInterface
-#define RECON_FPTD_IUnknown_QueryInterface
-typedef HRESULT (__stdcall *IUnknown_QueryInterface)(void * This, GUID * riid, void * * ppvObject);
-#endif
-#ifndef RECON_FPTD_IUnknown_Release
-#define RECON_FPTD_IUnknown_Release
-typedef ULONG (__stdcall *IUnknown_Release)(void * This);
-#endif
-#ifndef RECON_FPTD_KSPS_QuerySupport
-#define RECON_FPTD_KSPS_QuerySupport
-typedef HRESULT (__stdcall *KSPS_QuerySupport)(void * This, void * rguidPropSet, ULONG ulId, ULONG * pulTypeSupport);
-#endif
-#ifndef RECON_FPTD_KSPS_Set
-#define RECON_FPTD_KSPS_Set
-typedef HRESULT (__stdcall *KSPS_Set)(void * This, void * rguidPropSet, ULONG ulId, void * pInstanceData, ULONG ulInstanceLength, void * pPropertyData, ULONG ulDataLength);
-#endif
-
-struct D2SoundSmpStrc;
-struct IDirectSound3DBuffer;
-struct IKsPropertySet;
-struct IDirectSound3DBufferVtbl;
-struct IKsPropertySetVtbl;
 
 // Data types
-struct D2ClientSoundChannelStrc {
-    /* 0x00 */ struct D2SoundSmpStrc * pSoundSmp; // sample instance
-    /* 0x04 */ int32_t nChannelType; // 0/1/2/6 speaker-config channel type
-    /* 0x08 */ void * pActiveSound; // active sound request; +4 sound id, +0x2c/+0x30 state, +0x34 priority, +0x41 stream progress
-    /* 0x0C */ uint32_t field_0x0c;
-    /* 0x10 */ uint32_t field_0x10;
-    /* 0x14 */ uint32_t field_0x14;
-    /* 0x18 */ uint32_t field_0x18;
-    /* 0x1C */ uint32_t field_0x1c;
-};
-
 struct D2NpcGreetingSoundsStrc {
     /* 0x00 */ int nGreetingSoundId; // <npc>_greeting_1 (Sounds.txt), the default pick.
     /* 0x04 */ int nInactiveSoundId; // <npc>_greeting_inactive_1, picked 1 in 2 when nMode is 0.
@@ -74,31 +23,20 @@ struct D2NpcGreetingSoundsStrc {
     /* 0x14 */ int nLastRecordingIdx; // gnRecordingIndex() when it was chosen (written [EDI+0x14])
 };
 
-struct D2SoundSmpStrc {
-    /* 0x00 */ struct IDirectSoundBuffer * pDSBuffer; // IDirectSoundBuffer
-    /* 0x04 */ int32_t nBufSize; // total DirectSound buffer size in bytes
-    /* 0x08 */ int32_t nHalfBufSize; // half buffer size
-    /* 0x0C */ struct IDirectSound3DBuffer * pDS3DBuffer; // IDirectSound3DBuffer (stereo only)
-    /* 0x10 */ struct IKsPropertySet * pEaxInterface; // IKsPropertySet (EAX), QI'd from pDS3DBuffer
-    /* 0x14 */ uint8_t * pPcmData; // pointer to PCM source data
-    /* 0x18 */ int32_t nPcmSize; // PCM data size in bytes
-    /* 0x1C */ int32_t bIsPlaying; // non-zero if buffer is currently playing
-    /* 0x20 */ uint32_t field_08; // unknown
-    /* 0x24 */ int32_t nWritePos; // current write position
-    /* 0x28 */ int32_t bLoaded; // non-zero if wav data loaded into buffer
-    /* 0x2C */ int32_t bAtEnd; // non-zero if playback reached end
-    /* 0x30 */ int32_t nLoopEnd; // loop end offset (0xFFFFFFFF = no loop)
-    /* 0x34 */ int32_t dwFlags; // creation flags (bit0=stereo, bit1=3D, bit2=EAX)
-    /* 0x38 */ int32_t nVolume; // current volume level
-    /* 0x3C */ uint32_t fEaxObstruction; // EAX obstruction level (float). SOUNDSMP_SetEaxObstruction stores fParam here and, at EAX quality 2, sets gEAXPropertyGuid_Obstruction with (1.0-fParam) clamped 0..1; SOUNDSMP_SetVolume attenuates by (1 - this)
-    /* 0x40 */ int bLooping; // was pDS3DBufferAlt; never called through - zeroed by SOUNDSMP_Reset, gates write-pos wraparound in SOUNDSMP_WriteToBuffer
-    /* 0x44 */ int32_t nMinBufSize; // minimum buffer size threshold
-    /* 0x48 */ struct D2MPQFileStrc * pStreamFile; // SFile async-stream handle; SFILE_CancelAsyncRequestsForHandle/CloseFileWrapper/GetStreamInfo
-    /* 0x4C */ uint32_t field_0x4c; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
-    /* 0x50 */ uint32_t field_0x50; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
-    /* 0x54 */ uint32_t field_0x54; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
-    /* 0x58 */ uint32_t field_0x58; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
-    /* 0x5C */ uint32_t field_0x5c; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
+struct D2SoundEaxEnvironStrc {
+    /* 0x00 */ int32_t nEnvironment;
+    /* 0x04 */ float fEnvSize;
+    /* 0x08 */ float fEnvDiffusion;
+    /* 0x0C */ int32_t nRoom;
+    /* 0x10 */ int32_t nRoomHF;
+    /* 0x14 */ float fDecayTime;
+    /* 0x18 */ float fDecayHFRatio;
+    /* 0x1C */ int32_t nReflections;
+    /* 0x20 */ float fReflectionsDelay;
+    /* 0x24 */ int32_t nReverb;
+    /* 0x28 */ float fReverbDelay;
+    /* 0x2C */ float fRoomRolloff;
+    /* 0x30 */ float fAirAbsorptionHF;
 };
 
 struct D2SoundStringKeyStrc {
@@ -109,47 +47,6 @@ struct D2SoundStringKeyStrc {
 
     /* 0x00 */ uint16_t nSoundId;
     /* 0x02 */ uint16_t nStringKey;
-};
-
-struct IDirectSound3DBuffer {
-    /* 0x00 */ struct IDirectSound3DBufferVtbl * lpVtbl;
-};
-
-struct IDirectSound3DBufferVtbl {
-    /* 0x00 */ HRESULT (__stdcall *QueryInterface)(void *, GUID *, void * *);
-    /* 0x04 */ ULONG (__stdcall *AddRef)(void *);
-    /* 0x08 */ ULONG (__stdcall *Release)(void *);
-    /* 0x0C */ void * GetAllParameters;
-    /* 0x10 */ void * GetConeAngles;
-    /* 0x14 */ void * GetConeOrientation;
-    /* 0x18 */ void * GetConeOutsideVolume;
-    /* 0x1C */ void * GetMaxDistance;
-    /* 0x20 */ void * GetMinDistance;
-    /* 0x24 */ void * GetMode;
-    /* 0x28 */ void * GetPosition;
-    /* 0x2C */ void * GetVelocity;
-    /* 0x30 */ void * SetAllParameters;
-    /* 0x34 */ void * SetConeAngles;
-    /* 0x38 */ void * SetConeOrientation;
-    /* 0x3C */ void * SetConeOutsideVolume;
-    /* 0x40 */ HRESULT (__stdcall *SetMaxDistance)(void *, float, DWORD);
-    /* 0x44 */ HRESULT (__stdcall *SetMinDistance)(void *, float, DWORD);
-    /* 0x48 */ void * SetMode;
-    /* 0x4C */ HRESULT (__stdcall *SetPosition)(void *, float, float, float, DWORD);
-    /* 0x50 */ void * SetVelocity;
-};
-
-struct IKsPropertySet {
-    /* 0x00 */ struct IKsPropertySetVtbl * lpVtbl;
-};
-
-struct IKsPropertySetVtbl {
-    /* 0x00 */ HRESULT (__stdcall *QueryInterface)(void *, GUID *, void * *);
-    /* 0x04 */ ULONG (__stdcall *AddRef)(void *);
-    /* 0x08 */ ULONG (__stdcall *Release)(void *);
-    /* 0x0C */ void * Get;
-    /* 0x10 */ HRESULT (__stdcall *Set)(void *, void *, ULONG, void *, ULONG, void *, ULONG);
-    /* 0x14 */ HRESULT (__stdcall *QuerySupport)(void *, void *, ULONG, ULONG *);
 };
 
 namespace D2Client::GAME::Sound {
@@ -165,12 +62,12 @@ void __fastcall SOUND_ParseStreamWavHeader(int32_t pSoundStream);
 void __fastcall SOUND_SetEaxEnvironment(int32_t nEnvId);
 uint32_t __fastcall SOUND_MatchesSoundId(int32_t pSoundEntry, int32_t nSoundId);
 void __fastcall SOUND_DetachUnit(int32_t pSoundEntry);
-void __fastcall SOUND_StopAndDetach(int * * ppnParam);
+void __fastcall SOUND_StopAndDetach(struct D2ClientSoundChannelStrc * ppnParam);
 void __stdcall CleanUpGame();
 BOOL __stdcall SOUND_IsInitialized();
 BOOL __stdcall SOUND_IsInitializedDup();
 void __stdcall SOUND_UpdateNonLoopingStreams();
-uint32_t __fastcall SOUND_GetStreamProgress(int * pnParam);
+uint32_t __fastcall SOUND_GetStreamProgress(struct D2ClientSoundChannelStrc * pnParam);
 BOOL __stdcall SOUND_Is3DMixerActive();
 uint32_t __stdcall SOUND_IsEaxMixerActive();
 // Body continues at 004df9e6, the JNZ target of 004df9de - a branch, not a call. Ghidra had a CALL_RETURN flow override there and a separate function named 'SOUND_FindPlayingById'; that made EBP look like a parameter and turned this frame's locals into wild pointers.
@@ -181,7 +78,7 @@ void __stdcall SOUND_ShutdownAudio();
 // Initialises the audio mixer's streaming sample channels. Returns 0 immediately if the speaker config is unset, or halts if a mixer is already active. Allocates up to 8 channel slots: the first 4 are always type 1 (music), slots 4+ are type 2 (stereo) if nParam==1, type 6 (surround) if nParam==2, or type 0 otherwise. On success initialises EAX to environment 0 and sets pAudioMixerInterface; on failure calls SOUND_ShutdownAudio and returns 0.
 BOOL SOUND_InitStreamChannels(int32_t nParam);
 // Finds a free or preemptable sound channel for playback. First scans the global sound instance pool for a channel matching pnParam (sound type/category) that is not currently playing and has no active sound. If none found, scans for the best occupied channel that can be preempted via SOUND_IsChannelAvailable; if preemptable, stops the current sample, saves its stream progress, marks the channel free, and returns it. Returns NULL if no channel is available.
-int * * __stdcall SOUND_FindAvailableChannel(uint32_t nParam, int * pnParam);
+struct D2ClientSoundChannelStrc * __stdcall SOUND_FindAvailableChannel(uint32_t nParam, int pnParam);
 // Recomputes and re-applies a positional sound channel's mixing state (__fastcall, ECX=pSoundChannel). Reads the channel's sound descriptor (pSoundChannel[2]) and its sounds.txt line; halts via Fog::ErrorManager if descriptor is null. Computes effective volume by chaining music/master volume, per-channel left/right multipliers (skipping certain reserved sound-id ranges and Solo lines), and positional bias from the mixer. If the new volume and the descriptor's 3D position (offsets 0xC/0x10/0x14/0x20) match the channel's cached copy (pSoundChannel[3..7]) it returns 0 early (no change); otherwise distance-attenuates volume via falloff min/max, calls SOUNDSMP_CalculateVolumeAndPan/SetPan/Set3DPosition/SetEaxObstruction/SetVolume, caches the new pos+volume into the channel, and returns the descriptor pointer. Side-effects: drives the underlying audio mixer sample.
 int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel);
 BOOL __fastcall SOUND_SetSoundMixer(int32_t nParam);
@@ -189,7 +86,7 @@ BOOL __fastcall SOUND_SetSoundMixer(int32_t nParam);
 void __fastcall SOUND_SetBackgroundSoundsActive(uint32_t bActive);
 void __stdcall SOUND_ShutdownAudio_Thunk();
 // Plays a positioned (panned) sound effect using the game's channel system. Resolves the sound ID (randomizing from a group if flagged), checks for a duplicate already-playing instance, loads the sound file if needed, selects a mono/stereo/EAX channel, sets reverb and frequency, loads WAV data or opens a streaming file, and calls SOUNDSMP_Play/SOUNDSMP_OpenAndStreamFile. Returns the allocated channel slot on success, null on failure or if a duplicate throttle fires.
-struct D2PoolManagerStrc * * __fastcall SOUND_PlaySoundWithPanning(struct D2SoundChannelStrc * pMemory);
+struct D2ClientSoundChannelStrc * __fastcall SOUND_PlaySoundWithPanning(struct D2SoundChannelStrc * pMemory);
 // Returns the unit's greeting sound set &gaNpcGreetingSounds[n] by class id (pUnit+4, nClassId), or NULL if pUnit is NULL or the class has none. The callers pass the interacted NPC or the mercenary; every Cain class (0x92, 0xf4-0xf6, 0x109, 0x208) maps to entry 4.
 // Provenance: 004e0378 MOV EAX,[EAX+4]; record values are Sounds.txt <npc>_greeting_* ids.
 struct D2NpcGreetingSoundsStrc * SOUND_GetNpcGreetingSounds(struct D2UnitStrc * pUnit);

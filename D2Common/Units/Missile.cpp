@@ -30,7 +30,6 @@
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Common/Units.h"
-#include "D2Common/Units/MissileStream.h"
 #include "D2Game/D2MissileDamageDataStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
@@ -48,7 +47,6 @@
 #include "globals/globals.h"
 #include "D2Common/D2Common.h"
 #include "D2Common/ITEMS/ItemMods.h"
-#include "D2Game/Monster/Monsters.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -365,11 +363,11 @@ void __stdcall SetAnimSpeed(D2UnitStrc * pUnit, int32_t nAnimSpeed) {
 }
 
 void __fastcall SetStream(D2UnitStrc * pUnit, D2MissileStreamStrc * pStream) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MISSILE && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MISSILE && pUnit->pUnitData.pUnitDataMissile)) {
       return;
     }
 
-    pUnit->pUnitData.pUnitDataMonster->pMonsterAi = (D2MonsterAiStrc*)pStream;
+    pUnit->pUnitData.pUnitDataMissile->unk0x30 = pStream;
 }
 
 D2MissileStreamStrc * __fastcall GetStream(D2UnitStrc * pUnit) {
@@ -1082,19 +1080,10 @@ uint32_t __stdcall MISSILE_EvalMissileCalc(D2UnitStrc * pMissile, D2UnitStrc * p
         /* .pfnMethod = */ (pfnSkillCalcOp)&D2Common::Units::Missile::GetSpecialParamValueForSkillMissile,
         /* .nArgCount = */ 0x2
     }
-};
-    static int32_t gnMissileCalcMethodCount = 0x4;
+}; D2_STATIC_GUARD(gaMissileCalcMethods, "D2Common::Units::Missile::MISSILE_EvalMissileCalc::gaMissileCalcMethods");
+    static int32_t gnMissileCalcMethodCount = 0x4; D2_STATIC_GUARD(gnMissileCalcMethodCount, "D2Common::Units::Missile::MISSILE_EvalMissileCalc::gnMissileCalcMethodCount");
 
-    // Frame slots -20..-4 are ONE object: &pCalcCtxMissile is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      D2UnitStrc* pCalcCtxMissile;
-      D2UnitStrc* pCalcCtxOwner;
-      int nCalcCtxMissileId;
-      int nCalcCtxMissileLevel;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D2MissileCalcContextStrc sCalcCtx;
     if (pMissile) {
       if (pMissile->eUnitType != UNIT_MISSILE) {
         return 0;
@@ -1114,11 +1103,11 @@ uint32_t __stdcall MISSILE_EvalMissileCalc(D2UnitStrc * pMissile, D2UnitStrc * p
       return 0;
     }
 
-    __frame0.pCalcCtxMissile = pMissile;
-    __frame0.pCalcCtxOwner = pOwner;
-    __frame0.nCalcCtxMissileId = nMissileId;
-    __frame0.nCalcCtxMissileLevel = nMissileLevel;
-    uint32_t nResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pMissCode + nCalcExpression), sgptDataTable->nMissCodeSize - nCalcExpression, (fnSkillCalcMethod)MISSILE_CalcVMCallback_GetSpecialParam, gaMissileCalcMethods, gnMissileCalcMethodCount, &__frame0.pCalcCtxMissile);
+    sCalcCtx.pMissile = pMissile;
+    sCalcCtx.pOwner = pOwner;
+    sCalcCtx.nMissileId = nMissileId;
+    sCalcCtx.nMissileLevel = nMissileLevel;
+    uint32_t nResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pMissCode + nCalcExpression), sgptDataTable->nMissCodeSize - nCalcExpression, (fnSkillCalcMethod)MISSILE_CalcVMCallback_GetSpecialParam, gaMissileCalcMethods, gnMissileCalcMethodCount, &sCalcCtx);
     return nResult;
 }
 
@@ -1126,10 +1115,11 @@ uint32_t __stdcall MISSILE_EvalMissileCalc(D2UnitStrc * pMissile, D2UnitStrc * p
 void __stdcall EvaluateMissileFormula(D2MissileDamageDataStrc * pMissileDamageData, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, D2UnitStrc * pMissile, int32_t nParam) {
     bool _bHasBonusStats;
     bool bHasBonusStats;
-    D2UnitStrc* nElemMinDmg;
+    int32_t nElemMinDmg;
     int32_t nMasteryElemMin;
     int32_t nMasteryElemMax;
     D2SkillsTxt* pSkillTxt;
+    D2UnitStrc* pDVar2;
     int nStatVal;
     uint32_t nMercType;
     uint32_t nMercTypeCheck;
@@ -1165,14 +1155,15 @@ void __stdcall EvaluateMissileFormula(D2MissileDamageDataStrc * pMissileDamageDa
       nCalcMinDmg = GetMinDamage(pMissile, pUnit, nMissileId, nParam);
       nCalcMaxDmg = GetMaxDamage(pMissile, pUnit, nMissileId, nParam);
       nElemType = (eD2ElementalDamageTypeDWORD)(uint8_t)pMissileTxt->EType;
-      nElemMinDmg = (D2UnitStrc*)GetMinElemDamage(pMissile, pUnit, nMissileId, nParam);
+      nElemMinDmg = GetMinElemDamage(pMissile, pUnit, nMissileId, nParam);
       nElemMaxDmg = GetMaxElemDamage(pMissile, pUnit, nMissileId, nParam);
       nElemLength = GetElementalLength((int32_t)pMissile, pUnit, nMissileId, nParam);
+      pDVar2 = (D2UnitStrc*)nElemMinDmg;
       if (pMissileTxt->ApplyMastery) {
-        nMasteryElemMin = CalculateMasteryBonus(pUnit, nElemType, (int32_t)nElemMinDmg);
+        nMasteryElemMin = CalculateMasteryBonus(pUnit, nElemType, nElemMinDmg);
         nMasteryElemMax = CalculateMasteryBonus(pUnit, nElemType, nElemMaxDmg);
         nElemMaxDmg += nMasteryElemMax;
-        nElemMinDmg = (D2UnitStrc*)(nElemMinDmg->unk0x19 + nMasteryElemMin - 0x19);
+        pDVar2 = (D2UnitStrc*)(nElemMinDmg + nMasteryElemMin);
       }
     } else {
       nSkillId = (int)sVar1;
@@ -1197,12 +1188,12 @@ void __stdcall EvaluateMissileFormula(D2MissileDamageDataStrc * pMissileDamageDa
       nCalcMinDmg = Skills::SKILL_CalcMinDamage(pUnit, nSkillId, nParam, 0);
       nCalcMaxDmg = Skills::SKILL_CalcMaxDamage(pUnit, nSkillId, nParam, 0);
       nElemType = (eD2ElementalDamageTypeDWORD)pSkillTxt->EType;
-      nElemMinDmg = (D2UnitStrc*)Skills::SERVER_MinDamage(pUnit, nSkillId, nParam, 1);
+      pDVar2 = (D2UnitStrc*)Skills::SERVER_MinDamage(pUnit, nSkillId, nParam, 1);
       nElemMaxDmg = Skills::SERVER_MaxDamage(pUnit, nSkillId, nParam, 1);
       nElemLength = Skills::SERVER_Synergy1(pUnit, nSkillId, nParam, 1);
     }
 
-    int nUnit = (int)nElemMinDmg;
+    int nUnit = (int)pDVar2;
     if (pMissileTxt->Holy & 1U) {
       pMissileDamageData->nFlags |= 0x100;
     }

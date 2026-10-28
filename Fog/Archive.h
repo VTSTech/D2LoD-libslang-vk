@@ -20,7 +20,7 @@ namespace Fog::Archive {
 
 // Function declarations
 // @sourcefile .\SRC\Archive.cpp
-void * __fastcall D2FILE_AllocAndLoadD2File(struct D2PoolManagerStrc * pMemory, char * szFilename, size_t * pSize, char * szFile, int32_t nLine);
+void * __fastcall D2FILE_AllocAndLoadD2File(struct D2PoolManagerStrc * pMemory, char * szFilename, uint32_t * pSize, char * szFile, int32_t nLine);
 int __stdcall FindMPQOnCd(char * pszMpqName, int * pnPriority, int * * ppArchive, LPSTR szText);
 int * __stdcall FindMpqFromDiskOrCd(char * pszMpqName, int * pnPriority, int * ppArchive, LPSTR szText);
 // @sourcefile .\SRC\Archive.cpp

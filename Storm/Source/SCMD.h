@@ -12,7 +12,6 @@
 // Forward declarations
 struct D2GameNpcStrc;
 struct D2StormListHead;
-struct D2UnitDataClientSide;
 struct D2UnitDataMonsterStrc;
 struct SCMD;
 #ifndef RECON_FPTD_SCMDCALLBACK
@@ -65,7 +64,7 @@ void __stdcall SCMD_ConvertNumber(struct D2UnitDataMonsterStrc * cmdDef, char * 
 // @blizzard ConvertString (SCMD.CPP)
 void __stdcall SCMD_ConvertString(char * str, struct D2UnitDataMonsterStrc * cmdDef, uint32_t * outConsumed);
 // @blizzard GenerateError (SCMD.CPP)
-void __stdcall SCMD_GenerateError(uint32_t errorCode, pfnSCmdErrorCallback pfnCallback);
+void __stdcall SCMD_GenerateError(uint32_t errorCode, pfnSCmdErrorCallback pfnCallback, char * szItem);
 // @blizzard ProcessFile (SCMD.CPP)
 BOOL __stdcall SCMD_ProcessFile(char * filename, int * pnParam, uint32_t dwParam, pfnSCmdUnknownArgCallback pfnCallback, pfnSCmdErrorCallback pfnErrorCallback);
 uint32_t SCMD_GetListOffset(::SCMD * pThis, int nBaseOffset);
@@ -74,7 +73,7 @@ void SCMD_MoveToList(::SCMD * pThis, ::SCMD * pNode, int nParam, ::SCMD * pScmd)
 uint32_t SCMD_GetNextOffset(::SCMD * pThis, ::SCMD * pNode);
 void SCMD_UnlinkNode(::SCMD * pThis, ::SCMD * pNode);
 // @blizzard FindFlagDef (SCMD.CPP)
-int __stdcall SCMD_FindFlagDef(struct D2UnitDataClientSide * cmdList, char * str, int minLen);
+struct StormCmdArgDefStrc * __stdcall SCMD_FindFlagDef(struct StormCmdArgDefStrc * cmdList, char * str, int minLen);
 uint32_t SCMD_GetHandler(::SCMD * pThis, int nNodeOffset);
 void __fastcall SCMD_ClearList(struct D2StormListHead * nListPtr);
 void __fastcall SCMD_ClearAll(struct D2StormListHead * nListPtr);
@@ -91,7 +90,7 @@ uint32_t SCMD_RemoveNode(::SCMD * pThis, ::SCMD * pNode);
 // @blizzard PerformConversion (SCMD.CPP)
 BOOL __fastcall SCMD_PerformConversion(char * str, struct StormCmdArgDefStrc * cmdDef, int * outConsumed);
 // @blizzard ProcessCurrentFlag (SCMD.CPP)
-BOOL SCMD_ProcessCurrentFlag(int pCmdCtx, char * szArgLine, int * outConsumed);
+BOOL SCMD_ProcessCurrentFlag(int * * pCmdCtx, char * szArgLine, int * outConsumed);
 // @blizzard ProcessFlags (SCMD.CPP)
 BOOL __fastcall SCMD_ProcessFlags(pfnSCmdErrorCallback pfnErrorCallback, char * szText, int * pnOutConsumed);
 // @blizzard ProcessToken (SCMD.CPP)

@@ -35,7 +35,7 @@ void __fastcall BuildJungle(D2DrlgLevelStrc * pLevel) {
     { 0x1, 0x2, 0x0 },
     { 0x2, 0x0, 0x1 },
     { 0x2, 0x1, 0x0 }
-};
+}; D2_STATIC_GUARD(gaOutJungSpecialPresetRandOffsets, "D2Common::Drlg::OutJung::BuildJungle::gaOutJungSpecialPresetRandOffsets");
 
     int nLevelPrestId;
     int nRand;

@@ -136,29 +136,29 @@ int32_t __stdcall STATLIST_BinarySearchStatInfoArray(int32_t nParam, D2StatInfoS
     return nLo;
 }
 
-int __stdcall STATLIST_InsertStatIntoArray(void * * pParam, int32_t nParam, D2StatListExStrc * pStatList) {
-    void* pReallocBuf;
+D2StatStrc * __stdcall STATLIST_InsertStatIntoArray(D2StatInfoStrc * pParam, int32_t nParam, D2PoolManagerStrc * pStatList) {
+    D2StatStrc* pReallocBuf;
     int32_t nInsertPos = STATLIST_BinarySearchInsertPos(nParam, (int*)pParam);
     if (nInsertPos < 0) {
-      return 0;
+      return nullptr;
     }
-    if (*(short int*)((int)pParam + 6) <= *(short int*)(pParam + 1)) {
+    if (pParam->wStatCapacity <= pParam->wStatCount) {
       short int nNewCapacity;
-      nNewCapacity = *(short int*)((int)pParam + 6) + 4;
-      *(short int*)((int)pParam + 6) = nNewCapacity;
-      pReallocBuf = D2_REALLOC_POOL((D2PoolManagerStrc*)pStatList, *pParam, nNewCapacity * 8);
-      *pParam = pReallocBuf;
+      nNewCapacity = pParam->wStatCapacity + 4;
+      pParam->wStatCapacity = nNewCapacity;
+      pReallocBuf = (D2StatStrc*)D2_REALLOC_POOL(pStatList, pParam->pStatInfo, nNewCapacity * 8);
+      pParam->pStatInfo = pReallocBuf;
     }
-    if (nInsertPos < *(short int*)(pParam + 1)) {
-      pReallocBuf = (void*)((int)*pParam + nInsertPos * 8);
-      memmove((void*)((int)pReallocBuf + 8), pReallocBuf, (*(short int*)(pParam + 1) - nInsertPos) * 8);
+    if (nInsertPos < pParam->wStatCount) {
+      memmove(pParam->pStatInfo + nInsertPos + 1, pParam->pStatInfo + nInsertPos, (pParam->wStatCount - nInsertPos) * 8);
     }
 
-    int32_t* pNewEntry = (int32_t*)((int)*pParam + nInsertPos * 8);
-    *pNewEntry = nParam;
-    pNewEntry[1] = 0;
-    (*(short int*)(pParam + 1))++;
-    return (int)pNewEntry;
+    pReallocBuf = pParam->pStatInfo + nInsertPos;
+    pReallocBuf->wSubIndex = (short int)nParam;
+    pReallocBuf->wStatIndex = (short int)((uint32_t)nParam >> 0x10);
+    pReallocBuf->nStatValue = 0;
+    pParam->wStatCount++;
+    return pReallocBuf;
 }
 
 void __stdcall STATLIST_RemoveStatFromArray(D2PoolManagerStrc * pPoolManager1, D2StatStrc * pStat, D2PoolManagerStrc * pPoolManager2, void * * pParam) {
@@ -182,22 +182,20 @@ void __stdcall STATLIST_RemoveStatFromArray(D2PoolManagerStrc * pPoolManager1, D
     *pParam = pReallocBuf;
 }
 
-int32_t STATLIST_BinarySearchChangedInsertPos(D2StatInfoStrc * pStatInfo, int32_t nParam) {
+int32_t STATLIST_BinarySearchChangedInsertPos(D2ChangedStatArrayStrc * pStatInfo, int32_t nParam) {
     int nMid;
-    int nCount = (int)pStatInfo->wStatCount;
+    int nCount = (int)pStatInfo->wCount;
     int nLo = 0;
     if (0 >= nCount) {
       return nLo;
     }
 
     do {
-      int nEntryKey;
       nMid = (nCount - nLo) / 2 + nLo;
-      nEntryKey = *(int*)(&pStatInfo->pStatInfo->wSubIndex + nMid * 2);
-      if (nEntryKey < nParam) {
+      if (pStatInfo->pChangedStatIds[nMid] < nParam) {
         nLo = nMid + 1;
         nMid = nCount;
-      } else if (nEntryKey <= nParam) {
+      } else if (pStatInfo->pChangedStatIds[nMid] <= nParam) {
         return -1;
       }
 
@@ -239,7 +237,7 @@ void __stdcall STATLIST_TrackChangedStat(int32_t nShiftedStat, D2StatListExStrc 
     }
 
     D2ChangedStatArrayStrc* pStatInfo = &pStatEx->sChangedStats;
-    int32_t nInsertPos = STATLIST_BinarySearchChangedInsertPos((D2StatInfoStrc*)pStatInfo, nShiftedStat);
+    int32_t nInsertPos = STATLIST_BinarySearchChangedInsertPos(pStatInfo, nShiftedStat);
     if (nInsertPos < 0) {
       return;
     }
@@ -400,7 +398,7 @@ int32_t __stdcall STATLIST_PropagateStatDelta(int32_t nParam1, int32_t nParam2, 
     D2StatInfoStrc* pParam = &pSkillsTxt->sFullStats;
     long int lVar2 = Logging::STATLIST_BinarySearchStatById(nParam1, (int*)pParam);
     if (lVar2 < 0 || (pStatEntry = pParam->pStatInfo + lVar2 , !pStatEntry)) {
-      pStatEntry = (D2StatStrc*)STATLIST_InsertStatIntoArray((void**)&pParam->pStatInfo, nParam1, (D2StatListExStrc*)pSkillsTxt->sStatList.pMemory);
+      pStatEntry = STATLIST_InsertStatIntoArray(pParam, nParam1, pSkillsTxt->sStatList.pMemory);
     }
 
     int nOldValue = pStatEntry->nStatValue;
@@ -435,7 +433,7 @@ void __stdcall STATLIST_SetFullStatValue(int32_t nParam1, int32_t nParam2, D2Ite
         return;
       }
 
-      pStatEntry = (D2StatStrc*)STATLIST_InsertStatIntoArray((void**)&pParam->pStatInfo, nParam1, (D2StatListExStrc*)pSkillsTxt->sStatList.pMemory);
+      pStatEntry = STATLIST_InsertStatIntoArray(pParam, nParam1, pSkillsTxt->sStatList.pMemory);
     }
 
     int nOldValue = pStatEntry->nStatValue;
@@ -530,12 +528,12 @@ void __stdcall SetTimeout_WithFlag(D2StatListExStrc * pStatList, int32_t nTimeou
     pStatList->sStatList.nTimeout = nTimeout;
 }
 
-D2StatListExStrc * __stdcall STATLIST_GetFullListFromStatList(D2StatListExStrc * pStatList) {
+int __stdcall STATLIST_GetFullListFromStatList(D2StatListExStrc * pStatList) {
     if (pStatList) {
-      return (D2StatListExStrc*)pStatList->sStatList.nTimeout;
+      return pStatList->sStatList.nTimeout;
     }
 
-    return nullptr;
+    return 0;
 }
 
 int32_t __stdcall STATLIST_GetStatFromBaseArray(D2StatListExStrc * pStatList, eD2UnitStat eUnitStat, uint32_t nParam) {
@@ -648,8 +646,9 @@ int32_t __stdcall STATLIST_CalcStatWithPercentBonus(D2StatListExStrc * pStatList
     return nPercentStatValue + nBonusPart + nValue;
 }
 
-void __stdcall UNITS_CalcUnitStatWithPercentBonus(D2UnitStrc * pUnit, eD2UnitStat eUnitStat, eD2UnitStat ePercentStat, int32_t nValue) {
-    STATLIST_CalcStatWithPercentBonus(pUnit->pStatsEx, eUnitStat, ePercentStat, nValue);
+int32_t __stdcall UNITS_CalcUnitStatWithPercentBonus(D2UnitStrc * pUnit, eD2UnitStat eUnitStat, eD2UnitStat ePercentStat, int32_t nValue) {
+    int32_t iVar1 = STATLIST_CalcStatWithPercentBonus(pUnit->pStatsEx, eUnitStat, ePercentStat, nValue);
+    return iVar1;
 }
 
 int32_t __stdcall STATLIST_GetStatValueByIndex(D2StatListExStrc * pStatList, int32_t nIndex) {
@@ -819,7 +818,7 @@ void __stdcall STATLIST_DispatchUnchangedStatToCallback(D2UnitStrc * pUnit, D2Un
       return;
     }
 
-    int32_t nShiftedStatId = STATLIST_BinarySearchChangedInsertPos((D2StatInfoStrc*)&pDVar2->sChangedStats, eUnitStat << 0x10);
+    int32_t nShiftedStatId = STATLIST_BinarySearchChangedInsertPos(&pDVar2->sChangedStats, eUnitStat << 0x10);
     if (nShiftedStatId != -1) {
       return;
     }
@@ -1225,12 +1224,12 @@ int32_t __stdcall STATLIST_GetStatForDamageCalc(D2UnitStrc * pUnit2, D2UnitStrc 
     return nStatValue;
 }
 
-D2StatListExStrc * __stdcall STATLIST_GetFullListPtr(D2StatListExStrc * pStatList) {
+int __stdcall STATLIST_GetFullListPtr(D2StatListExStrc * pStatList) {
     if (pStatList) {
-      return (D2StatListExStrc*)pStatList->sStatList.nTimeout;
+      return pStatList->sStatList.nTimeout;
     }
 
-    return nullptr;
+    return 0;
 }
 
 void __stdcall STATSEX_SetStatListTimeout(D2StatListExStrc * pStatList, int32_t nParam) {
@@ -2092,7 +2091,7 @@ void __stdcall STATLIST_AddStatValue(D2StatListExStrc * pStatsEx, eD2UnitStat eU
     D2StatInfoStrc* pParam = &pStatsEx->sStatList.sBaseStats;
     long int lVar1 = Logging::STATLIST_BinarySearchStatById(nShiftedStat, (int*)pParam);
     if (lVar1 < 0 || (pStatEntry = pParam->pStatInfo + lVar1 , !pStatEntry)) {
-      pStatEntry = (D2StatStrc*)STATLIST_InsertStatIntoArray((void**)&pParam->pStatInfo, nShiftedStat, (D2StatListExStrc*)pStatsEx->sStatList.pMemory);
+      pStatEntry = STATLIST_InsertStatIntoArray(pParam, nShiftedStat, pStatsEx->sStatList.pMemory);
     }
 
     int* pnBaseStatValue = &pStatEntry->nStatValue;
@@ -2127,7 +2126,7 @@ BOOL __stdcall STATLIST_SetStatValue(D2StatListExStrc * pStatEx, eD2UnitStat eUn
         return 0;
       }
 
-      pStatEntry = (D2StatStrc*)STATLIST_InsertStatIntoArray((void**)&pParam->pStatInfo, nShiftedStat, (D2StatListExStrc*)pStatEx->sStatList.pMemory);
+      pStatEntry = STATLIST_InsertStatIntoArray(pParam, nShiftedStat, pStatEx->sStatList.pMemory);
     }
 
     int32_t nValueDelta = nParam - pStatEntry->nStatValue;
@@ -2178,7 +2177,7 @@ void __stdcall STATLIST_SetStatValueInBaseArray(D2StatListExStrc * pStatList, eD
         return;
       }
 
-      pStatEntry = (D2StatStrc*)STATLIST_InsertStatIntoArray((void**)&pParam->pStatInfo, nShiftedStat, (D2StatListExStrc*)pStatList->sStatList.pMemory);
+      pStatEntry = STATLIST_InsertStatIntoArray(pParam, nShiftedStat, pStatList->sStatList.pMemory);
     }
 
     int32_t nValueDelta = nValue - pStatEntry->nStatValue;

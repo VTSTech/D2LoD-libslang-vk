@@ -446,42 +446,27 @@ void __fastcall SHA1_Update(uint32_t * pnParam, void * pParam, uint32_t nByteLen
 
 void __fastcall SHA1_Final(uint8_t * pHashOut, uint32_t * pShaCtx) {
     // Static local variables (originally global data)
-    static uint8_t gaSHA1FinalData = -0x80;
+    static uint8_t gaSHA1FinalData[4] = { 0x80, 0x0, 0x0, 0x0 }; D2_STATIC_GUARD(gaSHA1FinalData, "Bnclient::SHA::SHA1_Final::gaSHA1FinalData");
 
-    // Frame slots -16..-4 are ONE object: &byLenBE0 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint8_t byLenBE0;
-      uint8_t byLenBE1;
-      uint8_t byLenBE2;
-      uint8_t byLenBE3;
-      uint8_t byLenBE4;
-      uint8_t byLenBE5;
-      uint8_t byLenBE6;
-      uint8_t byLenBE7;
-      uint32_t dwSecurityCookie;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
+    uint8_t abLengthBE[8];
     uint32_t uVar1 = pShaCtx[6];
-    __frame0.byLenBE0 = (uint8_t)(uVar1 >> 0x18);
-    __frame0.byLenBE1 = (uint8_t)(uVar1 >> 0x10);
-    __frame0.byLenBE3 = (uint8_t)uVar1;
+    abLengthBE[0] = (uint8_t)(uVar1 >> 0x18);
+    abLengthBE[1] = (uint8_t)(uVar1 >> 0x10);
+    abLengthBE[3] = (uint8_t)uVar1;
     uint32_t dwBitLen2 = pShaCtx[5];
-    __frame0.byLenBE2 = (uint8_t)(uVar1 >> 8);
-    __frame0.byLenBE4 = (uint8_t)(dwBitLen2 >> 0x18);
-    __frame0.byLenBE5 = (uint8_t)(dwBitLen2 >> 0x10);
-    __frame0.byLenBE6 = (uint8_t)(dwBitLen2 >> 8);
-    __frame0.byLenBE7 = (uint8_t)dwBitLen2;
-    SHA1_Update(pShaCtx, &gaSHA1FinalData, 1);
+    abLengthBE[2] = (uint8_t)(uVar1 >> 8);
+    abLengthBE[4] = (uint8_t)(dwBitLen2 >> 0x18);
+    abLengthBE[5] = (uint8_t)(dwBitLen2 >> 0x10);
+    abLengthBE[6] = (uint8_t)(dwBitLen2 >> 8);
+    abLengthBE[7] = (uint8_t)dwBitLen2;
+    SHA1_Update(pShaCtx, gaSHA1FinalData, 1);
     uVar1 = pShaCtx[5];
     while ((uVar1 & 0x1f8) != 0x1c0) {
-      SHA1_Update(pShaCtx, &gaBnSendRawBytesHeader, 1);
+      SHA1_Update(pShaCtx, gaBnSendRawBytesHeader, 1);
       uVar1 = pShaCtx[5];
     }
 
-    SHA1_Update(pShaCtx, &__frame0.byLenBE0, 8);
+    SHA1_Update(pShaCtx, abLengthBE, 8);
     uVar1 = 0;
     do {
       dwBitLen2 = uVar1 + 1;

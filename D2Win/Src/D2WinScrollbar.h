@@ -46,7 +46,7 @@ void __fastcall D2WINSCROLLBAR_SetStyle(::D2WinScrollbar * pScrollbar, int32_t n
 // Returns scrollbar style flags (field 0x14). Validates form type FORM_Scrollbar (5).
 int32_t __fastcall D2WINSCROLLBAR_GetStyle(::D2WinScrollbar * pScrollbar);
 BOOL __stdcall Push(struct D2ControlMsg * pScrollbar);
-BOOL __stdcall Mouse(::D2WinScrollbar * pScrollbar);
+BOOL __stdcall Mouse(struct D2ControlMsg * pScrollbar);
 BOOL __fastcall Draw(::D2WinScrollbar * pScrollbar);
 ::D2WinScrollbar * __fastcall D2WinScrollbar(int32_t nPosX, int32_t nPosY, int32_t nSizeX, int32_t nSizeY, struct DC6 * pDC6, OnPress pfnOnPress);
 

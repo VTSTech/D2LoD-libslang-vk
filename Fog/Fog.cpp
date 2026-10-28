@@ -17,8 +17,8 @@ namespace Fog {
 
 BOOL __stdcall D2CheckExpansionGame() {
     // Static local variables (originally global data)
-    static BOOL MPQ_d2expMpq_Exists;
-    static uint32_t gbExpansionCheckDone;
+    static BOOL MPQ_d2expMpq_Exists; D2_STATIC_GUARD_BSS(MPQ_d2expMpq_Exists, "Fog::D2CheckExpansionGame::MPQ_d2expMpq_Exists");
+    static uint32_t gbExpansionCheckDone; D2_STATIC_GUARD_BSS(gbExpansionCheckDone, "Fog::D2CheckExpansionGame::gbExpansionCheckDone");
 
     BOOL BVar1;
     char szMpqPath[260];

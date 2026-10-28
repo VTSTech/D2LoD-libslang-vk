@@ -4,6 +4,7 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2ClientStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2RosterStrc.h"
 #include "D2Client/D2UiPartyStrc.h"
 #include "D2Client/Engine/GfxInfo.h"
@@ -27,7 +28,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -39,7 +39,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/Storm.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Common/Drlg/Drlg.h"
@@ -219,22 +219,10 @@ void AllocUiPartyFromRoster(D2RosterStrc * pRoster, int32_t nPositionY) {
 }
 
 void __fastcall UI_DrawPartyMemberName(char * pszName, D2UiPartyStrc * pUiParty, int32_t nScreenY, int32_t nColor, int32_t bNarrowMode) {
-    // Frame slots -24..-4 are ONE object: &szEllipsisUtf8 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t szEllipsisUtf8;
-      uint8_t local_14;
-      uint8_t __pad5[3];
-      uint16_t wszEllipsis;
-      uint16_t local_e;
-      uint16_t local_c;
-      uint16_t local_a;
-      uint16_t local_8;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int i;
     uint16_t wszName[100];
+    char szEllipsisUtf8[5];
+    uint16_t wszEllipsis[5];
     uint16_t* pTruncate;
     pTruncate = wszName;
     for (i = 0x32; i; i--) {
@@ -245,13 +233,9 @@ void __fastcall UI_DrawPartyMemberName(char * pszName, D2UiPartyStrc * pUiParty,
 
     D2Lang::UTF8_ConvertToWideChar(wszName, (char*)pUiParty, 100);
     pTruncate = wszName + 99;
-    __frame0.szEllipsisUtf8 = 0x2e2e2e;
-    __frame0.local_14 = 0;
-    __frame0.wszEllipsis = L'\0';
-    __frame0.local_e = 0;
-    __frame0.local_c = 0;
-    __frame0.local_a = 0;
-    __frame0.local_8 = 0;
+    memcpy(szEllipsisUtf8, "...", 4);
+    szEllipsisUtf8[4] = '\0';
+    memset(wszEllipsis, 0, 5 * sizeof(wszEllipsis[0]));
     int32_t nTextWidth;
     nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszName);
     if (!bNarrowMode) {
@@ -278,8 +262,8 @@ void __fastcall UI_DrawPartyMemberName(char * pszName, D2UiPartyStrc * pUiParty,
       }
     }
 
-    D2Lang::UTF8_ConvertToWideChar(&__frame0.wszEllipsis, (char*)&__frame0.szEllipsisUtf8, 5);
-    D2Lang::Unicode::UNISYS::AppendToBuffer(wszName, &__frame0.wszEllipsis);
+    D2Lang::UTF8_ConvertToWideChar(wszEllipsis, szEllipsisUtf8, 5);
+    D2Lang::Unicode::UNISYS::AppendToBuffer(wszName, wszEllipsis);
     draw_name:
     D2Win::Src::D2WinFont::DRAW_text(wszName, gnPanelOffsetX + 0x24, nScreenY - gnPanelOffsetY - 2, nColor, 0);
 }
@@ -508,19 +492,9 @@ void __stdcall UI_DrawPartyButtons(D2UiPartyStrc * pUiParty) {
 }
 
 void __stdcall UI_DrawPartyMemberLevelName(D2UiPartyStrc * pUiParty, int32_t nColor, int32_t nScreenY) {
-    // Frame slots -16..-6 are ONE object: &wszEllipsis is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint16_t wszEllipsis;
-      uint16_t wEllipsisChar2;
-      uint16_t wEllipsisChar3;
-      uint16_t wLastChar;
-      uint16_t wEllipsisNull;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 10, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int iVar3;
     uint16_t wszLevelName[255];
+    uint16_t wszEllipsis[5];
     uint16_t wLastCharTmp;
     uint16_t* pwszLevelName = wszLevelName;
     for (iVar3 = 0x7f; iVar3; iVar3--) {
@@ -535,18 +509,14 @@ void __stdcall UI_DrawPartyMemberLevelName(D2UiPartyStrc * pUiParty, int32_t nCo
     uint16_t* pTruncate = wszLevelName + 0xfe;
     int32_t nPixelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszLevelName);
     if (0x8c < nPixelWidth) {
-      char szEllipsis[8];
+      char szEllipsis[5];
       nPixelWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLevelName);
       wLastCharTmp = wszLevelName[nPixelWidth - 1];
       memcpy(szEllipsis, "....", 5);
-      __frame0.wszEllipsis = L'\0';
-      __frame0.wEllipsisChar2 = 0;
-      __frame0.wEllipsisChar3 = 0;
-      __frame0.wLastChar = 0;
-      __frame0.wEllipsisNull = 0;
-      D2Lang::UTF8_ConvertToWideChar(&__frame0.wszEllipsis, szEllipsis, 5);
-      __frame0.wLastChar = wLastCharTmp;
-      nPixelWidth = D2Win::Src::D2WinFont::DRAW_text0(&__frame0.wszEllipsis);
+      memset(wszEllipsis, 0, 5 * sizeof(wszEllipsis[0]));
+      D2Lang::UTF8_ConvertToWideChar(wszEllipsis, szEllipsis, 5);
+      wszEllipsis[3] = wLastCharTmp;
+      nPixelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszEllipsis);
       iVar3 = D2Win::Src::D2WinFont::DRAW_text0(wszLevelName);
       while (0x8b - nPixelWidth < iVar3) {
         pTruncate--;
@@ -554,7 +524,7 @@ void __stdcall UI_DrawPartyMemberLevelName(D2UiPartyStrc * pUiParty, int32_t nCo
         iVar3 = D2Win::Src::D2WinFont::DRAW_text0(wszLevelName);
       }
 
-      D2Lang::Unicode::UNISYS::AppendToBuffer(wszLevelName, &__frame0.wszEllipsis);
+      D2Lang::Unicode::UNISYS::AppendToBuffer(wszLevelName, wszEllipsis);
     }
 
     D2Win::Src::D2WinFont::DRAW_text(wszLevelName, gnPanelOffsetX + 0x7e, nScreenY - gnPanelOffsetY + 0xc, nColor, 0);
@@ -571,7 +541,7 @@ void __stdcall UI_DrawPartyAcceptButton() {
 
 void __stdcall SetEachPlayerRosterGlobalPartyId() {
     // Static local variables (originally global data)
-    static int gaEachplayerRosterPartyId[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    static int gaEachplayerRosterPartyId[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; D2_STATIC_GUARD(gaEachplayerRosterPartyId, "D2Client::UI::Party::SetEachPlayerRosterGlobalPartyId::gaEachplayerRosterPartyId");
 
     int* pPartyId;
     D2RosterStrc* pRoster = GAME::Roster::GetNextRosterPlayer(nullptr);
@@ -842,52 +812,17 @@ void __stdcall UI_DrawPartyButtonTextWithTooltip(uint16_t nLocaleId1, uint16_t n
 
 void ROSTER_DrawPlayerTooltip(D2RosterStrc * pRoster) {
     // Static local variables (originally global data)
-    static short gawRosterTooltipOffsetX[4] = { 0x2783, 0x277f, 0x2781, 0x277e };
-    static short gawRosterTooltipOffsetY[4] = { 0x2783, 0x2780, 0x2782, 0x277e };
-    static uint16_t gwRosterCountMax[4] = { 0x2789, 0x2787, 0x2785, 0x2784 };
-    static uint16_t gwRosterSizeMax[34] = {
-    0x2789,
-    0x2788,
-    0x2786,
-    0x2784,
-    0xc81c,
-    0x6c,
-    0xc814,
-    0x6c,
-    0xc80c,
-    0x6c,
-    0xc804,
-    0x6c,
-    0xc7f8,
-    0x6c,
-    0xc7f0,
-    0x6c,
-    0xc7e4,
-    0x6c,
-    0xc7dc,
-    0x6c,
-    0xc7c8,
-    0x6c,
-    0xc7b4,
-    0x6c,
-    0xc7ac,
-    0x6c,
-    0xc7a4,
-    0x6c,
-    0xc788,
-    0x6c,
-    0xc780,
-    0x6c,
-    0xc77c,
-    0x6c
-};
+    static short gawRosterTooltipOffsetX[4] = { 0x2783, 0x277f, 0x2781, 0x277e }; D2_STATIC_GUARD(gawRosterTooltipOffsetX, "D2Client::UI::Party::ROSTER_DrawPlayerTooltip::gawRosterTooltipOffsetX");
+    static short gawRosterTooltipOffsetY[4] = { 0x2783, 0x2780, 0x2782, 0x277e }; D2_STATIC_GUARD(gawRosterTooltipOffsetY, "D2Client::UI::Party::ROSTER_DrawPlayerTooltip::gawRosterTooltipOffsetY");
+    static uint16_t gwRosterCountMax[4] = { 0x2789, 0x2787, 0x2785, 0x2784 }; D2_STATIC_GUARD(gwRosterCountMax, "D2Client::UI::Party::ROSTER_DrawPlayerTooltip::gwRosterCountMax");
+    static uint16_t gwRosterSizeMax[4] = { 0x2789, 0x2788, 0x2786, 0x2784 }; D2_STATIC_GUARD(gwRosterSizeMax, "D2Client::UI::Party::ROSTER_DrawPlayerTooltip::gwRosterSizeMax");
 
     uint16_t* pFormat;
     int bOutHostile;
     uint16_t wszName[128];
     uint16_t wszLine2[128];
     uint16_t wszLine1[128];
-    char szErrName[16];
+    char szErrName[18];
     uint16_t* pSrc = wszLine1;
     for (bOutHostile = 0x40; bOutHostile; bOutHostile--) {
       pSrc[0] = L'\0';
@@ -914,8 +849,7 @@ void ROSTER_DrawPlayerTooltip(D2RosterStrc * pRoster) {
     int32_t nBoxHeight = 0x10;
     char* pszName = GAME::Roster::GetRosterName(pRoster);
     /* ERROR PLAYER NAME */ if (!pszName) {
-      memcpy(szErrName, "ERROR PLAYER", 0xc);
-      memcpy(szErrName + 0xc, " NAM", 4);
+      memcpy(szErrName, "ERROR PLAYER NAME", 0x12);
       pszName = szErrName;
     }
 

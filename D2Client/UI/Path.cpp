@@ -11,6 +11,7 @@
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Common/D2InventoryStrc.h"
+#include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
@@ -33,7 +34,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Panel.h"
-#include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 
@@ -268,7 +268,7 @@ void __stdcall DEBUG_DrawWarpUnitBounds() {
 
 void __stdcall DRAW_UpdateMouseWorldOffsets() {
     // Static local variables (originally global data)
-    static int gnMouseWorldXBorder;
+    static int gnMouseWorldXBorder; D2_STATIC_GUARD_BSS(gnMouseWorldXBorder, "D2Client::UI::Path::DRAW_UpdateMouseWorldOffsets::gnMouseWorldXBorder");
 
     int nShakeY;
     int nShakeX;
@@ -359,7 +359,7 @@ void __stdcall DRAW_DrawRoomWallTiles(D2RoomStrc * pRoom) {
     if (nTileCount) {
       pTile = &pWallTiles->nPosY;
       do {
-        if (pTile[1]) {
+        if ((D2RoomCoordListStrc*)pTile[1]) {
           nScreenX = (pTile[-1] + roomCoords.sTileRect.left) * 5 + 3;
           nScreenY = (*pTile + roomCoords.sTileRect.top) * 5 + 3;
           D2Common::Drlg::Transform::CoordsMapToScreen(&nScreenX, &nScreenY);
@@ -388,7 +388,7 @@ void __stdcall DRAW_DrawRoomWallTiles(D2RoomStrc * pRoom) {
 
             nScreenY -= MouseYOffset;
             nScreenX += -7 - MouseXOffset;
-            D2gfx::D2GFX::D2GFX_DrawString(nScreenX, nScreenY, "%d", *(uint32_t*)(pTile[1] + 0x28));
+            D2gfx::D2GFX::D2GFX_DrawString(nScreenX, nScreenY, "%d", ((D2RoomCoordListStrc*)pTile[1])->nIndex);
           }
         }
 

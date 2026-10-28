@@ -64,9 +64,13 @@ struct __attribute__((packed)) D2QuestDataA1Q3Strc {
     /* 0x02 */ uint8_t bCharsiNotified; // Set in Callback_02 when Charsi interacted
     /* 0x03 */ uint8_t bQuestAccepted; // Set in Callback_11 when quest accepted (msg 0x92)
     /* 0x04 */ int32_t nMalusGUID; // GUID of the Horadric Malus object
-    /* 0x08 */ int32_t field_0x08;
+    /* 0x08 */ uint8_t field_0x08;
+    /* 0x09 */ uint8_t field_0x9;
+    /* 0x0A */ uint8_t field_0xa;
+    /* 0x0B */ uint8_t field_0xb;
     /* 0x0C */ int32_t field_0x0C;
-    /* 0x10 */ int16_t field_0x10;
+    /* 0x10 */ uint8_t field_0x10;
+    /* 0x11 */ uint8_t field_0x11;
     /* 0x12 */ int16_t field_0x12;
     /* 0x14 */ D2QuestGUIDStrc sQuestGUID; // Player tracking for quest item holders
     /* 0x98 */ int32_t nMalusMode; // Malus object mode/state
@@ -90,8 +94,7 @@ struct __attribute__((packed)) D2QuestDataA1Q4Strc {
     /* 0x014 */ int32_t field_0x14;
     /* 0x018 */ D2QuestDataA1Q4SubStrc sSub; // Cairn stones, tree, portal state
     /* 0x098 */ int32_t field_0x98;
-    /* 0x09C */ int32_t nCainPosX;
-    /* 0x0A0 */ int32_t nCainPosY;
+    /* 0x09C */ POINT ptCainPos;
     /* 0x0A4 */ int32_t nCageObjectGUID;
     /* 0x0A8 */ int32_t nPortalX;
     /* 0x0AC */ int32_t nPortalY;
@@ -107,20 +110,12 @@ struct __attribute__((packed)) D2QuestDataA1Q5Strc {
     /* 0x034 */ int32_t aPlayersForRewardGUIDs[12]; // Player GUIDs eligible for reward (primary list)
     /* 0x064 */ uint16_t nPlayersForRewardCount; // Number of players for reward; unsigned word: every read is MOVZX (Q05_Callback00_NpcActivate 00594c50)
     /* 0x066 */ int16_t field_0x66;
-    /* 0x068 */ int32_t nCountessChestGUID_0; // Countess chest object GUID [0]; array base at +0x68 iterated by Q05_SpawnCountessDeathEffect
-    /* 0x06C */ int32_t nCountessChestGUID_1;
-    /* 0x070 */ int32_t nCountessChestGUID_2;
-    /* 0x074 */ int32_t nCountessChestGUID_3;
-    /* 0x078 */ int32_t nCountessChestGUID_4;
-    /* 0x07C */ int32_t nCountessChestGUID_5;
-    /* 0x080 */ int32_t nCountessChestGUID_6;
-    /* 0x084 */ int32_t nCountessChestGUID_7;
+    /* 0x068 */ int32_t nCountessChestGUID_0[8]; // Countess chest object GUID [0]; array base at +0x68 iterated by Q05_SpawnCountessDeathEffect
     /* 0x088 */ int16_t nCountessChestCount; // Count of valid chest GUIDs; checked as ushort gate in Q05_SpawnCountessDeathEffect
     /* 0x08A */ uint8_t field_0x8a;
     /* 0x08B */ uint8_t field_0x8b;
     /* 0x08C */ D2QuestGUIDStrc sQuestGUID; // Main quest player tracking
-    /* 0x110 */ int32_t nCountessDeathX; // X coordinate of Countess death location
-    /* 0x114 */ int32_t nCountessDeathY; // Y coordinate of Countess death location
+    /* 0x110 */ POINT ptCountessDeath; // X coordinate of Countess death location
     /* 0x118 */ bool bRewardDistributed; // Set after rewards given to players
     /* 0x119 */ bool bDeathEffectPlayed; // Countess death visual effect played
     /* 0x11A */ bool bQuestCompleted; // Quest completion flag
@@ -286,7 +281,9 @@ struct D2QuestDataA2Q6Strc {
     /* 0x2C */ int nTyraelObjectGUID; // FindUnitFromTable(OBJECT, guid) in Callback_08
     /* 0x30 */ int field_0x30;
     /* 0x34 */ int nHoradricStaffTombLevelId; // correct tomb levelId from GetHoradricStaffTombLevelId
-    /* 0x38 */ int field_0x38;
+    /* 0x38 */ uint8_t bFalseTombRingInit;
+    /* 0x39 */ uint8_t field_0x39;
+    /* 0x3A */ uint16_t nFalseTombRingIndex;
     /* 0x3C */ uint8_t bPortalSpawnInProgress; // Tyrael portal spawn lock in Callback_11
     /* 0x3D */ uint8_t bCompletedPlayerJoined; // set in Callback_13 for rejoining players
     /* 0x3E */ uint8_t field_0x3E;
@@ -296,12 +293,7 @@ struct D2QuestDataA2Q6Strc {
     /* 0x45 */ uint8_t field_0x45;
     /* 0x46 */ uint8_t field_0x46;
     /* 0x47 */ uint8_t field_0x47;
-    /* 0x48 */ int field_0x48;
-    /* 0x4C */ int field_0x4C;
-    /* 0x50 */ int field_0x50;
-    /* 0x54 */ int field_0x54;
-    /* 0x58 */ int field_0x58;
-    /* 0x5C */ int field_0x5C;
+    /* 0x48 */ int32_t anFalseTombPortalClassId[6];
     /* 0x60 */ struct D2RoomStrc * pDurielKillRoom; // struct D2RoomStrc* - room where Duriel was killed
     /* 0x64 */ int field_0x64;
 };
@@ -382,7 +374,10 @@ struct D2QuestDataA3Q3Strc {
     /* 0x01 */ bool bAcceptedQuest; // Set when Hratli gives quest (msg 0x23B)
     /* 0x02 */ bool bCanDropBlade; // Enables serpent boss drop check in Callback_08
     /* 0x03 */ bool bSerpentArrived; // Set when serpent spawns near player
-    /* 0x04 */ int32_t nBladeGivenFlag; // Blade given flag (byte at +4 used as bool in GetBladeHasBeenGiven)
+    /* 0x04 */ uint8_t nBladeGivenFlag; // Blade given flag (byte at +4 used as bool in GetBladeHasBeenGiven)
+    /* 0x05 */ uint8_t field_0x5;
+    /* 0x06 */ uint8_t field_0x6;
+    /* 0x07 */ uint8_t field_0x7;
     /* 0x08 */ int32_t nSerpentKillerGUID; // GUID of player who killed the serpent
     /* 0x0C */ int32_t nSerpentSpawnX; // Serpent spawn X coordinate for QuestUpdate
     /* 0x10 */ int32_t nSerpentSpawnY; // Serpent spawn Y coordinate (GetSerpentLocation)
@@ -392,7 +387,10 @@ struct D2QuestDataA3Q3Strc {
     /* 0x1A */ uint8_t field_0x1A;
     /* 0x1B */ uint8_t field_0x1B;
     /* 0x1C */ int32_t nBladeItemCount; // Gidbinn item tracking (decremented on give, incremented on pickup)
-    /* 0x20 */ int32_t field_0x20;
+    /* 0x20 */ uint8_t field_0x20;
+    /* 0x21 */ uint8_t field_0x21;
+    /* 0x22 */ uint8_t field_0x22;
+    /* 0x23 */ uint8_t field_0x23;
     /* 0x24 */ int32_t nSerpentUnitGUID; // Q20_SpawnUniqueSerpent (005b9930) writes pSerpentUnit->nUnitGUID here after spawning the unique serpent pack (monClass 0x197). Distinct from nSerpentObjectGUID (+0x28) and nSerpentKillerGUID (+8); write site is the only reference
     /* 0x28 */ int32_t nSerpentObjectGUID; // GUID of serpent altar object (ActivateSerpentObject)
     /* 0x2C */ int32_t nQuestStage; // Quest progress stage (2=complete, used in Callback_13)
@@ -434,12 +432,7 @@ struct D2QuestDataA3Q5Strc {
     /* 0x0D */ bool bFirstFlailDropped; // First Khalim's Flail dropped
     /* 0x0E */ bool bBoxDropped; // Box dropped from council
     /* 0x0F */ uint8_t field_0x0F;
-    /* 0x10 */ int32_t aCouncilKillerGUIDs_0; // Council killer GUID 0
-    /* 0x14 */ int32_t aCouncilKillerGUIDs_1; // Council killer GUID 1
-    /* 0x18 */ int32_t aCouncilKillerGUIDs_2; // Council killer GUID 2
-    /* 0x1C */ int32_t aCouncilKillerGUIDs_3; // Council killer GUID 3
-    /* 0x20 */ int32_t aCouncilKillerGUIDs_4; // Council killer GUID 4
-    /* 0x24 */ int32_t aCouncilKillerGUIDs_5; // Council killer GUID 5
+    /* 0x10 */ int32_t anCouncilKillerGUIDs[6]; // Council killer GUID 0
     /* 0x28 */ int32_t field_0x28;
     /* 0x2C */ int32_t nCompellingOrbGUID;
     /* 0x30 */ int32_t nCouncilKillCount; // Council members killed (max 6)
@@ -467,7 +460,10 @@ struct D2QuestDataA3Q6Strc {
     /* 0x1A */ uint8_t field_0x1A;
     /* 0x1B */ uint8_t field_0x1B;
     /* 0x1C */ int32_t nPlayerCount; // Number of players for soulstone drop loop
-    /* 0x20 */ int32_t nDarkWandererMapAiState; // Dark Wanderer map AI state byte (SetupDarkWandererMapAi)
+    /* 0x20 */ uint8_t nDarkWandererMapAiState; // Dark Wanderer map AI state byte (SetupDarkWandererMapAi)
+    /* 0x21 */ uint8_t field_0x21;
+    /* 0x22 */ uint8_t field_0x22;
+    /* 0x23 */ uint8_t field_0x23;
     /* 0x24 */ struct D2MapAIStrc * pDrlgMap; // Pointer to DrlgMap for Dark Wanderer map AI moved via DRLGPRESET_TransferMapAI
     /* 0x28 */ int32_t nPrevStateFlagPrev; // Stored nStateFlagPrev for NotifyGuardianStateToPlayers
     /* 0x2C */ int32_t nDarkWandererGUID; // GUID of Dark Wanderer monster unit
@@ -491,10 +487,9 @@ struct D2QuestDataA3Q7Strc {
     /* 0x10 */ int32_t nDarkWandererGUID; // GUID of Dark Wanderer monster unit for portal spawning
 };
 
-struct D2QuestDataA4Q1Strc {
+struct __attribute__((packed)) D2QuestDataA4Q1Strc {
     /* 0x00 */ int field_0x00; // unused/reserved
-    /* 0x04 */ int nIzualDeathX; // Izual death X coord (POINT.x)
-    /* 0x08 */ int nIzualDeathY; // Izual death Y coord (POINT.y)
+    /* 0x04 */ POINT ptIzualDeath; // Izual death X coord (POINT.x)
     /* 0x0C */ uint8_t bHasStep4; // Set when QUESTSTATE_Step0x04
     /* 0x0D */ uint8_t bSpawnTimerAdded; // Guard against duplicate spawn timer
     /* 0x0E */ uint8_t field_0x0E; // padding
@@ -616,7 +611,10 @@ struct __attribute__((packed)) D2QuestDataA5Q3Strc {
     /* 0x098 */ int32_t nAnyaMonsterGUID; // GUID of Anya NPC monster
     /* 0x09C */ int32_t nAnyaCorpseGUID; // GUID of thawed Anya
     /* 0x0A0 */ int32_t nFrozensteinGUID; // UnitGUID of the spawned Frozenstein guard monster
-    /* 0x0A4 */ int32_t bFrozenAnyaSpawning; // Guard: frozen Anya object (0x22e) creation started; prevents double-spawn
+    /* 0x0A4 */ uint8_t bFrozenAnyaSpawning; // Guard: frozen Anya object (0x22e) creation started; prevents double-spawn
+    /* 0x0A5 */ uint8_t field_0xa5;
+    /* 0x0A6 */ uint8_t field_0xa6;
+    /* 0x0A7 */ uint8_t field_0xa7;
     /* 0x0A8 */ int32_t nFrozenAnyaObjectGUID; // UnitGUID returned by CreateUnit for the frozen-Anya ice-block object (0x22e)
     /* 0x0AC */ uint8_t bMalachaiTalked; // Malah NPC dialog triggered
     /* 0x0AD */ uint8_t bAnyaReachable; // Non-Harrogath level reached
@@ -704,7 +702,10 @@ struct D2QuestDataA5Q5Strc {
     /* 0x4C */ int nAltarObjectMode; // reserved
     /* 0x50 */ int nAltarGUID; // reserved
     /* 0x54 */ int nPlayersOnSummit; // Count of living players currently on Arreat Summit; zeroed then re-counted by ResurrectAncients to decide arena reset
-    /* 0x58 */ int field_0x58; // reserved
+    /* 0x58 */ uint8_t field_0x58; // reserved
+    /* 0x59 */ uint8_t field_0x59;
+    /* 0x5A */ uint8_t field_0x5a;
+    /* 0x5B */ uint8_t field_0x5b;
     /* 0x5C */ int nSummitDoorGUID; // reserved
     /* 0x60 */ int nSummitDoorObjectMode; // reserved
 };
@@ -727,7 +728,10 @@ struct __attribute__((packed)) D2QuestDataA5Q6Strc {
     /* 0x9A */ uint8_t field_0x9A;
     /* 0x9B */ uint8_t field_0x9B;
     /* 0x9C */ int32_t nField_0x9C; // Initialized to 1
-    /* 0xA0 */ int32_t field_0xA0;
+    /* 0xA0 */ uint8_t field_0xA0;
+    /* 0xA1 */ uint8_t field_0xa1;
+    /* 0xA2 */ uint8_t field_0xa2;
+    /* 0xA3 */ uint8_t field_0xa3;
     /* 0xA4 */ int32_t nQuestFlags; // Quest state flags bitmask sent to client in 0x50 QuestSpecial packet (Q36_SendQuestSpecialPacket)
 };
 

@@ -6,6 +6,7 @@
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2CMP/tagPALETTEENTRY.h"
 #include "D2Client/D2ControlStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
 #include "D2Client/Engine/Gfx.h"
@@ -13,11 +14,11 @@
 #include "D2Client/GAME/PalShift.h"
 #include "D2Client/Renderer/Renderer.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Multi/OOGUtilities.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinEditBox.h"
+#include "D2Win/Src/D2WinImage.h"
 #include "D2gfx/D2GfxHelperStrc.h"
 #include "Fog/Fog.h"
 #include "Fog/Src/ErrorManager.h"
@@ -38,7 +39,7 @@ typedef void (__stdcall *fnBinkFrameCallback)();
 
 namespace D2gfx::D2GFX {
 
-static D2GfxSettingsStrc dwD2GFX_Gamma = {};
+static D2GfxSettingsStrc dwD2GFX_Gamma = {}; D2_STATIC_GUARD(dwD2GFX_Gamma, "D2gfx::D2GFX::dwD2GFX_Gamma");
 
 // JMP thunk
 BOOL __stdcall D2GFX_GetPerspectiveCapable_ForPerspectiveItem() {
@@ -187,9 +188,9 @@ BOOL __stdcall D2GFX_Initialize(HINSTANCE hInstance, WNDPROC pfWndProc, eD2Rende
     /* .nfpDrawWallTile = */ (::fpDrawWallTile)&D2Client::fpDrawWallTile,
     /* .nfpDrawBlendedVisTile = */ (::fpDrawBlendedVisTile)&D2Client::fpDrawBlendedVisTile,
     /* .nfpDrawRoofTile = */ (::fpDrawRoofTile)&D2Client::fpDrawRoofTile
-};
-    static D2RendererFunctionsStrc * RENDERER_RenderedFunctionsSelector[7] = { nullptr, (D2RendererFunctionsStrc*)&D2Client::Renderer::WindowedFunctionTable, nullptr, (D2RendererFunctionsStrc*)&D2Client::Renderer::DirectDrawFunctionTable, (D2RendererFunctionsStrc*)&D2Client::Renderer::GlideFunctionTable, nullptr, (D2RendererFunctionsStrc*)&D2Client::Renderer::Direct3DFunctionTable };
-    static WNDPROC gpfnWndProc;
+}; D2_STATIC_GUARD(D2GfxHelperStrc_0072da60, "D2gfx::D2GFX::D2GFX_Initialize::D2GfxHelperStrc_0072da60");
+    static D2RendererFunctionsStrc * RENDERER_RenderedFunctionsSelector[7] = { nullptr, (D2RendererFunctionsStrc*)&D2Client::Renderer::WindowedFunctionTable, nullptr, (D2RendererFunctionsStrc*)&D2Client::Renderer::DirectDrawFunctionTable, (D2RendererFunctionsStrc*)&D2Client::Renderer::GlideFunctionTable, nullptr, (D2RendererFunctionsStrc*)&D2Client::Renderer::Direct3DFunctionTable }; D2_STATIC_GUARD(RENDERER_RenderedFunctionsSelector, "D2gfx::D2GFX::D2GFX_Initialize::RENDERER_RenderedFunctionsSelector");
+    static WNDPROC gpfnWndProc; D2_STATIC_GUARD_BSS(gpfnWndProc, "D2gfx::D2GFX::D2GFX_Initialize::gpfnWndProc");
 
     WNDCLASSA wndClass;
     hInstance = hInstance;
@@ -818,8 +819,8 @@ double __stdcall D2GFX_GetGammaFloat_Unused() {
 double D2GFX_CalculateGammaRamp() {
     // Static local variables (originally global data)
     // also labelled: lpPerformanceCount_007c9350, gdwPerfCounterInitHigh
-static LARGE_INTEGER gliPerfCounterStart = {};
-    static unsigned int gbGammaRampInitialized;
+static LARGE_INTEGER gliPerfCounterStart = {}; D2_STATIC_GUARD(gliPerfCounterStart, "D2gfx::D2GFX::D2GFX_CalculateGammaRamp::gliPerfCounterStart");
+    static unsigned int gbGammaRampInitialized; D2_STATIC_GUARD_BSS(gbGammaRampInitialized, "D2gfx::D2GFX::D2GFX_CalculateGammaRamp::gbGammaRampInitialized");
 
     int64_t lVar1;
     LARGE_INTEGER liFrequency;
@@ -842,9 +843,9 @@ static LARGE_INTEGER gliPerfCounterStart = {};
 // 5ms frame budget enforced - if frame took <5ms, sleeps remainder to throttle FPS.
 BOOL __stdcall D2GFX_EndScene() {
     // Static local variables (originally global data)
-    static uint64_t gdFrameSleepRemainder = 0;
-    static uint64_t gdFrameStartTime = 0;
-    static unsigned int gbGammaRampInitialized_b;
+    static double gdFrameSleepRemainder = 0; D2_STATIC_GUARD(gdFrameSleepRemainder, "D2gfx::D2GFX::D2GFX_EndScene::gdFrameSleepRemainder");
+    static double gdFrameStartTime = 0; D2_STATIC_GUARD(gdFrameStartTime, "D2gfx::D2GFX::D2GFX_EndScene::gdFrameStartTime");
+    static unsigned int gbGammaRampInitialized_b; D2_STATIC_GUARD_BSS(gbGammaRampInitialized_b, "D2gfx::D2GFX::D2GFX_EndScene::gbGammaRampInitialized_b");
 
     double dVar2;
     if (!(gbGammaRampInitialized_b & 1)) {
@@ -2461,7 +2462,7 @@ void __stdcall D2GFX_SetPalette(LPPALETTEENTRY pPalette) {
         /* .peBlue = */ 0,
         /* .peFlags = */ 0
     }
-};
+}; D2_STATIC_GUARD(gaPaletteCurrentBuffer, "D2gfx::D2GFX::D2GFX_SetPalette::gaPaletteCurrentBuffer");
 
     LPPALETTEENTRY pSrcEntry;
     tagPALETTEENTRY* pDstEntry;
@@ -2512,8 +2513,8 @@ void __stdcall D2GFX_DrawVerticalCropImage(D2GfxDataStrc * pDC6Context, int32_t 
     RENDERER_CurrentRenderedFunctions->nfpDrawVerticalCropImage(pDC6Context, nPositionX, nPositionY, nPercentHideFromBottom, nPercentShowFromBottom, nDrawMode);
 }
 
-void __stdcall D2GFX_DrawSprite6(D2GfxDataStrc * pDC6Context, int32_t nParam1, int32_t nParam2, void * pParam, int32_t nParam3) {
-    RENDERER_CurrentRenderedFunctions->nfpDrawClippedImage(pDC6Context, nParam1, nParam2, pParam, nParam3);
+void __stdcall D2GFX_DrawSprite6(D2GfxDataStrc * pDC6Context, int32_t nParam1, int32_t nParam2, D2GfxTileRectStrc * pClipRect, int32_t nParam3) {
+    RENDERER_CurrentRenderedFunctions->nfpDrawClippedImage(pDC6Context, nParam1, nParam2, pClipRect, nParam3);
 }
 
 void __stdcall D2GFX_DrawShadow(D2GfxDataStrc * pDC6Context, int32_t nPositionX, int32_t nPositionY) {
@@ -2530,7 +2531,7 @@ void __stdcall D2GFX_DebugFillBackBuffer(int32_t nXpos, int32_t nYpos) {
 
 void __stdcall D2GFX_UpdateScaleFactor() {
     // Static local variables (originally global data)
-    static uint32_t gnD2GFX_RequestedScaleFactor = 0x100;
+    static uint32_t gnD2GFX_RequestedScaleFactor = 0x100; D2_STATIC_GUARD(gnD2GFX_RequestedScaleFactor, "D2gfx::D2GFX::D2GFX_UpdateScaleFactor::gnD2GFX_RequestedScaleFactor");
 
     gnD2GFX_ActiveScaleFactor = gnD2GFX_RequestedScaleFactor;
     RENDERER_CurrentRenderedFunctions->nfpUpdateScaleFactor(gnD2GFX_RequestedScaleFactor);
@@ -3105,7 +3106,7 @@ void __fastcall PALETTE_InitColorLookupTables(BYTE * * ppPaletteTable) {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(gaPaletteBlendEntries, "D2gfx::D2GFX::PALETTE_InitColorLookupTables::gaPaletteBlendEntries");
 
     int nCount;
     uint8_t* pDstRow;
@@ -3145,6 +3146,15 @@ void __stdcall D2GFX_InitializeWindowSize() {
     __frame0_t __frame0;
     __frame0.nContrast = eRendererMode != RENDERER_Glide ? 100 : 0;
     Storm::Source::SReg::SRegLoadValue("Diablo II", "Contrast", 0, (int32_t*)&__frame0.nContrast);
+    // [vanilla-plus fix 15] The esc-menu contrast slider used to save out-of-range
+    // "Contrast" registry values (mis-decompiled UI_SLIDER_GetValueFromPosition).
+    // D2Glide::SetGamma consumes this value as a [0,100] percentage and
+    // FOG_FillArrayWithRandomInts halts (halt line 16) on anything larger — killing
+    // every -3dfx boot in this exe AND in retail Game.exe (shared registry value).
+    // Clamp pre-existing poison here so a boot can never trip it again.
+    if (__frame0.nContrast > 100) {
+      __frame0.nContrast = 100;
+    }
     D2GFX_SetOption(0xb, __frame0.nContrast);
     __frame0.dwGamma = 0x9b;
     Storm::Source::SReg::SRegLoadValue("Diablo II", "Gamma", 0, (int32_t*)&__frame0.dwGamma);

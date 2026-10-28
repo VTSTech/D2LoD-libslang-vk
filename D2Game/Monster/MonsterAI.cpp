@@ -8,6 +8,7 @@
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
+#include "D2Client/UI/npcmenu/Merc.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Common/D2BitBufferStrc.h"
@@ -55,9 +56,11 @@
 #include "D2Game/UNIT/sunitproxy.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Common/Units/Missile.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -446,8 +449,8 @@ void __fastcall NpcState_MoveState0To1(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 }
 
 void __fastcall NpcState_MoveState1To2(D2UnitStrc * pNpc, D2UnitStrc * pUnit) {
-    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMonster ? 0 : pNpc->pUnitData.pUnitDataMonster->pMonsterAi;
-    D2MonsterAiSubStrc* pAiSub = pMonsterAi->pAiSub;
+    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMissile ? 0 : (D2MonsterAiStrc*)pNpc->pUnitData.pUnitDataMissile->unk0x30;
+    D2MonsterAiSubStrc* pAiSub = (D2MonsterAiSubStrc*)((D2MissileStreamStrc*)pMonsterAi)->pStream;
     if (!pAiSub) {
       return;
     }
@@ -467,8 +470,8 @@ void __fastcall NpcState_MoveState1To2(D2UnitStrc * pNpc, D2UnitStrc * pUnit) {
 }
 
 uint32_t __fastcall NpcStateIs2(D2UnitStrc * pNpc, D2UnitStrc * pPlayer) {
-    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMonster ? 0 : pNpc->pUnitData.pUnitDataMonster->pMonsterAi;
-    D2MonsterAiSubStrc* pAiSub = pMonsterAi->pAiSub;
+    D2MonsterAiStrc* pMonsterAi = !pNpc || pNpc->eUnitType != UNIT_MONSTER || !pNpc->pUnitData.pUnitDataMissile ? 0 : (D2MonsterAiStrc*)pNpc->pUnitData.pUnitDataMissile->unk0x30;
+    D2MonsterAiSubStrc* pAiSub = (D2MonsterAiSubStrc*)((D2MissileStreamStrc*)pMonsterAi)->pStream;
     while (true) {
       if (!pAiSub) {
         return 0;
@@ -684,22 +687,14 @@ void __fastcall ClearAISub(::SGAMEDATA * pGame, D2UnitStrc * pUnit, fpAiClear fp
 
 // Hires a new mercenary unit for a player, replacing any existing one. Removes the current hired merc (fires 0x9B revive-cost packet, unassigns ownership, frees the unit), then rolls new merc stats via RollMercStats, assigns ownership and pet slot, applies level stats, and zeros name-record fields in the new merc's monster data. bSkipUnitNodeCreate skips adding the unit to the room node list (used during game-join restore).
 // @sourcefile .\MONSTER\MonsterAI.cpp
-void __fastcall MERC_HireAndReplaceMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pMinion, int16_t nMercLevelOverride, uint8_t * pHireInfo, BOOL bSkipUnitNodeCreate) {
-    // Frame slots -16..-4 are ONE object: &dwHireExtra is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t dwHireExtra;
-      uint32_t nHireTypeIdx;
-      uint32_t nHireTxtId;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+void __fastcall MERC_HireAndReplaceMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pMinion, int16_t nMercLevelOverride, D2MercForHire * pHireInfo, BOOL bSkipUnitNodeCreate) {
     D2UnitStrc* pExistingMerc;
     D2RoomStrc* pRoom;
     int32_t nAct;
     BOOL BVar1;
     D2HirelingTxt* pHirelingTxt;
     D2HirelingHireData sMercHireData;
+    D2PetDataStrc sPetData;
     eD2UnitType eOldMercUnitType;
     uint32_t dwZeroReviveCost;
     int nOldMercGUID;
@@ -728,16 +723,16 @@ void __fastcall MERC_HireAndReplaceMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
       UNIT::SUnit::FreeServerUnit(pGame, pExistingMerc);
     }
 
-    __frame0.dwHireExtra = *(uint32_t*)(pHireInfo + 4);
-    __frame0.nHireTypeIdx = (uint32_t)*(uint16_t*)pHireInfo;
-    nAct = D2Common::Merc::GetMercAct(pGame->bExpansion, 0, *(uint16_t*)pHireInfo);
-    BVar1 = D2Common::Merc::RollMercStats(pGame->bExpansion, pUnit, *(int32_t*)(pHireInfo + 4), nAct, (uint32_t)pGame->nDifficulty, &sMercHireData);
+    sPetData.nSeed = pHireInfo->nSeed;
+    sPetData.nNameId = (int)(uint16_t)pHireInfo->nNameStringId;
+    nAct = D2Common::Merc::GetMercAct(pGame->bExpansion, 0, pHireInfo->nNameStringId);
+    BVar1 = D2Common::Merc::RollMercStats(pGame->bExpansion, pUnit, pHireInfo->nSeed, nAct, (uint32_t)pGame->nDifficulty, &sMercHireData);
     if (!BVar1) {
       return;
     }
 
-    __frame0.nHireTxtId = sMercHireData.nId;
-    PLAYER::PlayerPets::RecastPetAndAssign(pGame, pUnit, pMinion, 7, &__frame0.dwHireExtra);
+    sPetData.nType = sMercHireData.nId;
+    PLAYER::PlayerPets::RecastPetAndAssign(pGame, pUnit, pMinion, 7, &sPetData);
     pMinion->eUnitFlags |= UNITFLAG_ISREVIVE;
     Ai::AiGeneral::AssignMinionOwner(pGame, pMinion, pUnit->nUnitGUID, pUnit->eUnitType, 0, 0);
     if (nMercLevelOverride == -1) {

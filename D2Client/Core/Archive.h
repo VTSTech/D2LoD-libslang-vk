@@ -17,7 +17,7 @@ namespace D2Client::Core::Archive {
 // @sourcefile .\CORE\ARCHIVE.CPP
 struct DC6 * __fastcall IMAGE_LoadDC6Ex(char * szFilename, BOOL bUseDccExtension);
 // @sourcefile .\CORE\ARCHIVE.CPP
-struct DC6 * __fastcall IMAGE_LoadWeatherDC6ToPointer(char * szFilename, size_t * pnSize, struct DC6 * pDC6);
+struct DC6 * __fastcall IMAGE_LoadWeatherDC6ToPointer(char * szFilename, uint32_t * pnSize, struct DC6 * pDC6);
 // @sourcefile .\CORE\ARCHIVE.CPP
 void __fastcall DC6_FreeAndDelete(struct DC6 * pDC6);
 

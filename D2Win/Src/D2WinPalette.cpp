@@ -11,6 +11,7 @@
 #include "Fog/SMem.h"
 #include "globals/globals.h"
 #include "D2Win/D2WinAnimImage.h"
+#include "support/d2_boot.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -47,7 +48,7 @@ void __stdcall D2WINPALETTE_LoadPalettes() {
     aPaletteTable[0x42] = gPaletteAct5;
     aPaletteTable[0x43] = gPaletteActNeutral;
     aPaletteTable[0x44] = gPaletteUnits;
-    aPaletteTable[0x45] = &gnPaletteIndexCounter;
+    aPaletteTable[0x45] = gnPaletteIndexCounter;
     aPaletteTable[0x46] = gPaletteMenuInGame;
     aPaletteTable[0x47] = gPaletteDataMenuInGame;
     D2gfx::D2GFX::D2GFX_SetPaletteTable((BYTE**)aPaletteTable);
@@ -115,7 +116,7 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
     uint32_t nText1;
     int nSrcLine = 99;
     char* szSrcFile = ".\\Src\\D2WinPalette.cpp";
-    size_t* pFileSize = 0;
+    uint32_t* pFileSize = 0;
     D2PoolManagerStrc* pDatFileData = D2WinArchive::ReturnZero();
     void* pDatFileHandle = Fog::Archive::D2FILE_AllocAndLoadD2File(pDatFileData, szText1, pFileSize, szSrcFile, nSrcLine);
     uint32_t nPaletteIdx = 0;
@@ -161,7 +162,7 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
     }
 
     pSrcArchive = pMemoryToFree + 0x1ad80;
-    pDstIndexCounter = (PALETTEENTRY*)&gnPaletteIndexCounter;
+    pDstIndexCounter = (PALETTEENTRY*)gnPaletteIndexCounter;
     for (nCount = 9; nCount; nCount--) {
       *pDstIndexCounter = *pSrcArchive;
       pSrcArchive++;
@@ -172,6 +173,12 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
     pDstIndexCounter->peRed = pSrcArchive->peRed;
     pDstIndexCounter->peGreen = BVar1;
     pDstIndexCounter->peBlue = pSrcArchive->peBlue;
+
+    // [vanilla-plus fix 26 diag A probe retired in 0.0.3: the once-per-load
+    // ui39 hex-dump served its purpose (fix 27 field-verified) and is gone;
+    // d2boot.log no longer records palette loads. Pure logging was removed,
+    // retail byte behavior unchanged.]
+
     uint8_t* pSrcBytes = &pMemoryToFree[0x1ad89].peFlags;
     uint8_t* pDstData = gPaletteTransposeBase;
     for (nCount = 0x340; nCount; nCount--) {

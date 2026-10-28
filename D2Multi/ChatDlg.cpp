@@ -76,7 +76,7 @@ typedef void (__fastcall *pfnMCPGameListEntry)(uint32_t nEntryField0, uint32_t n
 
 namespace D2Multi::ChatDlg {
 
-static char gaChatDlgHistoryBuffer_1__0_[10][256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static char gaChatDlgHistoryBuffer_1__0_[10][256] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; D2_STATIC_GUARD(gaChatDlgHistoryBuffer_1__0_, "D2Multi::ChatDlg::gaChatDlgHistoryBuffer_1__0_");
 
 // OnPress of the chat-lobby user-list page-back button gpCtlLobbyUserListPrevPageButton: COMCALLBACK_ScrollChannelUserList(-10); returns 1.
 // Provenance: asm 0043d9e0 (RET 4); fpOnPressCallback of form record 0070d060 (FORM_Button), created in CHATDLG_CreateAllForms at 0043fce8.
@@ -434,7 +434,6 @@ BOOL __stdcall CHATDLG_FindSubstringMatch(int32_t nTargetHash, int32_t nWordLen,
 
 BOOL __stdcall CHATDLG_DetectCDKeyInString(char * szText) {
     BOOL BVar1;
-    uint8_t cNullTerm;
     uint32_t dwKeyOut2;
     uint32_t dwKeyType;
     char cCur;
@@ -451,7 +450,7 @@ BOOL __stdcall CHATDLG_DetectCDKeyInString(char * szText) {
     }
 
     do {
-      char szKeyBuf[16];
+      char szKeyBuf[1024];
       if ((int)nRemaining < 0x10 - nCharsCollected) {
         return 0;
       }
@@ -468,7 +467,7 @@ BOOL __stdcall CHATDLG_DetectCDKeyInString(char * szText) {
         nCharsCollected++;
         check_key_complete:
         if (nCharsCollected == 0x10) {
-          cNullTerm = 0;
+          szKeyBuf[0x10] = '\0';
           BVar1 = ComCallback::COMCALLBACK_DetectCDKeyInMessage(szKeyBuf, &dwKeyType, &dwKeyOut2);
           if (BVar1 && (dwKeyType == 6 || dwKeyType == 7 || dwKeyType == 10 || dwKeyType == 0xc)) {
             return 1;
@@ -1066,7 +1065,7 @@ void __stdcall SafeDefaultChannel(char * pszChannel) {
 
 void __stdcall CHATDLG_DestroyAllForms() {
     // Static local variables (originally global data)
-    static D2ControlStrc * gpChatDlgMainControl;
+    static D2ControlStrc * gpChatDlgMainControl; D2_STATIC_GUARD_BSS(gpChatDlgMainControl, "D2Multi::ChatDlg::CHATDLG_DestroyAllForms::gpChatDlgMainControl");
 
     OOGUtilities::OOGUTIL_UpdateGameListFilter();
     OOGUtilities::UIMENU_DestroyLobbyAndJoinGameForms();
@@ -1241,9 +1240,9 @@ void __stdcall CHATDLG_CreateAllForms() {
 
 // Battle.net game creation and joining functions - handle both realm and open bnet modes
 uint32_t __fastcall OOGMENU_CreateGame(mcp0x03data * pMcpData, char * szServerIp) {
+    void* nAddress;
     int32_t nHasPeer;
     uint16_t* pwszError;
-    int32_t nLine;
     uint16_t nReqId;
     char cCur;
     ChatDlg::CHATDLG_DestroyAllForms();
@@ -1317,9 +1316,9 @@ uint32_t __fastcall OOGMENU_CreateGame(mcp0x03data * pMcpData, char * szServerIp
 
 // Battle.net game creation and joining functions - handle both realm and open bnet modes
 void __fastcall OOGMENU_JoinGame(int16_t nJoinId, char * szGameName, char * szPassword, char * szServerIp) {
+    void* nAddress;
     int32_t nHasPeer;
     uint16_t* pwszError;
-    int32_t nLine;
     char cCur;
     gpChatFormList = (void*)0x2;
     ChatDlg::CHATDLG_DestroyAllForms();
@@ -1481,7 +1480,7 @@ BOOL __stdcall CHATDLG_UpdateChatRoomList() {
 // Provenance: 1.14d asm 00440350, called as fpOnPress by D2WinTimer DrawEx 004fd8d2.
 BOOL __stdcall CHATDLG_OnTimerRequestLadderData(D2ControlMsg * pControlMsg) {
     // Static local variables (originally global data)
-    static uint32_t gnChatRoomListPrevSelectedBase = -0x1;
+    static uint32_t gnChatRoomListPrevSelectedBase = -0x1; D2_STATIC_GUARD(gnChatRoomListPrevSelectedBase, "D2Multi::ChatDlg::CHATDLG_OnTimerRequestLadderData::gnChatRoomListPrevSelectedBase");
 
     DWORD DVar1 = GetTickCount();
     if (!(gdwLadderRankRequestTimeout < DVar1 && g_pLadderBoardTextBox)) {
@@ -1506,54 +1505,51 @@ BOOL __stdcall CHATDLG_OnTimerRequestLadderData(D2ControlMsg * pControlMsg) {
 // Updates ladder board display after player click - renders rank cells with class colors and experience
 void __fastcall CHATDLG_HandleChatListClick(int32_t nStartRank, int32_t nRankCount, int32_t nEntryIndex, char nFilterMode, int32_t nLadderData) {
     // Static local variables (originally global data)
-    static char * gaszPlayerClassTokens[7] = { s_ama_006d5564, s_sor_006d5568, s_nec_006d556c, s_pal_006d5570, s_bar_006d5574, s_dru_006d5578, s_asn_006d557c };
+    static char * gaszPlayerClassTokens[7] = { s_ama_006d5564, s_sor_006d5568, s_nec_006d556c, s_pal_006d5570, s_bar_006d5574, s_dru_006d5578, s_asn_006d557c }; D2_STATIC_GUARD(gaszPlayerClassTokens, "D2Multi::ChatDlg::CHATDLG_HandleChatListClick::gaszPlayerClassTokens");
 
     int nCmp;
-    uint32_t nCopyWords;
-    uint8_t* pbCopySrc;
+    char* pbCopySrc;
+    uint16_t* pwszScratch;
     uint32_t nCopyLen;
-    uint8_t* pbCopyDst;
-    uint16_t* pcScratch;
+    char* pbCopyDst;
+    D2LadderRowBufStrc* pcScratch;
     uint16_t wszNamePart[256];
     uint16_t wszEmptyMsg[256];
     char sScratch[256];
-    uint16_t local_410[255];
-    uint8_t uStack529[257];
+    D2LadderRowBufStrc sRowBuf;
     char szNumBuf[256];
     int nNextRank;
-    uint8_t byCur;
     uint32_t dwCharStats;
-    uint8_t* pcVar1;
     if (!g_pLadderBoardTextBox) {
       return;
     }
     if (!nRankCount) {
-      pcScratch = local_410;
+      pcScratch = &sRowBuf;
       for (nCmp = 0x80; nCmp; nCmp--) {
-        pcScratch[0] = L'\0';
-        pcScratch[1] = L'\0';
-        pcScratch += 2;
+        pcScratch->wszCell[0] = L'\0';
+        pcScratch->wszCell[1] = L'\0';
+        pcScratch = (D2LadderRowBufStrc*)(pcScratch->wszCell + 2);
       }
 
-      pcScratch = wszNamePart;
+      pwszScratch = wszNamePart;
       for (nCmp = 0x80; nCmp; nCmp--) {
-        pcScratch[0] = L'\0';
-        pcScratch[1] = L'\0';
-        pcScratch += 2;
+        pwszScratch[0] = L'\0';
+        pwszScratch[1] = L'\0';
+        pwszScratch += 2;
       }
 
-      pcScratch = wszEmptyMsg;
+      pwszScratch = wszEmptyMsg;
       for (nCmp = 0x80; nCmp; nCmp--) {
-        pcScratch[0] = L'\0';
-        pcScratch[1] = L'\0';
-        pcScratch += 2;
+        pwszScratch[0] = L'\0';
+        pwszScratch[1] = L'\0';
+        pwszScratch += 2;
       }
 
       OOGUtilities::OOGUTIL_GetProfileCharacterName(sScratch);
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszNamePart, "Player \'%s\' is not on the ladder.", 0x100);
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszEmptyMsg, sScratch, 0x100);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, local_410, wszNamePart, (uint16_t*)wszEmptyMsg);
-      UIMENU_DrawSpecificJoinGameError(local_410, nullptr);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, sRowBuf.wszCell, wszNamePart, (uint16_t*)wszEmptyMsg);
+      UIMENU_DrawSpecificJoinGameError(sRowBuf.wszCell, nullptr);
       return;
     }
     if (nFilterMode != g_nLadderFilterMode) {
@@ -1591,66 +1587,28 @@ void __fastcall CHATDLG_HandleChatListClick(int32_t nStartRank, int32_t nRankCou
       nNextRank = nStartRank + 1;
       __itoa(nNextRank, szNumBuf, 10);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, szNumBuf, nStartRank, 0);
-      uStack529[1] = 0;
-      pbCopySrc = (uint8_t*)D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass((void*)(dwCharStats & 0xf), dwCharStats >> 8 & 0x1f, dwCharStats & 0x20, dwCharStats & 0x40);
+      sRowBuf.szName[0] = '\0';
+      pbCopySrc = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass(dwCharStats & 0xf, dwCharStats >> 8 & 0x1f, dwCharStats & 0x20, dwCharStats & 0x40);
       pbName = pbEntry;
       pbCopyDst = pbCopySrc;
       if (pbCopySrc) {
-        pbCopyDst = pbCopyDst + strlen((char*)pbCopyDst) + 1;
-        nCopyLen = (int)pbCopyDst - (int)pbCopySrc;
-        pbCopyDst = uStack529;
-        do {
-          pcVar1 = pbCopyDst + 1;
-          pbCopyDst++;
-        } while (*pcVar1);
-
-        for (nCopyWords = nCopyLen >> 2; nCopyWords; nCopyWords--) {
-          *(uint32_t*)pbCopyDst = *(uint32_t*)pbCopySrc;
-          pbCopySrc += 4;
-          pbCopyDst += 4;
-        }
-
-        for (nCopyLen &= 3; nCopyLen; nCopyLen--) {
-          *pbCopyDst = *pbCopySrc;
-          pbCopySrc++;
-          pbCopyDst++;
-        }
+        strcat(sRowBuf.szName, pbCopySrc);
       }
 
-      pbName = pbName + strlen((char*)pbName) + 1;
-      nCopyLen = (int)pbName - (int)pbEntry;
-      pbName = uStack529;
-      do {
-        pbCopyDst = pbName + 1;
-        pbName++;
-      } while (*pbCopyDst);
-
-      pbCopyDst = pbEntry;
-      for (nCopyWords = nCopyLen >> 2; nCopyWords; nCopyWords--) {
-        *(uint32_t*)pbName = *(uint32_t*)pbCopyDst;
-        pbCopyDst += 4;
-        pbName += 4;
-      }
-
-      for (nCopyLen &= 3; nCopyLen; nCopyLen--) {
-        *pbName = *pbCopyDst;
-        pbCopyDst++;
-        pbName++;
-      }
-
-      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, (char*)(uStack529 + 1), nStartRank, 1);
-      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, gaszPlayerClassTokens[(int)(dwCharStats & 0xf)], nStartRank, 2);
+      strcat(sRowBuf.szName, (char*)pbEntry);
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, sRowBuf.szName, nStartRank, 1);
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, gaszPlayerClassTokens[dwCharStats & 0xf], nStartRank, 2);
       __itoa((int)dwCharStats >> 0x10 & 0xff, szNumBuf, 10);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, szNumBuf, nStartRank, 3);
-      pcScratch = local_410;
+      pcScratch = &sRowBuf;
       for (nCmp = 0x80; nCmp; nCmp--) {
-        pcScratch[0] = L'\0';
-        pcScratch[1] = L'\0';
-        pcScratch += 2;
+        pcScratch->wszCell[0] = L'\0';
+        pcScratch->wszCell[1] = L'\0';
+        pcScratch = (D2LadderRowBufStrc*)(pcScratch->wszCell + 2);
       }
 
-      D2Lang::StrTable::strtable::STRTABLE_FormatUInt64WithAbbrev(local_410, *(uint32_t*)(pbEntry - 0xc), *(uint32_t*)(pbEntry - 8), 0xff);
-      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextWDirect(g_pLadderBoardTextBox, local_410, nStartRank, 4);
+      D2Lang::StrTable::strtable::STRTABLE_FormatUInt64WithAbbrev(sRowBuf.wszCell, *(uint32_t*)(pbEntry - 0xc), *(uint32_t*)(pbEntry - 8), 0xff);
+      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextWDirect(g_pLadderBoardTextBox, sRowBuf.wszCell, nStartRank, 4);
       pbEntry += nEntryStride;
       nStartRank = nNextRank;
     } while (nNextRank < nEndRank);

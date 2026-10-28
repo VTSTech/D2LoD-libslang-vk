@@ -155,7 +155,7 @@ int32_t __stdcall SBIG_CompareBigBuffers_ForSha1(struct BigData * pBigA, struct 
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method NOUN CORRECTION ONLY. Thunk onto 00421440.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void __fastcall SBIG_BigBuffer_IsLowestBitClearWrapper(uint32_t pThis, struct BigBuffer * pBigNum);
+BOOL __fastcall SBIG_BigBuffer_IsLowestBitClearWrapper(uint32_t pThis, struct BigBuffer * pBigNum);
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @caution Thunk onto SBIG_BigBuffer_GetFirstWord 00421510. The tail is misleading - this is not a dword-array cursor read; the correct tail is not established.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
@@ -466,7 +466,7 @@ void __stdcall SBigToBinaryArray(struct BigData * pBigData, void * pDestArray, i
 // @renamed-from SBIG_ExportBytesLimited (2026-08-28, Storm PowerPC oracle pass 4)
 // @oracle Mac PPC 1.10b Storm -- PPC SBigToBinaryBuffer -> 10098f00, 192B: .ToBinary + BlockMoveData into a caller buffer. 1.14d: 4 args, BigBuffer_ToBinary then STORM_Memcpy. The memcpy is the discriminator against the Array and Ptr forms.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.
-void __stdcall SBigToBinaryBuffer(struct BigData * pBigData, void * pDest, uint32_t nMaxBytes, size_t * pnSize);
+void __stdcall SBigToBinaryBuffer(struct BigData * pBigData, void * pDest, uint32_t nMaxBytes, uint32_t * pnSize);
 // @renamed-from SBIG_GetExportBufferPtr (2026-08-28, Storm PowerPC oracle pass 4)
 // @oracle Mac PPC 1.10b Storm -- PPC SBigToBinaryPtr -> 10098e70, 144B: .ToBinary and nothing else, returns the internal pointer. 1.14d: calls BigBuffer_ToBinary only.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.

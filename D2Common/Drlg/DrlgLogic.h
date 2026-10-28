@@ -15,6 +15,18 @@ struct D2PoolManagerStrc;
 struct D2RoomCoordListStrc;
 struct D2RoomExStrc;
 
+// Data types
+struct D2DrlgCoordIndexCtxStrc {
+    /* 0x00 */ struct D2RoomExStrc * pRoomEx;
+    /* 0x04 */ struct D2DrlgGridStrc * pCoordGrid;
+    /* 0x08 */ struct D2DrlgGridStrc * pOrientGrid;
+    /* 0x0C */ int32_t nReserved0C; // zeroed, no reader found
+    /* 0x10 */ int32_t nCallerArg10;
+    /* 0x14 */ struct D2DrlgGridStrc * pFloorGrid;
+    /* 0x18 */ int32_t nCoordIndex; // in/out counter
+    /* 0x1C */ uint32_t dwCoordFlags;
+};
+
 namespace D2Common::Drlg::DrlgLogic {
 
 // Function declarations

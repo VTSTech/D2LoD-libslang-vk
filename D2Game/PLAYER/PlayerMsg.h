@@ -10,6 +10,7 @@
 
 // Forward declarations
 struct D2ClientStrc;
+struct D2Packet0x5aEventStructure;
 struct D2SkillStrc;
 struct D2UnitStrc;
 struct D2WaypointStrc;
@@ -19,10 +20,13 @@ typedef int eD2MonsterAnimMode;
 typedef int eD2Skills;
 typedef int eD2UnitType;
 
+struct D2GSPacketSrv0x26;
+struct D2ChatMessage;
+
 // Data types
 struct D2ChatBroadcastCtx {
-    /* 0x00 */ void * pPacketData;
-    /* 0x04 */ void * pChatMessage;
+    /* 0x00 */ struct D2GSPacketSrv0x26 * pPacketData;
+    /* 0x04 */ struct D2ChatMessage * pChatMessage;
     /* 0x08 */ uint32_t nSenderGUID;
 };
 
@@ -603,16 +607,6 @@ struct __attribute__((packed)) D2GSPacketSrv0x26 {
     /* 0x1A */ char szMessage[256];
 };
 
-struct __attribute__((packed)) D2Packet0x5aEventStructure {
-    /* 0x00 */ uint8_t nPacketId;
-    /* 0x01 */ uint8_t nMessageType;
-    /* 0x02 */ uint8_t nColor;
-    /* 0x03 */ uint32_t nArg;
-    /* 0x07 */ uint8_t nArgTypes;
-    /* 0x08 */ char szName1[16];
-    /* 0x18 */ char szName2[16];
-};
-
 struct D2WarpChanceStrc {
     D2WarpChanceStrc() = default;
     D2WarpChanceStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
@@ -783,11 +777,11 @@ void __fastcall NET_D2GS_SERVER_Send_0x26_Chat(struct D2ClientStrc * pClient, st
 // @sourcefile .\PLAYER\PlrMsg.cpp
 eD2ServerIncomingStatus __fastcall SCMD_0x15_ChatMessage(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x15_ChatMessage * pPacket, size_t nSize);
 // Builds a 0x26 chat packet inline on the stack using a D2UnitStrc as raw packet buffer, then broadcasts to all clients via ForEachClient. dwParam is packed into the locale/color byte of the 0x26 header.
-int __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint32_t dwParam);
+void __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint32_t dwParam);
 // Broadcasts a pre-built 0x26 chat packet (pointed to by pdwParam as uint32_t array) to all clients in the game. dwParam is packed into the packet color/locale byte. Wraps ForEachClient with NET_D2GS_SERVER_Send_0x26_Chat callback.
 void __fastcall CHAT_BroadcastMessageToAllClients(::SGAMEDATA * pGame, uint32_t * pdwParam, uint32_t dwParam);
 // Iterates all clients in pGame via ForEachClient, broadcasting a 0x5A EventMessages packet built from nParam (pointer to message data). First measures the embedded character name string (capped at 16 chars); skips broadcast if name exceeds that limit. Side-effect: sends to every player in the game session.
-void __fastcall BroadcastEventMessage(::SGAMEDATA * pGame, uint8_t * pEventData);
+void __fastcall BroadcastEventMessage(::SGAMEDATA * pGame, struct D2Packet0x5aEventStructure * pEventData);
 // C->S 0x13 Entity Interact (9 bytes)
 // [op:1][unitType:u32][GUID:u32]
 // Validates unitType<=UNIT_WARP, calls SERVER_InteractOrPick(bSetting=0).

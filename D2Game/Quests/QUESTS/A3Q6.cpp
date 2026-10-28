@@ -40,9 +40,10 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
+#include "D2Game/Monster/AI/AI.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -262,7 +263,7 @@ BOOL __fastcall Q23_PlayerNotifyCompleted(::SGAMEDATA * pGame, D2UnitStrc * pUni
 // "go kill Mephisto" / "you've done it" dialog depending on progress.
 void __fastcall Q23_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ20QuestStateMessages[8] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 };
+    static int32_t gdwQ20QuestStateMessages[8] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6 }; D2_STATIC_GUARD(gdwQ20QuestStateMessages, "D2Game::Quests::QUESTS::A3Q6::Q23_Callback00_NpcActivate::gdwQ20QuestStateMessages");
 
     bool _bStep11;
     bool _bCompleted;
@@ -356,7 +357,7 @@ void __fastcall Q23_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     ::SGAMEDATA* pGame;
     int nLamEsenDone2;
     nLamEsenDone2 = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x4b) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x4b) {
       D2BitBufferStrc* pBitBuffer;
       QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
       if (1 < pQuestData->nStateFlag && pQuestData->nStateFlag < 4) {
@@ -460,8 +461,8 @@ void __fastcall Q23_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     short int nNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     short int nMsgIdx = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     ::SGAMEDATA* pUnitPlayerData = pQuestArgs->pGame;
-    ::SGAMEDATA* pGameInner = (::SGAMEDATA*)D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-    D2BitBufferStrc* pBitBuffer = *(D2BitBufferStrc**)(pGameInner->szGameName + (uint32_t)pUnitPlayerData->nDifficulty * 4 - 0x1a);
+    D2UnitDataPlayerStrc* pGameInner = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
+    D2BitBufferStrc* pBitBuffer = pGameInner->pQuestRecord[pUnitPlayerData->nDifficulty];
     /* GetQuestState(Guardian=0x16, Step0x11=0x0b): is quest finalized? */ _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheGuardian, QUESTSTATE_Step0x11);
     /* GetQuestState(Guardian=0x16, Completed=0): if !Step0x11 && Completed -> bail
                           */ if (!_bQuestState) {
@@ -713,7 +714,7 @@ void __fastcall Q23_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 // frames later to keep him advancing. Pure scripted-cinematic movement, no quest-state writes.
 void __fastcall Q23_TimerCallback_MephistoApproach(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
     uint32_t nDist;
-    eD2PlayerAnimMode eAnimMode;
+    eD2MonsterAnimMode eAnimMode;
     D2UnitStrc* pRoomUnit;
     D2QuestDataA3Q6Strc* pA3Q6Data = pQuestData->pQuestSpecificData.pA3Q6;
     if (pA3Q6Data->nMephistoApproachMode == 2) {
@@ -734,8 +735,8 @@ void __fastcall Q23_TimerCallback_MephistoApproach(D2QuestDataStrc * pQuestData,
           if (nDist < 0x12) {
             if (eAnimMode == Death) {
               pA3Q6Data->nMephistoAnimMode = 2;
-              D2Common::Units::SetupUpdateFlag(pUnit, eD2PlayerAnimMode_ns::Neutral);
-            } else if (eAnimMode == eD2PlayerAnimMode_ns::Neutral) {
+              D2Common::Units::SetupUpdateFlag(pUnit, eD2MonsterAnimMode_ns::Neutral);
+            } else if (eAnimMode == eD2MonsterAnimMode_ns::Neutral) {
               pA3Q6Data->nMephistoAnimMode = 2;
               D2Common::Units::SetupUpdateFlag(pUnit, Walk);
               D2Common::Units::RemoveCollision_Vector(pUnit);

@@ -33,7 +33,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -173,9 +173,9 @@ void __fastcall Q09_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
 
-    D2QuestDataA2Q1Strc* pA2Q1Data = pQuestData->pQuestSpecificData.pA2Q1;
+    D2QuestDataA1Q3Strc* pA2Q1Data = pQuestData->pQuestSpecificData.pA1Q3;
     if (nMessageIndex == 0x130) {
-      pA2Q1Data->bSpokeToAtma = 1;
+      pA2Q1Data->field_0x08 = '\x01';
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q1.cpp", 0xef);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q09_UpdateQuestRecord);
     } else {
@@ -191,7 +191,7 @@ void __fastcall Q09_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
       if (!bQuestState) {
-        if (pA2Q1Data->bRewardPending) {
+        if (pA2Q1Data->field_0x10 != '\0') {
           pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
           if (pSeqQuestData) {
             /* FARPROC lpfn for IsBadCodePtr */ bQuestState = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -240,7 +240,7 @@ void __fastcall Q09_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // A2Q1 callback[0]: pick which gossip/quest-log line Atma speaks. Reads JustCompleted/Completed/RewardAwaits for the player. If RewardAwaits -> line 3 (come collect the book). Else if this player already participated in the kill -> line 4. Else, if not Completed and nStateFlag in 1..3 (or JustCompleted), looks up gdwQ09QuestStateMessages[nStateFlag] and, if valid (<9, !=0xffffffff), speaks that intro/progress line. AddGossipMessageOnMonster renders the chosen line.
 void __fastcall Q09_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ09QuestStateMessages[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x0 };
+    static int32_t gdwQ09QuestStateMessages[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x0 }; D2_STATIC_GUARD(gdwQ09QuestStateMessages, "D2Game::Quests::QUESTS::A2Q1::Q09_Callback00_NpcActivate::gdwQ09QuestStateMessages");
 
     int32_t nPlayerGUID;
     int32_t nTargetClassIdLocal = !pQuestArgs->pTarget ? -1 : pQuestArgs->pTarget->nClassId;
@@ -475,7 +475,7 @@ void __fastcall Q09_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 
 // A2Q1 callback[3]: Atma introduction-reply handler. Triggered when the gossip control id == 0x28 (player finished Atma's intro speech). Removes the player from the pending-gossip GUID list. If quest is at nStateFlag==2 (introduced) and not yet Completed/RewardAwaits, advances to nStateFlag 3 (objective active: go kill Radament) and mirrors state into all players' records via Q09_UpdateQuestRecord.
 void __fastcall Q09_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GossipTextStrc*)0x28) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GSPacketSrv0x27_TextStrc*)0x28) {
       return;
     }
 
@@ -558,7 +558,7 @@ void __fastcall Q09_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
       /* GetQuestState RewardAwaits under FinishedInPreviousGame -> set bRewardPending
                          so Atma still hands over book */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RadamentsLair, QUESTSTATE_RewardAwaits);
       if (bQuestState == 1) {
-        pQuestData->pQuestSpecificData.pA2Q1->bRewardPending = true;
+        pQuestData->pQuestSpecificData.pA1Q3->field_0x10 = '\x01';
       }
 
       pQuestData->nStateFlag = 0;

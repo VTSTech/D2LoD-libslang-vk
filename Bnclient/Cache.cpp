@@ -300,7 +300,7 @@ BOOL __fastcall CACHE_ReadData(char * szKey, uint32_t * pCrc32Out, uint32_t * * 
     int nBlockTableOffset;
     D2BnCacheEntryHeaderStrc* pCrc32Cursor;
     char* szCorruptKey;
-    DWORD* nHeaderWriteSize;
+    DWORD nHeaderWriteSize;
     int nBlockEntryOffset;
     HANDLE hFile;
     if (pCrc32Out) {
@@ -412,13 +412,13 @@ BOOL __fastcall CACHE_ReadData(char * szKey, uint32_t * pCrc32Out, uint32_t * * 
           } while (nBlockTableOffset);
 
           __frame0.entryHeader.dwHeaderCrc32 = ~nCrc32Computed;
-          nHeaderWriteSize = (DWORD*)__frame0.entryHeader.dwHeaderSize;
+          nHeaderWriteSize = __frame0.entryHeader.dwHeaderSize;
           if (0x144 < __frame0.entryHeader.dwHeaderSize) {
-            nHeaderWriteSize = (DWORD*)0x144;
+            nHeaderWriteSize = 0x144;
           }
 
-          /* LPOVERLAPPED lpOverlapped for WriteFile */ /* LPDWORD lpNumberOfBytesWritten for WriteFile */ /* DWORD nNumberOfBytesToWrite for WriteFile */ /* LPCVOID lpBuffer for WriteFile */ /* HANDLE hFile for WriteFile */ WriteFile(ghCacheFileHandle, (LPCVOID)&__frame0.entryHeader, (DWORD)nHeaderWriteSize, (LPDWORD)&__frame0.nBytesWritten, (LPOVERLAPPED)0x0);
-          if (__frame0.nBytesWritten != nHeaderWriteSize) {
+          /* LPOVERLAPPED lpOverlapped for WriteFile */ /* LPDWORD lpNumberOfBytesWritten for WriteFile */ /* DWORD nNumberOfBytesToWrite for WriteFile */ /* LPCVOID lpBuffer for WriteFile */ /* HANDLE hFile for WriteFile */ WriteFile(ghCacheFileHandle, (LPCVOID)&__frame0.entryHeader, nHeaderWriteSize, (LPDWORD)&__frame0.nBytesWritten, (LPOVERLAPPED)0x0);
+          if (__frame0.nBytesWritten != (DWORD*)nHeaderWriteSize) {
             __frame0.nRebuildReason = 6;
             goto rebuild_corrupt_cache;
           }

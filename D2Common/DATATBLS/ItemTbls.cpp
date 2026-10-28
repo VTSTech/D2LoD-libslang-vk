@@ -10,11 +10,11 @@
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/Drlg/Preset.h"
-#include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Game/D2GambleTxt.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/SKILLS/Items.h"
+#include "D2Game/UNIT/SUNITNPC.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "Fog/D2PoolManagerStrc.h"
@@ -55,10 +55,10 @@ typedef int (__fastcall *CalcGetLinkerIndex_t)(char * szText, int * pOutHasResol
 
 namespace D2Common::DATATBLS::ItemTbls {
 
-static uint8_t gItemCommon_i_ItemTypeId;
-static D2MagicAffixTableStrc pTxtMagicAffixes = {};
-static D2RareAffixTableStrc pTxtRareAffixes = {};
-static D2BooksTableStrc pTxtBooks = {};
+static unsigned int gItemCommon_i_ItemTypeId = 0x646461; D2_STATIC_GUARD(gItemCommon_i_ItemTypeId, "D2Common::DATATBLS::ItemTbls::gItemCommon_i_ItemTypeId");
+static D2MagicAffixTableStrc pTxtMagicAffixes = {}; D2_STATIC_GUARD(pTxtMagicAffixes, "D2Common::DATATBLS::ItemTbls::pTxtMagicAffixes");
+static D2RareAffixTableStrc pTxtRareAffixes = {}; D2_STATIC_GUARD(pTxtRareAffixes, "D2Common::DATATBLS::ItemTbls::pTxtRareAffixes");
+static D2BooksTableStrc pTxtBooks = {}; D2_STATIC_GUARD(pTxtBooks, "D2Common::DATATBLS::ItemTbls::pTxtBooks");
 
 int32_t __fastcall ITEMTBLS_ParseItemStatCostOrBase(char * szFieldValue, int32_t * pResultType, int32_t nFieldType, int32_t nTableId) {
     int32_t nStatId;
@@ -1626,7 +1626,7 @@ void __fastcall TXT_AllocTxt_RareAffixes(D2PoolManagerStrc * pMemory) {
     do {
       uint32_t nStringId;
       nStringId = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)&gsRareAffixTable.pTable[nIdx].name[0], &__frame0.pStringOut);
-      *(short int*)&gsRareAffixTable.pTable[nIdx].nNameStrIdLo = (short int)nStringId;
+      gsRareAffixTable.pTable[nIdx].wNameStrId = (short int)nStringId;
       nIdx++;
     } while (nIdx < gsRareAffixTable.nSize);
 }
@@ -1647,17 +1647,17 @@ D2RareAffixTableStrc * __stdcall TXT_RareAffixes_GetTableInfo() {
 }
 
 // Returns rare affix group line for given 1-based index (72 bytes/entry). Used for rare item name generation (GetItemName).
-int32_t __stdcall TXT_RareAffixes_GetLine(int32_t nIndex) {
+D2RareAffixTxt * __stdcall TXT_RareAffixes_GetLine(int32_t nIndex) {
     if (!(nIndex <= gsRareAffixTable.nSize && 0 < nIndex)) {
-      return 0;
+      return nullptr;
     }
     if (gsRareAffixTable.pTable) {
-      return (int32_t)(gsRareAffixTable.pTable + nIndex - 1);
+      return gsRareAffixTable.pTable + nIndex - 1;
     }
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 799);
     exit(-1);
-    return (int32_t)(gsRareAffixTable.pTable + nIndex - 1);
+    return gsRareAffixTable.pTable + nIndex - 1;
 }
 
 // Loads and compiles uniqueitems.txt into sgtDataTable.pTxtUniqueItems (record stride 0x14C). Builds the column-binding descriptor: index, version, enabled/ladder/nolimit/carry1 bit flags, code (item base), rarity, lvl, lvl req, chr/inv transform colors, flippyfile/invfile graphics, cost mult/add, drop/use sounds, and the 12 prop/par/min/max modifier groups (props linked to the Properties table, par parsed via ITEMTBLS_ParseSkillMonTypeOrStateId). Creates the unique-items txt-link, calls CompileTxt, and error-halts if more than 0x7FFE rows. Then for each record: writes its sequential index, parses the index string field, and resolves the display-name string-table id (defaulting to 0x1507 if not found). __stdcall(void). Side effect: populates the global unique-items data table.
@@ -3045,49 +3045,49 @@ void __fastcall TXT_AllocTxt_qualityitems(D2PoolManagerStrc * pMemory) {
     qualityitems[0x15].nSize = 0;
     qualityitems[0x15].nOffset = 0;
     qualityitems[0x15].fpLinker = 0;
-    pTxtQualityItems = (D2QualityItemsTxt*)DataTbls::CompileTxt(pMemory, "qualityitems", qualityitems, &nTxtQualityItemsSize, 0x70);
+    nTxtQualityItemsSize.pTable = (D2QualityItemsTxt*)DataTbls::CompileTxt(pMemory, "qualityitems", qualityitems, &nTxtQualityItemsSize.nSize, 0x70);
     int nIdx = 0;
     uint16_t* pStringOut = 0;
-    if (0 >= nTxtQualityItemsSize) {
+    if (0 >= nTxtQualityItemsSize.nSize) {
       return;
     }
 
     int nByteOffset = 0;
     do {
-      if (pTxtQualityItems->effect1[nByteOffset] != '\0') {
-        nTxtQualItemsBase = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)(pTxtQualityItems->effect1 + nByteOffset), &pStringOut);
-        *(short int*)(pTxtQualityItems->effect2 + nByteOffset + 0x20) = (short int)nTxtQualItemsBase;
+      if (nTxtQualityItemsSize.pTable->effect1[nByteOffset] != '\0') {
+        nTxtQualItemsBase = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)(nTxtQualityItemsSize.pTable->effect1 + nByteOffset), &pStringOut);
+        *(short int*)(nTxtQualityItemsSize.pTable->effect2 + nByteOffset + 0x20) = (short int)nTxtQualItemsBase;
       }
-      if (pTxtQualityItems->effect2[nByteOffset] != '\0') {
-        nTxtQualItemsBase = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)(pTxtQualityItems->effect2 + nByteOffset), &pStringOut);
-        *(short int*)(pTxtQualityItems->effect2 + nByteOffset + 0x22) = (short int)nTxtQualItemsBase;
+      if (nTxtQualityItemsSize.pTable->effect2[nByteOffset] != '\0') {
+        nTxtQualItemsBase = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)(nTxtQualityItemsSize.pTable->effect2 + nByteOffset), &pStringOut);
+        *(short int*)(nTxtQualityItemsSize.pTable->effect2 + nByteOffset + 0x22) = (short int)nTxtQualItemsBase;
       }
 
       nIdx++;
       nByteOffset += 0x70;
-    } while (nIdx < nTxtQualityItemsSize);
+    } while (nIdx < nTxtQualityItemsSize.nSize);
 }
 
 void __stdcall thunk_UnloadBin_Lvl() {
-    DataTbls::UnloadBin(pTxtQualityItems);
+    DataTbls::UnloadBin(nTxtQualityItemsSize.pTable);
 }
 
 // Returns pointer to nTxtQualityItemsSize global. Used for unique/set item lookup.
-int * __stdcall TXT_QualityItems_GetTableInfo() {
+D2QualityItemsTableStrc * __stdcall TXT_QualityItems_GetTableInfo() {
     return &nTxtQualityItemsSize;
 }
 
 // Returns D2QualityItemsTxt* for given index. Used for unique/set item table lookup.
 D2QualityItemsTxt * __stdcall TXT_QualityItems_GetLine(int32_t nIndex) {
     int32_t nLine;
-    if (!(nIndex < nTxtQualityItemsSize && nIndex != -1)) {
+    if (!(nIndex < nTxtQualityItemsSize.nSize && nIndex != -1)) {
       return nullptr;
     }
-    if (!pTxtQualityItems) {
+    if (!nTxtQualityItemsSize.pTable) {
       nLine = 0x4f2;
     } else {
-      if (pTxtQualityItems + nIndex) {
-        return pTxtQualityItems + nIndex;
+      if (nTxtQualityItemsSize.pTable + nIndex) {
+        return nTxtQualityItemsSize.pTable + nIndex;
       }
 
       nLine = 0x4f3;
@@ -3104,14 +3104,12 @@ void __fastcall TXT_AllocTxt_gems(D2PoolManagerStrc * pMemory) {
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       uint16_t* pStringLookup;
-      uint8_t byLetterCode3;
-      uint8_t byLetterCode2;
-      uint8_t byLetterCode1;
-      uint8_t byLetterCode0;
+      char szGemCode[4];
       int nGemIdx;
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
+    uint8_t bVar2;
     uint32_t nTxtGemsBase;
     int nGemsSize;
     D2BinFieldInputStrc aFieldDefs[42];
@@ -3325,26 +3323,27 @@ void __fastcall TXT_AllocTxt_gems(D2PoolManagerStrc * pMemory) {
     aFieldDefs[0x29].nSize = 0;
     aFieldDefs[0x29].nOffset = 0;
     aFieldDefs[0x29].fpLinker = 0;
-    __frame0.nGemIdx = (int)pMemory;
-    pTxtGems = (D2GemsTxt*)DataTbls::CompileTxt(pMemory, "gems", aFieldDefs, &nTxtGemsSize, 0xc0);
+    nTxtGemsSize.pTable = (D2GemsTxt*)DataTbls::CompileTxt(pMemory, "gems", aFieldDefs, &nTxtGemsSize.nSize, 0xc0);
     __frame0.pStringLookup = 0;
     __frame0.nGemIdx = 0;
-    if (0 < nTxtGemsSize) {
+    if (0 < nTxtGemsSize.nSize) {
       nGemsSize = 0;
       do {
-        __frame0.byLetterCode3 = pTxtGems->letter[nGemsSize + 8] == 0x20U ? 0 : pTxtGems->letter[nGemsSize + 8];
-        __frame0.byLetterCode2 = pTxtGems->letter[nGemsSize + 9] == 0x20U ? 0 : pTxtGems->letter[nGemsSize + 9];
-        __frame0.byLetterCode0 = 0;
-        __frame0.byLetterCode1 = pTxtGems->letter[nGemsSize + 10] == 0x20U ? 0 : pTxtGems->letter[nGemsSize + 10];
-        nTxtGemsBase = D2Lang::StrTable::strtable::STRTABLE_LookupString(&__frame0.byLetterCode3, &__frame0.pStringLookup);
-        *(short int*)(pTxtGems->letter + nGemsSize + 0xc) = (short int)nTxtGemsBase;
+        __frame0.szGemCode[0] = nTxtGemsSize.pTable->letter[nGemsSize + 8] == 0x20U ? 0 : nTxtGemsSize.pTable->letter[nGemsSize + 8];
+        bVar2 = *(uint8_t*)((int)nTxtGemsSize.pTable->aWeaponMods + nGemsSize - 7);
+        __frame0.szGemCode[1] = bVar2 == 0x20 ? 0 : bVar2;
+        bVar2 = *(uint8_t*)((int)nTxtGemsSize.pTable->aWeaponMods + nGemsSize - 6);
+        __frame0.szGemCode[3] = '\0';
+        __frame0.szGemCode[2] = bVar2 == 0x20 ? 0 : bVar2;
+        nTxtGemsBase = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)__frame0.szGemCode, &__frame0.pStringLookup);
+        *(short int*)((int)nTxtGemsSize.pTable->aWeaponMods + nGemsSize - 4) = (short int)nTxtGemsBase;
         __frame0.nGemIdx++;
         nGemsSize += 0xc0;
-      } while (__frame0.nGemIdx < nTxtGemsSize);
+      } while (__frame0.nGemIdx < nTxtGemsSize.nSize);
     }
 
     nGemsSize = 0;
-    if (0 >= nTxtGemsSize) {
+    if (0 >= nTxtGemsSize.nSize) {
       return;
     }
 
@@ -3357,31 +3356,31 @@ void __fastcall TXT_AllocTxt_gems(D2PoolManagerStrc * pMemory) {
       pcVar1[1] = -1;
       pcVar1[2] = -1;
       pcVar1[3] = -1;
-      if (-1 < pTxtGems[nRunesSize].code) {
-        gsItemsTable.pItems[pTxtGems[nRunesSize].code].dwGemOffset = nGemsSize;
+      if (-1 < nTxtGemsSize.pTable[nRunesSize].code) {
+        gsItemsTable.pItems[nTxtGemsSize.pTable[nRunesSize].code].dwGemOffset = nGemsSize;
       }
 
       nGemsSize++;
       nTotalGemsRunesSize++;
       nRunesSize++;
-    } while (nGemsSize < nTxtGemsSize);
+    } while (nGemsSize < nTxtGemsSize.nSize);
 }
 
 void __stdcall thunk_UnloadBin_LvlType() {
-    DataTbls::UnloadBin(pTxtGems);
+    DataTbls::UnloadBin(nTxtGemsSize.pTable);
 }
 
 // Returns gem/rune table line for given index (192 bytes/entry). Used for socketed item property application.
-int32_t __stdcall TXT_Gems_GetLine(int32_t nIndex) {
+D2GemsTxt * __stdcall TXT_Gems_GetLine(int32_t nIndex) {
     int32_t nLine;
-    if (!(nIndex < nTxtGemsSize && nIndex != -1)) {
-      return 0;
+    if (!(nIndex < nTxtGemsSize.nSize && nIndex != -1)) {
+      return nullptr;
     }
-    if (!pTxtGems) {
+    if (!nTxtGemsSize.pTable) {
       nLine = 0x563;
     } else {
-      if (pTxtGems + nIndex) {
-        return (int32_t)(pTxtGems + nIndex);
+      if (nTxtGemsSize.pTable + nIndex) {
+        return nTxtGemsSize.pTable + nIndex;
       }
 
       nLine = 0x564;
@@ -3389,7 +3388,7 @@ int32_t __stdcall TXT_Gems_GetLine(int32_t nIndex) {
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
     exit(-1);
-    return 0;
+    return nullptr;
 }
 
 // Defines the binary field schema for books.txt (name/KEY_WORD, scrollspellcode/RAW4, bookspellcode/RAW4, pSpell/INT, scrollskill/NAME_INT, bookskill/NAME_INT, spellicon/CHAR, basecost/INT, costpercharge/INT) and calls CompileTxt to parse it into pTxtBooks. In: pMemory pool.
@@ -3491,41 +3490,41 @@ void __fastcall TXT_AllocTxt_lowqualityitems(D2PoolManagerStrc * pMemory) {
     aFieldDefs[1].nSize = 0;
     aFieldDefs[1].nOffset = 0;
     aFieldDefs[1].fpLinker = 0;
-    pTxtLowQualityItems = (D2LowQualityItemsTxt*)DataTbls::CompileTxt(pMemory, "lowqualityitems", aFieldDefs, &nTxtLowQualityItemsSize, 0x22);
+    nTxtLowQualityItemsSize.pTable = (D2LowQualityItemsTxt*)DataTbls::CompileTxt(pMemory, "lowqualityitems", aFieldDefs, &nTxtLowQualityItemsSize.nSize, 0x22);
     int nIdx = 0;
     uint16_t* pStringOut = 0;
-    if (0 >= nTxtLowQualityItemsSize) {
+    if (0 >= nTxtLowQualityItemsSize.nSize) {
       return;
     }
 
     do {
       uint32_t nStringId;
-      nStringId = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)&pTxtLowQualityItems[nIdx].Name[0], &pStringOut);
-      *(short int*)(pTxtLowQualityItems[nIdx].Name + 0x20) = (short int)nStringId;
+      nStringId = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)&nTxtLowQualityItemsSize.pTable[nIdx].Name[0], &pStringOut);
+      nTxtLowQualityItemsSize.pTable[nIdx].wNameStringId = (short int)nStringId;
       nIdx++;
-    } while (nIdx < nTxtLowQualityItemsSize);
+    } while (nIdx < nTxtLowQualityItemsSize.nSize);
 }
 
 void __stdcall thunk_UnloadBin_LvlPrest() {
-    DataTbls::UnloadBin(pTxtLowQualityItems);
+    DataTbls::UnloadBin(nTxtLowQualityItemsSize.pTable);
 }
 
 // Returns pointer to nTxtLowQualityItemsSize global. Used for crude/damaged quality item lookup.
-int * __stdcall TXT_LowQualityItems_GetTableInfo() {
+D2LowQualityItemsTableStrc * __stdcall TXT_LowQualityItems_GetTableInfo() {
     return &nTxtLowQualityItemsSize;
 }
 
 // Returns low quality item table line for given index (34 bytes/entry). Used for crude/damaged quality application.
-int32_t __stdcall TXT_LowQualityItems_GetLine(int32_t nIndex) {
+D2LowQualityItemsTxt * __stdcall TXT_LowQualityItems_GetLine(int32_t nIndex) {
     int32_t nLine;
-    if (!(nIndex < nTxtLowQualityItemsSize && nIndex != -1)) {
-      return 0;
+    if (!(nIndex < nTxtLowQualityItemsSize.nSize && nIndex != -1)) {
+      return nullptr;
     }
-    if (!pTxtLowQualityItems) {
+    if (!nTxtLowQualityItemsSize.pTable) {
       nLine = 0x5d0;
     } else {
-      if (pTxtLowQualityItems + nIndex) {
-        return (int32_t)(pTxtLowQualityItems + nIndex);
+      if (nTxtLowQualityItemsSize.pTable + nIndex) {
+        return nTxtLowQualityItemsSize.pTable + nIndex;
       }
 
       nLine = 0x5d1;
@@ -3533,7 +3532,7 @@ int32_t __stdcall TXT_LowQualityItems_GetLine(int32_t nIndex) {
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
     exit(-1);
-    return 0;
+    return nullptr;
 }
 
 // Loads and compiles the ItemRatio.txt data table. Builds a D2BinFieldInputStrc field-definition array (Version, Uber, Class Specific, then Unique/Rare/Set/Magic/HiQuality/Normal drop-chance + Divisor + Min columns at their struct offsets) and passes it to DataTbls::CompileTxt with row size 0x44, storing the parsed table into the global pTxtItemRatio and its row count into nTxtItemRatioSize. Allocates from the supplied D2PoolManagerStrc. Called once during data-table init.
@@ -3647,7 +3646,7 @@ void __stdcall thunk_UnloadBin_LvlMaze() {
 }
 
 // QualityRatio.txt row lookup. Returns quality upgrade chance ratios for treasure class calculations. Used by ITEM_RollItemQuality to apply TC quality bonuses during quality cascade.
-int32_t __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint32_t dwUnused, uint16_t nQualityTier) {
+D2ItemRatioTxt * __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint32_t dwUnused, uint16_t nQualityTier) {
     uint16_t wMinVal;
     int nBestMatchIdx = -1;
     uint32_t nBestMinVal = -1;
@@ -3660,7 +3659,7 @@ int32_t __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint32_t dwUnu
 
     int nRatioIdx = 0;
     if (0 >= nTxtItemRatioSize) {
-      return 0;
+      return nullptr;
     }
 
     short int* pEntry = &pTxtItemRatio->Version;
@@ -3678,10 +3677,10 @@ int32_t __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint32_t dwUnu
     } while (nRatioIdx < nTxtItemRatioSize);
 
     if (-1 >= nBestMatchIdx) {
-      return 0;
+      return nullptr;
     }
 
-    return (int32_t)(pTxtItemRatio + nBestMatchIdx);
+    return pTxtItemRatio + nBestMatchIdx;
 }
 
 int SORT_ItemDescPriority(LPCVOID pParam1, LPCVOID pParam2) {
@@ -4457,9 +4456,10 @@ void __fastcall TXT_AllocTxt_gamble(D2PoolManagerStrc * pMemory) {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gnItemTblsCacheSize, "D2Common::DATATBLS::ItemTbls::TXT_AllocTxt_gamble::gnItemTblsCacheSize");
 
     int32_t nItemClassId;
+    int nLevelCacheIdx;
     int* pGambleEntry;
     int nIdx;
     D2BinFieldInputStrc gamble[2];
@@ -4473,13 +4473,13 @@ void __fastcall TXT_AllocTxt_gamble(D2PoolManagerStrc * pMemory) {
     gamble[1].nSize = 0;
     gamble[1].nOffset = 0;
     gamble[1].fpLinker = 0;
-    D2GambleTxt* pTxtGamble = (D2GambleTxt*)DataTbls::CompileTxt(pMemory, "gamble", gamble, &nTxtGambleSize, 0xc);
-    if (!nTxtGambleSize) {
-      GambleTable = 0;
+    D2GambleTxt* pTxtGamble = (D2GambleTxt*)DataTbls::CompileTxt(pMemory, "gamble", gamble, &nTxtGambleSize.nSize, 0xc);
+    if (!nTxtGambleSize.nSize) {
+      nTxtGambleSize.pTable = 0;
     } else {
-      GambleTable = D2_ALLOC_POOL(nullptr, nTxtGambleSize * 4);
+      nTxtGambleSize.pTable = D2_ALLOC_POOL(nullptr, nTxtGambleSize.nSize * 4);
       nIdx = 0;
-      if (0 < nTxtGambleSize) {
+      if (0 < nTxtGambleSize.nSize) {
         pGambleEntry = &pTxtGamble->nItemClassId;
         do {
           nItemClassId = Fog::Src::Excel::GetClassIdFromName(sgtDataTable.sTxtItemsLink, *(uint32_t*)((D2GambleTxt*)(pGambleEntry - 2))->szCode, 0);
@@ -4492,29 +4492,28 @@ void __fastcall TXT_AllocTxt_gamble(D2PoolManagerStrc * pMemory) {
           *pGambleEntry = nItemClassId;
           nIdx++;
           pGambleEntry += 3;
-        } while (nIdx < nTxtGambleSize);
+        } while (nIdx < nTxtGambleSize.nSize);
       }
 
-      qsort(pTxtGamble, nTxtGambleSize, 0xc, TXT_Gamble_SortFunction);
+      qsort(pTxtGamble, nTxtGambleSize.nSize, 0xc, TXT_Gamble_SortFunction);
     }
 
     nIdx = 0;
-    if (0 < nTxtGambleSize) {
+    if (0 < nTxtGambleSize.nSize) {
       pGambleEntry = &pTxtGamble->nItemClassId;
       do {
-        *(int*)((int)GambleTable + nIdx * 4) = *pGambleEntry;
+        *(int*)((int)nTxtGambleSize.pTable + nIdx * 4) = *pGambleEntry;
         nIdx++;
         pGambleEntry += 3;
-      } while (nIdx < nTxtGambleSize);
+      } while (nIdx < nTxtGambleSize.nSize);
     }
 
     gnItemTblsCacheSize[0] = 2;
     nIdx = 1;
     do {
-      int nLevelCacheIdx;
-      gnItemTblsCacheSize[nIdx] = nTxtGambleSize;
+      gnItemTblsCacheSize[nIdx] = nTxtGambleSize.nSize;
       nLevelCacheIdx = 0;
-      if (0 < nTxtGambleSize) {
+      if (0 < nTxtGambleSize.nSize) {
         pGambleEntry = &pTxtGamble->nLevel;
         do {
           if (nIdx < *pGambleEntry) {
@@ -4524,7 +4523,7 @@ void __fastcall TXT_AllocTxt_gamble(D2PoolManagerStrc * pMemory) {
 
           nLevelCacheIdx++;
           pGambleEntry += 3;
-        } while (nLevelCacheIdx < nTxtGambleSize);
+        } while (nLevelCacheIdx < nTxtGambleSize.nSize);
       }
 
       nIdx++;
@@ -4537,16 +4536,16 @@ void __fastcall TXT_AllocTxt_gamble(D2PoolManagerStrc * pMemory) {
 
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __stdcall FreeGambleTable() {
-    if (!GambleTable) {
+    if (!nTxtGambleSize.pTable) {
       return;
     }
 
-    D2_FREE_POOL(nullptr, GambleTable);
-    GambleTable = 0;
-    nTxtGambleSize = 0;
+    D2_FREE_POOL(nullptr, nTxtGambleSize.pTable);
+    nTxtGambleSize.pTable = 0;
+    nTxtGambleSize.nSize = 0;
 }
 
-int * __stdcall GetGambleTableSize() {
+D2GambleTableStrc * __stdcall GetGambleTableSize() {
     return &nTxtGambleSize;
 }
 
@@ -4854,7 +4853,6 @@ BOOL __stdcall ITEMTBLS_CheckIfDataFileExists(char * szFileExt, D2PoolManagerStr
 // Builds the Runes.txt (rune word) data table for D2Common. Defines the column schema (name, rune name, complete/server flags, itype1-6/etype1-3 item-type filters linked to ItemTypes, rune1-6 base codes linked to Items, and 7 t1code/param/min/max stat triplets linked to Properties), loads "runessrv" (.txt/.bin/.xls, halting via Fog ErrorManager if none found), compiles it into pTxtRunes (stride 0x120, count nTxtRunesSize), then resolves each row's "complete" string-table key into its string id at offset 0x82. ECX = pool manager. No return.
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __fastcall TXT_AllocTxt_runes(D2PoolManagerStrc * pMemory) {
-    int nOffset;
     D2BinFieldInputStrc aFieldDefs[48];
     uint16_t* pStringOut;
     aFieldDefs[0].eType = FIELDTYPE_ASCII;
@@ -5106,19 +5104,17 @@ void __fastcall TXT_AllocTxt_runes(D2PoolManagerStrc * pMemory) {
       if (!bSrvBinExists) {
         bSrvBinExists = ITEMTBLS_CheckIfDataFileExists(".xls", pMemory, "runessrv");
         if (!bSrvBinExists) {
-          pTxtRunes = (int*)DataTbls::CompileTxt(pMemory, "runes", aFieldDefs, &nTxtRunesSize, 0x120);
+          nTxtRunesSize.pTable = (D2RunesTxt*)DataTbls::CompileTxt(pMemory, "runes", aFieldDefs, &nTxtRunesSize.nSize, 0x120);
           pStringOut = 0;
-          if (0 >= nTxtRunesSize) {
+          if (0 >= nTxtRunesSize.nSize) {
             return;
           }
 
-          nOffset = 0;
           do {
-            nStringId = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)((int)pTxtRunes + nOffset), &pStringOut);
-            *(short int*)((int)pTxtRunes + nOffset + 0x82) = (short int)nStringId;
+            nStringId = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)&nTxtRunesSize.pTable[nRuneIdx].name[0], &pStringOut);
+            *(short int*)(nTxtRunesSize.pTable[nRuneIdx].rune_name + 0x42) = (short int)nStringId;
             nRuneIdx++;
-            nOffset += 0x120;
-          } while (nRuneIdx < nTxtRunesSize);
+          } while (nRuneIdx < nTxtRunesSize.nSize);
 
           return;
         }
@@ -5136,48 +5132,48 @@ void __fastcall TXT_AllocTxt_runes(D2PoolManagerStrc * pMemory) {
 }
 
 void __stdcall ITEMTBLS_FreeRunes() {
-    DataTbls::UnloadBin(pTxtRunes);
+    DataTbls::UnloadBin(nTxtRunesSize.pTable);
     Fog::Src::Excel::STRUCT_FreeTxtLink(sgtDataTable.pTxtRunesLink);
 }
 
-int * __stdcall TXT_GetRuneTableSize() {
+D2RunesTxtTableStrc * __stdcall TXT_GetRuneTableSize() {
     return &nTxtRunesSize;
 }
 
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __stdcall ITEMTBLS_CopyRunewordRecord(int32_t nRunewordId, char * pSourceRecord) {
     int nDwords;
-    int* pDstRecord;
-    if (nTxtRunesSize <= nRunewordId) {
+    D2RunesTxt* pDstRecord;
+    if (nTxtRunesSize.nSize <= nRunewordId) {
       size_t nNewAllocSize;
       nNewAllocSize = (nRunewordId * 9 + 9) * 0x20;
-      pDstRecord = pTxtRunes;
+      pDstRecord = nTxtRunesSize.pTable;
       if (gpaMiscTxtTables) {
-        pDstRecord = pTxtRunes - 1;
+        pDstRecord = (D2RunesTxt*)&nTxtRunesSize.pTable[-1].t1max7;
         nNewAllocSize += 4;
       }
 
-      pTxtRunes = (int*)D2_REALLOC_POOL(nullptr, pDstRecord, nNewAllocSize);
+      nTxtRunesSize.pTable = (D2RunesTxt*)D2_REALLOC_POOL(nullptr, pDstRecord, nNewAllocSize);
       if (gpaMiscTxtTables) {
-        *pTxtRunes = nRunewordId + 1;
-        pTxtRunes++;
+        *(int32_t*)nTxtRunesSize.pTable->name = nRunewordId + 1;
+        nTxtRunesSize.pTable = (D2RunesTxt*)(nTxtRunesSize.pTable->name + 4);
       }
 
-      memset(pTxtRunes + nTxtRunesSize * 0x48, 0, (nRunewordId - nTxtRunesSize) * 0x120);
-      nTxtRunesSize = nRunewordId + 1;
+      memset(nTxtRunesSize.pTable + nTxtRunesSize.nSize, 0, (nRunewordId - nTxtRunesSize.nSize) * 0x120);
+      nTxtRunesSize.nSize = nRunewordId + 1;
     }
 
-    pDstRecord = pTxtRunes + nRunewordId * 0x48;
+    pDstRecord = nTxtRunesSize.pTable + nRunewordId;
     for (nDwords = 0x48; nDwords; nDwords--) {
-      *pDstRecord = *(int*)pSourceRecord;
-      pSourceRecord = (char*)((int)pSourceRecord + 4);
-      pDstRecord++;
+      *(uint32_t*)pDstRecord->name = *(uint32_t*)pSourceRecord;
+      pSourceRecord += 4;
+      pDstRecord = (D2RunesTxt*)(pDstRecord->name + 4);
     }
 }
 
 int32_t __stdcall ITEMTBLS_GetRunewordTxtRecord(int32_t nRunewordId) {
-    if (0 < nRunewordId && nRunewordId < nTxtRunesSize) {
-      return (int32_t)(pTxtRunes + nRunewordId * 0x48);
+    if (0 < nRunewordId && nRunewordId < nTxtRunesSize.nSize) {
+      return (int32_t)(nTxtRunesSize.pTable + nRunewordId);
     }
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x972);

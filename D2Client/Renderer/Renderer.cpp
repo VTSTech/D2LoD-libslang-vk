@@ -89,7 +89,7 @@ D2RendererFunctionsStrc GlideFunctionTable = {
     /* .nfpDrawLight = */ (fpDrawLight)&D2Glide::Renderer::Glide::DrawLight,
     /* .nfpDebugFillBackBuffer = */ (fpDebugFillBackBuffer)&D2Glide::Renderer::Glide::DebugFillBackBuffer,
     /* .nfpClearCaches = */ &D2Glide::Renderer::Glide::ClearCaches
-};
+}; D2_GLOBAL_GUARD(GlideFunctionTable, "D2Client::Renderer::GlideFunctionTable");
 
 D2RendererFunctionsStrc DirectDrawFunctionTable = {
     /* .nfpInitialize = */ &D2DDraw::Renderer::DirectDraw::Initialize,
@@ -146,7 +146,7 @@ D2RendererFunctionsStrc DirectDrawFunctionTable = {
     /* .nfpDrawLight = */ (fpDrawLight)&D2DDraw::Renderer::DirectDraw::DrawLight,
     /* .nfpDebugFillBackBuffer = */ (fpDebugFillBackBuffer)&D2DDraw::Renderer::DirectDraw::DebugFillBackBuffer,
     /* .nfpClearCaches = */ &D2DDraw::Renderer::DirectDraw::ClearCaches
-};
+}; D2_GLOBAL_GUARD(DirectDrawFunctionTable, "D2Client::Renderer::DirectDrawFunctionTable");
 
 D2RendererFunctionsStrc Direct3DFunctionTable = {
     /* .nfpInitialize = */ &D2Direct3D::Renderer::Initialize,
@@ -203,7 +203,7 @@ D2RendererFunctionsStrc Direct3DFunctionTable = {
     /* .nfpDrawLight = */ &D2Direct3D::Renderer::DrawLight,
     /* .nfpDebugFillBackBuffer = */ &D2Direct3D::Renderer::DebugFillBackBuffer,
     /* .nfpClearCaches = */ &D2Direct3D::Renderer::ClearCaches
-};
+}; D2_GLOBAL_GUARD(Direct3DFunctionTable, "D2Client::Renderer::Direct3DFunctionTable");
 
 D2RendererFunctionsStrc WindowedFunctionTable = {
     /* .nfpInitialize = */ &D2Client::Renderer::Windowed::Initialize,
@@ -260,6 +260,6 @@ D2RendererFunctionsStrc WindowedFunctionTable = {
     /* .nfpDrawLight = */ &D2Gdi::Renderer::Windowed::DrawLight,
     /* .nfpDebugFillBackBuffer = */ &D2Gdi::Renderer::Windowed::DebugFillBackBuffer,
     /* .nfpClearCaches = */ &D2Gdi::Renderer::Windowed::ClearCaches
-};
+}; D2_GLOBAL_GUARD(WindowedFunctionTable, "D2Client::Renderer::WindowedFunctionTable");
 
 } // namespace D2Client::Renderer

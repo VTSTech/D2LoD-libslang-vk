@@ -3,6 +3,7 @@
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/CmdTbl.h"
@@ -23,7 +24,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Win/DC6.h"
@@ -32,8 +32,8 @@
 #include "D2gfx/D2GFX.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/File.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SReg.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -404,7 +404,7 @@ void MINIPANEL_HandleButtonClick(int32_t nButtonId) {
 
 void __stdcall INPUT_MiniPanelMouseUp(D2UIMouseMsgStrc * pMsg) {
     // Static local variables (originally global data)
-    static uint32_t gnMiniPanelClickedButton;
+    static uint32_t gnMiniPanelClickedButton; D2_STATIC_GUARD_BSS(gnMiniPanelClickedButton, "D2Client::UI::MiniPanel::INPUT_MiniPanelMouseUp::gnMiniPanelClickedButton");
 
     uint32_t bBeltHover;
     eD2UnitType eUnitType;

@@ -14,7 +14,6 @@
 #include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
-#include "Fog/D2PoolManagerStrc.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -99,16 +98,16 @@ int __stdcall ProcessReceivedData(D2QSSocketStrc * pQServerStrc, void * pBuffer,
     uint32_t uVar3;
     size_t _Size;
     uint16_t wPacketSize;
-    void* _Src = pBuffer;
+    void* pvVar4 = pBuffer;
     do {
       int iVar1;
-      wPacketSize = *(uint16_t*)(pQServerStrc->nSizeFieldOffset + (int)_Src);
+      wPacketSize = *(uint16_t*)(pQServerStrc->nSizeFieldOffset + (int)pvVar4);
       uVar3 = (uint32_t)wPacketSize;
       iVar2 = pQServerStrc->nHeaderSize;
-      iVar1 = (int)pBuffer + (nBufferSize - (int)_Src);
+      iVar1 = (int)pBuffer + (nBufferSize - (int)pvVar4);
       if (iVar1 < iVar2 || iVar1 < (int)uVar3) {
-        _Size = (int)pBuffer + (nBufferSize - (int)_Src);
-        memcpy(pBuffer, _Src, _Size);
+        _Size = (int)pBuffer + (nBufferSize - (int)pvVar4);
+        memcpy(pBuffer, pvVar4, _Size);
         return _Size;
       }
       if (0x2063 < uVar3) {
@@ -117,7 +116,7 @@ int __stdcall ProcessReceivedData(D2QSSocketStrc * pQServerStrc, void * pBuffer,
       }
 
       wMsgSize = wPacketSize - (short int)iVar2;
-      pParam = (void*)(iVar2 + (int)_Src);
+      pParam = (void*)(iVar2 + (int)pvVar4);
       if (!pQServerStrc->pfnPacketHandler) {
         D2QSQueue::FOG_EnqueueMessage(&pQServerStrc->aQueue, pParam, wMsgSize);
         /* HANDLE hEvent for SetEvent */ SetEvent(pQServerStrc->pEvent);
@@ -131,18 +130,18 @@ int __stdcall ProcessReceivedData(D2QSSocketStrc * pQServerStrc, void * pBuffer,
         iVar2 = pQServerStrc->pfnPacketHandler(pQServerStrc->pHandlerContext);
         if (!iVar2) {
           if (0 < pQServerStrc->nSizeFieldOffset) {
-            pParam = _Src;
+            pParam = pvVar4;
             wMsgSize = wPacketSize;
           }
 
           D2QSQueue::FOG_EnqueueMessage(&pQServerStrc->aQueue, pParam, wMsgSize);
           /* HANDLE hEvent for SetEvent */ SetEvent(pQServerStrc->pEvent);
-          _Src = (void*)((int)_Src + uVar3);
+          pvVar4 = (void*)((int)pvVar4 + uVar3);
           continue;
         }
       }
 
-      _Src = (void*)((int)_Src + uVar3);
+      pvVar4 = (void*)((int)pvVar4 + uVar3);
     } while (true);
 }
 
@@ -374,7 +373,7 @@ void __stdcall FreeD2QSSocket(D2QSSocketStrc * pSocket) {
     }
 
     QSSOCKET_BlockSocket(pSocket);
-    D2QSQueue::Free((D2PoolManagerStrc*)&pSocket->aQueue);
+    D2QSQueue::Free(&pSocket->aQueue);
     D2NetDataStrc* pNetData = pSocket->pSafesock;
     if (pNetData && pNetData->hSocketThread) {
       Safesock::Free(pNetData);
@@ -423,17 +422,10 @@ int __stdcall NET_MCP_CLIENT_SendPacketToQSocket(D2QSSocketStrc * pQSocket, char
 }
 
 int32_t __stdcall NET_MCP_CLIENT_Send(D2QSSocketStrc * pQSocket, char * pBytes, uint16_t nDataSizeNoHeader) {
-    // Frame slots -8304..-8 are ONE object: &wPacketLength is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint16_t wPacketLength;
-      short int wDataSize;
-      uint8_t aSendBuf[8292];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8296, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint16_t _nDataSizeNoHeader;
     uint32_t nTotalSendSize;
+    uint8_t abLenHeader[4];
+    uint8_t aSendBuf[8292];
     uint16_t nDataSize = nDataSizeNoHeader;
     _nDataSizeNoHeader = (uint32_t)nDataSizeNoHeader;
     if (!pQSocket || !pQSocket->pSafesock || !pQSocket->pSafesock->bConnected) {
@@ -447,30 +439,31 @@ int32_t __stdcall NET_MCP_CLIENT_Send(D2QSSocketStrc * pQSocket, char * pBytes, 
       }
 
       _nDataSizeNoHeader = (uint32_t)nDataSize;
-      Storm::Source::SSystem::SMemCopy(__frame0.aSendBuf + 3, pBytes, _nDataSizeNoHeader - 1);
-      __frame0.wDataSize = nDataSize + 3;
-      __frame0.wPacketLength = (uint16_t)((uint16_t)(uint8_t)*pBytes << 8 | (uint16_t)(uint8_t)(char)pQSocket->nHeaderLeadByte);
-      Storm::Source::SSystem::SMemCopy(__frame0.aSendBuf, &__frame0.wPacketLength, 4);
+      Storm::Source::SSystem::SMemCopy(aSendBuf + 3, pBytes, _nDataSizeNoHeader - 1);
+      *(uint16_t*)((char*)&abLenHeader + 2) = nDataSize + 3;
+      abLenHeader[1] = *pBytes;
+      abLenHeader[0] = (uint8_t)pQSocket->nHeaderLeadByte;
+      Storm::Source::SSystem::SMemCopy(aSendBuf, abLenHeader, 4);
       nTotalSendSize = _nDataSizeNoHeader + 3;
     } else {
-      __frame0.wPacketLength = nDataSize + 2;
-      if (0x2063 < __frame0.wPacketLength) {
+      *(uint16_t*)(char*)&abLenHeader = nDataSize + 2;
+      if (0x2063 < (uint16_t)*(uint16_t*)(char*)&abLenHeader) {
         ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x71);
         exit(-1);
       }
 
-      Storm::Source::SSystem::SMemCopy(__frame0.aSendBuf, &__frame0.wPacketLength, 2);
+      Storm::Source::SSystem::SMemCopy(aSendBuf, abLenHeader, 2);
       if (!pBytes) {
         _nDataSizeNoHeader = 0;
       }
 
       nTotalSendSize = _nDataSizeNoHeader + 2;
       if (pBytes && nTotalSendSize < 0x2064) {
-        Storm::Source::SSystem::SMemCopy(__frame0.aSendBuf + 2, pBytes, _nDataSizeNoHeader);
+        Storm::Source::SSystem::SMemCopy(aSendBuf + 2, pBytes, _nDataSizeNoHeader);
       }
     }
 
-    int nSendResult = NET_MCP_CLIENT_SendPacketToQSocket(pQSocket, (char*)__frame0.aSendBuf, (short int)nTotalSendSize);
+    int nSendResult = NET_MCP_CLIENT_SendPacketToQSocket(pQSocket, (char*)aSendBuf, (short int)nTotalSendSize);
     Debug::GuardStack();
     return nSendResult + (_nDataSizeNoHeader - nTotalSendSize);
 }

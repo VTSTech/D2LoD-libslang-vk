@@ -22,7 +22,7 @@ void __fastcall SetupGamma(DWORD dwParam) {
 
 void __stdcall SetCurrentEngineToOne() {
     // Static local variables (originally global data)
-    static uint32_t gnCurrentEngineIndex;
+    static uint32_t gnCurrentEngineIndex; D2_STATIC_GUARD_BSS(gnCurrentEngineIndex, "D2Client::GAME::Rendering::SetCurrentEngineToOne::gnCurrentEngineIndex");
 
     D2Game::GAME::Rendering::CurrentRendingEngine = 1;
     gnCurrentEngineIndex = 1;
@@ -139,10 +139,10 @@ void __stdcall DrawRenderStats() {
 // Renders the in-game FPS and diagnostic stats overlay (toggled by gbFPSStatsEnabled). Maintains a per-second frame counter (fps global) and a cumulative frame accumulator. When enabled, draws: FPS + skip count, ping, physical/page memory usage (via GlobalMemoryStatus), renderer name (Software/DirectDraw/Glide/OpenGL/Direct3D/RAVE), and optionally COF memory, sprite cache, async file count, and CelData cache stats. Called each render frame from the game rendering path.
 void __stdcall DRAW_UI_FPSStats() {
     // Static local variables (originally global data)
-    static unsigned int gdwFPSLastSecondTick;
-    static uint32_t gnFPSFrameCounter;
-    static int gnFPSFrameCounterAccum;
-    static uint32_t gdwFPSStatsStartTick;
+    static unsigned int gdwFPSLastSecondTick; D2_STATIC_GUARD_BSS(gdwFPSLastSecondTick, "D2Client::GAME::Rendering::DRAW_UI_FPSStats::gdwFPSLastSecondTick");
+    static uint32_t gnFPSFrameCounter; D2_STATIC_GUARD_BSS(gnFPSFrameCounter, "D2Client::GAME::Rendering::DRAW_UI_FPSStats::gnFPSFrameCounter");
+    static int gnFPSFrameCounterAccum; D2_STATIC_GUARD_BSS(gnFPSFrameCounterAccum, "D2Client::GAME::Rendering::DRAW_UI_FPSStats::gnFPSFrameCounterAccum");
+    static uint32_t gdwFPSStatsStartTick; D2_STATIC_GUARD_BSS(gdwFPSStatsStartTick, "D2Client::GAME::Rendering::DRAW_UI_FPSStats::gdwFPSStatsStartTick");
 
     int32_t nStatValue;
     eD2RendererMode eRendererMode_lcl;
@@ -217,13 +217,13 @@ void __stdcall DRAW_UI_FPSStats() {
       iVar1 = Engine::Gfx::GFX_GetGfxSystemFlags();
       nUsage = Engine::Gfx::GFX_GetCofCacheMemUsage();
       D2gfx::D2GFX::D2GFX_DrawString(10, 0x84, "COF Memory->%i of %i", nUsage, iVar1);
-      uVar2 = (uint32_t)(uintptr_t)D2CMP::SRC::SpriteCache::SPRITECACHE_GetCacheSize();
+      uVar2 = D2CMP::SRC::SpriteCache::SPRITECACHE_GetCacheSize();
       nCacheTotal = D2CMP::SRC::SpriteCache::SPRITECACHE_GetTotalEntries();
       D2gfx::D2GFX::D2GFX_DrawString(10, 0x90, "Sprite Cache Memory->%i of %i", nCacheTotal, uVar2);
       nAsyncFiles = Fog::FOG_GetAsyncFileCount_ReturnZero();
       D2gfx::D2GFX::D2GFX_DrawString(10, 0x9c, "Async Files->%i", nAsyncFiles);
-      nCelCacheCurrent = (int32_t)D2CMP::SRC::SpriteCache::SPRITECACHE_GetCurrentSize();
-      nCelCacheMax = (int32_t)D2CMP::SRC::SpriteCache::SPRITECACHE_GetMaxSize();
+      nCelCacheCurrent = D2CMP::SRC::SpriteCache::SPRITECACHE_GetCurrentSize();
+      nCelCacheMax = D2CMP::SRC::SpriteCache::SPRITECACHE_GetMaxSize();
       D2gfx::D2GFX::D2GFX_DrawString(10, 0xa8, "CelData Cache Memory->%i of %i", nCelCacheMax, nCelCacheCurrent);
       D2Client::Sound::SoundHdr::SOUNDHDR_Nop();
       DrawRenderStats();

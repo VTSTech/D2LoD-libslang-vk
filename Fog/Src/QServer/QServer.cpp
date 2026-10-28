@@ -14,19 +14,19 @@
 #include "Fog/D2QServerStrc.h"
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
-#include "Fog/QServer.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
 #include "Fog/Src/QServer/QServer98.h"
 #include "Fog/Src/QServer/QServerNT.h"
 #include "Fog/Src/Safesock.h"
-#include "Storm/Source/SFile.h"
 #include "Storm/Source/SSTR.h"
+#include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 #include "Fog/Fog.h"
+#include "Fog/QServer.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -188,8 +188,8 @@ DWORD __stdcall WaitForEmptyEvent(D2QServerStrc * pQServer, DWORD dwParam) {
     return dwWaitResult;
 }
 
-::QServer * _unused_broken(::QServer * pQServer, LPCRITICAL_SECTION pCriticalSection) {
-    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ *(LPCRITICAL_SECTION*)pQServer = pCriticalSection;
+FogCritSectLockStrc * _unused_broken(FogCritSectLockStrc * pQServer, LPCRITICAL_SECTION pCriticalSection) {
+    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ pQServer->pCriticalSection = pCriticalSection;
     EnterCriticalSection(pCriticalSection);
     return pQServer;
 }
@@ -197,8 +197,8 @@ DWORD __stdcall WaitForEmptyEvent(D2QServerStrc * pQServer, DWORD dwParam) {
 // Leaves the critical section a QServer frame local holds: LeaveCriticalSection(*ppCriticalSection). ECX = &local,
 // plain RET; reached from the EH unwind funclet Unwind_006ca540 (LEA ECX,[EBP-0x10]; JMP).
 // Provenance: 1.14d 006be530 MOV EAX,[ECX] / PUSH EAX / CALL [LeaveCriticalSection].
-void __fastcall LeaveCriticalSection_QServer(LPCRITICAL_SECTION * ppCriticalSection) {
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(*ppCriticalSection);
+void __fastcall LeaveCriticalSection_QServer(FogCritSectLockStrc * ppCriticalSection) {
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(ppCriticalSection->pCriticalSection);
 }
 
 D2QServerClientConnectionStrc * __fastcall FindClientByClientId(D2QServerStrc * pQServer, int nClientId) {
@@ -1080,7 +1080,7 @@ static uint32_t gadwQServerPrefixMasks[33] = {
     0xfcffffff,
     0xfeffffff,
     0xffffffff
-};
+}; D2_STATIC_GUARD(gadwQServerPrefixMasks, "Fog::Src::MatchesGameTokenFilter::gadwQServerPrefixMasks");
 
     int nFilterIndex = 0;
     if (0 >= pQServer->nGameTokenFilterCount) {

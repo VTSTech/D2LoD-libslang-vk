@@ -50,7 +50,7 @@ void DRLGMAZE_GenerateSewerLevel(D2DrlgLevelStrc * pDrlgLevelStrc) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgSewerAreaReplacements, "D2Common::Drlg::Maze::Act2::Sewer::DRLGMAZE_GenerateSewerLevel::gaDrlgSewerAreaReplacements");
     static D2DrlgReplaceRoomStrc gaDrlgSewerReplacements_C[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x135,
@@ -76,7 +76,7 @@ void DRLGMAZE_GenerateSewerLevel(D2DrlgLevelStrc * pDrlgLevelStrc) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgSewerReplacements_C, "D2Common::Drlg::Maze::Act2::Sewer::DRLGMAZE_GenerateSewerLevel::gaDrlgSewerReplacements_C");
     static D2DrlgReplaceRoomStrc gaDrlgSewerReplacements_D[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x135,
@@ -102,7 +102,7 @@ void DRLGMAZE_GenerateSewerLevel(D2DrlgLevelStrc * pDrlgLevelStrc) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgSewerReplacements_D, "D2Common::Drlg::Maze::Act2::Sewer::DRLGMAZE_GenerateSewerLevel::gaDrlgSewerReplacements_D");
     static D2DrlgReplaceRoomStrc gaDrlgSewerReplacements_A[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x135,
@@ -128,7 +128,7 @@ void DRLGMAZE_GenerateSewerLevel(D2DrlgLevelStrc * pDrlgLevelStrc) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgSewerReplacements_A, "D2Common::Drlg::Maze::Act2::Sewer::DRLGMAZE_GenerateSewerLevel::gaDrlgSewerReplacements_A");
     static D2DrlgReplaceRoomStrc gaDrlgSewerReplacements_B[4] = {
     {
         /* .nSourceLevelPrestId = */ 0x135,
@@ -154,7 +154,7 @@ void DRLGMAZE_GenerateSewerLevel(D2DrlgLevelStrc * pDrlgLevelStrc) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(gaDrlgSewerReplacements_B, "D2Common::Drlg::Maze::Act2::Sewer::DRLGMAZE_GenerateSewerLevel::gaDrlgSewerReplacements_B");
 
     D2RoomExStrc* pNewRoom;
     int fReplaceResult;

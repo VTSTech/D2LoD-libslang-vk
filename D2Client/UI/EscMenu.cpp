@@ -5,6 +5,7 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2GameViewStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Rendering.h"
@@ -16,7 +17,6 @@
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT/Missile.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Sound/Src/D2SoundFast.h"
 #include "D2Win/DC6.h"
@@ -25,8 +25,8 @@
 #include "D2gfx/D2GFX.h"
 #include "Fog/Fog.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/Storm.h"
 #include "Storm/Source/SReg.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Panel.h"
 #include "D2Launch/MainMenus.h"
@@ -888,7 +888,7 @@ void __stdcall ESCMENU_DrawProgressBar(D2EscMenuItemStrc * pMenuItem, int32_t nB
     int nCenterX;
     int32_t nBarWidth;
     D2GfxDataStrc sGfxData;
-    int nItemCount = gpEscMenuItemCount[1].nItemCount + nBaseY;
+    int nItemCount = gpEscMenuItemCount->nBarYOffset + nBaseY;
     int nScreenCenterX = ScreenSizeX / 2;
     if (!bIsOptionsMenu) {
       nCenterX = nScreenCenterX - 0x3c;
@@ -939,9 +939,9 @@ void __stdcall ESCMENU_DrawProgressBar(D2EscMenuItemStrc * pMenuItem, int32_t nB
 // Renders escape menu UI. Tracks mouse position, updates selection via GetItemIndexFromMouseY or handles slider drag. Iterates visible items (skipping expansion-only in classic mode), drawing based on type: 0=centered image, 1=dual-sided images (left -230px, right +230px), 2=progress bar. Draws rotating star cursor on both sides of selected item, animating at tick rate. Uses gpEscMenuItemCount header for spacing and gpEscMenuCurrentTable for item data.
 void __stdcall DRAW_EscMenu() {
     // Static local variables (originally global data)
-    static uint32_t DRAW_RotatingStarPosition;
-    static uint32_t gnEscMenuLastMouseX;
-    static uint32_t gnEscMenuLastMouseY;
+    static uint32_t DRAW_RotatingStarPosition; D2_STATIC_GUARD_BSS(DRAW_RotatingStarPosition, "D2Client::UI::EscMenu::DRAW_EscMenu::DRAW_RotatingStarPosition");
+    static uint32_t gnEscMenuLastMouseX; D2_STATIC_GUARD_BSS(gnEscMenuLastMouseX, "D2Client::UI::EscMenu::DRAW_EscMenu::gnEscMenuLastMouseX");
+    static uint32_t gnEscMenuLastMouseY; D2_STATIC_GUARD_BSS(gnEscMenuLastMouseY, "D2Client::UI::EscMenu::DRAW_EscMenu::gnEscMenuLastMouseY");
 
     char* pcVar1;
     int nMouseX;

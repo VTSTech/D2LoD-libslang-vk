@@ -9,6 +9,7 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2BitBufferStrc;
 struct D2GSPacketSrv0x4E;
 struct D2UnitStrc;
 
@@ -88,7 +89,7 @@ namespace D2Client::UI::npcmenu::Merc {
 // Function declarations
 void __fastcall AddMercForHireToGlobalList(struct D2GSPacketSrv0x4E * pPacket);
 void __fastcall NET_D2GS_CLIENT_Incoming0x4F_INITMERCENARYLIST(char * pBytes);
-int __stdcall NPCMENU_GetMercHireCost();
+struct D2BitBufferStrc * __stdcall NPCMENU_GetMercHireCost();
 void __fastcall NPCMENU_SetSelectedMercIndex(int16_t nParam);
 void __fastcall NPCMENU_MercItemFoundCb(void * pUnit);
 void __fastcall NPCMENU_HandleMercListPacket(int32_t nParam);

@@ -10,12 +10,10 @@
 
 // Forward declarations
 struct D2CUnitEventStrc;
-struct D2DynamicPathStrc;
 struct D2RoomStrc;
 struct D2SkillArgStrc;
 struct D2UnitStrc;
 struct D2fpSkillFuncArg;
-struct D2fpSkillFuncSub;
 typedef int eD2Skills;
 typedef int eMissilesId;
 #ifndef RECON_FPTD_fpSkillsFunc
@@ -31,6 +29,16 @@ struct D2SkillNextTargetSearchStrc {
     /* 0x0C */ uint32_t nWrapGUID; // its GUID; starts at nExcludeGUID
     /* 0x10 */ uint32_t nExcludeGUID; // GUID of the current target; the next one must be greater
     /* 0x14 */ uint32_t nCount; // units visited
+};
+
+struct D2SkillsPerClassStrc {
+    /* 0x00 */ short Amazon;
+    /* 0x02 */ short Sorceress;
+    /* 0x04 */ short Necromancer;
+    /* 0x06 */ short Paladin;
+    /* 0x08 */ short Barbarian;
+    /* 0x0A */ short Druid;
+    /* 0x0C */ short Assassin;
 };
 
 namespace D2Client::SKILLS::Skills {
@@ -68,7 +76,7 @@ uint32_t __fastcall SKILLS_GetTargetTypeForSkill(int32_t nParam, int * pnParam);
 uint32_t __fastcall SKILL_ValidateTarget(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, uint32_t nTargetFlags);
 uint32_t ROOM_IsPointInRadius(struct D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t nRadius);
 // Iterates all units in adjacent rooms within nRadius of (nCenterX, nCenterY) and invokes fpCallback for each valid target. Builds a room list via DRLGROOM_GetAdjacentRoomsList, skips town rooms if nTargetFlags has bit 0x2000, filters by distance-squared, calls SKILL_ValidateTarget with nTargetFlags, optionally skips aura-immune monsters (bExcludeAuraImmune), and passes a D2fpSkillFuncArg to the callback. Accumulates hit count in sCallbackArg.nSize.
-void __fastcall SKILL_ForEachUnitInRadius(struct D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, uint32_t nTargetFlags, fpSkillsFunc fpCallback, struct D2fpSkillFuncSub * pCallbackData, int32_t bExcludeAuraImmune);
+void __fastcall SKILL_ForEachUnitInRadius(struct D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, uint32_t nTargetFlags, fpSkillsFunc fpCallback, void * pCallbackData, int32_t bExcludeAuraImmune);
 BOOL __fastcall SKILLS_RadiusCallback_IncrementCounter(struct D2fpSkillFuncArg * pFuncArg, struct D2UnitStrc * pUnit);
 struct D2UnitStrc * __fastcall SKILL_FindClosestTarget(struct D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, uint32_t nTargetFlags);
 BOOL __fastcall SKILLS_RadiusCallback_FindMinMaxGUID(struct D2fpSkillFuncArg * pFuncArg, struct D2UnitStrc * pUnit);
@@ -82,7 +90,7 @@ BOOL __fastcall Skills_CltDoFunc_Bow_ThrowItem(struct D2UnitStrc * pUnit, eD2Ski
 // Client-side skill cast initiator for a unit. Validates the skill row, performs the line-of-sight check (mapping SkillsTxt.lineofsight 1-5 to the appropriate collision mask), and SKILL_CanTargetDeadMonster gating. Ensures the skill object exists on the unit (allocates/adds it, clamping to max level and applying a skill-level bonus for overflow) and sets it as the unit's current skill. Cancels casting in town for non-town-allowed skills (HandleMessage 7 + plays the no-cast sound). Sets the unit's anim mode (or attack animation for melee Attack), runs the per-skill client-start function (cltstfunc), plays start/cast/class sounds, adds the cast overlay, and assigns missile light. Returns the skill result code (SKILL_Attack signals abort/no-op). __fastcall (EAX=eSkill, ECX=pUnit).
 // @sourcefile .\SKILLS\Skills.cpp
 int32_t __stdcall SKILLS_CastSkillClient(eD2Skills eSkill, struct D2UnitStrc * pUnit, int32_t nOwnerGUID, uint32_t nSkillLevel);
-int32_t __fastcall SKILLS_CastSkillClientArgsReversed(short * pArg1, int32_t nArg2, struct D2DynamicPathStrc * pUnit, eD2Skills eSkill);
+int32_t __fastcall SKILLS_CastSkillClientArgsReversed(short * pArg1, int32_t nArg2, struct D2UnitStrc * pUnit, eD2Skills eSkill);
 // Runs the client-side visual/audio presentation for a cast skill. Validates eSkill against Skills.txt and its cltdofunc index. If the skill has a cltmissile, spawns that client missile from the unit toward the target coords (resolved via GetCooordinates when bHasTarget, offset from the unit's path position) using either MakeMissile or MISSILE_CreateFromUnitWithOffset depending on skill flag bit1. Then invokes the skill's client DoFunc from the SKILLCLTDOFUNCS dispatch table (or ItemCltEffect override when targeted); both paths set the unit's SKSRVDOFUNC flag. Frees/swaps the skill light map. On success plays dosound on the caster and tgtsound/tgtoverlay on the confirmed target unit, and for the local player applies the skill's cast delay to the game data timer (clamped to 0xC, anim-mode guarded). Returns 1 if anything fired (missile/dofunc), else 0. Pure client effect, no gameplay state.
 uint32_t __fastcall SKILL_ExecuteClientDoFunc(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t bHasTarget);
 // @sourcefile .\SKILLS\Skills.cpp
@@ -94,7 +102,7 @@ void __fastcall SKILL_ExecuteClientProgressWithAura(struct D2UnitStrc * pUnit, s
 // Toggles dual-wield alternating attack for players carrying a usable weapon in both arm slots. If *pSwapState==0 and both arms hold a non-broken, non-potion weapon, reads SKILL_Attack param4 as the swap counter: if 0 sets it to 5 and switches active skill to SKILL_LeftHandSwing; otherwise resets param4 to 0 and restores SKILL_Attack. No-ops if pSwapState is already non-zero (mid-sequence).
 void __stdcall SKILLS_HandleDualWieldWeaponSwap(int * pSwapState, struct D2UnitStrc * pUnit);
 // @sourcefile .\SKILLS\Skills.cpp
-int32_t __fastcall SKILLS_CltStartSkillCast(struct D2DynamicPathStrc * pDynamicPath, int * pnParam);
+int32_t __fastcall SKILLS_CltStartSkillCast(struct D2UnitStrc * pDynamicPath, int * pnParam);
 int32_t __fastcall SKILL_ProcessCastFromPacket(struct D2UnitStrc * pUnit, int * pnParam);
 // Spawns a full 360-degree ring of 64 missiles (one per 4-byte entry in ganMissileRingCosOffsets/ganMissileRingSinOffsets). When pSkillArg1 is NULL fires all from pSkillArg2 (toggling a flag for MISSILE_Diabfire). When pSkillArg1 is non-NULL, randomly assigns each missile to pSkillArg1 or pSkillArg2 using the owner's RNG seed (1-in-6 chance selects pSkillArg1). Used by Nova-style skills.
 void __stdcall SKILLS_CreateMissileRing(struct D2SkillArgStrc * pSkillArg1, struct D2SkillArgStrc * pSkillArg2);

@@ -15,10 +15,12 @@
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Drlg/DrlgGrid.h"
 #include "D2Common/INVENTORY/Inventory.h"
+#include "D2Common/ITEMS/Items.h"
 #include "D2Common/Logging/ProfCore.h"
 #include "D2Common/Skills.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/Items.h"
+#include "D2Game/UNIT/SUNITNPC.h"
 #include "Storm/_unnamespaced.h"
 
 
@@ -26,7 +28,13 @@
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-char gpCubeRecipeItemTypeFlags_7[4] = { "set" };
+char gpCubeRecipeItemTypeFlags_7[4] = { "set" }; D2_GLOBAL_GUARD(gpCubeRecipeItemTypeFlags_7, "gpCubeRecipeItemTypeFlags_7");
+
+char gsGameMonsterSpawnContext[4] = { 'm', 'a', 'x', '\x00' }; D2_GLOBAL_GUARD(gsGameMonsterSpawnContext, "gsGameMonsterSpawnContext");
+
+char gsGameMissileTblsContext[4] = { 'm', 'i', 'n', '\x00' }; D2_GLOBAL_GUARD(gsGameMissileTblsContext, "gsGameMissileTblsContext");
+
+char gsGameDataTblsContext[4] = { 'm', 'o', 'd', '\x00' }; D2_GLOBAL_GUARD(gsGameDataTblsContext, "gsGameDataTblsContext");
 
 int gaPlayerAnimModeCheckTable[100] = {
     0x0,
@@ -129,7 +137,7 @@ int gaPlayerAnimModeCheckTable[100] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaPlayerAnimModeCheckTable, "gaPlayerAnimModeCheckTable");
 
 int gaAnimTableClassic[80] = {
     0x0,
@@ -212,7 +220,7 @@ int gaAnimTableClassic[80] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaAnimTableClassic, "gaAnimTableClassic");
 
 int gaAnimTableExpansion[80] = {
     0x0,
@@ -295,9 +303,9 @@ int gaAnimTableExpansion[80] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaAnimTableExpansion, "gaAnimTableExpansion");
 
-eD2States aSetItemsStateList[5] = { STATE_itemset1, STATE_itemset2, STATE_itemset3, STATE_itemset4, STATE_itemset5 };
+eD2States aSetItemsStateList[5] = { STATE_itemset1, STATE_itemset2, STATE_itemset3, STATE_itemset4, STATE_itemset5 }; D2_GLOBAL_GUARD(aSetItemsStateList, "aSetItemsStateList");
 
 int INT_ARRAY_006eb308[16] = {
     0x0,
@@ -316,9 +324,9 @@ int INT_ARRAY_006eb308[16] = {
     0x13,
     0x12,
     0x3
-};
+}; D2_GLOBAL_GUARD(INT_ARRAY_006eb308, "INT_ARRAY_006eb308");
 
-int gaUnitTypeInteractSizes[6] = { 0x0, 0x1, 0x1, 0x2, 0x0, -0x1 };
+int gaUnitTypeInteractSizes[6] = { 0x0, 0x1, 0x1, 0x2, 0x0, -0x1 }; D2_GLOBAL_GUARD(gaUnitTypeInteractSizes, "gaUnitTypeInteractSizes");
 
 int gaPathDirectionStepDeltas[41] = {
     0x0,
@@ -362,7 +370,7 @@ int gaPathDirectionStepDeltas[41] = {
     0x0,
     0x0,
     0x1
-};
+}; D2_GLOBAL_GUARD(gaPathDirectionStepDeltas, "gaPathDirectionStepDeltas");
 
 uint8_t DIFFDIRECTIONS[256] = {
     0x0,
@@ -621,9 +629,13 @@ uint8_t DIFFDIRECTIONS[256] = {
     0xff,
     0xff,
     0xff
-};
+}; D2_GLOBAL_GUARD(DIFFDIRECTIONS, "DIFFDIRECTIONS");
 
-int gaSetItemBonusStates[6] = { 0xa5, 0xa6, 0xa7, 0xa8, 0xa9, 0xaa };
+char s_A_006ed5ac[2] = { 'A', '\x00' }; D2_GLOBAL_GUARD(s_A_006ed5ac, "s_A_006ed5ac");
+
+char s_B_006ed5b0[2] = { 'B', '\x00' }; D2_GLOBAL_GUARD(s_B_006ed5b0, "s_B_006ed5b0");
+
+int gaSetItemBonusStates[6] = { 0xa5, 0xa6, 0xa7, 0xa8, 0xa9, 0xaa }; D2_GLOBAL_GUARD(gaSetItemBonusStates, "gaSetItemBonusStates");
 
 D2DrlgPresetTypeTablesStrc gPresetTypeTables = {
     /* .aIndex = */ {
@@ -1122,7 +1134,7 @@ D2DrlgPresetTypeTablesStrc gPresetTypeTables = {
             /* .nOffsetY = */ 0x2
         }
     }
-};
+}; D2_GLOBAL_GUARD(gPresetTypeTables, "gPresetTypeTables");
 
 int gnOutdoorsGridWidthByLevel[53] = {
     0x1000,
@@ -1178,7 +1190,7 @@ int gnOutdoorsGridWidthByLevel[53] = {
     0xf,
     0x177,
     0x32a
-};
+}; D2_GLOBAL_GUARD(gnOutdoorsGridWidthByLevel, "gnOutdoorsGridWidthByLevel");
 
 int gRoadPresetIdLookupTable[24] = {
     0x371,
@@ -1205,7 +1217,7 @@ int gRoadPresetIdLookupTable[24] = {
     0x3c7,
     0x37c,
     0x3c8
-};
+}; D2_GLOBAL_GUARD(gRoadPresetIdLookupTable, "gRoadPresetIdLookupTable");
 
 D2DrlgLevelDataList ACT1_D2DrlgLevelData1 = {
     /* .aEntry = */ {
@@ -1300,7 +1312,7 @@ D2DrlgLevelDataList ACT1_D2DrlgLevelData1 = {
             /* .nNodeLevelEntryIdNext = */ 0x0
         }
     }
-};
+}; D2_GLOBAL_GUARD(ACT1_D2DrlgLevelData1, "ACT1_D2DrlgLevelData1");
 
 D2DrlgLevelDataList ACT1_D2DrlgLevelData2 = {
     /* .aEntry = */ {
@@ -1395,7 +1407,7 @@ D2DrlgLevelDataList ACT1_D2DrlgLevelData2 = {
             /* .nNodeLevelEntryIdNext = */ 0x0
         }
     }
-};
+}; D2_GLOBAL_GUARD(ACT1_D2DrlgLevelData2, "ACT1_D2DrlgLevelData2");
 
 D2DrlgLevelDataList ACT2_D2DrlgLevelData1 = {
     /* .aEntry = */ {
@@ -1490,7 +1502,7 @@ D2DrlgLevelDataList ACT2_D2DrlgLevelData1 = {
             /* .nNodeLevelEntryIdNext = */ 0x0
         }
     }
-};
+}; D2_GLOBAL_GUARD(ACT2_D2DrlgLevelData1, "ACT2_D2DrlgLevelData1");
 
 D2DrlgLevelDataList ACT2_D2DrlgLevelData2 = {
     /* .aEntry = */ {
@@ -1585,7 +1597,7 @@ D2DrlgLevelDataList ACT2_D2DrlgLevelData2 = {
             /* .nNodeLevelEntryIdNext = */ 0x0
         }
     }
-};
+}; D2_GLOBAL_GUARD(ACT2_D2DrlgLevelData2, "ACT2_D2DrlgLevelData2");
 
 D2DrlgLevelDataList ACT5_D2DrlgLevelData3 = {
     /* .aEntry = */ {
@@ -1680,7 +1692,7 @@ D2DrlgLevelDataList ACT5_D2DrlgLevelData3 = {
             /* .nNodeLevelEntryIdNext = */ 0x0
         }
     }
-};
+}; D2_GLOBAL_GUARD(ACT5_D2DrlgLevelData3, "ACT5_D2DrlgLevelData3");
 
 D2DrlgLevelDataList ACT4_D2DrlgLevelData1 = {
     /* .aEntry = */ {
@@ -1775,7 +1787,7 @@ D2DrlgLevelDataList ACT4_D2DrlgLevelData1 = {
             /* .nNodeLevelEntryIdNext = */ 0x0
         }
     }
-};
+}; D2_GLOBAL_GUARD(ACT4_D2DrlgLevelData1, "ACT4_D2DrlgLevelData1");
 
 D2DrlgLevelDataList ACT4_D2DrlgLevelData2 = {
     /* .aEntry = */ {
@@ -1870,7 +1882,7 @@ D2DrlgLevelDataList ACT4_D2DrlgLevelData2 = {
             /* .nNodeLevelEntryIdNext = */ 0x0
         }
     }
-};
+}; D2_GLOBAL_GUARD(ACT4_D2DrlgLevelData2, "ACT4_D2DrlgLevelData2");
 
 int gaWildernessLevelSeedOffsets[170] = {
     0x0,
@@ -2043,7 +2055,7 @@ int gaWildernessLevelSeedOffsets[170] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaWildernessLevelSeedOffsets, "gaWildernessLevelSeedOffsets");
 
 int gPathDirectionTable[76] = {
     0x5,
@@ -2122,7 +2134,7 @@ int gPathDirectionTable[76] = {
     0x0,
     0x2,
     0x0
-};
+}; D2_GLOBAL_GUARD(gPathDirectionTable, "gPathDirectionTable");
 
 uint8_t gaDrlgPathDirectionTable[80] = {
     0x4,
@@ -2205,7 +2217,7 @@ uint8_t gaDrlgPathDirectionTable[80] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaDrlgPathDirectionTable, "gaDrlgPathDirectionTable");
 
 int gPathDirectionOffsetsX[16] = {
     0x1,
@@ -2224,7 +2236,7 @@ int gPathDirectionOffsetsX[16] = {
     -0x1,
     0x1,
     -0x1
-};
+}; D2_GLOBAL_GUARD(gPathDirectionOffsetsX, "gPathDirectionOffsetsX");
 
 int gnDrlgLevelSeed[64] = {
     0x0,
@@ -2291,7 +2303,7 @@ int gnDrlgLevelSeed[64] = {
     0x5,
     0x2,
     0x7
-};
+}; D2_GLOBAL_GUARD(gnDrlgLevelSeed, "gnDrlgLevelSeed");
 
 int gnDrlgMemoryMax[48] = {
     -0x2,
@@ -2342,7 +2354,7 @@ int gnDrlgMemoryMax[48] = {
     -0x1,
     0x1,
     -0x1
-};
+}; D2_GLOBAL_GUARD(gnDrlgMemoryMax, "gnDrlgMemoryMax");
 
 int gnPathSearchMax[128] = {
     0x39,
@@ -2473,7 +2485,7 @@ int gnPathSearchMax[128] = {
     0x74,
     0x62,
     0xc
-};
+}; D2_GLOBAL_GUARD(gnPathSearchMax, "gnPathSearchMax");
 
 int gnPathNodeMax[128] = {
     0x72,
@@ -2604,11 +2616,11 @@ int gnPathNodeMax[128] = {
     0x4e,
     0xb,
     0x27
-};
+}; D2_GLOBAL_GUARD(gnPathNodeMax, "gnPathNodeMax");
 
-uint32_t gaPathDirectionLookupTable[6] = { 0xffffffff, 0x2, 0x5, 0x4, 0x3, 0x0 };
+uint32_t gaPathDirectionLookupTable[6] = { 0xffffffff, 0x2, 0x5, 0x4, 0x3, 0x0 }; D2_GLOBAL_GUARD(gaPathDirectionLookupTable, "gaPathDirectionLookupTable");
 
-int gnDrlgLevelGenerationState[8] = { 0x0, -0xa0, -0x60, -0x40, -0x40, -0x60, -0xa0, 0x0 };
+int gnDrlgLevelGenerationState[8] = { 0x0, -0xa0, -0x60, -0x40, -0x40, -0x60, -0xa0, 0x0 }; D2_GLOBAL_GUARD(gnDrlgLevelGenerationState, "gnDrlgLevelGenerationState");
 
 int gnAct5OuterWallGridOffsetByType[24] = {
     -0x1,
@@ -2635,7 +2647,7 @@ int gnAct5OuterWallGridOffsetByType[24] = {
     0x0,
     0x0,
     0x1
-};
+}; D2_GLOBAL_GUARD(gnAct5OuterWallGridOffsetByType, "gnAct5OuterWallGridOffsetByType");
 
 int gaAct5SceneryPresetTable_0[15][7] = {
     { 0x6f, 0x3bb, 0x3bc, 0x0, 0x19, 0x1, 0x1 },
@@ -2653,7 +2665,7 @@ int gaAct5SceneryPresetTable_0[15][7] = {
     { 0x75, 0x3b5, 0x3b5, -0x1, 0x9, 0x4, 0x0 },
     { 0x75, 0x3b6, 0x3b6, -0x1, 0x9, 0x4, 0x0 },
     { 0x75, 0x3b7, 0x3b7, -0x1, 0x5, 0x3, 0x0 }
-};
+}; D2_GLOBAL_GUARD(gaAct5SceneryPresetTable_0, "gaAct5SceneryPresetTable_0");
 
 D2TombCanyonPresetRegionStrc gaTombCanyonPresetOffsets = {
     /* .aTombEntries = */ {
@@ -2738,7 +2750,7 @@ D2TombCanyonPresetRegionStrc gaTombCanyonPresetOffsets = {
         0x3,
         0x2
     }
-};
+}; D2_GLOBAL_GUARD(gaTombCanyonPresetOffsets, "gaTombCanyonPresetOffsets");
 
 uint8_t gaOutRoomPathDirectionDelta[24] = {
     0x0,
@@ -2765,7 +2777,7 @@ uint8_t gaOutRoomPathDirectionDelta[24] = {
     0x0,
     0xff,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaOutRoomPathDirectionDelta, "gaOutRoomPathDirectionDelta");
 
 D2ProfilingDumpFrequency gaProfilingDumpFrequency[23] = {
     {
@@ -5321,13 +5333,13 @@ D2ProfilingDumpFrequency gaProfilingDumpFrequency[23] = {
         /* .nCount = */ 0x0,
         /* .nUnused = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gaProfilingDumpFrequency, "gaProfilingDumpFrequency");
 
-pfnRoomExActivationHandler gaRoomExActivationHandlers[4] = { &D2Common::DUNGEON::Dungeon::DUNGEON_ActivationHandler0_SetRoomExPriority0, &D2Common::DUNGEON::Dungeon::DRLGROOMEX_ActivateRoomEx, &D2Common::DUNGEON::Dungeon::DRLGROOMEX_DemoteIfReady, &D2Common::DUNGEON::Dungeon::DRLGROOMEX_InitTileDataAndPresets };
+pfnRoomExActivationHandler gaRoomExActivationHandlers[4] = { &D2Common::DUNGEON::Dungeon::DUNGEON_ActivationHandler0_SetRoomExPriority0, &D2Common::DUNGEON::Dungeon::DRLGROOMEX_ActivateRoomEx, &D2Common::DUNGEON::Dungeon::DRLGROOMEX_DemoteIfReady, &D2Common::DUNGEON::Dungeon::DRLGROOMEX_InitTileDataAndPresets }; D2_GLOBAL_GUARD(gaRoomExActivationHandlers, "gaRoomExActivationHandlers");
 
-pfnRoomExDeactivationHandler gaRoomExDeactivationHandlers[4] = { &D2Common::DUNGEON::Dungeon::DRLGROOMEX_RecalcPriority_Case4, &D2Common::DUNGEON::Dungeon::DRLGROOMEX_RecalcPriority_Case5, &D2Common::DUNGEON::Dungeon::DRLGROOMEX_RecalcPriority_Case6, &D2Common::DUNGEON::Dungeon::ClearRoomExIfFlag0x01 };
+pfnRoomExDeactivationHandler gaRoomExDeactivationHandlers[4] = { &D2Common::DUNGEON::Dungeon::DRLGROOMEX_RecalcPriority_Case4, &D2Common::DUNGEON::Dungeon::DRLGROOMEX_RecalcPriority_Case5, &D2Common::DUNGEON::Dungeon::DRLGROOMEX_RecalcPriority_Case6, &D2Common::DUNGEON::Dungeon::ClearRoomExIfFlag0x01 }; D2_GLOBAL_GUARD(gaRoomExDeactivationHandlers, "gaRoomExDeactivationHandlers");
 
-uint32_t gnTimeRates[3] = { 0x80, 0x4, 0x8 };
+uint32_t gnTimeRates[3] = { 0x80, 0x4, 0x8 }; D2_GLOBAL_GUARD(gnTimeRates, "gnTimeRates");
 
 uint32_t aENVIRONMENTDATA1[18] = {
     0x140,
@@ -5348,7 +5360,7 @@ uint32_t aENVIRONMENTDATA1[18] = {
     0xc8,
     0x2,
     0xf3907d
-};
+}; D2_GLOBAL_GUARD(aENVIRONMENTDATA1, "aENVIRONMENTDATA1");
 
 D2DrlgActEnvironmentData aENVIRONMENTDATA3[6] = {
     {
@@ -5381,53 +5393,50 @@ D2DrlgActEnvironmentData aENVIRONMENTDATA3[6] = {
         /* .nEnvData = */ 0x2,
         /* .nLightColorRGB = */ 0xf3907d
     }
-};
+}; D2_GLOBAL_GUARD(aENVIRONMENTDATA3, "aENVIRONMENTDATA3");
 
-uint32_t aENVIRONMENTDATA2[33] = {
-    0x12c,
-    0x3,
-    0xf31e00,
-    0x0,
-    0x0,
-    0xf41e00,
-    0x3c,
-    0x1,
-    0xf31e00,
-    0x78,
-    0x2,
-    0xf31e00,
-    0xb4,
-    0x2,
-    0xf41e00,
-    0xf0,
-    0x2,
-    0xf31e00,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c
-};
+D2DrlgActEnvironmentData aENVIRONMENTDATA2[6] = {
+    {
+        /* .nLenght = */ 0x12c,
+        /* .nEnvData = */ 0x3,
+        /* .nLightColorRGB = */ 0xf31e00
+    },
+    {
+        /* .nLenght = */ 0x0,
+        /* .nEnvData = */ 0x0,
+        /* .nLightColorRGB = */ 0xf41e00
+    },
+    {
+        /* .nLenght = */ 0x3c,
+        /* .nEnvData = */ 0x1,
+        /* .nLightColorRGB = */ 0xf31e00
+    },
+    {
+        /* .nLenght = */ 0x78,
+        /* .nEnvData = */ 0x2,
+        /* .nLightColorRGB = */ 0xf31e00
+    },
+    {
+        /* .nLenght = */ 0xb4,
+        /* .nEnvData = */ 0x2,
+        /* .nLightColorRGB = */ 0xf41e00
+    },
+    {
+        /* .nLenght = */ 0xf0,
+        /* .nEnvData = */ 0x2,
+        /* .nLightColorRGB = */ 0xf31e00
+    }
+}; D2_GLOBAL_GUARD(aENVIRONMENTDATA2, "aENVIRONMENTDATA2");
 
 D2InventorySizesStrc gsInventoryBodyLocGridSize = {
     /* .Width = */ 0xd,
     /* .Height = */ 0x1
-};
+}; D2_GLOBAL_GUARD(gsInventoryBodyLocGridSize, "gsInventoryBodyLocGridSize");
 
 D2InventorySizesStrc g_InventorySizesDefaultConfig = {
     /* .Width = */ 0x10,
     /* .Height = */ 0x1
-};
+}; D2_GLOBAL_GUARD(g_InventorySizesDefaultConfig, "g_InventorySizesDefaultConfig");
 
 D2ItemsEventMethodStrc gaSkillCalcMethods[7] = {
     {
@@ -5458,38 +5467,7 @@ D2ItemsEventMethodStrc gaSkillCalcMethods[7] = {
         /* .pfnMethod = */ (pfnSkillCalcOp)&D2Common::Skills::SKILLS_EvalSkillDescCalc_Chained,
         /* .nArgCount = */ 0x3
     }
-};
-
-int gnOverlayTblsCount[28] = {
-    0x7488fc,
-    0x748990,
-    0x748918,
-    0x748918,
-    0x748918,
-    0x748924,
-    0x0,
-    0x74894c,
-    0x748960,
-    0x748960,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x2074696c,
-    0x20736564,
-    0x20797668,
-    0x20776273
-};
+}; D2_GLOBAL_GUARD(gaSkillCalcMethods, "gaSkillCalcMethods");
 
 int gpsPresetObjectTable[750] = {
     0xc,
@@ -6242,7 +6220,7 @@ int gpsPresetObjectTable[750] = {
     0x233,
     0x23a,
     0x18d
-};
+}; D2_GLOBAL_GUARD(gpsPresetObjectTable, "gpsPresetObjectTable");
 
 int gaFieldStepDeltaX[9] = {
     0x0,
@@ -6254,7 +6232,7 @@ int gaFieldStepDeltaX[9] = {
     -0x1,
     -0x1,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaFieldStepDeltaX, "gaFieldStepDeltaX");
 
 int gaFieldStepDeltaY[9] = {
     -0x1,
@@ -6266,12 +6244,12 @@ int gaFieldStepDeltaY[9] = {
     0x0,
     -0x1,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaFieldStepDeltaY, "gaFieldStepDeltaY");
 
 D2SeedStrc gsAutoMapSeed = {
     /* .nSeedLow = */ 0,
     /* .nSeedHigh = */ 0
-};
+}; D2_GLOBAL_GUARD(gsAutoMapSeed, "gsAutoMapSeed");
 
 D2AutomapRelatedTxt gpaAutoMapRelated[36] = {
     {
@@ -6418,7 +6396,7 @@ D2AutomapRelatedTxt gpaAutoMapRelated[36] = {
         /* .nIndex = */ 0,
         /* .nCount = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gpaAutoMapRelated, "gpaAutoMapRelated");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0096ca30 = {
     /* .DebugInfo = */ nullptr,
@@ -6427,7 +6405,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_0096ca30 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_0096ca30, "lpCriticalSection_0096ca30");
 
 D2ItemsTableStrc gsItemsTable = {
     /* .nSize = */ 0,
@@ -6438,7 +6416,7 @@ D2ItemsTableStrc gsItemsTable = {
     /* .nArmorSize = */ 0,
     /* .pMisc = */ nullptr,
     /* .nMiscSize = */ 0
-};
+}; D2_GLOBAL_GUARD(gsItemsTable, "gsItemsTable");
 
 D2MagicAffixTableStrc gsMagicAffixTable = {
     /* .nSize = */ 0,
@@ -6446,19 +6424,44 @@ D2MagicAffixTableStrc gsMagicAffixTable = {
     /* .pSuffixStart = */ nullptr,
     /* .pPrefixStart = */ nullptr,
     /* .pAutoMagicStart = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gsMagicAffixTable, "gsMagicAffixTable");
+
+D2GemsTableStrc nTxtGemsSize = {
+    /* .nSize = */ 0,
+    /* .pTable = */ nullptr
+}; D2_GLOBAL_GUARD(nTxtGemsSize, "nTxtGemsSize");
+
+D2RunesTxtTableStrc nTxtRunesSize = {
+    /* .nSize = */ 0,
+    /* .pTable = */ nullptr
+}; D2_GLOBAL_GUARD(nTxtRunesSize, "nTxtRunesSize");
 
 D2RareAffixTableStrc gsRareAffixTable = {
     /* .nSize = */ 0,
     /* .pTable = */ nullptr,
     /* .pSuffixStart = */ nullptr,
     /* .pPrefixStart = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gsRareAffixTable, "gsRareAffixTable");
+
+D2GambleTableStrc nTxtGambleSize = {
+    /* .nSize = */ 0,
+    /* .pTable = */ nullptr
+}; D2_GLOBAL_GUARD(nTxtGambleSize, "nTxtGambleSize");
+
+D2QualityItemsTableStrc nTxtQualityItemsSize = {
+    /* .nSize = */ 0,
+    /* .pTable = */ nullptr
+}; D2_GLOBAL_GUARD(nTxtQualityItemsSize, "nTxtQualityItemsSize");
+
+D2LowQualityItemsTableStrc nTxtLowQualityItemsSize = {
+    /* .nSize = */ 0,
+    /* .pTable = */ nullptr
+}; D2_GLOBAL_GUARD(nTxtLowQualityItemsSize, "nTxtLowQualityItemsSize");
 
 D2BooksTableStrc gsBooksTable = {
     /* .nSize = */ 0,
     /* .pTable = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gsBooksTable, "gsBooksTable");
 
 uint32_t gaItemTypeBaseIdTable[510] = {
     0,
@@ -6971,12 +6974,12 @@ uint32_t gaItemTypeBaseIdTable[510] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaItemTypeBaseIdTable, "gaItemTypeBaseIdTable");
 
 D2UniqueNameTablesStrc gsTxtUniqueNameTables = {
     /* .apTable = */ { nullptr, nullptr, nullptr, nullptr },
     /* .anSize = */ { 0, 0, 0, 0 }
-};
+}; D2_GLOBAL_GUARD(gsTxtUniqueNameTables, "gsTxtUniqueNameTables");
 
 int sgCharTemplateLevelIndex[64] = {
     0,
@@ -7043,120 +7046,101 @@ int sgCharTemplateLevelIndex[64] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(sgCharTemplateLevelIndex, "sgCharTemplateLevelIndex");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-uint32_t gszTxtCol_Act = 0x746341;
-uint32_t gnPathCalcDirectionVectorX_Pad0 = 0x0;
-uint32_t gnPathCalcDirectionVectorY_Pad0 = 0x0;
-uint32_t gszHirelingFieldName_act = 0x746361;
-char CHAR_A_006ed5ac = 'A';
-char CHAR_B_006ed5b0 = 'B';
-int gaAct5SceneryPresetTable_0_0__1_[15][7] = {};
-int gpaMiscTxtTables = 0x1;
-D2SeedStrc * psDataTableSeed = (D2SeedStrc *)&gsAutoMapSeed;
-int32_t gnSkillCalcMethodCount = 0x7;
-IgnoreList * gpIgnoreList = 0;
-D2LvlTypesTxt * pTxtLvlTypes = 0;
-void * gpPortalLevelArray = 0;
-unsigned int nPortalLevelCount = {};
-int nTxtLvlTypesSize = 0;
-D2LvlWarpTxt * pTxtLvlWarp = 0;
-int nTxtLvlWarpSize = 0;
-D2LvlMazeTxt * sgpTxtLvlMaze = 0;
-int nTxtLvlMazeSize = 0;
-D2LvlSubTxt * sgpTxtLvlSub = 0;
-int nTxtLvlSubSize = 0;
-int * gpnLvlSubTypeToIndex = 0;
-D2ExpansionLvlTblsTxt * pExpansionLvlTbls = 0;
-D2LvlTblsTxt * pTxtLvlTbls = 0;
-void * gpaDrlgLvlSubPresetFiles = 0;
-D2AutoMapLvlTbls * pAutoMapLvlTbls = 0;
-FILE * pLOGFILE = 0;
-BOOL bLOGFILE_ENABLED = 0;
-D2ItemsTableStrc sgpTxtItems = {};
-short * pTxtItemsVersion = 0;
-int nTxtGemsSize = 0;
-D2GemsTxt * pTxtGems = 0;
-int nTxtRunesSize = 0;
-int * pTxtRunes = 0;
-int nTxtGambleSize = 0;
-void * GambleTable = 0;
-int nTxtItemRatioSize = 0;
-D2ItemRatioTxt * pTxtItemRatio = 0;
-int nTxtQualityItemsSize = 0;
-D2QualityItemsTxt * pTxtQualityItems = 0;
-int nTxtLowQualityItemsSize = 0;
-D2LowQualityItemsTxt * pTxtLowQualityItems = 0;
-D2ShrinesTxt * pTxtShrines = 0;
-int nTxtShrinesSize = 0;
-D2ObjectsTxt * sgpTxtObjects = 0;
-int nTxtObjectsSize = 0;
-D2ObjGroupTxt * pTxtObjGroup = 0;
-int nTxtObjGroupSize = 0;
-unsigned int gnTreasureClassArraySize = {};
-D2MonItemPercentTxt * pMonItemPercentTxt = 0;
-unsigned short gwMonsterTblsDefaultId = {};
-int nTxtMonModeSize = 0;
-D2MonModeTxt * pTxtMonMode1 = 0;
-D2MonModeTxt * pTxtMonMode2 = 0;
-D2MonModeTxt * pTxtMonMode3 = 0;
-int nTxtObjTypeModeSize = 0;
-D2ObjTypeTxt * pTxtObjTypeMode = 0;
-D2ObjTypeTxt * pTxtObjType = 0;
-D2ObjModeTxt * pTxtObjMode = 0;
-int nTxtPlrTypeModeSize = 0;
-D2PlrTypeModeTxt * pTxtPlrTypeMode1 = 0;
-D2PlrTypeModeTxt * pTxtPlrTypeMode2 = 0;
-D2PlrTypeModeTxt * pTxtPlrTypeMode3 = 0;
-D2ArmTypeTxt * pTxtArmType = 0;
-D2CompositTxt * pTxtComposit = 0;
-int nTxtInventorySize = 0;
-D2InventoryTxt * pTxtInventory = 0;
-D2BeltsTxt * pTxtBelts = 0;
-D2CharTemplateTxt * sgpTxtCharTemplate = 0;
-int nTxtCharTemplateSize = 0;
-D2ArenaTxt * sgpTxtArena = 0;
-D2DrlgFileCacheNodeStrc * gpDrlgFileCache = 0;
-D2CubeMainTxt * pTxtCubeMain = 0;
-int nTxtCubeMainSize = 0;
-void * gpFieldDataTable = 0;
-unsigned int gnFieldDataTableWidth = {};
-unsigned int gnFieldDataTableHeight = {};
-int gnFieldDataTableSize = 0;
-unsigned int gnFieldTableHalfWidth = {};
-unsigned int gnFieldTableHalfHeight = {};
-unsigned int gdwDrlgLevelPlacementFlags = {};
-
-// =============================================================================
-// Uninitialized data (BSS)
-// =============================================================================
-
-uint8_t gsGameMonsterSpawnContext;
-uint8_t gsGameMissileTblsContext;
-uint8_t gsGameDataTblsContext;
-uint8_t gszTxtCol_Red;
-uint8_t gszTxtColName_lvl;
-uint8_t gszTxtColName_op;
-uint8_t gszTxtColName_S8;
-uint8_t gszTxtColName_S7;
-uint8_t gszObjMonCompToken_S6;
-uint8_t gszObjMonCompToken_S5;
-uint8_t gszObjMonCompToken_S4;
-uint8_t gszObjMonCompToken_S3;
-uint8_t gszObjMonCompToken_S2;
-uint8_t gszObjMonCompToken_S1;
-uint8_t gszObjMonCompToken_SH;
-uint8_t gszObjMonCompToken_LH;
-uint8_t gszObjMonCompToken_RH;
-uint8_t gszObjMonCompToken_LA;
-uint8_t gszObjMonCompToken_RA;
-uint8_t gszObjMonCompToken_LG;
-uint8_t gszObjMonCompToken_TR;
-uint8_t gszObjMonCompToken_HD;
+uint32_t gszTxtCol_Act = 0x746341; D2_GLOBAL_GUARD(gszTxtCol_Act, "gszTxtCol_Act");
+unsigned int gszTxtCol_Red = 0x646552; D2_GLOBAL_GUARD(gszTxtCol_Red, "gszTxtCol_Red");
+unsigned int gszTxtColName_lvl = 0x6c766c; D2_GLOBAL_GUARD(gszTxtColName_lvl, "gszTxtColName_lvl");
+unsigned int gszTxtColName_op = 0x706f; D2_GLOBAL_GUARD(gszTxtColName_op, "gszTxtColName_op");
+unsigned int gszTxtColName_S8 = 0x3853; D2_GLOBAL_GUARD(gszTxtColName_S8, "gszTxtColName_S8");
+unsigned int gszTxtColName_S7 = 0x3753; D2_GLOBAL_GUARD(gszTxtColName_S7, "gszTxtColName_S7");
+unsigned int gszObjMonCompToken_S6 = 0x3653; D2_GLOBAL_GUARD(gszObjMonCompToken_S6, "gszObjMonCompToken_S6");
+unsigned int gszObjMonCompToken_S5 = 0x3553; D2_GLOBAL_GUARD(gszObjMonCompToken_S5, "gszObjMonCompToken_S5");
+unsigned int gszObjMonCompToken_S4 = 0x3453; D2_GLOBAL_GUARD(gszObjMonCompToken_S4, "gszObjMonCompToken_S4");
+unsigned int gszObjMonCompToken_S3 = 0x3353; D2_GLOBAL_GUARD(gszObjMonCompToken_S3, "gszObjMonCompToken_S3");
+unsigned int gszObjMonCompToken_S2 = 0x3253; D2_GLOBAL_GUARD(gszObjMonCompToken_S2, "gszObjMonCompToken_S2");
+unsigned int gszObjMonCompToken_S1 = 0x3153; D2_GLOBAL_GUARD(gszObjMonCompToken_S1, "gszObjMonCompToken_S1");
+unsigned int gszObjMonCompToken_SH = 0x4853; D2_GLOBAL_GUARD(gszObjMonCompToken_SH, "gszObjMonCompToken_SH");
+unsigned int gszObjMonCompToken_LH = 0x484c; D2_GLOBAL_GUARD(gszObjMonCompToken_LH, "gszObjMonCompToken_LH");
+unsigned int gszObjMonCompToken_RH = 0x4852; D2_GLOBAL_GUARD(gszObjMonCompToken_RH, "gszObjMonCompToken_RH");
+unsigned int gszObjMonCompToken_LA = 0x414c; D2_GLOBAL_GUARD(gszObjMonCompToken_LA, "gszObjMonCompToken_LA");
+unsigned int gszObjMonCompToken_RA = 0x4152; D2_GLOBAL_GUARD(gszObjMonCompToken_RA, "gszObjMonCompToken_RA");
+unsigned int gszObjMonCompToken_LG = 0x474c; D2_GLOBAL_GUARD(gszObjMonCompToken_LG, "gszObjMonCompToken_LG");
+unsigned int gszObjMonCompToken_TR = 0x5254; D2_GLOBAL_GUARD(gszObjMonCompToken_TR, "gszObjMonCompToken_TR");
+unsigned int gszObjMonCompToken_HD = 0x4448; D2_GLOBAL_GUARD(gszObjMonCompToken_HD, "gszObjMonCompToken_HD");
+uint32_t gnPathCalcDirectionVectorX_Pad0 = 0x0; D2_GLOBAL_GUARD(gnPathCalcDirectionVectorX_Pad0, "gnPathCalcDirectionVectorX_Pad0");
+uint32_t gnPathCalcDirectionVectorY_Pad0 = 0x0; D2_GLOBAL_GUARD(gnPathCalcDirectionVectorY_Pad0, "gnPathCalcDirectionVectorY_Pad0");
+uint32_t gszHirelingFieldName_act = 0x746361; D2_GLOBAL_GUARD(gszHirelingFieldName_act, "gszHirelingFieldName_act");
+int gaAct5SceneryPresetTable_0_0__1_[15][7] = {}; D2_GLOBAL_GUARD(gaAct5SceneryPresetTable_0_0__1_, "gaAct5SceneryPresetTable_0_0__1_");
+int gpaMiscTxtTables = 0x1; D2_GLOBAL_GUARD(gpaMiscTxtTables, "gpaMiscTxtTables");
+D2SeedStrc * psDataTableSeed = (D2SeedStrc *)&gsAutoMapSeed; D2_GLOBAL_GUARD(psDataTableSeed, "psDataTableSeed");
+int32_t gnSkillCalcMethodCount = 0x7; D2_GLOBAL_GUARD(gnSkillCalcMethodCount, "gnSkillCalcMethodCount");
+IgnoreList * gpIgnoreList = 0; D2_GLOBAL_GUARD(gpIgnoreList, "gpIgnoreList");
+D2LvlTypesTxt * pTxtLvlTypes = 0; D2_GLOBAL_GUARD(pTxtLvlTypes, "pTxtLvlTypes");
+void * gpPortalLevelArray = 0; D2_GLOBAL_GUARD(gpPortalLevelArray, "gpPortalLevelArray");
+unsigned int nPortalLevelCount = {}; D2_GLOBAL_GUARD(nPortalLevelCount, "nPortalLevelCount");
+int nTxtLvlTypesSize = 0; D2_GLOBAL_GUARD(nTxtLvlTypesSize, "nTxtLvlTypesSize");
+D2LvlWarpTxt * pTxtLvlWarp = 0; D2_GLOBAL_GUARD(pTxtLvlWarp, "pTxtLvlWarp");
+int nTxtLvlWarpSize = 0; D2_GLOBAL_GUARD(nTxtLvlWarpSize, "nTxtLvlWarpSize");
+D2LvlMazeTxt * sgpTxtLvlMaze = 0; D2_GLOBAL_GUARD(sgpTxtLvlMaze, "sgpTxtLvlMaze");
+int nTxtLvlMazeSize = 0; D2_GLOBAL_GUARD(nTxtLvlMazeSize, "nTxtLvlMazeSize");
+D2LvlSubTxt * sgpTxtLvlSub = 0; D2_GLOBAL_GUARD(sgpTxtLvlSub, "sgpTxtLvlSub");
+int nTxtLvlSubSize = 0; D2_GLOBAL_GUARD(nTxtLvlSubSize, "nTxtLvlSubSize");
+int * gpnLvlSubTypeToIndex = 0; D2_GLOBAL_GUARD(gpnLvlSubTypeToIndex, "gpnLvlSubTypeToIndex");
+D2ExpansionLvlTblsTxt * pExpansionLvlTbls = 0; D2_GLOBAL_GUARD(pExpansionLvlTbls, "pExpansionLvlTbls");
+D2LvlTblsTxt * pTxtLvlTbls = 0; D2_GLOBAL_GUARD(pTxtLvlTbls, "pTxtLvlTbls");
+void * gpaDrlgLvlSubPresetFiles = 0; D2_GLOBAL_GUARD(gpaDrlgLvlSubPresetFiles, "gpaDrlgLvlSubPresetFiles");
+D2AutoMapLvlTbls * pAutoMapLvlTbls = 0; D2_GLOBAL_GUARD(pAutoMapLvlTbls, "pAutoMapLvlTbls");
+FILE * pLOGFILE = 0; D2_GLOBAL_GUARD(pLOGFILE, "pLOGFILE");
+BOOL bLOGFILE_ENABLED = 0; D2_GLOBAL_GUARD(bLOGFILE_ENABLED, "bLOGFILE_ENABLED");
+D2ItemsTableStrc sgpTxtItems = {}; D2_GLOBAL_GUARD(sgpTxtItems, "sgpTxtItems");
+short * pTxtItemsVersion = 0; D2_GLOBAL_GUARD(pTxtItemsVersion, "pTxtItemsVersion");
+int nTxtItemRatioSize = 0; D2_GLOBAL_GUARD(nTxtItemRatioSize, "nTxtItemRatioSize");
+D2ItemRatioTxt * pTxtItemRatio = 0; D2_GLOBAL_GUARD(pTxtItemRatio, "pTxtItemRatio");
+D2ShrinesTxt * pTxtShrines = 0; D2_GLOBAL_GUARD(pTxtShrines, "pTxtShrines");
+int nTxtShrinesSize = 0; D2_GLOBAL_GUARD(nTxtShrinesSize, "nTxtShrinesSize");
+D2ObjectsTxt * sgpTxtObjects = 0; D2_GLOBAL_GUARD(sgpTxtObjects, "sgpTxtObjects");
+int nTxtObjectsSize = 0; D2_GLOBAL_GUARD(nTxtObjectsSize, "nTxtObjectsSize");
+D2ObjGroupTxt * pTxtObjGroup = 0; D2_GLOBAL_GUARD(pTxtObjGroup, "pTxtObjGroup");
+int nTxtObjGroupSize = 0; D2_GLOBAL_GUARD(nTxtObjGroupSize, "nTxtObjGroupSize");
+unsigned int gnTreasureClassArraySize = {}; D2_GLOBAL_GUARD(gnTreasureClassArraySize, "gnTreasureClassArraySize");
+D2MonItemPercentTxt * pMonItemPercentTxt = 0; D2_GLOBAL_GUARD(pMonItemPercentTxt, "pMonItemPercentTxt");
+unsigned int gnAutoItemTypeTCCount = {}; D2_GLOBAL_GUARD(gnAutoItemTypeTCCount, "gnAutoItemTypeTCCount");
+unsigned short gwMonsterTblsDefaultId = {}; D2_GLOBAL_GUARD(gwMonsterTblsDefaultId, "gwMonsterTblsDefaultId");
+int nTxtMonModeSize = 0; D2_GLOBAL_GUARD(nTxtMonModeSize, "nTxtMonModeSize");
+D2MonModeTxt * pTxtMonMode1 = 0; D2_GLOBAL_GUARD(pTxtMonMode1, "pTxtMonMode1");
+D2MonModeTxt * pTxtMonMode2 = 0; D2_GLOBAL_GUARD(pTxtMonMode2, "pTxtMonMode2");
+D2MonModeTxt * pTxtMonMode3 = 0; D2_GLOBAL_GUARD(pTxtMonMode3, "pTxtMonMode3");
+int nTxtObjTypeModeSize = 0; D2_GLOBAL_GUARD(nTxtObjTypeModeSize, "nTxtObjTypeModeSize");
+D2ObjTypeTxt * pTxtObjTypeMode = 0; D2_GLOBAL_GUARD(pTxtObjTypeMode, "pTxtObjTypeMode");
+D2ObjTypeTxt * pTxtObjType = 0; D2_GLOBAL_GUARD(pTxtObjType, "pTxtObjType");
+D2ObjModeTxt * pTxtObjMode = 0; D2_GLOBAL_GUARD(pTxtObjMode, "pTxtObjMode");
+int nTxtPlrTypeModeSize = 0; D2_GLOBAL_GUARD(nTxtPlrTypeModeSize, "nTxtPlrTypeModeSize");
+D2PlrTypeModeTxt * pTxtPlrTypeMode1 = 0; D2_GLOBAL_GUARD(pTxtPlrTypeMode1, "pTxtPlrTypeMode1");
+D2PlrTypeModeTxt * pTxtPlrTypeMode2 = 0; D2_GLOBAL_GUARD(pTxtPlrTypeMode2, "pTxtPlrTypeMode2");
+D2PlrTypeModeTxt * pTxtPlrTypeMode3 = 0; D2_GLOBAL_GUARD(pTxtPlrTypeMode3, "pTxtPlrTypeMode3");
+D2ArmTypeTxt * pTxtArmType = 0; D2_GLOBAL_GUARD(pTxtArmType, "pTxtArmType");
+D2CompositTxt * pTxtComposit = 0; D2_GLOBAL_GUARD(pTxtComposit, "pTxtComposit");
+int nTxtInventorySize = 0; D2_GLOBAL_GUARD(nTxtInventorySize, "nTxtInventorySize");
+D2InventoryTxt * pTxtInventory = 0; D2_GLOBAL_GUARD(pTxtInventory, "pTxtInventory");
+D2BeltsTxt * pTxtBelts = 0; D2_GLOBAL_GUARD(pTxtBelts, "pTxtBelts");
+D2CharTemplateTxt * sgpTxtCharTemplate = 0; D2_GLOBAL_GUARD(sgpTxtCharTemplate, "sgpTxtCharTemplate");
+int nTxtCharTemplateSize = 0; D2_GLOBAL_GUARD(nTxtCharTemplateSize, "nTxtCharTemplateSize");
+D2ArenaTxt * sgpTxtArena = 0; D2_GLOBAL_GUARD(sgpTxtArena, "sgpTxtArena");
+D2DrlgFileCacheNodeStrc * gpDrlgFileCache = 0; D2_GLOBAL_GUARD(gpDrlgFileCache, "gpDrlgFileCache");
+D2CubeMainTxt * pTxtCubeMain = 0; D2_GLOBAL_GUARD(pTxtCubeMain, "pTxtCubeMain");
+int nTxtCubeMainSize = 0; D2_GLOBAL_GUARD(nTxtCubeMainSize, "nTxtCubeMainSize");
+void * gpFieldDataTable = 0; D2_GLOBAL_GUARD(gpFieldDataTable, "gpFieldDataTable");
+unsigned int gnFieldDataTableWidth = {}; D2_GLOBAL_GUARD(gnFieldDataTableWidth, "gnFieldDataTableWidth");
+unsigned int gnFieldDataTableHeight = {}; D2_GLOBAL_GUARD(gnFieldDataTableHeight, "gnFieldDataTableHeight");
+int gnFieldDataTableSize = 0; D2_GLOBAL_GUARD(gnFieldDataTableSize, "gnFieldDataTableSize");
+unsigned int gnFieldTableHalfWidth = {}; D2_GLOBAL_GUARD(gnFieldTableHalfWidth, "gnFieldTableHalfWidth");
+unsigned int gnFieldTableHalfHeight = {}; D2_GLOBAL_GUARD(gnFieldTableHalfHeight, "gnFieldTableHalfHeight");
+unsigned int gdwDrlgLevelPlacementFlags = {}; D2_GLOBAL_GUARD(gdwDrlgLevelPlacementFlags, "gdwDrlgLevelPlacementFlags");
 
 namespace D2Common::Drlg::Maze {
 
@@ -7253,7 +7237,7 @@ void * vftable[12] = {
     (void*)&__purecall,
     (void*)&__purecall,
     (void*)&D2Common::Chat::Ignorelist::ChatIgnoreList::ScalarDeletingDestructor
-};
+}; D2_GLOBAL_GUARD(vftable, "D2Common::Chat::Ignorelist::ChatIgnoreList::vftable");
 
 } // namespace D2Common::Chat::Ignorelist::ChatIgnoreList
 
@@ -7276,7 +7260,7 @@ void * vftable[12] = {
     (void*)&D2Common::Chat::Ignorelist::IgnoreList::SavePersistentSetting,
     (void*)&D2Common::Chat::Ignorelist::IgnoreList::ClearAccountMappings,
     (void*)&D2Common::Chat::Ignorelist::IgnoreList::ScalarDeletingDestructor
-};
+}; D2_GLOBAL_GUARD(vftable, "D2Common::Chat::Ignorelist::IgnoreList::vftable");
 
 } // namespace D2Common::Chat::Ignorelist::IgnoreList
 
@@ -7627,13 +7611,13 @@ uint16_t aaWaypointsBitMasks[112][2] = {
     { 0x7, 0x2000 },
     { 0x7, 0x4000 },
     { 0x7, 0x8000 }
-};
+}; D2_GLOBAL_GUARD(aaWaypointsBitMasks, "D2Client::Waypoint::aaWaypointsBitMasks");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int32_t nWaypointsBitMasksSize = 0x70;
+int32_t nWaypointsBitMasksSize = 0x70; D2_GLOBAL_GUARD(nWaypointsBitMasksSize, "D2Client::Waypoint::nWaypointsBitMasksSize");
 
 } // namespace D2Client::Waypoint
 
@@ -7643,7 +7627,7 @@ namespace D2Common::Drlg::DrlgGrid {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-fpFlagOperations apFlagOperations[6] = { (fpFlagOperations)&D2Common::Drlg::DrlgGrid::OrFlag, (fpFlagOperations)&D2Common::Drlg::DrlgGrid::AndFlag, (fpFlagOperations)&D2Common::Drlg::DrlgGrid::XorFlag, (fpFlagOperations)&D2Common::Drlg::DrlgGrid::OverwriteFlag, (fpFlagOperations)&D2Common::Drlg::DrlgGrid::OverwriteFlagIfZero, (fpFlagOperations)&D2Common::Drlg::DrlgGrid::AndNegatedFlag };
+fpFlagOperations apFlagOperations[6] = { (fpFlagOperations)&D2Common::Drlg::DrlgGrid::OrFlag, (fpFlagOperations)&D2Common::Drlg::DrlgGrid::AndFlag, (fpFlagOperations)&D2Common::Drlg::DrlgGrid::XorFlag, (fpFlagOperations)&D2Common::Drlg::DrlgGrid::OverwriteFlag, (fpFlagOperations)&D2Common::Drlg::DrlgGrid::OverwriteFlagIfZero, (fpFlagOperations)&D2Common::Drlg::DrlgGrid::AndNegatedFlag }; D2_GLOBAL_GUARD(apFlagOperations, "D2Common::Drlg::DrlgGrid::apFlagOperations");
 
 } // namespace D2Common::Drlg::DrlgGrid
 
@@ -7655,10 +7639,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -7666,6 +7646,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

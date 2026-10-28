@@ -44,7 +44,7 @@ void COMCALLBACK_HandleBannerAdFile(uint32_t * pBannerAdData);
 char * __stdcall COMCALLBACK_GetCurrentChannelName();
 BOOL __fastcall COMCALLBACK_ReturnTrue(uint32_t dwParam1, uint32_t dwParam2, char * szText1, char * szText2);
 // Parses BNet channel user data blob into D2ChannelUserStrc. Reads product tag (D2DV/D2XP/STAR/etc.) from pbRawData, extracts char class, experience, quest flags, merc data. Returns nCharClassId for the character portrait.
-uint32_t COMCALLBACK_CreateChannelUser(struct D2ChannelUserStrc * pChannelUser, uint32_t nStatusFlags, struct D2ChannelUserStrc * pUser, uint8_t * pbRawData);
+uint8_t COMCALLBACK_CreateChannelUser(uint8_t * pbRawData, uint32_t nStatusFlags, struct D2ChannelUserStrc * pUser);
 // Formats D2ChannelUserStrc data for display: splits clan*charname, converts to wide strings, extracts realm name, calls D2COMP_SetUnitDisplayStrings with portrait/name/realm/clan strings.
 void COMCALLBACK_FormatChannelUserData(struct D2ChannelUserStrc * pChannelUser);
 // Adds or updates a channel user in gpChannelUserLinkedListHead sorted list. Allocates 0x48-byte node, copies username and raw BNet data. Updates existing entry if username matches.
@@ -69,18 +69,18 @@ uint32_t __stdcall COMCALLBACK_AppendServerMessage(uint32_t dwParam, char * szTe
 // Formats and displays a Battle.net channel chat message with the username prefix in angle brackets, then forwards to the chat text display function.
 int __stdcall COMCALLBACK_AppendChatWithColor(char * szUsername, int nColor, char * szMessage, int nParam);
 // Broadcasts chat message from local player to Battle.net channel. Retrieves current username from network interface, finds matching user in channel list to determine status flags (operator/speaker/moderator), formats message with username and clan tag prefix, then dispatches to chat system with appropriate color based on user status (0=operator red, 3=speaker/moderator yellow, 4=normal white).
-void __stdcall COMCALLBACK_BroadcastChatMessage();
+void __fastcall COMCALLBACK_BroadcastChatMessage(char * szMessageBody);
 // Handles incoming BNet whisper message. Checks ignore list, finds sender in channel user list for status flags, formats sender/message and appends to chat with appropriate color.
 BOOL __fastcall COMCALLBACK_HandleWhisperMessage(uint32_t dwParam1, uint32_t dwParam2, char * szUsername, char * szText);
 BOOL __fastcall COMCALLBACK_AppendErrorMessage(uint32_t dwParam1, uint32_t dwParam2, uint32_t dwParam, char * szText);
 BOOL __fastcall COMCALLBACK_AppendInfoMessage(uint32_t dwCbArg1, uint32_t dwCbArg2, uint32_t dwParam, char * szText);
 BOOL __fastcall COMCALLBACK_HandleInfoRequest1(uint32_t dwCbArg1, uint32_t dwCbArg2, uint32_t dwParam1, char * szInfoArg);
 BOOL __fastcall COMCALLBACK_HandleInfoRequest2(uint32_t dwCbArg1, uint32_t dwCbArg2, uint32_t dwParam1, char * szInfoArg);
-void __fastcall COMCALLBACK_ValidateWhisperTarget(char * szMessage);
+void __fastcall COMCALLBACK_ValidateWhisperTarget(char * szUsername, char * szMessage);
 BOOL __fastcall COMCALLBACK_ProcessWhisperCommand(uint32_t dwCbArg1, uint32_t dwCbArg2, char * szRawText, char * szWhisperText);
 void __stdcall COMCALLBACK_FormatWhisperReply(uint8_t * pbReplyText, uint8_t * pbSenderName, char * szReplyArg);
 BOOL __fastcall COMCALLBACK_HandleWhisperReply(uint32_t dwParam1, uint32_t dwParam2, char * szText, uint32_t dwParam);
-void __fastcall COMCALLBACK_ValidateEmoteTarget(char * szEmoteText);
+void __fastcall COMCALLBACK_ValidateEmoteTarget(char * szPlayerName, char * szEmoteText);
 BOOL __fastcall COMCALLBACK_ProcessEmoteCommand(uint32_t dwParam1, uint32_t dwParam2, char * szText, char * szEmoteArg);
 // Scrolls the chat-lobby user list by nScrollDelta rows: clamps gnChannelUserListScrollOffset to 0..gnChannelUserCount-11 (0 when fewer than 12 users), rebuilds the list through COMCALLBACK_UpdateChannelUserList when the offset changed, and shows the back/forward scroll buttons only when there is something to scroll to.
 // Provenance: asm 00448bd0..00448c6c; the four user-list scroll buttons call it with -10, 10, -1 and 1.

@@ -72,13 +72,6 @@ typedef int (__stdcall *ChatDlgCallback)(uint32_t dwParam);
 
 namespace D2Multi::OOGUtilities {
 
-static uint16_t gnPendingGameInfoCharIndex = -0x1;
-static char gbLanGameListEntryNamePadding2 = 0;
-static uint16_t gwGameListCacheEntryPort = 0;
-static uint8_t gChatBufferData3 = 0;
-static uint8_t gChatBufferData2 = 0;
-static uint8_t gChatBufferData1 = 0;
-
 int __stdcall OOG_DisableControlCallback(uint32_t dwParam) {
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&pGameListCache->sControl, 1);
     return 1;
@@ -323,8 +316,8 @@ int __stdcall OOGUTIL_JoinDefaultChannel(D2ControlMsg * pControlMsg) {
 
 int __stdcall OOGUTIL_HandleChannelListDoubleClick(D2ControlMsg * pControlMsg) {
     // Static local variables (originally global data)
-    static int32_t gaOOGUtilChannelListLangNames = -0x2;
-    static unsigned int gdwLastChannelListClickTick;
+    static int32_t gaOOGUtilChannelListLangNames = -0x2; D2_STATIC_GUARD(gaOOGUtilChannelListLangNames, "D2Multi::OOGUtilities::OOGUTIL_HandleChannelListDoubleClick::gaOOGUtilChannelListLangNames");
+    static unsigned int gdwLastChannelListClickTick; D2_STATIC_GUARD_BSS(gdwLastChannelListClickTick, "D2Multi::OOGUtilities::OOGUTIL_HandleChannelListDoubleClick::gdwLastChannelListClickTick");
 
     uint16_t* pwszEditInput;
     int32_t pCurSelectedLine = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetSelectedLine(gpCtlChannelList);
@@ -391,8 +384,8 @@ void __stdcall AbleToJoinGameOrBanned(int32_t bBanned) {
 
 int __stdcall JoinOrCreateGame(DWORD dwParam) {
     // Static local variables (originally global data)
-    static unsigned int gdwLastGameInfoPollTick;
-    static uint32_t gdwLastNetworkHeartbeatTick;
+    static unsigned int gdwLastGameInfoPollTick; D2_STATIC_GUARD_BSS(gdwLastGameInfoPollTick, "D2Multi::OOGUtilities::JoinOrCreateGame::gdwLastGameInfoPollTick");
+    static uint32_t gdwLastNetworkHeartbeatTick; D2_STATIC_GUARD_BSS(gdwLastNetworkHeartbeatTick, "D2Multi::OOGUtilities::JoinOrCreateGame::gdwLastNetworkHeartbeatTick");
 
     bool bVar1;
     uint16_t nGSRequestId;
@@ -684,8 +677,8 @@ uint32_t __stdcall OOGMENU_RestoreMCPConnection() {
 
 int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
     // Static local variables (originally global data)
-    static uint8_t gnOogReplyCommandIndex;
-    static int gnLobbyTabCompletionIndex;
+    static uint8_t gnOogReplyCommandIndex; D2_STATIC_GUARD_BSS(gnOogReplyCommandIndex, "D2Multi::OOGUtilities::CHATDLG_RunChatLobbyScreen::gnOogReplyCommandIndex");
+    static int gnLobbyTabCompletionIndex; D2_STATIC_GUARD_BSS(gnLobbyTabCompletionIndex, "D2Multi::OOGUtilities::CHATDLG_RunChatLobbyScreen::gnLobbyTabCompletionIndex");
 
     D2ControlStrc* pCreatedForm;
     ::D2WinButton* pUserListButton;
@@ -1176,7 +1169,7 @@ int __stdcall CHAT_SendOutOfGameMessage() {
       }
 
       pNetworkUnknown->pfnSendChatCommand((uint8_t*)gszOogChatInputBuffer);
-      ComCallback::COMCALLBACK_BroadcastChatMessage();
+      ComCallback::COMCALLBACK_BroadcastChatMessage(gszOogChatInputBuffer);
     }
 
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetTextWide(gpChatDlgInputEditBox, nullptr);
@@ -1309,41 +1302,37 @@ uint32_t __fastcall OOGUTIL_CheckCharacterLevel(uint8_t * pszLevelChars) {
 // Copies: +8 gameid -> gwGameListCacheEntryPort; +0x14 -> gwOOGLobbyScreenState; +0x1c -> gszLanGameListEntryName;
 // +0x2c -> gszLanGameListEntryDescription. Called once per incoming MCP 0x05 game packet from JoinOrCreateGame.
 void __fastcall OOGMENU_AddGameToCache(int32_t pGameInfo) {
-    // Static local variables (originally global data)
-    static uint16_t gwOOGLobbyScreenState;
-
     char cChar;
     int nIndex = 0;
     if (0 < nGameListDifficultyFilter) {
-      short int* pwCachePort;
-      pwCachePort = (short int*)&gwGameListCacheEntryPort;
+      uint16_t* pwCachePort;
+      pwCachePort = &gbLanGameListEntryNamePadding2[0].nJoinId;
       do {
-        if (*pwCachePort == *(short int*)(pGameInfo + 8)) {
+        if (*pwCachePort == *(uint16_t*)(pGameInfo + 8)) {
           return;
         }
 
         nIndex++;
-        pwCachePort = (short int*)((int)pwCachePort + 0x3b);
+        pwCachePort = (uint16_t*)((int)pwCachePort + 0x3b);
       } while (nIndex < nGameListDifficultyFilter);
     }
 
-    int nEntryOffset = nGameListDifficultyFilter * 0x3b;
-    *(uint16_t*)((uintptr_t)&gwGameListCacheEntryPort + nEntryOffset) = *(uint16_t*)(pGameInfo + 8);
-    *(uint32_t*)((uintptr_t)&gdwGameListCacheEntryFlags + nEntryOffset) = 0;
-    *(uint16_t*)((uintptr_t)&gwOOGLobbyScreenState + nEntryOffset) = *(uint16_t*)(pGameInfo + 0x14);
+    gbLanGameListEntryNamePadding2[nGameListDifficultyFilter].nJoinId = *(uint16_t*)(pGameInfo + 8);
+    gbLanGameListEntryNamePadding2[nGameListDifficultyFilter].dwIpAddr = 0;
+    gbLanGameListEntryNamePadding2[nGameListDifficultyFilter].wDisplayedCount = *(uint16_t*)(pGameInfo + 0x14);
     char* pszSrc = (char*)(pGameInfo + 0x1c);
-    nIndex = nEntryOffset - (int)pszSrc;
+    nIndex = nGameListDifficultyFilter * 0x3b + (intptr_t)&gbLanGameListEntryNamePadding2[0].szName - (int)pszSrc;
     do {
       cChar = *pszSrc;
-      pszSrc[(int)(&gszLanGameListEntryName + nIndex)] = cChar;
+      pszSrc[nIndex] = cChar;
       pszSrc++;
     } while (cChar != '\0');
 
     pszSrc = (char*)(pGameInfo + 0x2c);
-    nEntryOffset -= (int)pszSrc;
+    nIndex = nGameListDifficultyFilter * 0x3b + (intptr_t)&gbLanGameListEntryNamePadding2[0].szDescription - (int)pszSrc;
     do {
       cChar = *pszSrc;
-      pszSrc[(int)(&gszLanGameListEntryDescription + nEntryOffset)] = cChar;
+      pszSrc[nIndex] = cChar;
       pszSrc++;
     } while (cChar != '\0');
 
@@ -1351,12 +1340,7 @@ void __fastcall OOGMENU_AddGameToCache(int32_t pGameInfo) {
 }
 
 void __stdcall OOGMENU_RefreshGameListDisplay() {
-    // Static local variables (originally global data)
-    static char gbLanGameListEntryNamePadding;
-    static uint8_t gwLanGameListEntryPortPrev;
-
     uint16_t* pwEntryPort;
-    uint8_t* pbEntryNameBase;
     uint8_t szSelectedName[256];
     char szPortText[16];
     int32_t nLastLineIndex;
@@ -1381,9 +1365,9 @@ void __stdcall OOGMENU_RefreshGameListDisplay() {
     }
 
     int32_t bHasPeer = D2MCPClient::McpConnect::HasPeerName();
-    memcpy(&gbLanGameListEntryNamePadding, &gbLanGameListEntryNamePadding2, nGameListDifficultyFilter * 0x3b);
+    memcpy(gbLanGameListEntryNamePadding, gbLanGameListEntryNamePadding2, nGameListDifficultyFilter * 0x3b);
     if (0 < gnFilteredGameListCount) {
-      pwEntryPort = (uint16_t*)&gwLanGameListEntryPortPrev;
+      pwEntryPort = &gbLanGameListEntryNamePadding[0].wDisplayedCount;
       do {
         D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOOGGameListTextBox, (char*)(pwEntryPort - 0x18));
         nLastLineIndex = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetLastLineIndex(gpOOGGameListTextBox);
@@ -1404,9 +1388,8 @@ void __stdcall OOGMENU_RefreshGameListDisplay() {
         return;
       }
 
-      pbEntryNameBase = &gaLanGameListEntryName;
       do {
-        nCmpResult = strcmp((char*)szSelectedName, (char*)pbEntryNameBase);
+        nCmpResult = strcmp((char*)szSelectedName, gbLanGameListEntryNamePadding[nEntryIndex].szName);
         if (!nCmpResult) {
           D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetSelectedLine(gpOOGGameListTextBox, nEntryIndex);
           D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(gpOOGGameListTextBox, nScrollPos);
@@ -1414,7 +1397,6 @@ void __stdcall OOGMENU_RefreshGameListDisplay() {
         }
 
         nEntryIndex++;
-        pbEntryNameBase += 0x3b;
         if (gnFilteredGameListCount <= nEntryIndex) {
           D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(gpOOGGameListTextBox, nScrollPos);
           return;
@@ -1436,34 +1418,30 @@ void __stdcall OOGMENU_RequestGameInfo() {
     }
 
     D2MCPClient::McpConnect::NET_MCP_CLIENT_Send_0x06_GameInfo(gszOOGRequestedGameName, (uint16_t)gnPendingGameInfoCharIndex);
-    gwLastGameInfoRequestId = gnPendingGameInfoCharIndex;
+    gwLastGameInfoRequestId = (uint16_t)gnPendingGameInfoCharIndex;
     gnPendingGameInfoCharIndex = -1;
 }
 
 void OOGUTIL_Unused2(int32_t nEntryIndex) {
-    // Static local variables (originally global data)
-    static char gbOOGLobbyScreenStatePadding;
-
-    uint8_t byChar;
+    char byChar;
     if (!gpOogGameListDetailsPanelControl) {
       return;
     }
 
-    int nEntryOffset = nEntryIndex * 0x3b;
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpOogGameListDetailsPanelControl);
-    uint8_t* pbDescEnd = &gszLanGameListEntryDescription + nEntryOffset;
-    pbDescEnd = pbDescEnd + strlen((char*)pbDescEnd) + 1;
-    if (pbDescEnd != (uint8_t*)(&gbOOGLobbyScreenStatePadding + nEntryOffset)) {
-      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, (char*)(&gszLanGameListEntryDescription + nEntryOffset));
+    char* pbDescEnd = gbLanGameListEntryNamePadding2[nEntryIndex].szDescription;
+    pbDescEnd = pbDescEnd + strlen(pbDescEnd) + 1;
+    if (pbDescEnd != gbLanGameListEntryNamePadding2[nEntryIndex].szDescription + 1) {
+      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, gbLanGameListEntryNamePadding2[nEntryIndex].szDescription);
       D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, "");
     }
 
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(gpOogGameListDetailsPanelControl, 0);
-    if (!(&gszLanGameListEntryName + nEntryOffset)) {
+    if (!gbLanGameListEntryNamePadding2[nEntryIndex].szName) {
       return;
     }
 
-    D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetTextFromAnsi(gpOogGamePasswordEditControl, (char*)(&gszLanGameListEntryName + nEntryOffset));
+    D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetTextFromAnsi(gpOogGamePasswordEditControl, gbLanGameListEntryNamePadding2[nEntryIndex].szName);
     D2Win::Src::D2WinMain::D2WINMAIN_SetFocusedControl(nullptr);
 }
 
@@ -1980,26 +1958,10 @@ int32_t __fastcall OOGUTIL_HandleGameListEntry(char * szText1, char * szText2, i
 }
 
 int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
-    // Static local variables (originally global data)
-    static uint16_t gnLanGameListEntryPort;
-    static uint32_t gnLanGameIPAddr;
-
-    // Frame slots -64..-11 are ONE object: &entryBuf is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t entryBuf;
-      uint8_t aEntryName[50];
-      int16_t nEntryPort;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 53, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    char* pszIpAddr;
-    uint8_t* pbEntryName;
+    char* pbEntryName;
     mcp0x03data aGameName[3];
     mcp0x03data aPassword[3];
-    _union_1226 entryIpAddr;
+    D2LanGameEntryStrc sGameEntry;
     BOOL bStatusVisible = D2Win::Src::D2WinMain::D2WINMAIN_GetControlVisible(gpCtlGameListStatus);
     if (!bStatusVisible) {
       return 0;
@@ -2027,12 +1989,11 @@ int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
     int nEntryIdx = 0;
     if (0 < nGameListDifficultyFilter) {
       int nCmp;
-      pbEntryName = &gaLanGameListEntryName;
       do {
-        nCmp = strcmp((char*)pbEntryName, aPassword->szGameName);
+        nCmp = strcmp(gbLanGameListEntryNamePadding[nEntryIdx].szName, aPassword->szGameName);
         if (!nCmp) {
-          pszIpAddr = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)((_union_1226*)((uintptr_t)&gnLanGameIPAddr + nEntryIdx * 0x3b))->S_un_b);
-          ChatDlg::OOGMENU_JoinGame(*(int16_t*)((uintptr_t)&gnLanGameListEntryPort + nEntryIdx * 0x3b), aPassword[0].szGameName, aGameName[0].szGameName, pszIpAddr);
+          pbEntryName = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)gbLanGameListEntryNamePadding[nEntryIdx].dwIpAddr);
+          ChatDlg::OOGMENU_JoinGame(gbLanGameListEntryNamePadding[nEntryIdx].nJoinId, aPassword[0].szGameName, aGameName[0].szGameName, pbEntryName);
           UIMENU_DestroyLobbyAndJoinGameForms();
           pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x147b);
           ChatDlg::UIMENU_PrintSmallTitleOnCenterScreen(pwszLocaleStr, nullptr);
@@ -2040,19 +2001,18 @@ int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
         }
 
         nEntryIdx++;
-        pbEntryName += 0x3b;
       } while (nEntryIdx < nGameListDifficultyFilter);
     }
 
-    bHasPeerName = OOGUTIL_HandleGameListEntry(aPassword[0].szGameName, aGameName[0].szGameName, (uintptr_t)&__frame0.entryBuf);
+    bHasPeerName = OOGUTIL_HandleGameListEntry(aPassword[0].szGameName, aGameName[0].szGameName, (uintptr_t)&sGameEntry);
     if (!bHasPeerName) {
       pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1411);
       ChatDlg::UIMENU_DrawTitleOnCenterSmaller(pwszLocaleStr, nullptr);
     } else {
-      nEntryIdx = strcmp((char*)__frame0.aEntryName, aPassword->szGameName);
+      nEntryIdx = strcmp(sGameEntry.szGameName, aPassword->szGameName);
       if (!nEntryIdx) {
-        pszIpAddr = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)entryIpAddr);
-        ChatDlg::OOGMENU_JoinGame(__frame0.nEntryPort, aPassword[0].szGameName, aGameName[0].szGameName, pszIpAddr);
+        pbEntryName = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)sGameEntry.dwIpAddress);
+        ChatDlg::OOGMENU_JoinGame(sGameEntry.nPort, aPassword[0].szGameName, aGameName[0].szGameName, pbEntryName);
         UIMENU_DestroyLobbyAndJoinGameForms();
         pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x147b);
         ChatDlg::UIMENU_PrintSmallTitleOnCenterScreen(pwszLocaleStr, nullptr);
@@ -2130,7 +2090,7 @@ void __stdcall UIMENU_PlayerProfileLabels() {
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont1,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e860, "D2Multi::OOGUtilities::UIMENU_PlayerProfileLabels::FORMS_PredefinedFormStrc_0070e860");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e890 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x2bc, 0x81, 0xd9, 0xc },
@@ -2141,7 +2101,7 @@ void __stdcall UIMENU_PlayerProfileLabels() {
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont1,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e890, "D2Multi::OOGUtilities::UIMENU_PlayerProfileLabels::FORMS_PredefinedFormStrc_0070e890");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e8c0 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x1a9, 0xb4, 0xd9, 0xc },
@@ -2152,7 +2112,7 @@ void __stdcall UIMENU_PlayerProfileLabels() {
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont1,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e8c0, "D2Multi::OOGUtilities::UIMENU_PlayerProfileLabels::FORMS_PredefinedFormStrc_0070e8c0");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e8f0 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x1a9, 0xe6, 0xd9, 0xc },
@@ -2163,7 +2123,7 @@ void __stdcall UIMENU_PlayerProfileLabels() {
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont1,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e8f0, "D2Multi::OOGUtilities::UIMENU_PlayerProfileLabels::FORMS_PredefinedFormStrc_0070e8f0");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e9b0 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x190, 0x70, 0x190, 0x16 },
@@ -2174,7 +2134,7 @@ void __stdcall UIMENU_PlayerProfileLabels() {
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont2,
     /* .nFlagsOrType = */ 0x2
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e9b0, "D2Multi::OOGUtilities::UIMENU_PlayerProfileLabels::FORMS_PredefinedFormStrc_0070e9b0");
 
     gUIPlayerProfileCharacterNameLabel = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(&FORMS_PredefinedFormStrc_0070e860);
     uint16_t* pwszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1493);
@@ -2295,12 +2255,12 @@ int __stdcall UIMENU_DialogWindowChatCommands() {
     /* .aParams = */ { 0x19f, 0x1bf, 0x175, 0x175 },
     /* .nExtraParam = */ 0x0,
     /* .nLabelAsLocaleStringId = */ 0x0,
-    /* .pDC6 = */ (DC6*)&gpDC6HelpBckg,
+    /* .pDC6 = */ &gpDC6HelpBckg,
     /* .fpOnPressCallback = */ nullptr,
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ nullptr,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e9e0, "D2Multi::OOGUtilities::UIMENU_DialogWindowChatCommands::FORMS_PredefinedFormStrc_0070e9e0");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070ea10 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x190, 0x70, 0x190, 0x16 },
@@ -2311,29 +2271,29 @@ int __stdcall UIMENU_DialogWindowChatCommands() {
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont2,
     /* .nFlagsOrType = */ 0x2
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070ea10, "D2Multi::OOGUtilities::UIMENU_DialogWindowChatCommands::FORMS_PredefinedFormStrc_0070ea10");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070ea40 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x1bf, 0x18e, 0x122, 0x10d },
     /* .nExtraParam = */ 0x0,
     /* .nLabelAsLocaleStringId = */ 0x0,
-    /* .pDC6 = */ (DC6*)&gpDC6JoinGameScrollbar,
+    /* .pDC6 = */ &gpDC6JoinGameScrollbar,
     /* .fpOnPressCallback = */ nullptr,
     /* .pTypeArg1 = */ (void*)gaMultiTextBoxScrollbarGeom6,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont4,
     /* .nFlagsOrType = */ 0x4
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070ea40, "D2Multi::OOGUtilities::UIMENU_DialogWindowChatCommands::FORMS_PredefinedFormStrc_0070ea40");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070ea70 = {
     /* .neD2FormType = */ FORM_Button,
     /* .aParams = */ { 0x29f, 0x1b1, 0x60, 0x20 },
     /* .nExtraParam = */ 0xd,
     /* .nLabelAsLocaleStringId = */ 0x13ee,
-    /* .pDC6 = */ (DC6*)&gpLauncherImageResource2,
+    /* .pDC6 = */ &gpLauncherImageResource2,
     /* .fpOnPressCallback = */ &D2Multi::ChatDlg::CHATDLG_OnPressChatCommandsOK,
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ nullptr,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070ea70, "D2Multi::OOGUtilities::UIMENU_DialogWindowChatCommands::FORMS_PredefinedFormStrc_0070ea70");
 
     ChatDlg::CHATDLG_DestroyAllForms();
     BOOL bIsExpansion = Launcher::CHATDLG_IsLobbyInitialized();
@@ -2679,7 +2639,7 @@ void __stdcall OOGUTIL_RequestGameListFromServer() {
       pbCursor = (uint8_t*)(pnQueryResult + 1);
       nAcceptedCount = 0;
       if (0 < nGameListDifficultyFilter) {
-        pCacheSlot = &gdwGameListCacheEntryFlags;
+        pCacheSlot = &gbLanGameListEntryNamePadding2[0].dwIpAddr;
         do {
           *(uint16_t*)(pCacheSlot - 1) = 1;
           pbField = pbCursor + 0x20;
@@ -2797,8 +2757,8 @@ int __stdcall EDITBOX_Cb_OOGUTIL_SetJoinGameError(void * pUnknown) {
 
 int __stdcall OOGUTIL_HandleGameCreation(D2ControlMsg * pControlMsg) {
     // Static local variables (originally global data)
-    static int32_t gaOOGUtilGameCreationLangNames = -0x2;
-    static unsigned int gdwLastGameListClickTick;
+    static int32_t gaOOGUtilGameCreationLangNames = -0x2; D2_STATIC_GUARD(gaOOGUtilGameCreationLangNames, "D2Multi::OOGUtilities::OOGUTIL_HandleGameCreation::gaOOGUtilGameCreationLangNames");
+    static unsigned int gdwLastGameListClickTick; D2_STATIC_GUARD_BSS(gdwLastGameListClickTick, "D2Multi::OOGUtilities::OOGUTIL_HandleGameCreation::gdwLastGameListClickTick");
 
     uint16_t nParam;
     char szLineText[256];
@@ -2931,7 +2891,7 @@ void __stdcall UIMENU_WaitInLine() {
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont2,
     /* .nFlagsOrType = */ 0x2
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070eaa0, "D2Multi::OOGUtilities::UIMENU_WaitInLine::FORMS_PredefinedFormStrc_0070eaa0");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070ead0 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x1ab, 0xea, 0x12c, 0x64 },
@@ -2942,18 +2902,18 @@ void __stdcall UIMENU_WaitInLine() {
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont1,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070ead0, "D2Multi::OOGUtilities::UIMENU_WaitInLine::FORMS_PredefinedFormStrc_0070ead0");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070eb30 = {
     /* .neD2FormType = */ FORM_Button,
     /* .aParams = */ { 0x1b1, 0x1b1, 0x60, 0x20 },
     /* .nExtraParam = */ 0xd,
     /* .nLabelAsLocaleStringId = */ 0x13ef,
-    /* .pDC6 = */ (DC6*)&gpLauncherImageResource2,
+    /* .pDC6 = */ &gpLauncherImageResource2,
     /* .fpOnPressCallback = */ &D2Multi::OOGUtilities::OOGUTIL_OnPressWaitInLineCancel,
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ nullptr,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070eb30, "D2Multi::OOGUtilities::UIMENU_WaitInLine::FORMS_PredefinedFormStrc_0070eb30");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070eb60 = {
     /* .neD2FormType = */ FORM_Timer,
     /* .aParams = */ { 0x2, 0x0, 0x0, 0x0 },
@@ -2964,7 +2924,7 @@ void __stdcall UIMENU_WaitInLine() {
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ nullptr,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070eb60, "D2Multi::OOGUtilities::UIMENU_WaitInLine::FORMS_PredefinedFormStrc_0070eb60");
 
     int nClearIter;
     uint16_t wszMessageBuffer[200];
@@ -3244,12 +3204,12 @@ void __fastcall OOGUTIL_CreateEditProfileDialog(char * szCharacterName, int nHar
     /* .aParams = */ { 0x19f, 0x1bf, 0x175, 0x175 },
     /* .nExtraParam = */ 0x0,
     /* .nLabelAsLocaleStringId = */ 0x0,
-    /* .pDC6 = */ (DC6*)&gpDC6PlayerProfileBckg2,
+    /* .pDC6 = */ &gpDC6PlayerProfileBckg2,
     /* .fpOnPressCallback = */ nullptr,
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ nullptr,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e680, "D2Multi::OOGUtilities::OOGUTIL_CreateEditProfileDialog::FORMS_PredefinedFormStrc_0070e680");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e6b0 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x1b0, 0x93, 0x9b, 0xc },
@@ -3260,7 +3220,7 @@ void __fastcall OOGUTIL_CreateEditProfileDialog(char * szCharacterName, int nHar
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont4,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e6b0, "D2Multi::OOGUtilities::OOGUTIL_CreateEditProfileDialog::FORMS_PredefinedFormStrc_0070e6b0");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e6e0 = {
     /* .neD2FormType = */ FORM_EditBox,
     /* .aParams = */ { 0x2c3, 0x9b, 0x37, 0x14 },
@@ -3271,7 +3231,7 @@ void __fastcall OOGUTIL_CreateEditProfileDialog(char * szCharacterName, int nHar
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont4,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e6e0, "D2Multi::OOGUtilities::OOGUTIL_CreateEditProfileDialog::FORMS_PredefinedFormStrc_0070e6e0");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e710 = {
     /* .neD2FormType = */ FORM_EditBox,
     /* .aParams = */ { 0x1b0, 0xcf, 0x103, 0x14 },
@@ -3282,7 +3242,7 @@ void __fastcall OOGUTIL_CreateEditProfileDialog(char * szCharacterName, int nHar
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont4,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e710, "D2Multi::OOGUtilities::OOGUTIL_CreateEditProfileDialog::FORMS_PredefinedFormStrc_0070e710");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e740 = {
     /* .neD2FormType = */ FORM_EditBox,
     /* .aParams = */ { 0x1b0, 0x183, 0x147, 0x96 },
@@ -3293,7 +3253,7 @@ void __fastcall OOGUTIL_CreateEditProfileDialog(char * szCharacterName, int nHar
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont4,
     /* .nFlagsOrType = */ 0x8
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e740, "D2Multi::OOGUtilities::OOGUTIL_CreateEditProfileDialog::FORMS_PredefinedFormStrc_0070e740");
 
     char szDescription[204];
     char szLocation[44];
@@ -3352,12 +3312,12 @@ void __fastcall OOGUTIL_CreateViewProfileDialog(char * szUserName, char * szChar
     /* .aParams = */ { 0x19f, 0x1bf, 0x175, 0x175 },
     /* .nExtraParam = */ 0x0,
     /* .nLabelAsLocaleStringId = */ 0x0,
-    /* .pDC6 = */ (DC6*)&gpDC6PlayerProfileBckg,
+    /* .pDC6 = */ &gpDC6PlayerProfileBckg,
     /* .fpOnPressCallback = */ nullptr,
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ nullptr,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e770, "D2Multi::OOGUtilities::OOGUTIL_CreateViewProfileDialog::FORMS_PredefinedFormStrc_0070e770");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e7a0 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x1b0, 0x93, 0x9b, 0xc },
@@ -3368,7 +3328,7 @@ void __fastcall OOGUTIL_CreateViewProfileDialog(char * szUserName, char * szChar
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont4,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e7a0, "D2Multi::OOGUtilities::OOGUTIL_CreateViewProfileDialog::FORMS_PredefinedFormStrc_0070e7a0");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e7d0 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x2c3, 0x93, 0x37, 0xc },
@@ -3379,7 +3339,7 @@ void __fastcall OOGUTIL_CreateViewProfileDialog(char * szUserName, char * szChar
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont4,
     /* .nFlagsOrType = */ 0x22
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e7d0, "D2Multi::OOGUtilities::OOGUTIL_CreateViewProfileDialog::FORMS_PredefinedFormStrc_0070e7d0");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e800 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x1b0, 0xc7, 0x103, 0xc },
@@ -3390,7 +3350,7 @@ void __fastcall OOGUTIL_CreateViewProfileDialog(char * szUserName, char * szChar
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont4,
     /* .nFlagsOrType = */ 0x20
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e800, "D2Multi::OOGUtilities::OOGUTIL_CreateViewProfileDialog::FORMS_PredefinedFormStrc_0070e800");
     static FORMS_PredefinedFormStrc FORMS_PredefinedFormStrc_0070e830 = {
     /* .neD2FormType = */ FORM_TextBox,
     /* .aParams = */ { 0x1b0, 0x183, 0x147, 0x96 },
@@ -3401,7 +3361,7 @@ void __fastcall OOGUTIL_CreateViewProfileDialog(char * szUserName, char * szChar
     /* .pTypeArg1 = */ nullptr,
     /* .pTypeArg2 = */ (void*)gaMultiFormFontParamsFont4,
     /* .nFlagsOrType = */ 0x0
-};
+}; D2_STATIC_GUARD(FORMS_PredefinedFormStrc_0070e830, "D2Multi::OOGUtilities::OOGUTIL_CreateViewProfileDialog::FORMS_PredefinedFormStrc_0070e830");
 
     // Frame slots -8..-4 are ONE object: &wCrLfDelim is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -3840,7 +3800,7 @@ int __stdcall OOGUTIL_ValidateUsername4(DWORD dwParam) {
 
 void __stdcall OOGUTIL_AppendChatText(uint16_t * wszText) {
     uint16_t* pwszMatch;
-    int32_t nRemainingLen;
+    int32_t iVar1;
     int32_t nLength = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
     if (nLength < 500) {
       uint16_t* pwszNewlineToken;
@@ -3848,8 +3808,8 @@ void __stdcall OOGUTIL_AppendChatText(uint16_t * wszText) {
       nLength = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszNewlineToken);
       pwszMatch = (uint16_t*)D2Lang::Unicode::UNISYS::UNICODE_FindSubstring((uint16_t*)wszText, (uint16_t*)pwszNewlineToken);
       while (pwszMatch && pwszMatch[nLength] != L'\0') {
-        nRemainingLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszMatch);
-        memmove(pwszMatch, pwszMatch + nLength + 1, (nRemainingLen - nLength) * 2);
+        iVar1 = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszMatch);
+        memmove(pwszMatch, pwszMatch + nLength + 1, (iVar1 - nLength) * 2);
         pwszMatch = (uint16_t*)D2Lang::Unicode::UNISYS::UNICODE_FindSubstring((uint16_t*)wszText, (uint16_t*)pwszNewlineToken);
       }
 

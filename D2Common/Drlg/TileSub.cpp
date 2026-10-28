@@ -9,11 +9,10 @@
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Drlg/DrlgGrid.h"
 #include "D2Common/Drlg/Preset.h"
-#include "Fog/D2MemoryManagerStrc.h"
+#include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
-#include "Fog/D2PoolManagerStrc.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -21,7 +20,7 @@
 namespace D2Common::Drlg::TileSub {
 
 // Ensures pLvlSubTxtRecord->pDrlgFile is loaded, then initializes per-layer grids (wall/floor/shadow) from the DS1 tile-type layers. Also applies a per-wall-layer flag mask and validates that substitution groups exist.
-void __fastcall InitializeDrlgFile(D2MemoryManagerStrc * pMemory, D2LvlSubTxt * pLvlSubTxtRecord) {
+void __fastcall InitializeDrlgFile(D2PoolManagerStrc * pMemory, D2LvlSubTxt * pLvlSubTxtRecord) {
     int nWallLayerIdx;
     D2DrlgCoordStrc gridInitCtx;
     D2DrlgGridStrc* pDStack_8;
@@ -30,7 +29,7 @@ void __fastcall InitializeDrlgFile(D2MemoryManagerStrc * pMemory, D2LvlSubTxt * 
       return;
     }
 
-    Preset::AllocDrlgFile(ppDrlgFile, (D2PoolManagerStrc*)pMemory, pLvlSubTxtRecord->File);
+    Preset::AllocDrlgFile(ppDrlgFile, pMemory, pLvlSubTxtRecord->File);
     D2DrlgFileStrc* pDrlgFile = *ppDrlgFile;
     int nGridWidth = pDrlgFile->nWidth + 1;
     gridInitCtx.nHeight = pDrlgFile->nHeight + 1;
@@ -78,12 +77,12 @@ void __fastcall InitializeDrlgFile(D2MemoryManagerStrc * pMemory, D2LvlSubTxt * 
 void __fastcall AddSecondaryBorder(D2UnkOutdoorStrc * pUnkOutdoor) {
     D2LvlSubTxt* pDVar1;
     D2LvlSubTxt* pLvlSubTxtRecord = DATATBLS::LvlTbls::TXT_LvlSub_GetLineFromSubType(pUnkOutdoor->nLvlSubId);
-    D2MemoryManagerStrc* pMemory = (D2MemoryManagerStrc*)pUnkOutdoor->pLevel->pDrlg->pDS1MemPool;
     if (pLvlSubTxtRecord->Type != pUnkOutdoor->nLvlSubId) {
       return;
     }
 
     do {
+      D2PoolManagerStrc* pMemory = pUnkOutdoor->pLevel->pDrlg->pDS1MemPool;
       InitializeDrlgFile(pMemory, pLvlSubTxtRecord);
       DRLGOUTDOOR_ApplySubstitutionGroup(pUnkOutdoor, pLvlSubTxtRecord);
       pDVar1 = pLvlSubTxtRecord + 1;

@@ -59,7 +59,7 @@ static char gszSrcFileTileProjects[23] = {
     'p',
     'p',
     '\x00'
-};
+}; D2_STATIC_GUARD(gszSrcFileTileProjects, "D2CMP::SRC::TileProjects::gszSrcFileTileProjects");
 
 // @sourcefile .\SRC\TileProjects.cpp
 void __stdcall Free() {

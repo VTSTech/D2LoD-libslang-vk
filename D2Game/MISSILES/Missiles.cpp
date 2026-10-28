@@ -3,6 +3,7 @@
 #include "D2Game/MISSILES/Missiles.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
+#include "D2Client/D2GSPacketSrv0x73.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -46,6 +47,7 @@
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
+#include "Fog/Save.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -372,28 +374,7 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
 
 // Sends packet 0x73 (MissileData) to the given client for a missile unit, but only if the missile's txt-row has the network-visible flag (0x20) set. Packs classId, current position, optional target coords, animation frame, owner type/GUID, missile level, and pierce index into the packet buffer.
 void __fastcall MISSILES_SendMissilePacket(D2ClientStrc * pClient, ::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t param_1) {
-    // Frame slots -36..-4 are ONE object: &dwPacketBuf is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint32_t dwPacketBuf;
-      uint8_t byPacketFlags;
-      uint16_t wMissileClassId;
-      int32_t nPosX;
-      int32_t nPosY;
-      uint32_t nTargetX;
-      uint32_t nTargetY;
-      uint8_t byCurrentFrameLo;
-      uint8_t byCurrentFrameHi;
-      uint8_t byOwnerType;
-      uint16_t wOwnerGuidLo;
-      uint16_t wOwnerGuidHi;
-      uint8_t byMissileLevel;
-      uint8_t byPierceIdx;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 32, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D2GSPacketSrv0x73 sPacket;
     if (!(pUnit && pUnit->eUnitType == UNIT_MISSILE)) {
       return;
     }
@@ -408,40 +389,40 @@ void __fastcall MISSILES_SendMissilePacket(D2ClientStrc * pClient, ::SGAMEDATA *
       return;
     }
 
-    __frame0.byPacketFlags = 0;
-    __frame0.wMissileClassId = 0;
-    __frame0.nPosX = 0;
-    __frame0.nPosY = 0;
-    __frame0.nTargetY = 0;
-    __frame0.byCurrentFrameLo = 0;
-    __frame0.byCurrentFrameHi = 0;
-    __frame0.byOwnerType = 0;
-    __frame0.wOwnerGuidLo = 0;
-    __frame0.wOwnerGuidHi = 0;
-    __frame0.byMissileLevel = 0;
-    __frame0.byPierceIdx = 0;
-    __frame0.dwPacketBuf = 0x73;
+    *(uint8_t*)((char*)&sPacket.nUnused + 3) = 0;
+    sPacket.nMissileClassId = 0;
+    sPacket.nMissileX = 0;
+    sPacket.nMissileY = 0;
+    sPacket.nTargetX = 0;
+    sPacket.nTargetY = 0;
+    *(uint8_t*)(char*)&sPacket.nCurrentFrame = 0;
+    *(uint8_t*)((char*)&sPacket.nCurrentFrame + 1) = 0;
+    sPacket.nOwnerType = 0;
+    *(uint16_t*)(char*)&sPacket.nOwnerGUID = 0;
+    *(uint16_t*)((char*)&sPacket.nOwnerGUID + 2) = 0;
+    sPacket.nSkillLevel = 0;
+    sPacket.nPierceIdxValue = 0;
+    *(uint32_t*)(char*)&sPacket = 0x73;
     int32_t nTmp = D2Common::Units::Missile::GetClassId(pUnit);
-    __frame0.wMissileClassId = (uint16_t)nTmp;
-    __frame0.nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-    __frame0.nPosY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+    sPacket.nMissileClassId = (short int)nTmp;
+    sPacket.nMissileX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+    sPacket.nMissileY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
     if (param_1) {
-      __frame0.nTargetX = 0;
-      __frame0.nTargetX = D2Common::PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath);
-      __frame0.nTargetY = D2Common::PATH::DynamicPath::GetYSP1(pUnit->pPath.pDynamicPath);
+      sPacket.nTargetX = D2Common::PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath);
+      sPacket.nTargetY = D2Common::PATH::DynamicPath::GetYSP1(pUnit->pPath.pDynamicPath);
     }
 
     nTmp = D2Common::Units::Missile::GetCurrentFrame(pUnit);
-    __frame0.byCurrentFrameLo = (uint8_t)nTmp;
-    __frame0.byCurrentFrameHi = (uint8_t)((uint32_t)nTmp >> 8);
-    __frame0.byOwnerType = (uint8_t)pOwnerUnit->eUnitType;
-    __frame0.wOwnerGuidLo = (uint16_t)pOwnerUnit->nUnitGUID;
-    __frame0.wOwnerGuidHi = (uint16_t)((uint32_t)pOwnerUnit->nUnitGUID >> 0x10);
+    *(uint8_t*)(char*)&sPacket.nCurrentFrame = (uint8_t)nTmp;
+    *(uint8_t*)((char*)&sPacket.nCurrentFrame + 1) = (uint8_t)((uint32_t)nTmp >> 8);
+    sPacket.nOwnerType = (uint8_t)pOwnerUnit->eUnitType;
+    *(uint16_t*)(char*)&sPacket.nOwnerGUID = (uint16_t)pOwnerUnit->nUnitGUID;
+    *(uint16_t*)((char*)&sPacket.nOwnerGUID + 2) = (uint16_t)((uint32_t)pOwnerUnit->nUnitGUID >> 0x10);
     nTmp = D2Common::Units::Missile::GetLevel(pUnit);
-    __frame0.byMissileLevel = (uint8_t)nTmp;
+    sPacket.nSkillLevel = (uint8_t)nTmp;
     nMissileClassId = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_pierce_idx, 0);
-    __frame0.byPierceIdx = (uint8_t)nMissileClassId;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x73_MissileData(pClient, &__frame0.dwPacketBuf);
+    sPacket.nPierceIdxValue = (uint8_t)nMissileClassId;
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x73_MissileData(pClient, &sPacket);
 }
 
 } // namespace D2Game::MISSILES::Missiles

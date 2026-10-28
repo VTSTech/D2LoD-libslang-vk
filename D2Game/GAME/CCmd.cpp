@@ -22,6 +22,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Debug.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
@@ -125,7 +126,7 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnve
     int nReason;
     int bServerValidRequest;
     uint32_t bAllowed;
-    int32_t bReturn1Result;
+    void* bReturn1Result;
     BOOL bFindMeCheckResult;
     D2ClientStrc* pClient;
     char szCharName[52];

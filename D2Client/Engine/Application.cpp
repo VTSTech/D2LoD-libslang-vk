@@ -19,6 +19,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SReg.h"
 #include "globals/globals.h"
+#include "D2Client/D2Client.h" // [vanilla-plus] ALTTOGGLE_EnsureIni
 #include "D2Client/Engine.h"
 #include "support/d2_trace.h"
 #include "support/d2_boot.h" // [d2boot]
@@ -32,8 +33,8 @@ namespace D2Client::Engine::Application {
 // Main app init. Client path loads MPQ data/media, sets renderer/window, optional keyhook, sound/gamma/vsync, then loops ApplicationRunCurrentMode until exit. On exit unloads MPQs and cleans up.
 int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData, eD2RendererMode eD2ApplicationModeAndRenderer) {
     // Static local variables (originally global data)
-    static uint32_t gbEnableKeyhookDll = 0x0;
-    static HMODULE ghKeyhookDll = (HMODULE)0x00000000;
+    static uint32_t gbEnableKeyhookDll = 0x0; D2_STATIC_GUARD(gbEnableKeyhookDll, "D2Client::Engine::Application::ApplicationMain::gbEnableKeyhookDll");
+    static HMODULE ghKeyhookDll = (HMODULE)0x00000000; D2_STATIC_GUARD(ghKeyhookDll, "D2Client::Engine::Application::ApplicationMain::ghKeyhookDll");
 
     // Frame slots -16..-4 are ONE object: &nFixedAspectRatio is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -47,13 +48,19 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     BOOL bMpqLoaded;
     FARPROC pfnKeyhook;
     bool bWindowCreated;
-    if (*(int*)&pD2IniData->bCRASHAPP == 1) {
+    if (pD2IniData->bCRASHAPP == 1) {
       Fog::Src::ErrorManager::CrashGame();
     }
 
     /* Here it assign global D2Application mode then param is used as variable to
                          determine renderer */ geD2ApplicationMode = eD2ApplicationModeAndRenderer;
     D2BOOT_MarkFmt("ApplicationMain enter (mode=%d)", (int)geD2ApplicationMode); // [d2boot]
+    D2BOOT_Mark("vanilla-plus 0.0.3"); // [d2boot] build self-identification (local builds do not always rotate the commit hash)
+    // [vanilla-plus] Create d2vp.ini next to the exe when missing (documented
+    // all-defaults template, one attempt per process) so the opt-in feature
+    // keys are discoverable at the title screen. Silent no-op when the file
+    // exists or cannot be written - config absence stays the vanilla path.
+    ALTTOGGLE_EnsureIni();
     __frame0.bSoundInit = 0;
     Fog::Source::SFile::SFILE_InitializeFileSystem((uint32_t)pD2IniData->bDIRECT, 0);
     D2BOOT_Mark("SFile filesystem init ok"); // [d2boot]
@@ -150,7 +157,11 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       Storm::Source::SReg::SRegSaveValue("Diablo II", "Resolution", 0, 0);
     }
     if (!pD2IniData->bNOSOUND && geD2ApplicationMode != APPMODE_server) {
-      D2Sound::Sound::SOUND_Initialize(*(uint32_t*)pD2IniData->bD2ExpMpqExistsOrLanugageCode, (HWND)(uint32_t)pD2IniData->bSOUNDBKG);
+      // [sound fix] bSOUNDBKG is a bool (ini struct offset 0x224), not a window handle —
+      // passing it made SOUND_Initialize see hwnd=0/1 and the DDA music stream bind to a
+      // dead window (the round-3 directx log's hwnd=00000000). The game window exists by
+      // now (CreateWindowWithChecks above), so hand over the real one.
+      D2Sound::Sound::SOUND_Initialize(*(uint32_t*)pD2IniData->bD2ExpMpqExistsOrLanugageCode, D2gfx::D2GFX::GetHwnd());
       __frame0.bSoundInit = 1;
     }
 

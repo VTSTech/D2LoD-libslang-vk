@@ -766,23 +766,23 @@ uint32_t __fastcall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, D2UnitStrc * 
     int nAffixRangeBytes;
     uint32_t apiStack4108[1024];
     D2RareAffixTxt* pCurAffixEntry = (D2RareAffixTxt*)0x5c19ad;
-    D2RareAffixTxt* pRareAffixTableInfo = (D2RareAffixTxt*)D2Common::DATATBLS::ItemTbls::TXT_RareAffixes_GetTableInfo();
+    D2RareAffixTableStrc* pRareAffixTableInfo = D2Common::DATATBLS::ItemTbls::TXT_RareAffixes_GetTableInfo();
     if (!pThis) {
-      pAffixRangeStart = *(D2RareAffixTxt**)&pRareAffixTableInfo->field_0x8;
+      pAffixRangeStart = pRareAffixTableInfo->pSuffixStart;
       pCurAffixEntry = pAffixRangeStart;
     } else {
-      pAffixRangeStart = pRareAffixTableInfo;
-      pCurAffixEntry = *(D2RareAffixTxt**)&pRareAffixTableInfo->nNameStrIdLo;
+      pAffixRangeStart = (D2RareAffixTxt*)pRareAffixTableInfo;
+      pCurAffixEntry = pRareAffixTableInfo->pPrefixStart;
     }
     if (!pCurAffixEntry) {
       return (uint32_t)pAffixRangeStart & -65536;
     }
 
-    int nAffixTableBaseIdx = ((int)pCurAffixEntry - *(int*)&pRareAffixTableInfo->field_0x4) / 0x48;
+    int nAffixTableBaseIdx = ((int)pCurAffixEntry - (int)pRareAffixTableInfo->pTable) / 0x48;
     if (!pThis) {
-      nAffixRangeBytes = *(int*)&pRareAffixTableInfo->nNameStrIdLo - *(int*)&pRareAffixTableInfo->field_0x8;
+      nAffixRangeBytes = (int)pRareAffixTableInfo->pPrefixStart - (int)pRareAffixTableInfo->pSuffixStart;
     } else {
-      nAffixRangeBytes = *(int*)pRareAffixTableInfo * 0x48 - *(int*)&pRareAffixTableInfo->nNameStrIdLo + *(int*)&pRareAffixTableInfo->field_0x4;
+      nAffixRangeBytes = pRareAffixTableInfo->nSize * 0x48 - (int)pRareAffixTableInfo->pPrefixStart + (int)pRareAffixTableInfo->pTable;
     }
 
     uint32_t nCanApply = nAffixRangeBytes * 0x38e38e39;
@@ -906,7 +906,7 @@ uint32_t __fastcall ITEMMOD_SelectMagicAffixVersioned(D2UnitStrc * pUnit, int32_
 // Generates and applies the rare-quality affixes for an item on pUnit. Rolls the rare prefix/suffix name groups (classic vs expansion via ITEM_GetItemData_wItemVersion), stores them, then rolls a count of magic affixes (jewels: 2-3; otherwise from gnSkillItemAffixPropertyBySkill keyed by the item seed) and alternately rolls up to 3 prefixes and 3 suffixes with ITEMMOD_RollMagicAffixClassic, passing the forced ids in pItemGenContext->nForcePrefix[]/nForceSuffix[]. On success clears the identified flag, applies each rolled magicaffixes line's stats via ApplyRuneAndGemStats, runs StaffMod, and returns 1; returns 0 if no name group rolled. Halts via Fog ErrorManager if a slot index exceeds 3. Register arguments: pUnit in ESI; pItemGenContext on the stack.
 BOOL __stdcall ITEMMOD_GenerateRareAffixes(D2ItemGenContextStrc * pItemGenContext, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static int gnSkillItemAffixPropertyBySkill[8] = { 0x3, 0x4, 0x4, 0x5, 0x5, 0x5, 0x6, 0x6 };
+    static int gnSkillItemAffixPropertyBySkill[8] = { 0x3, 0x4, 0x4, 0x5, 0x5, 0x5, 0x6, 0x6 }; D2_STATIC_GUARD(gnSkillItemAffixPropertyBySkill, "D2Game::SKILLS::Items::ITEMMOD_GenerateRareAffixes::gnSkillItemAffixPropertyBySkill");
 
     short int wRareSuffix;
     uint32_t nRarePrefixGroup;
@@ -1713,7 +1713,7 @@ BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenContextS
     uint32_t nTableSize;
     char aVisitedSlots[12];
     uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    uint32_t* pQualityItemsTableInfo = (uint32_t*)D2Common::DATATBLS::ItemTbls::TXT_QualityItems_GetTableInfo();
+    D2QualityItemsTableStrc* pQualityItemsTableInfo = D2Common::DATATBLS::ItemTbls::TXT_QualityItems_GetTableInfo();
     if (!pUnit) {
       nClassId = -1;
     } else {
@@ -1722,7 +1722,7 @@ BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenContextS
 
     D2ItemsTxt* pDVar6 = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
     if (pQualityItemsTableInfo && pDVar6) {
-      nTableSize = *pQualityItemsTableInfo;
+      nTableSize = pQualityItemsTableInfo->nSize;
       memset(aVisitedSlots, 0, 10 * sizeof(aVisitedSlots[0]));
       iVar2 = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_throwable(pUnit);
       if (iVar2 || pDVar6->bNoDurability != '\0') {
@@ -1797,7 +1797,7 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQuality(D2UnitStrc * pUnit) {
     int32_t iVar1;
     BOOL bResult;
     eD2UnitStat eUnitStat;
-    uint32_t* pnLowQualCount = (uint32_t*)D2Common::DATATBLS::ItemTbls::TXT_LowQualityItems_GetTableInfo();
+    D2LowQualityItemsTableStrc* pnLowQualCount = D2Common::DATATBLS::ItemTbls::TXT_LowQualityItems_GetTableInfo();
     if (!pUnit) {
       nClassId = -1;
     } else {
@@ -1810,7 +1810,7 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQuality(D2UnitStrc * pUnit) {
     }
 
     D2SeedStrc* pSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
-    nClassId = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, *pnLowQualCount);
+    nClassId = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, pnLowQualCount->nSize);
     D2Common::ITEMS::Items::ITEM_SetItemData_nFileIndex(pUnit, nClassId);
     nClassId = D2Common::ITEMS::Items::ITEM_CheckIfItemHasDurability(pUnit);
     if (nClassId) {
@@ -1908,8 +1908,8 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQualityClassic(D2UnitStrc * pUnit, D2ItemGenCo
     int nScaledStat;
     int32_t iVar1;
     eD2UnitStat eUnitStat;
-    uint32_t* pnLowQualCount;
-    pnLowQualCount = (uint32_t*)D2Common::DATATBLS::ItemTbls::TXT_LowQualityItems_GetTableInfo();
+    D2LowQualityItemsTableStrc* pnLowQualCount;
+    pnLowQualCount = D2Common::DATATBLS::ItemTbls::TXT_LowQualityItems_GetTableInfo();
     if (!pUnit) {
       nClassId = -1;
     } else {
@@ -1924,7 +1924,7 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQualityClassic(D2UnitStrc * pUnit, D2ItemGenCo
 
     D2SeedStrc* pSeed;
     pSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
-    nClassId = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, *pnLowQualCount);
+    nClassId = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, pnLowQualCount->nSize);
     D2Common::ITEMS::Items::ITEM_SetItemData_nFileIndex(pUnit, nClassId);
     BOOL bResult;
     bResult = 0;

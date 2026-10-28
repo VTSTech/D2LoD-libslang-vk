@@ -138,12 +138,7 @@ struct SGAMEDATA : public TSHashObject<SGAMEDATA, HASHKEY_NONE> {
     /* 0x0084 */ int32_t bInitSeed; // 1 if GameSeed forced, 0 if random
     /* 0x0088 */ struct D2ClientStrc * pClient; // ptClientLastJoined
     /* 0x008C */ int nClientsCount;
-    /* 0x0090 */ int dwSpawnedPlayers;
-    /* 0x0094 */ int dwSpawnedMonsters;
-    /* 0x0098 */ int dwSpawnedObjects;
-    /* 0x009C */ int dwSpawnedMissiles;
-    /* 0x00A0 */ int dwSpawnedItems;
-    /* 0x00A4 */ int dwSpawnedTiles;
+    /* 0x0090 */ uint32_t anUnitGuidCounters[6];
     /* 0x00A8 */ int dwGameFrame; // Current Frame (FrameCounter)
     /* 0x00AC */ int dwCycleLastSecond;
     /* 0x00B0 */ int dwCycleCount;

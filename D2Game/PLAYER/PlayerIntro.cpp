@@ -45,8 +45,8 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataPlayerInteractedNPCStrc) 
 
 namespace D2Game::PLAYER::PlayerIntro {
 
-static int gaNPCSpokenBitIndexMap_0__1_[35][2] = { 0 };
-static int gaNPCSpokenBitIndexMap_1__0_[35][2] = { 0 };
+static int gaNPCSpokenBitIndexMap_0__1_[35][2] = { 0 }; D2_STATIC_GUARD(gaNPCSpokenBitIndexMap_0__1_, "D2Game::PLAYER::PlayerIntro::gaNPCSpokenBitIndexMap_0__1_");
+static int gaNPCSpokenBitIndexMap_1__0_[35][2] = { 0 }; D2_STATIC_GUARD(gaNPCSpokenBitIndexMap_1__0_, "D2Game::PLAYER::PlayerIntro::gaNPCSpokenBitIndexMap_1__0_");
 
 void __fastcall PLAYER_SetSpokenWithNPC(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, int32_t nMonStatsId) {
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
@@ -136,15 +136,15 @@ void __fastcall PLAYER_UnsetSpokenWithNPC_Intro2(::SGAMEDATA * pGame, D2UnitStrc
 }
 
 void __fastcall CopyBufferToPointer(D2BitBufferStrc * pBitBuffer, char * pDest) {
-    int pSrcBuf = *(int*)pBitBuffer->pBuffer;
-    *(uint32_t*)pDest = *(uint32_t*)pSrcBuf;
-    *(uint32_t*)(pDest + 4) = *(uint32_t*)(pSrcBuf + 4);
+    uint32_t* pSrcBuf = *(uint32_t**)pBitBuffer->pBuffer;
+    *(uint32_t*)pDest = *pSrcBuf;
+    *(uint32_t*)(pDest + 4) = pSrcBuf[1];
 }
 
 void __fastcall CopySizeAndPosToBuffer(D2BitBufferStrc * pBitBuffer, uint8_t * pDest) {
-    int pSizePosData = *(int*)pBitBuffer->nBitsInBuffer;
-    *(uint32_t*)pDest = *(uint32_t*)pSizePosData;
-    *(uint32_t*)(pDest + 4) = *(uint32_t*)(pSizePosData + 4);
+    uint32_t* pSizePosData = *(uint32_t**)pBitBuffer->nBitsInBuffer;
+    *(uint32_t*)pDest = *pSizePosData;
+    *(uint32_t*)(pDest + 4) = pSizePosData[1];
 }
 
 void __fastcall PLAYERINTRO_CopyIntroData8Bytes(uint32_t * pdwParam1, uint32_t * pdwParam2) {

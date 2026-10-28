@@ -2,9 +2,9 @@
 
 #include "D2Win/Src/D2WinFont.h"
 #include "D2CMP/SRC/CelCmp.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/UI/Text.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -96,7 +96,7 @@ void InitFontCache(int32_t nFontIndex) {
 
     int32_t nAllocLine = 0xb5;
     char* szAllocFile = ".\\Src\\D2WinFont.cpp";
-    size_t* pOutFileSize = 0;
+    uint32_t* pOutFileSize = 0;
     D2PoolManagerStrc* pPoolMgr = D2WinArchive::ReturnZero();
     D2FontTableHeaderStrc* pFontTable = (D2FontTableHeaderStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pPoolMgr, szFontTablePath, pOutFileSize, szAllocFile, nAllocLine);
     gaFontCache[nFontIndex].pFontTable = pFontTable;
@@ -225,21 +225,20 @@ int32_t __fastcall DRAW_text0(uint16_t * wszText) {
 }
 
 int32_t TEXT_CalculateTextWidth(uint16_t * szBuffer) {
-    int32_t nCurLineWidth;
-    int32_t nLineWidth;
     uint32_t nColorCmpResult;
     D2FontGlyphStrc* pGlyphEntry;
+    int32_t nStrLen;
     int nCharPos = 0;
     if (!szBuffer) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x20d);
       exit(-1);
     }
 
-    nCurLineWidth = 0;
+    nStrLen = 0;
     int nMaxLineWidth = 0;
-    nLineWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(szBuffer);
+    int32_t nLineWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(szBuffer);
     if (0 >= nLineWidth) {
-      return nCurLineWidth;
+      return nStrLen;
     }
 
     do {
@@ -249,22 +248,22 @@ int32_t TEXT_CalculateTextWidth(uint16_t * szBuffer) {
         break;
       }
       if (wCharCode == L'\n') {
-        if (nMaxLineWidth < nCurLineWidth) {
-          nMaxLineWidth = nCurLineWidth;
+        if (nMaxLineWidth < nStrLen) {
+          nMaxLineWidth = nStrLen;
         }
 
-        nCurLineWidth = 0;
+        nStrLen = 0;
         szBuffer++;
       } else {
         if (0xff < (uint16_t)wCharCode || wCharCode != L'ÿ') {
           pGlyphEntry = (*gpfnFontGetCharWidth)(wCharCode);
-          nCurLineWidth += (uint32_t)pGlyphEntry->abUnverified[1];
+          nStrLen += (uint32_t)pGlyphEntry->abUnverified[1];
           szBuffer++;
         } else {
           nColorCmpResult = D2Lang::Unicode::UNISYS::UNICODE_CompareWideStringsNNoCase((uint16_t*)(szBuffer + 1), gnFontTableCharWidthCache, 1);
           if (!nColorCmpResult) {
             pGlyphEntry = (*gpfnFontGetCharWidth)(gnFontTableCharWidthCache[0]);
-            nCurLineWidth += (uint32_t)pGlyphEntry->abUnverified[1];
+            nStrLen += (uint32_t)pGlyphEntry->abUnverified[1];
           }
 
           szBuffer += 3;
@@ -275,16 +274,15 @@ int32_t TEXT_CalculateTextWidth(uint16_t * szBuffer) {
       nCharPos++;
     } while (nCharPos < nLineWidth);
 
-    if (nCurLineWidth >= nMaxLineWidth) {
-      return nCurLineWidth;
+    if (nStrLen >= nMaxLineWidth) {
+      return nStrLen;
     }
 
-    nCurLineWidth = nMaxLineWidth;
-    return nCurLineWidth;
+    nStrLen = nMaxLineWidth;
+    return nStrLen;
 }
 
 int32_t D2WINFONT_GetFirstLinePixelWidth(uint16_t * pwszString) {
-    int32_t nStrLen;
     uint32_t nColorCmpResult;
     D2FontGlyphStrc* pGlyphEntry;
     int32_t nLineWidth;
@@ -293,10 +291,10 @@ int32_t D2WINFONT_GetFirstLinePixelWidth(uint16_t * pwszString) {
       exit(-1);
     }
 
-    nLineWidth = 0;
-    nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength((uint16_t*)pwszString);
-    if (0 >= nStrLen) {
-      return nLineWidth;
+    int32_t iVar1 = 0;
+    nLineWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength((uint16_t*)pwszString);
+    if (0 >= nLineWidth) {
+      return iVar1;
     }
 
     int nCharPos = 0;
@@ -304,27 +302,27 @@ int32_t D2WINFONT_GetFirstLinePixelWidth(uint16_t * pwszString) {
       uint16_t wCharCode;
       wCharCode = *pwszString;
       if (wCharCode == 10) {
-        return nLineWidth;
+        return iVar1;
       }
       if (wCharCode < 0x100 && wCharCode == 0xff) {
         nColorCmpResult = D2Lang::Unicode::UNISYS::UNICODE_CompareWideStringsNNoCase(pwszString + 1, gnFontTableCharWidthCache, 1);
         if (!nColorCmpResult) {
           pGlyphEntry = (*gpfnFontGetCharWidth)(gnFontTableCharWidthCache[0]);
-          nLineWidth += (uint32_t)pGlyphEntry->abUnverified[1];
+          iVar1 += (uint32_t)pGlyphEntry->abUnverified[1];
         }
 
         nCharPos += 2;
         pwszString += 3;
       } else {
         pGlyphEntry = (*gpfnFontGetCharWidth)(wCharCode);
-        nLineWidth += (uint32_t)pGlyphEntry->abUnverified[1];
+        iVar1 += (uint32_t)pGlyphEntry->abUnverified[1];
         pwszString++;
       }
 
       nCharPos++;
-    } while (nCharPos < nStrLen);
+    } while (nCharPos < nLineWidth);
 
-    return nLineWidth;
+    return iVar1;
 }
 
 int32_t TEXT_CalculateTextHeight(uint16_t * szBuffer) {
@@ -856,7 +854,7 @@ void __fastcall TEXT_CalcTextDimensions(uint16_t * szBuffer, int * nSizeX, int *
 // Validates character code against font character set bitmask. Uses table at aFontNames[14+]. Returns 1 if character is valid in current font, 0 otherwise. 0xFF always returns 0 (reserved for color codes).
 BOOL __fastcall D2WINFONT_IsFontCharacterValid(uint8_t nCharCode) {
     // Static local variables (originally global data)
-    static uint32_t gaFontCharValidBits[8] = { 0x0, 0xffffffff, 0xffffffff, 0x7fffffff, 0x60000, 0xffffffff, 0xffffffff, 0xffffffff };
+    static uint32_t gaFontCharValidBits[8] = { 0x0, 0xffffffff, 0xffffffff, 0x7fffffff, 0x60000, 0xffffffff, 0xffffffff, 0xffffffff }; D2_STATIC_GUARD(gaFontCharValidBits, "D2Win::Src::D2WinFont::D2WINFONT_IsFontCharacterValid::gaFontCharValidBits");
 
     if (true && nCharCode == 0xff) {
       return 0;
@@ -1337,7 +1335,7 @@ void __stdcall D2WINFONT_InitFontSystem() {
 
 int32_t __fastcall SetAndReturnLastFont(int32_t nFontId) {
     // Static local variables (originally global data)
-    static unsigned int gdwFontCacheLastEvictionTick;
+    static unsigned int gdwFontCacheLastEvictionTick; D2_STATIC_GUARD_BSS(gdwFontCacheLastEvictionTick, "D2Win::Src::D2WinFont::SetAndReturnLastFont::gdwFontCacheLastEvictionTick");
 
     uint32_t nLRUAge;
     int nCacheIdx;

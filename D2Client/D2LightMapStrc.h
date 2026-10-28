@@ -15,7 +15,10 @@ typedef int eD2UnitType;
 struct __attribute__((packed)) D2LightMapStrc {
     /* 0x00 */ eD2UnitType eUnitType;
     /* 0x04 */ DWORD nUnitGUID;
-    /* 0x08 */ BOOL bUnknown;
+    /* 0x08 */ uint8_t bUnknown;
+    /* 0x09 */ uint8_t field_0x9;
+    /* 0x0A */ uint8_t field_0xa;
+    /* 0x0B */ uint8_t field_0xb;
     /* 0x0C */ int nLightType;
     /* 0x10 */ int nGridX; // Unit X position in light cell coords: (GetPrecisionX >> 0xD) + 4
     /* 0x14 */ int nGridY; // Unit Y position in light cell coords: (GetPrecisionY >> 0xD) + 4

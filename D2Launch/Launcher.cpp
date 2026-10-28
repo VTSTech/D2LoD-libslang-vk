@@ -5,7 +5,6 @@
 #include "Bnclient/Bnclient.h"
 #include "Bnclient/net_sid.h"
 #include "D2Client/D2BNetGatewayAccessStr.h"
-#include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2ControlStrc.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Game/Save.h"
@@ -59,8 +58,8 @@ typedef void (__stdcall *pfnUIMenuInstance)();
 
 namespace D2Launch::Launcher {
 
-static char * gpszPaletteSkyDat[4] = { 0 };
-static char * gpszPaletteSkyPl2[4] = { 0 };
+static char * gpszPaletteSkyDat[4] = { 0 }; D2_STATIC_GUARD(gpszPaletteSkyDat, "D2Launch::Launcher::gpszPaletteSkyDat");
+static char * gpszPaletteSkyPl2[4] = { 0 }; D2_STATIC_GUARD(gpszPaletteSkyPl2, "D2Launch::Launcher::gpszPaletteSkyPl2");
 
 void __stdcall CHARSEL_ResetCharListUI() {
     BOOL bDownArrowVisible = D2Client::CharScreen::TotalCurrentChars < 1 || D2Client::CharScreen::nSelectedCharIndex <= gnCharSelLoadMoreEntryIndex ? 0 : 1;
@@ -160,7 +159,7 @@ BOOL __stdcall CHARSEL_OpenRealmChangeDialog(D2ControlMsg * pControlMsg) {
 
 BOOL __stdcall CHARSEL_HandleCharListClick(D2ControlMsg * pControlMsg) {
     // Static local variables (originally global data)
-    static unsigned int gdwLastCharListClickTick;
+    static unsigned int gdwLastCharListClickTick; D2_STATIC_GUARD_BSS(gdwLastCharListClickTick, "D2Launch::Launcher::CHARSEL_HandleCharListClick::gdwLastCharListClickTick");
 
     BOOL bIsExpansion;
     if (gnCharSelSelectedIndex) {
@@ -856,7 +855,7 @@ void __stdcall LAUNCHER_DisconnectFromBnet() {
 // Displays out-of-game error/message dialogs. Error code determines which localized string to show. Custom data used for character names or custom messages.
 int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     // Static local variables (originally global data)
-    static uint32_t gnBnetAccountLoginFailCount = 0x1;
+    static uint32_t gnBnetAccountLoginFailCount = 0x1; D2_STATIC_GUARD(gnBnetAccountLoginFailCount, "D2Launch::Launcher::ShowOogErrorDialog::gnBnetAccountLoginFailCount");
     static char gszOogLastIniStringCache[16] = {
     0,
     0,
@@ -874,7 +873,7 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gszOogLastIniStringCache, "D2Launch::Launcher::ShowOogErrorDialog::gszOogLastIniStringCache");
 
     int32_t nErrorAddress;
     int nTitleStrId;
@@ -1127,14 +1126,16 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     return 0;
 }
 
-void __stdcall LAUNCHER_ShowOogErrorDialog_ForEnterEmail() {
+void __fastcall LAUNCHER_ShowOogErrorDialog_ForEnterEmail(eOogErrorCode eErrorCode, void * pCustomData) {
     D2OogErrorDataStrc sErrorData;
+    sErrorData.eErrorCode = eErrorCode;
+    sErrorData.pCustomData = pCustomData;
     ShowOogErrorDialog(&sErrorData);
 }
 
 uint32_t __stdcall CLIENT_ConnectToBattleNet() {
     // Static local variables (originally global data)
-    static uint32_t gnBNetConnectInProgress;
+    static uint32_t gnBNetConnectInProgress; D2_STATIC_GUARD_BSS(gnBNetConnectInProgress, "D2Launch::Launcher::CLIENT_ConnectToBattleNet::gnBNetConnectInProgress");
 
     uint32_t nErrorResult;
     int nResult;
@@ -1258,7 +1259,7 @@ int __fastcall EnterEmailMessagePumper(D2IniConfigStrc * pIniConfig, int32_t bCr
         if (nResponseCode != 1) {
           bSocketConnected = gpBNetCallbacks->pfnIsSocketConnected();
           if (bSocketConnected) {
-            LAUNCHER_ShowOogErrorDialog_ForEnterEmail();
+            LAUNCHER_ShowOogErrorDialog_ForEnterEmail(OOG_ERROR_BNET_ACCOUNT_CHECK, nullptr);
             return 0;
           }
         }
@@ -1276,28 +1277,28 @@ int __fastcall EnterEmailMessagePumper(D2IniConfigStrc * pIniConfig, int32_t bCr
         if (bSocketConnected) {
           switch (nResponseCode) {
             case 2:
-              LAUNCHER_ShowOogErrorDialog_ForEnterEmail();
+              LAUNCHER_ShowOogErrorDialog_ForEnterEmail(OOG_ERROR_CREATE_ACCOUNT_2, nullptr);
             return 0;
             case 3:
-              LAUNCHER_ShowOogErrorDialog_ForEnterEmail();
+              LAUNCHER_ShowOogErrorDialog_ForEnterEmail(OOG_ERROR_CREATE_ACCOUNT_3, nullptr);
             return 0;
             case 4:
-              LAUNCHER_ShowOogErrorDialog_ForEnterEmail();
+              LAUNCHER_ShowOogErrorDialog_ForEnterEmail(OOG_ERROR_CREATE_ACCOUNT_4, nullptr);
             return 0;
             case 5:
-              LAUNCHER_ShowOogErrorDialog_ForEnterEmail();
+              LAUNCHER_ShowOogErrorDialog_ForEnterEmail(OOG_ERROR_CREATE_ACCOUNT_5, nullptr);
             return 0;
             case 6:
-              LAUNCHER_ShowOogErrorDialog_ForEnterEmail();
+              LAUNCHER_ShowOogErrorDialog_ForEnterEmail(OOG_ERROR_CREATE_ACCOUNT_6, nullptr);
             return 0;
             case 7:
-              LAUNCHER_ShowOogErrorDialog_ForEnterEmail();
+              LAUNCHER_ShowOogErrorDialog_ForEnterEmail(OOG_ERROR_CREATE_ACCOUNT_7, nullptr);
             return 0;
             case 8:
-              LAUNCHER_ShowOogErrorDialog_ForEnterEmail();
+              LAUNCHER_ShowOogErrorDialog_ForEnterEmail(OOG_ERROR_CREATE_ACCOUNT_8, nullptr);
             return 0;
             default:
-              LAUNCHER_ShowOogErrorDialog_ForEnterEmail();
+              LAUNCHER_ShowOogErrorDialog_ForEnterEmail(OOG_ERROR_CREATE_ACCOUNT_1, nullptr);
             return 0;
           }
         }
@@ -1532,48 +1533,26 @@ void __fastcall LAUNCHER_DeleteCharacterFiles(D2CharSelStrc * pCharSel, char * s
 
 // Loads character appearance data from a .d2s save file for display in character selection. Reads up to 8KB from the save file, validates the magic number (0xaa55aa55), extracts equipment and visual data based on save file version (pre-0x5c vs 0x5c-0x60), and writes encoded appearance info to output buffer including class, level, and equipped items. Returns 1 on success, 0 on failure.
 uint32_t __fastcall LAUNCHER_LoadCharacterAppearanceFromD2s(char * szCharacterName, uint8_t * pOutputBuffer) {
-    // Frame -9736..-1544 is ONE object: a call writes 8192 literal bytes starting at &dwSaveMagicNumber.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      uint32_t dwSaveMagicNumber;
-      uint32_t dwSaveVersion;
-      uint8_t __pad8[16];
-      uint16_t wLevel;
-      uint8_t __pad26[8];
-      char cClassOld;
-      uint8_t __pad35[1];
-      uint16_t wLevelOld;
-      uint8_t abStack_25e2[2];
-      char cClassNew;
-      uint8_t __pad41[2];
-      uint8_t byPlayerClass;
-      uint8_t __pad44[10];
-      uint8_t abVisualSlotOld[10];
-      uint8_t abEquipSlotNew[88];
-      uint8_t loadBuffer[8040];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8192, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int i;
-    uint8_t* pbEquipSrc;
+    char* pbEquipSrc;
     uint8_t byOutPlayerClass;
-    char cPlayerClass;
+    uint8_t cPlayerClass;
     uint8_t* pbWritePtr;
     uint8_t* pbVisualSrc;
+    D2SaveFileBufferStrc sSaveFile;
     char szSavePathBuffer[1024];
     char szFilePath[500];
     FILE* pFile;
     uint32_t nLevel;
     uint8_t* pEquipmentData;
     uint8_t byCopyTmp;
-    uint8_t byVisualExtraByte;
     uint32_t dwCopyTmp;
     uint32_t dwCopyTmp2;
     uint16_t wCopyTmp;
     uint32_t nResult;
     nResult = 0;
     if (*szCharacterName == '\0') {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe9);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xe9);
       exit(-1);
     }
 
@@ -1586,32 +1565,32 @@ uint32_t __fastcall LAUNCHER_LoadCharacterAppearanceFromD2s(char * szCharacterNa
     }
 
     size_t nBytesRead;
-    nBytesRead = fread((D2CharSelCompStrc*)&__frame0.dwSaveMagicNumber, 1, 0x2000, pSaveFile);
-    if (7 < nBytesRead && __frame0.dwSaveMagicNumber == 0xaa55aa55) {
-      if (__frame0.dwSaveVersion < 0x5c) {
-        if (nBytesRead < 0x82 || __frame0.dwSaveVersion < 0x47) {
+    nBytesRead = fread((D2CharSelCompStrc*)&sSaveFile, 1, 0x2000, pSaveFile);
+    if (7 < nBytesRead && sSaveFile.sHeader.dwHeader == 0xaa55aa55) {
+      if (sSaveFile.sHeader.dwFileVersion < 0x5c) {
+        if (nBytesRead < 0x82 || sSaveFile.sHeader.dwFileVersion < 0x47) {
           goto cleanup;
         }
 
-        pbEquipSrc = __frame0.abStack_25e2;
-        pbVisualSrc = __frame0.abVisualSlotOld;
-        cPlayerClass = __frame0.cClassOld;
-        byOutPlayerClass = (uint8_t)__frame0.wLevelOld;
+        pbEquipSrc = (char*)((uintptr_t)&sSaveFile.sHeader.dwCharacterStatus + 2);
+        pbVisualSrc = (uint8_t*)((uintptr_t)&sSaveFile.sHeader.nTimeEx + 2);
+        cPlayerClass = sSaveFile.sHeader.szCharacterName[0xe];
+        byOutPlayerClass = (uint8_t)sSaveFile.sHeader.dwCharacterStatus;
       } else {
-        if (nBytesRead < 0x14f || 0x60 < __frame0.dwSaveVersion) {
+        if (nBytesRead < 0x14f || 0x60 < sSaveFile.sHeader.dwFileVersion) {
           goto cleanup;
         }
 
-        pbEquipSrc = __frame0.abEquipSlotNew + 0x48;
-        pbVisualSrc = __frame0.loadBuffer;
-        cPlayerClass = __frame0.cClassNew;
-        byOutPlayerClass = __frame0.byPlayerClass;
-        __frame0.wLevel = __frame0.wLevelOld;
+        pbEquipSrc = sSaveFile.sHeader.pAppearance1;
+        pbVisualSrc = (uint8_t*)sSaveFile.sHeader.pAppearance2;
+        cPlayerClass = sSaveFile.sHeader.nPlayerClassId;
+        byOutPlayerClass = sSaveFile.sHeader.bCharacterLevel;
+        *(uint16_t*)((char*)&sSaveFile.sHeader.szCharacterName + 4) = (uint16_t)sSaveFile.sHeader.dwCharacterStatus;
       }
 
       D2Game::Save::SAVEFILE_WriteEncodedInt14Bit(pOutputBuffer, 0xe);
       pbWritePtr = pOutputBuffer + 2;
-      if (!*pbEquipSrc) {
+      if (*pbEquipSrc == '\0') {
         i = 0;
         do {
           *pbWritePtr = gaNewCharDefaultAppearance[i];
@@ -1634,12 +1613,12 @@ uint32_t __fastcall LAUNCHER_LoadCharacterAppearanceFromD2s(char * szCharacterNa
       wCopyTmp = *(uint16_t*)(pbVisualSrc + 8);
       *pbWritePtr = cPlayerClass + 1;
       *(uint32_t*)(pbWritePtr + 1) = dwCopyTmp;
-      byVisualExtraByte = pbVisualSrc[10];
+      cPlayerClass = pbVisualSrc[10];
       *(uint32_t*)(pbWritePtr + 5) = dwCopyTmp2;
       *(uint16_t*)(pbWritePtr + 9) = wCopyTmp;
-      pbWritePtr[0xb] = byVisualExtraByte;
+      pbWritePtr[0xb] = cPlayerClass;
       pbWritePtr[0xc] = byOutPlayerClass;
-      D2Game::Save::SAVEFILE_WriteEncodedInt14Bit(pbWritePtr + 0xd, (uint32_t)__frame0.wLevel);
+      D2Game::Save::SAVEFILE_WriteEncodedInt14Bit(pbWritePtr + 0xd, (uint32_t)(uint16_t)*(uint16_t*)((char*)&sSaveFile.sHeader.szCharacterName + 4));
       D2Game::Save::SAVEFILE_WriteEncodedInt14Bit(pbWritePtr + 0xf, 0);
       pbWritePtr[0x11] = 0xff;
       pbWritePtr[0x12] = 0xff;
@@ -1654,28 +1633,21 @@ uint32_t __fastcall LAUNCHER_LoadCharacterAppearanceFromD2s(char * szCharacterNa
 }
 
 BOOL __fastcall UpdateSaveFileToExpansion(char * szCharname) {
-    // Frame -9732..-1540 is ONE object: a call writes 8192 literal bytes starting at &sSaveHeader.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      D2SaveFileHeaderStrc sSaveHeader;
-      uint8_t __pad335[7857];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8192, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     // Frame slots -16..-4 are ONE object: &dwExpansionFlag is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame1_t {
+    struct __frame0_t {
       uint32_t dwExpansionFlag;
       DWORD dwBytesWritten;
       DWORD dwBytesRead;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 12, "frame group __frame1_t must reproduce the Ghidra frame layout");
-    __frame1_t __frame1;
-    D2SaveFileHeaderStrc* lpBuffer;
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    __frame0_t __frame0;
+    D2SaveFileBufferStrc* lpBuffer;
+    D2SaveFileBufferStrc sSaveFile;
     char szSavePathBuffer[1024];
     char szFilePath[500];
     DWORD nNumberOfBytesToWrite;
-    __frame1.dwBytesRead = 0x43caad;
+    __frame0.dwBytesRead = 0x43caad;
     Fog::Source::SFile::GetAndCreateSavePath(szSavePathBuffer, 0x400);
     sprintf(szFilePath, "%s%s.d2s", szSavePathBuffer, szCharname);
     HANDLE hFile = Fog::Source::SFile::thunk_CreateFileA(szFilePath, 0xc0000000, 0, (LPSECURITY_ATTRIBUTES)0x0, 3, 0x8000000, (HANDLE)0x0);
@@ -1683,33 +1655,33 @@ BOOL __fastcall UpdateSaveFileToExpansion(char * szCharname) {
       return 0;
     }
 
-    Fog::Source::SFile::thunk_ReadFile(hFile, &__frame0.sSaveHeader, 0x2000, &__frame1.dwBytesRead, (LPOVERLAPPED)0x0);
-    if (!(7 < __frame1.dwBytesRead && __frame0.sSaveHeader.dwHeader == 0xaa55aa55)) {
+    Fog::Source::SFile::thunk_ReadFile(hFile, &sSaveFile, 0x2000, &__frame0.dwBytesRead, (LPOVERLAPPED)0x0);
+    if (!(7 < __frame0.dwBytesRead && sSaveFile.sHeader.dwHeader == 0xaa55aa55)) {
       return 0;
     }
-    if (__frame0.sSaveHeader.dwFileVersion < 0x5c) {
-      if (__frame1.dwBytesRead < 0x82) {
+    if (sSaveFile.sHeader.dwFileVersion < 0x5c) {
+      if (__frame0.dwBytesRead < 0x82) {
         return 0;
       }
 
-      __frame1.dwExpansionFlag = *(uint32_t*)((char*)&__frame0.sSaveHeader.szCharacterName + 4) | 0x20;
+      __frame0.dwExpansionFlag = *(uint32_t*)((char*)&sSaveFile.sHeader.szCharacterName + 4) | 0x20;
       Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, 0x18, (PLONG)0x0, 0);
-      lpBuffer = (D2SaveFileHeaderStrc*)&__frame1.dwExpansionFlag;
+      lpBuffer = (D2SaveFileBufferStrc*)&__frame0.dwExpansionFlag;
       nNumberOfBytesToWrite = 4;
     } else {
-      if (__frame1.dwBytesRead < 0x14f) {
+      if (__frame0.dwBytesRead < 0x14f) {
         return 0;
       }
 
-      __frame0.sSaveHeader.dwCharacterStatus |= 0x20;
-      __frame0.sSaveHeader.dwChecksum = 0;
-      __frame0.sSaveHeader.dwChecksum = Fog::Save::CalculateChecksum((uint8_t*)&__frame0.sSaveHeader, __frame1.dwBytesRead);
+      sSaveFile.sHeader.dwCharacterStatus |= 0x20;
+      sSaveFile.sHeader.dwChecksum = 0;
+      sSaveFile.sHeader.dwChecksum = Fog::Save::CalculateChecksum((uint8_t*)&sSaveFile, __frame0.dwBytesRead);
       Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, 0, (PLONG)0x0, 0);
-      lpBuffer = &__frame0.sSaveHeader;
-      nNumberOfBytesToWrite = __frame1.dwBytesRead;
+      lpBuffer = &sSaveFile;
+      nNumberOfBytesToWrite = __frame0.dwBytesRead;
     }
 
-    BOOL bWriteSuccess = Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)lpBuffer, nNumberOfBytesToWrite, &__frame1.dwBytesWritten, (LPOVERLAPPED)0x0);
+    BOOL bWriteSuccess = Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)lpBuffer, nNumberOfBytesToWrite, &__frame0.dwBytesWritten, (LPOVERLAPPED)0x0);
     Fog::Source::SFile::SFILE_Win32CloseHandle(hFile);
     return bWriteSuccess;
 }

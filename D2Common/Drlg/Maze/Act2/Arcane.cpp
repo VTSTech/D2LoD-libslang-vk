@@ -393,7 +393,7 @@ void __fastcall PickSummonerLocation(D2DrlgLevelStrc * pLevel) {
         /* .nDestPickedFile = */ -0x1,
         /* .nDirection = */ 0x2
     }
-};
+}; D2_STATIC_GUARD(AncientPickLocation, "D2Common::Drlg::Maze::Act2::Arcane::PickSummonerLocation::AncientPickLocation");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
     pLevel->sSeed = DVar1;

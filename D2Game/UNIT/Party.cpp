@@ -27,6 +27,7 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
@@ -570,10 +571,10 @@ int16_t __fastcall GetPartyIdFromUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
         return -1;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27c);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x27c);
       exit(-1);
     } else {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27b);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x27b);
       exit(-1);
     }
 }
@@ -582,8 +583,8 @@ int16_t __fastcall GetPartyIdFromUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 // @sourcefile .\UNIT\Party.cpp
 void __fastcall PARTY_RemoveUnitFromParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     int16_t nPartyId;
-    int32_t nPartySize;
     D2UnitPartyControlSub* pPartySub;
+    int32_t iVar1;
     int nUnitGUID;
     D2UnitPartyControlSubSub* pSubSub;
     D2UnitPartyControlSubSub* pPrevSubSub = 0;
@@ -625,8 +626,8 @@ void __fastcall PARTY_RemoveUnitFromParty(::SGAMEDATA * pGame, D2UnitStrc * pUni
           pSubSub = pMemoryToFree->pNext;
         }
 
-        nPartySize = CountPartyControlSubSize(pGame, nPartyId);
-        if (nPartySize >= 2) {
+        iVar1 = CountPartyControlSubSize(pGame, nPartyId);
+        if (iVar1 >= 2) {
           return;
         }
 

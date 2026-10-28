@@ -518,8 +518,9 @@ int32_t __stdcall SBIG_CompareBigBuffers_ForSha1(BigData * pBigA, BigData * pBig
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method NOUN CORRECTION ONLY. Thunk onto 00421440.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void __fastcall SBIG_BigBuffer_IsLowestBitClearWrapper(uint32_t pThis, BigBuffer * pBigNum) {
-    SBIG_BigBuffer_IsLowestBitClear(pBigNum);
+BOOL __fastcall SBIG_BigBuffer_IsLowestBitClearWrapper(uint32_t pThis, BigBuffer * pBigNum) {
+    BOOL BVar1 = SBIG_BigBuffer_IsLowestBitClear(pBigNum);
+    return BVar1;
 }
 
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
@@ -2792,7 +2793,7 @@ void __stdcall SBigToBinaryArray(BigData * pBigData, void * pDestArray, int32_t 
 // @renamed-from SBIG_ExportBytesLimited (2026-08-28, Storm PowerPC oracle pass 4)
 // @oracle Mac PPC 1.10b Storm -- PPC SBigToBinaryBuffer -> 10098f00, 192B: .ToBinary + BlockMoveData into a caller buffer. 1.14d: 4 args, BigBuffer_ToBinary then STORM_Memcpy. The memcpy is the discriminator against the Array and Ptr forms.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.
-void __stdcall SBigToBinaryBuffer(BigData * pBigData, void * pDest, uint32_t nMaxBytes, size_t * pnSize) {
+void __stdcall SBigToBinaryBuffer(BigData * pBigData, void * pDest, uint32_t nMaxBytes, uint32_t * pnSize) {
     BigBuffer_ToBinary(&pBigData->sPrimary, &pBigData->sOutBuffer);
     uint32_t uVar1 = pBigData->sOutBuffer.nLen;
     if (uVar1 < nMaxBytes) {
@@ -3401,8 +3402,8 @@ void __stdcall BigBuffer_Pow(BigBuffer * pnResult, BigBuffer * pnBase, uint32_t 
 // @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
 void __stdcall BigBuffer_Rand(BigBuffer * pnResult, BigBuffer * pnModulus, BigBuffer * pnInput, BigStack * pStack) {
     // Static local variables (originally global data)
-    static uint8_t gbSBigMontgomeryConstant2[8] = { 0x50, 0x46, 0x0, 0x0, 0x69, 0x90, 0x0, 0x0 };
-    static uint8_t gbSBigMontgomeryConstant1[8] = { 0xb5, 0x3b, 0x12, 0x1f, 0xe5, 0x55, 0x9a, 0x15 };
+    static uint8_t gbSBigMontgomeryConstant2[8] = { 0x50, 0x46, 0x0, 0x0, 0x69, 0x90, 0x0, 0x0 }; D2_STATIC_GUARD(gbSBigMontgomeryConstant2, "Storm::Source::SBig::BigBuffer_Rand::gbSBigMontgomeryConstant2");
+    static uint8_t gbSBigMontgomeryConstant1[8] = { 0xb5, 0x3b, 0x12, 0x1f, 0xe5, 0x55, 0x9a, 0x15 }; D2_STATIC_GUARD(gbSBigMontgomeryConstant1, "Storm::Source::SBig::BigBuffer_Rand::gbSBigMontgomeryConstant1");
 
     uint32_t uBitIter;
     uint32_t uAlignedCap;
@@ -4034,7 +4035,7 @@ void __stdcall SBigPowMod(BigData * pResult, BigData * pBase, BigData * pExponen
 // @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
 int32_t __stdcall BigBuffer_IsPrime(BigStack * pStack, BigBuffer * pnCandidate) {
     // Static local variables (originally global data)
-    static int gnSBigMillerRabinWitness = 0x2;
+    static uint32_t gnSBigMillerRabinWitness[1] = { 0x2 }; D2_STATIC_GUARD(gnSBigMillerRabinWitness, "Storm::Source::SBig::BigBuffer_IsPrime::gnSBigMillerRabinWitness");
     static uint32_t gaSBigSmallPrimesTable[171] = {
     0x3,
     0x5,
@@ -4207,7 +4208,7 @@ int32_t __stdcall BigBuffer_IsPrime(BigStack * pStack, BigBuffer * pnCandidate) 
     0x3f5,
     0x3fb,
     0x3fd
-};
+}; D2_STATIC_GUARD(gaSBigSmallPrimesTable, "Storm::Source::SBig::BigBuffer_IsPrime::gaSBigSmallPrimesTable");
 
     BigBuffer* pBignum;
     BigBuffer* pBVar1;
@@ -4343,7 +4344,7 @@ int32_t __stdcall BigBuffer_IsPrime(BigStack * pStack, BigBuffer * pnCandidate) 
         break;
       }
 
-      BigBuffer_FromUnsigned(*(uint32_t*)((uintptr_t)&gnSBigMillerRabinWitness + (int)pnOddPart), pnWitness);
+      BigBuffer_FromUnsigned(*(uint32_t*)((int)gnSBigMillerRabinWitness + (int)pnOddPart), pnWitness);
       BigBuffer_PowMod(pQuotient, pBVar1, pnCandidate, pnCandidate, pStack);
       nCmpResult = BigBuffer_Compare(pQuotient, pBVar1);
       if (nCmpResult) {

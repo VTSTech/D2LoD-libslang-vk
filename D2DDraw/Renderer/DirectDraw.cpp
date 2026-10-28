@@ -7,6 +7,7 @@
 #include "D2CMP/SRC/LRUCache.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/D2Client.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
 #include "D2Client/Engine/Gfx.h"
@@ -58,7 +59,7 @@ typedef void (__stdcall *fnBinkFrameCallback)();
 
 namespace D2DDraw::Renderer::DirectDraw {
 
-static bool gbDDrawPaletteSet = 0;
+static bool gbDDrawPaletteSet = 0; D2_STATIC_GUARD(gbDDrawPaletteSet, "D2DDraw::Renderer::DirectDraw::gbDDrawPaletteSet");
 
 BOOL __fastcall Initialize(HINSTANCE hInstance) {
     // Static local variables (originally global data)
@@ -319,13 +320,13 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
     0,
     0,
     0
-};
-    static int g_bDDrawGammaInitialized;
+}; D2_STATIC_GUARD(gszRendererDeviceName, "D2DDraw::Renderer::DirectDraw::Initialize::gszRendererDeviceName");
+    static int g_bDDrawGammaInitialized; D2_STATIC_GUARD_BSS(g_bDDrawGammaInitialized, "D2DDraw::Renderer::DirectDraw::Initialize::g_bDDrawGammaInitialized");
 
-    int32_t bRegReadOk;
     int bRegFlagsOk;
-    uint32_t szRegKey;
-    char dwTmp4[20];
+    char szRegKey[22];
+    uint32_t* pGuidSize;
+    int32_t nLine;
     uint32_t pSFileGlobal = Fog::Source::SFile::SFILE_GetGlobalPointer();
     if (!pSFileGlobal) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6f);
@@ -335,23 +336,18 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
       g_bDDrawGammaInitialized = 1;
     }
 
-    *(uint8_t*)(char*)&szRegKey = 'D';
-    *(uint8_t*)((char*)&szRegKey + 1) = 'i';
-    *(uint8_t*)((char*)&szRegKey + 2) = 'a';
-    *(uint8_t*)((char*)&szRegKey + 3) = 'b';
-    memcpy(dwTmp4, "lo II\\VideoConfig", 0x12);
-    bRegReadOk = Storm::Source::SReg::SRegLoadString((char*)&szRegKey, "DeviceName", 0, gszRendererDeviceName, 0x100);
-    if (bRegReadOk) {
-      uint32_t* pGuidSize;
-      bRegFlagsOk = Storm::Source::SReg::SRegLoadValue((char*)&szRegKey, "dwFlags", 0, (int32_t*)&gdwDDrawInitFlags);
+    memcpy(szRegKey, "Diablo II\\VideoConfig", 0x16);
+    nLine = Storm::Source::SReg::SRegLoadString(szRegKey, "DeviceName", 0, gszRendererDeviceName, 0x100);
+    if (nLine) {
+      bRegFlagsOk = Storm::Source::SReg::SRegLoadValue(szRegKey, "dwFlags", 0, (int32_t*)&gdwDDrawInitFlags);
       if (bRegFlagsOk) {
         if (gdwDDrawInitFlags & 1) {
           return 1;
         }
 
         pGuidSize = (uint32_t*)0x10;
-        bRegReadOk = Storm::Source::SReg::SRegLoadData(&szRegKey, "GUID", 0, (LPBYTE)&gGlideOpenWindowConfig, 0x10, &pGuidSize);
-        if (bRegReadOk && pGuidSize == (uint32_t*)0x10) {
+        nLine = Storm::Source::SReg::SRegLoadData((uint32_t*)szRegKey, "GUID", 0, (LPBYTE)&gGlideOpenWindowConfig, 0x10, &pGuidSize);
+        if (nLine && pGuidSize == (uint32_t*)0x10) {
           return 1;
         }
       }
@@ -507,7 +503,7 @@ void __fastcall SetPaletteTable(BYTE * * ppPaletteTable) {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(gaPaletteTableLocal, "D2DDraw::Renderer::DirectDraw::SetPaletteTable::gaPaletteTableLocal");
 
     int nCount;
     uint8_t** pDst = gaPaletteTableLocal;
@@ -929,8 +925,8 @@ void __fastcall DirectDrawErrorHandler(char * szContext, int32_t nErrorCode) {
 
 BOOL InternalOpenWindow(int32_t nResolutionMode) {
     // Static local variables (originally global data)
-    static uint32_t gdwDirectDrawPaletteSizes[4] = { 0x280, 0x320, 0x320, 0x0 };
-    static uint32_t gdwDirectDrawSurfaceWidths[4] = { 0x1e0, 0x258, 0x258, 0x0 };
+    static uint32_t gdwDirectDrawPaletteSizes[4] = { 0x280, 0x320, 0x320, 0x0 }; D2_STATIC_GUARD(gdwDirectDrawPaletteSizes, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawPaletteSizes");
+    static uint32_t gdwDirectDrawSurfaceWidths[4] = { 0x1e0, 0x258, 0x258, 0x0 }; D2_STATIC_GUARD(gdwDirectDrawSurfaceWidths, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawSurfaceWidths");
 
     char* szErrorMsg;
     DDSURFACEDESC ddSurfDesc;
@@ -1035,8 +1031,9 @@ BOOL InternalOpenWindow(int32_t nResolutionMode) {
 }
 
 BOOL __stdcall InternalCutsceneWindow() {
-    int32_t nHResult;
     char* szErrorMsg;
+    DDSURFACEDESC ddSurfDesc;
+    int32_t nLine;
     if (gbDDrawWindowInitialized) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26a);
       exit(-1);
@@ -1055,15 +1052,14 @@ BOOL __stdcall InternalCutsceneWindow() {
       nBitDepth = 0x20;
     }
 
-    nHResult = pWindowHandleBuffer->lpVtbl->SetDisplayMode(pWindowHandleBuffer, 0x280, 0x1e0, nBitDepth);
-    if (!nHResult) {
-      DDSURFACEDESC ddSurfDesc;
+    nLine = pWindowHandleBuffer->lpVtbl->SetDisplayMode(pWindowHandleBuffer, 0x280, 0x1e0, nBitDepth);
+    if (!nLine) {
       ddSurfDesc.dwSize = 0x6c;
       memset(&ddSurfDesc.dwFlags, 0, 0x68);
       ddSurfDesc.dwFlags = 1;
       ddSurfDesc.ddsCaps = 0x4200;
-      nHResult = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
-      if (!nHResult) {
+      nLine = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
+      if (!nLine) {
         gbDDrawWindowInitialized = 1;
         gbDDrawPaletteSet = 1;
         return 1;
@@ -1074,7 +1070,7 @@ BOOL __stdcall InternalCutsceneWindow() {
       szErrorMsg = "SetDisplayMode failed!";
     }
 
-    DirectDrawErrorHandler(szErrorMsg, nHResult);
+    DirectDrawErrorHandler(szErrorMsg, nLine);
     Fog::Src::LogManager::LOGFILE_WriteStringToFile("Opening DirectDraw window for cutscenes failed!");
     return 0;
 }
@@ -1099,29 +1095,21 @@ BOOL __fastcall CreateWindow(HWND hWnd, int32_t nResolutionMode) {
 }
 
 void __fastcall PlayCutScene(char * szFile, int32_t nResolutionMode, void * fpFrame) {
-    // Frame -100..-4 is ONE object: a call writes 96 literal bytes starting at &ddBlitFxRest.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      uint8_t ddBlitFxRest[76];
-      uint32_t dwBlitFlags;
-      uint8_t __pad80[16];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 96, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    DDBLTFX ddBltFx;
     if (gnRenderState) {
       return;
     }
 
     gnCutSceneActiveFlag = 1;
-    uint32_t ddBlitFx = 100;
-    memset(__frame0.ddBlitFxRest, 0, 0x60);
-    __frame0.dwBlitFlags = 0;
+    ddBltFx.dwSize = 100;
+    memset(&ddBltFx.dwDDFX, 0, 0x60);
+    ddBltFx.dwFillColor = 0;
     if (!gpDDrawPrimarySurface) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x387);
       exit(-1);
     }
 
-    HRESULT nErrorCode = gpDDrawPrimarySurface->lpVtbl->Blt(gpDDrawPrimarySurface, nullptr, nullptr, nullptr, 0x400, &ddBlitFx);
+    HRESULT nErrorCode = gpDDrawPrimarySurface->lpVtbl->Blt(gpDDrawPrimarySurface, nullptr, nullptr, nullptr, 0x400, &ddBltFx);
     if (nErrorCode) {
       DirectDrawErrorHandler("Cutscene clearing blit failed!", nErrorCode);
       return;
@@ -1338,7 +1326,7 @@ BOOL __fastcall ResizeWindow(HWND hWnd, BOOL bForceResize) {
 // @sourcefile .\Src\ddCore.cpp
 void Release() {
     // Static local variables (originally global data)
-    static IUnknown * gpDDrawComObject;
+    static IUnknown * gpDDrawComObject; D2_STATIC_GUARD_BSS(gpDDrawComObject, "D2DDraw::Renderer::DirectDraw::Release::gpDDrawComObject");
 
     if (!gnDDrawSurfaceHeight) {
       return;
@@ -1427,7 +1415,7 @@ BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc
 // DirectDraw renderer: returns palette pointer for the specified render mode. Reads from gpPaletteTable offsets 0x0-0x10C based on the nPaletteMode index (0-6).
 BYTE * __fastcall RENDERER_DIRECTDRAW_GetPalettePointer(int32_t nPaletteMode, uint32_t * pnOutHeight) {
     // Static local variables (originally global data)
-    static uint32_t gdwDirectDrawSurfaceHeights[8] = { 0x2, 0x2, 0x2, 0x1, 0x1, 0x0, 0x1, 0x0 };
+    static uint32_t gdwDirectDrawSurfaceHeights[8] = { 0x2, 0x2, 0x2, 0x1, 0x1, 0x0, 0x1, 0x0 }; D2_STATIC_GUARD(gdwDirectDrawSurfaceHeights, "D2DDraw::Renderer::DirectDraw::RENDERER_DIRECTDRAW_GetPalettePointer::gdwDirectDrawSurfaceHeights");
 
     *pnOutHeight = gdwDirectDrawSurfaceHeights[nPaletteMode];
     switch (nPaletteMode) {
@@ -1721,8 +1709,8 @@ void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int32_t nPosX, int32
 // @sourcefile .\Src\ddDebugFont.cpp
 void __stdcall D2ddDebugFont_Alloc() {
     // Static local variables (originally global data)
-    static uint32_t gnD2ddDebugFontTextColor = 0xffffff;
-    static COLORREF gnD2ddDebugFontBkColor = 0;
+    static uint32_t gnD2ddDebugFontTextColor = 0xffffff; D2_STATIC_GUARD(gnD2ddDebugFontTextColor, "D2DDraw::Renderer::DirectDraw::D2ddDebugFont_Alloc::gnD2ddDebugFontTextColor");
+    static COLORREF gnD2ddDebugFontBkColor = 0; D2_STATIC_GUARD(gnD2ddDebugFontBkColor, "D2DDraw::Renderer::DirectDraw::D2ddDebugFont_Alloc::gnD2ddDebugFontBkColor");
 
     COLORREF CVar1;
     int x;
@@ -2035,14 +2023,14 @@ void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_
 }
 
 // DirectDraw renderer internal helpers for sprite visibility testing, clip rect computation, debug font rendering, shadow quality query, pixel/line drawing primitives, and smacker video frame blitting.
-void __fastcall RENDERER_DDRAW_DrawLine(int * pStartPoint, int * pEndPoint, BYTE nPaletteIndex) {
+void __fastcall RENDERER_DDRAW_DrawLine(POINT * pStartPoint, POINT * pEndPoint, BYTE nPaletteIndex) {
     int nStepY;
     int nClampBottom;
     int nClampRight;
-    int nCurrentX = *pEndPoint;
-    int nStepX = pEndPoint[1];
-    int nDeltaX = *pStartPoint - nCurrentX;
-    int nDeltaY = pStartPoint[1] - nStepX;
+    int nCurrentX = pEndPoint->x;
+    int nStepX = pEndPoint->y;
+    int nDeltaX = pStartPoint->x - nCurrentX;
+    int nDeltaY = pStartPoint->y - nStepX;
     if (!(nDeltaX || nDeltaY)) {
       return;
     }
@@ -2131,48 +2119,38 @@ void __fastcall RENDERER_DDRAW_DrawLine(int * pStartPoint, int * pEndPoint, BYTE
 }
 
 void __fastcall DrawRect(RECT * pRect, BYTE nColor) {
-    // Frame slots -36..-4 are ONE object: &nMidXSave is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nMidXSave;
-      int nTop;
-      int nMidX;
-      int nBottom;
-      LONG nRight;
-      int nMidYSave;
-      int nLeft;
-      int nMidY;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 32, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    POINT nMidXSave;
+    POINT nMidX;
+    POINT nRight;
+    POINT nLeft;
     int32_t nLine;
-    __frame0.nLeft = pRect->left;
-    if (pRect->right < __frame0.nLeft) {
+    nLeft.x = pRect->left;
+    if (pRect->right < nLeft.x) {
       nLine = 0x12d;
     } else {
       uint32_t nWidth;
-      __frame0.nBottom = pRect->bottom;
-      __frame0.nTop = pRect->top;
-      if (__frame0.nTop <= __frame0.nBottom) {
-        nWidth = pRect->right - __frame0.nLeft;
-        if (!(nWidth && __frame0.nBottom - __frame0.nTop)) {
+      nMidX.y = pRect->bottom;
+      nMidXSave.y = pRect->top;
+      if (nMidXSave.y <= nMidX.y) {
+        nWidth = pRect->right - nLeft.x;
+        if (!(nWidth && nMidX.y - nMidXSave.y)) {
           return;
         }
 
-        __frame0.nRight = pRect->right;
-        __frame0.nMidYSave = pRect->top + ((uint32_t)(__frame0.nBottom - __frame0.nTop) >> 1);
-        __frame0.nMidXSave = (nWidth >> 1) + __frame0.nLeft;
-        __frame0.nMidX = __frame0.nMidXSave;
-        __frame0.nMidY = __frame0.nMidYSave;
-        RENDERER_DDRAW_DrawLine((int*)&__frame0.nRight, &__frame0.nMidXSave, nColor);
-        RENDERER_DDRAW_DrawLine(&__frame0.nMidX, (int*)&__frame0.nRight, nColor);
-        RENDERER_DDRAW_DrawLine(&__frame0.nLeft, &__frame0.nMidX, nColor);
-        RENDERER_DDRAW_DrawLine(&__frame0.nMidXSave, &__frame0.nLeft, nColor);
+        nRight.x = pRect->right;
+        nRight.y = pRect->top + ((uint32_t)(nMidX.y - nMidXSave.y) >> 1);
+        nMidXSave.x = (nWidth >> 1) + nLeft.x;
+        nMidX.x = nMidXSave.x;
+        nLeft.y = nRight.y;
+        RENDERER_DDRAW_DrawLine(&nRight, &nMidXSave, nColor);
+        RENDERER_DDRAW_DrawLine(&nMidX, &nRight, nColor);
+        RENDERER_DDRAW_DrawLine(&nLeft, &nMidX, nColor);
+        RENDERER_DDRAW_DrawLine(&nMidXSave, &nLeft, nColor);
         return;
       }
 
       nLine = 0x12e;
-      __frame0.nMidY = __frame0.nBottom;
+      nLeft.y = nMidX.y;
     }
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
@@ -2180,41 +2158,31 @@ void __fastcall DrawRect(RECT * pRect, BYTE nColor) {
 }
 
 void __fastcall DrawRectEx(RECT * pRect, BYTE nColor) {
-    // Frame slots -36..-4 are ONE object: &nLeftSave is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nLeftSave;
-      LONG nBottom;
-      int nLeft;
-      int nTop;
-      LONG nRight;
-      LONG nBottomSave;
-      LONG nRightSave;
-      int nTopSave;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 32, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.nLeftSave = pRect->left;
-    if (pRect->right < __frame0.nLeftSave) {
+    POINT nLeftSave;
+    POINT nRight;
+    POINT nRightSave;
+    nLeftSave.x = pRect->left;
+    if (pRect->right < nLeftSave.x) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x149);
       exit(-1);
     } else {
-      __frame0.nTop = pRect->top;
-      if (__frame0.nTop <= pRect->bottom) {
-        if (!(pRect->right != __frame0.nLeftSave && pRect->bottom != __frame0.nTop)) {
+      POINT nLeft;
+      nLeft.y = pRect->top;
+      if (nLeft.y <= pRect->bottom) {
+        if (!(pRect->right != nLeftSave.x && pRect->bottom != nLeft.y)) {
           return;
         }
 
-        __frame0.nRight = pRect->right;
-        __frame0.nBottom = pRect->bottom;
-        __frame0.nLeft = __frame0.nLeftSave;
-        __frame0.nBottomSave = __frame0.nBottom;
-        __frame0.nRightSave = __frame0.nRight;
-        __frame0.nTopSave = __frame0.nTop;
-        RENDERER_DDRAW_DrawLine((int*)&__frame0.nRightSave, &__frame0.nLeft, nColor);
-        RENDERER_DDRAW_DrawLine((int*)&__frame0.nRight, (int*)&__frame0.nRightSave, nColor);
-        RENDERER_DDRAW_DrawLine(&__frame0.nLeftSave, (int*)&__frame0.nRight, nColor);
-        RENDERER_DDRAW_DrawLine(&__frame0.nLeft, &__frame0.nLeftSave, nColor);
+        nRight.x = pRect->right;
+        nLeftSave.y = pRect->bottom;
+        nLeft.x = nLeftSave.x;
+        nRight.y = nLeftSave.y;
+        nRightSave.x = nRight.x;
+        nRightSave.y = nLeft.y;
+        RENDERER_DDRAW_DrawLine(&nRightSave, &nLeft, nColor);
+        RENDERER_DDRAW_DrawLine(&nRight, &nRightSave, nColor);
+        RENDERER_DDRAW_DrawLine(&nLeftSave, &nRight, nColor);
+        RENDERER_DDRAW_DrawLine(&nLeft, &nLeftSave, nColor);
         return;
       }
 
@@ -2290,23 +2258,15 @@ void __fastcall DrawSolidSquare(POINT * pPoint, BYTE nSize, BYTE nPaletteIndex) 
 }
 
 void __fastcall ClearScreen(BOOL bPartial) {
-    // Frame -100..-4 is ONE object: a call writes 96 literal bytes starting at &aBltFxData.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame0_t {
-      uint8_t aBltFxData[76];
-      uint32_t dwBltFlags;
-      uint8_t __pad80[16];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 96, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    uint32_t nBltFxSize = 100;
-    memset(__frame0.aBltFxData, 0, 0x60);
-    __frame0.dwBltFlags = 0;
+    DDBLTFX ddBltFx;
+    ddBltFx.dwSize = 100;
+    memset(&ddBltFx.dwDDFX, 0, 0x60);
+    ddBltFx.dwFillColor = 0;
     if (!pDirectDrawSurface) {
       return;
     }
 
-    HRESULT nDDrawResult = pDirectDrawSurface->lpVtbl->Blt(pDirectDrawSurface, nullptr, nullptr, nullptr, 0x400, &nBltFxSize);
+    HRESULT nDDrawResult = pDirectDrawSurface->lpVtbl->Blt(pDirectDrawSurface, nullptr, nullptr, nullptr, 0x400, &ddBltFx);
     if (!nDDrawResult) {
       return;
     }
@@ -2366,102 +2326,69 @@ BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, in
 }
 
 BOOL __fastcall DrawTransWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, D2GfxLightStrc * pLight, int32_t nScreenPanels, int32_t nAlpha) {
-    // Frame slots -44..-4 are ONE object: &nLightIntensity0Copy is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t nLightIntensity0Copy;
-      uint32_t nLightIntensity1;
-      uint32_t nLightIntensity1Copy;
-      uint32_t nLightIntensity0;
-      BOOL bAnyDrawn;
-      int nClipBottom;
-      int32_t nPosXSave;
-      uint8_t __pad28[4];
-      int nClipLeft;
-      int nClipRight;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 40, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int nLightIndex;
     int nSubtileX;
     short int* pSubtileEntry;
-    BOOL BVar1 = 0;
-    __frame0.nPosXSave = nPosX;
+    uint32_t aCornerLight[4];
+    BOOL BVar2 = 0;
     BOOL nSubtileY = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTile, 1, 0);
-    __frame0.bAnyDrawn = BVar1;
     if (!nSubtileY) {
-      return __frame0.bAnyDrawn;
+      return BVar2;
     }
 
-    __frame0.nClipBottom = RENDERER_nWindowHeight + 0x20;
-    __frame0.nClipLeft = -0x20;
-    __frame0.nClipRight = RENDERER_nWindowWidth;
+    int iVar1 = RENDERER_nWindowHeight + 0x20;
+    int nClipLeft = -0x20;
+    int nClipRight = RENDERER_nWindowWidth;
     if (nScreenPanels == 1) {
-      __frame0.nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+      nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
     } else if (nScreenPanels == 2) {
-      __frame0.nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+      nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
     }
 
     nScreenPanels = 0;
     if (0 >= pTile->nSubTiles) {
-      return __frame0.bAnyDrawn;
+      return BVar2;
     }
 
     do {
       int a3;
       a3 = pTile->pSubTiles[nScreenPanels].nOffsetY + nPosY;
-      nSubtileX = pTile->pSubTiles[nScreenPanels].nOffsetX + __frame0.nPosXSave;
-      if (__frame0.nClipLeft <= nSubtileX && nSubtileX < __frame0.nClipRight && -0x21 < a3 && a3 < __frame0.nClipBottom) {
+      nSubtileX = pTile->pSubTiles[nScreenPanels].nOffsetX + nPosX;
+      if (nClipLeft <= nSubtileX && nSubtileX < nClipRight && -0x21 < a3 && a3 < iVar1) {
         pSubtileEntry = &pTile->pSubTiles[nScreenPanels].nOffsetX;
         nLightIndex = (int)*pSubtileEntry >> 5;
-        __frame0.nLightIntensity0Copy = (uint32_t)pLight[nLightIndex].nIntensity;
-        __frame0.nLightIntensity1 = (uint32_t)pLight[nLightIndex + 1].nIntensity;
-        __frame0.bAnyDrawn = 1;
-        __frame0.nLightIntensity1Copy = __frame0.nLightIntensity1;
-        __frame0.nLightIntensity0 = __frame0.nLightIntensity0Copy;
-        D2GfxRendereInitFunctionsStrc->nfpDrawRoofTile(*(int*)(pSubtileEntry + 8), nSubtileX, a3, (uintptr_t)&__frame0.nLightIntensity0Copy, (uint8_t)nAlpha);
+        aCornerLight[0] = (uint32_t)pLight[nLightIndex].nIntensity;
+        aCornerLight[1] = (uint32_t)pLight[nLightIndex + 1].nIntensity;
+        aCornerLight[2] = aCornerLight[1];
+        aCornerLight[3] = aCornerLight[0];
+        D2GfxRendereInitFunctionsStrc->nfpDrawRoofTile(*(int*)(pSubtileEntry + 8), nSubtileX, a3, (int)aCornerLight, (uint8_t)nAlpha);
+        BVar2 = 1;
       }
 
       nScreenPanels++;
     } while (nScreenPanels < pTile->nSubTiles);
 
-    return __frame0.bAnyDrawn;
+    return BVar2;
 }
 
 BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, D2GfxLightStrc * pLight, int32_t nScreenPanels) {
-    // Frame slots -44..-4 are ONE object: &nLightIntensity0 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t nLightIntensity0;
-      uint32_t nLightIntensity1;
-      uint32_t nLightIntensity1Copy;
-      uint32_t nLightIntensity0Copy;
-      int nClipBottom;
-      int32_t nPosXSave;
-      BOOL bAnyDrawn;
-      uint8_t __pad28[4];
-      int nClipLeft;
-      int nClipRight;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 40, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int nLightIndex;
     int nSubtileX;
     short int* pSubtileEntry;
-    __frame0.bAnyDrawn = 0;
-    __frame0.nPosXSave = nPosX;
+    uint32_t aCornerLight[4];
+    BOOL bAnyDrawn = 0;
     BOOL nSubtileY = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTile, 1, 0);
     if (!nSubtileY) {
       return 0;
     }
 
-    __frame0.nClipBottom = RENDERER_nWindowHeight + 0x20;
-    __frame0.nClipLeft = -0x20;
-    __frame0.nClipRight = RENDERER_nWindowWidth;
+    int iVar1 = RENDERER_nWindowHeight + 0x20;
+    int nClipLeft = -0x20;
+    int nClipRight = RENDERER_nWindowWidth;
     if (nScreenPanels == 1) {
-      __frame0.nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
+      nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
     } else if (nScreenPanels == 2) {
-      __frame0.nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+      nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
     }
 
     nScreenPanels = 0;
@@ -2472,22 +2399,22 @@ BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int3
     do {
       int a3;
       a3 = pTile->pSubTiles[nScreenPanels].nOffsetY + nPosY;
-      nSubtileX = pTile->pSubTiles[nScreenPanels].nOffsetX + __frame0.nPosXSave;
-      if (__frame0.nClipLeft <= nSubtileX && nSubtileX < __frame0.nClipRight && -0x21 < a3 && a3 < __frame0.nClipBottom) {
+      nSubtileX = pTile->pSubTiles[nScreenPanels].nOffsetX + nPosX;
+      if (nClipLeft <= nSubtileX && nSubtileX < nClipRight && -0x21 < a3 && a3 < iVar1) {
         pSubtileEntry = &pTile->pSubTiles[nScreenPanels].nOffsetX;
         nLightIndex = (int)*pSubtileEntry >> 5;
-        __frame0.nLightIntensity0 = (uint32_t)pLight[nLightIndex].nIntensity;
-        __frame0.nLightIntensity1 = (uint32_t)pLight[nLightIndex + 1].nIntensity;
-        __frame0.bAnyDrawn = 1;
-        __frame0.nLightIntensity1Copy = __frame0.nLightIntensity1;
-        __frame0.nLightIntensity0Copy = __frame0.nLightIntensity0;
-        D2GfxRendereInitFunctionsStrc->nfpDrawWallTile(*(int*)(pSubtileEntry + 8), nSubtileX, a3, (uintptr_t)&__frame0.nLightIntensity0);
+        aCornerLight[0] = (uint32_t)pLight[nLightIndex].nIntensity;
+        aCornerLight[1] = (uint32_t)pLight[nLightIndex + 1].nIntensity;
+        bAnyDrawn = 1;
+        aCornerLight[2] = aCornerLight[1];
+        aCornerLight[3] = aCornerLight[0];
+        D2GfxRendereInitFunctionsStrc->nfpDrawWallTile(*(int*)(pSubtileEntry + 8), nSubtileX, a3, (int)aCornerLight);
       }
 
       nScreenPanels++;
     } while (nScreenPanels < pTile->nSubTiles);
 
-    return __frame0.bAnyDrawn;
+    return bAnyDrawn;
 }
 
 BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc * pLight, int32_t nPosX, int32_t nPosY, int32_t nWorldXpos, int32_t nWorldYpos, BYTE nAlpha, int32_t nScreenPanels, void * pTileData) {

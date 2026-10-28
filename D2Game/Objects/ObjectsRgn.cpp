@@ -45,6 +45,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"

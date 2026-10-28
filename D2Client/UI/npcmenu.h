@@ -12,7 +12,6 @@
 struct D2BitBufferStrc;
 struct D2GSPacketSrv0x2A;
 struct D2GSPacketSrv0x91;
-struct D2InventoryStrc;
 struct D2UnitStrc;
 struct EHExceptionRecord;
 struct EHRegistrationNode;
@@ -77,7 +76,7 @@ void __stdcall NPCMENU_SelectRandomDialogOption(struct D2NPCSpeechStrc * pSpeech
 void __stdcall NPCMENU_RandomizeAllNpcDialogs();
 uint32_t __fastcall NPCMENU_FindNextUnhandledMessage(int16_t nMsgTypeToFind);
 int __fastcall NPCMENU_ScrollCompleteShowNextMessage(void * pUserParam, uint32_t nReason, void * pDismissCallback);
-void __fastcall NPCMENU_AddHandledMessageId(short wParam);
+void NPCMENU_AddHandledMessageId(short wMsgId);
 // Runs the NPC quest-dependent menu-option enablers. For each of nEntryCount entries of pCallbackTable whose nNpcClassId matches: reads GetQuestState(pBitBuffer, nQuestId, nQuestFlag); with bCheckState != 0 calls pfnCallback when the state is set, with bCheckState == 0 when it is clear.
 // Returns the last called callback's result, or 1 when none ran (EDI starts at 1). Custom storage: table in ECX, count in EAX, RET 8.
 int32_t __stdcall NPCMENU_CheckQuestDependentCallbacks(struct D2NpcQuestCallbackEntry * pCallbackTable, int32_t nNpcClassId, struct D2BitBufferStrc * pBitBuffer, int32_t nEntryCount);
@@ -90,7 +89,7 @@ BOOL __stdcall CheckSpeachVersusInteractedUnit();
 int __stdcall NPCMENU_EmptyDialogDrawHandler();
 int __stdcall NPCMENU_OpenTradeWithNpc();
 void __stdcall NPCMENU_HireMerc();
-void NPCMENU_IsItemIdentified(struct D2UnitStrc * pUnit);
+BOOL NPCMENU_IsItemIdentified(struct D2UnitStrc * pUnit);
 int NPCMENU_CanItemBeRepaired(struct D2UnitStrc * pUnit);
 // Cain's "Identify Items" (4020 NPCIdentify1) option callback: slot 1 of the Cain rows 16, 17, 18, 19 and 38 (cain2, cain5, cain3, cain4, cain6); installed by NPCMENU_InitializeMenuOptions and NPCMENU_EnableCainIdentifyOption.
 // Halts if the transaction-wait dialog (gpNpcHireMercDialog) is already open. Otherwise opens it with 3353 "Waiting for confirmation of transaction...", sets a 60 s deadline, NPC UI state 10, gnNpcMenuTransactionType = 4, and sends C->S 0x34 (NPC GUID) = identify all items. Returns 1.
@@ -129,7 +128,7 @@ void __fastcall NPCMENU_OnItemUnequip(int32_t nUnitGUID);
 void __fastcall NPCMENU_OnItemPutInContainer(int32_t nUnitGUID);
 void __fastcall NPCMENU_OnItemPutInBelt(int32_t nUnitGUID);
 void __fastcall NPCMENU_OnItemInShop(int32_t nUnitGUID);
-BOOL __fastcall NPCMENU_CalculateItemTransactionCost(struct D2UnitStrc * pUnit, int32_t nTransactionMode, struct D2InventoryStrc * pInventory, uint16_t * pszBuffer, int32_t nBufferMaxLen);
+BOOL __fastcall NPCMENU_CalculateItemTransactionCost(struct D2UnitStrc * pUnit, int32_t nTransactionMode, int * pInventory, uint16_t * pszBuffer, int32_t nBufferMaxLen);
 uint32_t __stdcall NPCMENU_IsShopActive();
 int32_t NPCMENU_FindMenuIndexByNpcId(int32_t nParam);
 BOOL __stdcall NPCMENU_ConfirmTransactionCallback();

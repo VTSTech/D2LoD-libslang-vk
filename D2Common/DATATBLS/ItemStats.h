@@ -26,7 +26,7 @@ BOOL __stdcall STATES_HasAnyGfxFlag(struct D2UnitStrc * pUnit);
 int32_t __stdcall STATES_AssertGetGfxFlags(struct D2UnitStrc * pUnit);
 // Splits a unit's active state bitmask into server-side and GFX-side halves based on context. Uses pSingleStateDataTbl[0xd] (player) or [0xe] (non-player) when nParam==0, and [0xf] when nParam!=0, masking the state flags array so only context-relevant states remain in the server copy while visual-only states are ORed into the GFX flags. Calls ROOM_LinkUnitToUpdateList after filtering (unless non-player with nParam==0).
 void __stdcall STATES_FilterStatesByContext(struct D2UnitStrc * pUnit, int32_t nParam);
-int32_t __stdcall thunk_UNIT_GetStateList_StateFlags(struct D2UnitStrc * pUnit);
+int * __stdcall thunk_UNIT_GetStateList_StateFlags(struct D2UnitStrc * pUnit);
 BOOL STATES_HasMatchingStateFlag(struct D2UnitStrc * pUnit, struct D2StatesDataTbls * pStatesData);
 void __stdcall STATES_MoveToGfxFlags(struct D2UnitStrc * pUnit, uint32_t * pMaskWords);
 uint32_t __stdcall ITEMSTATS_CheckStateFlagArray1(eD2States eState);
@@ -48,7 +48,7 @@ uint32_t __stdcall ITEMSTATS_CheckStateFlagArray11(eD2States eState);
 uint32_t __stdcall ITEMSTATS_CheckStateFlagArray12(uint32_t nParam);
 uint32_t __stdcall STATES_IsStateActive(struct D2UnitStrc * pUnit, uint32_t nParam);
 BOOL __fastcall STATES_HasPoisonState(struct D2UnitStrc * pUnit);
-void __stdcall STATES_HasColdState(struct D2UnitStrc * pUnit);
+BOOL __stdcall STATES_HasColdState(struct D2UnitStrc * pUnit);
 BOOL __stdcall STATES_HasFireState(struct D2UnitStrc * pUnit);
 BOOL __stdcall STATES_HasLifeState(struct D2UnitStrc * pUnit);
 BOOL __stdcall STATES_HasManaState(struct D2UnitStrc * pUnit);

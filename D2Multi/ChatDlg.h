@@ -25,6 +25,11 @@ struct __attribute__((packed)) D2ChatDlgUnknown_0x10 {
     /* 0x0C */ uint32_t field3_0xc;
 };
 
+struct D2LadderRowBufStrc {
+    /* 0x000 */ uint16_t wszCell[256]; // cleared as 0x80 dwords; ladder cell text
+    /* 0x200 */ char szName[256]; // inlined strcat cursor starts at szName-1 (last byte of wszCell)
+};
+
 namespace D2Multi::ChatDlg {
 
 // Function declarations

@@ -252,7 +252,7 @@ int32_t __fastcall inflate(z_stream * pInflateStream, int32_t nFlush) {
     0xe,
     0x1,
     0xf
-};
+}; D2_STATIC_GUARD(gwZlibInflateWindow, "Storm::_3rdparty::zlib::inflate::inflate::gwZlibInflateWindow");
 
     uint8_t uVar1;
     uint8_t* puVar2;

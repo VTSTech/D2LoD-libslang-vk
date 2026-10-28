@@ -71,7 +71,7 @@ int __stdcall DRLGMAZE_SelectRandomPresetFile(int nPresetFile, struct D2DrlgLeve
 void __stdcall InitAllRoomsEx(struct D2RoomExStrc * pRoomEx, struct D2DrlgLevelStrc * pLevel);
 void __fastcall DRLGMAZE_InitializeLevel(struct D2DrlgLevelStrc * pLevel);
 // Top-level DRLG maze-level generator: builds the room layout for a maze-type D2 level. Allocates the level's root RoomEx (size/position from the level's preset DRLG data, centered in the level world rect) and adds it, then dispatches on nLevelType (and sometimes eD2LevelId) to the act/area-specific generator chain - e.g. Act1 Caves/Crypt/Jail/Catacombs, Act2 Sewer/Lair/Arcane/Tombs, Act3 Kurast/Durance/Sewers, Act5 Temple/IceCaves/Worldstone, Baal chamber - typically calling DRLGMAZE_BuildRoomGrid + ActualLevelGeneration then a per-area Replace/Roll pass. Patches fixed special rooms (e.g. Act3 sewer entry rooms 0x2c5..0x2ca to 0x2df.., ice-cave Frozen River/Drifter Cavern/Icy Cellar variants) by id. Applies barracks/river-of-flames/coordinate adjustment, then InitAllRoomsEx over every room. Halts via Fog ErrorManager on missing expected rooms or unknown level type. Returns a BOOL.
-BOOL __fastcall DRLGMAZE_GenerateLevel(struct D2DrlgLevelStrc * pLevel);
+void __fastcall DRLGMAZE_GenerateLevel(struct D2DrlgLevelStrc * pLevel);
 void __fastcall DRLGMAZE_ResetMazeRecord(struct D2DrlgLevelStrc * pLevel, BOOL bKeepRecord);
 
 } // namespace D2Common::Drlg::Maze

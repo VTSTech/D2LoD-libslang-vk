@@ -2,7 +2,6 @@
 
 #include "D2Game/Quests/QUESTS/A3Q1.h"
 #include "D2Client/D2ClientStrc.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -18,6 +17,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Stats/StatsEx.h"
+#include "D2Common/Text.h"
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Common/Units.h"
@@ -275,7 +275,7 @@ BOOL __fastcall Q18_PlayerUpdateTomeState(::SGAMEDATA * pGame, D2UnitStrc * pUni
 // Q18_Callback_00 — Lam Esen's Tome, state-0 gossip handler. Chooses which Alkor gossip line to show: if quest Completed and NOT JustCompleted, bail (already done). If player carries the Tome -> line 3 ("bring it to me"). Else if Completed and player participated -> line 4 (thanks). Else (intro active) -> line indexed by nStateFlag via gdwQ16QuestStateMessages. Emits the line via AddGossipMessageOnMonster. Read-only on record.
 void __fastcall Q18_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ16QuestStateMessages[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 };
+    static int32_t gdwQ16QuestStateMessages[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gdwQ16QuestStateMessages, "D2Game::Quests::QUESTS::A3Q1::Q18_Callback00_NpcActivate::gdwQ16QuestStateMessages");
 
     int32_t nTargetClassId;
     uint32_t nGossipIndex;
@@ -412,11 +412,11 @@ void __fastcall Q18_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 // Q18_Callback_03 — Lam Esen's Tome, state-3 handler (Alkor dialog progression). On gossip index 0x4f during intro with nStateFlag==0, bumps nStateFlag to 1 (quest started). On text-control 0x4b: removes the player from the GUID list and, if nStateFlag==2 and the player record is not yet Completed, broadcasts state 1, sets live state flag to 3 (a3q1.cpp:0x166), and re-syncs every player via Q18_PlayerUpdateTomeState. Reads record (Completed); writes only nStateFlag + GUID list.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q1.cpp
 void __fastcall Q18_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    D2GossipTextStrc* pTextControl = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
+    D2GSPacketSrv0x27_TextStrc* pTextControl = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
     if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 0x4f && pQuestData->bIsNotIntroduction && !pQuestData->nStateFlag) {
       pQuestData->nStateFlag = 1;
     }
-    if (pTextControl != (D2GossipTextStrc*)0x4b) {
+    if (pTextControl != (D2GSPacketSrv0x27_TextStrc*)0x4b) {
       return;
     }
 

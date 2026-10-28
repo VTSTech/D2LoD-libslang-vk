@@ -54,12 +54,11 @@ void __stdcall BNDOWNLOAD_WriteFileWithTimestamp(LPCSTR pThis, LPCVOID param_1, 
     Fog::Source::SFile::SFILE_Win32CloseHandle(hFile);
 }
 
-bool __stdcall NET_CopyDllFromArchive(D2ArchiveStrc * pArchive, char * pszSrcFileName, LPSTR szText) {
+BOOL __stdcall NET_CopyDllFromArchive(D2ArchiveStrc * pArchive, char * pszSrcFileName, LPSTR szText) {
     void* lpBuffer;
     HANDLE hFile;
-    D2MPQFileStrc* pMpqFile;
     char cTmp2;
-    *(uint8_t*)(char*)&pMpqFile = false;
+    D2MPQFileStrc* pMpqFile = 0;
     D2MPQFileStrc* pMpqFileLocal = 0;
     char* pExtDot = pszSrcFileName;
     pExtDot = pExtDot + strlen(pExtDot) + 1;
@@ -82,22 +81,22 @@ bool __stdcall NET_CopyDllFromArchive(D2ArchiveStrc * pArchive, char * pszSrcFil
         if (lpBuffer) {
           Storm::Source::SFile::SFileReadFile(pMpqFileLocal, lpBuffer, dwFileSize, nullptr, 0);
           hFile = Fog::Source::SFile::thunk_CreateFileA(szText, 0x40000000, 0, (LPSECURITY_ATTRIBUTES)0x0, 2, 0x80, (HANDLE)0x0);
-          *(uint8_t*)(char*)&pMpqFile = hFile != (HANDLE)-1;
-          if (*(uint8_t*)(char*)&pMpqFile) {
+          if (hFile != (HANDLE)-1) {
             Fog::Source::SFile::thunk_WriteFile(hFile, lpBuffer, dwFileSize, (LPDWORD)&pArchive, (LPOVERLAPPED)0x0);
             Fog::Source::SFile::SFILE_Win32CloseHandle(hFile);
           }
 
+          pMpqFile = (D2MPQFileStrc*)(uint32_t)(hFile != (HANDLE)-1);
           Storm::SMem::SMemFree(lpBuffer, ".\\BnDownload.cpp", 0x111, 0);
         }
       }
     }
     if (!pMpqFileLocal) {
-      return *(uint8_t*)(char*)&pMpqFile;
+      return (BOOL)(uintptr_t)pMpqFile;
     }
 
     Storm::Source::SFile::SFileCloseFile(pMpqFileLocal);
-    return *(uint8_t*)(char*)&pMpqFile;
+    return (BOOL)(uintptr_t)pMpqFile;
 }
 
 void __stdcall BNDOWNLOAD_SetCancelFlag() {
@@ -179,15 +178,14 @@ int32_t __fastcall BNDOWNLOAD_PerformCheckRevision(uint32_t * pdwVersionOut, uin
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1064, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    bool bCopyOk;
     char bSigValid;
     DWORD dwCurrentTick;
     int bArchiveOk;
-    uint32_t bCopyDllExtended;
+    BOOL BVar1;
     HMODULE hCheckRevDll;
     pfnCheckRevision pCheckRevision;
     HMODULE hGameModule;
-    int32_t iVar1;
+    int32_t iVar2;
     char* szGameExePathPtr;
     __frame0.dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (pdwVersionOut) {
@@ -217,8 +215,8 @@ int32_t __fastcall BNDOWNLOAD_PerformCheckRevision(uint32_t * pdwVersionOut, uin
 
         Storm::Source::SFile::SFileAuthenticateArchive(__frame0.pArchive, &__frame0.dwAuthResult);
         if (!__frame0.dwAuthResult || 4 < __frame0.dwAuthResult) {
-          bCopyOk = NET_CopyDllFromArchive(__frame0.pArchive, lpFileName_00881c58, &__frame0.szDllPath);
-          if ((uint32_t)((uint32_t)((uint32_t)bCopyDllExtended & 0xffffffu) << 8 | (uint32_t)(uint8_t)bCopyOk)) {
+          BVar1 = NET_CopyDllFromArchive(__frame0.pArchive, lpFileName_00881c58, &__frame0.szDllPath);
+          if (BVar1) {
             bSigValid = D2FILE_VerifyFileSignature(&__frame0.szDllPath);
             if (bSigValid != '\0') {
               /* LPCSTR lpLibFileName for LoadLibraryA */ hCheckRevDll = LoadLibraryA(&__frame0.szDllPath);
@@ -253,9 +251,9 @@ int32_t __fastcall BNDOWNLOAD_PerformCheckRevision(uint32_t * pdwVersionOut, uin
           /* LPCSTR lpFileName for DeleteFileA */ DeleteFileA(&__frame0.szDllPath);
         }
 
-        iVar1 = __frame0.nCheckResult;
+        iVar2 = __frame0.nCheckResult;
         Fog::Debug::GuardStack();
-        return iVar1;
+        return iVar2;
       }
 
       /* DWORD dwMilliseconds for Sleep */ Sleep(10);
@@ -340,9 +338,9 @@ uint32_t __stdcall BNDOWNLOAD_HasPatchFilename() {
     return (uint32_t)(lpFileName_00881c58[0] != '\0');
 }
 
-BOOL __stdcall BnetDownloadFile(SOCKET hSocket, char * szText, FILETIME * pTimestamp, int32_t nProgressMode, uint8_t bWriteFlags, LPCVOID * ppOutBuffer, uint32_t nFileSize) {
+BOOL __stdcall BnetDownloadFile(SOCKET hSocket, char * szText, FILETIME * pTimestamp, int32_t nProgressMode, uint8_t bWriteFlags, uint8_t * * ppOutBuffer, uint32_t nFileSize) {
     int nRecvResult;
-    void* pRecvBuf = Storm::SMem::SMemAlloc(nFileSize, ".\\BnDownload.cpp", 0x385, 8);
+    uint8_t* pRecvBuf = (uint8_t*)Storm::SMem::SMemAlloc(nFileSize, ".\\BnDownload.cpp", 0x385, 8);
     uint32_t nBytesReceived = 0;
     *ppOutBuffer = pRecvBuf;
     if (nFileSize) {
@@ -353,10 +351,10 @@ BOOL __stdcall BnetDownloadFile(SOCKET hSocket, char * szText, FILETIME * pTimes
           len = 0x5b4;
         }
 
-        /* int flags for recv */ /* int len for recv */ /* char * buf for recv */ /* SOCKET s for recv */ nRecvResult = recv(hSocket, (char*)((int)*ppOutBuffer + nBytesReceived), len, 0);
+        /* int flags for recv */ /* int len for recv */ /* char * buf for recv */ /* SOCKET s for recv */ nRecvResult = recv(hSocket, (char*)(*ppOutBuffer + nBytesReceived), len, 0);
         if (nRecvResult == -1 || nRecvResult < 1 || gbBnetDownloadCancelFlag) {
-          Storm::SMem::SMemFree((void*)*ppOutBuffer, ".\\BnDownload.cpp", 0x38f, 0);
-          *ppOutBuffer = (LPCVOID)0x0;
+          Storm::SMem::SMemFree(*ppOutBuffer, ".\\BnDownload.cpp", 0x38f, 0);
+          *ppOutBuffer = 0;
           Debug::DEBUG_UnusedDebugFunction("<ERROR: Failed to recv file  %s in DOWNLOADTOANY, filebytes = %ld, currpos = %ld, bytes = %d");
           return 0;
         }
@@ -368,13 +366,13 @@ BOOL __stdcall BnetDownloadFile(SOCKET hSocket, char * szText, FILETIME * pTimes
       } while (nBytesReceived < nFileSize);
     }
     if (bWriteFlags & 1) {
-      Cache::CACHE_WriteData(szText, *ppOutBuffer, nFileSize, (uint32_t*)&pTimestamp->dwLowDateTime, 0x13c680, 0x278d00);
+      Cache::CACHE_WriteData(szText, (LPCVOID)*ppOutBuffer, nFileSize, (uint32_t*)&pTimestamp->dwLowDateTime, 0x13c680, 0x278d00);
     }
     if (!(bWriteFlags & 2)) {
       return 1;
     }
 
-    BNDOWNLOAD_WriteFileWithTimestamp(szText, *ppOutBuffer, nFileSize, pTimestamp);
+    BNDOWNLOAD_WriteFileWithTimestamp(szText, (LPCVOID)*ppOutBuffer, nFileSize, pTimestamp);
     return 1;
 }
 
@@ -467,26 +465,17 @@ void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut) {
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame2_t) == 260, "frame group __frame2_t must reproduce the Ghidra frame layout");
     __frame2_t __frame2;
-    // Frame slots -784..-267 are ONE object: &cDestPathBuf is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -784..-8 are ONE object: &cDestPathBuf is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame3_t {
       char cDestPathBuf;
       uint8_t szDestPathTail[259];
       char szLineBuffer[256];
-      char cModulePathBuf;
+      char szModulePath[260];
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame3_t) == 517, "frame group __frame3_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame3_t) == 776, "frame group __frame3_t must reproduce the Ghidra frame layout");
     __frame3_t __frame3;
-    // Frame -267..-8 is ONE object: a call writes 259 literal bytes starting at &szModulePathTail.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame4_t {
-      uint8_t szModulePathTail[258];
-      uint8_t byPathNullTerm;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame4_t) == 259, "frame group __frame4_t must reproduce the Ghidra frame layout");
-    __frame4_t __frame4;
     uint8_t* pBVar1;
-    int32_t nCmpResult;
     int bArchiveOpened;
     DWORD nSize;
     char* pcFileListPtr;
@@ -494,19 +483,19 @@ void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut) {
     uint32_t nLineOffset;
     char* pListCursor;
     D2MPQFileStrc* pcStrLenResult;
-    uint32_t nErrorAddress = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
+    int32_t nErrorLine;
     __frame0.pOpenFileOut = pResultOut;
     if (!pResultOut) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4b5);
       exit(-1);
     }
 
-    __frame3.cModulePathBuf = '\0';
-    memset(__frame4.szModulePathTail, 0, 0x103);
-    /* DWORD nSize for GetModuleFileNameA */ /* LPSTR lpFilename for GetModuleFileNameA */ /* HMODULE hModule for GetModuleFileNameA */ GetModuleFileNameA((HMODULE)0x0, &__frame3.cModulePathBuf, 0x104);
-    __frame4.byPathNullTerm = 0;
-    char* pbArchivePath = &__frame3.cModulePathBuf;
-    char cCurrentChar = __frame3.cModulePathBuf;
+    __frame3.szModulePath[0] = '\0';
+    memset(__frame3.szModulePath + 1, 0, 0x103);
+    /* DWORD nSize for GetModuleFileNameA */ /* LPSTR lpFilename for GetModuleFileNameA */ /* HMODULE hModule for GetModuleFileNameA */ GetModuleFileNameA((HMODULE)0x0, __frame3.szModulePath, 0x104);
+    __frame3.szModulePath[0x103] = '\0';
+    char* pbArchivePath = __frame3.szModulePath;
+    char cCurrentChar = __frame3.szModulePath[0];
     while (cCurrentChar != '\0') {
       pListCursor = Storm::Source::SSTR::SStrChr(pbArchivePath + 1, '\\');
       if (!pListCursor) {
@@ -520,8 +509,8 @@ void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut) {
     *pbArchivePath = '\0';
     __frame1.cRegistryValue = '\0';
     memset(__frame1.szRegistryValueTail, 0, 0x3ff);
-    nCmpResult = Storm::Source::SReg::SRegLoadData((uint32_t*)"Patch", "Patches", 2, &__frame1.cRegistryValue, 0x3fe, nullptr);
-    if (!nCmpResult || __frame1.cRegistryValue == '\0') {
+    nErrorLine = Storm::Source::SReg::SRegLoadData((uint32_t*)"Patch", "Patches", 2, &__frame1.cRegistryValue, 0x3fe, nullptr);
+    if (!nErrorLine || __frame1.cRegistryValue == '\0') {
       *pResultOut = 0;
       Fog::Debug::GuardStack();
       return;
@@ -614,7 +603,7 @@ void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut) {
                 }
 
                 Storm::Source::SSTR::SStrCopy(&__frame2.szEntryName, pbArchivePath, 0x104);
-                /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(&__frame3.cDestPathBuf, "%s\\%s", &__frame3.cModulePathBuf, pbArchivePath);
+                /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(&__frame3.cDestPathBuf, "%s\\%s", __frame3.szModulePath, pbArchivePath);
                 pbArchivePath = __frame0.dwTmp2;
               }
 
@@ -652,20 +641,20 @@ void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut) {
 
     pbArchivePath = __frame1.szRegistryPath;
     __frame0.pVerifySigOut = lpFileName;
-    sprintf(pbArchivePath, "%s\\Game.exe", &__frame3.cModulePathBuf);
+    sprintf(pbArchivePath, "%s\\Game.exe", __frame3.szModulePath);
     Storm::Source::SReg::SRegSaveString((uint32_t*)"Patch", "Launcher", 2, pbArchivePath);
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     if (bIsExpansion) {
-      bArchiveOpened = sprintf(pbArchivePath, "%s\\%s;", &__frame3.cModulePathBuf, "d2exp.mpq");
+      bArchiveOpened = sprintf(pbArchivePath, "%s\\%s;", __frame3.szModulePath, "d2exp.mpq");
       pbArchivePath = __frame1.szRegistryPath + bArchiveOpened;
     }
 
-    sprintf(pbArchivePath, "%s\\%s;%s\\%s", &__frame3.cModulePathBuf, "d2data.mpq", &__frame3.cModulePathBuf, "d2sfx.mpq");
+    sprintf(pbArchivePath, "%s\\%s;%s\\%s", __frame3.szModulePath, "d2data.mpq", __frame3.szModulePath, "d2sfx.mpq");
     Storm::Source::SReg::SRegSaveString((uint32_t*)"Patch", "SrcData", 2, __frame1.szRegistryPath);
-    sprintf(__frame1.szRegistryPath, "%s\\%s", &__frame3.cModulePathBuf, "patch_d2.mpq");
+    sprintf(__frame1.szRegistryPath, "%s\\%s", __frame3.szModulePath, "patch_d2.mpq");
     Storm::Source::SReg::SRegSaveString((uint32_t*)"Patch", "DstData", 2, __frame1.szRegistryPath);
     if (szSourceFileName == &__frame1.cArchiveListBuf) {
-      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szSourceFileName, "%s\\bnupdate.exe", &__frame3.cModulePathBuf);
+      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szSourceFileName, "%s\\bnupdate.exe", __frame3.szModulePath);
       uVar2 = Storm::Source::SSTR::SStrLen(szSourceFileName);
       szSourceFileName = szSourceFileName + uVar2 + 1;
       pVerifySigResult = szSourceFileName;
@@ -673,7 +662,7 @@ void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut) {
 
     *szSourceFileName = '\0';
     BNGatewayAccess::SaveAndUnload(&ActualRealmInfo);
-    bIsExpansion = BNDOWNLOAD_LaunchVerifiedExecutables(&__frame3.cModulePathBuf, &__frame1.cArchiveListBuf);
+    bIsExpansion = BNDOWNLOAD_LaunchVerifiedExecutables(__frame3.szModulePath, &__frame1.cArchiveListBuf);
     if (bIsExpansion) {
       *__frame0.pOpenFileOut = 2;
       Fog::Debug::GuardStack();
@@ -699,15 +688,22 @@ int __fastcall BNDOWNLOAD_ApplyPrepatch(uint32_t * pdwParam) {
 }
 
 uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
-    // Frame slots -1396..-1380 are ONE object: &nSockAddrLen is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -1396..-1356 are ONE object: &nSockAddrLen is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       int nSockAddrLen;
       uint32_t nKeepAlive;
       uint32_t nRecvTimeout;
       int nRetryCount;
+      uint8_t* pFileData;
+      uint32_t nResponseSize;
+      D2BnetDownloadStateStrc* pDownloadCtx;
+      char* pcCurrentIp;
+      void* pResponseBuf;
+      uint8_t __pad36[3];
+      char bReqType;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 40, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     u_short nPort;
     char* pcToken;
@@ -716,21 +712,15 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
     BOOL BVar1;
     DWORD nCachedSize;
     int32_t bRecvFileOk;
-    uint32_t nResponseSize;
-    char bReqType;
     SOCKET hSocketCopy;
     sockaddr sSockAddr;
     char BnetIp[256];
     char szDnsResult[512];
     D2BnetDownloadStateStrc* pDownloadCtxCopy;
-    D2BnetDownloadStateStrc* pDownloadCtx;
-    pDownloadCtx = (D2BnetDownloadStateStrc*)lpThreadParam;
-    LPCVOID pFileData;
-    pFileData = 0;
-    void* pResponseBuf;
-    pResponseBuf = 0;
-    char* pcCurrentIp;
-    pcCurrentIp = 0;
+    __frame0.pDownloadCtx = (D2BnetDownloadStateStrc*)lpThreadParam;
+    __frame0.pFileData = 0;
+    __frame0.pResponseBuf = 0;
+    __frame0.pcCurrentIp = 0;
     __frame0.nRetryCount = 0;
     szDnsResult[0] = '\0';
     gbBnetDownloadCancelFlag = 0;
@@ -745,7 +735,7 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
       sSockAddr.sa_family = 2;
       sSockAddr.sa_data[0] = '\0';
       sSockAddr.sa_data[1] = '\0';
-      pcCurrentIp = pcToken;
+      __frame0.pcCurrentIp = pcToken;
       nPort = ntohs(0x17e0);
       /* char * cp for inet_addr */ sSockAddr.sa_data[0] = (char)nPort;
       sSockAddr.sa_data[1] = (char)(nPort >> 8);
@@ -772,9 +762,9 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
         setsockopt(hSocket, 0xffff, 8, (char*)&__frame0.nKeepAlive, 4);
         /* int optlen for setsockopt */ /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ __frame0.nRecvTimeout = 15000;
         setsockopt(hSocket, 0xffff, 0x1006, (char*)&__frame0.nRecvTimeout, 4);
-        /* int flags for send */ /* int len for send */ /* char * buf for send */ /* SOCKET s for send */ bReqType = '\x02';
-        nConnResult = send(hSocket, &bReqType, 1, 0);
-        pDownloadCtxCopy = pDownloadCtx;
+        /* int flags for send */ /* int len for send */ /* char * buf for send */ /* SOCKET s for send */ __frame0.bReqType = '\x02';
+        nConnResult = send(hSocket, &__frame0.bReqType, 1, 0);
+        pDownloadCtxCopy = __frame0.pDownloadCtx;
         if (nConnResult == 1) {
           pcToken = szRequestBuf;
           for (nConnResult = 0x8c; nConnResult; nConnResult--) {
@@ -783,12 +773,12 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
             pcToken += 4;
           }
 
-          /* int flags for send */ /* int len for send */ /* char * buf for send */ /* SOCKET s for send */ nSockResult = send(hSocket, szRequestBuf, (uint32_t)pDownloadCtx->nSendSize, 0);
+          /* int flags for send */ /* int len for send */ /* char * buf for send */ /* SOCKET s for send */ nSockResult = send(hSocket, szRequestBuf, (uint32_t)__frame0.pDownloadCtx->nSendSize, 0);
           if (nSockResult == pDownloadCtxCopy->nSendSize) {
-            nResponseSize = 0;
+            __frame0.nResponseSize = 0;
             nSockResult = 0;
             do {
-              /* int flags for recv */ /* int len for recv */ /* char * buf for recv */ /* SOCKET s for recv */ nConnResult = recv(hSocket, (char*)((uintptr_t)&nResponseSize + nSockResult), 4 - nSockResult, 0);
+              /* int flags for recv */ /* int len for recv */ /* char * buf for recv */ /* SOCKET s for recv */ nConnResult = recv(hSocket, (char*)((uintptr_t)&__frame0.nResponseSize + nSockResult), 4 - nSockResult, 0);
               if (nConnResult == -1 || nConnResult < 1) {
                 goto request_failed;
               }
@@ -796,19 +786,19 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
               nSockResult += nConnResult;
             } while (nSockResult < 4);
 
-            if (0xff < nResponseSize) {
+            if (0xff < __frame0.nResponseSize) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ee);
               exit(-1);
             }
 
-            pServerResp = Storm::SMem::SMemAlloc(nResponseSize, ".\\BnDownload.cpp", 0x2ef, 0);
-            pResponseBuf = pServerResp;
+            pServerResp = Storm::SMem::SMemAlloc(__frame0.nResponseSize, ".\\BnDownload.cpp", 0x2ef, 0);
+            __frame0.pResponseBuf = pServerResp;
             if (!pServerResp) {
               break;
             }
 
-            BVar1 = NET_RecvExact(hSocket, (int)pServerResp + 4, nResponseSize - 4);
-            pDownloadCtxCopy = pDownloadCtx;
+            BVar1 = NET_RecvExact(hSocket, (int)pServerResp + 4, __frame0.nResponseSize - 4);
+            pDownloadCtxCopy = __frame0.pDownloadCtx;
             if (!BVar1) {
               Debug::DEBUG_UnusedDebugFunction("ERROR: Failed recv from BNET for download.");
               hSocket = hSocketCopy;
@@ -819,13 +809,13 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
               hSocket = hSocketCopy;
               break;
             }
-            if (pDownloadCtx->nFileType == 2) {
+            if (__frame0.pDownloadCtx->nFileType == 2) {
               nCachedSize = BNDOWNLOAD_GetCachedFileSize((LPCSTR)((int)pServerResp + 0x18), (FILETIME*)((int)pServerResp + 0x10));
               if (nCachedSize != pDownloadCtxCopy->nCachedFileSize) {
                 pDownloadCtxCopy->nCachedFileSize = nCachedSize;
                 Fog::Src::Safesock::closeSocket(hSocketCopy);
                 Storm::SMem::SMemFree(pServerResp, ".\\BnDownload.cpp", 0x311, 0);
-                pResponseBuf = 0;
+                __frame0.pResponseBuf = 0;
                 goto retry_with_new_socket;
               }
               if (gbBnetDownloadCancelFlag) {
@@ -837,7 +827,7 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
             if (pDownloadCtxCopy->nFileType == 2) {
               bRecvFileOk = BNDOWNLOAD_RecvFileFromSocket((LPCSTR)((int)pServerResp + 0x18), hSocketCopy, pDownloadCtxCopy->nCachedFileSize, *(uint32_t*)((int)pServerResp + 4), pDownloadCtxCopy->nConnMode, (FILETIME*)((int)pServerResp + 0x10));
               if (bRecvFileOk) {
-                NET_BNFTP_CLIENT_ProcessFile(*(uint32_t*)((int)pServerResp + 8), pDownloadCtxCopy->nConnMode, *(FILETIME**)((int)pServerResp + 0xc), (LPCSTR)((int)pServerResp + 0x10), (char*)((int)pServerResp + 0x18), (uint32_t*)pDownloadCtxCopy->szOutputPath, (size_t)pFileData, *(int32_t*)((int)pServerResp + 4), 0);
+                NET_BNFTP_CLIENT_ProcessFile(*(uint32_t*)((int)pServerResp + 8), pDownloadCtxCopy->nConnMode, *(FILETIME**)((int)pServerResp + 0xc), (LPCSTR)((int)pServerResp + 0x10), (char*)((int)pServerResp + 0x18), (uint32_t*)pDownloadCtxCopy->szOutputPath, (size_t)__frame0.pFileData, *(int32_t*)((int)pServerResp + 4), 0);
                 hSocket = hSocketCopy;
                 break;
               }
@@ -851,9 +841,9 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
               Storm::SMem::SMemFree(pServerResp, ".\\BnDownload.cpp", 0x331, 0);
               pcToken = "WARNING: Failed to save to disk.";
             } else {
-              BVar1 = BnetDownloadFile(hSocketCopy, (char*)((int)pServerResp + 0x18), (FILETIME*)((int)pServerResp + 0x10), pDownloadCtxCopy->nConnMode, (uint8_t)pDownloadCtxCopy->nFileType, &pFileData, *(uint32_t*)((int)pServerResp + 4));
+              BVar1 = BnetDownloadFile(hSocketCopy, (char*)((int)pServerResp + 0x18), (FILETIME*)((int)pServerResp + 0x10), pDownloadCtxCopy->nConnMode, (uint8_t)pDownloadCtxCopy->nFileType, &__frame0.pFileData, *(uint32_t*)((int)pServerResp + 4));
               if (BVar1) {
-                NET_BNFTP_CLIENT_ProcessFile(*(uint32_t*)((int)pServerResp + 8), pDownloadCtxCopy->nConnMode, *(FILETIME**)((int)pServerResp + 0xc), (LPCSTR)((int)pServerResp + 0x10), (char*)((int)pServerResp + 0x18), (uint32_t*)pDownloadCtxCopy->szOutputPath, (size_t)pFileData, *(int32_t*)((int)pServerResp + 4), 0);
+                NET_BNFTP_CLIENT_ProcessFile(*(uint32_t*)((int)pServerResp + 8), pDownloadCtxCopy->nConnMode, *(FILETIME**)((int)pServerResp + 0xc), (LPCSTR)((int)pServerResp + 0x10), (char*)((int)pServerResp + 0x18), (uint32_t*)pDownloadCtxCopy->szOutputPath, (size_t)__frame0.pFileData, *(int32_t*)((int)pServerResp + 4), 0);
                 hSocket = hSocketCopy;
                 break;
               }
@@ -868,7 +858,7 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
               pcToken = "ERROR: Failed to copy file.";
             }
 
-            pResponseBuf = 0;
+            __frame0.pResponseBuf = 0;
             Debug::DEBUG_UnusedDebugFunction(pcToken);
             goto retry_with_new_socket;
           }
@@ -895,36 +885,36 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
       Debug::DEBUG_UnusedDebugFunction("WARNING: Failed to connect to download port. Retrying...");
       /* DWORD dwMilliseconds for Sleep */ Sleep(1000);
       if (szDnsResult[0] != '\0') {
-        if (!pcCurrentIp) {
+        if (!__frame0.pcCurrentIp) {
           pcToken = szDnsResult;
         } else {
           pcToken = 0;
         }
 
-        pcCurrentIp = strtok(pcToken, " ,;");
+        __frame0.pcCurrentIp = strtok(pcToken, " ,;");
       }
 
       hSocket = hSocketCopy;
-      if (!pcCurrentIp) {
+      if (!__frame0.pcCurrentIp) {
         break;
       }
 
-      /* char * cp for inet_addr */ *(uint32_t*)((char*)&sSockAddr.sa_data + 2) = inet_addr(pcCurrentIp);
+      /* char * cp for inet_addr */ *(uint32_t*)((char*)&sSockAddr.sa_data + 2) = inet_addr(__frame0.pcCurrentIp);
       retry_with_new_socket:
       /* int protocol for socket */ /* int type for socket */ /* int af for socket */ hSocket = socket(2, 1, 0);
-      lpThreadParam = (void*)pDownloadCtx;
+      lpThreadParam = (void*)__frame0.pDownloadCtx;
     } while (true);
 
-    pDownloadCtxCopy = pDownloadCtx;
-    nConnResult = pDownloadCtx->nConnMode;
+    pDownloadCtxCopy = __frame0.pDownloadCtx;
+    nConnResult = __frame0.pDownloadCtx->nConnMode;
     if (hSocket != -1) {
       Fog::Src::Safesock::closeSocket(hSocket);
     }
-    if (pFileData) {
-      Storm::SMem::SMemFree((void*)pFileData, ".\\BnDownload.cpp", 0x366, 0);
+    if (__frame0.pFileData) {
+      Storm::SMem::SMemFree(__frame0.pFileData, ".\\BnDownload.cpp", 0x366, 0);
     }
-    if (pResponseBuf) {
-      Storm::SMem::SMemFree(pResponseBuf, ".\\BnDownload.cpp", 0x367, 0);
+    if (__frame0.pResponseBuf) {
+      Storm::SMem::SMemFree(__frame0.pResponseBuf, ".\\BnDownload.cpp", 0x367, 0);
     }
 
     Storm::SMem::SMemFree(pDownloadCtxCopy, ".\\BnDownload.cpp", 0x368, 0);
@@ -1030,49 +1020,33 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 28, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    // Frame slots -4625..-4620 are ONE object: &byVersionByte is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -4625..-8 are ONE object: &byVersionByte is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     #pragma pack(push, 1)
     struct __frame1_t {
       uint8_t byVersionByte;
       D2MPQFileStrc* archiveFileCtx;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 5, "frame group __frame1_t must reproduce the Ghidra frame layout");
-    __frame1_t __frame1;
-    // Frame -4620..-520 is ONE object: a call writes 4100 literal bytes starting at &dwSigVerifyResult.
-    // Separate locals let the compiler reorder them, and the write would run off the frame.
-    struct __frame2_t {
-      char dwSigVerifyResult[2];
-      uint16_t dwSigVerifyHi;
-      uint32_t dwSigVerifyLo;
-      uint8_t __pad8[4092];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame2_t) == 4100, "frame group __frame2_t must reproduce the Ghidra frame layout");
-    __frame2_t __frame2;
-    // Frame slots -268..-8 are ONE object: &cTempDllPath is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame3_t {
+      SID_C2S_ExtraWork sExtraWork;
+      char szAdMessage[252];
       char cTempDllPath;
       uint8_t szTempDllPathTail[259];
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame3_t) == 260, "frame group __frame3_t must reproduce the Ghidra frame layout");
-    __frame3_t __frame3;
-    bool bCopyDllOk;
+    #pragma pack(pop)
+    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 4617, "frame group __frame1_t must reproduce the Ghidra frame layout");
+    __frame1_t __frame1;
     char* pDestPtr;
     uint32_t* puPoolCursor;
     void* _Dst;
     uint8_t* pbFtpEntryEnd;
     int bOpened;
-    uint32_t bCopyExtended;
+    BOOL BVar1;
     HMODULE hModule;
     FARPROC pExtraWorkProc;
     int32_t nOpenResult;
-    uint32_t uVar1;
+    uint32_t uVar2;
     uint8_t* _Str1;
     FILETIME FStack_1224;
     D2ArchiveStrc* pArchiveHandle;
-    char szAdMessage[252];
     uint8_t byScanChar;
     char cStrChar;
     uint8_t* pbStrCursor;
@@ -1168,16 +1142,16 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
       __frame0.dwStackPad0 = bDeleteSource;
       __frame0.dwStackPad1 = _Dst;
       BnSend::NET_SID_CLIENT_Send_0x21_DisplayAd();
-      sprintf(szAdMessage, "<Received Ad: %s, %s>\n", __frame0.dwStackPad3, __frame0.dwStackPad2);
-      BNMESSQUEUE_EnqueueString(1, szAdMessage);
+      sprintf(__frame1.szAdMessage, "<Received Ad: %s, %s>\n", __frame0.dwStackPad3, __frame0.dwStackPad2);
+      BNMESSQUEUE_EnqueueString(1, __frame1.szAdMessage);
       BNMESSQUEUE_EnqueueBytes(3, (char*)&__frame0.dwStackPad5, 0x18);
       Fog::Debug::GuardStack();
       return;
       case -0x7ffffffc:
         Debug::DEBUG_UnusedDebugFunction("Processing Bnserver.ini file");
-      uVar1 = Storm::Source::SSTR::SStrLen((char*)nSize);
-      pDestPtr = (char*)Storm::SMem::SMemAlloc(uVar1 + 1, ".\\BnDownload.cpp", 0x23f, 0);
-      Storm::Source::SSTR::SStrCopy(pDestPtr, (char*)__frame1.archiveFileCtx, uVar1 + 1);
+      uVar2 = Storm::Source::SSTR::SStrLen((char*)nSize);
+      pDestPtr = (char*)Storm::SMem::SMemAlloc(uVar2 + 1, ".\\BnDownload.cpp", 0x23f, 0);
+      Storm::Source::SSTR::SStrCopy(pDestPtr, (char*)__frame1.archiveFileCtx, uVar2 + 1);
       BNGatewayAccess::UpdateGatewaysFromIni(&ActualRealmInfo, pDestPtr);
       Storm::SMem::SMemFree(pDestPtr, ".\\BnDownload.cpp", 0x245, 0);
       BNGatewayAccess::SaveAndUnload(&ActualRealmInfo);
@@ -1194,8 +1168,8 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
           case_0x80000006:
           pArchiveHandle = 0;
           __frame1.archiveFileCtx = 0;
-          __frame3.cTempDllPath = '\0';
-          memset(__frame3.szTempDllPathTail, 0, 0x103);
+          __frame1.cTempDllPath = '\0';
+          memset(__frame1.szTempDllPathTail, 0, 0x103);
           Debug::DEBUG_UnusedDebugFunction("Processing ExtraWork file");
           bOpened = Storm::Source::SFile::SFileOpenArchive(szDestPath, nullptr, 0, &pArchiveHandle);
           if (!bOpened) {
@@ -1205,11 +1179,11 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
 
           Storm::Source::SFile::SFileAuthenticateArchive(pArchiveHandle, &__frame0.dwAuthResult);
           if (!__frame0.dwAuthResult || 4 < __frame0.dwAuthResult) {
-            bCopyDllOk = NET_CopyDllFromArchive(pArchiveHandle, szDestPath, &__frame3.cTempDllPath);
-            if (!(uint32_t)((uint32_t)((uint32_t)bCopyExtended & 0xffffffu) << 8 | (uint32_t)(uint8_t)bCopyDllOk)) {
+            BVar1 = NET_CopyDllFromArchive(pArchiveHandle, szDestPath, &__frame1.cTempDllPath);
+            if (!BVar1) {
               Debug::DEBUG_UnusedDebugFunction("<ERROR: Failed to extract ExtraWork DLL!>");
             } else {
-              /* LPCSTR lpLibFileName for LoadLibraryA */ hModule = LoadLibraryA(&__frame3.cTempDllPath);
+              /* LPCSTR lpLibFileName for LoadLibraryA */ hModule = LoadLibraryA(&__frame1.cTempDllPath);
               if (!hModule) {
                 pDestPtr = "<ERROR: Failed to load ExtraWork DLL!>";
                 log_extrawork_error:
@@ -1227,7 +1201,7 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
                   goto log_extrawork_error;
                 }
 
-                bOpened = Storm::Source::SFile::SFileReadFile(__frame1.archiveFileCtx, &__frame1.byVersionByte, 1, (size_t*)&FStack_1224.dwHighDateTime, 0);
+                bOpened = Storm::Source::SFile::SFileReadFile(__frame1.archiveFileCtx, &__frame1.byVersionByte, 1, (uint32_t*)&FStack_1224.dwHighDateTime, 0);
                 if (!bOpened) {
                   pDestPtr = "<ERROR: Failed to read game locale file!>";
                   goto log_extrawork_error;
@@ -1238,18 +1212,17 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
                 }
 
                 Storm::Source::SFile::SFileCloseFile(__frame1.archiveFileCtx);
-                memset(__frame2.dwSigVerifyResult, 0, 0x1004);
-                __frame2.dwSigVerifyLo = (uint32_t)__frame1.byVersionByte;
-                __frame2.dwSigVerifyResult[0] = '\x01';
-                __frame2.dwSigVerifyResult[1] = '\0';
-                __frame2.dwSigVerifyHi = 4;
+                memset(&__frame1.sExtraWork, 0, 0x1004);
+                *(uint32_t*)(char*)&__frame1.sExtraWork.abWorkData = (uint32_t)(uint8_t)__frame1.byVersionByte;
+                __frame1.sExtraWork.wGameType = 1;
+                __frame1.sExtraWork.wLength = 4;
                 bOpened = (*pExtraWorkProc)();
                 if (!bOpened) {
                   pDestPtr = "<ERROR: ExtraWork DLL indicated failure!>";
                   goto log_extrawork_error;
                 }
 
-                BnSend::NET_SID_CLIENT_Send(0x4b, __frame2.dwSigVerifyResult, __frame2.dwSigVerifyHi + 4);
+                BnSend::NET_SID_CLIENT_Send(0x4b, (char*)&__frame1.sExtraWork, __frame1.sExtraWork.wLength + 4);
               }
 
               szDestPath = (char*)szDestPathSave;
@@ -1267,8 +1240,8 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
 
           /* DWORD dwMilliseconds for Sleep */ Sleep(0x32);
           /* LPCSTR lpFileName for DeleteFileA */ DeleteFileA(szDestPath);
-          if (__frame3.cTempDllPath != '\0') {
-            /* LPCSTR lpFileName for DeleteFileA */ DeleteFileA(&__frame3.cTempDllPath);
+          if (__frame1.cTempDllPath != '\0') {
+            /* LPCSTR lpFileName for DeleteFileA */ DeleteFileA(&__frame1.cTempDllPath);
             Fog::Debug::GuardStack();
             return;
           }

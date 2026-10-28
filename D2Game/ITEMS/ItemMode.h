@@ -13,8 +13,8 @@ struct D2ClientStrc;
 struct D2InventoryStrc;
 struct D2ItemGenContextStrc;
 struct D2ItemsTxt;
+struct D2MonStatsTxt;
 struct D2SkillStrc;
-struct D2UnitDataMonsterStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
 typedef int eD2Skills;
@@ -33,7 +33,7 @@ struct __attribute__((packed)) D2WeaponSwapSlotStrc {
 namespace D2Game::ITEMS::ItemMode {
 
 // Function declarations
-struct D2UnitDataMonsterStrc * __fastcall GetMonsterData(struct D2UnitStrc * pUnit);
+struct D2MonStatsTxt * __fastcall GetMonsterData(struct D2UnitStrc * pUnit);
 // Server-side callback invoked when an item/stat modifier (op-function) changes a unit stat by (fParam1 old -> fParam2 new). Extracts the stat index from the eSkill packed param, looks up its ItemStatCost.txt line, and fires associated aura item-events. Switches on the affected stat: maxhp/maxmana/maxstamina proportionally rescales the current hitpoints/mana/stamina; item_addclassskills/addskill_tab/nonclassskill/singleskill grant or remove the granted skill (allocating, broadcasting via 0x21, updating passive/pet stats, deselecting if leveled to 0); state toggles a unit state and gfx; item_aura activates/deactivates a periodic aura; item_charged_skill adds/removes a charged item skill. Pure side-effects on pUnit's stats/skills/states.
 // @sourcefile .\ITEMS\ItemMode.cpp
 void __fastcall STATSLISTEX_FunctionCallback(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pItemOwner, eD2Skills eSkill, int nOldValue, int nNewValue);
@@ -67,7 +67,7 @@ void __fastcall ITEMMODE_RemoveItemStates(struct D2UnitStrc * pOwner, struct D2U
 void __fastcall ITEMMODE_UnequipItemStats(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, int32_t nEquipState, int32_t nParam);
 // Handles a player picking up a gold pile (pUnit=gold item, pUnit2=player). Computes how much gold fits under the player's inventory cap; if the pile has an owner, delegates to ChangeGoldForPlayer; if the player is in a party, splits via PARTY_SplitGoldToPartyMembers; otherwise credits directly via STATLIST_AddUnitStat. Removes the gold item from the room and deletes it. If the pile overflowed the cap, spawns the remainder as a new gold pile and plays a pickup sound (0x17).
 void __stdcall PickingGold(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
-void __stdcall ITEMMODE_GetItemPageForUnit(int16_t nParam, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
+void __stdcall ITEMMODE_GetItemPageForUnit(int32_t nParam, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 uint32_t ITEMMODE_CheckQuestItemCodePair(struct D2ItemsTxt * pItemsTxt1, struct D2ItemsTxt * pItemsTxt2, int32_t nCode1, int32_t nCode2);
 // Scans a unit's carried-item list (pUnit2 chain via INVENTORY_GetNextItem) to detect whether picking up the quest/unique item pUnit would create a forbidden duplicate. Returns 1 if a duplicate is found, 0 otherwise. Matches on (a) the same unique-item id (when pUnit is a carry-restricted unique, quality 7), or (b) quest-item code collisions against the txt row pointed to by nParam, including a hardcoded table of equivalent/exclusive 4-char quest item codes (e.g. j33/g33 keys, bks/bkd books, htsh/msf/pivt scrolls) and the fq2-pair checks via ITEMMODE_CheckQuestItemCodePair. Skips corpse-page items. Stops when reaching pUnit itself in the chain.
 BOOL __stdcall ITEMMODE_CheckDuplicateQuestItem(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, struct D2ItemsTxt * pOtherItemsTxt);
@@ -204,7 +204,7 @@ BOOL __fastcall EquipItem(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Bod
 BOOL __fastcall SERVER_Swap2HandItem(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nItemGUID, eD2BodyLoc eTargetBodyLoc, int32_t nForceEquip, uint32_t * pdwParam);
 // Server-side: equips the item nItemGUID onto body slot eTargetBodyLoc for pUnit, specifically handling the weapon/shield arm-swap case (L_ARM<->R_ARM). Validates the item exists and is in the cursor/GetHit state, that the equip action resolves to slot type 7, and equip requirements pass. Frees the conflicting arm slot: unequips the existing arm item, places it back into the inventory grid (or fails), then equips the new item to the target slot, updating socketed stats, weapon skills, body-loc, page, and item command flags, and recalculates equipped item states. Writes a result token into pOutToken->nToken (1 = blocked). Returns 1 on full success, 0 otherwise; halts (Fog error) on null game/unit or inventory inconsistency.
 // @sourcefile .\ITEMS\ItemMode.cpp
-BOOL __fastcall ITEMMODE_EquipItemToBodyLoc(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nItemGUID, eD2BodyLoc eTargetBodyLoc, ::SGAMEDATA * pOutToken);
+BOOL __fastcall ITEMMODE_EquipItemToBodyLoc(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nItemGUID, eD2BodyLoc eTargetBodyLoc, int * pOutToken);
 // Server-side weapon-swap (W key / weapon switch) for a player unit. Saves and resets the active left/right switch-skill ids+owners, collects items in the swapped weapon body locations, unequips their stats, removes them from the current weapon slots and equips the alternate-set items into the R_ARM/L_ARM (etc.) body locations, updating primary weapon, sockets, item flags (RELOAD/ADDED/TAKEN/DISABLED) and update lists. Recalculates equipped item states, toggles the client's weapon-swap flag, sends the 0x97 WeaponSwitch and 0x23 skill-select packets to re-select usable left/right skills. Writes a 4-byte pbSwapDone status block. Returns 1 on success, 0 on failure (item placement/ownership errors set pbSwapDone[0]); halts on null game/unit/client.
 // @sourcefile .\ITEMS\ItemMode.cpp
 BOOL __fastcall ITEMMODE_WeaponSwap(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, bool * pbSwapDone);

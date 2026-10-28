@@ -6,7 +6,6 @@
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
-#include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgCoordsStrc.h"
 #include "D2Common/Drlg/D2DrlgFileStrc.h"
 #include "D2Common/Drlg/D2DrlgGridStrc.h"
@@ -33,6 +32,7 @@
 #include "D2Common/Drlg/Maze/Act4/RiverOfFlames.h"
 #include "D2Common/Drlg/Maze/Act5/Worldstone.h"
 #include "D2Common/Drlg/Preset.h"
+#include "D2Game/Objects/Objects.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
@@ -79,7 +79,7 @@ D2RoomExStrc * __stdcall DRLGMAZE_PickRoomPreset(D2RoomExStrc * pRoomEx, int dwP
     { 0x0, 0x0 },
     { 0x0, 0x0 },
     { 0x0, 0x0 }
-};
+}; D2_STATIC_GUARD(gaMazePresetLookupExt, "D2Common::Drlg::Maze::DRLGMAZE_PickRoomPreset::gaMazePresetLookupExt");
     static int gaMazePresetLookup[16][3] = {
     { 0x0, 0x0, 0x0 },
     { 0x0, 0x0, 0x0 },
@@ -97,7 +97,7 @@ D2RoomExStrc * __stdcall DRLGMAZE_PickRoomPreset(D2RoomExStrc * pRoomEx, int dwP
     { 0x0, 0x0, 0x0 },
     { 0x0, 0x0, 0x0 },
     { 0x0, 0x0, 0x0 }
-};
+}; D2_STATIC_GUARD(gaMazePresetLookup, "D2Common::Drlg::Maze::DRLGMAZE_PickRoomPreset::gaMazePresetLookup");
 
     bool _bIsSingleFile;
     D2DrlgPresetRoomStrc* pDVar1;
@@ -198,7 +198,7 @@ D2RoomExStrc * __stdcall DRLGMAZE_PickRoomPreset(D2RoomExStrc * pRoomEx, int dwP
         nPresetIndex = gaMazePresetLookupExt[nPresetIndex][0];
       break;
       case 0x21:
-        _bIsSingleFile = DRLGMAZE_IsPresetSingleFile((D2DrlgMapStrc*)pMap);
+        _bIsSingleFile = DRLGMAZE_IsPresetSingleFile(pMap);
       if (!_bIsSingleFile) {
         nPresetIndex += 0x3ea;
       }
@@ -674,7 +674,7 @@ void SetupBaalChamber(D2DrlgLevelStrc * pLevel) {
     0x420,
     0x2,
     0x1
-};
+}; D2_STATIC_GUARD(gaBaalChamberPresets, "D2Common::Drlg::Maze::SetupBaalChamber::gaBaalChamberPresets");
 
     D2RoomExStrc* pSourceRoom = pLevel->pRoomExFirst;
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pSourceRoom->sSeed);
@@ -710,7 +710,7 @@ void __stdcall GenerateWolrdstoneAndTombs(D2DrlgLevelStrc * pLevel) {
         /* .nX = */ 0x1bd,
         /* .nY = */ 0x432
     }
-};
+}; D2_STATIC_GUARD(gnMazeRoomCountX, "D2Common::Drlg::Maze::GenerateWolrdstoneAndTombs::gnMazeRoomCountX");
 
     D2DrlgPresetRoomStrc* pDVar1;
     int bReplaceResult;
@@ -1011,7 +1011,6 @@ void __fastcall ForAllButDenOfEvil(D2DrlgLevelStrc * pLevel) {
 // Selects a random preset file index for a maze level using the level's seed and LvlPrest table.
 // @sourcefile .\DRLG\Maze.cpp
 int __stdcall DRLGMAZE_SelectRandomPresetFile(int nPresetFile, D2DrlgLevelStrc * pLevel, int * pState) {
-    int* pSelectedOffset;
     D2DrlgLevelLinkNodeStrc* pNode;
     eLvlTypes nLevelType;
     if (nPresetFile != -1) {
@@ -1023,71 +1022,70 @@ int __stdcall DRLGMAZE_SelectRandomPresetFile(int nPresetFile, D2DrlgLevelStrc *
     nFileCount = ((int*)pState[2])[0x10];
     int nFirstFile;
     nFirstFile = *(int*)pState[2];
-    int* nResult;
-    nResult = (int*)(pLevel->nLevelType - 3);
-    if (nResult >= (int*)0x21) {
-      return (int)nResult;
+    uint32_t nResult;
+    nResult = pLevel->nLevelType - 3;
+    if (nResult >= 0x21) {
+      return nResult;
     }
 
-    nResult = (int*)(uint32_t)gaMazeLevelTypeCaseTable[pLevel->nLevelType + 1];
-    switch ((uint32_t)gaMazeLevelTypeCaseTable[pLevel->nLevelType + 1]) {
+    nResult = (uint32_t)gaMazeLevelTypeCaseTable[pLevel->nLevelType + 1];
+    switch (nResult) {
       case 0:
-        pSelectedOffset = (int*)0x34;
+        nResult = 0x34;
       break;
-      case 0x1:
-        pSelectedOffset = (int*)0x6c;
+      case 1:
+        nResult = 0x6c;
       break;
-      case 0x2:
-        pSelectedOffset = (int*)0xa7;
+      case 2:
+        nResult = 0xa7;
       break;
-      case 0x3:
-        pSelectedOffset = (int*)0xcd;
+      case 3:
+        nResult = 0xcd;
       break;
-      case 0x4:
-        pSelectedOffset = (int*)0x101;
+      case 4:
+        nResult = 0x101;
       break;
-      case 0x5:
-        pSelectedOffset = (int*)0x12d;
+      case 5:
+        nResult = 0x12d;
       break;
-      case 0x6:
-        pSelectedOffset = (int*)0x19d;
+      case 6:
+        nResult = 0x19d;
       break;
-      case 0x7:
-        pSelectedOffset = (int*)0x1e1;
+      case 7:
+        nResult = 0x1e1;
       break;
-      case 0x8:
-        pSelectedOffset = (int*)0x2f1;
+      case 8:
+        nResult = 0x2f1;
       break;
-      case 0x9:
-        pSelectedOffset = (int*)0x298;
+      case 9:
+        nResult = 0x298;
       break;
-      case 0xa:
-        pSelectedOffset = (int*)0x2c0;
+      case 10:
+        nResult = 0x2c0;
       break;
       case 0xb:
-        pSelectedOffset = (int*)0x344;
+        nResult = 0x344;
       break;
       case 0xc:
-        pSelectedOffset = (int*)0x3ea;
+        nResult = 0x3ea;
       break;
       case 0xd:
-        pSelectedOffset = (int*)0x422;
+        nResult = 0x422;
       break;
       case 0xe:
-        pSelectedOffset = (int*)0x41c;
+        nResult = 0x41c;
       break;
       case 0xf:
-        return (int)nResult;
+        return nResult;
     }
 
-    nResult = pSelectedOffset;
-    if ((int)pSelectedOffset >= nFirstFile) {
-      return (int)nResult;
+    if ((int)nResult >= nFirstFile) {
+      return nResult;
     }
 
-    nResult = pSelectedOffset + 4;
-    if (nFirstFile >= (int)(pSelectedOffset + 4)) {
-      return (int)nResult;
+    nResult += 0x10;
+    if (nFirstFile >= (int)nResult) {
+      return nResult;
     }
 
     for (pNode = pLevel->pLevelLinkNodeFirst; pNode; pNode = pNode->pNext) {
@@ -1109,8 +1107,8 @@ int __stdcall DRLGMAZE_SelectRandomPresetFile(int nPresetFile, D2DrlgLevelStrc *
     nFirstFile = (pNode->dwData2 + 1) % pNode->dwData1;
     pNode->dwData2 = nFirstFile;
     pState[1] = nFirstFile;
-    nResult = pState;
-    return (int)nResult;
+    nResult = (uint32_t)pState;
+    return nResult;
 }
 
 void __stdcall InitAllRoomsEx(D2RoomExStrc * pRoomEx, D2DrlgLevelStrc * pLevel) {
@@ -1142,13 +1140,11 @@ void __fastcall DRLGMAZE_InitializeLevel(D2DrlgLevelStrc * pLevel) {
 }
 
 // Top-level DRLG maze-level generator: builds the room layout for a maze-type D2 level. Allocates the level's root RoomEx (size/position from the level's preset DRLG data, centered in the level world rect) and adds it, then dispatches on nLevelType (and sometimes eD2LevelId) to the act/area-specific generator chain - e.g. Act1 Caves/Crypt/Jail/Catacombs, Act2 Sewer/Lair/Arcane/Tombs, Act3 Kurast/Durance/Sewers, Act5 Temple/IceCaves/Worldstone, Baal chamber - typically calling DRLGMAZE_BuildRoomGrid + ActualLevelGeneration then a per-area Replace/Roll pass. Patches fixed special rooms (e.g. Act3 sewer entry rooms 0x2c5..0x2ca to 0x2df.., ice-cave Frozen River/Drifter Cavern/Icy Cellar variants) by id. Applies barracks/river-of-flames/coordinate adjustment, then InitAllRoomsEx over every room. Halts via Fog ErrorManager on missing expected rooms or unknown level type. Returns a BOOL.
-BOOL __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
+void __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
     D2DrlgPresetRoomStrc* pDVar1;
     uint32_t nVariant;
-    BOOL bResult;
     eD2LevelId eLevelId;
     D2RoomExStrc* pRoomIter;
-    D2RoomExStrc* pNextRoom;
     D2DrlgPresetRoomStrc* pDrifterCavernRoomData;
     D2DrlgPresetRoomStrc* pFrozenRiverRoomData;
     D2DrlgPresetRoomStrc* pIcyCellarRoomData;
@@ -1175,7 +1171,7 @@ BOOL __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
       break;
       default:
         {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x883);
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x883);
           exit(-1);
         }
       case 7:
@@ -1253,7 +1249,7 @@ BOOL __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
           pSearchRoom = pLevel->pRoomExFirst;
           while (true) {
             if (!pSearchRoom) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x84a);
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x84a);
               exit(-1);
             }
 
@@ -1310,7 +1306,7 @@ BOOL __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
         }
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x849);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x849);
       exit(-1);
       case 0x20:
         /* Temples picker */ DRLGMAZE_BuildRoomGrid(2, pLevel);
@@ -1322,7 +1318,7 @@ BOOL __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
         case LEVEL_FrozenRiver:
           {
             if (!pLevel->pRoomExFirst) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x85e);
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x85e);
               exit(-1);
             }
 
@@ -1377,17 +1373,15 @@ BOOL __fastcall DRLGMAZE_GenerateLevel(D2DrlgLevelStrc * pLevel) {
     }
     ForAllButDenOfEvil(pLevel);
     pSearchRoom = pLevel->pRoomExFirst;
-    BOOL BVar2 = bResult;
     while (pSearchRoom) {
-      BOOL bResult2;
+      D2RoomExStrc* pNextRoom;
       pNextRoom = pSearchRoom->pRoomExNext;
       InitAllRoomsEx(pSearchRoom, pLevel);
       pSearchRoom = pNextRoom;
-      BVar2 = bResult2;
     }
 
-    return BVar2;
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (int32_t)(char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x883);
+    return;
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x883);
     exit(-1);
 }
 

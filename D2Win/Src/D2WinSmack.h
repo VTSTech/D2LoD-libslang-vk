@@ -20,7 +20,7 @@ namespace D2Win::Src::D2WinSmack {
 
 // Function declarations
 // Calculates title prefix index based on character class and gender. Used for cinematics and titles. Class < 4 maps to index 0, < 8 to 1, < 12 to 2, else 3. If bIsExpansion non-zero and index > 0, adds 3.
-char * __stdcall D2WINSMACK_GetTitlePrefixIndexFromClass(void * pUnused, int32_t nClass, int32_t bHasModifier, int32_t bIsExpansion);
+char * __stdcall D2WINSMACK_GetTitlePrefixIndexFromClass(int pUnused, int32_t nClass, int32_t bHasModifier, int32_t bIsExpansion);
 // Loads and decodes Smacker video file into D2WinSmack control. Copies file path to field 0x40, closes previous smacker context, decodes new smacker to field 0x140. Stores path in global gpSmackerVideoBuffer and flags in gbSmackerVideoFlags.
 BOOL __stdcall D2WINSMACK_LoadAndDecodeSmacker(::D2WinSmack * pSmack, char * szFilePath, int32_t nFlags);
 // Closes smacker context and optionally deletes temporary file. Checks form type is FORM_Smack (9), closes smacker context at pContext field, deletes file at field 0x40 if gbSmackerKeepTempFile is zero.

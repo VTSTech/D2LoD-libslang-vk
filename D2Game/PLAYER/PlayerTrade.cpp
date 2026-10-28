@@ -43,11 +43,11 @@
 #include "D2Game/GAME/Clients.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/SCmd.h"
+#include "D2Game/GAME/Server.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/ITEMS/ItemMode.h"
 #include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/PLAYER/Player.h"
-#include "D2Game/PLAYER/PlayerMsg.h"
 #include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/PLAYER/PlayerSave.h"
 #include "D2Game/Quests/QUESTS/A1Q4.h"
@@ -68,6 +68,7 @@
 #include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/Excel.h"
 #include "Storm/Source/SSTR.h"
@@ -76,6 +77,7 @@
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Objects/ObjectsRgn.h"
+#include "D2Game/PLAYER/PlayerMsg.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -227,14 +229,14 @@ uint32_t PLAYERTRADE_CompareUint32(uint32_t * pnParam1, uint32_t * pnParam2) {
 }
 
 // Removes all items from the cube before transmutation. Iterates through the player's inventory, extracts items from INVPAGE_CUBE, sets their page to None, and frees them from the server unit system. Returns the inventory pointer.
-D2InventoryStrc * __stdcall CUBE_RemoveAllCubeItems(::SGAMEDATA * pGame, D2ClientStrc * pClient, D2UnitStrc * pUnit) {
+int32_t __stdcall CUBE_RemoveAllCubeItems(::SGAMEDATA * pGame, D2ClientStrc * pClient, D2UnitStrc * pUnit) {
     eInventoryPage invPage;
     eD2ItemFlag itemFlagMask;
     if (!pUnit->pInventory) {
-      return nullptr;
+      return 0;
     }
 
-    D2InventoryStrc* nRemovedCount = 0;
+    int nRemovedCount = 0;
     D2UnitStrc* pInvNode = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pUnit->pInventory);
     while (pInvNode) {
       D2UnitStrc* pItem;
@@ -248,7 +250,7 @@ D2InventoryStrc * __stdcall CUBE_RemoveAllCubeItems(::SGAMEDATA * pGame, D2Clien
           D2Common::ITEMS::Items::ITEM_SetItemData_ePreviousPage(pItem, 3);
           GAME::SCmd::Send0x9DRemoveItemFromContainer(pClient, pUnit, pItem, itemFlagMask);
           ITEMS::ItemMode::ITEMMODE_DeleteItemFromInventory(pGame, pUnit, pItem, 0);
-          nRemovedCount = (D2InventoryStrc*)((uintptr_t)&nRemovedCount->nSignatureMagic + 1);
+          nRemovedCount++;
         }
       }
     }
@@ -822,20 +824,8 @@ BOOL __fastcall CUBE_SpecialOutput_Unused3(::SGAMEDATA * pGame, D2UnitStrc * pUn
 // @sourcefile .\PLAYER\PlrTrade.cpp
 void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2CubeMainTxt * pRecipe, D2CubeSetupStrc * pMatchedItems, uint32_t nUnused) {
     // Static local variables (originally global data)
-    static D2CubeSpecialOutput CUBESPECIALOUTPUT[4] = { nullptr, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_CowPortalRecipe, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_Unused2, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_Unused3 };
+    static D2CubeSpecialOutput CUBESPECIALOUTPUT[4] = { nullptr, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_CowPortalRecipe, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_Unused2, &D2Game::PLAYER::PlayerTrade::CUBE_SpecialOutput_Unused3 }; D2_STATIC_GUARD(CUBESPECIALOUTPUT, "D2Game::PLAYER::PlayerTrade::CUBE_GenerateOutput::CUBESPECIALOUTPUT");
 
-    // Frame slots -236..-200 are ONE object: &nModCode is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nModCode;
-      int nModMax;
-      int nModMin;
-      int nModParam;
-      D2CubeMainTxt* pRecipeLocal;
-      int aOutputMeta[4];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 36, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint8_t byOutputType;
     uint16_t uVar1;
     int32_t pMaxExpTxt;
@@ -862,6 +852,8 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
     uint8_t* pModEntry;
     int64_t nMulDivResult;
     uint32_t apExtractedItems[18];
+    D2SetsTxtFStrc sProperty;
+    int aOutputMeta[4];
     D2UnitStrc* apDStack_c8[4];
     D2UnitStrc* nOutputClassId;
     uint32_t local_ac;
@@ -873,8 +865,6 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
     D2InventoryStrc* pSourceInventory;
     D2SeedStrc sRolledSeed;
     uint16_t wFlagsAndUpgrade;
-    D2CubeSetupStrc* pMatchedItemsLocal;
-    pMatchedItemsLocal = pMatchedItems;
     int nExtractedItemCount;
     nExtractedItemCount = 0;
     BOOL bHasOutput;
@@ -884,9 +874,9 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
     apDStack_c8[0] = 0;
     apDStack_c8[1] = 0;
     apDStack_c8[2] = 0;
-    __frame0.aOutputMeta[0] = 0;
-    __frame0.aOutputMeta[1] = 0;
-    __frame0.aOutputMeta[2] = 0;
+    aOutputMeta[0] = 0;
+    aOutputMeta[1] = 0;
+    aOutputMeta[2] = 0;
     int nOutputSlotIndex;
     nOutputSlotIndex = 0;
     D2UnitStrc* pPlayer;
@@ -894,14 +884,15 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
     ::SGAMEDATA* pGameLocal;
     pGameLocal = pGame;
     for (; nOutputSlotIndex <= 2; pDVar2 = pPlayer , nOutputSlotIndex++) {
-      __frame0.pRecipeLocal = pRecipe;
+      D2CubeSetupStrc* pMatchedItemsLocal;
+      pMatchedItemsLocal = pMatchedItems;
       nAffixIdx = nOutputSlotIndex;
-      pOutputEntry = __frame0.pRecipeLocal->pOutputItem + nOutputSlotIndex;
+      pOutputEntry = pRecipe->pOutputItem + nOutputSlotIndex;
       wFlagsAndUpgrade = pOutputEntry->wFlagsAndUpgrade;
       pOutput = pOutputEntry;
       apDStack_c8[nOutputSlotIndex] = 0;
       if (wFlagsAndUpgrade & 0x30) {
-        __frame0.aOutputMeta[nAffixIdx] = 1;
+        aOutputMeta[nAffixIdx] = 1;
       }
 
       nOutItemLevel = 0;
@@ -986,7 +977,7 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
           pDVar2 = pMatchedItemsLocal->entry[nOutputSlotIndex].pUnit1;
           D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pDVar2, INVPAGE_None);
           D2Common::Units::SetupUpdateFlag(pDVar2, 4);
-          pClonedOutput = ITEMS::Items::Drop::ITEM_CloneFromSerializedData(pGameTmp, pDVar2, nullptr, (uint32_t)!__frame0.aOutputMeta[nAffixIdx]);
+          pClonedOutput = ITEMS::Items::Drop::ITEM_CloneFromSerializedData(pGameTmp, pDVar2, nullptr, (uint32_t)!aOutputMeta[nAffixIdx]);
           apDStack_c8[nOutputSlotIndex] = pClonedOutput;
           D2Common::Units::SetupUpdateFlag(pClonedOutput, 4);
           D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pDVar2, INVPAGE_CUBE);
@@ -1003,7 +994,7 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
           }
         } else {
           eItemFlags = (eD2ItemQuality)pOutput->nQuality;
-          __frame0.aOutputMeta[3] = (uint32_t)pOutput->nUniqueItemId;
+          aOutputMeta[3] = (uint32_t)pOutput->nUniqueItemId;
           local_ac = -1;
           if (byOutputType == 0xff) {
             nOutputClassId = pMatchedItemsLocal->entry[nOutputSlotIndex].pUnit2;
@@ -1013,7 +1004,7 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
                 eSourceQuality = D2Common::ITEMS::Items::GetItemQuality(pDVar2);
                 eItemFlags = eSourceQuality & 0xff;
                 uSourceFileIndex = D2Common::ITEMS::Items::ITEM_GetItemData_nFileIndex(pDVar2);
-                __frame0.aOutputMeta[3] = uSourceFileIndex + 1 & 0xffff;
+                aOutputMeta[3] = uSourceFileIndex + 1 & 0xffff;
                 nOutItemLevel = D2Common::ITEMS::Items::ITEM_GetItemData_nItemLevel(pDVar2);
                 if ((char)eSourceQuality == '\a' && !(gadwBitMasks[uSourceFileIndex & 0x1f] & pGameLocal->fUniqueSpawn[(int)uSourceFileIndex >> 5])) {
                   local_ac = uSourceFileIndex;
@@ -1035,7 +1026,7 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
           pGameTmp = pGameLocal;
           sItemGenContext.wItemFormat = pGameLocal->wItemFormat;
           sItemGenContext.pUnit = pPlayer;
-          sItemGenContext.dwFileIndex = __frame0.aOutputMeta[3] & 0xffff;
+          sItemGenContext.dwFileIndex = aOutputMeta[3] & 0xffff;
           sItemGenContext.nItemClassid = (int)nOutputClassId;
           sItemGenContext.nItemLevel = nOutItemLevel;
           sItemGenContext.pGame = pGameLocal;
@@ -1082,7 +1073,7 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
         pDVar2 = pMatchedItemsLocal->entry[nOutputSlotIndex].pUnit1;
         D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pDVar2, INVPAGE_None);
         D2Common::Units::SetupUpdateFlag(pDVar2, 4);
-        apDStack_c8[3] = ITEMS::Items::Drop::ITEM_CloneFromSerializedData(pGameTmp, pDVar2, nullptr, (uint32_t)!__frame0.aOutputMeta[nOutputSlotIndex]);
+        apDStack_c8[3] = ITEMS::Items::Drop::ITEM_CloneFromSerializedData(pGameTmp, pDVar2, nullptr, (uint32_t)!aOutputMeta[nOutputSlotIndex]);
         byOutputType = pOutput->nType;
         pClonedOutput = 0;
         if (byOutputType == 0xfe) {
@@ -1125,7 +1116,7 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
       pDVar2 = apDStack_c8[nOutputSlotIndex];
       if (pDVar2) {
         bHasOutput = 1;
-        if (__frame0.aOutputMeta[nOutputSlotIndex]) {
+        if (aOutputMeta[nOutputSlotIndex]) {
           ITEMS::Items::Drop::ITEM_RemoveRuneword(pGameLocal, pDVar2);
           if (pOutput->wFlagsAndUpgrade & 0x20) {
             pClonedOutput = pMatchedItemsLocal->entry[nOutputSlotIndex].pUnit1;
@@ -1166,11 +1157,11 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
                 }
               }
 
-              __frame0.nModMax = (int)*(short int*)(pModEntry - 6);
-              __frame0.nModCode = *(int*)(pModEntry - 10);
-              __frame0.nModMin = (int)*(short int*)(pModEntry - 4);
-              __frame0.nModParam = (int)*(short int*)(pModEntry - 2);
-              D2Common::ITEMS::ItemMods::ITEMMOD_ApplyRunewordProperties(pDVar2, &__frame0.nModCode, (::SGAMEDATA*)pGameLocal->bExpansion);
+              sProperty.fparam = (uint8_t*)(int)*(short int*)(pModEntry - 6);
+              sProperty.fcode = *(int*)(pModEntry - 10);
+              sProperty.fmin = (int)*(short int*)(pModEntry - 4);
+              sProperty.fmax = (int)*(short int*)(pModEntry - 2);
+              D2Common::ITEMS::ItemMods::ITEMMOD_ApplyRunewordProperties(pDVar2, &sProperty, (::SGAMEDATA*)pGameLocal->bExpansion);
             }
           }
         }
@@ -1334,7 +1325,7 @@ void __stdcall GetDateUnused(int * pnParam) {
 // Server-side Horadric Cube recipe engine. Counts items currently in the player's cube, then scans every CubMain.txt recipe checking gating conditions: enabled (or debug-allow-disabled), expansion/version, ladder-only vs SP, min difficulty, required class, exact input count. Recipes with nOp 1-2 add calendar gates (day-of-month range, day-of-week); nOp 3-14 add a player-stat threshold compared (</>/==) against nValue right-shifted by the stat's valshift, where the stat is read three different ways (3-6 GetStatUnsignedValue, 7-10 SERVER_GetUnitStat, 11-14 STATLIST_GetStatBonusFromLists). On the first recipe whose gates pass AND whose item inputs validate (CUBE_ValidateRecipeInputs), calls CUBE_GenerateOutput to consume inputs and produce the result, then returns. No-op if player null or cube empty.
 void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc * pPlayer) {
     // Static local variables (originally global data)
-    static bool gbCubeAllowDisabledRecipes;
+    static bool gbCubeAllowDisabledRecipes; D2_STATIC_GUARD_BSS(gbCubeAllowDisabledRecipes, "D2Game::PLAYER::PlayerTrade::CUBE_MatchAndExecuteRecipe::gbCubeAllowDisabledRecipes");
 
     bool _bValidInputs;
     bool bValidInputs;
@@ -1638,9 +1629,9 @@ bool InitCopyInventoryForTrade(::SGAMEDATA * pGame, D2UnitStrc * pUnitStrc) {
     void* pSaveBuffer = D2_ALLOC_POOL(pGame->pMemoryPool, 0x2000);
     pCopy->pSaveBuffer = pSaveBuffer;
     D2InventoryStrc* pCopyInventory = PlayerSave::GetCopyInventory(pGame, pUnitStrc, (uint16_t*)pSaveBuffer, 0x2000, 0, 0, 0);
-    pCopy->pCopyInventory = pCopyInventory;
+    pCopy->pCopyInventory = (int32_t)pCopyInventory;
     if ((int)pCopyInventory < 1) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x809);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x809);
       exit(-1);
     }
 
@@ -1699,7 +1690,7 @@ void __fastcall TRADE_RestoreInventoryFromBackup(::SGAMEDATA * pGame, D2UnitStrc
     D2UnknownStructure0x18* pTradeCopy;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     if (!pPlayerData) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x880);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x880);
       exit(-1);
     } else {
       int iInvPage;
@@ -1723,7 +1714,7 @@ void __fastcall TRADE_RestoreInventoryFromBackup(::SGAMEDATA * pGame, D2UnitStrc
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x888);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x888);
       exit(-1);
     }
 }
@@ -2115,15 +2106,15 @@ void __fastcall SERVER_TradeTransferItemToCursor(::SGAMEDATA * pGame, D2UnitStrc
     GAME::SCmd::NET_D2GS_SERVER_Send_0x77_TRADEREQUEST(pClient, 0xc);
 }
 
-D2InventoryStrc * __fastcall CopyInventory(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int32_t nBufSize) {
+int32_t __fastcall CopyInventory(D2UnitStrc * pUnit, uint8_t * pUnit2, int32_t nBufSize) {
     D2UnknownStructure0x18* pTradeCopy2;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2UnknownStructure0x18* pTradeCopy = pPlayerData->pTradeCopyInventory;
-    if (!(pTradeCopy && (int)pTradeCopy->pCopyInventory <= nBufSize)) {
-      return nullptr;
+    if (!(pTradeCopy && pTradeCopy->pCopyInventory <= nBufSize)) {
+      return 0;
     }
 
-    memcpy(pUnit2, pTradeCopy->pSaveBuffer, (size_t)pTradeCopy->pCopyInventory);
+    memcpy(pUnit2, pTradeCopy->pSaveBuffer, pTradeCopy->pCopyInventory);
     return pTradeCopy->pCopyInventory;
 }
 
@@ -2505,22 +2496,6 @@ void __stdcall PLRTRADE_ExecuteTrade(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2
 
 // Several exits go through GuardStack tails with the status (0, 1 or 3) in AL.
 eD2ServerIncomingStatus __fastcall ClickButton(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int16_t nButtonId, uint32_t dwParam) {
-    // Frame slots -32..-4 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    #pragma pack(push, 1)
-    struct __frame0_t {
-      uint8_t byPacketId;
-      uint32_t szNamePart0;
-      uint32_t szNamePart4;
-      uint32_t szNamePart8;
-      uint32_t nNamePartC;
-      int nTradePartnerGUID;
-      uint8_t __pad21[3];
-      uint32_t nStackCookie;
-    };
-    #pragma pack(pop)
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 28, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     bool bHasInteract;
     bool bVar1;
     D2ClientStrc* pClient;
@@ -2529,16 +2504,16 @@ eD2ServerIncomingStatus __fastcall ClickButton(::SGAMEDATA * pGame, D2UnitStrc *
     int iVar2;
     D2UnitStrc* pCursorItem;
     DWORD dwTick;
-    int bPendingUpdates;
     uint8_t byTradeAction;
     uint8_t nTradeId;
     int32_t nLine;
     uint32_t dwInteractGUID;
     eD2UnitType eInteractType;
+    D2GSPacketSrv0x78 sPacket;
+    uint32_t nStackCookie;
     uint32_t nCancelReason;
     uint8_t byGoldSide;
     ::SGAMEDATA* pGame2;
-    __frame0.nStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     ::SGAMEDATA* pGame01;
     pGame01 = pGame;
     if (!pUnit) {
@@ -2586,6 +2561,7 @@ eD2ServerIncomingStatus __fastcall ClickButton(::SGAMEDATA * pGame, D2UnitStrc *
     D2UnitStrc* pPartnerUnit;
     pPartnerUnit = pTradePartner;
     if (!pTradePartner) {
+      int bPendingUpdates;
       bPendingUpdates = UNIT::ITEM_HasPendingInventoryUpdates(pGame, pUnit);
       if (bPendingUpdates) {
         Fog::Debug::GuardStack();
@@ -2655,25 +2631,25 @@ eD2ServerIncomingStatus __fastcall ClickButton(::SGAMEDATA * pGame, D2UnitStrc *
       if (bVar1) {
         bVar1 = InitCopyInventoryForTrade(pGame2, pPartnerUnit);
         if (bVar1) {
-          __frame0.byPacketId = 0x78;
+          sPacket.nPacketId = 'x';
           pClient = UNIT::SUnit::SUNIT_GetClient(pTradePartner, ".\\PLAYER\\PlrTrade.cpp", 0xb76);
           szCharName = GAME::Clients::GetCharName(pClient);
-          __frame0.szNamePart0 = *(uint32_t*)szCharName;
-          __frame0.szNamePart4 = *(uint32_t*)(szCharName + 4);
-          __frame0.szNamePart8 = *(uint32_t*)(szCharName + 8);
-          __frame0.nTradePartnerGUID = pTradePartner->nUnitGUID;
-          __frame0.nNamePartC = *(uint32_t*)(szCharName + 0xc) & 0xffffff;
+          *(uint32_t*)(char*)&sPacket.szName = *(uint32_t*)szCharName;
+          *(uint32_t*)((char*)&sPacket.szName + 4) = *(uint32_t*)(szCharName + 4);
+          *(uint32_t*)((char*)&sPacket.szName + 8) = *(uint32_t*)(szCharName + 8);
+          sPacket.nUnitGUID = pTradePartner->nUnitGUID;
+          *(uint32_t*)((char*)&sPacket.szName + 12) = *(uint32_t*)(szCharName + 0xc) & 0xffffff;
           pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PlrTrade.cpp", 0xb79);
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x78_TRADENAME(pClient, (uint32_t*)&__frame0.byPacketId);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x78_TRADENAME(pClient, &sPacket);
           pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PlrTrade.cpp", 0xb7a);
           szCharName = GAME::Clients::GetCharName(pClient);
-          __frame0.szNamePart0 = *(uint32_t*)szCharName;
-          __frame0.szNamePart4 = *(uint32_t*)(szCharName + 4);
-          __frame0.szNamePart8 = *(uint32_t*)(szCharName + 8);
-          __frame0.nTradePartnerGUID = pUnit->nUnitGUID;
-          __frame0.nNamePartC = *(uint32_t*)(szCharName + 0xc) & 0xffffff;
+          *(uint32_t*)(char*)&sPacket.szName = *(uint32_t*)szCharName;
+          *(uint32_t*)((char*)&sPacket.szName + 4) = *(uint32_t*)(szCharName + 4);
+          *(uint32_t*)((char*)&sPacket.szName + 8) = *(uint32_t*)(szCharName + 8);
+          sPacket.nUnitGUID = pUnit->nUnitGUID;
+          *(uint32_t*)((char*)&sPacket.szName + 12) = *(uint32_t*)(szCharName + 0xc) & 0xffffff;
           pClient = UNIT::SUnit::SUNIT_GetClient(pTradePartner, ".\\PLAYER\\PlrTrade.cpp", 0xb7d);
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x78_TRADENAME(pClient, (uint32_t*)&__frame0.byPacketId);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x78_TRADENAME(pClient, &sPacket);
           break;
         }
 

@@ -16,14 +16,8 @@ struct D2Wall2CellStrc {
     /* 0x05 */ uint8_t field_0x5;
     /* 0x06 */ uint8_t field_0x6;
     /* 0x07 */ uint8_t field_0x7;
-    /* 0x08 */ uint8_t field_0x8;
-    /* 0x09 */ uint8_t field_0x9;
-    /* 0x0A */ uint8_t field_0xa;
-    /* 0x0B */ uint8_t field_0xb;
-    /* 0x0C */ uint8_t field_0xc;
-    /* 0x0D */ uint8_t field_0xd;
-    /* 0x0E */ uint8_t field_0xe;
-    /* 0x0F */ uint8_t field_0xf;
+    /* 0x08 */ int32_t nGridIsoX;
+    /* 0x0C */ int32_t nGridIsoY;
     /* 0x10 */ struct D2Wall2DrawEntryStrc * pShadowPassList; // units, shadow-pass tiles and unit shadows; WALL2_InsertUnitDraw/InsertUnitShadowDraw/AddShadowPassTile append, dShadowPass walks
     /* 0x14 */ struct D2Wall2DrawEntryStrc * pWallList; // WALL2_AddWallTile appends; dWallPass and WALL2_DrawWallTilesWithAlpha walk
     /* 0x18 */ struct D2Wall2DrawEntryStrc * pUnitBelowList; // WALL2_InsertUnitDrawBelow appends

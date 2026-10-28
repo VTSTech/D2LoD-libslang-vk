@@ -5,17 +5,13 @@
 
 #include "globals/globals.h"
 #include "D2Client/Renderer/Glide.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Glide/glFloorCache.h"
 #include "D2Glide/glSubtileCache.h"
-#include "D2Glide/glTextureCache.h"
 
 
 // =============================================================================
 // Initialized data (arrays, structs, tables)
 // =============================================================================
-
-int gaPerspectiveImageSizeTable[8] = { 0x100, 0x100, 0x100, 0x80, 0x100, 0x40, 0x100, 0x20 };
 
 GrTexInfo gTexInfoDebugFontGlide = {
     /* .smallLodLog2 = */ 0x4,
@@ -23,7 +19,7 @@ GrTexInfo gTexInfoDebugFontGlide = {
     /* .aspectRatioLog2 = */ (GrAspectRatio_t)-0x1,
     /* .format = */ 0x5,
     /* .data = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gTexInfoDebugFontGlide, "gTexInfoDebugFontGlide");
 
 void * gapGlideStripVertexPtrsA[10] = {
     (void*)gaGlidePerspectiveVertices,
@@ -36,7 +32,7 @@ void * gapGlideStripVertexPtrsA[10] = {
     (void*)&gaGlidePerspectiveVertices[10].fX,
     (void*)&gaGlidePerspectiveVertices[12].fX,
     (void*)&gaGlidePerspectiveVertices[13].fX
-};
+}; D2_GLOBAL_GUARD(gapGlideStripVertexPtrsA, "gapGlideStripVertexPtrsA");
 
 void * gapGlideStripVertexPtrsB[10] = {
     (void*)&gaGlidePerspectiveVertices[1].fX,
@@ -49,7 +45,7 @@ void * gapGlideStripVertexPtrsB[10] = {
     (void*)&gaGlidePerspectiveVertices[11].fX,
     (void*)&gaGlidePerspectiveVertices[13].fX,
     (void*)&gaGlidePerspectiveVertices[14].fX
-};
+}; D2_GLOBAL_GUARD(gapGlideStripVertexPtrsB, "gapGlideStripVertexPtrsB");
 
 D2GlideWallCornerStrc gaGlideWallCornerTable[60] = {
     {
@@ -352,7 +348,7 @@ D2GlideWallCornerStrc gaGlideWallCornerTable[60] = {
         /* .nY = */ 0x0,
         /* .nZ = */ -0x28
     }
-};
+}; D2_GLOBAL_GUARD(gaGlideWallCornerTable, "gaGlideWallCornerTable");
 
 GrTexInfo gTexInfoBlocks0Glide = {
     /* .smallLodLog2 = */ 0x8,
@@ -360,7 +356,7 @@ GrTexInfo gTexInfoBlocks0Glide = {
     /* .aspectRatioLog2 = */ 0x2,
     /* .format = */ 0xa,
     /* .data = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gTexInfoBlocks0Glide, "gTexInfoBlocks0Glide");
 
 GrTexInfo gTexInfoBlocks1Glide = {
     /* .smallLodLog2 = */ 0x8,
@@ -368,7 +364,7 @@ GrTexInfo gTexInfoBlocks1Glide = {
     /* .aspectRatioLog2 = */ 0x2,
     /* .format = */ 0xa,
     /* .data = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gTexInfoBlocks1Glide, "gTexInfoBlocks1Glide");
 
 GrTexInfo g_GrTexInfoGlBlocks = {
     /* .smallLodLog2 = */ 0x5,
@@ -376,7 +372,7 @@ GrTexInfo g_GrTexInfoGlBlocks = {
     /* .aspectRatioLog2 = */ 0x0,
     /* .format = */ 0x5,
     /* .data = */ nullptr
-};
+}; D2_GLOBAL_GUARD(g_GrTexInfoGlBlocks, "g_GrTexInfoGlBlocks");
 
 GrTexInfo gTexInfoGlideSurfaceBlocks = {
     /* .smallLodLog2 = */ 0x8,
@@ -384,7 +380,7 @@ GrTexInfo gTexInfoGlideSurfaceBlocks = {
     /* .aspectRatioLog2 = */ 0x1,
     /* .format = */ 0x5,
     /* .data = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gTexInfoGlideSurfaceBlocks, "gTexInfoGlideSurfaceBlocks");
 
 GlSubtileCacheStrc gGlideSubtileTextureCache = {
     /* .dwEntrySize = */ 0,
@@ -395,7 +391,7 @@ GlSubtileCacheStrc gGlideSubtileTextureCache = {
     /* .pFreeHead = */ nullptr,
     /* .pFreeTail = */ nullptr,
     /* .pNodes = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gGlideSubtileTextureCache, "gGlideSubtileTextureCache");
 
 GlFloorCacheStrc gGlideFloorTextureCache = {
     /* .dwEntrySize = */ 0,
@@ -406,7 +402,7 @@ GlFloorCacheStrc gGlideFloorTextureCache = {
     /* .pFreeHead = */ nullptr,
     /* .pFreeTail = */ nullptr,
     /* .pNodes = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gGlideFloorTextureCache, "gGlideFloorTextureCache");
 
 uint32_t gGlidePaletteEntry0[256] = {
     0,
@@ -665,46 +661,82 @@ uint32_t gGlidePaletteEntry0[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gGlidePaletteEntry0, "gGlidePaletteEntry0");
 
-int gnGlideSecondaryTMUCount[2] = { 0, 0 };
+int gnGlideSecondaryTMUCount[2] = { 0, 0 }; D2_GLOBAL_GUARD(gnGlideSecondaryTMUCount, "gnGlideSecondaryTMUCount");
 
-double gfGlideVertex0T = 0;
-
-double gfGlideVertex1T = 0;
-
-GlTextureCacheStrc gGlideSmallTextureCache[3] = {
-    {
-        /* .dwEntrySize = */ 0,
-        /* .nMaxEntries = */ 0,
-        /* .nUsedCount = */ 0,
-        /* .pActiveHead = */ nullptr,
-        /* .pActiveTail = */ nullptr,
-        /* .pFreeHead = */ nullptr,
-        /* .pFreeTail = */ nullptr,
-        /* .pNodes = */ nullptr
+D2GlideVertexTexCacheBlockStrc gGlideVertex0 = {
+    /* .aVertex = */ {
+        {
+            /* .fX = */ 0,
+            /* .fY = */ 0,
+            /* .dwColor = */ 0,
+            /* .fOOW = */ 0,
+            /* .fS = */ 0,
+            /* .fT = */ 0,
+            /* .fW = */ 0
+        },
+        {
+            /* .fX = */ 0,
+            /* .fY = */ 0,
+            /* .dwColor = */ 0,
+            /* .fOOW = */ 0,
+            /* .fS = */ 0,
+            /* .fT = */ 0,
+            /* .fW = */ 0
+        },
+        {
+            /* .fX = */ 0,
+            /* .fY = */ 0,
+            /* .dwColor = */ 0,
+            /* .fOOW = */ 0,
+            /* .fS = */ 0,
+            /* .fT = */ 0,
+            /* .fW = */ 0
+        },
+        {
+            /* .fX = */ 0,
+            /* .fY = */ 0,
+            /* .dwColor = */ 0,
+            /* .fOOW = */ 0,
+            /* .fS = */ 0,
+            /* .fT = */ 0,
+            /* .fW = */ 0
+        }
     },
-    {
-        /* .dwEntrySize = */ 0,
-        /* .nMaxEntries = */ 0,
-        /* .nUsedCount = */ 0,
-        /* .pActiveHead = */ nullptr,
-        /* .pActiveTail = */ nullptr,
-        /* .pFreeHead = */ nullptr,
-        /* .pFreeTail = */ nullptr,
-        /* .pNodes = */ nullptr
-    },
-    {
-        /* .dwEntrySize = */ 0,
-        /* .nMaxEntries = */ 0,
-        /* .nUsedCount = */ 0,
-        /* .pActiveHead = */ nullptr,
-        /* .pActiveTail = */ nullptr,
-        /* .pFreeHead = */ nullptr,
-        /* .pFreeTail = */ nullptr,
-        /* .pNodes = */ nullptr
+    /* .aTextureCache = */ {
+        {
+            /* .dwEntrySize = */ 0,
+            /* .nMaxEntries = */ 0,
+            /* .nUsedCount = */ 0,
+            /* .pActiveHead = */ nullptr,
+            /* .pActiveTail = */ nullptr,
+            /* .pFreeHead = */ nullptr,
+            /* .pFreeTail = */ nullptr,
+            /* .pNodes = */ nullptr
+        },
+        {
+            /* .dwEntrySize = */ 0,
+            /* .nMaxEntries = */ 0,
+            /* .nUsedCount = */ 0,
+            /* .pActiveHead = */ nullptr,
+            /* .pActiveTail = */ nullptr,
+            /* .pFreeHead = */ nullptr,
+            /* .pFreeTail = */ nullptr,
+            /* .pNodes = */ nullptr
+        },
+        {
+            /* .dwEntrySize = */ 0,
+            /* .nMaxEntries = */ 0,
+            /* .nUsedCount = */ 0,
+            /* .pActiveHead = */ nullptr,
+            /* .pActiveTail = */ nullptr,
+            /* .pFreeHead = */ nullptr,
+            /* .pFreeTail = */ nullptr,
+            /* .pNodes = */ nullptr
+        }
     }
-};
+}; D2_GLOBAL_GUARD(gGlideVertex0, "gGlideVertex0");
 
 uint32_t gaGlideColorDebugGradientIndices[1024] = {
     0,
@@ -1731,7 +1763,7 @@ uint32_t gaGlideColorDebugGradientIndices[1024] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaGlideColorDebugGradientIndices, "gaGlideColorDebugGradientIndices");
 
 uint32_t gaGlideDebugFontTexStartAddrs[96] = {
     0,
@@ -1830,7 +1862,7 @@ uint32_t gaGlideDebugFontTexStartAddrs[96] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaGlideDebugFontTexStartAddrs, "gaGlideDebugFontTexStartAddrs");
 
 void * lpBuffer_008802c8[96] = {
     nullptr,
@@ -1929,7 +1961,7 @@ void * lpBuffer_008802c8[96] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(lpBuffer_008802c8, "lpBuffer_008802c8");
 
 D2GlideVertexStrc gaGlidePerspectiveVertices[15] = {
     {
@@ -2067,7 +2099,46 @@ D2GlideVertexStrc gaGlidePerspectiveVertices[15] = {
         /* .fT = */ 0,
         /* .fW = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaGlidePerspectiveVertices, "gaGlidePerspectiveVertices");
+
+D2GlideVertexStrc gGlidePerspectiveVertexBuffer[4] = {
+    {
+        /* .fX = */ 0,
+        /* .fY = */ 0,
+        /* .dwColor = */ 0,
+        /* .fOOW = */ 0,
+        /* .fS = */ 0,
+        /* .fT = */ 0,
+        /* .fW = */ 0
+    },
+    {
+        /* .fX = */ 0,
+        /* .fY = */ 0,
+        /* .dwColor = */ 0,
+        /* .fOOW = */ 0,
+        /* .fS = */ 0,
+        /* .fT = */ 0,
+        /* .fW = */ 0
+    },
+    {
+        /* .fX = */ 0,
+        /* .fY = */ 0,
+        /* .dwColor = */ 0,
+        /* .fOOW = */ 0,
+        /* .fS = */ 0,
+        /* .fT = */ 0,
+        /* .fW = */ 0
+    },
+    {
+        /* .fX = */ 0,
+        /* .fY = */ 0,
+        /* .dwColor = */ 0,
+        /* .fOOW = */ 0,
+        /* .fS = */ 0,
+        /* .fT = */ 0,
+        /* .fW = */ 0
+    }
+}; D2_GLOBAL_GUARD(gGlidePerspectiveVertexBuffer, "gGlidePerspectiveVertexBuffer");
 
 D2GlideVertexStrc gaGlideGroundTileVertices[36] = {
     {
@@ -2394,7 +2465,7 @@ D2GlideVertexStrc gaGlideGroundTileVertices[36] = {
         /* .fT = */ 0,
         /* .fW = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaGlideGroundTileVertices, "gaGlideGroundTileVertices");
 
 void * gapGlideGroundStripVertexPtrs[60] = {
     nullptr,
@@ -2457,94 +2528,64 @@ void * gapGlideGroundStripVertexPtrs[60] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(gapGlideGroundStripVertexPtrs, "gapGlideGroundStripVertexPtrs");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-uint32_t gnGlideTextureMode = -0x1;
-uint32_t ghGlideSstWindow = 0;
-int gnGlideTextureMemoryUsed = 0;
-uint32_t gbGlideIsDebugBuild = 0;
-FxI32 gnGlideTextureMemoryMask = 0;
-uint32_t ghGlideWindow = 0;
-uint32_t gbGlideInitialized = 0;
-uint32_t gbWINDOWED = 0;
-uint32_t gnGlideColorCombineMode = 0;
-uint32_t gnGlideAlphaBlendMode = 0;
-uint32_t gnGlideTextureFilteringMode = 0;
-uint32_t gbGlideInScene = 0;
-uint32_t gbGlidePerspectiveMode = 0;
-uint32_t gnGlideSpriteSecondaryTMUEnabled = 0;
-uint32_t gnGlideTMUIndex = 0;
-int gGlideVertex0 = 0;
-float gfGlideQuadZ0 = 0;
-uint32_t gnGlideVertexColor = 0;
-float gfGlideVertex0OOW = 0;
-float gfGlideVertex0S = 0;
-float gfGlideVertex0X = 0;
-float gfGlideQuadZ1 = 0;
-float gfGlideVertex0Color = 0;
-float gfGlideVertex1OOW = 0;
-float gfGlideVertex1S = 0;
-float gfGlidePaletteTableOffset = 0;
-float gfGlideVertex1Y = 0;
-float gfGlideVertex2Color = 0;
-float gfGlideVertex3OOW = 0;
-float gfGlideVertex3S = 0;
-float gfGlideVertex3T = 0;
-float gfGlideVertex2X = 0;
-float gfGlideVertex2Y = 0;
-float gfGlideVertex1Color = 0;
-float gfGlideVertex3Color = 0;
-int gnGlideAlphaBlendDst = 0;
-int gnGlideAlphaBlendSrc = 0;
-void * gpGlideSpriteBuffer = 0;
-void * gpGlideSpritePixelBuffer = 0;
-float gfGlideDebugFontVertex0X = 0;
-float gfGlideDebugFontVertex0Y = 0;
-float gfGlideDebugFontVertex1X = 0;
-float gfGlideDebugFontVertex1Y = 0;
-float gfGlideDebugFontVertex3S = 0;
-float gfGlideDebugFontVertex2T = 0;
-float gfGlideDebugFontVertex3X = 0;
-float gfGlideDebugFontVertex3T = 0;
-void * gpGlideDebugFontTexture = 0;
-uint32_t gnGlideDebugFontTMU = 0;
-int * gpnLightmapRowPointers = 0;
-int gGlidePerspectiveVertexBuffer = 0;
-float gfGlideWallVertexYMin = 0;
-float gfGlideWallVertex2X = 0;
-float gfGlideWallVertexYMid = 0;
-float gfGlideWallVertexYMax = 0;
-float gfGlideWallVertex3Y = 0;
-float gfGlideWallVertex4X = 0;
-float gfGlideWallVertex4Y = 0;
-uint8_t gbGlideGlobalLightGreen = 0;
-uint8_t gbGlideGlobalLightBlue = 0;
-uint8_t gbGlideGlobalLightRed = 0;
+uint32_t gnGlideTextureMode = -0x1; D2_GLOBAL_GUARD(gnGlideTextureMode, "gnGlideTextureMode");
+uint32_t ghGlideSstWindow = 0; D2_GLOBAL_GUARD(ghGlideSstWindow, "ghGlideSstWindow");
+int gnGlideTextureMemoryUsed = 0; D2_GLOBAL_GUARD(gnGlideTextureMemoryUsed, "gnGlideTextureMemoryUsed");
+uint32_t gbGlideIsDebugBuild = 0; D2_GLOBAL_GUARD(gbGlideIsDebugBuild, "gbGlideIsDebugBuild");
+FxI32 gnGlideTextureMemoryMask = 0; D2_GLOBAL_GUARD(gnGlideTextureMemoryMask, "gnGlideTextureMemoryMask");
+uint32_t ghGlideWindow = 0; D2_GLOBAL_GUARD(ghGlideWindow, "ghGlideWindow");
+uint32_t gbGlideInitialized = 0; D2_GLOBAL_GUARD(gbGlideInitialized, "gbGlideInitialized");
+uint32_t gbWINDOWED = 0; D2_GLOBAL_GUARD(gbWINDOWED, "gbWINDOWED");
+uint32_t gnGlideColorCombineMode = 0; D2_GLOBAL_GUARD(gnGlideColorCombineMode, "gnGlideColorCombineMode");
+uint32_t gnGlideAlphaBlendMode = 0; D2_GLOBAL_GUARD(gnGlideAlphaBlendMode, "gnGlideAlphaBlendMode");
+uint32_t gnGlideTextureFilteringMode = 0; D2_GLOBAL_GUARD(gnGlideTextureFilteringMode, "gnGlideTextureFilteringMode");
+uint32_t gbGlideInScene = 0; D2_GLOBAL_GUARD(gbGlideInScene, "gbGlideInScene");
+uint32_t gbGlidePerspectiveMode = 0; D2_GLOBAL_GUARD(gbGlidePerspectiveMode, "gbGlidePerspectiveMode");
+uint32_t gnGlideSpriteSecondaryTMUEnabled = 0; D2_GLOBAL_GUARD(gnGlideSpriteSecondaryTMUEnabled, "gnGlideSpriteSecondaryTMUEnabled");
+uint32_t gnGlideTMUIndex = 0; D2_GLOBAL_GUARD(gnGlideTMUIndex, "gnGlideTMUIndex");
+void * gpGlideSpriteBuffer = 0; D2_GLOBAL_GUARD(gpGlideSpriteBuffer, "gpGlideSpriteBuffer");
+void * gpGlideSpritePixelBuffer = 0; D2_GLOBAL_GUARD(gpGlideSpritePixelBuffer, "gpGlideSpritePixelBuffer");
+float gfGlideDebugFontVertex0X = 0; D2_GLOBAL_GUARD(gfGlideDebugFontVertex0X, "gfGlideDebugFontVertex0X");
+float gfGlideDebugFontVertex0Y = 0; D2_GLOBAL_GUARD(gfGlideDebugFontVertex0Y, "gfGlideDebugFontVertex0Y");
+float gfGlideDebugFontVertex1X = 0; D2_GLOBAL_GUARD(gfGlideDebugFontVertex1X, "gfGlideDebugFontVertex1X");
+float gfGlideDebugFontVertex1Y = 0; D2_GLOBAL_GUARD(gfGlideDebugFontVertex1Y, "gfGlideDebugFontVertex1Y");
+float gfGlideDebugFontVertex3S = 0; D2_GLOBAL_GUARD(gfGlideDebugFontVertex3S, "gfGlideDebugFontVertex3S");
+float gfGlideDebugFontVertex2T = 0; D2_GLOBAL_GUARD(gfGlideDebugFontVertex2T, "gfGlideDebugFontVertex2T");
+float gfGlideDebugFontVertex3X = 0; D2_GLOBAL_GUARD(gfGlideDebugFontVertex3X, "gfGlideDebugFontVertex3X");
+float gfGlideDebugFontVertex3T = 0; D2_GLOBAL_GUARD(gfGlideDebugFontVertex3T, "gfGlideDebugFontVertex3T");
+void * gpGlideDebugFontTexture = 0; D2_GLOBAL_GUARD(gpGlideDebugFontTexture, "gpGlideDebugFontTexture");
+uint32_t gnGlideDebugFontTMU = 0; D2_GLOBAL_GUARD(gnGlideDebugFontTMU, "gnGlideDebugFontTMU");
+int * gpnLightmapRowPointers = 0; D2_GLOBAL_GUARD(gpnLightmapRowPointers, "gpnLightmapRowPointers");
+uint8_t gbGlideGlobalLightGreen = 0; D2_GLOBAL_GUARD(gbGlideGlobalLightGreen, "gbGlideGlobalLightGreen");
+uint8_t gbGlideGlobalLightBlue = 0; D2_GLOBAL_GUARD(gbGlideGlobalLightBlue, "gbGlideGlobalLightBlue");
+uint8_t gbGlideGlobalLightRed = 0; D2_GLOBAL_GUARD(gbGlideGlobalLightRed, "gbGlideGlobalLightRed");
 // also labelled: glVertex
-uint8_t * gpGlideLightingTable = 0;
-int gnGlidePerspectiveOriginX = 0;
+uint8_t * gpGlideLightingTable = 0; D2_GLOBAL_GUARD(gpGlideLightingTable, "gpGlideLightingTable");
+int gnGlidePerspectiveOriginX = 0; D2_GLOBAL_GUARD(gnGlidePerspectiveOriginX, "gnGlidePerspectiveOriginX");
 // also labelled: gpGlideTexturePalette
-int32_t gnGlidePerspectiveScale = 0;
-int gnGlidePerspectiveOriginY = 0;
-void * gpPerspectiveLookupTable = 0;
-uint8_t (*gpGlideSmackerTexBuf0)[32768] = 0;
-uint8_t (*gpGlideSmackerTexBuf1)[32768] = 0;
-uint32_t gnGlideSmackTex1StartAddr = 0;
-uint32_t gnGlideSmackTex2StartAddr = 0;
-uint8_t (*gpGlideSmackerTexBuf2)[32768] = 0;
-uint32_t gnGlideTMUHandle = 0;
-uint32_t gnGlideTMUId = 0;
-void * gpGlBlocksWallBuffer = 0;
-void * gpGlBlocksFloorBuffer = 0;
-uint32_t gnBinkGlideYOffset = 0;
-uint32_t gnBinkGlideXOffset = 0;
-void * gpBinkVideoGlide = 0;
-uint32_t gnGlideBinkSurfaceType = 0;
-uint32_t g_bGlideBinkVideoQuitRequested = 0;
+int32_t gnGlidePerspectiveScale = 0; D2_GLOBAL_GUARD(gnGlidePerspectiveScale, "gnGlidePerspectiveScale");
+int gnGlidePerspectiveOriginY = 0; D2_GLOBAL_GUARD(gnGlidePerspectiveOriginY, "gnGlidePerspectiveOriginY");
+void * gpPerspectiveLookupTable = 0; D2_GLOBAL_GUARD(gpPerspectiveLookupTable, "gpPerspectiveLookupTable");
+uint8_t (*gpGlideSmackerTexBuf0)[32768] = 0; D2_GLOBAL_GUARD(gpGlideSmackerTexBuf0, "gpGlideSmackerTexBuf0");
+uint8_t (*gpGlideSmackerTexBuf1)[32768] = 0; D2_GLOBAL_GUARD(gpGlideSmackerTexBuf1, "gpGlideSmackerTexBuf1");
+uint32_t gnGlideSmackTex1StartAddr = 0; D2_GLOBAL_GUARD(gnGlideSmackTex1StartAddr, "gnGlideSmackTex1StartAddr");
+uint32_t gnGlideSmackTex2StartAddr = 0; D2_GLOBAL_GUARD(gnGlideSmackTex2StartAddr, "gnGlideSmackTex2StartAddr");
+uint8_t (*gpGlideSmackerTexBuf2)[32768] = 0; D2_GLOBAL_GUARD(gpGlideSmackerTexBuf2, "gpGlideSmackerTexBuf2");
+uint32_t gnGlideTMUHandle = 0; D2_GLOBAL_GUARD(gnGlideTMUHandle, "gnGlideTMUHandle");
+uint32_t gnGlideTMUId = 0; D2_GLOBAL_GUARD(gnGlideTMUId, "gnGlideTMUId");
+void * gpGlBlocksWallBuffer = 0; D2_GLOBAL_GUARD(gpGlBlocksWallBuffer, "gpGlBlocksWallBuffer");
+void * gpGlBlocksFloorBuffer = 0; D2_GLOBAL_GUARD(gpGlBlocksFloorBuffer, "gpGlBlocksFloorBuffer");
+uint32_t gnBinkGlideYOffset = 0; D2_GLOBAL_GUARD(gnBinkGlideYOffset, "gnBinkGlideYOffset");
+uint32_t gnBinkGlideXOffset = 0; D2_GLOBAL_GUARD(gnBinkGlideXOffset, "gnBinkGlideXOffset");
+void * gpBinkVideoGlide = 0; D2_GLOBAL_GUARD(gpBinkVideoGlide, "gpBinkVideoGlide");
+uint32_t gnGlideBinkSurfaceType = 0; D2_GLOBAL_GUARD(gnGlideBinkSurfaceType, "gnGlideBinkSurfaceType");
+uint32_t g_bGlideBinkVideoQuitRequested = 0; D2_GLOBAL_GUARD(g_bGlideBinkVideoQuitRequested, "g_bGlideBinkVideoQuitRequested");
 
 namespace D2Common::Drlg::Maze {
 
@@ -2874,10 +2915,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -2885,6 +2922,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

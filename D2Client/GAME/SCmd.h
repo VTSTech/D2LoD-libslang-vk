@@ -28,6 +28,7 @@ struct D2ItemStatCostTxt;
 struct D2ServerCmdStrc;
 struct D2SkillsTxt;
 struct D2UnitStrc;
+typedef int eD2ItemFlag;
 typedef int eD2Skills;
 typedef int eD2UnitStat;
 #ifndef RECON_FPTD_D2NET_CLIENT_D2GStoCLT
@@ -47,6 +48,41 @@ struct __attribute__((packed)) D2GSPacketClt0x5D {
     /* 0x03 */ int nPlayerGUID;
 };
 
+struct __attribute__((packed)) D2GSPacketSrv0x3F {
+    D2GSPacketSrv0x3F() = default;
+    D2GSPacketSrv0x3F(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+    D2GSPacketSrv0x3F(uint8_t a0, uint8_t a1, uint32_t a2, int16_t a3) : nPacketId(a0), nItemSlot(a1), nUnitGUID(a2), nSkillId(a3) {}
+
+    /* 0x00 */ uint8_t nPacketId;
+    /* 0x01 */ uint8_t nItemSlot; // 0xff when the unit GUID is used
+    /* 0x02 */ uint32_t nUnitGUID;
+    /* 0x06 */ int16_t nSkillId;
+};
+
+struct __attribute__((packed)) D2GSPacketSrv0x40 {
+    /* 0x00 */ uint8_t nPacketId;
+    /* 0x01 */ uint32_t dwItemGUID;
+    /* 0x05 */ eD2ItemFlag eItemFlag;
+    /* 0x09 */ BOOL bSet;
+};
+
+struct __attribute__((packed)) D2GSPacketSrv0x74 {
+    /* 0x00 */ uint8_t nPacketId;
+    /* 0x01 */ uint8_t bAssign;
+    /* 0x02 */ uint32_t dwPlayerGUID;
+    /* 0x06 */ uint32_t dwCorpseGUID;
+};
+
+struct __attribute__((packed)) D2GSPacketSrv0x7D {
+    /* 0x00 */ uint8_t nPacketId;
+    /* 0x01 */ uint8_t nOwnerUnitType;
+    /* 0x02 */ uint32_t dwOwnerGUID;
+    /* 0x06 */ uint32_t dwItemGUID;
+    /* 0x0A */ uint32_t dwItemState; // 0x100 broke, 0x200 repaired
+    /* 0x0E */ uint32_t dwBrokenFlag;
+};
+
 struct D2NET_CLIENT_D2GS_ServerToClient {
     /* 0x00 */ void (__fastcall *fpIncomingHandler)(char *);
     /* 0x04 */ int32_t nExpectedSize;
@@ -57,6 +93,38 @@ struct D2RosterMercArg {
     /* 0x00 */ int nSeed;
     /* 0x04 */ int nInitSeed;
     /* 0x08 */ int nZero;
+};
+
+struct D2SCmdPayload_5u32_u8 {
+    /* 0x00 */ uint32_t aData[5];
+    /* 0x14 */ uint8_t nData14;
+    /* 0x15 */ uint8_t field_0x15;
+    /* 0x16 */ uint8_t field_0x16;
+    /* 0x17 */ uint8_t field_0x17;
+};
+
+struct D2SCmdPayload_u32_u16 {
+    D2SCmdPayload_u32_u16() = default;
+    D2SCmdPayload_u32_u16(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+    D2SCmdPayload_u32_u16(uint32_t a0, uint16_t a1) : dwData0(a0), wData4(a1) {}
+
+    /* 0x00 */ uint32_t dwData0;
+    /* 0x04 */ uint16_t wData4;
+    /* 0x06 */ uint8_t field_0x6;
+    /* 0x07 */ uint8_t field_0x7;
+};
+
+struct D2SCmdPayload_u32_u16_u8 {
+    D2SCmdPayload_u32_u16_u8() = default;
+    D2SCmdPayload_u32_u16_u8(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+    D2SCmdPayload_u32_u16_u8(uint32_t a0, uint16_t a1, uint8_t a2) : dwData0(a0), wData4(a1), nData6(a2) {}
+
+    /* 0x00 */ uint32_t dwData0;
+    /* 0x04 */ uint16_t wData4;
+    /* 0x06 */ uint8_t nData6;
+    /* 0x07 */ uint8_t field_0x7;
 };
 
 struct D2ServerMessageHandleStrc {

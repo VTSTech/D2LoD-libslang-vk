@@ -13,14 +13,13 @@ struct D2CharSelStrc;
 struct D2McpGameInfoStrc;
 struct MCPPacketSrv0x04;
 struct mcp0x03data;
-typedef uint8_t eD2PlayerClassID;
 
 // Data types
 struct __attribute__((packed)) MCP_CHARCREATE {
     /* 0x00 */ char nPacketId;
-    /* 0x01 */ eD2PlayerClassID neD2PlayerClassID;
-    /* 0x02 */ short nFlags;
-    /* 0x04 */ char szCharName;
+    /* 0x01 */ DWORD dwCharClass;
+    /* 0x05 */ WORD wCharFlags;
+    /* 0x07 */ char szCharName[1025];
 };
 
 struct __attribute__((packed)) MCP_CREATEGAME {
@@ -30,9 +29,7 @@ struct __attribute__((packed)) MCP_CREATEGAME {
     /* 0x07 */ char nAlways1;
     /* 0x08 */ char nDifference;
     /* 0x09 */ char nMaxPlayers;
-    /* 0x0A */ char szName[1];
-    /* 0x0B */ char szPassword[1];
-    /* 0x0C */ char szDecription[1];
+    /* 0x0A */ char szStrings[1026];
 };
 
 struct __attribute__((packed)) MCPPacketClt0x01 {
@@ -42,6 +39,26 @@ struct __attribute__((packed)) MCPPacketClt0x01 {
     /* 0x09 */ char MCPChunk1[8];
     /* 0x11 */ char MCPChunk2[48];
     /* 0x41 */ char BnetName[0];
+};
+
+struct __attribute__((packed)) MCPPacketClt0x05 {
+    /* 0x00 */ uint8_t nPacketId;
+    /* 0x01 */ uint16_t wRequestId;
+    /* 0x03 */ uint32_t dwGameField;
+    /* 0x07 */ char szData[1025];
+};
+
+struct __attribute__((packed)) MCPPacketClt0x16 {
+    /* 0x00 */ uint8_t nPacketId;
+    /* 0x01 */ uint32_t dwField1;
+    /* 0x05 */ uint32_t dwField2;
+    /* 0x09 */ char szData[1027];
+};
+
+struct __attribute__((packed)) MCPPacketCltStr {
+    /* 0x00 */ uint8_t nPacketId;
+    /* 0x01 */ uint16_t wRequestId;
+    /* 0x03 */ char szData[1025];
 };
 
 namespace D2MCPClient::McpConnect {
@@ -86,8 +103,8 @@ void __stdcall McpConnectionLoop(int * pnParam);
 uint32_t __stdcall ThreadHandler();
 void __stdcall MCPCONNECT_CreateThread(uint32_t * pSrcState);
 char * __stdcall STRING_GetStringLength(char * szText, char * * ppszText, char * pszBufferEnd, int32_t nParam);
-void __fastcall NET_MCP_CLIENT_Send_0x01_StartUp(int * pnParam);
-void __fastcall NET_MCP_CLIENT_Send_0x02_CharCreate(char * szCharName, uint32_t dwCharClassFlags, uint32_t dwUnused);
+int32_t __fastcall NET_MCP_CLIENT_Send_0x01_StartUp(int * pnParam);
+void __fastcall NET_MCP_CLIENT_Send_0x02_CharCreate(char * szCharName, DWORD dwCharClassFlags, uint32_t dwUnused);
 void __fastcall NET_MCP_CLIENT_Send_0x07_CharLogon(char * szText);
 void __fastcall NET_MCP_CLIENT_Send_0x03_CreateGame(mcp0x03data * pMcpData, int16_t nRequestId);
 void __fastcall NET_MCP_CLIENT_Send_0x04_JoinGame(char * szGameName, char * szGamePassword, uint16_t nRequestId);

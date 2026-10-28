@@ -10,7 +10,6 @@
 #include "D2Net/in_addr.h"
 
 // Forward declarations
-struct D2QServerClientConnectionStrc;
 struct D2QServerStrc;
 typedef int eD2GSConnectionType;
 typedef int eD2GSGameType;
@@ -45,7 +44,7 @@ void __stdcall NET_HACK_CloseAndBanHackerIP(in_addr addr, char * szFile, int32_t
 void __stdcall NET_HACK_UnlistIP(in_addr addr, char * dwDuration, uint32_t dwFlags);
 void __stdcall NET_DisconnectIP(in_addr addr, char * szText, int32_t nFlags);
 // @sourcefile .\SRC\Server.cpp
-int __stdcall QSERVER_KillConnection(struct D2QServerClientConnectionStrc * nClientId);
+int __stdcall QSERVER_KillConnection(int32_t nClientId);
 void __stdcall NET_Thunk_QServerSetHacklistAddLineHook(fpD2QServerLineHook pfnHook);
 void __stdcall NET_SetQServerCallbackFunction(void * pfnCallback);
 void __stdcall AssignClientToToken(int32_t nClientId, uint32_t nToken);
@@ -67,7 +66,7 @@ BOOL __stdcall NET_D2GS_CLIENT_CheckIfConnectionTypeIsSinglePlayer();
 void __fastcall NET_D2GS_CLIENT_SetD2GSConnectionType(eD2GSConnectionType neD2GSConnectionType);
 int __stdcall WSAGetLastError();
 // Determines the expected wire size of an inbound D2GS client packet. Reads opcode = pBytes[0]; if 0 bytes or opcode > 0xB4 returns 0 (invalid). Looks up NET_D2GS_CLIENT_INCOMING_SIZE[opcode] into *pExpectedSize: 0 = unknown (return 0), positive = fixed size (return 1). A negative (sentinel) table entry means variable-length: switches on opcode to compute the true size from header fields (e.g. 0x16/0x5b ushort@+1, 0x3e byte@+1, 0xae clamped ushort+3, 0xaf name-length, 0x94 (count+2)*3, 0x26 three SSTR string lengths). Returns 1 if the size was resolved (and the full packet is present in pBytesSize), 0 if truncated/invalid.
-size_t __fastcall NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(char * pBytes, size_t pBytesSize, size_t * pExpectedSize);
+size_t __fastcall NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(char * pBytes, size_t pBytesSize, uint32_t * pExpectedSize);
 // Computes the byte length of an outgoing client->server packet from its leading command byte in pBytes (nSize = bytes available). 0xFF returns fixed 16; opcodes >0x70 are invalid (0). Otherwise looks up NET_D2GS_CLIENT_OUTGOING_SIZE[opcode]: a positive entry is the fixed size, negative means variable-length, computed per-opcode (0x14/0x15 sum nested Storm string lengths; 0x66 word length+3 capped at 0x1fd; 0x6c byte length+7). Writes the size to *pSize and returns it (0 = unknown/incomplete/needs more data).
 int32_t __fastcall NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize(char * pBytes, size_t nSize, int * pSize);
 

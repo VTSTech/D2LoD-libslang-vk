@@ -19,6 +19,25 @@ typedef int eD2States;
 typedef int eD2UnitStat;
 
 // Data types
+struct D2CorpseExplosionArgStrc {
+    /* 0x00 */ struct D2DamageStrc * pDamage;
+    /* 0x04 */ int32_t nX;
+    /* 0x08 */ int32_t nY;
+    /* 0x0C */ int32_t nRadiusSq;
+};
+
+struct D2MonsterCastPetHeadStrc {
+    /* 0x00 */ uint32_t nFlags;
+    /* 0x04 */ struct D2UnitStrc * pPlayer;
+    /* 0x08 */ int32_t classId;
+    /* 0x0C */ int32_t nFunctionId;
+    /* 0x10 */ uint32_t nMode;
+    /* 0x14 */ uint32_t nX;
+    /* 0x18 */ uint32_t nY2;
+    /* 0x1C */ uint32_t nType;
+    /* 0x20 */ uint32_t nSkillCalc;
+};
+
 struct D2MonsterCastPetStrc {
     /* 0x00 */ uint32_t nFlags;
     /* 0x04 */ struct D2UnitStrc * pPlayer;
@@ -38,7 +57,7 @@ struct __attribute__((packed)) D2NecroSkillArgStrc {
     /* 0x04 */ struct D2UnitStrc * pUnit;
     /* 0x08 */ int32_t bRegisterExpireCallback; // Nonzero: curse applies to monsters only, validates attackable non-good target + corpse-consume gate, registers SKILLNEC_OnCurseExpire AI callback. Read as full int32 by consumers.
     /* 0x0C */ int32_t bUpdateAnimSpeed; // Nonzero: calls UpdateAnimSpeed on cursed unit (Decrepify slow). Read as full int32.
-    /* 0x10 */ eSkillEType eSkill;
+    /* 0x10 */ eD2Skills eSkill;
     /* 0x14 */ int32_t nSkillLvl;
     /* 0x18 */ int32_t nDurationInFrames;
     /* 0x1C */ eD2UnitStat eStat[6];
@@ -74,7 +93,7 @@ uint32_t __fastcall SKILLNEC_ValidateCorpseTarget(::SGAMEDATA * pGame, struct D2
 BOOL __fastcall Skills_SrvStFunc_18_AlwaysAllow(::SGAMEDATA * pGame, struct D2UnitStrc * pAttacker, eD2Skills eD2Skill, int nSkillLvl);
 BOOL __fastcall Skills_SrvStFunc_19_IsTargetOutsideTown(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall Skills_SrvStFunc_20_IsGroundItemForIronGolem(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
-void CorpseConsumedCheck(struct D2UnitStrc * pUnit);
+BOOL CorpseConsumedCheck(struct D2UnitStrc * pUnit);
 BOOL __fastcall Skills_SrvStFunc_21_IsRevivableCorpse(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 void __fastcall SKILLNEC_OnCurseExpire(struct D2UnitStrc * pUnit, eD2States eState, int32_t dwParam);
 uint32_t __fastcall SKILLNEC_IsReviveOrRaiseSkeleton(eD2Skills eSkill);

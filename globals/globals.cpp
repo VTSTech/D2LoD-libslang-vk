@@ -9,6 +9,7 @@
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/Items/ItemMods.h"
+#include "D2Client/Renderer/Glide.h"
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/CmdTbl.h"
 #include "D2Client/UI/EscMenu.h"
@@ -19,20 +20,20 @@
 #include "D2Client/UI/Text.h"
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/ui.h"
+#include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Object.h"
 #include "D2Client/UNIT/UnitSnd.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/Logging/ProfCore.h"
 #include "D2Direct3D/Renderer/Direct3D.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Win/D2WinAnimImage.h"
 #include "D2Win/Src/D2WinMain.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/Engine/Application.h"
 #include "Storm/H/HeapManager.h"
-#include "Storm/H/Storm.h"
 #include "Storm/H/stpl.h"
+#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 
 // =============================================================================
@@ -44,154 +45,160 @@
 // content and agrees with it only by accident.
 // =============================================================================
 
-char s_207_82_87_133_0070f130[] = "207.82.87.133";
-char s_AppID_006fad8c[] = "AppID";
-char s_Assertion_Failure_006ccb6c[] = "Assertion Failure";
-char s_Available_command_line_options____006d5b20[] = "Available command line options:\012  -set[default command line]\011\011Set new default command line string\012  -lng[lngfile]\011\011\011Use \"lngfile\" for language resources\012";
-char s_BLIZZARDKEY_006cef6c[] = "BLIZZARDKEY";
-char s_BNNews_D2DV_006df210[] = "BNNews-D2DV";
-char s_Blizzard_Entertainment__Inc__006deb80[] = "Blizzard Entertainment, Inc.";
-char s_CLSID_006fad84[] = "CLSID";
-char s_Component_Categories_006fad6c[] = "Component Categories";
-char s_D2X_INTRO__s_BIK_006d913c[] = "D2X_INTRO_%s.BIK";
-char s_D2_LNG_006d5ee0[] = "D2.LNG";
-char s_DIABLO2SRV_007065dc[] = "DIABLO2SRV";
-char s_Deadlock_006ccb34[] = "Deadlock";
-char s_Diablo_2_EXE_006cc838[] = "Diablo 2.EXE";
-char s_Diablo_II_006cc8b8[] = "Diablo II";
-char s_Direct3D_Enumeration_0074c058[] = "Direct3D Enumeration";
-char s_Do_you_wish_to_terminate_the_appl_006cf1f4[] = "Do you wish to terminate the application\?";
-char s_ERROR___u__0x_08x__006cf2e0[] = "ERROR #%u (0x%08x)";
-char s_Enumeration_Class_0074c044[] = "Enumeration Class";
-char s_Error_1__Diablo_II_is_unable_to_p_0072daa8[] = "Error 1: Diablo II is unable to proceed.  Unsupported graphics mode.";
-char s_Error_1__Diablo_II_is_unable_to_p_0072daf0[] = "Error 1: Diablo II is unable to proceed.  Unsupported graphics mode.";
-char s_FileType_006fad60[] = "FileType";
-char s_File_Read_Error_006ccb94[] = "File Read Error";
-char s_File_Write_Error_006ccb80[] = "File Write Error";
-char s_File___s_Line___d__006cf284[] = "File:\011%s\012Line:\011%d\012";
-char s_Font16_006dc970[] = "Font16";
-char s_Font24_006dc930[] = "Font24";
-char s_Font30_006dc968[] = "Font30";
-char s_Font42_006dc960[] = "Font42";
-char s_Font6_006dc938[] = "Font6";
-char s_Font8_006dc978[] = "Font8";
-char s_FontExocet10_006dc910[] = "FontExocet10";
-char s_FontExocet8_006dc8f4[] = "FontExocet8";
-char s_FontFormal10_006dc950[] = "FontFormal10";
-char s_FontFormal11_006dc920[] = "FontFormal11";
-char s_FontFormal12_006dc940[] = "FontFormal12";
-char s_FontInGameChat_006dc8d0[] = "FontInGameChat";
-char s_FontRidiculous_006dc900[] = "FontRidiculous";
-char s_Function___s__006cf274[] = "Function:\011%s\012";
-char s_Gaunt_006d6b80[] = "Gaunt";
-char s_Halt_006ccb64[] = "Halt";
-char s_Handle___s__006cf25c[] = "Handle:\011%s\012";
-char s_Hardware_006fad48[] = "Hardware";
-char s_Interface_006fad54[] = "Interface";
-char s_Mime_006fad40[] = "Mime";
-char s_Missing_Dll_006ccb50[] = "Missing Dll";
-char s_No_Error_006ccbc8[] = "No Error";
-char s_Object___s__006cf268[] = "Object:\011%s\012";
-char s_Out_of_Memory_Error_006ccba4[] = "Out of Memory Error";
-char s_PKWARE_Data_Compression_Library_f_0074be60[] = "PKWARE Data Compression Library for Win32\015\012Copyright 1989-1995 PKWARE Inc.  All Rights Reserved\015\012Patent No. 5,051,745\015\012PKWARE Data Compression Library Reg. U.S. Pat. and Tm. Off.\015\012Version 1.11";
-char s_Press_OK_to_terminate_the_applica_006cf220[] = "Press OK to terminate the application.";
-char s_Program___s__006cf298[] = "Program:\011%s\012";
-char s_ReallyTheLastSucker_006dc8e0[] = "ReallyTheLastSucker";
-char s_Registry_Error_006ccb40[] = "Registry Error";
-char s_SECURITY_006fad30[] = "SECURITY";
-char s_SYSTEM_006fad28[] = "SYSTEM";
-char s_Software_006d71ec[] = "Software";
-char s_Stupid_Lng_cpp_error__006d5ea8[] = "Stupid Lng.cpp error.";
-char s_The_syntax_of_the_command_is_inco_006fcbe4[] = "The syntax of the command is incorrect.";
-char s_This_application_has_encountered__006cf2a8[] = "This application has encountered a critical error:\012\012%s\012";
-char s_TypeLib_006fad20[] = "TypeLib";
-char s_Unable_to_start_LNG_manager__006d5ec0[] = "Unable to start LNG manager.";
-char s_Unknown_Error_006ccbb8[] = "Unknown Error";
-char s_Warning_006ccb5c[] = "Warning";
-char s___H__006ed5a4[] = " (H)";
-char s___N__006ed59c[] = " (N)";
-char s__not_xlated_call_ken_w_00730520[] = " -not xlated call ken w";
-char s__s_palette_act_d__s_006dc7d0[] = "%s\\palette\\act%d\\%s";
-char s_block_006e1730[] = "block";
-char s_blocks_006e1738[] = "blocks";
-char s_buffer_error_006d37e0[] = "buffer error";
-char s_buysell_006d6b50[] = "buysell";
-char s_client_006cc920[] = "client";
-char s_cmncof_a1_d2_006d6c44[] = "cmncof_a1.d2";
-char s_cmncof_a2_d2_006d6c54[] = "cmncof_a2.d2";
-char s_cmncof_a3_d2_006d6c64[] = "cmncof_a3.d2";
-char s_cmncof_a4_d2_006d6c74[] = "cmncof_a4.d2";
-char s_cmncof_a6_d2_006d6c84[] = "cmncof_a6.d2";
-char s_d2_promo_bik_006d91ac[] = "d2_promo.bik";
-char s_d2data_mpq_006dc770[] = "d2data.mpq";
-char s_d2exp_mpq_006cd3a0[] = "d2exp.mpq";
-char s_data_error_006d3804[] = "data error";
-char s_data_global_music_act1_caves_wav_006dea30[] = "data\\global\\music\\act1\\caves.wav";
-char s_data_global_music_act1_crypt_wav_006de9e4[] = "data\\global\\music\\act1\\crypt.wav";
-char s_data_global_music_act1_monastery__006dea08[] = "data\\global\\music\\act1\\monastery.wav";
-char s_data_global_music_act2_desert_wav_006de8c4[] = "data\\global\\music\\act2\\desert.wav";
-char s_data_global_music_act2_harem_wav_006de9c0[] = "data\\global\\music\\act2\\harem.wav";
-char s_data_global_music_act2_sewer_wav_006de8a0[] = "data\\global\\music\\act2\\sewer.wav";
-char s_data_global_music_act2_tombs_wav_006de99c[] = "data\\global\\music\\act2\\tombs.wav";
-char s_data_global_music_act3_kurast_wav_006de87c[] = "data\\global\\music\\act3\\kurast.wav";
-char s_data_global_music_act3_kurastsewe_006de950[] = "data\\global\\music\\act3\\kurastsewer.wav";
-char s_data_global_music_act3_spider_wav_006de978[] = "data\\global\\music\\act3\\spider.wav";
-char s_data_global_music_act4_diablo_wav_006de858[] = "data\\global\\music\\act4\\diablo.wav";
-char s_data_global_music_act5_icecaves_w_006de90c[] = "data\\global\\music\\act5\\icecaves.wav";
-char s_data_global_music_act5_xtemple_wa_006de8e8[] = "data\\global\\music\\act5\\xtemple.wav";
-char s_data_global_music_common_options__006dea54[] = "data\\global\\music\\common\\options.wav";
-char s_data_global_music_introedit_wav_006de930[] = "data\\global\\music\\introedit.wav";
-char s_data_local_font__s_default_map_006e02d8[] = "data\\local\\font\\%s\\default.map";
-char s_data_local_lng__s_expansionstring_006e028c[] = "data\\local\\lng\\%s\\expansionstring.tbl";
-char s_data_local_lng__s_patchstring_tbl_006e02b4[] = "data\\local\\lng\\%s\\patchstring.tbl";
-char s_data_local_lng__s_string_tbl_006e02f8[] = "data\\local\\lng\\%s\\string.tbl";
-char s_dialogbackground_00727498[] = "dialogbackground";
-char s_expand_006cc8f8[] = "expand";
-char s_file_error_006d3820[] = "file error";
-char s_grasp_006d6b78[] = "grasp";
-char s_incompatible_version_006d37c8[] = "incompatible version";
-char s_insufficient_memory_006d37f0[] = "insufficient memory";
-char s_launcher_006cc900[] = "launcher";
-char s_mode_006d5bc4[] = "mode";
-char s_modstate0_006cc928[] = "modstate0";
-char s_multiplayer_006cc90c[] = "multiplayer";
-char s_need_dictionary_006d3838[] = "need dictionary";
-char s_ohand_006d6b70[] = "ohand";
-char s_orotate_006d6b68[] = "orotate";
-char s_pal_dat_006dc7c8[] = "pal.dat";
-char s_pal_pl2_006dc7c0[] = "pal.pl2";
-char s_palette_act1_pal_dat_006dc7fc[] = "palette\\act1\\pal.dat";
-char s_palette_act1_pal_pl2_006dc7e4[] = "palette\\act1\\pal.pl2";
-char s_palette_fechar_pal_dat_006d39e8[] = "palette\\fechar\\pal.dat";
-char s_palette_fechar_pal_pl2_006d39d0[] = "palette\\fechar\\pal.pl2";
-char s_palette_sky_pal_dat_006d39bc[] = "palette\\sky\\pal.dat";
-char s_palette_sky_pal_pl2_006d39a8[] = "palette\\sky\\pal.pl2";
-char s_patch_d2_mpq_006dc728[] = "patch_d2.mpq";
-char s_ppress_006d6b60[] = "ppress";
-char s_profile_description_006d4eb8[] = "profile\\description";
-char s_profile_location_006d4ecc[] = "profile\\location";
-char s_profile_sex_006d4ee0[] = "profile\\sex";
-char s_protate_006d6b58[] = "protate";
-char s_screen01_006d5d10[] = "screen01";
-char s_screen02_006d5d04[] = "screen02";
-char s_screen03_006d5cf8[] = "screen03";
-char s_screen04_006d5cec[] = "screen04";
-char s_screen05_006d5ce0[] = "screen05";
-char s_screen06_006d5cd4[] = "screen06";
-char s_screen07_006d5cc8[] = "screen07";
-char s_screen08_006d5cbc[] = "screen08";
-char s_screen09_006d5cb0[] = "screen09";
-char s_screen10_006d5ca4[] = "screen10";
-char s_server_006cc918[] = "server";
-char s_stream_end_006d382c[] = "stream end";
-char s_stream_error_006d3810[] = "stream error";
+char s_207_82_87_133_0070f130[] = "207.82.87.133"; D2_GLOBAL_GUARD(s_207_82_87_133_0070f130, "s_207_82_87_133_0070f130");
+char s_AppID_006fad8c[] = "AppID"; D2_GLOBAL_GUARD(s_AppID_006fad8c, "s_AppID_006fad8c");
+char s_Assertion_Failure_006ccb6c[] = "Assertion Failure"; D2_GLOBAL_GUARD(s_Assertion_Failure_006ccb6c, "s_Assertion_Failure_006ccb6c");
+char s_Available_command_line_options____006d5b20[] = "Available command line options:\012  -set[default command line]\011\011Set new default command line string\012  -lng[lngfile]\011\011\011Use \"lngfile\" for language resources\012"; D2_GLOBAL_GUARD(s_Available_command_line_options____006d5b20, "s_Available_command_line_options____006d5b20");
+char s_BLIZZARDKEY_006cef6c[] = "BLIZZARDKEY"; D2_GLOBAL_GUARD(s_BLIZZARDKEY_006cef6c, "s_BLIZZARDKEY_006cef6c");
+char s_BNNews_D2DV_006df210[] = "BNNews-D2DV"; D2_GLOBAL_GUARD(s_BNNews_D2DV_006df210, "s_BNNews_D2DV_006df210");
+char s_Blizzard_Entertainment__Inc__006deb80[] = "Blizzard Entertainment, Inc."; D2_GLOBAL_GUARD(s_Blizzard_Entertainment__Inc__006deb80, "s_Blizzard_Entertainment__Inc__006deb80");
+char s_CLSID_006fad84[] = "CLSID"; D2_GLOBAL_GUARD(s_CLSID_006fad84, "s_CLSID_006fad84");
+char s_CLen_006e163c[] = "CLen"; D2_GLOBAL_GUARD(s_CLen_006e163c, "s_CLen_006e163c");
+char s_Cold_006e164c[] = "Cold"; D2_GLOBAL_GUARD(s_Cold_006e164c, "s_Cold_006e164c");
+char s_Component_Categories_006fad6c[] = "Component Categories"; D2_GLOBAL_GUARD(s_Component_Categories_006fad6c, "s_Component_Categories_006fad6c");
+char s_D2X_INTRO__s_BIK_006d913c[] = "D2X_INTRO_%s.BIK"; D2_GLOBAL_GUARD(s_D2X_INTRO__s_BIK_006d913c, "s_D2X_INTRO__s_BIK_006d913c");
+char s_D2_LNG_006d5ee0[] = "D2.LNG"; D2_GLOBAL_GUARD(s_D2_LNG_006d5ee0, "s_D2_LNG_006d5ee0");
+char s_DIABLO2SRV_007065dc[] = "DIABLO2SRV"; D2_GLOBAL_GUARD(s_DIABLO2SRV_007065dc, "s_DIABLO2SRV_007065dc");
+char s_Deadlock_006ccb34[] = "Deadlock"; D2_GLOBAL_GUARD(s_Deadlock_006ccb34, "s_Deadlock_006ccb34");
+char s_Diablo_2_EXE_006cc838[] = "Diablo 2.EXE"; D2_GLOBAL_GUARD(s_Diablo_2_EXE_006cc838, "s_Diablo_2_EXE_006cc838");
+char s_Diablo_II_006cc8b8[] = "Diablo II"; D2_GLOBAL_GUARD(s_Diablo_II_006cc8b8, "s_Diablo_II_006cc8b8");
+char s_Direct3D_Enumeration_0074c058[] = "Direct3D Enumeration"; D2_GLOBAL_GUARD(s_Direct3D_Enumeration_0074c058, "s_Direct3D_Enumeration_0074c058");
+char s_Do_you_wish_to_terminate_the_appl_006cf1f4[] = "Do you wish to terminate the application\?"; D2_GLOBAL_GUARD(s_Do_you_wish_to_terminate_the_appl_006cf1f4, "s_Do_you_wish_to_terminate_the_appl_006cf1f4");
+char s_ERROR___u__0x_08x__006cf2e0[] = "ERROR #%u (0x%08x)"; D2_GLOBAL_GUARD(s_ERROR___u__0x_08x__006cf2e0, "s_ERROR___u__0x_08x__006cf2e0");
+char s_Enumeration_Class_0074c044[] = "Enumeration Class"; D2_GLOBAL_GUARD(s_Enumeration_Class_0074c044, "s_Enumeration_Class_0074c044");
+char s_Error_1__Diablo_II_is_unable_to_p_0072daa8[] = "Error 1: Diablo II is unable to proceed.  Unsupported graphics mode."; D2_GLOBAL_GUARD(s_Error_1__Diablo_II_is_unable_to_p_0072daa8, "s_Error_1__Diablo_II_is_unable_to_p_0072daa8");
+char s_Error_1__Diablo_II_is_unable_to_p_0072daf0[] = "Error 1: Diablo II is unable to proceed.  Unsupported graphics mode."; D2_GLOBAL_GUARD(s_Error_1__Diablo_II_is_unable_to_p_0072daf0, "s_Error_1__Diablo_II_is_unable_to_p_0072daf0");
+char s_FLen_006e1634[] = "FLen"; D2_GLOBAL_GUARD(s_FLen_006e1634, "s_FLen_006e1634");
+char s_FileType_006fad60[] = "FileType"; D2_GLOBAL_GUARD(s_FileType_006fad60, "s_FileType_006fad60");
+char s_File_Read_Error_006ccb94[] = "File Read Error"; D2_GLOBAL_GUARD(s_File_Read_Error_006ccb94, "s_File_Read_Error_006ccb94");
+char s_File_Write_Error_006ccb80[] = "File Write Error"; D2_GLOBAL_GUARD(s_File_Write_Error_006ccb80, "s_File_Write_Error_006ccb80");
+char s_File___s_Line___d__006cf284[] = "File:\011%s\012Line:\011%d\012"; D2_GLOBAL_GUARD(s_File___s_Line___d__006cf284, "s_File___s_Line___d__006cf284");
+char s_Fire_006e165c[] = "Fire"; D2_GLOBAL_GUARD(s_Fire_006e165c, "s_Fire_006e165c");
+char s_Font16_006dc970[] = "Font16"; D2_GLOBAL_GUARD(s_Font16_006dc970, "s_Font16_006dc970");
+char s_Font24_006dc930[] = "Font24"; D2_GLOBAL_GUARD(s_Font24_006dc930, "s_Font24_006dc930");
+char s_Font30_006dc968[] = "Font30"; D2_GLOBAL_GUARD(s_Font30_006dc968, "s_Font30_006dc968");
+char s_Font42_006dc960[] = "Font42"; D2_GLOBAL_GUARD(s_Font42_006dc960, "s_Font42_006dc960");
+char s_Font6_006dc938[] = "Font6"; D2_GLOBAL_GUARD(s_Font6_006dc938, "s_Font6_006dc938");
+char s_Font8_006dc978[] = "Font8"; D2_GLOBAL_GUARD(s_Font8_006dc978, "s_Font8_006dc978");
+char s_FontExocet10_006dc910[] = "FontExocet10"; D2_GLOBAL_GUARD(s_FontExocet10_006dc910, "s_FontExocet10_006dc910");
+char s_FontExocet8_006dc8f4[] = "FontExocet8"; D2_GLOBAL_GUARD(s_FontExocet8_006dc8f4, "s_FontExocet8_006dc8f4");
+char s_FontFormal10_006dc950[] = "FontFormal10"; D2_GLOBAL_GUARD(s_FontFormal10_006dc950, "s_FontFormal10_006dc950");
+char s_FontFormal11_006dc920[] = "FontFormal11"; D2_GLOBAL_GUARD(s_FontFormal11_006dc920, "s_FontFormal11_006dc920");
+char s_FontFormal12_006dc940[] = "FontFormal12"; D2_GLOBAL_GUARD(s_FontFormal12_006dc940, "s_FontFormal12_006dc940");
+char s_FontInGameChat_006dc8d0[] = "FontInGameChat"; D2_GLOBAL_GUARD(s_FontInGameChat_006dc8d0, "s_FontInGameChat_006dc8d0");
+char s_FontRidiculous_006dc900[] = "FontRidiculous"; D2_GLOBAL_GUARD(s_FontRidiculous_006dc900, "s_FontRidiculous_006dc900");
+char s_Function___s__006cf274[] = "Function:\011%s\012"; D2_GLOBAL_GUARD(s_Function___s__006cf274, "s_Function___s__006cf274");
+char s_Gaunt_006d6b80[] = "Gaunt"; D2_GLOBAL_GUARD(s_Gaunt_006d6b80, "s_Gaunt_006d6b80");
+char s_Halt_006ccb64[] = "Halt"; D2_GLOBAL_GUARD(s_Halt_006ccb64, "s_Halt_006ccb64");
+char s_Handle___s__006cf25c[] = "Handle:\011%s\012"; D2_GLOBAL_GUARD(s_Handle___s__006cf25c, "s_Handle___s__006cf25c");
+char s_Hardware_006fad48[] = "Hardware"; D2_GLOBAL_GUARD(s_Hardware_006fad48, "s_Hardware_006fad48");
+char s_Interface_006fad54[] = "Interface"; D2_GLOBAL_GUARD(s_Interface_006fad54, "s_Interface_006fad54");
+char s_Mana_006e1614[] = "Mana"; D2_GLOBAL_GUARD(s_Mana_006e1614, "s_Mana_006e1614");
+char s_Mime_006fad40[] = "Mime"; D2_GLOBAL_GUARD(s_Mime_006fad40, "s_Mime_006fad40");
+char s_Missing_Dll_006ccb50[] = "Missing Dll"; D2_GLOBAL_GUARD(s_Missing_Dll_006ccb50, "s_Missing_Dll_006ccb50");
+char s_No_Error_006ccbc8[] = "No Error"; D2_GLOBAL_GUARD(s_No_Error_006ccbc8, "s_No_Error_006ccbc8");
+char s_Object___s__006cf268[] = "Object:\011%s\012"; D2_GLOBAL_GUARD(s_Object___s__006cf268, "s_Object___s__006cf268");
+char s_Out_of_Memory_Error_006ccba4[] = "Out of Memory Error"; D2_GLOBAL_GUARD(s_Out_of_Memory_Error_006ccba4, "s_Out_of_Memory_Error_006ccba4");
+char s_PKWARE_Data_Compression_Library_f_0074be60[] = "PKWARE Data Compression Library for Win32\015\012Copyright 1989-1995 PKWARE Inc.  All Rights Reserved\015\012Patent No. 5,051,745\015\012PKWARE Data Compression Library Reg. U.S. Pat. and Tm. Off.\015\012Version 1.11"; D2_GLOBAL_GUARD(s_PKWARE_Data_Compression_Library_f_0074be60, "s_PKWARE_Data_Compression_Library_f_0074be60");
+char s_PLen_006e162c[] = "PLen"; D2_GLOBAL_GUARD(s_PLen_006e162c, "s_PLen_006e162c");
+char s_Press_OK_to_terminate_the_applica_006cf220[] = "Press OK to terminate the application."; D2_GLOBAL_GUARD(s_Press_OK_to_terminate_the_applica_006cf220, "s_Press_OK_to_terminate_the_applica_006cf220");
+char s_Program___s__006cf298[] = "Program:\011%s\012"; D2_GLOBAL_GUARD(s_Program___s__006cf298, "s_Program___s__006cf298");
+char s_ReallyTheLastSucker_006dc8e0[] = "ReallyTheLastSucker"; D2_GLOBAL_GUARD(s_ReallyTheLastSucker_006dc8e0, "s_ReallyTheLastSucker_006dc8e0");
+char s_Registry_Error_006ccb40[] = "Registry Error"; D2_GLOBAL_GUARD(s_Registry_Error_006ccb40, "s_Registry_Error_006ccb40");
+char s_SECURITY_006fad30[] = "SECURITY"; D2_GLOBAL_GUARD(s_SECURITY_006fad30, "s_SECURITY_006fad30");
+char s_SYSTEM_006fad28[] = "SYSTEM"; D2_GLOBAL_GUARD(s_SYSTEM_006fad28, "s_SYSTEM_006fad28");
+char s_Software_006d71ec[] = "Software"; D2_GLOBAL_GUARD(s_Software_006d71ec, "s_Software_006d71ec");
+char s_Stupid_Lng_cpp_error__006d5ea8[] = "Stupid Lng.cpp error."; D2_GLOBAL_GUARD(s_Stupid_Lng_cpp_error__006d5ea8, "s_Stupid_Lng_cpp_error__006d5ea8");
+char s_The_syntax_of_the_command_is_inco_006fcbe4[] = "The syntax of the command is incorrect."; D2_GLOBAL_GUARD(s_The_syntax_of_the_command_is_inco_006fcbe4, "s_The_syntax_of_the_command_is_inco_006fcbe4");
+char s_This_application_has_encountered__006cf2a8[] = "This application has encountered a critical error:\012\012%s\012"; D2_GLOBAL_GUARD(s_This_application_has_encountered__006cf2a8, "s_This_application_has_encountered__006cf2a8");
+char s_TypeLib_006fad20[] = "TypeLib"; D2_GLOBAL_GUARD(s_TypeLib_006fad20, "s_TypeLib_006fad20");
+char s_Unable_to_start_LNG_manager__006d5ec0[] = "Unable to start LNG manager."; D2_GLOBAL_GUARD(s_Unable_to_start_LNG_manager__006d5ec0, "s_Unable_to_start_LNG_manager__006d5ec0");
+char s_Unknown_Error_006ccbb8[] = "Unknown Error"; D2_GLOBAL_GUARD(s_Unknown_Error_006ccbb8, "s_Unknown_Error_006ccbb8");
+char s_Warning_006ccb5c[] = "Warning"; D2_GLOBAL_GUARD(s_Warning_006ccb5c, "s_Warning_006ccb5c");
+char s___H__006ed5a4[] = " (H)"; D2_GLOBAL_GUARD(s___H__006ed5a4, "s___H__006ed5a4");
+char s___N__006ed59c[] = " (N)"; D2_GLOBAL_GUARD(s___N__006ed59c, "s___N__006ed59c");
+char s__not_xlated_call_ken_w_00730520[] = " -not xlated call ken w"; D2_GLOBAL_GUARD(s__not_xlated_call_ken_w_00730520, "s__not_xlated_call_ken_w_00730520");
+char s__s_palette_act_d__s_006dc7d0[] = "%s\\palette\\act%d\\%s"; D2_GLOBAL_GUARD(s__s_palette_act_d__s_006dc7d0, "s__s_palette_act_d__s_006dc7d0");
+char s_block_006e1730[] = "block"; D2_GLOBAL_GUARD(s_block_006e1730, "s_block_006e1730");
+char s_blocks_006e1738[] = "blocks"; D2_GLOBAL_GUARD(s_blocks_006e1738, "s_blocks_006e1738");
+char s_buffer_error_006d37e0[] = "buffer error"; D2_GLOBAL_GUARD(s_buffer_error_006d37e0, "s_buffer_error_006d37e0");
+char s_buysell_006d6b50[] = "buysell"; D2_GLOBAL_GUARD(s_buysell_006d6b50, "s_buysell_006d6b50");
+char s_client_006cc920[] = "client"; D2_GLOBAL_GUARD(s_client_006cc920, "s_client_006cc920");
+char s_cmncof_a1_d2_006d6c44[] = "cmncof_a1.d2"; D2_GLOBAL_GUARD(s_cmncof_a1_d2_006d6c44, "s_cmncof_a1_d2_006d6c44");
+char s_cmncof_a2_d2_006d6c54[] = "cmncof_a2.d2"; D2_GLOBAL_GUARD(s_cmncof_a2_d2_006d6c54, "s_cmncof_a2_d2_006d6c54");
+char s_cmncof_a3_d2_006d6c64[] = "cmncof_a3.d2"; D2_GLOBAL_GUARD(s_cmncof_a3_d2_006d6c64, "s_cmncof_a3_d2_006d6c64");
+char s_cmncof_a4_d2_006d6c74[] = "cmncof_a4.d2"; D2_GLOBAL_GUARD(s_cmncof_a4_d2_006d6c74, "s_cmncof_a4_d2_006d6c74");
+char s_cmncof_a6_d2_006d6c84[] = "cmncof_a6.d2"; D2_GLOBAL_GUARD(s_cmncof_a6_d2_006d6c84, "s_cmncof_a6_d2_006d6c84");
+char s_d2_promo_bik_006d91ac[] = "d2_promo.bik"; D2_GLOBAL_GUARD(s_d2_promo_bik_006d91ac, "s_d2_promo_bik_006d91ac");
+char s_d2data_mpq_006dc770[] = "d2data.mpq"; D2_GLOBAL_GUARD(s_d2data_mpq_006dc770, "s_d2data_mpq_006dc770");
+char s_d2exp_mpq_006cd3a0[] = "d2exp.mpq"; D2_GLOBAL_GUARD(s_d2exp_mpq_006cd3a0, "s_d2exp_mpq_006cd3a0");
+char s_data_error_006d3804[] = "data error"; D2_GLOBAL_GUARD(s_data_error_006d3804, "s_data_error_006d3804");
+char s_data_global_music_act1_caves_wav_006dea30[] = "data\\global\\music\\act1\\caves.wav"; D2_GLOBAL_GUARD(s_data_global_music_act1_caves_wav_006dea30, "s_data_global_music_act1_caves_wav_006dea30");
+char s_data_global_music_act1_crypt_wav_006de9e4[] = "data\\global\\music\\act1\\crypt.wav"; D2_GLOBAL_GUARD(s_data_global_music_act1_crypt_wav_006de9e4, "s_data_global_music_act1_crypt_wav_006de9e4");
+char s_data_global_music_act1_monastery__006dea08[] = "data\\global\\music\\act1\\monastery.wav"; D2_GLOBAL_GUARD(s_data_global_music_act1_monastery__006dea08, "s_data_global_music_act1_monastery__006dea08");
+char s_data_global_music_act2_desert_wav_006de8c4[] = "data\\global\\music\\act2\\desert.wav"; D2_GLOBAL_GUARD(s_data_global_music_act2_desert_wav_006de8c4, "s_data_global_music_act2_desert_wav_006de8c4");
+char s_data_global_music_act2_harem_wav_006de9c0[] = "data\\global\\music\\act2\\harem.wav"; D2_GLOBAL_GUARD(s_data_global_music_act2_harem_wav_006de9c0, "s_data_global_music_act2_harem_wav_006de9c0");
+char s_data_global_music_act2_sewer_wav_006de8a0[] = "data\\global\\music\\act2\\sewer.wav"; D2_GLOBAL_GUARD(s_data_global_music_act2_sewer_wav_006de8a0, "s_data_global_music_act2_sewer_wav_006de8a0");
+char s_data_global_music_act2_tombs_wav_006de99c[] = "data\\global\\music\\act2\\tombs.wav"; D2_GLOBAL_GUARD(s_data_global_music_act2_tombs_wav_006de99c, "s_data_global_music_act2_tombs_wav_006de99c");
+char s_data_global_music_act3_kurast_wav_006de87c[] = "data\\global\\music\\act3\\kurast.wav"; D2_GLOBAL_GUARD(s_data_global_music_act3_kurast_wav_006de87c, "s_data_global_music_act3_kurast_wav_006de87c");
+char s_data_global_music_act3_kurastsewe_006de950[] = "data\\global\\music\\act3\\kurastsewer.wav"; D2_GLOBAL_GUARD(s_data_global_music_act3_kurastsewe_006de950, "s_data_global_music_act3_kurastsewe_006de950");
+char s_data_global_music_act3_spider_wav_006de978[] = "data\\global\\music\\act3\\spider.wav"; D2_GLOBAL_GUARD(s_data_global_music_act3_spider_wav_006de978, "s_data_global_music_act3_spider_wav_006de978");
+char s_data_global_music_act4_diablo_wav_006de858[] = "data\\global\\music\\act4\\diablo.wav"; D2_GLOBAL_GUARD(s_data_global_music_act4_diablo_wav_006de858, "s_data_global_music_act4_diablo_wav_006de858");
+char s_data_global_music_act5_icecaves_w_006de90c[] = "data\\global\\music\\act5\\icecaves.wav"; D2_GLOBAL_GUARD(s_data_global_music_act5_icecaves_w_006de90c, "s_data_global_music_act5_icecaves_w_006de90c");
+char s_data_global_music_act5_xtemple_wa_006de8e8[] = "data\\global\\music\\act5\\xtemple.wav"; D2_GLOBAL_GUARD(s_data_global_music_act5_xtemple_wa_006de8e8, "s_data_global_music_act5_xtemple_wa_006de8e8");
+char s_data_global_music_common_options__006dea54[] = "data\\global\\music\\common\\options.wav"; D2_GLOBAL_GUARD(s_data_global_music_common_options__006dea54, "s_data_global_music_common_options__006dea54");
+char s_data_global_music_introedit_wav_006de930[] = "data\\global\\music\\introedit.wav"; D2_GLOBAL_GUARD(s_data_global_music_introedit_wav_006de930, "s_data_global_music_introedit_wav_006de930");
+char s_data_local_font__s_default_map_006e02d8[] = "data\\local\\font\\%s\\default.map"; D2_GLOBAL_GUARD(s_data_local_font__s_default_map_006e02d8, "s_data_local_font__s_default_map_006e02d8");
+char s_data_local_lng__s_expansionstring_006e028c[] = "data\\local\\lng\\%s\\expansionstring.tbl"; D2_GLOBAL_GUARD(s_data_local_lng__s_expansionstring_006e028c, "s_data_local_lng__s_expansionstring_006e028c");
+char s_data_local_lng__s_patchstring_tbl_006e02b4[] = "data\\local\\lng\\%s\\patchstring.tbl"; D2_GLOBAL_GUARD(s_data_local_lng__s_patchstring_tbl_006e02b4, "s_data_local_lng__s_patchstring_tbl_006e02b4");
+char s_data_local_lng__s_string_tbl_006e02f8[] = "data\\local\\lng\\%s\\string.tbl"; D2_GLOBAL_GUARD(s_data_local_lng__s_string_tbl_006e02f8, "s_data_local_lng__s_string_tbl_006e02f8");
+char s_dialogbackground_00727498[] = "dialogbackground"; D2_GLOBAL_GUARD(s_dialogbackground_00727498, "s_dialogbackground_00727498");
+char s_expand_006cc8f8[] = "expand"; D2_GLOBAL_GUARD(s_expand_006cc8f8, "s_expand_006cc8f8");
+char s_file_error_006d3820[] = "file error"; D2_GLOBAL_GUARD(s_file_error_006d3820, "s_file_error_006d3820");
+char s_grasp_006d6b78[] = "grasp"; D2_GLOBAL_GUARD(s_grasp_006d6b78, "s_grasp_006d6b78");
+char s_incompatible_version_006d37c8[] = "incompatible version"; D2_GLOBAL_GUARD(s_incompatible_version_006d37c8, "s_incompatible_version_006d37c8");
+char s_insufficient_memory_006d37f0[] = "insufficient memory"; D2_GLOBAL_GUARD(s_insufficient_memory_006d37f0, "s_insufficient_memory_006d37f0");
+char s_launcher_006cc900[] = "launcher"; D2_GLOBAL_GUARD(s_launcher_006cc900, "s_launcher_006cc900");
+char s_mode_006d5bc4[] = "mode"; D2_GLOBAL_GUARD(s_mode_006d5bc4, "s_mode_006d5bc4");
+char s_modstate0_006cc928[] = "modstate0"; D2_GLOBAL_GUARD(s_modstate0_006cc928, "s_modstate0_006cc928");
+char s_multiplayer_006cc90c[] = "multiplayer"; D2_GLOBAL_GUARD(s_multiplayer_006cc90c, "s_multiplayer_006cc90c");
+char s_need_dictionary_006d3838[] = "need dictionary"; D2_GLOBAL_GUARD(s_need_dictionary_006d3838, "s_need_dictionary_006d3838");
+char s_ohand_006d6b70[] = "ohand"; D2_GLOBAL_GUARD(s_ohand_006d6b70, "s_ohand_006d6b70");
+char s_orotate_006d6b68[] = "orotate"; D2_GLOBAL_GUARD(s_orotate_006d6b68, "s_orotate_006d6b68");
+char s_pal_dat_006dc7c8[] = "pal.dat"; D2_GLOBAL_GUARD(s_pal_dat_006dc7c8, "s_pal_dat_006dc7c8");
+char s_pal_pl2_006dc7c0[] = "pal.pl2"; D2_GLOBAL_GUARD(s_pal_pl2_006dc7c0, "s_pal_pl2_006dc7c0");
+char s_palette_act1_pal_dat_006dc7fc[] = "palette\\act1\\pal.dat"; D2_GLOBAL_GUARD(s_palette_act1_pal_dat_006dc7fc, "s_palette_act1_pal_dat_006dc7fc");
+char s_palette_act1_pal_pl2_006dc7e4[] = "palette\\act1\\pal.pl2"; D2_GLOBAL_GUARD(s_palette_act1_pal_pl2_006dc7e4, "s_palette_act1_pal_pl2_006dc7e4");
+char s_palette_fechar_pal_dat_006d39e8[] = "palette\\fechar\\pal.dat"; D2_GLOBAL_GUARD(s_palette_fechar_pal_dat_006d39e8, "s_palette_fechar_pal_dat_006d39e8");
+char s_palette_fechar_pal_pl2_006d39d0[] = "palette\\fechar\\pal.pl2"; D2_GLOBAL_GUARD(s_palette_fechar_pal_pl2_006d39d0, "s_palette_fechar_pal_pl2_006d39d0");
+char s_palette_sky_pal_dat_006d39bc[] = "palette\\sky\\pal.dat"; D2_GLOBAL_GUARD(s_palette_sky_pal_dat_006d39bc, "s_palette_sky_pal_dat_006d39bc");
+char s_palette_sky_pal_pl2_006d39a8[] = "palette\\sky\\pal.pl2"; D2_GLOBAL_GUARD(s_palette_sky_pal_pl2_006d39a8, "s_palette_sky_pal_pl2_006d39a8");
+char s_patch_d2_mpq_006dc728[] = "patch_d2.mpq"; D2_GLOBAL_GUARD(s_patch_d2_mpq_006dc728, "s_patch_d2_mpq_006dc728");
+char s_ppress_006d6b60[] = "ppress"; D2_GLOBAL_GUARD(s_ppress_006d6b60, "s_ppress_006d6b60");
+char s_profile_description_006d4eb8[] = "profile\\description"; D2_GLOBAL_GUARD(s_profile_description_006d4eb8, "s_profile_description_006d4eb8");
+char s_profile_location_006d4ecc[] = "profile\\location"; D2_GLOBAL_GUARD(s_profile_location_006d4ecc, "s_profile_location_006d4ecc");
+char s_profile_sex_006d4ee0[] = "profile\\sex"; D2_GLOBAL_GUARD(s_profile_sex_006d4ee0, "s_profile_sex_006d4ee0");
+char s_protate_006d6b58[] = "protate"; D2_GLOBAL_GUARD(s_protate_006d6b58, "s_protate_006d6b58");
+char s_screen01_006d5d10[] = "screen01"; D2_GLOBAL_GUARD(s_screen01_006d5d10, "s_screen01_006d5d10");
+char s_screen02_006d5d04[] = "screen02"; D2_GLOBAL_GUARD(s_screen02_006d5d04, "s_screen02_006d5d04");
+char s_screen03_006d5cf8[] = "screen03"; D2_GLOBAL_GUARD(s_screen03_006d5cf8, "s_screen03_006d5cf8");
+char s_screen04_006d5cec[] = "screen04"; D2_GLOBAL_GUARD(s_screen04_006d5cec, "s_screen04_006d5cec");
+char s_screen05_006d5ce0[] = "screen05"; D2_GLOBAL_GUARD(s_screen05_006d5ce0, "s_screen05_006d5ce0");
+char s_screen06_006d5cd4[] = "screen06"; D2_GLOBAL_GUARD(s_screen06_006d5cd4, "s_screen06_006d5cd4");
+char s_screen07_006d5cc8[] = "screen07"; D2_GLOBAL_GUARD(s_screen07_006d5cc8, "s_screen07_006d5cc8");
+char s_screen08_006d5cbc[] = "screen08"; D2_GLOBAL_GUARD(s_screen08_006d5cbc, "s_screen08_006d5cbc");
+char s_screen09_006d5cb0[] = "screen09"; D2_GLOBAL_GUARD(s_screen09_006d5cb0, "s_screen09_006d5cb0");
+char s_screen10_006d5ca4[] = "screen10"; D2_GLOBAL_GUARD(s_screen10_006d5ca4, "s_screen10_006d5ca4");
+char s_server_006cc918[] = "server"; D2_GLOBAL_GUARD(s_server_006cc918, "s_server_006cc918");
+char s_stream_end_006d382c[] = "stream end"; D2_GLOBAL_GUARD(s_stream_end_006d382c, "s_stream_end_006d382c");
+char s_stream_error_006d3810[] = "stream error"; D2_GLOBAL_GUARD(s_stream_error_006d3810, "s_stream_error_006d3810");
 
 
 // =============================================================================
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-char s_Unknown_006cc780[8] = { 'U', 'n', 'k', 'n', 'o', 'w', 'n', '\x00' };
+char s_Unknown_006cc780[8] = { 'U', 'n', 'k', 'n', 'o', 'w', 'n', '\x00' }; D2_GLOBAL_GUARD(s_Unknown_006cc780, "s_Unknown_006cc780");
 
 char s_English_with_Korean_Chat_006cc788[28] = {
     'E',
@@ -222,11 +229,11 @@ char s_English_with_Korean_Chat_006cc788[28] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s_English_with_Korean_Chat_006cc788, "s_English_with_Korean_Chat_006cc788");
 
-char s_Russian_006cc7a4[8] = { 'R', 'u', 's', 's', 'i', 'a', 'n', '\x00' };
+char s_Russian_006cc7a4[8] = { 'R', 'u', 's', 's', 'i', 'a', 'n', '\x00' }; D2_GLOBAL_GUARD(s_Russian_006cc7a4, "s_Russian_006cc7a4");
 
-char s_Polish_006cc7ac[8] = { 'P', 'o', 'l', 'i', 's', 'h', '\x00', '\x00' };
+char s_Polish_006cc7ac[8] = { 'P', 'o', 'l', 'i', 's', 'h', '\x00', '\x00' }; D2_GLOBAL_GUARD(s_Polish_006cc7ac, "s_Polish_006cc7ac");
 
 char s_Traditional_Chinese_006cc7b4[20] = {
     'T',
@@ -249,7 +256,7 @@ char s_Traditional_Chinese_006cc7b4[20] = {
     's',
     'e',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s_Traditional_Chinese_006cc7b4, "s_Traditional_Chinese_006cc7b4");
 
 char s_Simplified_Chinese_006cc7c8[20] = {
     'S',
@@ -272,9 +279,9 @@ char s_Simplified_Chinese_006cc7c8[20] = {
     'e',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s_Simplified_Chinese_006cc7c8, "s_Simplified_Chinese_006cc7c8");
 
-char s_Korean_006cc7dc[8] = { 'K', 'o', 'r', 'e', 'a', 'n', '\x00', '\x00' };
+char s_Korean_006cc7dc[8] = { 'K', 'o', 'r', 'e', 'a', 'n', '\x00', '\x00' }; D2_GLOBAL_GUARD(s_Korean_006cc7dc, "s_Korean_006cc7dc");
 
 char s_Japanese_006cc7e4[12] = {
     'J',
@@ -289,9 +296,9 @@ char s_Japanese_006cc7e4[12] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s_Japanese_006cc7e4, "s_Japanese_006cc7e4");
 
-char s_Italian_006cc7f0[8] = { 'I', 't', 'a', 'l', 'i', 'a', 'n', '\x00' };
+char s_Italian_006cc7f0[8] = { 'I', 't', 'a', 'l', 'i', 'a', 'n', '\x00' }; D2_GLOBAL_GUARD(s_Italian_006cc7f0, "s_Italian_006cc7f0");
 
 char s_Portuguese_006cc7f8[12] = {
     'P',
@@ -306,64 +313,66 @@ char s_Portuguese_006cc7f8[12] = {
     'e',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s_Portuguese_006cc7f8, "s_Portuguese_006cc7f8");
 
-char s_French_006cc804[8] = { 'F', 'r', 'e', 'n', 'c', 'h', '\x00', '\x00' };
+char s_French_006cc804[8] = { 'F', 'r', 'e', 'n', 'c', 'h', '\x00', '\x00' }; D2_GLOBAL_GUARD(s_French_006cc804, "s_French_006cc804");
 
-char s_German_006cc80c[8] = { 'G', 'e', 'r', 'm', 'a', 'n', '\x00', '\x00' };
+char s_German_006cc80c[8] = { 'G', 'e', 'r', 'm', 'a', 'n', '\x00', '\x00' }; D2_GLOBAL_GUARD(s_German_006cc80c, "s_German_006cc80c");
 
-char s_Spanish_006cc814[8] = { 'S', 'p', 'a', 'n', 'i', 's', 'h', '\x00' };
+char s_Spanish_006cc814[8] = { 'S', 'p', 'a', 'n', 'i', 's', 'h', '\x00' }; D2_GLOBAL_GUARD(s_Spanish_006cc814, "s_Spanish_006cc814");
 
-char s_English_006cc81c[8] = { 'E', 'n', 'g', 'l', 'i', 's', 'h', '\x00' };
+char s_English_006cc81c[8] = { 'E', 'n', 'g', 'l', 'i', 's', 'h', '\x00' }; D2_GLOBAL_GUARD(s_English_006cc81c, "s_English_006cc81c");
 
-char gszHeapTagOperatorNew[4] = { "new" };
+char gszHeapTagOperatorNew[4] = { "new" }; D2_GLOBAL_GUARD(gszHeapTagOperatorNew, "gszHeapTagOperatorNew");
 
-char lpDefault_006cc837[1] = { '\x00' };
+char lpDefault_006cc837[1] = { '\x00' }; D2_GLOBAL_GUARD(lpDefault_006cc837, "lpDefault_006cc837");
 
 // also labelled: gszDot
-char gbCompressionDecoderMarker[2] = { "." };
+char gbCompressionDecoderMarker[2] = { "." }; D2_GLOBAL_GUARD(gbCompressionDecoderMarker, "gbCompressionDecoderMarker");
 
-char s_Dec_006ccb00[4] = { 'D', 'e', 'c', '\x00' };
+char s_Dec_006ccb00[4] = { 'D', 'e', 'c', '\x00' }; D2_GLOBAL_GUARD(s_Dec_006ccb00, "s_Dec_006ccb00");
 
-char s_Nov_006ccb04[4] = { 'N', 'o', 'v', '\x00' };
+char s_Nov_006ccb04[4] = { 'N', 'o', 'v', '\x00' }; D2_GLOBAL_GUARD(s_Nov_006ccb04, "s_Nov_006ccb04");
 
-char s_Oct_006ccb08[4] = { 'O', 'c', 't', '\x00' };
+char s_Oct_006ccb08[4] = { 'O', 'c', 't', '\x00' }; D2_GLOBAL_GUARD(s_Oct_006ccb08, "s_Oct_006ccb08");
 
-char s_Sep_006ccb0c[4] = { 'S', 'e', 'p', '\x00' };
+char s_Sep_006ccb0c[4] = { 'S', 'e', 'p', '\x00' }; D2_GLOBAL_GUARD(s_Sep_006ccb0c, "s_Sep_006ccb0c");
 
-char s_Aug_006ccb10[4] = { 'A', 'u', 'g', '\x00' };
+char s_Aug_006ccb10[4] = { 'A', 'u', 'g', '\x00' }; D2_GLOBAL_GUARD(s_Aug_006ccb10, "s_Aug_006ccb10");
 
-char s_Jul_006ccb14[4] = { 'J', 'u', 'l', '\x00' };
+char s_Jul_006ccb14[4] = { 'J', 'u', 'l', '\x00' }; D2_GLOBAL_GUARD(s_Jul_006ccb14, "s_Jul_006ccb14");
 
-char s_Jun_006ccb18[4] = { 'J', 'u', 'n', '\x00' };
+char s_Jun_006ccb18[4] = { 'J', 'u', 'n', '\x00' }; D2_GLOBAL_GUARD(s_Jun_006ccb18, "s_Jun_006ccb18");
 
-char s_May_006ccb1c[4] = { 'M', 'a', 'y', '\x00' };
+char s_May_006ccb1c[4] = { 'M', 'a', 'y', '\x00' }; D2_GLOBAL_GUARD(s_May_006ccb1c, "s_May_006ccb1c");
 
-char s_Apr_006ccb20[4] = { 'A', 'p', 'r', '\x00' };
+char s_Apr_006ccb20[4] = { 'A', 'p', 'r', '\x00' }; D2_GLOBAL_GUARD(s_Apr_006ccb20, "s_Apr_006ccb20");
 
-char s_Mar_006ccb24[4] = { 'M', 'a', 'r', '\x00' };
+char s_Mar_006ccb24[4] = { 'M', 'a', 'r', '\x00' }; D2_GLOBAL_GUARD(s_Mar_006ccb24, "s_Mar_006ccb24");
 
-char s_Feb_006ccb28[4] = { 'F', 'e', 'b', '\x00' };
+char s_Feb_006ccb28[4] = { 'F', 'e', 'b', '\x00' }; D2_GLOBAL_GUARD(s_Feb_006ccb28, "s_Feb_006ccb28");
 
-char s_Jan_006ccb2c[4] = { 'J', 'a', 'n', '\x00' };
+char s_Jan_006ccb2c[4] = { 'J', 'a', 'n', '\x00' }; D2_GLOBAL_GUARD(s_Jan_006ccb2c, "s_Jan_006ccb2c");
 
-double gdConst0_25 = 0.25;
+double gdConst0_25 = 0.25; D2_GLOBAL_GUARD(gdConst0_25, "gdConst0_25");
 
-double gdBytesToMegabytes = 9.5367431640625E-7;
+double gdBytesToMegabytes = 9.5367431640625E-7; D2_GLOBAL_GUARD(gdBytesToMegabytes, "gdBytesToMegabytes");
 
-double gfFloatGammaCorrectionInit = 100;
+double gfFloatGammaCorrectionInit = 100; D2_GLOBAL_GUARD(gfFloatGammaCorrectionInit, "gfFloatGammaCorrectionInit");
 
-double gdblConstantTen = 10;
+double gdblConstantTen = 10; D2_GLOBAL_GUARD(gdblConstantTen, "gdblConstantTen");
 
-char gaHexCharsLookupTable[4] = { '%', 's', '\x0a', '\x00' };
+char gaHexCharsLookupTable[4] = { '%', 's', '\x0a', '\x00' }; D2_GLOBAL_GUARD(gaHexCharsLookupTable, "gaHexCharsLookupTable");
 
-char s_Cyrix_006cdeb0[6] = { 'C', 'y', 'r', 'i', 'x', '\x00' };
+char gbSaveFileReadMarker[3] = { 'r', 'b', '\x00' }; D2_GLOBAL_GUARD(gbSaveFileReadMarker, "gbSaveFileReadMarker");
 
-char s_AMD_006cdeb8[4] = { 'A', 'M', 'D', '\x00' };
+char s_Cyrix_006cdeb0[6] = { 'C', 'y', 'r', 'i', 'x', '\x00' }; D2_GLOBAL_GUARD(s_Cyrix_006cdeb0, "s_Cyrix_006cdeb0");
 
-char s_Intel_006cdebc[8] = { 'I', 'n', 't', 'e', 'l', '\x00', '\x00', '\x00' };
+char s_AMD_006cdeb8[4] = { 'A', 'M', 'D', '\x00' }; D2_GLOBAL_GUARD(s_AMD_006cdeb8, "s_AMD_006cdeb8");
 
-char param_2_006ce200[5] = { "%s%s" };
+char s_Intel_006cdebc[8] = { 'I', 'n', 't', 'e', 'l', '\x00', '\x00', '\x00' }; D2_GLOBAL_GUARD(s_Intel_006cdebc, "s_Intel_006cdebc");
+
+char param_2_006ce200[5] = { "%s%s" }; D2_GLOBAL_GUARD(param_2_006ce200, "param_2_006ce200");
 
 // also labelled: BitMaskAnd
 uint32_t gadwBitMasks[32] = {
@@ -399,7 +408,7 @@ uint32_t gadwBitMasks[32] = {
     0x20000000,
     0x40000000,
     0x80000000
-};
+}; D2_GLOBAL_GUARD(gadwBitMasks, "gadwBitMasks");
 
 // also labelled: BitMaskOr
 uint32_t gadwInvBitMasks[32] = {
@@ -435,12 +444,12 @@ uint32_t gadwInvBitMasks[32] = {
     0xdfffffff,
     0xbfffffff,
     0x7fffffff
-};
+}; D2_GLOBAL_GUARD(gadwInvBitMasks, "gadwInvBitMasks");
 
 // also labelled: gfFloatMantissaMask
-double gdConst1 = 1;
+double gdConst1 = 1; D2_GLOBAL_GUARD(gdConst1, "gdConst1");
 
-double gfFloatScalingFactor = 0.5;
+double gfFloatScalingFactor = 0.5; D2_GLOBAL_GUARD(gfFloatScalingFactor, "gfFloatScalingFactor");
 
 char s_File___s_006cf1e8[10] = {
     'F',
@@ -453,9 +462,9 @@ char s_File___s_006cf1e8[10] = {
     's',
     '\x0a',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s_File___s_006cf1e8, "s_File___s_006cf1e8");
 
-char s__s_006cf248[6] = { '\x0a', '%', 's', '\x0a', '\x0a', '\x00' };
+char s__s_006cf248[6] = { '\x0a', '%', 's', '\x0a', '\x0a', '\x00' }; D2_GLOBAL_GUARD(s__s_006cf248, "s__s_006cf248");
 
 char s_Expr___s_006cf250[11] = {
     'E',
@@ -469,11 +478,11 @@ char s_Expr___s_006cf250[11] = {
     '\x0a',
     '\x0a',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s_Expr___s_006cf250, "s_Expr___s_006cf250");
 
-char gdwSystemMemoryMax[2] = { ")" };
+char gdwSystemMemoryMax[2] = { ")" }; D2_GLOBAL_GUARD(gdwSystemMemoryMax, "gdwSystemMemoryMax");
 
-char param_2_006cff28[3] = { "%c" };
+char param_2_006cff28[3] = { "%c" }; D2_GLOBAL_GUARD(param_2_006cff28, "param_2_006cff28");
 
 int gaZlibExtraBlBits[19] = {
     0x0,
@@ -495,7 +504,7 @@ int gaZlibExtraBlBits[19] = {
     0x2,
     0x3,
     0x7
-};
+}; D2_GLOBAL_GUARD(gaZlibExtraBlBits, "gaZlibExtraBlBits");
 
 char * z_errmsg[10] = {
     s_need_dictionary_006d3838,
@@ -508,111 +517,226 @@ char * z_errmsg[10] = {
     s_buffer_error_006d37e0,
     s_incompatible_version_006d37c8,
     lpDefault_006cc837
-};
+}; D2_GLOBAL_GUARD(z_errmsg, "z_errmsg");
 
-char * gaFrontEndPaletteFiles[4] = { s_palette_fechar_pal_dat_006d39e8, s_palette_fechar_pal_pl2_006d39d0, s_palette_sky_pal_dat_006d39bc, s_palette_sky_pal_pl2_006d39a8 };
+char * gaFrontEndPaletteFiles[4] = { s_palette_fechar_pal_dat_006d39e8, s_palette_fechar_pal_pl2_006d39d0, s_palette_sky_pal_dat_006d39bc, s_palette_sky_pal_pl2_006d39a8 }; D2_GLOBAL_GUARD(gaFrontEndPaletteFiles, "gaFrontEndPaletteFiles");
 
-char gaLanguageCodeFallback[4] = { 'C', 'H', 'I', '\x00' };
+char gaLanguageCodeFallback[4] = { 'C', 'H', 'I', '\x00' }; D2_GLOBAL_GUARD(gaLanguageCodeFallback, "gaLanguageCodeFallback");
 
-char gaLanguageCodeAbbrevTable[4] = { 'E', 'N', 'G', '\x00' };
+char gaLanguageCodeAbbrevTable[4] = { 'E', 'N', 'G', '\x00' }; D2_GLOBAL_GUARD(gaLanguageCodeAbbrevTable, "gaLanguageCodeAbbrevTable");
 
-char gpCutsceneVideoFrameBuffer[8] = { "640x146" };
+char gpCutsceneVideoFrameBuffer[8] = { "640x146" }; D2_GLOBAL_GUARD(gpCutsceneVideoFrameBuffer, "gpCutsceneVideoFrameBuffer");
 
-char gpCutscenesBlackBarTexture[8] = { "640x292" };
+char gpCutscenesBlackBarTexture[8] = { "640x292" }; D2_GLOBAL_GUARD(gpCutscenesBlackBarTexture, "gpCutscenesBlackBarTexture");
 
-char s_ama_006d5564[4] = { 'a', 'm', 'a', '\x00' };
+char s_ama_006d5564[4] = { 'a', 'm', 'a', '\x00' }; D2_GLOBAL_GUARD(s_ama_006d5564, "s_ama_006d5564");
 
-char s_sor_006d5568[4] = { 's', 'o', 'r', '\x00' };
+char s_sor_006d5568[4] = { 's', 'o', 'r', '\x00' }; D2_GLOBAL_GUARD(s_sor_006d5568, "s_sor_006d5568");
 
-char s_nec_006d556c[4] = { 'n', 'e', 'c', '\x00' };
+char s_nec_006d556c[4] = { 'n', 'e', 'c', '\x00' }; D2_GLOBAL_GUARD(s_nec_006d556c, "s_nec_006d556c");
 
-char s_pal_006d5570[4] = { 'p', 'a', 'l', '\x00' };
+char s_pal_006d5570[4] = { 'p', 'a', 'l', '\x00' }; D2_GLOBAL_GUARD(s_pal_006d5570, "s_pal_006d5570");
 
-char s_bar_006d5574[4] = { 'b', 'a', 'r', '\x00' };
+char s_bar_006d5574[4] = { 'b', 'a', 'r', '\x00' }; D2_GLOBAL_GUARD(s_bar_006d5574, "s_bar_006d5574");
 
-char s_dru_006d5578[4] = { 'd', 'r', 'u', '\x00' };
+char s_dru_006d5578[4] = { 'd', 'r', 'u', '\x00' }; D2_GLOBAL_GUARD(s_dru_006d5578, "s_dru_006d5578");
 
-char s_asn_006d557c[4] = { 'a', 's', 'n', '\x00' };
+char s_asn_006d557c[4] = { 'a', 's', 'n', '\x00' }; D2_GLOBAL_GUARD(s_asn_006d557c, "s_asn_006d557c");
 
-char param_2_006d57bc[3] = { '%', 'd', '\x00' };
+char param_2_006d57bc[3] = { '%', 'd', '\x00' }; D2_GLOBAL_GUARD(param_2_006d57bc, "param_2_006d57bc");
 
-char gsCharSelContext[4] = { '*', '\x00', '\x00', '\x00' };
+char gsCharSelContext[4] = { '*', '\x00', '\x00', '\x00' }; D2_GLOBAL_GUARD(gsCharSelContext, "gsCharSelContext");
 
-char gszCmdLineSwitchP[2] = { "p" };
+char gszCmdLineSwitchP[2] = { "p" }; D2_GLOBAL_GUARD(gszCmdLineSwitchP, "gszCmdLineSwitchP");
 
-char gszCmdLineSwitchC[2] = { "c" };
+char gszCmdLineSwitchC[2] = { "c" }; D2_GLOBAL_GUARD(gszCmdLineSwitchC, "gszCmdLineSwitchC");
 
 // also labelled: CRT_StrLen
-char gszCmdLineSwitchHelp[5] = { "help" };
+char gszCmdLineSwitchHelp[5] = { "help" }; D2_GLOBAL_GUARD(gszCmdLineSwitchHelp, "gszCmdLineSwitchHelp");
 
-char gszCmdLineSwitchH[2] = { "h" };
+char gszCmdLineSwitchH[2] = { "h" }; D2_GLOBAL_GUARD(gszCmdLineSwitchH, "gszCmdLineSwitchH");
 
-char gszCmdLineSwitchQuestionMark[2] = { "?" };
+char gszCmdLineSwitchQuestionMark[2] = { "?" }; D2_GLOBAL_GUARD(gszCmdLineSwitchQuestionMark, "gszCmdLineSwitchQuestionMark");
 
-char gTxtCompilationMemPool[4] = { 'e', 'n', 'd', '\x00' };
+char gaFreeUnitsOrderData[3] = { 'w', 'b', '\x00' }; D2_GLOBAL_GUARD(gaFreeUnitsOrderData, "gaFreeUnitsOrderData");
 
-char s_a5q6_006da1ec[5] = { 'a', '5', 'q', '6', '\x00' };
+char gTxtCompilationMemPool[4] = { 'e', 'n', 'd', '\x00' }; D2_GLOBAL_GUARD(gTxtCompilationMemPool, "gTxtCompilationMemPool");
 
-char s_a5q5_006da1f4[5] = { 'a', '5', 'q', '5', '\x00' };
+char s_D2X_OUT__s_BIK_006d912c[15] = {
+    'D',
+    '2',
+    'X',
+    '_',
+    'O',
+    'U',
+    'T',
+    '_',
+    '%',
+    's',
+    '.',
+    'B',
+    'I',
+    'K',
+    '\x00'
+}; D2_GLOBAL_GUARD(s_D2X_OUT__s_BIK_006d912c, "s_D2X_OUT__s_BIK_006d912c");
 
-char s_a5q4_006da1fc[5] = { 'a', '5', 'q', '4', '\x00' };
+char s_ACT04END_s_BIK_006d9150[15] = {
+    'A',
+    'C',
+    'T',
+    '0',
+    '4',
+    'E',
+    'N',
+    'D',
+    '%',
+    's',
+    '.',
+    'B',
+    'I',
+    'K',
+    '\x00'
+}; D2_GLOBAL_GUARD(s_ACT04END_s_BIK_006d9150, "s_ACT04END_s_BIK_006d9150");
 
-char s_a5q3_006da204[5] = { 'a', '5', 'q', '3', '\x00' };
+char s_ACT04START_s_BIK_006d9160[17] = {
+    'A',
+    'C',
+    'T',
+    '0',
+    '4',
+    'S',
+    'T',
+    'A',
+    'R',
+    'T',
+    '%',
+    's',
+    '.',
+    'B',
+    'I',
+    'K',
+    '\x00'
+}; D2_GLOBAL_GUARD(s_ACT04START_s_BIK_006d9160, "s_ACT04START_s_BIK_006d9160");
 
-char s_a5q2_006da20c[5] = { 'a', '5', 'q', '2', '\x00' };
+char s_ACT03START_s_BIK_006d9174[17] = {
+    'A',
+    'C',
+    'T',
+    '0',
+    '3',
+    'S',
+    'T',
+    'A',
+    'R',
+    'T',
+    '%',
+    's',
+    '.',
+    'B',
+    'I',
+    'K',
+    '\x00'
+}; D2_GLOBAL_GUARD(s_ACT03START_s_BIK_006d9174, "s_ACT03START_s_BIK_006d9174");
 
-char s_a5q1_006da214[5] = { 'a', '5', 'q', '1', '\x00' };
+char s_ACT02START_s_BIK_006d9188[17] = {
+    'A',
+    'C',
+    'T',
+    '0',
+    '2',
+    'S',
+    'T',
+    'A',
+    'R',
+    'T',
+    '%',
+    's',
+    '.',
+    'B',
+    'I',
+    'K',
+    '\x00'
+}; D2_GLOBAL_GUARD(s_ACT02START_s_BIK_006d9188, "s_ACT02START_s_BIK_006d9188");
 
-char s_a4q3_006da21c[5] = { 'a', '4', 'q', '3', '\x00' };
+char s_d2intro_s_bik_006d919c[14] = {
+    'd',
+    '2',
+    'i',
+    'n',
+    't',
+    'r',
+    'o',
+    '%',
+    's',
+    '.',
+    'b',
+    'i',
+    'k',
+    '\x00'
+}; D2_GLOBAL_GUARD(s_d2intro_s_bik_006d919c, "s_d2intro_s_bik_006d919c");
 
-char s_a4q2_006da224[5] = { 'a', '4', 'q', '2', '\x00' };
+char s_a5q6_006da1ec[5] = { 'a', '5', 'q', '6', '\x00' }; D2_GLOBAL_GUARD(s_a5q6_006da1ec, "s_a5q6_006da1ec");
 
-char s_a4q1_006da22c[5] = { 'a', '4', 'q', '1', '\x00' };
+char s_a5q5_006da1f4[5] = { 'a', '5', 'q', '5', '\x00' }; D2_GLOBAL_GUARD(s_a5q5_006da1f4, "s_a5q5_006da1f4");
 
-char s_a3q6_006da234[5] = { 'a', '3', 'q', '6', '\x00' };
+char s_a5q4_006da1fc[5] = { 'a', '5', 'q', '4', '\x00' }; D2_GLOBAL_GUARD(s_a5q4_006da1fc, "s_a5q4_006da1fc");
 
-char s_a3q5_006da23c[5] = { 'a', '3', 'q', '5', '\x00' };
+char s_a5q3_006da204[5] = { 'a', '5', 'q', '3', '\x00' }; D2_GLOBAL_GUARD(s_a5q3_006da204, "s_a5q3_006da204");
 
-char s_a3q4_006da244[5] = { 'a', '3', 'q', '4', '\x00' };
+char s_a5q2_006da20c[5] = { 'a', '5', 'q', '2', '\x00' }; D2_GLOBAL_GUARD(s_a5q2_006da20c, "s_a5q2_006da20c");
 
-char s_a3q3_006da24c[5] = { 'a', '3', 'q', '3', '\x00' };
+char s_a5q1_006da214[5] = { 'a', '5', 'q', '1', '\x00' }; D2_GLOBAL_GUARD(s_a5q1_006da214, "s_a5q1_006da214");
 
-char s_a3q2_006da254[5] = { 'a', '3', 'q', '2', '\x00' };
+char s_a4q3_006da21c[5] = { 'a', '4', 'q', '3', '\x00' }; D2_GLOBAL_GUARD(s_a4q3_006da21c, "s_a4q3_006da21c");
 
-char s_a3q1_006da25c[5] = { 'a', '3', 'q', '1', '\x00' };
+char s_a4q2_006da224[5] = { 'a', '4', 'q', '2', '\x00' }; D2_GLOBAL_GUARD(s_a4q2_006da224, "s_a4q2_006da224");
 
-char s_a2q6_006da264[5] = { 'a', '2', 'q', '6', '\x00' };
+char s_a4q1_006da22c[5] = { 'a', '4', 'q', '1', '\x00' }; D2_GLOBAL_GUARD(s_a4q1_006da22c, "s_a4q1_006da22c");
 
-char s_a2q5_006da26c[5] = { 'a', '2', 'q', '5', '\x00' };
+char s_a3q6_006da234[5] = { 'a', '3', 'q', '6', '\x00' }; D2_GLOBAL_GUARD(s_a3q6_006da234, "s_a3q6_006da234");
 
-char s_a2q4_006da274[5] = { 'a', '2', 'q', '4', '\x00' };
+char s_a3q5_006da23c[5] = { 'a', '3', 'q', '5', '\x00' }; D2_GLOBAL_GUARD(s_a3q5_006da23c, "s_a3q5_006da23c");
 
-char s_a2q3_006da27c[5] = { 'a', '2', 'q', '3', '\x00' };
+char s_a3q4_006da244[5] = { 'a', '3', 'q', '4', '\x00' }; D2_GLOBAL_GUARD(s_a3q4_006da244, "s_a3q4_006da244");
 
-char s_a2q2_006da284[5] = { 'a', '2', 'q', '2', '\x00' };
+char s_a3q3_006da24c[5] = { 'a', '3', 'q', '3', '\x00' }; D2_GLOBAL_GUARD(s_a3q3_006da24c, "s_a3q3_006da24c");
 
-char s_a2q1_006da28c[5] = { 'a', '2', 'q', '1', '\x00' };
+char s_a3q2_006da254[5] = { 'a', '3', 'q', '2', '\x00' }; D2_GLOBAL_GUARD(s_a3q2_006da254, "s_a3q2_006da254");
 
-char s_a1q6_006da294[5] = { 'a', '1', 'q', '6', '\x00' };
+char s_a3q1_006da25c[5] = { 'a', '3', 'q', '1', '\x00' }; D2_GLOBAL_GUARD(s_a3q1_006da25c, "s_a3q1_006da25c");
 
-char s_a1q5_006da29c[5] = { 'a', '1', 'q', '5', '\x00' };
+char s_a2q6_006da264[5] = { 'a', '2', 'q', '6', '\x00' }; D2_GLOBAL_GUARD(s_a2q6_006da264, "s_a2q6_006da264");
 
-char s_a1q4_006da2a4[5] = { 'a', '1', 'q', '4', '\x00' };
+char s_a2q5_006da26c[5] = { 'a', '2', 'q', '5', '\x00' }; D2_GLOBAL_GUARD(s_a2q5_006da26c, "s_a2q5_006da26c");
 
-char s_a1q3_006da2ac[5] = { 'a', '1', 'q', '3', '\x00' };
+char s_a2q4_006da274[5] = { 'a', '2', 'q', '4', '\x00' }; D2_GLOBAL_GUARD(s_a2q4_006da274, "s_a2q4_006da274");
 
-char s_a1q2_006da2b4[5] = { 'a', '1', 'q', '2', '\x00' };
+char s_a2q3_006da27c[5] = { 'a', '2', 'q', '3', '\x00' }; D2_GLOBAL_GUARD(s_a2q3_006da27c, "s_a2q3_006da27c");
 
-char s_a1q1_006da2bc[5] = { 'a', '1', 'q', '1', '\x00' };
+char s_a2q2_006da284[5] = { 'a', '2', 'q', '2', '\x00' }; D2_GLOBAL_GUARD(s_a2q2_006da284, "s_a2q2_006da284");
 
-uint64_t gaIntensityTableConstant = 0x408f400000000000;
+char s_a2q1_006da28c[5] = { 'a', '2', 'q', '1', '\x00' }; D2_GLOBAL_GUARD(s_a2q1_006da28c, "s_a2q1_006da28c");
+
+char s_a1q6_006da294[5] = { 'a', '1', 'q', '6', '\x00' }; D2_GLOBAL_GUARD(s_a1q6_006da294, "s_a1q6_006da294");
+
+char s_a1q5_006da29c[5] = { 'a', '1', 'q', '5', '\x00' }; D2_GLOBAL_GUARD(s_a1q5_006da29c, "s_a1q5_006da29c");
+
+char s_a1q4_006da2a4[5] = { 'a', '1', 'q', '4', '\x00' }; D2_GLOBAL_GUARD(s_a1q4_006da2a4, "s_a1q4_006da2a4");
+
+char s_a1q3_006da2ac[5] = { 'a', '1', 'q', '3', '\x00' }; D2_GLOBAL_GUARD(s_a1q3_006da2ac, "s_a1q3_006da2ac");
+
+char s_a1q2_006da2b4[5] = { 'a', '1', 'q', '2', '\x00' }; D2_GLOBAL_GUARD(s_a1q2_006da2b4, "s_a1q2_006da2b4");
+
+char s_a1q1_006da2bc[5] = { 'a', '1', 'q', '1', '\x00' }; D2_GLOBAL_GUARD(s_a1q1_006da2bc, "s_a1q1_006da2bc");
+
+uint64_t gaIntensityTableConstant = 0x408f400000000000; D2_GLOBAL_GUARD(gaIntensityTableConstant, "gaIntensityTableConstant");
 
 // also labelled: gaAudioPaletteConvertData
-double gdConst255 = 255;
+double gdConst255 = 255; D2_GLOBAL_GUARD(gdConst255, "gdConst255");
 
-uint64_t gaEnvironmentConstantData1 = 0x4060000000000000;
+uint64_t gaEnvironmentConstantData1 = 0x4060000000000000; D2_GLOBAL_GUARD(gaEnvironmentConstantData1, "gaEnvironmentConstantData1");
 
-char gaLanguageCodeLookup[4] = { 'E', 'N', 'U', '\x00' };
+char gaLanguageCodeLookup[4] = { 'E', 'N', 'U', '\x00' }; D2_GLOBAL_GUARD(gaLanguageCodeLookup, "gaLanguageCodeLookup");
 
 uint8_t gaNetSidSubstitutionBox[480] = {
     0x9,
@@ -1095,21 +1219,72 @@ uint8_t gaNetSidSubstitutionBox[480] = {
     0x0,
     0x5,
     0x8
-};
+}; D2_GLOBAL_GUARD(gaNetSidSubstitutionBox, "gaNetSidSubstitutionBox");
 
-char s_SIN_006e0264[4] = { 'S', 'I', 'N', '\x00' };
+char s_SIN_006e0264[4] = { 'S', 'I', 'N', '\x00' }; D2_GLOBAL_GUARD(s_SIN_006e0264, "s_SIN_006e0264");
 
-char s_HAN_006e0268[4] = { 'H', 'A', 'N', '\x00' };
+char s_HAN_006e0268[4] = { 'H', 'A', 'N', '\x00' }; D2_GLOBAL_GUARD(s_HAN_006e0268, "s_HAN_006e0268");
 
-char s_ITA_006e0274[4] = { 'I', 'T', 'A', '\x00' };
+char s_ITA_006e0274[4] = { 'I', 'T', 'A', '\x00' }; D2_GLOBAL_GUARD(s_ITA_006e0274, "s_ITA_006e0274");
 
-char s_BRA_006e0278[4] = { 'B', 'R', 'A', '\x00' };
+char s_BRA_006e0278[4] = { 'B', 'R', 'A', '\x00' }; D2_GLOBAL_GUARD(s_BRA_006e0278, "s_BRA_006e0278");
 
-char s_POR_006e027c[4] = { 'P', 'O', 'R', '\x00' };
+char s_POR_006e027c[4] = { 'P', 'O', 'R', '\x00' }; D2_GLOBAL_GUARD(s_POR_006e027c, "s_POR_006e027c");
 
-char s_FRA_006e0280[4] = { 'F', 'R', 'A', '\x00' };
+char s_FRA_006e0280[4] = { 'F', 'R', 'A', '\x00' }; D2_GLOBAL_GUARD(s_FRA_006e0280, "s_FRA_006e0280");
 
-char s_DEU_006e0284[4] = { 'D', 'E', 'U', '\x00' };
+char s_DEU_006e0284[4] = { 'D', 'E', 'U', '\x00' }; D2_GLOBAL_GUARD(s_DEU_006e0284, "s_DEU_006e0284");
+
+D2MonsterEquipEntryStrc gaMonsterEquipTable[12] = {
+    {
+        /* .szItemCode = */ { 'b', 's', 'd', ' ' },
+        /* .field_0x4 = */ 0x104
+    },
+    {
+        /* .szItemCode = */ { 't', 'a', 'x', ' ' },
+        /* .field_0x4 = */ 0x104
+    },
+    {
+        /* .szItemCode = */ { 'v', 'o', 'u', ' ' },
+        /* .field_0x4 = */ 0x104
+    },
+    {
+        /* .szItemCode = */ { 't', 'o', 'w', ' ' },
+        /* .field_0x4 = */ 0x105
+    },
+    {
+        /* .szItemCode = */ { 't', 'a', 'x', ' ' },
+        /* .field_0x4 = */ 0x105
+    },
+    {
+        /* .szItemCode = */ { 'r', 'i', 'n', ' ' },
+        /* .field_0x4 = */ 0x106
+    },
+    {
+        /* .szItemCode = */ { 'f', 'l', 'd', ' ' },
+        /* .field_0x4 = */ 0x103
+    },
+    {
+        /* .szItemCode = */ { 'h', 'g', 'l', ' ' },
+        /* .field_0x4 = */ 0x10a
+    },
+    {
+        /* .szItemCode = */ { 'f', 'l', 'd', ' ' },
+        /* .field_0x4 = */ 0x103
+    },
+    {
+        /* .szItemCode = */ { 'h', 'b', 't', ' ' },
+        /* .field_0x4 = */ 0x109
+    },
+    {
+        /* .szItemCode = */ { 'h', 'b', 't', ' ' },
+        /* .field_0x4 = */ 0x109
+    },
+    {
+        /* .szItemCode = */ { 'c', 'r', 'n', ' ' },
+        /* .field_0x4 = */ 0x101
+    }
+}; D2_GLOBAL_GUARD(gaMonsterEquipTable, "gaMonsterEquipTable");
 
 char gszDirObjects[20] = {
     'D',
@@ -1132,7 +1307,7 @@ char gszDirObjects[20] = {
     'T',
     'S',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(gszDirObjects, "gszDirObjects");
 
 uint32_t gaCelCmpDataBlock_006e36a0[224] = {
     0x0,
@@ -1359,12 +1534,14 @@ uint32_t gaCelCmpDataBlock_006e36a0[224] = {
     0x1e,
     0xf,
     0x1f
-};
+}; D2_GLOBAL_GUARD(gaCelCmpDataBlock_006e36a0, "gaCelCmpDataBlock_006e36a0");
 
 // also labelled: gdDrlgHueConst181
-double gdConst180 = 180;
+double gdConst180 = 180; D2_GLOBAL_GUARD(gdConst180, "gdConst180");
 
-char s_HDM_006ee7c0[4] = { 'H', 'D', 'M', '\x00' };
+char s_C_006ed5b4[2] = { 'C', '\x00' }; D2_GLOBAL_GUARD(s_C_006ed5b4, "s_C_006ed5b4");
+
+char s_HDM_006ee7c0[4] = { 'H', 'D', 'M', '\x00' }; D2_GLOBAL_GUARD(s_HDM_006ee7c0, "s_HDM_006ee7c0");
 
 int gaRoadPresetDirectionLookup[9] = {
     -0x1,
@@ -1376,7 +1553,7 @@ int gaRoadPresetDirectionLookup[9] = {
     -0x1,
     0x3,
     -0x1
-};
+}; D2_GLOBAL_GUARD(gaRoadPresetDirectionLookup, "gaRoadPresetDirectionLookup");
 
 int gaOutPlaceAdjacentRoadIndex[81] = {
     0x1,
@@ -1460,7 +1637,7 @@ int gaOutPlaceAdjacentRoadIndex[81] = {
     0xb,
     0xb,
     0x3
-};
+}; D2_GLOBAL_GUARD(gaOutPlaceAdjacentRoadIndex, "gaOutPlaceAdjacentRoadIndex");
 
 uint8_t gaWallNeighborOrientTable[256] = {
     0x0,
@@ -1719,9 +1896,9 @@ uint8_t gaWallNeighborOrientTable[256] = {
     0x18,
     0x1e,
     0x1
-};
+}; D2_GLOBAL_GUARD(gaWallNeighborOrientTable, "gaWallNeighborOrientTable");
 
-char s_SAM_006fad3c[4] = { 'S', 'A', 'M', '\x00' };
+char s_SAM_006fad3c[4] = { 'S', 'A', 'M', '\x00' }; D2_GLOBAL_GUARD(s_SAM_006fad3c, "s_SAM_006fad3c");
 
 char * gaAtlRegistryRootKeys[12] = {
     s_AppID_006fad8c,
@@ -1736,7 +1913,7 @@ char * gaAtlRegistryRootKeys[12] = {
     s_SYSTEM_006fad28,
     s_Software_006d71ec,
     s_TypeLib_006fad20
-};
+}; D2_GLOBAL_GUARD(gaAtlRegistryRootKeys, "gaAtlRegistryRootKeys");
 
 char s_Unable_to_open_response_file___s_006fcbc0[33] = {
     'U',
@@ -1772,7 +1949,7 @@ char s_Unable_to_open_response_file___s_006fcbc0[33] = {
     '%',
     's',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s_Unable_to_open_response_file___s_006fcbc0, "s_Unable_to_open_response_file___s_006fcbc0");
 
 char s_Invalid_argument___s_006fcc0c[21] = {
     'I',
@@ -1796,21 +1973,1062 @@ char s_Invalid_argument___s_006fcc0c[21] = {
     '%',
     's',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s_Invalid_argument___s_006fcc0c, "s_Invalid_argument___s_006fcc0c");
 
-char * gaSCMD_FallbackMessages[3] = { s_Invalid_argument___s_006fcc0c, s_The_syntax_of_the_command_is_inco_006fcbe4, s_Unable_to_open_response_file___s_006fcbc0 };
+char * gaSCMD_FallbackMessages[3] = { s_Invalid_argument___s_006fcc0c, s_The_syntax_of_the_command_is_inco_006fcbe4, s_Unable_to_open_response_file___s_006fcbc0 }; D2_GLOBAL_GUARD(gaSCMD_FallbackMessages, "gaSCMD_FallbackMessages");
 
-char lpMultiByteStr_006ff97c[2] = { "w" };
+int gaUTF8LeadByteMarks[8] = { 0x0, 0x0, 0xc0, 0xe0, 0xf0, 0xf8, 0xfc, 0x0 }; D2_GLOBAL_GUARD(gaUTF8LeadByteMarks, "gaUTF8LeadByteMarks");
 
-char lpSubBlock_006ff9b8[2] = { "\\" };
+char lpMultiByteStr_006ff97c[2] = { "w" }; D2_GLOBAL_GUARD(lpMultiByteStr_006ff97c, "lpMultiByteStr_006ff97c");
 
-char param_2_006ffc58[3] = { '%', 's', '\x00' };
+char lpSubBlock_006ff9b8[2] = { "\\" }; D2_GLOBAL_GUARD(lpSubBlock_006ff9b8, "lpSubBlock_006ff9b8");
 
-char lpOutputString_006ffcb0[2] = { "\n" };
+char param_2_006ffc58[3] = { '%', 's', '\x00' }; D2_GLOBAL_GUARD(param_2_006ffc58, "param_2_006ffc58");
 
-char gdwFileReadPosition[3] = { '\x0a', '\x0a', '\x00' };
+char lpOutputString_006ffcb0[2] = { "\n" }; D2_GLOBAL_GUARD(lpOutputString_006ffcb0, "lpOutputString_006ffcb0");
 
-char gszCrashDumpRegisterFormatString[4] = { 'E', 'S', 'P', '\x00' };
+char gdwFileReadPosition[3] = { '\x0a', '\x0a', '\x00' }; D2_GLOBAL_GUARD(gdwFileReadPosition, "gdwFileReadPosition");
+
+char gszCrashDumpRegisterFormatString[4] = { 'E', 'S', 'P', '\x00' }; D2_GLOBAL_GUARD(gszCrashDumpRegisterFormatString, "gszCrashDumpRegisterFormatString");
+
+uint8_t gszIniConfigKeywordCharacterAutoSave[32] = {
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd8,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x2e,
+    0xf0,
+    0x68,
+    0x0,
+    0x38,
+    0xf0,
+    0x68,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0
+}; D2_GLOBAL_GUARD(gszIniConfigKeywordCharacterAutoSave, "gszIniConfigKeywordCharacterAutoSave");
+
+uint8_t gszIniConfigKeywordNetworkPort[32] = {
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd8,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x61,
+    0xf0,
+    0x68,
+    0x0,
+    0x6b,
+    0xf0,
+    0x68,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0
+}; D2_GLOBAL_GUARD(gszIniConfigKeywordNetworkPort, "gszIniConfigKeywordNetworkPort");
+
+uint8_t gszIniConfigKeywordDifficultySetting[32] = {
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd8,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x93,
+    0xf0,
+    0x68,
+    0x0,
+    0x9d,
+    0xf0,
+    0x68,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0
+}; D2_GLOBAL_GUARD(gszIniConfigKeywordDifficultySetting, "gszIniConfigKeywordDifficultySetting");
+
+uint8_t gszIniConfigKeywordLanguageCode[28] = {
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd8,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0xce,
+    0xf0,
+    0x68,
+    0x0,
+    0xd8,
+    0xf0,
+    0x68,
+    0x0
+}; D2_GLOBAL_GUARD(gszIniConfigKeywordLanguageCode, "gszIniConfigKeywordLanguageCode");
+
+uint8_t gszIniConfigKeywordTextureFilter[96] = {
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd8,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd8,
+    0x57,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xb4,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xe2,
+    0x6c,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd8,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x92,
+    0x71,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0
+}; D2_GLOBAL_GUARD(gszIniConfigKeywordTextureFilter, "gszIniConfigKeywordTextureFilter");
+
+uint8_t gszIniConfigKeywordGammaCorrection[96] = {
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd8,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xca,
+    0x71,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd4,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xb,
+    0x72,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd4,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x7c,
+    0x7c,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0
+}; D2_GLOBAL_GUARD(gszIniConfigKeywordGammaCorrection, "gszIniConfigKeywordGammaCorrection");
+
+uint8_t gszIniConfigKeywordVsyncOption[264] = {
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd4,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xc6,
+    0x7c,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd4,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xc6,
+    0x7d,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xb0,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x5c,
+    0x83,
+    0x69,
+    0x0,
+    0x70,
+    0x83,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd0,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x85,
+    0x9d,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd0,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x83,
+    0xa2,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd4,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x2d,
+    0xa8,
+    0x69,
+    0x0,
+    0x49,
+    0xa8,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd4,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xce,
+    0xaa,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xc8,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x8f,
+    0xac,
+    0x69,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xcb,
+    0xab,
+    0x69,
+    0x0
+}; D2_GLOBAL_GUARD(gszIniConfigKeywordVsyncOption, "gszIniConfigKeywordVsyncOption");
+
+uint8_t gszIniConfigKeywordExperienceDisplay[96] = {
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd4,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x43,
+    0x2e,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd4,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfc,
+    0x30,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x5c,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x26,
+    0x7e,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0
+}; D2_GLOBAL_GUARD(gszIniConfigKeywordExperienceDisplay, "gszIniConfigKeywordExperienceDisplay");
+
+uint8_t gszIniConfigKeywordVideoDriver[336] = {
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x5c,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xc9,
+    0x7e,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd0,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xca,
+    0x89,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd4,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xa2,
+    0x8a,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd0,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x88,
+    0x8b,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xcc,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x65,
+    0x93,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xcc,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x3a,
+    0x94,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd0,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xee,
+    0x97,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd0,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd8,
+    0xad,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xd0,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xfe,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x1d,
+    0xb0,
+    0x6a,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xc4,
+    0x20,
+    0x70,
+    0x0,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0xcc,
+    0x20,
+    0x70,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xa8,
+    0xc0,
+    0x74,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x4,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0
+}; D2_GLOBAL_GUARD(gszIniConfigKeywordVideoDriver, "gszIniConfigKeywordVideoDriver");
 
 char * gaLanguageNames_00705000[15] = {
     s_English_006cc81c,
@@ -1828,7 +3046,7 @@ char * gaLanguageNames_00705000[15] = {
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
     (char*)0x006cc77c
-};
+}; D2_GLOBAL_GUARD(gaLanguageNames_00705000, "gaLanguageNames_00705000");
 
 char * gaMonthAbbreviations[12] = {
     s_Jan_006ccb2c,
@@ -1843,25 +3061,25 @@ char * gaMonthAbbreviations[12] = {
     s_Oct_006ccb08,
     s_Nov_006ccb04,
     s_Dec_006ccb00
-};
+}; D2_GLOBAL_GUARD(gaMonthAbbreviations, "gaMonthAbbreviations");
 
-int32_t gaMenuFormFontParamsFont3[2] = { 0x3, 0x0 };
+int32_t gaMenuFormFontParamsFont3[2] = { 0x3, 0x0 }; D2_GLOBAL_GUARD(gaMenuFormFontParamsFont3, "gaMenuFormFontParamsFont3");
 
-int32_t gaMenuFormFontParamsFont2[2] = { 0x2, 0x0 };
+int32_t gaMenuFormFontParamsFont2[2] = { 0x2, 0x0 }; D2_GLOBAL_GUARD(gaMenuFormFontParamsFont2, "gaMenuFormFontParamsFont2");
 
-int32_t gaMenuFormFontParamsFont7[2] = { 0x7, 0x0 };
+int32_t gaMenuFormFontParamsFont7[2] = { 0x7, 0x0 }; D2_GLOBAL_GUARD(gaMenuFormFontParamsFont7, "gaMenuFormFontParamsFont7");
 
-int32_t gaMenuFormFontParamsFont0Ex4[2] = { 0x0, 0x4 };
+int32_t gaMenuFormFontParamsFont0Ex4[2] = { 0x0, 0x4 }; D2_GLOBAL_GUARD(gaMenuFormFontParamsFont0Ex4, "gaMenuFormFontParamsFont0Ex4");
 
-int32_t gaMenuFormFontParamsFont4Ex1[2] = { 0x4, 0x1 };
+int32_t gaMenuFormFontParamsFont4Ex1[2] = { 0x4, 0x1 }; D2_GLOBAL_GUARD(gaMenuFormFontParamsFont4Ex1, "gaMenuFormFontParamsFont4Ex1");
 
-int32_t gaMenuFormFontParamsFont5[2] = { 0x5, 0x0 };
+int32_t gaMenuFormFontParamsFont5[2] = { 0x5, 0x0 }; D2_GLOBAL_GUARD(gaMenuFormFontParamsFont5, "gaMenuFormFontParamsFont5");
 
-int32_t gaMenuFormFontParamsFont4[2] = { 0x4, 0x0 };
+int32_t gaMenuFormFontParamsFont4[2] = { 0x4, 0x0 }; D2_GLOBAL_GUARD(gaMenuFormFontParamsFont4, "gaMenuFormFontParamsFont4");
 
-int32_t gaMenuFormFontParamsFont8[2] = { 0x8, 0x0 };
+int32_t gaMenuFormFontParamsFont8[2] = { 0x8, 0x0 }; D2_GLOBAL_GUARD(gaMenuFormFontParamsFont8, "gaMenuFormFontParamsFont8");
 
-int32_t gaMenuTextBoxScrollbarGeom0[3] = { 0x30, 0x1f5, 0x13f };
+int32_t gaMenuTextBoxScrollbarGeom0[3] = { 0x30, 0x1f5, 0x13f }; D2_GLOBAL_GUARD(gaMenuTextBoxScrollbarGeom0, "gaMenuTextBoxScrollbarGeom0");
 
 FORMS_AnimFrameStrc gaCharSelectAnimFramesAssassin[5] = {
     {
@@ -1894,7 +3112,7 @@ FORMS_AnimFrameStrc gaCharSelectAnimFramesAssassin[5] = {
         /* .nDrawMode = */ 0x5,
         /* .nFrameDelay = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaCharSelectAnimFramesAssassin, "gaCharSelectAnimFramesAssassin");
 
 FORMS_AnimFrameStrc gaCharSelectAnimFramesDruid[5] = {
     {
@@ -1927,7 +3145,7 @@ FORMS_AnimFrameStrc gaCharSelectAnimFramesDruid[5] = {
         /* .nDrawMode = */ 0x5,
         /* .nFrameDelay = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaCharSelectAnimFramesDruid, "gaCharSelectAnimFramesDruid");
 
 FORMS_AnimFrameStrc gaCharSelectAnimFramesAmazon[5] = {
     {
@@ -1960,7 +3178,7 @@ FORMS_AnimFrameStrc gaCharSelectAnimFramesAmazon[5] = {
         /* .nDrawMode = */ 0x5,
         /* .nFrameDelay = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaCharSelectAnimFramesAmazon, "gaCharSelectAnimFramesAmazon");
 
 FORMS_AnimFrameStrc gaCharSelectAnimFramesNecromancer[5] = {
     {
@@ -1993,7 +3211,7 @@ FORMS_AnimFrameStrc gaCharSelectAnimFramesNecromancer[5] = {
         /* .nDrawMode = */ 0x3,
         /* .nFrameDelay = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaCharSelectAnimFramesNecromancer, "gaCharSelectAnimFramesNecromancer");
 
 FORMS_AnimFrameStrc gaCharSelectAnimFramesBarbarian[5] = {
     {
@@ -2026,7 +3244,7 @@ FORMS_AnimFrameStrc gaCharSelectAnimFramesBarbarian[5] = {
         /* .nDrawMode = */ 0x5,
         /* .nFrameDelay = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaCharSelectAnimFramesBarbarian, "gaCharSelectAnimFramesBarbarian");
 
 FORMS_AnimFrameStrc gaCharSelectAnimFramesSorceress[5] = {
     {
@@ -2059,7 +3277,7 @@ FORMS_AnimFrameStrc gaCharSelectAnimFramesSorceress[5] = {
         /* .nDrawMode = */ 0x3,
         /* .nFrameDelay = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaCharSelectAnimFramesSorceress, "gaCharSelectAnimFramesSorceress");
 
 FORMS_AnimFrameStrc gaCharSelectAnimFramesPaladin[5] = {
     {
@@ -2092,7 +3310,7 @@ FORMS_AnimFrameStrc gaCharSelectAnimFramesPaladin[5] = {
         /* .nDrawMode = */ 0x5,
         /* .nFrameDelay = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaCharSelectAnimFramesPaladin, "gaCharSelectAnimFramesPaladin");
 
 FORMS_AnimFrameStrc gaMainMenuLogoLeftAnimFrames[5] = {
     {
@@ -2125,7 +3343,7 @@ FORMS_AnimFrameStrc gaMainMenuLogoLeftAnimFrames[5] = {
         /* .nDrawMode = */ 0x3,
         /* .nFrameDelay = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaMainMenuLogoLeftAnimFrames, "gaMainMenuLogoLeftAnimFrames");
 
 FORMS_AnimFrameStrc gaMainMenuLogoRightAnimFrames[5] = {
     {
@@ -2158,41 +3376,41 @@ FORMS_AnimFrameStrc gaMainMenuLogoRightAnimFrames[5] = {
         /* .nDrawMode = */ 0x3,
         /* .nFrameDelay = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaMainMenuLogoRightAnimFrames, "gaMainMenuLogoRightAnimFrames");
 
-int32_t gaMenuTextBoxScrollbarGeom1[3] = { 0x33, 0x1c8, 0x10e };
+int32_t gaMenuTextBoxScrollbarGeom1[3] = { 0x33, 0x1c8, 0x10e }; D2_GLOBAL_GUARD(gaMenuTextBoxScrollbarGeom1, "gaMenuTextBoxScrollbarGeom1");
 
-int32_t gaMenuTextBoxScrollbarGeom2[3] = { 0x2a9, 0x1d3, 0x143 };
+int32_t gaMenuTextBoxScrollbarGeom2[3] = { 0x2a9, 0x1d3, 0x143 }; D2_GLOBAL_GUARD(gaMenuTextBoxScrollbarGeom2, "gaMenuTextBoxScrollbarGeom2");
 
-int32_t gaMenuTextBoxScrollbarGeom3[3] = { 0x225, 0x1eb, 0x9a };
+int32_t gaMenuTextBoxScrollbarGeom3[3] = { 0x225, 0x1eb, 0x9a }; D2_GLOBAL_GUARD(gaMenuTextBoxScrollbarGeom3, "gaMenuTextBoxScrollbarGeom3");
 
-int32_t gaMenuTextBoxScrollbarGeom4[3] = { 0x1b7, 0x187, 0x9a };
+int32_t gaMenuTextBoxScrollbarGeom4[3] = { 0x1b7, 0x187, 0x9a }; D2_GLOBAL_GUARD(gaMenuTextBoxScrollbarGeom4, "gaMenuTextBoxScrollbarGeom4");
 
-int32_t gaMenuTextBoxScrollbarGeom5[3] = { 0x249, 0x1c9, 0x16b };
+int32_t gaMenuTextBoxScrollbarGeom5[3] = { 0x249, 0x1c9, 0x16b }; D2_GLOBAL_GUARD(gaMenuTextBoxScrollbarGeom5, "gaMenuTextBoxScrollbarGeom5");
 
-int32_t gaMultiFormFontParamsFont4[2] = { 0x4, 0x0 };
+int32_t gaMultiFormFontParamsFont4[2] = { 0x4, 0x0 }; D2_GLOBAL_GUARD(gaMultiFormFontParamsFont4, "gaMultiFormFontParamsFont4");
 
-int32_t gaMultiFormFontParamsFont3[2] = { 0x3, 0x0 };
+int32_t gaMultiFormFontParamsFont3[2] = { 0x3, 0x0 }; D2_GLOBAL_GUARD(gaMultiFormFontParamsFont3, "gaMultiFormFontParamsFont3");
 
-int32_t gaMultiFormFontParamsFont2[2] = { 0x2, 0x0 };
+int32_t gaMultiFormFontParamsFont2[2] = { 0x2, 0x0 }; D2_GLOBAL_GUARD(gaMultiFormFontParamsFont2, "gaMultiFormFontParamsFont2");
 
-int32_t gaMultiFormFontParamsFont1[2] = { 0x1, 0x0 };
+int32_t gaMultiFormFontParamsFont1[2] = { 0x1, 0x0 }; D2_GLOBAL_GUARD(gaMultiFormFontParamsFont1, "gaMultiFormFontParamsFont1");
 
-int32_t gaMultiFormFontParamsFont7[2] = { 0x7, 0x0 };
+int32_t gaMultiFormFontParamsFont7[2] = { 0x7, 0x0 }; D2_GLOBAL_GUARD(gaMultiFormFontParamsFont7, "gaMultiFormFontParamsFont7");
 
-int32_t gaMultiTextBoxScrollbarGeom0[3] = { 0x190, 0x186, 0x13a };
+int32_t gaMultiTextBoxScrollbarGeom0[3] = { 0x190, 0x186, 0x13a }; D2_GLOBAL_GUARD(gaMultiTextBoxScrollbarGeom0, "gaMultiTextBoxScrollbarGeom0");
 
-int32_t gaMultiTextBoxScrollbarGeom1[3] = { 0x250, 0x189, 0xad };
+int32_t gaMultiTextBoxScrollbarGeom1[3] = { 0x250, 0x189, 0xad }; D2_GLOBAL_GUARD(gaMultiTextBoxScrollbarGeom1, "gaMultiTextBoxScrollbarGeom1");
 
-int32_t gaMultiTextBoxScrollbarGeom2[3] = { 0x2f1, 0x18a, 0xc4 };
+int32_t gaMultiTextBoxScrollbarGeom2[3] = { 0x2f1, 0x18a, 0xc4 }; D2_GLOBAL_GUARD(gaMultiTextBoxScrollbarGeom2, "gaMultiTextBoxScrollbarGeom2");
 
-int32_t gaMultiTextBoxScrollbarGeom3[3] = { 0x2f1, 0x189, 0xc5 };
+int32_t gaMultiTextBoxScrollbarGeom3[3] = { 0x2f1, 0x189, 0xc5 }; D2_GLOBAL_GUARD(gaMultiTextBoxScrollbarGeom3, "gaMultiTextBoxScrollbarGeom3");
 
-int32_t gaMultiTextBoxScrollbarGeom4[3] = { 0x2f4, 0x187, 0xee };
+int32_t gaMultiTextBoxScrollbarGeom4[3] = { 0x2f4, 0x187, 0xee }; D2_GLOBAL_GUARD(gaMultiTextBoxScrollbarGeom4, "gaMultiTextBoxScrollbarGeom4");
 
-int32_t gaMultiTextBoxScrollbarGeom5[3] = { 0x2f4, 0x187, 0x10a };
+int32_t gaMultiTextBoxScrollbarGeom5[3] = { 0x2f4, 0x187, 0x10a }; D2_GLOBAL_GUARD(gaMultiTextBoxScrollbarGeom5, "gaMultiTextBoxScrollbarGeom5");
 
-int32_t gaMultiTextBoxScrollbarGeom6[3] = { 0x2f1, 0x187, 0x10a };
+int32_t gaMultiTextBoxScrollbarGeom6[3] = { 0x2f1, 0x187, 0x10a }; D2_GLOBAL_GUARD(gaMultiTextBoxScrollbarGeom6, "gaMultiTextBoxScrollbarGeom6");
 
 FORMS_AnimFrameStrc gaMultiLogoAnimFrames[5] = {
     {
@@ -2225,7 +3443,7 @@ FORMS_AnimFrameStrc gaMultiLogoAnimFrames[5] = {
         /* .nDrawMode = */ 0x3,
         /* .nFrameDelay = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(gaMultiLogoAnimFrames, "gaMultiLogoAnimFrames");
 
 char s___AUSGAMEDATA___0070f56c[16] = {
     '.',
@@ -2244,7 +3462,7 @@ char s___AUSGAMEDATA___0070f56c[16] = {
     '@',
     '@',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUSGAMEDATA___0070f56c, "s___AUSGAMEDATA___0070f56c");
 
 char s___AV__TSExplicitList_USGAMEDATA__0070f584[48] = {
     '.',
@@ -2295,7 +3513,7 @@ char s___AV__TSExplicitList_USGAMEDATA__0070f584[48] = {
     '@',
     '@',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AV__TSExplicitList_USGAMEDATA__0070f584, "s___AV__TSExplicitList_USGAMEDATA__0070f584");
 
 char s___AV__TSHashObjectChunk_USGAMEDA_0070f5f4[56] = {
     '.',
@@ -2354,312 +3572,44 @@ char s___AV__TSHashObjectChunk_USGAMEDA_0070f5f4[56] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AV__TSHashObjectChunk_USGAMEDA_0070f5f4, "s___AV__TSHashObjectChunk_USGAMEDA_0070f5f4");
 
 D2UIFlagDescStrc gaUIFlagDescs[38] = {
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x2,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
             0x1,
             0x0,
             0x0,
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x3,
             0x0,
+            0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
             0x0,
             0x1,
             0x0,
             0x0,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0
-        }
-    },
-    {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
             0x0,
             0x1,
             0x0,
@@ -2668,463 +3618,166 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x0,
             0x2,
+            0x1,
             0x0,
             0x0,
+            0x0,
+            0x0,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x0,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x0,
             0x1,
             0x0,
             0x0,
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x2,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
             0x0,
             0x0,
+            0x1,
+            0x1,
             0x0,
+            0x1,
+            0x1,
+            0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
             0x0,
             0x1,
             0x0,
             0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x2,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
             0x0,
             0x0,
             0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x0,
+            0x0,
+            0x0,
+            0x1,
             0x0,
             0x0,
             0x0,
             0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
+            0x1,
             0x0,
             0x0,
+            0x1
+        }
+    },
+    {
+        /* .anDismissMode = */ {
+            0x0,
+            0x1,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
             0x0,
             0x0,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
             0x0,
             0x0,
+            0x1,
             0x0,
+            0x1,
+            0x2,
             0x0,
+            0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x2,
+            0x1,
             0x0,
             0x0,
             0x0,
@@ -3133,7 +3786,7 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
         }
     },
     {
-        /* .aHeader = */ {
+        /* .anDismissMode = */ {
             0x0,
             0x0,
             0x0,
@@ -3166,69 +3819,16 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
             0x0,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
             0x0,
             0x0,
             0x0,
             0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+        }
+    },
+    {
+        /* .anDismissMode = */ {
             0x0,
             0x0,
             0x0,
@@ -3262,6 +3862,72 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
             0x0,
             0x0,
             0x1,
+            0x1,
+            0x1,
+            0x0,
+            0x0,
+            0x0
+        }
+    },
+    {
+        /* .anDismissMode = */ {
+            0x0,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
+            0x0,
+            0x0,
+            0x0,
+            0x3,
+            0x2,
+            0x0,
+            0x2,
+            0x0,
+            0x2,
+            0x3,
+            0x2,
+            0x2,
+            0x0,
+            0x3,
+            0x0,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x2,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x0,
+            0x2,
+            0x2,
+            0x2,
+            0x0,
+            0x2,
+            0x2
+        }
+    },
+    {
+        /* .anDismissMode = */ {
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x3,
+            0x1,
+            0x0,
+            0x0,
+            0x0,
             0x0,
             0x0,
             0x0,
@@ -3274,12 +3940,12 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
             0x0,
             0x0,
             0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
             0x0,
             0x0,
             0x0,
@@ -3288,102 +3954,91 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
+            0x0,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
+            0x3,
+            0x2,
+            0x2,
+            0x2,
+            0x3,
+            0x2,
+            0x3,
+            0x3,
+            0x3,
+            0x0,
+            0x1,
+            0x0,
+            0x2,
+            0x3,
+            0x3,
+            0x1,
+            0x2,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x2,
+            0x2,
+            0x0,
+            0x2,
+            0x1
+        }
+    },
+    {
+        /* .anDismissMode = */ {
+            0x0,
+            0x0,
+            0x2,
+            0x2,
+            0x2,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x2,
+            0x0,
+            0x0,
+            0x3,
+            0x0,
+            0x0,
+            0x2,
+            0x0,
+            0x0,
+            0x3,
+            0x0,
+            0x2,
+            0x0,
+            0x2,
+            0x3,
+            0x2,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x0,
+            0x2,
+            0x2,
+            0x2,
+            0x0,
+            0x2,
+            0x1
+        }
+    },
+    {
+        /* .anDismissMode = */ {
             0x0,
             0x0,
             0x0,
@@ -3417,24 +4072,6 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
             0x0,
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x0,
@@ -3443,837 +4080,17 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x3,
-        /* .aTail = */ {
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0
-        }
-    },
-    {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0
-        }
-    },
-    {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x3,
-        /* .aTail = */ {
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        }
-    },
-    {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        }
-    },
-    {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0
-        }
-    },
-    {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x4,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x0,
@@ -4284,251 +4101,115 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
             0x0,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x2,
-        /* .aTail = */ {
             0x2,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
             0x3,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x2,
+            0x2,
+            0x2,
             0x2,
             0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x4,
-            0x0,
-            0x0,
-            0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
             0x0,
+            0x1,
             0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
             0x1,
             0x0,
             0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
+        /* .anDismissMode = */ {
+            0x0,
+            0x0,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x0,
+            0x0,
+            0x1,
+            0x0,
+            0x0,
+            0x0,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
+            0x3,
+            0x0,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x1
+        }
+    },
+    {
+        /* .anDismissMode = */ {
+            0x0,
+            0x0,
+            0x0,
             0x0,
             0x0,
             0x0,
@@ -4540,58 +4221,8 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
             0x1,
             0x0,
             0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
             0x0,
             0x3,
             0x0,
@@ -4600,236 +4231,15 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
             0x0,
             0x0,
             0x0,
-            0x0,
             0x1,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x1,
-        /* .aTail = */ {
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        }
-    },
-    {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x0,
@@ -4838,970 +4248,259 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x4,
-            0x0,
-            0x0,
-            0x0,
+            0x3,
+            0x3,
+            0x3,
             0x3,
             0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x3,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x2,
-        /* .aTail = */ {
             0x2,
-            0x0,
-            0x0,
+            0x2,
+            0x3,
+            0x2,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x3,
+            0x2,
+            0x2,
+            0x2,
             0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
+        /* .anDismissMode = */ {
             0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x1,
             0x0,
             0x0,
-            0x0,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
             0x3,
             0x0,
+            0x3,
+            0x1,
+            0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
             0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x1,
-        /* .aTail = */ {
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
+            0x1,
+            0x2,
             0x2,
             0x0,
+            0x1,
             0x0,
+            0x1,
             0x0,
             0x2,
-            0x0,
-            0x0,
+            0x1,
+            0x2,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x2,
+            0x1,
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x3,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x1,
-        /* .aTail = */ {
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x3,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x2,
-        /* .aTail = */ {
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x3,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x2,
-        /* .aTail = */ {
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x0,
             0x0,
@@ -5818,83 +4517,7 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
             0x0,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x1,
             0x0,
@@ -5910,11 +4533,7 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
             0x0,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
             0x0,
             0x0,
             0x0,
@@ -5923,1469 +4542,398 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
             0x0,
             0x0,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
             0x3,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x3,
+            0x1,
+            0x1,
             0x0,
-            0x0,
+            0x1,
             0x0,
             0x1,
             0x0,
             0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x0,
+            0x1,
             0x1,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
+        /* .anDismissMode = */ {
             0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
+            0x2,
+            0x2,
             0x2,
             0x0,
             0x0,
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
             0x3,
             0x0,
+            0x3,
+            0x2,
+            0x2,
             0x0,
+            0x2,
             0x0,
+            0x2,
             0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
+            0x3,
+            0x2,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
             0x3,
             0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x2,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
             0x2,
             0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0
+            0x2
         }
     },
     {
-        /* .aHeader = */ {
+        /* .anDismissMode = */ {
             0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
             0x1,
             0x0,
             0x0,
             0x0,
             0x1,
+            0x1,
             0x0,
+            0x1,
+            0x1,
             0x0,
+            0x1,
+            0x1,
+            0x1,
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
             0x0,
             0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
+            0x2,
+            0x2,
             0x3,
             0x0,
-            0x0,
-            0x0,
+            0x3,
             0x2,
-            0x0,
-            0x0,
+            0x1,
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
+            0x2,
+            0x3,
+            0x2,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
             0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
+            0x3,
+            0x2,
             0x2,
             0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x0,
             0x3,
+            0x1,
+            0x2,
+            0x2,
+            0x3,
             0x0,
-            0x0,
+            0x3,
+            0x2,
+            0x1,
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
             0x2,
             0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x3,
+            0x1,
+            0x2,
+            0x2,
+            0x3,
             0x0,
-            0x0,
+            0x3,
+            0x2,
+            0x2,
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
             0x2,
             0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x3,
+            0x1,
+            0x2,
+            0x2,
+            0x3,
             0x0,
-            0x0,
+            0x3,
+            0x2,
+            0x2,
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
             0x2,
             0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x3,
+            0x1,
+            0x2,
+            0x2,
+            0x3,
             0x0,
-            0x0,
+            0x3,
+            0x2,
+            0x2,
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
             0x2,
             0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x3,
+            0x1,
+            0x2,
+            0x2,
+            0x3,
             0x0,
-            0x0,
+            0x3,
+            0x2,
+            0x2,
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
             0x2,
             0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
             0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
             0x2,
             0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x0,
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
             0x1,
             0x0,
             0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x0,
@@ -7400,71 +4948,12 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
             0x0,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x3,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x3,
-            0x0,
-            0x0,
-            0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x0,
@@ -7473,131 +4962,102 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
         }
     },
     {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
+        /* .anDismissMode = */ {
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x0,
             0x0,
             0x3,
+            0x1,
+            0x2,
+            0x2,
+            0x3,
             0x0,
+            0x3,
+            0x2,
+            0x2,
             0x0,
+            0x1,
             0x0,
+            0x2,
+            0x0,
+            0x2,
+            0x3,
+            0x2,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x3,
+            0x1,
             0x1,
             0x0,
             0x0,
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
+            0x1
+        }
+    },
+    {
+        /* .anDismissMode = */ {
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
+            0x1,
+            0x2,
+            0x2,
+            0x2,
+            0x1,
+            0x2,
+            0x1,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
+            0x2,
             0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
-            0x3,
-            0x0,
-            0x0,
-            0x0,
             0x1,
+            0x2,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x0,
+            0x2,
+            0x1
+        }
+    },
+    {
+        /* .anDismissMode = */ {
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
+            0x0,
             0x0,
             0x0,
             0x0,
@@ -7607,647 +5067,111 @@ D2UIFlagDescStrc gaUIFlagDescs[38] = {
             0x0,
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
+            0x1,
             0x0,
             0x0,
             0x1,
+            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x0,
+            0x1,
+            0x1,
+            0x2,
             0x0,
             0x0,
             0x0
         }
     },
     {
-        /* .aHeader = */ {
-            0x2,
+        /* .anDismissMode = */ {
+            0x0,
+            0x0,
+            0x1,
+            0x1,
             0x0,
             0x0,
             0x0,
-            0x2,
             0x0,
+            0x1,
+            0x1,
             0x0,
+            0x1,
+            0x1,
             0x0,
-            0x2,
+            0x1,
+            0x1,
+            0x1,
             0x0,
+            0x1,
             0x0,
+            0x1,
             0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x0,
             0x1,
             0x0,
             0x0,
             0x0,
             0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
+            0x1
         }
     },
     {
-        /* .aHeader = */ {
+        /* .anDismissMode = */ {
             0x0,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
             0x1,
             0x0,
             0x0,
             0x0,
+            0x1,
+            0x1,
             0x0,
+            0x1,
+            0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
             0x0,
             0x1,
             0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
             0x1,
             0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
+            0x1,
             0x0,
             0x1,
             0x0,
             0x0,
             0x0,
             0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0
-        }
-    },
-    {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        }
-    },
-    {
-        /* .aHeader = */ {
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0
-        },
-        /* .nDismissMode = */ 0x0,
-        /* .aTail = */ {
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x0,
-            0x1,
-            0x0,
-            0x0,
-            0x0,
-            0x2,
-            0x0,
-            0x0,
-            0x0
+            0x2
         }
     }
-};
+}; D2_GLOBAL_GUARD(gaUIFlagDescs, "gaUIFlagDescs");
 
 char * gaLanguageNames_00711d04[15] = {
     s_English_006cc81c,
@@ -8265,7 +5189,7 @@ char * gaLanguageNames_00711d04[15] = {
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
     (char*)0x006cc77c
-};
+}; D2_GLOBAL_GUARD(gaLanguageNames_00711d04, "gaLanguageNames_00711d04");
 
 D2CmdBindingStrc gaCmdBindings[57] = {
     {
@@ -8553,7 +5477,7 @@ D2CmdBindingStrc gaCmdBindings[57] = {
         /* .pfnAltHandler = */ nullptr,
         /* .nHasParam = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gaCmdBindings, "gaCmdBindings");
 
 D2EscMenuItemStrc gaEscMenuSwitchClassTable[7] = {
     {
@@ -17824,7 +14748,7 @@ D2EscMenuItemStrc gaEscMenuSwitchClassTable[7] = {
         /* .pDC6Main = */ nullptr,
         /* .pDC6SubImages = */ { nullptr, nullptr, nullptr, nullptr }
     }
-};
+}; D2_GLOBAL_GUARD(gaEscMenuSwitchClassTable, "gaEscMenuSwitchClassTable");
 
 D2EscMenuItemStrc gaEscMenuDeleteCharTable[8] = {
     {
@@ -28419,7 +25343,43 @@ D2EscMenuItemStrc gaEscMenuDeleteCharTable[8] = {
         /* .pDC6Main = */ nullptr,
         /* .pDC6SubImages = */ { nullptr, nullptr, nullptr, nullptr }
     }
-};
+}; D2_GLOBAL_GUARD(gaEscMenuDeleteCharTable, "gaEscMenuDeleteCharTable");
+
+char * gaLanguageNames_00722414[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_00722414, "gaLanguageNames_00722414");
+
+char * gaLanguageNames_00722470[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_00722470, "gaLanguageNames_00722470");
 
 uint16_t gaQuestDescData_DenOfEvil[32] = {
     0xe82,
@@ -28454,7 +25414,7 @@ uint16_t gaQuestDescData_DenOfEvil[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_DenOfEvil, "gaQuestDescData_DenOfEvil");
 
 uint16_t gaQuestDescData_SistersBurialGrounds[32] = {
     0xe83,
@@ -28489,7 +25449,7 @@ uint16_t gaQuestDescData_SistersBurialGrounds[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_SistersBurialGrounds, "gaQuestDescData_SistersBurialGrounds");
 
 uint16_t gaQuestDescData_ToolsOfTheTrade[32] = {
     0xe84,
@@ -28524,7 +25484,7 @@ uint16_t gaQuestDescData_ToolsOfTheTrade[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_ToolsOfTheTrade, "gaQuestDescData_ToolsOfTheTrade");
 
 uint16_t gaQuestDescData_SearchForCain[32] = {
     0xe85,
@@ -28559,7 +25519,7 @@ uint16_t gaQuestDescData_SearchForCain[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_SearchForCain, "gaQuestDescData_SearchForCain");
 
 uint16_t gaQuestDescData_ForgottenTower[32] = {
     0xe86,
@@ -28594,7 +25554,7 @@ uint16_t gaQuestDescData_ForgottenTower[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_ForgottenTower, "gaQuestDescData_ForgottenTower");
 
 uint16_t gaQuestDescData_SistersToTheSlaughter[32] = {
     0xe87,
@@ -28629,7 +25589,7 @@ uint16_t gaQuestDescData_SistersToTheSlaughter[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_SistersToTheSlaughter, "gaQuestDescData_SistersToTheSlaughter");
 
 uint16_t gaQuestDescData_RadamentsLair[32] = {
     0x39b,
@@ -28664,7 +25624,7 @@ uint16_t gaQuestDescData_RadamentsLair[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_RadamentsLair, "gaQuestDescData_RadamentsLair");
 
 uint16_t gaQuestDescData_HoradricStaff[32] = {
     0x39c,
@@ -28699,7 +25659,7 @@ uint16_t gaQuestDescData_HoradricStaff[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_HoradricStaff, "gaQuestDescData_HoradricStaff");
 
 uint16_t gaQuestDescData_TaintedSun[32] = {
     0x39d,
@@ -28734,7 +25694,7 @@ uint16_t gaQuestDescData_TaintedSun[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_TaintedSun, "gaQuestDescData_TaintedSun");
 
 uint16_t gaQuestDescData_ArcaneSanctuary[32] = {
     0x39e,
@@ -28769,7 +25729,7 @@ uint16_t gaQuestDescData_ArcaneSanctuary[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_ArcaneSanctuary, "gaQuestDescData_ArcaneSanctuary");
 
 uint16_t gaQuestDescData_TheSummoner[32] = {
     0x39f,
@@ -28804,7 +25764,7 @@ uint16_t gaQuestDescData_TheSummoner[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_TheSummoner, "gaQuestDescData_TheSummoner");
 
 uint16_t gaQuestDescData_LamEsensTome[32] = {
     0x3a2,
@@ -28839,7 +25799,7 @@ uint16_t gaQuestDescData_LamEsensTome[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_LamEsensTome, "gaQuestDescData_LamEsensTome");
 
 uint16_t gaQuestDescData_KhalimsWill[32] = {
     0x3a3,
@@ -28874,7 +25834,7 @@ uint16_t gaQuestDescData_KhalimsWill[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_KhalimsWill, "gaQuestDescData_KhalimsWill");
 
 uint16_t gaQuestDescData_BladeOfTheOldReligion[32] = {
     0x3a4,
@@ -28909,7 +25869,7 @@ uint16_t gaQuestDescData_BladeOfTheOldReligion[32] = {
     0xe8e,
     0x24b,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_BladeOfTheOldReligion, "gaQuestDescData_BladeOfTheOldReligion");
 
 uint16_t gaQuestDescData_GoldenBird[32] = {
     0x3a5,
@@ -28944,7 +25904,7 @@ uint16_t gaQuestDescData_GoldenBird[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_GoldenBird, "gaQuestDescData_GoldenBird");
 
 uint16_t gaQuestDescData_BlackenedTemple[32] = {
     0x3a6,
@@ -28979,7 +25939,7 @@ uint16_t gaQuestDescData_BlackenedTemple[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_BlackenedTemple, "gaQuestDescData_BlackenedTemple");
 
 uint16_t gaQuestDescData_TheGuardian[32] = {
     0x3a7,
@@ -29014,7 +25974,7 @@ uint16_t gaQuestDescData_TheGuardian[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_TheGuardian, "gaQuestDescData_TheGuardian");
 
 uint16_t gaQuestDescData_TerrorsEnd[32] = {
     0x3aa,
@@ -29049,7 +26009,7 @@ uint16_t gaQuestDescData_TerrorsEnd[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_TerrorsEnd, "gaQuestDescData_TerrorsEnd");
 
 uint16_t gaQuestDescData_HellsForge[32] = {
     0x3ab,
@@ -29084,7 +26044,7 @@ uint16_t gaQuestDescData_HellsForge[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_HellsForge, "gaQuestDescData_HellsForge");
 
 uint16_t gaQuestDescData_RescueMountArreat[32] = {
     0x585e,
@@ -29119,7 +26079,7 @@ uint16_t gaQuestDescData_RescueMountArreat[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_RescueMountArreat, "gaQuestDescData_RescueMountArreat");
 
 uint16_t gaQuestDescData_PrisonOfIce[32] = {
     0x5863,
@@ -29154,7 +26114,7 @@ uint16_t gaQuestDescData_PrisonOfIce[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_PrisonOfIce, "gaQuestDescData_PrisonOfIce");
 
 uint16_t gaQuestDescData_BetrayalOfHarrogath[32] = {
     0x5869,
@@ -29189,7 +26149,7 @@ uint16_t gaQuestDescData_BetrayalOfHarrogath[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_BetrayalOfHarrogath, "gaQuestDescData_BetrayalOfHarrogath");
 
 uint16_t gaQuestDescData_RiteOfPassage[32] = {
     0x586d,
@@ -29224,7 +26184,7 @@ uint16_t gaQuestDescData_RiteOfPassage[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_RiteOfPassage, "gaQuestDescData_RiteOfPassage");
 
 uint16_t gaQuestDescData_EveOfDestruction[32] = {
     0x5871,
@@ -29259,7 +26219,25 @@ uint16_t gaQuestDescData_EveOfDestruction[32] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(gaQuestDescData_EveOfDestruction, "gaQuestDescData_EveOfDestruction");
+
+char * gaLanguageNames_007251e0[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_007251e0, "gaLanguageNames_007251e0");
 
 D2SpeechBankStrc gaNpcSpeechData_725498[12] = {
     {
@@ -29346,7 +26324,7 @@ D2SpeechBankStrc gaNpcSpeechData_725498[12] = {
         /* .eQuest = */ QUEST_AbleGoToAct2,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcSpeechData_725498, "gaNpcSpeechData_725498");
 
 // also labelled: gaWaypointActEntryTable
 D2SpeechBankStrc gaNpcSpeechBank_725550[11] = {
@@ -29427,7 +26405,7 @@ D2SpeechBankStrc gaNpcSpeechBank_725550[11] = {
         /* .eQuest = */ QUEST_TheSearchForCain,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcSpeechBank_725550, "gaNpcSpeechBank_725550");
 
 D2SpeechBankStrc gaNpcDialogOptionData_7255f8[9] = {
     {
@@ -29493,7 +26471,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_7255f8[9] = {
         /* .eQuest = */ QUEST_AbleGoToAct2,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_7255f8, "gaNpcDialogOptionData_7255f8");
 
 D2SpeechBankStrc gaNpcDialogOptionData_725680[7] = {
     {
@@ -29545,7 +26523,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_725680[7] = {
         /* .eQuest = */ QUEST_AbleGoToAct2,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_725680, "gaNpcDialogOptionData_725680");
 
 D2SpeechBankStrc gaNpcDialogOptionData_7256f0[7] = {
     {
@@ -29597,7 +26575,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_7256f0[7] = {
         /* .eQuest = */ QUEST_AbleGoToAct2,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_7256f0, "gaNpcDialogOptionData_7256f0");
 
 D2SpeechBankStrc gaNpcDialogOptionData_725760[8] = {
     {
@@ -29656,7 +26634,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_725760[8] = {
         /* .eQuest = */ QUEST_AbleGoToAct2,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_725760, "gaNpcDialogOptionData_725760");
 
 D2SpeechBankStrc gaNpcDialogOptionData_7257d8[9] = {
     {
@@ -29722,7 +26700,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_7257d8[9] = {
         /* .eQuest = */ QUEST_AbleGoToAct2,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_7257d8, "gaNpcDialogOptionData_7257d8");
 
 D2SpeechBankStrc gaNpcDialogOptionData_725860[13] = {
     {
@@ -29816,7 +26794,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_725860[13] = {
         /* .eQuest = */ QUEST_SistersToTheSlaughter,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_725860, "gaNpcDialogOptionData_725860");
 
 D2SpeechBankStrc gaNpcDialogOptionData_725928[10] = {
     {
@@ -29889,7 +26867,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_725928[10] = {
         /* .eQuest = */ QUEST_AbleGoToAct3,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_725928, "gaNpcDialogOptionData_725928");
 
 D2SpeechBankStrc gaNpcDialogOptionData_7259c0[12] = {
     {
@@ -29976,7 +26954,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_7259c0[12] = {
         /* .eQuest = */ QUEST_AbleGoToAct3,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_7259c0, "gaNpcDialogOptionData_7259c0");
 
 D2SpeechBankStrc gaNpcDialogOptionData_725a78[14] = {
     {
@@ -30077,7 +27055,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_725a78[14] = {
         /* .eQuest = */ QUEST_AbleGoToAct3,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_725a78, "gaNpcDialogOptionData_725a78");
 
 D2SpeechBankStrc gaNpcDialogOptionData_725b50[12] = {
     {
@@ -30164,7 +27142,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_725b50[12] = {
         /* .eQuest = */ QUEST_AbleGoToAct3,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_725b50, "gaNpcDialogOptionData_725b50");
 
 D2SpeechBankStrc gaNpcDialogOptionData_725c08[11] = {
     {
@@ -30244,7 +27222,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_725c08[11] = {
         /* .eQuest = */ QUEST_AbleGoToAct3,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_725c08, "gaNpcDialogOptionData_725c08");
 
 D2SpeechBankStrc gaNpcSpriteFrameData_725d48[12] = {
     {
@@ -30331,7 +27309,7 @@ D2SpeechBankStrc gaNpcSpriteFrameData_725d48[12] = {
         /* .eQuest = */ QUEST_AbleGoToAct3,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcSpriteFrameData_725d48, "gaNpcSpriteFrameData_725d48");
 
 D2SpeechBankStrc gaNpcSpriteFrameData_725e00[11] = {
     {
@@ -30411,7 +27389,7 @@ D2SpeechBankStrc gaNpcSpriteFrameData_725e00[11] = {
         /* .eQuest = */ QUEST_AbleGoToAct3,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcSpriteFrameData_725e00, "gaNpcSpriteFrameData_725e00");
 
 D2SpeechBankStrc gaNpcDialogOptionData_725ea8[12] = {
     {
@@ -30498,7 +27476,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_725ea8[12] = {
         /* .eQuest = */ QUEST_AbleGoToAct3,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_725ea8, "gaNpcDialogOptionData_725ea8");
 
 D2SpeechBankStrc gaNpcDialogOptionData_725f60[7] = {
     {
@@ -30550,7 +27528,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_725f60[7] = {
         /* .eQuest = */ QUEST_AbleGoToAct3,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_725f60, "gaNpcDialogOptionData_725f60");
 
 D2SpeechBankStrc gaNpcDialogOptionData_725fd0[11] = {
     {
@@ -30630,7 +27608,7 @@ D2SpeechBankStrc gaNpcDialogOptionData_725fd0[11] = {
         /* .eQuest = */ QUEST_AbleGoToAct4,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcDialogOptionData_725fd0, "gaNpcDialogOptionData_725fd0");
 
 D2SpeechBankStrc D2SpeechBankStrc_ARRAY_00726078[12] = {
     {
@@ -30717,7 +27695,7 @@ D2SpeechBankStrc D2SpeechBankStrc_ARRAY_00726078[12] = {
         /* .eQuest = */ QUEST_UnknownDuplicate1,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(D2SpeechBankStrc_ARRAY_00726078, "D2SpeechBankStrc_ARRAY_00726078");
 
 // also labelled: gaNpcSpriteFrameData_726165
 D2SpeechBankStrc gaNpcSpeechBank_726130[9] = {
@@ -30784,7 +27762,7 @@ D2SpeechBankStrc gaNpcSpeechBank_726130[9] = {
         /* .eQuest = */ QUEST_AbleGoToAct4,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcSpeechBank_726130, "gaNpcSpeechBank_726130");
 
 D2SpeechBankStrc D2SpeechBankStrc_ARRAY_007261b8[11] = {
     {
@@ -30864,7 +27842,7 @@ D2SpeechBankStrc D2SpeechBankStrc_ARRAY_007261b8[11] = {
         /* .eQuest = */ QUEST_AbleGoToAct4,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(D2SpeechBankStrc_ARRAY_007261b8, "D2SpeechBankStrc_ARRAY_007261b8");
 
 D2SpeechBankStrc D2SpeechBankStrc_ARRAY_00726260[12] = {
     {
@@ -30951,7 +27929,7 @@ D2SpeechBankStrc D2SpeechBankStrc_ARRAY_00726260[12] = {
         /* .eQuest = */ QUEST_AbleGoToAct4,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(D2SpeechBankStrc_ARRAY_00726260, "D2SpeechBankStrc_ARRAY_00726260");
 
 D2SpeechBankStrc gaNpcSpriteFrameData_726314[3] = {
     {
@@ -30975,7 +27953,7 @@ D2SpeechBankStrc gaNpcSpriteFrameData_726314[3] = {
         /* .eQuest = */ QUEST_AbleGoToAct4,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcSpriteFrameData_726314, "gaNpcSpriteFrameData_726314");
 
 D2SpeechBankStrc D2SpeechBankStrc_ARRAY_00726344[3] = {
     {
@@ -30999,7 +27977,7 @@ D2SpeechBankStrc D2SpeechBankStrc_ARRAY_00726344[3] = {
         /* .eQuest = */ QUEST_AbleGoToAct4,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(D2SpeechBankStrc_ARRAY_00726344, "D2SpeechBankStrc_ARRAY_00726344");
 
 D2SpeechBankStrc D2SpeechBankStrc_ARRAY_00726378[6] = {
     {
@@ -31044,7 +28022,7 @@ D2SpeechBankStrc D2SpeechBankStrc_ARRAY_00726378[6] = {
         /* .eQuest = */ QUEST_AbleGoToAct4,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(D2SpeechBankStrc_ARRAY_00726378, "D2SpeechBankStrc_ARRAY_00726378");
 
 D2SpeechBankStrc D2SpeechBankStrc_ARRAY_007263d8[12] = {
     {
@@ -31131,7 +28109,7 @@ D2SpeechBankStrc D2SpeechBankStrc_ARRAY_007263d8[12] = {
         /* .eQuest = */ QUEST_AbleGoToAct5,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(D2SpeechBankStrc_ARRAY_007263d8, "D2SpeechBankStrc_ARRAY_007263d8");
 
 D2SpeechBankStrc gaNpcSpriteFrameData_726490[12] = {
     {
@@ -31218,7 +28196,7 @@ D2SpeechBankStrc gaNpcSpriteFrameData_726490[12] = {
         /* .eQuest = */ QUEST_AbleGoToAct5,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcSpriteFrameData_726490, "gaNpcSpriteFrameData_726490");
 
 // also labelled: gbyCharClassNameTableStart
 D2SpeechBankStrc gaNpcSpeechBank_726548[12] = {
@@ -31306,7 +28284,7 @@ D2SpeechBankStrc gaNpcSpeechBank_726548[12] = {
         /* .eQuest = */ QUEST_AbleGoToAct5,
         /* .nPlayerClass = */ 0x7
     }
-};
+}; D2_GLOBAL_GUARD(gaNpcSpeechBank_726548, "gaNpcSpeechBank_726548");
 
 D2SpeechBankStrc D2SpeechBankStrc_ARRAY_00726600[16] = {
     {
@@ -31421,7 +28399,7 @@ D2SpeechBankStrc D2SpeechBankStrc_ARRAY_00726600[16] = {
         /* .eQuest = */ QUEST_AbleGoToAct5,
         /* .nPlayerClass = */ 0x4
     }
-};
+}; D2_GLOBAL_GUARD(D2SpeechBankStrc_ARRAY_00726600, "D2SpeechBankStrc_ARRAY_00726600");
 
 D2SpeechBankStrc D2SpeechBankStrc_ARRAY_007266f0[12] = {
     {
@@ -31508,7 +28486,7 @@ D2SpeechBankStrc D2SpeechBankStrc_ARRAY_007266f0[12] = {
         /* .eQuest = */ QUEST_AbleGoToAct5,
         /* .nPlayerClass = */ 0x2
     }
-};
+}; D2_GLOBAL_GUARD(D2SpeechBankStrc_ARRAY_007266f0, "D2SpeechBankStrc_ARRAY_007266f0");
 
 D2SpeechBankStrc D2SpeechBankStrc_ARRAY_007267a8[11] = {
     {
@@ -31588,7 +28566,27 @@ D2SpeechBankStrc D2SpeechBankStrc_ARRAY_007267a8[11] = {
         /* .eQuest = */ QUEST_AbleGoToAct5,
         /* .nPlayerClass = */ 0x3
     }
-};
+}; D2_GLOBAL_GUARD(D2SpeechBankStrc_ARRAY_007267a8, "D2SpeechBankStrc_ARRAY_007267a8");
+
+char * gaLanguageNames_007273a8[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_007273a8, "gaLanguageNames_007273a8");
+
+uint32_t gnCursorInvTypeAutoOpenC[5] = { 0x0, 0x1, 0x4, 0x2, 0x6 }; D2_GLOBAL_GUARD(gnCursorInvTypeAutoOpenC, "gnCursorInvTypeAutoOpenC");
 
 eD2Sounds eD2Sounds_ARRAY_00727f48[12] = {
     SOUND_NONE,
@@ -31603,7 +28601,7 @@ eD2Sounds eD2Sounds_ARRAY_00727f48[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00727f48, "eD2Sounds_ARRAY_00727f48");
 
 eD2Sounds eD2Sounds_ARRAY_00727f78[12] = {
     SOUND_NONE,
@@ -31618,7 +28616,7 @@ eD2Sounds eD2Sounds_ARRAY_00727f78[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00727f78, "eD2Sounds_ARRAY_00727f78");
 
 eD2Sounds eD2Sounds_ARRAY_00727fa8[12] = {
     SOUND_NONE,
@@ -31633,7 +28631,7 @@ eD2Sounds eD2Sounds_ARRAY_00727fa8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00727fa8, "eD2Sounds_ARRAY_00727fa8");
 
 eD2Sounds eD2Sounds_ARRAY_00728008[12] = {
     SOUND_NONE,
@@ -31648,7 +28646,7 @@ eD2Sounds eD2Sounds_ARRAY_00728008[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728008, "eD2Sounds_ARRAY_00728008");
 
 eD2Sounds eD2Sounds_ARRAY_00728038[12] = {
     SOUND_NONE,
@@ -31663,7 +28661,7 @@ eD2Sounds eD2Sounds_ARRAY_00728038[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728038, "eD2Sounds_ARRAY_00728038");
 
 eD2Sounds eD2Sounds_ARRAY_00728068[12] = {
     SOUND_NONE,
@@ -31678,7 +28676,7 @@ eD2Sounds eD2Sounds_ARRAY_00728068[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728068, "eD2Sounds_ARRAY_00728068");
 
 eD2Sounds eD2Sounds_ARRAY_00728098[12] = {
     SOUND_NONE,
@@ -31693,7 +28691,7 @@ eD2Sounds eD2Sounds_ARRAY_00728098[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728098, "eD2Sounds_ARRAY_00728098");
 
 eD2Sounds eD2Sounds_ARRAY_007280c8[12] = {
     SOUND_NONE,
@@ -31708,7 +28706,7 @@ eD2Sounds eD2Sounds_ARRAY_007280c8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007280c8, "eD2Sounds_ARRAY_007280c8");
 
 eD2Sounds eD2Sounds_ARRAY_007280f8[12] = {
     SOUND_NONE,
@@ -31723,7 +28721,7 @@ eD2Sounds eD2Sounds_ARRAY_007280f8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007280f8, "eD2Sounds_ARRAY_007280f8");
 
 eD2Sounds eD2Sounds_ARRAY_00728128[12] = {
     SOUND_NONE,
@@ -31738,7 +28736,7 @@ eD2Sounds eD2Sounds_ARRAY_00728128[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728128, "eD2Sounds_ARRAY_00728128");
 
 eD2Sounds eD2Sounds_ARRAY_00728188[12] = {
     SOUND_NONE,
@@ -31753,7 +28751,7 @@ eD2Sounds eD2Sounds_ARRAY_00728188[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728188, "eD2Sounds_ARRAY_00728188");
 
 eD2Sounds eD2Sounds_ARRAY_007281b8[12] = {
     SOUND_NONE,
@@ -31768,7 +28766,7 @@ eD2Sounds eD2Sounds_ARRAY_007281b8[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007281b8, "eD2Sounds_ARRAY_007281b8");
 
 eD2Sounds eD2Sounds_ARRAY_007281e8[12] = {
     SOUND_NONE,
@@ -31783,7 +28781,7 @@ eD2Sounds eD2Sounds_ARRAY_007281e8[12] = {
     SOUND_CURSOR_PASS,
     SOUND_SORCERESS_CHAT_A_1,
     SOUND_CURSOR_SELECT
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007281e8, "eD2Sounds_ARRAY_007281e8");
 
 eD2Sounds eD2Sounds_ARRAY_00728218[12] = {
     SOUND_NONE,
@@ -31798,7 +28796,7 @@ eD2Sounds eD2Sounds_ARRAY_00728218[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728218, "eD2Sounds_ARRAY_00728218");
 
 eD2Sounds eD2Sounds_ARRAY_00728278[12] = {
     SOUND_NONE,
@@ -31813,7 +28811,7 @@ eD2Sounds eD2Sounds_ARRAY_00728278[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728278, "eD2Sounds_ARRAY_00728278");
 
 eD2Sounds eD2Sounds_ARRAY_007282a8[12] = {
     SOUND_NONE,
@@ -31828,7 +28826,7 @@ eD2Sounds eD2Sounds_ARRAY_007282a8[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007282a8, "eD2Sounds_ARRAY_007282a8");
 
 eD2Sounds eD2Sounds_ARRAY_007282d8[12] = {
     SOUND_NONE,
@@ -31843,7 +28841,7 @@ eD2Sounds eD2Sounds_ARRAY_007282d8[12] = {
     SOUND_CURSOR_SELECT,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007282d8, "eD2Sounds_ARRAY_007282d8");
 
 eD2Sounds eD2Sounds_ARRAY_00728308[12] = {
     SOUND_NONE,
@@ -31858,7 +28856,7 @@ eD2Sounds eD2Sounds_ARRAY_00728308[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728308, "eD2Sounds_ARRAY_00728308");
 
 eD2Sounds eD2Sounds_ARRAY_00728368[12] = {
     SOUND_NONE,
@@ -31873,7 +28871,7 @@ eD2Sounds eD2Sounds_ARRAY_00728368[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728368, "eD2Sounds_ARRAY_00728368");
 
 eD2Sounds eD2Sounds_ARRAY_00728398[12] = {
     SOUND_NONE,
@@ -31888,7 +28886,7 @@ eD2Sounds eD2Sounds_ARRAY_00728398[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728398, "eD2Sounds_ARRAY_00728398");
 
 eD2Sounds eD2Sounds_ARRAY_007283c8[12] = {
     SOUND_NONE,
@@ -31903,7 +28901,7 @@ eD2Sounds eD2Sounds_ARRAY_007283c8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007283c8, "eD2Sounds_ARRAY_007283c8");
 
 eD2Sounds eD2Sounds_ARRAY_007283f8[12] = {
     SOUND_NONE,
@@ -31918,7 +28916,7 @@ eD2Sounds eD2Sounds_ARRAY_007283f8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007283f8, "eD2Sounds_ARRAY_007283f8");
 
 eD2Sounds eD2Sounds_ARRAY_00728428[12] = {
     SOUND_NONE,
@@ -31933,7 +28931,7 @@ eD2Sounds eD2Sounds_ARRAY_00728428[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728428, "eD2Sounds_ARRAY_00728428");
 
 eD2Sounds eD2Sounds_ARRAY_00728458[12] = {
     SOUND_NONE,
@@ -31948,7 +28946,7 @@ eD2Sounds eD2Sounds_ARRAY_00728458[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728458, "eD2Sounds_ARRAY_00728458");
 
 eD2Sounds eD2Sounds_ARRAY_00728488[12] = {
     SOUND_NONE,
@@ -31963,7 +28961,7 @@ eD2Sounds eD2Sounds_ARRAY_00728488[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728488, "eD2Sounds_ARRAY_00728488");
 
 eD2Sounds eD2Sounds_ARRAY_007284b8[12] = {
     SOUND_NONE,
@@ -31978,7 +28976,7 @@ eD2Sounds eD2Sounds_ARRAY_007284b8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007284b8, "eD2Sounds_ARRAY_007284b8");
 
 eD2Sounds eD2Sounds_ARRAY_007284e8[12] = {
     SOUND_NONE,
@@ -31993,7 +28991,7 @@ eD2Sounds eD2Sounds_ARRAY_007284e8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007284e8, "eD2Sounds_ARRAY_007284e8");
 
 eD2Sounds eD2Sounds_ARRAY_00728518[12] = {
     SOUND_NONE,
@@ -32008,7 +29006,7 @@ eD2Sounds eD2Sounds_ARRAY_00728518[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728518, "eD2Sounds_ARRAY_00728518");
 
 eD2Sounds eD2Sounds_ARRAY_00728548[12] = {
     SOUND_NONE,
@@ -32023,7 +29021,7 @@ eD2Sounds eD2Sounds_ARRAY_00728548[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728548, "eD2Sounds_ARRAY_00728548");
 
 eD2Sounds eD2Sounds_ARRAY_00728578[12] = {
     SOUND_NONE,
@@ -32038,7 +29036,7 @@ eD2Sounds eD2Sounds_ARRAY_00728578[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728578, "eD2Sounds_ARRAY_00728578");
 
 eD2Sounds eD2Sounds_ARRAY_007285a8[12] = {
     SOUND_NONE,
@@ -32053,7 +29051,7 @@ eD2Sounds eD2Sounds_ARRAY_007285a8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007285a8, "eD2Sounds_ARRAY_007285a8");
 
 eD2Sounds eD2Sounds_ARRAY_007285d8[12] = {
     SOUND_NONE,
@@ -32068,7 +29066,7 @@ eD2Sounds eD2Sounds_ARRAY_007285d8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007285d8, "eD2Sounds_ARRAY_007285d8");
 
 eD2Sounds eD2Sounds_ARRAY_00728608[12] = {
     SOUND_NONE,
@@ -32083,7 +29081,7 @@ eD2Sounds eD2Sounds_ARRAY_00728608[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728608, "eD2Sounds_ARRAY_00728608");
 
 eD2Sounds eD2Sounds_ARRAY_00728638[12] = {
     SOUND_NONE,
@@ -32098,7 +29096,7 @@ eD2Sounds eD2Sounds_ARRAY_00728638[12] = {
     SOUND_CURSOR_SELECT,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728638, "eD2Sounds_ARRAY_00728638");
 
 eD2Sounds eD2Sounds_ARRAY_00728668[12] = {
     SOUND_PALADIN_ACT3_FIND_LAMESEN,
@@ -32113,7 +29111,7 @@ eD2Sounds eD2Sounds_ARRAY_00728668[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728668, "eD2Sounds_ARRAY_00728668");
 
 eD2Sounds eD2Sounds_ARRAY_00728698[12] = {
     SOUND_NONE,
@@ -32128,7 +29126,7 @@ eD2Sounds eD2Sounds_ARRAY_00728698[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728698, "eD2Sounds_ARRAY_00728698");
 
 eD2Sounds eD2Sounds_ARRAY_007286c8[12] = {
     SOUND_PALADIN_ACT3_COMPLETE_BLACKENED,
@@ -32143,7 +29141,7 @@ eD2Sounds eD2Sounds_ARRAY_007286c8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007286c8, "eD2Sounds_ARRAY_007286c8");
 
 eD2Sounds eD2Sounds_ARRAY_007286f8[12] = {
     SOUND_NONE,
@@ -32158,7 +29156,7 @@ eD2Sounds eD2Sounds_ARRAY_007286f8[12] = {
     SOUND_CURSOR_SELECT,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007286f8, "eD2Sounds_ARRAY_007286f8");
 
 eD2Sounds eD2Sounds_ARRAY_00728728[12] = {
     SOUND_PALADIN_ACT3_FIND_BENEATH,
@@ -32173,7 +29171,7 @@ eD2Sounds eD2Sounds_ARRAY_00728728[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728728, "eD2Sounds_ARRAY_00728728");
 
 eD2Sounds eD2Sounds_ARRAY_00728758[12] = {
     SOUND_NONE,
@@ -32188,7 +29186,7 @@ eD2Sounds eD2Sounds_ARRAY_00728758[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728758, "eD2Sounds_ARRAY_00728758");
 
 eD2Sounds eD2Sounds_ARRAY_00728788[12] = {
     SOUND_NONE,
@@ -32203,7 +29201,7 @@ eD2Sounds eD2Sounds_ARRAY_00728788[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728788, "eD2Sounds_ARRAY_00728788");
 
 eD2Sounds eD2Sounds_ARRAY_007287b8[12] = {
     SOUND_PALADIN_ACT3_FIND_GUARDIAN,
@@ -32218,7 +29216,7 @@ eD2Sounds eD2Sounds_ARRAY_007287b8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007287b8, "eD2Sounds_ARRAY_007287b8");
 
 eD2Sounds eD2Sounds_ARRAY_007287e8[12] = {
     SOUND_PALADIN_ACT3_FIND_LAMESEN,
@@ -32233,7 +29231,7 @@ eD2Sounds eD2Sounds_ARRAY_007287e8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007287e8, "eD2Sounds_ARRAY_007287e8");
 
 eD2Sounds eD2Sounds_ARRAY_00728848[12] = {
     SOUND_NONE,
@@ -32248,7 +29246,7 @@ eD2Sounds eD2Sounds_ARRAY_00728848[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728848, "eD2Sounds_ARRAY_00728848");
 
 eD2Sounds eD2Sounds_ARRAY_00728878[12] = {
     SOUND_NONE,
@@ -32263,7 +29261,7 @@ eD2Sounds eD2Sounds_ARRAY_00728878[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728878, "eD2Sounds_ARRAY_00728878");
 
 eD2Sounds eD2Sounds_ARRAY_007288a8[12] = {
     SOUND_NONE,
@@ -32278,7 +29276,7 @@ eD2Sounds eD2Sounds_ARRAY_007288a8[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007288a8, "eD2Sounds_ARRAY_007288a8");
 
 eD2Sounds eD2Sounds_ARRAY_007288d8[12] = {
     SOUND_NONE,
@@ -32293,7 +29291,7 @@ eD2Sounds eD2Sounds_ARRAY_007288d8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007288d8, "eD2Sounds_ARRAY_007288d8");
 
 eD2Sounds eD2Sounds_ARRAY_00728908[12] = {
     SOUND_NONE,
@@ -32308,7 +29306,7 @@ eD2Sounds eD2Sounds_ARRAY_00728908[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728908, "eD2Sounds_ARRAY_00728908");
 
 eD2Sounds eD2Sounds_ARRAY_00728938[12] = {
     SOUND_NONE,
@@ -32323,7 +29321,7 @@ eD2Sounds eD2Sounds_ARRAY_00728938[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728938, "eD2Sounds_ARRAY_00728938");
 
 eD2Sounds eD2Sounds_ARRAY_00728968[12] = {
     SOUND_NONE,
@@ -32338,7 +29336,7 @@ eD2Sounds eD2Sounds_ARRAY_00728968[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728968, "eD2Sounds_ARRAY_00728968");
 
 eD2Sounds eD2Sounds_ARRAY_00728998[12] = {
     SOUND_NONE,
@@ -32353,7 +29351,7 @@ eD2Sounds eD2Sounds_ARRAY_00728998[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728998, "eD2Sounds_ARRAY_00728998");
 
 eD2Sounds eD2Sounds_ARRAY_007289c8[12] = {
     SOUND_NONE,
@@ -32368,7 +29366,7 @@ eD2Sounds eD2Sounds_ARRAY_007289c8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007289c8, "eD2Sounds_ARRAY_007289c8");
 
 eD2Sounds eD2Sounds_ARRAY_007289f8[12] = {
     SOUND_NONE,
@@ -32383,7 +29381,7 @@ eD2Sounds eD2Sounds_ARRAY_007289f8[12] = {
     SOUND_CURSOR_PASS,
     SOUND_SORCERESS_CHAT_G_1,
     SOUND_CURSOR_SELECT
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007289f8, "eD2Sounds_ARRAY_007289f8");
 
 eD2Sounds eD2Sounds_ARRAY_00728a28[12] = {
     SOUND_NONE,
@@ -32398,7 +29396,7 @@ eD2Sounds eD2Sounds_ARRAY_00728a28[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728a28, "eD2Sounds_ARRAY_00728a28");
 
 eD2Sounds eD2Sounds_ARRAY_00728a58[12] = {
     SOUND_NONE,
@@ -32413,7 +29411,7 @@ eD2Sounds eD2Sounds_ARRAY_00728a58[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728a58, "eD2Sounds_ARRAY_00728a58");
 
 eD2Sounds eD2Sounds_ARRAY_00728a88[12] = {
     SOUND_NONE,
@@ -32428,7 +29426,7 @@ eD2Sounds eD2Sounds_ARRAY_00728a88[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728a88, "eD2Sounds_ARRAY_00728a88");
 
 eD2Sounds eD2Sounds_ARRAY_00728ab8[12] = {
     SOUND_NONE,
@@ -32443,7 +29441,7 @@ eD2Sounds eD2Sounds_ARRAY_00728ab8[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728ab8, "eD2Sounds_ARRAY_00728ab8");
 
 eD2Sounds eD2Sounds_ARRAY_00728ae8[12] = {
     SOUND_NONE,
@@ -32458,7 +29456,7 @@ eD2Sounds eD2Sounds_ARRAY_00728ae8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728ae8, "eD2Sounds_ARRAY_00728ae8");
 
 eD2Sounds eD2Sounds_ARRAY_00728b18[12] = {
     SOUND_NONE,
@@ -32473,7 +29471,7 @@ eD2Sounds eD2Sounds_ARRAY_00728b18[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728b18, "eD2Sounds_ARRAY_00728b18");
 
 eD2Sounds eD2Sounds_ARRAY_00728b48[12] = {
     SOUND_NONE,
@@ -32488,7 +29486,7 @@ eD2Sounds eD2Sounds_ARRAY_00728b48[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728b48, "eD2Sounds_ARRAY_00728b48");
 
 eD2Sounds eD2Sounds_ARRAY_00728b78[12] = {
     SOUND_NONE,
@@ -32503,7 +29501,7 @@ eD2Sounds eD2Sounds_ARRAY_00728b78[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728b78, "eD2Sounds_ARRAY_00728b78");
 
 eD2Sounds eD2Sounds_ARRAY_00728ba8[12] = {
     SOUND_NONE,
@@ -32518,7 +29516,7 @@ eD2Sounds eD2Sounds_ARRAY_00728ba8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728ba8, "eD2Sounds_ARRAY_00728ba8");
 
 eD2Sounds eD2Sounds_ARRAY_00728bd8[12] = {
     SOUND_NONE,
@@ -32533,7 +29531,7 @@ eD2Sounds eD2Sounds_ARRAY_00728bd8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728bd8, "eD2Sounds_ARRAY_00728bd8");
 
 eD2Sounds eD2Sounds_ARRAY_00728c08[12] = {
     SOUND_NONE,
@@ -32548,7 +29546,7 @@ eD2Sounds eD2Sounds_ARRAY_00728c08[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728c08, "eD2Sounds_ARRAY_00728c08");
 
 eD2Sounds eD2Sounds_ARRAY_00728c38[12] = {
     SOUND_NONE,
@@ -32563,7 +29561,7 @@ eD2Sounds eD2Sounds_ARRAY_00728c38[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728c38, "eD2Sounds_ARRAY_00728c38");
 
 eD2Sounds eD2Sounds_ARRAY_00728c68[12] = {
     SOUND_NONE,
@@ -32578,7 +29576,7 @@ eD2Sounds eD2Sounds_ARRAY_00728c68[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728c68, "eD2Sounds_ARRAY_00728c68");
 
 eD2Sounds eD2Sounds_ARRAY_00728c98[12] = {
     SOUND_NONE,
@@ -32593,7 +29591,7 @@ eD2Sounds eD2Sounds_ARRAY_00728c98[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728c98, "eD2Sounds_ARRAY_00728c98");
 
 eD2Sounds eD2Sounds_ARRAY_00728cc8[12] = {
     SOUND_NONE,
@@ -32608,7 +29606,7 @@ eD2Sounds eD2Sounds_ARRAY_00728cc8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728cc8, "eD2Sounds_ARRAY_00728cc8");
 
 eD2Sounds eD2Sounds_ARRAY_00728cf8[12] = {
     SOUND_NONE,
@@ -32623,7 +29621,7 @@ eD2Sounds eD2Sounds_ARRAY_00728cf8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728cf8, "eD2Sounds_ARRAY_00728cf8");
 
 eD2Sounds eD2Sounds_ARRAY_00728d28[12] = {
     SOUND_NONE,
@@ -32638,7 +29636,7 @@ eD2Sounds eD2Sounds_ARRAY_00728d28[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728d28, "eD2Sounds_ARRAY_00728d28");
 
 eD2Sounds eD2Sounds_ARRAY_00728d58[12] = {
     SOUND_NONE,
@@ -32653,7 +29651,7 @@ eD2Sounds eD2Sounds_ARRAY_00728d58[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728d58, "eD2Sounds_ARRAY_00728d58");
 
 eD2Sounds eD2Sounds_ARRAY_00728d88[12] = {
     SOUND_NONE,
@@ -32668,7 +29666,7 @@ eD2Sounds eD2Sounds_ARRAY_00728d88[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728d88, "eD2Sounds_ARRAY_00728d88");
 
 eD2Sounds eD2Sounds_ARRAY_00728db8[12] = {
     SOUND_NONE,
@@ -32683,7 +29681,7 @@ eD2Sounds eD2Sounds_ARRAY_00728db8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728db8, "eD2Sounds_ARRAY_00728db8");
 
 eD2Sounds eD2Sounds_ARRAY_00728e18[12] = {
     SOUND_NONE,
@@ -32698,7 +29696,7 @@ eD2Sounds eD2Sounds_ARRAY_00728e18[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728e18, "eD2Sounds_ARRAY_00728e18");
 
 eD2Sounds eD2Sounds_ARRAY_00728e48[12] = {
     SOUND_NONE,
@@ -32713,7 +29711,7 @@ eD2Sounds eD2Sounds_ARRAY_00728e48[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728e48, "eD2Sounds_ARRAY_00728e48");
 
 eD2Sounds eD2Sounds_ARRAY_00728e78[12] = {
     SOUND_NONE,
@@ -32728,7 +29726,7 @@ eD2Sounds eD2Sounds_ARRAY_00728e78[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728e78, "eD2Sounds_ARRAY_00728e78");
 
 eD2Sounds eD2Sounds_ARRAY_00728ea8[12] = {
     SOUND_NONE,
@@ -32743,7 +29741,7 @@ eD2Sounds eD2Sounds_ARRAY_00728ea8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728ea8, "eD2Sounds_ARRAY_00728ea8");
 
 eD2Sounds eD2Sounds_ARRAY_00728ed8[12] = {
     SOUND_NONE,
@@ -32758,7 +29756,7 @@ eD2Sounds eD2Sounds_ARRAY_00728ed8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728ed8, "eD2Sounds_ARRAY_00728ed8");
 
 eD2Sounds eD2Sounds_ARRAY_00728f08[12] = {
     SOUND_NONE,
@@ -32773,7 +29771,7 @@ eD2Sounds eD2Sounds_ARRAY_00728f08[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728f08, "eD2Sounds_ARRAY_00728f08");
 
 eD2Sounds eD2Sounds_ARRAY_00728f38[12] = {
     SOUND_NONE,
@@ -32788,7 +29786,7 @@ eD2Sounds eD2Sounds_ARRAY_00728f38[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728f38, "eD2Sounds_ARRAY_00728f38");
 
 eD2Sounds eD2Sounds_ARRAY_00728f68[12] = {
     SOUND_NONE,
@@ -32803,7 +29801,7 @@ eD2Sounds eD2Sounds_ARRAY_00728f68[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728f68, "eD2Sounds_ARRAY_00728f68");
 
 eD2Sounds eD2Sounds_ARRAY_00728f98[12] = {
     SOUND_NONE,
@@ -32818,7 +29816,7 @@ eD2Sounds eD2Sounds_ARRAY_00728f98[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728f98, "eD2Sounds_ARRAY_00728f98");
 
 eD2Sounds eD2Sounds_ARRAY_00728fc8[12] = {
     SOUND_NONE,
@@ -32833,7 +29831,7 @@ eD2Sounds eD2Sounds_ARRAY_00728fc8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728fc8, "eD2Sounds_ARRAY_00728fc8");
 
 eD2Sounds eD2Sounds_ARRAY_00728ff8[12] = {
     SOUND_NONE,
@@ -32848,7 +29846,7 @@ eD2Sounds eD2Sounds_ARRAY_00728ff8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00728ff8, "eD2Sounds_ARRAY_00728ff8");
 
 eD2Sounds eD2Sounds_ARRAY_00729028[12] = {
     SOUND_NONE,
@@ -32863,7 +29861,7 @@ eD2Sounds eD2Sounds_ARRAY_00729028[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729028, "eD2Sounds_ARRAY_00729028");
 
 eD2Sounds eD2Sounds_ARRAY_00729058[12] = {
     SOUND_NONE,
@@ -32878,7 +29876,7 @@ eD2Sounds eD2Sounds_ARRAY_00729058[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729058, "eD2Sounds_ARRAY_00729058");
 
 eD2Sounds eD2Sounds_ARRAY_00729088[12] = {
     SOUND_NONE,
@@ -32893,7 +29891,7 @@ eD2Sounds eD2Sounds_ARRAY_00729088[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729088, "eD2Sounds_ARRAY_00729088");
 
 eD2Sounds eD2Sounds_ARRAY_007290b8[12] = {
     SOUND_NONE,
@@ -32908,7 +29906,7 @@ eD2Sounds eD2Sounds_ARRAY_007290b8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007290b8, "eD2Sounds_ARRAY_007290b8");
 
 eD2Sounds eD2Sounds_ARRAY_007290e8[12] = {
     SOUND_NONE,
@@ -32923,7 +29921,7 @@ eD2Sounds eD2Sounds_ARRAY_007290e8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007290e8, "eD2Sounds_ARRAY_007290e8");
 
 eD2Sounds eD2Sounds_ARRAY_00729118[12] = {
     SOUND_NONE,
@@ -32938,7 +29936,7 @@ eD2Sounds eD2Sounds_ARRAY_00729118[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729118, "eD2Sounds_ARRAY_00729118");
 
 eD2Sounds eD2Sounds_ARRAY_00729148[12] = {
     SOUND_NONE,
@@ -32953,7 +29951,7 @@ eD2Sounds eD2Sounds_ARRAY_00729148[12] = {
     SOUND_CURSOR_SELECT,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729148, "eD2Sounds_ARRAY_00729148");
 
 eD2Sounds eD2Sounds_ARRAY_00729178[12] = {
     SOUND_NONE,
@@ -32968,7 +29966,7 @@ eD2Sounds eD2Sounds_ARRAY_00729178[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729178, "eD2Sounds_ARRAY_00729178");
 
 eD2Sounds eD2Sounds_ARRAY_007291a8[12] = {
     SOUND_NONE,
@@ -32983,7 +29981,7 @@ eD2Sounds eD2Sounds_ARRAY_007291a8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007291a8, "eD2Sounds_ARRAY_007291a8");
 
 eD2Sounds eD2Sounds_ARRAY_007291d8[12] = {
     SOUND_NONE,
@@ -32998,7 +29996,7 @@ eD2Sounds eD2Sounds_ARRAY_007291d8[12] = {
     SOUND_CURSOR_DURABILITY_BREAK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007291d8, "eD2Sounds_ARRAY_007291d8");
 
 eD2Sounds eD2Sounds_ARRAY_00729208[12] = {
     SOUND_NONE,
@@ -33013,7 +30011,7 @@ eD2Sounds eD2Sounds_ARRAY_00729208[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729208, "eD2Sounds_ARRAY_00729208");
 
 eD2Sounds eD2Sounds_ARRAY_00729238[12] = {
     SOUND_NONE,
@@ -33028,7 +30026,7 @@ eD2Sounds eD2Sounds_ARRAY_00729238[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729238, "eD2Sounds_ARRAY_00729238");
 
 eD2Sounds eD2Sounds_ARRAY_00729268[12] = {
     SOUND_NONE,
@@ -33043,7 +30041,7 @@ eD2Sounds eD2Sounds_ARRAY_00729268[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729268, "eD2Sounds_ARRAY_00729268");
 
 eD2Sounds eD2Sounds_ARRAY_00729298[12] = {
     SOUND_NONE,
@@ -33058,7 +30056,7 @@ eD2Sounds eD2Sounds_ARRAY_00729298[12] = {
     SOUND_CURSOR_PASS,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729298, "eD2Sounds_ARRAY_00729298");
 
 eD2Sounds eD2Sounds_ARRAY_007292c8[12] = {
     SOUND_NONE,
@@ -33073,7 +30071,7 @@ eD2Sounds eD2Sounds_ARRAY_007292c8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007292c8, "eD2Sounds_ARRAY_007292c8");
 
 eD2Sounds eD2Sounds_ARRAY_007292f8[12] = {
     SOUND_NONE,
@@ -33088,7 +30086,7 @@ eD2Sounds eD2Sounds_ARRAY_007292f8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007292f8, "eD2Sounds_ARRAY_007292f8");
 
 eD2Sounds eD2Sounds_ARRAY_00729358[12] = {
     SOUND_NONE,
@@ -33103,7 +30101,7 @@ eD2Sounds eD2Sounds_ARRAY_00729358[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729358, "eD2Sounds_ARRAY_00729358");
 
 eD2Sounds eD2Sounds_ARRAY_00729388[12] = {
     SOUND_NONE,
@@ -33118,7 +30116,7 @@ eD2Sounds eD2Sounds_ARRAY_00729388[12] = {
     SOUND_CURSOR_BUTTON_CLICK,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729388, "eD2Sounds_ARRAY_00729388");
 
 eD2Sounds eD2Sounds_ARRAY_007293b8[12] = {
     SOUND_NONE,
@@ -33133,7 +30131,7 @@ eD2Sounds eD2Sounds_ARRAY_007293b8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007293b8, "eD2Sounds_ARRAY_007293b8");
 
 eD2Sounds eD2Sounds_ARRAY_007293e8[12] = {
     SOUND_NONE,
@@ -33148,7 +30146,7 @@ eD2Sounds eD2Sounds_ARRAY_007293e8[12] = {
     SOUND_CURSOR_PASS,
     SOUND_AKARA_ACT1_Q1_INIT,
     SOUND_CURSOR_SELECT
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007293e8, "eD2Sounds_ARRAY_007293e8");
 
 eD2Sounds eD2Sounds_ARRAY_00729418[12] = {
     SOUND_NONE,
@@ -33163,7 +30161,7 @@ eD2Sounds eD2Sounds_ARRAY_00729418[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729418, "eD2Sounds_ARRAY_00729418");
 
 eD2Sounds eD2Sounds_ARRAY_00729448[12] = {
     SOUND_NONE,
@@ -33178,7 +30176,7 @@ eD2Sounds eD2Sounds_ARRAY_00729448[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729448, "eD2Sounds_ARRAY_00729448");
 
 eD2Sounds eD2Sounds_ARRAY_00729478[12] = {
     SOUND_NONE,
@@ -33193,7 +30191,7 @@ eD2Sounds eD2Sounds_ARRAY_00729478[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729478, "eD2Sounds_ARRAY_00729478");
 
 eD2Sounds eD2Sounds_ARRAY_007294a8[12] = {
     SOUND_NONE,
@@ -33208,7 +30206,7 @@ eD2Sounds eD2Sounds_ARRAY_007294a8[12] = {
     SOUND_CURSOR_PASS,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007294a8, "eD2Sounds_ARRAY_007294a8");
 
 eD2Sounds eD2Sounds_ARRAY_007294d8[12] = {
     SOUND_NONE,
@@ -33223,7 +30221,7 @@ eD2Sounds eD2Sounds_ARRAY_007294d8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007294d8, "eD2Sounds_ARRAY_007294d8");
 
 eD2Sounds eD2Sounds_ARRAY_00729508[12] = {
     SOUND_NONE,
@@ -33238,7 +30236,7 @@ eD2Sounds eD2Sounds_ARRAY_00729508[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729508, "eD2Sounds_ARRAY_00729508");
 
 eD2Sounds eD2Sounds_ARRAY_00729538[12] = {
     SOUND_NONE,
@@ -33253,7 +30251,7 @@ eD2Sounds eD2Sounds_ARRAY_00729538[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729538, "eD2Sounds_ARRAY_00729538");
 
 eD2Sounds eD2Sounds_ARRAY_00729568[12] = {
     SOUND_NONE,
@@ -33268,7 +30266,7 @@ eD2Sounds eD2Sounds_ARRAY_00729568[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729568, "eD2Sounds_ARRAY_00729568");
 
 eD2Sounds eD2Sounds_ARRAY_00729598[12] = {
     SOUND_NONE,
@@ -33283,7 +30281,7 @@ eD2Sounds eD2Sounds_ARRAY_00729598[12] = {
     SOUND_CURSOR_PASS,
     SOUND_AKARA_ACT1_GOSSIP_SOR,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_00729598, "eD2Sounds_ARRAY_00729598");
 
 eD2Sounds eD2Sounds_ARRAY_007295c8[12] = {
     SOUND_NONE,
@@ -33298,7 +30296,7 @@ eD2Sounds eD2Sounds_ARRAY_007295c8[12] = {
     SOUND_NONE,
     SOUND_NONE,
     SOUND_NONE
-};
+}; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007295c8, "eD2Sounds_ARRAY_007295c8");
 
 char * gaLanguageNames_0072a300[15] = {
     s_English_006cc81c,
@@ -33316,7 +30314,115 @@ char * gaLanguageNames_0072a300[15] = {
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
     (char*)0x006cc77c
-};
+}; D2_GLOBAL_GUARD(gaLanguageNames_0072a300, "gaLanguageNames_0072a300");
+
+char * gaLanguageNames_0072d8d8[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_0072d8d8, "gaLanguageNames_0072d8d8");
+
+char * gaLanguageNames_0072d914[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_0072d914, "gaLanguageNames_0072d914");
+
+char * gaLanguageNames_0072d950[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_0072d950, "gaLanguageNames_0072d950");
+
+char * gaLanguageNames_0072d994[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_0072d994, "gaLanguageNames_0072d994");
+
+char * gaLanguageNames_0072d9d0[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_0072d9d0, "gaLanguageNames_0072d9d0");
+
+char * gaLanguageNames_0072da0c[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_0072da0c, "gaLanguageNames_0072da0c");
 
 int gaGroundTileRowOffsets[15] = {
     0xe,
@@ -33334,7 +30440,7 @@ int gaGroundTileRowOffsets[15] = {
     0xa,
     0xc,
     0xe
-};
+}; D2_GLOBAL_GUARD(gaGroundTileRowOffsets, "gaGroundTileRowOffsets");
 
 int gaGroundTileRowWidths[15] = {
     0x4,
@@ -33352,7 +30458,7 @@ int gaGroundTileRowWidths[15] = {
     0xc,
     0x8,
     0x4
-};
+}; D2_GLOBAL_GUARD(gaGroundTileRowWidths, "gaGroundTileRowWidths");
 
 int gaGroundTileSrcPointers[15] = {
     0x0,
@@ -33370,7 +30476,24 @@ int gaGroundTileSrcPointers[15] = {
     0xe8,
     0xf4,
     0xfc
-};
+}; D2_GLOBAL_GUARD(gaGroundTileSrcPointers, "gaGroundTileSrcPointers");
+
+int gaPerspectiveImageSizeTable[14] = {
+    0x20,
+    0x100,
+    0x40,
+    0x100,
+    0x80,
+    0x100,
+    0x100,
+    0x100,
+    0x100,
+    0x80,
+    0x100,
+    0x40,
+    0x100,
+    0x20
+}; D2_GLOBAL_GUARD(gaPerspectiveImageSizeTable, "gaPerspectiveImageSizeTable");
 
 StormLinkedListStrc gFaultHandlerList = {
     /* .nLinkOffset = */ 0x0,
@@ -33378,7 +30501,7 @@ StormLinkedListStrc gFaultHandlerList = {
         /* .pPrevLink = */ (StormLinkStrc*)&gFaultHandlerList.head.pPrevLink,
         /* .pNext = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gFaultHandlerList, "gFaultHandlerList");
 
 char * gaszLanguageNames[32] = {
     s_English_006cc81c,
@@ -33413,7 +30536,7 @@ char * gaszLanguageNames[32] = {
     s_Unknown_006cc780,
     (char*)0x006cc77c,
     nullptr
-};
+}; D2_GLOBAL_GUARD(gaszLanguageNames, "gaszLanguageNames");
 
 int gaObjectSpawnOffsetGroup0[50] = {
     -0x4,
@@ -33466,7 +30589,7 @@ int gaObjectSpawnOffsetGroup0[50] = {
     0x7,
     -0x5,
     0x7
-};
+}; D2_GLOBAL_GUARD(gaObjectSpawnOffsetGroup0, "gaObjectSpawnOffsetGroup0");
 
 char gaQ33_Normal_AmazonBowCodes[5][4] = {
     { 'a', 'm', '1', ' ' },
@@ -33474,7 +30597,7 @@ char gaQ33_Normal_AmazonBowCodes[5][4] = {
     { 'a', 'm', '3', ' ' },
     { 'a', 'm', '4', ' ' },
     { 'a', 'm', '5', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Normal_AmazonBowCodes, "gaQ33_Normal_AmazonBowCodes");
 
 char gaQ33_Normal_SorceressOrbCodes[5][4] = {
     { 'o', 'b', '1', ' ' },
@@ -33482,7 +30605,7 @@ char gaQ33_Normal_SorceressOrbCodes[5][4] = {
     { 'o', 'b', '3', ' ' },
     { 'o', 'b', '4', ' ' },
     { 'o', 'b', '5', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Normal_SorceressOrbCodes, "gaQ33_Normal_SorceressOrbCodes");
 
 char gaQ33_Normal_NecromancerWandCodes[5][4] = {
     { 'n', 'e', '1', ' ' },
@@ -33490,7 +30613,7 @@ char gaQ33_Normal_NecromancerWandCodes[5][4] = {
     { 'n', 'e', '3', ' ' },
     { 'n', 'e', '4', ' ' },
     { 'n', 'e', '5', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Normal_NecromancerWandCodes, "gaQ33_Normal_NecromancerWandCodes");
 
 char gaQ33_Normal_PaladinScepterCodes[5][4] = {
     { 'p', 'a', '1', ' ' },
@@ -33498,7 +30621,7 @@ char gaQ33_Normal_PaladinScepterCodes[5][4] = {
     { 'p', 'a', '3', ' ' },
     { 'p', 'a', '4', ' ' },
     { 'p', 'a', '5', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Normal_PaladinScepterCodes, "gaQ33_Normal_PaladinScepterCodes");
 
 char gaQ33_Normal_BarbarianAxeCodes[5][4] = {
     { 'b', 'a', '1', ' ' },
@@ -33506,7 +30629,7 @@ char gaQ33_Normal_BarbarianAxeCodes[5][4] = {
     { 'b', 'a', '3', ' ' },
     { 'b', 'a', '4', ' ' },
     { 'b', 'a', '5', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Normal_BarbarianAxeCodes, "gaQ33_Normal_BarbarianAxeCodes");
 
 char gaQ33_Normal_DruidHelmCodes[5][4] = {
     { 'd', 'r', '1', ' ' },
@@ -33514,7 +30637,7 @@ char gaQ33_Normal_DruidHelmCodes[5][4] = {
     { 'd', 'r', '3', ' ' },
     { 'd', 'r', '4', ' ' },
     { 'd', 'r', '5', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Normal_DruidHelmCodes, "gaQ33_Normal_DruidHelmCodes");
 
 char gaQ33_Normal_AssassinClawCodes[7][4] = {
     { 'k', 't', 'r', ' ' },
@@ -33524,7 +30647,7 @@ char gaQ33_Normal_AssassinClawCodes[7][4] = {
     { 'c', 'l', 'w', ' ' },
     { 'b', 't', 'l', ' ' },
     { 's', 'k', 'r', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Normal_AssassinClawCodes, "gaQ33_Normal_AssassinClawCodes");
 
 char gaQ33_Nightmare_AmazonBowCodes[5][4] = {
     { 'a', 'm', 'b', ' ' },
@@ -33532,7 +30655,7 @@ char gaQ33_Nightmare_AmazonBowCodes[5][4] = {
     { 'a', 'm', 'd', ' ' },
     { 'a', 'm', 'e', ' ' },
     { 'a', 'm', 'f', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Nightmare_AmazonBowCodes, "gaQ33_Nightmare_AmazonBowCodes");
 
 char gaQ33_Nightmare_SorceressOrbCodes[5][4] = {
     { 'o', 'b', 'b', ' ' },
@@ -33540,7 +30663,7 @@ char gaQ33_Nightmare_SorceressOrbCodes[5][4] = {
     { 'o', 'b', 'd', ' ' },
     { 'o', 'b', 'e', ' ' },
     { 'o', 'b', 'f', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Nightmare_SorceressOrbCodes, "gaQ33_Nightmare_SorceressOrbCodes");
 
 char gaQ33_Nightmare_NecromancerWandCodes[5][4] = {
     { 'n', 'e', 'b', ' ' },
@@ -33548,7 +30671,7 @@ char gaQ33_Nightmare_NecromancerWandCodes[5][4] = {
     { 'n', 'e', 'd', ' ' },
     { 'n', 'e', 'e', ' ' },
     { 'n', 'e', 'f', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Nightmare_NecromancerWandCodes, "gaQ33_Nightmare_NecromancerWandCodes");
 
 char gaQ33_Nightmare_PaladinScepterCodes[5][4] = {
     { 'p', 'a', 'b', ' ' },
@@ -33556,7 +30679,7 @@ char gaQ33_Nightmare_PaladinScepterCodes[5][4] = {
     { 'p', 'a', 'd', ' ' },
     { 'p', 'a', 'e', ' ' },
     { 'p', 'a', 'f', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Nightmare_PaladinScepterCodes, "gaQ33_Nightmare_PaladinScepterCodes");
 
 char gaQ33_Nightmare_BarbarianAxeCodes[5][4] = {
     { 'b', 'a', 'b', ' ' },
@@ -33564,7 +30687,7 @@ char gaQ33_Nightmare_BarbarianAxeCodes[5][4] = {
     { 'b', 'a', 'd', ' ' },
     { 'b', 'a', 'e', ' ' },
     { 'b', 'a', 'f', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Nightmare_BarbarianAxeCodes, "gaQ33_Nightmare_BarbarianAxeCodes");
 
 char gaQ33_Nightmare_DruidHelmCodes[5][4] = {
     { 'd', 'r', 'b', ' ' },
@@ -33572,7 +30695,7 @@ char gaQ33_Nightmare_DruidHelmCodes[5][4] = {
     { 'd', 'r', 'd', ' ' },
     { 'd', 'r', 'e', ' ' },
     { 'd', 'r', 'f', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Nightmare_DruidHelmCodes, "gaQ33_Nightmare_DruidHelmCodes");
 
 char gaQ33_Nightmare_AssassinClawCodes[7][4] = {
     { '7', 'a', 'r', ' ' },
@@ -33582,7 +30705,7 @@ char gaQ33_Nightmare_AssassinClawCodes[7][4] = {
     { '7', 'l', 'w', ' ' },
     { '7', 't', 'w', ' ' },
     { '7', 'q', 'r', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Nightmare_AssassinClawCodes, "gaQ33_Nightmare_AssassinClawCodes");
 
 char gaQ33_Hell_AmazonBowCodes[5][4] = {
     { 'a', 'm', '6', ' ' },
@@ -33590,7 +30713,7 @@ char gaQ33_Hell_AmazonBowCodes[5][4] = {
     { 'a', 'm', '8', ' ' },
     { 'a', 'm', '9', ' ' },
     { 'a', 'm', 'a', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Hell_AmazonBowCodes, "gaQ33_Hell_AmazonBowCodes");
 
 char gaQ33_Hell_SorceressOrbCodes[5][4] = {
     { 'o', 'b', '6', ' ' },
@@ -33598,7 +30721,7 @@ char gaQ33_Hell_SorceressOrbCodes[5][4] = {
     { 'o', 'b', '8', ' ' },
     { 'o', 'b', '9', ' ' },
     { 'o', 'b', 'a', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Hell_SorceressOrbCodes, "gaQ33_Hell_SorceressOrbCodes");
 
 char gaQ33_Hell_NecromancerWandCodes[5][4] = {
     { 'n', 'e', '6', ' ' },
@@ -33606,7 +30729,7 @@ char gaQ33_Hell_NecromancerWandCodes[5][4] = {
     { 'n', 'e', '8', ' ' },
     { 'n', 'e', '9', ' ' },
     { 'n', 'e', 'a', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Hell_NecromancerWandCodes, "gaQ33_Hell_NecromancerWandCodes");
 
 char gaQ33_Hell_PaladinScepterCodes[5][4] = {
     { 'p', 'a', '6', ' ' },
@@ -33614,7 +30737,7 @@ char gaQ33_Hell_PaladinScepterCodes[5][4] = {
     { 'p', 'a', '8', ' ' },
     { 'p', 'a', '9', ' ' },
     { 'p', 'a', 'a', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Hell_PaladinScepterCodes, "gaQ33_Hell_PaladinScepterCodes");
 
 char gaQ33_Hell_BarbarianAxeCodes[5][4] = {
     { 'b', 'a', '6', ' ' },
@@ -33622,7 +30745,7 @@ char gaQ33_Hell_BarbarianAxeCodes[5][4] = {
     { 'b', 'a', '8', ' ' },
     { 'b', 'a', '9', ' ' },
     { 'b', 'a', 'a', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Hell_BarbarianAxeCodes, "gaQ33_Hell_BarbarianAxeCodes");
 
 char gaQ33_Hell_DruidHelmCodes[5][4] = {
     { 'd', 'r', '6', ' ' },
@@ -33630,7 +30753,7 @@ char gaQ33_Hell_DruidHelmCodes[5][4] = {
     { 'd', 'r', '8', ' ' },
     { 'd', 'r', '9', ' ' },
     { 'd', 'r', 'a', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Hell_DruidHelmCodes, "gaQ33_Hell_DruidHelmCodes");
 
 char gaQ33_Hell_AssassinClawCodes[7][4] = {
     { '9', 'a', 'r', ' ' },
@@ -33640,7 +30763,25 @@ char gaQ33_Hell_AssassinClawCodes[7][4] = {
     { '9', 'l', 'w', ' ' },
     { '9', 't', 'w', ' ' },
     { '9', 'q', 'r', ' ' }
-};
+}; D2_GLOBAL_GUARD(gaQ33_Hell_AssassinClawCodes, "gaQ33_Hell_AssassinClawCodes");
+
+char * gaLanguageNames_0073c6e0[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_0073c6e0, "gaLanguageNames_0073c6e0");
 
 uint8_t gaSkeletonComponentsByMasteryLvl[11][9] = {
     {
@@ -33764,7 +30905,7 @@ uint8_t gaSkeletonComponentsByMasteryLvl[11][9] = {
         0x2,
         0x4
     }
-};
+}; D2_GLOBAL_GUARD(gaSkeletonComponentsByMasteryLvl, "gaSkeletonComponentsByMasteryLvl");
 
 char s___AUTCELENTRY___00741f14[16] = {
     '.',
@@ -33783,7 +30924,7 @@ char s___AUTCELENTRY___00741f14[16] = {
     '@',
     '@',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUTCELENTRY___00741f14, "s___AUTCELENTRY___00741f14");
 
 char s___AUCELLIST___00741f2c[16] = {
     '.',
@@ -33802,7 +30943,7 @@ char s___AUCELLIST___00741f2c[16] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUCELLIST___00741f2c, "s___AUCELLIST___00741f2c");
 
 char s___AV__TSExplicitList_UCELLIST____00741f44[48] = {
     '.',
@@ -33853,7 +30994,7 @@ char s___AV__TSExplicitList_UCELLIST____00741f44[48] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AV__TSExplicitList_UCELLIST____00741f44, "s___AV__TSExplicitList_UCELLIST____00741f44");
 
 char s___AV__TSHashObjectChunk_UCELLIST_00741fb4[52] = {
     '.',
@@ -33908,7 +31049,7 @@ char s___AV__TSHashObjectChunk_UCELLIST_00741fb4[52] = {
     '@',
     '@',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AV__TSHashObjectChunk_UCELLIST_00741fb4, "s___AV__TSHashObjectChunk_UCELLIST_00741fb4");
 
 char s___AUMappingEntryNode___0074362c[24] = {
     '.',
@@ -33935,7 +31076,7 @@ char s___AUMappingEntryNode___0074362c[24] = {
     '@',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUMappingEntryNode___0074362c, "s___AUMappingEntryNode___0074362c");
 
 char s___AUStringEntryNode___0074364c[24] = {
     '.',
@@ -33962,7 +31103,7 @@ char s___AUStringEntryNode___0074364c[24] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUStringEntryNode___0074364c, "s___AUStringEntryNode___0074364c");
 
 char s___AV__TSExplicitList_UStringEntr_0074366c[56] = {
     '.',
@@ -34021,7 +31162,7 @@ char s___AV__TSExplicitList_UStringEntr_0074366c[56] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AV__TSExplicitList_UStringEntr_0074366c, "s___AV__TSExplicitList_UStringEntr_0074366c");
 
 char s___AV__TSExplicitList_UMappingEnt_007436ac[56] = {
     '.',
@@ -34080,7 +31221,7 @@ char s___AV__TSExplicitList_UMappingEnt_007436ac[56] = {
     '@',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AV__TSExplicitList_UMappingEnt_007436ac, "s___AV__TSExplicitList_UMappingEnt_007436ac");
 
 char * gaLanguageNames_0074430c[15] = {
     s_English_006cc81c,
@@ -34098,7 +31239,205 @@ char * gaLanguageNames_0074430c[15] = {
     s_English_with_Korean_Chat_006cc788,
     s_Unknown_006cc780,
     (char*)0x006cc77c
-};
+}; D2_GLOBAL_GUARD(gaLanguageNames_0074430c, "gaLanguageNames_0074430c");
+
+char * gaLanguageNames_007443a8[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_007443a8, "gaLanguageNames_007443a8");
+
+char * gaLanguageNames_007444c8[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_007444c8, "gaLanguageNames_007444c8");
+
+char * gaLanguageNames_00744508[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_00744508, "gaLanguageNames_00744508");
+
+char * gaLanguageNames_00744588[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_00744588, "gaLanguageNames_00744588");
+
+char * gaLanguageNames_007445c4[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_007445c4, "gaLanguageNames_007445c4");
+
+char * gaLanguageNames_00744600[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_00744600, "gaLanguageNames_00744600");
+
+char * gaLanguageNames_00745648[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_00745648, "gaLanguageNames_00745648");
+
+char * gaLanguageNames_00745684[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_00745684, "gaLanguageNames_00745684");
+
+char * gaLanguageNames_007456c0[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_007456c0, "gaLanguageNames_007456c0");
+
+char * gaLanguageNames_007456fc[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_007456fc, "gaLanguageNames_007456fc");
+
+char * gaLanguageNames_00745738[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_00745738, "gaLanguageNames_00745738");
 
 fpProperties PROPERTIESFUNCTIONS[37] = {
     nullptr,
@@ -34138,7 +31477,7 @@ fpProperties PROPERTIESFUNCTIONS[37] = {
     nullptr,
     nullptr,
     (fpProperties)&D2Common::ITEMS::ItemMods::ITEMPROP_AddStat_LayerFromRoll_ValueFromParam7
-};
+}; D2_GLOBAL_GUARD(PROPERTIESFUNCTIONS, "PROPERTIESFUNCTIONS");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_007466dc[7] = {
     {
@@ -34190,7 +31529,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_007466dc[7] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_007466dc, "D2MonSeqTxt_ARRAY_007466dc");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00746820[21] = {
     {
@@ -34340,7 +31679,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00746820[21] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00746820, "D2MonSeqTxt_ARRAY_00746820");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007468a0[14] = {
     {
@@ -34413,7 +31752,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007468a0[14] = {
         /* .nCounter1 = */ 0x0,
         /* .nCounter2 = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_007468a0, "D2MonSeqMonsterTbls_ARRAY_007468a0");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00746948[8] = {
     {
@@ -34472,7 +31811,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00746948[8] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00746948, "D2MonSeqTxt_ARRAY_00746948");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00746978[14] = {
     {
@@ -34545,7 +31884,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00746978[14] = {
         /* .nCounter1 = */ 0x0,
         /* .nCounter2 = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00746978, "D2MonSeqMonsterTbls_ARRAY_00746978");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00746a20[16] = {
     {
@@ -34660,7 +31999,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00746a20[16] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00746a20, "D2MonSeqTxt_ARRAY_00746a20");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00746a80[14] = {
     {
@@ -34733,7 +32072,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00746a80[14] = {
         /* .nCounter1 = */ 0x0,
         /* .nCounter2 = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00746a80, "D2MonSeqMonsterTbls_ARRAY_00746a80");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00746b28[16] = {
     {
@@ -34848,7 +32187,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00746b28[16] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00746b28, "D2MonSeqTxt_ARRAY_00746b28");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00746b88[14] = {
     {
@@ -34921,7 +32260,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00746b88[14] = {
         /* .nCounter1 = */ 0x0,
         /* .nCounter2 = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00746b88, "D2MonSeqMonsterTbls_ARRAY_00746b88");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00746c30[6] = {
     {
@@ -34966,7 +32305,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00746c30[6] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00746c30, "D2MonSeqTxt_ARRAY_00746c30");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00746c58[14] = {
     {
@@ -35039,7 +32378,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00746c58[14] = {
         /* .nCounter1 = */ 0x0,
         /* .nCounter2 = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00746c58, "D2MonSeqMonsterTbls_ARRAY_00746c58");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00746d00[16] = {
     {
@@ -35154,7 +32493,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00746d00[16] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00746d00, "D2MonSeqTxt_ARRAY_00746d00");
 
 D2MonSeqMonsterTbls gaMonSeqMonsterTblData[14] = {
     {
@@ -35227,7 +32566,7 @@ D2MonSeqMonsterTbls gaMonSeqMonsterTblData[14] = {
         /* .nCounter1 = */ 0xf,
         /* .nCounter2 = */ 0xf
     }
-};
+}; D2_GLOBAL_GUARD(gaMonSeqMonsterTblData, "gaMonSeqMonsterTblData");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00746e08[33] = {
     {
@@ -35461,7 +32800,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00746e08[33] = {
         /* .dir = */ 0x7,
         /* .event = */ 0x13
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00746e08, "D2MonSeqTxt_ARRAY_00746e08");
 
 D2MonSeqMonsterTbls gaMonSeqMonsterTblsExtra[14] = {
     {
@@ -35534,7 +32873,7 @@ D2MonSeqMonsterTbls gaMonSeqMonsterTblsExtra[14] = {
         /* .nCounter1 = */ 0x0,
         /* .nCounter2 = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(gaMonSeqMonsterTblsExtra, "gaMonSeqMonsterTblsExtra");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00746f78[45] = {
     {
@@ -35852,7 +33191,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00746f78[45] = {
         /* .dir = */ 0x7,
         /* .event = */ 0x11
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00746f78, "D2MonSeqTxt_ARRAY_00746f78");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747088[14] = {
     {
@@ -35925,7 +33264,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747088[14] = {
         /* .nCounter1 = */ 0x0,
         /* .nCounter2 = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00747088, "D2MonSeqMonsterTbls_ARRAY_00747088");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00747130[32] = {
     {
@@ -36152,7 +33491,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00747130[32] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00747130, "D2MonSeqTxt_ARRAY_00747130");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007471f0[14] = {
     {
@@ -36225,7 +33564,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007471f0[14] = {
         /* .nCounter1 = */ 0x0,
         /* .nCounter2 = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_007471f0, "D2MonSeqMonsterTbls_ARRAY_007471f0");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00747298[8] = {
     {
@@ -36284,7 +33623,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00747298[8] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x1
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00747298, "D2MonSeqTxt_ARRAY_00747298");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007472c8[14] = {
     {
@@ -36357,7 +33696,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007472c8[14] = {
         /* .nCounter1 = */ 0x8,
         /* .nCounter2 = */ 0x8
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_007472c8, "D2MonSeqMonsterTbls_ARRAY_007472c8");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00747370[17] = {
     {
@@ -36479,7 +33818,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00747370[17] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00747370, "D2MonSeqTxt_ARRAY_00747370");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007473d8[14] = {
     {
@@ -36552,7 +33891,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007473d8[14] = {
         /* .nCounter1 = */ 0x11,
         /* .nCounter2 = */ 0x11
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_007473d8, "D2MonSeqMonsterTbls_ARRAY_007473d8");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00747480[20] = {
     {
@@ -36695,7 +34034,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00747480[20] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00747480, "D2MonSeqTxt_ARRAY_00747480");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007474f8[14] = {
     {
@@ -36768,7 +34107,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007474f8[14] = {
         /* .nCounter1 = */ 0x13,
         /* .nCounter2 = */ 0x13
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_007474f8, "D2MonSeqMonsterTbls_ARRAY_007474f8");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_007475a0[16] = {
     {
@@ -36883,7 +34222,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_007475a0[16] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_007475a0, "D2MonSeqTxt_ARRAY_007475a0");
 
 D2MonSeqMonsterTbls gaMonSeqMonsterTbls[14] = {
     {
@@ -36956,7 +34295,7 @@ D2MonSeqMonsterTbls gaMonSeqMonsterTbls[14] = {
         /* .nCounter1 = */ 0xf,
         /* .nCounter2 = */ 0xf
     }
-};
+}; D2_GLOBAL_GUARD(gaMonSeqMonsterTbls, "gaMonSeqMonsterTbls");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_007476a8[104] = {
     {
@@ -37687,7 +35026,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_007476a8[104] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_007476a8, "D2MonSeqTxt_ARRAY_007476a8");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747918[14] = {
     {
@@ -37760,7 +35099,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747918[14] = {
         /* .nCounter1 = */ 0x16,
         /* .nCounter2 = */ 0x16
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00747918, "D2MonSeqMonsterTbls_ARRAY_00747918");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_007479c0[12] = {
     {
@@ -37847,7 +35186,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_007479c0[12] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_007479c0, "D2MonSeqTxt_ARRAY_007479c0");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747a08[14] = {
     {
@@ -37920,7 +35259,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747a08[14] = {
         /* .nCounter1 = */ 0xc,
         /* .nCounter2 = */ 0xc
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00747a08, "D2MonSeqMonsterTbls_ARRAY_00747a08");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00747ab0[28] = {
     {
@@ -38119,7 +35458,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00747ab0[28] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00747ab0, "D2MonSeqTxt_ARRAY_00747ab0");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747b58[14] = {
     {
@@ -38192,7 +35531,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747b58[14] = {
         /* .nCounter1 = */ 0x10,
         /* .nCounter2 = */ 0x10
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00747b58, "D2MonSeqMonsterTbls_ARRAY_00747b58");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00747c00[20] = {
     {
@@ -38335,7 +35674,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00747c00[20] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00747c00, "D2MonSeqTxt_ARRAY_00747c00");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747c78[14] = {
     {
@@ -38408,7 +35747,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747c78[14] = {
         /* .nCounter1 = */ 0x13,
         /* .nCounter2 = */ 0x13
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00747c78, "D2MonSeqMonsterTbls_ARRAY_00747c78");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00747d20[20] = {
     {
@@ -38551,7 +35890,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00747d20[20] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00747d20, "D2MonSeqTxt_ARRAY_00747d20");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747d98[14] = {
     {
@@ -38624,7 +35963,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747d98[14] = {
         /* .nCounter1 = */ 0x14,
         /* .nCounter2 = */ 0x14
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00747d98, "D2MonSeqMonsterTbls_ARRAY_00747d98");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00747e40[16] = {
     {
@@ -38739,7 +36078,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00747e40[16] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00747e40, "D2MonSeqTxt_ARRAY_00747e40");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747ea0[14] = {
     {
@@ -38812,7 +36151,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747ea0[14] = {
         /* .nCounter1 = */ 0xf,
         /* .nCounter2 = */ 0xf
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00747ea0, "D2MonSeqMonsterTbls_ARRAY_00747ea0");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00747f48[17] = {
     {
@@ -38934,7 +36273,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00747f48[17] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00747f48, "D2MonSeqTxt_ARRAY_00747f48");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747fb0[14] = {
     {
@@ -39007,7 +36346,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00747fb0[14] = {
         /* .nCounter1 = */ 0x11,
         /* .nCounter2 = */ 0x11
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00747fb0, "D2MonSeqMonsterTbls_ARRAY_00747fb0");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00748058[24] = {
     {
@@ -39178,7 +36517,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00748058[24] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00748058, "D2MonSeqTxt_ARRAY_00748058");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007480e8[14] = {
     {
@@ -39251,7 +36590,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007480e8[14] = {
         /* .nCounter1 = */ 0x17,
         /* .nCounter2 = */ 0x17
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_007480e8, "D2MonSeqMonsterTbls_ARRAY_007480e8");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00748190[16] = {
     {
@@ -39366,7 +36705,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00748190[16] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00748190, "D2MonSeqTxt_ARRAY_00748190");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007481f0[14] = {
     {
@@ -39439,7 +36778,7 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_007481f0[14] = {
         /* .nCounter1 = */ 0x10,
         /* .nCounter2 = */ 0x10
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_007481f0, "D2MonSeqMonsterTbls_ARRAY_007481f0");
 
 D2MonSeqTxt D2MonSeqTxt_ARRAY_00748298[20] = {
     {
@@ -39582,7 +36921,7 @@ D2MonSeqTxt D2MonSeqTxt_ARRAY_00748298[20] = {
         /* .dir = */ 0x0,
         /* .event = */ 0x0
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqTxt_ARRAY_00748298, "D2MonSeqTxt_ARRAY_00748298");
 
 D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00748310[14] = {
     {
@@ -39655,9 +36994,107 @@ D2MonSeqMonsterTbls D2MonSeqMonsterTbls_ARRAY_00748310[14] = {
         /* .nCounter1 = */ 0x13,
         /* .nCounter2 = */ 0x13
     }
-};
+}; D2_GLOBAL_GUARD(D2MonSeqMonsterTbls_ARRAY_00748310, "D2MonSeqMonsterTbls_ARRAY_00748310");
 
-double DOUBLE_0074adb4 = 1;
+uint32_t gaOverlayVariantCodes[43] = {
+    0x2074696c,
+    0x2074696c,
+    0x20736564,
+    0x20736564,
+    0x20797668,
+    0x20797668,
+    0x20797668,
+    0x2074696c,
+    0x20736564,
+    0x20797668,
+    0x20657861,
+    0x20657861,
+    0x20616c66,
+    0x20616c66,
+    0x20786168,
+    0x20786168,
+    0x2063616d,
+    0x2063616d,
+    0x206d6373,
+    0x206d6373,
+    0x0,
+    0x20637562,
+    0x2067726c,
+    0x2074696b,
+    0x206c6d73,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x2074696c,
+    0x20736564,
+    0x20797668,
+    0x2074696c,
+    0x2064656d,
+    0x20797668,
+    0x2074696c,
+    0x20736564,
+    0x20797668
+}; D2_GLOBAL_GUARD(gaOverlayVariantCodes, "gaOverlayVariantCodes");
+
+uint32_t gaOverlayVariantCodes2[12] = {
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x2074696c,
+    0x20736564,
+    0x20797668,
+    0x20776273
+}; D2_GLOBAL_GUARD(gaOverlayVariantCodes2, "gaOverlayVariantCodes2");
+
+char * gaLanguageNames_00748a58[16] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c,
+    nullptr
+}; D2_GLOBAL_GUARD(gaLanguageNames_00748a58, "gaLanguageNames_00748a58");
+
+char * gaLanguageNames_00748a98[15] = {
+    s_English_006cc81c,
+    s_Spanish_006cc814,
+    s_German_006cc80c,
+    s_French_006cc804,
+    s_Portuguese_006cc7f8,
+    s_Italian_006cc7f0,
+    s_Japanese_006cc7e4,
+    s_Korean_006cc7dc,
+    s_Simplified_Chinese_006cc7c8,
+    s_Traditional_Chinese_006cc7b4,
+    s_Polish_006cc7ac,
+    s_Russian_006cc7a4,
+    s_English_with_Korean_Chat_006cc788,
+    s_Unknown_006cc780,
+    (char*)0x006cc77c
+}; D2_GLOBAL_GUARD(gaLanguageNames_00748a98, "gaLanguageNames_00748a98");
+
+double DOUBLE_0074adb4 = 1; D2_GLOBAL_GUARD(DOUBLE_0074adb4, "DOUBLE_0074adb4");
 
 uint8_t gabyFxamClassOffset[16] = {
     0x8,
@@ -39676,9 +37113,9 @@ uint8_t gabyFxamClassOffset[16] = {
     0x4,
     0xc,
     0x8
-};
+}; D2_GLOBAL_GUARD(gabyFxamClassOffset, "gabyFxamClassOffset");
 
-eD2ApplicationMode geD2ApplicationMode = APPMODE_mode0;
+eD2ApplicationMode geD2ApplicationMode = APPMODE_mode0; D2_GLOBAL_GUARD(geD2ApplicationMode, "geD2ApplicationMode");
 
 CRITICAL_SECTION gLogMessageQueueCS = {
     /* .DebugInfo = */ nullptr,
@@ -39687,7 +37124,7 @@ CRITICAL_SECTION gLogMessageQueueCS = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(gLogMessageQueueCS, "gLogMessageQueueCS");
 
 // also labelled: FileHandlesCriticalSection_Maybe
 _RTL_CRITICAL_SECTION gLogFileCS = {
@@ -39697,7 +37134,7 @@ _RTL_CRITICAL_SECTION gLogFileCS = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(gLogFileCS, "gLogFileCS");
 
 void * g_SMemHeapBuckets[256] = {
     nullptr,
@@ -39956,7 +37393,7 @@ void * g_SMemHeapBuckets[256] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(g_SMemHeapBuckets, "g_SMemHeapBuckets");
 
 CRITICAL_SECTION DebugMemoryCriticalSection[256] = {
     {
@@ -42007,7 +39444,7 @@ CRITICAL_SECTION DebugMemoryCriticalSection[256] = {
         /* .LockSemaphore = */ nullptr,
         /* .SpinCount = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(DebugMemoryCriticalSection, "DebugMemoryCriticalSection");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_00779068 = {
     /* .DebugInfo = */ nullptr,
@@ -42016,7 +39453,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_00779068 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_00779068, "lpCriticalSection_00779068");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_00779080 = {
     /* .DebugInfo = */ nullptr,
@@ -42025,7 +39462,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_00779080 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_00779080, "lpCriticalSection_00779080");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_00779214 = {
     /* .DebugInfo = */ nullptr,
@@ -42034,7 +39471,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_00779214 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_00779214, "lpCriticalSection_00779214");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0077930c = {
     /* .DebugInfo = */ nullptr,
@@ -42043,7 +39480,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_0077930c = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_0077930c, "lpCriticalSection_0077930c");
 
 uint16_t pBetaRealmNames[7][256] = {
     {
@@ -43852,13 +41289,13 @@ uint16_t pBetaRealmNames[7][256] = {
         0,
         0
     }
-};
+}; D2_GLOBAL_GUARD(pBetaRealmNames, "pBetaRealmNames");
 
-int gaFormList30InitialItems[4] = { 0, 0, 0, 0 };
+int gaFormList30InitialItems[4] = { 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gaFormList30InitialItems, "gaFormList30InitialItems");
 
-int gaFormList32InitialItems[4] = { 0, 0, 0, 0 };
+int gaFormList32InitialItems[4] = { 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gaFormList32InitialItems, "gaFormList32InitialItems");
 
-int32_t gaChatTextBoxFontParams[2] = { 0, 0 };
+int32_t gaChatTextBoxFontParams[2] = { 0, 0 }; D2_GLOBAL_GUARD(gaChatTextBoxFontParams, "gaChatTextBoxFontParams");
 
 TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> gQServerGameState = {
     /* base TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0> */ {
@@ -43913,7 +41350,7 @@ TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> gQS
             /* .SpinCount = */ 0
         }
     }
-};
+}; D2_GLOBAL_GUARD(gQServerGameState, "gQServerGameState");
 
 uint16_t gU16ImmunityStringBuffer2[256] = {
     0,
@@ -44172,7 +41609,7 @@ uint16_t gU16ImmunityStringBuffer2[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gU16ImmunityStringBuffer2, "gU16ImmunityStringBuffer2");
 
 uint16_t UNICODE_007a2c80[80] = {
     0,
@@ -44255,7 +41692,7 @@ uint16_t UNICODE_007a2c80[80] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(UNICODE_007a2c80, "UNICODE_007a2c80");
 
 uint16_t gU16ImmunityStringBuffer1[256] = {
     0,
@@ -44514,14 +41951,273 @@ uint16_t gU16ImmunityStringBuffer1[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gU16ImmunityStringBuffer1, "gU16ImmunityStringBuffer1");
 
-uint16_t gwKeyNameBuffer[4] = { 0, 0, 0, 0 };
+uint16_t gnMonsterHealthBarValue[256] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+}; D2_GLOBAL_GUARD(gnMonsterHealthBarValue, "gnMonsterHealthBarValue");
+
+uint16_t gwKeyNameBuffer[4] = { 0, 0, 0, 0 }; D2_GLOBAL_GUARD(gwKeyNameBuffer, "gwKeyNameBuffer");
 
 D2SeedStrc gAncientsCloudSeed = {
     /* .nSeedLow = */ 0,
     /* .nSeedHigh = */ 0
-};
+}; D2_GLOBAL_GUARD(gAncientsCloudSeed, "gAncientsCloudSeed");
 
 uint16_t gwcImeCompositionBuffer[32] = {
     0,
@@ -44556,7 +42252,7 @@ uint16_t gwcImeCompositionBuffer[32] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gwcImeCompositionBuffer, "gwcImeCompositionBuffer");
 
 // also labelled: ChatValue
 uint16_t gwszChatInputText[257] = {
@@ -44817,7 +42513,7 @@ uint16_t gwszChatInputText[257] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gwszChatInputText, "gwszChatInputText");
 
 uint8_t gaChatHistoryBuffer[4112] = {
     0,
@@ -48932,7 +46628,7 @@ uint8_t gaChatHistoryBuffer[4112] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaChatHistoryBuffer, "gaChatHistoryBuffer");
 
 // also labelled: gpIMECompositionString
 uint16_t gwcIMECompositionString[32] = {
@@ -48968,7 +46664,8202 @@ uint16_t gwcIMECompositionString[32] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gwcIMECompositionString, "gwcIMECompositionString");
+
+uint8_t gpInvRecipeScrollImage[8192] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+}; D2_GLOBAL_GUARD(gpInvRecipeScrollImage, "gpInvRecipeScrollImage");
 
 D2QuestLogStrc gQuestLog = {
     /* .bQuestLogOpen = */ 0,
@@ -51004,9 +56895,9 @@ D2QuestLogStrc gQuestLog = {
     /* .bZooMonsterSpawned = */ 0,
     /* .nZooMonsterGUID = */ 0,
     /* .nZooSpawnCounter = */ 0
-};
+}; D2_GLOBAL_GUARD(gQuestLog, "gQuestLog");
 
-uint16_t gnMonsterUniqueNameBuffer[2] = { 0, 0 };
+uint16_t gnMonsterUniqueNameBuffer[2] = { 0, 0 }; D2_GLOBAL_GUARD(gnMonsterUniqueNameBuffer, "gnMonsterUniqueNameBuffer");
 
 uint16_t gNpcMenuConfirmDialogStrings[40] = {
     0,
@@ -51049,7 +56940,7 @@ uint16_t gNpcMenuConfirmDialogStrings[40] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gNpcMenuConfirmDialogStrings, "gNpcMenuConfirmDialogStrings");
 
 uint16_t gwszTradePartnerName[16] = {
     0,
@@ -51068,7 +56959,7 @@ uint16_t gwszTradePartnerName[16] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gwszTradePartnerName, "gwszTradePartnerName");
 
 uint8_t gaDirectDrawDitherPaletteRemap[1024] = {
     0,
@@ -52095,7 +57986,37 @@ uint8_t gaDirectDrawDitherPaletteRemap[1024] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaDirectDrawDitherPaletteRemap, "gaDirectDrawDitherPaletteRemap");
+
+D2RenderStatisticsStrc gnTextureMemoryUsageBytes = {
+    /* .nTextureMemoryUsageBytes = */ 0,
+    /* .field_0x4 = */ { 0, 0 },
+    /* .nGlideSubtileCacheMemBytes = */ 0,
+    /* .field_0x10 = */ { 0, 0 },
+    /* .nGlideSmallTextureCacheMemBytes = */ 0,
+    /* .nGlideMediumTextureCacheMemBytes = */ 0,
+    /* .nGlideLargeTextureCacheMemBytes = */ 0,
+    /* .field_0x24 = */ {
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    }
+}; D2_GLOBAL_GUARD(gnTextureMemoryUsageBytes, "gnTextureMemoryUsageBytes");
 
 // also labelled: ?rInitialWindowRect@@3UtagRECT@@A, Ordinal_24, lpRect_007c9160
 tagRECT rInitialWindowRect = {
@@ -52103,7 +58024,7 @@ tagRECT rInitialWindowRect = {
     /* .top = */ 0,
     /* .right = */ 0,
     /* .bottom = */ 0
-};
+}; D2_GLOBAL_GUARD(rInitialWindowRect, "rInitialWindowRect");
 
 uint8_t gpLineBufferTileArray[32][32][32] = {
     {
@@ -86986,7 +92907,7 @@ uint8_t gpLineBufferTileArray[32][32][32] = {
             0
         }
     }
-};
+}; D2_GLOBAL_GUARD(gpLineBufferTileArray, "gpLineBufferTileArray");
 
 // also labelled: gPaletteBlendLookupTable
 uint8_t gaPaletteColorLUT[49][256] = {
@@ -99632,7 +105553,7 @@ uint8_t gaPaletteColorLUT[49][256] = {
         0,
         0
     }
-};
+}; D2_GLOBAL_GUARD(gaPaletteColorLUT, "gaPaletteColorLUT");
 
 D2TooltipTextStrc DisplayedTooltip = {
     /* .wszString = */ {
@@ -100666,11 +106587,11 @@ D2TooltipTextStrc DisplayedTooltip = {
     /* .nColor = */ 0,
     /* .nCenterFlag = */ 0,
     /* .nLoadProgress = */ 0
-};
+}; D2_GLOBAL_GUARD(DisplayedTooltip, "DisplayedTooltip");
 
-uint16_t gnFontTableCharWidthCache[2] = { 0, 0 };
+uint16_t gnFontTableCharWidthCache[2] = { 0, 0 }; D2_GLOBAL_GUARD(gnFontTableCharWidthCache, "gnFontTableCharWidthCache");
 
-uint16_t gwFontHeightDefault[2] = { 0, 0 };
+uint16_t gwFontHeightDefault[2] = { 0, 0 }; D2_GLOBAL_GUARD(gwFontHeightDefault, "gwFontHeightDefault");
 
 CRITICAL_SECTION gcsErrorHandlerList = {
     /* .DebugInfo = */ nullptr,
@@ -100679,7 +106600,7 @@ CRITICAL_SECTION gcsErrorHandlerList = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(gcsErrorHandlerList, "gcsErrorHandlerList");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_00881860 = {
     /* .DebugInfo = */ nullptr,
@@ -100688,7 +106609,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_00881860 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_00881860, "lpCriticalSection_00881860");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_00881894 = {
     /* .DebugInfo = */ nullptr,
@@ -100697,7 +106618,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_00881894 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_00881894, "lpCriticalSection_00881894");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_00881f64 = {
     /* .DebugInfo = */ nullptr,
@@ -100706,7 +106627,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_00881f64 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_00881f64, "lpCriticalSection_00881f64");
 
 CRITICAL_SECTION aTaskQueueCriticalSections[32] = {
     {
@@ -100965,7 +106886,7 @@ CRITICAL_SECTION aTaskQueueCriticalSections[32] = {
         /* .LockSemaphore = */ nullptr,
         /* .SpinCount = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(aTaskQueueCriticalSections, "aTaskQueueCriticalSections");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0088caa8 = {
     /* .DebugInfo = */ nullptr,
@@ -100974,7 +106895,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_0088caa8 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_0088caa8, "lpCriticalSection_0088caa8");
 
 TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0> gCelCmpCacheHandler = {
     /* base TSExportTableSimple<CELLIST, HCELLIST__*, 0> */ {
@@ -101029,7 +106950,7 @@ TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0> gCelCmp
             /* .SpinCount = */ 0
         }
     }
-};
+}; D2_GLOBAL_GUARD(gCelCmpCacheHandler, "gCelCmpCacheHandler");
 
 D2DataTableTxtStrc sgtDataTable = {
     /* .pTxtPlayerClass = */ nullptr,
@@ -101885,9 +107806,9 @@ D2DataTableTxtStrc sgtDataTable = {
     /* .nRoomDataFreeGenerationB = */ 0,
     /* .nRoomDataFreeGenerationA = */ 0,
     /* .nRoomDataGenerationA = */ 0
-};
+}; D2_GLOBAL_GUARD(sgtDataTable, "sgtDataTable");
 
-unsigned long long gpItemTypeTableContext = 0;
+unsigned long long gpItemTypeTableContext = 0; D2_GLOBAL_GUARD(gpItemTypeTableContext, "gpItemTypeTableContext");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0096d610 = {
     /* .DebugInfo = */ nullptr,
@@ -101896,7 +107817,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_0096d610 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_0096d610, "lpCriticalSection_0096d610");
 
 HeapManager gpHeapManager = {
     /* .pfnAlloc = */ nullptr,
@@ -101904,7 +107825,7 @@ HeapManager gpHeapManager = {
     /* .pChunkHead = */ nullptr,
     /* .pChunkTail = */ nullptr,
     /* .nFreeBytes = */ 0
-};
+}; D2_GLOBAL_GUARD(gpHeapManager, "gpHeapManager");
 
 uint16_t g_Palette16Bit[256] = {
     0,
@@ -102163,7 +108084,7 @@ uint16_t g_Palette16Bit[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(g_Palette16Bit, "g_Palette16Bit");
 
 uint32_t g_Palette32Bit[256] = {
     0,
@@ -102422,7 +108343,7 @@ uint32_t g_Palette32Bit[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(g_Palette32Bit, "g_Palette32Bit");
 
 D2D3DDeviceSlotStrc gD3DDeviceBlock0[2] = {
     {
@@ -103433,7 +109354,7 @@ D2D3DDeviceSlotStrc gD3DDeviceBlock0[2] = {
         },
         /* .nModeCount = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gD3DDeviceBlock0, "gD3DDeviceBlock0");
 
 D2SmackerGlideBufferStrc gnSmackerGlideYOffset = {
     /* .aPaletteLUT = */ {
@@ -103695,14 +109616,14 @@ D2SmackerGlideBufferStrc gnSmackerGlideYOffset = {
         0
     },
     /* .pFrameBuffer = */ nullptr
-};
+}; D2_GLOBAL_GUARD(gnSmackerGlideYOffset, "gnSmackerGlideYOffset");
 
-char Rsrc_Manifest_1_409[1745] = { "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">\r\n</assembly>PAPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGX" };
+char Rsrc_Manifest_1_409[1745] = { "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">\r\n</assembly>PAPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGX" }; D2_GLOBAL_GUARD(Rsrc_Manifest_1_409, "Rsrc_Manifest_1_409");
 
 CLIENT_ID ClientId = {
     /* .UniqueProcess = */ nullptr,
     /* .UniqueThread = */ nullptr
-};
+}; D2_GLOBAL_GUARD(ClientId, "ClientId");
 
 uint32_t User32Reserved[26] = {
     0x0,
@@ -103731,9 +109652,9 @@ uint32_t User32Reserved[26] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(User32Reserved, "User32Reserved");
 
-uint32_t UserReserved[5] = { 0x0, 0x0, 0x0, 0x0, 0x0 };
+uint32_t UserReserved[5] = { 0x0, 0x0, 0x0, 0x0, 0x0 }; D2_GLOBAL_GUARD(UserReserved, "UserReserved");
 
 void * SystemReserved1[54] = {
     nullptr,
@@ -103790,7 +109711,7 @@ void * SystemReserved1[54] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(SystemReserved1, "SystemReserved1");
 
 uint8_t SpareBytes[36] = {
     '\x00',
@@ -103829,12 +109750,12 @@ uint8_t SpareBytes[36] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(SpareBytes, "SpareBytes");
 
 CLIENT_ID RealClientId = {
     /* .UniqueProcess = */ nullptr,
     /* .UniqueThread = */ nullptr
-};
+}; D2_GLOBAL_GUARD(RealClientId, "RealClientId");
 
 void * Win32ClientInfo[62] = {
     nullptr,
@@ -103899,7 +109820,7 @@ void * Win32ClientInfo[62] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(Win32ClientInfo, "Win32ClientInfo");
 
 void * glDispatchTable[233] = {
     nullptr,
@@ -104135,7 +110056,7 @@ void * glDispatchTable[233] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(glDispatchTable, "glDispatchTable");
 
 void * glReserved1[29] = {
     nullptr,
@@ -104167,7 +110088,7 @@ void * glReserved1[29] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(glReserved1, "glReserved1");
 
 uint16_t StaticUnicodeBuffer[261] = {
     0x0,
@@ -104431,7 +110352,7 @@ uint16_t StaticUnicodeBuffer[261] = {
     0x0,
     0x0,
     0x0
-};
+}; D2_GLOBAL_GUARD(StaticUnicodeBuffer, "StaticUnicodeBuffer");
 
 void * TlsSlots[64] = {
     nullptr,
@@ -104498,9 +110419,9 @@ void * TlsSlots[64] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(TlsSlots, "TlsSlots");
 
-void * DbgSsReserved[2] = { nullptr, nullptr };
+void * DbgSsReserved[2] = { nullptr, nullptr }; D2_GLOBAL_GUARD(DbgSsReserved, "DbgSsReserved");
 
 void * Instrumentation[9] = {
     nullptr,
@@ -104512,296 +110433,264 @@ void * Instrumentation[9] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(Instrumentation, "Instrumentation");
 
-GUID ActivityId = {} /* 00000000-0000-0000-0000-000000000000 */;
+GUID ActivityId = {} /* 00000000-0000-0000-0000-000000000000 */; D2_GLOBAL_GUARD(ActivityId, "ActivityId");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-uint8_t IMAGE_DOS_HEADER__00400000[128] = {};
-LPCSTR lpCaption_006cc848 = (LPCSTR)s_Diablo_2_EXE_006cc838;
-uint8_t gbChatDlgUpdateMarker = 0x2d;
-float gfTwoPow32 = 4.294967E+9;
-uint16_t gnSymbolSearchPathSeparator = 0x3b;
-char szOOGPasswordDialogTimeFmt = '\x0d';
-char * gpszCmdLineHelpText = s_Available_command_line_options____006d5b20;
-uint8_t gbExpansionInitialized = 0x30;
-char * gpszD2LngFileName = s_D2_LNG_006d5ee0;
-char * gpszLngManagerStartError = s_Unable_to_start_LNG_manager__006d5ec0;
-char * gpszLngCppError = s_Stupid_Lng_cpp_error__006d5ea8;
-float FLOAT_006da690 = 0.5;
-float FLOAT_006da6b8 = -1;
-char * gpszPaletteAct1Dat = s_palette_act1_pal_dat_006dc7fc;
-char * gpszPaletteAct1Pl2 = s_palette_act1_pal_pl2_006dc7e4;
-char * gpszPaletteActPathFormat = s__s_palette_act_d__s_006dc7d0;
-char * gpszPalDatName = s_pal_dat_006dc7c8;
-char * gpszPalPl2Name = s_pal_pl2_006dc7c0;
-uint32_t gnStringTruncateConstant = 0x2e2e2e;
-uint32_t gnPaletteLoadBufferSize = 0x7461642e;
-uint8_t gaPaletteLoadData = 0x0;
-char * gpszStringTblPathFormat = s_data_local_lng__s_string_tbl_006e02f8;
-char * gpszFontMapPathFormat = s_data_local_font__s_default_map_006e02d8;
-char * gpszPatchStringTblPathFormat = s_data_local_lng__s_patchstring_tbl_006e02b4;
-char * gpszExpansionStringTblPathFormat = s_data_local_lng__s_expansionstring_006e028c;
-char * gpszD2DataMpqName = s_d2data_mpq_006dc770;
-char * gpszPatchD2MpqName = s_patch_d2_mpq_006dc728;
-char * gpszD2ExpMpqName = s_d2exp_mpq_006cd3a0;
-uint16_t gaPossessiveNameData = 0x2073;
-char CHAR_C_006ed5b4 = 'C';
-char gDebugSpaceString = ' ';
-char * gpszDiabloIICaption = s_Diablo_II_006cc8b8;
-uint32_t gaScreenResolutionTableIndexArray = 0x40;
-uint32_t gaScreenResolutionModeArray = 0x1;
-int ScreenSizeX = 0x280;
-int ScreenSizeY = 0x1e0;
-uint32_t gnCursorInvTypeAutoOpenC = 0x0;
-uint32_t gnCursorInvTypeAutoOpenB = 0x1;
-uint32_t gnCursorInvTypeAutoOpenA = 0x5;
+uint8_t IMAGE_DOS_HEADER__00400000[128] = {}; D2_GLOBAL_GUARD(IMAGE_DOS_HEADER__00400000, "IMAGE_DOS_HEADER__00400000");
+LPCSTR lpCaption_006cc848 = (LPCSTR)s_Diablo_2_EXE_006cc838; D2_GLOBAL_GUARD(lpCaption_006cc848, "lpCaption_006cc848");
+uint8_t gbChatDlgUpdateMarker = 0x2d; D2_GLOBAL_GUARD(gbChatDlgUpdateMarker, "gbChatDlgUpdateMarker");
+float gfTwoPow32 = 4.294967E+9; D2_GLOBAL_GUARD(gfTwoPow32, "gfTwoPow32");
+uint16_t gnSymbolSearchPathSeparator = 0x3b; D2_GLOBAL_GUARD(gnSymbolSearchPathSeparator, "gnSymbolSearchPathSeparator");
+uint8_t gbFloatConstantBase = 0x0; D2_GLOBAL_GUARD(gbFloatConstantBase, "gbFloatConstantBase");
+char szOOGPasswordDialogTimeFmt = '\x0d'; D2_GLOBAL_GUARD(szOOGPasswordDialogTimeFmt, "szOOGPasswordDialogTimeFmt");
+char * gpszCmdLineHelpText = s_Available_command_line_options____006d5b20; D2_GLOBAL_GUARD(gpszCmdLineHelpText, "gpszCmdLineHelpText");
+uint8_t gbExpansionInitialized = 0x30; D2_GLOBAL_GUARD(gbExpansionInitialized, "gbExpansionInitialized");
+char * gpszD2LngFileName = s_D2_LNG_006d5ee0; D2_GLOBAL_GUARD(gpszD2LngFileName, "gpszD2LngFileName");
+char * gpszLngManagerStartError = s_Unable_to_start_LNG_manager__006d5ec0; D2_GLOBAL_GUARD(gpszLngManagerStartError, "gpszLngManagerStartError");
+char * gpszLngCppError = s_Stupid_Lng_cpp_error__006d5ea8; D2_GLOBAL_GUARD(gpszLngCppError, "gpszLngCppError");
+uint8_t gaMonsterDenEnvironmentData = 0x0; D2_GLOBAL_GUARD(gaMonsterDenEnvironmentData, "gaMonsterDenEnvironmentData");
+uint8_t gaWeatherTransitionConstant = 0x0; D2_GLOBAL_GUARD(gaWeatherTransitionConstant, "gaWeatherTransitionConstant");
+float FLOAT_006da690 = 0.5; D2_GLOBAL_GUARD(FLOAT_006da690, "FLOAT_006da690");
+float FLOAT_006da6b8 = -1; D2_GLOBAL_GUARD(FLOAT_006da6b8, "FLOAT_006da6b8");
+char * gpszPaletteAct1Dat = s_palette_act1_pal_dat_006dc7fc; D2_GLOBAL_GUARD(gpszPaletteAct1Dat, "gpszPaletteAct1Dat");
+char * gpszPaletteAct1Pl2 = s_palette_act1_pal_pl2_006dc7e4; D2_GLOBAL_GUARD(gpszPaletteAct1Pl2, "gpszPaletteAct1Pl2");
+char * gpszPaletteActPathFormat = s__s_palette_act_d__s_006dc7d0; D2_GLOBAL_GUARD(gpszPaletteActPathFormat, "gpszPaletteActPathFormat");
+char * gpszPalDatName = s_pal_dat_006dc7c8; D2_GLOBAL_GUARD(gpszPalDatName, "gpszPalDatName");
+char * gpszPalPl2Name = s_pal_pl2_006dc7c0; D2_GLOBAL_GUARD(gpszPalPl2Name, "gpszPalPl2Name");
+uint32_t gnStringTruncateConstant = 0x2e2e2e; D2_GLOBAL_GUARD(gnStringTruncateConstant, "gnStringTruncateConstant");
+uint32_t gnPaletteLoadBufferSize = 0x7461642e; D2_GLOBAL_GUARD(gnPaletteLoadBufferSize, "gnPaletteLoadBufferSize");
+uint8_t gaPaletteLoadData = 0x0; D2_GLOBAL_GUARD(gaPaletteLoadData, "gaPaletteLoadData");
+unsigned int gaItemTypeTxtIndexData = 0x6d6567; D2_GLOBAL_GUARD(gaItemTypeTxtIndexData, "gaItemTypeTxtIndexData");
+char * gpszStringTblPathFormat = s_data_local_lng__s_string_tbl_006e02f8; D2_GLOBAL_GUARD(gpszStringTblPathFormat, "gpszStringTblPathFormat");
+char * gpszFontMapPathFormat = s_data_local_font__s_default_map_006e02d8; D2_GLOBAL_GUARD(gpszFontMapPathFormat, "gpszFontMapPathFormat");
+char * gpszPatchStringTblPathFormat = s_data_local_lng__s_patchstring_tbl_006e02b4; D2_GLOBAL_GUARD(gpszPatchStringTblPathFormat, "gpszPatchStringTblPathFormat");
+char * gpszExpansionStringTblPathFormat = s_data_local_lng__s_expansionstring_006e028c; D2_GLOBAL_GUARD(gpszExpansionStringTblPathFormat, "gpszExpansionStringTblPathFormat");
+char * gpszD2DataMpqName = s_d2data_mpq_006dc770; D2_GLOBAL_GUARD(gpszD2DataMpqName, "gpszD2DataMpqName");
+char * gpszPatchD2MpqName = s_patch_d2_mpq_006dc728; D2_GLOBAL_GUARD(gpszPatchD2MpqName, "gpszPatchD2MpqName");
+char * gpszD2ExpMpqName = s_d2exp_mpq_006cd3a0; D2_GLOBAL_GUARD(gpszD2ExpMpqName, "gpszD2ExpMpqName");
+uint16_t gaPossessiveNameData = 0x2073; D2_GLOBAL_GUARD(gaPossessiveNameData, "gaPossessiveNameData");
+char gDebugSpaceString = ' '; D2_GLOBAL_GUARD(gDebugSpaceString, "gDebugSpaceString");
+char * gpszDiabloIICaption = s_Diablo_II_006cc8b8; D2_GLOBAL_GUARD(gpszDiabloIICaption, "gpszDiabloIICaption");
+uint32_t gaScreenResolutionTableIndexArray = 0x40; D2_GLOBAL_GUARD(gaScreenResolutionTableIndexArray, "gaScreenResolutionTableIndexArray");
+uint32_t gaScreenResolutionModeArray = 0x1; D2_GLOBAL_GUARD(gaScreenResolutionModeArray, "gaScreenResolutionModeArray");
+int ScreenSizeX = 0x280; D2_GLOBAL_GUARD(ScreenSizeX, "ScreenSizeX");
+int ScreenSizeY = 0x1e0; D2_GLOBAL_GUARD(ScreenSizeY, "ScreenSizeY");
+uint32_t gnCursorInvTypeAutoOpenA = 0x5; D2_GLOBAL_GUARD(gnCursorInvTypeAutoOpenA, "gnCursorInvTypeAutoOpenA");
 // also labelled: gnGFXUnknownA
-char * gpszDiabloIIClassNameSource = s_Diablo_II_006cc8b8;
-int32_t Frames_PerSecond = 0x19;
-D2DataTableTxtStrc * sgptDataTable = (D2DataTableTxtStrc *)&sgtDataTable;
-char * gaLanguageNames_0074430c_11[15] = {};
-uint32_t DWORD_007467b0 = 0x5070000;
-uint32_t DEFAULT_SECURITY_COOKIE = 0xbb40e64e;
-BOOL BOOL_0074c020 = 0x64;
-uint32_t TokenHashMapBucketSize = 0x10;
-uint32_t gnServiceRunning = 0x0;
-CRITICAL_SECTION gUICtrlSkillColumnState[256] = {};
-CRITICAL_SECTION gUICtrlPanelArrowState[256] = {};
-D2WinTextBox * gpCtlChannelList = 0;
-HANDLE MCPThread = 0;
-pfnMCPGameListEntry g_pfnMCPGameListCallback = (pfnMCPGameListEntry)0;
-pfnVoidNoArgCallback g_pfnMCPGameListCompleteCallback = (pfnVoidNoArgCallback)0;
-pfnMCPMessage g_pfnMCPMessageCallback = (pfnMCPMessage)0;
-LPCSTR gpszCmdLineCaptionStr = 0;
-D2GameViewStrc * D2GameView = 0;
-uint16_t gnMonsterHealthBarValue = 0;
-int WindowSizeY = 0;
-int WindowSizeX = 0;
-uint32_t gaSpriteArcaneStarYOffset = 0;
-uint32_t gaSpriteArcaneStarXOffset = 0;
-uint32_t gnEngineMode = 0;
-uint32_t gnCurrentEngineFlags = 0;
-void * gpSoundLRUListHead = 0;
-uint8_t gbInvImageLoadToggle = 0;
-uint32_t gpInvRecipeScrollImage = 0;
-uint32_t gnTextBoxExclusionX = 0;
-int gnUICtrlConfigScrollPosition = 0;
-uint32_t gdwSpellSelThrottleTick = 0;
-uint32_t gnGfxOverlayMode = 0;
-int gnTextureMemoryUsageBytes = 0;
-uint32_t gnGlideSubtileCacheMemBytes = 0;
-int gnGlideSmallTextureCacheMemBytes = 0;
-int gnGlideMediumTextureCacheMemBytes = 0;
-uint32_t gnGlideLargeTextureCacheMemBytes = 0;
-D2RendererCoreStrc * RENDERER_SelectedRendererCore = 0;
-int RENDERER_nWindowWidth = 0;
-int RENDERER_nWindowHeight = 0;
-int gnGlideWindowHandle = 0;
-int gnRenderState = 0;
-D2GfxSettingsStrc * pD2GFXRenderedDataStrc = 0;
-D2GfxHelperStrc * D2GfxRendereInitFunctionsStrc = 0;
-BYTE * * gpPaletteTable = 0;
+char * gpszDiabloIIClassNameSource = s_Diablo_II_006cc8b8; D2_GLOBAL_GUARD(gpszDiabloIIClassNameSource, "gpszDiabloIIClassNameSource");
+int32_t Frames_PerSecond = 0x19; D2_GLOBAL_GUARD(Frames_PerSecond, "Frames_PerSecond");
+D2DataTableTxtStrc * sgptDataTable = (D2DataTableTxtStrc *)&sgtDataTable; D2_GLOBAL_GUARD(sgptDataTable, "sgptDataTable");
+char * gaLanguageNames_0074430c_11[15] = {}; D2_GLOBAL_GUARD(gaLanguageNames_0074430c_11, "gaLanguageNames_0074430c_11");
+uint32_t DWORD_007467b0 = 0x5070000; D2_GLOBAL_GUARD(DWORD_007467b0, "DWORD_007467b0");
+uint32_t DEFAULT_SECURITY_COOKIE = 0xbb40e64e; D2_GLOBAL_GUARD(DEFAULT_SECURITY_COOKIE, "DEFAULT_SECURITY_COOKIE");
+unsigned int gaCRT_FPremData_3 = 0x6a9a24; D2_GLOBAL_GUARD(gaCRT_FPremData_3, "gaCRT_FPremData_3");
+BOOL BOOL_0074c020 = 0x64; D2_GLOBAL_GUARD(BOOL_0074c020, "BOOL_0074c020");
+uint32_t TokenHashMapBucketSize = 0x10; D2_GLOBAL_GUARD(TokenHashMapBucketSize, "TokenHashMapBucketSize");
+uint32_t gnServiceRunning = 0x0; D2_GLOBAL_GUARD(gnServiceRunning, "gnServiceRunning");
+CRITICAL_SECTION gUICtrlSkillColumnState[256] = {}; D2_GLOBAL_GUARD(gUICtrlSkillColumnState, "gUICtrlSkillColumnState");
+CRITICAL_SECTION gUICtrlPanelArrowState[256] = {}; D2_GLOBAL_GUARD(gUICtrlPanelArrowState, "gUICtrlPanelArrowState");
+D2WinTextBox * gpCtlChannelList = 0; D2_GLOBAL_GUARD(gpCtlChannelList, "gpCtlChannelList");
+HANDLE MCPThread = 0; D2_GLOBAL_GUARD(MCPThread, "MCPThread");
+pfnMCPGameListEntry g_pfnMCPGameListCallback = (pfnMCPGameListEntry)0; D2_GLOBAL_GUARD(g_pfnMCPGameListCallback, "g_pfnMCPGameListCallback");
+pfnVoidNoArgCallback g_pfnMCPGameListCompleteCallback = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(g_pfnMCPGameListCompleteCallback, "g_pfnMCPGameListCompleteCallback");
+pfnMCPMessage g_pfnMCPMessageCallback = (pfnMCPMessage)0; D2_GLOBAL_GUARD(g_pfnMCPMessageCallback, "g_pfnMCPMessageCallback");
+LPCSTR gpszCmdLineCaptionStr = 0; D2_GLOBAL_GUARD(gpszCmdLineCaptionStr, "gpszCmdLineCaptionStr");
+D2GameViewStrc * D2GameView = 0; D2_GLOBAL_GUARD(D2GameView, "D2GameView");
+int WindowSizeY = 0; D2_GLOBAL_GUARD(WindowSizeY, "WindowSizeY");
+int WindowSizeX = 0; D2_GLOBAL_GUARD(WindowSizeX, "WindowSizeX");
+uint32_t gaSpriteArcaneStarYOffset = 0; D2_GLOBAL_GUARD(gaSpriteArcaneStarYOffset, "gaSpriteArcaneStarYOffset");
+uint32_t gaSpriteArcaneStarXOffset = 0; D2_GLOBAL_GUARD(gaSpriteArcaneStarXOffset, "gaSpriteArcaneStarXOffset");
+uint32_t gnEngineMode = 0; D2_GLOBAL_GUARD(gnEngineMode, "gnEngineMode");
+uint32_t gnCurrentEngineFlags = 0; D2_GLOBAL_GUARD(gnCurrentEngineFlags, "gnCurrentEngineFlags");
+void * gpSoundLRUListHead = 0; D2_GLOBAL_GUARD(gpSoundLRUListHead, "gpSoundLRUListHead");
+uint8_t gbInvImageLoadToggle = 0; D2_GLOBAL_GUARD(gbInvImageLoadToggle, "gbInvImageLoadToggle");
+uint32_t gnTextBoxExclusionX = 0; D2_GLOBAL_GUARD(gnTextBoxExclusionX, "gnTextBoxExclusionX");
+int gnUICtrlConfigScrollPosition = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollPosition, "gnUICtrlConfigScrollPosition");
+uint32_t gdwSpellSelThrottleTick = 0; D2_GLOBAL_GUARD(gdwSpellSelThrottleTick, "gdwSpellSelThrottleTick");
+uint32_t gnGfxOverlayMode = 0; D2_GLOBAL_GUARD(gnGfxOverlayMode, "gnGfxOverlayMode");
+D2RendererCoreStrc * RENDERER_SelectedRendererCore = 0; D2_GLOBAL_GUARD(RENDERER_SelectedRendererCore, "RENDERER_SelectedRendererCore");
+int RENDERER_nWindowWidth = 0; D2_GLOBAL_GUARD(RENDERER_nWindowWidth, "RENDERER_nWindowWidth");
+int RENDERER_nWindowHeight = 0; D2_GLOBAL_GUARD(RENDERER_nWindowHeight, "RENDERER_nWindowHeight");
+int gnGlideWindowHandle = 0; D2_GLOBAL_GUARD(gnGlideWindowHandle, "gnGlideWindowHandle");
+int gnRenderState = 0; D2_GLOBAL_GUARD(gnRenderState, "gnRenderState");
+D2GfxSettingsStrc * pD2GFXRenderedDataStrc = 0; D2_GLOBAL_GUARD(pD2GFXRenderedDataStrc, "pD2GFXRenderedDataStrc");
+D2GfxHelperStrc * D2GfxRendereInitFunctionsStrc = 0; D2_GLOBAL_GUARD(D2GfxRendereInitFunctionsStrc, "D2GfxRendereInitFunctionsStrc");
+BYTE * * gpPaletteTable = 0; D2_GLOBAL_GUARD(gpPaletteTable, "gpPaletteTable");
 // also labelled: ppvBits_007c9154
-BYTE * gpRenderBackBufferBits = 0;
-LPCSTR gpszWindowClassName = 0;
-LPCSTR szWindowClassName = 0;
-LPCSTR gpszWindowTitle = 0;
-int gnTileInnerClipZMin = 0;
-int gnTileClipXMin = 0;
-int gnTileInnerXMax = 0;
-int gnTileClipZMax = 0;
-int gnTileViewportXOffset = 0;
-int gnTileInnerClipXMax = 0;
-int gnTileClipZMin = 0;
-int gnTileClipBottom = 0;
-uint32_t gbPerspectiveRenderEnabled = 0;
-uint32_t pRenderSurfaceBuffer = 0;
-int32_t gRenderBufferPitch = 0;
-BYTE * * gpPaletteBlendLookupTable = 0;
-uint32_t gnCursorDC6FrameNumber = 0;
-HWND ghwndD2GFX_CachedWindow = 0;
-uint32_t gnWindowInitState = 0;
-BOOL gbWindowed = 0;
-int gnResolutionMode = 0;
-int gnFormControlCount = 0;
-uint32_t gbGfxWindowCreated = 0;
-uint32_t gnInitialFormState = 0;
-pfnVoidNoArgCallback gpfnExitCallback = (pfnVoidNoArgCallback)0;
-grDrawLine GLIDEDLL__grDrawLine_8 = (grDrawLine)0;
-grDepthMask GLIDEDLL_grDepthMask_4 = (grDepthMask)0;
-grDrawPoint GLIDEDLL_grDrawPoint_4 = (grDrawPoint)0;
-grGlideShutdown GLIDEDLL_grGlideShutdown_0 = (grGlideShutdown)0;
-grDitherMode GLIDEDLL_grDitherMode_4 = (grDitherMode)0;
-grTexDownloadMipMap GLIDEDLL_grTexDownloadMipMap_16 = (grTexDownloadMipMap)0;
-pfnGlideGammaCorrectionRGB GLIDEDLL_guGammaCorrectionRGB_12 = (pfnGlideGammaCorrectionRGB)0;
-grDrawVertexArrayContiguous GLIDEDLL_grDrawVertexArrayContiguous_16 = (grDrawVertexArrayContiguous)0;
-grAlphaBlendFunction GLIDEDLL_grAlphaBlendFunction_16 = (grAlphaBlendFunction)0;
-grTexCombine GLIDEDLL_grTexCombine_28 = (grTexCombine)0;
-grLfbUnlock GLIDEDLL_grLfbUnlock_8 = (grLfbUnlock)0;
-grLfbLock GLIDEDLL_grLfbLock_24 = (grLfbLock)0;
-grLoadGammaTable GLIDEDLL_grLoadGammaTable_16 = (grLoadGammaTable)0;
-grAlphaCombine GLIDEDLL_grAlphaCombine_20 = (grAlphaCombine)0;
-grSstWinOpen GLIDEDLL_grSstWinOpen_28 = (grSstWinOpen)0;
-grTexFilterMode GLIDEDLL_grTexFilterMode_12 = (grTexFilterMode)0;
-grGlideInit GLIDEDLL_grGlideInit_0 = (grGlideInit)0;
-grFinish GLIDEDLL_grFinish_0 = (grFinish)0;
-pfnGlideDrawVertexArray GLIDEDLL_grDrawVertexArray_12 = (pfnGlideDrawVertexArray)0;
-grGet GLIDEDLL_grGet_12 = (grGet)0;
-grTexMinAddress GLIDEDLL_grTexMinAddress_4 = (grTexMinAddress)0;
-grColorCombine GLIDEDLL_grColorCombine_20 = (grColorCombine)0;
-grColorMask GLIDEDLL_grColorMask_8 = (grColorMask)0;
-grChromakeyValue GLIDEDLL_grChromakeyValue_4 = (grChromakeyValue)0;
-grCoordinateSpace GLIDEDLL_grCoordinateSpace_4 = (grCoordinateSpace)0;
-grSstSelect GLIDEDLL_grSstSelect_4 = (grSstSelect)0;
-grTexDownloadTable GLIDEDLL_grTexDownloadTable_8 = (grTexDownloadTable)0;
-grTexMaxAddress GLIDEDLL_grTexMaxAddress_4 = (grTexMaxAddress)0;
-grBufferClear GLIDEDLL_grBufferClear_12 = (grBufferClear)0;
-grChromakeyMode GLIDEDLL_grChromakeyMode_4 = (grChromakeyMode)0;
-grBufferSwap GLIDEDLL_grBufferSwap_4 = (grBufferSwap)0;
-grTexSource GLIDEDLL_grTexSource_16 = (grTexSource)0;
-grVertexLayout GLIDEDLL_grVertexLayout_12 = (grVertexLayout)0;
-grConstantColorValue GLIDEDLL_grConstantColorValue_4 = (grConstantColorValue)0;
-grSstWinClose _GLIDEDLL_grSstWinClose_4 = (grSstWinClose)0;
-HMODULE lpGLIDE3x_dll = 0;
-uint32_t gbPlayingCutScene = 0;
-IDirectDrawSurface1 * gpDDrawPrimarySurface = 0;
-uint32_t gbFaultHandlerListInitialized = 0;
-pfnFaultError g_pfnFaultErrorCallback = (pfnFaultError)0;
-D2Srp * g_pSrpContext = 0;
-uint32_t gnQServerListenSocket = 0;
-uint32_t Frames_TimeBetweenFrames = 0;
-uint32_t gnSeedCounter = 0;
-unsigned int gpfnProfCoreInitCallback = {};
-unsigned int UINT_0096d6a8 = {};
-IDirectDrawSurface7 * g_pD3DSurfaceBackbuffer = 0;
-uint32_t gnSmackerDecodeState = 0;
-uint32_t dwCurrentThreadId = 0;
-uint8_t IMAGE_RESOURCE_DIRECTORY_00995000[16] = {};
-uint8_t Rsrc_Icon_1_409[744] = {};
-uint8_t Rsrc_Icon_2_409[296] = {};
-uint8_t Rsrc_Icon_3_409[744] = {};
-uint8_t Rsrc_Icon_4_409[296] = {};
-uint8_t Rsrc_Icon_5_409[2216] = {};
-uint8_t Rsrc_Icon_6_409[296] = {};
-uint8_t Rsrc_GroupIcon_65_409[34] = {};
-uint8_t Rsrc_GroupIcon_66_409[34] = {};
-uint8_t Rsrc_GroupIcon_67_409[34] = {};
-uint8_t Rsrc_Version_1_409[92] = {};
-void * ExceptionList = (void *)0x00000000;
-void * SubSystemTib = (void *)0x00000000;
-void * FiberData = (void *)0x00000000;
-void * ArbitraryUserPointer = (void *)0x00000000;
-void * Self = (void *)0xffdff000;
-void * EnvironmentPointer = (void *)0x00000000;
-void * ActiveRpcHandle = (void *)0x00000000;
-void * ThreadLocalStoragePointer = (void *)0x00000000;
-uint32_t LastErrorValue = 0x0;
-uint32_t CountOfOwnedCriticalSections = 0x0;
-void * CsrClientThread = (void *)0x00000000;
-void * Win32ThreadInfo = (void *)0x00000000;
-void * WOW32Reserved = (void *)0x00000000;
-uint32_t CurrentLocale = 0x0;
-uint32_t FpSoftwareStatusRegister = 0x0;
-uint32_t ExceptionCode = 0x0;
-void * ActivationContextStackPointer = (void *)0x00000000;
-uint32_t TxFsContext = 0x0;
-uint32_t GdiTebBatch = 0x0;
-void * GdiCachedProcessHandle = (void *)0x00000000;
-uint32_t GdiClientPID = 0x0;
-uint32_t GdiCLientTID = 0x0;
-void * GdiThreadLocalInfo = (void *)0x00000000;
-void * glReserved2 = (void *)0x00000000;
-void * glSectionInfo = (void *)0x00000000;
-void * glSection = (void *)0x00000000;
-void * glTable = (void *)0x00000000;
-void * glCurrentRC = (void *)0x00000000;
-void * glContext = (void *)0x00000000;
-uint32_t LastStatusValue = 0x0;
-void * DeallocationStack = (void *)0x00000000;
-void * TlsLinks_Flink = (void *)0x00000000;
-void * TlsLinks_Blink = (void *)0x00000000;
-void * Vdm = (void *)0x00000000;
-void * ReservedForNtRpc = (void *)0x00000000;
-uint32_t HardErrorMode = 0x0;
-void * SubProcessTag = (void *)0x00000000;
-void * EtwLocalData = (void *)0x00000000;
-void * EtwTraceData = (void *)0x00000000;
-void * WinSockData = (void *)0x00000000;
-uint32_t GdiBatchCount = 0x0;
-uint32_t IdealProcessorValue = 0x0;
-uint32_t GuaranteedStackBytes = 0x0;
-void * ReservedForPerf = (void *)0x00000000;
-void * ReservedForOle = (void *)0x00000000;
-uint32_t WaitingOnLoaderLock = 0x0;
-void * SavedPriorityState = (void *)0x00000000;
-void * SoftPatchPtr1 = (void *)0x00000000;
-void * ThreadPoolData = (void *)0x00000000;
-void * TlsExpansionSlots = (void *)0x00000000;
-uint32_t MuiGeneration = 0x0;
-uint32_t IsImpersonating = 0x0;
-void * NlsCache = (void *)0x00000000;
-void * pShimData = (void *)0x00000000;
-uint32_t HeapVirtualAffinity = 0x0;
-void * CurrentTransactionHandle = (void *)0x00000000;
-void * ActiveFrame = (void *)0x00000000;
-void * FlsData = (void *)0x00000000;
-void * PreferredLanguages = (void *)0x00000000;
-void * UserPrefLanguages = (void *)0x00000000;
-void * MergedPrefLanguages = (void *)0x00000000;
-uint32_t MuiImpersonation = 0x0;
-unsigned short CrossTebFlags = {};
-unsigned short SameTebFlags = {};
-void * TxnScopeEnterCallback = (void *)0x00000000;
-void * TxnScopeExitCallback = (void *)0x00000000;
-void * TxnScopeContext = (void *)0x00000000;
-uint32_t LockCount = 0x0;
-void * ResourceRetValue = (void *)0x00000000;
+BYTE * gpRenderBackBufferBits = 0; D2_GLOBAL_GUARD(gpRenderBackBufferBits, "gpRenderBackBufferBits");
+LPCSTR gpszWindowClassName = 0; D2_GLOBAL_GUARD(gpszWindowClassName, "gpszWindowClassName");
+LPCSTR szWindowClassName = 0; D2_GLOBAL_GUARD(szWindowClassName, "szWindowClassName");
+LPCSTR gpszWindowTitle = 0; D2_GLOBAL_GUARD(gpszWindowTitle, "gpszWindowTitle");
+int gnTileInnerClipZMin = 0; D2_GLOBAL_GUARD(gnTileInnerClipZMin, "gnTileInnerClipZMin");
+int gnTileClipXMin = 0; D2_GLOBAL_GUARD(gnTileClipXMin, "gnTileClipXMin");
+int gnTileInnerXMax = 0; D2_GLOBAL_GUARD(gnTileInnerXMax, "gnTileInnerXMax");
+int gnTileClipZMax = 0; D2_GLOBAL_GUARD(gnTileClipZMax, "gnTileClipZMax");
+int gnTileViewportXOffset = 0; D2_GLOBAL_GUARD(gnTileViewportXOffset, "gnTileViewportXOffset");
+int gnTileInnerClipXMax = 0; D2_GLOBAL_GUARD(gnTileInnerClipXMax, "gnTileInnerClipXMax");
+int gnTileClipZMin = 0; D2_GLOBAL_GUARD(gnTileClipZMin, "gnTileClipZMin");
+int gnTileClipBottom = 0; D2_GLOBAL_GUARD(gnTileClipBottom, "gnTileClipBottom");
+uint32_t gbPerspectiveRenderEnabled = 0; D2_GLOBAL_GUARD(gbPerspectiveRenderEnabled, "gbPerspectiveRenderEnabled");
+uint32_t pRenderSurfaceBuffer = 0; D2_GLOBAL_GUARD(pRenderSurfaceBuffer, "pRenderSurfaceBuffer");
+int32_t gRenderBufferPitch = 0; D2_GLOBAL_GUARD(gRenderBufferPitch, "gRenderBufferPitch");
+BYTE * * gpPaletteBlendLookupTable = 0; D2_GLOBAL_GUARD(gpPaletteBlendLookupTable, "gpPaletteBlendLookupTable");
+uint32_t gnCursorDC6FrameNumber = 0; D2_GLOBAL_GUARD(gnCursorDC6FrameNumber, "gnCursorDC6FrameNumber");
+HWND ghwndD2GFX_CachedWindow = 0; D2_GLOBAL_GUARD(ghwndD2GFX_CachedWindow, "ghwndD2GFX_CachedWindow");
+uint32_t gnWindowInitState = 0; D2_GLOBAL_GUARD(gnWindowInitState, "gnWindowInitState");
+BOOL gbWindowed = 0; D2_GLOBAL_GUARD(gbWindowed, "gbWindowed");
+int gnResolutionMode = 0; D2_GLOBAL_GUARD(gnResolutionMode, "gnResolutionMode");
+int gnFormControlCount = 0; D2_GLOBAL_GUARD(gnFormControlCount, "gnFormControlCount");
+uint32_t gbGfxWindowCreated = 0; D2_GLOBAL_GUARD(gbGfxWindowCreated, "gbGfxWindowCreated");
+uint32_t gnInitialFormState = 0; D2_GLOBAL_GUARD(gnInitialFormState, "gnInitialFormState");
+pfnVoidNoArgCallback gpfnExitCallback = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(gpfnExitCallback, "gpfnExitCallback");
+grDrawLine GLIDEDLL__grDrawLine_8 = (grDrawLine)0; D2_GLOBAL_GUARD(GLIDEDLL__grDrawLine_8, "GLIDEDLL__grDrawLine_8");
+grDepthMask GLIDEDLL_grDepthMask_4 = (grDepthMask)0; D2_GLOBAL_GUARD(GLIDEDLL_grDepthMask_4, "GLIDEDLL_grDepthMask_4");
+grDrawPoint GLIDEDLL_grDrawPoint_4 = (grDrawPoint)0; D2_GLOBAL_GUARD(GLIDEDLL_grDrawPoint_4, "GLIDEDLL_grDrawPoint_4");
+grGlideShutdown GLIDEDLL_grGlideShutdown_0 = (grGlideShutdown)0; D2_GLOBAL_GUARD(GLIDEDLL_grGlideShutdown_0, "GLIDEDLL_grGlideShutdown_0");
+grDitherMode GLIDEDLL_grDitherMode_4 = (grDitherMode)0; D2_GLOBAL_GUARD(GLIDEDLL_grDitherMode_4, "GLIDEDLL_grDitherMode_4");
+grTexDownloadMipMap GLIDEDLL_grTexDownloadMipMap_16 = (grTexDownloadMipMap)0; D2_GLOBAL_GUARD(GLIDEDLL_grTexDownloadMipMap_16, "GLIDEDLL_grTexDownloadMipMap_16");
+pfnGlideGammaCorrectionRGB GLIDEDLL_guGammaCorrectionRGB_12 = (pfnGlideGammaCorrectionRGB)0; D2_GLOBAL_GUARD(GLIDEDLL_guGammaCorrectionRGB_12, "GLIDEDLL_guGammaCorrectionRGB_12");
+grDrawVertexArrayContiguous GLIDEDLL_grDrawVertexArrayContiguous_16 = (grDrawVertexArrayContiguous)0; D2_GLOBAL_GUARD(GLIDEDLL_grDrawVertexArrayContiguous_16, "GLIDEDLL_grDrawVertexArrayContiguous_16");
+grAlphaBlendFunction GLIDEDLL_grAlphaBlendFunction_16 = (grAlphaBlendFunction)0; D2_GLOBAL_GUARD(GLIDEDLL_grAlphaBlendFunction_16, "GLIDEDLL_grAlphaBlendFunction_16");
+grTexCombine GLIDEDLL_grTexCombine_28 = (grTexCombine)0; D2_GLOBAL_GUARD(GLIDEDLL_grTexCombine_28, "GLIDEDLL_grTexCombine_28");
+grLfbUnlock GLIDEDLL_grLfbUnlock_8 = (grLfbUnlock)0; D2_GLOBAL_GUARD(GLIDEDLL_grLfbUnlock_8, "GLIDEDLL_grLfbUnlock_8");
+grLfbLock GLIDEDLL_grLfbLock_24 = (grLfbLock)0; D2_GLOBAL_GUARD(GLIDEDLL_grLfbLock_24, "GLIDEDLL_grLfbLock_24");
+grLoadGammaTable GLIDEDLL_grLoadGammaTable_16 = (grLoadGammaTable)0; D2_GLOBAL_GUARD(GLIDEDLL_grLoadGammaTable_16, "GLIDEDLL_grLoadGammaTable_16");
+grAlphaCombine GLIDEDLL_grAlphaCombine_20 = (grAlphaCombine)0; D2_GLOBAL_GUARD(GLIDEDLL_grAlphaCombine_20, "GLIDEDLL_grAlphaCombine_20");
+grSstWinOpen GLIDEDLL_grSstWinOpen_28 = (grSstWinOpen)0; D2_GLOBAL_GUARD(GLIDEDLL_grSstWinOpen_28, "GLIDEDLL_grSstWinOpen_28");
+grTexFilterMode GLIDEDLL_grTexFilterMode_12 = (grTexFilterMode)0; D2_GLOBAL_GUARD(GLIDEDLL_grTexFilterMode_12, "GLIDEDLL_grTexFilterMode_12");
+grGlideInit GLIDEDLL_grGlideInit_0 = (grGlideInit)0; D2_GLOBAL_GUARD(GLIDEDLL_grGlideInit_0, "GLIDEDLL_grGlideInit_0");
+grFinish GLIDEDLL_grFinish_0 = (grFinish)0; D2_GLOBAL_GUARD(GLIDEDLL_grFinish_0, "GLIDEDLL_grFinish_0");
+pfnGlideDrawVertexArray GLIDEDLL_grDrawVertexArray_12 = (pfnGlideDrawVertexArray)0; D2_GLOBAL_GUARD(GLIDEDLL_grDrawVertexArray_12, "GLIDEDLL_grDrawVertexArray_12");
+grGet GLIDEDLL_grGet_12 = (grGet)0; D2_GLOBAL_GUARD(GLIDEDLL_grGet_12, "GLIDEDLL_grGet_12");
+grTexMinAddress GLIDEDLL_grTexMinAddress_4 = (grTexMinAddress)0; D2_GLOBAL_GUARD(GLIDEDLL_grTexMinAddress_4, "GLIDEDLL_grTexMinAddress_4");
+grColorCombine GLIDEDLL_grColorCombine_20 = (grColorCombine)0; D2_GLOBAL_GUARD(GLIDEDLL_grColorCombine_20, "GLIDEDLL_grColorCombine_20");
+grColorMask GLIDEDLL_grColorMask_8 = (grColorMask)0; D2_GLOBAL_GUARD(GLIDEDLL_grColorMask_8, "GLIDEDLL_grColorMask_8");
+grChromakeyValue GLIDEDLL_grChromakeyValue_4 = (grChromakeyValue)0; D2_GLOBAL_GUARD(GLIDEDLL_grChromakeyValue_4, "GLIDEDLL_grChromakeyValue_4");
+grCoordinateSpace GLIDEDLL_grCoordinateSpace_4 = (grCoordinateSpace)0; D2_GLOBAL_GUARD(GLIDEDLL_grCoordinateSpace_4, "GLIDEDLL_grCoordinateSpace_4");
+grSstSelect GLIDEDLL_grSstSelect_4 = (grSstSelect)0; D2_GLOBAL_GUARD(GLIDEDLL_grSstSelect_4, "GLIDEDLL_grSstSelect_4");
+grTexDownloadTable GLIDEDLL_grTexDownloadTable_8 = (grTexDownloadTable)0; D2_GLOBAL_GUARD(GLIDEDLL_grTexDownloadTable_8, "GLIDEDLL_grTexDownloadTable_8");
+grTexMaxAddress GLIDEDLL_grTexMaxAddress_4 = (grTexMaxAddress)0; D2_GLOBAL_GUARD(GLIDEDLL_grTexMaxAddress_4, "GLIDEDLL_grTexMaxAddress_4");
+grBufferClear GLIDEDLL_grBufferClear_12 = (grBufferClear)0; D2_GLOBAL_GUARD(GLIDEDLL_grBufferClear_12, "GLIDEDLL_grBufferClear_12");
+grChromakeyMode GLIDEDLL_grChromakeyMode_4 = (grChromakeyMode)0; D2_GLOBAL_GUARD(GLIDEDLL_grChromakeyMode_4, "GLIDEDLL_grChromakeyMode_4");
+grBufferSwap GLIDEDLL_grBufferSwap_4 = (grBufferSwap)0; D2_GLOBAL_GUARD(GLIDEDLL_grBufferSwap_4, "GLIDEDLL_grBufferSwap_4");
+grTexSource GLIDEDLL_grTexSource_16 = (grTexSource)0; D2_GLOBAL_GUARD(GLIDEDLL_grTexSource_16, "GLIDEDLL_grTexSource_16");
+grVertexLayout GLIDEDLL_grVertexLayout_12 = (grVertexLayout)0; D2_GLOBAL_GUARD(GLIDEDLL_grVertexLayout_12, "GLIDEDLL_grVertexLayout_12");
+grConstantColorValue GLIDEDLL_grConstantColorValue_4 = (grConstantColorValue)0; D2_GLOBAL_GUARD(GLIDEDLL_grConstantColorValue_4, "GLIDEDLL_grConstantColorValue_4");
+grSstWinClose _GLIDEDLL_grSstWinClose_4 = (grSstWinClose)0; D2_GLOBAL_GUARD(_GLIDEDLL_grSstWinClose_4, "_GLIDEDLL_grSstWinClose_4");
+HMODULE lpGLIDE3x_dll = 0; D2_GLOBAL_GUARD(lpGLIDE3x_dll, "lpGLIDE3x_dll");
+uint32_t gbPlayingCutScene = 0; D2_GLOBAL_GUARD(gbPlayingCutScene, "gbPlayingCutScene");
+IDirectDrawSurface1 * gpDDrawPrimarySurface = 0; D2_GLOBAL_GUARD(gpDDrawPrimarySurface, "gpDDrawPrimarySurface");
+uint32_t gbFaultHandlerListInitialized = 0; D2_GLOBAL_GUARD(gbFaultHandlerListInitialized, "gbFaultHandlerListInitialized");
+pfnFaultError g_pfnFaultErrorCallback = (pfnFaultError)0; D2_GLOBAL_GUARD(g_pfnFaultErrorCallback, "g_pfnFaultErrorCallback");
+D2Srp * g_pSrpContext = 0; D2_GLOBAL_GUARD(g_pSrpContext, "g_pSrpContext");
+uint32_t gnQServerListenSocket = 0; D2_GLOBAL_GUARD(gnQServerListenSocket, "gnQServerListenSocket");
+uint32_t Frames_TimeBetweenFrames = 0; D2_GLOBAL_GUARD(Frames_TimeBetweenFrames, "Frames_TimeBetweenFrames");
+uint32_t gnSeedCounter = 0; D2_GLOBAL_GUARD(gnSeedCounter, "gnSeedCounter");
+unsigned int gpfnProfCoreInitCallback = {}; D2_GLOBAL_GUARD(gpfnProfCoreInitCallback, "gpfnProfCoreInitCallback");
+unsigned int UINT_0096d6a8 = {}; D2_GLOBAL_GUARD(UINT_0096d6a8, "UINT_0096d6a8");
+IDirectDrawSurface7 * g_pD3DSurfaceBackbuffer = 0; D2_GLOBAL_GUARD(g_pD3DSurfaceBackbuffer, "g_pD3DSurfaceBackbuffer");
+uint32_t gnSmackerDecodeState = 0; D2_GLOBAL_GUARD(gnSmackerDecodeState, "gnSmackerDecodeState");
+uint32_t dwCurrentThreadId = 0; D2_GLOBAL_GUARD(dwCurrentThreadId, "dwCurrentThreadId");
+uint8_t IMAGE_RESOURCE_DIRECTORY_00995000[16] = {}; D2_GLOBAL_GUARD(IMAGE_RESOURCE_DIRECTORY_00995000, "IMAGE_RESOURCE_DIRECTORY_00995000");
+uint8_t Rsrc_Icon_1_409[744] = {}; D2_GLOBAL_GUARD(Rsrc_Icon_1_409, "Rsrc_Icon_1_409");
+uint8_t Rsrc_Icon_2_409[296] = {}; D2_GLOBAL_GUARD(Rsrc_Icon_2_409, "Rsrc_Icon_2_409");
+uint8_t Rsrc_Icon_3_409[744] = {}; D2_GLOBAL_GUARD(Rsrc_Icon_3_409, "Rsrc_Icon_3_409");
+uint8_t Rsrc_Icon_4_409[296] = {}; D2_GLOBAL_GUARD(Rsrc_Icon_4_409, "Rsrc_Icon_4_409");
+uint8_t Rsrc_Icon_5_409[2216] = {}; D2_GLOBAL_GUARD(Rsrc_Icon_5_409, "Rsrc_Icon_5_409");
+uint8_t Rsrc_Icon_6_409[296] = {}; D2_GLOBAL_GUARD(Rsrc_Icon_6_409, "Rsrc_Icon_6_409");
+uint8_t Rsrc_GroupIcon_65_409[34] = {}; D2_GLOBAL_GUARD(Rsrc_GroupIcon_65_409, "Rsrc_GroupIcon_65_409");
+uint8_t Rsrc_GroupIcon_66_409[34] = {}; D2_GLOBAL_GUARD(Rsrc_GroupIcon_66_409, "Rsrc_GroupIcon_66_409");
+uint8_t Rsrc_GroupIcon_67_409[34] = {}; D2_GLOBAL_GUARD(Rsrc_GroupIcon_67_409, "Rsrc_GroupIcon_67_409");
+uint8_t Rsrc_Version_1_409[92] = {}; D2_GLOBAL_GUARD(Rsrc_Version_1_409, "Rsrc_Version_1_409");
+void * ExceptionList = (void *)0x00000000; D2_GLOBAL_GUARD(ExceptionList, "ExceptionList");
+void * SubSystemTib = (void *)0x00000000; D2_GLOBAL_GUARD(SubSystemTib, "SubSystemTib");
+void * FiberData = (void *)0x00000000; D2_GLOBAL_GUARD(FiberData, "FiberData");
+void * ArbitraryUserPointer = (void *)0x00000000; D2_GLOBAL_GUARD(ArbitraryUserPointer, "ArbitraryUserPointer");
+void * Self = (void *)0xffdff000; D2_GLOBAL_GUARD(Self, "Self");
+void * EnvironmentPointer = (void *)0x00000000; D2_GLOBAL_GUARD(EnvironmentPointer, "EnvironmentPointer");
+void * ActiveRpcHandle = (void *)0x00000000; D2_GLOBAL_GUARD(ActiveRpcHandle, "ActiveRpcHandle");
+void * ThreadLocalStoragePointer = (void *)0x00000000; D2_GLOBAL_GUARD(ThreadLocalStoragePointer, "ThreadLocalStoragePointer");
+uint32_t LastErrorValue = 0x0; D2_GLOBAL_GUARD(LastErrorValue, "LastErrorValue");
+uint32_t CountOfOwnedCriticalSections = 0x0; D2_GLOBAL_GUARD(CountOfOwnedCriticalSections, "CountOfOwnedCriticalSections");
+void * CsrClientThread = (void *)0x00000000; D2_GLOBAL_GUARD(CsrClientThread, "CsrClientThread");
+void * Win32ThreadInfo = (void *)0x00000000; D2_GLOBAL_GUARD(Win32ThreadInfo, "Win32ThreadInfo");
+void * WOW32Reserved = (void *)0x00000000; D2_GLOBAL_GUARD(WOW32Reserved, "WOW32Reserved");
+uint32_t CurrentLocale = 0x0; D2_GLOBAL_GUARD(CurrentLocale, "CurrentLocale");
+uint32_t FpSoftwareStatusRegister = 0x0; D2_GLOBAL_GUARD(FpSoftwareStatusRegister, "FpSoftwareStatusRegister");
+uint32_t ExceptionCode = 0x0; D2_GLOBAL_GUARD(ExceptionCode, "ExceptionCode");
+void * ActivationContextStackPointer = (void *)0x00000000; D2_GLOBAL_GUARD(ActivationContextStackPointer, "ActivationContextStackPointer");
+uint32_t TxFsContext = 0x0; D2_GLOBAL_GUARD(TxFsContext, "TxFsContext");
+uint32_t GdiTebBatch = 0x0; D2_GLOBAL_GUARD(GdiTebBatch, "GdiTebBatch");
+void * GdiCachedProcessHandle = (void *)0x00000000; D2_GLOBAL_GUARD(GdiCachedProcessHandle, "GdiCachedProcessHandle");
+uint32_t GdiClientPID = 0x0; D2_GLOBAL_GUARD(GdiClientPID, "GdiClientPID");
+uint32_t GdiCLientTID = 0x0; D2_GLOBAL_GUARD(GdiCLientTID, "GdiCLientTID");
+void * GdiThreadLocalInfo = (void *)0x00000000; D2_GLOBAL_GUARD(GdiThreadLocalInfo, "GdiThreadLocalInfo");
+void * glReserved2 = (void *)0x00000000; D2_GLOBAL_GUARD(glReserved2, "glReserved2");
+void * glSectionInfo = (void *)0x00000000; D2_GLOBAL_GUARD(glSectionInfo, "glSectionInfo");
+void * glSection = (void *)0x00000000; D2_GLOBAL_GUARD(glSection, "glSection");
+void * glTable = (void *)0x00000000; D2_GLOBAL_GUARD(glTable, "glTable");
+void * glCurrentRC = (void *)0x00000000; D2_GLOBAL_GUARD(glCurrentRC, "glCurrentRC");
+void * glContext = (void *)0x00000000; D2_GLOBAL_GUARD(glContext, "glContext");
+uint32_t LastStatusValue = 0x0; D2_GLOBAL_GUARD(LastStatusValue, "LastStatusValue");
+void * DeallocationStack = (void *)0x00000000; D2_GLOBAL_GUARD(DeallocationStack, "DeallocationStack");
+void * TlsLinks_Flink = (void *)0x00000000; D2_GLOBAL_GUARD(TlsLinks_Flink, "TlsLinks_Flink");
+void * TlsLinks_Blink = (void *)0x00000000; D2_GLOBAL_GUARD(TlsLinks_Blink, "TlsLinks_Blink");
+void * Vdm = (void *)0x00000000; D2_GLOBAL_GUARD(Vdm, "Vdm");
+void * ReservedForNtRpc = (void *)0x00000000; D2_GLOBAL_GUARD(ReservedForNtRpc, "ReservedForNtRpc");
+uint32_t HardErrorMode = 0x0; D2_GLOBAL_GUARD(HardErrorMode, "HardErrorMode");
+void * SubProcessTag = (void *)0x00000000; D2_GLOBAL_GUARD(SubProcessTag, "SubProcessTag");
+void * EtwLocalData = (void *)0x00000000; D2_GLOBAL_GUARD(EtwLocalData, "EtwLocalData");
+void * EtwTraceData = (void *)0x00000000; D2_GLOBAL_GUARD(EtwTraceData, "EtwTraceData");
+void * WinSockData = (void *)0x00000000; D2_GLOBAL_GUARD(WinSockData, "WinSockData");
+uint32_t GdiBatchCount = 0x0; D2_GLOBAL_GUARD(GdiBatchCount, "GdiBatchCount");
+uint32_t IdealProcessorValue = 0x0; D2_GLOBAL_GUARD(IdealProcessorValue, "IdealProcessorValue");
+uint32_t GuaranteedStackBytes = 0x0; D2_GLOBAL_GUARD(GuaranteedStackBytes, "GuaranteedStackBytes");
+void * ReservedForPerf = (void *)0x00000000; D2_GLOBAL_GUARD(ReservedForPerf, "ReservedForPerf");
+void * ReservedForOle = (void *)0x00000000; D2_GLOBAL_GUARD(ReservedForOle, "ReservedForOle");
+uint32_t WaitingOnLoaderLock = 0x0; D2_GLOBAL_GUARD(WaitingOnLoaderLock, "WaitingOnLoaderLock");
+void * SavedPriorityState = (void *)0x00000000; D2_GLOBAL_GUARD(SavedPriorityState, "SavedPriorityState");
+void * SoftPatchPtr1 = (void *)0x00000000; D2_GLOBAL_GUARD(SoftPatchPtr1, "SoftPatchPtr1");
+void * ThreadPoolData = (void *)0x00000000; D2_GLOBAL_GUARD(ThreadPoolData, "ThreadPoolData");
+void * TlsExpansionSlots = (void *)0x00000000; D2_GLOBAL_GUARD(TlsExpansionSlots, "TlsExpansionSlots");
+uint32_t MuiGeneration = 0x0; D2_GLOBAL_GUARD(MuiGeneration, "MuiGeneration");
+uint32_t IsImpersonating = 0x0; D2_GLOBAL_GUARD(IsImpersonating, "IsImpersonating");
+void * NlsCache = (void *)0x00000000; D2_GLOBAL_GUARD(NlsCache, "NlsCache");
+void * pShimData = (void *)0x00000000; D2_GLOBAL_GUARD(pShimData, "pShimData");
+uint32_t HeapVirtualAffinity = 0x0; D2_GLOBAL_GUARD(HeapVirtualAffinity, "HeapVirtualAffinity");
+void * CurrentTransactionHandle = (void *)0x00000000; D2_GLOBAL_GUARD(CurrentTransactionHandle, "CurrentTransactionHandle");
+void * ActiveFrame = (void *)0x00000000; D2_GLOBAL_GUARD(ActiveFrame, "ActiveFrame");
+void * FlsData = (void *)0x00000000; D2_GLOBAL_GUARD(FlsData, "FlsData");
+void * PreferredLanguages = (void *)0x00000000; D2_GLOBAL_GUARD(PreferredLanguages, "PreferredLanguages");
+void * UserPrefLanguages = (void *)0x00000000; D2_GLOBAL_GUARD(UserPrefLanguages, "UserPrefLanguages");
+void * MergedPrefLanguages = (void *)0x00000000; D2_GLOBAL_GUARD(MergedPrefLanguages, "MergedPrefLanguages");
+uint32_t MuiImpersonation = 0x0; D2_GLOBAL_GUARD(MuiImpersonation, "MuiImpersonation");
+unsigned short CrossTebFlags = {}; D2_GLOBAL_GUARD(CrossTebFlags, "CrossTebFlags");
+unsigned short SameTebFlags = {}; D2_GLOBAL_GUARD(SameTebFlags, "SameTebFlags");
+void * TxnScopeEnterCallback = (void *)0x00000000; D2_GLOBAL_GUARD(TxnScopeEnterCallback, "TxnScopeEnterCallback");
+void * TxnScopeExitCallback = (void *)0x00000000; D2_GLOBAL_GUARD(TxnScopeExitCallback, "TxnScopeExitCallback");
+void * TxnScopeContext = (void *)0x00000000; D2_GLOBAL_GUARD(TxnScopeContext, "TxnScopeContext");
+uint32_t LockCount = 0x0; D2_GLOBAL_GUARD(LockCount, "LockCount");
+void * ResourceRetValue = (void *)0x00000000; D2_GLOBAL_GUARD(ResourceRetValue, "ResourceRetValue");
 
 // =============================================================================
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t gbSaveFileReadMarker;
-uint8_t gbFloatConstantBase;
-uint8_t gaFreeUnitsOrderData;
-uint8_t gaMonsterDenEnvironmentData;
-uint8_t gaWeatherTransitionConstant;
-uint8_t DAT_006d912c;
-uint8_t DAT_006d9150;
-uint8_t DAT_006d9160;
-uint8_t DAT_006d9174;
-uint8_t DAT_006d9188;
-uint8_t DAT_006d919c;
-uint8_t gaItemTypeTxtIndexData;
-uint8_t gszIniConfigKeywordCharacterAutoSave;
-uint8_t gszIniConfigKeywordNetworkPort;
-uint8_t gszIniConfigKeywordDifficultySetting;
-uint8_t gszIniConfigKeywordLanguageCode;
-uint8_t gszIniConfigKeywordTextureFilter;
-uint8_t gszIniConfigKeywordGammaCorrection;
-uint8_t gszIniConfigKeywordVsyncOption;
-uint8_t gszIniConfigKeywordExperienceDisplay;
-uint8_t gszIniConfigKeywordVideoDriver;
-uint8_t bUnitSoundTableInit;
-uint8_t gaUnitSoundIdsBarbarian;
-uint8_t gaUnitSoundIdsNecromancer;
-uint8_t gaUnitSoundIdsPaladin;
-uint8_t gaUnitSoundIdsSorceress;
-uint8_t gaUnitSoundIdsAssassin;
-uint8_t gaUnitSoundIdsDruid;
-uint8_t gbQuestA5Q2Unknown;
-uint8_t gaMonSeqMonsterTblData_Unknown;
-uint8_t gaMonSeqAnimData;
-uint8_t gaCRT_FPremData_3;
-uint8_t gbDamageModConfigLoaded;
-uint8_t gSaveFileBuffer;
-uint8_t gbOOGUnusedFlag_797261;
-uint8_t gbUnusedOOGDataFlag;
-uint8_t gbOOGUnusedFlag_79746c;
+uint8_t bUnitSoundTableInit; D2_GLOBAL_GUARD_BSS(bUnitSoundTableInit, "bUnitSoundTableInit");
+uint8_t gaUnitSoundIdsBarbarian; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsBarbarian, "gaUnitSoundIdsBarbarian");
+uint8_t gaUnitSoundIdsNecromancer; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsNecromancer, "gaUnitSoundIdsNecromancer");
+uint8_t gaUnitSoundIdsPaladin; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsPaladin, "gaUnitSoundIdsPaladin");
+uint8_t gaUnitSoundIdsSorceress; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsSorceress, "gaUnitSoundIdsSorceress");
+uint8_t gaUnitSoundIdsAssassin; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsAssassin, "gaUnitSoundIdsAssassin");
+uint8_t gaUnitSoundIdsDruid; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsDruid, "gaUnitSoundIdsDruid");
+uint8_t gbQuestA5Q2Unknown; D2_GLOBAL_GUARD_BSS(gbQuestA5Q2Unknown, "gbQuestA5Q2Unknown");
+uint8_t gaMonSeqMonsterTblData_Unknown; D2_GLOBAL_GUARD_BSS(gaMonSeqMonsterTblData_Unknown, "gaMonSeqMonsterTblData_Unknown");
+uint8_t gaMonSeqAnimData; D2_GLOBAL_GUARD_BSS(gaMonSeqAnimData, "gaMonSeqAnimData");
 
 namespace D2Common::Drlg::Maze {
 
@@ -104850,7 +110739,7 @@ uint8_t gaMazeLevelTypeCaseTable[40] = {
     0xcc,
     0xcc,
     0xcc
-};
+}; D2_GLOBAL_GUARD(gaMazeLevelTypeCaseTable, "D2Common::Drlg::Maze::gaMazeLevelTypeCaseTable");
 
 } // namespace D2Common::Drlg::Maze
 
@@ -104887,7 +110776,7 @@ uint8_t TXT_ParseFieldTypeCaseIndex[26] = {
     0x7,
     0x7,
     0x1
-};
+}; D2_GLOBAL_GUARD(TXT_ParseFieldTypeCaseIndex, "Fog::Src::Excel::TXT_ParseFieldTypeCaseIndex");
 
 } // namespace Fog::Src::Excel
 
@@ -104897,7 +110786,7 @@ namespace D2Client::Warden::NWardenClient {
 // Initialized scalars
 // =============================================================================
 
-void* vftable_meta_ptr = (void*)0x007000f8;
+void* vftable_meta_ptr = (void*)0x007000f8; D2_GLOBAL_GUARD(vftable_meta_ptr, "D2Client::Warden::NWardenClient::vftable_meta_ptr");
 
 } // namespace D2Client::Warden::NWardenClient
 
@@ -104907,7 +110796,7 @@ namespace D2Client::Warden {
 // Initialized scalars
 // =============================================================================
 
-void* vftable_meta_ptr = (void*)0x00700140;
+void* vftable_meta_ptr = (void*)0x00700140; D2_GLOBAL_GUARD(vftable_meta_ptr, "D2Client::Warden::vftable_meta_ptr");
 
 } // namespace D2Client::Warden
 
@@ -104917,7 +110806,7 @@ namespace D2Client::UI {
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t vftable_meta_ptr;
+uint8_t vftable_meta_ptr; D2_GLOBAL_GUARD_BSS(vftable_meta_ptr, "D2Client::UI::vftable_meta_ptr");
 
 } // namespace D2Client::UI
 
@@ -104927,7 +110816,7 @@ namespace D2Client::UI::Button::ButtonImplementation {
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t vftable_meta_ptr;
+uint8_t vftable_meta_ptr; D2_GLOBAL_GUARD_BSS(vftable_meta_ptr, "D2Client::UI::Button::ButtonImplementation::vftable_meta_ptr");
 
 } // namespace D2Client::UI::Button::ButtonImplementation
 
@@ -104937,7 +110826,7 @@ namespace D2Client::UI::Button::ButtonWrapper {
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t vftable_meta_ptr;
+uint8_t vftable_meta_ptr; D2_GLOBAL_GUARD_BSS(vftable_meta_ptr, "D2Client::UI::Button::ButtonWrapper::vftable_meta_ptr");
 
 } // namespace D2Client::UI::Button::ButtonWrapper
 
@@ -104947,7 +110836,7 @@ namespace D2Client::UI::Editbox::EditBoxImplementation {
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t vftable_meta_ptr;
+uint8_t vftable_meta_ptr; D2_GLOBAL_GUARD_BSS(vftable_meta_ptr, "D2Client::UI::Editbox::EditBoxImplementation::vftable_meta_ptr");
 
 } // namespace D2Client::UI::Editbox::EditBoxImplementation
 
@@ -104957,7 +110846,7 @@ namespace D2Client::UI::Editbox::EditBoxWrapper {
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t vftable_meta_ptr;
+uint8_t vftable_meta_ptr; D2_GLOBAL_GUARD_BSS(vftable_meta_ptr, "D2Client::UI::Editbox::EditBoxWrapper::vftable_meta_ptr");
 
 } // namespace D2Client::UI::Editbox::EditBoxWrapper
 
@@ -104967,7 +110856,7 @@ namespace D2Client::UI::Spinner::SpinnerImplementation {
 // Initialized scalars
 // =============================================================================
 
-void* vftable_meta_ptr = (void*)0x00700304;
+void* vftable_meta_ptr = (void*)0x00700304; D2_GLOBAL_GUARD(vftable_meta_ptr, "D2Client::UI::Spinner::SpinnerImplementation::vftable_meta_ptr");
 
 } // namespace D2Client::UI::Spinner::SpinnerImplementation
 
@@ -104977,7 +110866,7 @@ namespace D2Client::UI::Spinner::SpinnerWrapper {
 // Initialized scalars
 // =============================================================================
 
-void* vftable_meta_ptr = (void*)0x00700350;
+void* vftable_meta_ptr = (void*)0x00700350; D2_GLOBAL_GUARD(vftable_meta_ptr, "D2Client::UI::Spinner::SpinnerWrapper::vftable_meta_ptr");
 
 } // namespace D2Client::UI::Spinner::SpinnerWrapper
 
@@ -104991,7 +110880,7 @@ namespace D2Client::UI::ListBox::ListBoxWrapper {
 // Initialized scalars
 // =============================================================================
 
-int vftable_meta_ptr = 0x70039c;
+int vftable_meta_ptr = 0x70039c; D2_GLOBAL_GUARD(vftable_meta_ptr, "D2Client::UI::ListBox::ListBoxWrapper::vftable_meta_ptr");
 
 } // namespace D2Client::UI::ListBox::ListBoxWrapper
 
@@ -105001,7 +110890,7 @@ namespace D2Client::UI::ListBox::ListBoxImplementation {
 // Initialized scalars
 // =============================================================================
 
-void* vftable_meta_ptr = (void*)0x007003e8;
+void* vftable_meta_ptr = (void*)0x007003e8; D2_GLOBAL_GUARD(vftable_meta_ptr, "D2Client::UI::ListBox::ListBoxImplementation::vftable_meta_ptr");
 
 } // namespace D2Client::UI::ListBox::ListBoxImplementation
 
@@ -105031,7 +110920,7 @@ namespace D2Common::Chat::Ignorelist::ChatIgnoreList {
 // Initialized scalars
 // =============================================================================
 
-void* vftable_meta_ptr = (void*)0x0070056c;
+void* vftable_meta_ptr = (void*)0x0070056c; D2_GLOBAL_GUARD(vftable_meta_ptr, "D2Common::Chat::Ignorelist::ChatIgnoreList::vftable_meta_ptr");
 
 } // namespace D2Common::Chat::Ignorelist::ChatIgnoreList
 
@@ -105041,7 +110930,7 @@ namespace D2Common::Chat::Ignorelist::IgnoreList {
 // Initialized scalars
 // =============================================================================
 
-void* vftable_meta_ptr = (void*)0x00700644;
+void* vftable_meta_ptr = (void*)0x00700644; D2_GLOBAL_GUARD(vftable_meta_ptr, "D2Common::Chat::Ignorelist::IgnoreList::vftable_meta_ptr");
 
 } // namespace D2Common::Chat::Ignorelist::IgnoreList
 
@@ -105051,9 +110940,9 @@ namespace D2Common::Drlg::Outdoors {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-int aAct4OutdoorSceneryBaseByLevel[3] = { 0x33c, 0x340, 0x340 };
+int aAct4OutdoorSceneryBaseByLevel[3] = { 0x33c, 0x340, 0x340 }; D2_GLOBAL_GUARD(aAct4OutdoorSceneryBaseByLevel, "D2Common::Drlg::Outdoors::aAct4OutdoorSceneryBaseByLevel");
 
-int aAct4OutdoorPresetBaseByLevel[3] = { 0x32c, 0x331, 0x337 };
+int aAct4OutdoorPresetBaseByLevel[3] = { 0x32c, 0x331, 0x337 }; D2_GLOBAL_GUARD(aAct4OutdoorPresetBaseByLevel, "D2Common::Drlg::Outdoors::aAct4OutdoorPresetBaseByLevel");
 
 } // namespace D2Common::Drlg::Outdoors
 
@@ -105063,7 +110952,7 @@ namespace Define_the_symbol__ATL_MIXED {
 // Initialized scalars
 // =============================================================================
 
-void* vftable_meta_ptr = (void*)0x007009cc;
+void* vftable_meta_ptr = (void*)0x007009cc; D2_GLOBAL_GUARD(vftable_meta_ptr, "Define_the_symbol__ATL_MIXED::vftable_meta_ptr");
 
 } // namespace Define_the_symbol__ATL_MIXED
 
@@ -105073,7 +110962,7 @@ namespace Fog::_3rdparty::crashy {
 // Initialized scalars
 // =============================================================================
 
-void* vftable_meta_ptr = (void*)0x00700a14;
+void* vftable_meta_ptr = (void*)0x00700a14; D2_GLOBAL_GUARD(vftable_meta_ptr, "Fog::_3rdparty::crashy::vftable_meta_ptr");
 
 } // namespace Fog::_3rdparty::crashy
 
@@ -105083,7 +110972,7 @@ namespace Storm::SFile {
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t RTTI_Type_Descriptor;
+uint8_t RTTI_Type_Descriptor; D2_GLOBAL_GUARD_BSS(RTTI_Type_Descriptor, "Storm::SFile::RTTI_Type_Descriptor");
 
 } // namespace Storm::SFile
 
@@ -105093,7 +110982,7 @@ namespace Class::FILEREC {
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t RTTI_Type_Descriptor;
+uint8_t RTTI_Type_Descriptor; D2_GLOBAL_GUARD_BSS(RTTI_Type_Descriptor, "Class::FILEREC::RTTI_Type_Descriptor");
 
 } // namespace Class::FILEREC
 
@@ -105103,7 +110992,7 @@ namespace Class::EVENTREC {
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t RTTI_Type_Descriptor;
+uint8_t RTTI_Type_Descriptor; D2_GLOBAL_GUARD_BSS(RTTI_Type_Descriptor, "Class::EVENTREC::RTTI_Type_Descriptor");
 
 } // namespace Class::EVENTREC
 
@@ -105113,7 +111002,7 @@ namespace Class::REQUEST {
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t RTTI_Type_Descriptor;
+uint8_t RTTI_Type_Descriptor; D2_GLOBAL_GUARD_BSS(RTTI_Type_Descriptor, "Class::REQUEST::RTTI_Type_Descriptor");
 
 } // namespace Class::REQUEST
 
@@ -105123,7 +111012,7 @@ namespace Class::AUDIOSTREAM {
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t RTTI_Type_Descriptor;
+uint8_t RTTI_Type_Descriptor; D2_GLOBAL_GUARD_BSS(RTTI_Type_Descriptor, "Class::AUDIOSTREAM::RTTI_Type_Descriptor");
 
 } // namespace Class::AUDIOSTREAM
 
@@ -105133,7 +111022,7 @@ namespace Class::HANDLER {
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t RTTI_Type_Descriptor;
+uint8_t RTTI_Type_Descriptor; D2_GLOBAL_GUARD_BSS(RTTI_Type_Descriptor, "Class::HANDLER::RTTI_Type_Descriptor");
 
 } // namespace Class::HANDLER
 
@@ -105428,7 +111317,7 @@ uint16_t CharacterLookupTable[256] = {
     0xdd,
     0xde,
     0x9f
-};
+}; D2_GLOBAL_GUARD(CharacterLookupTable, "D2Client::UI::ui::CharacterLookupTable");
 
 } // namespace D2Client::UI::ui
 
@@ -105608,10 +111497,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -105619,6 +111504,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 
@@ -105630,7 +111519,7 @@ namespace D2Client::GAME::Record {
 // Initialized scalars
 // =============================================================================
 
-WndProcB pWndProcB = (::WndProcB)0;
+WndProcB pWndProcB = (::WndProcB)0; D2_GLOBAL_GUARD(pWndProcB, "D2Client::GAME::Record::pWndProcB");
 
 } // namespace D2Client::GAME::Record
 
@@ -105700,12 +111589,12 @@ namespace D2Client::Forms {
 // Initialized scalars
 // =============================================================================
 
-D2ControlStrc * pFormsList = 0;
-D2ControlStrc * pFormUnknown = 0;
-D2ControlStrc * pFormSecond = 0;
-D2WinEditBox * pFormTextAndEditBox = 0;
-D2ControlStrc * pFormFourth = 0;
-D2ControlStrc * pFormImage = 0;
+D2ControlStrc * pFormsList = 0; D2_GLOBAL_GUARD(pFormsList, "D2Client::Forms::pFormsList");
+D2ControlStrc * pFormUnknown = 0; D2_GLOBAL_GUARD(pFormUnknown, "D2Client::Forms::pFormUnknown");
+D2ControlStrc * pFormSecond = 0; D2_GLOBAL_GUARD(pFormSecond, "D2Client::Forms::pFormSecond");
+D2WinEditBox * pFormTextAndEditBox = 0; D2_GLOBAL_GUARD(pFormTextAndEditBox, "D2Client::Forms::pFormTextAndEditBox");
+D2ControlStrc * pFormFourth = 0; D2_GLOBAL_GUARD(pFormFourth, "D2Client::Forms::pFormFourth");
+D2ControlStrc * pFormImage = 0; D2_GLOBAL_GUARD(pFormImage, "D2Client::Forms::pFormImage");
 
 } // namespace D2Client::Forms
 
@@ -105719,7 +111608,7 @@ namespace D2Direct3D::Renderer {
 // Initialized scalars
 // =============================================================================
 
-unsigned int gnD3DTextureCapFlags = {};
-unsigned int g_bCutscenePlaying = {};
+unsigned int gnD3DTextureCapFlags = {}; D2_GLOBAL_GUARD(gnD3DTextureCapFlags, "D2Direct3D::Renderer::gnD3DTextureCapFlags");
+unsigned int g_bCutscenePlaying = {}; D2_GLOBAL_GUARD(g_bCutscenePlaying, "D2Direct3D::Renderer::g_bCutscenePlaying");
 
 } // namespace D2Direct3D::Renderer

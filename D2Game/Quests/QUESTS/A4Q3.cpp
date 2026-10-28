@@ -54,10 +54,11 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -205,7 +206,7 @@ BOOL __fastcall OBJOP_A4Q2_PandemoniumFortressGate(D2ObjectOperateFnArg * pOpera
           aQuestStatePacket[1] = 0x17;
           aQuestStatePacket[2] = 2;
           aQuestStatePacket[3] = 0;
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pPlayerClient, aQuestStatePacket);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pPlayerClient, (D2GSPacketSrv0x5D*)aQuestStatePacket);
           GAME::SCmd::NET_D2GS_SERVER_Send_0x61_CanGoToAct(pPlayerClient, 5);
         }
       }
@@ -336,7 +337,7 @@ void __fastcall Q28_PlayerCompleteForgeInAct4(::SGAMEDATA * pGame, D2UnitStrc * 
 BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
     int32_t nForgeObjClassId;
     D2ObjectsTxt* pObjectsTxt;
-    eD2PlayerAnimMode eForgeMode;
+    eD2ObjectAnimMode eForgeMode;
     D2UnitStrc* pQuestItem;
     D2ItemsTxt* pItemsTxt;
     int* pStrikeCount;
@@ -366,11 +367,11 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
 
         pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nForgeObjClassId);
         pQuestItem = pOperation->sArg.pVictim;
-        eForgeMode = Death;
+        eForgeMode = eD2ObjectAnimMode_ns::Neutral;
         if (pQuestItem) {
-          eForgeMode = pQuestItem->eAnimMode.ePlayerMode;
+          eForgeMode = pQuestItem->eAnimMode.eObjectMode;
         }
-        if (eForgeMode == Death) {
+        if (eForgeMode == eD2ObjectAnimMode_ns::Neutral) {
           /* HasQuestItem('mss '=0x2073736d, Mephisto's Soulstone): forge idle + player
                          carries soulstone -> place stone on anvil (internal state 2) */ pQuestItem = ITEMS::Items::Drop::HasQuestItem(pOperation->sArg.pGame, pOperation->pAttacker, 0x2073736d);
           if (pQuestItem) {
@@ -396,7 +397,7 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
           QUEST_SetStateFlag(pForgeQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q3.cpp", 0xf1);
           return 0;
         }
-        if (eForgeMode != Walk) {
+        if (eForgeMode != Opened) {
           return 0;
         }
 
@@ -551,7 +552,7 @@ void __fastcall Q28_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 // A4Q3 Hell's Forge — Q28_Callback_03 (state-handler slot 3): handles the gossip event id 0x67. Removes player from participant list, then if internal stateFlag==2 and the player has not Completed/RewardAwaits Hell's Forge, advances internal stateFlag to 3 (soulstone-on-anvil acknowledged) and re-syncs all players via IteratePlayerOrMonsterUnits(Q28_PlayerUpdateForgeState).
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q3.cpp
 void __fastcall Q28_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GossipTextStrc*)0x67) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl != (D2GSPacketSrv0x27_TextStrc*)0x67) {
       return;
     }
 
@@ -581,7 +582,7 @@ void __fastcall Q28_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q3.cpp
 void __fastcall Q28_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     BOOL bQuestState;
-    int32_t nErrorAddress;
+    int32_t nLine;
     short int nNpcClassId = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     short int nGossipMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
@@ -635,12 +636,12 @@ void __fastcall Q28_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         /* UnsetQuestState(QUEST_HellsForge=0x1b, RewardAwaits=1): clear reward-pending
                          now that Cain accepted the turn-in */ D2Common::QuestRecord::UnsetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
         if (!pQuestArgs->pPlayer) {
-          nErrorAddress = -1;
+          nLine = -1;
         } else {
-          nErrorAddress = pQuestArgs->pPlayer->nUnitGUID;
+          nLine = pQuestArgs->pPlayer->nUnitGUID;
         }
 
-        QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nErrorAddress);
+        QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nLine);
         QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
       }
     }
@@ -906,7 +907,7 @@ void __fastcall Q28_TimerCallback_DropForgeRunes(D2QuestDataStrc * pQuestData, D
     0x20393072,
     0x20303172,
     0x20313172
-};
+}; D2_STATIC_GUARD(aRunesListNomal, "D2Game::Quests::QUESTS::A4Q3::Q28_TimerCallback_DropForgeRunes::aRunesListNomal");
     static uint32_t aRunesListNightmare[11] = {
     0x20323172,
     0x20333172,
@@ -919,7 +920,7 @@ void __fastcall Q28_TimerCallback_DropForgeRunes(D2QuestDataStrc * pQuestData, D
     0x20303272,
     0x20313272,
     0x20323272
-};
+}; D2_STATIC_GUARD(aRunesListNightmare, "D2Game::Quests::QUESTS::A4Q3::Q28_TimerCallback_DropForgeRunes::aRunesListNightmare");
     static uint32_t aRunesListHell[11] = {
     0x20353172,
     0x20363172,
@@ -932,10 +933,10 @@ void __fastcall Q28_TimerCallback_DropForgeRunes(D2QuestDataStrc * pQuestData, D
     0x20333272,
     0x20343272,
     0x20353272
-};
-    static uint32_t Q28_aForgeRuneCodesAct1[7] = { 0x20767067, 0x20727067, 0x20627067, 0x20797067, 0x20677067, 0x20777067, 0x207a6b73 };
-    static uint32_t Q28_aForgeRuneCodesAct2[7] = { 0x20767a67, 0x20726c67, 0x20626c67, 0x20796c67, 0x20676c67, 0x20776c67, 0x206c6b73 };
-    static uint32_t Q28_aForgeRuneCodesAct3[7] = { 0x20767367, 0x20727367, 0x20627367, 0x20797367, 0x20677367, 0x20777367, 0x20756b73 };
+}; D2_STATIC_GUARD(aRunesListHell, "D2Game::Quests::QUESTS::A4Q3::Q28_TimerCallback_DropForgeRunes::aRunesListHell");
+    static uint32_t Q28_aForgeRuneCodesAct1[7] = { 0x20767067, 0x20727067, 0x20627067, 0x20797067, 0x20677067, 0x20777067, 0x207a6b73 }; D2_STATIC_GUARD(Q28_aForgeRuneCodesAct1, "D2Game::Quests::QUESTS::A4Q3::Q28_TimerCallback_DropForgeRunes::Q28_aForgeRuneCodesAct1");
+    static uint32_t Q28_aForgeRuneCodesAct2[7] = { 0x20767a67, 0x20726c67, 0x20626c67, 0x20796c67, 0x20676c67, 0x20776c67, 0x206c6b73 }; D2_STATIC_GUARD(Q28_aForgeRuneCodesAct2, "D2Game::Quests::QUESTS::A4Q3::Q28_TimerCallback_DropForgeRunes::Q28_aForgeRuneCodesAct2");
+    static uint32_t Q28_aForgeRuneCodesAct3[7] = { 0x20767367, 0x20727367, 0x20627367, 0x20797367, 0x20677367, 0x20777367, 0x20756b73 }; D2_STATIC_GUARD(Q28_aForgeRuneCodesAct3, "D2Game::Quests::QUESTS::A4Q3::Q28_TimerCallback_DropForgeRunes::Q28_aForgeRuneCodesAct3");
 
     D2SeedStrc* pSeed;
     uint32_t aRuneCode;

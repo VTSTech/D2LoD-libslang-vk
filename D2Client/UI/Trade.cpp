@@ -101,7 +101,6 @@ int __stdcall TRADE_GetPartnerGoldAmount() {
 }
 
 void __stdcall TRADE_HandleTradeCancel() {
-    int32_t nErrAddr;
     int32_t nLineNum;
     if (Dialog::gpTradeCancelDialog) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13d);
@@ -110,22 +109,22 @@ void __stdcall TRADE_HandleTradeCancel() {
 
     Dialog::gpTradeCancelDialog = Dialog::AllocDialogStrc(0x140, 100, TRADE_GetPartnerGoldAmount, TRADE_GetPartnerGoldAmount, 0, 1, 1, 0, 0, 0, 1);
     Dialog::DIALOG_SetHighlightStyle(Dialog::gpTradeCancelDialog, 1);
-    nLineNum = 0;
+    int32_t iVar1 = 0;
     fpDialogFunc nCallbackParam = 0;
     uint32_t nClickable = 1;
-    nErrAddr = 0;
+    nLineNum = 0;
     uint32_t nColorOrFont = 0;
     uint32_t nColor_lcl = 0xf;
     uint16_t* szString = D2Lang::StrTable::strtable::GetLocaleString(0xfcb);
-    Dialog::AddStringData(Dialog::gpTradeCancelDialog, szString, nColor_lcl, nColorOrFont, nErrAddr, nClickable, nCallbackParam, nLineNum);
-    nLineNum = 1;
+    Dialog::AddStringData(Dialog::gpTradeCancelDialog, szString, nColor_lcl, nColorOrFont, nLineNum, nClickable, nCallbackParam, iVar1);
+    iVar1 = 1;
     fpDialogFunc fpCancelCallback = TRADE_GetPartnerGoldAmount;
     nClickable = 1;
-    nErrAddr = 0;
+    nLineNum = 0;
     nColorOrFont = 0;
     nColor_lcl = 0xf;
     szString = D2Lang::StrTable::strtable::GetLocaleString(0xd48);
-    Dialog::AddStringData(Dialog::gpTradeCancelDialog, szString, nColor_lcl, nColorOrFont, nErrAddr, nClickable, fpCancelCallback, nLineNum);
+    Dialog::AddStringData(Dialog::gpTradeCancelDialog, szString, nColor_lcl, nColorOrFont, nLineNum, nClickable, fpCancelCallback, iVar1);
     Dialog::DIALOG_SetSelectedLine(Dialog::gpTradeCancelDialog, -1);
 }
 

@@ -64,11 +64,11 @@ namespace D2Client::ClientModeInGame {
 
 fnAppModeRun * __fastcall AppModeClientInit(HMODULE hModule) {
     // Static local variables (originally global data)
-    static fnAppModeRun gpfnClientAppModeRun = &D2Client::ClientModeInGame::fAPPMODE_client_ReturnAppMode_Caller;
+    static fnAppModeRun gpfnClientAppModeRun = &D2Client::ClientModeInGame::fAPPMODE_client_ReturnAppMode_Caller; D2_STATIC_GUARD(gpfnClientAppModeRun, "D2Client::ClientModeInGame::AppModeClientInit::gpfnClientAppModeRun");
 
     D2Common::Chat::Ignorelist::IGNORELIST_Initialize();
     D2Game::GAME::Server::ServerInit_nullsub();
-    HMODULE_007a0318 = hModule;
+    *(uint32_t*)((char*)&gMCPGameListBuffer + 28672) = (uint32_t)(uintptr_t)hModule;
     return &gpfnClientAppModeRun;
 }
 
@@ -79,7 +79,7 @@ void __stdcall AppModeClientShutdown() {
 }
 
 int32_t __fastcall fAPPMODE_client_ReturnAppMode_Caller(D2IniConfigStrc * pD2IniConfig) {
-    int32_t eAppMode = fAPPMODE_client_ReturnAppMode(HMODULE_007a0318, pD2IniConfig);
+    int32_t eAppMode = fAPPMODE_client_ReturnAppMode((HMODULE)*(uint32_t*)((char*)&gMCPGameListBuffer + 28672), pD2IniConfig);
     return eAppMode;
 }
 
@@ -160,7 +160,7 @@ BOOL __stdcall CmdLine_SaveDefaultCommandLine(CMDPARAMS * pParams, char * szCmdL
 // @provenance 1.14d asm 0044b600.
 BOOL __stdcall CmdLine_SetAppMode(CMDPARAMS * pParams, char * szCmdLine) {
     // Static local variables (originally global data)
-    static uint32_t gaClientModeHandlerTable[7] = { 0x0, 0x0, 0x6d5b14, 0x0, 0x0, 0x0, 0x0 };
+    static uint32_t gaClientModeHandlerTable[7] = { 0x0, 0x0, 0x6d5b14, 0x0, 0x0, 0x0, 0x0 }; D2_STATIC_GUARD(gaClientModeHandlerTable, "D2Client::ClientModeInGame::CmdLine_SetAppMode::gaClientModeHandlerTable");
 
     int nNameCmp;
     char szUserName[16];
@@ -197,7 +197,7 @@ BOOL __stdcall CmdLine_SetAppMode(CMDPARAMS * pParams, char * szCmdLine) {
 // LoadDataForGameAndSetupServer: registers cmdline options, loads core data, parses default command line from registry, ensures Save::szSaveCharacterName (username or "noname").
 BOOL __stdcall LoadDataForGameAndSetupServer(D2IniConfigStrc * D2IniData) {
     // Static local variables (originally global data)
-    static fnCmdLineOptionInit gCmdLineOptionTable[1] = { &D2Client::GAME::Game::RegisterCmdLineLngOption };
+    static fnCmdLineOptionInit gCmdLineOptionTable[1] = { &D2Client::GAME::Game::RegisterCmdLineLngOption }; D2_STATIC_GUARD(gCmdLineOptionTable, "D2Client::ClientModeInGame::LoadDataForGameAndSetupServer::gCmdLineOptionTable");
 
     BOOL gotUserName;
     char defaultCmdLine[260];
@@ -304,7 +304,7 @@ void __fastcall D2CLIENT_SetExitVar1(BOOL bResult) {
 // Client app-mode entry. Init memory/UI, load language + string tables, init TXT tables, then run pfModes[] loop. Returns to launcher based on quit/game type.
 int32_t __stdcall fAPPMODE_client_ReturnAppMode(HMODULE hModule, D2IniConfigStrc * D2IniData) {
     // Static local variables (originally global data)
-    static fnClientAppModeProc pfModes[7] = { nullptr, nullptr, &D2Client::GAME::Game::pfModes_EnterGame, &D2Client::GAME::Game::pfModes_Save, &D2Client::GAME::Game::pfModes_ExitGame, &D2Client::ClientModeInGame::NET_QServer_StartServer, &D2Client::ClientModeInGame::NET_QServer_ShutdownServer };
+    static fnClientAppModeProc pfModes[7] = { nullptr, nullptr, &D2Client::GAME::Game::pfModes_EnterGame, &D2Client::GAME::Game::pfModes_Save, &D2Client::GAME::Game::pfModes_ExitGame, &D2Client::ClientModeInGame::NET_QServer_StartServer, &D2Client::ClientModeInGame::NET_QServer_ShutdownServer }; D2_STATIC_GUARD(pfModes, "D2Client::ClientModeInGame::fAPPMODE_client_ReturnAppMode::pfModes");
     static char gszModuleFileName[260] = {
     0,
     0,
@@ -566,9 +566,9 @@ int32_t __stdcall fAPPMODE_client_ReturnAppMode(HMODULE hModule, D2IniConfigStrc
     0,
     0,
     0
-};
-    static HMODULE HMODULE_007a043c;
-    static int LastReturnTypeClientMode;
+}; D2_STATIC_GUARD(gszModuleFileName, "D2Client::ClientModeInGame::fAPPMODE_client_ReturnAppMode::gszModuleFileName");
+    static HMODULE HMODULE_007a043c; D2_STATIC_GUARD_BSS(HMODULE_007a043c, "D2Client::ClientModeInGame::fAPPMODE_client_ReturnAppMode::HMODULE_007a043c");
+    static int LastReturnTypeClientMode; D2_STATIC_GUARD_BSS(LastReturnTypeClientMode, "D2Client::ClientModeInGame::fAPPMODE_client_ReturnAppMode::LastReturnTypeClientMode");
 
     D2IniConfigStrc* pIniData = D2IniData;
     D2IniData_client = D2IniData;
@@ -646,7 +646,7 @@ int32_t __stdcall fAPPMODE_client_ReturnAppMode(HMODULE hModule, D2IniConfigStrc
 
 void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
     // Static local variables (originally global data)
-    static bool gbScreenResolutionChangeInitInProgress = true;
+    static bool gbScreenResolutionChangeInitInProgress = true; D2_STATIC_GUARD(gbScreenResolutionChangeInitInProgress, "D2Client::ClientModeInGame::CLIENT_SetScreenResolution::gbScreenResolutionChangeInitInProgress");
 
     DWORD dwScreenSize = D2gfx::D2GFX::D2GFX_GetResolutionMode();
     if (RequestedScreenModeMaybe == dwScreenSize) {
@@ -739,7 +739,7 @@ bool __stdcall GameLoopFuncInitGame(uint32_t dwUnused) {
 // pfModes_StartServer: create/init QServer, connect to server, run MessageGameLoop for required user action; sets player count and globals.
 eD2ClientAppMode __stdcall NET_QServer_StartServer() {
     // Static local variables (originally global data)
-    static int gInterfaceConfig1;
+    static int gInterfaceConfig1; D2_STATIC_GUARD_BSS(gInterfaceConfig1, "D2Client::ClientModeInGame::NET_QServer_StartServer::gInterfaceConfig1");
 
     eD2GSConnectionType neD2GSConnectionType;
     D2GS_Connected = 0;

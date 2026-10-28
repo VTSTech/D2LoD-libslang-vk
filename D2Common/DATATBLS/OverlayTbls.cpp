@@ -281,55 +281,42 @@ uint32_t __stdcall GetComponentsData(D2UnitStrc * pUnit, uint32_t nIndex) {
 // Resolves the graphic-component (DCC/COF token) for one of a monster's render components by index and variant. Validates the unit is a monster, reads its MonStats2 component table, bounds-checks the variant, and looks up the base comp-code via DATATBLS_GetCompCodeByIndex. For Act II monsters it may override the component from the gnOverlayTblsCount / gnOverlayTblsMaxId tables depending on the monster's validated base class id (special-cases base id 0xaa). Returns the resolved component token (cast as D2UnitStrc*), or NULL for non-monsters / out-of-range component or variant.
 D2UnitStrc * __stdcall MONSTER_GetComponentOverlay(D2UnitStrc * pUnit, uint32_t nComponentIdx, uint32_t nVariantIdx) {
     // Static local variables (originally global data)
-    static int gnOverlayTblsMaxId[47] = {
-    0x74899c,
-    0x748990,
-    0x74899c,
-    0x74899c,
-    0x74899c,
-    0x0,
-    0x748a14,
-    0x0,
-    0x7489e8,
-    0x7489e8,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c,
-    0x0,
-    0x6cc81c,
-    0x6cc814,
-    0x6cc80c,
-    0x6cc804,
-    0x6cc7f8,
-    0x6cc7f0,
-    0x6cc7e4,
-    0x6cc7dc,
-    0x6cc7c8,
-    0x6cc7b4,
-    0x6cc7ac,
-    0x6cc7a4,
-    0x6cc788,
-    0x6cc780,
-    0x6cc77c
-};
+    static uint32_t * gnOverlayTblsCount[16] = {
+    gaOverlayVariantCodes,
+    (uint32_t*)&gaOverlayVariantCodes[37],
+    (uint32_t*)&gaOverlayVariantCodes[7],
+    (uint32_t*)&gaOverlayVariantCodes[7],
+    (uint32_t*)&gaOverlayVariantCodes[7],
+    (uint32_t*)&gaOverlayVariantCodes[10],
+    nullptr,
+    (uint32_t*)&gaOverlayVariantCodes[20],
+    (uint32_t*)&gaOverlayVariantCodes[25],
+    (uint32_t*)&gaOverlayVariantCodes[25],
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr
+}; D2_STATIC_GUARD(gnOverlayTblsCount, "D2Common::DATATBLS::OverlayTbls::MONSTER_GetComponentOverlay::gnOverlayTblsCount");
+    static uint32_t * gnOverlayTblsMaxId[16] = {
+    (uint32_t*)&gaOverlayVariantCodes[40],
+    (uint32_t*)&gaOverlayVariantCodes[37],
+    (uint32_t*)&gaOverlayVariantCodes[40],
+    (uint32_t*)&gaOverlayVariantCodes[40],
+    (uint32_t*)&gaOverlayVariantCodes[40],
+    nullptr,
+    (uint32_t*)&gaOverlayVariantCodes2[11],
+    nullptr,
+    gaOverlayVariantCodes2,
+    gaOverlayVariantCodes2,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr
+}; D2_STATIC_GUARD(gnOverlayTblsMaxId, "D2Common::DATATBLS::OverlayTbls::MONSTER_GetComponentOverlay::gnOverlayTblsMaxId");
 
     eD2LevelId eLevelId;
     int32_t nBaseClassId;
@@ -359,10 +346,10 @@ D2UnitStrc * __stdcall MONSTER_GetComponentOverlay(D2UnitStrc * pUnit, uint32_t 
         nBaseClassId = D2Client::UNIT::Player::ValidateClassId(nBaseClassId);
         if (!nBaseClassId) {
           if (gnOverlayTblsCount[nComponentIdx]) {
-            pCompCodeStr = *(D2UnitStrc**)(gnOverlayTblsCount[nComponentIdx] + nVariantIdx * 4);
+            pCompCodeStr = (D2UnitStrc*)gnOverlayTblsCount[nComponentIdx][nVariantIdx];
           }
         } else if (nBaseClassId == 0xaa && gnOverlayTblsMaxId[nComponentIdx]) {
-          return *(D2UnitStrc**)(gnOverlayTblsMaxId[nComponentIdx] + nVariantIdx * 4);
+          return (D2UnitStrc*)gnOverlayTblsMaxId[nComponentIdx][nVariantIdx];
         }
       }
     }

@@ -66,8 +66,8 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x4F_INITMERCENARYLIST(char * pBytes) {
     D2Client::Merc::D2MercForHire[9].bActive = 0;
 }
 
-int __stdcall NPCMENU_GetMercHireCost() {
-    return (int)gpNpcMenuDialogOptions;
+D2BitBufferStrc * __stdcall NPCMENU_GetMercHireCost() {
+    return gpNpcMenuDialogOptions;
 }
 
 void __fastcall NPCMENU_SetSelectedMercIndex(int16_t nParam) {

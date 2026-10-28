@@ -2,11 +2,10 @@
 
 #include "Storm/Source/SEVT.h"
 #include "Fog/Engine/Application.h"
-#include "Storm/H/Storm.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SErr.h"
-#include "Storm/Source/SFile.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 
@@ -67,21 +66,21 @@ void __stdcall SEVT_CopyIdHashTable(uint32_t * * pDstTable, int * pSrcTable) {
 // @blizzard DeleteIdHashTable (SEVT.CPP)
 void SEVT_DeleteIdHashTable(void * * pTable) {
     void* pObject;
-    void* nBucket = 0;
+    uint32_t nBucket = 0;
     if (pTable[1]) {
       void* pBuckets;
       pBuckets = *pTable;
       do {
-        pObject = *(void**)((int)pBuckets + (int)nBucket * 4);
+        pObject = *(void**)((int)pBuckets + nBucket * 4);
         while (pObject) {
-          *(uint32_t*)((int)pBuckets + (int)nBucket * 4) = *(uint32_t*)((int)pObject + 0xc);
+          *(uint32_t*)((int)pBuckets + nBucket * 4) = *(uint32_t*)((int)pObject + 0xc);
           SMem::SMemFree(pObject, "delete", -1, 0);
           pBuckets = *pTable;
-          pObject = *(void**)((int)pBuckets + (int)nBucket * 4);
+          pObject = *(void**)((int)pBuckets + nBucket * 4);
         }
 
-        nBucket = (void*)((int)nBucket + 1);
-      } while (nBucket < pTable[1]);
+        nBucket++;
+      } while (nBucket < (uintptr_t)pTable[1]);
     }
 
     SMem::SMemFree(*pTable, ".\\SOURCE\\SEVT.CPP", 0x58, 0);
@@ -186,14 +185,8 @@ void __stdcall SEvtPushState(uint32_t nEventId, uint32_t nSubId) {
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0077930c);
 }
 
-// Registers a handler for an (eventId, subId) event type. The entry validates its arguments (pfnHandler non-NULL and dwReserved zero, else SetLastError ERROR_INVALID_PARAMETER 0x57 and return FALSE) and then falls through into the body at 0042644a, which creates or grows the event hash table, creates or grows the event's handler table, and links a new {key=arg3, priority=++pEvent[2], pfnHandler=arg5, next} node.
-// @oracle SEvtRegisterHandler
-// @oracle-source Storm export name list, and the PEF traceback-named body .SEvtRegisterHandler @100175e0 in Mac PPC 1.10b Storm
-// @rename-basis Behaviour. This is the only entry point in SEVT that allocates a handler node and links it into an event's handler table, and its argument checks are exactly a handler registration's: arg5 (stored as the callback at node[2], and the value SEvtDispatch calls) must be non-NULL, arg4 must be zero. The handler key it stores at node[0] is the value SEvtDispatch 00426f90 matches its third argument against, and the value SEvtUnregisterHandler 00426720 hashes by. RET 0x14 fixes the arity at five.
-// @former-name SEVT_RegisterEventValidated (invented)
-// @ghidra-gap 0042644a is NOT a separate function. It is reached only by the JNZ at 00426439 and is the fall-through body of this one; Ghidra split it. Named SEVT_RegisterHandler_Body until the split is repaired. Its @sourcefile stamp .\SOURCE\SEVT.CPP therefore belongs to this function as well.
-// @sourcefile .\SOURCE\SEVT.CPP
-// @ghidra-repair 2026-08-28: 0042644a was a spurious second function (SEVT_RegisterHandler_Body). It had no prologue, its only inbound reference in the whole program was the JNZ at 00426439 inside this function, and it read its arguments off this function's EBP frame with the same 20-byte purge. Merged back in, so this function's body is now the whole 00426420-00426710 span. The fragment's old plate read: @function SEVT_RegisterHandler_Body | @address Game.exe.ram:0042644a | @date 2026.06.13 | @description NOT A FUNCTION. This is the fall-through body of SEvtRegisterHandler at 00426420: its only inbound reference is the CONDITIONAL_JUMP from the argument check at 00426439, it has no prologue of its own, and it reads its arguments off the caller's EBP frame (EBP+8 eventId, +0xc subId, +0x10 key, +0x18 pfnHandler). Ghidra created a spurious function here. Descriptive name only - it makes no Storm API claim. | @body Creates the event hash table on first use and rehashes it when load exceeds 1/2; creates or grows the event's handler table the same way; allocates a 0x10-byte handler node {key, ++pEvent[2] as priority, pfnHandler, next} and links it into the handler bucket, incrementing the handler count at pEvent[3]+8 and setting gnSevtSnapshotActive. | @former-name SEVT_RegisterEventCallback | @ghidra-gap The correct repair is to delete this function and let 00426420's body extend over it. Not done here - that is a function-boundary change, not a rename. | @sourcefile .\SOURCE\SEVT.CPP | @sourcefile-basis Blizzard __FILE__ literal referenced from inside this body (9 sites: 004264a6, 0042651d, 00426542, 00426561, 004265c7, 004265e0, ...). First-party 1.14d evidence, not inferred and not from D2R.
+// Registers an event handler: allocates a handler node keyed by dwKey and links it into the handler table for (dwEventId, dwSubId); pfnHandler must be non-NULL and dwReserved zero. SEvtDispatch matches its key argument against the stored key.
+// Storm export SEvtRegisterHandler (export name list and Mac PPC 1.10b traceback).
 void __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey, int dwReserved, pfnSEvtHandler pfnHandler) {
     void* pNewBuckets;
     int* pTailSlot;
@@ -203,7 +196,7 @@ void __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_
     void* nOldBucketCount;
     uint32_t nNewHandlerCapacity;
     uint32_t nBucketIndex;
-    void* iOldBucketIndex;
+    uint32_t iOldBucketIndex;
     int nOldHandlerCapacity;
     uint32_t* pNextNode;
     uint32_t* ppNodeNext;
@@ -236,7 +229,7 @@ void __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_
             nOldBucketCount = gaEventRegistryHead;
             if (gaEventRegistryHead) {
               do {
-                pEvent = *(uint32_t**)((int)pvVar1 + (int)iOldBucketIndex * 4);
+                pEvent = *(uint32_t**)((int)pvVar1 + iOldBucketIndex * 4);
                 if (pEvent) {
                   do {
                     pNode = (uint32_t*)pEvent[4];
@@ -249,8 +242,8 @@ void __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_
                   } while (pNode);
                 }
 
-                iOldBucketIndex = (void*)((int)iOldBucketIndex + 1);
-              } while (iOldBucketIndex < nOldBucketCount);
+                iOldBucketIndex++;
+              } while (iOldBucketIndex < (uintptr_t)nOldBucketCount);
             }
           }
 
@@ -494,23 +487,23 @@ void __stdcall SEvtPopState(char * szText1, char * szText2) {
 // @namespace-fix moved Global -> Storm::Source::SEVT
 // @todo the list head it writes is still labelled gnUnnamedMessageBoxType; it is the SEvt break-command list head at 007088e8.
 int __stdcall SEvtBreakHandlerChain(void * pUnderMouse) {
-    StormLinkStrc* pNewNode;
+    StormBreakCmdStrc* pNewNode;
     uint32_t uPrevLink;
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0077930c);
-    StormLinkStrc* pNode = (StormLinkStrc*)SMem::SMemAlloc(0xc, s___AUBREAKCMD___007088d8, -2, 8);
+    StormBreakCmdStrc* pNode = (StormBreakCmdStrc*)SMem::SMemAlloc(0xc, s___AUBREAKCMD___007088d8, -2, 8);
     if (!pNode) {
       pNewNode = 0;
-      pNode = (StormLinkStrc*)&gpSevtBreakCmdListHead.pPrevLink;
+      pNode = (StormBreakCmdStrc*)&gpSevtBreakCmdListHead.pPrevLink;
     } else {
-      pNode->pPrevLink = 0;
-      pNode->pNext = 0;
+      pNode->link.pPrevLink = 0;
+      pNode->link.pNext = 0;
       pNewNode = pNode;
     }
 
-    StormLinkStrc* nNextNode = pNode->pPrevLink;
+    StormLinkStrc* nNextNode = pNode->link.pPrevLink;
     if (nNextNode) {
       int* pLinkSlot;
-      uPrevLink = pNode->pNext;
+      uPrevLink = pNode->link.pNext;
       if ((int)uPrevLink < 0) {
         pLinkSlot = (int*)~uPrevLink;
       } else {
@@ -518,16 +511,16 @@ int __stdcall SEvtBreakHandlerChain(void * pUnderMouse) {
       }
 
       *pLinkSlot = (int)nNextNode;
-      pNode->pPrevLink->pNext = pNode->pNext;
-      pNode->pPrevLink = 0;
-      pNode->pNext = 0;
+      pNode->link.pPrevLink->pNext = pNode->link.pNext;
+      pNode->link.pPrevLink = 0;
+      pNode->link.pNext = 0;
     }
 
-    pNode->pPrevLink = gpSevtBreakCmdListHead.pPrevLink;
-    pNode->pNext = gpSevtBreakCmdListHead.pPrevLink->pNext;
+    pNode->link.pPrevLink = gpSevtBreakCmdListHead.pPrevLink;
+    pNode->link.pNext = gpSevtBreakCmdListHead.pPrevLink->pNext;
     gpSevtBreakCmdListHead.pPrevLink->pNext = (int)pNewNode;
-    gpSevtBreakCmdListHead.pPrevLink = pNode;
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pNewNode[1].pPrevLink = (StormLinkStrc*)pUnderMouse;
+    gpSevtBreakCmdListHead.pPrevLink = &pNode->link;
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pNewNode->pData = pUnderMouse;
     LeaveCriticalSection(&lpCriticalSection_0077930c);
     return 1;
 }
@@ -539,20 +532,19 @@ int __stdcall SEvtBreakHandlerChain(void * pUnderMouse) {
 // @former-name SEVT_DispatchWindowMessage (invented. Its caller WND_DispatchWindowMessage 00420b00 is the Windows-message layer; this is not.)
 BOOL __stdcall SEvtDispatch(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey, void * pData) {
     // Static local variables (originally global data)
-    static LONG * lpAddend_007792fc;
+    static LONG * lpAddend_007792fc; D2_STATIC_GUARD_BSS(lpAddend_007792fc, "Storm::Source::SEVT::SEvtDispatch::lpAddend_007792fc");
 
-    bool _dwResult;
     int* pBreakCmd;
     uint32_t* pEventEntry;
     int* pLinkSlot;
     pfnSEvtHandler pfnHandler;
-    bool dwResult;
     int nNextNode;
     uint32_t uPrevLink;
     /* LONG * lpAddend for InterlockedIncrement */ InterlockedIncrement((LONG*)&lpAddend_007792fc);
     D2SevtHandlerNodeStrc* pHandlerNode;
     pHandlerNode = 0;
-    _dwResult = 0;
+    BOOL bResult;
+    bResult = 0;
     uint32_t uLastPriority;
     uLastPriority = -1;
     do {
@@ -618,14 +610,14 @@ BOOL __stdcall SEvtDispatch(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey
 
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0077930c);
       if (pfnHandler) {
-        _dwResult = 1;
+        bResult = 1;
         (*pfnHandler)(pData);
       }
     } while (pHandlerNode);
 
     /* LONG * lpAddend for InterlockedDecrement */ InterlockedDecrement((LONG*)&lpAddend_007792fc);
     if (0 >= gpSevtBreakCmdListHead.pNext) {
-      return _dwResult;
+      return bResult;
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0077930c);
@@ -639,7 +631,7 @@ BOOL __stdcall SEvtDispatch(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0077930c);
-    return _dwResult;
+    return bResult;
 }
 
 void StaticFini_CriticalSection_0077930c() {

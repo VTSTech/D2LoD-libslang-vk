@@ -15,7 +15,7 @@
 namespace D2CMP {
 
 void __fastcall SPRITECACHE_LRU_FreeEntryCallback(int pEntry) {
-    void* pEntry_00 = *(void**)(pEntry + 8);
+    void* pvVar2 = *(void**)(pEntry + 8);
     if (gpfnSpriteCacheFreeEntry) {
       BOOL BVar1;
       BVar1 = IsBadCodePtr((FARPROC)gpfnSpriteCacheFreeEntry);
@@ -24,11 +24,11 @@ void __fastcall SPRITECACHE_LRU_FreeEntryCallback(int pEntry) {
         exit(-1);
       }
 
-      (*gpfnSpriteCacheFreeEntry)(pEntry_00);
+      (*gpfnSpriteCacheFreeEntry)(pvVar2);
     }
 
-    *(uint32_t*)((int)pEntry_00 + 0x54) = 0;
-    *(uint32_t*)((int)pEntry_00 + 0x5c) = 0;
+    *(uint32_t*)((int)pvVar2 + 0x54) = 0;
+    *(uint32_t*)((int)pvVar2 + 0x5c) = 0;
 }
 
 void __fastcall SPRITECACHE_LRU_RemoveCacheEntryCallback(int pEntry) {
@@ -117,21 +117,21 @@ void __stdcall D2CMP_MaxDouble(double fParam1, double fParam2) {
 }
 
 int32_t __fastcall SUBTILE_CountRunLength(char * pDataStart, char * pDataEnd, int32_t nMaxRunLength, uint32_t * pIsAtEndFlag, uint32_t * pIsExactMatchFlag) {
-    int32_t nRunLen;
+    int32_t nLine;
     if (pDataEnd <= pDataStart) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19);
       exit(-1);
     }
 
     char cFirst = *pDataStart;
-    nRunLen = 0;
+    nLine = 0;
     do {
-      if (cFirst != *pDataStart || nMaxRunLength <= nRunLen) {
+      if (cFirst != *pDataStart || nMaxRunLength <= nLine) {
         break;
       }
 
       pDataStart++;
-      nRunLen++;
+      nLine++;
     } while (pDataStart < pDataEnd);
 
     if (pDataStart != pDataEnd) {
@@ -139,29 +139,29 @@ int32_t __fastcall SUBTILE_CountRunLength(char * pDataStart, char * pDataEnd, in
       for (; pDataStart < pDataEnd && cFirst == *pDataStart; pDataStart++) {}
 
       *pIsExactMatchFlag = (uint32_t)(pDataStart == pDataEnd);
-      return nRunLen;
+      return nLine;
     }
 
     *pIsAtEndFlag = 1;
     *pIsExactMatchFlag = 0;
-    return nRunLen;
+    return nLine;
 }
 
 int32_t __fastcall SUBTILE_CountRunLengthForByte(char * pCur, char * pEnd, char cSkipByte, int32_t nMaxRunLen, uint32_t * pbAtEnd, uint32_t * pbExactMatch) {
-    int32_t nRunLen;
+    int32_t nLine;
     if (pEnd <= pCur) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6f);
       exit(-1);
     }
 
-    nRunLen = 0;
+    nLine = 0;
     do {
-      if (*pCur == cSkipByte || nMaxRunLen <= nRunLen) {
+      if (*pCur == cSkipByte || nMaxRunLen <= nLine) {
         break;
       }
 
       pCur++;
-      nRunLen++;
+      nLine++;
     } while (pCur < pEnd);
 
     if (pCur != pEnd) {
@@ -169,12 +169,12 @@ int32_t __fastcall SUBTILE_CountRunLengthForByte(char * pCur, char * pEnd, char 
       for (; pCur < pEnd && *pCur == cSkipByte; pCur++) {}
 
       *pbExactMatch = (uint32_t)(pCur == pEnd);
-      return nRunLen;
+      return nLine;
     }
 
     *pbAtEnd = 1;
     *pbExactMatch = 0;
-    return nRunLen;
+    return nLine;
 }
 
 } // namespace D2CMP

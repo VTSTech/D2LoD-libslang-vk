@@ -42,6 +42,7 @@
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Common/Units.h"
+#include "D2Common/Units/Missile.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
@@ -110,24 +111,17 @@ uint32_t __stdcall ITEMS_SearchItemCodeTable(D2UnitStrc * pUnit, int32_t dwConte
         /* .pfnMethod = */ (pfnSkillCalcOp)&D2Common::Stats::StatsEx::UNITS_GetStatValueByType,
         /* .nArgCount = */ 0x2
     }
-};
-    static int nItemsEventMethodSize = 0x4;
+}; D2_STATIC_GUARD(aItemsEventMethod, "D2Common::ITEMS::Items::ITEMS_SearchItemCodeTable::aItemsEventMethod");
+    static int nItemsEventMethodSize = 0x4; D2_STATIC_GUARD(nItemsEventMethodSize, "D2Common::ITEMS::Items::ITEMS_SearchItemCodeTable::nItemsEventMethodSize");
 
-    // Frame slots -12..-4 are ONE object: &pUnitArg is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      D2UnitStrc* pUnitArg;
-      int32_t dwContextArg;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    D2ItemCalcContextStrc sCalcContext;
     if (!(sgptDataTable->pItemsCode && nOffset < (uint32_t)sgptDataTable->nItemsCodeSize)) {
       return 0;
     }
 
-    __frame0.pUnitArg = pUnit;
-    __frame0.dwContextArg = dwContext;
-    uint32_t nFormulaResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pItemsCode + nOffset), sgptDataTable->nItemsCodeSize - nOffset, Stats::StatsEx::nullsub, aItemsEventMethod, nItemsEventMethodSize, &__frame0.pUnitArg);
+    sCalcContext.pUnit = pUnit;
+    sCalcContext.nContext = dwContext;
+    uint32_t nFormulaResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pItemsCode + nOffset), sgptDataTable->nItemsCodeSize - nOffset, Stats::StatsEx::nullsub, aItemsEventMethod, nItemsEventMethodSize, &sCalcContext);
     return nFormulaResult;
 }
 
@@ -850,12 +844,12 @@ BOOL __stdcall IsStackable(D2UnitStrc * pUnit) {
 // Tests whether two item units are the "same kind" of potion for stacking/auto-fill purposes. Returns 1 immediately if the two items share a class id; otherwise looks up each item's ItemsTxt line and checks whether BOTH item codes appear together within the same potion-code group. Scans three configured code-group tables (health, mana, and a third group) held in UINT_ARRAY_00744660 (each preceded by a count); returns 1 if both items fall into any one group, else 0. Returns 0 if either unit pointer is null.
 BOOL __stdcall ITEM_CheckIfBothItemsAreSameTypeOfPotions(D2UnitStrc * pUnit, D2UnitStrc * pItemEx) {
     // Static local variables (originally global data)
-    static uint32_t gadwRejuvPotionCodes[2] = { 0x206c7672, 0x20737672 };
-    static uint32_t gnRejuvPotionCodeCount = 0x2;
-    static uint32_t gadwManaPotionCodes[5] = { 0x2031706d, 0x2032706d, 0x2033706d, 0x2034706d, 0x2035706d };
-    static uint32_t gnManaPotionCodeCount = 0x5;
-    static uint32_t gadwHealingPotionCodes[5] = { 0x20317068, 0x20327068, 0x20337068, 0x20347068, 0x20357068 };
-    static uint32_t gnHealingPotionCodeCount = 0x5;
+    static uint32_t gadwRejuvPotionCodes[2] = { 0x206c7672, 0x20737672 }; D2_STATIC_GUARD(gadwRejuvPotionCodes, "D2Common::ITEMS::Items::ITEM_CheckIfBothItemsAreSameTypeOfPotions::gadwRejuvPotionCodes");
+    static uint32_t gnRejuvPotionCodeCount = 0x2; D2_STATIC_GUARD(gnRejuvPotionCodeCount, "D2Common::ITEMS::Items::ITEM_CheckIfBothItemsAreSameTypeOfPotions::gnRejuvPotionCodeCount");
+    static uint32_t gadwManaPotionCodes[5] = { 0x2031706d, 0x2032706d, 0x2033706d, 0x2034706d, 0x2035706d }; D2_STATIC_GUARD(gadwManaPotionCodes, "D2Common::ITEMS::Items::ITEM_CheckIfBothItemsAreSameTypeOfPotions::gadwManaPotionCodes");
+    static uint32_t gnManaPotionCodeCount = 0x5; D2_STATIC_GUARD(gnManaPotionCodeCount, "D2Common::ITEMS::Items::ITEM_CheckIfBothItemsAreSameTypeOfPotions::gnManaPotionCodeCount");
+    static uint32_t gadwHealingPotionCodes[5] = { 0x20317068, 0x20327068, 0x20337068, 0x20347068, 0x20357068 }; D2_STATIC_GUARD(gadwHealingPotionCodes, "D2Common::ITEMS::Items::ITEM_CheckIfBothItemsAreSameTypeOfPotions::gadwHealingPotionCodes");
+    static uint32_t gnHealingPotionCodeCount = 0x5; D2_STATIC_GUARD(gnHealingPotionCodeCount, "D2Common::ITEMS::Items::ITEM_CheckIfBothItemsAreSameTypeOfPotions::gnHealingPotionCodeCount");
 
     if (!pUnit || !pItemEx) {
       return 0;
@@ -1829,8 +1823,8 @@ int16_t __stdcall ITEM_GetWeaponAnimClass(D2UnitStrc * pUnit) {
         /* .dwCode = */ 0x20317468,
         /* .nWeaponClass = */ 0xc
     }
-};
-    static uint32_t gnItemWeaponClassCodeCount = 0x8;
+}; D2_STATIC_GUARD(gaItemWeaponClassCodes, "D2Common::ITEMS::Items::ITEM_GetWeaponAnimClass::gaItemWeaponClassCodes");
+    static uint32_t gnItemWeaponClassCodeCount = 0x8; D2_STATIC_GUARD(gnItemWeaponClassCodeCount, "D2Common::ITEMS::Items::ITEM_GetWeaponAnimClass::gnItemWeaponClassCodeCount");
 
     uint32_t nClassId;
     if (!pUnit) {
@@ -2259,10 +2253,10 @@ int __stdcall ITEM_CalcWeaponAttackSpeed(D2UnitStrc * pUnit, D2UnitStrc * pItem)
     __frame0_t __frame0;
     bool _bIsWeapon;
     bool bIsWeapon;
-    int32_t nFastAttackStat;
     BOOL nAttackSpeedResult;
-    int iVar1;
+    int32_t iVar1;
     int iVar2;
+    int iVar3;
     uint32_t nTrigger;
     __frame0.nSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (!pItem || pItem->eUnitType != UNIT_ITEM) {
@@ -2288,12 +2282,12 @@ int __stdcall ITEM_CalcWeaponAttackSpeed(D2UnitStrc * pUnit, D2UnitStrc * pItem)
           return 0x2d;
         }
         if (__frame0.nFrames) {
-          nFastAttackStat = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pItem, UNITSTAT_item_fasterattackrate, 0);
-          iVar1 = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_attackrate, 0);
-          iVar2 = (nFastAttackStat + 100 + iVar1) * __frame0.nAnimSpeed;
-          iVar1 = __frame0.nFrames << 8;
+          iVar1 = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pItem, UNITSTAT_item_fasterattackrate, 0);
+          iVar2 = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_attackrate, 0);
+          iVar3 = (iVar1 + 100 + iVar2) * __frame0.nAnimSpeed;
+          iVar2 = __frame0.nFrames << 8;
           Fog::Debug::GuardStack();
-          return iVar1 / (iVar2 / 100);
+          return iVar2 / (iVar3 / 100);
         }
 
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1538);
@@ -2392,12 +2386,12 @@ int __stdcall ITEMS_DeserializeItemHeader(int32_t bIsOnGround, uint32_t nFileVer
     uint32_t uCoordOrBits;
     eD2UnitType eItemFlags;
     D2ItemsTxt* pItemsTxt;
-    int32_t nGoldSubIndex;
     D2StatListExStrc* pMemory;
     D2PoolManagerStrc* pMemory_00;
     uint32_t dwUnitGUID;
     char* pcItemCodeOrName;
     int32_t nSize;
+    int32_t nLayer;
     D2ItemStatCostTxt* pStatCostTxt;
     int32_t* pnItemSaveAdd;
     uint32_t dwReadValue = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 10);
@@ -2441,7 +2435,7 @@ int __stdcall ITEMS_DeserializeItemHeader(int32_t bIsOnGround, uint32_t nFileVer
       uCoordOrBits = ITEMS_IsA(pItem, ITEMTYPE_Gold);
       if (uCoordOrBits) {
         uCoordOrBits = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 1);
-        nGoldSubIndex = 0;
+        nLayer = 0;
         if (!uCoordOrBits) {
           nSize = 0xc;
         } else {
@@ -2449,7 +2443,7 @@ int __stdcall ITEMS_DeserializeItemHeader(int32_t bIsOnGround, uint32_t nFileVer
         }
 
         uCoordOrBits = Fog::BitBuffer::ReadUnsigned(pBitBuffer, nSize);
-        Stats::StatsEx::STATLIST_SetUnitStat(pItem, UNITSTAT_gold, uCoordOrBits, nGoldSubIndex);
+        Stats::StatsEx::STATLIST_SetUnitStat(pItem, UNITSTAT_gold, uCoordOrBits, nLayer);
       }
 
       uCoordOrBits = ITEMS_IsA(pItem, ITEMTYPE_Scroll);
@@ -2707,7 +2701,7 @@ void __fastcall ITEMS_WriteClampedValueToBitBuffer(int32_t nBits, uint32_t nValu
 void __stdcall SerializeSimpleItem(D2UnitStrc * pItem, D2BitBufferStrc * pBitBuffer, D2StatListExStrc * pStatListEx) {
     uint32_t nClassId;
     int nQuestDifficulty;
-    eD2PlayerAnimMode eAnimModeClamp;
+    eD2ItemAnimMode eAnimModeClamp;
     char* pcName;
     char cNameChar;
     eD2UnitType eUnitType;
@@ -2738,17 +2732,18 @@ void __stdcall SerializeSimpleItem(D2UnitStrc * pItem, D2BitBufferStrc * pBitBuf
 
     Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, uVal, 10);
     if (!pItem) {
-      eAnimModeClamp = Death;
+      eAnimModeClamp = Container;
     } else {
       eAnimModeClamp = pItem->eAnimMode.ePlayerMode;
     }
 
-    eAnimModeClamp = eAnimModeClamp != Death ? eAnimModeClamp : 0;
-    if (TownWalk < eAnimModeClamp) {
-      eAnimModeClamp = eD2PlayerAnimMode_ns::Attack1;
+    eD2ItemAnimMode nValue;
+    nValue = eAnimModeClamp != Container ? eAnimModeClamp : 0;
+    if (InItem < nValue) {
+      nValue = InItem | Equipment;
     }
 
-    Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, eAnimModeClamp, 3);
+    Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nValue, 3);
     if (!pItem) {
       eInventoryPage eVar1;
       no_body_loc:
@@ -3008,14 +3003,15 @@ uint32_t __stdcall ITEMS_CheckIfUpgradeable(uint32_t nItemClassId) {
     return (uint32_t)!pItemsTxt->bQuest;
 }
 
-void __stdcall ITEM_ValidateAndGetClass(D2UnitStrc * pUnit) {
+uint32_t __stdcall ITEM_ValidateAndGetClass(D2UnitStrc * pUnit) {
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78c);
       exit(-1);
     } else {
+      uint32_t uVar1;
       if (pUnit->eUnitType == UNIT_ITEM) {
-        ITEMS_CheckIfUpgradeable(pUnit->nClassId);
-        return;
+        uVar1 = ITEMS_CheckIfUpgradeable(pUnit->nClassId);
+        return uVar1;
       }
 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78d);
@@ -3337,9 +3333,9 @@ int32_t __stdcall ITEM_GetTxtItemTypes_beltable(D2UnitStrc * pUnit) {
 
 // Returns the spell-icon index for a scroll or book item (used for skill-icon display). For scrolls/books reads the icon byte from the Books.txt entry indexed by wMagicSuffix[0]; for other item types returns bSpellIcon from Items.txt. Returns -1 when TXT_Books_GetLine fails (0062bbb3). Halts on null or non-item unit.
 int __stdcall ITEM_GetSpellIcon(D2UnitStrc * pUnit) {
+    void* nBooksTxtLine;
     D2ItemsTxt* pItemsTxt;
     uint32_t nBookTxtIdx;
-    void* pvVar1;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdac);
       exit(-1);
@@ -3365,9 +3361,9 @@ int __stdcall ITEM_GetSpellIcon(D2UnitStrc * pUnit) {
           nBookTxtIdx = 0;
         }
 
-        pvVar1 = DATATBLS::ItemTbls::TXT_Books_GetLine(nBookTxtIdx);
-        if (pvVar1) {
-          return (uint32_t)*(uint8_t*)((int)pvVar1 + 2);
+        nBooksTxtLine = DATATBLS::ItemTbls::TXT_Books_GetLine(nBookTxtIdx);
+        if (nBooksTxtLine) {
+          return (uint32_t)*(uint8_t*)((int)nBooksTxtLine + 2);
         }
 
         return -1;
@@ -3566,7 +3562,7 @@ uint32_t __stdcall ITEM_IsSocketable(D2UnitStrc * pUnit) {
 
 // Determines which runeword (if any) an item currently forms from its socketed runes. Collects the class-ids of the items socketed into pItem, then scans the runes.txt rune table for a completed row whose rune sequence exactly matches the socketed runes (in order, count == socket count) and whose itype/etype constraints the base item satisfies (must be of an allowed itype and not of any excluded etype) via IsOfType. Returns the matching D2RuneTableStrc row, or NULL if none / the item is ineligible (not a normal-quality non-quest socketed item, or has no inventory). Read-only lookup, no state change.
 D2RuneTableStrc * __stdcall CalculateRunewordByItem(D2UnitStrc * pItem) {
-    int* pRuneTable;
+    D2RunesTxtTableStrc* pRuneTable;
     int nRuneSlot;
     uint32_t bIsType;
     int* pRuneEntry;
@@ -3574,9 +3570,8 @@ D2RuneTableStrc * __stdcall CalculateRunewordByItem(D2UnitStrc * pItem) {
     int nItypeIdx;
     short int* pTypeEntry;
     int anSocketedClassIds[6];
-    int* pRuneTableHeader;
+    D2RunesTxtTableStrc* pRuneTableHeader;
     int nRowIdx;
-    int nRowByteOffset;
     short int* nEtypeIdx;
     /* This function loops trough the items and calculates which runeword it should
                          be */ if (!pItem) {
@@ -3627,14 +3622,13 @@ D2RuneTableStrc * __stdcall CalculateRunewordByItem(D2UnitStrc * pItem) {
     }
 
     nRowIdx = 0;
-    if (0 >= *pRuneTable) {
+    if (0 >= pRuneTable->nSize) {
       return nullptr;
     }
 
-    nRowByteOffset = 0;
     pRuneTableHeader = pRuneTable;
     do {
-      runeTableRow = (D2RuneTableStrc*)(pRuneTable[1] + nRowByteOffset);
+      runeTableRow = (D2RuneTableStrc*)&pRuneTable->pTable[nRowIdx].name[0];
       if (runeTableRow->completed != '\0') {
         nRuneSlot = 0;
         pRuneEntry = &runeTableRow->rune1;
@@ -3692,9 +3686,9 @@ D2RuneTableStrc * __stdcall CalculateRunewordByItem(D2UnitStrc * pItem) {
       }
 
       next_runeword_row:
-      nRowByteOffset += 0x120;
+      ;
       nRowIdx++;
-    } while (nRowIdx < *pRuneTable);
+    } while (nRowIdx < pRuneTable->nSize);
 
     return nullptr;
 }
@@ -3732,7 +3726,7 @@ eD2PlayerClassIDDWORD __stdcall TXT_ItemTypes_GetClass(D2UnitStrc * pUnit) {
 }
 
 // Resolves the display/transform color (palette index) of an item and writes the raw transform-color code to *pColor. Priority order: (1) owner-unit states whose itemtype matches the item (states.txt itemtrans) override the color; otherwise by quality: magic/rare scan the item's prefix/suffix and automagic affixes for the first MagicAffix with a valid transformcolor; set uses SetItems.txt chrtransform/invtransform; unique uses UniqueItems.txt chrtransform/invtransform; normal socketed items derive color from the first socketed gem (Gems.txt). nTransType selects char (0) vs inventory (nonzero) palette via PALETTE_GetItemPalette, combining the item's bTransform/bInvTrans base. Returns the palette pointer/index, or 0 if no color applies. __stdcall.
-int32_t __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * pColor, int32_t nTransType) {
+uint8_t * __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * pColor, int32_t nTransType) {
     char bValidColor;
     eD2States eUnitState;
     uint32_t bIsType;
@@ -3742,14 +3736,14 @@ int32_t __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * pC
     D2UniqueItemsTxt* pUniqueTxt;
     D2SetItemsTxt* pSetItemTxt;
     D2UnitStrc* pFirstSocket;
-    int32_t nGemsTxtOffset;
+    D2GemsTxt* pDVar2;
     void* pPaletteData;
     uint8_t* pPaletteResult;
     D2MagicAffixTxt* pAffix;
     int nStateOrAffixIdx;
     eD2States eStateId;
     if (!pItem) {
-      return 0;
+      return nullptr;
     }
     if (pUnit) {
       D2StatesTxt* pDVar1;
@@ -3767,7 +3761,7 @@ int32_t __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * pC
                 pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(bIsType);
                 if (pItemsTxt) {
                   pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bTransform, (uint32_t)(uint8_t)pDVar1->itemtrans);
-                  return (int32_t)pPaletteResult;
+                  return pPaletteResult;
                 }
               }
             }
@@ -3828,66 +3822,66 @@ int32_t __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * pC
       case QUALITY_SET:
         pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
       if (!pItemsTxt) {
-        return 0;
+        return nullptr;
       }
 
       nStateOrAffixIdx = ITEM_GetItemData_nFileIndex(pItem);
       pSetItemTxt = D2Client::DataTbls::GetSetItemsLine(nStateOrAffixIdx);
       if (!pSetItemTxt) {
-        return 0;
+        return nullptr;
       }
       if (!nTransType) {
         if (pSetItemTxt->chrtransform < '\0') {
-          return 0;
+          return nullptr;
         }
 
         bValidColor = ITEMS_ValidateItemQualityCode((int)pSetItemTxt->chrtransform, (uint32_t)(uint8_t)pItemsTxt->bTransform);
         *pColor = bValidColor;
         pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bTransform, (int)pSetItemTxt->chrtransform);
-        return (int32_t)pPaletteResult;
+        return pPaletteResult;
       }
       if (pSetItemTxt->invtransform < '\0') {
-        return 0;
+        return nullptr;
       }
 
       bValidColor = ITEMS_ValidateItemQualityCode((int)pSetItemTxt->chrtransform, (uint32_t)(uint8_t)pItemsTxt->bTransform);
       *pColor = bValidColor;
       pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bInvTrans, (int)pSetItemTxt->invtransform);
-      return (int32_t)pPaletteResult;
+      return pPaletteResult;
       case QUALITY_UNIQUE:
         pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
       if (!pItemsTxt) {
-        return 0;
+        return nullptr;
       }
 
       nStateOrAffixIdx = ITEM_GetItemData_nFileIndex(pItem);
       if (nStateOrAffixIdx < 0) {
-        return 0;
+        return nullptr;
       }
 
       nStateOrAffixIdx = ITEM_GetItemData_nFileIndex(pItem);
       pUniqueTxt = D2Client::DataTbls::INV_GetUniqueItemsTxtLine(nStateOrAffixIdx);
       if (!pUniqueTxt) {
-        return 0;
+        return nullptr;
       }
       if (nTransType) {
         if (pUniqueTxt->invtransform < '\0') {
-          return 0;
+          return nullptr;
         }
 
         bValidColor = ITEMS_ValidateItemQualityCode((int)pUniqueTxt->chrtransform, (uint32_t)(uint8_t)pItemsTxt->bTransform);
         *pColor = bValidColor;
         pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bInvTrans, (int)pUniqueTxt->invtransform);
-        return (int32_t)pPaletteResult;
+        return pPaletteResult;
       }
       if (pUniqueTxt->chrtransform < '\0') {
-        return 0;
+        return nullptr;
       }
 
       bValidColor = ITEMS_ValidateItemQualityCode((int)pUniqueTxt->chrtransform, (uint32_t)(uint8_t)pItemsTxt->bTransform);
       *pColor = bValidColor;
       pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bTransform, (int)pUniqueTxt->chrtransform);
-      return (int32_t)pPaletteResult;
+      return pPaletteResult;
       default:
         if (pItem->eUnitType != UNIT_ITEM || (pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId) , !pItemsTxt) || !pItemsTxt->bHasInv || (bValidColor = ITEM_GetMaxSockCount(pItem) , bValidColor == '\0')) {
           goto try_automagic_color;
@@ -3906,17 +3900,17 @@ int32_t __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * pC
                   exit(-1);
                 }
 
-                nGemsTxtOffset = DATATBLS::ItemTbls::TXT_Gems_GetLine(pItemsTxt->dwGemOffset);
+                pDVar2 = DATATBLS::ItemTbls::TXT_Gems_GetLine(pItemsTxt->dwGemOffset);
                 pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
-                bValidColor = ITEMS_ValidateItemQualityCode((uint32_t)*(uint8_t*)(nGemsTxtOffset + 0x2f), (uint32_t)(uint8_t)pItemsTxt->bTransform);
+                bValidColor = ITEMS_ValidateItemQualityCode((uint32_t)(uint8_t)pDVar2->transform, (uint32_t)(uint8_t)pItemsTxt->bTransform);
                 *pColor = bValidColor;
                 if (nTransType) {
-                  pPaletteData = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bInvTrans, (uint32_t)*(uint8_t*)(nGemsTxtOffset + 0x2f));
-                  return (int32_t)pPaletteData;
+                  pPaletteData = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bInvTrans, (uint32_t)(uint8_t)pDVar2->transform);
+                  return (uint8_t*)pPaletteData;
                 }
 
-                pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bTransform, (uint32_t)*(uint8_t*)(nGemsTxtOffset + 0x2f));
-                return (int32_t)pPaletteResult;
+                pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bTransform, (uint32_t)(uint8_t)pDVar2->transform);
+                return pPaletteResult;
               }
             }
           }
@@ -3930,7 +3924,7 @@ int32_t __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * pC
     check_affix_color:
     pAffix = DATATBLS::ItemTbls::TXT_magicaffixes_GetLine(nAffixIdx);
     if (!pAffix || pAffix->transformcolor == -1) {
-      return 0;
+      return nullptr;
     }
 
     apply_affix_color:
@@ -3944,11 +3938,11 @@ int32_t __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * pC
     *pColor = bValidColor;
     if (nTransType) {
       pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bInvTrans, (uint32_t)(uint8_t)pAffix->transformcolor);
-      return (int32_t)pPaletteResult;
+      return pPaletteResult;
     }
 
     int nPalette = (int)D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bTransform, (uint32_t)(uint8_t)pAffix->transformcolor);
-    return nPalette;
+    return (uint8_t*)nPalette;
 }
 
 // Returns 1 if pUnit is a valid target for the Imbue quest reward (Charsi). Rejects: NULL (fatal error), gold, monster-dropped items (ITEMFLAG_MONSTER set), non-equippable item types. For equippable items also rejects: non-ethereal throwables, quest items (except "leg"), items with sockets or socket flag, and quality other than normal (not set/unique/magic/rare/crafted/tempered).
@@ -3958,7 +3952,7 @@ BOOL __stdcall IsValidImbumeItem(D2UnitStrc * pUnit) {
     uint32_t uVar1;
     int32_t nErrLine;
     if (!pUnit) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x67d);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x67d);
       exit(-1);
     }
     if (pUnit->eUnitType == UNIT_ITEM) {
@@ -4068,7 +4062,7 @@ BOOL __stdcall ITEM_CheckIfItemCanHaveSockets(D2UnitStrc * pUnit) {
     uint32_t uVar1;
     int32_t nErrOrSocketCount;
     if (!pUnit) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x67d);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x67d);
       exit(-1);
     }
     if (pUnit->eUnitType == UNIT_ITEM) {
@@ -4346,7 +4340,6 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
     D2SetsTxt* pSetsTxt;
     D2SetItemsTxt* pSetItemsTxt;
     D2ItemsTxt* pItemsTxt;
-    int32_t nBitsPos;
     D2ItemStatCostTxt* pStatCostTxt;
     uint32_t nTmpVal2;
     int nStatVal;
@@ -4378,6 +4371,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
     eD2ItemQuality eQualityType;
     bool bExtended;
     eD2UnitStat eStatId;
+    int32_t nBitWidth;
     int bError;
     bError = 0;
     uint32_t nBitsRead;
@@ -4805,12 +4799,12 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
           nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 1);
           nClassId = 0;
           if (!nBitVal) {
-            nBitsPos = 0xc;
+            nBitWidth = 0xc;
           } else {
-            nBitsPos = 0x20;
+            nBitWidth = 0x20;
           }
 
-          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, nBitsPos);
+          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, nBitWidth);
           eStatId = UNITSTAT_gold;
           goto store_gold_or_durability;
         }
@@ -4890,24 +4884,24 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
 
         nBitVal = ITEM_GetItemData_eD2ItemFlag_IsEthereal(pUnit);
         if (nBitVal) {
-          nBitsPos = 0;
+          nBitWidth = 0;
           nClassId = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_mindamage, 0);
-          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mindamage, nClassId * 3 / 2, nBitsPos);
-          nBitsPos = 0;
+          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mindamage, nClassId * 3 / 2, nBitWidth);
+          nBitWidth = 0;
           nClassId = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_maxdamage, 0);
-          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxdamage, nClassId * 3 / 2, nBitsPos);
-          nBitsPos = 0;
+          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxdamage, nClassId * 3 / 2, nBitWidth);
+          nBitWidth = 0;
           nClassId = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_secondary_mindamage, 0);
-          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_mindamage, nClassId * 3 / 2, nBitsPos);
-          nBitsPos = 0;
+          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_mindamage, nClassId * 3 / 2, nBitWidth);
+          nBitWidth = 0;
           nClassId = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, 0);
-          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, nClassId * 3 / 2, nBitsPos);
-          nBitsPos = 0;
+          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, nClassId * 3 / 2, nBitWidth);
+          nBitWidth = 0;
           nClassId = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, 0);
-          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, nClassId * 3 / 2, nBitsPos);
-          nBitsPos = 0;
+          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, nClassId * 3 / 2, nBitWidth);
+          nBitWidth = 0;
           nClassId = Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_item_throw_maxdamage, 0);
-          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_maxdamage, nClassId * 3 / 2, nBitsPos);
+          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_maxdamage, nClassId * 3 / 2, nBitWidth);
         }
         if (sgptDataTable->nTxtItemStatCostSize < 0x4a) {
           pStatCostTxt = 0;
@@ -4995,12 +4989,12 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
     if (bIsStackable) {
       nClassId = 0;
       if (nParam2 < 0x51) {
-        nBitsPos = 8;
+        nBitWidth = 8;
       } else {
-        nBitsPos = 9;
+        nBitWidth = 9;
       }
 
-      nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, nBitsPos);
+      nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, nBitWidth);
       Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_quantity, nBitVal, nClassId);
     }
     if (!pUnit || pUnit->eUnitType != UNIT_ITEM || !pUnit->pUnitData.pUnitDataItem) {
@@ -5483,7 +5477,7 @@ void __stdcall ExtractItemDetails(uint8_t * pBytesAfterId, size_t size, BOOL isS
 }
 
 // Deserialises an item unit from a binary save-data bit buffer into pUnit. Validates the 0x4D4A ("JM") magic header when nParam1 is set, reads the 32-bit item flags word, strips invalid flags, resets all affix/prefix/suffix fields on the unit to clean state, then delegates to ITEM_DeserializeFromBitBuffer (full items) or ITEMS_DeserializeItemHeader (compact items). Returns the number of bits consumed.
-int32_t __stdcall ITEM_LoadFromSaveData(D2UnitStrc * pUnit, uint8_t * pbParam, size_t nSize, uint32_t nParam1, uint32_t * pnParam, uint32_t nParam2, D2UnitDataItemDetailsStrc * pUnitDataItemDetails) {
+int32_t __stdcall ITEM_LoadFromSaveData(D2UnitStrc * pUnit, uint8_t * pbParam, size_t nSize, uint32_t nParam1, uint32_t * pnParam, uint32_t nParam2, int * pUnitDataItemDetails) {
     int32_t nBitsConsumed;
     int32_t nDeserializeResult;
     D2BitBufferStrc sBitBuffer;
@@ -5491,12 +5485,12 @@ int32_t __stdcall ITEM_LoadFromSaveData(D2UnitStrc * pUnit, uint8_t * pbParam, s
     if (nParam1) {
       nBitsConsumed = Fog::BitBuffer::ReadSigned(&sBitBuffer, 0x10);
       if (nBitsConsumed != 0x4d4a) {
-        pUnitDataItemDetails->classId = 1;
+        *pUnitDataItemDetails = 1;
         return 0;
       }
     }
 
-    pUnitDataItemDetails->classId = 0;
+    *pUnitDataItemDetails = 0;
     eD2ItemFlag eItemFlags = Fog::BitBuffer::ReadUnsigned(&sBitBuffer, 0x20);
     bool bIsExtended = (eItemFlags & ITEMFLAG_CRUDE) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD);
     if (bIsExtended) {
@@ -5572,7 +5566,7 @@ int32_t __stdcall ITEM_LoadFromSaveData(D2UnitStrc * pUnit, uint8_t * pbParam, s
       }
     }
     if (nDeserializeResult < 1) {
-      pUnitDataItemDetails->classId = 1;
+      *pUnitDataItemDetails = 1;
     }
 
     nBitsConsumed = Fog::BitBuffer::GetNextPositon(&sBitBuffer);
@@ -5581,8 +5575,8 @@ int32_t __stdcall ITEM_LoadFromSaveData(D2UnitStrc * pUnit, uint8_t * pbParam, s
 
 // Returns 1 if pUnit (item) is replenishable (throwable, stackable, non-ethereal, and its ItemTypesTxt entry has the repair flag set). Returns 0 for non-item units or items that fail any condition. Halts on null pUnit.
 BOOL ITEM_IsReplenishable(D2UnitStrc * pUnit) {
-    int32_t nErrAddress;
     eD2ItemTypes eItemType;
+    int32_t nErrLine;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x67d);
       exit(-1);
@@ -5599,8 +5593,8 @@ BOOL ITEM_IsReplenishable(D2UnitStrc * pUnit) {
       return 0;
     }
 
-    nErrAddress = ITEM_GetTxtItemTypes_throwable(pUnit);
-    if (!nErrAddress) {
+    nErrLine = ITEM_GetTxtItemTypes_throwable(pUnit);
+    if (!nErrLine) {
       return 0;
     }
 
@@ -5759,7 +5753,7 @@ uint8_t __stdcall ITEM_GetTxtItemTypes_varinvgfx(D2UnitStrc * pUnit) {
 
 D2Row_char_32 * __stdcall ITEM_GetTxtItemTypes_invgfx(D2UnitStrc * pUnit, uint32_t nParam) {
     // Static local variables (originally global data)
-    static char * gpszItemNoInvGfx = (char *)&lpDefault_006cc837;
+    static char * gpszItemNoInvGfx = (char *)&lpDefault_006cc837; D2_STATIC_GUARD(gpszItemNoInvGfx, "D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_invgfx::gpszItemNoInvGfx");
 
     if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
       return (D2Row_char_32*)(char (*)[32])gpszItemNoInvGfx;
@@ -6563,8 +6557,8 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
     HaltInternalError:
     /* Shared assert-halt tail (GetInstructionPointer +
                          ERROR_UnrecoverableInternalError_Halt + _exit): the 0xbba site falls through
-                         from 0062f283 and the 0xcdc site jumps here from 0062faa7. */ nErrorAddress = Fog::Src::ErrorManager::GetInstructionPointer();
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", nErrorAddress, iVar3);
+                         from 0062f283 and the 0xcdc site jumps here from 0062faa7. */ pBooksTxt = Fog::Src::ErrorManager::GetInstructionPointer();
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", pBooksTxt, iVar3);
     exit(-1);
     add_stat_costs:
     add_stat_costs_args_pushed:

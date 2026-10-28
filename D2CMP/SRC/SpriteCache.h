@@ -121,13 +121,13 @@ struct DC6Block * SPRITECACHE_GetFrameBlock(struct D2CelCacheBlockStrc * pCacheB
 // @sourcefile .\SRC\SpriteCache.cpp
 void __stdcall SPRITECACHE_LoadAndCacheDC6(struct D2CelFileCacheEntryStrc * pCelEntry, struct D2GfxDataStrc * pGfxData, struct D2CelCacheBlockStrc * pCacheBlock);
 uint32_t __stdcall SPRITECACHE_GetTotalEntries();
-void * __stdcall SPRITECACHE_GetCacheSize();
-BYTE * __stdcall SPRITECACHE_GetMaxSize();
-BYTE * __stdcall SPRITECACHE_GetCurrentSize();
+uint32_t __stdcall SPRITECACHE_GetCacheSize();
+int __stdcall SPRITECACHE_GetMaxSize();
+uint32_t __stdcall SPRITECACHE_GetCurrentSize();
 // @sourcefile .\SRC\SpriteCache.cpp
 void __fastcall GFX_AllocSpriteCache(struct D2GfxMemoryStrc * pGfxMemory, struct D2PoolManagerStrc * pMemory, void * pMaxMemory, fnSpriteCacheEntryRelease pfnReleaseEntry);
 void __stdcall SPRITECACHE_EvictOldest(int32_t nParam1, int32_t nParam2, int32_t nParam3);
-int32_t __fastcall SPRITECACHE_AddToLRU(uint32_t dwParam, int32_t nParam, int32_t bPriority);
+struct D2SpriteCacheEntryStrc * __fastcall SPRITECACHE_AddToLRU(uint32_t dwParam, struct D2GfxMemoryStrc * nParam, int32_t bPriority);
 void SPRITECACHE_RemoveFromLRU(int32_t nParam1, int32_t nParam2);
 // Counts the LRU cache blocks whose async load has not completed (ASYNCDATA_IsComplete == 0); halts on a block with no pAsyncData.
 // It frees nothing, it only counts (returns nPendingCount).
@@ -138,7 +138,7 @@ BOOL __stdcall SPRITECACHE_IsLoadPending(eD2UnitType eUnitType, int32_t nMode, i
 // Frees the async request of every LRU cache block whose load is still pending and clears tDecode.pAsyncData.
 // Completed blocks are left untouched.
 void __stdcall SPRITECACHE_CancelPendingLoads();
-int32_t __stdcall SPRITECACHE_Query(int32_t nParam1, int32_t nParam2, struct D2GfxMemoryStrc * pGfxMemory);
+struct D2SpriteCacheEntryStrc * __stdcall SPRITECACHE_Query(int32_t nParam1, int32_t nParam2, struct D2GfxMemoryStrc * pGfxMemory);
 // @sourcefile .\SRC\SpriteCache.cpp
 struct D2SpriteCacheEntryStrc * __fastcall SPRITECACHE_EvictEntry(struct D2GfxMemoryStrc * pGfxMemory, struct D2SpriteCacheEntryStrc * pCandidate, uint32_t bPreferOld);
 void __fastcall SPRITECACHE_AllocateMemory(void * pCache, int32_t nParam2);

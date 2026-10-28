@@ -168,7 +168,7 @@ void __fastcall UNITS_UnlinkUnitFromRoom(struct D2UnitStrc * pUnit, ::SGAMEDATA 
 void __fastcall FreeServerUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // 2022.01.09 - dzik
 void __fastcall FreeWarpUnits(::SGAMEDATA * pGame);
-uint32_t __fastcall SpawnUnitByType(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, eD2UnitType eUnitType, int nClassId, int32_t nX, int32_t nY, int32_t bInitItem, uint32_t dwParam8);
+struct D2UnitStrc * __fastcall SpawnUnitByType(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, eD2UnitType eUnitType, int nClassId, int32_t nX, int32_t nY, int32_t bInitItem, uint32_t dwParam8);
 void __fastcall SUNIT_SpawnPresetUnit(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2PresetUnitStrc * pPresetUnit);
 // Iterates all preset units in a room and spawns them via SUNIT_SpawnPresetUnit, with special-case filtering for Uber areas. In LEVEL_UberTristram: skips object class IDs 0x10c, 0x1a, 0x10d (Uber boss triggers). In LEVEL_MatronsDen and LEVEL_FurnaceofPain: skips object 0x18d. In LEVEL_ForgottenSands: skips object 0x192 and uses the game seed to decide which of a random 3-slot uber-object set to spawn. Non-monster presets are processed first; monsters are spawned in a second pass (skipped for UberTristram).
 void __fastcall SUNIT_SpawnPresetUnitsForRoom(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom);

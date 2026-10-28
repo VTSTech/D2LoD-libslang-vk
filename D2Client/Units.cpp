@@ -131,7 +131,7 @@ BOOL __fastcall GFXUTIL_UnitHasAnimMode(D2UnitStrc * pUnit, uint32_t nMode) {
       break;
       case UNIT_MONSTER:
         pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
-      if (pMonStats2 && (uint8_t)gadwBitMasks[nMode & 7] & pMonStats2->aCompCodes[((int)nMode >> 3) + 0xc2]) {
+      if (pMonStats2 && (uint8_t)gadwBitMasks[nMode & 7] & pMonStats2->HD[(int)nMode >> 3]) {
         return 1;
       }
 

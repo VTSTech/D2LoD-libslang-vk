@@ -10,6 +10,7 @@
 
 // Forward declarations
 struct D2BitBufferStrc;
+struct D2CoordStrc;
 struct D2ObjectInitFnArg;
 struct D2ObjectOperateFnArg;
 struct D2QuestArgStrc;
@@ -66,7 +67,7 @@ BOOL __fastcall Q14_CheckDurielProximity(::SGAMEDATA * pGame, struct D2UnitStrc 
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 BOOL __fastcall Q12_IsSanctuaryComplete(::SGAMEDATA * pGame);
 // A2Q4 - GetSummonerCoords. Outputs the Summoner location into pnParam[0/1]. If bSummonerKilled, returns exact (X,Y); if bSummonerCoordsFallback, returns (X, Y-4). Returns 1 if coords written, else 0. Used to place the Canyon-of-the-Magi portal near where the Summoner was.
-BOOL __fastcall Q12_GetSummonerCoords(::SGAMEDATA * pGame, int * pnParam);
+BOOL __fastcall Q12_GetSummonerCoords(::SGAMEDATA * pGame, struct D2CoordStrc * pCoord);
 // A2Q4 - CheckJustCompleted. Per-player iterator: reads (queries, does not write) the JustCompleted(0xd) bit of the Sanctuary record for each player. Side-effect-free probe used during the staff-altar operate flow alongside CheckArcaneAndReward/SetCannotComplete.
 BOOL __fastcall Q12_CheckJustCompleted(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // A2Q4 - OBJOP_StaffOfKingsAltar (object operate fn 42). Operating the Staff/Sanctuary altar object: sets the object death/update event, sends NPC-info packet 0x18c, records the room, and if quest is introduced and not yet at stateFlag 5 advances to 5 and runs the per-player iterators CheckArcaneAndReward (grant), SetCannotComplete, and CheckJustCompleted.

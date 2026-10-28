@@ -6,6 +6,7 @@
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/SCmd.h"
+#include "D2Client/UI/Chat.h"
 #include "D2Client/UI/Draw.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Launch/CharSel.h"
@@ -102,56 +103,47 @@ void __fastcall NET_D2GS_CLIENT_Send_0x6B(char * pBytes) {
 // Client-side keep-alive ping sender. Throttled to once per 5 seconds (gdwLastPingSentTick). Computes an anti-cheat/Warden checksum by reading 2 bytes each from two offsets in a named module via ReadProcessMemory; sends packet 0x6D containing the current tick, the computed checksum (obfuscated), and half the game data delay. Updates gnPacketSendCount_0x69 and _gbNetworkPacketSyncFlag after send.
 void __stdcall NET_D2GS_CLIENT_Send_0x6D_PING() {
     // Static local variables (originally global data)
-    static unsigned int gdwLastPingSentTick;
+    static unsigned int gdwLastPingSentTick; D2_STATIC_GUARD_BSS(gdwLastPingSentTick, "D2Client::GAME::Msg::NET_D2GS_CLIENT_Send_0x6D_PING::gdwLastPingSentTick");
 
-    // Frame slots -24..-4 are ONE object: &nObfModuleName is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nObfModuleName;
-      int nObfAddr2;
-      uint8_t byNameTerminator;
-      uint8_t __pad9[3];
-      uint16_t wReadWord1[2];
-      uint16_t wReadWord2[2];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     HANDLE hProcess;
     BOOL bReadOk;
     uint32_t nWardenChecksum;
     D2GSPacketClt0x6D packet;
+    char szModuleName[9];
+    uint16_t wReadWord1[2];
+    uint16_t wReadWord2[2];
     SIZE_T nBytesToRead;
     LPCVOID pBaseAddr;
     SIZE_T* pBytesRead;
     LPCVOID pReadAddr;
     uint16_t* pReadBuffer;
-    __frame0.nObfModuleName = gClientGameData.gnWardenChecksumModuleName * 0x470e31c1;
-    __frame0.nObfAddr2 = gClientGameData.gnWardenChecksumAddr2 * 0x470e31c1;
+    *(uint32_t*)(char*)&szModuleName = gClientGameData.gnWardenChecksumModuleName * 0x470e31c1;
+    *(uint32_t*)((char*)&szModuleName + 4) = gClientGameData.gnWardenChecksumAddr2 * 0x470e31c1;
     int nModuleOffset = gClientGameData.gnWardenChecksumModuleOffset * 0x470e31c1;
-    __frame0.byNameTerminator = 0;
-    if ((char)__frame0.nObfModuleName == '\0') {
+    szModuleName[8] = '\0';
+    if ((char)*(uint32_t*)(char*)&szModuleName == '\0') {
       nWardenChecksum = 0;
     } else {
       HMODULE hModule;
       /* LPCSTR lpModuleName for GetModuleHandleA */ nWardenChecksum = 0xcccccccc;
-      hModule = GetModuleHandleA((LPCSTR)&__frame0.nObfModuleName);
+      hModule = GetModuleHandleA(szModuleName);
       if (hModule) {
         /* SIZE_T * lpNumberOfBytesRead for ReadProcessMemory */ pBytesRead = 0;
         pReadAddr = (LPCVOID)(nModuleOffset + (int)hModule);
         /* SIZE_T nSize for ReadProcessMemory */ nBytesToRead = 2;
-        pReadBuffer = __frame0.wReadWord1;
+        pReadBuffer = wReadWord1;
         pBaseAddr = pReadAddr;
         /* LPVOID lpBuffer for ReadProcessMemory */ /* LPCVOID lpBaseAddress for ReadProcessMemory */ hProcess = GetCurrentProcess();
         /* HANDLE hProcess for ReadProcessMemory */ bReadOk = ReadProcessMemory(hProcess, pBaseAddr, pReadBuffer, nBytesToRead, pBytesRead);
         if (bReadOk) {
           /* SIZE_T * lpNumberOfBytesRead for ReadProcessMemory */ pBytesRead = 0;
           /* SIZE_T nSize for ReadProcessMemory */ nBytesToRead = 2;
-          pReadBuffer = __frame0.wReadWord2;
+          pReadBuffer = wReadWord2;
           /* LPVOID lpBuffer for ReadProcessMemory */ pReadAddr = (LPCVOID)((int)pReadAddr + 0x20);
           /* LPCVOID lpBaseAddress for ReadProcessMemory */ hProcess = GetCurrentProcess();
           /* HANDLE hProcess for ReadProcessMemory */ bReadOk = ReadProcessMemory(hProcess, pReadAddr, pReadBuffer, nBytesToRead, pBytesRead);
           if (bReadOk) {
-            nWardenChecksum = (((uint32_t)(__frame0.wReadWord2[0] >> 8) << 8 | __frame0.wReadWord2[0] & 0xff) << 8 | (uint32_t)(__frame0.wReadWord1[0] >> 8)) << 8 | __frame0.wReadWord1[0] & 0xff;
+            nWardenChecksum = (((uint32_t)(wReadWord2[0] >> 8) << 8 | wReadWord2[0] & 0xff) << 8 | (uint32_t)(wReadWord1[0] >> 8)) << 8 | wReadWord1[0] & 0xff;
           }
         }
       }
@@ -307,21 +299,10 @@ void __fastcall LOADING_AnimateProgressBar(int32_t nCurrentChunk, int32_t nTotal
 // Sends the player's save file to the game server as a stream of 0x6C (ASCII 'l') packets. Reads the entire save buffer via MSG_ReadSaveFileToBuffer, then sends it in 255-byte chunks followed by a final tail packet. Optionally animates a loading progress bar (bAnimate != 0). Updates gnPacketSendCount_0x69 and the network sync flag after each chunk.
 // @sourcefile .\GAME\Msg.cpp
 void __fastcall NET_D2GS_CLIENT_Send_0x6C(int32_t bAnimate) {
-    // Frame slots -280..-278 are ONE object: &packetId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      char packetId;
-      uint8_t byChunkLen;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 2, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int nBytesCopied;
-    size_t nTotalFileSize;
-    uint8_t chunkData[258];
+    D2GSPacketClt0x6C sPacket;
     size_t nChunkIndex = 0;
-    int32_t bAnimateLocal = bAnimate;
     uint8_t* pReadPtr = MSG_ReadSaveFileToBuffer(&nChunkIndex);
-    uint8_t* pSaveBuffer = pReadPtr;
     if (!pReadPtr) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x232);
       exit(-1);
@@ -333,22 +314,23 @@ void __fastcall NET_D2GS_CLIENT_Send_0x6C(int32_t bAnimate) {
     size_t nFileSize = nChunkIndex;
     int nTotalChunks = (int)nChunkIndex / 0xff;
     nChunkIndex = 0;
+    uint8_t* pbVar1 = pReadPtr;
     if (0 < nTotalChunks) {
       do {
-        __frame0.packetId = 'l';
-        nTotalFileSize = nFileSize;
-        __frame0.byChunkLen = 0xff;
+        sPacket.nId = 'l';
+        sPacket.nTotalSize = nFileSize;
+        sPacket.nChunkSize = 0xff;
         nBytesCopied = 0;
         do {
-          chunkData[nBytesCopied] = *pReadPtr;
+          sPacket.aData[nBytesCopied] = *pbVar1;
           nBytesCopied++;
-          pReadPtr++;
+          pbVar1++;
         } while (nBytesCopied < 0xff);
 
-        D2Net::SRC::Client::NET_D2GS_CLIENT_SendPacketAfterChecks(0x106, 0, &__frame0.packetId);
+        D2Net::SRC::Client::NET_D2GS_CLIENT_SendPacketAfterChecks(0x106, 0, (char*)&sPacket);
         gnD2GSBytesSentTotal += 0x106;
         gnD2GSPacketsSentTotal++;
-        if (bAnimateLocal) {
+        if (bAnimate) {
           LOADING_AnimateProgressBar(nChunkIndex, nTotalChunks);
         }
 
@@ -358,21 +340,21 @@ void __fastcall NET_D2GS_CLIENT_Send_0x6C(int32_t bAnimate) {
 
     nBytesCopied = (int)nFileSize % 0xff;
     int nTailBytes = 0;
-    __frame0.packetId = 'l';
-    nTotalFileSize = nFileSize;
-    __frame0.byChunkLen = (uint8_t)nBytesCopied;
+    sPacket.nId = 'l';
+    sPacket.nTotalSize = nFileSize;
+    sPacket.nChunkSize = (uint8_t)nBytesCopied;
     if (0 < nBytesCopied) {
       do {
-        chunkData[nTailBytes] = *pReadPtr;
+        sPacket.aData[nTailBytes] = *pbVar1;
         nTailBytes++;
-        pReadPtr++;
+        pbVar1++;
       } while (nTailBytes < nBytesCopied);
     }
 
-    D2Net::SRC::Client::NET_D2GS_CLIENT_SendPacketAfterChecks(nBytesCopied + 7U, 0, &__frame0.packetId);
+    D2Net::SRC::Client::NET_D2GS_CLIENT_SendPacketAfterChecks(nBytesCopied + 7U, 0, (char*)&sPacket);
     gnD2GSBytesSentTotal = gnD2GSBytesSentTotal + nBytesCopied + 7U;
     gnD2GSPacketsSentTotal++;
-    D2_FREE(pSaveBuffer);
+    D2_FREE(pReadPtr);
     if (nTotalChunks) {
       gnLoadingProgressRatio = (nTotalChunks << 8) / nTotalChunks;
       return;
@@ -897,8 +879,8 @@ void __stdcall NET_D2GS_CLIENT_Send(uint8_t * pBytes, int32_t nSize) {
     0,
     0,
     0
-};
-    static unsigned int gdwLastPacketSendTick;
+}; D2_STATIC_GUARD(gaLastSentPacketBuffer, "D2Client::GAME::Msg::NET_D2GS_CLIENT_Send::gaLastSentPacketBuffer");
+    static unsigned int gdwLastPacketSendTick; D2_STATIC_GUARD_BSS(gdwLastPacketSendTick, "D2Client::GAME::Msg::NET_D2GS_CLIENT_Send::gdwLastPacketSendTick");
 
     uint32_t nRemaining;
     int nCmpResult;
@@ -1152,34 +1134,24 @@ void __fastcall NET_D2GS_CLIENT_Send_0x5E(uint8_t nActionType, int32_t nPlayerGU
     NET_D2GS_CLIENT_Send(&local_c.nId, 6);
 }
 
-void __fastcall NET_D2GS_CLIENT_Send_Chat(uint8_t * pbParam) {
-    // Frame slots -520..-4 are ONE object: &byPacketId is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint8_t byPacketId;
-      uint8_t byHeader1;
-      uint8_t byHeader2;
-      char szMessage;
-      char aMsgBody[512];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 516, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+void __fastcall NET_D2GS_CLIENT_Send_Chat(D2ChatPacketBuildStrc * pChatPacket) {
     char* pcVar1;
-    __frame0.byPacketId = *pbParam;
-    __frame0.byHeader1 = pbParam[1];
-    __frame0.byHeader2 = pbParam[2];
-    uint32_t nMsgLen = Storm::Source::SSTR::SStrCopy(&__frame0.szMessage, (char*)(pbParam + 3), 0x100);
-    if (!(pbParam + 0x103)) {
-      __frame0.aMsgBody[nMsgLen] = '\0';
-      pcVar1 = __frame0.aMsgBody + nMsgLen + 1;
+    D2ChatPacketSendStrc sPacket;
+    sPacket.nCmd = pChatPacket->nCmd;
+    sPacket.nMsgType = pChatPacket->nMsgType;
+    sPacket.nIMEMode = pChatPacket->nIMEMode;
+    uint32_t nMsgLen = Storm::Source::SSTR::SStrCopy(sPacket.abData, pChatPacket->szMsg, 0x100);
+    if (!pChatPacket->szTarget) {
+      sPacket.abData[nMsgLen + 1] = '\0';
+      pcVar1 = sPacket.abData + nMsgLen + 2;
     } else {
       uint32_t nTargetLen;
-      nTargetLen = Storm::Source::SSTR::SStrCopy(__frame0.aMsgBody + nMsgLen, (char*)(pbParam + 0x103), 0x10);
-      pcVar1 = __frame0.aMsgBody + nTargetLen + nMsgLen + 1;
+      nTargetLen = Storm::Source::SSTR::SStrCopy(sPacket.abData + nMsgLen + 1, pChatPacket->szTarget, 0x10);
+      pcVar1 = sPacket.abData + nTargetLen + nMsgLen + 2;
     }
 
     *pcVar1 = '\0';
-    NET_D2GS_CLIENT_Send(&__frame0.byPacketId, (int32_t)(pcVar1 + (1 - (uintptr_t)&__frame0.byPacketId)));
+    NET_D2GS_CLIENT_Send(&sPacket.nCmd, (int32_t)(pcVar1 + (1 - (uintptr_t)&sPacket)));
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_0x66(void * pData, uint32_t nLen) {

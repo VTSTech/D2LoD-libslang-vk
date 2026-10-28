@@ -25,6 +25,12 @@ struct D2PacketListStrc {
     /* 0x204 */ struct D2PacketListStrc * pNext; // next list in the client's send / free chain (+0x204)
 };
 
+struct D2UnitProximityNodeStrc {
+    /* 0x00 */ struct D2UnitStrc * pUnit;
+    /* 0x04 */ uint32_t nDistance;
+    /* 0x08 */ uint32_t nNext; // index of the next node, 0 = end; node 0 is the list head
+};
+
 namespace D2Game::GAME::Clients {
 
 // Function declarations
@@ -46,9 +52,9 @@ void __fastcall FreeClientList(::SGAMEDATA * pGame);
 // Server-side handler invoked when a client's active room changes (pRoom = new room). If different from the client's current room, swaps room data/active-room-ex between the old and new levels, then diffs the adjacency lists: reveals and streams units for newly-adjacent rooms (CLIENT_RevealRoomAndSendUnits) and clears/hides map for rooms no longer adjacent (RoomClearForClientAndHideMap), re-resolving the client's player unit and issuing a movement/position packet update when the client's own room is cleared. Updates pClient->pRoom and OR-merges the new level's portal flag into the player's explored-portal flags. Custom calling convention: pClient in ESI, pRoom on stack.
 void __stdcall GAME_OnClientRoomChange(struct D2RoomStrc * pRoom, struct D2ClientStrc * pClient);
 // Inserts a player unit into a client's bounded nearest-units list kept sorted by Manhattan distance. Computes |nX-unitX|+|nY-unitY| using the unit's static (objects) or dynamic path position, then maintains an intrusive singly-linked sorted list of up to nMaxSlots entries (each entry = {pUnit, dist, nextLink}, head link at pSortList[2]; current count at pClient->nPacketBuffer+500). If full and the new unit is nearer than the farthest, evicts the tail; otherwise allocates the next free slot. Splices the entry into distance order and updates *ppnMaxDist (the running worst kept distance). Only acts on UNIT_PLAYER units. Custom calling convention: nX in EAX, pSortList in ESI, rest on stack.
-void __stdcall CLIENT_AddUnitToProximitySortedList(int32_t nX, struct D2UnitStrc * pUnit, int32_t nY, int32_t * ppnMaxDist, struct D2ClientStrc * pClient, uint32_t nMaxSlots, uint32_t * pSortList);
+void __stdcall CLIENT_AddUnitToProximitySortedList(int32_t nX, struct D2UnitStrc * pUnit, int32_t nY, int32_t * ppnMaxDist, struct D2ClientStrc * pClient, uint32_t nMaxSlots, struct D2UnitProximityNodeStrc * pNodes);
 // Serialises a proximity-sorted unit list into the client's nPacketBuffer for the visibility update packet. Iterates slots in the sort list writing 9-byte records: unit type (byte), GUID (dword), X position (word), Y position (word). Increments the buffer count per slot and follows the linked sort-list until a null slot is encountered. Called by GAME_CollectNearbyUnitPositions after building the sorted list.
-void __stdcall CLIENT_PopulateVisibilityPacketBuffer(int * * ppnSortList, struct D2ClientStrc * pClient);
+void __stdcall CLIENT_PopulateVisibilityPacketBuffer(struct D2UnitProximityNodeStrc * pNodes, struct D2ClientStrc * pClient);
 // Builds a proximity-sorted list of up to nParam units from all adjacent rooms around the client's current room and serialises them into the client's packet buffer. Gets the player unit's world position, iterates every unit in adjacent rooms via CLIENT_AddUnitToProximitySortedList, then calls CLIENT_PopulateVisibilityPacketBuffer. Halts fatally if pClient->pRoom is null or the adjacent-room list is unavailable.
 void __fastcall GAME_CollectNearbyUnitPositions(struct D2ClientStrc * pClient, uint32_t nParam);
 // Per-frame update for one connected client. Sends remove-object packets for stale adjacent rooms, sends adjacent-room unit updates, flushes changed stats to the player, recalculates inventory if the refresh flag is set, increments the room ticker, and on a room change fires quest and NPC-intro callbacks and calls GAME_OnClientRoomChange. Finishes by linking the player unit into the update list.

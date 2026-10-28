@@ -13,7 +13,6 @@ struct D2ControlMsg;
 struct D2ControlStrc;
 struct D2WinEditBox;
 struct DC6;
-typedef int eD2FormType;
 #ifndef RECON_FPTD_OnPress
 #define RECON_FPTD_OnPress
 typedef BOOL (__stdcall *OnPress)(struct D2ControlMsg * pControlMsg);
@@ -66,8 +65,8 @@ void __fastcall D2WINEDITBOX_LinkTabOrder(::D2WinEditBox * pEditBox, ::D2WinEdit
 int32_t __stdcall D2WINEDITBOX_HandleMouseClick(int * pEditBox, short * pszWideText);
 // Calculate text cursor position from edit box state. Iterates text lines and calculates pixel X,Y position of cursor based on character index. Outputs screen coordinates via pX and pY.
 void __stdcall D2WINEDITBOX_HandleTextSelection(int * pEditBox, int * pX, int * pY);
-BOOL __stdcall Mouse(::D2WinEditBox * pEditBox);
-BOOL __stdcall D2WINEDITBOX_CreateControl(struct D2ControlStrc * pControl, eD2FormType eFormType, struct DC6 * pDC6);
+BOOL __stdcall Mouse(struct D2ControlMsg * pEditBox);
+BOOL __stdcall D2WINEDITBOX_CreateControl(struct D2ControlMsg * pControl, int eFormType, int pDC6);
 BOOL __stdcall Push(struct D2ControlMsg * pControlMsg);
 int __stdcall D2WINEDITBOX_Unused_Placeholder_7(uint32_t dwUnused1, uint32_t dwUnused2, char * szText);
 uint32_t __stdcall D2WINEDITBOX_Unused_Placeholder_8(uint32_t dwUnused1, uint32_t dwUnused2, char * szText);

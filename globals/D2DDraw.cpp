@@ -1547,14 +1547,14 @@ PALETTEENTRY gaPaletteEntries[256] = {
         /* .peBlue = */ 0,
         /* .peFlags = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(gaPaletteEntries, "gaPaletteEntries");
 
 GUID gGlideOpenWindowConfig = {
     /* .Data1 = */ 0,
     /* .Data2 = */ 0,
     /* .Data3 = */ 0,
     /* .Data4 = */ { 0, 0, 0, 0, 0, 0, 0, 0 }
-};
+}; D2_GLOBAL_GUARD(gGlideOpenWindowConfig, "gGlideOpenWindowConfig");
 
 uint32_t gaD2ddDebugFontCharOffsets[96] = {
     0,
@@ -1653,7 +1653,7 @@ uint32_t gaD2ddDebugFontCharOffsets[96] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaD2ddDebugFontCharOffsets, "gaD2ddDebugFontCharOffsets");
 
 void * lpBuffer_00881428[96] = {
     nullptr,
@@ -1752,7 +1752,7 @@ void * lpBuffer_00881428[96] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(lpBuffer_00881428, "lpBuffer_00881428");
 
 uint8_t gaSmackerPaletteRemap[260] = {
     0,
@@ -2015,30 +2015,30 @@ uint8_t gaSmackerPaletteRemap[260] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gaSmackerPaletteRemap, "gaSmackerPaletteRemap");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-int gnDirectDrawPaletteSize = 0x64;
-uint32_t gnDirectDrawGamma = 0x64;
-uint32_t gdwDDrawInitFlags = 0;
-uint32_t gnDDrawSurfaceWidth = 0;
-uint32_t gnDDrawDisplayModeIndex = 0;
-uint32_t gnDDrawSurfaceHeight = 0;
-uint32_t gbDDrawWindowInitialized = 0;
-uint32_t gnCutSceneActiveFlag = 0;
-IDirectDraw1 * pWindowHandleBuffer = 0;
-IDirectDrawSurface1 * gpDDrawBackBuffer = 0;
-IDirectDrawSurface1 * pDirectDrawSurface = 0;
-IDirectDrawPalette * pDirectDrawPalette = 0;
-uint32_t gnDDrawFlipState = 0;
-uint32_t gnDDrawPaletteSize = 0;
-uint32_t gnDDrawSurfaceXMin = 0;
-uint32_t gnDDrawRenderWidth = 0;
-D2ddDebugFont * gpD2ddDebugFont = 0;
-uint32_t gbSmackerPaletteDirty = 0;
+int gnDirectDrawPaletteSize = 0x64; D2_GLOBAL_GUARD(gnDirectDrawPaletteSize, "gnDirectDrawPaletteSize");
+uint32_t gnDirectDrawGamma = 0x64; D2_GLOBAL_GUARD(gnDirectDrawGamma, "gnDirectDrawGamma");
+uint32_t gdwDDrawInitFlags = 0; D2_GLOBAL_GUARD(gdwDDrawInitFlags, "gdwDDrawInitFlags");
+uint32_t gnDDrawSurfaceWidth = 0; D2_GLOBAL_GUARD(gnDDrawSurfaceWidth, "gnDDrawSurfaceWidth");
+uint32_t gnDDrawDisplayModeIndex = 0; D2_GLOBAL_GUARD(gnDDrawDisplayModeIndex, "gnDDrawDisplayModeIndex");
+uint32_t gnDDrawSurfaceHeight = 0; D2_GLOBAL_GUARD(gnDDrawSurfaceHeight, "gnDDrawSurfaceHeight");
+uint32_t gbDDrawWindowInitialized = 0; D2_GLOBAL_GUARD(gbDDrawWindowInitialized, "gbDDrawWindowInitialized");
+uint32_t gnCutSceneActiveFlag = 0; D2_GLOBAL_GUARD(gnCutSceneActiveFlag, "gnCutSceneActiveFlag");
+IDirectDraw1 * pWindowHandleBuffer = 0; D2_GLOBAL_GUARD(pWindowHandleBuffer, "pWindowHandleBuffer");
+IDirectDrawSurface1 * gpDDrawBackBuffer = 0; D2_GLOBAL_GUARD(gpDDrawBackBuffer, "gpDDrawBackBuffer");
+IDirectDrawSurface1 * pDirectDrawSurface = 0; D2_GLOBAL_GUARD(pDirectDrawSurface, "pDirectDrawSurface");
+IDirectDrawPalette * pDirectDrawPalette = 0; D2_GLOBAL_GUARD(pDirectDrawPalette, "pDirectDrawPalette");
+uint32_t gnDDrawFlipState = 0; D2_GLOBAL_GUARD(gnDDrawFlipState, "gnDDrawFlipState");
+uint32_t gnDDrawPaletteSize = 0; D2_GLOBAL_GUARD(gnDDrawPaletteSize, "gnDDrawPaletteSize");
+uint32_t gnDDrawSurfaceXMin = 0; D2_GLOBAL_GUARD(gnDDrawSurfaceXMin, "gnDDrawSurfaceXMin");
+uint32_t gnDDrawRenderWidth = 0; D2_GLOBAL_GUARD(gnDDrawRenderWidth, "gnDDrawRenderWidth");
+D2ddDebugFont * gpD2ddDebugFont = 0; D2_GLOBAL_GUARD(gpD2ddDebugFont, "gpD2ddDebugFont");
+uint32_t gbSmackerPaletteDirty = 0; D2_GLOBAL_GUARD(gbSmackerPaletteDirty, "gbSmackerPaletteDirty");
 
 namespace D2Common::Drlg::Maze {
 
@@ -2368,10 +2368,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -2379,6 +2375,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

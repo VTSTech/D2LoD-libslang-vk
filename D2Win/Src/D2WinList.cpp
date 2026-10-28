@@ -2,7 +2,7 @@
 
 #include "D2Win/Src/D2WinList.h"
 #include "D2Client/D2ControlStrc.h"
-#include "D2Glide/Renderer/Glide.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/MainMenus.h"
@@ -298,7 +298,7 @@ BOOL __fastcall Draw(::D2WinList * pList) {
 
 BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
     // Static local variables (originally global data)
-    static unsigned int gdwListLastClickTick;
+    static unsigned int gdwListLastClickTick; D2_STATIC_GUARD_BSS(gdwListLastClickTick, "D2Win::Src::D2WinList::Push::gdwListLastClickTick");
 
     BOOL bCallbackResult;
     D2WinListEntry* pEntry;
@@ -487,7 +487,7 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
     0x0,
     0x0,
     0x0
-};
+}; D2_STATIC_GUARD(INT_ARRAY_006dd024, "D2Win::Src::D2WinList::D2WinList::INT_ARRAY_006dd024");
 
     D2WinListEntry* pNewEntry;
     uint16_t* wszLocaleStr;

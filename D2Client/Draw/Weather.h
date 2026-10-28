@@ -39,8 +39,7 @@ struct D2WeatherParticleStrc {
     /* 0x08 */ int nPosY; // Current screen Y position (updated each tick by vertical drift)
     /* 0x0C */ int nMaxY; // Y boundary; particle dies when nPosY exceeds this
     /* 0x10 */ int nLineIndex; // Act5 snow: wind line index (0-7); rain: speed tier
-    /* 0x14 */ short nSpeedLo; // Low short of speed/line-length int at +20 (Act5: 8-roll, rain: 15-roll)
-    /* 0x16 */ short nSpeedHi; // High short of speed/line-length int at +22; zeroed when dying
+    /* 0x14 */ int32_t nSpeed; // Low short of speed/line-length int at +20 (Act5: 8-roll, rain: 15-roll)
     /* 0x18 */ int nSinPhaseOffset; // Per-particle sin-table phase offset for lateral drift
     /* 0x1C */ int nDying; // Dying/fade flag; 1=particle reached boundary, counting down
     /* 0x20 */ int nFadeCountdown; // Fade countdown; decremented each tick until 0 then freed

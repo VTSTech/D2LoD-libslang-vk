@@ -2,6 +2,7 @@
 
 #include "D2Client/UI/SpellSel.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/DataTbls.h"
 #include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/Game/Game.h"
@@ -41,7 +42,6 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -52,10 +52,7 @@
 #include "D2gfx/D2GFX.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/D2ArchiveStrc.h"
-#include "Storm/D2MPQFileStrc.h"
-#include "Storm/H/Storm.h"
-#include "Storm/Source/SFile.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
@@ -66,51 +63,50 @@
 
 namespace D2Client::UI::SpellSel {
 
-static bool gbSpellSelActiveRightSkillSlot = 0;
-static int32_t gSpellSelLeftSkillSlot1[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot2[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot3[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot4[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot5[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot6[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot7[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot8[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot9[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot10[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot11[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot12[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot13[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot14[16] = { 0 };
-static int32_t gSpellSelLeftSkillSlot15[16] = { 0 };
-static uint8_t gbSpellSelMouseHandFlag;
-static bool gbSpellSelSkillTreeBackground = 0;
+static bool gbSpellSelActiveRightSkillSlot = 0; D2_STATIC_GUARD(gbSpellSelActiveRightSkillSlot, "D2Client::UI::SpellSel::gbSpellSelActiveRightSkillSlot");
+static int32_t gSpellSelLeftSkillSlot1[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot1, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot1");
+static int32_t gSpellSelLeftSkillSlot2[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot2, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot2");
+static int32_t gSpellSelLeftSkillSlot3[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot3, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot3");
+static int32_t gSpellSelLeftSkillSlot4[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot4, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot4");
+static int32_t gSpellSelLeftSkillSlot5[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot5, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot5");
+static int32_t gSpellSelLeftSkillSlot6[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot6, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot6");
+static int32_t gSpellSelLeftSkillSlot7[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot7, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot7");
+static int32_t gSpellSelLeftSkillSlot8[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot8, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot8");
+static int32_t gSpellSelLeftSkillSlot9[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot9, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot9");
+static int32_t gSpellSelLeftSkillSlot10[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot10, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot10");
+static int32_t gSpellSelLeftSkillSlot11[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot11, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot11");
+static int32_t gSpellSelLeftSkillSlot12[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot12, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot12");
+static int32_t gSpellSelLeftSkillSlot13[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot13, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot13");
+static int32_t gSpellSelLeftSkillSlot14[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot14, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot14");
+static int32_t gSpellSelLeftSkillSlot15[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot15, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot15");
+static bool gbSpellSelSkillTreeBackground = 0; D2_STATIC_GUARD(gbSpellSelSkillTreeBackground, "D2Client::UI::SpellSel::gbSpellSelSkillTreeBackground");
 
 void __stdcall SPELLSEL_Initialize() {
     // Static local variables (originally global data)
-    static int gSpellSelKeyBindText1;
-    static int gSpellSelKeyBindText2;
-    static int gSpellSelKeyBindText3;
-    static int gSpellSelKeyBindText4;
-    static int gSpellSelKeyBindText5;
-    static int gSpellSelKeyBindText6;
-    static int gSpellSelKeyBindText7;
-    static int gSpellSelKeyBindText8;
-    static int gSpellSelKeyBindText9;
-    static int gSpellSelKeyBindText10;
-    static int gSpellSelKeyBindText11;
-    static int gSpellSelKeyBindText12;
-    static int gSpellSelKeyBindText13;
-    static int gSpellSelKeyBindText14;
-    static int gSpellSelKeyBindText15;
-    static int gSpellSelKeyBindText16;
-    static int gSpellSelLeftSkillSlot16;
-    static int gSpellSelLeftSkillSlot17;
-    static int gSpellSelLeftSkillSlot18;
-    static int gSpellSelLeftSkillSlot19;
+    static int gSpellSelKeyBindText1; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText1, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText1");
+    static int gSpellSelKeyBindText2; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText2, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText2");
+    static int gSpellSelKeyBindText3; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText3, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText3");
+    static int gSpellSelKeyBindText4; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText4, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText4");
+    static int gSpellSelKeyBindText5; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText5, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText5");
+    static int gSpellSelKeyBindText6; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText6, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText6");
+    static int gSpellSelKeyBindText7; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText7, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText7");
+    static int gSpellSelKeyBindText8; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText8, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText8");
+    static int gSpellSelKeyBindText9; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText9, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText9");
+    static int gSpellSelKeyBindText10; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText10, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText10");
+    static int gSpellSelKeyBindText11; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText11, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText11");
+    static int gSpellSelKeyBindText12; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText12, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText12");
+    static int gSpellSelKeyBindText13; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText13, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText13");
+    static int gSpellSelKeyBindText14; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText14, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText14");
+    static int gSpellSelKeyBindText15; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText15, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText15");
+    static int gSpellSelKeyBindText16; D2_STATIC_GUARD_BSS(gSpellSelKeyBindText16, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelKeyBindText16");
+    static int gSpellSelLeftSkillSlot16; D2_STATIC_GUARD_BSS(gSpellSelLeftSkillSlot16, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelLeftSkillSlot16");
+    static int gSpellSelLeftSkillSlot17; D2_STATIC_GUARD_BSS(gSpellSelLeftSkillSlot17, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelLeftSkillSlot17");
+    static int gSpellSelLeftSkillSlot18; D2_STATIC_GUARD_BSS(gSpellSelLeftSkillSlot18, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelLeftSkillSlot18");
+    static int gSpellSelLeftSkillSlot19; D2_STATIC_GUARD_BSS(gSpellSelLeftSkillSlot19, "D2Client::UI::SpellSel::SPELLSEL_Initialize::gSpellSelLeftSkillSlot19");
 
     int iClear;
-    gpSpellSelSkillIconDC6 = (D2ArchiveStrc*)ui::ARCHIVE_LoadOverlayImageUsedInGame("Spells\\Skillicon");
-    D2ArchiveStrc* pLoadedClassArchive = (D2ArchiveStrc*)ui::ARCHIVE_LoadOverlayImageUsedInGame(pSpellsClassSkillicon[nD2PlayerClassID].szSpelliconPath);
+    gpSpellSelSkillIconDC6 = ui::ARCHIVE_LoadOverlayImageUsedInGame("Spells\\Skillicon");
+    DC6* pLoadedClassArchive = ui::ARCHIVE_LoadOverlayImageUsedInGame(pSpellsClassSkillicon[nD2PlayerClassID].szSpelliconPath);
     pSpellsClassSkillicon[nD2PlayerClassID].pD2Archive = pLoadedClassArchive;
     gSpellSelKeyBindText1 = -1;
     gSpellSelKeyBindText2 = -1;
@@ -191,18 +187,18 @@ void __stdcall SPELLSEL_Initialize() {
 
 void __stdcall SPELLSEL_Cleanup() {
     if (gpSpellSelSkillIconDC6) {
-      Core::Archive::DC6_FreeAndDelete((DC6*)gpSpellSelSkillIconDC6);
+      Core::Archive::DC6_FreeAndDelete(gpSpellSelSkillIconDC6);
       gpSpellSelSkillIconDC6 = 0;
     }
     if (pSpellsClassSkillicon[nD2PlayerClassID].pD2Archive) {
-      Core::Archive::DC6_FreeAndDelete((DC6*)pSpellsClassSkillicon[nD2PlayerClassID].pD2Archive);
+      Core::Archive::DC6_FreeAndDelete(pSpellsClassSkillicon[nD2PlayerClassID].pD2Archive);
       pSpellsClassSkillicon[nD2PlayerClassID].pD2Archive = 0;
     }
 
     D2ClassIconWithNameStrc* pClassIconEntry = pSpellsClassSkillicon;
     do {
       if (pClassIconEntry->pD2Archive) {
-        Core::Archive::DC6_FreeAndDelete((DC6*)pClassIconEntry->pD2Archive);
+        Core::Archive::DC6_FreeAndDelete(pClassIconEntry->pD2Archive);
         pClassIconEntry->pD2Archive = 0;
       }
 
@@ -210,7 +206,7 @@ void __stdcall SPELLSEL_Cleanup() {
     } while ((int)pClassIconEntry < (uintptr_t)((char*)&pSpellsClassSkillicon + sizeof(pSpellsClassSkillicon)));
 }
 
-D2ArchiveStrc * __fastcall ARCHIVE_LoadSpellsClassSkillicon(short * pSkillId) {
+DC6 * __fastcall ARCHIVE_LoadSpellsClassSkillicon(short * pSkillId) {
     if (!pSkillId) {
       return pSpellsClassSkillicon[nD2PlayerClassID].pD2Archive;
     }
@@ -223,7 +219,7 @@ D2ArchiveStrc * __fastcall ARCHIVE_LoadSpellsClassSkillicon(short * pSkillId) {
       return pSpellsClassSkillicon[nCharClass].pD2Archive;
     }
 
-    D2ArchiveStrc* pNewArchive = (D2ArchiveStrc*)ui::ARCHIVE_LoadOverlayImageUsedInGame(pSpellsClassSkillicon[nCharClass].szSpelliconPath);
+    DC6* pNewArchive = ui::ARCHIVE_LoadOverlayImageUsedInGame(pSpellsClassSkillicon[nCharClass].szSpelliconPath);
     pSpellsClassSkillicon[nCharClass].pD2Archive = pNewArchive;
     return pSpellsClassSkillicon[nCharClass].pD2Archive;
 }
@@ -274,15 +270,25 @@ void __fastcall SPELLSEL_DrawSkillTooltip(short * pSkillId, int32_t bShowExpande
 
 void __fastcall SPELLSEL_DrawKeyBindingText(int32_t nCmdIndex, int32_t nX, int32_t nY, int32_t dwColor) {
     // Static local variables (originally global data)
-    static int gSpellSelKeyNameBuffer;
-    static int gnSpellSelKeyBindTextY3;
-    static int gnSpellSelKeyBindTextY4;
-    static int gnSpellSelKeyBindTextY5;
-    static int gnSpellSelKeyBindTextY6;
-    static int gnSpellSelKeyBindTextY7;
-    static int gnSpellSelKeyBindTextY8;
-    static int gnSpellSelKeyBindTextY9;
-    static unsigned int gnSpellSelKeyBindTextDrawMode;
+    static uint16_t gSpellSelKeyNameBuffer[16] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+}; D2_STATIC_GUARD(gSpellSelKeyNameBuffer, "D2Client::UI::SpellSel::SPELLSEL_DrawKeyBindingText::gSpellSelKeyNameBuffer");
+    static unsigned int gnSpellSelKeyBindTextDrawMode; D2_STATIC_GUARD_BSS(gnSpellSelKeyBindTextDrawMode, "D2Client::UI::SpellSel::SPELLSEL_DrawKeyBindingText::gnSpellSelKeyBindTextDrawMode");
 
     uint16_t* pTruncEnd;
     uint16_t uVar1 = CmdTbl::CMD_GetKeyForCommand(nCmdIndex, 1);
@@ -291,35 +297,28 @@ void __fastcall SPELLSEL_DrawKeyBindingText(int32_t nCmdIndex, int32_t nX, int32
     }
     if (!(gnSpellSelKeyBindTextDrawMode & 1)) {
       gnSpellSelKeyBindTextDrawMode |= 1;
-      gSpellSelKeyNameBuffer = 0;
-      gnSpellSelKeyBindTextY3 = 0;
-      gnSpellSelKeyBindTextY4 = 0;
-      gnSpellSelKeyBindTextY5 = 0;
-      gnSpellSelKeyBindTextY6 = 0;
-      gnSpellSelKeyBindTextY7 = 0;
-      gnSpellSelKeyBindTextY8 = 0;
-      gnSpellSelKeyBindTextY9 = 0;
+      memset(gSpellSelKeyNameBuffer, 0, 16 * sizeof(gSpellSelKeyNameBuffer[0]));
     }
 
-    int* pWszKeyName = (int*)CmdTbl::CMD_GetKeyDescForCommand(nCmdIndex, 1);
-    int nTextWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)pWszKeyName);
+    uint16_t* pWszKeyName = CmdTbl::CMD_GetKeyDescForCommand(nCmdIndex, 1);
+    int nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(pWszKeyName);
     if (0x28 < nTextWidth) {
       int32_t nKeyNameLen;
-      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer((uint16_t*)&gSpellSelKeyNameBuffer, (uint16_t*)pWszKeyName, 0x10);
-      pWszKeyName = &gSpellSelKeyNameBuffer;
-      nKeyNameLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength((uint16_t*)&gSpellSelKeyNameBuffer);
-      pTruncEnd = (uint16_t*)((uintptr_t)&gSpellSelKeyNameBuffer + nKeyNameLen * 2);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(gSpellSelKeyNameBuffer, pWszKeyName, 0x10);
+      pWszKeyName = gSpellSelKeyNameBuffer;
+      nKeyNameLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(gSpellSelKeyNameBuffer);
+      pTruncEnd = gSpellSelKeyNameBuffer + nKeyNameLen;
       do {
         pTruncEnd--;
-        *pTruncEnd = 0;
-        nTextWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)&gSpellSelKeyNameBuffer);
+        *pTruncEnd = L'\0';
+        nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(gSpellSelKeyNameBuffer);
       } while (0x28 < nTextWidth);
     }
     if (0xd < nTextWidth) {
       nX += 0xd - nTextWidth;
     }
 
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)pWszKeyName, nX, nY, dwColor, 0);
+    D2Win::Src::D2WinFont::DRAW_text(pWszKeyName, nX, nY, dwColor, 0);
 }
 
 void __stdcall SPELLSEL_DrawKeyBindingsForLeftHand(int32_t nSlotIndex, short * pSkillId, int32_t nIconX, int32_t nIconY) {
@@ -538,12 +537,12 @@ void __fastcall SPELLSEL_DrawSkillIconWithQuantity(DC6 * pDC6, short * pSkillId,
 
 void __fastcall SPELLSEL_DrawSkillIcon(short * pSkillId, int32_t nSlotIndex, int32_t nSkillId, GLOBALPALLETE nGlobalPaletteShift, int32_t nIconX, int32_t nIconY, int32_t bIsLeftHand) {
     D2GfxDataStrc sGfxData;
-    D2ArchiveStrc* pSkillArchive;
+    DC6* pSkillArchive;
     uint32_t nSkillCharClass = D2Common::Skills::SKILLS_GetCharClassFromSkillId((int)*pSkillId);
     if (nSkillCharClass < 7) {
-      D2ArchiveStrc* pArchive;
+      DC6* pArchive;
       if (!pSpellsClassSkillicon[nSkillCharClass].pD2Archive) {
-        pArchive = (D2ArchiveStrc*)ui::ARCHIVE_LoadOverlayImageUsedInGame(pSpellsClassSkillicon[nSkillCharClass].szSpelliconPath);
+        pArchive = ui::ARCHIVE_LoadOverlayImageUsedInGame(pSpellsClassSkillicon[nSkillCharClass].szSpelliconPath);
         pSpellsClassSkillicon[nSkillCharClass].pD2Archive = pArchive;
       }
 
@@ -574,7 +573,7 @@ void __fastcall SPELLSEL_DrawSkillIcon(short * pSkillId, int32_t nSlotIndex, int
     }
 
     memset(&sGfxData, 0, 0x48);
-    sGfxData.pDC6 = (DC6*)pSkillArchive;
+    sGfxData.pDC6 = pSkillArchive;
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = (uint32_t)byIconCel;
     D2gfx::D2GFX::D2GFX_DrawShiftedImage(&sGfxData, nIconX, nIconY, -1, DRAW_SOLID, nGlobalPaletteShift);
@@ -664,12 +663,13 @@ int __fastcall SPELLSEL_FindChargedSkill4(D2UnitStrc * pUnit, int32_t nTargetSki
 }
 
 void __stdcall INPUT_SpellSelectClick(D2UIMouseMsgStrc * pMsg) {
-    int32_t nOwnerGUID;
+    int nCurMouseX;
     int nCurMouseY;
     D2SkillStrc* pSkill;
     BOOL bHasCharges;
     int nChargesLeft;
     int32_t nSlotScreenY;
+    int32_t nErrLine;
     int nSlotScreenXPos;
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
     if (!pPlayerUnit_lcl) {
@@ -681,18 +681,17 @@ void __stdcall INPUT_SpellSelectClick(D2UIMouseMsgStrc * pMsg) {
     int bHandled = 0;
     int* pSlotSkillIdPtr = gSpellSelGridRegion.aRightHandSlots;
     do {
-      int nCurMouseX;
       nSlotScreenY = pSlotSkillIdPtr[-0x78];
       nSlotScreenXPos = ((D2SpellSelGridRegionStrc*)(pSlotSkillIdPtr - 0xb4))->aSkillGrid[0];
       nCurMouseX = ui::GetMouseX();
       nCurMouseY = ui::GetMouseY();
       if (nSlotScreenXPos <= nCurMouseX && nCurMouseX <= nSlotScreenXPos + 0x30 && nSlotScreenY - 0x30 <= nCurMouseY && nCurMouseY <= nSlotScreenY) {
-        nOwnerGUID = *pSlotSkillIdPtr;
+        nErrLine = *pSlotSkillIdPtr;
         pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-        pSkill = D2Common::Skills::GetSkillByIdAndOwner(pPlayerUnit_lcl, pSlotSkillIdPtr[-0x3c], nOwnerGUID);
+        pSkill = D2Common::Skills::GetSkillByIdAndOwner(pPlayerUnit_lcl, pSlotSkillIdPtr[-0x3c], nErrLine);
         if (pSkill) {
-          nOwnerGUID = D2Common::Skills::GetOwnerGUID(pSkill);
-          if (nOwnerGUID != -1) {
+          nErrLine = D2Common::Skills::GetOwnerGUID(pSkill);
+          if (nErrLine != -1) {
             bHasCharges = D2Common::Skills::SKILLS_GetSkillData(pSkill, nullptr, nullptr, nullptr, &nChargesLeft);
             if (bHasCharges && nChargesLeft < 1) {
               bHasCharges = ui::GetUIFlag(UI_SKILLSELECT);
@@ -757,7 +756,8 @@ void __stdcall SPELLSEL_ClearSkillBinding(short * pSkillId, int32_t nChargesLeft
 }
 
 void __stdcall SPELLSEL_ClearChargedSkillBindings() {
-    int32_t nErrAddr;
+    D2SkillsTxt* pSkillsTxt;
+    int32_t nLine;
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
     D2SkillStrc* pSkill = D2Common::Units::GetFirstSkill(pUnit);
     if (!pSkill) {
@@ -766,11 +766,10 @@ void __stdcall SPELLSEL_ClearChargedSkillBindings() {
     }
 
     do {
-      D2SkillsTxt* pSkillsTxt;
       pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill);
       if (pSkillsTxt->scroll) {
-        nErrAddr = D2Common::Skills::SKILL_GetQuantity(pSkill);
-        SPELLSEL_ClearSkillBinding(&pSkillsTxt->skill, nErrAddr);
+        nLine = D2Common::Skills::SKILL_GetQuantity(pSkill);
+        SPELLSEL_ClearSkillBinding(&pSkillsTxt->skill, nLine);
       }
 
       pSkill = D2Common::Skills::GetNext(pSkill);
@@ -978,10 +977,27 @@ void __fastcall SPELLSEL_DrawSkillRequirementTooltip(short * pwSkillId, int32_t 
 
 void __fastcall SPELLSEL_DrawSkillGrid(D2UnitStrc * pUnit, int32_t nGridStartX, BOOL bWeaponSwap, BOOL bShowTooltips, BOOL bChargedOnly) {
     // Static local variables (originally global data)
-    static int gnSpellSelGridDrawX1;
-    static int gnSpellSelGridDrawX2;
-    static int gnSpellSelGridDrawX3;
-    static uint8_t gnSpellSelGridDrawX4;
+    static int gnSpellSelGridDrawX1; D2_STATIC_GUARD_BSS(gnSpellSelGridDrawX1, "D2Client::UI::SpellSel::SPELLSEL_DrawSkillGrid::gnSpellSelGridDrawX1");
+    static int gnSpellSelGridDrawX2; D2_STATIC_GUARD_BSS(gnSpellSelGridDrawX2, "D2Client::UI::SpellSel::SPELLSEL_DrawSkillGrid::gnSpellSelGridDrawX2");
+    static int gnSpellSelGridDrawX3; D2_STATIC_GUARD_BSS(gnSpellSelGridDrawX3, "D2Client::UI::SpellSel::SPELLSEL_DrawSkillGrid::gnSpellSelGridDrawX3");
+    static uint8_t gnSpellSelGridDrawX4[16] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+}; D2_STATIC_GUARD(gnSpellSelGridDrawX4, "D2Client::UI::SpellSel::SPELLSEL_DrawSkillGrid::gnSpellSelGridDrawX4");
 
     D2SkillStrc* pCurSkill;
     int nSkillId;
@@ -1010,11 +1026,16 @@ void __fastcall SPELLSEL_DrawSkillGrid(D2UnitStrc * pUnit, int32_t nGridStartX, 
     memset(aListPoolSeen, 0, 0x100);
     int nRow;
     nRow = 0;
+    uint32_t uVar1;
+    uVar1 = *(uint32_t*)(char*)&gnSpellSelGridDrawX4;
     do {
       int nXStep;
       nXStep = bWeaponSwap ? 0x30 : -0x30;
+      *(uint32_t*)(char*)&gnSpellSelGridDrawX4 = uVar1;
       nCurX = nStartX;
-      for (pCurSkill = D2Common::Units::GetFirstSkill(pLocalUnit); pCurSkill; pCurSkill = pNextSkill) {
+      pCurSkill = D2Common::Units::GetFirstSkill(pLocalUnit);
+      for (uVar1 = *(uint32_t*)(char*)&gnSpellSelGridDrawX4; pCurSkill; pCurSkill = pNextSkill , uVar1 = *(uint32_t*)(char*)&gnSpellSelGridDrawX4) {
+        *(uint32_t*)(char*)&gnSpellSelGridDrawX4 = uVar1;
         pNextSkill = D2Common::Skills::GetNext(pCurSkill);
         pSkillsTxt = D2Common::Skills::GetSkillsTxt(pCurSkill);
         if (pSkillsTxt) {
@@ -1090,7 +1111,10 @@ void __fastcall SPELLSEL_DrawSkillGrid(D2UnitStrc * pUnit, int32_t nGridStartX, 
                           gnSpellSelGridDrawX3 = nCurY;
                         break;
                         case 4:
-                          gnSpellSelGridDrawX4 = nCurY;
+                          gnSpellSelGridDrawX4[0] = (uint8_t)nCurY;
+                        gnSpellSelGridDrawX4[1] = *(uint8_t*)((char*)&nCurY + 1);
+                        gnSpellSelGridDrawX4[2] = *(uint8_t*)((char*)&nCurY + 2);
+                        gnSpellSelGridDrawX4[3] = *(uint8_t*)((char*)&nCurY + 3);
                       }
                     }
                   } else if (bIsChargedOrValid) {
@@ -1103,6 +1127,10 @@ void __fastcall SPELLSEL_DrawSkillGrid(D2UnitStrc * pUnit, int32_t nGridStartX, 
         }
       }
 
+      gnSpellSelGridDrawX4[0] = (uint8_t)uVar1;
+      gnSpellSelGridDrawX4[1] = (uint8_t)((uint32_t)uVar1 >> 8);
+      gnSpellSelGridDrawX4[2] = (uint8_t)((uint32_t)uVar1 >> 16);
+      gnSpellSelGridDrawX4[3] = (uint8_t)((uint32_t)uVar1 >> 24);
       nRow++;
       if (4 < nRow) {
         return;
@@ -1227,7 +1255,7 @@ void __stdcall ARCHIVE_LoadSpellsClassSkilltree() {
       exit(-1);
     }
 
-    D2ArchiveStrc* pArchive = (D2ArchiveStrc*)ui::ARCHIVE_LoadOverlayImageUsedInGame(pSpellsClassSkilltree[nD2PlayerClassID].szSpelliconPath);
+    DC6* pArchive = ui::ARCHIVE_LoadOverlayImageUsedInGame(pSpellsClassSkilltree[nD2PlayerClassID].szSpelliconPath);
     pSpellsClassSkilltree[nD2PlayerClassID].pD2Archive = pArchive;
 }
 
@@ -1236,7 +1264,7 @@ void __stdcall SPELLSEL_FreeSkilltreeGraphic() {
       return;
     }
 
-    Core::Archive::DC6_FreeAndDelete((DC6*)pSpellsClassSkilltree[nD2PlayerClassID].pD2Archive);
+    Core::Archive::DC6_FreeAndDelete(pSpellsClassSkilltree[nD2PlayerClassID].pD2Archive);
     pSpellsClassSkilltree[nD2PlayerClassID].pD2Archive = 0;
 }
 
@@ -1572,7 +1600,7 @@ void __stdcall SKILLTREE_DrawBackground() {
     -0x95,
     -0xdc,
     -0x95
-};
+}; D2_STATIC_GUARD(gaSpellSelTabHighlightX, "D2Client::UI::SpellSel::SKILLTREE_DrawBackground::gaSpellSelTabHighlightX");
 
     D2GfxDataStrc sGfxData;
     int nTabHighlightX = gaSpellSelTabHighlightX[nSkillTreeActiveTab + (uint32_t)nD2PlayerClassID * 3];
@@ -2047,7 +2075,7 @@ void __stdcall SKILLTREE_DrawSkillNode(eD2Skills eSkill, D2SkillsTxt * pSkillTxt
 
     int nMouseX = ui::GetMouseX();
     int nMouseY = ui::GetMouseY();
-    D2ArchiveStrc* pArchive = ARCHIVE_LoadSpellsClassSkillicon(nullptr);
+    DC6* pArchive = ARCHIVE_LoadSpellsClassSkillicon(nullptr);
     uint32_t nFrameNum = (uint32_t)pSkillDesc->iconcel;
     if (nSkillIconState == 1) {
       nFrameNum++;
@@ -2070,7 +2098,7 @@ void __stdcall SKILLTREE_DrawSkillNode(eD2Skills eSkill, D2SkillsTxt * pSkillTxt
 
     memset(&sGfxData, 0, 0x48);
     nSkillBonus = nRowY;
-    sGfxData.pDC6 = (DC6*)pArchive;
+    sGfxData.pDC6 = pArchive;
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = nFrameNum;
     D2gfx::D2GFX::D2GFX_DrawShiftedImage(&sGfxData, nColumnX, nRowY, -1, DRAW_SOLID, nGlobalPaletteShift);
@@ -2293,12 +2321,12 @@ void __stdcall SKILLTREE_DrawAllSkillNodes() {
 
 void __stdcall DRAW_UI_SkillWindow() {
     // Static local variables (originally global data)
-    static bool gbSpellSelSkillTreeScrolling;
+    static bool gbSpellSelSkillTreeScrolling; D2_STATIC_GUARD_BSS(gbSpellSelSkillTreeScrolling, "D2Client::UI::SpellSel::DRAW_UI_SkillWindow::gbSpellSelSkillTreeScrolling");
 
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
     D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
     gnSpellSelSkillTreeClickY = 1;
-    SPELLSEL_DrawSkilltreeBackground((DC6*)pSpellsClassSkilltree[nD2PlayerClassID].pD2Archive, nSkillTreeActiveTab);
+    SPELLSEL_DrawSkilltreeBackground(pSpellsClassSkilltree[nD2PlayerClassID].pD2Archive, nSkillTreeActiveTab);
     DRAW_UI_SkillsWindow_II();
     int32_t nNewSkills = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_newskills, 0);
     if (nNewSkills < 1) {

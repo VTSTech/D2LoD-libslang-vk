@@ -41,28 +41,18 @@ HANDLE GetKeyFileHandle(DWORD dwCreationDisposition, DWORD dwDesiredAccess) {
 
 // Serializes the global key-bindings table (g_KeyBindingsTable, 0x474 bytes, 0x11d entries) to two files: the user's active key file (via GetKeyFileHandle) and the install-directory "default.key" fallback. Writes a header with signature 0x5357 and version 0x25 before the binding data.
 void __stdcall CMD_WriteKeyFile() {
-    // Frame slots -16..-4 are ONE object: &wSignature is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint16_t wSignature;
-      uint16_t wVersion;
-      uint16_t wFileSize;
-      uint8_t __pad6[2];
-      DWORD nWritten;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     char* pEnd;
     char szBuffer[1142];
     char cStack_115;
     char szInstallPath[260];
+    D2KeyFileHeaderStrc sKeyFileHeader;
     HANDLE hFile = GetKeyFileHandle(2, 0x40000000);
     if (hFile == (HANDLE)-1) {
       return;
     }
 
     memset(szBuffer + 2, 0, 0x474);
-    __frame0.nWritten = 0;
+    DWORD nWritten = 0;
     szBuffer[0] = '%';
     szBuffer[1] = '\0';
     char* pDst = szBuffer + 6;
@@ -82,7 +72,7 @@ void __stdcall CMD_WriteKeyFile() {
       puVar5++;
     }
 
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)szBuffer, 0x476, &__frame0.nWritten, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)szBuffer, 0x476, &nWritten, (LPOVERLAPPED)0x0);
     Fog::Source::SFile::SFILE_Win32CloseHandle(hFile);
     Fog::Source::SFile::SFILE_GetInstallPath(szInstallPath, 0xdc);
     pDst = &cStack_115;
@@ -97,11 +87,11 @@ void __stdcall CMD_WriteKeyFile() {
       return;
     }
 
-    __frame0.wSignature = 0x5357;
-    __frame0.wVersion = 0x25;
-    __frame0.wFileSize = 0x47a;
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&__frame0.wSignature, 6, &__frame0.nWritten, (LPOVERLAPPED)0x0);
-    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)g_KeyBindingsTable, 0x474, &__frame0.nWritten, (LPOVERLAPPED)0x0);
+    sKeyFileHeader.wSignature = 0x5357;
+    sKeyFileHeader.wVersion = 0x25;
+    sKeyFileHeader.wDataSize = 0x47a;
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&sKeyFileHeader, 6, &nWritten, (LPOVERLAPPED)0x0);
+    Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)g_KeyBindingsTable, 0x474, &nWritten, (LPOVERLAPPED)0x0);
     Fog::Source::SFile::SFILE_Win32CloseHandle(hFile);
 }
 

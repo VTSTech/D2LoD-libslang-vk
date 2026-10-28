@@ -35,8 +35,8 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/Monster/AI/AI.h"
 
@@ -342,7 +342,7 @@ void __fastcall Q34_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // Q34_Callback_00 (Betrayal of Harrogath). State-0 gossip dispatcher for Nihlathak (0x200). Requires Prison of Ice complete/reward. Picks the right Nihlathak gossip line: reward-awaits -> line 4 (if Step0x04) or 3; already-participated -> line 4; else intro lines via gdwQuestCallbackAddressQ34[nStateFlag]. Read-only on quest state (drives dialog only).
 void __fastcall Q34_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQuestCallbackAddressQ34[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 };
+    static int32_t gdwQuestCallbackAddressQ34[6] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gdwQuestCallbackAddressQ34, "D2Game::Quests::QUESTS::A5Q4::Q34_Callback00_NpcActivate::gdwQuestCallbackAddressQ34");
 
     int nTargetClassId;
     uint32_t nMessageIndex;
@@ -740,7 +740,7 @@ void __fastcall Q34_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 void __fastcall Q34_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int nChoiceIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
     D2QuestDataA5Q4Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q4;
-    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GossipTextStrc*)0x6d && pQuestData->nStateFlag == 2) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x6d && pQuestData->nStateFlag == 2) {
       QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q4.cpp", 0x2ec);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q34_UpdateQuestStep);
     }

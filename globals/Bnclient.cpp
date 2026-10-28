@@ -21,6 +21,12 @@
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
+uint8_t gaBnSendRawBytesHeader[4] = { 0x0, 0x0, 0x0, 0x0 }; D2_GLOBAL_GUARD(gaBnSendRawBytesHeader, "gaBnSendRawBytesHeader");
+
+char gaCDKeyAuthData[4] = { ' ', ',', ';', '\x00' }; D2_GLOBAL_GUARD(gaCDKeyAuthData, "gaCDKeyAuthData");
+
+char s_ColonSeparator[2] = { ':', '\x00' }; D2_GLOBAL_GUARD(s_ColonSeparator, "s_ColonSeparator");
+
 D2BNetClientCallbacksStrc sgBNetClientCallbacks = {
     /* .pfnSetLoggingFlag = */ (fnSetLoggingFlag)&Bnclient::Debug::DEBUG_SetLoggingFlag,
     /* .pfnConnectToBattleNet = */ (fnConnectToBattleNet)&Bnclient::BnSend::ConnectingToBattleNet,
@@ -76,7 +82,7 @@ D2BNetClientCallbacksStrc sgBNetClientCallbacks = {
     /* .pfnCacheReadData = */ (fnCacheReadData)&Bnclient::Cache::CACHE_ReadData,
     /* .pfnCacheWriteData = */ (fnCacheWriteData)&Bnclient::Cache::CACHE_WriteData,
     /* .pfnReserved = */ nullptr
-};
+}; D2_GLOBAL_GUARD(sgBNetClientCallbacks, "sgBNetClientCallbacks");
 
 // also labelled: gdwFogCacheMax
 uint32_t gaBnCacheCrc32Table[256] = {
@@ -336,7 +342,7 @@ uint32_t gaBnCacheCrc32Table[256] = {
     0xc30c8ea1,
     0x5a05df1b,
     0x2d02ef8d
-};
+}; D2_GLOBAL_GUARD(gaBnCacheCrc32Table, "gaBnCacheCrc32Table");
 
 char s___AUItem_NewsTable___0072ff8c[24] = {
     '.',
@@ -363,7 +369,7 @@ char s___AUItem_NewsTable___0072ff8c[24] = {
     '\x00',
     '\x00',
     '\x00'
-};
+}; D2_GLOBAL_GUARD(s___AUItem_NewsTable___0072ff8c, "s___AUItem_NewsTable___0072ff8c");
 
 D2BNetGatewayAccessStr ActualRealmInfo = {
     /* .nCurrentGateway = */ 0,
@@ -375,7 +381,14 @@ D2BNetGatewayAccessStr ActualRealmInfo = {
     /* .nFormatVersion = */ 0,
     /* .bIsOverride = */ 0,
     /* .pRealmsData = */ nullptr
-};
+}; D2_GLOBAL_GUARD(ActualRealmInfo, "ActualRealmInfo");
+
+D2BnNewsTableStrc g_nNewsMaxCacheSize = {
+    /* .nCapacity = */ 0,
+    /* .nCount = */ 0,
+    /* .pEntries = */ nullptr,
+    /* .nGrowStep = */ 0
+}; D2_GLOBAL_GUARD(g_nNewsMaxCacheSize, "g_nNewsMaxCacheSize");
 
 char lpFileName_00881c58[260] = {
     0,
@@ -638,7 +651,7 @@ char lpFileName_00881c58[260] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(lpFileName_00881c58, "lpFileName_00881c58");
 
 char gszBNetChatInputBuffer[260] = {
     0,
@@ -901,7 +914,7 @@ char gszBNetChatInputBuffer[260] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gszBNetChatInputBuffer, "gszBNetChatInputBuffer");
 
 char g_szBnetConnectionStateString[128] = {
     0,
@@ -1032,7 +1045,7 @@ char g_szBnetConnectionStateString[128] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(g_szBnetConnectionStateString, "g_szBnetConnectionStateString");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_00882004 = {
     /* .DebugInfo = */ nullptr,
@@ -1041,7 +1054,7 @@ _RTL_CRITICAL_SECTION lpCriticalSection_00882004 = {
     /* .OwningThread = */ nullptr,
     /* .LockSemaphore = */ nullptr,
     /* .SpinCount = */ 0
-};
+}; D2_GLOBAL_GUARD(lpCriticalSection_00882004, "lpCriticalSection_00882004");
 
 char g_szCurrentChannelName[256] = {
     0,
@@ -1300,7 +1313,7 @@ char g_szCurrentChannelName[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(g_szCurrentChannelName, "g_szCurrentChannelName");
 
 BOOL NET_SID_INCOMING_CLIENT_PacketRequireAnswer[94] = {
     0,
@@ -1397,9 +1410,104 @@ BOOL NET_SID_INCOMING_CLIENT_PacketRequireAnswer[94] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(NET_SID_INCOMING_CLIENT_PacketRequireAnswer, "NET_SID_INCOMING_CLIENT_PacketRequireAnswer");
 
-uint32_t g_SIDPacketResponseFlags[7] = { 0, 0, 0, 0, 0, 0, 0 };
+uint32_t g_SIDPacketResponseFlags[94] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+}; D2_GLOBAL_GUARD(g_SIDPacketResponseFlags, "g_SIDPacketResponseFlags");
 
 char gszCDKeyInUseByUsername[256] = {
     0,
@@ -1658,7 +1766,7 @@ char gszCDKeyInUseByUsername[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(gszCDKeyInUseByUsername, "gszCDKeyInUseByUsername");
 
 char g_szStoredUsername[256] = {
     0,
@@ -1917,7 +2025,7 @@ char g_szStoredUsername[256] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(g_szStoredUsername, "g_szStoredUsername");
 
 D2SrpSaltVerifierStrc g_srpSaltVerifier = {
     /* .aSalt = */ {
@@ -1988,7 +2096,7 @@ D2SrpSaltVerifierStrc g_srpSaltVerifier = {
         0,
         0
     }
-};
+}; D2_GLOBAL_GUARD(g_srpSaltVerifier, "g_srpSaltVerifier");
 
 D2SrpCredentialsStrc g_srpCredentials = {
     /* .szUsername = */ {
@@ -2191,7 +2299,7 @@ D2SrpCredentialsStrc g_srpCredentials = {
         0,
         0
     }
-};
+}; D2_GLOBAL_GUARD(g_srpCredentials, "g_srpCredentials");
 
 uint8_t g_SHA1Contexts[276] = {
     0,
@@ -2470,7 +2578,7 @@ uint8_t g_SHA1Contexts[276] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(g_SHA1Contexts, "g_SHA1Contexts");
 
 uint8_t g_IDEAKeySchedules[312] = {
     0,
@@ -2785,70 +2893,59 @@ uint8_t g_IDEAKeySchedules[312] = {
     0,
     0,
     0
-};
+}; D2_GLOBAL_GUARD(g_IDEAKeySchedules, "g_IDEAKeySchedules");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-HANDLE ghCacheFileHandle = INVALID_HANDLE_VALUE;
-char * szBnNewsChannelName = s_BNNews_D2DV_006df210;
-uint32_t g_nRealmLogonResult = 0xff;
-uint32_t g_dwProductId = 0x1;
-int gnBnetLogFileHandle = 0;
-bool gbBnetLogInitialized = 0;
-D2BnCacheFileHeaderStrc * gpCacheFileHeader = 0;
-void * gpCacheBlockTable = 0;
-void * g_pCacheCryptTable = 0;
-uint8_t * gpCacheBufferPoolFirst = 0;
-uint32_t gbCacheIsOpen = 0;
-uint32_t g_nBNetServerToken = 0;
-uint32_t g_nBNetClientToken = 0;
-void * g_pBNetChannelListData = 0;
-void * gpRealmQueryData = 0;
-void * g_pBNetGameListData = 0;
-void * gpBNetWriteUserData = 0;
-void * g_pBNetReadUserData = 0;
-void * g_pBNetCDKeyHashData = 0;
-uint32_t g_nBNetConnectionState = 0;
-LONG * g_pBNetSocketData = 0;
+HANDLE ghCacheFileHandle = INVALID_HANDLE_VALUE; D2_GLOBAL_GUARD(ghCacheFileHandle, "ghCacheFileHandle");
+char * szBnNewsChannelName = s_BNNews_D2DV_006df210; D2_GLOBAL_GUARD(szBnNewsChannelName, "szBnNewsChannelName");
+uint32_t g_nRealmLogonResult = 0xff; D2_GLOBAL_GUARD(g_nRealmLogonResult, "g_nRealmLogonResult");
+uint32_t g_dwProductId = 0x1; D2_GLOBAL_GUARD(g_dwProductId, "g_dwProductId");
+int gnBnetLogFileHandle = 0; D2_GLOBAL_GUARD(gnBnetLogFileHandle, "gnBnetLogFileHandle");
+bool gbBnetLogInitialized = 0; D2_GLOBAL_GUARD(gbBnetLogInitialized, "gbBnetLogInitialized");
+D2BnCacheFileHeaderStrc * gpCacheFileHeader = 0; D2_GLOBAL_GUARD(gpCacheFileHeader, "gpCacheFileHeader");
+void * gpCacheBlockTable = 0; D2_GLOBAL_GUARD(gpCacheBlockTable, "gpCacheBlockTable");
+void * g_pCacheCryptTable = 0; D2_GLOBAL_GUARD(g_pCacheCryptTable, "g_pCacheCryptTable");
+uint8_t * gpCacheBufferPoolFirst = 0; D2_GLOBAL_GUARD(gpCacheBufferPoolFirst, "gpCacheBufferPoolFirst");
+uint32_t gbCacheIsOpen = 0; D2_GLOBAL_GUARD(gbCacheIsOpen, "gbCacheIsOpen");
+uint32_t g_nBNetServerToken = 0; D2_GLOBAL_GUARD(g_nBNetServerToken, "g_nBNetServerToken");
+uint32_t g_nBNetClientToken = 0; D2_GLOBAL_GUARD(g_nBNetClientToken, "g_nBNetClientToken");
+void * g_pBNetChannelListData = 0; D2_GLOBAL_GUARD(g_pBNetChannelListData, "g_pBNetChannelListData");
+void * gpRealmQueryData = 0; D2_GLOBAL_GUARD(gpRealmQueryData, "gpRealmQueryData");
+void * g_pBNetGameListData = 0; D2_GLOBAL_GUARD(g_pBNetGameListData, "g_pBNetGameListData");
+void * gpBNetWriteUserData = 0; D2_GLOBAL_GUARD(gpBNetWriteUserData, "gpBNetWriteUserData");
+void * g_pBNetReadUserData = 0; D2_GLOBAL_GUARD(g_pBNetReadUserData, "g_pBNetReadUserData");
+void * g_pBNetCDKeyHashData = 0; D2_GLOBAL_GUARD(g_pBNetCDKeyHashData, "g_pBNetCDKeyHashData");
+uint32_t g_nBNetConnectionState = 0; D2_GLOBAL_GUARD(g_nBNetConnectionState, "g_nBNetConnectionState");
+LONG * g_pBNetSocketData = 0; D2_GLOBAL_GUARD(g_pBNetSocketData, "g_pBNetSocketData");
 // also labelled: lpAddend_00881bf4
-LONG * Destination_00881bf4 = 0;
-uint32_t gbBNetSocketConnected = 0;
-long Target_00881bfc = 0;
+LONG * Destination_00881bf4 = 0; D2_GLOBAL_GUARD(Destination_00881bf4, "Destination_00881bf4");
+uint32_t gbBNetSocketConnected = 0; D2_GLOBAL_GUARD(gbBNetSocketConnected, "gbBNetSocketConnected");
+long Target_00881bfc = 0; D2_GLOBAL_GUARD(Target_00881bfc, "Target_00881bfc");
 // also labelled: lpAddend_00881c00
-LONG * Destination_00881c00 = 0;
-uint32_t g_nBNetThreadInitFlag = 0;
-uint32_t g_pfnNewsChannelCallback = 0;
-pfnVoidNoArgCallback g_pfnMotdCallback = (pfnVoidNoArgCallback)0;
-pfnVoidNoArgCallback g_pfnNewsCallback = (pfnVoidNoArgCallback)0;
-uint32_t g_nNewsMaxCacheSize = 0;
-uint32_t g_nNewsEntryCount = 0;
-void * gpBNetNewsCache = 0;
-uint32_t g_nFirstUnreadNewsIndex = 0;
-uint32_t g_dwNewsTimestamp = 0;
-int gnNetworkSendState = 0;
-unsigned int gbBnetDownloadCancelFlag = {};
-LONG * lpAddend_00881d5c = 0;
-uint8_t gbBnetFtpFileTransferActive = 0;
-uint8_t bBnetFtpDownloadActive = 0;
-uint32_t g_nBattleNetConnectionData = 0;
-uint32_t g_nBattleNetConnectionState = 0;
-BnMessQueue * nLobbyChatCurrentMessage = 0;
-BnMessQueue * nLobbyChatQueueMessages = 0;
-uint32_t g_nSIDResponseCount1 = 0;
-uint32_t g_nSIDResponseCount2 = 0;
-uint32_t g_bSIDProtocolReady = 0;
-uint32_t g_dwLastAdId = 0;
-uint32_t g_bSIDFlag2 = 0;
-
-// =============================================================================
-// Uninitialized data (BSS)
-// =============================================================================
-
-uint8_t gaBnSendRawBytesHeader;
-uint8_t gaCDKeyAuthData;
-uint8_t s_ColonSeparator;
+LONG * Destination_00881c00 = 0; D2_GLOBAL_GUARD(Destination_00881c00, "Destination_00881c00");
+uint32_t g_nBNetThreadInitFlag = 0; D2_GLOBAL_GUARD(g_nBNetThreadInitFlag, "g_nBNetThreadInitFlag");
+uint32_t g_pfnNewsChannelCallback = 0; D2_GLOBAL_GUARD(g_pfnNewsChannelCallback, "g_pfnNewsChannelCallback");
+pfnVoidNoArgCallback g_pfnMotdCallback = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(g_pfnMotdCallback, "g_pfnMotdCallback");
+pfnVoidNoArgCallback g_pfnNewsCallback = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(g_pfnNewsCallback, "g_pfnNewsCallback");
+uint32_t g_nFirstUnreadNewsIndex = 0; D2_GLOBAL_GUARD(g_nFirstUnreadNewsIndex, "g_nFirstUnreadNewsIndex");
+uint32_t g_dwNewsTimestamp = 0; D2_GLOBAL_GUARD(g_dwNewsTimestamp, "g_dwNewsTimestamp");
+int gnNetworkSendState = 0; D2_GLOBAL_GUARD(gnNetworkSendState, "gnNetworkSendState");
+unsigned int gbBnetDownloadCancelFlag = {}; D2_GLOBAL_GUARD(gbBnetDownloadCancelFlag, "gbBnetDownloadCancelFlag");
+LONG * lpAddend_00881d5c = 0; D2_GLOBAL_GUARD(lpAddend_00881d5c, "lpAddend_00881d5c");
+uint8_t gbBnetFtpFileTransferActive = 0; D2_GLOBAL_GUARD(gbBnetFtpFileTransferActive, "gbBnetFtpFileTransferActive");
+uint8_t bBnetFtpDownloadActive = 0; D2_GLOBAL_GUARD(bBnetFtpDownloadActive, "bBnetFtpDownloadActive");
+uint32_t g_nBattleNetConnectionData = 0; D2_GLOBAL_GUARD(g_nBattleNetConnectionData, "g_nBattleNetConnectionData");
+uint32_t g_nBattleNetConnectionState = 0; D2_GLOBAL_GUARD(g_nBattleNetConnectionState, "g_nBattleNetConnectionState");
+BnMessQueue * nLobbyChatCurrentMessage = 0; D2_GLOBAL_GUARD(nLobbyChatCurrentMessage, "nLobbyChatCurrentMessage");
+BnMessQueue * nLobbyChatQueueMessages = 0; D2_GLOBAL_GUARD(nLobbyChatQueueMessages, "nLobbyChatQueueMessages");
+uint32_t g_nSIDResponseCount1 = 0; D2_GLOBAL_GUARD(g_nSIDResponseCount1, "g_nSIDResponseCount1");
+uint32_t g_nSIDResponseCount2 = 0; D2_GLOBAL_GUARD(g_nSIDResponseCount2, "g_nSIDResponseCount2");
+uint32_t g_bSIDProtocolReady = 0; D2_GLOBAL_GUARD(g_bSIDProtocolReady, "g_bSIDProtocolReady");
+uint32_t g_dwLastAdId = 0; D2_GLOBAL_GUARD(g_dwLastAdId, "g_dwLastAdId");
+uint32_t g_bSIDFlag2 = 0; D2_GLOBAL_GUARD(g_bSIDFlag2, "g_bSIDFlag2");
 
 namespace D2Common::Drlg::Maze {
 
@@ -3178,10 +3275,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -3189,6 +3282,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 
@@ -3268,9 +3365,9 @@ namespace D2Client::_CdKey {
 // Initialized scalars
 // =============================================================================
 
-char * KeyClassic = 0;
-char * KeyExpansion = 0;
-char * KeyOwner = 0;
+char * KeyClassic = 0; D2_GLOBAL_GUARD(KeyClassic, "D2Client::_CdKey::KeyClassic");
+char * KeyExpansion = 0; D2_GLOBAL_GUARD(KeyExpansion, "D2Client::_CdKey::KeyExpansion");
+char * KeyOwner = 0; D2_GLOBAL_GUARD(KeyOwner, "D2Client::_CdKey::KeyOwner");
 
 } // namespace D2Client::_CdKey
 

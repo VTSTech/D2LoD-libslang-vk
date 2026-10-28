@@ -52,6 +52,7 @@
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "Fog/D2PoolManagerStrc.h"
+#include "Fog/Save.h"
 #include "globals/globals.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Common/DATATBLS/ItemStats.h"
@@ -121,60 +122,51 @@ BOOL __fastcall SKILLAMA_SrvStFn06_PowerStrike(::SGAMEDATA * pGame, D2UnitStrc *
 }
 
 // Amazon skill helper that probabilistically consumes weapon quantity or durability on use. For stackable weapons: if the RNG roll (based on pUnit's seed vs. nParam1 threshold) triggers, removes one charge via RemoveQuanityOnUse. For non-stackable weapons with durability: on a trigger, decrements durability by nParam2 and sends stat update 0x3E to the client; if durability reaches zero, calls ITEMMODE_SendItemUpdate (item break). Returns non-zero if an action was taken.
-uint32_t __stdcall UseQuanityAndDurability(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
-    D2ClientStrc* pClient;
-    uint32_t nUpdateResult;
-    uint32_t nRemoveResult;
+void __stdcall UseQuanityAndDurability(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+    int nCurrentDurability;
     uint16_t wLayer;
     bool bSendStatUpdate;
     int32_t nDurabilityStat;
     D2SeedStrc sNewSeed;
     uint32_t bIsWeapon = D2Common::ITEMS::Items::ITEMS_IsA(pUnit2, ITEMTYPE_Weapon);
-    uint32_t nResult = 0;
     if (!bIsWeapon) {
-      return nResult;
+      return;
     }
 
     BOOL fIsStackableCheck = D2Common::ITEMS::Items::IsStackable(pUnit2);
     if (!fIsStackableCheck) {
-      int nCurrentDurability;
+      D2ClientStrc* pClient;
       bIsWeapon = D2Common::ITEMS::Items::ITEM_CheckIfItemHasDurability(pUnit2);
-      nResult = 0;
       if (bIsWeapon) {
         sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
-        nResult = (uint32_t)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) * 0x51eb851f);
         pUnit->sSeed = sNewSeed;
         if ((int)(sNewSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 100) * -100) < nParam1) {
           nCurrentDurability = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_durability, 0);
-          nResult = nCurrentDurability - nParam2;
-          if (-1 < (int)nResult && nResult) {
-            D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit2, UNITSTAT_durability, nResult, 0);
+          bIsWeapon = nCurrentDurability - nParam2;
+          if (-1 < (int)bIsWeapon && bIsWeapon) {
+            D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit2, UNITSTAT_durability, bIsWeapon, 0);
             wLayer = 0;
             nDurabilityStat = 0x48;
             bSendStatUpdate = true;
             pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillAma.cpp", 0x9b);
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(pClient, pUnit2, bSendStatUpdate, nDurabilityStat, nResult, wLayer);
-            return nUpdateResult;
+            GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(pClient, pUnit2, bSendStatUpdate, nDurabilityStat, bIsWeapon, wLayer);
+            return;
           }
 
           ITEMS::ItemMode::ITEMMODE_SendItemUpdate(pGame, pUnit, pUnit2);
-          nResult = nRemoveResult;
         }
       }
     } else {
-      nResult = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_quantity, 0);
-      if (0 < (int)nResult) {
+      nCurrentDurability = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_quantity, 0);
+      if (0 < nCurrentDurability) {
         sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
-        nResult = (uint32_t)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) * 0x51eb851f);
         pUnit->sSeed = sNewSeed;
         if ((int)(sNewSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 100) * -100) < nParam1) {
-          nResult = SkillsServer::RemoveQuanityOnUse(pGame, pUnit);
-          return nResult;
+          SkillsServer::RemoveQuanityOnUse(pGame, pUnit);
+          return;
         }
       }
     }
-
-    return nResult;
 }
 
 // Amazon skill strike-step handler. Checks attack validity, then rolls a ToHit check (SKILLS_CalcToHit + DAMAGE_CalculateHitCheck). On hit: computes physical damage via calc[0], optional elemental conversion, calls SetDamageOnEvent, drains weapon quantity/durability via calc[1]/calc[2] (UseQuanityAndDurability), then applies damage with SrcDam=0x80.
@@ -452,6 +444,7 @@ uint32_t __fastcall SKILL_GetPhoenixBoltCount(D2SkillCallbackContextStrc * pCont
 }
 
 BOOL __fastcall Skills_SrvDoFunc_006_PhoenixStrikeAreaBolt(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    D2SkillAuraTargetArgStrc sAuraArgs;
     if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -461,17 +454,14 @@ BOOL __fastcall Skills_SrvDoFunc_006_PhoenixStrikeAreaBolt(::SGAMEDATA * pGame, 
       return 0;
     }
 
-    eD2Skills eSkillCopy = eSkill;
-    int32_t nSkillLvlCopy = nSkillLvl;
-    ::SGAMEDATA* pGame2 = pGame;
-    D2UnitStrc* pUnit2 = pUnit;
-    int32_t nDuration = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->auralencalc, eSkill, nSkillLvl);
-    eD2States eAuraTargetState = (eD2States)pSkillsTxt->auratargetstate;
-    int nAuraStatId = (int)pSkillsTxt->aurastat[0];
-    int32_t nAuraStatCalcVal = D2Common::Skills::D2GetSkillCalc(pUnit2, pSkillsTxt->aurastatcalc[0], eSkill, nSkillLvl);
-    D2UnitStrc* pUnit_00 = pUnit2;
-    int32_t nAuraRange = D2Common::Skills::D2GetSkillCalc(pUnit2, pSkillsTxt->aurarangecalc, eSkill, nSkillLvl);
-    SkillsServer::SKILLS_ApplyAreaEffect(pGame2, pUnit_00, 0, 0, nAuraRange, pSkillsTxt->aurafilter, SKILL_GetPhoenixBoltCount, &eSkillCopy, 1, ".\\SKILLS\\SkillAma.cpp", 0x20f);
+    sAuraArgs.eSkill = eSkill;
+    sAuraArgs.nSkillLvl = nSkillLvl;
+    sAuraArgs.nDuration = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->auralencalc, eSkill, nSkillLvl);
+    sAuraArgs.eAuraTargetState = (eD2States)pSkillsTxt->auratargetstate;
+    sAuraArgs.nAuraStat = (int32_t)pSkillsTxt->aurastat[0];
+    sAuraArgs.nAuraStatValue = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->aurastatcalc[0], eSkill, nSkillLvl);
+    int32_t nAuraRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->aurarangecalc, eSkill, nSkillLvl);
+    SkillsServer::SKILLS_ApplyAreaEffect(pGame, pUnit, 0, 0, nAuraRange, pSkillsTxt->aurafilter, SKILL_GetPhoenixBoltCount, &sAuraArgs, 1, ".\\SKILLS\\SkillAma.cpp", 0x20f);
     return 1;
 }
 
@@ -583,10 +573,10 @@ BOOL __fastcall Skills_SrvDoFunc_008_MultipleShot(::SGAMEDATA * pGame, D2UnitStr
     SkillsServer::SKILLS_NormalizeDirectionPerp(&nDirX, &nDirY);
     nTargetX -= (int)(nDirX * nArrowSpread) / 2;
     nTargetY -= (int)(nDirY * nArrowSpread) / 2;
-    eMissileId = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     nWeaponClass = D2Common::Units::GetWeaponClass(pUnit);
-    if (nWeaponClass != 1 && -1 < pSkillTxt->srvmissileb) {
-      eMissileId = (eMissilesId)pSkillTxt->srvmissileb;
+    if (nWeaponClass != 1 && -1 < pSkillTxt->srvmissile[2]) {
+      eMissileId = (eMissilesId)pSkillTxt->srvmissile[2];
     }
     if ((int)eMissileId < 0) {
       return 0;
@@ -687,10 +677,10 @@ BOOL __fastcall Skills_SrvDoFunc_010_GuidedArrowLaunch(::SGAMEDATA * pGame, D2Un
     }
 
     int32_t nUnitX = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[0], eSkill, nSkillLvl);
-    eMissilesId eMissileId = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     uint32_t nWeaponClass = D2Common::Units::GetWeaponClass(pUnit);
-    if (nWeaponClass != 1 && -1 < pSkillTxt->srvmissileb) {
-      eMissileId = (eMissilesId)pSkillTxt->srvmissileb;
+    if (nWeaponClass != 1 && -1 < pSkillTxt->srvmissile[2]) {
+      eMissileId = (eMissilesId)pSkillTxt->srvmissile[2];
     }
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
@@ -864,10 +854,10 @@ BOOL __fastcall Skills_SrvDoFunc_012_StrafeContinue(::SGAMEDATA * pGame, D2UnitS
     uint32_t nCursorX = 0;
     uint32_t nCursorY = 0;
     SkillsServer::SKILLS_GetTargetOrCursorPos(pGameSave, pUnit, &nCursorX, &nCursorY);
-    eMissileId = (eMissilesId)pSkillTxt->srvmissilea;
+    eMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     nTargetGUID = D2Common::Units::GetWeaponClass(pUnit);
-    if (nTargetGUID != 1 && -1 < pSkillTxt->srvmissileb) {
-      eMissileId = (eMissilesId)pSkillTxt->srvmissileb;
+    if (nTargetGUID != 1 && -1 < pSkillTxt->srvmissile[2]) {
+      eMissileId = (eMissilesId)pSkillTxt->srvmissile[2];
     }
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;

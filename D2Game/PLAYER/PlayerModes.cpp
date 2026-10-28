@@ -69,6 +69,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
+#include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
@@ -124,7 +125,7 @@ BOOL PLRMODES_CanInterruptCurrentMode(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, u
     0x1,
     0x1,
     0x0
-};
+}; D2_STATIC_GUARD(PLRMODES_CanInterruptCaseIndex, "D2Game::PLAYER::PlayerModes::PLRMODES_CanInterruptCurrentMode::PLRMODES_CanInterruptCaseIndex");
 
     D2UnitStrc* pCursorItem_lcl;
     int32_t iVar1;
@@ -304,10 +305,10 @@ int32_t __fastcall PLRMODES_ModeCallback_Neutral(::SGAMEDATA * pGame, D2UnitStrc
 
 // Begins a player movement path and transitions animation mode. Restores velocity/path type, then normalises the requested mode: Run falls back to Walk if stamina is 0; Walk/TownWalk are promoted to TownWalk when in town; KnockBack sets path type 8 and distance 5. Calculates the path; if path has waypoints, calls FreeCombatAndChangeAnimMode + clears anim timers; otherwise falls back to idle mode.
 void __stdcall PLRMODES_StartPathAndChangeMode(::SGAMEDATA * pGame, eD2PlayerAnimMode dwParam, D2UnitStrc * pUnit) {
-    int32_t nErrorAddress;
     int nStamina;
     D2RoomStrc* pRoom;
     BOOL bInTown;
+    int32_t nErrorLine;
     if (!pGame) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x138);
       exit(-1);
@@ -336,8 +337,8 @@ void __stdcall PLRMODES_StartPathAndChangeMode(::SGAMEDATA * pGame, eD2PlayerAni
 
     D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
     D2Common::Units::SetCurrentSkill(pUnit, nullptr);
-    nErrorAddress = D2Common::PATH::DynamicPath::GetPathPointsSize(pDynamicPath);
-    if (nErrorAddress) {
+    nErrorLine = D2Common::PATH::DynamicPath::GetPathPointsSize(pDynamicPath);
+    if (nErrorLine) {
       UNIT::SUnit::FreeCombatAndChangeAnimMode(pGame, pUnit, dwParam);
       UNIT::SUnit::UNITS_ClearAnimTimerEvents(pGame, pUnit);
       UNIT::SUnit::UNITS_ClearAnimAndTriggerEndAnim(pGame, pUnit);
@@ -475,7 +476,7 @@ void __stdcall PLRMODES_UnequipAndPrepareItemForDrop(::SGAMEDATA * pGame, D2Unit
     D2Common::INVENTORY::Inventory::INVENTORY_SwapPrimaryWeaponOnRemoval(pInventory, pUnit2);
     D2UnitStrc* pOwnerUnit = D2Common::INVENTORY::Inventory::ItemBelongsToInventoryOfPlayer(pInventory, pUnit2);
     if (!pOwnerUnit) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x25d);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x25d);
       exit(-1);
     } else {
       eD2ItemTypes eItemType;
@@ -503,7 +504,7 @@ void __stdcall PLRMODES_UnequipAndPrepareItemForDrop(::SGAMEDATA * pGame, D2Unit
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x25e);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x25e);
       exit(-1);
     }
 }
@@ -1105,8 +1106,9 @@ int32_t __fastcall PLRMODES_ModeCallback_AttackSkill(::SGAMEDATA * pGame, D2Unit
 // Ticks stamina recovery for a player unit each game loop. Reads current stamina and UNITSTAT_staminarecoverybonus; recovery shift is 8 (standing/town-walk) or 9 (walking). Applies bonus percentage, clamps to max stamina, then writes back via STATLIST_SetUnitStat. Returns early if already at max or if in a non-recovery anim mode (e.g. attacking).
 void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
     eD2PlayerAnimMode eAnimMode;
+    int32_t nShiftAmount;
     uint32_t nCurrentStamina = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_stamina, 0);
-    int8_t nShiftAmount = 8;
+    *(uint8_t*)(char*)&nShiftAmount = 8;
     int nRecoveryBonus = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_staminarecoverybonus, 0);
     if (!pUnit) {
       eAnimMode = Death;
@@ -1120,7 +1122,7 @@ void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
       case TownNeutral:
         break;
       case Walk:
-        nShiftAmount = 9;
+        *(uint8_t*)(char*)&nShiftAmount = 9;
       if (!(nCurrentStamina & -256)) {
         return;
       }
@@ -1132,7 +1134,7 @@ void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
         }
       break;
       case TownWalk:
-        nShiftAmount = 9;
+        *(uint8_t*)(char*)&nShiftAmount = 9;
     }
 
     int32_t nMaxStamina = D2Common::Stats::StatsEx::GetTxtMaxStamina(pUnit);
@@ -1140,7 +1142,7 @@ void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
       return;
     }
 
-    int nRecoverAmount = nMaxStamina >> nShiftAmount;
+    int nRecoverAmount = nMaxStamina >> (int8_t)nShiftAmount;
     if (nRecoveryBonus) {
       nRecoverAmount += nRecoverAmount * nRecoveryBonus / 100;
     }
@@ -1153,19 +1155,19 @@ void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_stamina, nRecoveryBonus, 0);
 }
 
-int32_t PLRMODES_GetHpPercent128(D2UnitStrc * pUnit, int32_t dwParam) {
+uint8_t PLRMODES_GetHpPercent128(D2UnitStrc * pUnit) {
     if (!pUnit) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)dwParam >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)0x80);
+      return 0x80;
     }
 
     int nHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
     int32_t nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
     int nMaxHpShifted = nMaxHp >> 8;
     if (!(0 < nMaxHpShifted && nHp >> 8 < nMaxHpShifted)) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nMaxHp >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)0x80);
+      return 0x80;
     }
 
-    return (nHp >> 8 << 7) / nMaxHpShifted;
+    return (uint8_t)((nHp >> 8 << 7) / nMaxHpShifted);
 }
 
 // Per-tick HP regeneration tick for a player unit. Reads UNITSTAT_hpregen; if zero returns early. Adds regen to current HP capped at txt-max; if the max is exceeded and the player has a healthpot state-list, removes and frees it. Enforces a floor of 0x100. Writes the new HP via STATLIST_SetUnitStat, then computes a 7-bit HP-percent and sends packet 0xAB to the client only if the change exceeds 4 units from the last sent value.
@@ -1809,7 +1811,7 @@ void __fastcall PLRMODES_ProcessPlayerMode(::SGAMEDATA * pGame, D2UnitStrc * pUn
     &D2Game::PLAYER::PlayerModes::PLRMODES_ModeCallback_DeathDead,
     &D2Game::PLAYER::PlayerModes::PLRMODES_ModeCallback_AttackSkill,
     &D2Game::PLAYER::PlayerModes::PLRMODES_ModeCallback_WalkRunBlock
-};
+}; D2_STATIC_GUARD(gaPlayerModeCallbacks, "D2Game::PLAYER::PlayerModes::PLRMODES_ProcessPlayerMode::gaPlayerModeCallbacks");
 
     int nCallbackResult;
     int nAnimMode = !pUnit ? 0 : pUnit->eAnimMode.ePlayerMode;

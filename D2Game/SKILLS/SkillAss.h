@@ -20,6 +20,33 @@ typedef int eD2States;
 typedef int eD2UnitStat;
 typedef int eMissilesId;
 
+// Data types
+struct D2MindBlastArgStrc {
+    /* 0x00 */ struct D2DamageStrc * pDamage;
+    /* 0x04 */ int32_t nStunLength;
+    /* 0x08 */ int32_t nConvertChance;
+    /* 0x0C */ int32_t nStunChance;
+};
+
+struct D2SkillAreaDamageArgStrc {
+    /* 0x00 */ struct D2DamageStrc * pDamage;
+    /* 0x04 */ int32_t nToHit;
+    /* 0x08 */ uint16_t wResultFlags;
+    /* 0x0A */ uint16_t _pad0A;
+    /* 0x0C */ uint32_t dwHitFlags;
+    /* 0x10 */ uint8_t nSrcDam;
+    /* 0x11 */ uint8_t _pad11[3];
+};
+
+struct __attribute__((packed)) D2SkillCurseArgStrc {
+    /* 0x00 */ eD2Skills eSkill;
+    /* 0x04 */ int32_t nSkillLvl;
+    /* 0x08 */ int32_t nDurationFrames;
+    /* 0x0C */ eD2States eTargetState;
+    /* 0x10 */ int32_t anStatIds[6];
+    /* 0x28 */ int32_t anStatValues[6];
+};
+
 namespace D2Game::SKILLS::SkillAss {
 
 // Function declarations

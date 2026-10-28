@@ -9,7 +9,6 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2ArchiveStrc;
 struct D2GamePalShiftGreenBloodStrc;
 struct D2InventoryStrc;
 struct D2LightMapStrc;
@@ -7237,8 +7236,8 @@ struct __attribute__((packed)) D2MonModeTxt {
 namespace D2Client::Engine::Gfx {
 
 // Function declarations
-struct D2InventoryStrc * __fastcall CLIENT_GetEffectiveInventory(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
-uint32_t GFX_HashTextureName(struct D2ArchiveStrc * pArchive);
+struct D2InventoryStrc * __fastcall CLIENT_GetEffectiveInventory(struct D2UnitStrc * pUnit, int * pUnit2);
+uint32_t GFX_HashTextureName(char * pArchive);
 void GFX_ExtractFilenameFromPath(uint32_t dwUnused, char * szPath, char * szOutFilename);
 void * __stdcall GFX_FindTextureInCache(void * pTextureCache, char * szPath);
 // @sourcefile .\ENGINE\Gfx.cpp

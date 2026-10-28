@@ -9,6 +9,8 @@
 
 static HANDLE g_hBootLog = INVALID_HANDLE_VALUE;
 static char g_szBootLogPath[MAX_PATH] = "(unopened)";
+static CRITICAL_SECTION g_csBootLog; // serialized: marks come from several threads
+static BOOL g_bBootLogCsReady = FALSE;
 
 static void BootLogOpen() {
     if (g_hBootLog != INVALID_HANDLE_VALUE) return;
@@ -34,13 +36,17 @@ static void BootLogOpen() {
 }
 
 static void BootLogWrite(const char* pszLine) {
+    // Serialized: marks come from several threads (render, sound, main).
+    if (g_bBootLogCsReady) EnterCriticalSection(&g_csBootLog);
     BootLogOpen();
-    if (g_hBootLog == INVALID_HANDLE_VALUE) return;
-    char szBuf[640];
-    int n = wsprintfA(szBuf, "[%8lu ms] %s\r\n", (unsigned long)GetTickCount(), pszLine);
-    DWORD dwWritten = 0;
-    WriteFile(g_hBootLog, szBuf, (DWORD)n, &dwWritten, 0);
-    FlushFileBuffers(g_hBootLog);
+    if (g_hBootLog != INVALID_HANDLE_VALUE) {
+        char szBuf[640];
+        int n = wsprintfA(szBuf, "[%8lu ms] %s\r\n", (unsigned long)GetTickCount(), pszLine);
+        DWORD dwWritten = 0;
+        WriteFile(g_hBootLog, szBuf, (DWORD)n, &dwWritten, 0);
+        FlushFileBuffers(g_hBootLog);
+    }
+    if (g_bBootLogCsReady) LeaveCriticalSection(&g_csBootLog);
 }
 
 extern "C" void D2BOOT_Mark(const char* pszStage) {
@@ -70,6 +76,8 @@ extern "C" void D2BOOT_Fail(const char* pszStage) {
 __attribute__((init_priority(130))) static struct D2BootInit {
     D2BootInit() {
         BootLogOpen();
+        InitializeCriticalSection(&g_csBootLog); // before any marks can race
+        g_bBootLogCsReady = TRUE;
         char szLine[MAX_PATH + 64];
         wsprintfA(szLine, "static-init ok (CRT + globals); log = %s", g_szBootLogPath);
         BootLogWrite(szLine);

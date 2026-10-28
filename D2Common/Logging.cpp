@@ -19,17 +19,12 @@ void __stdcall MISC_SafeStrncpy(char * szText, size_t nSize) {
 }
 
 // NOTE: Callee-saved register params inferred (medium confidence): pchar (EBX): char*
-void __fastcall StoreLogging(va_list pArgs, FILE * pFile, uint32_t nThreadId, uint32_t nLogLevel, uint32_t nComponent, uint32_t nSubsystem, uint32_t nSequence, char * szContext) {
+void __fastcall StoreLogging(char * szFormat, va_list pArgs, FILE * pFile, uint32_t nThreadId, uint32_t nLogLevel, uint32_t nComponent, uint32_t nSubsystem, uint32_t nSequence, char * szContext) {
     size_t nHeaderLen;
     int nMessageLen;
     char* szOutput;
     uint16_t* pszNewlinePos;
-    LPSYSTEMTIME Time;
-    uint16_t wHour;
-    uint16_t wMinute;
-    uint16_t wSecond;
-    uint16_t wMilliseconds;
-    char* szFmt;
+    SYSTEMTIME sLocalTime;
     char szLogLineBuf[500];
     uint32_t local_8;
     FILE* pFileToFlush;
@@ -37,14 +32,13 @@ void __fastcall StoreLogging(va_list pArgs, FILE * pFile, uint32_t nThreadId, ui
     char* szOutput_00;
     char* szWritePos;
     FILE* pLogFile = pFile;
-    va_list pArgsCopy = pArgs;
     if (bLOGFILE_ENABLED) {
       size_t nTimestampLen;
-      /* LPSYSTEMTIME lpSystemTime for GetLocalTime */ GetLocalTime((LPSYSTEMTIME)&Time);
-      nTimestampLen = Storm::Source::SSTR::SStrPrintf(szLogLineBuf, 500, "%02u:%02u:%02u.%03u\t", (uint32_t)wHour, (uint32_t)wMinute, (uint32_t)wSecond, (uint32_t)wMilliseconds);
+      /* LPSYSTEMTIME lpSystemTime for GetLocalTime */ GetLocalTime(&sLocalTime);
+      nTimestampLen = Storm::Source::SSTR::SStrPrintf(szLogLineBuf, 500, "%02u:%02u:%02u.%03u\t", (uint32_t)sLocalTime.wHour, (uint32_t)sLocalTime.wMinute, (uint32_t)sLocalTime.wSecond, (uint32_t)sLocalTime.wMilliseconds);
       szWritePos = szLogLineBuf + nTimestampLen;
       nHeaderLen = Storm::Source::SSTR::SStrPrintf(szWritePos, 500 - nTimestampLen, "%01lu\t%01lu\t%01lu\t%02lu\t%.50s\t%.5lu\t", nThreadId, nLogLevel, nComponent, nSubsystem, szContext, nSequence);
-      nMessageLen = Storm::Source::SSTR::SStrVPrintf(szWritePos + nHeaderLen, 500 - nTimestampLen - nHeaderLen, szFmt, pArgsCopy);
+      nMessageLen = Storm::Source::SSTR::SStrVPrintf(szWritePos + nHeaderLen, 500 - nTimestampLen - nHeaderLen, szFormat, pArgs);
       pFileToFlush = pLogFile;
       pszNewlinePos = (uint16_t*)(szWritePos + nHeaderLen + nMessageLen - 1);
       do {
@@ -63,7 +57,7 @@ void __fastcall StoreLogging(va_list pArgs, FILE * pFile, uint32_t nThreadId, ui
 }
 
 void LOGGING_FilePrintf(FILE * pFile, uint32_t dwGame, uint32_t dwFrame, uint32_t dwClient, uint32_t dwLogType, char * szFilename, uint32_t nLine, char * szFormatString, ...) {
-    StoreLogging((va_list)((uint8_t*)&szFormatString + 4), pFile, dwGame, dwFrame, dwClient, dwLogType, nLine, szFilename);
+    StoreLogging(szFormatString, (va_list)((uint8_t*)&szFormatString + 4), pFile, dwGame, dwFrame, dwClient, dwLogType, nLine, szFilename);
 }
 
 void LOGGING_LogLine(int32_t nGame, int32_t nFrame, int32_t nClient, int32_t nLogType, char * szFilename, int32_t nLine, char * szFormatString, ...) {
@@ -72,7 +66,7 @@ void LOGGING_LogLine(int32_t nGame, int32_t nFrame, int32_t nClient, int32_t nLo
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0096ca30);
-    StoreLogging((va_list)((uint8_t*)&szFormatString + 4), pLOGFILE, nGame, nFrame, nClient, nLogType, nLine, szFilename);
+    StoreLogging(szFormatString, (va_list)((uint8_t*)&szFormatString + 4), pLOGFILE, nGame, nFrame, nClient, nLogType, nLine, szFilename);
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0096ca30);
 }
 

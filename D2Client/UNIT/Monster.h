@@ -66,6 +66,17 @@ struct __attribute__((packed)) D2HirelingHireData {
     /* 0x38 */ int16_t field14_0x38;
 };
 
+struct D2MercInitArgStrc {
+    D2MercInitArgStrc() = default;
+    D2MercInitArgStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+    D2MercInitArgStrc(uint16_t a0, uint16_t a1, uint32_t a2) : wInitSeed(a0), wPad(a1), nSeed(a2) {}
+
+    /* 0x00 */ uint16_t wInitSeed;
+    /* 0x02 */ uint16_t wPad; // never written
+    /* 0x04 */ uint32_t nSeed;
+};
+
 struct __attribute__((packed)) D2MonMsgAnimModeStrc {
     /* 0x00 */ eD2MonsterAnimMode eMode; // Mode MonsterMessage sets for this message id; 0x10 = none (MONSTER_IsModeMoveFlagSet rejects >= 0x10)
     /* 0x04 */ int bCheckMoveFlag; // Nonzero: test the MonStats2 per-mode move flag (+0x104 bit[mode])
@@ -115,78 +126,18 @@ struct __attribute__((packed)) D2MonStats2Txt {
     /* 0x026 */ uint8_t aCompCodes[192]; // component code table: 16 seq slots x 12 bytes (3 dwords each, struct+0x26+slot*0xc); resolved class ids from comp code names, MONSTERTBLS_ParseMonSeqField
     /* 0x0E6 */ uint8_t field_0xe6;
     /* 0x0E7 */ uint8_t field_0xe7;
-    /* 0x0E8 */ struct {
-        /* 0x0E8 */ uint8_t HD : 1; // flag bit: byte 0xe8 mask 0x1
-        /* 0x0E8 */ uint8_t TR : 1; // flag bit: byte 0xe8 mask 0x2
-        /* 0x0E8 */ uint8_t LG : 1; // flag bit: byte 0xe8 mask 0x4
-        /* 0x0E8 */ uint8_t RA : 1; // flag bit: byte 0xe8 mask 0x8
-        /* 0x0E8 */ uint8_t LA : 1; // flag bit: byte 0xe8 mask 0x10
-        /* 0x0E8 */ uint8_t RH : 1; // flag bit: byte 0xe8 mask 0x20
-        /* 0x0E8 */ uint8_t LH : 1; // flag bit: byte 0xe8 mask 0x40
-        /* 0x0E8 */ uint8_t SH : 1; // flag bit: byte 0xe8 mask 0x80
-        /* 0x0E9 */ uint8_t S1 : 1; // flag bit: byte 0xe9 mask 0x1
-        /* 0x0E9 */ uint8_t S2 : 1; // flag bit: byte 0xe9 mask 0x2
-        /* 0x0E9 */ uint8_t S3 : 1; // flag bit: byte 0xe9 mask 0x4
-        /* 0x0E9 */ uint8_t S4 : 1; // flag bit: byte 0xe9 mask 0x8
-        /* 0x0E9 */ uint8_t S5 : 1; // flag bit: byte 0xe9 mask 0x10
-        /* 0x0E9 */ uint8_t S6 : 1; // flag bit: byte 0xe9 mask 0x20
-        /* 0x0E9 */ uint8_t S7 : 1; // flag bit: byte 0xe9 mask 0x40
-        /* 0x0E9 */ uint8_t S8 : 1; // flag bit: byte 0xe9 mask 0x80
-    };
+    /* 0x0E8 */ uint8_t HD[2]; // flag bit: byte 0xe8 mask 0x1
     /* 0x0EA */ uint8_t field_0xea;
     /* 0x0EB */ uint8_t field_0xeb;
     /* 0x0EC */ char TotalPieces;
     /* 0x0ED */ uint8_t field_0xed;
     /* 0x0EE */ uint8_t field_0xee;
     /* 0x0EF */ uint8_t field_0xef;
-    /* 0x0F0 */ struct {
-        /* 0x0F0 */ uint8_t mDT : 1; // flag bit: byte 0xf0 mask 0x1
-        /* 0x0F0 */ uint8_t mNU : 1; // flag bit: byte 0xf0 mask 0x2
-        /* 0x0F0 */ uint8_t mWL : 1; // flag bit: byte 0xf0 mask 0x4
-        /* 0x0F0 */ uint8_t mGH : 1; // flag bit: byte 0xf0 mask 0x8
-        /* 0x0F0 */ uint8_t mA1 : 1; // flag bit: byte 0xf0 mask 0x10
-        /* 0x0F0 */ uint8_t mA2 : 1; // flag bit: byte 0xf0 mask 0x20
-        /* 0x0F0 */ uint8_t mBL : 1; // flag bit: byte 0xf0 mask 0x40
-        /* 0x0F0 */ uint8_t mSC : 1; // flag bit: byte 0xf0 mask 0x80
-        /* 0x0F1 */ uint8_t mS1 : 1; // flag bit: byte 0xf1 mask 0x1
-        /* 0x0F1 */ uint8_t mS2 : 1; // flag bit: byte 0xf1 mask 0x2
-        /* 0x0F1 */ uint8_t mS3 : 1; // flag bit: byte 0xf1 mask 0x4
-        /* 0x0F1 */ uint8_t mS4 : 1; // flag bit: byte 0xf1 mask 0x8
-        /* 0x0F1 */ uint8_t mDD : 1; // flag bit: byte 0xf1 mask 0x10
-        /* 0x0F1 */ uint8_t mKB : 1; // flag bit: byte 0xf1 mask 0x20
-        /* 0x0F1 */ uint8_t mSQ : 1; // flag bit: byte 0xf1 mask 0x40
-        /* 0x0F1 */ uint8_t mRN : 1; // flag bit: byte 0xf1 mask 0x80
-    };
+    /* 0x0F0 */ uint8_t mDT[2]; // flag bit: byte 0xf0 mask 0x1
     /* 0x0F2 */ uint8_t field_0xf2;
     /* 0x0F3 */ uint8_t field_0xf3;
-    /* 0x0F4 */ uint8_t byDirDT; // dDT - NumDirections for Dead mode
-    /* 0x0F5 */ uint8_t byDirNU; // dNU - NumDirections for Neutral mode
-    /* 0x0F6 */ uint8_t byDirWL; // dWL - NumDirections for Walk mode
-    /* 0x0F7 */ uint8_t byDirGH; // dGH - NumDirections for GetHit mode
-    /* 0x0F8 */ uint8_t byDirA1; // dA1 - NumDirections for Attack1 mode
-    /* 0x0F9 */ uint8_t byDirA2; // dA2 - NumDirections for Attack2 mode
-    /* 0x0FA */ uint8_t byDirBL; // dBL - NumDirections for Block mode
-    /* 0x0FB */ uint8_t byDirSC; // dSC - NumDirections for Cast mode
-    /* 0x0FC */ uint8_t byDirS1; // dS1 - NumDirections for Skill1 mode
-    /* 0x0FD */ uint8_t byDirS2; // dS2 - NumDirections for Skill2 mode
-    /* 0x0FE */ uint8_t byDirS3; // dS3 - NumDirections for Skill3 mode
-    /* 0x0FF */ uint8_t byDirS4; // dS4 - NumDirections for Skill4 mode
-    /* 0x100 */ uint8_t byDirDD; // dDD - NumDirections for DeadDead mode
-    /* 0x101 */ uint8_t byDirKB; // dKB - NumDirections for KnockBack mode
-    /* 0x102 */ uint8_t byDirSQ; // dSQ - NumDirections for Sequence mode
-    /* 0x103 */ uint8_t byDirRN; // dRN - NumDirections for Run mode
-    /* 0x104 */ struct {
-        uint8_t : 4;  // unused
-        /* 0x104 */ uint8_t A1mv : 1; // flag bit: byte 0x104 mask 0x10
-        /* 0x104 */ uint8_t A2mv : 1; // flag bit: byte 0x104 mask 0x20
-        uint8_t : 1;  // unused
-        /* 0x104 */ uint8_t SCmv : 1; // flag bit: byte 0x104 mask 0x80
-        /* 0x105 */ uint8_t S1mv : 1; // flag bit: byte 0x105 mask 0x1
-        /* 0x105 */ uint8_t S2mv : 1; // flag bit: byte 0x105 mask 0x2
-        /* 0x105 */ uint8_t S3mv : 1; // flag bit: byte 0x105 mask 0x4
-        /* 0x105 */ uint8_t S4mv : 1; // flag bit: byte 0x105 mask 0x8
-        uint8_t : 4;  // unused
-    };
+    /* 0x0F4 */ uint8_t byDirDT[16]; // dDT - NumDirections for Dead mode
+    /* 0x104 */ uint8_t A1mv[2]; // flag bit: byte 0x104 mask 0x10
     /* 0x106 */ uint8_t field_0x106;
     /* 0x107 */ uint8_t field_0x107;
     /* 0x108 */ char byInfernoLen; // InfernoLen - number of inferno (channeled) sub-anims (struct+0x108)
@@ -207,9 +158,7 @@ struct __attribute__((packed)) D2MonStats2Txt {
     /* 0x11F */ uint8_t byLgtR; // light red component (AllocLightMap R param)
     /* 0x120 */ uint8_t byLgtG; // light green component (AllocLightMap G param)
     /* 0x121 */ uint8_t byLgtB; // light blue component (AllocLightMap B param)
-    /* 0x122 */ uint8_t byUtrans; // Utrans — unique colour transform (normal difficulty)
-    /* 0x123 */ uint8_t byUtransN; // Utrans(N) - unique palette transform for Nightmare
-    /* 0x124 */ uint8_t byUtransH; // Utrans(H) - unique palette transform for Hell
+    /* 0x122 */ uint8_t byUtrans[3]; // Utrans — unique colour transform (normal difficulty)
     /* 0x125 */ uint8_t field_0x125;
     /* 0x126 */ uint8_t field_0x126;
     /* 0x127 */ uint8_t field_0x127;
@@ -266,6 +215,11 @@ struct D2MonsterDataComponents {
     /* 0x0F */ uint8_t S8;
 };
 
+struct D2MonsterEquipEntryStrc {
+    /* 0x00 */ char szItemCode[4]; // space-padded item code
+    /* 0x04 */ int field_0x4; // 0x101..0x10a, read with the code by MONSTER_EquipFromClassTable
+};
+
 struct D2MonsterForEachStruct {
     /* 0x00 */ int value;
     /* 0x04 */ uint32_t (__fastcall *pCallBack)(::SGAMEDATA *, struct D2UnitStrc *, struct D2UnitStrc *, struct D2MonsterAiParameterStruct *);
@@ -318,7 +272,7 @@ void __fastcall MONSTER_SetMonStatsTxtAndType(struct D2UnitStrc * pUnit, uint16_
 int32_t * __fastcall GetMonsterAi(struct D2UnitStrc * pUnit);
 int32_t __fastcall GetOwnerGUID(struct D2UnitStrc * pUnit);
 void __fastcall SetOwnerGUID(struct D2UnitStrc * pUnit, int32_t nOwnerGUID);
-int32_t __fastcall MONSTER_GetAiDataPtr(struct D2UnitStrc * pUnit);
+int * __fastcall MONSTER_GetAiDataPtr(struct D2UnitStrc * pUnit);
 void MONSTER_ResetToNeutralFacingTarget(struct D2UnitStrc * pUnit);
 // Allocates and attaches a D2LightMapStrc to a monster unit. Computes the final light radius as the max of the monster's equipment light and its MonStats2 byLight value; special-cases Den of Evil quest monsters (clamped to radius 3). Replaces any existing light map and updates the unit's stored light radius.
 void __fastcall MONSTER_InitLightMap(struct D2UnitStrc * pUnit);
@@ -328,7 +282,7 @@ int32_t __fastcall IsMonsterGhostly(struct D2UnitStrc * pUnit);
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 BOOL __fastcall IsMonsterUnique(struct D2UnitStrc * pUnit);
 int32_t __fastcall IsMonsterMinion(struct D2UnitStrc * pUnit);
-bool __fastcall IsMonsterSuperUnique(struct D2UnitStrc * pUnit);
+BOOL __fastcall IsMonsterSuperUnique(struct D2UnitStrc * pUnit);
 void __fastcall MONSTER_ExplodeOwnerMissile(struct D2UnitStrc * pUnit);
 // Advances the monster's RNG seed, picks one of 5 missile IDs from a hard-coded table at gTxtCompilationMemPool+0x157c, casts it at the monster's own position via CastAttack, stores mutual owner links between unit and missile, and marks the missile NODRAW so it renders only via its attached particle.
 void MONSTER_SpawnRandomAttachedMissile(struct D2UnitStrc * pUnit);
@@ -365,7 +319,7 @@ void MONSTER_HandleBurrowTransition(struct D2UnitStrc * pUnit, int32_t nParam);
 void __fastcall MonsterMessage(int32_t nParam, struct D2UnitStrc * pUnit, struct D2ServerMessageHandleStrc * pMessage);
 uint32_t __fastcall NPCMENU_ParseSpeechData(int * pnParam, uint8_t * pParam, int * pnSpeechResult);
 // Client-side initialization of a mercenary unit from a network packet. Sets ISMERC|TARGETABLE flags, reads the name/seed from the packet, rolls stats via RollMercStats using the current player's level and difficulty, then assigns skills (id, level, mode) from the HirelingTxt table, sets the localized name, and recalculates equipped item stats.
-void __fastcall MERC_InitializeFromPacket(struct D2UnitStrc * pUnit, uint16_t * nParam);
+void __fastcall MERC_InitializeFromPacket(struct D2UnitStrc * pUnit, struct D2MercInitArgStrc * pMercInit);
 int __fastcall MONSTER_CanBeConverted(void * pUnit);
 void __fastcall NPCMENU_HandleQuestUpdate(int32_t nParam);
 // Client-side monster animation tick / end-of-cycle event dispatcher. Fires MonsterMessage(9) when SplEndDeath is set and both target coords are zero at the end of the frame cycle. Then switches on mode (nParam+4): advances the frame, clears collision/size, sets a path-point flag, or resets size to 0x100 depending on mode 0-3.

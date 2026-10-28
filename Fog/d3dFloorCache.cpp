@@ -53,16 +53,16 @@ void __stdcall D3D_RenderBinkVideoFrame() {
 
 void __fastcall D3D_PlayBinkVideo(char * szVideoPath, int nAudioMode, fnBinkFrameCallback pfnCallback) {
     // Static local variables (originally global data)
-    static uint32_t gbBinkVideoExitProcess;
-    static unsigned int gdwBinkVideoClickTime;
+    static uint32_t gbBinkVideoExitProcess; D2_STATIC_GUARD_BSS(gbBinkVideoExitProcess, "Fog::d3dFloorCache::D3D_PlayBinkVideo::gbBinkVideoExitProcess");
+    static unsigned int gdwBinkVideoClickTime; D2_STATIC_GUARD_BSS(gdwBinkVideoClickTime, "Fog::d3dFloorCache::D3D_PlayBinkVideo::gdwBinkVideoClickTime");
 
     uint32_t dwTickNow;
     int nBinkWaitResult;
     uint32_t dwBinkOpenFlags;
-    uint8_t msg[4];
-    tagMSG msgWindow;
+    tagMSG sMsg;
     HANDLE hVideoFile;
-    msgWindow.pt.y = 0;
+    bool bVar1;
+    bVar1 = false;
     gbBinkVideoShouldStop = 0;
     if (!(!gpBinkVideoD3D && !gnRenderState)) {
       return;
@@ -72,9 +72,9 @@ void __fastcall D3D_PlayBinkVideo(char * szVideoPath, int nAudioMode, fnBinkFram
     BinkSetSoundSystem(BinkOpenDirectSound, 0);
     uint32_t nOpenFlags;
     nOpenFlags = 4;
-    BOOL BVar1;
-    BVar1 = Source::SFile::GetUseDirectCommand();
-    if (BVar1) {
+    BOOL BVar2;
+    BVar2 = Source::SFile::GetUseDirectCommand();
+    if (BVar2) {
       nOpenFlags = 5;
     }
 
@@ -111,7 +111,7 @@ void __fastcall D3D_PlayBinkVideo(char * szVideoPath, int nAudioMode, fnBinkFram
         dwTickStart = GetTickCount();
         do {
           while (true) {
-            if (gbBinkVideoShouldStop && (dwTickNow = GetTickCount() , dwTickStart + 500 <= dwTickNow) || gnRenderState || msgWindow.pt.y) {
+            if (gbBinkVideoShouldStop && (dwTickNow = GetTickCount() , dwTickStart + 500 <= dwTickNow) || gnRenderState || bVar1) {
               if (gpBinkVideoD3D) {
                 D2Sound::Src::D2SoundSmp::SOUNDSMP_SetGlobalVolume(0);
                 BinkClose(gpBinkVideoD3D);
@@ -129,8 +129,8 @@ void __fastcall D3D_PlayBinkVideo(char * szVideoPath, int nAudioMode, fnBinkFram
               (*pfnCallback)();
             }
 
-            /* UINT wRemoveMsg for PeekMessageA */ /* UINT wMsgFilterMax for PeekMessageA */ /* UINT wMsgFilterMin for PeekMessageA */ /* HWND hWnd for PeekMessageA */ /* LPMSG lpMsg for PeekMessageA */ BVar1 = PeekMessageA((LPMSG)msg, (HWND)0x0, 0, 0, 1);
-            if (BVar1) {
+            /* UINT wRemoveMsg for PeekMessageA */ /* UINT wMsgFilterMax for PeekMessageA */ /* UINT wMsgFilterMin for PeekMessageA */ /* HWND hWnd for PeekMessageA */ /* LPMSG lpMsg for PeekMessageA */ BVar2 = PeekMessageA(&sMsg, (HWND)0x0, 0, 0, 1);
+            if (BVar2) {
               break;
             }
 
@@ -142,26 +142,26 @@ void __fastcall D3D_PlayBinkVideo(char * szVideoPath, int nAudioMode, fnBinkFram
             }
           }
 
-          if (msgWindow.hwnd < (HWND)0x202) {
-            if (msgWindow.hwnd == (HWND)0x201) {
+          if (sMsg.message < 0x202) {
+            if (sMsg.message == 0x201) {
               goto request_skip;
             }
-            if (msgWindow.hwnd == (HWND)0x12) {
+            if (sMsg.message == 0x12) {
               gbBinkVideoShouldStop = 1;
               gbBinkVideoExitProcess = 1;
-            } else if (msgWindow.hwnd == (HWND)0x102) {
+            } else if (sMsg.message == 0x102) {
               goto request_skip;
             }
           } else {
-            if (!(msgWindow.hwnd != (HWND)0x204 && msgWindow.hwnd != (HWND)0x207)) {
+            if (!(sMsg.message != 0x204 && sMsg.message != 0x207)) {
               request_skip:
-              msgWindow.pt.y = 1;
+              bVar1 = true;
               gdwBinkVideoClickTime = GetTickCount();
             }
           }
 
-          /* MSG * lpMsg for TranslateMessage */ TranslateMessage((MSG*)msg);
-          /* MSG * lpMsg for DispatchMessageA */ DispatchMessageA((MSG*)msg);
+          /* MSG * lpMsg for TranslateMessage */ TranslateMessage(&sMsg);
+          /* MSG * lpMsg for DispatchMessageA */ DispatchMessageA(&sMsg);
         } while (true);
       }
 

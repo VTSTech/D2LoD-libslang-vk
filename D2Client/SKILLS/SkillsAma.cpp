@@ -99,18 +99,18 @@ BOOL __fastcall Skills_CltStFunc_CheckAmmoFindClosestTarget(D2UnitStrc * pUnit, 
       pFoundTarget = Skills::SKILL_FindClosestTarget(pUnit, 0, 0, nAuraRange, 3);
     }
 
-    D2UnitStrc* nMaxCount = (D2UnitStrc*)D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[2], eSkill, nSkillLvl);
-    D2UnitStrc* nCalcMin = (D2UnitStrc*)D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[0], eSkill, nSkillLvl);
-    if ((int)nCalcMin < (int)nMaxCount) {
+    int32_t nMaxCount = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[2], eSkill, nSkillLvl);
+    int32_t nCalcMin = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[0], eSkill, nSkillLvl);
+    if (nCalcMin < nMaxCount) {
       nMaxCount = nCalcMin;
     }
 
     D2UnitStrc* nCalc0 = pFoundTarget;
-    if ((int)pFoundTarget <= (int)nMaxCount) {
-      nCalc0 = nMaxCount;
+    if ((int)pFoundTarget <= nMaxCount) {
+      nCalc0 = (D2UnitStrc*)nMaxCount;
     }
-    if ((int)nCalcMin <= (int)nCalc0 || (nCalcMin = nMaxCount , (int)pFoundTarget <= (int)nMaxCount)) {
-      pFoundTarget = nCalcMin;
+    if (nCalcMin <= (int)nCalc0 || (nCalcMin = nMaxCount , (int)pFoundTarget <= nMaxCount)) {
+      pFoundTarget = (D2UnitStrc*)nCalcMin;
     }
 
     D2Common::Skills::SKILL_SetParam1(pSkill, (int32_t)pFoundTarget);
@@ -159,9 +159,9 @@ BOOL __fastcall Skills_CltStFunc_FindClosestMeleeTargetSetParams(D2UnitStrc * pU
       pFoundTarget = Skills::SKILL_FindClosestTarget(pUnit, 0, 0, nMeleeRange, 0x20003);
     }
 
-    D2UnitStrc* nCalcMaxRange = (D2UnitStrc*)D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt[eSkill].calc[0], eSkill, nSkillLvl);
-    if ((int)nCalcMaxRange <= (int)pFoundTarget) {
-      pFoundTarget = nCalcMaxRange;
+    int32_t nCalcMaxRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt[eSkill].calc[0], eSkill, nSkillLvl);
+    if (nCalcMaxRange <= (int)pFoundTarget) {
+      pFoundTarget = (D2UnitStrc*)nCalcMaxRange;
     }
 
     D2Common::Skills::SKILL_SetParam1(pSkill, (int32_t)pFoundTarget);
@@ -285,10 +285,10 @@ BOOL __fastcall Skills_CltDoFunc_Ama_MultiShotArrows(D2UnitStrc * pUnit, eD2Skil
       return 0;
     }
 
-    eMissilesId eCltMissileId = (eMissilesId)pSkillTxt->cltmissilea;
+    eMissilesId eCltMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
     uint32_t nWeaponClass = D2Common::Units::GetWeaponClass(pUnit);
-    if (nWeaponClass != 1 && -1 < pSkillTxt->cltmissileb) {
-      eCltMissileId = (eMissilesId)pSkillTxt->cltmissileb;
+    if (nWeaponClass != 1 && -1 < pSkillTxt->cltmissile[2]) {
+      eCltMissileId = (eMissilesId)pSkillTxt->cltmissile[2];
     }
     if (!(-1 < (int)eCltMissileId && (int)eCltMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
@@ -480,9 +480,9 @@ BOOL __fastcall Skills_CltDoFunc_Ama_Strafe(D2UnitStrc * pUnit, eD2Skills eSkill
       return 0;
     }
 
-    nPrevTargetGUID = (eMissilesId)pSkillsTxt->cltmissilea;
+    nPrevTargetGUID = (eMissilesId)pSkillsTxt->cltmissile[1];
     uint32_t nWeaponClass = D2Common::Units::GetWeaponClass(pUnit);
-    if (nWeaponClass == 1 || (eVar1 = (int)pSkillsTxt->cltmissileb , pSkillsTxt->cltmissileb < 0)) {
+    if (nWeaponClass == 1 || (eVar1 = (int)pSkillsTxt->cltmissile[2] , pSkillsTxt->cltmissile[2] < 0)) {
       eVar1 = nPrevTargetGUID;
     }
     if (!(-1 < (int)eVar1 && (int)eVar1 < sgptDataTable->nTxtMissilesSize)) {

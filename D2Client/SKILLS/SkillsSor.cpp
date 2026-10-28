@@ -185,12 +185,12 @@ D2UnitStrc * __fastcall SKILLSSOR_CltCreateInfernoMissile(D2UnitStrc * pUnit, eD
       return nullptr;
     }
 
-    eMissilesId eMissileIdA = (eMissilesId)pSkillTxt->cltmissilea;
+    eMissilesId eMissileIdA = (eMissilesId)pSkillTxt->cltmissile[1];
     if (!(-1 < (int)eMissileIdA && (int)eMissileIdA < sgptDataTable->nTxtMissilesSize)) {
       return nullptr;
     }
 
-    eMissilesId eMissileIdB = (eMissilesId)pSkillTxt->cltmissileb;
+    eMissilesId eMissileIdB = (eMissilesId)pSkillTxt->cltmissile[2];
     if ((int)eMissileIdB < 0 || sgptDataTable->nTxtMissilesSize <= (int)eMissileIdB) {
       eMissileIdB = ~MISSILE_Arrow;
     }
@@ -357,7 +357,7 @@ BOOL __fastcall Skills_CltDoFunc_Sor_FrostNova(D2UnitStrc * pUnit, eD2Skills eSk
       return 0;
     }
 
-    eMissilesId ePrimaryMissileId = (eMissilesId)pSkillTxt->cltmissilea;
+    eMissilesId ePrimaryMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
     if (!(-1 < (int)ePrimaryMissileId && (int)ePrimaryMissileId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + ePrimaryMissileId)) {
       return 0;
     }
@@ -598,7 +598,7 @@ void __fastcall SKILLSSOR_CltCreateBlazeMissile(D2UnitStrc * pUnit) {
     }
 
     D2SkillsTxt* pSkillTxt = GAME::SCmd::TXT_Skills_GetLine(eSkill);
-    if (!(pSkillTxt && -1 < pSkillTxt->cltmissilea && (int)pSkillTxt->cltmissilea < sgptDataTable->nTxtMissilesSize)) {
+    if (!(pSkillTxt && -1 < pSkillTxt->cltmissile[1] && (int)pSkillTxt->cltmissile[1] < sgptDataTable->nTxtMissilesSize)) {
       return;
     }
 
@@ -613,26 +613,26 @@ void __fastcall SKILLSSOR_CltCreateBlazeMissile(D2UnitStrc * pUnit) {
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nFlags = 0x21;
     sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissilea;
+    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[1];
     sSkillArg.pOwner = pUnit;
     sSkillArg.nX = nUnitX;
     sSkillArg.nY = nUnitY;
     sSkillArg.eSkillNo = eSkill;
-    if (-1 < pSkillTxt->cltmissileb) {
-      if (pSkillTxt->cltmissilec < 0) {
+    if (-1 < pSkillTxt->cltmissile[2]) {
+      if (pSkillTxt->cltmissile[3] < 0) {
         nPathFlags = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 2);
         if (!nPathFlags) {
-          sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissileb;
+          sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[2];
         }
       } else {
         nPathFlags = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 3);
         if (!nPathFlags) {
-          sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissileb;
+          sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[2];
           UNIT::Missile::MakeMissile(&sSkillArg);
           return;
         }
         if (nPathFlags == 1) {
-          sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissilec;
+          sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[3];
           UNIT::Missile::MakeMissile(&sSkillArg);
           return;
         }
@@ -654,7 +654,7 @@ BOOL __fastcall Skills_CltDoFunc_Sor_Blizzard(D2UnitStrc * pUnit, eD2Skills eSki
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -717,7 +717,7 @@ int32_t __fastcall SKILLSSOR_StateCltEventFn01_ChillingArmor(int32_t nParam1, D2
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }

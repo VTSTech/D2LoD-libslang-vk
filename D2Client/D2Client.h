@@ -7,13 +7,12 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "D2Common/D2DynamicPathStrc.h"
+#include "D2Common/Drlg/Path.h"
 
 // Forward declarations
 struct CMDPARAMS;
 struct D2EscMenuItemStrc;
 struct D2GfxDataStrc;
-struct D2InventoryStrc;
 struct D2MissilesTxt;
 struct D2MonStatsTxt;
 struct D2RC4StateStrc;
@@ -36,6 +35,13 @@ struct _CONTEXT;
 #define RECON_FPTD_fnBinkFrameCallback
 typedef void (__stdcall *fnBinkFrameCallback)();
 #endif
+
+// Data types
+struct __attribute__((packed)) D2GSPacketSrv0x50 {
+    /* 0x00 */ uint8_t nPacketId; // 0x50
+    /* 0x01 */ uint16_t nMessageType; // 1/2/4/0xd/0x17 or quest id (Q36)
+    /* 0x03 */ uint16_t aPayload[6]; // word stores at +3,+5,+7; stone-order word loop from +3
+};
 
 namespace D2Client {
 
@@ -104,6 +110,25 @@ void __stdcall CMD_SetHoldAlt();
 void __stdcall CMD_StopRun();
 void __stdcall CMD_ClearClickModifier();
 void __stdcall CMD_ReleaseHoldAltAndClearSelection();
+// [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle
+// (D2R "Show Items: Toggle" parity). d2vp.ini next to d2.exe,
+// [features] alt_toggle=0|1 - default/missing file/missing key/garbage = 0
+// = vanilla hold-Alt behavior byte-for-byte. A missing d2vp.ini is created
+// with a documented all-defaults template (once per process, at client boot
+// or lazily before the first config read).
+BOOL __stdcall ALTTOGGLE_Active();   // config: toggle mode on?
+BOOL __stdcall ALTTOGGLE_Latched();  // current latch value
+void __stdcall ALTTOGGLE_Flip();     // keydown: latch = !latch
+void __stdcall ALTTOGGLE_Reset();    // InitializeUI: latch = FALSE
+void __stdcall ALTTOGGLE_EnsureIni(); // create d2vp.ini template if missing
+// [vanilla-plus alt-toggle] True while labels are shown by the toggle LATCH
+// (never true in vanilla hold mode). While latched, the ground-label renderer
+// must not own the click selection (vanilla DRAW_AltItems clears the selected
+// unit every frame the cursor is not over a label, which turns every click
+// into a walk), and ground items stay hit-testable so a label click picks the
+// item up. D2R "Show Items: Toggle" parity: labels stay up, clicks still
+// attack/interact.
+BOOL __stdcall ALTTOGGLE_LabelClickThrough();
 // Validates whether a command can be bound to mouse buttons (0x103-0x104). Returns false if command handler exists and button is left/right click, true otherwise. Used during key binding setup to prevent invalid mouse button assignments.
 BOOL CMD_ValidateMouseButtonBinding(int32_t nCmdIndex, uint16_t * pErrorCode, uint32_t nMouseButton);
 int32_t SORT_CompareInts(int * pA, int * pB);
@@ -161,7 +186,7 @@ int __stdcall D2CLIENT_GetTradePlayerGoldAmount();
 void __fastcall TRADE_SendGoldToPartner(uint32_t nParam);
 int __stdcall TRADE_IsTradeThrottled();
 void __stdcall SHOP_CleanupAssets();
-void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(int32_t nParam);
+void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(struct D2GSPacketSrv0x50 * pPacket);
 // Handles GS→client packet 0x5E (quest availability update): copies 37 bytes (9 dwords + 1 byte) from packet payload into aQuestAvailabilityPacket global buffer, then sets bReceivedQuestAvailabilityPacket=1.
 void __fastcall NET_D2GS_CLIENT_Incoming0x5E_QUESTPICKS(char * pBytes);
 uint32_t __stdcall GetQuestAvailabilityByIndex(int32_t nUnused, int32_t nQuestIndex);
@@ -184,7 +209,7 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
 int32_t __fastcall GFXUTIL_InitAndBuildMonsterCofParams(struct D2GfxDataStrc * pGfxData, int32_t nDirection, int32_t nFrameNumber, uint8_t nComponentType, int32_t nAnimMode, int32_t nWeaponClass, void * pCofFile, short * pComponentTable, struct D2MonStatsTxt * pMonStatsTxt, int32_t nComponentRow);
 int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(struct D2UnitStrc * pUnit, uint8_t * pbParam, int32_t pLayerArray, int * pOutMaxY, int32_t nPaletteShift, uint32_t nParam);
 int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(struct D2UnitStrc * pUnit, int32_t pOverlayEntry);
-void __fastcall GFXUTIL_GetOverlayDimensions(struct D2UnitStrc * pUnit, int nPaletteShift, uint32_t nAnimMode, struct D2InventoryStrc * pOutWidth, uint32_t * pdwParam);
+void __fastcall GFXUTIL_GetOverlayDimensions(struct D2UnitStrc * pUnit, int nPaletteShift, uint32_t nAnimMode, uint32_t * pOutWidth, uint32_t * pdwParam);
 uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(struct D2UnitStrc * pUnit, int32_t nParam, int32_t nWorldY);
 void __stdcall DRAW_WORLD_SetWarpFadeTimer();
 // Guard on a non-zero global deadline; sample the

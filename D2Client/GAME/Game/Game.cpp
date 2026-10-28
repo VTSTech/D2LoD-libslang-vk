@@ -10,6 +10,7 @@
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GameViewStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Draw/Weather.h"
@@ -65,7 +66,6 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -88,11 +88,12 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
-#include "Storm/H/Storm.h"
 #include "Storm/H/stpl.h"
 #include "Storm/Source/SCMD.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SSTR.h"
+#include "Storm/Source/SSystem.h"
+#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Client/Engine.h"
@@ -378,7 +379,7 @@ void __stdcall INPUT_HandleSecondaryClick(D2UIMouseMsgStrc * pMsg) {
 
 void __stdcall INPUT_HandleMouseWheel(D2UIMouseMsgStrc * pMsg) {
     // Static local variables (originally global data)
-    static int gnMouseWheelScrollAccumulator;
+    static int gnMouseWheelScrollAccumulator; D2_STATIC_GUARD_BSS(gnMouseWheelScrollAccumulator, "D2Client::GAME::Game::INPUT_HandleMouseWheel::gnMouseWheelScrollAccumulator");
 
     if (!ServerLoadingComplete) {
       return;
@@ -481,7 +482,17 @@ void __stdcall HandleMouseButtonEvent(int32_t pMouseEvent) {
     SHORT keyState;
     gnLastMouseButtonEventType = *(uint32_t*)(pMouseEvent + 8);
     if (*(int*)(pMouseEvent + 8)) {
-      UI::Draw::SetUIFlag(UI_HOLDALT, UI_RESET, 0);
+      // [vanilla-plus alt-toggle] This non-zero-event branch (message code
+      // 0x1c registration) fires on clicks AND app-activation. Vanilla uses
+      // it to clear Alt labels on click-while-holding. In toggle mode the
+      // flag converges to the latch instead: latched labels survive clicks,
+      // and an activation after a stuck Alt (lost keyup across alt-tab)
+      // heals to a sane state in both directions.
+      if (ALTTOGGLE_Active()) {
+        UI::Draw::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
+      } else {
+        UI::Draw::SetUIFlag(UI_HOLDALT, UI_RESET, 0);
+      }
       gClickModifierDown = 0;
       Select::ClearSelectedUnit();
       D2Win::Src::D2WinPalette::D2WINPALETTE_SetPaletteIndex(0);
@@ -558,8 +569,7 @@ void __stdcall GameLoop() {
 // Client-side world update. Runs at 25 FPS (same cadence as server loop).
 // Per-frame: GameLoop -> UpdateGfxState -> AnimateTiles -> UpdateLights -> Gfx_UpdateNearbyUnitGfx.
 // Also: day/night cycle, room activation, automap, periodic FreeDungeons (13th frame).
-int32_t __stdcall ClientSideGameLoop() {
-    int32_t freeResult;
+void __stdcall ClientSideGameLoop() {
     gClientGameData.uGlobalTickCountA = GetTickCount();
     GameLoop();
     UNIT::CUnit::CLIENT_UpdateUnitGfxState();
@@ -577,14 +587,11 @@ int32_t __stdcall ClientSideGameLoop() {
     D2Common::DUNGEON::Dungeon::DRLGROOMEX_UpdateClientRoomExActivation(pDrlgAct);
     UI::Automap::AUTOMAP_Update();
     gClientGameData.gnRecordEntryIndex++;
-    int nReturnValue = gClientGameData.gnRecordEntryIndex * 0x4ec4ec4f;
     if (gClientGameData.gnRecordEntryIndex != (uint32_t)gClientGameData.gnRecordEntryIndex / 0xd * 0xd) {
-      return nReturnValue;
+      return;
     }
 
     D2Common::DUNGEON::Dungeon::FreeDungeons(sgpDrlgAct);
-    nReturnValue = freeResult;
-    return nReturnValue;
 }
 
 void __stdcall GAMEDATA_InitializeEclipseEnvironment() {
@@ -649,7 +656,7 @@ void __stdcall GAME_FreeClientSideStructures() {
 
 void __fastcall GAMEDATA_SetDrawFunction(int32_t nDrawMode) {
     // Static local variables (originally global data)
-    static fnClientDrawProc gapfnClientDrawProcs[3] = { &D2Client::GAME::Game::InGameDraw, &D2Client::Engine::LOADER_DrawInsertDiscScreen, &D2Client::Engine::LOADER_DrawConnectionLostScreen };
+    static fnClientDrawProc gapfnClientDrawProcs[3] = { &D2Client::GAME::Game::InGameDraw, &D2Client::Engine::LOADER_DrawInsertDiscScreen, &D2Client::Engine::LOADER_DrawConnectionLostScreen }; D2_STATIC_GUARD(gapfnClientDrawProcs, "D2Client::GAME::Game::GAMEDATA_SetDrawFunction::gapfnClientDrawProcs");
 
     gClientGameData.nZeroHead = nDrawMode;
     gClientGameData.CurrentDrawFunction = gapfnClientDrawProcs[nDrawMode];
@@ -679,8 +686,8 @@ int __stdcall GAMEDATA_GetCurrentLevelBlankScreen() {
 // Viewport centered on player, supports shake, perspective, isometric transform.
 void __fastcall InGameDraw(int32_t nParam) {
     // Static local variables (originally global data)
-    static uint32_t gnLastCameraWorldY = -0x1;
-    static uint32_t gnLastCameraWorldX = -0x1;
+    static uint32_t gnLastCameraWorldY = -0x1; D2_STATIC_GUARD(gnLastCameraWorldY, "D2Client::GAME::Game::InGameDraw::gnLastCameraWorldY");
+    static uint32_t gnLastCameraWorldX = -0x1; D2_STATIC_GUARD(gnLastCameraWorldX, "D2Client::GAME::Game::InGameDraw::gnLastCameraWorldX");
 
     D2LevelsTxt* pLevelTxt;
     int nViewLeft;
@@ -794,7 +801,7 @@ void __stdcall DrawLoadingMessage() {
     0x14fa,
     0x14fb,
     0x0
-};
+}; D2_STATIC_GUARD(gwLoadingMessageStringIds, "D2Client::GAME::Game::DrawLoadingMessage::gwLoadingMessageStringIds");
 
     uint32_t nFontHeight;
     uint16_t nStringId;
@@ -978,7 +985,7 @@ void __stdcall UpdateMouseModifierKeyState() {
 // pfModes_Save: if hosting, queue EnterGame; otherwise return current client app mode.
 eD2ClientAppMode __stdcall pfModes_Save() {
     // Static local variables (originally global data)
-    static eD2ClientAppMode eD2ClientAppMode_0070ef18 = APPMODE_HOST;
+    static eD2ClientAppMode eD2ClientAppMode_0070ef18 = APPMODE_HOST; D2_STATIC_GUARD(eD2ClientAppMode_0070ef18, "D2Client::GAME::Game::pfModes_Save::eD2ClientAppMode_0070ef18");
 
     if (eD2ClientAppMode_0070ef18 != APPMODE_HOST) {
       return eD2ClientAppMode_0070ef18;
@@ -1010,7 +1017,7 @@ void __stdcall BetaScreen_NextPageIfVisible(D2UIMouseMsgStrc * pMsg) {
 // Draw beta screens; caches result in `gBetaScreenEntries[]` and uses `gD2QServer` congrats image/palette handles when the slideshow is active.
 uint32_t __stdcall DrawBetaScreen(uint32_t dwUnused) {
     // Static local variables (originally global data)
-    static uint32_t gnBetaScreenCount = 0xa;
+    static uint32_t gnBetaScreenCount = 0xa; D2_STATIC_GUARD(gnBetaScreenCount, "D2Client::GAME::Game::DrawBetaScreen::gnBetaScreenCount");
     static BetaScreenEntry gBetaScreenEntries[10] = {
     {
         /* .lastLoadTick = */ 0x0,
@@ -1072,7 +1079,7 @@ uint32_t __stdcall DrawBetaScreen(uint32_t dwUnused) {
         /* .paletteIndex = */ 0x0,
         /* .fileName = */ s_screen10_006d5ca4
     }
-};
+}; D2_STATIC_GUARD(gBetaScreenEntries, "D2Client::GAME::Game::DrawBetaScreen::gBetaScreenEntries");
 
     DC6* pLoadedImage;
     DWORD dwNowTick;
@@ -1599,7 +1606,7 @@ void __fastcall ClientInit_Noop16(D2IniConfigStrc * pIni) {
 // Iterates ClientInitFunctions table (52 entries) and calls each non-null init callback; returns data_0070f414 success flag.
 BOOL __fastcall LoadDataForGame(D2IniConfigStrc * pIni) {
     // Static local variables (originally global data)
-    static uint32_t gClientInitOk = 0x1;
+    static uint32_t gClientInitOk = 0x1; D2_STATIC_GUARD(gClientInitOk, "D2Client::GAME::Game::LoadDataForGame::gClientInitOk");
     static fpServerInitFunctions ClientInitFunctions[52] = {
     &D2Client::GAME::Game::ClientInit_Fullscreen,
     &D2Client::GAME::Game::ClientInit_Fullscreen,
@@ -1653,7 +1660,7 @@ BOOL __fastcall LoadDataForGame(D2IniConfigStrc * pIni) {
     &D2Client::GAME::Game::ClientInit_NoCompression,
     &D2Client::GAME::Game::ClientInit_UseTxt,
     &D2Client::GAME::Game::ClientInit_Noop16
-};
+}; D2_STATIC_GUARD(ClientInitFunctions, "D2Client::GAME::Game::LoadDataForGame::ClientInitFunctions");
 
     gClientInitOk = 1;
     uint32_t initIndex = 0;
@@ -1862,34 +1869,34 @@ int32_t __fastcall GAMEDATA_TimerGetRemaining(int32_t * pTimerStruct) {
     return 0;
 }
 
-uint32_t __fastcall GAMEDATA_CheckTimerExpired(int32_t * pTimerStruct) {
-    if (!pTimerStruct[1]) {
+uint32_t __fastcall GAMEDATA_CheckTimerExpired(D2ClientTimerStrc * pTimer) {
+    if (!pTimer->dwDurationMs) {
       return 1;
     }
 
     DWORD dwCurrentTick = GetTickCount();
-    if ((uint32_t)(*pTimerStruct + pTimerStruct[1]) > dwCurrentTick) {
-      return (uint32_t)!(*pTimerStruct - dwCurrentTick + pTimerStruct[1]);
+    if (pTimer->dwStartTick + pTimer->dwDurationMs > dwCurrentTick) {
+      return (uint32_t)!(pTimer->dwStartTick - dwCurrentTick + pTimer->dwDurationMs);
     }
 
-    *pTimerStruct = 0;
-    pTimerStruct[1] = 0;
+    pTimer->dwStartTick = 0;
+    pTimer->dwDurationMs = 0;
     return 1;
 }
 
 // Timer helper: checks [start,duration] pair, clears when expired, returns active status.
-uint32_t __fastcall Timer_IsActiveAndUpdate(int * pnParam) {
-    if (!pnParam[1]) {
+uint32_t __fastcall Timer_IsActiveAndUpdate(D2ClientTimerStrc * pTimer) {
+    if (!pTimer->dwDurationMs) {
       return 0;
     }
 
     DWORD nowTick = GetTickCount();
-    if ((uint32_t)(*pnParam + pnParam[1]) > nowTick) {
-      return (uint32_t)(*pnParam - nowTick + pnParam[1] != 0);
+    if (pTimer->dwStartTick + pTimer->dwDurationMs > nowTick) {
+      return (uint32_t)(pTimer->dwStartTick - nowTick + pTimer->dwDurationMs != 0);
     }
 
-    *pnParam = 0;
-    pnParam[1] = 0;
+    pTimer->dwStartTick = 0;
+    pTimer->dwDurationMs = 0;
     return 0;
 }
 
@@ -1954,8 +1961,8 @@ void __fastcall CLIENT_AllocAct(int32_t nActNo, int32_t nMapSeed, int32_t nAutom
 // GAME_InitClientSide: reset globals, init client pool, view/UI, loading screen, send join packet for network games, init palette/weather/lighting/chat; set CurrentDrawFunction and flags.
 // @sourcefile .\GAME\Game.cpp
 void __stdcall GAME_InitClientSide() {
-    gLoadTimerDurationMs = 0;
-    gLoadTimerStartTick = 0;
+    gLoadTimerDurationMs.dwStartTick = 0;
+    gLoadTimerDurationMs.dwDurationMs = 0;
     gExitCutsceneState.cutscenePlayed = false;
     gExitCutsceneState._pad0[0] = '\0';
     gExitCutsceneState._pad0[1] = '\0';
@@ -2020,8 +2027,8 @@ void __fastcall CLIENT_ConnectionRefused(int32_t nReason) {
     }
 
     UI::Draw::UI_CloseActivePanels(1, 0);
-    gLoadTimerDurationMs = GetTickCount();
-    gLoadTimerStartTick = 0x9c4;
+    gLoadTimerDurationMs.dwStartTick = GetTickCount();
+    gLoadTimerDurationMs.dwDurationMs = 0x9c4;
     D2CLIENT_ExitVar3 = 1;
     ServerLoadingComplete = 0;
     D2GS_Connected = 0;
@@ -2031,14 +2038,14 @@ void __fastcall CLIENT_ConnectionRefused(int32_t nReason) {
 // While load timer active, draw loading message; otherwise cleanup after loading act.
 uint32_t __stdcall LoadingScreen_TickOrCleanup(uint32_t dwArg1) {
     int iVar2;
-    if (gLoadTimerStartTick) {
+    if (gLoadTimerDurationMs.dwDurationMs) {
       DWORD DVar1;
       DVar1 = GetTickCount();
-      if (DVar1 < (uint32_t)(gLoadTimerStartTick + gLoadTimerDurationMs)) {
-        iVar2 = gLoadTimerStartTick - DVar1 + gLoadTimerDurationMs;
+      if (DVar1 < gLoadTimerDurationMs.dwDurationMs + gLoadTimerDurationMs.dwStartTick) {
+        iVar2 = gLoadTimerDurationMs.dwDurationMs - DVar1 + gLoadTimerDurationMs.dwStartTick;
       } else {
-        gLoadTimerDurationMs = 0;
-        gLoadTimerStartTick = 0;
+        gLoadTimerDurationMs.dwStartTick = 0;
+        gLoadTimerDurationMs.dwDurationMs = 0;
         iVar2 = 0;
       }
       if (iVar2) {
@@ -2101,14 +2108,12 @@ void __stdcall Congratz_HandleOkButton(D2UIMouseMsgStrc * pMsg) {
 }
 
 void __stdcall GAMEDATA_DrawCharacterPortrait() {
+    char* pcVar1;
     int nTitleIndex;
     uint32_t nCopyWords;
-    char* pDstChar;
     uint16_t awcTitle[100];
     uint16_t awcName[100];
-    char szName[99];
-    char cStack_69;
-    char szTitle[100];
+    D2CharPortraitTextStrc sText;
     char cChar;
     D2IniConfigStrc* pIniData = ClientModeInGame::D2IniData_Getter();
     uint16_t* pwClearCursor = awcName;
@@ -2119,14 +2124,14 @@ void __stdcall GAMEDATA_DrawCharacterPortrait() {
     }
 
     char* pSrcChar = pIniData->szNAME;
-    nTitleIndex = -(int)pSrcChar;
+    nTitleIndex = (uintptr_t)&sText - (int)pSrcChar;
     do {
       cChar = *pSrcChar;
-      pSrcChar[(int)(szName + nTitleIndex)] = cChar;
+      pSrcChar[nTitleIndex] = cChar;
       pSrcChar++;
     } while (cChar != '\0');
 
-    D2Lang::UTF8_ConvertToWideChar(awcName, szName, 0x40);
+    D2Lang::UTF8_ConvertToWideChar(awcName, sText.szName, 0x40);
     int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(awcName);
     D2Win::Src::D2WinFont::DRAW_text(awcName, ScreenSizeX / 2 - nTextWidth / 2, 0xbb, 4, 0);
     eD2PlayerStatus ePlayerStatus = pIniData->eCTEMP_eD2PlayerStatus;
@@ -2159,41 +2164,45 @@ void __stdcall GAMEDATA_DrawCharacterPortrait() {
       }
     }
 
-    pSrcChar = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass((void*)(uint32_t)nD2PlayerClassID, nTitleIndex, nHardcoreFlag, ePlayerStatus & 0x20);
+    pSrcChar = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass((uint32_t)nD2PlayerClassID, nTitleIndex, nHardcoreFlag, ePlayerStatus & 0x20);
     if (!pSrcChar) {
       return;
     }
 
-    nTitleIndex = -(int)pSrcChar;
+    nTitleIndex = 100 - (int)pSrcChar;
     do {
       cChar = *pSrcChar;
-      pSrcChar[(int)(szTitle + nTitleIndex)] = cChar;
+      pSrcChar[(uintptr_t)&sText + nTitleIndex] = cChar;
       pSrcChar++;
     } while (cChar != '\0');
 
-    pSrcChar = szName;
-    pSrcChar = pSrcChar + strlen(pSrcChar) + 1;
-    nHardcoreFlag = (int)pSrcChar - (int)szName;
-    pSrcChar = &cStack_69;
+    D2CharPortraitTextStrc* pDstChar = &sText;
     do {
-      pDstChar = pSrcChar + 1;
-      pSrcChar++;
-    } while (*pDstChar != '\0');
+      pSrcChar = pDstChar->szName;
+      pDstChar = (D2CharPortraitTextStrc*)(pDstChar->szName + 1);
+    } while (*pSrcChar != '\0');
 
-    pDstChar = szName;
+    nHardcoreFlag = (int)pDstChar - (uintptr_t)&sText;
+    pSrcChar = sText.szName + 99;
+    do {
+      pcVar1 = pSrcChar + 1;
+      pSrcChar++;
+    } while (*pcVar1 != '\0');
+
+    pDstChar = &sText;
     for (nCopyWords = nHardcoreFlag >> 2; nCopyWords; nCopyWords--) {
-      *(uint32_t*)pSrcChar = *(uint32_t*)pDstChar;
-      pDstChar += 4;
+      *(uint32_t*)pSrcChar = *(uint32_t*)pDstChar->szName;
+      pDstChar = (D2CharPortraitTextStrc*)(pDstChar->szName + 4);
       pSrcChar += 4;
     }
 
     for (nHardcoreFlag &= 3; nHardcoreFlag; nHardcoreFlag--) {
-      *pSrcChar = *pDstChar;
-      pDstChar++;
+      *pSrcChar = pDstChar->szName[0];
+      pDstChar = (D2CharPortraitTextStrc*)(pDstChar->szName + 1);
       pSrcChar++;
     }
 
-    D2Lang::UTF8_ConvertToWideChar(awcTitle, szTitle, 0x40);
+    D2Lang::UTF8_ConvertToWideChar(awcTitle, sText.szTitle, 0x40);
     nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(awcTitle);
     int32_t nY = 0x115;
     if (gClientGameData.CLIENT_bExpansion) {
@@ -2206,8 +2215,8 @@ void __stdcall GAMEDATA_DrawCharacterPortrait() {
 // End-game congrats screen; caches images in `gD2QServer.congratsBgImage`/`congratsOkButton` and uses `gD2QServer.frameSkipLevel` to decide whether to skip frames.
 uint32_t __stdcall DRAW_Congratz(uint32_t dwUnused) {
     // Static local variables (originally global data)
-    static DC6 * gpCongratzOkButtonDC6;
-    static DC6 * gpCongratsBgDC6;
+    static DC6 * gpCongratzOkButtonDC6; D2_STATIC_GUARD_BSS(gpCongratzOkButtonDC6, "D2Client::GAME::Game::DRAW_Congratz::gpCongratzOkButtonDC6");
+    static DC6 * gpCongratsBgDC6; D2_STATIC_GUARD_BSS(gpCongratsBgDC6, "D2Client::GAME::Game::DRAW_Congratz::gpCongratsBgDC6");
 
     int nFrameOffset;
     uint16_t* pwMessage;
@@ -2385,8 +2394,8 @@ void __stdcall Client_CheckConnectionTimeouts() {
 // Frame skip logic prevents runaway when overloaded. Exits when D2CLIENT_ExitVar3 set.
 uint32_t __stdcall CLIENT_GameLoopFrame(uint32_t dwUnused) {
     // Static local variables (originally global data)
-    static uint32_t uGlobalTickCountB = 0x28;
-    static int gnFrameSkipCounter;
+    static uint32_t uGlobalTickCountB = 0x28; D2_STATIC_GUARD(uGlobalTickCountB, "D2Client::GAME::Game::CLIENT_GameLoopFrame::uGlobalTickCountB");
+    static int gnFrameSkipCounter; D2_STATIC_GUARD_BSS(gnFrameSkipCounter, "D2Client::GAME::Game::CLIENT_GameLoopFrame::gnFrameSkipCounter");
 
     int32_t serverTickResult;
     D2RoomStrc* pRoom;
@@ -2627,7 +2636,7 @@ eD2ClientAppMode __stdcall pfModes_EnterGame() {
         /* .nMessageOrKeyCode = */ 0x1c,
         /* .pfHandler = */ (fnD2InitUIFlagFunction)&D2Client::GAME::Game::HandleMouseButtonEvent
     }
-};
+}; D2_STATIC_GUARD(gsGameDataFlagInit, "D2Client::GAME::Game::pfModes_EnterGame::gsGameDataFlagInit");
     static D2UIFlagInitStrc gsGameDataUIFlagInit[7] = {
     {
         /* .eEventType = */ 0x0,
@@ -2664,7 +2673,7 @@ eD2ClientAppMode __stdcall pfModes_EnterGame() {
         /* .nMessageOrKeyCode = */ 0x5d,
         /* .pfHandler = */ &D2Client::GAME::Game::INPUT_HandlePassthrough
     }
-};
+}; D2_STATIC_GUARD(gsGameDataUIFlagInit, "D2Client::GAME::Game::pfModes_EnterGame::gsGameDataUIFlagInit");
     static D2UIFlagInitStrc g_UIFlagInitGameDataPanel4[9] = {
     {
         /* .eEventType = */ 0x0,
@@ -2711,25 +2720,161 @@ eD2ClientAppMode __stdcall pfModes_EnterGame() {
         /* .nMessageOrKeyCode = */ 0x5d,
         /* .pfHandler = */ &D2Client::GAME::Game::INPUT_HandlePassthrough
     }
-};
-    static LPOSVERSIONINFOA lpVersionInformation_007a0528 = nullptr;
+}; D2_STATIC_GUARD(g_UIFlagInitGameDataPanel4, "D2Client::GAME::Game::pfModes_EnterGame::g_UIFlagInitGameDataPanel4");
+    static _OSVERSIONINFOA lpVersionInformation_007a0528 = {
+    /* .dwOSVersionInfoSize = */ 0,
+    /* .dwMajorVersion = */ 0,
+    /* .dwMinorVersion = */ 0,
+    /* .dwBuildNumber = */ 0,
+    /* .dwPlatformId = */ 0,
+    /* .szCSDVersion = */ {
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+    }
+}; D2_STATIC_GUARD(lpVersionInformation_007a0528, "D2Client::GAME::Game::pfModes_EnterGame::lpVersionInformation_007a0528");
     // also labelled: lpThreadId_QserverLoopThread, lpThreadId_007a05f0
-static uint32_t gdwHostGameThreadId;
-    static bool gbExitingGamePadding;
+static uint32_t gdwHostGameThreadId; D2_STATIC_GUARD_BSS(gdwHostGameThreadId, "D2Client::GAME::Game::pfModes_EnterGame::gdwHostGameThreadId");
+    static bool gbExitingGamePadding; D2_STATIC_GUARD_BSS(gbExitingGamePadding, "D2Client::GAME::Game::pfModes_EnterGame::gbExitingGamePadding");
 
     int nRecordResult;
     uint8_t byPlayerStatus;
     tagMSG sMsg;
-    if (!gLoadTimerStartTick) {
+    if (!gLoadTimerDurationMs.dwDurationMs) {
       ClientModeInGame::D2CLIENT_SetExitVar1(1);
     } else {
       DWORD dwNow;
       dwNow = GetTickCount();
-      if (dwNow < (uint32_t)(gLoadTimerStartTick + gLoadTimerDurationMs)) {
-        nRecordResult = gLoadTimerStartTick - dwNow + gLoadTimerDurationMs;
+      if (dwNow < gLoadTimerDurationMs.dwDurationMs + gLoadTimerDurationMs.dwStartTick) {
+        nRecordResult = gLoadTimerDurationMs.dwDurationMs - dwNow + gLoadTimerDurationMs.dwStartTick;
       } else {
-        gLoadTimerDurationMs = 0;
-        gLoadTimerStartTick = 0;
+        gLoadTimerDurationMs.dwStartTick = 0;
+        gLoadTimerDurationMs.dwDurationMs = 0;
         nRecordResult = 0;
       }
       if (!nRecordResult) {
@@ -2738,8 +2883,8 @@ static uint32_t gdwHostGameThreadId;
     }
 
     GetTickCount();
-    /* LPOSVERSIONINFOA lpVersionInformation for GetVersionExA */ lpVersionInformation_007a0528 = (LPOSVERSIONINFOA)0x94;
-    BOOL bResult = GetVersionExA((LPOSVERSIONINFOA)&lpVersionInformation_007a0528);
+    /* LPOSVERSIONINFOA lpVersionInformation for GetVersionExA */ lpVersionInformation_007a0528.dwOSVersionInfoSize = 0x94;
+    BOOL bResult = GetVersionExA(&lpVersionInformation_007a0528);
     if (bResult) {
       gbExitingGamePadding = 1;
     }
@@ -2943,7 +3088,7 @@ void __fastcall GAME_TryCopyFrom(::SGAMEDATA * pGame, ::SGAMEDATA * pGame2) {
 // Register -lng command-line option handler (language file) via SCMD::SCmdRegisterArgument.
 BOOL __stdcall RegisterCmdLineLngOption() {
     // Static local variables (originally global data)
-    static char * cCmdLineLanguageOption = (char *)0x00676e6c;
+    static char * cCmdLineLanguageOption = (char *)0x00676e6c; D2_STATIC_GUARD(cCmdLineLanguageOption, "D2Client::GAME::Game::RegisterCmdLineLngOption::cCmdLineLanguageOption");
 
     Storm::Source::SCmdRegisterArgument(0x20000, -1, (char*)&cCmdLineLanguageOption, lpLibFileName_007a0710, 0x104, 0, 0, nullptr);
     return 1;

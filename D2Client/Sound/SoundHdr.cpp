@@ -57,7 +57,7 @@
 
 namespace D2Client::Sound::SoundHdr {
 
-static float FLOAT_006d9108 = 400;
+static float FLOAT_006d9108 = 400; D2_STATIC_GUARD(FLOAT_006d9108, "D2Client::Sound::SoundHdr::FLOAT_006d9108");
 
 uint32_t __stdcall GetSoundEnv() {
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
@@ -944,7 +944,7 @@ void __fastcall SOUNDHDR_LoadSoundFile(int32_t nSoundId, int32_t bForceSync, int
       szSourceFile = ".\\Sound\\SoundHdr.cpp";
       pSoundDataBytes = &pSound->nSoundDataBytes;
       pMpqMgr = D2Win::Src::D2WinArchive::ReturnZero();
-      pSoundData = Fog::Archive::D2FILE_AllocAndLoadD2File(pMpqMgr, szPath, (size_t*)pSoundDataBytes, szSourceFile, nResult);
+      pSoundData = Fog::Archive::D2FILE_AllocAndLoadD2File(pMpqMgr, szPath, (uint32_t*)pSoundDataBytes, szSourceFile, nResult);
       pSound->pSoundDataBuffer = pSoundData;
       if (pSoundData) {
         nLoadStateOrBytes = pSound->nSoundDataBytes;

@@ -600,7 +600,7 @@ void __stdcall D3D_RenderTileComponentsToPixelBuffer(D2TileLibraryEntryStrc * pT
 }
 
 BOOL __fastcall D3D_RenderFloorTileToTexture(D2TileLibraryEntryStrc * pTileLibraryEntry) {
-    int32_t iVar1;
+    int iVar2;
     DWORD dwSurfaceOpResult;
     IDirect3DTexture2* pTexture;
     DDSURFACEDESC2 sSurfaceDesc;
@@ -617,7 +617,7 @@ BOOL __fastcall D3D_RenderFloorTileToTexture(D2TileLibraryEntryStrc * pTileLibra
       exit(-1);
     }
     if (!sCacheSlotIndex) {
-      int iVar2;
+      int32_t iVar1;
       iVar1 = D3DFLOOR_EnsureAvailableNode(&gD3DFloorTextureCache);
       pTileLibraryEntry->nTextureCacheIndex = (short int)iVar1;
       pFloorCacheNodes = gD3DFloorTextureCache.pNodeBuffer;
@@ -1692,9 +1692,9 @@ void __fastcall D3D_RenderSubtileToTexture(D2GroundSubTileStrc * pSubTile) {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gfD3DSmackerVertex1RhwOrZ, "D2Direct3D::d3dFloorCache::D3D_RenderSubtileToTexture::gfD3DSmackerVertex1RhwOrZ");
 
-    int32_t iVar1;
+    int iVar2;
     DWORD dwSurfaceResult;
     DDSURFACEDESC2 sSurfaceDesc;
     D3DSubtileCacheNodeStrc* pSubtileNodeBuffer = gD3DSubtileTextureCache.pNodeBuffer;
@@ -1703,7 +1703,7 @@ void __fastcall D3D_RenderSubtileToTexture(D2GroundSubTileStrc * pSubTile) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ef);
       exit(-1);
     } else {
-      int iVar2;
+      int32_t iVar1;
       if (wSubtileCacheIndex) {
         d3dSubtileCache::D3DSUBTILE_PromoteNodeToMRU(&gD3DSubtileTextureCache, (int)wSubtileCacheIndex);
         g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, pSubtileNodeBuffer[wSubtileCacheIndex - 1].pTexture);

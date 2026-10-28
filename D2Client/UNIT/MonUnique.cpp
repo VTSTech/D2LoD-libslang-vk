@@ -161,7 +161,7 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
     0x2b4e,
     0x27,
     0x2b4f
-};
+}; D2_STATIC_GUARD(gaChampionModifierTitles, "D2Client::UNIT::MonUnique::DefineSuperMonster::gaChampionModifierTitles");
 
     D2SuperUniquesTxt* pSuperUniqueTxt;
     uint16_t* pWVar2;
@@ -497,7 +497,7 @@ void __fastcall SetResistances(D2UnitStrc * pUnit, int32_t eModifier, int32_t bA
 // Dispatches unique/champion modifier init callbacks for a monster unit. Iterates gapMonUniqueModInitFuncs for all active global modifiers, then iterates the unit's MonUModList (up to 9 entries) calling the corresponding init function with the champion flag. Guards: pUnit must be non-null, UNIT_MONSTER, have valid pUnitDataMonster with a non-empty MonUModList.
 void __fastcall MONUNIQUE_ApplyModifierEffects(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static int gaMonUniqueBaseModIds[4] = { 0x1, 0x2, 0x3, 0x4 };
+    static int gaMonUniqueBaseModIds[4] = { 0x1, 0x2, 0x3, 0x4 }; D2_STATIC_GUARD(gaMonUniqueBaseModIds, "D2Client::UNIT::MonUnique::MONUNIQUE_ApplyModifierEffects::gaMonUniqueBaseModIds");
     static pfnMonUniqueModInit gapMonUniqueModInitFuncs[44] = {
     nullptr,
     &D2Client::UNIT::MonUnique::DefineSuperMonster,
@@ -543,7 +543,7 @@ void __fastcall MONUNIQUE_ApplyModifierEffects(D2UnitStrc * pUnit) {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_STATIC_GUARD(gapMonUniqueModInitFuncs, "D2Client::UNIT::MonUnique::MONUNIQUE_ApplyModifierEffects::gapMonUniqueModInitFuncs");
 
     uint32_t bApply;
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {

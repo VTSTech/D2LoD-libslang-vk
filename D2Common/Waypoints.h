@@ -10,7 +10,6 @@
 
 // Forward declarations
 struct D2PoolManagerStrc;
-struct D2SaveWaypointListEntryStrc;
 struct D2WaypointStrc;
 typedef int eD2LevelId;
 
@@ -29,6 +28,6 @@ BOOL __fastcall WAYPOINT_UpgradeSignature(struct D2WaypointStrc * pWaypoint);
 // @sourcefile .\WayPoint\Waypoint.cpp
 void __stdcall Free(struct D2PoolManagerStrc * pMemory, struct D2WaypointStrc * pWaypoint);
 void __stdcall CopyWaypointBits(struct D2WaypointStrc * pWaypoint, uint8_t * nWaypointBits);
-void __stdcall CopyWaypoint(struct D2WaypointStrc * pWaypoint, struct D2SaveWaypointListEntryStrc * pEntry);
+void __stdcall CopyWaypoint(struct D2WaypointStrc * pWaypoint, struct D2WaypointStrc * pEntry);
 
 } // namespace D2Common::Waypoints

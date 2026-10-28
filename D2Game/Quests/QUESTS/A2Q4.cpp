@@ -41,10 +41,10 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2GossipTextStrc.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/QuestLog.h"
 #include "D2Common/Drlg/Drlg.h"
+#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/Monster/Monsters.h"
 
@@ -355,7 +355,7 @@ void __fastcall Q12_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // A2Q4 - Callback_00 (gossip-text builder). Chooses which gossip line an NPC speaks. For Drognan(0x14b): advances the control RNG seed and picks one of 3 Summoner hint lines (8..10) if hint flag set, else line 7. Otherwise: if RewardAwaits(1) -> line 4; if player already participated -> line 5; else gate on stateFlag/intro/Completed(0)/JustCompleted(0xd) and index the gdwQ08QuestStateMessages table by stateFlag to pick the line.
 void __fastcall Q12_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     // Static local variables (originally global data)
-    static int32_t gdwQ08QuestStateMessages[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x0 };
+    static int32_t gdwQ08QuestStateMessages[7] = { -0x1, 0x0, 0x1, 0x2, 0x3, 0x4, 0x0 }; D2_STATIC_GUARD(gdwQ08QuestStateMessages, "D2Game::Quests::QUESTS::A2Q4::Q12_Callback00_NpcActivate::gdwQ08QuestStateMessages");
 
     int32_t nPlayerGUID;
     int32_t nTargetClassId;
@@ -761,7 +761,7 @@ BOOL __fastcall Q12_IsSanctuaryComplete(::SGAMEDATA * pGame) {
 }
 
 // A2Q4 - GetSummonerCoords. Outputs the Summoner location into pnParam[0/1]. If bSummonerKilled, returns exact (X,Y); if bSummonerCoordsFallback, returns (X, Y-4). Returns 1 if coords written, else 0. Used to place the Canyon-of-the-Magi portal near where the Summoner was.
-BOOL __fastcall Q12_GetSummonerCoords(::SGAMEDATA * pGame, int * pnParam) {
+BOOL __fastcall Q12_GetSummonerCoords(::SGAMEDATA * pGame, D2CoordStrc * pCoord) {
     D2QuestDataStrc* pDVar2 = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheArcaneSanctuary);
     if (!pDVar2) {
       return 0;
@@ -769,17 +769,17 @@ BOOL __fastcall Q12_GetSummonerCoords(::SGAMEDATA * pGame, int * pnParam) {
 
     D2QuestDataA2Q4Strc* pDVar1 = pDVar2->pQuestSpecificData.pA2Q4;
     if (pDVar1->bSummonerKilled) {
-      *pnParam = pDVar1->nSummonerX;
-      pnParam[1] = pDVar1->nSummonerY;
+      pCoord->nX = pDVar1->nSummonerX;
+      pCoord->nY = pDVar1->nSummonerY;
       return 1;
     }
     if (!pDVar1->bSummonerCoordsFallback) {
       return 0;
     }
 
-    *pnParam = pDVar1->nSummonerX;
-    pnParam[1] = pDVar1->nSummonerY;
-    pnParam[1] += -4;
+    pCoord->nX = pDVar1->nSummonerX;
+    pCoord->nY = pDVar1->nSummonerY;
+    pCoord->nY += -4;
     return 1;
 }
 
@@ -914,7 +914,7 @@ void __fastcall Q12_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         pJerhynUnit = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
         /* SetQuestState Step0x07 - journal sub-state (index 0x32 path) */ D2Common::QuestRecord::SetQuestState(pJerhynUnit->pQuestRecord[pGame->nDifficulty], QUEST_TheArcaneSanctuary, QUESTSTATE_Step0x07);
       }
-      if ((D2GossipTextStrc*)ptPos.y != (D2GossipTextStrc*)0x28) {
+      if ((D2GSPacketSrv0x27_TextStrc*)ptPos.y != (D2GSPacketSrv0x27_TextStrc*)0x28) {
         return;
       }
 
@@ -986,7 +986,7 @@ void __fastcall Q12_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 void __fastcall Q12_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     ::SGAMEDATA* pGame = pQuestData->pGame;
-    pQuestData->pNpcMessages = &A2Q4::aNpcGossipData;
+    pQuestData->pNpcMessages = A2Q4::aNpcGossipData;
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q12_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q12_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[3] = Q12_Callback03_ChangedLevel;

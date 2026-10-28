@@ -107,7 +107,7 @@ float __stdcall SOUNDSMP_ClampVolume(float fValue, float fParam2, float fParam3)
 float __stdcall SOUNDSMP_ClampAttenuation(float fParam);
 int * __stdcall SOUNDSMP_FindWavChunk(uint32_t * pRemainingSize, uint32_t * pChunkSize, int32_t nChunkId, int * pChunkHeader);
 void __fastcall SOUNDSMP_InitWaveFormat(WAVEFORMATEX * pWaveFormat, WORD nChannels);
-int * __fastcall SOUNDSMP_ParseWavHeader(int * pWavData, uint32_t * pDataSize, short * pWavFormat);
+int * __fastcall SOUNDSMP_ParseWavHeader(int * pWavData, uint32_t * pDataSize, WAVEFORMATEX * pWavFormat);
 void __fastcall SOUNDSMP_CalculateVolumeAndPan(uint32_t * pnVolume, uint32_t * pnPan, float fDeltaX, float fDeltaY, float fDeltaZ);
 
 } // namespace D2Sound::Src::D2SoundSmp

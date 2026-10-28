@@ -201,7 +201,7 @@ BOOL __fastcall Skills_SrvDoFunc_085_FireUpgradedMissile(::SGAMEDATA * pGame, D2
       return 0;
     }
 
-    int nMissileBase = (int)sgptDataTable->pTxtSkills[eSkill].srvmissilea;
+    int nMissileBase = (int)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
     if (!(-1 < nMissileBase && nMissileBase < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -430,7 +430,7 @@ BOOL __fastcall SKILLMONST_SrvStFn46_AndrialSpray(::SGAMEDATA * pGame, D2UnitStr
 // Server-side skill do-func (index 088) that fires a missile from a monster's animated body part. Reads the target direction from the current skill's stored params or cursor position, maps animation frame+direction to a composite body-part offset via MONSTERS_GetCompositeDimensions and a lookup table, then launches the skill's srvmissilea missile from that world position.
 BOOL __fastcall Skills_SrvDoFunc_088_FireMissileFromBodyPart(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     // Static local variables (originally global data)
-    static uint8_t BYTE_ARRAY_006e3188[8] = { 0x1d, 0x1c, 0x1b, 0x1a, 0x19, 0x18, 0x1f, 0x1e };
+    static uint8_t BYTE_ARRAY_006e3188[8] = { 0x1d, 0x1c, 0x1b, 0x1a, 0x19, 0x18, 0x1f, 0x1e }; D2_STATIC_GUARD(BYTE_ARRAY_006e3188, "D2Game::SKILLS::SkillMonst::Skills_SrvDoFunc_088_FireMissileFromBodyPart::BYTE_ARRAY_006e3188");
 
     uint8_t _local_1c;
     BOOL nDirection;
@@ -445,7 +445,7 @@ BOOL __fastcall Skills_SrvDoFunc_088_FireMissileFromBodyPart(::SGAMEDATA * pGame
       return 0;
     }
 
-    eMissilesId eVar2 = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissilea;
+    eMissilesId eVar2 = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
     if ((int)eVar2 < 0 || sgptDataTable->nTxtMissilesSize <= (int)eVar2) {
       return 0;
     }
@@ -868,7 +868,7 @@ BOOL __fastcall SKILLMONST_SrvDoFunc092_MeleeHitThenMissile(::SGAMEDATA * pGame,
 
     UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pVictim, 0);
     UNIT::SUnitDmg::DAMAGE_RemoveDamageListEntry(pGame, (int*)pUnit, (int*)pVictim);
-    eMissilesId nSrvMissle = (eMissilesId)pDVar1[eSkill].srvmissilea;
+    eMissilesId nSrvMissle = (eMissilesId)pDVar1[eSkill].srvmissile[1];
     if ((int)nSrvMissle < 0) {
       if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
         nSrvMissle = D2Common::Monsters::MONSTERS::MONSTER_GetMissileForAnimEvent(pUnit, 1);
@@ -898,7 +898,7 @@ BOOL __fastcall Skills_SrvDoFunc_093_FireLeadingMissile(::SGAMEDATA * pGame, D2U
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
     if ((int)eMissileId < 0 || sgptDataTable->nTxtMissilesSize <= (int)eMissileId) {
       return 0;
     }
@@ -1130,7 +1130,7 @@ BOOL __fastcall Skills_SrvDoFunc_095_SpawnTrapMissile(::SGAMEDATA * pGame, D2Uni
       return 0;
     }
 
-    eMissilesId nMissileId = (eMissilesId)pSkillsTxt->srvmissilea;
+    eMissilesId nMissileId = (eMissilesId)pSkillsTxt->srvmissile[1];
     if (!(-1 < (int)nMissileId && (int)nMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -1197,7 +1197,7 @@ BOOL __fastcall Skills_SrvDoFunc_152_SpawnTrapMissileVariant(::SGAMEDATA * pGame
       return 0;
     }
 
-    eMissilesId nMissileId = (eMissilesId)pSkillsTxt->srvmissilea;
+    eMissilesId nMissileId = (eMissilesId)pSkillsTxt->srvmissile[1];
     if (!(-1 < (int)nMissileId && (int)nMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -1479,7 +1479,7 @@ BOOL __fastcall Skills_SrvDoFunc_099_FireMissileRing8Dir(::SGAMEDATA * pGame, D2
     0x1,
     0x2,
     0x2
-};
+}; D2_STATIC_GUARD(gnSkillMissileCount_FireOrb, "D2Game::SKILLS::SkillMonst::Skills_SrvDoFunc_099_FireMissileRing8Dir::gnSkillMissileCount_FireOrb");
     static int gnSkillMissileCount_FireRing[16] = {
     0x0,
     0x1,
@@ -1497,7 +1497,7 @@ BOOL __fastcall Skills_SrvDoFunc_099_FireMissileRing8Dir(::SGAMEDATA * pGame, D2
     -0x2,
     -0x2,
     -0x1
-};
+}; D2_STATIC_GUARD(gnSkillMissileCount_FireRing, "D2Game::SKILLS::SkillMonst::Skills_SrvDoFunc_099_FireMissileRing8Dir::gnSkillMissileCount_FireRing");
 
     D2SkillArgStrc sSkillArg;
     if ((int)eSkill < 0) {
@@ -1512,7 +1512,7 @@ BOOL __fastcall Skills_SrvDoFunc_099_FireMissileRing8Dir(::SGAMEDATA * pGame, D2
       return 0;
     }
 
-    eMissilesId eSrvMissileId = (eMissilesId)pSkillsTxt->srvmissilea;
+    eMissilesId eSrvMissileId = (eMissilesId)pSkillsTxt->srvmissile[1];
     if (!(-1 < (int)eSrvMissileId && (int)eSrvMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -1626,7 +1626,7 @@ BOOL __fastcall Skills_SrvDoFunc_101_FireDirectionalMissile(::SGAMEDATA * pGame,
       return 0;
     }
 
-    eMissilesId eSrvMissileId = (eMissilesId)pSkillsTxt->srvmissilea;
+    eMissilesId eSrvMissileId = (eMissilesId)pSkillsTxt->srvmissile[1];
     if (!(-1 < (int)eSrvMissileId && (int)eSrvMissileId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + eSrvMissileId)) {
       return 0;
     }
@@ -1708,7 +1708,7 @@ BOOL __fastcall Skills_SrvDoFunc_102_FireRandomMultiMissile(::SGAMEDATA * pGame,
       return 0;
     }
 
-    eMissilesId eVar1 = (eMissilesId)pSkillsTxt->srvmissilea;
+    eMissilesId eVar1 = (eMissilesId)pSkillsTxt->srvmissile[1];
     if (!(-1 < (int)eVar1 && (int)eVar1 < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -1973,7 +1973,7 @@ BOOL __fastcall Skills_SrvDoFunc_105_FireParallelMissileVolley(::SGAMEDATA * pGa
     }
 
     eMissilesId eMissileId;
-    eMissileId = (eMissilesId)pSkillsTxt->srvmissilea;
+    eMissileId = (eMissilesId)pSkillsTxt->srvmissile[1];
     if ((int)eMissileId < 0 || sgptDataTable->nTxtMissilesSize <= (int)eMissileId) {
       return 0;
     }
@@ -2077,7 +2077,7 @@ BOOL __fastcall Skills_SrvDoFunc_106_FireMissileRingOnTarget(::SGAMEDATA * pGame
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissilea;
+    eMissilesId eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -2091,7 +2091,7 @@ BOOL __fastcall Skills_SrvDoFunc_106_FireMissileRingOnTarget(::SGAMEDATA * pGame
     }
 
     int32_t nVelocity = D2Common::DATATBLS::MissileTbls::MISSILETBLS_CalculateVelocity(eMissileId, nSkillLvl);
-    SkillsServer::SKILLS_CreateMissileRing(pGame, pUnit, pUnit, (eMissilesId*)eMissileId, eSkill, nSkillLvl, nVelocity);
+    SkillsServer::SKILLS_CreateMissileRing(pGame, pUnit, pUnit, eMissileId, eSkill, nSkillLvl, nVelocity);
     return 1;
 }
 
@@ -2424,7 +2424,7 @@ BOOL __fastcall Skills_SrvDoFunc_148_FireMissileBodyPart10(::SGAMEDATA * pGame, 
       return 0;
     }
 
-    int nBaseMissileId = (int)pSkillsTxt->srvmissilea;
+    int nBaseMissileId = (int)pSkillsTxt->srvmissile[1];
     if (!(-1 < nBaseMissileId && nBaseMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -2472,7 +2472,7 @@ BOOL __fastcall Skills_SrvDoFunc_149_FireMissileBodyPart11(::SGAMEDATA * pGame, 
       return 0;
     }
 
-    int nBaseMissileId = (int)pSkillsTxt->srvmissilea;
+    int nBaseMissileId = (int)pSkillsTxt->srvmissile[1];
     if (!(-1 < nBaseMissileId && nBaseMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -2525,7 +2525,7 @@ BOOL __fastcall Skills_SrvDoFunc_110_FireArrowModMissile(::SGAMEDATA * pGame, D2
 
     eMissilesId eMissileId = D2Common::Skills::SKILL_GetArrowModifierSkill(pUnit, &nSkillLvl);
     if (eMissileId == MISSILE_Arrow || eMissileId == MISSILE_Bolt) {
-      eMissileId = (eMissilesId)pSkillsTxt->srvmissilea;
+      eMissileId = (eMissilesId)pSkillsTxt->srvmissile[1];
       if (-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
         pMissileTxt = D2Client::GetMissleById(eMissileId);
         if (pMissileTxt) {
@@ -2552,7 +2552,7 @@ BOOL __fastcall Skills_SrvDoFunc_110_FireArrowModMissile(::SGAMEDATA * pGame, D2
 // Server skill do-func 112 (monster random-curse): rolls pUnit's seed mod 5 to pick one of the five Necromancer curse skills (gnSkillOffset_Necromancer_Curse). Builds a curse-effect descriptor (target state, aura range/length from the chosen skill's calc strings, and a per-curse stat-modifier table selected via switch on the roll), then applies it to all units in range through SKILLS_ApplyEffectToUnitsInRange using SKILLNEC_ApplyCurseToUnit as the callback. Returns the apply result (BOOL); returns 0 if the rolled curse skill/state is invalid.
 BOOL __fastcall Skills_SrvDoFunc_112_RandomCurse(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     // Static local variables (originally global data)
-    static uint32_t gnSkillOffset_Necromancer_Curse[5] = { 0x42, 0x48, 0x52, 0x57, 0x5b };
+    static uint32_t gnSkillOffset_Necromancer_Curse[5] = { 0x42, 0x48, 0x52, 0x57, 0x5b }; D2_STATIC_GUARD(gnSkillOffset_Necromancer_Curse, "D2Game::SKILLS::SkillMonst::Skills_SrvDoFunc_112_RandomCurse::gnSkillOffset_Necromancer_Curse");
 
     D2SkillAuraCtxStrc sNecroSkillArg;
     int32_t nAuraLen;
@@ -2640,7 +2640,6 @@ BOOL __fastcall Skills_SrvDoFunc_112_RandomCurse(::SGAMEDATA * pGame, D2UnitStrc
 
 // Server tick function called each frame for spider-type monsters: if the unit is moving (path flags non-zero), computes a directional offset from the spider's current facing, then spawns a MISSILE_Spidergoolay missile (SKILL_SpiderLay) at the offset position behind the spider, forming a persistent web trail.
 void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    uint32_t nPathFlags;
     D2SkillStrc* pSkill;
     int nPosX;
     int nPosY;
@@ -2649,26 +2648,21 @@ void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUni
     D2SkillArgStrc sSkillArg;
     int nOffsetY;
     int nOffsetX;
-    uint8_t abyDirLookup[4];
-    int nSpiderDirGfxOff;
+    uint8_t abyDirLookup[8];
     eD2UnitType eUnitType;
-    uint32_t nStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     if (pDynamicPath) {
+      uint32_t nPathFlags;
       nPathFlags = D2Common::PATH::Path::Get8FlagsFromDynamicPath(pDynamicPath);
       if (nPathFlags) {
-        abyDirLookup[0] = 10;
-        abyDirLookup[1] = 8;
-        abyDirLookup[2] = 0x16;
-        abyDirLookup[3] = 0x14;
-        nSpiderDirGfxOff = 0xc0e1012;
+        memcpy(abyDirLookup, "\n\b\x16\x14\x12\x10\x0e\f", 8);
         nPathFlags = D2Common::PATH::DynamicPath::UpdateDirection(pDynamicPath);
         nPathFlags = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nPathFlags);
-        nSpiderDirGfxOff = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nSpiderDirGfxOff + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)abyDirLookup[nPathFlags & 0xff]);
+        abyDirLookup[4] = abyDirLookup[nPathFlags & 0xff];
         D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(abyDirLookup[nPathFlags & 0xff], &nOffsetX, &nOffsetY);
         bApplyBonus = 1;
         pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_SpiderLay, pUnit);
-        nSpiderDirGfxOff = D2Common::Skills::GetSkillLevel(pUnit, pSkill, bApplyBonus);
+        *(uint32_t*)((char*)&abyDirLookup + 4) = D2Common::Skills::GetSkillLevel(pUnit, pSkill, bApplyBonus);
         eUnitType = pUnit->eUnitType;
         if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
           nPosX = pUnit->pPath.pStaticPath->nPosX;
@@ -2694,7 +2688,10 @@ void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUni
         memset(&sSkillArg, 0, 0x5c);
         sSkillArg.nUnitX = nPosX + nOffsetX * 2;
         sSkillArg.nUnitY = nPosY + nOffsetY * 2;
-        sSkillArg.nSkillLevel = nSpiderDirGfxOff;
+        *(uint8_t*)(char*)&sSkillArg.nSkillLevel = abyDirLookup[4];
+        *(uint8_t*)((char*)&sSkillArg.nSkillLevel + 1) = abyDirLookup[5];
+        *(uint8_t*)((char*)&sSkillArg.nSkillLevel + 2) = abyDirLookup[6];
+        *(uint8_t*)((char*)&sSkillArg.nSkillLevel + 3) = abyDirLookup[7];
         sSkillArg.nFlags = 0x21;
         sSkillArg.nVelocityOverride = 3;
         sSkillArg.eSkillNo = SKILL_SpiderLay;

@@ -18,8 +18,6 @@
 #include "D2Client/UNIT/UnitMode.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Lang/StrTable/strtable.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinArchive.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/Archive.h"
@@ -28,7 +26,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/Storm.h"
+#include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Common/Drlg/Drlg.h"
@@ -54,10 +52,8 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2CmdTbl_Line0x50f) == 0x47a, "D2_N
 
 namespace D2Client::UI::CmdTbl {
 
-static D2CmdBindingStrc gnCmdTableMax[57] = { {} };
-static pfnVoidNoArgCallback gpKeyBindingsTableEnd = (pfnVoidNoArgCallback)0;
-static uint8_t gbKeyBindingsEnabled;
-static uint8_t gbKeyConfigModeActive;
+static D2CmdBindingStrc gnCmdTableMax[57] = { {} }; D2_STATIC_GUARD(gnCmdTableMax, "D2Client::UI::CmdTbl::gnCmdTableMax");
+static pfnVoidNoArgCallback gpKeyBindingsTableEnd = (pfnVoidNoArgCallback)0; D2_STATIC_GUARD(gpKeyBindingsTableEnd, "D2Client::UI::CmdTbl::gpKeyBindingsTableEnd");
 
 void __stdcall CMD_ToggleRunMode() {
     GAME::Game::SetRunKeyDown(1);
@@ -307,21 +303,22 @@ void __fastcall CMD_InvokeCallbackByParam(int32_t nParam) {
 
 // @sourcefile .\UI\CmdTbl.cpp
 void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
+    char* pEnd;
     HANDLE hFile;
     D2CmdTbl_Line0x50f* pKeyData;
     int nCount;
-    uint32_t* pFileBufCursor;
-    int* pSrc;
+    uint16_t* pFileBufCursor;
+    D2KeyBindStrc* pSrc;
     D2CmdTbl_Line0x50f* pDst;
     int* pDstDefault;
-    uint32_t aKeyBindFileBuf[286];
+    uint8_t aKeyBindFileBuf[1146];
     char cStack_10d;
     char szPath[260];
     char szLangAbbr[4];
     char* pScan;
     D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbr, 0);
     if (dwParam) {
-      char* pEnd;
+      uint16_t uVar1;
       Fog::Source::SFile::SFILE_GetInstallPath(szPath, 0xdc);
       pScan = &cStack_10d;
       do {
@@ -336,15 +333,17 @@ void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
         Fog::Source::SFile::SFILE_Win32CloseHandle(hFile);
         if (dwParam == 0x47a) {
           pKeyData = D2_NEW_POOL(nullptr, D2CmdTbl_Line0x50f);
-          pFileBufCursor = aKeyBindFileBuf;
+          pFileBufCursor = (uint16_t*)aKeyBindFileBuf;
           pDst = pKeyData;
           for (nCount = 0x11e; nCount; nCount--) {
-            *(uint32_t*)pDst = *pFileBufCursor;
-            pFileBufCursor++;
-            pDst = (D2CmdTbl_Line0x50f*)&pDst->pNext;
+            uVar1 = pFileBufCursor[1];
+            pDst->wMagic = pFileBufCursor[0];
+            pDst->wVersion = uVar1;
+            pFileBufCursor += 2;
+            pDst = (D2CmdTbl_Line0x50f*)&pDst->wSize;
           }
 
-          *(uint16_t*)pDst = *(uint16_t*)pFileBufCursor;
+          pDst->wMagic = *pFileBufCursor;
           goto apply_key_data;
         }
       }
@@ -354,19 +353,19 @@ void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
     int nLine;
     nLine = 0x51e;
     pScan = ".\\UI\\CmdTbl.cpp";
-    size_t* pFileSize;
+    uint32_t* pFileSize;
     pFileSize = 0;
     D2PoolManagerStrc* pMPQ;
     pMPQ = D2Win::Src::D2WinArchive::ReturnZero();
     pKeyData = (D2CmdTbl_Line0x50f*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMPQ, szPath, pFileSize, pScan, nLine);
     apply_key_data:
     if (pKeyData) {
-      if (*(short int*)pKeyData == 0x5357 && *(short int*)&pKeyData->field_0x2 == 0x25 && *(short int*)&pKeyData->pNext == 0x47a) {
-        pSrc = (int*)((uintptr_t)&pKeyData->pNext + 2);
+      if (pKeyData->wMagic == 0x5357 && pKeyData->wVersion == 0x25 && pKeyData->wSize == 0x47a) {
+        pSrc = pKeyData->aBindings;
         pDstDefault = gaKeyBindingsDefault;
         for (nCount = 0x11d; nCount; nCount--) {
-          *pDstDefault = *pSrc;
-          pSrc++;
+          *pDstDefault = pSrc->nCmdIndex;
+          pSrc = (D2KeyBindStrc*)&pSrc->wKeyCode;
           pDstDefault++;
         }
 
@@ -1252,8 +1251,8 @@ void __fastcall CMD_ToggleKeyConfigMode(int32_t nEnable, int32_t bUpdateUIHandle
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x101,
     /* .pfHandler = */ &D2Client::UI::CmdTbl::INPUT_DispatchKeyCommand
-};
-    static uint8_t gbNormalUIHandlersRegistered;
+}; D2_STATIC_GUARD(gUIFlagCmdTableInit, "D2Client::UI::CmdTbl::CMD_ToggleKeyConfigMode::gUIFlagCmdTableInit");
+    static unsigned int gbNormalUIHandlersRegistered; D2_STATIC_GUARD_BSS(gbNormalUIHandlersRegistered, "D2Client::UI::CmdTbl::CMD_ToggleKeyConfigMode::gbNormalUIHandlersRegistered");
 
     HWND hWnd;
     int32_t nHandlerCount;

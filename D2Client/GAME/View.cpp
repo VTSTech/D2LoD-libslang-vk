@@ -6,6 +6,7 @@
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GameViewStrc.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2LightMapStrc.h"
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Draw/Weather.h"
@@ -33,7 +34,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Glide/Renderer/Glide.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinPalette.h"
@@ -87,7 +87,7 @@ void __fastcall ACTCALLBACKFN(D2RoomStrc * pRoom) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x591);
           exit(-1);
         }
-        if ((char)pLightMap->bUnknown == '\0') {
+        if (pLightMap->bUnknown == '\0') {
           pUnit = UNIT::Player::UNITS_FindClientSideUnit(pLightMap->nUnitGUID, eLightUnitType);
         } else {
           pUnit = UNIT::Player::UNITS_FindServerSideUnit(pLightMap->nUnitGUID, eLightUnitType);
@@ -522,8 +522,8 @@ void __stdcall VIEW_GenerateRandomViewParams(int32_t nStarIndex, int32_t bRespaw
 // Renders the animated star-field overlay used in the Arcane Sanctuary. On first call, seeds a PRNG from SHAKE_StartTickcount, generates 8 brightness-graduated palette entries into gaArcaneStarColorTable, then calls VIEW_GenerateRandomViewParams for each of the 256 stars. Each frame, draws all 256 stars as single-pixel lines using D2GFX_DrawLine. Every 40 ms (tick delta > 0x28), advances each star's X position by its velocity; stars that fall off-screen are re-randomised via VIEW_GenerateRandomViewParams.
 void __stdcall DRAW_Overlay_ArcaneStars() {
     // Static local variables (originally global data)
-    static unsigned int gdwArcaneStarsLastUpdateTick;
-    static uint32_t gbArcaneStarsInitialized;
+    static unsigned int gdwArcaneStarsLastUpdateTick; D2_STATIC_GUARD_BSS(gdwArcaneStarsLastUpdateTick, "D2Client::GAME::View::DRAW_Overlay_ArcaneStars::gdwArcaneStarsLastUpdateTick");
+    static uint32_t gbArcaneStarsInitialized; D2_STATIC_GUARD_BSS(gbArcaneStarsInitialized, "D2Client::GAME::View::DRAW_Overlay_ArcaneStars::gbArcaneStarsInitialized");
 
     int i;
     int32_t nPaletteIdx;
@@ -610,7 +610,7 @@ void __stdcall DRAW_Overlay_ArcaneStars() {
 // Draws Ancients arena background with parallax scrolling summit (summit01.dc6, 4-tile wrap) and animated clouds (cloud01.dc6, 10 instances with RNG positions/velocities). Cloud positions stored in gAncientsBackgroundCellPtrs array. Scroll offset calculated from player X position delta divided by 8. Supports 800x600 and higher resolutions.
 void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
     // Static local variables (originally global data)
-    static D2SeedStrc * gpAncientsCloudSeed = (D2SeedStrc *)&gAncientsCloudSeed;
+    static D2SeedStrc * gpAncientsCloudSeed = (D2SeedStrc *)&gAncientsCloudSeed; D2_STATIC_GUARD(gpAncientsCloudSeed, "D2Client::GAME::View::DRAW_Background_Ancients::gpAncientsCloudSeed");
     static int gaAncientsCloudYPos[10] = {
     0,
     0,
@@ -622,7 +622,7 @@ void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gaAncientsCloudYPos, "D2Client::GAME::View::DRAW_Background_Ancients::gaAncientsCloudYPos");
     static int gaAncientsCloudVelocities[10] = {
     0,
     0,
@@ -634,7 +634,7 @@ void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
     0,
     0,
     0
-};
+}; D2_STATIC_GUARD(gaAncientsCloudVelocities, "D2Client::GAME::View::DRAW_Background_Ancients::gaAncientsCloudVelocities");
     static int gaAncientsCloudXPos[10] = {
     0,
     0,
@@ -646,12 +646,12 @@ void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
     0,
     0,
     0
-};
-    static uint8_t gbAncientsCloudInitialized;
-    static int gnAncientsScrollDelta;
-    static uint8_t gbAncientsScrollBaseXSet;
-    static int gnAncientsScrollBaseX;
-    static bool gbAncientsScrollInitialized;
+}; D2_STATIC_GUARD(gaAncientsCloudXPos, "D2Client::GAME::View::DRAW_Background_Ancients::gaAncientsCloudXPos");
+    static uint8_t gbAncientsCloudInitialized; D2_STATIC_GUARD_BSS(gbAncientsCloudInitialized, "D2Client::GAME::View::DRAW_Background_Ancients::gbAncientsCloudInitialized");
+    static int gnAncientsScrollDelta; D2_STATIC_GUARD_BSS(gnAncientsScrollDelta, "D2Client::GAME::View::DRAW_Background_Ancients::gnAncientsScrollDelta");
+    static uint8_t gbAncientsScrollBaseXSet; D2_STATIC_GUARD_BSS(gbAncientsScrollBaseXSet, "D2Client::GAME::View::DRAW_Background_Ancients::gbAncientsScrollBaseXSet");
+    static int gnAncientsScrollBaseX; D2_STATIC_GUARD_BSS(gnAncientsScrollBaseX, "D2Client::GAME::View::DRAW_Background_Ancients::gnAncientsScrollBaseX");
+    static bool gbAncientsScrollInitialized; D2_STATIC_GUARD_BSS(gbAncientsScrollInitialized, "D2Client::GAME::View::DRAW_Background_Ancients::gbAncientsScrollInitialized");
 
     DWORD dwResMode;
     int nCloudIdx;
@@ -964,7 +964,7 @@ D2GameViewStrc * __stdcall AllocGameView() {
 // Already-documented — existing description is detailed and accurate (6-layer world rendering pipeline: background FX, underfloor, floor tiles, shadows, units, roofs/weather; handles perspective scale, lightmap updates, level-specific FX for Arcane Sanctuary and Arreat Summit).
 void __fastcall ViewDraw2(D2GameViewStrc * pGameView) {
     // Static local variables (originally global data)
-    static uint32_t gnFrameDrawCounter;
+    static uint32_t gnFrameDrawCounter; D2_STATIC_GUARD_BSS(gnFrameDrawCounter, "D2Client::GAME::View::ViewDraw2::gnFrameDrawCounter");
 
     bool _bPerspective;
     bool bPerspective;

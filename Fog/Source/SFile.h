@@ -42,7 +42,7 @@ void __fastcall SFILE_InitializeFileSystem(BOOL bResult, uint32_t dwParam);
 int32_t __fastcall ARCHIVE_OpenD2FileWrap(char * szFilename, struct D2MPQFileStrc * * ppFile);
 void __fastcall ERRORMANAGER_FCloseFile(struct D2MPQFileStrc * pMPQFile);
 // NOTE: Register params: pFileHandle (ECX): D2MPQFileStrc *, pOutputBuffer (EDX): void *
-int __fastcall ERRORMANAGER_FReadFile(struct D2MPQFileStrc * pFileHandle, void * pOutputBuffer, uint32_t nBytesToRead, size_t * pBytesRead, LPOVERLAPPED lpOverlapped, struct D2StormAsyncCompletionStrc * pCompletion, int dwReadFlags);
+int __fastcall ERRORMANAGER_FReadFile(struct D2MPQFileStrc * pFileHandle, void * pOutputBuffer, uint32_t nBytesToRead, uint32_t * pBytesRead, LPOVERLAPPED lpOverlapped, struct D2StormAsyncCompletionStrc * pCompletion, int dwReadFlags);
 // Thunk to Storm's SFILE_GetFileSize. PUSH EDX; PUSH ECX; CALL 00416370; RET - it tail-calls and returns that DWORD in EAX. Typed void, its callers dropped the result and tested an unassigned local, which fired the line-95 assert in the file-size path non-deterministically.
 DWORD __fastcall ERRORMANAGER_FGetFileSize(struct D2MPQFileStrc * pFileHandle, LPDWORD pdwFileSize);
 // @wasnamed SFILE_SeekFileWrapper

@@ -160,7 +160,7 @@ BOOL __stdcall BeginAsyncReadForClient(D2QServerStrc * pQServer, D2QServerClient
 
 D2QServerClientPacketStrc * __stdcall NET_QServerClientPacket_CreateStructAndCopyBytesThere(D2QServerClientConnectionStrc * pQServerClient, size_t nSize, char * pBytes) {
     D2QServerClientPacketStrc* pNewPacket = (D2QServerClientPacketStrc*)D2_ALLOC(nSize + 8);
-    memcpy(&pNewPacket->pBytes, pBytes, nSize);
+    memcpy(pNewPacket + 1, pBytes, nSize);
     pNewPacket->nPacketSize = nSize;
     pNewPacket->pQServerClientPacketNext = 0;
     D2QServerClientPacketStrc* pTailPacket = pQServerClient->pSendQueueHead;
@@ -309,7 +309,7 @@ int __stdcall BeginAsyncWriteForClient(D2QServerStrc * pQServer, D2QServerClient
       exit(-1);
     }
 
-    BOOL bWriteResult = WriteFile((HANDLE)pClient->socket, (LPCVOID)&pClient->pSendQueueHead->pBytes, pClient->pSendQueueHead->nPacketSize, &dwBytesWritten, &pClient->ovWrite);
+    BOOL bWriteResult = WriteFile((HANDLE)pClient->socket, (LPCVOID)(pClient->pSendQueueHead + 1), pClient->pSendQueueHead->nPacketSize, &dwBytesWritten, &pClient->ovWrite);
     DWORD dwLastError = GetLastError();
     if (!bWriteResult) {
       if (dwLastError != 0x3e5) {

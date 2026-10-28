@@ -89,7 +89,7 @@ struct __attribute__((packed)) D2ResistTableEntry {
     /* 0x18 */ int nDisplayIndex; // element/display index
     /* 0x1C */ int nFlag7; // skip-when-attacker-monster flag
     /* 0x20 */ int nEnabled; // entry-enabled flag
-    /* 0x24 */ int nEventId; // log/event id
+    /* 0x24 */ char * nEventId; // log/event id
     /* 0x28 */ int field_28; // byte flag (low byte used)
 };
 
@@ -201,7 +201,7 @@ void __fastcall DAMAGE_CalculateAndApplyDamage(::SGAMEDATA * pGame, struct D2Uni
 int32_t DAMAGE_GetSkillDamageBonus(struct D2UnitStrc * pUnit);
 uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pDefUnit, int32_t nAttackRating, int32_t nParam2);
 // Applies missile hit damage to all units within nRadius of (nCenterX,nCenterY) that pass targeting checks. Builds a UnitFind result set (flags nUnitFlags, default 0x583), skips the owner and owner-owner unless bHitOwner/bHitOwnerOwner are set, requires line-of-sight (COLLISION_LOS), optionally filters through pfnProc callback, then calls MISSMODE_ApplyMissileHitDamage for each hit. Returns 1 if any unit was hit, 0 otherwise.
-void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, int * pnParam, BOOL bHitOwner, BOOL bHitOwnerOwner, pfnAoEDamageFilter pfnProc, int32_t nUnitFlags);
+void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, struct D2DamageStrc * pDamage, BOOL bHitOwner, BOOL bHitOwnerOwner, pfnAoEDamageFilter pfnProc, int32_t nUnitFlags);
 void __fastcall DAMAGE_AddSkillBonusDamage(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, struct D2DamageStrc * param_1);
 void __fastcall SKILL_CalculateDamageForEvent(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, eD2Skills eSkill, int32_t nParam, struct D2DamageStrc * pDamage);
 // Scales nExperience by the level-difference penalty between attacker and defender. When defender level > 24 and attacker is active, delegates to D2ApplyPercent with raw levels. Otherwise clamps the difference to 10 and looks up a penalty fraction from gaExperiencePenaultyHigherAttacker or gaExperiencePenaultyHigherDefender, then scales via D2ApplyPercent(exp, pct, 0x100). Returns unmodified experience when penalty is 0x100 (no penalty).

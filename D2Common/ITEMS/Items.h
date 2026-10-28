@@ -31,6 +31,70 @@ typedef void (__fastcall *pfnItemTransactionCb)(::SGAMEDATA * pGame, struct D2Un
 #endif
 
 // Data types
+struct D2ItemCalcContextStrc {
+    /* 0x00 */ struct D2UnitStrc * pUnit;
+    /* 0x04 */ int32_t nContext;
+};
+
+struct D2RunesTxt {
+    /* 0x000 */ char name[64]; // d2bs binfields FIELDTYPE_ASCII
+    /* 0x040 */ char rune_name[64]; // d2bs binfields FIELDTYPE_ASCII
+    /* 0x080 */ char complete; // d2bs binfields FIELDTYPE_CHAR
+    /* 0x081 */ char server; // d2bs binfields FIELDTYPE_CHAR
+    /* 0x082 */ uint8_t field_0x82;
+    /* 0x083 */ uint8_t field_0x83;
+    /* 0x084 */ uint8_t field_0x84;
+    /* 0x085 */ uint8_t field_0x85;
+    /* 0x086 */ short itype1; // d2bs binfields FIELDTYPE_CODE_SHORT
+    /* 0x088 */ short itype2; // d2bs binfields FIELDTYPE_CODE_SHORT
+    /* 0x08A */ short itype3; // d2bs binfields FIELDTYPE_CODE_SHORT
+    /* 0x08C */ short itype4; // d2bs binfields FIELDTYPE_CODE_SHORT
+    /* 0x08E */ short itype5; // d2bs binfields FIELDTYPE_CODE_SHORT
+    /* 0x090 */ short itype6; // d2bs binfields FIELDTYPE_CODE_SHORT
+    /* 0x092 */ short etype1; // d2bs binfields FIELDTYPE_CODE_SHORT
+    /* 0x094 */ short etype2; // d2bs binfields FIELDTYPE_CODE_SHORT
+    /* 0x096 */ short etype3; // d2bs binfields FIELDTYPE_CODE_SHORT
+    /* 0x098 */ int rune1; // d2bs binfields FIELDTYPE_CODE_INT
+    /* 0x09C */ int rune2; // d2bs binfields FIELDTYPE_CODE_INT
+    /* 0x0A0 */ int rune3; // d2bs binfields FIELDTYPE_CODE_INT
+    /* 0x0A4 */ int rune4; // d2bs binfields FIELDTYPE_CODE_INT
+    /* 0x0A8 */ int rune5; // d2bs binfields FIELDTYPE_CODE_INT
+    /* 0x0AC */ int rune6; // d2bs binfields FIELDTYPE_CODE_INT
+    /* 0x0B0 */ int t1code1; // d2bs binfields FIELDTYPE_NAME_INT
+    /* 0x0B4 */ int t1param1; // d2bs binfields FIELDTYPE_LINKER_INT
+    /* 0x0B8 */ int t1min1; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x0BC */ int t1max1; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x0C0 */ int t1code2; // d2bs binfields FIELDTYPE_NAME_INT
+    /* 0x0C4 */ int t1param2; // d2bs binfields FIELDTYPE_LINKER_INT
+    /* 0x0C8 */ int t1min2; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x0CC */ int t1max2; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x0D0 */ int t1code3; // d2bs binfields FIELDTYPE_NAME_INT
+    /* 0x0D4 */ int t1param3; // d2bs binfields FIELDTYPE_LINKER_INT
+    /* 0x0D8 */ int t1min3; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x0DC */ int t1max3; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x0E0 */ int t1code4; // d2bs binfields FIELDTYPE_NAME_INT
+    /* 0x0E4 */ int t1param4; // d2bs binfields FIELDTYPE_LINKER_INT
+    /* 0x0E8 */ int t1min4; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x0EC */ int t1max4; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x0F0 */ int t1code5; // d2bs binfields FIELDTYPE_NAME_INT
+    /* 0x0F4 */ int t1param5; // d2bs binfields FIELDTYPE_LINKER_INT
+    /* 0x0F8 */ int t1min5; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x0FC */ int t1max5; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x100 */ int t1code6; // d2bs binfields FIELDTYPE_NAME_INT
+    /* 0x104 */ int t1param6; // d2bs binfields FIELDTYPE_LINKER_INT
+    /* 0x108 */ int t1min6; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x10C */ int t1max6; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x110 */ int t1code7; // d2bs binfields FIELDTYPE_NAME_INT
+    /* 0x114 */ int t1param7; // d2bs binfields FIELDTYPE_LINKER_INT
+    /* 0x118 */ int t1min7; // d2bs binfields FIELDTYPE_SIGNEDINT
+    /* 0x11C */ int t1max7; // d2bs binfields FIELDTYPE_SIGNEDINT
+};
+
+struct D2RunesTxtTableStrc {
+    /* 0x00 */ int nSize;
+    /* 0x04 */ struct D2RunesTxt * pTable;
+};
+
 struct __attribute__((packed)) D2RuneTableStrc {
     /* 0x00 */ char szName[64]; // runeword name (ASCII, starts here, 64 bytes)
     /* 0x40 */ char szRuneName[64]; // rune name column (ASCII, starts here, 64 bytes)
@@ -229,7 +293,7 @@ int32_t __stdcall ITEM_GetTxtSetItems_setIndex(struct D2UnitStrc * pUnit);
 eD2ItemTypes __stdcall ITEM_GetItemData_wType(struct D2UnitStrc * pUnit);
 void __stdcall ITEMS_SumSocketedItemStats(eD2UnitStat eUnitStat, int * pOutTotal, struct D2UnitStrc * pItem);
 uint32_t __stdcall ITEMS_CheckIfUpgradeable(uint32_t nItemClassId);
-void __stdcall ITEM_ValidateAndGetClass(struct D2UnitStrc * pUnit);
+uint32_t __stdcall ITEM_ValidateAndGetClass(struct D2UnitStrc * pUnit);
 // Computes the effective required character level to use an item (pUnit), optionally relative to a player (pUnit2) for class-specific affix requirements. Takes the max over: the item-quality contribution (magic prefix/suffix/automagic, set/unique/crafted lvlReq, rare affix level requirements using classlevelreq when the affix is class-restricted and matches the player class), the base Items.txt level requirement, the requirements of all socketed/contained items (recursive), the reqlevel of any +skill stats on the item (stat 0x6b) and +skilltab stats (stat 0x61, +6 unless the tab matches the player's class), plus the item_levelreq stat bonus. Returns the clamped (>=0) result. __fastcall, recursive over inventory contents.
 uint32_t __fastcall ITEM_CalcRequiredLevel(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 uint32_t __stdcall ITEM_GetRequiredLevel(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
@@ -251,7 +315,7 @@ int32_t __stdcall TXT_ItemTypes_CheckClass(struct D2UnitStrc * pUnit);
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 eD2PlayerClassIDDWORD __stdcall TXT_ItemTypes_GetClass(struct D2UnitStrc * pUnit);
 // Resolves the display/transform color (palette index) of an item and writes the raw transform-color code to *pColor. Priority order: (1) owner-unit states whose itemtype matches the item (states.txt itemtrans) override the color; otherwise by quality: magic/rare scan the item's prefix/suffix and automagic affixes for the first MagicAffix with a valid transformcolor; set uses SetItems.txt chrtransform/invtransform; unique uses UniqueItems.txt chrtransform/invtransform; normal socketed items derive color from the first socketed gem (Gems.txt). nTransType selects char (0) vs inventory (nonzero) palette via PALETTE_GetItemPalette, combining the item's bTransform/bInvTrans base. Returns the palette pointer/index, or 0 if no color applies. __stdcall.
-int32_t __stdcall GetItemColor(struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, char * pColor, int32_t nTransType);
+uint8_t * __stdcall GetItemColor(struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, char * pColor, int32_t nTransType);
 // Returns 1 if pUnit is a valid target for the Imbue quest reward (Charsi). Rejects: NULL (fatal error), gold, monster-dropped items (ITEMFLAG_MONSTER set), non-equippable item types. For equippable items also rejects: non-ethereal throwables, quest items (except "leg"), items with sockets or socket flag, and quality other than normal (not set/unique/magic/rare/crafted/tempered).
 // @sourcefile .\ITEMS\Items.cpp
 BOOL __stdcall IsValidImbumeItem(struct D2UnitStrc * pUnit);
@@ -269,7 +333,7 @@ void __stdcall ITEM_ResolvePercentStatToBaseValue(eD2UnitStat nRecipeType, struc
 int32_t __stdcall ITEM_DeserializeFromBitBuffer(struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, uint32_t nParam1, struct D2ItemStatCostTxt * pItemStatCostTxt, uint32_t * pnParam, uint32_t nParam2);
 void __stdcall ExtractItemDetails(uint8_t * pBytesAfterId, size_t size, BOOL isSave, struct D2UnitDataItemDetailsStrc * itemData);
 // Deserialises an item unit from a binary save-data bit buffer into pUnit. Validates the 0x4D4A ("JM") magic header when nParam1 is set, reads the 32-bit item flags word, strips invalid flags, resets all affix/prefix/suffix fields on the unit to clean state, then delegates to ITEM_DeserializeFromBitBuffer (full items) or ITEMS_DeserializeItemHeader (compact items). Returns the number of bits consumed.
-int32_t __stdcall ITEM_LoadFromSaveData(struct D2UnitStrc * pUnit, uint8_t * pbParam, size_t nSize, uint32_t nParam1, uint32_t * pnParam, uint32_t nParam2, struct D2UnitDataItemDetailsStrc * pUnitDataItemDetails);
+int32_t __stdcall ITEM_LoadFromSaveData(struct D2UnitStrc * pUnit, uint8_t * pbParam, size_t nSize, uint32_t nParam1, uint32_t * pnParam, uint32_t nParam2, int * pUnitDataItemDetails);
 // Returns 1 if pUnit (item) is replenishable (throwable, stackable, non-ethereal, and its ItemTypesTxt entry has the repair flag set). Returns 0 for non-item units or items that fail any condition. Halts on null pUnit.
 BOOL ITEM_IsReplenishable(struct D2UnitStrc * pUnit);
 // Returns 1 if the item unit can be repaired at an NPC. Checks: must be an identified, non-ethereal item whose ItemTypesTxt entry has the repair flag, is not replenishable, and has durability. Also passes if the item's charged skills are not fully charged.

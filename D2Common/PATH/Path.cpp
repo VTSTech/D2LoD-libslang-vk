@@ -8,7 +8,6 @@
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
-#include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
@@ -23,6 +22,7 @@
 #include "D2Common/Units.h"
 #include "D2Game/D2PathTypeArg.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/Objects/Objects.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
@@ -54,13 +54,13 @@ void __fastcall PATH_CheckPathPointsInRoom(D2DynamicPathStrc * pPath) {
 
     while (pRoom) {
       int iVar1;
-      nPointX = (uint32_t)(uint16_t)pPath->PathPoints[i].nX;
+      nPointX = (uint32_t)pPath->PathPoints[i].nX;
       iVar1 = pRoom->sCoords.dwXStart;
       if ((int)nPointX < iVar1 || pRoom->sCoords.dwXSize + iVar1 <= (int)nPointX) {
         break;
       }
 
-      nPointX = (uint32_t)(uint16_t)pPath->PathPoints[i].nY;
+      nPointX = (uint32_t)pPath->PathPoints[i].nY;
       iVar1 = pRoom->sCoords.dwYStart;
       if ((int)nPointX < iVar1 || pRoom->sCoords.dwYSize + iVar1 <= (int)nPointX) {
         break;
@@ -141,126 +141,115 @@ BOOL PATH_FindAlternateAroundObstacle(D2PathTypeArg * pPathState) {
     -0x1,
     0x1,
     -0x1
-};
+}; D2_STATIC_GUARD(gnObstacleAvoidanceXOffsets, "D2Common::PATH::Path::PATH_FindAlternateAroundObstacle::gnObstacleAvoidanceXOffsets");
 
-    // Frame slots -52..-16 are ONE object: &nPrimaryDir is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t nPrimaryDir;
-      int nSecondaryDir;
-      int nTertiaryDir;
-      uint32_t nPackedCurXY;
-      uint16_t nSecAltX;
-      uint16_t nSecAltY;
-      uint16_t nTerAltX;
-      uint16_t nTerAltY;
-      D2RoomStrc* pRoom;
-      uint32_t nCollType;
-      uint32_t nCollFlags;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 36, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint32_t nParam;
     uint32_t nPackedSrc;
     uint32_t nParam_00;
     uint16_t nAltX;
-    int32_t nAddress;
+    int32_t iVar4;
     uint16_t nAltY;
-    bool bReachedTarget;
+    uint32_t nDirTriplet[3];
+    int32_t anDirections[3];
+    uint32_t nPackedCurXY;
+    uint32_t nCollType;
+    uint32_t nCollFlags;
     eD2UnitType nPathMode;
+    uint32_t nTargetY;
+    uint32_t nTargetX;
+    int32_t nLine;
     if (pPathState->pDynamicPath->nFlags & 0x40000U) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 199);
       exit(-1);
     }
 
-    uint32_t nTargetY;
-    nTargetY = (uint32_t)(uint16_t)pPathState->pCoords.nPosX;
-    uint32_t nTargetX;
-    nTargetX = (uint32_t)(uint16_t)pPathState->pCoords.nOffsetX;
-    D2UnitStrc* pDVar1;
-    pDVar1 = pPathState->pDynamicPath->pOwner;
+    uint16_t uVar1;
+    uVar1 = pPathState->pCoords.nPosX;
+    uint16_t uVar2;
+    uVar2 = pPathState->pCoords.nOffsetX;
+    D2UnitStrc* pDVar3;
+    pDVar3 = pPathState->pDynamicPath->pOwner;
     uint16_t nCurX;
     nCurX = pPathState->pCoords.nOffsetY;
-    __frame0.pRoom = pPathState->pRoom;
-    __frame0.nCollType = pPathState->nUnitWidth;
-    __frame0.nCollFlags = pPathState->nCollisionPattern;
+    D2RoomStrc* pRoom;
+    pRoom = pPathState->pRoom;
+    eD2CollisionShapeType nType;
+    nType = pPathState->nUnitWidth;
+    nLine = pPathState->nCollisionPattern;
     uint16_t nCurY;
     nCurY = pPathState->pCoords.nPosY;
-    if (!pDVar1) {
+    if (!pDVar3) {
       nPathMode = UNIT_COUNT;
     } else {
-      nPathMode = pDVar1->eUnitType;
+      nPathMode = pDVar3->eUnitType;
     }
 
     *(uint16_t*)(char*)&nParam = pPathState->pCoords.nOffsetX;
     *(uint16_t*)((char*)&nParam + 2) = pPathState->pCoords.nPosX;
     *(uint16_t*)(char*)&nPackedSrc = pPathState->pCoords.nOffsetY;
     *(uint16_t*)((char*)&nPackedSrc + 2) = pPathState->pCoords.nPosY;
-    __frame0.nSecAltX = nCurX;
-    __frame0.nSecAltY = nCurY;
-    __frame0.nTerAltX = nCurX;
-    __frame0.nTerAltY = nCurY;
-    Drlg::Path::DRLGPATH_GetDirectionTripletPacked(nPackedSrc, nParam, &__frame0.nPrimaryDir);
+    Drlg::Path::DRLGPATH_GetDirectionTripletPacked(nPackedSrc, nParam, (uint32_t*)anDirections);
+    uint16_t nSecAltX;
+    nSecAltX = nCurX;
+    uint16_t nSecAltY;
+    nSecAltY = nCurY;
+    uint16_t nTerAltX;
+    nTerAltX = nCurX;
+    uint16_t nTerAltY;
+    nTerAltY = nCurY;
     while (true) {
-      uint32_t nDirTriplet[3];
-      if ((uint16_t)nTargetX == nCurX && (uint16_t)nTargetY == nCurY) {
+      if (uVar2 == nCurX && uVar1 == nCurY) {
         return 0;
       }
 
-      nCurY += (short int)gnObstacleAvoidanceXOffsets[__frame0.nPrimaryDir * 2 + 1];
-      nCurX += (short int)gnObstacleAvoidanceXOffsets[__frame0.nPrimaryDir * 2];
-      __frame0.nPackedCurXY = (uint32_t)((uint32_t)(uint16_t)nCurY << 16 | (uint32_t)(uint16_t)nCurX);
-      nAddress = Collision::CheckCollision_BlockPlayer_Type(__frame0.pRoom, (uint32_t)nCurX, (uint32_t)nCurY, __frame0.nCollType, __frame0.nCollFlags);
-      if (!nAddress) {
+      nCurY += (short int)gnObstacleAvoidanceXOffsets[anDirections[0] * 2 + 1];
+      nCurX += (short int)gnObstacleAvoidanceXOffsets[anDirections[0] * 2];
+      nPackedCurXY = (uint32_t)((uint32_t)(uint16_t)nCurY << 16 | (uint32_t)(uint16_t)nCurX);
+      iVar4 = Collision::CheckCollision_BlockPlayer_Type(pRoom, (uint32_t)nCurX, (uint32_t)nCurY, nType, nLine);
+      if (!iVar4) {
         pPathState->pCoords.nOffsetY = nCurX;
         pPathState->pCoords.nPosY = nCurY;
-        if (nCurX != (uint16_t)nTargetX) {
-          goto step_found;
-        }
-
-        bReachedTarget = nCurY == (uint16_t)nTargetY;
-        goto check_reached_target;
+        nAltY = nCurY;
+        nAltX = nCurX;
+        goto joined_r0x006482ad;
       }
 
-      __frame0.nSecAltX += (short int)gnObstacleAvoidanceXOffsets[__frame0.nSecondaryDir * 2];
-      __frame0.nSecAltY += (short int)gnObstacleAvoidanceXOffsets[__frame0.nSecondaryDir * 2 + 1];
-      nAddress = Collision::CheckCollision_BlockPlayer_Type(__frame0.pRoom, (uint32_t)__frame0.nSecAltX, (uint32_t)__frame0.nSecAltY, __frame0.nCollType, __frame0.nCollFlags);
-      nAltY = __frame0.nSecAltY;
-      nAltX = __frame0.nSecAltX;
-      if (!nAddress) {
+      nSecAltX += (short int)gnObstacleAvoidanceXOffsets[anDirections[1] * 2];
+      nSecAltY += (short int)gnObstacleAvoidanceXOffsets[anDirections[1] * 2 + 1];
+      iVar4 = Collision::CheckCollision_BlockPlayer_Type(pRoom, (uint32_t)nSecAltX, (uint32_t)nSecAltY, nType, nLine);
+      nAltY = nSecAltY;
+      nAltX = nSecAltX;
+      if (!iVar4) {
         break;
       }
-      if (__frame0.nTertiaryDir != 0xff) {
-        __frame0.nTerAltX += (short int)gnObstacleAvoidanceXOffsets[__frame0.nTertiaryDir * 2];
-        __frame0.nTerAltY += (short int)gnObstacleAvoidanceXOffsets[__frame0.nTertiaryDir * 2 + 1];
-        nAddress = Collision::CheckCollision_BlockPlayer_Type(__frame0.pRoom, (uint32_t)__frame0.nTerAltX, (uint32_t)__frame0.nTerAltY, __frame0.nCollType, __frame0.nCollFlags);
-        nAltY = __frame0.nTerAltY;
-        nAltX = __frame0.nTerAltX;
-        if (!nAddress) {
+      if (anDirections[2] != 0xff) {
+        nTerAltX += (short int)gnObstacleAvoidanceXOffsets[anDirections[2] * 2];
+        nAltY = nTerAltY + (short int)gnObstacleAvoidanceXOffsets[anDirections[2] * 2 + 1];
+        iVar4 = Collision::CheckCollision_BlockPlayer_Type(pRoom, (uint32_t)nTerAltX, (uint32_t)nAltY, nType, nLine);
+        nTerAltY = nAltY;
+        nAltX = nTerAltX;
+        if (!iVar4) {
           break;
         }
       }
 
       *(uint16_t*)(char*)&nParam_00 = pPathState->pCoords.nOffsetX;
       *(uint16_t*)((char*)&nParam_00 + 2) = pPathState->pCoords.nPosX;
-      Drlg::Path::DRLGPATH_GetDirectionTripletPacked(__frame0.nPackedCurXY, nParam_00, nDirTriplet);
-      __frame0.nPrimaryDir = nDirTriplet[0];
+      Drlg::Path::DRLGPATH_GetDirectionTripletPacked(nPackedCurXY, nParam_00, nDirTriplet);
+      anDirections[0] = nDirTriplet[0];
     }
 
     pPathState->pCoords.nPosY = nAltY;
     pPathState->pCoords.nOffsetY = nAltX;
-    if (nAltX == (uint16_t)nTargetX) {
-      bReachedTarget = nAltY == (uint16_t)nTargetY;
-      check_reached_target:
-      if (bReachedTarget) {
-        return 0;
-      }
+    joined_r0x006482ad:
+    if (nAltX == uVar2 && nAltY == uVar1) {
+      return 0;
+    }
+    if (nPathMode != UNIT_PLAYER) {
+      return 1;
     }
 
-    step_found:
-    if (nPathMode == UNIT_PLAYER) {
-      PATH_ExtendPathEndpoint(pPathState);
-    }
+    PATH_ExtendPathEndpoint(pPathState);
     return 1;
 }
 
@@ -553,16 +542,9 @@ uint32_t __stdcall PATH_RecalculatePath(D2UnitStrc * pUnit, int32_t nParam) {
 
 // Returns non-zero if pDynamicPath has reached its target. For missile-type paths checks step count; for unit targets computes distance vs step size, and if the target (player/monster) has moved more than 5 tiles from the last recorded position triggers PATH_RecalculatePath. Returns 1 if at destination, 0 if in range of target, or recalculate result.
 uint32_t PATH_CheckIfTargetReached(D2DynamicPathStrc * pDynamicPath) {
-    // Frame slots -8..-4 are ONE object: &wTargetX is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint16_t wTargetX;
-      uint16_t wTargetY;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 4, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     uint32_t bResult;
     int nDeltaY;
+    D2PathPointStrc sTarget;
     eD2UnitType eUnitType;
     if (pDynamicPath->ePathType - 5U < 2 && pDynamicPath->dwPathPoints <= pDynamicPath->nPathPointIndex) {
       return 1;
@@ -585,13 +567,13 @@ uint32_t PATH_CheckIfTargetReached(D2DynamicPathStrc * pDynamicPath) {
 
     short int nOldY = pDynamicPath->Coords.tSubtile.nPosY;
     short int nOldX = pDynamicPath->Coords.tSubtile.nPosX;
-    Drlg::Path::DRLGPATH_GetMissileTargetPosition((short int*)&__frame0.wTargetX, (D2UnitStrc*)pDynamicPath);
+    Drlg::Path::DRLGPATH_GetMissileTargetPosition((short int*)&sTarget, (D2UnitStrc*)pDynamicPath);
     if (pDynamicPath->pTargetUnit) {
       int nDeltaX;
       eUnitType = pDynamicPath->pTargetUnit->eUnitType;
       if (-1 < (int)eUnitType && (int)eUnitType < 2) {
-        nDeltaX = (uint32_t)(uint16_t)pDynamicPath->nPrevTargetX - (uint32_t)__frame0.wTargetX;
-        nDeltaY = (uint32_t)(uint16_t)pDynamicPath->nPrevTargetY - (uint32_t)__frame0.wTargetY;
+        nDeltaX = (uint32_t)(uint16_t)pDynamicPath->nPrevTargetX - (uint32_t)sTarget.nX;
+        nDeltaY = (uint32_t)(uint16_t)pDynamicPath->nPrevTargetY - (uint32_t)sTarget.nY;
         if (nDeltaX < 0) {
           nDeltaX = -nDeltaX;
         }
@@ -692,66 +674,54 @@ void __stdcall PATH_SetPathTarget(D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit) 
 }
 
 // Advances a dynamic path one sub-tile step. Calls PATH_ComputeDirectMovementVector to get the delta, adds it to the current sub-tile position, then calls PATH_TraceCollisionPath if the integer tile cell changed. On collision: if a mover monster owns the path, calls PATH_RecalculatePath; otherwise snaps direction registers. Writes the new sub-tile X/Y into pnOutX[0]/[1]. Returns true if the path is still in motion, false if stopped or collided without rerouting.
-bool __stdcall PATH_ComputeMovementStep(uint32_t * pnOutX, uint32_t * pnOutY, D2SkillsTxt * pSkillsTxt) {
-    // Frame slots -24..-4 are ONE object: &nDeltaX is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nDeltaX;
-      uint32_t nDeltaY;
-      BOOL bHasVelocity;
-      D2UnitStrc* pUnit;
-      int bHasMover;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+bool __stdcall PATH_ComputeMovementStep(uint32_t * pnOutX, uint32_t * pnOutY, D2DynamicPathStrc * pSkillsTxt) {
+    bool bVar3;
     uint32_t nRecalcResult;
-    char byCountdown;
-    __frame0.pUnit = *(D2UnitStrc**)pSkillsTxt->srvprgfunc;
-    pSkillsTxt->aurastat[0] = 0;
+    D2CoordStrc sVelocity;
+    D2UnitStrc* pUnit = pSkillsTxt->pOwner;
+    pSkillsTxt->eCollisionFlag = 0;
     *pnOutY = 0;
-    if (!__frame0.pUnit || __frame0.pUnit->eUnitType != UNIT_MONSTER || (__frame0.bHasMover = 1 , !(pSkillsTxt->srvprgfunc[2] & 0x10))) {
-      __frame0.bHasMover = 0;
+    if (!pUnit || pUnit->eUnitType != UNIT_MONSTER || (bVar3 = true , !(pSkillsTxt->nFlags & 0x10))) {
+      bVar3 = false;
     }
-    if (!*(int*)((int)pSkillsTxt->aurastatcalc + 10) && !*(int*)((int)pSkillsTxt->aurastatcalc + 0xe)) {
-      pSkillsTxt->etypeb1 = 0;
-      pSkillsTxt->etypeb2 = 0;
-      pSkillsTxt->etypea1 = 0;
-      pSkillsTxt->etypea2 = 0;
-      *pnOutX = (*(uint32_t*)pSkillsTxt & -65536) + 0x8000;
-      pnOutX[1] = (*(uint32_t*)((uint8_t*)pSkillsTxt + 0x4) & -65536) + 0x8000;
+    if (!pSkillsTxt->nVelocityX && !pSkillsTxt->nVelocityY) {
+      pSkillsTxt->dwPathPoints = 0;
+      pSkillsTxt->nPathPointIndex = 0;
+      *pnOutX = (pSkillsTxt->Coords.tFixed.x & 0xffff0000U) + 0x8000;
+      pnOutX[1] = (pSkillsTxt->Coords.tFixed.y & 0xffff0000U) + 0x8000;
       return false;
     }
 
-    __frame0.bHasVelocity = PATH_ComputeDirectMovementVector(&__frame0.nDeltaX, (int*)pSkillsTxt);
-    uint32_t nNewSubX = __frame0.nDeltaX + *(int*)pSkillsTxt;
-    uint32_t nNewSubY = __frame0.nDeltaY + *(int*)((uint8_t*)pSkillsTxt + 0x4);
-    if ((short int)((uint32_t)*(int*)pSkillsTxt >> 0x10) != (short int)(nNewSubX >> 0x10) || (short int)((uint32_t)*(int*)((uint8_t*)pSkillsTxt + 0x4) >> 0x10) != (short int)(nNewSubY >> 0x10)) {
+    BOOL BVar4 = PATH_ComputeDirectMovementVector(&sVelocity.nX, (int*)pSkillsTxt);
+    int iVar1 = pSkillsTxt->Coords.tFixed.y;
+    int iVar2 = pSkillsTxt->Coords.tFixed.x;
+    uint32_t nNewSubX = sVelocity.nX + iVar2;
+    uint32_t nNewSubY = sVelocity.nY + iVar1;
+    if ((short int)((uint32_t)iVar2 >> 0x10) != (short int)(nNewSubX >> 0x10) || (short int)((uint32_t)iVar1 >> 0x10) != (short int)(nNewSubY >> 0x10)) {
       BOOL bCollisionResult;
-      byCountdown = (char)pSkillsTxt->auratgtevent;
-      if (byCountdown != '\0' && pSkillsTxt->prgcalc[1] != 8 && pSkillsTxt->prgcalc[1] != 0xb) {
-        *(char*)&pSkillsTxt->auratgtevent = byCountdown - 1;
+      if (pSkillsTxt->nDist && pSkillsTxt->ePathType != 8 && pSkillsTxt->ePathType != 0xb) {
+        pSkillsTxt->nDist--;
       }
 
-      bCollisionResult = PATH_TraceCollisionPath(__frame0.nDeltaX, __frame0.nDeltaY, pnOutX, pnOutY, (D2DynamicPathStrc*)pSkillsTxt);
+      bCollisionResult = PATH_TraceCollisionPath(sVelocity.nX, sVelocity.nY, pnOutX, pnOutY, pSkillsTxt);
       if (bCollisionResult) {
-        if (!__frame0.bHasMover) {
-          pSkillsTxt->etypea1 = pSkillsTxt->etypeb1;
-          pSkillsTxt->etypea2 = pSkillsTxt->etypeb2;
+        if (!bVar3) {
+          pSkillsTxt->nPathPointIndex = pSkillsTxt->dwPathPoints;
           return false;
         }
 
-        nRecalcResult = PATH_RecalculatePath(__frame0.pUnit, (uint32_t)(*(int*)(pSkillsTxt->aurastat + 2) != 0));
+        nRecalcResult = PATH_RecalculatePath(pUnit, (uint32_t)(pSkillsTxt->pTargetUnit != 0));
         return (bool)('\x01' - (nRecalcResult != 0));
       }
     }
 
     *pnOutX = nNewSubX;
     pnOutX[1] = nNewSubY;
-    if (!__frame0.bHasVelocity) {
+    if (!BVar4) {
       return false;
     }
 
-    (*(int*)&pSkillsTxt->etypea1)++;
+    pSkillsTxt->nPathPointIndex++;
     return true;
 }
 
@@ -764,15 +734,7 @@ void PATH_ResetPathState(D2DynamicPathStrc * pDynamicPath) {
     pDynamicPath->nVelocityY = 0;
 }
 
-BOOL __stdcall PATH_AdvanceUnitAlongPath(D2UnitStrc * pUnit, D2DynamicPathStrc * pExternalPath) {
-    // Frame slots -12..-4 are ONE object: &nNewPosX is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t nNewPosX;
-      uint32_t nNewPosY;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+BOOL __stdcall PATH_AdvanceUnitAlongPath(D2UnitStrc * pUnit, int pExternalPath) {
     uint32_t nTargetReached;
     uint32_t nPathFlags;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
@@ -786,10 +748,11 @@ BOOL __stdcall PATH_AdvanceUnitAlongPath(D2UnitStrc * pUnit, D2DynamicPathStrc *
       pDynamicPath->eCollisionFlag = 0;
     }
     if (nPathFlags & 0x20 && 0 < pDynamicPath->dwPathPoints && pDynamicPath->dwVelocity && (nPathFlags & 0x40000 || (nTargetReached = PATH_CheckIfTargetReached(pDynamicPath) , nTargetReached != 0)) && pDynamicPath->nPathPointIndex < pDynamicPath->dwPathPoints) {
-      PATH_UpdateVelocityWithAcceleration((int32_t)pExternalPath, pDynamicPath);
+      D2CoordStrc sNewPos;
+      PATH_UpdateVelocityWithAcceleration(pExternalPath, pDynamicPath);
       if (pDynamicPath->nVelocityX || pDynamicPath->nVelocityY) {
-        PATH_ComputeMovementStep(&__frame0.nNewPosX, (uint32_t*)&pUnit, (D2SkillsTxt*)pDynamicPath);
-        Drlg::Path::DRLGPATH_SetPathPosition(__frame0.nNewPosX, __frame0.nNewPosY, nullptr, pDynamicPath);
+        PATH_ComputeMovementStep((uint32_t*)&sNewPos, (uint32_t*)&pUnit, pDynamicPath);
+        Drlg::Path::DRLGPATH_SetPathPosition(sNewPos.nX, sNewPos.nY, nullptr, pDynamicPath);
         if (pDynamicPath->ePathType != 4 && pDynamicPath->nPathPointIndex < pDynamicPath->dwPathPoints) {
           Drlg::Path::DRLGPATH_AdvanceAlongPathPoints(pDynamicPath, 1, 1);
         }

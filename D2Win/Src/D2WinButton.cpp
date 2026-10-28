@@ -2,7 +2,7 @@
 
 #include "D2Win/Src/D2WinButton.h"
 #include "D2Client/D2ControlStrc.h"
-#include "D2Glide/Renderer/Glide.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/MainMenus.h"
@@ -274,7 +274,7 @@ BOOL __fastcall Draw(::D2WinButton * pButton) {
     D2ControlStrc* pActiveFormImage;
     int nFrameOffset;
     int nTileCols;
-    uint8_t sHoverMsg[32];
+    D2ControlMsg sHoverMsg;
     D2GfxDataStrc sGfxData;
     int nTileX;
     DRAWMODE eDrawMode;
@@ -411,10 +411,10 @@ BOOL __fastcall Draw(::D2WinButton * pButton) {
       pButton->bMouseOver = 0;
     }
 
-    *(uint32_t*)((char*)&sHoverMsg + 12) = pButton->bMouseOver;
+    sHoverMsg.uLParam = d2_bits_as<D2UIMsgLParamUnion>(pButton->bMouseOver);
     gnFormControlCount++;
-    *(uint32_t*)(char*)&sHoverMsg = (uint32_t)(uintptr_t)pButton;
-    pButton->fpHoverCallback((D2ControlStrc*)sHoverMsg);
+    sHoverMsg.pControl = &pButton->sControl;
+    pButton->fpHoverCallback(&sHoverMsg);
     gnFormControlCount--;
     return 1;
 }
@@ -580,7 +580,7 @@ BOOL __stdcall D2WINBUTTON_HandleHotkey(D2ControlMsg * pControlMsg) {
     }
 
     pNewButton->nFrameOffsetDisabled = nTileFrames;
-    pNewButton->fpHoverCallback = (::Draw)pMouse;
+    pNewButton->fpHoverCallback = pMouse;
     pNewButton->bMouseOver = 0;
     pNewButton->nHotkeyStringId = 0;
     pNewButton->_pad626[0] = '\0';

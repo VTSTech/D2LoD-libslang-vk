@@ -60,7 +60,7 @@ BOOL __fastcall Skills_CltStFunc_SpawnCltMissileC(D2UnitStrc * pUnit, eD2Skills 
       return 0;
     }
 
-    eMissilesId eCltMissileC = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissilec;
+    eMissilesId eCltMissileC = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissile[3];
     if (!(-1 < (int)eCltMissileC && (int)eCltMissileC < sgptDataTable->nTxtMissilesSize)) {
       return 1;
     }
@@ -85,7 +85,7 @@ BOOL __fastcall Skills_CltDoFunc_Nec_CurseCenter_StreamMissile(D2UnitStrc * pUni
       return 0;
     }
 
-    short int nStreamMissile = pSkillTxt->cltmissilea;
+    short int nStreamMissile = pSkillTxt->cltmissile[1];
     if (!(-1 < nStreamMissile && (int)nStreamMissile < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -213,7 +213,7 @@ BOOL __fastcall Skills_CltStFunc_SetBoneWallGraphics(D2UnitStrc * pUnit, eD2Skil
       return 0;
     }
 
-    eMissilesId eCltMissileC = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissilec;
+    eMissilesId eCltMissileC = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissile[3];
     if (!(-1 < (int)eCltMissileC && (int)eCltMissileC < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -340,7 +340,7 @@ int __fastcall SKILLSNEC_CltCreateTeethMissiles(D2UnitStrc * pUnit, eD2Skills eS
     }
 
     eMissilesId eCltMissileId;
-    eCltMissileId = (eMissilesId)pSkillsTxt->cltmissilea;
+    eCltMissileId = (eMissilesId)pSkillsTxt->cltmissile[1];
     if ((int)eCltMissileId < 0) {
       return 0;
     }
@@ -411,14 +411,14 @@ int __fastcall SKILLSNEC_CltCreateTeethMissiles(D2UnitStrc * pUnit, eD2Skills eS
     spawn_target_missiles:
     sSkillArg.nY = nParam1;
     sSkillArg.nX = nTargetX;
-    eCltMissileId = (eMissilesId)pSkillsTxt->cltmissileb;
+    eCltMissileId = (eMissilesId)pSkillsTxt->cltmissile[2];
     D2UnitStrc* pTargetUnit = 0;
     if (0 < (int)eCltMissileId && (int)eCltMissileId < sgptDataTable->nTxtMissilesSize) {
       sSkillArg.nMissileTxtNo = eCltMissileId;
       pTargetUnit = UNIT::Missile::MakeMissile(&sSkillArg);
     }
 
-    eCltMissileId = (eMissilesId)pSkillsTxt->cltmissilec;
+    eCltMissileId = (eMissilesId)pSkillsTxt->cltmissile[3];
     if (0 < (int)eCltMissileId && (int)eCltMissileId < sgptDataTable->nTxtMissilesSize) {
       sSkillArg.nSkillLevel = 2;
       sSkillArg.nMissileTxtNo = eCltMissileId;
@@ -459,7 +459,7 @@ int __fastcall SKILLSNEC_CltCreateBoneSpearMissile(D2UnitStrc * pUnit, eD2Skills
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize && -1 < nParam2 && nParam2 < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nParam2)) {
       return 0;
     }
@@ -479,14 +479,14 @@ int __fastcall SKILLSNEC_CltCreateBoneSpearMissile(D2UnitStrc * pUnit, eD2Skills
     sSkillArg.nMissileTxtNo = eMissileId;
     sSkillArg.eSkillNo = eSkill;
     D2UnitStrc* pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
-    eMissileId = (eMissilesId)pSkillTxt->cltmissilec;
+    eMissileId = (eMissilesId)pSkillTxt->cltmissile[3];
     if (0 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
       sSkillArg.nSkillLevel = 2;
       sSkillArg.nMissileTxtNo = eMissileId;
       UNIT::Missile::MakeMissile(&sSkillArg);
     }
 
-    eMissileId = (eMissilesId)pSkillTxt->cltmissileb;
+    eMissileId = (eMissilesId)pSkillTxt->cltmissile[2];
     if (!pMissileUnit) {
       return 1;
     }
@@ -624,11 +624,11 @@ BOOL __fastcall Skills_CltStFunc_SelectReviveMissileByMonsterSize(D2UnitStrc * p
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissilea;
+    eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
     if (pMonStats2->overlayHeight == '\x01') {
-      eMissileId = (eMissilesId)pSkillTxt->cltmissileb;
+      eMissileId = (eMissilesId)pSkillTxt->cltmissile[2];
     } else if (pMonStats2->overlayHeight == '\x03') {
-      eMissileId = (eMissilesId)pSkillTxt->cltmissilec;
+      eMissileId = (eMissilesId)pSkillTxt->cltmissile[3];
     }
     if (!(-1 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;

@@ -118,14 +118,14 @@ BOOL __stdcall STATES_HasAnyGfxFlag(D2UnitStrc * pUnit) {
 }
 
 int32_t __stdcall STATES_AssertGetGfxFlags(D2UnitStrc * pUnit) {
-    int32_t nAddress;
+    int32_t nLine;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x99);
       exit(-1);
     }
 
-    nAddress = Stats::StatsEx::STATLIST_GetUnitGfxFlags(pUnit);
-    return nAddress;
+    nLine = Stats::StatsEx::STATLIST_GetUnitGfxFlags(pUnit);
+    return nLine;
 }
 
 // Splits a unit's active state bitmask into server-side and GFX-side halves based on context. Uses pSingleStateDataTbl[0xd] (player) or [0xe] (non-player) when nParam==0, and [0xf] when nParam!=0, masking the state flags array so only context-relevant states remain in the server copy while visual-only states are ORed into the GFX flags. Calls ROOM_LinkUnitToUpdateList after filtering (unless non-player with nParam==0).
@@ -190,9 +190,9 @@ void __stdcall STATES_FilterStatesByContext(D2UnitStrc * pUnit, int32_t nParam) 
     Unit::ROOM_LinkUnitToUpdateList(pUnit);
 }
 
-int32_t __stdcall thunk_UNIT_GetStateList_StateFlags(D2UnitStrc * pUnit) {
+int * __stdcall thunk_UNIT_GetStateList_StateFlags(D2UnitStrc * pUnit) {
     int* piVar1 = Stats::StatsEx::GetStateFlags(pUnit);
-    return (int32_t)piVar1;
+    return piVar1;
 }
 
 BOOL STATES_HasMatchingStateFlag(D2UnitStrc * pUnit, D2StatesDataTbls * pStatesData) {
@@ -360,8 +360,9 @@ BOOL __fastcall STATES_HasPoisonState(D2UnitStrc * pUnit) {
     return BVar1;
 }
 
-void __stdcall STATES_HasColdState(D2UnitStrc * pUnit) {
-    STATES_HasMatchingStateFlag(pUnit, sgptDataTable->pSingleStateDataTbl[0x12]);
+BOOL __stdcall STATES_HasColdState(D2UnitStrc * pUnit) {
+    BOOL BVar1 = STATES_HasMatchingStateFlag(pUnit, sgptDataTable->pSingleStateDataTbl[0x12]);
+    return BVar1;
 }
 
 BOOL __stdcall STATES_HasFireState(D2UnitStrc * pUnit) {

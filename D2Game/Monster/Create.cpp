@@ -56,7 +56,6 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/H/stpl.h"
 #include "globals/globals.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/Drlg/Drlg.h"
@@ -102,19 +101,9 @@ void __fastcall MONSTER_SetClearPartyFlags(int32_t nParam, int * pnParam, uint32
 }
 
 void __fastcall MONSTER_EquipFromClassTable(D2UnitStrc * pUnit) {
-    // Frame slots -24..-4 are ONE object: &pEquipEntry is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint32_t pEquipEntry;
-      int32_t nItemClassId;
-      bool bNormalCode;
-      uint8_t __pad9[3];
-      int nMonsterLevel;
-      int nEquipSlotsLeft;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     int nClassId;
+    D2MonEquipEntryStrc sEquipEntry;
+    int bNormalCode;
     if (!pUnit) {
       nClassId = -1;
     } else {
@@ -122,61 +111,63 @@ void __fastcall MONSTER_EquipFromClassTable(D2UnitStrc * pUnit) {
     }
 
     ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    __frame0.nMonsterLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-    uint32_t* pEquipTableEntry = (uint32_t*)("d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q2.cpp" + nClassId * 8 + 0x18);
-    __frame0.nEquipSlotsLeft = 4;
+    int nMonsterLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
+    // HAND FIX: the original indexes LEA ESI,[ESI*8+0x6e1bb0], a base 540 rows before
+    // gaMonsterEquipTable that lands inside an unrelated string; Ghidra cannot fold that
+    // bias, so the generated line read the Ancients' gear from the string's neighbours.
+    uint32_t* pEquipTableEntry = (uint32_t*)&gaMonsterEquipTable[nClassId - 540];
+    int nEquipSlotsLeft = 4;
     do {
       D2ItemsTxt* pItemsTxt;
-      __frame0.pEquipEntry = *pEquipTableEntry;
-      __frame0.nItemClassId = pEquipTableEntry[1];
-      pItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(__frame0.pEquipEntry, (int*)&__frame0.bNormalCode);
+      sEquipEntry.dwItemCode = *pEquipTableEntry;
+      *(uint32_t*)((char*)&sEquipEntry + 4) = pEquipTableEntry[1];
+      pItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(sEquipEntry.dwItemCode, &bNormalCode);
       if (pGame->nDifficulty == 1) {
-        __frame0.pEquipEntry = pItemsTxt->dwUberCode;
+        sEquipEntry.dwItemCode = pItemsTxt->dwUberCode;
       } else if (pGame->nDifficulty == 2) {
-        __frame0.pEquipEntry = pItemsTxt->dwUltraCode;
+        sEquipEntry.dwItemCode = pItemsTxt->dwUltraCode;
       }
 
-      MONSTER_CreateAndEquipItem(pGame, pUnit, &__frame0.pEquipEntry, __frame0.nMonsterLevel, QUALITY_MAGIC);
+      MONSTER_CreateAndEquipItem(pGame, pUnit, &sEquipEntry, nMonsterLevel, QUALITY_MAGIC);
       pEquipTableEntry += 6;
-      __frame0.nEquipSlotsLeft--;
-    } while (__frame0.nEquipSlotsLeft);
+      nEquipSlotsLeft--;
+    } while (nEquipSlotsLeft);
 }
 
 // Called when a server monster is created (from CreateMonster) to wire up quest behavior based on the monster's base class id (resolved through MonStats BaseId). Dispatches per boss/quest-monster: attaches the relevant quest record to the unit (QUEST_AttachToUnitByQuestId, e.g. Andariel->SistersToTheSlaughter, Radament->RadamentsLair, Summoner->TheSummoner, Diablo->TerrorsEnd, Baal->EveOfDestruction, Izual->TheFallenAngel, Hephasto->HellsForge, Nihlathak->BetrayalOfHaggorath, Anya-on-mount->RescueOnMountArreat) and/or applies fixed monster umods via InitUmods, sets unit flags (SUMMONER, NOTC), or special-cases (NM/Hell clone ids 0x2c0-0x2c5 get extra umods; act bosses get equip/umods; Q12 death dispatch by position). No-op for ordinary monsters.
-void __fastcall MONSTER_OnCreateAttachQuests(::SGAMEDATA * pQuestEventArg, D2UnitStrc * pMonster) {
-    int nUmodId;
+void __fastcall MONSTER_OnCreateAttachQuests(D2UnknownCreateMonsterStrc * pQuestEventArg, D2UnitStrc * pMonster) {
     int32_t nMonsterClassId;
     eD2QuestsInternal nQuestNoInternal;
     int32_t nRawClassId;
-    TSLink<::SGAMEDATA>* pTVar1;
-    pTVar1 = pQuestEventArg->m_linktofull.m_prevlink;
+    int nUmodId;
+    nUmodId = pQuestEventArg->nClassId;
     ::SGAMEDATA* pGame;
-    pGame = (::SGAMEDATA*)pQuestEventArg->m_hashval;
+    pGame = pQuestEventArg->pGame;
     int nBaseId;
-    nBaseId = (int)pTVar1;
-    if (-1 < (int)pTVar1 && (int)pTVar1 < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + (int)pTVar1) {
-      nBaseId = (int)(int)sgptDataTable->pTxtMonStats[(int)pTVar1].BaseId;
+    nBaseId = nUmodId;
+    if (-1 < nUmodId && nUmodId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nUmodId) {
+      nBaseId = (int)sgptDataTable->pTxtMonStats[nUmodId].BaseId;
     }
     if (-1 < nBaseId && nBaseId < sgptDataTable->nTxtMonStatsSize) {
       if (nBaseId < 0x1b3) {
-        if ((TSLink<::SGAMEDATA>*)nBaseId == (TSLink<::SGAMEDATA>*)0x1b2) {
+        if (nBaseId == 0x1b2) {
           Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pMonster, QUESTINT_RescueOnMountArreat);
           return;
         }
 
         goto dispatch_by_base_id;
       }
-      if ((TSLink<::SGAMEDATA>*)nBaseId == (TSLink<::SGAMEDATA>*)0x20e) {
+      if (nBaseId == 0x20e) {
         nQuestNoInternal = QUESTINT_BetrayalOfHaggorath;
       } else {
-        if ((TSLink<::SGAMEDATA>*)nBaseId == (TSLink<::SGAMEDATA>*)0x21c) {
+        if (nBaseId == 0x21c) {
           MONSTER_EquipFromClassTable(pMonster);
           return;
         }
-        if ((TSLink<::SGAMEDATA>*)nBaseId != (TSLink<::SGAMEDATA>*)0x220) {
+        if (nBaseId != 0x220) {
           return;
         }
-        if (pTVar1 == (TSLink<::SGAMEDATA>*)0x2c5) {
+        if (nUmodId == 0x2c5) {
           Monsters::InitUmods(pGame, pMonster, 0x16, 1);
           nRawClassId = 0x12;
           goto add_uber_boss_umods;
@@ -195,7 +186,7 @@ void __fastcall MONSTER_OnCreateAttachQuests(::SGAMEDATA * pQuestEventArg, D2Uni
     ;
     switch (nBaseId) {
       case 0x9c:
-        if (pTVar1 != (TSLink<::SGAMEDATA>*)0x2c3) {
+        if (nUmodId != 0x2c3) {
           Monsters::InitUmods(pGame, pMonster, 0x16, 1);
           Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pMonster, QUESTINT_SistersToTheSlaughter);
           return;
@@ -211,7 +202,7 @@ void __fastcall MONSTER_OnCreateAttachQuests(::SGAMEDATA * pQuestEventArg, D2Uni
       Quests::QUESTS::QUEST_DispatchMonsterDeathToQ12(nMonsterClassId, nRawClassId, nUmodId);
       return;
       case 0xd3:
-        if (pTVar1 != (TSLink<::SGAMEDATA>*)0x2c4) {
+        if (nUmodId != 0x2c4) {
           Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pMonster, QUESTINT_TheSevenTombs);
           Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pMonster, QUESTINT_TheHoradricStaff);
           return;
@@ -223,7 +214,7 @@ void __fastcall MONSTER_OnCreateAttachQuests(::SGAMEDATA * pQuestEventArg, D2Uni
         Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pMonster, QUESTINT_RadamentsLair);
       return;
       case 0xf2:
-        if (pTVar1 == (TSLink<::SGAMEDATA>*)0x2c0) {
+        if (nUmodId == 0x2c0) {
           Monsters::InitUmods(pGame, pMonster, 0x16, 1);
           Monsters::InitUmods(pGame, pMonster, 0x1e, 1);
           nRawClassId = 0x11;
@@ -233,7 +224,7 @@ void __fastcall MONSTER_OnCreateAttachQuests(::SGAMEDATA * pQuestEventArg, D2Uni
       goto attach_quest;
       case 0xf3:
         nRawClassId = 0x16;
-      if (pTVar1 != (TSLink<::SGAMEDATA>*)0x2c1) {
+      if (nUmodId != 0x2c1) {
         Monsters::InitUmods(pGame, pMonster, 0x16, 1);
         Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pMonster, QUESTINT_TerrorsEnd);
         return;
@@ -253,7 +244,7 @@ void __fastcall MONSTER_OnCreateAttachQuests(::SGAMEDATA * pQuestEventArg, D2Uni
       SetUnsetSummonerFlags(pMonster, 1, 1);
       return;
       case 0x100:
-        if (pTVar1 != (TSLink<::SGAMEDATA>*)0x2c2) {
+        if (nUmodId != 0x2c2) {
           Monsters::InitUmods(pGame, pMonster, 0x16, 1);
           Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pMonster, QUESTINT_TheFallenAngel);
           return;
@@ -501,7 +492,7 @@ BOOL __fastcall SpawnMinions_ByPattern(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
         /* .x = */ -0x1,
         /* .y = */ 0x0
     }
-};
+}; D2_STATIC_GUARD(POINT_ARRAY_006e2cf0, "D2Game::Monster::Create::SpawnMinions_ByPattern::POINT_ARRAY_006e2cf0");
 
     D2UnitStrc* pMinion;
     int32_t nClampedPattern;
@@ -592,7 +583,7 @@ BOOL __stdcall FindDiagonalNonCollisionCoords(D2RoomStrc * pRoom, int * pX, int 
         /* .x = */ -0x3,
         /* .y = */ 0x0
     }
-};
+}; D2_STATIC_GUARD(gaPathDiagonalOffsets, "D2Game::Monster::Create::FindDiagonalNonCollisionCoords::gaPathDiagonalOffsets");
 
     eCollisionFlags eCollision;
     uint32_t nTileWalkFlags;
@@ -662,28 +653,29 @@ BOOL __stdcall FindDiagonalNonCollisionCoords(D2RoomStrc * pRoom, int * pX, int 
 }
 
 // Spawns the initial minion pack for a monster whose MonStats entry defines minion1/minion2. Special-cases class 0x105 (uses AssignMinionOwner + SpawnMinions directly). For SetBoss monsters, assigns owner and interleaves spawns between minion1/minion2 type slots for a count drawn from PartyMin/PartyMax; registers each spawned minion via AssignMinionOwner + AddMinionToList. No-ops if the class id is out of range or MonStats is null.
-void MONSTER_SpawnMinionGroup(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+void MONSTER_SpawnMinionGroup(D2UnknownCreateMonsterStrc * pGame, D2UnitStrc * pUnit) {
     eD2Skills eUpgradeSkill;
     eD2UnitType eUnitType;
     BOOL bMinionIsLeader;
-    TSLink<::SGAMEDATA>* nPartySize = pGame->m_linktofull.m_prevlink;
-    if (!(-1 < (int)nPartySize && (int)nPartySize < sgptDataTable->nTxtMonStatsSize)) {
+    int32_t nTmp;
+    int32_t nPartySize = pGame->nClassId;
+    if (!(-1 < nPartySize && nPartySize < sgptDataTable->nTxtMonStatsSize)) {
       return;
     }
 
-    D2MonStatsTxt* pMonStats = sgptDataTable->pTxtMonStats + (int)nPartySize;
+    D2MonStatsTxt* pMonStats = sgptDataTable->pTxtMonStats + nPartySize;
     if (!pMonStats) {
       return;
     }
 
-    D2Common::DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId((int32_t)nPartySize, nullptr, &eUpgradeSkill);
-    ::SGAMEDATA* pGameInst = (::SGAMEDATA*)pGame->m_hashval;
-    int32_t nOwnerGUID = pGame->bGameIsSetup;
+    D2Common::DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nPartySize, nullptr, &eUpgradeSkill);
+    ::SGAMEDATA* pGameInst = pGame->pGame;
+    uint16_t wMinionType = pGame->nFlags;
     if (!(-1 < pMonStats->minion1 && (int)pMonStats->minion1 < sgptDataTable->nTxtMonStatsSize)) {
       return;
     }
 
-    int32_t nMinionClassId = D2Client::UNIT::Player::TXT_MonStats_GetBaseId_NoChecks((int32_t)nPartySize);
+    int32_t nMinionClassId = D2Client::UNIT::Player::TXT_MonStats_GetBaseId_NoChecks(nPartySize);
     if (-1 < nMinionClassId && nMinionClassId < sgptDataTable->nTxtMonStatsSize && nMinionClassId == 0x105) {
       if (!pUnit) {
         nMinionClassId = -1;
@@ -693,17 +685,17 @@ void MONSTER_SpawnMinionGroup(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 
       Ai::AiGeneral::AssignMinionOwner(pGameInst, pUnit, nMinionClassId, UNIT_MONSTER, 1, (uint8_t)*((uint8_t*)pMonStats + 0xc) & 0x20);
       nMinionClassId = D2Client::UNIT::Missile::SEED_RollRangeInclusive(&pUnit->sSeed, (uint32_t)(uint8_t)pMonStats->PartyMin, (uint32_t)(uint8_t)pMonStats->PartyMax);
-      SpawnMinions_ByPattern(pGameInst, pUnit, (int)pMonStats->minion1, eD2MonsterAnimMode_ns::Neutral, nMinionClassId, ~(uint32_t)(uint16_t)((uint16_t)nOwnerGUID >> 2) & 1, 0x40);
+      SpawnMinions_ByPattern(pGameInst, pUnit, (int)pMonStats->minion1, eD2MonsterAnimMode_ns::Neutral, nMinionClassId, ~(uint32_t)(wMinionType >> 2) & 1, 0x40);
       return;
     }
     if (pMonStats->SetBoss) {
       if (!pUnit) {
-        nOwnerGUID = -1;
+        nMinionClassId = -1;
       } else {
-        nOwnerGUID = pUnit->nUnitGUID;
+        nMinionClassId = pUnit->nUnitGUID;
       }
 
-      Ai::AiGeneral::AssignMinionOwner(pGameInst, pUnit, nOwnerGUID, UNIT_MONSTER, 1, (uint8_t)*((uint8_t*)pMonStats + 0xc) & 0x20);
+      Ai::AiGeneral::AssignMinionOwner(pGameInst, pUnit, nMinionClassId, UNIT_MONSTER, 1, (uint8_t)*((uint8_t*)pMonStats + 0xc) & 0x20);
     }
 
     int nMinionTypeSlot = 0;
@@ -712,8 +704,8 @@ void MONSTER_SpawnMinionGroup(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       bHasSecondMinionType = 1;
     }
 
-    nPartySize = (TSLink<::SGAMEDATA>*)D2Client::UNIT::Missile::SEED_RollRangeInclusive(&pUnit->sSeed, (uint32_t)(uint8_t)pMonStats->PartyMin, (uint32_t)(uint8_t)pMonStats->PartyMax);
-    if (0 >= (int)nPartySize) {
+    nPartySize = D2Client::UNIT::Missile::SEED_RollRangeInclusive(&pUnit->sSeed, (uint32_t)(uint8_t)pMonStats->PartyMin, (uint32_t)(uint8_t)pMonStats->PartyMax);
+    if (0 >= nPartySize) {
       return;
     }
 
@@ -722,10 +714,10 @@ void MONSTER_SpawnMinionGroup(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       pSpawnedMinion = SpawnMonsterAtUnit(pGameInst, pUnit, (int)*(short int*)(pMonStats->Code + nMinionTypeSlot * 2 + 0x16), eD2MonsterAnimMode_ns::Neutral, 4, 0x40);
       if (pSpawnedMinion && pMonStats->SetBoss) {
         bMinionIsLeader = 0;
-        nMinionClassId = 0;
+        nTmp = 0;
         eUnitType = UNIT_MONSTER;
-        nOwnerGUID = D2Client::UNIT::GetGUID(pUnit);
-        Ai::AiGeneral::AssignMinionOwner(pGameInst, pSpawnedMinion, nOwnerGUID, eUnitType, nMinionClassId, bMinionIsLeader);
+        nMinionClassId = D2Client::UNIT::GetGUID(pUnit);
+        Ai::AiGeneral::AssignMinionOwner(pGameInst, pSpawnedMinion, nMinionClassId, eUnitType, nTmp, bMinionIsLeader);
         Ai::AiGeneral::AddMinionToList(pGameInst, pUnit, pSpawnedMinion);
       }
 
@@ -734,7 +726,7 @@ void MONSTER_SpawnMinionGroup(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
         nMinionTypeSlot = 0;
       }
 
-      nPartySize = (TSLink<::SGAMEDATA>*)((int)nPartySize - 1);
+      nPartySize--;
     } while (nPartySize);
 }
 
@@ -1016,12 +1008,12 @@ D2UnitStrc * __fastcall CreateMonster(D2UnknownCreateMonsterStrc * pMonsterSpawn
       MONSTER_ApplySpecialUmods(pUnit, pMonsterSpawnData);
     }
 
-    MONSTER_OnCreateAttachQuests((::SGAMEDATA*)pMonsterSpawnData, pUnit);
+    MONSTER_OnCreateAttachQuests(pMonsterSpawnData, pUnit);
     if (nSpawnFlags & 0x40) {
       return pUnit;
     }
 
-    MONSTER_SpawnMinionGroup((::SGAMEDATA*)pMonsterSpawnData, pUnit);
+    MONSTER_SpawnMinionGroup(pMonsterSpawnData, pUnit);
     return pUnit;
 }
 
@@ -1311,7 +1303,132 @@ BOOL __fastcall SpawnMonsterAtUnitOffset(::SGAMEDATA * pGame, D2RoomStrc * pRoom
 
 BOOL __fastcall MONSTER_SpawnPredefinedAtUnit(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int32_t nUnused1, int32_t nUnused2, D2UnitStrc * pUnit, int32_t nParam, uint16_t nParam2) {
     // Static local variables (originally global data)
-    static uint8_t sPredefinedDataUnknown = 0x4;
+    static uint8_t sPredefinedDataUnknown[124] = {
+    0x4,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0x3,
+    0x0,
+    0x0,
+    0x0,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0x3,
+    0x0,
+    0x0,
+    0x0,
+    0xff,
+    0xff,
+    0xff,
+    0xff,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0x3,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x0,
+    0x1c,
+    0xc8,
+    0x6c,
+    0x0,
+    0x14,
+    0xc8,
+    0x6c,
+    0x0,
+    0xc,
+    0xc8,
+    0x6c,
+    0x0,
+    0x4,
+    0xc8,
+    0x6c,
+    0x0,
+    0xf8,
+    0xc7,
+    0x6c,
+    0x0,
+    0xf0,
+    0xc7,
+    0x6c,
+    0x0,
+    0xe4,
+    0xc7,
+    0x6c,
+    0x0,
+    0xdc,
+    0xc7,
+    0x6c,
+    0x0,
+    0xc8,
+    0xc7,
+    0x6c,
+    0x0,
+    0xb4,
+    0xc7,
+    0x6c,
+    0x0,
+    0xac,
+    0xc7,
+    0x6c,
+    0x0,
+    0xa4,
+    0xc7,
+    0x6c,
+    0x0,
+    0x88,
+    0xc7,
+    0x6c,
+    0x0,
+    0x80,
+    0xc7,
+    0x6c,
+    0x0,
+    0x7c,
+    0xc7,
+    0x6c,
+    0x0
+}; D2_STATIC_GUARD(sPredefinedDataUnknown, "D2Game::Monster::Create::MONSTER_SpawnPredefinedAtUnit::sPredefinedDataUnknown");
 
     int32_t nPosX;
     int32_t nPosY;
@@ -1341,7 +1458,7 @@ BOOL __fastcall MONSTER_SpawnPredefinedAtUnit(::SGAMEDATA * pGame, D2RoomStrc * 
       nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
     }
 
-    nResult = SpawnMonsterAtUnitOffset(pGame, pRoom, nPosX, nPosY, nullptr, 0x154, eD2MonsterAnimMode_ns::Skill1, (int*)&sPredefinedDataUnknown, nParam2);
+    nResult = SpawnMonsterAtUnitOffset(pGame, pRoom, nPosX, nPosY, nullptr, 0x154, eD2MonsterAnimMode_ns::Skill1, (int*)sPredefinedDataUnknown, nParam2);
     return nResult;
 }
 

@@ -8,11 +8,22 @@
 #include <cstdarg>
 #include "d2_platform.h"
 
+// Forward declarations
+struct D2SoundEaxEnvironStrc;
+
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct WAVEFORMATEX;
 #endif // _WIN32
 
 // Data types
+struct DSBCAPS {
+    /* 0x00 */ DWORD dwSize;
+    /* 0x04 */ DWORD dwFlags;
+    /* 0x08 */ DWORD dwBufferBytes;
+    /* 0x0C */ DWORD dwUnlockTransferRate;
+    /* 0x10 */ DWORD dwPlayCpuOverhead;
+};
+
 struct DSBUFFERDESC {
     /* 0x00 */ DWORD dwSize;
     /* 0x04 */ DWORD dwFlags;
@@ -41,7 +52,7 @@ namespace D2Sound::Sound {
 // Releases EAX interface objects. Calls Release() on gpDirectSoundEAXInterface and two related EAX globals (gpEAXInterface1, gpEAXInterface2), nulling pointers after release. Part of DirectSound shutdown sequence.
 void __stdcall SOUND_ReleaseEAXInterfaces();
 // Applies EAX environment parameters to gpDirectSoundEAXInterface. Two modes: gnSoundQualityMode==1 (simple: vol/distance/flags), ==2 (full: 14 reverb properties including decay, reflections, room size). Calls Set() on EAX property GUIDs for each param.
-void __fastcall SOUND_ApplyEAXEnvironment(float fParam);
+void __fastcall SOUND_ApplyEAXEnvironment(struct D2SoundEaxEnvironStrc * pEnviron);
 void __stdcall SOUND_ShutdownDirectSound();
 // Initializes DirectSound 8 with EAX 3.0 support - creates primary buffer, configures format, tests environment presets
 void __stdcall SOUND_InitDirectSound();

@@ -90,10 +90,7 @@ struct __attribute__((packed)) D2SkillsTxt {
     /* 0x038 */ int prgcalc[3];
     /* 0x044 */ char prgdam;
     /* 0x045 */ uint8_t field_0x45;
-    /* 0x046 */ short srvmissile;
-    /* 0x048 */ short srvmissilea;
-    /* 0x04A */ short srvmissileb;
-    /* 0x04C */ short srvmissilec;
+    /* 0x046 */ short srvmissile[4];
     /* 0x04E */ short srvoverlay;
     /* 0x050 */ int aurafilter;
     /* 0x054 */ short aurastat[6];
@@ -124,10 +121,7 @@ struct __attribute__((packed)) D2SkillsTxt {
     /* 0x0D0 */ int sumskcalc[5];
     /* 0x0E4 */ short sumumod;
     /* 0x0E6 */ short sumoverlay;
-    /* 0x0E8 */ short cltmissile;
-    /* 0x0EA */ short cltmissilea;
-    /* 0x0EC */ short cltmissileb;
-    /* 0x0EE */ short cltmissilec;
+    /* 0x0E8 */ short cltmissile[4];
     /* 0x0F0 */ short cltmissiled;
     /* 0x0F2 */ short cltstfunc;
     /* 0x0F4 */ short cltdofunc;

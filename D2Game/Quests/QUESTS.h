@@ -13,7 +13,6 @@ struct D2BitBufferStrc;
 struct D2ClientStrc;
 struct D2GSPacketSrv0x27_TextStrc;
 struct D2GSPacketSrv0x91;
-struct D2GossipTextStrc;
 struct D2InventoryStrc;
 struct D2MapAIStrc;
 struct D2ObjectInitFnArg;
@@ -69,7 +68,7 @@ struct D2NPCMessageStrc {
 };
 
 struct D2QuestArgStrcUnion1 {
-    /* 0x00 */ struct D2GossipTextStrc * pTextControl;
+    /* 0x00 */ struct D2GSPacketSrv0x27_TextStrc * pTextControl;
     /* 0x04 */ int nIndex;
 };
 
@@ -160,7 +159,7 @@ BOOL __stdcall QUEST_AttachToUnit(::SGAMEDATA * pGame, struct D2QuestDataStrc * 
 struct D2QuestDataStrc * __fastcall GetQuestDataByQuestNoInternal(::SGAMEDATA * pGame, eD2QuestsInternal eQuestNoInternal);
 // Looks up quest data by internal quest ID and attaches it to a unit. For QUESTINT_TheSearchForCain attaches to the cage object (classId 0x3d) and calls Q04_SetRescueTrigger; for QUESTINT_RadamentsLair attaches to Radament (0xe5); for QUESTINT_TheSummoner runs Q14 join noop on the Summoner (0xfa). Falls through to QUEST_AttachToUnit for all others.
 BOOL __fastcall QUEST_AttachToUnitByQuestId(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2QuestsInternal nQuestNoInternal);
-void __fastcall AddGossipMessageOnMonster(struct D2QuestDataStrc * pQuestData, struct D2GossipTextStrc * sTextMessage, int32_t nMonStatsId, int32_t nMessageIndexMaybe);
+void __fastcall AddGossipMessageOnMonster(struct D2QuestDataStrc * pQuestData, struct D2GSPacketSrv0x27_TextStrc * sTextMessage, int32_t nMonStatsId, int32_t nMessageIndexMaybe);
 // @sourcefile .\QUESTS\QUESTS.CPP
 void __fastcall FreeQuestControl(::SGAMEDATA * pGame);
 struct D2SeedStrc * __fastcall GetQuestControlSeed(::SGAMEDATA * pGame);
@@ -190,7 +189,7 @@ void __fastcall QUEST_ProcessQuestTimers(::SGAMEDATA * pGame);
 // @sourcefile .\QUESTS\QUESTS.CPP
 void __fastcall AddQuestTimer(struct D2QuestDataStrc * pQuestData, QUESTUPDATE fpQuestUpdate, int32_t nTimeout);
 // Determines the display byte to write into the quest-log packet for a single quest. Reads QUESTSTATE_JustCompleted and QUESTSTATE_CannotCompleteQuestInGame from the bit buffer, applies special-case logic for TheSearchForCain (Cain rescued check) and TheTaintedSun, and writes the resulting state byte into pQuestData2->nQuestNoInternal for the caller to pack into the log packet.
-void __fastcall QUEST_GetQuestLogDisplayState(struct D2QuestDataStrc * pQuestData, struct D2QuestDataStrc * pQuestData2, struct D2BitBufferStrc * pBitBuffer);
+void __fastcall QUEST_GetQuestLogDisplayState(struct D2QuestDataStrc * pQuestData, uint8_t * pQuestData2, struct D2BitBufferStrc * pBitBuffer);
 void __fastcall QUEST_DebugPrint(::SGAMEDATA * pGame, char * szMessage, char * szFile, int32_t nLine);
 // @sourcefile .\QUESTS\QUESTS.CPP
 void __stdcall QUEST_RemoveItemFromInventory(struct D2InventoryStrc * pInventory, struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, struct D2UnitStrc * pItem);

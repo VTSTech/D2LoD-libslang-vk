@@ -1548,7 +1548,7 @@ RGBQUAD prgbq_00989c40[256] = {
         /* .rgbRed = */ 0,
         /* .rgbReserved = */ 0
     }
-};
+}; D2_GLOBAL_GUARD(prgbq_00989c40, "prgbq_00989c40");
 
 BYTE * gpGlidePaletteTableData[72] = {
     nullptr,
@@ -1623,17 +1623,17 @@ BYTE * gpGlidePaletteTableData[72] = {
     nullptr,
     nullptr,
     nullptr
-};
+}; D2_GLOBAL_GUARD(gpGlidePaletteTableData, "gpGlidePaletteTableData");
 
 // =============================================================================
 // Initialized scalars
 // =============================================================================
 
-HPALETTE RENDERER_WINDOWED_hPalette = 0;
-HBITMAP RENDERER_WINDOWED_hDIBitmap = 0;
-uint32_t RENDERER_WINDOWED_nScaleOffsetY = 0;
-uint32_t RENDERER_WINDOWED_nScaleWidth = 0;
-HFONT RENDERER_WINDOWED_hDebugFont = 0;
+HPALETTE RENDERER_WINDOWED_hPalette = 0; D2_GLOBAL_GUARD(RENDERER_WINDOWED_hPalette, "RENDERER_WINDOWED_hPalette");
+HBITMAP RENDERER_WINDOWED_hDIBitmap = 0; D2_GLOBAL_GUARD(RENDERER_WINDOWED_hDIBitmap, "RENDERER_WINDOWED_hDIBitmap");
+uint32_t RENDERER_WINDOWED_nScaleOffsetY = 0; D2_GLOBAL_GUARD(RENDERER_WINDOWED_nScaleOffsetY, "RENDERER_WINDOWED_nScaleOffsetY");
+uint32_t RENDERER_WINDOWED_nScaleWidth = 0; D2_GLOBAL_GUARD(RENDERER_WINDOWED_nScaleWidth, "RENDERER_WINDOWED_nScaleWidth");
+HFONT RENDERER_WINDOWED_hDebugFont = 0; D2_GLOBAL_GUARD(RENDERER_WINDOWED_hDebugFont, "RENDERER_WINDOWED_hDebugFont");
 
 namespace D2Common::Drlg::Maze {
 
@@ -1963,10 +1963,6 @@ namespace Fog::Debug {
 
 } // namespace Fog::Debug
 
-namespace D2Game::Save {
-
-} // namespace D2Game::Save
-
 namespace D2Client::MCP {
 
 } // namespace D2Client::MCP
@@ -1974,6 +1970,10 @@ namespace D2Client::MCP {
 namespace D2Client::Bnet {
 
 } // namespace D2Client::Bnet
+
+namespace D2Game::Save {
+
+} // namespace D2Game::Save
 
 namespace D2Game::GameData {
 

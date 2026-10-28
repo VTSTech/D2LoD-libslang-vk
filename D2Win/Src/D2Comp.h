@@ -27,8 +27,8 @@ struct D2CompCharacterCompositeItemStrc {
 namespace D2Win::Src::D2Comp {
 
 // Function declarations
-int32_t D2COMP_AssertNotNull(int32_t pValue);
-void * __stdcall D2COMP_LoadAndValidateCOFFile(char * szCOFFilePath, size_t * pnSize);
+void * D2COMP_AssertNotNull(void * pValue);
+void * __stdcall D2COMP_LoadAndValidateCOFFile(char * szCOFFilePath, uint32_t * pnSize);
 void * __stdcall D2COMP_ValidateCOFLayerData(int32_t nLayerIndex, int32_t nFrameIndex, uint8_t * pbParam);
 int __stdcall D2COMP_FindOrAllocCOFCacheEntry(int32_t nPlayerClassId, char * szText, uint32_t dwWeaponClassToken, int32_t nAnimMode);
 void __stdcall D2COMP_ReleaseCOFCacheEntry(int32_t nParam, int * pnParam);
@@ -55,7 +55,7 @@ BOOL __fastcall D2COMP_SetAnimationMode(struct D2CharSelCompStrc * pCompUnit, in
 // Provenance: 1.14d asm 00504370 (pair scan over gnCompWeaponClassCodeMapCount entries); no callers, the same scan is inlined in D2COMP_AllocTxt_EverythingItems.
 int __stdcall D2COMP_GetWeaponClassCodeIndex(int32_t nWeaponClassCode);
 void __stdcall D2COMP_FreeServerMemory(void * pParam);
-void * __stdcall D2COMP_LoadExcelTxtFile(struct D2PoolManagerStrc * pMemory, char * szFileBaseName, char * szFileExt, size_t * pnSize);
+void * __stdcall D2COMP_LoadExcelTxtFile(struct D2PoolManagerStrc * pMemory, char * szFileBaseName, char * szFileExt, uint32_t * pnSize);
 void * __stdcall LoadTxt(struct D2PoolManagerStrc * pMemory, char * szTxtName, struct D2BinFieldInputStrc * pBinFields, size_t * pSize, int32_t nLineLength);
 void __fastcall D2COMP_AllocTxt_Items(struct D2PoolManagerStrc * pMemory);
 void __fastcall D2COMP_LoadItemTypesTxt(struct D2PoolManagerStrc * pMemory);

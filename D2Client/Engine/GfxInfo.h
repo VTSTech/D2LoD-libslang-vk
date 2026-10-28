@@ -33,7 +33,7 @@ void __fastcall GFX_SetOverlayFrame(struct D2UnitStrc * pUnit, int32_t nOverlayI
 void __fastcall GFX_DrawOverlayOnUnit(struct D2UnitStrc * pUnit, int32_t nOverlayId, int32_t nScreenX, int32_t nScreenY);
 void __stdcall DRAW_UNIT_States(struct D2UnitStrc * pUnit, int32_t nBlendMode, int32_t bSecondPass, int32_t nScreenX, int32_t nScreenY, int32_t bRaiseY);
 void __stdcall DRAW_UNIT_States_HaltTail(int nLine);
-int32_t __fastcall GFX_GetGfxInfoCofData(struct D2UnitStrc * pUnit, int32_t pAnimMode);
+uint8_t * __fastcall GFX_GetGfxInfoCofData(struct D2UnitStrc * pUnit, int32_t pAnimMode);
 struct D2GfxInfoUnkStrc * __fastcall GFX_FindGfxInfoByModeAndWeapon(struct D2UnitStrc * pUnit, int32_t nWeaponParam, int nAnimMode);
 // @sourcefile .\ENGINE\Gfx.cpp
 BOOL GFX_FreeGfxInfoEntry(struct D2UnitStrc * pUnit, struct D2GfxInfoUnkStrc * pGfxInfoUnk);
@@ -58,7 +58,7 @@ void __fastcall GFX_FreeUnitGfxInfoList(struct D2UnitStrc * pUnit);
 // @sourcefile .\ENGINE\Gfx.cpp
 void __fastcall GFX_FreeNonBaseGfxInfoEntries(struct D2UnitStrc * pUnit);
 // @sourcefile .\ENGINE\Gfx.cpp
-uint32_t GFX_GetUnitHealthBarColor(struct D2UnitStrc * pUnit);
+uint8_t GFX_GetUnitHealthBarColor(struct D2UnitStrc * pUnit);
 // @sourcefile .\ENGINE\Gfx.cpp
 uint32_t __fastcall DrawItemGfx(struct D2UnitStrc * pUnit, int32_t nHeight, int32_t nWidth);
 void __fastcall D2GFX_DrawSolidRectExBySize(int32_t nStartX, int32_t nStartY, int32_t nSizeX, int32_t nSizeY, int32_t nColor, DRAWMODE nDrawMode);

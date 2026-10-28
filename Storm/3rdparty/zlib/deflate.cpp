@@ -383,7 +383,7 @@ void lm_init(deflate_state * pDeflateState) {
     pDeflateState->match_length = 2;
 }
 
-char * __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDeflateState) {
+uint32_t __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDeflateState) {
     uint8_t* pScan;
     uint8_t* pScanNext;
     uint32_t nMatchLimit;
@@ -397,8 +397,8 @@ char * __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDeflateState
       nMatchLimit = 0;
     }
 
-    uint8_t cScanEnd1 = (pBestLen - 1)[(int)pScanStart];
-    uint8_t cScanEnd2 = pBestLen[(int)pScanStart];
+    uint8_t cScanEnd1 = pScanStart[(int)(pBestLen - 1)];
+    uint8_t cScanEnd2 = pScanStart[(int)pBestLen];
     uint8_t* pScanEnd = pScanStart + 0x102;
     if ((uint8_t*)pDeflateState->good_match <= pBestLen) {
       nChainLen >>= 2;
@@ -412,7 +412,7 @@ char * __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDeflateState
     do {
       uint8_t* pMatch;
       pMatch = pDeflateState->window + nCurMatch;
-      if (pMatch[(int)pBestLen] == cScanEnd2 && (pMatch - 1)[(int)pBestLen] == cScanEnd1 && *pMatch == *pScanStart && pMatch[1] == pScanStart[1]) {
+      if (pMatch[(int)pBestLen] == cScanEnd2 && pMatch[(int)(pBestLen - 1)] == cScanEnd1 && *pMatch == *pScanStart && pMatch[1] == pScanStart[1]) {
         pMatch += 2;
         pScan = pScanStart + 2;
         while (true) {
@@ -453,15 +453,15 @@ char * __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDeflateState
           pDeflateState->match_start = nCurMatch;
           if ((int)nNiceMatch <= (int)pMatch) {
             if ((uint8_t*)pDeflateState->lookahead >= pMatch) {
-              return (char*)pMatch;
+              return (uint32_t)pMatch;
             }
 
             pMatch = (uint8_t*)pDeflateState->lookahead;
-            return (char*)pMatch;
+            return (uint32_t)pMatch;
           }
 
           cScanEnd1 = pScanStart[(int)(pScanNext + (0x101 - (int)pScanEnd))];
-          cScanEnd2 = pMatch[(int)pScanStart];
+          cScanEnd2 = pScanStart[(int)pMatch];
           pBestLen = pMatch;
         }
       }
@@ -470,11 +470,11 @@ char * __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDeflateState
       nCurMatch = (uint32_t)pDeflateState->prev[pDeflateState->w_mask & nCurMatch];
       if (nCurMatch <= nMatchLimit || (nChainLen-- , pBestLen = pMatch , !nChainLen)) {
         if ((uint8_t*)pDeflateState->lookahead >= pMatch) {
-          return (char*)pMatch;
+          return (uint32_t)pMatch;
         }
 
         pMatch = (uint8_t*)pDeflateState->lookahead;
-        return (char*)pMatch;
+        return (uint32_t)pMatch;
       }
     } while (true);
 }
@@ -751,7 +751,6 @@ int32_t __fastcall deflate_stored(deflate_state * pDeflateState, int32_t nFlush)
 
 // zlib deflate_fast() - hash-chain matching, single pass compression strategy
 int32_t __fastcall deflate_fast(deflate_state * pDeflateState, int32_t nFlush) {
-    char* pMatchLenRet;
     uint16_t nDist;
     uint16_t nDistIdx;
     uint32_t nInsertCount;
@@ -821,8 +820,8 @@ int32_t __fastcall deflate_fast(deflate_state * pDeflateState, int32_t nFlush) {
         nHashHead = (uint32_t)pDeflateState->prev[pDeflateState->strstart & pDeflateState->w_mask];
         pDeflateState->head[pDeflateState->ins_h] = (uint16_t)pDeflateState->strstart;
         if (nHashHead && pDeflateState->strstart - nHashHead <= pDeflateState->w_size - 0x106) {
-          pMatchLenRet = longest_match(nHashHead, pDeflateState);
-          pDeflateState->match_length = (uint32_t)pMatchLenRet;
+          nHashHead = longest_match(nHashHead, pDeflateState);
+          pDeflateState->match_length = nHashHead;
         }
       }
       if (pDeflateState->match_length < 3) {
@@ -912,7 +911,7 @@ int32_t __fastcall deflate_fast(deflate_state * pDeflateState, int32_t nFlush) {
 
 int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
     uint32_t nLookahead;
-    char* nMatchLen;
+    uint32_t nMatchLen;
     uint32_t nInsHash;
     uint16_t nDistIdx;
     short int nDistShort;
@@ -1002,8 +1001,8 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
       pDeflateState->match_length = 2;
       if (nHashHead && nLookahead < pDeflateState->max_lazy_match && pDeflateState->strstart - nHashHead <= pDeflateState->w_size - 0x106) {
         nMatchLen = longest_match(nHashHead, pDeflateState);
-        pDeflateState->match_length = (uint32_t)nMatchLen;
-        if (nMatchLen < (char*)(void*)0x6 && (pDeflateState->strategy == 1 || nMatchLen == (char*)0x3 && 0x1000 < pDeflateState->strstart - pDeflateState->match_start)) {
+        pDeflateState->match_length = nMatchLen;
+        if (nMatchLen < 6 && (pDeflateState->strategy == 1 || nMatchLen == 3 && 0x1000 < pDeflateState->strstart - pDeflateState->match_start)) {
           pDeflateState->match_length = 2;
         }
       }
