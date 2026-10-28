@@ -174,28 +174,10 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
     pDstIndexCounter->peGreen = BVar1;
     pDstIndexCounter->peBlue = pSrcArchive->peBlue;
 
-    // [vanilla-plus fix 26 diag A] Once per palette load: hex-dump the 39
-    // loaded UI-color bytes (13 table triples consumed by table slot 0x45)
-    // plus the loaded pl2 byte size. The OOG hue-rotation family (purple
-    // "Expansion Character", teal copyright) sits upstream of the diffuse
-    // multiply (H16-c); this probe decides between (a) a truncated/misread
-    // pl2 tail (size short of the 0x6C327-byte layout, garbage triples),
-    // (b) wrong slice offsets (triples not matching the D2 UI palette), and
-    // (c) a later clobber (triples right here but wrong at draw time - then
-    // probe B and the D2GUARD lines take over). Pure logging, no control
-    // flow, retail byte behavior unchanged.
-    {
-      char szTableHex[79];
-      static const char szHexDigits[17] = "0123456789ABCDEF";
-      int nHexIdx;
-      for (nHexIdx = 0; nHexIdx < 39; nHexIdx++) {
-        szTableHex[nHexIdx * 2] = szHexDigits[gnPaletteIndexCounter[nHexIdx] >> 4];
-        szTableHex[nHexIdx * 2 + 1] = szHexDigits[gnPaletteIndexCounter[nHexIdx] & 0xF];
-      }
-      szTableHex[78] = '\0';
-      D2BOOT_MarkFmt("pal26A pl2=%s size=%u ui39=%s", szText2,
-        (unsigned)(pFileSize ? *pFileSize : 0), szTableHex);
-    }
+    // [vanilla-plus fix 26 diag A probe retired in 0.0.3: the once-per-load
+    // ui39 hex-dump served its purpose (fix 27 field-verified) and is gone;
+    // d2boot.log no longer records palette loads. Pure logging was removed,
+    // retail byte behavior unchanged.]
 
     uint8_t* pSrcBytes = &pMemoryToFree[0x1ad89].peFlags;
     uint8_t* pDstData = gPaletteTransposeBase;

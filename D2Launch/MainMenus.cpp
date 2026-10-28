@@ -395,15 +395,12 @@ void __fastcall D2GFX_SetPaletteForDraw(char * szPaletteDat, char * szPalettePl2
     char szDatPath[260];
     char szPl2Path[260];
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ // [vanilla-plus fix 27] flag set below, after the palette kind is known
-    // [vanilla-plus fix 26 diag B] pal26E: per-call caller RA + requested
-    // palette. The field log shows a self-sustaining sky<->fechar load
-    // ping-pong on char select (fechar, then sky one frame later, repeating
-    // ~1-2s) which re-times every OOG glyph-texture bake: the D3D text cache
-    // never re-bakes (its identity check compares only the pPalette pointer,
-    // which is nullptr for text), so whichever palette is live at first draw
-    // is frozen into the glyphs. Tagging the caller resolves the driver site.
-    // Pure logging, no control flow.
-    D2BOOT_MarkFmt("pal26E ra=%p ra1=%p pal=%s", __builtin_return_address(0), __builtin_return_address(1), szPaletteDat);
+    // [vanilla-plus fix 26 diag B pal26E caller-tag probe retired in 0.0.3:
+    // it logged every SetPaletteForDraw call and its own field data exposed
+    // the sky<->fechar ping-pong (re-firing every 1-2s at char select), so
+    // with the probe in place d2boot.log grew forever while the game sat at
+    // menus. The probe resolved the fix-27 flag-semantics driver (below) and
+    // is pure logging; removal changes no retail behavior.]
     wsprintfA(szDatPath, "%s\\%s", "DATA\\GLOBAL", szPaletteDat);
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPl2Path, "%s\\%s", "DATA\\GLOBAL", szPalettePl2);
     bool bIsFecharPalette = !strcmp(szPaletteDat, "palette\\fechar\\pal.dat");

@@ -3095,7 +3095,8 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
     }
 
     int pbSrcPixel = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockPixelData((int32_t)nParam);
-    int nPal26DFrameKey = pbSrcPixel; // [vanilla-plus fix 26 diag C] capture per-frame key before the switch clobbers pbSrcPixel
+    // [vanilla-plus fix 26 diag C captured nPal26DFrameKey here for the bake
+    // stamp; the probe is retired in 0.0.3, nothing else consumed the key.]
     // [vanilla-plus fix 27] Drop transpose-baked nodes when the LUT family
     // changes (see RENDERER_D3D_FlushTransposedTextureNodes). Runs before any
     // cache lookup; identical reloads (same palette contents) are no-ops.
@@ -3279,51 +3280,16 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
             DIRECTD3D_LogError("Failed to lock memory surface", dwHResult);
           }
           if ((uint8_t)sSurfaceDesc.dwFlags & 8) {
-            // [vanilla-plus fix 26 diag B] pal26D: bake stamp. Text uploads
-            // pass pPalette==nullptr and the cache never re-bakes them (the
-            // identity check up top compares only the pPalette pointer), so
-            // whichever palette g_Palette16Bit holds at first draw is frozen
-            // into the glyph texture. Once per frame pointer: first raw
-            // indices + the LUT family stamp at bake time; a later re-bake
-            // under a different stamp logs once as rehit. Pure logging.
-            if (!pPalette || ((uint8_t*)pPalette >= (uint8_t*)gPaletteTransposeBase && (uint8_t*)pPalette < (uint8_t*)gPaletteTransposeBase + 0xD00)) {
-              // [vanilla-plus fix 26 diag C] key = nPal26DFrameKey (the
-              // per-DC6-frame descriptor pointer; the pool base pbPixelData is
-              // constant and deduped every bake into one line in diag B).
-              // [vanilla-plus fix 27] condition widened: shifted/text uploads
-              // now bake through a pl2 UI-transpose palette instead of
-              // nullptr, and those bakes carry the same verification stamp.
-              // Stamp now includes lut22 (the font-ramp sentinel that raw
-              // 0x22 glyphs actually index through). Cap 256 frames.
-              static struct { uint8_t* pFrame; uint32_t dwStamp; uint32_t fLoggedRehit; } s_aPal26D[256] = {{0, 0, 0}};
-              static int s_nPal26DCount = 0;
-              int i;
-              for (i = 0; i < s_nPal26DCount && s_aPal26D[i].pFrame != (uint8_t*)nPal26DFrameKey; i++) {
-              }
-              uint32_t dwStamp = (g_Palette32Bit[0x80] & 0xffffff) ^ ((g_Palette32Bit[0xC0] & 0xffffff) << 8) ^ ((g_Palette32Bit[0x22] & 0xffffff) << 16);
-              if (i == s_nPal26DCount) {
-                if (s_nPal26DCount < 256) {
-                  s_aPal26D[s_nPal26DCount].pFrame = (uint8_t*)nPal26DFrameKey;
-                  s_aPal26D[s_nPal26DCount].dwStamp = dwStamp;
-                  s_aPal26D[s_nPal26DCount].fLoggedRehit = 0;
-                  s_nPal26DCount++;
-                }
-                D2BOOT_MarkFmt("pal26D bake frame=%p mode=%d raw=[%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X] lut22=%06X lut80=%06X lutC0=%06X",
-                  (void*)nPal26DFrameKey, (int)nMipIdx,
-                  (unsigned)pbPixelData[0], (unsigned)pbPixelData[1], (unsigned)pbPixelData[2], (unsigned)pbPixelData[3],
-                  (unsigned)pbPixelData[4], (unsigned)pbPixelData[5], (unsigned)pbPixelData[6], (unsigned)pbPixelData[7],
-                  (unsigned)pbPixelData[8], (unsigned)pbPixelData[9], (unsigned)pbPixelData[10], (unsigned)pbPixelData[11],
-                  (unsigned)pbPixelData[12], (unsigned)pbPixelData[13], (unsigned)pbPixelData[14], (unsigned)pbPixelData[15],
-                  (unsigned)(g_Palette32Bit[0x22] & 0xffffff),
-                  (unsigned)(g_Palette32Bit[0x80] & 0xffffff), (unsigned)(g_Palette32Bit[0xC0] & 0xffffff));
-              } else if (!s_aPal26D[i].fLoggedRehit && s_aPal26D[i].dwStamp != dwStamp) {
-                s_aPal26D[i].fLoggedRehit = 1;
-                D2BOOT_MarkFmt("pal26D rehit frame=%p lut22=%06X lut80=%06X lutC0=%06X",
-                  (void*)nPal26DFrameKey,
-                  (unsigned)(g_Palette32Bit[0x22] & 0xffffff),
-                  (unsigned)(g_Palette32Bit[0x80] & 0xffffff), (unsigned)(g_Palette32Bit[0xC0] & 0xffffff));
-              }
-            }
+            // [vanilla-plus fix 26 diag B/C/D bake-stamp probe retired in
+            // 0.0.3: the per-frame-key dedupe table capped at 256 distinct
+            // DC6 frames, but gameplay churns through far more distinct
+            // frame descriptors (and evicted textures re-bake), so past the
+            // cap EVERY text/shifted upload wrote a bake line plus a
+            // synchronous FlushFileBuffers on the render thread - the
+            // "d2boot.log grows rapidly" field report. The stamp verified
+            // fix 27's pl2 UI-transpose bake discipline (field-verified:
+            // "Colors are correct in D3D fullscreen now!"); the probe is
+            // pure logging and its removal changes no retail behavior.]
             RENDERER_D3D_ConvertPalettedTo16Bit(pbPixelData, (uint16_t*)sSurfaceDesc.lpSurface, pTexInfo->nTexWidth, pTexInfo->nTexHeight, sSurfaceDesc.lPitch >> 1, pTexInfo->nTexHeight);
             dwHResult = pDestSurface_00->lpVtbl->Unlock(pDestSurface_00, nullptr);
             if (dwHResult) {
@@ -3465,45 +3431,16 @@ void __stdcall RENDERER_DIRECT3D_DrawPalettedQuad(D2D3DSpriteInfoStrc * pTexture
 
     pVertexData += gd3dVertexBufferOffset * 8;
     if (!nParam4 && !nParam6) {
-      // [vanilla-plus fix 26 diag B] pal26B2: solid-diffuse branch. The field
-      // log never recorded slot-9/slot-11 triples (probe B), so the teal
-      // copyright / purple "Expansion Character" pixels cannot come from the
-      // 0x45-table multiply path; those draws fall through here with a raw
-      // nColor and their visible color is the baked texel itself. Dump each
-      // distinct color once (bounded to 24) plus the owning sprite. Pure
-      // logging, no control flow.
-      {
-        static uint32_t s_aPal26B2Seen[24] = {0};
-        static int s_nPal26B2Count = 0;
-        int i;
-        for (i = 0; i < s_nPal26B2Count && s_aPal26B2Seen[i] != nColor; i++) {
-        }
-        if (i == s_nPal26B2Count && s_nPal26B2Count < 24) {
-          s_aPal26B2Seen[s_nPal26B2Count++] = nColor;
-          D2BOOT_MarkFmt("pal26B2 solid nColor=%08X alpha=%02X sprite=%p",
-            (unsigned)nColor, (unsigned)nAlpha, (void*)pTextureInfo->pSprite);
-        }
-      }
+      // [vanilla-plus fix 26 diag B pal26B2 solid-color probe retired in
+      // 0.0.3: 24-slot seen-color set served its purpose (fix 27
+      // field-verified); pure logging removed, retail behavior unchanged.]
       RENDERER_D3D_SetTextureStageColor(pVertexData, nColor, nAlpha);
     } else {
       uint8_t* pPaletteEntry;
       pPaletteEntry = gpPaletteTable[0x45] + nParam4 * 3;
-      // [vanilla-plus fix 26 diag B] Once per color slot: dump the diffuse
-      // triple actually consumed plus the table identity. H16-c proved a hue
-      // rotation cannot come from this multiply - so if probe A showed healthy
-      // triples but this probe shows a wrong RGB or a table pointer that is
-      // not &gnPaletteIndexCounter, the fault is wiring or a post-load clobber
-      // (then cross-read the D2GUARD lines). Pure logging, no control flow.
-      {
-        static uint32_t s_dwPal26BDumpedSlots = 0;
-        if (!(s_dwPal26BDumpedSlots & (1u << (nParam4 & 0x1f)))) {
-          s_dwPal26BDumpedSlots |= 1u << (nParam4 & 0x1f);
-          D2BOOT_MarkFmt("pal26B slot=%d tbl=%p exp=%p rgb=%02X %02X %02X",
-            nParam4, (void*)gpPaletteTable[0x45], (void*)gnPaletteIndexCounter,
-            (unsigned)(uint8_t)pPaletteEntry[0], (unsigned)(uint8_t)pPaletteEntry[1],
-            (unsigned)(uint8_t)pPaletteEntry[2]);
-        }
-      }
+      // [vanilla-plus fix 26 diag B pal26B slot-probe retired in 0.0.3:
+      // once-per-slot diffuse dump served its purpose (fix 27
+      // field-verified); pure logging removed, retail behavior unchanged.]
 
       pVertexData[4] = (float)(uint32_t)((uint32_t)((uint32_t)((uint32_t)(uint16_t)((uint16_t)(uint8_t)nAlpha << 8 | (uint16_t)(uint8_t)*pPaletteEntry) << 8 | (uint32_t)(uint8_t)gpPaletteTable[0x45][nParam4 * 3 + 1]) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pPaletteEntry[2]);
     }
