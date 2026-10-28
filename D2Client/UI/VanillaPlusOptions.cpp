@@ -18,9 +18,10 @@
 //      stream (~2 KB for a 0x100-wide raster - worst case far more), a
 //      stack-smashing bug hiding behind the fallback path.
 // The retail esc-menu loop already invokes a per-row fpDrawCallback every
-// frame (ESCMENU_DrawMenu, before the row's image draw), so the label is now
-// rendered there with DRAW_text (font 2, Font30 - the family the retail row
-// label images are rendered in; see the tunables block). The row's
+// frame (ESCMENU_DrawMenu, before the row's image draw), so the label is
+// rendered there with DRAW_text (font resolved at runtime by measuring the
+// retail neighbor label image - see the tunables block and
+// VPLABEL_DecideMetrics). The row's
 // fpInitCallback still seeds pDC6Main, but only with the field-proven 8x8
 // blank placeholder:
 // type-0 rows draw pDC6Main unconditionally (a null pointer would halt the
@@ -45,6 +46,7 @@
 
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/D2Client.h"
+#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/Message.h"
 #include "D2Client/Sound/Sound.h"
@@ -78,26 +80,50 @@ namespace D2Client::UI::VanillaPlus {
 // Esc-menu row band. The retail draw loop bottom-anchors every row image at
 // nItemBottomY = nRowTop + nRowHeight; DC6 draws (font glyph frames included)
 // extend upward from the y passed to the renderer, i.e. the y passed to
-// DRAW_text is the glyph-cell bottom (descent included). The label baseline
-// is inset from the band bottom so the text sits visually centered in the
-// 0x27 band (tunable).
+// DRAW_text anchors the glyphs' bottoms (the baseline for non-descending
+// frames). The label baseline is inset from the band bottom so the text sits
+// visually centered in the 0x27 band (tunable).
 //
-// Field-QA (2026-10-29, rev4): the first Route B build used font 0xd
-// (FontInGameChat - the chat console font, ~10 px cell) and the label rendered
-// at roughly 1/3 the height of the neighboring rows - the retail rows are DC6
-// label images in the big menu-font family (same look as the esc-menu main
-// items), not chat-size text. Font30 (aFontNames[2], 30 px cell) is that
-// family's in-tree handle, so the row label uses it. The 0x27 band fits the
-// 30 px cell with inset 4 (cell spans rowTop+5 .. rowTop+35, 'p' descender
-// included); the Vanilla+ page below keeps 0xd on purpose - it mirrors the
-// retail ControlConfig page, which is drawn entirely in FontInGameChat.
+// Field-QA timeline for the row label FONT (rev3 -> revE):
+//   rev3: font 0xd (FontInGameChat, chat cell)  -> "label shows, ~10% size"
+//   rev4: font 2   (Font30)                     -> "closer, ~50% size"
+// The five retail rows (SoundOptions / VideoOptions / AutoMapOptions /
+// CfgOptions / Previous) are DC6 label IMAGES (DATA\LOCAL\{LANG}\UI\*.dc6),
+// so no font id is authoritative for them - only their pixel height is, and
+// that data lives in the MPQ, not in this tree. revE therefore stops guessing:
+// on the row's first draw it measures the retail neighbor label image's frame
+// height and picks the in-tree font whose capital-letter glyph frame height
+// matches it (candidates below, probed ascending; ties resolve to the larger
+// font). The pick is cached for the process lifetime; later draws just use
+// it. If measurement or glyph probes fail wholesale, the fallback is
+// Font42 - the largest menu font, which is where the "go bigger" answer the
+// 50% datapoint points at lives.
+//
+// Manual override (escape hatch, no rebuild needed): add to d2vp.ini (the
+// same file the [features] gates live in):
+//   [ui]
+//   label_font = <aFontNames index>
+// 1 = Font16, 2 = Font30, 3 = Font42, 7 = Font24; anything outside 0..13
+// falls back to the measured pick. Read once, when the metrics are decided.
+static const int gaVpLabelFontProbe[3] = { 7, 2, 3 };  // Font24, Font30, Font42 (ascending)
+static const int VPLABEL_FONT_FALLBACK = 3;            // Font42 - largest menu font
+
+// Resolved once per process by VPLABEL_DecideMetrics (first row draw).
+// -2 = undecided; afterwards a valid aFontNames index 0..13.
+static int gnVpLabelFontId = -2;
+
+// Baseline inset above the band bottom. Kept at the rev4 field-accepted
+// value: glyph frames are bottom-anchored, so a taller font extends upward
+// from the same anchor and the accepted placement carries over to whatever
+// font the measurement picks ('p' descenders may reach a few px into the
+// inter-row gap - the retail images bottom-anchor at the band bottom and
+// behave the same way).
 static const int VPLABEL_BASELINE_INSET = 4;
-static const uint16_t VPLABEL_FONT_ID = 2;         // Font30 - retail row-label family
 
 // The Vanilla+ page itself is a ControlConfig mirror and keeps ControlConfig's
 // own font (FontInGameChat) - its 0x1a row bands are sized for it. Deliberately
-// separate from VPLABEL_FONT_ID so the esc-menu row and the page can't drag
-// each other's metrics around.
+// separate from the row label's resolved font so the esc-menu row and the
+// page can't drag each other's metrics around.
 static const uint16_t VPPAGE_FONT_ID = 0xd;        // FontInGameChat - ControlConfig's font
 
 // Page layout (mirrors the ControlConfig panel box for a familiar look).
@@ -249,17 +275,161 @@ void __fastcall ESCMENU_InitVanillaPlusLabel(D2EscMenuItemStrc * pItem, D2UIMous
     VPLABEL_BuildBlankPlaceholder(&pItem->pDC6Main);
 }
 
+// ===== row label metrics (revE: measure the retail neighbor) ================
+
+// Mirror of D2Client.cpp's ALTTOGGLE_BuildIniPath (static there): resolve
+// "<exe dir>\\d2vp.ini" so [ui] label_font is read from the same file as the
+// [features] gates regardless of the process CWD. FALSE = unresolvable path;
+// the override is simply skipped.
+static BOOL VPLABEL_BuildIniPath(char* szIniPath) {
+    szIniPath[0] = '\0';
+    DWORD dwLen = GetModuleFileNameA(nullptr, szIniPath, 240);
+    if (!dwLen || dwLen >= 240) {
+        return FALSE;
+    }
+    char* pSlash = strrchr(szIniPath, '\\');
+    if (!pSlash) {
+        return FALSE;
+    }
+    pSlash[1] = '\0';
+    lstrcatA(szIniPath, "d2vp.ini");
+    return TRUE;
+}
+
+// Height of one glyph's frame in font nFontId (0 = not measurable). Forces
+// the standard lazy load through SetAndReturnLastFont (the exact path every
+// text draw takes when a font is first used), then reads the glyph's frame
+// from the font DC6 through the retail accessors - the same glyph-entry ->
+// frame-number lookup D2WINFONT_DrawWideString performs for every drawn
+// character. Leaves the current font switched; callers save/restore around
+// probe batches.
+static int VPLABEL_GlyphFrameHeight(int nFontId, uint16_t wCharCode) {
+    if (nFontId < 0 || nFontId >= 14) {
+        return 0;
+    }
+    D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
+    // A failed load leaves the cache entry null (SetAndReturnLastFont assigns
+    // the loader result unconditionally); FONT_GetCharWidthCallback would
+    // then index pGlyphs + ch against a null/garbage table - never
+    // dereference that.
+    if (!gaFontCache[nFontId].pFontDC6 || !gaFontCache[nFontId].pGlyphs) {
+        return 0;
+    }
+    D2FontGlyphStrc* pGlyph = (*gpfnFontGetCharWidth)(wCharCode);
+    if (!pGlyph) {
+        return 0;
+    }
+    DC6* pFontDc6 = (DC6*)gaFontCache[nFontId].pFontDC6;
+    D2GfxDataStrc sGfxData;
+    memset(&sGfxData, 0, sizeof(sGfxData));
+    sGfxData.pDC6 = pFontDc6;
+    sGfxData.nDirection = 0;
+    sGfxData.nFrameNumber = (int)*(const uint16_t*)(pGlyph->abUnverified + 6);
+    DC6Block* pBlock = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockFromGfxData(&sGfxData);
+    if (!pBlock) {
+        return 0;
+    }
+    int nHeight = (int)D2CMP::SRC::CelCmp::GetDC6Height(pBlock);
+    return nHeight > 0 ? nHeight : 0;
+}
+
+// Frame-0 height of a retail row's label image (the measurement target: what
+// the user visually compares our label against). Type-0 rows bottom-anchor
+// this exact image into the band, so its height IS the retail label height.
+static int VPLABEL_MeasureRowImageHeight(D2EscMenuItemStrc* pItem) {
+    if (!pItem || !pItem->pDC6Main) {
+        return 0;
+    }
+    D2GfxDataStrc sGfxData;
+    memset(&sGfxData, 0, sizeof(sGfxData));
+    sGfxData.pDC6 = pItem->pDC6Main;
+    sGfxData.nDirection = 0;
+    sGfxData.nFrameNumber = 0;
+    DC6Block* pBlock = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockFromGfxData(&sGfxData);
+    if (!pBlock) {
+        return 0;
+    }
+    int nHeight = (int)D2CMP::SRC::CelCmp::GetDC6Height(pBlock);
+    return nHeight > 0 ? nHeight : 0;
+}
+
+// Resolve the row label font, once per process, on the row's first draw.
+//   1. [ui] label_font override from d2vp.ini (validated 0..13).
+//   2. Measure the retail neighbor label (row [5] "Previous" - the direct
+//      visual neighbor below us, always visible, no expansion/visibility
+//      gates; fallback row [0] "SoundOptions") and pick the probed font whose
+//      'S' frame height best matches the image height. Capital height is the
+//      comparison metric: "Previous" has no descenders, so its baked image
+//      height IS its capital extent (+1-2 px of bake padding - the same bias
+//      for every candidate, so the argmin stays stable).
+//   3. Fallbacks: no measurable image or no probeable glyph -> Font42.
+static void VPLABEL_DecideMetrics() {
+    if (gnVpLabelFontId != -2) {
+        return; // already decided this process
+    }
+
+    // Provisional fallback; the paths below keep or replace it.
+    gnVpLabelFontId = VPLABEL_FONT_FALLBACK;
+
+    char szIniPath[260];
+    int nOverride = -1;
+    if (VPLABEL_BuildIniPath(szIniPath)) {
+        nOverride = (int)GetPrivateProfileIntA("ui", "label_font", -1, szIniPath);
+    }
+    if (nOverride >= 0 && nOverride < 14) {
+        gnVpLabelFontId = nOverride;
+        return;
+    }
+
+    int nTargetHeight = VPLABEL_MeasureRowImageHeight(&gaEscMenuOptionsTable[5]);
+    if (nTargetHeight <= 0) {
+        nTargetHeight = VPLABEL_MeasureRowImageHeight(&gaEscMenuOptionsTable[0]);
+    }
+    if (nTargetHeight <= 0) {
+        return; // keep Font42, nothing to measure against
+    }
+
+    int32_t nSavedFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(gaVpLabelFontProbe[0]);
+    int nBestFont = -1;
+    int nBestDist = 0;
+    for (int i = 0; i < 3; i++) {
+        int nFontId = gaVpLabelFontProbe[i];
+        int nCapsHeight = VPLABEL_GlyphFrameHeight(nFontId, (uint16_t)L'S');
+        if (nCapsHeight <= 0) {
+            continue;
+        }
+        int nDist = nCapsHeight > nTargetHeight ? nCapsHeight - nTargetHeight : nTargetHeight - nCapsHeight;
+        // "<=" on purpose: the probe order is ascending, so a distance tie
+        // resolves to the larger font (the retail labels are the big menu
+        // family - when in doubt, go bigger).
+        if (nBestFont == -1 || nDist <= nBestDist) {
+            nBestFont = nFontId;
+            nBestDist = nDist;
+        }
+    }
+    D2Win::Src::D2WinFont::SetAndReturnLastFont(nSavedFont);
+
+    if (nBestFont != -1) {
+        gnVpLabelFontId = nBestFont;
+    }
+}
+
 // Row draw callback (fpDrawCallback), invoked by DRAW_EscMenu every frame
-// before the row's image draw. Renders the label through the retail text path
-// (DRAW_text, font 2 = Font30) instead of a synthesized DC6. Geometry mirrors
-// the DRAW_EscMenu per-item formula so the text lands in the same band the
-// retail images bottom-anchor into; DRAW_text's y is the glyph-cell bottom
-// (DC6 frames draw upward from y), hence the small inset above the band bottom.
+// before the row's image draw. Renders the label through the retail text
+// path (DRAW_text, font resolved by VPLABEL_DecideMetrics) instead of a
+// synthesized DC6. Geometry mirrors the DRAW_EscMenu per-item formula so the
+// text lands in the same band the retail images bottom-anchor into;
+// DRAW_text's y anchors the glyph bottoms (DC6 frames draw upward from y),
+// hence the small inset above the band bottom.
 void __fastcall VANILLAPLUS_DrawRowLabel(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     (void)pMsg;
     if (!pItem) {
         return;
     }
+
+    // Resolve the label font once (measures the retail neighbor label; no-op
+    // after the first call). Must run before the SetAndReturnLastFont below.
+    VPLABEL_DecideMetrics();
 
     // Row band: replicate ESCMENU_DrawMenu's per-item Y formula for the
     // Options table (this row only ever draws while that table is active).
@@ -291,7 +461,7 @@ void __fastcall VANILLAPLUS_DrawRowLabel(D2EscMenuItemStrc * pItem, D2UIMouseMsg
     const int nBaselineY = nRowTop + gaEscMenuHeaderOptions.nRowHeight - VPLABEL_BASELINE_INSET;
 
     static const wchar_t gwszLabel[] = L"Vanilla+ Options";
-    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(VPLABEL_FONT_ID);
+    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(gnVpLabelFontId);
     int nTextWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)gwszLabel);
     D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gwszLabel, ScreenSizeX / 2 - nTextWidth / 2, nBaselineY, 0, 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);

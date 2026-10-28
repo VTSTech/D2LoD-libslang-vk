@@ -381,3 +381,68 @@ rebuild, then field round 3: label height visually matches the neighboring
 rows (640x480 and 800x600), vertical centering acceptable, the Vanilla+ page
 still renders ControlConfig-styled (unchanged), and every round-2 behavior
 stays green (live cursor, toggle round-trips, Esc round-trip, clean shutdown).
+
+## 11. Field-QA revision (rev E, 2026-10-29) — label size, measure-don't-guess
+
+Field round 3 on the rev-4 overlay: **"that's a lot closer. improved. but
+still only 50% size"** — the Font30 switch moved the label from ~10% to ~50%
+of the retail rows' height, direction confirmed, magnitude still short. Two
+font datapoints now exist (FontInGameChat ≈ 10%, Font30 ≈ 50%), and both are
+eyeball estimates against baked label images whose pixel height is MPQ data
+the sandbox cannot inspect. A third constant guess would repeat the same
+cycle; revE replaces the guess with a measurement.
+
+Design: `VPLABEL_FONT_ID` (constant) is replaced by a runtime resolution that
+runs once per process, on the row's first draw (`VPLABEL_DecideMetrics`):
+
+1. **Override first** — `[ui] label_font = <aFontNames index>` in `d2vp.ini`
+   (same file as the `[features]` gates; path resolved by a mirror of
+   `ALTTOGGLE_BuildIniPath` since that one is static in D2Client.cpp).
+   Values outside 0..13 are ignored. This is the escape hatch that turns any
+   residual size mismatch into a one-line ini edit instead of an overlay
+   round-trip.
+2. **Measure the retail neighbor** — row [5] "Previous" (`pDC6Main`, loaded
+   unconditionally at menu image load; no expansion/visibility gates, and it
+   is the row directly below ours, i.e. exactly what the eye compares
+   against; fallback row [0] "SoundOptions"). Its frame-0 height comes
+   through the retail accessors (`CELCMP_GetDC6BlockFromGfxData` +
+   `GetDC6Height`) — the same path every type-0 row draw takes.
+3. **Probe candidates** — for each of {7 = Font24, 2 = Font30, 3 = Font42}
+   (ascending), force the standard lazy load via `SetAndReturnLastFont`,
+   then read the 'S' glyph's frame height through the retail lookup chain
+   (`gpfnFontGetCharWidth` → frame number → `GetDC6Height`), the identical
+   glyph→frame lookup `D2WINFONT_DrawWideString` performs for every drawn
+   character. Pick the font whose capital height best matches the measured
+   image height; ties resolve to the larger font (the retail labels are the
+   big menu family — when in doubt, go bigger). Fallback if nothing
+   measures: Font42 (largest menu font).
+
+Metric note: capital height is the comparison because "Previous" has no
+descenders — its baked image height IS its capital extent (+1–2 px of bake
+padding, the same bias for every candidate, so the argmin is stable).
+`VPLABEL_BASELINE_INSET` stays 4 (rev4's field-accepted value): glyph frames
+are bottom-anchored, so a taller font extends upward from the same anchor and
+the accepted placement carries over; 'p' descenders may reach a few px into
+the inter-row gap, which the retail images (bottom-anchored at the band
+bottom) also do. Every API the resolution touches is retail-proven and was
+already exercised by three field rounds (font lazy load, glyph lookup, DC6
+block read, ini profile read via the bridge's own pattern).
+
+Failure containment: a failed font load leaves the cache entry null and
+`FONT_GetCharWidthCallback` would index `pGlyphs + ch` against garbage — the
+probe checks `pFontDC6 && pGlyphs` before touching either. All guards return
+0 and the resolver degrades to the next candidate or the Font42 fallback;
+no path can crash or render a null frame, and the page (`VPPAGE_FONT_ID` =
+0xd) is untouched.
+
+### 11.1 Verification
+
+Sandbox: extracted-verbatim harness re-run green with the extended stub set
+(`gaFontCache`/`gpfnFontGetCharWidth`/`lstrcatA` added — GetPrivateProfileIntA,
+`D2GfxDataStrc`, the CelCmp accessors and `SetAndReturnLastFont` were already
+mirrored). Real gate: owner llvm-mingw i686 rebuild, then field round 4:
+label height visually matches the neighboring rows (if it still reads short,
+set `[ui] label_font = 3` in d2vp.ini and restart the game — that forces the
+biggest font and, if even that is short, the next rev goes back to
+synthesizing a DC6 at the measured height, now with confirmed numbers); page
+unchanged; all round-2/3 behaviors stay green.
