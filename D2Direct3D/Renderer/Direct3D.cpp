@@ -3009,6 +3009,70 @@ static void RENDERER_D3D_UploadHaltDump(const char* szSite, D2D3DSpriteInfoStrc*
 }
 
 // Direct3D texture cache: uploads a DC6 frame to video memory. Determines mipmap level based on size, allocates cache slot, renders frame to memory surface, copies to texture via LockRect/memcpy, and sets as active texture.
+// [vanilla-plus fix 27] Flush every cached texture that was baked through a
+// pl2 UI-transpose palette (gpPaletteTable[0x34..0x40], the 13 per-palette
+// text-color remaps consumed by DrawShiftedImage). Those palettes reload IN
+// PLACE on every palette load: the pointer stays stable while the contents
+// change, so the cache's pointer-identity check cannot see a palette change
+// and would keep serving texels baked under the previous palette family
+// forever (the same class as the pre-fix-27 never-rebake text defect).
+// Mirrors the eviction path: clear the sprite descriptor binding, unlink
+// from the used chain, push onto the free tail; surfaces stay allocated for
+// reuse so the re-bake costs only a decode + upload.
+static void RENDERER_D3D_FlushTransposedTextureNodes() {
+    uint8_t* pTransposeLo = (uint8_t*)gPaletteTransposeBase;
+    uint8_t* pTransposeHi = (uint8_t*)gPaletteTransposeBase + 0xD00;
+    for (int nClass = 0; nClass < 3; nClass++) {
+        D3DTextureCacheStrc* pCache = &gD3DGenericTextureCache.aCaches[nClass];
+        D3DTextureCacheNodeStrc* pNode = pCache->pUsedHead;
+        int nGuard = 0;
+        while (pNode && nGuard++ <= pCache->nMaxNodes) {
+            D3DTextureCacheNodeStrc* pNextNode = pNode->pNext;
+            uint8_t* pPal = (uint8_t*)pNode->field_0x0C;
+            if (pPal >= pTransposeLo && pPal < pTransposeHi) {
+                if (pNode->pAssociatedTilePtr) {
+                    *(uint32_t*)((int)pNode->pAssociatedTilePtr + (int)pNode->field_0x08 * 8) = 0;
+                    *(uint32_t*)((int)pNode->pAssociatedTilePtr + (int)pNode->field_0x08 * 8 + 4) = 0;
+                    pNode->pAssociatedTilePtr = nullptr;
+                }
+                if (pNode->pPrev) {
+                    pNode->pPrev->pNext = pNode->pNext;
+                } else {
+                    pCache->pUsedHead = pNode->pNext;
+                }
+                if (pNextNode) {
+                    pNextNode->pPrev = pNode->pPrev;
+                } else {
+                    pCache->pUsedTail = pNode->pPrev;
+                }
+                pNode->pNext = nullptr;
+                pNode->pPrev = nullptr;
+                if (!pCache->pFreeHead) {
+                    pCache->pFreeHead = pNode;
+                } else {
+                    pCache->pFreeTail->pNext = pNode;
+                    pNode->pPrev = pCache->pFreeTail;
+                }
+                pCache->pFreeTail = pNode;
+                pCache->nUsedCount--;
+            }
+            pNode = pNextNode;
+        }
+    }
+}
+
+// [vanilla-plus fix 27] Mixed stamp of family-discriminating g_Palette32Bit
+// sentinels. act1/sky share 0x20/0x40/0x80/0xC0 and differ only at 0xF0;
+// fechar differs at all of them; multiplicative mixing avoids trivial
+// aliasing between near-identical palettes.
+static uint32_t RENDERER_D3D_ComputeLutFamilyStamp() {
+    return g_Palette32Bit[0x20] * 0x9E3779B1u
+         ^ g_Palette32Bit[0x40] * 0x85EBCA77u
+         ^ g_Palette32Bit[0x80] * 0xC2B2AE3Du
+         ^ g_Palette32Bit[0xC0] * 0x27D4EB2Fu
+         ^ g_Palette32Bit[0xF0] * 0x165667B1u;
+}
+
 int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
     uint8_t* pBVar3;
     DWORD dwHResult;
@@ -3031,6 +3095,18 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
     }
 
     int pbSrcPixel = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockPixelData((int32_t)nParam);
+    int nPal26DFrameKey = pbSrcPixel; // [vanilla-plus fix 26 diag C] capture per-frame key before the switch clobbers pbSrcPixel
+    // [vanilla-plus fix 27] Drop transpose-baked nodes when the LUT family
+    // changes (see RENDERER_D3D_FlushTransposedTextureNodes). Runs before any
+    // cache lookup; identical reloads (same palette contents) are no-ops.
+    {
+        static uint32_t s_dwD3DLutFamilyStamp = 0xFFFFFFFFu;
+        uint32_t dwLutStamp = RENDERER_D3D_ComputeLutFamilyStamp();
+        if (dwLutStamp != s_dwD3DLutFamilyStamp) {
+            s_dwD3DLutFamilyStamp = dwLutStamp;
+            RENDERER_D3D_FlushTransposedTextureNodes();
+        }
+    }
     int nMipIdx = nMode;
     if (nMode == 4) {
       nMipIdx = 1;
@@ -3203,6 +3279,51 @@ int32_t RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, B
             DIRECTD3D_LogError("Failed to lock memory surface", dwHResult);
           }
           if ((uint8_t)sSurfaceDesc.dwFlags & 8) {
+            // [vanilla-plus fix 26 diag B] pal26D: bake stamp. Text uploads
+            // pass pPalette==nullptr and the cache never re-bakes them (the
+            // identity check up top compares only the pPalette pointer), so
+            // whichever palette g_Palette16Bit holds at first draw is frozen
+            // into the glyph texture. Once per frame pointer: first raw
+            // indices + the LUT family stamp at bake time; a later re-bake
+            // under a different stamp logs once as rehit. Pure logging.
+            if (!pPalette || ((uint8_t*)pPalette >= (uint8_t*)gPaletteTransposeBase && (uint8_t*)pPalette < (uint8_t*)gPaletteTransposeBase + 0xD00)) {
+              // [vanilla-plus fix 26 diag C] key = nPal26DFrameKey (the
+              // per-DC6-frame descriptor pointer; the pool base pbPixelData is
+              // constant and deduped every bake into one line in diag B).
+              // [vanilla-plus fix 27] condition widened: shifted/text uploads
+              // now bake through a pl2 UI-transpose palette instead of
+              // nullptr, and those bakes carry the same verification stamp.
+              // Stamp now includes lut22 (the font-ramp sentinel that raw
+              // 0x22 glyphs actually index through). Cap 256 frames.
+              static struct { uint8_t* pFrame; uint32_t dwStamp; uint32_t fLoggedRehit; } s_aPal26D[256] = {{0, 0, 0}};
+              static int s_nPal26DCount = 0;
+              int i;
+              for (i = 0; i < s_nPal26DCount && s_aPal26D[i].pFrame != (uint8_t*)nPal26DFrameKey; i++) {
+              }
+              uint32_t dwStamp = (g_Palette32Bit[0x80] & 0xffffff) ^ ((g_Palette32Bit[0xC0] & 0xffffff) << 8) ^ ((g_Palette32Bit[0x22] & 0xffffff) << 16);
+              if (i == s_nPal26DCount) {
+                if (s_nPal26DCount < 256) {
+                  s_aPal26D[s_nPal26DCount].pFrame = (uint8_t*)nPal26DFrameKey;
+                  s_aPal26D[s_nPal26DCount].dwStamp = dwStamp;
+                  s_aPal26D[s_nPal26DCount].fLoggedRehit = 0;
+                  s_nPal26DCount++;
+                }
+                D2BOOT_MarkFmt("pal26D bake frame=%p mode=%d raw=[%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X] lut22=%06X lut80=%06X lutC0=%06X",
+                  (void*)nPal26DFrameKey, (int)nMipIdx,
+                  (unsigned)pbPixelData[0], (unsigned)pbPixelData[1], (unsigned)pbPixelData[2], (unsigned)pbPixelData[3],
+                  (unsigned)pbPixelData[4], (unsigned)pbPixelData[5], (unsigned)pbPixelData[6], (unsigned)pbPixelData[7],
+                  (unsigned)pbPixelData[8], (unsigned)pbPixelData[9], (unsigned)pbPixelData[10], (unsigned)pbPixelData[11],
+                  (unsigned)pbPixelData[12], (unsigned)pbPixelData[13], (unsigned)pbPixelData[14], (unsigned)pbPixelData[15],
+                  (unsigned)(g_Palette32Bit[0x22] & 0xffffff),
+                  (unsigned)(g_Palette32Bit[0x80] & 0xffffff), (unsigned)(g_Palette32Bit[0xC0] & 0xffffff));
+              } else if (!s_aPal26D[i].fLoggedRehit && s_aPal26D[i].dwStamp != dwStamp) {
+                s_aPal26D[i].fLoggedRehit = 1;
+                D2BOOT_MarkFmt("pal26D rehit frame=%p lut22=%06X lut80=%06X lutC0=%06X",
+                  (void*)nPal26DFrameKey,
+                  (unsigned)(g_Palette32Bit[0x22] & 0xffffff),
+                  (unsigned)(g_Palette32Bit[0x80] & 0xffffff), (unsigned)(g_Palette32Bit[0xC0] & 0xffffff));
+              }
+            }
             RENDERER_D3D_ConvertPalettedTo16Bit(pbPixelData, (uint16_t*)sSurfaceDesc.lpSurface, pTexInfo->nTexWidth, pTexInfo->nTexHeight, sSurfaceDesc.lPitch >> 1, pTexInfo->nTexHeight);
             dwHResult = pDestSurface_00->lpVtbl->Unlock(pDestSurface_00, nullptr);
             if (dwHResult) {
@@ -3344,6 +3465,25 @@ void __stdcall RENDERER_DIRECT3D_DrawPalettedQuad(D2D3DSpriteInfoStrc * pTexture
 
     pVertexData += gd3dVertexBufferOffset * 8;
     if (!nParam4 && !nParam6) {
+      // [vanilla-plus fix 26 diag B] pal26B2: solid-diffuse branch. The field
+      // log never recorded slot-9/slot-11 triples (probe B), so the teal
+      // copyright / purple "Expansion Character" pixels cannot come from the
+      // 0x45-table multiply path; those draws fall through here with a raw
+      // nColor and their visible color is the baked texel itself. Dump each
+      // distinct color once (bounded to 24) plus the owning sprite. Pure
+      // logging, no control flow.
+      {
+        static uint32_t s_aPal26B2Seen[24] = {0};
+        static int s_nPal26B2Count = 0;
+        int i;
+        for (i = 0; i < s_nPal26B2Count && s_aPal26B2Seen[i] != nColor; i++) {
+        }
+        if (i == s_nPal26B2Count && s_nPal26B2Count < 24) {
+          s_aPal26B2Seen[s_nPal26B2Count++] = nColor;
+          D2BOOT_MarkFmt("pal26B2 solid nColor=%08X alpha=%02X sprite=%p",
+            (unsigned)nColor, (unsigned)nAlpha, (void*)pTextureInfo->pSprite);
+        }
+      }
       RENDERER_D3D_SetTextureStageColor(pVertexData, nColor, nAlpha);
     } else {
       uint8_t* pPaletteEntry;
@@ -3572,13 +3712,34 @@ void __fastcall DrawShiftedImage(D2GfxDataStrc * pData, int nPosX, int nPosY, DW
     }
 
     RENDERER_D3D_CalculateTextureSize(&aSpriteInfo);
-    int32_t iVar1 = RENDERER_DIRECT3D_UploadTextureToCache(&aSpriteInfo, nullptr, 0, 1);
+    // [vanilla-plus fix 27] Bake shifted (text) glyphs through the pl2
+    // UI-transpose palette for this color slot, exactly like the GDI renderer
+    // (D2Gdi/Renderer/Windowed.cpp DrawShiftedImage:
+    // gpPaletteTable[nGlobalPaletteShift + 0x34]) and the DirectDraw renderer
+    // (D2DDraw/Renderer/DirectDraw.cpp: pShiftTable =
+    // gpPaletteTable[nGlobalPaletteShift + 0x34]). The 13 transpose palettes
+    // reload from every pal.pl2 and map the font's logical glyph indices onto
+    // the ACTIVE palette's physical text-color ramp, so text colors are
+    // correct under whichever palette family is live. The D3D path was the
+    // only renderer that skipped them: it baked raw glyph indices through
+    // g_Palette16Bit and leaned on the slot-0x45 diffuse multiply, which is
+    // only valid for white-ramp glyph bands and provably wrong for the fonts
+    // whose glyph pixels live in family-dependent bands (a green diffuse
+    // multiply can never yield the field-seen purple; H16-c).
+    BYTE* pBakePalette = nullptr;
+    if (nGlobalPaletteShift) {
+      pBakePalette = (BYTE*)gpPaletteTable[nGlobalPaletteShift + 0x34];
+    }
+    int32_t iVar1 = RENDERER_DIRECT3D_UploadTextureToCache(&aSpriteInfo, pBakePalette, 0, 1);
     if (!iVar1) {
       return;
     }
 
     uint8_t nAlpha = SetDrawModeAndGetAlpha(nDrawMode);
-    RENDERER_DIRECT3D_DrawPalettedQuad(&aSpriteInfo, nPosX, nPosY, dwGamma, nGlobalPaletteShift, nAlpha, 0);
+    // Shift 0 at the quad: the transpose already resolved the glyph color at
+    // bake time, so the 0x45 diffuse multiply must not double-apply (GDI
+    // parity - no diffuse is added after the transpose remap).
+    RENDERER_DIRECT3D_DrawPalettedQuad(&aSpriteInfo, nPosX, nPosY, dwGamma, 0, nAlpha, 0);
 }
 
 void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int nPosX, int nPosY, int nSkipLines, int nDrawLines, int nDrawMode) {
