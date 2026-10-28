@@ -36,6 +36,12 @@ workflow artifacts: `d2s-<sha>.exe` + `d2-map-<sha>.map` on `vanilla-plus` (the 
 is load-bearing for crash symbolization), `d2-<sha>.exe` + `d2-stripped-<sha>.exe` on
 `jaenster-main`.
 
+Prebuilt releases: [`D2LoD-Vanilla-Plus-0.0.2`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.2)
+ships a 7z bundling the rebuilt client (`d2s-9cf9f69.exe`), the `glide3x.dll` Vulkan
+wrapper (Glide3xVK 0.4.5) and launcher/debug scripts — extract into a 1.14d install
+(see the release notes or [`VANILLA-PLUS.md`](VANILLA-PLUS.md)). The wrapper line tags
+its own releases separately.
+
 ## The same idea as Devilution
 
 [Devilution](https://github.com/diasurgical/devilution) did this for the first Diablo: it
@@ -115,14 +121,21 @@ artifacts — grab one from the Actions tab instead of building locally.
 
 ## Run
 
-Copy `d2.exe` into your Diablo II folder, next to the original `Game.exe`, and
-start it from there:
+Two ways:
+
+- **From a release** (recommended for play): extract the
+  [`D2LoD-Vanilla-Plus-0.0.2.7z`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.2)
+  into your Diablo II folder, run `Launch.cmd` once (downloads the libretro slang shader
+  pack), then `install_shaders.cmd` to start the game with the Vulkan wrapper.
+- **From a build**: copy `d2.exe` into your Diablo II folder, next to the original
+  `Game.exe`, and start it from there:
 
 ```
 d2.exe -w
 ```
 
-`-w` runs it in a window.
+`-w` runs it in a window; `-3dfx` selects the Glide path (needs the wrapper's
+`glide3x.dll` in the same folder).
 
 ## Known issues
 

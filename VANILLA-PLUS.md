@@ -8,6 +8,10 @@ clean of the glide3x→Vulkan wrapper work — that lives on the `libslang-vk`
 branch of [VTSTech/D2LoD-libslang-vk](https://github.com/VTSTech/D2LoD-libslang-vk)
 and overlays on top of whatever `d2.exe` is running.
 
+**Latest release: [`D2LoD-Vanilla-Plus-0.0.2`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.2)**
+(2026-10-28, from `9cf9f69`) — one 7z with the client, the Glide3xVK 0.4.5 wrapper and
+launcher/debug scripts.
+
 ## The two layers
 
 ```
@@ -26,22 +30,30 @@ and overlays on top of whatever `d2.exe` is running.
 The wrapper never touches Game.exe and this branch never touches the wrapper;
 each can be fixed, replaced and released independently.
 
-## Status (2026-10-26)
+## Status (2026-10-28)
 
-- **Up to date with upstream.** `jaenster/redivivus:main` (`eef5f2c`) is merged
-  (`cf36935`); vanilla-plus is ahead of upstream and never behind. Upstream's
-  regeneration absorbed the game-side content of the closed PRs, including canonical
-  versions of the drops fix (fix 14) and the glide defect series.
-- **The glide defect series (fixes 1–13) is closed and field-verified**: launcher
-  crash, title-screen black triangles, end-of-loading halt, black light cores and unit
-  silhouettes, light-radius discoloration, shadow blobbing — all gone. Root causes and
-  evidence: `handoff.md` §3–§4.
-- **Drops work again and the Act 5 snow hang is gone** (upstream `eef5f2c`, field-checked
-  on the sibling `jaenster-main` line; drops carry the usual caveats).
-- **Tip `45c6c2d`**: the one-round CI fallout of the merge (18 compile errors where
-  re-inserted hooks referenced pre-merge names) is fixed — see `handoff.md` rev 4.
-- Diagnostics (`ShadowDiag`, `LightDiag v2`, `DropDiag v2.1`) stay in-tree, zero cost
-  when idle, armed for the next regression.
+- **Up to date with upstream.** `jaenster/redivivus:main` (`ad964f3`, the export-scale
+  commit: Ancients/Diablo/Act II overlay crash fixes, Esc closes speech boxes, unnamed
+  data tables restored, guard zones) is merged (`8030526`); vanilla-plus is ahead of
+  upstream and never behind.
+- **The glide defect series (fixes 1–13) is closed and field-verified** (HISTORY H1):
+  launcher crash, title-screen black triangles, end-of-loading halt, black light cores
+  and unit silhouettes, light-radius discoloration, shadow blobbing — all gone. Root
+  causes and evidence: `handoff.md` §3–§4.
+- **Sound is fixed** (fixes 15–16: title/in-game music and NPC/monster/player SFX;
+  upstreamed as jaenster/redivivus PR #10). **Drops work again and the Act 5 snow hang
+  is gone** (upstream).
+- **The fullscreen-D3D recovery (fixes 17–27) is closed and field-verified** (HISTORY
+  H9–H18): the Error 25 boot failure, the texture-pipeline boot halts, black ground,
+  diagonal bars, and wrong UI text hues are all gone under any act palette.
+- **First opt-in feature shipped**: the alt-key item-label toggle — press Alt once to
+  flip ground-item labels (D2R "Show Items: Toggle" parity). Gated behind
+  `[features] alt_toggle` in `d2vp.ini`, which the client auto-creates with documented
+  defaults; default off = vanilla byte-for-byte (see Features below).
+- **Releases**: `D2LoD-Vanilla-Plus-0.0.1` (`4857c30`) → `D2LoD-Vanilla-Plus-0.0.2`
+  (`9cf9f69`). CI (mingw-i686) is back in service and green on the 0.0.2 tag.
+- Diagnostics (`ShadowDiag`, `LightDiag v2`, `DropDiag v2.1`, `[d2boot]` boot marks, D3D
+  upload-halt dumps) stay in-tree, zero cost when idle, armed for the next regression.
 
 ## Principles
 
@@ -119,24 +131,26 @@ cannot be attributed.
 
 ## Roadmap
 
-1. **Stable base** — *in progress.* The known glide crash class is burned down
-   (fixes 1–13) and field-verified sessions run on the sibling `jaenster-main` line
-   (3dfx works, drops work with caveats, shadows/lighting in glide correct). Finish
-   the full single-player gauntlet (create character, several area transitions,
-   save+exit, town + combat + inventory screens) crash-free on `d2.exe` +
-   `glide3xvk` together, using the crash protocol above for whatever fires.
+1. **Stable base** — **done.** The glide crash class is burned down (fixes 1–13), sound
+   (15–16) and drops (14) are fixed, and the fullscreen-D3D recovery (17–27) is closed;
+   two public releases shipped on that base (`0.0.1`, `0.0.2`). The gauntlet now runs
+   crash-free on `d2.exe` + `glide3xvk` together; the crash protocol above handles
+   whatever fires next.
 2. **Compatibility pass** — confirm the wrapper's whole feature set (window
    presets, shader chain, controller, base_res) against the rebuilt exe and
-   note any game-side differences vs original Game.exe.
-3. **Vanilla-plus improvements** — opt-in QoL on top of a stable base
-   (candidates discussed per issue; nothing lands without a config gate).
+   note any game-side differences vs original Game.exe. (0.0.2 bundles Glide3xVK 0.4.5
+   and is field-played daily; remaining deltas land as issues.)
+3. **Vanilla-plus improvements** — **started**: the alt-key item-label toggle
+   (config-gated, default off) shipped in 0.0.2. Candidates discussed per issue;
+   nothing lands without a config gate.
 
 ## Build notes
 
 - CI-first policy: the tree builds on GitHub CI (real `i686-w64-mingw32-g++`,
   `tools/check-build.sh`) — do not burn local cycles on full rebuilds. Every push
   ships artifacts: `d2s-<sha>.exe` (stripped, play/distribute) + `d2-map-<sha>.map`
-  (linker map, load-bearing for crash symbolization).
+  (linker map, load-bearing for crash symbolization). (CI was retired 2026-10-27 per
+  HISTORY H2 and re-enabled 2026-10-28 — green on the 0.0.2 tag.)
 - Transfer: the agent sandbox has no push credentials, so fixes travel as **git
   bundles** — user side: `git fetch <file>.bundle vanilla-plus && git merge
   --ff-only FETCH_HEAD`, then push. Overlay zips remain the fallback for
