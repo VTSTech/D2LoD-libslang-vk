@@ -47,6 +47,14 @@ char     s_shader[64];
 unsigned s_shader_len = 0;
 bool     s_shader_on  = false;
 
+// 0.4.5 addendum: third overlay line — the running game exe + detected
+// classic-D2 patch ("d2.exe 1.14d"), composed by g3x_hostver and pushed once
+// per process from grSstWinOpen. Drawn directly below the tag (the two
+// identity lines sit together); absent until detection reports something.
+char     s_hostver[64];
+unsigned s_hostver_len = 0;
+bool     s_hostver_on  = false;
+
 // 0.4.3: transient hotkey-feedback line (F11 aspect / F12 base res). Decays
 // per g3x_overlay_render call — one call == one presented frame.
 char     s_toast[64];
@@ -137,6 +145,21 @@ void g3x_overlay_set_shader(const char* name) {
     std::memcpy(s_shader, base, s_shader_len);
     s_shader[s_shader_len] = '\0';
     s_shader_on = s_shader_len != 0;
+}
+
+void g3x_overlay_set_hostver(const char* text) {
+    if (!text || !text[0]) {
+        s_hostver[0] = '\0'; s_hostver_len = 0; s_hostver_on = false;
+        return;
+    }
+    // Pre-composed by g3x_hostver (already the final display text — no path
+    // stripping here). Whatever fits displays; 63 chars covers every shape
+    // the formatter can emit.
+    s_hostver_len = (unsigned)std::strlen(text);
+    if (s_hostver_len >= sizeof(s_hostver)) s_hostver_len = sizeof(s_hostver) - 1;
+    std::memcpy(s_hostver, text, s_hostver_len);
+    s_hostver[s_hostver_len] = '\0';
+    s_hostver_on = true;
 }
 
 void g3x_overlay_toast(const char* text) {
@@ -251,15 +274,20 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     // conf-panel toast with no preset loaded used to be silently dropped —
     // exactly the "never saw the toast" field report), and the box gains a
     // PERMANENT bottom line: the repo credit, so the stamp always names the
-    // project's home too.
+    // project's home too. 0.4.5 addendum: the box also gains the host-exe
+    // line ("d2.exe 1.14d") directly below the tag when g3x_hostver pushed
+    // one — identity lines first, shader/toast below.
     const unsigned pad = 3, oy = 4, step = 10;
+    const bool     hv    = s_hostver_on;   // 0.4.5 addendum: exe + patch line
     const bool     two   = s_shader_on;
     const bool     three = s_toast_on;
     unsigned max_len = s_tag.len;
+    if (hv)    max_len = (s_hostver_len > max_len) ? s_hostver_len : max_len;
     if (two)   max_len = (s_shader_len > max_len) ? s_shader_len : max_len;
     if (three) max_len = (s_toast_len  > max_len) ? s_toast_len  : max_len;
     if (k_credit_len > max_len) max_len = k_credit_len;
-    unsigned lines = 1 + (two ? 1u : 0u) + (three ? 1u : 0u) + 1u;   // + credit
+    unsigned lines = 1 + (hv ? 1u : 0u) + (two ? 1u : 0u) + (three ? 1u : 0u)
+                     + 1u;   // + credit
     unsigned bw = max_len * 8 + pad * 2;
     unsigned bh = 8 + (lines - 1) * step + pad * 2;
     if (bw + 4 > w) bw = w - 4;                    // keep the 4px right margin
@@ -283,10 +311,14 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     // overlay); the toast sits directly above it, shader line or not.
     const unsigned tx = ox + pad, ty = oy + pad;
     draw_line(bgra, w, h, tx, ty, s_tag.text, s_tag.len, 0xFF, 0xFF, 0xFF);
+    if (hv)
+        draw_line(bgra, w, h, tx, ty + step,
+                  s_hostver, s_hostver_len, 0xFF, 0xFF, 0xFF);
     if (two)
-        draw_line(bgra, w, h, tx, ty + step, s_shader, s_shader_len, 0xFF, 0xFF, 0xFF);
+        draw_line(bgra, w, h, tx, ty + step * (1 + (hv ? 1u : 0u)),
+                  s_shader, s_shader_len, 0xFF, 0xFF, 0xFF);
     if (three)
-        draw_line(bgra, w, h, tx, ty + step * (1 + (two ? 1u : 0u)),
+        draw_line(bgra, w, h, tx, ty + step * (1 + (hv ? 1u : 0u) + (two ? 1u : 0u)),
                   s_toast, s_toast_len, 0xFF, 0xFF, 0xFF);
     draw_line(bgra, w, h, tx, ty + step * (lines - 1),
               k_credit, k_credit_len, 0xFF, 0xFF, 0xFF);

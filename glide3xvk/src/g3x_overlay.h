@@ -10,6 +10,11 @@
 // chain dies; with no preset the line is absent and the box shrinks to the
 // tag alone (the clean P2 baseline look).
 //
+// Host-version line — since the 0.4.5 addendum the box also names the exe
+// it is running inside ("d2.exe 1.14d", "Game.exe v1.0.13.55",
+// "d2.exe [PE 3A5D2B1F]"), detected once per process by g3x_hostver at the
+// first grSstWinOpen. Absent until detection reports something.
+//
 // Bottom line — since 0.4.5 the box always ends with the repo credit,
 // "GitHub: VTSTech/D2LoD-libslang-vk" — the one overlay line that never
 // clears and never expires, so every screenshot the box stamps also carries
@@ -72,6 +77,14 @@ void g3x_overlay_set_shader(const char* name);
 // presented frames (~2s at 60fps, ~4s at D2's typical 30), then the box
 // shrinks back. NULL/empty clears immediately. Copies internally.
 void g3x_overlay_toast(const char* text);
+
+// 0.4.5 addendum: the running game exe + detected classic-D2 patch —
+// "d2.exe 1.14d", "Game.exe v1.0.13.55", "d2.exe [PE 3A5D2B1F]" — composed
+// by g3x_hostver and pushed once per process from grSstWinOpen. Drawn
+// directly below the tag line (the two identity lines sit together; the
+// shader line and toast move down one step). NULL/empty hides the line and
+// shrinks the box. Copies internally; whatever fits (63 chars) displays.
+void g3x_overlay_set_hostver(const char* text);
 
 // On/off switch. glide_exports wires [glide3xvk] overlay=0/1 to this; with no
 // ini key the value is auto — on (the box is the version stamp since the

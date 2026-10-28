@@ -49,6 +49,7 @@ set(G3XVK_SOURCES
     src/g3x_frame.cpp
     src/g3x_overlay.cpp
     src/g3x_slang.cpp
+    src/g3x_hostver.cpp
     src/g3x_window.cpp
     src/g3x_controller.cpp
     src/vk_backend.cpp
@@ -56,6 +57,9 @@ set(G3XVK_SOURCES
     vendor/volk/volk.c)
 
 add_library(glide3x SHARED ${G3XVK_SOURCES})
+
+# g3x_hostver reads the running exe's VERSIONINFO resource (GetFileVersionInfo
+# family) — system import lib, no static-linking implications.
 
 # ---- P3: libslang-vk (the preset chain at the present pass) -----------------
 #
@@ -88,6 +92,8 @@ else()
     message(STATUS "glide3xvk: libslang-vk NOT FOUND at ${G3XVK_SLANGVK_DIR} — "
         "building WITHOUT the preset chain (clone it beside the repo, see BUILD-32BIT.md)")
 endif()
+
+target_link_libraries(glide3x PRIVATE version)
 
 set_target_properties(glide3x PROPERTIES
     OUTPUT_NAME "glide3x"

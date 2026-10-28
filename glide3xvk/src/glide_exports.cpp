@@ -11,6 +11,7 @@
 #include "g3x_frame.h"
 #include "g3x_overlay.h"
 #include "g3x_slang.h"
+#include "g3x_hostver.h"
 #include "g3x_window.h"
 #include "g3x_controller.h"
 #include "vk_backend.h"
@@ -174,6 +175,10 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
         g3x_log("grSstWinOpen: overlay=%s (glide3xvk v%s, ini: %s)",
                 on ? "on" : "off", G3XVK_VERSION, ini[0] ? ini : "<exe path unresolved>");
     }
+    // 0.4.5 addendum: name the exe we are running inside on the overlay
+    // ("d2.exe 1.14d"). Once per process (the exe never changes); fail-soft,
+    // and the raw evidence always lands in the log even with overlay=0.
+    g3x_hostver_detect_push();
     // P3: preset chain — re-read d2slangvk.conf on every context open so a
     // relaunch picks up conf/preset edits without touching the DLL. Same
     // fail-soft spirit as the overlay switch: no conf = no chain = P2 look.
