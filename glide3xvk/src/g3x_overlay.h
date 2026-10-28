@@ -2,7 +2,14 @@
 //
 // Line 1 — "glide3xvk 0.4.3 (181780c)" — drawn into the present buffer every
 // frame, so a field screenshot always proves which build produced it (rounds
-// 6-11 repeatedly opened with "which dll was that?" ambiguity).
+// 6-11 repeatedly opened with "which dll was that?" ambiguity). Since the
+// 0.4.5 addendum the BOX draws this line with a live " FPS nnn" field appended
+// ("glide3xvk 0.4.5 (181780c) FPS 025") — a per-second presented-frame count
+// fed from the present seam, so the in-game /fps readout is no longer needed
+// for a quick sanity check. The FPS field lives ONLY in the box: the string
+// returned by g3x_overlay_tagline() (the grGetString(GR_RENDERER) text and
+// the identity other modules copy) stays the plain static tag, so external
+// queries keep seeing a stable, comparable renderer name.
 //
 // Line 2 — the active slang preset's file name, since 0.4.2 — so a field
 // screenshot also proves WHICH shader produced the look. g3x_slang pushes the
@@ -65,7 +72,35 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h);
 // The composed tag line — "glide3xvk <ver> (<build id>)". Static storage,
 // valid for the process lifetime. The overlay box draws it; it is also the
 // grGetString(GR_RENDERER) text, so the two stamps can never disagree.
+// (The BOX's copy of this line carries the " FPS nnn" suffix — see below —
+// but THIS string deliberately does not: renderer queries get the stable
+// identity, not a number that changes every second.)
 const char* g3x_overlay_tagline();
+
+// ---- 0.4.5 addendum: the tag line's live FPS field ---------------------------
+//
+// One call per PRESENTED frame, from g3x_frame_present() — both present
+// paths funnel through it (grBufferSwap for gameplay, grLfbUnlock for Bink
+// video, and the video loop never calls grBufferSwap), so the count matches
+// the game's own frame pace: what /fps would have shown, without /fps.
+//
+// now_ms is a MONOTONIC millisecond clock owned by the caller (GetTickCount64
+// on Windows). The meter is deliberately pure — no clock calls inside — so
+// the window math is host-testable with synthetic timestamps. It keeps a
+// 1-second window: frames are counted until >= 1000 ms have elapsed since
+// the window opened, then the displayed value becomes the rounded rate
+// (frames * 1000 / elapsed, half-rounded) and a new window starts. The box
+// shows " FPS 000" until the first window completes; the value clamps at
+// 999 for display. The tag line is recomposed ONLY when the value actually
+// changes — one snprintf per second of play, not per frame. A non-monotonic
+// now_ms (caller's clock glitch) restarts the window harmlessly.
+void g3x_overlay_fps_tick(uint64_t now_ms);
+
+// The value currently displayed in the tag line's FPS field (0 until the
+// first 1-second window completes). Test seam — the box composes the text
+// from the same state, so asserting on this and on the rendered pixels
+// together pins the whole path.
+unsigned g3x_overlay_fps();
 
 // The overlay's second line: the active slang preset's file name (basename
 // only, no path). NULL or empty clears the line and shrinks the box back to

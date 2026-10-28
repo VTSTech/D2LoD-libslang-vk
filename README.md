@@ -57,6 +57,16 @@ resolution — is the same one proven in
   no version resource at all — this repo's own CMake-built d2.exe among them.
   Detection never touches the game: fail-soft, and the raw values land in
   `glide3x.log` either way.
+- **The tag line carries a live FPS field (0.4.5 addendum)**: the top-right
+  box's first line reads `glide3xvk <ver> (<hash>) FPS 025` — a per-second
+  count of presented frames kept by the wrapper on the present seam (both
+  present paths count: `grBufferSwap` for gameplay and `grLfbUnlock` for the
+  Bink video loop), so it shows the game's true frame pace and the in-game
+  `/fps` readout is no longer needed for a quick sanity check. `FPS 000`
+  shows until the first full second completes; the value recomposes once per
+  second (one snprintf per second of play, not per frame) and clamps at 999.
+  The renderer name reported through `grGetString(GR_RENDERER)` stays the
+  plain static tag — external queries keep a stable, comparable string.
 - **Chocolate-Doom-VK-style hotkeys (0.4.3)**: in-game **F11** cycles the
   content aspect (`4:3 -> 16:10 -> 16:9 -> auto`) and **F12** cycles the shader
   base resolution (`1x -> 2x -> 3x -> 4x`) — the frame is linearly upscaled N-x

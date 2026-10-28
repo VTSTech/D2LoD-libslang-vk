@@ -33,6 +33,36 @@ struct TagLine {
 };
 const TagLine s_tag;
 
+// ---- 0.4.5 addendum: the tag line's live FPS field --------------------------
+//
+// The static s_tag stays the identity (it feeds g3x_overlay_tagline() ->
+// grGetString(GR_RENDERER) and the modules that copy the renderer name); the
+// BOX draws s_tagline — the same text with " FPS nnn" appended — so a field
+// screenshot now also proves the frame pace and the in-game /fps readout is
+// no longer needed. Same-TU dynamic init is top-to-bottom, so TagLineInit
+// below sees a fully-constructed s_tag by construction.
+char     s_tagline[96];
+unsigned s_tagline_len = 0;
+
+struct TagLineInit {
+    TagLineInit() {
+        std::snprintf(s_tagline, sizeof(s_tagline), "%s FPS 000", s_tag.text);
+        s_tagline[sizeof(s_tagline) - 1] = '\0';
+        s_tagline_len = (unsigned)std::strlen(s_tagline);
+    }
+};
+const TagLineInit s_tagline_init;
+
+// The meter: a 1-second window of presented frames, opened by the first tick
+// after each roll. s_fps_shown is the value the box displays (0 = no data
+// yet — the box's FPS 000); s_tagline is recomposed ONLY on a value change,
+// so the steady-state cost is one snprintf per second of play. Pure with
+// respect to time: the caller's tick supplies the clock reading.
+uint64_t s_fps_t0         = 0;
+unsigned s_fps_win_frames = 0;
+unsigned s_fps_shown      = 0;
+bool     s_fps_t0_valid   = false;
+
 // 0.4.5: the tag box's permanent bottom line — the repo credit. Unlike the
 // shader line (clears when no chain runs) and the toast (expires), it never
 // goes away, so every screenshot the overlay stamps also says where the
@@ -129,6 +159,34 @@ void g3x_overlay_set_enabled(bool on) { s_enabled = on; }
 bool g3x_overlay_enabled()            { return s_enabled; }
 
 const char* g3x_overlay_tagline() { return s_tag.text; }
+
+unsigned g3x_overlay_fps() { return s_fps_shown; }
+
+void g3x_overlay_fps_tick(uint64_t now_ms) {
+    // First tick ever (or after a caller-clock glitch): open the window here.
+    // One frame is already in it — this tick IS a presented frame.
+    if (!s_fps_t0_valid || now_ms < s_fps_t0) {
+        s_fps_t0       = now_ms;
+        s_fps_win_frames = 1;
+        s_fps_t0_valid = true;
+        return;
+    }
+    ++s_fps_win_frames;
+    const uint64_t elapsed = now_ms - s_fps_t0;
+    if (elapsed < 1000) return;                  // window still open
+
+    // Window rolled: rounded frames-per-second, clamped to the 3-digit field.
+    uint64_t fps = (s_fps_win_frames * 1000ULL + elapsed / 2) / elapsed;
+    if (fps > 999) fps = 999;
+    s_fps_shown = (unsigned)fps;
+    std::snprintf(s_tagline, sizeof(s_tagline), "%s FPS %03u",
+                  s_tag.text, s_fps_shown);
+    s_tagline[sizeof(s_tagline) - 1] = '\0';
+    s_tagline_len = (unsigned)std::strlen(s_tagline);
+
+    s_fps_t0         = now_ms;                   // next window starts here
+    s_fps_win_frames = 0;
+}
 
 void g3x_overlay_set_shader(const char* name) {
     if (!name || !name[0]) {
@@ -281,7 +339,7 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     const bool     hv    = s_hostver_on;   // 0.4.5 addendum: exe + patch line
     const bool     two   = s_shader_on;
     const bool     three = s_toast_on;
-    unsigned max_len = s_tag.len;
+    unsigned max_len = s_tagline_len;   // tag + live " FPS nnn" field
     if (hv)    max_len = (s_hostver_len > max_len) ? s_hostver_len : max_len;
     if (two)   max_len = (s_shader_len > max_len) ? s_shader_len : max_len;
     if (three) max_len = (s_toast_len  > max_len) ? s_toast_len  : max_len;
@@ -310,7 +368,7 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     // 2. glyphs. The credit is the LAST line (literally the bottom of the
     // overlay); the toast sits directly above it, shader line or not.
     const unsigned tx = ox + pad, ty = oy + pad;
-    draw_line(bgra, w, h, tx, ty, s_tag.text, s_tag.len, 0xFF, 0xFF, 0xFF);
+    draw_line(bgra, w, h, tx, ty, s_tagline, s_tagline_len, 0xFF, 0xFF, 0xFF);
     if (hv)
         draw_line(bgra, w, h, tx, ty + step,
                   s_hostver, s_hostver_len, 0xFF, 0xFF, 0xFF);

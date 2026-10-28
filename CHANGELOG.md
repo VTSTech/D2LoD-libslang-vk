@@ -179,7 +179,28 @@ branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
   Win32 pass fakecheck type-checked); glide3x links the system version
   import lib. No game-side changes — the DLL stays strictly read-only
   toward Game.exe.
-
+- **Overlay: live FPS in the tag line** (g3x_overlay + g3x_frame): the
+  top-right box's first line reads `glide3xvk 0.4.5 (<hash>) FPS 025` — a
+  per-second presented-frame count, so the in-game `/fps` readout is no
+  longer needed for a quick frame-pace sanity check. `g3x_frame_present`
+  ticks the meter once per presented frame (both present paths funnel
+  through it: `grBufferSwap` for gameplay and `grLfbUnlock` for the Bink
+  video loop — the video loop never calls grBufferSwap), and a 1-second
+  window of ticks becomes the displayed value: `FPS 000` until the first
+  full second completes, then the half-rounded rate over the window's
+  actual elapsed time, clamped at 999. The clock reading (GetTickCount64)
+  is taken at the call site and handed in as a `uint64_t` millisecond
+  argument — the meter is pure, so the whole window math is host-tested
+  with synthetic timestamps (scripts/test_fps_tag.cpp, 18 checks under
+  ASan+UBSan: rolls, rounding, clamp, no per-frame recompose — the tag
+  text is rebuilt only when the value changes, one snprintf per second of
+  play — non-monotonic clock tolerance, 3000-window drift check, tiny
+  present targets with the wider line). The string
+  `grGetString(GR_RENDERER)` reports stays the plain static tag — the FPS
+  field lives only in the box, so external renderer queries keep a stable,
+  comparable name; the tag box grew 8 characters wide at most (the
+  ` FPS nnn` suffix), still well under the credit line's width on any
+  normal present target.
 
 ### Fixed
 

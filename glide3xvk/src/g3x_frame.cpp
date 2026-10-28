@@ -1122,6 +1122,15 @@ bool g3x_frame_present() {
     g3x_vk_present_extent(&ext_w, &ext_h);
     if (!ext_w || !ext_h || !s_px) return false;
 
+    // 0.4.5 addendum: the tag line's FPS field — one tick per PRESENTED frame.
+    // Both present paths funnel through this seam (grBufferSwap for gameplay,
+    // grLfbUnlock for the Bink video loop — which never calls grBufferSwap),
+    // so the per-second count matches the game's own frame pace: what the
+    // in-game /fps readout would have shown, without /fps. GetTickCount64 is
+    // monotonic ms; the meter itself is pure (see g3x_overlay.h) and fed the
+    // clock reading from here so it stays host-testable.
+    g3x_overlay_fps_tick(GetTickCount64());
+
     // 0.4.5: Shift+V conf panel poll — on the present seam like the overlay
     // itself, and UNCONDITIONALLY (the F11/F12 slang hotkeys only poll while
     // a chain filters frames; the conf panel also covers the controller=/

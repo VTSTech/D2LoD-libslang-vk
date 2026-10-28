@@ -46,7 +46,7 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `src/glide_exports.cpp` | All 45 exports with exact signatures; the game-contract entry points (`grGet(0xF)`, `grSstWinOpen`, ini reading, session banner) |
 | `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam; 0.4.5: the texture table is O(1) (open-addressing hash + monotonic alloc cursor + same-texture rebind fast-out) |
 | `src/g3x_state.{h,cpp}` | Glide state tracking (grChromakey/grColorCombine/... current values) |
-| `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, since 0.4.3 a transient toast line for the F11/F12 hotkeys, since the 0.4.5 addendum the toggleable **Shift+V conf panel** on the left edge (storage + drawing; the content comes pre-formatted from g3x_slang) with its green arrow-key selection cursor, since the same addendum a permanent bottom line — the repo credit `GitHub: VTSTech/D2LoD-libslang-vk` — and (0.4.5 addendum) the host-exe version line pushed by g3x_hostver, drawn directly below the tag |
+| `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, since 0.4.3 a transient toast line for the F11/F12 hotkeys, since the 0.4.5 addendum the toggleable **Shift+V conf panel** on the left edge (storage + drawing; the content comes pre-formatted from g3x_slang) with its green arrow-key selection cursor, since the same addendum a permanent bottom line — the repo credit `GitHub: VTSTech/D2LoD-libslang-vk` — and (0.4.5 addendum) the host-exe version line pushed by g3x_hostver, drawn directly below the tag; the box's tag copy also carries the live ` FPS nnn` field (0.4.5 addendum: pure 1-second-window meter, ticked from g3x_frame_present) |
 | `src/g3x_drivertag.{h,cpp}` | 0.4.1–0.4.3: repointed the game's `"Video: Glide"` renderer-name string at our tag. **Removed in 0.4.5** (field call: the /fps tag must stay the game's own; the DLL is now strictly read-only toward Game.exe) — pending `git rm` of the two files |
 | `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf` (`preset`/`scale`/`vsync`/`aspect`/`base_res`/`window`/`borderless`), owns the input image + preset + chain, hot-reloads on file change, polls the F11/F12 hotkeys on the present path plus the Shift+V conf-panel toggle on EVERY present (chain or no chain; it formats and pushes the panel's lines from a fresh conf parse + the live hotkey state) with the panel's Up/Down selection, Left/Right value editing and the Left/Right preset browser over the current preset's folder subtree — recursed to any depth, rows stored as the relative paths `preset=` accepts (0.4.5: the edit is a surgical single-key conf rewrite — `g3x_slang_conf_rewrite_text`, host-tested — pushed through the normal conf machinery, so it lands live), fails soft to the unfiltered path |
 | `src/g3x_hostver.{h,cpp}` | 0.4.5 addendum: identifies the running game exe for the overlay's tag box — computes a zlib-compatible CRC-32 of the exe file on disk (a content fingerprint, stable across rebuilds where a link timestamp is not), checks it against the known-build table (a hit names the binary outright, e.g. `Game.exe Retail 1.14d`), then falls back through the host process's VERSIONINFO resource (GetFileVersionInfo/VerQueryValue, the Blizzard-stamped `dwFileVersion` pair mapped to the community patch names via the field-tested d2dx table: 1.09d/1.10/1.12/1.13c/1.13d/1.14b/1.14d) and the raw fingerprint (`d2.exe [CRC 3A5D2B1F]`); runs once per process from grSstWinOpen, fail-soft, evidence always logged. Pure logic (tables, CRC-32, line format) is windows.h-free and host-tested (scripts/test_hostver.cpp); the Win32 pass sits under `_WIN32` and is fakecheck type-checked |
@@ -119,6 +119,22 @@ quote the log line and the table gets the entry, so the exact binary gets
 named from then on. A known CRC outranks the resource tiers: the bytes are
 ground truth. Every step is fail-soft; the shader line and toast shift down
 one row while the hostver line shows.
+
+Since the 0.4.5 addendum the tag line also carries a **live FPS field** —
+`glide3xvk <ver> (<hash>) FPS 025` — so the in-game `/fps` readout is no
+longer needed for a quick frame-pace sanity check. `g3x_frame_present` ticks
+the meter once per presented frame (both present paths funnel through it:
+`grBufferSwap` for gameplay and `grLfbUnlock` for the Bink video loop, which
+never calls `grBufferSwap`), and a 1-second window of those ticks becomes the
+displayed value — `FPS 000` until the first full second completes, then the
+half-rounded per-second rate, clamped at 999. The clock reading comes from
+`GetTickCount64` at the call site; the meter itself is pure (a `uint64_t` ms
+argument, no clock calls) and host-tested with synthetic timestamps
+(scripts/test_fps_tag.cpp: window rolls, rounding, clamp, no per-frame
+recompose — the tag text is rebuilt only when the value changes, one snprintf
+per second of play — clock-glitch tolerance, long-run stability). The string
+`grGetString(GR_RENDERER)` reports stays the plain static tag: the FPS field
+lives only in the box, so external renderer queries keep a stable name.
 
 Since 0.4.3 the box also carries a **transient third line** when a hotkey
 fires: F11 (content aspect, `4:3 -> 16:10 -> 16:9 -> auto`) and F12 (shader
