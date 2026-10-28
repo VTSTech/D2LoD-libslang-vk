@@ -39,7 +39,9 @@ const char* g3x_hostver_patch_name(unsigned ver_ms, unsigned ver_ls) {
 // a comment (the CRC alone identifies the build; the log carries bytes=).
 const char* g3x_hostver_crc_name(uint32_t crc) {
     static const struct { uint32_t crc; const char* name; } kTable[] = {
-        { 0x4F393243u, "Retail 1.14d" },  // Game.exe, 3618792 bytes (3533 KiB)
+        { 0x4F393243u, "Retail 1.14d" },   // Game.exe, 3618792 bytes (3533 KiB)
+        { 0x1706E55Au, "Vanilla+ 0.0.1" }, // d2s-4857c30.exe, 23550478 bytes (22 MiB)
+        { 0xFE4CDB1Au, "Vanilla+ 0.0.2" }, // d2s-9cf9f69.exe, 23575054 bytes (22 MiB)
     };
     for (const auto& e : kTable)
         if (e.crc == crc)

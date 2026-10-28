@@ -116,9 +116,10 @@ field-extensible: the patch table is d2dx's field-tested set
 `1.0.13.64`=1.13d, `1.14.3.68`=1.14b, `1.14.3.71`=1.14d), and the CRC table
 grows from the evidence line every run logs (`ms`/`ls`/`crc`/`bytes`) —
 quote the log line and the table gets the entry, so the exact binary gets
-named from then on. A known CRC outranks the resource tiers: the bytes are
-ground truth. Every step is fail-soft; the shader line and toast shift down
-one row while the hostver line shows.
+named from then on (the rows so far: the retail 1.14d Game.exe and the two
+Vanilla+ builds — `Vanilla+ 0.0.1`/`0.0.2`). A known CRC outranks the
+resource tiers: the bytes are ground truth. Every step is fail-soft; the
+shader line and toast shift down one row while the hostver line shows.
 
 Since the 0.4.5 addendum the tag line also carries a **live FPS field** —
 `glide3xvk <ver> (<hash>) FPS 025` — so the in-game `/fps` readout is no

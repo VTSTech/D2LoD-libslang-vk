@@ -49,7 +49,8 @@ resolution — is the same one proven in
   which `Game.exe`/`d2.exe` the wrapper is inside and its classic-D2 patch —
   `Game.exe Retail 1.14d` when the exe's CRC-32 is in the known-build table
   (a content fingerprint that outranks the resource tiers: the bytes are
-  ground truth), `d2.exe 1.14d` when the exe's VERSIONINFO resource maps (the
+  ground truth; the table also carries the Vanilla+ builds —
+  `d2s-9cf9f69.exe Vanilla+ 0.0.2` / `d2s-4857c30.exe Vanilla+ 0.0.1`), `d2.exe 1.14d` when the exe's VERSIONINFO resource maps (the
   Blizzard-stamped `1.0.9.22` / `1.0.10.9` / `1.0.12.49` / `1.0.13.60` /
   `1.0.13.64` / `1.14.3.68` / `1.14.3.71` pairs, the same field-tested table
   d2dx uses), the dotted resource value (`Game.exe v1.0.13.55`) when it does

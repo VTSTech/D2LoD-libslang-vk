@@ -6,6 +6,7 @@
 // d2.exe — and the overlay's tag box now carries one more line naming it:
 //
 //     Game.exe Retail 1.14d     (CRC-32 matches the known-build table)
+//     d2s-9cf9f69.exe Vanilla+ 0.0.2  (ditto — the Vanilla+ builds, too)
 //     d2.exe 1.14d              (VERSIONINFO resource, patch mapped)
 //     d2.exe v1.14.3.70         (VERSIONINFO resource, patch not in the table)
 //     Game.exe [CRC 3A5D2B1F]   (unknown build, no resource — the exe's CRC-32)
