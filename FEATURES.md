@@ -1,6 +1,6 @@
 # FEATURES.md — D2R backport slate (vanilla-plus)
 
-*v1, 2026-10-29. Scoped by research: D2R official QoL behavior + prior art from the
+*v2, 2026-10-29. Row 4 (`transparent_hud`) added from an owner suggestion — no D2R parity, engine-native draw modes. Scoped by research: D2R official QoL behavior + prior art from the
 classic-D2 modding scene (PD2, BH/slashdiablo maphack, Sting's hackmap, d2dx). Ranked
 **low-risk first** per owner call. **Code-only** per charter Principle 4: no MPQ/data
 edits, no new assets — every feature is pure code + a `d2vp.ini` gate. Hook sites below
@@ -35,13 +35,14 @@ Every slate row must satisfy all of these before it ships:
 | 1 | HP/MP globe hover values | HUD | D2R globe hover shows current/max | S | Low | `globe_values` |
 | 2 | Clock / game-timer overlay | HUD | D2R Tab-screen game timer; BH wall-clock | S | Low | `clock_overlay` |
 | 3 | Item ilvl on tooltips | Loot | D2R 2.5 display-item-level toggle | S–M | Low | `ilvl_tooltip` |
-| 4 | Monster HP bar on hover | HUD | D2R enemy health bar (PC) | M | Low–Med | `monster_hp_bar` |
-| 5 | Auto gold pickup | Loot | D2R "Gold Pickup" gameplay option | M | Med | `auto_gold` |
-| 6 | Automap scale + position | HUD | D2R larger overlay map | M | Med | `automap_scale` |
-| 7 | Quick-cast keys | Controls | D2R-adjacent (PD2 quick cast) | M–L | Med–High | `quick_cast` |
+| 4 | Transparent bottom bar | HUD | None — owner suggestion; see-through-HUD staple elsewhere | S–M | Low–Med | `transparent_hud` |
+| 5 | Monster HP bar on hover | HUD | D2R enemy health bar (PC) | M | Low–Med | `monster_hp_bar` |
+| 6 | Auto gold pickup | Loot | D2R "Gold Pickup" gameplay option | M | Med | `auto_gold` |
+| 7 | Automap scale + position | HUD | D2R larger overlay map | M | Med | `automap_scale` |
+| 8 | Quick-cast keys | Controls | D2R-adjacent (PD2 quick cast) | M–L | Med–High | `quick_cast` |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
-the slate's head, not new scope. Rows 1–7 are the new candidates.
+the slate's head, not new scope. Rows 1–8 are the new candidates.
 
 ---
 
@@ -89,7 +90,46 @@ the slate's head, not new scope. Rows 1–7 are the new candidates.
   allocates tight); S–M.
 - **Exit**: ilvl matches ATMA/goMule-reported values on a sample, `0` = vanilla.
 
-### 4. Monster HP bar on hover — `[features] monster_hp_bar`
+### 4. Transparent bottom bar — `[features] transparent_hud`
+
+- **Behavior (owner suggestion, 2026-10-29 — not a D2R option)**: the bottom control
+  panel's stone texture is not rendered — the game world shows through the band it
+  used to cover. Everything drawn on top keeps rendering: orb fills, gold readout,
+  run/menu buttons, stamina + XP bars, skill icons, belt. Hit-tests are rect-based
+  (`PANEL_IsMouseIn*`), so clicks keep working with the stone gone.
+- **Proposed**: gate `transparent_hud`: `0` = vanilla; `1` = skip the stone background
+  blits (clean see-through); `2` = draw the same blits through one of the engine's own
+  transparency draw modes instead of `DRAW_SOLID` — the same stipple family the panel
+  already uses for orb fills and the stamina bar ("D2-authentic" dithered
+  transparency; no true alpha in the paletted path, same caveat as row 7).
+- **Candidate regions (tree-scan 2026-10-29 — the cleanest choke point on the slate)**:
+  the entire bottom bar is one function, `D2Client/UI/Panel.cpp`
+  `PANEL_DrawCharacterInfo()` (scan: lines 1329–1382) — 5 `DRAW_SOLID` frames of
+  `Panel\CtrlPnl7` (non-800 modes) or 6 frames of `Panel\800CtrlPnl7` (800x600),
+  called from `DRAW_UI_BordersAndOrbsAndFillers()` immediately before the orb/button/
+  bar draws it overlays. Gate the blits inside this one function; nothing else is
+  touched. Optional scope variants, same pattern: the 800-only stone side rails
+  (`DRAW_UI_BorderLeft`/`DRAW_UI_BorderRight`, border-type gated in the same
+  dispatcher) and the mini-panel background.
+- **Key verify items**: (a) the world stage fills the full frame every draw, so a
+  skipped blit reveals the world, not garbage — confirm in-game; (b) both image
+  variants (`CtrlPnl7` + `800CtrlPnl7`) covered — the function's two branches already
+  span them; (c) nothing reads back the stone pixels (orbs/buttons draw independently
+  in the sibling `PANEL_Draw*` calls) — verify; (d) the call site passes
+  `nPanelOffsetY = (eRendererMode == RENDERED_DirectDraw)`, i.e. the panel anchor
+  differs per renderer — test DirectDraw vs the other renderer.
+- **Prior art**: no D2R parity — owner suggestion; the see-through-HUD look is a
+  staple of other games' HUD packs, and see-through D2 UI is engine-native: Phrozen
+  Keep documents the draw-mode table (25%/50% stipple, color blends) modders have
+  used for transparent panels since the 1.10 era.
+- **Risk**: Low–Med. Pure draw-gating — no input, balance, or save surface. Care
+  points: taste (mode 1 leaves orbs/buttons floating over live world — mode 2 is the
+  softer look) and the renderer × resolution QA matrix.
+- **Exit**: gate on → world visible through the bottom band in 640/800 and both
+  renderers; every button/orb/tooltip behaves exactly as vanilla (row-31
+  click-through check); `0` = vanilla byte-for-byte.
+
+### 5. Monster HP bar on hover — `[features] monster_hp_bar`
 
 - **D2R behavior**: hovering/targeting an enemy shows a health bar (PC feature; players
   literally ask Blizzard for a toggle — it exists).
@@ -106,7 +146,7 @@ the slate's head, not new scope. Rows 1–7 are the new candidates.
 - **Exit**: bar tracks a fighting monster's HP 1:1 (compare vs. vanilla tooltip on
   same frame), hidden on nothing-hovered, `0` = vanilla.
 
-### 5. Auto gold pickup — `[features] auto_gold`
+### 6. Auto gold pickup — `[features] auto_gold`
 
 - **D2R behavior**: the "Gold Pickup" gameplay option vacuum-picks gold piles walked
   over (Blizzard shipped it; console got it first).
@@ -125,7 +165,7 @@ the slate's head, not new scope. Rows 1–7 are the new candidates.
 - **Exit**: walk-over picks gold exactly like click (full-inventory: pile stays),
   items untouched, `0` = vanilla.
 
-### 6. Automap scale + position — `[features] automap_scale`
+### 7. Automap scale + position — `[features] automap_scale`
 
 - **D2R behavior**: the overlay map is bigger, positioned, and more readable than
   vanilla's corner blit.
@@ -139,7 +179,7 @@ the slate's head, not new scope. Rows 1–7 are the new candidates.
 - **Exit**: 2x map in a custom corner without overlap artifacts in both resolutions,
   `0` = vanilla.
 
-### 7. Quick-cast keys — `[features] quick_cast`
+### 8. Quick-cast keys — `[features] quick_cast`
 
 - **D2R-adjacent behavior** (PD2 ships it explicitly): casting a bound skill at the
   cursor **without** switching the active skill; primary bind = quick cast, secondary =
@@ -186,4 +226,8 @@ the slate's head, not new scope. Rows 1–7 are the new candidates.
 - Prior art: [Project Diablo 2 patch notes](https://wiki.projectdiablo2.com/wiki/Patch_Notes)
   (quick cast, auto gold, buff timers, area-level display), slashdiablo maphack (BH),
   Sting's hackmap config surface, bayaraa/d2dx (renderer-side QoL precedents).
-- In-tree grounding: handoff.md rows 28–31 (the feature-era map), fix-14 Drop.cpp map.
+- Owner suggestions: transparent bottom bar (2026-10-29 — explicit no-parity row).
+- Engine grounding: Phrozen Keep draw-mode documentation (25%/50% stipple, color
+  blends; 1.10/1.13-era threads) — the paletted transparency family row 4 mode 2 uses.
+- In-tree grounding: handoff.md rows 28–31 (the feature-era map), fix-14 Drop.cpp map;
+  FEATURES row-4 scan of `D2Client/UI/Panel.cpp` (2026-10-29).
