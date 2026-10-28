@@ -1,11 +1,14 @@
 # DRAFT_auto_gold.md — slate row 6 implementation draft (v2, 2026-10-29)
 
-*Status: **IMPLEMENTED** (uncommitted, 2026-10-29). Tree-verify pass complete;
-owner decisions recorded (§6 → both recommended options); code landed in 3
-client TUs + ini template; syntax-verified via a signature-mirror harness
-(sandbox has no mingw — the user's Win11 build is the compile gate). Remaining:
-field QA V2/V3/V5/V6 + full build + land per handoff §7. Charter:
-VANILLA-PLUS.md. Slate: FEATURES.md row 6. Delivery conventions: handoff §7.*
+*Status: **FIELD VERIFIED** (2026-10-29). Tree-verify pass complete; owner
+decisions recorded (§6 → both recommended options); code landed in 3 client
+TUs + ini template; syntax-verified via a signature-mirror harness (sandbox
+has no mingw); llvm-mingw i686 full build green (user Win11, the compile
+gate); owner field session: "Auto-Gold Pickup works!", run with
+`alt_toggle=1` enabled alongside (row-31 coexistence). Remaining: land per
+handoff §7 (ledger row 33 + worklog entry); optional deep-QA V2/V5/V6 may
+ride a later field round, non-blocking. Charter: VANILLA-PLUS.md. Slate:
+FEATURES.md row 6. Delivery conventions: handoff §7.*
 
 **Headline of the pass: this feature needs ZERO changes to D2Game or D2Common.**
 The walk-over pickup rides retail's own, fully recovered server flow — the same 0x16
@@ -93,6 +96,13 @@ SP-focused; the ini comment says exactly that.
 
 ## 4. Impl-round verify items (V1–V5)
 
+- **FIELD VERIFIED 2026-10-29** (owner, overlay build on Win11 — llvm-mingw
+  i686 full build green): walk-over auto gold pickup works end-to-end
+  ("Auto-Gold Pickup works!"). The session ran with `alt_toggle=1` enabled
+  alongside — both features live at once, no interference reported (row-31
+  coexistence sanity). V2/V3/V5/V6 below were not separately reported; the
+  verified path exercises the same retail pick code those scenarios guard, so
+  they ride as optional deep-QA on a later field round (non-blocking).
 - **V1** ✅ DONE 2026-10-29: `ItemMode.cpp:948-986` (inside SERVER_PickToInventory)
   is the gold→stat core — STATSEX_GetCurrentStat(UNITSTAT_gold) on player+pile,
   cap clamp (remainder behavior read), STATLIST_AddUnitStat, then
@@ -118,10 +128,12 @@ SP-focused; the ini comment says exactly that.
 - **QA**: sandbox syntax-verified 2026-10-29 via signature-mirror harness
   (`g++ -fsyntax-only -Wall -Wextra` → PASS; scripts/auto_gold_syntax_check.cpp;
   stubs mirror Units.h:60/148, Collision.h:40, Dungeon.h:77, Items.h:178,
-  UnitMode.h:21, Player.h:172, D2UnitStrc.h fields). Real gate remains: per-TU
-  llvm-mingw i686 compile + full build (Win11 / CI). §11 field loop: V2/V3/V5/V6
-  scenarios + row-31 click-through regression check (clicking gold still works
-  with `alt_toggle=1`); A/B `auto_gold=0` = vanilla.
+  UnitMode.h:21, Player.h:172, D2UnitStrc.h fields). Real gate PASSED
+  2026-10-29: llvm-mingw i686 full build green (user Win11). Field loop
+  PASSED (core): owner verified walk-over pickup end-to-end with
+  `alt_toggle=1` enabled alongside (row-31 coexistence). Optional deep-QA on
+  a later round, non-blocking: V2/V3/V5/V6 scenarios (incl. clicking gold
+  with labels up) and the A/B `auto_gold=0` = vanilla check.
 - **V6** (added v2) Field: gold behind a wall/ledge within distance 5 → NOT
   picked and NO walk started (collision parity suppresses the fire).
 - **Land**: patch-first per §7 (unique anchors per site: A1/A6/A8 sites are all

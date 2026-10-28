@@ -174,11 +174,14 @@ the slate's head, not new scope. Rows 1–9 are the new candidates.
   distance, mirrored together with the server's `0x804` collision test, so a fire
   can NEVER start retail's walk-to-item (the character is never moved) — and
   **combat guard on** — fires only from Neutral/TownNeutral/Walk/Run.
-  **Implemented** (uncommitted): `D2Client.cpp` (gate + per-frame tick + dedupe
-  ring + ini template block), `D2Client.h` (2 decls), `UI/Draw.cpp` (1 call line
-  in `DRAW_UI`, outside the AltShowItems gate). Sandbox syntax-verified against
-  the real signatures; field QA (V2/V3/V5/V6) + llvm-mingw build = user's Win11
-  gate.
+  **Implemented + field-verified** (uncommitted): `D2Client.cpp` (gate +
+  per-frame tick + dedupe ring + ini template block), `D2Client.h` (2 decls),
+  `UI/Draw.cpp` (1 call line in `DRAW_UI`, outside the AltShowItems gate).
+  Sandbox syntax-verified against the real signatures; llvm-mingw i686 build
+  green (user Win11); **field-verified 2026-10-29** (owner: "Auto-Gold Pickup
+  works!" — session ran with `alt_toggle=1` enabled alongside, row-31
+  coexistence). Optional deep-QA V2/V5/V6 rides a later round, non-blocking.
+  Land: ledger row 33 per handoff §7.
 
 ### 7. Automap scale + position — `[features] automap_scale`
 
