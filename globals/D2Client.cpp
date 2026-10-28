@@ -12606,12 +12606,16 @@ D2EscMenuItemStrc gaEscMenuOptionsTable[6] = { // vanilla-plus (row 10): [5] -> 
     },
     {
         // vanilla-plus (row 10): "Vanilla+ Options" - placed directly above
-        // Previous Menu (owner decision 2026-10-29). Empty image path: the
-        // retail loader (ESCMENU_LoadLocalizedImages) skips rows whose path
-        // starts with '\0' without halting and without touching pDC6Main,
-        // then still calls fpInitCallback - ESCMENU_InitVanillaPlusLabel
-        // synthesizes the label DC6 in memory (Route A: zero shipped assets,
-        // zero loader edits, retail free path tears it down).
+        // Previous Menu (owner decision 2026-10-29; label route revised in
+        // field QA same day). Empty image path: the retail loader
+        // (ESCMENU_LoadLocalizedImages) skips rows whose path starts with
+        // '\0' without halting and without touching pDC6Main, then still
+        // calls fpInitCallback - ESCMENU_InitVanillaPlusLabel seeds an 8x8
+        // blank placeholder DC6 in memory (type-0 rows draw pDC6Main
+        // unconditionally; zero pixels = invisible), and the visible label is
+        // rendered every frame by fpDrawCallback (VANILLAPLUS_DrawRowLabel,
+        // retail DRAW_text path - Route B: zero shipped assets, zero loader
+        // edits, retail free path tears the placeholder down).
         /* .nMenuItemType = */ 0x0,
         /* .nExpansionOnly = */ 0x0,
         /* .nYPosition = */ 0x0,
@@ -12619,7 +12623,7 @@ D2EscMenuItemStrc gaEscMenuOptionsTable[6] = { // vanilla-plus (row 10): [5] -> 
         /* .fpVisibilityCheck = */ nullptr,
         /* .fpClickCallback = */ &D2Client::UI::VanillaPlus::ESCMENU_ShowVanillaPlusOptions,
         /* .fpInitCallback = */ &D2Client::UI::VanillaPlus::ESCMENU_InitVanillaPlusLabel,
-        /* .fpDrawCallback = */ nullptr,
+        /* .fpDrawCallback = */ &D2Client::UI::VanillaPlus::VANILLAPLUS_DrawRowLabel,
         /* .nSubImageCount = */ 0x0,
         /* .nImageIndex = */ 0x0,
         /* .bSelected = */ 0x0,

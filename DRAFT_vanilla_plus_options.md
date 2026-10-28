@@ -45,7 +45,11 @@ free path tears it down unchanged.**
 - Callback decls in `D2Client.h` (globals/D2Client.cpp already includes it — A-includes verified; no new include needed), definitions in the new `D2Client/UI/VanillaPlusOptions.cpp`.
 - Keyboard nav (up/down/enter) and mouse hover iterate `nItemCount` — our row participates free; selection star positions off `nYPosition` — free.
 
-### D2 — Route A: the synthesized label DC6 (new TU, ~150 lines)
+### D2 — Route A: the synthesized label DC6 (new TU, ~150 lines) — **RETIRED, see §9**
+
+> Field QA 2026-10-29 replaced this route with **Route B** (fpDrawCallback text
+> label + 8×8 blank placeholder). This section is kept as the design record;
+> §9 documents why it was retired and what shipped instead.
 
 `ESCMENU_InitVanillaPlusLabel(pItem, pMsg)`: if `pItem->pDC6Main` already set → return
 (idempotent). Else build the raw image:
@@ -84,6 +88,9 @@ impl, contract (steps 2–3) unchanged.
   `SetUIFlag(UI_VANILLAPLUS, UI_RESET) + SetUIFlag(UI_ESCMENU, UI_SET)` + restore the
   options table pointers (mirror `ESCMENU_SwitchToOptionsMenu` shape, A7).
 - Input handlers mirror ControlConfig's registration (pin the dispatch table site).
+  Field-QA revision: **no WM_MOUSEMOVE (0x200) entry** — see §9 (the always-on
+  `gUIFlagGeneralInit` batch owns 0x200; a chain-breaking 0x200 handler froze the
+  cursor).
 - Toggle action: read current (`GetPrivateProfileIntA` via the feature gates' own
   accessors where exported — else direct read), flip, `WritePrivateProfileStringA`
   (A10), then `D2VP_ConfigReloaded()` (A11) — effect is same-frame for the gates, ≤
@@ -249,3 +256,85 @@ default: always visible (it is how the features get discovered).
 - **Remaining**: real gate = owner llvm-mingw i686 full build + field loop
   V6 (label legibility/placement, toggle same-frame effect, Esc round-trip,
   clean shutdown free).
+
+## 9. Field-QA revision (rev C, 2026-10-29) — Route A retired → Route B
+
+First field build (owner Win11 llvm-mingw i686, overlay
+`d2vp-overlay-vanilla-plus-options-20261029-rev2.zip`): **compiles and runs, but
+the "Vanilla+ Options" row label is invisible while the row still opens the
+page, and the cursor locks while the page is open.** Both root-caused in the
+tree; both fixed in the same overlay round (rev 3).
+
+### 9.1 Bug 1 — invisible label (Route A retired)
+
+The Route A synthesis fell into its blank-8×8 fallback in the field (that
+fallback is the invisible-but-clickable row the owner saw; it also proved the
+placeholder's byte shape renders safely — evidence reused by Route B). Route A
+carried three independent defects that made it wrong even on success:
+
+1. **Row order**: DC6 RLE streams are **bottom-up** — `FASTCMP_DecompressRLEWithAlpha`
+   (D2CMP/SRC/FastCmp.cpp:1742) walks the destination with `nNegPitch =
+   -nDstPitch`, so encoded row 0 = the image's bottom scanline. The Route A
+   encoder emitted rows top-down ⇒ the label would have rendered vertically
+   flipped.
+2. **Palette**: glyph frames are drawn through `D2GFX_DrawShiftedImage` with the
+   font's palette-shift index (`D2WINFONT_DrawWideString`, D2WinFont.cpp:424–426);
+   Route A copied raw glyph indices into a plain `DrawImage` sprite — unshifted
+   colors at best.
+3. **Buffer**: `VPLABEL_BuildDc6` encoded into a 1240-byte stack scratch
+   (`aEncoded[VPPAGE_BOX_WIDTH * 2]`) while a 0x100-wide × 0x27-tall text raster
+   encodes to ~2 KB (worst case far more) — a stack-smash hidden behind the
+   fallback path.
+
+**Route B (shipped)**: the retail esc-menu loop already invokes a per-row
+`fpDrawCallback` every frame (`ESCMENU_DrawMenu`, EscMenu.cpp:1001–1004, before
+the row's image draw). The row now sets `fpDrawCallback =
+&VanillaPlus::VANILLAPLUS_DrawRowLabel`, which renders the label with `DRAW_text`
+(font 0xd — the ControlConfig row font, retail-proven) centered at
+`ScreenSizeX/2`, baseline at the row band bottom minus `VPLABEL_BASELINE_INSET`
+(DC6 draws extend upward from y, so y = baseline; same convention
+ControlConfig's row renderer uses). `fpInitCallback` now only seeds the
+field-proven 8×8 **blank placeholder** DC6 (hard-coded 16-byte RLE stream — per
+row `0x88` transparent-run + `0x80` end-of-row — no runtime encoder, no scratch
+buffer), which satisfies the unconditional type-0 image draw with zero visible
+pixels. Allocator + `CELCMP_FixupPointersAndPrepare` shape unchanged ⇒ retail
+free path (`DC6_FreeAndDelete`) still needs zero special-casing. Charter impact:
+none — still zero shipped assets, zero loader edits; the label now renders
+through the engine's own text path, so localization-ready and always legible.
+
+### 9.2 Bug 2 — locked cursor (0x200 handler removed)
+
+The page's input batch registered a `WM_MOUSEMOVE` (0x200) handler ending in
+`SMsgBreakHandlerChain`. Handlers registered later run first in the client
+chain, so every move while the page was open **broke the chain before
+`ui::UI_HandleMousePositionUpdate`** (the always-on `gUIFlagGeneralInit` batch,
+globals/D2Client.cpp:2691–2707) — the one handler that updates `MouseX/MouseY`
+and refreshes OS-cursor visibility (`UpdateOSCursorVisibilty(1)`) on every move.
+With position frozen and the OS cursor hidden by the normal gameplay path, the
+on-screen cursor stops tracking = "locked". Neither `ESCMENU` nor
+`ControlConfig` registers a 0x200 handler (ControlConfig's batch =
+`gaUIFlagInitTable + 5`: 0x201/0x202/0x204/0x205 + keydowns only).
+
+**Fix (shipped)**: batch is 3 entries — 0x201 down, 0x1b Esc, 0x202 up. Hover
+highlight is derived per frame in `DRAW_VanillaPlusOptions` from
+`ui::GetMouseX/GetMouseY` (the ESC menu and ControlConfig do exactly this).
+Down/up coordinate source is the message payload (`pMsg->uLParam`), which the
+handlers already used. Down/up handlers keep the retail modal idiom (bHandled=1
++ break — byte-matches `INPUT_ConfigMouseDown`, ui.cpp:3496–3498).
+
+### 9.3 Page text placement correction (same round)
+
+Same baseline convention applied to the page itself: `DRAW_text`'s y is the
+glyph **baseline** (bottom-anchored DC6), so row labels/values/Previous Menu
+now anchor at `row bottom − VPPAGE_TEXT_BASELINE_INSET` (was `row top + 2`,
+which would have floated the ink above its row). Title keeps ControlConfig's
+exact anchor (`boxTop + 0x1e`).
+
+### 9.4 Verification
+
+Sandbox: extracted-verbatim harness re-run green (row initializer extraction
+also re-type-checks the new `fpDrawCallback` pointer against the verbatim
+`D2EscMenuItemStrc`). Real gate: owner llvm-mingw i686 rebuild, then field
+re-check: label visible + legible, no cursor lock, toggle round-trip, Esc
+round-trip, clean shutdown free (the placeholder exercises the same retail
+free path).

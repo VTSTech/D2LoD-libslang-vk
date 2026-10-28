@@ -1,32 +1,49 @@
 // vanilla-plus: "Vanilla+ Options" in-game settings page (FEATURES.md row 10).
-// Design contract: DRAFT_vanilla_plus_options.md (Route A, above Previous Menu).
+// Design contract: DRAFT_vanilla_plus_options.md (Route B, above Previous Menu).
 // Charter: VANILLA-PLUS.md - additive UI only; every toggle stays opt-in with
 // 0-defaults; no D2Game/D2Common edits; no loader edits; no shipped assets.
 //
-// ===== Route A: the synthesized row label ===================================
-// The Options-page row (index 4 of gaEscMenuOptionsTable) carries an empty
-// image path. ESCMENU_LoadLocalizedImages skips rows whose
-// szLocalizedImagePath[0] == '\0' WITHOUT halting and WITHOUT assigning
-// pDC6Main, then still fires fpInitCallback - so ESCMENU_InitVanillaPlusLabel
-// seeds pItem->pDC6Main with a DC6 built entirely in memory:
-//   1. rasterize "Vanilla+ Options" from the font-0xd glyph frames (the same
-//      frames D2WINFONT_DrawWideString blits), copying the glyph pixels' own
-//      palette indices so the label renders like in-game white text;
-//   2. RLE-encode one 1-direction 1-frame DC6 whose bytes are shaped exactly
-//      like a file-loaded image (24-byte header, file-relative frame-offset
-//      table, 0x20-byte frame header, 0x80-terminated run rows);
-//   3. allocate the raw image with the same client allocator
-//      D2FILE_AllocAndLoadD2File uses (AllocClientMemory) and run the retail
-//      CELCMP_FixupPointersAndPrepare over it.
-// The retail free path (ESCMENU_FreeLoadedImages -> DC6_FreeAndDelete ->
-// DeleteCellFile + FreeClientMemory) then tears it down with zero
-// special-casing: same allocator, same shape, same fixup.
+// ===== Route B: the row label (field-QA revision, 2026-10-29) ===============
+// Route A (synthesizing a text DC6 from font glyph frames) was retired after
+// the first field build returned "label invisible, row clickable". The
+// synthesis had fallen back to its blank image, and it carried three latent
+// defects that would have broken it even on success:
+//   1. DC6 RLE streams are bottom-up - FASTCMP_DecompressRLEWithAlpha walks
+//      the destination with -nDstPitch - while the Route A encoder emitted
+//      rows top-down, so the label would have rendered vertically flipped;
+//   2. font glyph pixels are meant to be drawn through D2GFX_DrawShiftedImage
+//      with the font's palette-shift index; a plain DrawImage of copied glyph
+//      indices renders them unshifted;
+//   3. the 1240-byte encode scratch buffer could not hold the label's RLE
+//      stream (~2 KB for a 0x100-wide raster - worst case far more), a
+//      stack-smashing bug hiding behind the fallback path.
+// The retail esc-menu loop already invokes a per-row fpDrawCallback every
+// frame (ESCMENU_DrawMenu, before the row's image draw), so the label is now
+// rendered there with DRAW_text (font 0xd, the ControlConfig row font) - the
+// same retail text path the page itself uses. The row's fpInitCallback still
+// seeds pDC6Main, but only with the field-proven 8x8 blank placeholder:
+// type-0 rows draw pDC6Main unconditionally (a null pointer would halt the
+// draw), and the blank frame is exactly the image the first field build drew
+// invisibly-but-safely. Same allocator + CELCMP_FixupPointersAndPrepare
+// shape as a file-loaded image, so the retail free path (DC6_FreeAndDelete
+// -> DeleteCellFile + FreeClientMemory) still tears it down with zero
+// special-casing.
+//
+// ===== cursor handling (field-QA revision, 2026-10-29) ======================
+// The first field build registered a WM_MOUSEMOVE (0x200) handler that ended
+// in SMsgBreakHandlerChain - it ran first in the message chain and starved
+// ui::UI_HandleMousePositionUpdate (the always-on gUIFlagGeneralInit batch),
+// which is what updates MouseX/MouseY and refreshes the OS-cursor visibility
+// on every move. Result: the on-screen cursor froze ("locked") while the page
+// was open. Neither ESCMENU nor ControlConfig registers a 0x200 handler, so
+// neither does this page: hover state is derived per frame in
+// DRAW_VanillaPlusOptions from ui::GetMouseX/GetMouseY, and the mouse down/up
+// handlers keep reading coordinates from the message itself.
 
 #include "D2Client/UI/VanillaPlusOptions.h"
 
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/D2Client.h"
-#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/Message.h"
 #include "D2Client/Sound/Sound.h"
@@ -36,9 +53,9 @@
 #include "D2Sound/Src/D2SoundFast.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
-#include "D2Win/Src/D2WinArchive.h"
 #include "D2Win/Src/D2WinFont.h"
 #include "D2gfx/D2GFX.h"
+#include "Fog/Fog.h"
 #include "Fog/Memory.h"
 #include "Storm/Storm.h"
 #include "globals/globals.h"
@@ -57,10 +74,12 @@ namespace D2Client::UI::VanillaPlus {
 
 // ===== tunables (single place, field-QA) ====================================
 
-// Row label geometry. The synthesized image is bottom-anchored at
-// nItemBottomY by the renderer, so a VPLABEL_HEIGHT-pixel image spans the
-// whole 0x27 row band; the glyphs are vertically centered inside it.
-static const int VPLABEL_HEIGHT = 0x27;            // matches nRowHeight
+// Esc-menu row band. The retail draw loop bottom-anchors every row image at
+// nItemBottomY = nRowTop + nRowHeight; DC6 draws (font glyph frames included)
+// extend upward from the y passed to the renderer, i.e. the y passed to
+// DRAW_text is the text baseline. The label baseline is inset from the band
+// bottom so the text sits visually centered in the 0x27 band (tunable).
+static const int VPLABEL_BASELINE_INSET = 8;
 static const uint16_t VPLABEL_FONT_ID = 0xd;       // ControlConfig's row font
 
 // Page layout (mirrors the ControlConfig panel box for a familiar look).
@@ -70,6 +89,7 @@ static const int VPPAGE_ROW_PITCH = 0x20;
 static const int VPPAGE_ROW_HEIGHT = 0x1a;
 static const int VPPAGE_FIRST_ROW_Y = 0x50;        // from box top
 static const int VPPAGE_BACK_ROW_Y = 0x124;        // from box top
+static const int VPPAGE_TEXT_BASELINE_INSET = 4;   // baseline above row bottom
 
 // [features] keys rendered by the page. Adding a slate feature = +1 entry
 // here and +1 template block in ALTTOGGLE_WriteIniTemplate - nothing else.
@@ -86,7 +106,8 @@ static const int VPP_ROW_COUNT = 3;
 static const int VPP_ROW_BACK = 3; // hit-test index of the Previous Menu row
 
 // Input handlers (definitions below; the batch array references them).
-void __stdcall INPUT_VP_MouseMove(D2UIMouseMsgStrc * pMsg);
+// Deliberately NO WM_MOUSEMOVE (0x200) entry - see the header comment block:
+// the always-on gUIFlagGeneralInit batch owns 0x200 and must keep running.
 void __stdcall INPUT_VP_MouseDown(D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_VP_MouseUp(D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_VP_EscapeKey(D2UIMouseMsgStrc * pMsg);
@@ -94,18 +115,14 @@ void __stdcall INPUT_VP_EscapeKey(D2UIMouseMsgStrc * pMsg);
 // Input batch registered while the page is open (cube/panel style: dedicated
 // handlers, self-contained registration). eEventType: 0=window message,
 // 3=key down (ui.h D2UIFlagInitStrc contract).
-static D2UIFlagInitStrc gaVanillaPlusInit[4] = {
-    { 0x0, 0x200, &INPUT_VP_MouseMove },
+static D2UIFlagInitStrc gaVanillaPlusInit[3] = {
     { 0x0, 0x201, &INPUT_VP_MouseDown },
     { 0x3, 0x01b, &INPUT_VP_EscapeKey },
     { 0x0, 0x202, &INPUT_VP_MouseUp },
 };
 
-// ===== page state ============================================================
+// ===== page geometry helpers (kept in one place for draw and hit tests) =====
 
-static int gnVanillaPlusHoverRow = -1;  // hit-test row under the cursor
-
-// Page geometry helpers (kept in one place for the draw and the hit tests).
 static void VPPAGE_GetBoxOrigin(int* pnX, int* pnY) {
     *pnX = (ScreenSizeX - VPPAGE_BOX_WIDTH) / 2;
     *pnY = (WindowSizeY - VPPAGE_BOX_HEIGHT) / 2;
@@ -139,94 +156,33 @@ static int VPPAGE_HitTest(int nMouseX, int nMouseY) {
     return -1;
 }
 
-// ===== label synthesis (Route A) =============================================
+// ===== row placeholder (Route B) =============================================
 
-// Decode one DC6 frame (retail RLE: 0x01..0x7F literal run, 0x81..0xFF
-// transparent run of (token & 0x7F), 0x80 end-of-row) into an 8-bit raster.
-// Semantics pinned from FASTCMP_DecompressRLEWithAlpha (D2CMP/SRC/FastCmp.cpp).
-static void VPLABEL_DecodeFrameRLE(const DC6Block* pFrame, uint8_t* pOut, int nOutWidth, int nOutHeight) {
-    const uint8_t* pCursor = (const uint8_t*)pFrame + 0x20;
-    int nWidth = pFrame->nWidth;
-    int nHeight = pFrame->nHeight;
-    if (nWidth > nOutWidth) {
-        nWidth = nOutWidth;
-    }
-    if (nHeight > nOutHeight) {
-        nHeight = nOutHeight;
-    }
-    for (int y = 0; y < nHeight; y++) {
-        uint8_t* pRow = pOut + y * nOutWidth;
-        int x = 0;
-        while (x < nWidth) {
-            uint8_t byToken = *pCursor++;
-            if (byToken & 0x80) {
-                byToken &= 0x7f;
-                if (!byToken) {
-                    break; // 0x80 = end of row
-                }
-                x += byToken; // transparent run: leave the raster zeroed
-            } else {
-                if (!byToken) {
-                    break; // defensive: retail encoders never emit 0x00
-                }
-                if (x + byToken > nWidth) {
-                    byToken = (uint8_t)(nWidth - x);
-                }
-                for (uint8_t i = 0; i < byToken; i++) {
-                    pRow[x + i] = *pCursor++;
-                }
-                x += byToken;
-            }
-        }
-    }
-}
-
-// Encode an 8-bit raster as DC6 rows (inverse of the decoder above). Returns
-// the encoded size; pnDataSizeOut receives it for the frame's nLength field.
-static int VPLABEL_EncodeFrameRLE(const uint8_t* pRaster, int nWidth, int nHeight, uint8_t* pOut, int* pnDataSizeOut) {
-    uint8_t* pWrite = pOut;
-    for (int y = 0; y < nHeight; y++) {
-        const uint8_t* pRow = pRaster + y * nWidth;
-        int x = 0;
-        while (x < nWidth) {
-            if (!pRow[x]) {
-                int nRun = 1;
-                while (x + nRun < nWidth && !pRow[x + nRun] && nRun < 0x7f) {
-                    nRun++;
-                }
-                *pWrite++ = (uint8_t)(0x80 | nRun); // transparent run 1..127
-                x += nRun;
-            } else {
-                int nRun = 1;
-                while (x + nRun < nWidth && pRow[x + nRun] && nRun < 0x7f) {
-                    nRun++;
-                }
-                *pWrite++ = (uint8_t)nRun; // literal run 1..127
-                for (int i = 0; i < nRun; i++) {
-                    *pWrite++ = pRow[x + i];
-                }
-                x += nRun;
-            }
-        }
-        *pWrite++ = 0x80; // end of row
-    }
-    *pnDataSizeOut = (int)(pWrite - pOut);
-    return *pnDataSizeOut;
-}
-
-// Build the byte-exact raw DC6 file image around one encoded frame and run
-// the retail fixup. Allocation matches D2FILE_AllocAndLoadD2File (D2_ALLOC),
-// so the retail free path (DeleteCellFile + FreeClientMemory) is compatible
-// without special-casing. FALSE = out of memory (the caller keeps the row
-// label blank rather than risk a null pDC6Main draw halt).
-static BOOL VPLABEL_BuildDc6(const uint8_t* pRaster, int nWidth, int nHeight, DC6** ppOut) {
+// The esc-menu draw path for type-0 rows calls IMAGE_DrawDC6ImageOnScreen
+// unconditionally (ESCMENU_DrawMenu case 0), so pDC6Main must be a renderable
+// DC6 or the draw halts. This placeholder is the exact image the first field
+// build ended up drawing (Route A's blank fallback): an 8x8 fully transparent
+// frame. Its RLE stream is the deterministic encoding of an all-zero 8x8
+// raster - per row one 0x80|8 transparent-run token plus the 0x80 end-of-row
+// token - so it is hard-coded instead of runtime-encoded (the Route A encoder
+// and its undersized scratch buffer are gone from the shipped code path).
+//
+// Byte shape (file-loaded DC6 layout):
+//   0x00  24-byte DC6 header   (version 6, flags 1, format 0, 1 dir, 1 frame)
+//   0x18  frame-offset slot    (0x1C, file-absolute like every loaded image)
+//   0x1C  0x20-byte frame header (nFlip=1 retail terminator, 8x8, nLength=16)
+//   0x3C  RLE frame data       (16 bytes)
+// CELCMP_FixupPointersAndPrepare converts the offset slot to an absolute
+// pointer and allocates the per-frame 0x2C bookkeeping row, exactly as it
+// does for file-loaded images. FALSE = out of memory (caller leaves pDC6Main
+// null; the type-0 draw would halt, but allocation failure is failing anyway).
+static BOOL VPLABEL_BuildBlankPlaceholder(DC6** ppOut) {
     *ppOut = nullptr;
-    uint8_t aEncoded[VPPAGE_BOX_WIDTH * 2];
-    int nEncodedSize = 0;
-    VPLABEL_EncodeFrameRLE(pRaster, nWidth, nHeight, aEncoded, &nEncodedSize);
-
-    // 24-byte header + 4-byte frame-offset entry + 0x20-byte frame header.
-    int nTotalSize = 0x18 + 4 + 0x20 + nEncodedSize;
+    static const uint8_t gaBlankRle[16] = {
+        0x88, 0x80, 0x88, 0x80, 0x88, 0x80, 0x88, 0x80,
+        0x88, 0x80, 0x88, 0x80, 0x88, 0x80, 0x88, 0x80,
+    };
+    const int nTotalSize = 0x3C + (int)sizeof(gaBlankRle);
     DC6* pRaw = (DC6*)D2_ALLOC(nTotalSize);
     if (!pRaw) {
         return FALSE;
@@ -235,149 +191,31 @@ static BOOL VPLABEL_BuildDc6(const uint8_t* pRaster, int nWidth, int nHeight, DC
     pRaw->nVersion = 6;       // required by the fixup (nExpectedFormat == -1)
     pRaw->nFlags = 1;         // bit0 required, bit1 clear (pre-fixup state)
     pRaw->nFormat = 0;
-    /* nTerm stays zeroed (unused by the fixup for file-shaped images) */
+    /* nTerm stays zeroed */
     pRaw->nDirections = 1;
     pRaw->nFrames = 1;
-    *(uint32_t*)((char*)pRaw + 0x18) = 0x1C; // file-relative frame offset
+    *(uint32_t*)((char*)pRaw + 0x18) = 0x1C; // file-absolute frame offset
 
     DC6Block* pFrame = (DC6Block*)((char*)pRaw + 0x1C);
     pFrame->nFlip = 1;        // retail frame termination value
-    pFrame->nWidth = nWidth;
-    pFrame->nHeight = nHeight;
+    pFrame->nWidth = 8;
+    pFrame->nHeight = 8;
     pFrame->nOffsetX = 0;
     pFrame->nOffsetY = 0;
-    pFrame->nAllocSize = nWidth * nHeight;
+    pFrame->nAllocSize = 8 * 8;
     pFrame->nNextBlock = 0;   // fixup patch slot: overwritten with the row ptr
-    pFrame->nLength = nEncodedSize;
-    memcpy((char*)pRaw + 0x3C, aEncoded, nEncodedSize);
+    pFrame->nLength = (int)sizeof(gaBlankRle);
+    memcpy((char*)pRaw + 0x3C, gaBlankRle, sizeof(gaBlankRle));
 
     // Retail fixup: converts the file-relative offset to an absolute pointer,
     // allocates the 1x1 block row, patches the frame's +0x18 slot. Idempotent
     // (nFlags bit1), exactly what every file-loaded DC6 goes through.
-    D2CMP::SRC::CelCmp::CELCMP_FixupPointersAndPrepare(pRaw, ppOut, ".\\UI\\VANILLAPLUS.CPP", 0x0, -1, "vanilla-plus options label");
+    D2CMP::SRC::CelCmp::CELCMP_FixupPointersAndPrepare(pRaw, ppOut, ".\\UI\\VANILLAPLUS.CPP", 0x0, -1, "vanilla-plus options placeholder");
     if (!*ppOut) {
         D2_FREE(pRaw);
         return FALSE;
     }
     return TRUE;
-}
-
-// Rasterize the label from the font's own glyph frames and synthesize the
-// DC6. On any failure a small blank image is synthesized instead so the row
-// stays drawable (never a null pDC6Main under the type-0 draw path).
-static void VPLABEL_SynthesizeInto(DC6** ppOut) {
-    *ppOut = nullptr;
-
-    // Font selection: LookupGlyphEntry reads the CURRENT font cache, so
-    // select font 0xd first (load-on-demand) and restore afterwards.
-    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(VPLABEL_FONT_ID);
-
-    do {
-        // Load our own copy of the font image so glyph pixels can be decoded
-        // without reaching into D2WinFont's internal cache globals.
-        char szFontPath[80];
-        D2Win::Src::D2WinFont::D2WINFONT_BuildFontPath(szFontPath, VPLABEL_FONT_ID, (int32_t)sizeof(szFontPath));
-        DC6* pFontDC6 = D2Win::Src::D2WinArchive::IMAGE_LoadDC6(szFontPath, 0);
-        if (!pFontDC6) {
-            break;
-        }
-
-        static const wchar_t gwszLabel[] = L"Vanilla+ Options";
-        int nLabelChars = (int)(sizeof(gwszLabel) / sizeof(gwszLabel[0])) - 1;
-
-        // Measure: glyph advance widths from the .tbl entries, frames from
-        // the font image (D2WINFONT_DrawWideString's exact pairing).
-        int nTotalWidth = 0;
-        int nMaxGlyphHeight = 0;
-        int anFrameIndex[64];
-        int anGlyphWidth[64];
-        if (nLabelChars > 64) {
-            nLabelChars = 64;
-        }
-        for (int i = 0; i < nLabelChars; i++) {
-            D2FontGlyphStrc* pGlyph = D2Win::Src::D2WinFont::D2WINFONT_LookupGlyphEntry((uint16_t)gwszLabel[i]);
-            if (!pGlyph) {
-                anFrameIndex[i] = -1;
-                anGlyphWidth[i] = 0;
-                continue;
-            }
-            anFrameIndex[i] = *(const uint16_t*)(pGlyph->abUnverified + 6);
-            anGlyphWidth[i] = pGlyph->abUnverified[1];
-            nTotalWidth += anGlyphWidth[i];
-        }
-        if (nTotalWidth <= 0 || nTotalWidth > 0x100) {
-            D2Win::Src::D2WinArchive::IMAGE_FreeImage(pFontDC6);
-            break;
-        }
-
-        // Compose: decode each glyph frame, blit into the shared raster at
-        // the running pen x, vertically centered (the renderer bottom-anchors
-        // the whole image at nItemBottomY, so centered-in-band matches the
-        // row art). Glyph pixels keep the font's own palette indices.
-        int nGlyphPitch = 0x40;
-        static uint8_t aGlyphScratch[0x40 * 0x40];
-        static uint8_t aLabelRaster[0x100 * VPLABEL_HEIGHT];
-        memset(aLabelRaster, 0, sizeof(aLabelRaster));
-        int nPenX = 0;
-        for (int i = 0; i < nLabelChars; i++) {
-            if (anFrameIndex[i] < 0 || anGlyphWidth[i] <= 0 || anGlyphWidth[i] >= nGlyphPitch) {
-                continue;
-            }
-            // Frame lookup: direction 0 + the .tbl frame index - the exact
-            // (DC6, frame) pair D2WINFONT_DrawWideString renders.
-            D2GfxDataStrc sGfxData;
-            memset(&sGfxData, 0, sizeof(sGfxData));
-            sGfxData.pDC6 = pFontDC6;
-            sGfxData.nDirection = 0;
-            sGfxData.nFrameNumber = anFrameIndex[i];
-            DC6Block* pGlyphFrame = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockFromGfxData(&sGfxData);
-            if (pGlyphFrame) {
-                int nGlyphHeight = pGlyphFrame->nHeight;
-                if (nGlyphHeight > nGlyphPitch) {
-                    nGlyphHeight = nGlyphPitch;
-                }
-                memset(aGlyphScratch, 0, sizeof(aGlyphScratch));
-                VPLABEL_DecodeFrameRLE(pGlyphFrame, aGlyphScratch, nGlyphPitch, nGlyphPitch);
-                int nYOffset = (VPLABEL_HEIGHT - pGlyphFrame->nHeight) / 2;
-                if (nYOffset < 0) {
-                    nYOffset = 0;
-                }
-                for (int y = 0; y < nGlyphHeight; y++) {
-                    int nDstY = nYOffset + y;
-                    if (nDstY >= VPLABEL_HEIGHT) {
-                        break;
-                    }
-                    uint8_t* pDst = aLabelRaster + nDstY * nTotalWidth + nPenX;
-                    const uint8_t* pSrc = aGlyphScratch + y * nGlyphPitch;
-                    for (int x = 0; x < anGlyphWidth[i]; x++) {
-                        if (pSrc[x]) {
-                            pDst[x] = pSrc[x]; // keep the font's own palette index
-                        }
-                    }
-                }
-            }
-            // Advance the pen by the glyph's .tbl width (renderer parity).
-            nPenX += anGlyphWidth[i];
-        }
-
-        D2Win::Src::D2WinArchive::IMAGE_FreeImage(pFontDC6);
-
-        if (!VPLABEL_BuildDc6(aLabelRaster, nTotalWidth, VPLABEL_HEIGHT, ppOut)) {
-            break;
-        }
-        D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
-        return;
-    } while (0);
-
-    // Fallback: blank 8x8 image keeps the row drawable (and invisible)
-    // instead of a null pDC6Main halting the type-0 draw path.
-    {
-        static uint8_t aBlank[8 * 8]; // zeroed = fully transparent
-        if (!VPLABEL_BuildDc6(aBlank, 8, 8, ppOut)) {
-            *ppOut = nullptr; // out of memory: the process is failing anyway
-        }
-    }
-    D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
 // ===== Esc-menu row callbacks ================================================
@@ -387,7 +225,58 @@ void __fastcall ESCMENU_InitVanillaPlusLabel(D2EscMenuItemStrc * pItem, D2UIMous
     if (!pItem || pItem->pDC6Main) {
         return; // idempotent: ESCMENU_Initialize runs once, but stay safe
     }
-    VPLABEL_SynthesizeInto(&pItem->pDC6Main);
+    // Route B: the visible label is drawn by VANILLAPLUS_DrawRowLabel (the
+    // row's fpDrawCallback); this pointer only satisfies the unconditional
+    // type-0 image draw with a fully transparent frame.
+    VPLABEL_BuildBlankPlaceholder(&pItem->pDC6Main);
+}
+
+// Row draw callback (fpDrawCallback), invoked by ESCMENU_DrawMenu every frame
+// before the row's image draw. Renders the label through the retail text path
+// (DRAW_text, font 0xd) instead of a synthesized DC6. Geometry mirrors the
+// ESCMENU_DrawMenu per-item formula so the text lands in the same band the
+// retail images bottom-anchor into; DRAW_text's y is the baseline (DC6 frames
+// draw upward from y), hence the small inset above the band bottom.
+void __fastcall VANILLAPLUS_DrawRowLabel(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
+    (void)pMsg;
+    if (!pItem) {
+        return;
+    }
+
+    // Row band: replicate ESCMENU_DrawMenu's per-item Y formula for the
+    // Options table (this row only ever draws while that table is active).
+    // nVisibleBefore counts visible rows above ours (expansion gate + per-row
+    // fpVisibilityCheck), matching the retail loop's visibility accounting.
+    int nVisibleBefore = 0;
+    bool bFound = false;
+    for (int i = 0; i < gaEscMenuHeaderOptions.nItemCount; i++) {
+        if (&gaEscMenuOptionsTable[i] == pItem) {
+            bFound = true;
+            break;
+        }
+        if (gaEscMenuOptionsTable[i].nExpansionOnly && !Fog::D2CheckExpansionGame()) {
+            continue;
+        }
+        pfnEscMenuItemVisible pfnVisible = gaEscMenuOptionsTable[i].fpVisibilityCheck;
+        if (pfnVisible && !pfnVisible()) {
+            continue;
+        }
+        nVisibleBefore++;
+    }
+    if (!bFound) {
+        return; // foreign row: never ours, draw nothing
+    }
+
+    const int nMenuCenterY = ScreenSizeY - 0x50;
+    const int nRowTop = gaEscMenuHeaderOptions.nVerticalSpacing * nVisibleBefore
+        + (nMenuCenterY / 2 - gaEscMenuHeaderOptions.nVerticalSpacing * gaEscMenuHeaderOptions.nItemCount / 2);
+    const int nBaselineY = nRowTop + gaEscMenuHeaderOptions.nRowHeight - VPLABEL_BASELINE_INSET;
+
+    static const wchar_t gwszLabel[] = L"Vanilla+ Options";
+    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(VPLABEL_FONT_ID);
+    int nTextWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)gwszLabel);
+    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gwszLabel, ScreenSizeX / 2 - nTextWidth / 2, nBaselineY, 0, 0);
+    D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
 void __fastcall ESCMENU_ShowVanillaPlusOptions(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
@@ -425,17 +314,10 @@ static void VANILLAPLUS_ToggleRow(int nRowIndex) {
 }
 
 // ===== page: input handlers ==================================================
-
-void __stdcall INPUT_VP_MouseMove(D2UIMouseMsgStrc * pMsg) {
-    if (GAME::Game::GAMEDATA_GetExitFlag3()) {
-        pMsg->bHandled = 0;
-        return;
-    }
-    gnVanillaPlusHoverRow = VPPAGE_HitTest(ui::GetMouseX(), ui::GetMouseY());
-    pMsg->bHandled = 1;
-    pMsg->dwResult = 0;
-    Storm::SMsgBreakHandlerChain(pMsg);
-}
+// Coordinates come from the message, not from ui::GetMouseX/GetMouseY: the
+// chain position of these handlers relative to UI_HandleMousePositionUpdate
+// is not something this page controls, and the message payload is always the
+// event's own position.
 
 void __stdcall INPUT_VP_MouseDown(D2UIMouseMsgStrc * pMsg) {
     if (GAME::Game::GAMEDATA_GetExitFlag3()) {
@@ -476,24 +358,26 @@ void __stdcall INPUT_VP_EscapeKey(D2UIMouseMsgStrc * pMsg) {
 void __stdcall VANILLAPLUS_OnToggleUI(int32_t nParam) {
     HWND hWnd = D2gfx::D2GFX::GetHwnd();
     if (nParam) {
-        gnVanillaPlusHoverRow = -1;
-        _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gaVanillaPlusInit, 4);
+        _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gaVanillaPlusInit, 3);
     } else {
-        gnVanillaPlusHoverRow = -1;
-        _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gaVanillaPlusInit, 4);
+        _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gaVanillaPlusInit, 3);
     }
 }
 
 // ===== page: draw ============================================================
+// Text Y convention: DRAW_text's y is the glyph baseline (DC6 frames draw
+// upward from y), so every text call anchors its baseline relative to the
+// BOTTOM of its row band - the same convention ControlConfig's row renderer
+// uses (baseline at the highlight bottom).
 
-static void VPPAGE_DrawCenteredText(const wchar_t* wszText, int nY, int nColor) {
+static void VPPAGE_DrawCenteredText(const wchar_t* wszText, int nBaselineY, int nColor) {
     int nWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)wszText);
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)wszText, ScreenSizeX / 2 - nWidth / 2, nY, nColor, 0);
+    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)wszText, ScreenSizeX / 2 - nWidth / 2, nBaselineY, nColor, 0);
 }
 
-static void VPPAGE_DrawValueText(int nBoxX, int nValue, int nRowY) {
+static void VPPAGE_DrawValueText(int nBoxX, int nValue, int nBaselineY) {
     // On = green (2), Off = red (1) - classic D2 locale color codes.
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)(nValue ? L"On" : L"Off"), nBoxX + VPPAGE_BOX_WIDTH - 0x5a, nRowY, nValue ? 2 : 1, 0);
+    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)(nValue ? L"On" : L"Off"), nBoxX + VPPAGE_BOX_WIDTH - 0x5a, nBaselineY, nValue ? 2 : 1, 0);
 }
 
 void __stdcall DRAW_VanillaPlusOptions() {
@@ -512,9 +396,12 @@ void __stdcall DRAW_VanillaPlusOptions() {
     sFrame.bottom = nBoxY + VPPAGE_BOX_HEIGHT;
     ui::DRAW_Direct_RectFrame(&sFrame);
 
+    // Title: baseline at boxTop + 0x1e, ControlConfig's exact title anchor.
     VPPAGE_DrawCenteredText(L"Vanilla+ Options", nBoxY + 0x1e, 4);
 
-    // Feature rows: label left, value right, hover highlight.
+    // Feature rows: label left, value right, hover highlight. Hover is
+    // derived live from the shared mouse position (kept fresh by the
+    // always-on gUIFlagGeneralInit 0x200 handler - this page registers none).
     int nMouseX = ui::GetMouseX();
     int nMouseY = ui::GetMouseY();
     int nHover = VPPAGE_HitTest(nMouseX, nMouseY);
@@ -523,8 +410,9 @@ void __stdcall DRAW_VanillaPlusOptions() {
         if (nHover == i) {
             Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nBoxX + 0x12, nRowY, VPPAGE_BOX_WIDTH - 0x24, VPPAGE_ROW_HEIGHT, 0, DRAW_TRANSPARENT);
         }
-        D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gaVanillaPlusRows[i].wszLabel, nBoxX + 0x1e, nRowY + 2, 0, 0);
-        VPPAGE_DrawValueText(nBoxX, D2VP_GetFeatureToggle(gaVanillaPlusRows[i].szKey), nRowY + 2);
+        int nBaselineY = nRowY + VPPAGE_ROW_HEIGHT - VPPAGE_TEXT_BASELINE_INSET;
+        D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gaVanillaPlusRows[i].wszLabel, nBoxX + 0x1e, nBaselineY, 0, 0);
+        VPPAGE_DrawValueText(nBoxX, D2VP_GetFeatureToggle(gaVanillaPlusRows[i].szKey), nBaselineY);
     }
 
     // Previous Menu row (same highlight/click contract as the toggles).
@@ -532,7 +420,7 @@ void __stdcall DRAW_VanillaPlusOptions() {
     if (nHover == VPP_ROW_BACK) {
         Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nBoxX + 0x12, nBackY, VPPAGE_BOX_WIDTH - 0x24, VPPAGE_ROW_HEIGHT, 0, DRAW_TRANSPARENT);
     }
-    VPPAGE_DrawCenteredText(L"Previous Menu", nBackY + 2, 0);
+    VPPAGE_DrawCenteredText(L"Previous Menu", nBackY + VPPAGE_ROW_HEIGHT - VPPAGE_TEXT_BASELINE_INSET, 0);
 
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }

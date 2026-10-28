@@ -41,7 +41,7 @@ Every slate row must satisfy all of these before it ships:
 | 7 | Automap scale + position | HUD | D2R larger overlay map | M | Med | `automap_scale` |
 | 8 | Quick-cast keys | Controls | D2R-adjacent (PD2 quick cast) | M–L | Med–High | `quick_cast` |
 | 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | `shared_stash` |
-| 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med | **Implemented** (sandbox-verified 2026-10-29; land: ledger row 34) |
+| 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med→Low | **Implemented** (field rev C 2026-10-29: Route B label + cursor fix, field round 2 pending; land: ledger row 34) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
 the slate's head, not new scope. Rows 1–9 are the new candidates.
@@ -266,26 +266,35 @@ the slate's head, not new scope. Rows 1–9 are the new candidates.
   `d2vp.ini` (`WritePrivateProfileStringA`, first ini writer in tree) + flush the
   2 s gate caches, so changes apply same-frame instead of on the next ini edit.
 - **Tree-verify complete (2026-10-29, draft anchor map)**: the Esc-menu loader
-  **skips rows with an empty image path** (no asset needed for the row itself), and
-  the row label is a **runtime-synthesized DC6** (Route A, owner-called): raw
-  file-shaped image → retail `CELCMP_FixupPointersAndPrepare` → freed by the retail
-  `DC6_FreeAndDelete` — no shipped assets, no loader edits, free-path compatible by
-  construction. Page mirrors ControlConfig (`UI_CONFIG` precedent: escmenu row click
-  swaps to a font-text screen). UI-flag store is a hard-asserted 38-slot array —
-  `UI_VANILLAPLUS = 38` needs a 4-site mechanical extension (struct member, count
-  assert, GetUIFlag bound, dismiss table).
+  **skips rows with an empty image path** (no asset needed for the row itself). The
+  row label ships as **Route B** (field-QA revision, draft §9): `fpDrawCallback`
+  renders it with the retail `DRAW_text` path (font 0xd) every frame, and
+  `fpInitCallback` seeds an 8×8 blank placeholder DC6 (raw file-shaped image →
+  retail `CELCMP_FixupPointersAndPrepare` → freed by the retail
+  `DC6_FreeAndDelete`) that satisfies the type-0 draw with zero visible pixels —
+  no shipped assets, no loader edits, free-path compatible by construction.
+  (Route A — a glyph-synthesized text DC6 — was retired in field QA: invisible in
+  practice, plus bottom-up/palette-shift and encode-buffer defects; draft §9.1.)
+  Page mirrors ControlConfig (`UI_CONFIG` precedent: escmenu row click swaps to a
+  font-text screen; input = mouse down/up + Esc only — no 0x200 handler, draft
+  §9.2). UI-flag store is a hard-asserted 38-slot array — `UI_VANILLAPLUS = 38`
+  needed a 4-site mechanical extension (struct member, count assert, GetUIFlag
+  bound, dismiss table).
 - **Draft**: `DRAFT_vanilla_plus_options.md` (v1→v2, 2026-10-29) — 12 anchors,
   grep gates, V1–V6; owner decisions recorded: Route A + above-Previous placement.
-- **Implemented (2026-10-29, draft v2 §7–§8)**: Route A synthesis + page +
-  `UI_VANILLAPLUS = 38` extension landed across 11 retail files + 2 new TUs
-  (`D2Client/UI/VanillaPlusOptions.{h,cpp}`). V1–V5 pins resolved (DC6Block =
-  frame header, bottom-anchored draw, glyph source = font DC6 frames, same
-  allocator pair, dismiss-table growth zero-fills). Sandbox harness (verbatim
-  extraction, `g++ -fsyntax-only`) + 12 grep gates green; field loop V6 + real
-  llvm-mingw gate pending (owner).
-- **Risk**: Med. The synthesized-DC6 bridge is the only novel piece (V1–V3 pins);
-  everything else mirrors proven in-tree patterns. Zero D2Game/D2Common edits, no
-  loader edits, all retail rows byte-identical.
+- **Implemented (2026-10-29, draft v2 §7–§8; field-QA rev C §9)**: label route
+  Route B + page + `UI_VANILLAPLUS = 38` extension landed across 11 retail files +
+  2 new TUs (`D2Client/UI/VanillaPlusOptions.{h,cpp}`). V1–V5 pins resolved
+  (DC6Block = frame header, bottom-anchored draw, same allocator pair,
+  dismiss-table growth zero-fills). Sandbox harness (verbatim extraction,
+  `g++ -fsyntax-only`) + 12 grep gates green. **Field round 1** (rev 2 overlay):
+  builds + runs; label invisible (Route A fallback) + cursor lock (0x200
+  chain-break) → rev 3 = Route B label + 3-entry input batch + baseline-anchored
+  page text. Field round 2 + real llvm-mingw gate pending (owner).
+- **Risk**: Med→Low. Novel Route A synthesis retired; everything now mirrors
+  proven in-tree patterns (ControlConfig text/rows, esc-menu row callbacks, blank
+  placeholder = the byte shape field-proven in round 1). Zero D2Game/D2Common
+  edits, no loader edits, all retail rows byte-identical.
 
 ---
 
