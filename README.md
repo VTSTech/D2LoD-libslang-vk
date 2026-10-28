@@ -46,50 +46,20 @@ wrapper (Glide3xVK 0.4.5) and launcher/debug scripts — extract into a 1.14d in
 (see the release notes or [`VANILLA-PLUS.md`](VANILLA-PLUS.md)). The wrapper line tags
 its own releases separately.
 
-## The same idea as Devilution
-
-[Devilution](https://github.com/diasurgical/devilution) did this for the first Diablo: it
-reconstructed the shipped `Diablo.exe` as source code that builds, and
-[DevilutionX](https://github.com/diasurgical/DevilutionX) grew from it into the port many
-people play Diablo with today. Redivivus — the recovered-source base of this fork — is
-the same concept for Diablo II.
-
-Two things differ:
-
-- **The evidence.** Devilution could lean on debug symbols left on a PlayStation release
-  for many of its names and types. No such symbols exist for 1.14d, so every name, type
-  and structure here was reverse-engineered, cross-checked where possible against the
-  game's own assert messages and against the Mac build.
-- **The target.** Devilution worked toward a binary that matches the original byte for
-  byte. Redivivus aims first for one that behaves like the original; byte-matching
-  individual functions comes after.
-
-## How it was made
-
-This project started in 2021, well before large language models were any use for this kind of
-work. The reverse-engineering of 1.14d (naming, typing and understanding the code) was
-done by hand over years. Once LLMs became usable for it they sped the work up
-considerably: proposing types, chasing crashes, and building the tooling below. They
-joined an existing project; they did not start it.
-
-1. The 1.14d `Game.exe` was reverse-engineered in [Ghidra](https://ghidra-sre.org/):
-   every function named, typed and given its calling convention; every global given a
-   type and an extent.
-2. [ghidra-reconstruct](https://github.com/jaenster/ghidra-reconstruct) pulls the
-   decompilation out through [ghidra-mcp](https://github.com/jaenster/ghidra-mcp),
-   parses it into a C++ syntax tree, undoes the decompiler's artifacts, and emits this
-   tree.
-3. The tree is built, run, and every crash is traced back to its cause. That cause is
-   fixed where it belongs, usually in the Ghidra database, sometimes in the generator,
-   and only rarely by hand in the source.
-
 ## Status
 
 - Every translation unit compiles with a strict `-std=c++17`, without `-fpermissive`,
   and the executable links with no undefined symbol.
-- It starts, reaches the menus, and plays single player: create a character, enter the
-  game, walk, fight, change areas.
-- It is not finished. Some areas and features still crash. See
+- Single player plays end to end on the Direct3D renderer — intro video and music,
+  title, character select, loading, in-game, fullscreen or windowed. The
+  fullscreen-D3D recovery (17 fix rounds) and the sound fixes (title music, SFX
+  volume) are closed and field-verified; the known rendering defects (ground, sprites,
+  palettes, shadows, lighting, UI text colors) are fixed.
+- Opt-in features so far: Alt-key item-label toggle, self-provisioning `d2vp.ini`,
+  portable saves (single-player saves pinned to the game folder). All ship OFF — with
+  no config file the game behaves like retail.
+- It is not finished. Some areas and features still crash. A crash writes a symbolised
+  report to `d2crash-<date>-<time>.txt` next to the executable; see
   [Known issues](#known-issues).
 
 ## You need
@@ -120,9 +90,11 @@ cmake --build build
 ```
 
 That produces `build/d2.exe`, a 32-bit Windows executable. `tools/check-build.sh` does
-the same from a clean clone and checks the result; CI runs it on every push and uploads
-the exe (plus, on this fork's branches, a stripped copy and the linker map) as workflow
-artifacts — grab one from the Actions tab instead of building locally.
+the same from a clean clone and checks the result; CI runs it on every push to `main`
+and uploads the artifacts you actually want: `d2s-<sha>.exe` (stripped, play/distribute)
+plus `d2-map-<sha>.map` (the linker map used to symbolise crash addresses). On Windows,
+`tools/build-local-win11.ps1` scripts the same build locally. Grab an artifact from the
+Actions tab instead of building by hand.
 
 ## Run
 
