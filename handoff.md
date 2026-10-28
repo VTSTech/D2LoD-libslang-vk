@@ -125,9 +125,10 @@ Implications for vanilla-plus:
 
 1. **Upstream PR #10 watch** (jaenster/redivivus, sound fixes). `Fixes #N` is in place (rev 8) — merging auto-closes the companion issue. Watch for maintainer review on the `SetPan`/bit-pattern details.
 2. **0.0.2 post-release hygiene**: (a) **DONE in `f10b5ff`** — boot banner now reads `vanilla-plus 0.0.3` (rev 13); (b) **DONE in the 0.0.3 packaging** — script names match their function (`Launch.cmd` = play, `install_shaders.cmd` = shader setup) and the workaround sentence is dropped from the release notes (rev 14); (c) the release-notes markdown lives in `/home/z/my-project/download/` — regenerate after sandbox resets (the reset wiped it once already).
-3. **Task C (gameplay, unparked — awaiting user go)**: Z-key camera zoom + Shift equipment-compare. Loop per §11.
+3. **Task C (gameplay, unparked — awaiting user go)**: Z-key camera zoom + Shift equipment-compare. Loop per §11. *(2026-10-29: now slate rows 0a/0b in `FEATURES.md`.)*
 4. **Offered, not requested**: (a) `-3dfx` Contrast/SetGamma boot-halt clamp as an upstream patch (fix exists in fix 15, `04cea73`; PR #10 is sound-only, so this would be a separate proposal — hold or propose post-export); (b) ShadowDiag/LightDiag/DropDiag strip-or-env-gate. *(rev-9 item 4b — the fullscreen Direct3D regression — is CLOSED: fixes 17-27 shipped and field-verified in 0.0.2)*
 5. **Watch item**: `SOUNDSMP_SetPan` right-branch negation vs retail vtable+0x40 (stereo position only; identify the retail owner before touching — HISTORY H3).
+6. **D2R backport slate** (scoped 2026-10-29, research-based): 7 ranked candidates in `FEATURES.md` — low-risk first: globe_values (S), clock_overlay (S), ilvl_tooltip (S–M), monster_hp_bar (M), auto_gold (M), automap_scale (M), quick_cast (M–L) — plus a dropped-candidates table (expanded stash, socket recipes, loot filter, ...) with reasons. Code-only + feature contract per charter; hook sites are candidate regions — tree-verify anchors per row before any build round.
 
 ## 10. Tooling
 
