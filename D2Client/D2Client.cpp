@@ -838,6 +838,8 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         "; Ground-item labels on the Alt key:\r\n"
         ";   0 = hold Alt to show labels         (vanilla behavior)\r\n"
         ";   1 = press Alt once to toggle labels (D2R \"Show Items: Toggle\")\r\n"
+        "; While labels are toggled on, clicking still attacks, moves and\r\n"
+        "; interacts normally; clicking an item's label picks the item up.\r\n"
         "alt_toggle=0\r\n"
         "\r\n"
         "; Save file location (single-player):\r\n"
@@ -909,6 +911,18 @@ void __stdcall ALTTOGGLE_Flip() {
 
 void __stdcall ALTTOGGLE_Reset() {
     gbAltLatched = 0;
+}
+
+// [vanilla-plus alt-toggle] True while labels are shown by the toggle latch
+// (never true in hold mode). Vanilla's ground-label renderer (DRAW_AltItems)
+// clears the selected unit every frame the cursor is not over a label, which
+// turns every click into a walk while labels are on screen - survivable for a
+// momentary Alt hold, fatal for a latched toggle. Toggle-latch mode hands
+// selection back to the normal hover machinery instead (D2R "Show Items:
+// Toggle" parity: labels stay up, clicks still attack/interact, and clicking
+// an item's label or sprite picks the item up).
+BOOL __stdcall ALTTOGGLE_LabelClickThrough() {
+    return ALTTOGGLE_Active() && ALTTOGGLE_Latched();
 }
 
 void __stdcall CMD_SetHoldAlt() {

@@ -2452,8 +2452,14 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
         if (pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Run) {
           return 0;
         }
+      // [vanilla-plus alt-toggle] Vanilla: labels shown = ground items are
+      // click-through so clicks reach units behind loot. In toggle mode that
+      // same exclusion also kills the label-hover select (DRAW_AltItems
+      // selects through HitTestScreen), so while the LATCH shows labels items
+      // stay selectable: clicking a label or a sprite picks the item up (D2R
+      // parity). Hold mode (feature off): exclusion byte-for-byte unchanged.
       bInRect = UI::ui::GetUIFlag(UI_HOLDALT);
-      if (bInRect) {
+      if (bInRect && !ALTTOGGLE_LabelClickThrough()) {
         return 0;
       }
 

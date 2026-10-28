@@ -121,6 +121,14 @@ BOOL __stdcall ALTTOGGLE_Latched();  // current latch value
 void __stdcall ALTTOGGLE_Flip();     // keydown: latch = !latch
 void __stdcall ALTTOGGLE_Reset();    // InitializeUI: latch = FALSE
 void __stdcall ALTTOGGLE_EnsureIni(); // create d2vp.ini template if missing
+// [vanilla-plus alt-toggle] True while labels are shown by the toggle LATCH
+// (never true in vanilla hold mode). While latched, the ground-label renderer
+// must not own the click selection (vanilla DRAW_AltItems clears the selected
+// unit every frame the cursor is not over a label, which turns every click
+// into a walk), and ground items stay hit-testable so a label click picks the
+// item up. D2R "Show Items: Toggle" parity: labels stay up, clicks still
+// attack/interact.
+BOOL __stdcall ALTTOGGLE_LabelClickThrough();
 // Validates whether a command can be bound to mouse buttons (0x103-0x104). Returns false if command handler exists and button is left/right click, true otherwise. Used during key binding setup to prevent invalid mouse button assignments.
 BOOL CMD_ValidateMouseButtonBinding(int32_t nCmdIndex, uint16_t * pErrorCode, uint32_t nMouseButton);
 int32_t SORT_CompareInts(int * pA, int * pB);
