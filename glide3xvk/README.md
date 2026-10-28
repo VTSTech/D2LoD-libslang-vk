@@ -46,9 +46,9 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `src/glide_exports.cpp` | All 45 exports with exact signatures; the game-contract entry points (`grGet(0xF)`, `grSstWinOpen`, ini reading, session banner) |
 | `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam; 0.4.5: the texture table is O(1) (open-addressing hash + monotonic alloc cursor + same-texture rebind fast-out) |
 | `src/g3x_state.{h,cpp}` | Glide state tracking (grChromakey/grColorCombine/... current values) |
-| `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, since 0.4.3 a transient toast line for the F11/F12 hotkeys, and since the 0.4.5 addendum the toggleable **Shift+V conf panel** on the left edge (storage + drawing; the content comes pre-formatted from g3x_slang) with its green arrow-key selection cursor |
+| `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, since 0.4.3 a transient toast line for the F11/F12 hotkeys, since the 0.4.5 addendum the toggleable **Shift+V conf panel** on the left edge (storage + drawing; the content comes pre-formatted from g3x_slang) with its green arrow-key selection cursor, and since the same addendum a permanent bottom line — the repo credit `GitHub: VTSTech/D2LoD-libslang-vk` |
 | `src/g3x_drivertag.{h,cpp}` | 0.4.1–0.4.3: repointed the game's `"Video: Glide"` renderer-name string at our tag. **Removed in 0.4.5** (field call: the /fps tag must stay the game's own; the DLL is now strictly read-only toward Game.exe) — pending `git rm` of the two files |
-| `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf` (`preset`/`scale`/`vsync`/`aspect`/`base_res`/`window`/`borderless`), owns the input image + preset + chain, hot-reloads on file change, polls the F11/F12 hotkeys on the present path plus the Shift+V conf-panel toggle on EVERY present (chain or no chain; it formats and pushes the panel's lines from a fresh conf parse + the live hotkey state) with the panel's Up/Down selection, Left/Right value editing and the Left/Right preset browser over the current preset's folder (0.4.5: the edit is a surgical single-key conf rewrite — `g3x_slang_conf_rewrite_text`, host-tested — pushed through the normal conf machinery, so it lands live), fails soft to the unfiltered path |
+| `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf` (`preset`/`scale`/`vsync`/`aspect`/`base_res`/`window`/`borderless`), owns the input image + preset + chain, hot-reloads on file change, polls the F11/F12 hotkeys on the present path plus the Shift+V conf-panel toggle on EVERY present (chain or no chain; it formats and pushes the panel's lines from a fresh conf parse + the live hotkey state) with the panel's Up/Down selection, Left/Right value editing and the Left/Right preset browser over the current preset's folder subtree — recursed to any depth, rows stored as the relative paths `preset=` accepts (0.4.5: the edit is a surgical single-key conf rewrite — `g3x_slang_conf_rewrite_text`, host-tested — pushed through the normal conf machinery, so it lands live), fails soft to the unfiltered path |
 | `src/g3x_window.{h,cpp}` | 0.4.5: present-window presets + DPI awareness — sizes the game's own HWND to a `window=` preset (canonical sizes, `desktop`, `WxH`), config-only (applies at every renderer (re)open + conf hot-reload; no hotkey — F10 is a game skill-slot bind), reverts cleanly to the game's own window; pure table/parse lives inline in the header (host-tested), the Win32 apply runs inside `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` |
 | `src/g3x_controller.{h,cpp}` | 0.4.5 (experimental): controller support — a background XInput poller (pad 0, ~125 Hz, own thread; zero present-path cost) injects ordinary mouse/keyboard via SendInput (left stick = walk: cursor + auto-held LMB; right stick = fine aim at `controller_aimsens` speed; LT = LMB, RT = RMB, A = hold Shift+LMB attack-in-place combo, B = Alt hold, X = Space, Y = I, D-pad = belt 1-4, LB/RB = C/T, L3 = R run/walk, Start = Esc, Back = Tab), gated on game-window focus, everything held released on focus loss/disable/shutdown; cursor-home (0.4.5 field round 2): the walk-release cursor position becomes the player anchor (D2 walks end standing at the cursor — self-correcting) and a 0.4s quiet dwell parks the cursor back on it, so stick motion always emanates from the player; opt-in via `controller=` + `controller_sens=` + `controller_aimsens=` + `controller_deadzone=` + `controller_moveclick=` + `controller_home=`, hot-reloaded from the conf; XInput loaded dynamically (no new imports); pure core (bind table with multi-step combos, stick curve, desired-state diff step) inline in the header, host-tested (scripts/ctrltest.cpp) |
 | `presets/` | Two starter presets (scanline, sharpen — MIT, ours) + `d2slangvk.conf.sample` |
@@ -113,6 +113,14 @@ round-tripped SHADER_READ_ONLY -> TRANSFER and back inside the same command
 buffer), so every source-relative pass FBO re-derives at N-x; the output rect
 math honors the aspect pick before `scale=`.
 
+The 0.4.5 addendum rounds the box out with a **permanent bottom line** —
+`GitHub: VTSTech/D2LoD-libslang-vk` — the one overlay line that never clears
+(shader line) and never expires (toast), so every screenshot the box stamps
+also names the project's home. Two smaller panel-era fixes ride along: the
+hotkey toast now draws without the shader line too (a conf-panel toast with
+no preset loaded used to be silently dropped), and the conf panel renders
+before the tag box so the stamp wins any overlap on tiny present targets.
+
 Window presets (0.4.5) carry the same toast scheme without a hotkey: `window=`
 applies at renderer open and on conf change, toasting (`window 1080p
 1920x1080`) from the swap path (g3x_window) — it works with the chain off.
@@ -171,8 +179,9 @@ the exact path a hand edit takes, so every consumer applies it live
 (aspect/base_res snap on the spot, scale reads per frame, vsync at the next
 swapchain recreate, window/borderless/controller on their own mtime
 probes). The per-key steps mirror the consumers' own fixups: preset cycles
-the game dir's `*.slangp` files (FindFirstFileA, case-insensitive-sorted,
-`(none)` at the front), scale/vsync/aspect/base_res/window step their token
+the scanned `*.slangp` tree (FindFirstFileA, case-insensitive-sorted,
+`(none)` at the front — kept as the editor's fallback; the browser owns the
+row today), scale/vsync/aspect/base_res/window step their token
 lists, the toggles flip, controller_sens 0.25 (0.25-16), controller_aimsens
 0.05 (0.05-4), controller_deadzone 5% (1-80). Every change toasts and logs
 (`overlay: conf aspect = 16:9`); a list end, an empty preset dir or a
@@ -184,21 +193,24 @@ aimsens/deadzone/moveclick/home) are inert, so the panel skips their rows —
 the `controller off` row itself stays (Left/Right re-enables it, which
 re-lists the sub-options on the spot), keeping the panel honest about what
 the arrows can actually change. Second, **Left/Right on the preset row opens the
-preset browser**: the `*.slangp` list of the **current preset's folder**,
-rendered in the panel itself — the scan follows `preset=`'s dir component
-(`presets\crt.slangp` lists the `presets` folder; a bare/empty/absolute
-`preset=` lists the game dir) and the rows are stored exactly as `preset=`
-accepts them (`presets\xbr.slangp`), so a pick resolves back to the very
-file listed. Page shape: a `presets (N) - <dir>` header (the scanned
-folder), `(none)` at the front, the conf's
+preset browser**: the `*.slangp` list of the **current preset's folder
+subtree**, rendered in the panel itself — the scan root follows `preset=`'s
+dir component and the walk recurses to any depth (shader collections nest
+deeper than two folders; a leaf-only listing would show one entry per
+folder): `presets\crt.slangp` lists everything under `presets`, a
+bare/empty/absolute `preset=` lists the game dir tree — and the rows are
+stored exactly as `preset=` accepts them (`presets\xbr.slangp`,
+`shaders\crt\royale\kurozumi.slangp`), so a pick resolves back to the very
+file listed. Page shape: a `presets (N) - <dir>` header (the scan
+root), `(none)` at the front, the conf's
 current preset starred (`* `), up to 16 rows on screen with a scroll window
 that follows the cursor (the page builder, `g3x_slang_browser_page`, is a
 portable host-tested seam). Up/Down move the green cursor, Right loads the
 highlighted preset through the same write-conf + hot-reload path (a real
 change rebuilds the chain live; re-picking the active preset is a no-op
 rewrite that still confirms), Left goes back to the option page, Shift+V
-hides everything and resets the browser. The dir is scanned fresh at every
-open; an empty folder toasts `no .slangp in <folder>` instead of opening an
+hides everything and resets the browser. The tree is scanned fresh at every
+open; an empty tree toasts `no .slangp under <folder>` instead of opening an
 empty page. Same focus rule and edge latches as every panel key. The
 browser is deliberately **Enter/Esc-free**: Enter reaches the game's chat
 box and Esc reaches its menu, and a GetAsyncKeyState poll cannot swallow

@@ -10,6 +10,14 @@
 // chain dies; with no preset the line is absent and the box shrinks to the
 // tag alone (the clean P2 baseline look).
 //
+// Bottom line — since 0.4.5 the box always ends with the repo credit,
+// "GitHub: VTSTech/D2LoD-libslang-vk" — the one overlay line that never
+// clears and never expires, so every screenshot the box stamps also carries
+// the project's home. The hotkey toast (below) now shows without the shader
+// line too — a conf-panel toast with no preset loaded used to be dropped —
+// and the Shift+V conf panel draws before this box, so the stamp wins any
+// overlap on tiny present targets.
+//
 // Placement: the box is the PRIMARY version stamp. An earlier approach
 // (0.4.1-0.4.3) repointed the game's own "Video:" debug line at our tag via a
 // PE patch (g3x_drivertag) — removed in 0.4.5: field builds showed the stock

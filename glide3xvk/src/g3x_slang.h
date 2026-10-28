@@ -147,11 +147,13 @@ void g3x_slang_hotkeys_poll();
 // are only listed while controller= is on — with the master switch off they
 // are inert, so the panel hides them until it is back on. And Left/Right on
 // the preset row open the preset browser: the *.slangp list of the CURRENT
-// preset's folder — the dir component of preset= ("presets" for
-// "presets\crt.slangp"), or the game dir itself when preset= is empty, a
-// bare basename, or absolute — with the rows stored as the relative paths
-// preset= accepts (a subdir pick writes "presets\name.slangp" and resolves
-// back to the very file listed). The cursor starts on the conf's current
+// preset's folder SUBTREE — the scan root is the dir component of preset=
+// ("presets" for "presets\crt.slangp", "shaders\crt" for
+// "shaders\crt\royale\kurozumi.slangp"), or the game dir itself when preset=
+// is empty, a bare basename, or absolute — recursed to any depth, with the
+// rows stored as the relative paths preset= accepts (a subdir pick writes
+// "a\b\name.slangp" and resolves back to the very file listed). The cursor
+// starts on the conf's current
 // preset, Up/Down move, Right loads the highlighted preset through the same
 // write-conf + hot-reload path as the other rows' value edits, and Left
 // goes back to the option list. Enter and Esc are never asked for — they
@@ -161,20 +163,28 @@ void g3x_slang_conf_panel_poll();
 
 // ---- 0.4.5 preset browser (portable seam) ----------------------------------
 
-// Line stride of the browser page buffers: the conf panel's line cap
-// (G3XVK_CONF_PANEL_LINE_CAP in g3x_overlay.h) plus the NUL. A plain number
-// here so this header stays overlay-free (the stub build compiles without it).
-enum { G3XSLANG_BROWSER_LINE_CAP = 73 };
+// Page geometry: line stride = the conf panel's line cap
+// (G3XVK_CONF_PANEL_LINE_CAP in g3x_overlay.h) plus the NUL; row budget and
+// per-row bytes for the scan results (a 64-entry, 96-byte-row listing covers
+// deep shader trees — rows are relative paths, so depth costs bytes).
+enum {
+    G3XSLANG_BROWSER_LINE_CAP   = 73,
+    G3XSLANG_BROWSER_MAX_NAMES  = 64,
+    G3XSLANG_BROWSER_NAME_CAP   = 96
+};
 
 // Pure page builder for the preset browser — Left/Right on the preset row.
 // Renders into lines[][G3XSLANG_BROWSER_LINE_CAP]: a "presets (N) - dir"
 // header (dir_display empty/NULL drops the " - dir" part), up to
 // (max_lines - 2) list rows and a hint footer. Entry 0 is "(none)" (an empty
-// preset=), entries 1..count are the scanned names — bare basenames for a
-// game-dir scan, "subdir\name" relative paths when the browser lists the
-// current preset's folder; the entry matching active (the live preset=
-// value with '/' folded to '\\', full relative path, ""/NULL = none) is
-// marked "* ". *sel/*top are in/out:
+// preset=), entries 1..count are the scanned names — the relative paths
+// preset= accepts, from the current preset's folder SUBTREE: bare basenames
+// for a game-dir scan, "subdir\name" or "a\b\c\name" rows when the browser
+// lists a folder (the scan recurses to any depth — shader collections nest
+// deeper than two folders — and every row resolves back to the very file
+// that was listed); the entry matching active (the live preset= value with
+// '/' folded to '\\', full relative path, ""/NULL = none) is marked "* ".
+// *sel/*top are in/out:
 // sel clamps into [0, count] (0 = none), top scrolls so the cursor stays on
 // screen. Returns the pushed line count; *selected_out (when non-NULL) gets
 // the green-cursor line index for g3x_overlay_conf_panel_set_selected, or -1

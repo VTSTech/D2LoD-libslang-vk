@@ -33,6 +33,13 @@ struct TagLine {
 };
 const TagLine s_tag;
 
+// 0.4.5: the tag box's permanent bottom line — the repo credit. Unlike the
+// shader line (clears when no chain runs) and the toast (expires), it never
+// goes away, so every screenshot the overlay stamps also says where the
+// build came from.
+const char     k_credit[]   = "GitHub: VTSTech/D2LoD-libslang-vk";
+const unsigned k_credit_len = sizeof(k_credit) - 1;
+
 // 0.4.2: second overlay line — the active slang preset's file name. Pushed
 // by g3x_slang when a chain goes ready (first open, conf change, hot reload)
 // and cleared when the chain dies; empty = line absent, box = tag alone.
@@ -171,50 +178,8 @@ int  g3x_overlay_conf_panel_selected()             { return s_conf_sel; }
 void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     if (!s_enabled || !bgra || w < 8 || h < 8) return;
 
-    // P2.11: box anchored 4px from the TOP-RIGHT edge — the game's `/fps`
-    // readout occupies the top-left corner, so the tag moved out of its way.
-    // 0.4.2: up to two lines — the tag, then the active shader's file name
-    // one line-step below (10px: 8px cell + 2px gap, so line 1's descenders
-    // stay clear of line 2). 0.4.3: optional third line — the hotkey toast,
-    // same step, decaying per presented frame; the box grows for it and
-    // shrinks back when it expires. Box: (w-4-bw, 4)..(w-4, 4+bh), clamped
-    // to the buffer edges so absurdly small present targets can't write OOB.
     if (s_toast_on && s_toast_frames > 0) --s_toast_frames;
     else s_toast_on = false;
-
-    const unsigned pad = 3, oy = 4, step = 10;
-    const bool     two   = s_shader_on;
-    const bool     three = two && s_toast_on;
-    unsigned max_len = s_tag.len;
-    if (two)   max_len = (s_shader_len > max_len) ? s_shader_len : max_len;
-    if (three) max_len = (s_toast_len  > max_len) ? s_toast_len  : max_len;
-    unsigned lines = 1 + (two ? 1u : 0u) + (three ? 1u : 0u);
-    unsigned bw = max_len * 8 + pad * 2;
-    unsigned bh = 8 + (lines - 1) * step + pad * 2;
-    if (bw + 4 > w) bw = w - 4;                    // keep the 4px right margin
-    const unsigned ox = w - bw - 4;                // unsigned-safe: bw+4 <= w
-    if (oy + bh > h) bh = h - oy;                  // tiny present targets
-    if (!bw || !bh) return;
-
-    // 1. 65%-black backdrop (dst *= 0.35 per channel — rounds toward black).
-    for (unsigned y = oy; y < oy + bh; ++y) {
-        uint8_t* row = bgra + (size_t)y * w * 4;
-        for (unsigned x = ox; x < ox + bw; ++x) {
-            uint8_t* p = row + (size_t)x * 4;
-            p[0] = (uint8_t)((p[0] * 89) >> 8);   // B
-            p[1] = (uint8_t)((p[1] * 89) >> 8);   // G
-            p[2] = (uint8_t)((p[2] * 89) >> 8);   // R
-            p[3] = 0xFF;
-        }
-    }
-
-    // 2. glyphs.
-    const unsigned tx = ox + pad, ty = oy + pad;
-    draw_line(bgra, w, h, tx, ty, s_tag.text, s_tag.len, 0xFF, 0xFF, 0xFF);
-    if (two)
-        draw_line(bgra, w, h, tx, ty + step, s_shader, s_shader_len, 0xFF, 0xFF, 0xFF);
-    if (three)
-        draw_line(bgra, w, h, tx, ty + step * 2, s_toast, s_toast_len, 0xFF, 0xFF, 0xFF);
 
     // 3. 0.4.5: the Shift+V conf panel — a LEFT-edge box (the tag owns the
     // top-right; the game's /fps readout the very top-left corner, so the
@@ -226,8 +191,11 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
     // cursor — a dim-green band across the box on that row, glyphs in bright
     // green. g3x_slang moves the cursor; this module only paints it, and a
     // stale index just paints nothing.
-    if (!s_conf_visible || !s_conf_count) return;
-
+    // Drawn BEFORE the tag box: the tag is the build stamp and now also
+    // carries the repo credit line, so on a tiny present target where a wide
+    // panel line would reach under it, the tag box paints over the panel's
+    // tail rather than the other way around — the stamp always stays whole.
+    if (s_conf_visible && s_conf_count) {
     const unsigned ppad = 3, pox = 4, poy = 20, pstep = 10;
     unsigned pmax = 0;
     for (unsigned i = 0; i < s_conf_count; ++i)
@@ -238,8 +206,8 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
         pbw = (w > pox + 4) ? w - pox - 4 : 0;
     if (poy + pbh > h)                           // tiny present targets
         pbh = (h > poy) ? h - poy : 0;
-    if (!pbw || !pbh) return;
 
+    if (pbw && pbh) {
     const bool     sel_on = s_conf_sel >= 0 && (unsigned)s_conf_sel < s_conf_count;
     const unsigned sel_y0 = sel_on ? poy + ppad + (unsigned)s_conf_sel * pstep : 0;
     const unsigned sel_y1 = sel_y0 + 8;          // one glyph cell tall
@@ -268,4 +236,58 @@ void g3x_overlay_render(uint8_t* bgra, unsigned w, unsigned h) {
                   sel ? k_sel_b : 0xFF, sel ? k_sel_g : 0xFF,
                   sel ? k_sel_r : 0xFF);
     }
+    }
+    }
+
+    // P2.11: box anchored 4px from the TOP-RIGHT edge — the game's `/fps`
+    // readout occupies the top-left corner, so the tag moved out of its way.
+    // 0.4.2: up to two lines — the tag, then the active shader's file name
+    // one line-step below (10px: 8px cell + 2px gap, so line 1's descenders
+    // stay clear of line 2). 0.4.3: optional third line — the hotkey toast,
+    // same step, decaying per presented frame; the box grows for it and
+    // shrinks back when it expires. Box: (w-4-bw, 4)..(w-4, 4+bh), clamped
+    // to the buffer edges so absurdly small present targets can't write OOB.
+    // 0.4.5: the toast no longer requires the shader line to show (a
+    // conf-panel toast with no preset loaded used to be silently dropped —
+    // exactly the "never saw the toast" field report), and the box gains a
+    // PERMANENT bottom line: the repo credit, so the stamp always names the
+    // project's home too.
+    const unsigned pad = 3, oy = 4, step = 10;
+    const bool     two   = s_shader_on;
+    const bool     three = s_toast_on;
+    unsigned max_len = s_tag.len;
+    if (two)   max_len = (s_shader_len > max_len) ? s_shader_len : max_len;
+    if (three) max_len = (s_toast_len  > max_len) ? s_toast_len  : max_len;
+    if (k_credit_len > max_len) max_len = k_credit_len;
+    unsigned lines = 1 + (two ? 1u : 0u) + (three ? 1u : 0u) + 1u;   // + credit
+    unsigned bw = max_len * 8 + pad * 2;
+    unsigned bh = 8 + (lines - 1) * step + pad * 2;
+    if (bw + 4 > w) bw = w - 4;                    // keep the 4px right margin
+    const unsigned ox = w - bw - 4;                // unsigned-safe: bw+4 <= w
+    if (oy + bh > h) bh = h - oy;                  // tiny present targets
+    if (!bw || !bh) return;
+
+    // 1. 65%-black backdrop (dst *= 0.35 per channel — rounds toward black).
+    for (unsigned y = oy; y < oy + bh; ++y) {
+        uint8_t* row = bgra + (size_t)y * w * 4;
+        for (unsigned x = ox; x < ox + bw; ++x) {
+            uint8_t* p = row + (size_t)x * 4;
+            p[0] = (uint8_t)((p[0] * 89) >> 8);   // B
+            p[1] = (uint8_t)((p[1] * 89) >> 8);   // G
+            p[2] = (uint8_t)((p[2] * 89) >> 8);   // R
+            p[3] = 0xFF;
+        }
+    }
+
+    // 2. glyphs. The credit is the LAST line (literally the bottom of the
+    // overlay); the toast sits directly above it, shader line or not.
+    const unsigned tx = ox + pad, ty = oy + pad;
+    draw_line(bgra, w, h, tx, ty, s_tag.text, s_tag.len, 0xFF, 0xFF, 0xFF);
+    if (two)
+        draw_line(bgra, w, h, tx, ty + step, s_shader, s_shader_len, 0xFF, 0xFF, 0xFF);
+    if (three)
+        draw_line(bgra, w, h, tx, ty + step * (1 + (two ? 1u : 0u)),
+                  s_toast, s_toast_len, 0xFF, 0xFF, 0xFF);
+    draw_line(bgra, w, h, tx, ty + step * (lines - 1),
+              k_credit, k_credit_len, 0xFF, 0xFF, 0xFF);
 }

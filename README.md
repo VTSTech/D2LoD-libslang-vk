@@ -72,9 +72,9 @@ resolution — is the same one proven in
   sub-options are inert, so the panel skips their rows (`controller off`
   itself stays — Left/Right re-enables it, which re-lists them). **Left/Right**
   on the preset row opens the preset browser: the `*.slangp` list of the
-  current preset's folder in the panel (current preset starred, `(none)` at
-  the front, scrolling), **Up/Down** to move, **Right** loads the highlighted
-  preset live, **Left** goes back to the option list.
+  current preset's folder subtree in the panel (current preset starred,
+  `(none)` at the front, scrolling), **Up/Down** to move, **Right** loads the
+  highlighted preset live, **Left** goes back to the option list.
 - **Window size presets (0.4.5)**: `window=native|240p|480p|576p|720p|768p|1080p|desktop|WxH`
   and `borderless=0|1` in `d2slangvk.conf` size the OS window the game presents
   into — canonical sizes (240p=320x240 ... 1080p=1920x1080; `desktop` =
@@ -249,23 +249,32 @@ While the game window has focus — the same scheme as Chocolate-Doom-VK
   loads and **Left** backs out.
 - **Preset browser** (0.4.5) — while the conf panel is up and the cursor
   sits on the preset row, **Left/Right** open it: the `*.slangp` files of
-  the **current preset's folder** listed in the panel (`presets (N) - <dir>`,
-  current preset starred, `(none)` first). The scan follows `preset=`: a
-  value with a subfolder (`presets\crt.slangp`) lists that folder and shows
-  `presets\...` rows — a pick writes the same relative path back, so it
-  resolves to the very file listed; a bare or empty `preset=` scans the
-  game dir itself (an absolute `preset=` too — browser rows are relative
-  paths by contract). **Up/Down** move the cursor, **Right** loads the
+  the **current preset's folder subtree** listed in the panel
+  (`presets (N) - <dir>`, current preset starred, `(none)` first). The scan
+  root follows `preset=`'s folder and recurses to any depth — shader
+  collections nest deeper than two folders, and a leaf-only listing would
+  show one entry per folder: `presets\crt.slangp` lists everything under
+  `presets` (`presets\...` rows), `shaders\crt\royale\kurozumi.slangp`
+  lists everything under `shaders\crt` (`shaders\crt\royale\...` rows
+  included); a bare or empty `preset=` scans the game dir tree (an absolute
+  `preset=` too — browser rows are relative paths by contract). Every row
+  is written back exactly as `preset=` accepts it, so a pick resolves to
+  the very file listed. **Up/Down** move the cursor, **Right** loads the
   highlighted preset through the same write-conf + hot-reload path as the
   value edits (the chain rebuilds live), **Left** goes back to the
-  option page. An empty folder toasts `no .slangp in <folder>` instead of
+  option page. An empty tree toasts `no .slangp under <folder>` instead of
   opening the page. The browser never asks for **Enter** or **Esc** — those
   reach the game's chat box and its menu, and a polled hotkey cannot
   swallow them.
 
 Each press shows a toast line in the overlay box (`aspect 16:9`,
 `shader base 2x`, `conf overlay on`) for ~2 seconds and logs a
-`slang: F11/F12 ...` / `overlay: conf panel ...` line. The F11/F12 picks
+`slang: F11/F12 ...` / `overlay: conf panel ...` line. The toast shows
+whether or not a shader is loaded — an earlier build silently dropped it
+without an active shader line, which is why a browser toast could go
+unseen. The tag box itself now ends with a permanent bottom line,
+`GitHub: VTSTech/D2LoD-libslang-vk`, so every screenshot the overlay stamps
+also names the project's home. The F11/F12 picks
 are **session-only**: they are never written back to `d2slangvk.conf`, and
 a conf hot-reload snaps them back to whatever the file says. The panel's
 Left/Right edits are the opposite — they write the file, which is what makes

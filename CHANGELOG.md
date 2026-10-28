@@ -309,11 +309,14 @@ never tagged before)
   their rows — the `controller off` row itself stays (Left/Right switches
   it back on, which re-lists the sub-options on the spot). And **Left/Right**
   on the preset row open the preset browser over the **current preset's
-  folder**: the scan follows `preset=`'s dir component (`presets\crt.slangp`
-  lists the `presets` folder; a bare/empty/absolute `preset=` lists the game
-  dir) and the rows are stored exactly as `preset=` accepts them
-  (`presets\xbr.slangp` — a pick resolves back to the very file listed).
-  Page shape: a `presets (N) - <dir>` header (the scanned folder), the
+  folder subtree**: the scan root follows `preset=`'s dir component
+  (`presets\crt.slangp` lists the `presets` tree; a bare/empty/absolute
+  `preset=` lists the game dir tree) and the walk recurses to any depth —
+  shader collections nest deeper than two folders — with the rows stored
+  exactly as `preset=` accepts them (`presets\xbr.slangp`,
+  `shaders\crt\royale\kurozumi.slangp` — a pick resolves back to the very
+  file listed).
+  Page shape: a `presets (N) - <dir>` header (the scan root), the
   conf's current preset starred (`* `), `(none)` at the front, up to 16 rows
   on screen with a scroll window that follows the cursor. **Up/Down** move
   the green cursor through it, **Right** loads the highlighted preset (the
@@ -324,12 +327,25 @@ never tagged before)
   browser). The browser is deliberately Enter/Esc-free — Enter reaches the
   game's chat box and Esc its menu, and a GetAsyncKeyState poll cannot
   swallow either, so Left/Right do double duty (open from the preset row,
-  then load/back while it is up). The folder is scanned fresh at every
-  open; an empty folder toasts `no .slangp in <folder>` instead of opening
+  then load/back while it is up). The tree is scanned fresh at every
+  open; an empty tree toasts `no .slangp under <folder>` instead of opening
   an empty page. Logs `overlay: preset browser ...` lines to match.
+- **Overlay: repo credit line** (g3x_overlay): the tag box ends with a
+  permanent bottom line — `GitHub: VTSTech/D2LoD-libslang-vk` — the one
+  overlay line that never clears (shader line) and never expires (toast),
+  so every screenshot the overlay stamps also names the project's home.
+  The conf panel draws before the tag box, so the stamp wins any overlap on
+  tiny present targets.
 
 ### Fixed (0.4.5 addendum)
 
+- Conf-panel/browser toasts were invisible while no preset was loaded: the
+  overlay's optional toast line required the active-shader line to be up
+  (`three = two && s_toast_on`), so e.g. the browser's `no .slangp ...`
+  toast never drew in exactly the situation that produced it — the field
+  report of "never seeing" the empty-folder toast. The toast now draws
+  whether or not a shader line is up; the tag box's credit line stays the
+  bottom row either way.
 - The 8x8 overlay font's 'm' rendered as a solid block: DejaVu Sans Mono
   Bold's triple-stem 'm' collapses under the 4x-box-filter at 8px, and no
   overlay string until now contained a lowercase 'm'. The Shift+V panel's

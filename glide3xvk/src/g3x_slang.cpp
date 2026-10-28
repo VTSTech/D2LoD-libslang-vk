@@ -473,18 +473,21 @@ static bool         s_prev_up = false, s_prev_down = false;
 static bool         s_prev_left = false, s_prev_right = false;
 
 // 0.4.5 preset browser (Left/Right on the preset row): the current preset's
-// folder's *.slangp list — the dir component of preset= ("presets" for
-// "presets\crt.slangp"), or the game dir itself when preset= is empty, a
-// bare basename, or absolute (see preset_rel_dir). The cursor (0 = "(none)",
-// 1.. = the scanned names, stored as the relative paths preset= accepts) and
-// the scroll top. Scanned fresh at every open — the dir listing is read with
-// the same file-is-truth rule as the conf.
+// folder subtree's *.slangp list — the scan root is the dir component of
+// preset= ("presets" for "presets\crt.slangp", "shaders\crt" for
+// "shaders\crt\royale\kurozumi.slangp"), or the game dir itself when preset=
+// is empty, a bare basename, or absolute (see preset_rel_dir). The walk
+// recurses to any depth (shader collections nest deeper than two folders),
+// and every row is stored as the relative path preset= accepts, so a pick
+// resolves back to the very file that was listed. The cursor (0 = "(none)",
+// 1.. = the scanned rows) and the scroll top. Scanned fresh at every open —
+// the dir tree is read with the same file-is-truth rule as the conf.
 static bool         s_browser_open = false;
 static int          s_browser_sel  = 0;
 static unsigned     s_browser_top  = 0;
 static unsigned     s_browser_cnt  = 0;
-static char         s_browser_names[32][64];
-static char         s_browser_dir[MAX_PATH];   // full scan dir, page header
+static char         s_browser_names[G3XSLANG_BROWSER_MAX_NAMES][G3XSLANG_BROWSER_NAME_CAP];
+static char         s_browser_dir[MAX_PATH];   // full scan root, page header
 
 // preset= writes and the FindFirstFileA scan share one separator ('\'), so
 // the browser's star match is a plain _stricmp on the normalized live value
@@ -498,12 +501,14 @@ static void norm_preset_slash(const char* in, char* out, size_t cap) {
     out[n] = '\0';
 }
 
-// The current preset's folder as a relative subdir ("presets"), or "" when
-// preset= is empty, a bare basename, or absolute — the same three-way split
-// resolve_preset_path makes, because the browser's entries are relative
-// paths by contract (an absolute dir would need absolute rows that cannot
-// round-trip inside the 64-byte name slots). An over-long dir component
-// falls back the same way.
+// The current preset's folder as a relative subdir ("presets", "shaders\crt"),
+// or "" when preset= is empty, a bare basename, or absolute — the same
+// three-way split resolve_preset_path makes, because the browser's entries
+// are relative paths by contract (an absolute dir would need absolute rows
+// that cannot round-trip inside the name slots). Separators fold to '\\' on
+// the way through (preset= may use '/'; the scan and the stored rows share
+// one separator, which also keeps the star match a plain _stricmp). An
+// over-long dir component falls back the same way.
 static void preset_rel_dir(const char* preset, char* out, size_t cap) {
     if (!out || !cap) return;
     out[0] = '\0';
@@ -514,7 +519,8 @@ static void preset_rel_dir(const char* preset, char* out, size_t cap) {
         if (*p == '/' || *p == '\\') last = p;
     if (!last) return;                          // bare basename -> game dir
     if ((size_t)(last - preset) >= cap) return; // cannot happen at preset[512]
-    std::memcpy(out, preset, (size_t)(last - preset));
+    for (size_t i = 0; i < (size_t)(last - preset); ++i)
+        out[i] = (preset[i] == '/') ? '\\' : preset[i];
     out[last - preset] = '\0';
 }
 
@@ -820,7 +826,7 @@ static void conf_panel_refresh() {
     // re-derived from browser lines. Right/Left/Up/Down while the browser is
     // up are the poll's business.
     if (s_browser_open) {
-        const char* np[32];
+        const char* np[G3XSLANG_BROWSER_MAX_NAMES];
         for (unsigned i = 0; i < s_browser_cnt; ++i) np[i] = s_browser_names[i];
         char abn[512];                         // the live preset= value with
         norm_preset_slash(c.preset, abn,       // '\' separators, so the star
@@ -910,8 +916,9 @@ static void conf_panel_refresh() {
     }
 
     // 0.4.5: the footer hints the cursor row's extra action — on the preset
-    // row Left/Right opens the preset browser (the game dir's *.slangp list;
-    // Enter is never asked for — it reaches the game's chat box).
+    // row Left/Right opens the preset browser (the current preset's folder's
+    // subtree list; Enter is never asked for — it reaches the game's chat
+    // box).
     std::snprintf(footer, sizeof(lines[0]), "%s",
                   !_stricmp(s_conf_sel_key, "preset")
                       ? "[Up/Down] select - [Left/Right] list - [Shift+V] hide"
@@ -928,46 +935,95 @@ static void conf_panel_refresh_if_visible() {
 
 // ---- 0.4.5 value editing (Left/Right on the selected option) ----------------
 
-// Lists the *.slangp presets in the browser's scan dir (sorted,
-// case-insensitively). rel_dir is the current preset's folder as a relative
-// subdir ("presets") or "" for the game dir itself; the stored names are
-// exactly what preset= accepts — bare basenames for the game dir,
-// "<subdir>\<name>" rows for a subdir scan — resolve_preset_path turns them
-// back into the very files that were listed, so a pick round-trips
-// byte-for-byte. Rows that do not fit the 64-byte name slots are skipped
-// (a truncated path could not round-trip).
-static bool scan_presets(const char* rel_dir, char (*names)[64],
+// Lists the *.slangp presets under the browser's scan root (sorted,
+// case-insensitively by the full relative row). rel_dir is the current
+// preset's folder as a relative subdir ("presets", "shaders\crt") or "" for
+// the game dir itself. The walk RECURSES — shader collections nest deeper
+// than two folders, and a leaf-only listing would show one entry per folder
+// — so the stored names are exactly what preset= accepts: bare basenames
+// for a game-dir root, "a\b\name.slangp" relative rows for everything else;
+// resolve_preset_path turns a row back into the very file that was listed,
+// so a pick round-trips byte-for-byte.
+// Guards: FindFirstFileA patterns that do not fit MAX_PATH are skipped
+// (Windows could not open them either), junctions/symlinks are not followed
+// (FILE_ATTRIBUTE_REPARSE_POINT — cycle safety) on top of a recursion depth
+// cap, rows that do not fit a name slot are skipped (a truncated path could
+// not round-trip), and the row count caps at max.
+static void scan_presets_tree(const char* rel, char (*names)[G3XSLANG_BROWSER_NAME_CAP],
+                              unsigned max, unsigned* count, unsigned depth);
+
+static bool scan_presets(const char* rel_dir, char (*names)[G3XSLANG_BROWSER_NAME_CAP],
                          unsigned max, unsigned* count) {
     *count = 0;
     if (!names || !count || !max) return false;
     if (!rel_dir) rel_dir = "";
     if (!s_exe_dir[0] && !exe_dir_of(s_exe_dir, sizeof(s_exe_dir))) return false;
+    scan_presets_tree(rel_dir, names, max, count, 0);
+    // one case-insensitive sort over the accumulated rows — the walk
+    // collected dir by dir, depth-first, so this makes the page order purely
+    // content-driven (and identical across opens of the same tree)
+    for (unsigned i = 1; i < *count; ++i) {
+        char tmp[G3XSLANG_BROWSER_NAME_CAP];
+        std::memcpy(tmp, names[i], sizeof(tmp));
+        unsigned j = i;
+        while (j && _stricmp(names[j - 1], tmp) > 0) {
+            std::memcpy(names[j], names[j - 1], sizeof(tmp));
+            --j;
+        }
+        std::memcpy(names[j], tmp, sizeof(tmp));
+    }
+    return true;
+}
+
+// One directory of the recursive preset walk (see scan_presets). rel is the
+// dir's path relative to the exe dir ("" = the exe dir itself); files are
+// collected first, then each real subdirectory recurses one level deeper.
+static void scan_presets_tree(const char* rel, char (*names)[G3XSLANG_BROWSER_NAME_CAP],
+                              unsigned max, unsigned* count, unsigned depth) {
+    if (depth >= 16 || *count >= max) return;   // deep enough; also cycle-safe
     char pat[MAX_PATH];
-    if (rel_dir[0])
-        std::snprintf(pat, sizeof(pat), "%s\\%s\\*.slangp", s_exe_dir, rel_dir);
-    else
-        std::snprintf(pat, sizeof(pat), "%s\\*.slangp", s_exe_dir);
+    int pr = rel[0]
+        ? std::snprintf(pat, sizeof(pat), "%s\\%s\\*.slangp", s_exe_dir, rel)
+        : std::snprintf(pat, sizeof(pat), "%s\\*.slangp", s_exe_dir);
+    if (pr < 0 || pr >= (int)sizeof(pat)) return;   // over-long: unscannable
     WIN32_FIND_DATAA fd{};
     HANDLE h = FindFirstFileA(pat, &fd);
-    if (h == INVALID_HANDLE_VALUE) return true;    // none found is not an error
+    if (h != INVALID_HANDLE_VALUE) {
+        do {
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+            if (*count >= max) break;
+            const int wr = rel[0]
+                ? std::snprintf(names[*count], G3XSLANG_BROWSER_NAME_CAP,
+                                "%s\\%s", rel, fd.cFileName)
+                : std::snprintf(names[*count], G3XSLANG_BROWSER_NAME_CAP,
+                                "%s", fd.cFileName);
+            if (wr < 0 || wr >= G3XSLANG_BROWSER_NAME_CAP)
+                continue;                      // not round-trippable -> skipped
+            ++*count;
+        } while (FindNextFileA(h, &fd));
+        FindClose(h);
+    }
+    if (*count >= max) return;
+    pr = rel[0]
+        ? std::snprintf(pat, sizeof(pat), "%s\\%s\\*", s_exe_dir, rel)
+        : std::snprintf(pat, sizeof(pat), "%s\\*", s_exe_dir);
+    if (pr < 0 || pr >= (int)sizeof(pat)) return;
+    h = FindFirstFileA(pat, &fd);
+    if (h == INVALID_HANDLE_VALUE) return;
     do {
-        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+        if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) continue;
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) continue;
+        if (!std::strcmp(fd.cFileName, ".") || !std::strcmp(fd.cFileName, ".."))
+            continue;
+        char sub[G3XSLANG_BROWSER_NAME_CAP];   // rows under it must fit too
+        const int wr = rel[0]
+            ? std::snprintf(sub, sizeof(sub), "%s\\%s", rel, fd.cFileName)
+            : std::snprintf(sub, sizeof(sub), "%s", fd.cFileName);
+        if (wr < 0 || wr >= G3XSLANG_BROWSER_NAME_CAP) continue;
+        scan_presets_tree(sub, names, max, count, depth + 1);
         if (*count >= max) break;
-        const int wr = rel_dir[0]
-            ? std::snprintf(names[*count], 64, "%s\\%s", rel_dir, fd.cFileName)
-            : std::snprintf(names[*count], 64, "%s", fd.cFileName);
-        if (wr < 0 || wr >= 64) continue;          // not round-trippable
-        unsigned i = (*count)++;                   // insertion sort, ci-order
-        while (i && _stricmp(names[i], names[i - 1]) < 0) {
-            char tmp[64];
-            std::memcpy(tmp, names[i], sizeof(tmp));
-            std::memcpy(names[i], names[i - 1], sizeof(tmp));
-            std::memcpy(names[i - 1], tmp, sizeof(tmp));
-            --i;
-        }
     } while (FindNextFileA(h, &fd));
     FindClose(h);
-    return true;
 }
 
 // File I/O around g3x_slang_conf_rewrite_text: read d2slangvk.conf, rewrite
@@ -1023,17 +1079,24 @@ static bool conf_panel_edit(int dir, char* desc, size_t desc_cap) {
     val[0] = '\0';                             // 512 in the struct; both fit
 
     if (!_stricmp(key, "preset")) {
-        char names[32][64];
+        char names[G3XSLANG_BROWSER_MAX_NAMES][G3XSLANG_BROWSER_NAME_CAP];
         unsigned cnt = 0;
-        // game-dir cycle (the browser owns the preset row today; kept so the
-        // editor still names a value if that routing ever changes)
-        if (!scan_presets("", names, 32, &cnt) || !cnt) return false;
+        // game-dir tree cycle (the browser owns the preset row today; kept so
+        // the editor still names a value if that routing ever changes). Rows
+        // can be deep relative paths, so both the match and the display go
+        // through each row's basename.
+        if (!scan_presets("", names, G3XSLANG_BROWSER_MAX_NAMES, &cnt) || !cnt)
+            return false;
         const char* cur = c.preset;            // basename: what the panel shows
         for (const char* q = c.preset; *q; ++q)
             if (*q == '/' || *q == '\\') cur = q + 1;
         int idx = -1;
-        for (unsigned i = 0; i < cnt; ++i)
-            if (!_stricmp(cur, names[i])) { idx = (int)i; break; }
+        for (unsigned i = 0; i < cnt; ++i) {
+            const char* rb = names[i];
+            for (const char* q = names[i]; *q; ++q)
+                if (*q == '/' || *q == '\\') rb = q + 1;
+            if (!_stricmp(cur, rb)) { idx = (int)i; break; }
+        }
         const int nx = idx + dir;              // -1 = "(none)", the list front
         if (nx < -1 || nx >= (int)cnt) return false;
         if (nx >= 0) std::snprintf(val, sizeof(val), "%s", names[nx]);
@@ -1131,15 +1194,16 @@ static bool conf_panel_edit(int dir, char* desc, size_t desc_cap) {
 
 // ---- 0.4.5 preset browser (Left/Right on the panel's preset row) -----------
 
-// Opens the browser page over the CURRENT preset's folder: the dir component
-// of preset= ("presets" for "presets\crt.slangp"), or the game dir itself
-// when preset= is empty, a bare basename, or absolute (preset_rel_dir). The
-// listing is scanned fresh at every open — the same file-is-truth rule as
-// the conf — and stored as the relative paths preset= accepts. The cursor
-// starts on the conf's current preset (matched on the '\'-normalized value),
-// or on "(none)" when there is none / it is not in the folder. An empty
-// folder is a toast naming it, not an empty page — there is nothing useful
-// to show or pick.
+// Opens the browser page over the CURRENT preset's folder subtree: the scan
+// root is the dir component of preset= ("presets" for "presets\crt.slangp",
+// "shaders\crt" for "shaders\crt\royale\kurozumi.slangp"), or the game dir
+// itself when preset= is empty, a bare basename, or absolute
+// (preset_rel_dir). The listing is scanned fresh at every open — the same
+// file-is-truth rule as the conf — recursively to any depth, and stored as
+// the relative paths preset= accepts. The cursor starts on the conf's
+// current preset (matched on the '\'-normalized value), or on "(none)" when
+// there is none / it is not in the tree. An empty tree is a toast naming the
+// scan root, not an empty page — there is nothing useful to show or pick.
 static void conf_panel_browser_open() {
     G3xSlangConf c;
     conf_parse_fresh(&c);
@@ -1147,16 +1211,16 @@ static void conf_panel_browser_open() {
     char rel[MAX_PATH];
     preset_rel_dir(c.preset, rel, sizeof(rel));
 
-    char names[32][64];
+    char names[G3XSLANG_BROWSER_MAX_NAMES][G3XSLANG_BROWSER_NAME_CAP];
     unsigned cnt = 0;
-    if (!scan_presets(rel, names, 32, &cnt) || !cnt) {
+    if (!scan_presets(rel, names, G3XSLANG_BROWSER_MAX_NAMES, &cnt) || !cnt) {
         char msg[80];
         if (rel[0])
-            std::snprintf(msg, sizeof(msg), "no .slangp in %.60s", rel);
+            std::snprintf(msg, sizeof(msg), "no .slangp under %.58s", rel);
         else
-            std::snprintf(msg, sizeof(msg), "no .slangp in game dir");
+            std::snprintf(msg, sizeof(msg), "no .slangp under game dir");
         g3x_overlay_toast(msg);
-        g3x_log("overlay: preset browser empty (no .slangp in %s)",
+        g3x_log("overlay: preset browser empty (no .slangp under %s)",
                 rel[0] ? rel : "game dir");
         return;
     }
@@ -1188,8 +1252,8 @@ static void conf_panel_browser_open() {
     char msg[40];
     std::snprintf(msg, sizeof(msg), "presets: %u", cnt);
     g3x_overlay_toast(msg);
-    g3x_log("overlay: preset browser open (%u found%s%s)", cnt,
-            rel[0] ? " in " : "", rel[0] ? rel : "");
+    g3x_log("overlay: preset browser open (%u found under %s)", cnt,
+            rel[0] ? rel : "game dir");
 }
 
 // Right in the browser: write the highlighted entry into preset= (the same
@@ -1200,18 +1264,18 @@ static void conf_panel_browser_open() {
 // already-active preset rewrites the same value: the reload is skipped by
 // the mtime logic, the toast still confirms.
 static void conf_panel_browser_load() {
-    char val[64] = "";
+    char val[G3XSLANG_BROWSER_NAME_CAP] = "";
     if (s_browser_sel > 0 && (unsigned)s_browser_sel <= s_browser_cnt)
         std::snprintf(val, sizeof(val), "%s", s_browser_names[s_browser_sel - 1]);
-    char desc[64];
-    std::snprintf(desc, sizeof(desc), "%.44s", val[0] ? val : "(none)");
+    char desc[80];                             // toast-sized display text
+    std::snprintf(desc, sizeof(desc), "%.72s", val[0] ? val : "(none)");
     if (conf_write_key("preset", val)) {
         s_browser_open = false;
         reread_conf();                         // file-is-truth: reload + refresh
         char msg[80];
         std::snprintf(msg, sizeof(msg), "preset %s", desc);
         g3x_overlay_toast(msg);
-        g3x_log("overlay: conf preset = %s", desc);
+        g3x_log("overlay: conf preset = %s", val[0] ? val : "(none)");
     } else {
         g3x_log("overlay: conf preset unchanged (write failed)");
     }

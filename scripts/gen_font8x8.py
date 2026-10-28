@@ -73,7 +73,7 @@ OVERRIDE = {
     ord("q"): [0x00, 0x00, 0x1E, 0x1B, 0x13, 0x1E, 0x10, 0x10],
     # dot row0, stem col3 rows 2-6, hook cols1-3 row7
     ord("j"): [0x08, 0x00, 0x08, 0x08, 0x08, 0x08, 0x08, 0x0E],
-    # 0.4.6: DejaVu's triple-stem 'm' collapses to a solid block at 8px (the
+    # 0.4.5: DejaVu's triple-stem 'm' collapses to a solid block at 8px (the
     # box filter fills cols 2-7 rows 2-5). Hand-drawn in the style of the
     # generated 'n' (1px stems 3 columns apart, 1px top bar, x-height body
     # rows 2-7): arch tops merged into one bar, stems at cols 1/4/7. First
