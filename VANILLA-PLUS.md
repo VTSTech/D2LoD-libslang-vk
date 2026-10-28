@@ -67,7 +67,10 @@ each can be fixed, replaced and released independently.
   the toggle; entering a game starts with labels off. **Default OFF**: set
   `[features] alt_toggle=1` in `d2vp.ini` next to `d2.exe` (missing
   file/section/key/garbage value = vanilla hold-Alt behavior byte-for-byte;
-  the key is hot-re-read at most every 2 s).
+  the key is hot-re-read at most every 2 s). A missing `d2vp.ini` is created
+  at startup with a documented all-defaults template — one attempt per
+  process, never overwrites an existing file, silently skipped if the
+  directory is unwritable (delete it and a fresh copy returns next start).
 
 ## Build
 

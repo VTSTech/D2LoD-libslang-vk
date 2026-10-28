@@ -791,28 +791,93 @@ void __stdcall thunk_NET_D2GS_CLIENT_Send_SHORT_LeftSkillOnLocEx() {
 // Default/missing file/missing section/missing key/garbage value = 0 =
 // vanilla hold-Alt behavior byte-for-byte (Principle 1: opt-in, config-gated).
 // The ini is re-checked at most every 2000 ms via GetTickCount, mirroring the
-// wrapper's ~2 s conf hot-reload cadence. Auto-repeat never reaches the
-// handlers (CmdTbl.cpp filters lParam bit 30 upstream), so the keydown
+// wrapper's ~2 s conf hot-reload cadence. A missing d2vp.ini is created with
+// a documented all-defaults template: once per process at client boot
+// (ApplicationMain) and lazily before the first config read, so the opt-in
+// keys are discoverable without reading any docs. Auto-repeat never reaches
+// the handlers (CmdTbl.cpp filters lParam bit 30 upstream), so the keydown
 // handler fires exactly once per physical press.
 static int gbAltToggleMode = 0;
 static int gbAltLatched = 0;
 static DWORD dwAltToggleLastCheck = 0;
+static int gbAltIniAttempted = 0;
+
+// Resolve "<exe dir>\d2vp.ini". GetModuleFileNameA always yields a fully
+// qualified path; refuse the (unreachable) dir-less case rather than fall
+// back to a CWD-relative file.
+static BOOL ALTTOGGLE_BuildIniPath(char* szIniPath) {
+    szIniPath[0] = '\0';
+    DWORD dwLen = GetModuleFileNameA(nullptr, szIniPath, 240);
+    if (!dwLen || dwLen >= 240) {
+        return FALSE;
+    }
+    char* pSlash = strrchr(szIniPath, '\\');
+    if (!pSlash) {
+        return FALSE;
+    }
+    pSlash[1] = '\0';
+    lstrcatA(szIniPath, "d2vp.ini");
+    return TRUE;
+}
+
+// Best-effort template write. CREATE_NEW so a file that appears between the
+// existence check and the create is never clobbered; any failure (read-only
+// dir, AV lock, invalid path) stays silent - GetPrivateProfileIntA then keeps
+// returning the vanilla defaults, exactly like a missing file. Even a partial
+// write is safe: whatever GetPrivateProfileIntA can parse is a default.
+static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
+    static const char szTemplate[] =
+        "; d2vp.ini - vanilla-plus client options (auto-created by d2.exe)\r\n"
+        ";\r\n"
+        "; Missing file, section or key, or a garbage value, always falls back\r\n"
+        "; to vanilla behavior. The file is re-read at most every 2 seconds\r\n"
+        "; while the game runs. Delete this file and a fresh copy is written\r\n"
+        "; on the next game start.\r\n"
+        "\r\n"
+        "[features]\r\n"
+        "; Ground-item labels on the Alt key:\r\n"
+        ";   0 = hold Alt to show labels         (vanilla behavior)\r\n"
+        ";   1 = press Alt once to toggle labels (D2R \"Show Items: Toggle\")\r\n"
+        "alt_toggle=0\r\n";
+    HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
+                               FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        return;
+    }
+    DWORD dwWritten = 0;
+    WriteFile(hFile, szTemplate, (DWORD)(sizeof(szTemplate) - 1), &dwWritten, nullptr);
+    CloseHandle(hFile);
+}
+
+// Create d2vp.ini with documented defaults when none exists. At most one
+// attempt per process: a file deleted while the game runs is recreated on
+// the next game start, and a failed create (read-only dir) is not retried
+// every 2 s.
+void __stdcall ALTTOGGLE_EnsureIni() {
+    if (gbAltIniAttempted) {
+        return;
+    }
+    gbAltIniAttempted = 1;
+    char szIniPath[260];
+    if (!ALTTOGGLE_BuildIniPath(szIniPath)) {
+        return;
+    }
+    if (GetFileAttributesA(szIniPath) != INVALID_FILE_ATTRIBUTES) {
+        return; // exists (or exists-but-inaccessible: never overwrite)
+    }
+    ALTTOGGLE_WriteIniTemplate(szIniPath);
+}
 
 BOOL __stdcall ALTTOGGLE_Active() {
     DWORD dwNow = GetTickCount();
     if (!dwAltToggleLastCheck || dwNow - dwAltToggleLastCheck >= 2000) {
         char szIniPath[260];
         dwAltToggleLastCheck = dwNow;
-        szIniPath[0] = '\0';
-        DWORD dwLen = GetModuleFileNameA(nullptr, szIniPath, 240);
-        if (dwLen && dwLen < 240) {
-            char* pSlash = strrchr(szIniPath, '\\');
-            if (pSlash) {
-                pSlash[1] = '\0';
-            } else {
-                szIniPath[0] = '\0';
-            }
-            lstrcatA(szIniPath, "d2vp.ini");
+        if (ALTTOGGLE_BuildIniPath(szIniPath)) {
+            // The first config read can precede the boot hook in odd flows
+            // (e.g. non-interactive modes): create the template here too,
+            // before the read, so the read always sees a parseable file.
+            ALTTOGGLE_EnsureIni();
             // GetPrivateProfileIntA: missing file/section/key or a non-numeric
             // value all return the 0 default = vanilla hold mode.
             gbAltToggleMode = GetPrivateProfileIntA("features", "alt_toggle", 0, szIniPath) ? 1 : 0;

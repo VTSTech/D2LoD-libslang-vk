@@ -19,6 +19,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SReg.h"
 #include "globals/globals.h"
+#include "D2Client/D2Client.h" // [vanilla-plus] ALTTOGGLE_EnsureIni
 #include "D2Client/Engine.h"
 #include "support/d2_trace.h"
 #include "support/d2_boot.h" // [d2boot]
@@ -55,6 +56,11 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
                          determine renderer */ geD2ApplicationMode = eD2ApplicationModeAndRenderer;
     D2BOOT_MarkFmt("ApplicationMain enter (mode=%d)", (int)geD2ApplicationMode); // [d2boot]
     D2BOOT_Mark("vanilla-plus fixset through fix 27"); // [d2boot] build self-identification (local builds do not always rotate the commit hash)
+    // [vanilla-plus] Create d2vp.ini next to the exe when missing (documented
+    // all-defaults template, one attempt per process) so the opt-in feature
+    // keys are discoverable at the title screen. Silent no-op when the file
+    // exists or cannot be written - config absence stays the vanilla path.
+    ALTTOGGLE_EnsureIni();
     __frame0.bSoundInit = 0;
     Fog::Source::SFile::SFILE_InitializeFileSystem((uint32_t)pD2IniData->bDIRECT, 0);
     D2BOOT_Mark("SFile filesystem init ok"); // [d2boot]
