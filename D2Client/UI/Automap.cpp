@@ -102,6 +102,10 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2AutomapStrc) == 0x2804, "D2_NEW_A
 #define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
+#ifndef D2_FREE
+#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#endif
+
 static_assert(sizeof(void*) != 4 || sizeof(::D2AutomapLayerStrc) == 0x1c, "D2_NEW_AT(D2AutomapLayerStrc): the 32-bit layout must be the 0x1c bytes 1.14d allocates");
 
 
