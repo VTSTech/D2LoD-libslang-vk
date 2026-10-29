@@ -399,11 +399,6 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
       ScreenSizeX = 800;
       ScreenSizeY = 600;
       nScreenMode = 1;
-    } else if (RequestedScreenModeMaybe == 4) {
-      // Vanilla Plus: 1280x720
-      ScreenSizeX = 1280;
-      ScreenSizeY = 720;
-      nScreenMode = 1;
     }
 
     WindowSizeY = ScreenSizeY - 0x28;

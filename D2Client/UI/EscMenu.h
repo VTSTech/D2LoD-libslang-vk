@@ -68,7 +68,6 @@ void __fastcall UI_SLIDER_InitLightQuality(struct D2EscMenuItemStrc * pItem, str
 void __fastcall UI_SLIDER_ApplyBlendedShadows(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_InitBlendedShadows(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_ApplyResolution(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UI_SLIDER_DrawResolutionValue(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg); // VP: 720p stop label
 void __fastcall UI_SLIDER_ApplyPerspective(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall StoreGamma(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_InitGamma(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);

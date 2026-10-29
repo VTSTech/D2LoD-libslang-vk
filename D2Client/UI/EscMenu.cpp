@@ -16,7 +16,6 @@
 #include "D2Client/UI/Draw.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/ui.h"
-#include "D2Client/UI/VanillaPlusCore.h" // VP: resolution-mode label primitives
 #include "D2Client/UNIT/Missile.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Sound/Src/D2SoundFast.h"
@@ -115,77 +114,14 @@ void __fastcall UI_SLIDER_InitBlendedShadows(D2EscMenuItemStrc * pItem, D2UIMous
     D2gfx::D2GFX::D2GFX_SetBlendedShadows(pItem->nImageIndex);
 }
 
-// VP: the registry value is the slider POSITION (0 = 640x480, 1 = 800x600,
-// 2 = 1280x720 - the third stop is attached at runtime by the row's init
-// callback, see Storm/_unnamespaced.cpp); position -> screen mode mapping
-// mirrors CLIENT_SetScreenResolution (ClientModeInGame.cpp).
 void __fastcall UI_SLIDER_ApplyResolution(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     Storm::Source::SReg::SRegSaveValue("Diablo II", "Resolution", 0, pItem->nImageIndex);
     DWORD RequestedScreenModeMaybe = 2;
     if (!pItem->nImageIndex) {
       RequestedScreenModeMaybe = 0;
-    } else if (pItem->nImageIndex >= 2) {
-      // Vanilla Plus: 1280x720 (screen mode 4)
-      RequestedScreenModeMaybe = 4;
     }
 
     ClientModeInGame::CLIENT_SetScreenResolution(RequestedScreenModeMaybe);
-}
-
-// VP: value label for the 720p stop (stop 2). Retail ships label DC6s only
-// for stops 0/1 ("640x480"/"800x600"); stop 2's slot holds the Route-B blank
-// placeholder (attached by the init callback) and the visible label is drawn
-// here through the retail font path, sized to match the neighboring retail
-// value images. Runs every frame from DRAW_EscMenu BEFORE the row's image
-// draw; the blank drawn after is fully transparent, so the text survives.
-// The row band is recomputed with DRAW_EscMenu's per-item formula
-// (nYPosition is still zero at callback time) - same approach as
-// VANILLAPLUS_DrawRowLabel.
-void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
-    (void)pMsg;
-    if (!pItem || pItem->nImageIndex != 2) {
-      return;
-    }
-
-    // Locate the row in the expansion video-options table (the only table it
-    // belongs to) and count the visible rows above it, mirroring the retail
-    // loop's visibility accounting (expansion gate + per-row visibility).
-    int nVisibleBefore = 0;
-    bool bFound = false;
-    for (int i = 0; i < gaEscMenuHeaderDeleteChar.nItemCount; i++) {
-      if (&gaEscMenuDeleteCharTable[i] == pItem) {
-        bFound = true;
-        break;
-      }
-      if (gaEscMenuDeleteCharTable[i].nExpansionOnly && !Fog::D2CheckExpansionGame()) {
-        continue;
-      }
-      pfnEscMenuItemVisible pfnVisible = gaEscMenuDeleteCharTable[i].fpVisibilityCheck;
-      if (pfnVisible && !pfnVisible()) {
-        continue;
-      }
-      nVisibleBefore++;
-    }
-    if (!bFound) {
-      return; // foreign row: never ours, draw nothing
-    }
-
-    const int nMenuCenterY = ScreenSizeY - 0x50;
-    const int nRowTop = gaEscMenuHeaderDeleteChar.nVerticalSpacing * nVisibleBefore
-        + (nMenuCenterY / 2 - gaEscMenuHeaderDeleteChar.nVerticalSpacing * gaEscMenuHeaderDeleteChar.nItemCount / 2);
-    const int nRowBottom = nRowTop + gaEscMenuHeaderDeleteChar.nRowHeight;
-
-    // Baseline inset above the band bottom: the retail value images
-    // bottom-anchor exactly at the row bottom and carry 1-2 px of bake
-    // padding under the glyphs (tunable).
-    static const int RESLABEL_BASELINE_INSET = 2;
-
-    // Font: match the retail "800x600" value image of this same row (slot 1).
-    static const wchar_t gwszLabel[] = L"1280x720";
-    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(
-        VPRES_PickFontMatchingDC6(pItem->pDC6SubImages[1]));
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gwszLabel, ScreenSizeX / 2 + 0xe6, nRowBottom - RESLABEL_BASELINE_INSET, 0, 0);
-    D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
 void __fastcall UI_SLIDER_ApplyPerspective(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {

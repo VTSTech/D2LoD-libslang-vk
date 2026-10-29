@@ -317,11 +317,6 @@ void __stdcall D2GFX_GetWindowSizeByResolutionMode(int32_t nResolutionMode, int 
         *nWidth = 0x540;
       *nHeight = 700;
       return;
-      case 4:
-        // Vanilla Plus: 1280x720
-        *nWidth = 1280;
-      *nHeight = 720;
-      return;
       default:
         *nWidth = 0;
       nLine = 0x6d;
