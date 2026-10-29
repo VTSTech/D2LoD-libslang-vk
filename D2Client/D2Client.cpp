@@ -1833,7 +1833,7 @@ BOOL __fastcall OBJECT_CheckAutoLight(D2UnitStrc * pUnit, int32_t bSkipCofLoad) 
         if (pUnit->eAnimMode.ePlayerMode == Death) {
           pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Neutral;
           if (!bSkipCofLoad) {
-            Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+            Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
           }
 
           D2Common::Units::InitAnimMode(pUnit);
@@ -1853,7 +1853,7 @@ BOOL __fastcall OBJECT_CheckAutoLight(D2UnitStrc * pUnit, int32_t bSkipCofLoad) 
 
     pUnit->eAnimMode.ePlayerMode = Death;
     if (!bSkipCofLoad) {
-      Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+      Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
     }
 
     D2Common::Units::InitAnimMode(pUnit);

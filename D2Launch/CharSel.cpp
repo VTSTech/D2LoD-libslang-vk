@@ -1790,7 +1790,7 @@ BOOL __stdcall CHARSEL_InitRealmSelection() {
 }
 
 // @sourcefile .\Src\CharSel.cpp
-int __stdcall CHARSEL_CreateCharEntry(uint16_t * wszCharName, uint16_t * wszCommandString, int32_t nEntryType, bool ePlayerClass) {
+int __stdcall CHARSEL_CreateCharEntry(uint16_t * wszCharName, uint16_t * wszCommandString, int32_t nEntryType, uint8_t ePlayerClass) {
     int nAnimMode;
     D2CharSelStrc* pCharSel = D2_NEW_AT(D2CharSelStrc, ".\\Src\\CharSel.cpp", 0xbaf);
     D2Lang::WideCharToUTF8(pCharSel->szCharname, wszCharName, 0x100);
@@ -1854,7 +1854,7 @@ void __stdcall CHARSEL_AddCreateNewEntry() {
 
     uint16_t* pwszCommandString = D2Lang::StrTable::strtable::GetLocaleString(wCommandStrId);
     gnCharSelLoadMoreEntryIndex = D2Client::CharScreen::TotalCurrentChars;
-    CHARSEL_CreateCharEntry(pwszTitle, pwszCommandString, 1, true);
+    CHARSEL_CreateCharEntry(pwszTitle, pwszCommandString, 1, '\f');
 }
 
 void __stdcall CHARSEL_AddRetrievingEntry() {
@@ -1862,7 +1862,7 @@ void __stdcall CHARSEL_AddRetrievingEntry() {
     uint16_t* pwszTitle = D2Lang::StrTable::strtable::GetLocaleString(0x2b3b);
     wszEmptyCommand = (uint32_t)*(uint16_t*)((char*)&wszEmptyCommand + 2) << 0x10;
     gnCharSelLoadingEntryIndex = D2Client::CharScreen::TotalCurrentChars;
-    CHARSEL_CreateCharEntry(pwszTitle, (uint16_t*)&wszEmptyCommand, 2, true);
+    CHARSEL_CreateCharEntry(pwszTitle, (uint16_t*)&wszEmptyCommand, 2, '\x12');
 }
 
 // @sourcefile .\Src\CharSel.cpp

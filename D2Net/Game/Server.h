@@ -44,7 +44,7 @@ void __stdcall NET_HACK_CloseAndBanHackerIP(in_addr addr, char * szFile, int32_t
 void __stdcall NET_HACK_UnlistIP(in_addr addr, char * dwDuration, uint32_t dwFlags);
 void __stdcall NET_DisconnectIP(in_addr addr, char * szText, int32_t nFlags);
 // @sourcefile .\SRC\Server.cpp
-int __stdcall QSERVER_KillConnection(int32_t nClientId);
+void __stdcall QSERVER_KillConnection(int32_t nClientId);
 void __stdcall NET_Thunk_QServerSetHacklistAddLineHook(fpD2QServerLineHook pfnHook);
 void __stdcall NET_SetQServerCallbackFunction(void * pfnCallback);
 void __stdcall AssignClientToToken(int32_t nClientId, uint32_t nToken);

@@ -229,7 +229,7 @@ D2ObjectRngStrc * __fastcall GetObjectLevelRng(::SGAMEDATA * pGame, eD2LevelId e
     return pGame->pObjectControl->aLevelsRng[eLevelId];
 }
 
-D2SeedStrc * __fastcall GetObjectControlSeed(::SGAMEDATA * pGame) {
+D2SeedStrc * __fastcall GetObjectControlSeed(::SGAMEDATA * pGame, D2RoomStrc * pRoom) {
     return &pGame->pObjectControl->sSeed;
 }
 

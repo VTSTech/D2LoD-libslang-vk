@@ -337,7 +337,7 @@ BOOL __stdcall UNITMODE_SetModeAndLoadCof(int32_t nAnimMode, D2UnitStrc * pUnit)
 
     int32_t iVar1 = D2Common::Units::SetupUpdateFlag(pUnit, nAnimMode);
     if (iVar1) {
-      Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+      Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
       return 1;
     }
 
@@ -355,7 +355,7 @@ void __fastcall UNITMODE_SetAnimMode(D2UnitStrc * pUnit, eD2PlayerAnimMode nAnim
       return;
     }
 
-    Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+    Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
     UNITMODE_ShowElementalHitOverlay(pUnit, nAnimMode);
     UnitSnd::UNITSND_DispatchModeChangeSound(pUnit, nAnimMode, 0);
 }
@@ -371,7 +371,7 @@ void __fastcall UNITMODE_SetAnimModeSilent(D2UnitStrc * pUnit, int32_t nAnimMode
       return;
     }
 
-    Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+    Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
 }
 
 // Sends a walk/move message to a unit toward (nTargetX, nTargetY). Computes whether the unit has actually moved (delta > 1 in either axis). For monsters, skips if the class has no-move flag. For the local player unit sends msg ID 1; for remote players optionally calls PATH_MoveUnitToPoint (if bUsePathMove) or msg 0x17; monsters get msg with nTargetUnitId=1. If no movement occurred, clears path flag 0x20 instead.

@@ -1283,7 +1283,7 @@ void __fastcall GFX_AddOverlayToUnit(D2UnitStrc * pUnit, eOverlayId eOverlay, in
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
-void __fastcall GFX_LoadUnitModeCof(D2UnitStrc * pUnit) {
+void __fastcall GFX_LoadUnitModeCof(D2UnitStrc * pUnit, int32_t nUnused) {
     // Frame slots -20..-12 are ONE object: &nCompositResult is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {

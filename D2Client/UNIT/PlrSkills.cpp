@@ -1201,7 +1201,7 @@ static void STATES_ResetUnitGfxAndMode(D2UnitStrc * pUnit) {
     }
 
     reload_anim_state:
-    Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+    Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 1);
     D2Common::Units::InitAnimMode(pUnit);
     pUnit->nGfxCurrentFrame = 0;
     D2Common::Units::SetCurrentSkill(pUnit, nullptr);

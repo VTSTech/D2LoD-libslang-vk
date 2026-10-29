@@ -522,7 +522,7 @@ void __stdcall CLIENT_PreloadMonsterCofsInAdjacentRooms() {
         if (pUnit->eUnitType == UNIT_MONSTER) {
           eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_dopplezon);
           if (eState != STATE_none) {
-            Gfx::GFX_LoadUnitModeCof(pUnit);
+            Gfx::GFX_LoadUnitModeCof(pUnit, 0);
           }
         }
       }

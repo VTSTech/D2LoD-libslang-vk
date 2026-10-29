@@ -126,7 +126,7 @@ void CHARSEL_SetStatusMessage(int32_t nStatusCode);
 void __stdcall CHARSEL_ShowWaitTimeout();
 BOOL __stdcall CHARSEL_InitRealmSelection();
 // @sourcefile .\Src\CharSel.cpp
-int __stdcall CHARSEL_CreateCharEntry(uint16_t * wszCharName, uint16_t * wszCommandString, int32_t nEntryType, bool ePlayerClass);
+int __stdcall CHARSEL_CreateCharEntry(uint16_t * wszCharName, uint16_t * wszCommandString, int32_t nEntryType, uint8_t ePlayerClass);
 void __stdcall CHARSEL_AddCreateNewEntry();
 void __stdcall CHARSEL_AddRetrievingEntry();
 // @sourcefile .\Src\CharSel.cpp

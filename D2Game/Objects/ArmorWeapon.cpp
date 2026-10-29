@@ -38,7 +38,7 @@ static void __stdcall Roll(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgRoomCo
       return;
     }
 
-    D2SeedStrc* pCtrlSeed = ObjectsRgn::GetObjectControlSeed(pGame);
+    D2SeedStrc* pCtrlSeed = ObjectsRgn::GetObjectControlSeed(pGame, pRoom);
     D2SeedStrc DVar2 = D2_SEED_NEXT(*pCtrlSeed);
     *pCtrlSeed = DVar2;
     int iVar3 = (DVar2.nSeedLow & 1) + nRackType * 2;

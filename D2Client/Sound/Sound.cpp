@@ -475,7 +475,7 @@ int __fastcall SOUND_PlaySound(eD2Sounds nSoundId, D2UnitStrc * pUnit, int32_t n
       SOUND_CalculateUnitDirection(pUnit, nSoundId, fPosVec);
       SOUND_Calculate3DPosition(fPosVec, pChannel);
       fVar1 = SOUND_CalculateUnitDistance(nSoundId, pUnit);
-      pChannel->nUnitDistance = (int)fVar1;
+      pChannel->fUnitDistance = fVar1;
     } else {
       fPosVec[0] = 0.0;
       fPosVec[1] = 0.0;
@@ -994,8 +994,8 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
 
           SOUND_Calculate3DPosition(afSoundDir, pChanEntry);
           __frame0.fClosestDist.fValue = __frame0.fIndoorsSum / (float)__frame0.nUnitCount;
-          fIndoorsSmoothed = (float)pChanEntry->nUnitDistance;
-          if (__frame0.fClosestDist.fValue <= (float)pChanEntry->nUnitDistance) {
+          fIndoorsSmoothed = pChanEntry->fUnitDistance;
+          if (__frame0.fClosestDist.fValue <= pChanEntry->fUnitDistance) {
             if (__frame0.fClosestDist.fValue < fIndoorsSmoothed - 0.05) {
               __frame0.fClosestDist.fValue = fIndoorsSmoothed - 0.05;
             }
@@ -1003,7 +1003,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
             __frame0.fClosestDist.fValue = fIndoorsSmoothed + 0.05;
           }
 
-          pChanEntry->nUnitDistance = (int)d2_bits_of(__frame0.fClosestDist);
+          pChanEntry->fUnitDistance = (float)d2_bits_to_float(__frame0.fClosestDist);
         }
 
         uVar2 = __frame0.pFrameTime;

@@ -583,7 +583,7 @@ static void ITEM_RecalcAllEquippedItems_EBX(D2UnitStrc * pUnit) {
     }
     if (pUnit->eUnitType == UNIT_PLAYER) {
       Units::IfPlayer(pUnit);
-      Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+      Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
       return;
     }
 
@@ -1255,7 +1255,7 @@ void __fastcall ITEM_HandleItemRepairBreak(D2GSPacketSrv0x7D * pPacket) {
       D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pItem, ITEMFLAG_BROKEN, pPacket->dwBrokenFlag);
       Units::IfPlayer(pUnit);
       ITEM_RemoveItemFromBodyAndRecalc(nItemComponent, pItem, pUnit);
-      Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+      Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
       D2Common::ITEM_ProcessSetItemEquip(pUnit, pItem, 1, 1);
       ITEM_RecalcAllEquippedItems_EBX(pUnit);
       return;
@@ -1539,7 +1539,7 @@ void __fastcall HandleItemOnGround(uint8_t * pBuffer) {
             }
 
             ITEM_RecalcAllEquippedItems_EBX(pUnit);
-            Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+            Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
             pBuffer = pBuffer2;
             break;
           }
@@ -1899,7 +1899,7 @@ void __fastcall HandleItemEquip(uint8_t * pBytes) {
       SRC::CelCmp::GFX_ClearAllModeFlags(pOwnerUnit, (uint32_t)byWeaponHand);
     }
 
-    Engine::Gfx::GFX_LoadUnitModeCof(pOwnerUnit);
+    Engine::Gfx::GFX_LoadUnitModeCof(pOwnerUnit, 0);
     if (pOwnerUnit == pLocalPlayer) {
       ITEM_SaveWeaponHandClassId(stItemDetails.nBodyLoc, pItem);
       uVar1 = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(stItemDetails.flags, ITEMFLAG_IGNORE);
@@ -2005,7 +2005,7 @@ void __fastcall HandleItemIndirectSwapBodyItem(uint8_t * pBytes) {
       }
 
       D2Common::INVENTORY::Inventory::NullSub_2Arg(pInvTmp, nSwappedBodyLoc);
-      Engine::Gfx::GFX_LoadUnitModeCof(pCharmItem);
+      Engine::Gfx::GFX_LoadUnitModeCof(pCharmItem, 0);
       if (pCharmItem == pLocalPlayer) {
         UI::Inv::INV_ResetHoverAndContextState();
         pNewItem = pSwappedOutItem;
@@ -2078,7 +2078,7 @@ void __fastcall HandleItemIndirectSwapBodyItem(uint8_t * pBytes) {
         SRC::CelCmp::GFX_ClearAllModeFlags(pCharmItem, (uint32_t)byWeaponHand);
       }
 
-      Engine::Gfx::GFX_LoadUnitModeCof(pCharmItem);
+      Engine::Gfx::GFX_LoadUnitModeCof(pCharmItem, 0);
       ITEM_SaveWeaponHandClassId(stItemDetails.nBodyLoc, pNewItem);
       ITEM_ApplySocketableAndEquipStats(0, pCharmItem, pNewItem);
       pUnit = pOwnerUnit;
@@ -2137,7 +2137,7 @@ void __fastcall HandleItemUnequip(uint8_t * pBytes) {
     }
 
     ITEM_RecalcAllEquippedItems_EBX(pOwnerUnit);
-    Engine::Gfx::GFX_LoadUnitModeCof(pOwnerUnit);
+    Engine::Gfx::GFX_LoadUnitModeCof(pOwnerUnit, 0);
     uint8_t* pOwnerUnitSaved3 = pBytesSaved;
     if (pOwnerUnit == pLocalPlayer) {
       uint8_t byBodyLoc;
@@ -2262,7 +2262,7 @@ void __stdcall ITEM_HandleSwapBodyEquipItem(int32_t nParam1, D2UnitDataItemDetai
         ITEM_RecalcAllEquippedItems_EBX(pOwnerUnit);
         ITEM_RecalcAllEquippedItems_EBX(pOwnerUnit);
         ITEM_SaveWeaponHandClassId(pItemDetails->nBodyLoc, pItem);
-        Engine::Gfx::GFX_LoadUnitModeCof(pOwnerUnit);
+        Engine::Gfx::GFX_LoadUnitModeCof(pOwnerUnit, 0);
         UI::ui::UI_SendMouseMoveMessage();
         ITEM_RemoveUninterruptableState(pItem);
         return;
@@ -2428,7 +2428,7 @@ static void __stdcall ITEM_HandleWeaponSwitchItems(D2UnitDataItemDetailsStrc * p
               ITEM_RecalcAllEquippedItems_EBX(pOwnerUnit);
               ITEM_RecalcAllEquippedItems_EBX(pOwnerUnit);
               ITEM_SaveWeaponHandClassId(pUnitDataItemDetails->nBodyLoc, pNewItem);
-              Engine::Gfx::GFX_LoadUnitModeCof(pOwnerUnit);
+              Engine::Gfx::GFX_LoadUnitModeCof(pOwnerUnit, 0);
             } else {
               ITEM_RecalcAllEquippedItems_EBX(pOwnerUnit);
               ITEM_RecalcAllEquippedItems_EBX(pOwnerUnit);
@@ -3146,7 +3146,7 @@ void __fastcall HandleItemAutoUnequip(uint8_t * pPacketData) {
           D2Common::ITEM_ProcessSetItemEquip(pOwnerUnit, pItem, 1, 1);
           ITEM_RemoveUninterruptableState(pItem);
           D2Common::INVENTORY::Inventory::NullSub_2Arg(pInventory, (uint32_t)*(uint32_t*)((char*)&sItemDetails + 16) >> 8 & 0xff);
-          Engine::Gfx::GFX_LoadUnitModeCof(pOwnerUnit);
+          Engine::Gfx::GFX_LoadUnitModeCof(pOwnerUnit, 0);
           nItemComponent = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(sItemDetails.flags, ITEMFLAG_RELOAD);
           if (nItemComponent) {
             CUnit::RemoveObjectFromServerObjectTable(*(uint32_t*)(pPacketData + 4), UNIT_ITEM);
@@ -3331,7 +3331,7 @@ void __fastcall ITEM_HandleItemMoveToBodyLoc(uint8_t * pbParam) {
 
     Units::IfPlayer(pUnit);
     D2Common::INVENTORY::Inventory::INVENTORY_UpdatePrimaryWeapon(pInventory, pItem);
-    Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+    Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
     ITEM_ApplySocketableAndEquipStats(0, pUnit, pItem);
     ITEM_RecalcAllEquippedItems_EBX(pUnit);
     ITEM_RecalcAllEquippedItems_EBX(pUnit);
@@ -3433,7 +3433,7 @@ D2UnitStrc * __fastcall HandleItemUpdateStats(uint8_t * pbPacket) {
 
       D2Common::ITEM_ProcessSetItemEquip(pUnit, pCursorItem_lcl, 1, 1);
       D2Common::INVENTORY::Inventory::NullSub_2Arg(pInventory, (uint32_t)stItemDetails.nBodyLoc);
-      Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+      Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
       if (!pRemovedItem) {
         eRemovedItemUnitType = UNIT_COUNT;
         bFlag = -1;
@@ -3477,7 +3477,7 @@ D2UnitStrc * __fastcall HandleItemUpdateStats(uint8_t * pbPacket) {
         SRC::CelCmp::GFX_ClearAllModeFlags(pUnit, (uint32_t)byPacketAnimMode);
       }
 
-      Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+      Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
       if (pUnit == pLocalPlayer) {
         ITEM_SaveWeaponHandClassId(stItemDetails.nBodyLoc, pCursorItem_lcl);
         bFlag = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(stItemDetails.flags, ITEMFLAG_IGNORE);

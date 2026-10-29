@@ -83,7 +83,7 @@ struct __attribute__((packed)) D2SoundChannelStrc {
     /* 0x14 */ float fPosZ; // 3D position Z
     /* 0x18 */ float fPanResult; // calculated pan/hypotenuse
     /* 0x1C */ int nPriority; // channel priority (set by SOUND_SetChannelPriority)
-    /* 0x20 */ int nUnitDistance; // unit distance (pChannel[8])
+    /* 0x20 */ float fUnitDistance; // unit distance (pChannel[8])
     /* 0x24 */ int nParam; // extra param (pChannel[9])
     /* 0x28 */ int * pGlobal3Ref; // ptr to global3 timing struct (checked non-null + [4]!=0)
     /* 0x2C */ struct D2ClientSoundChannelStrc * undefined_0x2c; // unknown

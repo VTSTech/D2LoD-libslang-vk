@@ -100,10 +100,10 @@ void __fastcall WALL2_InitUnitGfx(D2UnitStrc * pUnit) {
         case UNIT_PLAYER:
 
         case UNIT_OBJECT:
-          Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+          Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
         return;
         case UNIT_MONSTER:
-          Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+          Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 1);
         return;
         case UNIT_MISSILE:
 
