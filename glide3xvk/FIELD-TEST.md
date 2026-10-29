@@ -928,3 +928,75 @@ Field checklist:
 Host rig: fxtest 134/134 (42 new checks: aspect rect math, conf aspect/base_res
 parse + bad-value handling, toast grow/decay/shrink). Exports unchanged
 45/45 (def untouched). DLL 8,684,837 bytes.
+
+## Round 18 (0.4.6) — PrintScreen screenshots + Ctrl+Left/Right preset cycling
+
+Requested after the 0.4.6 Scroll Lock toggle field-verified clean: a
+screenshot key (the game's own F9 captures the paletted pre-shader LFB frame
+through grLfb — useless for "what I actually see") and a way to compare
+presets without editing the conf mid-session.
+
+What 0.4.6 ships:
+
+1. **PrintScreen — PNG screenshot** (new `g3x_shot` module): one press saves
+   the gamma-corrected game raster at NATIVE game resolution into
+   `screenshots\` beside the game exe, `D2_YYYYMMDD_HHMMSS.png` (`_1`..`_9`
+   on same-second collisions). The capture point is BEFORE the overlay draws
+   on either present path, so no tag/panel/toast ever lands in the file —
+   Scroll Lock composes but is no longer required. The slang path submits its
+   chain-input buffer; the legacy path makes the identical native-res copy on
+   demand. The encoder is the dependency-free house PNG (truecolor RGB,
+   filter-0 rows, STORED zlib blocks, ~1.4 MB @ 800x600), host-verified end
+   to end (chunk/CRC structure, zlib inflate + adler, pixel-exact BGRA->RGB
+   round-trip on a 97x61 gradient; naming/collision/latch/focus-gate/
+   write-failure paths covered by a Win32-shimmed host test). Encode+write is
+   synchronous on the game thread: a few ms, at most one frame of hitch.
+2. **Ctrl+Left/Right — preset cycling**: `preset_1=`..`preset_8=` in
+   d2slangvk.conf build the rotation; Ctrl+Right forward, Ctrl+Left back,
+   wrapping; each press reloads the chain through the same machinery a hand
+   edit of `preset=` takes. The pick is a session override that SURVIVES D2's
+   constant context re-opens (a plain session value like F11/F12's would be
+   snapped back by every context-open reread) and yields to `preset=` the
+   moment the file's value changes underneath it. No chain required — cycling
+   from a preset-less conf builds the chain on the spot. The conf panel's
+   plain Left/Right edits are Ctrl-gated, so one press can never both step an
+   option and cycle the preset.
+3. **Conf keys**: `preset_1..8=` (the list) and `screenshots=1|0` (default on;
+   0 = the hotkey logs once and does nothing). Panel rows for both.
+
+Field checklist:
+
+- session banner reads `glide3xvk 0.4.6 <build>`.
+- press PrintScreen in-game: `saved D2_....png` toast, and the log carries
+  `shot: saved screenshots\D2_....png (800x600 RGB PNG)`; the file opens in
+  any viewer and carries NO version tag — at the menu it is the clean 800x600
+  menu frame.
+- two presses inside one second -> `_1` suffix, no overwrite.
+- `screenshots=0` in the conf (hot-reloads) -> a press logs
+  `shot: PrintScreen ignored (screenshots=0 in d2slangvk.conf)` once and
+  nothing is written. Panel `screenshots` row toggles it back live.
+- put three presets in the conf (`preset_1`..`preset_3`, e.g. the two shipped
+  starters plus the round-16 crtglow_lanczos), press Ctrl+Right in-game: the
+  chain reloads per press (`slang: chain ready '...' (Ctrl+arrow): ...`), the
+  overlay's shader line follows, the toast names the preset, and the log adds
+  `slang: preset cycle -> <path> (session pick; Ctrl+arrow)`. Ctrl+Left walks
+  back; both wrap.
+- walk through a menu->game transition after a pick: the pick STAYS (no
+  reload — the override survives context opens). Hand-edit `preset=` in the
+  conf (or pick from the Shift+V browser): the pick clears
+  (`slang: session preset pick cleared (preset= changed in d2slangvk.conf)`)
+  and the file's value wins.
+- empty list (no preset_N lines): Ctrl+arrow toasts `no preset_1..8 in conf`
+  and logs `slang: preset cycle has no preset_1..8 entries to walk` once.
+- conf panel up: plain Left/Right still step the selected option; Ctrl+Left/
+  Right still cycle — never both on one press.
+- alt-tab out, press both chords in the other window -> the game ignores
+  everything (focus guard, all latches parked).
+- with the overlay Scroll-Lock-toggled off: PrintScreen still saves (the log
+  line is the feedback; no toast can draw).
+
+Host rig: shot host test 20/20 + Python PNG validator 11/11 (chunk CRCs,
+zlib inflate + adler, filter bytes, pixel-exact round-trip); conf parser
+checks for preset_1..8 + screenshots in the same harness. Exports unchanged
+45/45 (def untouched). DLL 8,754,548 bytes (PE32, i386, linked against the
+static slangvk i686 build per BUILD-32BIT.md).

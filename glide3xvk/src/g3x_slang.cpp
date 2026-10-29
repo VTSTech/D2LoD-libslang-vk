@@ -30,6 +30,7 @@ bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out) {
     out->vsync = -1;
     out->aspect = G3XSLANG_ASPECT_AUTO;
     out->base_res = 1;
+    out->screenshots = 1;                    // 0.4.6: the shot key is on by default
     if (!text) return false;
 
     bool in_section = false;   // inside [slangvk]?
@@ -71,7 +72,17 @@ bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out) {
                 while (kl && (key[kl - 1] == ' ' || key[kl - 1] == '\t')) key[--kl] = '\0';
                 while (*val == ' ' || *val == '\t') ++val;
 
-                if (_strnicmp(key, "preset", 6) == 0 && kl == 6) {
+                if (_strnicmp(key, "preset_", 7) == 0 && kl == 8 &&
+                    key[7] >= '1' && key[7] <= '8') {
+                    // 0.4.6 preset-cycle list entry. "preset_1" has kl == 8,
+                    // so it can never collide with the plain preset= branch
+                    // below (which requires kl == 6). Same value rules as
+                    // preset=: an opaque relative/absolute path, empty = slot
+                    // unused (later assignments win, so re-assigning a slot
+                    // in the same file replaces it).
+                    std::snprintf(out->preset_list[key[7] - '1'],
+                                  sizeof(out->preset_list[0]), "%s", val);
+                } else if (_strnicmp(key, "preset", 6) == 0 && kl == 6) {
                     std::snprintf(out->preset, sizeof(out->preset), "%s", val);
                 } else if (_strnicmp(key, "scale", 5) == 0 && kl == 5) {
                     if (_strnicmp(val, "fit", 3) == 0)           out->scale = G3XSLANG_SCALE_FIT;
@@ -122,6 +133,10 @@ bool g3x_slang_conf_parse(const char* text, G3xSlangConf* out) {
                 } else if (_strnicmp(key, "controller_home", 15) == 0 && kl == 15) {
                     // cursor-home: same convention as moveclick (absent = on)
                     out->controller_home = (val[0] == '0') ? -1 : 1;
+                } else if (_strnicmp(key, "screenshots", 11) == 0 && kl == 11) {
+                    // 0.4.6 PrintScreen PNG key (g3x_shot); anything but a
+                    // leading 0 keeps the default (on).
+                    if (val[0] == '0') out->screenshots = 0;
                 }
                 // unknown keys are deliberately ignored (forward compatibility)
             }
@@ -407,6 +422,7 @@ const uint8_t* g3x_slang_test_last_frame(unsigned* w, unsigned* h) {
 #include "vk_backend.h"          // windows.h + the g3x_vk_slang_* services
 #include "g3x_overlay.h"         // 0.4.2: the active-shader line on the overlay
 #include "g3x_window.h"          // 0.4.5: the window= preset table (Left/Right cycling)
+#include "g3x_shot.h"            // 0.4.6: screenshots= flag lands in g3x_shot
 
 #include <volk.h>                // vulkan.h with VK_NO_PROTOTYPES (auto-defined)
 #include <slangvk/c.h>           // the C API (POD only — fine from C++17)
@@ -533,6 +549,42 @@ static unsigned       s_img_up_w = 0, s_img_up_h = 0;
 
 static char s_exe_dir[MAX_PATH] = "";
 static char s_conf_path[MAX_PATH] = "";
+
+// ---- 0.4.6: the session preset pick (Ctrl+Left/Right) -----------------------
+//
+// The cycler rotates the LIVE preset through the conf's preset_1..8 list as
+// a SESSION override. It cannot be a plain session value like the F11/F12
+// picks (those live in s_aspect_live/s_base_live and snap back on every
+// reread_conf — and D2 re-opens contexts constantly, so a cycled preset
+// would die on every menu->game transition): it must survive rereads. But
+// it also must not override the file forever — the file is the truth.
+// The rule (same family as every hotkey here — file wins at load, key wins
+// in flight):
+//   - s_preset_ovr        the pick itself ("" = none active)
+//   - s_preset_ovr_file   the FILE's preset= value at the moment the pick
+//                         was taken
+//   - s_preset_ovr_seen   the FILE's preset= at the last sync (the cycle
+//                         poll reads it to know what to diff against)
+// preset_override_sync() runs on EVERY fresh parse (reread_conf AND the
+// panel's conf_parse_fresh — both are file-truth reads): when the file's
+// preset= has moved underneath the pick (a hand edit, a panel-browser pick,
+// a deleted conf), the pick is cleared and the file wins; otherwise the
+// pick is substituted into the parsed conf so every consumer (chain reload,
+// panel display, browser star) sees it as if it were the conf's value.
+static char s_preset_ovr[512]      = "";
+static char s_preset_ovr_file[512] = "";
+static char s_preset_ovr_seen[512] = "";
+
+static void preset_override_sync(G3xSlangConf* c) {
+    std::snprintf(s_preset_ovr_seen, sizeof(s_preset_ovr_seen), "%s", c->preset);
+    if (!s_preset_ovr[0]) return;
+    if (std::strcmp(c->preset, s_preset_ovr_file) != 0) {
+        s_preset_ovr[0] = '\0';               // the file's preset= moved — file wins
+        g3x_log("slang: session preset pick cleared (preset= changed in d2slangvk.conf)");
+        return;
+    }
+    std::snprintf(c->preset, sizeof(c->preset), "%s", s_preset_ovr);
+}
 
 // ---- file helpers ----------------------------------------------------------
 
@@ -692,9 +744,16 @@ static void reread_conf() {
         fresh.vsync = -1;
         fresh.aspect = G3XSLANG_ASPECT_AUTO;
         fresh.base_res = 1;
+        fresh.screenshots = 1;
     }
+    // 0.4.6: the session preset pick re-syncs against the file BEFORE the
+    // change compare (a cleared pick leaves fresh.preset at the file's value;
+    // a live pick substitutes in, so the compare sees the effective target
+    // and no context-open reread can undo a cycled preset).
+    preset_override_sync(&fresh);
     const bool target_changed = std::strcmp(fresh.preset, s_conf.preset) != 0;
     s_conf = fresh;
+    g3x_shot_set_enabled(fresh.screenshots != 0);   // 0.4.6: the shot key follows the conf
     // 0.4.3: the conf is the source of truth on every (re)read - session
     // hotkey overrides snap back to the file's values, and a base-res change
     // drops the upscaled input image (rebuilt lazily at the new multiplier).
@@ -783,6 +842,7 @@ static bool conf_parse_fresh(G3xSlangConf* c) {
         if (text) {
             g3x_slang_conf_parse(text, c);
             HeapFree(GetProcessHeap(), 0, text);
+            preset_override_sync(c);             // 0.4.6: panel sees the session pick
             return true;
         }
     }
@@ -791,6 +851,7 @@ static bool conf_parse_fresh(G3xSlangConf* c) {
     c->vsync    = -1;
     c->aspect   = G3XSLANG_ASPECT_AUTO;
     c->base_res = 1;
+    c->screenshots = 1;
     return false;
 }
 
@@ -868,6 +929,8 @@ static void conf_panel_refresh() {
                   c.window[0] ? c.window : "native");
     std::snprintf(add(), sizeof(lines[0]), "borderless           %s",
                   c.borderless ? "on" : "off");
+    std::snprintf(add(), sizeof(lines[0]), "screenshots          %s",
+                  c.screenshots ? "on" : "off");
     std::snprintf(add(), sizeof(lines[0]), "controller           %s",
                   c.controller ? "on" : "off");
     if (c.controller) {                          // 0.4.5: master switch off = the
@@ -1142,6 +1205,9 @@ static bool conf_panel_edit(int dir, char* desc, size_t desc_cap) {
     } else if (!_stricmp(key, "borderless")) {
         std::snprintf(val, sizeof(val), "%d", c.borderless ? 0 : 1);
         std::snprintf(desc, desc_cap, "%s", c.borderless ? "off" : "on");
+    } else if (!_stricmp(key, "screenshots")) {
+        std::snprintf(val, sizeof(val), "%d", c.screenshots ? 0 : 1);
+        std::snprintf(desc, desc_cap, "%s", c.screenshots ? "off" : "on");
     } else if (!_stricmp(key, "controller")) {
         std::snprintf(val, sizeof(val), "%d", c.controller ? 0 : 1);
         std::snprintf(desc, desc_cap, "%s", c.controller ? "off" : "on");
@@ -1281,6 +1347,92 @@ static void conf_panel_browser_load() {
     }
 }
 
+// ---- 0.4.6 preset cycling (Ctrl+Left/Right) --------------------------------
+
+// Edge-polled from the conf-panel poll (the always-on present seam) on every
+// frame: Ctrl+Right steps the live preset FORWARD through the conf's
+// preset_1..8 list, Ctrl+Left steps BACK, both wrapping. Rules:
+//   - the list is parsed FRESH at every press (the file is the truth for
+//     WHAT can be cycled; empty slots are skipped, order is 1..8),
+//   - the pick is a session override (preset_override_sync's rule): it
+//     survives D2's constant context re-opens, and yields to preset= the
+//     moment the file's preset= moves underneath it,
+//   - a current preset not in the list starts the walk at preset_1
+//     (Ctrl+Right) or the last entry (Ctrl+Left) — add preset= itself to
+//     the list to include it in the rotation,
+//   - NO chain is required: cycling from a preset-less conf builds the
+//     chain on the spot (the reload path is the exact machinery a hand edit
+//     of preset= takes; a bad preset file fails soft and logs, and the next
+//     press moves on),
+//   - the panel's plain Left/Right value edits skip Ctrl-held presses (the
+//     gate below), so the two arrow meanings never collide: arrows edit the
+//     selected option, Ctrl+arrows cycle presets, in any panel state.
+// Feedback: a toast names the new preset (basename — the 8px font has no
+// room for paths), the log carries the full value, and the overlay's shader
+// line follows the chain reload on its own.
+static bool         s_prev_cleft = false, s_prev_cright = false;
+
+static void preset_cycle_poll() {
+    const bool ctrl = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+    if (!ctrl) {
+        s_prev_cleft = s_prev_cright = false;    // Ctrl released: re-arm both
+        return;
+    }
+    const bool lft = (GetAsyncKeyState(VK_LEFT)  & 0x8000) != 0;
+    const bool rgt = (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0;
+    int dir = 0;
+    if (rgt && !s_prev_cright)      dir = 1;
+    else if (lft && !s_prev_cleft)  dir = -1;
+    s_prev_cright = rgt;
+    s_prev_cleft  = lft;
+    if (!dir) return;
+
+    G3xSlangConf c;
+    conf_parse_fresh(&c);          // fresh list + fresh effective preset
+
+    const char* list[8];
+    unsigned n = 0;
+    for (unsigned i = 0; i < 8; ++i)
+        if (c.preset_list[i][0]) list[n++] = c.preset_list[i];
+    if (!n) {
+        g3x_overlay_toast("no preset_1..8 in conf");
+        g3x_log_once("cycle-none", "slang: preset cycle has no preset_1..8 entries to walk");
+        return;
+    }
+
+    // Find the current effective preset in the list ('/' folded to '\\' so a
+    // conf that spells its paths with forward slashes still matches rows).
+    char cur[512];
+    norm_preset_slash(c.preset, cur, sizeof(cur));
+    int idx = -1;
+    for (unsigned i = 0; i < n; ++i) {
+        char row[512];
+        norm_preset_slash(list[i], row, sizeof(row));
+        if (!_stricmp(cur, row)) { idx = (int)i; break; }
+    }
+    const int nx = (idx < 0) ? (dir > 0 ? 0 : (int)n - 1)
+                             : (idx + dir + (int)n) % (int)n;
+
+    // Take the pick: the file's preset= at THIS moment (s_preset_ovr_seen,
+    // captured by the sync inside conf_parse_fresh just above) anchors the
+    // override; the effective preset moves to the list entry.
+    std::snprintf(s_preset_ovr_file, sizeof(s_preset_ovr_file), "%s",
+                  s_preset_ovr_seen);
+    std::snprintf(s_preset_ovr, sizeof(s_preset_ovr), "%s", list[nx]);
+    std::snprintf(s_conf.preset, sizeof(s_conf.preset), "%s", s_preset_ovr);
+    s_preset_mtime = 0;                          // force the preset file reload
+    reload_preset_and_chain("Ctrl+arrow");
+
+    const char* base = list[nx];
+    for (const char* q = list[nx]; *q; ++q)
+        if (*q == '/' || *q == '\\') base = q + 1;
+    char msg[64];
+    std::snprintf(msg, sizeof(msg), "preset %.52s", base);
+    g3x_overlay_toast(msg);
+    g3x_log("slang: preset cycle -> %s (session pick; Ctrl+arrow)", s_preset_ovr);
+    conf_panel_refresh_if_visible();
+}
+
 // Edge-polled from the present path (g3x_frame_present) on every frame, so
 // the panel works with no chain active — the F11/F12 gate lives in
 // g3x_slang_present, this one is its always-on sibling. Same focus rule:
@@ -1297,6 +1449,8 @@ void g3x_slang_conf_panel_poll() {
         s_prev_down   = false;
         s_prev_left   = false;
         s_prev_right  = false;
+        s_prev_cleft  = false;
+        s_prev_cright = false;
         return;
     }
     if (GetForegroundWindow() != g_vk.hwnd) {
@@ -1305,8 +1459,14 @@ void g3x_slang_conf_panel_poll() {
         s_prev_down   = false;
         s_prev_left   = false;
         s_prev_right  = false;
+        s_prev_cleft  = false;
+        s_prev_cright = false;
         return;
     }
+    // 0.4.6: Ctrl+Left/Right preset cycling — the always-on seam means the
+    // cycler works with or without a chain (cycling INTO a preset builds it
+    // on the spot). Latches parked on focus loss like every key here.
+    preset_cycle_poll();
     const bool shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
     const bool v     = (GetAsyncKeyState(0x56 /* 'V' */) & 0x8000) != 0;
     const bool down  = shift && v;
@@ -1389,21 +1549,28 @@ void g3x_slang_conf_panel_poll() {
     // back to the option page — so the browser is fully Enter-free: Enter
     // reaches the game's chat box and Esc reaches its menu, and neither can
     // be swallowed by a GetAsyncKeyState poll.
+    // 0.4.6: Ctrl-held Left/Right are the preset cycler's keys
+    // (preset_cycle_poll above consumed them) — the panel's value steps must
+    // not also fire on the same press, so they are gated off while Ctrl is
+    // down. Plain arrows stay the panel's; the game keeps the arrows whenever
+    // the panel is hidden and keeps everything while the overlay is toggled
+    // off (the early-outs above).
+    const bool ctrl  = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
     const bool lft   = (GetAsyncKeyState(VK_LEFT)  & 0x8000) != 0;
     const bool rgt   = (GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0;
     if (g3x_overlay_conf_panel_visible()) {
         if (s_browser_open) {
-            if (rgt && !s_prev_right)
+            if (rgt && !s_prev_right && !ctrl)
                 conf_panel_browser_load();
-            if (lft && !s_prev_left) {
+            if (lft && !s_prev_left && !ctrl) {
                 s_browser_open = false;
                 conf_panel_refresh();
                 g3x_log("overlay: preset browser back");
             }
         } else {
             int dir = 0;
-            if (rgt && !s_prev_right) dir = 1;
-            else if (lft && !s_prev_left) dir = -1;
+            if (rgt && !s_prev_right && !ctrl) dir = 1;
+            else if (lft && !s_prev_left && !ctrl) dir = -1;
             if (dir) {
                 if (s_conf_opt_count && !_stricmp(s_conf_sel_key, "preset")) {
                     conf_panel_browser_open();   // the preset row's L/R = the
@@ -1438,6 +1605,8 @@ bool g3x_slang_init(void* instance, void* physical_device, void* device,
     s_conf.vsync = -1;
     s_conf.aspect = G3XSLANG_ASPECT_AUTO;
     s_conf.base_res = 1;
+    s_conf.screenshots = 1;
+    g3x_shot_set_enabled(true);   // 0.4.6: shot key live before the first conf read
     s_aspect_live = G3XSLANG_ASPECT_AUTO;
     s_base_live = 1;
 

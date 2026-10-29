@@ -1,4 +1,4 @@
-; d2slangvk.conf — glide3xvk 0.4.3 preset-chain settings.
+; d2slangvk.conf — glide3xvk 0.4.6 preset-chain settings.
 ; Copy this file beside Game.exe (same folder as glide3x.dll + glide3xvk.ini)
 ; and uncomment "preset=" to enable. No file (or no preset= line) = the DLL
 ; presents unfiltered, exactly like 0.3.x.
@@ -19,6 +19,25 @@
 ;preset=presets/glide3xvk-scanline.slangp
 ;preset=presets/glide3xvk-sharpen.slangp
 ;preset=Shaders/crt/crt-royale.slangp
+
+; The Ctrl+Left/Right cycle list (0.4.6): up to eight presets to step through
+; in-game — Ctrl+Right forward, Ctrl+Left back, wrapping, with a toast. Same
+; path rules as preset= (relative resolves against the game exe folder);
+; empty slots are skipped, order is 1..8. A pick lives for the session (it
+; survives D2's context re-opens) and yields to preset= the moment the file's
+; preset= changes. No chain is required — cycling from a preset-less conf
+; builds the chain on the spot. Add preset= itself to the list if it should
+; be part of the rotation.
+;preset_1=presets/glide3xvk-scanline.slangp
+;preset_2=presets/glide3xvk-sharpen.slangp
+;preset_3=Shaders/crt/crt-royale.slangp
+
+; PrintScreen screenshot key (0.4.6): press PrintScreen in-game to save the
+; current frame as a PNG into screenshots\ beside the game exe. The saved
+; frame is the gamma-corrected game raster at native resolution, captured
+; before the overlay draws (no tag/panel/toast in the file). 0 = the hotkey
+; logs once and does nothing. The encode+write costs a few ms on the press.
+;screenshots=1
 
 ; How the game frame sits in the window when the preset chain is on:
 ;   fit      — fit + center, letterboxed (default)

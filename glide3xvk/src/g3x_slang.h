@@ -51,9 +51,15 @@ struct G3xSlangRect {
 };
 
 // d2slangvk.conf body, parsed. Defaults: preset disabled, fit, vsync default,
-// aspect auto, base res 1x, window native, borderless off.
+// aspect auto, base res 1x, window native, borderless off, screenshots on.
 struct G3xSlangConf {
     char preset[512];   // "" = chain disabled; relative paths resolve against the game exe dir
+    // 0.4.6 preset-cycle list: preset_1= .. preset_8= in [slangvk], read in
+    // order, empty slots skipped. Entries are "preset="-shaped paths
+    // (relative resolves against the game exe dir). The Ctrl+Left/Right
+    // cycler rotates the LIVE preset through these entries as a session
+    // override; preset= itself stays the boot truth.
+    char preset_list[8][512];
     int  scale;         // G3XSLANG_SCALE_*
     int  vsync;         // -1 = swapchain default (FIFO), 0 = off, 1 = on
     int  aspect;        // G3XSLANG_ASPECT_* (0.4.3; default auto)
@@ -73,6 +79,8 @@ struct G3xSlangConf {
                                // fixup maps >=0 -> on (the default), <0 -> off
     int  controller_home;      // 0.4.5: cursor-home flag; same parser convention as
                                // moveclick — absent/default = on, present "0" = off
+    int  screenshots;          // 0.4.6: PrintScreen PNG key (1 default, 0 = hotkey
+                               // logs once and does nothing; consumed by g3x_shot)
 };
 
 // Pure parser for a d2slangvk.conf body: "[slangvk]" section with

@@ -3,8 +3,10 @@
 #include "vk_backend.h"
 #include "g3x_overlay.h"
 #include "g3x_slang.h"
+#include "g3x_shot.h"
 
 #include <cstring>
+#include <cstdio>
 #include <cstdlib>
 #include <cmath>
 #include <new>
@@ -1148,6 +1150,25 @@ static void overlay_scrolllock_poll() {
     s_prev_scroll = scroll;
 }
 
+// ---- 0.4.6: the PrintScreen screenshot key ---------------------------------
+
+// The capture points live inside g3x_frame_present (below): the frame bytes
+// only exist as a contiguous BGRA buffer there, and the shot must land
+// BEFORE the overlay draws so a saved PNG is always clean of the tag/panel/
+// toast. Both present paths funnel through one helper — the slang path
+// submits its chain-input buffer (gamma-corrected native game res), the
+// legacy path makes the identical native-res copy on demand, so the output
+// shape never depends on which path is live. The toast fires only when the
+// overlay can actually draw it; the log line is unconditional either way.
+static void shot_submit_and_report(const uint8_t* bgra, unsigned w, unsigned h) {
+    char name[64];
+    if (g3x_shot_submit(bgra, w, h, name, sizeof(name))) {
+        char msg[80];
+        std::snprintf(msg, sizeof(msg), "saved %s", name);
+        g3x_overlay_toast(msg);
+    }
+}
+
 bool g3x_frame_present() {
     unsigned ext_w = 0, ext_h = 0;
     g3x_vk_present_extent(&ext_w, &ext_h);
@@ -1166,6 +1187,13 @@ bool g3x_frame_present() {
     // the overlay takes effect for THIS frame already (the render calls below
     // gate on the fresh state) and nothing stale flashes for one present.
     overlay_scrolllock_poll();
+
+    // 0.4.6: PrintScreen screenshot poll — edge-latched like the Scroll Lock
+    // toggle, and deliberately NOT parked while the overlay is toggled off
+    // (clean shots are the point; while the boxes are hidden the toast simply
+    // cannot draw and the log line is the only feedback). The press is served
+    // at one of the two capture points below, before the overlay renders.
+    g3x_shot_poll();
 
     // 0.4.5: Shift+V conf panel poll — on the present seam like the overlay
     // itself, and UNCONDITIONALLY (the F11/F12 slang hotkeys only poll while
@@ -1191,6 +1219,12 @@ bool g3x_frame_present() {
             slang_cap = (unsigned)sneed;
         }
         gamma_scale_copy(slang_buf, s_w, s_h);
+        // 0.4.6 capture point (slang path): the chain-input buffer is the
+        // gamma-corrected native game frame — captured BEFORE the overlay
+        // renders into it, so the PNG never carries the tag/panel/toast. A
+        // shot consumed here survives a same-frame chain failure: the legacy
+        // path below sees no pending flag and does not double-submit.
+        if (g3x_shot_take_pending()) shot_submit_and_report(slang_buf, s_w, s_h);
         g3x_overlay_render(slang_buf, s_w, s_h);
         if (g3x_slang_present(slang_buf, s_w, s_h)) return true;
         g3x_log_once("slang-fell", "preset chain unavailable — unfiltered present this frame");
@@ -1209,6 +1243,26 @@ bool g3x_frame_present() {
     // gamma = straight copy (the dword layout already matches the swapchain's
     // BGRA byte order).
     gamma_scale_copy(compose, ext_w, ext_h);
+    // 0.4.6 capture point (legacy path): compose is sized to the WINDOW, but
+    // a shot is the game frame itself — on demand, make the same native-res
+    // post-gamma copy the slang path gets for free (identity-gamma 1:1 hits
+    // the memcpy fast path; the bar-free output shape matches either way).
+    if (g3x_shot_take_pending()) {
+        static uint8_t* shot_buf = nullptr;
+        static unsigned shot_cap = 0;
+        const size_t sneed = (size_t)s_w * s_h * 4;
+        if (shot_cap < sneed) {
+            delete[] shot_buf;
+            shot_buf = new (std::nothrow) uint8_t[sneed];
+            shot_cap = shot_buf ? (unsigned)sneed : 0;
+        }
+        if (shot_buf) {
+            gamma_scale_copy(shot_buf, s_w, s_h);
+            shot_submit_and_report(shot_buf, s_w, s_h);
+        } else {
+            g3x_log_once("shot-oom", "shot: capture buffer alloc failed — shot dropped");
+        }
+    }
     // P2.10: version tag — post-gamma, swapchain-resolution, drawn over
     // everything (including the LFB/Bink path); never enters the game's own
     // framebuffer, so grLfbLock reads and fade logic never see it.

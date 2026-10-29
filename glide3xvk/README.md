@@ -63,7 +63,7 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `BUILD-32BIT.md` | **P1 spike notes**: building libslang-vk itself as i686 Windows |
 | `FIELD-TEST.md` | The field log: per-round builds, diagnostics, and results on a vanilla retail 1.14d install |
 
-## The version stamp (0.4.1) + the overlay's shader line (0.4.2) + hotkey toasts (0.4.3) + the conf panel with its arrows (0.4.5) + the Scroll Lock toggle (0.4.6)
+## The version stamp (0.4.1) + the overlay's shader line (0.4.2) + hotkey toasts (0.4.3) + the conf panel with its arrows (0.4.5) + the Scroll Lock toggle + PrintScreen + preset cycling (0.4.6)
 
 The primary stamp is the game's own debug line: the `/fps` block ends with
 `Video: Glide` (a hardcoded string drawn at fixed game coords, decompiled
@@ -106,6 +106,28 @@ the arrow keys stay the game's), and a conf panel that was up comes back up
 when the overlay is toggled back on. The show press toasts `overlay on`; the
 hide press only logs (its toast would draw into a box that just died) —
 `overlay: on/off (Scroll Lock)` in glide3x.log either way.
+
+**0.4.6: PrintScreen saves a screenshot** (new `g3x_shot` module, polled from
+the same present seam). The capture point is BEFORE `g3x_overlay_render` on
+either present path, so the PNG never carries the tag/panel/toast — Scroll
+Lock composes with it but is no longer required for a clean shot. The frame
+saved is the gamma-corrected game raster at native game resolution: on the
+slang path that is the chain-input buffer (the chain itself renders straight
+into the acquired GPU swapchain image, out of a CPU-side capture's reach — a
+slang-FILTERED capture needs a Vulkan readback pass and stays future work),
+on the legacy path an identical native-res copy is made on demand, so the
+output shape never depends on which path is live. Naming is
+`screenshots\D2_YYYYMMDD_HHMMSS.png` beside the game exe (`_1`..`_9` on
+same-second collisions), the encoder is the house-rule dependency-free PNG
+(8-bit truecolor RGB, filter-0 rows, STORED zlib blocks — ~1.4 MB for
+800x600, host-verified end to end by chunk/CRC/inflate/pixel-round-trip),
+and the whole encode+write runs synchronously on the game thread (a few ms,
+at most one frame of hitch per press; the pixels are copied at the capture
+point so the raster reuses its buffer next frame). `screenshots=0` in
+d2slangvk.conf parks the hotkey (a press logs once); `screenshots` also has
+a Shift+V panel row. The shot key is deliberately NOT parked while the
+overlay is Scroll-Lock-toggled off — clean shots are the point — so while
+the boxes are hidden the log line is the only feedback.
 
 Since 0.4.2 the box carries a **second line when a preset filters frames**:
 the active preset's file name (basename only). `g3x_slang` pushes it on chain
@@ -452,3 +474,8 @@ The DirectDraw path (`-w`) is untouched by all of this.
   `texFilterMode(1,1)` and is point-sampled today.
 - Preset parameter UI / per-preset geometry defaults (P4): parameters are
   reachable through `slangvk_chain_set_parameter` but nothing drives them yet.
+- Slang-FILTERED screenshots (0.4.6's PrintScreen captures the pre-shader
+  game frame): the chain renders straight into the acquired swapchain image,
+  so a filtered capture needs a Vulkan readback pipeline (copy the swapchain
+  image to a host-visible buffer between chain render and present, or render
+  the chain into an offscreen target first) — a field round of its own.
