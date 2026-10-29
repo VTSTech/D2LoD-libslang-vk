@@ -38164,19 +38164,19 @@ void * TxnScopeContext = (void *)0x00000000; D2_GLOBAL_GUARD(TxnScopeContext, "T
 uint32_t LockCount = 0x0; D2_GLOBAL_GUARD(LockCount, "LockCount");
 void * ResourceRetValue = (void *)0x00000000; D2_GLOBAL_GUARD(ResourceRetValue, "ResourceRetValue");
 
+// VP: vanilla-plus - per-class player sound tables (see globals.h). Real contents recovered from the retail 1.14d Game.exe static .data - they are NOT runtime-filled (the decompile's "bUnitSoundTableInit" 1-byte stub sat at .data 0x727eac, which is gaUnitSoundIdsAmazon[0]'s low byte, and the six sibling 1-byte stubs were the first bytes of the contiguous 0x729f00..0x72a008 block). Anchors: gaUnitSoundTableByClassId = .data 0x72a008, entry order [Ama,Sorc,Nec,Pal,Barb,Dru,Ass] matching the decompiled initializer. Rows decoded against the LoD sounds.txt row order: [0]/[1] hit/death bases, [2]..[7] event 0x13/0x15/0x16/0x17/0x14/0x18 barks (0x17 = cantcarry, the inventory-full pickup-fail voice), [8] chat_a_1 (anim events 0x19-0x20 select [8], [8]+2 .. [8]+14), [9] act1_complete_andariel (quest events 0x21-0x53 are linear: id = [9] + event - 0x21, so 0x53 = [9]+0x32 = act5_defeat_baal), [10] footstep block base (barb heavy / ama+pal medium / sor+nec+dru+ass light; materials add +0/+4/+8/+0xc/+0x10/+0x14, running +0x18).
+int gaUnitSoundIdsAmazon[11] = { 2878, 2883, 2953, 2957, 2955, 2934, 2936, 2959, 2937, 2961, 2768 }; D2_GLOBAL_GUARD(gaUnitSoundIdsAmazon, "gaUnitSoundIdsAmazon");
+int gaUnitSoundIdsBarbarian[11] = { 2902, 2907, 3031, 3035, 3033, 3012, 3014, 3037, 3015, 3039, 2816 }; D2_GLOBAL_GUARD(gaUnitSoundIdsBarbarian, "gaUnitSoundIdsBarbarian");
+int gaUnitSoundIdsNecromancer[11] = { 2894, 2899, 3109, 3113, 3111, 3090, 3092, 3115, 3093, 3117, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsNecromancer, "gaUnitSoundIdsNecromancer");
+int gaUnitSoundIdsPaladin[11] = { 2886, 2891, 3187, 3191, 3189, 3168, 3170, 3193, 3171, 3195, 2768 }; D2_GLOBAL_GUARD(gaUnitSoundIdsPaladin, "gaUnitSoundIdsPaladin");
+int gaUnitSoundIdsSorceress[11] = { 2910, 2915, 3265, 3269, 3267, 3246, 3248, 3271, 3249, 3273, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsSorceress, "gaUnitSoundIdsSorceress");
+int gaUnitSoundIdsAssassin[11] = { 2918, 2923, 3343, 3347, 3345, 3324, 3326, 3349, 3327, 3351, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsAssassin, "gaUnitSoundIdsAssassin");
+int gaUnitSoundIdsDruid[11] = { 2926, 2931, 3421, 3425, 3423, 3402, 3404, 3427, 3405, 3429, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsDruid, "gaUnitSoundIdsDruid");
+
 // =============================================================================
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t bUnitSoundTableInit; D2_GLOBAL_GUARD_BSS(bUnitSoundTableInit, "bUnitSoundTableInit");
-// VP: vanilla-plus - per-class player sound tables (see globals.h): retail-size zero-filled arrays, not the decompiled 1-byte stubs. Nothing in-tree initializes them (the retail init is unrecovered), so they stay all-SOUND_NONE.
-int gaUnitSoundIdsAmazon[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsAmazon, "gaUnitSoundIdsAmazon");
-int gaUnitSoundIdsBarbarian[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsBarbarian, "gaUnitSoundIdsBarbarian");
-int gaUnitSoundIdsNecromancer[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsNecromancer, "gaUnitSoundIdsNecromancer");
-int gaUnitSoundIdsPaladin[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsPaladin, "gaUnitSoundIdsPaladin");
-int gaUnitSoundIdsSorceress[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsSorceress, "gaUnitSoundIdsSorceress");
-int gaUnitSoundIdsAssassin[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsAssassin, "gaUnitSoundIdsAssassin");
-int gaUnitSoundIdsDruid[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsDruid, "gaUnitSoundIdsDruid");
 uint8_t gbQuestA5Q2Unknown; D2_GLOBAL_GUARD_BSS(gbQuestA5Q2Unknown, "gbQuestA5Q2Unknown");
 uint8_t gaMonSeqMonsterTblData_Unknown; D2_GLOBAL_GUARD_BSS(gaMonSeqMonsterTblData_Unknown, "gaMonSeqMonsterTblData_Unknown");
 uint8_t gaMonSeqAnimData; D2_GLOBAL_GUARD_BSS(gaMonSeqAnimData, "gaMonSeqAnimData");

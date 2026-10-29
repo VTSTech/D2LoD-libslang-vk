@@ -44063,7 +44063,7 @@ eD2Sounds gaUnitSoundTableModeChange[12] = {
     SOUND_NONE
 }; D2_GLOBAL_GUARD(gaUnitSoundTableModeChange, "gaUnitSoundTableModeChange");
 
-// VP: vanilla-plus - entry 0 (Amazon) pointed at the orphaned bUnitSoundTableInit flag byte, a decompiler artifact of the unrecovered runtime init; all seven entries now target real zero-filled tables (see globals.h)
+// VP: vanilla-plus - entry 0 (Amazon) pointed at the orphaned bUnitSoundTableInit flag byte in the decompile; retail's .data 0x72a008 shows all seven entries target real tables (Amazon at 0x727eac, the other six contiguous at 0x729f00..0x72a008). Real contents restored in globals.cpp (recovered from retail 1.14d Game.exe; see globals.h)
 int * gaUnitSoundTableByClassId[7] = { (int*)&gaUnitSoundIdsAmazon, (int*)&gaUnitSoundIdsSorceress, (int*)&gaUnitSoundIdsNecromancer, (int*)&gaUnitSoundIdsPaladin, (int*)&gaUnitSoundIdsBarbarian, (int*)&gaUnitSoundIdsDruid, (int*)&gaUnitSoundIdsAssassin }; D2_GLOBAL_GUARD(gaUnitSoundTableByClassId, "gaUnitSoundTableByClassId");
 
 int gaAmbientMusicLevelSetTable[168] = {

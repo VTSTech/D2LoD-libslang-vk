@@ -1932,7 +1932,6 @@ extern uint32_t gnCursorInvTypeAutoOpenC[5];
 extern uint32_t gnCursorInvTypeAutoOpenA;
 extern D2SkillCltDoFunc SKILLCLTDOFUNCS[130];
 extern int SKILLCLTDOFUNCS_SIZE;
-extern uint8_t bUnitSoundTableInit;
 extern int gaUnitSoundTable[28];
 extern eD2Sounds eD2Sounds_ARRAY_00727f48[12];
 extern eD2Sounds eD2Sounds_ARRAY_00727f78[12];
@@ -2049,7 +2048,7 @@ extern eD2Sounds eD2Sounds_ARRAY_00729538[12];
 extern eD2Sounds eD2Sounds_ARRAY_00729568[12];
 extern eD2Sounds eD2Sounds_ARRAY_00729598[12];
 extern eD2Sounds eD2Sounds_ARRAY_007295c8[12];
-// VP: vanilla-plus - per-class player sound tables, indexed [0..10]: [0]/[1] hit/death, [2..7] event codes 0x13-0x18, [8]/[9] footstep/voice-line bases, [10] footstep base. Retail fills these at runtime behind bUnitSoundTableInit, but that init was not recovered and the decompile shrank each table to a 1-byte BSS stub - every indexed read ran past the object into neighboring globals, and a garbage sound id crashed SOUND_PlaySound on the null sounds.txt line (AV read at D2SoundsTxt.Volume@0x3C, the 0x2C inventory-full pickup path). Zero-filled arrays keep every consumer's SOUND_NONE early-out; recovering the real contents needs the retail init.
+// VP: vanilla-plus - per-class player sound tables, indexed [0..10]. Real contents recovered from the retail 1.14d Game.exe static .data (they are initialized data, not runtime-filled): the decompile shrank each table to a 1-byte stub because no recovered code wrote or sized them - every indexed read ran past the object into neighboring globals, and a garbage sound id crashed SOUND_PlaySound on the null sounds.txt line (AV read at D2SoundsTxt.Volume@0x3C, the 0x2C inventory-full pickup path). Slot semantics (verified against LoD sounds.txt wavs): [0]/[1] hit/death bases, [2..7] event codes 0x13/0x15/0x16/0x17/0x14/0x18 (impossible, cantuseyet, needkey, cantcarry = the pickup-fail voice, needmana, not_in_town), [8] chat_a_1 base for anim events 0x19-0x20, [9] act1_complete_andariel base for quest events 0x21-0x53 (linear, 0x53 = act5_defeat_baal), [10] footstep block base. Values live in globals.cpp, one grep gate per class pins the full initializer.
 extern int gaUnitSoundIdsAmazon[11];
 extern int gaUnitSoundIdsBarbarian[11];
 extern int gaUnitSoundIdsNecromancer[11];

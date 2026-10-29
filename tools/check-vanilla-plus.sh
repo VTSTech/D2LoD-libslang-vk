@@ -110,8 +110,19 @@ gate "automap tolerant frees"             D2Client/UI/Automap.cpp         'D2_FR
 # ---- sound-defect: class sound tables + sounds.txt null guard ---------------
 gate "sounds.txt null guard in SOUND_PlaySound" D2Client/Sound/Sound.cpp 'VP: lookup returns null' 1
 gate "class sound tables right-sized [11]" globals/globals.h            'extern int gaUnitSoundIds\w+\[11\]' 7
-gate "class sound tables zero-filled BSS"  globals/globals.cpp          'int gaUnitSoundIds\w+\[11\]' 7
+gate "class sound tables initialized"      globals/globals.cpp          'int gaUnitSoundIds\w+\[11\] = \{' 7
 gate "pointer table targets Amazon table"  globals/D2Client.cpp         'gaUnitSoundIdsAmazon' 1
+# restored retail values (1.14d Game.exe .data): full-initializer tripwire per class
+gate "sound table Amazon restored (retail .data)"      globals/globals.cpp 'int gaUnitSoundIdsAmazon\[11\] = \{ 2878, 2883, 2953, 2957, 2955, 2934, 2936, 2959, 2937, 2961, 2768 \}' 1
+gate "sound table Barbarian restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsBarbarian\[11\] = \{ 2902, 2907, 3031, 3035, 3033, 3012, 3014, 3037, 3015, 3039, 2816 \}' 1
+gate "sound table Necromancer restored (retail .data)" globals/globals.cpp 'int gaUnitSoundIdsNecromancer\[11\] = \{ 2894, 2899, 3109, 3113, 3111, 3090, 3092, 3115, 3093, 3117, 2720 \}' 1
+gate "sound table Paladin restored (retail .data)"     globals/globals.cpp 'int gaUnitSoundIdsPaladin\[11\] = \{ 2886, 2891, 3187, 3191, 3189, 3168, 3170, 3193, 3171, 3195, 2768 \}' 1
+gate "sound table Sorceress restored (retail .data)"   globals/globals.cpp 'int gaUnitSoundIdsSorceress\[11\] = \{ 2910, 2915, 3265, 3269, 3267, 3246, 3248, 3271, 3249, 3273, 2720 \}' 1
+gate "sound table Assassin restored (retail .data)"    globals/globals.cpp 'int gaUnitSoundIdsAssassin\[11\] = \{ 2918, 2923, 3343, 3347, 3345, 3324, 3326, 3349, 3327, 3351, 2720 \}' 1
+gate "sound table Druid restored (retail .data)"       globals/globals.cpp 'int gaUnitSoundIdsDruid\[11\] = \{ 2926, 2931, 3421, 3425, 3423, 3402, 3404, 3427, 3405, 3429, 2720 \}' 1
+# the decompile's phantom "init flag" (really Amazon[0]'s low byte) must stay gone
+gate "bUnitSoundTableInit phantom gone (cpp)" globals/globals.cpp 'uint8_t bUnitSoundTableInit' 0
+gate "bUnitSoundTableInit phantom gone (h)"   globals/globals.h   'uint8_t bUnitSoundTableInit' 0
 
 echo
 if [ "$FAIL" -eq 0 ]; then

@@ -63,9 +63,9 @@
 304	7	globals/D2Client.cpp
 16	0	globals/D2Direct3D.cpp
 46	1	globals/D2Win.cpp
-8	6	globals/globals.cpp
-18	13	globals/globals.h
-197	0	handoff.md
+9	7	globals/globals.cpp
+18	14	globals/globals.h
+200	0	handoff.md
 85	0	support/d2_boot.cpp
 12	0	support/d2_boot.h
 117	12	support/d2_crash.cpp
@@ -74,5 +74,5 @@
 217	0	tools/build-local-win11.ps1
 12	0	tools/check-build.sh
 94	0	tools/check-fork-surface.sh
-122	0	tools/check-vanilla-plus.sh
+133	0	tools/check-vanilla-plus.sh
 32	0	vanilla-plus/cmake/sources.cmake
