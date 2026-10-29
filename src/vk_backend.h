@@ -85,3 +85,18 @@ void* g3x_vk_slang_acquire_semaphore();            // the binary semaphore acqui
 // Returns false (soft, logged) when the backend is down.
 bool g3x_vk_slang_blit_scaled(void* src_image, void* dst_image,
                               unsigned sw, unsigned sh, unsigned dw, unsigned dh);
+
+// 0.4.6 PrintScreen: read back the JUST-RENDERED swapchain image (index as
+// acquired by g3x_vk_slang_acquire, chain render already submitted and
+// fence-waited, image resting in PRESENT_SRC_KHR) into a persistent
+// host-visible buffer and return the mapped BGRA8 pixels — the EXACT
+// presented raster: slang-FILTERED, overlay boxes included, swapchain extent
+// (query with g3x_vk_slang_swap_extent). The image makes one extra lap
+// PRESENT_SRC -> TRANSFER_SRC -> copy -> PRESENT_SRC in its own fenced
+// submit, so the caller presents immediately afterwards with
+// g3x_vk_slang_present_acquired as usual. The pointer is stable until the
+// NEXT readback (or shutdown) — encode or copy before returning. Requires
+// VK_IMAGE_USAGE_TRANSFER_SRC_BIT on the swapchain (granted at creation when
+// the surface allows; otherwise returns nullptr, once-logged — the shot key
+// fails soft). Returns nullptr (soft, logged) on any other failure too.
+const uint8_t* g3x_vk_slang_readback_acquired(uint32_t idx);

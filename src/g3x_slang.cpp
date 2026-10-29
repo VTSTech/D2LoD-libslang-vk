@@ -1663,6 +1663,19 @@ int g3x_slang_vsync_pref() { return s_conf_live ? s_conf.vsync : -1; }
 
 bool g3x_slang_active() { return s_ready && !s_disabled && s_chain != nullptr; }
 
+// 0.4.6 PrintScreen: submit the readback pixels + toast (mirror of the
+// g3x_frame helper; the slang path's capture lives here, in the GPU present,
+// because only this function knows when the chain has rendered into the
+// swapchain image that a readback can reach).
+static void shot_submit_and_report(const uint8_t* bgra, unsigned w, unsigned h) {
+    char name[64];
+    if (g3x_shot_submit(bgra, w, h, name, sizeof(name))) {
+        char msg[80];
+        std::snprintf(msg, sizeof(msg), "saved %s", name);
+        g3x_overlay_toast(msg);
+    }
+}
+
 bool g3x_slang_present(const uint8_t* bgra, unsigned w, unsigned h) {
     if (!g3x_slang_active() || !bgra || !w || !h) return false;
     ++s_frame;
@@ -1769,6 +1782,20 @@ bool g3x_slang_present(const uint8_t* bgra, unsigned w, unsigned h) {
     }
     s_consec_fail = 0;
 
+    // 0.4.6 PrintScreen: the shot is the PRESENTED image — taken here, AFTER
+    // the chain rendered (slang-FILTERED pixels, overlay boxes included: they
+    // drew into the chain's input buffer before this call) and BEFORE the
+    // present. The readback is its own fenced submit (see
+    // g3x_vk_slang_readback_acquired): when it returns, the pixels are in
+    // host memory and the encode+write runs right here on the game thread —
+    // the same at-most-one-frame-hitch trade as the CPU capture had.
+    // Consumed only on a SUCCESSFUL render: a chain failure leaves the press
+    // pending, and the legacy tail in g3x_frame serves it from compose — the
+    // unfiltered frame that actually gets presented that frame.
+    if (g3x_shot_take_pending()) {
+        const uint8_t* px = g3x_vk_slang_readback_acquired(idx);
+        if (px) shot_submit_and_report(px, ew, eh);
+    }
     g3x_vk_slang_present_acquired(idx);
     ++s_frames_filtered;
     return true;

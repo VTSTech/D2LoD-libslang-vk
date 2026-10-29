@@ -43,29 +43,30 @@ branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
   as a PNG into `screenshots\` beside the game exe — `D2_YYYYMMDD_HHMMSS.png`
   (same-second re-shots walk `_1`..`_9` instead of overwriting), with a
   `saved D2_....png` toast and a
-  `shot: saved screenshots\... (WxH RGB PNG)` line in glide3x.log. The captured
-  frame is the gamma-corrected game raster at NATIVE game resolution, taken at
-  the capture point BEFORE the overlay draws, so a saved PNG never carries the
-  version tag, the conf panel or the toast — the Scroll Lock toggle (0.4.6) and
-  the shot key compose, but no longer have to be used together. Both present
-  paths feed the same seam: the P3 slang path submits its chain-input buffer
-  (the chain renders straight into the acquired GPU swapchain image, which a
-  CPU-side capture cannot reach — a slang-FILTERED capture stays documented
-  future work), and the legacy path makes the identical native-res copy on
-  demand, so the output shape never depends on which path is live. The poll
+  `shot: saved screenshots\... (WxH RGB PNG)` line in glide3x.log. The shot is
+  WYSIWYG — the PRESENTED raster, what the screen shows: on the P3 slang path
+  a GPU readback of the rendered swapchain image (its own fenced submit
+  between the chain render and the present — `g3x_vk_slang_readback_acquired`
+  in vk_backend, `TRANSFER_SRC` swapchain usage granted when the surface
+  allows), so the PNG carries the slang-FILTERED pixels with the overlay
+  boxes drawn in; on the legacy path the compose buffer is captured straight
+  from memory right before the upload, byte-identical to what the swapchain
+  receives. Window/swapchain-resolution either way; Scroll Lock toggled off
+  = clean, still-filtered shots. The poll
   rides the present seam (`g3x_frame_present`, `g3x_shot_poll`) — always-on
   like the Scroll Lock toggle, and deliberately NOT parked while the overlay is
-  toggled off (clean shots are the point; while the boxes are hidden the toast
-  simply cannot draw and the log line is the only feedback). Foreground-gated
-  and edge-latched like every polled hotkey (a press in another window never
-  queues; a held PrintScreen is one shot, not a machine gun). The encode+write
-  is synchronous by design — the pixels are copied at the capture point, the
-  ~1.4 MB PNG (a hand-rolled, dependency-free encoder: 8-bit truecolor RGB,
-  filter-0 rows, STORED zlib blocks, table CRC-32 + adler-32; host-verified
-  end to end with a chunk/CRC/inflate/pixel-round-trip validator) lands a few
-  ms later on the game thread, at most one frame of hitch per press. Fail-soft:
-  an unwritable file logs `shot: PNG write FAILED ...` and the game rolls on.
-  Conf-gated by the new `screenshots=` key (below).
+  toggled off (a hidden overlay just makes every shot clean; while the boxes
+  are hidden the toast simply cannot draw and the log line is the only
+  feedback). Foreground-gated and edge-latched like every polled hotkey (a
+  press in another window never queues; a held PrintScreen is one shot, not a
+  machine gun). The readback + encode + write is synchronous by design — the
+  GPU copy is a sub-millisecond fenced transfer, the PNG (a hand-rolled,
+  dependency-free encoder: 8-bit truecolor RGB, filter-0 rows, STORED zlib
+  blocks, table CRC-32 + adler-32; host-verified end to end with a
+  chunk/CRC/inflate/pixel-round-trip validator) lands a few ms later on the
+  game thread, at most one frame of hitch per press. Fail-soft: an unwritable
+  file logs `shot: PNG write FAILED ...` and the game rolls on. Conf-gated by
+  the new `screenshots=` key (below).
 
 - **Preset cycling, Ctrl+Left/Right** (g3x_slang): list up to eight presets in
   `d2slangvk.conf` (`preset_1=` .. `preset_8=`, same relative/absolute path

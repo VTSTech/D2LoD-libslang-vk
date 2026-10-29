@@ -42,6 +42,14 @@ VkBuffer         s_staging      = VK_NULL_HANDLE;
 VkDeviceMemory   s_staging_mem  = VK_NULL_HANDLE;
 uint8_t*         s_staging_map  = nullptr;
 VkDeviceSize     s_staging_size = 0;
+// 0.4.6 PrintScreen: host-visible readback buffer for the presented-image
+// capture (extent-sized, allocated on the first shot, regrown on resize), and
+// whether the surface granted TRANSFER_SRC on the swapchain images at all.
+VkBuffer         s_readback       = VK_NULL_HANDLE;
+VkDeviceMemory   s_readback_mem   = VK_NULL_HANDLE;
+uint8_t*         s_readback_map   = nullptr;
+VkDeviceSize     s_readback_size  = 0;
+bool             s_swap_src_ok    = false;
 
 #define G3X_VK_CHECK(expr, what)                                              \
     do {                                                                      \
@@ -59,6 +67,10 @@ void destroy_swapchain_objects() {
     if (s_staging)          { vkDestroyBuffer(s_device, s_staging, nullptr); s_staging = VK_NULL_HANDLE; }
     if (s_staging_mem)      { vkFreeMemory(s_device, s_staging_mem, nullptr); s_staging_mem = VK_NULL_HANDLE; }
     s_staging_size = 0;
+    if (s_readback_map)     { vkUnmapMemory(s_device, s_readback_mem); s_readback_map = nullptr; }
+    if (s_readback)         { vkDestroyBuffer(s_device, s_readback, nullptr); s_readback = VK_NULL_HANDLE; }
+    if (s_readback_mem)     { vkFreeMemory(s_device, s_readback_mem, nullptr); s_readback_mem = VK_NULL_HANDLE; }
+    s_readback_size = 0;
     for (uint32_t i = 0; i < s_image_n; ++i) {
         if (s_views[i] != VK_NULL_HANDLE) { vkDestroyImageView(s_device, s_views[i], nullptr); s_views[i] = VK_NULL_HANDLE; }
     }
@@ -124,6 +136,45 @@ bool ensure_staging(VkDeviceSize bytes) {
     return true;
 }
 
+// host-visible readback buffer for the 0.4.6 PrintScreen presented-image
+// capture. Mirror of ensure_staging with the mirror-image usage bit: the GPU
+// writes INTO this buffer (CopyImageToBuffer target, TRANSFER_DST).
+bool ensure_readback(VkDeviceSize bytes) {
+    if (s_readback && s_readback_size >= bytes) return true;
+    if (s_readback_map)     { vkUnmapMemory(s_device, s_readback_mem); s_readback_map = nullptr; }
+    if (s_readback)         { vkDestroyBuffer(s_device, s_readback, nullptr); s_readback = VK_NULL_HANDLE; }
+    if (s_readback_mem)     { vkFreeMemory(s_device, s_readback_mem, nullptr); s_readback_mem = VK_NULL_HANDLE; }
+    s_readback_size = 0;
+
+    VkBufferCreateInfo bi{}; bi.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bi.size = bytes;
+    bi.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    G3X_VK_CHECK(vkCreateBuffer(s_device, &bi, nullptr, &s_readback), "vkCreateBuffer readback");
+    VkMemoryRequirements mr{}; vkGetBufferMemoryRequirements(s_device, s_readback, &mr);
+    uint32_t mem_type = 0;
+    {
+        VkPhysicalDeviceMemoryProperties mp{}; vkGetPhysicalDeviceMemoryProperties(s_phys, &mp);
+        bool found = false;
+        for (uint32_t i = 0; i < mp.memoryTypeCount; ++i) {
+            if ((mr.memoryTypeBits & (1u << i)) &&
+                (mp.memoryTypes[i].propertyFlags & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))) {
+                mem_type = i; found = true; break;
+            }
+        }
+        if (!found) { g3x_log("vk fail: no host-visible memory type (readback)"); return false; }
+    }
+    VkMemoryAllocateInfo ai{}; ai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    ai.allocationSize = mr.size; ai.memoryTypeIndex = mem_type;
+    G3X_VK_CHECK(vkAllocateMemory(s_device, &ai, nullptr, &s_readback_mem), "vkAllocateMemory readback");
+    G3X_VK_CHECK(vkBindBufferMemory(s_device, s_readback, s_readback_mem, 0), "vkBindBufferMemory readback");
+    G3X_VK_CHECK(vkMapMemory(s_device, s_readback_mem, 0, mr.size, 0, (void**)&s_readback_map),
+                 "vkMapMemory readback");
+    s_readback_size = mr.size;
+    return true;
+}
+
 bool create_swapchain() {
     VkSurfaceCapabilitiesKHR caps{};
     G3X_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(s_phys, s_surface, &caps),
@@ -155,7 +206,15 @@ bool create_swapchain() {
     if (caps.maxImageCount > 0 && image_count > caps.maxImageCount) image_count = caps.maxImageCount;
 
     // P3: the preset chain draws as a render pass -> COLOR_ATTACHMENT usage is
-    // required; TRANSFER_DST stays for the legacy unfiltered copy path.
+    // required; TRANSFER_DST stays for the legacy unfiltered copy path. 0.4.6
+    // PrintScreen: +TRANSFER_SRC when the surface allows it, so the PRESENTED
+    // image can be read back for a slang-FILTERED shot (see
+    // g3x_vk_slang_readback_acquired). The spec minimum for swapchain usage is
+    // COLOR_ATTACHMENT only — every real implementation also grants
+    // TRANSFER_SRC — but the check keeps a bizarre surface from killing the
+    // whole swapchain for a screenshot's sake.
+    s_swap_src_ok = (caps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) != 0;
+
     VkPresentModeKHR present_mode = VK_PRESENT_MODE_FIFO_KHR; // always supported
     if (g3x_slang_vsync_pref() == 0) {
         uint32_t npm = 0;
@@ -174,7 +233,8 @@ bool create_swapchain() {
     ci.imageColorSpace = fmts[0].colorSpace;
     ci.imageExtent = s_extent;
     ci.imageArrayLayers = 1;
-    ci.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    ci.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                    (s_swap_src_ok ? VK_IMAGE_USAGE_TRANSFER_SRC_BIT : 0);
     ci.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     ci.preTransform = caps.currentTransform;
     ci.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
@@ -188,9 +248,10 @@ bool create_swapchain() {
     G3X_VK_CHECK(vkGetSwapchainImagesKHR(s_device, s_swapchain, &s_image_n, s_images),
                  "vkGetSwapchainImagesKHR imgs");
 
-    g3x_log("vk: swapchain %ux%u fmt=%d images=%u (%s)", s_extent.width, s_extent.height,
+    g3x_log("vk: swapchain %ux%u fmt=%d images=%u (%s) readback=%s", s_extent.width, s_extent.height,
             (int)s_format, s_image_n,
-            present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? "IMMEDIATE" : "FIFO");
+            present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? "IMMEDIATE" : "FIFO",
+            s_swap_src_ok ? "on" : "off");
     for (uint32_t i = 0; i < s_image_n; ++i) {
         VkImageViewCreateInfo vi{}; vi.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         vi.image = s_images[i]; vi.viewType = VK_IMAGE_VIEW_TYPE_2D; vi.format = s_format;
@@ -504,6 +565,92 @@ void g3x_vk_slang_present_acquired(uint32_t idx) {
 
 void* g3x_vk_slang_swap_view(uint32_t idx) {
     return (idx < s_image_n) ? (void*)s_views[idx] : nullptr;
+}
+
+// ---- 0.4.6 PrintScreen: presented-image readback ----------------------------
+//
+// Reads back the JUST-RENDERED swapchain image so a shot is the exact
+// presented raster — slang-FILTERED pixels, overlay boxes included (they draw
+// into the chain's input on the CPU side) — instead of the pre-shader chain
+// input the old CPU capture points saw. Runs BETWEEN the chain render (which
+// fence-waits internally — "the chain render is synchronous per frame") and
+// the present itself, on the game thread: the image makes one extra lap
+// PRESENT_SRC -> TRANSFER_SRC -> copy -> PRESENT_SRC in its own fenced
+// submit, so present still sees the layout it requires and the map is stable
+// the moment this returns (the copy is a sub-millisecond PCIe read; the
+// encode+write keeps the same at-most-one-frame-hitch trade as before).
+//
+// Needs VK_IMAGE_USAGE_TRANSFER_SRC_BIT on the swapchain — requested at
+// creation only when the surface's supportedUsageFlags grants it (every real
+// implementation does; the spec minimum is COLOR_ATTACHMENT only). Without
+// the bit this returns nullptr and once-logs; the shot key fails soft (press
+// logged, no file, game rolls on).
+const uint8_t* g3x_vk_slang_readback_acquired(uint32_t idx) {
+    if (!g_vk.alive || !s_sync_live || idx >= s_image_n) return nullptr;
+    if (!s_swap_src_ok) {
+        g3x_log_once("shot-src", "shot: swapchain lacks TRANSFER_SRC usage — readback unavailable");
+        return nullptr;
+    }
+    const VkDeviceSize bytes = (VkDeviceSize)s_extent.width * s_extent.height * 4;
+    if (!ensure_readback(bytes) || !s_readback_map) return nullptr;
+
+    VkCommandBufferBeginInfo bi{}; bi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    if (vkBeginCommandBuffer(s_cmd, &bi) != VK_SUCCESS) return nullptr;
+
+    // PRESENT_SRC -> TRANSFER_SRC. srcAccessMask MUST be 0 coming out of
+    // PRESENT_SRC (no access is guaranteed under it); ALL_COMMANDS covers the
+    // chain's render into this image (the same idiom the blit service uses).
+    VkImageMemoryBarrier to_src{}; to_src.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    to_src.image = s_images[idx];
+    to_src.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_src.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    to_src.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    to_src.subresourceRange.levelCount = 1;
+    to_src.subresourceRange.layerCount = 1;
+    to_src.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    to_src.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    to_src.srcAccessMask = 0;
+    to_src.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    vkCmdPipelineBarrier(s_cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_src);
+
+    VkBufferImageCopy cpy{};
+    cpy.bufferOffset = 0;
+    cpy.bufferRowLength = 0; cpy.bufferImageHeight = 0;   // tightly packed
+    cpy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    cpy.imageSubresource.layerCount = 1;
+    cpy.imageExtent = {s_extent.width, s_extent.height, 1};
+    vkCmdCopyImageToBuffer(s_cmd, s_images[idx], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                           s_readback, 1, &cpy);
+
+    // TRANSFER_SRC -> PRESENT_SRC: the present still gets the layout it
+    // requires; ALL_COMMANDS destination scope mirrors the blit's leave
+    // barriers.
+    VkImageMemoryBarrier to_present = to_src;
+    to_present.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    to_present.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    to_present.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    to_present.dstAccessMask = 0;
+    vkCmdPipelineBarrier(s_cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_present);
+    if (vkEndCommandBuffer(s_cmd) != VK_SUCCESS) return nullptr;
+
+    VkSubmitInfo sub{}; sub.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    sub.commandBufferCount = 1; sub.pCommandBuffers = &s_cmd;
+    if (vkQueueSubmit(s_queue, 1, &sub, s_fence) != VK_SUCCESS) return nullptr;
+    if (vkWaitForFences(s_device, 1, &s_fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) return nullptr;
+    vkResetFences(s_device, 1, &s_fence);
+
+    // Rare non-BGRA surface (e.g. RGBA8): swizzle in place so the PNG encoder
+    // keeps its BGRA contract (the same swap present_pixels does on upload).
+    if (s_format != VK_FORMAT_B8G8R8A8_UNORM) {
+        uint8_t* p = s_readback_map;
+        for (VkDeviceSize i = 0; i < (VkDeviceSize)s_extent.width * s_extent.height; ++i, p += 4) {
+            uint8_t t = p[0]; p[0] = p[2]; p[2] = t;
+        }
+    }
+    return s_readback_map;
 }
 
 int g3x_vk_slang_swap_format() { return (int)s_format; }

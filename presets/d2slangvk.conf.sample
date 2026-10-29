@@ -33,10 +33,11 @@
 ;preset_3=Shaders/crt/crt-royale.slangp
 
 ; PrintScreen screenshot key (0.4.6): press PrintScreen in-game to save the
-; current frame as a PNG into screenshots\ beside the game exe. The saved
-; frame is the gamma-corrected game raster at native resolution, captured
-; before the overlay draws (no tag/panel/toast in the file). 0 = the hotkey
-; logs once and does nothing. The encode+write costs a few ms on the press.
+; presented frame as a PNG into screenshots\ beside the game exe — WYSIWYG:
+; shader-filtered pixels with the overlay boxes drawn in (Scroll Lock toggled
+; off = clean shots). 0 = the hotkey
+; logs once and does nothing. The readback + encode+write costs a few ms on
+; the press.
 ;screenshots=1
 
 ; How the game frame sits in the window when the preset chain is on:

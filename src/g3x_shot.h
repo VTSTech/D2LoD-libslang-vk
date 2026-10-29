@@ -1,38 +1,34 @@
 // glide3xvk — 0.4.6: the PrintScreen screenshot key.
 //
-// One press saves the CURRENT game frame as a PNG into screenshots\ beside
-// the game exe. The frame captured is the gamma-corrected game raster at
-// NATIVE game resolution (s_w x s_h in g3x_frame terms), taken BEFORE the
-// overlay draws — a saved PNG never contains the version tag, the conf panel
-// or the toast, with or without the Scroll Lock toggle. On the P3 preset
-// path this is the chain's input frame (the chain itself renders straight
-// into the GPU swapchain image, which a CPU-side capture cannot reach — a
-// slang-FILTERED capture needs a Vulkan readback pass and stays future work;
-// see "What is deliberately NOT here yet" in README.md). On the legacy path
-// the same native-res copy is made, so the output shape is identical
-// wherever a preset chain runs.
+// One press saves WHAT THE SCREEN SHOWS as a PNG into screenshots\ beside the
+// game exe: the PRESENTED raster — slang-FILTERED pixels on the preset path
+// (a GPU readback of the rendered swapchain image, taken between the chain
+// render and the present), the compose raster on the legacy path — overlay
+// boxes included, at swapchain/window resolution. WYSIWYG. For clean shots
+// (no tag/panel/toast) toggle the overlay off with Scroll Lock first: the
+// boxes hidden = nothing drawn into the frame the shot copies. The gamma-
+// corrected game raster is always in there (the chain input is built from it
+// on the CPU side; the legacy path IS it).
 //
-// Seam and rules (mirroring the 0.4.6 Scroll Lock toggle):
+// Seam and rules (mirroring the Scroll Lock toggle):
 //   - polled from the present seam (g3x_frame_present) on every presented
-//     frame — works with or without a preset chain, and is deliberately NOT
-//     parked while the overlay is Scroll-Lock-toggled off (clean shots are
-//     the point; the toast simply cannot draw while the boxes are hidden,
-//     so the log line is the only feedback there),
+//     frame, with or without a preset chain, and deliberately NOT parked
+//     while the overlay is toggled off (a hidden overlay then simply makes
+//     every shot clean),
 //   - foreground-gated: a press made while another window is focused is
 //     latched off, never queued (GetAsyncKeyState is process-global),
 //   - edge-latched: one press = one shot, held PrintScreen does not machine-gun,
 //   - conf-gated via [slangvk] screenshots= (1 default, 0 disables the key;
 //     g3x_slang pushes the parsed flag here on every conf read),
-//   - the encode + write run synchronously on the game thread (~a few ms for
-//     the 800x600 RGB payload; a deliberate trade: no detached-thread
-//     lifetime questions at process exit, one frame of hitch per shot at
-//     most) — the pixels are COPIED first, so the raster reuses its buffer
-//     the very next frame with zero tearing risk.
+//   - the encode + write run synchronously on the game thread (~a few ms;
+//     the GPU readback itself is a sub-millisecond fenced copy) — a
+//     deliberate trade: no detached-thread lifetime questions at process
+//     exit, at most one frame of hitch per shot.
 //
 // The PNG encoder is dependency-free by house rule (this DLL imports nothing
 // beyond winmm's counterparts and version): 8-bit RGB, filter type 0 per
 // row, zlib stream made of STORED deflate blocks (no compression — a
-// 800x600 shot is ~1.4 MB; determinism and tiny code beat ratio here),
+// window-res shot is ~1-6 MB; determinism and tiny code beat ratio here),
 // table-driven CRC-32 and the standard adler-32.
 #pragma once
 

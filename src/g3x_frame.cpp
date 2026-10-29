@@ -1152,14 +1152,14 @@ static void overlay_scrolllock_poll() {
 
 // ---- 0.4.6: the PrintScreen screenshot key ---------------------------------
 
-// The capture points live inside g3x_frame_present (below): the frame bytes
-// only exist as a contiguous BGRA buffer there, and the shot must land
-// BEFORE the overlay draws so a saved PNG is always clean of the tag/panel/
-// toast. Both present paths funnel through one helper — the slang path
-// submits its chain-input buffer (gamma-corrected native game res), the
-// legacy path makes the identical native-res copy on demand, so the output
-// shape never depends on which path is live. The toast fires only when the
-// overlay can actually draw it; the log line is unconditional either way.
+// The capture points live where the PRESENTED raster exists: the slang path
+// takes its shot inside g3x_slang_present's GPU half (swapchain readback —
+// slang-FILTERED pixels, overlay boxes included), the legacy path captures
+// compose right before present_pixels (byte-identical to what gets uploaded —
+// post-gamma, overlay included). WYSIWYG is the rule now: a shot shows what
+// the screen shows; the Scroll Lock toggle still yields clean shots (boxes
+// hidden = nothing drawn into the frame the shot copies). The toast fires
+// only when the overlay can actually draw it; the log line is unconditional.
 static void shot_submit_and_report(const uint8_t* bgra, unsigned w, unsigned h) {
     char name[64];
     if (g3x_shot_submit(bgra, w, h, name, sizeof(name))) {
@@ -1219,12 +1219,11 @@ bool g3x_frame_present() {
             slang_cap = (unsigned)sneed;
         }
         gamma_scale_copy(slang_buf, s_w, s_h);
-        // 0.4.6 capture point (slang path): the chain-input buffer is the
-        // gamma-corrected native game frame — captured BEFORE the overlay
-        // renders into it, so the PNG never carries the tag/panel/toast. A
-        // shot consumed here survives a same-frame chain failure: the legacy
-        // path below sees no pending flag and does not double-submit.
-        if (g3x_shot_take_pending()) shot_submit_and_report(slang_buf, s_w, s_h);
+        // 0.4.6 capture point (slang path): NOT here anymore. The shot is
+        // the PRESENTED image — taken inside g3x_slang_present's GPU half
+        // after the chain rendered, via the swapchain readback in vk_backend
+        // (filtered pixels, overlay included). A press on a frame whose chain
+        // fails stays pending and the legacy tail below serves it instead.
         g3x_overlay_render(slang_buf, s_w, s_h);
         if (g3x_slang_present(slang_buf, s_w, s_h)) return true;
         g3x_log_once("slang-fell", "preset chain unavailable — unfiltered present this frame");
@@ -1243,29 +1242,16 @@ bool g3x_frame_present() {
     // gamma = straight copy (the dword layout already matches the swapchain's
     // BGRA byte order).
     gamma_scale_copy(compose, ext_w, ext_h);
-    // 0.4.6 capture point (legacy path): compose is sized to the WINDOW, but
-    // a shot is the game frame itself — on demand, make the same native-res
-    // post-gamma copy the slang path gets for free (identity-gamma 1:1 hits
-    // the memcpy fast path; the bar-free output shape matches either way).
-    if (g3x_shot_take_pending()) {
-        static uint8_t* shot_buf = nullptr;
-        static unsigned shot_cap = 0;
-        const size_t sneed = (size_t)s_w * s_h * 4;
-        if (shot_cap < sneed) {
-            delete[] shot_buf;
-            shot_buf = new (std::nothrow) uint8_t[sneed];
-            shot_cap = shot_buf ? (unsigned)sneed : 0;
-        }
-        if (shot_buf) {
-            gamma_scale_copy(shot_buf, s_w, s_h);
-            shot_submit_and_report(shot_buf, s_w, s_h);
-        } else {
-            g3x_log_once("shot-oom", "shot: capture buffer alloc failed — shot dropped");
-        }
-    }
     // P2.10: version tag — post-gamma, swapchain-resolution, drawn over
     // everything (including the LFB/Bink path); never enters the game's own
     // framebuffer, so grLfbLock reads and fade logic never see it.
     g3x_overlay_render(compose, ext_w, ext_h);
+    // 0.4.6 capture point (legacy path): compose IS the presented raster —
+    // post-gamma, overlay boxes included, window-sized. Copy-free: the PNG
+    // encoder reads straight from the buffer present_pixels is about to
+    // upload, so the shot is byte-identical to what the swapchain shows. A
+    // press left pending by a same-frame slang chain failure lands here (the
+    // slang path consumed it only on a successful render).
+    if (g3x_shot_take_pending()) shot_submit_and_report(compose, ext_w, ext_h);
     return g3x_vk_present_pixels(compose, ext_w, ext_h);
 }
