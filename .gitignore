@@ -1,10 +1,6 @@
 .idea/
 .DS_Store
-metrics/
-compile-errors.txt
-sites2.tsv
-*.cpp.map
 /build/
 /build-g3x/
-/glide3xvk/build-i686/
+/build-i686/
 *.bak

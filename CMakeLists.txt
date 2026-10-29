@@ -1,185 +1,159 @@
-# Redivivus - Diablo II 1.14d Game.exe recovered as source that builds.
+# glide3xvk — our own glide3x.dll: Glide 3 on Vulkan, with the libslang-vk
+# preset chain at present (see README.md).
 #
-#   cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
-#   cmake --build build -j
-#
-# Produces build/d2.exe, the same executable recon/runs/link.sh links: every
-# translation unit compiled with the same flags, the hand-written assembly
-# support, and import libraries for the three licensed DLLs Game.exe used but did
-# not contain.
-#
-# The target is 32-bit Windows and the code assumes the MSVC x86 ABI, so the
-# only supported compiler is a mingw-w64 i686 g++ (native or cross).
+# Standalone repo: this tree builds ONLY the wrapper DLL — the game just does
+# LoadLibraryA("glide3x.dll") and resolves 45 stdcall exports; nothing else of
+# it is needed here. Toolchain: cmake/mingw-i686.cmake (32-bit Windows only,
+# deliberately: the whole point is loading inside the game's process).
 
 cmake_minimum_required(VERSION 3.16)
-project(Redivivus LANGUAGES C CXX ASM)
+project(glide3xvk LANGUAGES C CXX)
 
 if(NOT WIN32 OR NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
-    message(FATAL_ERROR "Redivivus targets 32-bit Windows. Configure with "
+    message(FATAL_ERROR "glide3xvk builds 32-bit Windows only — configure with "
         "-DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake (or a native i686 mingw-w64 g++).")
 endif()
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# link.sh builds unoptimised with debug info, and the fault handler's RVAs are
-# turned back into file:line with addr2line - so that is the default here too.
-# An optimising build type changes code generation of decompiled code that may
-# lean on undefined behaviour; treat one as an experiment, not a release.
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    set(CMAKE_BUILD_TYPE "" CACHE STRING "Empty = link.sh flags (-g, no -O)" FORCE)
-endif()
-
-option(REDIVIVUS_PERMISSIVE
-    "Add -fpermissive. Opt-in only: the gate is that every TU compiles strict." OFF)
-option(REDIVIVUS_DEV
-    "Development build: per-call tracing and the in-process control channel, which listens on an unauthenticated TCP port." OFF)
-
-# ---------------------------------------------------------------------------
-# Sources. Globbed, not listed: the generator adds and removes files on every
-# regen, and a hand list goes stale. CONFIGURE_DEPENDS re-globs on each build.
-# ---------------------------------------------------------------------------
-file(GLOB_RECURSE D2_SOURCES CONFIGURE_DEPENDS
-    LIST_DIRECTORIES false
-    "${CMAKE_SOURCE_DIR}/*.cpp"
-    "${CMAKE_SOURCE_DIR}/support/*.s")
-file(GLOB_RECURSE D2_HEADERS CONFIGURE_DEPENDS
-    LIST_DIRECTORIES false
-    "${CMAKE_SOURCE_DIR}/*.h")
-
-# A build directory inside the tree must not feed its own files back in.
-foreach(list D2_SOURCES D2_HEADERS)
-    list(FILTER ${list} EXCLUDE REGEX "^${CMAKE_BINARY_DIR}/")
-    list(FILTER ${list} EXCLUDE REGEX "/\\.git/")
-    # Vendored C library, built as its own target below; its headers (config.h,
-    # internal.h) must not land on the game's include path.
-    list(FILTER ${list} EXCLUDE REGEX "^${CMAKE_SOURCE_DIR}/thirdparty/libbacktrace/")
-    # Our glide3x.dll (glide3xvk/, PLAN.md section 0/4): separate SHARED target,
-    # built below when present. Nothing here may leak into the game's build —
-    # zero game-source drift.
-    list(FILTER ${list} EXCLUDE REGEX "^${CMAKE_SOURCE_DIR}/glide3xvk/")
-endforeach()
-list(SORT D2_SOURCES)
-
-# Headers are included by tree-relative path ("D2Game/UNIT/SUNITNPC.h"), with a
-# handful by bare name from their own directory. link.sh puts every directory
-# on the include path; the ones that hold headers are the ones that matter.
-set(D2_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}")
-foreach(h IN LISTS D2_HEADERS)
-    get_filename_component(dir "${h}" DIRECTORY)
-    list(APPEND D2_INCLUDE_DIRS "${dir}")
-endforeach()
-list(REMOVE_DUPLICATES D2_INCLUDE_DIRS)
-
-if(NOT REDIVIVUS_DEV)
-    list(REMOVE_ITEM D2_SOURCES "${CMAKE_SOURCE_DIR}/support/d2_control.cpp")
-endif()
-
-add_executable(d2 ${D2_SOURCES})
-target_include_directories(d2 PRIVATE ${D2_INCLUDE_DIRS})
-
-# ---------------------------------------------------------------------------
-# Compile flags - identical to link.sh.
-#   -w               warnings off, so real type holes surface as errors
-#   -fms-extensions  the decompilation's MSVC-isms
-#   -include ...     d2_platform.h carries the MSVC ABI model; support/d2_hand.h
-#                    the hand-written declarations. Few TUs include them, so
-#                    both are forced in ahead of every source.
-# SHELL: keeps each -include paired with its file; CMake de-duplicates plain
-# repeated options, which would orphan the second header.
-# The macro prefix map makes __FILE__ tree-relative, as it is when link.sh
-# compiles from inside the tree; debug info keeps absolute paths for addr2line.
-# ---------------------------------------------------------------------------
-set(CXX_ONLY "$<COMPILE_LANGUAGE:CXX>")
-set_target_properties(d2 PROPERTIES
-    CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
-target_compile_options(d2 PRIVATE
-    "$<${CXX_ONLY}:-g;-w;-fms-extensions>"
-    "$<${CXX_ONLY}:SHELL:-include ${CMAKE_SOURCE_DIR}/d2_platform.h>"
-    "$<${CXX_ONLY}:-fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=>")
-if(EXISTS "${CMAKE_SOURCE_DIR}/support/d2_hand.h")
-    target_compile_options(d2 PRIVATE
-        "$<${CXX_ONLY}:SHELL:-include ${CMAKE_SOURCE_DIR}/support/d2_hand.h>")
-endif()
-if(REDIVIVUS_PERMISSIVE)
-    target_compile_options(d2 PRIVATE "$<${CXX_ONLY}:-fpermissive>")
-endif()
-if(REDIVIVUS_DEV)
-    target_compile_definitions(d2 PRIVATE REDIVIVUS_DEV)
-endif()
-
-# ---------------------------------------------------------------------------
-# Crash reports (support/d2_crash.cpp) symbolise the stack from this build's own
-# DWARF with libbacktrace, vendored as C. The report names the build, so the git
-# describe of the tree is baked in at configure time; only d2_crash.cpp sees it,
-# so a new commit recompiles that one file.
-# ---------------------------------------------------------------------------
-add_library(d2_backtrace STATIC
-    thirdparty/libbacktrace/alloc.c
-    thirdparty/libbacktrace/dwarf.c
-    thirdparty/libbacktrace/fileline.c
-    thirdparty/libbacktrace/pecoff.c
-    thirdparty/libbacktrace/posix.c
-    thirdparty/libbacktrace/read.c
-    thirdparty/libbacktrace/sort.c
-    thirdparty/libbacktrace/state.c)
-set_target_properties(d2_backtrace PROPERTIES C_STANDARD 99 C_EXTENSIONS ON)
-target_include_directories(d2_backtrace PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/libbacktrace")
-target_compile_options(d2_backtrace PRIVATE -g -w)
-target_link_libraries(d2 PRIVATE d2_backtrace)
-
-if(NOT REDIVIVUS_BUILD_ID)
+# Build id for the log banner (same pattern as the game's REDIVIVUS_BUILD_ID).
+if(NOT G3XVK_BUILD_ID)
     execute_process(COMMAND git describe --always --dirty --tags
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        OUTPUT_VARIABLE REDIVIVUS_BUILD_ID OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET RESULT_VARIABLE _describe_rc)
-    if(NOT _describe_rc EQUAL 0 OR NOT REDIVIVUS_BUILD_ID)
-        set(REDIVIVUS_BUILD_ID "unknown")
+        OUTPUT_VARIABLE G3XVK_BUILD_ID OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET RESULT_VARIABLE _g3xvk_describe_rc)
+    if(NOT _g3xvk_describe_rc EQUAL 0 OR NOT G3XVK_BUILD_ID)
+        set(G3XVK_BUILD_ID "unknown")
     endif()
 endif()
-set_source_files_properties("${CMAKE_SOURCE_DIR}/support/d2_crash.cpp" PROPERTIES
-    COMPILE_DEFINITIONS "REDIVIVUS_BUILD_ID=\"${REDIVIVUS_BUILD_ID}\"")
 
-# ---------------------------------------------------------------------------
-# Link.
-# -static*: self-contained exe, no libgcc/libstdc++ DLLs beside it. The AtlThrow
-# shim performs a real C++ throw, so libstdc++ is needed regardless.
-# ---------------------------------------------------------------------------
-set_target_properties(d2 PROPERTIES WIN32_EXECUTABLE ON OUTPUT_NAME d2)
-target_link_options(d2 PRIVATE -static -static-libgcc -static-libstdc++)
-
-target_link_libraries(d2 PRIVATE
-    kernel32 user32 gdi32 advapi32 shell32 ole32 oleaut32
-    winmm ws2_32 version comctl32 comdlg32 imm32 uuid
-    ddraw dsound dxguid wintrust crypt32)
-
-# Bink, Smacker and IJL were licensed DLLs, never inside Game.exe. Their import
-# libraries are built from the checked-in .def files (derived from the shipped
-# export tables - see thirdparty/gen-implibs.sh), so the references resolve for
-# real rather than against stubs.
-if(EXISTS "${CMAKE_SOURCE_DIR}/thirdparty")
-    if(NOT CMAKE_DLLTOOL)
-        find_program(CMAKE_DLLTOOL NAMES ${D2_TOOL_PREFIX}dlltool dlltool REQUIRED)
+# Short build id for strings with a length budget: the overlay tag line and
+# toast draw it via the embedded 8x8 font, and the grGetString(GR_RENDERER)
+# reply carries it. "glide3xvk 0.4.1 (d76cf3c-dirty)" is the worst-case shape
+# at 30 chars. The long describe form ("0.3.1-6-gd76cf3c-dirty", 40 chars
+# with the tag prefix) would overrun the toast/line budgets.
+if(NOT G3XVK_BUILD_SHORT)
+    execute_process(COMMAND git rev-parse --short=7 HEAD
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        OUTPUT_VARIABLE G3XVK_BUILD_SHORT OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET RESULT_VARIABLE _g3xvk_short_rc)
+    if(NOT _g3xvk_short_rc EQUAL 0 OR NOT G3XVK_BUILD_SHORT)
+        set(G3XVK_BUILD_SHORT "unknown")
+    elseif(G3XVK_BUILD_ID MATCHES "-dirty$")
+        string(APPEND G3XVK_BUILD_SHORT "-dirty")
     endif()
-    foreach(dll binkw32 smackw32 ijl11)
-        set(def "${CMAKE_SOURCE_DIR}/thirdparty/${dll}.def")
-        set(implib "${CMAKE_BINARY_DIR}/thirdparty/lib${dll}.a")
-        add_custom_command(OUTPUT "${implib}"
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/thirdparty"
-            COMMAND "${CMAKE_DLLTOOL}" -d "${def}" -l "${implib}"
-            DEPENDS "${def}"
-            COMMENT "Import library lib${dll}.a")
-        list(APPEND D2_IMPLIBS "${implib}")
-    endforeach()
-    add_custom_target(d2_implibs DEPENDS ${D2_IMPLIBS})
-    add_dependencies(d2 d2_implibs)
-    target_link_libraries(d2 PRIVATE ${D2_IMPLIBS})
 endif()
 
-# ---------------------------------------------------------------------------
-# glide3xvk: our own glide3x.dll (Glide-on-Vulkan + libslang-vk at present).
-# Built from glide3xvk/ when present; excluded from the d2 glob above. Remove
-# the directory to build exactly the game, as before.
-# ---------------------------------------------------------------------------
-if(EXISTS "${CMAKE_SOURCE_DIR}/glide3xvk/CMakeLists.txt")
-    add_subdirectory(glide3xvk)
+set(G3XVK_SOURCES
+    src/g3x_log.cpp
+    src/g3x_state.cpp
+    src/g3x_frame.cpp
+    src/g3x_overlay.cpp
+    src/g3x_slang.cpp
+    src/g3x_shot.cpp
+    src/g3x_hostver.cpp
+    src/g3x_window.cpp
+    src/g3x_controller.cpp
+    src/vk_backend.cpp
+    src/glide_exports.cpp
+    vendor/volk/volk.c)
+
+add_library(glide3x SHARED ${G3XVK_SOURCES})
+
+# g3x_hostver reads the running exe's VERSIONINFO resource (GetFileVersionInfo
+# family) — system import lib, no static-linking implications.
+
+# ---- P3: libslang-vk (the preset chain at the present pass) -----------------
+#
+# Expects a libslang-vk checkout beside this repo (BUILD-32BIT.md recipe):
+#   git clone https://github.com/VTSTech/libslang-vk ../libslang-vk
+# Override the location with -DG3XVK_SLANGVK_DIR=<path>. When the checkout is
+# missing, glide3x still builds — with the preset chain stubbed out (same API,
+# always inactive) and a loud STATUS line here plus a log line at runtime.
+set(G3XVK_SLANGVK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../libslang-vk"
+    CACHE PATH "libslang-vk checkout (static slangvk target gets linked)")
+if(EXISTS "${G3XVK_SLANGVK_DIR}/CMakeLists.txt")
+    # Normal (non-cache) sets: visible to add_subdirectory below, invisible to
+    # the parent scope — the game tree's flags stay exactly as they were.
+    set(SLANGVK_BUILD_SHARED OFF)
+    set(SLANGVK_BUILD_TESTS OFF)
+    set(SLANGVK_BUILD_EXAMPLES OFF)
+    set(SLANGVK_BUILD_BENCHMARKS OFF)
+    # glslang names its archives with the Debug postfix when the build type is
+    # empty, which breaks the slangvk consumer graph (BUILD-32BIT.md); the
+    # directory-scoped shadow below fixes that without touching the cache, so
+    # a consumer configuring with an empty build type still links a Release
+    # slangvk.
+    set(CMAKE_BUILD_TYPE Release)
+    add_subdirectory("${G3XVK_SLANGVK_DIR}" "${CMAKE_BINARY_DIR}/glide3xvk-slangvk" EXCLUDE_FROM_ALL)
+    target_link_libraries(glide3x PRIVATE slangvk::slangvk)
+    target_compile_definitions(glide3x PRIVATE G3XVK_HAVE_SLANGVK=1)
+    message(STATUS "glide3xvk: libslang-vk at ${G3XVK_SLANGVK_DIR} — preset chain linked (P3)")
+else()
+    target_compile_definitions(glide3x PRIVATE G3XVK_HAVE_SLANGVK=0)
+    message(STATUS "glide3xvk: libslang-vk NOT FOUND at ${G3XVK_SLANGVK_DIR} — "
+        "building WITHOUT the preset chain (clone it beside the repo, see BUILD-32BIT.md)")
 endif()
+
+target_link_libraries(glide3x PRIVATE version)
+
+set_target_properties(glide3x PROPERTIES
+    OUTPUT_NAME "glide3x"
+    PREFIX ""            # no libglide3x.dll
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"  # lands at the build dir root
+    CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF
+    C_STANDARD 99 C_EXTENSIONS ON)
+
+target_include_directories(glide3x PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/vendor/volk"
+    "${CMAKE_CURRENT_SOURCE_DIR}/vendor/Vulkan-Headers/include")
+
+target_compile_definitions(glide3x PRIVATE
+    VK_USE_PLATFORM_WIN32_KHR
+    WIN32_LEAN_AND_MEAN
+    NOMINMAX)
+
+# Exports: glide3x.def lists the literal decorated names the game resolves
+# ("_grBufferSwap@4" — underscore INCLUDED). Two toolchain quirks to defeat:
+#   1. GNU ld keeps def-file export names verbatim but searches symbols with an
+#      extra leading '_' — solved by __asm__("__name@N") labels (one extra '_'
+#      gets stripped when ld writes the table, see glide_exports.cpp).
+#   2. CMake archives our objects (objects.a) and nothing references them, so
+#      def lookups find nothing — solved by -Wl,-u flags forcing every symbol
+#      undefined before the archive scan.
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/glide3x.def" _g3x_def)
+# Strip ';' comment lines first — the header comment cites "_grBufferSwap@4"
+# as an example, which the naive regex would count as a 46th export.
+string(REGEX REPLACE ";[^\n]*" "" _g3x_code "${_g3x_def}")
+string(REGEX MATCHALL "_[a-zA-Z]+@[0-9]+" _g3x_syms "${_g3x_code}")
+list(LENGTH _g3x_syms _g3x_n)
+if(NOT _g3x_n EQUAL 45)
+    message(FATAL_ERROR "glide3x.def must list exactly 45 exports (found ${_g3x_n})")
+endif()
+set(_g3x_force)
+foreach(s IN LISTS _g3x_syms)
+    string(SUBSTRING "${s}" 1 -1 _sym)          # grXxx@N
+    list(APPEND _g3x_force "-Wl,-u,__${_sym}")  # force __grXxx@N undefined
+endforeach()
+
+target_link_options(glide3x PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/glide3x.def"
+    ${_g3x_force}
+    -static -static-libgcc -static-libstdc++)  # self-contained DLL, house style
+
+# Our code may optimize freely — nothing else in this repo pins flags.
+# volk.c stays at its own pace; -O2 everywhere is fine.
+#
+# P2.12 perf: -msse2 -mfpmath=sse. The i686 default is x87 for ALL float math
+# (stack-based 80-bit, slow int conversions, no SIMD, no auto-vectorization)
+# and the raster is float-heavy — every fill_span/raster_tri inner loop pays
+# 1.5-3x. SSE2 is IEEE-754 single precision, deterministic, and universal on
+# any rig that runs a Vulkan driver (Pentium 4 / Athlon 64, 2003+).
+# glide3x target only: the game tree and the libslang-vk subbuild keep their
+# own flags.
+target_compile_options(glide3x PRIVATE -O2 -msse2 -mfpmath=sse -w)
+
+set_source_files_properties(src/glide_exports.cpp PROPERTIES
+    COMPILE_DEFINITIONS "G3XVK_BUILD_ID=\"${G3XVK_BUILD_ID}\"")
+# The overlay tag line embeds the short build id (see g3x_overlay.cpp).
+set_source_files_properties(src/g3x_overlay.cpp PROPERTIES
+    COMPILE_DEFINITIONS "G3XVK_BUILD_ID=\"${G3XVK_BUILD_ID}\";G3XVK_BUILD_SHORT=\"${G3XVK_BUILD_SHORT}\"")

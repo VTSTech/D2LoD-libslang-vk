@@ -1,439 +1,487 @@
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8da961b2-fba3-4913-b2e4-bb2510c3a5e3" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ef24cacf-3573-416b-a982-fc54520bab47" />
+# glide3xvk — our own `glide3x.dll` for D2LoD (Glide 3 → Vulkan)
 
-https://www.youtube.com/watch?v=fgnrBxsOLWU
+> **Standalone repo** — this tree builds ONLY the glide3x.dll wrapper,
+> trimmed out of the `D2LoD-libslang-vk` superproject (no game source inside).
+> Build it with `cmake -S . -B build-g3x -G Ninja
+> -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake` and a `libslang-vk` checkout
+> beside it (see BUILD-32BIT.md); CI does exactly that on every push.
 
-# D2LoD-libslang-vk
+The game's Glide loader (`D2Client/Renderer/Glide.cpp`) does
+`LoadLibraryA("glide3x.dll")` and resolves **45 stdcall exports**. This
+directory builds a drop-in replacement for that DLL: it exports exactly those
+45 entry points, implements the Glide 3 state machine and raster semantics D2
+actually uses, and presents the frame through a Vulkan swapchain. It runs on a
+**vanilla retail 1.14d install** (`Game.exe -3dfx`) — a rebuilt `d2.exe` is
+not required.
 
-[![Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/XcJ8mSCNZ)
+Status: the game renders correctly through it — menu, world, units, UI,
+shadows, text, cutscenes (field-verified over rounds 4–12; see
+`FIELD-TEST.md`). The CPU raster feeds a BGRA compose buffer; the GPU side is
+bootstrap + present. **P3 shipped (0.4.0): the libslang-vk preset chain sits
+at the present pass** — set `preset=` in `d2slangvk.conf` and every presented
+frame runs through the slang preset at up-scaled resolution; the full-screen
+0.4.3 field log proves it live on real hardware (crtglow_lanczos 7-pass chain,
+516 filtered frames, 0 fallbacks). **0.4.5 ships perf round 1** for the CPU
+side (SSE2 float math, O(1) texture table, swapchain headroom — verified
+bit-identical by the agent-side parity harness); field numbers pending.
 
-A drop-in **`glide3x.dll`** for **Diablo II: Lord of Destruction 1.14d** that renders the
-game through **Vulkan** — with libretro slang shader presets (`.slangp`) routed through
-**libslang-vk** as the goal of this branch.
+```
+d2.exe ── LoadLibraryA("glide3x.dll") ──► glide3x.dll (this directory)
+              45 Glide exports                │
+              grDraw* / grTex* / grLfb*       ├─ P2 (done): Glide raster core
+              grBufferSwap:                   │   paletted textures, combine
+               compose buffer                 │   states, fan/strip/point
+               + gamma                        │   raster, chroma, LFB, fills
+               + version-tag overlay          ├─ P3 (done, 0.4.0): preset chain
+               → queue submit                 │   slangvk_image (game res) →
+                                              │   slangvk_chain_render_swapchain
+                                              │   (d2slangvk.conf, hot-reload)
+                                              └─ present → Vulkan swapchain
+```
 
-When the game is started with `-3dfx`, its Glide loader
-(`D2Client/Renderer/Glide.cpp`) does `LoadLibraryA("glide3x.dll")` and resolves
-**45 stdcall exports**. This branch builds a replacement for exactly that DLL: it
-exports those 45 entry points, implements the Glide 3 state machine and raster
-semantics D2 actually uses, and presents every frame through a Vulkan swapchain.
-It runs on a **vanilla retail 1.14d install** — copy the DLL next to `Game.exe`,
-no rebuilt executable, no game-source changes. The payoff pattern — filtering the
-presented frame through a user-chosen preset (CRT-Royale and friends) at up-scaled
-resolution — is the same one proven in
-[DevilutionX-libslang-vk](https://github.com/VTSTech/DevilutionX-libslang-vk)
-(Diablo/Hellfire) and
-[chocolate-doom-vk](https://github.com/VTSTech/chocolate-doom-vk) (Doom).
+`libslang-vk` is **embedded** at the present pass — it is not the DLL itself
+(it doesn't speak Glide; it turns an input image into a preset-filtered
+swapchain image). The DLL links the static `slangvk` target and adopts our
+own Vulkan context (`slangvk_device_adopt`); without `d2slangvk.conf` the
+chain never engages and the DLL behaves exactly like 0.3.x.
 
-## Status — 0.4.6
+## Layout
 
-- The full game renders correctly through the Vulkan swapchain: menu, world, units,
-  UI, shadows, text, cutscenes (field-verified rounds 4–12 on real hardware; see
-  [glide3xvk/FIELD-TEST.md](glide3xvk/FIELD-TEST.md)).
-- **The libslang-vk preset chain is live (0.4.0)**: point `preset=` in
-  `d2slangvk.conf` at any libretro `.slangp` and every presented frame runs
-  through it at native game resolution — hot-reload on file change, fit /
-  integer / stretch scaling, unfiltered fallback on any failure.
-- **The version stamp is the overlay box (0.4.5)**: `glide3xvk <ver> (<hash>)`
-  drawn top-right every present — 8x8 bitmap font, post-gamma, never in the
-  game's framebuffer. The 0.4.1-0.4.3 drivertag patch (repointing the game's
-  own `Video:` line) is removed: field builds showed the stock `Video: Glide`
-  line either way, and the game's /fps output stays untouched now.
-  `overlay=0` in glide3xvk.ini hides the box.
-- **Scroll Lock toggles the overlay (0.4.6)**: press **Scroll Lock** in-game
-  to hide/show every overlay box at once — the version tag, the shader /
-  hostver / FPS lines, the toast and the Shift+V conf panel — for clean
-  screenshots and recordings without restarting or editing the ini. The
-  toggle is session-live (it survives D2's constant context re-opens — the
-  640x480 probes, menu, game — which would otherwise re-push the ini value
-  and pop the boxes back mid-session), while `overlay=` in glide3xvk.ini
-  still decides the state at startup and after a relaunch. Works with or
-  without a preset chain; while hidden the conf-panel hotkeys park too and
-  the arrow keys stay the game's; every press is logged
-  (`overlay: on/off (Scroll Lock)`).
-- **PrintScreen saves a screenshot (0.4.6)**: press **PrintScreen** in-game and
-  the current frame lands in `screenshots\` beside the game exe as a PNG
-  (`D2_YYYYMMDD_HHMMSS.png`, same-second re-shots walk `_1`..`_9`), with a
-  `saved ...` toast and a log line. The captured frame is the gamma-corrected
-  game raster at native game resolution, taken before the overlay draws — no
-  version tag, conf panel or toast in the file, ever (Scroll Lock composes,
-  but is no longer required for a clean shot). Works with or without a preset
-  chain; foreground-gated and edge-latched like every hotkey; the encode+write
-  is a few ms (dependency-free PNG encoder, host-verified end to end). Disable
-  with `screenshots=0`. A slang-FILTERED capture (post-shader pixels) needs a
-  GPU readback pass and stays future work — the shot is the pre-shader game
-  frame.
-- **The overlay shows the active shader (0.4.2)**: while a preset filters
-  frames, the fallback box's second line reads the preset's file name — pushed
-  on chain ready (first open, conf change, hot reload), cleared whenever the
-  chain dies; no preset = no line. Also fixed in 0.4.2: the 8x8 font's crushed
-  descenders (`g p q j` — "can't see the bottom of the g in glide").
-- **The overlay names the running game exe (0.4.5 addendum)**: detected once
-  per process at the first window open, the box's line under the tag shows
-  which `Game.exe`/`d2.exe` the wrapper is inside and its classic-D2 patch —
-  `Game.exe Retail 1.14d` when the exe's CRC-32 is in the known-build table
-  (a content fingerprint that outranks the resource tiers: the bytes are
-  ground truth; the table also carries the Vanilla+ builds —
-  `d2s-9cf9f69.exe Vanilla+ 0.0.2` / `d2s-4857c30.exe Vanilla+ 0.0.1`), `d2.exe 1.14d` when the exe's VERSIONINFO resource maps (the
-  Blizzard-stamped `1.0.9.22` / `1.0.10.9` / `1.0.12.49` / `1.0.13.60` /
-  `1.0.13.64` / `1.14.3.68` / `1.14.3.71` pairs, the same field-tested table
-  d2dx uses), the dotted resource value (`Game.exe v1.0.13.55`) when it does
-  not, or the exe's CRC-32 (`d2.exe [CRC 3A5D2B1F]`) for unknown builds with
-  no version resource at all — this repo's own CMake-built d2.exe among them.
-  Detection never touches the game: fail-soft, and the raw values land in
-  `glide3x.log` either way.
-- **The tag line carries a live FPS field (0.4.5 addendum)**: the top-right
-  box's first line reads `glide3xvk <ver> (<hash>) FPS 025` — a per-second
-  count of presented frames kept by the wrapper on the present seam (both
-  present paths count: `grBufferSwap` for gameplay and `grLfbUnlock` for the
-  Bink video loop), so it shows the game's true frame pace and the in-game
-  `/fps` readout is no longer needed for a quick sanity check. `FPS 000`
-  shows until the first full second completes; the value recomposes once per
-  second (one snprintf per second of play, not per frame) and clamps at 999.
-  The renderer name reported through `grGetString(GR_RENDERER)` stays the
-  plain static tag — external queries keep a stable, comparable string.
-- **Chocolate-Doom-VK-style hotkeys (0.4.3)**: in-game **F11** cycles the
-  content aspect (`4:3 -> 16:10 -> 16:9 -> auto`) and **F12** cycles the shader
-  base resolution (`1x -> 2x -> 3x -> 4x`) — the frame is linearly upscaled N-x
-  before the chain sees it, so source-relative pass FBOs (scanlines, glow)
-  render finer. Toast feedback in the overlay, logged, session-only; both also
-  settable via the new `aspect=` / `base_res=` conf keys (see the
-  [d2slangvk.conf reference](#d2slangvkconf-reference) below).
-- **Shift+V conf panel (0.4.5)**: press **Shift+V** in-game to toggle an
-  overlay panel on the left edge (below the game's `/fps` line) listing every
-  `d2slangvk.conf` option as currently resolved — preset, scale, vsync,
-  aspect/base_res (the live F11/F12 picks annotated with their `file:` values
-  when they differ), window/borderless and the full controller block with the
-  same defaults the modules apply. Re-read from disk each time it opens (the
-  file is the truth — even with no chain running, where the present-path hot
-  reload never fires), and refreshed live while it is up: conf hot-reloads and
-  F11/F12 presses update it in place. Works with or without a preset chain;
-  `overlay=0` in glide3xvk.ini hides it with the rest of the overlay.
-  **Up/Down** move a green selection cursor through its option lines, and
-  **Left/Right** change the selected option — one press = one step written
-  straight into `d2slangvk.conf` (a surgical single-key rewrite that keeps
-  comments, spacing and key order; every consumer hot-reloads the file, so
-  the change lands live like a hand edit): preset opens the preset browser
-  (below), scale/vsync/aspect/base_res/window step their token
-  lists, the toggles flip, controller_sens/aimsens/deadzone step and clamp
-  exactly like their conf fixups. With `controller=0` the controller
-  sub-options are inert, so the panel skips their rows (`controller off`
-  itself stays — Left/Right re-enables it, which re-lists them). **Left/Right**
-  on the preset row opens the preset browser: the `*.slangp` list of the
-  current preset's folder subtree in the panel (current preset starred,
-  `(none)` at the front, scrolling), **Up/Down** to move, **Right** loads the
-  highlighted preset live, **Left** goes back to the option list.
-- **Preset cycling, Ctrl+Left/Right (0.4.6)**: list up to eight presets in
-  `d2slangvk.conf` (`preset_1=` .. `preset_8=`) and step through them in-game —
-  **Ctrl+Right** forward, **Ctrl+Left** back, wrapping, each press reloading
-  the chain exactly like a hand edit of `preset=` (shader line + conf panel
-  follow on their own), with a toast naming the preset. The pick is a session
-  override that survives D2's context re-opens and yields to `preset=` the
-  moment the file's value changes. No chain required — cycling from a
-  preset-less conf builds the chain on the spot. Works while the conf panel is
-  up or down (plain arrows still edit the panel's selected option; the Ctrl
-  part of the chord routes to the cycler).
-- **Window size presets (0.4.5)**: `window=native|240p|480p|576p|720p|768p|1080p|desktop|WxH`
-  and `borderless=0|1` in `d2slangvk.conf` size the OS window the game presents
-  into — canonical sizes (240p=320x240 ... 1080p=1920x1080; `desktop` =
-  monitor-sized borderless), centered, `desktop`/`borderless` strip the frame.
-  **Config-only** (no hotkey — F10 belongs to the game's own skill-slot binds):
-  applied at every renderer (re)open, and a conf edit hot-reloads within half a
-  second (toast + log). The resize is
-  **DPI-aware** (runs inside `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)`,
-  loaded dynamically), so presets come out at their true physical size even
-  though the game is DPI-unaware — no desktop-scaling fiddling required. The
-  game still renders 800x600 into it: presets are output sizing (L4 — the
-  game's own render resolution stays the game's), and the unfiltered present
-  path now fits + centers with black bars instead of stretching, so 4:3
-  content stays 4:3 on any 16:9 window with or without a chain.
-- **Controller support (0.4.5, experimental)**: opt-in gamepad play via input
-  injection —
-  `controller=1` in `d2slangvk.conf` starts a background XInput poller that
-  drives the game through ordinary injected mouse/keyboard events (SendInput),
-  so every D2 screen works unchanged. Map tuned for Diablo II (movement IS
-  the mouse): left stick = walk (steers the cursor and holds left click while
-  deflected — D2 walk-to-cursor), right stick = fine aim (~35% speed for
-  putting the cursor on monsters/portals/labels), LT = left click, RT = right
-  click, A = hold Shift+LMB (attack in place toward the cursor — hit things
-  near you without pixel-perfect aiming), B = hold Alt (item labels), X =
-  Space, Y = I, D-pad = belt 1-4, LB = C, RB = T, L3 = R (run/walk), Start =
-  Esc, Back = Tab. **Cursor-home** (field round 2): after a short quiet dwell
-  the cursor returns to the player, and every stick move emanates from there
-  — it works without seeing the player because a D2 walk always ends with the
-  character standing AT the cursor, so each walk release re-syncs home. The
-  cursor can no longer get lost at the screen edge. Tunables:
-  `controller_sens=`, `controller_aimsens=`, `controller_deadzone=`,
-  `controller_moveclick=` (set 0 for a cursor-only left stick),
-  `controller_home=` (set 0 for a free cursor). Injects only while the game
-  window is focused; off by default; XInput loaded dynamically (no new DLL
-  imports). Status after three field rounds: **experimental** — close but not
-  fully dialed in yet; `controller_home=0` restores a plain free cursor if the
-  parked cursor fights hybrid mouse use. See the conf reference below.
-- **Perf round 1 (0.4.5)**: the full-screen 0.4.3 field log showed
-  avg=51.6 ms ≈ 19 fps @ 800x600 with the crtglow_lanczos 7-pass chain active
-  (≈ 470 draw calls per frame; the chain itself filtered 516 frames with
-  0 fallbacks — the chain is not the bottleneck). 0.4.5 goes after the CPU
-  side: **SSE2 float math** (i686 MinGW defaults to x87 for all float math,
-  and the raster is float-heavy), an **O(1) texture table** (binds were a
-  linear scan over up to 8192 slots) and **swapchain minImageCount+2** (the
-  log showed images=2, the bare minimum). Verified bit-identical by a
-  220-frame parity harness, so pixels cannot change — this round is pure
-  speed. Field numbers land in the next round's `frame N:` lines.
-- Frame budget today (0.4.3 field log, chain active): 51.6 ms ≈ 19 fps
-  @ 800x600 — the CPU raster + texture upkeep dominate; the chain adds a
-  fullscreen GPU pass on top but is not the bottleneck. 0.4.5 attacks the CPU
-  side (see above); moving the compose buffer to the GPU remains the 60 fps
-  endgame (PLAN.md §5 perf track).
-- Not wired yet, on purpose: GPU-side raster (the 60 fps endgame), bilinear
-  texture filtering (a look delta only; the ground's `texFilterMode(1,1)`
-  request is point-sampled).
+| Path | What |
+|---|---|
+| `src/glide_exports.cpp` | All 45 exports with exact signatures; the game-contract entry points (`grGet(0xF)`, `grSstWinOpen`, ini reading, session banner) |
+| `src/g3x_frame.{h,cpp}` | The P2 raster core: texture cache (P_8 / ARGB_8332 / RGB_565), palettes, scanline span rasterizer (fan-quad, pointer-array strips/fans, points/lines), combine/blend/chroma semantics, fill-rect fast path, LFB, gamma LUT, compose + present seam; 0.4.5: the texture table is O(1) (open-addressing hash + monotonic alloc cursor + same-texture rebind fast-out) |
+| `src/g3x_state.{h,cpp}` | Glide state tracking (grChromakey/grColorCombine/... current values) |
+| `src/g3x_overlay.{h,cpp}` | The version tag + active-shader line: composes `glide3xvk <version> (<short hash>)`, draws it as a top-right box (the fallback stamp since 0.4.1), since 0.4.2 a second line with the active preset's file name, since 0.4.3 a transient toast line for the F11/F12 hotkeys, since the 0.4.5 addendum the toggleable **Shift+V conf panel** on the left edge (storage + drawing; the content comes pre-formatted from g3x_slang) with its green arrow-key selection cursor, since the same addendum a permanent bottom line — the repo credit `GitHub: VTSTech/D2LoD-libslang-vk` — and (0.4.5 addendum) the host-exe version line pushed by g3x_hostver, drawn directly below the tag; the box's tag copy also carries the live ` FPS nnn` field (0.4.5 addendum: pure 1-second-window meter, ticked from g3x_frame_present); since 0.4.6 the module owns the Scroll Lock session toggle (`g3x_overlay_toggle` — a session override composed against the ini base, so the flip survives D2's context re-opens) |
+| `src/g3x_drivertag.{h,cpp}` | 0.4.1–0.4.3: repointed the game's `"Video: Glide"` renderer-name string at our tag. **Removed in 0.4.5** (field call: the /fps tag must stay the game's own; the DLL is now strictly read-only toward Game.exe) — pending `git rm` of the two files |
+| `src/g3x_slang.{h,cpp}` | P3: the libslang-vk preset chain — adopts our Vulkan context, parses `d2slangvk.conf` (`preset`/`scale`/`vsync`/`aspect`/`base_res`/`window`/`borderless`), owns the input image + preset + chain, hot-reloads on file change, polls the F11/F12 hotkeys on the present path plus the Shift+V conf-panel toggle on EVERY present (chain or no chain; it formats and pushes the panel's lines from a fresh conf parse + the live hotkey state) with the panel's Up/Down selection, Left/Right value editing and the Left/Right preset browser over the current preset's folder subtree — recursed to any depth, rows stored as the relative paths `preset=` accepts (0.4.5: the edit is a surgical single-key conf rewrite — `g3x_slang_conf_rewrite_text`, host-tested — pushed through the normal conf machinery, so it lands live; 0.4.6: the whole poll parks with its edge latches reset while the Scroll Lock overlay toggle has the overlay hidden, so no invisible conf edits and the arrow keys stay the game's), fails soft to the unfiltered path |
+| `src/g3x_hostver.{h,cpp}` | 0.4.5 addendum: identifies the running game exe for the overlay's tag box — computes a zlib-compatible CRC-32 of the exe file on disk (a content fingerprint, stable across rebuilds where a link timestamp is not), checks it against the known-build table (a hit names the binary outright, e.g. `Game.exe Retail 1.14d`), then falls back through the host process's VERSIONINFO resource (GetFileVersionInfo/VerQueryValue, the Blizzard-stamped `dwFileVersion` pair mapped to the community patch names via the field-tested d2dx table: 1.09d/1.10/1.12/1.13c/1.13d/1.14b/1.14d) and the raw fingerprint (`d2.exe [CRC 3A5D2B1F]`); runs once per process from grSstWinOpen, fail-soft, evidence always logged. Pure logic (tables, CRC-32, line format) is windows.h-free and host-tested (scripts/test_hostver.cpp); the Win32 pass sits under `_WIN32` and is fakecheck type-checked |
+| `src/g3x_window.{h,cpp}` | 0.4.5: present-window presets + DPI awareness — sizes the game's own HWND to a `window=` preset (canonical sizes, `desktop`, `WxH`), config-only (applies at every renderer (re)open + conf hot-reload; no hotkey — F10 is a game skill-slot bind), reverts cleanly to the game's own window; pure table/parse lives inline in the header (host-tested), the Win32 apply runs inside `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` |
+| `src/g3x_controller.{h,cpp}` | 0.4.5 (experimental): controller support — a background XInput poller (pad 0, ~125 Hz, own thread; zero present-path cost) injects ordinary mouse/keyboard via SendInput (left stick = walk: cursor + auto-held LMB; right stick = fine aim at `controller_aimsens` speed; LT = LMB, RT = RMB, A = hold Shift+LMB attack-in-place combo, B = Alt hold, X = Space, Y = I, D-pad = belt 1-4, LB/RB = C/T, L3 = R run/walk, Start = Esc, Back = Tab), gated on game-window focus, everything held released on focus loss/disable/shutdown; cursor-home (0.4.5 field round 2): the walk-release cursor position becomes the player anchor (D2 walks end standing at the cursor — self-correcting) and a 0.4s quiet dwell parks the cursor back on it, so stick motion always emanates from the player; opt-in via `controller=` + `controller_sens=` + `controller_aimsens=` + `controller_deadzone=` + `controller_moveclick=` + `controller_home=`, hot-reloaded from the conf; XInput loaded dynamically (no new imports); pure core (bind table with multi-step combos, stick curve, desired-state diff step) inline in the header, host-tested (scripts/ctrltest.cpp) |
+| `presets/` | Two starter presets (scanline, sharpen — MIT, ours) + `d2slangvk.conf.sample` |
+| `src/g3x_font8x8.h` | Embedded 8x8 1-bit bitmap font for the overlay (generated from DejaVu Sans Mono Bold) |
+| `src/g3x_log.{h,cpp}` | `glide3x.log` beside the game exe (`%TEMP%` fallback), log-once budgets, periodic frame summaries, exit summary |
+| `src/g3x_types.h` | Minimal Glide type surface (mirror of the game's `d2_platform.h` block) + values observed in the in-tree `D2Glide` call sites |
+| `src/vk_backend.{h,cpp}` | Vulkan bootstrap: volk → instance → win32 surface → device → swapchain → present; plus the 0.4.3 `g3x_vk_slang_blit_scaled` one-shot (fenced) upscale blit for the shader base resolution; 0.4.5: swapchain `minImageCount+2` for present-pacing headroom; fail-soft everywhere |
+| `glide3x.def` | The 45 decorated export names (`_grBufferSwap@4`...), repo `binkw32.def` syntax |
+| `vendor/volk/` | volk (runtime Vulkan loader, MIT — loads `vulkan-1.dll`, no SDK needed) |
+| `vendor/Vulkan-Headers/` | Khronos Vulkan C headers (Apache-2.0) |
+| `BUILD-32BIT.md` | **P1 spike notes**: building libslang-vk itself as i686 Windows |
+| `FIELD-TEST.md` | The field log: per-round builds, diagnostics, and results on a vanilla retail 1.14d install |
 
-## Install
+## The version stamp (0.4.1) + the overlay's shader line (0.4.2) + hotkey toasts (0.4.3) + the conf panel with its arrows (0.4.5) + the Scroll Lock toggle + PrintScreen + preset cycling (0.4.6)
 
-No build required:
+The primary stamp is the game's own debug line: the `/fps` block ends with
+`Video: Glide` (a hardcoded string drawn at fixed game coords, decompiled
+`D2Client/GAME/Rendering.cpp`), and `g3x_drivertag` repoints that string at a
+static `glide3xvk <ver> (<short hash>)` buffer of ours with one 4-byte store —
+the game then draws our tag in its own font at its own spot. Every patch step
+is fail-soft and logged (`drivertag: ...` in glide3x.log); on any miss the
+original P2.10 box below takes over untouched. The tag text uses a **short**
+build id (`git rev-parse --short=7 HEAD` + `-dirty`) because the game
+`sprintf()`s it into a `char[32]` stack buffer — worst case 31 chars, exact
+fit; the long describe form would truncate mid-hash.
 
-1. Get `glide3x.dll` — the
-   [releases page](https://github.com/VTSTech/D2LoD-libslang-vk/releases)
-   (0.3.1 there today) or the `glide3x-dll` artifact of the latest run in
-   [Actions](https://github.com/VTSTech/D2LoD-libslang-vk/actions) (current
-   code, preset chain included).
-2. Copy it into your Diablo II folder, next to the original `Game.exe`
-   (vanilla retail 1.14d). This repository contains no game data and no Blizzard
-   binaries; the DLL only draws what the game hands it.
-3. (Optional, the payoff) Copy `presets/d2slangvk.conf.sample` from the repo as
-   `d2slangvk.conf` beside `Game.exe`, uncomment a `preset=` line, and every
-   frame runs through that slang shader — hot-reload mid-game, `fit`/`integer`/
-   `stretch` scaling, `aspect=`/`base_res=` geometry, F11/F12 live hotkeys,
-   Shift+V conf panel, Scroll Lock overlay toggle, unfiltered fallback on any
-   failure. No conf = the exact 0.3.x behavior.
-   Every accepted value is documented in the
-   [d2slangvk.conf reference](#d2slangvkconf-reference) below.
-4. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
-
-A healthy run looks like: the menu renders, play works, and `glide3x.log` beside the
-exe carries the session banner (`glide3xvk 0.4.5 <build-id>`), periodic `frame N:`
-summaries, and a clean exit summary on shutdown. With a preset configured, the log
-adds `slang: chain ready '<preset>' ...` and per-event slang lines; without one, it
-says so once. If 32-bit Vulkan is unavailable
-(`vulkan-1.dll` x86 missing), the log says so, the DLL still loads, and the game keeps
-running — the DirectDraw path (`-w` without `-3dfx`) is untouched by all of this.
-
-## The version stamp
-
-The stamp is the original P2.10 overlay box — `glide3xvk <ver> (<hash>)` drawn
-every present into the **top-right** corner (8x8 bitmap font, 65%-black backdrop,
-1px drop shadow, post-gamma, never in the game's own framebuffer). It draws by
-default; `overlay=0` in glide3xvk.ini hides it, `overlay=1` forces it (re-read on
-every context open):
+The fallback box is the original P2.10 overlay: the tag drawn every present
+into the **top-right** corner (4px from the edge): 8x8 bitmap font, 65%-black
+backdrop, 1px drop shadow, rendered post-gamma at swapchain resolution —
+identical in the 640x480 probe phases, the 800x600 menu, gameplay, and the
+LFB/Bink video path, and it never enters the game's own framebuffer. With no
+ini key it draws only when the patch missed; the key is still honored
+(re-read on every context open):
 
 ```ini
 [glide3xvk]
-overlay=0
+overlay=1
 ```
 
-**Scroll Lock toggles it live (0.4.6)**: with the game window focused, a
-Scroll Lock press hides or restores every overlay box at once (the tag, the
-shader / hostver / FPS lines, the toast and the Shift+V conf panel) — the
-boxes vanishing and reappearing is the feedback, and the show press adds an
-`overlay on` toast once the box is back. The toggle is a session override:
-it survives D2's constant context re-opens (the 640x480 probes, menu and
-game each open one, and a plain ini re-push would pop the boxes back
-mid-session), while the ini value still decides the state at startup and
-after a relaunch — file wins at load, key wins in flight, the same split as
-the F11/F12 hotkeys vs `d2slangvk.conf`. While hidden nothing overlay-related
-draws and the conf-panel hotkeys park (the arrow keys stay the game's);
-every press lands in `glide3x.log` (`overlay: on/off (Scroll Lock)`).
+**0.4.6: Scroll Lock toggles the whole overlay live.** The poll lives on the
+present seam (`g3x_frame.cpp`, `overlay_scrolllock_poll`) — the same always-on
+home as the Shift+V conf-panel poll, so the toggle works with or without a
+preset chain, foreground-gated and edge-latched like every polled hotkey. The
+flip itself is `g3x_overlay_toggle()` in the overlay module: a **session
+override** composed against the ini base (`s_ini_enabled` / `s_session_toggle`
+/ `s_enabled`), because `grSstWinOpen` re-pushes `overlay=` on every context
+open and D2 opens contexts constantly (the 640x480 probes, the menu, the
+game) — a plain flip of the pushed flag would pop the boxes back on the next
+re-open. The override latches for the process lifetime; the ini still decides
+the state at startup and after a relaunch. While hidden nothing draws (the
+render early-out is unchanged), the conf-panel poll parks with all its edge
+latches reset (a hidden panel must not keep editing the conf invisibly, and
+the arrow keys stay the game's), and a conf panel that was up comes back up
+when the overlay is toggled back on. The show press toasts `overlay on`; the
+hide press only logs (its toast would draw into a box that just died) —
+`overlay: on/off (Scroll Lock)` in glide3x.log either way.
 
-The game's own `/fps` line keeps its stock `Video: Glide` text — an earlier
-attempt to repoint that string (0.4.1-0.4.3, `g3x_drivertag`) never showed on
-field builds and was removed in 0.4.5; the game binary is no longer patched at
-all.
+**0.4.6: PrintScreen saves a screenshot** (new `g3x_shot` module, polled from
+the same present seam). The capture point is BEFORE `g3x_overlay_render` on
+either present path, so the PNG never carries the tag/panel/toast — Scroll
+Lock composes with it but is no longer required for a clean shot. The frame
+saved is the gamma-corrected game raster at native game resolution: on the
+slang path that is the chain-input buffer (the chain itself renders straight
+into the acquired GPU swapchain image, out of a CPU-side capture's reach — a
+slang-FILTERED capture needs a Vulkan readback pass and stays future work),
+on the legacy path an identical native-res copy is made on demand, so the
+output shape never depends on which path is live. Naming is
+`screenshots\D2_YYYYMMDD_HHMMSS.png` beside the game exe (`_1`..`_9` on
+same-second collisions), the encoder is the house-rule dependency-free PNG
+(8-bit truecolor RGB, filter-0 rows, STORED zlib blocks — ~1.4 MB for
+800x600, host-verified end to end by chunk/CRC/inflate/pixel-round-trip),
+and the whole encode+write runs synchronously on the game thread (a few ms,
+at most one frame of hitch per press; the pixels are copied at the capture
+point so the raster reuses its buffer next frame). `screenshots=0` in
+d2slangvk.conf parks the hotkey (a press logs once); `screenshots` also has
+a Shift+V panel row. The shot key is deliberately NOT parked while the
+overlay is Scroll-Lock-toggled off — clean shots are the point — so while
+the boxes are hidden the log line is the only feedback.
 
-## d2slangvk.conf reference
+Since 0.4.2 the box carries a **second line when a preset filters frames**:
+the active preset's file name (basename only). `g3x_slang` pushes it on chain
+ready — first open, conf change, hot reload — and clears it whenever the
+chain dies (`destroy_chain()` is the single choke point: reload start,
+`preset_load`/`chain_create` failure, shutdown), so the line is truthful by
+construction; with no preset the box shrinks back to the tag alone. The same
+round re-tuned the 8x8 font's descenders (`g p q j`): bowls at rows 2-5, real
+tails on rows 6-7 — DejaVu's descent does not fit the tile and the generated
+tails were one broken row. Overrides live in `scripts/gen_font8x8.py`, which
+ships in-tree now.
 
-`d2slangvk.conf` lives beside `Game.exe` (same folder as `glide3x.dll` and
-`glide3xvk.ini` — the two files are independent: the ini only carries the
-overlay switch above, everything shader-related lives in the conf). It is read
-once at renderer init and re-checked every 32 frames while a chain filters:
-edit the conf or the `.slangp` it points at in place and the chain reloads
-within ~half a second, no game restart.
+Since the 0.4.5 addendum the box also **names the exe it is running inside**:
+`g3x_hostver` detects the host once per process at the first `grSstWinOpen`
+(the same seam that reads `overlay=`) and pushes a line drawn directly below
+the tag. The primary identifier is a zlib-compatible **CRC-32 of the exe
+file on disk** — a content fingerprint, stable across rebuilds where a link
+timestamp is not: a hit in the known-build table names the binary outright
+(`Game.exe Retail 1.14d`), an unknown one shows the raw hex
+(`d2.exe [CRC 3A5D2B1F]`) for resource-less builds, this repo's own
+CMake-built d2.exe among them. Between the two sit the VERSIONINFO tiers —
+`d2.exe 1.14d` when the exe's resource maps to a known patch, the dotted
+value (`Game.exe v1.0.13.55`) when it does not. Both name sources are
+field-extensible: the patch table is d2dx's field-tested set
+(`1.0.9.22`=1.09d, `1.0.10.9`=1.10, `1.0.12.49`=1.12, `1.0.13.60`=1.13c,
+`1.0.13.64`=1.13d, `1.14.3.68`=1.14b, `1.14.3.71`=1.14d), and the CRC table
+grows from the evidence line every run logs (`ms`/`ls`/`crc`/`bytes`) —
+quote the log line and the table gets the entry, so the exact binary gets
+named from then on (the rows so far: the retail 1.14d Game.exe and the two
+Vanilla+ builds — `Vanilla+ 0.0.1`/`0.0.2`). A known CRC outranks the
+resource tiers: the bytes are ground truth. Every step is fail-soft; the
+shader line and toast shift down one row while the hostver line shows.
 
-Syntax: a `[slangvk]` section header, `key=value` lines, `;` or `#` comment to
-end of line, blank lines ignored, later assignments win. Unknown keys are
-ignored (forward compatibility); a malformed value keeps the previous/default
-one and never fails the session. No file at all — or no `preset=` line — means
-the chain stays disabled and frames present unfiltered, exactly the 0.3.x look.
+Since the 0.4.5 addendum the tag line also carries a **live FPS field** —
+`glide3xvk <ver> (<hash>) FPS 025` — so the in-game `/fps` readout is no
+longer needed for a quick frame-pace sanity check. `g3x_frame_present` ticks
+the meter once per presented frame (both present paths funnel through it:
+`grBufferSwap` for gameplay and `grLfbUnlock` for the Bink video loop, which
+never calls `grBufferSwap`), and a 1-second window of those ticks becomes the
+displayed value — `FPS 000` until the first full second completes, then the
+half-rounded per-second rate, clamped at 999. The clock reading comes from
+`GetTickCount64` at the call site; the meter itself is pure (a `uint64_t` ms
+argument, no clock calls) and host-tested with synthetic timestamps
+(scripts/test_fps_tag.cpp: window rolls, rounding, clamp, no per-frame
+recompose — the tag text is rebuilt only when the value changes, one snprintf
+per second of play — clock-glitch tolerance, long-run stability). The string
+`grGetString(GR_RENDERER)` reports stays the plain static tag: the FPS field
+lives only in the box, so external renderer queries keep a stable name.
 
-Every key (0.4.6):
+Since 0.4.3 the box also carries a **transient third line** when a hotkey
+fires: F11 (content aspect, `4:3 -> 16:10 -> 16:9 -> auto`) and F12 (shader
+base resolution, `1x -> 2x -> 3x -> 4x`) — the Chocolate-Doom-VK scheme. Both
+only intercept while a chain filters frames and the game window is focused
+(`GetAsyncKeyState` is process-global, so the focus check matters); each press
+toasts (`aspect 16:9`, `shader base 2x`) for ~120 presented frames and logs a
+`slang: F11/F12 ...` line. The picks are session-only — never written back to
+`d2slangvk.conf`; a conf hot-reload snaps them back to the file's values. F12
+feeds the chain from a game-res-x-N upscaled `slangvk_image` (one linear
+`vkCmdBlitImage` in a fenced one-shot submit through `vk_backend`, layouts
+round-tripped SHADER_READ_ONLY -> TRANSFER and back inside the same command
+buffer), so every source-relative pass FBO re-derives at N-x; the output rect
+math honors the aspect pick before `scale=`.
 
-| Key | Values (default first) | What it does |
-|-----|------------------------|--------------|
-| `preset=` | *(empty)* = off, or a path to a `.slangp` | The libretro slang preset every presented frame runs through. Relative paths resolve against the game exe folder; drive-letter (`F:\...`) and UNC paths work as-is. Empty or missing line = chain disabled. Changing it (in the file) triggers a full preset reload. |
-| `preset_1=` .. `preset_8=` | *(empty)* = slot unused, or a `.slangp` path each | The Ctrl+Left/Right cycle list (0.4.6): up to eight presets to step through in-game, wrapping, with a toast. Same path rules as `preset=`; empty slots are skipped, order is 1..8; a current preset not in the list starts the walk at `preset_1` (Right) or the last entry (Left) — add `preset=` itself to the list to include it in the rotation. A pick lives for the session (survives D2's context re-opens) and yields to `preset=` when the file's value changes. No chain required — cycling from a preset-less conf builds the chain on the spot; a bad preset file fails soft (logged, unfiltered present, next press moves on). Hot-reloads like every key. |
-| `scale=` | `fit` \| `integer` \| `stretch` | How the chain's output sits in the window: `fit` fits + centers with letterbox; `integer` picks the largest whole-number multiple of the game resolution, centered; `stretch` fills the window edge to edge. Ignored while an explicit `aspect=` (or an F11 pick) is active. |
-| `vsync=` | *(empty)* = FIFO \| `0` \| `1` | Present mode of the swapchain the chain renders into: empty = default FIFO (vsync on); `0` prefers IMMEDIATE (uncapped, silently falls back to FIFO where unsupported); `1` = FIFO. Takes effect when the swapchain is (re)created — game start or resolution change. |
-| `aspect=` | `auto` \| `4:3` \| `16:10` \| `16:9` | Content-aspect override (0.4.3). `auto` keeps the `scale=` geometry. A fixed ratio letterboxes the chain output into the largest centered rectangle of that ratio inside the window: `4:3` on a 16:9 window = pillarbox with correct proportions; `16:9` on a 16:9 window = full-bleed. F11 cycles this live. |
-| `base_res=` | `1x` \| `2x` \| `3x` \| `4x` (bare `1`..`4` accepted) | Shader base resolution (0.4.3). The game frame is linearly upscaled N-x on the GPU before the chain sees it, so every source-relative pass FBO renders at N-x — scanline pitch, glow and blur radii get finer as N rises; the final pass is fit back into the output rect. Costs one extra fullscreen blit. F12 cycles this live. |
-| `window=` | *(empty)* = `native` \| `240p` \| `480p` \| `576p` \| `720p` \| `768p` \| `1080p` \| `desktop` \| `WxH` | Present-window preset (0.4.5). Sizes the OS window: `240p`=320x240, `480p`=640x480, `576p`=720x576, `720p`=1280x720, `768p`=1366x768, `1080p`=1920x1080, `desktop` = the current monitor's size (borderless), `WxH` = any explicit client size (e.g. `1600x1200`). Windowed presets are centered on the current monitor; the game's own 800x600 window is untouched at `native`. DPI-aware (physical pixels, see the presets bullet above); reapplied at every renderer (re)open, and conf edits hot-reload live (file is the source of truth). Config-only — no hotkey. This is output sizing only — the game keeps rendering 800x600. |
-| `borderless=` | `0` \| `1` | Strip the caption/borders on preset windows (0.4.5): `WS_POPUP` instead of the game's overlapped style, centered like the windowed presets. `desktop` is borderless regardless. `0`/empty keeps the game's own frame. |
-| `screenshots=` | `1` \| `0` | The PrintScreen PNG key (0.4.6, on by default): pressing PrintScreen in-game saves the gamma-corrected game frame at native resolution into `screenshots\` beside the exe (`D2_YYYYMMDD_HHMMSS.png`, `_1`..`_9` on same-second collisions), captured before the overlay draws (no tag/panel/toast in the file) — see the screenshot bullet above. `0` parks the hotkey: a press logs once (`shot: PrintScreen ignored (screenshots=0 ...)`) and does nothing. The panel's `screenshots` row (Shift+V) toggles this live. |
-| `controller=` | `0` \| `1` | Gamepad-to-mouse/keys input injection (0.4.5, off by default). `1` starts a background XInput poller (pad 0) that injects ordinary mouse/keyboard events — the game sees a normal mouse and keyboard, so every screen works. Map: left stick = walk (cursor + held LMB while deflected), right stick = fine aim, LT = LMB, RT = RMB, A = hold Shift+LMB (attack in place toward the cursor), B = hold Alt (item labels), X = tap Space, Y = tap I, D-pad = belt 1-4, LB = tap C, RB = tap T, L3 = tap R (run/walk), Start = Esc, Back = Tab (automap). Injects only while the game window is foreground; focus loss / disable / shutdown release everything held; taps are one clean keystroke (no auto-repeat flips). XInput loads dynamically (`xinput1_4` / `xinput9_1_0` / `xinput1_3`; none = logged once, feature stays off). Settings hot-reload with the conf (~2 s). |
-| `controller_sens=` | float (default `1.0`, clamp `16`) | Cursor speed multiplier for the left stick (0.4.5). Full-tilt base speed is ~1200 px/s before the multiplier; the squared response curve keeps precision near center. Missing/`0` = default. Hot-reloads. |
-| `controller_aimsens=` | float (default `0.35`, clamp `0.05`..`4`) | Right-stick fine-aim speed as a multiplier of the left-stick speed (0.4.5). Same curve and deadzone; slower by default so the cursor can be placed on a monster, portal or item label. Missing/`0` = default. Hot-reloads. |
-| `controller_deadzone=` | percent `1`..`80` (default `15`) | Radial stick deadzone as a percent of full throw (0.4.5). Stick response stays zero inside the zone and follows the squared curve outside it. Missing/`0` = default 15. Hot-reloads. |
-| `controller_moveclick=` | absent = on, `0` = off | Left-stick walk behavior (0.4.5): while the stick is deflected past the deadzone, left click is held so the character walks toward the cursor (D2 movement). Set `0` for a cursor-only left stick (clicks come only from LT/A). Hot-reloads. |
-| `controller_home=` | absent = on, `0` = off | Cursor-home (0.4.5, experimental): after ~0.4 s of quiet (sticks centered, nothing injected) the cursor is moved back onto the player, and every stick move emanates from there. Needs no player detection — a D2 walk always ends with the character standing at the cursor, so each stick-walk release re-syncs home (self-correcting; a walk stopped short by an obstacle re-syncs on the next one). The cursor can no longer get lost at the screen edge. Two honest limits: the cursor is parked, not hidden (hiding D2's own cursor sprite would mean intercepting the game's WM_SETCURSOR — Game.exe territory, out of scope), and a click that walks the character somewhere (LT on a far portal) leaves home there until the next stick-walk. Requires `controller_moveclick` on; a real mouse always wins while it moves. Set `0` for a plain free cursor. Hot-reloads. |
+The 0.4.5 addendum rounds the box out with a **permanent bottom line** —
+`GitHub: VTSTech/D2LoD-libslang-vk` — the one overlay line that never clears
+(shader line) and never expires (toast), so every screenshot the box stamps
+also names the project's home. Two smaller panel-era fixes ride along: the
+hotkey toast now draws without the shader line too (a conf-panel toast with
+no preset loaded used to be silently dropped), and the conf panel renders
+before the tag box so the stamp wins any overlap on tiny present targets.
 
-A worked example (the field setup from the round-16 screenshots):
+Window presets (0.4.5) carry the same toast scheme without a hotkey: `window=`
+applies at renderer open and on conf change, toasting (`window 1080p
+1920x1080`) from the swap path (g3x_window) — it works with the chain off.
+
+Controller support (0.4.5) is log-only on purpose: `controller=1` prints one
+`controller: on (...)` line with the active map and settings, the poll thread
+lives entirely outside the present path (no grBufferSwap hook, no toast race),
+and disabling or closing the renderer logs `controller: off (...)` after
+releasing everything held. Focus loss releases too — after alt-tabbing back,
+re-press a pad button if a held action did not resume.
+
+The **Shift+V conf panel (0.4.5)** is the overlay's first toggleable box: a
+left-edge sibling of the tag box (same 8x8 font, backdrop and shadow; it
+starts one line below the game's `/fps` readout, which owns the very top-left
+corner) listing every `d2slangvk.conf` option as resolved. The split of
+responsibilities keeps each module honest: g3x_overlay only stores, toggles
+and draws (it stays windows.h-free and host-testable); g3x_slang owns the
+content — a fresh parse of the conf from disk on every open (file is the
+truth, and this works with the chain OFF, where the present-path hot-reload
+probe never runs), the module defaults filled in the way their consumers
+apply them (`g3x_ctrl_conf_fixup` for the controller floats, empty
+`window=` = native), and the two hotkey-cycled options shown at their live
+value with a `file: ...` annotation when an F11/F12 pick differs from the
+conf. While the panel is up it refreshes itself: conf hot-reloads (via
+`reread_conf`) and F11/F12 presses re-push the lines, so what it shows is
+never stale. The toggle polls on the present seam (g3x_frame_present) with
+the same focus rule as F11/F12 — presses made while another window is
+foreground never toggle — and honors the `overlay=` ini switch. The panel
+round also fixed the 8x8 font's 'm': DejaVu Sans Mono Bold's triple-stem 'm'
+collapsed to a solid block under the box filter, and the panel's controller
+keys (`aimsens` / `moveclick` / `home`) were the first overlay text to expose
+it — the generator (`scripts/gen_font8x8.py`) now hand-draws 'm' alongside
+the descender overrides.
+
+The **selection cursor (0.4.5)** rides on top: while the panel is up,
+**Up/Down** move a green highlight through the option lines (the header and
+the hint footer are skipped). The selected row draws a dim-green band across
+the box with its glyphs in bright green (`#20FF20`-ish) — the only
+non-white/non-black ink the overlay has ever used, so the cursor reads
+instantly as "the thing the arrows move". g3x_slang owns the movement
+(edge-latched like Shift+V, same focus rule, clamped at the ends with no
+wrap, each move re-parsing the conf and logging `overlay: conf panel sel
+<key>`); g3x_overlay only paints it (an out-of-range or stale index just
+draws nothing, never out of the box). While the panel is hidden the arrow
+keys are untouched — the game keeps them.
+
+The **value editing (0.4.5)** is the other half: **Left/Right** on the
+cursor's row change that option — one press = one step, written straight
+into `d2slangvk.conf` through `g3x_slang_conf_rewrite_text` (a surgical
+single-key rewrite: comments, blank lines, spacing, key order and line
+endings survive byte-for-byte; duplicates of the key all become the new
+value since the parser is last-one-wins; same-line comments are kept; a
+missing key is appended at the end of the `[slangvk]` section, a missing
+section or conf is synthesized) and then pushed through `reread_conf()` —
+the exact path a hand edit takes, so every consumer applies it live
+(aspect/base_res snap on the spot, scale reads per frame, vsync at the next
+swapchain recreate, window/borderless/controller on their own mtime
+probes). The per-key steps mirror the consumers' own fixups: preset cycles
+the scanned `*.slangp` tree (FindFirstFileA, case-insensitive-sorted,
+`(none)` at the front — kept as the editor's fallback; the browser owns the
+row today), scale/vsync/aspect/base_res/window step their token
+lists, the toggles flip, controller_sens 0.25 (0.25-16), controller_aimsens
+0.05 (0.05-4), controller_deadzone 5% (1-80). Every change toasts and logs
+(`overlay: conf aspect = 16:9`); a list end, an empty preset dir or a
+failed write touches nothing and logs why.
+
+Two 0.4.5 refinements round the panel out. First, the **controller rows
+follow the master switch**: with `controller=0` the sub-options (sens/
+aimsens/deadzone/moveclick/home) are inert, so the panel skips their rows —
+the `controller off` row itself stays (Left/Right re-enables it, which
+re-lists the sub-options on the spot), keeping the panel honest about what
+the arrows can actually change. Second, **Left/Right on the preset row opens the
+preset browser**: the `*.slangp` list of the **current preset's folder
+subtree**, rendered in the panel itself — the scan root follows `preset=`'s
+dir component and the walk recurses to any depth (shader collections nest
+deeper than two folders; a leaf-only listing would show one entry per
+folder): `presets\crt.slangp` lists everything under `presets`, a
+bare/empty/absolute `preset=` lists the game dir tree — and the rows are
+stored exactly as `preset=` accepts them (`presets\xbr.slangp`,
+`shaders\crt\royale\kurozumi.slangp`), so a pick resolves back to the very
+file listed. Page shape: a `presets (N) - <dir>` header (the scan
+root), `(none)` at the front, the conf's
+current preset starred (`* `), up to 16 rows on screen with a scroll window
+that follows the cursor (the page builder, `g3x_slang_browser_page`, is a
+portable host-tested seam). Up/Down move the green cursor, Right loads the
+highlighted preset through the same write-conf + hot-reload path (a real
+change rebuilds the chain live; re-picking the active preset is a no-op
+rewrite that still confirms), Left goes back to the option page, Shift+V
+hides everything and resets the browser. The tree is scanned fresh at every
+open; an empty tree toasts `no .slangp under <folder>` instead of opening an
+empty page. Same focus rule and edge latches as every panel key. The
+browser is deliberately **Enter/Esc-free**: Enter reaches the game's chat
+box and Esc reaches its menu, and a GetAsyncKeyState poll cannot swallow
+either — so Left/Right do double duty (they open the browser from the
+preset row, then become its load/back buttons while it is up).
+
+## The preset chain (P3, 0.4.0)
+
+Every present, the gamma-corrected frame is uploaded at its **native game
+resolution** into a `slangvk_image`, and `slangvk_chain_render_swapchain`
+draws the preset chain straight into the acquired swapchain image — so the
+preset's own scaling algorithms see the true source size (640x480 in,
+whatever the window is out). The version-tag overlay is drawn onto the chain
+input, so it filters along with the frame (screenshots show what the player
+sees). The scaling/vsync/overlay relationship:
+
+- `scale=fit` — the chain fit-and-centers (letterbox). `scale=integer` — we
+  compute the largest whole-number multiple of the game resolution that fits
+  and hand the chain a centered rect. `scale=stretch` — full-rect.
+- `vsync=` — swapchain present mode (FIFO default; `0` prefers IMMEDIATE).
+- The overlay box anchors top-right exactly as in P2 (see above); with a
+  preset on it warps/filters with everything else.
+
+`d2slangvk.conf` beside `Game.exe` (copy it from
+`presets/d2slangvk.conf.sample`):
 
 ```ini
 [slangvk]
-preset=shaders/crt/crtglow_lanczos.slangp
-scale=stretch
-vsync=
-aspect=auto
-base_res=1x
+preset=presets/glide3xvk-scanline.slangp   ; or an absolute path into your
+                                            ; RetroArch shaders (CRT-Royale)
+scale=fit                                  ; fit | integer | stretch
+vsync=                                     ; empty = FIFO, 0 = immediate
+fallback=unfiltered                        ; preset failure -> raw frame
 ```
 
-### Hotkeys (in-game, 0.4.3 + 0.4.5 + 0.4.6)
+Behavior contract:
 
-While the game window has focus — the same scheme as Chocolate-Doom-VK
-(Scroll Lock, Shift+V and the arrows work always; F11/F12 require a chain to
-be filtering frames):
+- **No conf / no `preset=` line = the chain never engages.** Identical pixels
+  and logs to 0.3.x (the only log line is a one-shot "no preset" note).
+- **Hot reload**: the conf and the preset file are stat'ed every 32 frames;
+  any change reloads the preset and rebuilds the chain mid-session (a few
+  frames of unfiltered present during the swap).
+- **Fail-soft**: preset parse/compile/render failure logs the slang error and
+  downgrades to the unfiltered path (the whole session after 3 consecutive
+  render failures); the game never crashes on a bad preset.
+- Starter presets (ours, MIT): `presets/glide3xvk-scanline.slangp` (the
+  zero-risk smoke test — image identical apart from darkened alternate source
+  lines) and `presets/glide3xvk-sharpen.slangp` (mild unsharp mask). Real CRT
+  chains (CRT-Royale and friends) load from a RetroArch `shaders/` checkout
+  by absolute or game-relative path.
 
-- **Scroll Lock** (0.4.6) — toggle the overlay: every overlay box (the tag,
-  the shader / hostver / FPS lines, the toast and the conf panel) hides or
-  restores at once, for clean screenshots and recordings. Session-live —
-  survives D2's context re-opens; the `overlay=` ini key still decides the
-  state at startup and after a relaunch. See [The version stamp](#the-version-stamp)
-  for the details.
-- **PrintScreen** (0.4.6) — save a screenshot: the current frame lands in
-  `screenshots\` beside the game exe as a PNG, captured before the overlay
-  draws (no tag/panel/toast in the file) and at native game resolution, with
-  or without a preset chain. Toast + log; `screenshots=0` disables (the press
-  logs once instead). Works while the overlay is toggled off — the log line
-  is the feedback there.
-- **F11** — cycle content aspect: `4:3 -> 16:10 -> 16:9 -> auto -> ...`
-- **F12** — cycle shader base resolution: `1x -> 2x -> 3x -> 4x -> 1x`
-- **Shift+V** (0.4.5) — toggle the conf panel: a box on the left edge listing
-  every `d2slangvk.conf` option as currently resolved (defaults filled in;
-  the F11/F12 session picks annotated `file: ...` when they differ). Re-read
-  from disk every time it opens, refreshed live on conf hot-reload and
-  F11/F12 presses while it is up. Works with or without a chain — the
-  `window=` / `controller=` options matter without one. Press again to hide.
-- **Up/Down** (0.4.5) — while the conf panel is up, move its green selection
-  cursor through the option lines (clamped at the ends; every move re-parses
-  the conf and is logged). While the panel is hidden the arrow keys are
-  untouched — the game keeps them.
-- **Left/Right** (0.4.5) — while the conf panel is up, change the selected
-  option: one press = one step, written straight into `d2slangvk.conf` and
-  applied live through the normal conf hot-reload path (see the Shift+V
-  bullet above for the per-option steps). List ends, an empty preset dir
-  and failed writes touch nothing and are logged. On the preset row they
-  open the preset browser instead (below); inside the browser **Right**
-  loads and **Left** backs out.
-- **Ctrl+Left/Right** (0.4.6) — cycle the preset through the conf's
-  `preset_1=`..`preset_8=` list, wrapping, with a toast and a live chain
-  reload (see the preset-cycling bullet above). Works with the conf panel up
-  or down; the Ctrl part of the chord routes to the cycler, so the panel's
-  plain Left/Right value edits never double-fire on the same press.
-- **Preset browser** (0.4.5) — while the conf panel is up and the cursor
-  sits on the preset row, **Left/Right** open it: the `*.slangp` files of
-  the **current preset's folder subtree** listed in the panel
-  (`presets (N) - <dir>`, current preset starred, `(none)` first). The scan
-  root follows `preset=`'s folder and recurses to any depth — shader
-  collections nest deeper than two folders, and a leaf-only listing would
-  show one entry per folder: `presets\crt.slangp` lists everything under
-  `presets` (`presets\...` rows), `shaders\crt\royale\kurozumi.slangp`
-  lists everything under `shaders\crt` (`shaders\crt\royale\...` rows
-  included); a bare or empty `preset=` scans the game dir tree (an absolute
-  `preset=` too — browser rows are relative paths by contract). Every row
-  is written back exactly as `preset=` accepts it, so a pick resolves to
-  the very file listed. **Up/Down** move the cursor, **Right** loads the
-  highlighted preset through the same write-conf + hot-reload path as the
-  value edits (the chain rebuilds live), **Left** goes back to the
-  option page. An empty tree toasts `no .slangp under <folder>` instead of
-  opening the page. The browser never asks for **Enter** or **Esc** — those
-  reach the game's chat box and its menu, and a polled hotkey cannot
-  swallow them.
+## Performance (0.4.5)
 
-Each press shows a toast line in the overlay box (`aspect 16:9`,
-`shader base 2x`, `conf overlay on`) for ~2 seconds and logs a
-`slang: F11/F12 ...` / `overlay: conf panel ...` line. The toast shows
-whether or not a shader is loaded — an earlier build silently dropped it
-without an active shader line, which is why a browser toast could go
-unseen. The tag box itself now ends with a permanent bottom line,
-`GitHub: VTSTech/D2LoD-libslang-vk`, so every screenshot the overlay stamps
-also names the project's home. The F11/F12 picks
-are **session-only**: they are never written back to `d2slangvk.conf`, and
-a conf hot-reload snaps them back to whatever the file says. The panel's
-Left/Right edits are the opposite — they write the file, which is what makes
-them live for every consumer. The window presets have **no hotkey** by
-design — F10 is a game skill-slot bind and the wrapper must not steal game
-keys; the panel's window row (or the conf itself) is the way to change them.
+Measured profile (full-screen 0.4.3 field log, RX 560, 800x600, crtglow_lanczos
+7-pass chain active): **avg 51.6 ms/frame ≈ 19 fps** in-game. Per-frame draw
+mix: 152 fans + 170 strips + 142 RGB565 quads (≈ 470 draw calls), **fill=0** —
+the fullscreen dim-fill path is not a real-world cost. The budget is the CPU
+raster + texture-table upkeep, with the chain's fullscreen GPU pass on top
+(516 filtered frames, 0 fallbacks — the chain is not the bottleneck).
 
-## Build from source
+Perf round 1 (0.4.5), chosen off that profile:
+
+- **SSE2 float math** — i686 MinGW defaults every float operation to x87
+  (stack-based 80-bit, slow `fistp` int conversions, no SIMD, no
+  auto-vectorization), and the raster is float-heavy. glide3x now builds with
+  `-msse2 -mfpmath=sse` (target-scoped; the game tree keeps project policy).
+- **O(1) texture table** — `g3x_frame_tex_source` linearly scanned up to 8192
+  slots per bind and `tex_slot_alloc` rescanned from 0 per download; now an
+  open-addressing hash plus a monotonic allocation cursor (preserves the exact
+  first-free slot order) plus a same-texture rebind fast-out.
+- **Swapchain `minImageCount+2`** — the field log showed images=2, the bare
+  minimum; one extra image keeps FIFO present pacing from stalling the raster
+  thread.
+
+Zero pixel risk by construction: the agent-side `fxparity` harness replays a
+220-frame deterministic mixed scene (all blend classes, chroma, palettes,
+rebind storms, table-full stress) and hashes every present buffer — the
+before/after hash and counters are identical, so the round cannot change what
+you see, only how fast it gets there. Field numbers: capture `frame N:` lines
+chain-on vs chain-off on the next round's build.
+
+### The 25 fps ceiling (source-verified)
+
+Second 0.4.5 field log closed the loop: in-game `avg=` reads a dead-on
+40.0–40.3 ms (= 25.0 fps) while the Esc menu reads ~24 ms — with the same
+per-frame draw volume. `avg=` is swap-to-swap wall time, and the engine
+paces in-game frames itself: `CLIENT_GameLoopFrame`
+(`D2Client/GAME/Game/Game.cpp`) gates sim + render on a 40 ms budget
+(`uGlobalTickCountB = 0x28`, `fps_drawn = 25` hardcoded — the in-tree comment
+says it outright: the SP gameserver runs as part of the drawing process,
+"capped so hard at 25 frames"). The Esc menu early-returns and draws
+unthrottled, so its 45 fps ≈ the wrapper's true per-frame cost today.
+
+What this means: in-game fps is the engine's, not ours — the perf rounds
+still mattered because 0.4.3's 51.6 ms frames overflowed the game's 40 ms
+tick budget (the game's own frame-skip logic then drops ticks — the choppiness
+source); 0.4.5's ~22 ms fits. The `work=` field in the `frame N:` line (this
+build) reports the wrapper's present-path cost so the log separates engine
+pacing from wrapper cost. 60+ fps smoothness in-game is an engine-level
+project (d2dx-style motion interpolation on a rebuilt exe) — out of scope
+here; the wrapper targets: stay far under the 40 ms budget on the heaviest
+scenes, menus/cutscenes at full speed.
+
+## Build (same toolchain as the game)
+
+From the repository root, with a **libslang-vk checkout beside the repo**
+(the P3 preset chain links its static `slangvk` target; see `BUILD-32BIT.md`
+for the i686 verification of that build):
 
 ```sh
-apt install g++-mingw-w64-i686 binutils-mingw-w64-i686 cmake ninja-build   # Debian/Ubuntu
-
-cmake -S . -B build-g3x -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
-cmake --build build-g3x --target glide3x
-# → build-g3x/glide3x.dll (pei-i386; KERNEL32 + msvcrt imports only)
+git clone https://github.com/VTSTech/libslang-vk ../libslang-vk   # once
 ```
 
-CI (`.github/workflows/build.yml`) builds exactly this on every push to `main` or
-`libslang-vk` and uploads the DLL as the `glide3x-dll` workflow artifact. The build id
-embedded in the log banner, `grGetString(GR_RENDERER)` and the overlay comes from
-`git describe --always --dirty --tags` at compile time — build from a clean checkout
-of the pushed branch and the tag names a commit you can find on GitHub.
+Without the checkout the DLL still builds — with the chain stubbed out
+(same API, always inactive) and a loud CMake STATUS line saying so.
+
+```sh
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
+cmake --build build --target glide3x
+# → build/glide3x.dll (the root project builds it from glide3xvk/ when present;
+#   a full `cmake --build build` also lands it beside d2.exe automatically)
+```
+
+CI (`.github/workflows/build.yml`) does exactly this on every push and uploads
+the DLL as the `glide3x-dll` artifact; it checks out `VTSTech/libslang-vk`
+pinned (`ref: d208ac5`) so the chain builds reproducibly.
 
 Verify the export surface against the game's own loader (must be an empty diff):
 
 ```sh
-i686-w64-mingw32-objdump -p build-g3x/glide3x.dll \
+i686-w64-mingw32-objdump -p build/glide3x.dll \
   | sed -n '/Ordinal\/Name Pointer/,$p' \
   | grep -oE '_[A-Za-z]+@[0-9]+' | sort -u > /tmp/ours.txt
 grep -oE '"_[A-Za-z]+@[0-9]+"' D2Client/Renderer/Glide.cpp | tr -d '"' | sort -u > /tmp/game.txt
 diff /tmp/game.txt /tmp/ours.txt && echo "MATCH: all 45 GetProcAddress names covered"
 ```
 
-## Documentation
+> Toolchain note: GNU ld strips one leading `_` from every export name and
+> searches def-file internals with an extra one. The scaffold defeats both:
+> functions carry `__asm__("__name@N")` labels (double underscore → table gets
+> single), `glide3x.def` lists the literal names, and `-Wl,-u` flags force the
+> object archive member in for the def lookups. See the CMakeLists comment.
 
-- [glide3xvk/README.md](glide3xvk/README.md) — the renderer's architecture, module
-  layout, build, toolchain notes (GNU ld export decoration), overlay internals,
-  field-test procedure and fail-soft behavior
-- [glide3xvk/FIELD-TEST.md](glide3xvk/FIELD-TEST.md) — the per-round field log:
-  builds, diagnostics and results on a vanilla retail 1.14d install
-- [SCOPE.md](SCOPE.md) — the capability boundary: what the wrapper achieved and
-  can still do alone vs. what needs Game.exe work (source-receipted)
-- [glide3xvk/BUILD-32BIT.md](glide3xvk/BUILD-32BIT.md) — building libslang-vk itself
-  as i686 Windows (the P3 gate)
-- [PLAN.md](PLAN.md) — the P1–P5 integration plan with the phase ledger
+The root `CMakeLists.txt` picks this directory up automatically and keeps it
+out of the `d2` glob — delete the directory and the game builds exactly as
+before (zero game-source drift).
 
-## Roadmap
+The DLL is self-contained (`-static-libgcc -static-libstdc++`, volk loaded at
+runtime): KERNEL32 + msvcrt imports only. The build id embedded in the log
+banner, `grGetString(GR_RENDERER)` and the overlay comes from
+`git describe --always --dirty --tags` at compile time — build from a clean
+checkout of the pushed branch and the tag names a commit you can find on
+GitHub.
 
-- **P3 (shipped, 0.4.0; chain field-proven live)** — the libslang-vk preset
-  chain at the present pass (`d2slangvk.conf`, hot-reload, scaling modes,
-  fail-soft); the full-screen 0.4.3 log shows a 7-pass community chain
-  filtering every frame with 0 fallbacks
-- **Perf track (in progress, 0.4.5)** — CPU raster round 1 shipped (SSE2 float
-  math, O(1) texture table, swapchain headroom — bit-identical pixels); round-2
-  candidates: present-path fence pipelining, span-raster templating; the GPU
-  compose move is the 60 fps endgame (PLAN.md §5)
-- **P4** — preset parameter UI, CI-packaged drop-in zip (DLL + presets +
-  conf), crash-reporter hook
-- Deferred look item: bilinear texture filtering
+## Test procedure (field)
 
-## Upstream
+1. Copy `build/glide3x.dll` into the game root, next to the game exe.
+2. Launch the game with `-3dfx` — that selects the Glide renderer
+   (command line arg or `[VIDEO] 3DFX=1` in the ini). Works on a
+   **vanilla retail 1.14d install** (`Game.exe -w -3dfx` windowed on the field
+   rig). Full per-round walkthrough and history: `FIELD-TEST.md`.
+3. A healthy run looks like: the menu renders, play works, and
+   `glide3x.log` beside the exe carries the session banner
+   (`glide3xvk 0.4.5 <build-id>`), periodic `frame N:` summaries and a clean
+   exit summary on shutdown.
+4. The version tag in the top-right corner identifies the DLL in any
+   screenshot; `/fps` in the game stays readable top-left.
 
-This branch is part of a fork whose `master` line tracks the upstream 1.14d source
-recovery; the recovered game source stays untouched here — glide3xvk needs zero
-game-source edits, and the DLL is designed to run against the vanilla retail exe.
-While testing, upstream PRs we may discover (recovery fixes, build or diagnostics
-material) will be noted and, where they hold up, sent upstream — but the work on this
-branch is glide3xvk, and glide3x.dll loading Vulkan / libretro slang with libslang-vk
-is the goal.
+## Fail-soft behavior
 
-Diablo and Blizzard Entertainment are trademarks of Blizzard Entertainment, Inc. This
-project is not affiliated with or endorsed by Blizzard.
+If 32-bit Vulkan is unavailable (`vulkan-1.dll` x86 missing — see R2), the
+log says so, the DLL still loads, and the game keeps running (black window).
+The DirectDraw path (`-w`) is untouched by all of this.
+
+## What is deliberately NOT here yet
+
+- GPU-side raster (the 60 fps endgame): the 0.4.3 full-screen log measured
+  51.6 ms ≈ 19 fps @ 800x600 with the chain active; 0.4.5 took the first CPU
+  side cut (see Performance above), and the compose-to-GPU move remains the
+  main remaining perf item — present-path fence pipelining and span-raster
+  templating are queued as CPU-side round 2 (PLAN.md §5 perf track).
+- Bilinear texture filtering (look delta only): the ground requests
+  `texFilterMode(1,1)` and is point-sampled today.
+- Preset parameter UI / per-preset geometry defaults (P4): parameters are
+  reachable through `slangvk_chain_set_parameter` but nothing drives them yet.
+- Slang-FILTERED screenshots (0.4.6's PrintScreen captures the pre-shader
+  game frame): the chain renders straight into the acquired swapchain image,
+  so a filtered capture needs a Vulkan readback pipeline (copy the swapchain
+  image to a host-visible buffer between chain render and present, or render
+  the chain into an offscreen target first) — a field round of its own.
