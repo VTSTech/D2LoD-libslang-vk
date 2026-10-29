@@ -10,7 +10,8 @@ bundled with a Vulkan render wrapper (`glide3x.dll`). The base is
 taken apart function by function and turned back into C++ that builds — plus this fork's
 growing set of crash fixes and opt-in quality-of-life features. Vanilla comes first: with
 no config file the game behaves like retail, and every extra (Alt-key item labels,
-portable saves, more as they land) ships OFF and is enabled in `d2vp.ini`.
+portable saves, auto gold pickup, globe hover values, more as they land) ships OFF and
+is enabled in `d2vp.ini` — or in-game on the Vanilla+ Options page.
 
 It is the **whole** game. Up to 1.13 Diablo II shipped as a small `Game.exe` plus a dozen
 DLLs (`D2Client`, `D2Common`, `D2Game`, `D2Win`, `D2gfx`, `Storm`, `Fog`, ...). Patch 1.14
@@ -40,11 +41,11 @@ workflow artifacts: `d2s-<sha>.exe` + `d2-map-<sha>.map` on `main` (the linker m
 is load-bearing for crash symbolization), `d2-<sha>.exe` + `d2-stripped-<sha>.exe` on
 `jaenster-main`.
 
-Prebuilt releases: [`D2LoD-Vanilla-Plus-0.0.3`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.3)
-ships a 7z bundling the rebuilt client (`d2s-569fc5c.exe`), the `glide3x.dll` Vulkan
-wrapper (Glide3xVK 0.4.5) and launcher/debug scripts — extract into a 1.14d install
-(see the release notes or [`VANILLA-PLUS.md`](VANILLA-PLUS.md)). The wrapper line tags
-its own releases separately.
+Prebuilt releases: [`D2LoD-Vanilla-Plus-0.0.4`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.4)
+(2026-10-29) ships a 7z bundling the rebuilt client (`d2s-c81aae6.exe`), the
+`glide3x.dll` Vulkan wrapper (Glide3xVK 0.4.6) and launcher/debug scripts — extract
+into a 1.14d install (see the release notes or [`VANILLA-PLUS.md`](VANILLA-PLUS.md)).
+The wrapper line tags its own releases separately.
 
 ## Status
 
@@ -55,9 +56,14 @@ its own releases separately.
   fullscreen-D3D recovery (17 fix rounds) and the sound fixes (title music, SFX
   volume) are closed and field-verified; the known rendering defects (ground, sprites,
   palettes, shadows, lighting, UI text colors) are fixed.
-- Opt-in features so far: Alt-key item-label toggle, self-provisioning `d2vp.ini`,
-  portable saves (single-player saves pinned to the game folder). All ship OFF — with
-  no config file the game behaves like retail.
+- Opt-in features so far: Alt-key item-label toggle, portable saves (single-player
+  saves pinned to the game folder), auto gold pickup (walk over gold piles to collect
+  them, D2R "Gold Pickup" style — never moves your character, never fires in combat),
+  globe hover values (current/max printed on the life/mana orb face, D2R-style), and
+  the **Vanilla+ Options** page (Esc → Options → "Vanilla+ Options") that flips any of
+  them in-game — click a row and it writes `d2vp.ini` and applies same-frame. All ship
+  OFF — with no config file the game behaves like retail; the documented `d2vp.ini`
+  template self-creates on first start.
 - It is not finished. Some areas and features still crash. A crash writes a symbolised
   report to `d2crash-<date>-<time>.txt` next to the executable; see
   [Known issues](#known-issues).
@@ -116,7 +122,7 @@ Actions tab instead of building by hand.
 Two ways:
 
 - **From a release** (recommended for play): extract the
-  [`D2LoD-Vanilla-Plus-0.0.3.7z`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.3)
+  [`D2LoD-Vanilla-Plus-0.0.4.7z`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.4)
   into your Diablo II folder, run `Launch.cmd` to start the game with the Vulkan
   wrapper, and run `install_shaders.cmd` once for the libretro slang shader pack.
 - **From a build**: copy `d2.exe` into your Diablo II folder, next to the original
