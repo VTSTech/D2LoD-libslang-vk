@@ -157,6 +157,11 @@ struct G3xRouteBSink {
 
 // Attach/detach the record sink. Null restores the plain production path.
 void     g3x_frame_routeb_sink(const G3xRouteBSink* s);
+// Conditional detach: clears the slot only when it still holds THIS sink.
+// The capture and the GPU path share the single slot (last attach wins, by
+// design — one consumer per stream); a bare-null detach from whichever
+// module stops second silently disarmed the other mid-session.
+void     g3x_frame_routeb_detach(const G3xRouteBSink* s);
 
 // Route-B Stage 2: emit-only mode (raster=gpu). The dispatcher still expands
 // strips, resolves fill-rect shapes and expands lines — the decisions the

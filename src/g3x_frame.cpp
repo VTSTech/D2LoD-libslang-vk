@@ -509,6 +509,10 @@ struct GammaInit { GammaInit() { gamma_identity(); } } s_gamma_init;
 // external linkage, exactly one definition. s_routeb is TU-static.
 void g3x_frame_routeb_sink(const G3xRouteBSink* s) { s_routeb = s; }
 
+void g3x_frame_routeb_detach(const G3xRouteBSink* s) {
+    if (s_routeb == s) s_routeb = nullptr;
+}
+
 void g3x_frame_gpu_emit_only(bool on) { s_gpu_emit = on; }
 
 void g3x_frame_reset(unsigned w, unsigned h) {

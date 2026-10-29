@@ -138,6 +138,11 @@ G3xRouteBSink make_gpu_sink() {
     return s;    // remaining api handlers: fxcapture owns them when armed
 }
 
+// File-scope so stop() can detach conditionally (g3x_frame_routeb_detach):
+// fxcapture and this path share the single sink slot, and a bare-null
+// detach from whichever stops second disarmed the other mid-session.
+const G3xRouteBSink s_gp_sink = make_gpu_sink();
+
 // Cross-frame table pruning: content versions are monotonic per key, so a
 // LATER frame can only reference the newest version of each key. Dropping
 // the superseded entries after each pack bounds the maps to the live texture
@@ -434,8 +439,7 @@ void g3x_raster_gpu_start(unsigned w, unsigned h) {
     }
 
     s.dev_ok = true;
-    static const G3xRouteBSink sink = make_gpu_sink();
-    g3x_frame_routeb_sink(&sink);
+    g3x_frame_routeb_sink(&s_gp_sink);
     g3x_frame_gpu_emit_only(true);
     s.active = true;
     g3x_log("raster=gpu: kernel live (%ux%u, %ux%u tiles) — CPU raster idle "
@@ -446,17 +450,17 @@ void g3x_raster_gpu_start(unsigned w, unsigned h) {
 void g3x_raster_gpu_stop() {
     if (!s.active) return;
     g3x_frame_gpu_emit_only(false);
-    g3x_frame_routeb_sink(nullptr);
+    g3x_frame_routeb_detach(&s_gp_sink);
     s.active = false;
     s.fp_open = false;
     g3x_log("raster=gpu: detached (rendered %llu frames)",
             (unsigned long long)s.frames);
 }
 
-bool g3x_raster_gpu_end_frame() {
-    if (!s.active || !s.dev_ok) return false;
-    s.fp_open = false;
-    s.presented++;
+// The per-frame dispatch body: pack + upload + dispatch + present whatever
+// the sink collected this frame. Runs with the window closed; returns
+// whether the kernel drew and presented it.
+static bool end_frame_dispatch() {
     if (s.fp.prims.empty()) return false;    // Bink/LFB frame: CPU compose path
 
     if (!routeb::pack_frame(s.fp, s.col, s.g)) {
@@ -521,6 +525,28 @@ bool g3x_raster_gpu_end_frame() {
         }
     }
     return true;
+}
+
+bool g3x_raster_gpu_end_frame() {
+    if (!s.active || !s.dev_ok) return false;
+    s.fp_open = false;
+    s.presented++;
+    const bool ok = end_frame_dispatch();
+    // Frame-window reopen — field bug, first raster=gpu session: api_frame
+    // (the window-open event) fires per grSstWinOpen because it IS the cap
+    // format's frame boundary, but the live loop opens a context ONCE and
+    // then presents N times. The window closed at the first present —
+    // usually primitive-less, the game clears before it draws — and every
+    // later draw hit gp_prim's fp_open guard and was dropped: "detached
+    // (rendered 0 frames)", slang presented a black out-image all session.
+    // The replay harness never saw this: it drives one frame per EV_FRAME,
+    // i.e. one window per pack. The real per-swap frame boundary is HERE:
+    // reopen the window whatever this frame did (drawn / Bink-LFB / lost)
+    // so the next frame's draws collect. w/h stay as set at context open.
+    s.fp_open = true;
+    s.fp.clear = 0;
+    s.fp.prims.clear();                      // capacity retained
+    return ok;
 }
 
 void g3x_raster_gpu_shutdown() {
