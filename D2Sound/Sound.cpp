@@ -101,32 +101,7 @@ void __stdcall SOUND_ShutdownDirectSound() {
 // Initializes DirectSound 8 with EAX 3.0 support - creates primary buffer, configures format, tests environment presets
 void __stdcall SOUND_InitDirectSound() {
     // Static local variables (originally global data)
-    static DSCAPS gDSoundCapsBuffer = {
-    /* .dwSize = */ 0,
-    /* .dwFlags = */ 0,
-    /* .dwMinSecondarySampleRate = */ 0,
-    /* .dwMaxSecondarySampleRate = */ 0,
-    /* .dwPrimaryBuffers = */ 0,
-    /* .dwMaxHwMixingAllBuffers = */ 0,
-    /* .dwMaxHwMixingStaticBuffers = */ 0,
-    /* .dwMaxHwMixingStreamingBuffers = */ 0,
-    /* .dwFreeHwMixingAllBuffers = */ 0,
-    /* .dwFreeHwMixingStaticBuffers = */ 0,
-    /* .dwFreeHwMixingStreamingBuffers = */ 0,
-    /* .dwMaxHw3DAllBuffers = */ 0,
-    /* .dwMaxHw3DStaticBuffers = */ 0,
-    /* .dwMaxHw3DStreamingBuffers = */ 0,
-    /* .dwFreeHw3DAllBuffers = */ 0,
-    /* .dwFreeHw3DStaticBuffers = */ 0,
-    /* .dwFreeHw3DStreamingBuffers = */ 0,
-    /* .dwTotalHwMemBytes = */ 0,
-    /* .dwFreeHwMemBytes = */ 0,
-    /* .dwMaxContigFreeHwMemBytes = */ 0,
-    /* .dwUnlockTransferRateHwBuffers = */ 0,
-    /* .dwPlayCpuOverheadSwBuffers = */ 0,
-    /* .dwReserved1 = */ 0,
-    /* .dwReserved2 = */ 0
-}; D2_STATIC_GUARD(gDSoundCapsBuffer, "D2Sound::Sound::SOUND_InitDirectSound::gDSoundCapsBuffer");
+    static DSCAPS gDSoundCapsBuffer = {}; D2_STATIC_GUARD(gDSoundCapsBuffer, "D2Sound::Sound::SOUND_InitDirectSound::gDSoundCapsBuffer");
 
     char* szErrorMsg;
     BOOL BVar2;
@@ -356,18 +331,18 @@ int * SOUND_GetAmbientSoundEntry(int32_t nIndex) {
     }
     if (gaAmbientSoundFlags == gnAmbientSoundCount) {
       int* pAmbientEntry;
-      if (nIndex < gaAmbientSoundFlags) {
-        pAmbientEntry = gaAmbientSoundEntryTable + nIndex * 2;
-        if (gnAmbientSoundLanguageCode) {
-          return pAmbientEntry;
-        }
+      if (!(nIndex < gaAmbientSoundFlags)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x53);
+        exit(-1);
+      }
 
-        pAmbientEntry = gAmbientSoundTable + nIndex * 2;
+      pAmbientEntry = gaAmbientSoundEntryTable + nIndex * 2;
+      if (gnAmbientSoundLanguageCode) {
         return pAmbientEntry;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x53);
-      exit(-1);
+      pAmbientEntry = gAmbientSoundTable + nIndex * 2;
+      return pAmbientEntry;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x52);
       exit(-1);

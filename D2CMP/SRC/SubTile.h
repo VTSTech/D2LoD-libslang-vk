@@ -22,10 +22,9 @@ char * __fastcall SUBTILE_CompressToRLE(char * pDataStart, char * * ppCompressed
 void __fastcall SUBTILE_AllocAndCompress(uint32_t * pRawData, int bIsRaw);
 void __fastcall SUBTILE_ConvertToIndexed(uint32_t * pDstFrame, uint32_t * pSrcFrame, uint32_t dwColorKey, pfnRGBToPaletteIndex pfnGetPaletteIndex);
 char * __stdcall SUBTILE_ConvertRGBToIndexed(char * pSrcRGBData, uint32_t nRGBDataSize, uint32_t dwColorKey, pfnRGBToPaletteIndex pfnGetPaletteIndex);
-BOOL SUBTILE_CheckIfIsometricEmpty(int32_t pSubTileData);
-void __stdcall SUBTILE_CompressIsometricShape(int32_t pSubTileEntry, char * pPixelData);
 void __stdcall SUBTILE_ExtractIsometricPixels(int32_t pSubTileEntry, int32_t pSrcPixelData);
 void __stdcall SUBTILE_CompressWithColorKey(pfnRGBToPaletteIndex pfnGetPaletteIndex, int pSrcSubTile, int pDstSubTile, uint32_t dwColorKey);
 void __fastcall SUBTILE_RecompressExisting(int32_t pSubTileEntry);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2CMP::SRC::SubTile

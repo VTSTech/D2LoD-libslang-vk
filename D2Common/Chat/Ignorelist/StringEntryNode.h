@@ -16,6 +16,6 @@ struct StringEntryNode : public TSHashObject<StringEntryNode, HASHKEY_STRI> {
 namespace D2Common::Chat::Ignorelist::StringEntryNode {
 
 // Function declarations
-::StringEntryNode * ScalarDeletingDestructor(::StringEntryNode * pThis, uint32_t dwFlags);
+::StringEntryNode * __thiscall ScalarDeletingDestructor(::StringEntryNode * pThis, uint32_t dwFlags);
 
 } // namespace D2Common::Chat::Ignorelist::StringEntryNode

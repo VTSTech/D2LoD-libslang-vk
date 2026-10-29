@@ -81,8 +81,6 @@ uint32_t __stdcall GetErrorState();
 char * __fastcall StripPathPrefixToRelative(char * szText);
 // Returns the caller's return address, i.e. the instruction pointer of the call site. Body is MOV EAX,[ESP]; RET - it reads the return address off the stack and returns it. Takes NO arguments: the RET (not RET 4) leaves the caller's stack untouched, and the DWORD after the call is the __LINE__ value the caller pushed for the assert/halt call that follows. Fog ordinal #10265 @ RVA 0x8090.
 void * __stdcall GetInstructionPointer();
-// Formats debug output with optional timestamp and outputs to debugger/log. Supports flags: 0x04=prepend timestamp (HH:MM:SS.mmm format via GetLocalTime), 0x02=skip OutputDebugStringA, 0x01=write to LOG category via LogManager, 0x18=check CapsLock state. Uses a 4096-byte buffer for vsnprintf formatting with varargs, appending formatted text after timestamp if present.
-void __stdcall FormatDebugOutput(uint8_t bFlags, va_list vaArgs, char * szText);
 void OutputDebugStringSimple(char * szText, ...);
 void OutputDebugStringIfCapsLock(char * szText, ...);
 void FormatDebugOutputVariadic(uint8_t bFlags, char * szText, uint32_t firstArg);
@@ -131,5 +129,6 @@ void __stdcall ShowUnrecoverableErrorDialog(int32_t nParam, char * szText, int n
 // Initializes Fog error manager and debugging subsystems on first call. Sets up project metadata (ID 0x108, "Diablo II", version "D2 1.14d"), retrieves executable directory via SFILE_GetExecutableDirectory into a 4096-byte buffer, initializes two critical sections for thread safety, starts the log writer thread, validates gadwBitMasks/gadwInvBitMasks lookup tables, and registers the exit handler. On subsequent calls with bLogGameStrartupInfo=TRUE, only logs startup info via LOGFILE_StoreGameStartupInfo.
 void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, BOOL bLogGameStrartupInfo);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9bfb(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
+// 1 internal function (defined in .cpp)
 
 } // namespace Fog::Src::ErrorManager

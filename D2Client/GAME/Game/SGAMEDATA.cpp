@@ -36,7 +36,7 @@
 
 namespace D2Client::GAME::Game {
 
-::SGAMEDATA * ScalarDeletingDestructor(::SGAMEDATA * pThis, uint32_t dwFlags) {
+::SGAMEDATA * __thiscall ScalarDeletingDestructor(::SGAMEDATA * pThis, uint32_t dwFlags) {
     pThis->Destructor();
     if (!(dwFlags & 1 && pThis)) {
       return pThis;
@@ -48,7 +48,7 @@ namespace D2Client::GAME::Game {
 
 // Implicit copy constructor: clears both hash-object links, copies the remaining fields; returns this.
 // Called from TSGrowableArray<SGAMEDATA>::ReallocData 00450d90; analogue of CELLIST::CopyConstructor 006040b0.
-::SGAMEDATA * CopyConstructor(::SGAMEDATA * pThis, ::SGAMEDATA * pSource) {
+::SGAMEDATA * __thiscall CopyConstructor(::SGAMEDATA * pThis, ::SGAMEDATA * pSource) {
     int nWordsLeft;
     pThis->m_linktoslot.m_prevlink = 0;
     pThis->m_linktoslot.m_next = 0;

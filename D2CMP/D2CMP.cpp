@@ -75,32 +75,32 @@ uint32_t __stdcall CELCMP_AllocateCelListKey(uint32_t nParam1, uint32_t nParam2,
 }
 
 uint32_t __stdcall TILEPROJECT_GetSoundIndexIndex(int32_t nParam) {
-    if (nParam) {
-      return *(uint32_t*)(nParam + 0x10);
+    if (!nParam) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x82);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x82);
-    exit(-1);
+    return *(uint32_t*)(nParam + 0x10);
     return *(uint32_t*)(nParam + 0x10);
 }
 
 uint32_t __stdcall TILEPROJECT_GetMainIndex(uint32_t nParam) {
-    if (nParam) {
-      return (uint32_t)((uint32_t)(uint16_t)(short int)(nParam >> 0x10) << 16 | (uint32_t)(uint16_t)*(uint16_t*)(nParam + 4));
+    if (!nParam) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x83);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x83);
-    exit(-1);
+    return (uint32_t)((uint32_t)(uint16_t)(short int)(nParam >> 0x10) << 16 | (uint32_t)(uint16_t)*(uint16_t*)(nParam + 4));
     return (uint32_t)((uint32_t)(uint16_t)(short int)(nParam >> 0x10) << 16 | (uint32_t)(uint16_t)*(uint16_t*)(nParam + 4));
 }
 
 uint32_t __stdcall TILEPROJECT_GetAnimatedSubstDataPtr(int32_t nParam) {
-    if (nParam) {
-      return *(uint32_t*)(nParam + 0x58);
+    if (!nParam) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x84);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x84);
-    exit(-1);
+    return *(uint32_t*)(nParam + 0x58);
     return *(uint32_t*)(nParam + 0x58);
 }
 

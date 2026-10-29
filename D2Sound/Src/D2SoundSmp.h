@@ -73,7 +73,7 @@ void __fastcall SOUNDSMP_SetVolume(struct D2SoundSmpStrc * ppSoundSmp, int nVolu
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 int __fastcall SOUNDSMP_GetVolume(struct D2SoundSmpStrc * pSoundSmp);
 void __fastcall SOUNDSMP_SetPan(struct D2SoundSmpStrc * ppSoundSmp, int32_t nPan);
-void SOUNDSMP_Set3DPosition(struct D2SoundSmpStrc * pThis, float nSoundHandle, float dwParam, float pD2SoundsTxt);
+void __thiscall SOUNDSMP_Set3DPosition(struct D2SoundSmpStrc * pThis, float nSoundHandle, float dwParam, float pD2SoundsTxt);
 uint32_t __fastcall SOUNDSMP_GetStreamProgress(struct D2SoundSmpStrc * nParam);
 void __fastcall SOUNDSMP_SetFrequency(int32_t nParam, uint32_t dwParam);
 void __fastcall SOUNDSMP_SetMinDistance(struct D2SoundSmpStrc * nParam, int32_t dwParam);
@@ -89,9 +89,6 @@ void __fastcall SOUNDSMP_CancelStream(struct D2SoundSmpStrc * ppnParam);
 void __fastcall SOUNDSMP_Stop(struct D2SoundSmpStrc * ppnParam);
 void __fastcall CleanupSoundBuffer(uint32_t nParam);
 void __fastcall SOUNDSMP_CheckBufferLost(struct D2SoundSmpStrc * ppnParam);
-// The local holding the EAX interface was typed IUnknown *. It is IKsPropertySet *, the declared type
-// of D2SoundSmpStrc.pEaxInterface, which is what the assignment reads.
-void SOUNDSMP_ReleaseInterfaces(struct D2SoundSmpStrc * ppnParam);
 // @sourcefile .\Src\D2SoundSmp.cpp
 void __fastcall SOUNDSMP_Destroy(struct D2SoundSmpStrc * pSoundSmp);
 void __fastcall SOUNDSMP_Reset(struct D2SoundSmpStrc * pSoundSmp);
@@ -105,9 +102,9 @@ float SOUNDSMP_LinearToLogNoParam(float fValue, float fValue2);
 // No register arguments: EAX is first written by FNSTSW AX at 00516607 and only carries the x87 status word (1.14d asm).
 float __stdcall SOUNDSMP_ClampVolume(float fValue, float fParam2, float fParam3);
 float __stdcall SOUNDSMP_ClampAttenuation(float fParam);
-int * __stdcall SOUNDSMP_FindWavChunk(uint32_t * pRemainingSize, uint32_t * pChunkSize, int32_t nChunkId, int * pChunkHeader);
 void __fastcall SOUNDSMP_InitWaveFormat(WAVEFORMATEX * pWaveFormat, WORD nChannels);
 int * __fastcall SOUNDSMP_ParseWavHeader(int * pWavData, uint32_t * pDataSize, WAVEFORMATEX * pWavFormat);
 void __fastcall SOUNDSMP_CalculateVolumeAndPan(uint32_t * pnVolume, uint32_t * pnPan, float fDeltaX, float fDeltaY, float fDeltaZ);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Sound::Src::D2SoundSmp

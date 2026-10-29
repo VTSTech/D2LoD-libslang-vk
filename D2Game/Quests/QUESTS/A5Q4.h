@@ -30,7 +30,7 @@ void __fastcall Q34_Callback02_NpcDeactivate(struct D2QuestDataStrc * pQuestData
 BOOL __fastcall Q34_UpdateQuestStep(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // Q34_SequenceFilter (Betrayal of Harrogath). Sequence/advance handler. If still in intro (nStateFlag<4) bumps nStateFlag 0->1. Otherwise chains to the predecessor quest's sequence filter (nSequenceQuestId = Siege on Harrogath / kill Shenk) to keep act-5 quest ordering. No QuestRecord access.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q4.cpp
-void __fastcall Q34_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q34_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // A5Q4 (Betrayal of Harrogath) NPC dialog callback for Nihlathak (classId 0x200). On accept-quest line 0x4ea9: advances nStateFlag to 2, marks bAcceptedQuest/bNotifiedCompletion, and iterates Q34_UpdateQuestStep for all players. On return-after-kill line 0x4eb4: broadcasts prev state, sets Step0x04 in the player's QuestRecord, and if JustCompleted already set advances to nStateFlag 5 and runs Q34_SequenceFilter.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q4.cpp
 void __fastcall Q34_Callback11_ScrollMessage(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);

@@ -16,21 +16,21 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2WinAccountListEntry) == 0x38, "D2_NEW(D2WinAccountListEntry): the 32-bit layout must be the 0x38 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2WinAccountListEntry) == 0x38, "D2_NEW_AT(D2WinAccountListEntry): the 32-bit layout must be the 0x38 bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2WinAccountList) == 0x58, "D2_NEW(D2WinAccountList): the 32-bit layout must be the 0x58 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2WinAccountList) == 0x58, "D2_NEW_AT(D2WinAccountList): the 32-bit layout must be the 0x58 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_Draw
@@ -51,7 +51,7 @@ void __fastcall D2WINACCOUNTLIST_FreeAllEntries(::D2WinAccountList * pAccountLis
     D2WinAccountListEntry* pEntry = pAccountList->pFirstEntry;
     while (pEntry) {
       pNextEntry = pEntry->pNext;
-      D2_FREE(pEntry);
+      D2_FREE_AT(pEntry, ".\\Src\\D2WinAccountList.cpp", 99);
       pEntry = pNextEntry;
     }
 }
@@ -63,7 +63,7 @@ void __fastcall D2WINACCOUNTLIST_AddAccount(::D2WinAccountList * pAccountList, c
       exit(-1);
     }
 
-    D2WinAccountListEntry* _Dest = D2_NEW(D2WinAccountListEntry);
+    D2WinAccountListEntry* _Dest = D2_NEW_AT(D2WinAccountListEntry, ".\\Src\\D2WinAccountList.cpp", 0x77);
     strncpy(_Dest->szAccountName, szAccountName, 0x32);
     _Dest->pNext = pAccountList->pFirstEntry;
     pAccountList->pFirstEntry = _Dest;
@@ -102,7 +102,7 @@ BOOL __fastcall D2WINACCOUNTLIST_RemoveAccount(::D2WinAccountList * pAccountList
           pPrevEntry->pNext = pCurEntry->pNext;
         }
 
-        D2_FREE(pCurEntry);
+        D2_FREE_AT(pCurEntry, ".\\Src\\D2WinAccountList.cpp", 0xa7);
         return 1;
       }
 
@@ -224,7 +224,7 @@ BOOL __fastcall Draw(::D2WinAccountList * pAccountList) {
 
 ::D2WinAccountList * __fastcall D2WinAccountList(int32_t nPosX, int32_t nPosY, int32_t nSizeX, int32_t nSizeY, int32_t nUserData, uint32_t * pdwFontData) {
     uint32_t dwState;
-    ::D2WinAccountList* pNewList = D2_NEW(::D2WinAccountList);
+    ::D2WinAccountList* pNewList = D2_NEW_AT(::D2WinAccountList, ".\\Src\\D2WinAccountList.cpp", 0x24);
     memset(pNewList, 0, 0x58);
     pNewList->sControl.neD2FormType = FORM_AccountList;
     int* pStateField = &pNewList->sControl.dwState;

@@ -26,20 +26,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2BitBufferStrc) == 0x14, "D2_NEW(D2BitBufferStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2BitBufferStrc) == 0x14, "D2_NEW_AT(D2BitBufferStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataPlayerInteractedNPCStrc) == 0x8, "D2_NEW(D2UnitDataPlayerInteractedNPCStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataPlayerInteractedNPCStrc) == 0x8, "D2_NEW_AT(D2UnitDataPlayerInteractedNPCStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -161,14 +161,14 @@ void __fastcall PLAYERINTRO_CopyIntroDataIndirect(int32_t pSrc, uint32_t * pdwPa
 
 // @sourcefile .\PLAYER\PlrIntro.cpp
 D2UnitDataPlayerInteractedNPCStrc * __fastcall STRUCT_AllocPlayerInteractedNPC(::SGAMEDATA * pGame) {
-    D2UnitDataPlayerInteractedNPCStrc* pInteractedNPC = D2_NEW_POOL(pGame->pMemoryPool, D2UnitDataPlayerInteractedNPCStrc);
-    D2BitBufferStrc* pBitBuf = D2_NEW_POOL(pGame->pMemoryPool, D2BitBufferStrc);
-    uint8_t* pRawBuf = (uint8_t*)D2_ALLOC_POOL(pGame->pMemoryPool, 8);
+    D2UnitDataPlayerInteractedNPCStrc* pInteractedNPC = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitDataPlayerInteractedNPCStrc, ".\\PLAYER\\PlrIntro.cpp", 0xc4);
+    D2BitBufferStrc* pBitBuf = D2_NEW_POOL_AT(pGame->pMemoryPool, D2BitBufferStrc, ".\\PLAYER\\PlrIntro.cpp", 0xc5);
+    uint8_t* pRawBuf = (uint8_t*)D2_ALLOC_POOL_AT(pGame->pMemoryPool, 8, ".\\PLAYER\\PlrIntro.cpp", 0xc6);
     memset(pRawBuf, 0, 8 * sizeof(pRawBuf[0]));
     Fog::BitBuffer::InitBitBuffer(pBitBuf, pRawBuf, 8);
     pInteractedNPC->pIntro = pBitBuf;
-    pBitBuf = D2_NEW_POOL(pGame->pMemoryPool, D2BitBufferStrc);
-    pRawBuf = (uint8_t*)D2_ALLOC_POOL(pGame->pMemoryPool, 8);
+    pBitBuf = D2_NEW_POOL_AT(pGame->pMemoryPool, D2BitBufferStrc, ".\\PLAYER\\PlrIntro.cpp", 0xcb);
+    pRawBuf = (uint8_t*)D2_ALLOC_POOL_AT(pGame->pMemoryPool, 8, ".\\PLAYER\\PlrIntro.cpp", 0xcc);
     memset(pRawBuf, 0, 8 * sizeof(pRawBuf[0]));
     Fog::BitBuffer::InitBitBuffer(pBitBuf, pRawBuf, 8);
     pInteractedNPC->pIntro2 = pBitBuf;
@@ -178,17 +178,17 @@ D2UnitDataPlayerInteractedNPCStrc * __fastcall STRUCT_AllocPlayerInteractedNPC(:
 // @sourcefile .\PLAYER\PlrIntro.cpp
 void __fastcall PLAYERDATA_FreeInteractedNPCs(::SGAMEDATA * pGame, D2UnitDataPlayerInteractedNPCStrc * pInteractedNPCs) {
     if (pInteractedNPCs->pIntro) {
-      D2_FREE_POOL(pGame->pMemoryPool, pInteractedNPCs->pIntro->pBuffer);
-      D2_FREE_POOL(pGame->pMemoryPool, pInteractedNPCs->pIntro);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pInteractedNPCs->pIntro->pBuffer, ".\\PLAYER\\PlrIntro.cpp", 0xdb);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pInteractedNPCs->pIntro, ".\\PLAYER\\PlrIntro.cpp", 0xdc);
       pInteractedNPCs->pIntro = 0;
     }
     if (pInteractedNPCs->pIntro2) {
-      D2_FREE_POOL(pGame->pMemoryPool, pInteractedNPCs->pIntro2->pBuffer);
-      D2_FREE_POOL(pGame->pMemoryPool, pInteractedNPCs->pIntro2);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pInteractedNPCs->pIntro2->pBuffer, ".\\PLAYER\\PlrIntro.cpp", 0xe1);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pInteractedNPCs->pIntro2, ".\\PLAYER\\PlrIntro.cpp", 0xe2);
       pInteractedNPCs->pIntro2 = 0;
     }
 
-    D2_FREE_POOL(pGame->pMemoryPool, pInteractedNPCs);
+    D2_FREE_POOL_AT(pGame->pMemoryPool, pInteractedNPCs, ".\\PLAYER\\PlrIntro.cpp", 0xe5);
 }
 
 } // namespace D2Game::PLAYER::PlayerIntro

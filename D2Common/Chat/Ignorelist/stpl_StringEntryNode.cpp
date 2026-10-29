@@ -99,7 +99,7 @@ template<> ::StringEntryNode * TSExplicitList<StringEntryNode, -572662307>::Dele
 }
 
 // stpl-orphan: a COMDAT copy in TSExplicitList<StringEntryNode, -572662307> that no member owns
-void Destructor_UnreferencedCopy(TSExplicitList<::StringEntryNode, -572662307>* pThis) {
+void __thiscall Destructor_UnreferencedCopy(TSExplicitList<::StringEntryNode, -572662307>* pThis) {
     int* pListHead;
     pThis->UnlinkAll();
     TSLink<::StringEntryNode>* pTVar1 = &pThis->m_terminator;
@@ -312,7 +312,7 @@ template<> ::StringEntryNode * TSHashTable<StringEntryNode, HASHKEY_STRI>::Ptr(c
 
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> that no member owns
 // JMP thunk
-void thunk_Destructor(TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> * pThis) {
+void __thiscall thunk_Destructor(TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> * pThis) {
     pThis->Destructor();
 }
 
@@ -446,7 +446,7 @@ template<> ::StringEntryNode * TSExplicitList<StringEntryNode, -572662307>::NewN
 }
 
 // @blizzard TSHashTable<StringEntryNode,HASHKEY_STRI>::InternalNew (STORM.H)
-template<> ::StringEntryNode * TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalNew(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, TSExplicitList<::StringEntryNode, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags) {
+template<> ::StringEntryNode * __thiscall TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalNew(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, TSExplicitList<::StringEntryNode, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags) {
     TSLink<::StringEntryNode>* pBucketHead;
     uint32_t piVar2;
     ::StringEntryNode* pNode = (::StringEntryNode*)Storm::SMem::SMemAlloc(nExtraBytes + 0x18, s___AUStringEntryNode___0074364c, -2, dwFlags | 8);
@@ -498,7 +498,7 @@ template<> ::StringEntryNode * TSHashTable<StringEntryNode, HASHKEY_STRI>::Inter
 }
 
 // @blizzard TSHashTable<StringEntryNode,HASHKEY_STRI>::InternalDelete (STORM.H)
-template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalDelete(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, ::StringEntryNode * pNode) {
+template<> void __thiscall TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalDelete(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, ::StringEntryNode * pNode) {
     pNode->Destructor();
     Storm::SMem::SMemFree(pNode, s___AUStringEntryNode___0074364c, -2, 0);
 }
@@ -521,7 +521,7 @@ template<> void TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>::Cl
 }
 
 // @blizzard TSHashTable<StringEntryNode,HASHKEY_STRI>::Destroy (STORM.H)
-template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::Destroy(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis) {
+template<> void __thiscall TSHashTable<StringEntryNode, HASHKEY_STRI>::Destroy(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis) {
     pThis->InternalClear(1);
     pThis->nFullnessIndicator = 0;
     pThis->nSlotMask = 0;
@@ -532,7 +532,7 @@ template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::Destroy(TSHashTable<
 }
 
 // @blizzard TSHashTable<StringEntryNode,HASHKEY_STRI> scalar deleting destructor (STORM.H)
-template<> TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* TSHashTable<StringEntryNode, HASHKEY_STRI>::ScalarDeletingDestructor(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, uint32_t dwFlags) {
+template<> TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* __thiscall TSHashTable<StringEntryNode, HASHKEY_STRI>::ScalarDeletingDestructor(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, uint32_t dwFlags) {
     pThis->Destructor();
     if (!(dwFlags & 1 && pThis)) {
       return pThis;
@@ -543,7 +543,7 @@ template<> TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* TSHashTable<StringEnt
 }
 
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> that no member owns
-void SetCount_Unreferenced(TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> * pThis, uint32_t nCount) {
+void __thiscall SetCount_Unreferenced(TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> * pThis, uint32_t nCount) {
     pThis->SetCount(nCount);
 }
 

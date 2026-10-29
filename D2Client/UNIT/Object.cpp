@@ -61,18 +61,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataObjectStrc) == 0x38, "D2_NEW(D2UnitDataObjectStrc): the 32-bit layout must be the 0x38 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataObjectStrc) == 0x38, "D2_NEW_AT(D2UnitDataObjectStrc): the 32-bit layout must be the 0x38 bytes 1.14d allocates");
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -106,7 +106,7 @@ void __fastcall AllocObjectData(D2UnitStrc * pUnit, D2RoomStrc * pRoom, int32_t 
     BOOL nAutoLightResult;
     pUnit->uSideData.pClientSide.pLight = 0;
     pUnit->eAnimMode.ePlayerMode = nInitMode & 0xff;
-    D2UnitDataObjectStrc* pObjectData = D2_NEW(D2UnitDataObjectStrc);
+    D2UnitDataObjectStrc* pObjectData = D2_NEW_AT(D2UnitDataObjectStrc, ".\\UNIT\\Object.cpp", 0x76);
     pUnit->pUnitData.pUnitDataObject = pObjectData;
     memset(pObjectData, 0, 0x38);
     pUnit->pUnitData.pUnitDataPlayer->pQuestRecord[0] = 0;
@@ -220,10 +220,10 @@ void __fastcall FreeObjectData(D2UnitStrc * pUnit) {
       CUnit::FreeLightMap(pUnit);
     }
 
-    D2_FREE(pUnit->pUnitData.pUnitDataPlayer);
+    D2_FREE_AT(pUnit->pUnitData.pUnitDataPlayer, ".\\UNIT\\Object.cpp", 0xfe);
 }
 
-void OBJECT_ToggleDoorState(D2UnitStrc * pUnit) {
+static void OBJECT_ToggleDoorState(D2UnitStrc * pUnit) {
     uint8_t byStartFrame;
     if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Run) {
       pUnit->eAnimMode.ePlayerMode = Death;
@@ -251,7 +251,7 @@ void OBJECT_ToggleDoorState(D2UnitStrc * pUnit) {
 }
 
 // Advances or rewinds a door object's current animation frame toward a target frame derived from its TreasureClass txt data. In Neutral mode (door opening), increments frame toward target; in Run mode (door closing), decrements toward 0. When the target frame is reached, calls OBJECT_ToggleDoorState to flip the door's open/closed state. Halts on unexpected anim mode.
-void OBJECT_AnimateDoorTransition(D2UnitStrc * pUnit) {
+static void OBJECT_AnimateDoorTransition(D2UnitStrc * pUnit) {
     int nNextFrame;
     int nTargetFrame;
     eD2PlayerAnimMode eAnimMode = pUnit->eAnimMode.ePlayerMode;
@@ -289,7 +289,7 @@ void OBJECT_AnimateDoorTransition(D2UnitStrc * pUnit) {
 }
 
 // Advances the animation frame of an object unit for one game tick, driven by the object's D2ObjectsTxt data. Handles cyclic vs. non-cyclic animations, door-transition objects, special objects (classId 0xC reverse-playing, 0xBD torch state-machine walk→neutral), spawn-monster triggers on anim end (Neutral→Walk transition), selectable/collision/light-RGB updates, and overlay removal on specific shrine/chest IDs.
-void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
+static void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
     int32_t nSpawnMonsterId;
     int* pGfxFrame;
     D2ObjectsTxt* pTxtLine = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
@@ -382,7 +382,7 @@ void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
 }
 
 // Sets an object unit's animation mode and recomputes its collision/targetable/shadow state (used for portals and other interactive objects). nNewAnimMode (0..7) selects the new ObjectAnimMode; handles special transitions (open<->close, death->operate) using the ObjectsTxt FrameCnt/Start frame tables. Toggles UNITFLAG_TARGETABLE from bTargetable, blocks or removes the unit's collision path on the relevant mode changes, reloads the unit COF, sets the starting GFX frame, and finally sets/clears UNITFLAG_DRAWSHADOW from the ObjectsTxt BlocksLight table for the current mode. Halts if nNewAnimMode > 7.
-void __stdcall OBJECT_HandlePortalOpen(int32_t bTargetable, int32_t nNewAnimMode, D2UnitStrc * pUnit) {
+static void __stdcall OBJECT_HandlePortalOpen(int32_t bTargetable, int32_t nNewAnimMode, D2UnitStrc * pUnit) {
     int32_t nErrLine;
     D2RoomStrc* pRoom;
     eD2ObjectAnimMode eCurAnimMode;
@@ -451,7 +451,7 @@ void __stdcall OBJECT_HandlePortalOpen(int32_t bTargetable, int32_t nNewAnimMode
     pUnit->eUnitFlags &= ~UNITFLAG_DRAWSHADOW;
 }
 
-void OBJECT_UpdateModeAndProperties(D2UnitStrc * pUnit, D2ServerMessageHandleStrc * pMessage) {
+static void OBJECT_UpdateModeAndProperties(D2UnitStrc * pUnit, D2ServerMessageHandleStrc * pMessage) {
     D2ObjectsTxt* pDVar1 = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
     if (!pDVar1->IsDoor) {
       int nObjClassId;
@@ -709,28 +709,27 @@ void __fastcall OBJECT_UpdateShrineOverlay(D2UnitStrc * pUnit, D2ShrinesTxt * pS
     Engine::Gfx::GFX_AddOverlayToUnit(pUnit, aShrineDispatchTable[nShrineCode].nOverlayIdInactive, 3, 0, 0, 0, 0, 0);
 }
 
-void __stdcall OBJECT_PlayShrineSound(D2UnitStrc * pUnit, D2UnitStrc * pSourceUnit) {
+static void __stdcall OBJECT_PlayShrineSound(D2UnitStrc * pUnit, D2UnitStrc * pSourceUnit) {
     D2ShrinesTxt* pShrinesTxt = D2Common::Units::GetShrineTxtRecordFromObject(pSourceUnit);
     if (!pShrinesTxt) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x34d);
       exit(-1);
     } else {
-      if ((int)(uint32_t)pShrinesTxt->nCode < nShrineDispatchTableSize) {
-        if (aShrineDispatchTable[pShrinesTxt->nCode].nSoundId == SOUND_NONE) {
-          return;
-        }
-
-        Sound::SOUND_PlaySound(aShrineDispatchTable[pShrinesTxt->nCode].nSoundId, pUnit, 0, 0, 0);
+      if (!((int)(uint32_t)pShrinesTxt->nCode < nShrineDispatchTableSize)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x34e);
+        exit(-1);
+      }
+      if (aShrineDispatchTable[pShrinesTxt->nCode].nSoundId == SOUND_NONE) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x34e);
-      exit(-1);
+      Sound::SOUND_PlaySound(aShrineDispatchTable[pShrinesTxt->nCode].nSoundId, pUnit, 0, 0, 0);
+      return;
     }
 }
 
 // Server-side shrine/well activation dispatch: looks up D2ShrinesTxt.nCode or D2ObjectsTxt.ShrineFunction, finds the activating player, calls fpServerActivate callback, then plays activation sound
-void __stdcall OBJECT_DispatchShrineServerActivate(int * pnParam, D2UnitStrc * pUnit) {
+static void __stdcall OBJECT_DispatchShrineServerActivate(int * pnParam, D2UnitStrc * pUnit) {
     D2ObjectsTxt* pObjectsTxt;
     uint8_t byShrineCode;
     D2ShrinesTxt* pShrinesTxt = 0;
@@ -756,23 +755,22 @@ void __stdcall OBJECT_DispatchShrineServerActivate(int * pnParam, D2UnitStrc * p
     OBJECT_PlayShrineSound(pPlayer, pUnit);
 }
 
-void OBJECT_DispatchShrineClientFunc(D2UnitStrc * pUnit) {
+static void OBJECT_DispatchShrineClientFunc(D2UnitStrc * pUnit) {
     D2ShrinesTxt* pShrinesTxt = D2Common::Units::GetShrineTxtRecordFromObject(pUnit);
     if (!pShrinesTxt) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x37a);
       exit(-1);
     } else {
-      if ((int)(uint32_t)pShrinesTxt->nCode < nShrineDispatchTableSize) {
-        if (!aShrineDispatchTable[pShrinesTxt->nCode].fpClientOverlayUpdate) {
-          return;
-        }
-
-        aShrineDispatchTable[pShrinesTxt->nCode].fpClientOverlayUpdate(pUnit, pShrinesTxt);
+      if (!((int)(uint32_t)pShrinesTxt->nCode < nShrineDispatchTableSize)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x37b);
+        exit(-1);
+      }
+      if (!aShrineDispatchTable[pShrinesTxt->nCode].fpClientOverlayUpdate) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x37b);
-      exit(-1);
+      aShrineDispatchTable[pShrinesTxt->nCode].fpClientOverlayUpdate(pUnit, pShrinesTxt);
+      return;
     }
 }
 

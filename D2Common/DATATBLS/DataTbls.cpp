@@ -55,27 +55,26 @@
 #include "Bnclient/BNGatewayAccess.h"
 #include "D2Common/D2Common.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_REALLOC_POOL
-#define D2_REALLOC_POOL(pPool, p, size) Fog::Memory::ReAllocServerMemory((pPool), (p), (size), __FILE__, __LINE__, 0)
+#ifndef D2_REALLOC_POOL_AT
+#define D2_REALLOC_POOL_AT(pPool, p, size, szFile, nLine) Fog::Memory::ReAllocServerMemory((pPool), (p), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2SkillsPerClassCounter) == 0x1c, "D2_NEW(D2SkillsPerClassCounter): the 32-bit layout must be the 0x1c bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2SkillsPerClassCounter) == 0x1c, "D2_NEW_AT(D2SkillsPerClassCounter): the 32-bit layout must be the 0x1c bytes 1.14d allocates");
 
 
 namespace D2Common::DATATBLS::DataTbls {
@@ -113,7 +112,7 @@ BOOL __fastcall CheckIfFileExists(D2PoolManagerStrc * pMemory, char * szFilename
     return bFileExists;
 }
 
-void DATATBLS_NormalizeCodeTo4Chars(char * szText1, char * szText2) {
+static void DATATBLS_NormalizeCodeTo4Chars(char * szText1, char * szText2) {
     char cChar;
     if (*szText1 == '\0') {
       cChar = ' ';
@@ -216,7 +215,7 @@ int32_t __fastcall DATATBLS_AppendDataToBuffer(void * * pParam, int * pnParam, i
         return 0;
       }
 
-      pRealloced = D2_REALLOC_POOL(nullptr, *pParam, *pnCapacity);
+      pRealloced = D2_REALLOC_POOL_AT(nullptr, *pParam, *pnCapacity, ".\\DATATBLS\\DataTbls.cpp", 0x292);
       *pParam = pRealloced;
     }
 
@@ -315,9 +314,7 @@ void __fastcall DATATBLS_CompileSkillCode(char * szText, char * pRecord, int32_t
     size_t sVar1;
     uint32_t nCompiledLen;
     uint8_t aByteCodeBuf[1024];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (!pRecord) {
-      Fog::Debug::GuardStack();
       return;
     }
     if (szText) {
@@ -325,7 +322,6 @@ void __fastcall DATATBLS_CompileSkillCode(char * szText, char * pRecord, int32_t
       if (0 < (int)sVar1) {
         nCompiledLen = DATATBLS_AppendDataToBuffer(&sgtDataTable.pSkillsCode, &sgtDataTable.nSkillsCodeSize, &sgtDataTable.nSkillsCodeCapacity, aByteCodeBuf, sVar1);
         *(uint32_t*)(pRecord + nOffset) = nCompiledLen;
-        Fog::Debug::GuardStack();
         return;
       }
     }
@@ -335,16 +331,13 @@ void __fastcall DATATBLS_CompileSkillCode(char * szText, char * pRecord, int32_t
     pcVar1[1] = -1;
     pcVar1[2] = -1;
     pcVar1[3] = -1;
-    Fog::Debug::GuardStack();
 }
 
 void __fastcall DATATBLS_CompileSkillDescCode(char * szText, char * pRecord, int32_t nOffset, int32_t nSize, int32_t nTxtRow, int32_t nTxtColumn) {
     size_t sVar1;
     uint32_t nCompiledLen;
     uint8_t aByteCodeBuf[1024];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (!pRecord) {
-      Fog::Debug::GuardStack();
       return;
     }
     if (szText) {
@@ -352,7 +345,6 @@ void __fastcall DATATBLS_CompileSkillDescCode(char * szText, char * pRecord, int
       if (0 < (int)sVar1) {
         nCompiledLen = DATATBLS_AppendDataToBuffer(&sgtDataTable.pSkillDescCode, &sgtDataTable.nSkillDescCodeSize, &sgtDataTable.nSkillDescCodeCapacity, aByteCodeBuf, sVar1);
         *(uint32_t*)(pRecord + nOffset) = nCompiledLen;
-        Fog::Debug::GuardStack();
         return;
       }
     }
@@ -362,7 +354,6 @@ void __fastcall DATATBLS_CompileSkillDescCode(char * szText, char * pRecord, int
     pcVar1[1] = -1;
     pcVar1[2] = -1;
     pcVar1[3] = -1;
-    Fog::Debug::GuardStack();
 }
 
 D2AnimDataStrc * __stdcall TXT_AnimTbls_Get() {
@@ -398,7 +389,7 @@ void __fastcall DATATBLS_BuildStatesDataBitMask(D2StatesDataTbls * pStatesData, 
 
 // @sourcefile .\DATATBLS\DataTbls.cpp
 void __fastcall DATATBLS_BuildStatesDataList(D2AllStatesDataTbl * * ppAllStatesData, short * pCounter, uint32_t nFlag) {
-    D2AllStatesDataTbl* pAllStates = (D2AllStatesDataTbl*)D2_ALLOC_POOL(nullptr, sgtDataTable.nTxtStatesSize * 2);
+    D2AllStatesDataTbl* pAllStates = (D2AllStatesDataTbl*)D2_ALLOC_POOL_AT(nullptr, sgtDataTable.nTxtStatesSize * 2, ".\\DATATBLS\\DataTbls.cpp", 0x64b);
     *ppAllStatesData = pAllStates;
     memset(pAllStates, 0, sgtDataTable.nTxtStatesSize * 2);
     D2StatesTxt* pTxtStates = sgtDataTable.pTxtStates;
@@ -422,7 +413,7 @@ void __fastcall DATATBLS_BuildStatesDataList(D2AllStatesDataTbl * * ppAllStatesD
 
 // @sourcefile .\DATATBLS\DataTbls.cpp
 void __fastcall TXT_States_AllocItemTypesStateDataTable(D2AllStatesDataTbl * * ppAllStatesData, short * pCounter, int32_t nOffset) {
-    D2AllStatesDataTbl* pAllocTable = (D2AllStatesDataTbl*)D2_ALLOC_POOL(nullptr, sgtDataTable.nTxtStatesSize * 2);
+    D2AllStatesDataTbl* pAllocTable = (D2AllStatesDataTbl*)D2_ALLOC_POOL_AT(nullptr, sgtDataTable.nTxtStatesSize * 2, ".\\DATATBLS\\DataTbls.cpp", 0x662);
     *ppAllStatesData = pAllocTable;
     memset(pAllocTable, 0, sgtDataTable.nTxtStatesSize * 2);
     D2StatesTxt* pTxtStates = sgtDataTable.pTxtStates;
@@ -444,7 +435,7 @@ void __fastcall TXT_States_AllocItemTypesStateDataTable(D2AllStatesDataTbl * * p
     } while (nStateIdx < sgtDataTable.nTxtStatesSize);
 }
 
-void GetPlayerClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
+static void GetPlayerClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
     if (0 >= (int)nSize) {
       return;
     }
@@ -462,7 +453,7 @@ void GetPlayerClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
     szResult[nSize - 1] = '\0';
 }
 
-void GetMonsterClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
+static void GetMonsterClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
     uint16_t wNameStr;
     if (0 >= (int)nSize) {
       return;
@@ -481,7 +472,7 @@ void GetMonsterClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
     szResult[nSize - 1] = '\0';
 }
 
-void GetObjectClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
+static void GetObjectClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
     if (0 >= (int)nSize) {
       return;
     }
@@ -497,7 +488,7 @@ void GetObjectClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
     szResult[nSize - 1] = '\0';
 }
 
-void GetItemClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
+static void GetItemClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
     D2ItemsTxt* pTxtItem = ItemTbls::TXT_Items_GetLine(nClassId);
     if (pTxtItem && pTxtItem->wNameStr != 0x1506) {
       uint16_t* pwszLocaleName;
@@ -513,7 +504,7 @@ void GetItemClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
     szResult[nSize - 1] = '\0';
 }
 
-void GetMissileClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
+static void GetMissileClassIdToName(int32_t nClassId, char * szResult, size_t nSize) {
     if (0 >= (int)nSize) {
       return;
     }
@@ -582,7 +573,6 @@ char * __stdcall GetNameByClassIdAndType(eD2UnitType eUnitType, int16_t nClassId
 
 void __stdcall StoreDataTables(uint32_t szFileName, D2InventoryToBeUpdatedStrc * pInventoryToBeUpdated, size_t nSize, uint32_t dwVersion) {
     char szFilePath[260];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFilePath, "%s\\%s", "DATA\\GLOBAL\\EXCEL", szFileName);
     FILE* _File = fopen(szFilePath, "wb");
     if (_File) {
@@ -590,17 +580,13 @@ void __stdcall StoreDataTables(uint32_t szFileName, D2InventoryToBeUpdatedStrc *
       fwrite(pInventoryToBeUpdated, nSize, 1, _File);
       fclose(_File);
     }
-
-    Fog::Debug::GuardStack();
 }
 
 // @sourcefile .\DATATBLS\DataTbls.cpp
 D2ArchiveStrc * __fastcall ARCHIVE_LoadDataTables(D2PoolManagerStrc * pMemory, char * szTableName, char * szExtension, uint32_t * pSize, char * szFile, int32_t nLine) {
     char szFilePath[260];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFilePath, "%s\\%s%s", "DATA\\GLOBAL\\EXCEL", szTableName, szExtension);
     D2ArchiveStrc* pDVar1 = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMemory, szFilePath, pSize, ".\\DATATBLS\\DataTbls.cpp", 0x82f);
-    Fog::Debug::GuardStack();
     return pDVar1;
 }
 
@@ -619,7 +605,7 @@ void * __stdcall CompileTxt(D2PoolManagerStrc * pMemory, char * szTableName, D2B
     uint32_t dwStackCookie;
     char cChar;
     int32_t nErrorLine;
-    size_t nSize = 0;
+    uint32_t nSize = 0;
     if (sgtDataTable.bUseTxt) {
       size_t sVar5;
       nStrCmpResult = __stricmp(szTableName, "leveldefs");
@@ -640,7 +626,7 @@ void * __stdcall CompileTxt(D2PoolManagerStrc * pMemory, char * szTableName, D2B
       pBinField = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pArchiveTxt, nSize);
       sVar5 = Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinField);
       nBinAllocSize = sVar5 * nEndOffset;
-      pDataTable = D2_ALLOC_POOL(nullptr, nBinAllocSize);
+      pDataTable = D2_ALLOC_POOL_AT(nullptr, nBinAllocSize, ".\\DATATBLS\\DataTbls.cpp", 0x8c9);
       memset(pDataTable, 0, nBinAllocSize);
       Fog::Src::Excel::TXT_ParseDataAndPutIntoStructure(pBinField, pBinFieldInput, (char*)pDataTable, sVar5, nEndOffset);
       Fog::Src::Excel::TXT_FreeBinFieldExcel(pBinField);
@@ -659,7 +645,7 @@ void * __stdcall CompileTxt(D2PoolManagerStrc * pMemory, char * szTableName, D2B
 
       memcpy(pNameEnd + 1, ".bin", 5);
       StoreDataTables((uint32_t)szTableNameBuf, (D2InventoryToBeUpdatedStrc*)pDataTable, nBinAllocSize, sVar5);
-      D2_FREE_POOL(nullptr, pDataTable);
+      D2_FREE_POOL_AT(nullptr, pDataTable, ".\\DATATBLS\\DataTbls.cpp", 0x8d6);
     }
     if (!gpaMiscTxtTables) {
       nStrCmpResult = __stricmp(szTableName, "leveldefs");
@@ -677,28 +663,26 @@ void * __stdcall CompileTxt(D2PoolManagerStrc * pMemory, char * szTableName, D2B
     }
 
     D2ArchiveStrc* pArchive2 = ARCHIVE_LoadDataTables(pMemory, szTableName, szEffectiveName, &nSize, ".\\DATATBLS\\DataTbls.cpp", nErrorLine);
-    if (pArchive2) {
-      if (!gpaMiscTxtTables) {
-        pBinField = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pArchive2, nSize);
-        pArchiveTxt = (D2ArchiveStrc*)Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinField);
-        pParsedData = (D2ArchiveStrc**)D2_ALLOC_POOL(nullptr, (int)pArchiveTxt * nEndOffset);
-        memset(pParsedData, 0, (int)pArchiveTxt * nEndOffset);
-        Fog::Src::Excel::TXT_ParseDataAndPutIntoStructure(pBinField, pBinFieldInput, (char*)pParsedData, (size_t)pArchiveTxt, nEndOffset);
-        Fog::Src::Excel::TXT_FreeBinFieldExcel(pBinField);
-      } else {
-        pArchiveTxt = pArchive2->pPrevLink;
-        pParsedData = &pArchive2->pNext;
-      }
-      if (nTxtTableSize) {
-        *nTxtTableSize = (int)pArchiveTxt;
-      }
-
-      Fog::Debug::GuardStack();
-      return pParsedData;
+    if (!pArchive2) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8e7);
+      exit(-1);
+    }
+    if (!gpaMiscTxtTables) {
+      pBinField = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pArchive2, nSize);
+      pArchiveTxt = (D2ArchiveStrc*)Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinField);
+      pParsedData = (D2ArchiveStrc**)D2_ALLOC_POOL_AT(nullptr, (int)pArchiveTxt * nEndOffset, ".\\DATATBLS\\DataTbls.cpp", 0x904);
+      memset(pParsedData, 0, (int)pArchiveTxt * nEndOffset);
+      Fog::Src::Excel::TXT_ParseDataAndPutIntoStructure(pBinField, pBinFieldInput, (char*)pParsedData, (size_t)pArchiveTxt, nEndOffset);
+      Fog::Src::Excel::TXT_FreeBinFieldExcel(pBinField);
+    } else {
+      pArchiveTxt = pArchive2->pPrevLink;
+      pParsedData = &pArchive2->pNext;
+    }
+    if (nTxtTableSize) {
+      *nTxtTableSize = (int)pArchiveTxt;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8e7);
-    exit(-1);
+    return pParsedData;
 }
 
 void __stdcall sgtDataTableSetupIfUseTxt(int32_t nMode) {
@@ -711,11 +695,11 @@ void __stdcall UnloadBin(void * pTxtTable) {
       return;
     }
     if (gpaMiscTxtTables) {
-      D2_FREE_POOL(nullptr, (void*)((int)pTxtTable - 4));
+      D2_FREE_POOL_AT(nullptr, (void*)((int)pTxtTable - 4), ".\\DATATBLS\\DataTbls.cpp", 0x924);
       return;
     }
 
-    D2_FREE_POOL(nullptr, pTxtTable);
+    D2_FREE_POOL_AT(nullptr, pTxtTable, ".\\DATATBLS\\DataTbls.cpp", 0x926);
 }
 
 // Populates the wide-string class-name field in every row of the CharStats txt table. For each row, looks up the string-table key via STRTABLE_GetStringByKey; if not found, formats a fallback like "&lt;keyname&gt;" and writes the wide string (up to nWstringSize chars) into the destination field at the computed struct offset.
@@ -728,7 +712,6 @@ void __fastcall TXT_CharStats_DefineWideStringClass(D2CharStatsTxt * pTxtCharSta
     uint16_t wszTmpBuf[512];
     uint16_t wszSrcBuf[512];
     uint16_t wszShortBuf[32];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     uint16_t* pDestination = wszSrcBuf;
     for (i = 0x100; i; i--) {
       pDestination[0] = L'\0';
@@ -767,13 +750,11 @@ void __fastcall TXT_CharStats_DefineWideStringClass(D2CharStatsTxt * pTxtCharSta
         nRowsRemaining--;
       } while (nRowsRemaining);
     }
-
-    Fog::Debug::GuardStack();
 }
 
 // One-time startup loader for the many small single-column code/name lookup tables in DataTbls. Always compiles compcode. If sgtDataTable.bUseTxt is set, also creates a TxtLink struct and compiles each of: playerclass, bodylocs, storepage, elemtypes, hitclass, colors, hiredesc, monmode, plrmode, monai, monplace, skillcalc, misscalc, skills, events. Each is a CODE4 or NAME_I_WORD keyed table whose compiled pointer + link are stored into the corresponding sgtDataTable.pTxt*/pTxt*Link/nTxt*Size globals. Allocates from pMemory. Pure init side-effects, no return.
 // @sourcefile .\DATATBLS\DataTbls.cpp
-void TXT_AllocTxt_VariousSmallTables(D2PoolManagerStrc * pMemory) {
+static void TXT_AllocTxt_VariousSmallTables(D2PoolManagerStrc * pMemory) {
     D2BinFieldInputStrc events[2];
     D2BinFieldInputStrc colors[2];
     D2BinFieldInputStrc skills[2];
@@ -1657,9 +1638,8 @@ DWORD __stdcall TXT_Experience_GetExpRatio(int32_t nLevel) {
 // @sourcefile .\DATATBLS\DataTbls.cpp
 void __fastcall TXT_SaveTableToBinFile(D2PoolManagerStrc * pMemory, char * szTableName, D2ArchiveStrc * * ppInput, size_t * pSize2, size_t * pSize1) {
     FILE* pFile;
-    size_t nLoadedSize;
+    uint32_t nLoadedSize;
     char szFilePath[260];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (sgtDataTable.bUseTxt && *ppInput) {
       /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFilePath, "%s\\%s.bin", "DATA\\GLOBAL\\EXCEL", szTableName);
       pFile = fopen(szFilePath, "wb");
@@ -1668,14 +1648,13 @@ void __fastcall TXT_SaveTableToBinFile(D2PoolManagerStrc * pMemory, char * szTab
         fclose(pFile);
       }
 
-      D2_FREE_POOL(nullptr, *ppInput);
+      D2_FREE_POOL_AT(nullptr, *ppInput, ".\\DATATBLS\\DataTbls.cpp", 0x275);
     }
 
     D2ArchiveStrc* pLoadedArchive = ARCHIVE_LoadDataTables(pMemory, szTableName, ".bin", &nLoadedSize, ".\\DATATBLS\\DataTbls.cpp", 0x27a);
     *ppInput = pLoadedArchive;
     *pSize1 = nLoadedSize;
     *pSize2 = nLoadedSize;
-    Fog::Debug::GuardStack();
 }
 
 // Loads and compiles Skills.txt and SkillDesc.txt into the engine's runtime tables. Builds two large D2BinFieldInputStrc schemas (skills: flags, mana/level reqs, damage, elemental, calc/srvprgfunc string-linker columns, state and reqskill cross-links; skilldesc) and compiles both into sgtDataTable (pTxtSkills/nTxtSkillsCount, pTxtSkillDesc/nTxtSkillDescSize, their txt-links, nPassiveSkillsCount). Also derives per-class skill index tables (pSkillsPerClassStrc, pPassiveSkillsPerClassStrc, pSkillsPerClassCounter, nSkillCountMaxPerClass) and cross-references pets (pTxtPetType.nSkillId). Caches skillscode/skilldesccode bins. Must run after pTxtPetType is loaded; halts via ErrorManager on count overflow. Skill record stride 0x23c. __stdcall(pMemory).
@@ -3515,120 +3494,119 @@ void __stdcall TXT_AllocTxt_skill_skilldesc(D2PoolManagerStrc * pMemory) {
       sgtDataTable.nPassiveSkillsCount = 0;
       sgtDataTable.pTxtSkillDescLink = Fog::Src::Excel::STRUCT_CreateTxtLinkStrc(".\\DATATBLS\\DataTbls.cpp", 0x542);
       sgtDataTable.pTxtSkillDesc = (D2SkillDescTxt*)CompileTxt(pMemory, "skilldesc", pskilldesc, &sgtDataTable.nTxtSkillDescSize, 0x120);
-      if (sgtDataTable.nTxtSkillDescSize < 0x7fff) {
-        if (sgtDataTable.bUseTxt) {
-          Fog::Src::Excel::STRUCT_FreeTxtLink(__frame0.pSkillsLink);
-          Fog::Src::Excel::STRUCT_FreeTxtLink(__frame0.pMonStatsLink);
-          UnloadBin(pMonStatsTable);
-          Fog::Src::Excel::STRUCT_FreeTxtLink(__frame0.pSkillDescLink);
-          UnloadBin(pTxtTable);
-        }
+      if (!(sgtDataTable.nTxtSkillDescSize < 0x7fff)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x544);
+        exit(-1);
+      }
+      if (sgtDataTable.bUseTxt) {
+        Fog::Src::Excel::STRUCT_FreeTxtLink(__frame0.pSkillsLink);
+        Fog::Src::Excel::STRUCT_FreeTxtLink(__frame0.pMonStatsLink);
+        UnloadBin(pMonStatsTable);
+        Fog::Src::Excel::STRUCT_FreeTxtLink(__frame0.pSkillDescLink);
+        UnloadBin(pTxtTable);
+      }
 
-        TXT_SaveTableToBinFile(pMemory, "skillscode", (D2ArchiveStrc**)&sgtDataTable.pSkillsCode, (size_t*)&sgtDataTable.nSkillsCodeSize, (size_t*)&sgtDataTable.nSkillsCodeCapacity);
-        TXT_SaveTableToBinFile(pMemory, "skilldesccode", (D2ArchiveStrc**)&sgtDataTable.pSkillDescCode, (size_t*)&sgtDataTable.nSkillDescCodeSize, (size_t*)&sgtDataTable.nSkillDescCodeCapacity);
-        sgtDataTable.pSkillsPerClassCounter = D2_NEW_POOL(nullptr, D2SkillsPerClassCounter);
-        sgtDataTable.pSkillsPerClassCounter->Amazon = 0;
-        sgtDataTable.pSkillsPerClassCounter->Sorceress = 0;
-        sgtDataTable.pSkillsPerClassCounter->Necromancer = 0;
-        sgtDataTable.pSkillsPerClassCounter->Paladin = 0;
-        sgtDataTable.pSkillsPerClassCounter->Barbarian = 0;
-        sgtDataTable.pSkillsPerClassCounter->Druid = 0;
-        sgtDataTable.pSkillsPerClassCounter->Assassin = 0;
-        nCounter = 0;
-        if (0 < sgtDataTable.nTxtSkillsCount) {
-          do {
-            pDVar1 = sgtDataTable.pTxtSkills;
-            nPetType = sgtDataTable.pTxtSkills[nCounter].charclass;
-            if (-1 < nPetType && nPetType < 7) {
-              (&sgtDataTable.pSkillsPerClassCounter->Amazon)[nPetType]++;
-            }
-            if (-1 < pDVar1[nCounter].passivestate) {
-              sgtDataTable.nPassiveSkillsCount++;
-            }
-
-            nCounter++;
-          } while (nCounter < sgtDataTable.nTxtSkillsCount);
-        }
-
-        sgtDataTable.nSkillCountMaxPerClass = 0;
-        if (0 < sgtDataTable.pSkillsPerClassCounter->Amazon) {
-          sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Amazon;
-        }
-        if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Sorceress) {
-          sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Sorceress;
-        }
-        if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Necromancer) {
-          sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Necromancer;
-        }
-        if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Paladin) {
-          sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Paladin;
-        }
-        if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Barbarian) {
-          sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Barbarian;
-        }
-        if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Druid) {
-          sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Druid;
-        }
-        if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Assassin) {
-          sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Assassin;
-        }
-
-        sgtDataTable.pSkillsPerClassStrc = (int16_t*)D2_ALLOC_POOL(nullptr, sgtDataTable.nSkillCountMaxPerClass * 0xe);
-        memset(sgtDataTable.pSkillsPerClassStrc, 0, sgtDataTable.nSkillCountMaxPerClass * 0xe);
-        sgtDataTable.pSkillsPerClassCounter->Amazon = 0;
-        sgtDataTable.pSkillsPerClassCounter->Sorceress = 0;
-        sgtDataTable.pSkillsPerClassCounter->Necromancer = 0;
-        sgtDataTable.pSkillsPerClassCounter->Paladin = 0;
-        sgtDataTable.pSkillsPerClassCounter->Barbarian = 0;
-        sgtDataTable.pSkillsPerClassCounter->Druid = 0;
-        sgtDataTable.pSkillsPerClassCounter->Assassin = 0;
-        sgtDataTable.pPassiveSkillsPerClassStrc = (D2PassiveSkillsPerClassStrc*)D2_ALLOC_POOL(nullptr, sgtDataTable.nPassiveSkillsCount * 2);
-        memset(sgtDataTable.pPassiveSkillsPerClassStrc, 0, sgtDataTable.nPassiveSkillsCount * 2);
-        nCounter = 0;
-        sgtDataTable.nPassiveSkillsCount = 0;
-        if (0 < sgtDataTable.nTxtSkillsCount) {
-          pMemory2 = 0;
-          do {
-            pSrvPrgFunc = sgtDataTable.pTxtSkills->srvprgfunc;
-            nPetType = *(char*)((uintptr_t)&((D2PoolManagerStrc*)pMemory2)->pPools[0].pSync.DebugInfo + (int)(pSrvPrgFunc - 0x22));
-            if (-1 < nPetType && nPetType < '\a') {
-              sgtDataTable.pSkillsPerClassStrc[nPetType * sgtDataTable.nSkillCountMaxPerClass + (&sgtDataTable.pSkillsPerClassCounter->Amazon)[nPetType]] = (int16_t)nCounter;
-              (&sgtDataTable.pSkillsPerClassCounter->Amazon)[*(char*)((uintptr_t)&((D2PoolManagerStrc*)pMemory2)->pPools[0].pSync.DebugInfo + (int)(pSrvPrgFunc - 0x22))]++;
-            }
-            if (-1 < *(short int*)((uintptr_t)&((D2PoolManagerStrc*)pMemory2)->pPools[0].pSync.DebugInfo + (int)(pSrvPrgFunc + 0x22))) {
-              sgtDataTable.pPassiveSkillsPerClassStrc[sgtDataTable.nPassiveSkillsCount].nSkillId = (int16_t)nCounter;
-              sgtDataTable.nPassiveSkillsCount++;
-            }
-
-            pMemory2 = &((D2PoolManagerStrc*)pMemory2)->pPools[0xb].pSync.OwningThread;
-            nCounter++;
-          } while (nCounter < sgtDataTable.nTxtSkillsCount);
-        }
-
-        nCounter = 0;
-        if (0 >= sgtDataTable.nTxtSkillsCount) {
-          return;
-        }
-
+      TXT_SaveTableToBinFile(pMemory, "skillscode", (D2ArchiveStrc**)&sgtDataTable.pSkillsCode, (size_t*)&sgtDataTable.nSkillsCodeSize, (size_t*)&sgtDataTable.nSkillsCodeCapacity);
+      TXT_SaveTableToBinFile(pMemory, "skilldesccode", (D2ArchiveStrc**)&sgtDataTable.pSkillDescCode, (size_t*)&sgtDataTable.nSkillDescCodeSize, (size_t*)&sgtDataTable.nSkillDescCodeCapacity);
+      sgtDataTable.pSkillsPerClassCounter = D2_NEW_POOL_AT(nullptr, D2SkillsPerClassCounter, ".\\DATATBLS\\DataTbls.cpp", 0x556);
+      sgtDataTable.pSkillsPerClassCounter->Amazon = 0;
+      sgtDataTable.pSkillsPerClassCounter->Sorceress = 0;
+      sgtDataTable.pSkillsPerClassCounter->Necromancer = 0;
+      sgtDataTable.pSkillsPerClassCounter->Paladin = 0;
+      sgtDataTable.pSkillsPerClassCounter->Barbarian = 0;
+      sgtDataTable.pSkillsPerClassCounter->Druid = 0;
+      sgtDataTable.pSkillsPerClassCounter->Assassin = 0;
+      nCounter = 0;
+      if (0 < sgtDataTable.nTxtSkillsCount) {
         do {
-          pSkillTxt = sgtDataTable.pTxtPetType;
-          nPetType = sgtDataTable.pTxtSkills[nCounter].pettype;
-          if (-1 < nPetType) {
-            iVar2 = (int)nPetType;
-            if (iVar2 < sgtDataTable.nTxtPetTypeSize && sgtDataTable.pTxtPetType[iVar2].nSkillIndexCounter < 0xf) {
-              sgtDataTable.pTxtPetType[iVar2].nSkillId[sgtDataTable.pTxtPetType[iVar2].nSkillIndexCounter] = (short int)nCounter;
-              pSkillTxt[iVar2].nSkillIndexCounter++;
-            }
+          pDVar1 = sgtDataTable.pTxtSkills;
+          nPetType = sgtDataTable.pTxtSkills[nCounter].charclass;
+          if (-1 < nPetType && nPetType < 7) {
+            (&sgtDataTable.pSkillsPerClassCounter->Amazon)[nPetType]++;
+          }
+          if (-1 < pDVar1[nCounter].passivestate) {
+            sgtDataTable.nPassiveSkillsCount++;
           }
 
           nCounter++;
         } while (nCounter < sgtDataTable.nTxtSkillsCount);
+      }
 
+      sgtDataTable.nSkillCountMaxPerClass = 0;
+      if (0 < sgtDataTable.pSkillsPerClassCounter->Amazon) {
+        sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Amazon;
+      }
+      if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Sorceress) {
+        sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Sorceress;
+      }
+      if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Necromancer) {
+        sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Necromancer;
+      }
+      if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Paladin) {
+        sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Paladin;
+      }
+      if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Barbarian) {
+        sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Barbarian;
+      }
+      if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Druid) {
+        sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Druid;
+      }
+      if (sgtDataTable.nSkillCountMaxPerClass < sgtDataTable.pSkillsPerClassCounter->Assassin) {
+        sgtDataTable.nSkillCountMaxPerClass = sgtDataTable.pSkillsPerClassCounter->Assassin;
+      }
+
+      sgtDataTable.pSkillsPerClassStrc = (int16_t*)D2_ALLOC_POOL_AT(nullptr, sgtDataTable.nSkillCountMaxPerClass * 0xe, ".\\DATATBLS\\DataTbls.cpp", 0x576);
+      memset(sgtDataTable.pSkillsPerClassStrc, 0, sgtDataTable.nSkillCountMaxPerClass * 0xe);
+      sgtDataTable.pSkillsPerClassCounter->Amazon = 0;
+      sgtDataTable.pSkillsPerClassCounter->Sorceress = 0;
+      sgtDataTable.pSkillsPerClassCounter->Necromancer = 0;
+      sgtDataTable.pSkillsPerClassCounter->Paladin = 0;
+      sgtDataTable.pSkillsPerClassCounter->Barbarian = 0;
+      sgtDataTable.pSkillsPerClassCounter->Druid = 0;
+      sgtDataTable.pSkillsPerClassCounter->Assassin = 0;
+      sgtDataTable.pPassiveSkillsPerClassStrc = (D2PassiveSkillsPerClassStrc*)D2_ALLOC_POOL_AT(nullptr, sgtDataTable.nPassiveSkillsCount * 2, ".\\DATATBLS\\DataTbls.cpp", 0x57a);
+      memset(sgtDataTable.pPassiveSkillsPerClassStrc, 0, sgtDataTable.nPassiveSkillsCount * 2);
+      nCounter = 0;
+      sgtDataTable.nPassiveSkillsCount = 0;
+      if (0 < sgtDataTable.nTxtSkillsCount) {
+        pMemory2 = 0;
+        do {
+          pSrvPrgFunc = sgtDataTable.pTxtSkills->srvprgfunc;
+          nPetType = *(char*)((uintptr_t)&((D2PoolManagerStrc*)pMemory2)->pPools[0].pSync.DebugInfo + (int)(pSrvPrgFunc - 0x22));
+          if (-1 < nPetType && nPetType < '\a') {
+            sgtDataTable.pSkillsPerClassStrc[nPetType * sgtDataTable.nSkillCountMaxPerClass + (&sgtDataTable.pSkillsPerClassCounter->Amazon)[nPetType]] = (int16_t)nCounter;
+            (&sgtDataTable.pSkillsPerClassCounter->Amazon)[*(char*)((uintptr_t)&((D2PoolManagerStrc*)pMemory2)->pPools[0].pSync.DebugInfo + (int)(pSrvPrgFunc - 0x22))]++;
+          }
+          if (-1 < *(short int*)((uintptr_t)&((D2PoolManagerStrc*)pMemory2)->pPools[0].pSync.DebugInfo + (int)(pSrvPrgFunc + 0x22))) {
+            sgtDataTable.pPassiveSkillsPerClassStrc[sgtDataTable.nPassiveSkillsCount].nSkillId = (int16_t)nCounter;
+            sgtDataTable.nPassiveSkillsCount++;
+          }
+
+          pMemory2 = &((D2PoolManagerStrc*)pMemory2)->pPools[0xb].pSync.OwningThread;
+          nCounter++;
+        } while (nCounter < sgtDataTable.nTxtSkillsCount);
+      }
+
+      nCounter = 0;
+      if (0 >= sgtDataTable.nTxtSkillsCount) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x544);
-      exit(-1);
+      do {
+        pSkillTxt = sgtDataTable.pTxtPetType;
+        nPetType = sgtDataTable.pTxtSkills[nCounter].pettype;
+        if (-1 < nPetType) {
+          iVar2 = (int)nPetType;
+          if (iVar2 < sgtDataTable.nTxtPetTypeSize && sgtDataTable.pTxtPetType[iVar2].nSkillIndexCounter < 0xf) {
+            sgtDataTable.pTxtPetType[iVar2].nSkillId[sgtDataTable.pTxtPetType[iVar2].nSkillIndexCounter] = (short int)nCounter;
+            pSkillTxt[iVar2].nSkillIndexCounter++;
+          }
+        }
+
+        nCounter++;
+      } while (nCounter < sgtDataTable.nTxtSkillsCount);
+
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x53e);
       exit(-1);
@@ -3641,30 +3619,30 @@ void __stdcall DATATBLS_FreeSkillsTxtTables() {
     D2SkillDescTxt* pMemoryToFree_00;
     int32_t nTmp;
     if (sgtDataTable.pSkillsPerClassCounter) {
-      D2_FREE_POOL(nullptr, sgtDataTable.pSkillsPerClassCounter);
+      D2_FREE_POOL_AT(nullptr, sgtDataTable.pSkillsPerClassCounter, ".\\DATATBLS\\DataTbls.cpp", 0x5b8);
       sgtDataTable.pSkillsPerClassCounter = 0;
     }
     if (sgtDataTable.pSkillsPerClassStrc) {
-      D2_FREE_POOL(nullptr, sgtDataTable.pSkillsPerClassStrc);
+      D2_FREE_POOL_AT(nullptr, sgtDataTable.pSkillsPerClassStrc, ".\\DATATBLS\\DataTbls.cpp", 0x5be);
       sgtDataTable.pSkillsPerClassStrc = 0;
     }
 
     sgtDataTable.nSkillCountMaxPerClass = 0;
     if (sgtDataTable.pPassiveSkillsPerClassStrc) {
-      D2_FREE_POOL(nullptr, sgtDataTable.pPassiveSkillsPerClassStrc);
+      D2_FREE_POOL_AT(nullptr, sgtDataTable.pPassiveSkillsPerClassStrc, ".\\DATATBLS\\DataTbls.cpp", 0x5c5);
       sgtDataTable.pPassiveSkillsPerClassStrc = 0;
     }
 
     sgtDataTable.nPassiveSkillsCount = 0;
     if (sgtDataTable.pSkillsCode) {
-      D2_FREE_POOL(nullptr, sgtDataTable.pSkillsCode);
+      D2_FREE_POOL_AT(nullptr, sgtDataTable.pSkillsCode, ".\\DATATBLS\\DataTbls.cpp", 0x5cc);
       sgtDataTable.pSkillsCode = 0;
     }
 
     sgtDataTable.nSkillsCodeSize = 0;
     sgtDataTable.nSkillsCodeCapacity = 0;
     if (sgtDataTable.pSkillDescCode) {
-      D2_FREE_POOL(nullptr, sgtDataTable.pSkillDescCode);
+      D2_FREE_POOL_AT(nullptr, sgtDataTable.pSkillDescCode, ".\\DATATBLS\\DataTbls.cpp", 0x5d4);
       sgtDataTable.pSkillDescCode = 0;
     }
 
@@ -4193,7 +4171,7 @@ void __fastcall TXT_AllocTxt_states(D2PoolManagerStrc * pMemory) {
 
     int nDwordCount = (int)(sgtDataTable.nTxtStatesSize + 0x1f + (sgtDataTable.nTxtStatesSize + 0x1f >> 0x1f & 0x1fU)) >> 5;
     size_t nAllocSize = nDwordCount * 0xa0;
-    sgtDataTable.pStatesDataTbls = (D2StatesDataTbls*)D2_ALLOC_POOL(nullptr, nAllocSize);
+    sgtDataTable.pStatesDataTbls = (D2StatesDataTbls*)D2_ALLOC_POOL_AT(nullptr, nAllocSize, ".\\DATATBLS\\DataTbls.cpp", 0x6ce);
     memset(sgtDataTable.pStatesDataTbls, 0, nAllocSize);
     int nStateDataOffset = 0;
     do {
@@ -4216,23 +4194,23 @@ void __fastcall TXT_AllocTxt_states(D2PoolManagerStrc * pMemory) {
 void __stdcall DATATBLS_FreeStatesTxtTables() {
     int32_t nLine;
     if (sgtDataTable.pStatesDataTbls) {
-      D2_FREE_POOL(nullptr, sgtDataTable.pStatesDataTbls);
+      D2_FREE_POOL_AT(nullptr, sgtDataTable.pStatesDataTbls, ".\\DATATBLS\\DataTbls.cpp", 0x6e8);
       sgtDataTable.pStatesDataTbls = 0;
     }
     if (sgtDataTable.pAllStatesDataTblFlag0x04) {
-      D2_FREE_POOL(nullptr, sgtDataTable.pAllStatesDataTblFlag0x04);
+      D2_FREE_POOL_AT(nullptr, sgtDataTable.pAllStatesDataTblFlag0x04, ".\\DATATBLS\\DataTbls.cpp", 0x6ed);
       sgtDataTable.pAllStatesDataTblFlag0x04 = 0;
     }
     if (sgtDataTable.pAllStatesDataTblFlag0x0B) {
-      D2_FREE_POOL(nullptr, sgtDataTable.pAllStatesDataTblFlag0x0B);
+      D2_FREE_POOL_AT(nullptr, sgtDataTable.pAllStatesDataTblFlag0x0B, ".\\DATATBLS\\DataTbls.cpp", 0x6f2);
       sgtDataTable.pAllStatesDataTblFlag0x0B = 0;
     }
     if (sgtDataTable.pAllStatesDataTblFlag0x10) {
-      D2_FREE_POOL(nullptr, sgtDataTable.pAllStatesDataTblFlag0x10);
+      D2_FREE_POOL_AT(nullptr, sgtDataTable.pAllStatesDataTblFlag0x10, ".\\DATATBLS\\DataTbls.cpp", 0x6f7);
       sgtDataTable.pAllStatesDataTblFlag0x10 = 0;
     }
     if (sgtDataTable.pAllStatesDataTblFlag0x05) {
-      D2_FREE_POOL(nullptr, sgtDataTable.pAllStatesDataTblFlag0x05);
+      D2_FREE_POOL_AT(nullptr, sgtDataTable.pAllStatesDataTblFlag0x05, ".\\DATATBLS\\DataTbls.cpp", 0x6fc);
       sgtDataTable.pAllStatesDataTblFlag0x05 = 0;
     }
 
@@ -4488,11 +4466,11 @@ void __stdcall FreeTables() {
       return;
     }
     if (gpaMiscTxtTables) {
-      D2_FREE_POOL(nullptr, &sgtDataTable.pTxtDifficultyLevels[-1].GambleUltra);
+      D2_FREE_POOL_AT(nullptr, &sgtDataTable.pTxtDifficultyLevels[-1].GambleUltra, ".\\DATATBLS\\DataTbls.cpp", 0x924);
       return;
     }
 
-    D2_FREE_POOL(nullptr, sgtDataTable.pTxtDifficultyLevels);
+    D2_FREE_POOL_AT(nullptr, sgtDataTable.pTxtDifficultyLevels, ".\\DATATBLS\\DataTbls.cpp", 0x926);
 }
 
 // Initialises all D2Common game-data text tables by sequentially calling individual TXT_AllocTxt_* loaders for every table category (items, monsters, skills, sounds, overlays, stats, levels, objects, arena, cubemod, belts, etc.). Called once at startup with the Fog memory pool; bGametypeIsOBNetHost and nZero2 gate expansion-specific level sub-tables.
@@ -4514,8 +4492,8 @@ void __stdcall TXT_InitTxtFiles(D2PoolManagerStrc * pMemory, int32_t nZero2, int
     ItemTbls::TXT_AllocTxt_items(pMemory);
     ItemTbls::TXT_AllocTxt_MagicAffixes(pMemory);
     ItemTbls::TXT_AllocTxt_RareAffixes(pMemory);
-    ItemTbls::TXT_AllocTxt_uniqueitems();
-    ItemTbls::TXT_AllocTxt_setitems();
+    ItemTbls::TXT_AllocTxt_uniqueitems(pMemory);
+    ItemTbls::TXT_AllocTxt_setitems(pMemory);
     ItemTbls::TXT_AllocTxt_gems(pMemory);
     ItemTbls::TXT_AllocTxt_books(pMemory);
     ItemTbls::TXT_AllocTxt_qualityitems(pMemory);

@@ -225,13 +225,13 @@ void __fastcall DropItemForVictim_Unused(::SGAMEDATA * pGame, D2ObjectOperateFnA
           exit(-1);
         } else {
           pVictimMonStats = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(pVictim->nClassId);
-          if (pVictimMonStats) {
-            SERVER_ITEM_DecideDrops(pGame, pVictim, 0, pUnitKill);
-            return;
+          if (!pVictimMonStats) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x204);
+            exit(-1);
           }
 
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x204);
-          exit(-1);
+          SERVER_ITEM_DecideDrops(pGame, pVictim, 0, pUnitKill);
+          return;
         }
       }
     }
@@ -350,7 +350,7 @@ void __fastcall RegenAndPsnDecreaser(::SGAMEDATA * pGame, D2UnitStrc * pUnit, in
 }
 
 // Queries whether a monster supports a given animation mode (eAnimMode, 0..0xF). Consults the global gnMonsterAnimModeSequenceFlags table: returns 1 if that mode has sequence flags set, or if its alt-flags are clear and it requires MonStats it checks the unit's MonStats2 movement-flag bit ((&byMvFlags0)[mode>>3] & bitmask[mode&7]). Returns nonzero if the anim mode is available for this unit, 0 otherwise (incl. null unit or mode>=0x10). Pure lookup, no side effects.
-uint32_t MONSTER_HasAnimModeSequence(D2UnitStrc * pUnit, eD2MonsterAnimMode eAnimMode) {
+static uint32_t MONSTER_HasAnimModeSequence(D2UnitStrc * pUnit, eD2MonsterAnimMode eAnimMode) {
     // Static local variables (originally global data)
     static D2MonsterAnimModeFlagsStrc gnMonsterAnimModeSequenceFlags[16] = {
     {
@@ -566,7 +566,7 @@ BOOL __fastcall thunk_ExecuteTimerTrigger(::SGAMEDATA * pGame, D2UnitStrc * pUni
     return 1;
 }
 
-void CalculateCollisionDamage_Unused(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+static void CalculateCollisionDamage_Unused(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     bool _bInRange;
     bool bInRange;
     int32_t nDamage;
@@ -1099,14 +1099,15 @@ BOOL __fastcall MONMODE_TryFleeFromTarget(::SGAMEDATA * pGame, D2MonsterKillStrc
     return 1;
 }
 
-void __fastcall MONMODE_CompleteSkillSequence(::SGAMEDATA * pGame, D2MonsterKillStrc * pMonsterKill) {
+BOOL __fastcall MONMODE_CompleteSkillSequence(::SGAMEDATA * pGame, D2MonsterKillStrc * pMonsterKill) {
     D2UnitStrc* pUnit = pMonsterKill->pVictim;
     UNIT::SUnit::FreeCombatAndChangeAnimMode(pGame, pUnit, 0xe);
     if (pUnit) {
       pUnit->eUnitFlags &= ~UNITFLAG_SKSRVDOFUNC;
     }
 
-    SKILLS::SkillsServer::SKILLS_OnModeComplete(pGame, pUnit);
+    int32_t iVar1 = SKILLS::SkillsServer::SKILLS_OnModeComplete(pGame, pUnit);
+    return iVar1;
 }
 
 // Looks up the death/drop event-dispatch callback record for a monster. Given a UNIT_MONSTER and an event index nParam (0..0xF), returns a pointer into the global DropHandlerArray. Returns NULL for non-monsters, out-of-range class ids, or nParam>0xF. Most monsters map directly (DropHandlerArray + nParam), but special bosses override specific events by class id: Diablo / DiabloClone / UberDiablo and Baal variants (Throne/Uber) redirect their death/drop events to dedicated handler slots (e.g. +7, +0x10, +0x11), TrappedSoul to +0x12/+0x13, and Warrior/Master act-boss minions event 0xB to +0x14. Used by the monster event dispatcher to pick the correct on-death behavior.
@@ -1198,7 +1199,7 @@ D2AiDispatchCallbacksStrc * __fastcall GetDropHandler(D2UnitStrc * pUnit, uint32
         /* .bBool = */ 0x1
     },
     {
-        /* .pFn1 = */ (fnD2DropHandler)&D2Game::GAME::Event::Dispatch::Monster::MONMODE_CompleteSkillSequence,
+        /* .pFn1 = */ &D2Game::GAME::Event::Dispatch::Monster::MONMODE_CompleteSkillSequence,
         /* .pFn2 = */ (fnD2DropHandler)&D2Game::GAME::Event::Dispatch::Monster::MONSTER_UpdateSkillCastAnimation,
         /* .pFn3 = */ &D2Game::GAME::Event::Dispatch::Monster::MONSTER_EndOfFrameAiDispatch,
         /* .bBool = */ 0x1
@@ -1308,7 +1309,7 @@ D2AiDispatchCallbacksStrc * __fastcall GetDropHandler(D2UnitStrc * pUnit, uint32
     return DropHandlerArray + nParam;
 }
 
-void __stdcall MONSTER_InitiateDefaultDeath(::SGAMEDATA * pGame, int32_t nParam, D2UnitStrc * pUnit) {
+static void __stdcall MONSTER_InitiateDefaultDeath(::SGAMEDATA * pGame, int32_t nParam, D2UnitStrc * pUnit) {
     D2MonsterKillStrc sMonsterKill;
     D2Common::Units::SetCurrentSkill(pUnit, nullptr);
     if (nParam && nParam != 0xc) {

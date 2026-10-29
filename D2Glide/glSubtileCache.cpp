@@ -8,12 +8,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -28,7 +28,7 @@ int __fastcall GLSUBTILE_Initialize(GlSubtileCacheStrc * pCache, int nVramStart,
     pCache->dwEntrySize = dwSubtileSize;
     size_t nAllocSize = nEntryCount * 0x14;
     pCache->nMaxEntries = nEntryCount;
-    uint8_t* pNodeArray = (uint8_t*)D2_ALLOC(nAllocSize);
+    uint8_t* pNodeArray = (uint8_t*)D2_ALLOC_AT(nAllocSize, ".\\Src\\glSubtileCache.cpp", 0x29);
     pCache->pNodes = (GlSubtileCacheNodeStrc*)pNodeArray;
     if (!pNodeArray) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a);
@@ -98,7 +98,7 @@ int __fastcall GLSUBTILE_Initialize(GlSubtileCacheStrc * pCache, int nVramStart,
 }
 
 // Appends subtile cache node to tail of active LRU list (most-recently-used position).
-void GLSUBTILE_AppendNodeToTail(GlSubtileCacheStrc * pCache, GlSubtileCacheNodeStrc * pNode) {
+static void GLSUBTILE_AppendNodeToTail(GlSubtileCacheStrc * pCache, GlSubtileCacheNodeStrc * pNode) {
     if (!pCache->pActiveHead) {
       pCache->pActiveHead = pNode;
       pCache->pActiveTail = pNode;
@@ -133,7 +133,7 @@ GlSubtileCacheNodeStrc * __fastcall GLSUBTILE_RemoveNodeFromHead(uint32_t dwPara
 }
 
 // Removes a subtile cache node from the active LRU list by index. Returns pointer to removed node.
-GlSubtileCacheNodeStrc * GLSUBTILE_RemoveNodeByIndex(GlSubtileCacheStrc * pCache, int nNodeIndex) {
+static GlSubtileCacheNodeStrc * GLSUBTILE_RemoveNodeByIndex(GlSubtileCacheStrc * pCache, int nNodeIndex) {
     uint8_t* pPrevTail;
     GlSubtileCacheNodeStrc* pHeadNode = pCache->pActiveHead;
     if (!pHeadNode) {
@@ -166,7 +166,7 @@ GlSubtileCacheNodeStrc * GLSUBTILE_RemoveNodeByIndex(GlSubtileCacheStrc * pCache
 }
 
 // Allocates node from free list and moves to active list tail. Returns 1-based node index on success, 0 if cache full.
-int GLSUBTILE_AllocateNode(GlSubtileCacheStrc * pCache) {
+static int GLSUBTILE_AllocateNode(GlSubtileCacheStrc * pCache) {
     if (pCache->nUsedCount == pCache->nMaxEntries) {
       return 0;
     }
@@ -215,14 +215,14 @@ void __fastcall GLSUBTILE_PromoteNodeToMRU(GlSubtileCacheStrc * pCache, int nNod
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xbb);
       exit(-1);
     } else {
-      if (0 < nNodeIndex1Based) {
-        pNode = GLSUBTILE_RemoveNodeByIndex(pCache, nNodeIndex1Based - 1);
-        GLSUBTILE_AppendNodeToTail(pCache, pNode);
-        return;
+      if (!(0 < nNodeIndex1Based)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xbc);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xbc);
-      exit(-1);
+      pNode = GLSUBTILE_RemoveNodeByIndex(pCache, nNodeIndex1Based - 1);
+      GLSUBTILE_AppendNodeToTail(pCache, pNode);
+      return;
     }
 }
 
@@ -296,7 +296,7 @@ void __fastcall GLSUBTILE_Destroy(uint32_t * pCacheData, GlSubtileCacheStrc * pC
       }
     }
     if ((void*)pCacheData[7]) {
-      D2_FREE((void*)pCacheData[7]);
+      D2_FREE_AT((void*)pCacheData[7], ".\\Src\\glSubtileCache.cpp", 0x74);
       pCacheData[7] = 0;
     }
 

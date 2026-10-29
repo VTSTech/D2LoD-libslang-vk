@@ -51,7 +51,7 @@ namespace D2Game::PLAYER::PlayerSave2 {
 // Provenance: asm 00568d60..00568d69; unreferenced in 1.14d.
 __time32_t __stdcall PLRSAVE_GetTime32(__time32_t * pTime);
 int32_t __fastcall FindEndOfString(char * szString, int32_t nMaxSize);
-void __stdcall PLAYERSAVE2_LoadOldSavegame_ReturnZero();
+int __stdcall PLAYERSAVE2_LoadOldSavegame_ReturnZero();
 // Returns the 1-based index of the carried item matching nItemGUID in the player's inventory list, by iterating INVENTORY_GetFirstItem/GetNextItem/GetCarriedItem. Returns 0 if GUID is -1, inventory is null, or item not found. Halts with an internal error if the index would exceed 0x7FFE.
 int16_t __fastcall GetItemIndexInList(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nItemGUID);
 void __fastcall SaveMercData(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2SaveFileHeaderStrc * pSaveHeader);
@@ -81,8 +81,6 @@ int __fastcall MakeSaveFile(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint
 int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint32_t dwCharacterStatus, struct D2ClientStrc * pClient);
 void __fastcall SetHotkey(struct D2SaveHotKeyStrc * pSaveHotKey, uint32_t * pnParam, uint32_t * pnHand, uint32_t * nItemIndex);
 void __fastcall PLAYERSAVE_LinkPlayerToUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
-// Bootstraps a brand-new player unit for a connecting client: creates the unit, links it to the client, sends the init packet, places starting items, sets default left/right skills to Attack, then selects the class-specific start skill from CharStats.txt if present. Fires QUEST_OnPlayerJoinGame for act-0 quests. Outputs the created unit pointer.
-int32_t __stdcall PLAYERSAVE_CreateNewCharacter(struct D2ClientStrc * pSaveContext, ::SGAMEDATA * pGameStrc, struct D2UnitStrc * * dwArg1);
 // Parses the .d2s save-file header during game join/load, validates it, and creates the player's server unit. Verifies the stored checksum (zeroing the checksum field before recomputing), the recorded file size, and the file-version range (0x5c-0x60); confirms the saved character name matches the client's. Applies CalculateGetFlags policy (may reject or return code 2 for a 'hardcore dead' / status-bit-1 file). Sets the client's class, weapon-swap flag, file flags, create time, and current act from the per-difficulty progress byte; recovers the map seed for single-player. Creates the UNIT_PLAYER unit (pOutUnit), links it to the client, sends the init-unit packet, and restores all 16 hotkeys plus the L/R and weapon-swap skill assignments and guild info. ppSaveFileHeader is advanced past the consumed header on success. Returns 0 on success, 2 to signal a status-bit case, or error codes 3-7.
 int32_t __fastcall PLAYERSAVE_ParseHeaderAndCreateUnit(::SGAMEDATA * pGame, struct D2ClientStrc * pClient, struct D2SaveFileHeaderStrc * * ppSaveFileHeader, struct D2SaveFileHeaderStrc * pHeader, struct D2UnitStrc * * pOutUnit);
 int __fastcall PLRSAVE_ReadQuestsFromBuffer(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int * * ppQuestBuffer, int * pnBytesRead, uint32_t dwParam);
@@ -105,7 +103,7 @@ int __fastcall PLRSAVE_LoadCorpseFromBuffer(::SGAMEDATA * pGame, struct D2UnitSt
 // Deserializes a mercenary from save data and recreates it as a live unit. Reads 8 dwords of merc save data (type, GUID, name index, experience), looks up the hireling text entry, creates the merc unit via CreateMerc, links it to the player via PETS_UpdatePetData, clamps experience to the minimum for its level, applies level stats, and ensures an inventory is allocated. Returns the new D2UnitStrc or null if the save data is empty or creation fails.
 struct D2UnitStrc * __fastcall LoadMerc(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2MercSaveDataStrc * pMercSaveData, uint32_t dwParam);
 // Loads a mercenary's equipped items from the save buffer into the given merc unit (expansion-only, magic 0x666a). Calls PLRSAVE_LoadItemsFromBuffer, then recalculates the merc's inventory stats and sets HP to max if the merc is alive. Skipped entirely in classic (non-expansion) games.
-int LoadMerc2(void * pThis, struct D2UnitStrc * pUnit, struct D2UnitStrc * * ppUnit, struct D2UnitStrc * pUnit2, uint32_t nParam, int * pnParam);
+int __thiscall LoadMerc2(void * pThis, struct D2UnitStrc * pUnit, struct D2UnitStrc * * ppUnit, struct D2UnitStrc * pUnit2, uint32_t nParam, int * pnParam);
 // Deserializes the Iron Golem item (and its socketed items) from the save stream. Reads the golem's base item via ITEM_CreateFromSaveData, then iterates usedSockets to read and socket each child item via PutItemInItem. Validates the runeword flag on completion. Returns 1 on success, 0 on any parse/create failure; advances *ppReadPos and writes *ppGolemItem.
 BOOL __fastcall CreateItemIronGolemItem(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * * ppGolemItem, uint8_t * * ppReadPos, int32_t nEndOffset, uint32_t nVersion);
 // Restores an Iron Golem from save (expansion-only, magic 0x666b). Reads the sacrificed item from the buffer via CreateItemIronGolemItem, equips it as the current skill, marks the golem for update, and registers its GUID on the client. If the golem byte is 0 (no golem), skips creation silently. Returns 0x17 on failure.
@@ -119,5 +117,6 @@ int32_t __fastcall HOTKEY_GetAssignedItemGUID(::SGAMEDATA * pGame, struct D2Unit
 void __fastcall SetStatsAndHotkeys(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit, int32_t nHitpoints, int32_t nMana);
 // Loads a player from a modern .d2s save buffer into a live server unit (fastcall pGame,pClient,pSaveHeader,nSaveDataOffset,ppUnit). Parses the header and creates the unit (PLAYERSAVE_ParseHeaderAndCreateUnit), then sequentially reads quests, waypoints, intro/NPC-greeting flags, stats, hard skills, items, corpse, mercenary, and golem from the buffer, threading a moving read pointer between pSaveHeader and the buffer end. Records pre-load HP/mana and restores them via SetStatsAndHotkeys on success. On parse error 2 at end-of-buffer it creates a fresh character. On any failure it frees the partially-built unit (and its DRLG room) and unlinks it from the client; returns gdwPlayerSaveVersion[errorCode] (0 = success). Writes the loaded unit to *ppUnit.
 int32_t __fastcall PLAYERSAVE_LoadModernFormat(::SGAMEDATA * pGame, struct D2ClientStrc * pClient, struct D2SaveFileHeaderStrc * pSaveHeader, int32_t nSaveDataOffset, struct D2UnitStrc * * ppUnit, uint32_t dwParam6, uint32_t dwParam7, uint32_t dwParam8);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::PLAYER::PlayerSave2

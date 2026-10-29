@@ -34,7 +34,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/PLAYER/PlayerMsg.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -52,9 +51,8 @@ typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitSt
 namespace D2Game::PLAYER::PlayerScreen {
 
 // Builds and sends a 0x5A event-message packet to a client. Zeroes a D2Packet0x5aEventStructure, fills packet ID 0x5A, message type 0x07, the target unit GID, and maps bParam (event subtype 1-11) to a color code. Dispatches via NET_D2GS_SERVER_Send_0x5A_EventMessages. Used for party/relationship notifications.
-void SendPlayerEvent(void * pThis, uint32_t pUnitGid, uint8_t bParam) {
+void __thiscall SendPlayerEvent(void * pThis, uint32_t pUnitGid, uint8_t bParam) {
     D2Packet0x5aEventStructure sEventPacket;
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     memset(sEventPacket.szName1, 0, 16 * sizeof(sEventPacket.szName1[0]));
     memset(sEventPacket.szName2, 0, 16 * sizeof(sEventPacket.szName2[0]));
     sEventPacket.nArg = pUnitGid;
@@ -92,10 +90,9 @@ void SendPlayerEvent(void * pThis, uint32_t pUnitGid, uint8_t bParam) {
     }
 
     GAME::SCmd::NET_D2GS_SERVER_Send_0x5A_SYSTEMMSG((D2ClientStrc*)pThis, &sEventPacket);
-    Fog::Debug::GuardStack();
 }
 
-void __stdcall SendPlayerInfo(uint16_t nParam, uint32_t nParam2, D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pUnit2) {
+static void __stdcall SendPlayerInfo(uint16_t nParam, uint32_t nParam2, D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pUnit2) {
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry(pGame, pUnit, pUnit2);
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry(pGame, pUnit2, pUnit);
     uint32_t uFlags = UNIT::PlayerList::PLAYERLIST_GetFlagsMasked(pUnit, pUnit2, (uint32_t)nParam);
@@ -158,7 +155,7 @@ void __fastcall PARTYSCREEN_UpdateSquelchRelation(::SGAMEDATA * pGame, D2UnitStr
     GAME::SCmd::NET_D2GS_SERVER_Send_0x75_UPDATEROSTER(pTarget, pUnit);
 }
 
-void RefreshPlayerStatus(D2UnitStrc * pUnit1, D2UnitStrc * pUnit2) {
+static void RefreshPlayerStatus(D2UnitStrc * pUnit1, D2UnitStrc * pUnit2) {
     int nUnit2GUID;
     int nUnit1GUID = !pUnit1 ? -1 : pUnit1->nUnitGUID;
     if (!pUnit2) {
@@ -391,7 +388,7 @@ void __fastcall PARTYSCREEN_SetHostileForPlayer(::SGAMEDATA * pGame, D2UnitStrc 
 }
 
 // @sourcefile .\PLAYER\PartyScreen.cpp
-void __stdcall PARTYSCREEN_SetHostileWithParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static void __stdcall PARTYSCREEN_SetHostileWithParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     uint32_t nUnitGUID;
     uint8_t bEventType;
     int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
@@ -532,11 +529,11 @@ eD2ServerIncomingStatus __fastcall PlayerScreen_DispatchAction(::SGAMEDATA * pGa
     return SERVERSTATUS_OK;
 }
 
-void __fastcall PARTYSCREEN_ClearHostileRelation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
+int __fastcall PARTYSCREEN_ClearHostileRelation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
     if (pUnit && pUnit->eUnitType == UNIT_PLAYER) {
       UNIT::PlayerList::PLAYERLIST_AddPlayerEntry(pGame, pUnit, pTarget);
       UNIT::PlayerList::SendRelationshipStatus(pGame, pUnit, pTarget, 8, 0);
-      return;
+      return 1;
     }
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15);

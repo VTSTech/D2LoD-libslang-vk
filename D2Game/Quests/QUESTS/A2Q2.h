@@ -30,23 +30,6 @@ void __fastcall Q09_AICallback_GreaterMummy(::SGAMEDATA * pGame, struct D2UnitSt
 // internal quest-data is absent/uninitialized OR its nStateFlag==5 (fully done).
 // Gate used so The Horadric Staff dialog/flow only proceeds once Radament is dealt with.
 bool __fastcall Q10_IsRadamentCompleted(::SGAMEDATA * pGame);
-// Q10_CheckHoradricStaffState. Reads QuestRecord bits for QUEST_TheHoradricStaff.
-// Returns 1 (quest "live"/should be shown) when NOT yet Completed and NOT
-// FinishedInPreviousGame, OR when JustCompleted/CannotCompleteQuestInGame is set;
-// returns 0 once fully closed out. Drives whether to push a quest-log update to client.
-BOOL __stdcall Q10_CheckHoradricStaffState(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame);
-// Q10_NotifyHoradricStaffActive. If Q10_CheckHoradricStaffState says the quest is
-// live, send quest-log update (msg 9 = The Horadric Staff) to the player. Pure
-// notification wrapper; no state changes.
-void __stdcall Q10_NotifyHoradricStaffActive(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame);
-// Q10_CheckQuestItemsForDialog. Inspects which quest items the player holds and
-// picks the Drognan/Cain dialog message index (*pOutput) for The Horadric Staff.
-// Item codes: 'tsh '=Staff of Kings, 'box '=Horadric Cube, 'rt1 '=Book of Skill
-// scroll, 'vip '=Amulet of the Viper, 'msf '=assembled Horadric Staff.
-// For each held item it reads the matching QuestRecord step bit (Step0x03/04/05/06/10)
-// and emits the not-yet-told message (low index) or the already-told message
-// (high index). Returns nonzero if a relevant item is held. Read-only on quest state.
-uint8_t __stdcall Q10_CheckQuestItemsForDialog(struct D2UnitStrc * pUnit, struct D2QuestDataStrc * pQuestData, uint8_t * pOutput);
 // Q10_ActiveFilter. Quest-active filter for NPC 0xf4 (Drognan). Returns true (show
 // this quest's dialog) only for classId 0xf4 AND when either RewardAwaits bit is set
 // OR Q10_CheckQuestItemsForDialog finds a relevant quest item. Read-only.
@@ -160,5 +143,6 @@ void __fastcall Q10_Callback09_PlayerDroppedWithQuestItem(struct D2QuestDataStrc
 //  [0xa]=Callback_10  [0xb]=Callback_11 (dialog advance)  [0xd]=Callback_13 (recount)
 //  [0xe]=Callback_14 (item gained). Sets nStateFlagPrev=0xd initial. No QuestRecord I/O.
 void __fastcall Q10_InitData(struct D2QuestDataStrc * pQuestData);
+// 3 internal functions (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A2Q2

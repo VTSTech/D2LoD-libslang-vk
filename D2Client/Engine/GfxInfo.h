@@ -36,19 +36,12 @@ void __stdcall DRAW_UNIT_States_HaltTail(int nLine);
 uint8_t * __fastcall GFX_GetGfxInfoCofData(struct D2UnitStrc * pUnit, int32_t pAnimMode);
 struct D2GfxInfoUnkStrc * __fastcall GFX_FindGfxInfoByModeAndWeapon(struct D2UnitStrc * pUnit, int32_t nWeaponParam, int nAnimMode);
 // @sourcefile .\ENGINE\Gfx.cpp
-BOOL GFX_FreeGfxInfoEntry(struct D2UnitStrc * pUnit, struct D2GfxInfoUnkStrc * pGfxInfoUnk);
-BOOL __stdcall GFX_FindOrEvictGfxInfoEntry(int32_t nWeaponParam, struct D2GfxInfoUnkStrc * * ppGfxInfoUnk, int * pnOutCofData, struct D2UnitStrc * pUnit, int nAnimMode);
-// @sourcefile .\ENGINE\Gfx.cpp
 int __stdcall GFX_LoadCompositCof(int * pnOutCofData, uint32_t nAnimMode, struct D2UnitStrc * pUnit);
 // @sourcefile .\ENGINE\Gfx.cpp
 void GFX_LoadMonsterModeCof(struct D2UnitStrc * pUnit, uint32_t nComponent);
 // @sourcefile .\ENGINE\Gfx.cpp
 void GFX_LoadObjectModeCof(struct D2UnitStrc * pUnit, uint32_t nComponent);
 uint32_t GFX_LoadGenericModeCof(struct D2UnitStrc * pUnit, uint32_t nComponent);
-// @sourcefile .\ENGINE\Gfx.cpp
-void __stdcall GFX_FreeAllGfxInfoEntries(int32_t nComponentCount, struct D2UnitStrc * pUnit);
-// @sourcefile .\ENGINE\Gfx.cpp
-void GFX_FreeOverlayList(int32_t pGfxInfo);
 // @sourcefile .\ENGINE\Gfx.cpp
 struct D2GfxInfoStrc * __stdcall AllocGfxInfo();
 // @sourcefile .\ENGINE\Gfx.cpp
@@ -72,5 +65,6 @@ void __fastcall GFX_SetCofDataFlags(struct D2GfxInfoStrc * pGfxInfo, DWORD dwCof
 int32_t __fastcall GFX_GetCofDataFlags(struct D2GfxInfoStrc * pGfxInfo);
 void __fastcall GFX_SetPalShiftIndex(struct D2GfxInfoStrc * pGfxInfo, int32_t nPalShiftIndex);
 int32_t __fastcall GFX_GetPalShiftIndex(struct D2GfxInfoStrc * pGfxInfo);
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Client::Engine::GfxInfo

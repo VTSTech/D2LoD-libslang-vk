@@ -62,15 +62,11 @@ void __fastcall SendMercForHireList(::SGAMEDATA * pGame, struct D2ClientStrc * p
 int32_t __fastcall SUNITNPC_GetActCappedLevel(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nLevel);
 // Rolls the quality of a store item: advances pSeed, takes roll = seed % 100, and returns QUALITY_LOW (1) for item level < 5 and roll > 90, QUALITY_SUPERIOR (3) for level 5..9 and roll > 85 or level >= 10 and roll > 74, else QUALITY_NORMAL (2).
 // U2 2026-10-21: asm 00576900; was SUNITNPC_CalculateRepairCost (kept as label), its one caller FillNpcStore passes the result to GenerateNpcItems as the quality.
-eD2ItemQuality SUNITNPC_RollStoreItemQuality(struct D2SeedStrc * pSeed, int32_t nItemLevel);
+eD2ItemQuality __thiscall SUNITNPC_RollStoreItemQuality(struct D2SeedStrc * pSeed, int32_t nItemLevel);
 // Server-side NPC trade-item restock/generation. Given a vendor NPC unit and its trade state (pTradeState, D2NpcTradeStateStrc), rolls and generates the NPC's purchasable inventory: walks tradeList1 entries, for each in-range item rolls a count via the NPC's seeded RNG (SUNITNPC_GetActCappedLevel caps player level+5 by act in Normal) and spawns items through SUNITNPC_GenerateNpcItems; also restocks stackable ammo/scrolls and tradeList2 entries, setting quantity on gold-priced ('qcv'/'acv') items. Aborts a batch after 0x20 consecutive spawn failures. Side effect: stamps the refresh tick (dwLastTradeTick). Halts on missing GameNpc.
 void __fastcall SUNITNPC_FillNpcStore(::SGAMEDATA * pGame, struct D2UnitStrc * pPlayer, struct D2UnitStrc * pNpcUnit, struct D2NpcTradeStateStrc * pTradeState);
 // @sourcefile .\UNIT\SUNITNPC.CPP
 void __fastcall SUNITNPC_RepairAllItems(struct D2UnitStrc * pPlayer, struct D2InventoryStrc * pInventory);
-// Picks a random item code from the NPC's trade list 1. Finds the D2GameNpcStrc for pUnit (00535f10). If the list (sTrade +0xc, count +0x10) is non-empty it takes RANDOM_RandomNumberSelector(pSeed, nTradeList1), advances pSeed, resolves the 12-byte entry's code at +4 to its ItemsTxt line, writes the code to *pdwOutItemCode and returns 1. An empty list writes 0 to *pdwOutItemCode and returns 0. *pdwReservedOut is written back with its own entry value. No repair cost is computed.
-// Halts: line 0x389 if the NPC is not found, 0x383 if its trade block is null, 0x384 if trade byte +3 is 0.
-// Provenance: 1.14d asm 00576c90..00576d85.
-int __stdcall SUNITNPC_RollTradeListItemCode(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2SeedStrc * pSeed, uint32_t dwReserved, uint32_t * pdwOutItemCode, uint32_t * pdwReservedOut, uint32_t nParam);
 BOOL __fastcall CheckIfPlayerCanAffordCost(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nCost);
 // @sourcefile .\UNIT\SUNITNPC.CPP
 void __fastcall SUNITNPC_ApplyScrollSkill(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nQuantityUsed);
@@ -106,11 +102,8 @@ void __fastcall SUNITNPC_ProcessGamble(::SGAMEDATA * pGame, struct D2UnitStrc * 
 // Server-side NPC identify-all handler (Deckard Cain). Validates the player is interacting with the given NPC GUID (Cain/act-equivalents) and that unidentified items exist; if the Search-for-Cain quest is incomplete it charges 100 gold per unidentified item. Walks the player inventory (INVENTORY/CUBE pages) and calls ITEMMODE_ProcessItemSell to identify each unidentified item, then sends NET_D2GS_SERVER_Send_0x2A NpcTransaction result (code 9=no items/not-found, 3=success, 0xC=cannot afford) with the player gold to the client.
 // @sourcefile .\UNIT\SUNITNPC.CPP
 void __fastcall SUNITNPC_HandleIdentify(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nNpcGUID);
-BOOL __stdcall UnitHasItemInInventory(int32_t guid, struct D2UnitStrc * pUnit);
 // @sourcefile .\UNIT\SUNITNPC.CPP
 void __fastcall SUNITNPC_CheckCanIdentify(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nItemGUID);
-// Expansion-only: given a base item class ID and player level, randomly upgrades it to its uber or ultra variant using the NPC's RNG seed. Upgrade chance = (playerLevel - upgradeLevel) * chanceMult + 1, rolled against 10000. Returns the upgraded class ID if rolled, otherwise the original nItemClassId. Used when populating NPC shop inventory.
-uint32_t __stdcall SUNITNPC_RepairAndRecharge(::SGAMEDATA * pGame, uint32_t nItemClassId, int32_t nUberChanceMult, int32_t nUltraChanceMult, int32_t nPlayerLevel);
 // Server-side: builds the randomized gamble-screen inventory offered by a gambling NPC to a player. Allocates a gamble record (new player inventory + player GUID) onto the NPC game-data list. Using the NPC's RNG seed and difficulty GambleRare/Set/Unique/Uber/Ultra weights, rolls up to 14 items from the per-level gamble table, repairs/recharges item codes, picks a quality tier, creates each item (ITEM_CreateFromTemplate), marks it identified and on the inventory page, places it into the gamble inventory via SERVER_ItemToInventory, and frees the item if placement fails.
 // @sourcefile .\UNIT\SUNITNPC.CPP
 void __fastcall GAMBLE_GenerateGambleInventory(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pPlayerUnit, int32_t nNpcGameData);
@@ -151,5 +144,6 @@ void __fastcall SUNITNPC_HandleSellAction(::SGAMEDATA * pGame, struct D2UnitStrc
 // Server-side NPC "use/talk" dispatcher: given the interacted NPC monster GUID and quest-state selector, performs the right NPC menu action and replies with a 0x58 OpenUI packet. Validates the monster (monstats interact flag, UNIT_MONSTER, has AI) then branches: trade-reward states route to NpcState_MoveState1To2 + SUNITNPC_HandleTradeAction for the appropriate vendor set; mercenary state sends the for-hire list. Handles act-specific quest actions by NPC class: Charsi imbue (A1Q3 ToolsOfTheTrade), Akara respec/skill-clear (A1Q1 Respec), Larzuk socketing (A5Q1), Anya personalize (A5Q4), and travel NPCs (Warriv/Meshif/Tyrael/Cain) loading the destination act level and enabling its waypoint. The imbue/socket/personalize branches create the reward item, place it in inventory or drop it at FindBestSpotToSpawnItem, and send OpenUI menu code 6 (success) or 7 (fail/drop). __fastcall: pGame(ECX), pUnit(EDX); pQState, item GUID, target-item GUID on stack.
 // @sourcefile .\UNIT\SUNITNPC.CPP
 int __fastcall UseMenu(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2QuestState pQState, DWORD guid, DWORD nGuid);
+// 3 internal functions (defined in .cpp)
 
 } // namespace D2Game::UNIT::SUNITNPC

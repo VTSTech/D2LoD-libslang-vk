@@ -26,7 +26,7 @@
 // Unreferenced copy of the constructor: SStrDup's szKey into the key; returns this.
 // Same code as HASHKEY_STRI::Constructor 0060dd00 (it could equally be an unproven HASHKEY_STR copy).
 // stpl-orphan: a COMDAT copy in HASHKEY_STRI that no member owns
-::HASHKEY_STRI * Constructor_Unreferenced(::HASHKEY_STRI * pThis, char * szKey) {
+::HASHKEY_STRI * __thiscall Constructor_Unreferenced(::HASHKEY_STRI * pThis, char * szKey) {
     uint32_t* pszDup = Storm::Source::SSTR::SStrDup(szKey);
     pThis->szString = (char*)pszDup;
     return pThis;
@@ -35,7 +35,7 @@
 // Unreferenced copy of operator=: frees the old string (stpl.h line 1513), SStrDup's pSource's; returns this.
 // Same code as HASHKEY_STRI::Assign 0060e130 (it could equally be an unproven HASHKEY_STR copy).
 // stpl-orphan: a COMDAT copy in HASHKEY_STRI that no member owns
-::HASHKEY_STRI * Assign_Unreferenced(::HASHKEY_STRI * pThis, ::HASHKEY_STRI * pSource) {
+::HASHKEY_STRI * __thiscall Assign_Unreferenced(::HASHKEY_STRI * pThis, ::HASHKEY_STRI * pSource) {
     if (pThis->szString) {
       Storm::SMem::SMemFree(pThis->szString, "d:\\diablo2\\Diablo2\\3rdparty\\storm\\h\\stpl.h", 0x5e9, 0);
     }

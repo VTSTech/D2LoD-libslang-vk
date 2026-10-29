@@ -287,7 +287,7 @@ BOOL __fastcall Skills_CltDoFunc_Bar_Whirlwind_CorpseExplosion(D2UnitStrc * pUni
 }
 
 // Resolves a valid teleport/move-skill landing tile for pUnit toward the requested destination (*pnParam1,*pnParam2). Clamps the destination to the skill's aurarangecalc max range, then probes up to 3 candidate tiles (the clamped point and two offsets), each requiring: a free collision coordinate in the room/neighbors, no blocking collision, line-of-sight from the unit, and distance within range. On success writes the accepted tile back into *pnParam1/*pnParam2 and returns 1. On failure plays the player's "cannot move there" sound (0x13) and returns 0. eSkill passed in EAX.
-BOOL __stdcall SKILL_ValidateTeleportDestination(D2UnitStrc * pUnit, int32_t nParam, int * pnParam1, int * pnParam2, eD2Skills eSkill) {
+static BOOL __stdcall SKILL_ValidateTeleportDestination(D2UnitStrc * pUnit, int32_t nParam, int * pnParam1, int * pnParam2, eD2Skills eSkill) {
     eD2CollisionShapeType nUnitSize;
     uint16_t nCollisionHigh;
     uint32_t bHasLOS;
@@ -417,7 +417,7 @@ BOOL __stdcall SKILL_ValidateTeleportDestination(D2UnitStrc * pUnit, int32_t nPa
     } while (true);
 }
 
-BOOL __stdcall SKILL_CanUseAtLocation(D2UnitStrc * pUnit, int32_t nX, int32_t nY, eD2Skills eSkill) {
+static BOOL __stdcall SKILL_CanUseAtLocation(D2UnitStrc * pUnit, int32_t nX, int32_t nY, eD2Skills eSkill) {
     if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -661,7 +661,7 @@ void __fastcall SKILL_CreateLeapArcParticle(D2UnitStrc * pUnit, D2SkillStrc * pS
 }
 
 // Client-side skill missile position update, used by skills whose missile tracks a moving target (e.g. Guided Arrow). Retrieves the target unit from skill params 3/4, snaps the server path, sets the missile to single-step mode, then computes a lead position as (caster_pos * 3 - target_pos * 2). Aborts if the lead position falls inside a town room. Finally sets the server path's destination to the lead position and recalculates the path (type 0xB).
-void __stdcall CLIENT_UpdateSkillMissilePosition(D2SkillStrc * pSkill, int32_t nParam1, int32_t nParam2, D2DynamicPathStrc * pDynamicPath) {
+static void __stdcall CLIENT_UpdateSkillMissilePosition(D2SkillStrc * pSkill, int32_t nParam1, int32_t nParam2, D2DynamicPathStrc * pDynamicPath) {
     int nTargetXPos;
     int nTargetYPos;
     D2DynamicPathStrc* pDynamicPath_00 = pDynamicPath->pServerPath;
@@ -722,7 +722,7 @@ void __stdcall CLIENT_UpdateSkillMissilePosition(D2SkillStrc * pSkill, int32_t n
 }
 
 // Teleport/leap landing fixup: removes stale collision at the target tile and resets the unit's dynamic-path collision type, pattern and path type.
-void __stdcall PATH_ResetCollisionOnLanding(int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
+static void __stdcall PATH_ResetCollisionOnLanding(int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
     eD2CollisionShapeType nUnitWidth;
     int32_t iVar1;
     eD2UnitType eUnitTypeLocal;
@@ -770,7 +770,7 @@ void __stdcall PATH_ResetCollisionOnLanding(int32_t nParam1, int32_t nParam2, D2
 }
 
 // Client-side skill cast feedback for a unit (pDynamicPath is treated as the casting unit). Reads the active skill's param1/param2 (target X/Y) and the unit's shifted Z. If the unit has landed (Z==0) at the cast target it plays the skill sound, clears the position vector, optionally adds the dust overlay, plays a footstep sound (and a paladin chat sound / missile-position update for specific anim modes). Otherwise it sets the unit's sequence frame to a per-state value (jump/charge based on anim mode and distance to target) and bumps nUnitWidth. Returns 1 when the cast effect completed, 0 while still animating. Custom-register convention.
-BOOL __stdcall CLIENT_PlaySkillSound(D2SkillStrc * pSkill, int32_t nParam, D2DynamicPathStrc * pDynamicPath) {
+static BOOL __stdcall CLIENT_PlaySkillSound(D2SkillStrc * pSkill, int32_t nParam, D2DynamicPathStrc * pDynamicPath) {
     uint32_t nDistToTarget;
     int nAnimMode;
     int32_t nNewSequence;

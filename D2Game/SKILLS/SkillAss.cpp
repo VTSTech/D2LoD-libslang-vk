@@ -208,7 +208,7 @@ BOOL __fastcall SKILLASS_SrvStFn23_MartialArtsCharge(::SGAMEDATA * pGame, D2Unit
 }
 
 // Adds one charge level (max 3) to an Assassin charge-up state (eState) on pUnit. Allocates a new stat list if none exists for the state, attaches skill/level modifier stats, and sets a decay timer via auralencalc. On each new charge level increments the eUnitStat counter and evaluates aurastat[1]/aurastatcalc[1] to add the bonus stat value. Triggers SetState and D2StatesTogglegfx to show the visual charge state.
-void __stdcall SKILLASS_AddChargeUpStack(::SGAMEDATA * pGame, eD2Skills eSkill, int32_t nParam, eD2States eState, eD2UnitStat eUnitStat, D2UnitStrc * pUnit) {
+static void __stdcall SKILLASS_AddChargeUpStack(::SGAMEDATA * pGame, eD2Skills eSkill, int32_t nParam, eD2States eState, eD2UnitStat eUnitStat, D2UnitStrc * pUnit) {
     if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return;
     }
@@ -328,7 +328,7 @@ BOOL __fastcall Skills_SrvDoFunc_035_ElementalChargeRelease(::SGAMEDATA * pGame,
 }
 
 // War Cry hit-effect callback. Reads the charge-up skill id and level from pStatList, evaluates aurastat[0] (the stun stat) and its calc[0] expression scaled by the charge count, adds the result to pDamage->dwEnDmgPct, and if the skill has a tgtoverlay applies it to the current target unit.
-void __stdcall SKILLBAR_HandleWarCryStun(D2StatListExStrc * pStatList, D2DamageStrc * pDamage, D2UnitStrc * pUnit) {
+static void __stdcall SKILLBAR_HandleWarCryStun(D2StatListExStrc * pStatList, D2DamageStrc * pDamage, D2UnitStrc * pUnit) {
     ::SGAMEDATA* pGame;
     D2UnitStrc* pUnit_00;
     eD2Skills eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
@@ -474,7 +474,7 @@ void __stdcall SKILLASS_ApplyChargeUpDamage(D2UnitStrc * pUnit, D2StatListExStrc
 }
 
 // Applies Assassin charge-up damage conversion to pDamage. Resolves the charge-up skill and level from pStatList, upgrades to the unit's current skill level if higher, validates the skill's aurastat[0], then calls SetDamageOnEvent. For Cold element at charge level 3, adds freeze duration from dwColdLength/calc[0]. Converts a portion of dwPhysDamage to the skill's element type via SERVER_AppendDamageToUnitEvent using calc[0] as the conversion percentage (clamped to 100%). Sets result flag 0x4000.
-void __stdcall SKILLASS_ApplyChargeUpConvertDamage(D2UnitStrc * pUnit, D2StatListExStrc * pStatList, D2DamageStrc * pDamage) {
+static void __stdcall SKILLASS_ApplyChargeUpConvertDamage(D2UnitStrc * pUnit, D2StatListExStrc * pStatList, D2DamageStrc * pDamage) {
     int32_t nPhysConvertPct;
     int32_t nValue;
     eD2Skills eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
@@ -1544,7 +1544,7 @@ void __fastcall SKILLASS_ReleaseChargeUpAttack(::SGAMEDATA * pGame, D2UnitStrc *
 }
 
 // Server-side per-hit damage application for the Assassin's dual-wield Whirlwind-style melee attack (also used by other dual-weapon skills). Args (custom calling convention): nParam=SGAMEDATA*, pDamage (in/out D2DamageStrc), pUnit=target, eSkill, pUnit1=skill-context unit, pUnit2(EBX)=attacker. Applies progressive charge-up damage, sets hit flags 3, computes skill min/max damage scaled by the damage struct's enhanced-damage percent (with 64-bit overflow-safe paths), adds kick damage similarly, rolls a uniform value in [min,max] from the attacker seed, and accumulates into pDamage->dwPhysDamage. Then, for each equipped weapon (main + offhand in BODYLOC_R_ARM slot), validates it is an unbroken usable weapon with an owner, toggles its item stats active, calls DAMAGE_CalculateOffensiveDamage and SKILLASS_DispatchChargeUpDamage so both weapons contribute, then restores the main weapon's stat-active flag.
-void __stdcall SKILLBAR_ApplyWhirlwindDamage(::SGAMEDATA * pGame, D2DamageStrc * pDamage, D2UnitStrc * pUnit, eD2Skills eSkill, D2UnitStrc * pUnit1, D2UnitStrc * pUnit2) {
+static void __stdcall SKILLBAR_ApplyWhirlwindDamage(::SGAMEDATA * pGame, D2DamageStrc * pDamage, D2UnitStrc * pUnit, eD2Skills eSkill, D2UnitStrc * pUnit1, D2UnitStrc * pUnit2) {
     eD2BodyLoc eBodyLoc;
     uint32_t nMinDmg;
     int nEnhKickDmg;
@@ -1706,7 +1706,7 @@ void __stdcall SKILLBAR_ApplyWhirlwindDamage(::SGAMEDATA * pGame, D2DamageStrc *
     D2Common::Stats::StatsEx::STATLIST_SetItemStatActive(pUnit2, pMainWeapon, 1);
 }
 
-void __stdcall D2CalcKickDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SkillsTxt * pSkillTxt, int32_t nSkillLvl, BOOL bKickCheck, D2UnitStrc * pAttacker, eD2Skills eSkill) {
+static void __stdcall D2CalcKickDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SkillsTxt * pSkillTxt, int32_t nSkillLvl, BOOL bKickCheck, D2UnitStrc * pAttacker, eD2Skills eSkill) {
     D2DamageStrc sDamage;
     uint32_t nToHit = D2Common::Skills::SKILLS_CalcToHit(pAttacker, eSkill, nSkillLvl);
     int nProgToHit = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pAttacker, UNITSTAT_progressive_tohit, 0);
@@ -2148,7 +2148,7 @@ BOOL __fastcall Skills_SrvDoFunc_045_SummonTrapSentry(::SGAMEDATA * pGame, D2Uni
 }
 
 // Generic Assassin skill melee attack resolver. Computes to-hit (SKILLS_CalcToHit + progressive_tohit stat), runs DAMAGE_CalculateHitCheck; on hit applies progressive damage, elemental enhancement, conversion percent, SetDamageOnEvent, offensive damage calculation, and DispatchChargeUpDamage. Always finalises with DAMAGE_CalculateAndApplyDamage.
-void __stdcall SKILLASS_SkillMeleeAttack(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam, eD2Skills eSkill, D2UnitStrc * pUnit2) {
+static void __stdcall SKILLASS_SkillMeleeAttack(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam, eD2Skills eSkill, D2UnitStrc * pUnit2) {
     D2DamageStrc sDamage;
     if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return;
@@ -2653,7 +2653,7 @@ void __fastcall SKILLASS_EquipSummonItems(::SGAMEDATA * pGame, D2UnitStrc * nPar
 }
 
 // Server-side Assassin skill helper called when a charge-up or multi-level minion is summoned at level > 1. Scales the minion's max HP by the per-level HP bonus from SkillsTxt Param[0], then allocates a fresh stat list and populates it with up to 6+5 skill calc stats (from the skill data block offsets 0x54 and 0x98). Optionally applies unique monster modifiers (umod) if the skill entry specifies one. Called after SKILL_CreateSummon to buff the newly spawned unit.
-void __stdcall SKILLASS_ApplyLevelScaledBuffs(::SGAMEDATA * pGame, int32_t nParam1, eD2Skills eSkill, int32_t nParam2, D2UnitStrc * pUnit) {
+static void __stdcall SKILLASS_ApplyLevelScaledBuffs(::SGAMEDATA * pGame, int32_t nParam1, eD2Skills eSkill, int32_t nParam2, D2UnitStrc * pUnit) {
     eD2UnitType eUnitType;
     int nHpBonusPerLevelPct;
     if (1 >= nParam2) {
@@ -2898,7 +2898,7 @@ BOOL __fastcall Skills_SrvDoFunc_050_DragonTail_FireExplosion(::SGAMEDATA * pGam
     return 1;
 }
 
-uint32_t __stdcall SKILLAMZ_GetGuidedArrowPiercingBonus(int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
+static uint32_t __stdcall SKILLAMZ_GetGuidedArrowPiercingBonus(int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return 0;
     }
@@ -2971,7 +2971,7 @@ void __fastcall SKILLASS_OnConversionExpire(D2UnitStrc * pUnit, eD2States eState
 }
 
 // Server-side application of the Conversion effect (Assassin/Druid "convert enemy to ally") to pUnit, cast by pUnit2 with skill data at nParam. RNG-rolls success; on success allocates/refreshes a STATE_conversion statlist with an expiry frame (game frame + base + random duration), sets the SKILLASS_OnConversionExpire callback, frees the converted unit's existing minions, sets it to alignment 2 (ally), retargets it, and creates a unit node. Also caps the convert's level/HP/maxhp against the caster via a STATE_conversion_save snapshot when the convert out-levels the caster. Returns 1 on success, 0 if the roll fails or stat allocation fails. Custom register calling convention (pUnit@ECX, nParam@EAX).
-BOOL __stdcall SKILLASS_ApplyConversionToUnit(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pUnit2, int32_t nParam) {
+static BOOL __stdcall SKILLASS_ApplyConversionToUnit(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pUnit2, int32_t nParam) {
     eD2UnitType eOwnerUnitType;
     int32_t nMaxHpShifted;
     int nHpScaledFull;

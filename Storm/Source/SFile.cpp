@@ -20,7 +20,6 @@
 #include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "support/d2_trace.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -144,7 +143,7 @@ int32_t __stdcall SFILE_DecompressLzw(int32_t pSrcData, int32_t pDstData, int32_
 }
 
 // @blizzard Decrypt (SFILE.CPP)
-void SFILE_Decrypt(uint32_t nSeed, uint32_t * pData, uint32_t nByteLen) {
+static void SFILE_Decrypt(uint32_t nSeed, uint32_t * pData, uint32_t nByteLen) {
     uint32_t nDwordsRem;
     int nKey = -0x11111112;
     for (nDwordsRem = nByteLen >> 2; nDwordsRem; nDwordsRem--) {
@@ -159,7 +158,7 @@ void SFILE_Decrypt(uint32_t nSeed, uint32_t * pData, uint32_t nByteLen) {
 }
 
 // @blizzard Hash (SFILE.CPP)
-uint32_t __stdcall SFILE_Hash(int32_t nHashKind, char * szText) {
+static uint32_t __stdcall SFILE_Hash(int32_t nHashKind, char * szText) {
     uint32_t nHash = 0x7fed7fed;
     int nSeed = -0x11111112;
     for (; szText && *szText != '\0'; szText++) {
@@ -174,7 +173,7 @@ uint32_t __stdcall SFILE_Hash(int32_t nHashKind, char * szText) {
 
 // @sourcefile .\SOURCE\SFILE.CPP
 // @blizzard InitializeHashSource (SFILE.CPP)
-void SFILE_InitializeHashSource(uint32_t nSeed) {
+static void SFILE_InitializeHashSource(uint32_t nSeed) {
     uint32_t nLo;
     if (!g_pStormMpqCryptTable) {
       g_pStormMpqCryptTable = SMem::SMemAlloc(0x1400, ".\\SOURCE\\SFILE.CPP", 0x340, 0);
@@ -205,7 +204,7 @@ void SFILE_InitializeHashSource(uint32_t nSeed) {
 }
 
 // @blizzard ReadFileChecked (SFILE.CPP)
-int __stdcall SFILE_ReadFileChecked(int32_t * pMPQFile, void * pOutputBuf, uint32_t nBytesToRead, uint32_t * pnBytesRead, HANDLE hFile, LPDWORD pdwBytesRead, int32_t nFileOffset) {
+static int __stdcall SFILE_ReadFileChecked(int32_t * pMPQFile, void * pOutputBuf, uint32_t nBytesToRead, uint32_t * pnBytesRead, HANDLE hFile, LPDWORD pdwBytesRead, int32_t nFileOffset) {
     BOOL bReadSuccess;
     DWORD dwLastError;
     int bShouldRetry;
@@ -250,7 +249,7 @@ int __stdcall SFILE_ReadFileChecked(int32_t * pMPQFile, void * pOutputBuf, uint3
     return 0;
 }
 
-int __stdcall SFILE_SyncReadFile(void * pOutputBuf, uint32_t nBytesToRead, uint32_t * pnBytesRead, int32_t nFileOffset, D2MPQFileStrc * pFileHandle) {
+static int __stdcall SFILE_SyncReadFile(void * pOutputBuf, uint32_t nBytesToRead, uint32_t * pnBytesRead, int32_t nFileOffset, D2MPQFileStrc * pFileHandle) {
     DWORD nBytesRead = 0;
     SFILE_ReadFileChecked((int32_t*)&pOutputBuf, pOutputBuf, nBytesToRead, (uint32_t*)pFileHandle->szFileName, pFileHandle->hFile, &nBytesRead, nFileOffset);
     if (!pnBytesRead) {
@@ -261,12 +260,12 @@ int __stdcall SFILE_SyncReadFile(void * pOutputBuf, uint32_t nBytesToRead, uint3
     return (uint32_t)(nBytesRead == nBytesToRead);
 }
 
-D2MPQBlockEntryStrc * SFILE_GetBlockTableEntry(D2ArchiveStrc * pArchive, int32_t nHashIndex) {
+static D2MPQBlockEntryStrc * SFILE_GetBlockTableEntry(D2ArchiveStrc * pArchive, int32_t nHashIndex) {
     return pArchive->pBlockTable + pArchive->pHashTable[nHashIndex].dwBlockIndex;
 }
 
 // @blizzard SearchHashTable (SFILE.CPP)
-uint32_t __stdcall SFILE_SearchHashTable(D2ArchiveStrc * pArchive, int16_t nLocale, char cPlatform, char * szFileName) {
+static uint32_t __stdcall SFILE_SearchHashTable(D2ArchiveStrc * pArchive, int16_t nLocale, char cPlatform, char * szFileName) {
     char cVar1;
     uint16_t nEntryLocale;
     uint32_t nHashIndex = SFILE_Hash(0, szFileName);
@@ -341,7 +340,7 @@ void __fastcall SFILE_ShiftSectorTable(int32_t pSectorTable, uint32_t nSectorCou
     *(uint32_t*)((int)pDst + 0x28) = 0;
 }
 
-int32_t SFILE_GetStreamPosition(D2StormAudioStreamRec * pStream) {
+static int32_t SFILE_GetStreamPosition(D2StormAudioStreamRec * pStream) {
     // Frame slots -12..-4 are ONE object: &nPosHigh is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -371,7 +370,7 @@ int32_t SFILE_GetStreamPosition(D2StormAudioStreamRec * pStream) {
     return __frame0.nPosition;
 }
 
-void SFILE_HandleAsyncReadError(D2StormAsyncOpStrc * pAsyncOp) {
+static void SFILE_HandleAsyncReadError(D2StormAsyncOpStrc * pAsyncOp) {
     uint32_t nCopyBytes;
     uint32_t nBytesRead;
     D2StormAudioStreamRec* pParentStream;
@@ -432,25 +431,25 @@ void __stdcall SFILE_BuildDefaultBasePath() {
 }
 
 // @blizzard CheckArchiveHandle (SFILE.CPP)
-int SFILE_CheckArchiveHandle(D2ArchiveStrc * pArchive, D2ArchiveStrc * * ppArchive) {
+static int __stdcall SFILE_CheckArchiveHandle(D2ArchiveStrc * pArchive, D2ArchiveStrc * * ppArchive) {
     *ppArchive = pArchive;
     return 1;
 }
 
-uint32_t SFILE_FileExistsOnDisk(LPCSTR szText) {
+static uint32_t SFILE_FileExistsOnDisk(LPCSTR szText) {
     DWORD dwFileAttributes = GetFileAttributesA(szText);
     return ~(dwFileAttributes >> 4) & 1;
 }
 
 // @blizzard CheckFileHandle (SFILE.CPP)
-int SFILE_CheckFileHandle(D2MPQFileStrc * pMPQFile, D2MPQFileStrc * * ppMPQFile) {
+static int __stdcall SFILE_CheckFileHandle(D2MPQFileStrc * pMPQFile, D2MPQFileStrc * * ppMPQFile) {
     *ppMPQFile = pMPQFile;
     return 1;
 }
 
 // @blizzard CheckForCdRom (SFILE.CPP)
 BOOL __stdcall SFILE_CheckForCdRom(char * szText) {
-    // Frame slots -288..-4 are ONE object: &dwTotalClusters is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -288..-8 are ONE object: &dwTotalClusters is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       DWORD dwTotalClusters;
@@ -459,14 +458,12 @@ BOOL __stdcall SFILE_CheckForCdRom(char * szText) {
       DWORD dwBytesPerSector;
       char szRootPath[4];
       uint32_t szFsName[65];
-      uint32_t dwStackCookie;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 284, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 280, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     uint32_t nChecksum;
     LPDWORD dwSectorsPerCluster;
     uint16_t nFoldedChecksum;
-    __frame0.dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     SSTR::SStrCopy(__frame0.szRootPath, szText, 4);
     UINT nDriveType = GetDriveTypeA(__frame0.szRootPath);
     __frame0.dwFsFlags = 0;
@@ -482,21 +479,18 @@ BOOL __stdcall SFILE_CheckForCdRom(char * szText) {
         nChecksum = __frame0.dwFsFlags & 4 ^ __frame0.szFsName[0] ^ __frame0.dwFreeClusters ^ __frame0.dwBytesPerSector ^ nDriveType;
         nFoldedChecksum = (uint16_t)(nChecksum >> 0x10) ^ (uint16_t)nChecksum;
         if (nFoldedChecksum == 0x1f00 || nFoldedChecksum == 0x805) {
-          Fog::Debug::GuardStack();
           return 1;
         }
       }
     }
 
-    Fog::Debug::GuardStack();
     return 0;
 }
 
 // @blizzard ConvertRelativePathName (SFILE.CPP)
-void __stdcall SFILE_ConvertRelativePathName(int32_t bStripDir, char * szFileName, char * szOutPath) {
+static void __stdcall SFILE_ConvertRelativePathName(int32_t bStripDir, char * szFileName, char * szOutPath) {
     char* pLastSlash;
     char szTmpPath[260];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (szSFileBasePath[0] == '\0') {
       SFILE_BuildDefaultBasePath();
     }
@@ -509,10 +503,9 @@ void __stdcall SFILE_ConvertRelativePathName(int32_t bStripDir, char * szFileNam
 
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szTmpPath, "%s%s", szSFileBasePath, szFileName);
     __fullpath(szOutPath, szTmpPath, 0x104);
-    Fog::Debug::GuardStack();
 }
 
-uint32_t __stdcall SFILE_FindFileOnDisk(uint8_t bSearchFlags, LPCSTR szOutPath, char * szFileName) {
+static uint32_t __stdcall SFILE_FindFileOnDisk(uint8_t bSearchFlags, LPCSTR szOutPath, char * szFileName) {
     uint32_t dwFileAttributes = 0;
     if (!(bSearchFlags & 3)) {
       return dwFileAttributes;
@@ -1720,7 +1713,7 @@ uint32_t __stdcall SFILE_InternalReadAligned(D2MPQFileStrc * pArchive, uint32_t 
 // the run is clipped to the file size at [pHashEntry+8] unless [pHashEntry+0xc] has bits 0xff00 set. Inputs are EDX and ESI only;
 // ECX is scratch (first written at 00416fcd).
 // @blizzard InternalReadAlignedSector (SFILE.CPP)
-uint32_t SFILE_InternalReadAlignedSector(uint32_t nAlignedOffset, D2MPQFileStrc * pMPQFile) {
+static uint32_t SFILE_InternalReadAlignedSector(uint32_t nAlignedOffset, D2MPQFileStrc * pMPQFile) {
     D2ArchiveStrc* pArchive = pMPQFile->pArchive;
     if (pArchive->pLastReadFile == pMPQFile && pArchive->nLastReadOffset == nAlignedOffset) {
       return pArchive->nLastReadResult;
@@ -1740,7 +1733,7 @@ uint32_t SFILE_InternalReadAlignedSector(uint32_t nAlignedOffset, D2MPQFileStrc 
 }
 
 // @blizzard InternalReadUnaligned (SFILE.CPP)
-uint32_t __stdcall SFILE_InternalReadUnaligned(D2MPQFileStrc * pMPQFile, uint32_t * pOutputBuf, uint32_t nBytesToRead, uint32_t nFileOffset) {
+static uint32_t __stdcall SFILE_InternalReadUnaligned(D2MPQFileStrc * pMPQFile, uint32_t * pOutputBuf, uint32_t nBytesToRead, uint32_t nFileOffset) {
     uint32_t* pSectorSizePtr;
     uint32_t uVar2;
     uint32_t nFirstChunk;
@@ -2362,7 +2355,6 @@ int __fastcall SFILE_SearchFileInArchives(D2ArchiveStrc * pArchive, D2MPQBlockEn
     char* szFileName_00;
     char szDiskPath[260];
     char szPrefixedName[260];
-    uint32_t nStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (ppArchiveOut) {
       *ppArchiveOut = 0;
     }
@@ -2374,7 +2366,6 @@ int __fastcall SFILE_SearchFileInArchives(D2ArchiveStrc * pArchive, D2MPQBlockEn
     if (pArchive) {
       nRet = SFILE_CheckArchiveHandle(pArchive, &pValidatedArchive);
       if (!nRet) {
-        Fog::Debug::GuardStack();
         return 0;
       }
     }
@@ -2402,7 +2393,6 @@ int __fastcall SFILE_SearchFileInArchives(D2ArchiveStrc * pArchive, D2MPQBlockEn
               SSTR::SStrCopy(szDiskPathOut, szDiskPath, 0x104);
             }
 
-            Fog::Debug::GuardStack();
             return 2;
           }
         }
@@ -2427,7 +2417,6 @@ int __fastcall SFILE_SearchFileInArchives(D2ArchiveStrc * pArchive, D2MPQBlockEn
             SErr::SErrSetLastError(0x3ee);
           }
 
-          Fog::Debug::GuardStack();
           return nRet;
         }
       }
@@ -2442,7 +2431,6 @@ int __fastcall SFILE_SearchFileInArchives(D2ArchiveStrc * pArchive, D2MPQBlockEn
     } while (true);
 
     SErr::SErrSetLastError(2);
-    Fog::Debug::GuardStack();
     return 0;
 }
 
@@ -3392,7 +3380,6 @@ int __stdcall SFileOpenFileEx(D2ArchiveStrc * pArchive, char * szFileName, uint3
     D2MPQBlockEntryStrc* pSavedBlockEntry;
     D2ArchiveStrc* pFileArchive;
     int* pRefCount;
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     uint32_t nResult = -1;
     char* pFileName = szFileName;
     if (!phFile) {
@@ -3487,12 +3474,10 @@ int __stdcall SFileOpenFileEx(D2ArchiveStrc * pArchive, char * szFileName, uint3
         (*fpSFileOpenCallback)(szFileName, gpSFileOpenCallbackParam);
       }
 
-      Fog::Debug::GuardStack();
       return nResult;
     }
 
     SErr::SErrSetLastError(0x57);
-    Fog::Debug::GuardStack();
     return 0;
 }
 
@@ -3556,7 +3541,7 @@ D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord4(int * * ppArchive, int32_t n
 }
 
 // @blizzard IssueRequest (SFILE.CPP)
-D2StormAsyncOpStrc * __stdcall SFILE_IssueRequest(uint32_t nFileOffset, uint32_t pChunkWritePtr, uint32_t pReadBufferBase, IDirectSoundBuffer * pStream, uint32_t pUserCtx2, D2StormAudioStreamRec * pParentStream, uint32_t nChunkSize, int32_t nTimeoutMs, uint32_t bUrgent, HANDLE hCompletionEvent, uint32_t bQueueImmediately, int32_t bIsLastChunk, D2StormAsyncCompletionStrc * pCompletion, D2MPQFileStrc * pMPQFile) {
+static D2StormAsyncOpStrc * __stdcall SFILE_IssueRequest(uint32_t nFileOffset, uint32_t pChunkWritePtr, uint32_t pReadBufferBase, IDirectSoundBuffer * pStream, uint32_t pUserCtx2, D2StormAudioStreamRec * pParentStream, uint32_t nChunkSize, int32_t nTimeoutMs, uint32_t bUrgent, HANDLE hCompletionEvent, uint32_t bQueueImmediately, int32_t bIsLastChunk, D2StormAsyncCompletionStrc * pCompletion, D2MPQFileStrc * pMPQFile) {
     int bArgsValid;
     D2StormAsyncOpStrc* pPrevBack;
     D2StormAsyncOpStrc* pRequest = 0;
@@ -4482,7 +4467,7 @@ void __stdcall SFILE_CreateCdThread() {
 }
 
 // Under the SFile lock, sets the urgent flag (+0x1c) of every queued Storm read request whose buffer base (+0x24, SFILE_IssueRequest) is pReadBuffer. No-op if pReadBuffer is NULL. SFILE_SelectAsyncRequest caps an urgent request's deadline at 1000 ms (0041a51a).
-void SFILE_SetRequestUrgentByBuffer(void * pReadBuffer, BOOL bUrgent) {
+static void SFILE_SetRequestUrgentByBuffer(void * pReadBuffer, BOOL bUrgent) {
     uint32_t pAsyncRequest;
     if (!pReadBuffer) {
       return;
@@ -4862,13 +4847,13 @@ int __stdcall SFileReadFile(D2MPQFileStrc * pMPQFile, void * pOutputBuffer, uint
 }
 
 // Simplified wrapper for SFILE_ReadFile that passes 0 for the completion callback parameter and param6 as the async flags. Used when caller doesn't need completion notification.
-void __stdcall SFILE_ReadFileSimple(D2MPQFileStrc * pMPQFile, void * pOutputBuffer, uint32_t nBytesToRead, size_t * pnSize, int32_t pAsyncReadCtx, D2StormAsyncCompletionStrc * pCompletion) {
+void __stdcall SFILE_ReadFileSimple(D2MPQFileStrc * pMPQFile, void * pOutputBuffer, uint32_t nBytesToRead, uint32_t * pnSize, int32_t pAsyncReadCtx, D2StormAsyncCompletionStrc * pCompletion) {
     SFileReadFileEx2(pMPQFile, pOutputBuffer, nBytesToRead, pnSize, (LPOVERLAPPED)pAsyncReadCtx, 0, pCompletion);
 }
 
 // Load MPQ attributes from (attributes) file in archive
 // @sourcefile .\SOURCE\SFILE.CPP
-int SFILE_LoadAttributes(D2ArchiveStrc * pArchive, int pAttributesBuffer, int nNumEntries) {
+int __thiscall SFILE_LoadAttributes(D2ArchiveStrc * pArchive, int pAttributesBuffer, int nNumEntries) {
     uint32_t* pDstEntry;
     DWORD nExpectedSize;
     D2MPQFileStrc* pMpqFile;
@@ -4947,7 +4932,7 @@ int SFILE_LoadAttributes(D2ArchiveStrc * pArchive, int pAttributesBuffer, int nN
 }
 
 // @blizzard FindChunk (SFILE.CPP)
-uint32_t SFILE_FindChunk(int32_t nChunkId, D2MPQFileStrc * pMPQFile, int * pnChunkSize) {
+static uint32_t SFILE_FindChunk(int32_t nChunkId, D2MPQFileStrc * pMPQFile, int * pnChunkSize) {
     DWORD nSeekPos;
     D2FileChunkHeaderStrc sChunkHeader;
     int bReadOk = SFileReadFile(pMPQFile, &sChunkHeader, 8, nullptr, 0);
@@ -5327,7 +5312,6 @@ int __stdcall SFileOpenArchive(char * szArchiveName, int * pUserData, uint32_t n
     }
     if (!(bValidArgs & -(uint32_t)(szArchiveName != 0) & -(uint32_t)(*szArchiveName != '\0'))) {
       SErr::SErrSetLastError(0x57);
-      Fog::Debug::GuardStack();
       return 0;
     }
 
@@ -5386,7 +5370,6 @@ int __stdcall SFileOpenArchive(char * szArchiveName, int * pUserData, uint32_t n
         pArchive->nPriority = 0;
         iVar2 = SFILE_s_OpenArchive(pArchive, nFlags, bIsCdrom, ppArchive);
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00779068);
-        Fog::Debug::GuardStack();
         return iVar2;
       }
     } else {
@@ -5394,31 +5377,27 @@ int __stdcall SFileOpenArchive(char * szArchiveName, int * pUserData, uint32_t n
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00779068);
-    Fog::Debug::GuardStack();
     return 0;
 }
 
 // @sourcefile .\SOURCE\SFILE.CPP
 void __stdcall SFILE_OpenNestedArchive(int32_t nParentArchive, char * szFileName, int * pUserData, uint32_t nFlags, D2ArchiveStrc * * ppArchive) {
-    // Frame slots -272..-4 are ONE object: &pBlockInfo is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -272..-8 are ONE object: &pBlockInfo is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       D2MPQFileStrc* pBlockInfo;
       char szResolvedPath[260];
-      uint32_t dwStackCookie;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 268, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 264, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     D2ArchiveStrc* pNewArchive;
     D2MPQHeaderStrc* pHeaderBuf;
     D2ArchiveStrc* pArchive;
     D2MPQFileStrc* pOpenedFile;
-    __frame0.dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     D2MPQFileStrc** pMpqFile = &__frame0.pBlockInfo;
     uint32_t nSearchFlags = SFILE_GetOpenFlags();
     int nOpenResult = SFileOpenFileEx((D2ArchiveStrc*)nParentArchive, szFileName, nSearchFlags, (void**)pMpqFile);
     if (!nOpenResult) {
-      Fog::Debug::GuardStack();
       return;
     }
 
@@ -5431,7 +5410,6 @@ void __stdcall SFILE_OpenNestedArchive(int32_t nParentArchive, char * szFileName
       nSearchFlags = SFILE_GetOpenFlags();
       SFILE_FindFileOnDisk((uint8_t)nSearchFlags, __frame0.szResolvedPath, szFileName);
       SFileOpenArchive(szFileName, pUserData, nFlags, ppArchive);
-      Fog::Debug::GuardStack();
       return;
     }
     if (!(pOpenedFile->pBlockEntry->dwFlags & 0x1ff00)) {
@@ -5457,14 +5435,12 @@ void __stdcall SFILE_OpenNestedArchive(int32_t nParentArchive, char * szFileName
       pArchive->nArchiveFileSize = pOpenedFile->pBlockEntry->dwFileSize + pOpenedFile->pBlockEntry->dwFilePos;
       SFILE_s_OpenArchive(pArchive, nFlags, pArchive->nArchiveType, ppArchive);
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00779068);
-      Fog::Debug::GuardStack();
       return;
     }
 
     SFileCloseFile(pMPQFile);
     SErr::SErrSetLastError(0x3ee);
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00779068);
-    Fog::Debug::GuardStack();
 }
 
 void __fastcall CRC32_UpdateCRC(uint8_t * pbData, int32_t nLength, uint32_t * pdwCrc, uint8_t byFlags) {

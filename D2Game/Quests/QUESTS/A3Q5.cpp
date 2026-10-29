@@ -51,24 +51,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q5Strc) == 0x50, "D2_NEW(D2QuestDataA3Q5Strc): the 32-bit layout must be the 0x50 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q5Strc) == 0x50, "D2_NEW_AT(D2QuestDataA3Q5Strc): the 32-bit layout must be the 0x50 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A3Q5 {
@@ -586,23 +582,24 @@ void __fastcall Q22_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 }
 
 // Q22_SequenceFilter (BLACKENED TEMPLE) — fpSequenceFilter chained to the next quest in the sequence (nSequenceQuestId = QUEST_TheGoldenBird). Only fires once this quest reaches nStateFlag 7 (fully complete) and is past intro; then looks up the sequenced quest's data and invokes its own sequence filter. No quest-record state calls.
-void __fastcall Q22_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q22_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag != 7 && pQuestData->bIsNotIntroduction) {
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pQuestData_00) {
-      return;
+      return false;
     }
 
-    BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (BVar1) {
+    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+    if (BVar2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1f5);
       exit(-1);
     }
 
-    pQuestData_00->fpSequenceFilter(pQuestData_00);
+    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+    return bVar1;
 }
 
 // Q22_Callback_13 (BLACKENED TEMPLE) — quest-state[0xd] init/resume handler that reconstructs the live nStateFlag from the player's saved quest record when a game (re)loads. Sets bJerhynAiActive if Khalim's Will is done. If the record is Completed OR at Step0x04, marks the shared record JustCompleted and ends intro. Otherwise reads Lam Esen's Tome completion into pPortalSpawnRoom, then maps record Step0x02/Step0x03 to live nStateFlag (2/3 -> Step0x02 partial; 4/5 -> Step0x03), choosing the value by Lam Esen completion. Pure resume logic; one record write (JustCompleted).
@@ -924,19 +921,19 @@ BOOL __fastcall OBJOP_A3Q5_NihlathakAltarLaunchOrb(D2ObjectOperateFnArg * pOpera
         pQuestSpecificData->bJerhynAiActive = true;
         NotifyPlayersAboutEvent(pQuestData->pGame, 10);
         /* FARPROC lpfn for IsBadCodePtr */ _bQuestState = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-        if (!_bQuestState) {
-          pQuestData->fpSequenceFilter(pQuestData);
-          nAttackerPartyId = UNIT::SUnit::GetPartyId(pOperation->pAttacker);
-          if (nAttackerPartyId == -1) {
-            return 0;
-          }
+        if (_bQuestState) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x353);
+          exit(-1);
+        }
 
-          UNIT::Party::ExecuteFunctionForEveryPartyMember(pOperation->sArg.pGame, nAttackerPartyId, (::fpExecuteOnUnitFunction)Q22_PlayerCompleteKhalimsWill, 0);
+        pQuestData->fpSequenceFilter(pQuestData);
+        nAttackerPartyId = UNIT::SUnit::GetPartyId(pOperation->pAttacker);
+        if (nAttackerPartyId == -1) {
           return 0;
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x353);
-        exit(-1);
+        UNIT::Party::ExecuteFunctionForEveryPartyMember(pOperation->sArg.pGame, nAttackerPartyId, (::fpExecuteOnUnitFunction)Q22_PlayerCompleteKhalimsWill, 0);
+        return 0;
       }
     }
 
@@ -1117,14 +1114,14 @@ void __fastcall Q22_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[3] = Q22_Callback03_ChangedLevel;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q22_Callback13_PlayerStartedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q22_Callback10_PlayerLeavesGame;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q22_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q22_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_TheGoldenBird;
     pQuestData->nStateFlag = 0;
     pQuestData->nQuestIdReal = QUEST_TheBlackenedTemple;
     pQuestData->fpActiveFilter = Q22_ActiveFilter;
     pQuestData->nInitNo = 6;
     pQuestData->fpStatusFilter = 0;
-    D2QuestDataA3Q5Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA3Q5Strc);
+    D2QuestDataA3Q5Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA3Q5Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q5.cpp", 0x425);
     pQuestData->pQuestSpecificData.pA3Q5 = pQuestSpecificData;
     /* Stupid... Why double memset here ? */ memset(pQuestSpecificData, 0, 0x50);
     memset(pQuestData->pQuestSpecificData.pA3Q5, 0, 0x50);

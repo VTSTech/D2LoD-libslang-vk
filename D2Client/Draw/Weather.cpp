@@ -143,7 +143,7 @@ void __stdcall WEATHER_ResetEnvironmentParticles() {
     exit(-1);
 }
 
-void __stdcall WEATHER_SetEnabledState(int bForceReset, int bNewState) {
+static void __stdcall WEATHER_SetEnabledState(int bForceReset, int bNewState) {
     if (gnWeatherTransitionProgress && bNewState) {
       gnWeatherTransitionProgress = 0;
     }
@@ -570,7 +570,7 @@ void __fastcall WEATHER_SpawnBubble(int nScreenX, int nScreenY, int nWorldX, int
     *(uint32_t*)((int)nRoll + nBubbleIndex * 0x18 + 0x14) = 2;
 }
 
-void __stdcall WEATHER_GetLightingTint(uint8_t * pOutAlpha, int nIntensity, uint8_t * pOutTint) {
+static void __stdcall WEATHER_GetLightingTint(uint8_t * pOutAlpha, int nIntensity, uint8_t * pOutTint) {
     // Static local variables (originally global data)
     static uint8_t gaWeatherLightTintData[7] = { 0xc8, 0x40, 0xa0, 0x20, 0x50, 0x40, 0xa0 }; D2_STATIC_GUARD(gaWeatherLightTintData, "D2Client::Draw::Weather::WEATHER_GetLightingTint::gaWeatherLightTintData");
 
@@ -619,7 +619,7 @@ void __stdcall WEATHER_GetLightingTint(uint8_t * pOutAlpha, int nIntensity, uint
     *pOutAlpha = gWeatherPaletteLightingNightColors[nIndex];
 }
 
-void WEATHER_SpawnParticle(D2SeedStrc * pSeed) {
+static void WEATHER_SpawnParticle(D2SeedStrc * pSeed) {
     bool bIsBlizzard;
     D2WeatherParticleStrc* pParticleSlot;
     uint32_t nSlot = Fog::Src::DataArrays::FOG_GetMissileField((D2MissilesTxt*)pEnvironmentParticles);
@@ -655,13 +655,13 @@ void WEATHER_SpawnParticle(D2SeedStrc * pSeed) {
       }
 
       nLineIndex = pParticleArray[nParticleSlotIndex].nLineIndex;
-      if (nLineIndex < 8 && -1 < nLineIndex) {
-        WEATHER_GetLightingTint(&pParticleArray[nParticleSlotIndex].nColor, nLineIndex, &pParticleArray[nParticleSlotIndex].nAlpha);
-        return;
+      if (!(nLineIndex < 8 && -1 < nLineIndex)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x390);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x390);
-      exit(-1);
+      WEATHER_GetLightingTint(&pParticleArray[nParticleSlotIndex].nColor, nLineIndex, &pParticleArray[nParticleSlotIndex].nAlpha);
+      return;
     }
 
     sNextSeed = D2_SEED_NEXT(*pSeed);
@@ -902,11 +902,11 @@ uint32_t __stdcall WEATHER_GetCurrentLevelWeatherFlags() {
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveRain(eLevel);
-    bool bCanHaveMud = D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveMud(eLevel);
-    return (uint32_t)bCanHaveMud;
+    uint8_t bCanHaveMud = D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveMud(eLevel);
+    return (uint32_t)(bCanHaveMud != '\0');
 }
 
-int WEATHER_UpdateParticleCount(D2SeedStrc * pSeed) {
+static int WEATHER_UpdateParticleCount(D2SeedStrc * pSeed) {
     uint64_t seed64;
     while (pEnvironmentParticles->nUsedCount < gnWeatherParticleState) {
       WEATHER_SpawnParticle(pSeed);
@@ -958,6 +958,7 @@ int WEATHER_UpdateParticleCount(D2SeedStrc * pSeed) {
 }
 
 void __stdcall DRAW_Overlay_Weather() {
+    uint32_t eBorderType;
     D2RoomStrc* pRoom;
     eD2LevelId eLevel;
     int nClipLeft;
@@ -967,11 +968,13 @@ void __stdcall DRAW_Overlay_Weather() {
     int32_t nLineOrCoord;
     int32_t nSoundPosZ;
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_Net();
-    bool bVar1 = false;
+    bool bVar2 = false;
     if (pPlayer) {
+      uint8_t bVar1;
       pRoom = D2Common::Units::UNITS_GetRoom(pPlayer);
       eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
       bVar1 = D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveRain(eLevel);
+      bVar2 = bVar1 != '\0';
       D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveMud(eLevel);
     }
 
@@ -983,7 +986,6 @@ void __stdcall DRAW_Overlay_Weather() {
 
     D2SeedStrc* pSeed = &pPlayer->sSeed;
     if (gnWeatherTransitionProgress && gbWeatherTransitionTriggered) {
-      uint32_t eBorderType;
       gbWeatherTransitionTriggered--;
       if (!gbWeatherTransitionTriggered) {
         if (!gnWeatherTransitionState) {
@@ -1022,7 +1024,7 @@ void __stdcall DRAW_Overlay_Weather() {
         return;
       }
     }
-    if (!(bVar1 && pEnvironmentParticles->nUsedCount)) {
+    if (!(bVar2 && pEnvironmentParticles->nUsedCount)) {
       return;
     }
 
@@ -1134,8 +1136,8 @@ uint32_t __stdcall WEATHER_CanHaveRain() {
 
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-    bool bCanRainResult = D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveRain(eLevel);
-    bCanRain = (uint32_t)bCanRainResult;
+    uint8_t bCanRainResult = D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveRain(eLevel);
+    bCanRain = (uint32_t)(bCanRainResult != '\0');
     D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveMud(eLevel);
     return bCanRain;
 }
@@ -1165,7 +1167,12 @@ void __stdcall ENV_FreeClientSide_NoOp() {
 
 void __fastcall WEATHER_TransitionState(uint32_t nState) {
     int32_t nErrorLineReg;
-    if (nState < 4) {
+    if (!(nState < 4)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12a);
+      exit(-1);
+    }
+
+    {
       D2UnitStrc* pPlayer;
       if (!((!gnWeatherTransitionLock || !nState) && (!gnWeatherStateAct5 || nState == 2))) {
         return;
@@ -1196,9 +1203,6 @@ void __fastcall WEATHER_TransitionState(uint32_t nState) {
 
       return;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12a);
-    exit(-1);
 }
 
 // Flips gnWeatherTransitionLock. Unlocking calls WEATHER_UpdateStateAct5(1). Locking zeroes the Act 5 and transition weather states, requires the player unit (halt, Env.cpp line 311), clears gnWeatherParticleState and resets the particle array (halt, line 347, if entries remain).
@@ -1219,12 +1223,12 @@ void __stdcall WEATHER_ToggleTransitionLock() {
     } else {
       gnWeatherParticleState = 0;
       Fog::Src::DataArrays::FOG_InitDataArray(pEnvironmentParticles);
-      if (!pEnvironmentParticles->nUsedCount) {
-        return;
+      if (pEnvironmentParticles->nUsedCount) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15b);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15b);
-      exit(-1);
+      return;
     }
 }
 
@@ -1259,13 +1263,13 @@ void __stdcall WEATHER_UpdateTransition(D2SeedStrc * pSeed) {
     } else if (!gnWeatherTransitionLock) {
       gnWeatherCurrentTransitionState = 2;
       pPlayer = UNIT::Player::GetPlayerUnit_UI();
-      if (pPlayer) {
-        LoadCustomSettingsPerAreaAct5();
-        return;
+      if (!pPlayer) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x137);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x137);
-      exit(-1);
+      LoadCustomSettingsPerAreaAct5();
+      return;
     }
 }
 
@@ -1274,7 +1278,7 @@ void __stdcall WeatherEffects() {
     static BOOL WEATHER_bCanMud; D2_STATIC_GUARD_BSS(WEATHER_bCanMud, "D2Client::Draw::Weather::WeatherEffects::WEATHER_bCanMud");
     static BOOL WEATHER_bCanRain; D2_STATIC_GUARD_BSS(WEATHER_bCanRain, "D2Client::Draw::Weather::WeatherEffects::WEATHER_bCanRain");
 
-    bool bMudResult;
+    uint8_t bMudResult;
     D2RoomStrc* pRoom;
     eD2LevelId eLevel;
     D2UnitStrc* pPlayer;
@@ -1287,10 +1291,10 @@ void __stdcall WeatherEffects() {
       bool bRainResult;
       pRoom = D2Common::Units::UNITS_GetRoom(pPlayer);
       eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-      bRainResult = D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveRain(eLevel);
+      bRainResult = (bool)D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveRain(eLevel);
       bCanRain = (BOOL)bRainResult;
       bMudResult = D2Common::DATATBLS::LvlTbls::LEVEL_CanHaveMud(eLevel);
-      bCanMud = (BOOL)bMudResult;
+      bCanMud = (BOOL)(bMudResult != '\0');
       if (bCanRain) {
         goto clear_mud_and_update;
       }

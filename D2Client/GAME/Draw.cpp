@@ -75,7 +75,7 @@ void __fastcall DRAW_UpdateTileVisibilityBounds(D2DrlgTileDataStrc * pActSub18, 
 }
 
 // Fills an 8x8 grid of D2GfxLightExStrc entries with light colour and intensity for a tile. For indoor tiles, queries the act environment for a flat intensity and RGB colour, then writes those constant values to all 64 cells. For outdoor tiles, iterates the 8x8 world-coordinate grid (tile origin * 8, stepped by 8) and calls DRAW_CoordIsInCoord for each cell to compute per-cell light colour from the outdoor lighting model.
-void __stdcall GetIntensityFlagsForTile(int32_t nTileX, int32_t nTileY, int32_t nIndoorFlag, D2GfxLightExStrc * pLightGrid) {
+static void __stdcall GetIntensityFlagsForTile(int32_t nTileX, int32_t nTileY, int32_t nIndoorFlag, D2GfxLightExStrc * pLightGrid) {
     int nCol;
     int nRow;
     int nWorldX;
@@ -120,7 +120,7 @@ void __stdcall GetIntensityFlagsForTile(int32_t nTileX, int32_t nTileY, int32_t 
 }
 
 // Fills a 6×6 grid of D2GfxLightExStrc entries with full-white (RGB 0xFF, intensity 0xFF) light positions for roof/ortho lighting. When bBorderOnly is set, only the border cells are written. nSplitSide (1=left, 2=right) shifts nScreenX by ±ScreenSizeX/4 for split-screen support. Each cell position is computed from the (col, row) index and the base screen coords.
-void __stdcall DRAW_CalcRoofLightGridOrtho(D2GfxLightExStrc * pLightEntry, int32_t nScreenX, int32_t nScreenY, int32_t bBorderOnly, int32_t nSplitSide) {
+static void __stdcall DRAW_CalcRoofLightGridOrtho(D2GfxLightExStrc * pLightEntry, int32_t nScreenX, int32_t nScreenY, int32_t bBorderOnly, int32_t nSplitSide) {
     int nHalfWidthAdj;
     if (nSplitSide == 1) {
       nHalfWidthAdj = -((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2);
@@ -206,7 +206,7 @@ void __stdcall DRAW_CalcRoofLightOrtho(D2GfxLightExStrc * pParam, int32_t nScree
     } while (nHalfWidthAdj < 6);
 }
 
-void __stdcall DRAW_CalcRoofLightGridPerspective(D2GfxLightExStrc * pLightEntry, int32_t nTileX, int32_t nTileY, int32_t nDepth, int32_t bBorderOnly, int32_t nSplitSide) {
+static void __stdcall DRAW_CalcRoofLightGridPerspective(D2GfxLightExStrc * pLightEntry, int32_t nTileX, int32_t nTileY, int32_t nDepth, int32_t bBorderOnly, int32_t nSplitSide) {
     int* pXAdjust;
     int nScreenHalfAdj = 0;
     if (nSplitSide == 1) {
@@ -685,28 +685,7 @@ void __fastcall dRoofDraw(D2GameViewStrc * pGameView) {
 // D2DrawFloorStrc scratch state.
 void __fastcall dFloorDraw(D2GameViewStrc * pGameView) {
     // Static local variables (originally global data)
-    static D2DrawFloorStrc D2DrawFloorStrc_007c8a28 = {
-    /* .bLowQuality = */ 0,
-    /* .field1_0x1 = */ 0,
-    /* .field2_0x2 = */ 0,
-    /* .field3_0x3 = */ 0,
-    /* .bIsPerspective = */ 0,
-    /* .bWeatherSplashEnabled = */ 0,
-    /* .nRecordingRelated = */ 0,
-    /* .uWeatherRelated = */ 0,
-    /* .nLastSplashFrame = */ 0,
-    /* .nRecordingFrameRelated = */ 0,
-    /* .nRollSeed = */ nullptr,
-    /* .nWindowBorderType = */ 0,
-    /* .pGameView = */ nullptr,
-    /* .bPerspectiveHasEffectOnSprite = */ 0,
-    /* .nMinTileX = */ 0,
-    /* .nMaxTileX = */ 0,
-    /* .nMinTileY = */ 0,
-    /* .nMaxTileY = */ 0,
-    /* .nX = */ 0,
-    /* .nY = */ 0
-}; D2_STATIC_GUARD(D2DrawFloorStrc_007c8a28, "D2Client::GAME::Draw::dFloorDraw::D2DrawFloorStrc_007c8a28");
+    static D2DrawFloorStrc D2DrawFloorStrc_007c8a28 = {}; D2_STATIC_GUARD(D2DrawFloorStrc_007c8a28, "D2Client::GAME::Draw::dFloorDraw::D2DrawFloorStrc_007c8a28");
 
     DrawFloorByViewAndFloor(pGameView, &D2DrawFloorStrc_007c8a28);
 }
@@ -761,7 +740,7 @@ int32_t * __stdcall DRAW_GetIntensityTableForMode(int * pnTableMode, int32_t bPe
 }
 
 // Client-side render pass: iterates the under-floor wall-tile node list in a Wall2 cell, expires fade transitions whose timer has elapsed, then draws each visible tile (flag mask 0x1c000 set, 0x408 clear) via D2GFX_DrawWallTile or D2GFX_DrawTransWallTile depending on alpha. Samples DRAW_CoordIsInCoord for per-light RGBA values and fills a local D2GfxLightStrc array. Accounts for perspective vs. isometric screen-coordinate calculation.
-void __stdcall WALL2_DrawUnderFloorTiles(D2GameViewStrc * pViewData, D2Wall2CellStrc * pWall2Cell) {
+static void __stdcall WALL2_DrawUnderFloorTiles(D2GameViewStrc * pViewData, D2Wall2CellStrc * pWall2Cell) {
     uint8_t nAlpha;
     uint8_t byMaskedIntensity;
     int nScreenX;

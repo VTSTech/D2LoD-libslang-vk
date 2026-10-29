@@ -93,7 +93,7 @@ void __fastcall DRLGOUTPLACE_PlaceAct2CanyonExitPresets(D2DrlgLevelStrc * pLevel
     Outdoors::SpawnOutdoorLevelPresetEx(pLevel, pLevelData->nGridCoordsWidth - 1, 0, 0x16a, -1, 0);
 }
 
-void PlaceCliffs(D2DrlgLevelStrc * pLevel) {
+static void PlaceCliffs(D2DrlgLevelStrc * pLevel) {
     // Static local variables (originally global data)
     static uint32_t gaCliffWallGridOffsets[160] = {
     0x178,
@@ -294,15 +294,15 @@ void __fastcall AddExits(D2DrlgLevelStrc * pLevel) {
     }
 
     BOOL bSpawnResult = Outdoors::SpawnOutdoorLevelPreset(pLevel, nLine, -1, 0, '\x0f');
-    if (bSpawnResult) {
-      return;
+    if (!bSpawnResult) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xaa);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xaa);
-    exit(-1);
+    return;
 }
 
-void PlaceFillsInRockyWaste(D2DrlgLevelStrc * pLevel) {
+static void PlaceFillsInRockyWaste(D2DrlgLevelStrc * pLevel) {
     D2LvlPrestId nPresetId0[7];
     nPresetId0[0] = LVLPREST_ACT_2_DESERT_OASIS_1;
     nPresetId0[1] = 0x19b;
@@ -314,7 +314,7 @@ void PlaceFillsInRockyWaste(D2DrlgLevelStrc * pLevel) {
     PlacePresetVariants(pLevel, nPresetId0, 7, 0);
 }
 
-void PlaceFillsInDryHills(D2DrlgLevelStrc * pLevel) {
+static void PlaceFillsInDryHills(D2DrlgLevelStrc * pLevel) {
     D2LvlPrestId nPresetId0[8];
     nPresetId0[4] = 0x18b;
     nPresetId0[5] = 0x19b;
@@ -328,7 +328,7 @@ void PlaceFillsInDryHills(D2DrlgLevelStrc * pLevel) {
     PlacePresetVariants(pLevel, nPresetId0, 4, 1);
 }
 
-void PlaceFillsInFarOasis(D2DrlgLevelStrc * pLevel) {
+static void PlaceFillsInFarOasis(D2DrlgLevelStrc * pLevel) {
     D2LvlPrestId nPresetIds[4];
     D2LvlPrestId nPresetIdBonus[1];
     nPresetIds[0] = LVLPREST_ACT_2_DESERT_RUINS_08X08;
@@ -341,7 +341,7 @@ void PlaceFillsInFarOasis(D2DrlgLevelStrc * pLevel) {
     PlacePresetVariants(pLevel, nPresetIdBonus, 1, 1);
 }
 
-void PlaceRuinsInLostCity(D2DrlgLevelStrc * pLevel) {
+static void PlaceRuinsInLostCity(D2DrlgLevelStrc * pLevel) {
     D2LvlPrestId nPresetId0[4];
     nPresetId0[0] = LVLPREST_ACT_2_DESERT_RUINS_ELDER;
     nPresetId0[1] = 0x198;
@@ -350,7 +350,7 @@ void PlaceRuinsInLostCity(D2DrlgLevelStrc * pLevel) {
     PlacePresetVariants(pLevel, nPresetId0, 4, 0);
 }
 
-void PlaceFillsInLostCity(D2DrlgLevelStrc * pLevel) {
+static void PlaceFillsInLostCity(D2DrlgLevelStrc * pLevel) {
     D2LvlPrestId nPresetId0[6];
     nPresetId0[0] = LVLPREST_ACT_2_DESERT_OASIS_1;
     nPresetId0[1] = 400;
@@ -363,7 +363,7 @@ void PlaceFillsInLostCity(D2DrlgLevelStrc * pLevel) {
     PlacePresetVariants(pLevel, nPresetId0 + 5, 1, 1);
 }
 
-void PlaceTombEntriesInCanyon(D2DrlgLevelStrc * pLevel) {
+static void PlaceTombEntriesInCanyon(D2DrlgLevelStrc * pLevel) {
     uint32_t* pTombTableEntry = (uint32_t*)&gaTombCanyonPresetOffsets.aTombEntries[0].nY;
     do {
       Outdoors::SpawnOutdoorLevelPresetEx(pLevel, pTombTableEntry[-1], *pTombTableEntry, pTombTableEntry[-3], pTombTableEntry[-2], 0);
@@ -373,7 +373,7 @@ void PlaceTombEntriesInCanyon(D2DrlgLevelStrc * pLevel) {
     Outdoors::SpawnOutdoorLevelPresetEx(pLevel, 4, 4, 0x18a, -1, 0);
 }
 
-void PlaceFillsInCanyon(D2DrlgLevelStrc * pLevel) {
+static void PlaceFillsInCanyon(D2DrlgLevelStrc * pLevel) {
     D2LvlPrestId nPresetId0[7];
     nPresetId0[0] = LVLPREST_ACT_2_DESERT_FILL_BONE_1;
     nPresetId0[1] = 0x192;

@@ -37,8 +37,6 @@ option(REDIVIVUS_LOUD
     "Loud build: 0xFE-filled locals, stack canaries, array index checks and guard zones between globals that report at the defect (support/d2_loud.cpp). Not for release." OFF)
 option(REDIVIVUS_LOUD_STACK_PROTECTOR
     "With REDIVIVUS_LOUD: also -fstack-protector-strong (fatal on a smashed canary). OFF gives the playable loud build." ON)
-option(REDIVIVUS_LEAN
-    "Lean build: drop -g. Code generation is identical (-O0 either way) and d2exe.map addresses do not move, but objects and the exe shrink to a fraction, and compiling and linking are much faster. What is lost: d2_crash symbolises stack traces from the running image's own DWARF, so a lean crash report prints module+0xOFFSET to resolve against d2exe.map - exactly what the stripped d2s artifact CI ships does. OFF = charter default fat exe." OFF)
 
 # ---------------------------------------------------------------------------
 # Sources. Globbed, not listed: the generator adds and removes files on every
@@ -52,28 +50,17 @@ file(GLOB_RECURSE D2_HEADERS CONFIGURE_DEPENDS
     LIST_DIRECTORIES false
     "${CMAKE_SOURCE_DIR}/*.h")
 
-# A build directory inside the tree must not feed its own files back in, and
-# the vendored libbacktrace (built as its own target below) must not leak its
-# headers (config.h, internal.h) onto the game's include path. The prefix
-# excludes match LITERALLY (string(FIND) == 0) instead of by regex: building
-# a regex from the raw path fails to compile ("Nested *?+") when the checkout
-# lives under a name with regex metacharacters, e.g. F:\Coding\Code\C++\.
+# A build directory inside the tree must not feed its own files back in.
 foreach(list D2_SOURCES D2_HEADERS)
+    list(FILTER ${list} EXCLUDE REGEX "^${CMAKE_BINARY_DIR}/")
     list(FILTER ${list} EXCLUDE REGEX "/\\.git/")
-    set(_kept "")
-    foreach(entry IN LISTS ${list})
-        string(FIND "${entry}" "${CMAKE_BINARY_DIR}/" _in_build)
-        string(FIND "${entry}" "${CMAKE_SOURCE_DIR}/thirdparty/libbacktrace/" _in_backtrace)
-        if(NOT _in_build EQUAL 0 AND NOT _in_backtrace EQUAL 0)
-            list(APPEND _kept "${entry}")
-        endif()
-    endforeach()
-    set(${list} "${_kept}")
+    # Vendored C library, built as its own target below; its headers (config.h,
+    # internal.h) must not land on the game's include path.
+    list(FILTER ${list} EXCLUDE REGEX "^${CMAKE_SOURCE_DIR}/thirdparty/libbacktrace/")
+    # The msvc8 oracle: its shim headers stand in for MSVC's and its build/ holds
+    # a translated copy of the tree, so none of it belongs to the game.
+    list(FILTER ${list} EXCLUDE REGEX "^${CMAKE_SOURCE_DIR}/asm_matching/")
 endforeach()
-unset(_kept)
-unset(entry)
-unset(_in_build)
-unset(_in_backtrace)
 list(SORT D2_SOURCES)
 
 # Headers are included by tree-relative path ("D2Game/UNIT/SUNITNPC.h"), with a
@@ -111,14 +98,8 @@ target_include_directories(d2 PRIVATE ${D2_INCLUDE_DIRS})
 set(CXX_ONLY "$<COMPILE_LANGUAGE:CXX>")
 set_target_properties(d2 PROPERTIES
     CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
-if(REDIVIVUS_LEAN)
-    target_compile_options(d2 PRIVATE
-        "$<${CXX_ONLY}:-w;-fms-extensions>")
-else()
-    target_compile_options(d2 PRIVATE
-        "$<${CXX_ONLY}:-g;-w;-fms-extensions>")
-endif()
 target_compile_options(d2 PRIVATE
+    "$<${CXX_ONLY}:-g;-w;-fms-extensions>"
     "$<${CXX_ONLY}:SHELL:-include ${CMAKE_SOURCE_DIR}/d2_platform.h>"
     "$<${CXX_ONLY}:-fmacro-prefix-map=${CMAKE_SOURCE_DIR}/=>")
 if(EXISTS "${CMAKE_SOURCE_DIR}/support/d2_hand.h")
@@ -156,9 +137,9 @@ endif()
 
 # ---------------------------------------------------------------------------
 # Crash reports (support/d2_crash.cpp) symbolise the stack from this build's own
-# DWARF with libbacktrace, vendored as C. The report names the build, so the
-# short commit hash of the tree is baked in at configure time; only d2_crash.cpp
-# sees it, so a new commit recompiles that one file.
+# DWARF with libbacktrace, vendored as C. The report names the build, so the git
+# describe of the tree is baked in at configure time; only d2_crash.cpp sees it,
+# so a new commit recompiles that one file.
 # ---------------------------------------------------------------------------
 add_library(d2_backtrace STATIC
     thirdparty/libbacktrace/alloc.c
@@ -171,15 +152,11 @@ add_library(d2_backtrace STATIC
     thirdparty/libbacktrace/state.c)
 set_target_properties(d2_backtrace PROPERTIES C_STANDARD 99 C_EXTENSIONS ON)
 target_include_directories(d2_backtrace PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/libbacktrace")
-if(REDIVIVUS_LEAN)
-    target_compile_options(d2_backtrace PRIVATE -w)
-else()
-    target_compile_options(d2_backtrace PRIVATE -g -w)
-endif()
+target_compile_options(d2_backtrace PRIVATE -g -w)
 target_link_libraries(d2 PRIVATE d2_backtrace)
 
 if(NOT REDIVIVUS_BUILD_ID)
-    execute_process(COMMAND git rev-parse --short HEAD
+    execute_process(COMMAND git describe --always --dirty --tags
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         OUTPUT_VARIABLE REDIVIVUS_BUILD_ID OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET RESULT_VARIABLE _describe_rc)
@@ -209,12 +186,7 @@ endif()
 # shim performs a real C++ throw, so libstdc++ is needed regardless.
 # ---------------------------------------------------------------------------
 set_target_properties(d2 PROPERTIES WIN32_EXECUTABLE ON OUTPUT_NAME d2)
-# -Wl,-Map: write build/d2exe.map next to the exe. Map emission is a link-time
-# text dump only - it does not change code layout, so addresses in the exe stay
-# identical with and without it. It lets any crash address (module+0xOFFSET
-# from a d2crash report, or a VEH bootlog line) be resolved to its function by
-# grepping the map, even from a machine without addr2line/DWARF tools.
-target_link_options(d2 PRIVATE -static -static-libgcc -static-libstdc++ -Wl,-Map,d2exe.map)
+target_link_options(d2 PRIVATE -static -static-libgcc -static-libstdc++)
 
 target_link_libraries(d2 PRIVATE
     kernel32 user32 gdi32 advapi32 shell32 ole32 oleaut32

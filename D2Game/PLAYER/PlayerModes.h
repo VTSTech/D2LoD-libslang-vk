@@ -22,7 +22,6 @@ namespace D2Game::PLAYER::PlayerModes {
 
 // Function declarations
 int32_t __fastcall PLRMODES_HasAnimEventLastOrComing5Frames(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
-BOOL PLRMODES_HasEndAnimEventAndSeqInput(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // Checks if the player unit can interrupt its current animation mode to start the specified new mode. Returns TRUE if the new mode can interrupt.
 BOOL PLRMODES_CanInterruptCurrentMode(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, uint32_t nNewMode);
 // Attempts to cancel current player mode and initiate movement to a target location. Validates unit state, checks for blocking modes, and dispatches path-finding for the move.
@@ -31,17 +30,8 @@ int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, stru
 void __fastcall PLRMODES_SetIdleMode(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nMode, int32_t nX, int32_t nY);
 int32_t __fastcall PLRMODES_ModeCallback_DeathDead(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2);
 int32_t __fastcall PLRMODES_ModeCallback_Neutral(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2);
-// Begins a player movement path and transitions animation mode. Restores velocity/path type, then normalises the requested mode: Run falls back to Walk if stamina is 0; Walk/TownWalk are promoted to TownWalk when in town; KnockBack sets path type 8 and distance 5. Calculates the path; if path has waypoints, calls FreeCombatAndChangeAnimMode + clears anim timers; otherwise falls back to idle mode.
-void __stdcall PLRMODES_StartPathAndChangeMode(::SGAMEDATA * pGame, eD2PlayerAnimMode dwParam, struct D2UnitStrc * pUnit);
 void __fastcall PLRMODES_SetTargetAndStartPath(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nModeIndex, struct D2UnitStrc * pTargetUnit);
 void __fastcall PLRMODES_SetMoveTargetPosition(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nLevel, int32_t nPosX, int32_t nPosY);
-// Drains stamina for one run-tick. Returns 1 immediately if player is in town (no drain). Computes base drain from CharStats.RunDrain*2, multiplies by armor speed factor (torso item Speed/10+1), then adjusts by UNITSTAT_item_staminadrainpct. Subtracts the result from stamina; if stamina reaches 0, clamps it to 0 and returns 0 (caller should switch to walk). Returns 1 while stamina remains.
-BOOL PLRMODES_DrainStamina(struct D2UnitStrc * pUnit);
-// Puts a dying player's unit into the dead state: hitpoints stat (6) set to 0 and the stat list recalculated, states
-// filtered, the client's attached unit cleared, corpse collision set, unit timers of types 8 and 9 removed, then tail-jumps
-// to UNITS_ClearAnimTimerEvents. pGame in EDI, pUnit in ESI (custom storage). Called from PLRMODES_HandlePlayerDeath and PLRMODES_Death; not
-// inline, it is a real function with two call sites. Provenance: 1.14d 0057f330..0057f38e, .\PLAYER\PlrModes.cpp literal at 0057f34f.
-void PLRMODES_ClearModeAndSetDead(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall SERVERUNIT_GoldAmmountForDeadBody(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pDeadBody, uint32_t nGoldAmmount, uint32_t nGoldPileCount);
 // Removes an equipped item (pUnit2) from the player's body at nBodyLoc and prepares it for dropping. Swaps primary weapon if needed, nulls the body-loc slot, handles belt removal for belt-type items, unequips item stats, marks item as REMOVED, issues ITEMCMD_DELETE and ITEMCMD_BODYLOC_TAKE_ITEM, refreshes inventory. Halts with error if item doesn't belong to the player's inventory.
 void __stdcall PLRMODES_UnequipAndPrepareItemForDrop(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, int32_t nBodyLoc);
@@ -51,7 +41,6 @@ void PLRMODES_ClearCursorAndDeleteItem(struct D2UnitStrc * pUnit, struct D2UnitS
 // @sourcefile .\PLAYER\PlrModes.cpp
 void __stdcall PLRMODES_DropAllEquipmentAndGold(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 int32_t __stdcall PLRMODES_CleanupInvalidCorpses(::SGAMEDATA * pGame, struct D2UnitStrc * pUnitRaw);
-uint32_t __stdcall PLRMODES_IsCorpseOwnedByPlayer(::SGAMEDATA * pGame, struct D2UnitStrc * pCorpseUnitRaw, struct D2UnitStrc * pUnit);
 // Processes a player picking up their own corpse. Validates the corpse has STATE_playerbody and is owned by the acting player. If the corpse holds pending experience (e.g. from Nightmare/Hell death penalty), awards it via DAMAGE_AwardKillExperience. Equips corpse items back onto the player; on success, removes the corpse from inventory, deletes the unit from the room, sends packet 0x8E (corpse assign=0) to clients, removes collision, and frees the unit.
 void __fastcall PLRMODES_PickupCorpse(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pCorpseUnit);
 // Server-side handler executed when a player's death animation completes. Creates the dead-body unit at the player's current position, frees all pets, sets the client's dead flag (bit 3), and saves the game (ladder games only). Then: forces anim mode 0x11 (dead), resets HP to 0, recalculates stats, filters active states, detaches unit type from client, enables corpse collision, and cancels all periodic skill/stat timer events.
@@ -62,27 +51,15 @@ int32_t __fastcall PLRMODES_ModeCallback_GetHitCast(::SGAMEDATA * pGame, struct 
 void __fastcall PLRMODES_ChangeAnimModeAndResetSkill(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nAnimMode, int32_t dwParam1, int32_t dwParam2);
 void __fastcall PLRMODES_StartCastAtPosition(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nAnimMode, int32_t nPosX, int32_t nPosY);
 void __fastcall PLRMODES_StartCastAtEntity(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nAnimMode, struct D2UnitStrc * pTargetUnit);
-void __stdcall PLRMODES_ReequipWeaponAfterThrow(::SGAMEDATA * pGame, uint32_t nBodyLocFlags, struct D2UnitStrc * pUnit);
-// Called when a stackable ammo or throwable weapon reaches quantity 0. If the item is a throwable stat holder, zeroes the quantity stat and returns. Otherwise: unequips the item via EquipItem, marks it deleted, and searches the inventory for a reload-compatible replacement of the same type/classId to auto-reequip into the same body-loc slot. If the item has the reequip flag, calls PLRMODES_ReequipWeaponAfterThrow.
-// @sourcefile .\PLAYER\PlrModes.cpp
-void __stdcall PLRMODES_HandleDepletedAmmoOrThrowable(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pWeaponOwner);
 // @sourcefile .\PLAYER\PlrModes.cpp
 void PLRMODES_CheckSwapWeaponSkill(eD2Skills * peSkillId, struct D2UnitStrc * pUnit);
-// After a weapon swap or action completes, restores the player's left and right skill slots to their pre-swap values (stored in peSkillId[0..3]: right skill id, left skill id, right owner, left owner). Skips SKILL_Attack (default). Calls Server_SelectSkill only if the skill is known, not currently selected, and is usable (excludes error codes 2 and 7).
-void PLRMODES_RestoreSwappedSkill(eD2Skills * peSkillId, struct D2UnitStrc * pUnit);
 // End-of-attack maintenance check. Snapshots the current left/right skill assignments, then calls PLRMODES_HandleDepletedAmmoOrThrowable for both the right-arm and left-arm weapon slots to unequip exhausted quivers or thrown weapons. Finally calls PLRMODES_RestoreSwappedSkill with the saved skill snapshot to re-select the appropriate skills after any weapon removal.
 void __fastcall PLRMODES_CheckWeaponQuantityAndDurability(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // Iterates a player's inventory looking for equipped weapons (eInvGridType==3) with zero durability that are not already broken. For each such weapon, sets the ITEMFLAG_BROKEN flag via ITEMMODE_SendItemUpdate and broadcasts the item state change. Sets a unit update flag on the first break found. No-op if pUnit is null or not a player.
 // @sourcefile .\PLAYER\PlrModes.cpp
 void __fastcall PLRMODES_BreakZeroDurabilityWeapons(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 int32_t __fastcall PLRMODES_ModeCallback_AttackSkill(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nModeArg, int32_t nSeqFrame);
-// Ticks stamina recovery for a player unit each game loop. Reads current stamina and UNITSTAT_staminarecoverybonus; recovery shift is 8 (standing/town-walk) or 9 (walking). Applies bonus percentage, clamps to max stamina, then writes back via STATLIST_SetUnitStat. Returns early if already at max or if in a non-recovery anim mode (e.g. attacking).
-void PLRMODES_RecoverStamina(struct D2UnitStrc * pUnit);
 uint8_t PLRMODES_GetHpPercent128(struct D2UnitStrc * pUnit);
-// Per-tick HP regeneration tick for a player unit. Reads UNITSTAT_hpregen; if zero returns early. Adds regen to current HP capped at txt-max; if the max is exceeded and the player has a healthpot state-list, removes and frees it. Enforces a floor of 0x100. Writes the new HP via STATLIST_SetUnitStat, then computes a 7-bit HP-percent and sends packet 0xAB to the client only if the change exceeds 4 units from the last sent value.
-BOOL PLRMODES_RegenHp(struct D2UnitStrc * pUnit);
-// Per-tick mana regeneration for a player unit (called from the player-mode timer). Reads current mana and max mana; if STATE_nomanaregen is absent, computes base regen from CharStatsTxt.ManaRegen scaled by manarecoverybonus stat. Adds flat manarecovery stat on top. Removes the active mana-potion stat list once mana is full. Clamps the delta to not exceed max or go below zero, then applies via STATLIST_AddUnitStat.
-void PLRMODES_RegenMana(struct D2UnitStrc * pUnit);
 void __fastcall PLRMODES_RemoveExpiredStatLists(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2);
 void __fastcall PLRMODES_PeriodicStatRegen(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2);
 // Flushes all pending per-unit network state to a single client after a mode change. Sends ReassignPlayer if the unit is warping or is a remote player. If bSendItems is set, sends updated inventory items (0x9C packet) plus two equipped-item-recalc packets (0x47, 0x48). Dispatches the mode-change net message if DOUPDATE is flagged. Then drains the unit's packet queue, sends pending sound/hover-text/life-class/state/overlay packets, and fires attribute-update callbacks for velocity, attack-rate, level, strength, and dexterity stats that changed.
@@ -105,5 +82,6 @@ void __fastcall PLRMODES_OnModeComplete(::SGAMEDATA * pGame, struct D2UnitStrc *
 // Per-tick dispatcher for the player's current animation mode. Reads pUnit->eAnimMode, looks up the corresponding callback in gaPlayerModeCallbacks[], invokes it with (nArg1, nArg2), and calls PLRMODES_OnModeComplete if the callback returns 2 (mode finished).
 void __fastcall PLRMODES_ProcessPlayerMode(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2);
 void __fastcall PLAYEREVENT_DefaultCallback(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2TimerTypeDWORD eTimerType, int32_t nArg1, int32_t nArg2);
+// 11 internal functions (defined in .cpp)
 
 } // namespace D2Game::PLAYER::PlayerModes

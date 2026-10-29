@@ -47,21 +47,16 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q2Strc) == 0xb0, "D2_NEW(D2QuestDataA3Q2Strc): the 32-bit layout must be the 0xb0 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q2Strc) == 0xb0, "D2_NEW_AT(D2QuestDataA3Q2Strc): the 32-bit layout must be the 0xb0 bytes 1.14d allocates");
 
-
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
-#endif
 
 namespace D2Game::Quests::QUESTS::A3Q2 {
 
@@ -153,19 +148,19 @@ void __fastcall Q19_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 }
 
 // Q19_SequenceFilter (Khalim's Will). Sequence-chain filter: if this quest not yet at StateFlag 5 and is active, bumps StateFlag 0->1 and returns. Otherwise chains to the next quest's (nSequenceQuestId=QUEST_AbleGoToAct3) sequence filter, halting on a bad fn ptr. Pure StateFlag gating; no QuestRecord writes.
-void __fastcall Q19_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q19_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
       if (pQuestData->nStateFlag) {
-        return;
+        return true;
       }
 
       pQuestData->nStateFlag = 1;
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pNextQuestData) {
-      return;
+      return false;
     }
 
     BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -174,7 +169,8 @@ void __fastcall Q19_SequenceFilter(D2QuestDataStrc * pQuestData) {
       exit(-1);
     }
 
-    pNextQuestData->fpSequenceFilter(pNextQuestData);
+    bool bShouldSequence = pNextQuestData->fpSequenceFilter(pNextQuestData);
+    return bShouldSequence;
 }
 
 // Q19_SendQuestStatePacket (Khalim's Will). Builds and sends the 0x5D quest-state packet to the player's client conveying which Khalim's Will sub-stage/relic message to display. No QuestRecord transitions; pure client notification.
@@ -985,7 +981,7 @@ void __fastcall Q19_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->nInitNo = 0;
     pQuestData->fpStatusFilter = Q19_StatusFilter;
     pQuestData->fpActiveFilter = Q19_ActiveFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q19_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q19_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_AbleGoToAct3;
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q19_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q19_Callback11_ScrollMessage;
@@ -993,7 +989,7 @@ void __fastcall Q19_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q19_Callback13_PlayerStartedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q19_Callback10_PlayerLeavesGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[4] = Q19_Callback04_ItemPickedUp;
-    D2QuestDataA3Q2Strc* pQuestSpecificData = D2_NEW_POOL(pQuestDataInternal->pMemoryPool, D2QuestDataA3Q2Strc);
+    D2QuestDataA3Q2Strc* pQuestSpecificData = D2_NEW_POOL_AT(pQuestDataInternal->pMemoryPool, D2QuestDataA3Q2Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q2.cpp", 0x39b);
     pQuestData->pQuestSpecificData.pA3Q2 = pQuestSpecificData;
     memset(pQuestSpecificData, 0, 0xb0);
     pQuestSpecificData->nOrbUpdateMode = 0;

@@ -103,7 +103,7 @@ bool __fastcall Q32_ActiveFilter(struct D2QuestDataStrc * pQuestData, int32_t nT
 // and returns (don't unlock the next quest yet). Once done (stateFlag==5), looks up the next quest in the chain
 // (nSequenceQuestId) and invokes ITS sequence filter, propagating the "you may now start the next quest" unlock.
 // No direct QuestRecord writes here.
-void __fastcall Q32_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q32_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // Q32_Callback_14 (A5Q2 Rescue on Mount Arreat) -- state-handler slot[0xe].
 // Clears the player's QuestRecord Step0x04 bit for QUEST_RescueOnMountArreat (resets the "barricade freed"
 // transient progress flag). Counterpart to where Step0x04 is set in Q32_OnBarricadeDestroyed.

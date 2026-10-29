@@ -496,18 +496,18 @@ void __fastcall HandleIncoming0x89(int32_t nEventId) {
     static uint32_t gdwDenOfEvilEventFlags; D2_STATIC_GUARD_BSS(gdwDenOfEvilEventFlags, "D2Client::Source::ClientEngine::HandleIncoming0x89::gdwDenOfEvilEventFlags");
 
     if (nEventId < 0x20) {
-      if (nEventId < 0x14) {
-        gdwDenOfEvilEventFlags |= 1 << ((uint8_t)nEventId & 0x1f);
-        if (!CLIENT_QuestEventHandlers[nEventId]) {
-          return;
-        }
+      if (!(nEventId < 0x14)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1da);
+        exit(-1);
+      }
 
-        (*CLIENT_QuestEventHandlers[nEventId])();
+      gdwDenOfEvilEventFlags |= 1 << ((uint8_t)nEventId & 0x1f);
+      if (!CLIENT_QuestEventHandlers[nEventId]) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1da);
-      exit(-1);
+      (*CLIENT_QuestEventHandlers[nEventId])();
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1d9);
       exit(-1);
@@ -980,7 +980,7 @@ void __fastcall CLIENT_SpawnWorldstoneShakeParticle(D2UnitStrc * pUnit) {
     CLIENT_CheckWorldstoneShake(pRoom);
 }
 
-void DRAW_Overlay_SecondsLeftToGame(D2QServerClientConnectionStrc * pQServerClientConnection) {
+static void DRAW_Overlay_SecondsLeftToGame(D2QServerClientConnectionStrc * pQServerClientConnection) {
     int nClearCount;
     uint16_t wszText[256];
     int32_t nHighResTime = Fog::Src::LogManager::LOGMGR_GetHighResolutionTime();
@@ -1002,7 +1002,7 @@ void DRAW_Overlay_SecondsLeftToGame(D2QServerClientConnectionStrc * pQServerClie
     }
 
     pFormatStr = D2Lang::StrTable::strtable::GetLocaleString(0x13e9);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszText, pFormatStr, (uint16_t*)nSecondsLeft);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszText, pFormatStr, nSecondsLeft);
     int32_t nSavedFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
     int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszText);
     D2Win::Src::D2WinFont::DRAW_text(wszText, ScreenSizeX / 2 - nTextWidth / 2, 0x177, 9, 1);
@@ -1027,7 +1027,7 @@ uint32_t __fastcall GetSomeMonsterStatFlag(int32_t nMonsterClassId, uint32_t nSt
     return (uint32_t)sgptDataTable->pTxtMonStatsEx[nMonStatsExIndex].mDT[(int)nStatBitIndex >> 3] & gadwBitMasks[nStatBitIndex & 7];
 }
 
-void __stdcall ROOM_FindSpawnPositionForMonster(D2RoomStrc * pRoom, int32_t nMonsterClassId, uint32_t * pSeed) {
+static void __stdcall ROOM_FindSpawnPositionForMonster(D2RoomStrc * pRoom, int32_t nMonsterClassId, uint32_t * pSeed) {
     uint32_t nRandOffset;
     D2DrlgRoomCoordsStrc sRoomCoords;
     uint64_t nSeedModBranch;
@@ -1303,7 +1303,7 @@ void __fastcall CLIENT_UnregisterActiveUnitFromSlot(int32_t nUnitId) {
     } while (nSlotIndex < 8);
 }
 
-D2UnitStrc * __stdcall CLIENT_FindClosestTrackedUnit(D2UnitStrc * pUnit, int * pnClosestDist) {
+static D2UnitStrc * __stdcall CLIENT_FindClosestTrackedUnit(D2UnitStrc * pUnit, int * pnClosestDist) {
     int32_t nDist;
     D2UnitStrc* pClosest = 0;
     D2UnitStrc** ppSlot = gaActiveUnitSlots;
@@ -1327,7 +1327,7 @@ D2UnitStrc * __stdcall CLIENT_FindClosestTrackedUnit(D2UnitStrc * pUnit, int * p
 }
 
 // Sends a monster message whose target is pTarget's unit type and GUID (6 / -1 when pTarget is NULL); asm 0046c77c..0046c795.
-void __stdcall CLIENT_SendMonsterMoveToUnitMessage(int32_t nSenderId, int32_t nSkillLvl, D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
+static void __stdcall CLIENT_SendMonsterMoveToUnitMessage(int32_t nSenderId, int32_t nSkillLvl, D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
     D2ServerMessageHandleStrc sMsgTargetPos;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     sMsgTargetPos.nSkillId = UNIT_COUNT;
@@ -1346,7 +1346,7 @@ void __stdcall CLIENT_SendMonsterMoveToUnitMessage(int32_t nSenderId, int32_t nS
     UNIT::Monster::MonsterMessage(nSenderId, pUnit, &sMsgTargetPos);
 }
 
-uint32_t __stdcall MONSTER_TryMoveTowardTarget(D2UnitStrc * pUnit, uint8_t bMoveStep, int32_t nSenderId, int32_t dwAnimMode, D2UnitStrc * pTarget) {
+static uint32_t __stdcall MONSTER_TryMoveTowardTarget(D2UnitStrc * pUnit, uint8_t bMoveStep, int32_t nSenderId, int32_t dwAnimMode, D2UnitStrc * pTarget) {
     uint32_t nTargetX;
     uint32_t nTargetY;
     D2ServerMessageHandleStrc sMsg;
@@ -1425,7 +1425,7 @@ uint32_t __stdcall MONSTER_TryMoveTowardTarget(D2UnitStrc * pUnit, uint8_t bMove
     return 1;
 }
 
-void __stdcall CLIENT_SendMonsterMoveToRandomNearbyPosMessage(uint32_t nOffsetRange, int32_t nSenderId, int32_t nSkillLvl, D2UnitStrc * pUnit) {
+static void __stdcall CLIENT_SendMonsterMoveToRandomNearbyPosMessage(uint32_t nOffsetRange, int32_t nSenderId, int32_t nSkillLvl, D2UnitStrc * pUnit) {
     D2ServerMessageHandleStrc sMsg;
     int local_c;
     int32_t nMonsterX;
@@ -1472,7 +1472,7 @@ void __stdcall CLIENT_SendMonsterMoveToRandomNearbyPosMessage(uint32_t nOffsetRa
     UNIT::Monster::MonsterMessage(nSenderId, pUnit, &sMsg);
 }
 
-void __stdcall CLIENT_SendMonsterMoveToTargetMessage(int32_t nTargetX, int32_t nTargetY, int32_t nSenderId, int32_t nSkillLvl, D2UnitStrc * pUnit) {
+static void __stdcall CLIENT_SendMonsterMoveToTargetMessage(int32_t nTargetX, int32_t nTargetY, int32_t nSenderId, int32_t nSkillLvl, D2UnitStrc * pUnit) {
     D2ServerMessageHandleStrc sMsg;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     sMsg.nTargetUnitType = 0;
@@ -1485,7 +1485,7 @@ void __stdcall CLIENT_SendMonsterMoveToTargetMessage(int32_t nTargetX, int32_t n
     UNIT::Monster::MonsterMessage(nSenderId, pUnit, &sMsg);
 }
 
-void CLIENT_SendMonsterAttackMessage(D2UnitStrc * pUnit) {
+static void CLIENT_SendMonsterAttackMessage(D2UnitStrc * pUnit) {
     D2ServerMessageHandleStrc sMsg;
     sMsg.nSkillId = 0;
     sMsg.nItemId = 0;
@@ -1515,7 +1515,7 @@ void CLIENT_SendMonsterAttackMessage(D2UnitStrc * pUnit) {
     UNIT::Monster::MonsterMessage(8, pUnit, &sMsg);
 }
 
-void CLIENT_SendMonsterWanderMessage(D2UnitStrc * pUnit) {
+static void CLIENT_SendMonsterWanderMessage(D2UnitStrc * pUnit) {
     D2ServerMessageHandleStrc sMsg;
     sMsg.nSkillId = 0;
     sMsg.nItemId = 0;
@@ -1548,7 +1548,7 @@ void CLIENT_SendMonsterWanderMessage(D2UnitStrc * pUnit) {
 // Parameter 2 was typed D2MonsterAiStrc - a struct passed by value in EAX. It is a scalar. The body
 // clamps it against 199 and stores it through GetMonsterAi into the monster data's AI slot (+0x30), which the client uses as a frame countdown, not a pointer: 0046d780 tests it with a signed compare and decrements it, and sets it to 25 when no
 // target is found.
-void CLIENT_SetMonsterAiTimer(D2UnitStrc * pUnit, int32_t sMonsterAi) {
+static void CLIENT_SetMonsterAiTimer(D2UnitStrc * pUnit, int32_t sMonsterAi) {
     if (199 < sMonsterAi) {
       sMonsterAi = 200;
     }
@@ -1561,7 +1561,7 @@ void CLIENT_SetMonsterAiTimer(D2UnitStrc * pUnit, int32_t sMonsterAi) {
     *pnAiDelay = sMonsterAi;
 }
 
-uint32_t CLIENT_CheckIfUnitPositionsMatch(D2UnitStrc * pnUnit1, D2UnitStrc * pnUnit2) {
+static uint32_t CLIENT_CheckIfUnitPositionsMatch(D2UnitStrc * pnUnit1, D2UnitStrc * pnUnit2) {
     int nUnit1Y;
     int nUnit2X;
     int nUnit2Y;
@@ -1608,7 +1608,7 @@ uint32_t CLIENT_CheckIfUnitPositionsMatch(D2UnitStrc * pnUnit1, D2UnitStrc * pnU
     return 1;
 }
 
-void MONSTER_FindAndChaseNearestEnemy(D2UnitStrc * pUnit) {
+static void MONSTER_FindAndChaseNearestEnemy(D2UnitStrc * pUnit) {
     // Frame slots -12..-4 are ONE object: &nClosestDist is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -1655,7 +1655,7 @@ void MONSTER_FindAndChaseNearestEnemy(D2UnitStrc * pUnit) {
     }
 }
 
-void __stdcall CLIENT_MonsterAi_IdleWanderBehavior(D2UnitStrc * pTarget, uint32_t nTargetDistance, D2UnitStrc * pUnit) {
+static void __stdcall CLIENT_MonsterAi_IdleWanderBehavior(D2UnitStrc * pTarget, uint32_t nTargetDistance, D2UnitStrc * pUnit) {
     if (!(pUnit && pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral)) {
       return;
     }
@@ -1675,7 +1675,7 @@ void __stdcall CLIENT_MonsterAi_IdleWanderBehavior(D2UnitStrc * pTarget, uint32_
     CLIENT_SendMonsterMoveToRandomNearbyPosMessage(9, 1, 0, pUnit);
 }
 
-void CLIENT_MonsterIdleApproach(D2UnitStrc * pUnit) {
+static void CLIENT_MonsterIdleApproach(D2UnitStrc * pUnit) {
     int iVar2;
     int iVar3;
     int iVar4;
@@ -1765,7 +1765,7 @@ void CLIENT_MonsterIdleApproach(D2UnitStrc * pUnit) {
     CLIENT_SendMonsterMoveToTargetMessage(local_8 * 3 + local_c * -2, (iVar2 + iVar4) * 3 + iVar3 * -2, 1, 0, pUnit);
 }
 
-void __stdcall CLIENT_MonsterThinkBehavior(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
+static void __stdcall CLIENT_MonsterThinkBehavior(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
     eD2PlayerAnimMode eAnimMode = !pUnit ? Death : pUnit->eAnimMode.ePlayerMode;
     BOOL bIsDead = D2Common::Monsters::MONSTERS::CheckIfMonsterIsDead(pUnit);
     if (bIsDead) {
@@ -1797,7 +1797,7 @@ void __stdcall CLIENT_MonsterThinkBehavior(D2UnitStrc * pUnit, D2UnitStrc * pTar
     CLIENT_SendMonsterMoveToRandomNearbyPosMessage(4, 1, 0, pUnit);
 }
 
-void __stdcall CLIENT_MonsterAi_CorpseSeekerBehavior(uint32_t nTargetDistance, D2UnitStrc * pTarget, D2UnitStrc * pUnit) {
+static void __stdcall CLIENT_MonsterAi_CorpseSeekerBehavior(uint32_t nTargetDistance, D2UnitStrc * pTarget, D2UnitStrc * pUnit) {
     // Frame slots -12..-4 are ONE object: &nClosestDist is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -1883,7 +1883,7 @@ void __stdcall CLIENT_MonsterAi_CorpseSeekerBehavior(uint32_t nTargetDistance, D
     CLIENT_SendMonsterWanderMessage(pUnit);
 }
 
-void __stdcall CLIENT_MonsterAi_BasicChaseBehavior(uint32_t nTargetDistance, D2UnitStrc * pTarget, D2UnitStrc * pUnit) {
+static void __stdcall CLIENT_MonsterAi_BasicChaseBehavior(uint32_t nTargetDistance, D2UnitStrc * pTarget, D2UnitStrc * pUnit) {
     BOOL bIsDead = D2Common::Monsters::MONSTERS::CheckIfMonsterIsDead(pUnit);
     if (bIsDead) {
       return;
@@ -1917,7 +1917,7 @@ void __stdcall CLIENT_MonsterAi_BasicChaseBehavior(uint32_t nTargetDistance, D2U
     CLIENT_SendMonsterMoveToRandomNearbyPosMessage(4, 1, 0, pUnit);
 }
 
-void CLIENT_MonsterSeekCorpse(D2UnitStrc * pUnit) {
+static void CLIENT_MonsterSeekCorpse(D2UnitStrc * pUnit) {
     // Frame slots -12..-4 are ONE object: &nClosestDist is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -1990,7 +1990,7 @@ void CLIENT_MonsterSeekCorpse(D2UnitStrc * pUnit) {
     }
 }
 
-void CLIENT_SpawnWorldstoneChipDebris(D2UnitStrc * pUnit) {
+static void CLIENT_SpawnWorldstoneChipDebris(D2UnitStrc * pUnit) {
     int nX;
     int nY;
     bool bDirFlag;
@@ -2060,7 +2060,7 @@ void CLIENT_SpawnWorldstoneChipDebris(D2UnitStrc * pUnit) {
     }
 }
 
-void MONSTER_ProcessPathCallback(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
+static void MONSTER_ProcessPathCallback(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
     int32_t* pnAiDelay;
     int iVar1;
     eD2PlayerAnimMode nTargetStateRng = !pUnit ? Death : pUnit->eAnimMode.ePlayerMode;

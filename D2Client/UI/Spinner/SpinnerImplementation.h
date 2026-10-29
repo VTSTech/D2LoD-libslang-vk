@@ -19,22 +19,22 @@ typedef void (*fpSpinnerRepeatAction)();
 namespace D2Client::UI::Spinner::SpinnerImplementation {
 
 // Function declarations
-void Destructor(::SpinnerImplementation * pThis);
-void Draw(::SpinnerImplementation * pThis);
-BOOL IsMouseOnUpButton(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-BOOL IsMouseOnDownButton(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int GetValue(::SpinnerImplementation * pThis);
-int GetRepeatDelta(::SpinnerImplementation * pThis);
-int OnMouseWheel(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseDown(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseUp(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnChar(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseMove(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnUpArrow(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnDownArrow(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnRightArrow(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnLeftArrow(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-::SpinnerImplementation * Constructor(::SpinnerImplementation * pThis, int nPosX, int nPosY, BOOL bHorizontal, fpSpinnerRepeatAction pfnRepeatAction);
-::SpinnerImplementation * ScalarDeletingDestructor(::SpinnerImplementation * pThis, uint32_t nFlags);
+void __thiscall Destructor(::SpinnerImplementation * pThis);
+void __thiscall Draw(::SpinnerImplementation * pThis);
+BOOL __thiscall IsMouseOnUpButton(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+BOOL __thiscall IsMouseOnDownButton(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall GetValue(::SpinnerImplementation * pThis);
+int __thiscall GetRepeatDelta(::SpinnerImplementation * pThis);
+int __thiscall OnMouseWheel(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseDown(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseUp(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnChar(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseMove(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnUpArrow(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnDownArrow(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnRightArrow(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnLeftArrow(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+::SpinnerImplementation * __thiscall Constructor(::SpinnerImplementation * pThis, int nPosX, int nPosY, BOOL bHorizontal, fpSpinnerRepeatAction pfnRepeatAction);
+::SpinnerImplementation * __thiscall ScalarDeletingDestructor(::SpinnerImplementation * pThis, uint32_t nFlags);
 
 } // namespace D2Client::UI::Spinner::SpinnerImplementation

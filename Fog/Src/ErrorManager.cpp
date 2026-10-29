@@ -69,7 +69,6 @@ DWORD __fastcall GetParentProcessId(int32_t nProcessId) {
     }
 
     /* HANDLE hObject for CloseHandle */ CloseHandle(hSnapshot);
-    Debug::GuardStack();
     return DVar1;
 }
 
@@ -115,10 +114,8 @@ void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
     uint8_t* aLogFilePaths[21];
     PSID pAdminSid;
     _SID_IDENTIFIER_AUTHORITY sNtAuthority;
-    uint32_t uSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int8_t iVar1 = _3rdparty::crashy::IsOpen(pReport);
     if (iVar1 == '\0') {
-      Debug::GuardStack();
       return;
     }
 
@@ -207,8 +204,6 @@ void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
 
       nLogIdx++;
     } while (nLogIdx < 0x15);
-
-    Debug::GuardStack();
 }
 
 void __stdcall InitializeSystemInfo() {
@@ -217,7 +212,6 @@ void __stdcall InitializeSystemInfo() {
     _OSVERSIONINFOA osVersionInfo;
     float fMajorVersionF;
     float fMinorVersionFrac;
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     /* LPOSVERSIONINFOA lpVersionInformation for GetVersionExA */ osVersionInfo.dwOSVersionInfoSize = 0x94;
     BOOL bVersionOk = GetVersionExA(&osVersionInfo);
     if (bVersionOk) {
@@ -253,7 +247,6 @@ void __stdcall InitializeSystemInfo() {
     /* LPSYSTEM_INFO lpSystemInfo for GetSystemInfo */ g_dwTotalPhysicalMemory = memoryStatus.dwTotalPhys;
     GetSystemInfo(&gSystemInfo);
     gbSystemInfoInitialized = 1;
-    Debug::GuardStack();
 }
 
 // Registered with atexit. Tears down the Fog error/log subsystem and deletes the two critical sections at 0074c830 and 0074d848. Takes no arguments: the earlier EAX/ESI "parameters" were a callee-save PUSH ESI / POP ESI pair misread as inputs.
@@ -334,7 +327,7 @@ __attribute__((noinline)) void * __stdcall GetInstructionPointer() {
 }
 
 // Formats debug output with optional timestamp and outputs to debugger/log. Supports flags: 0x04=prepend timestamp (HH:MM:SS.mmm format via GetLocalTime), 0x02=skip OutputDebugStringA, 0x01=write to LOG category via LogManager, 0x18=check CapsLock state. Uses a 4096-byte buffer for vsnprintf formatting with varargs, appending formatted text after timestamp if present.
-void __stdcall FormatDebugOutput(uint8_t bFlags, va_list vaArgs, char * szText) {
+static void __stdcall FormatDebugOutput(uint8_t bFlags, va_list vaArgs, char * szText) {
     char szOutputBuffer[4096];
     char cCurrent;
     szOutputBuffer[0] = '\0';
@@ -357,40 +350,37 @@ void __stdcall FormatDebugOutput(uint8_t bFlags, va_list vaArgs, char * szText) 
     if (bFlags & 0x18) {
       /* int nVirtKey for GetKeyState */ GetKeyState(0x14);
     }
-
-    Debug::GuardStack();
 }
 
 void OutputDebugStringSimple(char * szText, ...) {
+    va_list __va;
+    va_start(__va, szText);
     char szBuffer[4095];
     char cCurrent;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* pScan = szBuffer;
     szBuffer[0] = '\0';
     pScan = pScan + strlen(pScan) + 1;
-    __vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, (va_list)((uint8_t*)&szText + 4));
+    __vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
     uint8_t cNull = 0;
     OutputDebugStringA(szBuffer);
-    Debug::GuardStack();
 }
 
 void OutputDebugStringIfCapsLock(char * szText, ...) {
+    va_list __va;
+    va_start(__va, szText);
     char* pScan;
     char szBuffer[4095];
     uint8_t cNull;
     char cCurrent;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     uint16_t wKeyState = GetAsyncKeyState(0x14);
     if (wKeyState & 1) {
       pScan = szBuffer;
       szBuffer[0] = '\0';
       pScan = pScan + strlen(pScan) + 1;
-      __vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, (va_list)((uint8_t*)&szText + 4));
+      __vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
       /* LPCSTR lpOutputString for OutputDebugStringA */ cNull = 0;
       OutputDebugStringA(szBuffer);
     }
-
-    Debug::GuardStack();
 }
 
 void FormatDebugOutputVariadic(uint8_t bFlags, char * szText, uint32_t firstArg) {
@@ -507,7 +497,6 @@ int __fastcall DumpLog(D2CrashReportStrc * pCrashInfo, void * pUserContext) {
     }
 
     ExceptionList = pPrevSehFrame;
-    Debug::GuardStack();
     return 2;
 }
 
@@ -607,7 +596,6 @@ void __fastcall CRASH_FillupCrashTxt(char * szSummary, char * szReason, char * *
         __frame0.nSehState = -1;
         _3rdparty::crashy::Destructor(&crashFile);
         ExceptionList = __frame0.pPrevSehFrame;
-        Debug::GuardStack();
         return;
       }
     }
@@ -617,7 +605,6 @@ void __fastcall CRASH_FillupCrashTxt(char * szSummary, char * szReason, char * *
     __frame0.nSehState = -1;
     _3rdparty::crashy::Destructor(&crashFile);
     ExceptionList = __frame0.pPrevSehFrame;
-    Debug::GuardStack();
 }
 
 BOOL __fastcall CheckErrorDuringError(char * szText, int32_t nLine, char * szReason) {
@@ -633,6 +620,8 @@ BOOL __fastcall CheckErrorDuringError(char * szText, int32_t nLine, char * szRea
 // Main error handling dispatcher for Fog subsystem. Validates error is not recursive via CheckErrorDuringError, logs the error category, and formats error message with file/line info. For assertion/halt/OOM errors, writes crash report via CRASH_FillupCrashTxt. Uses two 4096-byte buffers: one for vsnprintf formatting the reason (varargs), one for the final "[ErrorType] (reason) failed at file(line)" message. Sets global error state to prevent cascading errors.
 // @sourcefile .\Src\ErrorManager.cpp
 void FOG_ErrorHandler(eFOG_ErrorType eErrorType, char * szFile, int32_t nLine, char * szReasonFormat, ...) {
+    va_list __va;
+    va_start(__va, szReasonFormat);
     char cTmp;
     char* szRelativeFile;
     char szErrorMessageBuffer[4096];
@@ -662,7 +651,7 @@ void FOG_ErrorHandler(eFOG_ErrorType eErrorType, char * szFile, int32_t nLine, c
 
       uVar1 = _3rdparty::crashy::isDebuggerPresent();
       if ((char)uVar1 == '\0') {
-        Storm::Source::SSTR::SStrPrintf(szFormattedReasonBuffer, 0x1000, szReasonFormat, (va_list)((uint8_t*)&szReasonFormat + 4));
+        Storm::Source::SSTR::SStrPrintf(szFormattedReasonBuffer, 0x1000, szReasonFormat, __va);
         nLineSaved = nLine;
         szRelativeFile = StripPathPrefixToRelative(szFile);
         Storm::Source::SSTR::SStrPrintf(szErrorMessageBuffer, 0x1000, "[%s] (%s) failed at %s(%i)", gaErrorTypeNames[eErrorType], szFormattedReasonBuffer, szRelativeFile, nLineSaved);
@@ -674,8 +663,6 @@ void FOG_ErrorHandler(eFOG_ErrorType eErrorType, char * szFile, int32_t nLine, c
     } else {
       D2BOOT_Mark("FOG_ErrorHandler: error-during-error (recursive) -> suppressed"); // [d2boot]
     }
-
-    Debug::GuardStack();
 }
 
 void ERROR_UnrecoverableInternalError_AssertionFailure(char * szUnused, int32_t nAddress, int32_t nLine) {
@@ -777,7 +764,6 @@ void __stdcall ShowUnrecoverableErrorDialog(int32_t nParam, char * szText, int n
     LogManager::LogWithCategoryVarArgs("", "%s", szFinalErrorMessage);
     LogManager::ExitOrCrashCleanUpJmp();
     /* UINT uType for MessageBoxA */ /* LPCSTR lpCaption for MessageBoxA */ /* LPCSTR lpText for MessageBoxA */ /* HWND hWnd for MessageBoxA */ MessageBoxA((HWND)0x0, szMessageBoxBuffer, szTitleBuffer, 0x30);
-    Debug::GuardStack();
 }
 
 // Initializes Fog error manager and debugging subsystems on first call. Sets up project metadata (ID 0x108, "Diablo II", version "D2 1.14d"), retrieves executable directory via SFILE_GetExecutableDirectory into a 4096-byte buffer, initializes two critical sections for thread safety, starts the log writer thread, validates gadwBitMasks/gadwInvBitMasks lookup tables, and registers the exit handler. On subsequent calls with bLogGameStrartupInfo=TRUE, only logs startup info via LOGFILE_StoreGameStartupInfo.
@@ -4881,24 +4867,7 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
     0,
     0
 }; D2_STATIC_GUARD(gszFogCrashReportCustomMessage, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gszFogCrashReportCustomMessage");
-    static char gszFogVersionString[16] = {
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-}; D2_STATIC_GUARD(gszFogVersionString, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gszFogVersionString");
+    static char gszFogVersionString[16] = {}; D2_STATIC_GUARD(gszFogVersionString, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gszFogVersionString");
     static bool gbFogErrorManagerPadding; D2_STATIC_GUARD_BSS(gbFogErrorManagerPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gbFogErrorManagerPadding");
     static uint64_t gFogMemoryPoolPadding = 0; D2_STATIC_GUARD(gFogMemoryPoolPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gFogMemoryPoolPadding");
 
@@ -4977,11 +4946,8 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
       Storm::Source::SErr::SErrSetBlizzardErrorFunction(CRASH_FillupCrashTxt);
     } else if (bLogGameStrartupInfo) {
       Source::SFile::LOGFILE_StoreGameStartupInfo();
-      Debug::GuardStack();
       return;
     }
-
-    Debug::GuardStack();
 }
 
 // compiler-generated C++ EH handler; its frame is never registered with the OS

@@ -12,7 +12,7 @@ uint32_t * get_crc_table() {
     return gdwCrc32Table0;
 }
 
-uint32_t crc32_little(uint8_t * pbBuf, uint32_t nLen, uint32_t nCrc) {
+static uint32_t crc32_little(uint8_t * pbBuf, uint32_t nLen, uint32_t nCrc) {
     // Static local variables (originally global data)
     static uint32_t gdwCrc32Table1[256] = {
     0x0,
@@ -1671,7 +1671,7 @@ uint32_t __fastcall gf2_matrix_times(uint32_t dwVec, uint32_t * pdwMat) {
     return uVar1;
 }
 
-void gf2_matrix_square(uint32_t * pdwMatA, uint32_t * pdwMatB) {
+static void gf2_matrix_square(uint32_t * pdwMatA, uint32_t * pdwMatB) {
     uint32_t dwBits;
     uint32_t dwAccum;
     int nByteOffset = (int)pdwMatB - (int)pdwMatA;

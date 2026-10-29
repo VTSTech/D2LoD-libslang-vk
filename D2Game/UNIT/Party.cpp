@@ -36,23 +36,23 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitPartyControl) == 0x8, "D2_NEW(D2UnitPartyControl): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitPartyControl) == 0x8, "D2_NEW_AT(D2UnitPartyControl): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitPartyControlSub) == 0xc, "D2_NEW(D2UnitPartyControlSub): the 32-bit layout must be the 0xc bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitPartyControlSub) == 0xc, "D2_NEW_AT(D2UnitPartyControlSub): the 32-bit layout must be the 0xc bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitPartyControlSubSub) == 0x8, "D2_NEW(D2UnitPartyControlSubSub): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitPartyControlSubSub) == 0x8, "D2_NEW_AT(D2UnitPartyControlSubSub): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_pfnPartyMemberFilter
@@ -100,17 +100,17 @@ void __fastcall AllocPartyControl(::SGAMEDATA * pGame) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x18);
       exit(-1);
     } else if (!pGame->pPartyControl) {
-      pPartyControl = D2_NEW_POOL(pGame->pMemoryPool, D2UnitPartyControl);
-      if (pPartyControl) {
-        *(uint32_t*)pPartyControl = 0;
-        pPartyControl->pSub = 0;
-        pPartyControl->nPartyId = 3;
-        pGame->pPartyControl = pPartyControl;
-        return;
+      pPartyControl = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitPartyControl, ".\\UNIT\\Party.cpp", 0x1a);
+      if (!pPartyControl) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b);
-      exit(-1);
+      *(uint32_t*)pPartyControl = 0;
+      pPartyControl->pSub = 0;
+      pPartyControl->nPartyId = 3;
+      pGame->pPartyControl = pPartyControl;
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19);
       exit(-1);
@@ -138,19 +138,19 @@ void __fastcall FreePartyControl(::SGAMEDATA * pGame) {
       pMemoryToFree_01 = pMemoryToFree_00->pSub;
       while (pMemoryToFree_01) {
         pNextSubSub = pMemoryToFree_01->pNext;
-        D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree_01);
+        D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree_01, ".\\UNIT\\Party.cpp", 0x3f);
         pMemoryToFree_01 = pNextSubSub;
       }
 
-      D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree_00);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree_00, ".\\UNIT\\Party.cpp", 0x43);
       pMemoryToFree_00 = pNextSub;
     }
 
-    D2_FREE_POOL(pGame->pMemoryPool, pPartyControl);
+    D2_FREE_POOL_AT(pGame->pMemoryPool, pPartyControl, ".\\UNIT\\Party.cpp", 0x47);
     pGame->pPartyControl = 0;
 }
 
-uint16_t PARTY_UpdateNextPartyId(::SGAMEDATA * pGame) {
+static uint16_t PARTY_UpdateNextPartyId(::SGAMEDATA * pGame) {
     D2UnitPartyControlSub** ppPrevSub;
     D2UnitPartyControl* pDVar1 = pGame->pPartyControl;
     uint16_t uVar2 = pDVar1->nPartyId;
@@ -193,25 +193,25 @@ int16_t __fastcall AllocPartyControlSub0x4(::SGAMEDATA * pGame) {
       exit(-1);
     } else {
       uint16_t nNewPartyId;
-      pNewSub = D2_NEW_POOL(pGame->pMemoryPool, D2UnitPartyControlSub);
-      if (pNewSub) {
-        *(uint32_t*)pNewSub = 0;
-        pNewSub->pSub = 0;
-        pNewSub->pPrev = 0;
-        nNewPartyId = PARTY_UpdateNextPartyId(pGame);
-        pNewSub->nPartyId = nNewPartyId;
-        pNewSub->pPrev = pPartyCtrl->pSub;
-        pPartyCtrl->pSub = pNewSub;
-        return pNewSub->nPartyId;
+      pNewSub = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitPartyControlSub, ".\\UNIT\\Party.cpp", 0x80);
+      if (!pNewSub) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x81);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x81);
-      exit(-1);
+      *(uint32_t*)pNewSub = 0;
+      pNewSub->pSub = 0;
+      pNewSub->pPrev = 0;
+      nNewPartyId = PARTY_UpdateNextPartyId(pGame);
+      pNewSub->nPartyId = nNewPartyId;
+      pNewSub->pPrev = pPartyCtrl->pSub;
+      pPartyCtrl->pSub = pNewSub;
+      return pNewSub->nPartyId;
     }
 }
 
 // @sourcefile .\UNIT\Party.cpp
-void __stdcall PARTY_FreePartyMembers(D2UnitPartyControlSub * pPartyControlSub, ::SGAMEDATA * pGame) {
+static void __stdcall PARTY_FreePartyMembers(D2UnitPartyControlSub * pPartyControlSub, ::SGAMEDATA * pGame) {
     int32_t nLine;
     D2UnitPartyControlSubSub* pNextSubSub;
     D2UnitPartyControlSubSub* pSub;
@@ -220,7 +220,7 @@ void __stdcall PARTY_FreePartyMembers(D2UnitPartyControlSub * pPartyControlSub, 
       pSub = pPartyControlSub->pSub;
       while (true) {
         if (!pSub) {
-          D2_FREE_POOL(pGame->pMemoryPool, pPartyControlSub);
+          D2_FREE_POOL_AT(pGame->pMemoryPool, pPartyControlSub, ".\\UNIT\\Party.cpp", 0xa5);
           return;
         }
 
@@ -232,7 +232,7 @@ void __stdcall PARTY_FreePartyMembers(D2UnitPartyControlSub * pPartyControlSub, 
         PLAYER::PlayerScreen::SendAllPlayersPartyInfo(pGame, pMember);
         GAME::SCmd::NET_D2GS_SERVER_Send_0x8D_PLAYERPARTY(pMember, pMember);
         pNextSubSub = pSub->pNext;
-        D2_FREE_POOL(pGame->pMemoryPool, pSub);
+        D2_FREE_POOL_AT(pGame->pMemoryPool, pSub, ".\\UNIT\\Party.cpp", 0xa2);
         pSub = pNextSubSub;
       }
 
@@ -281,7 +281,7 @@ void __fastcall PARTY_DisbandParty(::SGAMEDATA * pGame, int16_t nPartyId) {
     PARTY_FreePartyMembers(pFoundSub, pGame);
 }
 
-D2UnitPartyControlSub * FindPartyControlSub(::SGAMEDATA * pGame, int16_t nPartyId) {
+static D2UnitPartyControlSub * FindPartyControlSub(::SGAMEDATA * pGame, int16_t nPartyId) {
     short int* pnPartyId;
     if (!pGame->pPartyControl) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd2);
@@ -303,7 +303,7 @@ D2UnitPartyControlSub * FindPartyControlSub(::SGAMEDATA * pGame, int16_t nPartyI
     return pSub;
 }
 
-BOOL CheckUnitGUIDInAllPartyControlSubs(int32_t nUnitGUID, D2UnitPartyControlSub * ppPartyControlSub) {
+static BOOL CheckUnitGUIDInAllPartyControlSubs(int32_t nUnitGUID, D2UnitPartyControlSub * ppPartyControlSub) {
     if (!ppPartyControlSub) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe5);
       exit(-1);
@@ -326,7 +326,7 @@ BOOL CheckUnitGUIDInAllPartyControlSubs(int32_t nUnitGUID, D2UnitPartyControlSub
 
 // Adds a player unit to an existing party slot identified by nPartyId. Searches pGame->pPartyControl->pSub for the matching party, allocates a new D2UnitPartyControlSubSub node with the unit's GUID, prepends it to the party's member list, broadcasts 0x8D (AssignPlayerToParty), and clears hostile relations between the newcomer and all existing members. Returns 1 on success. Halts with an internal error if the party control, party slot, or unit is invalid.
 // @sourcefile .\UNIT\Party.cpp
-void __stdcall PARTY_AddUnitToParty(::SGAMEDATA * pGame, int16_t nPartyId, D2UnitStrc * pUnit, int32_t nLine) {
+int __stdcall PARTY_AddUnitToParty(::SGAMEDATA * pGame, int16_t nPartyId, D2UnitStrc * pUnit, int32_t nLine) {
     D2UnitPartyControlSubSub* pNewSubSub;
     D2UnitStrc* pExistingMember;
     D2UnitPartyControlSub* pFoundSub;
@@ -355,10 +355,10 @@ void __stdcall PARTY_AddUnitToParty(::SGAMEDATA * pGame, int16_t nPartyId, D2Uni
       } else {
         bAlreadyInParty = CheckUnitGUIDInAllPartyControlSubs(nUnitGUID, pFoundSub);
         if (bAlreadyInParty) {
-          return;
+          return 1;
         }
 
-        pNewSubSub = D2_NEW_POOL(pGame->pMemoryPool, D2UnitPartyControlSubSub);
+        pNewSubSub = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitPartyControlSubSub, ".\\UNIT\\Party.cpp", 0x108);
         if (pNewSubSub) {
           pNewSubSub->pNext = 0;
           pNewSubSub->nUnitGUID = nUnitGUID;
@@ -373,7 +373,7 @@ void __stdcall PARTY_AddUnitToParty(::SGAMEDATA * pGame, int16_t nPartyId, D2Uni
             }
           }
 
-          return;
+          return 1;
         }
       }
     }
@@ -505,7 +505,7 @@ void __fastcall FindUnitWithFilter(::SGAMEDATA * pGame, D2UnitStrc * pUnit, pfnP
     }
 }
 
-void __stdcall GoldCalculations(D2UnitStrc * pUnit, int * pnParam1, int * pnParam2, int32_t nParam) {
+static void __stdcall GoldCalculations(D2UnitStrc * pUnit, int * pnParam1, int * pnParam2, int32_t nParam) {
     uint32_t nGoldLimit = D2Common::Units::GetInventoryGoldLimit(pUnit);
     int nCurrentGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
     *pnParam2 = 0;
@@ -555,24 +555,23 @@ int16_t __fastcall GetPartyIdFromUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     }
     if (pUnit->eUnitType == UNIT_PLAYER) {
       D2UnitPartyControlSub* pSub;
-      if (pGame) {
-        if (!pGame->pPartyControl) {
-          return -1;
-        }
-
-        for (pSub = pGame->pPartyControl->pSub; pSub; pSub = pSub->pPrev) {
-          for (pSubSub = pSub->pSub; pSubSub; pSubSub = pSubSub->pNext) {
-            if (pSubSub->nUnitGUID == nSearchGUID) {
-              return pSub->nPartyId;
-            }
-          }
-        }
-
+      if (!pGame) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x27c);
+        exit(-1);
+      }
+      if (!pGame->pPartyControl) {
         return -1;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x27c);
-      exit(-1);
+      for (pSub = pGame->pPartyControl->pSub; pSub; pSub = pSub->pPrev) {
+        for (pSubSub = pSub->pSub; pSubSub; pSubSub = pSubSub->pNext) {
+          if (pSubSub->nUnitGUID == nSearchGUID) {
+            return pSub->nPartyId;
+          }
+        }
+      }
+
+      return -1;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x27b);
       exit(-1);
@@ -618,7 +617,7 @@ void __fastcall PARTY_RemoveUnitFromParty(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
             PLAYER::PlayerScreen::SendAllPlayersPartyInfo(pGame, pUnit);
             GAME::SCmd::NET_D2GS_SERVER_Send_0x8D_PLAYERPARTY(pUnit, pUnit);
-            D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+            D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\UNIT\\Party.cpp", 0x148);
             break;
           }
 

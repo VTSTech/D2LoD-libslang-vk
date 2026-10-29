@@ -1019,7 +1019,7 @@ BOOL __fastcall Skills_SrvDoFunc_067_Charge(::SGAMEDATA * pGame, D2UnitStrc * pU
 }
 
 // Rolls a random physical damage value for pUnit scaled by 256. Reads min/max damage stats from the active weapon (main-hand or off-hand via INVENTORY_GetWeaponHandedness, or bare-hand stats if no weapon). Uses the unit's seed for the RNG roll. Returns the resulting damage value (fixed-point *256).
-int32_t SKILLPAL_RollRandomDamage(D2UnitStrc * pUnit) {
+static int32_t SKILLPAL_RollRandomDamage(D2UnitStrc * pUnit) {
     uint32_t uVar1;
     int nMinDmg;
     int nMaxDmg;
@@ -1271,7 +1271,7 @@ void __fastcall SKILLPAL_OnConversionExpire(D2UnitStrc * pUnit, eD2States eState
 }
 
 // Checks whether pUnit2 can be converted by the Paladin's Holy Bolt/Convert skill (eSkill). Returns 0 if pUnit2 is a merc, non-monster, already-aligned, or a consumed corpse. Otherwise rolls a random chance against skills.txt calc[0]; returns 1 if the roll succeeds (or nParam2==0 for guaranteed convert).
-BOOL __stdcall SKILLPAL_CanConvertTarget(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, eD2Skills eSkill, D2UnitStrc * pUnit2) {
+static BOOL __stdcall SKILLPAL_CanConvertTarget(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, eD2Skills eSkill, D2UnitStrc * pUnit2) {
     if ((int)eSkill < 0) {
       return 0;
     }

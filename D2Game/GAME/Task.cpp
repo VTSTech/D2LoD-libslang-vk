@@ -23,23 +23,23 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2TaskQueueSlotStrc) == 0x18, "D2_NEW(D2TaskQueueSlotStrc): the 32-bit layout must be the 0x18 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2TaskQueueSlotStrc) == 0x18, "D2_NEW_AT(D2TaskQueueSlotStrc): the 32-bit layout must be the 0x18 bytes 1.14d allocates");
 
 
 namespace D2Game::GAME::Task {
@@ -52,17 +52,17 @@ void __fastcall LINKLIST_InsertBefore(D2LinkNodeStrc * pPrev, D2LinkNodeStrc * p
       exit(-1);
     } else {
       D2LinkNodeStrc* pDVar1;
-      if (pNode) {
-        pNode->pNext = pPrev;
-        pDVar1 = pPrev->pPrev;
-        pNode->pPrev = pDVar1;
-        pDVar1->pNext = pNode;
-        pPrev->pPrev = pNode;
-        return;
+      if (!pNode) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6d);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6d);
-      exit(-1);
+      pNode->pNext = pPrev;
+      pDVar1 = pPrev->pPrev;
+      pNode->pPrev = pDVar1;
+      pDVar1->pNext = pNode;
+      pPrev->pPrev = pNode;
+      return;
     }
 }
 
@@ -74,17 +74,17 @@ void __fastcall TASK_LinkTaskToList(D2LinkNodeStrc * pList, D2LinkNodeStrc * pLi
       exit(-1);
     } else {
       D2LinkNodeStrc* pPrevNode;
-      if (pLink) {
-        pLink->pNext = pList;
-        pPrevNode = pList->pPrev;
-        pLink->pPrev = pPrevNode;
-        pPrevNode->pNext = pLink;
-        pList->pPrev = pLink;
-        return;
+      if (!pLink) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78);
-      exit(-1);
+      pLink->pNext = pList;
+      pPrevNode = pList->pPrev;
+      pLink->pPrev = pPrevNode;
+      pPrevNode->pNext = pLink;
+      pList->pPrev = pLink;
+      return;
     }
 }
 
@@ -101,17 +101,17 @@ void __fastcall LINKLIST_AppendToList(D2LinkNodeStrc * * ppList, D2LinkNodeStrc 
       exit(-1);
     } else {
       pDVar1 = *ppList;
-      if (pDVar1) {
-        pNode->pNext = pDVar1;
-        pDVar2 = pDVar1->pPrev;
-        pNode->pPrev = pDVar2;
-        pDVar2->pNext = pNode;
-        pDVar1->pPrev = pNode;
-        return;
+      if (!pDVar1) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
-      exit(-1);
+      pNode->pNext = pDVar1;
+      pDVar2 = pDVar1->pPrev;
+      pNode->pPrev = pDVar2;
+      pDVar2->pNext = pNode;
+      pDVar1->pPrev = pNode;
+      return;
     }
 }
 
@@ -170,7 +170,7 @@ void __stdcall TASK_LeaveQueueCriticalSection(D2TaskQueueSlotStrc * pSlot) {
 
 // Inserts pTaskNode into pSlot->sTaskList in timestamp order. Register call: pSlot@ECX, pTaskNode@EDX, nDelay@EAX. Adds nDelay to the node's timestamp (+0), walks sTaskList along its +0 links past entries whose timestamp is later (signed difference > 0), and links the node's list link (pTaskNode+0xc) in before the first entry that is not later. Halts at line 0x6c if the walk ends on NULL, 0x6d if the node link is NULL.
 // Provenance: asm 00564400..00564459.
-void TASK_InsertTaskAtTimestamp(D2TaskQueueSlotStrc * pSlot, D2TaskNodeStrc * pTaskNode, int32_t nDelay) {
+static void TASK_InsertTaskAtTimestamp(D2TaskQueueSlotStrc * pSlot, D2TaskNodeStrc * pTaskNode, int32_t nDelay) {
     D2LinkNodeStrc* pDVar1;
     D2LinkNodeStrc* pInsertPos;
     pTaskNode->dwTimestamp += nDelay;
@@ -185,17 +185,17 @@ void TASK_InsertTaskAtTimestamp(D2TaskQueueSlotStrc * pSlot, D2TaskNodeStrc * pT
       exit(-1);
     } else {
       D2LinkNodeStrc* pDVar2;
-      if (pDVar1) {
-        pDVar1->pNext = pInsertPos;
-        pDVar2 = pInsertPos->pPrev;
-        pTaskNode->sLink.pPrev = pDVar2;
-        pDVar2->pNext = pDVar1;
-        pInsertPos->pPrev = pDVar1;
-        return;
+      if (!pDVar1) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6d);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6d);
-      exit(-1);
+      pDVar1->pNext = pInsertPos;
+      pDVar2 = pInsertPos->pPrev;
+      pTaskNode->sLink.pPrev = pDVar2;
+      pDVar2->pNext = pDVar1;
+      pInsertPos->pPrev = pDVar1;
+      return;
     }
 }
 
@@ -342,13 +342,13 @@ void __stdcall TASK_GameTickCallback(uint32_t nParam, D2TaskNodeStrc * pTaskNode
       }
 
       TASK_InsertTaskAtTimestamp(pDVar1, pTaskNode, 0x28);
-      if (pDVar1->nSlotIndex < 0x20) {
-        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(aTaskQueueCriticalSections + pDVar1->nSlotIndex);
-        return;
+      if (!(pDVar1->nSlotIndex < 0x20)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x97);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x97);
-      exit(-1);
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(aTaskQueueCriticalSections + pDVar1->nSlotIndex);
+      return;
     }
 
     D2ClientStrc* pClient;
@@ -394,7 +394,7 @@ void __stdcall TASK_GameTickCallback(uint32_t nParam, D2TaskNodeStrc * pTaskNode
 
       TASK_UnlinkTaskFromList(pSlotLink);
       TASK_LinkTaskToList(&gsTaskQueueListHead, pSlotLink);
-      D2_FREE(pTaskNode);
+      D2_FREE_AT(pTaskNode, ".\\GAME\\Task.cpp", 0x309);
     }
 
     gnTaskQueueTailIndex--;
@@ -420,7 +420,7 @@ void __stdcall TASK_FreeAllSlots() {
 
         pSlotLink->pNext->pPrev = pSlot->sSlotLink.pPrev;
         pSlot->sSlotLink.pPrev->pNext = pSlotLink->pNext;
-        D2_FREE_POOL(nullptr, (void*)gaTaskQueueHeadArray[nSlotOffset]);
+        D2_FREE_POOL_AT(nullptr, (void*)gaTaskQueueHeadArray[nSlotOffset], ".\\GAME\\Task.cpp", 0x330);
         *(uint32_t*)&gaTaskQueueHeadArray[nSlotOffset] = 0;
       }
 
@@ -448,7 +448,7 @@ uint32_t __stdcall TASK_AllocateTaskQueue() {
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(aTaskQueueCriticalSections + nSlotIndex);
     if (!gaTaskQueueHeadArray[nSlotIndex]) {
       D2LinkNodeStrc* pDVar1;
-      pNewSlot = D2_NEW_POOL(nullptr, D2TaskQueueSlotStrc);
+      pNewSlot = D2_NEW_POOL_AT(nullptr, D2TaskQueueSlotStrc, ".\\GAME\\Task.cpp", 0x3fb);
       pNewSlot->nSlotIndex = nSlotIndex;
       pNewSlot->nTaskCount = 0;
       pDVar1 = &pNewSlot->sTaskList;
@@ -504,19 +504,19 @@ BOOL __fastcall TASK_EnqueueGameTask(D2TaskNodeStrc * pTaskNode, uint32_t dwCall
         pSlotLink->pNext->pPrev = pSlotLink->pPrev;
         pSlotLink->pPrev->pNext = pSlotLink->pNext;
         pNewTaskLink = gsTaskQueueListHead.pNext;
-        if (gsTaskQueueListHead.pNext) {
-          pSlotLink->pNext = gsTaskQueueListHead.pNext;
-          pTailLink = pNewTaskLink->pPrev;
-          pSlotLink->pPrev = pTailLink;
-          pTailLink->pNext = pSlotLink;
-          pNewTaskLink->pPrev = pSlotLink;
-          bSuccess = 1;
-          /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0088caa8);
-          return bSuccess;
+        if (!gsTaskQueueListHead.pNext) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
-        exit(-1);
+        pSlotLink->pNext = gsTaskQueueListHead.pNext;
+        pTailLink = pNewTaskLink->pPrev;
+        pSlotLink->pPrev = pTailLink;
+        pTailLink->pNext = pSlotLink;
+        pNewTaskLink->pPrev = pSlotLink;
+        bSuccess = 1;
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0088caa8);
+        return bSuccess;
       }
     }
 

@@ -20,12 +20,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -38,8 +38,8 @@ namespace D2Glide::glBlocks {
 
 // @sourcefile .\Src\glBlocks.cpp
 void __stdcall GLBLOCKS_AllocBlockBuffers() {
-    gpGlBlocksWallBuffer = D2_ALLOC(0x400);
-    gpGlBlocksFloorBuffer = D2_ALLOC(0x8000);
+    gpGlBlocksWallBuffer = D2_ALLOC_AT(0x400, ".\\Src\\glBlocks.cpp", 0x33);
+    gpGlBlocksFloorBuffer = D2_ALLOC_AT(0x8000, ".\\Src\\glBlocks.cpp", 0x34);
     g_GrTexInfoGlBlocks.data = gpGlBlocksWallBuffer;
     gTexInfoGlideSurfaceBlocks.data = gpGlBlocksFloorBuffer;
 }
@@ -47,18 +47,18 @@ void __stdcall GLBLOCKS_AllocBlockBuffers() {
 // @sourcefile .\Src\glBlocks.cpp
 void __stdcall GLBLOCKS_FreeBlockBuffers() {
     if (gpGlBlocksWallBuffer) {
-      D2_FREE(gpGlBlocksWallBuffer);
+      D2_FREE_AT(gpGlBlocksWallBuffer, ".\\Src\\glBlocks.cpp", 0x3f);
       gpGlBlocksWallBuffer = 0;
     }
     if (!gpGlBlocksFloorBuffer) {
       return;
     }
 
-    D2_FREE(gpGlBlocksFloorBuffer);
+    D2_FREE_AT(gpGlBlocksFloorBuffer, ".\\Src\\glBlocks.cpp", 0x45);
     gpGlBlocksFloorBuffer = 0;
 }
 
-void GLBLOCKS_DecodeRLEBlock(uint8_t * pbSrc, uint8_t * pbDstRow) {
+static void GLBLOCKS_DecodeRLEBlock(uint8_t * pbSrc, uint8_t * pbDstRow) {
     uint8_t bySkip;
     int nRowsLeft = 0x20;
     memset(pbDstRow, 0, 0x400);
@@ -226,17 +226,17 @@ void __fastcall GLBLOCKS_LoadWallSubtileTexture(D2GroundSubTileStrc * pSubTile) 
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x112);
         exit(-1);
       } else {
-        if (nNodeIdx0 < (int)gGlideSubtileTextureCache.nMaxEntries) {
-          gGlideSubtileTextureCache.pNodes[nTexCacheIdx - 1].pSubTile = pSubTile;
-          startAddress = gGlideSubtileTextureCache.pNodes[pSubTile->nTextureCacheIndex - 1].dwAddress;
-          (*GLIDEDLL_grTexDownloadMipMap_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);
-          (*GLIDEDLL_grTexSource_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);
-          Renderer::Glide::RENDERER_GLIDE_SetTextureMode(gnGlideTMUId);
-          return;
+        if (!(nNodeIdx0 < (int)gGlideSubtileTextureCache.nMaxEntries)) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x113);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x113);
-        exit(-1);
+        gGlideSubtileTextureCache.pNodes[nTexCacheIdx - 1].pSubTile = pSubTile;
+        startAddress = gGlideSubtileTextureCache.pNodes[pSubTile->nTextureCacheIndex - 1].dwAddress;
+        (*GLIDEDLL_grTexDownloadMipMap_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);
+        (*GLIDEDLL_grTexSource_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);
+        Renderer::Glide::RENDERER_GLIDE_SetTextureMode(gnGlideTMUId);
+        return;
       }
     }
 }

@@ -24,6 +24,6 @@ struct __attribute__((packed)) TCELENTRY {
 namespace D2CMP::SRC::CelCmp::TCELENTRY {
 
 // Function declarations
-::TCELENTRY * ScalarDeletingDestructor(::TCELENTRY * pThis, uint32_t dwFlags);
+::TCELENTRY * __thiscall ScalarDeletingDestructor(::TCELENTRY * pThis, uint32_t dwFlags);
 
 } // namespace D2CMP::SRC::CelCmp::TCELENTRY

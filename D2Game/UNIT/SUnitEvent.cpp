@@ -21,19 +21,19 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2SUnitEventStrc) == 0x20, "D2_NEW(D2SUnitEventStrc): the 32-bit layout must be the 0x20 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2SUnitEventStrc) == 0x20, "D2_NEW_AT(D2SUnitEventStrc): the 32-bit layout must be the 0x20 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_D2ItemStatCostItemEventFunc
@@ -53,7 +53,7 @@ void __fastcall UNITEVENT_FreeAllEvents(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
     while (pMemoryToFree) {
       D2SUnitEventStrc* pNextEvent;
       pNextEvent = pMemoryToFree->pNext;
-      D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\UNIT\\SUnitEvent.cpp", 0x3d);
       pMemoryToFree = pNextEvent;
     }
 
@@ -66,7 +66,7 @@ D2SUnitEventStrc * __fastcall SUNITEVENT_Alloc(::SGAMEDATA * pGame, D2UnitStrc *
       return nullptr;
     }
 
-    D2SUnitEventStrc* pNewEvent = D2_NEW_POOL(pGame->pMemoryPool, D2SUnitEventStrc);
+    D2SUnitEventStrc* pNewEvent = D2_NEW_POOL_AT(pGame->pMemoryPool, D2SUnitEventStrc, ".\\UNIT\\SUnitEvent.cpp", 0x57);
     pNewEvent->nUnitEvent = '\0';
     pNewEvent->field_0x1 = 0;
     pNewEvent->nFlags = 0;
@@ -120,7 +120,7 @@ void __fastcall SUNITEVENT_RemoveEventsByQueueAndOwner(::SGAMEDATA * pGame, D2Un
             pMemoryToFree->pNext->pPrev = pMemoryToFree->pPrev;
           }
 
-          D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+          D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\UNIT\\SUnitEvent.cpp", 0x95);
         } else {
           pMemoryToFree->nFlags |= 2;
         }
@@ -179,7 +179,7 @@ int32_t __fastcall UNITEVENT_DispatchEventsByType(::SGAMEDATA * pGame, uint32_t 
             pMemoryToFree->pNext->pPrev = pMemoryToFree->pPrev;
           }
 
-          D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+          D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\UNIT\\SUnitEvent.cpp", 0xeb);
         }
       }
     }

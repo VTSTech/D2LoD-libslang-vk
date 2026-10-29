@@ -13,51 +13,51 @@
 struct IgnoreList;
 #ifndef RECON_FPTD_IgnoreList_AddAccountMapping
 #define RECON_FPTD_IgnoreList_AddAccountMapping
-typedef void (*IgnoreList_AddAccountMapping)(::IgnoreList * pThis, char * szRaw, int32_t nRawLen);
+typedef void (__thiscall *IgnoreList_AddAccountMapping)(::IgnoreList * pThis, char * szRaw, int32_t nRawLen);
 #endif
 #ifndef RECON_FPTD_IgnoreList_AddByAccountName
 #define RECON_FPTD_IgnoreList_AddByAccountName
-typedef int32_t (*IgnoreList_AddByAccountName)(::IgnoreList * pThis, char * szAccountName);
+typedef int32_t (__thiscall *IgnoreList_AddByAccountName)(::IgnoreList * pThis, char * szAccountName);
 #endif
 #ifndef RECON_FPTD_IgnoreList_AddByPattern
 #define RECON_FPTD_IgnoreList_AddByPattern
-typedef int32_t (*IgnoreList_AddByPattern)(::IgnoreList * pThis, char * szPattern);
+typedef int32_t (__thiscall *IgnoreList_AddByPattern)(::IgnoreList * pThis, char * szPattern);
 #endif
 #ifndef RECON_FPTD_IgnoreList_CheckAccountNameIgnored
 #define RECON_FPTD_IgnoreList_CheckAccountNameIgnored
-typedef int32_t (*IgnoreList_CheckAccountNameIgnored)(::IgnoreList * pThis, char * szAccountName);
+typedef int32_t (__thiscall *IgnoreList_CheckAccountNameIgnored)(::IgnoreList * pThis, char * szAccountName);
 #endif
 #ifndef RECON_FPTD_IgnoreList_CheckIgnored
 #define RECON_FPTD_IgnoreList_CheckIgnored
-typedef int32_t (*IgnoreList_CheckIgnored)(::IgnoreList * pThis, char * szPlayerName);
+typedef int32_t (__thiscall *IgnoreList_CheckIgnored)(::IgnoreList * pThis, char * szPlayerName);
 #endif
 #ifndef RECON_FPTD_IgnoreList_ClearAccountMappings
 #define RECON_FPTD_IgnoreList_ClearAccountMappings
-typedef void (*IgnoreList_ClearAccountMappings)(::IgnoreList * pThis);
+typedef void (__thiscall *IgnoreList_ClearAccountMappings)(::IgnoreList * pThis);
 #endif
 #ifndef RECON_FPTD_IgnoreList_GetMappedValue
 #define RECON_FPTD_IgnoreList_GetMappedValue
-typedef int32_t (*IgnoreList_GetMappedValue)(::IgnoreList * pThis, char * szKey, char * szOut, int32_t nOutSize);
+typedef int32_t (__thiscall *IgnoreList_GetMappedValue)(::IgnoreList * pThis, char * szKey, char * szOut, int32_t nOutSize);
 #endif
 #ifndef RECON_FPTD_IgnoreList_GetPersistentSetting
 #define RECON_FPTD_IgnoreList_GetPersistentSetting
-typedef int32_t (*IgnoreList_GetPersistentSetting)(::IgnoreList * pThis);
+typedef int32_t (__thiscall *IgnoreList_GetPersistentSetting)(::IgnoreList * pThis);
 #endif
 #ifndef RECON_FPTD_IgnoreList_RemoveByAccountName
 #define RECON_FPTD_IgnoreList_RemoveByAccountName
-typedef int32_t (*IgnoreList_RemoveByAccountName)(::IgnoreList * pThis, char * szAccountName);
+typedef int32_t (__thiscall *IgnoreList_RemoveByAccountName)(::IgnoreList * pThis, char * szAccountName);
 #endif
 #ifndef RECON_FPTD_IgnoreList_RemoveByPattern
 #define RECON_FPTD_IgnoreList_RemoveByPattern
-typedef int32_t (*IgnoreList_RemoveByPattern)(::IgnoreList * pThis, char * szPattern);
+typedef int32_t (__thiscall *IgnoreList_RemoveByPattern)(::IgnoreList * pThis, char * szPattern);
 #endif
 #ifndef RECON_FPTD_IgnoreList_SavePersistentSetting
 #define RECON_FPTD_IgnoreList_SavePersistentSetting
-typedef void (*IgnoreList_SavePersistentSetting)(::IgnoreList * pThis, int32_t nPersistent);
+typedef void (__thiscall *IgnoreList_SavePersistentSetting)(::IgnoreList * pThis, int32_t nPersistent);
 #endif
 #ifndef RECON_FPTD_IgnoreList_ScalarDeletingDestructor
 #define RECON_FPTD_IgnoreList_ScalarDeletingDestructor
-typedef ::IgnoreList * (*IgnoreList_ScalarDeletingDestructor)(::IgnoreList * pThis, uint32_t nFlags);
+typedef ::IgnoreList * (__thiscall *IgnoreList_ScalarDeletingDestructor)(::IgnoreList * pThis, uint32_t nFlags);
 #endif
 
 struct IgnoreListVtable;
@@ -74,47 +74,47 @@ struct __attribute__((packed)) IgnoreList {
 };
 
 struct IgnoreListVtable {
-    /* 0x00 */ int32_t (*AddByPattern)(::IgnoreList *, char *);
-    /* 0x04 */ int32_t (*RemoveByPattern)(::IgnoreList *, char *);
-    /* 0x08 */ int32_t (*CheckIgnored)(::IgnoreList *, char *);
-    /* 0x0C */ int32_t (*AddByAccountName)(::IgnoreList *, char *);
-    /* 0x10 */ int32_t (*RemoveByAccountName)(::IgnoreList *, char *);
-    /* 0x14 */ int32_t (*CheckAccountNameIgnored)(::IgnoreList *, char *);
-    /* 0x18 */ void (*AddAccountMapping)(::IgnoreList *, char *, int32_t);
-    /* 0x1C */ int32_t (*GetMappedValue)(::IgnoreList *, char *, char *, int32_t);
-    /* 0x20 */ int32_t (*GetPersistentSetting)(::IgnoreList *);
-    /* 0x24 */ void (*SavePersistentSetting)(::IgnoreList *, int32_t);
-    /* 0x28 */ void (*ClearAccountMappings)(::IgnoreList *);
-    /* 0x2C */ ::IgnoreList * (*ScalarDeletingDestructor)(::IgnoreList *, uint32_t);
+    /* 0x00 */ int32_t (__thiscall *AddByPattern)(::IgnoreList *, char *);
+    /* 0x04 */ int32_t (__thiscall *RemoveByPattern)(::IgnoreList *, char *);
+    /* 0x08 */ int32_t (__thiscall *CheckIgnored)(::IgnoreList *, char *);
+    /* 0x0C */ int32_t (__thiscall *AddByAccountName)(::IgnoreList *, char *);
+    /* 0x10 */ int32_t (__thiscall *RemoveByAccountName)(::IgnoreList *, char *);
+    /* 0x14 */ int32_t (__thiscall *CheckAccountNameIgnored)(::IgnoreList *, char *);
+    /* 0x18 */ void (__thiscall *AddAccountMapping)(::IgnoreList *, char *, int32_t);
+    /* 0x1C */ int32_t (__thiscall *GetMappedValue)(::IgnoreList *, char *, char *, int32_t);
+    /* 0x20 */ int32_t (__thiscall *GetPersistentSetting)(::IgnoreList *);
+    /* 0x24 */ void (__thiscall *SavePersistentSetting)(::IgnoreList *, int32_t);
+    /* 0x28 */ void (__thiscall *ClearAccountMappings)(::IgnoreList *);
+    /* 0x2C */ ::IgnoreList * (__thiscall *ScalarDeletingDestructor)(::IgnoreList *, uint32_t);
 };
 
 namespace D2Common::Chat::Ignorelist::IgnoreList {
 
 // Function declarations
-int32_t CloseAppendFile(::IgnoreList * pThis);
-int32_t GetPersistentSetting(::IgnoreList * pThis);
-void SavePersistentSetting(::IgnoreList * pThis, int32_t nPersistent);
-int32_t AppendLineToFile(::IgnoreList * pThis, char * szLine);
+int32_t __thiscall CloseAppendFile(::IgnoreList * pThis);
+int32_t __thiscall GetPersistentSetting(::IgnoreList * pThis);
+void __thiscall SavePersistentSetting(::IgnoreList * pThis, int32_t nPersistent);
+int32_t __thiscall AppendLineToFile(::IgnoreList * pThis, char * szLine);
 // Writes the ignore list to its file: one ignored name pattern per line, then each ignored account prefixed with '!'.
-int32_t SaveToFile(::IgnoreList * pThis);
-void ClearAccountMappings(::IgnoreList * pThis);
-int32_t GetMappedValue(::IgnoreList * pThis, char * szKey, char * szOut, int32_t nOutSize);
-int32_t RemoveByPattern(::IgnoreList * pThis, char * szPattern);
-int32_t RemoveByAccountName(::IgnoreList * pThis, char * szAccountName);
+int32_t __thiscall SaveToFile(::IgnoreList * pThis);
+void __thiscall ClearAccountMappings(::IgnoreList * pThis);
+int32_t __thiscall GetMappedValue(::IgnoreList * pThis, char * szKey, char * szOut, int32_t nOutSize);
+int32_t __thiscall RemoveByPattern(::IgnoreList * pThis, char * szPattern);
+int32_t __thiscall RemoveByAccountName(::IgnoreList * pThis, char * szAccountName);
 // Returns whether the account name is on the ignore list. It tail-calls Fog::Debug::GuardStack, which returns its argument, so the result is already in EAX; typed void the reconstruction dropped every return value and callers tested an unassigned local.
-int32_t CheckAccountNameIgnored(::IgnoreList * pThis, char * szAccountName);
-int32_t CheckCharNameIgnored(::IgnoreList * pThis, char * szCharName);
+int32_t __thiscall CheckAccountNameIgnored(::IgnoreList * pThis, char * szAccountName);
+int32_t __thiscall CheckCharNameIgnored(::IgnoreList * pThis, char * szCharName);
 // Returns whether the player name is on the ignore list. Tail-calls Fog::Debug::GuardStack, which returns its argument, so the result is already in EAX; typed void the reconstruction dropped it.
-int32_t CheckIgnored(::IgnoreList * pThis, char * szPlayerName);
-void Destructor(::IgnoreList * pThis);
-::IgnoreList * ScalarDeletingDestructor(::IgnoreList * pThis, uint32_t nFlags);
+int32_t __thiscall CheckIgnored(::IgnoreList * pThis, char * szPlayerName);
+void __thiscall Destructor(::IgnoreList * pThis);
+::IgnoreList * __thiscall ScalarDeletingDestructor(::IgnoreList * pThis, uint32_t nFlags);
 // Adds a name pattern to the ignore list and returns the result. Tail-calls Fog::Debug::GuardStack, which returns its argument, so the value is already in EAX; typed void the reconstruction dropped it.
-int32_t AddByPattern(::IgnoreList * pThis, char * szPattern);
+int32_t __thiscall AddByPattern(::IgnoreList * pThis, char * szPattern);
 // Adds an account name to the ignore list and returns the result. Tail-calls Fog::Debug::GuardStack, which returns its argument, so the value is already in EAX; typed void the reconstruction dropped it.
-int32_t AddByAccountName(::IgnoreList * pThis, char * szAccountName);
-void LoadFromFile(::IgnoreList * pThis);
-::IgnoreList * Constructor(::IgnoreList * pThis);
+int32_t __thiscall AddByAccountName(::IgnoreList * pThis, char * szAccountName);
+void __thiscall LoadFromFile(::IgnoreList * pThis);
+::IgnoreList * __thiscall Constructor(::IgnoreList * pThis);
 // @sourcefile .\Chat\Ignorelist.cpp
-void AddAccountMapping(::IgnoreList * pThis, char * szRaw, int32_t nRawLen);
+void __thiscall AddAccountMapping(::IgnoreList * pThis, char * szRaw, int32_t nRawLen);
 
 } // namespace D2Common::Chat::Ignorelist::IgnoreList

@@ -15,12 +15,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -50,7 +50,7 @@ void __fastcall TXT_AllocTxt_plrmode_plrtype(D2PoolManagerStrc * pMemory) {
     D2PlrTypeModeTxt* pTxtPlrType = (D2PlrTypeModeTxt*)DataTbls::CompileTxt(pMemory, "plrtype", plr, &nTxtPlrTypeSize, 0x34);
     D2PlrTypeModeTxt* pTxtPlrMode = (D2PlrTypeModeTxt*)DataTbls::CompileTxt(pMemory, "plrmode", plr, &nTxtPlrModeSize, 0x34);
     int nTotalSize = nTxtPlrModeSize + nTxtPlrTypeSize;
-    D2PlrTypeModeTxt* pTxtPlrTypeMode = (D2PlrTypeModeTxt*)D2_ALLOC_POOL(nullptr, nTotalSize * 0x34);
+    D2PlrTypeModeTxt* pTxtPlrTypeMode = (D2PlrTypeModeTxt*)D2_ALLOC_POOL_AT(nullptr, nTotalSize * 0x34, ".\\DATATBLS\\TokTbls.cpp", 0x37);
     if (!pTxtPlrTypeMode) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x38);
       exit(-1);
@@ -195,7 +195,7 @@ void __fastcall TXT_AllocTxt_objtype_objmode(D2PoolManagerStrc * pMemory) {
     D2ObjTypeTxt* pTxtObjType_lcl = (D2ObjTypeTxt*)DataTbls::CompileTxt(pMemory, "objtype", obj, &nObjTypeSize, 0x34);
     D2ObjModeTxt* pTxtObjMode_lcl = (D2ObjModeTxt*)DataTbls::CompileTxt(pMemory, "objmode", obj, &nObjModeSize, 0x34);
     int nTotalSize = nObjModeSize + nObjTypeSize;
-    D2ObjTypeTxt* pTxtObjType2 = (D2ObjTypeTxt*)D2_ALLOC_POOL(nullptr, nTotalSize * 0x34);
+    D2ObjTypeTxt* pTxtObjType2 = (D2ObjTypeTxt*)D2_ALLOC_POOL_AT(nullptr, nTotalSize * 0x34, ".\\DATATBLS\\TokTbls.cpp", 0x94);
     if (!pTxtObjType2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x95);
       exit(-1);
@@ -254,7 +254,7 @@ void __fastcall TXT_AllocTxt_armtype(D2PoolManagerStrc * pMemory) {
 // @sourcefile .\DATATBLS\TokTbls.cpp
 void __stdcall FreeTokenTables() {
     if (pTxtPlrTypeMode1) {
-      D2_FREE_POOL(nullptr, pTxtPlrTypeMode1);
+      D2_FREE_POOL_AT(nullptr, pTxtPlrTypeMode1, ".\\DATATBLS\\TokTbls.cpp", 0xd6);
     }
 
     pTxtPlrTypeMode1 = 0;
@@ -264,7 +264,7 @@ void __stdcall FreeTokenTables() {
 
     pTxtMonMode1 = 0;
     if (pTxtObjTypeMode) {
-      D2_FREE_POOL(nullptr, pTxtObjTypeMode);
+      D2_FREE_POOL_AT(nullptr, pTxtObjTypeMode, ".\\DATATBLS\\TokTbls.cpp", 0xe2);
     }
 
     pTxtObjTypeMode = 0;
@@ -288,22 +288,22 @@ D2PlrTypeModeTxt * __stdcall TxtGetPlrTypeModeLine(uint32_t nMode, int32_t nMode
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x110);
       exit(-1);
     } else if (!nModeIndex) {
-      if (pTxtPlrTypeMode2 + nMode) {
-        return pTxtPlrTypeMode2 + nMode;
+      if (!(pTxtPlrTypeMode2 + nMode)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x113);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x113);
-      exit(-1);
+      return pTxtPlrTypeMode2 + nMode;
     } else {
       if (nModeIndex != 1) {
         return nullptr;
       }
-      if (pTxtPlrTypeMode3 + nMode) {
-        return pTxtPlrTypeMode3 + nMode;
+      if (!(pTxtPlrTypeMode3 + nMode)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x116);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x116);
-      exit(-1);
+      return pTxtPlrTypeMode3 + nMode;
     }
 }
 
@@ -312,22 +312,22 @@ D2MonModeTxt * __stdcall TxtGetMonModeLine(uint32_t nId, int32_t nModeIndex) {
       return nullptr;
     }
     if (!nModeIndex) {
-      if (pTxtMonMode2 + nId) {
-        return pTxtMonMode2 + nId;
+      if (!(pTxtMonMode2 + nId)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x126);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x126);
-      exit(-1);
+      return pTxtMonMode2 + nId;
     } else {
       if (nModeIndex != 1) {
         return nullptr;
       }
-      if (pTxtMonMode3 + nId) {
-        return pTxtMonMode3 + nId;
+      if (!(pTxtMonMode3 + nId)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x129);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x129);
-      exit(-1);
+      return pTxtMonMode3 + nId;
     }
 }
 
@@ -336,42 +336,42 @@ D2ObjTypeTxt * __stdcall TxtGetObjTypeModeLine(uint32_t nId, int32_t nModeIndex)
       return nullptr;
     }
     if (!nModeIndex) {
-      if (pTxtObjType + nId) {
-        return pTxtObjType + nId;
+      if (!(pTxtObjType + nId)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x139);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x139);
-      exit(-1);
+      return pTxtObjType + nId;
     } else {
       if (nModeIndex != 1) {
         return nullptr;
       }
-      if (pTxtObjMode + nId) {
-        return (D2ObjTypeTxt*)(pTxtObjMode + nId);
+      if (!(pTxtObjMode + nId)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13c);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13c);
-      exit(-1);
+      return (D2ObjTypeTxt*)(pTxtObjMode + nId);
     }
 }
 
 D2CompositTxt * __stdcall TxtCompositGetLine(int32_t nId) {
-    if (pTxtComposit + nId) {
-      return pTxtComposit + nId;
+    if (!(pTxtComposit + nId)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x147);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x147);
-    exit(-1);
+    return pTxtComposit + nId;
     return pTxtComposit + nId;
 }
 
 D2ArmTypeTxt * __stdcall TxtGetArmTypeLine(int32_t nId) {
-    if (pTxtArmType + nId) {
-      return pTxtArmType + nId;
+    if (!(pTxtArmType + nId)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x150);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x150);
-    exit(-1);
+    return pTxtArmType + nId;
     return pTxtArmType + nId;
 }
 
@@ -842,21 +842,21 @@ void __stdcall GetBodyDimensions(int32_t neInventoryPage, int32_t nScreenMode, D
       exit(-1);
     } else {
       pDVar1 = &pTxtInventory[nTxtIndex].pBody.rArm + eBodyLoc;
-      if (pDVar1) {
-        pOutput->nLeft = pDVar1->nLeft;
-        pOutput->nRight = pDVar1->nRight;
-        pOutput->nTop = pDVar1->nTop;
-        pOutput->nBottom = pDVar1->nBottom;
-        byHeight = pDVar1->nHeight;
-        wPadCopy = pDVar1->wPad;
-        pOutput->nWidth = pDVar1->nWidth;
-        pOutput->nHeight = byHeight;
-        pOutput->wPad = wPadCopy;
-        return;
+      if (!pDVar1) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa5);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa5);
-      exit(-1);
+      pOutput->nLeft = pDVar1->nLeft;
+      pOutput->nRight = pDVar1->nRight;
+      pOutput->nTop = pDVar1->nTop;
+      pOutput->nBottom = pDVar1->nBottom;
+      byHeight = pDVar1->nHeight;
+      wPadCopy = pDVar1->wPad;
+      pOutput->nWidth = pDVar1->nWidth;
+      pOutput->nHeight = byHeight;
+      pOutput->wPad = wPadCopy;
+      return;
     }
 }
 

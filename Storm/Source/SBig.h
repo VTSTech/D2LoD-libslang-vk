@@ -26,12 +26,6 @@ typedef BigBuffer D2SbigArrayStrc;
 namespace Storm::Source::SBig {
 
 // Function declarations
-//   pnAccum: ESI:4 (uint *) - points at a 64-bit lo/hi pair
-// @boundary The run's lower edge. 00420d50 WND_GetWndProc is genuine window code. Between them sit four zero-caller functions (00420db0 WND_ByteBuffer_HasRoom, 00420dd0/00420e00/00420e10 WND_EntryArray_*) which were LEFT under D2Client::WindowHandle: nothing calls them, so nothing places them on either side of the boundary. Do not assume they are window code either.
-// @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
-// @oracle-negative Pass 6 examined this and found NO oracle counterpart and no usable fingerprint. The oracle emits no matching symbol. Name left exactly as pass 5 left it; the tail is unverified. Do not upgrade it to a TS* method name without new evidence.
-// @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
-uint32_t __stdcall SBIG_Accumulator_AddWithCarry(ULONGLONG ullAddend, uint32_t * pnAccum);
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @caution THE TAIL IS ACTIVELY MISLEADING and pass 6 deliberately did NOT rename it, because what it should be called is not established. There is no multiply-and-add here: the __allmul(lo, hi, 0, 1) call is a multiply by 2^32, i.e. a 32-bit word shift. No oracle counterpart exists. Read the body before trusting or reusing this name.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
@@ -40,11 +34,6 @@ void __stdcall SBIG_Accumulator_MulAndAdd(uint32_t * pnParam, uint32_t nAddend);
 // @caution THE TAIL IS ACTIVELY MISLEADING and pass 6 deliberately did NOT rename it. It computes no offset; it assembles a 64-bit value from a high and a low word, MAKE64(hi, lo). No oracle counterpart exists. Read the body before trusting this name.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
 int64_t __stdcall SBIG_Accumulator_ComputeOffset(uint32_t nMultiplicand, uint32_t nAddend);
-// @was SBIG_DecodeVariableLengthInt (pass 6, 2026.08.28)
-// @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
-// @oracle-method PLAUSIBLE, and the strongest of the plausibles. It is byte-for-byte the loop the oracle inlines in .FromStream__FR9BigBufferPCvUiPUi @1009b620, and it is the exact inverse of BigBuffer_EncodeDataBytes 00421bd0, which pass 5 confirmed against .EncodeDataBytes__FR29TSGrowableArray<Uc,8TSCD<Uc>>Ui @1009b8a0. The oracle has no separate DecodeDataBytes symbol, so the name is the inferred counterpart of a confirmed one rather than a read export.
-// @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void BigBuffer_DecodeDataBytes(uint32_t * pnReadPos, uint8_t * pBuffer, uint32_t * pnValue, uint32_t nBufferLen);
 // @was SBIG_DynArray_GetElementPtr (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. Body is 'return this->m_data + nIndex*4', identical to the oracle's .__vc__15TSBaseArray<Ui>FUi @1009b390. operator[](Ui) on the dword element array.
@@ -101,7 +90,7 @@ uint32_t __fastcall TSGrowableArray_Uc_CalcChunkSize(struct BigBuffer * pThis, u
 uint32_t __stdcall TSGrowableArray_Uc_RoundToChunk(uint32_t nValue, uint32_t nMultiple);
 // TSFixedArray<unsigned char>::ReallocData: sets pBuffer->nCapacity = nNewSize and SMemReAllocs the byte data in place (flag 0x10); if that fails, SMemAllocs a new block, copies min(nLen, nNewSize) bytes and frees the old one.
 // Provenance: 1.14d asm 004211c0 (SMem tag 0x708880); PPC Storm 1.10b .ReallocData__31TSFixedArray<...>FUi has the same shape.
-void TSFixedArray_Uc_ReallocData(struct TSGrowableArray_Uc * pBuffer, uint32_t nNewSize);
+void __thiscall TSFixedArray_Uc_ReallocData(struct TSGrowableArray_Uc * pBuffer, uint32_t nNewSize);
 // @was SBIG_BitSet_RoundUpPow2_Max256B (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. Identical to TSGrowableArray_Uc_CalcChunkSize 00421160, K = 0x100. Distinguished only by its SMem tag, 0x70888c - the second byte-array instantiation. The Alt infix marks that second instantiation, it is not an oracle token.
@@ -140,11 +129,6 @@ BOOL __fastcall SBIG_BigBuffer_IsLowestBitClear(struct BigBuffer * pBitSet);
 // @oracle-method NOUN CORRECTION ONLY. Inlined on the oracle side. Tail unchanged and unverified.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
 int32_t __stdcall SBIG_BigBuffer_FindLowestBit(struct BigBuffer * pBitSet);
-// @was SBIG_BitSet_GetFirstWord (pass 6, 2026.08.28)
-// @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
-// @oracle-method NOUN CORRECTION ONLY. Tail unchanged and unverified.
-// @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void SBIG_BigBuffer_GetFirstWord(uint32_t dwUnused, uint32_t * pOutWord, struct BigBuffer * pBitSet);
 // @caution Its only two callers are Fog::SHA::SHA1_ApplyBigInt and Fog::SHA::SHA1_CompareBigInt, not SBig. It is a 9-byte thunk onto SBIG_BitSet_Compare, so it was moved with the rest, but it may in truth be a COMDAT of the Fog SHA translation unit. Unresolved.
 // @was SBIG_BitSet_CompareWrapper (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
@@ -164,12 +148,12 @@ void __fastcall SBIG_ArrayDwordReadAtCursor(struct BigBuffer * pBigNum, uint32_t
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method PLAUSIBLE, upgraded this pass. It is the inner element-copy body of the oracle's .__as__ @100395e0, which MSVC outlined. Its call site inside TSGrowableArray_Ui_Assign 00421ba0 is Copy(src.m_count, src.m_data) on this, which is the Copy(Ui, const T*) signature. Not independently confirmed against a standalone oracle symbol, because MWCC never emitted one.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void TSBaseArray_Ui_Copy(uint32_t * pArray, uint32_t nCount, uint32_t * pSrc);
+void __thiscall TSBaseArray_Ui_Copy(uint32_t * pArray, uint32_t nCount, uint32_t * pSrc);
 // @was SBIG_ArrayByteEnsureAdditional (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. Compute n = arg + m_count; when m_alloc is below n, and only when the flag is set, call CalcChunkSize then round n up to that chunk, then call ReallocData with n - the oracle's .Reserve__34TSGrowableArray<3RGN,10TSCD<3RGN>>FUi,i at 10040af0, including the bool second parameter that selects chunk rounding. Byte instantiation, SMem tag 0x708880.
 // @struct The container header is +0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk. BigBuffer extends it with +0x10 m_offset, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void TSGrowableArray_Uc_Reserve(uint32_t * pArray, int32_t nAdditional, int32_t bAlignToGranularity);
+void __thiscall TSGrowableArray_Uc_Reserve(uint32_t * pArray, int32_t nAdditional, int32_t bAlignToGranularity);
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @oracle-negative Pass 6: NOT a TS* method. Same flag-0 realloc fragment as 00421110, byte instantiation (SMem tag 0x708880), ZERO callers. No oracle name available; descriptive name kept.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
@@ -182,12 +166,12 @@ void __fastcall SBIG_ArrayByteAltSetCapacity(int32_t nCapacity, int * pArray);
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. n*4 sizing, SMemReAlloc flag 0x10 with the alloc/copy/free fallback. Matches the block the oracle inlines into .SetCount__29TSGrowableArray<Ui,8TSCD<Ui>>FUi @1009b120. Dword instantiation, SMem tag 0x708874.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void TSFixedArray_Ui_ReallocData(uint32_t * pArray, uint32_t nCapacity);
+void __thiscall TSFixedArray_Ui_ReallocData(uint32_t * pArray, uint32_t nCapacity);
 // @was SBIG_ArrayByteAltRealloc (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. Identical to TSFixedArray_Uc_ReallocData 004211c0; second byte instantiation, SMem tag 0x70888c.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void TSFixedArray_UcAlt_ReallocData(uint32_t * pArray, uint32_t nCapacity);
+void __thiscall TSFixedArray_UcAlt_ReallocData(uint32_t * pArray, uint32_t nCapacity);
 // @was SBIG_ArrayDwordFreeBuffer (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method PLAUSIBLE. Frees the m_data pointer at +8 and nothing else. Its only xrefs are MSVC exception-unwind funclets, which is where a destructor is referenced from.
@@ -197,7 +181,7 @@ void __fastcall TSFixedArray_Ui_Destructor(void * pArray);
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method PLAUSIBLE. The oracle's operator= body MINUS the trailing chunk-field copy - i.e. the TSFixedArray form, which has no chunk field, as against TSGrowableArray_Ui_Assign 00421ba0 which has it.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void * TSFixedArray_Ui_Assign(uint32_t * pArray, void * pSrcArray);
+void * __thiscall TSFixedArray_Ui_Assign(uint32_t * pArray, void * pSrcArray);
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @oracle-negative Pass 6 examined this: no oracle symbol corresponds to it. The existing descriptive name matches what the body does and was kept unchanged rather than forced onto a TS* method name.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
@@ -211,7 +195,7 @@ int32_t __fastcall TSGrowableArray_Uc_New(uint32_t * pArray);
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. Matches the oracle's .SetCount__38TSGrowableArray<5RECTF,12TSCD<5RECTF>>FUi @1003cdb0 with the element construct/destruct loops collapsed away, as they are for a POD element type. Byte instantiation.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void TSGrowableArray_Uc_SetCount(uint32_t * pArray, uint32_t nNewCount);
+void __thiscall TSGrowableArray_Uc_SetCount(uint32_t * pArray, uint32_t nNewCount);
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @note Thunk onto SBIG_ArrayByteAppendData 004218b0. Pass 6 found no oracle counterpart; name kept.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
@@ -220,30 +204,27 @@ void __fastcall SBIG_ArrayByteAppendByte(uint8_t * pByte, uint32_t * pArray);
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method PLAUSIBLE. Same body as TSBaseArray_Ui_Copy 004215c0 with element scale 1. SMem tag 0x708880.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void TSBaseArray_Uc_Copy(uint32_t * pArray, uint32_t nCount, uint8_t * pSrc);
+void __thiscall TSBaseArray_Uc_Copy(uint32_t * pArray, uint32_t nCount, uint8_t * pSrc);
 // @was SBIG_ArrayByteAltAssignFromData (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method PLAUSIBLE. Same body as 004219f0; second byte instantiation, SMem tag 0x70888c.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void TSBaseArray_UcAlt_Copy(uint32_t * pArray, uint32_t nCount, uint8_t * pSrc);
+void __thiscall TSBaseArray_UcAlt_Copy(uint32_t * pArray, uint32_t nCount, uint8_t * pSrc);
 // @was SBIG_ArrayDwordEnsureAdditional (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. Same structure as TSGrowableArray_Uc_Reserve 00421630, dword elements.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void TSGrowableArray_Ui_Reserve(uint32_t * pArray, int32_t nAdditional, int32_t bAlignToGranularity);
+void __thiscall TSGrowableArray_Ui_Reserve(uint32_t * pArray, int32_t nAdditional, int32_t bAlignToGranularity);
 // @was SBIG_ArrayByteAltEnsureAdditional (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. Same structure as 00421630; second byte instantiation, SMem tag 0x70888c.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void TSGrowableArray_UcAlt_Reserve(uint32_t * pArray, int32_t nAdditional, int32_t bAlignToGranularity);
+void __thiscall TSGrowableArray_UcAlt_Reserve(uint32_t * pArray, int32_t nAdditional, int32_t bAlignToGranularity);
 // @was SBIG_ArrayDwordCopyAssignWithGranularity (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED, and verified by hand this pass. Body is 'if (this != &src) Copy(src.m_count, src.m_data); this->m_chunk = src.m_chunk; return this'. The trailing chunk-field copy after the element copy is present ONLY in the oracle's .__as__ @100395e0 and is what identifies operator= rather than a plain copy helper. Its call to 004215c0 is also what establishes that function as TSBaseArray::Copy.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void * TSGrowableArray_Ui_Assign(uint32_t * pDest, void * pSource);
-// @oracle 2026-08-28 pass 5. MODULE FILING FIX. This function was filed under D2Client::WindowHandle with a WND_ name. It is not window code: it sits in the contiguous run 00420eb0-00421d80, and every function in that run that has any caller at all is called only from Storm::Source::SBig (BigBuffer_*, SBIG_*, SBig* wrappers). The run is address-adjacent to SBIG_Constructor 00421e10 and is MSVC's COMDAT block for the template containers that SBig.cpp instantiates. The PPC oracle names those templates: TSGrowableArray<Ui,TSCD<Ui>> for the limb array (.SetCount__29TSGrowableArray<Ui,8TSCD<Ui>>FUi @1009b120), TSBaseArray<Ui> for element access (.__vc__15TSBaseArray<Ui>FUi @1009b390, .Top__15TSBaseArray<Ui>Fv @1009c580), TSGrowableArray<Uc,TSCD<Uc>> for the byte output arrays, plus TSFixedArray/TSCD, with methods Reserve(Ui,i), SetCount(Ui), ReallocData(Ui), RoundToChunk(Ui,Ui) const, CalcChunkSize(Ui), operator[](Ui), Top(), New(), NewElement(). Moved to Storm::Source::SBig and re-prefixed SBIG_. THE DESCRIPTIVE TAIL OF THE NAME IS UNCHANGED AND UNVERIFIED - only the module claim was corrected. Mapping the tails onto the TS* method names above is the obvious next pass.
-// @oracle-name EncodeDataBytes(TSGrowableArray<unsigned char>&, unsigned). PPC mangled symbol ".EncodeDataBytes__FR29TSGrowableArray<Uc,8TSCD<Uc>>Ui" @1009b8a0. Established in pass 4 as the extra callee BigBuffer_ToStream has over BigBuffer_ToBinary - the varint length prefix. Free function.
-void BigBuffer_EncodeDataBytes(uint32_t nValue, struct TSGrowableArray_Uc * pByteBuffer);
+void * __thiscall TSGrowableArray_Ui_Assign(uint32_t * pDest, void * pSource);
 // @oracle 2026-08-28 pass 5. MODULE FILING FIX. This function was filed under D2Client::WindowHandle with a WND_ name. It is not window code: it sits in the contiguous run 00420eb0-00421d80, and every function in that run that has any caller at all is called only from Storm::Source::SBig (BigBuffer_*, SBIG_*, SBig* wrappers). The run is address-adjacent to SBIG_Constructor 00421e10 and is MSVC's COMDAT block for the template containers that SBig.cpp instantiates. The PPC oracle names those templates: TSGrowableArray<Ui,TSCD<Ui>> for the limb array (.SetCount__29TSGrowableArray<Ui,8TSCD<Ui>>FUi @1009b120), TSBaseArray<Ui> for element access (.__vc__15TSBaseArray<Ui>FUi @1009b390, .Top__15TSBaseArray<Ui>Fv @1009c580), TSGrowableArray<Uc,TSCD<Uc>> for the byte output arrays, plus TSFixedArray/TSCD, with methods Reserve(Ui,i), SetCount(Ui), ReallocData(Ui), RoundToChunk(Ui,Ui) const, CalcChunkSize(Ui), operator[](Ui), Top(), New(), NewElement(). Moved to Storm::Source::SBig and re-prefixed SBIG_. THE DESCRIPTIVE TAIL OF THE NAME IS UNCHANGED AND UNVERIFIED - only the module claim was corrected. Mapping the tails onto the TS* method names above is the obvious next pass.
 // @oracle-name ToBinaryAppend(TSGrowableArray<unsigned char>&, const BigBuffer&). PPC mangled symbol ".ToBinaryAppend__FR29TSGrowableArray<Uc,8TSCD<Uc>>RC9BigBuffer" @1009ab90. Established in pass 4 as BigBuffer_ToBinary's sole callee and one of BigBuffer_ToStream's; the filing is what was left undone. Free function, not a member - hence the BigBuffer_ disambiguator prefix used throughout this module.
 void __stdcall BigBuffer_ToBinaryAppend(struct TSGrowableArray_Uc * pByteBuffer, struct BigBuffer * pBignum);
@@ -257,7 +238,7 @@ void __fastcall SBIG_EnsureCapacity(uint32_t nIndex, int32_t bZeroFill, struct B
 // @oracle-method CONFIRMED. Line for line the same body as TSGrowableArray_Uc_SetCount 00421980 - which is itself confirmed against the oracle's .SetCount__38TSGrowableArray<5RECTF,12TSCD<5RECTF>>FUi @1003cdb0 - differing only in calling the dword instantiation's helpers (TSGrowableArray_Ui_CalcChunkSize 004210a0, TSFixedArray_Ui_ReallocData 004216e0) where 00421980 calls the byte ones. Same guard 'if (m_count < n && m_alloc < n)', same zero-chunk lazy CalcChunkSize, same round-up-to-chunk, same trailing 'm_count = n'.
 // @note This function lies OUTSIDE the 00420eb0-00421d80 COMDAT run that passes 5 and 6 worked, which is why earlier passes did not reach it. It completes the pair: SetCount now exists for both the Ui and the Uc instantiation.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}. Chunk cap = 256/sizeof(element).
-void TSGrowableArray_Ui_SetCount(struct BigBuffer * pDwordArray, uint32_t nNewLen);
+void __thiscall TSGrowableArray_Ui_SetCount(struct BigBuffer * pDwordArray, uint32_t nNewLen);
 int32_t __fastcall SBIG_AppendBytes(uint32_t nByteCount, uint8_t * pSrcBytes, uint32_t * pByteArray);
 void __fastcall SBIG_GrowToIndex(int32_t nIndex, struct BigBuffer * pDwordArray);
 int32_t __fastcall SBIG_GetPtrAtOffset(int32_t nIndex, struct BigBuffer * pBigNum);
@@ -266,111 +247,6 @@ void __fastcall SBIG_GrowToIndexNoZero(int32_t nIndex, struct BigBuffer * pDword
 void __fastcall SBIG_SetOffset(int32_t nOffset, struct BigBuffer * pBigNum);
 void __fastcall SBIG_TrimLeadingZeros(struct BigBuffer * pDwordArray);
 void * __fastcall SBIG_CopyAssign(void * pSource, uint32_t * pDest);
-// @renamed-from SBIG_AddValueWithCarry (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Add__FR9BigBufferRC9BigBufferUi @100a0300 -- the scalar overload: sole target of SBigInc, and .FindPrime / .FromStr call it exactly where 1.14d FindPrime / FromStr call this. Was SBIG_AddValueWithCarry.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Add_Ui(uint32_t nCarry, struct BigBuffer * pSource, struct BigBuffer * pDest);
-// @renamed-from SBIG_Add (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Add__FR9BigBufferRC9BigBufferRC9BigBuffer @100a01a0 -- sole target of SBigAdd's forwarder in both builds; 3 buffer args.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Add(struct BigBuffer * pSourceA, struct BigBuffer * pSourceB, struct BigBuffer * pDest);
-// @renamed-from SBIG_BitwiseAnd (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .And__FR9BigBufferRC9BigBufferRC9BigBuffer @100a0070 -- sole target of SBigAnd's forwarder.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_And(struct BigBuffer * pSourceA, struct BigBuffer * pSourceB, struct BigBuffer * pDest);
-// Compare big integer array against scalar value
-// @renamed-from SBIG_CompareValue (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Compare__FRC9BigBufferUi @1009ff50 -- the only other callee of .ToStr besides .Div_Ux, and 1.14d ToStr calls exactly this pair. Compares a BigBuffer against a scalar. Was SBIG_CompareValue.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-int32_t __stdcall BigBuffer_Compare_Ui(uint32_t nValue, struct BigBuffer * pBigIntArray);
-// @renamed-from SBIG_DivModValue64 (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Div__FR9BigBufferPUiRC9BigBufferUx @1009fdd0 -- scalar divide with a uint* remainder out-param and a 64-bit divisor; called by .ToStr, .IsPrime and .Div in the PPC exactly where 1.14d ToStr/IsPrime/Div call this. Was SBIG_DivModValue64.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Div_Ux(uint32_t * pRemainderOut, struct BigBuffer * pDividend, uint32_t nDivisorLo, uint32_t nDivisorHi, struct BigBuffer * pQuotient);
-// @renamed-from SBIG_IsOdd (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .IsOdd__FRC9BigBuffer @1009e4d0 -- sole target of SBigIsOdd's forwarder.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void BigBuffer_IsOdd(struct BigBuffer * pBignum);
-// @renamed-from SBIG_IsOne (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .IsOne__FRC9BigBuffer @1009e3f0 -- sole target of SBigIsOne's forwarder; also called by .IsPrime and .FindPrime where 1.14d does the same.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-BOOL BigBuffer_IsOne(struct BigBuffer * pBignum);
-// @renamed-from SBIG_IsZero (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .IsZero__FRC9BigBuffer @1009db10 -- sole target of SBigIsZero's forwarder; also called by .Gcd, .InvMod and .IsPrime where 1.14d does the same.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-uint32_t BigBuffer_IsZero(struct BigBuffer * pBignum);
-// @renamed-from SBIG_MulValue64 (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Mul__FR9BigBufferRC9BigBufferUx @1009d9f0 -- scalar overload with a 64-bit multiplier; called by .FromStr and .Div where 1.14d calls this. Was SBIG_MulValue64.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Mul_Ux(struct BigBuffer * pSource, uint32_t nMultiplierLo, uint32_t nMultiplierHi, struct BigBuffer * pDest);
-// @renamed-from SBIG_BitwiseNot (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Not__FR9BigBufferRC9BigBuffer @1009d620 -- sole target of SBigNot's forwarder; 2 args.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Not(struct BigBuffer * pSource, struct BigBuffer * pDest);
-// @renamed-from SBIG_BitwiseOr (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Or__FR9BigBufferRC9BigBufferRC9BigBuffer @1009d4f0 -- sole target of SBigOr's forwarder.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Or(struct BigBuffer * pLhs, struct BigBuffer * pRhs, struct BigBuffer * pResult);
-// @renamed-from SBIG_SetBit (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Set2Exp__FR9BigBufferUi @1009c730 -- sole target of SBigSet2Exp's forwarder; also called by .FindPrime where 1.14d FindPrime calls this. Sets the value to 2^n. Was SBIG_SetBit.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Set2Exp(uint32_t nBitPos, struct BigBuffer * pResult);
-// @renamed-from SBIG_SetToOne (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .SetOne__FR9BigBuffer @1009c6b0 -- sole target of SBigSetOne's forwarder; also called by .InvMod and .PowMod where 1.14d does the same. Was SBIG_SetToOne.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void BigBuffer_SetOne(struct BigBuffer * pResult);
-// @renamed-from SBIG_ShrinkToOffset (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .SetZero__FR9BigBuffer @1009c660 -- sole target of SBigSetZero's forwarder; PPC body is one SetCount(0). Also called by .InvMod, .FromStr and .Div where 1.14d calls this. Was SBIG_ShrinkToOffset.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void BigBuffer_SetZero(struct BigBuffer * pResult);
-// @renamed-from SBIG_ShiftLeft (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Shl__FR9BigBufferRC9BigBufferUi @1009c3f0 -- sole target of SBigShl's forwarder; also called by .Rand and .Div.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Shl(struct BigBuffer * pSrc, struct BigBuffer * pResult, uint32_t nShiftBits);
-// @renamed-from SBIG_ShiftRight (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Shr__FR9BigBufferRC9BigBufferUi @1009c2c0 -- sole target of SBigShr's forwarder; also called by .Rand, .Div and .IsPrime.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Shr(struct BigBuffer * pSrc, struct BigBuffer * pResult, uint32_t nShiftBits);
-// @renamed-from SBIG_Negate (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Sub__FR9BigBufferRC9BigBufferUi @1009bed0 -- the scalar overload: sole target of SBigDec, and .IsPrime / .FindPrime call it exactly where 1.14d calls this (the n-1 step). It does not negate. Was SBIG_Negate.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Sub_Ui(struct BigBuffer * pSrc, struct BigBuffer * pResult, uint32_t nSubtrahend);
-// @renamed-from SBIG_Sub (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Sub__FR9BigBufferRC9BigBufferRC9BigBuffer @1009bd70 -- sole target of SBigSub's forwarder; also called by .Div, .InvMod and .FindPrime.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Sub(struct BigBuffer * pLhs, struct BigBuffer * pRhs, struct BigBuffer * pResult);
-// @renamed-from SBIG_BitwiseXor (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Xor__FR9BigBufferRC9BigBufferRC9BigBuffer @1009bc40 -- sole target of SBigXor's forwarder.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Xor(struct BigBuffer * pLhs, struct BigBuffer * pRhs, struct BigBuffer * pResult);
-// @renamed-from SBIG_ImportBytes (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .FromBinary__FR9BigBufferPCvUi @1009b7b0 -- sole target of SBigFromBinary's forwarder; also the sole bignum callee of .FromStream, matching 1.14d FromStream. Was SBIG_ImportBytes.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_FromBinary(void * pSrcBytes, uint32_t nByteCount, struct BigBuffer * pResult);
-// @renamed-from SBIG_ImportDecimalString (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .FromStr__FR9BigBufferPCc @1009b700 -- sole target of SBigFromStr's forwarder; callee set {SetZero, Mul_Ux, Add_Ui} matches .FromStr exactly - a decimal-string accumulator. Was SBIG_ImportDecimalString.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void BigBuffer_FromStr(struct BigBuffer * pResult, char * szText);
-// @renamed-from SBIG_ImportVarint (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .FromStream__FR9BigBufferPCvUiPUi @1009b620 -- 4 args with a bytes-consumed out-param; decodes the length prefix then calls FromBinary, exactly as .FromStream does. Was SBIG_ImportVarint.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_FromStream(struct BigBuffer * pResult, int * pnBytesRead, uint8_t * pSrc, uint32_t nMaxLen);
-// @renamed-from SBIG_SetValue (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .FromUnsigned__FR9BigBufferUi @1009b080 -- sole target of SBigFromUnsigned's forwarder; also called by .IsPrime where 1.14d IsPrime calls this. Was SBIG_SetValue.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_FromUnsigned(uint32_t dwValue, struct BigBuffer * pResult);
-// @renamed-from SBIG_ExportBytes (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .ToBinary__FR29TSGrowableArray<Uc,8TSCD<Uc>>RC9BigBuffer @1009ae00 -- the target of all three SBigToBinary* forms; like .ToBinary its only callee is ToBinaryAppend. Was SBIG_ExportBytes.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void BigBuffer_ToBinary(struct BigBuffer * pBigNum, struct TSGrowableArray_Uc * pOutBuffer);
-// @renamed-from SBIG_ExportDecimalString (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .ToStr__FR29TSGrowableArray<Uc,8TSCD<Uc>>RC9BigBufferR8BigStack @1009a330 -- the target of all three SBigToStr* forms; callee set {Div_Ux, Compare_Ui} matches .ToStr exactly. Was SBIG_ExportDecimalString.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_ToStr(struct BigStack * pStack, struct BigBuffer * pValue, struct TSGrowableArray_Uc * pOutBuffer);
-// @renamed-from SBIG_ExportVarint (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .ToStream__FR29TSGrowableArray<Uc,8TSCD<Uc>>RC9BigBuffer @1009a290 -- the target of all three SBigToStream* forms; callee set {ToBinary, EncodeDataBytes, ToBinaryAppend} matches .ToStream exactly. Was SBIG_ExportVarint.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void BigBuffer_ToStream(struct TSGrowableArray_Uc * pOutBuffer, struct BigBuffer * pSrcBignum);
 // @renamed-from SBIG_AddWrapper (2026-08-28, Storm PowerPC oracle pass 4)
 // @oracle Mac PPC 1.10b Storm -- PPC export vector SBigAdd -> 1009a250, 64B thunk, single bl .Add__FR9BigBufferRC9BigBufferRC9BigBuffer. 1.14d: 3-arg forwarder onto BigBuffer_Add 00422300.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.
@@ -500,27 +376,10 @@ void __stdcall SBigToStreamPtr(struct BigData * pBigData, uint8_t * * ppBufferOu
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.
 void __stdcall SBigXor(struct BigData * pResult, struct BigData * pBigA, struct BigData * pBigB);
 void __fastcall SBIG_CopyBigNumToTemp(struct BigStack * pStack, struct BigBuffer * pDest, struct BigBuffer * pSrc);
-// Big integer division with modulo: divides pDividend by pDivisor, writing quotient and remainder.
-// @renamed-from SBIG_DivMod (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Div__FR9BigBufferR9BigBufferRC9BigBufferRC9BigBufferR8BigStack @1009f6a0 -- 5 args (quot, rem, a, b, stack); callee set {SetZero, Div_Ux, Shl, 64-bit divide, Mul_Ux, Sub, Shr} matches .Div one for one. Was SBIG_DivMod.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Div(struct BigBuffer * pQuotient, struct BigBuffer * pRemainder, struct BigBuffer * pDivisor, struct BigStack * pStack, struct BigBuffer * pDividend);
-// @renamed-from SBIG_GCD (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Gcd__FR9BigBufferRC9BigBufferRC9BigBufferR8BigStack @1009ec60 -- 4 args; callee set {Div, IsZero} matches .Gcd exactly. Was SBIG_GCD.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Gcd(struct BigBuffer * pnA, struct BigStack * pStack, struct BigBuffer * pnB, struct BigBuffer * pnResult);
 // @renamed-from SBIG_MontgomeryMulHelper (2026-08-28, Storm PowerPC oracle pass 4)
 // @oracle Mac PPC 1.10b Storm mangled symbol .Mul__FR9BigBufferRC9BigBufferRC9BigBufferR8BigStack @1009d720 -- 4 args; like .Mul it calls no other bignum routine, only array growth. Called by .Rand, .Pow, .PowMod, .InvMod, .IsPrime exactly where 1.14d calls this. There is NO Montgomery arithmetic anywhere in Storm's bignum - was SBIG_MontgomeryMulHelper, an invention.
 // @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
 void __stdcall BigBuffer_Mul(struct BigBuffer * pnResult, struct BigBuffer * pnA, struct BigBuffer * pnB, struct BigStack * pStack);
-// @renamed-from SBIG_ModMul (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol (no PPC counterpart - MWCC inlined it into the SBigMulMod thunk) -- 1.14d-only factored body of SBigMulMod: Mul into a BigStack temp, then Div reducing that temp by the modulus; the remainder goes to pnResult (Stack[0x4]). Was SBIG_ModMul.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_MulMod(struct BigBuffer * pnB, struct BigBuffer * pnResult, struct BigBuffer * pnA, struct BigBuffer * pnModulus, struct BigStack * pStack);
-// @renamed-from SBIG_MontgomeryPowerMod (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .Pow__FR9BigBufferRC9BigBufferUiR8BigStack @1009d240 -- 4 args; square-and-multiply over a scalar unsigned exponent with NO modulus, and like .Pow its only bignum callee is Mul. Was SBIG_MontgomeryPowerMod - it is neither Montgomery nor modular.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_Pow(struct BigBuffer * pnResult, struct BigBuffer * pnBase, uint32_t nExponent, struct BigStack * pStack);
 // @renamed-from SBIG_MontgomeryMul (2026-08-28, Storm PowerPC oracle pass 4)
 // @oracle Mac PPC 1.10b Storm mangled symbol .Rand__FR9BigBufferRC9BigBufferR9BigBufferR8BigStack @1009c810 -- 4 args; callee set {Mul, Shr, Add, Shl, Div} is exactly .Rand's, and no other BigBuffer routine has that set. Was SBIG_MontgomeryMul, an invention.
 // @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
@@ -565,13 +424,6 @@ void __stdcall SBigRand(struct BigData * pnParam1, struct BigData * pnParam2, st
 // @oracle Mac PPC 1.10b Storm -- PPC SBigSquare -> 100992e0, single bl .Square__FR9BigBufferRC9BigBufferR8BigStack (3 args -> 2-arg C API). 1.14d: 2-arg forwarder onto BigBuffer_Square 00424b00, which like .Square calls no other bignum routine.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.
 void __stdcall SBigSquare(struct BigData * pResult, struct BigData * pBigSrc);
-// @renamed-from SBIG_ModInverse (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .InvMod__FR9BigBufferRC9BigBufferRC9BigBufferR8BigStack @1009e5b0 -- 4 args; callee set {SetOne, SetZero, Div, Mul, Add, IsZero, Sub} matches .InvMod exactly. Was SBIG_ModInverse.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_InvMod(struct BigBuffer * pnResult, struct BigBuffer * pnModulus, struct BigStack * pStack, struct BigBuffer * pnInput);
-// PowMod: *pnResult = pnBase ^ pnExponent mod pnModulus over BigBuffer digits, scanning the exponent two bits at a time (square twice, then multiply by apBasePowers[bits] = base, base^2 or base^3) with BigBuffer_MulMod/Square/Div on pStack's scratch buffers.
-// Provenance: 1.14d asm 00425150; PPC Storm 1.10b symbol PowMod__FR9BigBufferRC9BigBufferRC9BigBufferRC9BigBufferR8BigStack (internal, not an export).
-void __stdcall BigBuffer_PowMod(struct BigBuffer * pnResult, struct BigBuffer * pnBase, struct BigBuffer * pnExponent, struct BigBuffer * pnModulus, struct BigStack * pStack);
 // @renamed-from SBIG_ModInverseWrapper (2026-08-28, Storm PowerPC oracle pass 4)
 // @oracle Mac PPC 1.10b Storm -- PPC SBigInvMod -> 10099b20, single bl .InvMod__FR9BigBufferRC9BigBufferRC9BigBufferR8BigStack. 1.14d: 3-arg forwarder onto BigBuffer_InvMod 00424fb0, whose callee set {SetOne, SetZero, Div, Mul, Add, IsZero, Sub} matches .InvMod exactly.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.
@@ -580,18 +432,10 @@ void __stdcall SBigInvMod(struct BigData * pnParam1, struct BigData * pnParam2, 
 // @oracle Mac PPC 1.10b Storm -- PPC SBigPowMod -> 100994b0, single bl .PowMod__FR9BigBufferRC9BigBufferRC9BigBufferRC9BigBufferR8BigStackR (5 args -> 4-arg C API). 1.14d: 4-arg forwarder onto BigBuffer_PowMod 00425150, whose callee set {SetOne, MulMod, Square, Div} matches .PowMod's {SetOne, Mul, Div, Square}.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.
 void __stdcall SBigPowMod(struct BigData * pResult, struct BigData * pBase, struct BigData * pExponent, struct BigData * pModulus);
-// @renamed-from SBIG_MillerRabinTest (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .IsPrime__FRC9BigBufferR8BigStack @1009dbc0 -- 2 args; callee set {IsZero, Div_Ux, FromUnsigned, Div, IsOne, Sub_Ui, Shr, PowMod, Mul} matches .IsPrime one for one. Miller-Rabin is the algorithm, IsPrime is the name. Was SBIG_MillerRabinTest.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-int32_t __stdcall BigBuffer_IsPrime(struct BigStack * pStack, struct BigBuffer * pnCandidate);
 // @renamed-from SBIG_MillerRabinTestWrapper (2026-08-28, Storm PowerPC oracle pass 4)
 // @oracle Mac PPC 1.10b Storm -- PPC SBigIsPrime -> 100999e0, single bl .IsPrime__FRC9BigBufferR8BigStack (2 args -> 1-arg C API). 1.14d: 1-arg forwarder onto BigBuffer_IsPrime 00425350.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.
 void __stdcall SBigIsPrime(struct BigData * pBigNum);
-// @renamed-from SBIG_GeneratePrime (2026-08-28, Storm PowerPC oracle pass 4)
-// @oracle Mac PPC 1.10b Storm mangled symbol .FindPrime__FR9BigBufferUiRC9BigBufferRC9BigBufferR8BigStack @1009f330 -- 5 args; callee set {Set2Exp, Add, Div, Add_Ui, Sub_Ui, IsPrime, IsOne, Gcd, Sub} matches .FindPrime's nine callees one for one. Was SBIG_GeneratePrime.
-// @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
-void __stdcall BigBuffer_FindPrime(int32_t nBitLength, struct BigBuffer * pnLowerBound, struct BigBuffer * pnCoprimeWith, struct BigStack * pStack, struct BigBuffer * pnPrime);
 // @renamed-from SBIG_GeneratePrimeWrapper (2026-08-28, Storm PowerPC oracle pass 4)
 // @oracle Mac PPC 1.10b Storm -- PPC SBigFindPrime -> 10099d20, single bl .FindPrime__FR9BigBufferUiRC9BigBufferRC9BigBufferR8BigStack (5 args -> 4-arg C API). 1.14d: 4-arg forwarder onto BigBuffer_FindPrime 004255e0, whose callee set matches .FindPrime's nine callees one for one.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.
@@ -601,5 +445,6 @@ void __fastcall CRYPTO_ByteSwap64Array(uint16_t * pwOut, uint16_t * pwIn);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9f88(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9fc1(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9ff0(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
+// 38 internal functions (defined in .cpp)
 
 } // namespace Storm::Source::SBig

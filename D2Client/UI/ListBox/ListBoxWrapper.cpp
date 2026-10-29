@@ -26,7 +26,7 @@ typedef void (*fpListBoxItemActivated)();
 
 namespace D2Client::UI::ListBox::ListBoxWrapper {
 
-void Destructor(::ListBoxWrapper * pThis) {
+void __thiscall Destructor(::ListBoxWrapper * pThis) {
     pfnEHHandlerRoutine pfnExceptHandler = SehHandler_6ca218;
     void* pPrevExceptionList = ExceptionList;
     ExceptionList = &pPrevExceptionList;
@@ -41,7 +41,7 @@ void Destructor(::ListBoxWrapper * pThis) {
     ExceptionList = pPrevExceptionList;
 }
 
-::ListBoxWrapper * ScalarDeletingDestructor(::ListBoxWrapper * pThis, uint32_t nFlags) {
+::ListBoxWrapper * __thiscall ScalarDeletingDestructor(::ListBoxWrapper * pThis, uint32_t nFlags) {
     ListBoxWrapper::Destructor(pThis);
     if (!(nFlags & 1 && pThis)) {
       return pThis;
@@ -51,79 +51,79 @@ void Destructor(::ListBoxWrapper * pThis) {
     return pThis;
 }
 
-int OnDownArrow(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnDownArrow(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnDownArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnUpArrow(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnUpArrow(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnUpArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnRightArrow(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnRightArrow(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnRightArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnLeftArrow(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnLeftArrow(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnLeftArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseDown(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseDown(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseDown(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseUp(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseUp(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseUp(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseMove(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseMove(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseMove(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnChar(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnChar(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnChar(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int GetValue(::ListBoxWrapper * pThis) {
+int __thiscall GetValue(::ListBoxWrapper * pThis) {
     int iVar1 = pThis->pImplementation->pVtable->GetValue(pThis->pImplementation);
     return iVar1;
 }
 
-void Draw(::ListBoxWrapper * pThis) {
+void __thiscall Draw(::ListBoxWrapper * pThis) {
     pThis->pImplementation->pVtable->Draw(pThis->pImplementation);
 }
 
-void AddItem(::ListBoxWrapper * pThis, uint16_t * wszLine0, uint16_t * wszLine1, uint16_t * wszLine2, uint16_t * wszLine3, uint16_t * wszLine4, uint16_t * wszLine5, uint32_t dwItemData, int nColor, BOOL bUseDefaultColor, int nFont) {
+void __thiscall AddItem(::ListBoxWrapper * pThis, uint16_t * wszLine0, uint16_t * wszLine1, uint16_t * wszLine2, uint16_t * wszLine3, uint16_t * wszLine4, uint16_t * wszLine5, uint32_t dwItemData, int nColor, BOOL bUseDefaultColor, int nFont) {
     pThis->pImplementation->pVtable->AddItem(pThis->pImplementation, wszLine0, wszLine1, wszLine2, wszLine3, wszLine4, wszLine5, dwItemData, nColor, bUseDefaultColor, nFont);
 }
 
-uint32_t GetItemUserData(::ListBoxWrapper * pThis, int nIndex) {
+uint32_t __thiscall GetItemUserData(::ListBoxWrapper * pThis, int nIndex) {
     uint32_t uVar1 = ListBoxImplementation::GetItemUserData(pThis->pImplementation, nIndex);
     return uVar1;
 }
 
-int GetItemCount(::ListBoxWrapper * pThis) {
+int __thiscall GetItemCount(::ListBoxWrapper * pThis) {
     int iVar1 = pThis->pImplementation->pVtable->GetItemCount(pThis->pImplementation);
     return iVar1;
 }
 
-void Clear(::ListBoxWrapper * pThis) {
+void __thiscall Clear(::ListBoxWrapper * pThis) {
     pThis->pImplementation->pVtable->Clear(pThis->pImplementation);
 }
 
-int OnMouseWheel(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseWheel(::ListBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseWheel(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-::ListBoxWrapper * Constructor(::ListBoxWrapper * pThis, int nPosX, int nPosY, int nWidth, int nHeight, int nItemSpacing, int nDefaultColor, int nDefaultFont, fpListBoxItemActivated pfnOnItemActivated, bool bTallRows) {
+::ListBoxWrapper * __thiscall Constructor(::ListBoxWrapper * pThis, int nPosX, int nPosY, int nWidth, int nHeight, int nItemSpacing, int nDefaultColor, int nDefaultFont, fpListBoxItemActivated pfnOnItemActivated, bool bTallRows) {
     pfnEHHandlerRoutine pSehHandler = SehHandler_6ca263;
     void* pPrevSehFrame = ExceptionList;
     uint32_t nSehState = 0;

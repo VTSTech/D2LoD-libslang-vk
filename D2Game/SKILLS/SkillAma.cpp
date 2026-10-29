@@ -122,7 +122,7 @@ BOOL __fastcall SKILLAMA_SrvStFn06_PowerStrike(::SGAMEDATA * pGame, D2UnitStrc *
 }
 
 // Amazon skill helper that probabilistically consumes weapon quantity or durability on use. For stackable weapons: if the RNG roll (based on pUnit's seed vs. nParam1 threshold) triggers, removes one charge via RemoveQuanityOnUse. For non-stackable weapons with durability: on a trigger, decrements durability by nParam2 and sends stat update 0x3E to the client; if durability reaches zero, calls ITEMMODE_SendItemUpdate (item break). Returns non-zero if an action was taken.
-void __stdcall UseQuanityAndDurability(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static void __stdcall UseQuanityAndDurability(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     int nCurrentDurability;
     uint16_t wLayer;
     bool bSendStatUpdate;

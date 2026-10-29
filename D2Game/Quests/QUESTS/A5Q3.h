@@ -59,19 +59,7 @@ BOOL __fastcall Q33_OnFrozenAnyaKilled(::SGAMEDATA * pGame, struct D2UnitStrc * 
 // Q33_SequenceFilter (PrisonOfIce): the quest's fpSequenceFilter. While quest active and stateFlag<5, bootstraps
 // stateFlag 0->1. Once past that, chains to the next quest's sequence filter (nSequenceQuestId) so dependent quests
 // (Betrayal of Harrogath) get re-evaluated. Halts on IsBadCodePtr of the chained fn ptr.
-void __fastcall Q33_SequenceFilter(struct D2QuestDataStrc * pQuestData);
-// Q33_SpawnAnyaAndPortal (PrisonOfIce): when the frozen-Anya OBJECT exists, spawns the rescued-Anya MONSTER (0x200)
-// at its coords, hands over the preset/DRLG map AI, then creates a town portal OBJECT (classId 0xbd) in a nearby room.
-// Records GUIDs in pA5Q3. Re-runs Q33_SequenceFilter afterward. Drives the post-rescue Anya escort/portal sequence.
-void __stdcall Q33_SpawnAnyaAndPortal(struct D2QuestDataStrc * pQuestData, struct D2QuestDataA5Q3Strc * pA5Q3);
-// Q33_KillMonsterHelper (PrisonOfIce): generic helper to instantly kill a monster — clears AI sub, zeroes path,
-// fires AITHINK timer, sets hitpoints=0, applies Dead skill + lifecycle transition, relinks to update list.
-// Used to despawn quest monsters (frozen/rescued Anya placeholders).
-void __fastcall A5Q3_KillMonsterInstantly(struct D2UnitStrc * pUnitStrc, ::SGAMEDATA * * pGameStrc);
-// Q33_CleanupQuestMonsters (PrisonOfIce): tears down the spawned Anya quest units. For the rescued-Anya monster (0x200)
-// and the second Anya unit (0x202): finds it (or removes the inactive record), clears AI sub, applies Dead + lifecycle
-// transition, frees DRLG/collision and removes from room. Clears the spawned/active flags in pA5Q3.
-void Q33_CleanupQuestMonsters(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q33_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // Q33_KillAnyaMonsterTimer (PrisonOfIce): quest timer that instantly kills the rescued-Anya monster (table type 1) —
 // clear AI sub, zero path, AITHINK, hp=0, Dead skill + lifecycle transition, relink. Used to finalize the escort.
 void __fastcall Q33_KillAnyaMonsterTimer(::SGAMEDATA * pGame);
@@ -129,9 +117,6 @@ void __fastcall Q33_Callback14_PlayerJoinedGame(struct D2QuestDataStrc * pQuestD
 // sets the shared flag pA5Q3->field_0xE2=1 (note: reads the quest data via QUESTINT_ToolsOfTheTrade internal-no which the
 // union aliases here). Used to test whether anyone in the party still carries the Scroll of Resistance.
 void __fastcall Q33_CheckPlayerHasScrollOfResistance(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
-// Q33_CheckPartyHasScrollOfResistance (PrisonOfIce): returns 1 if this player holds the "ice " scroll, else scans the
-// whole party via Q33_CheckPlayerHasScrollOfResistance and returns whether anyone holds it (field_0xE2).
-uint32_t Q33_CheckPartyHasScrollOfResistance(int32_t nParam, struct D2UnitStrc * pUnit);
 // A5Q3 (Prison of Ice) fpStatusFilter callback. Writes a quest-log display sub-state byte into *nUnknown based on the player's per-difficulty bit-buffer. If Completed: returns true with *nUnknown=0. If RewardAwaits/JustCompleted: maps Step0x08/Step0x09 flags to values 5/6/0xd. Otherwise: checks party for Scroll of Resistance (4), CannotComplete (0xc), or falls back to nStateFlagPrev. Always returns true.
 bool __fastcall Q33_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown);
 // Q33_InitData (PrisonOfIce constructor): allocates the 0x114-byte A5Q3 quest-specific block and wires the quest:
@@ -157,7 +142,7 @@ void __fastcall Objects_InitFn69(struct D2ObjectInitFnArg * pInitArg);
 void __fastcall Q33_AnyaTimerCallback(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit);
 // Q33_GetAnyaCoordinates (PrisonOfIce): returns the stored portal coords if active, portal spawned and Anya not yet
 // running. Used to locate the rescue portal.
-uint32_t Q33_GetAnyaCoordinates(void * pThis, int32_t * pOutCoords);
+uint32_t __thiscall Q33_GetAnyaCoordinates(void * pThis, int32_t * pOutCoords);
 // Q33_SpawnPortalNearAnya (PrisonOfIce): creates the town-portal OBJECT (classId 0xbd) at stored coords in a nearby
 // valid room (nudging coords +3 if none found), once. Records portal GUID. The portal Anya uses to return to Harrogath.
 BOOL __fastcall Q33_SpawnPortalNearAnya(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
@@ -198,9 +183,10 @@ BOOL __fastcall OBJOP_A5Q3_RescueAnyaFromPortal(struct D2ObjectOperateFnArg * pO
 // Q33_OnPresetObjectLoad1 (PrisonOfIce): on preset-unit load, copies the preset object list into pA5Q3->pDrlgMap; if the
 // frozen Anya is already spawned and present, hands the DRLG map file over to its monster map AI (once). Restores ice-Anya
 // visuals/AI when the level region (re)loads.
-void Q33_OnPresetObjectLoad1(void * pThis, struct D2MapAIStrc * pMapAI);
+void __thiscall Q33_OnPresetObjectLoad1(void * pThis, struct D2MapAIStrc * pMapAI);
 // Q33_OnPresetObjectLoad2 (PrisonOfIce): same as Load1 but for the rescued-Anya monster (field_0x108 map) — copies the
 // preset list and transfers the DRLG map file to the Anya monster's AI once it is alive. Restores rescued-Anya on reload.
-void Q33_OnPresetObjectLoad2(void * pThis, struct D2MapAIStrc * pMapAI);
+void __thiscall Q33_OnPresetObjectLoad2(void * pThis, struct D2MapAIStrc * pMapAI);
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A5Q3

@@ -65,28 +65,27 @@
 #include "globals/globals.h"
 #include "Bnclient/BNGatewayAccess.h"
 #include "D2Game/GAME/Event/Dispatch/Monster.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "Fog/Src/Safesock.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2InactiveUnitListStrc) == 0x18, "D2_NEW(D2InactiveUnitListStrc): the 32-bit layout must be the 0x18 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2InactiveUnitListStrc) == 0x18, "D2_NEW_AT(D2InactiveUnitListStrc): the 32-bit layout must be the 0x18 bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2InactiveMonsterRecordStrc) == 0x5c, "D2_NEW(D2InactiveMonsterRecordStrc): the 32-bit layout must be the 0x5c bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2InactiveMonsterRecordStrc) == 0x5c, "D2_NEW_AT(D2InactiveMonsterRecordStrc): the 32-bit layout must be the 0x5c bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2InactiveUnitRecordStrc) == 0x34, "D2_NEW(D2InactiveUnitRecordStrc): the 32-bit layout must be the 0x34 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2InactiveUnitRecordStrc) == 0x34, "D2_NEW_AT(D2InactiveUnitRecordStrc): the 32-bit layout must be the 0x34 bytes 1.14d allocates");
 
 
 namespace D2Game::UNIT::SUnitInactive {
@@ -97,11 +96,11 @@ void SUNITINACTIVE_FreeInactiveMonster(::SGAMEDATA * pGame, D2InventoryToBeUpdat
       D2Common::Drlg::Preset::DRLGPRESET_FreeSpawnPointList(pGame->pMemoryPool, (D2AiGeneralStrc*)pUnit[4].pNext);
     }
 
-    D2_FREE_POOL(pGame->pMemoryPool, pUnit);
+    D2_FREE_POOL_AT(pGame->pMemoryPool, pUnit, ".\\UNIT\\SUnitInactive.cpp", 0x8c);
 }
 
 // @sourcefile .\UNIT\SUnitInactive.cpp
-void __stdcall SUNITINACTIVE_FindAndRemoveInactiveUnitsByRoom(int * pnParam1, int * pnParam2, D2RoomStrc * pRoom, int32_t nParam) {
+static void __stdcall SUNITINACTIVE_FindAndRemoveInactiveUnitsByRoom(int * pnParam1, int * pnParam2, D2RoomStrc * pRoom, int32_t nParam) {
     D2DrlgRoomCoordsStrc sRoomCoords;
     *pnParam1 = 0;
     *pnParam2 = 0;
@@ -125,7 +124,7 @@ void __stdcall SUNITINACTIVE_FindAndRemoveInactiveUnitsByRoom(int * pnParam1, in
 
         *pnParam1 = pMemoryToFree[4];
         *pnParam2 = pMemoryToFree[2];
-        D2_FREE_POOL(*(D2PoolManagerStrc**)(nParam + 0x1c), pMemoryToFree);
+        D2_FREE_POOL_AT(*(D2PoolManagerStrc**)(nParam + 0x1c), pMemoryToFree, ".\\UNIT\\SUnitInactive.cpp", 0xb6);
         return;
       }
 
@@ -139,7 +138,7 @@ void __stdcall SUNITINACTIVE_FindAndRemoveInactiveUnitsByRoom(int * pnParam1, in
 }
 
 // Deserialises a ground item from its inactive (saved-room) binary record and re-creates it as a live D2UnitStrc in pRoom. Extracts item details, calls ITEM_CreateFromSaveData, clamps the despawn frame to at most 15000 frames from now, then iterates any socketed items in the serialised stream — deserialising each and inserting into the item's inventory via PutItemInInventory and ITEMMODE_IsItemOnCursor.
-D2UnitStrc * __stdcall SUNITINACTIVE_RestoreInactiveItem(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int * pInactiveData) {
+static D2UnitStrc * __stdcall SUNITINACTIVE_RestoreInactiveItem(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int * pInactiveData) {
     int nNewDespawnFrame;
     size_t nBytesRemaining;
     D2UnitDataItemDetailsStrc local_2c;
@@ -198,7 +197,7 @@ D2UnitStrc * __stdcall SUNITINACTIVE_RestoreInactiveItem(::SGAMEDATA * pGame, D2
 }
 
 // @sourcefile .\UNIT\SUnitInactive.cpp
-void __stdcall SUNITINACTIVE_RestoreInactiveItemList(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int * pnParam) {
+static void __stdcall SUNITINACTIVE_RestoreInactiveItemList(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int * pnParam) {
     while (pnParam) {
       int* piVar1;
       piVar1 = (int*)*pnParam;
@@ -206,14 +205,14 @@ void __stdcall SUNITINACTIVE_RestoreInactiveItemList(::SGAMEDATA * pGame, D2Room
         SUNITINACTIVE_RestoreInactiveItem(pGame, pRoom, pnParam);
       }
 
-      D2_FREE_POOL(pGame->pMemoryPool, pnParam);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pnParam, ".\\UNIT\\SUnitInactive.cpp", 0x126);
       pnParam = piVar1;
     }
 }
 
 // Serializes a ground/dropped item into a bitstream (up to 1024 bytes), allocates an inactive record (serialized bytes + 0xF header) in the game memory pool, calculates a despawn timer, then frees the unit and any socketed items via FreeServerUnit. Appends the record to pInactiveList->next chain, or if pOutInactiveRecord is non-null writes the pointer there instead.
 // @sourcefile .\UNIT\SUnitInactive.cpp
-void __stdcall SUNITINACTIVE_SerializeAndDeactivateItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t pInactiveList, int * pOutInactiveRecord) {
+static void __stdcall SUNITINACTIVE_SerializeAndDeactivateItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t pInactiveList, int * pOutInactiveRecord) {
     D2UnitStrc* pNextSocketedItem;
     D2InactiveItemRecordBufferStrc sRecord;
     D2InventoryStrc* pInventory;
@@ -223,7 +222,7 @@ void __stdcall SUNITINACTIVE_SerializeAndDeactivateItem(::SGAMEDATA * pGame, D2U
     sRecord.nItemDataSize = (int16_t)nSerializedLen;
     sRecord.nDespawnTimer = ITEMS::Items::Drop::ITEM_CalculateDespawnTimer(pGame, pUnit);
     uint32_t nSerializedBytes = (uint32_t)(uint16_t)sRecord.nItemDataSize;
-    int* pNewInactiveRecord = (int*)D2_ALLOC_POOL(pGame->pMemoryPool, nSerializedBytes + 0xf);
+    int* pNewInactiveRecord = (int*)D2_ALLOC_POOL_AT(pGame->pMemoryPool, nSerializedBytes + 0xf, ".\\UNIT\\SUnitInactive.cpp", 0x1e2);
     memcpy(pNewInactiveRecord, &sRecord, nSerializedBytes + 0xf);
     int32_t iVar1 = D2Common::ITEMS::Items::ITEM_GetItemsTxt_bHasInv(pUnit);
     if (iVar1) {
@@ -245,17 +244,15 @@ void __stdcall SUNITINACTIVE_SerializeAndDeactivateItem(::SGAMEDATA * pGame, D2U
     if (!pOutInactiveRecord) {
       *pNewInactiveRecord = *(int*)(pInactiveList + 8);
       *(int**)(pInactiveList + 8) = (int*)pNewInactiveRecord;
-      Fog::Debug::GuardStack();
       return;
     }
 
     *pOutInactiveRecord = (int)pNewInactiveRecord;
-    Fog::Debug::GuardStack();
 }
 
 // Locates and removes an inactive monster record matching nClassId (record +8, stored from pUnit->nClassId by SUNITINACTIVE_DeactivateMonster at 005422b1) from the bucket list indexed by byActNo in the game's inactive monster table. On match: unlinks the node, clears its minion list via ClearMinionList, frees its AI/spawn-point list, and frees the record. Searches all D2InactiveUnitListStrc chained entries in the bucket.
 // @sourcefile .\UNIT\SUnitInactive.cpp
-void SUNITINACTIVE_RemoveInactiveMonsterByClassId(uint8_t byActNo, ::SGAMEDATA * pGame, uint16_t nClassId) {
+static void SUNITINACTIVE_RemoveInactiveMonsterByClassId(uint8_t byActNo, ::SGAMEDATA * pGame, uint16_t nClassId) {
     D2InactiveMonsterRecordStrc* pCurMonster;
     D2InactiveMonsterRecordStrc** pNextLink;
     D2InactiveUnitListStrc* pInactiveList = pGame->pInactiveUnitList[byActNo];
@@ -281,7 +278,7 @@ void SUNITINACTIVE_RemoveInactiveMonsterByClassId(uint8_t byActNo, ::SGAMEDATA *
               D2Common::Drlg::Preset::DRLGPRESET_FreeSpawnPointList(pGame->pMemoryPool, pCurMonster->pAiGeneral);
             }
 
-            D2_FREE_POOL(pGame->pMemoryPool, pCurMonster);
+            D2_FREE_POOL_AT(pGame->pMemoryPool, pCurMonster, ".\\UNIT\\SUnitInactive.cpp", 0x8c);
             return;
           }
 
@@ -296,7 +293,7 @@ void SUNITINACTIVE_RemoveInactiveMonsterByClassId(uint8_t byActNo, ::SGAMEDATA *
 }
 
 // @sourcefile .\UNIT\SUnitInactive.cpp
-void SUNITINACTIVE_FreeInactiveMonsterList(::SGAMEDATA * pGame, D2InactiveUnitListStrc * pInactiveUnitList) {
+static void SUNITINACTIVE_FreeInactiveMonsterList(::SGAMEDATA * pGame, D2InactiveUnitListStrc * pInactiveUnitList) {
     D2InactiveMonsterRecordStrc* pCurMonster = pInactiveUnitList->pInactiveMonsters;
     while (pCurMonster) {
       D2InactiveMonsterRecordStrc* pNextMonster;
@@ -306,14 +303,14 @@ void SUNITINACTIVE_FreeInactiveMonsterList(::SGAMEDATA * pGame, D2InactiveUnitLi
         D2Common::Drlg::Preset::DRLGPRESET_FreeSpawnPointList(pGame->pMemoryPool, pCurMonster->pAiGeneral);
       }
 
-      D2_FREE_POOL(pGame->pMemoryPool, pCurMonster);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pCurMonster, ".\\UNIT\\SUnitInactive.cpp", 0x8c);
       pCurMonster = pNextMonster;
     }
 }
 
 // Looks up or allocates a D2InactiveUnitListStrc for the given act and room coordinate (x, pDrlgRoomCoords) in the game's per-act inactive-unit list, which is kept sorted by nX. If nParam==0 returns the found entry or NULL without allocating; if nParam!=0 inserts a fresh node (with empty item/monster/unit sub-lists) into the sorted list and returns it.
 // @sourcefile .\UNIT\SUnitInactive.cpp
-D2InactiveUnitListStrc * __stdcall SUNITINACTIVE_AllocOrFindInactiveList(::SGAMEDATA * pGame, int32_t nAct, int32_t nY, int32_t nParam, int32_t x) {
+static D2InactiveUnitListStrc * __stdcall SUNITINACTIVE_AllocOrFindInactiveList(::SGAMEDATA * pGame, int32_t nAct, int32_t nY, int32_t nParam, int32_t x) {
     D2InactiveUnitListStrc* pNextList;
     pNextList = pGame->pInactiveUnitList[nAct];
     bool bFoundExact;
@@ -345,7 +342,7 @@ D2InactiveUnitListStrc * __stdcall SUNITINACTIVE_AllocOrFindInactiveList(::SGAME
       return pResultList;
     }
 
-    pResultList = D2_NEW_POOL(pGame->pMemoryPool, D2InactiveUnitListStrc);
+    pResultList = D2_NEW_POOL_AT(pGame->pMemoryPool, D2InactiveUnitListStrc, ".\\UNIT\\SUnitInactive.cpp", 0x424);
     pResultList->pInactiveItems = 0;
     pResultList->pInactiveMonsters = 0;
     pResultList->pInactiveUnits = 0;
@@ -370,7 +367,7 @@ void __stdcall SUNITINACTIVE_AllocInactiveListForRoom(::SGAMEDATA * pGame, int32
 }
 
 // Restores a monster's AI/quest state when re-activating it from an inactive (saved/persisted) record. Reads the MonStats line by pnParam[1]; for NPC/interact/inTown monsters (re)creates AI command 10 and seeds its args from the inactive record's nAiArgument/nAiArgument2, and transfers the saved map-AI file via DRLGPRESET_TakeFileFromDrlgMap. Special-cases certain class ids (0x10b/0xf3, super-unique boss flag, plus BaseId 0x44/0x21f via SetAiArgument, and 0x137/0x138 byte fields) to re-apply per-monster AI arguments, and patches monster state flags when the AI-argument pointer equals the DEADEAD sentinel. pnParam is the monster D2UnitStrc.
-void __stdcall SUNITINACTIVE_RestoreMonsterStateFromInactive(::SGAMEDATA * pGame, D2InactiveMonsterRecordStrc * pInactiveMonRec, int * pnParam) {
+static void __stdcall SUNITINACTIVE_RestoreMonsterStateFromInactive(::SGAMEDATA * pGame, D2InactiveMonsterRecordStrc * pInactiveMonRec, int * pnParam) {
     D2MonStatsTxt* pAiCmd;
     D2MonsterAiCmdStrc* pAiCmdNpc;
     int nBaseId;
@@ -457,7 +454,7 @@ void __stdcall SUNITINACTIVE_RestoreMonsterStateFromInactive(::SGAMEDATA * pGame
 }
 
 // Serializes a monster's transient state into an inactive-unit save record (nParam1 = destination record, pnParam = the D2UnitStrc). Writes a DEADEAD death marker + state flag masks when the corresponding mode flags are set, persists NPC/interact AI command args and any preset map-AI file reference, and stores special-case AI arguments for certain monster base ids (0x44, 0x21f) and class ids (0x10b, 0xf3). For super-unique boss types (0x137/0x138) saves a byte from the monster's extra data, else zeroes the saved arg field. Uses register-passed params (EDI/EBX/EAX).
-void SUNITINACTIVE_SaveMonsterStateToInactive(D2InactiveMonsterRecordStrc * pInactiveMonsterRecord, ::SGAMEDATA * pGame, int * pnParam) {
+static void SUNITINACTIVE_SaveMonsterStateToInactive(D2InactiveMonsterRecordStrc * pInactiveMonsterRecord, ::SGAMEDATA * pGame, int * pnParam) {
     D2MonStatsTxt* pAiCmd;
     D2MonsterAiCmdStrc* pAiCmdNpc;
     uint32_t dwSavedAiArg;
@@ -547,7 +544,7 @@ void SUNITINACTIVE_SaveMonsterStateToInactive(D2InactiveMonsterRecordStrc * pIna
 
 // Deactivates a monster when its area is unloaded/idled, serializing its full state into an InactiveMonsterRecord so it can be restored later. Strips all active states (removing/freeing their stat lists), fires the AITHINK timer trigger, then allocates a 0x5c record from the game memory pool and fills it: position (from static/dynamic path), classId, game frame, AI command type, name seed, saved monster state, type-flag bitmask (champion/unique/boss/minion/possessed/aligned/dead etc. via CheckMonsterType + alignment + anim mode), experience, max/current HP, level/area id, the 9-byte UMod list, owner/minion-list linkage, GUID and unit flags. Links the record into the per-act inactive list (SUNITINACTIVE_AllocOrFindInactiveList) keyed by room coords. No-op if unit or its room is null. Uses custom register args (pUnit in EAX).
 // @sourcefile .\UNIT\SUnitInactive.cpp
-void __stdcall SUNITINACTIVE_DeactivateMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+static void __stdcall SUNITINACTIVE_DeactivateMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     eD2States nAiCmdType;
     int16_t nBossNo;
     D2AiGeneralStrc* pAiGeneral;
@@ -582,7 +579,7 @@ void __stdcall SUNITINACTIVE_DeactivateMonster(::SGAMEDATA * pGame, D2UnitStrc *
     }
 
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_AITHINK, 0);
-    D2InactiveMonsterRecordStrc* pInactiveRec = D2_NEW_POOL(pGame->pMemoryPool, D2InactiveMonsterRecordStrc);
+    D2InactiveMonsterRecordStrc* pInactiveRec = D2_NEW_POOL_AT(pGame->pMemoryPool, D2InactiveMonsterRecordStrc, ".\\UNIT\\SUnitInactive.cpp", 0x528);
     memset(pInactiveRec, 0, 0x5c);
     pInactiveRec->nOwnerId = -1;
     eD2UnitType eUnitType = pUnit->eUnitType;
@@ -723,7 +720,7 @@ void __stdcall SUNITINACTIVE_DeactivateMonster(::SGAMEDATA * pGame, D2UnitStrc *
 
 // Server-side re-activation of stored ("inactive") monsters when a room is loaded/entered. Finds the inactive-unit list for the room's act and DRLG coordinates, then iterates each saved D2InactiveMonsterRecordStrc and respawns the monster: chooses spawn flags (flying/initial), picks the right spawn path (plain SpawnMonster with fallback to random/spiral free positions, SERVER_SpawnMonster for boss/superunique, or MONSTER_SpawnWithUniqueModifiers), then restores its alignment, minion list, experience/maxhp/hitpoints stats (decayed if offline > ~0x1d4c frames), AI function, saved state, unique mods, and unit flags. Handles Chaos Sanctuary seal-Diablo special case (corpse/skip), relocation of already-existing units, node-table registration, and monster-region update. Frees each record after processing. Pure side-effects on game world; no return.
 // @sourcefile .\UNIT\SUnitInactive.cpp
-void __stdcall SUNITINACTIVE_RoomInitMonsters(::SGAMEDATA * pGame, D2RoomStrc * pRoom) {
+static void __stdcall SUNITINACTIVE_RoomInitMonsters(::SGAMEDATA * pGame, D2RoomStrc * pRoom) {
     bool _bDiabloSealsAllActive;
     bool bFreePosFound;
     BOOL nHitpoints;
@@ -928,7 +925,7 @@ void __stdcall SUNITINACTIVE_RoomInitMonsters(::SGAMEDATA * pGame, D2RoomStrc * 
         D2Common::Drlg::Preset::DRLGPRESET_FreeSpawnPointList(pGame->pMemoryPool, pInactiveMonRec->pAiGeneral);
       }
 
-      D2_FREE_POOL(pGame->pMemoryPool, pInactiveMonRec);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pInactiveMonRec, ".\\UNIT\\SUnitInactive.cpp", 0x8c);
       pInactiveMonRec = pNextInactiveRec;
       if (!pNextInactiveRec) {
         return;
@@ -953,37 +950,37 @@ BOOL __fastcall SUNITINACTIVE_CheckDeadMonsterAtCoords(::SGAMEDATA * pGame, D2Ro
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x6db);
       exit(-1);
     } else {
-      if (nPosX && nPosY) {
-        pFoundRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nPosX, nPosY);
-        eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-        eActNo = D2Common::Drlg::GetActNoFromLevelNumber(eLevelId);
-        if (pFoundRoom || (pFoundRoom = D2Common::DUNGEON::Dungeon::FindRoomBySubtileCoordinates(pGame->pAct[eActNo], nPosX, nPosY) , pFoundRoom != 0)) {
-          for (pUnit = pFoundRoom->pUnitList; pUnit; pUnit = pUnit->pRoomNext) {
-            if (pUnit->eUnitType == UNIT_MONSTER && pUnit->nClassId == nParam) {
-              BVar1 = SUnit::CheckForModeZeroDeath(pUnit);
-              if (BVar1) {
-                return 1;
-              }
+      if (!(nPosX && nPosY)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x6dc);
+        exit(-1);
+      }
+
+      pFoundRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nPosX, nPosY);
+      eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+      eActNo = D2Common::Drlg::GetActNoFromLevelNumber(eLevelId);
+      if (pFoundRoom || (pFoundRoom = D2Common::DUNGEON::Dungeon::FindRoomBySubtileCoordinates(pGame->pAct[eActNo], nPosX, nPosY) , pFoundRoom != 0)) {
+        for (pUnit = pFoundRoom->pUnitList; pUnit; pUnit = pUnit->pRoomNext) {
+          if (pUnit->eUnitType == UNIT_MONSTER && pUnit->nClassId == nParam) {
+            BVar1 = SUnit::CheckForModeZeroDeath(pUnit);
+            if (BVar1) {
+              return 1;
             }
           }
         }
+      }
 
-        pInactiveList = SUNITINACTIVE_AllocOrFindInactiveList(pGame, (uint32_t)eActNo, nPosY, 0, nPosX);
-        if (!pInactiveList) {
-          return 0;
-        }
-
-        for (pInactiveMonster = pInactiveList->pInactiveMonsters; pInactiveMonster; pInactiveMonster = pInactiveMonster->pNext) {
-          if (pInactiveMonster->nClassId == nParam && pInactiveMonster->nTypeFlags & 4) {
-            return 1;
-          }
-        }
-
+      pInactiveList = SUNITINACTIVE_AllocOrFindInactiveList(pGame, (uint32_t)eActNo, nPosY, 0, nPosX);
+      if (!pInactiveList) {
         return 0;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x6dc);
-      exit(-1);
+      for (pInactiveMonster = pInactiveList->pInactiveMonsters; pInactiveMonster; pInactiveMonster = pInactiveMonster->pNext) {
+        if (pInactiveMonster->nClassId == nParam && pInactiveMonster->nTypeFlags & 4) {
+          return 1;
+        }
+      }
+
+      return 0;
     }
 }
 
@@ -1011,7 +1008,7 @@ void __fastcall SUNITINACTIVE_FreeUnusedItems(::SGAMEDATA * pGame, int32_t nAct)
             pDVar1->pNext = pNextItemRec;
           }
 
-          D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+          D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\UNIT\\SUnitInactive.cpp", 0x723);
           pMemoryToFree = pDVar1;
         }
       }
@@ -1169,7 +1166,7 @@ void __fastcall SUNITINACTIVE_RoomInit(::SGAMEDATA * pGame, D2RoomStrc * pRoom) 
 // Retired notes from 'SUNITINACTIVE_DeactivateUnit':
 // Server-side: snapshots a unit into the game's per-act inactive-unit list before it is removed from an active room (e.g. when a room/level is unloaded). Finds (or allocates+inserts, sorted by room X/Y coords) the D2InactiveUnitListStrc bucket for the unit's room, then serializes the unit. Items are delegated to SUNITINACTIVE_SerializeAndDeactivateItem; all other unit types get a freshly allocated D2InactiveUnitRecordStrc recording position, type, classId, anim mode, GUID, flags and game frame. Objects (type 2) additionally capture shrine timer state, chest spark/drop data, and a name-byte. Register args: pUnit@EAX, pGame@Stack[0x4] (see signature). No return.
 // @sourcefile .\UNIT\SUnitInactive.cpp
-void __stdcall SUNITINACTIVE_SaveInactiveUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+static void __stdcall SUNITINACTIVE_SaveInactiveUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2InactiveUnitListStrc* pDVar2;
     int iVar6;
     D2ObjectsTxt* pDVar7;
@@ -1198,7 +1195,7 @@ void __stdcall SUNITINACTIVE_SaveInactiveUnit(::SGAMEDATA * pGame, D2UnitStrc * 
       pDVar2 = pDVar5;
       if (!pDVar2) {
         insert_new_list_node:
-        pDVar5 = D2_NEW_POOL(pGame->pMemoryPool, D2InactiveUnitListStrc);
+        pDVar5 = D2_NEW_POOL_AT(pGame->pMemoryPool, D2InactiveUnitListStrc, ".\\UNIT\\SUnitInactive.cpp", 0x22e);
         pDVar5->nX = 0;
         pDVar5->nY = 0;
         pDVar5->pInactiveItems = 0;
@@ -1237,7 +1234,7 @@ void __stdcall SUNITINACTIVE_SaveInactiveUnit(::SGAMEDATA * pGame, D2UnitStrc * 
       return;
     }
 
-    D2InactiveUnitRecordStrc* _Dst = D2_NEW_POOL(pGame->pMemoryPool, D2InactiveUnitRecordStrc);
+    D2InactiveUnitRecordStrc* _Dst = D2_NEW_POOL_AT(pGame->pMemoryPool, D2InactiveUnitRecordStrc, ".\\UNIT\\SUnitInactive.cpp", 0x244);
     memset(_Dst, 0, 0x34);
     eD2UnitType eVar1 = pUnit->eUnitType;
     if (eVar1 == UNIT_OBJECT || 3 < (int)eVar1 && (int)eVar1 < 6) {
@@ -1317,19 +1314,19 @@ void __fastcall SUNITINACTIVE_FreeAllInactiveLists(::SGAMEDATA * pGame) {
         pCurUnitRecord = pCurList->pInactiveUnits;
         while (pCurUnitRecord) {
           pNextUnitRecord = pCurUnitRecord->pNext;
-          D2_FREE_POOL(pGame->pMemoryPool, pCurUnitRecord);
+          D2_FREE_POOL_AT(pGame->pMemoryPool, pCurUnitRecord, ".\\UNIT\\SUnitInactive.cpp", 0x29a);
           pCurUnitRecord = pNextUnitRecord;
         }
 
         pMemoryToFree = pCurList->pInactiveItems;
         while (pMemoryToFree) {
           pNextItemRecord = pMemoryToFree->pNext;
-          D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+          D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\UNIT\\SUnitInactive.cpp", 0x2a4);
           pMemoryToFree = pNextItemRecord;
         }
 
         SUNITINACTIVE_FreeInactiveMonsterList(pGame, pCurList);
-        D2_FREE_POOL(pGame->pMemoryPool, pCurList);
+        D2_FREE_POOL_AT(pGame->pMemoryPool, pCurList, ".\\UNIT\\SUnitInactive.cpp", 0x2ab);
         pCurList = pNextList;
       }
 
@@ -1340,7 +1337,7 @@ void __fastcall SUNITINACTIVE_FreeAllInactiveLists(::SGAMEDATA * pGame) {
 
 // Removes a single inactive unit record from the per-act inactive list by unit type and class ID. For monsters (nUnitType==1) delegates to SUNITINACTIVE_RemoveInactiveMonsterByClassId; for other types walks the linked list and frees the matching D2InactiveUnitRecordStrc from the game memory pool.
 // @sourcefile .\UNIT\SUnitInactive.cpp
-void __stdcall SUNITINACTIVE_RemoveInactiveUnitByTypeAndId(::SGAMEDATA * pGame, uint16_t nUnitType, uint32_t nClassId, uint8_t byActNo) {
+void __fastcall SUNITINACTIVE_RemoveInactiveUnitByTypeAndId(::SGAMEDATA * pGame, uint16_t nUnitType, uint32_t nClassId, uint8_t byActNo) {
     D2InactiveUnitRecordStrc* pCurRecord;
     D2InactiveUnitRecordStrc* pNextRecord;
     if (nUnitType == 1) {
@@ -1367,7 +1364,7 @@ void __stdcall SUNITINACTIVE_RemoveInactiveUnitByTypeAndId(::SGAMEDATA * pGame, 
               pPrevRecord->pNext = pCurRecord->pNext;
             }
 
-            D2_FREE_POOL(pGame->pMemoryPool, pCurRecord);
+            D2_FREE_POOL_AT(pGame->pMemoryPool, pCurRecord, ".\\UNIT\\SUnitInactive.cpp", 0x324);
             return;
           }
 
@@ -1384,7 +1381,7 @@ void __stdcall SUNITINACTIVE_RemoveInactiveUnitByTypeAndId(::SGAMEDATA * pGame, 
 }
 
 // Decides the fate of a dead or inactivating monster and either saves it as an inactive unit or frees it. Determines bShouldSave from many gates: whether the unit is truly dead (CheckForModeZeroDeath), the level's saveMonsters flag, the resurrect flag, a Kick-mode seeded RNG roll (advances and writes the room seed), passive-state presence, alignment==2, low node-table index (frees AI nodes and saves when alive), special class ids 0x16b/0x16c, monster-type bit 0x18, minion ownership (delegates dead pets to PETS_HandleDeadPet), an eUnitFlags bit, and the monstats2 byRestore field (0 => don't save, 2 => force save). If a pet record resulted, marks UNITFLAGEX_HASBEENDELETED and conditionally saves then clears the room link and returns; otherwise conditionally saves and then frees the server unit. Server-side unit cleanup; custom register args (pUnit@ESI, pGame on stack).
-void __stdcall UNITS_ProcessDeadOrInactiveMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+static void __stdcall UNITS_ProcessDeadOrInactiveMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     int nMonStatsExIdx;
     uint32_t dwMonTypeFlags;
     D2UnitStrc* pOwnerUnit;

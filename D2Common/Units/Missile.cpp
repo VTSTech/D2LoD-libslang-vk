@@ -51,18 +51,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataMissileStrc) == 0x34, "D2_NEW(D2UnitDataMissileStrc): the 32-bit layout must be the 0x34 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataMissileStrc) == 0x34, "D2_NEW_AT(D2UnitDataMissileStrc): the 32-bit layout must be the 0x34 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -79,7 +79,7 @@ void __stdcall AllocMissileData(D2UnitStrc * pUnit) {
       return;
     }
 
-    D2UnitDataMissileStrc* pUnitDataMissile = D2_NEW_POOL(pUnit->pMemory, D2UnitDataMissileStrc);
+    D2UnitDataMissileStrc* pUnitDataMissile = D2_NEW_POOL_AT(pUnit->pMemory, D2UnitDataMissileStrc, ".\\UNITS\\Missile.cpp", 0x22);
     memset(pUnitDataMissile, 0, 0x34);
     pUnitDataMissile->nOwnerGUID = -1;
     pUnit->pUnitData.pUnitDataMissile = pUnitDataMissile;
@@ -91,7 +91,7 @@ void __stdcall FreeMissileData(D2UnitStrc * pUnit) {
       return;
     }
 
-    D2_FREE_POOL(pUnit->pMemory, pUnit->pUnitData.pUnitDataPlayer);
+    D2_FREE_POOL_AT(pUnit->pMemory, pUnit->pUnitData.pUnitDataPlayer, ".\\UNITS\\Missile.cpp", 0x3e);
     pUnit->pUnitData.pUnitDataPlayer = 0;
 }
 
@@ -140,7 +140,7 @@ void __stdcall SetSkill(D2UnitStrc * pUnit, eD2Skills eSkill) {
     pUnit->pUnitData.pUnitDataMissile->nSkillNo = (int16_t)eClampedSkill;
 }
 
-eD2Skills GetSkillId(D2UnitStrc * pUnit) {
+eD2Skills __stdcall GetSkillId(D2UnitStrc * pUnit) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MISSILE && pUnit->pUnitData.pUnitDataMissile)) {
       return SKILL_Attack;
     }
@@ -448,7 +448,7 @@ void __stdcall GetHomeType(D2UnitStrc * pUnit, int * nHomeType, int * nHomeGUID)
     *nHomeGUID = -1;
 }
 
-BOOL __stdcall HasBonusStats(D2UnitStrc * pUnit, D2UnitStrc * pItem) {
+static BOOL __stdcall HasBonusStats(D2UnitStrc * pUnit, D2UnitStrc * pItem) {
     D2SeedStrc DVar1;
     int nCritChance = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_passive_critical_strike, 0);
     D2SeedStrc seedRng = D2_SEED_NEXT(pItem->sSeed);
@@ -484,7 +484,7 @@ BOOL __stdcall HasBonusStats(D2UnitStrc * pUnit, D2UnitStrc * pItem) {
 }
 
 // Accumulates all elemental damage stats from pUnit into pMissileDamageData, left-shifted by nShift. Reads fire/lightning/magic/cold/poison/life-drain/mana-drain/burning min+max stats and their durations from pUnit via GetStatUnsignedValue, then adds each (shifted) value to the corresponding field of D2MissileDamageDataStrc. Poison length uses skill_poison_override_length if present, otherwise poisonlength+poison_count. Custom register calling convention: pMissileDamageData=ESI, pUnit=EDI, nShift=BL.
-void AddStatsToDamage(D2MissileDamageDataStrc * pMissileDamageData, D2UnitStrc * pUnit, BYTE nShift) {
+static void AddStatsToDamage(D2MissileDamageDataStrc * pMissileDamageData, D2UnitStrc * pUnit, BYTE nShift) {
     int nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_firemindam, 0);
     pMissileDamageData->nFireMinDamage += nStatValue << (nShift & 0x1f);
     nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_firemaxdam, 0);
@@ -530,7 +530,7 @@ void AddStatsToDamage(D2MissileDamageDataStrc * pMissileDamageData, D2UnitStrc *
 }
 
 // Scales all elemental damage fields in pMissileDamageData by nSrcDamage/128 (arithmetic right-shift by 7 with rounding correction). If nSrcDamage == 0x80 (i.e. factor is exactly 1.0), the function is a no-op. Mutates fire/lightning/magic/cold/poison/life-drain/mana-drain/burning min+max values and their durations in-place. Custom register calling convention: pMissileDamageData=ECX, nSrcDamage=ESI.
-void CalculateFinalDamage(D2MissileDamageDataStrc * pMissileDamageData, int32_t nSrcDamage) {
+static void CalculateFinalDamage(D2MissileDamageDataStrc * pMissileDamageData, int32_t nSrcDamage) {
     if (nSrcDamage == 0x80) {
       return;
     }
@@ -572,7 +572,7 @@ void CalculateFinalDamage(D2MissileDamageDataStrc * pMissileDamageData, int32_t 
 }
 
 // Returns nSrcDamage scaled by the owner unit's elemental mastery passive stat for nElemType (fire/lightning/cold+freeze/poison). Reads UNITSTAT_passive_*_mastery via GetStatUnsignedValue and applies the percentage via D2ApplyPercent. Returns 0 if no mastery or unknown element.
-int32_t CalculateMasteryBonus(D2UnitStrc * pUnit, eD2ElementalDamageTypeDWORD nElemType, int32_t nSrcDamage) {
+static int32_t CalculateMasteryBonus(D2UnitStrc * pUnit, eD2ElementalDamageTypeDWORD nElemType, int32_t nSrcDamage) {
     int nMasteryPercent;
     int32_t nScaledDamage;
     switch (nElemType) {

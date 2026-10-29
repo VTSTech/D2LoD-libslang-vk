@@ -1,0 +1,19 @@
+{
+  "$schema": "https://code.claude.com/schemas/marketplace.json",
+  "name": "redivivus",
+  "description": "Read the reverse-engineered Diablo II 1.14d and propose corrections for review.",
+  "owner": {
+    "name": "Redivivus",
+    "url": "https://redivivus.app/"
+  },
+  "plugins": [
+    {
+      "name": "redivivus",
+      "source": "./agent",
+      "description": "The Redivivus MCP server (read-only Ghidra for Diablo II 1.14d Windows and Mac) and the house rules for proposing changes.",
+      "homepage": "https://redivivus.app/",
+      "repository": "https://github.com/jaenster/redivivus",
+      "keywords": ["diablo2", "reverse-engineering", "ghidra", "mcp"]
+    }
+  ]
+}

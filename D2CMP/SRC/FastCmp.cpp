@@ -11,12 +11,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -27,12 +27,12 @@ typedef uint8_t (__stdcall *pfnRGBToPaletteIndex)(uint8_t nRed, uint8_t nGreen, 
 
 namespace D2CMP::SRC::FastCmp {
 
-void __stdcall FASTCMP_CompressToRLE(uint8_t * pSrcData, uint32_t nLineCount, uint8_t * pDirectionOrder, uint8_t * * ppRLEBuffer, uint8_t * * ppRLEEnd, uint8_t * pBaseData) {
+static void __stdcall FASTCMP_CompressToRLE(uint8_t * pSrcData, uint32_t nLineCount, uint8_t * pDirectionOrder, uint8_t * * ppRLEBuffer, uint8_t * * ppRLEEnd, uint8_t * pBaseData) {
     int nColorRunLen;
     uint32_t nColorTailFlag;
     int nZeroTailFlag;
     uint8_t* pbRLEAlloc;
-    pbRLEAlloc = (uint8_t*)D2_ALLOC(((int)pSrcData * 2 + 1) * nLineCount);
+    pbRLEAlloc = (uint8_t*)D2_ALLOC_AT(((int)pSrcData * 2 + 1) * nLineCount, ".\\SRC\\FastCmp.cpp", 0x25);
     uint32_t nLinesDone;
     nLinesDone = 0;
     uint8_t* pbLineStride;
@@ -137,7 +137,7 @@ void __fastcall FASTCMP_ConvertDCCWithPaletteRemap(DC6 * pDCC, DC6 * pDCCDest, p
     do {
       uint32_t* pNewFrameData;
       nPixelCount = *(int*)(pSrcFrame->nVersion + 8) * *(int*)(pSrcFrame->nVersion + 4);
-      pbIndexedBuf = (uint8_t*)D2_ALLOC(nPixelCount);
+      pbIndexedBuf = (uint8_t*)D2_ALLOC_AT(nPixelCount, ".\\SRC\\FastCmp.cpp", 0xd4);
       pbSrcPixel = (uint8_t*)(pSrcFrame->nVersion + 0x20);
       nPixelIndex = 0;
       pbIndexOut = pbIndexedBuf;
@@ -163,9 +163,9 @@ void __fastcall FASTCMP_ConvertDCCWithPaletteRemap(DC6 * pDCC, DC6 * pDCCDest, p
 
       pNewFrameData = (uint32_t*)pSrcFrame->nVersion;
       FASTCMP_CompressToRLE((uint8_t*)pNewFrameData[1], pNewFrameData[2], (uint8_t*)*pNewFrameData, &pbCompressedData, (uint8_t**)&nCompressedSize, pbIndexedBuf);
-      D2_FREE(pbIndexedBuf);
+      D2_FREE_AT(pbIndexedBuf, ".\\SRC\\FastCmp.cpp", 0xf0);
       nCompressedSizeOut = nCompressedSize;
-      pNewFrameData = (uint32_t*)D2_ALLOC(nCompressedSize + 0x23);
+      pNewFrameData = (uint32_t*)D2_ALLOC_AT(nCompressedSize + 0x23, ".\\SRC\\FastCmp.cpp", 0xf2);
       pbSrcPixel = pbCompressedData;
       *pNewFrameData = *(uint32_t*)pSrcFrame->nVersion;
       pNewFrameData[1] = *(uint32_t*)(pSrcFrame->nVersion + 4);
@@ -177,7 +177,7 @@ void __fastcall FASTCMP_ConvertDCCWithPaletteRemap(DC6 * pDCC, DC6 * pDCCDest, p
       pNewFrameData[5] = 0;
       pNewFrameData[6] = 0;
       memcpy(pNewFrameData + 8, pbCompressedData, nCompressedSizeOut);
-      D2_FREE(pbSrcPixel);
+      D2_FREE_AT(pbSrcPixel, ".\\SRC\\FastCmp.cpp", 0xfd);
       *(uint32_t**)((int)pDCCDest - (int)pDCC + (int)pSrcFrame) = (uint32_t*)pNewFrameData;
       nFrameIndex++;
       pSrcFrame = (DC6*)&pSrcFrame->nFlags;
@@ -1885,7 +1885,7 @@ uint32_t __fastcall FASTCMP_DecompressRLEWithPaletteConversion(int32_t pDCCSrc, 
     for (nFrameInDir = (int)nDirectionCount < 1 ? 0 : nDirectionCount; 0 < (int)nFrameInDir; nFrameInDir = *(uint32_t*)(nFrameInDir + 4)) {
       FASTCMP_CompressToRLE(*(uint8_t**)(nFrameInDir + 0xc), *(uint32_t*)(nFrameInDir + 0x10), *(uint8_t**)(nFrameInDir + 8), &nCompressedSize, &pbCompressedData, *(uint8_t**)(nFrameInDir + 0x20));
       nCompressedDataSize = pbCompressedData;
-      pNewFrame = (uint32_t*)D2_ALLOC((size_t)(pbCompressedData + 0x23));
+      pNewFrame = (uint32_t*)D2_ALLOC_AT((size_t)(pbCompressedData + 0x23), ".\\SRC\\FastCmp.cpp", 0x82);
       pMemoryToFree = nCompressedSize;
       *pNewFrame = *(uint32_t*)(nFrameInDir + 8);
       pNewFrame[1] = *(uint32_t*)(nFrameInDir + 0xc);
@@ -1897,7 +1897,7 @@ uint32_t __fastcall FASTCMP_DecompressRLEWithPaletteConversion(int32_t pDCCSrc, 
       pNewFrame[6] = 0;
       pNewFrame[4] = dwFrameFlags;
       memcpy(pNewFrame + 8, nCompressedSize, (size_t)nCompressedDataSize);
-      D2_FREE(pMemoryToFree);
+      D2_FREE_AT(pMemoryToFree, ".\\SRC\\FastCmp.cpp", 0x8d);
       nDirectionCount = *(uint32_t*)(pDCCSrc + 0x28);
       if (nDirectionCount < 2) {
         nDirectionIndex = 1;

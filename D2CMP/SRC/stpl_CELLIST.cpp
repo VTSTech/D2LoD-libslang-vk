@@ -41,7 +41,7 @@ template<> TSLink<::CELLIST>* TSLink<CELLIST>::NextLink(int32_t nLinkOffset) {
 }
 
 // stpl-orphan: a COMDAT copy in TSLink<CELLIST> that no member owns
-TSLink<::CELLIST>* NextLink_Unreferenced(TSLink<::CELLIST>* pThis, int32_t nLinkOffset) {
+TSLink<::CELLIST>* __thiscall NextLink_Unreferenced(TSLink<::CELLIST>* pThis, int32_t nLinkOffset) {
     uint32_t nOffsetOrRef = pThis->m_next;
     if ((int)nOffsetOrRef < 0) {
       return (TSLink<::CELLIST>*)~nOffsetOrRef;
@@ -67,7 +67,7 @@ template<> uint32_t TSHashTable<CELLIST, HASHKEY_NONE>::ComputeSlot(uint32_t dwH
 }
 
 // stpl-orphan: a COMDAT copy in TSLink<CELLIST> that no member owns
-TSLink<::CELLIST>* NextLink_Unreferenced2(TSLink<::CELLIST>* pThis, int32_t nLinkOffset) {
+TSLink<::CELLIST>* __thiscall NextLink_Unreferenced2(TSLink<::CELLIST>* pThis, int32_t nLinkOffset) {
     uint32_t nOffsetOrRef = pThis->m_next;
     if ((int)nOffsetOrRef < 0) {
       return (TSLink<::CELLIST>*)~nOffsetOrRef;
@@ -183,7 +183,7 @@ template<> ::CELLIST * TSExplicitList<CELLIST, -572662307>::RawNext(::CELLIST * 
 }
 
 // stpl-orphan: a COMDAT copy in TSExplicitList<CELLIST, -572662307> that no member owns
-TSLink<::CELLIST>* Link_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, ::CELLIST * ptr) {
+TSLink<::CELLIST>* __thiscall Link_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, ::CELLIST * ptr) {
     if (!ptr) {
       return &pThis->m_terminator;
     }
@@ -237,7 +237,7 @@ template<> ::CELLIST * TSExplicitList<CELLIST, -572662307>::Next(::CELLIST * pNo
 }
 
 // stpl-orphan: a COMDAT copy in TSExplicitList<CELLIST, -572662307> that no member owns
-void SetLinkOffset_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, int32_t nLinkOffset) {
+void __thiscall SetLinkOffset_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, int32_t nLinkOffset) {
     pThis->m_linkoffset = nLinkOffset;
     uint32_t* pLink = (uint32_t*)&pThis->m_terminator;
     *pLink = (uint32_t)pLink;
@@ -358,7 +358,7 @@ template<> void TSExplicitList<CELLIST, -572662307>::LinkNode(::CELLIST * pNode,
 }
 
 // stpl-orphan: a COMDAT copy in TSExplicitList<CELLIST, -572662307> that no member owns
-void UnlinkNode_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, ::CELLIST * ptr) {
+void __thiscall UnlinkNode_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, ::CELLIST * ptr) {
     TSLink<::CELLIST>* pSlot;
     int* pBackLink;
     if (!ptr) {
@@ -516,7 +516,7 @@ template<> void TSHashTable<CELLIST, HASHKEY_NONE>::InternalClear(int32_t bUnlin
 }
 
 // stpl-orphan: a COMDAT copy in TSExplicitList<CELLIST, -572662307> that no member owns
-void Destructor_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis) {
+void __thiscall Destructor_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis) {
     int* pBackLink;
     pThis->UnlinkAll();
     TSLink<::CELLIST>* pTVar1 = &pThis->m_terminator;

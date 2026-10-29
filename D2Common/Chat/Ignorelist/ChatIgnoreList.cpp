@@ -10,11 +10,11 @@
 
 namespace D2Common::Chat::Ignorelist::ChatIgnoreList {
 
-void Destructor(::ChatIgnoreList * pThis) {
+void __thiscall Destructor(::ChatIgnoreList * pThis) {
     pThis->_vfptr = (ChatIgnoreListVtable*)(void*)ChatIgnoreList::vftable;
 }
 
-::ChatIgnoreList * ScalarDeletingDestructor(::ChatIgnoreList * pThis, uint32_t nFlags) {
+::ChatIgnoreList * __thiscall ScalarDeletingDestructor(::ChatIgnoreList * pThis, uint32_t nFlags) {
     pThis->_vfptr = (ChatIgnoreListVtable*)(void*)ChatIgnoreList::vftable;
     if (!(nFlags & 1)) {
       return pThis;
@@ -24,7 +24,7 @@ void Destructor(::ChatIgnoreList * pThis) {
     return pThis;
 }
 
-::ChatIgnoreList * Constructor(::ChatIgnoreList * pThis) {
+::ChatIgnoreList * __thiscall Constructor(::ChatIgnoreList * pThis) {
     pThis->_vfptr = (ChatIgnoreListVtable*)(void*)ChatIgnoreList::vftable;
     return pThis;
 }

@@ -17,12 +17,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
 
@@ -77,7 +77,7 @@ void __fastcall GFXHASH_UnlinkCacheEntry(int32_t pHashTable, D2PoolManagerStrc *
           } while (nFrameIdx < (uint32_t)pCacheBlock->tDecode.nFramesPerDir * (uint32_t)pCacheBlock->tDecode.nDirCount);
         }
         if (nErrAddress) {
-          D2_FREE_POOL(pMemory, nErrAddress);
+          D2_FREE_POOL_AT(pMemory, nErrAddress, ".\\SRC\\GfxHash.cpp", 0x82);
         }
       }
 
@@ -85,7 +85,7 @@ void __fastcall GFXHASH_UnlinkCacheEntry(int32_t pHashTable, D2PoolManagerStrc *
       pCacheBlock->tDecode.pAsyncData = 0;
     }
 
-    D2_FREE_POOL(pMemory, pEntry);
+    D2_FREE_POOL_AT(pMemory, pEntry, ".\\SRC\\GfxHash.cpp", 0x8e);
 }
 
 void __fastcall GFXHASH_InitHashTable(void * pParam) {
@@ -166,7 +166,7 @@ uint32_t __fastcall GFXHASH_CalcDirectionIndex(int32_t nParam, uint32_t * pnPara
     return 0;
 }
 
-uint32_t GFXHASH_CalcHashKey(D2GfxDataStrc * pGfxData, uint32_t * pnParam1, uint32_t * pnParam2, D2CelFileCacheEntryStrc * pCelEntry) {
+static uint32_t GFXHASH_CalcHashKey(D2GfxDataStrc * pGfxData, uint32_t * pnParam1, uint32_t * pnParam2, D2CelFileCacheEntryStrc * pCelEntry) {
     uint32_t nHashAccum;
     uint32_t nDirIdx = GFXHASH_CalcDirectionIndex((int32_t)pGfxData, pnParam1, pCelEntry);
     *pnParam2 = nDirIdx;
@@ -237,7 +237,7 @@ int32_t __fastcall GFXHASH_FindEntryByGfxData(void * pHashTable, D2GfxDataStrc *
 
 // @sourcefile .\SRC\GfxHash.cpp
 uint32_t * __fastcall GFX_AllocCacheEntry(D2PoolManagerStrc * pMemory, void * pHashTable, uint32_t nDirIdxOut, D2GfxDataStrc * pGfxData, D2CelFileCacheEntryStrc * pCelEntry) {
-    uint32_t* pNewEntry = (uint32_t*)D2_ALLOC_POOL(pMemory, 0x30);
+    uint32_t* pNewEntry = (uint32_t*)D2_ALLOC_POOL_AT(pMemory, 0x30, ".\\SRC\\GfxHash.cpp", 0xef);
     D2GfxDataStrc* nGfxDataSaved = pGfxData;
     pNewEntry[8] = nDirIdxOut;
     nDirIdxOut = 0;

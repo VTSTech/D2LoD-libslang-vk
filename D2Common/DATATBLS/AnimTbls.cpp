@@ -19,26 +19,25 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2AnimDataStrc) == 0x4a4, "D2_NEW(D2AnimDataStrc): the 32-bit layout must be the 0x4a4 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2AnimDataStrc) == 0x4a4, "D2_NEW_AT(D2AnimDataStrc): the 32-bit layout must be the 0x4a4 bytes 1.14d allocates");
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -47,8 +46,7 @@ namespace D2Common::DATATBLS::AnimTbls {
 // @sourcefile .\DATATBLS\AnimTbls.cpp
 D2AnimDataStrc * __fastcall TXT_AllocTxt_AnimTbls(D2PoolManagerStrc * pMemory) {
     char szFilePath[260];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    D2AnimDataStrc* pAnimTbls = D2_NEW_POOL(nullptr, D2AnimDataStrc);
+    D2AnimDataStrc* pAnimTbls = D2_NEW_POOL_AT(nullptr, D2AnimDataStrc, ".\\DATATBLS\\AnimTbls.cpp", 0x83);
     memset(pAnimTbls, 0, 0x4a4);
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFilePath, "%s\\AnimData.d2", "DATA\\GLOBAL");
     D2AnimDataBucketStrc* pArchive = (D2AnimDataBucketStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMemory, szFilePath, nullptr, ".\\DATATBLS\\AnimTbls.cpp", 0x8a);
@@ -64,7 +62,6 @@ D2AnimDataStrc * __fastcall TXT_AllocTxt_AnimTbls(D2PoolManagerStrc * pMemory) {
 
     pAnimTbls->pDefaultRecord.nFrames = 0x800;
     pAnimTbls->pDefaultRecord.nAnimSpeed = 0x100;
-    Fog::Debug::GuardStack();
     return pAnimTbls;
 }
 
@@ -77,8 +74,8 @@ void __fastcall ANIMDATA_FreeAnimDataRecord(void * * pParam) {
       return;
     }
 
-    D2_FREE(*pParam);
-    D2_FREE_POOL(nullptr, pParam);
+    D2_FREE_AT(*pParam, ".\\DATATBLS\\AnimTbls.cpp", 0xbe);
+    D2_FREE_POOL_AT(nullptr, pParam, ".\\DATATBLS\\AnimTbls.cpp", 0xbf);
 }
 
 // pdwName1 in EDI, pdwName2 in ESI: TRUE when both 8-byte names match as two dwords. Halts (AnimTbls.cpp lines 217/218, StringLength((LPCTSTR)pdwName2) <= 8) on a name longer than 8.
@@ -87,16 +84,15 @@ BOOL __stdcall ANIMDATA_CompareNames(uint32_t * pdwName1, uint32_t * pdwName2) {
     uint32_t uVar1 = Storm::Source::SSTR::SSTR_StringLength((char*)pdwName1);
     if (uVar1 < 9) {
       uVar1 = Storm::Source::SSTR::SSTR_StringLength((char*)pdwName2);
-      if (uVar1 < 9) {
-        if (*pdwName1 == *pdwName2) {
-          return (uint32_t)(pdwName1[1] == pdwName2[1]);
-        }
-
-        return 0;
+      if (!(uVar1 < 9)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xda);
+        exit(-1);
+      }
+      if (*pdwName1 == *pdwName2) {
+        return (uint32_t)(pdwName1[1] == pdwName2[1]);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xda);
-      exit(-1);
+      return 0;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd9);
       exit(-1);
@@ -107,22 +103,22 @@ BOOL __stdcall ANIMDATA_CompareNames(uint32_t * pdwName1, uint32_t * pdwName2) {
 // byte-sum hash, then walks the hash bucket comparing 8-byte names.
 // Returns pointer to the matching record or NULL.
 // Source: .\\DATATBLS\\AnimTbls.cpp
-int * ANIMDATA_GetRecordByNameHash(int * pnParam) {
-    char cChar = (char)*pnParam;
-    int* pszChar = pnParam;
+static int * ANIMDATA_GetRecordByNameHash(LPSTR pnParam) {
+    char cChar = *pnParam;
+    char* pszChar = pnParam;
     while (cChar != '\0') {
-      cChar = (char)*pszChar;
+      cChar = *pszChar;
       if ('`' < cChar && cChar < '{') {
-        *(char*)pszChar = cChar - 0x20;
+        *pszChar = cChar - 0x20;
       }
 
-      pszChar = (int*)((int)pszChar + 1);
-      cChar = *(char*)pszChar;
+      pszChar++;
+      cChar = *pszChar;
     }
 
     D2AnimDataStrc* pAnimTbls = DataTbls::TXT_AnimTbls_Get();
     uint32_t nHashValue = 0;
-    uint8_t bCharValue = (uint8_t)*pnParam;
+    uint8_t bCharValue = *pnParam;
     uint8_t* pbCursor = (uint8_t*)pnParam;
     while (bCharValue) {
       pbCursor++;
@@ -137,7 +133,7 @@ int * ANIMDATA_GetRecordByNameHash(int * pnParam) {
         return nullptr;
       }
 
-      nHashValue = Storm::Source::SSTR::SSTR_StringLength((char*)pnParam);
+      nHashValue = Storm::Source::SSTR::SSTR_StringLength(pnParam);
       if (8 < nHashValue) {
         break;
       }
@@ -147,7 +143,7 @@ int * ANIMDATA_GetRecordByNameHash(int * pnParam) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xda);
         exit(-1);
       }
-      if (*pnParam == *(int*)szRecordName->szAnimDataName && pnParam[1] == *(int*)(szRecordName->szAnimDataName + 4)) {
+      if (*(int*)pnParam == *(int*)szRecordName->szAnimDataName && *(int*)(pnParam + 4) == *(int*)(szRecordName->szAnimDataName + 4)) {
         return (int*)szRecordName;
       }
 
@@ -164,37 +160,30 @@ int * ANIMDATA_GetRecordByNameHash(int * pnParam) {
 // Called by SetAnimData and composit rendering code.
 D2AnimDataRecordStrc * __fastcall ANIMDATA_GetAnimDataForUnit(D2UnitStrc * pUnit, uint32_t nParam, uint32_t nCofMode, uint32_t nWeaponClass, D2InventoryStrc * pInventory) {
     D2AnimDataStrc* pDVar1;
-    int szCofName[3];
-    szCofName[2] = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    szCofName[0] = 0;
-    szCofName[1] = 0;
+    char szCofName[8];
+    memset(szCofName, 0, 8 * sizeof(szCofName[0]));
     int32_t nCofNameLen = 0;
-    COMPOSIT::Composit::COMPOSIT_BuildCofPath(pUnit, nParam, nCofMode, nWeaponClass, pInventory, (LPSTR)szCofName, &nCofNameLen, 0, 1);
+    COMPOSIT::Composit::COMPOSIT_BuildCofPath(pUnit, nParam, nCofMode, nWeaponClass, pInventory, szCofName, &nCofNameLen, 0, 1);
     D2AnimDataRecordStrc* pRecord = (D2AnimDataRecordStrc*)ANIMDATA_GetRecordByNameHash(szCofName);
     if (!pRecord) {
       pDVar1 = DataTbls::TXT_AnimTbls_Get();
       pRecord = &pDVar1->pDefaultRecord;
     }
 
-    Fog::Debug::GuardStack();
     return pRecord;
 }
 
 // Sets the animation speed value in an AnimData record for a unit.
 // Builds composit name, looks up record, writes nParam to the speed field.
 void __stdcall ANIMDATA_SetAnimSpeedForUnit(D2UnitStrc * pUnit, int32_t nParam) {
-    int szCofName[3];
-    szCofName[2] = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    szCofName[0] = 0;
-    szCofName[1] = 0;
+    char szCofName[8];
+    memset(szCofName, 0, 8 * sizeof(szCofName[0]));
     int nCofNameLen = 0;
-    COMPOSIT::Composit::COMPOSIT_GetCofPathWithTransform(pUnit, (LPSTR)szCofName, &nCofNameLen, 0, 1, pUnit->pInventory, -1);
+    COMPOSIT::Composit::COMPOSIT_GetCofPathWithTransform(pUnit, szCofName, &nCofNameLen, 0, 1, pUnit->pInventory, -1);
     int* pRecord = ANIMDATA_GetRecordByNameHash(szCofName);
     if (pRecord) {
       pRecord[3] = nParam;
     }
-
-    Fog::Debug::GuardStack();
 }
 
 // Retrieves frame count, animation speed, and trigger frame from an AnimData
@@ -202,7 +191,7 @@ void __stdcall ANIMDATA_SetAnimSpeedForUnit(D2UnitStrc * pUnit, int32_t nParam) 
 // per-frame event array (up to 0x90 bytes). Returns 1 on success, 0 on
 // fallback to default record.
 BOOL __stdcall ANIMDATA_GetFramesSpeedAndTrigger(int * pszName, uint32_t * pnFrameCount, int * pnAnimSpeed, uint32_t * pnTriggerFrame) {
-    int* pRecord = ANIMDATA_GetRecordByNameHash(pszName);
+    int* pRecord = ANIMDATA_GetRecordByNameHash((LPSTR)pszName);
     if (!pRecord) {
       D2AnimDataStrc* pAnimTbls;
       pAnimTbls = DataTbls::TXT_AnimTbls_Get();

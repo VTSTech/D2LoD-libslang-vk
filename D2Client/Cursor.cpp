@@ -13,12 +13,12 @@ namespace D2Client::Cursor {
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 BOOL __stdcall CURSOR_IsAnimated(int nCursor) {
     if (gnCursorDataCount == 7) {
-      if (nCursor < 7) {
-        return CursorData[nCursor].bAnimated;
+      if (!(nCursor < 7)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x85);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x85);
-      exit(-1);
+      return CursorData[nCursor].bAnimated;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x84);
       exit(-1);

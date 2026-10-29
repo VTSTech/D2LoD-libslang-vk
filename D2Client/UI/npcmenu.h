@@ -76,21 +76,16 @@ void __stdcall NPCMENU_SelectRandomDialogOption(struct D2NPCSpeechStrc * pSpeech
 void __stdcall NPCMENU_RandomizeAllNpcDialogs();
 uint32_t __fastcall NPCMENU_FindNextUnhandledMessage(int16_t nMsgTypeToFind);
 int __fastcall NPCMENU_ScrollCompleteShowNextMessage(void * pUserParam, uint32_t nReason, void * pDismissCallback);
-void NPCMENU_AddHandledMessageId(short wMsgId);
-// Runs the NPC quest-dependent menu-option enablers. For each of nEntryCount entries of pCallbackTable whose nNpcClassId matches: reads GetQuestState(pBitBuffer, nQuestId, nQuestFlag); with bCheckState != 0 calls pfnCallback when the state is set, with bCheckState == 0 when it is clear.
-// Returns the last called callback's result, or 1 when none ran (EDI starts at 1). Custom storage: table in ECX, count in EAX, RET 8.
-int32_t __stdcall NPCMENU_CheckQuestDependentCallbacks(struct D2NpcQuestCallbackEntry * pCallbackTable, int32_t nNpcClassId, struct D2BitBufferStrc * pBitBuffer, int32_t nEntryCount);
+void __fastcall NPCMENU_AddHandledMessageId(short wMsgId);
 void inline_NPC_IsInteractableSideNpc(int32_t nNpcClassId);
 int __stdcall NPCMENU_ShowSelectedDialogOption();
 int __stdcall NPCMENU_ShowGossipDialog();
 int __stdcall NPCMENU_ShowIntroduceDialog();
-int NPCMENU_CalculateDialogPosition(POINT * pPoint);
 BOOL __stdcall CheckSpeachVersusInteractedUnit();
 int __stdcall NPCMENU_EmptyDialogDrawHandler();
 int __stdcall NPCMENU_OpenTradeWithNpc();
 void __stdcall NPCMENU_HireMerc();
 BOOL NPCMENU_IsItemIdentified(struct D2UnitStrc * pUnit);
-int NPCMENU_CanItemBeRepaired(struct D2UnitStrc * pUnit);
 // Cain's "Identify Items" (4020 NPCIdentify1) option callback: slot 1 of the Cain rows 16, 17, 18, 19 and 38 (cain2, cain5, cain3, cain4, cain6); installed by NPCMENU_InitializeMenuOptions and NPCMENU_EnableCainIdentifyOption.
 // Halts if the transaction-wait dialog (gpNpcHireMercDialog) is already open. Otherwise opens it with 3353 "Waiting for confirmation of transaction...", sets a 60 s deadline, NPC UI state 10, gnNpcMenuTransactionType = 4, and sends C->S 0x34 (NPC GUID) = identify all items. Returns 1.
 int __stdcall NPCMENU_CainIdentifyOptionCallback();
@@ -130,7 +125,6 @@ void __fastcall NPCMENU_OnItemPutInBelt(int32_t nUnitGUID);
 void __fastcall NPCMENU_OnItemInShop(int32_t nUnitGUID);
 BOOL __fastcall NPCMENU_CalculateItemTransactionCost(struct D2UnitStrc * pUnit, int32_t nTransactionMode, int * pInventory, uint16_t * pszBuffer, int32_t nBufferMaxLen);
 uint32_t __stdcall NPCMENU_IsShopActive();
-int32_t NPCMENU_FindMenuIndexByNpcId(int32_t nParam);
 BOOL __stdcall NPCMENU_ConfirmTransactionCallback();
 void __stdcall NPCMENU_ShowTransactionConfirmDialog();
 BOOL __fastcall GetInteractedUnitGuid(int * pNpcGUID);
@@ -177,7 +171,6 @@ void __stdcall NPCMENU_CloseStashUI();
 int __stdcall NPCMENU_EmptyDrawCallback1();
 // Returns 0 while gnNpcMenuActiveMode is set. Otherwise frees gpNpcActionConfirmDialog, sets the NPC UI state to none, resets inventory hover, closes the NPC interaction and resets UI_NPCMENU; returns 1. fpDialogFunc2 of the action-confirm dialog, also called by its OK handler.
 int __stdcall NPCMENU_CloseConfirmDialogAndInteraction();
-void __stdcall NPCMENU_SendCainIdentifyItems(char cParam, int32_t nParam);
 // A two-liner:
 // NPCMENU_SendCainIdentifyItems('\x01', g_nNpcTradeMenuState->nGossip). In the callee
 // @004b40d0 a non-zero first argument makes it re-read g_nNpcTradeMenuState->nGossip and
@@ -245,8 +238,6 @@ void __fastcall NPCMENU_HandleTradePacket(struct D2GSPacketSrv0x2A * pPacket);
 // Kashya (monstats 150) menu row 11: adds option string 3397 (NPCMenuHire, "Hire") with callback NPCMENU_BuildMercHireMenu (count 2->3). Returns 1.
 // Called from the NPC quest table (entry 2: quest 2, state flag 0, Sisters' Burial Grounds) and from NPCMENU_HandleMenuSelection when the player level is 8 or more.
 int __stdcall NPCMENU_EnableKashyaHireOption();
-// bAddTradeOption: 0 removes the trade option from the NPC's menu, nonzero inserts it (before the hire option).
-BOOL __stdcall NPCMENU_ConfigureMenuOption(BOOL bAddTradeOption, int32_t nNpcMenuOptionId);
 // Warriv (monstats 155) menu row 13: adds option string 3382 (WarrivMenu1b, "Go East") with callback 004b5140.
 // NPC quest table entry 0: quest 6, state flag 0 (Sisters to the Slaughter).
 int __stdcall NPCMENU_EnableWarrivGoEastOption();
@@ -274,5 +265,6 @@ int __stdcall NPCMENU_AkaraRespecOptionCallback();
 // NPC quest table entry 4: quest 1, state flag 0 (Den of Evil).
 int __stdcall NPCMENU_EnableAkaraRespecOption();
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca09b(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
+// 6 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::npcmenu

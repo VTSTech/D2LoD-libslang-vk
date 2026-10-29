@@ -153,7 +153,7 @@ void __fastcall MISSILE_InitializeVisual(D2UnitStrc * pUnit, int32_t nParam) {
     pUnit->nGfxCurrentFrame = nRandFrame << 8;
 }
 
-int32_t MISSILE_GetSpeedByRemainingFrames(D2UnitStrc * pUnit) {
+static int32_t MISSILE_GetSpeedByRemainingFrames(D2UnitStrc * pUnit) {
     int32_t nRemainingFrames = D2Common::Units::Missile::GetRemainingFrames(pUnit);
     if (nRemainingFrames < 0x7d) {
       return 0x19;
@@ -165,7 +165,7 @@ int32_t MISSILE_GetSpeedByRemainingFrames(D2UnitStrc * pUnit) {
     return 10;
 }
 
-int32_t MISSILE_GetPoisonNovaRadius(int32_t pMissileTxtRaw, int32_t nCurrentFrame) {
+static int32_t MISSILE_GetPoisonNovaRadius(int32_t pMissileTxtRaw, int32_t nCurrentFrame) {
     if (0x1d >= nCurrentFrame) {
       return 1;
     }
@@ -205,7 +205,7 @@ int32_t __fastcall MISSILE_CltHitFn10_ProgOverlay(D2UnitStrc * pUnit, D2UnitStrc
 }
 
 // Configures a homing missile (pUnit2) to track pUnit or a fixed target coordinate. Computes range from missile txt data and skill level, sets total/current frames, then either sets a unit target (mode 5, collision distance) or a world-coordinate target (mode 6, distance to XY). If the computed distance is under 25 tiles, immediately triggers PATH_CalculatePath to begin pursuit.
-void __stdcall MISSILE_SetupHoming(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static void __stdcall MISSILE_SetupHoming(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     eD2UnitType eUnitType;
     if (!pUnit2) {
       return;
@@ -271,7 +271,7 @@ void __stdcall MISSILE_SetupHoming(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
 }
 
 // Retargets a homing missile to the closest valid enemy. Reads search radius from MissilesTxt[missile.classId].Param2, checks target flags (bit 2 = already locked), resolves the missile owner, then calls SKILL_FindClosestTargetWithStats from the missile's current position. On success calls MISSILE_SetupHoming to redirect the missile. Returns 0 on success, 1 on any early-out (null unit, bad classId, already locked, no owner).
-BOOL MISSILE_RetargetClosest(D2UnitStrc * pUnit) {
+static BOOL MISSILE_RetargetClosest(D2UnitStrc * pUnit) {
     if (!pUnit) {
       return 1;
     }
@@ -487,7 +487,7 @@ int __stdcall LIGHTMAP_GetQualityLevel() {
     return gnLightmapQualityLastCheck;
 }
 
-uint32_t __stdcall MISSILE_CanHitTarget(D2UnitStrc * pUnit, D2UnitStrc * pUnit1, D2MissilesTxt * pMissileTxt, D2UnitStrc * pUnit2) {
+static uint32_t __stdcall MISSILE_CanHitTarget(D2UnitStrc * pUnit, D2UnitStrc * pUnit1, D2MissilesTxt * pMissileTxt, D2UnitStrc * pUnit2) {
     bool bIsValidTarget;
     if (!(pUnit1 && pUnit1->eUnitFlags >> 3 & 1 && pUnit1->eUnitFlags >> 2 & 1)) {
       return 0;
@@ -617,7 +617,7 @@ void __fastcall MISSILE_FreeClientMissile(D2UnitStrc * pUnit) {
     pUnit->pPath.pStaticPath = 0;
 }
 
-void MISSILE_UpdateLightFlicker(D2UnitStrc * pUnitRaw) {
+static void MISSILE_UpdateLightFlicker(D2UnitStrc * pUnitRaw) {
     D2MissilesTxt* pMissileTxt;
     int nMissileClassId;
     if (!pUnitRaw || (nMissileClassId = pUnitRaw->nClassId , nMissileClassId < 0) || sgptDataTable->nTxtMissilesSize <= nMissileClassId) {
@@ -660,7 +660,7 @@ int32_t __fastcall MISSILE_CltHitFn40_HealingBolt(D2UnitStrc * pUnit, D2UnitStrc
     return (uint32_t)(nRosterOwnerGUID == pOwner->nUnitGUID);
 }
 
-int32_t MISSILE_GetSpeedTier(int32_t nParam) {
+static int32_t MISSILE_GetSpeedTier(int32_t nParam) {
     if (nParam < 0x96) {
       return 0x14;
     }
@@ -674,7 +674,7 @@ int32_t MISSILE_GetSpeedTier(int32_t nParam) {
     return 10;
 }
 
-int MISSILE_CheckAndDecrementPierce(D2UnitStrc * pUnit) {
+static int MISSILE_CheckAndDecrementPierce(D2UnitStrc * pUnit) {
     D2MissilesTxt* pMissileTxt;
     int nResult = 3;
     int32_t nMissileClassId = D2Common::Units::Missile::GetClassId(pUnit);
@@ -728,7 +728,7 @@ void __fastcall MISSILE_RemoveClientSide(D2UnitStrc * pUnit) {
 }
 
 // Computes and stores the pierce count for missile pUnit against target pUnit2 (player or monster only). Checks MissilesTxt pierce flag (bit 2); if set, sums UNITSTAT_skill_pierce + UNITSTAT_item_pierce on the target, then runs a seeded RNG loop (up to 4 iterations) comparing random%100 against pierce chance to count successful pierces. Writes the result to missile's UNITSTAT_pierce_idx stat. Uses UNITSTAT_pierce_idx on the target as the RNG seed index for non-local players.
-void __stdcall MISSILE_CalculatePierceCount(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static void __stdcall MISSILE_CalculatePierceCount(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     D2MissilesTxt* pMissileTxt;
     D2UnitStrc* pLocalPlayer;
     int32_t local_10;
@@ -1581,7 +1581,7 @@ void __fastcall MISSILE_SetupDescentAnim(D2UnitStrc * pUnit) {
 }
 
 // Spawns a child missile (nMissileId) at a random offset within nRadius tiles of the parent missile pUnit2, using the parent's seed RNG. Avoids spawning exactly at origin by nudging X by +1 if both offsets resolve to zero. Sets the new missile's TargetX/TargetY to the chosen offset and returns the new missile unit pointer.
-D2UnitStrc * __stdcall MISSILE_CreateRandomOffset(D2UnitStrc * pUnit, eMissilesId nMissileId, int32_t nRadius, D2UnitStrc * pUnit2) {
+static D2UnitStrc * __stdcall MISSILE_CreateRandomOffset(D2UnitStrc * pUnit, eMissilesId nMissileId, int32_t nRadius, D2UnitStrc * pUnit2) {
     uint32_t nRandX;
     D2SkillArgStrc sSkillArg;
     D2SeedStrc sSeedTmp;
@@ -4599,7 +4599,7 @@ int32_t __fastcall MISSILE_CltHitFn47_CatapultSpikeBall(D2UnitStrc * pUnit, D2Un
 }
 
 // Molten Boulder splash/debris spawner. Resolves the missile's owner and source position (static or dynamic path). Spawns nSplashCount randomly-scattered Moltenboulder-flyingrocks missiles around the impact point (seeded from the missile's RNG, requiring distance>3 from origin), then, if nDebrisMissileId>=0, spawns a fixed ring of debris missiles using the gaRockDebrisSpreadConstY/gaRockDebrisSpreadTableX offset tables. All sub-missiles inherit the owner, skill id and skill level. No return value.
-void __stdcall MISSILE_CreateFlyingRockDebris(D2UnitStrc * pMissileUnit, int32_t nSplashCount, int32_t nVelocity, int32_t nDebrisCount, eMissilesId nDebrisMissileId) {
+static void __stdcall MISSILE_CreateFlyingRockDebris(D2UnitStrc * pMissileUnit, int32_t nSplashCount, int32_t nVelocity, int32_t nDebrisCount, eMissilesId nDebrisMissileId) {
     // Static local variables (originally global data)
     static int gaRockDebrisSpreadConstY[18] = {
     0x2,
@@ -5041,7 +5041,7 @@ int32_t __fastcall MISSILE_CltHitFn60_Nihlithak(D2UnitStrc * pUnit, D2UnitStrc *
 }
 
 // Spawns a missile at a random position within nRadius tiles of pUnit's current location. Advances pUnit->sSeed twice (LCG 0x6AC690C5) to pick independent random X and Y offsets in [0, 2*nRadius), then fills a D2SkillArgStrc with the owner, origin, skill id, level, and the jittered target coords (unitPos +/- offset - radius), and calls MakeMissile. Works for both static-path and dynamic-path units.
-void __stdcall MISSILE_CreateRandomOffsetHit(int32_t nRadius, eMissilesId nMissileId, D2UnitStrc * pUnit) {
+static void __stdcall MISSILE_CreateRandomOffsetHit(int32_t nRadius, eMissilesId nMissileId, D2UnitStrc * pUnit) {
     D2SeedStrc DVar1;
     uint64_t uVar2;
     int nPosXorY;
@@ -5353,7 +5353,7 @@ int32_t __fastcall MISSILE_CltHitFn43_HfFragment2(D2UnitStrc * pUnit, D2UnitStrc
 }
 
 // Spawns a fixed ring of 14 fragment missiles (MISSILE_Hffragment1) radiating outward from a parent missile unit, used by the Frozen Orb / Hydra-style ring-burst effect. Uses a hardcoded table of 14 (dx, dy) offset pairs to define the ring geometry; computes per-fragment travel distance via Manhattan-distance approximation to set nTotalFrames proportional to pTxtMissiles->Range. After spawning each fragment, sets its target X (from nParam) and a seeded random target Y offset (+/-11 frames) for spread. Iterates all 14 slots regardless of spawn failures.
-void __stdcall MISSILE_CreateCircularRing(D2UnitStrc * pUnit, int32_t nParam) {
+static void __stdcall MISSILE_CreateCircularRing(D2UnitStrc * pUnit, int32_t nParam) {
     D2UnitStrc* pFragMissile;
     int nAbsOffY;
     int nAbsOffX;
@@ -5624,7 +5624,7 @@ int32_t __fastcall MISSILE_CltHitFn41_DurielDeathRock(D2UnitStrc * pUnit, D2Unit
 }
 
 // Creates a missile aimed in the direction a monster is facing, used for upgrade/transform attacks. Retrieves upgrade skill direction vector via MONSTERS_GetUpgradeSkillsAndCount, randomises spawn position near pUnit2's location using its seed (±10 tiles), creates the missile via MakeMissile, then sets its particle position and offset vectors using the facing direction converted to screen space. Asserts missile Range == 25.
-void __stdcall MISSILE_CreateAtMonsterFacing(D2UnitStrc * pUnit, eMissilesId nMissileId, D2UnitStrc * pUnit2) {
+static void __stdcall MISSILE_CreateAtMonsterFacing(D2UnitStrc * pUnit, eMissilesId nMissileId, D2UnitStrc * pUnit2) {
     D2MissilesTxt* pMissileTxt;
     D2SkillArgStrc sSkillArg;
     int nPosXorY = 0;
@@ -5690,7 +5690,7 @@ void __stdcall MISSILE_CreateAtMonsterFacing(D2UnitStrc * pUnit, eMissilesId nMi
 }
 
 // Spawns a randomized debris missile around a source unit (pUnit2), used for the Nihlathak debris/swoosh effect. Advances pUnit2's RNG seed to pick one of four cardinal offset directions from the source position and a random depth offset, then selects one of MISSILE_Nehlithakdebris1..4 (or Nehlithakswoosh) via seed % 30. Builds a D2SkillArgStrc (owner=pUnit, skill/level taken from pUnit2) and calls MakeMissile; on success sets the new missile's shifted Z position and its target X/Y to the source unit's current position. No return value.
-void __stdcall MISSILE_CreateRandomCardinal(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static void __stdcall MISSILE_CreateRandomCardinal(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     int nTargetX;
     D2SkillArgStrc sSkillArg;
     int32_t aCardinalOffsetA[4];
@@ -5792,7 +5792,7 @@ void __stdcall MISSILE_CreateRandomCardinal(D2UnitStrc * pUnit, D2UnitStrc * pUn
 }
 
 // Spawns a MISSILE_Brdeathlightningbolt (Baal death lightning) at a seeded-random offset target. Derives nTargetX/Y from pUnit2's RNG seed (range ±0x14 in both axes); falls back to a nonzero X if both are zero. Sets the new missile's target coords and applies a -10 Z shift (SetPosVectorShifted) for visual depth.
-void __stdcall MISSILE_CreateBaalLightningBolt(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static void __stdcall MISSILE_CreateBaalLightningBolt(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     D2SkillArgStrc sSkillArg;
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.pOwner = pUnit;
@@ -5828,7 +5828,7 @@ void __stdcall MISSILE_CreateBaalLightningBolt(D2UnitStrc * pUnit, D2UnitStrc * 
     Engine::Particle::SetPosVectorShifted(pNewMissile, 0, 0, -10);
 }
 
-void __stdcall MISSILE_CreateDebrisWithCollision(int32_t nParam1, D2UnitStrc * pUnit, int32_t nParam2) {
+static void __stdcall MISSILE_CreateDebrisWithCollision(int32_t nParam1, D2UnitStrc * pUnit, int32_t nParam2) {
     D2SkillArgStrc sSkillArg;
     int32_t eCollisionFlag = 1;
     eD2CollisionUnitSize nCollideWidth = COLLISION_UNIT_SIZE_BIG;
@@ -6025,7 +6025,7 @@ int32_t __fastcall MISSILE_CltHitFn48_CatapultColdBall(D2UnitStrc * pUnit, D2Uni
 }
 
 // Spawns Anya's steam vent missiles (MISSILE_Anyasteamvent + MISSILE_Anyasteam) at a randomly chosen unblocked tile near (nX, nY). Up to 4 attempts: each iteration advances pMissile's RNG seed to pick a random offset within a ~34x34 tile window, then calls CheckCollision_BlockPlayerMissile to reject blocked tiles. On success, fills a D2SkillArgStrc with the owner, skill ID, level, and chosen coordinates, then calls MakeMissile twice for the vent and steam sub-missiles.
-void __stdcall MISSILE_CreateSteamVent(D2UnitStrc * pUnit, int32_t nX, int32_t nY, D2UnitStrc * pMissile) {
+static void __stdcall MISSILE_CreateSteamVent(D2UnitStrc * pUnit, int32_t nX, int32_t nY, D2UnitStrc * pMissile) {
     eCollisionFlags eCollision;
     int nCandidateY;
     int nRandY;

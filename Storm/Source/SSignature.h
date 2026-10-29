@@ -47,8 +47,6 @@ namespace Storm::Source::SSignature {
 // Function declarations
 struct BigData * * __fastcall SSIG_InitBigNum(struct BigData * * pBigNum);
 void __fastcall SSIG_FreeBigNum(void * * pBigNum);
-BOOL SSIG_FindSignatureMarker(int32_t nOffset, uint32_t nTotalSize, int32_t pBuffer, int * pnFoundOffset);
-void __stdcall SSIG_HashData(uint32_t nDataLen, uint8_t * pData, int32_t pDigestOut);
 // @sourcefile .\SOURCE\SSignature.cpp
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SSIG_AllocContext. Storm export, exact string "SSignatureVerifyStream_Begin" (PPC export vector 100cdfc4 -> code 100a3c90). Basis: callee set {operator new / SMemAlloc, Sha1::Initialize} == 1.14d {SMemAlloc, Sha1_Initialize}, and PPC reads exactly r3,r4,r5 = 3 args, matching this function's 3 params. Allocates the 0x78-byte verify-stream context and a nModulusLen+4 data buffer, and inits the embedded Sha1 at ctx+0x18.
@@ -117,5 +115,6 @@ void __fastcall CryptRSA_Prepare(void * pModulusBytes, uint32_t nModulusLen, voi
 void __fastcall CryptRSA_Process(void * pData, uint32_t nDataLen, struct BigData * * ppKey);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9ef8(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9f28(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
+// 2 internal functions (defined in .cpp)
 
 } // namespace Storm::Source::SSignature

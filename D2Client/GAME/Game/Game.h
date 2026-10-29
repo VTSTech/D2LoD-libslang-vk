@@ -99,7 +99,7 @@ void __fastcall SetGlobalAlwaysRun(int32_t nValue);
 BOOL __stdcall GetGlobalAlwaysRun();
 void __fastcall GAMEDATA_SetClickModifier(int32_t bModifierDown);
 // Compute mouse click modifier flags (run/always-run, modifier key).
-uint32_t GetMouseClickFlags();
+uint32_t __stdcall GetMouseClickFlags();
 void __stdcall GAME_SetMouseButtonEventPending();
 uint8_t __stdcall GAME_GetPrimaryClickState();
 uint8_t __stdcall GAME_GetMouseButtonEventState();
@@ -267,13 +267,12 @@ uint32_t __stdcall GetStepsOfMissileMovement();
 eD2GSGameType __stdcall CLIENT_GetD2GSGameType();
 void __fastcall GAMEDATA_ExtendTimeout(int32_t nDelayMs);
 void __stdcall GAMEDATA_LoadActTiles(uint32_t nAct);
-void GAMEDATA_CheckColorTxtOverride(uint32_t pUnused);
 BOOL __stdcall GAMEDATA_GetBloodFlag();
 void __fastcall CLIENT_SetDifficulty(char nDifficulty);
 void __fastcall CLIENT_SetExpansion(bool bExpansion);
 void __fastcall CLIENT_SetLadder(BOOL bLadder);
 uint32_t __stdcall GAMEDATA_GetLadderOrGameType();
-BOOL CLIENT_CheckExpansion();
+BOOL __stdcall CLIENT_CheckExpansion();
 uint8_t __stdcall GetDificulity();
 // Clear in-game UI flags for several UI elements (data_0070f2c4/348/360).
 void __stdcall ClearInGameUIFlags();
@@ -316,5 +315,6 @@ BOOL __stdcall RegisterCmdLineLngOption();
 void __stdcall FreeLanguage();
 void __stdcall thunk_GAMEDATA_CheckAutomapCenterOnLoad();
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca026(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Client::GAME::Game

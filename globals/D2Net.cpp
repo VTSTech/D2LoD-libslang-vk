@@ -196,14 +196,7 @@ int NET_D2GS_CLIENT_INCOMING_SIZE[181] = {
     0x5
 }; D2_GLOBAL_GUARD(NET_D2GS_CLIENT_INCOMING_SIZE, "NET_D2GS_CLIENT_INCOMING_SIZE");
 
-_RTL_CRITICAL_SECTION lpCriticalSection_00882ce8 = {
-    /* .DebugInfo = */ nullptr,
-    /* .LockCount = */ 0,
-    /* .RecursionCount = */ 0,
-    /* .OwningThread = */ nullptr,
-    /* .LockSemaphore = */ nullptr,
-    /* .SpinCount = */ 0
-}; D2_GLOBAL_GUARD(lpCriticalSection_00882ce8, "lpCriticalSection_00882ce8");
+_RTL_CRITICAL_SECTION lpCriticalSection_00882ce8 = {}; D2_GLOBAL_GUARD(lpCriticalSection_00882ce8, "lpCriticalSection_00882ce8");
 
 eD2GSConnectionType nD2GSConnectionType = 0; D2_GLOBAL_GUARD(nD2GSConnectionType, "nD2GSConnectionType");
 

@@ -33,7 +33,7 @@ void __fastcall Q19_Callback02_NpcDeactivate(struct D2QuestDataStrc * pQuestData
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q2.cpp
 void __fastcall Q19_Callback11_ScrollMessage(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q19_SequenceFilter (Khalim's Will). Sequence-chain filter: if this quest not yet at StateFlag 5 and is active, bumps StateFlag 0->1 and returns. Otherwise chains to the next quest's (nSequenceQuestId=QUEST_AbleGoToAct3) sequence filter, halting on a bad fn ptr. Pure StateFlag gating; no QuestRecord writes.
-void __fastcall Q19_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q19_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // Q19_SendQuestStatePacket (Khalim's Will). Builds and sends the 0x5D quest-state packet to the player's client conveying which Khalim's Will sub-stage/relic message to display. No QuestRecord transitions; pure client notification.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q2.cpp
 void __fastcall Q19_SendQuestStatePacket(uint8_t bStateByte, struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);

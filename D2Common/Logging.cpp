@@ -5,7 +5,6 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -19,7 +18,7 @@ void __stdcall MISC_SafeStrncpy(char * szText, size_t nSize) {
 }
 
 // NOTE: Callee-saved register params inferred (medium confidence): pchar (EBX): char*
-void __fastcall StoreLogging(char * szFormat, va_list pArgs, FILE * pFile, uint32_t nThreadId, uint32_t nLogLevel, uint32_t nComponent, uint32_t nSubsystem, uint32_t nSequence, char * szContext) {
+static void __fastcall StoreLogging(char * szFormat, va_list pArgs, FILE * pFile, uint32_t nThreadId, uint32_t nLogLevel, uint32_t nComponent, uint32_t nSubsystem, uint32_t nSequence, char * szContext) {
     size_t nHeaderLen;
     int nMessageLen;
     char* szOutput;
@@ -52,21 +51,23 @@ void __fastcall StoreLogging(char * szFormat, va_list pArgs, FILE * pFile, uint3
       fwrite(szLogLineBuf, (int)szOutput - (int)(szLogLineBuf + 1), 1, pLogFile);
       fflush(pFileToFlush);
     }
-
-    Fog::Debug::GuardStack();
 }
 
 void LOGGING_FilePrintf(FILE * pFile, uint32_t dwGame, uint32_t dwFrame, uint32_t dwClient, uint32_t dwLogType, char * szFilename, uint32_t nLine, char * szFormatString, ...) {
-    StoreLogging(szFormatString, (va_list)((uint8_t*)&szFormatString + 4), pFile, dwGame, dwFrame, dwClient, dwLogType, nLine, szFilename);
+    va_list __va;
+    va_start(__va, szFormatString);
+    StoreLogging(szFormatString, __va, pFile, dwGame, dwFrame, dwClient, dwLogType, nLine, szFilename);
 }
 
 void LOGGING_LogLine(int32_t nGame, int32_t nFrame, int32_t nClient, int32_t nLogType, char * szFilename, int32_t nLine, char * szFormatString, ...) {
+    va_list __va;
+    va_start(__va, szFormatString);
     if (!pLOGFILE) {
       return;
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0096ca30);
-    StoreLogging(szFormatString, (va_list)((uint8_t*)&szFormatString + 4), pLOGFILE, nGame, nFrame, nClient, nLogType, nLine, szFilename);
+    StoreLogging(szFormatString, __va, pLOGFILE, nGame, nFrame, nClient, nLogType, nLine, szFilename);
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0096ca30);
 }
 
@@ -76,6 +77,8 @@ void LOGGING_LogLine(int32_t nGame, int32_t nFrame, int32_t nClient, int32_t nLo
 // time/thread/level logger. Two different loggers, one name.
 // @caveat zero xrefs - called through a pointer or dead. Name derived from its format strings.
 void StoreGameLogging(int32_t nGame, int32_t nFrame, void * pClient, int32_t nParam1, int32_t nLogTypeArg, int32_t nParam2, ...) {
+    va_list __va;
+    va_start(__va, nParam2);
     char* pszScan;
     size_t nPrefixLen;
     char* pszBody;
@@ -107,7 +110,7 @@ void StoreGameLogging(int32_t nGame, int32_t nFrame, void * pClient, int32_t nPa
       pszBody = szLogLine + ((int)pszScan - (int)(szLogLine + 1));
       nSize = 500 - ((int)pszScan - (int)(szLogLine + 1));
       nPrefixLen = Storm::Source::SSTR::SStrPrintf(pszBody, nSize, "Size:%d\n", nLogTypeArg);
-      Storm::Source::SSTR::SStrVPrintf(pszBody + nPrefixLen, nSize - nPrefixLen, (char*)nParam2, (va_list)((uint8_t*)&nParam2 + 4));
+      Storm::Source::SSTR::SStrVPrintf(pszBody + nPrefixLen, nSize - nPrefixLen, (char*)nParam2, __va);
       pszScan = pszBody + nPrefixLen - 1;
       do {
         pszBody = pszScan;
@@ -123,8 +126,6 @@ void StoreGameLogging(int32_t nGame, int32_t nFrame, void * pClient, int32_t nPa
       fflush(pLOGFILE);
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0096ca30);
     }
-
-    Fog::Debug::GuardStack();
 }
 
 bool __fastcall LOGGING_OpenLogFile(char * szLogFileName) {

@@ -18,13 +18,12 @@
 #include "Fog/Src/Excel.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "Storm/D2ArchiveStrc.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -35,7 +34,7 @@ typedef int (__fastcall *CalcGetKeyWordToNumber_t)(char * szKey);
 
 namespace D2Common::DATATBLS::MissileTbls {
 
-void MISSILETBLS_PadCodeTo4Chars(char * szText1, char * szText2) {
+static void MISSILETBLS_PadCodeTo4Chars(char * szText1, char * szText2) {
     char cLastChar;
     if (*szText1 == '\0') {
       cLastChar = ' ';
@@ -166,9 +165,7 @@ void __fastcall MissileCalcLinker(char * pSrc, void * pRecord, int32_t nOffset, 
     size_t sVar1;
     int32_t nParsedLen;
     uint8_t byCalcBuf[1024];
-    uint32_t nStackGuard = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (!pRecord) {
-      Fog::Debug::GuardStack();
       return;
     }
     if (pSrc) {
@@ -176,13 +173,11 @@ void __fastcall MissileCalcLinker(char * pSrc, void * pRecord, int32_t nOffset, 
       if (0 < (int)sVar1) {
         nParsedLen = DataTbls::DATATBLS_AppendDataToBuffer(&sgtDataTable.pMissCode, &sgtDataTable.nMissCodeSize, &sgtDataTable.nMissCodeCapacity, byCalcBuf, sVar1);
         *(int32_t*)(nOffset + (int)pRecord) = nParsedLen;
-        Fog::Debug::GuardStack();
         return;
       }
     }
 
     *(uint32_t*)(nOffset + (int)pRecord) = -1;
-    Fog::Debug::GuardStack();
 }
 
 // Validates a single field of a D2MissilesTxt row (indexed by nMissileIdx) against [nMinVal, nMaxVal] and clamps it in-place if out of range. Reads the field via eFieldType (0=signed byte, 1=unsigned byte, 2=signed short, 3=unsigned short, 4=uint32) at nFieldOffset into the Missile sub-struct. On violation, walks pFieldDescArray to find the matching descriptor, then writes back the clamped value at the same offset and width.
@@ -1036,7 +1031,7 @@ void __fastcall TXT_AllocTxt_missiles(D2PoolManagerStrc * pMemory) {
 // @sourcefile .\DATATBLS\MissileTbls.cpp
 void __stdcall MISSILETBLS_FreeTxt() {
     if (sgtDataTable.pMissCode) {
-      D2_FREE_POOL(nullptr, sgtDataTable.pMissCode);
+      D2_FREE_POOL_AT(nullptr, sgtDataTable.pMissCode, ".\\DATATBLS\\MissileTbls.cpp", 0x19e);
       sgtDataTable.pMissCode = 0;
     }
 

@@ -251,34 +251,11 @@ void SFILE_DecompressLzw_BufferWrite(void * pSrc, uint32_t * pnBytes, void * pBu
 // so SFile owning its own explode wrapper alongside SComp's is the real structure, not an error.
 // @blizzard DecompressLzw (SFILE.CPP)
 int32_t __stdcall SFILE_DecompressLzw(int32_t pSrcData, int32_t pDstData, int32_t nDstSize);
-// @blizzard Decrypt (SFILE.CPP)
-void SFILE_Decrypt(uint32_t nSeed, uint32_t * pData, uint32_t nByteLen);
-// @blizzard Hash (SFILE.CPP)
-uint32_t __stdcall SFILE_Hash(int32_t nHashKind, char * szText);
-// @sourcefile .\SOURCE\SFILE.CPP
-// @blizzard InitializeHashSource (SFILE.CPP)
-void SFILE_InitializeHashSource(uint32_t nSeed);
-// @blizzard ReadFileChecked (SFILE.CPP)
-int __stdcall SFILE_ReadFileChecked(int32_t * pMPQFile, void * pOutputBuf, uint32_t nBytesToRead, uint32_t * pnBytesRead, HANDLE hFile, LPDWORD pdwBytesRead, int32_t nFileOffset);
-int __stdcall SFILE_SyncReadFile(void * pOutputBuf, uint32_t nBytesToRead, uint32_t * pnBytesRead, int32_t nFileOffset, struct D2MPQFileStrc * pFileHandle);
-struct D2MPQBlockEntryStrc * SFILE_GetBlockTableEntry(struct D2ArchiveStrc * pArchive, int32_t nHashIndex);
-// @blizzard SearchHashTable (SFILE.CPP)
-uint32_t __stdcall SFILE_SearchHashTable(struct D2ArchiveStrc * pArchive, int16_t nLocale, char cPlatform, char * szFileName);
 void __fastcall SFILE_ShiftSectorTable(int32_t pSectorTable, uint32_t nSectorCount);
-int32_t SFILE_GetStreamPosition(struct D2StormAudioStreamRec * pStream);
-void SFILE_HandleAsyncReadError(struct D2StormAsyncOpStrc * pAsyncOp);
 // @blizzard BuildDefaultBasePath (SFILE.CPP)
 void __stdcall SFILE_BuildDefaultBasePath();
-// @blizzard CheckArchiveHandle (SFILE.CPP)
-int SFILE_CheckArchiveHandle(struct D2ArchiveStrc * pArchive, struct D2ArchiveStrc * * ppArchive);
-uint32_t SFILE_FileExistsOnDisk(LPCSTR szText);
-// @blizzard CheckFileHandle (SFILE.CPP)
-int SFILE_CheckFileHandle(struct D2MPQFileStrc * pMPQFile, struct D2MPQFileStrc * * ppMPQFile);
 // @blizzard CheckForCdRom (SFILE.CPP)
 BOOL __stdcall SFILE_CheckForCdRom(char * szText);
-// @blizzard ConvertRelativePathName (SFILE.CPP)
-void __stdcall SFILE_ConvertRelativePathName(int32_t bStripDir, char * szFileName, char * szOutPath);
-uint32_t __stdcall SFILE_FindFileOnDisk(uint8_t bSearchFlags, LPCSTR szOutPath, char * szFileName);
 void __stdcall SFILE_EnsureHashSource();
 // @sourcefile .\SOURCE\SFILE.CPP
 // Verifies an archive's RSA signature (default key gaSFileSignatureRsaModulus/0x100, gaSFileSignatureRsaExponent/4 when both key pointers are null). Writes 1 or 5 to *pdwAuthResult (5 = verified) and returns result==5. The pArchive, nModulusLen and nExponentLen slots are reused for the verify context, the saved file position and the read count.
@@ -418,14 +395,6 @@ uint32_t __fastcall SFILE_CompareFileName(int * pLeft, int * pnParam);
 // @sourcefile .\SOURCE\SFILE.CPP
 // @blizzard InternalReadAligned (SFILE.CPP)
 uint32_t __stdcall SFILE_InternalReadAligned(struct D2MPQFileStrc * pArchive, uint32_t nFileOffset, uint32_t * pDstBuf, uint32_t nReadLen);
-// Reads the sector-aligned run that starts at byte offset nAlignedOffset (417040 passes nFileOffset & ~(nSectorSize-1))
-// into the archive's shared sector buffer, reusing the cached result when (pMPQFile, nAlignedOffset) matches the last call;
-// the run is clipped to the file size at [pHashEntry+8] unless [pHashEntry+0xc] has bits 0xff00 set. Inputs are EDX and ESI only;
-// ECX is scratch (first written at 00416fcd).
-// @blizzard InternalReadAlignedSector (SFILE.CPP)
-uint32_t SFILE_InternalReadAlignedSector(uint32_t nAlignedOffset, struct D2MPQFileStrc * pMPQFile);
-// @blizzard InternalReadUnaligned (SFILE.CPP)
-uint32_t __stdcall SFILE_InternalReadUnaligned(struct D2MPQFileStrc * pMPQFile, uint32_t * pOutputBuf, uint32_t nBytesToRead, uint32_t nFileOffset);
 // @sourcefile .\SOURCE\SFILE.CPP
 // @blizzard SFileAuthenticateArchive (SFILE.CPP)
 int __stdcall SFileAuthenticateArchive(struct D2ArchiveStrc * pArchive, uint32_t * pdwAuthResult);
@@ -488,8 +457,6 @@ int __stdcall SFileOpenFileEx(struct D2ArchiveStrc * pArchive, char * szFileName
 struct D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord3(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
 uint32_t __fastcall SFILE_RemoveAsyncRequestFromQueue(void * pListContext, int * pNode);
 struct D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord4(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
-// @blizzard IssueRequest (SFILE.CPP)
-struct D2StormAsyncOpStrc * __stdcall SFILE_IssueRequest(uint32_t nFileOffset, uint32_t pChunkWritePtr, uint32_t pReadBufferBase, struct IDirectSoundBuffer * pStream, uint32_t pUserCtx2, struct D2StormAudioStreamRec * pParentStream, uint32_t nChunkSize, int32_t nTimeoutMs, uint32_t bUrgent, HANDLE hCompletionEvent, uint32_t bQueueImmediately, int32_t bIsLastChunk, struct D2StormAsyncCompletionStrc * pCompletion, struct D2MPQFileStrc * pMPQFile);
 // @blizzard SFileCloseFile (SFILE.CPP)
 int __stdcall SFileCloseFile(struct D2MPQFileStrc * pMPQFile);
 // @blizzard SFileOpenFile (SFILE.CPP)
@@ -528,8 +495,6 @@ void __stdcall SFILE_SelectAsyncRequest(int32_t nFileHandle, uint32_t nCurrentFi
 DWORD __stdcall SFILE_CdThreadProc(void * lpThreadParam);
 // @blizzard CreateCdThread (SFILE.CPP)
 void __stdcall SFILE_CreateCdThread();
-// Under the SFile lock, sets the urgent flag (+0x1c) of every queued Storm read request whose buffer base (+0x24, SFILE_IssueRequest) is pReadBuffer. No-op if pReadBuffer is NULL. SFILE_SelectAsyncRequest caps an urgent request's deadline at 1000 ms (0041a51a).
-void SFILE_SetRequestUrgentByBuffer(void * pReadBuffer, BOOL bUrgent);
 // Cancels async request without returning status. Validates handle (sets ERROR_INVALID_PARAMETER if zero), then calls SFILE_CancelAsyncRequest(param1, 0). Called by ASYNCDATA_Free to silently cancel pending I/O during cleanup.
 void __stdcall SFILE_CancelAsyncRequestNoReturn(int32_t nParam);
 // Cancels async request and returns status. Validates handle (returns 0 + ERROR_INVALID_PARAMETER if zero), then calls SFILE_CancelAsyncRequest(param1, 0) and returns its result (1=success, 0=failure).
@@ -550,12 +515,10 @@ uint32_t __stdcall SFileLoadFileEx2(struct D2ArchiveStrc * pArchive, uint32_t * 
 // @blizzard SFileReadFile (SFILE.CPP)
 int __stdcall SFileReadFile(struct D2MPQFileStrc * pMPQFile, void * pOutputBuffer, uint32_t nBytesToRead, uint32_t * pnSize, int32_t pAsyncReadCtx);
 // Simplified wrapper for SFILE_ReadFile that passes 0 for the completion callback parameter and param6 as the async flags. Used when caller doesn't need completion notification.
-void __stdcall SFILE_ReadFileSimple(struct D2MPQFileStrc * pMPQFile, void * pOutputBuffer, uint32_t nBytesToRead, size_t * pnSize, int32_t pAsyncReadCtx, struct D2StormAsyncCompletionStrc * pCompletion);
+void __stdcall SFILE_ReadFileSimple(struct D2MPQFileStrc * pMPQFile, void * pOutputBuffer, uint32_t nBytesToRead, uint32_t * pnSize, int32_t pAsyncReadCtx, struct D2StormAsyncCompletionStrc * pCompletion);
 // Load MPQ attributes from (attributes) file in archive
 // @sourcefile .\SOURCE\SFILE.CPP
-int SFILE_LoadAttributes(struct D2ArchiveStrc * pArchive, int pAttributesBuffer, int nNumEntries);
-// @blizzard FindChunk (SFILE.CPP)
-uint32_t SFILE_FindChunk(int32_t nChunkId, struct D2MPQFileStrc * pMPQFile, int * pnChunkSize);
+int __thiscall SFILE_LoadAttributes(struct D2ArchiveStrc * pArchive, int pAttributesBuffer, int nNumEntries);
 // Open wave file as audio stream from MPQ archive. Parses RIFF/WAVE headers, allocates audio buffer, initializes DirectSound stream with frequency/channels settings. Starts async IO thread. Returns 1 on success, 0 on failure.
 // @sourcefile .\SOURCE\SFILE.CPP
 BOOL __stdcall SFileDdaBeginEx(struct D2MPQFileStrc * hFile, uint32_t dwBufferBytes, uint32_t dwFlags, uint32_t dwInitialPos, int32_t lVolume, int32_t lPan, struct IDirectSoundBuffer * lpDSB);
@@ -594,5 +557,6 @@ void StaticFini_gSFileOpenFileList();
 void StaticFini_gSFileAudioStreamList();
 // Runs at exit: removes every element from the stream record list gSFileStreamRecordList, then unlinks the list head itself.
 void StaticFini_gSFileStreamRecordList();
+// 19 internal functions (defined in .cpp)
 
 } // namespace Storm::Source::SFile

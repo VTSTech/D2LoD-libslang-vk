@@ -10,18 +10,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2DrlgVertexStrc) == 0x14, "D2_NEW(D2DrlgVertexStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2DrlgVertexStrc) == 0x14, "D2_NEW_AT(D2DrlgVertexStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -30,7 +30,7 @@ namespace D2Common::Drlg::DrlgVer {
 // Allocates 0x14-byte vertex node.
 // @sourcefile .\DRLG\DrlgVer.cpp
 D2DrlgVertexStrc * __fastcall DRLGVER_AllocVertex(D2PoolManagerStrc * pMemory, uint8_t nDirection) {
-    D2DrlgVertexStrc* pVertex = D2_NEW_POOL(pMemory, D2DrlgVertexStrc);
+    D2DrlgVertexStrc* pVertex = D2_NEW_POOL_AT(pMemory, D2DrlgVertexStrc, ".\\DRLG\\DrlgVer.cpp", 0x13);
     pVertex->nPosX = 0;
     pVertex->nPosY = 0;
     *(uint32_t*)&pVertex->nDirection = 0;
@@ -134,7 +134,7 @@ D2DrlgVertexStrc * __stdcall DRLGVER_CreateVerticesFromEdges(D2PoolManagerStrc *
             pEdgeVertex->dwFlags |= 2;
           }
           if (nCoordMax * nEdgeVtxPos < nAnchorPos * nEdgeVtxPos) {
-            pNewVertex = D2_NEW_POOL(pMemory, D2DrlgVertexStrc);
+            pNewVertex = D2_NEW_POOL_AT(pMemory, D2DrlgVertexStrc, ".\\DRLG\\DrlgVer.cpp", 0x13);
             pNewVertex->nPosX = 0;
             pNewVertex->nPosY = 0;
             *(uint32_t*)&pNewVertex->nDirection = 0;
@@ -154,7 +154,7 @@ D2DrlgVertexStrc * __stdcall DRLGVER_CreateVerticesFromEdges(D2PoolManagerStrc *
           }
         }
       } else if (!(nEdgeMax - nAnchorPos * nEdgeVtxPos) || nEdgeMax < nAnchorPos * nEdgeVtxPos) {
-        pNewVertex = D2_NEW_POOL(pMemory, D2DrlgVertexStrc);
+        pNewVertex = D2_NEW_POOL_AT(pMemory, D2DrlgVertexStrc, ".\\DRLG\\DrlgVer.cpp", 0x13);
         pNewVertex->nPosX = 0;
         pNewVertex->nPosY = 0;
         *(uint32_t*)&pNewVertex->nDirection = 0;
@@ -196,7 +196,7 @@ void __fastcall DRLGVER_CreateRoomVertices(D2PoolManagerStrc * pMemory, D2DrlgVe
       (*pSizePtr)--;
     }
 
-    D2DrlgVertexStrc* pVertex = D2_NEW_POOL(pMemory, D2DrlgVertexStrc);
+    D2DrlgVertexStrc* pVertex = D2_NEW_POOL_AT(pMemory, D2DrlgVertexStrc, ".\\DRLG\\DrlgVer.cpp", 0x13);
     pVertex->nPosX = 0;
     pVertex->nPosY = 0;
     *(uint32_t*)&pVertex->nDirection = 0;
@@ -206,7 +206,7 @@ void __fastcall DRLGVER_CreateRoomVertices(D2PoolManagerStrc * pMemory, D2DrlgVe
     *ppVertices = pVertex;
     pVertex->nPosX = pDrlgCoord->nPosX;
     pVertex->nPosY = pDrlgCoord->nPosY + pDrlgCoord->nHeight;
-    D2DrlgVertexStrc* pVertexNext = D2_NEW_POOL(pMemory, D2DrlgVertexStrc);
+    D2DrlgVertexStrc* pVertexNext = D2_NEW_POOL_AT(pMemory, D2DrlgVertexStrc, ".\\DRLG\\DrlgVer.cpp", 0x13);
     pVertexNext->nPosX = 0;
     pVertexNext->nPosY = 0;
     *(uint32_t*)&pVertexNext->nDirection = 0;
@@ -216,7 +216,7 @@ void __fastcall DRLGVER_CreateRoomVertices(D2PoolManagerStrc * pMemory, D2DrlgVe
     pVertex->pNext = pVertexNext;
     pVertexNext->nPosX = pDrlgCoord->nPosX;
     pVertexNext->nPosY = pDrlgCoord->nPosY;
-    pVertex = D2_NEW_POOL(pMemory, D2DrlgVertexStrc);
+    pVertex = D2_NEW_POOL_AT(pMemory, D2DrlgVertexStrc, ".\\DRLG\\DrlgVer.cpp", 0x13);
     pVertex->nPosX = 0;
     pVertex->nPosY = 0;
     *(uint32_t*)&pVertex->nDirection = 0;
@@ -226,7 +226,7 @@ void __fastcall DRLGVER_CreateRoomVertices(D2PoolManagerStrc * pMemory, D2DrlgVe
     pVertexNext->pNext = pVertex;
     pVertex->nPosX = pDrlgCoord->nPosX + pDrlgCoord->nWidth;
     pVertex->nPosY = pDrlgCoord->nPosY;
-    pVertexNext = D2_NEW_POOL(pMemory, D2DrlgVertexStrc);
+    pVertexNext = D2_NEW_POOL_AT(pMemory, D2DrlgVertexStrc, ".\\DRLG\\DrlgVer.cpp", 0x13);
     pVertexNext->nPosX = 0;
     pVertexNext->nPosY = 0;
     *(uint32_t*)&pVertexNext->nDirection = 0;
@@ -271,14 +271,14 @@ void __fastcall DRLGVER_FreeVertices(D2PoolManagerStrc * pMemory, D2DrlgVertexSt
       }
 
       pNext = pCurrent->pNext;
-      D2_FREE_POOL(pMemory, pCurrent);
+      D2_FREE_POOL_AT(pMemory, pCurrent, ".\\DRLG\\DrlgVer.cpp", 0x114);
       pCurrent = pNext;
     } while (pNext != *ppVertices);
 
-    D2_FREE_POOL(pMemory, pNext);
+    D2_FREE_POOL_AT(pMemory, pNext, ".\\DRLG\\DrlgVer.cpp", 0x117);
     if (!pNext) {
       free_head:
-      D2_FREE_POOL(pMemory, *ppVertices);
+      D2_FREE_POOL_AT(pMemory, *ppVertices, ".\\DRLG\\DrlgVer.cpp", 0x11f);
     }
 
     *ppVertices = 0;

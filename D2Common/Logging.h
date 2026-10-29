@@ -12,8 +12,6 @@ namespace D2Common::Logging {
 
 // Function declarations
 void __stdcall MISC_SafeStrncpy(char * szText, size_t nSize);
-// NOTE: Callee-saved register params inferred (medium confidence): pchar (EBX): char*
-void __fastcall StoreLogging(char * szFormat, va_list pArgs, FILE * pFile, uint32_t nThreadId, uint32_t nLogLevel, uint32_t nComponent, uint32_t nSubsystem, uint32_t nSequence, char * szContext);
 void LOGGING_FilePrintf(FILE * pFile, uint32_t dwGame, uint32_t dwFrame, uint32_t dwClient, uint32_t dwLogType, char * szFilename, uint32_t nLine, char * szFormatString, ...);
 void LOGGING_LogLine(int32_t nGame, int32_t nFrame, int32_t nClient, int32_t nLogType, char * szFilename, int32_t nLine, char * szFormatString, ...);
 // @wasnamed StoreLogging - one name on two different functions.
@@ -26,5 +24,6 @@ bool __fastcall LOGGING_OpenLogFile(char * szLogFileName);
 void __stdcall CloseLogging();
 // Binary search for a stat entry by ID in a sorted stat array. Takes stat ID in EDI and pointer to stat array descriptor in EAX. Returns index on success, -1 if not found.
 long STATLIST_BinarySearchStatById(int32_t nParam, int * pnParam);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Common::Logging

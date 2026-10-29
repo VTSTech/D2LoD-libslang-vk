@@ -42,18 +42,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2MonsterPathParamStrc) == 0x24, "D2_NEW(D2MonsterPathParamStrc): the 32-bit layout must be the 0x24 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2MonsterPathParamStrc) == 0x24, "D2_NEW_AT(D2MonsterPathParamStrc): the 32-bit layout must be the 0x24 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -122,7 +122,7 @@ void __fastcall SetCombatAndMonStats(D2MonsterPathParamStrc * pPathParam, int32_
 }
 
 // Initiates pathfinding for a monster along ePathType with nDistance as the step limit. Detects target-change by comparing current dynamic-path target/coords to pPathParam's cached values and resets the cache on mismatch. Calls PATH_CalculatePath; if no path points result, retries with fallback path type PATHTYPE_TOWARD_FALLBACK for movement types. Marks unit for update and returns the effective path type used.
-eD2PathTypes __stdcall GetPathCount(eD2PathTypes ePathType, uint8_t nDistance, D2UnitStrc * pUnit, D2MonsterPathParamStrc * pPathParam) {
+static eD2PathTypes __stdcall GetPathCount(eD2PathTypes ePathType, uint8_t nDistance, D2UnitStrc * pUnit, D2MonsterPathParamStrc * pPathParam) {
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     D2Common::PATH::DynamicPath::OverwriteDistanceAndMaxDistance(pDynamicPath, nDistance);
     D2UnitStrc* pTargetUnit = D2Common::PATH::DynamicPath::GetTargetUnit(pDynamicPath);
@@ -247,7 +247,7 @@ void __stdcall AddGamePathCount(D2MonsterPathParamStrc * pPathParam, int32_t ePa
 
 // @sourcefile .\MONSTER\MonsterMode.cpp
 D2MonsterPathParamStrc * __fastcall AllocAiParam(::SGAMEDATA * pGame) {
-    D2MonsterPathParamStrc* pMonsterMode = D2_NEW_POOL(pGame->pMemoryPool, D2MonsterPathParamStrc);
+    D2MonsterPathParamStrc* pMonsterMode = D2_NEW_POOL_AT(pGame->pMemoryPool, D2MonsterPathParamStrc, ".\\MONSTER\\MonsterMode.cpp", 0x13f);
     pMonsterMode->bPathFlag0 = '\0';
     pMonsterMode->bPathFlag1 = '\0';
     *(uint16_t*)&pMonsterMode->field_0x2 = 0;
@@ -264,7 +264,7 @@ D2MonsterPathParamStrc * __fastcall AllocAiParam(::SGAMEDATA * pGame) {
 
 // @sourcefile .\MONSTER\MonsterMode.cpp
 void __fastcall MONSTERDATA_FreeMonsterMode(::SGAMEDATA * pGame, D2MonsterPathParamStrc * pPathParam) {
-    D2_FREE_POOL(pGame->pMemoryPool, pPathParam);
+    D2_FREE_POOL_AT(pGame->pMemoryPool, pPathParam, ".\\MONSTER\\MonsterMode.cpp", 0x147);
 }
 
 // Death transition handler for a monster unit. Frees hover-text, calls RemoveMinionsFromAiIfFlag1Set2Not, clears targeting flags (ISVALIDTARGET, CANBEATTACKED), recalculates stats, filters states by boss context, removes light state targetability, optionally enables corpse collision (if deadCol flag not set in MonStats2), sets final facing direction, and starts regen timers via MONSTER_StartAiAndRegenTimers.

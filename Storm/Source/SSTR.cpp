@@ -6,7 +6,6 @@
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -427,7 +426,7 @@ uint32_t __stdcall SStrPack(LPSTR szText, char * szSource, uint32_t nBufferLengt
     return 0;
 }
 
-uint32_t D2vsprintf(char * szFormat, size_t nSize, char * pBuffer, va_list pArgs) {
+static uint32_t D2vsprintf(char * szFormat, size_t nSize, char * pBuffer, va_list pArgs) {
     uint32_t nWritten;
     if (!nSize) {
       nWritten = 0;
@@ -455,12 +454,14 @@ uint32_t D2vsprintf(char * szFormat, size_t nSize, char * pBuffer, va_list pArgs
 // @sourcefile-storm .\SOURCE\SSTR.CPP  (first-party: SStrDup's own SMemAlloc call site names it)
 // @wasnamed STRING_printfToPointer
 size_t SStrPrintf(char * szOutput, size_t nSize, char * Format, ...) {
+    va_list __va;
+    va_start(__va, Format);
     if (!szOutput || !Format) {
       SErr::SErrSetLastError(0x57);
       return 0;
     }
 
-    uint32_t nWritten = D2vsprintf(Format, nSize, szOutput, (va_list)((uint8_t*)&Format + 4));
+    uint32_t nWritten = D2vsprintf(Format, nSize, szOutput, __va);
     return nWritten;
 }
 
@@ -925,7 +926,6 @@ int __stdcall SStrHashHT(uint8_t * pszText) {
     uint32_t nLen;
     uint8_t szUpper[1024];
     uint32_t nChar;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     uint8_t bChar = *pszText;
     uint8_t* pWrite = szUpper;
     for (nLen = 0; nChar = (uint32_t)bChar , nChar && (pszText++ , nLen < 0x3ff); nLen++) {
@@ -942,7 +942,6 @@ int __stdcall SStrHashHT(uint8_t * pszText) {
 
     *pWrite = 0;
     uint32_t uVar1 = SSTR_JenkinsHash((int*)szUpper, nLen, 0);
-    Fog::Debug::GuardStack();
     return uVar1;
 }
 
@@ -2099,7 +2098,7 @@ void __stdcall UTF8_EncodeChar(uint32_t uCodepoint, uint8_t * pbOut) {
     *pbOut = 0;
 }
 
-void __fastcall UTF8_AdvanceToCharBoundary(uint32_t pThis, int pszBase, int nPosition, int nDirection) {
+static void __fastcall UTF8_AdvanceToCharBoundary(uint32_t pThis, int pszBase, int nPosition, int nDirection) {
     for (; 0 < nPosition && *(uint8_t*)(pszBase + nPosition) && (*(uint8_t*)(pszBase + nPosition) & 0xc0) == 0x80; nPosition += nDirection) {}
 }
 
@@ -2111,7 +2110,7 @@ void __stdcall UTF8_StepForwardOneChar(int str_base, int position, uint32_t ecx_
     UTF8_AdvanceToCharBoundary(ecx_passthru, str_base, position + 1, 1);
 }
 
-int TRANSTBL_UnicodeToSingleByte(void * pThis, uint16_t * pXlatTbl, uint8_t * pbOut, int nCount) {
+static int __thiscall TRANSTBL_UnicodeToSingleByte(void * pThis, uint16_t * pXlatTbl, uint8_t * pbOut, int nCount) {
     uint8_t byMapped;
     uint16_t* pSearchEntry;
     int iSearchIdx;
@@ -2179,7 +2178,7 @@ int TRANSTBL_UnicodeToSingleByte(void * pThis, uint16_t * pXlatTbl, uint8_t * pb
     return (int)pOutCur - (int)pbOut;
 }
 
-int __fastcall TRANSTBL_SingleByteToUnicode(uint32_t pThis, uint8_t * pbSrc, int nCount, uint16_t * pDest, uint16_t * pXlatTbl) {
+static int __fastcall TRANSTBL_SingleByteToUnicode(uint32_t pThis, uint8_t * pbSrc, int nCount, uint16_t * pDest, uint16_t * pXlatTbl) {
     if (!nCount) {
       return 0;
     }

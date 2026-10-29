@@ -37,12 +37,12 @@ typedef _EXCEPTION_DISPOSITION (*pfnEHHandlerRoutine)(EHExceptionRecord * pExcep
 
 namespace D2Client::UI::Button::ButtonImplementation {
 
-void Destructor(::ButtonImplementation * pThis) {
+void __thiscall Destructor(::ButtonImplementation * pThis) {
     pThis->pVtable = (ButtonImplementationVtable*)(void*)ButtonImplementation::vftable;
     UI::Destructor((::UIWidget*)pThis);
 }
 
-BOOL IsMouseInBounds(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+BOOL __thiscall IsMouseInBounds(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     uint32_t uVar2 = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
     if (!(pThis->nPosX <= (int)uVar1 && (int)uVar1 <= pThis->nWidth + pThis->nPosX && pThis->nPosY - pThis->nHeight <= (int)uVar2 && (int)uVar2 <= pThis->nPosY)) {
@@ -52,15 +52,15 @@ BOOL IsMouseInBounds(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 1;
 }
 
-int GetValue(::ButtonImplementation * pThis) {
+int __thiscall GetValue(::ButtonImplementation * pThis) {
     return 0;
 }
 
-void SetAccelerator(::ButtonImplementation * pThis, BOOL bEnable) {
+void __thiscall SetAccelerator(::ButtonImplementation * pThis, BOOL bEnable) {
     pThis->bAcceptEnterKey = bEnable;
 }
 
-int OnMouseDown(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseDown(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     int32_t nMouseX = (int32_t)pMsg->uLParam.sMousePos.nMouseX;
     int32_t nMouseY = (int32_t)pMsg->uLParam.sMousePos.nMouseY;
     if (!(pThis->nPosX <= nMouseX && nMouseX <= pThis->nWidth + pThis->nPosX && pThis->nPosY - pThis->nHeight <= nMouseY && nMouseY <= pThis->nPosY)) {
@@ -72,7 +72,7 @@ int OnMouseDown(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 1;
 }
 
-int OnMouseUp(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseUp(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     if (!pThis->bPressed) {
       return 0;
     }
@@ -91,7 +91,7 @@ int OnMouseUp(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-int OnChar(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnChar(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     if (!(pThis->bAcceptEnterKey && !(pMsg->uLParam.nLParam & 0x40000000U) && pMsg->nWParam == 0xd)) {
       return 0;
     }
@@ -100,31 +100,31 @@ int OnChar(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return dwCallbackResult;
 }
 
-int OnMouseMove(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseMove(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-int OnUpArrow(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnUpArrow(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-int OnDownArrow(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnDownArrow(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-int OnRightArrow(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnRightArrow(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-int OnLeftArrow(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnLeftArrow(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-int OnMouseWheel(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseWheel(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-::ButtonImplementation * Constructor(::ButtonImplementation * pThis, int nPosX, int nPosY, int nButtonKind, fpButtonOnActivate pfnOnActivate) {
+::ButtonImplementation * __thiscall Constructor(::ButtonImplementation * pThis, int nPosX, int nPosY, int nButtonKind, fpButtonOnActivate pfnOnActivate) {
     D2GfxDataStrc aGfxParams;
     pfnEHHandlerRoutine pExcHandler = __GSHandlerCheck_EH_6ca0d8;
     void* pExcList = ExceptionList;
@@ -154,7 +154,7 @@ int OnMouseWheel(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return pThis;
 }
 
-::ButtonImplementation * ScalarDeletingDestructor(::ButtonImplementation * pThis, uint32_t nFlags) {
+::ButtonImplementation * __thiscall ScalarDeletingDestructor(::ButtonImplementation * pThis, uint32_t nFlags) {
     pThis->pVtable = (ButtonImplementationVtable*)(void*)ButtonImplementation::vftable;
     UI::Destructor((::UIWidget*)pThis);
     if (!(nFlags & 1)) {
@@ -165,7 +165,7 @@ int OnMouseWheel(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return pThis;
 }
 
-void Draw(::ButtonImplementation * pThis) {
+void __thiscall Draw(::ButtonImplementation * pThis) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
     sGfxData.pDC6 = ui::GetBuySellBtnDC6();

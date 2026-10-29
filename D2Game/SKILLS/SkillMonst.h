@@ -18,9 +18,9 @@ namespace D2Game::SKILLS::SkillMonst {
 
 // Function declarations
 // SrvStFunc 42: monster melee-hit skill state tick. If the caster is a player, delegates to Skills_SrvStFunc_32. Otherwise computes to-hit vs the target, rolls hit check, applies skill ResultFlags/HitFlags/HitClass on hit (with combat stat recalc), and calls DAMAGE_CalculateAndApplyDamage with flag 0x80.
-void __fastcall SKILLMONST_SrvStFn42_FireHit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
+BOOL __fastcall SKILLMONST_SrvStFn42_FireHit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall Skills_SrvDoFunc_083_MonsterMeleeAttack(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
-void __fastcall SKILLMONST_SrvStFn43_MaggotEgg(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
+BOOL __fastcall SKILLMONST_SrvStFn43_MaggotEgg(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 // SrvDoFunc 84: spawns up to calc[0] minions of the summon class around the caster (expanding spawn radius 1-4 on failure), marks each NOXP, then kills the caster via SERVER_KillMonster (self-destruct on cast). Used by exploding-suicide minion monsters.
 BOOL __fastcall Skills_SrvDoFunc_084_SpawnMinionsAndSuicide(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall Skills_SrvDoFunc_085_FireUpgradedMissile(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
@@ -52,8 +52,6 @@ BOOL __fastcall SKILLMONST_SrvStFn51_Submerge(::SGAMEDATA * pGame, struct D2Unit
 BOOL __fastcall Skills_SrvDoFunc_094_ResetAnimFrame(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall SKILLMONST_SrvStFn52_Emerge(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall SKILLMONST_SrvStFn53_MonInferno(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
-void __stdcall SKILLASSN_GetTrapHealthBonus(uint32_t dwUnused, eD2Skills eSkill, struct D2UnitStrc * pUnit, int32_t nSkillLvl, struct D2UnitStrc * pMissileUnit);
-void SKILLMONST_TriggerModeChange(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame);
 void __fastcall SKILLASSN_GetShadowHealthBonus(struct D2SkillsTxt * pSkillsTxt, struct D2UnitStrc * pUnit);
 // SrvDoFunc #95: server-side trap/sentry skill handler that spawns one missile from the caster unit toward the target cursor. Looks up srvmissilea from the skill's txt row, computes velocity from VelLev×level/8+Vel, builds a D2SkillArgStrc, and calls CreatingMissile. On success, applies trap health bonuses, checks the inferno state to optionally reschedule the next fire frame via SetEvent, otherwise triggers a mode-change. Returns 0 if the skill, missile id, or target position is invalid.
 BOOL __fastcall Skills_SrvDoFunc_095_SpawnTrapMissile(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
@@ -108,5 +106,6 @@ BOOL __fastcall Skills_SrvDoFunc_112_RandomCurse(::SGAMEDATA * pGame, struct D2U
 void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // Monster skill server do-func: applies the Fetish Aura (STATE_fetishaura) to nearby enemy units. Resolves target/cursor position, finds units within range (Param[3] + nSkillLvl*2), filters by CanAttack and SKILLNEC_ValidateAttackableTarget, then calls SKILLS_SetStateWithCurse with UNITSTAT_attackrate on each valid target.
 BOOL __fastcall Skills_SrvDoFunc_111_ApplyFetishAura(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Game::SKILLS::SkillMonst

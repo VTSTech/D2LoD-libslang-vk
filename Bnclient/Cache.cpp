@@ -7,7 +7,6 @@
 #include "Storm/SMem.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -56,16 +55,15 @@ int __fastcall CACHE_FreeMem(void * pParam) {
 // Opens the Fog cache file for reading/writing. Creates %APPDATA%\Blizzard Entertainment\Diablo II\bncache.dat if missing, reads hash table header, validates magic/version, allocates hash table memory. Sets ghCacheFileHandle to opened file handle or INVALID_HANDLE_VALUE on error.
 // @sourcefile .\CACHE.CPP
 int32_t __stdcall CACHE_Open() {
-    // Frame slots -280..-4 are ONE object: &nBytesRead is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -280..-8 are ONE object: &nBytesRead is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       DWORD nBytesRead;
       uint32_t nFileSize;
       DWORD nBytesRead2;
       char szFilePath[260];
-      uint32_t uStackCookie;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 276, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 272, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     int nErrorCode;
     uint32_t nCrc32;
@@ -75,7 +73,6 @@ int32_t __stdcall CACHE_Open() {
     uint32_t nTableByteSize;
     D2BnCacheFileHeaderStrc* pHashEntryInit;
     D2BnCacheFileHeaderStrc* pHeaderBuf;
-    __frame0.uStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00881894);
     if (gbCacheIsOpen) {
       CACHE_FreeAll();
@@ -87,7 +84,6 @@ int32_t __stdcall CACHE_Open() {
     if (ghCacheFileHandle == (HANDLE)-1) {
       CACHE_FreeAll();
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
-      Fog::Debug::GuardStack();
       return 0;
     }
 
@@ -113,7 +109,6 @@ int32_t __stdcall CACHE_Open() {
       if (ghCacheFileHandle == (HANDLE)-1) {
         CACHE_FreeAll();
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
-        Fog::Debug::GuardStack();
         return 0;
       }
 
@@ -257,13 +252,11 @@ int32_t __stdcall CACHE_Open() {
     gbCacheIsOpen = 1;
     unlock_and_succeed:
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
-    Fog::Debug::GuardStack();
     return 1;
 }
 
 void __stdcall CACHE_Rebuild() {
     char szFilePath[260];
-    uint32_t uStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (gbCacheIsOpen) {
       CACHE_FreeAll();
       CACHE_DeleteFile();
@@ -273,7 +266,6 @@ void __stdcall CACHE_Rebuild() {
     CACHE_BuildFilePath(szFilePath);
     /* LPCSTR lpFileName for DeleteFileA */ DeleteFileA(szFilePath);
     CACHE_Open();
-    Fog::Debug::GuardStack();
 }
 
 // Reads cached data from bncache.dat using key lookup, validates CRC32, and returns decrypted data buffer
@@ -455,13 +447,11 @@ BOOL __fastcall CACHE_ReadData(char * szKey, uint32_t * pCrc32Out, uint32_t * * 
 
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
         if (!__frame0.nCorruptReason && !__frame0.nRebuildReason) {
-          Fog::Debug::GuardStack();
           return 1;
         }
       }
     }
 
-    Fog::Debug::GuardStack();
     return 0;
 }
 
@@ -498,7 +488,6 @@ BOOL __fastcall CACHE_WriteData(char * szCacheKey, LPCVOID pDataToWrite, uint32_
     uint32_t nBlockIdx;
     nBlockIdx = 0;
     if (!szCacheKey || *szCacheKey == '\0' || !pDataToWrite || !nDataSize || !pFileTime || !nCacheExpiry || !gbCacheIsOpen || 0x1000000 < nDataSize) {
-      Fog::Debug::GuardStack();
       return 0;
     }
 
@@ -735,7 +724,6 @@ BOOL __fastcall CACHE_WriteData(char * szCacheKey, LPCVOID pDataToWrite, uint32_
     CACHE_Rebuild();
     cleanup:
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
-    Fog::Debug::GuardStack();
     return (uint32_t)!nRebuildReason;
 }
 

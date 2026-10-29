@@ -26,7 +26,7 @@ void __fastcall Q23_NotifyGuardianStateToPlayers(::SGAMEDATA * pGame, char cPara
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_HandleKhalimsWillCompletion(pGame): on the Guardian quest data, force Khalim's-Eye and Khalim's-Flail counts to 2 (mark Khalim's Will assembled), then if the orb unit exists flag it for client update (SetupUpdateFlag 1, and mode-2 update for the secondary orb ref). Cross-quest helper: pokes the Khalim's-Will item bookkeeping that gates the Mephisto fight. No quest-state transitions.
 void __fastcall Q24_HandleKhalimsWillCompletion(::SGAMEDATA * pGame);
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_SetupDarkWandererMapAi(pGame, pDrlgMap): stores the passed DRLG map pointer into quest data, then if the tracked "wanderer" monster exists, its map is valid, and the map hasn't been taken yet -> transfers (DRLGPRESET_TakeFileFromDrlgMap) the monster's map-AI DRLG file into quest data and marks bDrlgMapTaken. Binds the Mephisto/Act4-transition actor's generated map into the quest. No quest-state transitions.
-void Q24_SetupDarkWandererMapAi(void * pThis, int32_t nParam);
+void __thiscall Q24_SetupDarkWandererMapAi(void * pThis, int32_t nParam);
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_StatusFilter: quest status-string filter callback (installed by Q24_InitData into fpStatusFilter). Stub - always returns false (no special status-bit suppression for this slot).
 bool __fastcall Q24_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown);
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_ActiveFilter: quest active/monster filter callback (installed by Q24_InitData into fpActiveFilter). Stub - always returns false.

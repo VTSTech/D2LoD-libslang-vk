@@ -114,7 +114,7 @@ bool __fastcall Q02_ActiveFilter(struct D2QuestDataStrc * pQuestData, int32_t nT
 // (nSequenceQuestId = QUEST_TheSearchForCain / A1Q3) by invoking its
 // fpSequenceFilter.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q2.cpp
-void __fastcall Q02_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q02_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // A1Q2 Sisters' Burial Grounds, state-0xd (load/join reconcile) handler. Restores in-memory nStateFlag/nStateFlagPrev from persisted QuestRecord step bits for a joining or loading player. Skips if Completed or FinishedInPreviousGame. Step0x04 -> nStateFlag=3/prev=2; Step0x03 -> nStateFlag=3/prev=1; Step0x02 -> nStateFlag=2/prev=1. Reads record only.
 void __fastcall Q02_Callback13_PlayerStartedGame(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // A1Q2 init (Q02_InitData): registers Sisters' Burial Grounds. Allocates the

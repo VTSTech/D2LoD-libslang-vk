@@ -17,18 +17,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitNodeStrc) == 0x10, "D2_NEW(D2UnitNodeStrc): the 32-bit layout must be the 0x10 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitNodeStrc) == 0x10, "D2_NEW_AT(D2UnitNodeStrc): the 32-bit layout must be the 0x10 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -55,7 +55,7 @@ void __fastcall TARGETS_AddTargetToTrackingList(::SGAMEDATA * pGame, D2UnitStrc 
       return;
     }
 
-    D2UnitNodeStrc* pTrackingNode = D2_NEW_POOL(pGame->pMemoryPool, D2UnitNodeStrc);
+    D2UnitNodeStrc* pTrackingNode = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitNodeStrc, ".\\GAME\\Targets.cpp", 0x39);
     if (!pTrackingNode) {
       return;
     }
@@ -85,7 +85,7 @@ D2UnitNodeStrc * __fastcall CreateUnitNode(::SGAMEDATA * pGame, D2UnitStrc * pUn
       return pNode;
     }
 
-    pNode = D2_NEW_POOL(pGame->pMemoryPool, D2UnitNodeStrc);
+    pNode = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitNodeStrc, ".\\GAME\\Targets.cpp", 0x6c);
     if (!pNode) {
       return pNode;
     }
@@ -112,7 +112,7 @@ void __fastcall AddNodeToTable(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2NodeUn
     }
 
     D2UnitNodeStrc* pPrevHead = pGame->pUnitNodes[nNodeTableIndex];
-    D2UnitNodeStrc* pNode = D2_NEW_POOL(pGame->pMemoryPool, D2UnitNodeStrc);
+    D2UnitNodeStrc* pNode = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitNodeStrc, ".\\GAME\\Targets.cpp", 0xa1);
     if (!pNode) {
       return;
     }
@@ -149,7 +149,7 @@ void __fastcall UNIT_FreeUnitNodes(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
         pMemoryToFree->pUnit->nNodeTableIndex = 0xb;
       }
 
-      D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\GAME\\Targets.cpp", 0xe8);
       pMemoryToFree = pPrev;
     }
 
@@ -223,7 +223,7 @@ void __fastcall MONSTER_FreeUnitNodes(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       }
     }
 
-    D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+    D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\GAME\\Targets.cpp", 0x142);
     pUnit->nNodeTableIndex = 0xb;
 }
 

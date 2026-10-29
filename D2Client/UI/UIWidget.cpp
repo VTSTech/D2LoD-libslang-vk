@@ -10,12 +10,12 @@
 
 namespace D2Client::UI {
 
-::UIWidget * Constructor(::UIWidget * pThis) {
+::UIWidget * __thiscall Constructor(::UIWidget * pThis) {
     pThis->pVtable = (UIWidgetVtable*)(void*)UI::vftable;
     return pThis;
 }
 
-void Destructor(::UIWidget * pThis) {
+void __thiscall Destructor(::UIWidget * pThis) {
     pThis->pVtable = (UIWidgetVtable*)(void*)UI::vftable;
 }
 

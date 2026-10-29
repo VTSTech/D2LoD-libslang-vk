@@ -11,7 +11,7 @@
 
 namespace D2Common::Chat::Ignorelist::StringEntryNode {
 
-::StringEntryNode * ScalarDeletingDestructor(::StringEntryNode * pThis, uint32_t dwFlags) {
+::StringEntryNode * __thiscall ScalarDeletingDestructor(::StringEntryNode * pThis, uint32_t dwFlags) {
     pThis->Destructor();
     if (!(dwFlags & 1 && pThis)) {
       return pThis;

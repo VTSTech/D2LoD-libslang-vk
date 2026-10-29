@@ -349,101 +349,101 @@ HWND __stdcall D2GFX_CreateWindow(BOOL bWindowed, int32_t nResolution) {
       exit(-1);
     } else {
       int nSystemResolutionX;
-      if (!hwndD2GFX_Window) {
-        bD2GFX_Windowed = bWindowed;
-        nResolutionMode = nResolution;
-        WindowRectangle.left = 0;
-        WindowRectangle.top = 0;
-        D2GFX_GetWindowSizeByResolutionMode(nResolution, (int*)&WindowRectangle.right, (int*)&WindowRectangle.bottom);
-        /* Reused parameter to assign dwStyle for window
-                         For reference check in here:
-                         {@url https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles} */ nWindowSizeY = WindowRectangle.bottom;
-        if (bD2GFX_Windowed == 1) {
-          /* windowed dwStyle */ nResolution = 0xcb0000;
-        } else {
-          /* full screen dwStyle */ nResolution = -0x7ff80000;
-          if (eRendererMode == RENDERED_Unused5) {
-            nResolution = -0x79f80000;
-          }
-        }
-
-        /* DWORD dwExStyle for AdjustWindowRectEx */ /* BOOL bMenu for AdjustWindowRectEx */ /* DWORD dwStyle for AdjustWindowRectEx */ /* LPRECT lpRect for AdjustWindowRectEx */ AdjustWindowRectEx(&WindowRectangle, nResolution, 0, 0x40000);
-        nSystemResolutionXY = WindowRectangle.bottom - WindowRectangle.top;
-        nSystemResolutionX = WindowRectangle.right - WindowRectangle.left;
-        nWindowSizeY = nSystemResolutionXY - nWindowSizeY;
-        /* Code to execute if Windowed mode is active
-                         Same situation here, game reuses variable */ bWindowed = 0;
-        if (bD2GFX_Windowed == 1) {
-          lpRect = &rcDesktop;
-          /* LPRECT lpRect for GetClientRect */ hWnd = GetDesktopWindow();
-          /* HWND hWnd for GetClientRect */ GetClientRect(hWnd, lpRect);
-          bWindowed = rcDesktop.right - nSystemResolutionX >> 1;
-          if (bWindowed < 0) {
-            bWindowed = 0;
-          }
-
-          nWindowX = rcDesktop.bottom - nSystemResolutionXY >> 1;
-          if (nWindowX < 0) {
-            nWindowX = 0;
-          }
-        } else if (eRendererMode == RENDERER_Glide) {
-          /* int nIndex for GetSystemMetrics */ bWindowed = 0;
-          nWindowX = 0;
-          nSystemResolutionX = GetSystemMetrics(0);
-          if (nSystemResolutionX < 0x321) {
-            nSystemResolutionX = 800;
-          } else {
-            /* int nIndex for GetSystemMetrics */ nSystemResolutionX = GetSystemMetrics(0);
-          }
-
-          /* int nIndex for GetSystemMetrics */ nSystemResolutionXY = GetSystemMetrics(1);
-          if (nSystemResolutionXY < 0x259) {
-            nSystemResolutionXY = 600;
-          } else {
-            /* int nIndex for GetSystemMetrics */ nSystemResolutionXY = GetSystemMetrics(1);
-          }
-        }
-
-        /* int nIndex for GetSystemMetrics */ nSystemMetricsX = GetSystemMetrics(0);
-        if (nSystemMetricsX < 800) {
-          memset(&sDevMode, 0, 0x9c);
-          /* DWORD dwFlags for ChangeDisplaySettingsA */ /* DEVMODEA * lpDevMode for ChangeDisplaySettingsA */ sDevMode.dmSize = 0x9c;
-          sDevMode.dmBitsPerPel = 8;
-          sDevMode.dmPelsWidth = 800;
-          sDevMode.dmPelsHeight = 600;
-          sDevMode.dmFields = 0x1c0000;
-          ChangeDisplaySettingsA(&sDevMode, 0);
-        }
-
-        /* LPVOID lpParam for CreateWindowExA */ /* HINSTANCE hInstance for CreateWindowExA */ /* HMENU hMenu for CreateWindowExA */ /* HWND hWndParent for CreateWindowExA */ /* int nHeight for CreateWindowExA */ /* int nWidth for CreateWindowExA */ /* int Y for CreateWindowExA */ /* int X for CreateWindowExA */ /* DWORD dwStyle for CreateWindowExA */ /* LPCSTR lpWindowName for CreateWindowExA */ /* LPCSTR lpClassName for CreateWindowExA */ /* DWORD dwExStyle for CreateWindowExA */ /* Create full screen window */ hwndD2GFX_Window = CreateWindowExA(0x40008, szWindowClassName, gpszWindowTitle, nResolution, bWindowed, nWindowX, nSystemResolutionX, nSystemResolutionXY, (HWND)0x0, (HMENU)0x0, hInstance, (LPVOID)0x0);
-        if (!hwndD2GFX_Window) {
-          nErrorCode = GetLastError();
-          FAULT_ShowFormattedErrorWithArgs(nErrorCode);
-          return (HWND)0x0;
-        }
-
-        /* int nCmdShow for ShowWindow */ /* HWND hWnd for ShowWindow */ ShowWindow(hwndD2GFX_Window, 1);
-        /* HWND hWnd for UpdateWindow */ UpdateWindow(hwndD2GFX_Window);
-        /* HWND hWnd for SetFocus */ SetFocus(hwndD2GFX_Window);
-        /* DWORD dw for GdiSetBatchLimit */ GdiSetBatchLimit(1);
-        HideOSCursor();
-        hWnd = (HWND)RENDERER_CurrentRenderedFunctions->nfpCreateWindow(hwndD2GFX_Window, nResolutionMode);
-        if (!hWnd) {
-          ghWndMain = 1;
-          ShowOSCursor();
-          if (hwndD2GFX_Window) {
-            /* HWND hWnd for DestroyWindow */ DestroyWindow(hwndD2GFX_Window);
-            hwndD2GFX_Window = (HWND)0x0;
-          }
-        }
-
-        D2GFX_InitializeWindowSize();
-        /* UINT uFlags for SetWindowPos */ /* int cy for SetWindowPos */ /* int cx for SetWindowPos */ /* int Y for SetWindowPos */ /* int X for SetWindowPos */ /* HWND hWndInsertAfter for SetWindowPos */ /* HWND hWnd for SetWindowPos */ SetWindowPos(hwndD2GFX_Window, HWND_NOTOPMOST, 0, 0, nSystemResolutionX, nSystemResolutionXY, 2);
-        return hWnd;
+      if (hwndD2GFX_Window) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x91);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x91);
-      exit(-1);
+      bD2GFX_Windowed = bWindowed;
+      nResolutionMode = nResolution;
+      WindowRectangle.left = 0;
+      WindowRectangle.top = 0;
+      D2GFX_GetWindowSizeByResolutionMode(nResolution, (int*)&WindowRectangle.right, (int*)&WindowRectangle.bottom);
+      /* Reused parameter to assign dwStyle for window
+                         For reference check in here:
+                         {@url https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles} */ nWindowSizeY = WindowRectangle.bottom;
+      if (bD2GFX_Windowed == 1) {
+        /* windowed dwStyle */ nResolution = 0xcb0000;
+      } else {
+        /* full screen dwStyle */ nResolution = -0x7ff80000;
+        if (eRendererMode == RENDERED_Unused5) {
+          nResolution = -0x79f80000;
+        }
+      }
+
+      /* DWORD dwExStyle for AdjustWindowRectEx */ /* BOOL bMenu for AdjustWindowRectEx */ /* DWORD dwStyle for AdjustWindowRectEx */ /* LPRECT lpRect for AdjustWindowRectEx */ AdjustWindowRectEx(&WindowRectangle, nResolution, 0, 0x40000);
+      nSystemResolutionXY = WindowRectangle.bottom - WindowRectangle.top;
+      nSystemResolutionX = WindowRectangle.right - WindowRectangle.left;
+      nWindowSizeY = nSystemResolutionXY - nWindowSizeY;
+      /* Code to execute if Windowed mode is active
+                         Same situation here, game reuses variable */ bWindowed = 0;
+      if (bD2GFX_Windowed == 1) {
+        lpRect = &rcDesktop;
+        /* LPRECT lpRect for GetClientRect */ hWnd = GetDesktopWindow();
+        /* HWND hWnd for GetClientRect */ GetClientRect(hWnd, lpRect);
+        bWindowed = rcDesktop.right - nSystemResolutionX >> 1;
+        if (bWindowed < 0) {
+          bWindowed = 0;
+        }
+
+        nWindowX = rcDesktop.bottom - nSystemResolutionXY >> 1;
+        if (nWindowX < 0) {
+          nWindowX = 0;
+        }
+      } else if (eRendererMode == RENDERER_Glide) {
+        /* int nIndex for GetSystemMetrics */ bWindowed = 0;
+        nWindowX = 0;
+        nSystemResolutionX = GetSystemMetrics(0);
+        if (nSystemResolutionX < 0x321) {
+          nSystemResolutionX = 800;
+        } else {
+          /* int nIndex for GetSystemMetrics */ nSystemResolutionX = GetSystemMetrics(0);
+        }
+
+        /* int nIndex for GetSystemMetrics */ nSystemResolutionXY = GetSystemMetrics(1);
+        if (nSystemResolutionXY < 0x259) {
+          nSystemResolutionXY = 600;
+        } else {
+          /* int nIndex for GetSystemMetrics */ nSystemResolutionXY = GetSystemMetrics(1);
+        }
+      }
+
+      /* int nIndex for GetSystemMetrics */ nSystemMetricsX = GetSystemMetrics(0);
+      if (nSystemMetricsX < 800) {
+        memset(&sDevMode, 0, 0x9c);
+        /* DWORD dwFlags for ChangeDisplaySettingsA */ /* DEVMODEA * lpDevMode for ChangeDisplaySettingsA */ sDevMode.dmSize = 0x9c;
+        sDevMode.dmBitsPerPel = 8;
+        sDevMode.dmPelsWidth = 800;
+        sDevMode.dmPelsHeight = 600;
+        sDevMode.dmFields = 0x1c0000;
+        ChangeDisplaySettingsA(&sDevMode, 0);
+      }
+
+      /* LPVOID lpParam for CreateWindowExA */ /* HINSTANCE hInstance for CreateWindowExA */ /* HMENU hMenu for CreateWindowExA */ /* HWND hWndParent for CreateWindowExA */ /* int nHeight for CreateWindowExA */ /* int nWidth for CreateWindowExA */ /* int Y for CreateWindowExA */ /* int X for CreateWindowExA */ /* DWORD dwStyle for CreateWindowExA */ /* LPCSTR lpWindowName for CreateWindowExA */ /* LPCSTR lpClassName for CreateWindowExA */ /* DWORD dwExStyle for CreateWindowExA */ /* Create full screen window */ hwndD2GFX_Window = CreateWindowExA(0x40008, szWindowClassName, gpszWindowTitle, nResolution, bWindowed, nWindowX, nSystemResolutionX, nSystemResolutionXY, (HWND)0x0, (HMENU)0x0, hInstance, (LPVOID)0x0);
+      if (!hwndD2GFX_Window) {
+        nErrorCode = GetLastError();
+        FAULT_ShowFormattedErrorWithArgs(nErrorCode);
+        return (HWND)0x0;
+      }
+
+      /* int nCmdShow for ShowWindow */ /* HWND hWnd for ShowWindow */ ShowWindow(hwndD2GFX_Window, 1);
+      /* HWND hWnd for UpdateWindow */ UpdateWindow(hwndD2GFX_Window);
+      /* HWND hWnd for SetFocus */ SetFocus(hwndD2GFX_Window);
+      /* DWORD dw for GdiSetBatchLimit */ GdiSetBatchLimit(1);
+      HideOSCursor();
+      hWnd = (HWND)RENDERER_CurrentRenderedFunctions->nfpCreateWindow(hwndD2GFX_Window, nResolutionMode);
+      if (!hWnd) {
+        ghWndMain = 1;
+        ShowOSCursor();
+        if (hwndD2GFX_Window) {
+          /* HWND hWnd for DestroyWindow */ DestroyWindow(hwndD2GFX_Window);
+          hwndD2GFX_Window = (HWND)0x0;
+        }
+      }
+
+      D2GFX_InitializeWindowSize();
+      /* UINT uFlags for SetWindowPos */ /* int cy for SetWindowPos */ /* int cx for SetWindowPos */ /* int Y for SetWindowPos */ /* int X for SetWindowPos */ /* HWND hWndInsertAfter for SetWindowPos */ /* HWND hWnd for SetWindowPos */ SetWindowPos(hwndD2GFX_Window, HWND_NOTOPMOST, 0, 0, nSystemResolutionX, nSystemResolutionXY, 2);
+      return hWnd;
     }
 }
 
@@ -925,1544 +925,7 @@ void __stdcall D2GFX_ClearScreen(BOOL bPartial) {
 
 void __stdcall D2GFX_SetPalette(LPPALETTEENTRY pPalette) {
     // Static local variables (originally global data)
-    static tagPALETTEENTRY gaPaletteCurrentBuffer[256] = {
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    },
-    {
-        /* .peRed = */ 0,
-        /* .peGreen = */ 0,
-        /* .peBlue = */ 0,
-        /* .peFlags = */ 0
-    }
-}; D2_STATIC_GUARD(gaPaletteCurrentBuffer, "D2gfx::D2GFX::D2GFX_SetPalette::gaPaletteCurrentBuffer");
+    static tagPALETTEENTRY gaPaletteCurrentBuffer[256] = {}; D2_STATIC_GUARD(gaPaletteCurrentBuffer, "D2gfx::D2GFX::D2GFX_SetPalette::gaPaletteCurrentBuffer");
 
     LPPALETTEENTRY pSrcEntry;
     tagPALETTEENTRY* pDstEntry;
@@ -2548,15 +1011,15 @@ void __stdcall D2GFX_SetDefaultScaleFactor() {
 
 void __stdcall D2GFX_SetPerspectiveScale(int32_t nXScale, int32_t nYScale) {
     if (eRendererMode == RENDERER_Glide || eRendererMode == RENDERED_Unused5 || eRendererMode == RENDERER_COUNT || eRendererMode == RENDERER_Direct3D) {
-      if (D2GFXRenderedData.bPerspectiveEnabled) {
-        nD2GFX_PerspectiveScaleX = nXScale;
-        nD2GFX_PerspectiveScaleY = nYScale;
-        RENDERER_CurrentRenderedFunctions->nfpSetPerspectiveScale(nXScale, nYScale);
-        return;
+      if (!D2GFXRenderedData.bPerspectiveEnabled) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x62);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x62);
-      exit(-1);
+      nD2GFX_PerspectiveScaleX = nXScale;
+      nD2GFX_PerspectiveScaleY = nYScale;
+      RENDERER_CurrentRenderedFunctions->nfpSetPerspectiveScale(nXScale, nYScale);
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x61);
       exit(-1);
@@ -2566,26 +1029,26 @@ void __stdcall D2GFX_SetPerspectiveScale(int32_t nXScale, int32_t nYScale) {
 uint32_t __stdcall D2GFX_IsInPerspectiveBounds(int32_t nXpos, int32_t nYpos) {
     if (eRendererMode == RENDERER_Glide || eRendererMode == RENDERED_Unused5 || eRendererMode == RENDERER_COUNT || eRendererMode == RENDERER_Direct3D) {
       int nDelta;
-      if (D2GFXRenderedData.bPerspectiveEnabled) {
-        nDelta = nXpos - nD2GFX_PerspectiveScaleX;
-        if (nDelta < 0) {
-          nDelta = -nDelta;
-        }
-        if (0x320000 < nDelta) {
-          return 0;
-        }
+      if (!D2GFXRenderedData.bPerspectiveEnabled) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x75);
+        exit(-1);
+      }
 
-        nDelta = nYpos - nD2GFX_PerspectiveScaleY;
-        if (nDelta >= 0) {
-          return (uint32_t)(nDelta < 0x320001);
-        }
-
+      nDelta = nXpos - nD2GFX_PerspectiveScaleX;
+      if (nDelta < 0) {
         nDelta = -nDelta;
+      }
+      if (0x320000 < nDelta) {
+        return 0;
+      }
+
+      nDelta = nYpos - nD2GFX_PerspectiveScaleY;
+      if (nDelta >= 0) {
         return (uint32_t)(nDelta < 0x320001);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x75);
-      exit(-1);
+      nDelta = -nDelta;
+      return (uint32_t)(nDelta < 0x320001);
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x74);
       exit(-1);
@@ -2597,25 +1060,25 @@ void __stdcall D2GFX_AdjustPerspectivePosition(int32_t nXpos, int32_t nYpos, int
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8b);
       exit(-1);
     } else {
-      if (D2GFXRenderedData.bPerspectiveEnabled) {
-        RENDERER_CurrentRenderedFunctions->nfpAdjustPerspectivePosition(nXpos, nYpos, nBais, pXAdjust, pYAdjust);
-        return;
+      if (!D2GFXRenderedData.bPerspectiveEnabled) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8c);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8c);
-      exit(-1);
+      RENDERER_CurrentRenderedFunctions->nfpAdjustPerspectivePosition(nXpos, nYpos, nBais, pXAdjust, pYAdjust);
+      return;
     }
 }
 
 void __stdcall D2GFX_PerspecitveScalePosition(int32_t nXpos, int32_t nYpos, int32_t nAngle, int * pXpos, int * pYpos, BOOL bOrder) {
     if (eRendererMode == RENDERER_Glide || eRendererMode == RENDERED_Unused5 || eRendererMode == RENDERER_COUNT || eRendererMode == RENDERER_Direct3D) {
-      if (D2GFXRenderedData.bPerspectiveEnabled) {
-        RENDERER_CurrentRenderedFunctions->nfpPerspectiveScalePosition(nXpos, nYpos, 0, pXpos, pYpos, bOrder);
-        return;
+      if (!D2GFXRenderedData.bPerspectiveEnabled) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x99);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x99);
-      exit(-1);
+      RENDERER_CurrentRenderedFunctions->nfpPerspectiveScalePosition(nXpos, nYpos, 0, pXpos, pYpos, bOrder);
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x98);
       exit(-1);
@@ -2624,13 +1087,13 @@ void __stdcall D2GFX_PerspecitveScalePosition(int32_t nXpos, int32_t nYpos, int3
 
 void __stdcall D2GFX_SetDefaultPerspectiveFactor() {
     if (eRendererMode == RENDERER_Glide || eRendererMode == RENDERED_Unused5 || eRendererMode == RENDERER_COUNT || eRendererMode == RENDERER_Direct3D) {
-      if (D2GFXRenderedData.bPerspectiveEnabled) {
-        RENDERER_CurrentRenderedFunctions->nfpSetDefaultPerspectiveFactor();
-        return;
+      if (!D2GFXRenderedData.bPerspectiveEnabled) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa9);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa9);
-      exit(-1);
+      RENDERER_CurrentRenderedFunctions->nfpSetDefaultPerspectiveFactor();
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa8);
       exit(-1);
@@ -2638,7 +1101,9 @@ void __stdcall D2GFX_SetDefaultPerspectiveFactor() {
 }
 
 void D2GFX_DrawString(int32_t nProbablyX, int32_t nProbablyY, char * szFormatString, ...) {
-    RENDERER_CurrentRenderedFunctions->nfpDrawString(nProbablyX, nProbablyY, szFormatString, (va_list)((uint8_t*)&szFormatString + 4));
+    va_list __va;
+    va_start(__va, szFormatString);
+    RENDERER_CurrentRenderedFunctions->nfpDrawString(nProbablyX, nProbablyY, szFormatString, __va);
 }
 
 void __stdcall D2GFX_DrawLight(DWORD * pLight, DWORD * pPlayerLight, int32_t nXpos, int32_t nYpos) {
@@ -3033,80 +1498,7 @@ void __stdcall D2GFX_InitializeLineBuffer() {
 // Initializes color lookup tables for palette blending. Populates gPaletteBlendLookupTable (256x256 entries) by blending all combinations of source and destination palette indices. Used by rendering functions for alpha blending and color effects.
 void __fastcall PALETTE_InitColorLookupTables(BYTE * * ppPaletteTable) {
     // Static local variables (originally global data)
-    static BYTE * gaPaletteBlendEntries[72] = {
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr
-}; D2_STATIC_GUARD(gaPaletteBlendEntries, "D2gfx::D2GFX::PALETTE_InitColorLookupTables::gaPaletteBlendEntries");
+    static BYTE * gaPaletteBlendEntries[72] = {}; D2_STATIC_GUARD(gaPaletteBlendEntries, "D2gfx::D2GFX::PALETTE_InitColorLookupTables::gaPaletteBlendEntries");
 
     int nCount;
     uint8_t* pDstRow;

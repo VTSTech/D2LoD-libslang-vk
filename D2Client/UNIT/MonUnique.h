@@ -35,8 +35,6 @@ void __fastcall MakeFireExposionAttack(struct D2UnitStrc * pUnit, int32_t nUMod,
 void __fastcall MakeMonsterCorpseExplodeAttack(struct D2UnitStrc * pUnit, int32_t nUMod, int32_t bApply);
 void __fastcall MONUNIQUE_SpawnDeathMissile(struct D2UnitStrc * pUnit, int32_t eModifier, int32_t bApply);
 void __fastcall MONUNIQUE_DurielDeathAndSpawn(struct D2UnitStrc * pUnit, int32_t nUMod, int32_t nParam2);
-// Fires a ring of 4 directional missiles (N/S/E/W, 2 copies each = 8 total) from a unique monster. Skips MISSILE_Lightunique unless the monster has the 0x100 unique-type flag. For each of 4 cardinal directions, places sSkillArg.nUnitX/Y at unitPos + direction offset and calls MakeMissile twice (pMissileEx index 0 and 1). Uses SKILLSMON_SetMissilePathLinear for all except MISSILE_Queenpoisoncloud. nToHit defaults to 1 if passed as 0.
-void __stdcall MONUNIQUE_SpawnDirectionalMissiles(struct D2UnitStrc * pUnit, eMissilesId eMissileId, int32_t nToHit);
 void __fastcall MONUNIQUE_ApplyModifierGriswold(struct D2UnitStrc * pUnit, int32_t nUMod, int32_t bIsChampion);
 void __fastcall MONUNIQUE_ApplyModifierTheSmith(struct D2UnitStrc * pUnit, int32_t nUMod, int32_t bIsChampion);
 void __fastcall MONUNIQUE_SpawnBugLightning(struct D2UnitStrc * pUnit, int32_t nUMod, int32_t nParam2);
@@ -46,5 +44,6 @@ void __fastcall MONUNIQUE_SpawnExplodingArrowDeath(struct D2UnitStrc * pUnit, in
 // Per-frame callback for suicide-exploder monsters (e.g. Flesh Beast). Fires only at Death animation frame 4. Reads the monster's treasure class index (difficulty-adjusted) to decide the explosion type: index 1 spawns MISSILE_Suicidefireexplode, index>=2 spawns MISSILE_Suicideiceexplode. Always spawns MISSILE_Suicidecorpseexplode at the unit's position as the secondary corpse-burst effect.
 void __fastcall MONUNIQUE_SpawnSuicideExplosion(struct D2UnitStrc * pUnit, int32_t nUMod, uint32_t nParam2);
 void __fastcall MONUNIQUE_PregnantCorpseBurst(struct D2UnitStrc * pUnit);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Client::UNIT::MonUnique

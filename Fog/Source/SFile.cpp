@@ -109,10 +109,8 @@ int __fastcall SafeCreateDirectoryTree(char * szPath) {
     DWORD dwError;
     uint32_t nSegmentLen;
     char szPartialPath[260];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int bFailed = 1;
     if (!szPath || *szPath == '\0') {
-      Debug::GuardStack();
       return 0;
     }
 
@@ -133,7 +131,6 @@ int __fastcall SafeCreateDirectoryTree(char * szPath) {
 
         pNextSep = Storm::Source::SSTR::SStrChr(pNextSep + 1, '\\');
         if (!pNextSep) {
-          Debug::GuardStack();
           return 1;
         }
       }
@@ -141,7 +138,6 @@ int __fastcall SafeCreateDirectoryTree(char * szPath) {
       bFailed = 0;
     }
 
-    Debug::GuardStack();
     return bFailed;
 }
 
@@ -236,7 +232,6 @@ int __fastcall SFILE_GetBlizzardAppDataPath(char * szOutPath, uint32_t nMaxLen) 
         nSrcPathLen = Storm::Source::SSTR::SStrLen(cAppDataPath);
         if (!nSrcPathLen || cAppDataPath[nSrcPathLen - 1] != '\\') {
           if (nSrcPathLen + 1 == nMaxLen) {
-            Debug::GuardStack();
             return 0;
           }
 
@@ -249,13 +244,11 @@ int __fastcall SFILE_GetBlizzardAppDataPath(char * szOutPath, uint32_t nMaxLen) 
           Storm::Source::SSTR::SStrCopy(szOutPath, cAppDataPath, nMaxLen);
           nSrcPathLen = Storm::Source::SSTR::SStrLen(szOutPath);
           nDstPathLen = Storm::Source::SSTR::SStrLen(cAppDataPath);
-          Debug::GuardStack();
           return (uint32_t)(nSrcPathLen == nDstPathLen);
         }
       }
     }
 
-    Debug::GuardStack();
     return 0;
 }
 
@@ -263,12 +256,11 @@ BOOL __stdcall GetUseDirectCommand() {
     return D2Ini_bUseDirect;
 }
 
-bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
+static bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
     int iVar1;
     char szAppDataPath[260];
     char* pszSubPath;
     if (!nMaxLen) {
-      Debug::GuardStack();
       return false;
     }
     if (!szOutPath) {
@@ -280,7 +272,6 @@ bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
     if ((char)bKnownFolderOk == '\0') {
       iVar1 = SHGetFolderPathA(0, 5, 0, 0, szAppDataPath);
       if (iVar1) {
-        Debug::GuardStack();
         return false;
       }
 
@@ -292,7 +283,6 @@ bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
     }
 
     Storm::Source::SSTR::SStrPack(szOutPath, pszSubPath, nMaxLen);
-    Debug::GuardStack();
     return true;
 }
 
@@ -315,14 +305,12 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
     /* LPCSTR lpNewFileName for MoveFileA */ /* LPCSTR lpExistingFileName for MoveFileA */ pcVar8[1] = cSaved2;
     BOOL bSuccess = MoveFileA(szSrcRoot, szDstRoot);
     if (bSuccess) {
-      Debug::GuardStack();
       return 2;
     }
 
     DWORD dwAttributes = GetFileAttributesA(szSrcRoot);
     if (dwAttributes == -1) {
       dwAttributes = GetLastError();
-      Debug::GuardStack();
       return 2 - (uint32_t)(dwAttributes != 2);
     }
     /* LPCSTR lpFileName for GetFileAttributesA */ if (dwAttributes & 0x10) {
@@ -332,7 +320,6 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
         if (dwAttributes == -1) {
           dwAttributes = GetLastError();
           if (dwAttributes != 2) {
-            Debug::GuardStack();
             return 1;
           }
 
@@ -368,12 +355,10 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
 
         /* HANDLE hFindFile for FindClose */ FindClose(hFindFile);
         /* LPCSTR lpPathName for RemoveDirectoryA */ RemoveDirectoryA(szSrcRoot);
-        Debug::GuardStack();
         return nRecursiveResult;
       }
     }
 
-    Debug::GuardStack();
     return 1;
 }
 
@@ -548,7 +533,6 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
       uVar1 = Storm::Source::SSTR::SStrLen(pBuffer);
       if (!uVar1 || pBuffer[uVar1 - 1] != '\\') {
         if (uVar1 + 1 == nSize) {
-          Debug::GuardStack();
           return;
         }
 
@@ -557,11 +541,8 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
       }
 
       SafeCreateDirectoryTree(pBuffer);
-      Debug::GuardStack();
       return;
     }
-
-    Debug::GuardStack();
 }
 
 int32_t __fastcall SFILE_CalculateBufferOffset(int32_t pThis, int32_t nBufferOffset) {
@@ -569,12 +550,16 @@ int32_t __fastcall SFILE_CalculateBufferOffset(int32_t pThis, int32_t nBufferOff
 }
 
 char * ERRORMANAGER_SprintfToBuffer(char * szText1, char * szText2, ...) {
-    vsprintf(szText1, szText2, (va_list)((uint8_t*)&szText2 + 4));
+    va_list __va;
+    va_start(__va, szText2);
+    vsprintf(szText1, szText2, __va);
     return szText1;
 }
 
 char * ERRORMANAGER_SnprintfTerminated(char * szText1, size_t nSize, char * szText2, ...) {
-    __vsnprintf(szText1, nSize, szText2, (va_list)((uint8_t*)&szText2 + 4));
+    va_list __va;
+    va_start(__va, szText2);
+    __vsnprintf(szText1, nSize, szText2, __va);
     szText1[nSize - 1] = '\0';
     return szText1;
 }
@@ -653,7 +638,6 @@ void __fastcall SFILE_DeleteOldLogFiles(char * szLogPrefix) {
     _SYSTEMTIME systemTime;
     char szFilePath[4096];
     char szLogDir[4096];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* szFileNamePrefix = szLogPrefix;
     /* LPSYSTEMTIME lpSystemTime for GetLocalTime */ GetLocalTime(&systemTime);
     szLogDir[0] = '\0';
@@ -676,8 +660,6 @@ void __fastcall SFILE_DeleteOldLogFiles(char * szLogPrefix) {
       nJulianDay--;
       iCount--;
     } while (iCount);
-
-    Debug::GuardStack();
 }
 
 void __stdcall LOGFILE_StoreGameStartupInfo() {
@@ -692,7 +674,6 @@ void __stdcall LOGFILE_StoreGameStartupInfo() {
     __frame0_t __frame0;
     _SYSTEMTIME systemTime;
     char szComputerName[64];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     Src::LogManager::LOGFILE_WriteStringToFile("------------------------------------------------------");
     /* LPSYSTEMTIME lpSystemTime for GetLocalTime */ GetLocalTime(&systemTime);
     Src::LogManager::LOGFILE_WriteStringToFile("%04d-%02d-%02d %02d:%02d:%02d", (uint32_t)systemTime.wYear, (uint32_t)systemTime.wMonth, (uint32_t)systemTime.wDay, (uint32_t)systemTime.wHour, (uint32_t)systemTime.wMinute, (uint32_t)systemTime.wSecond);
@@ -756,7 +737,6 @@ void __stdcall LOGFILE_StoreGameStartupInfo() {
     Src::LogManager::LOGFILE_WriteStringToFile("Computer name: %s", szComputerName);
     Src::LogManager::LOGFILE_WriteStringToFile("------------------------------------------------------");
     Src::LogManager::LOGFILE_WriteStringToFile("");
-    Debug::GuardStack();
 }
 
 // JMP thunk

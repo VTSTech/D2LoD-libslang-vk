@@ -13,15 +13,15 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2WinTimer) == 0x48, "D2_NEW(D2WinTimer): the 32-bit layout must be the 0x48 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2WinTimer) == 0x48, "D2_NEW_AT(D2WinTimer): the 32-bit layout must be the 0x48 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_OnPress
@@ -127,7 +127,7 @@ BOOL __stdcall Key(D2ControlMsg * pTimer) {
 // @sourcefile .\Src\D2WinTimer.cpp
 ::D2WinTimer * __fastcall D2WinTimer(int32_t nTimeoutInSeconds, OnPress pfnOnPress) {
     DWORD dwCreationTick;
-    ::D2WinTimer* pTimer = D2_NEW(::D2WinTimer);
+    ::D2WinTimer* pTimer = D2_NEW_AT(::D2WinTimer, ".\\Src\\D2WinTimer.cpp", 0x1c);
     memset(pTimer, 0, 0x48);
     pTimer->sControl.neD2FormType = FORM_Timer;
     int* pDwState = &pTimer->sControl.dwState;

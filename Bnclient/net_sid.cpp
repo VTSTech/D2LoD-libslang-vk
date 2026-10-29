@@ -51,7 +51,7 @@ int __fastcall NET_SID_CLIENT_GetStateAndClear(int * pOutState) {
     return 1;
 }
 
-void __fastcall SID_GetState(int * pOutState) {
+int __fastcall SID_GetState(int * pOutState) {
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00882004);
     *pOutState = g_nBattleNetConnectionState;
     pOutState[1] = g_nBattleNetConnectionData;
@@ -60,10 +60,12 @@ void __fastcall SID_GetState(int * pOutState) {
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00882004);
+    return 1;
 }
 
-void __fastcall NET_SID_CLIENT_SetChannelName(char * szChannelName) {
+int __fastcall NET_SID_CLIENT_SetChannelName(char * szChannelName) {
     Storm::Source::SSTR::SStrCopy(g_szCurrentChannelName, szChannelName, 0x100);
+    return 1;
 }
 
 void * __stdcall NET_SID_CLIENT_GetChannelNamePtr() {
@@ -225,7 +227,7 @@ uint32_t __stdcall NET_SID_CLIENT_GetResponseCount1() {
     return g_nSIDResponseCount1;
 }
 
-void __stdcall SID_InitializeProtocolState() {
+int __stdcall SID_InitializeProtocolState() {
     int nCount;
     uint32_t* pResponseFlag = g_SIDPacketResponseFlags;
     for (nCount = 0x5e; nCount; nCount--) {
@@ -242,6 +244,7 @@ void __stdcall SID_InitializeProtocolState() {
     g_nRealmLogonResult = 0xff;
     g_bSIDProtocolReady = 0;
     SID_SetStateFlag1(0);
+    return 1;
 }
 
 BOOL __fastcall NET_SID_CLIENT_WaitForPacketId(uint8_t nPacketId) {
@@ -641,21 +644,19 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthInfo(SID_S2C_AuthInfo * pPacketData,
 // Key status: 0x200=invalid, 0x201=in use, 0x202=disabled, 0x203=wrong product
 // Initiates MPQ patch download for upgrade paths or sets login state for authentication flow.
 BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketData, size_t nPacketSize) {
-    // Frame slots -264..-4 are ONE object: &szPatchFilename is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -264..-8 are ONE object: &szPatchFilename is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       uint8_t szPatchFilename;
       uint8_t szPatchFilenameBuffer[255];
-      uint32_t dwSecurityCookie;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 260, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 256, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     uint32_t nByteIndex;
     uint32_t nPatchNameLen;
     int nNullCount;
     uint32_t dwResultCode;
     FILETIME szAdditionalInfo;
-    __frame0.dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (4 < nPacketSize && *(char*)((int)pPacketData + (nPacketSize - 1)) == '\0') {
       nByteIndex = 4;
       nNullCount = 0;
@@ -670,7 +671,6 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketDat
 
         if (nNullCount) {
           Debug::DEBUG_UnusedDebugFunction("INVALID: AuthCheck");
-          Fog::Debug::GuardStack();
           return 0;
         }
       }
@@ -749,12 +749,10 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthCheck(SID_S2C_AuthCheck * pPacketDat
         }
       }
 
-      Fog::Debug::GuardStack();
       return 1;
     }
 
     Debug::DEBUG_UnusedDebugFunction("INVALID: AuthCheck");
-    Fog::Debug::GuardStack();
     return 0;
 }
 
@@ -1269,7 +1267,7 @@ void __stdcall NET_SID_CLIENT_FreeSRP() {
 // - Country abbreviation (3 bytes): From GetLocaleInfo(LOCALE_SABBREVCTRYNAME)
 // - Country name (null-terminated string): From GetLocaleInfo(LOCALE_SENGCOUNTRY)
 // Server responds with SID_AUTH_INFO containing version check challenge.
-void __stdcall NET_SID_CLIENT_Send_0x50_AuthInfo() {
+int __stdcall NET_SID_CLIENT_Send_0x50_AuthInfo() {
     // Frame slots -388..-8 are ONE object: &nSockAddrLen is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -1331,7 +1329,7 @@ void __stdcall NET_SID_CLIENT_Send_0x50_AuthInfo() {
     GetLocaleInfoA(0x400, 0x1002, __frame0.sAuthInfoPacket.szCountryName, 0x100);
     bGotLocalIp = Storm::Source::SSTR::SStrLen(__frame0.sAuthInfoPacket.szCountryName);
     BnSend::NET_SID_CLIENT_Send(0x50, (char*)&__frame0.sAuthInfoPacket, bGotLocalIp + 0x29);
-    Fog::Debug::GuardStack();
+    return 1;
 }
 
 // SID_AUTH_CHECK (0x51) packet sender - Version and CD key verification request
@@ -1361,7 +1359,6 @@ int32_t __stdcall NET_SID_CLIENT_Send_0x51_AuthCheck() {
     uint8_t* szBufferOutput;
     D2SidAuthCheckPacketStrc dwClientToken;
     uint8_t szExeInfoClassic[256];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     memset(&dwClientToken, 0, 0x25c);
     __time32_t _Var1 = _time32(nullptr);
     DWORD dwTickCount = GetTickCount();
@@ -1371,7 +1368,6 @@ int32_t __stdcall NET_SID_CLIENT_Send_0x51_AuthCheck() {
     while (!bHasPatchFile) {
       bIsExpansion = SID_GetReadyFlag();
       if (bIsExpansion) {
-        Fog::Debug::GuardStack();
         return 0;
       }
 
@@ -1405,12 +1401,10 @@ int32_t __stdcall NET_SID_CLIENT_Send_0x51_AuthCheck() {
       FreeKeys();
       bHasPatchFile = Storm::Source::SSTR::SStrLen((char*)szBufferOutput);
       BnSend::NET_SID_CLIENT_Send(0x51, (char*)&dwClientToken, (size_t)(szBufferOutput + (bHasPatchFile + 1 - (uintptr_t)&dwClientToken)));
-      Fog::Debug::GuardStack();
       return 1;
     }
 
     BNMESSQUEUE_SetStateIfZero(1);
-    Fog::Debug::GuardStack();
     return 0;
 }
 
@@ -1420,7 +1414,6 @@ int __fastcall NET_SID_CLIENT_Send_0x53_AuthAccountLogon(char * pUsername, char 
     char usernameBuffer[256];
     char passwordUpper[256];
     char usernameUpper[256];
-    uint32_t securityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     g_bSIDFlag2 = 0;
     Storm::Source::SSTR::SStrCopy(g_szStoredUsername, pUsername, 0x100);
     Storm::Source::SSystem::SMemZero(&g_srpCredentials, 0xbc);
@@ -1432,35 +1425,29 @@ int __fastcall NET_SID_CLIENT_Send_0x53_AuthAccountLogon(char * pUsername, char 
     Storm::Source::SSystem::SMemCopy(srpClientPublicKeyA, g_srpCredentials.aClientPublicKey_A, 0x20);
     uint32_t nUsernameLen = Storm::Source::SSTR::SStrCopy(usernameBuffer, pUsername, 0x100);
     BnSend::NET_SID_CLIENT_Send(0x53, srpClientPublicKeyA, nUsernameLen + 0x21);
-    Fog::Debug::GuardStack();
     return 1;
 }
 
 int32_t __stdcall NET_SID_CLIENT_Resend_0x53_AuthAccountLogon() {
     char publicKey[32];
     char usernameBuffer[256];
-    uint32_t securityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     Storm::Source::SSystem::SMemCopy(publicKey, g_srpCredentials.aClientPublicKey_A, 0x20);
     uint32_t nUsernameLen = Storm::Source::SSTR::SStrCopy(usernameBuffer, g_szStoredUsername, 0x100);
     BnSend::NET_SID_CLIENT_Send(0x53, publicKey, nUsernameLen + 0x21);
-    Fog::Debug::GuardStack();
     return 1;
 }
 
 // SID_AUTH_ACCOUNTLOGONPROOF (0x54) sender — given server's SRP challenge (salt 's' and server public key 'B'), runs SRP_ClientKeyExchange to compute client proof M1 = H(H(N)^H(g), H(I), s, A, B, K), then sends the 20-byte M1 proof to Battle.net.
 int32_t __fastcall NET_SID_CLIENT_Send_0x54_AuthAccountLogonProof(void * pSalt, void * pServerPublicKeyB) {
     char M1ClientProof[20];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     BOOL bKeyExchangeOk = SRP::SRP_ClientKeyExchange(&g_pSrpContext, &g_srpCredentials, pSalt, pServerPublicKeyB);
     Storm::Source::SSystem::SMemZero(g_srpCredentials.szPassword, 0x20);
     if (bKeyExchangeOk) {
       Storm::Source::SSystem::SMemCopy(M1ClientProof, g_srpCredentials.aClientProof_M1, 0x14);
       BnSend::NET_SID_CLIENT_Send(0x54, M1ClientProof, 0x14);
-      Fog::Debug::GuardStack();
       return 1;
     }
 
-    Fog::Debug::GuardStack();
     return 0;
 }
 
@@ -1471,7 +1458,6 @@ int __fastcall NET_SID_CLIENT_Send_0x52_AuthAccountCreate(char * pUsername, char
     char usernameBuffer[256];
     uint32_t passwordUpper[64];
     char usernameUpper[256];
-    uint32_t securityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     Storm::Source::SSTR::SStrCopy(usernameUpper, pUsername, 0x100);
     Storm::Source::SSTR::SStrUpper(usernameUpper);
     Storm::Source::SSTR::SStrCopy((char*)passwordUpper, pPassword, 0x100);
@@ -1479,7 +1465,6 @@ int __fastcall NET_SID_CLIENT_Send_0x52_AuthAccountCreate(char * pUsername, char
     SRP::SRP_ClientGenerateVerifier(&g_pSrpContext, usernameUpper, passwordUpper, salt, verifier);
     uint32_t nUsernameLen = Storm::Source::SSTR::SStrCopy(usernameBuffer, pUsername, 0x7fffffff);
     BnSend::NET_SID_CLIENT_Send(0x52, (char*)salt, nUsernameLen + 0x41);
-    Fog::Debug::GuardStack();
     return 1;
 }
 
@@ -1490,7 +1475,6 @@ int __fastcall NET_SID_CLIENT_Send_0x55_AuthAccountChange(char * pUsername, char
     char oldPasswordUpper[256];
     uint32_t newPasswordUpperBuf[64];
     char usernameUpper[256];
-    uint32_t securityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     g_bSIDFlag2 = 0;
     Storm::Source::SSystem::SMemZero(&g_srpCredentials, 0xbc);
     Storm::Source::SSTR::SStrCopy(usernameUpper, pUsername, 0x100);
@@ -1504,14 +1488,12 @@ int __fastcall NET_SID_CLIENT_Send_0x55_AuthAccountChange(char * pUsername, char
     Storm::Source::SSystem::SMemCopy(srpClientPublicKeyA, g_srpCredentials.aClientPublicKey_A, 0x20);
     uint32_t nUsernameLen = Storm::Source::SSTR::SStrCopy(usernameBuffer, pUsername, 0x100);
     BnSend::NET_SID_CLIENT_Send(0x55, srpClientPublicKeyA, nUsernameLen + 0x21);
-    Fog::Debug::GuardStack();
     return 0;
 }
 
 int32_t __fastcall NET_SID_CLIENT_Send_0x56_AuthAccountChangeProof(void * pSalt, void * pServerPublicKeyB) {
     char M1ClientProof[20];
     uint8_t abNewSrpSalt[64];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     BOOL bKeyExchangeOk = SRP::SRP_ClientKeyExchange(&g_pSrpContext, &g_srpCredentials, pSalt, pServerPublicKeyB);
     Storm::Source::SSystem::SMemZero(g_srpCredentials.szPassword, 0x20);
     if (bKeyExchangeOk) {
@@ -1519,11 +1501,9 @@ int32_t __fastcall NET_SID_CLIENT_Send_0x56_AuthAccountChangeProof(void * pSalt,
       Storm::Source::SSystem::SMemCopy(abNewSrpSalt, &g_srpSaltVerifier, 0x40);
       Storm::Source::SSystem::SMemZero(&g_srpSaltVerifier, 0x40);
       BnSend::NET_SID_CLIENT_Send(0x56, M1ClientProof, 0x54);
-      Fog::Debug::GuardStack();
       return 1;
     }
 
-    Fog::Debug::GuardStack();
     return 0;
 }
 
@@ -1540,7 +1520,7 @@ BOOL __fastcall NET_SID_CLIENT_Send_0x57_AuthAccountUpgrade(int32_t bIncrementFl
     return 1;
 }
 
-void __fastcall NET_SID_CLIENT_Send_0x58_AuthAccountUpgradeProof(uint32_t nServerToken) {
+int __fastcall NET_SID_CLIENT_Send_0x58_AuthAccountUpgradeProof(uint32_t nServerToken) {
     // Frame slots -380..-292 are ONE object: &dwClientToken is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -1560,7 +1540,6 @@ void __fastcall NET_SID_CLIENT_Send_0x58_AuthAccountUpgradeProof(uint32_t nServe
     __frame1_t __frame1;
     D2SHA1 shaUsernameHash;
     char szUsernameLower[256];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     __frame1.abUpgradeProofInput = GetTickCount();
     __frame1.uStack_120 = nServerToken;
     uint32_t nLen = Storm::Source::SSTR::SStrCopy(szUsernameLower, g_srpCredentials.szPassword, 0x100);
@@ -1572,12 +1551,12 @@ void __fastcall NET_SID_CLIENT_Send_0x58_AuthAccountUpgradeProof(uint32_t nServe
     Storm::Source::SSystem::SMemCopy(__frame0.abSrpSaltCopy, &g_srpSaltVerifier, 0x40);
     Storm::Source::SSystem::SMemZero(&g_srpSaltVerifier, 0x40);
     BnSend::NET_SID_CLIENT_Send(0x58, (char*)&__frame0.dwClientToken, 0x58);
-    Fog::Debug::GuardStack();
+    return 0;
 }
 
 // Verifies the server's 20-byte SRP proof M2 = H(A, M1, K) against the locally computed expected value stored in g_srpCredentials. Called after receiving status 0 in the 0x54 logon proof response.
 int32_t __fastcall NET_SID_CLIENT_VerifyServerProof(void * pM2ServerProof) {
-    BOOL BVar1 = SRP::SRP_ClientVerifyServerProof(&g_srpCredentials, (int*)pM2ServerProof);
+    BOOL BVar1 = SRP::SRP_ClientVerifyServerProof(&g_pSrpContext, &g_srpCredentials, (int*)pM2ServerProof);
     return BVar1;
 }
 
@@ -2031,7 +2010,7 @@ void __stdcall NET_SID_CLIENT_SubstitutionBoxShuffle(int32_t pToken) {
 }
 
 void __fastcall NET_SID_CLIENT_TransformCdKeyToken(int32_t nCdKeyValue, uint32_t * pOutPublic, uint32_t * pOutProduct, uint16_t * pOutHash) {
-    // Frame slots -76..-4 are ONE object: &nBigNum0 is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -76..-8 are ONE object: &nBigNum0 is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       uint32_t nBigNum0;
@@ -2039,13 +2018,11 @@ void __fastcall NET_SID_CLIENT_TransformCdKeyToken(int32_t nCdKeyValue, uint32_t
       uint32_t pBigNum2;
       uint32_t nBigNum3;
       uint8_t base5Digits[52];
-      uint32_t securityCookie;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 72, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 68, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     uint32_t dwLfsrSeed;
     int digitIndex;
-    __frame0.securityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (nCdKeyValue && pOutHash) {
       NET_SID_CLIENT_ExpandCdKeyToBase5(nCdKeyValue, (int32_t)__frame0.base5Digits);
       digitIndex = 0x34;
@@ -2066,8 +2043,6 @@ void __fastcall NET_SID_CLIENT_TransformCdKeyToken(int32_t nCdKeyValue, uint32_t
       *(uint32_t*)(pOutHash + 1) = __frame0.pBigNum2;
       *(uint32_t*)(pOutHash + 3) = __frame0.nBigNum3;
     }
-
-    Fog::Debug::GuardStack();
 }
 
 // Returns _time32(pTime) with pTime passed in EAX (CRT inline time() copy).
@@ -2102,7 +2077,6 @@ void __fastcall NET_SID_CLIENT_EncodeCDKeyHash(int32_t pThis, int32_t nSeed) {
     int nKeyCharIdx2;
     uint8_t hashWorkBuf[196];
     char cKeyChar;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (!pThis) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4e);
       exit(-1);
@@ -2175,8 +2149,6 @@ void __fastcall NET_SID_CLIENT_EncodeCDKeyHash(int32_t pThis, int32_t nSeed) {
       nKeyCharOffset++;
       pRandBufPos += 0x10;
     } while (nKeyCharOffset < 3);
-
-    Fog::Debug::GuardStack();
 }
 
 int32_t __fastcall NET_SID_CLIENT_DecodeCDKeyHash(int * pnParam, uint32_t nParam, int32_t szCDKey) {
@@ -2195,92 +2167,88 @@ int32_t __fastcall NET_SID_CLIENT_DecodeCDKeyHash(int * pnParam, uint32_t nParam
     uint32_t shaState[5];
     uint8_t byDataByte;
     int nRoundKeyIdx;
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (!pnParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x91);
       exit(-1);
     } else {
-      if (szCDKey) {
-        NET_SID_CLIENT_EncodeCDKeyHash(szCDKey, 0);
-        if (nParam < 9 || (nAlignedLen = nParam - 8 , (nAlignedLen & 0x3f) != 0)) {
-          Fog::Debug::GuardStack();
-          return 0;
-        }
+      if (!szCDKey) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x92);
+        exit(-1);
+      }
 
-        nBlockCounter = 0;
-        while (nAlignedLen) {
-          pSrcCopyPtr = (uint32_t*)pnParam;
-          pEncWorkPtr = (uint32_t*)abEncBlock;
-          for (nLoopIdx = 0x10; nLoopIdx; nLoopIdx--) {
-            *pEncWorkPtr = *pSrcCopyPtr;
-            pSrcCopyPtr++;
-            pEncWorkPtr++;
-          }
-
-          NET_SID_CLIENT_GetSHAState(0, shaState);
-          if (!(nBlockCounter & 7)) {
-            nLoopIdx = 0;
-            do {
-              NET_SID_CLIENT_IDEAEncryptDecrypt(0, (uint16_t*)(abEncBlock + nLoopIdx), (short int*)(abDecBlock + nLoopIdx));
-              nLoopIdx += 8;
-            } while (nLoopIdx < 0x40);
-          } else {
-            pEncBuf = (uint32_t*)abEncBlock;
-            pDecBuf = (uint32_t*)abDecBlock;
-            for (nLoopIdx = 0x10; nLoopIdx; nLoopIdx--) {
-              *pDecBuf = *pEncBuf;
-              pEncBuf++;
-              pDecBuf++;
-            }
-          }
-
-          nKeyByteIdx = 0x3e;
-          nLoopIdx = 0;
-          do {
-            abEncBlock[nLoopIdx] = abDecBlock[nLoopIdx] - *(char*)((int)shaState + (nKeyByteIdx + 1) % 0x14);
-            abEncBlock[nLoopIdx + 1] = abDecBlock[nLoopIdx + 1] - *(char*)((int)shaState + nKeyByteIdx % 0x14);
-            abEncBlock[nLoopIdx + 2] = abDecBlock[nLoopIdx + 2] - *(char*)((int)shaState + (nKeyByteIdx - 1) % 0x14);
-            nRoundKeyIdx = nKeyByteIdx - 2;
-            nKeyByteIdx += -4;
-            abEncBlock[nLoopIdx + 3] = abDecBlock[nLoopIdx + 3] - *(char*)((int)shaState + nRoundKeyIdx % 0x14);
-            nLoopIdx += 4;
-          } while (-2 < nKeyByteIdx);
-
-          if (!(nBlockCounter & 0xf)) {
-            NET_SID_CLIENT_SHA1Compress(0, (uint32_t*)abEncBlock, nullptr);
-          }
-
-          nBlockCounter++;
-          nAlignedLen -= 0x40;
-          pSrcCopyPtr = (uint32_t*)(pnParam + 0x10);
-          pInBufCopy = (uint32_t*)abEncBlock;
-          pWorkBuf = (uint32_t*)pnParam;
-          for (nLoopIdx = 0x10; pnParam = (int*)pSrcCopyPtr , nLoopIdx != 0; nLoopIdx--) {
-            *pWorkBuf = *pInBufCopy;
-            pInBufCopy++;
-            pWorkBuf++;
-          }
-        }
-
-        if ((char)pnParam[1] == '\0') {
-          NET_SID_CLIENT_GetSHAState(0, shaState);
-          if (*pnParam == shaState[0]) {
-            byDataByte = *(uint8_t*)((int)pnParam + 5);
-            NET_SID_CLIENT_ClearIDEAContexts();
-            NET_SID_CLIENT_ClearSHAContexts();
-            Fog::Debug::GuardStack();
-            return nParam - 0x48 + (uint32_t)byDataByte;
-          }
-        }
-
-        NET_SID_CLIENT_ClearIDEAContexts();
-        NET_SID_CLIENT_ClearSHAContexts();
-        Fog::Debug::GuardStack();
+      NET_SID_CLIENT_EncodeCDKeyHash(szCDKey, 0);
+      if (nParam < 9 || (nAlignedLen = nParam - 8 , (nAlignedLen & 0x3f) != 0)) {
         return 0;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x92);
-      exit(-1);
+      nBlockCounter = 0;
+      while (nAlignedLen) {
+        pSrcCopyPtr = (uint32_t*)pnParam;
+        pEncWorkPtr = (uint32_t*)abEncBlock;
+        for (nLoopIdx = 0x10; nLoopIdx; nLoopIdx--) {
+          *pEncWorkPtr = *pSrcCopyPtr;
+          pSrcCopyPtr++;
+          pEncWorkPtr++;
+        }
+
+        NET_SID_CLIENT_GetSHAState(0, shaState);
+        if (!(nBlockCounter & 7)) {
+          nLoopIdx = 0;
+          do {
+            NET_SID_CLIENT_IDEAEncryptDecrypt(0, (uint16_t*)(abEncBlock + nLoopIdx), (short int*)(abDecBlock + nLoopIdx));
+            nLoopIdx += 8;
+          } while (nLoopIdx < 0x40);
+        } else {
+          pEncBuf = (uint32_t*)abEncBlock;
+          pDecBuf = (uint32_t*)abDecBlock;
+          for (nLoopIdx = 0x10; nLoopIdx; nLoopIdx--) {
+            *pDecBuf = *pEncBuf;
+            pEncBuf++;
+            pDecBuf++;
+          }
+        }
+
+        nKeyByteIdx = 0x3e;
+        nLoopIdx = 0;
+        do {
+          abEncBlock[nLoopIdx] = abDecBlock[nLoopIdx] - *(char*)((int)shaState + (nKeyByteIdx + 1) % 0x14);
+          abEncBlock[nLoopIdx + 1] = abDecBlock[nLoopIdx + 1] - *(char*)((int)shaState + nKeyByteIdx % 0x14);
+          abEncBlock[nLoopIdx + 2] = abDecBlock[nLoopIdx + 2] - *(char*)((int)shaState + (nKeyByteIdx - 1) % 0x14);
+          nRoundKeyIdx = nKeyByteIdx - 2;
+          nKeyByteIdx += -4;
+          abEncBlock[nLoopIdx + 3] = abDecBlock[nLoopIdx + 3] - *(char*)((int)shaState + nRoundKeyIdx % 0x14);
+          nLoopIdx += 4;
+        } while (-2 < nKeyByteIdx);
+
+        if (!(nBlockCounter & 0xf)) {
+          NET_SID_CLIENT_SHA1Compress(0, (uint32_t*)abEncBlock, nullptr);
+        }
+
+        nBlockCounter++;
+        nAlignedLen -= 0x40;
+        pSrcCopyPtr = (uint32_t*)(pnParam + 0x10);
+        pInBufCopy = (uint32_t*)abEncBlock;
+        pWorkBuf = (uint32_t*)pnParam;
+        for (nLoopIdx = 0x10; pnParam = (int*)pSrcCopyPtr , nLoopIdx != 0; nLoopIdx--) {
+          *pWorkBuf = *pInBufCopy;
+          pInBufCopy++;
+          pWorkBuf++;
+        }
+      }
+
+      if ((char)pnParam[1] == '\0') {
+        NET_SID_CLIENT_GetSHAState(0, shaState);
+        if (*pnParam == shaState[0]) {
+          byDataByte = *(uint8_t*)((int)pnParam + 5);
+          NET_SID_CLIENT_ClearIDEAContexts();
+          NET_SID_CLIENT_ClearSHAContexts();
+          return nParam - 0x48 + (uint32_t)byDataByte;
+        }
+      }
+
+      NET_SID_CLIENT_ClearIDEAContexts();
+      NET_SID_CLIENT_ClearSHAContexts();
+      return 0;
     }
 }
 
@@ -2320,86 +2288,84 @@ void __fastcall NET_SID_CLIENT_EncodeBuffer(uint32_t * pdwParam, uint32_t nParam
       exit(-1);
     } else {
       nLine = NET_SID_CLIENT_CalculateAlignedBufferSize(nParam);
-      if (nBufferAlignment == nLine) {
-        NET_SID_CLIENT_EncodeCDKeyHash(szCDKey, 1);
-        nChunkSize = 0;
-        nBlockCounter = 0;
-        while (nParam) {
-          nChunkSize = nParam;
-          if (0x3f < nParam) {
-            nChunkSize = 0x40;
-          }
+      if (nBufferAlignment != nLine) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x108);
+        exit(-1);
+      }
 
-          memcpy(abPlainBlock, pdwParam, nChunkSize);
-          if (nChunkSize < 0x40) {
-            memset(abPlainBlock + nChunkSize, 0, 0x40 - nChunkSize);
-          }
+      NET_SID_CLIENT_EncodeCDKeyHash(szCDKey, 1);
+      nChunkSize = 0;
+      nBlockCounter = 0;
+      while (nParam) {
+        nChunkSize = nParam;
+        if (0x3f < nParam) {
+          nChunkSize = 0x40;
+        }
 
-          NET_SID_CLIENT_GetSHAState(0, shaState);
-          if (!(nBlockCounter & 0xf)) {
-            NET_SID_CLIENT_SHA1Compress(0, (uint32_t*)abPlainBlock, nullptr);
-          }
+        memcpy(abPlainBlock, pdwParam, nChunkSize);
+        if (nChunkSize < 0x40) {
+          memset(abPlainBlock + nChunkSize, 0, 0x40 - nChunkSize);
+        }
 
+        NET_SID_CLIENT_GetSHAState(0, shaState);
+        if (!(nBlockCounter & 0xf)) {
+          NET_SID_CLIENT_SHA1Compress(0, (uint32_t*)abPlainBlock, nullptr);
+        }
+
+        nCopyCount = 0;
+        do {
+          abEncBlock[nCopyCount] = *(char*)((int)shaState + (0x3fU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount];
+          abEncBlock[nCopyCount + 1] = *(char*)((int)shaState + (0x3eU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount + 1];
+          abEncBlock[nCopyCount + 2] = *(char*)((int)shaState + (0x3dU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount + 2];
+          nKeyByteIdx = nCopyCount + 4;
+          abEncBlock[nCopyCount + 3] = *(char*)((int)shaState + (0x3cU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount + 3];
+          nCopyCount = nKeyByteIdx;
+        } while (nKeyByteIdx < 0x40);
+
+        if (!(nBlockCounter & 7)) {
           nCopyCount = 0;
           do {
-            abEncBlock[nCopyCount] = *(char*)((int)shaState + (0x3fU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount];
-            abEncBlock[nCopyCount + 1] = *(char*)((int)shaState + (0x3eU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount + 1];
-            abEncBlock[nCopyCount + 2] = *(char*)((int)shaState + (0x3dU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount + 2];
-            nKeyByteIdx = nCopyCount + 4;
-            abEncBlock[nCopyCount + 3] = *(char*)((int)shaState + (0x3cU - nCopyCount) % 0x14) + abPlainBlock[nCopyCount + 3];
-            nCopyCount = nKeyByteIdx;
-          } while (nKeyByteIdx < 0x40);
-
-          if (!(nBlockCounter & 7)) {
-            nCopyCount = 0;
-            do {
-              NET_SID_CLIENT_IDEAEncryptDecrypt(0, (uint16_t*)(abEncBlock + nCopyCount), (short int*)(abPlainBlock + nCopyCount));
-              nCopyCount += 8;
-            } while (nCopyCount < 0x40);
-          } else {
-            pSrcBlock = (uint32_t*)abEncBlock;
-            pDstBlock = (uint32_t*)abPlainBlock;
-            for (nCopyCount = 0x10; nCopyCount; nCopyCount--) {
-              *pDstBlock = *pSrcBlock;
-              pSrcBlock++;
-              pDstBlock++;
-            }
-          }
-
-          puVar1 = pdwParam + 0x10;
-          nBlockCounter++;
-          nParam -= nChunkSize;
-          pDstPtr = (uint32_t*)abPlainBlock;
-          pNextSrcBlock = pdwParam;
-          for (nCopyCount = 0x10; pdwParam = puVar1 , nCopyCount != 0; nCopyCount--) {
-            *pNextSrcBlock = *pDstPtr;
-            pDstPtr++;
-            pNextSrcBlock++;
+            NET_SID_CLIENT_IDEAEncryptDecrypt(0, (uint16_t*)(abEncBlock + nCopyCount), (short int*)(abPlainBlock + nCopyCount));
+            nCopyCount += 8;
+          } while (nCopyCount < 0x40);
+        } else {
+          pSrcBlock = (uint32_t*)abEncBlock;
+          pDstBlock = (uint32_t*)abPlainBlock;
+          for (nCopyCount = 0x10; nCopyCount; nCopyCount--) {
+            *pDstBlock = *pSrcBlock;
+            pSrcBlock++;
+            pDstBlock++;
           }
         }
 
-        NET_SID_CLIENT_GetSHAState(0, shaFinalState);
-        *pdwParam = shaFinalState[0];
-        *(uint8_t*)(pdwParam + 1) = 0;
-        *(char*)((int)pdwParam + 5) = (char)nChunkSize;
-        *(uint16_t*)((int)pdwParam + 6) = 0;
-        NET_SID_CLIENT_ClearIDEAContexts();
-        NET_SID_CLIENT_ClearSHAContexts();
-        Fog::Debug::GuardStack();
-        return;
+        puVar1 = pdwParam + 0x10;
+        nBlockCounter++;
+        nParam -= nChunkSize;
+        pDstPtr = (uint32_t*)abPlainBlock;
+        pNextSrcBlock = pdwParam;
+        for (nCopyCount = 0x10; pdwParam = puVar1 , nCopyCount != 0; nCopyCount--) {
+          *pNextSrcBlock = *pDstPtr;
+          pDstPtr++;
+          pNextSrcBlock++;
+        }
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x108);
-      exit(-1);
+      NET_SID_CLIENT_GetSHAState(0, shaFinalState);
+      *pdwParam = shaFinalState[0];
+      *(uint8_t*)(pdwParam + 1) = 0;
+      *(char*)((int)pdwParam + 5) = (char)nChunkSize;
+      *(uint16_t*)((int)pdwParam + 6) = 0;
+      NET_SID_CLIENT_ClearIDEAContexts();
+      NET_SID_CLIENT_ClearSHAContexts();
+      return;
     }
 }
 
-int32_t NET_SID_CLIENT_DecodeAndValidateBuffer(int * pnParam, uint32_t nParam) {
+static int32_t NET_SID_CLIENT_DecodeAndValidateBuffer(int * pnParam, uint32_t nParam) {
     uint32_t nSearchLimit;
     int nNonNullCount;
     uint8_t szRandKey[20];
     int nCurByte;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     NET_SID_CLIENT_GenerateRandomString((int32_t)szRandKey, 0x14);
     uint32_t nDecodedLen = NET_SID_CLIENT_DecodeCDKeyHash(pnParam, nParam, (int32_t)szRandKey);
     if (nDecodedLen && nDecodedLen < nParam) {
@@ -2417,23 +2383,20 @@ int32_t NET_SID_CLIENT_DecodeAndValidateBuffer(int * pnParam, uint32_t nParam) {
             break;
           }
           if (!nSearchLimit) {
-            Fog::Debug::GuardStack();
             return 0;
           }
         }
 
         if (nNonNullCount) {
-          Fog::Debug::GuardStack();
           return 1;
         }
       }
     }
 
-    Fog::Debug::GuardStack();
     return 0;
 }
 
-uint32_t * NET_SID_CLIENT_LoadAndDecodeCDKeyFile(uint32_t * pnParam, DWORD * dwParam) {
+static uint32_t * NET_SID_CLIENT_LoadAndDecodeCDKeyFile(uint32_t * pnParam, DWORD * dwParam) {
     *dwParam = 0x400;
     uint32_t* pLoadedKeyBuf = pnParam;
     Storm::Source::SFile::SFileLoadFile((char*)pnParam, (void**)&pLoadedKeyBuf, dwParam, 1, 0);
@@ -2623,8 +2586,6 @@ void __stdcall DecodeAndLoadKeys() {
         pLoadedKeyBuf++;
       } while (*pLoadedKeyBuf != '\0');
     }
-
-    Fog::Debug::GuardStack();
 }
 
 void __stdcall FreeKeys() {
@@ -2978,8 +2939,6 @@ void __fastcall NET_SID_CLIENT_IDEAInvertKey(uint16_t * pEncryptKey, uint16_t * 
       pWrite++;
       copyCounter--;
     } while (copyCounter);
-
-    Fog::Debug::GuardStack();
 }
 
 void __fastcall NET_SID_CLIENT_IDEACrypt(uint16_t * pPlaintext, short * pCiphertext, uint16_t * pSubkeys) {

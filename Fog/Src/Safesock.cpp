@@ -11,23 +11,22 @@
 #include "Fog/Src/LogManager.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2NetDataStrc) == 0x78, "D2_NEW(D2NetDataStrc): the 32-bit layout must be the 0x78 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2NetDataStrc) == 0x78, "D2_NEW_AT(D2NetDataStrc): the 32-bit layout must be the 0x78 bytes 1.14d allocates");
 
 
 namespace Fog::Src::Safesock {
@@ -39,9 +38,7 @@ int __fastcall closeSocket(SOCKET hSocket) {
 
 BOOL __stdcall StartUp() {
     WSADATA wsaData;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int nResult = WSAStartup(0x101, &wsaData);
-    Debug::GuardStack();
     return (uint32_t)!nResult;
 }
 
@@ -66,7 +63,7 @@ D2NetDataStrc * __fastcall Create(char * szHostName, u_short nPort, LPTHREAD_STA
     LPVOID pThreadParamLocal = pThreadParam;
     LPTHREAD_START_ROUTINE pThreadProcLocal = pThreadProc;
     char* szHostNameOrSockLen = szHostName;
-    D2NetDataStrc* pSafesockStrc = D2_NEW(D2NetDataStrc);
+    D2NetDataStrc* pSafesockStrc = D2_NEW_AT(D2NetDataStrc, ".\\Src\\Safesock.cpp", 0xcc);
     memset(pSafesockStrc, 0, 0x78);
     if (!szConnectionAlias) {
       szConnectionAlias = "UNKNOWN";
@@ -79,8 +76,7 @@ D2NetDataStrc * __fastcall Create(char * szHostName, u_short nPort, LPTHREAD_STA
       /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ pSafesockStrc->nWSALastError = nResult;
       pSafesockStrc->nError = 1;
       DeleteCriticalSection(&pSafesockStrc->pSync);
-      D2_FREE(pSafesockStrc);
-      Debug::GuardStack();
+      D2_FREE_AT(pSafesockStrc, ".\\Src\\Safesock.cpp", 0xdf);
       return nullptr;
     }
 
@@ -91,8 +87,7 @@ D2NetDataStrc * __fastcall Create(char * szHostName, u_short nPort, LPTHREAD_STA
       pSafesockStrc->nWSALastError = nResult;
       /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ pSafesockStrc->nError = 2;
       DeleteCriticalSection(&pSafesockStrc->pSync);
-      D2_FREE(pSafesockStrc);
-      Debug::GuardStack();
+      D2_FREE_AT(pSafesockStrc, ".\\Src\\Safesock.cpp", 0xf3);
       return nullptr;
     }
 
@@ -132,8 +127,7 @@ D2NetDataStrc * __fastcall Create(char * szHostName, u_short nPort, LPTHREAD_STA
         pSafesockStrc->nWSALastError = nResult;
         /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ pSafesockStrc->nError = 3;
         DeleteCriticalSection(&pSafesockStrc->pSync);
-        D2_FREE(pSafesockStrc);
-        Debug::GuardStack();
+        D2_FREE_AT(pSafesockStrc, ".\\Src\\Safesock.cpp", 0x123);
         return nullptr;
       }
     }
@@ -161,7 +155,6 @@ D2NetDataStrc * __fastcall Create(char * szHostName, u_short nPort, LPTHREAD_STA
       pSafesockStrc->hSocketThread = hThread;
     }
 
-    Debug::GuardStack();
     return pSafesockStrc;
 }
 
@@ -193,7 +186,7 @@ void __fastcall Free(D2NetDataStrc * pNetData) {
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ DeleteCriticalSection(lpCriticalSection);
-    D2_FREE(pNetData);
+    D2_FREE_AT(pNetData, ".\\Src\\Safesock.cpp", 0x183);
 }
 
 int32_t __fastcall WSASocket2_Read(D2NetDataStrc * pNetData, char * pBuffer, size_t nSize) {
@@ -293,12 +286,12 @@ int __fastcall Safesock_PollReadReady(D2NetDataStrc * pNetData) {
       /* fd_set * param_2 for __WSAFDIsSet */ /* SOCKET param_1 for __WSAFDIsSet */ nResult = __WSAFDIsSet(pNetData->hSocket, &exceptFds);
       if (!nResult) {
         /* fd_set * param_2 for __WSAFDIsSet */ /* SOCKET param_1 for __WSAFDIsSet */ nResult = __WSAFDIsSet(pNetData->hSocket, &readFds);
-        if (nResult) {
-          return 1;
+        if (!nResult) {
+          ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x22e);
+          exit(-1);
         }
 
-        ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x22e);
-        exit(-1);
+        return 1;
       }
     }
 
@@ -327,7 +320,6 @@ char * __stdcall NET_GetLocalIp() {
     sockaddr_in connectAddr;
     sockaddr_in sLocalSockAddr;
     char szHostName[256];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     /* LPWSADATA lpWSAData for WSAStartup */ /* WORD wVersionRequired for WSAStartup */ sLocalSockAddr.sin_addr = 0;
     WSAStartup(0x101, &wsaData);
     int nResult = gethostname(szHostName, 0x100);
@@ -356,46 +348,12 @@ char * __stdcall NET_GetLocalIp() {
     char* pcVar3 = inet_ntoa((in_addr)sLocalSockAddr.sin_addr);
     sprintf(cp_0075d040, "%s", pcVar3);
     WSACleanup();
-    Debug::GuardStack();
     return cp_0075d040;
 }
 
 char * __fastcall NET_MakeIPV4AddressHumanFriendly(in_addr sAddr) {
     // Static local variables (originally global data)
-    static char szIPV4Address[32] = {
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-}; D2_STATIC_GUARD(szIPV4Address, "Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly::szIPV4Address");
+    static char szIPV4Address[32] = {}; D2_STATIC_GUARD(szIPV4Address, "Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly::szIPV4Address");
 
     char cChar;
     char* pSrc = inet_ntoa(sAddr);

@@ -9,12 +9,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -28,7 +28,7 @@ void FOG_ClearStruct12Bytes(uint32_t * pdwParam) {
 
 // @sourcefile .\Src\DataArrays.cpp
 D2DataArrayStrc * __fastcall FOG_CreateDataArray(char * pszName, int numObjects, int nObjectSize) {
-    D2DataArrayStrc* local_EAX_31 = (D2DataArrayStrc*)D2_ALLOC(numObjects * nObjectSize + 0x120);
+    D2DataArrayStrc* local_EAX_31 = (D2DataArrayStrc*)D2_ALLOC_AT(numObjects * nObjectSize + 0x120, ".\\Src\\DataArrays.cpp", 0x34);
     if (!local_EAX_31) {
       return local_EAX_31;
     }
@@ -45,12 +45,17 @@ D2DataArrayStrc * __fastcall FOG_CreateDataArray(char * pszName, int numObjects,
 // @sourcefile .\Src\DataArrays.cpp
 void __fastcall FreeWeatherPointer(void * pParam) {
     memset(pParam, 0, 0x120);
-    D2_FREE(pParam);
+    D2_FREE_AT(pParam, ".\\Src\\DataArrays.cpp", 0x4c);
 }
 
 void __fastcall FOG_InitDataArray(D2DataArrayStrc * pDataArray) {
     int nObjectOffset;
-    if (pDataArray->bInitialized) {
+    if (!pDataArray->bInitialized) {
+      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x68);
+      exit(-1);
+    }
+
+    {
       int nObjectIndex;
       nObjectIndex = 0;
       pDataArray->nHighestUsedIndex = -1;
@@ -69,9 +74,6 @@ void __fastcall FOG_InitDataArray(D2DataArrayStrc * pDataArray) {
 
       return;
     }
-
-    ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x68);
-    exit(-1);
 }
 
 uint32_t __fastcall FOG_GetMissileField(D2MissilesTxt * pMissilesTxt) {
@@ -126,21 +128,21 @@ short * __fastcall FOG_GetDataArrayEntry(D2DataArrayStrc * pDataArray, int nHand
       exit(-1);
     } else {
       short int* pEntry;
-      if (pDataArray->bInitialized) {
-        pEntry = (short int*)(pDataArray->nObjectSize * nHighWord + (int)pDataArray->pData);
-        nSlotId = *pEntry;
-        if (!nSlotId) {
-          return nullptr;
-        }
-        if (!((short int)nHandle && nSlotId != (short int)nHandle)) {
-          return pEntry;
-        }
-
-        return nullptr;
+      if (!pDataArray->bInitialized) {
+        ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0xde);
+        exit(-1);
       }
 
-      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0xde);
-      exit(-1);
+      pEntry = (short int*)(pDataArray->nObjectSize * nHighWord + (int)pDataArray->pData);
+      nSlotId = *pEntry;
+      if (!nSlotId) {
+        return nullptr;
+      }
+      if (!((short int)nHandle && nSlotId != (short int)nHandle)) {
+        return pEntry;
+      }
+
+      return nullptr;
     }
 }
 
@@ -148,12 +150,12 @@ short * __fastcall FOG_GetDataArrayEntry(D2DataArrayStrc * pDataArray, int nHand
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 short * __fastcall FOG_GetDataArrayEntryOrHalt(D2DataArrayStrc * pDataArray, int nHandle) {
     short int* psVar1 = FOG_GetDataArrayEntry(pDataArray, nHandle);
-    if (psVar1) {
-      return psVar1;
+    if (!psVar1) {
+      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0xfd);
+      exit(-1);
     }
 
-    ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0xfd);
-    exit(-1);
+    return psVar1;
     return psVar1;
 }
 

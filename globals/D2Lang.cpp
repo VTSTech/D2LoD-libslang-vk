@@ -437,14 +437,7 @@ D2Utf8DecodeRowStrc gaUtf8DecodeTable[7] = {
         /* .dwCodePointMask = */ 0x7fffffff,
         /* .dwMinValue = */ 0x4000000
     },
-    {
-        /* .wMask = */ 0x0,
-        /* .wExpect = */ 0x0,
-        /* .wShift = */ 0x0,
-        /* .wPad = */ 0x0,
-        /* .dwCodePointMask = */ 0x0,
-        /* .dwMinValue = */ 0x0
-    }
+    {}
 }; D2_GLOBAL_GUARD(gaUtf8DecodeTable, "gaUtf8DecodeTable");
 
 // =============================================================================

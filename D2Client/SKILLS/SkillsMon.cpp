@@ -649,7 +649,7 @@ BOOL __fastcall Skills_CltDoFunc_Mon_SpawnMissilesInArea(D2UnitStrc * pUnit, eD2
 }
 
 // Configures the total frame count and animation speed of an existing missile unit (pUnit2). Frame count comes from skill calc[0], falling back to MissileTxt.Param2-1+nSkillLvl, clamped to [1, 255]. Sets path distance, animation speed (AnimLen&lt;&lt;8 / frames), total frames, and current frame on the missile. Used to synchronize missile travel time with skill level.
-void __stdcall SKILLSMON_SetMissileFrameAndSpeed(uint32_t dwUnused, eD2Skills eSkill, D2UnitStrc * pUnit, int32_t nSkillLvl, D2UnitStrc * pUnit2) {
+static void __stdcall SKILLSMON_SetMissileFrameAndSpeed(uint32_t dwUnused, eD2Skills eSkill, D2UnitStrc * pUnit, int32_t nSkillLvl, D2UnitStrc * pUnit2) {
     if ((int)eSkill < 0 || sgptDataTable->nTxtSkillsCount <= (int)eSkill || !(sgptDataTable->pTxtSkills + eSkill)) {
       return;
     }
@@ -684,7 +684,7 @@ void __stdcall SKILLSMON_SetMissileFrameAndSpeed(uint32_t dwUnused, eD2Skills eS
 }
 
 // Creates a single missile from a pre-built D2SkillArgStrc using pUnit's RNG seed to pick a velocity offset from a table (pVelocityOffsets points to an int array, seed mod 5 selects entry). Advances pUnit->sSeed twice. After MakeMissile succeeds, calls SKILLSMON_SetMissileFrameAndSpeed to apply frame/speed from skill calc. Returns the new missile unit or NULL on failure.
-D2UnitStrc * __stdcall SKILLSMON_CreateMissileWithSeed(int32_t * pVelocityOffsets, int32_t nParam2, int32_t nParam3, eD2Skills eSkill, int32_t nParam4, D2UnitStrc * pUnit, int32_t nParam5) {
+static D2UnitStrc * __stdcall SKILLSMON_CreateMissileWithSeed(int32_t * pVelocityOffsets, int32_t nParam2, int32_t nParam3, eD2Skills eSkill, int32_t nParam4, D2UnitStrc * pUnit, int32_t nParam5) {
     uint32_t dwUnusedPad;
     D2SkillArgStrc sSkillArg;
     memset(&sSkillArg, 0, 0x5c);

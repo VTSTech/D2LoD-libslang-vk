@@ -28,24 +28,23 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/Excel.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -875,12 +874,12 @@ D2LevelsTxt * __stdcall TXT_Levels_GetLine(eD2LevelId eLevel) {
     return sgptDataTable->pTxtLevels + eLevel;
 }
 
-bool __stdcall LEVEL_CanHaveRain(eD2LevelId eLevel) {
+uint8_t __stdcall LEVEL_CanHaveRain(eD2LevelId eLevel) {
     if (!(0 < (int)eLevel && (int)eLevel < sgptDataTable->nTxtLevelsSize)) {
-      return false;
+      return '\0';
     }
 
-    return (bool)sgptDataTable->pTxtLevels[eLevel].Rain;
+    return sgptDataTable->pTxtLevels[eLevel].Rain;
 }
 
 uint32_t __stdcall LVLTBLS_GetNoPer(uint32_t nParam) {
@@ -891,12 +890,12 @@ uint32_t __stdcall LVLTBLS_GetNoPer(uint32_t nParam) {
     return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(nParam * 0x220 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)sgptDataTable->pTxtLevels[nParam].NoPer);
 }
 
-bool __stdcall LEVEL_CanHaveMud(eD2LevelId eLevel) {
+uint8_t __stdcall LEVEL_CanHaveMud(eD2LevelId eLevel) {
     if (!(0 < (int)eLevel && (int)eLevel < sgptDataTable->nTxtLevelsSize)) {
-      return false;
+      return '\0';
     }
 
-    return (bool)sgptDataTable->pTxtLevels[eLevel].Mud;
+    return sgptDataTable->pTxtLevels[eLevel].Mud;
 }
 
 void __stdcall LVLTBLS_FreeLevelsTxt() {
@@ -927,7 +926,7 @@ int32_t __stdcall TXT_Levels_GetMonLvlForDifficulty(eD2LevelId eLevel, eD2Diffic
 
 // Scans the LevelDefs table for levels with the Portal flag set, counts them, allocates a server array (gpPortalLevelArray) of that size, and fills it with the level indices. Used at startup to build the list of portal-accessible levels. Halts if write index exceeds the counted portal level count.
 // @sourcefile .\DATATBLS\LvlTbls.cpp
-void LVLTBLS_BuildPortalLevelArray(D2LevelDefsTxt * pTxtLevelDefs) {
+static void LVLTBLS_BuildPortalLevelArray(D2LevelDefsTxt * pTxtLevelDefs) {
     int* pPortalFieldCur;
     int nLevelsRemaining = sgptDataTable->nTxtLevelsSize;
     nPortalLevelCount = 0;
@@ -947,7 +946,7 @@ void LVLTBLS_BuildPortalLevelArray(D2LevelDefsTxt * pTxtLevelDefs) {
 
       nPortalLevelCount = nPortalLevels;
       if (nPortalLevels) {
-        pPortalLevelIds = D2_ALLOC_POOL(nullptr, nPortalLevels * 4);
+        pPortalLevelIds = D2_ALLOC_POOL_AT(nullptr, nPortalLevels * 4, ".\\DATATBLS\\LvlTbls.cpp", 0x16c);
         nPortalLevels = nPortalLevelCount;
         gpPortalLevelArray = pPortalLevelIds;
         memset(pPortalLevelIds, 0, nPortalLevelCount * 4);
@@ -1213,7 +1212,7 @@ void __stdcall LVLTBLS_FreeLevelDefsTxt() {
       return;
     }
 
-    D2_FREE_POOL(nullptr, gpPortalLevelArray);
+    D2_FREE_POOL_AT(nullptr, gpPortalLevelArray, ".\\DATATBLS\\LvlTbls.cpp", 0x1d9);
 }
 
 D2LevelDefsTxt * __fastcall TXT_LevelDefs_GetLine(eD2LevelId eLevel) {
@@ -1225,11 +1224,10 @@ D2LevelDefsTxt * __fastcall TXT_LevelDefs_GetLine(eD2LevelId eLevel) {
 }
 
 // Converts all forward slashes '/' in a level path string to backslashes '\\' in-place, then prepends the data directory prefix via wsprintfA. Used to normalize DS1/DT1 file paths loaded from level text tables to Windows path format.
-void __fastcall LVLTBLS_FixPathSlashes(char * szText, char * szPathPrefix) {
+static void __fastcall LVLTBLS_FixPathSlashes(char * szText, char * szPathPrefix) {
     int i;
     char szFormatBuf[60];
     char cCurrent;
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* pcScan = szText;
     pcScan = pcScan + strlen(pcScan) + 1;
     int pcSrc = (int)pcScan - (int)(szText + 1);
@@ -1255,8 +1253,6 @@ void __fastcall LVLTBLS_FixPathSlashes(char * szText, char * szPathPrefix) {
         pcScan++;
       } while (cCurrent != '\0');
     }
-
-    Fog::Debug::GuardStack();
 }
 
 // Loads and compiles lvltypes.txt into the global pTxtLvlTypes / nTxtLvlTypesSize table. Builds a D2BinFieldInputStrc schema describing the row layout: 32 "File N" ASCII path fields (0x3b bytes each), plus Act (char) and Expansion (int), terminated by an END field; row stride 0x788. Calls CompileTxt to parse the txt via pMemory pool, then post-processes every row converting forward to back slashes in all 32 file-path strings via LVLTBLS_FixPathSlashes. Part of D2Common data-table init.
@@ -1465,12 +1461,12 @@ void __stdcall thunk_UnloadBin_DataTbls() {
 }
 
 D2LvlTypesTxt * __stdcall TXT_LvlTypes_GetLine(int32_t nLvlTypeId) {
-    if (pTxtLvlTypes) {
-      return pTxtLvlTypes + nLvlTypeId;
+    if (!pTxtLvlTypes) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x251);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x251);
-    exit(-1);
+    return pTxtLvlTypes + nLvlTypeId;
     return pTxtLvlTypes + nLvlTypeId;
 }
 
@@ -1640,7 +1636,7 @@ void __fastcall TXT_AllocTxt_lvlprest(D2PoolManagerStrc * pMemory, int32_t nPara
     if (nParam) {
       size_t nAllocSize;
       nAllocSize = sgptDataTable->nTxtLvlPrestSize * 0x18;
-      pTxtLvlTbls = (D2LvlTblsTxt*)D2_ALLOC(nAllocSize);
+      pTxtLvlTbls = (D2LvlTblsTxt*)D2_ALLOC_AT(nAllocSize, ".\\DATATBLS\\LvlTbls.cpp", 0x2a7);
       memset(pTxtLvlTbls, 0, nAllocSize);
     }
 
@@ -1700,7 +1696,7 @@ void __stdcall TXT_LvlTbls_Free() {
         } while (i < sgptDataTable->nTxtLvlPrestSize * 6);
       }
 
-      D2_FREE(pMemoryToFree);
+      D2_FREE_AT(pMemoryToFree, ".\\DATATBLS\\LvlTbls.cpp", 0x2d2);
       pTxtLvlTbls = 0;
     }
     if (!sgtDataTable.pTxtLvlPrest) {
@@ -2053,7 +2049,7 @@ void __fastcall TXT_AllocTxt_lvlsub(D2PoolManagerStrc * pMemory, int32_t nParam,
 
       if (nMaxTypeId) {
         nAllocSize = nMaxTypeId * 4 + 4;
-        gpnLvlSubTypeToIndex = (int*)D2_ALLOC_POOL(nullptr, nAllocSize);
+        gpnLvlSubTypeToIndex = (int*)D2_ALLOC_POOL_AT(nullptr, nAllocSize, ".\\DATATBLS\\LvlTbls.cpp", 0x3a6);
         memset(gpnLvlSubTypeToIndex, 0, nAllocSize);
         i = 0;
         nRowCount = nTxtLvlSubSize;
@@ -2075,7 +2071,7 @@ void __fastcall TXT_AllocTxt_lvlsub(D2PoolManagerStrc * pMemory, int32_t nParam,
       }
     }
     if (nParam || bGametypeIsOBNetHost) {
-      gpaDrlgLvlSubPresetFiles = D2_ALLOC(nRowCount * 4);
+      gpaDrlgLvlSubPresetFiles = D2_ALLOC_AT(nRowCount * 4, ".\\DATATBLS\\LvlTbls.cpp", 0x3b6);
       memset(gpaDrlgLvlSubPresetFiles, 0, nTxtLvlSubSize * 4);
     }
 
@@ -2122,7 +2118,7 @@ void __stdcall TXT_FreeTxt_LvlSub() {
         } while (i < nTxtLvlSubSize);
       }
 
-      D2_FREE(pMemoryToFree);
+      D2_FREE_AT(pMemoryToFree, ".\\DATATBLS\\LvlTbls.cpp", 0x3d8);
       gpaDrlgLvlSubPresetFiles = 0;
     }
     if (sgpTxtLvlSub) {
@@ -2143,7 +2139,7 @@ void __stdcall TXT_FreeTxt_LvlSub() {
       return;
     }
 
-    D2_FREE_POOL(nullptr, gpnLvlSubTypeToIndex);
+    D2_FREE_POOL_AT(nullptr, gpnLvlSubTypeToIndex, ".\\DATATBLS\\LvlTbls.cpp", 1000);
     gpnLvlSubTypeToIndex = 0;
 }
 
@@ -2155,12 +2151,12 @@ D2LvlSubTxt * __fastcall TXT_LvlSub_GetLineFromSubType(int32_t nSubType) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3f2);
       exit(-1);
     } else {
-      if (gpnLvlSubTypeToIndex) {
-        return sgpTxtLvlSub + gpnLvlSubTypeToIndex[nSubType];
+      if (!gpnLvlSubTypeToIndex) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3f3);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3f3);
-      exit(-1);
+      return sgpTxtLvlSub + gpnLvlSubTypeToIndex[nSubType];
     }
 }
 
@@ -2177,7 +2173,7 @@ void __stdcall TXT_LoadExpansionLvlTbls() {
     }
 
     size_t nAllocSize = nTxtLvlTypesSize << 0xc;
-    D2ExpansionLvlTblsTxt* pExpLvlTblsRow = (D2ExpansionLvlTblsTxt*)D2_ALLOC_POOL(nullptr, nAllocSize);
+    D2ExpansionLvlTblsTxt* pExpLvlTblsRow = (D2ExpansionLvlTblsTxt*)D2_ALLOC_POOL_AT(nullptr, nAllocSize, ".\\DATATBLS\\LvlTbls.cpp", 0x413);
     pExpansionLvlTbls = pExpLvlTblsRow;
     memset(pExpLvlTblsRow, 0, nAllocSize);
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
@@ -2216,11 +2212,11 @@ void __stdcall TXT_FreeExpansionLvlTbls() {
       return;
     }
 
-    D2_FREE_POOL(nullptr, pExpansionLvlTbls);
+    D2_FREE_POOL_AT(nullptr, pExpansionLvlTbls, ".\\DATATBLS\\LvlTbls.cpp", 0x43a);
 }
 
 // Looks up the automap level ID for a given level name string by linearly scanning a hardcoded name table (stride 0x10, ending before 0x6E7F8F). Returns the zero-based index of the matching entry, or 0 if the input starts with '0'. Halts with an internal error if the table end is exceeded.
-int32_t LVLTBLS_GetAutomapLevelId(char * szLevelName) {
+static int32_t LVLTBLS_GetAutomapLevelId(char * szLevelName) {
     // Static local variables (originally global data)
     static char gaAutomapLevelNames[36][16] = {
     {
@@ -2900,7 +2896,7 @@ int32_t LVLTBLS_GetAutomapLevelId(char * szLevelName) {
 }
 
 // Linear search through a hardcoded table of tile-name strings (e.g. "fl") to resolve an automap tile name to its integer tile ID. Returns 0 if the name starts with '0' or matches the first entry; halts with an internal error if the table end is overrun. In: szTileName (EDI). Out: matching tile ID or 0.
-int32_t LVLTBLS_GetAutomapTileId(char * szTileName) {
+static int32_t LVLTBLS_GetAutomapTileId(char * szTileName) {
     int nTileId = 0;
     if (*szTileName == '0') {
       return 0;
@@ -2997,7 +2993,7 @@ void __fastcall TXT_AllocTxt_automap(D2PoolManagerStrc * pMemory) {
     automap[9].nOffset = 0;
     automap[9].fpLinker = 0;
     D2AutomapTxt* pTxtAutomap = (D2AutomapTxt*)DataTbls::CompileTxt(pMemory, "automap", automap, &nTxtAutomapSize, 0x2c);
-    D2AutoMapLvlTbls* pAutoMapLvlTbls_lcl = (D2AutoMapLvlTbls*)D2_ALLOC_POOL(nullptr, nTxtAutomapSize << 5);
+    D2AutoMapLvlTbls* pAutoMapLvlTbls_lcl = (D2AutoMapLvlTbls*)D2_ALLOC_POOL_AT(nullptr, nTxtAutomapSize << 5, ".\\DATATBLS\\LvlTbls.cpp", 0x4f7);
     memset(pAutoMapLvlTbls_lcl, 0, nTxtAutomapSize << 5);
     int nTxtRow = 0;
     if (0 < nTxtAutomapSize) {
@@ -3070,12 +3066,12 @@ void __fastcall TXT_AllocTxt_automap(D2PoolManagerStrc * pMemory) {
         gpaAutoMapRelated[nIndex].nCount = nAutoMapRow;
       } while (nAutoMapRow < nTxtAutomapSize);
     }
-    if (nAutoMapRow <= nTxtAutomapSize) {
-      return;
+    if (!(nAutoMapRow <= nTxtAutomapSize)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), (int32_t)pTxtAutomap);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), (int32_t)pTxtAutomap);
-    exit(-1);
+    return;
 }
 
 int32_t __fastcall GetRandomCellNo(int32_t nLevelType, int32_t nOrientation, int32_t nIndex, int32_t nSubIndex) {
@@ -3115,7 +3111,7 @@ int32_t __fastcall GetRandomCellNo(int32_t nLevelType, int32_t nOrientation, int
 // @sourcefile .\DATATBLS\LvlTbls.cpp
 void __stdcall FreeAutoMapLvlTbls() {
     if (pAutoMapLvlTbls) {
-      D2_FREE_POOL(nullptr, pAutoMapLvlTbls);
+      D2_FREE_POOL_AT(nullptr, pAutoMapLvlTbls, ".\\DATATBLS\\LvlTbls.cpp", 0x551);
     }
 
     pAutoMapLvlTbls = 0;

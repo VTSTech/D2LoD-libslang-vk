@@ -59,7 +59,6 @@ void __stdcall LoadCustomSettingsPerAreaAct5();
 // Re-initialises the pEnvironmentParticles data array and halts (Env.cpp line 347, spParticleData->nTotalCount == 0) if entries remain in use.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 void __stdcall WEATHER_ResetEnvironmentParticles();
-void __stdcall WEATHER_SetEnabledState(int bForceReset, int bNewState);
 int __stdcall WEATHER_InitializeRngParams();
 int __stdcall WEATHER_UpdateStateAct5(int bForceDisable);
 void __fastcall MISC_PrepareWeatherOverlay(eD2LevelId eLevel);
@@ -70,12 +69,9 @@ void __stdcall WEATHER_UpdateSplashes();
 void __stdcall WEATHER_UpdateBubbles();
 void __fastcall WEATHER_SpawnSplash(int nScreenX, int nScreenY, int nWorldX, int nWorldY);
 void __fastcall WEATHER_SpawnBubble(int nScreenX, int nScreenY, int nWorldX, int nWorldY);
-void __stdcall WEATHER_GetLightingTint(uint8_t * pOutAlpha, int nIntensity, uint8_t * pOutTint);
-void WEATHER_SpawnParticle(struct D2SeedStrc * pSeed);
 void __stdcall WEATHER_UpdateParticles(struct D2SeedStrc * pSeed);
 void __stdcall WEATHER_DrawParticles();
 uint32_t __stdcall WEATHER_GetCurrentLevelWeatherFlags();
-int WEATHER_UpdateParticleCount(struct D2SeedStrc * pSeed);
 void __stdcall DRAW_Overlay_Weather();
 void __fastcall WEATHER_DrawBubbles(struct D2DataArrayStrc * pBubbleArray, struct DC6 * * pDC6Table);
 void __stdcall DRAW_WORLD_RainEffectOnFloor();
@@ -94,5 +90,6 @@ void __stdcall WeatherEffects();
 uint32_t __fastcall WEATHER_ApproximateDistance(uint32_t nDeltaX, uint32_t nDeltaY);
 // Approximate 2D distance used by the weather and lightmap code. Non-standard convention: the X delta arrives in EAX and the Y delta on the stack, and the callee cleans up (RET 4). Declaring only the stack argument left the EAX delta looking like an unassigned local inside the abs() at the top.
 uint32_t __stdcall WEATHER_ApproximateDistanceCustomCC(uint32_t nDeltaX, uint32_t nDeltaY);
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Client::Draw::Weather

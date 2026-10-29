@@ -24,7 +24,6 @@ struct D2UnitPlayerListStrc {
 namespace D2Game::UNIT::PlayerList {
 
 // Function declarations
-DWORD * PLAYERLIST_FindEntry(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 // @wasnamed AllocPlayerList - one name on two different functions.
 // @evidence Allocates a 0x14-byte D2UnitPlayerListStrc (PlayerList.cpp:0x6d),
 // guards with PLAYERLIST_FindEntry and links it into pPlayerData->pPlayerList. 004dc270 allocates the
@@ -51,5 +50,6 @@ void __fastcall PLAYERLIST_SetHostileDelay(struct D2UnitStrc * pUnit, struct D2U
 void __fastcall PLAYERLIST_RemoveFromListCallback(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 // @sourcefile .\UNIT\PlayerList.cpp
 void __fastcall PLAYERDATA_FreePlayerList(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::UNIT::PlayerList

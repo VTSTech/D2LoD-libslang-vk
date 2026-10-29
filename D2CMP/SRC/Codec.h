@@ -69,18 +69,14 @@ struct __attribute__((packed)) D2DccFileHeaderStrc {
 namespace D2CMP::SRC::Codec {
 
 // Function declarations
-uint32_t CODEC_ReadBits(struct D2CodecBitStateStrc * pBitState, int nNumBits);
 uint32_t __stdcall CODEC_ReadBitsWithTransparency(uint32_t pCharSelComp, struct D2CodecBitStateStrc * pBitState, int32_t nParam2, int32_t nParam3);
-BOOL CODEC_AdvanceFrameIterator(int * pnParam, int32_t nParam);
-void CODEC_InitializeFrameIterator(int32_t nParam);
-void __stdcall CODEC_CalculateFrameBounds(int32_t pFrameData, int32_t nMaxXAccum, int * pOutBounds, void * pFrameArray);
 void __stdcall CODEC_BuildInversePalette(uint32_t nPaletteBase, int32_t nPaletteMaskBase, int32_t nInverseMapBase, int32_t nPaletteTableBase);
 void __fastcall CODEC_BuildInversePaletteFromBitmask(uint8_t * pInversePalette, uint32_t * pUsedColourBits, uint8_t * pPaletteData);
-void __stdcall CODEC_DecodeFramePixels(uint8_t * * pbParam, int32_t nParam, int32_t nBitStream2, int * pPrevIterState, int * pnParam);
 // Decompress frame pixel data from bit streams. Processes frame iterator list, decodes pixels via two bit buffers (one for pixel delta, one for colors). Fills output buffer row-by-row. Returns bits read into pBitsRead and buffer advance into pBitOffsets.
 void __stdcall CODEC_DecompressFrameData(int32_t nCodecState, struct D2CodecPixelBufferEntryStrc * pBitState1, struct D2CodecBitStateStrc * nBits1, struct D2CodecBitStateStrc * pBitState2, struct D2CodecBitStateStrc * nBits2, struct D2CodecBitStateStrc * pBitState3, int * pBitOffsets, uint8_t * * ppOutBuffer, int * pBitsRead);
 BOOL __fastcall CODEC_EncodeRLE(int32_t nParam1, int32_t nParam2, uint8_t * pOutBuf);
 int __fastcall CODEC_LoadPaletteFromFile(char * szText, struct D2CelFileCacheEntryStrc * pCelEntry);
 void * __fastcall CODEC_DecompressAllFrames(uint32_t * pnParam, struct D2PoolManagerStrc * pMemory, int32_t nReadSize, uint8_t * pCelHeader, struct D2CelDecodeStateStrc * pDecodeState, int32_t nStartFrame, int32_t nFrameCount, size_t * pnSize, char * szFileName);
+// 5 internal functions (defined in .cpp)
 
 } // namespace D2CMP::SRC::Codec

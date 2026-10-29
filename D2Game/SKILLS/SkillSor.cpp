@@ -88,7 +88,7 @@ int32_t __fastcall GetTxtTableParam6(int32_t nParam) {
     return sgptDataTable->pTxtSkills[nParam].Param[6];
 }
 
-void SKILLSOR_OnInfernoExpire(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
+static void SKILLSOR_OnInfernoExpire(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
     uint32_t nFrames = 1;
     D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_inferno, 0);
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_MODECHANGE, 0);
@@ -1164,7 +1164,7 @@ BOOL __fastcall Skills_SrvDoFunc_028_Meteor_Blizzard(::SGAMEDATA * pGame, D2Unit
     return (uint32_t)(pMissile != 0);
 }
 
-D2UnitStrc * __stdcall SKILLSOR_CreateMissileAtTarget(::SGAMEDATA * pGame, eMissilesId eMissileId, eD2Skills eSkill, int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static D2UnitStrc * __stdcall SKILLSOR_CreateMissileAtTarget(::SGAMEDATA * pGame, eMissilesId eMissileId, eD2Skills eSkill, int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     if (!(pUnit2 && pUnit)) {
       return nullptr;
     }

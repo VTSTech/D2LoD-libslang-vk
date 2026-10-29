@@ -871,7 +871,7 @@ BOOL __stdcall SKILLDRUID_ApplyTimedAuraBuff(::SGAMEDATA * pGame, D2UnitStrc * p
     return 1;
 }
 
-void __stdcall SKILLDRUID_GetSummonDamageBonus(D2SkillsTxt * pSkillTxt, ::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nMinToHit, int32_t nParam2, eD2Skills eSkill, D2UnitStrc * pUnit2) {
+static void __stdcall SKILLDRUID_GetSummonDamageBonus(D2SkillsTxt * pSkillTxt, ::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nMinToHit, int32_t nParam2, eD2Skills eSkill, D2UnitStrc * pUnit2) {
     D2DamageStrc sDamage;
     if (nMinToHit < 10) {
       nMinToHit = 10;
@@ -894,7 +894,7 @@ void __stdcall SKILLDRUID_GetSummonDamageBonus(D2SkillsTxt * pSkillTxt, ::SGAMED
     UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit2, pUnit, 0);
 }
 
-void __stdcall SKILLDRUID_CreateAuraMissile(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit, int32_t nDuration, int32_t nSkillLvl, eD2Skills eSkill) {
+static void __stdcall SKILLDRUID_CreateAuraMissile(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit, int32_t nDuration, int32_t nSkillLvl, eD2Skills eSkill) {
     D2SkillArgStrc sSkillArg;
     if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
       return;
@@ -1328,7 +1328,7 @@ BOOL __fastcall Skills_SrvDoFunc_146_CycloneArmor(::SGAMEDATA * pGame, D2UnitStr
     return 0;
 }
 
-int32_t SKILLDRUID_GetSummonHealthBonus(int32_t ecxCtx, int * pnAbsorb, int32_t nAbsorbDelta) {
+static int32_t SKILLDRUID_GetSummonHealthBonus(int32_t ecxCtx, int * pnAbsorb, int32_t nAbsorbDelta) {
     int nCurAbsorb = *pnAbsorb;
     if (nAbsorbDelta <= nCurAbsorb) {
       *pnAbsorb = nCurAbsorb - nAbsorbDelta;

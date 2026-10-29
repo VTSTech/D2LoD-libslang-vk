@@ -50,24 +50,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q4Strc) == 0x48, "D2_NEW(D2QuestDataA2Q4Strc): the 32-bit layout must be the 0x48 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q4Strc) == 0x48, "D2_NEW_AT(D2QuestDataA2Q4Strc): the 32-bit layout must be the 0x48 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A2Q4 {
@@ -237,7 +233,7 @@ BOOL __fastcall Q12_CheckJournalState(::SGAMEDATA * pGame) {
 }
 
 // A2Q4 - OnJournalActivate. Marks the quest journal entry as active (field_0xe=1) and sets the portal-placement substate to 2, then iterates players running UpdateQuestRecord to persist. If a tracked object exists, refreshes its update flag and removes its collision (opens the way). Called when the Cellar/staff path activates the Sanctuary entrance. Parameter 0 is the A2Q4 record and parameter 1 is the D2QuestDataStrc; they were recorded the wrong way round until 2026.08.30.
-void __stdcall Q12_OnJournalActivate(D2QuestDataA2Q4Strc * pQuestData, D2QuestDataStrc * pQuestContext) {
+static void __stdcall Q12_OnJournalActivate(D2QuestDataA2Q4Strc * pQuestData, D2QuestDataStrc * pQuestContext) {
     short int sVar1;
     *(uint8_t*)(char*)&sVar1 = pQuestData->nPortalPlacedStateLo;
     *(uint8_t*)((char*)&sVar1 + 1) = pQuestData->nPortalPlacedStateHi;
@@ -486,31 +482,32 @@ BOOL __fastcall Q12_CheckArcaneAndReward(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 }
 
 // A2Q4 - SequenceFilter (inlined real body). Runs the sequence filter of the chained follow-up quest (nSequenceQuestId = The Summoner): looks up that quest's data and invokes its fpSequenceFilter. Halts via ErrorManager if the function pointer is a bad code ptr.
-void __fastcall Q12_SequenceFilterInlined(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q12_SequenceFilterInlined(D2QuestDataStrc * pQuestData) {
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pQuestData_00) {
-      return;
+      return false;
     }
 
-    BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (BVar1) {
+    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+    if (BVar2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x34e);
       exit(-1);
     }
 
-    pQuestData_00->fpSequenceFilter(pQuestData_00);
+    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+    return bVar1;
 }
 
 // A2Q4 - SequenceFilter (entry). On first activation (stateFlag==0 and intro done) sets stateFlag 1, then chains into the sequence quest (The Summoner) by calling its fpSequenceFilter. Halts via ErrorManager if the fn ptr is bad.
-void __fastcall Q12_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q12_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (!(!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction)) {
-      return;
+      return true;
     }
 
     QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q4.cpp", 0x35a);
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pQuestData_00) {
-      return;
+      return true;
     }
 
     BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -520,6 +517,8 @@ void __fastcall Q12_SequenceFilter(D2QuestDataStrc * pQuestData) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x34e);
       exit(-1);
     }
+
+    return true;
 }
 
 // A2Q4 - Callback_13 (load/sync handler). Reconstructs in-memory quest stateFlag from the persisted record on game load. If TaintedSun Completed(0) -> mark journal fields. If Sanctuary Completed(0) or RewardAwaits(1): set record JustCompleted(0xd) and mark journal done. If player holds the quest item -> stateFlag 1. Else map step bits to stateFlag: Step0x05->4/4, Step0x04->4/3, Step0x03->3/3, Step0x02->2/2. Also checks HoradricStaff Completed(0) to mark the journal entry.
@@ -995,13 +994,13 @@ void __fastcall Q12_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q12_Callback13_PlayerStartedGame;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
-    D2QuestDataA2Q4Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA2Q4Strc);
+    D2QuestDataA2Q4Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA2Q4Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q4.cpp", 0x3dd);
     pQuestData->pQuestSpecificData.pA2Q4 = pQuestSpecificData;
     pQuestData->nQuestIdReal = QUEST_TheArcaneSanctuary;
     pQuestData->fpStatusFilter = 0;
     pQuestData->nInitNo = 5;
     pQuestData->fpActiveFilter = Q12_ActiveFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q12_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q12_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_TheSummoner;
     QUESTGUID_SetPlayerCountToZero(&pQuestData->sQuestGUID);
     D2QuestDataA2Q4Strc* pA2Q3Data = pQuestData->pQuestSpecificData.pA2Q4;

@@ -48,15 +48,15 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q2Strc) == 0x30, "D2_NEW(D2QuestDataA2Q2Strc): the 32-bit layout must be the 0x30 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q2Strc) == 0x30, "D2_NEW_AT(D2QuestDataA2Q2Strc): the 32-bit layout must be the 0x30 bytes 1.14d allocates");
 
 
 namespace D2Game::Quests::QUESTS::A2Q2 {
@@ -114,7 +114,7 @@ bool __fastcall Q10_IsRadamentCompleted(::SGAMEDATA * pGame) {
 // Returns 1 (quest "live"/should be shown) when NOT yet Completed and NOT
 // FinishedInPreviousGame, OR when JustCompleted/CannotCompleteQuestInGame is set;
 // returns 0 once fully closed out. Drives whether to push a quest-log update to client.
-BOOL __stdcall Q10_CheckHoradricStaffState(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
+static BOOL __stdcall Q10_CheckHoradricStaffState(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
     D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pDVar1->pQuestRecord[pGame->nDifficulty];
     BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Completed);
@@ -141,13 +141,14 @@ BOOL __stdcall Q10_CheckHoradricStaffState(D2UnitStrc * pUnit, ::SGAMEDATA * pGa
 // Q10_NotifyHoradricStaffActive. If Q10_CheckHoradricStaffState says the quest is
 // live, send quest-log update (msg 9 = The Horadric Staff) to the player. Pure
 // notification wrapper; no state changes.
-void __stdcall Q10_NotifyHoradricStaffActive(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
+static int __stdcall Q10_NotifyHoradricStaffActive(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
     BOOL bIsQuestLive = Q10_CheckHoradricStaffState(pUnit, pGame);
     if (!bIsQuestLive) {
-      return;
+      return 0;
     }
 
     QUEST_SendQuestUpdateToPlayer(pGame, pUnit, 9);
+    return 0;
 }
 
 // Q10_CheckQuestItemsForDialog. Inspects which quest items the player holds and
@@ -157,7 +158,7 @@ void __stdcall Q10_NotifyHoradricStaffActive(D2UnitStrc * pUnit, ::SGAMEDATA * p
 // For each held item it reads the matching QuestRecord step bit (Step0x03/04/05/06/10)
 // and emits the not-yet-told message (low index) or the already-told message
 // (high index). Returns nonzero if a relevant item is held. Read-only on quest state.
-uint8_t __stdcall Q10_CheckQuestItemsForDialog(D2UnitStrc * pUnit, D2QuestDataStrc * pQuestData, uint8_t * pOutput) {
+static uint8_t __stdcall Q10_CheckQuestItemsForDialog(D2UnitStrc * pUnit, D2QuestDataStrc * pQuestData, uint8_t * pOutput) {
     BOOL bQuestStepSet;
     *pOutput = 0xff;
     ::SGAMEDATA* pGame = pQuestData->pGame;
@@ -1056,7 +1057,7 @@ void __fastcall Q10_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     pQuestData->pNpcMessages = A2Q2::aNpcGossipData;
     pQuestData->bIsActive = true;
-    D2QuestDataA2Q2Strc* pQuestSpecificData = D2_NEW_POOL(pQuestData->pGame->pMemoryPool, D2QuestDataA2Q2Strc);
+    D2QuestDataA2Q2Strc* pQuestSpecificData = D2_NEW_POOL_AT(pQuestData->pGame->pMemoryPool, D2QuestDataA2Q2Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q2.cpp", 0x3ed);
     pQuestData->pQuestSpecificData.pA2Q2 = pQuestSpecificData;
     pQuestData->nQuestIdReal = QUEST_TheHoradricStaff;
     pQuestData->fpStatusFilter = Q10_StatusFilter;

@@ -33,7 +33,6 @@ namespace Fog::Src::LogManager {
 
 // Function declarations
 int __stdcall DetectCpuVendor();
-void __stdcall DecodeCpuModelName(uint32_t nModel, int32_t nBrandId, char * pOutName, int32_t nVendor, int32_t nFamily, int32_t nType);
 int64_t __stdcall GetTimestamp();
 uint32_t __stdcall BenchmarkCpuSpeed();
 uint64_t __stdcall GetCpuVersionInfo();
@@ -83,7 +82,7 @@ void __fastcall DestroyListWithHandler(int * pListHead);
 void __fastcall TeardownListFull(struct D2StormListHead * pListHead);
 void __fastcall ZeroListNode(uint32_t * pNode);
 // Scalar deleting destructor: MOV ESI,ECX takes this; TEST byte [EBP+8],1 is the free flag; RET 4; returns this in EAX. Parameters were listed in STORAGE order (bFreeMemory first), which is the argument-swap shape that crashed IGNORELIST_DtorScalar; a vtable caller passes (this, bFreeMemory).
-void * DestroyListNodeAndFree(void * pThis, uint8_t bFreeMemory);
+void * __thiscall DestroyListNodeAndFree(void * pThis, uint8_t bFreeMemory);
 void __fastcall DestroyAllListNodes(void * pListHead);
 int * * __fastcall AllocateAndInsertMessageNode(int32_t nInsertMode, int32_t nPayloadSize, uint32_t dwAllocFlags, int * * ppListHead);
 void __stdcall StopLogWriterThread();
@@ -126,5 +125,6 @@ void StaticFini_gLogMessageQueueCS();
 void StaticFini_gLogFileCS();
 // Runs at exit: removes every element still on the log message queue gLogMessageQueueHead, then unlinks the list head itself.
 void StaticFini_gLogMessageQueueHead();
+// 1 internal function (defined in .cpp)
 
 } // namespace Fog::Src::LogManager

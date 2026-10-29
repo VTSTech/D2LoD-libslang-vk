@@ -39,18 +39,18 @@ void __fastcall GFX_ClearAllModeFlags(D2UnitStrc * pUnit, int32_t nMaxMode) {
 
         return;
       }
-      if (eUnitType == UNIT_OBJECT) {
-        nComponent = 0;
-        do {
-          Engine::GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\0');
-          nComponent++;
-        } while (nComponent < 8);
-
-        return;
+      if (eUnitType != UNIT_OBJECT) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd3e);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd3e);
-      exit(-1);
+      nComponent = 0;
+      do {
+        Engine::GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\0');
+        nComponent++;
+      } while (nComponent < 8);
+
+      return;
     }
 
     uint32_t nComponentPlayer = 0;

@@ -346,7 +346,7 @@ void __stdcall PANEL_DrawSkillIcons() {
     Panel::SPELLSEL_DrawSkillIcon(pUnit, pSkill, ScreenSizeX - 0xa5, ScreenSizeY, 0);
 }
 
-int32_t PANEL_GetSmoothedStatValue(eD2UnitStat eUnitStat) {
+static int32_t PANEL_GetSmoothedStatValue(eD2UnitStat eUnitStat) {
     int nMaxValue;
     int32_t nNow;
     int nAbsDiff;
@@ -604,7 +604,7 @@ void __stdcall PANEL_ShowRunButtonTooltip() {
       memset(wszKeyLine, 0, 0x3c);
       pwszCursor = CmdTbl::CMD_GetKeyDescForCommand(0x23, 1);
       pWVar2 = D2Lang::StrTable::strtable::GetLocaleString(0x1052);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyLine, pWVar2, (uint16_t*)pwszCursor);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyLine, pWVar2, pwszCursor);
       D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, wszKeyLine);
     }
 
@@ -613,14 +613,14 @@ void __stdcall PANEL_ShowRunButtonTooltip() {
       memset(wszKeyLine, 0, 0x3c);
       pwszCursor = CmdTbl::CMD_GetKeyDescForCommand(0x23, 0);
       pWVar2 = D2Lang::StrTable::strtable::GetLocaleString(0x1052);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyLine, pWVar2, (uint16_t*)pwszCursor);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyLine, pWVar2, pwszCursor);
       D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, wszKeyLine);
     }
 
     D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(wszTooltip, ScreenSizeX / 2 - 0x91, ScreenSizeY - 0x17, 0, 1);
 }
 
-BOOL PANEL_IsMouseInRunButton(int32_t nMouseX, int32_t nMouseY) {
+static BOOL PANEL_IsMouseInRunButton(int32_t nMouseX, int32_t nMouseY) {
     if (!(ScreenSizeX / 2 - 0x91 <= nMouseX && nMouseX <= ScreenSizeX / 2 - 0x80 && ScreenSizeY - 0x1c <= nMouseY && nMouseY <= ScreenSizeY - 8)) {
       return 0;
     }
@@ -726,11 +726,11 @@ void __stdcall PANEL_DrawStaminaBar() {
     }
 
     pwszCursor = D2Lang::StrTable::strtable::GetLocaleString(0x1044);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszTooltip, pwszCursor, (uint16_t*)nCurStaminaUnits, nMaxStaminaUnits);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszTooltip, pwszCursor, nCurStaminaUnits, nMaxStaminaUnits);
     D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(wszTooltip, ScreenSizeX / 2 - 0x4c, ScreenSizeY - 0x34, nCurStamina, 1);
 }
 
-BOOL PANEL_IsMouseInMenuButton(int32_t nMouseX, int32_t nMouseY) {
+static BOOL PANEL_IsMouseInMenuButton(int32_t nMouseX, int32_t nMouseY) {
     if (!(ScreenSizeX / 2 - 8 <= nMouseX && nMouseX <= ScreenSizeX / 2 + 5 && ScreenSizeY - 0x27 <= nMouseY && nMouseY <= ScreenSizeY - 0xd)) {
       return 0;
     }
@@ -775,7 +775,7 @@ void __stdcall PANEL_DrawMenuButton() {
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 8, ScreenSizeY - 0x10, -1, DRAW_SOLID, nullptr);
 }
 
-void __stdcall PANEL_HighlightBeltSlot(int32_t nBeltSlot, int32_t nHighlightColor) {
+static void __stdcall PANEL_HighlightBeltSlot(int32_t nBeltSlot, int32_t nHighlightColor) {
     int nRect[4];
     PANEL_InitBeltColors();
     if (nHighlightColor == 2) {
@@ -786,7 +786,7 @@ void __stdcall PANEL_HighlightBeltSlot(int32_t nBeltSlot, int32_t nHighlightColo
     Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nRect[0], nRect[2], 0x1d, 0x1d, (uint32_t)gaPanelBeltColors[nHighlightColor], DRAW_VERYTRANSPARENT);
 }
 
-void CLIENT_HandleBeltSlotClick(D2InventoryStrc * pInventory) {
+static void CLIENT_HandleBeltSlotClick(D2InventoryStrc * pInventory) {
     D2BeltsTxt sBeltsTxt;
     D2UnitStrc* nFoundItemSlot;
     D2UnitStrc* pCursorItem_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pInventory);
@@ -964,7 +964,7 @@ void __stdcall PANEL_DrawBeltSlots(int32_t nFrameNumber) {
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nPositionX, nPositionY, -1, DRAW_SOLID, nullptr);
 }
 
-void __stdcall Draw_EquipmentNeedToRepairBody_1(int32_t bIsLeftSide, int32_t nSlotVariant, eD2BodyLocDWORD eEquipSlot, int32_t nRowBase) {
+static void __stdcall Draw_EquipmentNeedToRepairBody_1(int32_t bIsLeftSide, int32_t nSlotVariant, eD2BodyLocDWORD eEquipSlot, int32_t nRowBase) {
     D2GfxDataStrc sGfxData;
     int iVar1 = nRowBase * 0xb;
     switch (eEquipSlot) {
@@ -1281,7 +1281,7 @@ void __stdcall PANEL_DrawPanelLayout() {
       }
 
       pwszBuf = D2Lang::StrTable::strtable::GetLocaleString(0x1045);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszHpFormatted, pwszBuf, (uint16_t*)nStatValue, nMouseY);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszHpFormatted, pwszBuf, nStatValue, nMouseY);
       D2Lang::Unicode::UNISYS::AppendToBuffer(wszHpText, wszHpFormatted);
       nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszHpText);
       D2Win::Src::D2WinFont::DRAW_text(wszHpText, 0x41 - nTextWidth / 2, ScreenSizeY - 0x5f, 0, 0);
@@ -1293,11 +1293,11 @@ void __stdcall PANEL_DrawPanelLayout() {
     }
 
     nTextWidth = PANEL_GetSmoothedStatValue(UNITSTAT_mana);
-    uint16_t* pArgs = (uint16_t*)(nTextWidth >> 8);
+    nMouseX = nTextWidth >> 8;
     nTextWidth = D2Common::Stats::StatsEx::GetTxtMaxMana(pUnit);
     nMouseY = nTextWidth >> 8;
     pwszBuf = D2Lang::StrTable::strtable::GetLocaleString(0x1046);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszMpFormatted, pwszBuf, pArgs, nMouseY);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszMpFormatted, pwszBuf, nMouseX, nMouseY);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszMpText, wszMpFormatted);
     nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszMpText);
     D2Win::Src::D2WinFont::DRAW_text(wszMpText, ScreenSizeX - nTextWidth / 2 - 0x50, ScreenSizeY - 0x5f, 0, 0);
@@ -1326,7 +1326,7 @@ void __stdcall PANEL_DrawLife() {
     D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(pwszLocale, nMouseX - 1, nTooltipY, nTooltipColor, nTooltipFlag);
 }
 
-void PANEL_DrawCharacterInfo(int32_t nPanelOffsetY) {
+static void PANEL_DrawCharacterInfo(int32_t nPanelOffsetY) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
     DWORD eResolutionMode = D2gfx::D2GFX::D2GFX_GetResolutionMode();
@@ -1424,7 +1424,7 @@ void __stdcall DRAW_UI_BorderRight() {
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 400, 0x229, -1, DRAW_SOLID, nullptr);
 }
 
-int32_t __stdcall PANEL_GetPanelLayoutHeight(int32_t nMouseX, int32_t nMouseY) {
+static int32_t __stdcall PANEL_GetPanelLayoutHeight(int32_t nMouseX, int32_t nMouseY) {
     D2BeltsTxt sBeltsTxt;
     D2Common::DATATBLS::BeltsTbls::GetBeltsLine(gnBeltPanelState, nScreenMode, &sBeltsTxt);
     int nBoxId = 0;
@@ -1510,7 +1510,7 @@ void __stdcall ClickBelt(D2InventoryStrc * pInventory, int32_t nMouseY, int32_t 
     Sound::SOUND_PlaySound(nSoundId, nullptr, nSoundArg1, nSoundArg2, nSoundArg3);
 }
 
-void CLIENT_HandleBeltMouseDown(D2InventoryStrc * pInventory, int32_t nMouseY, int32_t nMouseX) {
+static void CLIENT_HandleBeltMouseDown(D2InventoryStrc * pInventory, int32_t nMouseY, int32_t nMouseX) {
     int aInvRect[4];
     uint32_t nBeltSlot = PANEL_GetPanelLayoutHeight(nMouseX, nMouseY);
     if (-1 >= (int)nBeltSlot) {
@@ -1822,7 +1822,7 @@ void __stdcall PANEL_DrawGoldAmount() {
       DWORD nNextLevelExp2 = nNextLevelExp;
       nNextLevelExp = nNextLevelExp2;
       pwsText = D2Lang::StrTable::strtable::GetLocaleString(0x1043);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, awsTooltip, pwsText, (uint16_t*)nCurrentExp, nNextLevelExp);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, awsTooltip, pwsText, nCurrentExp, nNextLevelExp);
       D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(awsTooltip, ScreenSizeX / 2 - 0x92, ScreenSizeY - 0x33, 0, 1);
     }
     if (!nBarWidth) {

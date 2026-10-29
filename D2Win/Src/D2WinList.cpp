@@ -21,21 +21,21 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2WinListEntry) == 0x224, "D2_NEW(D2WinListEntry): the 32-bit layout must be the 0x224 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2WinListEntry) == 0x224, "D2_NEW_AT(D2WinListEntry): the 32-bit layout must be the 0x224 bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2WinList) == 0x6c, "D2_NEW(D2WinList): the 32-bit layout must be the 0x6c bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2WinList) == 0x6c, "D2_NEW_AT(D2WinList): the 32-bit layout must be the 0x6c bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpListEntryCallback
@@ -63,7 +63,7 @@ void __fastcall FORMS_DestroyD2WinList(::D2WinList * pList) {
     D2WinListEntry* pEntry = pList->sEntriesControl.pFirstEntry;
     while (pEntry) {
       pNextEntry = pEntry->pNext;
-      D2_FREE(pEntry);
+      D2_FREE_AT(pEntry, ".\\Src\\D2WinList.cpp", 0x85);
       pEntry = pNextEntry;
     }
 
@@ -81,58 +81,58 @@ void __fastcall D2WINLIST_AddListItem(::D2WinList * pList, uint16_t * wszText, f
     if (pList->sControl.neD2FormType == FORM_List) {
       D2WinListEntry* pNewEntry;
       D2WinFont::SetAndReturnLastFont(pList->sEntriesControl.nFontId);
-      pNewEntry = D2_NEW(D2WinListEntry);
+      pNewEntry = D2_NEW_AT(D2WinListEntry, ".\\Src\\D2WinList.cpp", 0xa5);
       nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
-      if (nLine < 0x100) {
-        D2Lang::Unicode::UNISYS::STRING_CopyWideString(pNewEntry->wszText, wszText);
-        D2WinFont::TEXT_CalcTextDimensions(wszText, &pTextWidth, &nTextHeight);
-        pTextWidth += 8;
-        if (pList->sEntriesControl.nMaxTextWidth < pTextWidth) {
-          pList->sEntriesControl.nMaxTextWidth = pTextWidth;
-        }
+      if (!(nLine < 0x100)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa6);
+        exit(-1);
+      }
 
-        pNewEntry->nTextWidth = pTextWidth;
-        pNewEntry->pfnOnActivate = nItemData;
-        pNewEntry->nLeft = 0;
-        pNewEntry->nRight = 0;
-        pNewEntry->nTop = 0;
-        pNewEntry->nBottom = 0;
-        pNewEntry->bItemFlags = bItemFlags;
-        pNewEntry->nUserData = nUserData;
-        if (!bPrepend) {
-          pTailEntry = pList->sEntriesControl.pFirstEntry;
-          if (!pTailEntry) {
-            pList->sEntriesControl.pFirstEntry = pNewEntry;
-            pNewEntry->pNext = 0;
-          } else {
-            nNextNode = pTailEntry->pNext;
-            while (nNextNode) {
-              pTailEntry = pTailEntry->pNext;
-              nNextNode = pTailEntry->pNext;
-            }
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(pNewEntry->wszText, wszText);
+      D2WinFont::TEXT_CalcTextDimensions(wszText, &pTextWidth, &nTextHeight);
+      pTextWidth += 8;
+      if (pList->sEntriesControl.nMaxTextWidth < pTextWidth) {
+        pList->sEntriesControl.nMaxTextWidth = pTextWidth;
+      }
 
-            pTailEntry->pNext = pNewEntry;
-            pNewEntry->pNext = 0;
-          }
-        } else {
-          pNewEntry->pNext = pList->sEntriesControl.pFirstEntry;
+      pNewEntry->nTextWidth = pTextWidth;
+      pNewEntry->pfnOnActivate = nItemData;
+      pNewEntry->nLeft = 0;
+      pNewEntry->nRight = 0;
+      pNewEntry->nTop = 0;
+      pNewEntry->nBottom = 0;
+      pNewEntry->bItemFlags = bItemFlags;
+      pNewEntry->nUserData = nUserData;
+      if (!bPrepend) {
+        pTailEntry = pList->sEntriesControl.pFirstEntry;
+        if (!pTailEntry) {
           pList->sEntriesControl.pFirstEntry = pNewEntry;
-        }
+          pNewEntry->pNext = 0;
+        } else {
+          nNextNode = pTailEntry->pNext;
+          while (nNextNode) {
+            pTailEntry = pTailEntry->pNext;
+            nNextNode = pTailEntry->pNext;
+          }
 
-        pItemCount = &pList->sEntriesControl.nItemCount;
-        (*pItemCount)++;
-        D2WinFont::SetAndReturnLastFont(1);
-        if (!bSelect) {
-          return;
+          pTailEntry->pNext = pNewEntry;
+          pNewEntry->pNext = 0;
         }
+      } else {
+        pNewEntry->pNext = pList->sEntriesControl.pFirstEntry;
+        pList->sEntriesControl.pFirstEntry = pNewEntry;
+      }
 
-        pList->sEntriesControl.pSelectedEntry = pNewEntry;
-        pList->sEntriesControl.nSelectedIndex = pList->sEntriesControl.nItemCount - 1;
+      pItemCount = &pList->sEntriesControl.nItemCount;
+      (*pItemCount)++;
+      D2WinFont::SetAndReturnLastFont(1);
+      if (!bSelect) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa6);
-      exit(-1);
+      pList->sEntriesControl.pSelectedEntry = pNewEntry;
+      pList->sEntriesControl.nSelectedIndex = pList->sEntriesControl.nItemCount - 1;
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa1);
       exit(-1);
@@ -200,12 +200,12 @@ D2WinListEntry * __fastcall D2WINLIST_GetEntryByIndex(::D2WinList * pList, int n
 // Returns the list's item count (+0x50 sEntriesControl.nItemCount, incremented by D2WINLIST_AddListItem); halts (D2WinList.cpp line 248, eType == D2WIN_LIST) on a non-list control.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 int __fastcall D2WINLIST_GetItemCount(::D2WinList * pList) {
-    if (pList->sControl.neD2FormType == FORM_List) {
-      return pList->sEntriesControl.nItemCount;
+    if (pList->sControl.neD2FormType != FORM_List) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf8);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf8);
-    exit(-1);
+    return pList->sEntriesControl.nItemCount;
     return pList->sEntriesControl.nItemCount;
 }
 
@@ -237,7 +237,12 @@ BOOL __fastcall Draw(::D2WinList * pList) {
     int nSizeX;
     int nSkipCount;
     int* ppDrawFrame;
-    if (pList->sControl.neD2FormType == FORM_List) {
+    if (pList->sControl.neD2FormType != FORM_List) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x119);
+      exit(-1);
+    }
+
+    {
       int nTextWidth;
       D2WinFont::SetAndReturnLastFont(pList->sEntriesControl.nFontId);
       pCurrentEntry = pList->sEntriesControl.pFirstEntry;
@@ -291,9 +296,6 @@ BOOL __fastcall Draw(::D2WinList * pList) {
       D2WinFont::SetAndReturnLastFont(1);
       return 1;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x119);
-    exit(-1);
 }
 
 BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
@@ -494,7 +496,7 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
     int32_t nStrLen;
     int eFontType;
     D2WinListEntry* pTailEntry;
-    ::D2WinList* pList = D2_NEW(::D2WinList);
+    ::D2WinList* pList = D2_NEW_AT(::D2WinList, ".\\Src\\D2WinList.cpp", 0x2e);
     memset(pList, 0, 0x6c);
     pList->sControl.neD2FormType = FORM_List;
     int* pItemCountPtr = &pList->sControl.dwState;
@@ -529,7 +531,7 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
       D2WinListEntry* pDVar1;
       nSizeX = pnItemArray + 1;
       do {
-        pNewEntry = D2_NEW(D2WinListEntry);
+        pNewEntry = D2_NEW_AT(D2WinListEntry, ".\\Src\\D2WinList.cpp", 0x56);
         wszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(*(uint16_t*)(nSizeX - 1));
         nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLocaleStr);
         if (0xff < nStrLen) {

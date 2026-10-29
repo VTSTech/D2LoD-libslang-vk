@@ -401,7 +401,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_OffsetParticleMissile(D2UnitStrc * pUnit, 
 }
 
 // Client-side visual effect for revive skills: spawns nParam2 decorative missiles around the caster unit using a circular offset table (gnSkillGfxReviveTableOffset1/2, 8 entries). Each missile uses SKILLSMON_SetMissilePathLinear as its path function. No damage or server interaction; purely cosmetic revive ring effect.
-void __stdcall SKILLSEMON_CltSetReviveGfx(eMissilesId pParam, eD2Skills eSkill, int32_t nParam1, D2UnitStrc * pUnit, int32_t nParam2) {
+static void __stdcall SKILLSEMON_CltSetReviveGfx(eMissilesId pParam, eD2Skills eSkill, int32_t nParam1, D2UnitStrc * pUnit, int32_t nParam2) {
     // Static local variables (originally global data)
     static int gnSkillGfxReviveTableOffset2[8] = { 0x0, 0x0, 0x1, -0x1, 0x1, -0x1, -0x1, 0x1 }; D2_STATIC_GUARD(gnSkillGfxReviveTableOffset2, "D2Client::SKILLS::SkillsEMon::SKILLSEMON_CltSetReviveGfx::gnSkillGfxReviveTableOffset2");
     static int gnSkillGfxReviveTableOffset1[8] = { 0x1, -0x1, 0x0, 0x0, 0x1, -0x1, 0x1, -0x1 }; D2_STATIC_GUARD(gnSkillGfxReviveTableOffset1, "D2Client::SKILLS::SkillsEMon::SKILLSEMON_CltSetReviveGfx::gnSkillGfxReviveTableOffset1");
@@ -434,7 +434,7 @@ void __stdcall SKILLSEMON_CltSetReviveGfx(eMissilesId pParam, eD2Skills eSkill, 
 }
 
 // Client-side helper: creates a missile at the unit's current map position (reads X/Y from static or dynamic path), inherits the unit's facing direction, and clears the path's 0x40 flag. If nParam is non-zero, marks the missile dead immediately (used for visual-only effects). Returns TRUE on success.
-BOOL __stdcall SKILLSEMON_CltCreateMissileAtUnit(eMissilesId neMissilesId, eD2Skills eSkill, int32_t nSkillLevel, int32_t nParam, D2UnitStrc * pUnit) {
+static BOOL __stdcall SKILLSEMON_CltCreateMissileAtUnit(eMissilesId neMissilesId, eD2Skills eSkill, int32_t nSkillLevel, int32_t nParam, D2UnitStrc * pUnit) {
     int nY;
     int nX;
     eD2UnitType eUnitType = pUnit->eUnitType;

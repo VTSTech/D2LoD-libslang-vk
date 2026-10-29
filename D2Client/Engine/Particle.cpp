@@ -22,18 +22,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2ParticleStrc) == 0x4c, "D2_NEW(D2ParticleStrc): the 32-bit layout must be the 0x4c bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2ParticleStrc) == 0x4c, "D2_NEW_AT(D2ParticleStrc): the 32-bit layout must be the 0x4c bytes 1.14d allocates");
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -43,7 +43,7 @@ namespace D2Client::Engine::Particle {
 void __stdcall AllocParticle(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
     if (!pParticle) {
-      pParticle = D2_NEW(D2ParticleStrc);
+      pParticle = D2_NEW_AT(D2ParticleStrc, ".\\ENGINE\\Particle.cpp", 0x48);
       if (!pParticle) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x4a);
         exit(-1);
@@ -61,7 +61,7 @@ void __stdcall FreeParticle(D2UnitStrc * pUnit) {
       return;
     }
 
-    D2_FREE(pParticle);
+    D2_FREE_AT(pParticle, ".\\ENGINE\\Particle.cpp", 100);
     GfxInfo::SetParticle(pUnit, nullptr);
 }
 

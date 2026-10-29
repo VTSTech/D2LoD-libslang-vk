@@ -80,25 +80,25 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataMonsterStrc) == 0x60, "D2_NEW(D2UnitDataMonsterStrc): the 32-bit layout must be the 0x60 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataMonsterStrc) == 0x60, "D2_NEW_AT(D2UnitDataMonsterStrc): the 32-bit layout must be the 0x60 bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitStrc) == 0xf4, "D2_NEW(D2UnitStrc): the 32-bit layout must be the 0xf4 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitStrc) == 0xf4, "D2_NEW_AT(D2UnitStrc): the 32-bit layout must be the 0xf4 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataPlayerStrc) == 0x16c, "D2_NEW(D2UnitDataPlayerStrc): the 32-bit layout must be the 0x16c bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataPlayerStrc) == 0x16c, "D2_NEW_AT(D2UnitDataPlayerStrc): the 32-bit layout must be the 0x16c bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2StaticPathStrc) == 0x20, "D2_NEW(D2StaticPathStrc): the 32-bit layout must be the 0x20 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2StaticPathStrc) == 0x20, "D2_NEW_AT(D2StaticPathStrc): the 32-bit layout must be the 0x20 bytes 1.14d allocates");
 
 
 namespace D2Common::Units {
@@ -167,7 +167,7 @@ D2SkillStrc * __stdcall GetCurrentSkill(D2UnitStrc * pUnit) {
 
 // @sourcefile .\UNITS\Units.cpp
 D2UnitStrc * __stdcall AllocUnit(D2PoolManagerStrc * pMemory, eD2UnitType eUnitType) {
-    D2UnitStrc* pUnit = D2_NEW_POOL(pMemory, D2UnitStrc);
+    D2UnitStrc* pUnit = D2_NEW_POOL_AT(pMemory, D2UnitStrc, ".\\UNITS\\Units.cpp", 0x66e);
     memset(pUnit, 0, 0xf4);
     pUnit->eUnitType = eUnitType;
     pUnit->pMemory = pMemory;
@@ -175,7 +175,7 @@ D2UnitStrc * __stdcall AllocUnit(D2PoolManagerStrc * pMemory, eD2UnitType eUnitT
       return pUnit;
     }
 
-    D2UnitDataMonsterStrc* local_EAX_79 = D2_NEW_POOL(pMemory, D2UnitDataMonsterStrc);
+    D2UnitDataMonsterStrc* local_EAX_79 = D2_NEW_POOL_AT(pMemory, D2UnitDataMonsterStrc, ".\\UNITS\\Units.cpp", 0x67b);
     pUnit->pUnitData.pUnitDataMonster = local_EAX_79;
     memset(local_EAX_79, 0, 0x60);
     return pUnit;
@@ -190,12 +190,12 @@ void __stdcall Free(D2UnitStrc * pUnit) {
     Stats::StatsEx::STATLIST_FreeStatListMemory(pUnit);
     Skills::SKILLS_FreeSkillList(pUnit);
     if (pUnit->eUnitType == UNIT_MONSTER) {
-      D2_FREE_POOL(pUnit->pMemory, pUnit->pUnitData.pUnitDataPlayer);
+      D2_FREE_POOL_AT(pUnit->pMemory, pUnit->pUnitData.pUnitDataPlayer, ".\\UNITS\\Units.cpp", 0x69a);
     }
 
     pUnit->eUnitType = UNIT_COUNT;
     pUnit->nUnitGUID = -1;
-    D2_FREE_POOL(pUnit->pMemory, pUnit);
+    D2_FREE_POOL_AT(pUnit->pMemory, pUnit, ".\\UNITS\\Units.cpp", 0x6a4);
 }
 
 void __fastcall UNITS_SetWarpStaticPathCoords(D2UnitStrc * pUnit, int32_t nPosX, int32_t nPosY, int32_t nUnkX, int32_t nUnkY) {
@@ -204,17 +204,17 @@ void __fastcall UNITS_SetWarpStaticPathCoords(D2UnitStrc * pUnit, int32_t nPosX,
       exit(-1);
     } else {
       D2StaticPathStrc* pStaticPath;
-      if (pUnit->eUnitType == UNIT_WARP) {
-        pStaticPath = pUnit->pPath.pStaticPath;
-        pStaticPath->nPosX = nPosX;
-        pStaticPath->nPosY = nPosY;
-        pStaticPath->nUnkX = nUnkX;
-        pStaticPath->nUnkY = nUnkY;
-        return;
+      if (pUnit->eUnitType != UNIT_WARP) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6b1);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6b1);
-      exit(-1);
+      pStaticPath = pUnit->pPath.pStaticPath;
+      pStaticPath->nPosX = nPosX;
+      pStaticPath->nPosY = nPosY;
+      pStaticPath->nUnkX = nUnkX;
+      pStaticPath->nUnkY = nUnkY;
+      return;
     }
 }
 
@@ -258,13 +258,13 @@ void __stdcall SetXForStaticUnit(D2UnitStrc * pUnit, int32_t nX) {
     } else {
       eD2UnitType eUnitType;
       eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
-        pUnit->pPath.pStaticPath->nPosX = nX;
-        return;
+      if (!(eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6fa);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6fa);
-      exit(-1);
+      pUnit->pPath.pStaticPath->nPosX = nX;
+      return;
     }
 }
 
@@ -275,13 +275,13 @@ void __stdcall SetYForStaticUnit(D2UnitStrc * pUnit, int32_t nY) {
     } else {
       eD2UnitType eUnitType;
       eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
-        pUnit->pPath.pStaticPath->nPosY = nY;
-        return;
+      if (!(eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x711);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x711);
-      exit(-1);
+      pUnit->pPath.pStaticPath->nPosY = nY;
+      return;
     }
 }
 
@@ -518,15 +518,15 @@ void __fastcall SetTargetXYForWarp(D2UnitStrc * pUnit, int32_t nTargetX, int32_t
       exit(-1);
     } else {
       D2StaticPathStrc* pStaticPath;
-      if (pUnit->eUnitType == UNIT_WARP) {
-        pStaticPath = pUnit->pPath.pStaticPath;
-        pStaticPath->nScreenX = nTargetX;
-        pStaticPath->nScreenY = nTargetY;
-        return;
+      if (pUnit->eUnitType != UNIT_WARP) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x801);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x801);
-      exit(-1);
+      pStaticPath = pUnit->pPath.pStaticPath;
+      pStaticPath->nScreenX = nTargetX;
+      pStaticPath->nScreenY = nTargetY;
+      return;
     }
 }
 
@@ -642,13 +642,13 @@ void __stdcall SetTargetUnitForDynamicUnit(D2UnitStrc * pUnit, D2UnitStrc * pTar
     } else {
       eD2UnitType eUnitType;
       eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_PLAYER || eUnitType == UNIT_MONSTER || eUnitType == UNIT_MISSILE) {
-        PATH::DynamicPath::SetTarget(pUnit->pPath.pDynamicPath, pTargetUnit);
-        return;
+      if (!(eUnitType == UNIT_PLAYER || eUnitType == UNIT_MONSTER || eUnitType == UNIT_MISSILE)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8ae);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8ae);
-      exit(-1);
+      PATH::DynamicPath::SetTarget(pUnit->pPath.pDynamicPath, pTargetUnit);
+      return;
     }
 }
 
@@ -660,13 +660,13 @@ eD2UnitType __stdcall GetTargetTypeFromDynamicUnit(D2UnitStrc * pUnit) {
     } else {
       int nTargetId;
       eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_PLAYER || eUnitType == UNIT_MONSTER || eUnitType == UNIT_MISSILE) {
-        /* pUnit is reused here for return */ PATH::DynamicPath::GetTargetTypeAndGUID(pUnit->pPath.pDynamicPath, (eD2UnitType*)&pUnit, &nTargetId);
-        return (eD2UnitType)pUnit;
+      if (!(eUnitType == UNIT_PLAYER || eUnitType == UNIT_MONSTER || eUnitType == UNIT_MISSILE)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8bb);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8bb);
-      exit(-1);
+      /* pUnit is reused here for return */ PATH::DynamicPath::GetTargetTypeAndGUID(pUnit->pPath.pDynamicPath, (eD2UnitType*)&pUnit, &nTargetId);
+      return (eD2UnitType)pUnit;
     }
 }
 
@@ -678,13 +678,13 @@ int * __stdcall GetTargetGUIDFromDynamicUnit(D2UnitStrc * pUnit) {
     } else {
       eD2UnitType eUnitType;
       eOwnUnitType = pUnit->eUnitType;
-      if (eOwnUnitType == UNIT_PLAYER || eOwnUnitType == UNIT_MONSTER || eOwnUnitType == UNIT_MISSILE) {
-        PATH::DynamicPath::GetTargetTypeAndGUID(pUnit->pPath.pDynamicPath, &eUnitType, (int*)&pUnit);
-        return (int*)pUnit;
+      if (!(eOwnUnitType == UNIT_PLAYER || eOwnUnitType == UNIT_MONSTER || eOwnUnitType == UNIT_MISSILE)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x8cc);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x8cc);
-      exit(-1);
+      PATH::DynamicPath::GetTargetTypeAndGUID(pUnit->pPath.pDynamicPath, &eUnitType, (int*)&pUnit);
+      return (int*)pUnit;
     }
 }
 
@@ -693,13 +693,13 @@ void __stdcall SetTargetUnitForPlayerOrMonster(D2UnitStrc * pUnit, D2UnitStrc * 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x8dc);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_PLAYER || pUnit->eUnitType == UNIT_MONSTER) {
-        PATH::DynamicPath::SetTarget(pUnit->pPath.pDynamicPath, pTargetUnit);
-        return;
+      if (!(pUnit->eUnitType == UNIT_PLAYER || pUnit->eUnitType == UNIT_MONSTER)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x8de);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x8de);
-      exit(-1);
+      PATH::DynamicPath::SetTarget(pUnit->pPath.pDynamicPath, pTargetUnit);
+      return;
     }
 }
 
@@ -742,7 +742,7 @@ void __stdcall GetRunAndWalkVelocityForPlayer(int32_t nUnused, int32_t ePlayerCl
     *pRunVelocity = (uint32_t)(uint8_t)pCharStatsTxt->RunVelocity;
 }
 
-void AddWalkVelocityStatIfExistToPlayer(D2UnitStrc * pUnit, int32_t ePlayerClassId) {
+static void AddWalkVelocityStatIfExistToPlayer(D2UnitStrc * pUnit, int32_t ePlayerClassId) {
     D2PoolManagerStrc* pMemory;
     eD2UnitType eUnitType;
     int32_t nUnitGUID;
@@ -935,7 +935,7 @@ void __stdcall SetAnimOrSeqMode(D2UnitStrc * pUnit, int32_t nAnimMode) {
     pUnit->eAnimMode.ePlayerMode = nAnimMode;
 }
 
-int32_t __stdcall UpdateSequenceMode(D2UnitStrc * pUnit, uint32_t nSeqMode) {
+static int32_t __stdcall UpdateSequenceMode(D2UnitStrc * pUnit, uint32_t nSeqMode) {
     uint32_t nFrameCount;
     uint8_t byActionFrame[4];
     uint32_t nStartFrame;
@@ -995,7 +995,7 @@ void __stdcall SetFrameNonRate(D2UnitStrc * pUnit, int32_t nRate, int32_t nFailR
     pUnit->nGfxCurrentFrame = nRate * 0x100 + nFailRate * -0x100 + pUnit->nGfxCurrentFrame;
 }
 
-int32_t UNITS_GetBaseWalkVelocity(eD2UnitType eUnitType, int32_t nClassId) {
+static int32_t UNITS_GetBaseWalkVelocity(eD2UnitType eUnitType, int32_t nClassId) {
     if (eUnitType == UNIT_PLAYER) {
       if (!(-1 < nClassId && nClassId < sgptDataTable->nTxtCharStatsSize)) {
         return (uint32_t)*(volatile uint8_t*)0x40 << 8;
@@ -1013,7 +1013,7 @@ int32_t UNITS_GetBaseWalkVelocity(eD2UnitType eUnitType, int32_t nClassId) {
     return (int)sgptDataTable->pTxtMonStats[nClassId].Velocity << 8;
 }
 
-int32_t UNITS_GetAnimFrameTime(eD2UnitType eUnitType, int32_t nClassId, int32_t nAnimMode) {
+static int32_t UNITS_GetAnimFrameTime(eD2UnitType eUnitType, int32_t nClassId, int32_t nAnimMode) {
     D2MonStatsTxt* pMonStatsTxt;
     if (eUnitType == UNIT_PLAYER) {
       return nAnimMode != 3 ? 0xd5 : 0x65;
@@ -1042,7 +1042,7 @@ uint8_t * __stdcall UNITS_GetAnimTableEntry(int32_t nClassId, int32_t nAnimMode)
 }
 
 // Returns non-zero if the given animation mode is playable for the unit. For players, looks up the mode in gaPlayerAnimModeCheckTable; for monsters, uses gaAnimTableClassic/Expansion based on class ID. NPCs only allow modes 2 and 15. Also checks whether the current skill has the relevant skill-flag set (flag 0x1 with no 0x1000 override).
-BOOL __stdcall CanPlayAnimMode(D2UnitStrc * pUnit, int32_t nClassId, eD2UnitType eUnitType, int32_t nAnimMode) {
+static BOOL __stdcall CanPlayAnimMode(D2UnitStrc * pUnit, int32_t nClassId, eD2UnitType eUnitType, int32_t nAnimMode) {
     int* pAnimModeEntry;
     if (eUnitType == UNIT_PLAYER) {
       pAnimModeEntry = gaPlayerAnimModeCheckTable + nAnimMode * 5;
@@ -1051,12 +1051,12 @@ BOOL __stdcall CanPlayAnimMode(D2UnitStrc * pUnit, int32_t nClassId, eD2UnitType
         if (eUnitType == UNIT_PLAYER) {
           return 0;
         }
-        if (eUnitType == UNIT_MONSTER) {
-          return 0;
+        if (eUnitType != UNIT_MONSTER) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xbd2);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xbd2);
-        exit(-1);
+        return 0;
       }
       if (-1 < nClassId && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && sgptDataTable->pTxtMonStats[nClassId].npc) {
         if (nAnimMode == 2) {
@@ -1105,12 +1105,12 @@ uint32_t __fastcall UNITS_CheckAnimateAtFrameEnd(int32_t nAnimMode, eD2UnitType 
         if (eUnitType == UNIT_PLAYER) {
           return 0;
         }
-        if (eUnitType == UNIT_MONSTER) {
-          return 0;
+        if (eUnitType != UNIT_MONSTER) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xbef);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xbef);
-        exit(-1);
+        return 0;
       }
       if (nClassId < 0x19a) {
         pAnimModeEntry = gaAnimTableClassic + nAnimMode * 5;
@@ -1135,7 +1135,7 @@ uint32_t __fastcall UNITS_CheckAnimateAtFrameEnd(int32_t nAnimMode, eD2UnitType 
     return (uint8_t)*((uint8_t*)pSkillsTxt + 0x6) & 8;
 }
 
-int __stdcall UNITS_GetAnimFrameSkip(int32_t nAnimMode, int32_t nParam, eD2UnitType eUnitType) {
+static int __stdcall UNITS_GetAnimFrameSkip(int32_t nAnimMode, int32_t nParam, eD2UnitType eUnitType) {
     if (eUnitType == UNIT_PLAYER) {
       return gaPlayerAnimModeCheckTable[nAnimMode * 5 + 4];
     }
@@ -1150,7 +1150,7 @@ int __stdcall UNITS_GetAnimFrameSkip(int32_t nAnimMode, int32_t nParam, eD2UnitT
 }
 
 // @sourcefile .\UNITS\Units.cpp
-BOOL HasSequenceTransition(D2UnitStrc * pUnit, int32_t nAnimMode, eD2UnitType eUnitType) {
+static BOOL HasSequenceTransition(D2UnitStrc * pUnit, int32_t nAnimMode, eD2UnitType eUnitType) {
     eD2Skills eSkill;
     D2SkillsTxt* pSkillsTxt;
     if (eUnitType == UNIT_PLAYER) {
@@ -1187,7 +1187,7 @@ BOOL HasSequenceTransition(D2UnitStrc * pUnit, int32_t nAnimMode, eD2UnitType eU
 }
 
 // Returns the diminished (soft-capped) value of a unit stat indexed by nParam into gaUnitStatDiminished[]. If the entry has nDiminishedFlag==1 and the raw value is non-zero, applies a harmonic-mean formula: (base * value) / (base + value), producing diminishing returns. Otherwise returns the raw shifted stat value unchanged.
-int32_t GetDiminishedStat(D2UnitStrc * pUnit, int32_t nParam) {
+static int32_t GetDiminishedStat(D2UnitStrc * pUnit, int32_t nParam) {
     // Static local variables (originally global data)
     static D2UnitStatDiminishedEntryStrc gaUnitStatDiminished[5] = {
     {
@@ -1348,24 +1348,24 @@ D2SkillStrc * __stdcall GetSkillFromSkillId(D2UnitStrc * pUnit, eD2Skills eSkill
       exit(-1);
     } else {
       D2SkillStrc* pSkillIter;
-      if (pUnit) {
-        pSkillIter = Skills::GetFirstSkill(pUnit->pSkillsList);
-        while (true) {
-          if (!pSkillIter) {
-            return nullptr;
-          }
-          if (pSkillIter->pRecord == pSkillsTxt + eSkill) {
-            break;
-          }
-
-          pSkillIter = pSkillIter->pNext;
-        }
-
-        return pSkillIter;
+      if (!pUnit) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x638);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x638);
-      exit(-1);
+      pSkillIter = Skills::GetFirstSkill(pUnit->pSkillsList);
+      while (true) {
+        if (!pSkillIter) {
+          return nullptr;
+        }
+        if (pSkillIter->pRecord == pSkillsTxt + eSkill) {
+          break;
+        }
+
+        pSkillIter = pSkillIter->pNext;
+      }
+
+      return pSkillIter;
     }
 }
 
@@ -1382,12 +1382,12 @@ BOOL __stdcall IsDoor(D2UnitStrc * pUnit) {
 }
 
 BOOL __fastcall CheckIfObjectOrientationIs1(D2UnitStrc * pUnit) {
-    if (pUnit->eUnitType == UNIT_OBJECT) {
-      return (uint32_t)(pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->Orientation == '\x01');
+    if (pUnit->eUnitType != UNIT_OBJECT) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe1e);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe1e);
-    exit(-1);
+    return (uint32_t)(pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->Orientation == '\x01');
     return (uint32_t)(pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->Orientation == '\x01');
 }
 
@@ -1406,12 +1406,12 @@ D2ObjectsTxt * __stdcall GetObjectTxtRecordFromObject(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe3c);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_OBJECT) {
-        return (D2ObjectsTxt*)pUnit->pUnitData.pUnitDataMonster->pMonStatsTxt;
+      if (pUnit->eUnitType != UNIT_OBJECT) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe43);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe43);
-      exit(-1);
+      return (D2ObjectsTxt*)pUnit->pUnitData.pUnitDataMonster->pMonStatsTxt;
     }
 }
 
@@ -1420,12 +1420,12 @@ D2ShrinesTxt * __stdcall GetShrineTxtRecordFromObject(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe4e);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_OBJECT) {
-        return pUnit->pUnitData.pUnitDataObject->pTxtShrinesLine;
+      if (pUnit->eUnitType != UNIT_OBJECT) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe55);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe55);
-      exit(-1);
+      return pUnit->pUnitData.pUnitDataObject->pTxtShrinesLine;
     }
 }
 
@@ -1434,13 +1434,13 @@ void __stdcall SetShrineTxtRecordInObjectData(D2UnitStrc * pUnit, D2ShrinesTxt *
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe60);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_OBJECT) {
-        pUnit->pUnitData.pUnitDataObject->pTxtShrinesLine = pShrinesTxt;
-        return;
+      if (pUnit->eUnitType != UNIT_OBJECT) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe67);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe67);
-      exit(-1);
+      pUnit->pUnitData.pUnitDataObject->pTxtShrinesLine = pShrinesTxt;
+      return;
     }
 }
 
@@ -1452,7 +1452,7 @@ void __stdcall UpdateDirectionAndSpeed(D2UnitStrc * pUnit, int32_t nX, int32_t n
     PATH::DynamicPath::PATH_SetDirectionToTarget(pUnit->pPath.pDynamicPath, nX, nY, 0);
 }
 
-void __stdcall StoreOwnerTypeAndGUID(D2UnitStrc * pUnit, eD2UnitType eUnitType, int32_t nOwnerGUID) {
+static void __stdcall StoreOwnerTypeAndGUID(D2UnitStrc * pUnit, eD2UnitType eUnitType, int32_t nOwnerGUID) {
     D2StatListExStrc* pStatsEx;
     if (!pUnit) {
       return;
@@ -1589,12 +1589,12 @@ int32_t __stdcall GetBeltType(D2UnitStrc * pUnit) {
     } else {
       D2ItemsTxt* pItemsTxt;
       pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
-      if (pItemsTxt) {
-        return (uint32_t)pItemsTxt->bBelt;
+      if (!pItemsTxt) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf24);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf24);
-      exit(-1);
+      return (uint32_t)pItemsTxt->bBelt;
     }
 }
 
@@ -1630,31 +1630,31 @@ void __stdcall AllocPlayerData(D2UnitStrc * pUnit) {
       exit(-1);
     } else {
       D2UnitDataPlayerStrc* pUnitDataPlayer;
-      if (!pUnit->pUnitData.pUnitDataPlayer) {
-        pUnitDataPlayer = D2_NEW_POOL(pUnit->pMemory, D2UnitDataPlayerStrc);
-        pUnit->pUnitData.pUnitDataPlayer = pUnitDataPlayer;
-        memset(pUnitDataPlayer, 0, 0x16c);
-        pUnit->pUnitData.pUnitDataPlayer->szCharName[0] = '\0';
-        iActIdx = 0x1c;
-        do {
-          pMemPool = D2Client::UNIT::CUnitEvent::GetMemPool(pUnit);
-          pQuestBuf = QuestRecord::CreateBitBuffer(pMemPool);
-          *(D2BitBufferStrc**)(pUnit->pUnitData.pUnitDataPlayer->szCharName + iActIdx - 0xc) = (D2BitBufferStrc*)pQuestBuf;
-          pMemPool = D2Client::UNIT::CUnitEvent::GetMemPool(pUnit);
-          pWaypoint = Waypoints::Alloc(pMemPool);
-          *(D2WaypointStrc**)(pUnit->pUnitData.pUnitDataPlayer->szCharName + iActIdx) = (D2WaypointStrc*)pWaypoint;
-          iActIdx += 4;
-        } while (iActIdx < 0x28);
-
-        nLine = DUNGEON::Dungeon::GetPortalFlagFromLevelId(LEVEL_RogueEncampment);
-        pUnit->pUnitData.pUnitDataPlayer->nPortalFlags = nLine;
-        pUnit->pUnitData.pUnitDataPlayer->dwTradeTick = 0;
-        Txt::Cube::FIELDTBLS_AllocPlayerData_NoOp(pUnit);
-        return;
+      if (pUnit->pUnitData.pUnitDataPlayer) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf51);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf51);
-      exit(-1);
+      pUnitDataPlayer = D2_NEW_POOL_AT(pUnit->pMemory, D2UnitDataPlayerStrc, ".\\UNITS\\Units.cpp", 0xf52);
+      pUnit->pUnitData.pUnitDataPlayer = pUnitDataPlayer;
+      memset(pUnitDataPlayer, 0, 0x16c);
+      pUnit->pUnitData.pUnitDataPlayer->szCharName[0] = '\0';
+      iActIdx = 0x1c;
+      do {
+        pMemPool = D2Client::UNIT::CUnitEvent::GetMemPool(pUnit);
+        pQuestBuf = QuestRecord::CreateBitBuffer(pMemPool);
+        *(D2BitBufferStrc**)(pUnit->pUnitData.pUnitDataPlayer->szCharName + iActIdx - 0xc) = (D2BitBufferStrc*)pQuestBuf;
+        pMemPool = D2Client::UNIT::CUnitEvent::GetMemPool(pUnit);
+        pWaypoint = Waypoints::Alloc(pMemPool);
+        *(D2WaypointStrc**)(pUnit->pUnitData.pUnitDataPlayer->szCharName + iActIdx) = (D2WaypointStrc*)pWaypoint;
+        iActIdx += 4;
+      } while (iActIdx < 0x28);
+
+      nLine = DUNGEON::Dungeon::GetPortalFlagFromLevelId(LEVEL_RogueEncampment);
+      pUnit->pUnitData.pUnitDataPlayer->nPortalFlags = nLine;
+      pUnit->pUnitData.pUnitDataPlayer->dwTradeTick = 0;
+      Txt::Cube::FIELDTBLS_AllocPlayerData_NoOp(pUnit);
+      return;
     }
 }
 
@@ -1665,22 +1665,22 @@ void __stdcall FreePlayerData(D2PoolManagerStrc * pMemory, D2UnitStrc * pUnit) {
       exit(-1);
     } else {
       int iActIdx;
-      if (pUnit->pUnitData.pUnitDataPlayer) {
-        iActIdx = 0x1c;
-        do {
-          QuestRecord::FreeQuestRecordPool(pMemory, *(D2BitBufferStrc**)(pUnit->pUnitData.pUnitDataPlayer->szCharName + iActIdx - 0xc));
-          Waypoints::Free(pMemory, *(D2WaypointStrc**)(pUnit->pUnitData.pUnitDataPlayer->szCharName + iActIdx));
-          iActIdx += 4;
-        } while (iActIdx < 0x28);
-
-        Txt::Cube::FIELDTBLS_FreePlayerData_STUB();
-        D2_FREE_POOL(pMemory, pUnit->pUnitData.pUnitDataPlayer);
-        pUnit->pUnitData.pUnitDataPlayer = 0;
-        return;
+      if (!pUnit->pUnitData.pUnitDataPlayer) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf6d);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf6d);
-      exit(-1);
+      iActIdx = 0x1c;
+      do {
+        QuestRecord::FreeQuestRecordPool(pMemory, *(D2BitBufferStrc**)(pUnit->pUnitData.pUnitDataPlayer->szCharName + iActIdx - 0xc));
+        Waypoints::Free(pMemory, *(D2WaypointStrc**)(pUnit->pUnitData.pUnitDataPlayer->szCharName + iActIdx));
+        iActIdx += 4;
+      } while (iActIdx < 0x28);
+
+      Txt::Cube::FIELDTBLS_FreePlayerData_STUB();
+      D2_FREE_POOL_AT(pMemory, pUnit->pUnitData.pUnitDataPlayer, ".\\UNITS\\Units.cpp", 0xf76);
+      pUnit->pUnitData.pUnitDataPlayer = 0;
+      return;
     }
 }
 
@@ -1692,13 +1692,13 @@ void __stdcall SetNameInPlayerData(D2UnitStrc * pUnit, char * szName) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf99);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_PLAYER) {
-        Storm::Source::SSTR::SStrCopy(pUnit->pUnitData.pUnitDataPlayer->szCharName, szName, 0x7fffffff);
-        return;
+      if (pUnit->eUnitType != UNIT_PLAYER) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf9a);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf9a);
-      exit(-1);
+      Storm::Source::SSTR::SStrCopy(pUnit->pUnitData.pUnitDataPlayer->szCharName, szName, 0x7fffffff);
+      return;
     }
 }
 
@@ -1710,12 +1710,12 @@ char * __stdcall GetPlayerName(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfa7);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_PLAYER) {
-        return pUnit->pUnitData.pUnitDataPlayer->szCharName;
+      if (pUnit->eUnitType != UNIT_PLAYER) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfa8);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfa8);
-      exit(-1);
+      return pUnit->pUnitData.pUnitDataPlayer->szCharName;
     }
 }
 
@@ -1724,12 +1724,12 @@ D2UnitDataPlayerStrc * __stdcall GetPlayerData(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfb4);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_PLAYER) {
-        return pUnit->pUnitData.pUnitDataPlayer;
+      if (pUnit->eUnitType != UNIT_PLAYER) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfb6);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfb6);
-      exit(-1);
+      return pUnit->pUnitData.pUnitDataPlayer;
     }
 }
 
@@ -1738,13 +1738,13 @@ void __stdcall SetPlayerPortalFlags(D2UnitStrc * pUnit, int32_t nPortalFlags) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfbf);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_PLAYER) {
-        pUnit->pUnitData.pUnitDataPlayer->nPortalFlags = nPortalFlags;
-        return;
+      if (pUnit->eUnitType != UNIT_PLAYER) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfc0);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfc0);
-      exit(-1);
+      pUnit->pUnitData.pUnitDataPlayer->nPortalFlags = nPortalFlags;
+      return;
     }
 }
 
@@ -1753,12 +1753,12 @@ int32_t __stdcall GetPlayerPortalFlags(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfc9);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_PLAYER) {
-        return pUnit->pUnitData.pUnitDataPlayer->nPortalFlags;
+      if (pUnit->eUnitType != UNIT_PLAYER) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfca);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfca);
-      exit(-1);
+      return pUnit->pUnitData.pUnitDataPlayer->nPortalFlags;
     }
 }
 
@@ -1779,12 +1779,12 @@ uint8_t __stdcall GetObjectPortalFlags(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfe4);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_OBJECT) {
-        return pUnit->pUnitData.pUnitDataMonster->Components[1];
+      if (pUnit->eUnitType != UNIT_OBJECT) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfe5);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfe5);
-      exit(-1);
+      return pUnit->pUnitData.pUnitDataMonster->Components[1];
     }
 }
 
@@ -1793,13 +1793,13 @@ void __stdcall SetObjectPortalFlags(D2UnitStrc * pUnit, uint8_t nPortalFlag) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfef);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_OBJECT) {
-        pUnit->pUnitData.pUnitDataMonster->Components[1] = nPortalFlag;
-        return;
+      if (pUnit->eUnitType != UNIT_OBJECT) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xff0);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xff0);
-      exit(-1);
+      pUnit->pUnitData.pUnitDataMonster->Components[1] = nPortalFlag;
+      return;
     }
 }
 
@@ -1808,12 +1808,12 @@ BOOL __stdcall CheckObjectPortalFlag(D2UnitStrc * pUnit, uint8_t nPortalFlag) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xffa);
       exit(-1);
     } else {
-      if (pUnit->eUnitType == UNIT_OBJECT) {
-        return (uint32_t)((pUnit->pUnitData.pUnitDataMonster->Components[1] & nPortalFlag) != 0);
+      if (pUnit->eUnitType != UNIT_OBJECT) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xffb);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xffb);
-      exit(-1);
+      return (uint32_t)((pUnit->pUnitData.pUnitDataMonster->Components[1] & nPortalFlag) != 0);
     }
 }
 
@@ -2178,24 +2178,24 @@ BOOL __stdcall TestCollisionWithUnit(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, in
       exit(-1);
     } else {
       D2RoomStrc* pRoom;
-      if (pUnit2) {
-        pRoom = UNITS_GetRoom(pUnit);
-        if (!pRoom) {
-          return 0;
-        }
-
-        nX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-        nY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-        nSize2 = GetUnitSizeX(pUnit);
-        nX2 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit2);
-        nY2 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit2);
-        nSize = GetUnitSizeX(pUnit2);
-        bCollides = D2Common::Units::TestCollision(nX, nSize, nX2, nY, nSize2, nY2, pRoom, eCollisionFlag);
-        return bCollides;
+      if (!pUnit2) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1291);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1291);
-      exit(-1);
+      pRoom = UNITS_GetRoom(pUnit);
+      if (!pRoom) {
+        return 0;
+      }
+
+      nX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+      nY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+      nSize2 = GetUnitSizeX(pUnit);
+      nX2 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit2);
+      nY2 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit2);
+      nSize = GetUnitSizeX(pUnit2);
+      bCollides = D2Common::Units::TestCollision(nX, nSize, nX2, nY, nSize2, nY2, pRoom, eCollisionFlag);
+      return bCollides;
     }
 }
 
@@ -2599,13 +2599,13 @@ void __stdcall SetWeaponGUID(D2UnitStrc * pUnit, D2UnitStrc * pWeapon) {
         pPlayerData->nWeaponGUID = 0;
         return;
       }
-      if (pWeapon->eUnitType == UNIT_ITEM) {
-        pPlayerData->nWeaponGUID = pWeapon->nUnitGUID;
-        return;
+      if (pWeapon->eUnitType != UNIT_ITEM) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x14c9);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x14c9);
-      exit(-1);
+      pPlayerData->nWeaponGUID = pWeapon->nUnitGUID;
+      return;
     }
 }
 
@@ -2614,12 +2614,12 @@ int32_t __stdcall GetWeaponGUID(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfb4);
       exit(-1);
     } else if (pUnit->eUnitType == UNIT_PLAYER) {
-      if (pUnit->pUnitData.pUnitDataPlayer) {
-        return pUnit->pUnitData.pUnitDataPlayer->nWeaponGUID;
+      if (!pUnit->pUnitData.pUnitDataPlayer) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x14d7);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x14d7);
-      exit(-1);
+      return pUnit->pUnitData.pUnitDataPlayer->nWeaponGUID;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfb6);
       exit(-1);
@@ -2658,12 +2658,12 @@ void __fastcall SetTimerArg(D2UnitStrc * pUnit, D2TimerArgStrc * pTimerArg) {
 }
 
 D2TimerArgStrc * __fastcall GetTimerArg(D2UnitStrc * pUnit) {
-    if (pUnit) {
-      return (D2TimerArgStrc*)pUnit->uSideData.pClientSide.dwSfxTicks;
+    if (!pUnit) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1513);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1513);
-    exit(-1);
+    return (D2TimerArgStrc*)pUnit->uSideData.pClientSide.dwSfxTicks;
     return (D2TimerArgStrc*)pUnit->uSideData.pClientSide.dwSfxTicks;
 }
 
@@ -2673,7 +2673,7 @@ void __stdcall AllocStaticPath(D2UnitStrc * pUnit) {
       return;
     }
 
-    D2StaticPathStrc* pPathStrc = D2_NEW_POOL(pUnit->pMemory, D2StaticPathStrc);
+    D2StaticPathStrc* pPathStrc = D2_NEW_POOL_AT(pUnit->pMemory, D2StaticPathStrc, ".\\UNITS\\Units.cpp", 0x151e);
     pUnit->pPath.pStaticPath = pPathStrc;
     pPathStrc->pRoom = 0;
     pPathStrc->nScreenX = 0;
@@ -2694,7 +2694,7 @@ void __stdcall FreeStaticPath(D2UnitStrc * pUnit) {
       return;
     }
 
-    D2_FREE_POOL(pUnit->pMemory, pUnit->pPath.pStaticPath);
+    D2_FREE_POOL_AT(pUnit->pMemory, pUnit->pPath.pStaticPath, ".\\UNITS\\Units.cpp", 0x152b);
 }
 
 BOOL __stdcall CanDualWield(D2UnitStrc * pUnit) {
@@ -3626,7 +3626,12 @@ void __stdcall InitAnimMode(D2UnitStrc * pUnitArg) {
     D2UnitStrc* pAnimMode;
     short int wFrameDelta;
     D2UnitStrc* pUnit_00 = pUnitArg;
-    if (pUnitArg) {
+    if (!pUnitArg) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x951);
+      exit(-1);
+    }
+
+    {
       short int wAnimSpeed;
       pUnitArg->nActionFrame = 0;
       nWeaponAnimClass = GetWeaponAnimClass(pUnitArg);
@@ -3724,9 +3729,6 @@ void __stdcall InitAnimMode(D2UnitStrc * pUnitArg) {
 
       return;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x951);
-    exit(-1);
 }
 
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).

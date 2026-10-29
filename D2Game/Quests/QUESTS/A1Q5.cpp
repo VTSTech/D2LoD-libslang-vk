@@ -51,30 +51,26 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA1Q5Strc) == 0x120, "D2_NEW(D2QuestDataA1Q5Strc): the 32-bit layout must be the 0x120 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA1Q5Strc) == 0x120, "D2_NEW_AT(D2QuestDataA1Q5Strc): the 32-bit layout must be the 0x120 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
 #endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
-#endif
 
 namespace D2Game::Quests::QUESTS::A1Q5 {
 
 // A1Q5 "Forgotten Tower" — removes a player from one of two in-quest GUID tracking lists (selected by nListSelector 0/1). Searches the list in nListBase for nPlayerGUID; if found, swaps it with the tail entry and decrements the count. Returns 1 if found+removed, 0 if not present. Used to deregister players who leave or are re-synced.
-BOOL __stdcall Q05_RemovePlayerFromTrackingList(int32_t nListSelector, int32_t nListBase, int32_t nPlayerGUID) {
+static BOOL __stdcall Q05_RemovePlayerFromTrackingList(int32_t nListSelector, int32_t nListBase, int32_t nPlayerGUID) {
     uint32_t nListCount;
     int i = 0;
     if (!nListSelector) {
@@ -743,14 +739,14 @@ void __fastcall Q05_CheckAndUpdateOnAreaEntry(::SGAMEDATA * pGame, D2UnitStrc * 
     }
 }
 
-void __fastcall Q05_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q05_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag < 2 && pQuestData->bIsNotIntroduction || pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pSeqQuestData) {
-      return;
+      return false;
     }
 
     BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -759,7 +755,8 @@ void __fastcall Q05_SequenceFilter(D2QuestDataStrc * pQuestData) {
       exit(-1);
     }
 
-    pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+    bool byTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+    return byTmp;
 }
 
 bool __fastcall Q05_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
@@ -1055,8 +1052,8 @@ void __fastcall Q05_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->fpStatusFilter = 0;
     pQuestData->nInitNo = 4;
     pQuestData->fpActiveFilter = Q05_ActiveFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q05_SequenceFilter;
-    D2QuestDataA1Q5Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA1Q5Strc);
+    pQuestData->fpSequenceFilter = Q05_SequenceFilter;
+    D2QuestDataA1Q5Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA1Q5Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x40f);
     pQuestData->pQuestSpecificData.pA1Q5 = pQuestSpecificData;
     pQuestData->nSequenceQuestId = QUEST_ToolsOfTheTrade;
     memset(pQuestSpecificData, 0, 0x120);

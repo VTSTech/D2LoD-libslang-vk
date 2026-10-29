@@ -147,10 +147,10 @@ template<class T, class TKey>
 class TSHashTable {
 public:
     struct Vtable {
-        /* 0x00 */ void (*InternalDelete)(TSHashTable<T, TKey>*, T*);
-        /* 0x04 */ T* (*InternalNew)(TSHashTable<T, TKey>*, TSExplicitList<T, -572662307>*, uint32_t, uint32_t);
-        /* 0x08 */ TSHashTable<T, TKey>* (*ScalarDeletingDestructor)(TSHashTable<T, TKey>*, uint32_t);
-        /* 0x0C */ void (*Destroy)(TSHashTable<T, TKey>*);
+        /* 0x00 */ void (__thiscall *InternalDelete)(TSHashTable<T, TKey>*, T*);
+        /* 0x04 */ T* (__thiscall *InternalNew)(TSHashTable<T, TKey>*, TSExplicitList<T, -572662307>*, uint32_t, uint32_t);
+        /* 0x08 */ TSHashTable<T, TKey>* (__thiscall *ScalarDeletingDestructor)(TSHashTable<T, TKey>*, uint32_t);
+        /* 0x0C */ void (__thiscall *Destroy)(TSHashTable<T, TKey>*);
     };
 
     /* 0x00 */ Vtable* pVtable;
@@ -163,10 +163,10 @@ public:
     static void * vftable[4];
     void InternalClear(int32_t bUnlinkOnly);
     void Destructor();
-    static void InternalDelete(TSHashTable<T, TKey>* pThis, T* pNode);
-    static T* InternalNew(TSHashTable<T, TKey>* pThis, TSExplicitList<T, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
-    static void Destroy(TSHashTable<T, TKey>* pThis);
-    static TSHashTable<T, TKey>* ScalarDeletingDestructor(TSHashTable<T, TKey>* pThis, uint32_t dwFlags);
+    static void __thiscall InternalDelete(TSHashTable<T, TKey>* pThis, T* pNode);
+    static T* __thiscall InternalNew(TSHashTable<T, TKey>* pThis, TSExplicitList<T, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
+    static void __thiscall Destroy(TSHashTable<T, TKey>* pThis);
+    static TSHashTable<T, TKey>* __thiscall ScalarDeletingDestructor(TSHashTable<T, TKey>* pThis, uint32_t dwFlags);
     TSHashTable<T, TKey>* Constructor();
     void Unlink(T* pNode);
     void Delete(T* pNode);
@@ -186,10 +186,10 @@ template<class T, class TKey, int N>
 class TSHashTableReuse : public TSHashTable<T, TKey> {
 public:
     struct Vtable {
-        /* 0x00 */ void (*InternalDelete)(TSHashTableReuse<T, TKey, N>*, T*);
-        /* 0x04 */ T* (*InternalNew)(TSHashTableReuse<T, TKey, N>*, TSExplicitList<T, -572662307>*, uint32_t, uint32_t);
-        /* 0x08 */ TSHashTableReuse<T, TKey, N>* (*ScalarDeletingDestructor)(TSHashTableReuse<T, TKey, N>*, uint32_t);
-        /* 0x0C */ void (*Destroy)(TSHashTableReuse<T, TKey, N>*);
+        /* 0x00 */ void (__thiscall *InternalDelete)(TSHashTableReuse<T, TKey, N>*, T*);
+        /* 0x04 */ T* (__thiscall *InternalNew)(TSHashTableReuse<T, TKey, N>*, TSExplicitList<T, -572662307>*, uint32_t, uint32_t);
+        /* 0x08 */ TSHashTableReuse<T, TKey, N>* (__thiscall *ScalarDeletingDestructor)(TSHashTableReuse<T, TKey, N>*, uint32_t);
+        /* 0x0C */ void (__thiscall *Destroy)(TSHashTableReuse<T, TKey, N>*);
     };
 
     /* 0x28 */ TSExplicitList<T, -572662307> tReuseList;
@@ -200,10 +200,10 @@ public:
     static void * vftable[4];
     void InternalDestroy();
     void Destructor();
-    static void InternalDelete(TSHashTableReuse<T, TKey, N>* pThis, T* pNode);
-    static T* InternalNew(TSHashTableReuse<T, TKey, N>* pThis, TSExplicitList<T, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
-    static void Destroy(TSHashTableReuse<T, TKey, N>* pThis);
-    static TSHashTableReuse<T, TKey, N>* ScalarDeletingDestructor(TSHashTableReuse<T, TKey, N>* pThis, uint32_t dwFlags);
+    static void __thiscall InternalDelete(TSHashTableReuse<T, TKey, N>* pThis, T* pNode);
+    static T* __thiscall InternalNew(TSHashTableReuse<T, TKey, N>* pThis, TSExplicitList<T, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
+    static void __thiscall Destroy(TSHashTableReuse<T, TKey, N>* pThis);
+    static TSHashTableReuse<T, TKey, N>* __thiscall ScalarDeletingDestructor(TSHashTableReuse<T, TKey, N>* pThis, uint32_t dwFlags);
     TSHashTableReuse<T, TKey, N>* Constructor();
 };
 
@@ -211,10 +211,10 @@ template<class T, class THandle, int N>
 class TSExportTableSimple : public TSHashTableReuse<T, HASHKEY_NONE, N> {
 public:
     struct Vtable {
-        /* 0x00 */ void (*InternalDelete)(TSExportTableSimple<T, THandle, N>*, T*);
-        /* 0x04 */ T* (*InternalNew)(TSExportTableSimple<T, THandle, N>*, TSExplicitList<T, -572662307>*, uint32_t, uint32_t);
-        /* 0x08 */ TSExportTableSimple<T, THandle, N>* (*ScalarDeletingDestructor)(TSExportTableSimple<T, THandle, N>*, uint32_t);
-        /* 0x0C */ void (*Destroy)(TSExportTableSimple<T, THandle, N>*);
+        /* 0x00 */ void (__thiscall *InternalDelete)(TSExportTableSimple<T, THandle, N>*, T*);
+        /* 0x04 */ T* (__thiscall *InternalNew)(TSExportTableSimple<T, THandle, N>*, TSExplicitList<T, -572662307>*, uint32_t, uint32_t);
+        /* 0x08 */ TSExportTableSimple<T, THandle, N>* (__thiscall *ScalarDeletingDestructor)(TSExportTableSimple<T, THandle, N>*, uint32_t);
+        /* 0x0C */ void (__thiscall *Destroy)(TSExportTableSimple<T, THandle, N>*);
     };
 
     /* 0x44 */ HASHKEY_NONE tKey;
@@ -224,7 +224,7 @@ public:
     static void* vftable_meta_ptr;
     static void * vftable[4];
     TSExportTableSimple<T, THandle, N>* Constructor();
-    static TSExportTableSimple<T, THandle, N>* ScalarDeletingDestructor(TSExportTableSimple<T, THandle, N>* pThis, uint32_t dwFlags);
+    static TSExportTableSimple<T, THandle, N>* __thiscall ScalarDeletingDestructor(TSExportTableSimple<T, THandle, N>* pThis, uint32_t dwFlags);
     void Delete(T* pNode);
     T* Ptr(uint32_t nHandle);
     uint32_t GenerateUniqueHandle();
@@ -235,10 +235,10 @@ template<class T, class THandle, class TLockedHandle, class TSync, int N>
 class TSExportTableSync : public TSExportTableSimple<T, THandle, N> {
 public:
     struct Vtable {
-        /* 0x00 */ void (*InternalDelete)(TSExportTableSync<T, THandle, TLockedHandle, TSync, N>*, T*);
-        /* 0x04 */ T* (*InternalNew)(TSExportTableSync<T, THandle, TLockedHandle, TSync, N>*, TSExplicitList<T, -572662307>*, uint32_t, uint32_t);
-        /* 0x08 */ TSExportTableSync<T, THandle, TLockedHandle, TSync, N>* (*ScalarDeletingDestructor)(TSExportTableSync<T, THandle, TLockedHandle, TSync, N>*, uint32_t);
-        /* 0x0C */ void (*Destroy)(TSExportTableSync<T, THandle, TLockedHandle, TSync, N>*);
+        /* 0x00 */ void (__thiscall *InternalDelete)(TSExportTableSync<T, THandle, TLockedHandle, TSync, N>*, T*);
+        /* 0x04 */ T* (__thiscall *InternalNew)(TSExportTableSync<T, THandle, TLockedHandle, TSync, N>*, TSExplicitList<T, -572662307>*, uint32_t, uint32_t);
+        /* 0x08 */ TSExportTableSync<T, THandle, TLockedHandle, TSync, N>* (__thiscall *ScalarDeletingDestructor)(TSExportTableSync<T, THandle, TLockedHandle, TSync, N>*, uint32_t);
+        /* 0x0C */ void (__thiscall *Destroy)(TSExportTableSync<T, THandle, TLockedHandle, TSync, N>*);
     };
 
     /* 0x50 */ TSync tSync;
@@ -247,7 +247,7 @@ public:
     static void * vftable[4];
     void Destructor();
     TSExportTableSync<T, THandle, TLockedHandle, TSync, N>* Constructor();
-    static TSExportTableSync<T, THandle, TLockedHandle, TSync, N>* ScalarDeletingDestructor(TSExportTableSync<T, THandle, TLockedHandle, TSync, N>* pThis, uint32_t dwFlags);
+    static TSExportTableSync<T, THandle, TLockedHandle, TSync, N>* __thiscall ScalarDeletingDestructor(TSExportTableSync<T, THandle, TLockedHandle, TSync, N>* pThis, uint32_t dwFlags);
     void SyncLeaveLock(int32_t nLockedHandle);
     void Unlock(int32_t nLockedHandle);
     void DeleteUnlock(T* pNode, int32_t nLockedHandle);
@@ -384,7 +384,7 @@ template<> TSExportTableSimple<::CELLIST, HCELLIST__*, 0>* TSExportTableSimple<C
 // Allocate the next available hash key from the CEL hash table and insert the new CEL list entry
 template<> ::CELLIST * TSExportTableSimple<CELLIST, HCELLIST__*, 0>::New(uint32_t * pHandle);
 // @blizzard TSExportTableSimple<CELLIST,HCELLIST__*,0> scalar deleting destructor (STORM.H)
-template<> TSExportTableSimple<::CELLIST, HCELLIST__*, 0>* TSExportTableSimple<CELLIST, HCELLIST__*, 0>::ScalarDeletingDestructor(TSExportTableSimple<::CELLIST, HCELLIST__*, 0>* pThis, uint32_t dwFlags);
+template<> TSExportTableSimple<::CELLIST, HCELLIST__*, 0>* __thiscall TSExportTableSimple<CELLIST, HCELLIST__*, 0>::ScalarDeletingDestructor(TSExportTableSimple<::CELLIST, HCELLIST__*, 0>* pThis, uint32_t dwFlags);
 
 // TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0>
 // meta pointer for TSExportTableSimple<struct SGAMEDATA,struct HSGAMEDATA__ *,0>::vftable
@@ -393,7 +393,7 @@ template<> void* TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0>::vftable_meta_
 template<> void * TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0>::vftable[4];
 template<> TSExportTableSimple<::SGAMEDATA, HSGAMEDATA__*, 0>* TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0>::Constructor();
 // @blizzard TSExportTableSimple<SGAMEDATA,HSGAMEDATA__*,0> scalar deleting destructor (STORM.H)
-template<> TSExportTableSimple<::SGAMEDATA, HSGAMEDATA__*, 0>* TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0>::ScalarDeletingDestructor(TSExportTableSimple<::SGAMEDATA, HSGAMEDATA__*, 0>* pThis, uint32_t dwFlags);
+template<> TSExportTableSimple<::SGAMEDATA, HSGAMEDATA__*, 0>* __thiscall TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0>::ScalarDeletingDestructor(TSExportTableSimple<::SGAMEDATA, HSGAMEDATA__*, 0>* pThis, uint32_t dwFlags);
 template<> void TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0>::Delete(::SGAMEDATA * pNode);
 // Looks up a game by 32-bit token in the hash-map without acquiring locks. Calls QSERVER_HashMapLookup with token as both key and unused parameter. Returns SGAMEDATA pointer if found, otherwise NULL. Caller must hold appropriate critical section.
 template<> ::SGAMEDATA * TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0>::Ptr(uint32_t nHandle);
@@ -417,7 +417,7 @@ template<> void TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCrit
 // Tail-calls TSHASH_InsertCelListEntry and returns straight through; that callee computes pNewEntry via a vtable factory call and leaves it in EAX at its own RET, so this wrapper's real EAX at exit is the new cel-list entry pointer.
 template<> ::CELLIST * TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>::NewLock(uint32_t * pHandle, int32_t * pLockedHandle);
 // @blizzard TSExportTableSync<CELLIST,HCELLIST__*,HLOCKEDCELLIST__*,CCritSect,0> scalar deleting destructor (STORM.H)
-template<> TSExportTableSync<::CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>* TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>::ScalarDeletingDestructor(TSExportTableSync<::CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>* pThis, uint32_t dwFlags);
+template<> TSExportTableSync<::CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>* __thiscall TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>::ScalarDeletingDestructor(TSExportTableSync<::CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>* pThis, uint32_t dwFlags);
 
 // TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>
 // meta pointer for TSExportTableSync<struct SGAMEDATA,struct HSGAMEDATA__ *,struct HSGAMEDATALOCK__ *,class CCritSect,0>::vftable
@@ -427,7 +427,7 @@ template<> void * TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*,
 template<> void TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::Destructor();
 template<> TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>* TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::Constructor();
 // @blizzard TSExportTableSync<SGAMEDATA,HSGAMEDATA__*,HSGAMEDATALOCK__*,CCritSect,0> scalar deleting destructor (STORM.H)
-template<> TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>* TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::ScalarDeletingDestructor(TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>* pThis, uint32_t dwFlags);
+template<> TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>* __thiscall TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::ScalarDeletingDestructor(TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>* pThis, uint32_t dwFlags);
 template<> void TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::SyncLeaveLock(int32_t nLockedHandle);
 template<> void TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::Unlock(int32_t nLockedHandle);
 template<> void TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::DeleteUnlock(::SGAMEDATA * pNode, int32_t nLockedHandle);
@@ -531,13 +531,13 @@ template<> void TSHashTable<CELLIST, HASHKEY_NONE>::InternalClear(int32_t bUnlin
 template<> ::CELLIST * TSHashTable<CELLIST, HASHKEY_NONE>::Ptr(uint32_t dwHashVal, HASHKEY_NONE * pKey);
 template<> void TSHashTable<CELLIST, HASHKEY_NONE>::Destructor();
 // @blizzard TSHashTable<CELLIST,HASHKEY_NONE>::InternalNew (STORM.H)
-template<> ::CELLIST * TSHashTable<CELLIST, HASHKEY_NONE>::InternalNew(TSHashTable<::CELLIST, HASHKEY_NONE>* pThis, TSExplicitList<::CELLIST, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
+template<> ::CELLIST * __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::InternalNew(TSHashTable<::CELLIST, HASHKEY_NONE>* pThis, TSExplicitList<::CELLIST, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
 // @blizzard TSHashTable<CELLIST,HASHKEY_NONE>::InternalDelete (STORM.H)
-template<> void TSHashTable<CELLIST, HASHKEY_NONE>::InternalDelete(TSHashTable<::CELLIST, HASHKEY_NONE>* pThis, ::CELLIST * pNode);
+template<> void __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::InternalDelete(TSHashTable<::CELLIST, HASHKEY_NONE>* pThis, ::CELLIST * pNode);
 // @blizzard TSHashTable<CELLIST,HASHKEY_NONE>::Destroy (STORM.H)
-template<> void TSHashTable<CELLIST, HASHKEY_NONE>::Destroy(TSHashTable<::CELLIST, HASHKEY_NONE>* pThis);
+template<> void __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::Destroy(TSHashTable<::CELLIST, HASHKEY_NONE>* pThis);
 // @blizzard TSHashTable<CELLIST,HASHKEY_NONE> scalar deleting destructor (STORM.H)
-template<> TSHashTable<::CELLIST, HASHKEY_NONE>* TSHashTable<CELLIST, HASHKEY_NONE>::ScalarDeletingDestructor(TSHashTable<::CELLIST, HASHKEY_NONE>* pThis, uint32_t dwFlags);
+template<> TSHashTable<::CELLIST, HASHKEY_NONE>* __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::ScalarDeletingDestructor(TSHashTable<::CELLIST, HASHKEY_NONE>* pThis, uint32_t dwFlags);
 template<> TSHashTable<::CELLIST, HASHKEY_NONE>* TSHashTable<CELLIST, HASHKEY_NONE>::Constructor();
 // Rehash all CelList entries into a doubled bucket array
 template<> void TSHashTable<CELLIST, HASHKEY_NONE>::GrowListArray();
@@ -561,13 +561,13 @@ template<> ::MappingEntryNode * TSHashTable<MappingEntryNode, HASHKEY_STRI>::Ptr
 template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::Destructor();
 // @sourcefile .\Chat\Ignorelist.cpp
 // @blizzard TSHashTable<MappingEntryNode,HASHKEY_STRI>::InternalDelete (STORM.H)
-template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalDelete(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, ::MappingEntryNode * pNode);
+template<> void __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalDelete(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, ::MappingEntryNode * pNode);
 // @blizzard TSHashTable<MappingEntryNode,HASHKEY_STRI>::InternalNew (STORM.H)
-template<> ::MappingEntryNode * TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalNew(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, TSExplicitList<::MappingEntryNode, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
+template<> ::MappingEntryNode * __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalNew(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, TSExplicitList<::MappingEntryNode, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
 // @blizzard TSHashTable<MappingEntryNode,HASHKEY_STRI>::Destroy (STORM.H)
-template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::Destroy(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis);
+template<> void __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::Destroy(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis);
 // @blizzard TSHashTable<MappingEntryNode,HASHKEY_STRI> scalar deleting destructor (STORM.H)
-template<> TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* TSHashTable<MappingEntryNode, HASHKEY_STRI>::ScalarDeletingDestructor(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, uint32_t dwFlags);
+template<> TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::ScalarDeletingDestructor(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, uint32_t dwFlags);
 template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::GrowListArray();
 template<> TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* TSHashTable<MappingEntryNode, HASHKEY_STRI>::Constructor();
 // Check load factor and rehash the mapping entry hash table if chain length exceeds threshold
@@ -583,13 +583,13 @@ template<> void * TSHashTable<SGAMEDATA, HASHKEY_NONE>::vftable[4];
 template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::InternalClear(int32_t bUnlinkOnly);
 template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::Destructor();
 // @blizzard TSHashTable<SGAMEDATA,HASHKEY_NONE>::InternalDelete (STORM.H)
-template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::InternalDelete(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, ::SGAMEDATA * pNode);
+template<> void __thiscall TSHashTable<SGAMEDATA, HASHKEY_NONE>::InternalDelete(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, ::SGAMEDATA * pNode);
 // @blizzard TSHashTable<SGAMEDATA,HASHKEY_NONE>::InternalNew (STORM.H)
-template<> ::SGAMEDATA * TSHashTable<SGAMEDATA, HASHKEY_NONE>::InternalNew(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
+template<> ::SGAMEDATA * __thiscall TSHashTable<SGAMEDATA, HASHKEY_NONE>::InternalNew(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
 // @blizzard TSHashTable<SGAMEDATA,HASHKEY_NONE>::Destroy (STORM.H)
-template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::Destroy(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis);
+template<> void __thiscall TSHashTable<SGAMEDATA, HASHKEY_NONE>::Destroy(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis);
 // @blizzard TSHashTable<SGAMEDATA,HASHKEY_NONE> scalar deleting destructor (STORM.H)
-template<> TSHashTable<::SGAMEDATA, HASHKEY_NONE>* TSHashTable<SGAMEDATA, HASHKEY_NONE>::ScalarDeletingDestructor(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, uint32_t dwFlags);
+template<> TSHashTable<::SGAMEDATA, HASHKEY_NONE>* __thiscall TSHashTable<SGAMEDATA, HASHKEY_NONE>::ScalarDeletingDestructor(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, uint32_t dwFlags);
 template<> TSHashTable<::SGAMEDATA, HASHKEY_NONE>* TSHashTable<SGAMEDATA, HASHKEY_NONE>::Constructor();
 // Unlinks a SGAMEDATA from up to two intrusive hash-table chains (pHashLink1/pHashLink2 with their corresponding nHashLinkOffset fields). For each non-null link, computes the back-pointer using the stored offset, patches the predecessor's next pointer to skip this node, then zeroes the game's own link field and offset. Called during game teardown to remove the game from name/token lookup tables before freeing memory.
 template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::Unlink(::SGAMEDATA * pNode);
@@ -619,13 +619,13 @@ template<> ::StringEntryNode * TSHashTable<StringEntryNode, HASHKEY_STRI>::Ptr(u
 template<> ::StringEntryNode * TSHashTable<StringEntryNode, HASHKEY_STRI>::Ptr(char * szKey);
 template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::Destructor();
 // @blizzard TSHashTable<StringEntryNode,HASHKEY_STRI>::InternalNew (STORM.H)
-template<> ::StringEntryNode * TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalNew(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, TSExplicitList<::StringEntryNode, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
+template<> ::StringEntryNode * __thiscall TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalNew(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, TSExplicitList<::StringEntryNode, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
 // @blizzard TSHashTable<StringEntryNode,HASHKEY_STRI>::InternalDelete (STORM.H)
-template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalDelete(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, ::StringEntryNode * pNode);
+template<> void __thiscall TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalDelete(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, ::StringEntryNode * pNode);
 // @blizzard TSHashTable<StringEntryNode,HASHKEY_STRI>::Destroy (STORM.H)
-template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::Destroy(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis);
+template<> void __thiscall TSHashTable<StringEntryNode, HASHKEY_STRI>::Destroy(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis);
 // @blizzard TSHashTable<StringEntryNode,HASHKEY_STRI> scalar deleting destructor (STORM.H)
-template<> TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* TSHashTable<StringEntryNode, HASHKEY_STRI>::ScalarDeletingDestructor(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, uint32_t dwFlags);
+template<> TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* __thiscall TSHashTable<StringEntryNode, HASHKEY_STRI>::ScalarDeletingDestructor(TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* pThis, uint32_t dwFlags);
 template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::GrowListArray();
 template<> TSHashTable<::StringEntryNode, ::HASHKEY_STRI>* TSHashTable<StringEntryNode, HASHKEY_STRI>::Constructor();
 // Check load factor and rehash the string entry hash table if chain length exceeds threshold
@@ -642,16 +642,16 @@ template<> void TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::InternalDestroy();
 template<> TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::Constructor();
 // Free a pool node: flush its active CelList, unlink from free list, unlink both entries, then SMemFree
 // @blizzard TSHashTableReuse<CELLIST,HASHKEY_NONE,0>::InternalDelete (STORM.H)
-template<> void TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::InternalDelete(TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* pThis, ::CELLIST * pNode);
+template<> void __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::InternalDelete(TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* pThis, ::CELLIST * pNode);
 // @blizzard TSHashTableReuse<CELLIST,HASHKEY_NONE,0>::InternalNew (STORM.H)
-template<> ::CELLIST * TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::InternalNew(TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* pThis, TSExplicitList<::CELLIST, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
+template<> ::CELLIST * __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::InternalNew(TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* pThis, TSExplicitList<::CELLIST, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
 // Destructor: free all chunk lists and pool nodes, unlink free lists, call base hash table dtor
 template<> void TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::Destructor();
 // Clear all bucket chains and free all CelList chunk pools
 // @blizzard TSHashTableReuse<CELLIST,HASHKEY_NONE,0>::Destroy (STORM.H)
-template<> void TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::Destroy(TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* pThis);
+template<> void __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::Destroy(TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* pThis);
 // @blizzard TSHashTableReuse<CELLIST,HASHKEY_NONE,0> scalar deleting destructor (STORM.H)
-template<> TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::ScalarDeletingDestructor(TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* pThis, uint32_t dwFlags);
+template<> TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::ScalarDeletingDestructor(TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* pThis, uint32_t dwFlags);
 
 // TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>
 // meta pointer for TSHashTableReuse<struct SGAMEDATA,class HASHKEY_NONE,0>::vftable
@@ -661,13 +661,13 @@ template<> void * TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::vftable[4];
 template<> void TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::InternalDestroy();
 template<> void TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::Destructor();
 // @blizzard TSHashTableReuse<SGAMEDATA,HASHKEY_NONE,0>::InternalDelete (STORM.H)
-template<> void TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::InternalDelete(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, ::SGAMEDATA * pNode);
+template<> void __thiscall TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::InternalDelete(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, ::SGAMEDATA * pNode);
 // @blizzard TSHashTableReuse<SGAMEDATA,HASHKEY_NONE,0>::InternalNew (STORM.H)
-template<> ::SGAMEDATA * TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::InternalNew(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
+template<> ::SGAMEDATA * __thiscall TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::InternalNew(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags);
 // @blizzard TSHashTableReuse<SGAMEDATA,HASHKEY_NONE,0>::Destroy (STORM.H)
-template<> void TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::Destroy(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis);
+template<> void __thiscall TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::Destroy(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis);
 // @blizzard TSHashTableReuse<SGAMEDATA,HASHKEY_NONE,0> scalar deleting destructor (STORM.H)
-template<> TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::ScalarDeletingDestructor(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, uint32_t dwFlags);
+template<> TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* __thiscall TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::ScalarDeletingDestructor(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, uint32_t dwFlags);
 template<> TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::Constructor();
 
 // TSLink<CELLIST>
@@ -701,90 +701,90 @@ template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::DeleteNode(::T
 // stpl-orphan: a COMDAT copy in TSLink<SGAMEDATA> that no member owns
 // Unreferenced copy of NextLink: the link after this one.
 // Byte-identical to TSLink<CELLIST>::NextLink 00601bc0; T not proven (no xrefs), filed with the SGAMEDATA block.
-TSLink<::SGAMEDATA>* NextLink_Unreferenced(TSLink<::SGAMEDATA>* pThis, int32_t nLinkOffset);
+TSLink<::SGAMEDATA>* __thiscall NextLink_Unreferenced(TSLink<::SGAMEDATA>* pThis, int32_t nLinkOffset);
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
 // Unreferenced copy of Link: address of pNode's link, or the terminator for a null node.
 // Byte-identical to TSExplicitList<CELLIST,..>::Link 00602110; T not proven (no xrefs), filed with the SGAMEDATA block.
-TSLink<::SGAMEDATA>* Link_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, ::SGAMEDATA * pNode);
+TSLink<::SGAMEDATA>* __thiscall Link_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, ::SGAMEDATA * pNode);
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
 // Unreferenced copy of SetLinkOffset: sets the link offset and resets the terminator.
 // Byte-identical to TSExplicitList<CELLIST,..>::SetLinkOffset 006022f0; T not proven (no xrefs), filed with the SGAMEDATA block.
-void SetLinkOffset_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, int32_t nLinkOffset);
+void __thiscall SetLinkOffset_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, int32_t nLinkOffset);
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
 // Unreferenced copy of UnlinkNode: unlinks pNode and clears its link.
 // Byte-identical to TSExplicitList<CELLIST,..>::UnlinkNode 006022a0; T not proven (no xrefs), filed with the SGAMEDATA block.
-void UnlinkNode_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, ::SGAMEDATA * pNode);
+void __thiscall UnlinkNode_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, ::SGAMEDATA * pNode);
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
 // Unreferenced copy of the destructor: unlinks every node, then the terminator.
 // Same code as TSExplicitList<CELLIST,..>::Destructor 00602aa0; T from its call to UnlinkAll 0044f8e0.
-void Destructor_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis);
+void __thiscall Destructor_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis);
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
 // Unreferenced copy of the copy constructor; returns this.
 // Byte-identical to TSExplicitList<CELLIST,..>::CopyConstructor 006023b0; T not proven (no xrefs), filed with the SGAMEDATA block.
-TSExplicitList<::SGAMEDATA, -572662307>* CopyConstructor_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pSource);
+TSExplicitList<::SGAMEDATA, -572662307>* __thiscall CopyConstructor_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pSource);
 // stpl-orphan: a COMDAT copy in TSExplicitList<TSHashObjectChunk<SGAMEDATA, HASHKEY_NONE>, 16> that no member owns
 // Unreferenced copy of the destructor: unlinks every chunk, then the terminator.
 // Same code as TSExplicitList<TSHashObjectChunk<CELLIST,..>,16>::Destructor 006028d0; T from its call to UnlinkAll 0044f930.
-void Destructor_Unreferenced(TSExplicitList<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>, 16>* pThis);
+void __thiscall Destructor_Unreferenced(TSExplicitList<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>, 16>* pThis);
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
 // Unreferenced copy of the destructor: unlinks every node, then the terminator.
 // Same code as TSExplicitList<CELLIST,..>::Destructor 00602aa0; T from its call to UnlinkAll 0044f8e0.
-void Destructor_Unreferenced2(TSExplicitList<::SGAMEDATA, -572662307>* pThis);
+void __thiscall Destructor_Unreferenced2(TSExplicitList<::SGAMEDATA, -572662307>* pThis);
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> that no member owns
 // Jump thunk to TSGrowableArray<TSExplicitList<SGAMEDATA,..>>::Destructor 0044ff60.
 // Reached only from Unwind_006ca01b; same shape as 00603240.
-void Destructor_UnwindThunk(TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> * pThis);
+void __thiscall Destructor_UnwindThunk(TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> * pThis);
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> that no member owns
 // Unreferenced stub that tail-jumps to SetCount 00450110.
 // Same code as TSGrowableArray<TSExplicitList<CELLIST,..>>::SetCount_Unreferenced 00603850.
-void SetCount_Unreferenced(TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> * pThis, uint32_t nCount);
+void __thiscall SetCount_Unreferenced(TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> * pThis, uint32_t nCount);
 // stpl-orphan: a COMDAT copy in TSLink<CELLIST> that no member owns
-TSLink<::CELLIST>* NextLink_Unreferenced(TSLink<::CELLIST>* pThis, int32_t nLinkOffset);
+TSLink<::CELLIST>* __thiscall NextLink_Unreferenced(TSLink<::CELLIST>* pThis, int32_t nLinkOffset);
 // stpl-orphan: a COMDAT copy in TSLink<CELLIST> that no member owns
-TSLink<::CELLIST>* NextLink_Unreferenced2(TSLink<::CELLIST>* pThis, int32_t nLinkOffset);
+TSLink<::CELLIST>* __thiscall NextLink_Unreferenced2(TSLink<::CELLIST>* pThis, int32_t nLinkOffset);
 // stpl-orphan: a COMDAT copy in TSExplicitList<CELLIST, -572662307> that no member owns
-TSLink<::CELLIST>* Link_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, ::CELLIST * ptr);
+TSLink<::CELLIST>* __thiscall Link_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, ::CELLIST * ptr);
 // stpl-orphan: a COMDAT copy in TSExplicitList<CELLIST, -572662307> that no member owns
-void SetLinkOffset_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, int32_t nLinkOffset);
+void __thiscall SetLinkOffset_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, int32_t nLinkOffset);
 // stpl-orphan: a COMDAT copy in TSExplicitList<CELLIST, -572662307> that no member owns
-void UnlinkNode_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, ::CELLIST * ptr);
+void __thiscall UnlinkNode_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis, ::CELLIST * ptr);
 // stpl-orphan: a COMDAT copy in TSExplicitList<CELLIST, -572662307> that no member owns
-void Destructor_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis);
+void __thiscall Destructor_Unreferenced(TSExplicitList<::CELLIST, -572662307>* pThis);
 // stpl-orphan: a COMDAT copy in TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16> that no member owns
-void Destructor_Unreferenced(TSExplicitList<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>, 16>* pThis);
+void __thiscall Destructor_Unreferenced(TSExplicitList<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>, 16>* pThis);
 // stpl-orphan: a COMDAT copy in TSExplicitList<CELLIST, -572662307> that no member owns
-void Destructor_Unreferenced2(TSExplicitList<::CELLIST, -572662307>* pThis);
+void __thiscall Destructor_Unreferenced2(TSExplicitList<::CELLIST, -572662307>* pThis);
 // stpl-orphan: a COMDAT copy in D2CMP::SRC::CelCmp::CELLIST that no member owns
-void Destructor_Unreferenced(::CELLIST * pThis);
+void __thiscall Destructor_Unreferenced(::CELLIST * pThis);
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<CELLIST, -572662307>> that no member owns
-void Destructor_UnwindThunk(TSGrowableArray<TSExplicitList<CELLIST, -572662307>> * pThis);
+void __thiscall Destructor_UnwindThunk(TSGrowableArray<TSExplicitList<CELLIST, -572662307>> * pThis);
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<CELLIST, -572662307>> that no member owns
-void SetCount_Unreferenced(TSGrowableArray<TSExplicitList<CELLIST, -572662307>> * pThis, uint32_t nCount);
+void __thiscall SetCount_Unreferenced(TSGrowableArray<TSExplicitList<CELLIST, -572662307>> * pThis, uint32_t nCount);
 // stpl-orphan: a COMDAT copy in HASHKEY_STRI that no member owns
 // Unreferenced copy of the constructor: SStrDup's szKey into the key; returns this.
 // Same code as HASHKEY_STRI::Constructor 0060dd00 (it could equally be an unproven HASHKEY_STR copy).
-::HASHKEY_STRI * Constructor_Unreferenced(::HASHKEY_STRI * pThis, char * szKey);
+::HASHKEY_STRI * __thiscall Constructor_Unreferenced(::HASHKEY_STRI * pThis, char * szKey);
 // stpl-orphan: a COMDAT copy in HASHKEY_STRI that no member owns
 // Unreferenced copy of operator=: frees the old string (stpl.h line 1513), SStrDup's pSource's; returns this.
 // Same code as HASHKEY_STRI::Assign 0060e130 (it could equally be an unproven HASHKEY_STR copy).
-::HASHKEY_STRI * Assign_Unreferenced(::HASHKEY_STRI * pThis, ::HASHKEY_STRI * pSource);
+::HASHKEY_STRI * __thiscall Assign_Unreferenced(::HASHKEY_STRI * pThis, ::HASHKEY_STRI * pSource);
 // stpl-orphan: a COMDAT copy in TSExplicitList<StringEntryNode, -572662307> that no member owns
-TSExplicitList<::StringEntryNode, -572662307>* CopyConstructor_Unreferenced(TSExplicitList<::StringEntryNode, -572662307>* pThis, TSExplicitList<::StringEntryNode, -572662307>* pSource);
+TSExplicitList<::StringEntryNode, -572662307>* __thiscall CopyConstructor_Unreferenced(TSExplicitList<::StringEntryNode, -572662307>* pThis, TSExplicitList<::StringEntryNode, -572662307>* pSource);
 // stpl-orphan: a COMDAT copy in TSExplicitList<StringEntryNode, -572662307> that no member owns
-void Destructor_Unreferenced(TSExplicitList<::StringEntryNode, -572662307>* pThis);
+void __thiscall Destructor_Unreferenced(TSExplicitList<::StringEntryNode, -572662307>* pThis);
 // stpl-orphan: a COMDAT copy in TSExplicitList<MappingEntryNode, -572662307> that no member owns
-void Destructor_Unreferenced(TSExplicitList<::MappingEntryNode, -572662307>* pThis);
+void __thiscall Destructor_Unreferenced(TSExplicitList<::MappingEntryNode, -572662307>* pThis);
 // stpl-orphan: a COMDAT copy in TSExplicitList<MappingEntryNode, -572662307> that no member owns
-TSExplicitList<::MappingEntryNode, -572662307>* CopyConstructor_Unreferenced(TSExplicitList<::MappingEntryNode, -572662307>* pThis, TSExplicitList<::MappingEntryNode, -572662307>* pSource);
+TSExplicitList<::MappingEntryNode, -572662307>* __thiscall CopyConstructor_Unreferenced(TSExplicitList<::MappingEntryNode, -572662307>* pThis, TSExplicitList<::MappingEntryNode, -572662307>* pSource);
 // stpl-orphan: a COMDAT copy in TSExplicitList<StringEntryNode, -572662307> that no member owns
-void Destructor_UnreferencedCopy(TSExplicitList<::StringEntryNode, -572662307>* pThis);
+void __thiscall Destructor_UnreferencedCopy(TSExplicitList<::StringEntryNode, -572662307>* pThis);
 // stpl-orphan: a COMDAT copy in TSExplicitList<MappingEntryNode, -572662307> that no member owns
-void Destructor_UnreferencedCopy(TSExplicitList<::MappingEntryNode, -572662307>* pThis);
+void __thiscall Destructor_UnreferencedCopy(TSExplicitList<::MappingEntryNode, -572662307>* pThis);
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> that no member owns
-void thunk_Destructor(TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> * pThis);
+void __thiscall thunk_Destructor(TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> * pThis);
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> that no member owns
-void thunk_Destructor(TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> * pThis);
+void __thiscall thunk_Destructor(TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> * pThis);
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> that no member owns
-void SetCount_Unreferenced(TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> * pThis, uint32_t nCount);
+void __thiscall SetCount_Unreferenced(TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>> * pThis, uint32_t nCount);
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> that no member owns
-void SetCount_Unreferenced(TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> * pThis, uint32_t nCount);
+void __thiscall SetCount_Unreferenced(TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> * pThis, uint32_t nCount);

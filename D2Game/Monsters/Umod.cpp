@@ -55,7 +55,7 @@ void __fastcall MONUMOD_RollNameSeed(D2UnitStrc * pUnit, int32_t nIndex, BOOL bU
     pUnit->pUnitData.pUnitDataMonster->nNameSeed = (uint16_t)sSeedNext.nSeedLow;
 }
 
-void UMOD_IncreaseMonsterHp(uint32_t nUmodConstant, D2UnitStrc * pUnit) {
+static void UMOD_IncreaseMonsterHp(uint32_t nUmodConstant, D2UnitStrc * pUnit) {
     int nHpBonus;
     uint32_t nBaseHp;
     nBaseHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);

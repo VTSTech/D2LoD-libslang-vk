@@ -44,11 +44,6 @@ void __fastcall D2WINEDITBOX_SetFilterCallback(::D2WinEditBox * pEditBox, fpD2Wi
 void __fastcall D2WINEDITBOX_SetChangeCallback(::D2WinEditBox * pEditBox, fpD2WinEditBoxChange fpChangeCallback);
 char * __stdcall D2WINEDITBOX_GetTextBuffer();
 void __fastcall D2WINEDITBOX_ValidateInput(char * szText);
-// Returns TRUE when the edit box has a non-empty selection: nSelAnchor (+0x54) != -1 and
-// nSelAnchor != nSelCursor (+0x58). HandleKeyPress uses it to decide whether typing replaces a selection
-// and whether Ctrl+C / Ctrl+X have anything to copy. Halts on NULL or a non-edit-box control.
-// Evidence: 1.14d asm 004fdc9f (CMP [EAX+0x54],-1, then compare with [EAX+0x58]).
-BOOL D2WINEDITBOX_HasSelection(::D2WinEditBox * pEditBox);
 // Clears the selection: nSelAnchor = -1, nSelCursor = 0. Halts (lines 0x1A4/0x1A6) unless
 // pEditBox is a non-null FORM_EditBox. It does not touch focus.
 void __fastcall D2WINEDITBOX_ClearSelection(::D2WinEditBox * pEditBox);
@@ -61,24 +56,14 @@ uint16_t * __fastcall FORMS_TextInput_GetValue(struct D2ControlStrc * pControl);
 // Links two edit boxes in tab order: pEditBox->pNextTabEditBox = pNextEditBox, pNextEditBox->pPrevTabEditBox = pEditBox. Halts unless both are non-null edit-box controls (eType 1).
 // @provenance 1.14d asm 004fddd0..004fde22; was named D2WINEDITBOX_SetText, which it does not do.
 void __fastcall D2WINEDITBOX_LinkTabOrder(::D2WinEditBox * pEditBox, ::D2WinEditBox * pNextEditBox);
-// Handles mouse click in D2 edit box. Converts wide text to multi-byte, wraps lines to fit box width, calculates cursor position relative to click point.
-int32_t __stdcall D2WINEDITBOX_HandleMouseClick(int * pEditBox, short * pszWideText);
-// Calculate text cursor position from edit box state. Iterates text lines and calculates pixel X,Y position of cursor based on character index. Outputs screen coordinates via pX and pY.
-void __stdcall D2WINEDITBOX_HandleTextSelection(int * pEditBox, int * pX, int * pY);
 BOOL __stdcall Mouse(struct D2ControlMsg * pEditBox);
 BOOL __stdcall D2WINEDITBOX_CreateControl(struct D2ControlMsg * pControl, int eFormType, int pDC6);
 BOOL __stdcall Push(struct D2ControlMsg * pControlMsg);
 int __stdcall D2WINEDITBOX_Unused_Placeholder_7(uint32_t dwUnused1, uint32_t dwUnused2, char * szText);
 uint32_t __stdcall D2WINEDITBOX_Unused_Placeholder_8(uint32_t dwUnused1, uint32_t dwUnused2, char * szText);
-void D2WINEDITBOX_UpdateCursorPosition(::D2WinEditBox * pEditBox);
-// Deletes the selected text: nDelStart = min(nSelAnchor +0x54, nSelCursor +0x58), nDelEnd = max;
-// rebuilds wszText as text[0..nDelStart) + text[nDelEnd..], sets nCursorIndex (+0x25c) to nDelStart
-// (clamped to the new length) and clears the selection. Halts on NULL or a non-edit-box control.
-// Evidence: 1.14d asm 004fea46..004fea58 (CMP/JL/JG min-max into EBX/EDI).
-void D2WINEDITBOX_HandleDelete(::D2WinEditBox * pEditBox);
 BOOL __fastcall D2WINEDITBOX_HandleKeyPress(::D2WinEditBox * pEditBox, uint8_t bParam);
 BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cParam);
-void __fastcall D2WINEDITBOX_SetTextWide(::D2WinEditBox * pnParam, uint16_t * wszText);
+int __fastcall D2WINEDITBOX_SetTextWide(::D2WinEditBox * pnParam, uint16_t * wszText);
 BOOL __fastcall Draw(::D2WinEditBox * pEditBox);
 BOOL __stdcall PushFlag0x8(struct D2ControlMsg * pControlMsg);
 // Sets the text of a D2Win edit box from a narrow string: widens szText into a zeroed 256-WCHAR buffer (STRING_CopyCharToWCharWithSetMaxSize) and passes it to D2WINEDITBOX_SetTextWide.
@@ -87,5 +72,6 @@ void __fastcall D2WINEDITBOX_SetTextFromAnsi(::D2WinEditBox * pEditBox, char * s
 BOOL __fastcall DrawFlag0x8(::D2WinEditBox * pEditBox);
 // @sourcefile .\Src\D2WinEditBox.cpp
 ::D2WinEditBox * __fastcall D2WinEditBox(int32_t nPosX, int32_t nPosY, int32_t nSizeX, int32_t nSizeY, int32_t nInsetX, int32_t nInsetY, struct DC6 * pDC6, fpD2WinEditBoxSubmit pfnSubmit, OnPress pfnOnPress, uint32_t nFlags, uint32_t * pFontIds);
+// 5 internal functions (defined in .cpp)
 
 } // namespace D2Win::Src::D2WinEditBox

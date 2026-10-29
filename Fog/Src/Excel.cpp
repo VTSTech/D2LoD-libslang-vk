@@ -15,31 +15,30 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_REALLOC_POOL
-#define D2_REALLOC_POOL(pPool, p, size) Fog::Memory::ReAllocServerMemory((pPool), (p), (size), __FILE__, __LINE__, 0)
+#ifndef D2_REALLOC_POOL_AT
+#define D2_REALLOC_POOL_AT(pPool, p, size, szFile, nLine) Fog::Memory::ReAllocServerMemory((pPool), (p), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2BinFieldExcelStrc) == 0x10, "D2_NEW(D2BinFieldExcelStrc): the 32-bit layout must be the 0x10 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2BinFieldExcelStrc) == 0x10, "D2_NEW_AT(D2BinFieldExcelStrc): the 32-bit layout must be the 0x10 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_PFN_TxtFieldLinker
@@ -55,8 +54,8 @@ namespace Fog::Src::Excel {
 
 // @sourcefile .\Src\Excel\Excel.cpp
 void __stdcall TXT_FreeBinFieldExcel(D2BinFieldExcelStrc * pBinFieldExcel) {
-    D2_FREE(pBinFieldExcel->pD2Archive);
-    D2_FREE_POOL(nullptr, pBinFieldExcel);
+    D2_FREE_AT(pBinFieldExcel->pD2Archive, ".\\Src\\Excel\\Excel.cpp", 0x9a);
+    D2_FREE_POOL_AT(nullptr, pBinFieldExcel, ".\\Src\\Excel\\Excel.cpp", 0x9b);
 }
 
 size_t __stdcall TXT_GetLinesCountFromBinFieldExcel(D2BinFieldExcelStrc * pBinFieldExcel) {
@@ -203,7 +202,7 @@ void __fastcall STRUCT_FreeTxtLinkNode(D2TxtLinkNodeStrc * pTxtLinkNode) {
       STRUCT_FreeTxtLinkNode(pTxtLinkNode->pNext);
     }
 
-    D2_FREE_POOL(nullptr, pTxtLinkNode);
+    D2_FREE_POOL_AT(nullptr, pTxtLinkNode, ".\\Src\\Excel\\Excel.cpp", 0x346);
 }
 
 // @sourcefile .\Src\Excel\Excel.cpp
@@ -221,13 +220,13 @@ void __stdcall STRUCT_FreeTxtLink(D2TxtLinkStrc * pTxtLink) {
         STRUCT_FreeTxtLinkNode(pTxtLinkNode->pNext);
       }
 
-      D2_FREE_POOL(nullptr, pTxtLinkNode);
+      D2_FREE_POOL_AT(nullptr, pTxtLinkNode, ".\\Src\\Excel\\Excel.cpp", 0x346);
     }
     if (pTxtLink->pTxtLinkSub0x08) {
-      D2_FREE_POOL(nullptr, pTxtLink->pTxtLinkSub0x08);
+      D2_FREE_POOL_AT(nullptr, pTxtLink->pTxtLinkSub0x08, ".\\Src\\Excel\\Excel.cpp", 0x35d);
     }
 
-    D2_FREE_POOL(nullptr, pTxtLink);
+    D2_FREE_POOL_AT(nullptr, pTxtLink, ".\\Src\\Excel\\Excel.cpp", 0x360);
 }
 
 int32_t __stdcall GetClassIdFromName(D2TxtLinkStrc * pTxtLink, uint32_t pItemsTxt, uint32_t dwParam3) {
@@ -328,7 +327,7 @@ uint32_t __stdcall FillUpTxtLinkSub0x08(D2TxtLinkStrc * pTxtLink, char * nItemCo
       if (!pTxtLink->pTxtLinkNode) {
         if (pTxtLink->nCapacity <= pTxtLink->nRecords) {
           nLowIndex = pTxtLink->nCapacity + 0x40;
-          pNewTxtLinkSub0x08 = (D2TxtLinkSub0x08Strc*)D2_REALLOC_POOL(nullptr, pTxtLink->pTxtLinkSub0x08, nLowIndex * 8);
+          pNewTxtLinkSub0x08 = (D2TxtLinkSub0x08Strc*)D2_REALLOC_POOL_AT(nullptr, pTxtLink->pTxtLinkSub0x08, nLowIndex * 8, ".\\Src\\Excel\\Excel.cpp", 0x3df);
           pTxtLink->pTxtLinkSub0x08 = pNewTxtLinkSub0x08;
           memset(pNewTxtLinkSub0x08 + pTxtLink->nCapacity, 0, 0x200);
           pTxtLink->nCapacity = nLowIndex;
@@ -417,13 +416,11 @@ int32_t __stdcall GetLinkNodeIndex(D2TxtLinkStrc * pLink, char * szItemCode, uin
     int nCmpResult;
     int32_t iVar1;
     uint8_t szUpperItemCode[32];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     Storm::Source::SSTR::SStrCopy((char*)szUpperItemCode, szItemCode, 0x20);
     SMem::SMemStringToUppercase((char*)szUpperItemCode, 0x20);
     D2TxtLinkNodeStrc* pCurNode = pLink->pTxtLinkNode;
     if (!pLink->nRecords) {
       if (!pCurNode) {
-        Debug::GuardStack();
         return -1;
       }
     } else if (!pCurNode) {
@@ -435,7 +432,6 @@ int32_t __stdcall GetLinkNodeIndex(D2TxtLinkStrc * pLink, char * szItemCode, uin
       nCmpResult = strcmp((char*)szUpperItemCode, pCurNode->szText);
       if (!nCmpResult) {
         iVar1 = pCurNode->nLinkIndex;
-        Debug::GuardStack();
         return iVar1;
       }
       if (nCmpResult < 0) {
@@ -445,11 +441,10 @@ int32_t __stdcall GetLinkNodeIndex(D2TxtLinkStrc * pLink, char * szItemCode, uin
       }
     } while (pCurNode);
 
-    Debug::GuardStack();
     return -1;
 }
 
-uint8_t * __fastcall FOG_ValidateBytePtr(uint8_t * pbyte, uint8_t * pKey) {
+static uint8_t * __fastcall FOG_ValidateBytePtr(uint8_t * pbyte, uint8_t * pKey) {
     int nCmpResult = *(int*)pbyte;
     do {
       uint8_t* pNode;
@@ -464,7 +459,7 @@ uint8_t * __fastcall FOG_ValidateBytePtr(uint8_t * pbyte, uint8_t * pKey) {
         pbyte = pNode + 0x24;
       } else {
         if (nCmpResult < 1) {
-          pNode = (uint8_t*)D2_FREE_POOL(nullptr, pKey);
+          pNode = (uint8_t*)D2_FREE_POOL_AT(nullptr, pKey, ".\\Src\\Excel\\Excel.cpp", 0x4a7);
           return pNode;
         }
 
@@ -483,20 +478,20 @@ int __stdcall FOG_ParseStringField(D2TxtLinkStrc * pTxtLink, char * szText) {
       exit(-1);
     } else {
       int iVar1;
-      if (!pTxtLink->pTxtLinkSub0x08) {
-        pKey = (uint8_t*)D2_ALLOC_POOL(nullptr, 0x2c);
-        memset(pKey, 0, 0x2c);
-        Storm::Source::SSTR::SStrCopy((char*)pKey, szText, 0x20);
-        SMem::SMemStringToUppercase((char*)pKey, 0x20);
-        *(int*)(pKey + 0x20) = pTxtLink->nRecords;
-        FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
-        iVar1 = pTxtLink->nRecords;
-        pTxtLink->nRecords = iVar1 + 1;
-        return iVar1;
+      if (pTxtLink->pTxtLinkSub0x08) {
+        ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4b6);
+        exit(-1);
       }
 
-      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4b6);
-      exit(-1);
+      pKey = (uint8_t*)D2_ALLOC_POOL_AT(nullptr, 0x2c, ".\\Src\\Excel\\Excel.cpp", 0x4b9);
+      memset(pKey, 0, 0x2c);
+      Storm::Source::SSTR::SStrCopy((char*)pKey, szText, 0x20);
+      SMem::SMemStringToUppercase((char*)pKey, 0x20);
+      *(int*)(pKey + 0x20) = pTxtLink->nRecords;
+      FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
+      iVar1 = pTxtLink->nRecords;
+      pTxtLink->nRecords = iVar1 + 1;
+      return iVar1;
     }
 }
 
@@ -507,25 +502,25 @@ int __fastcall FOG_ParseTxtLink(D2TxtLinkStrc * pTxtLink, char * szText) {
       exit(-1);
     } else {
       int iVar1;
-      if (!pTxtLink->pTxtLinkSub0x08) {
-        iVar1 = GetLinkNodeIndex(pTxtLink, szText, 0);
-        if (iVar1 >= 0) {
-          return iVar1;
-        }
+      if (pTxtLink->pTxtLinkSub0x08) {
+        ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4d0);
+        exit(-1);
+      }
 
-        pKey = (uint8_t*)D2_ALLOC_POOL(nullptr, 0x2c);
-        memset(pKey, 0, 0x2c);
-        Storm::Source::SSTR::SStrCopy((char*)pKey, szText, 0x20);
-        SMem::SMemStringToUppercase((char*)pKey, 0x20);
-        *(int*)(pKey + 0x20) = pTxtLink->nRecords;
-        FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
-        iVar1 = pTxtLink->nRecords;
-        pTxtLink->nRecords = iVar1 + 1;
+      iVar1 = GetLinkNodeIndex(pTxtLink, szText, 0);
+      if (iVar1 >= 0) {
         return iVar1;
       }
 
-      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4d0);
-      exit(-1);
+      pKey = (uint8_t*)D2_ALLOC_POOL_AT(nullptr, 0x2c, ".\\Src\\Excel\\Excel.cpp", 0x4d9);
+      memset(pKey, 0, 0x2c);
+      Storm::Source::SSTR::SStrCopy((char*)pKey, szText, 0x20);
+      SMem::SMemStringToUppercase((char*)pKey, 0x20);
+      *(int*)(pKey + 0x20) = pTxtLink->nRecords;
+      FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
+      iVar1 = pTxtLink->nRecords;
+      pTxtLink->nRecords = iVar1 + 1;
+      return iVar1;
     }
 }
 
@@ -538,7 +533,7 @@ D2BinFieldExcelStrc * __stdcall STRUCT_CreateBinFieldExcelAndFillData(D2ArchiveS
     D2ArchiveStrc* pCurPos;
     pCurPos = (D2ArchiveStrc*)(pD2Archive->szArchivePath + (nSize - 8));
     D2BinFieldExcelStrc* pBinFieldExcel;
-    pBinFieldExcel = D2_NEW_POOL(nullptr, D2BinFieldExcelStrc);
+    pBinFieldExcel = D2_NEW_POOL_AT(nullptr, D2BinFieldExcelStrc, ".\\Src\\Excel\\Excel.cpp", 0x4d);
     pBinFieldExcel->pD2Archive = pD2Archive;
     pBinFieldExcel->pDataStart = 0;
     pBinFieldExcel->nLinesCount = 0;
@@ -569,8 +564,8 @@ D2BinFieldExcelStrc * __stdcall STRUCT_CreateBinFieldExcelAndFillData(D2ArchiveS
       pScanPos = (D2ArchiveStrc*)((uintptr_t)&pScanPos->pPrevLink + 2);
       if (pCurPos <= pScanPos) {
         error:
-        D2_FREE(pBinFieldExcel->pD2Archive);
-        D2_FREE_POOL(nullptr, pBinFieldExcel);
+        D2_FREE_AT(pBinFieldExcel->pD2Archive, ".\\Src\\Excel\\Excel.cpp", 0x9a);
+        D2_FREE_POOL_AT(nullptr, pBinFieldExcel, ".\\Src\\Excel\\Excel.cpp", 0x9b);
         return nullptr;
       }
       if ((uint32_t)pBinFieldExcel->nColumnCount < 0x119) {
@@ -664,8 +659,6 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
     bool bHasLinkFields;
     uint32_t dwCode;
     uint16_t nFieldMapIdx;
-    uint32_t dwSecurityCookie;
-    dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* pCurrentRecord;
     pCurrentRecord = pRecord;
     if (!nLinesCount) {
@@ -880,7 +873,6 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
         pCurDataPos = pBinFieldExcel->pDataStart;
         nLineIndex = 0;
         if ((int)pBinFieldExcel->nLinesCount < 1) {
-          Debug::GuardStack();
           return;
         }
 
@@ -1279,7 +1271,6 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
           nLineIndex++;
           pCurDataPos = pDstChar + 1;
           if ((int)pBinFieldExcel->nLinesCount <= nLineIndex) {
-            Debug::GuardStack();
             return;
           }
         } while (true);

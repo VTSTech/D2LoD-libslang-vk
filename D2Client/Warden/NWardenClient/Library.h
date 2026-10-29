@@ -12,31 +12,31 @@
 struct Library;
 #ifndef RECON_FPTD_NWardenClient_Library_AllocateMemory
 #define RECON_FPTD_NWardenClient_Library_AllocateMemory
-typedef void * (*NWardenClient_Library_AllocateMemory)(::Library * pThis, uint32_t nSize);
+typedef void * (__thiscall *NWardenClient_Library_AllocateMemory)(::Library * pThis, uint32_t nSize);
 #endif
 #ifndef RECON_FPTD_NWardenClient_Library_CheckModule
 #define RECON_FPTD_NWardenClient_Library_CheckModule
-typedef int8_t (*NWardenClient_Library_CheckModule)(::Library * pThis, uint8_t * pModuleHash, void * pRc4Key);
+typedef int8_t (__thiscall *NWardenClient_Library_CheckModule)(::Library * pThis, uint8_t * pModuleHash, void * pRc4Key);
 #endif
 #ifndef RECON_FPTD_NWardenClient_Library_FreeMemory
 #define RECON_FPTD_NWardenClient_Library_FreeMemory
-typedef void (*NWardenClient_Library_FreeMemory)(::Library * pThis, void * pMem);
+typedef void (__thiscall *NWardenClient_Library_FreeMemory)(::Library * pThis, void * pMem);
 #endif
 #ifndef RECON_FPTD_NWardenClient_Library_GetRC4Data
 #define RECON_FPTD_NWardenClient_Library_GetRC4Data
-typedef int8_t (*NWardenClient_Library_GetRC4Data)(::Library * pThis, void * pDest, uint32_t * pnSize);
+typedef int8_t (__thiscall *NWardenClient_Library_GetRC4Data)(::Library * pThis, void * pDest, uint32_t * pnSize);
 #endif
 #ifndef RECON_FPTD_NWardenClient_Library_LoadModule
 #define RECON_FPTD_NWardenClient_Library_LoadModule
-typedef void (*NWardenClient_Library_LoadModule)(::Library * pThis, uint8_t * pModuleHash, void * pData, uint32_t nSize);
+typedef void (__thiscall *NWardenClient_Library_LoadModule)(::Library * pThis, uint8_t * pModuleHash, void * pData, uint32_t nSize);
 #endif
 #ifndef RECON_FPTD_NWardenClient_Library_SendPacket
 #define RECON_FPTD_NWardenClient_Library_SendPacket
-typedef void (*NWardenClient_Library_SendPacket)(::Library * pThis, void * pData, uint32_t nLen);
+typedef void (__thiscall *NWardenClient_Library_SendPacket)(::Library * pThis, void * pData, uint32_t nLen);
 #endif
 #ifndef RECON_FPTD_NWardenClient_Library_SetRC4Data
 #define RECON_FPTD_NWardenClient_Library_SetRC4Data
-typedef void (*NWardenClient_Library_SetRC4Data)(::Library * pThis, void * pData, uint32_t nSize);
+typedef void (__thiscall *NWardenClient_Library_SetRC4Data)(::Library * pThis, void * pData, uint32_t nSize);
 #endif
 
 struct LibraryVtable;
@@ -47,13 +47,13 @@ struct Library {
 };
 
 struct LibraryVtable {
-    /* 0x00 */ void (*SendPacket)(::Library *, void *, uint32_t);
-    /* 0x04 */ int8_t (*CheckModule)(::Library *, uint8_t *, void *);
-    /* 0x08 */ void (*LoadModule)(::Library *, uint8_t *, void *, uint32_t);
-    /* 0x0C */ void * (*AllocateMemory)(::Library *, uint32_t);
-    /* 0x10 */ void (*FreeMemory)(::Library *, void *);
-    /* 0x14 */ void (*SetRC4Data)(::Library *, void *, uint32_t);
-    /* 0x18 */ int8_t (*GetRC4Data)(::Library *, void *, uint32_t *);
+    /* 0x00 */ void (__thiscall *SendPacket)(::Library *, void *, uint32_t);
+    /* 0x04 */ int8_t (__thiscall *CheckModule)(::Library *, uint8_t *, void *);
+    /* 0x08 */ void (__thiscall *LoadModule)(::Library *, uint8_t *, void *, uint32_t);
+    /* 0x0C */ void * (__thiscall *AllocateMemory)(::Library *, uint32_t);
+    /* 0x10 */ void (__thiscall *FreeMemory)(::Library *, void *);
+    /* 0x14 */ void (__thiscall *SetRC4Data)(::Library *, void *, uint32_t);
+    /* 0x18 */ int8_t (__thiscall *GetRC4Data)(::Library *, void *, uint32_t *);
     /* 0x1C */ uint8_t field_0x1c;
     /* 0x1D */ uint8_t field_0x1d;
     /* 0x1E */ uint8_t field_0x1e;
@@ -63,6 +63,6 @@ struct LibraryVtable {
 namespace D2Client::Warden::NWardenClient {
 
 // Function declarations
-::Library * Constructor(::Library * pThis);
+::Library * __thiscall Constructor(::Library * pThis);
 
 } // namespace D2Client::Warden::NWardenClient

@@ -15,15 +15,15 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2CUnitEventStrc) == 0x20, "D2_NEW(D2CUnitEventStrc): the 32-bit layout must be the 0x20 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2CUnitEventStrc) == 0x20, "D2_NEW_AT(D2CUnitEventStrc): the 32-bit layout must be the 0x20 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fnCUnitEventCallback
@@ -72,7 +72,7 @@ D2CUnitEventStrc * __fastcall CUNITEVENT_Alloc(D2UnitStrc * pUnit, D2UnitStrc * 
       return nullptr;
     }
 
-    D2CUnitEventStrc* pNewEvent = D2_NEW_POOL(pUnit->pMemory, D2CUnitEventStrc);
+    D2CUnitEventStrc* pNewEvent = D2_NEW_POOL_AT(pUnit->pMemory, D2CUnitEventStrc, ".\\UNIT\\CUnitEvent.cpp", 0x48);
     pNewEvent->nEventType = 0;
     pNewEvent->nEventState = 0;
     pNewEvent->pNext = 0;

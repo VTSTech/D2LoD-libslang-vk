@@ -49,7 +49,7 @@
 
 namespace D2Client::UI::Waypoint {
 
-int32_t WAYPOINT_GetActIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
+static int32_t WAYPOINT_GetActIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     if (!bIsExpansion || (bIsExpansion = GAME::Game::CLIENT_CheckExpansion() , !bIsExpansion)) {
       if (0x1e < nMouseY || 0x140 < nMouseX) {
@@ -83,7 +83,7 @@ int32_t WAYPOINT_GetActIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
     return (0xff < nMouseX) + 3;
 }
 
-int32_t WAYPOINT_GetWaypointIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
+static int32_t WAYPOINT_GetWaypointIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
     uint32_t* pHitTestData;
     int nIndex = 0;
     int* piVar1 = gaWaypointRowLayout;
@@ -189,7 +189,7 @@ void __stdcall WAYPOINT_Shutdown() {
     FreeUiImages();
 }
 
-void Waypoint_SetWaypointArea(int32_t nAct) {
+static void Waypoint_SetWaypointArea(int32_t nAct) {
     D2BitBufferStrc* pQuestInfo;
     BOOL bQuestComplete;
     eD2Quests eQuestId;

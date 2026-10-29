@@ -47,24 +47,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q3Strc) == 0xa0, "D2_NEW(D2QuestDataA2Q3Strc): the 32-bit layout must be the 0xa0 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q3Strc) == 0xa0, "D2_NEW_AT(D2QuestDataA2Q3Strc): the 32-bit layout must be the 0xa0 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A2Q3 {
@@ -356,23 +352,24 @@ void __fastcall Q11_OnViperAmuletInit(D2QuestDataStrc * pQuestData, D2UnitStrc *
 // A2Q3 - fpSequenceFilter (Q11_SequenceFilter): chains to the next quest in the sequence. When this quest's
 // stateFlag==5 (finished) or intro not done, looks up the sequence-linked quest data and invokes its own
 // fpSequenceFilter (asserting the fn ptr is valid first). No quest-record access.
-void __fastcall Q11_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q11_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pQuestData_00) {
-      return;
+      return false;
     }
 
-    BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (BVar1) {
+    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+    if (BVar2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a5);
       exit(-1);
     }
 
-    pQuestData_00->fpSequenceFilter(pQuestData_00);
+    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+    return bVar1;
 }
 
 // A2Q3 - per-unit iterator cb (Q11_UpdateQuestRecord): mirrors the server quest stateFlag into each player's
@@ -413,7 +410,7 @@ BOOL __fastcall Q11_UpdateQuestRecord(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 // A2Q3 - Q11_OnPlayerInteract: player triggers the Tainted-Sun start (e.g. via the altar/NPC). Calls
 // Q11_BeginTaintedSun; if it deferred (act not loaded, returns 0) sets the pending flag and sends a 0x5D
 // quest-state packet (quest 10, flag 1) to the interacting client; otherwise sets the darkened flag.
-void __stdcall Q11_OnPlayerInteract(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
+static void __stdcall Q11_OnPlayerInteract(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
     D2GSPacketSrv0x5D abyQuestStatePacket;
     D2QuestDataA2Q3Strc* pA2Q3Data = pQuestData->pQuestSpecificData.pA2Q3;
     bool bTaintedSunStarted = (bool)Q11_BeginTaintedSun(pQuestData);
@@ -843,7 +840,7 @@ void __fastcall Q11_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // A2Q3 - Q11_StartDarknessTimer (custom register calling convention): if darkness not yet started, rolls a
 // random 15-17 tick delay (SEED_RollRange) and arms Q11_TimerCheckDarkness via AddQuestTimer, setting the
 // 'timer armed' flag. Schedules the delayed onset of the Tainted-Sun darkening. No quest-record access.
-void __stdcall Q11_StartDarknessTimer(uint8_t * pQuestData) {
+static void __stdcall Q11_StartDarknessTimer(uint8_t * pQuestData) {
     int pQuestSpecificData = *(int*)(pQuestData + 0x18);
     if (!(pQuestData[0xc] == '\0' && *(char*)(pQuestSpecificData + 1) == '\0')) {
       return;
@@ -902,13 +899,13 @@ void __fastcall Q11_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->pNpcMessages = &A2Q3::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
-    D2QuestDataA2Q3Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA2Q3Strc);
+    D2QuestDataA2Q3Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA2Q3Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q3.cpp", 0x323);
     pQuestData->pQuestSpecificData.pA2Q3 = pQuestSpecificData;
     pQuestData->nQuestIdReal = QUEST_TheTaintedSun;
     pQuestData->fpStatusFilter = 0;
     pQuestData->nInitNo = 4;
     pQuestData->fpActiveFilter = Q11_ActiveFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q11_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q11_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_TheTaintedSun;
     memset(pQuestSpecificData, 0, 0xa0);
     pQuestSpecificData->nViperAmuletUpdateFlag = 0;

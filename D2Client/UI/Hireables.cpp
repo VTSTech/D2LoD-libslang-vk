@@ -57,12 +57,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -151,7 +151,7 @@ void __stdcall LoadClassIcons() {
     }
 
     size_t nAllocSize = sgptDataTable->nTxtPetTypeSize * 0x14;
-    gpHireablesList = (D2HireablesListStrc*)D2_ALLOC_POOL(nullptr, nAllocSize);
+    gpHireablesList = (D2HireablesListStrc*)D2_ALLOC_POOL_AT(nullptr, nAllocSize, ".\\UI\\Hireables.cpp", 0x96);
     memset(gpHireablesList, 0, nAllocSize);
 }
 
@@ -184,7 +184,7 @@ void __stdcall FreeHireablesList() {
       } while (nIconIdx < nIconCount);
     }
 
-    D2_FREE_POOL(nullptr, pMemoryToFree);
+    D2_FREE_POOL_AT(nullptr, pMemoryToFree, ".\\UI\\Hireables.cpp", 0xb7);
     gpHireablesList = 0;
 }
 
@@ -209,7 +209,7 @@ void __stdcall UnsetHealthBarInitialize() {
     HealthBarColorsInitialized = false;
 }
 
-void __stdcall DrawHirelingName(int32_t nX, int32_t nY, int32_t nColor, uint16_t * lwMessage) {
+static void __stdcall DrawHirelingName(int32_t nX, int32_t nY, int32_t nColor, uint16_t * lwMessage) {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(6);
     uint16_t* pwszTrunc = lwMessage + 0x1f;
     int nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(lwMessage);
@@ -229,7 +229,7 @@ void __stdcall DrawHirelingName(int32_t nX, int32_t nY, int32_t nColor, uint16_t
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
-void __stdcall GetAndDrawHirelingName(int32_t nX, int32_t nY, int32_t nPetType) {
+static void __stdcall GetAndDrawHirelingName(int32_t nX, int32_t nY, int32_t nPetType) {
     uint16_t wszName[32];
     if (!(-1 < nPetType && nPetType < sgptDataTable->nTxtPetTypeSize)) {
       return;
@@ -697,7 +697,7 @@ void __stdcall UI_InitializeHirelingIconsUI() {
 }
 
 // Stack-slot reuse: after the colour is chosen, the low byte of the nPetType slot holds nColorMask, which is the colour passed to D2GFX_DrawSolidRectEx.
-void __stdcall DrawHealthBar(uint32_t nRosterGUID, uint32_t nPetType, int32_t nX) {
+static void __stdcall DrawHealthBar(uint32_t nRosterGUID, uint32_t nPetType, int32_t nX) {
     int nHp = !nPetType ? GAME::Roster::GetRosterHP(nRosterGUID) : GAME::RosterPets::GetRosterPerHPPercent(nRosterGUID);
     if (!nHp) {
       return;
@@ -733,7 +733,7 @@ void __stdcall DrawHealthBar(uint32_t nRosterGUID, uint32_t nPetType, int32_t nX
     D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nBarEndX, 14, nX + 46, 19, 0, DRAW_SOLID);
 }
 
-void __stdcall UI_DrawHirelingNameFromUnit(int32_t nX, int32_t nY, D2UnitStrc * pUnit) {
+static void __stdcall UI_DrawHirelingNameFromUnit(int32_t nX, int32_t nY, D2UnitStrc * pUnit) {
     uint16_t wszName[32];
     if (!pUnit) {
       return;
@@ -747,7 +747,7 @@ void __stdcall UI_DrawHirelingNameFromUnit(int32_t nX, int32_t nY, D2UnitStrc * 
     DrawHirelingName(nX, nY, 0, wszName);
 }
 
-BOOL __stdcall UI_DrawPartyMembersHirelingIcons(int * pnY, int * pnYOffset, int * pnX, D2UnitStrc * pUnit) {
+static BOOL __stdcall UI_DrawPartyMembersHirelingIcons(int * pnY, int * pnYOffset, int * pnX, D2UnitStrc * pUnit) {
     uint32_t nRosterGUID;
     int32_t nRosterCharClass;
     char* pszName;
@@ -836,7 +836,7 @@ BOOL __stdcall UI_DrawPartyMembersHirelingIcons(int * pnY, int * pnYOffset, int 
     return 1;
 }
 
-BOOL __stdcall HIRELING_DrawPortraitIcon(D2UnitStrc * pUnit, int * pnYToggle, int * pnY, int * pnX) {
+static BOOL __stdcall HIRELING_DrawPortraitIcon(D2UnitStrc * pUnit, int * pnYToggle, int * pnY, int * pnX) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
     sGfxData.pDC6 = GetRosterIcon(pUnit, 7, (int32_t*)&pUnit, nullptr);
@@ -880,7 +880,7 @@ BOOL __stdcall HIRELING_DrawPortraitIcon(D2UnitStrc * pUnit, int * pnYToggle, in
     return 1;
 }
 
-BOOL __stdcall HIRELING_DrawPetIcon(D2UnitStrc * pUnit, int * nX, int * pnYToggle, uint32_t nPetType, int * nY) {
+static BOOL __stdcall HIRELING_DrawPetIcon(D2UnitStrc * pUnit, int * nX, int * pnYToggle, uint32_t nPetType, int * nY) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
     sGfxData.pDC6 = GetRosterIcon(pUnit, nPetType, (int32_t*)&pUnit, nullptr);
@@ -904,7 +904,7 @@ BOOL __stdcall HIRELING_DrawPetIcon(D2UnitStrc * pUnit, int * nX, int * pnYToggl
     return 1;
 }
 
-BOOL __stdcall HIRELING_DrawSummonIcon(D2UnitStrc * pUnit, int32_t * nY, int * pnYToggle, uint32_t nSkillId, int32_t * nX) {
+static BOOL __stdcall HIRELING_DrawSummonIcon(D2UnitStrc * pUnit, int32_t * nY, int * pnYToggle, uint32_t nSkillId, int32_t * nX) {
     D2GfxDataStrc sGfxData;
     int32_t nRosterGUIDOut;
     int32_t nRosterCount = GAME::RosterPets::CountRostersForUnitFilterBySkill(pUnit, nSkillId);
@@ -941,7 +941,7 @@ BOOL __stdcall HIRELING_DrawSummonIcon(D2UnitStrc * pUnit, int32_t * nY, int * p
     return 1;
 }
 
-BOOL __stdcall HIRELING_DrawGenericPetIcon(D2UnitStrc * pUnit, int * pnX, int * pnYToggle, uint32_t nPetType, int * pnY) {
+static BOOL __stdcall HIRELING_DrawGenericPetIcon(D2UnitStrc * pUnit, int * pnX, int * pnYToggle, uint32_t nPetType, int * pnY) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
     sGfxData.pDC6 = GetRosterIcon(pUnit, nPetType, (int32_t*)&pUnit, nullptr);
@@ -1051,7 +1051,7 @@ void __stdcall UI_DrawHireableIcons() {
     uint16_t* pwszStr2 = D2Lang::StrTable::strtable::GetLocaleString(0x58a3);
     uint16_t* pwszStr3 = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
     uint16_t* pwszKeyDesc = CmdTbl::CMD_GetKeyDescForCommand(0x36, 1);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltip, pwszStr2, (uint16_t*)pwszKeyDesc);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltip, pwszStr2, pwszKeyDesc);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, pwszStr3);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, pwszStr1);
     D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(wszTooltip, gpHireHoverUnit, gnHireIconDrawX + 0x24, 0, 0);

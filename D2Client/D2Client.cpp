@@ -130,12 +130,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -159,12 +159,12 @@ static eD2PlayerClassID eD2PlayerClassID_00712f00 = CLASS_SORCERESS; D2_STATIC_G
 // @sourcefile .\CORE\WINMAIN.CPP
 BOOL __stdcall WINMAIN_TestMemoryAccess(CMDPARAMS * pParams, char * szCmdLine) {
     uint8_t* pPage;
-    uint8_t* pMemory = (uint8_t*)D2_ALLOC(0x6000000);
+    uint8_t* pMemory = (uint8_t*)D2_ALLOC_AT(0x6000000, ".\\CORE\\WINMAIN.CPP", 0x121);
     for (pPage = pMemory; pPage < pMemory + 0x6000000; pPage += 0x1000) {
       *pPage = 0;
     }
 
-    D2_FREE(pMemory);
+    D2_FREE_AT(pMemory, ".\\CORE\\WINMAIN.CPP", 0x124);
     return 1;
 }
 
@@ -1491,7 +1491,7 @@ void __fastcall AUTOMAP_UpdatePartyNamesCallback(D2EscMenuItemStrc * pItem, D2UI
     UI::Automap::AUTOMAP_SetPartyNames(pItem->nImageIndex);
 }
 
-BOOL __stdcall UNITMODE_TryInteractWithObject(D2UnitStrc * pUnit, D2PathPointStrc pathPoint, int32_t nActionType, D2UnitStrc * pTargetUnit, int32_t nTargetGUID) {
+static BOOL __stdcall UNITMODE_TryInteractWithObject(D2UnitStrc * pUnit, D2PathPointStrc pathPoint, int32_t nActionType, D2UnitStrc * pTargetUnit, int32_t nTargetGUID) {
     if (pTargetUnit && pTargetUnit->eUnitFlags >> 1 & 1) {
       BOOL BVar1;
       BVar1 = UNIT::UnitMode::UNITMODE_IsTargetInActionRange(pTargetUnit, pUnit, nActionType);
@@ -1935,7 +1935,7 @@ void __fastcall MONSTER_FreeMonsterPath(int * pThis) {
       return;
     }
 
-    D2_FREE(*(void**)(iVar1 + 0x2c));
+    D2_FREE_AT(*(void**)(iVar1 + 0x2c), ".\\UNIT\\Monster.cpp", 0x66);
     *(uint32_t*)(iVar1 + 0x2c) = 0;
 }
 
@@ -1963,14 +1963,14 @@ int __stdcall NPCMENU_GetCurrentMenuId() {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd55);
         exit(-1);
       } else {
-        if (_Interaction::geNpcUiState != 8) {
-          _Interaction::geNpcUiState = NPCUI_SHOP;
-          UI::Inv::INV_ExitIdentifyMode();
-          return 1;
+        if (_Interaction::geNpcUiState == 8) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd56);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd56);
-        exit(-1);
+        _Interaction::geNpcUiState = NPCUI_SHOP;
+        UI::Inv::INV_ExitIdentifyMode();
+        return 1;
       }
     }
     if (gnNpcMenuTransactionType == 5) {
@@ -2100,12 +2100,12 @@ uint32_t __stdcall GetQuestAvailabilityByIndex(int32_t nUnused, int32_t nQuestIn
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x60);
       exit(-1);
     } else {
-      if (nQuestIndex < 0x25) {
-        return (uint32_t)aQuestAvailabilityPacket[nQuestIndex];
+      if (!(nQuestIndex < 0x25)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x65);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x65);
-      exit(-1);
+      return (uint32_t)aQuestAvailabilityPacket[nQuestIndex];
     }
 }
 
@@ -2177,23 +2177,22 @@ BOOL __fastcall OBJECT_CheckAutoLight(D2UnitStrc * pUnit, int32_t bSkipCofLoad) 
 
     int32_t nPeriodOfDay = D2Common::Environment::DRLGENV_GetPeriodOfDayFromAct(sgpDrlgAct, nullptr);
     if (nPeriodOfDay) {
-      if (nPeriodOfDay - 1U < 3) {
-        if (pUnit->eAnimMode.ePlayerMode == Death) {
-          pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Neutral;
-          if (!bSkipCofLoad) {
-            Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
-          }
-
-          D2Common::Units::InitAnimMode(pUnit);
-          UNIT::SetMonsterFlags(pUnit, UNITFLAG_TARGETABLE, (uint32_t)pTxtLine->Selectable[pUnit->eAnimMode.ePlayerMode]);
+      if (!(nPeriodOfDay - 1U < 3)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x66);
+        exit(-1);
+      }
+      if (pUnit->eAnimMode.ePlayerMode == Death) {
+        pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Neutral;
+        if (!bSkipCofLoad) {
+          Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
         }
 
-        OBJECT_SetLightRGB(pTxtLine->Red, pTxtLine->Green, pTxtLine->Blue, (uint16_t)(uint8_t)pTxtLine->Lit[pUnit->eAnimMode.ePlayerMode], pUnit);
-        return 1;
+        D2Common::Units::InitAnimMode(pUnit);
+        UNIT::SetMonsterFlags(pUnit, UNITFLAG_TARGETABLE, (uint32_t)pTxtLine->Selectable[pUnit->eAnimMode.ePlayerMode]);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x66);
-      exit(-1);
+      OBJECT_SetLightRGB(pTxtLine->Red, pTxtLine->Green, pTxtLine->Blue, (uint16_t)(uint8_t)pTxtLine->Lit[pUnit->eAnimMode.ePlayerMode], pUnit);
+      return 1;
     }
     if (!(pUnit->eAnimMode.ePlayerMode == Walk || pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral)) {
       return 0;
@@ -2367,7 +2366,7 @@ int32_t __fastcall DC6_AssignParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit
     return nResult;
 }
 
-BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode, short * pComponentTable, void * pMonStatsTxt, int32_t nComponentRow, int32_t nWeaponClass, D2GfxDataStrc * pGfxData) {
+static BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode, short * pComponentTable, void * pMonStatsTxt, int32_t nComponentRow, int32_t nWeaponClass, D2GfxDataStrc * pGfxData) {
     bool _bCompositeDeath;
     bool bCompositeDeath;
     int nOverlay;
@@ -2437,20 +2436,19 @@ BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode,
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x426);
               exit(-1);
             } else {
-              if (nAnimMode) {
-                if (!pGfxData->nArmorToken) {
-                  pGfxData->nArmorToken = 0x20787878;
-                }
-                if (pGfxData->nModeToken) {
-                  return 1;
-                }
-
-                pGfxData->nModeToken = 0x20787878;
+              if (!nAnimMode) {
+                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x427);
+                exit(-1);
+              }
+              if (!pGfxData->nArmorToken) {
+                pGfxData->nArmorToken = 0x20787878;
+              }
+              if (pGfxData->nModeToken) {
                 return 1;
               }
 
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x427);
-              exit(-1);
+              pGfxData->nModeToken = 0x20787878;
+              return 1;
             }
           }
 

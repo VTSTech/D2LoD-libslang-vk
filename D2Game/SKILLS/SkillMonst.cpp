@@ -70,7 +70,6 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Game/Ai/AiGeneral.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "Fog/Src/Safesock.h"
 
@@ -85,24 +84,25 @@ typedef void (__fastcall *pfnSkillRangeCb)(D2UnitStrc * pUnit, void * pCtx);
 namespace D2Game::SKILLS::SkillMonst {
 
 // SrvStFunc 42: monster melee-hit skill state tick. If the caster is a player, delegates to Skills_SrvStFunc_32. Otherwise computes to-hit vs the target, rolls hit check, applies skill ResultFlags/HitFlags/HitClass on hit (with combat stat recalc), and calls DAMAGE_CalculateAndApplyDamage with flag 0x80.
-void __fastcall SKILLMONST_SrvStFn42_FireHit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall SKILLMONST_SrvStFn42_FireHit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2DamageStrc sDamage;
     if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return;
+      return 0;
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
     if (!pSkillTxt) {
-      return;
+      return 0;
     }
 
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
     if (!pTarget) {
-      return;
+      return 0;
     }
     if (pUnit && pUnit->eUnitType == UNIT_PLAYER) {
-      SkillBar::SKILLBAR_SrvStFn32_StrikeWithAuraState(pGame, pUnit, eSkill, nSkillLvl);
-      return;
+      BOOL BVar1;
+      BVar1 = SkillBar::SKILLBAR_SrvStFn32_StrikeWithAuraState(pGame, pUnit, eSkill, nSkillLvl);
+      return BVar1;
     }
 
     memset(&sDamage, 0, 0x70);
@@ -121,6 +121,7 @@ void __fastcall SKILLMONST_SrvStFn42_FireHit(::SGAMEDATA * pGame, D2UnitStrc * p
     }
 
     UNIT::SUnitDmg::DAMAGE_CalculateAndApplyDamage(pGame, pUnit, pTarget, &sDamage, 0x80);
+    return 1;
 }
 
 BOOL __fastcall Skills_SrvDoFunc_083_MonsterMeleeAttack(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
@@ -135,12 +136,13 @@ BOOL __fastcall Skills_SrvDoFunc_083_MonsterMeleeAttack(::SGAMEDATA * pGame, D2U
     return bResult;
 }
 
-void __fastcall SKILLMONST_SrvStFn43_MaggotEgg(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall SKILLMONST_SrvStFn43_MaggotEgg(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     if (pUnit) {
       pUnit->eUnitFlags &= ~(UNITFLAG_ISVALIDTARGET | UNITFLAG_CANBEATTACKED | UNITFLAG_TARGETABLE);
     }
 
     D2Common::PATH::DynamicPath::PATH_SetCorpseCollision(pUnit, 1);
+    return 1;
 }
 
 // SrvDoFunc 84: spawns up to calc[0] minions of the summon class around the caster (expanding spawn radius 1-4 on failure), marks each NOXP, then kills the caster via SERVER_KillMonster (self-destruct on cast). Used by exploding-suicide minion monsters.
@@ -1027,7 +1029,7 @@ BOOL __fastcall SKILLMONST_SrvStFn53_MonInferno(::SGAMEDATA * pGame, D2UnitStrc 
     return 1;
 }
 
-void __stdcall SKILLASSN_GetTrapHealthBonus(uint32_t dwUnused, eD2Skills eSkill, D2UnitStrc * pUnit, int32_t nSkillLvl, D2UnitStrc * pMissileUnit) {
+static void __stdcall SKILLASSN_GetTrapHealthBonus(uint32_t dwUnused, eD2Skills eSkill, D2UnitStrc * pUnit, int32_t nSkillLvl, D2UnitStrc * pMissileUnit) {
     if ((int)eSkill < 0 || sgptDataTable->nTxtSkillsCount <= (int)eSkill || !(sgptDataTable->pTxtSkills + eSkill)) {
       return;
     }
@@ -1061,7 +1063,7 @@ void __stdcall SKILLASSN_GetTrapHealthBonus(uint32_t dwUnused, eD2Skills eSkill,
     D2Common::Units::Missile::SetCurrentFrame(pMissileUnit, nLifetime);
 }
 
-void SKILLMONST_TriggerModeChange(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
+static int SKILLMONST_TriggerModeChange(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
     uint32_t nEventDelay = 0xb;
     if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
       int nMonStatsExIdx;
@@ -1076,6 +1078,7 @@ void SKILLMONST_TriggerModeChange(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
 
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_MODECHANGE, 0);
     GAME::Event::SetEvent(pGame, pUnit, 1, pGame->dwGameFrame + nEventDelay, 0, 0);
+    return 1;
 }
 
 void __fastcall SKILLASSN_GetShadowHealthBonus(D2SkillsTxt * pSkillsTxt, D2UnitStrc * pUnit) {
@@ -2700,12 +2703,9 @@ void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUni
         sSkillArg.nX = nPosX;
         sSkillArg.nY = nPosY;
         MISSILES::Missiles::CreatingMissile(pGame, &sSkillArg);
-        Fog::Debug::GuardStack();
         return;
       }
     }
-
-    Fog::Debug::GuardStack();
 }
 
 // Monster skill server do-func: applies the Fetish Aura (STATE_fetishaura) to nearby enemy units. Resolves target/cursor position, finds units within range (Param[3] + nSkillLvl*2), filters by CanAttack and SKILLNEC_ValidateAttackableTarget, then calls SKILLS_SetStateWithCurse with UNITSTAT_attackrate on each valid target.

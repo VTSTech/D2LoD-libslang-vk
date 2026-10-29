@@ -47,24 +47,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA5Q1Strc) == 0x18, "D2_NEW(D2QuestDataA5Q1Strc): the 32-bit layout must be the 0x18 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA5Q1Strc) == 0x18, "D2_NEW_AT(D2QuestDataA5Q1Strc): the 32-bit layout must be the 0x18 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A5Q1 {
@@ -538,14 +534,14 @@ bool __fastcall Q31_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 }
 
 // A5Q1 sequence filter: chains to the next quest's sequence filter (nSequenceQuestId). Only proceeds when this quest reached stateFlag 5 (reward given) or intro shown; validates the chained fn ptr before calling. No quest-state bit reads.
-void __fastcall Q31_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q31_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pSeqQuestData) {
-      return;
+      return false;
     }
 
     BOOL bIsBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -554,7 +550,8 @@ void __fastcall Q31_SequenceFilter(D2QuestDataStrc * pQuestData) {
       exit(-1);
     }
 
-    pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+    bool nTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+    return nTmp;
 }
 
 // A5Q1: on game load, rebuild volatile in-memory state (nStateFlagPrev@+0xb, nStateFlag@+0xc) from the player's persisted quest-record bits. Priority: Completed(0)/FinishedPrev(0xf)/RewardAwaits(1) -> prev=5 (done); Step0x04(4) -> prev2,flag3; Step0x03(3) -> prev1,flag3; Step0x02(2) -> prev1,flag2; else if player has spoken with Larzuk-intro NPC 0x201 and intro shown -> flag=1. Decompiler shows nQuestIdReal via [ESI+0xe0].
@@ -621,13 +618,13 @@ void __fastcall Q31_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->pNpcMessages = &A5Q1::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
-    D2QuestDataA5Q1Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA5Q1Strc);
+    D2QuestDataA5Q1Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA5Q1Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q1.cpp", 0x2d3);
     pQuestData->pQuestSpecificData.pA5Q1 = pQuestSpecificData;
     pQuestData->nQuestIdReal = QUEST_SiegeOnHaggorath;
     pQuestData->fpStatusFilter = Q31_StatusFilter;
     pQuestData->nInitNo = 4;
     pQuestData->fpActiveFilter = Q31_ActiveFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q31_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q31_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_UnknownDuplicate1;
     pQuestSpecificData->pPresetDrlgFile = 0;
     pQuestSpecificData->pShenkRoom = 0;
@@ -725,7 +722,7 @@ void __fastcall Q31_OnOverseerDeath(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 }
 
 // A5Q1 preset-object load hook: when the Shenk preset object loads, copies its preset object list into the quest data; if Shenk was already spawned and his unit still exists, re-attaches the DRLG map file to his AI. No quest-record bit changes.
-void Q31_OnPresetObjectLoad(void * pThis, D2MapAIStrc * pMapAI) {
+void __thiscall Q31_OnPresetObjectLoad(void * pThis, D2MapAIStrc * pMapAI) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal((::SGAMEDATA*)pThis, QUESTINT_SiegeOnHaggorath);
     if (!(pQuestData && pMapAI)) {
       return;

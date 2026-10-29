@@ -24,10 +24,6 @@ namespace D2Lang {
 void __stdcall UI_FormatNumberWithCommas(uint16_t * wszText, int32_t nParam1, int32_t nParam2);
 // Decodes next UTF-8 character from byte stream. Multi-byte decoding using table at gaUtf8DecodeTable. Returns character width in bytes or -1 on error. Validates continuation bytes (0x80 mask).
 int32_t __stdcall UTF8_DecodeNextChar(uint8_t * pUtf8, uint16_t * pwCharOut, int32_t nMaxBytes);
-// Encodes a single UTF-16 code point to UTF-8 bytes. Returns number of bytes written (1-4). Uses lookup table at 0x007309b8.
-int32_t __stdcall EncodeUTF8CodePoint(uint16_t nParam, uint8_t * pbParam);
-// Returns byte width of next UTF-8 character without decoding. Uses same validation table as DecodeNextChar. Returns -1 on error.
-int32_t __stdcall UTF8_GetNextCharWidth(uint8_t * pUtf8, int32_t nMaxBytes);
 // Counts UTF-8 characters in string. Iterates via GetNextCharWidth, handles variable-width encoding. Returns character count (not byte count).
 int32_t __fastcall UTF8_GetStringLength(char * szUtf8, int32_t nMaxBytes);
 void __fastcall UTF8_EncodeCodePoint(uint16_t * nParam);
@@ -37,5 +33,6 @@ char * __fastcall WideCharToUTF8(char * pDest, uint16_t * pSrc, int nMaxBytes);
 void __fastcall UTF8_GetEncodedLength(uint16_t * pwszStr, int32_t nMaxChars);
 // Compares two characters using UI character lookup table for case-insensitive comparison. If char < 0x100, maps via CharacterLookupTable, else uses raw value. Returns 1 if equal, 0 otherwise.
 BOOL __stdcall UI_CompareCharsUsingLookupTable(uint16_t wChar1, uint16_t wChar2);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Lang

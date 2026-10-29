@@ -6,12 +6,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -19,7 +19,7 @@ namespace D2Sound::D2SoundUntil {
 
 // NOTE: Register params: pListHead (ECX): void *, pItem (EDX): void *
 void __fastcall SOUND_sD2SoundSmp_Alloc(void * pListHead, void * pItem) {
-    uint32_t* pNewNode = (uint32_t*)D2_ALLOC(8);
+    uint32_t* pNewNode = (uint32_t*)D2_ALLOC_AT(8, ".\\Src\\D2SoundUtil.cpp", 0xd5);
     *pNewNode = 0;
     pNewNode[1] = 0;
     uint32_t dwOldHead = *(uint32_t*)pListHead;
@@ -57,7 +57,7 @@ void __fastcall SOUND_sD2SoundSmp_Free(int * * ppListHead, int32_t nSearchValue)
       pPrev[1] = pMemoryToFree[1];
     }
 
-    D2_FREE(pMemoryToFree);
+    D2_FREE_AT(pMemoryToFree, ".\\Src\\D2SoundUtil.cpp", 0xf1);
 }
 
 BOOL __fastcall SOUNDUTIL_FindInLinkedList(int * pNode, int32_t nSearchValue) {
@@ -101,7 +101,7 @@ void __fastcall SOUNDUTIL_FreeLinkedList(int * * ppListHead) {
             pPrev[1] = pMemoryToFree[1];
           }
 
-          D2_FREE(pMemoryToFree);
+          D2_FREE_AT(pMemoryToFree, ".\\Src\\D2SoundUtil.cpp", 0xf1);
           break;
         }
 
@@ -115,7 +115,7 @@ void __fastcall SOUNDUTIL_FreeLinkedList(int * * ppListHead) {
 
 void __fastcall SOUNDUTIL_AppendToLinkedList(void * * ppListHead, uint32_t dwNodeValue) {
     void* pTail;
-    uint32_t* pNewNode = (uint32_t*)D2_ALLOC(8);
+    uint32_t* pNewNode = (uint32_t*)D2_ALLOC_AT(8, ".\\Src\\D2SoundUtil.cpp", 0x120);
     pNewNode[1] = 0;
     *pNewNode = dwNodeValue;
     void* pNext = *ppListHead;
@@ -264,17 +264,17 @@ BOOL __fastcall SOUNDUTIL_GetFileVersionInfo(LPCSTR szText, uint32_t * pnFileVer
       return 0;
     }
 
-    void* pBlock = D2_ALLOC(nResourceSizeOut);
+    void* pBlock = D2_ALLOC_AT(nResourceSizeOut, ".\\Src\\D2SoundUtil.cpp", 0x21c);
     nResourceSizeOut = nResourceSizeCopy;
     bReadOk = SOUNDUTIL_ReadVersionResource(szText, &nResourceSizeOut, pBlock);
     if (!bReadOk) {
-      D2_FREE(pBlock);
+      D2_FREE_AT(pBlock, ".\\Src\\D2SoundUtil.cpp", 0x221);
       return 0;
     }
 
     /* PUINT puLen for VerQueryValueA */ /* LPVOID * lplpBuffer for VerQueryValueA */ /* LPCSTR lpSubBlock for VerQueryValueA */ /* LPCVOID pBlock for VerQueryValueA */ bReadOk = VerQueryValueA(pBlock, "\\", &pVerInfo, &__frame0.nVerBlockLen);
     if (!bReadOk) {
-      D2_FREE(pBlock);
+      D2_FREE_AT(pBlock, ".\\Src\\D2SoundUtil.cpp", 0x229);
       return 0;
     }
 

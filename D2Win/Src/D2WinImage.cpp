@@ -23,15 +23,15 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2WinImage) == 0x4c, "D2_NEW(D2WinImage): the 32-bit layout must be the 0x4c bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2WinImage) == 0x4c, "D2_NEW_AT(D2WinImage): the 32-bit layout must be the 0x4c bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_ImageHitArea
@@ -330,7 +330,7 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
 
 // @sourcefile .\Src\D2WinImage.cpp
 ::D2WinImage * __fastcall D2WinImage(int32_t nParam1, int32_t nParam2, int32_t nSizeX, int32_t nSizeY, DC6 * pDC6, OnPress pfnOnPress, D2WinImageHitArea * pHitAreas, ::Key pKey) {
-    ::D2WinImage* pNewImage = D2_NEW(::D2WinImage);
+    ::D2WinImage* pNewImage = D2_NEW_AT(::D2WinImage, ".\\Src\\D2WinImage.cpp", 0x1d);
     memset(pNewImage, 0, 0x4c);
     pNewImage->sControl.neD2FormType = FORM_Image;
     int* pDwState = &pNewImage->sControl.dwState;

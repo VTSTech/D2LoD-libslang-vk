@@ -87,19 +87,19 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2CombatEntryStrc) == 0x88, "D2_NEW(D2CombatEntryStrc): the 32-bit layout must be the 0x88 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2CombatEntryStrc) == 0x88, "D2_NEW_AT(D2CombatEntryStrc): the 32-bit layout must be the 0x88 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_PFN_StatExpireCallback
@@ -125,7 +125,7 @@ uint32_t __fastcall DAMAGE_CheckMonsterTypeVsMonsterType(uint32_t nMonTypeA, int
     return *(uint32_t*)(sgptDataTable->pTxtMonTypeUnknown + (sgptDataTable->nMonTypeEquivRowDwords * nMonTypeB + ((int)nMonTypeA >> 5)) * 4) & gadwBitMasks[nMonTypeA & 0x1f];
 }
 
-uint32_t __stdcall DAMAGE_RollPhysicalDamageRange(int32_t nDamageRange, int32_t nMinPctBonus, D2UnitStrc * pUnit, int32_t nDamageMin, int32_t nRangePctBonus, uint32_t nDamageAccum) {
+static uint32_t __stdcall DAMAGE_RollPhysicalDamageRange(int32_t nDamageRange, int32_t nMinPctBonus, D2UnitStrc * pUnit, int32_t nDamageMin, int32_t nRangePctBonus, uint32_t nDamageAccum) {
     uint32_t nRandRoll;
     if (0 >= nDamageRange) {
       return (int)nDamageAccum < 0 ? 0 : nDamageAccum;
@@ -144,7 +144,7 @@ uint32_t __stdcall DAMAGE_RollPhysicalDamageRange(int32_t nDamageRange, int32_t 
     return (int)nDamageAccum < 0 ? 0 : nDamageAccum;
 }
 
-uint32_t __stdcall DAMAGE_RollElementalDamageWithBonus(eD2UnitStat eUnitStat, eD2UnitStat eStat1, int32_t nParam1, int32_t nParam2, uint32_t nParam, D2UnitStrc * pUnit, eD2UnitStat eStat2) {
+static uint32_t __stdcall DAMAGE_RollElementalDamageWithBonus(eD2UnitStat eUnitStat, eD2UnitStat eStat1, int32_t nParam1, int32_t nParam2, uint32_t nParam, D2UnitStrc * pUnit, eD2UnitStat eStat2) {
     int nDamageBase = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eStat2, 0);
     if (nDamageBase * 0x100 < 8) {
       return (int)nParam < 0 ? 0 : nParam;
@@ -162,7 +162,7 @@ uint32_t __stdcall DAMAGE_RollElementalDamageWithBonus(eD2UnitStat eUnitStat, eD
     return nResult;
 }
 
-int32_t __stdcall DAMAGE_ApplyHealingToUnit(int32_t nParam, D2UnitStrc * pUnit) {
+static int32_t __stdcall DAMAGE_ApplyHealingToUnit(int32_t nParam, D2UnitStrc * pUnit) {
     bool _bIsDead;
     bool bIsDead;
     if (0 >= nParam) {
@@ -194,7 +194,7 @@ int32_t __stdcall DAMAGE_ApplyHealingToUnit(int32_t nParam, D2UnitStrc * pUnit) 
     return nParam;
 }
 
-int32_t __stdcall DAMAGE_ApplyManaToUnit(int32_t nParam, D2UnitStrc * pUnit) {
+static int32_t __stdcall DAMAGE_ApplyManaToUnit(int32_t nParam, D2UnitStrc * pUnit) {
     if (nParam < 1) {
       return 0;
     }
@@ -214,7 +214,7 @@ int32_t __stdcall DAMAGE_ApplyManaToUnit(int32_t nParam, D2UnitStrc * pUnit) {
     return nParam;
 }
 
-uint32_t DAMAGE_DrainManaFromUnit(uint32_t nParam, D2UnitStrc * pUnit) {
+static uint32_t DAMAGE_DrainManaFromUnit(uint32_t nParam, D2UnitStrc * pUnit) {
     if ((int)nParam < 1) {
       return 0;
     }
@@ -229,7 +229,7 @@ uint32_t DAMAGE_DrainManaFromUnit(uint32_t nParam, D2UnitStrc * pUnit) {
     return nNewMana ? nParam : 0;
 }
 
-uint32_t DAMAGE_DrainStaminaFromUnit(uint32_t nParam, D2UnitStrc * pUnit) {
+static uint32_t DAMAGE_DrainStaminaFromUnit(uint32_t nParam, D2UnitStrc * pUnit) {
     if ((int)nParam < 1) {
       return 0;
     }
@@ -245,7 +245,7 @@ uint32_t DAMAGE_DrainStaminaFromUnit(uint32_t nParam, D2UnitStrc * pUnit) {
 }
 
 // Applies the STATE_stunned state to pUnit2 for nParam game-frames. Skips if nParam &lt; 1, if the target is a non-stunable monster (boss, zero-velocity, or rolls against a 90% stun-chance for monster-type 8), or clamps mercs to 13 frames and others to 250. Re-uses an existing stun stat-list if present (updates timeout + event), otherwise allocates a new one and attaches it.
-void __stdcall DAMAGE_ApplyStun(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc * pUnit2) {
+static void __stdcall DAMAGE_ApplyStun(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc * pUnit2) {
     D2MonStatsTxt* pVictimMonStats;
     uint32_t nCheckResult;
     D2StatListExStrc* pStunStatList;
@@ -312,7 +312,7 @@ void __stdcall DAMAGE_ApplyStun(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc *
 }
 
 // Applies poison damage-over-time to pUnit2. nParam1=drain rate (UNITSTAT_hpregen penalty per frame), nParam2=duration in frames. If no existing STATE_poison stat list, allocates a new one and sets it up with the attacker's GUID/type and expiry event. If one already exists, extends duration and stacks rate if the new hit is stronger. Triggers STATREGEN timer for monster targets.
-void __stdcall DAMAGE_ApplyPoison(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit2) {
+static void __stdcall DAMAGE_ApplyPoison(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit2) {
     int32_t nAttackerGUID;
     if (!(0 < nParam2 && 0 < nParam1)) {
       return;
@@ -377,7 +377,7 @@ void __fastcall DAMAGE_OnColdExpire(D2UnitStrc * pUnit, eD2States eState, uint32
 }
 
 // Applies burning (fire DoT) damage to pUnit2, mirroring DAMAGE_ApplyPoison logic but for STATE_burning. nParam1=HP drain rate, nParam2=duration frames. Allocates or updates a stat list on the target with hpregen penalty and expiry event; stacks rate/extends duration if new hit is stronger than current burn.
-void __stdcall DAMAGE_ApplyBurning(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit2) {
+static void __stdcall DAMAGE_ApplyBurning(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit2) {
     int32_t nAttackerGUID;
     if (!(0 < nParam2 && 0 < nParam1)) {
       return;
@@ -436,7 +436,7 @@ int32_t __fastcall DAMAGE_GetMonsterDelayByDifficulty(D2UnitStrc * pUnit, D2Unit
 
 // Applies cold slow to pUnit2 for nParam frames, sourced from attacker pUnit. Looks up MonStats ColdEffect per difficulty; divides duration for cold-immune monsters. Creates or extends STATE_cold stat list (velocity/attack/anim rate penalties), schedules expiry event, and probabilistically sets STATE_shatter on eligible monsters.
 // @sourcefile .\UNIT\SUnitDmg.cpp
-void __stdcall DAMAGE_ApplyCold(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc * pUnit2) {
+static void __stdcall DAMAGE_ApplyCold(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc * pUnit2) {
     bool _bCanShatter;
     bool bCanShatter;
     eD2UnitType eUnitType;
@@ -511,7 +511,7 @@ void __stdcall DAMAGE_ApplyCold(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc *
 }
 
 // Server-side application of the Freeze effect to a target (pUnit2) from attacker pUnit for nParam frames. Players and bosses/special/uninterruptable/merc monsters fall back to DAMAGE_ApplyCold instead of being frozen. For eligible monsters: bails if a monster delay-by-difficulty check passes, divides duration by the difficulty's MonsterFreezeDivisor, and computes an expire game-frame. Creates+attaches a STATE_freeze statlist with expire callback SUNITDMG_StatExpireCallback_ResumeAI (or extends an existing freeze's timeout to the later expiry). Fires game events: event 0xc with the expire frame, an AITHINK timer trigger, and event 2 one frame after expiry to resume AI. Halts via Fog::ErrorManager on a zero freeze divisor or a non-monster reaching the event stage.
-void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc * pUnit2) {
+static void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc * pUnit2) {
     D2MonStatsTxt* pMonStatsTxt;
     uint32_t nCheckResult;
     D2DifficultyLevelsTxt* pDiffLevels;
@@ -718,7 +718,7 @@ void __stdcall DAMAGE_ApplyDemonBonus(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, i
     *(int*)(nParam + 0xc) += nDemonDmgPct;
 }
 
-void DAMAGE_ApplyUndeadBonusDamage(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static void DAMAGE_ApplyUndeadBonusDamage(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     BOOL nUndeadOrBluntBonus = D2Common::Monsters::MONSTERS::MONSTER_IsMonsterUndead(pUnit2);
     if (!nUndeadOrBluntBonus) {
       return;
@@ -742,7 +742,7 @@ void DAMAGE_ApplyUndeadBonusDamage(int32_t nParam, D2UnitStrc * pUnit, D2UnitStr
     *(int*)(nParam + 0xc) = *(int*)(nParam + 0xc) + iVar1 + nUndeadDmgPct;
 }
 
-void __stdcall DAMAGE_ApplyMonsterTypeBonusDamage(D2UnitStrc * pUnit, D2DamageStrc * pDamage, int * pnParam) {
+static void __stdcall DAMAGE_ApplyMonsterTypeBonusDamage(D2UnitStrc * pUnit, D2DamageStrc * pDamage, int * pnParam) {
     D2StatStrc anBonusValues[128];
     if (!(pnParam && *pnParam == 1)) {
       return;
@@ -1017,7 +1017,7 @@ void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc 
 }
 
 // Computes the effective resistance value for one damage type given a resist-table entry and a damage context. Reads the defender's raw resistance stat, subtracts pierce from the attacker if applicable, applies the difficulty resistance penalty for players (hardcoded -20/-50 for classic, or DifficultyLevels.txt ResistPenalty for LoD). Clamps the result to [-100, maxResist] where maxResist is 75 (or stat-extended up to 95) for players. Special case: physical resistance (damageresist) against a Sanctuary-wielding attacker vs. undead defender is forced to 0. Returns the final clamped resist value.
-int32_t DAMAGE_CalculateResistance(D2ResistTableEntry * pEntry, D2DamageContext * pCtx) {
+static int32_t DAMAGE_CalculateResistance(D2ResistTableEntry * pEntry, D2DamageContext * pCtx) {
     eD2States eUnbreakableState;
     BOOL nIsUndeadCheck;
     int32_t nClampedResist;
@@ -1092,7 +1092,7 @@ int32_t DAMAGE_CalculateResistance(D2ResistTableEntry * pEntry, D2DamageContext 
 }
 
 // Reduces nDamage via the defender's percent-absorb and flat-absorb stats (from pEntry). Percent absorb is capped at 40%; the absorbed amount is added to pCtx->pDamage->dwAbsLife (restores life). Flat absorb is applied after percent. Returns the remaining damage after both absorbs.
-int32_t DAMAGE_AbsorbDamageByPercent(D2DamageContext * pCtx, D2ResistTableEntry * pEntry, int32_t nDamage) {
+static int32_t DAMAGE_AbsorbDamageByPercent(D2DamageContext * pCtx, D2ResistTableEntry * pEntry, int32_t nDamage) {
     int nFlatAbsorbAmt;
     if (pEntry->eAbsorbPctStat == ~UNITSTAT_strength) {
       return nDamage;
@@ -1129,7 +1129,7 @@ int32_t DAMAGE_AbsorbDamageByPercent(D2DamageContext * pCtx, D2ResistTableEntry 
     return nDamage;
 }
 
-int32_t __stdcall DAMAGE_ApplyElementalDamageWithResist(D2DamageContext * pCtx, int32_t bBypass, D2ResistTableEntry * pEntry) {
+static int32_t __stdcall DAMAGE_ApplyElementalDamageWithResist(D2DamageContext * pCtx, int32_t bBypass, D2ResistTableEntry * pEntry) {
     int nReducedDmg;
     uint8_t* pDmgField = pCtx->pDamage->nReserved66 + pEntry->nDamageFieldOffset - 0x66;
     int nIncomingDmg = *(int*)pDmgField;
@@ -1167,7 +1167,7 @@ int32_t __stdcall DAMAGE_ApplyElementalDamageWithResist(D2DamageContext * pCtx, 
 }
 
 // Returns an integer percentage multiplier for experience awarded on a kill, based on attacker/defender unit types. Player killed by non-merc, non-revive monster: 100%. Player killed by merc/revive: 17%. Merc vs merc: 25%. Merc vs boss: DifficultyLevels.HireableBossDamagePercent (or 100 if no diff table). Monster with MonStat flag-0xC bit-7 vs revived unit: 400% if target is merc, else 400%. All other cases: 100%.
-int32_t DAMAGE_CalculateExperienceMultiplier(D2DamageContext * pCtx) {
+static int32_t DAMAGE_CalculateExperienceMultiplier(D2DamageContext * pCtx) {
     uint32_t uMercType;
     D2UnitStrc* pAttackerSave = pCtx->pAttacker;
     if (!pAttackerSave) {
@@ -1238,7 +1238,7 @@ int32_t DAMAGE_CalculateExperienceMultiplier(D2DamageContext * pCtx) {
 }
 
 // Zeroes out cold/freeze lengths if defender has UNITSTAT_item_cannotbefrozen, or halves them if they have UNITSTAT_item_halffreezeduration. Also clears poison DoT duration if defender has STATE_shrine_resist_poison, and burn duration if they have STATE_shrine_resist_fire. Modifies pCtx->pDamage in place.
-void DAMAGE_ProcessFreezeAndPoisonImmunity(D2DamageContext * pCtx) {
+static void DAMAGE_ProcessFreezeAndPoisonImmunity(D2DamageContext * pCtx) {
     eD2States eStateResult;
     if (0 < pCtx->pDamage->dwColdLength || 0 < pCtx->pDamage->dwFrzLength) {
       int32_t nCannotBeFrozen;
@@ -1546,7 +1546,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
     pDmg->dwDmgTotal = pDmg->dwLifeLeech + nDrStatValue;
 }
 
-uint32_t DAMAGE_GetMonsterDrainEffectiveness(void * pThis, D2UnitStrc * pUnit) {
+uint32_t __thiscall DAMAGE_GetMonsterDrainEffectiveness(void * pThis, D2UnitStrc * pUnit) {
     if (!pThis || *(int*)pThis != 1) {
       return 100;
     }
@@ -1574,7 +1574,7 @@ uint32_t DAMAGE_GetMonsterDrainEffectiveness(void * pThis, D2UnitStrc * pUnit) {
 // KEY: Calculated post-resist, so resists double-penalize leech.
 // Connects offensive damage → attacker HP/mana restoration.
 // @sourcefile .\UNIT\SUnitDmg.cpp
-void __stdcall DAMAGE_ApplyLifeAndManaLeech(::SGAMEDATA * pGame, D2UnitStrc * pDefender, D2UnitStrc * pAttacker, D2DamageStrc * pDmgStrc) {
+static void __stdcall DAMAGE_ApplyLifeAndManaLeech(::SGAMEDATA * pGame, D2UnitStrc * pDefender, D2UnitStrc * pAttacker, D2DamageStrc * pDmgStrc) {
     ::SGAMEDATA* pGameFromUnit;
     D2DifficultyLevelsTxt* pDiffLevels;
     uint32_t uMercType;
@@ -1864,7 +1864,7 @@ void __fastcall FreeCombat(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
           pPrevCombatEntry->pNext = pNextCombatEntry;
         }
 
-        D2_FREE_POOL(pGame->pMemoryPool, pCombatEntry);
+        D2_FREE_POOL_AT(pGame->pMemoryPool, pCombatEntry, ".\\UNIT\\SUnitDmg.cpp", 0x769);
         pCurCombatEntry = pPrevCombatEntry;
       }
 
@@ -1893,7 +1893,7 @@ void __fastcall DAMAGE_RemoveDamageListEntry(::SGAMEDATA * pGame, int * pnParam,
           pPrevCombatEntry->pNext = pNextCombatEntry;
         }
 
-        D2_FREE_POOL(pGame->pMemoryPool, pCombatEntry);
+        D2_FREE_POOL_AT(pGame->pMemoryPool, pCombatEntry, ".\\UNIT\\SUnitDmg.cpp", 0x79f);
         pCurCombatEntry = pPrevCombatEntry;
       }
 
@@ -1903,13 +1903,13 @@ void __fastcall DAMAGE_RemoveDamageListEntry(::SGAMEDATA * pGame, int * pnParam,
 }
 
 // @sourcefile .\UNIT\SUnitDmg.cpp
-void __stdcall DAMAGE_AddDamageListEntry(int32_t nGamePtr, int * pnParam1, int * pnParam2, int * pnParam3) {
+static void __stdcall DAMAGE_AddDamageListEntry(int32_t nGamePtr, int * pnParam1, int * pnParam2, int * pnParam3) {
     int i;
     if (!((!pnParam3 || *pnParam3 != 2 || pnParam3[1] != 7 && pnParam3[1] != 0xb) && (*pnParam3 == 1 || !*pnParam3))) {
       return;
     }
 
-    D2CombatEntryStrc* pNewCombatEntry = D2_NEW_POOL(*(D2PoolManagerStrc**)(nGamePtr + 0x1c), D2CombatEntryStrc);
+    D2CombatEntryStrc* pNewCombatEntry = D2_NEW_POOL_AT(*(D2PoolManagerStrc**)(nGamePtr + 0x1c), D2CombatEntryStrc, ".\\UNIT\\SUnitDmg.cpp", 0x7cb);
     pNewCombatEntry->field_0 = nGamePtr;
     pNewCombatEntry->eAttackerType = *pnParam2;
     pNewCombatEntry->nAttackerGUID = pnParam2[3];
@@ -1966,7 +1966,7 @@ BOOL __stdcall DAMAGE_CheckKnockbackThreshold(D2UnitStrc * pUnit, D2DamageStrc *
     return 0;
 }
 
-void __stdcall DAMAGE_RemoveObjectAtSameCoords(int32_t nClassId, D2UnitStrc * pUnit) {
+static void __stdcall DAMAGE_RemoveObjectAtSameCoords(int32_t nClassId, D2UnitStrc * pUnit) {
     POINT ptObjPos;
     POINT ptUnitPos;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
@@ -2094,7 +2094,7 @@ void __fastcall SERVER_KillMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Un
 }
 
 // Determines the elemental damage type flag for a unit's current attack by round-robining through up to 4 elemental damage types (indexed via gnElementalDamageTypeCallCount mod 4). Checks nParam2 damage ranges; if none are positive falls back to a fire-type flag (0x10 if bit 0x2000 set) or default type 0xD. Returns combined flags ORed with nParam.
-uint32_t DAMAGE_GetElementalDamageTypeFlags(uint32_t nParam, int32_t nParam2) {
+static uint32_t DAMAGE_GetElementalDamageTypeFlags(uint32_t nParam, int32_t nParam2) {
     // Static local variables (originally global data)
     static int gaDamageTypeStatOffsets[16] = {
     0x24,
@@ -2417,7 +2417,7 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
 }
 
 // On a hit, reduces durability of one piece of equipment. For the attacker (pUnit): reduces the active weapon's durability via ITEMS_ReduceDurability. For the victim (pVictim): builds a weighted slot list of equipped armor pieces (up to gnArmorBodyLocCount slots from gaArmorDurabilityWeights), then picks a random slot proportional to weight using pVictim->sSeed, and reduces durability of that armor piece. Returns nothing; EAX is left over from ITEMS_ReduceDurability.
-void __stdcall DAMAGE_ReduceEquipmentDurability(::SGAMEDATA * pGame, D2UnitStrc * pVictim, D2UnitStrc * pUnit) {
+static void __stdcall DAMAGE_ReduceEquipmentDurability(::SGAMEDATA * pGame, D2UnitStrc * pVictim, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static int gaArmorDurabilityWeights[14] = {
     0x1,
@@ -2643,7 +2643,7 @@ uint32_t __stdcall DAMAGE_RollMinMaxDamageRange(int32_t nParam, uint32_t * pnPar
 }
 
 // Gives a monster defender the prevent-heal state when a player attacker has item_preventheal (stat 0x75): STATE 0x34 for 120000 frames on armorclass, through SKILLS_SetStateWithExpiryTime with no expire callback. Classes 0x2C0-0x2C5 are exempt. Register arguments: pDefender in ESI, pAttacker in EDI; nothing is returned.
-void DAMAGE_CheckPreventHealAndSetState(D2UnitStrc * pDefender, D2UnitStrc * pAttacker) {
+static void DAMAGE_CheckPreventHealAndSetState(D2UnitStrc * pDefender, D2UnitStrc * pAttacker) {
     D2StateExArgStrc sStateArg;
     if (!(pAttacker && pAttacker->eUnitType == UNIT_PLAYER && pDefender && pDefender->eUnitType == UNIT_MONSTER)) {
       return;
@@ -2667,7 +2667,7 @@ void DAMAGE_CheckPreventHealAndSetState(D2UnitStrc * pDefender, D2UnitStrc * pAt
 }
 
 // Applies three hit-chance modifiers from the attacker's (pUnit) stats to the in/out hit-chance (pnParam1) and armor-class (pnParam2) values. First, if the attacker has UNITSTAT_item_ignoretargetac and the defender is a non-boss, non-unique, non-merc monster, zeroes the AC. Second, reduces AC by the fractional-AC percent (halved vs. players/bosses/mercs, clamped 0-100). Third, adds demon/undead +to-hit bonuses to the attack rating.
-void __stdcall DAMAGE_ApplyIgnoreAndFractionalAC(int * pnHitChance, int * pnArmorClass, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static void __stdcall DAMAGE_ApplyIgnoreAndFractionalAC(int * pnHitChance, int * pnArmorClass, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     uint32_t bIsBossOrUnique;
     int32_t nIgnoreACFlag;
     nIgnoreACFlag = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_ignoretargetac, 0);
@@ -3069,7 +3069,7 @@ void __fastcall SKILL_CalculateDamageForEvent(::SGAMEDATA * pGame, D2UnitStrc * 
 }
 
 // Scales nExperience by the level-difference penalty between attacker and defender. When defender level > 24 and attacker is active, delegates to D2ApplyPercent with raw levels. Otherwise clamps the difference to 10 and looks up a penalty fraction from gaExperiencePenaultyHigherAttacker or gaExperiencePenaultyHigherDefender, then scales via D2ApplyPercent(exp, pct, 0x100). Returns unmodified experience when penalty is 0x100 (no penalty).
-int32_t EXPERIENCE_ApplyLevelDiffPenaulty(int32_t nExperience, int32_t nDefenderLevel, int32_t nAttackerLevel) {
+static int32_t EXPERIENCE_ApplyLevelDiffPenaulty(int32_t nExperience, int32_t nDefenderLevel, int32_t nAttackerLevel) {
     // Static local variables (originally global data)
     static int gaExperiencePenaultyHigherDefender[11] = {
     0x100,
@@ -3144,7 +3144,7 @@ int32_t __fastcall DAMAGE_SafeShiftMultiply(int32_t nParam1, int32_t nParam2, in
     return nParam1;
 }
 
-int32_t __stdcall XP_ApplyLevelExpRatio(int32_t nLevel, int32_t nParam) {
+static int32_t __stdcall XP_ApplyLevelExpRatio(int32_t nLevel, int32_t nParam) {
     if (0 >= nParam) {
       return nParam;
     }
@@ -3165,7 +3165,7 @@ int32_t __stdcall XP_ApplyLevelExpRatio(int32_t nLevel, int32_t nParam) {
 }
 
 // Calculates the experience cap for a mercenary gaining XP. If pUnit is a player, returns nBaseXp unchanged. If pUnit is a player-owned pet/merc, caps the award to 1/64 of the XP needed for the merc's current level (from HirelingTxt expPerLvl). Returns 0 if no valid hireling record is found (non-player-owned unit).
-uint32_t __stdcall CALC_Experience(::SGAMEDATA * pGame, uint32_t nBaseXp, D2UnitStrc * pUnit, int32_t nMercLevel) {
+static uint32_t __stdcall CALC_Experience(::SGAMEDATA * pGame, uint32_t nBaseXp, D2UnitStrc * pUnit, int32_t nMercLevel) {
     int nMercGUID;
     if (pUnit && pUnit->eUnitType == UNIT_PLAYER) {
       return nBaseXp;
@@ -3201,7 +3201,7 @@ uint32_t __stdcall CALC_Experience(::SGAMEDATA * pGame, uint32_t nBaseXp, D2Unit
     return nBaseXp;
 }
 
-uint32_t __stdcall SERVER_CalculateExperienceForUnit(::SGAMEDATA * pGame, int32_t nKillerLevel, int32_t baseExperience, D2UnitStrc * pUnit, int32_t nPlayerLevel) {
+static uint32_t __stdcall SERVER_CalculateExperienceForUnit(::SGAMEDATA * pGame, int32_t nKillerLevel, int32_t baseExperience, D2UnitStrc * pUnit, int32_t nPlayerLevel) {
     eD2PlayerClassID ePlayerClass;
     int32_t nXpAfterLevelPenalty;
     if (baseExperience < 0x800000) {
@@ -3234,7 +3234,7 @@ uint32_t __stdcall SERVER_CalculateExperienceForUnit(::SGAMEDATA * pGame, int32_
     return nXpAfterRatio;
 }
 
-void __stdcall SERVER_PlayerUpdateExperience(::SGAMEDATA * pGame, int32_t nPrevLevel, int32_t nXpGain, D2UnitStrc * pUnit) {
+static void __stdcall SERVER_PlayerUpdateExperience(::SGAMEDATA * pGame, int32_t nPrevLevel, int32_t nXpGain, D2UnitStrc * pUnit) {
     eD2PlayerClassID ePlayerClass;
     if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
       return;
@@ -3324,7 +3324,7 @@ BOOL __fastcall ExperienceLoopOverPlayers(uint32_t dwParam, D2UnitStrc * pUnit, 
 }
 
 // Distributes kill XP among all party members near the victim. Calls ExperienceLoopOverPlayers to collect eligible players into D2PartyExperienceStrc. For a solo kill, computes and grants XP directly. For parties, computes each member's share proportionally by level and calls SERVER_PlayerUpdateExperience per member.
-void __stdcall SERVER_PartyShareExperience(int32_t nBaseExperience, D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pVictim, int32_t nAttackerLevel, int32_t nVictimLevel) {
+static void __stdcall SERVER_PartyShareExperience(int32_t nBaseExperience, D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pVictim, int32_t nAttackerLevel, int32_t nVictimLevel) {
     uint32_t nXpForPlayer;
     uint64_t nXpShareRatio;
     D2PartyExperienceStrc sParty;
@@ -3359,7 +3359,7 @@ void __stdcall SERVER_PartyShareExperience(int32_t nBaseExperience, D2UnitStrc *
 }
 
 // Resolves the player owner responsible for a kill, for XP/credit attribution. Returns pAttacker directly if it is a player. For monsters, walks the ownership chain (GetOwnerUnit) and checks curse stat lists (flag 0x800) on both attacker and victim to find a cursing player owner. Returns null if no player owner is found.
-D2UnitStrc * __stdcall SERVER_GetOwnerFromMonsterUnit(::SGAMEDATA * pGame, D2UnitStrc * pVictim, D2UnitStrc * pAttacker) {
+static D2UnitStrc * __stdcall SERVER_GetOwnerFromMonsterUnit(::SGAMEDATA * pGame, D2UnitStrc * pVictim, D2UnitStrc * pAttacker) {
     uint32_t nOwnerGUID;
     eD2UnitType eUnitType = UNIT_COUNT;
     if (pAttacker) {
@@ -3398,7 +3398,7 @@ D2UnitStrc * __stdcall SERVER_GetOwnerFromMonsterUnit(::SGAMEDATA * pGame, D2Uni
 }
 
 // Sends the mercenary its share of an experience award. Non-standard convention: the experience amount arrives in EAX and the second unit in EDI, with three stack arguments (RET 0xc). Declaring only the stack arguments left the award looking like an unassigned local in the 'if (0 >= x) return' guard, so the merc experience gate ran on whatever EAX happened to hold.
-void __stdcall SERVER_SEND_MercExperience(int32_t nExperience, D2UnitStrc * pUnit2, ::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nMercLevel) {
+static void __stdcall SERVER_SEND_MercExperience(int32_t nExperience, D2UnitStrc * pUnit2, ::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nMercLevel) {
     int32_t nMercGUID;
     if (0 >= nExperience) {
       return;

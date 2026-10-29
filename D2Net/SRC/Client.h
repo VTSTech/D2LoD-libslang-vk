@@ -1355,9 +1355,9 @@ int __stdcall NET_D2GS_CLIENT_ParseRecvBufferIntoPacketQueues();
 DWORD __stdcall ThreadClientToServer(void * lpThreadParam);
 // Sends packet to server. Validates packet size <= 0x204 bytes, forwards to NET_SendPacketToClient (misnomer in callee name).
 void __fastcall NET_CLIENT_SendPacketToServer(void * pUnused, uint16_t nPacketSize, char * pPacket);
-int32_t NET_SendPacketToD2GSOnline(char * pBytes, size_t * nSize);
 uint32_t __stdcall NET_D2GS_CLIENT_SendPacketAfterChecks(size_t nSize, int32_t Unused, char * pBytes);
 // @sourcefile .\SRC\Client.cpp
 void __fastcall NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket(char * pBytes, size_t pBytesSize);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Net::SRC::Client

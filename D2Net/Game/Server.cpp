@@ -11,7 +11,6 @@
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Client/UI/MiniPanel.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "Fog/D2QServerStrc.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -159,7 +158,6 @@ int32_t __stdcall NET_D2GS_SERVER_SendPacketToClient(int32_t nMode, int32_t nCli
     BOOL BVar1 = NET_D2GS_CLIENT_CheckIfConnectionTypeIsSinglePlayer();
     if (BVar1) {
       SRC::Client::NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket(pBytes, nSize);
-      Fog::Debug::GuardStack();
       return nSize;
     }
     if ((char)nMode != '\0' || *pBytes != -0x51) {
@@ -167,30 +165,27 @@ int32_t __stdcall NET_D2GS_SERVER_SendPacketToClient(int32_t nMode, int32_t nCli
       Fog::Src::D2Net::NET_D2GS_SERVER_LogSentPacket(pBytes, nSize);
       if ((char)nMode != '\x02') {
         pbCompressedEnd = Fog::Src::D2Net::NET_D2GS_SERVER_CompressPacket(pBuffer + 2, 1032, pBytes, nSize);
-        if (pbCompressedEnd) {
-          pbCompressedSize = pbCompressedEnd + 1;
-          if (pbCompressedSize < 0xf0) {
-            pBuffer[1] = (char)pbCompressedSize;
-            nSendResult = Fog::Src::SendPacketByClientId(pQServer, nClientId, pBuffer + 1, pbCompressedSize);
-            Fog::Debug::GuardStack();
-            return nSendResult ? pbCompressedSize : 0;
-          }
-
-          nSize_00 = pbCompressedEnd + 2;
-          pBuffer[0] = (uint8_t)(nSize_00 >> 8) | 0xf0;
-          pBuffer[1] = (char)nSize_00;
-          nSendResult = Fog::Src::SendPacketByClientId(pQServer, nClientId, pBuffer, nSize_00);
-          Fog::Debug::GuardStack();
-          return nSendResult ? nSize_00 : 0;
+        if (!pbCompressedEnd) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x178);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x178);
-        exit(-1);
+        pbCompressedSize = pbCompressedEnd + 1;
+        if (pbCompressedSize < 0xf0) {
+          pBuffer[1] = (char)pbCompressedSize;
+          nSendResult = Fog::Src::SendPacketByClientId(pQServer, nClientId, pBuffer + 1, pbCompressedSize);
+          return nSendResult ? pbCompressedSize : 0;
+        }
+
+        nSize_00 = pbCompressedEnd + 2;
+        pBuffer[0] = (uint8_t)(nSize_00 >> 8) | 0xf0;
+        pBuffer[1] = (char)nSize_00;
+        nSendResult = Fog::Src::SendPacketByClientId(pQServer, nClientId, pBuffer, nSize_00);
+        return nSendResult ? nSize_00 : 0;
       }
     }
 
     nSendResult = Fog::Src::SendPacketByClientId(pQServer, nClientId, pBytes, nSize);
-    Fog::Debug::GuardStack();
     return nSendResult ? nSize : 0;
 }
 

@@ -37,7 +37,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -47,7 +46,7 @@ namespace D2Game::SKILLS::Items {
 
 // Appends one {affixIndex, affixTxt} pair to a weighted-roll candidate list and RETURNS THE NEW COUNT. Writes pAffixTxt at [pCandidatePairs + nCount*8 + 4] and nAffixIndex at [pCandidatePairs + nCount*8], then returns nCount + 1. At the 0x1ff cap it writes nothing and returns nCount unchanged.
 // The return is the count: nCount arrives in EAX and 005c0d14 ADD EAX,0x1 falls into the RET.
-int32_t __stdcall SKILLITEMS_SetDispatchTableEntry(int32_t pCandidatePairs, int32_t pAffixTxt, int32_t nAffixIndex, int32_t nCount) {
+static int32_t __stdcall SKILLITEMS_SetDispatchTableEntry(int32_t pCandidatePairs, int32_t pAffixTxt, int32_t nAffixIndex, int32_t nCount) {
     if (nCount >= 0x1ff) {
       return nCount;
     }
@@ -67,7 +66,7 @@ int32_t __stdcall SKILLITEMS_GetDispatchTableRange(int32_t pDispatchTable, int32
 }
 
 // Returns max(nValue * nPercent / 100, nMinimum): nValue in EAX, nMinimum in ESI, nPercent on the stack (RET 4); the throw-damage scaling of the crude-quality item mods. Was named SKILLITEMS_NoOp.
-int32_t __stdcall SKILLITEMS_ApplyPercentWithMinimum(int32_t nValue, int32_t nMinimum, int32_t nPercent) {
+static int32_t __stdcall SKILLITEMS_ApplyPercentWithMinimum(int32_t nValue, int32_t nMinimum, int32_t nPercent) {
     int iVar1 = nValue * nPercent / 100;
     if (iVar1 >= nMinimum) {
       return iVar1;
@@ -489,7 +488,7 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
 }
 
 // Returns 1 if pUnit (an item) has any magic prefix or suffix whose affix group ID matches nGroupId, else 0. Iterates up to 3 prefix slots then up to 3 suffix slots, looking up each affix ID via TXT_magicaffixes_GetLine and comparing the group field. Used to gate skill behavior on item modifier groups.
-BOOL HasSufixOrPrefix(int32_t nGroupId, D2UnitStrc * pUnit) {
+static BOOL HasSufixOrPrefix(int32_t nGroupId, D2UnitStrc * pUnit) {
     D2MagicAffixTxt* pAffixTxt;
     uint32_t uSuffixId;
     int iSlot = 0;
@@ -904,7 +903,7 @@ uint32_t __fastcall ITEMMOD_SelectMagicAffixVersioned(D2UnitStrc * pUnit, int32_
 }
 
 // Generates and applies the rare-quality affixes for an item on pUnit. Rolls the rare prefix/suffix name groups (classic vs expansion via ITEM_GetItemData_wItemVersion), stores them, then rolls a count of magic affixes (jewels: 2-3; otherwise from gnSkillItemAffixPropertyBySkill keyed by the item seed) and alternately rolls up to 3 prefixes and 3 suffixes with ITEMMOD_RollMagicAffixClassic, passing the forced ids in pItemGenContext->nForcePrefix[]/nForceSuffix[]. On success clears the identified flag, applies each rolled magicaffixes line's stats via ApplyRuneAndGemStats, runs StaffMod, and returns 1; returns 0 if no name group rolled. Halts via Fog ErrorManager if a slot index exceeds 3. Register arguments: pUnit in ESI; pItemGenContext on the stack.
-BOOL __stdcall ITEMMOD_GenerateRareAffixes(D2ItemGenContextStrc * pItemGenContext, D2UnitStrc * pUnit) {
+static BOOL __stdcall ITEMMOD_GenerateRareAffixes(D2ItemGenContextStrc * pItemGenContext, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static int gnSkillItemAffixPropertyBySkill[8] = { 0x3, 0x4, 0x4, 0x5, 0x5, 0x5, 0x6, 0x6 }; D2_STATIC_GUARD(gnSkillItemAffixPropertyBySkill, "D2Game::SKILLS::Items::ITEMMOD_GenerateRareAffixes::gnSkillItemAffixPropertyBySkill");
 
@@ -1055,7 +1054,7 @@ BOOL __stdcall ITEMMOD_GenerateRareAffixes(D2ItemGenContextStrc * pItemGenContex
 }
 
 // Rolls rare-quality affixes (prefixes/suffixes) onto an item. Picks 3-6 affixes (2-3 for jewels) via the item seed, alternating prefix/suffix slots, rejecting duplicates and same-group collisions (up to 3 existing slots, 251 reroll attempts). Stores chosen affixes into the unit's magic-prefix/suffix arrays, marks the item identified, applies each affix's stat mods, then runs StaffMod. Returns 1 on success, 0 if max-affix counts are zero or nothing rolled. Classic vs expansion item versions use different roll/max helpers.
-BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2UnitStrc * pUnit) {
+static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2UnitStrc * pUnit) {
     uint32_t uVar1;
     short int wRarePrefix;
     short int wRareSuffix;
@@ -1474,7 +1473,7 @@ int32_t __fastcall ITEMMOD_GetScrollBookIndex(D2UnitStrc * pUnit, int32_t nParam
 }
 
 // Selects and applies a set-item affix to pUnit during item generation. Builds a weighted candidate list from pTxtSetItems entries whose item code, level, and version match the item; if pItemGenContext->dwFileIndex (1-based) names a matching set item it is used directly, otherwise one is chosen by weighted random from the item's seed. Calls ApplyRuneAndGemStats(4) to stamp the set stats. Returns 1 on success, 0 if no candidate found.
-BOOL __stdcall ITEMMOD_GenerateSetItem(D2ItemGenContextStrc * pItemGenContext, D2UnitStrc * pUnit) {
+static BOOL __stdcall ITEMMOD_GenerateSetItem(D2ItemGenContextStrc * pItemGenContext, D2UnitStrc * pUnit) {
     DWORD aDStack2072[512];
     DWORD nSetItemWeight;
     int nCandidateCount;
@@ -1702,7 +1701,7 @@ BOOL __fastcall ITEMMOD_GenerateSetOrUniqueVersioned(D2UnitStrc * pUnit, D2ItemG
 
 // @returns BOOL in EAX (1/0 on both cookie-checked exits)
 // Randomly selects and applies a superior-quality mod row from QualityItems.txt to pUnit. Limits the table to 4 entries for throwable or no-durability items. Uses the item's own seed in a rejection-sampling loop (tracks visited slots in aVisitedSlots[12]) to find a row that passes ITEMMOD_MatchesRepairType, then writes the file index, applies rune/gem stats via ApplyRuneAndGemStats, and calls StaffMod(pUnit, pItemGenContext). Protected by a stack-guard cookie.
-BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenContext) {
+static BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenContext) {
     D2SeedStrc DVar1;
     int32_t iVar2;
     D2SeedStrc* pDVar7;
@@ -1712,7 +1711,6 @@ BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenContextS
     DWORD nRandIdx;
     uint32_t nTableSize;
     char aVisitedSlots[12];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     D2QualityItemsTableStrc* pQualityItemsTableInfo = D2Common::DATATBLS::ItemTbls::TXT_QualityItems_GetTableInfo();
     if (!pUnit) {
       nClassId = -1;
@@ -1755,7 +1753,6 @@ BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenContextS
           D2Common::ITEMS::Items::ITEM_SetItemData_nFileIndex(pUnit, nRandIdx);
           D2Common::ITEMS::ItemMods::ApplyRuneAndGemStats(1, nullptr, pUnit, pMagicAffixLine, 0, 0);
           StaffMod(pUnit, pItemGenContext);
-          Fog::Debug::GuardStack();
           return 1;
         }
 
@@ -1768,14 +1765,12 @@ BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenContextS
         while (aVisitedSlots[iVisitedIdx] != '\0') {
           iVisitedIdx++;
           if ((int)nTableSize <= iVisitedIdx) {
-            Fog::Debug::GuardStack();
             return 0;
           }
         }
       }
     }
 
-    Fog::Debug::GuardStack();
     return 0;
 }
 

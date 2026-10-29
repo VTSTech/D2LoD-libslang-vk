@@ -705,7 +705,7 @@ int32_t __fastcall LINKEDLIST_GetNextOrHead(int32_t pThis, int32_t nNode) {
 // @note The same relink body is instantiated at least seven more times in 1.14d and is named correctly
 // everywhere else (ARCHIVE_LinkNode @0045bbe0, SFILE_InsertFileRecordIntoList1..5). This was the only
 // false one.
-void LINKEDLIST_LinkNode(int * * pList, int * * ppNodeSlot, int32_t nInsertMode, int * * ppTargetList) {
+void __thiscall LINKEDLIST_LinkNode(int * * pList, int * * ppNodeSlot, int32_t nInsertMode, int * * ppTargetList) {
     int* pLinkSlot;
     int** pTargetNode = ppNodeSlot;
     if (!ppNodeSlot) {

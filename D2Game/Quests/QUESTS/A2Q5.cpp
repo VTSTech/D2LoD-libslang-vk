@@ -37,15 +37,15 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q5Strc) == 0xc, "D2_NEW(D2QuestDataA2Q5Strc): the 32-bit layout must be the 0xc bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q5Strc) == 0xc, "D2_NEW_AT(D2QuestDataA2Q5Strc): the 32-bit layout must be the 0xc bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
@@ -453,7 +453,7 @@ void __fastcall Q13_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->pNpcMessages = &A2Q5::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
-    D2QuestDataA2Q5Strc* pQuestSpecificData = D2_NEW_POOL(pQuestData->pGame->pMemoryPool, D2QuestDataA2Q5Strc);
+    D2QuestDataA2Q5Strc* pQuestSpecificData = D2_NEW_POOL_AT(pQuestData->pGame->pMemoryPool, D2QuestDataA2Q5Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q5.cpp", 0x212);
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q13_Callback00_NpcActivate;
     pQuestData->fpStatusFilter = 0;
     pQuestData->pQuestSpecificData.pA2Q5 = pQuestSpecificData;

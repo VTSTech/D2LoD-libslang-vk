@@ -32,7 +32,7 @@ typedef int (*fpEditBoxOnEnter)();
 namespace D2Client::UI::Editbox::EditBoxWrapper {
 
 // Wrapper destructor for EditBoxWrapper; resets vtable, destroys owned implementation, then falls back to ButtonWrapper base cleanup.
-void Destructor(::EditBoxWrapper * pThis) {
+void __thiscall Destructor(::EditBoxWrapper * pThis) {
     pfnEHHandlerRoutine pExcHandler = __GSHandlerCheck_EH_6ca138;
     void* pPrevExceptionList = ExceptionList;
     ExceptionList = &pPrevExceptionList;
@@ -48,7 +48,7 @@ void Destructor(::EditBoxWrapper * pThis) {
     ExceptionList = pPrevExceptionList;
 }
 
-::EditBoxWrapper * ScalarDeletingDestructor(::EditBoxWrapper * pThis, uint32_t nFlags) {
+::EditBoxWrapper * __thiscall ScalarDeletingDestructor(::EditBoxWrapper * pThis, uint32_t nFlags) {
     EditBoxWrapper::Destructor(pThis);
     if (!(nFlags & 1 && pThis)) {
       return pThis;
@@ -58,96 +58,96 @@ void Destructor(::EditBoxWrapper * pThis) {
     return pThis;
 }
 
-int OnMouseWheel(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseWheel(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseWheel(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseDown(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseDown(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseDown(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseUp(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseUp(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseUp(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseMove(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseMove(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseMove(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-void Draw(::EditBoxWrapper * pThis) {
+void __thiscall Draw(::EditBoxWrapper * pThis) {
     pThis->pImplementation->pVtable->Draw(pThis->pImplementation);
 }
 
-int OnChar(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnChar(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnChar(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnDownArrow(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnDownArrow(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnDownArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnUpArrow(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnUpArrow(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnUpArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnRightArrow(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnRightArrow(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnRightArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnLeftArrow(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnLeftArrow(::EditBoxWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnLeftArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int GetValue(::EditBoxWrapper * pThis) {
+int __thiscall GetValue(::EditBoxWrapper * pThis) {
     int iVar1 = pThis->pImplementation->pVtable->GetValue(pThis->pImplementation);
     return iVar1;
 }
 
-int GetRepeatDelta(::EditBoxWrapper * pThis, int nUnused) {
+int __thiscall GetRepeatDelta(::EditBoxWrapper * pThis, int nUnused) {
     int iVar1 = pThis->pImplementation->pVtable->GetRepeatDelta(pThis->pImplementation);
     return iVar1;
 }
 
 // Forwards SetNumber to the wrapped EditBoxImplementation through vtable slot 15.
-void SetNumber(::EditBoxWrapper * pThis, int nNumber) {
+void __thiscall SetNumber(::EditBoxWrapper * pThis, int nNumber) {
     pThis->pImplementation->pVtable->SetNumber(pThis->pImplementation, nNumber);
 }
 
 // Forwards SetText to the wrapped EditBoxImplementation through vtable slot 14.
-void SetText(::EditBoxWrapper * pThis, char * szText) {
+void __thiscall SetText(::EditBoxWrapper * pThis, char * szText) {
     pThis->pImplementation->pVtable->SetText(pThis->pImplementation, szText);
 }
 
-void GetText(::EditBoxWrapper * pThis, char * szBuffer) {
+void __thiscall GetText(::EditBoxWrapper * pThis, char * szBuffer) {
     pThis->pImplementation->pVtable->GetText(pThis->pImplementation, szBuffer);
 }
 
-void SetCharFilter(::EditBoxWrapper * pThis, fpUIWidgetCharFilter pfnCharFilter) {
+void __thiscall SetCharFilter(::EditBoxWrapper * pThis, fpUIWidgetCharFilter pfnCharFilter) {
     pThis->pImplementation->pfnCharFilter = pfnCharFilter;
 }
 
-void SetWidth(::EditBoxWrapper * pThis, int nWidth) {
+void __thiscall SetWidth(::EditBoxWrapper * pThis, int nWidth) {
     pThis->pImplementation->pVtable->SetWidth(pThis->pImplementation, nWidth);
 }
 
-void SetKeyRepeat(::EditBoxWrapper * pThis, BOOL bAllow) {
+void __thiscall SetKeyRepeat(::EditBoxWrapper * pThis, BOOL bAllow) {
     pThis->pImplementation->pVtable->SetKeyRepeat(pThis->pImplementation, bAllow);
 }
 
-void SetNumericOnly(::EditBoxWrapper * pThis, BOOL bNumericOnly) {
+void __thiscall SetNumericOnly(::EditBoxWrapper * pThis, BOOL bNumericOnly) {
     pThis->pImplementation->pVtable->SetNumericOnly(pThis->pImplementation, bNumericOnly);
 }
 
-::EditBoxWrapper * Constructor(::EditBoxWrapper * pThis, int nPosX, int nPosY, int nWidth, int nMaxLines, int nMaxValue, uint16_t nMaxLength, fpEditBoxOnEnter pfnOnEnter, int nFont) {
+::EditBoxWrapper * __thiscall Constructor(::EditBoxWrapper * pThis, int nPosX, int nPosY, int nWidth, int nMaxLines, int nMaxValue, uint16_t nMaxLength, fpEditBoxOnEnter pfnOnEnter, int nFont) {
     pfnEHHandlerRoutine pExceptionHandler = __GSHandlerCheck_EH_6ca183;
     void* pSavedExceptionList = ExceptionList;
     uint32_t dwSehState = 0;

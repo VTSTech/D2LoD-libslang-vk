@@ -13,22 +13,21 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QSSocketStrc) == 0x194, "D2_NEW(D2QSSocketStrc): the 32-bit layout must be the 0x194 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QSSocketStrc) == 0x194, "D2_NEW_AT(D2QSSocketStrc): the 32-bit layout must be the 0x194 bytes 1.14d allocates");
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -90,7 +89,7 @@ int __stdcall ReadBytesFromSocket(D2QSSocketStrc * pMCPQSocket, char * pOutBuf, 
 }
 
 // NOTE: Register params: pQServerStrc (EAX): D2QSSocketStrc *
-int __stdcall ProcessReceivedData(D2QSSocketStrc * pQServerStrc, void * pBuffer, int nBufferSize) {
+static int __stdcall ProcessReceivedData(D2QSSocketStrc * pQServerStrc, void * pBuffer, int nBufferSize) {
     BOOL bBadHandlerPtr;
     int iVar2;
     uint16_t wMsgSize;
@@ -156,7 +155,7 @@ void __stdcall QSSOCKET_SetCallbackHandler2(D2QSSocketStrc * pQSSocket, int nHea
 }
 
 // NOTE: Register param types inferred (medium confidence): pQSSocketStrc (ESI): D2QSSocketStrc *
-void __stdcall QSSOCKET_BlockSocket(D2QSSocketStrc * pQSSocketStrc) {
+static void __stdcall QSSOCKET_BlockSocket(D2QSSocketStrc * pQSSocketStrc) {
     if (!pQSSocketStrc) {
       return;
     }
@@ -173,7 +172,7 @@ void __stdcall QSSOCKET_BlockSocket(D2QSSocketStrc * pQSSocketStrc) {
 }
 
 // Thread-safe socket close with critical section protection
-void __stdcall CloseSocket(D2QSSocketStrc * pQServer) {
+static void __stdcall CloseSocket(D2QSSocketStrc * pQServer) {
     if (!pQServer) {
       return;
     }
@@ -197,8 +196,6 @@ void __stdcall ReceiveLoopCallback(D2QSSocketStrc * pQSSocket) {
     int nWsaError;
     int nSocketStatus;
     char aRecvBuffer[8296];
-    uint32_t dwStackCookie;
-    dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int nPendingOffset;
     nPendingOffset = 0;
     D2NetDataStrc* pSafesock;
@@ -259,7 +256,6 @@ void __stdcall ReceiveLoopCallback(D2QSSocketStrc * pQSSocket) {
               /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pQSSocket->pSafesock->pSync);
             }
 
-            Debug::GuardStack();
             return;
           }
 
@@ -278,7 +274,6 @@ void __stdcall ReceiveLoopCallback(D2QSSocketStrc * pQSSocket) {
 
     cleanup:
     CloseSocket(pQSSocket);
-    Debug::GuardStack();
 }
 
 // lpStartAddress parameter of CreateThread
@@ -338,31 +333,31 @@ D2QSSocketStrc * __stdcall STRUCT_D2QSSocket_Init(char * szIpAddress, int nPort,
       char* pszScan;
       pszScan = szIpAddress;
       pszScan = pszScan + strlen(pszScan) + 1;
-      if ((uint32_t)((int)pszScan - (int)(szIpAddress + 1)) < 0x103) {
-        pD2QSSocket = D2_NEW(D2QSSocketStrc);
-        if (!pD2QSSocket) {
-          return pD2QSSocket;
-        }
+      if (!((uint32_t)((int)pszScan - (int)(szIpAddress + 1)) < 0x103)) {
+        ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x243);
+        exit(-1);
+      }
 
-        memset(pD2QSSocket, 0, 0x194);
-        Storm::Source::SSTR::SStrCopy(pD2QSSocket->szIpAddress, szIpAddress, 0x104);
-        if (!szName) {
-          dwErrorCode = 0x40;
-          szName = "UNKNOWN";
-        } else {
-          dwErrorCode = 4;
-        }
-
-        Storm::Source::SSTR::SStrCopy(pD2QSSocket->szName, szName, dwErrorCode);
-        pD2QSSocket->nPort = nPort;
-        D2QSQueue::D2QSQUEUE_Initialize(&pD2QSSocket->aQueue);
-        pD2QSSocket->nHeaderSize = 2;
-        pD2QSSocket->nSizeFieldOffset = 0;
+      pD2QSSocket = D2_NEW_AT(D2QSSocketStrc, ".\\Src\\D2QSSocket.cpp", 0x245);
+      if (!pD2QSSocket) {
         return pD2QSSocket;
       }
 
-      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x243);
-      exit(-1);
+      memset(pD2QSSocket, 0, 0x194);
+      Storm::Source::SSTR::SStrCopy(pD2QSSocket->szIpAddress, szIpAddress, 0x104);
+      if (!szName) {
+        dwErrorCode = 0x40;
+        szName = "UNKNOWN";
+      } else {
+        dwErrorCode = 4;
+      }
+
+      Storm::Source::SSTR::SStrCopy(pD2QSSocket->szName, szName, dwErrorCode);
+      pD2QSSocket->nPort = nPort;
+      D2QSQueue::D2QSQUEUE_Initialize(&pD2QSSocket->aQueue);
+      pD2QSSocket->nHeaderSize = 2;
+      pD2QSSocket->nSizeFieldOffset = 0;
+      return pD2QSSocket;
     }
 }
 
@@ -380,7 +375,7 @@ void __stdcall FreeD2QSSocket(D2QSSocketStrc * pSocket) {
       pSocket->pSafesock = 0;
     }
 
-    D2_FREE(pSocket);
+    D2_FREE_AT(pSocket, ".\\Src\\D2QSSocket.cpp", 0x27c);
 }
 
 void __stdcall QSSOCKET_WaitForEvent(D2QSSocketStrc * pQSSocket, DWORD dwTimeout) {
@@ -429,7 +424,6 @@ int32_t __stdcall NET_MCP_CLIENT_Send(D2QSSocketStrc * pQSocket, char * pBytes, 
     uint16_t nDataSize = nDataSizeNoHeader;
     _nDataSizeNoHeader = (uint32_t)nDataSizeNoHeader;
     if (!pQSocket || !pQSocket->pSafesock || !pQSocket->pSafesock->bConnected) {
-      Debug::GuardStack();
       return -1;
     }
     if (pQSocket->nHeaderSize == 4 && pQSocket->nSizeFieldOffset == 2) {
@@ -464,7 +458,6 @@ int32_t __stdcall NET_MCP_CLIENT_Send(D2QSSocketStrc * pQSocket, char * pBytes, 
     }
 
     int nSendResult = NET_MCP_CLIENT_SendPacketToQSocket(pQSocket, (char*)aSendBuf, (short int)nTotalSendSize);
-    Debug::GuardStack();
     return nSendResult + (_nDataSizeNoHeader - nTotalSendSize);
 }
 

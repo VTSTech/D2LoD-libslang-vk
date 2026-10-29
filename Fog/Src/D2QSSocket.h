@@ -18,13 +18,7 @@ namespace Fog::Src::D2QSSocket {
 int __fastcall NET_MCP_CLIENT_SendPacketToSafesocket(struct D2NetDataStrc * pSafesocket, char * pBytes, size_t nSize);
 bool __stdcall QSSOCKET_SendWithTimeout(struct D2QSSocketStrc * pQSSocket, char * pBuffer, uint16_t nLength);
 int __stdcall ReadBytesFromSocket(struct D2QSSocketStrc * pMCPQSocket, char * pOutBuf, int nMaxBytes);
-// NOTE: Register params: pQServerStrc (EAX): D2QSSocketStrc *
-int __stdcall ProcessReceivedData(struct D2QSSocketStrc * pQServerStrc, void * pBuffer, int nBufferSize);
 void __stdcall QSSOCKET_SetCallbackHandler2(struct D2QSSocketStrc * pQSSocket, int nHeaderSize, int nSizeFieldOffset, int nUnknown0x120);
-// NOTE: Register param types inferred (medium confidence): pQSSocketStrc (ESI): D2QSSocketStrc *
-void __stdcall QSSOCKET_BlockSocket(struct D2QSSocketStrc * pQSSocketStrc);
-// Thread-safe socket close with critical section protection
-void __stdcall CloseSocket(struct D2QSSocketStrc * pQServer);
 // Socket receive loop, passed as thread proc to Fog::Safesock::Create_Flag0
 void __stdcall ReceiveLoopCallback(struct D2QSSocketStrc * pQSSocket);
 // lpStartAddress parameter of CreateThread
@@ -41,5 +35,6 @@ struct D2NetDataStrc * __stdcall NET_D2QSocket_GetSafesock(struct D2QSSocketStrc
 void __stdcall QSSOCKET_SignalEvent(struct D2QSSocketStrc * pQSSocket);
 int __stdcall NET_MCP_CLIENT_SendPacketToQSocket(struct D2QSSocketStrc * pQSocket, char * pBytes, short nSize);
 int32_t __stdcall NET_MCP_CLIENT_Send(struct D2QSSocketStrc * pQSocket, char * pBytes, uint16_t nDataSizeNoHeader);
+// 3 internal functions (defined in .cpp)
 
 } // namespace Fog::Src::D2QSSocket

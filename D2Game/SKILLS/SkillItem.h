@@ -32,9 +32,6 @@ int * __fastcall RollRoomSeed(struct D2RoomStrc * pRoom);
 int32_t __fastcall MONSTERREGION_CheckSpawnDensity(struct D2MonsterRegionStrc * pMonterRegion, struct D2RoomStrc * pRoom);
 // @sourcefile .\SKILLS\SkillItem.cpp
 BOOL __fastcall SKILLITEM_ItemSpellInit_UseStackable(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, struct D2UnitStrc * pTarget, int nX, int nY, eD2Skills eSkill);
-struct D2InventoryStrc * SKILLITEM_FindItemInInventory(struct D2UnitStrc * pUnit, struct D2UnitStrc * nParam);
-// @sourcefile .\SKILLS\SkillItem.cpp
-void SKILLITEM_ClearCursorFlagAndNotifyClient(struct D2UnitStrc * pUnit);
 // @sourcefile .\SKILLS\SkillItem.cpp
 BOOL __fastcall SKILLITEM_IdentifyScrollSpell(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, struct D2UnitStrc * pTarget, int nX, int nY, eD2Skills eSkill);
 // Server handler for the Town Portal scroll spell (player units only). If the caster is in town or Uber Tristram, plays the fail sound and returns 0. Otherwise destroys any existing portal pair, spawns a new Town Portal object (obj 0x3B) at the caster's position via SERVER_SpawnPortal, records the portal GUID on the player, rebinds any previous portal owner, fires quest callbacks, and sends CMD 0x7C to the client. Returns 1 on successful portal creation.
@@ -104,5 +101,6 @@ BOOL __fastcall ITEMEVENT_ReviveMonster(::SGAMEDATA * pGame, uint32_t nUnitEvent
 BOOL __fastcall ITEMEVENT_LaunchMissileOnOwner(::SGAMEDATA * pGame, uint32_t nUnitEvent, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, struct D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall ITEMEVENT_ApplyFreezeDamage(::SGAMEDATA * pGame, uint32_t nUnitEvent, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, struct D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall ITEMEVENT_ApplyHitDamage(::SGAMEDATA * pGame, uint32_t nUnitEvent, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, struct D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Game::SKILLS::SkillItem

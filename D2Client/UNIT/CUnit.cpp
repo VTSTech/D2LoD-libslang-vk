@@ -224,7 +224,7 @@ BOOL __fastcall WARP_IsPointInClickArea(D2UnitStrc * pUnit, int32_t nClickX, int
     return 1;
 }
 
-uint32_t __stdcall CUNIT_IsClickInSpriteBounds(int32_t nClickY, int * pUnit, D2ObjectsTxt * pObjectsTxt, int32_t nClickX) {
+static uint32_t __stdcall CUNIT_IsClickInSpriteBounds(int32_t nClickY, int * pUnit, D2ObjectsTxt * pObjectsTxt, int32_t nClickX) {
     int nPosY;
     int32_t nPosX;
     int nScreenX = *pUnit;
@@ -256,7 +256,7 @@ uint32_t __stdcall CUNIT_IsClickInSpriteBounds(int32_t nClickY, int * pUnit, D2O
 }
 
 // Computes the screen-space bounding rectangle [left, top, right, bottom] for a unit's sprite at the given animation frame and mode. Loads the DC6 cel via SPRITECACHE_GetOrLoadSprite, reads DC6 offset/width/height, maps to target-screen coords, enforces a minimum 32x32 extent, and applies particle-system offsets. Returns 1 on success, 0 if the anim mode is absent or the sprite cannot be loaded.
-uint32_t __stdcall CUNIT_CalculateSpriteBounds(uint32_t nFrame, uint32_t nAnimMode, D2UnitStrc * pUnit, int * pBoundsRect) {
+static uint32_t __stdcall CUNIT_CalculateSpriteBounds(uint32_t nFrame, uint32_t nAnimMode, D2UnitStrc * pUnit, int * pBoundsRect) {
     // Frame slots -12..-4 are ONE object: &nFrameCountOut is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -332,7 +332,7 @@ uint32_t __stdcall CUNIT_CalculateSpriteBounds(uint32_t nFrame, uint32_t nAnimMo
 }
 
 // Calls the skill's SelectProc handler with ECX = pUnit (the caster, loaded at 004642e7) and EDX = pTargetUnit, which is never written here and reaches the handler unchanged (1.14d asm).
-uint32_t __stdcall SKILL_ExecuteSelectProc(D2UnitStrc * pUnit, eD2Skills eSkill, D2UnitStrc * pTargetUnit) {
+static uint32_t __stdcall SKILL_ExecuteSelectProc(D2UnitStrc * pUnit, eD2Skills eSkill, D2UnitStrc * pTargetUnit) {
     // Static local variables (originally global data)
     static SkillSelectProcFn g_aSkillSelectProcHandlers[7] = { nullptr, &D2Client::SKILL_SelectProc_IsSelectableCorpse2, &D2Client::SKILL_SelectProc_IsCorpseConsumableBasic, &D2Client::SKILL_SelectProc_IsConvertibleCorpse, &D2Client::SKILL_SelectProc_IsCorpseValidForRevive, &D2Client::SKILL_SelectProc_IsSelectableCorpse, &D2Client::SKILL_SelectProc_CanReviveMonster }; D2_STATIC_GUARD(g_aSkillSelectProcHandlers, "D2Client::UNIT::CUnit::SKILL_ExecuteSelectProc::g_aSkillSelectProcHandlers");
     static uint32_t g_nSkillSelectProcCount = 0x7; D2_STATIC_GUARD(g_nSkillSelectProcCount, "D2Client::UNIT::CUnit::SKILL_ExecuteSelectProc::g_nSkillSelectProcCount");
@@ -356,7 +356,7 @@ uint32_t __stdcall SKILL_ExecuteSelectProc(D2UnitStrc * pUnit, eD2Skills eSkill,
 
 // pTargetUnit is the hovered unit (HitTestScreen sets ESI from it at 00466913) and must be a monster (dwUnitType == 1 at 00464316); pUnit is the player whose left then right skill's SelectProc is tried.
 // @sourcefile .\UNIT\CUnit.cpp
-uint32_t SKILL_CheckActiveSkillSelectProc(D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit) {
+static uint32_t SKILL_CheckActiveSkillSelectProc(D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit) {
     if (!(pTargetUnit && pTargetUnit->eUnitType == UNIT_MONSTER)) {
       return 0;
     }
@@ -484,7 +484,7 @@ void __fastcall CLIENT_TurnPlayerToFaceUnit(D2UnitStrc * pUnit) {
     D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pDynamicPath, pUnit->pPath.pStaticPath->nPosX, nTargetY, 0);
 }
 
-uint32_t __stdcall SKILL_IsSequenceInputReady(D2UnitStrc * pUnit, D2SkillStrc * pSkillUnused) {
+static uint32_t __stdcall SKILL_IsSequenceInputReady(D2UnitStrc * pUnit, D2SkillStrc * pSkillUnused) {
     D2SkillStrc* pSkill = D2Common::Units::GetCurrentSkill(pUnit);
     if (!pSkill) {
       return 1;
@@ -630,12 +630,12 @@ void __stdcall UpdateObjectAutoLightOnPeriodChange() {
 }
 
 D2ServerCmdStrc * __fastcall GetServerCmd(D2UnitStrc * pUnit) {
-    if (pUnit) {
-      return pUnit->pServerCmd;
+    if (!pUnit) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8a5);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8a5);
-    exit(-1);
+    return pUnit->pServerCmd;
     return pUnit->pServerCmd;
 }
 
@@ -777,7 +777,7 @@ void __fastcall CUNIT_IterateItemsWithCallback(fnUnitIterCallback pfnCallback) {
     Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[2], pfnCallback);
 }
 
-D2UnitStrc * CUNIT_IterateUntilWarp(int * pnParam) {
+static D2UnitStrc * CUNIT_IterateUntilWarp(int * pnParam) {
     while (true) {
       if (!(D2UnitStrc*)pnParam) {
         return nullptr;
@@ -931,12 +931,12 @@ void __fastcall CUNIT_SetUnitFlag3(int32_t pUnit) {
 // Returns the client-side dwStartLight (+0x68) of pUnit; halts (CUnit.cpp line 2623) on NULL.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 uint32_t __fastcall CUNIT_GetStartLight(D2UnitStrc * pUnit) {
-    if (pUnit) {
-      return pUnit->uSideData.pClientSide.dwStartLight;
+    if (!pUnit) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa3f);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa3f);
-    exit(-1);
+    return pUnit->uSideData.pClientSide.dwStartLight;
     return pUnit->uSideData.pClientSide.dwStartLight;
 }
 
@@ -949,7 +949,7 @@ void __fastcall SetLightRadius(D2UnitStrc * pUnit, int32_t nLightRadiusX) {
     pUnit->uSideData.pClientSide.dwStartLight = nLightRadiusX;
 }
 
-uint32_t __stdcall CUNIT_IsItemInUnitInventory(D2UnitStrc * pExcludeUnit, D2UnitStrc * pUnit, D2UnitStrc * pContainerUnit) {
+static uint32_t __stdcall CUNIT_IsItemInUnitInventory(D2UnitStrc * pExcludeUnit, D2UnitStrc * pUnit, D2UnitStrc * pContainerUnit) {
     D2UnitStrc* pInvSlotItem;
     if (pExcludeUnit == pContainerUnit) {
       return 0;
@@ -973,7 +973,7 @@ uint32_t __stdcall CUNIT_IsItemInUnitInventory(D2UnitStrc * pExcludeUnit, D2Unit
     return 0;
 }
 
-uint32_t __stdcall CUNIT_IsItemInAnyInventory(D2UnitStrc * pExcludeUnit, D2UnitStrc * pUnit) {
+static uint32_t __stdcall CUNIT_IsItemInAnyInventory(D2UnitStrc * pExcludeUnit, D2UnitStrc * pUnit) {
     uint32_t bFound;
     D2UnitStrc* pUnitIter;
     D2UnitStrc* (*ppUnitTable)[128] = ServerSideUnitHashTables;
@@ -1364,92 +1364,91 @@ void __fastcall CLIENT_TeleportUnitToPosition(D2UnitStrc * pUnit, int32_t nX, in
       exit(-1);
     } else {
       D2RoomStrc* pCurrentRoom;
-      if (!nXSaved || !nY || pRoom) {
-        if (pUnit->eUnitFlags & UNITFLAG_ISDEAD) {
-          return;
-        }
-
-        eUnitAnimMode = pUnit->eAnimMode.ePlayerMode;
-        if (pUnit->eUnitType == UNIT_PLAYER) {
-          if (eUnitAnimMode == Death) {
-            return;
-          }
-          if (eUnitAnimMode == eD2PlayerAnimMode_ns::Dead) {
-            return;
-          }
-        } else if (pUnit->eUnitType == UNIT_MONSTER) {
-          if (eUnitAnimMode == Death) {
-            return;
-          }
-          if (eUnitAnimMode == Kick) {
-            return;
-          }
-        }
-        if (pUnit == pPlayer) {
-          pCurrentRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-          if (pCurrentRoom) {
-            pSkill = D2Common::Units::GetCurrentSkill(pUnit);
-            if (!pSkill || (pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt) || !pSkillsTxt->warp) {
-              if (bWarpFade) {
-                if (pUnit->eUnitType != UNIT_PLAYER) {
-                  Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x17d);
-                  exit(-1);
-                }
-
-                DRAW_WORLD_SetWarpFadeTimer();
-              }
-            } else {
-              bWarpFade = 0;
-            }
-          }
-          if (pRoom) {
-            D2Common::DUNGEON::Dungeon::UpdatePops(pRoom, nXSaved, nY, (uint32_t)(pCurrentRoom != pRoom));
-            eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-            bNoPerspective = D2Common::DATATBLS::LvlTbls::LVLTBLS_GetNoPer(eLevelId);
-            D2gfx::D2GFX::D2GFX_SetPerspectiveCapable((uint32_t)((char)bNoPerspective == '\0'));
-            if (pCurrentRoom) {
-              eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pCurrentRoom);
-              ptFreePos.y = (LONG)D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(eLevelId);
-              eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-              pLevelsTxt = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(eLevelId);
-              if (*(char*)(ptFreePos.y + 2) != pLevelsTxt->Pal) {
-                D2Win::Src::D2WinPalette::D2WINPAL_LoadActPalette(pLevelsTxt->Pal);
-                D2CMP::Pallete::PALETTE_SetAct((uint32_t)(uint8_t)pLevelsTxt->Pal);
-              }
-            }
-          }
-        }
-
-        pDynamicPathCast = pDynamicPath;
-        nCollisionType = D2Common::PATH::Path::PATH_GetCollisionMaskAt(pDynamicPath, pUnit, pRoom, (uint16_t)nXSaved, (uint16_t)nY);
-        if (!nCollisionType) {
-          ptFreePos.x = nXSaved;
-          ptFreePos.y = nY;
-          nLine = D2Common::Units::GetUnitSizeX(pUnit);
-          D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &ptFreePos, nLine, 0x1c09, 1);
-          nLine = D2Common::PATH::Path::PATH_GetCollisionTypeAt((uint32_t*)pDynamicPathCast, pUnit, pRoom, (uint16_t)ptFreePos.x, (uint16_t)ptFreePos.y);
-          if (!nLine) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1a9);
-            exit(-1);
-          }
-        }
-
-        UI::Automap::AUTOMAP_SetRefreshDelay();
-        if (pUnit == pPlayer) {
-          Draw::Weather::WEATHER_ClearParticleArrays(bWarpFade);
-        }
-
-        Player::CLIENT_SendIdlePlayerMessage(pUnit);
+      if (!(!nXSaved || !nY || pRoom)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x168);
+        exit(-1);
+      }
+      if (pUnit->eUnitFlags & UNITFLAG_ISDEAD) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x168);
-      exit(-1);
+      eUnitAnimMode = pUnit->eAnimMode.ePlayerMode;
+      if (pUnit->eUnitType == UNIT_PLAYER) {
+        if (eUnitAnimMode == Death) {
+          return;
+        }
+        if (eUnitAnimMode == eD2PlayerAnimMode_ns::Dead) {
+          return;
+        }
+      } else if (pUnit->eUnitType == UNIT_MONSTER) {
+        if (eUnitAnimMode == Death) {
+          return;
+        }
+        if (eUnitAnimMode == Kick) {
+          return;
+        }
+      }
+      if (pUnit == pPlayer) {
+        pCurrentRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+        if (pCurrentRoom) {
+          pSkill = D2Common::Units::GetCurrentSkill(pUnit);
+          if (!pSkill || (pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt) || !pSkillsTxt->warp) {
+            if (bWarpFade) {
+              if (pUnit->eUnitType != UNIT_PLAYER) {
+                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x17d);
+                exit(-1);
+              }
+
+              DRAW_WORLD_SetWarpFadeTimer();
+            }
+          } else {
+            bWarpFade = 0;
+          }
+        }
+        if (pRoom) {
+          D2Common::DUNGEON::Dungeon::UpdatePops(pRoom, nXSaved, nY, (uint32_t)(pCurrentRoom != pRoom));
+          eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+          bNoPerspective = D2Common::DATATBLS::LvlTbls::LVLTBLS_GetNoPer(eLevelId);
+          D2gfx::D2GFX::D2GFX_SetPerspectiveCapable((uint32_t)((char)bNoPerspective == '\0'));
+          if (pCurrentRoom) {
+            eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pCurrentRoom);
+            ptFreePos.y = (LONG)D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(eLevelId);
+            eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+            pLevelsTxt = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(eLevelId);
+            if (*(char*)(ptFreePos.y + 2) != pLevelsTxt->Pal) {
+              D2Win::Src::D2WinPalette::D2WINPAL_LoadActPalette(pLevelsTxt->Pal);
+              D2CMP::Pallete::PALETTE_SetAct((uint32_t)(uint8_t)pLevelsTxt->Pal);
+            }
+          }
+        }
+      }
+
+      pDynamicPathCast = pDynamicPath;
+      nCollisionType = D2Common::PATH::Path::PATH_GetCollisionMaskAt(pDynamicPath, pUnit, pRoom, (uint16_t)nXSaved, (uint16_t)nY);
+      if (!nCollisionType) {
+        ptFreePos.x = nXSaved;
+        ptFreePos.y = nY;
+        nLine = D2Common::Units::GetUnitSizeX(pUnit);
+        D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &ptFreePos, nLine, 0x1c09, 1);
+        nLine = D2Common::PATH::Path::PATH_GetCollisionTypeAt((uint32_t*)pDynamicPathCast, pUnit, pRoom, (uint16_t)ptFreePos.x, (uint16_t)ptFreePos.y);
+        if (!nLine) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1a9);
+          exit(-1);
+        }
+      }
+
+      UI::Automap::AUTOMAP_SetRefreshDelay();
+      if (pUnit == pPlayer) {
+        Draw::Weather::WEATHER_ClearParticleArrays(bWarpFade);
+      }
+
+      Player::CLIENT_SendIdlePlayerMessage(pUnit);
+      return;
     }
 }
 
 // Client-side dispatcher for skill visual side-effects keyed by a numeric effect ID. Handles Hydra overlays (0x15f-0x161), Charged-Bolt clone particles (0x154-0x157), Worldstone-shake particle (0x209), Rise-from-grave particle (0x196), Feral-Rage overlay (0x1a1-0x1a2), poison-hit overlay (0x21f), and Mephisto/Blizzard overlays (0xf2/0x2c0). No-ops for unrecognised IDs.
-void CLIENT_PlaySkillVisualEffect(D2UnitStrc * pUnit, int32_t nEffectId) {
+static void CLIENT_PlaySkillVisualEffect(D2UnitStrc * pUnit, int32_t nEffectId) {
     if (0x14d < nEffectId) {
       int nClassId;
       if (nEffectId < 0x162) {
@@ -1520,7 +1519,7 @@ void CLIENT_PlaySkillVisualEffect(D2UnitStrc * pUnit, int32_t nEffectId) {
 }
 
 // Client-side unit teardown dispatcher. Frees the unit's light maps (primary + skill swap), particles, and sound FX, then dispatches on eUnitType: players and monsters free hover text and call type-specific free fns + sound iteration; objects also free static path; missiles call MISSILE_FreeClientMissile; items free item unit + item data; warps remove from room. Finally frees event list, server cmd, clears pPlayerUnit if applicable, and calls Units::Free.
-void FreeAny(D2UnitStrc * pUnit) {
+static void FreeAny(D2UnitStrc * pUnit) {
     D2LightMapStrc* pLightMap = pUnit->uSideData.pClientSide.pLight;
     if (pLightMap) {
       Draw::LightMap::FreeLightMap(pLightMap);
@@ -1881,7 +1880,7 @@ void __fastcall UNITS_RemoveFromClientHashTable(uint32_t dwUnitGUID, int32_t nUn
 }
 
 // Inserts a newly allocated unit into the server-side hash table. If insertion fails due to a GUID collision, evicts the existing unit and retries. If the retry also fails, frees pUnit and returns null. Returns pUnit on success.
-D2UnitStrc * FinalizeCreation(D2UnitStrc * pUnit) {
+static D2UnitStrc * FinalizeCreation(D2UnitStrc * pUnit) {
     uint32_t bInserted = Player::InsertIntoHashTable(pUnit);
     if (bInserted) {
       return pUnit;
@@ -1908,7 +1907,7 @@ D2UnitStrc * FinalizeCreation(D2UnitStrc * pUnit) {
 
 // Client-side unit initialisation, counterpart to the server's CreateUnit. Populates a pre-allocated D2UnitStrc with GUID, class, type, expansion flag, seeds, and act/room from map coordinates. Dispatches to type-specific init routines (JoinRoomSetup for players, AllocObjectData for objects, MISSILE_InitMissileUnit for missiles, ITEM_SetAnimModeAndPlace for items, static-path + collision for warps). Monsters are not supported client-side and halt with an error. Finalises via FinalizeCreation and adds visual overlays for objects.
 // @sourcefile .\UNIT\CUnit.cpp
-D2UnitStrc * __stdcall InitCommonData(D2UnitStrc * pUnit, int32_t nUnitGUID, int32_t nClassId, int32_t nX, int32_t nY, eD2UnitType eUnitType, int32_t nItemAnimMode, uint32_t nObjectAnimMode) {
+static D2UnitStrc * __stdcall InitCommonData(D2UnitStrc * pUnit, int32_t nUnitGUID, int32_t nClassId, int32_t nX, int32_t nY, eD2UnitType eUnitType, int32_t nItemAnimMode, uint32_t nObjectAnimMode) {
     eD2LevelId eLevel;
     uint32_t nNewSeed;
     D2UnitStrc* pFinalUnit;

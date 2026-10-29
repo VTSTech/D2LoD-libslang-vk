@@ -18,15 +18,15 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2WinAnimImage) == 0x60, "D2_NEW(D2WinAnimImage): the 32-bit layout must be the 0x60 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2WinAnimImage) == 0x60, "D2_NEW_AT(D2WinAnimImage): the 32-bit layout must be the 0x60 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_OnPress
@@ -54,12 +54,12 @@ void __fastcall FORMS_DestroyD2WinAnimImage(::D2WinAnimImage * pWinAnimImage) {
 
 // Returns the current animation state (field 0x14) from D2WinAnimImage. Validates form type is FORM_Image (2).
 int32_t __fastcall D2WINANIMIMAGE_GetCurrentState(::D2WinAnimImage * pAnimImage) {
-    if (pAnimImage->sControl.neD2FormType == FORM_Image) {
-      return pAnimImage->nAnimState;
+    if (pAnimImage->sControl.neD2FormType != FORM_Image) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x50);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x50);
-    exit(-1);
+    return pAnimImage->nAnimState;
     return pAnimImage->nAnimState;
 }
 
@@ -123,7 +123,7 @@ BOOL __fastcall DrawAnim(::D2WinAnimImage * pAnimImage) {
 }
 
 // Per-frame animation update. Advances frame counter, handles state transitions (looping vs one-shot), invokes frame change callbacks. Returns 1 on success.
-BOOL D2WINANIMIMAGE_UpdateFrame(::D2WinAnimImage * pAnimImage) {
+static BOOL D2WINANIMIMAGE_UpdateFrame(::D2WinAnimImage * pAnimImage) {
     BOOL bHitTest;
     D2WinAnimImageNotifyStrc sNotifyArgs;
     uint32_t nFrameCount;
@@ -331,7 +331,7 @@ BOOL __stdcall D2WINANIMIMAGE_SetAnimate(::D2WinAnimImage * pAnimImage, BOOL bAn
 // @sourcefile .\D2WinAnimImage.cpp
 ::D2WinAnimImage * __fastcall D2WinAnimImage(int32_t nPosX, int32_t nPosY, int32_t nSizeX, int32_t nSizeY, DC6 * pDC6, int32_t nStaticFrameDelay, OnPress pfnOnPress, FORMS_AnimFrameStrc * pAnimFrames, DRAWMODE eDrawMode, fpD2WinAnimImageNotify pfnOnStateChange) {
     DWORD dwTick;
-    ::D2WinAnimImage* pNewAnimImage = D2_NEW(::D2WinAnimImage);
+    ::D2WinAnimImage* pNewAnimImage = D2_NEW_AT(::D2WinAnimImage, ".\\D2WinAnimImage.cpp", 0x1c);
     memset(pNewAnimImage, 0, 0x60);
     pNewAnimImage->sControl.neD2FormType = FORM_Image;
     int* pStateField = &pNewAnimImage->sControl.dwState;

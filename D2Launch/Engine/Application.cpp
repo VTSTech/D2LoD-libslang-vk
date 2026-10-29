@@ -4,7 +4,6 @@
 #include "Fog/Debug.h"
 #include "Storm/Source/SReg.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -310,8 +309,6 @@ void __fastcall D2INIT_CheckCommandLineOrLoadItFromRegistry(char * * ppszText) {
       Storm::Source::SReg::SRegLoadString("Diablo II", "SvcCmdLine", 0, REGISTRY_CmdLine, 0x400);
       *ppszText = REGISTRY_CmdLine;
     }
-
-    Fog::Debug::GuardStack();
 }
 
 } // namespace D2Launch::Engine::Application

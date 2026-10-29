@@ -35,24 +35,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q4Strc) == 0x1c, "D2_NEW(D2QuestDataA3Q4Strc): the 32-bit layout must be the 0x1c bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q4Strc) == 0x1c, "D2_NEW_AT(D2QuestDataA3Q4Strc): the 32-bit layout must be the 0x1c bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A3Q4 {
@@ -348,13 +344,14 @@ void __fastcall Q21_PlayerSetGoldenBirdQuestState(::SGAMEDATA * pGame, D2UnitStr
 // Q21_PartySetGoldenBirdState (custom regs) -- broadcast the player's current Golden Bird sub-state to
 // every party member. Gets the player's party id (SUnit::GetPartyId); if in a party, runs
 // Q21_PlayerSetGoldenBirdQuestState over all members (ExecuteFunctionForEveryPartyMember). No-op solo.
-void Q21_PartySetGoldenBirdState(void * pThis, ::SGAMEDATA * pGame) {
+int __thiscall Q21_PartySetGoldenBirdState(void * pThis, ::SGAMEDATA * pGame) {
     int16_t nPartyId = UNIT::SUnit::GetPartyId((D2UnitStrc*)pThis);
     if (nPartyId == -1) {
-      return;
+      return 0;
     }
 
     UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q21_PlayerSetGoldenBirdQuestState, 0);
+    return 0;
 }
 
 // Q21_Callback_11 (__fastcall) -- MAIN Golden Bird NPC-dialog state machine (quest event 0xb).
@@ -548,10 +545,10 @@ void __fastcall Q21_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
 // or quest is active. Chains the next quest's sequence filters: runs the filter of nSequenceQuestId
 // (QUEST_SpokeToHratli prereq) and of QUESTINT_BladeOfTheOldReligion (Gidbinn) to advance the act's
 // quest chain. No QuestRecord state changes of its own; pure dispatch/IsBadCodePtr-guarded fp calls.
-void __fastcall Q21_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q21_SequenceFilter(D2QuestDataStrc * pQuestData) {
     BOOL bBadCodePtr;
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
@@ -568,22 +565,24 @@ void __fastcall Q21_SequenceFilter(D2QuestDataStrc * pQuestData) {
 
     pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_BladeOfTheOldReligion);
     if (!pNextQuestData) {
-      return;
+      return cPrereqFilterResult;
     }
 
     /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (!bBadCodePtr) {
+    if (bBadCodePtr) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x28a);
+      exit(-1);
+    }
+
+    {
       bool cGidbinnFilterResult;
       cGidbinnFilterResult = pNextQuestData->fpSequenceFilter(pNextQuestData);
       if (!(!cGidbinnFilterResult && !cPrereqFilterResult)) {
-        return;
+        return true;
       }
 
-      return;
+      return false;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x28a);
-    exit(-1);
 }
 
 // Q21_Callback_13 (__fastcall) -- Golden Bird quest-load / state-flag reconstruction (event 0xd, run
@@ -723,7 +722,7 @@ void __fastcall Q21_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->fpActiveFilter = Q21_ActiveFilter;
     pQuestData->nInitNo = 0;
     pQuestData->fpStatusFilter = Q21_StatusFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q21_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q21_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_SpokeToHratli;
     pQuestData->sStateFunctions.fpQuestStateHandler[4] = Q21_Callback04_ItemPickedUp;
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q21_Callback00_NpcActivate;
@@ -734,7 +733,7 @@ void __fastcall Q21_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xe] = Q21_Callback14_PlayerJoinedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[9] = Q21_Callback09_PlayerDroppedWithQuestItem;
     QUESTGUID_SetPlayerCountToZero(&pQuestData->sQuestGUID);
-    D2QuestDataA3Q4Strc* pQuestSpecificData = D2_NEW_POOL(pQuestData->pGame->pMemoryPool, D2QuestDataA3Q4Strc);
+    D2QuestDataA3Q4Strc* pQuestSpecificData = D2_NEW_POOL_AT(pQuestData->pGame->pMemoryPool, D2QuestDataA3Q4Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q4.cpp", 0x340);
     pQuestData->pQuestSpecificData.pA3Q4 = pQuestSpecificData;
     /* Should use here memset */ pQuestSpecificData->bBirdDropped = false;
     pQuestSpecificData->bCanDropBird = false;

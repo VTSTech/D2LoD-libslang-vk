@@ -66,11 +66,11 @@ struct D2RareAffixTableStrc * __stdcall TXT_RareAffixes_GetTableInfo();
 struct D2RareAffixTxt * __stdcall TXT_RareAffixes_GetLine(int32_t nIndex);
 // Loads and compiles uniqueitems.txt into sgtDataTable.pTxtUniqueItems (record stride 0x14C). Builds the column-binding descriptor: index, version, enabled/ladder/nolimit/carry1 bit flags, code (item base), rarity, lvl, lvl req, chr/inv transform colors, flippyfile/invfile graphics, cost mult/add, drop/use sounds, and the 12 prop/par/min/max modifier groups (props linked to the Properties table, par parsed via ITEMTBLS_ParseSkillMonTypeOrStateId). Creates the unique-items txt-link, calls CompileTxt, and error-halts if more than 0x7FFE rows. Then for each record: writes its sequential index, parses the index string field, and resolves the display-name string-table id (defaulting to 0x1507 if not found). __stdcall(void). Side effect: populates the global unique-items data table.
 // @sourcefile .\DATATBLS\ItemTbls.cpp
-void __stdcall TXT_AllocTxt_uniqueitems();
+void __fastcall TXT_AllocTxt_uniqueitems(struct D2PoolManagerStrc * pMemory);
 void __stdcall ITEMTBLS_FreeUniqueItems();
 // Builds the field-descriptor tables for SetItems.txt (and the embedded Sets.txt schema) and compiles both into the global sgtDataTable bin tables via CompileTxt. Wires record links (pTxtSets/pTxtSetItems) and property/parameter linkers (ITEMTBLS_ParseSkillMonTypeOrStateId). Post-compile: assigns each set-item record its row id, resolves its display string id (default 0x1507 if missing), and back-links each set-item into its parent Sets record (max 6 per set), copying version. Halts via Fog ErrorManager if a table exceeds 0x7fff rows. Called once at data-table load.
 // @sourcefile .\DATATBLS\ItemTbls.cpp
-void __stdcall TXT_AllocTxt_setitems();
+void __fastcall TXT_AllocTxt_setitems(struct D2PoolManagerStrc * pMemory);
 void __stdcall ITEMTBLS_FreeSetsAndSetItems();
 // Compiles QualityItems.txt into the in-memory pTxtQualityItems table during data-table init. Declares the column schema (nummods, mod1/2 code+param+min+max, effect1/effect2 strings, and the per-equipment-type applicability flags armor/weapon/shield/scepter/wand/staff/bow/boots/gloves/belt) with field types and struct offsets, linking mod codes to the Properties table, then calls DataTbls::CompileTxt (record size 0x70). Post-process: for each row resolves the effect1/effect2 string-table keys via STRTABLE_LookupString and writes the looked-up string indices back into the record. Side effect: sets the global pTxtQualityItems / nTxtQualityItemsSize. Allocates from pMemory.
 void __fastcall TXT_AllocTxt_qualityitems(struct D2PoolManagerStrc * pMemory);
@@ -121,13 +121,12 @@ void __fastcall TXT_AllocTxt_gamble(struct D2PoolManagerStrc * pMemory);
 void __stdcall FreeGambleTable();
 struct D2GambleTableStrc * __stdcall GetGambleTableSize();
 // Breadth-first traversal of the itemtypes.txt equiv1/equiv2 parent-type tree to test whether nItemTypeId is a subtype of nTargetTypeId. Returns 1 if nTargetTypeId &lt; 1 (wildcard), 1 if target found in the type hierarchy, 0 if out-of-range or stack depth exceeds 124. Used by item-type membership checks.
-BOOL ITEMTBLS_CheckItemTypeRecursive(int32_t nItemTypeId, int32_t nTargetTypeId);
+BOOL __fastcall ITEMTBLS_CheckItemTypeRecursive(int32_t nItemTypeId, int32_t nTargetTypeId);
 // Loads and compiles the itemtypes.txt data table at startup. Builds the 36-entry field-definition array (code/equiv1-2/bodyloc/shoots/quiver/maxsock/class/storepage/invgfx1-6/etc., with code/bodyloc/class/storepage columns linked to their lookup tables), creates the itemtypes TxtLink, and calls CompileTxt to populate sgtDataTable.pTxtItemTypes (record size 0xE4) and its row count. Then allocates and fills pTxtItemTypesUnknown, a per-type bitmap (ceil(count/32) dwords per type) where bit j is set if type j is a recursive subtype of type i (via ITEMTBLS_CheckItemTypeRecursive), giving fast item-type ancestry tests.
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __fastcall TXT_AllocTxt_itemtypes(struct D2PoolManagerStrc * pMemory);
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __stdcall ITEMTBLS_FreeItemTypes();
-BOOL __stdcall ITEMTBLS_CheckIfDataFileExists(char * szFileExt, struct D2PoolManagerStrc * pPoolManagerStrc, char * szFileName);
 // Builds the Runes.txt (rune word) data table for D2Common. Defines the column schema (name, rune name, complete/server flags, itype1-6/etype1-3 item-type filters linked to ItemTypes, rune1-6 base codes linked to Items, and 7 t1code/param/min/max stat triplets linked to Properties), loads "runessrv" (.txt/.bin/.xls, halting via Fog ErrorManager if none found), compiles it into pTxtRunes (stride 0x120, count nTxtRunesSize), then resolves each row's "complete" string-table key into its string id at offset 0x82. ECX = pool manager. No return.
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __fastcall TXT_AllocTxt_runes(struct D2PoolManagerStrc * pMemory);
@@ -136,5 +135,6 @@ struct D2RunesTxtTableStrc * __stdcall TXT_GetRuneTableSize();
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __stdcall ITEMTBLS_CopyRunewordRecord(int32_t nRunewordId, char * pSourceRecord);
 int32_t __stdcall ITEMTBLS_GetRunewordTxtRecord(int32_t nRunewordId);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Common::DATATBLS::ItemTbls

@@ -100,7 +100,7 @@ uint32_t __fastcall AI_Baal_IsPortalInRange(uint32_t dwParam, D2UnitStrc * pUnit
 
 // Calculate threat/risk score for Baal monster based on target distance, resistances, and skill levels
 // @sourcefile .\Ai\AiBaal.cpp
-int32_t __stdcall RiskAssignmentBaal(D2UnitStrc * pUnit, D2UnitStrc * pTarget, void * pAnchorData) {
+static int32_t __stdcall RiskAssignmentBaal(D2UnitStrc * pUnit, D2UnitStrc * pTarget, void * pAnchorData) {
     int32_t nLifePercent;
     eD2Skills eSkillId;
     uint32_t nRightAttackRank;
@@ -188,7 +188,7 @@ int32_t __stdcall RiskAssignmentBaal(D2UnitStrc * pUnit, D2UnitStrc * pTarget, v
 }
 
 // Baal-AI target selector: scans the game's per-act player unit-node lists (pGame->pUnitNodes[0..]) to pick the highest-scoring player target for the Baal monster pUnit2. For the first list it calls an indirect predicate (pUnit, called as code ptr) to gate candidates, skipping dead/dying players, then scores survivors via RiskAssignmentBaal; later lists are filtered by matching act. Tracks a separate best-of-secondary-list candidate and, if it's very close (collision dist <5) and not already in melee range, repaths Baal toward it (SetTarget/PATH_CalculatePath); if no path, that candidate becomes the result. Writes candidate count to *pnParam2 and best score to *pnParam1; returns the chosen target unit. Halts via Fog error if pUnit is null or a node holds a non-player. Custom calling convention (pUnit2 in EBX).
-D2UnitStrc * __stdcall SelectTargetBaal(::SGAMEDATA * pGame, int * pnParam1, int * pnParam2, int32_t nParam, fpAiTargetPredicate pUnit, D2UnitStrc * pUnit2) {
+static D2UnitStrc * __stdcall SelectTargetBaal(::SGAMEDATA * pGame, int * pnParam1, int * pnParam2, int32_t nParam, fpAiTargetPredicate pUnit, D2UnitStrc * pUnit2) {
     int nScore;
     BOOL bInMeleeRange;
     D2UnitStrc* pTargetUnit;
@@ -330,24 +330,23 @@ uint32_t __fastcall AI_BAAL_IsUnitInRange(D2UnitStrc * pUnit, int * pnParam) {
       exit(-1);
     } else {
       int32_t nX;
-      if (pnParam) {
-        if (pUnit->nAct != *(eAct*)(pnParam + 6)) {
-          return 0;
-        }
-
-        nLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-        nX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-        nDist = GetCollisionDistanceFromXY((D2UnitStrc*)pnParam, nX, nLine);
-        return (uint32_t)(nDist < 0x3fc);
+      if (!pnParam) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11e);
+        exit(-1);
+      }
+      if (pUnit->nAct != *(eAct*)(pnParam + 6)) {
+        return 0;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11e);
-      exit(-1);
+      nLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+      nX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+      nDist = GetCollisionDistanceFromXY((D2UnitStrc*)pnParam, nX, nLine);
+      return (uint32_t)(nDist < 0x3fc);
     }
 }
 
 // @sourcefile .\Ai\AiBaal.cpp
-BOOL AI_BAAL_IsSkillPowerful(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
+static BOOL AI_BAAL_IsSkillPowerful(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
     int nSkillLevel;
     bool bSignedLessOrEqual;
     if (!pSkill) {
@@ -377,7 +376,7 @@ BOOL AI_BAAL_IsSkillPowerful(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
 }
 
 // @sourcefile .\Ai\AiBaal.cpp
-BOOL AI_BAAL_HasPowerfulSkill(D2UnitStrc * pUnit) {
+static BOOL AI_BAAL_HasPowerfulSkill(D2UnitStrc * pUnit) {
     int nSkillLevel;
     D2SkillStrc* pSkill = D2Common::Units::GetRightSkill(pUnit);
     if (pSkill) {
@@ -452,7 +451,7 @@ int32_t __stdcall AI_BAAL_SelectWeightedAction(int * pnWeights, int32_t nWeightC
 }
 
 // Already-documented — existing description accurately covers Baal Clone's weighted-random action selection. Builds a 16-entry weight table biased by difficulty, Baal Clone's current life percentage, cold state, and whether a sub-unit (pUnit2) is present; rolls against the total weight using pUnit2's seed; returns the chosen action index 0-15.
-int32_t __stdcall AI_BAAL_CloneChooseAction(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam2, D2UnitStrc * pUnit2) {
+static int32_t __stdcall AI_BAAL_CloneChooseAction(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam2, D2UnitStrc * pUnit2) {
     int anWeights[16];
     D2SeedStrc sNewSeed;
     anWeights[0xb] = 10;
@@ -532,7 +531,7 @@ int32_t __stdcall AI_BAAL_CloneChooseAction(::SGAMEDATA * pGame, D2UnitStrc * pU
 }
 
 // Weighted random action selector for Baal's throne-room fight (custom regs: stack params pGame/pUnit/nParam2..4, ESI=pUnit2=Baal). Builds a 16-entry weight table seeded with base action weights, boosting the "act" entry by (100-Baal's life pct) plus a difficulty-dependent base (125 on Normal else 100), and adjusting entries based on the flags nParam2 (wave count <2), nParam3, AI_BAAL_HasPowerfulSkill, and nParam4. Sums total weight, draws a roll from pUnit2->sSeed (power-of-two fast path uses mask, else modulo), advancing the seed LCG, then walks the table accumulating weights and returns the index of the first bucket exceeding the roll (defaults to 1 if none). Return value is the chosen Baal action/skill index; no other side effects besides advancing Baal's seed.
-int32_t __stdcall AI_BAAL_ThroneRoomChooseAction(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam2, int32_t nParam3, int32_t nParam4, D2UnitStrc * pUnit2) {
+static int32_t __stdcall AI_BAAL_ThroneRoomChooseAction(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam2, int32_t nParam3, int32_t nParam4, D2UnitStrc * pUnit2) {
     int anWeights[17];
     int64_t nSeedProduct;
     int64_t lSeedProduct;
@@ -629,7 +628,7 @@ int32_t __stdcall AI_BAAL_ThroneRoomChooseAction(::SGAMEDATA * pGame, D2UnitStrc
 }
 
 // Baal AI decision: builds a 16-entry weight table for Baal's possible actions and returns the chosen action index via weighted RNG roll. Initializes base weights (skills, summons, teleport, etc.), with difficulty adjustment (normal lowers some), distance-to-target tweaks (GetDistance: >0x23 and >0x19 thresholds shift melee/ranged weights), a life-based weight (anWeights[1] = base + (100 - target life%)), and context flags (nParam2 phase count, nParam6, level-difficulty scaling, AI_BAAL_HasPowerfulSkill, nParam3/4/5). Sums all weights, rolls target's seed modulo total (power-of-two fast path), then walks the table accumulating until the roll is exceeded and returns that index (fallback 1).
-int32_t __stdcall AI_Baal_SelectActionWeighted(::SGAMEDATA * pGame, int32_t nParam1, D2UnitStrc * pUnit, int32_t nParam2, int32_t nParam3, int32_t nParam4, int32_t nParam5, int32_t nParam6, D2UnitStrc * pUnit2) {
+static int32_t __stdcall AI_Baal_SelectActionWeighted(::SGAMEDATA * pGame, int32_t nParam1, D2UnitStrc * pUnit, int32_t nParam2, int32_t nParam3, int32_t nParam4, int32_t nParam5, int32_t nParam6, D2UnitStrc * pUnit2) {
     int* pWeightCursor;
     uint32_t nTotalWeight;
     uint32_t nRandRoll;
@@ -763,7 +762,7 @@ int32_t __stdcall AI_Baal_SelectActionWeighted(::SGAMEDATA * pGame, int32_t nPar
 }
 
 // Evaluates and returns the next combat action index for Baal's AI. When nCombatAiState==0 and no target (pUnit2 null): checks collision at Baal's current position and returns 4 if blocked, else 1 with 8% chance or 1. When a target is present: determines if the target's player-object is in the Throne Room within 75 units, measures distance to anchor point, tests melee range and wall collision, then delegates to AI_BAAL_CloneChooseAction (melee), AI_Baal_SelectActionWeighted (wall), or AI_BAAL_ThroneRoomChooseAction. Returns the chosen action index.
-int32_t __stdcall AI_BaalEvaluateCombatAction(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, int32_t nParam3, int32_t nParam4, D2UnitStrc * pUnit2, D2UnitStrc * pUnit3) {
+static int32_t __stdcall AI_BaalEvaluateCombatAction(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, int32_t nParam3, int32_t nParam4, D2UnitStrc * pUnit2, D2UnitStrc * pUnit3) {
     bool _bInThroneRoom;
     bool _bVeryFarFromAnchor;
     bool _bInMeleeRange;
@@ -868,7 +867,7 @@ void __fastcall AI_BAAL_CountPowerfulSkills(int32_t nSkillNode, int * pnSelfSkil
 }
 
 // Baal-AI helper that spawns a single weakened Baal clone minion. First counts existing "powerful skill" minions via CallForEachMinion/AI_BAAL_CountPowerfulSkills and bails if any already exist (one-clone guard). Resolves Baal's current target/owner, derives a spawn position near the target (or Baal) by jittering its X/Y with the room/unit RNG (mod 0x18 offsets), finds a valid nearby room, and spawns the clone monster (class id ~0x23a) via SpawnMonster. The clone is flagged NOXP|NOTC, restarts AI thinking, is registered as Baal's minion (AssignMinionOwner/AddMinionToList, mutual StoreOwner), and gets 1/3 of Baal's max-hp/current-hp with hpregen 0. On success increments a counter at *(nParam+0x18) and returns 1 (packed in EAX high bits); returns 0 if guard hit, owner dead, or spawn failed.
-bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, D2UnitStrc * pUnit) {
+static bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, D2UnitStrc * pUnit) {
     // Frame slots -32..-24 are ONE object: &nSeedMulHi is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {

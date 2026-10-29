@@ -4,7 +4,6 @@
 #include "Fog/Debug.h"
 #include "Storm/3rdparty/zlib/deflate.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -47,7 +46,7 @@ void __fastcall init_block(deflate_state * pDeflateState) {
     pDeflateState->dyn_ltree[0x100].fc = 1;
 }
 
-void __stdcall pqdownheap(int32_t nIndex, deflate_state * pDeflateState, ct_data * pTree) {
+static void __stdcall pqdownheap(int32_t nIndex, deflate_state * pDeflateState, ct_data * pTree) {
     int nSmaller;
     int nHeapLen = pDeflateState->heap_len;
     int iVar1 = pDeflateState->heap[nIndex];
@@ -84,7 +83,7 @@ void __stdcall pqdownheap(int32_t nIndex, deflate_state * pDeflateState, ct_data
     pDeflateState->heap[nIndex] = iVar1;
 }
 
-void gen_bitlen(tree_desc * pTreeDesc, deflate_state * pDeflateState) {
+static void gen_bitlen(tree_desc * pTreeDesc, deflate_state * pDeflateState) {
     uint16_t uVar1;
     uint32_t nBits;
     uint16_t* pwBitLenCount;
@@ -186,7 +185,7 @@ void gen_bitlen(tree_desc * pTreeDesc, deflate_state * pDeflateState) {
     }
 }
 
-void __stdcall scan_tree(int32_t nMaxCode, deflate_state * pDeflateState, ct_data * pTree) {
+static void __stdcall scan_tree(int32_t nMaxCode, deflate_state * pDeflateState, ct_data * pTree) {
     uint16_t wNextLen = pTree->dl;
     int nCount = 0;
     uint32_t nPrevLen = -1;
@@ -246,7 +245,7 @@ void __stdcall scan_tree(int32_t nMaxCode, deflate_state * pDeflateState, ct_dat
     } while (nRemaining);
 }
 
-void send_tree(int32_t nMaxCode, ct_data * pTree, deflate_state * pDeflateState) {
+static void send_tree(int32_t nMaxCode, ct_data * pTree, deflate_state * pDeflateState) {
     uint8_t byBitCount;
     int32_t iVar1;
     uint32_t nSymBitLen;
@@ -440,7 +439,7 @@ void send_tree(int32_t nMaxCode, ct_data * pTree, deflate_state * pDeflateState)
     } while (nRemaining);
 }
 
-void __stdcall send_all_trees(int32_t nLCodes, int32_t nDCodes, int32_t nBlCodes, deflate_state * pDeflateState) {
+static void __stdcall send_all_trees(int32_t nLCodes, int32_t nDCodes, int32_t nBlCodes, deflate_state * pDeflateState) {
     int32_t iVar2;
     uint32_t uVar3;
     uint32_t uVar4;
@@ -726,7 +725,7 @@ uint32_t __fastcall _tr_tally(deflate_state * pDeflateState, int32_t nDist, int3
     return (uint32_t)(pDeflateState->last_lit == pDeflateState->lit_bufsize - 1);
 }
 
-void __stdcall compress_block(ct_data * pLTree, ct_data * pDTree, deflate_state * pDeflateState) {
+static void __stdcall compress_block(ct_data * pLTree, ct_data * pDTree, deflate_state * pDeflateState) {
     // Static local variables (originally global data)
     // also labelled: gnSSCompPHDBufferState
 static int gaZlibBaseLength[29] = {
@@ -931,7 +930,7 @@ static int gaZlibBaseDist[30] = {
     pDeflateState->bi_buf = wCode >> (0x10U - (char)nBitCount2 & 0x1f);
 }
 
-BOOL detect_data_type(deflate_state * pDeflateState) {
+static BOOL detect_data_type(deflate_state * pDeflateState) {
     uint32_t nBlockMask = -201342849;
     int nIndex = 0;
     ct_data* pwFreq = pDeflateState->dyn_ltree;
@@ -976,7 +975,7 @@ uint32_t __fastcall bi_reverse(uint32_t nCode, int nLen) {
     return uVar2 & 0x7fffffff | uVar3;
 }
 
-void bi_flush(deflate_state * pDeflateState) {
+static void bi_flush(deflate_state * pDeflateState) {
     if (pDeflateState->bi_valid == 0x10) {
       pDeflateState->pending_buf[pDeflateState->pending] = (uint8_t)pDeflateState->bi_buf;
       pDeflateState->pending++;
@@ -1018,7 +1017,7 @@ void bi_windup(deflate_state * pDeflateState) {
     pDeflateState->bi_valid = 0;
 }
 
-void __stdcall copy_block(int32_t nLen, uint8_t * pbBuf, int32_t bWriteHeader, deflate_state * pDeflateState) {
+static void __stdcall copy_block(int32_t nLen, uint8_t * pbBuf, int32_t bWriteHeader, deflate_state * pDeflateState) {
     uint8_t byLenHi;
     if (pDeflateState->bi_valid < 9) {
       if (0 < pDeflateState->bi_valid) {
@@ -1094,14 +1093,13 @@ static static_tree_desc gZlibStaticBlDesc = {
     init_block(pDeflateState);
 }
 
-void __stdcall gen_codes(ct_data * pTree, int32_t nMaxCode, uint16_t * pBlCount) {
+static void __stdcall gen_codes(ct_data * pTree, int32_t nMaxCode, uint16_t * pBlCount) {
     uint32_t nCodeIn;
     uint32_t nReversedPrev;
     uint32_t nLen;
     uint32_t uVar7;
     uint16_t awNextCode[16];
     uint32_t nReversed;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int nBits = 1;
     uint16_t wCode = 0;
     do {
@@ -1132,11 +1130,9 @@ void __stdcall gen_codes(ct_data * pTree, int32_t nMaxCode, uint16_t * pBlCount)
         nBits++;
       } while (nBits <= nMaxCode);
     }
-
-    Fog::Debug::GuardStack();
 }
 
-void __stdcall build_tree(tree_desc * pTreeDesc, deflate_state * pDeflateState) {
+static void __stdcall build_tree(tree_desc * pTreeDesc, deflate_state * pDeflateState) {
     uint8_t bVar3;
     int32_t nNodeM;
     ct_data* pTree = pTreeDesc->dyn_tree;
@@ -1219,7 +1215,7 @@ void __stdcall build_tree(tree_desc * pTreeDesc, deflate_state * pDeflateState) 
     gen_codes(pTree, nMaxCode, pDeflateState->bl_count);
 }
 
-int32_t build_bl_tree(deflate_state * pDeflateState) {
+static int32_t build_bl_tree(deflate_state * pDeflateState) {
     scan_tree(pDeflateState->l_desc.max_code, pDeflateState, pDeflateState->dyn_ltree);
     scan_tree(pDeflateState->d_desc.max_code, pDeflateState, pDeflateState->dyn_dtree);
     build_tree(&pDeflateState->bl_desc, pDeflateState);

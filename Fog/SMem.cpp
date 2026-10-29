@@ -7,7 +7,6 @@
 #include "Storm/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -1069,7 +1068,6 @@ char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, 
     char szTempBuf[32];
     uint32_t nWidthCopy;
     char* pcSrc;
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     uint32_t nClampedWidth = nWidth;
     if (0x20 < nWidth) {
       nClampedWidth = 0x20;
@@ -1083,7 +1081,6 @@ char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, 
       if (szTempBuf + (nClampedWidth - 1) <= pcWrite2) {
         memset(szText, 0x2a, nClampedWidth - 1);
         szText[nWidthCopy - 1] = '\0';
-        Debug::GuardStack();
         return szText;
       }
 
@@ -1115,7 +1112,6 @@ char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, 
     }
 
     *szText = '\0';
-    Debug::GuardStack();
     return pcWrite2;
 }
 

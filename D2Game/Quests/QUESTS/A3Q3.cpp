@@ -52,24 +52,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q3Strc) == 0x30, "D2_NEW(D2QuestDataA3Q3Strc): the 32-bit layout must be the 0x30 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q3Strc) == 0x30, "D2_NEW_AT(D2QuestDataA3Q3Strc): the 32-bit layout must be the 0x30 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A3Q3 {
@@ -564,13 +560,13 @@ void __fastcall Q20_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 
         QUEST_SetStateFlag(pQuestData, 5, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q3.cpp", 0x26d);
         /* FARPROC lpfn for IsBadCodePtr */ bQuestState = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-        if (!bQuestState) {
-          pQuestData->fpSequenceFilter(pQuestData);
-          return;
+        if (bQuestState) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26e);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26e);
-        exit(-1);
+        pQuestData->fpSequenceFilter(pQuestData);
+        return;
       }
       if (nNPCNo != 0x251) {
         return;
@@ -694,28 +690,29 @@ void __fastcall Q20_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
 // real play: bump nStateFlag 0->1 and return. Once at step 5 (Will used), it looks up the chained
 // prerequisite quest (nSequenceQuestId = QUEST_AbleGoToAct3) and invokes that quest's own sequence
 // filter, propagating the completion forward in the quest chain.
-void __fastcall Q20_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q20_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
       if (pQuestData->nStateFlag) {
-        return;
+        return true;
       }
 
       pQuestData->nStateFlag = 1;
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pQuestData_00) {
-      return;
+      return false;
     }
 
-    BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (BVar1) {
+    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+    if (BVar2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2dc);
       exit(-1);
     }
 
-    pQuestData_00->fpSequenceFilter(pQuestData_00);
+    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+    return bVar1;
 }
 
 // A3Q3 "Khalim's Will" — callback #14: per-player counter maintenance. Increments the
@@ -841,7 +838,7 @@ void __fastcall Q20_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->fpActiveFilter = Q20_ActiveFilter;
     pQuestData->nInitNo = 4;
     pQuestData->fpStatusFilter = Q20_StatusFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q20_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q20_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_AbleGoToAct3;
     pQuestData->sStateFunctions.fpQuestStateHandler[4] = Q20_Callback04_ItemPickedUp;
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q20_Callback00_NpcActivate;
@@ -851,7 +848,7 @@ void __fastcall Q20_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q20_Callback13_PlayerStartedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xe] = Q20_Callback14_PlayerJoinedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[9] = Q20_Callback09_PlayerDroppedWithQuestItem;
-    D2QuestDataA3Q3Strc* pQuestSpecificData = D2_NEW_POOL(pSVar1->pMemoryPool, D2QuestDataA3Q3Strc);
+    D2QuestDataA3Q3Strc* pQuestSpecificData = D2_NEW_POOL_AT(pSVar1->pMemoryPool, D2QuestDataA3Q3Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q3.cpp", 0x394);
     pQuestData->pQuestSpecificData.pA3Q3 = pQuestSpecificData;
     memset(pQuestSpecificData, 0, 0x30);
     pQuestSpecificData->nQuestStage = 0;
@@ -860,7 +857,7 @@ void __fastcall Q20_InitData(D2QuestDataStrc * pQuestData) {
 // A3Q3 "Khalim's Will" — spawns the unique serpent/council monster pack (monClass 0x197) that
 // carries the quest item. Sets in-progress guard at +4 around the spawn; on success records spawned,
 // clears the "pending" flag (+3) and stores the spawned unit's GUID at +0x24. No quest-state writes.
-void Q20_SpawnUniqueSerpent(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2QuestDataA3Q3Strc * pA3Q3Data) {
+static void Q20_SpawnUniqueSerpent(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2QuestDataA3Q3Strc * pA3Q3Data) {
     pA3Q3Data->nBladeGivenFlag = '\x01';
     D2UnitStrc* pSerpentUnit = Monsters::SpawnUniquePack(pGame, pRoom, nullptr, 0x197, 1, 0, 0, 1);
     if (pSerpentUnit) {

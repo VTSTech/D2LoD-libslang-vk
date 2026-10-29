@@ -13,7 +13,6 @@
 #include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -100,7 +99,7 @@ void __fastcall BITSTREAM_WriteLiteralByte(int32_t pHuffState, int32_t pBitStrea
     BITSTREAM_WriteBits((D2BitStreamWriterStrc*)pBitStream, nCode, nBits);
 }
 
-void SCOMP_SelectADPCMParams(uint8_t * pnBitsPerSample, uint32_t nChannels, uint32_t * pnStepShift) {
+static void SCOMP_SelectADPCMParams(uint8_t * pnBitsPerSample, uint32_t nChannels, uint32_t * pnStepShift) {
     if (nChannels) {
       if (nChannels < 3) {
         *pnBitsPerSample = '\x04';
@@ -119,7 +118,7 @@ void SCOMP_SelectADPCMParams(uint8_t * pnBitsPerSample, uint32_t nChannels, uint
 }
 
 // Encodes PCM audio samples to ADPCM format with dynamic bit rate adjustment
-uint32_t __stdcall SCOMP_ADPCMEncode(uint32_t nMaxOutSize, short * pInSamples, uint32_t nInSize, uint32_t nChannels, uint8_t nBitsPerSample, short * pOutBuffer) {
+static uint32_t __stdcall SCOMP_ADPCMEncode(uint32_t nMaxOutSize, short * pInSamples, uint32_t nInSize, uint32_t nChannels, uint8_t nBitsPerSample, short * pOutBuffer) {
     uint32_t nStepSize;
     uint32_t nDelta;
     int nPredicted;
@@ -275,7 +274,7 @@ uint32_t __stdcall SCOMP_ADPCMEncode(uint32_t nMaxOutSize, short * pInSamples, u
     return nOutSize;
 }
 
-short * __stdcall SCOMP_ADPCMDecode(short * pOut, uint32_t nOutSize, int32_t pIn, uint32_t nChannels, int32_t nInSize) {
+static short * __stdcall SCOMP_ADPCMDecode(short * pOut, uint32_t nOutSize, int32_t pIn, uint32_t nChannels, int32_t nInSize) {
     int* piVar1;
     int nPredicted;
     uint32_t nDelta;
@@ -473,17 +472,20 @@ void __fastcall SCOMP_PkwareDecompress(void * pOutBuf, uint32_t * pdwOutLength, 
 }
 
 // @sourcefile .\SOURCE\SCOMP.CPP
-void __fastcall SCOMP_ArenaAlloc(D2ScompArenaStrc * pArenaState, int32_t nItems, int32_t nItemSize) {
+void * __fastcall SCOMP_ArenaAlloc(D2ScompArenaStrc * pArenaState, int32_t nItems, int32_t nItemSize) {
     uint8_t* nSize = (uint8_t*)(nItems * nItemSize);
     if ((uint32_t)nSize & 3) {
       nSize += 4 - ((uint32_t)nSize & 3);
     }
-    if (nSize < pArenaState->pBase + (pArenaState->nSize - (int)pArenaState->pCur)) {
-      pArenaState->pCur = nSize + (int)pArenaState->pCur;
-      return;
+
+    uint8_t* puVar1 = pArenaState->pCur;
+    if (nSize < pArenaState->pBase + (pArenaState->nSize - (int)puVar1)) {
+      pArenaState->pCur = nSize + (int)puVar1;
+      return puVar1;
     }
 
-    SMem::SMemAlloc((uint32_t)nSize, ".\\SOURCE\\SCOMP.CPP", 0x4c4, 0);
+    void* pvVar2 = SMem::SMemAlloc((uint32_t)nSize, ".\\SOURCE\\SCOMP.CPP", 0x4c4, 0);
+    return pvVar2;
 }
 
 // @sourcefile .\SOURCE\SCOMP.CPP
@@ -495,7 +497,7 @@ void __fastcall SCOMP_ArenaFree(D2ScompArenaStrc * pArenaState, void * pBlock) {
     SMem::SMemFree(pBlock, ".\\SOURCE\\SCOMP.CPP", 0x4cc, 0);
 }
 
-int __stdcall SCOMP_ZlibCompress(uint8_t * pSrc, uint32_t nSrcLen, uint32_t nLevel, uint32_t * pnOutLen) {
+static int __stdcall SCOMP_ZlibCompress(uint8_t * pSrc, uint32_t nSrcLen, uint32_t nLevel, uint32_t * pnOutLen) {
     z_stream zStream;
     D2ScompArenaStrc sArena;
     uint8_t aArenaBuf[300004];
@@ -519,13 +521,11 @@ int __stdcall SCOMP_ZlibCompress(uint8_t * pSrc, uint32_t nSrcLen, uint32_t nLev
         _3rdparty::zlib::deflate::deflateEnd(&zStream);
         nRetInit = -5;
         if (nRet) {
-          Fog::Debug::GuardStack();
           return nRet;
         }
       }
     }
 
-    Fog::Debug::GuardStack();
     return nRetInit;
 }
 
@@ -556,12 +556,11 @@ void __fastcall SCOMP_ZlibCompressWithLevel(uint8_t * pDst, uint32_t * pnDstLen,
 // bzip2, so the whole pair may be misnamed. What would
 // settle it is the SCompDecompress method-table entry that points at 0041e340 and the compression id
 // it sits under.
-int __stdcall SCOMP_InflateZlibStackArena(uint8_t * pSrc, uint8_t * pDst, uint32_t nSrcLen, uint32_t * pnOutLen) {
+static int __stdcall SCOMP_InflateZlibStackArena(uint8_t * pSrc, uint8_t * pDst, uint32_t nSrcLen, uint32_t * pnOutLen) {
     int32_t nRet;
     z_stream zStream;
     D2ScompArenaStrc sArena;
     uint8_t aArenaBuf[47000];
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     zStream.avail_out = *pnOutLen;
     zStream.next_out = pDst;
     sArena.pCur = aArenaBuf;
@@ -582,13 +581,11 @@ int __stdcall SCOMP_InflateZlibStackArena(uint8_t * pSrc, uint8_t * pDst, uint32
         _3rdparty::zlib::inflate::inflateEnd(&zStream);
         nRetInit = -5;
         if (nRet) {
-          Fog::Debug::GuardStack();
           return nRet;
         }
       }
     }
 
-    Fog::Debug::GuardStack();
     return nRetInit;
 }
 
@@ -623,7 +620,7 @@ void __fastcall SCOMP_AdpcmStereoDecompress(short * pDst, short * * pnDstLen, in
 }
 
 // @sourcefile .\SOURCE\SCOMP.CPP
-uint32_t * SCOMP_AcquireTempBuffer(uint32_t nSize, int32_t * pbShared) {
+static uint32_t * SCOMP_AcquireTempBuffer(uint32_t nSize, int32_t * pbShared) {
     // Static local variables (originally global data)
     static uint32_t gnScompTempBufferCapacity; D2_STATIC_GUARD_BSS(gnScompTempBufferCapacity, "Storm::Source::SSComp::SCOMP_AcquireTempBuffer::gnScompTempBufferCapacity");
 
@@ -654,7 +651,7 @@ uint32_t * SCOMP_AcquireTempBuffer(uint32_t nSize, int32_t * pbShared) {
 }
 
 // @sourcefile .\SOURCE\SCOMP.CPP
-void __stdcall SCOMP_ReleaseTempBuffer(int32_t bShared, void * pBuf) {
+static void __stdcall SCOMP_ReleaseTempBuffer(int32_t bShared, void * pBuf) {
     if (!pBuf) {
       return;
     }
@@ -3922,7 +3919,7 @@ void __fastcall SCOMP_HuffmanDecompress(uint8_t * pDst, int * pnDstSize, uint32_
 }
 
 // @blizzard FlushLog (SLOG.CPP)
-void SLOG_FlushLog(D2SLogStrc * pLog) {
+static void SLOG_FlushLog(D2SLogStrc * pLog) {
     DWORD dwBytesWritten;
     if (!pLog->nUsed) {
       return;
@@ -3934,7 +3931,7 @@ void SLOG_FlushLog(D2SLogStrc * pLog) {
     pLog->nLineStart = 0;
 }
 
-void SLOG_OutputIndent(D2SLogStrc * pLog) {
+static void SLOG_OutputIndent(D2SLogStrc * pLog) {
     size_t nLen = pLog->nIndent;
     if (0 >= (int)nLen) {
       return;
@@ -3949,81 +3946,16 @@ void SLOG_OutputIndent(D2SLogStrc * pLog) {
 }
 
 // @blizzard OutputReturn (SLOG.CPP)
-void SLOG_OutputReturn(D2SLogStrc * pLog) {
+static void SLOG_OutputReturn(D2SLogStrc * pLog) {
     SSystem::SMemCopy(pLog->acBuffer + pLog->nUsed, (void*)"\r\n", 3);
     pLog->nUsed += 2;
 }
 
 // @blizzard OutputTime (SLOG.CPP)
-void __stdcall SLOG_OutputTime(int32_t bHasData, D2SLogStrc * pLog) {
+static void __stdcall SLOG_OutputTime(int32_t bHasData, D2SLogStrc * pLog) {
     // Static local variables (originally global data)
     static uint32_t gnSLogTimeStrLen; D2_STATIC_GUARD_BSS(gnSLogTimeStrLen, "Storm::Source::SSComp::SLOG_OutputTime::gnSLogTimeStrLen");
-    static char gszSLogTimeStr[64] = {
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-}; D2_STATIC_GUARD(gszSLogTimeStr, "Storm::Source::SSComp::SLOG_OutputTime::gszSLogTimeStr");
+    static char gszSLogTimeStr[64] = {}; D2_STATIC_GUARD(gszSLogTimeStr, "Storm::Source::SSComp::SLOG_OutputTime::gszSLogTimeStr");
     static uint32_t gdwSLogLastTime; D2_STATIC_GUARD_BSS(gdwSLogLastTime, "Storm::Source::SSComp::SLOG_OutputTime::gdwSLogLastTime");
 
     if (!pLog->bTimestamps) {
@@ -4053,7 +3985,7 @@ void __stdcall SLOG_OutputTime(int32_t bHasData, D2SLogStrc * pLog) {
 }
 
 // @blizzard UnlockDeleteLog (SLOG.CPP)
-void SLOG_UnlockDeleteLog(LPVOID pTarget, int32_t nSlot) {
+static void SLOG_UnlockDeleteLog(LPVOID pTarget, int32_t nSlot) {
     D2SLogStrc* pNode = gaSLogHead[nSlot];
     if (pNode) {
       D2SLogStrc** ppPrevNext = gaSLogHead + nSlot;
@@ -4213,6 +4145,8 @@ void __stdcall SLogInitialize() {
 
 // @blizzard SLogPend (SLOG.CPP)
 void SLogPend(uint32_t nHandle, char * szFormat, ...) {
+    va_list __va;
+    va_start(__va, szFormat);
     uint32_t nSlot;
     D2SLogStrc* pContext = SLOG_LockLog(&nSlot, 0, nHandle);
     if (!pContext) {
@@ -4221,7 +4155,7 @@ void SLogPend(uint32_t nHandle, char * szFormat, ...) {
 
     pContext->nUsed = pContext->nLineStart;
     SLOG_OutputTime(1, pContext);
-    vsprintf(pContext->acBuffer + pContext->nUsed, szFormat, (va_list)((uint8_t*)&szFormat + 4));
+    vsprintf(pContext->acBuffer + pContext->nUsed, szFormat, __va);
     uint32_t nWritten = SSTR::SStrLen(pContext->acBuffer + pContext->nUsed);
     pContext->nUsed += nWritten;
     SLOG_OutputReturn(pContext);
@@ -4230,6 +4164,8 @@ void SLogPend(uint32_t nHandle, char * szFormat, ...) {
 
 // @blizzard SLogWrite (SLOG.CPP)
 void SLogWrite(uint32_t nHandle, char * szFormat, ...) {
+    va_list __va;
+    va_start(__va, szFormat);
     uint32_t nSlot;
     D2SLogStrc* pContext = SLOG_LockLog(&nSlot, 0, nHandle);
     if (!pContext) {
@@ -4237,7 +4173,7 @@ void SLogWrite(uint32_t nHandle, char * szFormat, ...) {
     }
 
     SLOG_OutputTime(1, pContext);
-    vsprintf(pContext->acBuffer + pContext->nUsed, szFormat, (va_list)((uint8_t*)&szFormat + 4));
+    vsprintf(pContext->acBuffer + pContext->nUsed, szFormat, __va);
     uint32_t nWritten = SSTR::SStrLen(pContext->acBuffer + pContext->nUsed);
     pContext->nUsed += nWritten;
     SLOG_OutputReturn(pContext);

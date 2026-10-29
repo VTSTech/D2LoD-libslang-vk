@@ -10,12 +10,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -30,7 +30,7 @@ int __fastcall GLFLOOR_Initialize(GlFloorCacheStrc * pCache, int nVramStart, int
     pCache->dwEntrySize = dwFloorSize;
     size_t nAllocSize = nEntryCount * 0x14;
     pCache->nMaxEntries = nEntryCount;
-    GlFloorCacheNodeStrc* pNodes = (GlFloorCacheNodeStrc*)D2_ALLOC(nAllocSize);
+    GlFloorCacheNodeStrc* pNodes = (GlFloorCacheNodeStrc*)D2_ALLOC_AT(nAllocSize, ".\\Src\\glFloorCache.cpp", 0x29);
     pCache->pNodes = pNodes;
     if (!pNodes) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a);
@@ -100,7 +100,7 @@ int __fastcall GLFLOOR_Initialize(GlFloorCacheStrc * pCache, int nVramStart, int
 }
 
 // Appends floor cache node to tail of active LRU list (most-recently-used position). Creates list if empty, otherwise links to existing tail.
-void GLFLOOR_AppendNodeToTail(GlFloorCacheStrc * pCache, GlFloorCacheNodeStrc * pNode) {
+static void GLFLOOR_AppendNodeToTail(GlFloorCacheStrc * pCache, GlFloorCacheNodeStrc * pNode) {
     if (!pCache->pActiveHead) {
       pCache->pActiveHead = pNode;
       pCache->pActiveTail = pNode;
@@ -152,7 +152,7 @@ GlFloorCacheNodeStrc * __fastcall GLFLOOR_RemoveNodeByIndex(GlFloorCacheStrc * p
 }
 
 // Allocates node from free list and moves to active list tail. Returns 1-based node index on success, 0 if cache full.
-int GLFLOOR_AllocateNode(GlFloorCacheStrc * pCache) {
+static int GLFLOOR_AllocateNode(GlFloorCacheStrc * pCache) {
     if (pCache->nUsedCount == pCache->nMaxEntries) {
       return 0;
     }
@@ -201,14 +201,14 @@ void __fastcall GLFLOOR_PromoteNodeToMRU(GlFloorCacheStrc * pCache, int nNodeInd
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xbd);
       exit(-1);
     } else {
-      if (0 < nNodeIndex1Based) {
-        pNode = GLFLOOR_RemoveNodeByIndex(pCache, nNodeIndex1Based - 1);
-        GLFLOOR_AppendNodeToTail(pCache, pNode);
-        return;
+      if (!(0 < nNodeIndex1Based)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xbe);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xbe);
-      exit(-1);
+      pNode = GLFLOOR_RemoveNodeByIndex(pCache, nNodeIndex1Based - 1);
+      GLFLOOR_AppendNodeToTail(pCache, pNode);
+      return;
     }
 }
 
@@ -302,7 +302,7 @@ void __fastcall GLFLOOR_Destroy(uint32_t * pCacheData, GlFloorCacheStrc * pCache
       }
     }
     if ((void*)pCacheData[7]) {
-      D2_FREE((void*)pCacheData[7]);
+      D2_FREE_AT((void*)pCacheData[7], ".\\Src\\glFloorCache.cpp", 0x74);
       pCacheData[7] = 0;
     }
 
@@ -319,12 +319,12 @@ short __fastcall GLFLOOR_EnsureCapacity(GlFloorCacheStrc * pCache) {
 
     GLFLOOR_EvictLRU(pCache);
     nNodeIndex = GLFLOOR_AllocateNode(pCache);
-    if (nNodeIndex) {
-      return (short int)nNodeIndex;
+    if (!nNodeIndex) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8b);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8b);
-    exit(-1);
+    return (short int)nNodeIndex;
     return (short int)nNodeIndex;
 }
 

@@ -17,15 +17,15 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2WinScrollbar) == 0x60, "D2_NEW(D2WinScrollbar): the 32-bit layout must be the 0x60 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2WinScrollbar) == 0x60, "D2_NEW_AT(D2WinScrollbar): the 32-bit layout must be the 0x60 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpD2WinScrollbarOnChange
@@ -49,12 +49,12 @@ void __fastcall FORMS_DestroyD2WinScrollbar(::D2WinScrollbar * pScrollbar) {
 
 // Returns scrollbar maximum value (field 0x12). Validates form type FORM_Scrollbar (5).
 int32_t __fastcall D2WINSCROLLBAR_GetMaxValue(::D2WinScrollbar * pScrollbar) {
-    if (pScrollbar->sControl.neD2FormType == FORM_Scrollbar) {
-      return pScrollbar->nMaxValue;
+    if (pScrollbar->sControl.neD2FormType != FORM_Scrollbar) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4b);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4b);
-    exit(-1);
+    return pScrollbar->nMaxValue;
     return pScrollbar->nMaxValue;
 }
 
@@ -85,12 +85,12 @@ BOOL __fastcall D2WINSCROLLBAR_SetPosition(::D2WinScrollbar * pScrollbar, int32_
 
 // Returns scrollbar current position (field 0x13). Validates form type FORM_Scrollbar (5).
 int32_t __fastcall D2WINSCROLLBAR_GetPosition(::D2WinScrollbar * pScrollbar) {
-    if (pScrollbar->sControl.neD2FormType == FORM_Scrollbar) {
-      return pScrollbar->nPosition;
+    if (pScrollbar->sControl.neD2FormType != FORM_Scrollbar) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x74);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x74);
-    exit(-1);
+    return pScrollbar->nPosition;
     return pScrollbar->nPosition;
 }
 
@@ -162,12 +162,12 @@ void __fastcall D2WINSCROLLBAR_SetStyle(::D2WinScrollbar * pScrollbar, int32_t n
 
 // Returns scrollbar style flags (field 0x14). Validates form type FORM_Scrollbar (5).
 int32_t __fastcall D2WINSCROLLBAR_GetStyle(::D2WinScrollbar * pScrollbar) {
-    if (pScrollbar->sControl.neD2FormType == FORM_Scrollbar) {
-      return pScrollbar->nStyle;
+    if (pScrollbar->sControl.neD2FormType != FORM_Scrollbar) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd2);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd2);
-    exit(-1);
+    return pScrollbar->nStyle;
     return pScrollbar->nStyle;
 }
 
@@ -308,59 +308,59 @@ BOOL __fastcall Draw(::D2WinScrollbar * pScrollbar) {
       exit(-1);
     } else {
       uint32_t nGlobalTickCount;
-      if (pScrollbar->sControl.neD2FormType == FORM_Scrollbar) {
-        dwCtrlState = pScrollbar->sControl.dwState;
-        if (!(dwCtrlState & 4 && dwCtrlState & 1)) {
-          return 0;
-        }
+      if (pScrollbar->sControl.neD2FormType != FORM_Scrollbar) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe8);
+        exit(-1);
+      }
 
-        local_8 = pScrollbar->sControl.pDC6;
-        nLine = pScrollbar->sControl.dwPosX;
-        nDrawY = pScrollbar->sControl.dwPosY - 1;
-        if (!pScrollbar->nMaxValue) {
-          return 1;
-        }
+      dwCtrlState = pScrollbar->sControl.dwState;
+      if (!(dwCtrlState & 4 && dwCtrlState & 1)) {
+        return 0;
+      }
 
-        nGlobalTickCount = D2WinMain::D2WINMAIN_GetWinMainState();
-        if (!nGlobalTickCount) {
-          pScrollbar->nWheelLockFlag = 0;
-        }
-        if (pScrollbar->nWheelLockFlag) {
-          pScrollbarArg.uMsg = 0x201;
-          pScrollbarArg.pControl = &pScrollbar->sControl;
-          D2WinScrollbar::Push(&pScrollbarArg);
-        }
-
-        memset(&sGfxData, 0, 0x48);
-        sGfxData.pDC6 = local_8;
-        sGfxData.nFrameNumber = (uint32_t)(pScrollbar->bDownArrowPressed != 0) * 2 + 1;
-        sGfxData.nDirection = 0;
-        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nLine, nDrawY, -1, DRAW_SOLID, nullptr);
-        sGfxData.nFrameNumber = 5;
-        if (10 < pScrollbar->sControl.dwSizeY - 10) {
-          local_8 = (DC6*)0xa;
-          do {
-            local_8 = (DC6*)((uintptr_t)&local_8->nFormat + 2);
-            nDrawY += -10;
-            D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nLine, nDrawY, -1, DRAW_SOLID, nullptr);
-          } while ((int)local_8 < pScrollbar->sControl.dwSizeY - 10);
-        }
-
-        sGfxData.nFrameNumber = pScrollbar->bUpArrowPressed ? 2 : 0;
-        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nLine, pScrollbar->sControl.dwPosY - pScrollbar->sControl.dwSizeY + 9, -1, DRAW_SOLID, nullptr);
-        nDrawY = pScrollbar->sControl.dwSizeY;
-        sGfxData.nFrameNumber = 4;
-        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nLine, (nDrawY - 0x1e) * pScrollbar->nPosition / pScrollbar->nMaxValue - nDrawY + 0x13 + pScrollbar->sControl.dwPosY, -1, DRAW_SOLID, nullptr);
+      local_8 = pScrollbar->sControl.pDC6;
+      nLine = pScrollbar->sControl.dwPosX;
+      nDrawY = pScrollbar->sControl.dwPosY - 1;
+      if (!pScrollbar->nMaxValue) {
         return 1;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe8);
-      exit(-1);
+      nGlobalTickCount = D2WinMain::D2WINMAIN_GetWinMainState();
+      if (!nGlobalTickCount) {
+        pScrollbar->nWheelLockFlag = 0;
+      }
+      if (pScrollbar->nWheelLockFlag) {
+        pScrollbarArg.uMsg = 0x201;
+        pScrollbarArg.pControl = &pScrollbar->sControl;
+        D2WinScrollbar::Push(&pScrollbarArg);
+      }
+
+      memset(&sGfxData, 0, 0x48);
+      sGfxData.pDC6 = local_8;
+      sGfxData.nFrameNumber = (uint32_t)(pScrollbar->bDownArrowPressed != 0) * 2 + 1;
+      sGfxData.nDirection = 0;
+      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nLine, nDrawY, -1, DRAW_SOLID, nullptr);
+      sGfxData.nFrameNumber = 5;
+      if (10 < pScrollbar->sControl.dwSizeY - 10) {
+        local_8 = (DC6*)0xa;
+        do {
+          local_8 = (DC6*)((uintptr_t)&local_8->nFormat + 2);
+          nDrawY += -10;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nLine, nDrawY, -1, DRAW_SOLID, nullptr);
+        } while ((int)local_8 < pScrollbar->sControl.dwSizeY - 10);
+      }
+
+      sGfxData.nFrameNumber = pScrollbar->bUpArrowPressed ? 2 : 0;
+      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nLine, pScrollbar->sControl.dwPosY - pScrollbar->sControl.dwSizeY + 9, -1, DRAW_SOLID, nullptr);
+      nDrawY = pScrollbar->sControl.dwSizeY;
+      sGfxData.nFrameNumber = 4;
+      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nLine, (nDrawY - 0x1e) * pScrollbar->nPosition / pScrollbar->nMaxValue - nDrawY + 0x13 + pScrollbar->sControl.dwPosY, -1, DRAW_SOLID, nullptr);
+      return 1;
     }
 }
 
 ::D2WinScrollbar * __fastcall D2WinScrollbar(int32_t nPosX, int32_t nPosY, int32_t nSizeX, int32_t nSizeY, DC6 * pDC6, OnPress pfnOnPress) {
-    ::D2WinScrollbar* pNewScrollbar = D2_NEW(::D2WinScrollbar);
+    ::D2WinScrollbar* pNewScrollbar = D2_NEW_AT(::D2WinScrollbar, ".\\Src\\D2WinScrollbar.cpp", 0x1c);
     memset(pNewScrollbar, 0, 0x60);
     pNewScrollbar->sControl.neD2FormType = FORM_Scrollbar;
     int* pStateField = &pNewScrollbar->sControl.dwState;

@@ -20,18 +20,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2WaypointStrc) == 0x10, "D2_NEW(D2WaypointStrc): the 32-bit layout must be the 0x10 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2WaypointStrc) == 0x10, "D2_NEW_AT(D2WaypointStrc): the 32-bit layout must be the 0x10 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -89,12 +89,12 @@ uint32_t __stdcall CheckWaypoint(D2WaypointStrc * pWaypoint, uint16_t nWaypointI
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdd);
       exit(-1);
     } else if (D2Client::Waypoint::nWaypointsBitMasksSize == 0x70) {
-      if (nWaypointId < 112) {
-        return (uint32_t)(pWaypoint->aWaypointBits[D2Client::Waypoint::aaWaypointsBitMasks[nWaypointId][0] - 1] & D2Client::Waypoint::aaWaypointsBitMasks[nWaypointId][1]);
+      if (!(nWaypointId < 112)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe1);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe1);
-      exit(-1);
+      return (uint32_t)(pWaypoint->aWaypointBits[D2Client::Waypoint::aaWaypointsBitMasks[nWaypointId][0] - 1] & D2Client::Waypoint::aaWaypointsBitMasks[nWaypointId][1]);
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xde);
       exit(-1);
@@ -106,13 +106,13 @@ void __stdcall EnableWaypoint(D2WaypointStrc * pWaypoint, uint16_t nWaypointId) 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xed);
       exit(-1);
     } else if (D2Client::Waypoint::nWaypointsBitMasksSize == 0x70) {
-      if (nWaypointId < 0x70) {
-        pWaypoint->aWaypointBits[D2Client::Waypoint::aaWaypointsBitMasks[nWaypointId][0] - 1] |= D2Client::Waypoint::aaWaypointsBitMasks[nWaypointId][1];
-        return;
+      if (!(nWaypointId < 0x70)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf1);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf1);
-      exit(-1);
+      pWaypoint->aWaypointBits[D2Client::Waypoint::aaWaypointsBitMasks[nWaypointId][0] - 1] |= D2Client::Waypoint::aaWaypointsBitMasks[nWaypointId][1];
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xee);
       exit(-1);
@@ -121,7 +121,7 @@ void __stdcall EnableWaypoint(D2WaypointStrc * pWaypoint, uint16_t nWaypointId) 
 
 // @sourcefile .\WayPoint\Waypoint.cpp
 D2WaypointStrc * __stdcall Alloc(D2PoolManagerStrc * pMemory) {
-    D2WaypointStrc* pWaypoint = D2_NEW_POOL(pMemory, D2WaypointStrc);
+    D2WaypointStrc* pWaypoint = D2_NEW_POOL_AT(pMemory, D2WaypointStrc, ".\\WayPoint\\Waypoint.cpp", 0xfc);
     pWaypoint->nSignature = 0;
     memset(pWaypoint->aWaypointBits, 0, 7 * sizeof(pWaypoint->aWaypointBits[0]));
     pWaypoint->nSignature = 0x102;
@@ -157,7 +157,7 @@ void __stdcall Free(D2PoolManagerStrc * pMemory, D2WaypointStrc * pWaypoint) {
       pWaypoint->nSignature = 0x102;
     }
 
-    D2_FREE_POOL(pMemory, pWaypoint);
+    D2_FREE_POOL_AT(pMemory, pWaypoint, ".\\WayPoint\\Waypoint.cpp", 0x121);
 }
 
 void __stdcall CopyWaypointBits(D2WaypointStrc * pWaypoint, uint8_t * nWaypointBits) {

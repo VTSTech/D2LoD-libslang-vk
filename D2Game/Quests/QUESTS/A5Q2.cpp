@@ -52,21 +52,17 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA5Q2Strc) == 0x160, "D2_NEW(D2QuestDataA5Q2Strc): the 32-bit layout must be the 0x160 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA5Q2Strc) == 0x160, "D2_NEW_AT(D2QuestDataA5Q2Strc): the 32-bit layout must be the 0x160 bytes 1.14d allocates");
 
 
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
-#endif
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
@@ -704,30 +700,30 @@ bool __fastcall Q32_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 // and returns (don't unlock the next quest yet). Once done (stateFlag==5), looks up the next quest in the chain
 // (nSequenceQuestId) and invokes ITS sequence filter, propagating the "you may now start the next quest" unlock.
 // No direct QuestRecord writes here.
-void __fastcall Q32_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    bool _bBadPtr;
+bool __fastcall Q32_SequenceFilter(D2QuestDataStrc * pQuestData) {
     bool bBadPtr;
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
       if (pQuestData->nStateFlag) {
-        return;
+        return true;
       }
 
       pQuestData->nStateFlag = 1;
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pSeqQuestData) {
-      return;
+      return false;
     }
 
-    /* FARPROC lpfn for IsBadCodePtr */ _bBadPtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (_bBadPtr) {
+    BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+    if (BVar1) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2cd);
       exit(-1);
     }
 
-    pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+    bool nErrorLine = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+    return nErrorLine;
 }
 
 // Q32_Callback_14 (A5Q2 Rescue on Mount Arreat) -- state-handler slot[0xe].
@@ -801,13 +797,13 @@ void __fastcall Q32_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->pNpcMessages = A5Q2::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
-    D2QuestDataA5Q2Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA5Q2Strc);
+    D2QuestDataA5Q2Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA5Q2Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q2.cpp", 0x323);
     pQuestData->pQuestSpecificData.pA5Q2 = pQuestSpecificData;
     pQuestData->nQuestIdReal = QUEST_RescueOnMountArreat;
     pQuestData->fpStatusFilter = 0;
     pQuestData->nInitNo = 4;
     pQuestData->fpActiveFilter = Q32_ActiveFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q32_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q32_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_SpokeToMalachai;
     memset(pQuestSpecificData, 0, 0x160);
     QUESTGUID_SetPlayerCountToZero(&pQuestSpecificData->sQuestGUID);

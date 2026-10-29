@@ -71,12 +71,7 @@ void __stdcall SetResolutionModeWithEndCutScene(int32_t nResolutionMode) {
 BOOL __stdcall D2GFX_SetVideoMode(int32_t nResolutionMode) {
     // Static local variables (originally global data)
     // also labelled: WindowRect, lpRect_007d5580
-static RECT gWindowRect = {
-    /* .left = */ 0,
-    /* .top = */ 0,
-    /* .right = */ 0,
-    /* .bottom = */ 0
-}; D2_STATIC_GUARD(gWindowRect, "D2Win::D2GFX::D2GFX_SetVideoMode::gWindowRect");
+static RECT gWindowRect = {}; D2_STATIC_GUARD(gWindowRect, "D2Win::D2GFX::D2GFX_SetVideoMode::gWindowRect");
 
     if (!gnResolutionMode && !gWindowRect.right) {
       HWND hWndResult;

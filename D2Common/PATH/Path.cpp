@@ -34,8 +34,8 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -81,7 +81,7 @@ void __stdcall PATH_GetTargetCoordinates(int32_t nDirIndex, int32_t * pnOutX, in
 }
 
 // PATH_ExtendPathEndpoint - Nudges a path endpoint further in the direction of movement, stepping up to 5 subtiles as long as no collision is encountered. Used to extend paths past obstacles for smoother movement.
-void PATH_ExtendPathEndpoint(D2PathTypeArg * pPathData) {
+static void PATH_ExtendPathEndpoint(D2PathTypeArg * pPathData) {
     uint32_t nX = (uint32_t)(uint16_t)pPathData->pCoords.nOffsetY;
     int nDeltaX = nX - (uint16_t)pPathData->pCoords.nOffsetX;
     int nDeltaY = (uint32_t)(uint16_t)pPathData->pCoords.nPosY - (uint32_t)(uint16_t)pPathData->pCoords.nPosX;
@@ -304,7 +304,7 @@ uint32_t PATH_CanMonsterPathInArea(D2UnitStrc * pUnit, uint16_t * pPathData) {
 }
 
 void __stdcall STRUCT_FreePath(D2PoolManagerStrc * pMemory, void * pPath) {
-    D2_FREE_POOL(pMemory, pPath);
+    D2_FREE_POOL_AT(pMemory, pPath, ".\\PATH\\Path.cpp", 0x3d9);
 }
 
 uint32_t __stdcall PATH_CalculateDistance(uint32_t nFromXfp, uint32_t nFromYfp, uint32_t nToXfp, uint32_t nToYfp) {
@@ -313,19 +313,19 @@ uint32_t __stdcall PATH_CalculateDistance(uint32_t nFromXfp, uint32_t nFromYfp, 
 }
 
 // Tests whether a single path step from nParam2 to nParam1 is passable for pDynamicPath's owner. If the path has flag 0x4 (teleport/move-collision update), directly calls UpdateCollision_Type and returns 1. Otherwise calls RemoveGetCollision_Type or RemoveGetCollision_Width (based on bbox flag 0x40000), accumulates the result into eCollisionFlag, and returns 1 (passable) or 0 (blocked) depending on collision bits 0x1/0x4.
-BOOL __stdcall PATH_CheckCollisionOnStep(uint32_t nParam1, uint32_t nParam2, D2DynamicPathStrc * pDynamicPath) {
+static BOOL __stdcall PATH_CheckCollisionOnStep(uint32_t nParam1, uint32_t nParam2, D2DynamicPathStrc * pDynamicPath) {
     eCollisionFlags eCheckCollisionPattern;
     eCollisionFlags eCollResult;
     if (pDynamicPath->nFlags & 4U) {
       D2UnitStrc* pDVar1;
       pDVar1 = pDynamicPath->pOwner;
-      if (pDVar1 && (pDVar1->eUnitType == UNIT_PLAYER || pDVar1 && pDVar1->eUnitType == UNIT_MONSTER)) {
-        Collision::UpdateCollision_Type(pDynamicPath->pRoom, nParam2 & 0xffff, (uint32_t)*(uint16_t*)((char*)&nParam2 + 2), pDynamicPath->pRoom, nParam1 & 0xffff, (uint32_t)*(uint16_t*)((char*)&nParam1 + 2), pDynamicPath->nUnitWidth, pDynamicPath->nCollisionFlag);
-        return 1;
+      if (!(pDVar1 && (pDVar1->eUnitType == UNIT_PLAYER || pDVar1 && pDVar1->eUnitType == UNIT_MONSTER))) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x209);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x209);
-      exit(-1);
+      Collision::UpdateCollision_Type(pDynamicPath->pRoom, nParam2 & 0xffff, (uint32_t)*(uint16_t*)((char*)&nParam2 + 2), pDynamicPath->pRoom, nParam1 & 0xffff, (uint32_t)*(uint16_t*)((char*)&nParam1 + 2), pDynamicPath->nUnitWidth, pDynamicPath->nCollisionFlag);
+      return 1;
     }
 
     uint32_t nBBoxFlag = pDynamicPath->nFlags & 0x40000;
@@ -355,7 +355,7 @@ BOOL __stdcall PATH_CheckCollisionOnStep(uint32_t nParam1, uint32_t nParam2, D2D
 }
 
 // Computes a direct (non-pathfound) movement velocity vector toward the current path target. Reads existing velocity into pVelOut[0/1]. If the path type is not 4, calculates the delta to the target waypoint in fixed-point; if both delta components are within the current speed magnitude, snaps the velocity exactly to the remaining delta and returns 1 (target reached this step). Otherwise leaves velocity unchanged and returns 0.
-BOOL __stdcall PATH_ComputeDirectMovementVector(int * pVelOut, int * pDynamicPath) {
+static BOOL __stdcall PATH_ComputeDirectMovementVector(int * pVelOut, int * pDynamicPath) {
     *pVelOut = *(int*)((int)pDynamicPath + 0x72);
     pVelOut[1] = *(int*)((int)pDynamicPath + 0x76);
     if (pDynamicPath[0xf] == 4) {
@@ -406,7 +406,7 @@ BOOL __stdcall PATH_ComputeDirectMovementVector(int * pVelOut, int * pDynamicPat
 
 // Traces a straight-line path from the dynamic path's current position by (nStartX, nStartY) fixed-point steps, checking collision at each cell transition via PATH_CheckCollisionOnStep. On collision writes the last valid cell centre into pFinalCoords and step count into pNumStepsTraced and returns 1; if the endpoint is reached without collision returns 0 with the full target coords. Optionally records each crossed cell in pDynamicPath->SaveCoords (flag 0x20000).
 // Stack-slot reuse: the nStartY slot holds the packed next cell (nextCellY << 16 | nextCellX) passed to PATH_CheckCollisionOnStep.
-BOOL __stdcall PATH_TraceCollisionPath(int32_t nStartX, uint32_t nStartY, uint32_t * pFinalCoords, uint32_t * pNumStepsTraced, D2DynamicPathStrc * pDynamicPath) {
+static BOOL __stdcall PATH_TraceCollisionPath(int32_t nStartX, uint32_t nStartY, uint32_t * pFinalCoords, uint32_t * pNumStepsTraced, D2DynamicPathStrc * pDynamicPath) {
     int iVar1;
     BOOL nStepResult;
     short int currentCellY;
@@ -474,7 +474,7 @@ BOOL __stdcall PATH_TraceCollisionPath(int32_t nStartX, uint32_t nStartY, uint32
     return 0;
 }
 
-void PATH_UpdateVelocityWithAcceleration(int32_t nParam, D2DynamicPathStrc * pDynamicPath) {
+static void PATH_UpdateVelocityWithAcceleration(int32_t nParam, D2DynamicPathStrc * pDynamicPath) {
     if (nParam < 1) {
       nParam = 0x400;
     }
@@ -541,7 +541,7 @@ uint32_t __stdcall PATH_RecalculatePath(D2UnitStrc * pUnit, int32_t nParam) {
 }
 
 // Returns non-zero if pDynamicPath has reached its target. For missile-type paths checks step count; for unit targets computes distance vs step size, and if the target (player/monster) has moved more than 5 tiles from the last recorded position triggers PATH_RecalculatePath. Returns 1 if at destination, 0 if in range of target, or recalculate result.
-uint32_t PATH_CheckIfTargetReached(D2DynamicPathStrc * pDynamicPath) {
+static uint32_t PATH_CheckIfTargetReached(D2DynamicPathStrc * pDynamicPath) {
     uint32_t bResult;
     int nDeltaY;
     D2PathPointStrc sTarget;
@@ -652,29 +652,29 @@ void __stdcall PATH_SetPathTarget(D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit) 
       exit(-1);
     } else {
       D2DynamicPathStrc* pSrcPath;
-      if (pTargetUnit) {
-        pSrcPath = pUnit->pPath.pDynamicPath;
-        pTargetPath = pTargetUnit->pPath.pDynamicPath;
-        if (pSrcPath->Coords.tSubtile.nPosX == pTargetPath->Coords.tSubtile.nPosX && pSrcPath->Coords.tSubtile.nPosY == pTargetPath->Coords.tSubtile.nPosY) {
-          pSrcPath->nFlags &= -9;
-        } else {
-          pSrcPath->nFlags |= 8;
-        }
-        if (pSrcPath->pRoom != pTargetPath->pRoom) {
-          pSrcPath->nFlags |= 1;
-        }
-
-        Drlg::Path::DRLGPATH_SetPathPosition(pTargetPath->Coords.tFixed.x, pTargetPath->Coords.tFixed.y, pTargetPath->pRoom, pSrcPath);
-        return;
+      if (!pTargetUnit) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x54f);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x54f);
-      exit(-1);
+      pSrcPath = pUnit->pPath.pDynamicPath;
+      pTargetPath = pTargetUnit->pPath.pDynamicPath;
+      if (pSrcPath->Coords.tSubtile.nPosX == pTargetPath->Coords.tSubtile.nPosX && pSrcPath->Coords.tSubtile.nPosY == pTargetPath->Coords.tSubtile.nPosY) {
+        pSrcPath->nFlags &= -9;
+      } else {
+        pSrcPath->nFlags |= 8;
+      }
+      if (pSrcPath->pRoom != pTargetPath->pRoom) {
+        pSrcPath->nFlags |= 1;
+      }
+
+      Drlg::Path::DRLGPATH_SetPathPosition(pTargetPath->Coords.tFixed.x, pTargetPath->Coords.tFixed.y, pTargetPath->pRoom, pSrcPath);
+      return;
     }
 }
 
 // Advances a dynamic path one sub-tile step. Calls PATH_ComputeDirectMovementVector to get the delta, adds it to the current sub-tile position, then calls PATH_TraceCollisionPath if the integer tile cell changed. On collision: if a mover monster owns the path, calls PATH_RecalculatePath; otherwise snaps direction registers. Writes the new sub-tile X/Y into pnOutX[0]/[1]. Returns true if the path is still in motion, false if stopped or collided without rerouting.
-bool __stdcall PATH_ComputeMovementStep(uint32_t * pnOutX, uint32_t * pnOutY, D2DynamicPathStrc * pSkillsTxt) {
+static bool __stdcall PATH_ComputeMovementStep(uint32_t * pnOutX, uint32_t * pnOutY, D2DynamicPathStrc * pSkillsTxt) {
     bool bVar3;
     uint32_t nRecalcResult;
     D2CoordStrc sVelocity;
@@ -725,7 +725,7 @@ bool __stdcall PATH_ComputeMovementStep(uint32_t * pnOutX, uint32_t * pnOutY, D2
     return true;
 }
 
-void PATH_ResetPathState(D2DynamicPathStrc * pDynamicPath) {
+static void PATH_ResetPathState(D2DynamicPathStrc * pDynamicPath) {
     Drlg::Path::DRLGPATH_SetPathPosition((pDynamicPath->Coords.tFixed.x & 0xffff0000U) + 0x8000, (pDynamicPath->Coords.tFixed.y & 0xffff0000U) + 0x8000, nullptr, pDynamicPath);
     pDynamicPath->nFlags &= -33;
     pDynamicPath->dwPathPoints = 0;
@@ -767,7 +767,7 @@ BOOL __stdcall PATH_AdvanceUnitAlongPath(D2UnitStrc * pUnit, int pExternalPath) 
 }
 
 // Commits a unit's collision footprint to its new tile position. Depending on path flags and whether nTargetPos is zero: removes, updates, or width-updates collision via the appropriate Collision helper; sets the room-change flag if the room changed; calls DRLGPATH_SetPathPosition to record the new fixed-point coordinates; and for non-zero targets validates the destination room (fatal error if none found). Resets path state afterward. Returns 1.
-BOOL __stdcall PATH_MoveUnitToPosition(D2RoomStrc * pRoom, uint32_t nTargetPos, D2DynamicPathStrc * pPath) {
+static BOOL __stdcall PATH_MoveUnitToPosition(D2RoomStrc * pRoom, uint32_t nTargetPos, D2DynamicPathStrc * pPath) {
     uint16_t uVar1;
     uint16_t uVar2;
     eCollisionFlags eNewCollision;
@@ -816,7 +816,7 @@ BOOL __stdcall PATH_MoveUnitToPosition(D2RoomStrc * pRoom, uint32_t nTargetPos, 
     return 1;
 }
 
-void __stdcall PATH_MoveObjectToPosition(D2RoomStrc * pRoom, uint32_t nTargetPos, uint32_t * pPath) {
+static int __stdcall PATH_MoveObjectToPosition(D2RoomStrc * pRoom, uint32_t nTargetPos, uint32_t * pPath) {
     uint16_t wPosX = *(uint16_t*)((int)pPath + 2);
     uint16_t wPosY = *(uint16_t*)((int)pPath + 6);
     if (!(int*)pPath[0xc] || *(int*)pPath[0xc] != 3) {
@@ -845,6 +845,7 @@ void __stdcall PATH_MoveObjectToPosition(D2RoomStrc * pRoom, uint32_t nTargetPos
     }
 
     PATH_ResetPathState((D2DynamicPathStrc*)pPath);
+    return 1;
 }
 
 BOOL __stdcall PATH_GetCollisionMaskAt(D2DynamicPathStrc * pDynamicPath, D2UnitStrc * pUnit, D2RoomStrc * pRoom, uint16_t wPosX, uint16_t wPosY) {

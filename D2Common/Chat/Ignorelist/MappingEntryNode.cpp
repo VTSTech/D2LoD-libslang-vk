@@ -12,7 +12,7 @@
 namespace D2Common::Chat::Ignorelist::MappingEntryNode {
 
 // @sourcefile .\Chat\Ignorelist.cpp
-void Destructor(::MappingEntryNode * pThis) {
+void __thiscall Destructor(::MappingEntryNode * pThis) {
     if (pThis->szMappedValue) {
       Storm::SMem::SMemFree(pThis->szMappedValue, ".\\Chat\\Ignorelist.cpp", 0x11, 0);
     }
@@ -21,7 +21,7 @@ void Destructor(::MappingEntryNode * pThis) {
 }
 
 // @sourcefile .\Chat\Ignorelist.cpp
-::MappingEntryNode * ScalarDeletingDestructor(::MappingEntryNode * pThis, uint32_t dwFlags) {
+::MappingEntryNode * __thiscall ScalarDeletingDestructor(::MappingEntryNode * pThis, uint32_t dwFlags) {
     if (pThis->szMappedValue) {
       Storm::SMem::SMemFree(pThis->szMappedValue, ".\\Chat\\Ignorelist.cpp", 0x11, 0);
     }
@@ -35,7 +35,7 @@ void Destructor(::MappingEntryNode * pThis) {
     return pThis;
 }
 
-::MappingEntryNode * Constructor(::MappingEntryNode * pThis, char * szMappedValue) {
+::MappingEntryNode * __thiscall Constructor(::MappingEntryNode * pThis, char * szMappedValue) {
     pThis->m_linktoslot.m_prevlink = 0;
     pThis->m_linktoslot.m_next = 0;
     pThis->m_linktofull.m_prevlink = 0;

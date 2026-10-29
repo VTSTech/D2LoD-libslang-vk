@@ -12,7 +12,6 @@
 #include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Chat.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -22,7 +21,6 @@ namespace Bnclient::BNGatewayAccess {
 int32_t __stdcall GetSystemTimeZone() {
     int32_t iVar1;
     _TIME_ZONE_INFORMATION tziInfo;
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     Storm::Source::SSystem::SMemZero(&tziInfo, 0xac);
     /* LPTIME_ZONE_INFORMATION lpTimeZoneInformation for GetTimeZoneInformation */ GetTimeZoneInformation(&tziInfo);
     LANGID langId = GetUserDefaultLangID();
@@ -30,7 +28,6 @@ int32_t __stdcall GetSystemTimeZone() {
       iVar1 = tziInfo.Bias;
     }
 
-    Fog::Debug::GuardStack();
     return iVar1;
 }
 
@@ -76,7 +73,7 @@ void __stdcall SaveAndUnload(D2BNetGatewayAccessStr * pGatewayAccess) {
     pGatewayAccess->pRealmsData = 0;
 }
 
-char * Nth(void * pThis, int nIndex) {
+char * __thiscall Nth(void * pThis, int nIndex) {
     char* szDataCursor = *(char**)((int)pThis + 0x10);
     if (!(szDataCursor && 0 < nIndex && nIndex <= *(int*)((int)pThis + 8))) {
       return (char*)pThis;
@@ -187,7 +184,7 @@ void __stdcall SetCurGateway(int32_t nParam1, int32_t nParam2) {
 // Load falls to UpdateGatewaysFromIni -> assert (see 0x518850).
 // An "Override.." value name sets bIsOverride=1 @0x51827f.
 // @sourcefile .\BNetGW.cpp
-void GetGatewayList(void * pThis, char * szText) {
+void __thiscall GetGatewayList(void * pThis, char * szText) {
     bool bRegReadResult;
     uint32_t* dwRegDataSize;
     int32_t nLine;
@@ -310,7 +307,7 @@ char * __stdcall SkipEOL(char * szText1, char * szText2) {
     return szText1;
 }
 
-char * __stdcall FindSection(char * szText1, char * szText2) {
+char * __thiscall FindSection(D2BNetGatewayAccessStr * pThis, char * szText1, char * szText2) {
     char* pIniCursor = szText1;
     char* pBufEnd = pIniCursor + strlen(pIniCursor);
     pIniCursor = pBufEnd + 1;
@@ -381,7 +378,7 @@ char * __stdcall FindKey(char * szText1, char * szText2) {
     return nullptr;
 }
 
-void PickClosestZone(void * pThis, int32_t nGmtMinutes) {
+void __thiscall PickClosestZone(void * pThis, int32_t nGmtMinutes) {
     // Frame slots -24..-4 are ONE object: &szStrtolEnd is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -542,7 +539,7 @@ void __stdcall Load(D2BNetGatewayAccessStr * pGatewayAccess) {
 // on a bad/empty buffer — the crash the 2nd shared-wineprefix client hits via the BNFTP path.
 // @sourcefile .\BNetGW.cpp
 void __stdcall UpdateGatewaysFromIni(D2BNetGatewayAccessStr * pClientSideData, char * szText) {
-    // Frame slots -48..-4 are ONE object: &nTmp4 is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -48..-8 are ONE object: &nTmp4 is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       char* nTmp4;
@@ -552,9 +549,8 @@ void __stdcall UpdateGatewaysFromIni(D2BNetGatewayAccessStr * pClientSideData, c
       uint32_t nGatewayIniIdx;
       char* nTmp1;
       char szKeyBuf[16];
-      uint32_t dwSecurityCookie;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 44, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 40, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     uint32_t nSize;
     uint32_t nIniVersion;
@@ -567,11 +563,10 @@ void __stdcall UpdateGatewaysFromIni(D2BNetGatewayAccessStr * pClientSideData, c
     char cCur;
     int nFieldLen;
     int32_t nLine;
-    __frame0.dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* pCur = szText;
     __frame0.nTmp2 = pCur + strlen(pCur);
     pCur = __frame0.nTmp2 + 1;
-    pCur = FindSection(szText, "Server List Version");
+    pCur = FindSection(pClientSideData, szText, "Server List Version");
     if (!pCur) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x277);
       exit(-1);
@@ -585,7 +580,6 @@ void __stdcall UpdateGatewaysFromIni(D2BNetGatewayAccessStr * pClientSideData, c
         nIniVersion = strtoul(pCur, &__frame0.nTmp4, 10);
         __frame0.nGatewayIniIdx = nIniVersion;
         if (nIniVersion <= pClientSideData->nFormatVersion) {
-          Fog::Debug::GuardStack();
           return;
         }
 
@@ -613,7 +607,7 @@ void __stdcall UpdateGatewaysFromIni(D2BNetGatewayAccessStr * pClientSideData, c
         pCur[1] = '0';
         pCur[2] = '\0';
         pCur += 3;
-        pIniKeyVal = FindSection(szText, "Server Gateways");
+        pIniKeyVal = FindSection(pClientSideData, szText, "Server Gateways");
         __frame0.nGatewayIniIdx = 1;
         sprintf(__frame0.szKeyBuf, "%d", 1);
         pZoneVal = FindKey(pIniKeyVal, __frame0.szKeyBuf);
@@ -622,7 +616,7 @@ void __stdcall UpdateGatewaysFromIni(D2BNetGatewayAccessStr * pClientSideData, c
           __frame0.nTmp1 += -(int)pZoneVal;
           Storm::Source::SSTR::SStrCopy(pCur, pZoneVal, (int32_t)(__frame0.nTmp1 + 1));
           __frame0.nTmp3 = pCur;
-          pZoneVal = FindSection(szText, pCur);
+          pZoneVal = FindSection(pClientSideData, szText, pCur);
           if (pZoneVal) {
             __frame0.nTmp1 = pCur + 1 + (int)__frame0.nTmp1;
             pCur = FindKey(pZoneVal, "ZONE");
@@ -661,18 +655,17 @@ void __stdcall UpdateGatewaysFromIni(D2BNetGatewayAccessStr * pClientSideData, c
         *pCur = '\0';
         pCur += 1 - (int)pRegMultiSzBuf;
         if ((int)pCur < (int)nSize) {
-          if (pRegMultiSzBuf[(int)(pCur - 1)] == '\0' && pRegMultiSzBuf[(int)(pCur - 2)] == '\0') {
-            pClientSideData->pGatewayData = pRegMultiSzBuf;
-            pClientSideData->nGatewayDataSize = (uint32_t)pCur;
-            PickClosestZone(pClientSideData, __frame0.nSystemGmtBias);
-            SaveAndUnload(pClientSideData);
-            Load(pClientSideData);
-            Fog::Debug::GuardStack();
-            return;
+          if (!(pRegMultiSzBuf[(int)(pCur - 1)] == '\0' && pRegMultiSzBuf[(int)(pCur - 2)] == '\0')) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e8);
+            exit(-1);
           }
 
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e8);
-          exit(-1);
+          pClientSideData->pGatewayData = pRegMultiSzBuf;
+          pClientSideData->nGatewayDataSize = (uint32_t)pCur;
+          PickClosestZone(pClientSideData, __frame0.nSystemGmtBias);
+          SaveAndUnload(pClientSideData);
+          Load(pClientSideData);
+          return;
         } else {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e6);
           exit(-1);

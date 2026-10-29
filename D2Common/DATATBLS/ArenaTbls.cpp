@@ -70,12 +70,12 @@ void __fastcall TXT_LoadArenaTxt(D2PoolManagerStrc * pMemory) {
 }
 
 D2ArenaTxt * __fastcall GetArenaTxtRecord(int32_t nArenaType) {
-    if (0 >= nArenaType) {
-      return sgpTxtArena + nArenaType;
+    if (!(0 >= nArenaType)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x41);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x41);
-    exit(-1);
+    return sgpTxtArena + nArenaType;
     return sgpTxtArena + nArenaType;
 }
 
@@ -85,7 +85,7 @@ void __stdcall FreeArenaTxt() {
 }
 
 // Builds sgCharTemplateLevelIndex (int[64]): for each CharTemplate level the index of its first row. Rows (stride 0xf0, level byte at +0x1f) must be sorted by ascending level; halts at line 0x5c otherwise.
-void __stdcall TXT_BuildCharTemplateLevelIndex(D2CharTemplateTxt * pCharTemplateTxt, int32_t nCount) {
+static void __stdcall TXT_BuildCharTemplateLevelIndex(D2CharTemplateTxt * pCharTemplateTxt, int32_t nCount) {
     memset(sgCharTemplateLevelIndex, 0, 0x100);
     uint32_t nPrevLevel = 0;
     int i = 0;
@@ -525,12 +525,12 @@ D2CharTemplateTxt * __fastcall TXT_CharTemplate_GetLine(int nTemplate, int nLeve
     } else {
       int iVar1;
       iVar1 = sgCharTemplateLevelIndex[nLevelIndex] - 1 + nTemplate;
-      if (iVar1 < nTxtCharTemplateSize) {
-        return sgpTxtCharTemplate + iVar1;
+      if (!(iVar1 < nTxtCharTemplateSize)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf8);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf8);
-      exit(-1);
+      return sgpTxtCharTemplate + iVar1;
     }
 }
 
@@ -541,12 +541,12 @@ uint32_t __fastcall GetClassFromCharTemplateTxt(int32_t nTemplate, int32_t nLeve
     } else {
       int nRowIdx;
       nRowIdx = sgCharTemplateLevelIndex[nLevel] - 1 + nTemplate;
-      if (nRowIdx < nTxtCharTemplateSize) {
-        return (uint32_t)sgpTxtCharTemplate[nRowIdx]._class;
+      if (!(nRowIdx < nTxtCharTemplateSize)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf8);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf8);
-      exit(-1);
+      return (uint32_t)sgpTxtCharTemplate[nRowIdx]._class;
     }
 }
 

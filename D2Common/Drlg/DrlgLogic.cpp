@@ -27,28 +27,28 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2DrlgCoordListStrc) == 0x34, "D2_NEW(D2DrlgCoordListStrc): the 32-bit layout must be the 0x34 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2DrlgCoordListStrc) == 0x34, "D2_NEW_AT(D2DrlgCoordListStrc): the 32-bit layout must be the 0x34 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2RoomCoordListStrc) == 0x30, "D2_NEW(D2RoomCoordListStrc): the 32-bit layout must be the 0x30 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2RoomCoordListStrc) == 0x30, "D2_NEW_AT(D2RoomCoordListStrc): the 32-bit layout must be the 0x30 bytes 1.14d allocates");
 
 
 namespace D2Common::Drlg::DrlgLogic {
 
 // @sourcefile .\DRLG\DrlgLogic.cpp
 D2DrlgCoordListStrc * __fastcall AllocEmptyDrlgCoordList_Unused(D2PoolManagerStrc * pMemory, D2RoomExStrc * pRoomEx) {
-    D2DrlgCoordListStrc* _Dst = D2_NEW_POOL(pMemory, D2DrlgCoordListStrc);
+    D2DrlgCoordListStrc* _Dst = D2_NEW_POOL_AT(pMemory, D2DrlgCoordListStrc, ".\\DRLG\\DrlgLogic.cpp", 0xdf);
     memset(_Dst, 0, 0x34);
     pRoomEx->pDrlgCoordList = _Dst;
     return _Dst;
@@ -57,7 +57,7 @@ D2DrlgCoordListStrc * __fastcall AllocEmptyDrlgCoordList_Unused(D2PoolManagerStr
 // @sourcefile .\DRLG\DrlgLogic.cpp
 void AllocEmptyRoomCoordList_Unused(D2PoolManagerStrc * pMemory, D2DrlgCoordListStrc * pDrlgCoordList, int32_t nSize) {
     pDrlgCoordList->nListSize = nSize;
-    D2RoomCoordListStrc* _Dst = (D2RoomCoordListStrc*)D2_ALLOC_POOL(pMemory, nSize * 0x30);
+    D2RoomCoordListStrc* _Dst = (D2RoomCoordListStrc*)D2_ALLOC_POOL_AT(pMemory, nSize * 0x30, ".\\DRLG\\DrlgLogic.cpp", 0xe9);
     pDrlgCoordList->pCoord = _Dst;
     memset(_Dst, 0, pDrlgCoordList->nListSize * 0x30);
 }
@@ -78,11 +78,11 @@ void __fastcall FreeDrlgCoordList(D2RoomExStrc * pRoomEx) {
     while (pRoomCoordList) {
       D2RoomCoordListStrc* pNextCoord;
       pNextCoord = pRoomCoordList->pNext;
-      D2_FREE_POOL(pMemory, pRoomCoordList);
+      D2_FREE_POOL_AT(pMemory, pRoomCoordList, ".\\DRLG\\DrlgLogic.cpp", 0x101);
       pRoomCoordList = pNextCoord;
     }
 
-    D2_FREE_POOL(pMemory, pDrlgCoordList);
+    D2_FREE_POOL_AT(pMemory, pDrlgCoordList, ".\\DRLG\\DrlgLogic.cpp", 0x106);
     pRoomEx->pDrlgCoordList = 0;
 }
 
@@ -129,7 +129,7 @@ void __fastcall InitializeDrlgCoordList(D2RoomExStrc * pRoomEx, int nMatchIndex,
 }
 
 // Sets grid flag 8 (door) for tiles with flag 4 and no orientation.
-void __stdcall DRLGLOGIC_SetGridDoorFlags(D2DrlgGridStrc * pGrid, D2RoomExStrc * pRoomEx) {
+static void __stdcall DRLGLOGIC_SetGridDoorFlags(D2DrlgGridStrc * pGrid, D2RoomExStrc * pRoomEx) {
     D2DrlgTileDataStrc* pTileData;
     D2DrlgTileGridStrc* pRoomTiles = pRoomEx->pRoomTiles;
     uint32_t nTileIndex = 0;
@@ -259,7 +259,7 @@ void __stdcall DRLGLOGIC_BuildCoordRegions(D2RoomExStrc * pRoomEx, D2DrlgCoordLi
           nOrientFlagsLow = nOrientFlags & 0xfffffff;
           nRowY = DrlgGrid::GetGridFlags(&pCoordList->sCoordIndexGrid, iCellX, nCellY);
           if (!nRowY) {
-            _Dst = D2_NEW_POOL(pMemory, D2RoomCoordListStrc);
+            _Dst = D2_NEW_POOL_AT(pMemory, D2RoomCoordListStrc, ".\\DRLG\\DrlgLogic.cpp", 0x201);
             memset(_Dst, 0, 0x30);
             _Dst->nIndex = nOrientFlagsLow;
             _Dst->bNode = (uint32_t)((nOrientFlags & 0x20000000) == 0x20000000);
@@ -367,13 +367,13 @@ void __fastcall AllocDrlgCoordList(D2RoomExStrc * pRoomEx) {
     D2RoomCoordListStrc* pCoord;
     D2DrlgLevelStrc* pLevel = pRoomEx->pLevel;
     D2PoolManagerStrc* pMemory = pLevel->pDrlg->pMemoryPool;
-    D2DrlgCoordListStrc* pCoordList = D2_NEW_POOL(pMemory, D2DrlgCoordListStrc);
+    D2DrlgCoordListStrc* pCoordList = D2_NEW_POOL_AT(pMemory, D2DrlgCoordListStrc, ".\\DRLG\\DrlgLogic.cpp", 0xdf);
     memset(pCoordList, 0, 0x34);
     pRoomEx->pDrlgCoordList = pCoordList;
     pCoordList->eFlags |= 1;
     pLevel->nLastRoomExCoordsIndex = 1;
     pCoordList->nListSize = 1;
-    pCoord = D2_NEW_POOL(pMemory, D2RoomCoordListStrc);
+    pCoord = D2_NEW_POOL_AT(pMemory, D2RoomCoordListStrc, ".\\DRLG\\DrlgLogic.cpp", 0xe9);
     pCoordList->pCoord = pCoord;
     memset(pCoord, 0, pCoordList->nListSize * 0x30);
     pCoordList->pCoord->nIndex = pLevel->nLastRoomExCoordsIndex;
@@ -459,17 +459,17 @@ D2RoomCoordListStrc * __fastcall DRLGLOGIC_GetCoordListFromSubtilePos(D2RoomExSt
 }
 
 D2RoomCoordListStrc * __fastcall GetCoordList(D2RoomExStrc * pRoomEx) {
-    if (pRoomEx->pDrlgCoordList) {
-      return pRoomEx->pDrlgCoordList->pCoord;
+    if (!pRoomEx->pDrlgCoordList) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2cd);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2cd);
-    exit(-1);
+    return pRoomEx->pDrlgCoordList->pCoord;
     return pRoomEx->pDrlgCoordList->pCoord;
 }
 
 // Links the DRLG coordinate-list grids of two adjacent rooms at border point (nX,nY). Looks up each room's coord-list grid index at the border point, validates that both grids exist, are different, belong to the same level, and share the same node flag, then calls InitializeDrlgCoordList to merge them. Halts fatally if pSrcRoom has no coord list.
-void __stdcall DRLGLOGIC_LinkCoordListEntry(int32_t nY, int32_t nX, D2RoomExStrc * pNeighborRoom, D2RoomExStrc * pSrcRoom) {
+static void __stdcall DRLGLOGIC_LinkCoordListEntry(int32_t nY, int32_t nX, D2RoomExStrc * pNeighborRoom, D2RoomExStrc * pSrcRoom) {
     int32_t nNeighborCoordIndex;
     int nDestIndex;
     int nSrcIndex;
@@ -524,7 +524,7 @@ void __stdcall DRLGLOGIC_LinkCoordListEntry(int32_t nY, int32_t nX, D2RoomExStrc
 }
 
 // Links coord lists at boundaries between this room and its near rooms.
-void DRLGLOGIC_LinkBorderCoordLists(D2RoomExStrc * pRoomEx) {
+static void DRLGLOGIC_LinkBorderCoordLists(D2RoomExStrc * pRoomEx) {
     int nCoordValue;
     int nNearIndex = 0;
     if (0 >= pRoomEx->nDrlgRoomsExNearCount) {
@@ -575,7 +575,7 @@ void __fastcall DRLGLOGIC_BuildRoomCoordList(D2RoomExStrc * pRoomEx, int nOrient
     D2PoolManagerStrc* pPoolManagerStrc = pLevel->pDrlg->pMemoryPool;
     D2DrlgGridStrc* nOrientGridFlagsSave = (D2DrlgGridStrc*)nOrientGridFlags;
     D2DrlgLevelStrc* pLevelCtx = pLevel;
-    D2DrlgCoordListStrc* pCoordListStrc = D2_NEW_POOL(pPoolManagerStrc, D2DrlgCoordListStrc);
+    D2DrlgCoordListStrc* pCoordListStrc = D2_NEW_POOL_AT(pPoolManagerStrc, D2DrlgCoordListStrc, ".\\DRLG\\DrlgLogic.cpp", 0xdf);
     memset(pCoordListStrc, 0, 0x34);
     pRoomEx->pDrlgCoordList = pCoordListStrc;
     DRLGLOGIC_SetGridDoorFlags(pGrid, pRoomEx);
@@ -601,7 +601,7 @@ void __fastcall DRLGLOGIC_BuildRoomCoordList(D2RoomExStrc * pRoomEx, int nOrient
     DrlgGrid::ResetGrid(&sLocalGrid);
     nCoordCount = sCoordCtx.nCoordIndex - nCoordIndexStart + 1;
     pCoordListStrc->nListSize = nCoordCount;
-    pAllocCoordArray = (D2RoomCoordListStrc*)D2_ALLOC_POOL(pPoolManagerStrc, nCoordCount * 0x30);
+    pAllocCoordArray = (D2RoomCoordListStrc*)D2_ALLOC_POOL_AT(pPoolManagerStrc, nCoordCount * 0x30, ".\\DRLG\\DrlgLogic.cpp", 0xe9);
     pCoordListStrc->pCoord = pAllocCoordArray;
     memset(pAllocCoordArray, 0, pCoordListStrc->nListSize * 0x30);
     pLevelCtx->nLastRoomExCoordsIndex += pCoordListStrc->nListSize;

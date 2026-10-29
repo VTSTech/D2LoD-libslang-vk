@@ -53,21 +53,20 @@
 #include "D2Client/UI/QuestLog.h"
 #include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/Quests/QUESTS/A4Q1.h"
 #include "Fog/Src/Safesock.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA4Q2Strc) == 0x4c, "D2_NEW(D2QuestDataA4Q2Strc): the 32-bit layout must be the 0x4c bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA4Q2Strc) == 0x4c, "D2_NEW_AT(D2QuestDataA4Q2Strc): the 32-bit layout must be the 0x4c bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpSUnitIterateCallback
@@ -77,10 +76,6 @@ typedef void (__fastcall *fpSUnitIterateCallback)(::SGAMEDATA * pGame, D2UnitStr
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A4Q2 {
@@ -196,12 +191,13 @@ bool __fastcall Q27_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 
 // [A4Q3 Terror's End] SequenceFilter: when the quest log is first opened and quest not yet started (nStateFlag==0) but introduced, bump internal nStateFlag to 1 (quest now in-progress / step0x02 displayable).
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q2.cpp
-void __fastcall Q27_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q27_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (!(!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction)) {
-      return;
+      return true;
     }
 
     QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x91);
+    return true;
 }
 
 // [A4Q3 Terror's End] Per-player: mirror the internal nStateFlag progress into the persisted QUEST_TerrorsEnd record. nStateFlag 2 -> set Step0x02; nStateFlag 3 -> Step0x03 (if prev set) else Step0x04. No-op once quest Completed.
@@ -237,7 +233,7 @@ BOOL __fastcall Q27_PlayerUpdateTerrorsEndState(::SGAMEDATA * pGame, D2UnitStrc 
 }
 
 // [A4Q3 Terror's End — expansion] Spawn the red Pandemonium town portal (object class 0x236) next to Diablo's corpse / Tyrael: find a spawnable tile +5x from target, CreateUnit the portal, clear bExpansionPortalCheck and set bPortalSpawned. This is the portal back to the Pandemonium Fortress shown after Diablo dies in LoD.
-void __stdcall Q27_SpawnDiabloPortal(D2QuestArgStrc * pQuestArgs, D2QuestDataA4Q2Strc * pQuestSpecificData) {
+static void __stdcall Q27_SpawnDiabloPortal(D2QuestArgStrc * pQuestArgs, D2QuestDataA4Q2Strc * pQuestSpecificData) {
     D2RoomStrc* pRoom;
     D2UnitStrc* pPortalUnit;
     uint32_t nScanRadius;
@@ -515,7 +511,6 @@ BOOL __fastcall Q27_PlayerEnterGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
       sPacket5D.nAlertFlags = '\x01';
       sPacket5D.nFilterStatus = '\0';
       GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, &sPacket5D);
-      Fog::Debug::GuardStack();
       return 0;
     }
 
@@ -523,7 +518,6 @@ BOOL __fastcall Q27_PlayerEnterGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
     sPacket50.nMessageType = 0x17;
     pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x1da);
     GAME::SCmd::NET_D2GS_SERVER_Send_0x50_QuestSpecial(pClient, &sPacket50);
-    Fog::Debug::GuardStack();
     return 0;
 }
 
@@ -617,7 +611,7 @@ uint8_t __fastcall QuitGameAfterDia(::SGAMEDATA * pGame, D2QuestDataStrc * pQues
 
 // [A4Q3 Terror's End] Mark QUEST_TerrorsEnd done for one player's record: set JustCompleted + Completed, clear step states. Classic (non-expansion): also set steps 0x06/0x07 and bump client status to 4 (act complete / go-to-credits). Increments a counter in the A4Q2 quest struct.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q2.cpp
-void __stdcall Q27_SetTerrorsEndCompleted(D2BitBufferStrc * pBitBuffer, ::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+static void __stdcall Q27_SetTerrorsEndCompleted(D2BitBufferStrc * pBitBuffer, ::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2ClientStrc* pClient;
     /* SetQuestState(TerrorsEnd, JustCompleted=0xd) — Diablo just died self game
                           */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_JustCompleted);
@@ -913,7 +907,7 @@ BOOL __fastcall Q27_GetAllSealsActivated(::SGAMEDATA * pGame) {
 }
 
 // [A4Q3 Terror's End] All-seals-activated trigger. Sets the seals-done flag, notifies players (event 0xc), then walks every room of Act IV's Chaos Sanctuary and force-kills all neutral living monsters (except Diablo 0xf3) — i.e. clears the seal bosses' minions when the final seal is hit, summoning Diablo.
-void __stdcall Q27_ActivateAllSealsKillChaos(int * pQuestSpecificData, ::SGAMEDATA * pGame) {
+static void __stdcall Q27_ActivateAllSealsKillChaos(int * pQuestSpecificData, ::SGAMEDATA * pGame) {
     D2UnitStrc* pUnit;
     D2RoomStrc* pRoom;
     BOOL bMonDead;
@@ -1059,9 +1053,9 @@ void __fastcall Q27_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->nInitNo = 4;
     pQuestData->fpStatusFilter = 0;
     pQuestData->fpActiveFilter = Q27_ActiveFilter;
-    D2QuestDataA4Q2Strc* pQuestSpecificData = D2_NEW_POOL(pSVar1->pMemoryPool, D2QuestDataA4Q2Strc);
+    D2QuestDataA4Q2Strc* pQuestSpecificData = D2_NEW_POOL_AT(pSVar1->pMemoryPool, D2QuestDataA4Q2Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x418);
     pQuestData->pQuestSpecificData.pA4Q2 = pQuestSpecificData;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q27_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q27_SequenceFilter;
     memset(pQuestSpecificData, 0, 0x4c);
 }
 

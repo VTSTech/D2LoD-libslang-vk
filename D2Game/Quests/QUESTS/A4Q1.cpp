@@ -39,21 +39,16 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA4Q1Strc) == 0x1c, "D2_NEW(D2QuestDataA4Q1Strc): the 32-bit layout must be the 0x1c bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA4Q1Strc) == 0x1c, "D2_NEW_AT(D2QuestDataA4Q1Strc): the 32-bit layout must be the 0x1c bytes 1.14d allocates");
 
-
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
-#endif
 
 namespace D2Game::Quests::QUESTS::A4Q1 {
 
@@ -115,23 +110,24 @@ BOOL __fastcall Q26_PlayerUpdateFallenAngelState(::SGAMEDATA * pGame, D2UnitStrc
 }
 
 // Q26_SequenceFilter — chains to the prerequisite quest's filter (nSequenceQuestId = QUEST_SpokeToTyrael). Runs only when this quest's stateflag==5 (finalized) or post-introduction; validates the linked quest's fpSequenceFilter ptr (halts on bad ptr) then invokes it. Propagates Fallen Angel completion into the Act 4 quest sequence/Tyrael dialog gating.
-void __fastcall Q26_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q26_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pQuestData_00) {
-      return;
+      return false;
     }
 
-    BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData_00->fpSequenceFilter);
-    if (BVar1) {
+    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData_00->fpSequenceFilter);
+    if (BVar2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa1);
       exit(-1);
     }
 
-    pQuestData_00->fpSequenceFilter(pQuestData_00);
+    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+    return bVar1;
 }
 
 // Q26_PlayerNotifyCompleted — completion-notify predicate+send (callback for QUEST_SetStateAndBroadcast). Sends quest-update packet 0x16 to a player only if the Fallen Angel quest is Completed-or-FinishedInPreviousGame AND not (JustCompleted) AND not (CannotCompleteQuestInGame); otherwise no-op. Pushes the finished UI update to relevant players.
@@ -548,9 +544,9 @@ void __fastcall Q26_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->nInitNo = 4;
     pQuestData->fpStatusFilter = 0;
     pQuestData->fpActiveFilter = Q26_ActiveFilter;
-    D2QuestDataA4Q1Strc* pQuestSpecificData = D2_NEW_POOL(pSVar1->pMemoryPool, D2QuestDataA4Q1Strc);
+    D2QuestDataA4Q1Strc* pQuestSpecificData = D2_NEW_POOL_AT(pSVar1->pMemoryPool, D2QuestDataA4Q1Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q1.cpp", 0x2a0);
     pQuestData->pQuestSpecificData.pA4Q1 = pQuestSpecificData;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q26_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q26_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_SpokeToTyrael;
     pQuestSpecificData->field_0x00 = 0;
     pQuestSpecificData->ptIzualDeath.x = 0;

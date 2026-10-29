@@ -915,7 +915,7 @@ int32_t __fastcall fAPPMODE_multiplayer_ReturnAppMode_Caller(D2IniConfigStrc * p
 }
 
 // Handles the /reply command for out-of-game chat. Parses the reply target from gszOogReplyCommandBuffer, validates token count is exactly 2 (command + message), and formats a whisper message ("/w *target message") to send via the network interface. Shows error messages if no reply target exists or if command syntax is incorrect.
-uint32_t OOGUTIL_HandleReplyCommand(char * szText1, char * szText2) {
+static uint32_t OOGUTIL_HandleReplyCommand(char * szText1, char * szText2) {
     int nTokenCount;
     uint16_t* pwszErrorMsg;
     char szCommandBuffer[256];
@@ -1150,7 +1150,7 @@ void __fastcall OOGUTIL_HandleChatCommands(char * szText) {
     pwszMsg = wszNameWide;
     pwszFmtTemplate = D2Lang::StrTable::strtable::GetLocaleString(nErrorStrId);
     print_ignore_result:
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x208, wszFormatBuffer, pwszFmtTemplate, (uint16_t*)pwszMsg);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x208, wszFormatBuffer, pwszFmtTemplate, pwszMsg);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszOutputBuffer, wszFormatBuffer);
     ChatDlg::CHATDLG_AppendTextToTextBox(wszOutputBuffer, 3);
 }
@@ -1269,7 +1269,12 @@ int __stdcall OOGUTIL_SendChatMessageWide(uint16_t * wszText) {
 }
 
 char * __fastcall OOGUTIL_GetStringEnd(char * szText) {
-    if (szText) {
+    if (!szText) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xad);
+      exit(-1);
+    }
+
+    {
       char cVar1;
       cVar1 = *szText;
       while (cVar1 != '\0') {
@@ -1279,9 +1284,6 @@ char * __fastcall OOGUTIL_GetStringEnd(char * szText) {
 
       return szText + 1;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xad);
-    exit(-1);
 }
 
 uint32_t __fastcall OOGUTIL_CheckCharacterLevel(uint8_t * pszLevelChars) {
@@ -1422,7 +1424,7 @@ void __stdcall OOGMENU_RequestGameInfo() {
     gnPendingGameInfoCharIndex = -1;
 }
 
-void OOGUTIL_Unused2(int32_t nEntryIndex) {
+static void OOGUTIL_Unused2(int32_t nEntryIndex) {
     char byChar;
     if (!gpOogGameListDetailsPanelControl) {
       return;
@@ -2065,7 +2067,7 @@ BOOL __stdcall OOGUTIL_OnPressDifficultyHell(D2ControlMsg * pControlMsg) {
 // Copies szCharacterName (the clicked chat user's character name) into gszProfileCharacterName and stores nHardcoreFlag / nExpansionFlag (the clicked
 // D2ChannelUserStrc nHardcoreFlag +0xa0 / nExpansionFlag +0xa8, via COMCALLBACK_HandleUserListClick) into
 // gnProfileUserHardcoreFlag / gnProfileUserExpansionFlag, which OOGUTIL_OnPressProfileLadder (00443ef0) reads to open the matching ladder and request that character's rank.
-void __stdcall OOGUTIL_SetProfileUser(int nHardcoreFlag, int nExpansionFlag, char * szCharacterName) {
+static void __stdcall OOGUTIL_SetProfileUser(int nHardcoreFlag, int nExpansionFlag, char * szCharacterName) {
     char cChar;
     int nDestOffset = (int)gszProfileCharacterName - (int)szCharacterName;
     do {
@@ -2745,9 +2747,10 @@ void __stdcall OOGMENU_RequestGameList() {
     LastGameRequestId = CreateJoinGameRequestId;
 }
 
-void __stdcall OOGUTIL_SendGamePassword(DWORD dwParam1, DWORD dwParam2, char * szText) {
+BOOL __stdcall OOGUTIL_SendGamePassword(DWORD dwParam1, DWORD dwParam2, char * szText) {
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetSelectedLine(gpOOGGameListTextBox, -1);
-    OOGUTIL_SendPasswordPacket(dwParam1, dwParam2, szText);
+    BOOL BVar1 = OOGUTIL_SendPasswordPacket(dwParam1, dwParam2, szText);
+    return BVar1;
 }
 
 int __stdcall EDITBOX_Cb_OOGUTIL_SetJoinGameError(void * pUnknown) {
@@ -3802,7 +3805,12 @@ void __stdcall OOGUTIL_AppendChatText(uint16_t * wszText) {
     uint16_t* pwszMatch;
     int32_t iVar1;
     int32_t nLength = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
-    if (nLength < 500) {
+    if (!(nLength < 500)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x300);
+      exit(-1);
+    }
+
+    {
       uint16_t* pwszNewlineToken;
       pwszNewlineToken = D2Lang::StrTable::strtable::GetLocaleString(0xf9a);
       nLength = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszNewlineToken);
@@ -3815,9 +3823,6 @@ void __stdcall OOGUTIL_AppendChatText(uint16_t * wszText) {
 
       return;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x300);
-    exit(-1);
 }
 
 int __fastcall OOGUTIL_ValidateStringFilter(DWORD dwUnused, char * szText) {

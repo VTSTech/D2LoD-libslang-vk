@@ -8,12 +8,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
 
@@ -30,7 +30,7 @@ void __fastcall Free(D2QSQueueStrc * pPoolManager) {
     D2QSQueueEntryStrc* pDVar1 = pPoolManager->pHead;
     while (pDVar1) {
       pDVar1 = pDVar1->pNext;
-      D2_FREE(pPoolManager->pHead);
+      D2_FREE_AT(pPoolManager->pHead, ".\\Src\\D2QSQueue.cpp", 0x27);
       pPoolManager->pHead = pDVar1;
     }
 
@@ -53,7 +53,7 @@ void __fastcall FOG_EnqueueMessage(D2QSQueueStrc * pClientSideData, void * pPara
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pClientSideData->csLock);
-    D2QSQueueEntryStrc* puMsgEntry = (D2QSQueueEntryStrc*)D2_ALLOC(wMsgSize + 8);
+    D2QSQueueEntryStrc* puMsgEntry = (D2QSQueueEntryStrc*)D2_ALLOC_AT(wMsgSize + 8, ".\\Src\\D2QSQueue.cpp", 0x4e);
     puMsgEntry->wMsgSize = wMsgSize;
     puMsgEntry->pNext = 0;
     memcpy(puMsgEntry + 1, pParam, (uint32_t)wMsgSize);
@@ -83,7 +83,7 @@ uint32_t __fastcall D2QSQUEUE_Dequeue(D2QSQueueStrc * pdwParam, void * pParam, i
       }
 
       iNextEntry = iNextEntry->pNext;
-      D2_FREE(pdwParam->pHead);
+      D2_FREE_AT(pdwParam->pHead, ".\\Src\\D2QSQueue.cpp", 0x78);
       pdwParam->pHead = iNextEntry;
       if (!iNextEntry) {
         pdwParam->pTail = 0;

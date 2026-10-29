@@ -76,7 +76,6 @@
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -112,8 +111,8 @@ int32_t __fastcall FindEndOfString(char * szString, int32_t nMaxSize) {
     return (int)pPosition - (int)szString;
 }
 
-void __stdcall PLAYERSAVE2_LoadOldSavegame_ReturnZero() {
-
+int __stdcall PLAYERSAVE2_LoadOldSavegame_ReturnZero() {
+    return 0;
 }
 
 // Returns the 1-based index of the carried item matching nItemGUID in the player's inventory list, by iterating INVENTORY_GetFirstItem/GetNextItem/GetCarriedItem. Returns 0 if GUID is -1, inventory is null, or item not found. Halts with an internal error if the index would exceed 0x7FFE.
@@ -145,12 +144,12 @@ int16_t __fastcall GetItemIndexInList(::SGAMEDATA * pGame, D2UnitStrc * pUnit, i
       nItemIdx++;
     }
 
-    if (0x7ffe >= nItemIdx) {
-      return (int16_t)nItemIdx;
+    if (!(0x7ffe >= nItemIdx)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x185);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x185);
-    exit(-1);
+    return (int16_t)nItemIdx;
     return (int16_t)nItemIdx;
 }
 
@@ -248,7 +247,6 @@ int32_t __fastcall SaveHeader(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD * p
         if (0 < iVar3) {
           nRequiredEndAddr = nStartAddress + 0x14f;
           if (pEndAddress < nRequiredEndAddr) {
-            Fog::Debug::GuardStack();
             return 1;
           }
 
@@ -363,13 +361,11 @@ int32_t __fastcall SaveHeader(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD * p
           *(short int*)pDstDword = (short int)*pSrcDword;
           *(uint8_t*)((int)pDstDword + 2) = *(uint8_t*)((int)pSrcDword + 2);
           *(uint32_t*)pStartPtr = nRequiredEndAddr;
-          Fog::Debug::GuardStack();
           return 0;
         }
       }
     }
 
-    Fog::Debug::GuardStack();
     return 2;
 }
 
@@ -808,7 +804,6 @@ int __fastcall MakeSaveFile(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint8_t * p
     size_t nSaveFileSize;
     DWORD dwCrc;
     char* pItemsDryRunEnd;
-    __frame0.nItemsTempEnd = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     DWORD pEndAddress = nBufferSize + (int)pSaveBuffer;
     __frame0.pStartAddress = (DWORD)pSaveBuffer;
     char* pTempCursor = __frame0.itemsTempBuf;
@@ -848,7 +843,6 @@ int __fastcall MakeSaveFile(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint8_t * p
                           *(size_t*)(pSaveBuffer + 8) = nSaveFileSize;
                           dwCrc = Fog::Save::CalculateChecksum(pSaveBuffer, nSaveFileSize);
                           *(DWORD*)(pSaveBuffer + 0xc) = dwCrc;
-                          Fog::Debug::GuardStack();
                           return 0;
                         }
                       }
@@ -863,7 +857,6 @@ int __fastcall MakeSaveFile(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint8_t * p
     }
 
     *nStartOffset = 0;
-    Fog::Debug::GuardStack();
     return nItemsSpaceAvail;
 }
 
@@ -959,7 +952,7 @@ void __fastcall PLAYERSAVE_LinkPlayerToUnit(::SGAMEDATA * pGame, D2UnitStrc * pU
 }
 
 // Bootstraps a brand-new player unit for a connecting client: creates the unit, links it to the client, sends the init packet, places starting items, sets default left/right skills to Attack, then selects the class-specific start skill from CharStats.txt if present. Fires QUEST_OnPlayerJoinGame for act-0 quests. Outputs the created unit pointer.
-int32_t __stdcall PLAYERSAVE_CreateNewCharacter(D2ClientStrc * pSaveContext, ::SGAMEDATA * pGameStrc, D2UnitStrc * * dwArg1) {
+static int32_t __stdcall PLAYERSAVE_CreateNewCharacter(D2ClientStrc * pSaveContext, ::SGAMEDATA * pGameStrc, D2UnitStrc * * dwArg1) {
     D2SkillStrc* pDVar1;
     uint32_t nActId;
     int32_t nClassIdx;
@@ -1541,7 +1534,7 @@ D2UnitStrc * __fastcall LoadMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Merc
 }
 
 // Loads a mercenary's equipped items from the save buffer into the given merc unit (expansion-only, magic 0x666a). Calls PLRSAVE_LoadItemsFromBuffer, then recalculates the merc's inventory stats and sets HP to max if the merc is alive. Skipped entirely in classic (non-expansion) games.
-int LoadMerc2(void * pThis, D2UnitStrc * pUnit, D2UnitStrc * * ppUnit, D2UnitStrc * pUnit2, uint32_t nParam, int * pnParam) {
+int __thiscall LoadMerc2(void * pThis, D2UnitStrc * pUnit, D2UnitStrc * * ppUnit, D2UnitStrc * pUnit2, uint32_t nParam, int * pnParam) {
     BOOL bIsDead;
     int32_t nValue;
     D2UnitStrc* pMercUnit = pUnit2;

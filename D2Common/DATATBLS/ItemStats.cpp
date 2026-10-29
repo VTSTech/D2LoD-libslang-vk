@@ -195,7 +195,7 @@ int * __stdcall thunk_UNIT_GetStateList_StateFlags(D2UnitStrc * pUnit) {
     return piVar1;
 }
 
-BOOL STATES_HasMatchingStateFlag(D2UnitStrc * pUnit, D2StatesDataTbls * pStatesData) {
+static BOOL STATES_HasMatchingStateFlag(D2UnitStrc * pUnit, D2StatesDataTbls * pStatesData) {
     int32_t nStateFlags = (int32_t)Stats::StatsEx::GetStateFlags(pUnit);
     if (!nStateFlags) {
       return 0;

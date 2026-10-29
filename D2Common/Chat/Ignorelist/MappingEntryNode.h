@@ -18,9 +18,9 @@ namespace D2Common::Chat::Ignorelist::MappingEntryNode {
 
 // Function declarations
 // @sourcefile .\Chat\Ignorelist.cpp
-void Destructor(::MappingEntryNode * pThis);
+void __thiscall Destructor(::MappingEntryNode * pThis);
 // @sourcefile .\Chat\Ignorelist.cpp
-::MappingEntryNode * ScalarDeletingDestructor(::MappingEntryNode * pThis, uint32_t dwFlags);
-::MappingEntryNode * Constructor(::MappingEntryNode * pThis, char * szMappedValue);
+::MappingEntryNode * __thiscall ScalarDeletingDestructor(::MappingEntryNode * pThis, uint32_t dwFlags);
+::MappingEntryNode * __thiscall Constructor(::MappingEntryNode * pThis, char * szMappedValue);
 
 } // namespace D2Common::Chat::Ignorelist::MappingEntryNode

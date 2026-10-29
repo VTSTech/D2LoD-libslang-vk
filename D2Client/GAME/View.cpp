@@ -50,19 +50,19 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2GameViewStrc) == 0xeabc, "D2_NEW(D2GameViewStrc): the 32-bit layout must be the 0xeabc bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2GameViewStrc) == 0xeabc, "D2_NEW_AT(D2GameViewStrc): the 32-bit layout must be the 0xeabc bytes 1.14d allocates");
 
 
 namespace D2Client::GAME::View {
@@ -304,18 +304,18 @@ void __stdcall VIEW_InitLookupTables() {
       if (!gpViewPalByteTable32x16) {
         if (!gpViewPalByteTable16x32) {
           if (!gpViewPalPointerTable32x32) {
-            if (!gpViewPalByteTable32x40) {
-              D2Win::Src::D2WinPalette::D2WINPAL_CopyPalette(gPaletteTransitionTable);
-              gpViewPalPointerTable32x8 = VIEW_AllocPalettePointerTable(0x20, 8);
-              gpViewPalByteTable32x16 = VIEW_AllocByteTable(0x20, 0x10);
-              gpViewPalByteTable16x32 = VIEW_AllocByteTable(0x20, 0x20);
-              gpViewPalPointerTable32x32 = VIEW_AllocPalettePointerTable2(0x20, 0x20);
-              gpViewPalByteTable32x40 = VIEW_AllocByteTable(0x20, 0x28);
-              return;
+            if (gpViewPalByteTable32x40) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xce);
+              exit(-1);
             }
 
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xce);
-            exit(-1);
+            D2Win::Src::D2WinPalette::D2WINPAL_CopyPalette(gPaletteTransitionTable);
+            gpViewPalPointerTable32x8 = VIEW_AllocPalettePointerTable(0x20, 8);
+            gpViewPalByteTable32x16 = VIEW_AllocByteTable(0x20, 0x10);
+            gpViewPalByteTable16x32 = VIEW_AllocByteTable(0x20, 0x20);
+            gpViewPalPointerTable32x32 = VIEW_AllocPalettePointerTable2(0x20, 0x20);
+            gpViewPalByteTable32x40 = VIEW_AllocByteTable(0x20, 0x28);
+            return;
           } else {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcd);
             exit(-1);
@@ -362,40 +362,40 @@ void __stdcall VIEW_FreeLookupTables() {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfd);
       exit(-1);
     } else {
-      if (gpViewPalByteTable32x40) {
-        D2MEM_VirtualFree(gpViewPalPointerTable32x8);
-        if (gpViewPalByteTable32x16) {
-          D2MEM_VirtualFree(gpViewPalByteTable32x16);
-        }
-        if (gpViewPalByteTable16x32) {
-          D2MEM_VirtualFree(gpViewPalByteTable16x32);
-        }
-        if (gpViewPalPointerTable32x32) {
-          D2MEM_VirtualFree(gpViewPalPointerTable32x32);
-        }
-        if (gpViewPalByteTable32x40) {
-          D2MEM_VirtualFree(gpViewPalByteTable32x40);
-        }
-
-        gpViewPalPointerTable32x8 = 0;
-        gpViewPalByteTable32x16 = 0;
-        gpViewPalByteTable16x32 = 0;
-        gpViewPalPointerTable32x32 = 0;
-        gpViewPalByteTable32x40 = 0;
-        gnSoundShakeVolume = 0;
-        VIEW_FreeDC6Images();
-        return;
+      if (!gpViewPalByteTable32x40) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfe);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfe);
-      exit(-1);
+      D2MEM_VirtualFree(gpViewPalPointerTable32x8);
+      if (gpViewPalByteTable32x16) {
+        D2MEM_VirtualFree(gpViewPalByteTable32x16);
+      }
+      if (gpViewPalByteTable16x32) {
+        D2MEM_VirtualFree(gpViewPalByteTable16x32);
+      }
+      if (gpViewPalPointerTable32x32) {
+        D2MEM_VirtualFree(gpViewPalPointerTable32x32);
+      }
+      if (gpViewPalByteTable32x40) {
+        D2MEM_VirtualFree(gpViewPalByteTable32x40);
+      }
+
+      gpViewPalPointerTable32x8 = 0;
+      gpViewPalByteTable32x16 = 0;
+      gpViewPalByteTable16x32 = 0;
+      gpViewPalPointerTable32x32 = 0;
+      gpViewPalByteTable32x40 = 0;
+      gnSoundShakeVolume = 0;
+      VIEW_FreeDC6Images();
+      return;
     }
 }
 
 // @sourcefile .\GAME\View.cpp
 void __fastcall FreeGameView(D2GameViewStrc * pGameView) {
     Wall2::FreeWall2(pGameView);
-    D2_FREE(pGameView);
+    D2_FREE_AT(pGameView, ".\\GAME\\View.cpp", 0x141);
 }
 
 void __fastcall SetFlag0x1(D2GameViewStrc * pGameView) {
@@ -608,45 +608,12 @@ void __stdcall DRAW_Overlay_ArcaneStars() {
 }
 
 // Draws Ancients arena background with parallax scrolling summit (summit01.dc6, 4-tile wrap) and animated clouds (cloud01.dc6, 10 instances with RNG positions/velocities). Cloud positions stored in gAncientsBackgroundCellPtrs array. Scroll offset calculated from player X position delta divided by 8. Supports 800x600 and higher resolutions.
-void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
+static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
     // Static local variables (originally global data)
     static D2SeedStrc * gpAncientsCloudSeed = (D2SeedStrc *)&gAncientsCloudSeed; D2_STATIC_GUARD(gpAncientsCloudSeed, "D2Client::GAME::View::DRAW_Background_Ancients::gpAncientsCloudSeed");
-    static int gaAncientsCloudYPos[10] = {
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-}; D2_STATIC_GUARD(gaAncientsCloudYPos, "D2Client::GAME::View::DRAW_Background_Ancients::gaAncientsCloudYPos");
-    static int gaAncientsCloudVelocities[10] = {
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-}; D2_STATIC_GUARD(gaAncientsCloudVelocities, "D2Client::GAME::View::DRAW_Background_Ancients::gaAncientsCloudVelocities");
-    static int gaAncientsCloudXPos[10] = {
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-}; D2_STATIC_GUARD(gaAncientsCloudXPos, "D2Client::GAME::View::DRAW_Background_Ancients::gaAncientsCloudXPos");
+    static int gaAncientsCloudYPos[10] = {}; D2_STATIC_GUARD(gaAncientsCloudYPos, "D2Client::GAME::View::DRAW_Background_Ancients::gaAncientsCloudYPos");
+    static int gaAncientsCloudVelocities[10] = {}; D2_STATIC_GUARD(gaAncientsCloudVelocities, "D2Client::GAME::View::DRAW_Background_Ancients::gaAncientsCloudVelocities");
+    static int gaAncientsCloudXPos[10] = {}; D2_STATIC_GUARD(gaAncientsCloudXPos, "D2Client::GAME::View::DRAW_Background_Ancients::gaAncientsCloudXPos");
     static uint8_t gbAncientsCloudInitialized; D2_STATIC_GUARD_BSS(gbAncientsCloudInitialized, "D2Client::GAME::View::DRAW_Background_Ancients::gbAncientsCloudInitialized");
     static int gnAncientsScrollDelta; D2_STATIC_GUARD_BSS(gnAncientsScrollDelta, "D2Client::GAME::View::DRAW_Background_Ancients::gnAncientsScrollDelta");
     static uint8_t gbAncientsScrollBaseXSet; D2_STATIC_GUARD_BSS(gbAncientsScrollBaseXSet, "D2Client::GAME::View::DRAW_Background_Ancients::gbAncientsScrollBaseXSet");
@@ -836,7 +803,7 @@ void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
 }
 
 // Adjusts the looping screen-shake rumble sound (SOUND_BABOONDEMON_HIT_4) to match the current shake intensity. Converts nShakeIntensity (0–20) to a 0–255 target volume, starts the channel if not already playing, stops it if volume reaches 0, otherwise ramps the current volume toward the target by ±6 per call via SOUND_SetChannelPriority.
-void SHAKE_UpdateShakeSoundVolume(int32_t nShakeIntensity) {
+static void SHAKE_UpdateShakeSoundVolume(int32_t nShakeIntensity) {
     uint32_t nNewVolume;
     uint32_t nTargetVolume;
     nTargetVolume = nShakeIntensity * 0xff / 0x14;
@@ -933,25 +900,25 @@ D2GameViewStrc * __stdcall AllocGameView() {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11a);
       exit(-1);
     } else {
-      if (gpViewPalByteTable16x32) {
-        pGameView = D2_NEW(D2GameViewStrc);
-        /* int yBottom for SetRect */ /* int xRight for SetRect */ /* int yTop for SetRect */ /* int xLeft for SetRect */ /* LPRECT lprc for SetRect */ SetRect(&pGameView->pView, 0, 0, 0, 0);
-        pPalByteTable16x32 = gpViewPalByteTable16x32;
-        pPalByteTable32x16 = gpViewPalByteTable32x16;
-        pPalPointerTable = gpViewPalPointerTable32x8;
-        pGameView->nFlags = 0;
-        pGameView->pPalPointerTable32x8 = pPalPointerTable;
-        pGameView->pPalByteTable32x16 = pPalByteTable32x16;
-        pGameView->pPalByteTable16x32 = pPalByteTable16x32;
-        Wall2::WALL2_OnAllocGameView_NoOp();
-        Wall2::ResetWall2Data(pGameView);
-        pGameView->nFlags |= 1;
-        gnLastLightmapUpdateFrame = 0;
-        return pGameView;
+      if (!gpViewPalByteTable16x32) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11b);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11b);
-      exit(-1);
+      pGameView = D2_NEW_AT(D2GameViewStrc, ".\\GAME\\View.cpp", 0x11d);
+      /* int yBottom for SetRect */ /* int xRight for SetRect */ /* int yTop for SetRect */ /* int xLeft for SetRect */ /* LPRECT lprc for SetRect */ SetRect(&pGameView->pView, 0, 0, 0, 0);
+      pPalByteTable16x32 = gpViewPalByteTable16x32;
+      pPalByteTable32x16 = gpViewPalByteTable32x16;
+      pPalPointerTable = gpViewPalPointerTable32x8;
+      pGameView->nFlags = 0;
+      pGameView->pPalPointerTable32x8 = pPalPointerTable;
+      pGameView->pPalByteTable32x16 = pPalByteTable32x16;
+      pGameView->pPalByteTable16x32 = pPalByteTable16x32;
+      Wall2::WALL2_OnAllocGameView_NoOp();
+      Wall2::ResetWall2Data(pGameView);
+      pGameView->nFlags |= 1;
+      gnLastLightmapUpdateFrame = 0;
+      return pGameView;
     }
 }
 

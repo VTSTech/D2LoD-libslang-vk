@@ -37,7 +37,7 @@ typedef void (*fpSpinnerRepeatAction)();
 
 namespace D2Client::UI::Spinner::SpinnerImplementation {
 
-void Destructor(::SpinnerImplementation * pThis) {
+void __thiscall Destructor(::SpinnerImplementation * pThis) {
     pfnEHHandlerRoutine pExceptionHandler = SehHandler_6ca198;
     void* pSavedExceptionList = ExceptionList;
     ExceptionList = &pSavedExceptionList;
@@ -49,7 +49,7 @@ void Destructor(::SpinnerImplementation * pThis) {
     ExceptionList = pSavedExceptionList;
 }
 
-void Draw(::SpinnerImplementation * pThis) {
+void __thiscall Draw(::SpinnerImplementation * pThis) {
     D2GfxDataStrc sGfxData;
     if (pThis->bDownPressed || pThis->bUpPressed) {
       pThis->nRepeatStep++;
@@ -65,7 +65,7 @@ void Draw(::SpinnerImplementation * pThis) {
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pThis->nDownButtonX, pThis->nDownButtonY, -1, DRAW_SOLID, nullptr);
 }
 
-BOOL IsMouseOnUpButton(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+BOOL __thiscall IsMouseOnUpButton(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     uint32_t uVar2 = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
     if (!(pThis->nUpButtonX < (int)uVar1 && (int)uVar1 < pThis->nButtonWidth + pThis->nUpButtonX && pThis->nUpButtonY - pThis->nButtonHeight < (int)uVar2 && (int)uVar2 <= pThis->nUpButtonY)) {
@@ -75,7 +75,7 @@ BOOL IsMouseOnUpButton(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg)
     return 1;
 }
 
-BOOL IsMouseOnDownButton(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+BOOL __thiscall IsMouseOnDownButton(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     uint32_t uVar2 = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
     if (!(pThis->nDownButtonX < (int)uVar1 && (int)uVar1 < pThis->nButtonWidth + pThis->nDownButtonX && pThis->nDownButtonY - pThis->nButtonHeight < (int)uVar2 && (int)uVar2 < pThis->nDownButtonY)) {
@@ -85,7 +85,7 @@ BOOL IsMouseOnDownButton(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMs
     return 1;
 }
 
-int GetValue(::SpinnerImplementation * pThis) {
+int __thiscall GetValue(::SpinnerImplementation * pThis) {
     if (!pThis->bUpPressed) {
       return pThis->bDownPressed ? 2 : 0;
     }
@@ -93,7 +93,7 @@ int GetValue(::SpinnerImplementation * pThis) {
     return 1;
 }
 
-int GetRepeatDelta(::SpinnerImplementation * pThis) {
+int __thiscall GetRepeatDelta(::SpinnerImplementation * pThis) {
     uint32_t dwElapsed;
     if (!pThis->bUpPressed && !pThis->bDownPressed) {
       return 0;
@@ -133,7 +133,7 @@ int GetRepeatDelta(::SpinnerImplementation * pThis) {
     return 1;
 }
 
-int OnMouseWheel(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseWheel(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     short int nWheelDelta;
     nWheelDelta = *(short int*)((uintptr_t)&pMsg->nWParam + 2);
     if (nWheelDelta < 1) {
@@ -156,7 +156,7 @@ int OnMouseWheel(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 1;
 }
 
-int OnMouseDown(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseDown(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     DWORD dwNow;
     pThis->bMouseCaptured = 1;
     int32_t nMouseX = (int32_t)pMsg->uLParam.sMousePos.nMouseX;
@@ -186,7 +186,7 @@ int OnMouseDown(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 1;
 }
 
-int OnMouseUp(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseUp(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     if (!pThis->bMouseCaptured) {
       return 0;
     }
@@ -205,31 +205,31 @@ int OnMouseUp(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 1;
 }
 
-int OnChar(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnChar(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-int OnMouseMove(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseMove(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-int OnUpArrow(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnUpArrow(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-int OnDownArrow(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnDownArrow(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-int OnRightArrow(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnRightArrow(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-int OnLeftArrow(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnLeftArrow(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return 0;
 }
 
-::SpinnerImplementation * Constructor(::SpinnerImplementation * pThis, int nPosX, int nPosY, BOOL bHorizontal, fpSpinnerRepeatAction pfnRepeatAction) {
+::SpinnerImplementation * __thiscall Constructor(::SpinnerImplementation * pThis, int nPosX, int nPosY, BOOL bHorizontal, fpSpinnerRepeatAction pfnRepeatAction) {
     char szPath[260];
     D2GfxDataStrc celQueryBuf;
     pfnEHHandlerRoutine puExcHandler = SehHandler_6ca1d8;
@@ -274,7 +274,7 @@ int OnLeftArrow(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     return pThis;
 }
 
-::SpinnerImplementation * ScalarDeletingDestructor(::SpinnerImplementation * pThis, uint32_t nFlags) {
+::SpinnerImplementation * __thiscall ScalarDeletingDestructor(::SpinnerImplementation * pThis, uint32_t nFlags) {
     SpinnerImplementation::Destructor(pThis);
     if (!(nFlags & 1 && pThis)) {
       return pThis;

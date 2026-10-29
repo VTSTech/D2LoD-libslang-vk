@@ -102,7 +102,6 @@ void __stdcall McpConnectionLoop(int * pnParam);
 // lpStartAddress parameter of CreateThread
 uint32_t __stdcall ThreadHandler();
 void __stdcall MCPCONNECT_CreateThread(uint32_t * pSrcState);
-char * __stdcall STRING_GetStringLength(char * szText, char * * ppszText, char * pszBufferEnd, int32_t nParam);
 int32_t __fastcall NET_MCP_CLIENT_Send_0x01_StartUp(int * pnParam);
 void __fastcall NET_MCP_CLIENT_Send_0x02_CharCreate(char * szCharName, DWORD dwCharClassFlags, uint32_t dwUnused);
 void __fastcall NET_MCP_CLIENT_Send_0x07_CharLogon(char * szText);
@@ -172,5 +171,6 @@ void __stdcall MCPCONNECT_SanitizeWideString(uint16_t * wszText);
 // This is NOT one concatenated packet, and NOT BNCS SID_GETADVLISTEX (that path is TCP/IP
 // only, via OOGUTIL_RequestGameListFromServer / g_pBNetGameListData).
 BOOL __fastcall NET_MCP_CLIENT_Incoming0x05(char * pBytes, size_t nSize);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2MCPClient::McpConnect

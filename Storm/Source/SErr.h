@@ -61,12 +61,6 @@ void __stdcall SERR_AddStormFacility(uint16_t wModuleId);
 // @module Internal to SErr.cpp. Not on the Storm 1.10b export table.
 // @blizzard AddStormMessages (SERR.CPP)
 void __stdcall SERR_AddStormMessages();
-// LoadStringA(GetModuleHandleA(NULL), nErrorIndex + 0x5100, gszErrorStringBuffer, 256), falling back to a static table entry when the resource is missing. Takes its argument in ESI (custom convention).
-// @was SSYSTEM_LoadErrorString (pass 6, 2026.08.28) - operation verified from the body, only the module prefix was wrong.
-// @module Internal to SErr.cpp; its only caller is SErrDisplayError 0041caf0. Not on the Storm 1.10b export table.
-// @oracle-negative It is NOT SErrGetErrorStr. That export takes 3 arguments and calls FormatMessage; this takes 1 and calls LoadStringA. The real SErrGetErrorStr is 0041c430. On the PPC the oracle inlines this LoadString step directly into SErrDisplayError, so there is no oracle counterpart to name it from.
-// @blizzard GetString (SERR.CPP)
-LPSTR * SERR_GetString(int32_t nErrorIndex);
 // Lazily initialises the SErr critical section (InterlockedIncrement guard around InitializeCriticalSection) and enters it.
 // @was SSYSTEM_EnterErrorCriticalSection (pass 6, 2026.08.28) - operation verified, only the module prefix was wrong.
 // @module Internal to SErr.cpp, not an export - it appears nowhere on the Storm 1.10b export table, and MWCC inlined this idiom into every SErr export on the PPC side (which is why all 19 oracle exports show InterlockedIncrement/InitializeCriticalSection/EnterCriticalSection in their raw callee sets).
@@ -78,11 +72,6 @@ void __stdcall SERR_InternalEnterCriticalSection();
 // @module Internal to SErr.cpp. Same 7 callers as SERR_EnterCriticalSection 0041c1a0.
 // @blizzard InternalLeaveCriticalSection (SERR.CPP)
 void __stdcall SERR_InternalLeaveCriticalSection();
-// Takes 3 arguments and calls SStrLen, strpbrk, SStrCopy, SStrPack. Used by SErrDisplayError 0041caf0 while building the stack-trace text.
-// @was SSYSTEM_DemangleSymbolName (pass 6, 2026.08.28) - the module prefix was wrong and is corrected; SErr.cpp membership is established (its only caller is SErrDisplayError).
-// @caution The tail "DemangleSymbolName" is NOT verified. It was carried over unchanged rather than guessed at. Only the callee set was checked this pass, not the body. There is no oracle counterpart: MWCC inlined whatever this is into SErrDisplayError on the PPC, so the oracle offers no name for it. If a later pass reads the body, correct or confirm the tail here.
-// @blizzard UndecorateObjectName (SERR.CPP)
-BOOL __stdcall SERR_UndecorateObjectName(char * szMangled, int32_t nMaxLen, char * szText);
 // Under the error critical section, records a callback and its parameter plus the calling thread id, so a later app-fatal can call back into the caller's context.
 // @was SSYSTEM_SetThreadContext (pass 6, 2026.08.28) - the old name also collided with the Win32 API SetThreadContext, which this is not.
 // @oracle Storm 1.10b PPC export SErrPrepareAppFatal, code vector 10015af0 (TVector 100cbe9c).
@@ -94,7 +83,7 @@ void __stdcall SErrPrepareAppFatal(void * pfnCallback, uint32_t nCallbackParam);
 // @oracle-basis Callee set {EnterCriticalSection, GetProcessHeap, HeapAlloc, LeaveCriticalSection} is the oracle's exactly. The oracle prologue at 10015890 saves r3 and r4 and nothing else, so the true arity is 2; Ghidra's third parameter dwParam2 is unused in the body and is spurious.
 // @corroboration Its one caller is D2Client CLIENT_LoadLNG - D2 registering the loaded .LNG string table as an error message source. That is the API's documented purpose and it is a caller from outside Storm, as an export should have.
 // @oracle-note The rival SSYSTEM_RegisterErrorModule 0041c0f0 writes the same gpErrorModuleList but calls GetModuleHandleA and takes no critical section, so it is the internal self-registration helper, not the export. Left under its descriptive name.
-void __stdcall SErrRegisterMessageSource(uint16_t wModuleId, HMODULE dwModuleBase, uint32_t dwParam2);
+int __stdcall SErrRegisterMessageSource(uint16_t wModuleId, HMODULE dwModuleBase, uint32_t dwParam2);
 // Stores dwErrCode into Storm's own dwLastErrorCode global and then forwards it to the Win32 SetLastError.
 // @was SetLastError (pass 6, 2026.08.28) - the old name shadowed the Win32 import of the same name that this function calls, which made the decompilation read as infinite recursion.
 // @oracle Storm 1.10b PPC export SErrSetLastError, code vector 10015680 (TVector 100cbec4).
@@ -143,5 +132,6 @@ void __stdcall SErrDisplayAppFatal(char * szText, ...);
 void __stdcall SErrReportResourceLeak(char * szMessage);
 // Runs at exit: removes every element from the Storm error callback list, then unlinks the list head itself.
 void StaticFini_gStormErrorCallbackList();
+// 2 internal functions (defined in .cpp)
 
 } // namespace Storm::Source::SErr

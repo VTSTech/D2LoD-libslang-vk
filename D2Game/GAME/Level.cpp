@@ -48,7 +48,7 @@
 namespace D2Game::GAME::Level {
 
 // Initialize DRLG act for game. Select town level (arena override), allocate act+DRLG+environment, and init Tainted Sun quest state for the act.
-void InitDrlgAct(::SGAMEDATA * pGame, char nActNo) {
+static void InitDrlgAct(::SGAMEDATA * pGame, char nActNo) {
     eD2LevelId townLevelId;
     uint32_t arenaModeFlag = Arena::ARENA_IsArenaLevel(pGame);
     if (!arenaModeFlag) {

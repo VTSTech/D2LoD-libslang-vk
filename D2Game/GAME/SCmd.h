@@ -151,8 +151,6 @@ struct __attribute__((packed)) D2GSPacketSrvTextData {
 namespace D2Game::GAME::SCmd {
 
 // Function declarations
-// @sourcefile .\GAME\SCmd.cpp
-void __stdcall SCMD_QueuePacketForClient(uint8_t * pBytes, size_t nSize, struct D2ClientStrc * pClient);
 void __fastcall NET_D2GS_SERVER_SendStateCommand(struct D2ClientStrc * pClient, uint8_t nPacketId);
 void __fastcall NET_D2GS_SERVER_Send_0x01_NEWGAME(struct D2ClientStrc * pClient, uint8_t nPacketId, ::SGAMEDATA * pGame);
 // Server-to-client act load command. Opcode 0x03. Instructs client to load a new act.
@@ -249,16 +247,10 @@ void __fastcall NET_D2GS_SERVER_Send_0x77_TRADEREQUEST(struct D2ClientStrc * pCl
 void __fastcall NET_D2GS_SERVER_Send_0x78_TRADENAME(struct D2ClientStrc * pClient, struct D2GSPacketSrv0x78 * pPacketData);
 // Server-to-client summon log update. Opcode 0x7A.
 void __fastcall NET_D2GS_SERVER_Send_0x7A_UPDATEPET(struct D2ClientStrc * pClient, uint8_t bParam, uint8_t nUnitType, uint32_t dwGUID, uint32_t dwMercGUID, uint16_t wExperience);
-void NET_D2GS_SERVER_Send_0x81_UPDATEPETPARAMS(void * pThis, uint8_t byAction, uint32_t dwPetGUID, uint32_t dwMercUnitGUID, uint16_t wMercType, uint32_t dwOwnerUnitGUID, uint32_t dwMercExperience);
+void __thiscall NET_D2GS_SERVER_Send_0x81_UPDATEPETPARAMS(void * pThis, uint8_t byAction, uint32_t dwPetGUID, uint32_t dwMercUnitGUID, uint16_t wMercType, uint32_t dwOwnerUnitGUID, uint32_t dwMercExperience);
 // Server-to-client gold amount in trade. Opcode 0x79.
 void __fastcall NET_D2GS_SERVER_Send_0x79_TRADEGOLD(struct D2ClientStrc * pClient, uint32_t dwGold, uint8_t nTradeId);
 BOOL SCMD_DetectPositionDesync(int32_t pState, int32_t nNewPos);
-// Detects position desync for an owned monster. Verifies pUnit2 is a monster owned by pUnit, then compares its stored position against nNewPos. If the delta exceeds 8 units, or if a consecutive-desync counter exceeds 6, resets the counter and snaps the stored position to nNewPos, returning 1. Returns 0 if in sync or guard conditions fail.
-BOOL __stdcall SCMD_CheckMonsterPositionDesync(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, int32_t nNewPos);
-// Ensures a D2PartyDataStrc entry exists in pUnit2's player-data party list for the unit identified by pUnit, then checks whether the position/life snapshot has changed enough to warrant a network update. Both units must share the same party ID. Allocates a new node from the server memory pool if one is not found. Returns 1 if a state update should be broadcast (area changed, or life delta &gt;8 accumulated 6+ times), 0 otherwise.
-// @sourcefile .\GAME\SCmd.cpp
-BOOL __stdcall PLAYERDATA_AllocPartyData(struct D2UnitStrc * pUnit, int32_t nUnitLife, eD2LevelId eLevel, struct D2UnitStrc * pUnit2);
-BOOL __stdcall SCMD_DispatchUnitPartyData(struct D2UnitStrc * pUnit, int32_t nUnitLife, eD2LevelId eLevel, struct D2UnitStrc * pUnit2);
 // Server-to-client ally/party info update. Always sends 0x7F (ally party info: GUID, life%, level).
 // If target is player and > 50 units away, appends 0x90 (automap position: GUID, X, Y).
 // Dual-packet system for efficiency: nearby allies get minimal update, distant players get automap sync.
@@ -357,7 +349,7 @@ void __fastcall NET_D2GS_SERVER_Send_0xA4_PRELOAD_MONSTER(struct D2ClientStrc * 
 void __fastcall NET_D2GS_SERVER_Send_0xA6_DATATABLEUPDATE(struct D2ClientStrc * pClient, bool bUnknown, int16_t nTxtRunesSize, size_t nStreamSize, void * nStream);
 void __fastcall NET_D2GS_SERVER_Send_0xA7_UNITSTATE_ON_EX(struct D2ClientStrc * pClient, uint8_t byUnitType, uint32_t nUnitGUID, uint32_t dwStateId);
 void __fastcall NET_D2GS_SERVER_Send_0xA9_UNITSTATE_OFF_EX(struct D2ClientStrc * pClient, uint8_t byUnitType, uint32_t nUnitGUID, uint32_t dwStateId);
-void SCMD_WriteBooleanToBitBuffer(void * pThis, int32_t nBoolValue);
+void __thiscall SCMD_WriteBooleanToBitBuffer(void * pThis, int32_t nBoolValue);
 // Server-to-client packet builder/sender for D2GS message 0xAC (spawn/add a monster on the client). For a UNIT_MONSTER, bit-packs into a temp BitBuffer: animation mode (clamped to Attack2/Block/Kick/Death/Neutral), component/equipment indices, boss/champion/unique/superunique/minion/ghostly type flags, superunique boss number, the UMod list, the monster name seed, pet ownership (owner GUID when the owner is a player whose pet type==7), an optional owner GUID for player-owned units, and the network-visible stat list (only stats flagged ITEMSTATCOSTFLAG_SEND_OTHER, written using each stat's sendBits/sendParamBits). Prepends the 0xAC header (id, GUID, classId, X/Y, hp%, total size) and dispatches via NET_D2GS_SERVER_SendPacket_Helper to the given client. No-op for null/non-monster units. Stack-guarded.
 void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(struct D2ClientStrc * pClient, struct D2UnitStrc * pUnit);
 // Server-to-client Warden anti-cheat module packet. Opcode 0xAE, variable size (max 510 bytes).
@@ -397,12 +389,13 @@ void __fastcall Send0x9CItemAddQuantity(struct D2ClientStrc * pClient, struct D2
 void __fastcall Send0x9CItemSwapInContainer(struct D2ClientStrc * pClient, struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, eD2ItemFlag eItemFlags);
 // @sourcefile .\GAME\SCmd.cpp
 void __fastcall Send0x9CItemPutInBelt(struct D2ClientStrc * pClient, struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, eD2ItemFlag eItemFlags);
-void Send0x9CItemRemoveFromBelt(void * pThis, struct D2UnitStrc * pUnit, eD2ItemFlag eItemFlag);
-void Send0x9CItemSwapInBelt(void * pThis, struct D2UnitStrc * pUnit, eD2ItemFlag eItemFlag);
-void Send0x9CItemToCursor(void * pThis, struct D2UnitStrc * pUnit);
+void __thiscall Send0x9CItemRemoveFromBelt(void * pThis, struct D2UnitStrc * pUnit, eD2ItemFlag eItemFlag);
+void __thiscall Send0x9CItemSwapInBelt(void * pThis, struct D2UnitStrc * pUnit, eD2ItemFlag eItemFlag);
+void __thiscall Send0x9CItemToCursor(void * pThis, struct D2UnitStrc * pUnit);
 // @sourcefile .\GAME\SCmd.cpp
-void Send0x9CItemHandleInShop(void * pThis, struct D2UnitStrc * pUnit, char cParam);
+void __thiscall Send0x9CItemHandleInShop(void * pThis, struct D2UnitStrc * pUnit, char cParam);
 BOOL __fastcall STRING_CheckIfStringLengthDoNotExceedSize(char * szText, int32_t nMaxLength);
 void __fastcall thunk_NET_D2GS_SERVER_Send_0x5A_EventMessages(struct D2ClientStrc * pClient, struct D2Packet0x5aEventStructure * pEventPacket);
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Game::GAME::SCmd

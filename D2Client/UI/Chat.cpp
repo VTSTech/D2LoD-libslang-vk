@@ -41,19 +41,19 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
 namespace D2Client::UI::Chat {
 
 // @sourcefile .\UI\chat.cpp
-void CHAT_HandleIMECandidateList(HIMC hImc) {
+static void CHAT_HandleIMECandidateList(HIMC hImc) {
     DWORD dwListCount;
     DWORD nAllocSize = ImmGetCandidateListCountA(hImc, &dwListCount);
     DWORD dwListSize = ImmGetCandidateListA(hImc, 0, (LPCANDIDATELIST)0x0, 0);
@@ -61,16 +61,16 @@ void CHAT_HandleIMECandidateList(HIMC hImc) {
       return;
     }
     if (gpIMECandidateList) {
-      D2_FREE(gpIMECandidateList);
+      D2_FREE_AT(gpIMECandidateList, ".\\UI\\chat.cpp", 0xeb);
     }
 
-    gpIMECandidateList = (LPCANDIDATELIST)D2_ALLOC(nAllocSize);
+    gpIMECandidateList = (LPCANDIDATELIST)D2_ALLOC_AT(nAllocSize, ".\\UI\\chat.cpp", 0xed);
     /* DWORD dwBufLen for ImmGetCandidateListA */ /* LPCANDIDATELIST lpCandList for ImmGetCandidateListA */ /* DWORD deIndex for ImmGetCandidateListA */ /* HIMC param_1 for ImmGetCandidateListA */ ImmGetCandidateListA(hImc, 0, gpIMECandidateList, nAllocSize);
     if (!(gpIMECandidateList->dwStyle == 2 && gpIMECandidateList->dwCount == 1)) {
       return;
     }
 
-    D2_FREE(gpIMECandidateList);
+    D2_FREE_AT(gpIMECandidateList, ".\\UI\\chat.cpp", 0xf2);
     gpIMECandidateList = (LPCANDIDATELIST)0x0;
 }
 
@@ -112,7 +112,7 @@ void __stdcall INPUT_HandleIMENotify(D2UIMouseMsgStrc * pMsg) {
           pMemoryToFree = gpIMECandidateList;
         if (gaIMECompositionBuffer == 9) {
           if (gpIMECandidateList) {
-            D2_FREE(gpIMECandidateList);
+            D2_FREE_AT(gpIMECandidateList, ".\\UI\\chat.cpp", 0x160);
             gpIMECandidateList = (LPCANDIDATELIST)0x0;
           }
 
@@ -124,7 +124,7 @@ void __stdcall INPUT_HandleIMENotify(D2UIMouseMsgStrc * pMsg) {
           goto cleanup;
         }
         if (pMemoryToFree) {
-          D2_FREE(pMemoryToFree);
+          D2_FREE_AT(pMemoryToFree, ".\\UI\\chat.cpp", 0x16b);
           gpIMECandidateList = (LPCANDIDATELIST)0x0;
         }
 
@@ -395,11 +395,11 @@ void __stdcall CHAT_ShutdownIME() {
       return;
     }
 
-    D2_FREE(gpIMECandidateList);
+    D2_FREE_AT(gpIMECandidateList, ".\\UI\\chat.cpp", 0x29d);
     gpIMECandidateList = (LPCANDIDATELIST)0x0;
 }
 
-int32_t __stdcall CHAT_CompareCaseInsensitive(char * szText1, char * szText2) {
+static int32_t __stdcall CHAT_CompareCaseInsensitive(char * szText1, char * szText2) {
     int nUpper1;
     int nUpper2;
     char cCur;
@@ -433,7 +433,7 @@ int32_t __stdcall CHAT_CompareCaseInsensitive(char * szText1, char * szText2) {
     return (uint32_t)(nUpper1 != nUpper2 && -1 < nUpper1 - nUpper2) * 2 - 1;
 }
 
-void CHAT_DrawCursor(int32_t nPosY, int32_t nPosX, int32_t nColor) {
+static void CHAT_DrawCursor(int32_t nPosY, int32_t nPosX, int32_t nColor) {
     // Static local variables (originally global data)
     static uint16_t gnIMECursorBlinkDuration = 0x1f4; D2_STATIC_GUARD(gnIMECursorBlinkDuration, "D2Client::UI::Chat::CHAT_DrawCursor::gnIMECursorBlinkDuration");
     static uint32_t gnIMECursorVisible = 0x1; D2_STATIC_GUARD(gnIMECursorVisible, "D2Client::UI::Chat::CHAT_DrawCursor::gnIMECursorVisible");
@@ -887,7 +887,7 @@ void __stdcall CHAT_InitHistoryIndices() {
     gnChatInputTextCursorPosition = 0;
 }
 
-char * CHAT_ExtractWhisperTarget(char * szText) {
+static char * CHAT_ExtractWhisperTarget(char * szText) {
     char* pszWhisperName;
     char* pszStarPos = Storm::Source::SSTR::SStrChr(szText, '*');
     if (!(!pszStarPos || (pszWhisperName = pszStarPos + 1 , pszStarPos[1] == '\0'))) {
@@ -898,7 +898,7 @@ char * CHAT_ExtractWhisperTarget(char * szText) {
     return pszWhisperName;
 }
 
-void CHAT_ExtractWhisperPrefix(char * szInput, char * szOutPrefix) {
+static void CHAT_ExtractWhisperPrefix(char * szInput, char * szOutPrefix) {
     if (*szInput != '*') {
       char* pStar;
       pStar = Storm::Source::SSTR::SStrChr(szInput, '*');
@@ -1029,7 +1029,7 @@ void __stdcall CHAT_ProcessBattleNetMessage() {
           }
 
           pwszFormat = D2Lang::StrTable::strtable::GetLocaleString(wStringId);
-          D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x153, wszFormatted, pwszFormat, (uint16_t*)pwszSenderLine, pWVar1);
+          D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x153, wszFormatted, pwszFormat, pwszSenderLine, pWVar1);
           wszFormatted[0x153] = L'\0';
           Text::TEXT_PrintGameString(wszFormatted, 2);
           return;
@@ -1059,7 +1059,7 @@ void __stdcall CHAT_ProcessBattleNetMessage() {
     Text::TEXT_PrintGameString(wszPrefixW, 3);
 }
 
-BOOL CHAT_HandleResignCommand(char * szCommandName, char * szInput) {
+static BOOL CHAT_HandleResignCommand(char * szCommandName, char * szInput) {
     char szUsageMessage[256];
     MessageStrc MStack_124;
     char szDelimiter[4];
@@ -1112,7 +1112,7 @@ BOOL CHAT_HandleResignCommand(char * szCommandName, char * szInput) {
     return 1;
 }
 
-BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szCommandName, char * szInput) {
+static BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szCommandName, char * szInput) {
     // Static local variables (originally global data)
     static char gszChatWhisperTargetName[2] = " "; D2_STATIC_GUARD(gszChatWhisperTargetName, "D2Client::UI::Chat::CHAT_HandleWhisperCommand::gszChatWhisperTargetName");
 
@@ -1220,7 +1220,7 @@ BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szCommandName, 
     return 1;
 }
 
-void __stdcall CHAT_ExtractCommandParameter(int32_t nMaxLength, char * szInput, char * szOutParam) {
+static void __stdcall CHAT_ExtractCommandParameter(int32_t nMaxLength, char * szInput, char * szOutParam) {
     char* pSpace = Storm::Source::SSTR::SStrChr(szInput, ' ');
     if (pSpace) {
       Storm::Source::SSTR::SStrCopy(szOutParam, pSpace + 1, nMaxLength);
@@ -1232,7 +1232,7 @@ void __stdcall CHAT_ExtractCommandParameter(int32_t nMaxLength, char * szInput, 
 
 // Process chat commands (/fps, /framerate, /players, /nopickup, /ignore, /unignore, /filtermsg, /msg, /help, etc.). Parses command, checks game state, executes handler or sends message via NET_D2GS_CLIENT_Send_Chat.
 // Stack[0x8] nInputOffset is reused as the parse cursor: it is overwritten with pszInputBase + nInputOffset (asm 0047c44c..45b); the caller passes the count of leading spaces it skipped.
-void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBase, int32_t nInputOffset) {
+static void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBase, int32_t nInputOffset) {
     eD2GSGameType eGameType;
     int32_t nCmpResult;
     BOOL BVar1;
@@ -1349,7 +1349,7 @@ void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBa
 
           pwLocaleString = wszAccountName;
           pwFormatArg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba3);
-          D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x208, wszMsgBuffer3, pwFormatArg, (uint16_t*)pwLocaleString);
+          D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x208, wszMsgBuffer3, pwFormatArg, pwLocaleString);
           D2Lang::Unicode::UNISYS::AppendToBuffer(wszMsgBuffer1, wszMsgBuffer3);
         }
       } else {
@@ -1455,7 +1455,7 @@ void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBa
           pwFormatArg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba5);
         }
 
-        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x208, wszMsgBuffer3, pwFormatArg, (uint16_t*)pwLocaleString);
+        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x208, wszMsgBuffer3, pwFormatArg, pwLocaleString);
         D2Lang::Unicode::UNISYS::AppendToBuffer(wszMsgBuffer1, wszMsgBuffer3);
       }
 
@@ -1564,7 +1564,7 @@ void __stdcall INPUT_HandleChatCharInput(D2UIMouseMsgStrc * pMsg) {
     Storm::SMsgBreakHandlerChain(pMsg);
 }
 
-int UI_SLIDER_GetValueFromPosition(int32_t nCurrentPos, int32_t nMinPos, D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos) {
+int __stdcall UI_SLIDER_GetValueFromPosition(int32_t nCurrentPos, int32_t nMinPos, D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos) {
     int nStepCount = pSliderItem->nSubImageCount - 1;
     float fStepCount = (float)nStepCount;
     if (nStepCount < 0) {
@@ -1586,7 +1586,7 @@ int UI_SLIDER_GetValueFromPosition(int32_t nCurrentPos, int32_t nMinPos, D2EscMe
     return nResultValue;
 }
 
-int UI_SLIDER_GetPositionFromValue(int32_t nMinPos, D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos) {
+int __fastcall UI_SLIDER_GetPositionFromValue(int32_t nMinPos, D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos) {
     float fRange = (float)(nMaxPos - nMinPos);
     if (nMaxPos - nMinPos < 0) {
       fRange += 4.2949673e+09;

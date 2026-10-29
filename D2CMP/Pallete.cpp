@@ -13,7 +13,6 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -83,7 +82,6 @@ void __fastcall PALETTE_LoadFromFile(char * pdwParam, int32_t nPaletteSet) {
     int nPrefixWords;
     char nStrEndOffset1[260];
     D2MPQFileStrc* pArchive;
-    uint32_t nReadSize = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* pSrcWord = "Data\\Global\\Items\\Palette\\";
     char* szPathDst = nStrEndOffset1;
     for (nPrefixWords = 6; nPrefixWords; nPrefixWords--) {
@@ -107,8 +105,6 @@ void __fastcall PALETTE_LoadFromFile(char * pdwParam, int32_t nPaletteSet) {
       D2FILE_ReadFile(nullptr, pArchive, gaItemPaletteData + nPaletteSet * 0x6900, local_8);
       D2FILE_CloseFile(nullptr, pArchive);
     }
-
-    Fog::Debug::GuardStack();
 }
 
 void __stdcall PALETTE_InitItemPalettes() {

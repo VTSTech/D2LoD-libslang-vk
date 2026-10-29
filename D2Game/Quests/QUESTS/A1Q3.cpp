@@ -37,24 +37,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA1Q3Strc) == 0xa4, "D2_NEW(D2QuestDataA1Q3Strc): the 32-bit layout must be the 0xa4 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA1Q3Strc) == 0xa4, "D2_NEW_AT(D2QuestDataA1Q3Strc): the 32-bit layout must be the 0xa4 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A1Q3 {
@@ -180,14 +176,14 @@ void __fastcall Q03_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
               /* SetQuestRecordState(QUEST_ToolsOfTheTrade, JustCompleted=0xd) — server-side
                          record mark on nStateFlag 4->5 */ QUEST_SetQuestRecordState(pQuestData->pGame, QUEST_ToolsOfTheTrade, QUESTSTATE_JustCompleted);
               /* FARPROC lpfn for IsBadCodePtr */ bQuestState = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-              if (!bQuestState) {
-                pQuestData->fpSequenceFilter(pQuestData);
-                QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
-                return;
+              if (bQuestState) {
+                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfa);
+                exit(-1);
               }
 
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfa);
-              exit(-1);
+              pQuestData->fpSequenceFilter(pQuestData);
+              QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
+              return;
             }
             if (pA1Q3Data->bSequenceReady) {
               pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
@@ -324,7 +320,7 @@ void __fastcall Q03_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 
 // MallusHandler (A1Q3) — invoked when the Malus item count drops to 0 (see Q03_Callback_06). If the Malus had been taken: advance nStateFlag to 3, set eFlags, broadcast state 1 (RewardAwaits/intro), clear bMalusTaken-area flag, then locate the dropped Malus unit (FindUnitFromTable, classId 0x6c = the Malus object) and flag it for update; if not found, clear bMalusTaken. No quest-record bit writes (state via broadcast).
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q3.cpp
-bool __stdcall MallusHandler(D2QuestDataStrc * pQuestData) {
+static bool __stdcall MallusHandler(D2QuestDataStrc * pQuestData) {
     if (!pQuestData->bIsNotIntroduction) {
       return false;
     }
@@ -553,7 +549,7 @@ void __fastcall Q03_CheckPlayerHasMalus(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 }
 
 // Q03_CheckPartyHasMalus (A1Q3) — returns whether the player (or anyone in their party) holds the Horadric Malus. Fast path: true if the player carries it. Else if not partied, false. Otherwise clears field_0xA0 and runs Q03_CheckPlayerHasMalus over all party members, returning field_0xA0. Read-only on record.
-BOOL Q03_CheckPartyHasMalus(D2UnitStrc * pUnitStrc, D2QuestDataStrc * pQuestData) {
+static BOOL Q03_CheckPartyHasMalus(D2UnitStrc * pUnitStrc, D2QuestDataStrc * pQuestData) {
     uint32_t dwItemCode = 0x206d6468;
     ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnitStrc);
     D2UnitStrc* pMalusItem = ITEMS::Items::Drop::HasQuestItem(pGame, pUnitStrc, dwItemCode);
@@ -622,26 +618,29 @@ bool __fastcall Q03_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
 
 // Q03_SequenceFilter (A1Q3) — quest-sequence advance hook. If nStateFlag==0 and in-introduction: set nStateFlag to 1 (kick the quest into started state). If nStateFlag==5 (done) or not in-introduction: chain to the next quest in the sequence (nSequenceQuestId = A1Q4 Sisters to the Slaughter) by calling its fpSequenceFilter. No quest-record writes.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q3.cpp
-void __fastcall Q03_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q03_SequenceFilter(D2QuestDataStrc * pQuestData) {
+    bool bVar1;
     D2QuestDataStrc* pQuestData_00;
-    BOOL BVar1;
+    BOOL BVar2;
     if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x35a);
     } else if (pQuestData->nStateFlag == 5 || !pQuestData->bIsNotIntroduction) {
       pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
       if (!pQuestData_00) {
-        return;
+        return false;
       }
 
-      /* FARPROC lpfn for IsBadCodePtr */ BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-      if (BVar1) {
+      /* FARPROC lpfn for IsBadCodePtr */ BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (BVar2) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x362);
         exit(-1);
       }
 
-      pQuestData_00->fpSequenceFilter(pQuestData_00);
-      return;
+      bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+      return bVar1;
     }
+
+    return true;
 }
 
 // A1Q3 Tools of the Trade, state-0xd (load/join reconcile) handler. If the player carries the Malus (item 0x206d6468), increments nQuestItemCount and sets bSequenceReady. Then, if quest is not Completed and not FinishedInPreviousGame, restores the in-memory nStateFlag from the persisted record: Step0x02 -> nStateFlag=2/prev=1; Step0x03 -> nStateFlag=3/prev=1. Reads record only; does not write quest-record bits.
@@ -701,11 +700,11 @@ void __fastcall Q03_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q03_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q03_Callback02_NpcDeactivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q03_Callback13_PlayerStartedGame;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q03_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q03_SequenceFilter;
     pQuestData->pNpcMessages = &A1Q3::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nQuestIdReal = QUEST_ToolsOfTheTrade;
-    D2QuestDataA1Q3Strc* pQuestSpecificData = D2_NEW_POOL(pSVar1->pMemoryPool, D2QuestDataA1Q3Strc);
+    D2QuestDataA1Q3Strc* pQuestSpecificData = D2_NEW_POOL_AT(pSVar1->pMemoryPool, D2QuestDataA1Q3Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x3ae);
     pQuestData->pQuestSpecificData.pA1Q3 = pQuestSpecificData;
     pQuestData->nStateFlag = 0;
     pQuestData->fpStatusFilter = Q03_StatusFilter;

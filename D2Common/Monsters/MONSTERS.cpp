@@ -53,8 +53,8 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
 
@@ -284,7 +284,7 @@ void __fastcall SetSuperUniqueName(D2UnitStrc * pUnit, uint16_t * wszText) {
     }
 
     int32_t nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
-    uint16_t* pNameBuf = (uint16_t*)D2_ALLOC(nStrLen * 2 + 2);
+    uint16_t* pNameBuf = (uint16_t*)D2_ALLOC_AT(nStrLen * 2 + 2, ".\\Monsters\\MONSTERS.CPP", 0xc3);
     pUnit->pUnitData.pUnitDataPlayer->nPortalFlags = (int32_t)pNameBuf;
     D2Lang::Unicode::UNISYS::STRING_CopyWideString((uint16_t*)pUnit->pUnitData.pUnitDataPlayer->nPortalFlags, wszText);
 }
@@ -599,14 +599,14 @@ void __stdcall MONSTERS_GetUpgradeSkillsAndCount(D2UnitStrc * pUnit, uint32_t * 
     } else {
       DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(pUnit->nClassId, nullptr, (eD2Skills*)&pUnit);
       if ((int)pUnit < 4) {
-        if (-1 < (int)pUnit) {
-          *pdwAnimFlags = gdwMonStatAnimFlagsTable[(int)pUnit].dwFlags;
-          *pdwValidFlags = gdwMonStatAnimFlagsTable[(int)pUnit].dwValidFlags;
-          return;
+        if (!(-1 < (int)pUnit)) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c9);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c9);
-        exit(-1);
+        *pdwAnimFlags = gdwMonStatAnimFlagsTable[(int)pUnit].dwFlags;
+        *pdwValidFlags = gdwMonStatAnimFlagsTable[(int)pUnit].dwValidFlags;
+        return;
       } else {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c8);
         exit(-1);

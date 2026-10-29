@@ -42,24 +42,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA5Q4Strc) == 0x90, "D2_NEW(D2QuestDataA5Q4Strc): the 32-bit layout must be the 0x90 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA5Q4Strc) == 0x90, "D2_NEW_AT(D2QuestDataA5Q4Strc): the 32-bit layout must be the 0x90 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A5Q4 {
@@ -263,28 +259,29 @@ BOOL __fastcall Q34_UpdateQuestStep(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
 
 // Q34_SequenceFilter (Betrayal of Harrogath). Sequence/advance handler. If still in intro (nStateFlag<4) bumps nStateFlag 0->1. Otherwise chains to the predecessor quest's sequence filter (nSequenceQuestId = Siege on Harrogath / kill Shenk) to keep act-5 quest ordering. No QuestRecord access.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q4.cpp
-void __fastcall Q34_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q34_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag < 4 && pQuestData->bIsNotIntroduction) {
       if (pQuestData->nStateFlag) {
-        return;
+        return true;
       }
 
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q4.cpp", 0xff);
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pQuestData_00) {
-      return;
+      return false;
     }
 
-    BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (BVar1) {
+    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+    if (BVar2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf6);
       exit(-1);
     }
 
-    pQuestData_00->fpSequenceFilter(pQuestData_00);
+    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+    return bVar1;
 }
 
 // A5Q4 (Betrayal of Harrogath) NPC dialog callback for Nihlathak (classId 0x200). On accept-quest line 0x4ea9: advances nStateFlag to 2, marks bAcceptedQuest/bNotifiedCompletion, and iterates Q34_UpdateQuestStep for all players. On return-after-kill line 0x4eb4: broadcasts prev state, sets Step0x04 in the player's QuestRecord, and if JustCompleted already set advances to nStateFlag 5 and runs Q34_SequenceFilter.
@@ -768,13 +765,13 @@ void __fastcall Q34_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->pNpcMessages = &A5Q4::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
-    D2QuestDataA5Q4Strc* pQuestSpecificData = D2_NEW_POOL(pSVar1->pMemoryPool, D2QuestDataA5Q4Strc);
+    D2QuestDataA5Q4Strc* pQuestSpecificData = D2_NEW_POOL_AT(pSVar1->pMemoryPool, D2QuestDataA5Q4Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q4.cpp", 0x30d);
     pQuestData->pQuestSpecificData.pA5Q4 = pQuestSpecificData;
     pQuestData->nQuestIdReal = QUEST_BetrayalOfHaggorath;
     pQuestData->fpStatusFilter = Q34_StatusFilter;
     pQuestData->nInitNo = 4;
     pQuestData->fpActiveFilter = Q34_ActiveFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q34_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q34_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_SiegeOnHaggorath;
     memset(pQuestSpecificData, 0, 0x90);
     QUESTGUID_SetPlayerCountToZero(&pQuestSpecificData->sQuestGUID);

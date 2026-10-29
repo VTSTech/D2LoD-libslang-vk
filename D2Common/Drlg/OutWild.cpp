@@ -19,7 +19,7 @@
 namespace D2Common::Drlg::OutWild {
 
 // Spawns outdoor level border presets (town transitions, caves, vertical dividers) for pLevel based on wilderness flags. Handles the central column divider (dwFlags bit 4), the four cardinal border exits (bits 7-10), and the mandatory town wayback preset (0x33/preset 15). Aborts with an unrecoverable error if the wayback preset fails to place. Skips level 0x27 (Harrogath interior).
-void SpawnTownTransitionsAndCaves(D2DrlgLevelStrc * pLevel) {
+static void SpawnTownTransitionsAndCaves(D2DrlgLevelStrc * pLevel) {
     D2DrlgLevelStrc* pLinkedLevel;
     int nMidColumn;
     if (pLevel->eD2LevelId == 0x27) {

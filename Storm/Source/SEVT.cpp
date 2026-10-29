@@ -64,7 +64,7 @@ void __stdcall SEVT_CopyIdHashTable(uint32_t * * pDstTable, int * pSrcTable) {
 
 // @sourcefile .\SOURCE\SEVT.CPP
 // @blizzard DeleteIdHashTable (SEVT.CPP)
-void SEVT_DeleteIdHashTable(void * * pTable) {
+static void SEVT_DeleteIdHashTable(void * * pTable) {
     void* pObject;
     uint32_t nBucket = 0;
     if (pTable[1]) {
@@ -88,7 +88,7 @@ void SEVT_DeleteIdHashTable(void * * pTable) {
 }
 
 // @blizzard FindTypeHashEntry (SEVT.CPP)
-uint32_t * SEVT_FindTypeHashEntry(uint32_t dwUnused, uint32_t nSubId, uint32_t nEventId) {
+static uint32_t * SEVT_FindTypeHashEntry(uint32_t dwUnused, uint32_t nSubId, uint32_t nEventId) {
     uint32_t* pEvent;
     if (!gpEventHashBuckets || !gaEventRegistryHead) {
       pEvent = 0;
@@ -187,7 +187,7 @@ void __stdcall SEvtPushState(uint32_t nEventId, uint32_t nSubId) {
 
 // Registers an event handler: allocates a handler node keyed by dwKey and links it into the handler table for (dwEventId, dwSubId); pfnHandler must be non-NULL and dwReserved zero. SEvtDispatch matches its key argument against the stored key.
 // Storm export SEvtRegisterHandler (export name list and Mac PPC 1.10b traceback).
-void __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey, int dwReserved, pfnSEvtHandler pfnHandler) {
+int __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey, int dwReserved, pfnSEvtHandler pfnHandler) {
     void* pNewBuckets;
     int* pTailSlot;
     uint32_t* pNode;
@@ -202,7 +202,7 @@ void __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_
     uint32_t* ppNodeNext;
     if (!(pfnHandler ? (dwReserved != 0) - 1 : 0)) {
       SErr::SErrSetLastError(0x57);
-      return;
+      return 0;
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0077930c);
@@ -332,6 +332,7 @@ void __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_
     (*(int*)(pEvent[3] + 8))++;
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ gnSevtSnapshotActive = 1;
     LeaveCriticalSection(&lpCriticalSection_0077930c);
+    return 1;
 }
 
 // Removes one registered handler from an event type.

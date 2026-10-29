@@ -3,7 +3,6 @@
 #include "D2Client/Source/SSComp.h"
 #include "Fog/Debug.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -135,7 +134,7 @@ uint32_t __fastcall ZLIB_Adler32(uint32_t nAdler, uint8_t * pbData, uint32_t nLe
     return nSum2 << 0x10 | nSum1;
 }
 
-uint32_t __stdcall ZLIB_Adler32Combine(uint32_t nAdler1, uint32_t nLen2Lo, uint32_t nLen2Hi, uint32_t nAdler2) {
+static uint32_t __stdcall ZLIB_Adler32Combine(uint32_t nAdler1, uint32_t nLen2Lo, uint32_t nLen2Hi, uint32_t nAdler2) {
     if ((int)nLen2Hi < 1 && ((int)nLen2Hi < 0 || false)) {
       return -1;
     }
@@ -609,8 +608,6 @@ static uint16_t gaZlibLengthExtraBitsTable[31] = {
     uint32_t dwTableEntry;
     uint16_t aOffset[16];
     uint16_t aCount[16];
-    uint32_t dwStackCookie;
-    dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     uint32_t nMaxBits;
     nMaxBits = 0;
     memset(aCount, 0, 16 * sizeof(aCount[0]));
@@ -641,7 +638,6 @@ static uint16_t gaZlibLengthExtraBitsTable[31] = {
       *(uint32_t*)*ppOutTable = 0x140;
       *ppOutTable += 4;
       *pMaxBits = 1;
-      Fog::Debug::GuardStack();
       return 0;
     }
 
@@ -667,7 +663,6 @@ static uint16_t gaZlibLengthExtraBitsTable[31] = {
     do {
       nLeft = nLeft * 2 - (uint32_t)aCount[nLoopIdx];
       if (nLeft < 0) {
-        Fog::Debug::GuardStack();
         return -1;
       }
 
@@ -675,7 +670,6 @@ static uint16_t gaZlibLengthExtraBitsTable[31] = {
     } while (nLoopIdx < 0x10);
 
     if (0 < nLeft && (!nTableType || nMaxBits != 1)) {
-      Fog::Debug::GuardStack();
       return -1;
     }
 
@@ -735,7 +729,6 @@ static uint16_t gaZlibLengthExtraBitsTable[31] = {
       bTableSizeExact = nTableFill == 0x250;
     }
     if (!bTableSizeOk && !bTableSizeExact) {
-      Fog::Debug::GuardStack();
       return 1;
     }
 
@@ -784,7 +777,6 @@ static uint16_t gaZlibLengthExtraBitsTable[31] = {
 
             *ppOutTable += nUsedEntries * 4;
             *pMaxBits = nRootBits;
-            Fog::Debug::GuardStack();
             return 0;
           }
 
@@ -821,14 +813,12 @@ static uint16_t gaZlibLengthExtraBitsTable[31] = {
         bTableSizeOk = nUsedEntries < 0x354;
         bTableSizeExact = nUsedEntries == 0x354;
         if (!bTableSizeOk && !bTableSizeExact) {
-          Fog::Debug::GuardStack();
           return 1;
         }
       } else if (nTableType == 2) {
         bTableSizeOk = nUsedEntries < 0x250;
         bTableSizeExact = nUsedEntries == 0x250;
         if (!bTableSizeOk && !bTableSizeExact) {
-          Fog::Debug::GuardStack();
           return 1;
         }
       }

@@ -291,7 +291,7 @@ void __stdcall SOUND_ShutdownAudio() {
 }
 
 // Initialises the audio mixer's streaming sample channels. Returns 0 immediately if the speaker config is unset, or halts if a mixer is already active. Allocates up to 8 channel slots: the first 4 are always type 1 (music), slots 4+ are type 2 (stereo) if nParam==1, type 6 (surround) if nParam==2, or type 0 otherwise. On success initialises EAX to environment 0 and sets pAudioMixerInterface; on failure calls SOUND_ShutdownAudio and returns 0.
-BOOL SOUND_InitStreamChannels(int32_t nParam) {
+static BOOL SOUND_InitStreamChannels(int32_t nParam) {
     D2SoundSmpStrc* pNewSampleInst;
     IDirectSound* dwSpeakerConfig = D2Sound::SOUND_GetSpeakerConfigFlag();
     if (!dwSpeakerConfig) {
@@ -332,7 +332,7 @@ BOOL SOUND_InitStreamChannels(int32_t nParam) {
 }
 
 // Finds a free or preemptable sound channel for playback. First scans the global sound instance pool for a channel matching pnParam (sound type/category) that is not currently playing and has no active sound. If none found, scans for the best occupied channel that can be preempted via SOUND_IsChannelAvailable; if preemptable, stops the current sample, saves its stream progress, marks the channel free, and returns it. Returns NULL if no channel is available.
-D2ClientSoundChannelStrc * __stdcall SOUND_FindAvailableChannel(uint32_t nParam, int pnParam) {
+static D2ClientSoundChannelStrc * __stdcall SOUND_FindAvailableChannel(uint32_t nParam, int pnParam) {
     int32_t bIsPlaying;
     BOOL BVar1;
     uint32_t nStreamProgress;
@@ -723,7 +723,7 @@ D2ClientSoundChannelStrc * __fastcall SOUND_PlaySoundWithPanning(D2SoundChannelS
 
 // Returns the unit's greeting sound set &gaNpcGreetingSounds[n] by class id (pUnit+4, nClassId), or NULL if pUnit is NULL or the class has none. The callers pass the interacted NPC or the mercenary; every Cain class (0x92, 0xf4-0xf6, 0x109, 0x208) maps to entry 4.
 // Provenance: 004e0378 MOV EAX,[EAX+4]; record values are Sounds.txt <npc>_greeting_* ids.
-D2NpcGreetingSoundsStrc * SOUND_GetNpcGreetingSounds(D2UnitStrc * pUnit) {
+static D2NpcGreetingSoundsStrc * __stdcall SOUND_GetNpcGreetingSounds(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     // also labelled: gaAmbienceSoundGroups, bAmbienceSoundGroupAct1D
 static D2NpcGreetingSoundsStrc gaNpcGreetingSounds[29] = {

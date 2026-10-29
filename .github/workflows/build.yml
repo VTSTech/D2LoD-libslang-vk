@@ -3,9 +3,9 @@ name: build
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md']
+    paths-ignore: ['**.md', '.recomp.json', 'progress/**', '.github/workflows/progress.yml']
   pull_request:
-    paths-ignore: ['**.md']
+    paths-ignore: ['**.md', '.recomp.json', 'progress/**', '.github/workflows/progress.yml']
   workflow_dispatch:
 
 # A newer push makes an older build of the same ref pointless.

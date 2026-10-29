@@ -79,27 +79,27 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2GfxUnknown_0xa8) == 0xa8, "D2_NEW(D2GfxUnknown_0xa8): the 32-bit layout must be the 0xa8 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2GfxUnknown_0xa8) == 0xa8, "D2_NEW_AT(D2GfxUnknown_0xa8): the 32-bit layout must be the 0xa8 bytes 1.14d allocates");
 
 
 namespace D2Client::Engine::Gfx {
@@ -129,7 +129,7 @@ D2InventoryStrc * __fastcall CLIENT_GetEffectiveInventory(D2UnitStrc * pUnit, in
     return pUnit->pInventory;
 }
 
-uint32_t GFX_HashTextureName(char * pArchive) {
+static uint32_t GFX_HashTextureName(char * pArchive) {
     char DVar1;
     char* pEnd = pArchive;
     pEnd = pEnd + strlen(pEnd) + 1;
@@ -142,7 +142,7 @@ uint32_t GFX_HashTextureName(char * pArchive) {
     return ((nHash >> 8 ^ nHash) >> 0x10 ^ nHash >> 8 ^ nHash) & 0x1ff;
 }
 
-void GFX_ExtractFilenameFromPath(uint32_t dwUnused, char * szPath, char * szOutFilename) {
+static void GFX_ExtractFilenameFromPath(uint32_t dwUnused, char * szPath, char * szOutFilename) {
     char* pcEnd = szPath;
     pcEnd = pcEnd + strlen(pcEnd) + 1;
     char* pcCur = szPath + (int)(pcEnd + (-4 - (int)(szPath + 1)));
@@ -207,7 +207,7 @@ void * __stdcall GFX_LoadCofFile(void * pTextureCache, char * szPath) {
       return nullptr;
     }
 
-    uint32_t* pEntry = (uint32_t*)D2_ALLOC(0x1c);
+    uint32_t* pEntry = (uint32_t*)D2_ALLOC_AT(0x1c, ".\\ENGINE\\Gfx.cpp", 0xdc);
     *pEntry = 0;
     memset(pEntry + 1, 0, 6 * sizeof(pEntry[0]));
     pEntry[1] |= 1;
@@ -295,7 +295,7 @@ void __stdcall GFX_LoadAndHashCofArchive(char * szPath, int * pCache) {
     *pCache = 1;
 }
 
-void GFX_SyncStateOverlayPriority(int * pOverlay, int32_t pGfxInfo) {
+static void GFX_SyncStateOverlayPriority(int * pOverlay, int32_t pGfxInfo) {
     int* pCur = *(int**)(pGfxInfo + 0x2c);
     do {
       if (!pCur) {
@@ -395,7 +395,7 @@ void __stdcall GFX_RemoveStateOverlayAndReprioritize(D2UnitStrc * pUnit, int32_t
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
-int32_t GFX_FreeUnusedCofEntries(void * pCacheTable) {
+static int32_t GFX_FreeUnusedCofEntries(void * pCacheTable) {
     uint32_t* pMemoryToFree;
     uint32_t* ppBucketHead = (uint32_t*)((int)pCacheTable + 0xc);
     int nBucketsLeft = 0x200;
@@ -411,8 +411,8 @@ int32_t GFX_FreeUnusedCofEntries(void * pCacheTable) {
         pNextEntry = (uint32_t*)*pMemoryToFree;
         if (*(uint8_t*)(pMemoryToFree + 1) & 1) {
           gbCofCacheLRUEnabled += -0x1c - pMemoryToFree[2];
-          D2_FREE((void*)pMemoryToFree[5]);
-          pCacheTable = (void*)D2_FREE(pMemoryToFree);
+          D2_FREE_AT((void*)pMemoryToFree[5], ".\\ENGINE\\Gfx.cpp", 0xe3c);
+          pCacheTable = (void*)D2_FREE_AT(pMemoryToFree, ".\\ENGINE\\Gfx.cpp", 0xe3d);
         }
       }
 
@@ -428,7 +428,7 @@ void __fastcall GFX_FreePlayerCofCache(int32_t nParam) {
     GFX_FreeUnusedCofEntries(&gPlayerCofCache);
     gbCofCacheLRUEnabled -= gPlayerCofCache.nCacheEntryCount;
     if (gPlayerCofCache.pCacheMemory) {
-      D2_FREE(gPlayerCofCache.pCacheMemory);
+      D2_FREE_AT(gPlayerCofCache.pCacheMemory, ".\\ENGINE\\Gfx.cpp", 0xe50);
     }
 
     memset(&gPlayerCofCache, 0, 0x80c);
@@ -440,14 +440,14 @@ int32_t GFX_FreeMonsterCofCache() {
     GFX_FreeUnusedCofEntries(&gMonsterCofCache);
     gbCofCacheLRUEnabled -= gMonsterCofCache.nCacheEntryCount;
     if (gMonsterCofCache.pCacheMemory) {
-      D2_FREE(gMonsterCofCache.pCacheMemory);
+      D2_FREE_AT(gMonsterCofCache.pCacheMemory, ".\\ENGINE\\Gfx.cpp", 0xe61);
     }
 
     pCleared = memset(&gMonsterCofCache, 0, 0x80c);
     return (int32_t)pCleared;
 }
 
-void __stdcall GFX_BuildMonsterCofPath(uint32_t nModeId, LPSTR szOutputPath, int * pnComponentCode, int32_t nMonsterClassId) {
+static void __stdcall GFX_BuildMonsterCofPath(uint32_t nModeId, LPSTR szOutputPath, int * pnComponentCode, int32_t nMonsterClassId) {
     // Static local variables (originally global data)
     static D2CofPathOverrideStrc gnMonsterCofPathBuildTotalItems[1] = {
     {
@@ -529,7 +529,7 @@ void __stdcall GFX_BuildMonsterCofPath(uint32_t nModeId, LPSTR szOutputPath, int
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutputPath, "%s\\%s\\COF\\%s%s%s.COF", "DATA\\GLOBAL\\MONSTERS", szMonCode, szMonCode, szAnimToken, szCompToken);
 }
 
-void __stdcall GFX_PrecacheMonsterCofSprites(D2MonStatsTxt * pMonStatsTxt, uint32_t nModeId, int32_t bSync, short * pComponentTable) {
+static void __stdcall GFX_PrecacheMonsterCofSprites(D2MonStatsTxt * pMonStatsTxt, uint32_t nModeId, int32_t bSync, short * pComponentTable) {
     int32_t bParamsValid1;
     DC6* pDC6;
     uint32_t nComponentRow;
@@ -690,7 +690,7 @@ int32_t __fastcall GFX_GetModeStatusEntry(int32_t nParam) {
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
-void GFX_LoadMonsterModeCofByState(D2UnitStrc * pUnit, uint32_t nAnimMode) {
+static void GFX_LoadMonsterModeCofByState(D2UnitStrc * pUnit, uint32_t nAnimMode) {
     int nClassId;
     eD2UnitType eUnitType = UNIT_COUNT;
     if (!pUnit) {
@@ -767,7 +767,7 @@ D2GfxInfoUnkStrc * __fastcall GFX_EnsureUnitCofLoaded(D2UnitStrc * pUnit, int32_
 }
 
 // Loads unit sprite COF and precaches sprites asynchronously. Returns GfxInfoUnk on success, 0 on failure, or 0xffffffff on cache miss. Custom convention: nAsyncBlockId (stack), pUnit (EAX), pWeaponClass (EBX) - already documented in this comment but never applied to the signature, so both registers reached the reconstruction as uninitialised locals.
-D2GfxInfoUnkStrc * __stdcall GFX_AsyncLoadUnitSprites(int32_t nAsyncBlockId, D2UnitStrc * pUnit, int nAnimMode) {
+static D2GfxInfoUnkStrc * __stdcall GFX_AsyncLoadUnitSprites(int32_t nAsyncBlockId, D2UnitStrc * pUnit, int nAnimMode) {
     // Frame slots -52..-20 are ONE object: &nFrameResult is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -892,7 +892,7 @@ D2GfxInfoUnkStrc * __stdcall GFX_AsyncLoadUnitSprites(int32_t nAsyncBlockId, D2U
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
-void __stdcall GFX_AsyncLoadMonsterSprites(int32_t nAsyncBlockId, int * nModeIndex, D2UnitStrc * pUnit) {
+static void __stdcall GFX_AsyncLoadMonsterSprites(int32_t nAsyncBlockId, int * nModeIndex, D2UnitStrc * pUnit) {
     D2GfxInfoUnkStrc* pLoadResult;
     int nClassId;
     eD2UnitType eUnitType = UNIT_COUNT;
@@ -930,7 +930,7 @@ void __stdcall GFX_AsyncLoadMonsterSprites(int32_t nAsyncBlockId, int * nModeInd
     g_pMonsterSpriteCofStatusTable->nModeLoadStatus[(int)(nModeIndex + nClassId * 10)] = 1;
 }
 
-void __stdcall GFX_PrecacheMonsterModeSprites(int32_t nAsyncBlockId, D2UnitStrc * pUnit) {
+static void __stdcall GFX_PrecacheMonsterModeSprites(int32_t nAsyncBlockId, D2UnitStrc * pUnit) {
     DWORD nClassId = Source::ClientEngine::CLIENT_GetEffectiveClassId(pUnit);
     if (!(-1 < (int)nClassId && (int)nClassId < sgptDataTable->nTxtMonStatsSize)) {
       return;
@@ -963,7 +963,7 @@ void __stdcall GFX_PrecacheMonsterModeSprites(int32_t nAsyncBlockId, D2UnitStrc 
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
-void __stdcall GFX_AsyncLoadPlayerSprites(int32_t nAsyncBlockId, int32_t nModeIndex, D2UnitStrc * pUnit) {
+static void __stdcall GFX_AsyncLoadPlayerSprites(int32_t nAsyncBlockId, int32_t nModeIndex, D2UnitStrc * pUnit) {
     int nClassId;
     eD2UnitType eUnitType = UNIT_COUNT;
     if (!pUnit) {
@@ -1001,7 +1001,7 @@ void __stdcall GFX_AsyncLoadPlayerSprites(int32_t nAsyncBlockId, int32_t nModeIn
 
 // Iterate units in adjacent rooms; update gfx/anim state, may show loading UI while streaming.
 // @sourcefile .\ENGINE\Gfx.cpp
-void Gfx_UpdateNearbyUnitGfx(int32_t bShowLoadingUi) {
+static void Gfx_UpdateNearbyUnitGfx(int32_t bShowLoadingUi) {
     // Static local variables (originally global data)
     static uint32_t gaNearbyPlayerCofUpdateQueue[8] = { 0x5, 0x6, 0x1, 0x2, 0x3, 0x7, 0xa, 0x4 }; D2_STATIC_GUARD(gaNearbyPlayerCofUpdateQueue, "D2Client::Engine::Gfx::Gfx_UpdateNearbyUnitGfx::gaNearbyPlayerCofUpdateQueue");
     static uint32_t gnNearbyPlayerCofCount = 0x8; D2_STATIC_GUARD(gnNearbyPlayerCofCount, "D2Client::Engine::Gfx::Gfx_UpdateNearbyUnitGfx::gnNearbyPlayerCofCount");
@@ -1097,7 +1097,7 @@ void __fastcall GFX_InitCofSystem(int nSystemFlags) {
     memset(&gMonsterCofCache, 0, 0x80c);
     memset(gaSpriteLoadStatusTable, 0, 0x460);
     size_t nMonSpriteTableSize = sgptDataTable->nTxtMonStatsSize * 0xa0;
-    g_pMonsterSpriteCofStatusTable = (D2MonsterCofStatusEntryStrc*)D2_ALLOC_POOL(nullptr, nMonSpriteTableSize);
+    g_pMonsterSpriteCofStatusTable = (D2MonsterCofStatusEntryStrc*)D2_ALLOC_POOL_AT(nullptr, nMonSpriteTableSize, ".\\ENGINE\\Gfx.cpp", 0x7e1);
     memset(g_pMonsterSpriteCofStatusTable, 0, nMonSpriteTableSize);
     gnGfxDirectionCountCache = D2Win::Src::D2WinArchive::D2WINARCHIVE_GetArchiveHandle();
     GfxUtil::InitializeModeTokens();
@@ -1108,14 +1108,14 @@ void GFX_ShutdownCofSystem() {
     GFX_FreeUnusedCofEntries(&gPlayerCofCache);
     gbCofCacheLRUEnabled -= gPlayerCofCache.nCacheEntryCount;
     if (gPlayerCofCache.pCacheMemory) {
-      D2_FREE(gPlayerCofCache.pCacheMemory);
+      D2_FREE_AT(gPlayerCofCache.pCacheMemory, ".\\ENGINE\\Gfx.cpp", 0xe50);
     }
 
     memset(&gPlayerCofCache, 0, 0x80c);
     GFX_FreeUnusedCofEntries(&gMonsterCofCache);
     gbCofCacheLRUEnabled -= gMonsterCofCache.nCacheEntryCount;
     if (gMonsterCofCache.pCacheMemory) {
-      D2_FREE(gMonsterCofCache.pCacheMemory);
+      D2_FREE_AT(gMonsterCofCache.pCacheMemory, ".\\ENGINE\\Gfx.cpp", 0xe61);
     }
 
     memset(&gMonsterCofCache, 0, 0x80c);
@@ -1123,7 +1123,7 @@ void GFX_ShutdownCofSystem() {
       return;
     }
 
-    D2_FREE_POOL(nullptr, g_pMonsterSpriteCofStatusTable);
+    D2_FREE_POOL_AT(nullptr, g_pMonsterSpriteCofStatusTable, ".\\ENGINE\\Gfx.cpp", 0x7f9);
     g_pMonsterSpriteCofStatusTable = 0;
 }
 
@@ -1194,7 +1194,7 @@ void __fastcall GFX_AddOverlayToUnit(D2UnitStrc * pUnit, eOverlayId eOverlay, in
       GfxInfo::GFX_RemoveOverlayById(eOverlay, pUnit);
     }
 
-    D2GfxUnknown_0xa8* pOverlay = D2_NEW(D2GfxUnknown_0xa8);
+    D2GfxUnknown_0xa8* pOverlay = D2_NEW_AT(D2GfxUnknown_0xa8, ".\\ENGINE\\Gfx.cpp", 0xc48);
     if (!pOverlay) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc49);
       exit(-1);
@@ -1247,31 +1247,31 @@ void __fastcall GFX_AddOverlayToUnit(D2UnitStrc * pUnit, eOverlayId eOverlay, in
       }
 
       pGfxInfo = UNIT::CUnit::GetGfxInfo(pUnit);
-      if (pGfxInfo) {
-        pOverlay->nPreDraw = (uint32_t)(uint8_t)pOverlayTxt->PreDraw;
-        pOverlay->pNext = (D2GfxUnknown_0xa8*)pGfxInfo->pOverlayList;
-        pGfxInfo->pOverlayList = pOverlay;
-        if (pOverlay->nOverlayType == 8) {
-          pOverlay->nStatePriorityValue = nValue0;
-          GFX_SyncStateOverlayPriority(&pOverlay->nOverlayType, (int32_t)pGfxInfo);
-        }
-        if (nColorScale) {
-          nRandomValue = Archive::RANDOM_RandomNumberSelector(&pPlayer->sSeed, nColorScale << 8);
-          pOverlay->nRandomOffset = nRandomValue;
-        }
-
-        pOverlay->nAnimRate = pOverlayTxt->AnimRate << 4;
-        if (nRandomMod) {
-          nRandomValue = Archive::RANDOM_RandomNumberSelector(&pPlayer->sSeed, nRandomMod << 4);
-          pOverlay->nAnimRate += nRandomValue;
-        }
-
-        pOverlay->nLoopWaitTime = pOverlayTxt->LoopWaitTime;
-        return;
+      if (!pGfxInfo) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc7a);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc7a);
-      exit(-1);
+      pOverlay->nPreDraw = (uint32_t)(uint8_t)pOverlayTxt->PreDraw;
+      pOverlay->pNext = (D2GfxUnknown_0xa8*)pGfxInfo->pOverlayList;
+      pGfxInfo->pOverlayList = pOverlay;
+      if (pOverlay->nOverlayType == 8) {
+        pOverlay->nStatePriorityValue = nValue0;
+        GFX_SyncStateOverlayPriority(&pOverlay->nOverlayType, (int32_t)pGfxInfo);
+      }
+      if (nColorScale) {
+        nRandomValue = Archive::RANDOM_RandomNumberSelector(&pPlayer->sSeed, nColorScale << 8);
+        pOverlay->nRandomOffset = nRandomValue;
+      }
+
+      pOverlay->nAnimRate = pOverlayTxt->AnimRate << 4;
+      if (nRandomMod) {
+        nRandomValue = Archive::RANDOM_RandomNumberSelector(&pPlayer->sSeed, nRandomMod << 4);
+        pOverlay->nAnimRate += nRandomValue;
+      }
+
+      pOverlay->nLoopWaitTime = pOverlayTxt->LoopWaitTime;
+      return;
     }
 }
 
@@ -1715,7 +1715,7 @@ void __fastcall GFX_UpdateOverlayAnimations(D2UnitStrc * pUnit) {
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
-D2GfxInfoUnkStrc * __stdcall GFX_DrawUnitComponents(int32_t nWorldX, uint32_t nLightColor, int32_t bTransparent, int32_t bDrawStates, int32_t nWorldY, D2UnitStrc * pUnit) {
+static D2GfxInfoUnkStrc * __stdcall GFX_DrawUnitComponents(int32_t nWorldX, uint32_t nLightColor, int32_t bTransparent, int32_t bDrawStates, int32_t nWorldY, D2UnitStrc * pUnit) {
     int nCallResult;
     D2UnitStrc* pUnitTmp;
     D2InventoryStrc* pInventory;

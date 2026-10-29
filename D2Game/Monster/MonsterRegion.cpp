@@ -40,29 +40,28 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/Drlg/Drlg.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2MonsterRegionStrc) == 0x2e4, "D2_NEW(D2MonsterRegionStrc): the 32-bit layout must be the 0x2e4 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2MonsterRegionStrc) == 0x2e4, "D2_NEW_AT(D2MonsterRegionStrc): the 32-bit layout must be the 0x2e4 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
 namespace D2Game::Monster::MonsterRegion {
 
 // Picks the per-region monster type roster for a level. Copies the level's normal (mon) or nightmare/hell (nmon) candidate class-id pool into a stack buffer, then draws up to NumMon (capped 13) distinct entries using the seed RNG, removing each picked id from the pool. For the first pick on a rangedspawn level it retries (up to ~4 attempts) until it lands a ranged (rangedtype) monster. Each accepted spawnable (isSpawn) MonStats id is written into pMonsterRegion->pMonData with its Rarity, accumulating nTotalRarity/nSpawnCount/nCounter. Server-side seed-deterministic so all clients agree on the region's monster set.
-void __stdcall MONREGION_PopulateMonsterTypes(BOOL bIsNotNormalDifficulty, D2MonsterRegionStrc * pMonsterRegion, D2LevelsTxt * pTxtLevels, D2SeedStrc * pSeed) {
+static void __stdcall MONREGION_PopulateMonsterTypes(BOOL bIsNotNormalDifficulty, D2MonsterRegionStrc * pMonsterRegion, D2LevelsTxt * pTxtLevels, D2SeedStrc * pSeed) {
     short int* pMonList;
     D2MonStatsTxt* pMonStats;
     uint32_t nCopyWords;
@@ -256,8 +255,6 @@ void __stdcall MONREGION_PopulateMonsterTypes(BOOL bIsNotNormalDifficulty, D2Mon
         nRandPick = nValidMonCount;
       } while (nMonsPicked < (int)nMaxMons);
     }
-
-    Fog::Debug::GuardStack();
 }
 
 // Allocates and populates a D2MonsterRegionStrc for every level (index 1..nTxtLevelsSize-1) in the game. Per level: pool-allocates a zeroed region, fills monster density/boss counts/wander/quest flags from LevelsTxt, rolls monster types via MONREGION_PopulateMonsterTypes, then seeds champion-pack data for each monster slot. Halts with fatal error 0x83 if DifficultyLevels txt lookup fails.
@@ -272,7 +269,12 @@ void __fastcall AllocMonsterRegion(D2PoolManagerStrc * pMemory, D2Row_D2MonsterR
     pSeed->nSeedHigh = 0x29a;
     uint32_t nDifficulty_00 = (uint32_t)nDifficulty;
     D2DifficultyLevelsTxt* pDiffLevels = D2Common::DATATBLS::DataTbls::GetDifficultyLevels(nDifficulty_00);
-    if (pDiffLevels) {
+    if (!pDiffLevels) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x83);
+      exit(-1);
+    }
+
+    {
       D2MonsterRegionStrc* pMonsterRegion;
       nSeedLow = 1;
       if (1 >= sgptDataTable->nTxtLevelsSize) {
@@ -281,7 +283,7 @@ void __fastcall AllocMonsterRegion(D2PoolManagerStrc * pMemory, D2Row_D2MonsterR
 
       do {
         pMonRegionListEntry = (int*)((int)pMonsterRegionList + 4);
-        pMonsterRegion = D2_NEW_POOL(pMemory, D2MonsterRegionStrc);
+        pMonsterRegion = D2_NEW_POOL_AT(pMemory, D2MonsterRegionStrc, ".\\MONSTER\\MonsterRegion.cpp", 0x87);
         memset(pMonsterRegion, 0, 0x2e4);
         pLevelTxt = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(nSeedLow);
         pMonsterRegion->nAct = pLevelTxt->Act;
@@ -320,9 +322,6 @@ void __fastcall AllocMonsterRegion(D2PoolManagerStrc * pMemory, D2Row_D2MonsterR
 
       return;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x83);
-    exit(-1);
 }
 
 // @sourcefile .\MONSTER\MonsterRegion.cpp
@@ -335,7 +334,7 @@ void __fastcall FreeMonsterRegion(D2PoolManagerStrc * pMemory, int32_t nParam) {
     do {
       nParam += 4;
       if (*(void**)nParam) {
-        D2_FREE_POOL(pMemory, *(void**)nParam);
+        D2_FREE_POOL_AT(pMemory, *(void**)nParam, ".\\MONSTER\\MonsterRegion.cpp", 0xc5);
       }
 
       i++;

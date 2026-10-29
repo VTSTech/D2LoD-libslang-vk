@@ -36,13 +36,13 @@ void __fastcall D2WIN_RegisterWindowHandler(int32_t hHandle, int32_t nHandlerTyp
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x18);
               exit(-1);
             } else {
-              if (nMessage != 0x100) {
-                Storm::WindowHandle::SMsgRegisterMessage(hHandle, nMessage, pCallback);
-                return;
+              if (nMessage == 0x100) {
+                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19);
+                exit(-1);
               }
 
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19);
-              exit(-1);
+              Storm::WindowHandle::SMsgRegisterMessage(hHandle, nMessage, pCallback);
+              return;
             }
           }
         case 1:
@@ -75,13 +75,13 @@ void __fastcall D2WIN_UnregisterWindowHandler(int32_t hHandle, int32_t nHandlerT
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x35);
               exit(-1);
             } else {
-              if (pMessage != (void*)0x100) {
-                Storm::WindowHandle::SMsgUnregisterMessage(hHandle, (char*)pMessage, (char*)pCallback);
-                return;
+              if (pMessage == (void*)0x100) {
+                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x36);
+                exit(-1);
               }
 
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x36);
-              exit(-1);
+              Storm::WindowHandle::SMsgUnregisterMessage(hHandle, (char*)pMessage, (char*)pCallback);
+              return;
             }
           }
         case 1:
@@ -103,7 +103,12 @@ void __fastcall D2WIN_UnregisterWindowHandler(int32_t hHandle, int32_t nHandlerT
 
 // Registers multiple window handlers from array. Each array entry contains {type, message, callback} triplet. Iterates array and calls RegisterWindowHandler for each entry.
 void __fastcall D2WIN_RegisterWindowHandlerArray(int32_t hHandle, void * pHandlerArray, int32_t nHandlerCount) {
-    if (hHandle) {
+    if (!hHandle) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4d);
+      exit(-1);
+    }
+
+    {
       int32_t* pHandlerEntry;
       if (!nHandlerCount) {
         return;
@@ -118,14 +123,16 @@ void __fastcall D2WIN_RegisterWindowHandlerArray(int32_t hHandle, void * pHandle
 
       return;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4d);
-    exit(-1);
 }
 
 // Unregisters multiple window handlers from array. Iterates array and calls UnregisterWindowHandler for each {type, message, callback} triplet.
 void __fastcall D2WIN_UnregisterWindowHandlerArray(int32_t hHandle, void * pHandlerArray, int32_t nHandlerCount) {
-    if (hHandle) {
+    if (!hHandle) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a);
+      exit(-1);
+    }
+
+    {
       int32_t* pHandlerEntry;
       if (!nHandlerCount) {
         return;
@@ -140,9 +147,6 @@ void __fastcall D2WIN_UnregisterWindowHandlerArray(int32_t hHandle, void * pHand
 
       return;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a);
-    exit(-1);
 }
 
 // Adds list item from narrow character string. Converts szCharName to wide string (max 256 chars), forwards to AddListItem.

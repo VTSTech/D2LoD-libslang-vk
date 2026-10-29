@@ -49,24 +49,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q1Strc) == 0xa0, "D2_NEW(D2QuestDataA3Q1Strc): the 32-bit layout must be the 0xa0 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q1Strc) == 0xa0, "D2_NEW_AT(D2QuestDataA3Q1Strc): the 32-bit layout must be the 0xa0 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A3Q1 {
@@ -163,7 +159,7 @@ void __fastcall Objects_InitFn50(int32_t * pdwParam) {
 }
 
 // Q17_SetupHratliMapAi — (QUEST_SpokeToHratli helper, not Lam Esen). Stores a DRLG map pointer into the SpokeToHratli quest-specific data and, if Hratli's map-AI is flagged and his unit + map file are valid and not yet transplanted, moves the DRLG preset file onto Hratli's monster map-AI (one-shot via bDrlgMapTaken). No player quest-record state touched.
-void Q17_SetupHratliMapAi(void * pThis, int32_t nParam) {
+void __thiscall Q17_SetupHratliMapAi(void * pThis, int32_t nParam) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal((::SGAMEDATA*)pThis, QUESTINT_SpokeToHratli);
     if (!pQuestData) {
       return;
@@ -706,15 +702,14 @@ void __fastcall Q18_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 }
 
 // Q18_SequenceFilter — Lam Esen's Tome quest-chain link. Once this quest is fully complete (live nStateFlag==5, or not in intro), looks up the next quest (nSequenceQuestId = QUEST_BladeOfTheOldReligion) and invokes its sequence filter, propagating quest unlock down the chain. Halts via Fog ErrorManager if the next filter pointer is bad. No quest-record bits.
-void __fastcall Q18_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    bool bBadPtr;
+bool __fastcall Q18_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pNextQuestData) {
-      return;
+      return false;
     }
 
     BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -723,7 +718,8 @@ void __fastcall Q18_SequenceFilter(D2QuestDataStrc * pQuestData) {
       exit(-1);
     }
 
-    pNextQuestData->fpSequenceFilter(pNextQuestData);
+    bool bBadPtr = pNextQuestData->fpSequenceFilter(pNextQuestData);
+    return bBadPtr;
 }
 
 // Q18_CheckPlayerHasTome — Lam Esen's Tome, per-party-member predicate (called by ExecuteFunctionForEveryPartyMember from Q18_StatusFilter). If this party member carries the Tome item (0x20626262), set the shared bTaintedSunStartedFailed flag (reused as "someone in party has the tome") in the Lam Esen quest data. Read-only on quest record.
@@ -809,9 +805,9 @@ void __fastcall Q18_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->nInitNo = 4;
     pQuestData->fpStatusFilter = Q18_StatusFilter;
     pQuestData->fpActiveFilter = Q18_ActiveFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q18_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q18_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_BladeOfTheOldReligion;
-    D2QuestDataA3Q1Strc* pQuestSpecificData = D2_NEW_POOL(pQuestData->pGame->pMemoryPool, D2QuestDataA3Q1Strc);
+    D2QuestDataA3Q1Strc* pQuestSpecificData = D2_NEW_POOL_AT(pQuestData->pGame->pMemoryPool, D2QuestDataA3Q1Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q1.cpp", 0x3ad);
     pQuestData->pQuestSpecificData.pA3Q1 = pQuestSpecificData;
     pQuestData->sStateFunctions.fpQuestStateHandler[4] = Q18_Callback04_ItemPickedUp;
     pQuestData->sStateFunctions.fpQuestStateHandler[5] = Q18_Callback05_ItemDropped;

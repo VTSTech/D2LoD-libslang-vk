@@ -55,7 +55,7 @@ void __fastcall Q31_Callback03_ChangedLevel(struct D2QuestDataStrc * pQuestData,
 // A5Q1 active filter for Larzuk (class 0x1ff): returns true (quest is interactable) if RewardAwaits(1) and reward not yet given (Step0x05 unset), OR if intro shown, in-progress, and not Completed(0)/RewardAwaits(1). Read-only.
 bool __fastcall Q31_ActiveFilter(struct D2QuestDataStrc * pQuestData, int32_t nTargetClassId, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2UnitStrc * pUnitEx);
 // A5Q1 sequence filter: chains to the next quest's sequence filter (nSequenceQuestId). Only proceeds when this quest reached stateFlag 5 (reward given) or intro shown; validates the chained fn ptr before calling. No quest-state bit reads.
-void __fastcall Q31_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q31_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // A5Q1: on game load, rebuild volatile in-memory state (nStateFlagPrev@+0xb, nStateFlag@+0xc) from the player's persisted quest-record bits. Priority: Completed(0)/FinishedPrev(0xf)/RewardAwaits(1) -> prev=5 (done); Step0x04(4) -> prev2,flag3; Step0x03(3) -> prev1,flag3; Step0x02(2) -> prev1,flag2; else if player has spoken with Larzuk-intro NPC 0x201 and intro shown -> flag=1. Decompiler shows nQuestIdReal via [ESI+0xe0].
 void __fastcall Q31_Callback13_PlayerStartedGame(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // A5Q1 init: allocates the A5Q1-specific data block, wires up the state-handler table (Callback 0/2/3/8/10/11/13), the Larzuk NPC gossip message table (mon 0x1ff, string 0x4e6d), and the filter fn ptrs (status/active/sequence). Sets nQuestIdReal=Q35/SiegeOnHarrogath, nInitNo=4, nSequenceQuestId; zeroes all progress flags.
@@ -70,6 +70,6 @@ void __fastcall Objects_InitFn71(struct D2ObjectInitFnArg * pInitArg);
 // A5Q1 death hook: when a monster dies, if it is boss 0x2a (Shenk the Overseer) and quest progress<2 with intro shown, broadcast state 2 (Shenk slain) which drives the state-8 completion fan-out.
 void __fastcall Q31_OnOverseerDeath(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // A5Q1 preset-object load hook: when the Shenk preset object loads, copies its preset object list into the quest data; if Shenk was already spawned and his unit still exists, re-attaches the DRLG map file to his AI. No quest-record bit changes.
-void Q31_OnPresetObjectLoad(void * pThis, struct D2MapAIStrc * pMapAI);
+void __thiscall Q31_OnPresetObjectLoad(void * pThis, struct D2MapAIStrc * pMapAI);
 
 } // namespace D2Game::Quests::QUESTS::A5Q1

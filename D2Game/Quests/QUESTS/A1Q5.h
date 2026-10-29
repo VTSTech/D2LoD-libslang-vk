@@ -22,8 +22,6 @@ typedef int eD2Quests;
 namespace D2Game::Quests::QUESTS::A1Q5 {
 
 // Function declarations
-// A1Q5 "Forgotten Tower" — removes a player from one of two in-quest GUID tracking lists (selected by nListSelector 0/1). Searches the list in nListBase for nPlayerGUID; if found, swaps it with the tail entry and decrements the count. Returns 1 if found+removed, 0 if not present. Used to deregister players who leave or are re-synced.
-BOOL __stdcall Q05_RemovePlayerFromTrackingList(int32_t nListSelector, int32_t nListBase, int32_t nPlayerGUID);
 // Quest item drop and callback functions for A1Q4 (Search for Cain), A1Q5 (Forgotten Tower), and A1Q6 (Sisters to the Slaughter)
 uint32_t __stdcall QUEST_IsPlayerGUIDInTrackingList(struct D2QuestDataA1Q5Strc * pListBase, int32_t nListSelector, int32_t nPlayerGUID);
 BOOL __fastcall Q05_NotifyQuestStateToPlayer(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
@@ -65,7 +63,7 @@ int __fastcall Q05_OnTowerComplete(::SGAMEDATA * pGame, struct D2QuestDataStrc *
 void __fastcall Q05_Callback03_ChangedLevel(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q5.cpp
 void __fastcall Q05_CheckAndUpdateOnAreaEntry(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nAreaFlag);
-void __fastcall Q05_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q05_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 bool __fastcall Q05_ActiveFilter(struct D2QuestDataStrc * pQuestData, int32_t nTargetClassId, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2UnitStrc * pUnitEx);
 BOOL __fastcall Q05_SetCannotCompleteInGame(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 BOOL __fastcall Q05_PropagateRewardToParty(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
@@ -92,5 +90,6 @@ void __fastcall Q05_Callback13_PlayerStartedGame(struct D2QuestDataStrc * pQuest
 // A1Q5 (The Forgotten Tower) per-game quest registration. Zeroes the state-handler table then wires the per-state callbacks: [0]=Callback_00 (gossip), [3]=Callback_03 (area/tower entry), [8]=Callback_08 (Countess/clear), [0xa]=Callback_10 (player left), [0xb]=Callback_11 (Akara dialog/turn-in), [0xd]=Callback_13 (reload). Sets nQuestIdReal=QUEST_ForgottenTower, installs the NPC gossip table (aNpcGossipData), fpActiveFilter=Q05_ActiveFilter, fpSequenceFilter=Q05_SequenceFilter, nSequenceQuestId=QUEST_ToolsOfTheTrade (next quest), nInitNo=4, fpStatusFilter=null. Allocates the 0x120-byte A1Q5-specific data from the game memory pool, zeroes it, and inits its GUID player-count list (QUESTGUID_SetPlayerCountToZero). Pure registration; no quest-record state I/O.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q5.cpp
 void __fastcall Q05_InitData(struct D2QuestDataStrc * pQuestData);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A1Q5

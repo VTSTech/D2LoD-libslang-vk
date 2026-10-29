@@ -38,24 +38,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q1Strc) == 0x14, "D2_NEW(D2QuestDataA2Q1Strc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q1Strc) == 0x14, "D2_NEW_AT(D2QuestDataA2Q1Strc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A2Q1 {
@@ -507,14 +503,14 @@ void __fastcall Q09_OnPlayerJoinNoop(::SGAMEDATA * pGame, D2QuestDataStrc * pQue
 }
 
 // A2Q1 fpSequenceFilter: chain into the next quest's sequence filter once this quest is at its terminal state (nStateFlag==5) or already past intro. Looks up the sequence-successor quest (nSequenceQuestId = QUEST_TheSummoner) and tail-calls its fpSequenceFilter, with an IsBadCodePtr guard that halts on a corrupt pointer. Drives the act-2 quest-availability chain forward.
-void __fastcall Q09_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q09_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pSeqQuestData) {
-      return;
+      return false;
     }
 
     BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -523,7 +519,8 @@ void __fastcall Q09_SequenceFilter(D2QuestDataStrc * pQuestData) {
       exit(-1);
     }
 
-    pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+    bool nStateFlagTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+    return nStateFlagTmp;
 }
 
 // A2Q1 callback[0xd]: on-join-game state reconciliation from the persisted quest record. Branches on the stored record bits for this player: (a) Completed -> if Step0x05 set (book earned) but player no longer holds the Book of Skill item, clears Completed/RewardAwaits/FinishedInPreviousGame/Step0x05 (book was lost, re-allow); then pushes JustCompleted, marks intro done, nStateFlag=0. (b) FinishedInPreviousGame -> if RewardAwaits, sets bRewardPending so Atma still hands over the book this game; nStateFlag=0, intro done. (c) Step0x04 -> nStateFlag=3,prev=2. (d) Step0x03 -> nStateFlag=3,prev=1. (e) Step0x02 -> nStateFlag=2,prev=1. Restores live engine state from saved bits when a player enters.
@@ -603,9 +600,9 @@ void __fastcall Q09_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q09_Callback02_NpcDeactivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q09_Callback13_PlayerStartedGame;
     pQuestData->nSequenceQuestId = QUEST_TheSummoner;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q09_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q09_SequenceFilter;
     pQuestData->pNpcMessages = &A2Q1::aNpcGossipData;
-    D2QuestDataA2Q1Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA2Q1Strc);
+    D2QuestDataA2Q1Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA2Q1Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q1.cpp", 0x29e);
     pQuestData->pQuestSpecificData.pA2Q1 = pQuestSpecificData;
     pQuestData->nQuestIdReal = QUEST_RadamentsLair;
     pQuestData->fpStatusFilter = 0;

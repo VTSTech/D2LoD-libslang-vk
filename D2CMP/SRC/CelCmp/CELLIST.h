@@ -22,9 +22,9 @@ struct __attribute__((packed)) CELLIST : public TSHashObject<CELLIST, HASHKEY_NO
 namespace D2CMP::SRC::CelCmp::CELLIST {
 
 // Function declarations
-void Destructor(::CELLIST * pThis);
-::CELLIST * ScalarDeletingDestructor(::CELLIST * pThis, uint32_t dwFlags);
+void __thiscall Destructor(::CELLIST * pThis);
+::CELLIST * __thiscall ScalarDeletingDestructor(::CELLIST * pThis, uint32_t dwFlags);
 // Copy pool metadata from src pool and init free-list sentinel links on this node
-::CELLIST * CopyConstructor(::CELLIST * pThis, ::CELLIST * pSource);
+::CELLIST * __thiscall CopyConstructor(::CELLIST * pThis, ::CELLIST * pSource);
 
 } // namespace D2CMP::SRC::CelCmp::CELLIST

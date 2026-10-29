@@ -37,8 +37,8 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -221,8 +221,8 @@ void __stdcall TEXT_DrawCashDisplay() {
             dwColor = D2Win::Src::D2WinFont::DRAW_text0(pMemoryToFree->wszLine);
             D2Win::Src::D2WinFont::DRAW_text(pMemoryToFree->wszLine, 0xa0 - dwColor / 2, nTabIdx, 4, 0);
             pWordWrapNode = pMemoryToFree->pNext;
-            D2_FREE(pMemoryToFree->wszLine);
-            D2_FREE(pMemoryToFree);
+            D2_FREE_AT(pMemoryToFree->wszLine, ".\\UI\\UseItem.cpp", 0x2c3);
+            D2_FREE_AT(pMemoryToFree, ".\\UI\\UseItem.cpp", 0x2c4);
             nTabIdx += 0x14;
             pMemoryToFree = pWordWrapNode;
           } while (pWordWrapNode);

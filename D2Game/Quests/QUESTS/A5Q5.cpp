@@ -65,24 +65,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA5Q5Strc) == 0x64, "D2_NEW(D2QuestDataA5Q5Strc): the 32-bit layout must be the 0x64 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA5Q5Strc) == 0x64, "D2_NEW_AT(D2QuestDataA5Q5Strc): the 32-bit layout must be the 0x64 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A5Q5 {
@@ -165,7 +161,7 @@ void __fastcall Q35_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
 }
 
 // [A5Q5 = Rite of Passage] Q35_KillAndRemoveAncient: kills one Ancient super-unique (Talic/Korlic/Madawc) by GUID, runs its Dead lifecycle transition, and removes it from the room. Used by the arena reset path. No quest-state writes.
-bool Q35_KillAndRemoveAncient(::SGAMEDATA * pGame, DWORD dwParam) {
+static bool Q35_KillAndRemoveAncient(::SGAMEDATA * pGame, DWORD dwParam) {
     bool dwKillSuccess;
     bool bKillResult;
     D2MonsterKillStrc sMonsterKill;
@@ -234,7 +230,7 @@ BOOL __stdcall Q35_PrepareAncientsForBattle(D2QuestDataStrc * pQuestData, D2Ques
 }
 
 // A5Q5 (Rite of Passage) full arena reset, called on player death or leaving during the fight. Iterates all three Ancient slots: kills and removes each spawned Ancient via Q35_KillAndRemoveAncient (or removes inactive unit if already dead), decrements alive/spawned counters, and restores all three altar statues to anim mode 0. Clears fight-active flags. No quest-state writes.
-void __stdcall Q35_ResetAncientsArena(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2) {
+static void __stdcall Q35_ResetAncientsArena(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2) {
     bool bKillSuccess;
     D2UnitStrc* pStatue;
     DWORD* pAncientGUID = (DWORD*)(nParam2 + 0x20);
@@ -562,7 +558,7 @@ void __fastcall Q35_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 }
 
 // A5Q5 (Rite of Passage) XP reward function. Grants 1,400,000 / 20,000,000 / 40,000,000 XP for Normal/Nightmare/Hell respectively, capped to one level's worth of experience. Loops awarding XP until the cap is exhausted or the level table is exceeded. Caller is responsible for setting Completed/JustCompleted quest states.
-uint32_t __stdcall RewardExperienceFromAncients(::SGAMEDATA * pQuestData, D2UnitStrc * pUnit) {
+static uint32_t __stdcall RewardExperienceFromAncients(::SGAMEDATA * pQuestData, D2UnitStrc * pUnit) {
     int32_t nExpNeeded;
     uint32_t nValue;
     int32_t ePlayerClassId;
@@ -732,7 +728,7 @@ BOOL __fastcall Q35_OnAncientsDefeated(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 }
 
 // [A5Q5 = Rite of Passage] Q35_FireAncientDeathMissile: cosmetic — fires the MISSILE_AncientDeathCenter effect at a slain Ancient's position. No quest-state writes.
-void __stdcall Q35_FireAncientDeathMissile(D2QuestArgStrc * pQuestArg, D2QuestDataStrc * pQuestData, DWORD dwParam) {
+static void __stdcall Q35_FireAncientDeathMissile(D2QuestArgStrc * pQuestArg, D2QuestDataStrc * pQuestData, DWORD dwParam) {
     D2SkillArgStrc sSkillArg;
     D2UnitStrc* pAncientUnit = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, dwParam);
     if (!pAncientUnit) {
@@ -930,19 +926,19 @@ bool __fastcall Q35_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 }
 
 // [A5Q5 = Rite of Passage] Q35_SequenceFilter: quest-chain gate. While nStateFlag != 5 (Ancients not dead), parks the quest at nStateFlag 1; once finished, chains into the next quest (nSequenceQuestId = RescueOnMountArreat) sequence filter. No quest-record writes.
-void __fastcall Q35_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q35_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
       if (pQuestData->nStateFlag) {
-        return;
+        return true;
       }
 
       pQuestData->nStateFlag = 1;
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pNextQuestData) {
-      return;
+      return false;
     }
 
     BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -951,7 +947,8 @@ void __fastcall Q35_SequenceFilter(D2QuestDataStrc * pQuestData) {
       exit(-1);
     }
 
-    pNextQuestData->fpSequenceFilter(pNextQuestData);
+    bool uVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
+    return uVar1;
 }
 
 // [A5Q5 = Rite of Passage] Q35_Callback_13 (sub-handler idx 0xd): on game load, reconstructs live nStateFlag/nStateFlagPrev from the saved quest record. Completed/FinishedInPreviousGame -> set field_0x4A (done). Step0x03 -> nStateFlag 3. Step0x02 -> nStateFlag 2. Read-only on records.
@@ -999,13 +996,13 @@ void __fastcall Q35_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->pNpcMessages = A5Q5::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
-    D2QuestDataA5Q5Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA5Q5Strc);
+    D2QuestDataA5Q5Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA5Q5Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q5.cpp", 0x41d);
     pQuestData->pQuestSpecificData.pA5Q5 = pQuestSpecificData;
     pQuestData->nQuestIdReal = QUEST_RiteOfPassage;
     pQuestData->fpStatusFilter = 0;
     pQuestData->nInitNo = 4;
     pQuestData->fpActiveFilter = Q35_ActiveFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q35_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q35_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_RescueOnMountArreat;
     memset(pQuestSpecificData, 0, 0x64);
 }
@@ -1127,7 +1124,7 @@ BOOL __fastcall Q35_CheckQuestNotStarted(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 }
 
 // [A5Q5 = Rite of Passage] Q35_SetStatueAnimMode: sets one altar statue's display/anim mode from the saved per-statue mode. classId 0x1da->slot[0x34], 0x1db->slot[0x30], 0x1dc->slot[0x38]. No quest-state writes.
-void Q35_SetStatueAnimMode(uint32_t dwParam, D2QuestDataA5Q5Strc * pQuestData, D2ObjectInitFnArg * pInitArg) {
+static void Q35_SetStatueAnimMode(uint32_t dwParam, D2QuestDataA5Q5Strc * pQuestData, D2ObjectInitFnArg * pInitArg) {
     int nClassId;
     D2UnitStrc* pUnit = pInitArg->pObject;
     if (!pUnit) {

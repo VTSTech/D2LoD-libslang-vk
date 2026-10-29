@@ -24,31 +24,31 @@ typedef int (__fastcall *fpUIWidgetCharFilter)(::UIWidget * pWidget, struct D2UI
 namespace D2Client::UI::Editbox::EditBoxImplementation {
 
 // Function declarations
-void Destructor(::EditBoxImplementation * pThis);
-void SetNumericOnly(::EditBoxImplementation * pThis, BOOL bNumericOnly);
-void Draw(::EditBoxImplementation * pThis);
+void __thiscall Destructor(::EditBoxImplementation * pThis);
+void __thiscall SetNumericOnly(::EditBoxImplementation * pThis, BOOL bNumericOnly);
+void __thiscall Draw(::EditBoxImplementation * pThis);
 // Formats nNumber as decimal text and stores it as the edit box text.
 // EditBoxImplementation vtable slot 15.
-void SetNumber(::EditBoxImplementation * pThis, int nNumber);
+void __thiscall SetNumber(::EditBoxImplementation * pThis, int nNumber);
 // Converts the narrow string szText to wide text and stores it as the edit box text.
 // EditBoxImplementation vtable slot 14.
-void SetText(::EditBoxImplementation * pThis, char * szText);
-int GetValue(::EditBoxImplementation * pThis);
-void GetText(::EditBoxImplementation * pThis, char * szBuffer);
-int GetRepeatDelta(::EditBoxImplementation * pThis);
-int OnMouseDown(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseWheel(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseUp(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnChar(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseMove(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnUpArrow(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnDownArrow(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-void SetCharFilter(::EditBoxImplementation * pThis, fpUIWidgetCharFilter pfnCharFilter);
-void SetWidth(::EditBoxImplementation * pThis, int nWidth);
-void SetKeyRepeat(::EditBoxImplementation * pThis, BOOL bAllow);
-int OnRightArrow(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnLeftArrow(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-::EditBoxImplementation * Constructor(::EditBoxImplementation * pThis, int nPosX, int nPosY, int nWidth, int nMaxLines, int nMaxValue, uint16_t nMaxLength, fpEditBoxOnEnter pfnOnEnter, int nFont);
-::EditBoxImplementation * ScalarDeletingDestructor(::EditBoxImplementation * pThis, uint32_t nFlags);
+void __thiscall SetText(::EditBoxImplementation * pThis, char * szText);
+int __thiscall GetValue(::EditBoxImplementation * pThis);
+void __thiscall GetText(::EditBoxImplementation * pThis, char * szBuffer);
+int __thiscall GetRepeatDelta(::EditBoxImplementation * pThis);
+int __thiscall OnMouseDown(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseWheel(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseUp(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnChar(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseMove(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnUpArrow(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnDownArrow(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+void __thiscall SetCharFilter(::EditBoxImplementation * pThis, fpUIWidgetCharFilter pfnCharFilter);
+void __thiscall SetWidth(::EditBoxImplementation * pThis, int nWidth);
+void __thiscall SetKeyRepeat(::EditBoxImplementation * pThis, BOOL bAllow);
+int __thiscall OnRightArrow(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnLeftArrow(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+::EditBoxImplementation * __thiscall Constructor(::EditBoxImplementation * pThis, int nPosX, int nPosY, int nWidth, int nMaxLines, int nMaxValue, uint16_t nMaxLength, fpEditBoxOnEnter pfnOnEnter, int nFont);
+::EditBoxImplementation * __thiscall ScalarDeletingDestructor(::EditBoxImplementation * pThis, uint32_t nFlags);
 
 } // namespace D2Client::UI::Editbox::EditBoxImplementation

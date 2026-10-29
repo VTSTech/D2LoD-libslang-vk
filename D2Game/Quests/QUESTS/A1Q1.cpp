@@ -41,18 +41,14 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A1Q1 {
@@ -542,14 +538,14 @@ bool __fastcall Q01_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 }
 
 // A1Q1 (Den of Evil) sequence-filter (Q01_SequenceFilter, fpSequenceFilter) -- chains quest activation. Only proceeds once Den of Evil is finished (nStateFlag==5 or fully introduced); then looks up the next quest in the chain (nSequenceQuestId = QUEST_SistersBurialGrounds, set in Q01_InitData) and invokes its sequence filter, so completing the Den unlocks/advances A1Q2. No direct quest-record state ops; it drives quest progression via the chain.
-void __fastcall Q01_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q01_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
-      return;
+      return true;
     }
 
     D2QuestDataStrc* pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
     if (!pNextQuestData) {
-      return;
+      return false;
     }
 
     BOOL bBadFnPtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -558,7 +554,8 @@ void __fastcall Q01_SequenceFilter(D2QuestDataStrc * pQuestData) {
       exit(-1);
     }
 
-    pNextQuestData->fpSequenceFilter(pNextQuestData);
+    bool uVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
+    return uVar1;
 }
 
 // A1Q1 (Den of Evil) state-0x0d callback (Q01_Callback_13) -- reconstructs the server-side progress flags (nStateFlag / nStateFlagPrev) from a player's saved quest record on (re)load, so a returning player resumes at the right step. If the player's QUEST_DenOfEvil record is not Completed and not FinishedInPreviousGame, it reads the journal step sub-states: Step0x04 -> flag 3, prev 2 (den cleared, return to Akara); Step0x03 -> flag 3, prev 1 (entered the Den); Step0x02 -> flag 2, prev 1 (talked to Akara). The inverse of Q01_SyncQuestStepToPlayer.
@@ -614,14 +611,14 @@ void __fastcall Q01_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->pNpcMessages = &A1Q1::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 1;
-    D2QuestDataA1Q1Strc** pQuestSpecificData = (D2QuestDataA1Q1Strc**)D2_ALLOC_POOL(pGame->pMemoryPool, 0x8c);
+    D2QuestDataA1Q1Strc** pQuestSpecificData = (D2QuestDataA1Q1Strc**)D2_ALLOC_POOL_AT(pGame->pMemoryPool, 0x8c, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q1.cpp", 0x2ee);
     pQuestData->pQuestSpecificData.pA1Q1 = (D2QuestDataA1Q1Strc*)pQuestSpecificData;
     pQuestData->nQuestIdReal = QUEST_DenOfEvil;
     pQuestData->nSubQuestId = QUEST_Respec;
     pQuestData->fpStatusFilter = 0;
     pQuestData->nInitNo = 4;
     pQuestData->fpActiveFilter = Q01_ActiveFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q01_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q01_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_SistersBurialGrounds;
     memset(pQuestSpecificData, 0, 0x8c);
     QUESTGUID_SetPlayerCountToZero((D2QuestGUIDStrc*)pQuestSpecificData);

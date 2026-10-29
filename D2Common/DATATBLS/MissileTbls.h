@@ -14,7 +14,6 @@ struct D2PoolManagerStrc;
 namespace D2Common::DATATBLS::MissileTbls {
 
 // Function declarations
-void MISSILETBLS_PadCodeTo4Chars(char * szText1, char * szText2);
 int32_t __fastcall MapMissilesTxtKeywordToNumber(char * szKey);
 // Validates and resolves a calc-code string (szText) for a missile table column. For nCalcType==1: looks up the code in the skills link table (nLinkType==3) or missiles link table (nLinkType==4); sets *pdwParam=1 on a successful lookup, 0 on fallback via GetClassIdFromName on the misc-calc link. For other nCalcType values: packs the up-to-4-char string into a uint32 and calls GetClassIdFromName on the miss-calc link, always setting *pdwParam=0.
 int __fastcall MISSILETBLS_ValidateCalcCode(char * szText, int * pOutHasResolvedToConstant, int nAST, int nKeywordNumber);
@@ -27,5 +26,6 @@ void __fastcall TXT_AllocTxt_missiles(struct D2PoolManagerStrc * pMemory);
 // @sourcefile .\DATATBLS\MissileTbls.cpp
 void __stdcall MISSILETBLS_FreeTxt();
 int32_t __stdcall MISSILETBLS_CalculateVelocity(int32_t nMissileId, int32_t nLevel);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Common::DATATBLS::MissileTbls

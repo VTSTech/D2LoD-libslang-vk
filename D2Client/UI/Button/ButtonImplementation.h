@@ -19,21 +19,21 @@ typedef int (*fpButtonOnActivate)();
 namespace D2Client::UI::Button::ButtonImplementation {
 
 // Function declarations
-void Destructor(::ButtonImplementation * pThis);
-BOOL IsMouseInBounds(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int GetValue(::ButtonImplementation * pThis);
-void SetAccelerator(::ButtonImplementation * pThis, BOOL bEnable);
-int OnMouseDown(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseUp(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnChar(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseMove(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnUpArrow(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnDownArrow(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnRightArrow(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnLeftArrow(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseWheel(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
-::ButtonImplementation * Constructor(::ButtonImplementation * pThis, int nPosX, int nPosY, int nButtonKind, fpButtonOnActivate pfnOnActivate);
-::ButtonImplementation * ScalarDeletingDestructor(::ButtonImplementation * pThis, uint32_t nFlags);
-void Draw(::ButtonImplementation * pThis);
+void __thiscall Destructor(::ButtonImplementation * pThis);
+BOOL __thiscall IsMouseInBounds(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall GetValue(::ButtonImplementation * pThis);
+void __thiscall SetAccelerator(::ButtonImplementation * pThis, BOOL bEnable);
+int __thiscall OnMouseDown(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseUp(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnChar(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseMove(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnUpArrow(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnDownArrow(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnRightArrow(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnLeftArrow(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseWheel(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+::ButtonImplementation * __thiscall Constructor(::ButtonImplementation * pThis, int nPosX, int nPosY, int nButtonKind, fpButtonOnActivate pfnOnActivate);
+::ButtonImplementation * __thiscall ScalarDeletingDestructor(::ButtonImplementation * pThis, uint32_t nFlags);
+void __thiscall Draw(::ButtonImplementation * pThis);
 
 } // namespace D2Client::UI::Button::ButtonImplementation

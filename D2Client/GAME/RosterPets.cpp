@@ -35,19 +35,19 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2RosterPetStrc) == 0x34, "D2_NEW(D2RosterPetStrc): the 32-bit layout must be the 0x34 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2RosterPetStrc) == 0x34, "D2_NEW_AT(D2RosterPetStrc): the 32-bit layout must be the 0x34 bytes 1.14d allocates");
 
 
 namespace D2Client::GAME::RosterPets {
@@ -66,7 +66,7 @@ void __stdcall FreeRosterPet() {
     while (pMemoryToFree) {
       D2RosterPetStrc* pNextPet;
       pNextPet = pMemoryToFree->pNext;
-      D2_FREE(pMemoryToFree);
+      D2_FREE_AT(pMemoryToFree, ".\\GAME\\RosterPets.cpp", 0x2f);
       pMemoryToFree = pNextPet;
     }
 
@@ -93,12 +93,12 @@ void __fastcall ROSTERPETS_RemoveRosterPetsBySkillID(int32_t nOwnerGUID, int32_t
 
     if (pPrev) {
       pPrev->pNext = pMemoryToFree->pNext;
-      D2_FREE(pMemoryToFree);
+      D2_FREE_AT(pMemoryToFree, ".\\GAME\\RosterPets.cpp", 0x59);
       return;
     }
 
     pRosterPet = pMemoryToFree->pNext;
-    D2_FREE(pMemoryToFree);
+    D2_FREE_AT(pMemoryToFree, ".\\GAME\\RosterPets.cpp", 0x59);
 }
 
 // @sourcefile .\GAME\RosterPets.cpp
@@ -112,7 +112,7 @@ void __fastcall AddRosterPet(int32_t nRosterGUID, int32_t nOwnerGUID, int32_t nS
 
     while (true) {
       if (!pExisting) {
-        pRosterPet = D2_NEW(D2RosterPetStrc);
+        pRosterPet = D2_NEW_AT(D2RosterPetStrc, ".\\GAME\\RosterPets.cpp", 0x7a);
         memset(pRosterPet, 0, 0x34);
         pRosterPet->nRosterGUID = nRosterGUID;
         pRosterPet->nOwnerGUID = nOwnerGUID;
@@ -228,7 +228,7 @@ void __fastcall RemoveRosterPet(int32_t nRosterGUID) {
       pPrev->pNext = pMemoryToFree->pNext;
     }
 
-    D2_FREE(pMemoryToFree);
+    D2_FREE_AT(pMemoryToFree, ".\\GAME\\RosterPets.cpp", 0xd1);
 }
 
 // Returns the ownership relation of a roster pet to the local player: 0=not found or different party, 1=owned by local player, 2=owned by same-party member, 3=pet type lacks the party-share flag (nFlags&0x10==0) or skill out of range. Looks up the pet by nRosterGUID, checks PetType txt flags, then compares party IDs.

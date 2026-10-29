@@ -15,155 +15,155 @@ struct EditBoxImplementation;
 struct EditBoxWrapper;
 #ifndef RECON_FPTD_EditBoxImplementation_Draw
 #define RECON_FPTD_EditBoxImplementation_Draw
-typedef void (*EditBoxImplementation_Draw)(::EditBoxImplementation * pThis);
+typedef void (__thiscall *EditBoxImplementation_Draw)(::EditBoxImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_GetRepeatDelta
 #define RECON_FPTD_EditBoxImplementation_GetRepeatDelta
-typedef int (*EditBoxImplementation_GetRepeatDelta)(::EditBoxImplementation * pThis);
+typedef int (__thiscall *EditBoxImplementation_GetRepeatDelta)(::EditBoxImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_GetText
 #define RECON_FPTD_EditBoxImplementation_GetText
-typedef void (*EditBoxImplementation_GetText)(::EditBoxImplementation * pThis, char * szBuffer);
+typedef void (__thiscall *EditBoxImplementation_GetText)(::EditBoxImplementation * pThis, char * szBuffer);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_GetValue
 #define RECON_FPTD_EditBoxImplementation_GetValue
-typedef int (*EditBoxImplementation_GetValue)(::EditBoxImplementation * pThis);
+typedef int (__thiscall *EditBoxImplementation_GetValue)(::EditBoxImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_OnChar
 #define RECON_FPTD_EditBoxImplementation_OnChar
-typedef int (*EditBoxImplementation_OnChar)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxImplementation_OnChar)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_OnDownArrow
 #define RECON_FPTD_EditBoxImplementation_OnDownArrow
-typedef int (*EditBoxImplementation_OnDownArrow)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxImplementation_OnDownArrow)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_OnLeftArrow
 #define RECON_FPTD_EditBoxImplementation_OnLeftArrow
-typedef int (*EditBoxImplementation_OnLeftArrow)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxImplementation_OnLeftArrow)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_OnMouseDown
 #define RECON_FPTD_EditBoxImplementation_OnMouseDown
-typedef int (*EditBoxImplementation_OnMouseDown)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxImplementation_OnMouseDown)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_OnMouseMove
 #define RECON_FPTD_EditBoxImplementation_OnMouseMove
-typedef int (*EditBoxImplementation_OnMouseMove)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxImplementation_OnMouseMove)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_OnMouseUp
 #define RECON_FPTD_EditBoxImplementation_OnMouseUp
-typedef int (*EditBoxImplementation_OnMouseUp)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxImplementation_OnMouseUp)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_OnMouseWheel
 #define RECON_FPTD_EditBoxImplementation_OnMouseWheel
-typedef int (*EditBoxImplementation_OnMouseWheel)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxImplementation_OnMouseWheel)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_OnRightArrow
 #define RECON_FPTD_EditBoxImplementation_OnRightArrow
-typedef int (*EditBoxImplementation_OnRightArrow)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxImplementation_OnRightArrow)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_OnUpArrow
 #define RECON_FPTD_EditBoxImplementation_OnUpArrow
-typedef int (*EditBoxImplementation_OnUpArrow)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxImplementation_OnUpArrow)(::EditBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_ScalarDeletingDestructor
 #define RECON_FPTD_EditBoxImplementation_ScalarDeletingDestructor
-typedef ::EditBoxImplementation * (*EditBoxImplementation_ScalarDeletingDestructor)(::EditBoxImplementation * pThis, uint32_t nFlags);
+typedef ::EditBoxImplementation * (__thiscall *EditBoxImplementation_ScalarDeletingDestructor)(::EditBoxImplementation * pThis, uint32_t nFlags);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_SetKeyRepeat
 #define RECON_FPTD_EditBoxImplementation_SetKeyRepeat
-typedef void (*EditBoxImplementation_SetKeyRepeat)(::EditBoxImplementation * pThis, BOOL bAllow);
+typedef void (__thiscall *EditBoxImplementation_SetKeyRepeat)(::EditBoxImplementation * pThis, BOOL bAllow);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_SetNumber
 #define RECON_FPTD_EditBoxImplementation_SetNumber
-typedef void (*EditBoxImplementation_SetNumber)(::EditBoxImplementation * pThis, int nNumber);
+typedef void (__thiscall *EditBoxImplementation_SetNumber)(::EditBoxImplementation * pThis, int nNumber);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_SetNumericOnly
 #define RECON_FPTD_EditBoxImplementation_SetNumericOnly
-typedef void (*EditBoxImplementation_SetNumericOnly)(::EditBoxImplementation * pThis, BOOL bNumericOnly);
+typedef void (__thiscall *EditBoxImplementation_SetNumericOnly)(::EditBoxImplementation * pThis, BOOL bNumericOnly);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_SetText
 #define RECON_FPTD_EditBoxImplementation_SetText
-typedef void (*EditBoxImplementation_SetText)(::EditBoxImplementation * pThis, char * szText);
+typedef void (__thiscall *EditBoxImplementation_SetText)(::EditBoxImplementation * pThis, char * szText);
 #endif
 #ifndef RECON_FPTD_EditBoxImplementation_SetWidth
 #define RECON_FPTD_EditBoxImplementation_SetWidth
-typedef void (*EditBoxImplementation_SetWidth)(::EditBoxImplementation * pThis, int nWidth);
+typedef void (__thiscall *EditBoxImplementation_SetWidth)(::EditBoxImplementation * pThis, int nWidth);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_Draw
 #define RECON_FPTD_EditBoxWrapper_Draw
-typedef void (*EditBoxWrapper_Draw)(::EditBoxWrapper * pThis);
+typedef void (__thiscall *EditBoxWrapper_Draw)(::EditBoxWrapper * pThis);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_GetRepeatDelta
 #define RECON_FPTD_EditBoxWrapper_GetRepeatDelta
-typedef int (*EditBoxWrapper_GetRepeatDelta)(::EditBoxWrapper * pThis, int nUnused);
+typedef int (__thiscall *EditBoxWrapper_GetRepeatDelta)(::EditBoxWrapper * pThis, int nUnused);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_GetText
 #define RECON_FPTD_EditBoxWrapper_GetText
-typedef void (*EditBoxWrapper_GetText)(::EditBoxWrapper * pThis, char * szBuffer);
+typedef void (__thiscall *EditBoxWrapper_GetText)(::EditBoxWrapper * pThis, char * szBuffer);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_GetValue
 #define RECON_FPTD_EditBoxWrapper_GetValue
-typedef int (*EditBoxWrapper_GetValue)(::EditBoxWrapper * pThis);
+typedef int (__thiscall *EditBoxWrapper_GetValue)(::EditBoxWrapper * pThis);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_OnChar
 #define RECON_FPTD_EditBoxWrapper_OnChar
-typedef int (*EditBoxWrapper_OnChar)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxWrapper_OnChar)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_OnDownArrow
 #define RECON_FPTD_EditBoxWrapper_OnDownArrow
-typedef int (*EditBoxWrapper_OnDownArrow)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxWrapper_OnDownArrow)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_OnLeftArrow
 #define RECON_FPTD_EditBoxWrapper_OnLeftArrow
-typedef int (*EditBoxWrapper_OnLeftArrow)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxWrapper_OnLeftArrow)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_OnMouseDown
 #define RECON_FPTD_EditBoxWrapper_OnMouseDown
-typedef int (*EditBoxWrapper_OnMouseDown)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxWrapper_OnMouseDown)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_OnMouseMove
 #define RECON_FPTD_EditBoxWrapper_OnMouseMove
-typedef int (*EditBoxWrapper_OnMouseMove)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxWrapper_OnMouseMove)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_OnMouseUp
 #define RECON_FPTD_EditBoxWrapper_OnMouseUp
-typedef int (*EditBoxWrapper_OnMouseUp)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxWrapper_OnMouseUp)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_OnMouseWheel
 #define RECON_FPTD_EditBoxWrapper_OnMouseWheel
-typedef int (*EditBoxWrapper_OnMouseWheel)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxWrapper_OnMouseWheel)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_OnRightArrow
 #define RECON_FPTD_EditBoxWrapper_OnRightArrow
-typedef int (*EditBoxWrapper_OnRightArrow)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxWrapper_OnRightArrow)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_OnUpArrow
 #define RECON_FPTD_EditBoxWrapper_OnUpArrow
-typedef int (*EditBoxWrapper_OnUpArrow)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *EditBoxWrapper_OnUpArrow)(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_ScalarDeletingDestructor
 #define RECON_FPTD_EditBoxWrapper_ScalarDeletingDestructor
-typedef ::EditBoxWrapper * (*EditBoxWrapper_ScalarDeletingDestructor)(::EditBoxWrapper * pThis, uint32_t nFlags);
+typedef ::EditBoxWrapper * (__thiscall *EditBoxWrapper_ScalarDeletingDestructor)(::EditBoxWrapper * pThis, uint32_t nFlags);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_SetKeyRepeat
 #define RECON_FPTD_EditBoxWrapper_SetKeyRepeat
-typedef void (*EditBoxWrapper_SetKeyRepeat)(::EditBoxWrapper * pThis, BOOL bAllow);
+typedef void (__thiscall *EditBoxWrapper_SetKeyRepeat)(::EditBoxWrapper * pThis, BOOL bAllow);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_SetNumber
 #define RECON_FPTD_EditBoxWrapper_SetNumber
-typedef void (*EditBoxWrapper_SetNumber)(::EditBoxWrapper * pThis, int nNumber);
+typedef void (__thiscall *EditBoxWrapper_SetNumber)(::EditBoxWrapper * pThis, int nNumber);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_SetNumericOnly
 #define RECON_FPTD_EditBoxWrapper_SetNumericOnly
-typedef void (*EditBoxWrapper_SetNumericOnly)(::EditBoxWrapper * pThis, BOOL bNumericOnly);
+typedef void (__thiscall *EditBoxWrapper_SetNumericOnly)(::EditBoxWrapper * pThis, BOOL bNumericOnly);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_SetText
 #define RECON_FPTD_EditBoxWrapper_SetText
-typedef void (*EditBoxWrapper_SetText)(::EditBoxWrapper * pThis, char * szText);
+typedef void (__thiscall *EditBoxWrapper_SetText)(::EditBoxWrapper * pThis, char * szText);
 #endif
 #ifndef RECON_FPTD_EditBoxWrapper_SetWidth
 #define RECON_FPTD_EditBoxWrapper_SetWidth
-typedef void (*EditBoxWrapper_SetWidth)(::EditBoxWrapper * pThis, int nWidth);
+typedef void (__thiscall *EditBoxWrapper_SetWidth)(::EditBoxWrapper * pThis, int nWidth);
 #endif
 #ifndef RECON_FPTD_fpEditBoxOnEnter
 #define RECON_FPTD_fpEditBoxOnEnter
@@ -211,76 +211,76 @@ struct EditBoxWrapper {
 };
 
 struct EditBoxImplementationVtable {
-    /* 0x00 */ ::EditBoxImplementation * (*ScalarDeletingDestructor)(::EditBoxImplementation *, uint32_t);
-    /* 0x04 */ void (*Draw)(::EditBoxImplementation *);
-    /* 0x08 */ int (*OnMouseWheel)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x0C */ int (*OnMouseDown)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x10 */ int (*OnMouseUp)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x14 */ int (*OnMouseMove)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x18 */ int (*OnChar)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x1C */ int (*OnUpArrow)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x20 */ int (*OnDownArrow)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x24 */ int (*OnRightArrow)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x28 */ int (*OnLeftArrow)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x2C */ int (*GetValue)(::EditBoxImplementation *);
-    /* 0x30 */ void (*GetText)(::EditBoxImplementation *, char *);
-    /* 0x34 */ int (*GetRepeatDelta)(::EditBoxImplementation *);
-    /* 0x38 */ void (*SetText)(::EditBoxImplementation *, char *);
-    /* 0x3C */ void (*SetNumber)(::EditBoxImplementation *, int);
-    /* 0x40 */ void (*SetWidth)(::EditBoxImplementation *, int);
-    /* 0x44 */ void (*SetKeyRepeat)(::EditBoxImplementation *, BOOL);
-    /* 0x48 */ void (*SetNumericOnly)(::EditBoxImplementation *, BOOL);
+    /* 0x00 */ ::EditBoxImplementation * (__thiscall *ScalarDeletingDestructor)(::EditBoxImplementation *, uint32_t);
+    /* 0x04 */ void (__thiscall *Draw)(::EditBoxImplementation *);
+    /* 0x08 */ int (__thiscall *OnMouseWheel)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x0C */ int (__thiscall *OnMouseDown)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x10 */ int (__thiscall *OnMouseUp)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x14 */ int (__thiscall *OnMouseMove)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x18 */ int (__thiscall *OnChar)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x1C */ int (__thiscall *OnUpArrow)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x20 */ int (__thiscall *OnDownArrow)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x24 */ int (__thiscall *OnRightArrow)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x28 */ int (__thiscall *OnLeftArrow)(::EditBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x2C */ int (__thiscall *GetValue)(::EditBoxImplementation *);
+    /* 0x30 */ void (__thiscall *GetText)(::EditBoxImplementation *, char *);
+    /* 0x34 */ int (__thiscall *GetRepeatDelta)(::EditBoxImplementation *);
+    /* 0x38 */ void (__thiscall *SetText)(::EditBoxImplementation *, char *);
+    /* 0x3C */ void (__thiscall *SetNumber)(::EditBoxImplementation *, int);
+    /* 0x40 */ void (__thiscall *SetWidth)(::EditBoxImplementation *, int);
+    /* 0x44 */ void (__thiscall *SetKeyRepeat)(::EditBoxImplementation *, BOOL);
+    /* 0x48 */ void (__thiscall *SetNumericOnly)(::EditBoxImplementation *, BOOL);
 };
 
 struct EditBoxWrapperVtable {
-    /* 0x00 */ ::EditBoxWrapper * (*ScalarDeletingDestructor)(::EditBoxWrapper *, uint32_t);
-    /* 0x04 */ void (*Draw)(::EditBoxWrapper *);
-    /* 0x08 */ int (*OnMouseWheel)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x0C */ int (*OnMouseDown)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x10 */ int (*OnMouseUp)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x14 */ int (*OnMouseMove)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x18 */ int (*OnChar)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x1C */ int (*OnUpArrow)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x20 */ int (*OnDownArrow)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x24 */ int (*OnRightArrow)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x28 */ int (*OnLeftArrow)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x2C */ int (*GetValue)(::EditBoxWrapper *);
-    /* 0x30 */ int (*GetRepeatDelta)(::EditBoxWrapper *, int);
-    /* 0x34 */ void (*SetText)(::EditBoxWrapper *, char *);
-    /* 0x38 */ void (*SetNumber)(::EditBoxWrapper *, int);
-    /* 0x3C */ void (*GetText)(::EditBoxWrapper *, char *);
-    /* 0x40 */ void (*SetWidth)(::EditBoxWrapper *, int);
-    /* 0x44 */ void (*SetKeyRepeat)(::EditBoxWrapper *, BOOL);
-    /* 0x48 */ void (*SetNumericOnly)(::EditBoxWrapper *, BOOL);
+    /* 0x00 */ ::EditBoxWrapper * (__thiscall *ScalarDeletingDestructor)(::EditBoxWrapper *, uint32_t);
+    /* 0x04 */ void (__thiscall *Draw)(::EditBoxWrapper *);
+    /* 0x08 */ int (__thiscall *OnMouseWheel)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x0C */ int (__thiscall *OnMouseDown)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x10 */ int (__thiscall *OnMouseUp)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x14 */ int (__thiscall *OnMouseMove)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x18 */ int (__thiscall *OnChar)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x1C */ int (__thiscall *OnUpArrow)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x20 */ int (__thiscall *OnDownArrow)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x24 */ int (__thiscall *OnRightArrow)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x28 */ int (__thiscall *OnLeftArrow)(::EditBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x2C */ int (__thiscall *GetValue)(::EditBoxWrapper *);
+    /* 0x30 */ int (__thiscall *GetRepeatDelta)(::EditBoxWrapper *, int);
+    /* 0x34 */ void (__thiscall *SetText)(::EditBoxWrapper *, char *);
+    /* 0x38 */ void (__thiscall *SetNumber)(::EditBoxWrapper *, int);
+    /* 0x3C */ void (__thiscall *GetText)(::EditBoxWrapper *, char *);
+    /* 0x40 */ void (__thiscall *SetWidth)(::EditBoxWrapper *, int);
+    /* 0x44 */ void (__thiscall *SetKeyRepeat)(::EditBoxWrapper *, BOOL);
+    /* 0x48 */ void (__thiscall *SetNumericOnly)(::EditBoxWrapper *, BOOL);
 };
 
 namespace D2Client::UI::Editbox::EditBoxWrapper {
 
 // Function declarations
 // Wrapper destructor for EditBoxWrapper; resets vtable, destroys owned implementation, then falls back to ButtonWrapper base cleanup.
-void Destructor(::EditBoxWrapper * pThis);
-::EditBoxWrapper * ScalarDeletingDestructor(::EditBoxWrapper * pThis, uint32_t nFlags);
-int OnMouseWheel(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseDown(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseUp(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseMove(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-void Draw(::EditBoxWrapper * pThis);
-int OnChar(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnDownArrow(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnUpArrow(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnRightArrow(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnLeftArrow(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int GetValue(::EditBoxWrapper * pThis);
-int GetRepeatDelta(::EditBoxWrapper * pThis, int nUnused);
+void __thiscall Destructor(::EditBoxWrapper * pThis);
+::EditBoxWrapper * __thiscall ScalarDeletingDestructor(::EditBoxWrapper * pThis, uint32_t nFlags);
+int __thiscall OnMouseWheel(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseDown(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseUp(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseMove(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+void __thiscall Draw(::EditBoxWrapper * pThis);
+int __thiscall OnChar(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnDownArrow(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnUpArrow(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnRightArrow(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnLeftArrow(::EditBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall GetValue(::EditBoxWrapper * pThis);
+int __thiscall GetRepeatDelta(::EditBoxWrapper * pThis, int nUnused);
 // Forwards SetNumber to the wrapped EditBoxImplementation through vtable slot 15.
-void SetNumber(::EditBoxWrapper * pThis, int nNumber);
+void __thiscall SetNumber(::EditBoxWrapper * pThis, int nNumber);
 // Forwards SetText to the wrapped EditBoxImplementation through vtable slot 14.
-void SetText(::EditBoxWrapper * pThis, char * szText);
-void GetText(::EditBoxWrapper * pThis, char * szBuffer);
-void SetCharFilter(::EditBoxWrapper * pThis, fpUIWidgetCharFilter pfnCharFilter);
-void SetWidth(::EditBoxWrapper * pThis, int nWidth);
-void SetKeyRepeat(::EditBoxWrapper * pThis, BOOL bAllow);
-void SetNumericOnly(::EditBoxWrapper * pThis, BOOL bNumericOnly);
-::EditBoxWrapper * Constructor(::EditBoxWrapper * pThis, int nPosX, int nPosY, int nWidth, int nMaxLines, int nMaxValue, uint16_t nMaxLength, fpEditBoxOnEnter pfnOnEnter, int nFont);
+void __thiscall SetText(::EditBoxWrapper * pThis, char * szText);
+void __thiscall GetText(::EditBoxWrapper * pThis, char * szBuffer);
+void __thiscall SetCharFilter(::EditBoxWrapper * pThis, fpUIWidgetCharFilter pfnCharFilter);
+void __thiscall SetWidth(::EditBoxWrapper * pThis, int nWidth);
+void __thiscall SetKeyRepeat(::EditBoxWrapper * pThis, BOOL bAllow);
+void __thiscall SetNumericOnly(::EditBoxWrapper * pThis, BOOL bNumericOnly);
+::EditBoxWrapper * __thiscall Constructor(::EditBoxWrapper * pThis, int nPosX, int nPosY, int nWidth, int nMaxLines, int nMaxValue, uint16_t nMaxLength, fpEditBoxOnEnter pfnOnEnter, int nFont);
 
 } // namespace D2Client::UI::Editbox::EditBoxWrapper

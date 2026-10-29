@@ -36,13 +36,10 @@
 namespace D2Common::Merc {
 
 // Returns the animation index for the weapon currently held by a mercenary unit by walking the global gaMercWeaponAnimMap table (14 entries) and matching nWeaponClass. Returns -1 if no match found.
-int32_t MERC_GetWeaponAnimIndex(D2UnitStrc * pUnit) {
+static int32_t MERC_GetWeaponAnimIndex(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static D2MercWeaponAnimMapStrc gaMercWeaponAnimMap[14] = {
-    {
-        /* .nAnimIndex = */ 0x0,
-        /* .nWeaponClass = */ 0x0
-    },
+    {},
     {
         /* .nAnimIndex = */ 0x1,
         /* .nWeaponClass = */ 0x3
@@ -112,7 +109,7 @@ int32_t MERC_GetWeaponAnimIndex(D2UnitStrc * pUnit) {
 }
 
 // Returns the D2MonSeqMonsterTbls entry for the unit's current skill sequence. For player-type units (mercs), resolves via apFixedSequenceTable indexed by weapon anim index. For monster units, looks up the monster's MonStats entry then retrieves by sequence ID. Returns null if no current skill or sequence ID &lt; 1.
-D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTable(D2UnitStrc * pUnit) {
+static D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTable(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static D2MonSeqMonsterTbls * apFixedSequenceTable[24] = {
     nullptr,
@@ -162,12 +159,12 @@ D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTable(D2UnitStrc * pUnit) {
     if (eUnitType == UNIT_PLAYER) {
       pFixedSeqTable = apFixedSequenceTable[nSequenceId];
       nWeaponClass = MERC_GetWeaponAnimIndex(pUnit);
-      if (nWeaponClass != -1) {
-        return pFixedSeqTable + nWeaponClass;
+      if (nWeaponClass == -1) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x533);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x533);
-      exit(-1);
+      return pFixedSeqTable + nWeaponClass;
       return pFixedSeqTable + nWeaponClass;
     }
     if (eUnitType != UNIT_MONSTER) {
@@ -289,10 +286,7 @@ uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsS
         /* .nBaseAttackRating = */ 0x258,
         /* .nBaseDefense = */ 0xf
     },
-    {
-        /* .nBaseAttackRating = */ 0x0,
-        /* .nBaseDefense = */ 0x0
-    }
+    {}
 }; D2_STATIC_GUARD(gaMercBaseStats, "D2Common::Merc::MERC_GenerateStatsFromSeed::gaMercBaseStats");
     static D2MercSecondaryStrc gaMercSecondaryTable[6] = {
     {
@@ -421,13 +415,7 @@ uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsS
     }
 }; D2_STATIC_GUARD(gaMercQuaternaryTable, "D2Common::Merc::MERC_GenerateStatsFromSeed::gaMercQuaternaryTable");
     static D2MercQuinaryStrc gaMercQuinaryTable[12] = {
-    {
-        /* .nAbility = */ 0x0,
-        /* .nHealthBonus = */ 0x0,
-        /* .nArmorBonus = */ 0x0,
-        /* .nSecondary = */ 0x0,
-        0x0
-    },
+    {},
     {
         /* .nAbility = */ 0x1,
         /* .nHealthBonus = */ 0x37,

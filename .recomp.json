@@ -1,0 +1,62 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Diablo II",
+  "wikidata": "Q244033",
+  "system": "PC (Windows)",
+  "type": "decomp",
+  "original": {
+    "region": "World",
+    "revision": "1.14d",
+    "sha1": "af0ea93d2a652ceb11ac01ee2e4ae1ef613444c2"
+  },
+  "project": "Redivivus",
+  "status": "playable",
+  "targets": [
+    "Windows"
+  ],
+  "toolchain": [
+    "Ghidra",
+    "Ghidra-reconstruct",
+    "Mingw-w64"
+  ],
+  "approach": "We decompile Game.exe in Ghidra and a generator turns that into C++ that compiles",
+  "maintainers": [
+    {
+      "name": "jaenster",
+      "link": "https://github.com/jaenster"
+    }
+  ],
+  "links": [
+    {
+      "label": "Website",
+      "url": "https://redivivus.app"
+    },
+    {
+      "label": "Discord",
+      "url": "https://discord.gg/MHK2Dg9"
+    },
+    {
+      "label": "Generator",
+      "url": "https://github.com/jaenster/ghidra-reconstruct"
+    },
+    {
+      "label": "Issues",
+      "url": "https://github.com/jaenster/redivivus/issues"
+    }
+  ],
+  "help": [
+    "Ghidra typing",
+    "Matching functions to MSVC 2005",
+    "The generator (TypeScript)",
+    "Playing it and reporting bugs"
+  ],
+  "tags": [
+    "c++",
+    "ghidra",
+    "byte-matching",
+    "lord-of-destruction",
+    "1.14d"
+  ],
+  "notes": "Work started on 2021-03-26 in a private repo; this public one is a fresh history from 2026. This is the actual 1.14d Game.exe (classic and LoD are both in there) turned back into C++, and you can build it and play single player. It still crashes now and then, and Battle.net doesn't work yet. We don't edit the generated code by hand much; if something's wrong we fix it in Ghidra or in the generator and regenerate. The percentage is how much of the original code comes out byte for byte the same when compiled with MSVC 2005.",
+  "x-started": "2021-03-26"
+}

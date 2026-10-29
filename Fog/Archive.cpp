@@ -13,23 +13,22 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2FogArchiveStrc) == 0x108, "D2_NEW(D2FogArchiveStrc): the 32-bit layout must be the 0x108 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2FogArchiveStrc) == 0x108, "D2_NEW_AT(D2FogArchiveStrc): the 32-bit layout must be the 0x108 bytes 1.14d allocates");
 
 
 namespace Fog::Archive {
@@ -53,7 +52,7 @@ void * __fastcall D2FILE_AllocAndLoadD2File(D2PoolManagerStrc * pMemory, char * 
     }
 
     DWORD dwFileSize = D2FILE_GetFileSize(pMemory, __frame0.pFile, &__frame0.dwFileSizeOut);
-    pBuffer = D2_ALLOC(dwFileSize + 800);
+    pBuffer = D2_ALLOC_AT(dwFileSize + 800, ".\\SRC\\Archive.cpp", 0xcf);
     if (!pBuffer) {
       return pBuffer;
     }
@@ -68,15 +67,13 @@ void * __fastcall D2FILE_AllocAndLoadD2File(D2PoolManagerStrc * pMemory, char * 
     return pBuffer;
 }
 
-int __stdcall FindMPQOnCd(char * pszMpqName, int * pnPriority, int * * ppArchive, LPSTR szText) {
+static int __stdcall FindMPQOnCd(char * pszMpqName, int * pnPriority, int * * ppArchive, LPSTR szText) {
     char* pcNextBackslash;
     DWORD dwDriveStringsLen;
     UINT nDriveType;
     BOOL bVolumeInfoOk;
     char szDriveStrings[260];
     LPCSTR szCurrentDrive;
-    uint32_t local_8;
-    local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     /* DWORD nSize for GetModuleFileNameA */ /* LPSTR lpFilename for GetModuleFileNameA */ /* HMODULE hModule for GetModuleFileNameA */ GetModuleFileNameA((HMODULE)0x0, szText, 0x104);
     szText[0x103] = '\0';
     char cCurrentChar;
@@ -139,11 +136,10 @@ int __stdcall FindMPQOnCd(char * pszMpqName, int * pnPriority, int * * ppArchive
       bOpenArchiveCdOk = 1;
     }
 
-    Debug::GuardStack();
     return bOpenArchiveCdOk;
 }
 
-int * __stdcall FindMpqFromDiskOrCd(char * pszMpqName, int * pnPriority, int * ppArchive, LPSTR szText) {
+static int * __stdcall FindMpqFromDiskOrCd(char * pszMpqName, int * pnPriority, int * ppArchive, LPSTR szText) {
     uint32_t nFlags = 2;
     if (ppArchive) {
       nFlags = 3;
@@ -179,7 +175,7 @@ int * __stdcall FindMpqFromDiskOrCd(char * pszMpqName, int * pnPriority, int * p
 // @sourcefile .\SRC\Archive.cpp
 D2FogArchiveStrc * __fastcall ARCHIVE_LoadMPQ(char * szMpqFileName, int32_t nZero, ::fpRequiredUserAction nfpRequiredUserAction, int32_t nTimeTBC) {
     BOOL BVar1;
-    D2FogArchiveStrc* pFogArchive = D2_NEW(D2FogArchiveStrc);
+    D2FogArchiveStrc* pFogArchive = D2_NEW_AT(D2FogArchiveStrc, ".\\SRC\\Archive.cpp", 0x20a);
     pFogArchive->hArchive = 0;
     while (true) {
       D2ArchiveStrc* pArchive;
@@ -203,7 +199,7 @@ D2FogArchiveStrc * __fastcall ARCHIVE_LoadMPQ(char * szMpqFileName, int32_t nZer
       }
     }
 
-    D2_FREE(pFogArchive);
+    D2_FREE_AT(pFogArchive, ".\\SRC\\Archive.cpp", 0x21a);
     return nullptr;
 }
 
@@ -214,7 +210,7 @@ void __fastcall ARCHIVE_FreeMpqFile(D2FogArchiveStrc * pFogArchive) {
     }
 
     pFogArchive->hArchive = 0;
-    D2_FREE(pFogArchive);
+    D2_FREE_AT(pFogArchive, ".\\SRC\\Archive.cpp", 0x25c);
 }
 
 } // namespace Fog::Archive

@@ -331,7 +331,7 @@ BOOL __stdcall CHARSEL_OnPressPumpRealmCharListLoad(D2ControlMsg * pControlMsg) 
     return 1;
 }
 
-void CHARSEL_RequestRealmCharList(char * szRealmName) {
+static void CHARSEL_RequestRealmCharList(char * szRealmName) {
     CharSel::CHARSEL_DestroyAllCharEntries();
     gbCharSelArrowsHidden = 0;
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gpControlCharSelArrows, 1);
@@ -679,7 +679,7 @@ BOOL __stdcall HandleUpdateToExpansion(D2ControlMsg * pControlMsg) {
               D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszCharName, pSelectedCharacter->szCharname, 0x100);
               pwszMessage = awszCharName;
               pwszFormat = D2Lang::StrTable::strtable::GetLocaleString(0x2b89);
-              D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, awszFormattedMsg, pwszFormat, (uint16_t*)pwszMessage);
+              D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, awszFormattedMsg, pwszFormat, pwszMessage);
               pwszMessage = awszFormattedMsg;
             } else {
               pwszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x145b);
@@ -751,9 +751,9 @@ BOOL __stdcall LAUNCHER_StartGameWithSelectedCharacter(D2ControlMsg * pControlMs
     return 1;
 }
 
-void __fastcall LAUNCHER_InitNetworkLobbyQueue(D2IniConfigStrc * pIniConfig) {
+int __fastcall LAUNCHER_InitNetworkLobbyQueue(D2IniConfigStrc * pIniConfig) {
     if (pIniConfig->pBNetClientCallbacks) {
-      return;
+      return 1;
     }
 
     gpBNetCallbacks = Bnclient::NET_InitAndGetLobbyChatQueue();
@@ -764,6 +764,7 @@ void __fastcall LAUNCHER_InitNetworkLobbyQueue(D2IniConfigStrc * pIniConfig) {
 
     pIniConfig->pBNetClientCallbacks = gpBNetCallbacks;
     gpBNetCallbacks->pfnSetLoggingFlag((uint32_t)pIniConfig);
+    return 1;
 }
 
 void __stdcall LAUNCHER_SetBusyFlag() {
@@ -856,24 +857,7 @@ void __stdcall LAUNCHER_DisconnectFromBnet() {
 int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     // Static local variables (originally global data)
     static uint32_t gnBnetAccountLoginFailCount = 0x1; D2_STATIC_GUARD(gnBnetAccountLoginFailCount, "D2Launch::Launcher::ShowOogErrorDialog::gnBnetAccountLoginFailCount");
-    static char gszOogLastIniStringCache[16] = {
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-}; D2_STATIC_GUARD(gszOogLastIniStringCache, "D2Launch::Launcher::ShowOogErrorDialog::gszOogLastIniStringCache");
+    static char gszOogLastIniStringCache[16] = {}; D2_STATIC_GUARD(gszOogLastIniStringCache, "D2Launch::Launcher::ShowOogErrorDialog::gszOogLastIniStringCache");
 
     int32_t nErrorAddress;
     int nTitleStrId;
@@ -949,23 +933,23 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
 
       case OOG_ERROR_CHAR_NAME_DIALOG_2:
         Fog::File::CONTAINER_InitializeBuffer(awszCharName, 2, 0x200, MainMenus::STRING_ZeroOneWCHAR);
-      if (pErrorData->pCustomData) {
-        D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszCharName, (char*)pErrorData->pCustomData, 0x200);
-        cchBufferSize = 0x200;
-        pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(0x147f);
-        D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszTitle, pwszClearCursor, cchBufferSize);
-        cchBufferSize = 0x200;
-        pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(pErrorData->eErrorCode != OOG_ERROR_CHAR_NAME_DIALOG ? 0x2aa2 : 0x1450);
-        D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszBody, pwszClearCursor, cchBufferSize);
-        cchBufferSize = 0x200;
-        pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(0x1451);
-        D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszFooter, pwszClearCursor, cchBufferSize);
-        MainMenus::UIMENU_CrashingCantTestIt(awszTitle, awszBody, awszCharName, awszFooter, MainMenus::UIMENU_MainMenu);
-        return 0;
+      if (!pErrorData->pCustomData) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ad);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ad);
-      exit(-1);
+      D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszCharName, (char*)pErrorData->pCustomData, 0x200);
+      cchBufferSize = 0x200;
+      pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(0x147f);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszTitle, pwszClearCursor, cchBufferSize);
+      cchBufferSize = 0x200;
+      pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(pErrorData->eErrorCode != OOG_ERROR_CHAR_NAME_DIALOG ? 0x2aa2 : 0x1450);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszBody, pwszClearCursor, cchBufferSize);
+      cchBufferSize = 0x200;
+      pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(0x1451);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszFooter, pwszClearCursor, cchBufferSize);
+      MainMenus::UIMENU_CrashingCantTestIt(awszTitle, awszBody, awszCharName, awszFooter, MainMenus::UIMENU_MainMenu);
+      return 0;
       case OOG_ERROR_11:
         nTitleStrId = 0x147f;
       nBodyStrId = 0x14ec;
@@ -1126,7 +1110,7 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     return 0;
 }
 
-void __fastcall LAUNCHER_ShowOogErrorDialog_ForEnterEmail(eOogErrorCode eErrorCode, void * pCustomData) {
+static void __fastcall LAUNCHER_ShowOogErrorDialog_ForEnterEmail(eOogErrorCode eErrorCode, void * pCustomData) {
     D2OogErrorDataStrc sErrorData;
     sErrorData.eErrorCode = eErrorCode;
     sErrorData.pCustomData = pCustomData;

@@ -213,7 +213,7 @@ void putShortMSB(deflate_state * pDeflateState, uint32_t wValue) {
     pDeflateState->pending++;
 }
 
-void flush_pending(z_stream * pStream) {
+static void flush_pending(z_stream * pStream) {
     uint32_t* puVar1;
     deflate_state* pDeflateState = (deflate_state*)pStream->state;
     trees::_tr_flush_bits(pDeflateState);
@@ -363,7 +363,7 @@ uint32_t __fastcall read_buf(z_stream * pStream, uint8_t * pBuf, uint32_t nSize)
     return _Size;
 }
 
-void lm_init(deflate_state * pDeflateState) {
+static void lm_init(deflate_state * pDeflateState) {
     pDeflateState->window_size = pDeflateState->w_size * 2;
     pDeflateState->head[pDeflateState->hash_size - 1] = 0;
     memset(pDeflateState->head, 0, pDeflateState->hash_size * 2 - 2);
@@ -383,7 +383,7 @@ void lm_init(deflate_state * pDeflateState) {
     pDeflateState->match_length = 2;
 }
 
-uint32_t __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDeflateState) {
+static uint32_t __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDeflateState) {
     uint8_t* pScan;
     uint8_t* pScanNext;
     uint32_t nMatchLimit;
@@ -479,7 +479,7 @@ uint32_t __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDeflateSta
     } while (true);
 }
 
-void fill_window(deflate_state * pDeflateState) {
+static void fill_window(deflate_state * pDeflateState) {
     uint16_t nNewHead;
     uint32_t nChecksum;
     uint16_t* pHashEntry;
@@ -1133,7 +1133,7 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
     } while (true);
 }
 
-block_state __stdcall deflate_rle(int32_t nFlush, deflate_state * pDeflateState) {
+static block_state __stdcall deflate_rle(int32_t nFlush, deflate_state * pDeflateState) {
     uint8_t* pScanCur;
     uint8_t* pScanNext;
     uint8_t* pBlockStart;
@@ -1305,7 +1305,7 @@ block_state __stdcall deflate_rle(int32_t nFlush, deflate_state * pDeflateState)
     } while (true);
 }
 
-block_state __stdcall deflate_huff(int32_t nFlush, deflate_state * pDeflateState) {
+static block_state __stdcall deflate_huff(int32_t nFlush, deflate_state * pDeflateState) {
     uint32_t nCopyLen;
     uint8_t* pBlockStart;
     int nBlockStartOff;

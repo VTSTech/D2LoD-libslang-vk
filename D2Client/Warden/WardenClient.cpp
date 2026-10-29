@@ -62,7 +62,7 @@ uint32_t __stdcall WARDEN_CheckSignatureMagic(int32_t nDataLen, uint32_t nTotalL
     return (uint32_t)(pBuffer == 0x5349474e);
 }
 
-void __stdcall WARDEN_ComputeModuleHash(char * szModuleName, int32_t pHashOut, uint32_t nSplitOffset, uint32_t nTotalLen, uint8_t * pModuleData) {
+static void __stdcall WARDEN_ComputeModuleHash(char * szModuleName, int32_t pHashOut, uint32_t nSplitOffset, uint32_t nTotalLen, uint8_t * pModuleData) {
     uint8_t szUpperName[1024];
     D2Sha1ContextStrc sha1Ctx;
     Fog::Source::SSignature::Sha1_Initialize(&sha1Ctx);
@@ -81,7 +81,7 @@ void __stdcall WARDEN_ComputeModuleHash(char * szModuleName, int32_t pHashOut, u
 
 // Verifies a Warden module's RSA signature: checks the 'NGIS' tag at the end of the module, builds the expected padded SHA-1 hash of the module and its name, decrypts the trailing signature with the supplied modulus and exponent (SBigPowMod) and returns TRUE when the two match.
 // Source file WARDEN/WardenClient.cpp (__FILE__ literal, 4 sites).
-BOOL __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName, int32_t pData, void * pModulus, void * pExponent, uint32_t nExponentLen, uint32_t nSigDataLen, uint32_t nTotalLen) {
+static BOOL __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szModuleName, int32_t pData, void * pModulus, void * pExponent, uint32_t nExponentLen, uint32_t nSigDataLen, uint32_t nTotalLen) {
     // Frame slots -24..-4 are ONE object: &pExpectedHash is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -159,7 +159,7 @@ LPVOID * __fastcall WARDEN_DestroyModuleObject(uint8_t bFreeStruct, LPVOID * ppM
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
-BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Key, uint32_t nSize) {
+static BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Key, uint32_t nSize) {
     // Static local variables (originally global data)
     static uint32_t gdwWardenModuleRsaExponent = 0x10001; D2_STATIC_GUARD(gdwWardenModuleRsaExponent, "D2Client::Warden::WARDEN_DecryptAndLoadModule::gdwWardenModuleRsaExponent");
     static uint8_t gabWardenModuleRsaModulus[256] = {
@@ -526,7 +526,7 @@ BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Key, uint
 // decrypted with pRc4Key, loaded and freed with pfnCacheFreeMem. Returns the load result, 0 if the
 // module is not cached.
 // Provenance: 1.14d asm 0047fee0 (callers 004803e4 MOV EBX,0x6d8768 and 00480027 MOV EBX,[EBP+8]).
-BOOL __stdcall WARDEN_ResolveAndLoadModule(void * pRc4Key, uint8_t * pModuleHash) {
+static BOOL __stdcall WARDEN_ResolveAndLoadModule(void * pRc4Key, uint8_t * pModuleHash) {
     // Static local variables (originally global data)
     static uint8_t gaWardenModuleLoadData[185] = {
     0x1,
@@ -774,16 +774,16 @@ uint32_t __stdcall WARDEN_DownloadModule(char * dwParam1, void * dwParam2, uint3
     return bResult;
 }
 
-void SendPacket(::WardenClient * pThis, void * pData, uint32_t nLen) {
+void __thiscall SendPacket(::WardenClient * pThis, void * pData, uint32_t nLen) {
     GAME::Msg::NET_D2GS_CLIENT_Send_0x66(pData, nLen);
 }
 
-bool CheckModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pRc4Key) {
+bool __thiscall CheckModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pRc4Key) {
     BOOL bResult = WARDEN_ResolveAndLoadModule(pRc4Key, pModuleHash);
     return bResult != 0;
 }
 
-void LoadModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pData, uint32_t nSize) {
+void __thiscall LoadModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pData, uint32_t nSize) {
     char szModuleFile[40];
     _FILETIME fileTime;
     uint32_t i = 0;
@@ -804,18 +804,18 @@ void LoadModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pData, uin
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
-void * AllocateMemory(::WardenClient * pThis, uint32_t nSize) {
+void * __thiscall AllocateMemory(::WardenClient * pThis, uint32_t nSize) {
     void* pvVar1 = Storm::SMem::SMemAlloc(nSize, ".\\WARDEN\\WardenClient.cpp", 0x274, 0);
     return pvVar1;
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
-void FreeMemory(::WardenClient * pThis, void * pMem) {
+void __thiscall FreeMemory(::WardenClient * pThis, void * pMem) {
     Storm::SMem::SMemFree(pMem, ".\\WARDEN\\WardenClient.cpp", 0x27b, 0);
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
-void SetRC4Data(::WardenClient * pThis, void * pData, uint32_t nSize) {
+void __thiscall SetRC4Data(::WardenClient * pThis, void * pData, uint32_t nSize) {
     if (gpWardenResponseData) {
       Storm::SMem::SMemFree(gpWardenResponseData, ".\\WARDEN\\WardenClient.cpp", 0x283, 0);
     }
@@ -826,7 +826,7 @@ void SetRC4Data(::WardenClient * pThis, void * pData, uint32_t nSize) {
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
-bool GetRC4Data(::WardenClient * pThis, void * pDest, uint32_t * pnSize) {
+bool __thiscall GetRC4Data(::WardenClient * pThis, void * pDest, uint32_t * pnSize) {
     void* pSrc = gpWardenResponseData;
     if (!gpWardenResponseData) {
       return false;
@@ -845,7 +845,7 @@ bool GetRC4Data(::WardenClient * pThis, void * pDest, uint32_t * pnSize) {
     return true;
 }
 
-::WardenClient * Constructor(::WardenClient * pThis) {
+::WardenClient * __thiscall Constructor(::WardenClient * pThis) {
     pThis->_vfptr = (WardenClientVtable*)(void*)Warden::vftable;
     return pThis;
 }

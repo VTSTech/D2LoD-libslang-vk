@@ -26,7 +26,6 @@ namespace D2Common::DATATBLS::DataTbls {
 
 // Function declarations
 BOOL __fastcall CheckIfFileExists(struct D2PoolManagerStrc * pMemory, char * szFilename, struct D2MPQFileStrc * * ppFile, BOOL bDontLogError);
-void DATATBLS_NormalizeCodeTo4Chars(char * szText1, char * szText2);
 uint16_t __fastcall DATATBLS_LookupStringId(char * szKey);
 uint32_t __stdcall DATATBLS_GetCompCodeByIndex(int32_t nIndex);
 DWORD __stdcall TXT_Experience_GetLineLevel(int32_t ePlayerClass, int32_t nLevel);
@@ -48,11 +47,6 @@ void __fastcall DATATBLS_BuildStatesDataBitMask(struct D2StatesDataTbls * pState
 void __fastcall DATATBLS_BuildStatesDataList(struct D2AllStatesDataTbl * * ppAllStatesData, short * pCounter, uint32_t nFlag);
 // @sourcefile .\DATATBLS\DataTbls.cpp
 void __fastcall TXT_States_AllocItemTypesStateDataTable(struct D2AllStatesDataTbl * * ppAllStatesData, short * pCounter, int32_t nOffset);
-void GetPlayerClassIdToName(int32_t nClassId, char * szResult, size_t nSize);
-void GetMonsterClassIdToName(int32_t nClassId, char * szResult, size_t nSize);
-void GetObjectClassIdToName(int32_t nClassId, char * szResult, size_t nSize);
-void GetItemClassIdToName(int32_t nClassId, char * szResult, size_t nSize);
-void GetMissileClassIdToName(int32_t nClassId, char * szResult, size_t nSize);
 char * __stdcall GetUnitClassIdToName(struct D2UnitStrc * pUnit, char * szResult, size_t nSize);
 char * __stdcall GetNameByClassIdAndType(eD2UnitType eUnitType, int16_t nClassId, char * szResult, size_t nSize);
 void __stdcall StoreDataTables(uint32_t szFileName, struct D2InventoryToBeUpdatedStrc * pInventoryToBeUpdated, size_t nSize, uint32_t dwVersion);
@@ -66,9 +60,6 @@ void __stdcall sgtDataTableSetupIfUseTxt(int32_t nMode);
 void __stdcall UnloadBin(void * pTxtTable);
 // Populates the wide-string class-name field in every row of the CharStats txt table. For each row, looks up the string-table key via STRTABLE_GetStringByKey; if not found, formats a fallback like "&lt;keyname&gt;" and writes the wide string (up to nWstringSize chars) into the destination field at the computed struct offset.
 void __fastcall TXT_CharStats_DefineWideStringClass(struct D2CharStatsTxt * pTxtCharStats, int32_t nTxtCharStatsSize, int32_t nStructStride, int32_t nSrcFieldOffset, int32_t nParam, size_t nWstringSize);
-// One-time startup loader for the many small single-column code/name lookup tables in DataTbls. Always compiles compcode. If sgtDataTable.bUseTxt is set, also creates a TxtLink struct and compiles each of: playerclass, bodylocs, storepage, elemtypes, hitclass, colors, hiredesc, monmode, plrmode, monai, monplace, skillcalc, misscalc, skills, events. Each is a CODE4 or NAME_I_WORD keyed table whose compiled pointer + link are stored into the corresponding sgtDataTable.pTxt*/pTxt*Link/nTxt*Size globals. Allocates from pMemory. Pure init side-effects, no return.
-// @sourcefile .\DATATBLS\DataTbls.cpp
-void TXT_AllocTxt_VariousSmallTables(struct D2PoolManagerStrc * pMemory);
 // Shutdown teardown for the miscellaneous data tables in sgtDataTable. Always frees compcode (table + its TxtLink); then, only when bUseTxt is set, frees the remaining misc txt tables and their TxtLinks: playerclass, bodylocs, storepage, elemtypes, hitclass, colors, hiredesc, monmode, plrmode, monai, monplace, skillcalc, misscalc, skillsheader, events. The base-pointer fixup before FreeServerMemory differs by table (-1 or -2 element offset) and the source-line code passed to the allocator depends on whether gpaMiscTxtTables is set (aggregate vs individual allocation), mirroring how each was allocated.
 // @sourcefile .\DATATBLS\DataTbls.cpp
 void __stdcall DATATBLS_FreeMiscTxtTables();
@@ -103,5 +94,6 @@ void __stdcall DATATBLS_FreePetTypeTxtTables();
 void __stdcall FreeTables();
 // Initialises all D2Common game-data text tables by sequentially calling individual TXT_AllocTxt_* loaders for every table category (items, monsters, skills, sounds, overlays, stats, levels, objects, arena, cubemod, belts, etc.). Called once at startup with the Fog memory pool; bGametypeIsOBNetHost and nZero2 gate expansion-specific level sub-tables.
 void __stdcall TXT_InitTxtFiles(struct D2PoolManagerStrc * pMemory, int32_t nZero2, int32_t bGametypeIsOBNetHost);
+// 7 internal functions (defined in .cpp)
 
 } // namespace D2Common::DATATBLS::DataTbls

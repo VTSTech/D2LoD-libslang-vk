@@ -477,7 +477,7 @@ void __fastcall CLIENT_FreePlayerUnit(D2UnitStrc * pUnit) {
     Engine::CLIENT_PreloadMonsterCofsInAdjacentRooms();
 }
 
-void CLIENT_UpdateUnitRoomPops(D2UnitStrc * pUnit) {
+static void CLIENT_UpdateUnitRoomPops(D2UnitStrc * pUnit) {
     int32_t nX;
     eD2UnitType eUnitType = pUnit->eUnitType;
     int nY = 0;
@@ -501,7 +501,7 @@ void CLIENT_UpdateUnitRoomPops(D2UnitStrc * pUnit) {
     D2Common::DUNGEON::Dungeon::UpdatePops(pRoom, nX, nY, bOtherRoom);
 }
 
-void CLIENT_OnPlayerEnterRoom(D2UnitStrc * pUnit) {
+static void CLIENT_OnPlayerEnterRoom(D2UnitStrc * pUnit) {
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     if (!pRoom) {
       return;
@@ -527,7 +527,7 @@ void CLIENT_OnPlayerEnterRoom(D2UnitStrc * pUnit) {
 }
 
 // Client-side collision check for a player unit in Neutral or TownNeutral anim mode. Reads the unit's current tile position, tests for solid-blocking collision via CheckCollision_BlockAll_Type, and if blocked calls GetFreeCoordinates_WithNeighboorRooms + CLIENT_TeleportUnitToPosition to push the unit to the nearest free tile.
-void CLIENT_ResolvePlayerCollision(D2UnitStrc * pUnit) {
+static void CLIENT_ResolvePlayerCollision(D2UnitStrc * pUnit) {
     eD2PlayerAnimMode eAnimMode;
     POINT sTilePos;
     if (!pUnit) {
@@ -576,7 +576,7 @@ void CLIENT_ResolvePlayerCollision(D2UnitStrc * pUnit) {
     CUnit::CLIENT_TeleportUnitToPosition(pUnit, sTilePos.x, sTilePos.y, 0);
 }
 
-void CLIENT_HandlePlayerDeath(D2UnitStrc * pUnit) {
+static void CLIENT_HandlePlayerDeath(D2UnitStrc * pUnit) {
     ITEM_ResetWeaponHandClassIds();
     D2Common::PATH::DynamicPath::PATH_SetCorpseCollision(pUnit, 0);
     CUnit::SetDeadFlag(pUnit);
@@ -594,7 +594,7 @@ void CLIENT_HandlePlayerDeath(D2UnitStrc * pUnit) {
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, 0, 0);
 }
 
-void __stdcall CLIENT_PlayIndexedUnitSound(D2UnitStrc * pUnit, int32_t nSoundIndex) {
+static void __stdcall CLIENT_PlayIndexedUnitSound(D2UnitStrc * pUnit, int32_t nSoundIndex) {
     // Static local variables (originally global data)
     static int gwPlayerAnimationState[9] = {
     0x0,
@@ -675,7 +675,7 @@ uint32_t __stdcall PLAYER_ValidateSkillMessage(int * pnUsabilityCode, D2UnitStrc
     return 1;
 }
 
-void __stdcall PLAYER_ApplyCurrentSkillFlags(int32_t bIsLocalPlayer, D2UnitStrc * pUnit) {
+static void __stdcall PLAYER_ApplyCurrentSkillFlags(int32_t bIsLocalPlayer, D2UnitStrc * pUnit) {
     D2SkillStrc* pSkill = D2Common::Units::GetCurrentSkill(pUnit);
     if (!pSkill) {
       return;
@@ -882,7 +882,7 @@ BOOL __fastcall PlayerMessage(int32_t nMessageType, D2UnitStrc * pUnit, D2Server
 }
 
 // Dispatches a buffered skill command (pSkillCmd) to the appropriate UNITMODE_ExecuteSkillAction overload based on click type and modifier flags. Ignores input if the mouse is below the bottom UI panel. For unit-targeted commands (nActionContext==1) resolves target GUID and unit type from pSkillCmd[2], then picks left/right x normal/shift/run variants (UNITMODEACTION_LEFTSKILL_UNIT 1-4, RIGHTSKILL_UNIT 1-4). For ground-targeted commands uses LEFTSKILL_COORD/RIGHTSKILL_COORD variants with pSkillCmd[3]/[4] as X/Y.
-void __stdcall PLAYER_ExecuteModeBasedAction(int32_t nActionContext, D2UnderMouseStrc * pUnderMouse) {
+static void __stdcall PLAYER_ExecuteModeBasedAction(int32_t nActionContext, D2UnderMouseStrc * pUnderMouse) {
     eD2UnitModeAction nSkillActionMode;
     eD2UnitType nTargetOrX;
     int32_t nX;
@@ -979,7 +979,7 @@ BOOL __stdcall CLIENT_MovePlayerToPosition(D2UnitStrc * pUnit, int16_t nX, int16
 }
 
 // Client-side handler for a player attempting to interact with a world object (by unit ID nParam1). Looks up the object, checks the just_portaled curse state for waypoints (classId 0x3b). If within range and line-of-sight, executes UNITMODEACTION_ITEM_INTERACT; otherwise moves the player toward the object's tile position. Stores last skill hit via D2Client for the interaction. Returns without action if object not found.
-void __stdcall PLAYER_InteractWithObject(int32_t nParam1, D2UnderMouseStrc * pUnderMouse) {
+static void __stdcall PLAYER_InteractWithObject(int32_t nParam1, D2UnderMouseStrc * pUnderMouse) {
     int16_t nY;
     int16_t nX;
     eD2States eCurseState;
@@ -1049,7 +1049,7 @@ void __stdcall PLAYER_InteractWithObject(int32_t nParam1, D2UnderMouseStrc * pUn
     Engine::StoreLastSkillHit(0x13, pUnderMouse->pPlayer, UNIT_OBJECT, nParam1);
 }
 
-void PLAYER_InteractWithUnit(int32_t nParam1, D2UnderMouseStrc * pUnderMouse) {
+static void PLAYER_InteractWithUnit(int32_t nParam1, D2UnderMouseStrc * pUnderMouse) {
     uint32_t nDistance = D2Common::Collision::GetDistanceBetweenUnits(pUnderMouse->pTarget, pUnderMouse->pPlayer);
     if (nDistance < 3) {
       BOOL bBlocked;
@@ -1105,7 +1105,7 @@ uint32_t __fastcall SKILL_CheckAuraRange(D2SkillStrc * pSkill, D2UnitStrc * pUni
 }
 
 // Client-side aura movement handler: checks SKILL_CheckAuraRange for the active aura skill; if the caster is in range, records last skill hits for unk1 and unk3|Poison aura types, then interpolates the caster's position along the remaining steps toward the target and calls CLIENT_MovePlayerToPosition. Falls back to PLAYER_ExecuteModeBasedAction if the caster has left range.
-void PLAYER_ExecuteSkillWithAura(int32_t nTargetGUID, eD2UnitType eTargetUnitType, D2UnderMouseStrc * pUnderMouse) {
+static void PLAYER_ExecuteSkillWithAura(int32_t nTargetGUID, eD2UnitType eTargetUnitType, D2UnderMouseStrc * pUnderMouse) {
     int32_t nSrcXPos;
     int32_t nDstX;
     int32_t nDstY;
@@ -1117,49 +1117,48 @@ void PLAYER_ExecuteSkillWithAura(int32_t nTargetGUID, eD2UnitType eTargetUnitTyp
       exit(-1);
     } else {
       uint32_t bOutOfRange;
-      if (pUnderMouse->pPlayer) {
-        if (!(*(uint8_t*)&pUnderMouse->flags & 0x20)) {
-          bOutOfRange = SKILL_CheckAuraRange(pUnderMouse->pSkill, pUnderMouse->pTarget, &nCurDist, &nTotalDist);
-          if (!bOutOfRange) {
-            if (*(uint8_t*)&pUnderMouse->flags & 1) {
-              Engine::StoreLastSkillHit(unk1, pUnderMouse->pPlayer, eTargetUnitType, nTargetGUID);
-            }
-            if (*(uint8_t*)&pUnderMouse->flags & 2) {
-              Engine::StoreLastSkillHit(unk3 | Poison, pUnderMouse->pPlayer, eTargetUnitType, nTargetGUID);
-            }
+      if (!pUnderMouse->pPlayer) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x530);
+        exit(-1);
+      }
+      if (!(*(uint8_t*)&pUnderMouse->flags & 0x20)) {
+        bOutOfRange = SKILL_CheckAuraRange(pUnderMouse->pSkill, pUnderMouse->pTarget, &nCurDist, &nTotalDist);
+        if (!bOutOfRange) {
+          if (*(uint8_t*)&pUnderMouse->flags & 1) {
+            Engine::StoreLastSkillHit(unk1, pUnderMouse->pPlayer, eTargetUnitType, nTargetGUID);
+          }
+          if (*(uint8_t*)&pUnderMouse->flags & 2) {
+            Engine::StoreLastSkillHit(unk3 | Poison, pUnderMouse->pPlayer, eTargetUnitType, nTargetGUID);
+          }
 
-            nStepsRemaining = nTotalDist - nCurDist;
-            if (nStepsRemaining < 1) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x548);
-              exit(-1);
-            } else {
-              if (nTotalDist) {
-                nSrcXPos = Units::GetXPosFromDynamicPathUnit(pUnderMouse->pPlayer);
-                nCurDist = Units::GetYPosFromDynamicPathUnit(pUnderMouse->pPlayer);
-                nDstX = Units::GetXPosFromDynamicPathUnit(pUnderMouse->pTarget);
-                nDstY = Units::GetYPosFromDynamicPathUnit(pUnderMouse->pTarget);
-                nCurDist = (nDstY - nCurDist) * nStepsRemaining / nTotalDist + nCurDist;
-                CLIENT_MovePlayerToPosition(pUnderMouse->pPlayer, (short int)((nDstX - nSrcXPos) * nStepsRemaining / nTotalDist) + (short int)nSrcXPos, (int16_t)nCurDist, pUnderMouse->nMoveActionType);
-                return;
-              }
-
+          nStepsRemaining = nTotalDist - nCurDist;
+          if (nStepsRemaining < 1) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x548);
+            exit(-1);
+          } else {
+            if (!nTotalDist) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x549);
               exit(-1);
             }
+
+            nSrcXPos = Units::GetXPosFromDynamicPathUnit(pUnderMouse->pPlayer);
+            nCurDist = Units::GetYPosFromDynamicPathUnit(pUnderMouse->pPlayer);
+            nDstX = Units::GetXPosFromDynamicPathUnit(pUnderMouse->pTarget);
+            nDstY = Units::GetYPosFromDynamicPathUnit(pUnderMouse->pTarget);
+            nCurDist = (nDstY - nCurDist) * nStepsRemaining / nTotalDist + nCurDist;
+            CLIENT_MovePlayerToPosition(pUnderMouse->pPlayer, (short int)((nDstX - nSrcXPos) * nStepsRemaining / nTotalDist) + (short int)nSrcXPos, (int16_t)nCurDist, pUnderMouse->nMoveActionType);
+            return;
           }
         }
-
-        PLAYER_ExecuteModeBasedAction(1, pUnderMouse);
-        return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x530);
-      exit(-1);
+      PLAYER_ExecuteModeBasedAction(1, pUnderMouse);
+      return;
     }
 }
 
 // Client-side skill execution targeting a specific unit GUID. Verifies skill usability, resolves the target unit, checks melee range, and dispatches via aura path (srvdofunc==0x13), ranged/bow path (StoreLastSkillHit), or the general PLAYER_ExecuteModeBasedAction depending on weapon class and range.
-void __stdcall PLAYER_ExecuteSkillAtUnit(eD2UnitType eTargetUnitType, int32_t nTargetGUID, D2UnderMouseStrc * pUnderMouse) {
+static void __stdcall PLAYER_ExecuteSkillAtUnit(eD2UnitType eTargetUnitType, int32_t nTargetGUID, D2UnderMouseStrc * pUnderMouse) {
     D2SkillStrc** ppSkill = &pUnderMouse->pSkill;
     uint32_t bUsable = PLAYER_CheckSkillUsability(nullptr, pUnderMouse->pPlayer, ppSkill);
     if (!bUsable) {
@@ -1228,7 +1227,7 @@ BOOL __stdcall PLAYER_CheckPendingInteraction(int32_t nTargetType, int32_t nTarg
 }
 
 // Client-side: resolve and act on the local player's pending interaction with a target unit, dispatching on the target's unit type. PLAYER: if out of melee range or blocked, walk toward it (ExecuteSkillAction), else attack. MONSTER: NPCs (interact/npc flag) send the 0x59 NPC-interact request and face the player; non-interactive monsters fall through to a generic ranged/melee skill action with range 5. OBJECT: range/collision-checked interaction (with a special just_portaled guard for type-0x3B objects), moving the player into range or executing the interact skill. ITEM: pickup-range interact or move-to. WARP: rate-limited (500-tick cooldown via GAMEDATA_Get/SetValue007a04c8) move-or-use-portal. Common path issues NET_D2GS_CLIENT skill/interact messages and StoreLastSkillHit. Param: pSkillCtx (EAX) carries the interacting unit (dwStartLight), target (nPaletteIndex), and skill ticks. __thiscall-ish custom-reg convention.
-void __stdcall PLAYER_InteractWithUnitByType(eD2UnitType eTargetUnitType, int32_t nTargetGUID, D2UnderMouseStrc * pUnderMouse) {
+static void __stdcall PLAYER_InteractWithUnitByType(eD2UnitType eTargetUnitType, int32_t nTargetGUID, D2UnderMouseStrc * pUnderMouse) {
     eD2States eCurseState;
     BOOL bCollides;
     uint32_t nNowTick;
@@ -1405,7 +1404,7 @@ void __stdcall PLAYER_InteractWithUnitByType(eD2UnitType eTargetUnitType, int32_
 }
 
 // Client-side skill-action validator called before queuing a skill use. Checks town restrictions (plays sound 0x18 and returns 0 if skill disallowed in town), sets move/attack action-type codes on pUnderMouse (1/2 or 3/4 based on shift flag), clears any pending trade or interact queue state, then calls SKILL_ValidateTarget to resolve the final target and coordinates. Drops cursor item to ground if item-type is 6. Returns 1 if the action is valid, 0 otherwise.
-uint32_t INPUT_ValidateSkillAction(D2UnderMouseStrc * pUnderMouse) {
+static uint32_t INPUT_ValidateSkillAction(D2UnderMouseStrc * pUnderMouse) {
     bool _bNeedsTarget;
     bool bNeedsTarget;
     D2RoomStrc* pRoom;
@@ -1495,7 +1494,7 @@ uint32_t INPUT_ValidateSkillAction(D2UnderMouseStrc * pUnderMouse) {
     return 1;
 }
 
-void INPUT_ContinuePlayerMovement(D2UnderMouseStrc * pMouse) {
+static void INPUT_ContinuePlayerMovement(D2UnderMouseStrc * pMouse) {
     D2UnitStrc* pUnit = pMouse->pPlayer;
     if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
       return;
@@ -1521,7 +1520,7 @@ void INPUT_ContinuePlayerMovement(D2UnderMouseStrc * pMouse) {
 }
 
 // Computes the effective movement target for a player unit given the current mouse context. Reads the player's current tile position (static or dynamic path), computes the X/Y delta to the mouse cursor, clamps the minimum step distance based on mouse context flags (e.g. run/walk/attack modifiers), and writes the adjusted target back into pMouseCtx. Returns 1 if the movement should be committed (delta large enough and run-frame throttle not exceeded), 0 otherwise.
-BOOL __stdcall PLAYER_CalculateMovementTarget(D2UnitStrc * pPlayerUnit, D2UnderMouseStrc * pMouseCtx) {
+static BOOL __stdcall PLAYER_CalculateMovementTarget(D2UnitStrc * pPlayerUnit, D2UnderMouseStrc * pMouseCtx) {
     // Static local variables (originally global data)
     static int gnLastMovementTargetEntryIndex; D2_STATIC_GUARD_BSS(gnLastMovementTargetEntryIndex, "D2Client::UNIT::Player::PLAYER_CalculateMovementTarget::gnLastMovementTargetEntryIndex");
 
@@ -1614,7 +1613,7 @@ BOOL __stdcall PLAYER_CalculateMovementTarget(D2UnitStrc * pPlayerUnit, D2UnderM
 }
 
 // @sourcefile .\UNIT\Player.cpp
-uint32_t SKILL_IsPassiveSkill(D2SkillStrc * pSkill) {
+static uint32_t SKILL_IsPassiveSkill(D2SkillStrc * pSkill) {
     D2SkillsTxt* pSkillsTxt;
     if (!pSkill) {
       return 0;
@@ -1635,7 +1634,7 @@ uint32_t SKILL_IsPassiveSkill(D2SkillStrc * pSkill) {
 
 // Client-side dispatcher for a left/right-click skill action gathered in pUnderMouse (player, target unit, selected skill, flags). After INPUT_ValidateSkillAction, resolves the right behavior for the target: interact with object/NPC/warp, talk in town, force-cast a skill at a unit/tile, attack a monster, or walk to the clicked position. Honors skill flags4 (force-hostile, usable-while-interact), weapon class, town rules, and shift/force modifiers; issues PLAYER_ExecuteSkillAtUnit / PLAYER_InteractWith* / PLAYER_ExecuteModeBasedAction / CLIENT_MovePlayerToPosition accordingly.
 // @sourcefile .\UNIT\Player.cpp
-void INPUT_ExecuteSkillCommand(D2UnderMouseStrc * pUnderMouse) {
+static void INPUT_ExecuteSkillCommand(D2UnderMouseStrc * pUnderMouse) {
     int iVar1;
     uint32_t bIsInteractable;
     D2SkillsTxt* pSkillsTxt2;
@@ -1835,7 +1834,7 @@ BOOL __fastcall IsUnitNotMoving(D2UnderMouseStrc * pUnderMouse) {
     return 0;
 }
 
-BOOL INPUT_HandleLeftClickRepeat(D2UnderMouseStrc * pUnderMouse) {
+static BOOL INPUT_HandleLeftClickRepeat(D2UnderMouseStrc * pUnderMouse) {
     D2UnitStrc* pCursorItem_lcl;
     BOOL bResult = IsUnitNotMoving(pUnderMouse);
     if (!bResult) {
@@ -1871,7 +1870,7 @@ BOOL INPUT_HandleLeftClickRepeat(D2UnderMouseStrc * pUnderMouse) {
 }
 
 // Player input handler that issues a walk/move command toward the coordinate or unit under the cursor (pMouse is the under-mouse input context). Bails if the player is already moving or cannot be interrupted. Computes the player's run/walk velocity (scaled by velocitypercent) and detects a run/walk toggle mismatch against the current path velocity and the input flags. If a target unit is set and it differs from the confirmed target (or a velocity mismatch), it retargets the dynamic path and re-issues the skill command; otherwise it flags the move and runs INPUT_ExecuteSkillCommand. Returns 1. Custom-register convention (pMouse in EDI).
-uint32_t WalkToCoordOrUnit(D2UnderMouseStrc * pMouse) {
+static uint32_t WalkToCoordOrUnit(D2UnderMouseStrc * pMouse) {
     int nVelocityPct;
     int32_t nClassId;
     int nRunVelocity;
@@ -1941,7 +1940,7 @@ uint32_t WalkToCoordOrUnit(D2UnderMouseStrc * pMouse) {
     return 1;
 }
 
-BOOL INPUT_HandleLeftClickWithPet(D2UnderMouseStrc * pUnderMouse) {
+static BOOL INPUT_HandleLeftClickWithPet(D2UnderMouseStrc * pUnderMouse) {
     D2RosterPetSeedStrc* pSeed;
     IsUnitNotMoving(pUnderMouse);
     int32_t nUnitGUID = GAME::RosterPets::GetRosterPetGUID(pUnderMouse->pPlayer, 7, 0);
@@ -1961,7 +1960,7 @@ BOOL INPUT_HandleLeftClickWithPet(D2UnderMouseStrc * pUnderMouse) {
 }
 
 // @sourcefile .\UNIT\Player.cpp
-BOOL ClickMapRightSkill(D2UnderMouseStrc * pUnderMouse) {
+static BOOL ClickMapRightSkill(D2UnderMouseStrc * pUnderMouse) {
     D2SkillsTxt* pSkillsTxt;
     BOOL bCanAct = IsUnitNotMoving(pUnderMouse);
     if (!bCanAct) {
@@ -1990,7 +1989,7 @@ BOOL ClickMapRightSkill(D2UnderMouseStrc * pUnderMouse) {
 }
 
 // @sourcefile .\UNIT\Player.cpp
-BOOL INPUT_HandleRightClickRepeat(D2UnderMouseStrc * pUnderMouse) {
+static BOOL INPUT_HandleRightClickRepeat(D2UnderMouseStrc * pUnderMouse) {
     D2SkillsTxt* pSkillsTxt;
     BOOL bCanAct = IsUnitNotMoving(pUnderMouse);
     if (!bCanAct) {
@@ -2018,7 +2017,7 @@ BOOL INPUT_HandleRightClickRepeat(D2UnderMouseStrc * pUnderMouse) {
     return 1;
 }
 
-BOOL INPUT_HandleRightClickWithPet(D2UnderMouseStrc * pUnderMouse) {
+static BOOL INPUT_HandleRightClickWithPet(D2UnderMouseStrc * pUnderMouse) {
     IsUnitNotMoving(pUnderMouse);
     int32_t nUnitGUID = GAME::RosterPets::GetRosterPetGUID(pUnderMouse->pPlayer, 7, 0);
     if (nUnitGUID == -1) {
@@ -2326,7 +2325,7 @@ void __fastcall CLIENT_WarpPlayerAndContinueMove(D2UnitStrc * pUnit, D2RoomStrc 
 }
 
 // Client-side stamina-depletion handler for the local player. When the player's stamina hits 0, cancels any active run/walk: if chasing a unit target, re-issues a follow message; otherwise captures the current destination, frees any pending light map, resets the current skill, and transitions the unit to Walk or TownWalk mode (or falls back to CLIENT_SetAnimModeAndMoveToCurrentPos if no valid path target). No-ops for non-local or non-zero stamina units.
-void CLIENT_CancelRunAndWalk(D2UnitStrc * pUnit) {
+static void CLIENT_CancelRunAndWalk(D2UnitStrc * pUnit) {
     eD2PlayerAnimMode nAnimMode;
     eD2PlayerAnimMode eNeutralMode;
     D2ServerMessageHandleStrc nStaminaOrDestX;
@@ -2406,11 +2405,7 @@ void __fastcall PLAYER_ProcessPlayerModeSimulation(D2UnitStrc * pUnit) {
         /* .nFrameAdvanceMode = */ 0x2,
         /* .nCompleteMode = */ 0x0
     },
-    {
-        /* .nStepMode = */ 0x0,
-        /* .nFrameAdvanceMode = */ 0x0,
-        /* .nCompleteMode = */ 0x0
-    },
+    {},
     {
         /* .nStepMode = */ 0x1,
         /* .nFrameAdvanceMode = */ 0x0,
@@ -2426,11 +2421,7 @@ void __fastcall PLAYER_ProcessPlayerModeSimulation(D2UnitStrc * pUnit) {
         /* .nFrameAdvanceMode = */ 0x1,
         /* .nCompleteMode = */ 0x2
     },
-    {
-        /* .nStepMode = */ 0x0,
-        /* .nFrameAdvanceMode = */ 0x0,
-        /* .nCompleteMode = */ 0x0
-    },
+    {},
     {
         /* .nStepMode = */ 0x1,
         /* .nFrameAdvanceMode = */ 0x0,
@@ -2856,12 +2847,12 @@ uint32_t InsertIntoHashTable(D2UnitStrc * pUnit) {
       pPrevUnit = FindUnit(pUnit->nUnitGUID, ServerSideUnitHashTables[pUnit->eUnitType], pUnit->eUnitType, pUnit->nUnitGUID & 0x7f);
       if (!pPrevUnit) {
         pPrevUnit = FindUnit(pUnit->nUnitGUID, ServerSideUnitHashTables[pUnit->eUnitType], pUnit->eUnitType, pUnit->nUnitGUID & 0x7f);
-        if (!pPrevUnit) {
-          goto insert_sorted;
+        if (pPrevUnit) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa5);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa5);
-        exit(-1);
+        goto insert_sorted;
       }
     } else {
       D2UnitStrc* (*papDVar1)[128];

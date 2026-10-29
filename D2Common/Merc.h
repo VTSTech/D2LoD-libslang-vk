@@ -38,10 +38,6 @@ struct D2MercRolledStatsStrc {
 namespace D2Common::Merc {
 
 // Function declarations
-// Returns the animation index for the weapon currently held by a mercenary unit by walking the global gaMercWeaponAnimMap table (14 entries) and matching nWeaponClass. Returns -1 if no match found.
-int32_t MERC_GetWeaponAnimIndex(struct D2UnitStrc * pUnit);
-// Returns the D2MonSeqMonsterTbls entry for the unit's current skill sequence. For player-type units (mercs), resolves via apFixedSequenceTable indexed by weapon anim index. For monster units, looks up the monster's MonStats entry then retrieves by sequence ID. Returns null if no current skill or sequence ID &lt; 1.
-struct D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTable(struct D2UnitStrc * pUnit);
 // 2022.01.09 - dzik
 struct D2MonSeqTxt * __stdcall MERC_GetSequenceTxt(struct D2UnitStrc * pUnit);
 // 2022.01.09 - dzik
@@ -64,5 +60,6 @@ int32_t __stdcall GetBaseExperience(int32_t nLevel, int32_t nExpPerLevel);
 uint32_t __stdcall GetReviveCost(struct D2UnitStrc * pUnit);
 // Randomly selects a mercenary (hireling) from the appropriate act/difficulty table and computes all rolled stats (level, HP, STR, DEX, damage, defense, XP, cost, resists) into pHireData. Uses nMercSeed to initialize the RNG. Level is buyer's level ±5 clamped to 2. All per-level deltas are scaled from the selected HirelingTxt row. Returns TRUE on success, FALSE if no valid hireling entry exists.
 BOOL __fastcall RollMercStats(int32_t nVersion, struct D2UnitStrc * pUnit, int32_t nMercSeed, int32_t nAct, int32_t nDifficulty, struct D2HirelingHireData * pHireData);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Common::Merc

@@ -30,7 +30,6 @@ namespace D2Game::SKILLS::SkillSor {
 
 // Function declarations
 int32_t __fastcall GetTxtTableParam6(int32_t nParam);
-void SKILLSOR_OnInfernoExpire(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame);
 // Per-tick server handler for the Sorceress Inferno skill. Validates the skill/missile records, retrieves the cursor target position, then spawns an Inferno missile each tick for as many frames as the calc specifies. For monsters using Inferno it manages the inferno state and schedules the end-anim event via SetEvent; for players it sets up the anim timer events.
 BOOL __fastcall INFERNO_CastInfernoTick(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl2, eMissilesId eMissileId);
 // Starts or sustains a channelled Inferno cast. On first call (no STATE_inferno stat list), allocates a stat list, schedules a 0xC event at frame+20, attaches it, sets the expire callback, and activates STATE_inferno. On subsequent calls, refreshes the stat-list timeout to frame+6, reschedules the event, and calls INFERNO_CastInfernoTick to spawn the next missile tick. For monster casters, param1 is set to game-frame + calc[1] duration.
@@ -68,12 +67,12 @@ BOOL __fastcall Skills_SrvDoFunc_026_ChainLighting(::SGAMEDATA * pGame, struct D
 BOOL __fastcall Skills_SrvDoFunc_151_FireDirectionalMissile(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall Skills_SrvDoFunc_027_Teleport(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall Skills_SrvDoFunc_028_Meteor_Blizzard(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
-struct D2UnitStrc * __stdcall SKILLSOR_CreateMissileAtTarget(::SGAMEDATA * pGame, eMissilesId eMissileId, eD2Skills eSkill, int32_t nParam, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 // Server-side do-function for the Sorceress Thunder Storm skill. On first cast (param2==0 or no active state), applies the aura state with a timed stat list (modifierlist_skill + modifierlist_level). On subsequent ticks (param2!=0), searches the area for a target via SKILLS_FindNextUnitInAreaByGUID, fires SKILLSOR_CreateMissileAtTarget toward it, immediately processes the missile hit, frees the missile unit, and sends a unit-message packet. Stores the last target GUID in skill param1; clears param2 each tick. Returns 0 if skill/missile/state data is invalid.
 BOOL __fastcall Skills_SrvDoFunc_029_ThunderStorm(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 // Item-event callback for the Sorceress Energy Shield / mana-absorption aura. Verifies the caster has an active aura state and a positive calc[0] absorption percentage. Iterates the global gnAuraManaAbsorbIndex table of damage-field offsets in pParam, siphons a percentage of each damage value (capped to 1/16 of current mana), reduces the corresponding mana by the absorbed amount (inverted ratio), and stores the result via STATLIST_SetUnitStat. If mana reaches zero, removes the aura stat list. Plays a directional overlay on the damage source if the aura specifies prgoverlay.
 BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitEvent, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, struct D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl);
 // Server-side skill DoFunc 144 (Hydra). Spawns the 3 Hydra heads for caster pUnit. Validates the skill row, resolves the summon monster class via SKILLS_GetSummonMonsterClassId and the pettype, finds the cast target/cursor position and a valid (non-town) room nearby. If the caster is a mercenary it retargets to the merc's owner. Computes the Hydra lifetime (TXT_Skills_GetSkillRange + current game frame) and a per-head skill calc (petmax), then loops 3 times creating a summon via SKILL_CreateSummon at offsets from gnSkillMissileCount_Hydra / gnAuraDamageScale_ManaAbsorb, assigning each its skill (SetSkill), summon buffs, an expiry timer (SetDwArgsIfNotNeg0x29a), and alignment inherited from a monster caster. Returns TRUE if at least one head was created, else FALSE.
 BOOL __fastcall Skills_SrvDoFunc_144_Hydra(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills iHydraIdx, int32_t nSkillLvl);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Game::SKILLS::SkillSor

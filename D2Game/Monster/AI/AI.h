@@ -112,7 +112,7 @@ void __fastcall AI_Fn1_Idle(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, stru
 uint32_t __fastcall AI_FindClosestAllyOfSameType(int nUnusedCtx, struct D2UnitStrc * pUnit, struct D2UnitStrc * pCandidate, struct D2MonsterAiParameterStruct * ppBestResult);
 uint32_t __fastcall ReturnFirstArgument(uint32_t * pdwParam);
 void __fastcall SetDwArgsIfNotNeg0x29a(struct D2AiGeneralStrc * pMonsterAi, int32_t dwArg0, int32_t dwArg1, int32_t dwArg2);
-uint32_t AI_CanApplyColdState(void * pThis, eD2States eState, int32_t nParam);
+uint32_t __thiscall AI_CanApplyColdState(void * pThis, eD2States eState, int32_t nParam);
 // Assigns or switches the active AI function for a monster unit. Validates pGame/pUnit/pMonsterAiGeneral and that nFunctionId < 0x12. If the monster is in STATE_uninterruptable, halts with an error. If the current fpFunction differs from the table entry or there is no secondary function, resets dwArg0/1/2, calls ResetAiGeneralStrc, looks up the new AI entry, runs its fpInit initializer (populating a scratch D2AiParamStrc), then sets fpFunction to fpMain (or AI_Function1_Idle if null). If a valid secondary function exists, installs it instead without reinitializing.
 void __fastcall AttachCorrectAiFunctionToMonster(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiGeneralStrc * pMonsterAiGeneral, int32_t nFunctionId);
 BOOL __fastcall MonsterNeedsToOpenDoor(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);
@@ -165,8 +165,6 @@ BOOL __fastcall TestIfMonsterCanHitTarget(struct D2UnitStrc * pUnit, struct D2Un
 uint32_t __fastcall MONSTERAI_FindNearestAllyCallback(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther, struct D2UnitStrc * * ppAllyData);
 int32_t __fastcall AI_ForEachFn04_FindDyingMonster(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther, uint32_t * test);
 uint32_t __fastcall MONSTERAI_GetThreatLevel(struct D2UnitStrc * pUnit);
-// Validates that a monster (pUnit) may legally target pTarget. Checks: both are monsters/players, neither is dead, target's room is not a town room, target has UNITFLAG_CANBEATTACKED, and if target is invisible: player invis targets succeed only on melee range or a 50% seed roll; monster invis targets are blocked unless in melee range. Falls through to UNITS_CheckIfCanAttackTarget.
-uint32_t __stdcall MONSTERAI_CanTargetUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 uint32_t __stdcall MONSTERAI_IsValidTarget(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 // ForEach callback used during AI target scanning. For each candidate pOther unit: if it is a valid attackable player/monster (alive, TARGETABLE flag set, can-attack check passes), records it in ppResults as a preferred (threat>=2 → ppResults[0]/[1]) or secondary (ppResults[5]/[6]) target when within distance ppResults[3]/[6] respectively, skipping if already blocked by LOS (TestCollisionWithUnit). If the unit fails those checks but is an aligned monster with nAiFlags bit 3 set, checks grid index against ppResults[4] and clears ppResults[2] on match (pack-leader slot invalidation). Always returns 0.
 uint32_t __fastcall AI_ForEachFn05_ScanTargetsByThreat(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther, struct D2UnitStrc * * ppResults);
@@ -176,14 +174,10 @@ uint32_t __fastcall AI_ForEachFn11_AltHittableTarget(::SGAMEDATA * pGame, struct
 uint32_t __fastcall AI_ForEachFn08_NearestClosedDoor(uint32_t dwParam, int * pnParam, struct D2UnitStrc * pUnit, struct D2MonsterAiParameterStruct * ppResults);
 int __fastcall AI_ForEachFn09_FindOwnMinionCorpse(uint32_t dwParam, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther, struct D2UnitStrc * * ppResults);
 uint32_t __fastcall AI_ForEachFn12_CountClassInRange(uint32_t dwParam, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther, int * pCountBuf);
-uint32_t __stdcall ForEachCallOther(::SGAMEDATA * pGame, struct D2MonsterAiParameterStruct * pParams, fpMonsterAiForEach pFunc, struct D2UnitStrc * pUnit);
 // Iterates every client in the rooms adjacent to pUnit's room and invokes pfnAiForEach for each corresponding player unit. Stops and returns the first non-zero callback result. Used by monster AI to scan nearby player units for targeting.
 // Body spans 005dcee0-005dcf64 (single function, RET 0x10). 005dcef9 is the JNZ target of the null-room test at 005dcef1, NOT a call target - a function defined there makes EBP look like a parameter and turns the three EBP-relative locals (ppRoomList at -0xc, nRoomCount at -8, nRoomIndex at -4) into wild pointers.
 uint32_t __stdcall ForEachCallType1(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2MonsterAiParameterStruct * pAiParam, fpMonsterAiForEach pfnAiForEach);
-// Iterates every unit in rooms adjacent to pUnit (skipping town rooms and rooms without clients) and calls pFunc(pGame, pUnit, pOther, pParams) for each. Returns the first non-zero result from pFunc, or 0 if all return 0. Used as the type-2 ForEach dispatch in monster AI scanning loops.
-uint32_t __stdcall ForEachCallType2(::SGAMEDATA * pGame, struct D2MonsterAiParameterStruct * pParams, fpMonsterAiForEach pFunc, struct D2UnitStrc * pUnit);
 void __fastcall ForEachMinion(struct D2UnitStrc * nUnitParam, struct D2MinionForEachCtx * ppCallbackCtx, int * pResult);
-uint32_t __stdcall ForEachCallType3(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, struct D2MonsterAiParameterStruct * pParam, fpMonsterAiForEach pFunc);
 // Monster AI dispatch helper. Looks up nParamValue in MonsterAiForEachTable to get a callback and dispatch type (1/2/3/other), then calls the corresponding ForEachCallTypeN routine. Falls back to pBackupFunc if the table entry has no callback. Returns the result of the dispatched call, or 0 if no callback is available.
 uint32_t __fastcall ForEach(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2MonsterAiParameterStruct * pParams, fpMonsterAiForEach pBackupFunc, int32_t nParamValue);
 // ForEach callback: for each living monster pOther within pCountBuf[3] distance of pUnit, increments a bucket in pCountBuf based on classId. Buckets 0-7 track specific Pandemonium-era minion classes (0x2C0, 0x2C1, 0x2C5, 0x2C7, 0x2C8, 0x2DB/DC/DD, plus a generic overflow bucket). Used to tally nearby minion composition for AI decisions.
@@ -201,10 +195,6 @@ void __fastcall MONSTERAI_SetTargetUnit(struct D2UnitStrc * pUnit, struct D2Unit
 struct D2UnitStrc * __fastcall AI_FindUnitAtPositionByBaseId(uint32_t nUnused, struct D2RoomStrc * pRoom, int32_t nTargetX, int32_t nTargetY, int32_t nBaseIdFilter);
 // Returns TRUE if eState can be applied to pUnit as a debuff. Guards: pUnit is a living monster, eState &lt; 0x14, unit is not already STATE_uninterruptable, CanSwitchAI is true, unit is attackable or alive, monster type != 10 (cold-immune-like flag), and AI_CanApplyColdState approves (unless eState is STATE_weaken). Used to gate AI debuff skill usage.
 BOOL __fastcall MONSTERAI_CanApplyDebuffState(struct D2UnitStrc * pUnit, eD2States eState);
-// Validates and optionally replaces a candidate switch-target (*ppUnit). Returns 0 (keep candidate) if pUnit is a player or nParam1==0. If nParam2 &lt; 6, probes a path to the candidate; if unreachable (zero path points), runs a ForEach scan for an alternative unit within distance 0x13 and updates *ppUnit and *pDistance accordingly. Returns 1 to signal the caller should use the secondary (LOS) target instead.
-BOOL __stdcall MONSTERAI_ValidateSwitchTarget(struct D2UnitStrc * * ppUnit, int * pDistance, int32_t nParam1, int32_t nParam2, struct D2UnitStrc * pUnit);
-// Resolves the current target for a monster's "switch AI" (the secondary AI targeting mode, e.g. for converted/charmed or special monsters). Only operates on UNIT_MONSTER units that have a switch-AI param. Param1 selects target domain: 1=player by GUID, 2=monster by GUID, 4=missile by GUID (looked up via FindUnitFromTable), 3=proximity scan (toggles alignment, runs AI ForEach over nearby units to pick the best by distance). For the resolved candidate, optionally requires line of sight (bRequireLOS) and that it is alive/valid; on success writes the unit to *ppOutUnit and distance to *pOutDistance and returns 1, else clears the switch-AI target params and returns 0. Custom register calling convention (pGame in EAX, pUnit in ESI).
-BOOL __stdcall MONSTERAI_FindSwitchAiTarget(struct D2UnitStrc * pSwitchParam, int32_t bRequireLOS, struct D2UnitStrc * * ppOutUnit, int * pOutDistance, ::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // ADVANCED TARGET SELECTION:
 // 1. Check switch AI target (from SwitchAI field in MonStatsEx)
 // 2. Scan all players in act, filter by:
@@ -286,11 +276,8 @@ int32_t __fastcall WalkRandomOffsetAroundUnit(::SGAMEDATA * pGame, struct D2Unit
 int __fastcall SetCombatStateAndApproachTarget(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, uint8_t nState, int32_t directionFlags);
 // Makes a monster cast eSkill at a randomly-offset world position within nRange tiles of its current position. Uses the unit's own seed (LCG step) to pick independent X and Y offsets in [-nRange, +nRange], then calls SERVER_UNIT_CastSkill with targetGUID=0 (ground-targeted). Handles static-path objects and dynamic-path units for position resolution.
 void __fastcall MONSTERAI_CastSkillAtRandomOffset(struct D2UnitStrc * pUnit, int32_t nRange, eD2Skills eSkill, uint8_t nSkillMode);
-uint32_t MONSTERAI_CalculateTrapDamage(uint32_t dwParam, uint32_t nParam1, uint32_t nParam2, DWORD dwParam2, int32_t nParam);
 // Computes and applies a retaliatory/trap-style damage hit from pUnit against pVictim. No-ops in town or when a wall/door blocks the line. Derives min/max damage from victim hitpoints (>>3 and >>5), rolls a to-hit/chance value from victim level/dexterity/AC and the unit RNG seed; on a hit rolls trap damage via MONSTERAI_CalculateTrapDamage and fills a D2DamageStrc whose element (fire/lightning/cold) is selected by nDmgType (1/2/3). Sets uninterruptable-aware result flags, applies defensive reduction and damage to the victim.
 void __fastcall MONSTERAI_CalculateCounterAttackDamage(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pVictim, int32_t nDmgType);
-// Schedules a convert event (event type 7, UNITMOD 0x15) for all neutral monsters within radius 0x583 of pUnit. Filters by nUnitType; if bUndeadOnly is set, skips non-undead monsters. Skips class 0x14d. For each eligible monster picks a random game-frame delay in [nMinDelay, nMaxDelay) from pUnit's seed via RANDOM_RandomNumberSelector, then calls SetEvent. Asserts nMinDelay &lt; nMaxDelay != 0; halts on assertion failure. Used by Decrepify/Conversion-style AI effects.
-void __stdcall MONSTERAI_ConvertMonstersInRadius(int32_t nUnitType, int32_t nMinDelay, int32_t nMaxDelay, int32_t bUndeadOnly, struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame);
 void __fastcall MONSTERAI_ThinkRangedSpecial(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall AI_Mephisto_SpawnDeathMissile(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall MONSTERAI_ThinkRangedShort(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
@@ -445,7 +432,7 @@ void __fastcall AITHINK_Fn1_Diablo(::SGAMEDATA * pGame, struct D2UnitStrc * pUni
 // Server-side Baal AI action selector. Builds a 17-entry skill-weight table chosen by branch on whether Baal is in melee range vs colliding-with-wall vs ranged, then adjusts weights by target fire/light resist, the target's life%, cold state, difficulty, distance, whether the target casts a feared skill (Blizzard/Meteor/FireWall/ImmolationArrow over a level threshold), and Chaos-Sanctuary arena positioning. Filters out actions Baal cannot cast at the target position, sums the weights and does a seed-RNG weighted pick. Returns the chosen action index (0..16), or fixed codes (0x10 collision-blocked, 0xb fallback) when no valid target. Honors a precomputed override at *(nAiContext+0x14).
 // Action weight slots (aActionWeights index): 5 melee skill mod, 6 lightning, 7 cold adjust, 8 fire adjust, 9 range bias, 10 fire, 12 skill, 13 cold, 15 arena target. aActionWeightTemplate is built first and copied over aActionWeights with REP MOVSD (17 dwords).
 int32_t __fastcall AI_BAAL_ChooseCombatAction(int nAiContext, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTargetUnit, uint32_t nDistanceMetric, int32_t nDifficultyContext, int32_t pAiCommand);
-void MONSTERAI_SpawnSpecificMinions(void * pThis, struct D2UnitStrc * pUnit);
+void __thiscall MONSTERAI_SpawnSpecificMinions(void * pThis, struct D2UnitStrc * pUnit);
 void __fastcall AITHINK_Fn1_UberDiablo(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);
 void __fastcall AITHINK_Fn1_Vendor(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);
 void __fastcall AITHINK_Fn1_Hydra(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);
@@ -723,5 +710,6 @@ int32_t __fastcall AI_Monster_CastItemEffectSkill(::SGAMEDATA * pGame, struct D2
 // out-argument of AI_Monster_CastItemEffectSkill once its value is copied to EBX.
 BOOL __fastcall SKILL_CastOnTargetUnit(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSubSkill, struct D2UnitStrc * pTarget, int32_t nParam);
 BOOL __fastcall MONSTERAI_CastItemEffectSkill(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSubSkill, uint32_t nCoordX, uint32_t nCoordY, int32_t nParam2);
+// 8 internal functions (defined in .cpp)
 
 } // namespace D2Game::Monster::AI

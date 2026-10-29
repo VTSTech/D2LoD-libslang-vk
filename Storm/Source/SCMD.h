@@ -54,31 +54,16 @@ struct __attribute__((packed)) StormCmdArgDefStrc {
 namespace Storm::Source {
 
 // Function declarations
-// Parses command-line boolean argument with optional +/- prefix. Updates bitmask in cmdDef based on flags (sets bits on +/true, clears bits on -/false). Also updates external bitmask pointer if provided.
-// @blizzard ConvertBool (SCMD.CPP)
-void __fastcall SCMD_ConvertBool(struct D2GameNpcStrc * cmdDef, char * str, uint32_t * outConsumed);
-// Parses command-line integer argument using strtol (signed) or strtoul (unsigned) based on command definition flags. Stores parsed value and reports consumed character count. Copies result to external buffer if provided.
-// @blizzard ConvertNumber (SCMD.CPP)
-void __stdcall SCMD_ConvertNumber(struct D2UnitDataMonsterStrc * cmdDef, char * str, int * outConsumed);
-// @sourcefile .\SOURCE\SCMD.CPP
-// @blizzard ConvertString (SCMD.CPP)
-void __stdcall SCMD_ConvertString(char * str, struct D2UnitDataMonsterStrc * cmdDef, uint32_t * outConsumed);
-// @blizzard GenerateError (SCMD.CPP)
-void __stdcall SCMD_GenerateError(uint32_t errorCode, pfnSCmdErrorCallback pfnCallback, char * szItem);
-// @blizzard ProcessFile (SCMD.CPP)
-BOOL __stdcall SCMD_ProcessFile(char * filename, int * pnParam, uint32_t dwParam, pfnSCmdUnknownArgCallback pfnCallback, pfnSCmdErrorCallback pfnErrorCallback);
-uint32_t SCMD_GetListOffset(::SCMD * pThis, int nBaseOffset);
-::SCMD * SCMD_GetListHead(::SCMD * pThis, ::SCMD * pNode);
-void SCMD_MoveToList(::SCMD * pThis, ::SCMD * pNode, int nParam, ::SCMD * pScmd);
-uint32_t SCMD_GetNextOffset(::SCMD * pThis, ::SCMD * pNode);
-void SCMD_UnlinkNode(::SCMD * pThis, ::SCMD * pNode);
-// @blizzard FindFlagDef (SCMD.CPP)
-struct StormCmdArgDefStrc * __stdcall SCMD_FindFlagDef(struct StormCmdArgDefStrc * cmdList, char * str, int minLen);
-uint32_t SCMD_GetHandler(::SCMD * pThis, int nNodeOffset);
+uint32_t __thiscall SCMD_GetListOffset(::SCMD * pThis, int nBaseOffset);
+::SCMD * __thiscall SCMD_GetListHead(::SCMD * pThis, ::SCMD * pNode);
+void __thiscall SCMD_MoveToList(::SCMD * pThis, ::SCMD * pNode, int nParam, ::SCMD * pScmd);
+uint32_t __thiscall SCMD_GetNextOffset(::SCMD * pThis, ::SCMD * pNode);
+void __thiscall SCMD_UnlinkNode(::SCMD * pThis, ::SCMD * pNode);
+uint32_t __thiscall SCMD_GetHandler(::SCMD * pThis, int nNodeOffset);
 void __fastcall SCMD_ClearList(struct D2StormListHead * nListPtr);
 void __fastcall SCMD_ClearAll(struct D2StormListHead * nListPtr);
-::SCMD * SCMD_AllocNode(::SCMD * pThis, int nInsertMode, int nParam, uint32_t nParam2);
-::SCMD * SCMD_FreeNode(::SCMD * pThis, uint8_t bFreeMemory);
+::SCMD * __thiscall SCMD_AllocNode(::SCMD * pThis, int nInsertMode, int nParam, uint32_t nParam2);
+::SCMD * __thiscall SCMD_FreeNode(::SCMD * pThis, uint8_t bFreeMemory);
 // Registers one command-line argument definition into Storm's command list.
 // @oracle SCmdRegisterArgument
 // @oracle-source Storm export vector SCmdRegisterArgument @100cbcac -> code 10008240 = the traceback-named function .SCmdRegisterArgument, in Mac PPC 1.10b Storm
@@ -86,15 +71,9 @@ void __fastcall SCMD_ClearAll(struct D2StormListHead * nListPtr);
 // @former-name SCMD_RegisterCommand
 BOOL __stdcall SCmdRegisterArgument(uint32_t dwFlags, uint32_t dwId, char * szText, void * pVariable, uint32_t dwVariableBytes, uint32_t dwSetValue, uint32_t dwSetMask, SCMDCALLBACK pfnCallback);
 void __fastcall SCMD_FreeAllNodes(void * pListHead);
-uint32_t SCMD_RemoveNode(::SCMD * pThis, ::SCMD * pNode);
-// @blizzard PerformConversion (SCMD.CPP)
-BOOL __fastcall SCMD_PerformConversion(char * str, struct StormCmdArgDefStrc * cmdDef, int * outConsumed);
-// @blizzard ProcessCurrentFlag (SCMD.CPP)
-BOOL SCMD_ProcessCurrentFlag(int * * pCmdCtx, char * szArgLine, int * outConsumed);
+uint32_t __thiscall SCMD_RemoveNode(::SCMD * pThis, ::SCMD * pNode);
 // @blizzard ProcessFlags (SCMD.CPP)
 BOOL __fastcall SCMD_ProcessFlags(pfnSCmdErrorCallback pfnErrorCallback, char * szText, int * pnOutConsumed);
-// @blizzard ProcessToken (SCMD.CPP)
-BOOL __fastcall SCMD_ProcessToken(uint32_t * cmdDefPtr, char * str, int * outPtr, int noFileExpand, pfnSCmdUnknownArgCallback unknownCb, pfnSCmdErrorCallback errorCb);
 // @blizzard SCmdCheckId (SCMD.CPP)
 uint32_t __stdcall SCmdCheckId(int nCmdId);
 // Tears the SCmd module down: frees the allocated string value at +0x3c of every string-typed command node in both lists, frees every node in both lists, and clears gbScmdHasPriorityCommand. No arguments.
@@ -137,7 +116,7 @@ bool __stdcall SCmdGetBool(int nCmdId);
 // @oracle-source Storm export vector SCmdProcess @100cbc94 -> code 100086c0 = the traceback-named function .SCmdProcess, in Mac PPC 1.10b Storm
 // @rename-basis Behaviour plus a cross-architecture body match. .SCmdProcess reads r3..r6, i.e. exactly four arguments, and is the target of the two-argument command-line wrapper at 10008640 which supplies its own second argument as the literal 1. This function has the same four arguments and is likewise the target of SCmdProcessCommandLine 006c50b0, which calls it as (GetCommandLineA(), 1, arg1, arg2) - the same literal 1 in the same slot, which is the skip-argv[0] flag.
 // @former-name SCMD_ParseCommandLine (also resolves a duplicate-name collision: 006c4a00 carried the same name)
-void __stdcall SCmdProcess(char * szCommandLine, int bSkipFirstToken, pfnSCmdUnknownArgCallback pfnUnknownCallback, pfnSCmdErrorCallback pfnErrorCallback);
+int __stdcall SCmdProcess(char * szCommandLine, int bSkipFirstToken, pfnSCmdUnknownArgCallback pfnUnknownCallback, pfnSCmdErrorCallback pfnErrorCallback);
 // Processes the process's own command line: GetCommandLineA() then SCmdProcess(cmdline, 1, arg1, arg2).
 // @oracle SCmdProcessCommandLine
 // @oracle-source Storm export vector SCmdProcessCommandLine @100cbc9c -> code 10008640 in Mac PPC 1.10b Storm
@@ -148,5 +127,6 @@ void __stdcall SCmdProcessCommandLine(pfnSCmdUnknownArgCallback pfnUnknownCallba
 void StaticFini_gStormCmdListBackslash();
 // Runs at exit: removes every element from the Storm command-argument list gStormCmdListHeadSlash, then unlinks the list head itself.
 void StaticFini_gStormCmdListSlash();
+// 9 internal functions (defined in .cpp)
 
 } // namespace Storm::Source

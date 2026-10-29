@@ -49,7 +49,7 @@ void __fastcall COMPOSIT_ReadCompositeFileRow(int32_t nBodyIndex, char * szText)
     memcpy(szText, "hth ", 4);
 }
 
-int COMPOSIT_GetItemTypeIndex(int32_t iItemType) {
+int __stdcall COMPOSIT_GetItemTypeIndex(int32_t iItemType) {
     // Static local variables (originally global data)
     static D2CompositListStrc gaCompositItemTypeMap[13] = {
     {

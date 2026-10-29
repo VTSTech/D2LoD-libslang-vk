@@ -14,55 +14,55 @@ struct ButtonWrapper;
 struct D2UIMouseMsgStrc;
 #ifndef RECON_FPTD_ButtonImplementation_Draw
 #define RECON_FPTD_ButtonImplementation_Draw
-typedef void (*ButtonImplementation_Draw)(::ButtonImplementation * pThis);
+typedef void (__thiscall *ButtonImplementation_Draw)(::ButtonImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_GetValue
 #define RECON_FPTD_ButtonImplementation_GetValue
-typedef int (*ButtonImplementation_GetValue)(::ButtonImplementation * pThis);
+typedef int (__thiscall *ButtonImplementation_GetValue)(::ButtonImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_OnChar
 #define RECON_FPTD_ButtonImplementation_OnChar
-typedef int (*ButtonImplementation_OnChar)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonImplementation_OnChar)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_OnDownArrow
 #define RECON_FPTD_ButtonImplementation_OnDownArrow
-typedef int (*ButtonImplementation_OnDownArrow)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonImplementation_OnDownArrow)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_OnLeftArrow
 #define RECON_FPTD_ButtonImplementation_OnLeftArrow
-typedef int (*ButtonImplementation_OnLeftArrow)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonImplementation_OnLeftArrow)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_OnMouseDown
 #define RECON_FPTD_ButtonImplementation_OnMouseDown
-typedef int (*ButtonImplementation_OnMouseDown)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonImplementation_OnMouseDown)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_OnMouseMove
 #define RECON_FPTD_ButtonImplementation_OnMouseMove
-typedef int (*ButtonImplementation_OnMouseMove)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonImplementation_OnMouseMove)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_OnMouseUp
 #define RECON_FPTD_ButtonImplementation_OnMouseUp
-typedef int (*ButtonImplementation_OnMouseUp)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonImplementation_OnMouseUp)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_OnMouseWheel
 #define RECON_FPTD_ButtonImplementation_OnMouseWheel
-typedef int (*ButtonImplementation_OnMouseWheel)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonImplementation_OnMouseWheel)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_OnRightArrow
 #define RECON_FPTD_ButtonImplementation_OnRightArrow
-typedef int (*ButtonImplementation_OnRightArrow)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonImplementation_OnRightArrow)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_OnUpArrow
 #define RECON_FPTD_ButtonImplementation_OnUpArrow
-typedef int (*ButtonImplementation_OnUpArrow)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonImplementation_OnUpArrow)(::ButtonImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_ScalarDeletingDestructor
 #define RECON_FPTD_ButtonImplementation_ScalarDeletingDestructor
-typedef ::ButtonImplementation * (*ButtonImplementation_ScalarDeletingDestructor)(::ButtonImplementation * pThis, uint32_t nFlags);
+typedef ::ButtonImplementation * (__thiscall *ButtonImplementation_ScalarDeletingDestructor)(::ButtonImplementation * pThis, uint32_t nFlags);
 #endif
 #ifndef RECON_FPTD_ButtonImplementation_SetAccelerator
 #define RECON_FPTD_ButtonImplementation_SetAccelerator
-typedef void (*ButtonImplementation_SetAccelerator)(::ButtonImplementation * pThis, BOOL bEnable);
+typedef void (__thiscall *ButtonImplementation_SetAccelerator)(::ButtonImplementation * pThis, BOOL bEnable);
 #endif
 #ifndef RECON_FPTD_fpButtonOnActivate
 #define RECON_FPTD_fpButtonOnActivate
@@ -71,38 +71,38 @@ typedef int (*fpButtonOnActivate)();
 
 // Data types
 struct ButtonImplementationVtable {
-    /* 0x00 */ ::ButtonImplementation * (*ScalarDeletingDestructor)(::ButtonImplementation *, uint32_t);
-    /* 0x04 */ void (*Draw)(::ButtonImplementation *);
-    /* 0x08 */ int (*OnMouseWheel)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x0C */ int (*OnMouseDown)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x10 */ int (*OnMouseUp)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x14 */ int (*OnMouseMove)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x18 */ int (*OnChar)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x1C */ int (*OnUpArrow)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x20 */ int (*OnDownArrow)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x24 */ int (*OnRightArrow)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x28 */ int (*OnLeftArrow)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x2C */ int (*GetValue)(::ButtonImplementation *);
-    /* 0x30 */ void (*SetAccelerator)(::ButtonImplementation *, BOOL);
+    /* 0x00 */ ::ButtonImplementation * (__thiscall *ScalarDeletingDestructor)(::ButtonImplementation *, uint32_t);
+    /* 0x04 */ void (__thiscall *Draw)(::ButtonImplementation *);
+    /* 0x08 */ int (__thiscall *OnMouseWheel)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x0C */ int (__thiscall *OnMouseDown)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x10 */ int (__thiscall *OnMouseUp)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x14 */ int (__thiscall *OnMouseMove)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x18 */ int (__thiscall *OnChar)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x1C */ int (__thiscall *OnUpArrow)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x20 */ int (__thiscall *OnDownArrow)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x24 */ int (__thiscall *OnRightArrow)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x28 */ int (__thiscall *OnLeftArrow)(::ButtonImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x2C */ int (__thiscall *GetValue)(::ButtonImplementation *);
+    /* 0x30 */ void (__thiscall *SetAccelerator)(::ButtonImplementation *, BOOL);
 };
 
 namespace D2Client::UI::Button::ButtonWrapper {
 
 // Function declarations
-void Destructor(::ButtonWrapper * pThis);
-::ButtonWrapper * ScalarDeletingDestructor(::ButtonWrapper * pThis, uint32_t nFlags);
-int OnMouseWheel(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseDown(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseUp(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseMove(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-void Draw(::ButtonWrapper * pThis);
-int OnChar(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnDownArrow(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnUpArrow(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnRightArrow(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnLeftArrow(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int GetValue(::ButtonWrapper * pThis);
-void SetAccelerator(::ButtonWrapper * pThis, BOOL bEnable);
-::ButtonWrapper * Constructor(::ButtonWrapper * pThis, int nPosX, int nPosY, int nButtonKind, fpButtonOnActivate pfnOnActivate);
+void __thiscall Destructor(::ButtonWrapper * pThis);
+::ButtonWrapper * __thiscall ScalarDeletingDestructor(::ButtonWrapper * pThis, uint32_t nFlags);
+int __thiscall OnMouseWheel(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseDown(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseUp(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseMove(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+void __thiscall Draw(::ButtonWrapper * pThis);
+int __thiscall OnChar(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnDownArrow(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnUpArrow(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnRightArrow(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnLeftArrow(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall GetValue(::ButtonWrapper * pThis);
+void __thiscall SetAccelerator(::ButtonWrapper * pThis, BOOL bEnable);
+::ButtonWrapper * __thiscall Constructor(::ButtonWrapper * pThis, int nPosX, int nPosY, int nButtonKind, fpButtonOnActivate pfnOnActivate);
 
 } // namespace D2Client::UI::Button::ButtonWrapper

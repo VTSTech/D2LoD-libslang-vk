@@ -27,7 +27,7 @@
 namespace D2Game::Objects::ArmorWeapon {
 
 // Populates a room region with armor/weapon rack objects of the given nRackType. Uses the game's control seed to pick a rack variant (even/odd), looks up the Objects.txt entry for size, then sweeps the DRLG coordinate space (horizontally for even variant, vertically for odd) calling ROOM_CheckSpawnCollision and CreateUnit at each valid grid position. Aborts with a fatal error if pRoom is null at spawn time.
-void __stdcall Roll(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgRoomCoordsStrc * pDrlgCoords, int32_t nRackType) {
+static void __stdcall Roll(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2DrlgRoomCoordsStrc * pDrlgCoords, int32_t nRackType) {
     // Static local variables (originally global data)
     static int RackType[4] = { 0x68, 0x69, 0x6a, 0x6b }; D2_STATIC_GUARD(RackType, "D2Game::Objects::ArmorWeapon::Roll::RackType");
     static int RackTypeCount = 0x2; D2_STATIC_GUARD(RackTypeCount, "D2Game::Objects::ArmorWeapon::Roll::RackTypeCount");

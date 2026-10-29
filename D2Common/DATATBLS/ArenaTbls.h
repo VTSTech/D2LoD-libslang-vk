@@ -46,8 +46,6 @@ namespace D2Common::DATATBLS::ArenaTbls {
 void __fastcall TXT_LoadArenaTxt(struct D2PoolManagerStrc * pMemory);
 struct D2ArenaTxt * __fastcall GetArenaTxtRecord(int32_t nArenaType);
 void __stdcall FreeArenaTxt();
-// Builds sgCharTemplateLevelIndex (int[64]): for each CharTemplate level the index of its first row. Rows (stride 0xf0, level byte at +0x1f) must be sorted by ascending level; halts at line 0x5c otherwise.
-void __stdcall TXT_BuildCharTemplateLevelIndex(struct D2CharTemplateTxt * pCharTemplateTxt, int32_t nCount);
 // Arena preset-fighter roster loader (= beta D2Common ARENA_LoadCharTemplatesTxt, DATATBLS\Arena.cpp). LIVE in 1.14d: called by TXT_InitTxtFiles at game init, compiles chartemplate.txt into the level-indexed ArenaCharTemplate[] (0xF8-byte records: Name, class->index, level, str/int/Hitpoints/Mana/ManaRegenBonus/Velocity/AttackRate/OtherRate, RightSkill, Skill1-9+SkillLevel1-9, item1-15 (code/loc/count)). Retail ships no chartemplate.txt so it loads 0 rows. Provide the data file to populate the arena roster for arena mode; spawn via the GetCharTemplateRecord(level,n) accessors. Arena GAMEPLAY (rounds/combat) was the part actually cut.
 void __fastcall TXT_LoadCharTemplateTxt(struct D2PoolManagerStrc * pMemory);
 void __stdcall FreeCharTemplateTxt();
@@ -55,5 +53,6 @@ void __stdcall FreeCharTemplateTxt();
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 struct D2CharTemplateTxt * __fastcall TXT_CharTemplate_GetLine(int nTemplate, int nLevelIndex);
 uint32_t __fastcall GetClassFromCharTemplateTxt(int32_t nTemplate, int32_t nLevel);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Common::DATATBLS::ArenaTbls

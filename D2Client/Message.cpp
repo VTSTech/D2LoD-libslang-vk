@@ -111,13 +111,13 @@ void __fastcall MESSAGE_RegisterEventHandler(HWND hWnd, int32_t eEventType, int3
       switch (eEventType) {
         case 0:
           {
-            if (nMessageOrKeyCode != 0x111) {
-              Storm::WindowHandle::SMsgRegisterMessage((uint32_t)hWnd, nMessageOrKeyCode, pfHandler);
-              return;
+            if (nMessageOrKeyCode == 0x111) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x114);
+              exit(-1);
             }
 
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x114);
-            exit(-1);
+            Storm::WindowHandle::SMsgRegisterMessage((uint32_t)hWnd, nMessageOrKeyCode, pfHandler);
+            return;
           }
         case 1:
           Storm::WindowHandle::SMsgRegisterCommand((uint32_t)hWnd, nMessageOrKeyCode, pfHandler);
@@ -142,13 +142,13 @@ void __fastcall MESSAGE_UnregisterEventHandler(HWND hWnd, int32_t eEventType, in
       switch (eEventType) {
         case 0:
           {
-            if (nMessageOrKeyCode != 0x111) {
-              Storm::WindowHandle::SMsgUnregisterMessage((uint32_t)hWnd, (char*)nMessageOrKeyCode, pfHandler);
-              return;
+            if (nMessageOrKeyCode == 0x111) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x135);
+              exit(-1);
             }
 
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x135);
-            exit(-1);
+            Storm::WindowHandle::SMsgUnregisterMessage((uint32_t)hWnd, (char*)nMessageOrKeyCode, pfHandler);
+            return;
           }
         case 1:
           Storm::WindowHandle::SMsgUnregisterCommand(hWnd, (char*)nMessageOrKeyCode, pfHandler);
@@ -169,7 +169,12 @@ void __fastcall MESSAGE_UnregisterEventHandler(HWND hWnd, int32_t eEventType, in
 
 // Iterates D2UIFlagInitStrc array and registers nCount event handlers via MESSAGE_RegisterEventHandler. Used during UI state initialization.
 void __fastcall MESSAGE_RegisterEventHandlerBatch(HWND hWnd, D2UIFlagInitStrc * pEventHandlers, int32_t nCount) {
-    if (hWnd) {
+    if (!hWnd) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x153);
+      exit(-1);
+    }
+
+    {
       int32_t* pnMessageCode;
       if (!nCount) {
         return;
@@ -184,14 +189,16 @@ void __fastcall MESSAGE_RegisterEventHandlerBatch(HWND hWnd, D2UIFlagInitStrc * 
 
       return;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x153);
-    exit(-1);
 }
 
 // Iterates D2UIFlagInitStrc array and unregisters nCount event handlers via MESSAGE_UnregisterEventHandler. Used during UI state cleanup.
 void __fastcall MESSAGE_UnregisterEventHandlerBatch(HWND hWnd, D2UIFlagInitStrc * pEventHandlers, int32_t nCount) {
-    if (hWnd) {
+    if (!hWnd) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x166);
+      exit(-1);
+    }
+
+    {
       int32_t* pnMessageCode;
       if (!nCount) {
         return;
@@ -206,9 +213,6 @@ void __fastcall MESSAGE_UnregisterEventHandlerBatch(HWND hWnd, D2UIFlagInitStrc 
 
       return;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x166);
-    exit(-1);
 }
 
 uint32_t __fastcall MESSAGE_RegisterWindowMessageHandlers(uint32_t nParam) {

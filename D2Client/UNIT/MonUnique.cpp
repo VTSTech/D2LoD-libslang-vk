@@ -726,7 +726,7 @@ void __fastcall MONUNIQUE_DurielDeathAndSpawn(D2UnitStrc * pUnit, int32_t nUMod,
 }
 
 // Fires a ring of 4 directional missiles (N/S/E/W, 2 copies each = 8 total) from a unique monster. Skips MISSILE_Lightunique unless the monster has the 0x100 unique-type flag. For each of 4 cardinal directions, places sSkillArg.nUnitX/Y at unitPos + direction offset and calls MakeMissile twice (pMissileEx index 0 and 1). Uses SKILLSMON_SetMissilePathLinear for all except MISSILE_Queenpoisoncloud. nToHit defaults to 1 if passed as 0.
-void __stdcall MONUNIQUE_SpawnDirectionalMissiles(D2UnitStrc * pUnit, eMissilesId eMissileId, int32_t nToHit) {
+static void __stdcall MONUNIQUE_SpawnDirectionalMissiles(D2UnitStrc * pUnit, eMissilesId eMissileId, int32_t nToHit) {
     int nPosX;
     int nPosY;
     D2SkillArgStrc sSkillArg;

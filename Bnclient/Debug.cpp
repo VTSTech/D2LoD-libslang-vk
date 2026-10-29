@@ -12,7 +12,7 @@
 
 namespace Bnclient::Debug {
 
-void DEBUG_LogFormattedMessage(void * pThis, char * szMessage) {
+void __thiscall DEBUG_LogFormattedMessage(void * pThis, char * szMessage) {
     Storm::Source::SSComp::SLogWrite(*(uint32_t*)pThis, szMessage);
 }
 

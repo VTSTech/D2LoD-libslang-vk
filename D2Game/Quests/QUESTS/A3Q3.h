@@ -99,7 +99,7 @@ void __fastcall Q20_Callback04_ItemPickedUp(struct D2QuestDataStrc * pQuestData,
 // real play: bump nStateFlag 0->1 and return. Once at step 5 (Will used), it looks up the chained
 // prerequisite quest (nSequenceQuestId = QUEST_AbleGoToAct3) and invokes that quest's own sequence
 // filter, propagating the completion forward in the quest chain.
-void __fastcall Q20_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q20_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // A3Q3 "Khalim's Will" — callback #14: per-player counter maintenance. Increments the
 // "players holding the Will item" tally (aPlayerGUID[7]) when this player has the quest item; clears
 // the aPlayerGUID[8] one-shot flag once the count drops back to exactly 1. Bookkeeping for spawn/drop
@@ -119,10 +119,6 @@ void __fastcall Q20_Callback13_PlayerStartedGame(struct D2QuestDataStrc * pQuest
 // the 0x30-byte A3Q3-specific state struct (nQuestStage=0).
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q3.cpp
 void __fastcall Q20_InitData(struct D2QuestDataStrc * pQuestData);
-// A3Q3 "Khalim's Will" — spawns the unique serpent/council monster pack (monClass 0x197) that
-// carries the quest item. Sets in-progress guard at +4 around the spawn; on success records spawned,
-// clears the "pending" flag (+3) and stores the spawned unit's GUID at +0x24. No quest-state writes.
-void Q20_SpawnUniqueSerpent(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2QuestDataA3Q3Strc * pA3Q3Data);
 // A3Q3 "Khalim's Will" — accessor: returns the quest's "blade has been given/dropped" flag
 // (bTaintedSunStartedFailed field of the A3Q3 state struct) from the global quest data. Read-only.
 uint32_t __fastcall Q20_GetBladeHasBeenGiven(::SGAMEDATA * pGame);
@@ -161,5 +157,6 @@ void __fastcall Q20_ActivateSerpentObject(::SGAMEDATA * pGame);
 // and coordinates into the A3Q3 state struct and applies the stored update/visibility flag
 // (aPlayerGUID[0xb]) to the object so it shows in the correct state on (re)creation. No quest bits.
 void __fastcall Objects_InitFn39(struct D2ObjectInitFnArg * pInitArg);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A3Q3

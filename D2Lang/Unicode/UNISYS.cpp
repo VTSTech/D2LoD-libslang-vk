@@ -12,13 +12,12 @@
 #include "Storm/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Launch/MainMenus.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -157,7 +156,7 @@ uint32_t __fastcall UNICODE_CompareWideStringsNNoCase(uint16_t * pwszText1, uint
     return -1;
 }
 
-short * UNICODE_FindWideChar(void * pThis, int16_t wCharToFind) {
+short * __thiscall UNICODE_FindWideChar(void * pThis, int16_t wCharToFind) {
     short int wCurChar = *(short int*)pThis;
     if (!wCurChar) {
       return nullptr;
@@ -404,7 +403,9 @@ uint16_t * __fastcall UNICODE_FindSubstring(uint16_t * pwszHaystack, uint16_t * 
     } while (true);
 }
 
-void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszText1, uint16_t * wszText2, uint16_t * pArgs, ...) {
+void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszDst, uint16_t * wszFmt, ...) {
+    va_list __va;
+    va_start(__va, wszFmt);
     uint16_t* pFmtSpec;
     uint16_t* pArgCur;
     int nCopyLen;
@@ -418,43 +419,40 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszText1, uint16_t *
     uint16_t wszNumBuf[16];
     uint16_t wChar;
     uint16_t wFmtChar;
-    uint32_t local_8;
-    local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    if (wszText2) {
-      *wszText1 = L'\0';
-      pArgSave = pArgs;
+    if (wszFmt) {
+      *wszDst = L'\0';
+      pArgSave = *(uint16_t**)__va;
       pFmtSpecPos = 0;
-      if (*wszText2 != L'\0') {
-        ppArgCur = &pArgs;
+      if (*wszFmt != L'\0') {
+        ppArgCur = (uint16_t**)__va;
         wszFmtBuf[0] = L'%';
         wszFmtBuf[1] = 0;
         nCharCount = 0;
         do {
           wszFmtBuf[2] = L'\0';
-          pFmtSpec = (uint16_t*)UNICODE_FindSubstring((uint16_t*)wszText2, (uint16_t*)wszFmtBuf);
+          pFmtSpec = (uint16_t*)UNICODE_FindSubstring((uint16_t*)wszFmt, (uint16_t*)wszFmtBuf);
           if (pFmtSpec) {
             wszFmtBuf[2] = pFmtSpec[1];
             pFmtSpecPos = pFmtSpec;
           }
 
-          for (; wszText2 != pFmtSpecPos && *wszText2 != L'\0'; wszText2++) {
+          for (; wszFmt != pFmtSpecPos && *wszFmt != L'\0'; wszFmt++) {
             if (nMaxChars <= nCharCount) {
               goto truncate_output;
             }
 
-            *wszText1 = *wszText2;
-            wszText1++;
+            *wszDst = *wszFmt;
+            wszDst++;
             nCharCount++;
           }
 
           if (nMaxChars <= nCharCount) {
             truncate_output:
-            wszText1[-1] = L'\0';
+            wszDst[-1] = L'\0';
             break;
           }
-          if (*wszText2 == L'\0') {
-            *wszText1 = L'\0';
-            Fog::Debug::GuardStack();
+          if (*wszFmt == L'\0') {
+            *wszDst = L'\0';
             return;
           }
           if (!pFmtSpecPos) {
@@ -464,8 +462,7 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszText1, uint16_t *
 
           switch (wszFmtBuf[2]) {
             case L'\0':
-              STRING_CopyWideString(wszText1, wszFmtBuf);
-            Fog::Debug::GuardStack();
+              STRING_CopyWideString(wszDst, wszFmtBuf);
             return;
             default:
               {
@@ -475,19 +472,18 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszText1, uint16_t *
             case L'%':
               nCharCount++;
             if (nMaxChars <= nCharCount) {
-              Fog::Debug::GuardStack();
               return;
             }
 
             pFmtSpec = wszFmtBuf;
-            nDstOffset = (int)wszText1 - (int)pFmtSpec;
+            nDstOffset = (int)wszDst - (int)pFmtSpec;
             do {
               wFmtChar = *pFmtSpec;
               *(uint16_t*)(nDstOffset + (int)pFmtSpec) = wFmtChar;
               pFmtSpec++;
             } while (wFmtChar != L'\0');
 
-            wszText1++;
+            wszDst++;
             break;
             case L'd':
 
@@ -511,12 +507,11 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszText1, uint16_t *
             }
 
             if (nMaxChars <= nDstOffset + 1 + nCharCount) {
-              Fog::Debug::GuardStack();
               return;
             }
 
             pFmtSpec = wszNumBuf;
-            nCopyLen = (int)wszText1 - (int)pFmtSpec;
+            nCopyLen = (int)wszDst - (int)pFmtSpec;
             do {
               wFmtChar = *pFmtSpec;
               *(uint16_t*)(nCopyLen + (int)pFmtSpec) = wFmtChar;
@@ -524,12 +519,11 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszText1, uint16_t *
             } while (wFmtChar != L'\0');
 
             nCharCount += nDstOffset;
-            wszText1 += nDstOffset;
+            wszDst += nDstOffset;
             break;
             case L's':
               if (!pArgSave || (pArgCur = pArgSave , nDstOffset = 0 , !*pArgSave)) {
-                UNICODE_AppendWideStringN((uint16_t*)wszText1, pArgSave, nMaxChars - nCharCount - 1);
-                Fog::Debug::GuardStack();
+                UNICODE_AppendWideStringN((uint16_t*)wszDst, pArgSave, nMaxChars - nCharCount - 1);
                 return;
               }
             do {
@@ -539,30 +533,27 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszText1, uint16_t *
             } while (*pArgCur);
 
             if (!nDstOffset || nMaxChars <= nCopyLen + 2 + nCharCount) {
-              UNICODE_AppendWideStringN((uint16_t*)wszText1, pArgSave, nMaxChars - nCharCount - 1);
-              Fog::Debug::GuardStack();
+              UNICODE_AppendWideStringN((uint16_t*)wszDst, pArgSave, nMaxChars - nCharCount - 1);
               return;
             }
 
-            nCopyLen = (int)wszText1 - (int)pArgSave;
+            nCopyLen = (int)wszDst - (int)pArgSave;
             do {
               *(uint16_t*)(nCopyLen + (int)pArgSave) = *pArgSave;
               wChar = *pArgSave;
               pArgSave++;
             } while (wChar);
 
-            wszText1 += nDstOffset;
+            wszDst += nDstOffset;
             nCharCount += nDstOffset;
           }
 
-          wszText2 += 2;
+          wszFmt += 2;
           ppArgCur++;
           pArgSave = *ppArgCur;
-        } while (*wszText2 != L'\0');
+        } while (*wszFmt != L'\0');
       }
     }
-
-    Fog::Debug::GuardStack();
 }
 
 BOOL __fastcall UNICODE_CheckLineBreakPosition(int32_t pWszText, int32_t nPos) {
@@ -633,12 +624,10 @@ void __fastcall STRING_ConvertCharToWchar(uint16_t * pwszBuffer, char * pszBuffe
     }
     if (wszBuffer[nCharsCopied] == L'\0') {
       pwszBuffer[nCharsCopied] = L'\0';
-      Fog::Debug::GuardStack();
       return;
     }
 
     pwszBuffer[nCharsCopied - 1] = L'\0';
-    Fog::Debug::GuardStack();
 }
 
 uint16_t * __fastcall STRING_CopyCharToWCharWithSetMaxSize(uint16_t * pDestination, char * szSource, int32_t nSize) {
@@ -677,7 +666,6 @@ char * __fastcall UNICODE_WideToMultiByte(char * pszDst, uint16_t * pwszSrc, int
 bool __fastcall UNICODE_CheckTrailingPunctuation(char * szSourceFile, uint16_t * pwChar) {
     uint32_t nGuardRetVal;
     uint16_t wszTable[20];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int i = 0;
     memset(wszTable, 0, 20 * sizeof(wszTable[0]));
     do {
@@ -726,7 +714,6 @@ bool __fastcall UNICODE_CheckTrailingPunctuation(char * szSourceFile, uint16_t *
       do {
         if (*pwChar == wszTable[i]) {
           nGuardRetVal = 0x52718c;
-          Fog::Debug::GuardStack();
           return true;
         }
 
@@ -735,11 +722,10 @@ bool __fastcall UNICODE_CheckTrailingPunctuation(char * szSourceFile, uint16_t *
     }
 
     nGuardRetVal = 0x52717a;
-    Fog::Debug::GuardStack();
     return false;
 }
 
-bool UNICODE_CheckLeadingPunctuation(char * pszTable, uint16_t * wszText) {
+static bool UNICODE_CheckLeadingPunctuation(char * pszTable, uint16_t * wszText) {
     uint16_t wszTable[21];
     int i = 0;
     memset(wszTable + 1, 0, 20 * sizeof(wszTable[0]));
@@ -788,7 +774,6 @@ bool UNICODE_CheckLeadingPunctuation(char * pszTable, uint16_t * wszText) {
     if (0 < nPunctTableLen) {
       do {
         if (wszText[nWideLen - 1] == wszTable[i + 1]) {
-          Fog::Debug::GuardStack();
           return true;
         }
 
@@ -796,7 +781,6 @@ bool UNICODE_CheckLeadingPunctuation(char * pszTable, uint16_t * wszText) {
       } while (i < nPunctTableLen);
     }
 
-    Fog::Debug::GuardStack();
     return false;
 }
 
@@ -819,7 +803,6 @@ void __fastcall UNICODE_FormatPossessiveName(uint16_t * wszText1, uint16_t * wsz
     if (nMaxChars < i + 5 + nLen2) {
       if (i < nMaxChars) {
         STRING_CopyWideString(wszText1, wszSuffix);
-        Fog::Debug::GuardStack();
         return;
       }
     } else {
@@ -976,8 +959,6 @@ void __fastcall UNICODE_FormatPossessiveName(uint16_t * wszText1, uint16_t * wsz
       append_last_part:
       AppendToBuffer(wszText1, wszSuffix);
     }
-
-    Fog::Debug::GuardStack();
 }
 
 void UNICODE_FreeBuffer(void * pParam) {
@@ -992,12 +973,12 @@ void UNICODE_AllocBuffer(uint32_t nSize) {
     Storm::SMem::SMemAlloc(nSize, "new[]", -1, 0);
 }
 
-void UNICODE_ReadByteRange(void * pThis, uint8_t * pByteRange) {
+void __thiscall UNICODE_ReadByteRange(void * pThis, uint8_t * pByteRange) {
     *(uint16_t*)pThis = (uint16_t)*pByteRange;
     *(uint16_t*)((int)pThis + 2) = (uint16_t)pByteRange[2];
 }
 
-uint32_t UNICODE_CheckByteInRange(void * pThis, uint8_t byValue) {
+uint32_t __thiscall UNICODE_CheckByteInRange(void * pThis, uint8_t byValue) {
     if (!(*(uint8_t*)pThis <= byValue && byValue <= *(uint8_t*)((int)pThis + 1))) {
       return 0;
     }
@@ -1005,7 +986,7 @@ uint32_t UNICODE_CheckByteInRange(void * pThis, uint8_t byValue) {
     return 1;
 }
 
-int32_t UNICODE_IsControlChar(uint8_t byChar) {
+static int32_t __stdcall UNICODE_IsControlChar(uint8_t byChar) {
     int32_t i = 0;
     if (0x1f >= byChar) {
       return i;
@@ -1044,57 +1025,14 @@ void __stdcall UNICODE_FreeKamapTables() {
 // @sourcefile .\Unicode\UNISYS.CPP
 void __fastcall UNICODE_LoadKamapFile(D2PoolManagerStrc * pMemory, char * szFilename) {
     // Static local variables (originally global data)
-    static uint8_t szUnicodeKamapVersion[40] = {
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-}; D2_STATIC_GUARD(szUnicodeKamapVersion, "D2Lang::Unicode::UNISYS::UNICODE_LoadKamapFile::szUnicodeKamapVersion");
+    static uint8_t szUnicodeKamapVersion[40] = {}; D2_STATIC_GUARD(szUnicodeKamapVersion, "D2Lang::Unicode::UNISYS::UNICODE_LoadKamapFile::szUnicodeKamapVersion");
 
     uint8_t szVersionBuf[40];
     uint8_t cTmp;
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* pFileData = (char*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMemory, szFilename, nullptr, ".\\Unicode\\UNISYS.CPP", 0x61);
     int nOffset = strncmp(pFileData, "KAMAP\n", 5);
     if (nOffset) {
-      D2_FREE(pFileData);
-      Fog::Debug::GuardStack();
+      D2_FREE_AT(pFileData, ".\\Unicode\\UNISYS.CPP", 0x65);
       return;
     }
 
@@ -1107,8 +1045,7 @@ void __fastcall UNICODE_LoadKamapFile(D2PoolManagerStrc * pMemory, char * szFile
         nOffset++;
       }
       if (0x27 < nOffset) {
-        D2_FREE(pFileData);
-        Fog::Debug::GuardStack();
+        D2_FREE_AT(pFileData, ".\\Unicode\\UNISYS.CPP", 0x79);
         return;
       }
     } while (!bFoundMarker);
@@ -1124,8 +1061,7 @@ void __fastcall UNICODE_LoadKamapFile(D2PoolManagerStrc * pMemory, char * szFile
 
     g_pUnicodeKamapTable = Storm::SMem::SMemAlloc((uint32_t)(uint8_t)*pGroupCount * 2, "new[]", -1, 0);
     if (!g_pUnicodeKamapTable) {
-      D2_FREE(pFileData);
-      Fog::Debug::GuardStack();
+      D2_FREE_AT(pFileData, ".\\Unicode\\UNISYS.CPP", 0x91);
       return;
     }
 
@@ -1138,8 +1074,7 @@ void __fastcall UNICODE_LoadKamapFile(D2PoolManagerStrc * pMemory, char * szFile
     void* pAllocBuf = Storm::SMem::SMemAlloc((uint32_t)*pFilePtr * 4, "new[]", -1, 0);
     gpUnicodeKamapToCodeTable = pAllocBuf;
     if (!pAllocBuf) {
-      D2_FREE(pFileData);
-      Fog::Debug::GuardStack();
+      D2_FREE_AT(pFileData, ".\\Unicode\\UNISYS.CPP", 0x9e);
       return;
     }
 
@@ -1159,8 +1094,7 @@ void __fastcall UNICODE_LoadKamapFile(D2PoolManagerStrc * pMemory, char * szFile
     uint16_t* pwCodeToMapTable = (uint16_t*)Storm::SMem::SMemAlloc((uint32_t)*pFilePtr * 2, "new[]", -1, 0);
     gpUnicodeCodeToMapTable = pwCodeToMapTable;
     if (!pwCodeToMapTable) {
-      D2_FREE(pFileData);
-      Fog::Debug::GuardStack();
+      D2_FREE_AT(pFileData, ".\\Unicode\\UNISYS.CPP", 0xb0);
       return;
     }
 
@@ -1182,8 +1116,7 @@ void __fastcall UNICODE_LoadKamapFile(D2PoolManagerStrc * pMemory, char * szFile
       nOffset++;
     } while (cTmp);
 
-    D2_FREE(pFileData);
-    Fog::Debug::GuardStack();
+    D2_FREE_AT(pFileData, ".\\Unicode\\UNISYS.CPP", 0xbe);
 }
 
 uint32_t __fastcall UNICODE_MapCharacterToCode(uint32_t dwParam, uint16_t wChar) {
@@ -1408,23 +1341,23 @@ int32_t __fastcall UNICODE_GetMultiByteLength(uint16_t * wszText, int32_t nParam
     return nByteLen;
 }
 
-char * __fastcall UNICODE_GetWideCharCount(char * szText, char * szSourceFile) {
-    char* pszCount;
+int32_t __fastcall UNICODE_GetWideCharCount(char * szText, int32_t szSourceFile) {
+    int32_t nIsControl;
     char cTmp;
     if (!gpUnicodeCodeToMapTable) {
-      pszCount = szText + 1;
+      char* pcVar1;
+      pcVar1 = szText + 1;
       szText = szText + strlen(szText) + 1;
-      return szText - (int)pszCount;
+      return (int)szText - (int)pcVar1;
     }
 
-    pszCount = 0;
+    int pszCount = 0;
     int i = 0;
-    if (0 >= (int)szSourceFile) {
+    if (0 >= szSourceFile) {
       return pszCount;
     }
 
     do {
-      int32_t nIsControl;
       if (!szText[i]) {
         return pszCount;
       }
@@ -1437,7 +1370,7 @@ char * __fastcall UNICODE_GetWideCharCount(char * szText, char * szSourceFile) {
       }
 
       pszCount++;
-    } while (i < (int)szSourceFile);
+    } while (i < szSourceFile);
 
     return pszCount;
 }

@@ -30,7 +30,7 @@ typedef void (*fpSpinnerRepeatAction)();
 
 namespace D2Client::UI::Spinner::SpinnerWrapper {
 
-void Destructor(::SpinnerWrapper * pThis) {
+void __thiscall Destructor(::SpinnerWrapper * pThis) {
     pfnEHHandlerRoutine pExceptionHandler = SehHandler_6ca1b8;
     void* pSavedExceptionList = ExceptionList;
     ExceptionList = &pSavedExceptionList;
@@ -46,7 +46,7 @@ void Destructor(::SpinnerWrapper * pThis) {
     ExceptionList = pSavedExceptionList;
 }
 
-::SpinnerWrapper * ScalarDeletingDestructor(::SpinnerWrapper * pThis, uint32_t nFlags) {
+::SpinnerWrapper * __thiscall ScalarDeletingDestructor(::SpinnerWrapper * pThis, uint32_t nFlags) {
     SpinnerWrapper::Destructor(pThis);
     if (!(nFlags & 1 && pThis)) {
       return pThis;
@@ -56,66 +56,66 @@ void Destructor(::SpinnerWrapper * pThis) {
     return pThis;
 }
 
-int OnMouseWheel(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseWheel(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseWheel(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseDown(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseDown(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseDown(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseUp(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseUp(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseUp(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseMove(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseMove(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseMove(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-void Draw(::SpinnerWrapper * pThis) {
+void __thiscall Draw(::SpinnerWrapper * pThis) {
     pThis->pImplementation->pVtable->Draw(pThis->pImplementation);
 }
 
-int OnChar(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnChar(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnChar(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnDownArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnDownArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnDownArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnUpArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnUpArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnUpArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnRightArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnRightArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnRightArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnLeftArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnLeftArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnLeftArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int GetValue(::SpinnerWrapper * pThis) {
+int __thiscall GetValue(::SpinnerWrapper * pThis) {
     int iVar1 = pThis->pImplementation->pVtable->GetValue(pThis->pImplementation);
     return iVar1;
 }
 
-int GetRepeatDelta(::SpinnerWrapper * pThis, int nUnused) {
+int __thiscall GetRepeatDelta(::SpinnerWrapper * pThis, int nUnused) {
     int iVar1 = pThis->pImplementation->pVtable->GetRepeatDelta(pThis->pImplementation);
     return iVar1;
 }
 
-::SpinnerWrapper * Constructor(::SpinnerWrapper * pThis, int nPosX, int nPosY, BOOL bHorizontal, fpSpinnerRepeatAction pfnRepeatAction) {
+::SpinnerWrapper * __thiscall Constructor(::SpinnerWrapper * pThis, int nPosX, int nPosY, BOOL bHorizontal, fpSpinnerRepeatAction pfnRepeatAction) {
     pfnEHHandlerRoutine puExcHandler = SehHandler_6ca203;
     void* pExcList = ExceptionList;
     uint32_t nExcState = 0;

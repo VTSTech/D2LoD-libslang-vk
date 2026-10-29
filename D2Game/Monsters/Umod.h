@@ -15,7 +15,6 @@ namespace D2Game::Monsters::Umod {
 
 // Function declarations
 void __fastcall MONUMOD_RollNameSeed(struct D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown);
-void UMOD_IncreaseMonsterHp(uint32_t nUmodConstant, struct D2UnitStrc * pUnit);
 void __fastcall MONUMOD_ApplyHpBonus(struct D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown);
 void __fastcall MONUMOD_ApplyChampionLevelBonus(struct D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown);
 // Applies champion-tier stat bonuses to a monster unit. Decrements level by 1, reduces XP by 40%, then adds difficulty-scaled damage percent (MonUmod[11].constants) and to-hit percent (MonUmod[10].constants) bonuses. Also adds a velocity bonus based on nIndex: 0x24 subtracts speed, 0x25 computes a formula from base Velocity, other values add a flat +20%. Skips Griswold (classId 0x76) with halved damage bonus.
@@ -44,5 +43,6 @@ void __fastcall ColdEnchanted(struct D2UnitStrc * pUnit, int32_t nIndex, BOOL bU
 void __fastcall PoisonEnchanted(struct D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown);
 // Applies the Mana Burn monster modifier (umod) to pUnit. Same structure as Fire/LightningEnchanted: requires a live UNIT_MONSTER + game pointer, derives difficulty (0-2) and single/multiplayer flag, reads unit level, and indexes monlvl.txt DM[mp*3+diff]. Computes the drain amounts from GetUmodConstant (diff+0x10/+0x13 or +0x1c/+0x1f when bUnknown set) and adds UNITSTAT_manadrainmindam/manadrainmaxdam, each scaled by 0x100 (256, mana fixed-point) before chaining MagicResist. No-op on null unit/game or out-of-range monlvl row.
 void __fastcall ManaBurn(struct D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::Monsters::Umod

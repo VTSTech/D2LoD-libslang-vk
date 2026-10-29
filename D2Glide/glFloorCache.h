@@ -37,12 +37,8 @@ namespace D2Glide::glFloorCache {
 // Initializes Glide floor cache with LRU eviction policy. Allocates node array (0x14 bytes per entry). Halts with error 0x2a if allocation fails.
 // @sourcefile .\Src\glFloorCache.cpp
 int __fastcall GLFLOOR_Initialize(struct GlFloorCacheStrc * pCache, int nVramStart, int nVramEnd, uint32_t dwFloorSize);
-// Appends floor cache node to tail of active LRU list (most-recently-used position). Creates list if empty, otherwise links to existing tail.
-void GLFLOOR_AppendNodeToTail(struct GlFloorCacheStrc * pCache, struct GlFloorCacheNodeStrc * pNode);
 // Removes a floor cache node from the active LRU list by index. Returns pointer to removed node.
 struct GlFloorCacheNodeStrc * __fastcall GLFLOOR_RemoveNodeByIndex(struct GlFloorCacheStrc * pCache, int nNodeIndex);
-// Allocates node from free list and moves to active list tail. Returns 1-based node index on success, 0 if cache full.
-int GLFLOOR_AllocateNode(struct GlFloorCacheStrc * pCache);
 // Promotes a floor cache node to most-recently-used position (active list tail).
 void __fastcall GLFLOOR_PromoteNodeToMRU(struct GlFloorCacheStrc * pCache, int nNodeIndex1Based);
 // Evicts the least recently used floor-tile node: unlinks the head of the active list (pActiveHead,
@@ -61,5 +57,6 @@ void __fastcall GLFLOOR_InvalidateByIndex(struct GlFloorCacheStrc * pCache, int 
 void __fastcall GLFLOOR_Destroy(uint32_t * pCacheData, struct GlFloorCacheStrc * pCache);
 // Ensures cache has free capacity by allocating a node. If cache is full, evicts LRU entry first. Returns success status.
 short __fastcall GLFLOOR_EnsureCapacity(struct GlFloorCacheStrc * pCache);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Glide::glFloorCache

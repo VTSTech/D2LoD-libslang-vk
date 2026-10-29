@@ -53,12 +53,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
 
@@ -177,7 +177,7 @@ void __stdcall D2WINMAIN_FreeLeadingFormControls() {
 
     while (!(D2Client::Forms::pFormUnknown->dwState & 1U)) {
       pDVar1 = D2Client::Forms::pFormUnknown->pNext;
-      D2_FREE(D2Client::Forms::pFormUnknown);
+      D2_FREE_AT(D2Client::Forms::pFormUnknown, ".\\Src\\D2WinMain.cpp", 0x25a);
       D2Client::Forms::pFormUnknown = pDVar1;
       if (!pDVar1) {
         return;
@@ -190,7 +190,7 @@ void __stdcall D2WINMAIN_FreeLeadingFormControls() {
       }
 
       pDVar1 = D2Client::Forms::pFormUnknown->pNext;
-      D2_FREE(D2Client::Forms::pFormUnknown);
+      D2_FREE_AT(D2Client::Forms::pFormUnknown, ".\\Src\\D2WinMain.cpp", 0x263);
       D2Client::Forms::pFormUnknown = pDVar1;
     } while (pDVar1);
 }
@@ -378,12 +378,12 @@ void __fastcall D2WINMAIN_SetControlVisible(D2ControlStrc * pControl, BOOL bVisi
 
 // Returns bit 0 of control flags (offset +8), checking visibility/enabled state. Halts on null pointer.
 BOOL __fastcall D2WINMAIN_GetControlVisible(D2ControlStrc * pControl) {
-    if (pControl) {
-      return pControl->dwState & 1;
+    if (!pControl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x33f);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x33f);
-    exit(-1);
+    return pControl->dwState & 1;
     return pControl->dwState & 1;
 }
 
@@ -406,12 +406,12 @@ void __fastcall D2WINMAIN_SetControlActive(D2ControlStrc * pControl, BOOL bActiv
 // Returns pControl->dwState & gadwBitMasks[2], the active bit D2WINMAIN_SetControlActive sets; halts (line 858) on NULL.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 BOOL __fastcall D2WINMAIN_IsControlActive(D2ControlStrc * pControl) {
-    if (pControl) {
-      return pControl->dwState & 4;
+    if (!pControl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x35a);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x35a);
-    exit(-1);
+    return pControl->dwState & 4;
     return pControl->dwState & 4;
 }
 
@@ -851,7 +851,7 @@ void __stdcall D2WIN_HandleActivation(int32_t nParam) {
 // of that struct are modelled - the 19948-byte tail is left as an explicit unmodelled blob.
 // @wasnamed parameter 1 was pQServerClientPacket typed D2QServerClientPacketStrc *. It is assigned
 // straight into JPEG_CORE_PROPERTIES.DIBBytes, so it is the pixel buffer; retyped uint8_t *.
-void __stdcall D2WIN_SaveScreenshotToFile(uint8_t * pDibBytes, LPCSTR szFileName, int32_t nWidth, int32_t nHeight) {
+static void __stdcall D2WIN_SaveScreenshotToFile(uint8_t * pDibBytes, LPCSTR szFileName, int32_t nWidth, int32_t nHeight) {
     // Static local variables (originally global data)
     static uint32_t gnScreenshotSequenceIndex = 0x1; D2_STATIC_GUARD(gnScreenshotSequenceIndex, "D2Win::Src::D2WinMain::D2WIN_SaveScreenshotToFile::gnScreenshotSequenceIndex");
 
@@ -916,14 +916,14 @@ void __fastcall D2WIN_TakeThrottledScreenshot(LPCSTR szFileName) {
     __frame0.nScreenWidth = 0;
     __frame0.nScreenHeight = 0;
     D2gfx::D2GFX::D2GFX_GetScreenSize(&__frame0.nScreenWidth, &__frame0.nScreenHeight);
-    uint8_t* pBuffer = (uint8_t*)D2_ALLOC(__frame0.nScreenHeight * __frame0.nScreenWidth * 3);
+    uint8_t* pBuffer = (uint8_t*)D2_ALLOC_AT(__frame0.nScreenHeight * __frame0.nScreenWidth * 3, ".\\Src\\D2WinMain.cpp", 0x6a7);
     BOOL bGotBackBuffer = D2gfx::D2GFX::D2GFX_GetBackBuffer(pBuffer);
     if (bGotBackBuffer) {
       D2WIN_SaveScreenshotToFile(pBuffer, szFileName, __frame0.nScreenWidth, __frame0.nScreenHeight);
     }
 
     gdwLastScreenshotTick = dwTickCount;
-    D2_FREE(pBuffer);
+    D2_FREE_AT(pBuffer, ".\\Src\\D2WinMain.cpp", 0x6b4);
 }
 
 void __stdcall D2WIN_ToggleMusicOptions(int32_t nParam) {
@@ -1305,14 +1305,14 @@ void __stdcall TakeScreenshot() {
     __frame0.nScreenWidth = 0;
     __frame0.nScreenHeight = 0;
     D2gfx::D2GFX::D2GFX_GetScreenSize(&__frame0.nScreenWidth, &__frame0.nScreenHeight);
-    uint8_t* pBuffer = (uint8_t*)D2_ALLOC(__frame0.nScreenHeight * __frame0.nScreenWidth * 3);
+    uint8_t* pBuffer = (uint8_t*)D2_ALLOC_AT(__frame0.nScreenHeight * __frame0.nScreenWidth * 3, ".\\Src\\D2WinMain.cpp", 0x6a7);
     BOOL bGotBackBuffer = D2gfx::D2GFX::D2GFX_GetBackBuffer(pBuffer);
     if (bGotBackBuffer) {
       D2WIN_SaveScreenshotToFile(pBuffer, (LPCSTR)0x0, __frame0.nScreenWidth, __frame0.nScreenHeight);
     }
 
     gdwLastScreenshotTick = dwTickCount;
-    D2_FREE(pBuffer);
+    D2_FREE_AT(pBuffer, ".\\Src\\D2WinMain.cpp", 0x6b4);
 }
 
 void __stdcall D2WIN_Unused_Placeholder_5(int32_t nParam) {

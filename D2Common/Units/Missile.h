@@ -51,7 +51,7 @@ void __stdcall SetFlags(struct D2UnitStrc * pUnit, int32_t dwFlags);
 void __stdcall SetLevel(struct D2UnitStrc * pUnit, int16_t nLevel);
 int32_t __stdcall GetLevel(struct D2UnitStrc * pUnit);
 void __stdcall SetSkill(struct D2UnitStrc * pUnit, eD2Skills eSkill);
-eD2Skills GetSkillId(struct D2UnitStrc * pUnit);
+eD2Skills __stdcall GetSkillId(struct D2UnitStrc * pUnit);
 void __stdcall SetTotalFrames(struct D2UnitStrc * pUnit, int32_t nTotalFrames);
 int32_t __stdcall GetTotalFrames(struct D2UnitStrc * pUnit);
 void __stdcall SetCurrentFrame(struct D2UnitStrc * pUnit, int32_t nCurrentFrame);
@@ -77,13 +77,6 @@ void __stdcall SetTargetY(struct D2UnitStrc * pUnit, int32_t nTargetY);
 int32_t __stdcall GetTargetY(struct D2UnitStrc * pUnit);
 void __stdcall SetHomeType(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 void __stdcall GetHomeType(struct D2UnitStrc * pUnit, int * nHomeType, int * nHomeGUID);
-BOOL __stdcall HasBonusStats(struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem);
-// Accumulates all elemental damage stats from pUnit into pMissileDamageData, left-shifted by nShift. Reads fire/lightning/magic/cold/poison/life-drain/mana-drain/burning min+max stats and their durations from pUnit via GetStatUnsignedValue, then adds each (shifted) value to the corresponding field of D2MissileDamageDataStrc. Poison length uses skill_poison_override_length if present, otherwise poisonlength+poison_count. Custom register calling convention: pMissileDamageData=ESI, pUnit=EDI, nShift=BL.
-void AddStatsToDamage(struct D2MissileDamageDataStrc * pMissileDamageData, struct D2UnitStrc * pUnit, BYTE nShift);
-// Scales all elemental damage fields in pMissileDamageData by nSrcDamage/128 (arithmetic right-shift by 7 with rounding correction). If nSrcDamage == 0x80 (i.e. factor is exactly 1.0), the function is a no-op. Mutates fire/lightning/magic/cold/poison/life-drain/mana-drain/burning min+max values and their durations in-place. Custom register calling convention: pMissileDamageData=ECX, nSrcDamage=ESI.
-void CalculateFinalDamage(struct D2MissileDamageDataStrc * pMissileDamageData, int32_t nSrcDamage);
-// Returns nSrcDamage scaled by the owner unit's elemental mastery passive stat for nElemType (fire/lightning/cold+freeze/poison). Reads UNITSTAT_passive_*_mastery via GetStatUnsignedValue and applies the percentage via D2ApplyPercent. Returns 0 if no mastery or unknown element.
-int32_t CalculateMasteryBonus(struct D2UnitStrc * pUnit, eD2ElementalDamageTypeDWORD nElemType, int32_t nSrcDamage);
 // Writes all damage stats from a D2MissileDamageDataStrc onto a missile unit via STATLIST_SetUnitStat. Covers physical, fire, lightning, magic, cold, poison, life/mana/stamina drain, stun, burning, demon/undead damage%, target-AC, and bypass flags. Also copies damage-vs-montype bonus layers from the caster (pUnit) to the missile if pUnit is non-null.
 void __stdcall SetDamageStats(struct D2UnitStrc * pUnit, struct D2UnitStrc * pMissile, struct D2MissileDamageDataStrc * pMissileDamageData, int32_t nLevel);
 // Returns the minimum physical damage for a missile at a given level. Resolves nMissileId and nLevel from the pUnit missile if not provided. Looks up D2MissilesTxt base MinDamage + level breakpoint bonus (MinLevDam1), optionally scales by DmgSymPerCalc calc expression, then shifts result left by HitShift. Returns 0 for non-missile units or invalid missile IDs.
@@ -106,5 +99,6 @@ int32_t __fastcall GetSpecialParamValueForSkillMissile(eD2Skills eSkill, uint8_t
 uint32_t __stdcall MISSILE_EvalMissileCalc(struct D2UnitStrc * pMissile, struct D2UnitStrc * pOwner, uint32_t nCalcExpression, int32_t nMissileId, int32_t nMissileLevel);
 // Computes the full damage profile for a missile into a D2MissileDamageDataStrc (zeroed first, 0x7c bytes). Resolves base/elemental damage either from missiles.txt fields (SrcDamage/SrcMissDmg, EType, GetMin/MaxDamage, mastery bonus) or, when the missile carries a skill, from that skill's calc functions (SKILL_CalcMin/MaxDamage, SERVER_Min/MaxDamage, synergy). When SrcDamage applies, folds in the owner's weapon-derived physical damage (mindamage/maxdamage scaled by SrcDamage%, two-handed halving, str/dex item bonuses, throwing/secondary/two-hand weapon-damage stats, blunt-vs-undead bonus) plus damage%, item min/max-damage%, demon/undead/targetAC% and skill bypass-undead/demon/beast flags. When SrcMissDmg applies instead, pulls those stats from pUnit2. Routes elemental min/max/length into the matching fire/light/magic/cold/poison/drain/stun/burning fields, then calls AddStatsToDamage + CalculateFinalDamage. Core server missile-damage calc; no output if the missile/owner is invalid.
 void __stdcall EvaluateMissileFormula(struct D2MissileDamageDataStrc * pMissileDamageData, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, struct D2UnitStrc * pMissile, int32_t nParam);
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Common::Units::Missile

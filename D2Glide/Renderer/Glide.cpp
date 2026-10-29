@@ -35,19 +35,19 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2RendererCoreStrc) == 0x18, "D2_NEW(D2RendererCoreStrc): the 32-bit layout must be the 0x18 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2RendererCoreStrc) == 0x18, "D2_NEW_AT(D2RendererCoreStrc): the 32-bit layout must be the 0x18 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fnBinkFrameCallback
@@ -233,80 +233,7 @@ int32_t __fastcall RENDERER_GLIDE_ScalePaletteValue(int32_t nParam) {
 
 void __fastcall SetPaletteTable(BYTE * * ppPaletteTable) {
     // Static local variables (originally global data)
-    static BYTE * gaGlidePaletteTableData[72] = {
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr
-}; D2_STATIC_GUARD(gaGlidePaletteTableData, "D2Glide::Renderer::Glide::SetPaletteTable::gaGlidePaletteTableData");
+    static BYTE * gaGlidePaletteTableData[72] = {}; D2_STATIC_GUARD(gaGlidePaletteTableData, "D2Glide::Renderer::Glide::SetPaletteTable::gaGlidePaletteTableData");
 
     int nCount;
     uint8_t** pDst = gaGlidePaletteTableData;
@@ -441,8 +368,8 @@ BOOL __stdcall RENDERER_GLIDE_IsPerspectiveMode() {
 
 BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
     // Static local variables (originally global data)
-    static uint32_t gnGlideTexMemBaseAddress[3] = { 0, 0, 0 }; D2_STATIC_GUARD(gnGlideTexMemBaseAddress, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitTextureMemory::gnGlideTexMemBaseAddress");
-    static uint32_t gnGlideTextureMemoryMax[3] = { 0, 0, 0 }; D2_STATIC_GUARD(gnGlideTextureMemoryMax, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitTextureMemory::gnGlideTextureMemoryMax");
+    static uint32_t gnGlideTexMemBaseAddress[3] = {}; D2_STATIC_GUARD(gnGlideTexMemBaseAddress, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitTextureMemory::gnGlideTexMemBaseAddress");
+    static uint32_t gnGlideTextureMemoryMax[3] = {}; D2_STATIC_GUARD(gnGlideTextureMemoryMax, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitTextureMemory::gnGlideTextureMemoryMax");
 
     FxU32 nTexMemAddr;
     int32_t iVar2;
@@ -613,7 +540,7 @@ void __fastcall PlayCutScene(char * szFile, int32_t nResolutionMode, void * fpFr
     gbPlayingCutScene = 0;
 }
 
-BOOL RENDERER_GLIDE_InitWindow(int32_t nParam, FxU32 nParam2) {
+static BOOL RENDERER_GLIDE_InitWindow(int32_t nParam, FxU32 nParam2) {
     // Static local variables (originally global data)
     static uint32_t gnGlideRendererInitialized = 0x1; D2_STATIC_GUARD(gnGlideRendererInitialized, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitWindow::gnGlideRendererInitialized");
     static int gnGlideRefreshRate640; D2_STATIC_GUARD_BSS(gnGlideRefreshRate640, "D2Glide::Renderer::Glide::RENDERER_GLIDE_InitWindow::gnGlideRefreshRate640");
@@ -718,7 +645,7 @@ BOOL RENDERER_GLIDE_InitWindow(int32_t nParam, FxU32 nParam2) {
     return __frame0.nResult;
 }
 
-void Release() {
+BOOL Release() {
     if (gbGlideInitialized) {
       GLSMACK_FreeBuffers();
       RENDERER_GLIDE_DestroyWindow();
@@ -730,14 +657,15 @@ void Release() {
     }
     if (RENDERER_SelectedRendererCore) {
       /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ DeleteCriticalSection(&RENDERER_SelectedRendererCore->sLock);
-      D2_FREE(RENDERER_SelectedRendererCore);
+      D2_FREE_AT(RENDERER_SelectedRendererCore, ".\\Src\\glCore.cpp", 0x30d);
       RENDERER_SelectedRendererCore = 0;
     }
     if (!lpGLIDE3x_dll) {
-      return;
+      return 1;
     }
 
     /* HMODULE hLibModule for FreeLibrary */ FreeLibrary(lpGLIDE3x_dll);
+    return 1;
 }
 
 BOOL __fastcall CreateWindow(HWND hWnd, int32_t nResolutionMode) {
@@ -800,8 +728,8 @@ BOOL __fastcall ResizeWindow(HWND hWnd, BOOL bForceResize) {
 }
 
 // JMP thunk
-void thunk_Release() {
-    ::D2Glide::Renderer::Glide::Release();
+BOOL thunk_Release() {
+    return ::D2Glide::Renderer::Glide::Release();
 }
 
 BOOL __stdcall BeginCutScene() {
@@ -832,13 +760,13 @@ BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc
     (*GLIDEDLL_grGlideInit_0)();
     gbGlideInitialized = 1;
     (*GLIDEDLL_grSstSelect_4)(0);
-    atexit(Glide::thunk_Release);
+    atexit((void (__cdecl *)())(BOOL (*)())Glide::thunk_Release);
     RENDERER_GLIDE_BuildLightingTable();
     RENDERER_GLIDE_BuildPerspectiveLUT();
     RENDERER_GLIDE_InitPerspectiveTables();
     RENDERER_GLIDE_InitGroundTileVertices();
     GLSMACK_AllocBuffers();
-    RENDERER_SelectedRendererCore = D2_NEW(D2RendererCoreStrc);
+    RENDERER_SelectedRendererCore = D2_NEW_AT(D2RendererCoreStrc, ".\\Src\\glCore.cpp", 0x2d5);
     /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ InitializeCriticalSection(&RENDERER_SelectedRendererCore->sLock);
     return 1;
 }
@@ -846,14 +774,14 @@ BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc
 // @sourcefile .\Src\glSprite.cpp
 void __stdcall RENDERER_GLIDE_FreeSpriteBuffers() {
     if (gpGlideSpriteBuffer) {
-      D2_FREE(gpGlideSpriteBuffer);
+      D2_FREE_AT(gpGlideSpriteBuffer, ".\\Src\\glSprite.cpp", 0x74);
       gpGlideSpriteBuffer = 0;
     }
     if (!gpGlideSpritePixelBuffer) {
       return;
     }
 
-    D2_FREE(gpGlideSpritePixelBuffer);
+    D2_FREE_AT(gpGlideSpritePixelBuffer, ".\\Src\\glSprite.cpp", 0x7a);
     gpGlideSpritePixelBuffer = 0;
 }
 
@@ -877,7 +805,7 @@ void __fastcall GLIDE_PixelDataFreeCallback_ClearCacheNodes(int * pCacheIndices)
     *(uint32_t*)(gGlideVertex0.aTextureCache[pCacheIndices[8] - 1].pNodes + (pCacheIndices[9] - 1) * 0x1c + 8) = 0;
 }
 
-int RENDERER_GLIDE_GetSpriteMetadata(D2GfxDataStrc * pGfxData, uint32_t * * ppMetadata) {
+static int RENDERER_GLIDE_GetSpriteMetadata(D2GfxDataStrc * pGfxData, uint32_t * * ppMetadata) {
     int bSpriteLoaded = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(pGfxData, 0, 1);
     if (!bSpriteLoaded) {
       return 0;
@@ -899,7 +827,7 @@ int RENDERER_GLIDE_GetSpriteMetadata(D2GfxDataStrc * pGfxData, uint32_t * * ppMe
     return 1;
 }
 
-void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
+static void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
     // Static local variables (originally global data)
     static int gnGlideCacheSizeB[4] = { 0x0, -0x1, -0x2, -0x3 }; D2_STATIC_GUARD(gnGlideCacheSizeB, "D2Glide::Renderer::Glide::RENDERER_GLIDE_CalculateTextureSize::gnGlideCacheSizeB");
     static int gnGlideCacheSizeA[4] = { 0x0, 0x1, 0x2, 0x3 }; D2_STATIC_GUARD(gnGlideCacheSizeA, "D2Glide::Renderer::Glide::RENDERER_GLIDE_CalculateTextureSize::gnGlideCacheSizeA");
@@ -1025,7 +953,7 @@ void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
 }
 
 // Glide texture cache: uploads a DC6 frame to video memory. Determines LOD level based on texture size, allocates cache slot, renders frame to buffer, encrypts with hash, and downloads to TMU via grTexDownloadMipMap.
-int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
+static int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
     void* nErrorAddress;
     uint8_t* pbyPalettePixel;
     FxU32 startAddress;
@@ -1131,80 +1059,80 @@ int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * pTexInf
       exit(-1);
     } else {
       uint8_t* pBVar1;
-      if (pTexInfo->nTexArea < 0x10001) {
-        memset(gpGlideSpriteBuffer, 0, pTexInfo->nTexArea);
-        switch (nMode) {
-          case 1:
-
-          case 4:
-            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, -pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 1, 0, 0, (BYTE*)nErrorAddress, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, pPalette);
-          break;
-          case 2:
-            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, -pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 1, 0, 0, (BYTE*)nErrorAddress, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, pPalette);
-          pBVar1 = gpPaletteTable[0x46];
-          nSpriteBufferPtr = 0;
-          pbyPalettePixel = (uint8_t*)gpGlideSpriteBuffer;
-          if (0 < pTexInfo->nTexArea) {
-            do {
-              if (*pbyPalettePixel) {
-                *pbyPalettePixel = pBVar1[*pbyPalettePixel];
-              }
-
-              nSpriteBufferPtr++;
-              pbyPalettePixel++;
-            } while (nSpriteBufferPtr < pTexInfo->nTexArea);
-          }
-
-          break;
-          case 3:
-            D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, 1 - pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 2, 0, 0, (BYTE*)nErrorAddress, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, nullptr);
-          nErrorAddress = gpGlideSpritePixelBuffer;
-          if (!gpGlideSpritePixelBuffer) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ad);
-            exit(-1);
-          }
-          if (0x10000 < pTexInfo->nTexArea) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ae);
-            exit(-1);
-          }
-
-          memset(gpGlideSpritePixelBuffer, 0, pTexInfo->nTexArea);
-          nNewCacheNode = pTexInfo->nTexWidth;
-          pSrcPixelRow = (char*)(nNewCacheNode + (int)gpGlideSpriteBuffer);
-          nSpriteBufferPtr = nNewCacheNode + (int)nErrorAddress;
-          nMode = pTexInfo->nTexArea + nNewCacheNode * -2;
-          if (0 < nMode) {
-            do {
-              byPixel = *pSrcPixelRow;
-              pSrcPixelRow++;
-              if (byPixel != '\0') {
-                *(uint8_t*)(nSpriteBufferPtr - pTexInfo->nTexWidth) = nOutlineColor;
-                *(uint8_t*)(nSpriteBufferPtr - 1) = nOutlineColor;
-                *(uint8_t*)(nSpriteBufferPtr + 1) = nOutlineColor;
-                *(uint8_t*)(nSpriteBufferPtr + pTexInfo->nTexWidth) = nOutlineColor;
-              }
-
-              nSpriteBufferPtr++;
-              nMode--;
-            } while (nMode);
-          }
-
-          grTexInfo.data = nErrorAddress;
-        }
-
-        (*GLIDEDLL_grTexDownloadMipMap_16)(gnGlideTMUIndex, nTexStartAddress, 3, &grTexInfo);
-        startAddress = nTexStartAddress;
-        (*GLIDEDLL_grTexSource_16)(gnGlideTMUIndex, startAddress, 3, &grTexInfo);
-        RENDERER_GLIDE_SetTextureMode(gnGlideTMUIndex);
-        return 1;
+      if (!(pTexInfo->nTexArea < 0x10001)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x185);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x185);
-      exit(-1);
+      memset(gpGlideSpriteBuffer, 0, pTexInfo->nTexArea);
+      switch (nMode) {
+        case 1:
+
+        case 4:
+          D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, -pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 1, 0, 0, (BYTE*)nErrorAddress, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, pPalette);
+        break;
+        case 2:
+          D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, -pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 1, 0, 0, (BYTE*)nErrorAddress, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, pPalette);
+        pBVar1 = gpPaletteTable[0x46];
+        nSpriteBufferPtr = 0;
+        pbyPalettePixel = (uint8_t*)gpGlideSpriteBuffer;
+        if (0 < pTexInfo->nTexArea) {
+          do {
+            if (*pbyPalettePixel) {
+              *pbyPalettePixel = pBVar1[*pbyPalettePixel];
+            }
+
+            nSpriteBufferPtr++;
+            pbyPalettePixel++;
+          } while (nSpriteBufferPtr < pTexInfo->nTexArea);
+        }
+
+        break;
+        case 3:
+          D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, 1 - pTexInfo->nLeft, pTexInfo->nTexHeight - pTexInfo->nTop - 2, 0, 0, (BYTE*)nErrorAddress, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, nullptr);
+        nErrorAddress = gpGlideSpritePixelBuffer;
+        if (!gpGlideSpritePixelBuffer) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ad);
+          exit(-1);
+        }
+        if (0x10000 < pTexInfo->nTexArea) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ae);
+          exit(-1);
+        }
+
+        memset(gpGlideSpritePixelBuffer, 0, pTexInfo->nTexArea);
+        nNewCacheNode = pTexInfo->nTexWidth;
+        pSrcPixelRow = (char*)(nNewCacheNode + (int)gpGlideSpriteBuffer);
+        nSpriteBufferPtr = nNewCacheNode + (int)nErrorAddress;
+        nMode = pTexInfo->nTexArea + nNewCacheNode * -2;
+        if (0 < nMode) {
+          do {
+            byPixel = *pSrcPixelRow;
+            pSrcPixelRow++;
+            if (byPixel != '\0') {
+              *(uint8_t*)(nSpriteBufferPtr - pTexInfo->nTexWidth) = nOutlineColor;
+              *(uint8_t*)(nSpriteBufferPtr - 1) = nOutlineColor;
+              *(uint8_t*)(nSpriteBufferPtr + 1) = nOutlineColor;
+              *(uint8_t*)(nSpriteBufferPtr + pTexInfo->nTexWidth) = nOutlineColor;
+            }
+
+            nSpriteBufferPtr++;
+            nMode--;
+          } while (nMode);
+        }
+
+        grTexInfo.data = nErrorAddress;
+      }
+
+      (*GLIDEDLL_grTexDownloadMipMap_16)(gnGlideTMUIndex, nTexStartAddress, 3, &grTexInfo);
+      startAddress = nTexStartAddress;
+      (*GLIDEDLL_grTexSource_16)(gnGlideTMUIndex, startAddress, 3, &grTexInfo);
+      RENDERER_GLIDE_SetTextureMode(gnGlideTMUIndex);
+      return 1;
     }
 }
 
-void __stdcall RENDERER_GLIDE_DrawShadowQuad(int32_t nParam1, int32_t nParam2, GlideTexInfoStrc * nParam3) {
+static void __stdcall RENDERER_GLIDE_DrawShadowQuad(int32_t nParam1, int32_t nParam2, GlideTexInfoStrc * nParam3) {
     int32_t nTexWidth;
     int32_t iVar1;
     int nTexHeight;
@@ -1264,7 +1192,7 @@ void __stdcall RENDERER_GLIDE_DrawShadowQuad(int32_t nParam1, int32_t nParam2, G
 }
 
 // Glide renderer: draws a textured quad using the palette table at gpPaletteTable+0x114. Applies viewport scaling, handles palette color lookup, and submits a 4-vertex triangle fan via grDrawVertexArrayContiguous.
-void __stdcall RENDERER_GLIDE_DrawPalettedQuad(GlideTexInfoStrc * pGlideQuad, int32_t nParam1, int32_t nParam2, uint32_t nParam, int32_t nParam3, int32_t nParam4) {
+static void __stdcall RENDERER_GLIDE_DrawPalettedQuad(GlideTexInfoStrc * pGlideQuad, int32_t nParam1, int32_t nParam2, uint32_t nParam, int32_t nParam3, int32_t nParam4) {
     int32_t nTexHeight;
     RENDERER_GLIDE_SetColorCombine(1);
     RENDERER_GLIDE_SetTextureFiltering(1);
@@ -1325,7 +1253,7 @@ void __stdcall RENDERER_GLIDE_DrawPalettedQuad(GlideTexInfoStrc * pGlideQuad, in
     (*GLIDEDLL_grDitherMode_4)(2);
 }
 
-void RENDERER_GLIDE_SetDrawMode(int32_t nParam) {
+static void RENDERER_GLIDE_SetDrawMode(int32_t nParam) {
     int32_t nBlendModeArg;
     if (false) {
       default_case:
@@ -1579,7 +1507,7 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int32_t nPosX, int3
     RENDERER_GLIDE_DrawPalettedQuad(&texSizeBuf, nPosXSaved, nPosY, -1, 0, 0);
 }
 
-BOOL __stdcall RENDERER_GLIDE_CalculateClipRect(int32_t nScreenX, int32_t nScreenY, int32_t nPosY, uint32_t * pnClipBounds, D2RenderClipOutStrc * pnOutRect) {
+static BOOL __stdcall RENDERER_GLIDE_CalculateClipRect(int32_t nScreenX, int32_t nScreenY, int32_t nPosY, uint32_t * pnClipBounds, D2RenderClipOutStrc * pnOutRect) {
     int nScreenBottom = nScreenY + *(int*)(nScreenX + 0xc);
     int nSpriteWidth = *(int*)(nScreenX + 4);
     int nScreenRight = nPosY + *(int*)(nScreenX + 0x10);
@@ -1625,12 +1553,12 @@ BOOL __stdcall RENDERER_GLIDE_CalculateClipRect(int32_t nScreenX, int32_t nScree
     } else {
       pnOutRect->nDrawHeight = nSpriteHeightTmp - pnOutRect->nSkipTop;
     }
-    if (0 < pnOutRect->nDrawHeight) {
-      return 0;
+    if (!(0 < pnOutRect->nDrawHeight)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x424);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x424);
-    exit(-1);
+    return 0;
     return 1;
 }
 
@@ -1758,27 +1686,27 @@ void __fastcall DebugFillBackBuffer(int32_t nPosX, int32_t nPosY) {
 void __stdcall RENDERER_GLIDE_InitSpriteCache() {
     if (!gpGlideSpriteBuffer) {
       BOOL bIsPerspective;
-      if (!gpGlideSpritePixelBuffer) {
-        gpGlideSpriteBuffer = D2_ALLOC(0x10000);
-        gpGlideSpritePixelBuffer = D2_ALLOC(0x10000);
-        D2CMP::SRC::CelCmp::CELCMP_SetPixelDataFreeCallback(GLIDE_PixelDataFreeCallback_ClearCacheNodes);
-        gnGlideTMUIndex = (uint32_t)(1 < gnGlideTextureMemoryUsed);
-        gnGlideSpriteSecondaryTMUEnabled = 0;
-        if (1 >= gnGlideTextureMemoryUsed) {
-          return;
-        }
+      if (gpGlideSpritePixelBuffer) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4b);
+        exit(-1);
+      }
 
-        bIsPerspective = RENDERER_GLIDE_IsPerspectiveMode();
-        if (bIsPerspective) {
-          return;
-        }
-
-        gnGlideSpriteSecondaryTMUEnabled = 1;
+      gpGlideSpriteBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4c);
+      gpGlideSpritePixelBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4d);
+      D2CMP::SRC::CelCmp::CELCMP_SetPixelDataFreeCallback(GLIDE_PixelDataFreeCallback_ClearCacheNodes);
+      gnGlideTMUIndex = (uint32_t)(1 < gnGlideTextureMemoryUsed);
+      gnGlideSpriteSecondaryTMUEnabled = 0;
+      if (1 >= gnGlideTextureMemoryUsed) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4b);
-      exit(-1);
+      bIsPerspective = RENDERER_GLIDE_IsPerspectiveMode();
+      if (bIsPerspective) {
+        return;
+      }
+
+      gnGlideSpriteSecondaryTMUEnabled = 1;
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4a);
       exit(-1);
@@ -1814,7 +1742,7 @@ int32_t __fastcall RENDERER_GLIDE_InitDebugFont(FxU32 nParam2, int32_t nParam) {
       nParam2 = (nSizeMask | nParam2) + 1;
     }
 
-    uint32_t* pTexBuf = (uint32_t*)D2_ALLOC(0x80);
+    uint32_t* pTexBuf = (uint32_t*)D2_ALLOC_AT(0x80, ".\\Src\\glDebugFont.cpp", 0x62);
     int nGlyphOffset = 0;
     uint32_t* pTexStartAddr = gaGlideDebugFontTexStartAddrs;
     gTexInfoDebugFontGlide.data = pTexBuf;
@@ -1838,7 +1766,7 @@ int32_t __fastcall RENDERER_GLIDE_InitDebugFont(FxU32 nParam2, int32_t nParam) {
       pTexStartAddr++;
     } while ((int)pTexStartAddr < (uintptr_t)((char*)&gaGlideDebugFontTexStartAddrs + sizeof(gaGlideDebugFontTexStartAddrs)));
 
-    D2_FREE(pTexBuf);
+    D2_FREE_AT(pTexBuf, ".\\Src\\glDebugFont.cpp", 0x70);
     gfGlideDebugFontVertex0X = 0.0;
     gfGlideDebugFontVertex0Y = 0.0;
     gfGlideDebugFontVertex0OOW = 1.0;
@@ -1893,7 +1821,7 @@ void __stdcall RENDERER_GLIDE_GenerateDebugFont() {
       exit(-1);
     }
 
-    gpGlideDebugFontTexture = D2_ALLOC(0x3000);
+    gpGlideDebugFontTexture = D2_ALLOC_AT(0x3000, ".\\Src\\glDebugFont.cpp", 0x99);
     int nGlyphIndex = 0;
     int nTexOffset = 0;
     do {
@@ -1933,11 +1861,11 @@ void __stdcall RENDERER_GLIDE_FreeDebugFont() {
       return;
     }
 
-    D2_FREE(gpGlideDebugFontTexture);
+    D2_FREE_AT(gpGlideDebugFontTexture, ".\\Src\\glDebugFont.cpp", 0xfb);
     gpGlideDebugFontTexture = 0;
 }
 
-LPINT __stdcall RENDERER_GLIDE_DrawDebugChar(int32_t nParam1, int32_t nParam2, char cParam) {
+static LPINT __stdcall RENDERER_GLIDE_DrawDebugChar(int32_t nParam1, int32_t nParam2, char cParam) {
     if (0x280 < nParam1) {
       return (LPINT)0x0;
     }
@@ -1987,7 +1915,7 @@ void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_lis
     } while (nCharIdx < nStrLen);
 }
 
-void RENDERER_GLIDE_DrawLightRadialPoints(int32_t nParam1, GrColor_t nColor, int32_t nParam2) {
+static void RENDERER_GLIDE_DrawLightRadialPoints(int32_t nParam1, GrColor_t nColor, int32_t nParam2) {
     // Static local variables (originally global data)
     static int gnGlideRadialLightPtr2[8] = { 0x1, 0x2, 0x0, 0x1, 0x2, 0x3, 0x1, 0x2 }; D2_STATIC_GUARD(gnGlideRadialLightPtr2, "D2Glide::Renderer::Glide::RENDERER_GLIDE_DrawLightRadialPoints::gnGlideRadialLightPtr2");
     static int gnGlideRadialLightPtr[8] = { 0x0, 0x0, 0x1, 0x1, 0x1, 0x1, 0x2, 0x2 }; D2_STATIC_GUARD(gnGlideRadialLightPtr, "D2Glide::Renderer::Glide::RENDERER_GLIDE_DrawLightRadialPoints::gnGlideRadialLightPtr");
@@ -2311,30 +2239,30 @@ void __fastcall DrawRect(RECT * pRect, DWORD nPaletteIndex) {
     } else {
       int nXEnd;
       nRectTop = pRect->top;
-      if (nRectTop <= pRect->bottom) {
-        nRectHeight = pRect->right - nRectLeft;
-        nRectWidth = pRect->bottom - nRectTop;
-        if (!(nRectHeight && nRectWidth)) {
-          return;
-        }
+      if (!(nRectTop <= pRect->bottom)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xba);
+        exit(-1);
+      }
 
-        nXEnd = nRectHeight + nRectLeft;
-        nYEnd = nRectWidth + nRectTop;
-        nXStart = (nRectHeight >> 1) + nRectLeft;
-        nYEnd_00 = (nRectWidth >> 1) + nRectTop;
-        if (!(-1 < nXEnd && nRectLeft <= RENDERER_nWindowWidth && -1 < nYEnd && nRectTop <= RENDERER_nWindowHeight)) {
-          return;
-        }
-
-        Glide::DrawLine(nXStart, nRectTop, nXEnd, nYEnd_00, nPaletteIndex, 0xff);
-        Glide::DrawLine(nXEnd, nYEnd_00, nXStart, nYEnd, nPaletteIndex, 0xff);
-        Glide::DrawLine(nXStart, nYEnd, nRectLeft, nYEnd_00, nPaletteIndex, 0xff);
-        Glide::DrawLine(nRectLeft, nYEnd_00, nXStart, nRectTop, nPaletteIndex, 0xff);
+      nRectHeight = pRect->right - nRectLeft;
+      nRectWidth = pRect->bottom - nRectTop;
+      if (!(nRectHeight && nRectWidth)) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xba);
-      exit(-1);
+      nXEnd = nRectHeight + nRectLeft;
+      nYEnd = nRectWidth + nRectTop;
+      nXStart = (nRectHeight >> 1) + nRectLeft;
+      nYEnd_00 = (nRectWidth >> 1) + nRectTop;
+      if (!(-1 < nXEnd && nRectLeft <= RENDERER_nWindowWidth && -1 < nYEnd && nRectTop <= RENDERER_nWindowHeight)) {
+        return;
+      }
+
+      Glide::DrawLine(nXStart, nRectTop, nXEnd, nYEnd_00, nPaletteIndex, 0xff);
+      Glide::DrawLine(nXEnd, nYEnd_00, nXStart, nYEnd, nPaletteIndex, 0xff);
+      Glide::DrawLine(nXStart, nYEnd, nRectLeft, nYEnd_00, nPaletteIndex, 0xff);
+      Glide::DrawLine(nRectLeft, nYEnd_00, nXStart, nRectTop, nPaletteIndex, 0xff);
+      return;
     }
 }
 
@@ -2351,44 +2279,44 @@ void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex) {
       uint32_t nXStart;
       nClampedYStart = pRect->top;
       nClampedYEnd = pRect->bottom;
-      if ((int)nClampedYStart <= (int)nClampedYEnd) {
-        nXEnd = RENDERER_nWindowWidth - 1;
-        nXStart = nXEnd;
-        if ((int)((int)nClampedXStart < 1 ? 0 : nClampedXStart) < (int)nXEnd) {
-          nXStart = (int)nClampedXStart < 1 ? 0 : nClampedXStart;
-        }
-        if ((int)((int)nClampedYEndTmp < 1 ? 0 : nClampedYEndTmp) < (int)nXEnd) {
-          nXEnd = (int)nClampedYEndTmp < 1 ? 0 : nClampedYEndTmp;
-        }
-        if (nXStart == nXEnd) {
-          return;
-        }
+      if (!((int)nClampedYStart <= (int)nClampedYEnd)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe0);
+        exit(-1);
+      }
 
-        nClampedYEndTmp = RENDERER_nWindowHeight - 1;
-        nClampedXStart = nClampedYEndTmp;
-        if ((int)((int)nClampedYStart < 1 ? 0 : nClampedYStart) < (int)nClampedYEndTmp) {
-          nClampedXStart = (int)nClampedYStart < 1 ? 0 : nClampedYStart;
-        }
-        if ((int)((int)nClampedYEnd < 1 ? 0 : nClampedYEnd) < (int)nClampedYEndTmp) {
-          nClampedYEndTmp = (int)nClampedYEnd < 1 ? 0 : nClampedYEnd;
-        }
-        if (nClampedYEndTmp == nClampedXStart) {
-          return;
-        }
-        if ((int)nClampedYEndTmp < (int)nClampedXStart) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf0);
-          exit(-1);
-        }
-
-        Glide::DrawLine(nXStart, nClampedXStart, nXEnd, nClampedXStart, nPaletteIndex, 0xff);
-        Glide::DrawLine(nXEnd, nClampedXStart, nXEnd, nClampedYEndTmp, nPaletteIndex, 0xff);
-        Glide::DrawLine(nXEnd, nClampedYEndTmp, nXStart, nClampedYEndTmp, nPaletteIndex, 0xff);
-        Glide::DrawLine(nXStart, nClampedYEndTmp, nXStart, nClampedXStart, nPaletteIndex, 0xff);
+      nXEnd = RENDERER_nWindowWidth - 1;
+      nXStart = nXEnd;
+      if ((int)((int)nClampedXStart < 1 ? 0 : nClampedXStart) < (int)nXEnd) {
+        nXStart = (int)nClampedXStart < 1 ? 0 : nClampedXStart;
+      }
+      if ((int)((int)nClampedYEndTmp < 1 ? 0 : nClampedYEndTmp) < (int)nXEnd) {
+        nXEnd = (int)nClampedYEndTmp < 1 ? 0 : nClampedYEndTmp;
+      }
+      if (nXStart == nXEnd) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe0);
-      exit(-1);
+      nClampedYEndTmp = RENDERER_nWindowHeight - 1;
+      nClampedXStart = nClampedYEndTmp;
+      if ((int)((int)nClampedYStart < 1 ? 0 : nClampedYStart) < (int)nClampedYEndTmp) {
+        nClampedXStart = (int)nClampedYStart < 1 ? 0 : nClampedYStart;
+      }
+      if ((int)((int)nClampedYEnd < 1 ? 0 : nClampedYEnd) < (int)nClampedYEndTmp) {
+        nClampedYEndTmp = (int)nClampedYEnd < 1 ? 0 : nClampedYEnd;
+      }
+      if (nClampedYEndTmp == nClampedXStart) {
+        return;
+      }
+      if ((int)nClampedYEndTmp < (int)nClampedXStart) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf0);
+        exit(-1);
+      }
+
+      Glide::DrawLine(nXStart, nClampedXStart, nXEnd, nClampedXStart, nPaletteIndex, 0xff);
+      Glide::DrawLine(nXEnd, nClampedXStart, nXEnd, nClampedYEndTmp, nPaletteIndex, 0xff);
+      Glide::DrawLine(nXEnd, nClampedYEndTmp, nXStart, nClampedYEndTmp, nPaletteIndex, 0xff);
+      Glide::DrawLine(nXStart, nClampedYEndTmp, nXStart, nClampedXStart, nPaletteIndex, 0xff);
+      return;
     }
 }
 
@@ -2398,13 +2326,13 @@ void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex) {
       exit(-1);
     } else {
       uint32_t byHighPaletteIdx;
-      if (pRect->top <= pRect->bottom) {
-        Glide::DrawSolidRectEx(pRect->left, pRect->top, pRect->right, pRect->bottom, (uint32_t)((uint32_t)((uint32_t)byHighPaletteIdx & 0xffffffu) << 8 | (uint32_t)(uint8_t)nPaletteIndex), 5);
-        return;
+      if (!(pRect->top <= pRect->bottom)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x101);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x101);
-      exit(-1);
+      Glide::DrawSolidRectEx(pRect->left, pRect->top, pRect->right, pRect->bottom, (uint32_t)((uint32_t)((uint32_t)byHighPaletteIdx & 0xffffffu) << 8 | (uint32_t)(uint8_t)nPaletteIndex), 5);
+      return;
     }
 }
 
@@ -2423,7 +2351,7 @@ void __fastcall ClearScreen(BOOL bPartial) {
     (*GLIDEDLL_grBufferClear_12)(0, '\0', 0);
 }
 
-void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode, RECT * pnBounds, int32_t nScreenPanels, int * pnXOffset) {
+static void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode, RECT * pnBounds, int32_t nScreenPanels, int * pnXOffset) {
     if (!pnBounds) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x54);
       exit(-1);
@@ -2747,7 +2675,7 @@ BOOL __fastcall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, D2TileL
 }
 
 // Draw wall tile with perspective projection in Glide renderer. Calculates 4 corner positions, tests screen bounds, applies color averaging and texturing. Returns 1 if tile was drawn, 0 otherwise.
-int32_t __stdcall RENDERER_GLIDE_DrawWallTilePerspective(int32_t nScreenPanels, D2TileLibraryEntryStrc * pTile, int nScreenX, int nScreenY, int pColorTable) {
+static int32_t __stdcall RENDERER_GLIDE_DrawWallTilePerspective(int32_t nScreenPanels, D2TileLibraryEntryStrc * pTile, int nScreenX, int nScreenY, int pColorTable) {
     D2FloatIntUnion DVar1;
     short int* psVar2;
     int nCornerFixedY;
@@ -2867,7 +2795,7 @@ int32_t __stdcall RENDERER_GLIDE_DrawWallTilePerspective(int32_t nScreenPanels, 
     return nZMid;
 }
 
-BOOL __stdcall RENDERER_GLIDE_DrawTransparentWallTile(int32_t nPosX, int32_t nPosY, int32_t pLight, GrColor_t nColor, D2TileLibraryEntryStrc * pTileLibraryEntry, int32_t nScreenPanels) {
+static BOOL __stdcall RENDERER_GLIDE_DrawTransparentWallTile(int32_t nPosX, int32_t nPosY, int32_t pLight, GrColor_t nColor, D2TileLibraryEntryStrc * pTileLibraryEntry, int32_t nScreenPanels) {
     BOOL bPerspective = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTileLibraryEntry, 1, 0);
     if (!bPerspective) {
       return 0;
@@ -3086,7 +3014,7 @@ BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
 }
 
 void __stdcall RENDERER_GLIDE_AllocLightingTable() {
-    gpGlideLightingTable = (uint8_t*)D2_ALLOC(0x10000);
+    gpGlideLightingTable = (uint8_t*)D2_ALLOC_AT(0x10000, ".\\Src\\glVertex.cpp", 0x17);
 }
 
 void __stdcall RENDERER_GLIDE_FreeLightingTable() {
@@ -3094,7 +3022,7 @@ void __stdcall RENDERER_GLIDE_FreeLightingTable() {
       return;
     }
 
-    D2_FREE(gpGlideLightingTable);
+    D2_FREE_AT(gpGlideLightingTable, ".\\Src\\glVertex.cpp", 0x1e);
     gpGlideLightingTable = 0;
 }
 
@@ -3133,7 +3061,7 @@ void __fastcall RENDERER_GLIDE_ApplyColorLighting(D2GlideVertexStrc * pVertex, u
 
 // @sourcefile .\Src\glPerspective.cpp
 void __stdcall RENDERER_GLIDE_AllocPerspectiveLUT() {
-    gpPerspectiveLookupTable = D2_ALLOC(0x8000);
+    gpPerspectiveLookupTable = D2_ALLOC_AT(0x8000, ".\\Src\\glPerspective.cpp", 0x38);
 }
 
 // @sourcefile .\Src\glPerspective.cpp
@@ -3142,7 +3070,7 @@ void __stdcall RENDERER_GLIDE_FreePerspectiveLUT() {
       return;
     }
 
-    D2_FREE(gpPerspectiveLookupTable);
+    D2_FREE_AT(gpPerspectiveLookupTable, ".\\Src\\glPerspective.cpp", 0x3f);
     gpPerspectiveLookupTable = 0;
 }
 
@@ -3228,26 +3156,26 @@ void __stdcall GLSMACK_AllocBuffers() {
     gfGlideSmackerVertex1Oow = -1;
     gfGlideSmackerVertex2Oow = -1;
     gfGlideSmackerVertex3Oow = -1;
-    gpGlideSmackerTexBuf0 = (D2Row_uint8_t_32768*)D2_ALLOC(0x8000);
-    gpGlideSmackerTexBuf1 = (D2Row_uint8_t_32768*)D2_ALLOC(0x8000);
-    gpGlideSmackerTexBuf2 = (D2Row_uint8_t_32768*)D2_ALLOC(0x8000);
+    gpGlideSmackerTexBuf0 = (D2Row_uint8_t_32768*)D2_ALLOC_AT(0x8000, ".\\Src\\glSmack.cpp", 0x47);
+    gpGlideSmackerTexBuf1 = (D2Row_uint8_t_32768*)D2_ALLOC_AT(0x8000, ".\\Src\\glSmack.cpp", 0x48);
+    gpGlideSmackerTexBuf2 = (D2Row_uint8_t_32768*)D2_ALLOC_AT(0x8000, ".\\Src\\glSmack.cpp", 0x49);
 }
 
 // @sourcefile .\Src\glSmack.cpp
 void __stdcall GLSMACK_FreeBuffers() {
     if (gpGlideSmackerTexBuf0) {
-      D2_FREE(gpGlideSmackerTexBuf0);
+      D2_FREE_AT(gpGlideSmackerTexBuf0, ".\\Src\\glSmack.cpp", 0x56);
       gpGlideSmackerTexBuf0 = 0;
     }
     if (gpGlideSmackerTexBuf1) {
-      D2_FREE(gpGlideSmackerTexBuf1);
+      D2_FREE_AT(gpGlideSmackerTexBuf1, ".\\Src\\glSmack.cpp", 0x5b);
       gpGlideSmackerTexBuf1 = 0;
     }
     if (!gpGlideSmackerTexBuf2) {
       return;
     }
 
-    D2_FREE(gpGlideSmackerTexBuf2);
+    D2_FREE_AT(gpGlideSmackerTexBuf2, ".\\Src\\glSmack.cpp", 0x60);
     gpGlideSmackerTexBuf2 = 0;
 }
 
@@ -3331,7 +3259,7 @@ void __stdcall GLSMACK_UploadTextures() {
     (*GLIDEDLL_grTexDownloadMipMap_16)(gnGlideTMUHandle, gnGlideSmackTex2StartAddr, 3, &gTexInfoBlocks1Glide);
 }
 
-void __stdcall GLSMACK_DrawSmackerQuad(D2SmackerContextStrc * pSmackerData, int32_t nOffsetY, int32_t nAlpha) {
+static void __stdcall GLSMACK_DrawSmackerQuad(D2SmackerContextStrc * pSmackerData, int32_t nOffsetY, int32_t nAlpha) {
     // Static local variables (originally global data)
     static int gaGlideSmackerVertices; D2_STATIC_GUARD_BSS(gaGlideSmackerVertices, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gaGlideSmackerVertices");
     static float gfGlideSmackerVertex1Y; D2_STATIC_GUARD_BSS(gfGlideSmackerVertex1Y, "D2Glide::Renderer::Glide::GLSMACK_DrawSmackerQuad::gfGlideSmackerVertex1Y");

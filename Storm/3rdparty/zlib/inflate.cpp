@@ -179,7 +179,7 @@ void __fastcall fixedtables(inflate_state * state) {
     state->distbits = 5;
 }
 
-BOOL __stdcall updatewindow(uint32_t nCopy, uint8_t * pEnd, z_stream * pStream) {
+static BOOL __stdcall updatewindow(uint32_t nCopy, uint8_t * pEnd, z_stream * pStream) {
     size_t nWrapLen;
     inflate_state* pState = (inflate_state*)pStream->state;
     if (!pState->window) {
@@ -1504,7 +1504,7 @@ int __fastcall inflateGetHeader(z_stream * pStream, gz_header * pHead) {
     return 0;
 }
 
-uint32_t __stdcall syncsearch(uint32_t * pnMatchState, uint32_t nLen, uint8_t * pBuf) {
+static uint32_t __stdcall syncsearch(uint32_t * pnMatchState, uint32_t nLen, uint8_t * pBuf) {
     uint32_t nGot = *pnMatchState;
     uint32_t i = 0;
     if (nLen) {

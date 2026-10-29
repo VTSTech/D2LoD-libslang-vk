@@ -88,8 +88,8 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -581,7 +581,7 @@ int * __fastcall MONSTER_GetAiDataPtr(D2UnitStrc * pUnit) {
     return (int*)&pUnit->pUnitData.pUnitDataPlayer->pArena;
 }
 
-void MONSTER_ResetToNeutralFacingTarget(D2UnitStrc * pUnit) {
+static void MONSTER_ResetToNeutralFacingTarget(D2UnitStrc * pUnit) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return;
     }
@@ -702,7 +702,7 @@ void __fastcall MONSTER_ExplodeOwnerMissile(D2UnitStrc * pUnit) {
 }
 
 // Advances the monster's RNG seed, picks one of 5 missile IDs from a hard-coded table at gTxtCompilationMemPool+0x157c, casts it at the monster's own position via CastAttack, stores mutual owner links between unit and missile, and marks the missile NODRAW so it renders only via its attached particle.
-void MONSTER_SpawnRandomAttachedMissile(D2UnitStrc * pUnit) {
+static void MONSTER_SpawnRandomAttachedMissile(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static int INT_ARRAY_006da5dc[5] = { 0x196, 0x19a, 0x19f, 0x1a2, 0x1a5 }; D2_STATIC_GUARD(INT_ARRAY_006da5dc, "D2Client::UNIT::Monster::MONSTER_SpawnRandomAttachedMissile::INT_ARRAY_006da5dc");
 
@@ -748,7 +748,7 @@ void MONSTER_SpawnRandomAttachedMissile(D2UnitStrc * pUnit) {
 }
 
 // Performs class-ID-specific post-spawn setup for special/unique monsters. Handles: gnMonsterSpecialType pointer (0x96), collision-pattern reset for large monsters (0x9d/0x9e/0x13f), player targeting/facing (0x14b), BladeCreeper missile cast with owner assignment (0x19d), random attached missile (0x1f1/0x1f2/499/500), Baal teleport missile (0x23a), and random direction seeded from player RNG (0x158).
-void MONSTER_InitSpecialMonster(D2UnitStrc * pUnit, int32_t nClassId) {
+static void MONSTER_InitSpecialMonster(D2UnitStrc * pUnit, int32_t nClassId) {
     // Static local variables (originally global data)
     static uint32_t gnMonsterSpecialType; D2_STATIC_GUARD_BSS(gnMonsterSpecialType, "D2Client::UNIT::Monster::MONSTER_InitSpecialMonster::gnMonsterSpecialType");
 
@@ -1086,7 +1086,7 @@ void __fastcall FreeMonster(D2UnitStrc * pUnit) {
       return;
     }
 
-    D2_FREE(pMonData->pPathParamOrName.wszMonsterName);
+    D2_FREE_AT(pMonData->pPathParamOrName.wszMonsterName, ".\\UNIT\\Monster.cpp", 0x66);
     pMonData->pPathParamOrName.wszMonsterName = 0;
 }
 
@@ -1140,7 +1140,7 @@ void __fastcall MONSTER_TransformToClassId(D2UnitStrc * pUnit, int32_t nClassId)
     if (pUnit->eUnitType == UNIT_MONSTER) {
       pMonData = pUnit->pUnitData.pUnitDataMonster;
       if (pMonData && pMonData->pPathParamOrName.wszMonsterName) {
-        D2_FREE(pMonData->pPathParamOrName.wszMonsterName);
+        D2_FREE_AT(pMonData->pPathParamOrName.wszMonsterName, ".\\UNIT\\Monster.cpp", 0x66);
         pMonData->pPathParamOrName.wszMonsterName = 0;
       }
     }
@@ -1323,7 +1323,7 @@ void __stdcall MONSTER_SpawnFetishMissileSpread(D2UnitStrc * pUnit, eMissilesId 
 }
 
 // Fires a missile from a monster toward its confirmed target (or waypoint if no target). Resolves the missile ID via MONSTER_GetMissileForAnimEvent. Dispatches to MISSILE_CreateFromUnitWithOffset for panther pots, MONSTER_ExplodeOwnerMissile+SpawnRandomAttachedMissile for catapult charged balls, or MakeMissile for all others. Always calls MONSTER_SpawnFetishMissileSpread after.
-void MONSTER_CastMissileAtTarget(D2UnitStrc * pUnit) {
+static void MONSTER_CastMissileAtTarget(D2UnitStrc * pUnit) {
     D2SkillArgStrc sSkillArg;
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return;
@@ -1374,7 +1374,7 @@ void MONSTER_CastMissileAtTarget(D2UnitStrc * pUnit) {
 }
 
 // Returns a pointer into the monster anim-mode data table for the given unit's current anim mode. Special-cases class IDs 0xf3/0x14d (Throw→gMonsterAnimModeIndexB) and 0x21f/0x220/0x23a (Cast→gMonsterAnimModeIndexA). For other modes checks MonStats2 flag bits; uses the Andariel normal-death override for Death mode. Returns NULL if the unit is invalid or anim mode is out of range.
-int * MONSTER_GetAnimModeDataEntry(D2UnitStrc * pUnit) {
+static int * MONSTER_GetAnimModeDataEntry(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static D2ClientMonAnimModeEntryStrc gMonsterAnimModeDataGap[16] = {
     {
@@ -1382,11 +1382,7 @@ int * MONSTER_GetAnimModeDataEntry(D2UnitStrc * pUnit) {
         /* .nField4 = */ 0x2,
         /* .nField8 = */ 0x0
     },
-    {
-        /* .nField0 = */ 0x0,
-        /* .nField4 = */ 0x0,
-        /* .nField8 = */ 0x0
-    },
+    {},
     {
         /* .nField0 = */ 0x1,
         /* .nField4 = */ 0x0,
@@ -1432,11 +1428,7 @@ int * MONSTER_GetAnimModeDataEntry(D2UnitStrc * pUnit) {
         /* .nField4 = */ 0x2,
         /* .nField8 = */ 0x0
     },
-    {
-        /* .nField0 = */ 0x0,
-        /* .nField4 = */ 0x0,
-        /* .nField8 = */ 0x0
-    },
+    {},
     {
         /* .nField0 = */ 0x0,
         /* .nField4 = */ 0x2,
@@ -1578,7 +1570,7 @@ int * MONSTER_GetAnimModeDataEntry(D2UnitStrc * pUnit) {
 }
 
 // Client-side per-frame animation driver for monster skill casting. Advances trail effects (PATH_StepAndCreateTrailEffects) when the skill has the movement flag set, and calls SKILLS_CltSetSkillFromCurrent at appropriate action frames (1-4) or on UNITFLAG_SKSRVDOFUNC clearance. Handles three special srvdofunc overrides (0x5F looping animation clamp, 0x7E frame wrap at 0xBFF, 0x98 inferno-state frame randomisation using MonStats2 frame bounds).
-void MONSTER_ProcessSkillAnimation(D2UnitStrc * pUnit) {
+static void MONSTER_ProcessSkillAnimation(D2UnitStrc * pUnit) {
     uint32_t bResult;
     eD2States eState;
     int nCurrentFrame;
@@ -1652,7 +1644,7 @@ void MONSTER_ProcessSkillAnimation(D2UnitStrc * pUnit) {
 }
 
 // Called when a monster's skill/action animation completes (eAnimMode is one of the Skill1-3/attack/cast modes). Looks up the monster's base MonStats id and, with per-class special-case logic, decides the next animation mode. Skill1 (non-class-0x4e) snaps the unit's dynamic path to tile, restores velocity/path type and switches to Run. Otherwise it faces the confirmed target, and depending on the current anim mode and class id either: loops the current animation (returns without change for certain classes), transitions caster class 0x88 from Cast to Throw, fires special missiles for class 0x1f1 on GetHit (MONSTER_ExplodeOwnerMissile + SpawnRandomAttachedMissile), or transitions classes 0x193/0x194 into Attack2. Default fallthrough sets Neutral and re-inits the anim (InitAnimMode). No return; mutates unit anim state.
-void MONSTER_HandleSkillAnimEnd(D2UnitStrc * pUnit) {
+static void MONSTER_HandleSkillAnimEnd(D2UnitStrc * pUnit) {
     uint32_t bHasPathActive;
     D2DynamicPathStrc* pDynamicPath;
     if (!pUnit) {
@@ -1923,7 +1915,7 @@ D2MonStats2Txt * __fastcall MONSTER_SpawnBloodParticles(D2UnitStrc * pUnit, D2Mo
     return (D2MonStats2Txt*)nMonStats2Idx;
 }
 
-void MONSTER_PreloadSequenceAnimations(D2UnitStrc * pUnit) {
+static void MONSTER_PreloadSequenceAnimations(D2UnitStrc * pUnit) {
     uint32_t nFrameSpeed;
     uint32_t nFrameEnd;
     uint32_t nFrameStart;
@@ -1945,7 +1937,7 @@ void MONSTER_PreloadSequenceAnimations(D2UnitStrc * pUnit) {
 
 // Returns nonzero when pModeEntry->bCheckMoveFlag is set, eMode < 0x10 and the monster's MonStats2 per-mode move bit (+0x104, bit eMode: A1mv/A2mv/SCmv/S1mv..S4mv) is set.
 // Called by MonsterMessage with a gaMonMsgAnimModeTable row; 1.14d asm 004afbc8..004afbf2.
-uint32_t MONSTER_IsModeMoveFlagSet(D2UnitStrc * pUnit, D2MonMsgAnimModeStrc * pModeEntry) {
+static uint32_t MONSTER_IsModeMoveFlagSet(D2UnitStrc * pUnit, D2MonMsgAnimModeStrc * pModeEntry) {
     if (!(pUnit && pModeEntry)) {
       return 0;
     }
@@ -1967,7 +1959,7 @@ uint32_t MONSTER_IsModeMoveFlagSet(D2UnitStrc * pUnit, D2MonMsgAnimModeStrc * pM
 }
 
 // Spawns death-effect missiles for a monster. Uber minions that are not frozen emit MISSILE_Suicidefireexplode + MISSILE_Suicidecorpseexplode. All other monsters emit a glacial spike missile (offset by MonStats2 Height into the missile table) plus MISSILE_Icebreaksmoke.
-void MONSTER_SpawnDeathEffectMissiles(D2UnitStrc * pUnit) {
+static void MONSTER_SpawnDeathEffectMissiles(D2UnitStrc * pUnit) {
     D2SkillArgStrc sSkillArg;
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return;
@@ -2002,7 +1994,7 @@ void MONSTER_SpawnDeathEffectMissiles(D2UnitStrc * pUnit) {
 }
 
 // Animation-mode callback driving a monster's burrow (submerge/emerge) transition. On mode 0xc (burrow down): clears the unit's targetable/attackable/valid-target flags, removes both its unit-related and monster collision footprints at its current cell, shrinks collision width to 5, clears the collision pattern, and starts a downward fading particle effect. On modes 0xe/0xa (emerge): re-sets those flags, re-adds collision, restores width 1 and pattern 0x3c01, and starts an upward fade. Reads position from static or dynamic path depending on unit type.
-void MONSTER_HandleBurrowTransition(D2UnitStrc * pUnit, int32_t nParam) {
+static void MONSTER_HandleBurrowTransition(D2UnitStrc * pUnit, int32_t nParam) {
     int32_t nPosY;
     int32_t nPosX;
     D2RoomStrc* pRoom;

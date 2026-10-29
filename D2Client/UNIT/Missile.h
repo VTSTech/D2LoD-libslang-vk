@@ -52,13 +52,7 @@ int32_t __fastcall SEED_RollRangeInclusive(struct D2SeedStrc * pSeed, int32_t nM
 int32_t __fastcall MISSILE_GetBoltSpeed(int32_t nSkillId, int32_t nSkillLevel);
 bool __stdcall MISSILE_CheckLineOfSight(int32_t nDeltaX, struct D2RoomStrc * pRoom, int32_t nMaxDistSq, int32_t nSourceX, int32_t nSourceY, int32_t nDeltaY);
 void __fastcall MISSILE_InitializeVisual(struct D2UnitStrc * pUnit, int32_t nParam);
-int32_t MISSILE_GetSpeedByRemainingFrames(struct D2UnitStrc * pUnit);
-int32_t MISSILE_GetPoisonNovaRadius(int32_t pMissileTxtRaw, int32_t nCurrentFrame);
 int32_t __fastcall MISSILE_CltHitFn10_ProgOverlay(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
-// Configures a homing missile (pUnit2) to track pUnit or a fixed target coordinate. Computes range from missile txt data and skill level, sets total/current frames, then either sets a unit target (mode 5, collision distance) or a world-coordinate target (mode 6, distance to XY). If the computed distance is under 25 tiles, immediately triggers PATH_CalculatePath to begin pursuit.
-void __stdcall MISSILE_SetupHoming(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
-// Retargets a homing missile to the closest valid enemy. Reads search radius from MissilesTxt[missile.classId].Param2, checks target flags (bit 2 = already locked), resolves the missile owner, then calls SKILL_FindClosestTargetWithStats from the missile's current position. On success calls MISSILE_SetupHoming to redirect the missile. Returns 0 on success, 1 on any early-out (null unit, bad classId, already locked, no owner).
-BOOL MISSILE_RetargetClosest(struct D2UnitStrc * pUnit);
 // Client-side hit function for missile type 013 (homing/seeking). Returns 1 (no-hit) if owner is missing/active, missile is in a town room, or targeting flags are ambiguous. If target-lock flag (bit 1) is set and the colliding target differs from the locked target, returns 0 (miss). If retarget flag (bit 1 of nTargetFlags) is set and no frames remain, calls MISSILE_RetargetClosest and returns result. Used as CltHitFunc dispatch entry.
 int32_t __fastcall MISSILE_CltHitFn13_Homing(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 int32_t __fastcall MISSILE_CltHitFn34_MephistoDoNotDraw(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
@@ -69,20 +63,14 @@ int32_t __fastcall MISSILE_CltHitFn51_LightTrailJavelin(struct D2UnitStrc * pUni
 int32_t __fastcall MISSILE_CltHitFn61_WorldStoneShake(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 void __fastcall LIGHTMAP_SetQualityLevel(uint32_t dwParam);
 int __stdcall LIGHTMAP_GetQualityLevel();
-uint32_t __stdcall MISSILE_CanHitTarget(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit1, struct D2MissilesTxt * pMissileTxt, struct D2UnitStrc * pUnit2);
 int32_t __fastcall Missiles_SrvDoFuncData_02(struct D2UnitStrc * pUnit, struct D2MissileCltCollideCtxStrc * pCtx);
 int32_t __fastcall Missiles_SrvDoFuncData_01(struct D2UnitStrc * pUnit, struct D2MissileCltCollideCtxStrc * pCtx);
 int32_t __fastcall Missiles_SrvDoFuncData_03(struct D2UnitStrc * pUnit, struct D2MissileCltCollideCtxStrc * pCtx);
 int32_t __fastcall Missiles_SrvDoFuncData_07(struct D2UnitStrc * pUnit, struct D2MissileCltCollideCtxStrc * pCtx);
 void __fastcall MISSILE_InitMissileUnit(struct D2UnitStrc * pUnit, struct D2RoomStrc * pRoom, int32_t nX, int32_t nY, uint32_t nFlags);
 void __fastcall MISSILE_FreeClientMissile(struct D2UnitStrc * pUnit);
-void MISSILE_UpdateLightFlicker(struct D2UnitStrc * pUnitRaw);
 int32_t __fastcall MISSILE_CltHitFn40_HealingBolt(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
-int32_t MISSILE_GetSpeedTier(int32_t nParam);
-int MISSILE_CheckAndDecrementPierce(struct D2UnitStrc * pUnit);
 void __fastcall MISSILE_RemoveClientSide(struct D2UnitStrc * pUnit);
-// Computes and stores the pierce count for missile pUnit against target pUnit2 (player or monster only). Checks MissilesTxt pierce flag (bit 2); if set, sums UNITSTAT_skill_pierce + UNITSTAT_item_pierce on the target, then runs a seeded RNG loop (up to 4 iterations) comparing random%100 against pierce chance to count successful pierces. Writes the result to missile's UNITSTAT_pierce_idx stat. Uses UNITSTAT_pierce_idx on the target as the RNG seed index for non-local players.
-void __stdcall MISSILE_CalculatePierceCount(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 // Constructs and spawns a missile unit from a D2SkillArgStrc request. Resolves spawn position (explicit X/Y or owner/source unit position), finds the containing room, computes velocity from missiles.txt Vel/VelLev scaled by skill level (with slowmissiles state applied), determines the target (unit, fixed point, or direction next to caster), then creates a UNIT_MISSILE via CreateMissileOrMonster. Sets anim frames/speed, path velocities/acceleration/max-velocity, owner, skill, level, pierce count, lightmap, optional particle/projectile init, plays the travel sound, and dispatches unique-monster mod attacks. Returns the new missile unit, or NULL on any failure (bad txt index, no room, no path). Used by the skill/missile firing pipeline.
 struct D2UnitStrc * __fastcall MakeMissile(struct D2SkillArgStrc * pSkillArg);
 struct D2UnitStrc * __fastcall CastAttack(struct D2UnitStrc * pUnit, eMissilesId nMissileId, int32_t nX, int32_t nY, eD2Skills eSkill, int32_t nSkillLevel);
@@ -103,8 +91,6 @@ void __fastcall MISSILE_SpawnRandomScatter(struct D2UnitStrc * pUnit, uint32_t n
 struct D2UnitStrc * __fastcall MISSILE_CreatePeriodicTrail(struct D2UnitStrc * pUnit, int32_t nRadius, int32_t nInterval, eMissilesId nMissileId);
 void __fastcall MISSILE_SetupFallingZPos(struct D2UnitStrc * pUnit);
 void __fastcall MISSILE_SetupDescentAnim(struct D2UnitStrc * pUnit);
-// Spawns a child missile (nMissileId) at a random offset within nRadius tiles of the parent missile pUnit2, using the parent's seed RNG. Avoids spawning exactly at origin by nudging X by +1 if both offsets resolve to zero. Sets the new missile's TargetX/TargetY to the chosen offset and returns the new missile unit pointer.
-struct D2UnitStrc * __stdcall MISSILE_CreateRandomOffset(struct D2UnitStrc * pUnit, eMissilesId nMissileId, int32_t nRadius, struct D2UnitStrc * pUnit2);
 // Spawns up to 8 child shatter missiles from a parent missile unit. nCount controls spread range (clamped: spreadRange = nCount*7, max 8 missiles). For each child: calls MakeMissile with the parent's skill/level, then randomises X/Y offset within the spread range and Z offset within MissilesTxt.CltParam2, applies position via SetPosVectorShifted and velocity offset via CltParam1/CltParam3. Used by ice/bone shatter skill effects.
 void __fastcall MISSILE_CreateMultiShatter(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, eMissilesId nMissileId, int32_t nCount);
 // Spawns a sub-missile and handles periodic sound/particle effects for a parent missile. Every other frame (or every 16th frame at low levels), spawns 1–4 child missiles via MakeMissile with a random positional offset scaled by skill level. Also triggers CltSubMissile1 shatter and plays ProgSound at frame 0x13B if configured in MissilesTxt.
@@ -159,8 +145,6 @@ int32_t __fastcall MISSILE_CltHitFn36_HellMeteorDown(struct D2UnitStrc * pUnit, 
 int32_t __fastcall MISSILE_CltHitFn44_InAirLanding(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 // Client-side hit function for missile type 047 (random-scatter + secondary missile). Computes sub-missile count = (level-1)*HitPar2+HitPar1 (fallback: skill calc[3], min 1). Calls SKILL_SpawnRandomMissilesInArea with CltHitSubMissile1 for the scatter burst, count/4 as the area radius. If CltHitSubMissile2 is valid, also spawns one direct missile at missile's current position. Always returns 1.
 int32_t __fastcall MISSILE_CltHitFn47_CatapultSpikeBall(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
-// Molten Boulder splash/debris spawner. Resolves the missile's owner and source position (static or dynamic path). Spawns nSplashCount randomly-scattered Moltenboulder-flyingrocks missiles around the impact point (seeded from the missile's RNG, requiring distance>3 from origin), then, if nDebrisMissileId>=0, spawns a fixed ring of debris missiles using the gaRockDebrisSpreadConstY/gaRockDebrisSpreadTableX offset tables. All sub-missiles inherit the owner, skill id and skill level. No return value.
-void __stdcall MISSILE_CreateFlyingRockDebris(struct D2UnitStrc * pMissileUnit, int32_t nSplashCount, int32_t nVelocity, int32_t nDebrisCount, eMissilesId nDebrisMissileId);
 int32_t __fastcall MISSILE_CltHitFn50_CatapultMeteorBall(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 // Client hit handler for missile 052 (flying rock / boulder type). On impact with a large monster (MonStats2 large flag), spawns CltHitSubMissile1 via CastAttack at impact position, then calls MISSILE_CreateFlyingRockDebris using HitPar1/2/SubMissile2/3. Returns 0 immediately if target is not a large monster.
 int32_t __fastcall MISSILE_CltHitFn52_MoltenBoulder(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
@@ -173,8 +157,6 @@ int32_t __fastcall MISSILE_CltHitFn56_RecyclerVine(struct D2UnitStrc * pUnit, st
 int32_t __fastcall MISSILE_CltHitFn57_BaalSpawnMonsters(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 // Client hit handler for missile 060. Spawns CltHitSubMissile1 at the impact point, then spawns CltHitSubMissile2 with a Z-position offset (SetPosVectorShifted) controlled by HitPar1. Both sub-missiles inherit the parent's owner, skill, and level.
 int32_t __fastcall MISSILE_CltHitFn60_Nihlithak(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
-// Spawns a missile at a random position within nRadius tiles of pUnit's current location. Advances pUnit->sSeed twice (LCG 0x6AC690C5) to pick independent random X and Y offsets in [0, 2*nRadius), then fills a D2SkillArgStrc with the owner, origin, skill id, level, and the jittered target coords (unitPos +/- offset - radius), and calls MakeMissile. Works for both static-path and dynamic-path units.
-void __stdcall MISSILE_CreateRandomOffsetHit(int32_t nRadius, eMissilesId nMissileId, struct D2UnitStrc * pUnit);
 // Client hit handler for ice-break missiles (031). Only fires when pTarget is NULL (terrain hit). Selects a melt sub-missile (Icebreaksmallmelt or Icebreaklargemelt) based on the missile's class ID (0x110/0x111/0x112/0x1a1), spawns it via CastAttack at the impact position, then copies the parent's direction and sets animation speed 0x80.
 int32_t __fastcall MISSILE_CltHitFn31_IceBreak(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 struct D2UnitStrc * __fastcall MISSILE_CreateFootprint(struct D2UnitStrc * pUnit, int32_t nParam);
@@ -183,8 +165,6 @@ void __fastcall MISSILE_CreateTowardObject(int32_t nObjectId, struct D2UnitStrc 
 int32_t __fastcall MISSILE_CltHitFn42_HfFragment1(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 // Client hit handler for missile 043 (Hffragment / hellfire). Spawns a MISSILE_Hffragment3 sub-missile at the impact position using the range from missile TXT entry 0x175; applies a random Y-target offset derived from the parent missile's seed; sets target X from the parent. Flags 0x8005 mark it as a special fragment.
 int32_t __fastcall MISSILE_CltHitFn43_HfFragment2(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
-// Spawns a fixed ring of 14 fragment missiles (MISSILE_Hffragment1) radiating outward from a parent missile unit, used by the Frozen Orb / Hydra-style ring-burst effect. Uses a hardcoded table of 14 (dx, dy) offset pairs to define the ring geometry; computes per-fragment travel distance via Manhattan-distance approximation to set nTotalFrames proportional to pTxtMissiles->Range. After spawning each fragment, sets its target X (from nParam) and a seeded random target Y offset (+/-11 frames) for spread. Iterates all 14 slots regardless of spawn failures.
-void __stdcall MISSILE_CreateCircularRing(struct D2UnitStrc * pUnit, int32_t nParam);
 // Body continues at 004d1be4, the JZ target of 004d1bdb - a branch, not a call. Ghidra had a CALL_RETURN flow override there and a separate function named 'MISSILE_CreateMultiFromSeed'; that made EBP look like a parameter and turned this frame's locals into wild pointers.
 // Retired notes from 'MISSILE_CreateMultiFromSeed':
 // Spawns a burst of N sub-missiles (skill missile 0x15d) scattered within +-10 around the source missile's position, where N is read as the missile's TargetX. Re-seeds the missile RNG (low=TargetY, high=0x29a) for deterministic scatter; each sub-missile offset is derived from the seed via mod-20 (-10..+9). Skips spawning when the offset lands exactly on the origin. Successfully created sub-missiles get SKILLSMON_SetMissilePathLinear applied. Sub-missiles inherit owner, skill id and skill level. Returns 1.
@@ -193,19 +173,10 @@ int32_t __fastcall MISSILE_CltHitFn37_RadamentHandOfGod(struct D2UnitStrc * pUni
 int32_t __fastcall MISSILE_CltHitFn38_TaintedSunFlash(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 int32_t __fastcall MISSILE_CltHitFn39_QueenDeathGlob(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 int32_t __fastcall MISSILE_CltHitFn41_DurielDeathRock(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
-// Creates a missile aimed in the direction a monster is facing, used for upgrade/transform attacks. Retrieves upgrade skill direction vector via MONSTERS_GetUpgradeSkillsAndCount, randomises spawn position near pUnit2's location using its seed (±10 tiles), creates the missile via MakeMissile, then sets its particle position and offset vectors using the facing direction converted to screen space. Asserts missile Range == 25.
-void __stdcall MISSILE_CreateAtMonsterFacing(struct D2UnitStrc * pUnit, eMissilesId nMissileId, struct D2UnitStrc * pUnit2);
-// Spawns a randomized debris missile around a source unit (pUnit2), used for the Nihlathak debris/swoosh effect. Advances pUnit2's RNG seed to pick one of four cardinal offset directions from the source position and a random depth offset, then selects one of MISSILE_Nehlithakdebris1..4 (or Nehlithakswoosh) via seed % 30. Builds a D2SkillArgStrc (owner=pUnit, skill/level taken from pUnit2) and calls MakeMissile; on success sets the new missile's shifted Z position and its target X/Y to the source unit's current position. No return value.
-void __stdcall MISSILE_CreateRandomCardinal(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
-// Spawns a MISSILE_Brdeathlightningbolt (Baal death lightning) at a seeded-random offset target. Derives nTargetX/Y from pUnit2's RNG seed (range ±0x14 in both axes); falls back to a nonzero X if both are zero. Sets the new missile's target coords and applies a -10 Z shift (SetPosVectorShifted) for visual depth.
-void __stdcall MISSILE_CreateBaalLightningBolt(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
-void __stdcall MISSILE_CreateDebrisWithCollision(int32_t nParam1, struct D2UnitStrc * pUnit, int32_t nParam2);
 // Client per-frame handler for missile 066 (Uber area debris/shockwave). Only active when the owner is in an Uber level (level IDs 0x83–0x84). Tracks owner with PATH_SetPathTarget, occasionally triggers a screen-shake (SetShake), and every ~10 frames spawns a debris missile at a seeded random offset. Removes the missile client-side if owner is absent or outside Uber areas.
 void __fastcall MISSILE_CltDoFn66_WorldStoneShake(struct D2UnitStrc * pUnit);
 // Missile hit-function #48: the Freezing Arrow / cold-catapult explosion burst. On impact at the firing unit's position it spawns a central Freezingarrowexp1 missile, then loops over a fixed 4-point offset table (the aExplosionOffsets array, +1/0/-1 deltas) spawning a Freezingarrowexp2 aimed at each offset (PATH_SetDirectionToTarget) plus a CatapultColdExplosion missile at that tile. Each catapult explosion has its total frame count and velocity randomized using the firing unit's RNG seed (the standard *0x6ac690c5 LCG, power-of-two masked or modulo), and a client particle projectile (PARTICLE_InitProjectile) is initialized for it. Always returns 1. Drives the staggered multi-tile cold explosion visual/damage pattern.
 int32_t __fastcall MISSILE_CltHitFn48_CatapultColdBall(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
-// Spawns Anya's steam vent missiles (MISSILE_Anyasteamvent + MISSILE_Anyasteam) at a randomly chosen unblocked tile near (nX, nY). Up to 4 attempts: each iteration advances pMissile's RNG seed to pick a random offset within a ~34x34 tile window, then calls CheckCollision_BlockPlayerMissile to reject blocked tiles. On success, fills a D2SkillArgStrc with the owner, skill ID, level, and chosen coordinates, then calls MakeMissile twice for the vent and steam sub-missiles.
-void __stdcall MISSILE_CreateSteamVent(struct D2UnitStrc * pUnit, int32_t nX, int32_t nY, struct D2UnitStrc * pMissile);
 // Client hit handler for missile 062. Seeds the missile's RNG from the current X position, then spawns CltHitSubMissile1 at a randomly offset target position within ±HitPar1 tiles of the impact point. The scatter radius is controlled by cHitPar1 (default 1). Requires a valid owner.
 int32_t __fastcall MISSILE_CltHitFn62_BaalTauntLightning(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 int32_t __fastcall MISSILE_CltHitFn63_BaalTauntPoison(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
@@ -326,5 +297,6 @@ void __fastcall MISSILE_CltDoFn54_AnyaCenter(struct D2UnitStrc * pUnit);
 void __fastcall MISSILE_CltDoFn55_AncientDeathCenter(struct D2UnitStrc * pUnit);
 // Client-side tick for a rotating/orbiting missile. Every other remaining frame (odd frames skipped), recomputes SP1 by rotating the missile's current position around its stored TargetX/Y pivot using a 90-degree perpendicular offset, then calls PATH_CalculatePath to follow the updated waypoint — effectively making the missile orbit its target point. Falls through to CltDoFunc_001.
 void __fastcall MISSILE_CltDoFn60_Hurricane(struct D2UnitStrc * pUnit);
+// 18 internal functions (defined in .cpp)
 
 } // namespace D2Client::UNIT::Missile

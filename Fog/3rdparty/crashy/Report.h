@@ -12,7 +12,7 @@
 struct Report;
 #ifndef RECON_FPTD_crashy_Report_ScalarDeletingDestructor
 #define RECON_FPTD_crashy_Report_ScalarDeletingDestructor
-typedef ::Report * (*crashy_Report_ScalarDeletingDestructor)(::Report * pThis, uint32_t nFlags);
+typedef ::Report * (__thiscall *crashy_Report_ScalarDeletingDestructor)(::Report * pThis, uint32_t nFlags);
 #endif
 
 struct ReportVtable;
@@ -34,19 +34,19 @@ struct __attribute__((packed)) Report {
 };
 
 struct ReportVtable {
-    /* 0x00 */ ::Report * (*ScalarDeletingDestructor)(::Report *, uint32_t);
+    /* 0x00 */ ::Report * (__thiscall *ScalarDeletingDestructor)(::Report *, uint32_t);
 };
 
 namespace Fog::_3rdparty::crashy {
 
 // Function declarations
-::Report * Constructor(::Report * pThis);
-::Report * ScalarDeletingDestructor(::Report * pThis, uint32_t nFlags);
-void Destructor(::Report * pThis);
-int8_t Open(::Report * pThis, char * szFileName);
-int8_t Close(::Report * pThis);
-int8_t IsOpen(::Report * pThis);
-int8_t AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir);
+::Report * __thiscall Constructor(::Report * pThis);
+::Report * __thiscall ScalarDeletingDestructor(::Report * pThis, uint32_t nFlags);
+void __thiscall Destructor(::Report * pThis);
+int8_t __thiscall Open(::Report * pThis, char * szFileName);
+int8_t __thiscall Close(::Report * pThis);
+int8_t __thiscall IsOpen(::Report * pThis);
+int8_t __thiscall AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir);
 int32_t Printf(::Report * pThis, char * szFormat, ...);
 
 } // namespace Fog::_3rdparty::crashy

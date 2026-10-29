@@ -91,20 +91,12 @@ struct D2GameNpcStrc * __fastcall GetGameNpcbyClassId(::SGAMEDATA * pGame, int32
 struct D2GameNpcStrc * __fastcall GetGameNpcByUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int * pNpcIndex);
 // @sourcefile .\UNIT\sunitproxy.cpp
 void __fastcall SUNITPROXY_AddItemToNpcProxy(struct D2UnitStrc * pNpcUnit, ::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t dwTradeParam);
-// @sourcefile .\UNIT\sunitproxy.cpp
-void SUNITPROXY_InitNpcTradeItems(int32_t nParam1, ::SGAMEDATA * pGame, void * * pParam);
 // Server-side init of the game's NPC control table. Allocates the D2GameNpcControlStrc and its 0x1100-byte NPC array from the game pool, seeds its RNG from the game seed, and iterates every monstats.txt row: for each monster flagged as an NPC (npc bit), allocates a player-style inventory, assigns a control-table slot (max 64, halts via ErrorManager if exceeded), and copies init data (flags/name) from the static gpNpcControlInitTable. For trade-enabled NPCs (flag==1) it dispatches on monster id to SUNITPROXY_InitNpcTradeItems with the per-vendor store index and marks the slot tradeable/repair. Stores the result in pGame->pNpcControl. __fastcall(pGame).
 // @sourcefile .\UNIT\sunitproxy.cpp
 void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame);
-void __stdcall SUNITPROXY_FreeInventoryItems(::SGAMEDATA * pGame, struct D2InventoryStrc * pInventory);
-// Frees all server-side proxy data for a single NPC entry (pNpcEntry) within pGame. Walks and frees the trade inventory linked list (unk0x08), calling SUNITPROXY_FreeInventoryItems + STRUCT_FreeInventory on each node, then frees the NPC's own inventory. Also walks a second linked list (unk0x14) deleting any owned items via ITEM_DeleteItemAndFreeUnit. All nodes freed from pGame->pMemoryPool.
-// @sourcefile .\UNIT\sunitproxy.cpp
-void __stdcall SUNITPROXY_FreeNpcProxyData(struct D2GameNpcStrc * pNpcEntry, ::SGAMEDATA * pGame);
 // Tears down pGame->pNpcControl entirely. For each of nNpcCount NPC entries: frees the interaction linked list, calls SUNITPROXY_FreeNpcProxyData, and frees two auxiliary memory blocks. Finally frees the NPC array and the control struct itself from pGame->pMemoryPool, then nulls pGame->pNpcControl.
 // @sourcefile .\UNIT\sunitproxy.cpp
 void __fastcall FreeNpcControl(::SGAMEDATA * pGame);
-// @sourcefile .\UNIT\sunitproxy.cpp
-void __stdcall SUNITPROXY_AddTradeQueueEntry(struct D2UnitStrc * pUnit, uint32_t dwTradeParam, int32_t nAction, ::SGAMEDATA * pGame, struct D2GameNpcStrc * pNpc);
 void __fastcall SUNITPROXY_QueueTradeAction(struct D2UnitStrc * pNpcUnit, ::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t dwTradeParam, uint32_t nTradeAction);
 // IterateAllUnits callback: when pUnit has a room (UNITS_GetRoom) whose level
 // (DRLGROOM_GetLevelIdFromRoom) equals pArgs->eLevelId (+0), increments pArgs->nCount (+4).
@@ -141,5 +133,6 @@ void __stdcall SUNITPROXY_UpdateNpcProxiesForAct(::SGAMEDATA * pGame, char nAct,
 void __fastcall IterateNpcIntroUnits(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2LevelId eLevel, eD2LevelId eLevelIdTwo);
 void __fastcall SERVER_InitClassicTowns(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall SUNITPROXY_SendProxyItemsToClient(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nNpcProxy, struct D2ClientStrc * pClient);
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Game::UNIT::sunitproxy

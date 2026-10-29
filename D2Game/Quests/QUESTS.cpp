@@ -104,7 +104,6 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/QuestLog.h"
 #include "D2Common/Unit/D2UnitDataItemStrc.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/Quests/QUESTS/A1Q0.h"
 #include "D2Game/Quests/QUESTS/A1Q3.h"
 #include "D2Game/Quests/QUESTS/A1Q7.h"
@@ -126,25 +125,25 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitQuestDataListStrc) == 0x8, "D2_NEW(D2UnitQuestDataListStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitQuestDataListStrc) == 0x8, "D2_NEW_AT(D2UnitQuestDataListStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestTimerStrc) == 0x14, "D2_NEW(D2QuestTimerStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestTimerStrc) == 0x14, "D2_NEW_AT(D2QuestTimerStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestControlStrc) == 0x24, "D2_NEW(D2QuestControlStrc): the 32-bit layout must be the 0x24 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestControlStrc) == 0x24, "D2_NEW_AT(D2QuestControlStrc): the 32-bit layout must be the 0x24 bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataStrc) == 0xf8, "D2_NEW(D2QuestDataStrc): the 32-bit layout must be the 0xf8 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataStrc) == 0xf8, "D2_NEW_AT(D2QuestDataStrc): the 32-bit layout must be the 0xf8 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_QUESTUPDATE
@@ -164,13 +163,13 @@ void __fastcall FreeQuestDataList(::SGAMEDATA * pGame, D2UnitQuestDataListStrc *
     while (pQuestDataList) {
       D2UnitQuestDataListStrc* pNext;
       pNext = pQuestDataList->pNext;
-      D2_FREE_POOL(pGame->pMemoryPool, pQuestDataList);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pQuestDataList, ".\\QUESTS\\QUESTS.CPP", 0x50);
       pQuestDataList = pNext;
     }
 }
 
 // @sourcefile .\QUESTS\QUESTS.CPP
-BOOL __stdcall QUEST_AttachToUnit(::SGAMEDATA * pGame, D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
+static BOOL __stdcall QUEST_AttachToUnit(::SGAMEDATA * pGame, D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
     D2UnitQuestDataListStrc* pExistingNode = pUnit->uSideData.pServerSide.pQuestEventList;
     if (!pQuestData) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5d);
@@ -183,7 +182,7 @@ BOOL __stdcall QUEST_AttachToUnit(::SGAMEDATA * pGame, D2QuestDataStrc * pQuestD
       }
     }
 
-    D2UnitQuestDataListStrc* pQuestListNode = D2_NEW_POOL(pGame->pMemoryPool, D2UnitQuestDataListStrc);
+    D2UnitQuestDataListStrc* pQuestListNode = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitQuestDataListStrc, ".\\QUESTS\\QUESTS.CPP", 0x68);
     pQuestListNode->pQuestData = pQuestData;
     pQuestListNode->pNext = (D2UnitQuestDataListStrc*)pUnit->uSideData.pClientSide.nSfxMode;
     pUnit->uSideData.pServerSide.pQuestEventList = pQuestListNode;
@@ -282,10 +281,10 @@ void __fastcall FreeQuestControl(::SGAMEDATA * pGame) {
     while (pMemoryToFree_00) {
       pNextQuestData = pMemoryToFree_00->pPrev;
       if (pMemoryToFree_00->pQuestSpecificData.pA1Q1) {
-        D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree_00->pQuestSpecificData.pA1Q1);
+        D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree_00->pQuestSpecificData.pA1Q1, ".\\QUESTS\\QUESTS.CPP", 0x1df);
       }
 
-      D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree_00);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree_00, ".\\QUESTS\\QUESTS.CPP", 0x1e1);
       pMemoryToFree_00 = pNextQuestData;
     }
 
@@ -293,12 +292,12 @@ void __fastcall FreeQuestControl(::SGAMEDATA * pGame) {
     while (pNextQuestData2) {
       D2QuestTimerStrc* pDVar1;
       pDVar1 = pNextQuestData2->pNext;
-      D2_FREE_POOL(pGame->pMemoryPool, pNextQuestData2);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pNextQuestData2, ".\\QUESTS\\QUESTS.CPP", 0x1e8);
       pNextQuestData2 = pDVar1;
     }
 
     D2Common::QuestRecord::FreeQuestRecordPool(pGame->pMemoryPool, pMemoryToFree->pQuestFlags);
-    D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+    D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\QUESTS\\QUESTS.CPP", 0x1ec);
 }
 
 D2SeedStrc * __fastcall GetQuestControlSeed(::SGAMEDATA * pGame) {
@@ -310,7 +309,7 @@ D2SeedStrc * __fastcall GetQuestControlSeed(::SGAMEDATA * pGame) {
     exit(-1);
 }
 
-void __stdcall QUEST_DispatchBroadcast(bool bFlag1, bool bFlag2, D2QuestArgStrc * pQuestArg) {
+static void __stdcall QUEST_DispatchBroadcast(bool bFlag1, bool bFlag2, D2QuestArgStrc * pQuestArg) {
     eD2LevelId eLevelId;
     BOOL bIsBadPtr;
     D2QuestControlStrc* pQuestControl = pQuestArg->pGame->pQuestControl;
@@ -342,7 +341,7 @@ void __stdcall QUEST_DispatchBroadcast(bool bFlag1, bool bFlag2, D2QuestArgStrc 
     }
 }
 
-void __stdcall QUEST_DispatchToUnit(D2UnitStrc * pUnit, D2QuestArgStrc * pCall) {
+static void __stdcall QUEST_DispatchToUnit(D2UnitStrc * pUnit, D2QuestArgStrc * pCall) {
     BOOL bIsBadPtr;
     D2UnitQuestDataListStrc* pList = pCall->pTarget->uSideData.pServerSide.pQuestEventList;
     do {
@@ -453,7 +452,7 @@ void __fastcall QUEST_OnMonsterKilled(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
     QUEST_DispatchToUnit(pKiller, &questArg2);
 }
 
-void __stdcall QUEST_OnPlayerEnteredArea(::SGAMEDATA * pGame, int32_t ePreviousLevelId, int32_t eEnteredLevelId, D2UnitStrc * pUnit) {
+void __fastcall QUEST_OnPlayerEnteredArea(::SGAMEDATA * pGame, int32_t ePreviousLevelId, int32_t eEnteredLevelId, D2UnitStrc * pUnit) {
     D2QuestArgStrc questArg;
     // Zeroed deliberately. Every one of these builders leaves part of the struct unwritten
     // and QUEST_DispatchBroadcast dereferences pGame and pPlayer - it crashed in UNITS_GetRoom on a
@@ -568,7 +567,7 @@ void __fastcall QUEST_OnNpcInteraction(D2ClientStrc * pClient, D2UnitStrc * pUni
 //   MOV [EBP-0x14],EAX  -> questArg.pTarget (the one stack argument, [EBP+8])
 //   MOV [EBP-0x10],EDX  -> questArg.pPlayer (EDX)
 // Declaring only the stack argument left pGame and pPlayer as uninitialised locals and split the struct into loose dwTmp slots, so the broadcast received a garbage game pointer and a garbage player.
-void __stdcall QUEST_OnNpcDeactivate(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D2UnitStrc * pTarget) {
+void __fastcall QUEST_OnNpcDeactivate(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D2UnitStrc * pTarget) {
     D2QuestArgStrc DStack_20;
     DStack_20.pTarget = pTarget;
     DStack_20.nEvent = 2;
@@ -648,11 +647,11 @@ void __fastcall QUEST_ProcessQuestTimers(::SGAMEDATA * pGame) {
         if (bTimerDone == '\x01') {
           if (!pPrevTimer) {
             pQuestControl->pTimer = pMemoryToFree->pNext;
-            D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+            D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\QUESTS\\QUESTS.CPP", 0x3f7);
             pMemoryToFree = 0;
           } else {
             pPrevTimer->pNext = pMemoryToFree->pNext;
-            D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+            D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\QUESTS\\QUESTS.CPP", 0x3fe);
             pMemoryToFree = pPrevTimer;
           }
         } else {
@@ -676,7 +675,7 @@ void __fastcall AddQuestTimer(D2QuestDataStrc * pQuestData, QUESTUPDATE fpQuestU
     }
 
     D2QuestTimerStrc* pExistingTimer = pQuestControl->pTimer;
-    D2QuestTimerStrc* pNewTimer = D2_NEW_POOL(pQuestData->pGame->pMemoryPool, D2QuestTimerStrc);
+    D2QuestTimerStrc* pNewTimer = D2_NEW_POOL_AT(pQuestData->pGame->pMemoryPool, D2QuestTimerStrc, ".\\QUESTS\\QUESTS.CPP", 0x41a);
     pNewTimer->pNext = pExistingTimer;
     pNewTimer->pfUpdate = fpQuestUpdate;
     pNewTimer->pQuest = pQuestData;
@@ -742,7 +741,7 @@ void __fastcall QUEST_DebugPrint(::SGAMEDATA * pGame, char * szMessage, char * s
 }
 
 // @sourcefile .\QUESTS\QUESTS.CPP
-void __stdcall QUEST_RemoveItemFromInventory(D2InventoryStrc * pInventory, D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pItem) {
+static void __stdcall QUEST_RemoveItemFromInventory(D2InventoryStrc * pInventory, D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pItem) {
     eD2ItemAnimMode eItemMode;
     int32_t dwXPos;
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\QUESTS\\QUESTS.CPP", 0x534);
@@ -875,14 +874,11 @@ void __fastcall QUEST_SetStateAndBroadcast(D2QuestDataStrc * pQuestData, uint8_t
 
 void __fastcall QUEST_SetStateFlag(D2QuestDataStrc * pQuestData, int32_t nState, char * szSourceFile, uint32_t nSourceLine) {
     char szDebugMsg[128];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ pQuestData->nStateFlag = (uint8_t)nState;
     wsprintfA(szDebugMsg, "changing state to %d\n", nState);
     if (DEBUGPRINT) {
       PLAYER::PlayerMsg::PrepareClientMessage(pQuestData->pGame, szDebugMsg, 4);
     }
-
-    Fog::Debug::GuardStack();
 }
 
 void __fastcall QUEST_OnNpcGossip(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, uint32_t nNpcGUID, uint32_t nGossipIndex) {
@@ -905,7 +901,7 @@ void __fastcall QUEST_OnNpcGossip(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, uin
     QUEST_DispatchBroadcast(true, true, &questArg);
 }
 
-void QUEST_ResetQuestDataForReconnect(eD2QuestsInternal nQuestNoInternal, ::SGAMEDATA * pGame) {
+static void QUEST_ResetQuestDataForReconnect(eD2QuestsInternal nQuestNoInternal, ::SGAMEDATA * pGame) {
     if ((int)nQuestNoInternal < 0) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x77);
       exit(-1);
@@ -945,24 +941,24 @@ uint32_t __stdcall CheckIntroductionFlagByInternalQuestId(::SGAMEDATA * pGame, e
       exit(-1);
     } else {
       D2QuestDataStrc* pQuestData;
-      if (pGame->pQuestControl->bPickedSet) {
-        pQuestData = pGame->pQuestControl->pQuestData;
-        while (true) {
-          if (!pQuestData) {
-            return 1;
-          }
-          if (pQuestData->nQuestNoInternal == nQuestNoInternal) {
-            break;
-          }
-
-          pQuestData = pQuestData->pPrev;
-        }
-
-        return (uint32_t)pQuestData->bIsNotIntroduction;
+      if (!pGame->pQuestControl->bPickedSet) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7c5);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7c5);
-      exit(-1);
+      pQuestData = pGame->pQuestControl->pQuestData;
+      while (true) {
+        if (!pQuestData) {
+          return 1;
+        }
+        if (pQuestData->nQuestNoInternal == nQuestNoInternal) {
+          break;
+        }
+
+        pQuestData = pQuestData->pPrev;
+      }
+
+      return (uint32_t)pQuestData->bIsNotIntroduction;
     }
 }
 
@@ -976,7 +972,6 @@ void __fastcall NET_D2GS_SERVER_Send_0x29_GAMEQUESTRECORD_Prepare(::SGAMEDATA * 
     sPacket0x29.nPacketId = 0x29;
     D2Common::QuestRecord::CopyQuestBitBuffer(pGame->pQuestControl->pQuestFlags, sPacket0x29.szQuestBits, 0x60, 0);
     GAME::SCmd::NET_D2GS_SERVER_Send_0x29_GAMEQUESTRECORD(pClient, &sPacket0x29.nPacketId);
-    Fog::Debug::GuardStack();
 }
 
 // Server-side handler that determines whether an NPC wants to initiate a quest interaction with a player unit. Validates that pUnit is a player and that the target NPC's MonStats.interact flag is set. Iterates the game's quest list for the player's current act; for each quest calls fpActiveFilter to check eligibility against the player's quest record. On first match, sends packet 0x8A (NpcWantsInteract) to the client and returns 1. Triggers fatal error if called with bad state (null quest-set, bad function pointer, null player data, null quest record).
@@ -1498,7 +1493,7 @@ void __stdcall QUEST_MarkNPCsAsIntroduced(::SGAMEDATA * pGame, int32_t pNpcIdArr
 }
 
 // Marks all NPCs in the destination act as already-introduced (spoken-with) for pUnit when an act transition occurs. Switches on eActNo (ACT_I through ACT_V; ACT_IV is a no-op) and iterates the corresponding NPCINTRO_ListActN table, calling INTRONPC_SetSpokenWithNPC_Intro2 for each entry. Ensures the player does not see first-meeting NPC intros upon entering the new act.
-void QUEST_GrantActTransitionReward(eAct eActNo, ::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+static void QUEST_GrantActTransitionReward(eAct eActNo, ::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2UnitDataPlayerStrc* pPlayerData;
     int* pNpcListIter;
     D2UnitDataPlayerInteractedNPCStrc* pInteractedNPCs;
@@ -1550,7 +1545,7 @@ void QUEST_GrantActTransitionReward(eAct eActNo, ::SGAMEDATA * pGame, D2UnitStrc
     }
 }
 
-BOOL __stdcall INTRONPC_FillInPacketWithIntroNpcIds(D2UnitDataPlayerInteractedNPCStrc * pInteractedNPCs, int * aNpcList, int32_t nListSize, D2GSPacketSrv0x91 * pD2GSPacketSrv0x91) {
+static BOOL __stdcall INTRONPC_FillInPacketWithIntroNpcIds(D2UnitDataPlayerInteractedNPCStrc * pInteractedNPCs, int * aNpcList, int32_t nListSize, D2GSPacketSrv0x91 * pD2GSPacketSrv0x91) {
     short int* pNpcIdSlot = (short int*)pD2GSPacketSrv0x91->nNpcID;
     pNpcIdSlot[0] = 0xffff;
     pNpcIdSlot[1] = 0xffff;
@@ -1610,7 +1605,6 @@ BOOL __fastcall INTRONPC_FillInPacketWithIntroNpcIdsInAct(::SGAMEDATA * pGame, D
       break;
       default:
         {
-          Fog::Debug::GuardStack();
           return (BOOL)(uintptr_t)pInteractedNPCs;
         }
       case ACT_V:
@@ -1629,7 +1623,6 @@ BOOL __fastcall INTRONPC_FillInPacketWithIntroNpcIdsInAct(::SGAMEDATA * pGame, D
       pInteractedNPCs = pInteractedNPCsAfterSend;
     }
 
-    Fog::Debug::GuardStack();
     return (BOOL)(uintptr_t)pInteractedNPCs;
 }
 
@@ -2264,7 +2257,7 @@ void __fastcall AllocQuestControl(::SGAMEDATA * pGame) {
       BOOL bBadCodePtr;
       pQuestData = 0;
       do {
-        pMemory = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataStrc);
+        pMemory = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataStrc, ".\\QUESTS\\QUESTS.CPP", 0x195);
         byActNo = (uint8_t)aQuestInitDataExtended[nIndex].nAct;
         nSimpleActNo = aQuestInitDataExtended[nIndex].nQuestNoInternal;
         memset(pMemory, 0, 0xf8);
@@ -2295,7 +2288,7 @@ void __fastcall AllocQuestControl(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pSimpleQuestData = pMemory;
     if (0 < nQuestDataSimpleSize) {
       do {
-        pSimpleQuestData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataStrc);
+        pSimpleQuestData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataStrc, ".\\QUESTS\\QUESTS.CPP", 0x1a1);
         memset(pSimpleQuestData, 0, 0xf8);
         pSimpleQuestData->nQuestNoInternal = nIndex + QUESTINT_SimpleQuest1;
         pSimpleQuestData->pGame = pGame;
@@ -2320,7 +2313,7 @@ void __fastcall AllocQuestControl(::SGAMEDATA * pGame) {
       } while (nIndex < nQuestDataSimpleSize);
     }
 
-    D2QuestControlStrc* pQuestControl = D2_NEW_POOL(pGame->pMemoryPool, D2QuestControlStrc);
+    D2QuestControlStrc* pQuestControl = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestControlStrc, ".\\QUESTS\\QUESTS.CPP", 0x1b2);
     pQuestControl->bPickedSet = 0;
     pQuestControl->pQuestData = pSimpleQuestData;
     pQuestControl->pTimer = 0;
@@ -2364,7 +2357,7 @@ void RemoveQuestTimer(D2QuestDataStrc * pQuestData, QUESTUPDATE pQuestUpdate, ::
           pPrevTimer->pNext = pMemoryToFree->pNext;
         }
 
-        D2_FREE_POOL(pQuestData->pGame->pMemoryPool, pMemoryToFree);
+        D2_FREE_POOL_AT(pQuestData->pGame->pMemoryPool, pMemoryToFree, ".\\QUESTS\\QUESTS.CPP", 0x43e);
         return;
       }
 
@@ -2496,8 +2489,6 @@ void __fastcall RefreshQuestDataForUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
 
       GAME::SCmd::NET_D2GS_SERVER_Send_0x52_PlayerQuestLog(pClientData, &__frame0.byMsgId52);
     }
-
-    Fog::Debug::GuardStack();
 }
 
 // Server-side quest initialization run when a player joins/enters the game. On first call (bPickedSet==0) it picks the quest set: for fresh games (nExperienceFrame==0) handles reconnect carry-over of completed quests (gbQuestReconnectMode), fires each quest's join-init handler (state-fn index 0xD), then runs the act-quest sequence filters (Den of Evil, Radament, Golden Bird, Fallen Angel, Siege/Haggorath) via fpSequenceFilter. On subsequent calls fires handler index 0xE. Always sends the client its quest UI state: 0x5E (quest availability per extended quest's bIsNotIntroduction), 0x28 (PlayerQuestInfo from the difficulty's quest record), 0x29 (quest-log prep), and 0x89 (unique events) if Den-of-Evil QuestDataBool is set. Halts via ERROR_UnrecoverableInternalError on bad handler pointers.
@@ -2589,7 +2580,6 @@ void __fastcall QUEST_OnPlayerJoinGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
           while (pQuestDataIter->nQuestNoInternal != QUESTINT_DenOfEvil) {
             pQuestDataIter = pQuestDataIter->pPrev;
             if (!pQuestDataIter) {
-              Fog::Debug::GuardStack();
               return;
             }
           }
@@ -2603,7 +2593,6 @@ void __fastcall QUEST_OnPlayerJoinGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
         }
       }
 
-      Fog::Debug::GuardStack();
       return;
     }
 
@@ -2722,13 +2711,13 @@ void __fastcall QUEST_OnPlayerJoinGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
             pQuestDataIter = 0;
             run_siege_filter:
             /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)pQuestDataIter->fpSequenceFilter);
-            if (!bBadCodePtr) {
-              pQuestDataIter->fpSequenceFilter(pQuestDataIter);
-              goto send_quest_state;
+            if (bBadCodePtr) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x65a);
+              exit(-1);
             }
 
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x65a);
-            exit(-1);
+            pQuestDataIter->fpSequenceFilter(pQuestDataIter);
+            goto send_quest_state;
           } else {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x656);
             exit(-1);
@@ -3304,7 +3293,7 @@ void __fastcall QUEST_JerhynNpcAILogic(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     *pdwParam2 = 0;
 }
 
-void CreateSealGlow(D2ObjectOperateFnArg * pOperateArg, POINT * pPoint, int32_t nParam) {
+static void CreateSealGlow(D2ObjectOperateFnArg * pOperateArg, POINT * pPoint, int32_t nParam) {
     int32_t nCollisionMask;
     LONG nY = pPoint->y;
     D2RoomStrc* pVictimRoom = D2Common::Units::UNITS_GetRoom(pOperateArg->sArg.pVictim);

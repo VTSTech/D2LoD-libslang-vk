@@ -25,12 +25,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -248,25 +248,25 @@ void __stdcall CopyCharListToGlobal(char * pBytes, size_t nSize) {
     uint32_t nCharCount;
     char byChar;
     if (D2Client::MCP::CharListPacket) {
-      D2_FREE(D2Client::MCP::CharListPacket);
+      D2_FREE_AT(D2Client::MCP::CharListPacket, ".\\Src\\McpConnect.cpp", 0x21e);
       D2Client::MCP::CharListPacket = 0;
     }
     if (!nSize) {
       return;
     }
 
-    D2Client::MCP::CharListPacket = D2_ALLOC(nSize);
+    D2Client::MCP::CharListPacket = D2_ALLOC_AT(nSize, ".\\Src\\McpConnect.cpp", 0x227);
     memcpy(D2Client::MCP::CharListPacket, pBytes, nSize);
     if (*pBytes == '\x17') {
       if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 1) < 0x100) {
         if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 3) < 0x100) {
           if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 5) < 0x100) {
-            if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 7) < 0x100) {
-              return;
+            if (!(*(uint16_t*)((int)D2Client::MCP::CharListPacket + 7) < 0x100)) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x236);
+              exit(-1);
             }
 
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x236);
-            exit(-1);
+            return;
           } else {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x235);
             exit(-1);
@@ -283,19 +283,19 @@ void __stdcall CopyCharListToGlobal(char * pBytes, size_t nSize) {
       if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 1) < 0x100) {
         if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 3) < 0x100) {
           if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 5) < 0x100) {
-            if (*(uint16_t*)((int)D2Client::MCP::CharListPacket + 7) < 0x100) {
-              pszCursor = (char*)((int)D2Client::MCP::CharListPacket + 9);
-              for (nCharCount = (uint32_t)*(uint16_t*)((int)D2Client::MCP::CharListPacket + 7); nCharCount; nCharCount--) {
-                pszCursor += 4;
-                pszCursor = pszCursor + strlen(pszCursor) + 1;
-                pszCursor = pszCursor + strlen(pszCursor) + 1;
-              }
-
-              return;
+            if (!(*(uint16_t*)((int)D2Client::MCP::CharListPacket + 7) < 0x100)) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x245);
+              exit(-1);
             }
 
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x245);
-            exit(-1);
+            pszCursor = (char*)((int)D2Client::MCP::CharListPacket + 9);
+            for (nCharCount = (uint32_t)*(uint16_t*)((int)D2Client::MCP::CharListPacket + 7); nCharCount; nCharCount--) {
+              pszCursor += 4;
+              pszCursor = pszCursor + strlen(pszCursor) + 1;
+              pszCursor = pszCursor + strlen(pszCursor) + 1;
+            }
+
+            return;
           } else {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x244);
             exit(-1);
@@ -410,7 +410,7 @@ void __stdcall MCPCONNECT_CreateThread(uint32_t * pSrcState) {
     MCPThread = CreateThread((LPSECURITY_ATTRIBUTES)0x0, 0, (LPTHREAD_START_ROUTINE)ThreadHandler, (LPVOID)0x0, 0, (LPDWORD)&pSrcState);
 }
 
-char * __stdcall STRING_GetStringLength(char * szText, char * * ppszText, char * pszBufferEnd, int32_t nParam) {
+static char * __stdcall STRING_GetStringLength(char * szText, char * * ppszText, char * pszBufferEnd, int32_t nParam) {
     int nCopyDelta;
     char byChar;
     char* pcVar1 = szText + 1;
@@ -1122,7 +1122,12 @@ void __stdcall MCPCONNECT_SanitizeWideString(uint16_t * wszText) {
     uint16_t* wszMatch;
     int32_t iVar1;
     int32_t nLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
-    if (nLen < 500) {
+    if (!(nLen < 500)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x342);
+      exit(-1);
+    }
+
+    {
       uint16_t* wszToken;
       wszToken = D2Lang::StrTable::strtable::GetLocaleString(0xf9a);
       nLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszToken);
@@ -1135,9 +1140,6 @@ void __stdcall MCPCONNECT_SanitizeWideString(uint16_t * wszText) {
 
       return;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x342);
-    exit(-1);
 }
 
 // MCP 0x05 reply handler = REALM GAMELIST entry (one game per packet) AND join-info.

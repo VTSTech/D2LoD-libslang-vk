@@ -24,19 +24,18 @@
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgCoordsStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2DrlgAnimTileGridStrc) == 0x14, "D2_NEW(D2DrlgAnimTileGridStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2DrlgAnimTileGridStrc) == 0x14, "D2_NEW_AT(D2DrlgAnimTileGridStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
 
 
 namespace D2Common::Drlg::DrlgAnim {
@@ -114,7 +113,7 @@ void __fastcall DRLGROOMTILE_CountAnimTilesFromGrid(D2RoomExStrc * pRoomEx, D2Dr
     } while (nKillEdgeY < nCellY);
 }
 
-void AnimateTile(D2RoomExStrc * pRoomEx) {
+static void AnimateTile(D2RoomExStrc * pRoomEx) {
     D2DrlgAnimTileGridStrc* pAnimTile;
     int* dwTmp;
     if (!(pRoomEx->eRoomExFlags & 0x8000000U && pRoomEx->pRoomTiles)) {
@@ -171,7 +170,6 @@ void __fastcall DRLGANIM_AllocAnimatedTiles(D2DrlgGridStrc * pGrids, D2RoomExStr
     int nWorldPosX;
     int* pTileEntryPtr;
     D2RoomExStrc* pRoomExIter;
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     D2PoolManagerStrc* pMemory = pRoomEx->pLevel->pDrlg->pMemoryPool;
     D2DrlgGridStrc* pGridsCtx = pGrids;
     D2RoomExStrc* pRoomExCtx = pRoomEx;
@@ -199,13 +197,13 @@ void __fastcall DRLGANIM_AllocAnimatedTiles(D2DrlgGridStrc * pGrids, D2RoomExStr
               }
 
               nMatchCount = D2CMP::DUNGEON::Dungeon::TILEPROJECT_LookupTilesInAllProjects(pRoomExIter->apTiles, pTileEntryIter[1], (uint32_t)nOrientation, nIndex & 0xff, aTileResults, 0x28);
-              pAnimTileGrid = D2_NEW_POOL(pMemory, D2DrlgAnimTileGridStrc);
+              pAnimTileGrid = D2_NEW_POOL_AT(pMemory, D2DrlgAnimTileGridStrc, ".\\DRLG\\DrlgAnim.cpp", 0x9b);
               pAnimTileGrid->ppTileData = 0;
               pAnimTileGrid->nFrameStep = 0;
               pAnimTileGrid->pNext = 0;
               pAnimTileGrid->nFrames = nMatchCount;
               pAnimTileGrid->nCurrentFrame = 0;
-              pAllocated = (D2DrlgTileDataStrc**)D2_ALLOC_POOL(pMemory, nMatchCount * 4);
+              pAllocated = (D2DrlgTileDataStrc**)D2_ALLOC_POOL_AT(pMemory, nMatchCount * 4, ".\\DRLG\\DrlgAnim.cpp", 0xa1);
               pAnimTileGrid->ppTileData = pAllocated;
               memset(pAllocated, 0, nMatchCount * 4);
               pAnimTileGrid->nFrameStep = nFrameStep;
@@ -286,8 +284,6 @@ void __fastcall DRLGANIM_AllocAnimatedTiles(D2DrlgGridStrc * pGrids, D2RoomExStr
         } while (i < nTileCount);
       }
     }
-
-    Fog::Debug::GuardStack();
 }
 
 // Wrapper calling DRLGANIM_AllocAnimatedTiles for wall/floor/shadow.

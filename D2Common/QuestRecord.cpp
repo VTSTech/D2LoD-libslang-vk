@@ -11,18 +11,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2BitBufferStrc) == 0x14, "D2_NEW(D2BitBufferStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2BitBufferStrc) == 0x14, "D2_NEW_AT(D2BitBufferStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -72,8 +72,8 @@ void __stdcall UnsetQuestStepStates(D2BitBufferStrc * pBitBuffer, eD2Quests nQue
 
 // @sourcefile .\QuestRecord\QuestRecord.cpp
 D2BitBufferStrc * __stdcall CreateBitBuffer(D2PoolManagerStrc * pMemory) {
-    D2BitBufferStrc* pBitBuffer = D2_NEW_POOL(pMemory, D2BitBufferStrc);
-    uint8_t* pBytes = (uint8_t*)D2_ALLOC_POOL(pMemory, 0x60);
+    D2BitBufferStrc* pBitBuffer = D2_NEW_POOL_AT(pMemory, D2BitBufferStrc, ".\\QuestRecord\\QuestRecord.cpp", 0x50);
+    uint8_t* pBytes = (uint8_t*)D2_ALLOC_POOL_AT(pMemory, 0x60, ".\\QuestRecord\\QuestRecord.cpp", 0x51);
     memset(pBytes, 0, 0x60);
     Fog::BitBuffer::InitBitBuffer(pBitBuffer, pBytes, 0x60);
     return pBitBuffer;
@@ -85,8 +85,8 @@ void __stdcall FreeQuestRecordPool(D2PoolManagerStrc * pMemory, D2BitBufferStrc 
       return;
     }
 
-    D2_FREE_POOL(pMemory, pBitBuffer->pBuffer);
-    D2_FREE_POOL(pMemory, pBitBuffer);
+    D2_FREE_POOL_AT(pMemory, pBitBuffer->pBuffer, ".\\QuestRecord\\QuestRecord.cpp", 0x60);
+    D2_FREE_POOL_AT(pMemory, pBitBuffer, ".\\QuestRecord\\QuestRecord.cpp", 0x61);
 }
 
 // Copies the 0x60-byte quest record from szText into pBitBuffer (0x18 dwords; halts if nSize != 0x60). If nParam is non-zero, for each 16-bit quest slot (bit offsets 0..0x2ae, stride 16) clears QUESTSTATE_JustCompleted (13) and QUESTSTATE_CannotCompleteQuestInGame (14) and sets QUESTSTATE_FinishedInPreviousGame (15) when QUESTSTATE_RewardAwaits (1) is set.

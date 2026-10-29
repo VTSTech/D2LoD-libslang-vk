@@ -18,8 +18,8 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
 
@@ -136,7 +136,7 @@ void __fastcall SpawnRandomPreset(D2DrlgLevelStrc * pLevel, int32_t nLevelPrestI
     }
 
     void* pMemoryToFree;
-    pMemoryToFree = D2_ALLOC_POOL(pMemory, nTotalCells * 8);
+    pMemoryToFree = D2_ALLOC_POOL_AT(pMemory, nTotalCells * 8, ".\\DRLG\\OutJung.cpp", 0xcb);
     nLevelPrestId2 = 0;
     if (0 < (int)nTotalCells) {
       do {

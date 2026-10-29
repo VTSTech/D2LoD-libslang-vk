@@ -8,12 +8,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -29,7 +29,7 @@ int __fastcall GLTEXCACHE_Initialize(GlTextureCacheStrc * pCache, int nVramStart
     pCache->dwEntrySize = dwTextureSize;
     size_t nAllocSize = nEntryCount * 0x1c;
     pCache->nMaxEntries = nEntryCount;
-    uint8_t* pNodeArray = (uint8_t*)D2_ALLOC(nAllocSize);
+    uint8_t* pNodeArray = (uint8_t*)D2_ALLOC_AT(nAllocSize, ".\\Src\\glTextureCache.cpp", 0x2d);
     pCache->pNodes = pNodeArray;
     memset(pNodeArray, 0, nAllocSize);
     int iNode = 0;
@@ -96,7 +96,7 @@ int __fastcall GLTEXCACHE_Initialize(GlTextureCacheStrc * pCache, int nVramStart
 }
 
 // Appends texture cache node to tail of active LRU list (most-recently-used position). Creates list if empty, otherwise links to existing tail.
-void GLTEXCACHE_AppendNodeToTail(GlTextureCacheStrc * pCache, GlTextureCacheNodeStrc * pNode) {
+static void GLTEXCACHE_AppendNodeToTail(GlTextureCacheStrc * pCache, GlTextureCacheNodeStrc * pNode) {
     if (!pCache->pActiveHead) {
       pCache->pActiveHead = (uint8_t*)pNode;
       pCache->pActiveTail = (uint8_t*)pNode;
@@ -149,7 +149,7 @@ GlTextureCacheNodeStrc * __fastcall GLTEXCACHE_RemoveNodeByIndex(GlTextureCacheS
 }
 
 // Allocates node from free list and moves to active list tail (MRU position). Returns 1-based node index on success, 0 if cache full. Halts with error 0xc1 if free list unexpectedly empty.
-int GLTEXCACHE_AllocateNode(GlTextureCacheStrc * pCache) {
+static int GLTEXCACHE_AllocateNode(GlTextureCacheStrc * pCache) {
     if (pCache->nUsedCount == pCache->nMaxEntries) {
       return 0;
     }
@@ -198,14 +198,14 @@ void __fastcall GLTEXCACHE_PromoteNodeToMRU(GlTextureCacheStrc * pCache, int nNo
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdf);
       exit(-1);
     } else {
-      if (0 < nNodeIndex1Based) {
-        pNode = GLTEXCACHE_RemoveNodeByIndex(pCache, nNodeIndex1Based - 1);
-        GLTEXCACHE_AppendNodeToTail(pCache, pNode);
-        return;
+      if (!(0 < nNodeIndex1Based)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe0);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe0);
-      exit(-1);
+      pNode = GLTEXCACHE_RemoveNodeByIndex(pCache, nNodeIndex1Based - 1);
+      GLTEXCACHE_AppendNodeToTail(pCache, pNode);
+      return;
     }
 }
 
@@ -260,7 +260,7 @@ void __fastcall GLTEXCACHE_Destroy(GlTextureCacheStrc * pCacheData, GlTextureCac
       }
     }
     if (pCacheData->pNodes) {
-      D2_FREE(pCacheData->pNodes);
+      D2_FREE_AT(pCacheData->pNodes, ".\\Src\\glTextureCache.cpp", 0x7f);
       pCacheData->pNodes = 0;
     }
 

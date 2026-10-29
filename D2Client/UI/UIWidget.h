@@ -14,7 +14,7 @@ struct UIWidget;
 namespace D2Client::UI {
 
 // Function declarations
-::UIWidget * Constructor(::UIWidget * pThis);
-void Destructor(::UIWidget * pThis);
+::UIWidget * __thiscall Constructor(::UIWidget * pThis);
+void __thiscall Destructor(::UIWidget * pThis);
 
 } // namespace D2Client::UI

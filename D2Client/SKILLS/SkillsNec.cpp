@@ -131,7 +131,7 @@ BOOL __fastcall Skills_CltDoFunc_Nec_CurseCenter_StreamMissile(D2UnitStrc * pUni
 }
 
 // Client-side: spawns a single Bone Wall/Prison missile segment at the correct orientation. Gets target coords via GetCooordinates, computes delta from caster to target and distance, calculates a normalized direction for the wall segment. Fills D2SkillArgStrc with the given eMissileId, eSkill, nParam (as nToHit), nFlags=3, and perpendicular velocity components. After MakeMissile, sets the missile's facing via PATH_SetNewDirection to point toward the target. Returns 1 on success, 0 if coords unavailable or missile allocation failed.
-uint32_t __stdcall SKILLSNEC_CltSetBoneWallGfx(eD2Skills eSkill, int32_t nParam, eMissilesId eMissileId, D2UnitStrc * pUnit) {
+static uint32_t __stdcall SKILLSNEC_CltSetBoneWallGfx(eD2Skills eSkill, int32_t nParam, eMissilesId eMissileId, D2UnitStrc * pUnit) {
     int nDeltaX;
     int nNormDeltaX;
     int nDeltaY;

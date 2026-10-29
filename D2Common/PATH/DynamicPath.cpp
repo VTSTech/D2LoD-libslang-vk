@@ -45,20 +45,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2DynamicPathStrc) == 0x200, "D2_NEW(D2DynamicPathStrc): the 32-bit layout must be the 0x200 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2DynamicPathStrc) == 0x200, "D2_NEW_AT(D2DynamicPathStrc): the 32-bit layout must be the 0x200 bytes 1.14d allocates");
 
 
 namespace D2Common::PATH::DynamicPath {
 
-int32_t PATH_GetCollisionPatternFromMonStats(D2UnitStrc * pUnit) {
+static int32_t PATH_GetCollisionPatternFromMonStats(D2UnitStrc * pUnit) {
     D2MonStatsTxt* pMonStatsTxt;
     int nMonStatsIdx;
     if (!pUnit || (nMonStatsIdx = pUnit->nClassId , nMonStatsIdx < 0) || sgptDataTable->nTxtMonStatsSize <= nMonStatsIdx) {
@@ -299,42 +299,42 @@ void __stdcall SetDirectionAndNewDirection(D2DynamicPathStrc * pDynamicPath, uin
 }
 
 int32_t __stdcall GetXPos(D2DynamicPathStrc * pDynamicPath) {
-    if (pDynamicPath) {
-      return (uint32_t)(uint16_t)pDynamicPath->Coords.tSubtile.nPosX;
+    if (!pDynamicPath) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x692);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x692);
-    exit(-1);
+    return (uint32_t)(uint16_t)pDynamicPath->Coords.tSubtile.nPosX;
     return (uint32_t)(uint16_t)pDynamicPath->Coords.tSubtile.nPosX;
 }
 
 int32_t __stdcall GetYPos(D2DynamicPathStrc * pDynamicPath) {
-    if (pDynamicPath) {
-      return (uint32_t)(uint16_t)pDynamicPath->Coords.tSubtile.nPosY;
+    if (!pDynamicPath) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x69d);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x69d);
-    exit(-1);
+    return (uint32_t)(uint16_t)pDynamicPath->Coords.tSubtile.nPosY;
     return (uint32_t)(uint16_t)pDynamicPath->Coords.tSubtile.nPosY;
 }
 
 int32_t __stdcall GetPrecisionX(D2DynamicPathStrc * pDynamicPath) {
-    if (pDynamicPath) {
-      return pDynamicPath->Coords.tFixed.x;
+    if (!pDynamicPath) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 1704);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 1704);
-    exit(-1);
+    return pDynamicPath->Coords.tFixed.x;
     return pDynamicPath->Coords.tFixed.x;
 }
 
 int32_t __stdcall GetPrecisionY(D2DynamicPathStrc * pDynamicPath) {
-    if (pDynamicPath) {
-      return pDynamicPath->Coords.tFixed.y;
+    if (!pDynamicPath) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6b3);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6b3);
-    exit(-1);
+    return pDynamicPath->Coords.tFixed.y;
     return pDynamicPath->Coords.tFixed.y;
 }
 
@@ -585,12 +585,12 @@ void __stdcall PATH_SetPathType(D2DynamicPathStrc * pDynamicPath, int ePathType)
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x872);
         exit(-1);
       } else {
-        if (ePathType != 4 || pDynamicPath->nDistMax < 0x4e) {
-          return;
+        if (!(ePathType != 4 || pDynamicPath->nDistMax < 0x4e)) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x873);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x873);
-        exit(-1);
+        return;
       }
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x861);
@@ -852,7 +852,7 @@ uint32_t __stdcall PATH_HasRemainingDistance(D2DynamicPathStrc * pDynamicPath) {
 }
 
 // Attempts to build a single-step direct path from pDynamicPath's current position to its target unit. Snapshots the target's current X/Y into pDynamicPath-&gt;nTargetX/Y, validates both axes are within 99 units and non-zero, then writes a one-point path and advances along it. Sets flag bit 1 if the target falls outside the current room bounds. Returns dwPathPoints (1 on success, 0 on rejection).
-uint32_t PATH_BuildDirectPathToTarget(D2DynamicPathStrc * pDynamicPath) {
+static uint32_t PATH_BuildDirectPathToTarget(D2DynamicPathStrc * pDynamicPath) {
     short int sTargetY;
     int32_t nCoord;
     int32_t nRoomBound;
@@ -1132,7 +1132,7 @@ BOOL __stdcall PATH_RemoveUnitCollision(D2UnitStrc * pUnit, int32_t nParam) {
     return 1;
 }
 
-int32_t PATH_CalculateMissilePath(D2DynamicPathStrc * pDynamicPath, int32_t nParam) {
+static int32_t PATH_CalculateMissilePath(D2DynamicPathStrc * pDynamicPath, int32_t nParam) {
     uint32_t nPathPoints;
     int ePathType = pDynamicPath->ePathType;
     if (ePathType == 4) {
@@ -1161,7 +1161,7 @@ int32_t PATH_CalculateMissilePath(D2DynamicPathStrc * pDynamicPath, int32_t nPar
 }
 
 // Resolves the dynamic-path target position for pPathTypeArg's pTargetUnit. Reads the target's current X/Y (from static path for objects/tiles, dynamic path otherwise) into pDynamicPath->nTargetX/nTargetY. Returns 1 if there is no target unit; 0 if the resolved position is (0,0). For players/monsters applies a missile offset if set. For door objects, nudges the target +/-2 along X or Y depending on door orientation (so pathing aims to the open side), returning 2. Items and other handled unit types return 2. Halts via Fog ErrorManager if a unit it expects to be a door is not.
-uint8_t PATH_ResolveTargetPosition(D2PathTypeArg * pPathTypeArg, int32_t nDistMax) {
+static uint8_t PATH_ResolveTargetPosition(D2PathTypeArg * pPathTypeArg, int32_t nDistMax) {
     bool bIsDoor;
     eCollisionFlags sCoord;
     short int nTargetY;
@@ -1455,7 +1455,7 @@ void __stdcall PATH_UpdateCollisionWidth(D2UnitStrc * pUnit) {
 // Allocates and initializes the dynamic path structure for a unit. Allocates a 0x200-byte D2DynamicPathStrc from the server memory pool, zeroes it, links it to pUnit->pPath.pDynamicPath and sets pOwner, unit size/interact width, sub-tile world coords (centered at +0x8000) for (nX,nY), velocity 0x800 and the seed SaveCoords entry. Configures collision flags/pattern, path type and search params per eUnitType (PLAYER, MONSTER, MISSILE); monster branch derives the collision pattern from MonStats and halts via ErrorManager on invalid pet-path states. If pRoom is set, adds the unit's collision and registers it to the room; computes the screen position via DRLG_MapWorldToScreenCoords; sets flag 0x10 when nParam!=0.
 void __stdcall AllocDynamicPath(D2PoolManagerStrc * pMemory, D2RoomStrc * pRoom, int32_t nX, int32_t nY, D2UnitStrc * pUnit, int32_t nParam) {
     D2DynamicPathStrc* pDynamicPath;
-    pDynamicPath = D2_NEW_POOL(pMemory, D2DynamicPathStrc);
+    pDynamicPath = D2_NEW_POOL_AT(pMemory, D2DynamicPathStrc, ".\\PATH\\Path.cpp", 0x453);
     memset(pDynamicPath, 0, 0x200);
     D2UnitStrc* pUnit_00;
     pUnit_00 = pUnit;
@@ -1494,23 +1494,23 @@ void __stdcall AllocDynamicPath(D2PoolManagerStrc * pMemory, D2RoomStrc * pRoom,
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x871);
             exit(-1);
           } else {
-            if (pDynamicPath->dwPrevPathType != 8) {
-              nUnitWidth = D2Client::UNIT::Player::TXT_MonStats_GetBaseId(pUnit_00);
-              if (nUnitWidth < 0 || sgptDataTable->nTxtMonStatsSize <= nUnitWidth || nUnitWidth != 0x26) {
-                nUnitWidth = PATH_GetCollisionPatternFromMonStats(pUnit_00);
-                pDynamicPath->nCollisionPattern = nUnitWidth;
-                pDynamicPath->nDistMax = 0xe;
-              } else {
-                pUnit_00->pPath.pDynamicPath->nUnitWidth = 5;
-                pDynamicPath->nCollisionPattern = 0x804;
-                pDynamicPath->nDistMax = 0xe;
-              }
-
-              goto place_and_set_screen_pos;
+            if (pDynamicPath->dwPrevPathType == 8) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x872);
+              exit(-1);
             }
 
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x872);
-            exit(-1);
+            nUnitWidth = D2Client::UNIT::Player::TXT_MonStats_GetBaseId(pUnit_00);
+            if (nUnitWidth < 0 || sgptDataTable->nTxtMonStatsSize <= nUnitWidth || nUnitWidth != 0x26) {
+              nUnitWidth = PATH_GetCollisionPatternFromMonStats(pUnit_00);
+              pDynamicPath->nCollisionPattern = nUnitWidth;
+              pDynamicPath->nDistMax = 0xe;
+            } else {
+              pUnit_00->pPath.pDynamicPath->nUnitWidth = 5;
+              pDynamicPath->nCollisionPattern = 0x804;
+              pDynamicPath->nDistMax = 0xe;
+            }
+
+            goto place_and_set_screen_pos;
           }
         } else {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x861);

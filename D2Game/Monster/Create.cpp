@@ -100,7 +100,7 @@ void __fastcall MONSTER_SetClearPartyFlags(int32_t nParam, int * pnParam, uint32
     pPartySlot[1] = (int*)((uint32_t)pPartySlot[1] & ~dwFlagMask);
 }
 
-void __fastcall MONSTER_EquipFromClassTable(D2UnitStrc * pUnit) {
+static void __fastcall MONSTER_EquipFromClassTable(D2UnitStrc * pUnit) {
     int nClassId;
     D2MonEquipEntryStrc sEquipEntry;
     int bNormalCode;
@@ -135,7 +135,7 @@ void __fastcall MONSTER_EquipFromClassTable(D2UnitStrc * pUnit) {
 }
 
 // Called when a server monster is created (from CreateMonster) to wire up quest behavior based on the monster's base class id (resolved through MonStats BaseId). Dispatches per boss/quest-monster: attaches the relevant quest record to the unit (QUEST_AttachToUnitByQuestId, e.g. Andariel->SistersToTheSlaughter, Radament->RadamentsLair, Summoner->TheSummoner, Diablo->TerrorsEnd, Baal->EveOfDestruction, Izual->TheFallenAngel, Hephasto->HellsForge, Nihlathak->BetrayalOfHaggorath, Anya-on-mount->RescueOnMountArreat) and/or applies fixed monster umods via InitUmods, sets unit flags (SUMMONER, NOTC), or special-cases (NM/Hell clone ids 0x2c0-0x2c5 get extra umods; act bosses get equip/umods; Q12 death dispatch by position). No-op for ordinary monsters.
-void __fastcall MONSTER_OnCreateAttachQuests(D2UnknownCreateMonsterStrc * pQuestEventArg, D2UnitStrc * pMonster) {
+static void __fastcall MONSTER_OnCreateAttachQuests(D2UnknownCreateMonsterStrc * pQuestEventArg, D2UnitStrc * pMonster) {
     int32_t nMonsterClassId;
     eD2QuestsInternal nQuestNoInternal;
     int32_t nRawClassId;
@@ -299,7 +299,7 @@ void __fastcall MONSTER_OnCreateAttachQuests(D2UnknownCreateMonsterStrc * pQuest
 }
 
 // Applies hardcoded unique-modifier sets (umods) to specific monster class IDs at spawn time. Resolves the monster's BaseId first, then dispatches to InitUmods with a hardcoded umod index for a fixed set of class IDs (e.g. 0x18, 0x5b, 0x60, 0xd3, 0x146-0x14a, 0x162, 0x1b4, 0x1cd, 0x1f5, 0x21c-0x21e). Called via EDI/EAX custom calling convention (pUnit@EDI, pCreateData@EAX).
-void MONSTER_ApplySpecialUmods(D2UnitStrc * pUnit, D2UnknownCreateMonsterStrc * pCreateData) {
+static void MONSTER_ApplySpecialUmods(D2UnitStrc * pUnit, D2UnknownCreateMonsterStrc * pCreateData) {
     int32_t nClassId;
     nClassId = pCreateData->nClassId;
     ::SGAMEDATA* pGame;
@@ -653,7 +653,7 @@ BOOL __stdcall FindDiagonalNonCollisionCoords(D2RoomStrc * pRoom, int * pX, int 
 }
 
 // Spawns the initial minion pack for a monster whose MonStats entry defines minion1/minion2. Special-cases class 0x105 (uses AssignMinionOwner + SpawnMinions directly). For SetBoss monsters, assigns owner and interleaves spawns between minion1/minion2 type slots for a count drawn from PartyMin/PartyMax; registers each spawned minion via AssignMinionOwner + AddMinionToList. No-ops if the class id is out of range or MonStats is null.
-void MONSTER_SpawnMinionGroup(D2UnknownCreateMonsterStrc * pGame, D2UnitStrc * pUnit) {
+static void MONSTER_SpawnMinionGroup(D2UnknownCreateMonsterStrc * pGame, D2UnitStrc * pUnit) {
     eD2Skills eUpgradeSkill;
     eD2UnitType eUnitType;
     BOOL bMinionIsLeader;
@@ -1505,7 +1505,12 @@ BOOL __fastcall SpawnRandomMonster(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int3
     if (sCreateParams.nClassId == -1) {
       return 0;
     }
-    if (nMonSearchAttempts < (int)nLevelMonCount) {
+    if (!(nMonSearchAttempts < (int)nLevelMonCount)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x507);
+      exit(-1);
+    }
+
+    {
       D2UnitStrc* pSpawnedUnit;
       sCreateParams.pRoom = pRoomSaved;
       sCreateParams.nGUID = 0;
@@ -1519,9 +1524,6 @@ BOOL __fastcall SpawnRandomMonster(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int3
       pSpawnedUnit = CreateMonster(&sCreateParams);
       return (uint32_t)(pSpawnedUnit != 0);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x507);
-    exit(-1);
     return 0;
 }
 

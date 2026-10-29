@@ -18,7 +18,7 @@ uint32_t __fastcall STRING_CompareWideStrings(uint16_t * wszText1, uint16_t * ws
 int32_t __fastcall UNICODE_CompareWideStringsN(uint16_t * nParam1, uint16_t * nParam2, int32_t nMaxChars);
 int32_t __fastcall UNICODE_CompareWideStringsNoCase(uint16_t * pwszText1, uint16_t * pwszText2);
 uint32_t __fastcall UNICODE_CompareWideStringsNNoCase(uint16_t * pwszText1, uint16_t * pwszText2, int32_t nMaxChars);
-short * UNICODE_FindWideChar(void * pThis, int16_t wCharToFind);
+short * __thiscall UNICODE_FindWideChar(void * pThis, int16_t wCharToFind);
 uint16_t * __fastcall AppendToBuffer(uint16_t * wszText1, uint16_t * wszText2);
 void __fastcall UNICODE_AppendWideStringN(uint16_t * pwszDst, uint16_t * pwszSrc, int32_t nMaxChars);
 void __fastcall WSTRING_PutWideCharIntoBuffer(uint16_t * pDestination, uint16_t * wszChar, size_t nSizeMaybe);
@@ -26,19 +26,17 @@ uint16_t * __fastcall STRING_CopyWideString(uint16_t * wDestination, uint16_t * 
 int32_t __fastcall STRING_GetWideStringLength(uint16_t * wszString);
 uint16_t * __fastcall UNICODE_FindSubstringNoCase(uint16_t * pwszHaystack, uint16_t * pwszNeedle);
 uint16_t * __fastcall UNICODE_FindSubstring(uint16_t * pwszHaystack, uint16_t * pwszNeedle);
-void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszText1, uint16_t * wszText2, uint16_t * pArgs, ...);
+void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszDst, uint16_t * wszFmt, ...);
 BOOL __fastcall UNICODE_CheckLineBreakPosition(int32_t pWszText, int32_t nPos);
 void __fastcall STRING_ConvertCharToWchar(uint16_t * pwszBuffer, char * pszBuffer, int32_t nSize);
 uint16_t * __fastcall STRING_CopyCharToWCharWithSetMaxSize(uint16_t * pDestination, char * szSource, int32_t nSize);
 char * __fastcall UNICODE_WideToMultiByte(char * pszDst, uint16_t * pwszSrc, int32_t nSize);
 bool __fastcall UNICODE_CheckTrailingPunctuation(char * szSourceFile, uint16_t * pwChar);
-bool UNICODE_CheckLeadingPunctuation(char * pszTable, uint16_t * wszText);
 void __fastcall UNICODE_FormatPossessiveName(uint16_t * wszText1, uint16_t * wszText2, uint16_t * wszSuffix, int32_t nMaxChars, int32_t nLang);
 void UNICODE_FreeBuffer(void * pParam);
 void UNICODE_AllocBuffer(uint32_t nSize);
-void UNICODE_ReadByteRange(void * pThis, uint8_t * pByteRange);
-uint32_t UNICODE_CheckByteInRange(void * pThis, uint8_t byValue);
-int32_t UNICODE_IsControlChar(uint8_t byChar);
+void __thiscall UNICODE_ReadByteRange(void * pThis, uint8_t * pByteRange);
+uint32_t __thiscall UNICODE_CheckByteInRange(void * pThis, uint8_t byValue);
 void __stdcall UNICODE_FreeKamapTables();
 // @sourcefile .\Unicode\UNISYS.CPP
 void __fastcall UNICODE_LoadKamapFile(struct D2PoolManagerStrc * pMemory, char * szFilename);
@@ -50,6 +48,7 @@ uint32_t UNICODE_BinarySearchKamap(uint16_t wChar);
 uint16_t * __fastcall UNICODE_ConvertMultiByteToWide(uint16_t * wszText, uint8_t * pbParam, int32_t nSize);
 uint8_t * __fastcall UNICODE_ConvertWideToMultiByte(uint8_t * pParam, uint16_t * nParam, int32_t nSize);
 int32_t __fastcall UNICODE_GetMultiByteLength(uint16_t * wszText, int32_t nParam);
-char * __fastcall UNICODE_GetWideCharCount(char * szText, char * szSourceFile);
+int32_t __fastcall UNICODE_GetWideCharCount(char * szText, int32_t szSourceFile);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Lang::Unicode::UNISYS

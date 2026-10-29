@@ -21,14 +21,11 @@ struct __attribute__((packed)) D2WaypointListEntryStrc {
 namespace D2Client::UI::Waypoint {
 
 // Function declarations
-int32_t WAYPOINT_GetActIndexFromMouse(int32_t nMouseX, int32_t nMouseY);
-int32_t WAYPOINT_GetWaypointIndexFromMouse(int32_t nMouseX, int32_t nMouseY);
 void __stdcall DRAW_UI_WaypointGFXLoad();
 void __stdcall FreeUiImages();
 void __stdcall InitializeWaypoints();
 void __stdcall WAYPOINT_SendClosePacket();
 void __stdcall WAYPOINT_Shutdown();
-void Waypoint_SetWaypointArea(int32_t nAct);
 void __stdcall WAYPOINT_PopulateList();
 void __stdcall DRAW_UI_Waypoint();
 void __stdcall INPUT_WaypointTravel(struct D2UIMouseMsgStrc * pMsg);
@@ -36,5 +33,6 @@ void __stdcall WAYPOINT_SendOpenPacket();
 void __fastcall WAYPOINT_Init(int32_t pPacket);
 void __stdcall INPUT_WaypointMouseUp(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_WaypointMouseDown(struct D2UIMouseMsgStrc * pMsg);
+// 3 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::Waypoint

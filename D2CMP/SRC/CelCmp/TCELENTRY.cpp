@@ -11,7 +11,7 @@
 
 namespace D2CMP::SRC::CelCmp::TCELENTRY {
 
-::TCELENTRY * ScalarDeletingDestructor(::TCELENTRY * pThis, uint32_t dwFlags) {
+::TCELENTRY * __thiscall ScalarDeletingDestructor(::TCELENTRY * pThis, uint32_t dwFlags) {
     uint32_t uLinkOffset;
     TSLink<::TCELENTRY>* nNext = pThis->m_link.m_prevlink;
     if (nNext) {

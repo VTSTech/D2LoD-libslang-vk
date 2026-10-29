@@ -38,8 +38,6 @@ void AllocEmptyRoomCoordList_Unused(struct D2PoolManagerStrc * pMemory, struct D
 void __fastcall FreeDrlgCoordList(struct D2RoomExStrc * pRoomEx);
 // Replaces all references to pOrientationGrid with pFloorGrid in pRoomEx's coordinate list, then recursively propagates the replacement to all neighbouring RoomEx entries that share the same level ID. Used during DRLG map-generation to commit a floor-grid assignment across a connected tile group.
 void __fastcall InitializeDrlgCoordList(struct D2RoomExStrc * pRoomEx, int nMatchIndex, int nNewIndex, int bNode);
-// Sets grid flag 8 (door) for tiles with flag 4 and no orientation.
-void __stdcall DRLGLOGIC_SetGridDoorFlags(struct D2DrlgGridStrc * pGrid, struct D2RoomExStrc * pRoomEx);
 // Two-pass wall flagging for DRLG layout grids. First pass: iterates pRoomEx's own wall tile array and calls AlterGridFlag for tiles that are standard left-side wall type (nFlags bits 0x1c000==0x4000, tileType!=15, non-special). Second pass: checks neighbouring rooms' map-link tile chains for matching wall tiles that project into pRoomEx bounds, flagging them with coordinate-transformed positions.
 void __stdcall DRLGLOGIC_SetGridWallFlags(struct D2RoomExStrc * pRoomEx, struct D2DrlgGridStrc * pGrid);
 // Reads grid flags at each tile position and stores in tile entry offset +0x10.
@@ -59,12 +57,9 @@ int32_t __fastcall DRLG_ROOMEX_GetGridIndex(struct D2RoomExStrc * pRoomEx, int32
 // Converts subtile coords to world coords and looks up coord list entry.
 struct D2RoomCoordListStrc * __fastcall DRLGLOGIC_GetCoordListFromSubtilePos(struct D2RoomExStrc * pRoomEx, int32_t nX, int32_t nY);
 struct D2RoomCoordListStrc * __fastcall GetCoordList(struct D2RoomExStrc * pRoomEx);
-// Links the DRLG coordinate-list grids of two adjacent rooms at border point (nX,nY). Looks up each room's coord-list grid index at the border point, validates that both grids exist, are different, belong to the same level, and share the same node flag, then calls InitializeDrlgCoordList to merge them. Halts fatally if pSrcRoom has no coord list.
-void __stdcall DRLGLOGIC_LinkCoordListEntry(int32_t nY, int32_t nX, struct D2RoomExStrc * pNeighborRoom, struct D2RoomExStrc * pSrcRoom);
-// Links coord lists at boundaries between this room and its near rooms.
-void DRLGLOGIC_LinkBorderCoordLists(struct D2RoomExStrc * pRoomEx);
 // Allocates D2DrlgCoordListStrc, builds grid, populates coord list.
 // @sourcefile .\DRLG\DrlgLogic.cpp
 void __fastcall DRLGLOGIC_BuildRoomCoordList(struct D2RoomExStrc * pRoomEx, int nOrientGridFlags, int nFloorGridFlags, struct D2DrlgGridStrc * pGrid);
+// 3 internal functions (defined in .cpp)
 
 } // namespace D2Common::Drlg::DrlgLogic

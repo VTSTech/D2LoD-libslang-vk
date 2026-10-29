@@ -6,14 +6,13 @@
 #include "Fog/Engine/Application.h"
 #include "Fog/File.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
 namespace Fog::_3rdparty::crashy {
 
-::Report * Constructor(::Report * pThis) {
+::Report * __thiscall Constructor(::Report * pThis) {
     pThis->_vfptr = (ReportVtable*)(void*)crashy::vftable;
     pThis->pFile = 0;
     pThis->nAttachmentCount = 0;
@@ -22,7 +21,7 @@ namespace Fog::_3rdparty::crashy {
     return pThis;
 }
 
-::Report * ScalarDeletingDestructor(::Report * pThis, uint32_t nFlags) {
+::Report * __thiscall ScalarDeletingDestructor(::Report * pThis, uint32_t nFlags) {
     pThis->_vfptr = (ReportVtable*)(void*)crashy::vftable;
     if (pThis->pFile) {
       fclose(pThis->pFile);
@@ -36,7 +35,7 @@ namespace Fog::_3rdparty::crashy {
     return pThis;
 }
 
-void Destructor(::Report * pThis) {
+void __thiscall Destructor(::Report * pThis) {
     pThis->_vfptr = (ReportVtable*)(void*)crashy::vftable;
     if (!pThis->pFile) {
       return;
@@ -46,7 +45,7 @@ void Destructor(::Report * pThis) {
     pThis->pFile = 0;
 }
 
-int8_t Open(::Report * pThis, char * szFileName) {
+int8_t __thiscall Open(::Report * pThis, char * szFileName) {
     bool bGotPath;
     tm localTime;
     __time64_t tTime = __time64(nullptr);
@@ -84,7 +83,7 @@ int8_t Open(::Report * pThis, char * szFileName) {
     return pFile != 0;
 }
 
-int8_t Close(::Report * pThis) {
+int8_t __thiscall Close(::Report * pThis) {
     if (!pThis->pFile) {
       return '\x01';
     }
@@ -94,11 +93,11 @@ int8_t Close(::Report * pThis) {
     return '\x01';
 }
 
-int8_t IsOpen(::Report * pThis) {
+int8_t __thiscall IsOpen(::Report * pThis) {
     return pThis->pFile != 0;
 }
 
-int8_t AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir) {
+int8_t __thiscall AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir) {
     char* pBaseDirPtr;
     uint32_t uVar1;
     char* pDst;
@@ -107,11 +106,9 @@ int8_t AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir) {
     char szPathCopy[1024];
     char cCh;
     uint32_t local_8;
-    local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     ::Report* pFileReg;
     pFileReg = pThis;
     if (0xf < pThis->nAttachmentCount) {
-      Debug::GuardStack();
       return '\0';
     }
     if (bCopyToReportDir == '\0') {
@@ -141,7 +138,6 @@ int8_t AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir) {
         szPath = szPath + strlen(szPath) + 1;
         count_attachment:
         pFileReg->nAttachmentCount++;
-        Debug::GuardStack();
         return '\x01';
       }
     } else if (pThis->szReportDir[0] != '\0') {
@@ -179,12 +175,13 @@ int8_t AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir) {
       }
     }
 
-    Debug::GuardStack();
     return '\0';
 }
 
 int32_t Printf(::Report * pThis, char * szFormat, ...) {
-    int nWritten = CRT_Vsprintf_L(pThis->pFile, (int)szFormat, (va_list)((uint8_t*)&szFormat + 4));
+    va_list __va;
+    va_start(__va, szFormat);
+    int nWritten = CRT_Vsprintf_L(pThis->pFile, (int)szFormat, __va);
     return nWritten;
 }
 

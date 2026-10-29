@@ -37,24 +37,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA1Q2Strc) == 0xc, "D2_NEW(D2QuestDataA1Q2Strc): the 32-bit layout must be the 0xc bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA1Q2Strc) == 0xc, "D2_NEW_AT(D2QuestDataA1Q2Strc): the 32-bit layout must be the 0xc bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A1Q2 {
@@ -547,7 +543,8 @@ bool __fastcall Q02_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 // (nSequenceQuestId = QUEST_TheSearchForCain / A1Q3) by invoking its
 // fpSequenceFilter.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q2.cpp
-void __fastcall Q02_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q02_SequenceFilter(D2QuestDataStrc * pQuestData) {
+    bool bVar1;
     D2QuestDataStrc* pNextQuestData;
     BOOL bBadFnPtr;
     if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
@@ -555,7 +552,7 @@ void __fastcall Q02_SequenceFilter(D2QuestDataStrc * pQuestData) {
     } else if (pQuestData->nStateFlag == 5 || !pQuestData->bIsNotIntroduction) {
       pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
       if (!pNextQuestData) {
-        return;
+        return false;
       }
 
       /* FARPROC lpfn for IsBadCodePtr */ bBadFnPtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -564,9 +561,11 @@ void __fastcall Q02_SequenceFilter(D2QuestDataStrc * pQuestData) {
         exit(-1);
       }
 
-      pNextQuestData->fpSequenceFilter(pNextQuestData);
-      return;
+      bVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
+      return bVar1;
     }
+
+    return true;
 }
 
 // A1Q2 Sisters' Burial Grounds, state-0xd (load/join reconcile) handler. Restores in-memory nStateFlag/nStateFlagPrev from persisted QuestRecord step bits for a joining or loading player. Skips if Completed or FinishedInPreviousGame. Step0x04 -> nStateFlag=3/prev=2; Step0x03 -> nStateFlag=3/prev=1; Step0x02 -> nStateFlag=2/prev=1. Reads record only.
@@ -629,11 +628,11 @@ void __fastcall Q02_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q02_Callback10_PlayerLeavesGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q02_Callback02_NpcDeactivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q02_Callback13_PlayerStartedGame;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q02_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q02_SequenceFilter;
     pQuestData->pNpcMessages = &A1Q2::aNpcGossipData;
     pQuestData->nQuestIdReal = QUEST_SistersBurialGrounds;
     pQuestData->bIsActive = true;
-    D2QuestDataA1Q2Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA1Q2Strc);
+    D2QuestDataA1Q2Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA1Q2Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q2.cpp", 0x27f);
     pQuestData->fpStatusFilter = 0;
     pQuestData->pQuestSpecificData.pA1Q2 = pQuestSpecificData;
     pQuestData->fpActiveFilter = Q02_ActiveFilter;

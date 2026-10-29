@@ -12,7 +12,7 @@
 
 namespace D2CMP::SRC::CelCmp::CELLIST {
 
-void Destructor(::CELLIST * pThis) {
+void __thiscall Destructor(::CELLIST * pThis) {
     uint32_t uLinkOffset;
     pThis->m_frames.UnlinkAll();
     TSLink<::TCELENTRY>* pTVar1 = &pThis->m_frames.m_terminator;
@@ -35,7 +35,7 @@ void Destructor(::CELLIST * pThis) {
     pThis->Destructor();
 }
 
-::CELLIST * ScalarDeletingDestructor(::CELLIST * pThis, uint32_t dwFlags) {
+::CELLIST * __thiscall ScalarDeletingDestructor(::CELLIST * pThis, uint32_t dwFlags) {
     uint32_t uLinkOffset;
     pThis->m_frames.UnlinkAll();
     TSLink<::TCELENTRY>* pTVar1 = &pThis->m_frames.m_terminator;
@@ -65,7 +65,7 @@ void Destructor(::CELLIST * pThis) {
 }
 
 // Copy pool metadata from src pool and init free-list sentinel links on this node
-::CELLIST * CopyConstructor(::CELLIST * pThis, ::CELLIST * pSource) {
+::CELLIST * __thiscall CopyConstructor(::CELLIST * pThis, ::CELLIST * pSource) {
     pThis->m_linktoslot.m_prevlink = 0;
     pThis->m_linktoslot.m_next = 0;
     pThis->m_linktofull.m_prevlink = 0;

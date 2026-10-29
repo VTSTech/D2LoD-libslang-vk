@@ -80,31 +80,19 @@ void TILECMP_FreeTileNode(struct D2TileCmpTileNodeStrc * pTileNode);
 // @sourcefile .\SRC\Tilecmp.cpp
 struct D2TileCmpTileSetStrc * __stdcall TILECMP_AllocTileSet();
 // @sourcefile .\SRC\Tilecmp.cpp
-void TILECMP_FreeTileSet(struct D2TileCmpTileSetStrc * pTileSet);
-// @sourcefile .\SRC\Tilecmp.cpp
 void __stdcall TILECMP_AllocTileLink(uint32_t dwTileRef, uint32_t dwLinkData);
 // @sourcefile .\SRC\Tilecmp.cpp
 void __stdcall TILECMP_FreeTileSetChain(struct D2TileCmpTileSetListStrc * pTileSetList);
 void __stdcall TILECMP_AddTileToSet(struct D2TileCmpTileSetListStrc * pTileSetList, uint16_t wFlags, uint16_t wRoofHeight, uint32_t nOrientation, uint32_t nMainIndex, uint32_t nSubIndex, uint32_t nRarity, uint32_t nDirection, uint32_t * pSubTileFlags);
-BOOL __stdcall TILECMP_ValidateTilePixels(uint32_t * pTilePixels, int32_t nPitch, int32_t pTile);
 // @sourcefile .\SRC\Tilecmp.cpp
 void __stdcall TILECMP_CacheTileData(int * pTileMeasures, uint32_t * pTilePixels, int32_t nPitch, int32_t nOffsetX, int32_t nOffsetY);
-BOOL __stdcall TILECMP_CheckTilePatternRLE(uint32_t dwColorKey, char * pPixelBuf);
-// @sourcefile .\SRC\Tilecmp.cpp
-void __stdcall TILECMP_ExtractIsometricSubTile(int32_t pSubTile, void * pTileData, uint32_t dwColorKey, size_t nSubTileIndex, int32_t nSubTileOffset);
-// @sourcefile .\SRC\Tilecmp.cpp
-void TILECMP_Generate25SubTiles(struct D2TileCmpTileSetStrc * pTileSet, void * pDT1Data);
 void __stdcall TILECMP_InitTileSetFromDT1(struct D2TileCmpTileSetStrc * pTileSet, int32_t nDT1Data);
-// @sourcefile .\SRC\Tilecmp.cpp
-// @note ESI nErrLine is not a real input (ESI is only saved, then overwritten at 00609c82). It stays because the halt tail at 00609cbb is reached at two stack depths (PUSH 0x202 with ESI/EDI saved, PUSH 0x213 after POP ESI); without it the decompiler reads the 0x213 slot as unaff_ESI.
-void __stdcall TILECMP_SerializeTileSet(struct D2TileCmpTileSetStrc * pSrcTileSet, struct D2TileLibraryEntryStrc * pDstEntry, DWORD nErrLine);
 // @sourcefile .\SRC\Tilecmp.cpp
 // @note ESI nErrLine is not a real input (ESI is only saved, then overwritten at 00609df0). It stays because the halt tail at 00609d71 is reached at several stack depths (0x224/0x22d/0x239/0x247); without it the decompiler reads the 0x239 line as unaff_ESI.
 uint32_t __stdcall TILECMP_ExportCacheToBuffer(struct D2TileCmpTileSetListStrc * pTileSetList, void * ppOutBuffer, DWORD nErrLine);
 // @sourcefile .\SRC\Tilecmp.cpp
 void __stdcall TILECMP_FreeTileCache(struct D2TileLibraryHeaderStrc * pTileLibrary, int32_t nUnused);
 int32_t __fastcall TILECMP_CalculateCacheSize(int32_t nUnused, int32_t pTileCmpHdr);
-size_t TILECMP_CopyTileNodes(void * pDstBuf, int32_t pTileSetEntry);
 // @sourcefile .\SRC\Tilecmp.cpp
 void __fastcall TILECMP_DeserializeAndFixup(int32_t pThis, void * pTileSetData, void * * ppDstBuffer, size_t * pSizeOut);
 void __stdcall TILECMP_FixupPointersInPlace(int * pTileCmpHdr, int * * ppTileCmpHdrOut, char * szText);
@@ -118,7 +106,6 @@ struct D2TileLibraryHashStrc * __fastcall TILECMP_RegisterTilesForLookup(struct 
 // tile's block data into pSubTiles. Halts on line 0x3c9 if pTile is null.
 // Provenance: 1.14d asm 0060a4e9..0060a50c (ADD [EAX+ESI+0x10],EDI with EDI = [ECX+0x54]).
 void __stdcall TILECMP_RelocateSubTilePixelData(struct D2TileLibraryEntryStrc * pTile);
-void TILECMP_ApplyFunctionToPixels(uint8_t * pPixelData, int32_t nPixelBytes, pfnTilecmpPixelCallback pPixelCallback);
 // REFUSED 2026-08-29: parameter 2 is one stack slot with two live ranges. On entry it holds the
 // pfnTilecmpPixelCallback that is forwarded to TILECMP_ApplyFunctionToPixels; from the loop onward
 // MSVC reuses the same slot as the node byte iterator (assigned 0, then advanced by 0x14). Ghidra
@@ -128,10 +115,9 @@ void TILECMP_ApplyFunctionToPixels(uint8_t * pPixelData, int32_t nPixelBytes, pf
 // conversion error at Tilecmp.cpp:1044. Do not retype either half without solving both roles.
 void __stdcall TILECMP_ProcessAllTilePixels(int32_t pTileCmpHdr, void * pNodeByteIter);
 // @sourcefile .\SRC\Tilecmp.cpp
-void __stdcall TILECMP_CompressSubTile(int nECXContext, uint32_t * pSrcSubTile, uint32_t * pDstSubTile, pfnRGBToPaletteIndex pfnGetPaletteIndex, uint32_t dwColorKey);
-// @sourcefile .\SRC\Tilecmp.cpp
 void __stdcall TILECMP_DeepCopyWithRecompression(uint32_t * pSrcTileCmpHdr, uint32_t * ppDstTileCmpHdr, void * pPaletteContext);
 // @sourcefile .\SRC\Tilecmp.cpp
 void __stdcall TILECMP_ShallowCopyZeroPointers(void * pParam, void * * pParam2, size_t * pnSize);
+// 9 internal functions (defined in .cpp)
 
 } // namespace D2CMP::SRC::Tilecmp

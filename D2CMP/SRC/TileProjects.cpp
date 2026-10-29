@@ -18,19 +18,19 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2TileProjectStrc) == 0x110, "D2_NEW(D2TileProjectStrc): the 32-bit layout must be the 0x110 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2TileProjectStrc) == 0x110, "D2_NEW_AT(D2TileProjectStrc): the 32-bit layout must be the 0x110 bytes 1.14d allocates");
 
 
 namespace D2CMP::SRC::TileProjects {
@@ -71,14 +71,14 @@ void __stdcall Free() {
       pMemoryToFree->pTileLibrary = 0;
       FindTiles::FINDTILE_FreeHashTable(pMemoryToFree->pHash);
       pMemoryToFree->pHash = 0;
-      D2_FREE(pMemoryToFree);
+      D2_FREE_AT(pMemoryToFree, ".\\SRC\\TileProjects.cpp", 0x2a);
       pMemoryToFree = pDVar1;
     }
 
     gpTileProjectListHead = 0;
 }
 
-D2TileProjectStrc * TILEPROJECT_FindByFilename(char * szFilename) {
+static D2TileProjectStrc * TILEPROJECT_FindByFilename(char * szFilename) {
     int nCmpResult;
     uint8_t* pSearchCursor;
     D2TileProjectStrc* pCacheNode = gpTileProjectListHead;
@@ -121,7 +121,7 @@ D2TileLibraryHeaderStrc * __stdcall Alloc(D2TileLibraryHashStrc * * ppHash, char
     }
 
     size_t nFileSize = SpriteCache::SPRITECACHE_LoadFromFile(szFilename);
-    int* pTileBuffer = (int*)D2_ALLOC(nFileSize);
+    int* pTileBuffer = (int*)D2_ALLOC_AT(nFileSize, ".\\SRC\\TileProjects.cpp", 0x6b);
     if (!pTileBuffer) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
       exit(-1);
@@ -133,26 +133,26 @@ D2TileLibraryHeaderStrc * __stdcall Alloc(D2TileLibraryHashStrc * * ppHash, char
       D2FILE_CloseFile(nullptr, pFile);
       Tilecmp::TILECMP_FixupMinimalPointers(pTileBuffer, (int**)&pTileData, szFilename);
       pNewHash = Tilecmp::TILECMP_RegisterTilesForLookup(pTileData);
-      pExistingNode = D2_NEW(D2TileProjectStrc);
-      if (pExistingNode) {
-        memset(pExistingNode, 0, 0x110);
-        pExistingNode->pNext = gpTileProjectListHead;
-        pExistingNode->pTileLibrary = pTileData;
-        pExistingNode->pHash = pNewHash;
-        nNameCopyOffset = (int)pExistingNode - (int)szFilename;
-        gpTileProjectListHead = pExistingNode;
-        do {
-          cNameChar = *szFilename;
-          szFilename[nNameCopyOffset] = cNameChar;
-          szFilename++;
-        } while (cNameChar != '\0');
-
-        *ppHash = pExistingNode->pHash;
-        return pTileData;
+      pExistingNode = D2_NEW_AT(D2TileProjectStrc, ".\\SRC\\TileProjects.cpp", 0x7b);
+      if (!pExistingNode) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7c);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7c);
-      exit(-1);
+      memset(pExistingNode, 0, 0x110);
+      pExistingNode->pNext = gpTileProjectListHead;
+      pExistingNode->pTileLibrary = pTileData;
+      pExistingNode->pHash = pNewHash;
+      nNameCopyOffset = (int)pExistingNode - (int)szFilename;
+      gpTileProjectListHead = pExistingNode;
+      do {
+        cNameChar = *szFilename;
+        szFilename[nNameCopyOffset] = cNameChar;
+        szFilename++;
+      } while (cNameChar != '\0');
+
+      *ppHash = pExistingNode->pHash;
+      return pTileData;
     }
 }
 

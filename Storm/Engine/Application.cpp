@@ -4,7 +4,6 @@
 #include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -36,7 +35,6 @@ void __stdcall LIB_LoadAdvapi32() {
     BOOL nResult;
     _SID_IDENTIFIER_AUTHORITY sSidAuthority;
     uint8_t aclBuf[512];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     memset(sSidAuthority.Value, 0, 5 * sizeof(sSidAuthority.Value[0]));
     sSidAuthority.Value[5] = '\x01';
     HANDLE hProcess = GetCurrentProcess();
@@ -71,8 +69,6 @@ void __stdcall LIB_LoadAdvapi32() {
     if (pSid) {
       /* PSID pSid for FreeSid */ FreeSid(pSid);
     }
-
-    Fog::Debug::GuardStack();
 }
 
 } // namespace Storm::Engine::Application

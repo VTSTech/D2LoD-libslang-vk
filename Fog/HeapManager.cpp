@@ -12,7 +12,7 @@ namespace Fog {
 // Library Function - Single Match
 //  public: void __thiscall HeapManager::Destructor(void)
 // Library: Visual Studio 2005 Release
-void Destructor(::HeapManager * pThis) {
+void __thiscall Destructor(::HeapManager * pThis) {
     if (!pThis->pfnFree) {
       return;
     }
@@ -31,7 +31,7 @@ void Destructor(::HeapManager * pThis) {
 // Library Function - Single Match
 //  public: void * __thiscall HeapManager::getMemory(unsigned int,int)
 // Library: Visual Studio 2005 Release
-void * getMemory(::HeapManager * pThis, uint32_t nSize, int bUseHeap) {
+void * __thiscall getMemory(::HeapManager * pThis, uint32_t nSize, int bUseHeap) {
     void* pResult;
     uint32_t nAlignedSize;
     nAlignedSize = nSize + 7 & -8;

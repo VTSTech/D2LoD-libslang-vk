@@ -9,7 +9,6 @@
 #include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -47,9 +46,11 @@ int BNET_LogIndent(int32_t nIndentAction, int32_t nParam2) {
 }
 
 void BnetLog_WriteLine(char * Format, ...) {
+    va_list __va;
+    va_start(__va, Format);
     char szBuf[512];
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00881860);
-    __vsnprintf(szBuf, 0x200, Format, (va_list)((uint8_t*)&Format + 4));
+    __vsnprintf(szBuf, 0x200, Format, __va);
     szBuf[0x1ff] = '\0';
     if (!(gbBnetLogInitialized & 1)) {
       gbBnetLogInitialized |= 1;
@@ -59,7 +60,6 @@ void BnetLog_WriteLine(char * Format, ...) {
 
     Storm::Source::SSComp::SLogWrite(gnBnetLogFileHandle, szBuf);
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881860);
-    Fog::Debug::GuardStack();
 }
 
 void StaticFini_CriticalSection_00881860() {

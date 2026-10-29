@@ -38,9 +38,7 @@ namespace D2Direct3D::d3dSubtileCache {
 // Function declarations
 int __fastcall D3DSUBTILE_Initialize(struct D3DSubtileCacheStrc * pCache, int nBaseMemoryUsed, int nAvailableMemory, uint32_t dwTextureSize);
 void __fastcall D3DSUBTILE_SetPalette(struct D3DSubtileCacheStrc * pCache, void * pPalette);
-void __fastcall D3DSUBTILE_InsertNodeAtTail(struct D3DSubtileCacheNodeStrc * pNode, struct D3DSubtileCacheStrc * pCache);
 struct D3DSubtileCacheNodeStrc * __fastcall D3DSUBTILE_RemoveNodeByIndex(struct D3DSubtileCacheStrc * pCache, int nIndex);
-int __stdcall D3DSUBTILE_AllocateNodeFromFreeList(struct D3DSubtileCacheStrc * pCache);
 // Moves the subtile-cache node for the 1-based nIndex to the most-recently-used end: returns at once if
 // fewer than 2 nodes are in use, otherwise D3DSUBTILE_RemoveNodeByIndex(nIndex-1) then
 // D3DSUBTILE_InsertNodeAtTail. Halts on line 199 (nIndex 0), 200 (nIndex > nMaxNodes) or 0xc9 (negative).
@@ -54,5 +52,6 @@ void __fastcall D3DSUBTILE_InvalidateByIndex(struct D3DSubtileCacheStrc * pCache
 // @sourcefile .\Src\d3dSubtileCache.cpp
 void __fastcall D3DSUBTILE_Free(struct D3DSubtileCacheStrc * pCache, BOOL bInvalidateAll);
 int32_t __fastcall D3DSUBTILE_EnsureAvailableNode(struct D3DSubtileCacheStrc * pCache);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Direct3D::d3dSubtileCache

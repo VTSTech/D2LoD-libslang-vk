@@ -67,10 +67,6 @@ void __fastcall Q04_Callback11_ScrollMessage(struct D2QuestDataStrc * pQuestData
 // Falls back to a small lookup table indexed by nStateFlag (1..5) for the default
 // intro/progress lines. Pure read of quest state -> chooses a text line; no transitions.
 void __fastcall Q04_Callback00_NpcActivate(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
-// A1Q4 — QuestStartDebugNotify: debug-only QUEST_DebugPrint("Started quest") helper
-// called at the points where the quest first transitions out of the not-started state.
-// @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q4.cpp
-void __stdcall QuestStartDebugNotify(struct D2QuestDataStrc * pQuestData);
 // A1Q4 — Q04_SendQuestStatePacket: builds and sends the 0x5d quest-state packet
 // (opcode 0x5d, quest 4) to a single unit's client. Pure network notify, no state change.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q4.cpp
@@ -81,12 +77,6 @@ void __fastcall Q04_SendQuestStatePacket(struct D2UnitStrc * pUnit);
 // lifecycle transition. On kill, marks the quest sub-flag 0x61 (guards cleared).
 // Driven by Q04_TimerDespawnRogueGuards.
 BOOL __fastcall Q04_DespawnRogueGuards(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
-// A1Q4 — Q04_SpawnDeckardCainNpc: spawns the rescued Deckard Cain NPC unit
-// (monster classId 0x109) at/near a given room tile. Validates the requested tile
-// is inside the room, then retries FindSpawnableLocation + SpawnMonster up to ~0x14
-// nearby rooms until placement succeeds. On success flags Cain init/resurrect, records
-// his unit GUID into the quest sub-struct, and sets the "Cain spawned" flag (0x51).
-void __stdcall Q04_SpawnDeckardCainNpc(struct D2RoomStrc * pRoom, ::SGAMEDATA * pGame, int32_t nX, int32_t nY);
 // A1Q4 — Q04_MarkCannotComplete (per-player iterate callback).
 // If a player has NOT yet Completed and has no RewardAwaits, mark their quest record
 // CannotCompleteQuestInGame (they were not present when the quest was force-progressed,
@@ -98,13 +88,6 @@ BOOL __fastcall Q04_MarkCannotComplete(::SGAMEDATA * pGame, struct D2UnitStrc * 
 // 0x1f) for each of the deciphered scroll ('bkd ') and Scroll of Inifuss ('bks ')
 // the player currently carries. No quest-state transition.
 void __fastcall Q04_Callback14_PlayerJoinedGame(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
-// A1Q4 — Q04_DeactivateCairnStones: tears down the Cairn Stones puzzle after it has
-// served its purpose. If the stones-active flag (0x47) is set, finds the Cairn Stones
-// object (classId 0x1e) and stops its animation. Clears the quest's local active byte,
-// broadcasts step 1 (Q04_NotifyQuestStateToPlayer), sets step flag 3, clears sub-flag
-// 0x58, and re-syncs all players. Called from Callback_06/Callback_09 on completion.
-// @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q4.cpp
-void __stdcall Q04_DeactivateCairnStones(struct D2QuestDataStrc * pQuestData);
 // A1Q4 — Q04_Callback_09 (quest event handler, slot 9): item-drop/loss watcher.
 // Hooked while the Scroll-of-Inifuss puzzle is live. When a quest scroll ('bkd '/'bks ')
 // leaves the player's inventory, decrements the held-item count; if the count hits 0
@@ -225,7 +208,7 @@ void __fastcall Q04_SendStonesOrderToClient(::SGAMEDATA * pGame, struct D2UnitSt
 // the next quest in the chain (nSequenceQuestId = QUEST_ToolsOfTheTrade) by invoking
 // its sequence filter. Asserts the next filter pointer is valid.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q4.cpp
-void __fastcall Q04_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q04_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // A1Q4 — Q04_SetCainRescuedFlag: sets the quest sub-struct "Cain rescued" byte
 // (offset 0x63) to 1. Setter only.
 void __fastcall Q04_SetCainRescuedFlag(::SGAMEDATA * pGame);
@@ -289,7 +272,7 @@ void __fastcall Q33_UpdateFrozenAnyaNpcState(struct D2QuestDataStrc * pQuestData
 // A1Q4 — Q04_GetCainPortalCoordinates: outputs the saved Cain-area portal coords
 // (field 0xA8/0xAC) into pOutCoords if the quest is active, the portal-placed flag is
 // set, and not suppressed. Returns 1 on success, 0 otherwise. Getter.
-BOOL Q04_GetCainPortalCoordinates(void * pThis, uint32_t * pOutCoords);
+BOOL __thiscall Q04_GetCainPortalCoordinates(void * pThis, uint32_t * pOutCoords);
 // A1Q4 — Q04_SpawnCainCage: spawns the Cain cage/gibbet object (object classId 0xbd)
 // at the saved coords the first time (guarded by a one-shot flag), retrying nearby rooms
 // and nudging the spawn position if no room is found. Records the cage GUID. No quest
@@ -319,14 +302,7 @@ uint32_t __fastcall Q04_IsTristramActive(::SGAMEDATA * pGame);
 void __fastcall Q04_DropShieldRewards(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit);
 // A1Q4 — Q04_SetCainUnitGUID: stores Cain's unit GUID into the quest sub-struct
 // (field_0xB0). Setter only.
-void Q04_SetCainUnitGUID(void * pThis, int32_t nCainGUID);
-// A1Q4 — Q04_ActivateCairnStonesAndTree: master "make the quest objects active" routine.
-// Animates/activates the Cairn Stones (classId 0x1a) and the Tree-of-Inifuss objects to
-// their open/usable state and sets sub-flags. Depending on cParam1/cParam2 it either
-// schedules the Rogue-guard despawn timer (Q04_TimerDespawnRogueGuards) or immediately
-// despawns guards (Q04_DespawnRogueGuards), and removes the inactive Cain placeholder.
-// Called from the force-start / debug-progress paths and Callback_03. No quest record bits.
-void __stdcall Q04_ActivateCairnStonesAndTree(char cParam1, char cParam2, struct D2QuestDataStrc * pQuestData);
+void __thiscall Q04_SetCainUnitGUID(void * pThis, int32_t nCainGUID);
 // A1Q4 — Q04_ForceStartQuestProgression: one-shot (guarded by flag 0x65) debug/forced
 // advance that activates the quest objects (Q04_ActivateCairnStonesAndTree) and jumps the
 // step flag straight to 6 (Cain freed). Halts if quest data missing.
@@ -366,5 +342,6 @@ void __fastcall Q04_InitData(struct D2QuestDataStrc * pQuestData);
 // non-present players via Q04_MarkCannotComplete. The scripted/forced-completion entry.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q4.cpp
 void __fastcall ForceStartQuest(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A1Q4

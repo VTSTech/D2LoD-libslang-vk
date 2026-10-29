@@ -27,18 +27,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2RendererCoreStrc) == 0x18, "D2_NEW(D2RendererCoreStrc): the 32-bit layout must be the 0x18 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2RendererCoreStrc) == 0x18, "D2_NEW_AT(D2RendererCoreStrc): the 32-bit layout must be the 0x18 bytes 1.14d allocates");
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -48,7 +48,7 @@ namespace D2Gdi::Renderer::Windowed {
 BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc * pHelpers) {
     pD2GFXRenderedDataStrc = pSettings;
     D2GfxRendereInitFunctionsStrc = pHelpers;
-    RENDERER_SelectedRendererCore = D2_NEW(D2RendererCoreStrc);
+    RENDERER_SelectedRendererCore = D2_NEW_AT(D2RendererCoreStrc, ".\\Src\\gdiCore.cpp", 0x4b);
     /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ InitializeCriticalSection(&RENDERER_SelectedRendererCore->sLock);
     return 1;
 }
@@ -60,7 +60,7 @@ BOOL Release() {
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ DeleteCriticalSection(&RENDERER_SelectedRendererCore->sLock);
-    D2_FREE(RENDERER_SelectedRendererCore);
+    D2_FREE_AT(RENDERER_SelectedRendererCore, ".\\Src\\gdiCore.cpp", 0x59);
     RENDERER_SelectedRendererCore = 0;
     return 1;
 }
@@ -70,7 +70,7 @@ void ClearCaches() {
 }
 
 // Allocates the GDI DIB section for windowed software rendering. Maps resolution mode (0=640×480, 1/2=800×600, 3=1360×700) to window dimensions, creates BITMAPINFO header with 8-bit indexed color, calls CreateDIBSection to allocate shared bitmap memory. Stores HBITMAP handle in RENDERER_WINDOWED_hDIBitmap global and pixel buffer pointer in ppvBits_007c9154. Initializes Y-buffer table via fpFillYBufferTable callback.
-void __stdcall RENDERER_WINDOWED_AllocateDIBSection(int nResolutionMode) {
+static void __stdcall RENDERER_WINDOWED_AllocateDIBSection(int nResolutionMode) {
     int iVar1;
     int iVar2;
     BITMAPINFO256 sBitmapInfo;
@@ -373,14 +373,14 @@ void __fastcall RENDERER_WINDOWED_GetPalette(HPALETTE * phPalette, RGBQUAD * * p
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x222);
       exit(-1);
     } else {
-      if (ppRgbQuad) {
-        *phPalette = RENDERER_WINDOWED_hPalette;
-        *ppRgbQuad = prgbq_00989c40;
-        return;
+      if (!ppRgbQuad) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x223);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x223);
-      exit(-1);
+      *phPalette = RENDERER_WINDOWED_hPalette;
+      *ppRgbQuad = prgbq_00989c40;
+      return;
     }
 }
 
@@ -393,15 +393,15 @@ void __fastcall RENDERER_WINDOWED_GetFramebufferInfo(uint32_t * ppvBitsOut, uint
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x231);
       exit(-1);
     } else {
-      if (pnWidthOut) {
-        *ppvBitsOut = (uint32_t)(uintptr_t)gpRenderBackBufferBits;
-        *pnHeightOut = RENDERER_nWindowHeight;
-        *pnWidthOut = RENDERER_nWindowWidth;
-        return;
+      if (!pnWidthOut) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x232);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x232);
-      exit(-1);
+      *ppvBitsOut = (uint32_t)(uintptr_t)gpRenderBackBufferBits;
+      *pnHeightOut = RENDERER_nWindowHeight;
+      *pnWidthOut = RENDERER_nWindowWidth;
+      return;
     }
 }
 
@@ -466,7 +466,7 @@ void __stdcall RENDERER_WINDOWED_ValidateDC6Visibility(DC6Block * pDC6Block, int
 }
 
 // Calculates clipped crop rectangle for DC6 image rendering. Takes input crop rect + DC6 position/dimensions, clamps to window bounds, calculates top/bottom skip lines for partial draws. Outputs adjusted crop rect (nClippedLeft, nClippedRight, skipTop, visibleHeight) to pOutput array. Used to optimize blits by pre-calculating which scanlines to draw.
-int __fastcall RENDERER_WINDOWED_CalculateCropRect(uint32_t * pCropRect, DC6Block * pDC6Block, int nPosY, int nPosX, uint32_t * pOutput) {
+static int __fastcall RENDERER_WINDOWED_CalculateCropRect(uint32_t * pCropRect, DC6Block * pDC6Block, int nPosY, int nPosX, uint32_t * pOutput) {
     int32_t nSpriteWidth = D2CMP::SRC::CelCmp::GetDC6Width(pDC6Block);
     int32_t nOffsetX = D2CMP::SRC::CelCmp::GetDC6Height(pDC6Block);
     uint32_t uClampedLeft = (int)*pCropRect < 1 ? 0 : *pCropRect;
@@ -510,12 +510,12 @@ int __fastcall RENDERER_WINDOWED_CalculateCropRect(uint32_t * pCropRect, DC6Bloc
     } else {
       pOutput[3] = nOffsetX - pOutput[2];
     }
-    if ((int)pOutput[3] >= 1) {
-      return 0;
+    if (!((int)pOutput[3] >= 1)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd1);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd1);
-    exit(-1);
+    return 0;
     return 0;
 }
 
@@ -678,18 +678,17 @@ void __fastcall DrawImageFast(D2GfxDataStrc * pData, int nPosX, int nPosY, BYTE 
 }
 
 void __fastcall DebugFillBackBuffer(int nPosX, int nPosY) {
-    if (0 < nPosX && nPosX < RENDERER_nWindowWidth - 0x50) {
-      if (0 < nPosY && nPosY < RENDERER_nWindowHeight - 0x50) {
-        D2CMP::SRC::FastCmp::DRAW_DebugFillRect((int32_t)(gpRenderBackBufferBits + nPosX + RENDERER_nWindowWidth * nPosY), RENDERER_nWindowWidth);
-        return;
-      }
-
+    if (!(0 < nPosX && nPosX < RENDERER_nWindowWidth - 0x50)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ab);
+      exit(-1);
+    }
+    if (!(0 < nPosY && nPosY < RENDERER_nWindowHeight - 0x50)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ac);
       exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ab);
-    exit(-1);
+    D2CMP::SRC::FastCmp::DRAW_DebugFillRect((int32_t)(gpRenderBackBufferBits + nPosX + RENDERER_nWindowWidth * nPosY), RENDERER_nWindowWidth);
+    return;
 }
 
 void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwGamma, int nDrawMode, int nScreenMode, BYTE * pPalette) {
@@ -1056,27 +1055,26 @@ void __fastcall DrawRectEx(uint8_t * pRect, int nPaletteIndex) {
     } else {
       uint8_t byColorParam;
       nX1_copy.y = *(LONG*)(pRect + 4);
-      if (nX1_copy.y <= *(int*)(pRect + 0xc)) {
-        if (!(*(int*)(pRect + 8) != nX1.x && *(int*)(pRect + 0xc) != nX1_copy.y)) {
-          return;
-        }
-
-        nX2_save.x = *(LONG*)(pRect + 8);
-        nX1.y = *(LONG*)(pRect + 0xc);
-        byColorParam = (uint8_t)nPaletteIndex;
-        nX1_copy.x = nX1.x;
-        nX2_save.y = nX1.y;
-        nX2_copy.x = nX2_save.x;
-        nX2_copy.y = nX1_copy.y;
-        RENDERER_WINDOWED_DrawLineBresenham(&nX2_copy, &nX1_copy, byColorParam);
-        RENDERER_WINDOWED_DrawLineBresenham(&nX2_save, &nX2_copy, byColorParam);
-        RENDERER_WINDOWED_DrawLineBresenham(&nX1, &nX2_save, byColorParam);
-        RENDERER_WINDOWED_DrawLineBresenham(&nX1_copy, &nX1, byColorParam);
+      if (!(nX1_copy.y <= *(int*)(pRect + 0xc))) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x143);
+        exit(-1);
+      }
+      if (!(*(int*)(pRect + 8) != nX1.x && *(int*)(pRect + 0xc) != nX1_copy.y)) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x143);
-      exit(-1);
+      nX2_save.x = *(LONG*)(pRect + 8);
+      nX1.y = *(LONG*)(pRect + 0xc);
+      byColorParam = (uint8_t)nPaletteIndex;
+      nX1_copy.x = nX1.x;
+      nX2_save.y = nX1.y;
+      nX2_copy.x = nX2_save.x;
+      nX2_copy.y = nX1_copy.y;
+      RENDERER_WINDOWED_DrawLineBresenham(&nX2_copy, &nX1_copy, byColorParam);
+      RENDERER_WINDOWED_DrawLineBresenham(&nX2_save, &nX2_copy, byColorParam);
+      RENDERER_WINDOWED_DrawLineBresenham(&nX1, &nX2_save, byColorParam);
+      RENDERER_WINDOWED_DrawLineBresenham(&nX1_copy, &nX1, byColorParam);
+      return;
     }
 }
 
@@ -1327,7 +1325,7 @@ BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
 // @sourcefile .\Src\gdiSmack.cpp
 void __fastcall CloseSmacker(D2SmackerContextStrc * pContext) {
     if (gnSmackerGlideYOffset.pFrameBuffer) {
-      D2_FREE(gnSmackerGlideYOffset.pFrameBuffer);
+      D2_FREE_AT(gnSmackerGlideYOffset.pFrameBuffer, ".\\Src\\gdiSmack.cpp", 0xf0);
       gnSmackerGlideYOffset.pFrameBuffer = 0;
     }
     if (pContext->eMode == 's' && pContext->hSmack) {
@@ -1339,7 +1337,7 @@ void __fastcall CloseSmacker(D2SmackerContextStrc * pContext) {
 }
 
 // Blits Smacker video frame to framebuffer with palette translation. Reads Smacker structure (offset +8=x, +0xC=y), copies nWidth×nHeight pixels from gnSmackerGlideYOffset.pFrameBuffer (Smacker frame buffer) to ppvBits_007c9154, applying palette lookup via gnSmackerGlideYOffset[pixel] translation table. Row-major blit with RENDERER_nWindowWidth stride.
-void RENDERER_WINDOWED_BlitSmackerFrame(D2SmackerContextStrc * pSmacker, int nHeight, int nWidth) {
+void __thiscall RENDERER_WINDOWED_BlitSmackerFrame(D2SmackerContextStrc * pSmacker, int nHeight, int nWidth) {
     uint8_t* pbSrcPixel;
     int nColsLeft;
     uint8_t* iDestRowAddr = gpRenderBackBufferBits + (pSmacker->nY - nHeight) * RENDERER_nWindowWidth + pSmacker->nX;
@@ -1372,7 +1370,7 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
     DWORD nFileSize;
     pBuffer->eMode = (char)nVersion;
     if ((char)nVersion == 'p') {
-      gnSmackerGlideYOffset.pFrameBuffer = D2_ALLOC(0x6db0);
+      gnSmackerGlideYOffset.pFrameBuffer = D2_ALLOC_AT(0x6db0, ".\\Src\\gdiSmack.cpp", 0x51);
       memset(gnSmackerGlideYOffset.pFrameBuffer, 0, 0x6db0);
       nVersion = 0;
       nFileSize = 0;
@@ -1403,7 +1401,7 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
       nResult = (void*)SmackOpen(szSmacker, 0xfe000, -1);
       pBuffer->hSmack = nResult;
       if (nResult) {
-        _Dst = D2_ALLOC(*(int*)((int)nResult + 4) * *(int*)((int)nResult + 8));
+        _Dst = D2_ALLOC_AT(*(int*)((int)nResult + 4) * *(int*)((int)nResult + 8), ".\\Src\\gdiSmack.cpp", 0x43);
         gnSmackerGlideYOffset.pFrameBuffer = _Dst;
         memset(_Dst, 0, *(int*)((int)nResult + 4) * *(int*)((int)nResult + 8));
         SmackToBuffer(pBuffer->hSmack, 0, 0, *(uint32_t*)((int)nResult + 4), *(uint32_t*)((int)nResult + 8), _Dst, 0);
@@ -1412,7 +1410,7 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
       }
     }
     if (gnSmackerGlideYOffset.pFrameBuffer) {
-      D2_FREE(gnSmackerGlideYOffset.pFrameBuffer);
+      D2_FREE_AT(gnSmackerGlideYOffset.pFrameBuffer, ".\\Src\\gdiSmack.cpp", 0xf0);
       gnSmackerGlideYOffset.pFrameBuffer = 0;
     }
     if (pBuffer->eMode == 's' && pBuffer->hSmack) {

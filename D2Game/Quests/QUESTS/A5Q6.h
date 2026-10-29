@@ -40,9 +40,6 @@ void __fastcall Q36_Callback00_NpcActivate(struct D2QuestDataStrc * pQuestData, 
 void __fastcall Q36_SetCompleteForPartyMember(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // A5Q6 Eve of Destruction (state-fn slot 0xa). Player-leaves cleanup: remove the player's GUID from both the quest's and the A5Q6-specific participant GUID lists (uses -1 if no player). Keeps the Baal-fight participant tracking consistent on disconnect/leave.
 void __fastcall Q36_Callback10_PlayerLeavesGame(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
-// A5Q6 Eve of Destruction. Marks one player's quest fully complete: set record JustCompleted(0xd) + Completed(0), push client status 5 (act-V complete), and bump a counter on the quest-specific data. Called from Q36_CheckWorldstoneChamber when a player is present in the Worldstone Chamber as Baal dies.
-// @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q6.cpp
-void __stdcall Q36_CompleteQuestAndSetStatus(struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, ::SGAMEDATA * pGame);
 // A5Q6 Eve of Destruction. Per-player iterate callback: if this player's quest is JustCompleted(0xd), look up their party and propagate Baal-kill credit to every party member via ExecuteFunctionForEveryPartyMember(Q36_SetCompleteForPartyMember).
 BOOL __fastcall Q36_PropagateCompleteToParty(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // A5Q6 Eve of Destruction. Per-player iterate callback: for any player whose quest is not RewardAwaits(1), set record CannotCompleteQuestInGame(0xe) and send the quest-state packet (quest 0x24). Marks players who were not present for the Baal kill so they can't re-complete it in this game instance.
@@ -54,9 +51,6 @@ BOOL __fastcall Q36_SendCompletionNotification(::SGAMEDATA * pGame, struct D2Uni
 BOOL __fastcall Q36_CheckWorldstoneChamber(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // A5Q6 Eve of Destruction — BAAL DEATH HANDLER (state-fn slot 8). Fires when Baal is killed. NotifyPlayers(0x13); sets live quest state to 4 and broadcasts; then iterates all players: Q36_CheckWorldstoneChamber (credit those present), Q36_PropagateCompleteToParty (party credit), SetCannotComplete (lock out absentees), Q36_SendCompletionNotification (client FX). Rolls and drops quest gold reward (difficulty-scaled) per player in the chamber, saves char to client, sets nStateFlag=5. Finally spawns the red Baal-death portal/missile (0x271) and toggles the room portal flag — the exit portal to town.
 void __fastcall Q36_Callback_08_CompleteQuest(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
-// A5Q6 Eve of Destruction. Sends the 0x50 "quest special" packet (quest 0x24) to a player's client, carrying the A5Q6-specific field (the randomly-rolled monster id from Objects_InitFn79). Used to sync the quest's special data to the client.
-// @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q6.cpp
-void Q36_SendQuestSpecialPacket(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame);
 // A5Q6 Eve of Destruction. Thin per-player iterate wrapper around Q36_SendQuestSpecialPacket (sends the 0x50 quest-special packet to each player).
 BOOL __fastcall Q36_SendQuestSpecialPacketCallback(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // A5Q6 Eve of Destruction (state-fn slot 3). Quest-accept / "talked to Tyrael" handler. On gossip index 0x6d sends the special quest packet. When the activation index==0x6d and live nStateFlag==2: if player not Completed/RewardAwaits, advance live quest to nStateFlag 3, broadcast "in progress" (state 1), and propagate sub-steps to all players (SetStep0x2And0x3). For index>0x82 advances to state 2. Drives the player's acceptance of the final-assault quest.
@@ -65,7 +59,7 @@ void __fastcall Q36_Callback03_ChangedLevel(struct D2QuestDataStrc * pQuestData,
 // A5Q6 Eve of Destruction. fpActiveFilter: returns true if the given NPC/monster class should currently offer this quest's gossip (a "!" indicator). True for the Ancients statues 0x219..0x21b once A5Q5 cleared them and Anya not yet transformed; or, once quest Completed, for act-V NPCs (0x1ff/0x200/0x201/0x203/0x208/0x209) whose corresponding journal Step bit (Step0x04..Step0x09) is NOT yet set — i.e. the player still has someone to talk to about Baal. Class 0x208 also suppressed once Step0x10 set.
 bool __fastcall Q36_ActiveFilter(struct D2QuestDataStrc * pQuestData, eD2MonsterClassId nTargetClassId, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2UnitStrc * pUnitEx);
 // A5Q6 Eve of Destruction. fpSequenceFilter (linked to prerequisite QUEST_PrisonOfIce / Anya rescue). When this quest is active and not yet started (nStateFlag==0), latch bAnyaTransformed, force live nStateFlag=2, broadcast "in progress" (state 1), and push sub-steps to all players. Kicks the final quest into motion once Anya/prereq conditions are met.
-void __fastcall Q36_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q36_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // A5Q6 Eve of Destruction (state-fn slot 0xe). If the player's quest is Completed(0), set Step0x10 (the "departed act V / acknowledged completion" bit). Small post-completion bookkeeping callback.
 void __fastcall Q36_Callback14_PlayerJoinedGame(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // A5Q6 Eve of Destruction (state-fn slot 0xd). Quest-load / late-join reconciliation. If the player has NOT completed (not Completed, not FinishedInPreviousGame, not RewardAwaits) but has progressed (Step0x03 set, or Step0x02 -> mark bAnyaTransformed): restore live quest nStateFlag to 3 (in-progress). If already completed/finished: set Step0x10 and push client status 5 (act done). Reconstructs quest progression for a joining/loading player.
@@ -91,5 +85,6 @@ BOOL __fastcall OBJOP_A5Q6_TyraelPortalToEnd(struct D2ObjectOperateFnArg * pOper
 void __fastcall Objects_InitFn79(struct D2ObjectInitFnArg * pInitArg);
 // A5Q6 Eve of Destruction. Spawns Tyrael (monster class 0x209... note: 0x209 here is the spawned NPC) as a Neutral monster ~5 tiles from the given unit in the Worldstone Chamber. Tyrael appears after Baal's death to open the portal home.
 void __fastcall SpawnTyrael(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2UnitStrc * pUnit);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A5Q6

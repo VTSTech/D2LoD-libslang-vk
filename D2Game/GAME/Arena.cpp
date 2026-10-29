@@ -33,38 +33,38 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2ArenaControlStrc) == 0x10, "D2_NEW(D2ArenaControlStrc): the 32-bit layout must be the 0x10 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2ArenaControlStrc) == 0x10, "D2_NEW_AT(D2ArenaControlStrc): the 32-bit layout must be the 0x10 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataPlayerArenaStrc) == 0x8, "D2_NEW(D2UnitDataPlayerArenaStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataPlayerArenaStrc) == 0x8, "D2_NEW_AT(D2UnitDataPlayerArenaStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
 
 
 namespace D2Game::GAME::Arena {
 
 bool __stdcall ARENA_TestFlag(::SGAMEDATA * pGame, uint32_t nParam) {
-    if (pGame->pArenaCtrl) {
-      return (pGame->pArenaCtrl->eArenaFlags & nParam) != 0;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
-    exit(-1);
+    return (pGame->pArenaCtrl->eArenaFlags & nParam) != 0;
     return (pGame->pArenaCtrl->eArenaFlags & nParam) != 0;
 }
 
 // @sourcefile .\GAME\Arena.cpp
-void AllocArenaControl(void * pThis, eD2ArenaFlags eArenaFlags, uint8_t nTemplate) {
-    D2ArenaControlStrc* pArenaCtrl = D2_NEW_POOL(*(D2PoolManagerStrc**)((int)pThis + 0x1c), D2ArenaControlStrc);
+void __thiscall AllocArenaControl(void * pThis, eD2ArenaFlags eArenaFlags, uint8_t nTemplate) {
+    D2ArenaControlStrc* pArenaCtrl = D2_NEW_POOL_AT(*(D2PoolManagerStrc**)((int)pThis + 0x1c), D2ArenaControlStrc, ".\\GAME\\Arena.cpp", 0x32);
     pArenaCtrl->eLevelId = LEVEL_None;
     pArenaCtrl->nArenaTxtRecord = 0;
     pArenaCtrl->nTemplateLevel = 0;
@@ -79,13 +79,13 @@ void __fastcall FreeArenaControl(::SGAMEDATA * pGame) {
       return;
     }
 
-    D2_FREE_POOL(pGame->pMemoryPool, pGame->pArenaCtrl);
+    D2_FREE_POOL_AT(pGame->pMemoryPool, pGame->pArenaCtrl, ".\\GAME\\Arena.cpp", 0x40);
     pGame->pArenaCtrl = 0;
 }
 
 // @sourcefile .\GAME\Arena.cpp
 void __fastcall AllocPlayerArena(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    D2UnitDataPlayerArenaStrc* pArena = D2_NEW_POOL(pGame->pMemoryPool, D2UnitDataPlayerArenaStrc);
+    D2UnitDataPlayerArenaStrc* pArena = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitDataPlayerArenaStrc, ".\\GAME\\Arena.cpp", 0x47);
     pArena->nScore = 0;
     pArena->bScoreDirty = 0;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
@@ -108,29 +108,29 @@ void __fastcall FreePlayerArena(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       return;
     }
 
-    D2_FREE_POOL(pGame->pMemoryPool, pPlayerData->pArena);
+    D2_FREE_POOL_AT(pGame->pMemoryPool, pPlayerData->pArena, ".\\GAME\\Arena.cpp", 0x57);
     pPlayerData->pArena = 0;
 }
 
 eD2LevelId __fastcall GetTownLevelFromArenaCtrl(::SGAMEDATA * pGame) {
-    if (pGame->pArenaCtrl) {
-      return pGame->pArenaCtrl->eLevelId;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 99);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 99);
-    exit(-1);
+    return pGame->pArenaCtrl->eLevelId;
     return pGame->pArenaCtrl->eLevelId;
 }
 
 // pGame in EAX: returns pArenaCtrl->nArenaTxtRecord; halts (Arena.cpp line 108, ptArena) when there is no arena control.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 int __stdcall ARENA_GetArenaTxtRecord(::SGAMEDATA * pGame) {
-    if (pGame->pArenaCtrl) {
-      return pGame->pArenaCtrl->nArenaTxtRecord;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
-    exit(-1);
+    return pGame->pArenaCtrl->nArenaTxtRecord;
     return pGame->pArenaCtrl->nArenaTxtRecord;
 }
 
@@ -413,13 +413,13 @@ void __fastcall ARENA_ClearScoreDirty(::SGAMEDATA * pGameStrc, D2UnitStrc * pUni
     } else {
       D2UnitDataPlayerStrc* pPlayerData;
       pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-      if (pPlayerData->pArena) {
-        pPlayerData->pArena->bScoreDirty = 0;
-        return;
+      if (!pPlayerData->pArena) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc9);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc9);
-      exit(-1);
+      pPlayerData->pArena->bScoreDirty = 0;
+      return;
     }
 }
 
@@ -432,18 +432,18 @@ void __fastcall ARENA_ClearUpdateFlag(::SGAMEDATA * pGame) {
     *peVar1 &= ~ARENAFLAG_ScoresDirty;
 }
 
-int ARENA_IsScoreDirty(D2UnitStrc * pUnit) {
+static int ARENA_IsScoreDirty(D2UnitStrc * pUnit) {
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    if (pPlayerData->pArena) {
-      return pPlayerData->pArena->bScoreDirty;
+    if (!pPlayerData->pArena) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdb);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdb);
-    exit(-1);
+    return pPlayerData->pArena->bScoreDirty;
     return pPlayerData->pArena->bScoreDirty;
 }
 
-void __stdcall UpdatePlayerKillCount(D2ClientStrc * pClient, D2UnitStrc * pUnit) {
+static void __stdcall UpdatePlayerKillCount(D2ClientStrc * pClient, D2UnitStrc * pUnit) {
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2UnitDataPlayerArenaStrc* pArenaData = pPlayerData->pArena;
     if (!pArenaData) {
@@ -458,7 +458,7 @@ void __stdcall UpdatePlayerKillCount(D2ClientStrc * pClient, D2UnitStrc * pUnit)
     SCmd::NET_D2GS_SERVER_Send_0x65_SCORE_UPDATE(pClient, pUnit->nUnitGUID, (uint16_t)pArenaData->nScore);
 }
 
-void __stdcall ARENA_BroadcastKillToPlayers(::SGAMEDATA * pGame, int32_t nBroadcastMode, D2ClientStrc * pClient) {
+static void __stdcall ARENA_BroadcastKillToPlayers(::SGAMEDATA * pGame, int32_t nBroadcastMode, D2ClientStrc * pClient) {
     D2UnitDataPlayerStrc* pPlayerData;
     D2UnitStrc* pKillerUnit = Clients::CLIENTS_GetControlUnit(pClient, 0);
     D2ClientStrc* pClientIter = pGame->pClient;
@@ -526,54 +526,54 @@ void __fastcall ARENA_BroadcastScoreOnJoin(::SGAMEDATA * pGame, D2ClientStrc * p
 }
 
 uint32_t __fastcall ARENA_GetClientUpdateFlag(::SGAMEDATA * pGame) {
-    if (pGame->pArenaCtrl) {
-      return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 2 & 1;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
-    exit(-1);
+    return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 2 & 1;
     return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 2 & 1;
 }
 
 uint32_t __fastcall ARENA_IsArenaLevel(::SGAMEDATA * pGame) {
-    if (pGame->pArenaCtrl) {
-      return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 1 & 1;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
-    exit(-1);
+    return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 1 & 1;
     return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 1 & 1;
 }
 
 uint32_t __fastcall ARENA_IsNoCubeRecipes(::SGAMEDATA * pGame) {
-    if (pGame->pArenaCtrl) {
-      return pGame->pArenaCtrl->eArenaFlags >> 0x10 & 1;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
-    exit(-1);
+    return pGame->pArenaCtrl->eArenaFlags >> 0x10 & 1;
     return pGame->pArenaCtrl->eArenaFlags >> 0x10 & 1;
 }
 
 eD2ArenaFlags __fastcall ARENA_GetFlags(::SGAMEDATA * pGame) {
-    if (pGame->pArenaCtrl) {
-      return pGame->pArenaCtrl->eArenaFlags;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x139);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x139);
-    exit(-1);
+    return pGame->pArenaCtrl->eArenaFlags;
     return pGame->pArenaCtrl->eArenaFlags;
 }
 
 // Returns pArenaCtrl->eArenaFlags & eMask; halts (Arena.cpp line 323) when there is no arena control.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 int __fastcall ARENA_TestFlags(::SGAMEDATA * pGame, eD2ArenaFlags eMask) {
-    if (pGame->pArenaCtrl) {
-      return pGame->pArenaCtrl->eArenaFlags & eMask;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x143);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x143);
-    exit(-1);
+    return pGame->pArenaCtrl->eArenaFlags & eMask;
     return pGame->pArenaCtrl->eArenaFlags & eMask;
 }
 
@@ -598,56 +598,56 @@ BOOL __stdcall NullSub() {
 // Returns bit 0x40 of pArenaCtrl->eArenaFlags (no enum name yet); halts (Arena.cpp line 39, ptArena) when there is no arena control.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 BOOL __fastcall ARENA_IsFlag0x40Set(::SGAMEDATA * pGame) {
-    if (pGame->pArenaCtrl) {
-      return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 6 & 1;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
-    exit(-1);
+    return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 6 & 1;
     return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 6 & 1;
 }
 
 // Returns bit 0x80 of pArenaCtrl->eArenaFlags (no enum name yet); halts (Arena.cpp line 39, ptArena) when there is no arena control.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 BOOL __fastcall ARENA_IsFlag0x80Set(::SGAMEDATA * pGame) {
-    if (pGame->pArenaCtrl) {
-      return (uint32_t)((uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 7);
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
-    exit(-1);
+    return (uint32_t)((uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 7);
     return (uint32_t)((uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 7);
 }
 
 uint32_t __fastcall ARENA_IsArenaMode(::SGAMEDATA * pGame) {
-    if (pGame->pArenaCtrl) {
-      return pGame->pArenaCtrl->eArenaFlags >> 8 & 1;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
-    exit(-1);
+    return pGame->pArenaCtrl->eArenaFlags >> 8 & 1;
     return pGame->pArenaCtrl->eArenaFlags >> 8 & 1;
 }
 
 uint32_t __fastcall ARENA_GetTemplate(::SGAMEDATA * pGame) {
-    if (pGame->pArenaCtrl) {
-      return (uint32_t)(uint8_t)pGame->pArenaCtrl->nTemplateLevel;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x172);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x172);
-    exit(-1);
+    return (uint32_t)(uint8_t)pGame->pArenaCtrl->nTemplateLevel;
     return (uint32_t)(uint8_t)pGame->pArenaCtrl->nTemplateLevel;
 }
 
 // Returns bit 0x200 of pArenaCtrl->eArenaFlags (no enum name yet); halts (Arena.cpp line 39, ptArena) when there is no arena control.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 BOOL __fastcall ARENA_IsFlag0x200Set(::SGAMEDATA * pGame) {
-    if (pGame->pArenaCtrl) {
-      return pGame->pArenaCtrl->eArenaFlags >> 9 & 1;
+    if (!pGame->pArenaCtrl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
-    exit(-1);
+    return pGame->pArenaCtrl->eArenaFlags >> 9 & 1;
     return pGame->pArenaCtrl->eArenaFlags >> 9 & 1;
 }
 

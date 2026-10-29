@@ -52,7 +52,6 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Game/GAME/Task.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Launch/MainMenus.h"
 #include "Fog/Fog.h"
 #include "Fog/Src/LogManager.h"
@@ -175,14 +174,12 @@ void __fastcall D2FILE_CloseFile(D2PoolManagerStrc * pMemory, D2MPQFileStrc * pF
 DWORD __fastcall D2FILE_GetFileSize(D2PoolManagerStrc * pMemory, D2MPQFileStrc * pFile, LPDWORD pFileSizeOut) {
     DWORD dwFileSizeResult;
     char szArchivePath[260];
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (!pFile) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x59);
       exit(-1);
     } else {
       dwFileSizeResult = Fog::Source::SFile::ERRORMANAGER_FGetFileSize(pFile, pFileSizeOut);
       if (dwFileSizeResult) {
-        Fog::Debug::GuardStack();
         return dwFileSizeResult;
       }
 
@@ -195,14 +192,12 @@ DWORD __fastcall D2FILE_GetFileSize(D2PoolManagerStrc * pMemory, D2MPQFileStrc *
 void __fastcall D2FILE_SeekFile(D2PoolManagerStrc * pMemory, D2MPQFileStrc * pFile, int32_t nDistanceToMove, int * pnNewPos, DWORD dwMoveMethod) {
     DWORD nSeekResult;
     char szArchivePath[260];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (!pFile) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x70);
       exit(-1);
     } else {
       nSeekResult = Fog::Source::SFile::SFILE_SetFilePointerThunk(pFile, nDistanceToMove, pnNewPos, dwMoveMethod);
       if (nSeekResult != -1) {
-        Fog::Debug::GuardStack();
         return;
       }
 
@@ -216,7 +211,6 @@ void __fastcall D2FILE_SeekFile(D2PoolManagerStrc * pMemory, D2MPQFileStrc * pFi
 void __fastcall D2FILE_ReadFile(D2PoolManagerStrc * pMemory, D2MPQFileStrc * pFile, void * pBuffer, uint32_t nBytesToRead) {
     uint32_t nBytesRead;
     char szArchivePath[260];
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (!pFile) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x87);
       exit(-1);
@@ -230,8 +224,6 @@ void __fastcall D2FILE_ReadFile(D2PoolManagerStrc * pMemory, D2MPQFileStrc * pFi
     if (nBytesToRead != nBytesRead) {
       D2FILE_ReadFile_HaltTail(0x92);
     }
-
-    Fog::Debug::GuardStack();
 }
 
 void __stdcall D2FILE_ReadFile_HaltTail(int nLine) {
@@ -276,7 +268,6 @@ void __fastcall FAULT_ShowErrorMessageBox(LPCSTR szText) {
 
 void __fastcall FAULT_FormatAndShowError(LPCSTR szFile, int nLine, LPCSTR szExpression) {
     char szBuffer[512];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (g_pfnFaultErrorCallback) {
       (*g_pfnFaultErrorCallback)(szFile, nLine, szExpression);
     }
@@ -286,8 +277,6 @@ void __fastcall FAULT_FormatAndShowError(LPCSTR szFile, int nLine, LPCSTR szExpr
     if (nMsgBoxResult == 3) {
       FAULT_TerminateCurrentProcess();
     }
-
-    Fog::Debug::GuardStack();
 }
 
 void __fastcall FAULT_RegisterErrorHandler(pfnStormErrorHandler pfnHandler) {
@@ -329,37 +318,36 @@ void __fastcall FAULT_LookupErrorString(uint32_t nErrorCode, char * szText, int3
 }
 
 void FAULT_ShowFormattedError(uint32_t nErrorCode, ...) {
+    va_list __va;
+    va_start(__va, nErrorCode);
     char szFormattedMsg[512];
     char szErrorMsg[512];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     FAULT_LookupErrorString(nErrorCode, szErrorMsg, 0x200);
-    /* va_list arglist for wvsprintfA */ /* LPCSTR param_2 for wvsprintfA */ /* LPSTR param_1 for wvsprintfA */ wvsprintfA(szFormattedMsg, szErrorMsg, (va_list)((uint8_t*)&nErrorCode + 4));
+    /* va_list arglist for wvsprintfA */ /* LPCSTR param_2 for wvsprintfA */ /* LPSTR param_1 for wvsprintfA */ wvsprintfA(szFormattedMsg, szErrorMsg, __va);
     int nMsgBoxResult = MessageBoxA((HWND)0x0, szFormattedMsg, "Diablo 2.EXE", 0x2215);
     if (nMsgBoxResult != 4) {
       FAULT_TerminateCurrentProcess();
     }
-
-    Fog::Debug::GuardStack();
 }
 
 void FAULT_ShowFormattedErrorAndTerminate(uint32_t nErrorCode, ...) {
+    va_list __va;
+    va_start(__va, nErrorCode);
     char szFormattedMsg[512];
     char szErrorMsg[512];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     FAULT_LookupErrorString(nErrorCode, szErrorMsg, 0x200);
-    /* va_list arglist for wvsprintfA */ /* LPCSTR param_2 for wvsprintfA */ /* LPSTR param_1 for wvsprintfA */ wvsprintfA(szFormattedMsg, szErrorMsg, (va_list)((uint8_t*)&nErrorCode + 4));
+    /* va_list arglist for wvsprintfA */ /* LPCSTR param_2 for wvsprintfA */ /* LPSTR param_1 for wvsprintfA */ wvsprintfA(szFormattedMsg, szErrorMsg, __va);
     FAULT_ShowErrorAndTerminate(szFormattedMsg);
-    Fog::Debug::GuardStack();
 }
 
 void FAULT_ShowFormattedErrorWithArgs(uint32_t nErrorCode, ...) {
+    va_list __va;
+    va_start(__va, nErrorCode);
     char szFormattedMsg[512];
     char szErrorMsg[512];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     FAULT_LookupErrorString(nErrorCode, szErrorMsg, 0x200);
-    /* va_list arglist for wvsprintfA */ /* LPCSTR param_2 for wvsprintfA */ /* LPSTR param_1 for wvsprintfA */ wvsprintfA(szFormattedMsg, szErrorMsg, (va_list)((uint8_t*)&nErrorCode + 4));
+    /* va_list arglist for wvsprintfA */ /* LPCSTR param_2 for wvsprintfA */ /* LPSTR param_1 for wvsprintfA */ wvsprintfA(szFormattedMsg, szErrorMsg, __va);
     FAULT_ShowErrorMessageBox(szFormattedMsg);
-    Fog::Debug::GuardStack();
 }
 
 LPVOID __fastcall D2MEM_VirtualAlloc(SIZE_T nSize) {

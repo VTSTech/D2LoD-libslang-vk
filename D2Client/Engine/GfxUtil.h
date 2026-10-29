@@ -41,9 +41,7 @@ namespace D2Client::Engine::GfxUtil {
 
 // Function declarations
 void GFXUTIL_PadTokenString(char * szText1, char * szText2);
-uint8_t GFXUTIL_GetCompositePaletteIndex(struct D2UnitStrc * pUnit, uint8_t byComponent);
 void __stdcall InitializeModeTokens();
-void __stdcall GFXUTIL_SetMissileCelFile(struct D2GfxDataStrc * pGfxData, struct D2UnitStrc * pMissile);
 // @sourcefile .\ENGINE\GfxUtil.cpp
 void __fastcall AllocGfxUtil(void * * pParam, uint32_t dwParam, uint32_t dwValue1, uint32_t dwValue2, int * pnParam1, int * pnParam2);
 int32_t __fastcall GFXUTIL_FindGfxNodeByTypeAndId(int32_t pNode, int32_t nType, int32_t nId);
@@ -56,11 +54,6 @@ void __fastcall GFXUTIL_NormalizeItemMode(struct D2UnitStrc * pUnitStrc, uint32_
 // NOTE: Register param types inferred (medium confidence): pUnitStrc (ECX): D2UnitStrc *, pInventory (EDX): D2InventoryStrc *
 void __fastcall GFXUTIL_GetArmorAppearanceFromTorso(struct D2UnitStrc * pUnitStrc, struct D2InventoryStrc * pInventory, BOOL bCheckBroken, uint32_t * pOutAppearance);
 uint32_t __fastcall GFXUTIL_IsDC6BlockOnScreen(struct DC6Block * pDC6Block, int32_t nParam, int32_t nScreenY, BOOL bFlipped);
-// @sourcefile .\ENGINE\GfxUtil.cpp
-void GFXUTIL_SetItemGfxFile(struct D2GfxDataStrc * pGfxData, struct D2UnitStrc * pUnit);
-int32_t GFXUTIL_GetOverlayNumDirections(int32_t nParam);
-int32_t GFXUTIL_GetBodyLocWeaponToken(int32_t nBodyLoc, struct D2UnitStrc * pUnit);
-int32_t __stdcall GFXUTIL_GetNumDirectionsForUnit(struct D2UnitStrc * pUnit, eD2UnitType eUnitType, int32_t nMode, int32_t nClassId);
 void * __fastcall GFXUTIL_Identity(void * dwParam);
 uint32_t __fastcall GFXUTIL_GetCofFrameCount(uint8_t * pbParam, uint32_t nParam);
 uint32_t __fastcall GFXUTIL_GetCofAnimSpeed(uint8_t * pbParam, uint32_t nParam);
@@ -70,9 +63,6 @@ uint32_t __fastcall GFXUTIL_GetCofDrawOrder(uint8_t * pbParam, uint32_t nParam);
 int __fastcall GFXUTIL_IsValidUnitType(struct D2UnitStrc * pnParam);
 uint32_t __fastcall GFXUTIL_GetGfxInfoComponent(struct D2UnitStrc * pUnit, int32_t nParam);
 void __fastcall GFXUTIL_SetGfxInfoComponent(struct D2UnitStrc * pUnit, int32_t nParam, uint8_t byComponentVal);
-// @sourcefile .\ENGINE\GfxUtil.cpp
-void __stdcall GFXUTIL_UpdateDirectionForMode(uint8_t bParam, int32_t nAnimMode, int32_t nPrevDirection, struct D2UnitStrc * pUnit, int32_t nNewDirection);
-void GFXUTIL_ConvertDirectionBits(int32_t nFromDirs, int32_t nToDirs, uint32_t * pnParam);
 void __fastcall GFXUTIL_CalcDirectionAndFrame(int32_t nTypeId, int32_t nCofComponent, uint32_t * pnParam, uint32_t * pnFrameHandler, int * pnParam2, uint32_t nNumDirs, int32_t nAnimMode, struct D2UnitStrc * pUnit, int32_t nAnimDir);
 // @sourcefile .\ENGINE\GfxUtil.cpp
 BOOL __fastcall GFXUTIL_GetEtherealTransparency(struct D2UnitStrc * pUnit, int32_t nParam, uint32_t * pOutTransTable, uint32_t nItemClassId);
@@ -82,5 +72,6 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(struct D2UnitStrc * pUni
 // Build COF parameters from unit animation/equipment - determines graphics file, weapon, armor appearance
 // @sourcefile .\ENGINE\GfxUtil.cpp
 BOOL __stdcall GFXUTIL_BuildCofParams(struct D2GfxDataStrc * pGfxData, struct D2UnitStrc * pUnit, struct D2UnitStrc * pEquipContext, int * pOutItemClassId);
+// 8 internal functions (defined in .cpp)
 
 } // namespace D2Client::Engine::GfxUtil

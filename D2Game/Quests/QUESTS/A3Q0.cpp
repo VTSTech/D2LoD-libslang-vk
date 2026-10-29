@@ -29,15 +29,15 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q0Strc) == 0x1c, "D2_NEW(D2QuestDataA3Q0Strc): the 32-bit layout must be the 0x1c bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q0Strc) == 0x1c, "D2_NEW_AT(D2QuestDataA3Q0Strc): the 32-bit layout must be the 0x1c bytes 1.14d allocates");
 
 
 namespace D2Game::Quests::QUESTS::A3Q0 {
@@ -125,7 +125,7 @@ void __fastcall Q17_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
-    D2QuestDataA3Q0Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA3Q0Strc);
+    D2QuestDataA3Q0Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA3Q0Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q0.cpp", 0x94);
     pQuestData->pQuestSpecificData.pA3Q0 = pQuestSpecificData;
     pQuestSpecificData->bHratliSpawned = false;
     pQuestSpecificData->bHratliMapAiSet = false;

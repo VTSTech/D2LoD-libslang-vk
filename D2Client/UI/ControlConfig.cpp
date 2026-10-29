@@ -250,7 +250,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
 }
 
 // UI controls config: returns text color index for a control entry based on binding state. Returns 3 (highlighted) if selected and not in bind mode, 5 (bound) or 4 (unbound) based on whether keys are assigned via CMD_IsCommandBound.
-int32_t UI_GetConfigControlTextColor(int32_t nColumn, int32_t nRow) {
+static int32_t UI_GetConfigControlTextColor(int32_t nColumn, int32_t nRow) {
     if (nRow == g_ControlConfigUIState && (gbUICtrlConfigKeyBindMode || nColumn == nConfigControlSelected)) {
       return 3;
     }

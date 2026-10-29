@@ -72,7 +72,7 @@
 
 namespace D2Client::UNIT::PlrSkills {
 
-BOOL STATES_IsUnitTransformable(D2UnitStrc * pUnit) {
+static BOOL STATES_IsUnitTransformable(D2UnitStrc * pUnit) {
     eD2UnitType eUnitType = UNIT_COUNT;
     if (pUnit) {
       eUnitType = pUnit->eUnitType;
@@ -168,7 +168,7 @@ void __fastcall PLRSKILLS_DrawChargeTrailIfSecondary(D2UnitStrc * pUnit, uint32_
     ::D2Client::UNIT::PlrSkills::PLRSKILLS_DrawSkillTrail_Secondary(pUnit, nParam);
 }
 
-void __stdcall STATES_RemoveOverlayById(D2UnitStrc * pUnit, int32_t nParam) {
+static void __stdcall STATES_RemoveOverlayById(D2UnitStrc * pUnit, int32_t nParam) {
     if (nParam == -1) {
       return;
     }
@@ -1175,7 +1175,7 @@ void __fastcall STATES_AddStateOverlays(D2UnitStrc * pUnit, eD2States eState) {
     Engine::Gfx::GFX_AddOverlayToUnit(pUnit, eOverlay2, 3, 0, 0, 0, 0, 0);
 }
 
-void STATES_ResetUnitGfxAndMode(D2UnitStrc * pUnit) {
+static void STATES_ResetUnitGfxAndMode(D2UnitStrc * pUnit) {
     Engine::GfxInfo::GFX_FreeAllModesGfxInfo(pUnit);
     if (pUnit) {
       if (pUnit->eUnitType == UNIT_PLAYER) {

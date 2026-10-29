@@ -521,7 +521,7 @@ void __fastcall SKILLNEC_ApplyCurseToUnit(D2UnitStrc * pUnit, D2NecroSkillArgStr
     } while (iStatLoop);
 }
 
-int32_t SKILLNEC_ApplyCurseDifficultyDivisor(uint32_t nParam, int32_t nParam2) {
+static int32_t SKILLNEC_ApplyCurseDifficultyDivisor(uint32_t nParam, int32_t nParam2) {
     D2DifficultyLevelsTxt* pDiffLevels = D2Common::DATATBLS::DataTbls::GetDifficultyLevels(nParam & 0xff);
     if (!(pDiffLevels && pDiffLevels->AiCurseDivisor)) {
       return nParam2;
@@ -959,7 +959,7 @@ void __fastcall SKILLNEC_ApplySummonResistPassive(D2UnitStrc * pUnit, D2UnitStrc
 }
 
 // Initialises a raised skeleton's visual component bytes from a mastery-level lookup table (0x741940, stride 9, level capped at 10). Writes the component bytes into the monster's unit data. If bRollComponents, advances the room RNG to randomise components [0xb]/[0xc] and refreshes the monster AI args.
-void __stdcall SKILLNEC_SetSkeletonComponentsByMasteryLvl(D2UnitStrc * pSkeletonUnit, int32_t bHasExtraVariant, int32_t bRollComponents, D2UnitStrc * pSeedUnit, int32_t nMasteryLvl) {
+static void __stdcall SKILLNEC_SetSkeletonComponentsByMasteryLvl(D2UnitStrc * pSkeletonUnit, int32_t bHasExtraVariant, int32_t bRollComponents, D2UnitStrc * pSeedUnit, int32_t nMasteryLvl) {
     D2AiGeneralStrc* pMonsterAi;
     if (10 < nMasteryLvl) {
       nMasteryLvl = 10;
@@ -1022,7 +1022,7 @@ void __stdcall SKILLNEC_SetSkeletonComponentsByMasteryLvl(D2UnitStrc * pSkeleton
     Monster::AI::SetDwArgsIfNotNeg0x29a(pMonsterAi, 1, 0, -0x29a);
 }
 
-void __stdcall SKILLNEC_RollSkeletonMastery(D2UnitStrc * pUnit, int * pnParam, int32_t nSkillLvl, int32_t eSkillMastery) {
+static void __stdcall SKILLNEC_RollSkeletonMastery(D2UnitStrc * pUnit, int * pnParam, int32_t nSkillLvl, int32_t eSkillMastery) {
     int nExtraVariantChance;
     D2SeedStrc sSeedNew;
     int32_t nMasteryLvlState = 1;
@@ -1055,7 +1055,7 @@ void __stdcall SKILLNEC_RollSkeletonMastery(D2UnitStrc * pUnit, int * pnParam, i
     SKILLNEC_SetSkeletonComponentsByMasteryLvl((D2UnitStrc*)pnParam, bHasExtraVariant, 0, pUnit, nMasteryLvlState);
 }
 
-void __stdcall SKILLNEC_SpawnSkeletonsForRevive(int * pnParam, D2UnitStrc * pUnit) {
+static void __stdcall SKILLNEC_SpawnSkeletonsForRevive(int * pnParam, D2UnitStrc * pUnit) {
     int nMasteryLvl = 1;
     eD2States eMasteryState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_skel_mastery);
     if (eMasteryState != STATE_none) {
@@ -2013,7 +2013,7 @@ BOOL __fastcall Skills_SrvDoFunc_060_SummonBoneWall(::SGAMEDATA * pGame, D2UnitS
 }
 
 // Creates a Necromancer summon at an explicit world position (nSpawnX, nSpawnY). Resolves the monster class id via SKILLS_GetSummonMonsterClassId, finds the best nearby room, aborts if the spawn point is in town, then creates the monster via SKILL_CreateSummon with flags=9, applies summon buffs and umods, and registers the unit in the target node table. Returns the new D2UnitStrc* or NULL on failure.
-D2UnitStrc * __stdcall SKILLNEC_CreateSummonAtPosition(::SGAMEDATA * pGame, int32_t nSpawnX, int32_t nSpawnY, int32_t nSkillLvl, eD2Skills eSkill, D2UnitStrc * pUnit) {
+static D2UnitStrc * __stdcall SKILLNEC_CreateSummonAtPosition(::SGAMEDATA * pGame, int32_t nSpawnX, int32_t nSpawnY, int32_t nSkillLvl, eD2Skills eSkill, D2UnitStrc * pUnit) {
     D2SkillsTxt* pSkillsTxt;
     D2MonsterCastPetStrc sSummonParams;
     if ((int)eSkill < 0 || sgptDataTable->nTxtSkillsCount <= (int)eSkill) {
@@ -2187,7 +2187,7 @@ BOOL __fastcall Skills_SrvDoFunc_063_PoisonExplosion(::SGAMEDATA * pGame, D2Unit
     return 1;
 }
 
-int32_t SKILLNEC_AddHitpoints(D2UnitStrc * pUnit, int32_t nParam) {
+static int32_t SKILLNEC_AddHitpoints(D2UnitStrc * pUnit, int32_t nParam) {
     if (nParam < 1) {
       return 0;
     }

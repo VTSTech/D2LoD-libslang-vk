@@ -43,15 +43,15 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q7Strc) == 0x14, "D2_NEW(D2QuestDataA3Q7Strc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q7Strc) == 0x14, "D2_NEW_AT(D2QuestDataA3Q7Strc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
 
 
 namespace D2Game::Quests::QUESTS::A3Q7 {
@@ -144,7 +144,7 @@ void __fastcall Q24_HandleKhalimsWillCompletion(::SGAMEDATA * pGame) {
 }
 
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_SetupDarkWandererMapAi(pGame, pDrlgMap): stores the passed DRLG map pointer into quest data, then if the tracked "wanderer" monster exists, its map is valid, and the map hasn't been taken yet -> transfers (DRLGPRESET_TakeFileFromDrlgMap) the monster's map-AI DRLG file into quest data and marks bDrlgMapTaken. Binds the Mephisto/Act4-transition actor's generated map into the quest. No quest-state transitions.
-void Q24_SetupDarkWandererMapAi(void * pThis, int32_t nParam) {
+void __thiscall Q24_SetupDarkWandererMapAi(void * pThis, int32_t nParam) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal((::SGAMEDATA*)pThis, QUESTINT_TheGuardian);
     if (!pQuestData) {
       return;
@@ -298,7 +298,7 @@ void __fastcall Q24_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
-    D2QuestDataA3Q7Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA3Q7Strc);
+    D2QuestDataA3Q7Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA3Q7Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q7.cpp", 0xb9);
     pQuestData->pQuestSpecificData.pA3Q7 = pQuestSpecificData;
     /* memset should be used here */ pQuestSpecificData->bHasSpawnCoords = false;
     pQuestSpecificData->bQuestCompleted = false;

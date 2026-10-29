@@ -15,8 +15,8 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -224,8 +224,8 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
 
     D2WINPALETTE_LoadPalettes();
     D2gfx::D2GFX::D2GFX_SetPalette(MostLikelyCurrentPalletePtr);
-    D2_FREE(pDatFileHandle);
-    D2_FREE(pMemoryToFree);
+    D2_FREE_AT(pDatFileHandle, ".\\Src\\D2WinPalette.cpp", 0x96);
+    D2_FREE_AT(pMemoryToFree, ".\\Src\\D2WinPalette.cpp", 0x99);
     return 1;
 }
 
@@ -244,7 +244,7 @@ BOOL __fastcall D2WINPAL_LoadActPalette(uint8_t nParam) {
     return nResult;
 }
 
-void __stdcall LoadPalette(char * szDatFile, char * szPl2File) {
+int __stdcall LoadPalette(char * szDatFile, char * szPl2File) {
     char szDatFullPath[260];
     if (!szDatFile) {
       char szPl2FullPath[260];
@@ -252,11 +252,12 @@ void __stdcall LoadPalette(char * szDatFile, char * szPl2File) {
       /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szDatFullPath, "%s\\%s", "DATA\\GLOBAL", "palette\\act1\\pal.pl2");
       D2WINPAL_LoadPaletteFiles(szPl2FullPath, szDatFullPath);
       D2Comp::D2COMP_InitEmblemColorTables();
-      return;
+      return 1;
     }
 
     D2WINPAL_LoadPaletteFiles(szDatFile, szPl2File);
     D2Comp::D2COMP_InitEmblemColorTables();
+    return 1;
 }
 
 void __fastcall D2WINPAL_SetGammaRamp(uint32_t dwParam) {

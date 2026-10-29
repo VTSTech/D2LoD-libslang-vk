@@ -65,7 +65,6 @@ uint32_t __stdcall SStrLen(char * szText);
 // @sourcefile-storm .\SOURCE\SSTR.CPP  (first-party: SStrDup's own SMemAlloc call site names it)
 // @wasnamed SSTR_AppendStringOptimized
 uint32_t __stdcall SStrPack(LPSTR szText, char * szSource, uint32_t nBufferLength);
-uint32_t D2vsprintf(char * szFormat, size_t nSize, char * pBuffer, va_list pArgs);
 // @oracle PPC Mac Storm 1.10b export table (337 named TVector symbols), the authoritative Storm API.
 // @oracle-signature SStrPrintf(char *, unsigned long, const char *, ...)
 // @oracle-basis The only __cdecl varargs formatter in the module: (out, size, format, ...), NULL guard on out and
@@ -187,11 +186,8 @@ int __stdcall UTF8_CalculateUTF16Length(char * szText, int nMaxBytes, int * pnPa
 int __stdcall UTF8_ToUTF16(short * pszUTF16Out, int nOutMaxChars, uint8_t * pbUTF8In, int nInBytes, int * pnCharsWritten, int * pnBytesRead);
 uint32_t __stdcall UTF8_DecodeNextChar(uint8_t * pbParam, int * pnParam);
 void __stdcall UTF8_EncodeChar(uint32_t uCodepoint, uint8_t * pbOut);
-void __fastcall UTF8_AdvanceToCharBoundary(uint32_t pThis, int pszBase, int nPosition, int nDirection);
 void __stdcall UTF8_StepBackOneChar(int str_base, int position, uint32_t ecx_passthru);
 void __stdcall UTF8_StepForwardOneChar(int str_base, int position, uint32_t ecx_passthru);
-int TRANSTBL_UnicodeToSingleByte(void * pThis, uint16_t * pXlatTbl, uint8_t * pbOut, int nCount);
-int __fastcall TRANSTBL_SingleByteToUnicode(uint32_t pThis, uint8_t * pbSrc, int nCount, uint16_t * pDest, uint16_t * pXlatTbl);
 void __stdcall TRANSTBL_UnicodeToLatin1(uint8_t * pbOut, void * pSrcUTF16, int nCount);
 void __stdcall TRANSTBL_UnicodeToLatin2(uint8_t * pbOut, void * pSrcUTF16, int nCount);
 void __stdcall TRANSTBL_UnicodeToKorean(uint8_t * pbOut, void * pSrcUTF16, int nCount);
@@ -199,5 +195,6 @@ int __stdcall TRANSTBL_Latin1ToUnicode(uint16_t * dest, uint8_t * src, int count
 void __stdcall TRANSTBL_Latin2ToUnicode(uint16_t * dest, uint8_t * src, int count, uint32_t ecx_passthru);
 void __stdcall TRANSTBL_KoreanToUnicode(uint16_t * dest, uint8_t * src, int count, uint32_t ecx_passthru);
 int __fastcall SSTR_StringLength(char * szText);
+// 4 internal functions (defined in .cpp)
 
 } // namespace Storm::Source::SSTR

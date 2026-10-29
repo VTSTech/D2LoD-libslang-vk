@@ -26,19 +26,19 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2WinTextBox) == 0xac, "D2_NEW(D2WinTextBox): the 32-bit layout must be the 0xac bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2WinTextBox) == 0xac, "D2_NEW_AT(D2WinTextBox): the 32-bit layout must be the 0xac bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_OnPress
@@ -62,7 +62,7 @@ int __stdcall EDITBOX_Cb_D2WINTEXTBOX_SetSelectedLine(::D2WinEditBox * pEditBox,
     return 1;
 }
 
-void D2WINTEXTBOX_ComputeLineSpacingForLanguage(int32_t nFontIndex) {
+static void D2WINTEXTBOX_ComputeLineSpacingForLanguage(int32_t nFontIndex) {
     int32_t nPrevFont;
     uint32_t nLangCode = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
     if (nLangCode == 7) {
@@ -134,13 +134,13 @@ void __fastcall D2WINTEXTBOX_ClearAllLines(::D2WinTextBox * pTextBox) {
       do {
         pMemoryToFree = *(void**)((int)nErrorCode + nColIdx * 4);
         if (pMemoryToFree) {
-          D2_FREE(pMemoryToFree);
+          D2_FREE_AT(pMemoryToFree, ".\\Src\\D2WinTextBox.cpp", 0xe7);
         }
 
         nColIdx++;
       } while (nColIdx < 5);
 
-      D2_FREE(nErrorCode);
+      D2_FREE_AT(nErrorCode, ".\\Src\\D2WinTextBox.cpp", 0xe9);
       nErrorCode = pNextLineNode;
     }
 
@@ -151,24 +151,24 @@ void __fastcall D2WINTEXTBOX_ClearAllLines(::D2WinTextBox * pTextBox) {
     pTextBox->sStyleControl.dwSizeY = 0;
 }
 
-void __fastcall D2WINTEXTBOX_SetLinePadding(::D2WinTextBox * pnTextBox, int32_t nPadLeft, int32_t nPadding) {
+int __fastcall D2WINTEXTBOX_SetLinePadding(::D2WinTextBox * pnTextBox, int32_t nPadLeft, int32_t nPadding) {
     if (!pnTextBox) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfa);
       exit(-1);
     } else {
-      if (pnTextBox->sControl.neD2FormType == FORM_TextBox) {
-        pnTextBox->nExtraLineSpacingC = nPadding;
-        pnTextBox->nExtraLineSpacingB = nPadLeft;
-        return;
+      if (pnTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfb);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfb);
-      exit(-1);
+      pnTextBox->nExtraLineSpacingC = nPadding;
+      pnTextBox->nExtraLineSpacingB = nPadLeft;
+      return 1;
     }
 }
 
 // @sourcefile .\Src\D2WinTextBox.cpp
-void __fastcall D2WINTEXTBOX_SetLineCellTextW(::D2WinTextBox * pnTextBox, uint16_t * wszText, int32_t nRow, int32_t nCol) {
+int __fastcall D2WINTEXTBOX_SetLineCellTextW(::D2WinTextBox * pnTextBox, uint16_t * wszText, int32_t nRow, int32_t nCol) {
     int nLineNode;
     uint16_t* wszAllocDst;
     int nCurLineNode;
@@ -180,40 +180,40 @@ void __fastcall D2WINTEXTBOX_SetLineCellTextW(::D2WinTextBox * pnTextBox, uint16
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1f9);
       exit(-1);
     } else if (pnTextBox->sControl.neD2FormType == FORM_TextBox) {
-      if (nCol < (int)pnTextBox->sStyleControl.fpPush) {
-        Fog::File::CONTAINER_InitializeBuffer(wszLocalBuf, 2, 0x400, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-        D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszLocalBuf, wszText);
-        nCurLineNode = pnTextBox->sStyleControl.dwState;
-        nLineNode = 0;
-        if (0 < nRow) {
-          do {
-            if (!nCurLineNode) {
-              return;
-            }
-
-            nCurLineNode = *(int*)(nCurLineNode + 0x1c);
-            nLineNode++;
-          } while (nLineNode < nRow);
-        }
-        if (!nCurLineNode) {
-          return;
-        }
-        if (*(int*)(nCurLineNode + nCol * 4)) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x20f);
-          exit(-1);
-        }
-
-        nZero = 0;
-        nLine = 0x210;
-        nLine_00 = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLocalBuf);
-        wszAllocDst = (uint16_t*)Fog::Memory::AllocClientMemory(nLine_00 * 2 + 2, ".\\Src\\D2WinTextBox.cpp", nLine, nZero);
-        *(uint16_t**)(nCurLineNode + nCol * 4) = (uint16_t*)wszAllocDst;
-        D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszAllocDst, wszLocalBuf);
-        return;
+      if (!(nCol < (int)pnTextBox->sStyleControl.fpPush)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1fb);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1fb);
-      exit(-1);
+      Fog::File::CONTAINER_InitializeBuffer(wszLocalBuf, 2, 0x400, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszLocalBuf, wszText);
+      nCurLineNode = pnTextBox->sStyleControl.dwState;
+      nLineNode = 0;
+      if (0 < nRow) {
+        do {
+          if (!nCurLineNode) {
+            return 1;
+          }
+
+          nCurLineNode = *(int*)(nCurLineNode + 0x1c);
+          nLineNode++;
+        } while (nLineNode < nRow);
+      }
+      if (!nCurLineNode) {
+        return 1;
+      }
+      if (*(int*)(nCurLineNode + nCol * 4)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x20f);
+        exit(-1);
+      }
+
+      nZero = 0;
+      nLine = 0x210;
+      nLine_00 = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLocalBuf);
+      wszAllocDst = (uint16_t*)Fog::Memory::AllocClientMemory(nLine_00 * 2 + 2, ".\\Src\\D2WinTextBox.cpp", nLine, nZero);
+      *(uint16_t**)(nCurLineNode + nCol * 4) = (uint16_t*)wszAllocDst;
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszAllocDst, wszLocalBuf);
+      return 1;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1fa);
       exit(-1);
@@ -249,7 +249,7 @@ void __fastcall D2WINTEXTBOX_ClearLineRow(::D2WinTextBox * pnParam, int32_t nRow
           do {
             nErrorAddr = *(void**)(pCurLineNode + nCurNode * 4);
             if (nErrorAddr) {
-              D2_FREE(nErrorAddr);
+              D2_FREE_AT(nErrorAddr, ".\\Src\\D2WinTextBox.cpp", 0x231);
               *(uint32_t*)(pCurLineNode + nCurNode * 4) = 0;
             }
 
@@ -272,12 +272,12 @@ int32_t __fastcall D2WINTEXTBOX_GetLineCount(::D2WinTextBox * pnParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x23e);
       exit(-1);
     } else {
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        return pnParam->sStyleControl.dwSizeX;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x23f);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x23f);
-      exit(-1);
+      return pnParam->sStyleControl.dwSizeX;
     }
 }
 
@@ -286,12 +286,12 @@ int32_t __fastcall D2WINTEXTBOX_GetScrollPosition(::D2WinTextBox * pnParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x24a);
       exit(-1);
     } else {
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        return pnParam->sStyleControl.dwSizeY;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x24b);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x24b);
-      exit(-1);
+      return pnParam->sStyleControl.dwSizeY;
     }
 }
 
@@ -300,12 +300,12 @@ int32_t __fastcall D2WINTEXTBOX_GetSelectedLine(::D2WinTextBox * pnParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x256);
       exit(-1);
     } else {
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        return (int32_t)pnParam->sStyleControl.fpDrawEx;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 599);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 599);
-      exit(-1);
+      return (int32_t)pnParam->sStyleControl.fpDrawEx;
     }
 }
 
@@ -316,28 +316,28 @@ void __fastcall D2WINTEXTBOX_SetSelectedLine(::D2WinTextBox * pnParam, int32_t n
       exit(-1);
     } else {
       ::DrawEx nClampedLine;
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        nClamped = nLineIndex;
-        if (nLineIndex < 0) {
-          nClamped = -1;
-        }
-
-        nClampedLine = (::DrawEx)(pnParam->sStyleControl.dwSizeX - 1);
-        if (nClamped < (int)nClampedLine) {
-          if (-1 < nLineIndex) {
-            pnParam->sStyleControl.fpDrawEx = (::DrawEx)nLineIndex;
-            return;
-          }
-
-          nClampedLine = (::DrawEx)-1;
-        }
-
-        pnParam->sStyleControl.fpDrawEx = nClampedLine;
-        return;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x263);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x263);
-      exit(-1);
+      nClamped = nLineIndex;
+      if (nLineIndex < 0) {
+        nClamped = -1;
+      }
+
+      nClampedLine = (::DrawEx)(pnParam->sStyleControl.dwSizeX - 1);
+      if (nClamped < (int)nClampedLine) {
+        if (-1 < nLineIndex) {
+          pnParam->sStyleControl.fpDrawEx = (::DrawEx)nLineIndex;
+          return;
+        }
+
+        nClampedLine = (::DrawEx)-1;
+      }
+
+      pnParam->sStyleControl.fpDrawEx = nClampedLine;
+      return;
     }
 }
 
@@ -349,39 +349,39 @@ uint32_t __fastcall D2WINTEXTBOX_ScrollToLine(::D2WinTextBox * pnParam, int32_t 
       exit(-1);
     } else {
       int pCurLineNode;
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        pCurLineNode = pnParam->sStyleControl.dwSizeX;
-        if (pCurLineNode <= nTargetLine) {
-          nTargetLine = pCurLineNode;
-        }
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x272);
+        exit(-1);
+      }
 
-        pCurLineNode = pnParam->sStyleControl.dwState;
-        nLineIndex = 0;
-        if (0 < nTargetLine) {
-          do {
-            pNextLineNode = *(int*)(pCurLineNode + 0x1c);
-            if (!pNextLineNode) {
-              break;
-            }
+      pCurLineNode = pnParam->sStyleControl.dwSizeX;
+      if (pCurLineNode <= nTargetLine) {
+        nTargetLine = pCurLineNode;
+      }
 
-            nLineIndex++;
-            pCurLineNode = pNextLineNode;
-          } while (nLineIndex < nTargetLine);
-        }
-        if (pCurLineNode) {
-          pnParam->sStyleControl.dwPosY = pCurLineNode;
-          pnParam->sStyleControl.dwSizeY = nTargetLine;
-        }
-        if (!pnParam->pScrollbar) {
-          return 1;
-        }
+      pCurLineNode = pnParam->sStyleControl.dwState;
+      nLineIndex = 0;
+      if (0 < nTargetLine) {
+        do {
+          pNextLineNode = *(int*)(pCurLineNode + 0x1c);
+          if (!pNextLineNode) {
+            break;
+          }
 
-        D2WinScrollbar::D2WINSCROLLBAR_SetPosition(pnParam->pScrollbar, nTargetLine);
+          nLineIndex++;
+          pCurLineNode = pNextLineNode;
+        } while (nLineIndex < nTargetLine);
+      }
+      if (pCurLineNode) {
+        pnParam->sStyleControl.dwPosY = pCurLineNode;
+        pnParam->sStyleControl.dwSizeY = nTargetLine;
+      }
+      if (!pnParam->pScrollbar) {
         return 1;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x272);
-      exit(-1);
+      D2WinScrollbar::D2WINSCROLLBAR_SetPosition(pnParam->pScrollbar, nTargetLine);
+      return 1;
     }
 }
 
@@ -394,18 +394,18 @@ int32_t __fastcall D2WINTEXTBOX_GetVisibleLineCount(::D2WinTextBox * pnParam) {
       exit(-1);
     } else {
       uint32_t uFontHeight;
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        D2WinFont::SetAndReturnLastFont(pnParam->nScrollWidth);
-        nPaddingTop = pnParam->sStyleControl.pDC6;
-        nHeight = pnParam->sControl.dwSizeY;
-        D2WINTEXTBOX_ComputeLineSpacingForLanguage(pnParam->nScrollWidth);
-        uFontHeight = D2WinFont::D2WINFONT_GetCurrentFontHeight();
-        iVar1 = uFontHeight + (int)pnParam->pLineSpacingGlobal;
-        return (nHeight + (int)nPaddingTop * -2 - iVar1) / (pnParam->nExtraLineSpacingC + iVar1) + 1;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x291);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x291);
-      exit(-1);
+      D2WinFont::SetAndReturnLastFont(pnParam->nScrollWidth);
+      nPaddingTop = pnParam->sStyleControl.pDC6;
+      nHeight = pnParam->sControl.dwSizeY;
+      D2WINTEXTBOX_ComputeLineSpacingForLanguage(pnParam->nScrollWidth);
+      uFontHeight = D2WinFont::D2WINFONT_GetCurrentFontHeight();
+      iVar1 = uFontHeight + (int)pnParam->pLineSpacingGlobal;
+      return (nHeight + (int)nPaddingTop * -2 - iVar1) / (pnParam->nExtraLineSpacingC + iVar1) + 1;
     }
 }
 
@@ -417,26 +417,26 @@ uint16_t * __fastcall D2WINTEXTBOX_GetSelectedLineText(::D2WinTextBox * pnTextBo
       exit(-1);
     } else {
       ::DrawEx pDVar1;
-      if (pnTextBox->sControl.neD2FormType == FORM_TextBox) {
-        pDVar1 = pnTextBox->sStyleControl.fpDrawEx;
-        if (!(pDVar1 != (::DrawEx)-1 && (uint32_t)pnTextBox->sStyleControl.fpDraw & 1)) {
-          return nullptr;
-        }
+      if (pnTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a7);
+        exit(-1);
+      }
 
-        nSelectedLine = 0;
-        for (pLineNode = (uint32_t*)pnTextBox->sStyleControl.dwState; pLineNode; pLineNode = (uint32_t*)pLineNode[7]) {
-          if (pDVar1 == nSelectedLine) {
-            return (uint16_t*)*pLineNode;
-          }
-
-          nSelectedLine++;
-        }
-
+      pDVar1 = pnTextBox->sStyleControl.fpDrawEx;
+      if (!(pDVar1 != (::DrawEx)-1 && (uint32_t)pnTextBox->sStyleControl.fpDraw & 1)) {
         return nullptr;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a7);
-      exit(-1);
+      nSelectedLine = 0;
+      for (pLineNode = (uint32_t*)pnTextBox->sStyleControl.dwState; pLineNode; pLineNode = (uint32_t*)pLineNode[7]) {
+        if (pDVar1 == nSelectedLine) {
+          return (uint16_t*)*pLineNode;
+        }
+
+        nSelectedLine++;
+      }
+
+      return nullptr;
     }
 }
 
@@ -485,19 +485,19 @@ void __fastcall D2WINTEXTBOX_SetColumnCount(::D2WinTextBox * pnParam, int32_t nC
       exit(-1);
     } else if (pnParam->sControl.neD2FormType == FORM_TextBox) {
       if (nColumnCount - 1U < 5) {
-        if ((int)pnParam->sStyleControl.fpPush <= nColumnCount) {
-          pnParam->sStyleControl.fpPush = (::Push)nColumnCount;
-          if (1 >= nColumnCount) {
-            return;
-          }
+        if (!((int)pnParam->sStyleControl.fpPush <= nColumnCount)) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e2);
+          exit(-1);
+        }
 
-          ppDVar1 = &pnParam->sStyleControl.fpDraw;
-          *ppDVar1 = (::Draw)((uint32_t)*ppDVar1 | 0x20);
+        pnParam->sStyleControl.fpPush = (::Push)nColumnCount;
+        if (1 >= nColumnCount) {
           return;
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e2);
-        exit(-1);
+        ppDVar1 = &pnParam->sStyleControl.fpDraw;
+        *ppDVar1 = (::Draw)((uint32_t)*ppDVar1 | 0x20);
+        return;
       } else {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e0);
         exit(-1);
@@ -513,13 +513,13 @@ void __fastcall D2WINTEXTBOX_SetColumnWidth(::D2WinTextBox * pnParam, int32_t nC
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ef);
       exit(-1);
     } else if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-      if (-1 < nColumnIndex && nColumnIndex < (int)pnParam->sStyleControl.fpPush) {
-        (&pnParam->sStyleControl.fpMouse)[nColumnIndex] = (::Mouse)nColumnWidth;
-        return;
+      if (!(-1 < nColumnIndex && nColumnIndex < (int)pnParam->sStyleControl.fpPush)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2f2);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2f2);
-      exit(-1);
+      (&pnParam->sStyleControl.fpMouse)[nColumnIndex] = (::Mouse)nColumnWidth;
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2f0);
       exit(-1);
@@ -531,13 +531,13 @@ void __fastcall D2WINTEXTBOX_SetColumnAlignment(::D2WinTextBox * pnParam, int32_
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2fc);
       exit(-1);
     } else if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-      if (-1 < nColumnIndex) {
-        (&pnParam->sStyleControl.pNext)[nColumnIndex] = (D2ControlStrc*)nAlignment;
-        return;
+      if (!(-1 < nColumnIndex)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ff);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ff);
-      exit(-1);
+      (&pnParam->sStyleControl.pNext)[nColumnIndex] = (D2ControlStrc*)nAlignment;
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2fd);
       exit(-1);
@@ -551,27 +551,27 @@ int32_t __fastcall D2WINTEXTBOX_GetLastLineIndex(::D2WinTextBox * pnParam) {
       exit(-1);
     } else {
       int nCount;
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        pCurLineNode = pnParam->sStyleControl.dwState;
-        nCount = 0;
-        while (true) {
-          if (!pCurLineNode) {
-            break;
-          }
-
-          pCurLineNode = *(int*)(pCurLineNode + 0x1c);
-          if (!pCurLineNode) {
-            break;
-          }
-
-          nCount++;
-        }
-
-        return nCount;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x30a);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x30a);
-      exit(-1);
+      pCurLineNode = pnParam->sStyleControl.dwState;
+      nCount = 0;
+      while (true) {
+        if (!pCurLineNode) {
+          break;
+        }
+
+        pCurLineNode = *(int*)(pCurLineNode + 0x1c);
+        if (!pCurLineNode) {
+          break;
+        }
+
+        nCount++;
+      }
+
+      return nCount;
     }
 }
 
@@ -583,17 +583,16 @@ void __fastcall D2WINTEXTBOX_SetActive(::D2WinTextBox * pTextBox, BOOL bActive) 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 800);
       exit(-1);
     } else {
-      if (pTextBox->sControl.neD2FormType == FORM_TextBox) {
-        if (!pTextBox->pScrollbar) {
-          return;
-        }
-
-        D2WinMain::D2WINMAIN_SetControlActive(&pTextBox->pScrollbar->sControl, bActive);
+      if (pTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x321);
+        exit(-1);
+      }
+      if (!pTextBox->pScrollbar) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x321);
-      exit(-1);
+      D2WinMain::D2WINMAIN_SetControlActive(&pTextBox->pScrollbar->sControl, bActive);
+      return;
     }
 }
 
@@ -646,13 +645,13 @@ uint32_t __fastcall D2WINTEXTBOX_SetLineColor(::D2WinTextBox * pnParam, int32_t 
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x382);
           exit(-1);
         } else {
-          if (nLineIndex == nParam) {
-            *(uint32_t*)(pCurLineNode + 0x14) = dwColor;
-            return 1;
+          if (nLineIndex != nParam) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 899);
+            exit(-1);
           }
 
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 899);
-          exit(-1);
+          *(uint32_t*)(pCurLineNode + 0x14) = dwColor;
+          return 1;
         }
       }
     } else {
@@ -661,28 +660,28 @@ uint32_t __fastcall D2WINTEXTBOX_SetLineColor(::D2WinTextBox * pnParam, int32_t 
     }
 }
 
-int32_t D2WINTEXTBOX_GetVisibleLinesFromScroll(::D2WinTextBox * pnParam) {
+static int32_t D2WINTEXTBOX_GetVisibleLinesFromScroll(::D2WinTextBox * pnParam) {
     int pCurLineNode;
     if (!pnParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x393);
       exit(-1);
     } else {
       int nCount;
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        nCount = 0;
-        for (pCurLineNode = pnParam->sStyleControl.dwPosY; pCurLineNode; pCurLineNode = *(int*)(pCurLineNode + 0x1c)) {
-          nCount++;
-        }
-
-        return nCount;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x394);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x394);
-      exit(-1);
+      nCount = 0;
+      for (pCurLineNode = pnParam->sStyleControl.dwPosY; pCurLineNode; pCurLineNode = *(int*)(pCurLineNode + 0x1c)) {
+        nCount++;
+      }
+
+      return nCount;
     }
 }
 
-int32_t __stdcall D2WINTEXTBOX_TruncateStringToFitWidth(int32_t nParam, uint16_t * wszText) {
+static int32_t __stdcall D2WINTEXTBOX_TruncateStringToFitWidth(int32_t nParam, uint16_t * wszText) {
     int nSize;
     int nCharsKept = 0;
     int32_t nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
@@ -735,184 +734,184 @@ BOOL __fastcall Draw(::D2WinTextBox * pTextBox) {
       exit(-1);
     } else {
       uint32_t uBgColor;
-      if (pTextBox->sControl.neD2FormType == FORM_TextBox) {
-        uBgColor = pTextBox->sControl.dwState;
-        if (!(uBgColor & 4) || !(uBgColor & 1)) {
-          return 0;
-        }
-
-        uBgColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x40, 0x40, 0x40);
-        pBgDC6 = pTextBox->sControl.pDC6;
-        if (pBgDC6) {
-          memset(&sGfxData, 0, 0x48);
-          sGfxData.nDirection = 0;
-          sGfxData.nFrameNumber = 0;
-          sGfxData.pDC6 = pBgDC6;
-          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pTextBox->sControl.dwPosX, pTextBox->sControl.dwPosY - 1, -1, DRAW_SOLID, nullptr);
-        }
-
-        D2WINTEXTBOX_ComputeLineSpacingForLanguage(pTextBox->nScrollWidth);
-        D2WinFont::SetAndReturnLastFont(pTextBox->nScrollWidth);
-        nUsableWidth2 = (::ListCheck)(pTextBox->sControl.dwPosX + pTextBox->sStyleControl.neD2FormType);
-        uFontHeight = D2WinFont::D2WINFONT_GetCurrentFontHeight();
-        nCurY = uFontHeight + (pTextBox->sControl.dwPosY - pTextBox->sControl.dwSizeY) + (int)pTextBox->sStyleControl.pDC6;
-        D2WINTEXTBOX_ComputeLineSpacingForLanguage(pTextBox->nScrollWidth);
-        uFontHeight = D2WinFont::D2WINFONT_GetCurrentFontHeight();
-        nTextPixelWidth = uFontHeight + (int)pTextBox->pLineSpacingGlobal;
-        nRemainingHeight = pTextBox->sControl.dwSizeY + (int)pTextBox->sStyleControl.pDC6 * -2;
-        uFontHeight = pTextBox->sControl.dwSizeX + pTextBox->sStyleControl.neD2FormType * -2;
-        if ((uint32_t)pTextBox->sStyleControl.fpDraw & 0x40) {
-          pColWidthEntry = (uint32_t*)pTextBox->sStyleControl.dwPosY;
-          if (pColWidthEntry) {
-            pTextBox->nExtraLineSpacingA += -2;
-            nTextWidth = D2WinFont::DRAW_text0((uint16_t*)*pColWidthEntry);
-            if (pTextBox->nExtraLineSpacingA < -nTextWidth) {
-              pTextBox->nExtraLineSpacingA = uFontHeight;
-            }
-          }
-        }
-        if ((uint32_t)pTextBox->sStyleControl.fpDraw & 0x80) {
-          nLineStride = pTextBox->sStyleControl.dwPosY;
-          if (nLineStride) {
-            pTextBox->nExtraLineSpacingA += -2;
-            if (pTextBox->nExtraLineSpacingA < -nTextPixelWidth) {
-              pTextBox->nExtraLineSpacingA = 0;
-              pTextBox->sStyleControl.dwPosY = *(int*)(nLineStride + 0x1c);
-            }
-          }
-        }
-
-        pCurLine = (uint32_t*)pTextBox->sStyleControl.dwPosY;
-        nLineIndex = 0;
-        if (pCurLine) {
-          do {
-            nColIndex = 0;
-            if (0 < (int)pTextBox->sStyleControl.fpPush) {
-              do {
-                pCellText = (uint16_t*)pCurLine[nColIndex];
-                if (!pCellText) {
-                  break;
-                }
-
-                nNumCols = pTextBox->sStyleControl.fpPush;
-                nBaseX = (::ListCheck)pTextBox->sControl.dwSizeX;
-                pColWidth = nBaseX;
-                if (nColIndex < (int)(nNumCols - 1)) {
-                  pColWidth = (&pTextBox->sStyleControl.fpListCheck)[nColIndex];
-                }
-
-                nColOffsetX = (&pTextBox->sStyleControl.fpMouse)[nColIndex];
-                if (!nColOffsetX) {
-                  pColStyleFlags = pTextBox->sStyleControl.fpDraw;
-                  if (!((uint32_t)pColStyleFlags & 2)) {
-                    nColDrawX = nUsableWidth2;
-                    if ((uint32_t)pColStyleFlags & 0x10) {
-                      nLineStride = D2WinFont::DRAW_text0((uint16_t*)*pCurLine);
-                      if (nLineStride < 0) {
-                        nLineStride = 0;
-                      }
-
-                      nColDrawX = (::ListCheck)(pTextBox->sControl.dwPosX - nLineStride);
-                    }
-                  } else {
-                    nTextWidth = D2WinFont::DRAW_text0((uint16_t*)*pCurLine);
-                    nLineStride = (pTextBox->sControl.dwSizeX - nTextWidth) / 2;
-                    if (nLineStride < 0) {
-                      nLineStride = 0;
-                    }
-
-                    nColDrawX = (::ListCheck)(pTextBox->sControl.dwPosX + nLineStride);
-                  }
-                } else {
-                  nColDrawX = nUsableWidth2 + (int)nColOffsetX;
-                  if (nColIndex + 1 < (int)nNumCols) {
-                    pColWidth = (&pTextBox->sStyleControl.fpListCheck)[nColIndex] - (int)nColOffsetX;
-                  } else {
-                    pColWidth = nBaseX - (int)nColOffsetX;
-                  }
-
-                  pStyleFlags = (&pTextBox->sStyleControl.pNext)[nColIndex];
-                  if (!((uint32_t)pStyleFlags & 2)) {
-                    if ((uint32_t)pStyleFlags & 0x10) {
-                      nLineStride = D2WinFont::DRAW_text0(pCellText);
-                      if (nLineStride < 0) {
-                        nLineStride = 0;
-                      }
-
-                      nColDrawX = pColWidth + ((int)nColDrawX - nLineStride);
-                    }
-                  } else {
-                    nTextWidth = D2WinFont::DRAW_text0(pCellText);
-                    nLineStride = ((int)pColWidth - nTextWidth) / 2;
-                    if (nLineStride < 0) {
-                      nLineStride = 0;
-                    }
-
-                    nColDrawX += nLineStride;
-                  }
-                }
-
-                pCellText = local_87c;
-                for (nLineStride = 0x200; nLineStride; nLineStride--) {
-                  pCellText[0] = L'\0';
-                  pCellText[1] = L'\0';
-                  pCellText += 2;
-                }
-
-                D2Lang::Unicode::UNISYS::STRING_CopyWideString(local_87c, (uint16_t*)pCurLine[nColIndex]);
-                D2WINTEXTBOX_TruncateStringToFitWidth((int32_t)pColWidth, local_87c);
-                nLineStride = nCurY;
-                if (pTextBox->sStyleControl.fpDrawEx == (::DrawEx)(pTextBox->sStyleControl.dwSizeY + nLineIndex) && (uint32_t)pTextBox->sStyleControl.fpDraw & 1) {
-                  dwColor = pCurLine[5] != PALETTE_GOLD ? pCurLine[5] : 0;
-                  if (!nColIndex) {
-                    D2WinFont::D2WINFONT_DrawTextWithOffsetBackground(local_87c, (int32_t)nColDrawX, nCurY, uFontHeight, uBgColor & 0xff, DRAW_SOLID, dwColor);
-                  } else {
-                    D2WinFont::DRAW_text(local_87c, (int32_t)nColDrawX, nLineStride, dwColor, 0);
-                  }
-                } else {
-                  pColStyleFlags = pTextBox->sStyleControl.fpDraw;
-                  if (!((uint32_t)pColStyleFlags & 0x40)) {
-                    dwColor = pCurLine[5];
-                    if ((char)(uintptr_t)pColStyleFlags < '\0') {
-                      nLineStride = pTextBox->nExtraLineSpacingA + nCurY;
-                    }
-
-                    D2WinFont::DRAW_text(local_87c, (int32_t)nColDrawX, nLineStride, dwColor, 0);
-                  } else {
-                    D2WinFont::D2WINFONT_DrawWideStringRightToLeft((uint16_t*)pCurLine[nColIndex], (int32_t)nColDrawX, nCurY, pCurLine[5], pTextBox->nExtraLineSpacingA, uFontHeight);
-                  }
-                }
-
-                nColIndex++;
-              } while (nColIndex < (int)pTextBox->sStyleControl.fpPush);
-            }
-            if (*(char*)(pCurLine + 6) == '\0') {
-              nLineStride = pTextBox->nExtraLineSpacingC;
-            } else {
-              nLineStride = pTextBox->nExtraLineSpacingB;
-            }
-
-            nLineIndex++;
-            nCurY = nCurY + nLineStride + nTextPixelWidth;
-            nRemainingHeight -= nLineStride + nTextPixelWidth;
-            pCurLine = (uint32_t*)pCurLine[7];
-            if (!pCurLine) {
-              break;
-            }
-            if (*(char*)(pCurLine + 6) == '\0') {
-              nLineStride = pTextBox->nExtraLineSpacingC;
-            } else {
-              nLineStride = pTextBox->nExtraLineSpacingB;
-            }
-          } while (nLineStride + nTextPixelWidth <= nRemainingHeight);
-        }
-
-        D2WinFont::SetAndReturnLastFont(1);
-        return 1;
+      if (pTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3bd);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3bd);
-      exit(-1);
+      uBgColor = pTextBox->sControl.dwState;
+      if (!(uBgColor & 4) || !(uBgColor & 1)) {
+        return 0;
+      }
+
+      uBgColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x40, 0x40, 0x40);
+      pBgDC6 = pTextBox->sControl.pDC6;
+      if (pBgDC6) {
+        memset(&sGfxData, 0, 0x48);
+        sGfxData.nDirection = 0;
+        sGfxData.nFrameNumber = 0;
+        sGfxData.pDC6 = pBgDC6;
+        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pTextBox->sControl.dwPosX, pTextBox->sControl.dwPosY - 1, -1, DRAW_SOLID, nullptr);
+      }
+
+      D2WINTEXTBOX_ComputeLineSpacingForLanguage(pTextBox->nScrollWidth);
+      D2WinFont::SetAndReturnLastFont(pTextBox->nScrollWidth);
+      nUsableWidth2 = (::ListCheck)(pTextBox->sControl.dwPosX + pTextBox->sStyleControl.neD2FormType);
+      uFontHeight = D2WinFont::D2WINFONT_GetCurrentFontHeight();
+      nCurY = uFontHeight + (pTextBox->sControl.dwPosY - pTextBox->sControl.dwSizeY) + (int)pTextBox->sStyleControl.pDC6;
+      D2WINTEXTBOX_ComputeLineSpacingForLanguage(pTextBox->nScrollWidth);
+      uFontHeight = D2WinFont::D2WINFONT_GetCurrentFontHeight();
+      nTextPixelWidth = uFontHeight + (int)pTextBox->pLineSpacingGlobal;
+      nRemainingHeight = pTextBox->sControl.dwSizeY + (int)pTextBox->sStyleControl.pDC6 * -2;
+      uFontHeight = pTextBox->sControl.dwSizeX + pTextBox->sStyleControl.neD2FormType * -2;
+      if ((uint32_t)pTextBox->sStyleControl.fpDraw & 0x40) {
+        pColWidthEntry = (uint32_t*)pTextBox->sStyleControl.dwPosY;
+        if (pColWidthEntry) {
+          pTextBox->nExtraLineSpacingA += -2;
+          nTextWidth = D2WinFont::DRAW_text0((uint16_t*)*pColWidthEntry);
+          if (pTextBox->nExtraLineSpacingA < -nTextWidth) {
+            pTextBox->nExtraLineSpacingA = uFontHeight;
+          }
+        }
+      }
+      if ((uint32_t)pTextBox->sStyleControl.fpDraw & 0x80) {
+        nLineStride = pTextBox->sStyleControl.dwPosY;
+        if (nLineStride) {
+          pTextBox->nExtraLineSpacingA += -2;
+          if (pTextBox->nExtraLineSpacingA < -nTextPixelWidth) {
+            pTextBox->nExtraLineSpacingA = 0;
+            pTextBox->sStyleControl.dwPosY = *(int*)(nLineStride + 0x1c);
+          }
+        }
+      }
+
+      pCurLine = (uint32_t*)pTextBox->sStyleControl.dwPosY;
+      nLineIndex = 0;
+      if (pCurLine) {
+        do {
+          nColIndex = 0;
+          if (0 < (int)pTextBox->sStyleControl.fpPush) {
+            do {
+              pCellText = (uint16_t*)pCurLine[nColIndex];
+              if (!pCellText) {
+                break;
+              }
+
+              nNumCols = pTextBox->sStyleControl.fpPush;
+              nBaseX = (::ListCheck)pTextBox->sControl.dwSizeX;
+              pColWidth = nBaseX;
+              if (nColIndex < (int)(nNumCols - 1)) {
+                pColWidth = (&pTextBox->sStyleControl.fpListCheck)[nColIndex];
+              }
+
+              nColOffsetX = (&pTextBox->sStyleControl.fpMouse)[nColIndex];
+              if (!nColOffsetX) {
+                pColStyleFlags = pTextBox->sStyleControl.fpDraw;
+                if (!((uint32_t)pColStyleFlags & 2)) {
+                  nColDrawX = nUsableWidth2;
+                  if ((uint32_t)pColStyleFlags & 0x10) {
+                    nLineStride = D2WinFont::DRAW_text0((uint16_t*)*pCurLine);
+                    if (nLineStride < 0) {
+                      nLineStride = 0;
+                    }
+
+                    nColDrawX = (::ListCheck)(pTextBox->sControl.dwPosX - nLineStride);
+                  }
+                } else {
+                  nTextWidth = D2WinFont::DRAW_text0((uint16_t*)*pCurLine);
+                  nLineStride = (pTextBox->sControl.dwSizeX - nTextWidth) / 2;
+                  if (nLineStride < 0) {
+                    nLineStride = 0;
+                  }
+
+                  nColDrawX = (::ListCheck)(pTextBox->sControl.dwPosX + nLineStride);
+                }
+              } else {
+                nColDrawX = nUsableWidth2 + (int)nColOffsetX;
+                if (nColIndex + 1 < (int)nNumCols) {
+                  pColWidth = (&pTextBox->sStyleControl.fpListCheck)[nColIndex] - (int)nColOffsetX;
+                } else {
+                  pColWidth = nBaseX - (int)nColOffsetX;
+                }
+
+                pStyleFlags = (&pTextBox->sStyleControl.pNext)[nColIndex];
+                if (!((uint32_t)pStyleFlags & 2)) {
+                  if ((uint32_t)pStyleFlags & 0x10) {
+                    nLineStride = D2WinFont::DRAW_text0(pCellText);
+                    if (nLineStride < 0) {
+                      nLineStride = 0;
+                    }
+
+                    nColDrawX = pColWidth + ((int)nColDrawX - nLineStride);
+                  }
+                } else {
+                  nTextWidth = D2WinFont::DRAW_text0(pCellText);
+                  nLineStride = ((int)pColWidth - nTextWidth) / 2;
+                  if (nLineStride < 0) {
+                    nLineStride = 0;
+                  }
+
+                  nColDrawX += nLineStride;
+                }
+              }
+
+              pCellText = local_87c;
+              for (nLineStride = 0x200; nLineStride; nLineStride--) {
+                pCellText[0] = L'\0';
+                pCellText[1] = L'\0';
+                pCellText += 2;
+              }
+
+              D2Lang::Unicode::UNISYS::STRING_CopyWideString(local_87c, (uint16_t*)pCurLine[nColIndex]);
+              D2WINTEXTBOX_TruncateStringToFitWidth((int32_t)pColWidth, local_87c);
+              nLineStride = nCurY;
+              if (pTextBox->sStyleControl.fpDrawEx == (::DrawEx)(pTextBox->sStyleControl.dwSizeY + nLineIndex) && (uint32_t)pTextBox->sStyleControl.fpDraw & 1) {
+                dwColor = pCurLine[5] != PALETTE_GOLD ? pCurLine[5] : 0;
+                if (!nColIndex) {
+                  D2WinFont::D2WINFONT_DrawTextWithOffsetBackground(local_87c, (int32_t)nColDrawX, nCurY, uFontHeight, uBgColor & 0xff, DRAW_SOLID, dwColor);
+                } else {
+                  D2WinFont::DRAW_text(local_87c, (int32_t)nColDrawX, nLineStride, dwColor, 0);
+                }
+              } else {
+                pColStyleFlags = pTextBox->sStyleControl.fpDraw;
+                if (!((uint32_t)pColStyleFlags & 0x40)) {
+                  dwColor = pCurLine[5];
+                  if ((char)(uintptr_t)pColStyleFlags < '\0') {
+                    nLineStride = pTextBox->nExtraLineSpacingA + nCurY;
+                  }
+
+                  D2WinFont::DRAW_text(local_87c, (int32_t)nColDrawX, nLineStride, dwColor, 0);
+                } else {
+                  D2WinFont::D2WINFONT_DrawWideStringRightToLeft((uint16_t*)pCurLine[nColIndex], (int32_t)nColDrawX, nCurY, pCurLine[5], pTextBox->nExtraLineSpacingA, uFontHeight);
+                }
+              }
+
+              nColIndex++;
+            } while (nColIndex < (int)pTextBox->sStyleControl.fpPush);
+          }
+          if (*(char*)(pCurLine + 6) == '\0') {
+            nLineStride = pTextBox->nExtraLineSpacingC;
+          } else {
+            nLineStride = pTextBox->nExtraLineSpacingB;
+          }
+
+          nLineIndex++;
+          nCurY = nCurY + nLineStride + nTextPixelWidth;
+          nRemainingHeight -= nLineStride + nTextPixelWidth;
+          pCurLine = (uint32_t*)pCurLine[7];
+          if (!pCurLine) {
+            break;
+          }
+          if (*(char*)(pCurLine + 6) == '\0') {
+            nLineStride = pTextBox->nExtraLineSpacingC;
+          } else {
+            nLineStride = pTextBox->nExtraLineSpacingB;
+          }
+        } while (nLineStride + nTextPixelWidth <= nRemainingHeight);
+      }
+
+      D2WinFont::SetAndReturnLastFont(1);
+      return 1;
     }
 }
 
@@ -929,43 +928,43 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
       exit(-1);
     } else {
       uint32_t uVar1;
-      if (pTextBox->sControl.neD2FormType == FORM_TextBox) {
-        uVar1 = pTextBox->sControl.dwState;
-        if (!(uVar1 & 4 && uVar1 & 1 && 0 < pTextBox->sStyleControl.dwSizeX)) {
-          return 0;
-        }
-        if ((uint32_t)pTextBox->sStyleControl.fpDraw & 1) {
-          nMouseYOffset = pTextBox->sControl.dwSizeY - pTextBox->sControl.dwPosY + D2Client::Mouse::nPosY;
-          D2WinFont::SetAndReturnLastFont(pTextBox->nScrollWidth);
-          D2WINTEXTBOX_ComputeLineSpacingForLanguage(pTextBox->nScrollWidth);
-          uFontHeight = D2WinFont::D2WINFONT_GetCurrentFontHeight();
-          uSelectedRow = (::DrawEx)((nMouseYOffset - (int)pTextBox->sStyleControl.pDC6) / (int)((int)pTextBox->pLineSpacingGlobal + uFontHeight) + pTextBox->sStyleControl.dwSizeY);
-          pTextBox->sStyleControl.fpDrawEx = uSelectedRow;
-          if (!((uint32_t)pTextBox->sStyleControl.fpDraw & 8)) {
-            if ((int)uSelectedRow < 0 || pTextBox->sStyleControl.dwSizeX <= (int)uSelectedRow) {
-              pTextBox->sStyleControl.fpDrawEx = (::DrawEx)-1;
-            }
-          } else {
-            uClampedSel = (::DrawEx)(pTextBox->sStyleControl.dwSizeX - 1);
-            if ((int)((int)uSelectedRow < 1 ? 0 : (uint32_t)uSelectedRow) < (int)uClampedSel) {
-              uClampedSel = (::DrawEx)((int)uSelectedRow < 1 ? 0 : (uint32_t)uSelectedRow);
-            }
-
-            pTextBox->sStyleControl.fpDrawEx = uClampedSel;
-          }
-        }
-
-        pOVar2 = pTextBox->sControl.fpOnPress;
-        if (!pOVar2) {
-          return 0;
-        }
-
-        bCallbackResult = (*pOVar2)(pControlMsg);
-        return bCallbackResult;
+      if (pTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4d1);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4d1);
-      exit(-1);
+      uVar1 = pTextBox->sControl.dwState;
+      if (!(uVar1 & 4 && uVar1 & 1 && 0 < pTextBox->sStyleControl.dwSizeX)) {
+        return 0;
+      }
+      if ((uint32_t)pTextBox->sStyleControl.fpDraw & 1) {
+        nMouseYOffset = pTextBox->sControl.dwSizeY - pTextBox->sControl.dwPosY + D2Client::Mouse::nPosY;
+        D2WinFont::SetAndReturnLastFont(pTextBox->nScrollWidth);
+        D2WINTEXTBOX_ComputeLineSpacingForLanguage(pTextBox->nScrollWidth);
+        uFontHeight = D2WinFont::D2WINFONT_GetCurrentFontHeight();
+        uSelectedRow = (::DrawEx)((nMouseYOffset - (int)pTextBox->sStyleControl.pDC6) / (int)((int)pTextBox->pLineSpacingGlobal + uFontHeight) + pTextBox->sStyleControl.dwSizeY);
+        pTextBox->sStyleControl.fpDrawEx = uSelectedRow;
+        if (!((uint32_t)pTextBox->sStyleControl.fpDraw & 8)) {
+          if ((int)uSelectedRow < 0 || pTextBox->sStyleControl.dwSizeX <= (int)uSelectedRow) {
+            pTextBox->sStyleControl.fpDrawEx = (::DrawEx)-1;
+          }
+        } else {
+          uClampedSel = (::DrawEx)(pTextBox->sStyleControl.dwSizeX - 1);
+          if ((int)((int)uSelectedRow < 1 ? 0 : (uint32_t)uSelectedRow) < (int)uClampedSel) {
+            uClampedSel = (::DrawEx)((int)uSelectedRow < 1 ? 0 : (uint32_t)uSelectedRow);
+          }
+
+          pTextBox->sStyleControl.fpDrawEx = uClampedSel;
+        }
+      }
+
+      pOVar2 = pTextBox->sControl.fpOnPress;
+      if (!pOVar2) {
+        return 0;
+      }
+
+      bCallbackResult = (*pOVar2)(pControlMsg);
+      return bCallbackResult;
     }
 }
 
@@ -1107,13 +1106,13 @@ int __fastcall D2WINTEXTBOX_GetScrollbarMaxValue(::D2WinTextBox * pTextBox) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x578);
       exit(-1);
     } else {
-      if (pTextBox->sControl.neD2FormType == FORM_TextBox) {
-        iVar1 = D2WinScrollbar::D2WINSCROLLBAR_GetMaxValue(pTextBox->pScrollbar);
-        return iVar1;
+      if (pTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x579);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x579);
-      exit(-1);
+      iVar1 = D2WinScrollbar::D2WINSCROLLBAR_GetMaxValue(pTextBox->pScrollbar);
+      return iVar1;
     }
 }
 
@@ -1122,13 +1121,13 @@ void __fastcall D2WINTEXTBOX_SetScrollbarMaxRange(::D2WinTextBox * pnParam, uint
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x582);
       exit(-1);
     } else {
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        D2WinScrollbar::D2WINSCROLLBAR_SetMaxValue(pnParam->pScrollbar, nParam);
-        return;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x583);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x583);
-      exit(-1);
+      D2WinScrollbar::D2WINSCROLLBAR_SetMaxValue(pnParam->pScrollbar, nParam);
+      return;
     }
 }
 
@@ -1138,13 +1137,13 @@ int __fastcall D2WINTEXTBOX_RefreshScrollbar(::D2WinTextBox * pnParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x58c);
       exit(-1);
     } else {
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        nLine = D2WinScrollbar::D2WINSCROLLBAR_GetPosition(pnParam->pScrollbar);
-        return nLine;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x58d);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x58d);
-      exit(-1);
+      nLine = D2WinScrollbar::D2WINSCROLLBAR_GetPosition(pnParam->pScrollbar);
+      return nLine;
     }
 }
 
@@ -1153,13 +1152,13 @@ void __fastcall D2WINTEXTBOX_SetScrollbarPosition(::D2WinTextBox * pnParam, int3
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x596);
       exit(-1);
     } else {
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        D2WinScrollbar::D2WINSCROLLBAR_SetPosition(pnParam->pScrollbar, nParam);
-        return;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x597);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x597);
-      exit(-1);
+      D2WinScrollbar::D2WINSCROLLBAR_SetPosition(pnParam->pScrollbar, nParam);
+      return;
     }
 }
 
@@ -1169,13 +1168,13 @@ void __fastcall D2WINTEXTBOX_SetScrollbarCallbackA(::D2WinTextBox * pTextBox, ::
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a0);
       exit(-1);
     } else {
-      if (pTextBox->sControl.neD2FormType == FORM_TextBox) {
-        D2WinScrollbar::D2WINSCROLLBAR_SetLinkedTextBox(pTextBox->pScrollbar, pLinkedTextBox);
-        return;
+      if (pTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a1);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a1);
-      exit(-1);
+      D2WinScrollbar::D2WINSCROLLBAR_SetLinkedTextBox(pTextBox->pScrollbar, pLinkedTextBox);
+      return;
     }
 }
 
@@ -1185,13 +1184,13 @@ void __fastcall D2WINTEXTBOX_SetScrollbarCallbackB(::D2WinTextBox * pTextBox, fp
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5aa);
       exit(-1);
     } else {
-      if (pTextBox->sControl.neD2FormType == FORM_TextBox) {
-        D2WinScrollbar::D2WINSCROLLBAR_SetChangeCallback(pTextBox->pScrollbar, fpOnChange);
-        return;
+      if (pTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5ab);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5ab);
-      exit(-1);
+      D2WinScrollbar::D2WINSCROLLBAR_SetChangeCallback(pTextBox->pScrollbar, fpOnChange);
+      return;
     }
 }
 
@@ -1200,13 +1199,13 @@ void __fastcall D2WINTEXTBOX_SetScrollbarStyle(::D2WinTextBox * pnParam, int32_t
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5b4);
       exit(-1);
     } else {
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        D2WinScrollbar::D2WINSCROLLBAR_SetStyle(pnParam->pScrollbar, nParam);
-        return;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5b5);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5b5);
-      exit(-1);
+      D2WinScrollbar::D2WINSCROLLBAR_SetStyle(pnParam->pScrollbar, nParam);
+      return;
     }
 }
 
@@ -1218,13 +1217,13 @@ int __fastcall D2WINTEXTBOX_GetScrollbarStyle(::D2WinTextBox * pTextBox) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5be);
       exit(-1);
     } else {
-      if (pTextBox->sControl.neD2FormType == FORM_TextBox) {
-        iVar1 = D2WinScrollbar::D2WINSCROLLBAR_GetStyle(pTextBox->pScrollbar);
-        return iVar1;
+      if (pTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5bf);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5bf);
-      exit(-1);
+      iVar1 = D2WinScrollbar::D2WINSCROLLBAR_GetStyle(pTextBox->pScrollbar);
+      return iVar1;
     }
 }
 
@@ -1234,7 +1233,7 @@ int __fastcall D2WINTEXTBOX_GetScrollbarStyle(::D2WinTextBox * pTextBox) {
     int32_t nScrollPageSize;
     int nScrollbarPosX;
     int nScrollbarPosY;
-    ::D2WinTextBox* pNew = D2_NEW(::D2WinTextBox);
+    ::D2WinTextBox* pNew = D2_NEW_AT(::D2WinTextBox, ".\\Src\\D2WinTextBox.cpp", 99);
     memset(pNew, 0, 0xac);
     if (nParam & 4 && !pnParam2) {
       nWidth += -0x1a;
@@ -1316,18 +1315,17 @@ void __fastcall FORMS_DestroyD2WinTextBox(::D2WinTextBox * pWinTextBox) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcb);
       exit(-1);
     } else {
-      if (pWinTextBox->sControl.neD2FormType == FORM_TextBox) {
-        if (pWinTextBox->pScrollbar) {
-          D2WinScrollbar::FORMS_DestroyD2WinScrollbar(pWinTextBox->pScrollbar);
-        }
-
-        D2WINTEXTBOX_ClearAllLines(pWinTextBox);
-        D2WinMain::FORMS_DestroyControl(&pWinTextBox->sControl);
-        return;
+      if (pWinTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcc);
+        exit(-1);
+      }
+      if (pWinTextBox->pScrollbar) {
+        D2WinScrollbar::FORMS_DestroyD2WinScrollbar(pWinTextBox->pScrollbar);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcc);
-      exit(-1);
+      D2WINTEXTBOX_ClearAllLines(pWinTextBox);
+      D2WinMain::FORMS_DestroyControl(&pWinTextBox->sControl);
+      return;
     }
 }
 
@@ -1352,129 +1350,129 @@ BOOL __fastcall SetText(::D2WinTextBox * pTextBox, uint16_t * szText, int32_t nL
       exit(-1);
     } else {
       int* pLineEntry;
-      if (pTextBox->sControl.neD2FormType == FORM_TextBox) {
-        pszTrimmed = wszWorkBuf;
-        for (nVisibleLines = 0x200; nVisibleLines; nVisibleLines--) {
-          pszTrimmed[0] = L'\0';
-          pszTrimmed[1] = L'\0';
-          pszTrimmed += 2;
-        }
-
-        D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszWorkBuf, szText);
-        pszTrimmed = wszWorkBuf;
-        while (true) {
-          if (wszWorkBuf[0] == L'\0') {
-            break;
-          }
-          if ((uint16_t)*pszTrimmed >= 0x100) {
-            break;
-          }
-
-          nVisibleLines = isspace((uint32_t)(uint16_t)*pszTrimmed);
-          if (!nVisibleLines) {
-            break;
-          }
-
-          pszTrimmed++;
-          wszWorkBuf[0] = *pszTrimmed;
-        }
-
-        D2WinFont::SetAndReturnLastFont(pTextBox->nScrollWidth);
-        if (!((uint32_t)pTextBox->sStyleControl.fpDraw & 0x20)) {
-          nVisibleLines = pTextBox->sControl.dwSizeX + pTextBox->sStyleControl.neD2FormType * -2;
-          if (nAlignment == 2) {
-            Fog::File::CONTAINER_InitializeBuffer(wszIndent, 2, 6, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-            memcpy(wszIndent, L"     ", 0xc);
-            nStrLen = D2WinFont::DRAW_text0(wszIndent);
-            nVisibleLines -= nStrLen;
-          }
-
-          nStrLen = D2WinFont::D2WINFONT_GetStringPixelWidth(pszTrimmed, 0xff);
-          if (nVisibleLines <= nStrLen) {
-            _uResult = D2WINTEXTBOX_WordWrapAndSetText(pTextBox, pszTrimmed, nLineStyle, nAlignment);
-            return _uResult;
-          }
-        }
-
-        pLineEntry = (int*)D2_ALLOC(0x20);
-        nStrLen = 0;
-        if (nAlignment == 2) {
-          nSourceLine = 0x161;
-          nMaxWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pszTrimmed);
-          nPixelWidth = Fog::Memory::AllocClientMemory(nMaxWidth * 2 + 0xc, ".\\Src\\D2WinTextBox.cpp", nSourceLine, nStrLen);
-          *pLineEntry = (int)nPixelWidth;
-          *(uint16_t*)((int)nPixelWidth + 8) = 0x20;
-          *(uint16_t*)(*pLineEntry + 6) = *(uint16_t*)(*pLineEntry + 8);
-          *(uint16_t*)(*pLineEntry + 4) = *(uint16_t*)(*pLineEntry + 6);
-          *(uint16_t*)(*pLineEntry + 2) = *(uint16_t*)(*pLineEntry + 4);
-          *(uint16_t*)*pLineEntry = ((uint16_t*)*pLineEntry)[1];
-          wDestination = *pLineEntry + 10;
-        } else {
-          nSourceLine = 0x167;
-          nMaxWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pszTrimmed);
-          wDestination = (int32_t)Fog::Memory::AllocClientMemory(nMaxWidth * 2 + 2, ".\\Src\\D2WinTextBox.cpp", nSourceLine, nStrLen);
-          *pLineEntry = wDestination;
-        }
-
-        D2Lang::Unicode::UNISYS::STRING_CopyWideString((uint16_t*)wDestination, pszTrimmed);
-        memset(pLineEntry + 1, 0, 4 * sizeof(pLineEntry[0]));
-        pLineEntry[5] = nLineStyle;
-        *(bool*)(pLineEntry + 6) = bIndent;
-        pLineEntry[7] = 0;
-        bAutoScroll = false;
-        if (!pTextBox->sStyleControl.dwState) {
-          pnLineCount = &pTextBox->sStyleControl.dwSizeX;
-          (*pnLineCount)++;
-          pTextBox->sStyleControl.dwState = (int)pLineEntry;
-          pTextBox->sStyleControl.dwPosX = (int)pLineEntry;
-          pTextBox->sStyleControl.dwPosY = (int)pLineEntry;
-        } else {
-          *(int**)(pTextBox->sStyleControl.dwPosX + 0x1c) = (int*)pLineEntry;
-          pnLineCount = &pTextBox->sStyleControl.dwSizeX;
-          (*pnLineCount)++;
-          pTextBox->sStyleControl.dwPosX = (int)pLineEntry;
-          nStrLen = D2WINTEXTBOX_GetVisibleLineCount(pTextBox);
-          nMaxWidth = D2WINTEXTBOX_GetVisibleLinesFromScroll(pTextBox);
-          if (nStrLen < nMaxWidth) {
-            pScrollbar = pTextBox->pScrollbar;
-            if (pScrollbar) {
-              nStrLen = D2WinScrollbar::D2WINSCROLLBAR_GetMaxValue(pScrollbar);
-              nMaxWidth = D2WinScrollbar::D2WINSCROLLBAR_GetPosition(pScrollbar);
-              if (nMaxWidth != nStrLen) {
-                goto update_scrollbar_range;
-              }
-            }
-
-            nVisibleLines = *(int*)(pTextBox->sStyleControl.dwPosY + 0x1c);
-            bAutoScroll = true;
-            pLineEntry = &pTextBox->sStyleControl.dwSizeY;
-            (*pLineEntry)++;
-            pTextBox->sStyleControl.dwPosY = nVisibleLines;
-          }
-        }
-
-        update_scrollbar_range:
-        if (pTextBox->pScrollbar) {
-          nStrLen = D2WinScrollbar::D2WINSCROLLBAR_GetPosition(pTextBox->pScrollbar);
-          nMaxWidth = D2WINTEXTBOX_GetVisibleLineCount(pTextBox);
-          D2WinScrollbar::D2WINSCROLLBAR_SetMaxValue(pTextBox->pScrollbar, pTextBox->sStyleControl.dwSizeX - nMaxWidth);
-          if (bAutoScroll) {
-            D2WinScrollbar::D2WINSCROLLBAR_SetPosition(pTextBox->pScrollbar, pTextBox->sStyleControl.dwSizeY);
-            return 1;
-          }
-
-          D2WinScrollbar::D2WINSCROLLBAR_SetPosition(pTextBox->pScrollbar, nStrLen);
-        }
-        return 1;
+      if (pTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x133);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x133);
-      exit(-1);
+      pszTrimmed = wszWorkBuf;
+      for (nVisibleLines = 0x200; nVisibleLines; nVisibleLines--) {
+        pszTrimmed[0] = L'\0';
+        pszTrimmed[1] = L'\0';
+        pszTrimmed += 2;
+      }
+
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszWorkBuf, szText);
+      pszTrimmed = wszWorkBuf;
+      while (true) {
+        if (wszWorkBuf[0] == L'\0') {
+          break;
+        }
+        if ((uint16_t)*pszTrimmed >= 0x100) {
+          break;
+        }
+
+        nVisibleLines = isspace((uint32_t)(uint16_t)*pszTrimmed);
+        if (!nVisibleLines) {
+          break;
+        }
+
+        pszTrimmed++;
+        wszWorkBuf[0] = *pszTrimmed;
+      }
+
+      D2WinFont::SetAndReturnLastFont(pTextBox->nScrollWidth);
+      if (!((uint32_t)pTextBox->sStyleControl.fpDraw & 0x20)) {
+        nVisibleLines = pTextBox->sControl.dwSizeX + pTextBox->sStyleControl.neD2FormType * -2;
+        if (nAlignment == 2) {
+          Fog::File::CONTAINER_InitializeBuffer(wszIndent, 2, 6, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+          memcpy(wszIndent, L"     ", 0xc);
+          nStrLen = D2WinFont::DRAW_text0(wszIndent);
+          nVisibleLines -= nStrLen;
+        }
+
+        nStrLen = D2WinFont::D2WINFONT_GetStringPixelWidth(pszTrimmed, 0xff);
+        if (nVisibleLines <= nStrLen) {
+          _uResult = D2WINTEXTBOX_WordWrapAndSetText(pTextBox, pszTrimmed, nLineStyle, nAlignment);
+          return _uResult;
+        }
+      }
+
+      pLineEntry = (int*)D2_ALLOC_AT(0x20, ".\\Src\\D2WinTextBox.cpp", 0x15d);
+      nStrLen = 0;
+      if (nAlignment == 2) {
+        nSourceLine = 0x161;
+        nMaxWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pszTrimmed);
+        nPixelWidth = Fog::Memory::AllocClientMemory(nMaxWidth * 2 + 0xc, ".\\Src\\D2WinTextBox.cpp", nSourceLine, nStrLen);
+        *pLineEntry = (int)nPixelWidth;
+        *(uint16_t*)((int)nPixelWidth + 8) = 0x20;
+        *(uint16_t*)(*pLineEntry + 6) = *(uint16_t*)(*pLineEntry + 8);
+        *(uint16_t*)(*pLineEntry + 4) = *(uint16_t*)(*pLineEntry + 6);
+        *(uint16_t*)(*pLineEntry + 2) = *(uint16_t*)(*pLineEntry + 4);
+        *(uint16_t*)*pLineEntry = ((uint16_t*)*pLineEntry)[1];
+        wDestination = *pLineEntry + 10;
+      } else {
+        nSourceLine = 0x167;
+        nMaxWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pszTrimmed);
+        wDestination = (int32_t)Fog::Memory::AllocClientMemory(nMaxWidth * 2 + 2, ".\\Src\\D2WinTextBox.cpp", nSourceLine, nStrLen);
+        *pLineEntry = wDestination;
+      }
+
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString((uint16_t*)wDestination, pszTrimmed);
+      memset(pLineEntry + 1, 0, 4 * sizeof(pLineEntry[0]));
+      pLineEntry[5] = nLineStyle;
+      *(bool*)(pLineEntry + 6) = bIndent;
+      pLineEntry[7] = 0;
+      bAutoScroll = false;
+      if (!pTextBox->sStyleControl.dwState) {
+        pnLineCount = &pTextBox->sStyleControl.dwSizeX;
+        (*pnLineCount)++;
+        pTextBox->sStyleControl.dwState = (int)pLineEntry;
+        pTextBox->sStyleControl.dwPosX = (int)pLineEntry;
+        pTextBox->sStyleControl.dwPosY = (int)pLineEntry;
+      } else {
+        *(int**)(pTextBox->sStyleControl.dwPosX + 0x1c) = (int*)pLineEntry;
+        pnLineCount = &pTextBox->sStyleControl.dwSizeX;
+        (*pnLineCount)++;
+        pTextBox->sStyleControl.dwPosX = (int)pLineEntry;
+        nStrLen = D2WINTEXTBOX_GetVisibleLineCount(pTextBox);
+        nMaxWidth = D2WINTEXTBOX_GetVisibleLinesFromScroll(pTextBox);
+        if (nStrLen < nMaxWidth) {
+          pScrollbar = pTextBox->pScrollbar;
+          if (pScrollbar) {
+            nStrLen = D2WinScrollbar::D2WINSCROLLBAR_GetMaxValue(pScrollbar);
+            nMaxWidth = D2WinScrollbar::D2WINSCROLLBAR_GetPosition(pScrollbar);
+            if (nMaxWidth != nStrLen) {
+              goto update_scrollbar_range;
+            }
+          }
+
+          nVisibleLines = *(int*)(pTextBox->sStyleControl.dwPosY + 0x1c);
+          bAutoScroll = true;
+          pLineEntry = &pTextBox->sStyleControl.dwSizeY;
+          (*pLineEntry)++;
+          pTextBox->sStyleControl.dwPosY = nVisibleLines;
+        }
+      }
+
+      update_scrollbar_range:
+      if (pTextBox->pScrollbar) {
+        nStrLen = D2WinScrollbar::D2WINSCROLLBAR_GetPosition(pTextBox->pScrollbar);
+        nMaxWidth = D2WINTEXTBOX_GetVisibleLineCount(pTextBox);
+        D2WinScrollbar::D2WINSCROLLBAR_SetMaxValue(pTextBox->pScrollbar, pTextBox->sStyleControl.dwSizeX - nMaxWidth);
+        if (bAutoScroll) {
+          D2WinScrollbar::D2WINSCROLLBAR_SetPosition(pTextBox->pScrollbar, pTextBox->sStyleControl.dwSizeY);
+          return 1;
+        }
+
+        D2WinScrollbar::D2WINSCROLLBAR_SetPosition(pTextBox->pScrollbar, nStrLen);
+      }
+      return 1;
     }
 }
 
 // @sourcefile .\Src\D2WinTextBox.cpp
-void __fastcall D2WINTEXTBOX_AddLines(::D2WinTextBox * pnParam, uint16_t * wszText, int nRepeatCount, int32_t nLineStyle, bool bIndent) {
+int __fastcall D2WINTEXTBOX_AddLines(::D2WinTextBox * pnParam, uint16_t * wszText, int nRepeatCount, int32_t nLineStyle, bool bIndent) {
     uint32_t* pNewEntry;
     uint16_t* pAllocedText;
     int32_t nLine;
@@ -1483,41 +1481,41 @@ void __fastcall D2WINTEXTBOX_AddLines(::D2WinTextBox * pnParam, uint16_t * wszTe
       exit(-1);
     } else {
       int* piVar1;
-      if (pnParam->sControl.neD2FormType == FORM_TextBox) {
-        nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
-        if (0 < nRepeatCount) {
-          do {
-            pNewEntry = (uint32_t*)D2_ALLOC(0x20);
-            pAllocedText = (uint16_t*)D2_ALLOC(nLine * 2 + 2);
-            *pNewEntry = (uint32_t)(uintptr_t)pAllocedText;
-            D2Lang::Unicode::UNISYS::STRING_CopyWideString(pAllocedText, wszText);
-            memset(pNewEntry + 1, 0, 4 * sizeof(pNewEntry[0]));
-            pNewEntry[5] = nLineStyle;
-            *(bool*)(pNewEntry + 6) = bIndent;
-            pNewEntry[7] = 0;
-            if (!pnParam->sStyleControl.dwState) {
-              pnParam->sStyleControl.dwState = (int)pNewEntry;
-            } else {
-              *(uint32_t**)(pnParam->sStyleControl.dwPosX + 0x1c) = (uint32_t*)pNewEntry;
-            }
-
-            piVar1 = &pnParam->sStyleControl.dwSizeX;
-            (*piVar1)++;
-            nRepeatCount--;
-            pnParam->sStyleControl.dwPosX = (int)pNewEntry;
-          } while (nRepeatCount);
-        }
-        if (!pnParam->pScrollbar) {
-          return;
-        }
-
-        nLine = D2WINTEXTBOX_GetVisibleLineCount(pnParam);
-        D2WinScrollbar::D2WINSCROLLBAR_SetMaxValue(pnParam->pScrollbar, pnParam->sStyleControl.dwSizeX - nLine);
-        return;
+      if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1a8);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1a8);
-      exit(-1);
+      nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
+      if (0 < nRepeatCount) {
+        do {
+          pNewEntry = (uint32_t*)D2_ALLOC_AT(0x20, ".\\Src\\D2WinTextBox.cpp", 0x1af);
+          pAllocedText = (uint16_t*)D2_ALLOC_AT(nLine * 2 + 2, ".\\Src\\D2WinTextBox.cpp", 0x1b0);
+          *pNewEntry = (uint32_t)(uintptr_t)pAllocedText;
+          D2Lang::Unicode::UNISYS::STRING_CopyWideString(pAllocedText, wszText);
+          memset(pNewEntry + 1, 0, 4 * sizeof(pNewEntry[0]));
+          pNewEntry[5] = nLineStyle;
+          *(bool*)(pNewEntry + 6) = bIndent;
+          pNewEntry[7] = 0;
+          if (!pnParam->sStyleControl.dwState) {
+            pnParam->sStyleControl.dwState = (int)pNewEntry;
+          } else {
+            *(uint32_t**)(pnParam->sStyleControl.dwPosX + 0x1c) = (uint32_t*)pNewEntry;
+          }
+
+          piVar1 = &pnParam->sStyleControl.dwSizeX;
+          (*piVar1)++;
+          nRepeatCount--;
+          pnParam->sStyleControl.dwPosX = (int)pNewEntry;
+        } while (nRepeatCount);
+      }
+      if (!pnParam->pScrollbar) {
+        return 1;
+      }
+
+      nLine = D2WINTEXTBOX_GetVisibleLineCount(pnParam);
+      D2WinScrollbar::D2WINSCROLLBAR_SetMaxValue(pnParam->pScrollbar, pnParam->sStyleControl.dwSizeX - nLine);
+      return 1;
     }
 }
 
@@ -1559,68 +1557,68 @@ BOOL __fastcall D2WINTEXTBOX_WordWrapAndSetText(::D2WinTextBox * pTextBox, uint1
       exit(-1);
     } else {
       uint16_t* pFirstLine;
-      if (pTextBox->sControl.neD2FormType == FORM_TextBox) {
-        nAvailWidth = pTextBox->sControl.dwSizeX + pTextBox->sStyleControl.neD2FormType * -2;
-        nMaxPixelWidth = nAvailWidth;
-        if (nAlignment == 2) {
-          Fog::File::CONTAINER_InitializeBuffer(wszIndentBuf, 2, 6, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-          memcpy(wszIndentBuf, L"     ", 0xc);
-          nLine = D2WinFont::DRAW_text0(wszIndentBuf);
-          nMaxPixelWidth = nAvailWidth - nLine;
-        }
-
-        pFirstLine = (uint16_t*)Storm::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x497, 0);
-        pWorkBuf = pFirstLine;
-        D2Lang::Unicode::UNISYS::STRING_CopyWideString(pFirstLine, wszText);
-        nTotalLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pFirstLine);
-        pLastSpace = 0;
-        pCharCursor = pFirstLine;
-        nWrapCharCount = 0;
-        nPrevCharCount = 0;
-        if (0 < nTotalLen) {
-          do {
-            if (*pCharCursor == L' ') {
-              pLastSpace = pCharCursor;
-            }
-
-            nWrapCharCount = nPrevCharCount + 1;
-            nLine = D2WinFont::D2WINFONT_GetStringPixelWidth(pszCurScan, nWrapCharCount);
-            if (nMaxPixelWidth <= nLine) {
-              nWrapCharCount = nPrevCharCount;
-              if (pLastSpace) {
-                nWrapCharCount = (int)pLastSpace - (int)pFirstLine >> 1;
-                pCharCursor = pLastSpace;
-              }
-
-              break;
-            }
-
-            pCharCursor++;
-            nPrevCharCount = nWrapCharCount;
-          } while ((int)nWrapCharCount < nTotalLen);
-        }
-
-        pFirstLine = (uint16_t*)Storm::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x4b7, 0);
-        pSecondLine = (uint16_t*)Storm::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x4b8, 0);
-        D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pFirstLine, pWorkBuf, nWrapCharCount);
-        pszCurScan = (uint16_t*)(nTotalLen - nWrapCharCount);
-        pFirstLine[nWrapCharCount] = L'\0';
-        D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pSecondLine, pCharCursor, (size_t)pszCurScan);
-        pSecondLine[(int)pszCurScan] = L'\0';
-        Storm::SMem::SMemFree(pWorkBuf, ".\\Src\\D2WinTextBox.cpp", 0x4bf, 0);
-        D2WinTextBox::SetText(pTextBoxSaved, pFirstLine, nLineStyle, true, nAlignment);
-        if (nAlignment == 1) {
-          nAlignment = 2;
-        }
-
-        D2WinTextBox::SetText(pTextBoxSaved, pSecondLine, nLineStyle, false, nAlignment);
-        Storm::SMem::SMemFree(pFirstLine, ".\\Src\\D2WinTextBox.cpp", 0x4c4, 0);
-        Storm::SMem::SMemFree(pSecondLine, ".\\Src\\D2WinTextBox.cpp", 0x4c5, 0);
-        return 1;
+      if (pTextBox->sControl.neD2FormType != FORM_TextBox) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x483);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x483);
-      exit(-1);
+      nAvailWidth = pTextBox->sControl.dwSizeX + pTextBox->sStyleControl.neD2FormType * -2;
+      nMaxPixelWidth = nAvailWidth;
+      if (nAlignment == 2) {
+        Fog::File::CONTAINER_InitializeBuffer(wszIndentBuf, 2, 6, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+        memcpy(wszIndentBuf, L"     ", 0xc);
+        nLine = D2WinFont::DRAW_text0(wszIndentBuf);
+        nMaxPixelWidth = nAvailWidth - nLine;
+      }
+
+      pFirstLine = (uint16_t*)Storm::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x497, 0);
+      pWorkBuf = pFirstLine;
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(pFirstLine, wszText);
+      nTotalLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pFirstLine);
+      pLastSpace = 0;
+      pCharCursor = pFirstLine;
+      nWrapCharCount = 0;
+      nPrevCharCount = 0;
+      if (0 < nTotalLen) {
+        do {
+          if (*pCharCursor == L' ') {
+            pLastSpace = pCharCursor;
+          }
+
+          nWrapCharCount = nPrevCharCount + 1;
+          nLine = D2WinFont::D2WINFONT_GetStringPixelWidth(pszCurScan, nWrapCharCount);
+          if (nMaxPixelWidth <= nLine) {
+            nWrapCharCount = nPrevCharCount;
+            if (pLastSpace) {
+              nWrapCharCount = (int)pLastSpace - (int)pFirstLine >> 1;
+              pCharCursor = pLastSpace;
+            }
+
+            break;
+          }
+
+          pCharCursor++;
+          nPrevCharCount = nWrapCharCount;
+        } while ((int)nWrapCharCount < nTotalLen);
+      }
+
+      pFirstLine = (uint16_t*)Storm::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x4b7, 0);
+      pSecondLine = (uint16_t*)Storm::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x4b8, 0);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pFirstLine, pWorkBuf, nWrapCharCount);
+      pszCurScan = (uint16_t*)(nTotalLen - nWrapCharCount);
+      pFirstLine[nWrapCharCount] = L'\0';
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pSecondLine, pCharCursor, (size_t)pszCurScan);
+      pSecondLine[(int)pszCurScan] = L'\0';
+      Storm::SMem::SMemFree(pWorkBuf, ".\\Src\\D2WinTextBox.cpp", 0x4bf, 0);
+      D2WinTextBox::SetText(pTextBoxSaved, pFirstLine, nLineStyle, true, nAlignment);
+      if (nAlignment == 1) {
+        nAlignment = 2;
+      }
+
+      D2WinTextBox::SetText(pTextBoxSaved, pSecondLine, nLineStyle, false, nAlignment);
+      Storm::SMem::SMemFree(pFirstLine, ".\\Src\\D2WinTextBox.cpp", 0x4c4, 0);
+      Storm::SMem::SMemFree(pSecondLine, ".\\Src\\D2WinTextBox.cpp", 0x4c5, 0);
+      return 1;
     }
 }
 

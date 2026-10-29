@@ -172,7 +172,6 @@ void __stdcall INPUT_HandleIMEStartComposition(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_HandleIMEEndComposition(struct D2UIMouseMsgStrc * pMsg);
 // Small callback/thunk that reads a party names field from ECX+0x124 and forwards it to AUTOMAP_SetPartyNames.
 void __fastcall AUTOMAP_UpdatePartyNamesCallback(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-BOOL __stdcall UNITMODE_TryInteractWithObject(struct D2UnitStrc * pUnit, D2PathPointStrc pathPoint, int32_t nActionType, struct D2UnitStrc * pTargetUnit, int32_t nTargetGUID);
 void __fastcall UNITMODE_ExecuteDeferredAction(struct D2UnitStrc * pUnit);
 void SOUNDHDR_CompleteAsyncLoad(int32_t pSoundHdr);
 // The ECX slot that carries a function pointer was one variable holding three callees with two
@@ -220,7 +219,6 @@ void __fastcall TEXT_HandleItemUse(int32_t nParam1, int32_t nParam2);
 void __stdcall SOUND_ClearGlobalState();
 void __fastcall MISSILES_StatExpireCallback_ClearState(struct D2UnitStrc * pUnit, eD2States eState, int32_t nParam);
 int32_t __fastcall DC6_AssignParams(struct D2GfxDataStrc * pGfxData, struct D2UnitStrc * pUnit, struct DC6 * pDC6, int32_t nDirection, int32_t nFrameNumber, int * pnOutItemClassId, uint8_t nComponentType, struct D2UnitStrc * pEquipContext);
-BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode, short * pComponentTable, void * pMonStatsTxt, int32_t nComponentRow, int32_t nWeaponClass, struct D2GfxDataStrc * pGfxData);
 int32_t __fastcall GFXUTIL_InitAndBuildMonsterCofParams(struct D2GfxDataStrc * pGfxData, int32_t nDirection, int32_t nFrameNumber, uint8_t nComponentType, int32_t nAnimMode, int32_t nWeaponClass, void * pCofFile, short * pComponentTable, struct D2MonStatsTxt * pMonStatsTxt, int32_t nComponentRow);
 int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(struct D2UnitStrc * pUnit, uint8_t * pbParam, int32_t pLayerArray, int * pOutMaxY, int32_t nPaletteShift, uint32_t nParam);
 int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(struct D2UnitStrc * pUnit, int32_t pOverlayEntry);
@@ -257,5 +255,6 @@ void __fastcall BINK_PlayVideoFile(char * szFileName, int32_t nParam, fnBinkFram
 void AtexitCleanup_FreeLinkedListAndCritSec();
 _EXCEPTION_DISPOSITION SehHandler_6ca218(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION SehHandler_6ca238(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Client

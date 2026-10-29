@@ -69,7 +69,6 @@ int __fastcall SFILE_GetExecutableDirectory(char * szText, DWORD nSize);
 int __fastcall SFILE_GetInstallPath(LPSTR lpFilename, DWORD nSize);
 int __fastcall SFILE_GetBlizzardAppDataPath(char * szOutPath, uint32_t nMaxLen);
 BOOL __stdcall GetUseDirectCommand();
-bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen);
 int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot);
 void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize);
 int32_t __fastcall SFILE_CalculateBufferOffset(int32_t pThis, int32_t nBufferOffset);
@@ -84,5 +83,6 @@ void __fastcall SFILE_GregorianCalendarFromJulian(int32_t nJulianDay, int * pYea
 void __fastcall SFILE_DeleteOldLogFiles(char * szLogPrefix);
 void __stdcall LOGFILE_StoreGameStartupInfo();
 void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(FILE * szSuffix);
+// 1 internal function (defined in .cpp)
 
 } // namespace Fog::Source::SFile

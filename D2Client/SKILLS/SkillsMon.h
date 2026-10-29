@@ -34,10 +34,6 @@ BOOL __fastcall Skills_CltStFunc_ClearTargetableFlags(struct D2UnitStrc * pUnit,
 BOOL __fastcall Skills_CltDoFunc_Mon_AdvanceFrameMetrics2(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 // Client do-func that spawns a burst of missiles in an area around the target position. Uses skill cltmissilea as the missile type, aurarangecalc (minus 6, min 1) as the scatter radius, and cltcalc[0] as the missile count. Delegates to MISSILE_SpawnMissilesInArea. Sets UNITFLAG_SKSRVDOFUNC on pUnit.
 BOOL __fastcall Skills_CltDoFunc_Mon_SpawnMissilesInArea(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
-// Configures the total frame count and animation speed of an existing missile unit (pUnit2). Frame count comes from skill calc[0], falling back to MissileTxt.Param2-1+nSkillLvl, clamped to [1, 255]. Sets path distance, animation speed (AnimLen&lt;&lt;8 / frames), total frames, and current frame on the missile. Used to synchronize missile travel time with skill level.
-void __stdcall SKILLSMON_SetMissileFrameAndSpeed(uint32_t dwUnused, eD2Skills eSkill, struct D2UnitStrc * pUnit, int32_t nSkillLvl, struct D2UnitStrc * pUnit2);
-// Creates a single missile from a pre-built D2SkillArgStrc using pUnit's RNG seed to pick a velocity offset from a table (pVelocityOffsets points to an int array, seed mod 5 selects entry). Advances pUnit->sSeed twice. After MakeMissile succeeds, calls SKILLSMON_SetMissileFrameAndSpeed to apply frame/speed from skill calc. Returns the new missile unit or NULL on failure.
-struct D2UnitStrc * __stdcall SKILLSMON_CreateMissileWithSeed(int32_t * pVelocityOffsets, int32_t nParam2, int32_t nParam3, eD2Skills eSkill, int32_t nParam4, struct D2UnitStrc * pUnit, int32_t nParam5);
 // Client do-func that fires exactly 2 missiles toward the target, randomly choosing between cltmissilea and cltmissileb each shot using pUnit's RNG seed (bit 0). Orients the dynamic path toward the target first. Calls SKILLSMON_CreateMissileWithSeed for each shot using the 0x6dbaa0 velocity table.
 BOOL __fastcall Skills_CltDoFunc_Mon_RandomDualMissile(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall Skills_CltStFunc_SetTargetableFlags(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
@@ -80,5 +76,6 @@ BOOL __fastcall Skills_CltDoFunc_Mon_ArrowModifier_MakeMissile(struct D2UnitStrc
 // Client-side handler that spawns a Spider Lay (web) missile for a spider monster. Requires a valid dynamic path with non-zero 8-flags (direction). Reads the unit's SpiderLay skill level, determines the unit's facing direction via UpdateDirection+MONSTERS_GetGfxOffsetTable2, looks up a fixed per-direction offset table to offset the spawn point, rejects town rooms, then fires MISSILE_Spidergoolay via MakeMissile with nFlags=0x25, playing SOUND_SORCERESS_ENERGYSHIELD_HIT_3 on success.
 struct D2UnitStrc * __fastcall SKILLSMON_CltCreateSpiderLay(struct D2UnitStrc * pUnit);
 void __fastcall SKILLSMON_SetMissilePathLinear(struct D2UnitStrc * pUnit, int32_t nParam);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Client::SKILLS::SkillsMon

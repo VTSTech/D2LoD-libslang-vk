@@ -24,25 +24,25 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2TextLineStrc) == 0x8, "D2_NEW(D2TextLineStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2TextLineStrc) == 0x8, "D2_NEW_AT(D2TextLineStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
 
 
 namespace D2Win::Src::D2WinFont {
 
 // Constructs full font file path: DATA\LOCAL\Font\{language}\{fontname}. Special case for Korean chat font (index 13). Uses global language code and font name table.
-void __stdcall D2WINFONT_BuildFontPath(char * szPathOut, int32_t nFontIndex, int32_t nBufferSize) {
+static void __stdcall D2WINFONT_BuildFontPath(char * szPathOut, int32_t nFontIndex, int32_t nBufferSize) {
     char szBasePath[260];
     char cCurChar;
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szBasePath, "%s\\%s\\", "DATA\\LOCAL", "Font");
@@ -64,7 +64,7 @@ void __stdcall D2WINFONT_BuildFontPath(char * szPathOut, int32_t nFontIndex, int
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPathOut, "%s%s%s", szBasePath, _FONT::sLanguageCode, _FONT::aFontNames[nFontIndex]);
 }
 
-void __stdcall GetFontTablePath(int32_t nBufSize, int32_t nFontIndex, LPSTR szFontTablePath) {
+static void __stdcall GetFontTablePath(int32_t nBufSize, int32_t nFontIndex, LPSTR szFontTablePath) {
     char szBasePath[260];
     char cCurChar;
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szBasePath, "%s\\%s\\", "DATA\\LOCAL", "Font");
@@ -87,11 +87,11 @@ void __stdcall GetFontTablePath(int32_t nBufSize, int32_t nFontIndex, LPSTR szFo
 }
 
 // @sourcefile .\Src\D2WinFont.cpp
-void InitFontCache(int32_t nFontIndex) {
+static void InitFontCache(int32_t nFontIndex) {
     char szFontTablePath[80];
     GetFontTablePath(0x4f, nFontIndex, szFontTablePath);
     if (gaFontCache[nFontIndex].pFontTable) {
-      D2_FREE(gaFontCache[nFontIndex].pFontTable);
+      D2_FREE_AT(gaFontCache[nFontIndex].pFontTable, ".\\Src\\D2WinFont.cpp", 0xb3);
     }
 
     int32_t nAllocLine = 0xb5;
@@ -113,7 +113,7 @@ void __stdcall D2WINFONT_FreeFontCache() {
         ((D2FontCacheEntryStrc*)(ppFontTable - 1))->pFontDC6 = 0;
       }
       if (*ppFontTable) {
-        D2_FREE(*ppFontTable);
+        D2_FREE_AT(*ppFontTable, ".\\Src\\D2WinFont.cpp", 0x135);
         *ppFontTable = 0;
       }
 
@@ -224,7 +224,7 @@ int32_t __fastcall DRAW_text0(uint16_t * wszText) {
     return nResult;
 }
 
-int32_t TEXT_CalculateTextWidth(uint16_t * szBuffer) {
+static int32_t TEXT_CalculateTextWidth(uint16_t * szBuffer) {
     uint32_t nColorCmpResult;
     D2FontGlyphStrc* pGlyphEntry;
     int32_t nStrLen;
@@ -282,7 +282,7 @@ int32_t TEXT_CalculateTextWidth(uint16_t * szBuffer) {
     return nStrLen;
 }
 
-int32_t D2WINFONT_GetFirstLinePixelWidth(uint16_t * pwszString) {
+static int32_t D2WINFONT_GetFirstLinePixelWidth(uint16_t * pwszString) {
     uint32_t nColorCmpResult;
     D2FontGlyphStrc* pGlyphEntry;
     int32_t nLineWidth;
@@ -325,7 +325,7 @@ int32_t D2WINFONT_GetFirstLinePixelWidth(uint16_t * pwszString) {
     return iVar1;
 }
 
-int32_t TEXT_CalculateTextHeight(uint16_t * szBuffer) {
+static int32_t TEXT_CalculateTextHeight(uint16_t * szBuffer) {
     if (!szBuffer) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x25e);
       exit(-1);
@@ -359,7 +359,7 @@ void __stdcall D2WINFONT_DrawSolidRectFromBottomLeft(int32_t nX, DRAWMODE eDrawM
 }
 
 // Core wide string renderer. Processes color codes (0xFF prefix), newlines (0x0A), glyph lookup via gpfnFontGetCharWidth callback, horizontal centering if enabled. Draws each character glyph from font DC6.
-void __stdcall D2WINFONT_DrawWideString(uint16_t * wszText, int32_t nX, int32_t nY, int32_t nWidth, GLOBALPALLETE eGlobalPalette, int32_t bCenterHorizontally) {
+static void __stdcall D2WINFONT_DrawWideString(uint16_t * wszText, int32_t nX, int32_t nY, int32_t nWidth, GLOBALPALLETE eGlobalPalette, int32_t bCenterHorizontally) {
     int32_t nLineWidth;
     D2FontGlyphStrc* nLinePixelWidth2;
     int nStrLen;
@@ -432,7 +432,7 @@ void __stdcall D2WINFONT_DrawWideString(uint16_t * wszText, int32_t nX, int32_t 
 }
 
 // Wide string renderer with custom draw mode (transparency, blending). Processes color codes, newlines, horizontal centering, glyph rendering. Returns pointer to last processed glyph data.
-void * __stdcall D2WINFONT_DrawWideStringWithDrawMode(int32_t nX, uint16_t * wszText, GLOBALPALLETE eGlobalPalette, int32_t nY, int32_t nWidth, int32_t bCenterHorizontally, DRAWMODE eDrawMode) {
+static void * __stdcall D2WINFONT_DrawWideStringWithDrawMode(int32_t nX, uint16_t * wszText, GLOBALPALLETE eGlobalPalette, int32_t nY, int32_t nWidth, int32_t bCenterHorizontally, DRAWMODE eDrawMode) {
     int32_t nLineWidth;
     uint32_t nFontHeight;
     D2FontGlyphStrc* pNextChar;
@@ -679,7 +679,7 @@ void * __fastcall D2WINFONT_DrawWideStringRightToLeft(uint16_t * wszText, int32_
 }
 
 // Simplified wide string renderer without color code processing. Skips color code sequences (0xFF + 3 chars), handles newlines, draws glyphs. Uses DRAW_SOLID mode with no palette shift.
-void D2WINFONT_DrawWideStringSimple(uint16_t * wszText, int32_t nX, int32_t nY) {
+static void D2WINFONT_DrawWideStringSimple(uint16_t * wszText, int32_t nX, int32_t nY) {
     uint16_t wCharCode;
     D2FontGlyphStrc* pGlyphEntry;
     D2GfxDataStrc sGfxData;
@@ -859,12 +859,12 @@ BOOL __fastcall D2WINFONT_IsFontCharacterValid(uint8_t nCharCode) {
     if (true && nCharCode == 0xff) {
       return 0;
     }
-    if (7 >= nCharCode >> 5) {
-      return gaFontCharValidBits[nCharCode >> 5] >> (nCharCode & 0x1f) & 1;
+    if (!(7 >= nCharCode >> 5)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4d8);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4d8);
-    exit(-1);
+    return gaFontCharValidBits[nCharCode >> 5] >> (nCharCode & 0x1f) & 1;
     return gaFontCharValidBits[nCharCode >> 5] >> (nCharCode & 0x1f) & 1;
 }
 
@@ -1030,15 +1030,15 @@ void __fastcall D2WINFONT_FreeWordWrapList(void * * ppNodeList) {
     while (ppNodeList) {
       void** ppvVar1;
       ppvVar1 = (void**)ppNodeList[1];
-      D2_FREE(*ppNodeList);
-      D2_FREE(ppNodeList);
+      D2_FREE_AT(*ppNodeList, ".\\Src\\D2WinFont.cpp", 0x579);
+      D2_FREE_AT(ppNodeList, ".\\Src\\D2WinFont.cpp", 0x57a);
       ppNodeList = ppvVar1;
     }
 }
 
 // @sourcefile .\Src\D2WinFont.cpp
 D2TextLineStrc * __stdcall D2WINFONT_AllocWordWrapNode(uint16_t * pwszText, size_t nSize, int32_t bTrimLeadingSpace) {
-    D2TextLineStrc* pNode = D2_NEW(D2TextLineStrc);
+    D2TextLineStrc* pNode = D2_NEW_AT(D2TextLineStrc, ".\\Src\\D2WinFont.cpp", 0x588);
     if (bTrimLeadingSpace && (uint16_t)*pwszText < 0x100) {
       int bIsSpace;
       bIsSpace = isspace((uint32_t)(uint16_t)*pwszText);
@@ -1048,7 +1048,7 @@ D2TextLineStrc * __stdcall D2WINFONT_AllocWordWrapNode(uint16_t * pwszText, size
       }
     }
 
-    uint16_t* pNodeText = (uint16_t*)D2_ALLOC(nSize * 2 + 2);
+    uint16_t* pNodeText = (uint16_t*)D2_ALLOC_AT(nSize * 2 + 2, ".\\Src\\D2WinFont.cpp", 0x591);
     pNode->wszLine = pNodeText;
     pNode->pNext = 0;
     D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pNodeText, pwszText, nSize);
@@ -1078,9 +1078,9 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
     nTextPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)wszText, nStrLen);
     if (nTextPixelWidth <= nMaxWidth) {
       *pnLineCount = 1;
-      pNode = D2_NEW(D2TextLineStrc);
+      pNode = D2_NEW_AT(D2TextLineStrc, ".\\Src\\D2WinFont.cpp", 0x588);
       nSegLen = nStrLen + 1;
-      pNodeText = (uint16_t*)D2_ALLOC(nStrLen + 3 + nSegLen);
+      pNodeText = (uint16_t*)D2_ALLOC_AT(nStrLen + 3 + nSegLen, ".\\Src\\D2WinFont.cpp", 0x591);
       pNode->wszLine = pNodeText;
       pNode->pNext = 0;
       D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pNodeText, wszText, nSegLen);
@@ -1141,7 +1141,7 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
           } while (nSegStart < nSegEnd);
         }
 
-        pNode = D2_NEW(D2TextLineStrc);
+        pNode = D2_NEW_AT(D2TextLineStrc, ".\\Src\\D2WinFont.cpp", 0x588);
         pNodeText = wszText + nSegStart;
         nSegLen = nSegEnd - nSegStart + 1;
         if ((uint16_t)*pNodeText < 0x100) {
@@ -1152,7 +1152,7 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
           }
         }
 
-        pDestination = (uint16_t*)D2_ALLOC(nSegLen * 2 + 2);
+        pDestination = (uint16_t*)D2_ALLOC_AT(nSegLen * 2 + 2, ".\\Src\\D2WinFont.cpp", 0x591);
         pNode->wszLine = pDestination;
         pNode->pNext = 0;
         D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pDestination, pNodeText, nSegLen);

@@ -46,7 +46,7 @@ template<> TSExplicitList<::SGAMEDATA, -572662307>* TSGrowableArray<TSExplicitLi
 // Unreferenced copy of NextLink: the link after this one.
 // Byte-identical to TSLink<CELLIST>::NextLink 00601bc0; T not proven (no xrefs), filed with the SGAMEDATA block.
 // stpl-orphan: a COMDAT copy in TSLink<SGAMEDATA> that no member owns
-TSLink<::SGAMEDATA>* NextLink_Unreferenced(TSLink<::SGAMEDATA>* pThis, int32_t nLinkOffset) {
+TSLink<::SGAMEDATA>* __thiscall NextLink_Unreferenced(TSLink<::SGAMEDATA>* pThis, int32_t nLinkOffset) {
     uint32_t nOffset = pThis->m_next;
     if ((int)nOffset < 0) {
       return (TSLink<::SGAMEDATA>*)~nOffset;
@@ -119,7 +119,7 @@ template<> TSLink<::SGAMEDATA>* TSExplicitList<SGAMEDATA, -572662307>::Link(::SG
 // Unreferenced copy of Link: address of pNode's link, or the terminator for a null node.
 // Byte-identical to TSExplicitList<CELLIST,..>::Link 00602110; T not proven (no xrefs), filed with the SGAMEDATA block.
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
-TSLink<::SGAMEDATA>* Link_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, ::SGAMEDATA * pNode) {
+TSLink<::SGAMEDATA>* __thiscall Link_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, ::SGAMEDATA * pNode) {
     if (!pNode) {
       return &pThis->m_terminator;
     }
@@ -168,7 +168,7 @@ template<> void TSExplicitList<SGAMEDATA, -572662307>::SetLinkOffset(int32_t nLi
 // Unreferenced copy of SetLinkOffset: sets the link offset and resets the terminator.
 // Byte-identical to TSExplicitList<CELLIST,..>::SetLinkOffset 006022f0; T not proven (no xrefs), filed with the SGAMEDATA block.
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
-void SetLinkOffset_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, int32_t nLinkOffset) {
+void __thiscall SetLinkOffset_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, int32_t nLinkOffset) {
     pThis->m_linkoffset = nLinkOffset;
     TSLink<::SGAMEDATA>* pTVar1 = &pThis->m_terminator;
     pTVar1->m_prevlink = pTVar1;
@@ -229,7 +229,7 @@ template<> void TSHashObject<SGAMEDATA, HASHKEY_NONE>::Destructor() {
 // Unreferenced copy of UnlinkNode: unlinks pNode and clears its link.
 // Byte-identical to TSExplicitList<CELLIST,..>::UnlinkNode 006022a0; T not proven (no xrefs), filed with the SGAMEDATA block.
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
-void UnlinkNode_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, ::SGAMEDATA * pNode) {
+void __thiscall UnlinkNode_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, ::SGAMEDATA * pNode) {
     TSLink<::SGAMEDATA>* pNodeLink;
     int* pPrevLink;
     if (!pNode) {
@@ -380,7 +380,7 @@ template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::InternalClear(int32_t bUnl
 // Unreferenced copy of the destructor: unlinks every node, then the terminator.
 // Same code as TSExplicitList<CELLIST,..>::Destructor 00602aa0; T from its call to UnlinkAll 0044f8e0.
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
-void Destructor_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis) {
+void __thiscall Destructor_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis) {
     int* pPrevLink;
     pThis->UnlinkAll();
     TSLink<::SGAMEDATA>* pTVar1 = &pThis->m_terminator;
@@ -429,7 +429,7 @@ template<> void TSExplicitList<TSHashObjectChunk<SGAMEDATA, HASHKEY_NONE>, 16>::
 // Unreferenced copy of the copy constructor; returns this.
 // Byte-identical to TSExplicitList<CELLIST,..>::CopyConstructor 006023b0; T not proven (no xrefs), filed with the SGAMEDATA block.
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
-TSExplicitList<::SGAMEDATA, -572662307>* CopyConstructor_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pSource) {
+TSExplicitList<::SGAMEDATA, -572662307>* __thiscall CopyConstructor_Unreferenced(TSExplicitList<::SGAMEDATA, -572662307>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pSource) {
     TSLink<::SGAMEDATA>* pTVar1 = &pThis->m_terminator;
     pTVar1->m_prevlink = 0;
     pThis->m_terminator.m_next = 0;
@@ -441,7 +441,7 @@ TSExplicitList<::SGAMEDATA, -572662307>* CopyConstructor_Unreferenced(TSExplicit
 }
 
 // @blizzard TSHashTableReuse<SGAMEDATA,HASHKEY_NONE,0>::InternalDelete (STORM.H)
-template<> void TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::InternalDelete(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, ::SGAMEDATA * pNode) {
+template<> void __thiscall TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::InternalDelete(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, ::SGAMEDATA * pNode) {
     pNode->Destructor();
     Storm::SMem::SMemFree(pNode, s___AUSGAMEDATA___0070f56c, -2, 0);
 }
@@ -576,7 +576,7 @@ template<> TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>* TSExplicitList<TSHashOb
 }
 
 // @blizzard TSHashTableReuse<SGAMEDATA,HASHKEY_NONE,0>::InternalNew (STORM.H)
-template<> ::SGAMEDATA * TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::InternalNew(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags) {
+template<> ::SGAMEDATA * __thiscall TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::InternalNew(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags) {
     TSLink<::SGAMEDATA>* ppSlot;
     uint32_t pTailLink;
     ::SGAMEDATA* pGame = (::SGAMEDATA*)Storm::SMem::SMemAlloc(nExtraBytes + 0x1df4, s___AUSGAMEDATA___0070f56c, -2, dwFlags | 8);
@@ -627,14 +627,14 @@ template<> ::SGAMEDATA * TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::InternalN
 }
 
 // @blizzard TSHashTableReuse<SGAMEDATA,HASHKEY_NONE,0>::Destroy (STORM.H)
-template<> void TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::Destroy(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis) {
+template<> void __thiscall TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::Destroy(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis) {
     pThis->InternalClear(0);
     pThis->tChunkList.Clear();
     pThis->tReuseList.Clear();
 }
 
 // @blizzard TSHashTableReuse<SGAMEDATA,HASHKEY_NONE,0> scalar deleting destructor (STORM.H)
-template<> TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::ScalarDeletingDestructor(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, uint32_t dwFlags) {
+template<> TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* __thiscall TSHashTableReuse<SGAMEDATA, HASHKEY_NONE, 0>::ScalarDeletingDestructor(TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>* pThis, uint32_t dwFlags) {
     pThis->Destructor();
     if (!(dwFlags & 1 && pThis)) {
       return pThis;
@@ -680,7 +680,7 @@ template<> TSExportTableSimple<::SGAMEDATA, HSGAMEDATA__*, 0>* TSExportTableSimp
 }
 
 // @blizzard TSExportTableSimple<SGAMEDATA,HSGAMEDATA__*,0> scalar deleting destructor (STORM.H)
-template<> TSExportTableSimple<::SGAMEDATA, HSGAMEDATA__*, 0>* TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0>::ScalarDeletingDestructor(TSExportTableSimple<::SGAMEDATA, HSGAMEDATA__*, 0>* pThis, uint32_t dwFlags) {
+template<> TSExportTableSimple<::SGAMEDATA, HSGAMEDATA__*, 0>* __thiscall TSExportTableSimple<SGAMEDATA, HSGAMEDATA__*, 0>::ScalarDeletingDestructor(TSExportTableSimple<::SGAMEDATA, HSGAMEDATA__*, 0>* pThis, uint32_t dwFlags) {
     pThis->Destructor();
     if (!(dwFlags & 1 && pThis)) {
       return pThis;
@@ -705,7 +705,7 @@ template<> TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCri
 }
 
 // @blizzard TSExportTableSync<SGAMEDATA,HSGAMEDATA__*,HSGAMEDATALOCK__*,CCritSect,0> scalar deleting destructor (STORM.H)
-template<> TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>* TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::ScalarDeletingDestructor(TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>* pThis, uint32_t dwFlags) {
+template<> TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>* __thiscall TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::ScalarDeletingDestructor(TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>* pThis, uint32_t dwFlags) {
     /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ DeleteCriticalSection(&pThis->tSync.m_critsect);
     pThis->TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>::Destructor();
     if (!(dwFlags & 1 && pThis)) {

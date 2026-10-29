@@ -321,7 +321,7 @@ void __stdcall HELP_DrawHelpButtonTooltip() {
       memset(wszKeyLine, 0, 0x3c);
       pKeyDescPrimary = CmdTbl::CMD_GetKeyDescForCommand(6, 1);
       pWVar2 = D2Lang::StrTable::strtable::GetLocaleString(0x1052);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyLine, pWVar2, (uint16_t*)pKeyDescPrimary);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyLine, pWVar2, pKeyDescPrimary);
       D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, wszKeyLine);
     }
 
@@ -330,7 +330,7 @@ void __stdcall HELP_DrawHelpButtonTooltip() {
       memset(wszKeyLine, 0, 0x3c);
       pKeyDescPrimary = CmdTbl::CMD_GetKeyDescForCommand(6, 0);
       pWVar2 = D2Lang::StrTable::strtable::GetLocaleString(0x1052);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyLine, pWVar2, (uint16_t*)pKeyDescPrimary);
+      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyLine, pWVar2, pKeyDescPrimary);
       D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, wszKeyLine);
     }
 
@@ -489,7 +489,7 @@ void __stdcall DRAW_UI_HelpXpac() {
 
     pStr = CmdTbl::CMD_GetKeyNameForCommand(0x22, 1);
     uint16_t* pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x1067);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf4, pFormat, (uint16_t*)pStr);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf4, pFormat, pStr);
     D2Win::Src::D2WinFont::DRAW_text(wszBuf4, 0x75, 0x4e, 0, 0);
     pStr = wszBuf1;
     for (i = 0x32; i; i--) {
@@ -500,7 +500,7 @@ void __stdcall DRAW_UI_HelpXpac() {
 
     pStr = CmdTbl::CMD_GetKeyNameForCommand(0x25, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x1068);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf1, pFormat, (uint16_t*)pStr);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf1, pFormat, pStr);
     D2Win::Src::D2WinFont::DRAW_text(wszBuf1, 0x75, 0x62, 0, 0);
     pStr = wszBuf2;
     for (i = 0x32; i; i--) {
@@ -511,7 +511,7 @@ void __stdcall DRAW_UI_HelpXpac() {
 
     pStr = CmdTbl::CMD_GetKeyNameForCommand(0x24, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x1069);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf2, pFormat, (uint16_t*)pStr);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf2, pFormat, pStr);
     D2Win::Src::D2WinFont::DRAW_text(wszBuf2, 0x75, 0x76, 0, 0);
     pStr = wszBuf3;
     for (i = 0x32; i; i--) {
@@ -522,7 +522,7 @@ void __stdcall DRAW_UI_HelpXpac() {
 
     pStr = CmdTbl::CMD_GetKeyNameForCommand(7, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x106a);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf3, pFormat, (uint16_t*)pStr);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf3, pFormat, pStr);
     D2Win::Src::D2WinFont::DRAW_text(wszBuf3, 0x75, 0x8a, 0, 0);
     bCentered = 0;
     nPosY = 0;
@@ -548,7 +548,7 @@ void __stdcall DRAW_UI_HelpXpac() {
 
     pStr = CmdTbl::CMD_GetKeyNameForCommand(6, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x106e);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf5, pFormat, (uint16_t*)pStr);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf5, pFormat, pStr);
     D2Win::Src::D2WinFont::DRAW_text(wszBuf5, 0x75, 0xda, 0, 0);
     pStr = wszBuf;
     for (i = 0x32; i; i--) {
@@ -901,7 +901,7 @@ void __stdcall DRAW_UI_HelpClassic() {
 
     pDst = CmdTbl::CMD_GetKeyNameForCommand(0x22, 1);
     uint16_t* pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x1067);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf4, pFormat, (uint16_t*)pDst);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf4, pFormat, pDst);
     D2Win::Src::D2WinFont::DRAW_text(wszBuf4, 0x75, 0x4e, 0, 0);
     pDst = wszBuf1;
     for (i = 0x32; i; i--) {
@@ -912,7 +912,7 @@ void __stdcall DRAW_UI_HelpClassic() {
 
     pDst = CmdTbl::CMD_GetKeyNameForCommand(0x25, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x1068);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf1, pFormat, (uint16_t*)pDst);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf1, pFormat, pDst);
     D2Win::Src::D2WinFont::DRAW_text(wszBuf1, 0x75, 0x62, 0, 0);
     pDst = wszBuf2;
     for (i = 0x32; i; i--) {
@@ -923,7 +923,7 @@ void __stdcall DRAW_UI_HelpClassic() {
 
     pDst = CmdTbl::CMD_GetKeyNameForCommand(0x24, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x1069);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf2, pFormat, (uint16_t*)pDst);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf2, pFormat, pDst);
     D2Win::Src::D2WinFont::DRAW_text(wszBuf2, 0x75, 0x76, 0, 0);
     pDst = wszBuf3;
     for (i = 0x32; i; i--) {
@@ -934,7 +934,7 @@ void __stdcall DRAW_UI_HelpClassic() {
 
     pDst = CmdTbl::CMD_GetKeyNameForCommand(7, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x106a);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf3, pFormat, (uint16_t*)pDst);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf3, pFormat, pDst);
     D2Win::Src::D2WinFont::DRAW_text(wszBuf3, 0x75, 0x8a, 0, 0);
     bCentered = 0;
     nPosY = 0;
@@ -960,7 +960,7 @@ void __stdcall DRAW_UI_HelpClassic() {
 
     pDst = CmdTbl::CMD_GetKeyNameForCommand(6, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x106e);
-    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf5, pFormat, (uint16_t*)pDst);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf5, pFormat, pDst);
     D2Win::Src::D2WinFont::DRAW_text(wszBuf5, 0x75, 0xda, 0, 0);
     pDst = wszBuf;
     for (i = 0x32; i; i--) {

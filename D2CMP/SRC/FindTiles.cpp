@@ -11,23 +11,23 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2TileLibraryHashStrc) == 0x200, "D2_NEW(D2TileLibraryHashStrc): the 32-bit layout must be the 0x200 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2TileLibraryHashStrc) == 0x200, "D2_NEW_AT(D2TileLibraryHashStrc): the 32-bit layout must be the 0x200 bytes 1.14d allocates");
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2TileLibraryHashRefStrc) == 0x8, "D2_NEW(D2TileLibraryHashRefStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2TileLibraryHashRefStrc) == 0x8, "D2_NEW_AT(D2TileLibraryHashRefStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2TileLibraryHashNodeStrc) == 0x14, "D2_NEW(D2TileLibraryHashNodeStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2TileLibraryHashNodeStrc) == 0x14, "D2_NEW_AT(D2TileLibraryHashNodeStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
 
 
 namespace D2CMP::SRC::FindTiles {
@@ -35,17 +35,17 @@ namespace D2CMP::SRC::FindTiles {
 // Computes a 0-127 hash byte in AL/EAX (masked and range-checked before the halt-on-overflow guard); the caller reads it as a hash-table index (nHashIdx).
 int __fastcall FINDTILE_ComputeHash(char cParam1, char cParam2, char cTileSubType) {
     uint32_t uVar1 = (uint8_t)(cParam1 * '\x02' - cTileSubType + cParam2) & 0x8000007f;
-    if (0x7f >= (uint8_t)uVar1) {
-      return uVar1;
+    if (!(0x7f >= (uint8_t)uVar1)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1e);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1e);
-    exit(-1);
+    return uVar1;
     return uVar1;
 }
 
 D2TileLibraryHashStrc * __stdcall FINDTILE_AllocHashTable() {
-    D2TileLibraryHashStrc* pHashTable = D2_NEW(D2TileLibraryHashStrc);
+    D2TileLibraryHashStrc* pHashTable = D2_NEW_AT(D2TileLibraryHashStrc, ".\\SRC\\FindTiles.cpp", 0x2a);
     if (!pHashTable) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2b);
       exit(-1);
@@ -72,12 +72,12 @@ void __fastcall FINDTILE_FreeHashTable(D2TileLibraryHashStrc * pHashTable) {
         pMemoryToFree_00 = pMemoryToFree->pRef;
         while (pMemoryToFree_00) {
           pNextChainNode = pMemoryToFree_00->pNext;
-          D2_FREE(pMemoryToFree_00);
+          D2_FREE_AT(pMemoryToFree_00, ".\\SRC\\FindTiles.cpp", 0x4c);
           pMemoryToFree_00 = pNextChainNode;
         }
 
         pMemoryToFree->pRef = 0;
-        D2_FREE(pMemoryToFree);
+        D2_FREE_AT(pMemoryToFree, ".\\SRC\\FindTiles.cpp", 0x50);
         pMemoryToFree = pNextEntry;
       }
 
@@ -85,12 +85,12 @@ void __fastcall FINDTILE_FreeHashTable(D2TileLibraryHashStrc * pHashTable) {
       iBucket++;
     } while (iBucket < 0x80);
 
-    D2_FREE(pHashTable);
+    D2_FREE_AT(pHashTable, ".\\SRC\\FindTiles.cpp", 0x57);
 }
 
 // Adds pTileData to the hash node's tile-ref chain unless it is already there: walks pHashNode->pRef by pNext, otherwise allocates an 8-byte D2TileLibraryHashRefStrc (FindTiles.cpp line 0x6e, halts on line 0x6f if the allocation fails) and links it in front of the old head.
 // Provenance: 1.14d asm 0060cea0..0060cef5.
-void FINDTILE_AddTileToChain(D2TileLibraryHashNodeStrc * pHashNode, D2TileLibraryEntryStrc * pTileData) {
+static void FINDTILE_AddTileToChain(D2TileLibraryHashNodeStrc * pHashNode, D2TileLibraryEntryStrc * pTileData) {
     D2TileLibraryHashRefStrc* pDVar1;
     for (pDVar1 = pHashNode->pRef; pDVar1; pDVar1 = pDVar1->pNext) {
       if (pDVar1->pTile == pTileData) {
@@ -98,7 +98,7 @@ void FINDTILE_AddTileToChain(D2TileLibraryHashNodeStrc * pHashNode, D2TileLibrar
       }
     }
 
-    D2TileLibraryHashRefStrc* pNewEntry = D2_NEW(D2TileLibraryHashRefStrc);
+    D2TileLibraryHashRefStrc* pNewEntry = D2_NEW_AT(D2TileLibraryHashRefStrc, ".\\SRC\\FindTiles.cpp", 0x6e);
     if (pNewEntry) {
       pNewEntry->pNext = 0;
       pNewEntry->pTile = pTileData;
@@ -113,8 +113,8 @@ void FINDTILE_AddTileToChain(D2TileLibraryHashNodeStrc * pHashNode, D2TileLibrar
 
 // Allocates a 0x14-byte D2TileLibraryHashNodeStrc for pTileData's (nIndex, nSubIndex, nOrientation) key, links it in front of the bucket head *ppHashSlot, and gives it a one-entry tile-ref chain holding pTileData. Halts on line 0x83 or 0x8f if an allocation fails.
 // Provenance: 1.14d asm 0060cf00..0060cf90 (FindTiles.cpp lines 0x82..0x8f).
-void FINDTILE_AllocHashEntry(D2TileLibraryEntryStrc * pTileData, D2TileLibraryHashNodeStrc * * ppHashSlot) {
-    D2TileLibraryHashNodeStrc* pHashEntry = D2_NEW(D2TileLibraryHashNodeStrc);
+static void FINDTILE_AllocHashEntry(D2TileLibraryEntryStrc * pTileData, D2TileLibraryHashNodeStrc * * ppHashSlot) {
+    D2TileLibraryHashNodeStrc* pHashEntry = D2_NEW_AT(D2TileLibraryHashNodeStrc, ".\\SRC\\FindTiles.cpp", 0x82);
     if (!pHashEntry) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x83);
       exit(-1);
@@ -130,16 +130,16 @@ void FINDTILE_AllocHashEntry(D2TileLibraryEntryStrc * pTileData, D2TileLibraryHa
       pHashEntry->nOrientation = pTileData->nOrientation;
       pHashEntry->pNext = *ppHashSlot;
       *ppHashSlot = pHashEntry;
-      pChainEntry = D2_NEW(D2TileLibraryHashRefStrc);
-      if (pChainEntry) {
-        pChainEntry->pNext = 0;
-        pChainEntry->pTile = pTileData;
-        pHashEntry->pRef = pChainEntry;
-        return;
+      pChainEntry = D2_NEW_AT(D2TileLibraryHashRefStrc, ".\\SRC\\FindTiles.cpp", 0x8e);
+      if (!pChainEntry) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8f);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8f);
-      exit(-1);
+      pChainEntry->pNext = 0;
+      pChainEntry->pTile = pTileData;
+      pHashEntry->pRef = pChainEntry;
+      return;
     }
 }
 
@@ -153,35 +153,35 @@ void __fastcall FINDTILE_Register(D2TileLibraryHashStrc * pHashTable, D2TileLibr
       exit(-1);
     } else {
       uint32_t nHashIdx;
-      if (pTileData) {
-        nHashIdx = FINDTILE_ComputeHash((char)pTileData->nSubIndex, (char)pTileData->nIndex, (char)pTileData->nOrientation);
-        pHashSlot = pHashTable->pNodes + (nHashIdx & 0xff);
-        pHashEntry = *pHashSlot;
-        if (pHashEntry) {
-          do {
-            if (!bFound) {
-              goto add_to_existing_entry;
-            }
-            if (pHashEntry->nSubIndex == pTileData->nSubIndex && pHashEntry->nIndex == pTileData->nIndex && pHashEntry->nOrientation == pTileData->nOrientation) {
-              bFound = false;
-            } else {
-              pHashEntry = pHashEntry->pNext;
-            }
-          } while (pHashEntry);
-
-          if (!bFound) {
-            add_to_existing_entry:
-            FINDTILE_AddTileToChain(pHashEntry, pTileData);
-            return;
-          }
-        }
-
-        FINDTILE_AllocHashEntry(pTileData, pHashSlot);
-        return;
+      if (!pTileData) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa6);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa6);
-      exit(-1);
+      nHashIdx = FINDTILE_ComputeHash((char)pTileData->nSubIndex, (char)pTileData->nIndex, (char)pTileData->nOrientation);
+      pHashSlot = pHashTable->pNodes + (nHashIdx & 0xff);
+      pHashEntry = *pHashSlot;
+      if (pHashEntry) {
+        do {
+          if (!bFound) {
+            goto add_to_existing_entry;
+          }
+          if (pHashEntry->nSubIndex == pTileData->nSubIndex && pHashEntry->nIndex == pTileData->nIndex && pHashEntry->nOrientation == pTileData->nOrientation) {
+            bFound = false;
+          } else {
+            pHashEntry = pHashEntry->pNext;
+          }
+        } while (pHashEntry);
+
+        if (!bFound) {
+          add_to_existing_entry:
+          FINDTILE_AddTileToChain(pHashEntry, pTileData);
+          return;
+        }
+      }
+
+      FINDTILE_AllocHashEntry(pTileData, pHashSlot);
+      return;
     }
 }
 
@@ -196,46 +196,45 @@ int32_t __fastcall FINDTILE_Lookup(int * * pHashTable, int32_t pResultArray, uin
       exit(-1);
     } else {
       int* pEntry;
-      if (pResultArray) {
-        if (!nMaxResults) {
-          return 0;
-        }
+      if (!pResultArray) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd0);
+        exit(-1);
+      }
+      if (!nMaxResults) {
+        return 0;
+      }
 
-        i = FINDTILE_ComputeHash((char)nParam4, (char)nTileSubType, (char)nTileType);
-        pEntry = pHashTable[i & 0xff];
-        if (!pEntry) {
-          return nResultCount;
-        }
-
-        bMatched = false;
-        do {
-          if (bMatched) {
-            goto copy_matches;
-          }
-          if (pEntry[1] == nParam4 && *pEntry == nTileSubType && pEntry[2] == nTileType) {
-            bMatched = true;
-          } else {
-            pEntry = (int*)pEntry[4];
-          }
-        } while (pEntry);
-
-        if (!bMatched) {
-          return nResultCount;
-        }
-
-        copy_matches:
-        pChainNode = (void*)pEntry[3];
-        for (i = 0; pChainNode && i < nMaxResults; i++) {
-          nResultCount++;
-          *(uint32_t*)(pResultArray + i * 4) = *(uint32_t*)pChainNode;
-          pChainNode = *(void**)((int)pChainNode + 4);
-        }
-
+      i = FINDTILE_ComputeHash((char)nParam4, (char)nTileSubType, (char)nTileType);
+      pEntry = pHashTable[i & 0xff];
+      if (!pEntry) {
         return nResultCount;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd0);
-      exit(-1);
+      bMatched = false;
+      do {
+        if (bMatched) {
+          goto copy_matches;
+        }
+        if (pEntry[1] == nParam4 && *pEntry == nTileSubType && pEntry[2] == nTileType) {
+          bMatched = true;
+        } else {
+          pEntry = (int*)pEntry[4];
+        }
+      } while (pEntry);
+
+      if (!bMatched) {
+        return nResultCount;
+      }
+
+      copy_matches:
+      pChainNode = (void*)pEntry[3];
+      for (i = 0; pChainNode && i < nMaxResults; i++) {
+        nResultCount++;
+        *(uint32_t*)(pResultArray + i * 4) = *(uint32_t*)pChainNode;
+        pChainNode = *(void**)((int)pChainNode + 4);
+      }
+
+      return nResultCount;
     }
 }
 

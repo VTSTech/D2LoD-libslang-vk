@@ -571,7 +571,7 @@ typedef bool (__fastcall *pfnAiMapDirectionHandler)(::SGAMEDATA * pGame, D2UnitS
 typedef char (__stdcall *fnGetProtocolVersionChar)();
 typedef char * (__stdcall *grGetString)(FxU32 pname);
 typedef eD2ClientAppMode (__stdcall *fnClientAppModeProc)();
-typedef eD2ServerIncomingStatus (__fastcall *D2NET_SERVER_CLTtoD2GS)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, char * pBytes, size_t nSize);
+typedef eD2ServerIncomingStatus (__fastcall *D2NET_SERVER_CLTtoD2GS)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, char * pBytes, uint32_t nSize);
 typedef int (*fnConnectToBattleNet)();
 typedef int (*fnLogIndent)(int nAction, int nParam);
 typedef int (__fastcall *D2MissileSrvDoFunc)(::SGAMEDATA * pGame, D2UnitStrc * pMissile);
@@ -920,7 +920,7 @@ struct D2MonStatAnimEntryStrc {
 };
 
 struct D2NET_SERVER_D2GS_ClientToServer {
-    /* 0x00 */ eD2ServerIncomingStatus (__fastcall *fpHandler)(::SGAMEDATA *, D2UnitStrc *, char *, size_t);
+    /* 0x00 */ eD2ServerIncomingStatus (__fastcall *fpHandler)(::SGAMEDATA *, D2UnitStrc *, char *, uint32_t);
     /* 0x04 */ BOOL field1_0x4;
 };
 

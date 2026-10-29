@@ -86,7 +86,6 @@
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/Unit/Unit.h"
 #include "D2Game/D2Game.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/SKILLS/SkillEMonst.h"
 #include "Fog/Src/Safesock.h"
 
@@ -95,7 +94,7 @@
 
 namespace D2Game::MISSILES::MissilesMode {
 
-uint32_t MISSILE_RollAttackHit(void * pThis, D2UnitStrc * pUnit, D2UnitStrc * pUnit1) {
+uint32_t __thiscall MISSILE_RollAttackHit(void * pThis, D2UnitStrc * pUnit, D2UnitStrc * pUnit1) {
     int32_t nToHit = 0;
     if (pThis) {
       nToHit = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat((D2UnitStrc*)pThis, UNITSTAT_tohit, 0);
@@ -106,7 +105,7 @@ uint32_t MISSILE_RollAttackHit(void * pThis, D2UnitStrc * pUnit, D2UnitStrc * pU
 }
 
 // Rolls a random elemental damage value for a missile unit. Reads max damage (eStat) and min damage (eUnitStat) stats from the unit; if an optional bonus-percent stat (eUnitStatEx) is provided, scales both bounds by that percentage. Returns a random value in [scaledMin, scaledMax] using the unit's seed, or 0 if max is less than 1 or min is 0.
-int32_t __stdcall MISSILE_RollElementalDamage(D2UnitStrc * pUnit, eD2UnitStat eUnitStat, eD2UnitStat eUnitStatEx, eD2UnitStat eStat) {
+static int32_t __stdcall MISSILE_RollElementalDamage(D2UnitStrc * pUnit, eD2UnitStat eUnitStat, eD2UnitStat eUnitStatEx, eD2UnitStat eStat) {
     int nValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eStat, 0);
     if (nValue < 1) {
       return 0;
@@ -850,7 +849,7 @@ void __fastcall MISSILES_SpawnSubMissileAlongPath(::SGAMEDATA * pGame, D2UnitStr
 }
 
 // Spawns a missile of a given type at a random position near the parent missile, but only every nParam2 frames (throttled by remaining-frames modulo). Uses remaining-frame count + X-pos as a deterministic seed offset. Picks a random (x,y) offset within nParam1 radius, collision-checks the candidate tile, and calls CreatingMissile if clear. Returns the spawned unit or null.
-D2UnitStrc * __stdcall MISSILES_SpawnPeriodicRandom(::SGAMEDATA * pGame, int32_t nParam1, eMissilesId pParam, int32_t eCollisionFlag, int32_t nParam2, D2UnitStrc * pUnit) {
+static D2UnitStrc * __stdcall MISSILES_SpawnPeriodicRandom(::SGAMEDATA * pGame, int32_t nParam1, eMissilesId pParam, int32_t eCollisionFlag, int32_t nParam2, D2UnitStrc * pUnit) {
     D2SkillArgStrc sSkillArg;
     if (!nParam2) {
       return nullptr;
@@ -934,7 +933,7 @@ void __fastcall SpawnPortal(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2LevelId 
     D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bSetsPortalFlag);
 }
 
-void MISSILES_UpdatePathToOwner(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+static void MISSILES_UpdatePathToOwner(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     int32_t nCoord;
     int16_t wOwnerPosY;
     int16_t wOwnerPosX;
@@ -1434,7 +1433,7 @@ BOOL __fastcall Missiles_SrvHitFunc_AreaDamageWithSpawnPattern(::SGAMEDATA * pGa
 }
 
 // Initialises a missile unit's travel range and targeting after launch. Computes total frames from missiles.txt Range + (level-1)*LevRange and sets both TotalFrames and CurrentFrame (countdown). If a live target unit is supplied, links the dynamic path to it (target-track mode, targetX=5) and calls GetCollisionDistance; otherwise resolves the fixed destination coords from the missile's embedded XY offset and uses GetDistanceToXY (point-target mode, targetX=6). If the resulting range is under 25 tiles, immediately runs PATH_CalculatePath.
-void __stdcall MISSILE_SetupTargetAndRange(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static void __stdcall MISSILE_SetupTargetAndRange(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     int nPosY;
     eD2UnitType eUnitType;
     if (!pUnit2) {
@@ -1500,7 +1499,7 @@ void __stdcall MISSILE_SetupTargetAndRange(D2UnitStrc * pUnit, D2UnitStrc * pUni
     D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit2, 0);
 }
 
-BOOL __stdcall MISSILES_ApplyAreaHitEffect(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+static BOOL __stdcall MISSILES_ApplyAreaHitEffect(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     if (!pUnit) {
       return 1;
     }
@@ -1739,7 +1738,7 @@ BOOL __fastcall Missiles_SrvHitFunc_AreaDamageWithDurationMod(::SGAMEDATA * pGam
 }
 
 // Spawns up to 18 child missiles in a fixed radial pattern around the parent missile's current position. Iterates the gaMissileOffsets_RadialPattern18 table in steps of nParam2*4 (stride to skip entries), each offset applied to the unit's X/Y center. nParam1 sets fixed lifetime (flag 0x8000). Inherits owner/skill/level from parent.
-void __stdcall MISSILES_SpawnRadialPattern18(::SGAMEDATA * pGame, eMissilesId pParam, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
+static void __stdcall MISSILES_SpawnRadialPattern18(::SGAMEDATA * pGame, eMissilesId pParam, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static int gnSubMissileCount_RadialPattern18[18] = {
     0x2,
@@ -5055,7 +5054,7 @@ void __fastcall MISSMODE_ExpireAndFree(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     UNIT::SUnit::FreeServerUnit(pGame, pUnit);
 }
 
-BOOL MISSMODE_CheckCollisionMode(int nCollisionMode, int * pnParam) {
+static BOOL MISSMODE_CheckCollisionMode(int nCollisionMode, int * pnParam) {
     int nCurMode = !pnParam ? 6 : *pnParam;
     switch (nCollisionMode) {
       case 0:
@@ -5075,7 +5074,7 @@ BOOL MISSMODE_CheckCollisionMode(int nCollisionMode, int * pnParam) {
     return 1;
 }
 
-int getDamageTarget(D2UnitStrc * pUnit) {
+static int getDamageTarget(D2UnitStrc * pUnit) {
     D2MissilesTxt* pMissilesTxt;
     int nClassId;
     int nDmgTargetMode = 3;
@@ -5098,7 +5097,7 @@ int getDamageTarget(D2UnitStrc * pUnit) {
     return nDmgTargetMode;
 }
 
-void MISSMODE_ApplyNextHitState(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
+static void MISSMODE_ApplyNextHitState(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
     D2MissilesTxt* pMissilesTxt;
     int nClassId;
     if (!pUnit || (nClassId = pUnit->nClassId , nClassId < 0) || sgptDataTable->nTxtMissilesSize <= nClassId) {
@@ -5125,7 +5124,7 @@ void MISSMODE_ApplyNextHitState(D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
 }
 
 // Server-side per-frame missile update dispatcher. For the given missile unit, looks up its MissilesTxt and validates its pSrvDoFunc index against MISSILESSRVDOFUNCS_SIZE. Resolves the missile's room (falling back to DRLGROOM_FindBetterNearbyRoom from its coords) and its owner. If the missile would be in a town and isn't flagged to persist there (flags2 &4 / &8 logic), it is destroyed (FreeServerUnit). Otherwise it invokes the missile's server "do" callback MISSILESSRVDOFUNCS[pSrvDoFunc](pGame, pUnit); a return of 2 means the callback already handled/kept it, anything else falls through to FreeServerUnit. Side effects: may free the missile unit. Note: __fastcall-ish, pUnit in EDI, pGame on stack (custom convention).
-void __stdcall MissileSrvDo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+static void __stdcall MissileSrvDo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static int MISSILESSRVDOFUNCS_SIZE = 0x35; D2_STATIC_GUARD(MISSILESSRVDOFUNCS_SIZE, "D2Game::MISSILES::MissilesMode::MissileSrvDo::MISSILESSRVDOFUNCS_SIZE");
     static D2MissileSrvDoFunc MISSILESSRVDOFUNCS[53] = {
@@ -5254,7 +5253,7 @@ void __fastcall MISSILEEVENT_DefaultCallback(::SGAMEDATA * pGame, D2UnitStrc * p
     MissileSrvDo(pGame, pUnit);
 }
 
-void MISSMODE_HitWithArmorReduction(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage) {
+static void MISSMODE_HitWithArmorReduction(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage) {
     MISSMODE_ApplyMissileHitDamage(pGame, pUnit, pTarget, pDamage);
     if (!(pTarget && pTarget->eUnitType == UNIT_MONSTER)) {
       return;
@@ -6986,13 +6985,11 @@ int __fastcall MISSMODE_SrvDoFn18_TowerChestSpawner(::SGAMEDATA * pGame, D2UnitS
           }
 
           nSpawnInterval = MISSMODE_SrvDoFn01_BasicMissile(pGame, pUnit);
-          Fog::Debug::GuardStack();
           return nSpawnInterval;
         }
       }
     }
 
-    Fog::Debug::GuardStack();
     return 2;
 }
 

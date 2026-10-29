@@ -47,24 +47,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q6Strc) == 0x34, "D2_NEW(D2QuestDataA3Q6Strc): the 32-bit layout must be the 0x34 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA3Q6Strc) == 0x34, "D2_NEW_AT(D2QuestDataA3Q6Strc): the 32-bit layout must be the 0x34 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A3Q6 {
@@ -186,7 +182,7 @@ BOOL __fastcall Q23_PlayerUpdateGuardianSteps(::SGAMEDATA * pGame, D2UnitStrc * 
 // JustCompleted(0xd) + Completed(0) + Step0x11(0x0b, "Act4 unlocked / quest finalized"), then calls
 // SetClientStatus(3) to flag the client as able-to-progress (the gate that opens travel to Pandemonium/Act4).
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q6.cpp
-void __stdcall Q23_SetGuardianQuestComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer) {
+static void __stdcall Q23_SetGuardianQuestComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer) {
     D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGuardian, QUESTSTATE_JustCompleted);
     D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGuardian, QUESTSTATE_Completed);
     D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGuardian, QUESTSTATE_Step0x11);
@@ -808,13 +804,14 @@ void __fastcall Objects_InitFn44(D2ObjectInitFnArg * pInitArg) {
 
 // [The Guardian (Q23)] fpSequenceFilter: when the player has the intro done (bIsNotIntroduction) but no
 // state flag yet, sets nStateFlag=1 and arms slot[2] (Q23_Callback_02). Bootstraps the acceptance step.
-void __fastcall Q23_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q23_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (!(!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction)) {
-      return;
+      return true;
     }
 
     pQuestData->nStateFlag = 1;
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q23_Callback02_NpcDeactivate;
+    return true;
 }
 
 // [The Guardian (Q23)] Quest-state handler slot[0xd]: RELOAD/REJOIN reconstruction. On game (re)entry,
@@ -918,13 +915,13 @@ void __fastcall Q23_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[3] = Q23_Callback03_ChangedLevel;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q23_Callback13_PlayerStartedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q23_Callback10_PlayerLeavesGame;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q23_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q23_SequenceFilter;
     pQuestData->nStateFlag = 0;
     pQuestData->nQuestIdReal = QUEST_TheGuardian;
     pQuestData->nInitNo = 6;
     pQuestData->fpStatusFilter = 0;
     pQuestData->fpActiveFilter = Q23_ActiveFilter;
-    D2QuestDataA3Q6Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA3Q6Strc);
+    D2QuestDataA3Q6Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA3Q6Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q6.cpp", 0x380);
     pQuestData->pQuestSpecificData.pA3Q6 = pQuestSpecificData;
     memset(pQuestSpecificData, 0, 0x34);
 }

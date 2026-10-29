@@ -34,11 +34,6 @@ uint32_t __fastcall Q23_CheckDuranceOfHateLevel2(::SGAMEDATA * pGame, struct D2U
 bool __fastcall Q23_ActiveFilter(struct D2QuestDataStrc * pQuestData, int32_t nTargetClassId, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2UnitStrc * pUnitEx);
 // Per-player iterator callback for A3Q6 The Guardian: syncs an individual player's QuestRecord journal sub-steps to the shared quest's nStateFlag/nStateFlagPrev. Skips players whose quest is already Completed or at Step0x11. Maps nStateFlag 2→Step0x02, 3→Step0x03; for state 4/5 further branches on nStateFlagPrev (2/3/4) to write Step0x04-Step0x09, reflecting which Cain/Ormus dialog steps Mephisto-quest progress has reached.
 BOOL __fastcall Q23_PlayerUpdateGuardianSteps(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
-// [The Guardian (Q23)] Marks the Mephisto quest COMPLETE for one player. Sets the player's QuestRecord
-// JustCompleted(0xd) + Completed(0) + Step0x11(0x0b, "Act4 unlocked / quest finalized"), then calls
-// SetClientStatus(3) to flag the client as able-to-progress (the gate that opens travel to Pandemonium/Act4).
-// @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q6.cpp
-void __stdcall Q23_SetGuardianQuestComplete(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer);
 // [The Guardian (Q23)] Per-player iterator run after Mephisto dies. If this player is standing in
 // Durance of Hate Level 3 (Mephisto's level) and hasn't yet completed/finalized the quest, calls
 // Q23_SetGuardianQuestComplete to mark JustCompleted/Completed/Step0x11 and bumps the participation
@@ -120,7 +115,7 @@ void __fastcall Objects_InitFn45(struct D2ObjectInitFnArg * pInitArg);
 void __fastcall Objects_InitFn44(struct D2ObjectInitFnArg * pInitArg);
 // [The Guardian (Q23)] fpSequenceFilter: when the player has the intro done (bIsNotIntroduction) but no
 // state flag yet, sets nStateFlag=1 and arms slot[2] (Q23_Callback_02). Bootstraps the acceptance step.
-void __fastcall Q23_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q23_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // [The Guardian (Q23)] Quest-state handler slot[0xd]: RELOAD/REJOIN reconstruction. On game (re)entry,
 // reads the player's saved Guardian QuestRecord sub-steps (Step0x02..0x09) and rebuilds the in-memory
 // shared nStateFlag/nStateFlagPrev so the Mephisto quest resumes at the right dialog stage. If already
@@ -135,5 +130,6 @@ void __fastcall Q23_Callback13_PlayerStartedGame(struct D2QuestDataStrc * pQuest
 // Sets nQuestIdReal=QUEST_TheGuardian (this confirms the file is "The Guardian", kill Mephisto, opens Act4).
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q6.cpp
 void __fastcall Q23_InitData(struct D2QuestDataStrc * pQuestData);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A3Q6

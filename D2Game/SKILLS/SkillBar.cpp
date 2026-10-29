@@ -185,7 +185,7 @@ BOOL __fastcall SKILLBAR_SrvStFn33_TargetRevivableCorpse(::SGAMEDATA * pGame, D2
 }
 
 // Resolves the Lightning Fury bolt-count offset for the Find Potion item-code table. Determines act from the unit's room level, rolls the unit's RNG seed mod 100, compares against SkilParam2/SkilParam3 thresholds to pick bolt-count offset (0/1/2), and returns the corresponding entry from gaMapAiDirectionHandlersPtr table indexed by [act*3 + offset]. Returns 0 if out of bounds.
-uint32_t __stdcall SKILLAMZ_CreateLightningFuryBolts(int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
+static uint32_t __stdcall SKILLAMZ_CreateLightningFuryBolts(int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static uint32_t gnLightningFuryBoltCount = 0xf; D2_STATIC_GUARD(gnLightningFuryBoltCount, "D2Game::SKILLS::SkillBar::SKILLAMZ_CreateLightningFuryBolts::gnLightningFuryBoltCount");
     static uint32_t gaAmzLightningFuryBoltTable[15][3] = {
@@ -986,7 +986,7 @@ BOOL __fastcall SKILLBAR_SrvStFn38_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc * p
     return 1;
 }
 
-BOOL SKILLAMZ_GetPlagueJavelinCloudCount(int32_t nParam) {
+static BOOL SKILLAMZ_GetPlagueJavelinCloudCount(int32_t nParam) {
     D2InventoryStrc* pInventory = *(D2InventoryStrc**)(nParam + 0x60);
     if (!pInventory) {
       return 0;
@@ -1012,7 +1012,7 @@ BOOL SKILLAMZ_GetPlagueJavelinCloudCount(int32_t nParam) {
 }
 
 // Per-frame tick callback for Amazon Plague Javelin. For monster units returns a seeded RNG result. For players, checks whether the current frame has reached the stored next-cloud-frame (skill param4); if so, computes the next cloud interval based on the active weapon attack speed (bucketed into 4/6/8/10/12/14/16 frames), and returns 1 or 2 indicating how many poison clouds to spawn this tick.
-int32_t __stdcall SKILLAMZ_CreatePlagueJavelinClouds(int32_t nParam, D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
+static int32_t __stdcall SKILLAMZ_CreatePlagueJavelinClouds(int32_t nParam, D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
     int nAttackFrames;
     if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
       D2SeedStrc DVar1;
@@ -1313,7 +1313,7 @@ BOOL __fastcall SKILLBAR_SrvStFn39_Berserk(::SGAMEDATA * pGame, D2UnitStrc * pUn
 }
 
 // For a leap-style skill (Leap/Leap Attack/Teleport-like), clamps and validates the requested target coord (*pnParam1,*pnParam2) to a reachable destination. Clamps the target along the source->target line to the skill's max range (aurarangecalc via D2GetSkillCalc, eSkill@EAX), then tries up to 3 candidate cells (the clamped point and two perpendicular-offset fallbacks) seeking one that is free of player-collision (GetFreeCoordinates/CheckCollision_BlockPlayer), has line-of-sight from source (SKILLS_HasLineOfSight), and is within range. On success overwrites *pnParam1/*pnParam2 with the chosen cell and returns 1; returns 0 if no valid cell or invalid skill. Reads unit position from static/dynamic path.
-BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t nParam, int * pnParam1, int * pnParam2, eD2Skills eSkill) {
+static BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t nParam, int * pnParam1, int * pnParam2, eD2Skills eSkill) {
     D2RoomStrc* pRoom;
     eD2CollisionShapeType nRangeOrSize;
     uint32_t bHasLOS;
@@ -1437,7 +1437,7 @@ BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t nParam, 
     } while (true);
 }
 
-void __stdcall SKILLBAR_InitChargeTarget(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SkillStrc * pSkill, D2UnitStrc * pUnit2) {
+static void __stdcall SKILLBAR_InitChargeTarget(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SkillStrc * pSkill, D2UnitStrc * pUnit2) {
     if (!(pUnit2 && pSkill)) {
       return;
     }
@@ -1449,7 +1449,7 @@ void __stdcall SKILLBAR_InitChargeTarget(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     D2Common::Skills::SKILL_SetParam4(pSkill, pUnit2->nUnitGUID);
 }
 
-BOOL __stdcall SKILLBAR_CanTargetPosition(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, int32_t nParam3) {
+static BOOL __stdcall SKILLBAR_CanTargetPosition(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, int32_t nParam3) {
     if (!(-1 < nParam3 && nParam3 < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -1593,7 +1593,7 @@ BOOL __fastcall SKILLBAR_SrvStFn40_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 }
 
 // Initialises the movement path for a transport-type skill (e.g. Leap, Charge start). Sets skill flags to 0x1101, zeros the collision type/pattern, reads destination coords from skill param1/param2, sets path type 9 (teleport-style), looks up run speed from MonStats or CharStats, sets path velocities, and triggers PATH_CalculatePath. Returns 1 on success, 0 if no dynamic path or no valid destination.
-BOOL __stdcall SKILL_InitTransportPath(D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
+static BOOL __stdcall SKILL_InitTransportPath(D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
     uint32_t nRunSpeed;
     D2CharStatsTxt* pCharStats;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
@@ -1631,7 +1631,7 @@ BOOL __stdcall SKILL_InitTransportPath(D2SkillStrc * pSkill, D2UnitStrc * pUnit)
 }
 
 // Computes the overshooting charge path for Barbarian Charge. Resolves the target unit from skill param3 (type) and param4 (GUID), sets skill flags to 1, forces sequence frame 0xC, snaps position to tile, then calculates an overshoot destination (3× caster origin − 2× target coords). Aborts if the overshoot lands in a town room. Sets path type 8, distance 5, and calls PATH_CalculatePath.
-void __stdcall SKILLBAR_CalculateChargePath(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
+static void __stdcall SKILLBAR_CalculateChargePath(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
     if (!pSkill) {
       return;
     }
@@ -1677,7 +1677,7 @@ void __stdcall SKILLBAR_CalculateChargePath(::SGAMEDATA * pGame, int32_t nParam1
 }
 
 // Called each server tick while a charging unit (player or monster) is en route to its charge destination. Reads target (nX, nY) from skill params 1/2. If the unit has reached the target: removes old collision, restores normal collision type and path type, fires UNITEVENTCALLBACK_ENDANIM, schedules a follow-up event, and sends a 0xA5 packet with the current skill ID. Special cases: Baal (monBaseId 0x4E) calls SKILLBAR_CalculateChargePath instead; Iron Golem (0x21C) adjusts sequence frame based on remaining distance. If not yet at target, advances the sequence frame (monsters) or resets the anim timer (players). Returns 1 when arrival is processed, 0 otherwise.
-BOOL __stdcall SKILLBAR_ArriveAtChargeTarget(::SGAMEDATA * pGame, D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
+static BOOL __stdcall SKILLBAR_ArriveAtChargeTarget(::SGAMEDATA * pGame, D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
     int nUnitX;
     int32_t nCollisionWidth;
     eD2Skills eCurrentSkill;
@@ -1810,7 +1810,7 @@ BOOL __fastcall Skills_SrvDoFunc_077_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUni
 }
 
 // Finds the next valid melee target for Whirlwind/Charge-type skills. First checks if the current target unit is still in melee range. Falls back to the unit stored in skill param3/param4 (type/GUID). If still not found, scans a melee-range-plus-four radius for any hostile unit via SKILLS_FindNextUnitInAreaByGUID. Stores the chosen target's type and GUID back into param3/param4 and returns the target, or NULL and sets param3=6 if none found.
-D2UnitStrc * __stdcall SKILLBAR_AcquireNextTarget(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
+static D2UnitStrc * __stdcall SKILLBAR_AcquireNextTarget(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
     int32_t nSearchRadius;
     if (!pSkill) {
       return nullptr;
@@ -1909,7 +1909,7 @@ BOOL __fastcall SKILLBAR_SrvStFn41_LeapAttack(::SGAMEDATA * pGame, D2UnitStrc * 
 }
 
 // Server-side hit cycle for the Whirlwind skill. Acquires the next target in the spin arc via SKILLBAR_AcquireNextTarget, performs a to-hit check, and if it lands: calculates and applies physical + elemental damage, removes any stun state list from the target, and applies the skill's server overlay. Returns 1 if a target was hit, 0 if no valid target or skill entry found.
-BOOL __stdcall SKILLBAR_WhirlwindHitCycle(::SGAMEDATA * pGame, eD2Skills eSkill, int32_t nSkillLvl, D2UnitStrc * pUnit) {
+static BOOL __stdcall SKILLBAR_WhirlwindHitCycle(::SGAMEDATA * pGame, eD2Skills eSkill, int32_t nSkillLvl, D2UnitStrc * pUnit) {
     D2StatListExStrc* pStatList;
     D2DamageStrc sDamage;
     short int nHitOverlayId;

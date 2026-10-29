@@ -12,51 +12,51 @@
 struct ChatIgnoreList;
 #ifndef RECON_FPTD_ChatIgnoreList_AddAccountMapping
 #define RECON_FPTD_ChatIgnoreList_AddAccountMapping
-typedef void (*ChatIgnoreList_AddAccountMapping)(::ChatIgnoreList * pThis, char * szRaw, int32_t nRawLen);
+typedef void (__thiscall *ChatIgnoreList_AddAccountMapping)(::ChatIgnoreList * pThis, char * szRaw, int32_t nRawLen);
 #endif
 #ifndef RECON_FPTD_ChatIgnoreList_AddByAccountName
 #define RECON_FPTD_ChatIgnoreList_AddByAccountName
-typedef int32_t (*ChatIgnoreList_AddByAccountName)(::ChatIgnoreList * pThis, char * szAccountName);
+typedef int32_t (__thiscall *ChatIgnoreList_AddByAccountName)(::ChatIgnoreList * pThis, char * szAccountName);
 #endif
 #ifndef RECON_FPTD_ChatIgnoreList_AddByPattern
 #define RECON_FPTD_ChatIgnoreList_AddByPattern
-typedef int32_t (*ChatIgnoreList_AddByPattern)(::ChatIgnoreList * pThis, char * szPattern);
+typedef int32_t (__thiscall *ChatIgnoreList_AddByPattern)(::ChatIgnoreList * pThis, char * szPattern);
 #endif
 #ifndef RECON_FPTD_ChatIgnoreList_CheckAccountNameIgnored
 #define RECON_FPTD_ChatIgnoreList_CheckAccountNameIgnored
-typedef int32_t (*ChatIgnoreList_CheckAccountNameIgnored)(::ChatIgnoreList * pThis, char * szAccountName);
+typedef int32_t (__thiscall *ChatIgnoreList_CheckAccountNameIgnored)(::ChatIgnoreList * pThis, char * szAccountName);
 #endif
 #ifndef RECON_FPTD_ChatIgnoreList_CheckIgnored
 #define RECON_FPTD_ChatIgnoreList_CheckIgnored
-typedef int32_t (*ChatIgnoreList_CheckIgnored)(::ChatIgnoreList * pThis, char * szPlayerName);
+typedef int32_t (__thiscall *ChatIgnoreList_CheckIgnored)(::ChatIgnoreList * pThis, char * szPlayerName);
 #endif
 #ifndef RECON_FPTD_ChatIgnoreList_ClearAccountMappings
 #define RECON_FPTD_ChatIgnoreList_ClearAccountMappings
-typedef void (*ChatIgnoreList_ClearAccountMappings)(::ChatIgnoreList * pThis);
+typedef void (__thiscall *ChatIgnoreList_ClearAccountMappings)(::ChatIgnoreList * pThis);
 #endif
 #ifndef RECON_FPTD_ChatIgnoreList_GetMappedValue
 #define RECON_FPTD_ChatIgnoreList_GetMappedValue
-typedef int32_t (*ChatIgnoreList_GetMappedValue)(::ChatIgnoreList * pThis, char * szKey, char * szOut, int32_t nOutSize);
+typedef int32_t (__thiscall *ChatIgnoreList_GetMappedValue)(::ChatIgnoreList * pThis, char * szKey, char * szOut, int32_t nOutSize);
 #endif
 #ifndef RECON_FPTD_ChatIgnoreList_GetPersistentSetting
 #define RECON_FPTD_ChatIgnoreList_GetPersistentSetting
-typedef int32_t (*ChatIgnoreList_GetPersistentSetting)(::ChatIgnoreList * pThis);
+typedef int32_t (__thiscall *ChatIgnoreList_GetPersistentSetting)(::ChatIgnoreList * pThis);
 #endif
 #ifndef RECON_FPTD_ChatIgnoreList_RemoveByAccountName
 #define RECON_FPTD_ChatIgnoreList_RemoveByAccountName
-typedef int32_t (*ChatIgnoreList_RemoveByAccountName)(::ChatIgnoreList * pThis, char * szAccountName);
+typedef int32_t (__thiscall *ChatIgnoreList_RemoveByAccountName)(::ChatIgnoreList * pThis, char * szAccountName);
 #endif
 #ifndef RECON_FPTD_ChatIgnoreList_RemoveByPattern
 #define RECON_FPTD_ChatIgnoreList_RemoveByPattern
-typedef int32_t (*ChatIgnoreList_RemoveByPattern)(::ChatIgnoreList * pThis, char * szPattern);
+typedef int32_t (__thiscall *ChatIgnoreList_RemoveByPattern)(::ChatIgnoreList * pThis, char * szPattern);
 #endif
 #ifndef RECON_FPTD_ChatIgnoreList_SavePersistentSetting
 #define RECON_FPTD_ChatIgnoreList_SavePersistentSetting
-typedef void (*ChatIgnoreList_SavePersistentSetting)(::ChatIgnoreList * pThis, int32_t nPersistent);
+typedef void (__thiscall *ChatIgnoreList_SavePersistentSetting)(::ChatIgnoreList * pThis, int32_t nPersistent);
 #endif
 #ifndef RECON_FPTD_ChatIgnoreList_ScalarDeletingDestructor
 #define RECON_FPTD_ChatIgnoreList_ScalarDeletingDestructor
-typedef ::ChatIgnoreList * (*ChatIgnoreList_ScalarDeletingDestructor)(::ChatIgnoreList * pThis, uint32_t nFlags);
+typedef ::ChatIgnoreList * (__thiscall *ChatIgnoreList_ScalarDeletingDestructor)(::ChatIgnoreList * pThis, uint32_t nFlags);
 #endif
 
 struct ChatIgnoreListVtable;
@@ -67,25 +67,25 @@ struct ChatIgnoreList {
 };
 
 struct ChatIgnoreListVtable {
-    /* 0x00 */ int32_t (*AddByPattern)(::ChatIgnoreList *, char *);
-    /* 0x04 */ int32_t (*RemoveByPattern)(::ChatIgnoreList *, char *);
-    /* 0x08 */ int32_t (*CheckIgnored)(::ChatIgnoreList *, char *);
-    /* 0x0C */ int32_t (*AddByAccountName)(::ChatIgnoreList *, char *);
-    /* 0x10 */ int32_t (*RemoveByAccountName)(::ChatIgnoreList *, char *);
-    /* 0x14 */ int32_t (*CheckAccountNameIgnored)(::ChatIgnoreList *, char *);
-    /* 0x18 */ void (*AddAccountMapping)(::ChatIgnoreList *, char *, int32_t);
-    /* 0x1C */ int32_t (*GetMappedValue)(::ChatIgnoreList *, char *, char *, int32_t);
-    /* 0x20 */ int32_t (*GetPersistentSetting)(::ChatIgnoreList *);
-    /* 0x24 */ void (*SavePersistentSetting)(::ChatIgnoreList *, int32_t);
-    /* 0x28 */ void (*ClearAccountMappings)(::ChatIgnoreList *);
-    /* 0x2C */ ::ChatIgnoreList * (*ScalarDeletingDestructor)(::ChatIgnoreList *, uint32_t);
+    /* 0x00 */ int32_t (__thiscall *AddByPattern)(::ChatIgnoreList *, char *);
+    /* 0x04 */ int32_t (__thiscall *RemoveByPattern)(::ChatIgnoreList *, char *);
+    /* 0x08 */ int32_t (__thiscall *CheckIgnored)(::ChatIgnoreList *, char *);
+    /* 0x0C */ int32_t (__thiscall *AddByAccountName)(::ChatIgnoreList *, char *);
+    /* 0x10 */ int32_t (__thiscall *RemoveByAccountName)(::ChatIgnoreList *, char *);
+    /* 0x14 */ int32_t (__thiscall *CheckAccountNameIgnored)(::ChatIgnoreList *, char *);
+    /* 0x18 */ void (__thiscall *AddAccountMapping)(::ChatIgnoreList *, char *, int32_t);
+    /* 0x1C */ int32_t (__thiscall *GetMappedValue)(::ChatIgnoreList *, char *, char *, int32_t);
+    /* 0x20 */ int32_t (__thiscall *GetPersistentSetting)(::ChatIgnoreList *);
+    /* 0x24 */ void (__thiscall *SavePersistentSetting)(::ChatIgnoreList *, int32_t);
+    /* 0x28 */ void (__thiscall *ClearAccountMappings)(::ChatIgnoreList *);
+    /* 0x2C */ ::ChatIgnoreList * (__thiscall *ScalarDeletingDestructor)(::ChatIgnoreList *, uint32_t);
 };
 
 namespace D2Common::Chat::Ignorelist::ChatIgnoreList {
 
 // Function declarations
-void Destructor(::ChatIgnoreList * pThis);
-::ChatIgnoreList * ScalarDeletingDestructor(::ChatIgnoreList * pThis, uint32_t nFlags);
-::ChatIgnoreList * Constructor(::ChatIgnoreList * pThis);
+void __thiscall Destructor(::ChatIgnoreList * pThis);
+::ChatIgnoreList * __thiscall ScalarDeletingDestructor(::ChatIgnoreList * pThis, uint32_t nFlags);
+::ChatIgnoreList * __thiscall Constructor(::ChatIgnoreList * pThis);
 
 } // namespace D2Common::Chat::Ignorelist::ChatIgnoreList

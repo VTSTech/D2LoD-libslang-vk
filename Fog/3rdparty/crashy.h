@@ -55,7 +55,6 @@ void __fastcall SYSTEM_Win32TerminateProcess(uint32_t uExitCode);
 // The offset was only readable once the local was widened to the real struct; before that it was
 // six loose dwords with invented names. No callers, so the rename is local.
 void __stdcall SYSTEM_GetCurrentProcessThreadCount();
-uint32_t __stdcall SYSTEM_GetStackRegion(LPCVOID * ppStackBase, LPCVOID pAddress, LPCVOID * ppStackTop);
 // NOTE: Return type changed void→char (1 callers, MEDIUM confidence)
 char __stdcall SYSTEM_CaptureThreadContext(int * pnStackTop, DWORD dwThreadId, int * pStackSize, LPCVOID * ppEsp);
 bool __stdcall SYSTEM_GetThreadName(int32_t wThreadId, char * pBuffer);
@@ -68,5 +67,6 @@ char * ILT_strrchr(char * _Str, int32_t _Ch);
 void __stdcall SYSTEM_EnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection);
 void __stdcall LeaveCriticalSection_System(LPCRITICAL_SECTION lpCriticalSection);
 void __stdcall DebugThread();
+// 1 internal function (defined in .cpp)
 
 } // namespace Fog::_3rdparty::crashy

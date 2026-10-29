@@ -41,11 +41,7 @@ void __fastcall SKILLEMONST_DetachFromHost(::SGAMEDATA * pGame, struct D2UnitStr
 // SrvDoFunc 129: parasite attach/detach dispatch. If unit already has an owner, relocates it to target coords and calls SKILLEMONST_DetachFromHost. If no target exists, falls back to SrvDoFunc_098 teleport. Otherwise relocates unit onto the target and calls SKILLEMONST_AttachToHost.
 BOOL __fastcall Skills_SrvDoFunc_129_AttachOrDetachFromHost(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall SKILLEMONST_SrvStFn61_SelfResurrect(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
-void __stdcall SKILLSOR_GetMeteorSubMissileCount(eMissilesId pParam, eD2Skills eSkill, int32_t nSkillLvl, ::SGAMEDATA * pGame, int32_t nCount, struct D2UnitStrc * pUnit);
 BOOL __fastcall Skills_SrvDoFunc_130_SpawnSubMissiles(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
-void __stdcall SKILLEMONST_ApplyAuraBuff(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, eD2Skills eSkill, int32_t nSkillLvl);
-// Transforms a target monster into a new class derived from the skill's summon monster class (difficulty-scaled). Calls MONSTER_TransformMonsterClass, reattaches AI, fires lifecycle transition, applies STATE_changeclass, attaches a stat list (UNITSTAT_shortparam1 = new class id), and initialises sumumod umod slots on the target.
-void __stdcall SKILLEMONST_TransformMonsterClass(struct D2UnitStrc * pUnit, DWORD dwParam, ::SGAMEDATA * pGame, struct D2UnitStrc * pUnit2, int32_t nParam);
 // SrvDoFunc 131: on a living monster target with base id 0x1C5, rolls a random percent against calc[0] and, if the target lacks auratargetstate, calls SKILLEMONST_TransformMonsterClass; otherwise falls through to SKILLEMONST_ApplyAuraBuff. Returns FALSE if target is dead or skill record invalid.
 BOOL __fastcall Skills_SrvDoFunc_131_ConditionalTransformOrBuff(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 BOOL __fastcall Skills_SrvDoFunc_132_FireClassUpgradedMissile(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
@@ -74,5 +70,6 @@ BOOL __fastcall fpBaalWaveFunction(::SGAMEDATA * pGame, struct D2UnitStrc * pAtt
 BOOL __fastcall Skills_SrvDoFunc_141_BaalCorpseExplosionWave(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 // Searches for a useable, attackable corpse within nSearchRadius of pUnit. Iterates UnitFind results from neighboring rooms, checks IsCorpseUseable and UNITS_CheckIfCanAttackTarget for each candidate, and returns the first match (or NULL). Excludes pExcludeUnit via find flags.
 struct D2UnitStrc * __fastcall SKILLEMONST_FindNearbyCorpse(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pExcludeUnit, int32_t nSearchRadius);
+// 3 internal functions (defined in .cpp)
 
 } // namespace D2Game::SKILLS::SkillEMonst

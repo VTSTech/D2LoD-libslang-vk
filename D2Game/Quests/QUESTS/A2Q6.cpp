@@ -46,15 +46,15 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q6Strc) == 0x68, "D2_NEW(D2QuestDataA2Q6Strc): the 32-bit layout must be the 0x68 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q6Strc) == 0x68, "D2_NEW_AT(D2QuestDataA2Q6Strc): the 32-bit layout must be the 0x68 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
@@ -64,10 +64,6 @@ typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitSt
 #ifndef RECON_FPTD_QUESTACTIVE
 #define RECON_FPTD_QUESTACTIVE
 typedef bool (__fastcall *QUESTACTIVE)(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A2Q6 {
@@ -327,7 +323,7 @@ void __fastcall Q14_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
 }
 
 // A2Q6 "The Seven Tombs" — mark Duriel dead / quest just-completed for one player's record. Sets TheSevenTombs Step0x03 + JustCompleted(0xd) on the player's quest-record bitbuffer, then bumps that client's status to 2 (act-progress) for the current difficulty. This is the core "Duriel killed" record stamp; called per qualifying player in Duriel's Lair.
-void __stdcall Q14_SetDurielComplete(::SGAMEDATA * pQuestControl, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer) {
+static void __stdcall Q14_SetDurielComplete(::SGAMEDATA * pQuestControl, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer) {
     /* SetQuestState(TheSevenTombs, 0xd=JustCompleted) — Duriel killed self game
                           */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_JustCompleted);
     /* SetQuestState(TheSevenTombs, 3=Step0x03) — Duriel-dead progress bit */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x03);
@@ -1002,23 +998,24 @@ bool __fastcall Q14_ActiveFilter(D2QuestDataStrc * pQuestData, eD2MonsterClassId
 }
 
 // A2Q6 "The Seven Tombs" — fpSequenceFilter: if quest not yet started (nStateFlag==0) and introduced, sets nStateFlag 1 (quest visible/started). Then chains into TheTaintedSun's sequence filter (the two Act2 quests are linked). No bitbuffer record changes.
-void __fastcall Q14_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q14_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x3e9);
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheTaintedSun);
     if (!pQuestData_00) {
-      return;
+      return true;
     }
 
-    BOOL BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (BVar1) {
+    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+    if (BVar2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3ee);
       exit(-1);
     }
 
-    pQuestData_00->fpSequenceFilter(pQuestData_00);
+    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+    return bVar1;
 }
 
 // A2Q6 "The Seven Tombs" — handler slot 0xe: on this event, clears the player's TheHoradricStaff record Step0x09 bit (cross-quest cleanup tying staff completion into the tombs quest).
@@ -1091,13 +1088,13 @@ void __fastcall Q14_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->pNpcMessages = &A2Q6::aNpcGossipData;
     pQuestData->bIsActive = true;
     pQuestData->nStateFlag = 0;
-    D2QuestDataA2Q6Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA2Q6Strc);
+    D2QuestDataA2Q6Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA2Q6Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x442);
     pQuestData->pQuestSpecificData.pA2Q6 = pQuestSpecificData;
     pQuestData->nQuestIdReal = QUEST_TheSevenTombs;
     pQuestData->fpStatusFilter = Q14_StatusFilter;
     pQuestData->nInitNo = 4;
     pQuestData->fpActiveFilter = (QUESTACTIVE)Q14_ActiveFilter;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q14_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q14_SequenceFilter;
     memset(pQuestSpecificData, 0, 0x68);
     pQuestSpecificData->bTombEntered = 0;
     pQuestSpecificData->field_0x2 = 0;

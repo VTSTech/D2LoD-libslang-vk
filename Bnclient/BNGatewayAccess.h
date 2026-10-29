@@ -32,7 +32,7 @@ namespace Bnclient::BNGatewayAccess {
 int32_t __stdcall GetSystemTimeZone();
 // @sourcefile .\BNetGW.cpp
 void __stdcall SaveAndUnload(struct D2BNetGatewayAccessStr * pGatewayAccess);
-char * Nth(void * pThis, int nIndex);
+char * __thiscall Nth(void * pThis, int nIndex);
 char * __stdcall DNS(struct D2BNetGatewayAccessStr * pGatewayAccess, int nIndex);
 int32_t __stdcall GMT(struct D2BNetGatewayAccessStr * pGatewayAccess, int nIndex);
 char * __stdcall Name(struct D2BNetGatewayAccessStr * pGatewayAccess, int nIndex);
@@ -45,16 +45,16 @@ void __stdcall SetCurGateway(int32_t nParam1, int32_t nParam2);
 // Load falls to UpdateGatewaysFromIni -> assert (see 0x518850).
 // An "Override.." value name sets bIsOverride=1 @0x51827f.
 // @sourcefile .\BNetGW.cpp
-void GetGatewayList(void * pThis, char * szText);
+void __thiscall GetGatewayList(void * pThis, char * szText);
 void __fastcall GetBattlenetGatewayList(int32_t nGatewayAccess);
 void __fastcall GetBattlenetRealmsList(int32_t nGatewayAccess);
 uint32_t * __stdcall WritingDefaultGatewayList(DWORD * pdwFileSize);
 void __fastcall WriteDefaultGatewayList(char * szText);
 char * __stdcall SkipToEOL(char * szText1, char * szText2);
 char * __stdcall SkipEOL(char * szText1, char * szText2);
-char * __stdcall FindSection(char * szText1, char * szText2);
+char * __thiscall FindSection(struct D2BNetGatewayAccessStr * pThis, char * szText1, char * szText2);
 char * __stdcall FindKey(char * szText1, char * szText2);
-void PickClosestZone(void * pThis, int32_t nGmtMinutes);
+void __thiscall PickClosestZone(void * pThis, int32_t nGmtMinutes);
 // BNGatewayAccess::Load — Battle.net gateway-list loader. Asserts (ERROR_Halt, line 0x6c) when the registry gateway list isn't a 3n+1 entry count (missing/contended registry in a shared wineprefix).
 void __stdcall Load(struct D2BNetGatewayAccessStr * pGatewayAccess);
 // UpdateGatewaysFromIni(this, szIni) __stdcall (both args on stack: [ebp+8]=this,

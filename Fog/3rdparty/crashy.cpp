@@ -81,14 +81,11 @@ void __stdcall SYSTEM_GetCurrentProcessThreadCount() {
 
     /* HANDLE hObject for CloseHandle */ CloseHandle(hSnapshot);
     if (bFound) {
-      Debug::GuardStack();
       return;
     }
-
-    Debug::GuardStack();
 }
 
-uint32_t __stdcall SYSTEM_GetStackRegion(LPCVOID * ppStackBase, LPCVOID pAddress, LPCVOID * ppStackTop) {
+static uint32_t __stdcall SYSTEM_GetStackRegion(LPCVOID * ppStackBase, LPCVOID pAddress, LPCVOID * ppStackTop) {
     _MEMORY_BASIC_INFORMATION mbi;
     LPCVOID pVqResult = (LPCVOID)VirtualQuery(pAddress, &mbi, 0x1c);
     if (!(pVqResult && mbi.State == 0x1000 && mbi.Type == 0x20000 && mbi.Protect == 4)) {
@@ -133,8 +130,6 @@ char __stdcall SYSTEM_CaptureThreadContext(int * pnStackTop, DWORD dwThreadId, i
     LPCVOID pStackTop;
     LPCVOID pStackBase;
     CONTEXT ctx;
-    uint32_t dwStackCookie;
-    dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int* pnStackSize;
     pnStackSize = pStackSize;
     HANDLE hThread;
@@ -156,7 +151,6 @@ char __stdcall SYSTEM_CaptureThreadContext(int * pnStackTop, DWORD dwThreadId, i
         /* HANDLE hObject for CloseHandle */ CloseHandle(hThread);
       }
 
-      Debug::GuardStack();
       return (char)dwStackRegionResult;
     }
 
@@ -174,7 +168,6 @@ char __stdcall SYSTEM_CaptureThreadContext(int * pnStackTop, DWORD dwThreadId, i
       }
     }
 
-    Debug::GuardStack();
     return '\0';
 }
 
@@ -200,10 +193,8 @@ void __stdcall thunk_InitializeDebugSubsystem() {
 
 bool __stdcall InternalCheckCorp() {
     WSADATA wsaData;
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int nWsaStartupResult = WSAStartup(0x202, &wsaData);
     if (nWsaStartupResult) {
-      Debug::GuardStack();
       return false;
     }
 
@@ -214,7 +205,6 @@ bool __stdcall InternalCheckCorp() {
     }
 
     WSACleanup();
-    Debug::GuardStack();
     return bIsBlizzardHost;
 }
 
@@ -251,21 +241,19 @@ void __fastcall SYSTEM_SetGlobalString(char * szText) {
 }
 
 bool __fastcall ErrorReportingLaunch(char * szText, D2BlizzardErrorArgument * pArg) {
-    // Frame slots -5128..-4 are ONE object: &szCmdLine is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -5128..-8 are ONE object: &szCmdLine is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       char szCmdLine;
       uint8_t szCmdLineRest[4095];
       char szExePath[1024];
-      uint32_t dwStackCookie;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 5124, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 5120, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     bool bExists;
     uint32_t nAttach;
     char** ppAttachment;
     char cCh;
-    __frame0.dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* pDst;
     pDst = __frame0.szExePath;
     char* pSrcCur;
@@ -343,11 +331,9 @@ bool __fastcall ErrorReportingLaunch(char * szText, D2BlizzardErrorArgument * pA
         File::STRING_AppendStringToString(&__frame0.szCmdLine, 0x1000, szText);
         File::STRING_AppendStringToString(&__frame0.szCmdLine, 0x1000, "\"");
         bExists = File::FILETOOLS_StartApplicationWithCommandLine_UTF8(__frame0.szExePath, &__frame0.szCmdLine);
-        Debug::GuardStack();
         return bExists;
       }
     }
-    Debug::GuardStack();
     return false;
 }
 

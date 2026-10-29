@@ -17,18 +17,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2GameRecordStrc) == 0x1f4c, "D2_NEW(D2GameRecordStrc): the 32-bit layout must be the 0x1f4c bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2GameRecordStrc) == 0x1f4c, "D2_NEW_AT(D2GameRecordStrc): the 32-bit layout must be the 0x1f4c bytes 1.14d allocates");
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -45,7 +45,7 @@ namespace D2Client::GAME::Record {
 
 // @sourcefile .\GAME\Record.cpp
 void __stdcall AllocGameRecord() {
-    D2GameRecordStrc* pRecord = D2_NEW(D2GameRecordStrc);
+    D2GameRecordStrc* pRecord = D2_NEW_AT(D2GameRecordStrc, ".\\GAME\\Record.cpp", 0x35);
     pRecord->nEntrySize = 0;
     pRecord->nPlaybackIndex = 0;
     gpCurrentGameRecord->pNext = pRecord;
@@ -173,7 +173,7 @@ void __stdcall LoadGameRecordFromFile() {
       D2GameRecordStrc* pBlock;
       do {
         if (nBlockIndex) {
-          pBlock = D2_NEW(D2GameRecordStrc);
+          pBlock = D2_NEW_AT(D2GameRecordStrc, ".\\GAME\\Record.cpp", 0x35);
           pBlock->nEntrySize = 0;
           pBlock->nPlaybackIndex = 0;
           gpCurrentGameRecord->pNext = pBlock;
@@ -205,7 +205,7 @@ void __stdcall FreeGameRecord() {
     while (pMemoryToFree) {
       D2GameRecordStrc* pNextRecord;
       pNextRecord = pMemoryToFree->pNext;
-      D2_FREE(pMemoryToFree);
+      D2_FREE_AT(pMemoryToFree, ".\\GAME\\Record.cpp", 0x120);
       pMemoryToFree = pNextRecord;
     }
 }

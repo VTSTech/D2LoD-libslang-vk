@@ -15,55 +15,55 @@ struct UIWidget;
 struct ButtonWrapper;
 #ifndef RECON_FPTD_ButtonWrapper_Draw
 #define RECON_FPTD_ButtonWrapper_Draw
-typedef void (*ButtonWrapper_Draw)(::ButtonWrapper * pThis);
+typedef void (__thiscall *ButtonWrapper_Draw)(::ButtonWrapper * pThis);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_GetValue
 #define RECON_FPTD_ButtonWrapper_GetValue
-typedef int (*ButtonWrapper_GetValue)(::ButtonWrapper * pThis);
+typedef int (__thiscall *ButtonWrapper_GetValue)(::ButtonWrapper * pThis);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_OnChar
 #define RECON_FPTD_ButtonWrapper_OnChar
-typedef int (*ButtonWrapper_OnChar)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonWrapper_OnChar)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_OnDownArrow
 #define RECON_FPTD_ButtonWrapper_OnDownArrow
-typedef int (*ButtonWrapper_OnDownArrow)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonWrapper_OnDownArrow)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_OnLeftArrow
 #define RECON_FPTD_ButtonWrapper_OnLeftArrow
-typedef int (*ButtonWrapper_OnLeftArrow)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonWrapper_OnLeftArrow)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_OnMouseDown
 #define RECON_FPTD_ButtonWrapper_OnMouseDown
-typedef int (*ButtonWrapper_OnMouseDown)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonWrapper_OnMouseDown)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_OnMouseMove
 #define RECON_FPTD_ButtonWrapper_OnMouseMove
-typedef int (*ButtonWrapper_OnMouseMove)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonWrapper_OnMouseMove)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_OnMouseUp
 #define RECON_FPTD_ButtonWrapper_OnMouseUp
-typedef int (*ButtonWrapper_OnMouseUp)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonWrapper_OnMouseUp)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_OnMouseWheel
 #define RECON_FPTD_ButtonWrapper_OnMouseWheel
-typedef int (*ButtonWrapper_OnMouseWheel)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonWrapper_OnMouseWheel)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_OnRightArrow
 #define RECON_FPTD_ButtonWrapper_OnRightArrow
-typedef int (*ButtonWrapper_OnRightArrow)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonWrapper_OnRightArrow)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_OnUpArrow
 #define RECON_FPTD_ButtonWrapper_OnUpArrow
-typedef int (*ButtonWrapper_OnUpArrow)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ButtonWrapper_OnUpArrow)(::ButtonWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_ScalarDeletingDestructor
 #define RECON_FPTD_ButtonWrapper_ScalarDeletingDestructor
-typedef ::ButtonWrapper * (*ButtonWrapper_ScalarDeletingDestructor)(::ButtonWrapper * pThis, uint32_t nFlags);
+typedef ::ButtonWrapper * (__thiscall *ButtonWrapper_ScalarDeletingDestructor)(::ButtonWrapper * pThis, uint32_t nFlags);
 #endif
 #ifndef RECON_FPTD_ButtonWrapper_SetAccelerator
 #define RECON_FPTD_ButtonWrapper_SetAccelerator
-typedef void (*ButtonWrapper_SetAccelerator)(::ButtonWrapper * pThis, BOOL bEnable);
+typedef void (__thiscall *ButtonWrapper_SetAccelerator)(::ButtonWrapper * pThis, BOOL bEnable);
 #endif
 #ifndef RECON_FPTD_fpButtonOnActivate
 #define RECON_FPTD_fpButtonOnActivate
@@ -101,17 +101,17 @@ struct ButtonWrapper {
 };
 
 struct ButtonWrapperVtable {
-    /* 0x00 */ ::ButtonWrapper * (*ScalarDeletingDestructor)(::ButtonWrapper *, uint32_t);
-    /* 0x04 */ void (*Draw)(::ButtonWrapper *);
-    /* 0x08 */ int (*OnMouseWheel)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x0C */ int (*OnMouseDown)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x10 */ int (*OnMouseUp)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x14 */ int (*OnMouseMove)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x18 */ int (*OnChar)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x1C */ int (*OnUpArrow)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x20 */ int (*OnDownArrow)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x24 */ int (*OnRightArrow)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x28 */ int (*OnLeftArrow)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x2C */ int (*GetValue)(::ButtonWrapper *);
-    /* 0x30 */ void (*SetAccelerator)(::ButtonWrapper *, BOOL);
+    /* 0x00 */ ::ButtonWrapper * (__thiscall *ScalarDeletingDestructor)(::ButtonWrapper *, uint32_t);
+    /* 0x04 */ void (__thiscall *Draw)(::ButtonWrapper *);
+    /* 0x08 */ int (__thiscall *OnMouseWheel)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x0C */ int (__thiscall *OnMouseDown)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x10 */ int (__thiscall *OnMouseUp)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x14 */ int (__thiscall *OnMouseMove)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x18 */ int (__thiscall *OnChar)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x1C */ int (__thiscall *OnUpArrow)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x20 */ int (__thiscall *OnDownArrow)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x24 */ int (__thiscall *OnRightArrow)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x28 */ int (__thiscall *OnLeftArrow)(::ButtonWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x2C */ int (__thiscall *GetValue)(::ButtonWrapper *);
+    /* 0x30 */ void (__thiscall *SetAccelerator)(::ButtonWrapper *, BOOL);
 };

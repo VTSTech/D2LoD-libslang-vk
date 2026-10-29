@@ -32,18 +32,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2UnitPlayerListStrc) == 0x14, "D2_NEW(D2UnitPlayerListStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2UnitPlayerListStrc) == 0x14, "D2_NEW_AT(D2UnitPlayerListStrc): the 32-bit layout must be the 0x14 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -54,7 +54,7 @@ typedef void (__fastcall *fpSUnitIterateCallback)(::SGAMEDATA * pGame, D2UnitStr
 
 namespace D2Game::UNIT::PlayerList {
 
-DWORD * PLAYERLIST_FindEntry(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static DWORD * PLAYERLIST_FindEntry(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     D2UnitPlayerListStrc* pDVar1;
     int nTargetGUID;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
@@ -102,7 +102,7 @@ void __fastcall PLAYERLIST_AddPlayerEntry(::SGAMEDATA * pGame, D2UnitStrc * pUni
       return;
     }
 
-    D2UnitPlayerListStrc* pNewEntry = D2_NEW_POOL(pGame->pMemoryPool, D2UnitPlayerListStrc);
+    D2UnitPlayerListStrc* pNewEntry = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitPlayerListStrc, ".\\UNIT\\PlayerList.cpp", 0x6d);
     pNewEntry->nUnitGUID = 0;
     pNewEntry->nRelationshipFlags = 0;
     pNewEntry->nHostileDelay = 0;
@@ -157,7 +157,7 @@ void __fastcall PLAYERLIST_RemoveFromList(::SGAMEDATA * pGame, D2UnitStrc * pUni
       pPrevEntry->pNext = pMemoryToFree->pNext;
     }
 
-    D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+    D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\UNIT\\PlayerList.cpp", 0x97);
 }
 
 // Updates the relationship flags between pUnit and pTargetUnit in pUnit's player list, then sends packet 0x8C (RelationshipUpdate) to pTargetUnit's client. dwFlagMask selects which relationship bits to modify; nParam=0 clears them, non-zero sets them. No-op if the two units are the same or no list entry exists for pTargetUnit.
@@ -518,7 +518,7 @@ void __fastcall PLAYERDATA_FreePlayerList(::SGAMEDATA * pGame, D2UnitStrc * pUni
     while (pMemoryToFree) {
       D2UnitPlayerListStrc* pNextEntry;
       pNextEntry = pMemoryToFree->pNext;
-      D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\UNIT\\PlayerList.cpp", 0x4e);
       pMemoryToFree = pNextEntry;
     }
 

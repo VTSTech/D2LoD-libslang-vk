@@ -30,7 +30,7 @@ namespace D2Game::GAME::Arena {
 // Function declarations
 bool __stdcall ARENA_TestFlag(::SGAMEDATA * pGame, uint32_t nParam);
 // @sourcefile .\GAME\Arena.cpp
-void AllocArenaControl(void * pThis, eD2ArenaFlags eArenaFlags, uint8_t nTemplate);
+void __thiscall AllocArenaControl(void * pThis, eD2ArenaFlags eArenaFlags, uint8_t nTemplate);
 // @sourcefile .\GAME\Arena.cpp
 void __fastcall FreeArenaControl(::SGAMEDATA * pGame);
 // @sourcefile .\GAME\Arena.cpp
@@ -48,9 +48,6 @@ void __fastcall SERVER_ARENA_KillHandler(::SGAMEDATA * pGame, struct D2UnitStrc 
 // Clears bScoreDirty flag on player's D2UnitDataPlayerArenaStrc. Halts if unit is null, not player type, or has no arena data.
 void __fastcall ARENA_ClearScoreDirty(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit);
 void __fastcall ARENA_ClearUpdateFlag(::SGAMEDATA * pGame);
-int ARENA_IsScoreDirty(struct D2UnitStrc * pUnit);
-void __stdcall UpdatePlayerKillCount(struct D2ClientStrc * pClient, struct D2UnitStrc * pUnit);
-void __stdcall ARENA_BroadcastKillToPlayers(::SGAMEDATA * pGame, int32_t nBroadcastMode, struct D2ClientStrc * pClient);
 void __fastcall ARENA_UpdatePlayerKillState(::SGAMEDATA * pGame, struct D2ClientStrc * pClient);
 void __fastcall ARENA_BroadcastScoreOnJoin(::SGAMEDATA * pGame, struct D2ClientStrc * pClient);
 uint32_t __fastcall ARENA_GetClientUpdateFlag(::SGAMEDATA * pGame);
@@ -73,5 +70,6 @@ uint32_t __fastcall ARENA_GetTemplate(::SGAMEDATA * pGame);
 // Returns bit 0x200 of pArenaCtrl->eArenaFlags (no enum name yet); halts (Arena.cpp line 39, ptArena) when there is no arena control.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 BOOL __fastcall ARENA_IsFlag0x200Set(::SGAMEDATA * pGame);
+// 3 internal functions (defined in .cpp)
 
 } // namespace D2Game::GAME::Arena

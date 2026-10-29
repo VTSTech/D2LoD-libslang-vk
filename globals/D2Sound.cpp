@@ -133,25 +133,11 @@ int gaAmbientSoundEntryTable[16] = {
 }; D2_GLOBAL_GUARD(gaAmbientSoundEntryTable, "gaAmbientSoundEntryTable");
 
 // also labelled: lpCriticalSection_SoundPlay, lpCriticalSection_0088174c
-_RTL_CRITICAL_SECTION gSoundSmpCs = {
-    /* .DebugInfo = */ nullptr,
-    /* .LockCount = */ 0,
-    /* .RecursionCount = */ 0,
-    /* .OwningThread = */ nullptr,
-    /* .LockSemaphore = */ nullptr,
-    /* .SpinCount = */ 0
-}; D2_GLOBAL_GUARD(gSoundSmpCs, "gSoundSmpCs");
+_RTL_CRITICAL_SECTION gSoundSmpCs = {}; D2_GLOBAL_GUARD(gSoundSmpCs, "gSoundSmpCs");
 
-_RTL_CRITICAL_SECTION lpCriticalSection_008817c4 = {
-    /* .DebugInfo = */ nullptr,
-    /* .LockCount = */ 0,
-    /* .RecursionCount = */ 0,
-    /* .OwningThread = */ nullptr,
-    /* .LockSemaphore = */ nullptr,
-    /* .SpinCount = */ 0
-}; D2_GLOBAL_GUARD(lpCriticalSection_008817c4, "lpCriticalSection_008817c4");
+_RTL_CRITICAL_SECTION lpCriticalSection_008817c4 = {}; D2_GLOBAL_GUARD(lpCriticalSection_008817c4, "lpCriticalSection_008817c4");
 
-D2SoundSmpStrc * gpaSoundEffectBuffers[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }; D2_GLOBAL_GUARD(gpaSoundEffectBuffers, "gpaSoundEffectBuffers");
+D2SoundSmpStrc * gpaSoundEffectBuffers[8] = {}; D2_GLOBAL_GUARD(gpaSoundEffectBuffers, "gpaSoundEffectBuffers");
 
 // =============================================================================
 // Initialized scalars

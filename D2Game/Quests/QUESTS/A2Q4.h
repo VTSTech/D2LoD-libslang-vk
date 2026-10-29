@@ -33,8 +33,6 @@ BOOL __fastcall Q12_UpdateQuestRecord(::SGAMEDATA * pGame, struct D2UnitStrc * p
 void __fastcall Q12_Callback02_NpcDeactivate(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // A2Q4 - CheckJournalState. Returns 1 if the Arcane Sanctuary entrance portal has been placed (A2Q4 sSub.nPortalGUID == 2), else 0. Used to gate whether the Palace-Cellar->Sanctuary portal already exists.
 BOOL __fastcall Q12_CheckJournalState(::SGAMEDATA * pGame);
-// A2Q4 - OnJournalActivate. Marks the quest journal entry as active (field_0xe=1) and sets the portal-placement substate to 2, then iterates players running UpdateQuestRecord to persist. If a tracked object exists, refreshes its update flag and removes its collision (opens the way). Called when the Cellar/staff path activates the Sanctuary entrance. Parameter 0 is the A2Q4 record and parameter 1 is the D2QuestDataStrc; they were recorded the wrong way round until 2026.08.30.
-void __stdcall Q12_OnJournalActivate(struct D2QuestDataA2Q4Strc * pQuestData, struct D2QuestDataStrc * pQuestContext);
 // A2Q4 - Callback_11 (NPC-talk handler). Drives the quest from NPC dialogue. Drognan(0x14b): msg 0xba -> set Step0x07; msg 0xbb..0xbd -> set Step0x08. Other NPCs: for the Summoner-aftermath gossip set, send gossip packet and consume RewardAwaits(1) (Unset + add player to participation list). On msg 0x18c (staff/Sanctuary trigger) broadcasts state 5 and, if player is in the right room, spawns the Canyon-of-the-Magi portal and marks record JustCompleted(0xd). Atma(0xb1 msg0x175)->stateFlag 2 + OnJournalActivate; Cain/Jerhyn(0xc9 msg0x179)->stateFlag 3, broadcast state 3, persist.
 void __fastcall Q12_Callback11_ScrollMessage(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArg);
 // A2Q4 - Callback_00 (gossip-text builder). Chooses which gossip line an NPC speaks. For Drognan(0x14b): advances the control RNG seed and picks one of 3 Summoner hint lines (8..10) if hint flag set, else line 7. Otherwise: if RewardAwaits(1) -> line 4; if player already participated -> line 5; else gate on stateFlag/intro/Completed(0)/JustCompleted(0xd) and index the gdwQ08QuestStateMessages table by stateFlag to pick the line.
@@ -44,9 +42,9 @@ BOOL __fastcall Q12_SetCannotComplete(::SGAMEDATA * pGame, struct D2UnitStrc * p
 // A2Q4 - CheckArcaneAndReward. Per-player iterator callback: the actual quest-COMPLETE grant. If not already Completed(0)/RewardAwaits(1) and the player is standing in LEVEL_ArcaneSanctuary, sets the full completion bit set on the record: JustCompleted(0xd), RewardAwaits(1), Completed(0), clears all step bits, then re-sets Step0x08+Step0x07; finally propagates completion to every party member via Q12_SetArcaneCompleteOnPartyMember.
 BOOL __fastcall Q12_CheckArcaneAndReward(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // A2Q4 - SequenceFilter (inlined real body). Runs the sequence filter of the chained follow-up quest (nSequenceQuestId = The Summoner): looks up that quest's data and invokes its fpSequenceFilter. Halts via ErrorManager if the function pointer is a bad code ptr.
-void __fastcall Q12_SequenceFilterInlined(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q12_SequenceFilterInlined(struct D2QuestDataStrc * pQuestData);
 // A2Q4 - SequenceFilter (entry). On first activation (stateFlag==0 and intro done) sets stateFlag 1, then chains into the sequence quest (The Summoner) by calling its fpSequenceFilter. Halts via ErrorManager if the fn ptr is bad.
-void __fastcall Q12_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q12_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // A2Q4 - Callback_13 (load/sync handler). Reconstructs in-memory quest stateFlag from the persisted record on game load. If TaintedSun Completed(0) -> mark journal fields. If Sanctuary Completed(0) or RewardAwaits(1): set record JustCompleted(0xd) and mark journal done. If player holds the quest item -> stateFlag 1. Else map step bits to stateFlag: Step0x05->4/4, Step0x04->4/3, Step0x03->3/3, Step0x02->2/2. Also checks HoradricStaff Completed(0) to mark the journal entry.
 void __fastcall Q12_Callback13_PlayerStartedGame(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // A2Q4 - OnHoradricStaffAssembled. Entry point fired when the Horadric Staff is assembled (the prerequisite that unlocks the Arcane Sanctuary). If quest not yet introduced -> OnJournalActivate (open the Sanctuary entrance). Otherwise set stateFlag 1 if zero, and if no prior progress broadcast quest state 1 via QUEST_SetStateAndBroadcast(NotifyArcaneComplete).
@@ -80,5 +78,6 @@ void __fastcall Q12_SetObjectOperateState(::SGAMEDATA * pGame, int32_t nParam);
 void __fastcall Q12_Callback03_ChangedLevel(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // A2Q4 - InitData. Quest registration/init. Allocates the A2Q4 quest-specific data block (0x48), zeroes state functions, wires the gossip table and the state-handler callbacks (0->Callback_00, 2->Callback_02, 3->Callback_03, 0xa->Callback_10, 0xb->Callback_11, 0xd->Callback_13), sets nQuestIdReal=TheArcaneSanctuary, fpActiveFilter=Q12_ActiveFilter, fpSequenceFilter=Q12_SequenceFilter, nSequenceQuestId=TheSummoner, and clears the Summoner/sun sub-flags.
 void __fastcall Q12_InitData(struct D2QuestDataStrc * pQuestData);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A2Q4

@@ -56,7 +56,7 @@ template<> void TSExplicitList<SGAMEDATA, -572662307>::Destructor() {
 // Unreferenced copy of the destructor: unlinks every chunk, then the terminator.
 // Same code as TSExplicitList<TSHashObjectChunk<CELLIST,..>,16>::Destructor 006028d0; T from its call to UnlinkAll 0044f930.
 // stpl-orphan: a COMDAT copy in TSExplicitList<TSHashObjectChunk<SGAMEDATA, HASHKEY_NONE>, 16> that no member owns
-void Destructor_Unreferenced(TSExplicitList<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>, 16>* pThis) {
+void __thiscall Destructor_Unreferenced(TSExplicitList<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>, 16>* pThis) {
     int* pPrevLink;
     pThis->UnlinkAll();
     TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>* pTVar1 = &pThis->m_terminator;
@@ -174,7 +174,7 @@ template<> void TSGrowableArray<SGAMEDATA>::Destructor() {
 // Unreferenced copy of the destructor: unlinks every node, then the terminator.
 // Same code as TSExplicitList<CELLIST,..>::Destructor 00602aa0; T from its call to UnlinkAll 0044f8e0.
 // stpl-orphan: a COMDAT copy in TSExplicitList<SGAMEDATA, -572662307> that no member owns
-void Destructor_Unreferenced2(TSExplicitList<::SGAMEDATA, -572662307>* pThis) {
+void __thiscall Destructor_Unreferenced2(TSExplicitList<::SGAMEDATA, -572662307>* pThis) {
     int* pPrevLink;
     pThis->UnlinkAll();
     TSLink<::SGAMEDATA>* pTVar1 = &pThis->m_terminator;
@@ -346,7 +346,7 @@ template<> void TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>>::Reserve(
 
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> that no member owns
 // JMP thunk
-void Destructor_UnwindThunk(TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> * pThis) {
+void __thiscall Destructor_UnwindThunk(TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> * pThis) {
     pThis->Destructor();
 }
 
@@ -563,13 +563,13 @@ template<> ::SGAMEDATA * TSExplicitList<SGAMEDATA, -572662307>::NewNode(uint32_t
 }
 
 // @blizzard TSHashTable<SGAMEDATA,HASHKEY_NONE>::InternalDelete (STORM.H)
-template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::InternalDelete(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, ::SGAMEDATA * pNode) {
+template<> void __thiscall TSHashTable<SGAMEDATA, HASHKEY_NONE>::InternalDelete(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, ::SGAMEDATA * pNode) {
     pNode->Destructor();
     Storm::SMem::SMemFree(pNode, s___AUSGAMEDATA___0070f56c, -2, 0);
 }
 
 // @blizzard TSHashTable<SGAMEDATA,HASHKEY_NONE>::InternalNew (STORM.H)
-template<> ::SGAMEDATA * TSHashTable<SGAMEDATA, HASHKEY_NONE>::InternalNew(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags) {
+template<> ::SGAMEDATA * __thiscall TSHashTable<SGAMEDATA, HASHKEY_NONE>::InternalNew(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, TSExplicitList<::SGAMEDATA, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags) {
     TSLink<::SGAMEDATA>* ppSlot;
     uint32_t piVar2;
     ::SGAMEDATA* pNode = (::SGAMEDATA*)Storm::SMem::SMemAlloc(nExtraBytes + 0x1df4, s___AUSGAMEDATA___0070f56c, -2, dwFlags | 8);
@@ -637,7 +637,7 @@ template<> void TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>>::Clear() 
 }
 
 // @blizzard TSHashTable<SGAMEDATA,HASHKEY_NONE>::Destroy (STORM.H)
-template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::Destroy(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis) {
+template<> void __thiscall TSHashTable<SGAMEDATA, HASHKEY_NONE>::Destroy(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis) {
     pThis->InternalClear(1);
     pThis->nFullnessIndicator = 0;
     pThis->nSlotMask = 0;
@@ -648,7 +648,7 @@ template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::Destroy(TSHashTable<::SGAM
 }
 
 // @blizzard TSHashTable<SGAMEDATA,HASHKEY_NONE> scalar deleting destructor (STORM.H)
-template<> TSHashTable<::SGAMEDATA, HASHKEY_NONE>* TSHashTable<SGAMEDATA, HASHKEY_NONE>::ScalarDeletingDestructor(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, uint32_t dwFlags) {
+template<> TSHashTable<::SGAMEDATA, HASHKEY_NONE>* __thiscall TSHashTable<SGAMEDATA, HASHKEY_NONE>::ScalarDeletingDestructor(TSHashTable<::SGAMEDATA, HASHKEY_NONE>* pThis, uint32_t dwFlags) {
     pThis->Destructor();
     if (!(dwFlags & 1 && pThis)) {
       return pThis;
@@ -745,7 +745,7 @@ template<> void TSExplicitList<TSHashObjectChunk<SGAMEDATA, HASHKEY_NONE>, 16>::
 // Unreferenced stub that tail-jumps to SetCount 00450110.
 // Same code as TSGrowableArray<TSExplicitList<CELLIST,..>>::SetCount_Unreferenced 00603850.
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> that no member owns
-void SetCount_Unreferenced(TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> * pThis, uint32_t nCount) {
+void __thiscall SetCount_Unreferenced(TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>> * pThis, uint32_t nCount) {
     pThis->SetCount(nCount);
 }
 

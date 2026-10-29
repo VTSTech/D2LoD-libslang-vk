@@ -32,8 +32,6 @@ BOOL __fastcall SKILLAMA_SrvStFn04_ArrowAttack(::SGAMEDATA * pGame, struct D2Uni
 BOOL __fastcall SKILLAMA_SrvStFn05_Jab(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 // Amazon skill strike-step handler. Gets the current target, performs an auto-hit check (no ToHit roll), then if hit: reads calc[0] for enhanced-damage bonus, optionally sets elemental conversion (calc[3]/EType), calls SetDamageOnEvent, and applies the damage via DAMAGE_CalculateAndApplyDamage with SrcDam flags.
 BOOL __fastcall SKILLAMA_SrvStFn06_PowerStrike(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
-// Amazon skill helper that probabilistically consumes weapon quantity or durability on use. For stackable weapons: if the RNG roll (based on pUnit's seed vs. nParam1 threshold) triggers, removes one charge via RemoveQuanityOnUse. For non-stackable weapons with durability: on a trigger, decrements durability by nParam2 and sends stat update 0x3E to the client; if durability reaches zero, calls ITEMMODE_SendItemUpdate (item break). Returns non-zero if an action was taken.
-void __stdcall UseQuanityAndDurability(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 // Amazon skill strike-step handler. Checks attack validity, then rolls a ToHit check (SKILLS_CalcToHit + DAMAGE_CalculateHitCheck). On hit: computes physical damage via calc[0], optional elemental conversion, calls SetDamageOnEvent, drains weapon quantity/durability via calc[1]/calc[2] (UseQuanityAndDurability), then applies damage with SrcDam=0x80.
 BOOL __fastcall SKILLAMA_SrvStFn07_Impale(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 // Server state-start function for the Amazon Strafe skill (SrvStFunc index 8). Checks throwable ammo availability; if present, computes aura range, finds or area-sweeps for a target, clamps the hit count to calc[0]/calc[2] bounds, stores the result and target identity in skill params 1-3, and consumes one ammo unit. If no ammo, triggers weapon durability/break checks and returns FALSE.
@@ -66,5 +64,6 @@ BOOL __fastcall Skills_SrvDoFunc_014_LightningStrike(::SGAMEDATA * pGame, struct
 BOOL __fastcall Skills_SrvDoFunc_015_SummonDecoy(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 // Summon Valkyrie do-func. Looks up the Valkyrie monster class via SKILLS_GetSummonMonsterClassId, creates the pet unit via SKILL_CreateSummon, then: revives the corpse slot via SKILLNEC_ReviveCorpseAsMinion, applies summon buffs, fires the AI-think timer event, applies the STATE_valkyrie aura state, stores the owner, and adds the unit to the target node table.
 BOOL __fastcall Skills_SrvDoFunc_016_SummonValkyrie(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::SKILLS::SkillAma

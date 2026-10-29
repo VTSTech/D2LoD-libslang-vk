@@ -10,7 +10,6 @@
 #include "Fog/Src/QServer/QServer.h"
 #include "Fog/Src/Safesock.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Net/in_addr.h"
 #include "Fog/QServer.h"
 
@@ -80,8 +79,6 @@ DWORD __stdcall SocketThreadMain(void * lpThreadParam) {
     char aRecvBuf[1460];
     char szErrBuf[100];
     D2QServerStrc* pQServerCopy;
-    uint32_t dwStackCookie;
-    dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     __frame0.pQServerRef = (D2QServerStrc*)lpThreadParam;
     __frame0.nBucketIdx = 0;
     __frame0.nClientStep = 0;
@@ -351,7 +348,6 @@ BOOL __fastcall CreateSocketOnline(D2QServerStrc * pQServer, u_short nPort) {
     u_long ulNonBlocking;
     char optReuseAddr[4];
     sockaddr bindAddr;
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     /* int protocol for socket */ /* int type for socket */ /* int af for socket */ pQServer->nPerIpConnectionLimit = 1;
     SOCKET s = socket(2, 1, 0);
     if (s != -1) {
@@ -393,14 +389,12 @@ BOOL __fastcall CreateSocketOnline(D2QServerStrc * pQServer, u_short nPort) {
         hThread = CreateThread((LPSECURITY_ATTRIBUTES)0x0, 0, (LPTHREAD_START_ROUTINE)SocketThreadMain, pQServer, 0, (LPDWORD)pQServer->aAcceptThreadIds);
         pQServer->aAcceptThreadHandles[0] = hThread;
         ErrorManager::StubHook1();
-        Debug::GuardStack();
         return 1;
       }
 
       Safesock::closeSocket(s);
     }
 
-    Debug::GuardStack();
     return 0;
 }
 

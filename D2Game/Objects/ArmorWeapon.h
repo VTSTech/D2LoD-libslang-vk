@@ -16,9 +16,8 @@ struct SGAMEDATA;
 namespace D2Game::Objects::ArmorWeapon {
 
 // Function declarations
-// Populates a room region with armor/weapon rack objects of the given nRackType. Uses the game's control seed to pick a rack variant (even/odd), looks up the Objects.txt entry for size, then sweeps the DRLG coordinate space (horizontally for even variant, vertically for odd) calling ROOM_CheckSpawnCollision and CreateUnit at each valid grid position. Aborts with a fatal error if pRoom is null at spawn time.
-void __stdcall Roll(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2DrlgRoomCoordsStrc * pDrlgCoords, int32_t nRackType);
 int32_t __fastcall RollArmorStand(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2DrlgRoomCoordsStrc * pDrlgCoords);
 int32_t __fastcall RollWeaponRack(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2DrlgRoomCoordsStrc * pDrlgCoords);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::Objects::ArmorWeapon

@@ -39,8 +39,6 @@ int32_t __fastcall D2WINANIMIMAGE_GetCurrentState(::D2WinAnimImage * pAnimImage)
 // Attempts to transition animation from state 3 (loaded) to state 4 (playing). Resets frame counter and updates tick timestamp. Returns 1 if transitioned, 0 if already playing or stopped.
 BOOL __fastcall D2WINANIMIMAGE_TryAdvanceToPlaying(::D2WinAnimImage * pAnimImage);
 BOOL __fastcall DrawAnim(::D2WinAnimImage * pAnimImage);
-// Per-frame animation update. Advances frame counter, handles state transitions (looping vs one-shot), invokes frame change callbacks. Returns 1 on success.
-BOOL D2WINANIMIMAGE_UpdateFrame(::D2WinAnimImage * pAnimImage);
 BOOL __fastcall Draw(::D2WinAnimImage * pAnimImage);
 BOOL __stdcall Push(struct D2ControlMsg * pControlMsg);
 // Sets bAnimate (+0x5c): while it is 0, Draw keeps nCurrentFrame where it is. Returns 1; halts if the control is not FORM_Image.
@@ -48,5 +46,6 @@ BOOL __stdcall Push(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall D2WINANIMIMAGE_SetAnimate(::D2WinAnimImage * pAnimImage, BOOL bAnimate);
 // @sourcefile .\D2WinAnimImage.cpp
 ::D2WinAnimImage * __fastcall D2WinAnimImage(int32_t nPosX, int32_t nPosY, int32_t nSizeX, int32_t nSizeY, struct DC6 * pDC6, int32_t nStaticFrameDelay, OnPress pfnOnPress, struct FORMS_AnimFrameStrc * pAnimFrames, DRAWMODE eDrawMode, fpD2WinAnimImageNotify pfnOnStateChange);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Win

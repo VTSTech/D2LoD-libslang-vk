@@ -8,7 +8,6 @@
 #include "Storm/Source/SBig.h"
 #include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -29,7 +28,7 @@ void __fastcall SSIG_FreeBigNum(void * * pBigNum) {
     SBig::SBigDel((BigData*)*pBigNum);
 }
 
-BOOL SSIG_FindSignatureMarker(int32_t nOffset, uint32_t nTotalSize, int32_t pBuffer, int * pnFoundOffset) {
+static BOOL __stdcall SSIG_FindSignatureMarker(int32_t nOffset, uint32_t nTotalSize, int32_t pBuffer, int * pnFoundOffset) {
     int nMarkerOffset = nTotalSize - nOffset - 4;
     *pnFoundOffset = nMarkerOffset;
     if (!(nOffset + 4U <= nTotalSize && *(int*)(nMarkerOffset + pBuffer) == 0x5349474e)) {
@@ -39,13 +38,11 @@ BOOL SSIG_FindSignatureMarker(int32_t nOffset, uint32_t nTotalSize, int32_t pBuf
     return 1;
 }
 
-void __stdcall SSIG_HashData(uint32_t nDataLen, uint8_t * pData, int32_t pDigestOut) {
+static void __stdcall SSIG_HashData(uint32_t nDataLen, uint8_t * pData, int32_t pDigestOut) {
     D2Sha1ContextStrc shaContext;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     Fog::Source::SSignature::Sha1_Initialize(&shaContext);
     Sha1_Append(pData, nDataLen, &shaContext);
     Sha1_Finalize((uint8_t*)pDigestOut, &shaContext);
-    Fog::Debug::GuardStack();
 }
 
 // @sourcefile .\SOURCE\SSignature.cpp
@@ -564,7 +561,7 @@ int __fastcall Sha1_Finalize(uint8_t * pDigest, D2Sha1ContextStrc * pCtx) {
     0x0
 }; D2_STATIC_GUARD(gaSha1PaddingBlock, "Storm::Source::SSignature::Sha1_Finalize::gaSha1PaddingBlock");
 
-    // Frame slots -16..-4 are ONE object: &byLen7 is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -16..-8 are ONE object: &byLen7 is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       uint8_t byLen7;
@@ -575,12 +572,10 @@ int __fastcall Sha1_Finalize(uint8_t * pDigest, D2Sha1ContextStrc * pCtx) {
       uint8_t byLen2;
       uint8_t byLen1;
       uint8_t byLen0;
-      uint32_t local_8;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     uint32_t uVar1;
-    __frame0.local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     uint32_t dwCountLow = pCtx->nBitCountLow;
     uint32_t dwCountHigh = pCtx->nBitCountHigh;
     __frame0.byLen0 = (uint8_t)dwCountLow;
@@ -607,7 +602,6 @@ int __fastcall Sha1_Finalize(uint8_t * pDigest, D2Sha1ContextStrc * pCtx) {
       nWordsLeft--;
     } while (nWordsLeft);
 
-    Fog::Debug::GuardStack();
     return uVar1 >> 0x18;
 }
 

@@ -98,7 +98,7 @@ void __stdcall MINIPANEL_DrawButton(int32_t nParam1, int32_t nParam2, int32_t nP
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nParam2, nParam3, -1, DRAW_SOLID, nullptr);
 }
 
-void MINIPANEL_CalculateButtonPositions(int32_t bIsExpansion) {
+static void MINIPANEL_CalculateButtonPositions(int32_t bIsExpansion) {
     int bSinglePlayer = gbMiniPanelSinglePlayer;
     uint32_t nButtonCount = 8;
     if (gbMiniPanelSinglePlayer) {
@@ -331,7 +331,7 @@ BOOL __stdcall IsRightScreenOpen() {
     return 1;
 }
 
-void MINIPANEL_HandleButtonClick(int32_t nButtonId) {
+static void MINIPANEL_HandleButtonClick(int32_t nButtonId) {
     bool _bFlagActive;
     bool bFlagActive;
     eD2GSGameType eGameType;
@@ -695,7 +695,7 @@ BOOL __stdcall WAYPOINT_IsMouseInMiniPanel() {
     return 1;
 }
 
-void __stdcall MINIPANEL_ShowTooltip(int32_t nX, int32_t nY, int32_t nButtonFrame) {
+static void __stdcall MINIPANEL_ShowTooltip(int32_t nX, int32_t nY, int32_t nButtonFrame) {
     int i;
     uint16_t nStringIndex;
     uint16_t wszTooltip[200];
@@ -762,7 +762,7 @@ void __stdcall MINIPANEL_ShowTooltip(int32_t nX, int32_t nY, int32_t nButtonFram
         memset(wszKeyText, 0, 0x3c);
         pLocaleStr = CmdTbl::CMD_GetKeyNameForCommand(nCommandId, 1);
         pFormatStr = D2Lang::StrTable::strtable::GetLocaleString(0x1052);
-        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyText, pFormatStr, (uint16_t*)pLocaleStr);
+        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyText, pFormatStr, pLocaleStr);
         D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, wszKeyText);
       }
 
@@ -771,7 +771,7 @@ void __stdcall MINIPANEL_ShowTooltip(int32_t nX, int32_t nY, int32_t nButtonFram
         memset(wszKeyText, 0, 0x3c);
         pLocaleStr = CmdTbl::CMD_GetKeyNameForCommand(nCommandId, 0);
         pFormatStr = D2Lang::StrTable::strtable::GetLocaleString(0x1052);
-        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyText, pFormatStr, (uint16_t*)pLocaleStr);
+        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x1e, wszKeyText, pFormatStr, pLocaleStr);
         D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, wszKeyText);
       }
     }
@@ -779,7 +779,7 @@ void __stdcall MINIPANEL_ShowTooltip(int32_t nX, int32_t nY, int32_t nButtonFram
     D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(wszTooltip, nX - 3, nY - 0x1a, 0, 1);
 }
 
-void MINIPANEL_HandleMouseHover(int32_t nLayout) {
+static void MINIPANEL_HandleMouseHover(int32_t nLayout) {
     int nMouseX = ui::GetMouseX();
     int nMouseY = ui::GetMouseY();
     int nButtonIndex = 0;

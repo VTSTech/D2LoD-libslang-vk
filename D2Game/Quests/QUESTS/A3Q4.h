@@ -58,7 +58,7 @@ void __fastcall Q21_PlayerSetGoldenBirdQuestState(::SGAMEDATA * pGame, struct D2
 // Q21_PartySetGoldenBirdState (custom regs) -- broadcast the player's current Golden Bird sub-state to
 // every party member. Gets the player's party id (SUnit::GetPartyId); if in a party, runs
 // Q21_PlayerSetGoldenBirdQuestState over all members (ExecuteFunctionForEveryPartyMember). No-op solo.
-void Q21_PartySetGoldenBirdState(void * pThis, ::SGAMEDATA * pGame);
+int __thiscall Q21_PartySetGoldenBirdState(void * pThis, ::SGAMEDATA * pGame);
 // Q21_Callback_11 (__fastcall) -- MAIN Golden Bird NPC-dialog state machine (quest event 0xb).
 // Dispatches on (NPC id, dialog message id). Bails if quest already Completed. Transitions:
 //   Meshif(0xf5) msg 0x20f (give Jade): SetState Step0x02; advance flag->2; sync party; cache state=2.
@@ -79,7 +79,7 @@ void __fastcall Q21_Callback04_ItemPickedUp(struct D2QuestDataStrc * pQuestData,
 // or quest is active. Chains the next quest's sequence filters: runs the filter of nSequenceQuestId
 // (QUEST_SpokeToHratli prereq) and of QUESTINT_BladeOfTheOldReligion (Gidbinn) to advance the act's
 // quest chain. No QuestRecord state changes of its own; pure dispatch/IsBadCodePtr-guarded fp calls.
-void __fastcall Q21_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q21_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // Q21_Callback_13 (__fastcall) -- Golden Bird quest-load / state-flag reconstruction (event 0xd, run
 // on join/load). Rebuilds the in-memory nStateFlag/nStateFlagPrev from the persisted QuestRecord bits
 // + which item the player carries, so the quest-log resumes at the right step:

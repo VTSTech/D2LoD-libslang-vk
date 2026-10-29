@@ -191,9 +191,9 @@ struct D2ObjectControlStrc {
 namespace D2Client::GAME::Game {
 
 // Function declarations
-::SGAMEDATA * ScalarDeletingDestructor(::SGAMEDATA * pThis, uint32_t dwFlags);
+::SGAMEDATA * __thiscall ScalarDeletingDestructor(::SGAMEDATA * pThis, uint32_t dwFlags);
 // Implicit copy constructor: clears both hash-object links, copies the remaining fields; returns this.
 // Called from TSGrowableArray<SGAMEDATA>::ReallocData 00450d90; analogue of CELLIST::CopyConstructor 006040b0.
-::SGAMEDATA * CopyConstructor(::SGAMEDATA * pThis, ::SGAMEDATA * pSource);
+::SGAMEDATA * __thiscall CopyConstructor(::SGAMEDATA * pThis, ::SGAMEDATA * pSource);
 
 } // namespace D2Client::GAME::Game

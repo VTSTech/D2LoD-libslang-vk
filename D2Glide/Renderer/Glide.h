@@ -84,31 +84,21 @@ BOOL __stdcall RENDERER_GLIDE_IsPerspectiveMode();
 BOOL __stdcall RENDERER_GLIDE_InitTextureMemory();
 BOOL __stdcall RENDERER_GLIDE_DestroyWindow();
 void __fastcall PlayCutScene(char * szFile, int32_t nResolutionMode, void * fpFrame);
-BOOL RENDERER_GLIDE_InitWindow(int32_t nParam, FxU32 nParam2);
-void Release();
+BOOL Release();
 BOOL __fastcall CreateWindow(HWND hWnd, int32_t nResolutionMode);
 void __fastcall EndCutScene(HWND hWnd, int32_t nResolutionMode, int32_t nWindowState);
 BOOL __fastcall ResizeWindow(HWND hWnd, BOOL bForceResize);
-void thunk_Release();
+BOOL thunk_Release();
 BOOL __stdcall BeginCutScene();
 BOOL __fastcall InitPerspective(struct D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc * pHelpers);
 // @sourcefile .\Src\glSprite.cpp
 void __stdcall RENDERER_GLIDE_FreeSpriteBuffers();
 void __fastcall GLIDE_PixelDataFreeCallback_ClearCacheNodes(int * pCacheIndices);
-int RENDERER_GLIDE_GetSpriteMetadata(struct D2GfxDataStrc * pGfxData, uint32_t * * ppMetadata);
-void RENDERER_GLIDE_CalculateTextureSize(struct GlideTexInfoStrc * pTexInfo);
-// Glide texture cache: uploads a DC6 frame to video memory. Determines LOD level based on texture size, allocates cache slot, renders frame to buffer, encrypts with hash, and downloads to TMU via grTexDownloadMipMap.
-int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(struct GlideTexInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode);
-void __stdcall RENDERER_GLIDE_DrawShadowQuad(int32_t nParam1, int32_t nParam2, struct GlideTexInfoStrc * nParam3);
-// Glide renderer: draws a textured quad using the palette table at gpPaletteTable+0x114. Applies viewport scaling, handles palette color lookup, and submits a 4-vertex triangle fan via grDrawVertexArrayContiguous.
-void __stdcall RENDERER_GLIDE_DrawPalettedQuad(struct GlideTexInfoStrc * pGlideQuad, int32_t nParam1, int32_t nParam2, uint32_t nParam, int32_t nParam3, int32_t nParam4);
-void RENDERER_GLIDE_SetDrawMode(int32_t nParam);
 // Glide: draw isometric perspective image with texture filtering and lighting
 void __fastcall DrawPerspectiveImage(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, DWORD dwGamma, int32_t nDrawMode, int32_t nScreenMode, BYTE * pPalette);
 BOOL __fastcall DrawImage(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, DWORD dwGamma, int32_t nDrawMode, BYTE * pPalette);
 void __fastcall DrawShiftedImage(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, DWORD dwGamma, int32_t nDrawMode, int32_t nGlobalPaletteShift);
 void __fastcall DrawVerticalCropImage(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, int32_t nSkipLines, int32_t nDrawLines, int32_t nDrawMode);
-BOOL __stdcall RENDERER_GLIDE_CalculateClipRect(int32_t nScreenX, int32_t nScreenY, int32_t nPosY, uint32_t * pnClipBounds, struct D2RenderClipOutStrc * pnOutRect);
 void __fastcall DrawClippedImage(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, void * pCropRect, int32_t nDrawMode);
 void __fastcall DrawShadow(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY);
 void __fastcall DrawImageFast(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, BYTE nPaletteIndex);
@@ -118,9 +108,7 @@ void __stdcall RENDERER_GLIDE_InitSpriteCache();
 int32_t __fastcall RENDERER_GLIDE_InitDebugFont(FxU32 nParam2, int32_t nParam);
 void __stdcall RENDERER_GLIDE_GenerateDebugFont();
 void __stdcall RENDERER_GLIDE_FreeDebugFont();
-LPINT __stdcall RENDERER_GLIDE_DrawDebugChar(int32_t nParam1, int32_t nParam2, char cParam);
 void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_list va);
-void RENDERER_GLIDE_DrawLightRadialPoints(int32_t nParam1, GrColor_t nColor, int32_t nParam2);
 void __stdcall RENDERER_GLIDE_DrawLightGradient();
 void __stdcall RENDERER_GLIDE_DrawLightMap();
 void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int32_t nPosX, int32_t nPosY);
@@ -134,16 +122,12 @@ void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex);
 void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex);
 void __fastcall DrawSolidSquare(POINT * pPoint, BYTE nSize, int32_t nPaletteIndex);
 void __fastcall ClearScreen(BOOL bPartial);
-void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode, RECT * pnBounds, int32_t nScreenPanels, int * pnXOffset);
 void __stdcall RENDERER_GLIDE_InitPerspectiveTables();
 BOOL __fastcall RENDERER_GLIDE_DrawShadowTileSimple(struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, uint8_t nAlpha, int32_t nSubtileIdx);
 // Renders shadow tile with perspective projection in GLIDE renderer. Takes screen coordinates and alpha, applies perspective transform and blending.
 BOOL __fastcall RENDERER_GLIDE_DrawShadowTilePerspective(struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, uint8_t nAlpha, int32_t nScreenPanels);
 BOOL __fastcall DrawShadowTile(struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t nDrawMode, int32_t nScreenPanels);
 BOOL __fastcall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t pColorTable);
-// Draw wall tile with perspective projection in Glide renderer. Calculates 4 corner positions, tests screen bounds, applies color averaging and texturing. Returns 1 if tile was drawn, 0 otherwise.
-int32_t __stdcall RENDERER_GLIDE_DrawWallTilePerspective(int32_t nScreenPanels, struct D2TileLibraryEntryStrc * pTile, int nScreenX, int nScreenY, int pColorTable);
-BOOL __stdcall RENDERER_GLIDE_DrawTransparentWallTile(int32_t nPosX, int32_t nPosY, int32_t pLight, GrColor_t nColor, struct D2TileLibraryEntryStrc * pTileLibraryEntry, int32_t nScreenPanels);
 BOOL __fastcall DrawTransWallTile(struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, struct D2GfxLightStrc * pLight, int32_t nScreenPanels, int32_t nAlpha);
 BOOL __fastcall DrawWallTile(struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, struct D2GfxLightStrc * pLight, int32_t nScreenPanels);
 void RENDERER_GLIDE_InitGroundTileVertices();
@@ -173,9 +157,9 @@ void __stdcall GLSMACK_DestroyNoop();
 void __fastcall CloseSmacker(struct D2SmackerContextStrc * pContext);
 void __fastcall GLSMACK_ConvertPaletteToRGB565(uint8_t * pRgbPalette);
 void __stdcall GLSMACK_UploadTextures();
-void __stdcall GLSMACK_DrawSmackerQuad(struct D2SmackerContextStrc * pSmackerData, int32_t nOffsetY, int32_t nAlpha);
 // @sourcefile .\Src\glSmack.cpp
 void __fastcall DecodeSmacker(char * szSmacker, struct D2SmackerContextStrc * pBuffer, int32_t nVersion);
 void __fastcall PlayerSmacker(struct D2SmackerContextStrc * pContext);
+// 14 internal functions (defined in .cpp)
 
 } // namespace D2Glide::Renderer::Glide

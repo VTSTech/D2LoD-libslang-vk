@@ -850,12 +850,12 @@ void __fastcall TXT_AllocTxt_objects(D2PoolManagerStrc * pMemory) {
 
 D2ObjectsTxt * __stdcall TXT_Objects_GetLine(int32_t nClassId) {
     if (nClassId < nTxtObjectsSize) {
-      if (-1 < nClassId) {
-        return sgpTxtObjects + nClassId;
+      if (!(-1 < nClassId)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xde);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xde);
-      exit(-1);
+      return sgpTxtObjects + nClassId;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdd);
       exit(-1);
@@ -1087,12 +1087,12 @@ void __fastcall TXT_AllocTxt_shrines(D2PoolManagerStrc * pMemory) {
 
 D2ShrinesTxt * __stdcall TXT_Shrines_GetLine(int32_t nShrineId) {
     if (nShrineId < nTxtShrinesSize) {
-      if (-1 < nShrineId) {
-        return pTxtShrines + nShrineId;
+      if (!(-1 < nShrineId)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
-      exit(-1);
+      return pTxtShrines + nShrineId;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15f);
       exit(-1);

@@ -14,51 +14,51 @@ struct D2UIMouseMsgStrc;
 struct UIWidget;
 #ifndef RECON_FPTD_UIWidget_Draw
 #define RECON_FPTD_UIWidget_Draw
-typedef void (*UIWidget_Draw)(::UIWidget * pThis);
+typedef void (__thiscall *UIWidget_Draw)(::UIWidget * pThis);
 #endif
 #ifndef RECON_FPTD_UIWidget_GetValue
 #define RECON_FPTD_UIWidget_GetValue
-typedef int (*UIWidget_GetValue)(::UIWidget * pThis);
+typedef int (__thiscall *UIWidget_GetValue)(::UIWidget * pThis);
 #endif
 #ifndef RECON_FPTD_UIWidget_OnChar
 #define RECON_FPTD_UIWidget_OnChar
-typedef int (*UIWidget_OnChar)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *UIWidget_OnChar)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_UIWidget_OnDownArrow
 #define RECON_FPTD_UIWidget_OnDownArrow
-typedef int (*UIWidget_OnDownArrow)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *UIWidget_OnDownArrow)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_UIWidget_OnLeftArrow
 #define RECON_FPTD_UIWidget_OnLeftArrow
-typedef int (*UIWidget_OnLeftArrow)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *UIWidget_OnLeftArrow)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_UIWidget_OnMouseDown
 #define RECON_FPTD_UIWidget_OnMouseDown
-typedef int (*UIWidget_OnMouseDown)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *UIWidget_OnMouseDown)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_UIWidget_OnMouseMove
 #define RECON_FPTD_UIWidget_OnMouseMove
-typedef int (*UIWidget_OnMouseMove)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *UIWidget_OnMouseMove)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_UIWidget_OnMouseUp
 #define RECON_FPTD_UIWidget_OnMouseUp
-typedef int (*UIWidget_OnMouseUp)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *UIWidget_OnMouseUp)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_UIWidget_OnMouseWheel
 #define RECON_FPTD_UIWidget_OnMouseWheel
-typedef int (*UIWidget_OnMouseWheel)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *UIWidget_OnMouseWheel)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_UIWidget_OnRightArrow
 #define RECON_FPTD_UIWidget_OnRightArrow
-typedef int (*UIWidget_OnRightArrow)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *UIWidget_OnRightArrow)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_UIWidget_OnUpArrow
 #define RECON_FPTD_UIWidget_OnUpArrow
-typedef int (*UIWidget_OnUpArrow)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *UIWidget_OnUpArrow)(::UIWidget * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_UIWidget_ScalarDeletingDestructor
 #define RECON_FPTD_UIWidget_ScalarDeletingDestructor
-typedef ::UIWidget * (*UIWidget_ScalarDeletingDestructor)(::UIWidget * pThis, uint32_t nFlags);
+typedef ::UIWidget * (__thiscall *UIWidget_ScalarDeletingDestructor)(::UIWidget * pThis, uint32_t nFlags);
 #endif
 #ifndef RECON_FPTD_fpDialogFunc
 #define RECON_FPTD_fpDialogFunc
@@ -84,18 +84,18 @@ struct UIWidget {
 };
 
 struct UIWidgetVtable {
-    /* 0x00 */ ::UIWidget * (*ScalarDeletingDestructor)(::UIWidget *, uint32_t);
-    /* 0x04 */ void (*Draw)(::UIWidget *);
-    /* 0x08 */ int (*OnMouseWheel)(::UIWidget *, struct D2UIMouseMsgStrc *);
-    /* 0x0C */ int (*OnMouseDown)(::UIWidget *, struct D2UIMouseMsgStrc *);
-    /* 0x10 */ int (*OnMouseUp)(::UIWidget *, struct D2UIMouseMsgStrc *);
-    /* 0x14 */ int (*OnMouseMove)(::UIWidget *, struct D2UIMouseMsgStrc *);
-    /* 0x18 */ int (*OnChar)(::UIWidget *, struct D2UIMouseMsgStrc *);
-    /* 0x1C */ int (*OnUpArrow)(::UIWidget *, struct D2UIMouseMsgStrc *);
-    /* 0x20 */ int (*OnDownArrow)(::UIWidget *, struct D2UIMouseMsgStrc *);
-    /* 0x24 */ int (*OnRightArrow)(::UIWidget *, struct D2UIMouseMsgStrc *);
-    /* 0x28 */ int (*OnLeftArrow)(::UIWidget *, struct D2UIMouseMsgStrc *);
-    /* 0x2C */ int (*GetValue)(::UIWidget *);
+    /* 0x00 */ ::UIWidget * (__thiscall *ScalarDeletingDestructor)(::UIWidget *, uint32_t);
+    /* 0x04 */ void (__thiscall *Draw)(::UIWidget *);
+    /* 0x08 */ int (__thiscall *OnMouseWheel)(::UIWidget *, struct D2UIMouseMsgStrc *);
+    /* 0x0C */ int (__thiscall *OnMouseDown)(::UIWidget *, struct D2UIMouseMsgStrc *);
+    /* 0x10 */ int (__thiscall *OnMouseUp)(::UIWidget *, struct D2UIMouseMsgStrc *);
+    /* 0x14 */ int (__thiscall *OnMouseMove)(::UIWidget *, struct D2UIMouseMsgStrc *);
+    /* 0x18 */ int (__thiscall *OnChar)(::UIWidget *, struct D2UIMouseMsgStrc *);
+    /* 0x1C */ int (__thiscall *OnUpArrow)(::UIWidget *, struct D2UIMouseMsgStrc *);
+    /* 0x20 */ int (__thiscall *OnDownArrow)(::UIWidget *, struct D2UIMouseMsgStrc *);
+    /* 0x24 */ int (__thiscall *OnRightArrow)(::UIWidget *, struct D2UIMouseMsgStrc *);
+    /* 0x28 */ int (__thiscall *OnLeftArrow)(::UIWidget *, struct D2UIMouseMsgStrc *);
+    /* 0x2C */ int (__thiscall *GetValue)(::UIWidget *);
 };
 
 namespace D2Client::UI::Dialog {
@@ -104,7 +104,6 @@ namespace D2Client::UI::Dialog {
 void __stdcall INPUT_DialogClickHandler(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_DialogMouseUp(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_DialogMouseDown(struct D2UIMouseMsgStrc * pMsg);
-void __stdcall DIALOG_HandleEscapeKeyEvent(int32_t nParam, struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_DialogEscapeKey(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_DialogMouseWheel(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_DialogConfirm(struct D2UIMouseMsgStrc * pMsg);
@@ -112,7 +111,6 @@ void __stdcall INPUT_DialogNavigateUp(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_DialogNavigateDown(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_DialogPageUp(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_DialogPageDown(struct D2UIMouseMsgStrc * pMsg);
-int DIALOG_HandleEnterKeyEvent(void * pDialog, uint32_t nKeyCode);
 void __stdcall INPUT_DialogEnterKey(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_DialogKeyHandler(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall DIALOG_InitializeSystem();
@@ -126,10 +124,10 @@ void __fastcall DIALOG_DrawBackground(struct D2DialogStrc * pDialog);
 void __fastcall DIALOG_SetSelectedLine(struct D2DialogStrc * pDialog, int32_t nSubIndex);
 // Sets D2DialogStrc::nHighlightStyle (0x5C): 1=text highlight color, 2=animated cursor icons flanking selected line
 void __fastcall DIALOG_SetHighlightStyle(struct D2DialogStrc * pDialog, int32_t nStyle);
-void DIALOG_CenterStringLine(struct D2DialogStrc * pDialog, int32_t nIndex);
 void __fastcall DIALOG_RecalculateLayout(struct D2DialogStrc * pDialog);
 int32_t __fastcall DIALOG_GetSelectedIndex(struct D2DialogStrc * pDialog);
 int __stdcall GetDialogCounter();
 void __fastcall AddStringData(struct D2DialogStrc * pDialog, uint16_t * szString, uint32_t param_1, uint32_t param_2, int32_t nParam1, uint32_t nParam, fpDialogFunc nParam2, int32_t nParam3);
+// 3 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::Dialog

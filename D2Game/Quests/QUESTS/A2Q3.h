@@ -79,15 +79,11 @@ void __fastcall Q11_OnViperAmuletInit(struct D2QuestDataStrc * pQuestData, struc
 // A2Q3 - fpSequenceFilter (Q11_SequenceFilter): chains to the next quest in the sequence. When this quest's
 // stateFlag==5 (finished) or intro not done, looks up the sequence-linked quest data and invokes its own
 // fpSequenceFilter (asserting the fn ptr is valid first). No quest-record access.
-void __fastcall Q11_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q11_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // A2Q3 - per-unit iterator cb (Q11_UpdateQuestRecord): mirrors the server quest stateFlag into each player's
 // saved quest record. If not yet Completed/RewardAwaits, reads the live stateFlag and writes the matching
 // progress sub-state: any flag -> Step0x02, ==2 -> Step0x03, ==3 -> Step0x04. Keeps client save in sync.
 BOOL __fastcall Q11_UpdateQuestRecord(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
-// A2Q3 - Q11_OnPlayerInteract: player triggers the Tainted-Sun start (e.g. via the altar/NPC). Calls
-// Q11_BeginTaintedSun; if it deferred (act not loaded, returns 0) sets the pending flag and sends a 0x5D
-// quest-state packet (quest 10, flag 1) to the interacting client; otherwise sets the darkened flag.
-void __stdcall Q11_OnPlayerInteract(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit);
 // A2Q3 - state-0xd quest-event callback (fpQuestStateHandler[0xd], Q11_Callback_13): re-syncs server
 // stateFlag from a player's saved record on (re)entry. If record is Completed or RewardAwaits ->
 // SetQuestRecordState JustCompleted and return. Else only proceeds if Step0x02 is set: re-runs the start
@@ -128,10 +124,6 @@ uint32_t __fastcall Q11_GetTaintedSunFlag(int32_t nParam);
 // Completed (UnsetQuestState RewardAwaits), add player to participant GUID list, and if pre-intro set record
 // JustCompleted. This is the reward/turn-in finalization path.
 void __fastcall Q11_Callback11_ScrollMessage(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
-// A2Q3 - Q11_StartDarknessTimer (custom register calling convention): if darkness not yet started, rolls a
-// random 15-17 tick delay (SEED_RollRange) and arms Q11_TimerCheckDarkness via AddQuestTimer, setting the
-// 'timer armed' flag. Schedules the delayed onset of the Tainted-Sun darkening. No quest-record access.
-void __stdcall Q11_StartDarknessTimer(uint8_t * pQuestData);
 // A2Q3 - state-3 quest-event callback (fpQuestStateHandler[3], Q11_Callback_03): reacts to map/level enters.
 // On indices 0x2c/0x2d with stateFlag 0 and intro done -> Q11_StartDarknessTimer (schedule darkening). On index
 // 0x28 with bAcceptedQuest -> Q11_BeginTaintedSun and, on success, sync records (Q11_UpdateQuestRecord) and
@@ -143,5 +135,6 @@ void __fastcall Q11_Callback03_ChangedLevel(struct D2QuestDataStrc * pQuestData,
 // QUEST_TheTaintedSun, fpActiveFilter=Q11_ActiveFilter, fpSequenceFilter=Q11_SequenceFilter, initNo 4,
 // stateFlag 0, and zero-inits the participant GUID list. No quest-record access.
 void __fastcall Q11_InitData(struct D2QuestDataStrc * pQuestData);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A2Q3

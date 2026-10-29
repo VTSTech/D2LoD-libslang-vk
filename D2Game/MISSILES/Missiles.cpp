@@ -98,7 +98,7 @@ void __fastcall ClearMissileUnitData(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     GAME::Event::EVENT_FreeAllTimersForUnit(pGame, pUnit);
 }
 
-void __stdcall MISSILES_EvalDamageAndSetStats(D2UnitStrc * pUnit, D2UnitStrc * pUnit1, D2UnitStrc * pUnit2, int32_t nParam) {
+static void __stdcall MISSILES_EvalDamageAndSetStats(D2UnitStrc * pUnit, D2UnitStrc * pUnit1, D2UnitStrc * pUnit2, int32_t nParam) {
     D2MissileDamageDataStrc sDamageData;
     PLAYER::Player::EQUIPMENT_RecalcDualWieldWeaponStats(pUnit1, 0);
     D2Common::Units::Missile::EvaluateMissileFormula(&sDamageData, pUnit1, pUnit, pUnit2, nParam);
@@ -106,7 +106,7 @@ void __stdcall MISSILES_EvalDamageAndSetStats(D2UnitStrc * pUnit, D2UnitStrc * p
     PLAYER::Player::WEAPON_ApplyEquippedWeaponStats(pUnit1, 0);
 }
 
-void __stdcall CalculatePierce(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+static void __stdcall CalculatePierce(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     if (!(pUnit2 && pUnit && pUnit->eUnitType == UNIT_MISSILE && (pUnit2->eUnitType == UNIT_PLAYER || pUnit2->eUnitType == UNIT_MONSTER))) {
       return;
     }

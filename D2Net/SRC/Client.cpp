@@ -14,26 +14,25 @@
 #include "Fog/Src/Safesock.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "Fog/D2QServerStrc.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2PacketsClientStrc) == 0x7bc, "D2_NEW(D2PacketsClientStrc): the 32-bit layout must be the 0x7bc bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2PacketsClientStrc) == 0x7bc, "D2_NEW_AT(D2PacketsClientStrc): the 32-bit layout must be the 0x7bc bytes 1.14d allocates");
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2OnePacketClientStrc) == 0x210, "D2_NEW(D2OnePacketClientStrc): the 32-bit layout must be the 0x210 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2OnePacketClientStrc) == 0x210, "D2_NEW_AT(D2OnePacketClientStrc): the 32-bit layout must be the 0x210 bytes 1.14d allocates");
 
 
 namespace D2Net::SRC::Client {
@@ -74,403 +73,7 @@ static sockaddr * name_00882b38; D2_STATIC_GUARD_BSS(name_00882b38, "D2Net::SRC:
     static int nClientSockAddrIn; D2_STATIC_GUARD_BSS(nClientSockAddrIn, "D2Net::SRC::Client::CLIENT_ServerConnectionThread_lpStartAddress::nClientSockAddrIn");
     static int gnClientSockAddrPadding0; D2_STATIC_GUARD_BSS(gnClientSockAddrPadding0, "D2Net::SRC::Client::CLIENT_ServerConnectionThread_lpStartAddress::gnClientSockAddrPadding0");
     static int gnClientSockAddrPadding1; D2_STATIC_GUARD_BSS(gnClientSockAddrPadding1, "D2Net::SRC::Client::CLIENT_ServerConnectionThread_lpStartAddress::gnClientSockAddrPadding1");
-    static WSADATA gWSAData = {
-    /* .wVersion = */ 0,
-    /* .wHighVersion = */ 0,
-    /* .szDescription = */ {
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
-    },
-    /* .szSystemStatus = */ {
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
-    },
-    /* .iMaxSockets = */ 0,
-    /* .iMaxUdpDg = */ 0,
-    /* .lpVendorInfo = */ nullptr
-}; D2_STATIC_GUARD(gWSAData, "D2Net::SRC::Client::CLIENT_ServerConnectionThread_lpStartAddress::gWSAData");
+    static WSADATA gWSAData = {}; D2_STATIC_GUARD(gWSAData, "D2Net::SRC::Client::CLIENT_ServerConnectionThread_lpStartAddress::gWSAData");
 
     /* LPWSADATA lpWSAData for WSAStartup */ /* WORD wVersionRequired for WSAStartup */ gbClientConnectionShutdown = 0;
     WSAStartup(0x101, &gWSAData);
@@ -507,7 +110,7 @@ void __stdcall NET_D2GS_ConnectToServer(eD2GSConnectionType neD2GSConnectionType
     /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ pD2PacketClient_to_0xAE = 0;
     pD2PacketClient_from_0xAF = 0;
     InitializeCriticalSection(&lpCriticalSection_00882ce8);
-    pD2PacketsClientBuffer = D2_NEW(D2PacketsClientStrc);
+    pD2PacketsClientBuffer = D2_NEW_AT(D2PacketsClientStrc, ".\\SRC\\Client.cpp", 200);
     memset(pD2PacketsClientBuffer, 0, 0x7bc);
     ::D2Net::Game::Server::NET_D2GS_CLIENT_SetD2GSConnectionType(neD2GSConnectionType);
     BOOL BVar1 = ::D2Net::Game::Server::NET_D2GS_CLIENT_CheckIfConnectionTypeIsSinglePlayer();
@@ -524,7 +127,7 @@ void __stdcall NET_D2GS_ConnectToServer(eD2GSConnectionType neD2GSConnectionType
 void __stdcall NET_CLIENT_ShutdownConnection() {
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00882ce8);
     if (pD2PacketsClientBuffer) {
-      D2_FREE(pD2PacketsClientBuffer);
+      D2_FREE_AT(pD2PacketsClientBuffer, ".\\SRC\\Client.cpp", 0xda);
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pD2PacketsClientBuffer = 0;
@@ -571,7 +174,6 @@ int __stdcall NET_D2GS_CLIENT_ParseRecvBufferIntoPacketQueues() {
     uint8_t aHuffmanTable[256];
     uint8_t byFirstByte;
     D2OnePacketClientStrc* pWalkPacket;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     size_t pBytesSize = pD2PacketsClientBuffer->nCount;
     int bHasCompressionPacket = 0;
     D2PacketsClientStrc* pBytes = pD2PacketsClientBuffer;
@@ -592,7 +194,7 @@ int __stdcall NET_D2GS_CLIENT_ParseRecvBufferIntoPacketQueues() {
         break;
       }
 
-      pNewPacket = D2_NEW(D2OnePacketClientStrc);
+      pNewPacket = D2_NEW_AT(D2OnePacketClientStrc, ".\\SRC\\Client.cpp", 300);
       pNewPacket->nSize = nPacketSize;
       pNewPacket->nTickCount = 0;
       pNewPacket->pD2PacketClientNext = 0;
@@ -641,7 +243,6 @@ int __stdcall NET_D2GS_CLIENT_ParseRecvBufferIntoPacketQueues() {
       memmove(pWalkBuffer, pBytes, pBytesSize);
     }
 
-    Fog::Debug::GuardStack();
     return bHasCompressionPacket;
 }
 
@@ -658,8 +259,6 @@ DWORD __stdcall ThreadClientToServer(void * lpThreadParam) {
     uint8_t aCompressedBuf[2496];
     uint8_t bLenHeaderByte;
     char* lpOutputString;
-    uint32_t dwStackCookie;
-    dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     uint8_t* pCompressedRead;
     pCompressedRead = 0;
     int bCompressedMode;
@@ -771,7 +370,6 @@ DWORD __stdcall ThreadClientToServer(void * lpThreadParam) {
         /* LPCSTR lpOutputString for OutputDebugStringA */ lpOutputString = "Client thread close #6\n";
         exit_thread:
         OutputDebugStringA(lpOutputString);
-        Fog::Debug::GuardStack();
         return 0;
       }
     } while (true);
@@ -787,7 +385,7 @@ void __fastcall NET_CLIENT_SendPacketToServer(void * pUnused, uint16_t nPacketSi
     ::D2Net::Game::Server::NET_SendPacketToClient(pPacket, nPacketSize);
 }
 
-int32_t NET_SendPacketToD2GSOnline(char * pBytes, size_t * nSize) {
+static int32_t NET_SendPacketToD2GSOnline(char * pBytes, size_t * nSize) {
     int32_t nSendResult = send(CLIENT_SocketToServer, pBytes, (int)nSize, 0);
     if (nSendResult != -1) {
       return nSendResult;
@@ -840,7 +438,7 @@ void __fastcall NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket(char * pByte
         return;
       }
 
-      pNewPacket = D2_NEW(D2OnePacketClientStrc);
+      pNewPacket = D2_NEW_AT(D2OnePacketClientStrc, ".\\SRC\\Client.cpp", 0x1fd);
       nSizeResult = ::D2Net::Game::Server::NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(pBytes, pBytesSize, (uint32_t*)&nPacketSize);
       if (!nSizeResult) {
         return;

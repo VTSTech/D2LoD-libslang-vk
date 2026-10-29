@@ -8,19 +8,19 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2GSPacketSrv0x27_EntryStrc) == 0xc, "D2_NEW(D2GSPacketSrv0x27_EntryStrc): the 32-bit layout must be the 0xc bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2GSPacketSrv0x27_EntryStrc) == 0xc, "D2_NEW_AT(D2GSPacketSrv0x27_EntryStrc): the 32-bit layout must be the 0xc bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_pfnTextMessageCompare
@@ -31,12 +31,12 @@ typedef int32_t (__fastcall *pfnTextMessageCompare)(uint16_t * pnCodeA, uint16_t
 namespace D2Common::Text {
 
 // @sourcefile .\Text\Text.cpp
-void TEXT_FreeAllMessages(D2GSPacketSrv0x27_TextStrc * ppPoolManager) {
+static void TEXT_FreeAllMessages(D2GSPacketSrv0x27_TextStrc * ppPoolManager) {
     D2GSPacketSrv0x27_EntryStrc* pMemoryToFree = ppPoolManager->pMessage;
     while (pMemoryToFree) {
       D2GSPacketSrv0x27_EntryStrc* pNext;
       pNext = pMemoryToFree->pPrev;
-      D2_FREE_POOL(ppPoolManager->pMemory, pMemoryToFree);
+      D2_FREE_POOL_AT(ppPoolManager->pMemory, pMemoryToFree, ".\\Text\\Text.cpp", 0x3c);
       pMemoryToFree = pNext;
     }
 
@@ -49,18 +49,18 @@ void __stdcall STRUCT_FreeTxtMessageForPacket0x27(D2GSPacketSrv0x27_TextStrc * p
     while (pMemoryToFree) {
       D2GSPacketSrv0x27_EntryStrc* pPrev;
       pPrev = pMemoryToFree->pPrev;
-      D2_FREE_POOL(pGSPacketSrv0x27_Text->pMemory, pMemoryToFree);
+      D2_FREE_POOL_AT(pGSPacketSrv0x27_Text->pMemory, pMemoryToFree, ".\\Text\\Text.cpp", 0x3c);
       pMemoryToFree = pPrev;
     }
 
     pGSPacketSrv0x27_Text->nCount = 0;
-    D2_FREE_POOL(pGSPacketSrv0x27_Text->pMemory, pGSPacketSrv0x27_Text);
+    D2_FREE_POOL_AT(pGSPacketSrv0x27_Text->pMemory, pGSPacketSrv0x27_Text, ".\\Text\\Text.cpp", 0x4c);
 }
 
 // @sourcefile .\Text\Text.cpp
 void __stdcall AddNewGossipText(D2GSPacketSrv0x27_TextStrc * pGossipText, int32_t nStringIndex, int32_t bMenu) {
     D2GSPacketSrv0x27_EntryStrc* pOldHead = pGossipText->pMessage;
-    D2GSPacketSrv0x27_EntryStrc* psVar2 = D2_NEW_POOL(pGossipText->pMemory, D2GSPacketSrv0x27_EntryStrc);
+    D2GSPacketSrv0x27_EntryStrc* psVar2 = D2_NEW_POOL_AT(pGossipText->pMemory, D2GSPacketSrv0x27_EntryStrc, ".\\Text\\Text.cpp", 0x5a);
     psVar2->pPrev = pOldHead;
     psVar2->nMessage = (short int)nStringIndex;
     psVar2->nType = bMenu;
@@ -92,7 +92,7 @@ void __stdcall TEXT_RemoveMessageById(D2GSPacketSrv0x27_TextStrc * ppPoolManager
       pDVar2->pPrev = pMemoryToFree->pPrev;
     }
 
-    D2_FREE_POOL(ppPoolManager->pMemory, pMemoryToFree);
+    D2_FREE_POOL_AT(ppPoolManager->pMemory, pMemoryToFree, ".\\Text\\Text.cpp", 0x7b);
     ppPoolManager->nCount--;
 }
 
@@ -181,32 +181,32 @@ void __stdcall StoreMessages(D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x27_Text,
       exit(-1);
     } else {
       TEXT_FreeAllMessages(pGSPacketSrv0x27_Text);
-      if (*pPacketData < 8) {
-        pGSPacketSrv0x27_Text = 0;
-        pCurPacket = (short int*)pPacketData;
-        if (!*pPacketData) {
-          return;
-        }
+      if (!(*pPacketData < 8)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x112);
+        exit(-1);
+      }
 
-        do {
-          pOldHead = pTxtMsg->pMessage;
-          nMsgCode = pCurPacket[2];
-          byMsgType = *(uint8_t*)(pCurPacket + 1);
-          pNewEntry = D2_NEW_POOL(pTxtMsg->pMemory, D2GSPacketSrv0x27_EntryStrc);
-          pNewEntry->pPrev = pOldHead;
-          pNewEntry->nMessage = nMsgCode;
-          pNewEntry->nType = (uint32_t)byMsgType;
-          pTxtMsg->nCount++;
-          pTxtMsg->pMessage = pNewEntry;
-          pGSPacketSrv0x27_Text = (D2GSPacketSrv0x27_TextStrc*)((uintptr_t)&pGSPacketSrv0x27_Text->pMemory + 1);
-          pCurPacket += 2;
-        } while ((int)pGSPacketSrv0x27_Text < (int)(uint32_t)*pPacketData);
-
+      pGSPacketSrv0x27_Text = 0;
+      pCurPacket = (short int*)pPacketData;
+      if (!*pPacketData) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x112);
-      exit(-1);
+      do {
+        pOldHead = pTxtMsg->pMessage;
+        nMsgCode = pCurPacket[2];
+        byMsgType = *(uint8_t*)(pCurPacket + 1);
+        pNewEntry = D2_NEW_POOL_AT(pTxtMsg->pMemory, D2GSPacketSrv0x27_EntryStrc, ".\\Text\\Text.cpp", 0x5a);
+        pNewEntry->pPrev = pOldHead;
+        pNewEntry->nMessage = nMsgCode;
+        pNewEntry->nType = (uint32_t)byMsgType;
+        pTxtMsg->nCount++;
+        pTxtMsg->pMessage = pNewEntry;
+        pGSPacketSrv0x27_Text = (D2GSPacketSrv0x27_TextStrc*)((uintptr_t)&pGSPacketSrv0x27_Text->pMemory + 1);
+        pCurPacket += 2;
+      } while ((int)pGSPacketSrv0x27_Text < (int)(uint32_t)*pPacketData);
+
+      return;
     }
 }
 
@@ -308,7 +308,7 @@ void __stdcall TEXT_SortMessageList(D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x2
     }
 
     D2GSPacketSrv0x27_EntryStrc* pCurEntry = pGSPacketSrv0x27_Text->pMessage;
-    uint16_t* pSortBuf = (uint16_t*)D2_ALLOC_POOL(pGSPacketSrv0x27_Text->pMemory, (uint32_t)(uint16_t)pGSPacketSrv0x27_Text->nCount * 0xc);
+    uint16_t* pSortBuf = (uint16_t*)D2_ALLOC_POOL_AT(pGSPacketSrv0x27_Text->pMemory, (uint32_t)(uint16_t)pGSPacketSrv0x27_Text->nCount * 0xc, ".\\Text\\Text.cpp", 0x16c);
     uint16_t* pBufSlot = pSortBuf;
     for (; pCurEntry; pCurEntry = pCurEntry->pPrev) {
       *pBufSlot = pCurEntry->nMessage;
@@ -330,7 +330,7 @@ void __stdcall TEXT_SortMessageList(D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x2
       } while (iEntry < (int)(uint32_t)(uint16_t)pGSPacketSrv0x27_Text->nCount);
     }
 
-    D2_FREE_POOL(pGSPacketSrv0x27_Text->pMemory, pSortBuf);
+    D2_FREE_POOL_AT(pGSPacketSrv0x27_Text->pMemory, pSortBuf, ".\\Text\\Text.cpp", 0x17e);
 }
 
 } // namespace D2Common::Text

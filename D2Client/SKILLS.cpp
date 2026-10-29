@@ -200,7 +200,7 @@ BOOL __fastcall Skills_CltDoFunc_BaalCorpseExplosion(D2UnitStrc * pUnit, eD2Skil
 }
 
 // Spawns a single directed missile as part of a multi-missile/spread skill effect. Advances the owner unit's RNG seed to pick one of 8 directional offsets (gnSkillBaseTableIndex/Offset), derives the spawn X/Y from the owner's static or dynamic path position, and selects a missile id from a 3-entry table at nParam1+0xEA/0xEC/0xEE (seed-randomized choice). Builds a zeroed D2SkillArgStrc, calls MakeMissile, then sets a seed-derived Z position (via D2GetSkillCalc + UNIT_GetModuloFromSeed) and the missile target X/Y to the owner's current position. No return value; nParam1 points to the skill/missile parameter record.
-void __stdcall SKILLSCLT_CreateMultiMissileDirected(int32_t nParam1, eD2Skills eSkill, int32_t nParam2, D2UnitStrc * pUnit) {
+static void __stdcall SKILLSCLT_CreateMultiMissileDirected(int32_t nParam1, eD2Skills eSkill, int32_t nParam2, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static int gnSkillBaseTableOffset[8] = { 0x7, 0x5, 0x0, -0x5, -0x7, -0x5, 0x0, 0x5 }; D2_STATIC_GUARD(gnSkillBaseTableOffset, "D2Client::SKILLS::SKILLSCLT_CreateMultiMissileDirected::gnSkillBaseTableOffset");
     static int gnSkillBaseTableIndex[8] = { 0x0, 0x5, 0x7, 0x5, 0x0, -0x5, -0x7, -0x5 }; D2_STATIC_GUARD(gnSkillBaseTableIndex, "D2Client::SKILLS::SKILLSCLT_CreateMultiMissileDirected::gnSkillBaseTableIndex");
@@ -637,7 +637,7 @@ void __fastcall SKILLSCLT_SetMissilePathAndCalc(D2UnitStrc * pUnit, int32_t nIni
 }
 
 // Client-side missile spread fan: spawns nCount-indexed missiles for skill eSkill arranged via gnMissileSpreadTableX_Alt/Y_Alt offsets (stepped by nSkillLevel). Builds a zeroed D2SkillArgStrc (owner=pTargetUnit, target X/Y, missile txt id, flags=3, callback SKILLSCLT_SetMissilePathAndCalc), advances a 64-bit LCG seed per missile, calls MakeMissile then SetTargetX with GetSkilParam1+1. Display/prediction only; no server damage.
-void __stdcall SKILLSCLT_CltCreateMissileAtTarget(uint32_t dwSeed, uint32_t pUnit, D2UnitStrc * pTargetUnit, uint8_t * pMissileId, int32_t nX, int32_t nY, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCount) {
+static void __stdcall SKILLSCLT_CltCreateMissileAtTarget(uint32_t dwSeed, uint32_t pUnit, D2UnitStrc * pTargetUnit, uint8_t * pMissileId, int32_t nX, int32_t nY, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCount) {
     // Static local variables (originally global data)
     static uint8_t gnMissileSpreadTableX_Alt[256] = {
     0x1e,
@@ -1267,7 +1267,7 @@ void __fastcall SKILLSCLT_SetMissilePathExtended(D2UnitStrc * pUnit, int32_t nIn
 }
 
 // Variant of SKILLSCLT_CltCreateMissileAtTarget using the alternate spread tables gnMissileSpreadTableX_Alt2/Y_Alt2 and the SKILLSCLT_SetMissilePathExtended path callback. Client-side missile-fan spawner: iterates nCount missiles offset by spread tables (stepped by nSkillLevel), builds a D2SkillArgStrc, advances a per-missile LCG seed, calls MakeMissile + SetTargetX(GetSkilParam1+1). Prediction/display only.
-void __stdcall SKILLS_CltCreateMissileSpreadAtTarget_ExtendedPath(uint32_t dwSeed, D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit, uint8_t * pMissileId, int32_t nX, int32_t nY, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCount) {
+static void __stdcall SKILLS_CltCreateMissileSpreadAtTarget_ExtendedPath(uint32_t dwSeed, D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit, uint8_t * pMissileId, int32_t nX, int32_t nY, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCount) {
     // Static local variables (originally global data)
     static uint8_t gnMissileSpreadTableX_Alt2[256] = {
     0x1e,
@@ -1995,7 +1995,7 @@ BOOL __fastcall Skills_CltDoFunc_AuraState_OverlayOnCaster(D2UnitStrc * pUnit, e
 }
 
 // Spawns nCount missiles from a seeded RNG (nSeed, multiplier 0x6ac690c5) at randomly scattered offsets (±20 subtiles in X and Y) around the cast coordinates (nX, nY). Each missile is fired via MakeMissile with the RNG-derived direction offsets stored in nUnitX/nUnitY; on success, stores the seed value in targetX and the packed direction word in targetY for server synchronization. Used by skills like Frozen Orb projectile burst.
-void __stdcall SKILLSCLT_CreateProjectileMissile(uint32_t dwUnused, uint32_t nSeed, D2UnitStrc * pUnit, int32_t nX, int32_t nY, eD2Skills eSkill, int32_t nSkillLevel, uint8_t * pMissileId, int32_t nCount) {
+static void __stdcall SKILLSCLT_CreateProjectileMissile(uint32_t dwUnused, uint32_t nSeed, D2UnitStrc * pUnit, int32_t nX, int32_t nY, eD2Skills eSkill, int32_t nSkillLevel, uint8_t * pMissileId, int32_t nCount) {
     uint32_t nSeedLowVal;
     D2SkillArgStrc sSkillArg;
     D2SeedStrc sSeed;

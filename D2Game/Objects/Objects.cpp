@@ -82,18 +82,18 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2TimerArgStrc) == 0x8, "D2_NEW(D2TimerArgStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2TimerArgStrc) == 0x8, "D2_NEW_AT(D2TimerArgStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
 
@@ -330,10 +330,10 @@ D2UnitStrc * __fastcall SERVER_InitUnitObject(::SGAMEDATA * pGame, D2RoomStrc * 
 
 // @sourcefile .\OBJECTS\Objects.cpp
 D2TimerArgStrc * __fastcall AllocTimer(::SGAMEDATA * pGame) {
-    D2TimerArgStrc* pTimerNode = D2_NEW_POOL(pGame->pMemoryPool, D2TimerArgStrc);
+    D2TimerArgStrc* pTimerNode = D2_NEW_POOL_AT(pGame->pMemoryPool, D2TimerArgStrc, ".\\OBJECTS\\Objects.cpp", 0x1b8);
     pTimerNode->pTimerList = 0;
     pTimerNode->nUnitGUID = -1;
-    uint32_t* pTimerSentinel = (uint32_t*)D2_ALLOC_POOL(pGame->pMemoryPool, 8);
+    uint32_t* pTimerSentinel = (uint32_t*)D2_ALLOC_POOL_AT(pGame->pMemoryPool, 8, ".\\OBJECTS\\Objects.cpp", 0x1bc);
     *pTimerSentinel = -1;
     pTimerSentinel[1] = 0;
     pTimerNode->pTimerList = pTimerSentinel;
@@ -346,11 +346,11 @@ void __fastcall FrreeTimer(::SGAMEDATA * pGame, void * * pParam) {
     while (pMemoryToFree) {
       void* pNext;
       pNext = *(void**)((int)pMemoryToFree + 4);
-      D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\OBJECTS\\Objects.cpp", 0x1ce);
       pMemoryToFree = pNext;
     }
 
-    D2_FREE_POOL(pGame->pMemoryPool, pParam);
+    D2_FREE_POOL_AT(pGame->pMemoryPool, pParam, ".\\OBJECTS\\Objects.cpp", 0x1d1);
 }
 
 // Server-side initializer for a freshly created object unit. Looks up the unit's ObjectsTxt record, assigns its GUID, clears the sparkly-chest flag, and sets/clears CANBEATTACKED and TARGETABLE unit flags from the txt (IsAttackable / Selectable[animMode]). Validates class id < 0x23d and anim mode < 8 (halts via ErrorManager otherwise). Clears the unit's timer list, then dispatches to the per-object init function in the OBJECTSINITFN table (index = ObjectsTxt.InitFn, bounds-checked < 0x50, IsBadCodePtr-guarded) passing a D2ObjectInitFnArg with game/room/x/y/seed/txt. Rolls a 1-in-0xe seed chance to flag a PreOperate object for update, and allocates+attaches a timer arg. Inputs: pGame, pUnit, nAnimModeOrGUID (used as GUID), pRoom, nX, nY.
@@ -474,43 +474,43 @@ void __fastcall OBJECT_InitializeObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     GAME::Event::EVENT_ClearTimerList(pGameCopy, pUnit);
     if ((uint16_t)nObjClassId < 0x23d) {
       D2SeedStrc* pSeed;
-      if ((uint8_t)pObjectsTxt->InitFn < 0x50) {
-        pSeed = ObjectsRgn::GetObjectControlSeed(pGameCopy);
-        if ((uint8_t)pObjectsTxt->InitFn < 0x50 && OBJECTSINITFN[(uint8_t)pObjectsTxt->InitFn]) {
-          /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSINITFN[(uint8_t)pObjectsTxt->InitFn]);
-          if (bBadCodePtr) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26a);
-            exit(-1);
-          }
-
-          s0x00.pGame = pGameCopy;
-          s0x00.nX = nX;
-          s0x00.nY = nY;
-          s0x00.pRoom = pRoom;
-          s0x00.pObject = pUnit;
-          s0x00.pSeed = pSeed;
-          s0x00.pObjectTxt = pObjectsTxt;
-          (*OBJECTSINITFN[(uint8_t)pObjectsTxt->InitFn])(&s0x00);
-        }
-        if (!pObjectsTxt->Selectable[nAnimModeOrGUID]) {
-          pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
-        } else {
-          pUnit->eUnitFlags |= UNITFLAG_TARGETABLE;
-        }
-        if (pObjectsTxt->PreOperate && !(pUnit->eUnitFlags >> 7 & 1)) {
-          nPreOpSeedRoll = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 0xe);
-          if (!nPreOpSeedRoll) {
-            D2Common::Units::SetupUpdateFlag(pUnit, 2);
-          }
-        }
-
-        pTimerArg = AllocTimer(pGameCopy);
-        D2Common::Units::SetTimerArg(pUnit, pTimerArg);
-        return;
+      if (!((uint8_t)pObjectsTxt->InitFn < 0x50)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x262);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x262);
-      exit(-1);
+      pSeed = ObjectsRgn::GetObjectControlSeed(pGameCopy);
+      if ((uint8_t)pObjectsTxt->InitFn < 0x50 && OBJECTSINITFN[(uint8_t)pObjectsTxt->InitFn]) {
+        /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSINITFN[(uint8_t)pObjectsTxt->InitFn]);
+        if (bBadCodePtr) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26a);
+          exit(-1);
+        }
+
+        s0x00.pGame = pGameCopy;
+        s0x00.nX = nX;
+        s0x00.nY = nY;
+        s0x00.pRoom = pRoom;
+        s0x00.pObject = pUnit;
+        s0x00.pSeed = pSeed;
+        s0x00.pObjectTxt = pObjectsTxt;
+        (*OBJECTSINITFN[(uint8_t)pObjectsTxt->InitFn])(&s0x00);
+      }
+      if (!pObjectsTxt->Selectable[nAnimModeOrGUID]) {
+        pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
+      } else {
+        pUnit->eUnitFlags |= UNITFLAG_TARGETABLE;
+      }
+      if (pObjectsTxt->PreOperate && !(pUnit->eUnitFlags >> 7 & 1)) {
+        nPreOpSeedRoll = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 0xe);
+        if (!nPreOpSeedRoll) {
+          D2Common::Units::SetupUpdateFlag(pUnit, 2);
+        }
+      }
+
+      pTimerArg = AllocTimer(pGameCopy);
+      D2Common::Units::SetTimerArg(pUnit, pTimerArg);
+      return;
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x260);
       exit(-1);
@@ -518,7 +518,7 @@ void __fastcall OBJECT_InitializeObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 }
 
 // Selects a random shrine type ID for a given shrine category (1–4; 0 or >4 clamped to 2) that satisfies the level's minimum level requirement. Draws from the pre-built shrine RNG pool (GetShrinesRng), retrying up to 8 times to find a shrine whose dwLevelMin <= nLevelId. Returns the chosen shrine type ID (never 0; remapped to 1). Halts if the shrine pool for the category is empty.
-int32_t __stdcall OBJECT_SelectRandomShrineType(::SGAMEDATA * pGame, uint32_t nLevelId, uint8_t byShrineCategory, D2RoomStrc * pRoom) {
+static int32_t __stdcall OBJECT_SelectRandomShrineType(::SGAMEDATA * pGame, uint32_t nLevelId, uint8_t byShrineCategory, D2RoomStrc * pRoom) {
     D2SeedStrc DVar1;
     D2ShrinesTxt* pShrineLine;
     uint32_t nRandIdx;
@@ -957,7 +957,7 @@ BOOL __stdcall ROOM_CheckSpawnCollision(D2RoomStrc * pRoom, uint32_t nParam1, in
     return 1;
 }
 
-BOOL __stdcall ROOM_CheckSpawnCollisionSimple(D2RoomStrc * pRoom, int32_t nParam1, int32_t nParam2, int * pnParam1, int * pnParam2) {
+static BOOL __stdcall ROOM_CheckSpawnCollisionSimple(D2RoomStrc * pRoom, int32_t nParam1, int32_t nParam2, int * pnParam1, int * pnParam2) {
     if (!(1 < pnParam2[2] && 1 < pnParam2[3])) {
       return 0;
     }
@@ -1095,13 +1095,13 @@ D2UnitStrc * __stdcall OBJECT_PlaceWithCallback(::SGAMEDATA * pGame, int32_t nOb
             if (4 < nRetries) {
               return nullptr;
             }
-            if (pRoom) {
-              pSpawnedUnit = UNIT::SUnit::CreateUnit(UNIT_OBJECT, nObjClassId, nX, nY, pGame, pRoom, 1, 0, nullptr);
-              return pSpawnedUnit;
+            if (!pRoom) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x593);
+              exit(-1);
             }
 
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x593);
-            exit(-1);
+            pSpawnedUnit = UNIT::SUnit::CreateUnit(UNIT_OBJECT, nObjClassId, nX, nY, pGame, pRoom, 1, 0, nullptr);
+            return pSpawnedUnit;
           }
         }
       }
@@ -1332,13 +1332,13 @@ D2UnitStrc * __stdcall OBJECT_PlaceAtBiasedPosition(::SGAMEDATA * pGame, int32_t
             if (4 < nRetries) {
               return nullptr;
             }
-            if (pRoom) {
-              pSpawnedUnit = UNIT::SUnit::CreateUnit(UNIT_OBJECT, nClassId, nCandidateX, nCandidateY, pGame, pRoom, 1, 0, nullptr);
-              return pSpawnedUnit;
+            if (!pRoom) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x64d);
+              exit(-1);
             }
 
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x64d);
-            exit(-1);
+            pSpawnedUnit = UNIT::SUnit::CreateUnit(UNIT_OBJECT, nClassId, nCandidateX, nCandidateY, pGame, pRoom, 1, 0, nullptr);
+            return pSpawnedUnit;
           }
         }
       }
@@ -2352,7 +2352,7 @@ int32_t __fastcall OBJECT_PopulateGridItems(::SGAMEDATA * pGame, D2RoomStrc * pR
 }
 
 // Decides whether and which object-populate sub-function to run for a room. Returns 0 immediately if the room area fails a minimum-density threshold (objRng[2] < objRng[3]*10). Rolls the object-control seed to get a base chance, adjusts a density bonus (+5/+10) based on room fill ratio, and skips if the roll exceeds the density+12 threshold. Collects enabled populate-type indices from dwPopulateMask bits, randomly picks one, then dispatches to the corresponding function pointer from the global populate-function table at 0x731e68, passing &sRoomCoords.
-int32_t __stdcall OBJECT_RollAndDispatchPopulateFn(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint32_t dwPopulateMask, int32_t pObjRng) {
+static int32_t __stdcall OBJECT_RollAndDispatchPopulateFn(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint32_t dwPopulateMask, int32_t pObjRng) {
     D2DrlgRoomCoordsStrc sRoomCoords;
     int nEnabledPopTypes[8];
     if (*(int*)(pObjRng + 8) < *(int*)(pObjRng + 0xc) * 10) {
@@ -2415,7 +2415,7 @@ int32_t __stdcall OBJECT_RollAndDispatchPopulateFn(::SGAMEDATA * pGame, D2RoomSt
 }
 
 // Populates special objects for one room during level generation. Skips rooms that already have a waypoint, are outdoors-bordered, or are in town. Lazily initialises the per-level object RNG's room count on first call. Increments the room counter (pad_0x4) and, if the room's populate-fn pointer is set, calls OBJECT_RollAndDispatchPopulateFn; returns 1 on success, 0 otherwise.
-BOOL __stdcall OBJECT_PopulateRoomSpecialObjects(::SGAMEDATA * pGame, int32_t nParam, D2RoomStrc * pRoom) {
+static BOOL __stdcall OBJECT_PopulateRoomSpecialObjects(::SGAMEDATA * pGame, int32_t nParam, D2RoomStrc * pRoom) {
     int32_t nPopResult;
     BOOL bResult = D2Common::DUNGEON::Dungeon::HasWaypoint(pRoom);
     if (bResult) {
@@ -2621,13 +2621,13 @@ void __fastcall OBJECT_PopulateFromObjGroup(::SGAMEDATA * pGame, D2RoomStrc * pR
 
           /* FARPROC lpfn for IsBadCodePtr */ _bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn]);
           if (!_bBadCodePtr) {
-            if (pObjGroupTxt->nDensity[nGroupEntryIdx] < 0x80) {
-              (*OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn])(pGame, pRoom, pObjGroupTxt->nDensity[nGroupEntryIdx], nObjClassId, 100);
-              return;
+            if (!(pObjGroupTxt->nDensity[nGroupEntryIdx] < 0x80)) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcac);
+              exit(-1);
             }
 
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcac);
-            exit(-1);
+            (*OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn])(pGame, pRoom, pObjGroupTxt->nDensity[nGroupEntryIdx], nObjClassId, 100);
+            return;
           } else {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcab);
             exit(-1);
@@ -2681,7 +2681,7 @@ uint8_t __stdcall OBJECT_GetDefaultSize() {
     return '\x02';
 }
 
-void OBJECT_RemapClassIdFromParm(int32_t nParam) {
+static void OBJECT_RemapClassIdFromParm(int32_t nParam) {
     int32_t nClassId = !nParam ? -1 : *(int32_t*)(nParam + 4);
     D2ObjectsTxt* pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nClassId);
     int nParmClassId = pObjectsTxt->Parm[1];

@@ -45,7 +45,7 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(struct D2ObjectOperateFnArg * pOperati
 bool __fastcall Q28_ActiveFilter(struct D2QuestDataStrc * pQuestData, int32_t nTargetClassId, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2UnitStrc * pUnitEx);
 // A4Q3 Hell's Forge — Q28_SequenceFilter (fpSequenceFilter): quest-chain sequencer. If not yet started but introduced, sets internal stateFlag 1. If finished (stateFlag==5) or not introduced, looks up the next quest in the chain (nSequenceQuestId = QUEST_AbleGoToAct4) and invokes ITS sequence filter (with an IsBadCodePtr guard). Propagates quest unlocks down the Act4 chain. No QuestRecord writes.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q3.cpp
-void __fastcall Q28_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q28_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // A4Q3 Hell's Forge — Q28_PlayerUpdateForgeState: per-player QuestRecord sync from the internal stateFlag (called via IteratePlayerOrMonsterUnits when the forge progresses). If not already Completed/RewardAwaits: stateFlag 2 -> set Step0x05 (if bGotHammer, i.e. hammer received) else Step0x02; stateFlag 3 -> set Step0x03. Translates the shared internal forge progression into each player's quest-step bits.
 BOOL __fastcall Q28_PlayerUpdateForgeState(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // A4Q3 Hell's Forge — Q28_Callback_10 (state-handler slot 10/0xa): on player-leave bookkeeping. Removes the player (by nUnitGUID, or -1 for "all") from the quest's participant GUID list. No QuestRecord writes.

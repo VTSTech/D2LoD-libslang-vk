@@ -15,131 +15,131 @@ struct ListBoxImplementation;
 struct ListBoxWrapper;
 #ifndef RECON_FPTD_ListBoxImplementation_AddItem
 #define RECON_FPTD_ListBoxImplementation_AddItem
-typedef void (*ListBoxImplementation_AddItem)(::ListBoxImplementation * pThis, uint16_t * wszLine0, uint16_t * wszLine1, uint16_t * wszLine2, uint16_t * wszLine3, uint16_t * wszLine4, uint16_t * wszLine5, uint32_t dwItemData, int nColor, BOOL bUseDefaultColor, int nFont);
+typedef void (__thiscall *ListBoxImplementation_AddItem)(::ListBoxImplementation * pThis, uint16_t * wszLine0, uint16_t * wszLine1, uint16_t * wszLine2, uint16_t * wszLine3, uint16_t * wszLine4, uint16_t * wszLine5, uint32_t dwItemData, int nColor, BOOL bUseDefaultColor, int nFont);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_Clear
 #define RECON_FPTD_ListBoxImplementation_Clear
-typedef void (*ListBoxImplementation_Clear)(::ListBoxImplementation * pThis);
+typedef void (__thiscall *ListBoxImplementation_Clear)(::ListBoxImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_Draw
 #define RECON_FPTD_ListBoxImplementation_Draw
-typedef void (*ListBoxImplementation_Draw)(::ListBoxImplementation * pThis);
+typedef void (__thiscall *ListBoxImplementation_Draw)(::ListBoxImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_DrawScrollbar
 #define RECON_FPTD_ListBoxImplementation_DrawScrollbar
-typedef void (*ListBoxImplementation_DrawScrollbar)(::ListBoxImplementation * pThis);
+typedef void (__thiscall *ListBoxImplementation_DrawScrollbar)(::ListBoxImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_GetItemCount
 #define RECON_FPTD_ListBoxImplementation_GetItemCount
-typedef int (*ListBoxImplementation_GetItemCount)(::ListBoxImplementation * pThis);
+typedef int (__thiscall *ListBoxImplementation_GetItemCount)(::ListBoxImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_GetValue
 #define RECON_FPTD_ListBoxImplementation_GetValue
-typedef int (*ListBoxImplementation_GetValue)(::ListBoxImplementation * pThis);
+typedef int (__thiscall *ListBoxImplementation_GetValue)(::ListBoxImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_OnChar
 #define RECON_FPTD_ListBoxImplementation_OnChar
-typedef int (*ListBoxImplementation_OnChar)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxImplementation_OnChar)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_OnDownArrow
 #define RECON_FPTD_ListBoxImplementation_OnDownArrow
-typedef int (*ListBoxImplementation_OnDownArrow)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxImplementation_OnDownArrow)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_OnLeftArrow
 #define RECON_FPTD_ListBoxImplementation_OnLeftArrow
-typedef int (*ListBoxImplementation_OnLeftArrow)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxImplementation_OnLeftArrow)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_OnMouseDown
 #define RECON_FPTD_ListBoxImplementation_OnMouseDown
-typedef int (*ListBoxImplementation_OnMouseDown)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxImplementation_OnMouseDown)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_OnMouseMove
 #define RECON_FPTD_ListBoxImplementation_OnMouseMove
-typedef int (*ListBoxImplementation_OnMouseMove)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxImplementation_OnMouseMove)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_OnMouseUp
 #define RECON_FPTD_ListBoxImplementation_OnMouseUp
-typedef int (*ListBoxImplementation_OnMouseUp)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxImplementation_OnMouseUp)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_OnMouseWheel
 #define RECON_FPTD_ListBoxImplementation_OnMouseWheel
-typedef int (*ListBoxImplementation_OnMouseWheel)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxImplementation_OnMouseWheel)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_OnRightArrow
 #define RECON_FPTD_ListBoxImplementation_OnRightArrow
-typedef int (*ListBoxImplementation_OnRightArrow)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxImplementation_OnRightArrow)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_OnUpArrow
 #define RECON_FPTD_ListBoxImplementation_OnUpArrow
-typedef int (*ListBoxImplementation_OnUpArrow)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxImplementation_OnUpArrow)(::ListBoxImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxImplementation_ScalarDeletingDestructor
 #define RECON_FPTD_ListBoxImplementation_ScalarDeletingDestructor
-typedef ::ListBoxImplementation * (*ListBoxImplementation_ScalarDeletingDestructor)(::ListBoxImplementation * pThis, uint32_t nFlags);
+typedef ::ListBoxImplementation * (__thiscall *ListBoxImplementation_ScalarDeletingDestructor)(::ListBoxImplementation * pThis, uint32_t nFlags);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_AddItem
 #define RECON_FPTD_ListBoxWrapper_AddItem
-typedef void (*ListBoxWrapper_AddItem)(::ListBoxWrapper * pThis, uint16_t * wszLine0, uint16_t * wszLine1, uint16_t * wszLine2, uint16_t * wszLine3, uint16_t * wszLine4, uint16_t * wszLine5, uint32_t dwItemData, int nColor, BOOL bUseDefaultColor, int nFont);
+typedef void (__thiscall *ListBoxWrapper_AddItem)(::ListBoxWrapper * pThis, uint16_t * wszLine0, uint16_t * wszLine1, uint16_t * wszLine2, uint16_t * wszLine3, uint16_t * wszLine4, uint16_t * wszLine5, uint32_t dwItemData, int nColor, BOOL bUseDefaultColor, int nFont);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_Clear
 #define RECON_FPTD_ListBoxWrapper_Clear
-typedef void (*ListBoxWrapper_Clear)(::ListBoxWrapper * pThis);
+typedef void (__thiscall *ListBoxWrapper_Clear)(::ListBoxWrapper * pThis);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_Draw
 #define RECON_FPTD_ListBoxWrapper_Draw
-typedef void (*ListBoxWrapper_Draw)(::ListBoxWrapper * pThis);
+typedef void (__thiscall *ListBoxWrapper_Draw)(::ListBoxWrapper * pThis);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_GetItemCount
 #define RECON_FPTD_ListBoxWrapper_GetItemCount
-typedef int (*ListBoxWrapper_GetItemCount)(::ListBoxWrapper * pThis);
+typedef int (__thiscall *ListBoxWrapper_GetItemCount)(::ListBoxWrapper * pThis);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_GetItemUserData
 #define RECON_FPTD_ListBoxWrapper_GetItemUserData
-typedef uint32_t (*ListBoxWrapper_GetItemUserData)(::ListBoxWrapper * pThis, int nIndex);
+typedef uint32_t (__thiscall *ListBoxWrapper_GetItemUserData)(::ListBoxWrapper * pThis, int nIndex);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_GetValue
 #define RECON_FPTD_ListBoxWrapper_GetValue
-typedef int (*ListBoxWrapper_GetValue)(::ListBoxWrapper * pThis);
+typedef int (__thiscall *ListBoxWrapper_GetValue)(::ListBoxWrapper * pThis);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_OnChar
 #define RECON_FPTD_ListBoxWrapper_OnChar
-typedef int (*ListBoxWrapper_OnChar)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxWrapper_OnChar)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_OnDownArrow
 #define RECON_FPTD_ListBoxWrapper_OnDownArrow
-typedef int (*ListBoxWrapper_OnDownArrow)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxWrapper_OnDownArrow)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_OnLeftArrow
 #define RECON_FPTD_ListBoxWrapper_OnLeftArrow
-typedef int (*ListBoxWrapper_OnLeftArrow)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxWrapper_OnLeftArrow)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_OnMouseDown
 #define RECON_FPTD_ListBoxWrapper_OnMouseDown
-typedef int (*ListBoxWrapper_OnMouseDown)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxWrapper_OnMouseDown)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_OnMouseMove
 #define RECON_FPTD_ListBoxWrapper_OnMouseMove
-typedef int (*ListBoxWrapper_OnMouseMove)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxWrapper_OnMouseMove)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_OnMouseUp
 #define RECON_FPTD_ListBoxWrapper_OnMouseUp
-typedef int (*ListBoxWrapper_OnMouseUp)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxWrapper_OnMouseUp)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_OnMouseWheel
 #define RECON_FPTD_ListBoxWrapper_OnMouseWheel
-typedef int (*ListBoxWrapper_OnMouseWheel)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxWrapper_OnMouseWheel)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_OnRightArrow
 #define RECON_FPTD_ListBoxWrapper_OnRightArrow
-typedef int (*ListBoxWrapper_OnRightArrow)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxWrapper_OnRightArrow)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_OnUpArrow
 #define RECON_FPTD_ListBoxWrapper_OnUpArrow
-typedef int (*ListBoxWrapper_OnUpArrow)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *ListBoxWrapper_OnUpArrow)(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_ListBoxWrapper_ScalarDeletingDestructor
 #define RECON_FPTD_ListBoxWrapper_ScalarDeletingDestructor
-typedef ::ListBoxWrapper * (*ListBoxWrapper_ScalarDeletingDestructor)(::ListBoxWrapper * pThis, uint32_t nFlags);
+typedef ::ListBoxWrapper * (__thiscall *ListBoxWrapper_ScalarDeletingDestructor)(::ListBoxWrapper * pThis, uint32_t nFlags);
 #endif
 #ifndef RECON_FPTD_fpListBoxItemActivated
 #define RECON_FPTD_fpListBoxItemActivated
@@ -169,41 +169,41 @@ struct ListBoxWrapper {
 };
 
 struct ListBoxImplementationVtable {
-    /* 0x00 */ ::ListBoxImplementation * (*ScalarDeletingDestructor)(::ListBoxImplementation *, uint32_t);
-    /* 0x04 */ void (*Draw)(::ListBoxImplementation *);
-    /* 0x08 */ int (*OnMouseWheel)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x0C */ int (*OnMouseDown)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x10 */ int (*OnMouseUp)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x14 */ int (*OnMouseMove)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x18 */ int (*OnChar)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x1C */ int (*OnUpArrow)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x20 */ int (*OnDownArrow)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x24 */ int (*OnRightArrow)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x28 */ int (*OnLeftArrow)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x2C */ int (*GetValue)(::ListBoxImplementation *);
-    /* 0x30 */ void (*DrawScrollbar)(::ListBoxImplementation *);
-    /* 0x34 */ int (*GetItemCount)(::ListBoxImplementation *);
-    /* 0x38 */ void (*Clear)(::ListBoxImplementation *);
-    /* 0x3C */ void (*AddItem)(::ListBoxImplementation *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint32_t, int, BOOL, int);
+    /* 0x00 */ ::ListBoxImplementation * (__thiscall *ScalarDeletingDestructor)(::ListBoxImplementation *, uint32_t);
+    /* 0x04 */ void (__thiscall *Draw)(::ListBoxImplementation *);
+    /* 0x08 */ int (__thiscall *OnMouseWheel)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x0C */ int (__thiscall *OnMouseDown)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x10 */ int (__thiscall *OnMouseUp)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x14 */ int (__thiscall *OnMouseMove)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x18 */ int (__thiscall *OnChar)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x1C */ int (__thiscall *OnUpArrow)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x20 */ int (__thiscall *OnDownArrow)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x24 */ int (__thiscall *OnRightArrow)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x28 */ int (__thiscall *OnLeftArrow)(::ListBoxImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x2C */ int (__thiscall *GetValue)(::ListBoxImplementation *);
+    /* 0x30 */ void (__thiscall *DrawScrollbar)(::ListBoxImplementation *);
+    /* 0x34 */ int (__thiscall *GetItemCount)(::ListBoxImplementation *);
+    /* 0x38 */ void (__thiscall *Clear)(::ListBoxImplementation *);
+    /* 0x3C */ void (__thiscall *AddItem)(::ListBoxImplementation *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint32_t, int, BOOL, int);
 };
 
 struct ListBoxWrapperVtable {
-    /* 0x00 */ ::ListBoxWrapper * (*ScalarDeletingDestructor)(::ListBoxWrapper *, uint32_t);
-    /* 0x04 */ void (*Draw)(::ListBoxWrapper *);
-    /* 0x08 */ int (*OnMouseWheel)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x0C */ int (*OnMouseDown)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x10 */ int (*OnMouseUp)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x14 */ int (*OnMouseMove)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x18 */ int (*OnChar)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x1C */ int (*OnUpArrow)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x20 */ int (*OnDownArrow)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x24 */ int (*OnRightArrow)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x28 */ int (*OnLeftArrow)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x2C */ int (*GetValue)(::ListBoxWrapper *);
-    /* 0x30 */ void (*AddItem)(::ListBoxWrapper *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint32_t, int, BOOL, int);
-    /* 0x34 */ uint32_t (*GetItemUserData)(::ListBoxWrapper *, int);
-    /* 0x38 */ int (*GetItemCount)(::ListBoxWrapper *);
-    /* 0x3C */ void (*Clear)(::ListBoxWrapper *);
+    /* 0x00 */ ::ListBoxWrapper * (__thiscall *ScalarDeletingDestructor)(::ListBoxWrapper *, uint32_t);
+    /* 0x04 */ void (__thiscall *Draw)(::ListBoxWrapper *);
+    /* 0x08 */ int (__thiscall *OnMouseWheel)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x0C */ int (__thiscall *OnMouseDown)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x10 */ int (__thiscall *OnMouseUp)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x14 */ int (__thiscall *OnMouseMove)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x18 */ int (__thiscall *OnChar)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x1C */ int (__thiscall *OnUpArrow)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x20 */ int (__thiscall *OnDownArrow)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x24 */ int (__thiscall *OnRightArrow)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x28 */ int (__thiscall *OnLeftArrow)(::ListBoxWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x2C */ int (__thiscall *GetValue)(::ListBoxWrapper *);
+    /* 0x30 */ void (__thiscall *AddItem)(::ListBoxWrapper *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint16_t *, uint32_t, int, BOOL, int);
+    /* 0x34 */ uint32_t (__thiscall *GetItemUserData)(::ListBoxWrapper *, int);
+    /* 0x38 */ int (__thiscall *GetItemCount)(::ListBoxWrapper *);
+    /* 0x3C */ void (__thiscall *Clear)(::ListBoxWrapper *);
 };
 
 struct __attribute__((packed)) ListBoxImplementation {
@@ -243,23 +243,23 @@ struct __attribute__((packed)) ListBoxImplementation {
 namespace D2Client::UI::ListBox::ListBoxWrapper {
 
 // Function declarations
-void Destructor(::ListBoxWrapper * pThis);
-::ListBoxWrapper * ScalarDeletingDestructor(::ListBoxWrapper * pThis, uint32_t nFlags);
-int OnDownArrow(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnUpArrow(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnRightArrow(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnLeftArrow(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseDown(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseUp(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseMove(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnChar(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int GetValue(::ListBoxWrapper * pThis);
-void Draw(::ListBoxWrapper * pThis);
-void AddItem(::ListBoxWrapper * pThis, uint16_t * wszLine0, uint16_t * wszLine1, uint16_t * wszLine2, uint16_t * wszLine3, uint16_t * wszLine4, uint16_t * wszLine5, uint32_t dwItemData, int nColor, BOOL bUseDefaultColor, int nFont);
-uint32_t GetItemUserData(::ListBoxWrapper * pThis, int nIndex);
-int GetItemCount(::ListBoxWrapper * pThis);
-void Clear(::ListBoxWrapper * pThis);
-int OnMouseWheel(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-::ListBoxWrapper * Constructor(::ListBoxWrapper * pThis, int nPosX, int nPosY, int nWidth, int nHeight, int nItemSpacing, int nDefaultColor, int nDefaultFont, fpListBoxItemActivated pfnOnItemActivated, bool bTallRows);
+void __thiscall Destructor(::ListBoxWrapper * pThis);
+::ListBoxWrapper * __thiscall ScalarDeletingDestructor(::ListBoxWrapper * pThis, uint32_t nFlags);
+int __thiscall OnDownArrow(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnUpArrow(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnRightArrow(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnLeftArrow(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseDown(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseUp(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseMove(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnChar(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall GetValue(::ListBoxWrapper * pThis);
+void __thiscall Draw(::ListBoxWrapper * pThis);
+void __thiscall AddItem(::ListBoxWrapper * pThis, uint16_t * wszLine0, uint16_t * wszLine1, uint16_t * wszLine2, uint16_t * wszLine3, uint16_t * wszLine4, uint16_t * wszLine5, uint32_t dwItemData, int nColor, BOOL bUseDefaultColor, int nFont);
+uint32_t __thiscall GetItemUserData(::ListBoxWrapper * pThis, int nIndex);
+int __thiscall GetItemCount(::ListBoxWrapper * pThis);
+void __thiscall Clear(::ListBoxWrapper * pThis);
+int __thiscall OnMouseWheel(::ListBoxWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+::ListBoxWrapper * __thiscall Constructor(::ListBoxWrapper * pThis, int nPosX, int nPosY, int nWidth, int nHeight, int nItemSpacing, int nDefaultColor, int nDefaultFont, fpListBoxItemActivated pfnOnItemActivated, bool bTallRows);
 
 } // namespace D2Client::UI::ListBox::ListBoxWrapper

@@ -26,22 +26,22 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2MissileStreamStrc) == 0x8, "D2_NEW(D2MissileStreamStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2MissileStreamStrc) == 0x8, "D2_NEW_AT(D2MissileStreamStrc): the 32-bit layout must be the 0x8 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_REALLOC_POOL
-#define D2_REALLOC_POOL(pPool, p, size) Fog::Memory::ReAllocServerMemory((pPool), (p), (size), __FILE__, __LINE__, 0)
+#ifndef D2_REALLOC_POOL_AT
+#define D2_REALLOC_POOL_AT(pPool, p, size, szFile, nLine) Fog::Memory::ReAllocServerMemory((pPool), (p), (size), (szFile), (nLine), 0)
 #endif
 
 
@@ -76,7 +76,7 @@ void __stdcall AllocMissileStream(D2UnitStrc * pUnit) {
       pMemory = pUnit->pMemory;
     }
 
-    pStream = D2_NEW_POOL(pMemory, D2MissileStreamStrc);
+    pStream = D2_NEW_POOL_AT(pMemory, D2MissileStreamStrc, ".\\UNITS\\MisStream.cpp", 0x2e);
     pStream->pStream = 0;
     pStream->nStreamSize = 0;
     Missile::SetStream(pUnit, pStream);
@@ -95,7 +95,7 @@ void __stdcall FreeMissileStream(D2UnitStrc * pUnit) {
         pMemoryPool = pUnit->pMemory;
       }
 
-      D2_FREE_POOL(pMemoryPool, pMemoryToFree->pStream);
+      D2_FREE_POOL_AT(pMemoryPool, pMemoryToFree->pStream, ".\\UNITS\\MisStream.cpp", 0x3b);
     }
     if (!pUnit) {
       pMemoryPool = 0;
@@ -103,7 +103,7 @@ void __stdcall FreeMissileStream(D2UnitStrc * pUnit) {
       pMemoryPool = pUnit->pMemory;
     }
 
-    D2_FREE_POOL(pMemoryPool, pMemoryToFree);
+    D2_FREE_POOL_AT(pMemoryPool, pMemoryToFree, ".\\UNITS\\MisStream.cpp", 0x3c);
 }
 
 int32_t __fastcall Return1(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
@@ -193,12 +193,12 @@ void __stdcall Update(D2UnitStrc * pUnit, D2UnitStrc * pMissile, int32_t nParam1
       nSegmentCount = nExtraPerSegment;
       if (!pStream->nStreamSize) {
         pStream->nStreamSize = nPathIdx;
-        pStreamArray = (int*)D2_ALLOC_POOL(pMissile->pMemory, nPathIdx * 4);
+        pStreamArray = (int*)D2_ALLOC_POOL_AT(pMissile->pMemory, nPathIdx * 4, ".\\UNITS\\MisStream.cpp", 0x97);
         pStream->pStream = pStreamArray;
         memset(pStreamArray, 0, nPathIdx * 4);
         nExtraPerSegment = nSegmentCount;
       } else if (pStream->nStreamSize < nPathIdx) {
-        pStreamArray = (int*)D2_REALLOC_POOL(pMissile->pMemory, pStream->pStream, nPathIdx * 4);
+        pStreamArray = (int*)D2_REALLOC_POOL_AT(pMissile->pMemory, pStream->pStream, nPathIdx * 4, ".\\UNITS\\MisStream.cpp", 0x9a);
         pStream->pStream = pStreamArray;
       }
 
@@ -209,71 +209,71 @@ void __stdcall Update(D2UnitStrc * pUnit, D2UnitStrc * pMissile, int32_t nParam1
 
       /* FARPROC lpfn for IsBadCodePtr */ nExtraCycleCounter = 4;
       bBadPtr = IsBadCodePtr((FARPROC)nfpCreate);
-      if (!bBadPtr) {
-        nPathIdx = 0;
-        nSubSegIdx = 0;
-        nCurDamage = nParam1;
-        if (0 < nSegmentCount) {
-          do {
-            nCurY = (uint32_t)pPathPoints[nPathIdx].nY;
-            nCurX = (uint32_t)pPathPoints[nPathIdx].nX;
-            nDirection = Drlg::Path::DRLGPATH_GetDirectionFromCoords((uint32_t)pPathPoints[nPathIdx + 1].nX, (uint32_t)pPathPoints[nPathIdx + 1].nY, nCurX, nCurY);
-            nDirection_20 = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nDirection_20 + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nDirection);
-            if (nSubSegIdx < nExtraPerSegment / nDivisions || !nParam1) {
-              nSubSegIdx++;
-              nCreated = (*nfpCreate)(pUnit, pStream->pStream[nPathIdx], nCurX, nCurY, nCurDamage, 0);
-              pStream->pStream[nPathIdx] = nCreated;
-            } else {
-              nSubSegIdx = 1;
-              nCreated = (*nfpCreate)(pMissile, pStream->pStream[nPathIdx], nCurX, nCurY, nCurDamage, 1);
-              nCurDamage -= nParam2;
-              pStream->pStream[nPathIdx] = nCreated;
-              if (bExtended) {
-                nCreated = (int)(nExtraSpacing + ((int)nExtraSpacing >> 0x1f & 3U)) >> 2;
-                nExtraSpacingRem = nExtraSpacing & 0x80000003;
-                if ((int)nExtraSpacingRem < 0) {
-                  nExtraSpacingRem = (nExtraSpacingRem - 1 | -4) + 1;
-                }
-                if (nExtraCycleCounter < (int)nExtraSpacingRem) {
-                  nCreated++;
-                }
+      if (bBadPtr) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa9);
+        exit(-1);
+      }
 
-                nExtraCycleCounter--;
-                if (nExtraCycleCounter < 1) {
-                  nExtraCycleCounter = 4;
-                }
-                if (0 < nCreated) {
-                  do {
-                    nExtraMissiles = nCreated;
-                    nCreated = (*nfpCreate)(pUnit, pStream->pStream[nPathIdx], nCurX, nCurY, nCurDamage, 2);
-                    nCurDamage -= nParam2;
-                    pStream->pStream[nPathIdx] = nCreated;
-                    nCreated = nExtraMissiles - 1;
-                  } while (nExtraMissiles - 1);
+      nPathIdx = 0;
+      nSubSegIdx = 0;
+      nCurDamage = nParam1;
+      if (0 < nSegmentCount) {
+        do {
+          nCurY = (uint32_t)pPathPoints[nPathIdx].nY;
+          nCurX = (uint32_t)pPathPoints[nPathIdx].nX;
+          nDirection = Drlg::Path::DRLGPATH_GetDirectionFromCoords((uint32_t)pPathPoints[nPathIdx + 1].nX, (uint32_t)pPathPoints[nPathIdx + 1].nY, nCurX, nCurY);
+          nDirection_20 = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nDirection_20 + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nDirection);
+          if (nSubSegIdx < nExtraPerSegment / nDivisions || !nParam1) {
+            nSubSegIdx++;
+            nCreated = (*nfpCreate)(pUnit, pStream->pStream[nPathIdx], nCurX, nCurY, nCurDamage, 0);
+            pStream->pStream[nPathIdx] = nCreated;
+          } else {
+            nSubSegIdx = 1;
+            nCreated = (*nfpCreate)(pMissile, pStream->pStream[nPathIdx], nCurX, nCurY, nCurDamage, 1);
+            nCurDamage -= nParam2;
+            pStream->pStream[nPathIdx] = nCreated;
+            if (bExtended) {
+              nCreated = (int)(nExtraSpacing + ((int)nExtraSpacing >> 0x1f & 3U)) >> 2;
+              nExtraSpacingRem = nExtraSpacing & 0x80000003;
+              if ((int)nExtraSpacingRem < 0) {
+                nExtraSpacingRem = (nExtraSpacingRem - 1 | -4) + 1;
+              }
+              if (nExtraCycleCounter < (int)nExtraSpacingRem) {
+                nCreated++;
+              }
 
-                  nExtraMissiles = 0;
-                }
+              nExtraCycleCounter--;
+              if (nExtraCycleCounter < 1) {
+                nExtraCycleCounter = 4;
+              }
+              if (0 < nCreated) {
+                do {
+                  nExtraMissiles = nCreated;
+                  nCreated = (*nfpCreate)(pUnit, pStream->pStream[nPathIdx], nCurX, nCurY, nCurDamage, 2);
+                  nCurDamage -= nParam2;
+                  pStream->pStream[nPathIdx] = nCreated;
+                  nCreated = nExtraMissiles - 1;
+                } while (nExtraMissiles - 1);
+
+                nExtraMissiles = 0;
               }
             }
+          }
 
-            nPathIdx++;
-          } while (nPathIdx < nSegmentCount);
-        }
-        if (pStream->nStreamSize <= nPathIdx) {
-          return;
-        }
-
-        do {
-          (*nfpUnknown)(pStream->pStream[nPathIdx]);
-          pStream->pStream[nPathIdx] = 0;
           nPathIdx++;
-        } while (nPathIdx < pStream->nStreamSize);
-
+        } while (nPathIdx < nSegmentCount);
+      }
+      if (pStream->nStreamSize <= nPathIdx) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa9);
-      exit(-1);
+      do {
+        (*nfpUnknown)(pStream->pStream[nPathIdx]);
+        pStream->pStream[nPathIdx] = 0;
+        nPathIdx++;
+      } while (nPathIdx < pStream->nStreamSize);
+
+      return;
     }
 }
 

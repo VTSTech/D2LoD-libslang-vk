@@ -19,15 +19,13 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
-#include "support/d2_boot.h" // [d2boot]
 #include "globals/globals.h"
 #include "Bnclient/Bnet.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -42,13 +40,9 @@ char __fastcall D2FILE_VerifyFileSignature(LPCSTR szText) {
     char cVar2;
     int iVar3;
     char szSignerOrg[512];
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
-    D2BOOT_MarkFmt("sig verify enter: %s", szText ? szText : "(null)"); // [d2boot]
     int32_t dwWinTrustResult = D2FILE_VerifySignatureWinTrust(szText);
-    D2BOOT_MarkFmt("sig verify: WinTrust -> %d", (int)dwWinTrustResult); // [d2boot]
     if (!dwWinTrustResult) {
       bVar1 = D2FILE_GetSignerOrganization(szText, szSignerOrg, 0x200);
-      D2BOOT_MarkFmt("sig verify: signer org -> %d", (int)bVar1); // [d2boot]
       cVar2 = '\0';
       if (bVar1) {
         iVar3 = __strnicmp(szSignerOrg, gnFileSignatureResult, 0x200);
@@ -58,7 +52,6 @@ char __fastcall D2FILE_VerifyFileSignature(LPCSTR szText) {
       cVar2 = '\0';
     }
 
-    Fog::Debug::GuardStack();
     return cVar2;
 }
 
@@ -70,7 +63,6 @@ int32_t __fastcall D2FILE_VerifySignatureWinTrust(LPCSTR szText) {
     D2WinTrustData sWvtData;
     D2WinTrustFileInfo sWvtFileInfo;
     GUID sActionGuid;
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (szText && *szText != '\0') {
       /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ nVerifyResult = MultiByteToWideChar(0, 0, szText, -1, (LPWSTR)0x0, 0);
       if (0 < (int)nVerifyResult) {
@@ -104,9 +96,7 @@ int32_t __fastcall D2FILE_VerifySignatureWinTrust(LPCSTR szText) {
         sWvtData.hWVTStateData = 0;
         sWvtData.pwszURLReference = 0;
         sWvtData.dwUIContext = 0;
-        D2BOOT_Mark("WinVerifyTrust: calling"); // [d2boot]
         nTrustResult = WinVerifyTrust((HWND)0x0, &sActionGuid, &sWvtData);
-        D2BOOT_MarkFmt("WinVerifyTrust -> 0x%08X", (unsigned)nTrustResult); // [d2boot]
         if (nTrustResult == -0x7ff6dfda || nTrustResult == -0x7ff4fffc) {
           nVerifyResult = 3;
         } else if (nTrustResult == -0x7ff4ff00) {
@@ -121,13 +111,11 @@ int32_t __fastcall D2FILE_VerifySignatureWinTrust(LPCSTR szText) {
         }
 
         Fog::Engine::Application::MISC_OperatorDeleteShim(pWideStr);
-        Fog::Debug::GuardStack();
         return nVerifyResult;
       }
     }
 
     nVerifyResult = 4;
-    Fog::Debug::GuardStack();
     return nVerifyResult;
 }
 
@@ -168,11 +156,8 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     DWORD nNameLen;
     int nAnsiLen;
     uint32_t dwSehUnused;
-    uint32_t dwSignerEncryptedHash;
-    uint32_t dwSignerAlgId;
-    uint32_t dwSignerSubject;
-    uint32_t dwSignerIssuer;
-    SIZE_T nMsgInfoSize;
+    _CERT_INFO sCertInfo;
+    DWORD nMsgInfoSize;
     uint8_t* local_8 = gszFileSignerOrganizationAttribute;
     uint32_t dwSehHandlerAddr = 0x517c3f;
     /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ if (!(szFilePath && *szFilePath != '\0')) {
@@ -193,7 +178,6 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     HLOCAL hMsgInfo = (HLOCAL)0x0;
     local_8 = 0;
     BOOL bSuccess = CryptQueryObject(1, pWideStr, 0x400, 2, 0, nullptr, nullptr, nullptr, &hCertStore, &hCryptMsg, nullptr);
-    D2BOOT_MarkFmt("signer: CryptQueryObject -> %d", (int)bSuccess); // [d2boot]
     /* DWORD * pcbData for CryptMsgGetParam */ /* void * pvData for CryptMsgGetParam */ /* DWORD dwIndex for CryptMsgGetParam */ /* DWORD dwParamType for CryptMsgGetParam */ /* HCRYPTMSG hCryptMsg for CryptMsgGetParam */ /* SIZE_T uBytes for LocalAlloc */ /* UINT uFlags for LocalAlloc */ /* DWORD * pcbData for CryptMsgGetParam */ /* void * pvData for CryptMsgGetParam */ /* DWORD dwIndex for CryptMsgGetParam */ /* DWORD dwParamType for CryptMsgGetParam */ /* HCRYPTMSG hCryptMsg for CryptMsgGetParam */ if (bSuccess) {
       bSuccess = CryptMsgGetParam(hCryptMsg, 6, 0, nullptr, &nMsgInfoSize);
       if (bSuccess) {
@@ -201,34 +185,13 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
         if (hMsgInfo) {
           bSuccess = CryptMsgGetParam(hCryptMsg, 6, 0, hMsgInfo, &nMsgInfoSize);
           if (bSuccess) {
-            D2BOOT_MarkFmt("signer: signerinfo size -> %u", (unsigned)nMsgInfoSize); // [d2boot]
-            dwSignerSubject = *(uint32_t*)((int)hMsgInfo + 4);        // CMSG_SIGNER_INFO.Issuer.cbData
-            dwSignerIssuer = *(uint32_t*)((int)hMsgInfo + 8);         // CMSG_SIGNER_INFO.Issuer.pbData
-            dwSignerEncryptedHash = *(uint32_t*)((int)hMsgInfo + 0xc); // CMSG_SIGNER_INFO.SerialNumber.cbData
-            dwSignerAlgId = *(uint32_t*)((int)hMsgInfo + 0x10);       // CMSG_SIGNER_INFO.SerialNumber.pbData
-            // [d2boot FIX] CERT_FIND_SUBJECT_CERT (0xB0000) requires pvFindPara = const CERT_INFO*.
-            // The decompile placeholder passed a 4-byte UNINITIALIZED stack array, so crypt32
-            // dereferenced garbage Issuer/SerialNumber blob pointers -> 0xC0000005 immediately
-            // after WinVerifyTrust succeeded. The original built this CERT_INFO from
-            // CMSG_SIGNER_INFO; rebuild it here.
-            // mingw's CERT_INFO has an extra SubjectPublicKeyInfo member the real MS
-            // struct lacks (112 vs 88 bytes), but it sits after Subject (offset 56);
-            // SerialNumber@4 and Issuer@24 - the fields CERT_FIND_SUBJECT_CERT reads -
-            // are at identical offsets, and everything else is zeroed.
-            static_assert(offsetof(CERT_INFO, SerialNumber) == 4, "CERT_INFO SerialNumber offset");
-            static_assert(offsetof(CERT_INFO, Issuer) == 24, "CERT_INFO Issuer offset");
-            CERT_INFO sCertFindInfo;
-            memset(&sCertFindInfo, 0, sizeof(sCertFindInfo));
-            sCertFindInfo.Issuer.cbData = dwSignerSubject;
-            sCertFindInfo.Issuer.pbData = (BYTE*)(UINT_PTR)dwSignerIssuer;
-            sCertFindInfo.SerialNumber.cbData = dwSignerEncryptedHash;
-            sCertFindInfo.SerialNumber.pbData = (BYTE*)(UINT_PTR)dwSignerAlgId;
-            D2BOOT_Mark("signer: CertFind SUBJECT_CERT enter"); // [d2boot]
-            /* PCCERT_CONTEXT pPrevCertContext for CertFindCertificateInStore */ /* void * pvFindPara for CertFindCertificateInStore */ /* DWORD dwFindType for CertFindCertificateInStore */ /* DWORD dwFindFlags for CertFindCertificateInStore */ /* DWORD dwCertEncodingType for CertFindCertificateInStore */ /* HCERTSTORE hCertStore for CertFindCertificateInStore */ pCertContext = CertFindCertificateInStore(hCertStore, 0x10001, 0, 0xb0000, &sCertFindInfo, (PCCERT_CONTEXT)0x0);
-            D2BOOT_MarkFmt("signer: CertFind -> %08X", (unsigned)(UINT_PTR)pCertContext); // [d2boot]
+            sCertInfo.Issuer.cbData = *(DWORD*)((int)hMsgInfo + 4);
+            sCertInfo.Issuer.pbData = *(uint8_t**)((int)hMsgInfo + 8);
+            sCertInfo.SerialNumber.cbData = *(DWORD*)((int)hMsgInfo + 0xc);
+            sCertInfo.SerialNumber.pbData = *(uint8_t**)((int)hMsgInfo + 0x10);
+            /* PCCERT_CONTEXT pPrevCertContext for CertFindCertificateInStore */ /* void * pvFindPara for CertFindCertificateInStore */ /* DWORD dwFindType for CertFindCertificateInStore */ /* DWORD dwFindFlags for CertFindCertificateInStore */ /* DWORD dwCertEncodingType for CertFindCertificateInStore */ /* HCERTSTORE hCertStore for CertFindCertificateInStore */ pCertContext = CertFindCertificateInStore(hCertStore, 0x10001, 0, 0xb0000, &sCertInfo, (PCCERT_CONTEXT)0x0);
             /* DWORD cchNameString for CertGetNameStringW */ /* LPWSTR pszNameString for CertGetNameStringW */ /* void * pvTypePara for CertGetNameStringW */ /* DWORD dwFlags for CertGetNameStringW */ /* DWORD dwType for CertGetNameStringW */ /* PCCERT_CONTEXT pCertContext for CertGetNameStringW */ if (pCertContext) {
               pWideStr = (LPWSTR)CertGetNameStringW(pCertContext, 3, 0, (void*)"2.5.4.10", (LPWSTR)0x0, 0);
-              D2BOOT_MarkFmt("signer: name cch -> %u", (unsigned)(UINT_PTR)pWideStr); // [d2boot]
               if (pWideStr) {
                 nWideCharLen = (int)Fog::Engine::Application::MISC_OperatorNewShim(-(uint32_t)((int)((uint64_t)(uint32_t)(uintptr_t)pWideStr * 2 >> 0x20) != 0) | (uint32_t)((uint64_t)(uint32_t)(uintptr_t)pWideStr * 2));
                 /* DWORD cchNameString for CertGetNameStringW */ /* LPWSTR pszNameString for CertGetNameStringW */ /* void * pvTypePara for CertGetNameStringW */ /* DWORD dwFlags for CertGetNameStringW */ /* DWORD dwType for CertGetNameStringW */ /* PCCERT_CONTEXT pCertContext for CertGetNameStringW */ nNameLen = CertGetNameStringW(pCertContext, 3, 0, (void*)"2.5.4.10", (LPWSTR)nWideCharLen, (DWORD)pWideStr);
@@ -237,7 +200,6 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
                   if (0 < nAnsiLen) {
                     /* LPBOOL lpUsedDefaultChar for WideCharToMultiByte */ /* LPCSTR lpDefaultChar for WideCharToMultiByte */ /* int cbMultiByte for WideCharToMultiByte */ /* LPSTR lpMultiByteStr for WideCharToMultiByte */ /* int cchWideChar for WideCharToMultiByte */ /* LPCWSTR lpWideCharStr for WideCharToMultiByte */ /* DWORD dwFlags for WideCharToMultiByte */ /* UINT CodePage for WideCharToMultiByte */ WideCharToMultiByte(0xfde9, 0, (LPCWSTR)nWideCharLen, -1, szOrgOut, nOrgMaxLen, (LPCSTR)0x0, (LPBOOL)0x0);
                     bGotOrg = true;
-                    D2BOOT_Mark("signer: org converted ok"); // [d2boot]
                   }
                 }
 
@@ -250,20 +212,22 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     }
 
     local_8 = (uint8_t*)-2;
-    // [d2boot FIX v5] D2FILE_CleanupCryptHandles(0, frame) is the Ghidra rendering of the
-    // original MSVC __try/__finally cleanup: it reads the handle locals at fixed offsets
-    // from the CALLER's frame (-0x2C hMsgInfo, -0x28 pCertContext, -0x30 hCertStore,
-    // -0x24 hCryptMsg) using the ORIGINAL MSVC frame layout. Under mingw those slots hold
-    // unrelated locals, so the helper passed garbage handles to LocalFree /
-    // CertFreeCertificateContext / CertCloseStore / CryptMsgClose -> the real crash:
-    // v3 AND v4 faulted at the same instruction (0x77D12600, inside crypt32/ntdll), v4 only
-    // reached it later because the v4 CERT_INFO fix let CertFind succeed first.
-    // Clean up with the real handle variables instead.
-    if (hMsgInfo) LocalFree(hMsgInfo);                            // [d2boot]
-    if (pCertContext) CertFreeCertificateContext(pCertContext);   // [d2boot]
-    if (hCertStore) CertCloseStore(hCertStore, 0);                // [d2boot]
-    if (hCryptMsg) CryptMsgClose(hCryptMsg);                      // [d2boot]
-    D2BOOT_Mark("signer: cleanup ok");                            // [d2boot]
+    // The original runs its __finally block (1.14d 00517df5) here, which frees the four handles
+    // through fixed offsets of this MSVC frame. Under another compiler those offsets hold other
+    // locals, so the handles are freed by name instead, in the original order.
+    // Retire-When: the generator emits an MSVC __finally block as code in its own function.
+    if (hMsgInfo) {
+      LocalFree(hMsgInfo);
+    }
+    if (pCertContext) {
+      CertFreeCertificateContext(pCertContext);
+    }
+    if (hCertStore) {
+      CertCloseStore(hCertStore, 0);
+    }
+    if (hCryptMsg) {
+      CryptMsgClose(hCryptMsg);
+    }
     return bGotOrg;
 }
 
@@ -503,7 +467,6 @@ void CACHE_BuildFilePath(LPSTR szText) {
 // Closes and deletes the Fog cache file. Closes ghCacheFileHandle if open, builds cache file path to %APPDATA%\Blizzard Entertainment\Diablo II\bncache.dat, and deletes it via DeleteFileA.
 void __stdcall CACHE_DeleteFile() {
     char szFilePath[260];
-    uint32_t uStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (ghCacheFileHandle != (HANDLE)-1) {
       /* HANDLE hObject for CloseHandle */ CloseHandle(ghCacheFileHandle);
       ghCacheFileHandle = (HANDLE)-1;
@@ -512,13 +475,12 @@ void __stdcall CACHE_DeleteFile() {
     szFilePath[0] = '\0';
     CACHE_BuildFilePath(szFilePath);
     /* LPCSTR lpFileName for DeleteFileA */ DeleteFileA(szFilePath);
-    Fog::Debug::GuardStack();
 }
 
 // @sourcefile .\BnSend.cpp
 void BNSEND_FreeRealmQueryData() {
     if (gpRealmQueryData) {
-      D2_FREE(gpRealmQueryData);
+      D2_FREE_AT(gpRealmQueryData, ".\\BnSend.cpp", 0x19a);
     }
 
     gpRealmQueryData = 0;
@@ -527,7 +489,7 @@ void BNSEND_FreeRealmQueryData() {
 // @sourcefile .\BnSend.cpp
 void BNSEND_FreeUserProfileData() {
     if (gpBNetWriteUserData) {
-      D2_FREE(gpBNetWriteUserData);
+      D2_FREE_AT(gpBNetWriteUserData, ".\\BnSend.cpp", 0x3b2);
     }
 
     gpBNetWriteUserData = 0;
@@ -548,13 +510,11 @@ void __fastcall NET_SID_CLIENT_SetupIDEAKey(int32_t nKeyScheduleIdx, int32_t bEn
     *(uint32_t*)((char*)&aUserKey + 12) = pdwKeyMaterial[3];
     if (bEncryptMode) {
       _net_sid::NET_SID_CLIENT_IDEAExpandKey(aUserKey, (uint16_t*)(g_IDEAKeySchedules + nKeyScheduleIdx * 0x68));
-      Fog::Debug::GuardStack();
       return;
     }
 
     _net_sid::NET_SID_CLIENT_IDEAExpandKey(aUserKey, aKeyScheduleBuf);
     _net_sid::NET_SID_CLIENT_IDEAInvertKey(aKeyScheduleBuf, (uint16_t*)(g_IDEAKeySchedules + nKeyScheduleIdx * 0x68));
-    Fog::Debug::GuardStack();
 }
 
 void __fastcall SRP_DestroyContext(D2Srp * * ppContext) {

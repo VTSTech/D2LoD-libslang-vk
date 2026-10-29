@@ -16,107 +16,107 @@ struct SpinnerImplementation;
 struct SpinnerWrapper;
 #ifndef RECON_FPTD_SpinnerImplementation_Draw
 #define RECON_FPTD_SpinnerImplementation_Draw
-typedef void (*SpinnerImplementation_Draw)(::SpinnerImplementation * pThis);
+typedef void (__thiscall *SpinnerImplementation_Draw)(::SpinnerImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_GetRepeatDelta
 #define RECON_FPTD_SpinnerImplementation_GetRepeatDelta
-typedef int (*SpinnerImplementation_GetRepeatDelta)(::SpinnerImplementation * pThis);
+typedef int (__thiscall *SpinnerImplementation_GetRepeatDelta)(::SpinnerImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_GetValue
 #define RECON_FPTD_SpinnerImplementation_GetValue
-typedef int (*SpinnerImplementation_GetValue)(::SpinnerImplementation * pThis);
+typedef int (__thiscall *SpinnerImplementation_GetValue)(::SpinnerImplementation * pThis);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_OnChar
 #define RECON_FPTD_SpinnerImplementation_OnChar
-typedef int (*SpinnerImplementation_OnChar)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerImplementation_OnChar)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_OnDownArrow
 #define RECON_FPTD_SpinnerImplementation_OnDownArrow
-typedef int (*SpinnerImplementation_OnDownArrow)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerImplementation_OnDownArrow)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_OnLeftArrow
 #define RECON_FPTD_SpinnerImplementation_OnLeftArrow
-typedef int (*SpinnerImplementation_OnLeftArrow)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerImplementation_OnLeftArrow)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_OnMouseDown
 #define RECON_FPTD_SpinnerImplementation_OnMouseDown
-typedef int (*SpinnerImplementation_OnMouseDown)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerImplementation_OnMouseDown)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_OnMouseMove
 #define RECON_FPTD_SpinnerImplementation_OnMouseMove
-typedef int (*SpinnerImplementation_OnMouseMove)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerImplementation_OnMouseMove)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_OnMouseUp
 #define RECON_FPTD_SpinnerImplementation_OnMouseUp
-typedef int (*SpinnerImplementation_OnMouseUp)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerImplementation_OnMouseUp)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_OnMouseWheel
 #define RECON_FPTD_SpinnerImplementation_OnMouseWheel
-typedef int (*SpinnerImplementation_OnMouseWheel)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerImplementation_OnMouseWheel)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_OnRightArrow
 #define RECON_FPTD_SpinnerImplementation_OnRightArrow
-typedef int (*SpinnerImplementation_OnRightArrow)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerImplementation_OnRightArrow)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_OnUpArrow
 #define RECON_FPTD_SpinnerImplementation_OnUpArrow
-typedef int (*SpinnerImplementation_OnUpArrow)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerImplementation_OnUpArrow)(::SpinnerImplementation * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerImplementation_ScalarDeletingDestructor
 #define RECON_FPTD_SpinnerImplementation_ScalarDeletingDestructor
-typedef ::SpinnerImplementation * (*SpinnerImplementation_ScalarDeletingDestructor)(::SpinnerImplementation * pThis, uint32_t nFlags);
+typedef ::SpinnerImplementation * (__thiscall *SpinnerImplementation_ScalarDeletingDestructor)(::SpinnerImplementation * pThis, uint32_t nFlags);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_Draw
 #define RECON_FPTD_SpinnerWrapper_Draw
-typedef void (*SpinnerWrapper_Draw)(::SpinnerWrapper * pThis);
+typedef void (__thiscall *SpinnerWrapper_Draw)(::SpinnerWrapper * pThis);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_GetRepeatDelta
 #define RECON_FPTD_SpinnerWrapper_GetRepeatDelta
-typedef int (*SpinnerWrapper_GetRepeatDelta)(::SpinnerWrapper * pThis, int nUnused);
+typedef int (__thiscall *SpinnerWrapper_GetRepeatDelta)(::SpinnerWrapper * pThis, int nUnused);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_GetValue
 #define RECON_FPTD_SpinnerWrapper_GetValue
-typedef int (*SpinnerWrapper_GetValue)(::SpinnerWrapper * pThis);
+typedef int (__thiscall *SpinnerWrapper_GetValue)(::SpinnerWrapper * pThis);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_OnChar
 #define RECON_FPTD_SpinnerWrapper_OnChar
-typedef int (*SpinnerWrapper_OnChar)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerWrapper_OnChar)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_OnDownArrow
 #define RECON_FPTD_SpinnerWrapper_OnDownArrow
-typedef int (*SpinnerWrapper_OnDownArrow)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerWrapper_OnDownArrow)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_OnLeftArrow
 #define RECON_FPTD_SpinnerWrapper_OnLeftArrow
-typedef int (*SpinnerWrapper_OnLeftArrow)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerWrapper_OnLeftArrow)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_OnMouseDown
 #define RECON_FPTD_SpinnerWrapper_OnMouseDown
-typedef int (*SpinnerWrapper_OnMouseDown)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerWrapper_OnMouseDown)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_OnMouseMove
 #define RECON_FPTD_SpinnerWrapper_OnMouseMove
-typedef int (*SpinnerWrapper_OnMouseMove)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerWrapper_OnMouseMove)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_OnMouseUp
 #define RECON_FPTD_SpinnerWrapper_OnMouseUp
-typedef int (*SpinnerWrapper_OnMouseUp)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerWrapper_OnMouseUp)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_OnMouseWheel
 #define RECON_FPTD_SpinnerWrapper_OnMouseWheel
-typedef int (*SpinnerWrapper_OnMouseWheel)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerWrapper_OnMouseWheel)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_OnRightArrow
 #define RECON_FPTD_SpinnerWrapper_OnRightArrow
-typedef int (*SpinnerWrapper_OnRightArrow)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerWrapper_OnRightArrow)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_OnUpArrow
 #define RECON_FPTD_SpinnerWrapper_OnUpArrow
-typedef int (*SpinnerWrapper_OnUpArrow)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+typedef int (__thiscall *SpinnerWrapper_OnUpArrow)(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
 #endif
 #ifndef RECON_FPTD_SpinnerWrapper_ScalarDeletingDestructor
 #define RECON_FPTD_SpinnerWrapper_ScalarDeletingDestructor
-typedef ::SpinnerWrapper * (*SpinnerWrapper_ScalarDeletingDestructor)(::SpinnerWrapper * pThis, uint32_t nFlags);
+typedef ::SpinnerWrapper * (__thiscall *SpinnerWrapper_ScalarDeletingDestructor)(::SpinnerWrapper * pThis, uint32_t nFlags);
 #endif
 #ifndef RECON_FPTD_fpSpinnerRepeatAction
 #define RECON_FPTD_fpSpinnerRepeatAction
@@ -162,54 +162,54 @@ struct SpinnerWrapper {
 };
 
 struct SpinnerImplementationVtable {
-    /* 0x00 */ ::SpinnerImplementation * (*ScalarDeletingDestructor)(::SpinnerImplementation *, uint32_t);
-    /* 0x04 */ void (*Draw)(::SpinnerImplementation *);
-    /* 0x08 */ int (*OnMouseWheel)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x0C */ int (*OnMouseDown)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x10 */ int (*OnMouseUp)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x14 */ int (*OnMouseMove)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x18 */ int (*OnChar)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x1C */ int (*OnUpArrow)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x20 */ int (*OnDownArrow)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x24 */ int (*OnRightArrow)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x28 */ int (*OnLeftArrow)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
-    /* 0x2C */ int (*GetValue)(::SpinnerImplementation *);
-    /* 0x30 */ int (*GetRepeatDelta)(::SpinnerImplementation *);
+    /* 0x00 */ ::SpinnerImplementation * (__thiscall *ScalarDeletingDestructor)(::SpinnerImplementation *, uint32_t);
+    /* 0x04 */ void (__thiscall *Draw)(::SpinnerImplementation *);
+    /* 0x08 */ int (__thiscall *OnMouseWheel)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x0C */ int (__thiscall *OnMouseDown)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x10 */ int (__thiscall *OnMouseUp)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x14 */ int (__thiscall *OnMouseMove)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x18 */ int (__thiscall *OnChar)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x1C */ int (__thiscall *OnUpArrow)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x20 */ int (__thiscall *OnDownArrow)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x24 */ int (__thiscall *OnRightArrow)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x28 */ int (__thiscall *OnLeftArrow)(::SpinnerImplementation *, struct D2UIMouseMsgStrc *);
+    /* 0x2C */ int (__thiscall *GetValue)(::SpinnerImplementation *);
+    /* 0x30 */ int (__thiscall *GetRepeatDelta)(::SpinnerImplementation *);
 };
 
 struct SpinnerWrapperVtable {
-    /* 0x00 */ ::SpinnerWrapper * (*ScalarDeletingDestructor)(::SpinnerWrapper *, uint32_t);
-    /* 0x04 */ void (*Draw)(::SpinnerWrapper *);
-    /* 0x08 */ int (*OnMouseWheel)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x0C */ int (*OnMouseDown)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x10 */ int (*OnMouseUp)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x14 */ int (*OnMouseMove)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x18 */ int (*OnChar)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x1C */ int (*OnUpArrow)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x20 */ int (*OnDownArrow)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x24 */ int (*OnRightArrow)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x28 */ int (*OnLeftArrow)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
-    /* 0x2C */ int (*GetValue)(::SpinnerWrapper *);
-    /* 0x30 */ int (*GetRepeatDelta)(::SpinnerWrapper *, int);
+    /* 0x00 */ ::SpinnerWrapper * (__thiscall *ScalarDeletingDestructor)(::SpinnerWrapper *, uint32_t);
+    /* 0x04 */ void (__thiscall *Draw)(::SpinnerWrapper *);
+    /* 0x08 */ int (__thiscall *OnMouseWheel)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x0C */ int (__thiscall *OnMouseDown)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x10 */ int (__thiscall *OnMouseUp)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x14 */ int (__thiscall *OnMouseMove)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x18 */ int (__thiscall *OnChar)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x1C */ int (__thiscall *OnUpArrow)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x20 */ int (__thiscall *OnDownArrow)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x24 */ int (__thiscall *OnRightArrow)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x28 */ int (__thiscall *OnLeftArrow)(::SpinnerWrapper *, struct D2UIMouseMsgStrc *);
+    /* 0x2C */ int (__thiscall *GetValue)(::SpinnerWrapper *);
+    /* 0x30 */ int (__thiscall *GetRepeatDelta)(::SpinnerWrapper *, int);
 };
 
 namespace D2Client::UI::Spinner::SpinnerWrapper {
 
 // Function declarations
-void Destructor(::SpinnerWrapper * pThis);
-::SpinnerWrapper * ScalarDeletingDestructor(::SpinnerWrapper * pThis, uint32_t nFlags);
-int OnMouseWheel(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseDown(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseUp(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnMouseMove(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-void Draw(::SpinnerWrapper * pThis);
-int OnChar(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnDownArrow(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnUpArrow(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnRightArrow(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int OnLeftArrow(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
-int GetValue(::SpinnerWrapper * pThis);
-int GetRepeatDelta(::SpinnerWrapper * pThis, int nUnused);
-::SpinnerWrapper * Constructor(::SpinnerWrapper * pThis, int nPosX, int nPosY, BOOL bHorizontal, fpSpinnerRepeatAction pfnRepeatAction);
+void __thiscall Destructor(::SpinnerWrapper * pThis);
+::SpinnerWrapper * __thiscall ScalarDeletingDestructor(::SpinnerWrapper * pThis, uint32_t nFlags);
+int __thiscall OnMouseWheel(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseDown(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseUp(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnMouseMove(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+void __thiscall Draw(::SpinnerWrapper * pThis);
+int __thiscall OnChar(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnDownArrow(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnUpArrow(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnRightArrow(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall OnLeftArrow(::SpinnerWrapper * pThis, struct D2UIMouseMsgStrc * pMsg);
+int __thiscall GetValue(::SpinnerWrapper * pThis);
+int __thiscall GetRepeatDelta(::SpinnerWrapper * pThis, int nUnused);
+::SpinnerWrapper * __thiscall Constructor(::SpinnerWrapper * pThis, int nPosX, int nPosY, BOOL bHorizontal, fpSpinnerRepeatAction pfnRepeatAction);
 
 } // namespace D2Client::UI::Spinner::SpinnerWrapper

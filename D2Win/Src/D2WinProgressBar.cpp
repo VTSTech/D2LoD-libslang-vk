@@ -13,15 +13,15 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW
-#define D2_NEW(T) ((T*)D2_ALLOC(sizeof(T)))
+#ifndef D2_NEW_AT
+#define D2_NEW_AT(T, szFile, nLine) ((T*)D2_ALLOC_AT(sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2WinProgressBar) == 0x44, "D2_NEW(D2WinProgressBar): the 32-bit layout must be the 0x44 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2WinProgressBar) == 0x44, "D2_NEW_AT(D2WinProgressBar): the 32-bit layout must be the 0x44 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_Draw
@@ -59,7 +59,7 @@ BOOL __fastcall Draw(::D2WinProgressBar * pProgressBar) {
 
 ::D2WinProgressBar * __fastcall D2WinProgressBar(int32_t dwPosX, int32_t dwPosY, int32_t dwSizeX, int32_t dwSizeY) {
     uint32_t dwState;
-    ::D2WinProgressBar* pNewBar = D2_NEW(::D2WinProgressBar);
+    ::D2WinProgressBar* pNewBar = D2_NEW_AT(::D2WinProgressBar, ".\\Src\\D2WinProgressBar.cpp", 0x1a);
     memset(pNewBar, 0, 0x44);
     pNewBar->sControl.neD2FormType = FORM_ProgressBar;
     int* pStateField = &pNewBar->sControl.dwState;

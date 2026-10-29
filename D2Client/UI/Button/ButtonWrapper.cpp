@@ -27,7 +27,7 @@ typedef _EXCEPTION_DISPOSITION (*pfnEHHandlerRoutine)(EHExceptionRecord * pExcep
 
 namespace D2Client::UI::Button::ButtonWrapper {
 
-void Destructor(::ButtonWrapper * pThis) {
+void __thiscall Destructor(::ButtonWrapper * pThis) {
     // Frame slots -16..-4 are ONE object: &pPrevExcList is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -52,7 +52,7 @@ void Destructor(::ButtonWrapper * pThis) {
     ExceptionList = __frame0.pPrevExcList;
 }
 
-::ButtonWrapper * ScalarDeletingDestructor(::ButtonWrapper * pThis, uint32_t nFlags) {
+::ButtonWrapper * __thiscall ScalarDeletingDestructor(::ButtonWrapper * pThis, uint32_t nFlags) {
     ButtonWrapper::Destructor(pThis);
     if (!(nFlags & 1 && pThis)) {
       return pThis;
@@ -62,65 +62,65 @@ void Destructor(::ButtonWrapper * pThis) {
     return pThis;
 }
 
-int OnMouseWheel(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseWheel(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseWheel(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseDown(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseDown(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseDown(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseUp(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseUp(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseUp(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnMouseMove(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnMouseMove(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnMouseMove(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-void Draw(::ButtonWrapper * pThis) {
+void __thiscall Draw(::ButtonWrapper * pThis) {
     pThis->pImplementation->pVtable->Draw(pThis->pImplementation);
 }
 
-int OnChar(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnChar(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnChar(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnDownArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnDownArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnDownArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnUpArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnUpArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnUpArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnRightArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnRightArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnRightArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int OnLeftArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
+int __thiscall OnLeftArrow(::ButtonWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
     int iVar1 = pThis->pImplementation->pVtable->OnLeftArrow(pThis->pImplementation, pMsg);
     return iVar1;
 }
 
-int GetValue(::ButtonWrapper * pThis) {
+int __thiscall GetValue(::ButtonWrapper * pThis) {
     int iVar1 = pThis->pImplementation->pVtable->GetValue(pThis->pImplementation);
     return iVar1;
 }
 
-void SetAccelerator(::ButtonWrapper * pThis, BOOL bEnable) {
+void __thiscall SetAccelerator(::ButtonWrapper * pThis, BOOL bEnable) {
     pThis->pImplementation->pVtable->SetAccelerator(pThis->pImplementation, bEnable);
 }
 
-::ButtonWrapper * Constructor(::ButtonWrapper * pThis, int nPosX, int nPosY, int nButtonKind, fpButtonOnActivate pfnOnActivate) {
+::ButtonWrapper * __thiscall Constructor(::ButtonWrapper * pThis, int nPosX, int nPosY, int nButtonKind, fpButtonOnActivate pfnOnActivate) {
     pfnEHHandlerRoutine pExcHandler = __GSHandlerCheck_EH_6ca103;
     void* pPrevExceptionList = ExceptionList;
     int32_t dwExcState = 0;

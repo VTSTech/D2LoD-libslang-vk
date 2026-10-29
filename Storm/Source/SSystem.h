@@ -81,7 +81,7 @@ int32_t __fastcall LINKEDLIST_GetNextOrHead(int32_t pThis, int32_t nNode);
 // @note The same relink body is instantiated at least seven more times in 1.14d and is named correctly
 // everywhere else (ARCHIVE_LinkNode @0045bbe0, SFILE_InsertFileRecordIntoList1..5). This was the only
 // false one.
-void LINKEDLIST_LinkNode(int * * pList, int * * ppNodeSlot, int32_t nInsertMode, int * * ppTargetList);
+void __thiscall LINKEDLIST_LinkNode(int * * pList, int * * ppNodeSlot, int32_t nInsertMode, int * * ppTargetList);
 // Retrieves the count field from a linked list node with bitwise masking. Returns count masked with sign-extend logic to handle special count encodings. Used for size queries on list structures.
 uint32_t __fastcall LINKEDLIST_GetCountMasked(int32_t pThis, int32_t nNode);
 void __fastcall LINKEDLIST_GetHead(int32_t pThis, int * pListHead);

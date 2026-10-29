@@ -50,7 +50,6 @@ void __fastcall OBJMODE_DeactivateShrine(::SGAMEDATA * pGame, struct D2UnitStrc 
 // Advances the fill-progress animation for fillable objects (e.g. Mana Wells, Healing Wells). Reads Components[0] as the current fill level, increments it each tick, then recomputes SetupUpdateFlag based on the ratio of current level to the doubled/default txt sizes. Halts with an unrecoverable error if fill level exceeds its expected bounds. Used by the object-mode update tick to drive incremental fill visuals.
 void __fastcall OBJMODE_UpdateFillProgress(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall OBJMODE_UpdateHoverTextExpiry(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
-void __stdcall OBJMODE_TriggerProximityEffect(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall OBJMODE_UpdateTrapObject(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // Routes a chest-open event to the appropriate operate-callback based on chest type (Components[0] & 0x7f) and level ID. Type 8 in Act 4+ levels, type 3 in Act 1-3 outside TowerCellarLevel5, and types 1/4 in Act 1-3 all redirect to gapObjectOperateCallbacks[2] (special chest handler). All other types dispatch through gapObjectOperateCallbacks[chestType] directly. Halts via ERROR_UnrecoverableInternalError_Halt if any callback pointer fails IsBadCodePtr.
 void __fastcall OBJMODE_DispatchChestType(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
@@ -60,8 +59,6 @@ void __fastcall QUEST_DispatchObjectActivation(::SGAMEDATA * pGame, struct D2Uni
 // Sends the current server-side object state to a single client. Emits SCMD 0x0E (ObjectState) with the object's GUID, active flag (bit 1 of eUnitFlags), and current anim mode. For shrine-subclass objects in Neutral mode also sends SCMD 0x4D (UnitCastSkill) carrying the shrine code and the last activating player GUID. For portal-subclass objects sends SCMD 0x60 (TownPortalState).
 void __fastcall OBJECT_SendStateToClient(struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
 void __fastcall PacketUpdateForClient(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
-// @sourcefile .\OBJECTS\ObjMode.cpp
-void AUTOMAP_RevealAfterTeleport(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, struct D2RoomStrc * pRoom);
 // Object operate-fn: searches the victim object's room and all adjacent rooms for another object of the same classId, then calls AUTOMAP_RevealAfterTeleport on the first match found. Used by Waygate-style objects that need to reveal the automap of their destination area. Always returns 0.
 BOOL __fastcall OBJOP_RevealAutomapArea(struct D2ObjectOperateFnArg * pOperation);
 BOOL __fastcall OBJOP_ExplodingTrap(struct D2ObjectOperateFnArg * pOperation);
@@ -74,17 +71,12 @@ BOOL __fastcall OBJOP_OpenTimedDoor(struct D2ObjectOperateFnArg * pOperation);
 BOOL __fastcall OBJOP_UseStairAlias(struct D2ObjectOperateFnArg * pOperation);
 // Object operate-fn for breakable containers (barrels, chests that shatter). Returns 1 early if the object is alive (not in Death mode). Otherwise marks the object updated, removes its collision, clears or sets UNITFLAG_TARGETABLE based on the txt Selectable flag for the current anim mode, and if Mode[2] is set schedules the opening animation frame event. Always returns 1.
 BOOL __fastcall OBJOP_OpenBreakableContainer(struct D2ObjectOperateFnArg * pOperation);
-BOOL __stdcall OBJMODE_CheckSpawnMonsterFromSkeletonActRestriction(int32_t nParam, struct D2RoomStrc * pRoom);
-void OBJMODE_SpawnMonsterFromObject(eD2MonsterAnimMode eMonsterAnimMode, int32_t nParam, struct D2ObjectModeArg * pObjectModeArg);
 void __fastcall OBJMODE_SpawnRandomMonsters(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall OBJMODE_SpawnCompanionChests(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
-void OBJMODE_SpawnMonsterAtObject(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t dwParam);
 void __fastcall OBJMODE_SpawnSiegeMonsterA(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall OBJMODE_SpawnSiegeMonsterB(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall OBJMODE_SpawnSiegeMonsterC(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 void __fastcall OBJMODE_SpawnSiegeMonsterD(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
-void __stdcall OBJMODE_DispatchOperateCallback(struct D2ObjectOperateFnArg * pOperation, uint8_t nFunctionId);
-BOOL OBJMODE_CheckInventoryHasItemType(eD2ItemTypes eItemType, struct D2UnitStrc * pUnit);
 // Object operate-fn for the Horadric Cube chest object. If the cube is closed (Death mode or null) and the player is not already trading: checks the player's inventory for a Gem-type item (required to open the cube); if absent plays a sound. If a gem is present, sets interact info to the cube's GUID, marks the cube open (SetupUpdateFlag 3), and sends SCMD 0x58 (OpenUI) to the client. If the cube is already open (Run mode) and it matches the current NPC interaction, closes it (ClearInteractInfo, SetupUpdateFlag 1). Always returns 1.
 // @sourcefile .\OBJECTS\ObjMode.cpp
 BOOL __fastcall OBJOP_OpenHoradricCube(struct D2ObjectOperateFnArg * pOperation);
@@ -98,8 +90,6 @@ void __fastcall Shrines_HealthExchangeFunction(struct D2ObjectOperateFnArg * pAr
 void __fastcall Shrines_ManaExchangeFunction(struct D2ObjectOperateFnArg * pArguments, struct D2ShrinesTxt * pTxtShrines);
 void __fastcall Shrines_ShrineOfEnirhsFunction(struct D2ObjectOperateFnArg * pArguments, struct D2ShrinesTxt * pTxtShrines);
 void __fastcall Shrines_PortalShrineFunction(struct D2ObjectOperateFnArg * pArguments, struct D2ShrinesTxt * pTxtShrines);
-// Two GuardStack tails: GuardStack(1) after successful spawn/removal, GuardStack(nReturnValue) where nReturnValue is explicitly set to 0 (no spawn spot) or 1 (spawned) elsewhere.
-BOOL __stdcall Shrines_GemShrine_SpawnGem(int32_t nItemClassId, struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, struct D2UnitStrc * pUnit2);
 // Gem Shrine activation handler. Iterates the activating player's gem inventory (type 0x14) and upgrades the first upgradeable gem by spawning its BetterGem entry via Shrines_GemShrine_SpawnGem. If no upgrade is possible (no gems or all already max-grade), picks a random chipped gem type (gcw/gcr/gcg/gcb/gcy/gcv) by seeding on the player unit and spawns it. Halts with an internal error if a gem item code fails to resolve.
 void __fastcall Shrines_GemShrineFunction(struct D2ObjectOperateFnArg * pArguments, struct D2ShrinesTxt * pTxtShrines);
 // Server-side activation effect for a Storm/Tempest shrine (operate handler, D2ObjectOperateFnArg + ShrinesTxt). Two-phase: (1) finds all alive units within ShrinesTxt.dwArg1 tiles of the operating unit via InitializeUnitFindData/FindAllMatchingUnitsInNeighboredRooms and drains a percentage (dwArg0-based, ~ /100) of each monster/player target's hitpoints via STATLIST_AddUnitStat; (2) spawns a 5x5 ring/grid of MISSILE_Fireball missiles around the unit (offsets -5..+25 step 5, alternating sides), owned by pAttacker, with missile level capped 1..8 from the owner's level/5. No return.
@@ -109,10 +99,6 @@ void __fastcall Shrines_WarpingShrineFunction(struct D2ObjectOperateFnArg * pArg
 void __fastcall Shrines_ExplodingShrineFunction(struct D2ObjectOperateFnArg * pArguments, struct D2ShrinesTxt * pTxtShrines);
 // Object operate handler for a Poison shrine. Using the shrine unit's seed, spawns dwArg0..dwArg1 random potion items ("gpm" item code) at the best free spot near the attacker via FindBestSpotToSpawnItem + ITEM_CreateItemInstance (quantity 1, DOUPDATE). Then fires 6 poison missiles in a fixed offset spread (the aMissileOffsets ring) centered on the shrine, with skill level scaled by attacker level/5 (clamped 1..8). Side effect: advances the shrine seed.
 void __fastcall Shrines_PoisonShrineFunction(struct D2ObjectOperateFnArg * pArguments, struct D2ShrinesTxt * pTxtShrines);
-// Computes the effective to-hit (attack rate) for a skill+weapon pair and writes it into *pnParam. Starts from the unit's base attack rate; if no explicit weapon is provided (pUnit2==null), falls back to the equipped weapon. Missile-potion weapons force *pnParam=0. Final value combines skill's LevToHit/ToHit columns, item bonus damage, UNITSTAT_item_tohit_percent, and the character class's ToHitFactor from CharStats.txt. Halts if pSkill is null.
-void __stdcall SKILL_GetAttackRateForWeapon(struct D2SkillStrc * pSkill, struct D2UnitStrc * pUnit, int * pnParam, int32_t nParam, struct D2UnitStrc * pUnit2);
-// Returns a shrine's effective stat bonus for the given unit stat. For most stats (resistances, stamina, experience, etc.) returns nParam unchanged. For UNITSTAT_tohit, computes the attack rate via SKILL_GetAttackRateForWeapon. For UNITSTAT_mindamage, resolves whether to use primary or secondary min-damage stat based on dual-wield handedness, then fetches the raw stat value and scales it as (statValue * nParam) / 100.
-int32_t __stdcall OBJMODE_GetModifiedStatValueFromShrine(eD2UnitStat eUnitStat, int32_t nParam, struct D2UnitStrc * pUnit);
 void __fastcall Shrines_CombatBoostFunction(struct D2ObjectOperateFnArg * pArguments, struct D2ShrinesTxt * pTxtShrines);
 void __fastcall SHRINE_OnStaminaExpire(struct D2UnitStrc * pUnit, eD2States eState, int32_t dwParam);
 void __fastcall Shrines_StaminaBoostFunction(struct D2ObjectOperateFnArg * pArguments, struct D2ShrinesTxt * pTxtShrines);
@@ -128,15 +114,13 @@ BOOL __fastcall OBJOP_DestroyDestructible(struct D2ObjectOperateFnArg * pOperati
 BOOL __fastcall OBJOP_SpawnQuestItemReward(struct D2ObjectOperateFnArg * pOperation);
 BOOL __fastcall OBJOP_SpawnExceptionalItemDrop(struct D2ObjectOperateFnArg * pOperation);
 BOOL __fastcall OBJOP_SpawnNormalItemDrop(struct D2ObjectOperateFnArg * pOperation);
-// Iterator callback (EDI = SGAMEDATA**) that applies counter-attack damage from a source object to all nearby units in its room. For each unit in the room: players not in Dead mode within range 3 take MONSTERAI_CalculateCounterAttackDamage; monsters not in Kick mode within range 3 take the same; explosive-barrel objects (pHashLink1==0xb, Death mode) within collision distance 3 are detonated via OBJOP_DetonateExplosiveBarrel. Passes the constructed sOperation for barrel detonation.
-void OBJMODE_ApplyCounterAttackToNearbyUnits(::SGAMEDATA * * ppGame);
 BOOL __fastcall OBJOP_DetonateExplosiveBarrel(struct D2ObjectOperateFnArg * pOperation);
 BOOL __fastcall OBJOP_ActivateSimple(struct D2ObjectOperateFnArg * pOperation);
 BOOL __fastcall OBJOP_ActivateNoOp(struct D2ObjectOperateFnArg * pOperation);
 // Server entry-point for a player interacting with a world object. Looks up the object unit by nUnitId/pUId, reads its ObjectsTxt record, and guards against interaction while the player is trading, has interact state set, or is holding a cursor item (except for class 0x10b). Dispatches to OBJECTSOPERATEFN[pTxt->OperateFn] with a fully populated D2ObjectOperateFnArg. Skips classes 0x79, 0x7a, and 0x16. Halts with an unrecoverable error if OperateFn >= 0x65.
 BOOL __fastcall InteractWithObject(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t nUnitId, DWORD pUId, int * pTxt);
 ::SGAMEDATA * __fastcall Interact(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t nObjectType, DWORD nGid);
-void OBJECT_UpdateCollisionOnModeChange(void * pThis, DWORD nGid);
+void __thiscall OBJECT_UpdateCollisionOnModeChange(void * pThis, DWORD nGid);
 BOOL __fastcall OBJOP_A2Q2_ArcaneGateLevelTransition(struct D2ObjectOperateFnArg * pOperation);
 // Object operate-fn (index 46): activates the portal to Act 4 (Pandemonium Fortress). Guards: victim object must be alive (not Death mode) and the attacker must have QUEST_TheGuardian in JustCompleted or Completed state. Calls QUEST_HandleKhalimsWillCompletion, and if the victim is in DuranceOfHateLevel3 also unlocks the ThePandemoniumFortress waypoint and calls InitLevel to load Act 4. Returns 0.
 BOOL __fastcall Objects_OperateFn46_PortalToAct4(struct D2ObjectOperateFnArg * pOperation);
@@ -158,20 +142,16 @@ uint32_t __fastcall OBJMODE_ShrineVitalityBoost(::SGAMEDATA * pGame, struct D2Un
 uint32_t __fastcall OBJMODE_ShrineStrengthBoost(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nBoostAmount);
 uint32_t __fastcall OBJMODE_ShrineHealthRefill(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nBoostAmount);
 uint32_t __fastcall OBJMODE_ShrineSkillPointBoost(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nBoostAmount);
-// Probabilistic dispatcher for an object's per-mode operate handler. Indexes gaObjectsModeFuncTable by bParam (mode index, bounds-checked against gnObjectsModeFunctionDispatchTableCount), advances the object's RNG seed at nParam+0x20 (LCG *0x6ac690c5) and rolls 0..99; only if the roll is below that mode's nSpriteThreshold does it invoke the table's pfnHandler (validated via IsBadCodePtr, halting on a bad pointer) with the mode's nModeFlags, returning the handler's result. Returns 0 if out of range or the probability gate fails. Custom convention (nParam in EDI).
-uint32_t __stdcall OBJMODE_DispatchOperateFunction(::SGAMEDATA * pGame, uint8_t bParam, int32_t nParam);
 // Server-side handler for the 0x44 object-interaction packet (well/Horadric-orifice/quest container). Resolves the player, object and item units by GUID. For nParam==2 sends the 0x58 OpenUI response (result 1) and clears interaction. For nParam==3 it tries to consume an item: special-cases the Horadric Orifice object (classId 0x98) requiring the "tsh " (Horadric Staff) item code, otherwise moves the item to the player's cursor; on success dispatches the object's operate function (or the orifice's Q14_OnStaffUsedInOrifice for A2Q7), sends OpenUI result 5 and schedules the object anim event; on failure sends result 4. Returns 1.
 // @sourcefile .\OBJECTS\ObjMode.cpp
-void __fastcall _x44PacketHandler(::SGAMEDATA * pGame, DWORD dwParam, DWORD param_1, DWORD dwItemGUID, int16_t nParam);
+int __fastcall _x44PacketHandler(::SGAMEDATA * pGame, DWORD dwParam, DWORD param_1, DWORD dwItemGUID, int16_t nParam);
 void __fastcall OBJMODE_HandleObjectDeactivation(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pObject);
 // NOTE: Register param types inferred (medium confidence): pGameStrc (ECX): SGAMEDATA *, pUnit (EDX): D2UnitStrc *
 void __fastcall OBJMODE_OnWaypointFinish(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit);
 // Completes the two-phase town-portal link: given the GUID of a blue portal stub and the destination level, locates the stub object (classId 0x3b), verifies it is unlinked and has an owner unit, then stores the destination level in the portal's component data, sets the linked flag, frees the owner stub unit, and calls LinkPortal to establish the bidirectional connection. Halts with an internal error if preconditions fail.
-void OBJMODE_FinalizePortalLink(void * pThis, DWORD dwBluePortalGUID, eD2LevelId eLevel);
+void __thiscall OBJMODE_FinalizePortalLink(void * pThis, DWORD dwBluePortalGUID, eD2LevelId eLevel);
 void __stdcall OBJMODE_FinalizePortalLink_HaltTail(int nLine);
 void __stdcall OBJECT_HandleUnitRevival(struct D2UnitStrc * pUnit, bool * pbRevived);
-// Object-mode handler that applies well/shrine healing to a player unit. Reads D2ObjectsTxt Parm flags (bit 1=HP, bit 0=mana) and a percentage scalar, then restores HP, mana, and stamina up to their maximums and sends attribute-update packets for each. Also removes poison and freeze state lists. Revives any dead hireable mercenary via SUNITNPC_HandleHireableAction, then iterates pets via PetsForEach/OBJECT_HandleUnitRevival. Returns UNIT_MONSTER (1) if anything was healed/cured, UNIT_PLAYER (0) if nothing changed.
-BOOL __stdcall OBJMODE_ApplyWellHealing(::SGAMEDATA * pGame, struct D2ObjectsTxt * pTxtObjects, struct D2UnitStrc * pUnit);
 BOOL __fastcall OBJOP_ActivateHealingWell(struct D2ObjectOperateFnArg * pOperation);
 // Spawns a single item drop near a unit. Converts a 4-char item code to a class ID, finds the best nearby open spawn tile via FindBestSpotToSpawnItem, and calls ITEM_CreateItemInstance with the given quality and a level derived from the source unit. No-ops silently if the item code is invalid or no spawn tile is found.
 void __fastcall SpawnDrop(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t sCode, eD2ItemQuality eItemQuality);
@@ -198,5 +178,6 @@ BOOL __fastcall OBJOP_OpenTrapChestSkillTrigger(struct D2ObjectOperateFnArg * pO
 // Object operate callback for an unlocked (no-lock) chest. Advances the chest's D2SeedStrc RNG, then on a roll below 90/100 calls RollChestDrops (ITEMTYPE_None1) and sets update-flag 5 on success. On a failed roll (empty chest): sets update-flag 1 and schedules two game events — a frame-delayed open-animation event and a loot-despawn event 20 frames later. Returns 0 in all paths.
 BOOL __fastcall OBJOP_OpenUnlockedChest(struct D2ObjectOperateFnArg * pOperation);
 void __fastcall OBJECTEVENT_DefaultCallback(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2TimerTypeDWORD eTimerType);
+// 13 internal functions (defined in .cpp)
 
 } // namespace D2Game::Objects::ObjectsMode

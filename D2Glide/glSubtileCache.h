@@ -37,14 +37,8 @@ namespace D2Glide::glSubtileCache {
 // Initializes Glide subtile cache with LRU eviction policy. Allocates node array (0x14 bytes per entry). Halts with error 0x2a if allocation fails.
 // @sourcefile .\Src\glSubtileCache.cpp
 int __fastcall GLSUBTILE_Initialize(struct GlSubtileCacheStrc * pCache, int nVramStart, int nVramEnd, uint32_t dwSubtileSize);
-// Appends subtile cache node to tail of active LRU list (most-recently-used position).
-void GLSUBTILE_AppendNodeToTail(struct GlSubtileCacheStrc * pCache, struct GlSubtileCacheNodeStrc * pNode);
 // Removes and returns the head node from active LRU list (least-recently-used).
 struct GlSubtileCacheNodeStrc * __fastcall GLSUBTILE_RemoveNodeFromHead(uint32_t dwParam, struct GlSubtileCacheStrc * pCache);
-// Removes a subtile cache node from the active LRU list by index. Returns pointer to removed node.
-struct GlSubtileCacheNodeStrc * GLSUBTILE_RemoveNodeByIndex(struct GlSubtileCacheStrc * pCache, int nNodeIndex);
-// Allocates node from free list and moves to active list tail. Returns 1-based node index on success, 0 if cache full.
-int GLSUBTILE_AllocateNode(struct GlSubtileCacheStrc * pCache);
 // Promotes a subtile cache node to most-recently-used position (active list tail).
 void __fastcall GLSUBTILE_PromoteNodeToMRU(struct GlSubtileCacheStrc * pCache, int nNodeIndex1Based);
 // Removes the subtile-cache node at 0-based nNodeIndex (GLSUBTILE_RemoveNodeByIndex), clears its
@@ -58,5 +52,6 @@ void __fastcall GLSUBTILE_InvalidateByIndex(struct GlSubtileCacheStrc * pCache, 
 void __fastcall GLSUBTILE_Destroy(uint32_t * pCacheData, struct GlSubtileCacheStrc * pCache);
 // Ensures cache has free capacity by allocating a node. If cache is full, evicts LRU entry first.
 int __fastcall GLSUBTILE_EnsureCapacity(struct GlSubtileCacheStrc * pCache);
+// 3 internal functions (defined in .cpp)
 
 } // namespace D2Glide::glSubtileCache

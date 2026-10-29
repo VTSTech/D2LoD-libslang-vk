@@ -36,9 +36,6 @@ void __fastcall DeactivateToolsOfTrade(::SGAMEDATA * pGame, struct D2UnitStrc * 
 // Q03_Callback_03 (A1Q3) — state-3 handler. When entering with pTextControl==1 and nStateFlag==2 and the record shows neither Completed nor RewardAwaits: if no prior state, broadcast state 1 (intro/RewardAwaits) via Q03_NpcGossipHandler; then advance nStateFlag to 3, sync progress to all units, and clear its own slot handler (one-shot). If not in-introduction, just clears its handler slot. Read-only on quest record (uses Step states via sync).
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q3.cpp
 void __fastcall Q03_Callback03_ChangedLevel(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
-// MallusHandler (A1Q3) — invoked when the Malus item count drops to 0 (see Q03_Callback_06). If the Malus had been taken: advance nStateFlag to 3, set eFlags, broadcast state 1 (RewardAwaits/intro), clear bMalusTaken-area flag, then locate the dropped Malus unit (FindUnitFromTable, classId 0x6c = the Malus object) and flag it for update; if not found, clear bMalusTaken. No quest-record bit writes (state via broadcast).
-// @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q3.cpp
-bool __stdcall MallusHandler(struct D2QuestDataStrc * pQuestData);
 // Q03_Callback_04 (A1Q3) — state-4 handler (player has picked up / is carrying the Malus). One-shot: if Step0x06 record bit not set, SetQuestState Step0x06 and play the Malus pickup sound event (event sound 0x24). Always broadcast state 2 (in-progress) via Q03_NpcGossipHandler. Transition: -> Step0x06 (first time only).
 void __fastcall Q03_Callback04_ItemPickedUp(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q03_Callback_14 (A1Q3) — item-pickup hook (handler slot 0xe). When the player picks up the Horadric Malus ('hdm ') and the quest is in-progress (nStateFlag != 5): increment nQuestItemCount; if count>0 and bMalusTaken and nMalusMode==2, set nStateFlagPrev=2 (arm the "Malus in hand" sub-state). No quest-record writes.
@@ -56,17 +53,16 @@ BOOL __fastcall OBJOP_A1Q3_DenOfEvil_CheckCompletion(struct D2ObjectOperateFnArg
 bool __fastcall Q03_ActiveFilter(struct D2QuestDataStrc * pQuestData, int32_t nTargetClassId, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2UnitStrc * pUnitEx);
 // Q03_CheckPlayerHasMalus (A1Q3) — party-iteration callback. If this player carries the Horadric Malus ('hdm '), set the shared A1Q3 flag field_0xA0=1 (used by Q03_CheckPartyHasMalus to test whether anyone in the party holds the Malus). No quest-record writes.
 void __fastcall Q03_CheckPlayerHasMalus(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
-// Q03_CheckPartyHasMalus (A1Q3) — returns whether the player (or anyone in their party) holds the Horadric Malus. Fast path: true if the player carries it. Else if not partied, false. Otherwise clears field_0xA0 and runs Q03_CheckPlayerHasMalus over all party members, returning field_0xA0. Read-only on record.
-BOOL Q03_CheckPartyHasMalus(struct D2UnitStrc * pUnitStrc, struct D2QuestDataStrc * pQuestData);
 // Q03_StatusFilter (A1Q3) — computes the quest-log/journal display status code (*nUnknown) for this player. If RewardAwaits bit set -> code 0x0a. Else if nobody in party holds the Malus: in-introduction branch maps record state to a code — JustCompleted -> 0x10a (if RewardAwaits) else 0xd; CannotCompleteQuestInGame -> 0x0c; nStateFlag<5 -> nStateFlagPrev; else (flag>=5) if record JustCompleted, code = 0x04 + (level>=8 ? 8 : 0). If someone holds the Malus and quest not Completed -> code 0x02. Read-only on record.
 bool __fastcall Q03_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode);
 // Q03_SequenceFilter (A1Q3) — quest-sequence advance hook. If nStateFlag==0 and in-introduction: set nStateFlag to 1 (kick the quest into started state). If nStateFlag==5 (done) or not in-introduction: chain to the next quest in the sequence (nSequenceQuestId = A1Q4 Sisters to the Slaughter) by calling its fpSequenceFilter. No quest-record writes.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q3.cpp
-void __fastcall Q03_SequenceFilter(struct D2QuestDataStrc * pQuestData);
+bool __fastcall Q03_SequenceFilter(struct D2QuestDataStrc * pQuestData);
 // A1Q3 Tools of the Trade, state-0xd (load/join reconcile) handler. If the player carries the Malus (item 0x206d6468), increments nQuestItemCount and sets bSequenceReady. Then, if quest is not Completed and not FinishedInPreviousGame, restores the in-memory nStateFlag from the persisted record: Step0x02 -> nStateFlag=2/prev=1; Step0x03 -> nStateFlag=3/prev=1. Reads record only; does not write quest-record bits.
 void __fastcall Q03_Callback13_PlayerStartedGame(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q03_InitData (A1Q3) — quest constructor. Allocates the A1Q3-specific struct (0xa4 bytes), wires up the per-state handler table (slots 0,2,3,4,6,9,10,0xb,0xd,0xe -> the Q03_Callback_* fns), sets fpSequenceFilter/fpStatusFilter/fpActiveFilter, the Charsi NPC message table (mon 0x9a, string 0x92, menu), nQuestIdReal=ToolsOfTheTrade, nSequenceQuestId=A1Q4 SistersToTheSlaughter, nInitNo=5, bIsActive=true, nStateFlag=0, then zero-inits the struct (bMalusTaken/bCharsiNotified/bQuestAccepted/nMalusMode=0) and resets the participant GUID list. No quest-record writes.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q3.cpp
 void __fastcall Q03_InitData(struct D2QuestDataStrc * pQuestData);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A1Q3

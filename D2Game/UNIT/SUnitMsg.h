@@ -144,9 +144,6 @@ void __fastcall PLAYER_InitBaseStats(::SGAMEDATA * pGame, struct D2UnitStrc * pU
 void __fastcall thunk_NET_D2GS_SERVER_Send_0x75_PlayerPartyInfo(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOtherUnit);
 // Server-side level-up handler: recomputes pUnit's level from accumulated experience, updates UNITSTAT_level and UNITSTAT_nextexp, then — if the unit gained one or more levels — scales up max HP/mana/stamina (and restores them to max), awards stat points and skill points, refreshes NPC gamble inventories, broadcasts party info (0x75) to all players, recalculates equipped item stats, and calls the BattleNet UpdateGameInformation callback. Called from the SUnitMsg message-processing layer.
 void __fastcall UpdateGameInfo(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
-void PLAYER_AddEnergyStatPoints(struct D2UnitStrc * pUnit, int32_t nParam);
-// Spends nParam stat points into Vitality: decrements statpts by nParam, adds nParam to vitality, adds LifePerVitality*nParam*64 to maxhp (and to current HP if nParam>0, capped at maxhp), and adds StaminaPerVitality*nParam*64 to maxstamina (and stamina if nParam>0, capped). Uses CharStats.txt per-vitality multipliers.
-void PLAYER_AddVitalityStatPoints(int32_t nParam, struct D2UnitStrc * pUnit);
 void __fastcall ClearStats(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 BOOL __fastcall PLAYER_AssignStatPoint(struct D2UnitStrc * pUnit, uint32_t eStatType);
 // Send all active buff/debuff states for unit to client. Iterates state flags, encodes state list via bit buffer with per-state stat lists using ItemStatCost config. Sends via 0xA8 opcode.
@@ -187,5 +184,6 @@ void __fastcall SERVER_UnitQueuePacketSend(struct D2UnitStrc * pUnit, struct D2C
 void __fastcall SERVER_UnitQueuePacketFree(struct D2UnitStrc * pUnit);
 // Server-side: sends the full set of init packets describing one unit (pUnit) to a single client when the unit enters that client's view. Switches on unit type: players get 0x59 AssignPlayer; monsters get 0xAC AddMonster plus seeded pierce stat, optional 0x98 EvilHut, and 0x21 oskill grants for each SendSkills bit; objects get 0x51 WorldObject and, for portals, 0x60 state and 0x82 ownership; missiles get a missile packet; ground items get 0x9C add/refresh. A second switch then sends follow-up state: player attributes/items/corpse-assign/state-list/mode/hover-text, monster updates and item lists, item drop packets. Halts via Fog ErrorManager if a player corpse's cursor item owner can't be found.
 void __fastcall SERVER_SendInitUnitPacket(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Game::UNIT::SUnitMsg

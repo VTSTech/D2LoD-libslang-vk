@@ -21,21 +21,21 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2TimerListStrc) == 0x7088, "D2_NEW(D2TimerListStrc): the 32-bit layout must be the 0x7088 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2TimerListStrc) == 0x7088, "D2_NEW_AT(D2TimerListStrc): the 32-bit layout must be the 0x7088 bytes 1.14d allocates");
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2TimerQueueStrc) == 0xa20, "D2_NEW(D2TimerQueueStrc): the 32-bit layout must be the 0xa20 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2TimerQueueStrc) == 0xa20, "D2_NEW_AT(D2TimerQueueStrc): the 32-bit layout must be the 0xa20 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpTimerFunctionUnit
@@ -61,9 +61,9 @@ D2TimerStrc * * __stdcall _UnusedGetFromList(eD2UnitType eUnitType, uint32_t nPa
 
 // Allocates a timer pool containing 600 D2TimerStrc slots linked as a free list. Pool size is 0x7088 bytes (600 * 48 bytes per timer + header). Multiple pools are chained together via pNextList when capacity is exhausted. Returns the first available timer from pFirstList.
 // @sourcefile .\GAME\Event.cpp
-D2TimerListStrc * EVENT_AllocTimerPool(::SGAMEDATA * pGame) {
+static D2TimerListStrc * EVENT_AllocTimerPool(::SGAMEDATA * pGame) {
     D2TimerStrc* pSlot;
-    D2TimerListStrc* pPool = D2_NEW_POOL(pGame->pMemoryPool, D2TimerListStrc);
+    D2TimerListStrc* pPool = D2_NEW_POOL_AT(pGame->pMemoryPool, D2TimerListStrc, ".\\GAME\\Event.cpp", 0xa9);
     if (!pPool) {
       return nullptr;
     }
@@ -84,7 +84,7 @@ D2TimerListStrc * EVENT_AllocTimerPool(::SGAMEDATA * pGame) {
 }
 
 // Walks timer pools to find a free timer from pFirstList. If all pools are exhausted, allocates a new 600-timer pool via EVENT_AllocTimerPool and chains it to pNextList. Returns a zeroed timer ready for initialization. Pools are never freed until game end.
-D2TimerStrc * __stdcall EVENT_GetTimerOrAllocNew(::SGAMEDATA * pGame, D2TimerQueueStrc * pTimerQueue) {
+static D2TimerStrc * __stdcall EVENT_GetTimerOrAllocNew(::SGAMEDATA * pGame, D2TimerQueueStrc * pTimerQueue) {
     D2TimerListStrc* pNewPool;
     D2TimerStrc* pDVar2;
     D2TimerListStrc* pPool;
@@ -106,7 +106,7 @@ D2TimerStrc * __stdcall EVENT_GetTimerOrAllocNew(::SGAMEDATA * pGame, D2TimerQue
 }
 
 // Allocates a timer and attaches it to a unit's timer linked list. Calls EVENT_GetTimerOrAllocNew to obtain a recycled timer, links it via pNextTimerOnUnit (head insertion), and copies the unit's GUID and type to the timer structure. Returns the allocated D2TimerStrc ready for configuration.
-D2TimerStrc * EVENT_AllocTimerToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+static D2TimerStrc * EVENT_AllocTimerToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2TimerStrc* pTimer = EVENT_GetTimerOrAllocNew(pGame, pGame->pTimerQueue);
     pTimer->pUnit = pUnit;
     D2TimerStrc* pExistingHead = UNIT::SUnit::GetTimerList(pUnit);
@@ -209,11 +209,11 @@ void __fastcall EVENT_FreeTimerQueue(::SGAMEDATA * pGame) {
     while (pMemoryToFree_00) {
       D2TimerListStrc* pNextPool;
       pNextPool = pMemoryToFree_00->pNextList;
-      D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree_00);
+      D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree_00, ".\\GAME\\Event.cpp", 0x314);
       pMemoryToFree_00 = pNextPool;
     }
 
-    D2_FREE_POOL(pGame->pMemoryPool, pMemoryToFree);
+    D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\GAME\\Event.cpp", 0x317);
     pGame->pTimerQueue = 0;
 }
 
@@ -225,7 +225,7 @@ void __fastcall EVENT_AllocTimerQueue(::SGAMEDATA * pGame) {
       EVENT_FreeTimerQueue(pGame);
     }
 
-    D2TimerQueueStrc* pNewQueue = D2_NEW_POOL(pGame->pMemoryPool, D2TimerQueueStrc);
+    D2TimerQueueStrc* pNewQueue = D2_NEW_POOL_AT(pGame->pMemoryPool, D2TimerQueueStrc, ".\\GAME\\Event.cpp", 0x327);
     memset(pNewQueue, 0, 0xa20);
     D2TimerListStrc* pTimerPool = EVENT_AllocTimerPool(pGame);
     pNewQueue->pTimerList = pTimerPool;
@@ -279,7 +279,7 @@ BOOL __fastcall EVENT_TimerTypeExistsOnUnit(::SGAMEDATA * pGame, D2UnitStrc * pU
 
 // Internal core function that allocates and enqueues a timer for immediate execution (nFrame=-1). Validates nTimerType < 15, allocates via EVENT_AllocTimerToUnit, sets flag 0x4, stores callback/args, then inserts at head of pTimerListByType bucket using aTimerIndexUnitTypeLookupTable to map unit type to bucket index.
 // @sourcefile .\GAME\Event.cpp
-void __stdcall EVENT_TriggerTimerInternal(fpTimerFunctionUnit nfpTimerFunction, int32_t nArg1, int32_t nArg2, D2UnitStrc * pUnit, int32_t nTimerType, ::SGAMEDATA * pGame) {
+static void __stdcall EVENT_TriggerTimerInternal(fpTimerFunctionUnit nfpTimerFunction, int32_t nArg1, int32_t nArg2, D2UnitStrc * pUnit, int32_t nTimerType, ::SGAMEDATA * pGame) {
     eD2UnitType eUnitType;
     D2TimerStrc* pPrevHead;
     D2TimerStrc** ppTimerListHead;
@@ -329,7 +329,7 @@ void __fastcall EVENT_TriggerWithCallback(::SGAMEDATA * pGame, D2UnitStrc * pUni
 // pTimerQueue->pDispatchedTimersByType[idx][nFrame & 0x3F] (idx = aTimerIndexUnitTypeLookupTable[unit type])
 // and makes it the pActiveTimersByType[idx][nFrame & 0x3F] head if that bucket is empty.
 // Called by SetEvent and SetEventMapReveal.
-void __stdcall SetEventInternal(eD2TimerTypeDWORD eTimerType, ::SGAMEDATA * pGame, int32_t nFrame, D2UnitStrc * pUnit, fpTimerFunctionUnit fpFunction, int32_t nArg1, int32_t nArg2) {
+static void __stdcall SetEventInternal(eD2TimerTypeDWORD eTimerType, ::SGAMEDATA * pGame, int32_t nFrame, D2UnitStrc * pUnit, fpTimerFunctionUnit fpFunction, int32_t nArg1, int32_t nArg2) {
     D2TimerStrc** ppDispatchBucket;
     uint32_t nFrameBucket;
     if ((int)eTimerType >= 0xf) {

@@ -9,22 +9,22 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2GSPacketSrv0x27_TextStrc) == 0xc, "D2_NEW(D2GSPacketSrv0x27_TextStrc): the 32-bit layout must be the 0xc bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2GSPacketSrv0x27_TextStrc) == 0xc, "D2_NEW_AT(D2GSPacketSrv0x27_TextStrc): the 32-bit layout must be the 0xc bytes 1.14d allocates");
 
 
 namespace D2Common::Game {
 
 // @sourcefile .\Text\Text.cpp
 D2GSPacketSrv0x27_TextStrc * __stdcall STRUCT_AllocTxtMessageForPacket0x27(D2PoolManagerStrc * pMemory) {
-    D2GSPacketSrv0x27_TextStrc* pTxtMsg = D2_NEW_POOL(pMemory, D2GSPacketSrv0x27_TextStrc);
+    D2GSPacketSrv0x27_TextStrc* pTxtMsg = D2_NEW_POOL_AT(pMemory, D2GSPacketSrv0x27_TextStrc, ".\\Text\\Text.cpp", 0x2b);
     pTxtMsg->pMemory = pMemory;
     pTxtMsg->pMessage = 0;
     pTxtMsg->nCount = 0;

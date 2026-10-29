@@ -94,7 +94,6 @@ void __fastcall CRASH_DumpThreadContext(DWORD dwThreadId, void * pContext, fnCra
 void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, struct D2CrashFrameStrc * aFrameAddrs, int32_t nNumFrames, fnCrashOutputLine pOutputCallback, ::Report * pReport, char bIncludeThreadName, char bIncludeStackInfo);
 void __fastcall CRASH_DumpRegisters(DWORD dwThreadId, fnCrashOutputLine pOutputCallback, ::Report * pReport);
 void __fastcall CRASH_EnumerateThreads(fnCrashOutputLine pOutputCallback, ::Report * pReport, DWORD dwSkipThreadId);
-void CRASH_GetExceptionName(char * szText, DWORD dwExceptionCode);
 // FOG top-level unhandled-exception filter (SetUnhandledExceptionFilter target) — shows the Blizzard "application encountered an unexpected error" crash dialog.
 // It returns LONG: 00403eb0 XOR EAX,EAX reaches the RET 0x4 at
 // 00403ec0 and 00403f3a MOV EAX,ECX reaches the one at 00403f49, so EAX carries the filter disposition
@@ -106,7 +105,6 @@ void __fastcall CRASH_SetExceptionHandler(pfnFogExceptionFilter pfnFilter, void 
 uint32_t __stdcall FILETOOLS_ExtractDirectory(char * szDest, char * nDestSize, char * szSrcPath);
 uint32_t __stdcall FILETOOLS_ExtractFilename(char * szDest, char * szSrcPath, char * nDestSize);
 bool __fastcall STRING_AppendBlizzardErrorSubfolderToPath(char * szPath);
-char * STRING_CopyStringBounded(int32_t nDestSize, char * szDest, char * szSrc);
 char * __stdcall STRING_AppendStringToString(char * szDest, int32_t nDestSize, char * szSrc);
 int STRING_FormatVarArgs(char * szFormat, char * szDest, int32_t nDestSize, ...);
 bool __fastcall FILETOOLS_StartApplicationWithCommandLine_UTF8(LPCSTR lpApplicationName, LPCSTR szCommandLine);
@@ -124,7 +122,8 @@ bool FILETOOLS_GetTempPath_UTF8(LPSTR szDest);
 // WCHAR/wchar_t/wchar16/unicode to uint16_t (D2's own wide strings are ushort in decompiled bodies),
 // so a wcsrchr result inferred as wchar_t * came out as uint16_t * while the parameter stayed
 // LPCWSTR - half of a designed rewrite. LPWSTR is outside that rewrite set, so both sides now agree.
-uint32_t __fastcall FILETOOLS_CreateDirectoryW(LPWSTR lpPathName);
+bool __fastcall FILETOOLS_CreateDirectoryW(LPWSTR lpPathName);
 BOOL __stdcall FILETOOLS_CreateFolder_UTF8(LPCSTR szPathName);
+// 2 internal functions (defined in .cpp)
 
 } // namespace Fog::File

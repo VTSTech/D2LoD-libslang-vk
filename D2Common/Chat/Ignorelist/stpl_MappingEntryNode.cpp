@@ -78,7 +78,7 @@ template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalClear(int32
 }
 
 // stpl-orphan: a COMDAT copy in TSExplicitList<MappingEntryNode, -572662307> that no member owns
-void Destructor_Unreferenced(TSExplicitList<::MappingEntryNode, -572662307>* pThis) {
+void __thiscall Destructor_Unreferenced(TSExplicitList<::MappingEntryNode, -572662307>* pThis) {
     int* pPrevLink;
     pThis->UnlinkAll();
     TSLink<::MappingEntryNode>* pTVar1 = &pThis->m_terminator;
@@ -126,7 +126,7 @@ template<> ::MappingEntryNode * TSExplicitList<MappingEntryNode, -572662307>::De
 }
 
 // stpl-orphan: a COMDAT copy in TSExplicitList<MappingEntryNode, -572662307> that no member owns
-TSExplicitList<::MappingEntryNode, -572662307>* CopyConstructor_Unreferenced(TSExplicitList<::MappingEntryNode, -572662307>* pThis, TSExplicitList<::MappingEntryNode, -572662307>* pSource) {
+TSExplicitList<::MappingEntryNode, -572662307>* __thiscall CopyConstructor_Unreferenced(TSExplicitList<::MappingEntryNode, -572662307>* pThis, TSExplicitList<::MappingEntryNode, -572662307>* pSource) {
     uint32_t* pHead = (uint32_t*)&pThis->m_terminator;
     *pHead = 0;
     pThis->m_terminator.m_next = 0;
@@ -232,7 +232,7 @@ template<> ::MappingEntryNode * TSHashTable<MappingEntryNode, HASHKEY_STRI>::Ptr
 }
 
 // stpl-orphan: a COMDAT copy in TSExplicitList<MappingEntryNode, -572662307> that no member owns
-void Destructor_UnreferencedCopy(TSExplicitList<::MappingEntryNode, -572662307>* pThis) {
+void __thiscall Destructor_UnreferencedCopy(TSExplicitList<::MappingEntryNode, -572662307>* pThis) {
     int* pListHead;
     pThis->UnlinkAll();
     TSLink<::MappingEntryNode>* pTVar1 = &pThis->m_terminator;
@@ -404,7 +404,7 @@ template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::R
 
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> that no member owns
 // JMP thunk
-void thunk_Destructor(TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> * pThis) {
+void __thiscall thunk_Destructor(TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> * pThis) {
     pThis->Destructor();
 }
 
@@ -540,7 +540,7 @@ template<> ::MappingEntryNode * TSExplicitList<MappingEntryNode, -572662307>::Ne
 
 // @sourcefile .\Chat\Ignorelist.cpp
 // @blizzard TSHashTable<MappingEntryNode,HASHKEY_STRI>::InternalDelete (STORM.H)
-template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalDelete(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, ::MappingEntryNode * pNode) {
+template<> void __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalDelete(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, ::MappingEntryNode * pNode) {
     if (pNode->szMappedValue) {
       Storm::SMem::SMemFree(pNode->szMappedValue, ".\\Chat\\Ignorelist.cpp", 0x11, 0);
     }
@@ -550,7 +550,7 @@ template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalDelete(TSHa
 }
 
 // @blizzard TSHashTable<MappingEntryNode,HASHKEY_STRI>::InternalNew (STORM.H)
-template<> ::MappingEntryNode * TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalNew(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, TSExplicitList<::MappingEntryNode, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags) {
+template<> ::MappingEntryNode * __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalNew(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, TSExplicitList<::MappingEntryNode, -572662307>* pList, uint32_t nExtraBytes, uint32_t dwFlags) {
     TSLink<::MappingEntryNode>* pBucketHead;
     uint32_t piVar2;
     ::MappingEntryNode* pNode = (::MappingEntryNode*)Storm::SMem::SMemAlloc(nExtraBytes + 0x1c, s___AUMappingEntryNode___0074362c, -2, dwFlags | 8);
@@ -620,7 +620,7 @@ template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::C
 }
 
 // @blizzard TSHashTable<MappingEntryNode,HASHKEY_STRI>::Destroy (STORM.H)
-template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::Destroy(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis) {
+template<> void __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::Destroy(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis) {
     pThis->InternalClear(1);
     pThis->nFullnessIndicator = 0;
     pThis->nSlotMask = 0;
@@ -631,7 +631,7 @@ template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::Destroy(TSHashTable
 }
 
 // @blizzard TSHashTable<MappingEntryNode,HASHKEY_STRI> scalar deleting destructor (STORM.H)
-template<> TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* TSHashTable<MappingEntryNode, HASHKEY_STRI>::ScalarDeletingDestructor(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, uint32_t dwFlags) {
+template<> TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* __thiscall TSHashTable<MappingEntryNode, HASHKEY_STRI>::ScalarDeletingDestructor(TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* pThis, uint32_t dwFlags) {
     pThis->Destructor();
     if (!(dwFlags & 1 && pThis)) {
       return pThis;
@@ -642,7 +642,7 @@ template<> TSHashTable<::MappingEntryNode, ::HASHKEY_STRI>* TSHashTable<MappingE
 }
 
 // stpl-orphan: a COMDAT copy in TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> that no member owns
-void SetCount_Unreferenced(TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> * pThis, uint32_t nCount) {
+void __thiscall SetCount_Unreferenced(TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>> * pThis, uint32_t nCount) {
     pThis->SetCount(nCount);
 }
 

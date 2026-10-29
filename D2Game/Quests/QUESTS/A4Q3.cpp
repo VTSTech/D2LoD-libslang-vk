@@ -63,24 +63,20 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_NEW_POOL
-#define D2_NEW_POOL(pPool, T) ((T*)D2_ALLOC_POOL((pPool), sizeof(T)))
+#ifndef D2_NEW_POOL_AT
+#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
 #endif
 
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA4Q3Strc) == 0x20, "D2_NEW(D2QuestDataA4Q3Strc): the 32-bit layout must be the 0x20 bytes 1.14d allocates");
+static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA4Q3Strc) == 0x20, "D2_NEW_AT(D2QuestDataA4Q3Strc): the 32-bit layout must be the 0x20 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg);
-#endif
-#ifndef RECON_FPTD_QUESTSEQ
-#define RECON_FPTD_QUESTSEQ
-typedef bool (__fastcall *QUESTSEQ)(D2QuestDataStrc * pQuestData);
 #endif
 
 namespace D2Game::Quests::QUESTS::A4Q3 {
@@ -478,7 +474,8 @@ bool __fastcall Q28_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 
 // A4Q3 Hell's Forge — Q28_SequenceFilter (fpSequenceFilter): quest-chain sequencer. If not yet started but introduced, sets internal stateFlag 1. If finished (stateFlag==5) or not introduced, looks up the next quest in the chain (nSequenceQuestId = QUEST_AbleGoToAct4) and invokes ITS sequence filter (with an IsBadCodePtr guard). Propagates quest unlocks down the Act4 chain. No QuestRecord writes.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q3.cpp
-void __fastcall Q28_SequenceFilter(D2QuestDataStrc * pQuestData) {
+bool __fastcall Q28_SequenceFilter(D2QuestDataStrc * pQuestData) {
+    bool byTmp;
     D2QuestDataStrc* pSeqQuestData;
     BOOL bBadCodePtr;
     if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
@@ -486,7 +483,7 @@ void __fastcall Q28_SequenceFilter(D2QuestDataStrc * pQuestData) {
     } else if (pQuestData->nStateFlag == 5 || !pQuestData->bIsNotIntroduction) {
       pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
       if (!pSeqQuestData) {
-        return;
+        return false;
       }
 
       /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)pSeqQuestData->fpSequenceFilter);
@@ -495,9 +492,11 @@ void __fastcall Q28_SequenceFilter(D2QuestDataStrc * pQuestData) {
         exit(-1);
       }
 
-      pSeqQuestData->fpSequenceFilter(pSeqQuestData);
-      return;
+      byTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+      return byTmp;
     }
+
+    return true;
 }
 
 // A4Q3 Hell's Forge — Q28_PlayerUpdateForgeState: per-player QuestRecord sync from the internal stateFlag (called via IteratePlayerOrMonsterUnits when the forge progresses). If not already Completed/RewardAwaits: stateFlag 2 -> set Step0x05 (if bGotHammer, i.e. hammer received) else Step0x02; stateFlag 3 -> set Step0x03. Translates the shared internal forge progression into each player's quest-step bits.
@@ -856,7 +855,7 @@ void __fastcall Q28_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->nStateFlag = 0;
     pQuestData->pNpcMessages = &A4Q3::aNpcGossipData;
     pQuestData->bIsActive = true;
-    pQuestData->fpSequenceFilter = (QUESTSEQ)Q28_SequenceFilter;
+    pQuestData->fpSequenceFilter = Q28_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_AbleGoToAct4;
     pQuestData->nQuestIdReal = QUEST_HellsForge;
     pQuestData->nInitNo = 4;
@@ -871,7 +870,7 @@ void __fastcall Q28_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[9] = Q28_DecrementHellforgeWeaponCount;
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q28_Callback08_MonsterKilled;
     pQuestData->sStateFunctions.fpQuestStateHandler[4] = Q28_Callback04_ItemPickedUp;
-    D2QuestDataA4Q3Strc* pQuestSpecificData = D2_NEW_POOL(pGame->pMemoryPool, D2QuestDataA4Q3Strc);
+    D2QuestDataA4Q3Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA4Q3Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q3.cpp", 0x358);
     pQuestData->pQuestSpecificData.pA4Q3 = pQuestSpecificData;
     pQuestSpecificData->nForgeStage = 0;
     pQuestSpecificData->field_0x01 = 0;
