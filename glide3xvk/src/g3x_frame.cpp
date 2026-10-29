@@ -1117,6 +1117,37 @@ static void gamma_scale_copy(uint8_t* dst, unsigned dw, unsigned dh) {
     }
 }
 
+// ---- 0.4.6: the Scroll Lock overlay toggle ---------------------------------
+
+// Edge-polled from the present seam (g3x_frame_present, below) on every
+// presented frame — the same always-on home as the Shift+V conf-panel poll,
+// and deliberately NOT inside g3x_slang: the overlay exists with or without a
+// preset chain, so its toggle must too (the F11/F12 polls only run while a
+// chain filters). Same focus rule as every polled hotkey here: presses made
+// while another window is foreground never toggle (GetAsyncKeyState is
+// process-global otherwise) — and an unfocused Scroll Lock press leaves the
+// latch reset, so alt-tabbing back never fires a stale toggle.
+//
+// Feedback: the boxes vanishing/reappearing IS the visual answer (nothing
+// draws while the overlay is off, toasts included — the "off" press cannot
+// show a toast in a box that just died, so only the show press toasts, and
+// every press lands in glide3x.log). The OS-side Scroll Lock LED is the
+// keyboard's own business and is left alone.
+static bool s_prev_scroll = false;
+static void overlay_scrolllock_poll() {
+    if (GetForegroundWindow() != g_vk.hwnd) {
+        s_prev_scroll = false;                   // don't queue presses made elsewhere
+        return;
+    }
+    const bool scroll = (GetAsyncKeyState(VK_SCROLL) & 0x8000) != 0;
+    if (scroll && !s_prev_scroll) {
+        const bool on = g3x_overlay_toggle();
+        if (on) g3x_overlay_toast("overlay on");
+        g3x_log("overlay: %s (Scroll Lock)", on ? "on" : "off");
+    }
+    s_prev_scroll = scroll;
+}
+
 bool g3x_frame_present() {
     unsigned ext_w = 0, ext_h = 0;
     g3x_vk_present_extent(&ext_w, &ext_h);
@@ -1131,10 +1162,17 @@ bool g3x_frame_present() {
     // clock reading from here so it stays host-testable.
     g3x_overlay_fps_tick(GetTickCount64());
 
+    // 0.4.6: Scroll Lock overlay toggle — polled first, so a press that hides
+    // the overlay takes effect for THIS frame already (the render calls below
+    // gate on the fresh state) and nothing stale flashes for one present.
+    overlay_scrolllock_poll();
+
     // 0.4.5: Shift+V conf panel poll — on the present seam like the overlay
     // itself, and UNCONDITIONALLY (the F11/F12 slang hotkeys only poll while
     // a chain filters frames; the conf panel also covers the controller=/
-    // window= options that matter without one).
+    // window= options that matter without one). The poll itself early-outs
+    // while the overlay is toggled off — a hidden panel must not keep editing
+    // the conf invisibly, and the arrow keys stay the game's.
     g3x_slang_conf_panel_poll();
 
     // P3: preset-chain path. The chain receives the gamma-corrected NATIVE

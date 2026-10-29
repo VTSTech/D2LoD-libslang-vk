@@ -54,7 +54,9 @@
 // host harness): an embedded 8x8 1-bit bitmap font (g3x_font8x8.h, generated
 // from DejaVu Sans Mono Bold), a 65%-black backdrop box and a 1px drop shadow.
 // No windows.h — the ini on/off switch is read by glide_exports (grSstWinOpen)
-// and pushed in via g3x_overlay_set_enabled.
+// and pushed in via g3x_overlay_set_enabled, and the Scroll Lock toggle (0.4.6)
+// is polled on the present seam (g3x_frame) and pushed in via
+// g3x_overlay_toggle.
 #pragma once
 
 #include <cstdint>
@@ -62,7 +64,7 @@
 // Release version of this glide3xvk build. Shown by the overlay, printed by
 // the session banner and reported through grGetString(GR_RENDERER). Bump on
 // every field-delivered change set.
-#define G3XVK_VERSION "0.4.5"
+#define G3XVK_VERSION "0.4.6"
 
 // Render the tag into a BGRA8 buffer (w*h*4 bytes, stride = w*4). Safe to call
 // with any buffer size; the box anchors 4px from the right/top edge and clamps
@@ -126,9 +128,24 @@ void g3x_overlay_set_hostver(const char* text);
 // On/off switch. glide_exports wires [glide3xvk] overlay=0/1 to this; with no
 // ini key the value is auto — on (the box is the version stamp since the
 // drivertag patch was removed). Hides the conf panel too (overlay=0 means no
-// overlay boxes at all).
+// overlay boxes at all). Re-pushed on every context open so a relaunch picks
+// up ini edits without touching the DLL.
 void g3x_overlay_set_enabled(bool on);
 bool g3x_overlay_enabled();
+
+// 0.4.6: the Scroll Lock toggle — flip the overlay on/off at runtime and
+// return the NEW state. A session override, not a re-push of the ini value:
+// D2 re-opens Glide contexts constantly (the 640x480 probes, menu, game), and
+// an ini re-push on each open would pop the boxes back mid-session, so the
+// toggle latches until process end while the ini still decides the state at
+// startup and after a relaunch (file wins at load, key wins in flight — the
+// same split as the F11/F12 hotkeys vs d2slangvk.conf). Hides and restores
+// EVERY overlay box: the tag, the shader/hostver/FPS lines, the toast and the
+// Shift+V conf panel (its visible flag is untouched — a panel up before the
+// toggle is up again after toggling back). While hidden nothing draws, so the
+// vanishing/reappearing box is the toggle's own feedback; g3x_frame toasts
+// "overlay on" on the show press and logs both directions.
+bool g3x_overlay_toggle();
 
 // ---- 0.4.5: the Shift+V conf panel -----------------------------------------
 //

@@ -18,7 +18,22 @@
 
 namespace {
 
+// The effective switch — what g3x_overlay_render gates on. Composed from the
+// ini base and the Scroll Lock session override (see g3x_overlay_toggle).
 bool s_enabled = true;
+
+// 0.4.6: the two inputs the effective switch composes from.
+//   s_ini_enabled    — [glide3xvk] overlay= in glide3xvk.ini, re-pushed by
+//                      glide_exports on every context open (relaunch picks up
+//                      edits without touching the DLL).
+//   s_session_toggle — the Scroll Lock override: 0 = none (the ini wins),
+//                      +1 = pinned on, -1 = pinned off. Latches for the
+//                      process lifetime so D2's constant context re-opens
+//                      (640x480 probes, menu, game) cannot pop the boxes back
+//                      mid-session; the ini still decides the state at startup
+//                      and after a relaunch.
+bool s_ini_enabled    = true;
+int  s_session_toggle = 0;
 
 // The tag line, composed once before main() runs: "glide3xvk 0.3.0 (build)".
 struct TagLine {
@@ -155,8 +170,20 @@ void draw_line(uint8_t* bgra, unsigned w, unsigned h,
 
 } // namespace
 
-void g3x_overlay_set_enabled(bool on) { s_enabled = on; }
-bool g3x_overlay_enabled()            { return s_enabled; }
+void g3x_overlay_set_enabled(bool on) {
+    s_ini_enabled = on;
+    s_enabled = s_session_toggle ? (s_session_toggle > 0) : on;
+}
+bool g3x_overlay_enabled() { return s_enabled; }
+
+bool g3x_overlay_toggle() {
+    // Pin the flipped value: from on to "pinned off", from off to "pinned on".
+    // The next ini re-push composes through this override (set_enabled above),
+    // so the toggle survives every grSstWinOpen until the process ends.
+    s_session_toggle = s_enabled ? -1 : 1;
+    s_enabled = (s_session_toggle > 0);
+    return s_enabled;
+}
 
 const char* g3x_overlay_tagline() { return s_tag.text; }
 

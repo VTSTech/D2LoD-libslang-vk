@@ -7,6 +7,37 @@ Format follows Keep a Changelog. Where a field round already ran, entries cite w
 glide3x.log showed on real hardware (RX 560, Vulkan 1.3, windowed). Commit refs are on
 branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
 
+## [0.4.6] - 2026-10-29
+
+### Added
+
+- **Scroll Lock overlay toggle** (g3x_frame + g3x_overlay + g3x_slang): press
+  **Scroll Lock** in-game (game window focused) to hide or restore every
+  overlay box at once — the version tag with its shader / hostver / FPS
+  lines, the toast and the Shift+V conf panel — for clean screenshots and
+  recordings without restarting the game or editing glide3xvk.ini. The poll
+  rides the present seam (`g3x_frame_present`, `overlay_scrolllock_poll`) —
+  the same always-on home as the conf-panel poll, so it works with or without
+  a preset chain, foreground-gated and edge-latched like every polled hotkey
+  (presses made in another window never toggle, and an unfocused press
+  leaves the latch reset so alt-tabbing back never fires a stale flip). The
+  flip itself is `g3x_overlay_toggle()`, a **session override** composed
+  against the ini base in the overlay module: `grSstWinOpen` re-pushes
+  `[glide3xvk] overlay=` on every context open and D2 opens contexts
+  constantly (the 640x480 probes, the menu, the game), so a plain flip of the
+  pushed flag would pop the boxes back on the next re-open — the override
+  latches for the process lifetime while the ini still decides the state at
+  startup and after a relaunch (file wins at load, key wins in flight, the
+  same split as the F11/F12 hotkeys vs `d2slangvk.conf`). While hidden
+  nothing draws (the render early-out is unchanged — the boxes vanishing and
+  reappearing is the toggle's own feedback), the conf-panel poll parks with
+  all its edge latches reset (a hidden panel must not keep editing
+  `d2slangvk.conf` invisibly, and the arrow keys stay the game's), and a
+  conf panel that was up comes back up when the overlay is toggled back on.
+  The show press toasts `overlay on`; the hide press only logs (its toast
+  would draw into a box that just died) — `overlay: on/off (Scroll Lock)`
+  lands in glide3x.log either way. The OS-side Scroll Lock LED is untouched.
+
 ## [0.4.5] - 2026-10-25
 
 ### Added

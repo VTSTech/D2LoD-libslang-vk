@@ -24,7 +24,7 @@ resolution — is the same one proven in
 (Diablo/Hellfire) and
 [chocolate-doom-vk](https://github.com/VTSTech/chocolate-doom-vk) (Doom).
 
-## Status — 0.4.5
+## Status — 0.4.6
 
 - The full game renders correctly through the Vulkan swapchain: menu, world, units,
   UI, shadows, text, cutscenes (field-verified rounds 4–12 on real hardware; see
@@ -39,6 +39,17 @@ resolution — is the same one proven in
   own `Video:` line) is removed: field builds showed the stock `Video: Glide`
   line either way, and the game's /fps output stays untouched now.
   `overlay=0` in glide3xvk.ini hides the box.
+- **Scroll Lock toggles the overlay (0.4.6)**: press **Scroll Lock** in-game
+  to hide/show every overlay box at once — the version tag, the shader /
+  hostver / FPS lines, the toast and the Shift+V conf panel — for clean
+  screenshots and recordings without restarting or editing the ini. The
+  toggle is session-live (it survives D2's constant context re-opens — the
+  640x480 probes, menu, game — which would otherwise re-push the ini value
+  and pop the boxes back mid-session), while `overlay=` in glide3xvk.ini
+  still decides the state at startup and after a relaunch. Works with or
+  without a preset chain; while hidden the conf-panel hotkeys park too and
+  the arrow keys stay the game's; every press is logged
+  (`overlay: on/off (Scroll Lock)`).
 - **The overlay shows the active shader (0.4.2)**: while a preset filters
   frames, the fallback box's second line reads the preset's file name — pushed
   on chain ready (first open, conf change, hot reload), cleared whenever the
@@ -171,8 +182,8 @@ No build required:
    `d2slangvk.conf` beside `Game.exe`, uncomment a `preset=` line, and every
    frame runs through that slang shader — hot-reload mid-game, `fit`/`integer`/
    `stretch` scaling, `aspect=`/`base_res=` geometry, F11/F12 live hotkeys,
-   Shift+V conf panel, unfiltered fallback on any failure. No conf = the exact
-   0.3.x behavior.
+   Shift+V conf panel, Scroll Lock overlay toggle, unfiltered fallback on any
+   failure. No conf = the exact 0.3.x behavior.
    Every accepted value is documented in the
    [d2slangvk.conf reference](#d2slangvkconf-reference) below.
 4. Launch: `Game.exe -w -3dfx` (`-w` windowed, `-3dfx` selects the Glide renderer).
@@ -197,6 +208,19 @@ every context open):
 [glide3xvk]
 overlay=0
 ```
+
+**Scroll Lock toggles it live (0.4.6)**: with the game window focused, a
+Scroll Lock press hides or restores every overlay box at once (the tag, the
+shader / hostver / FPS lines, the toast and the Shift+V conf panel) — the
+boxes vanishing and reappearing is the feedback, and the show press adds an
+`overlay on` toast once the box is back. The toggle is a session override:
+it survives D2's constant context re-opens (the 640x480 probes, menu and
+game each open one, and a plain ini re-push would pop the boxes back
+mid-session), while the ini value still decides the state at startup and
+after a relaunch — file wins at load, key wins in flight, the same split as
+the F11/F12 hotkeys vs `d2slangvk.conf`. While hidden nothing overlay-related
+draws and the conf-panel hotkeys park (the arrow keys stay the game's);
+every press lands in `glide3x.log` (`overlay: on/off (Scroll Lock)`).
 
 The game's own `/fps` line keeps its stock `Video: Glide` text — an earlier
 attempt to repoint that string (0.4.1-0.4.3, `g3x_drivertag`) never showed on
@@ -247,11 +271,18 @@ aspect=auto
 base_res=1x
 ```
 
-### Hotkeys (in-game, 0.4.3 + 0.4.5)
+### Hotkeys (in-game, 0.4.3 + 0.4.5 + 0.4.6)
 
 While the game window has focus — the same scheme as Chocolate-Doom-VK
-(F11/F12 require a chain to be filtering frames; Shift+V works always):
+(Scroll Lock and Shift+V work always; F11/F12 require a chain to be
+filtering frames):
 
+- **Scroll Lock** (0.4.6) — toggle the overlay: every overlay box (the tag,
+  the shader / hostver / FPS lines, the toast and the conf panel) hides or
+  restores at once, for clean screenshots and recordings. Session-live —
+  survives D2's context re-opens; the `overlay=` ini key still decides the
+  state at startup and after a relaunch. See [The version stamp](#the-version-stamp)
+  for the details.
 - **F11** — cycle content aspect: `4:3 -> 16:10 -> 16:9 -> auto -> ...`
 - **F12** — cycle shader base resolution: `1x -> 2x -> 3x -> 4x -> 1x`
 - **Shift+V** (0.4.5) — toggle the conf panel: a box on the left edge listing

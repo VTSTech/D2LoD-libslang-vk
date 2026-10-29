@@ -1285,7 +1285,20 @@ static void conf_panel_browser_load() {
 // the panel works with no chain active — the F11/F12 gate lives in
 // g3x_slang_present, this one is its always-on sibling. Same focus rule:
 // presses made while another window is foreground never toggle.
+// 0.4.6: also parked entirely while the overlay is Scroll-Lock-toggled off —
+// a panel nobody can see must not keep editing d2slangvk.conf invisibly, and
+// Shift+V would only flip a hidden flag. Same latch-reset as focus loss: the
+// keys go fully back to the game while the overlay is hidden, and nothing
+// fires stale on the way back in.
 void g3x_slang_conf_panel_poll() {
+    if (!g3x_overlay_enabled()) {
+        s_prev_shiftv = false;                   // overlay hidden: park every
+        s_prev_up     = false;                   // latch exactly like focus loss
+        s_prev_down   = false;
+        s_prev_left   = false;
+        s_prev_right  = false;
+        return;
+    }
     if (GetForegroundWindow() != g_vk.hwnd) {
         s_prev_shiftv = false;                   // don't queue presses made elsewhere
         s_prev_up     = false;
