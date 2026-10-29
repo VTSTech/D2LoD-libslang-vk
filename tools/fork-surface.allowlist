@@ -16,7 +16,7 @@
 13	0	D2Client/UI/Chat.cpp
 32	6	D2Client/UI/Draw.cpp
 18	1	D2Client/UI/ShowItems.cpp
-529	0	D2Client/UI/VanillaPlusCore.cpp
+545	0	D2Client/UI/VanillaPlusCore.cpp
 65	0	D2Client/UI/VanillaPlusCore.h
 598	0	D2Client/UI/VanillaPlusOptions.cpp
 66	0	D2Client/UI/VanillaPlusOptions.h

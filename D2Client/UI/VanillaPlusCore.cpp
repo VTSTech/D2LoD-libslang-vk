@@ -514,11 +514,27 @@ void __stdcall VANILLAPLUS_SelfCheck() {
                     "!= 6 - the row-10 esc-menu edit was lost (see docs/merge-upstream.md)");
         exit(-1);
     }
-    if (gaEscMenuOptionsTable[5].fpClickCallback !=
-        &D2Client::UI::VanillaPlus::ESCMENU_ShowVanillaPlusOptions) {
-        D2BOOT_Fail("vanilla-plus self-check: gaEscMenuOptionsTable[5].fpClickCallback "
-                    "not wired - the row-10 table edit was lost (see docs/merge-upstream.md)");
-        exit(-1);
+    // The row-10 entry is INSERTED above "Previous Menu" (index 4 of 6, owner
+    // decision 2026-10-29), not appended - and a future upstream merge may
+    // reshuffle rows again. Scan for it instead of hardcoding an index: fail
+    // only if the wired row is missing or duplicated.
+    {
+        constexpr int kRow10Count =
+            sizeof(gaEscMenuOptionsTable) / sizeof(gaEscMenuOptionsTable[0]);
+        int nWired = 0;
+        for (int i = 0; i < kRow10Count; ++i) {
+            if (gaEscMenuOptionsTable[i].fpClickCallback ==
+                &D2Client::UI::VanillaPlus::ESCMENU_ShowVanillaPlusOptions) {
+                ++nWired;
+            }
+        }
+        if (nWired != 1) {
+            D2BOOT_Fail("vanilla-plus self-check: gaEscMenuOptionsTable row-10 "
+                        "click callback not wired (or duplicated) - the row-10 "
+                        "table edit was lost or doubled in a merge "
+                        "(see docs/merge-upstream.md)");
+            exit(-1);
+        }
     }
     if (gUIFlagDismissModeTable[38] !=
         (D2UIFlagDescStrc*)&gaUIFlagDescs[9].anDismissMode[0]) {
