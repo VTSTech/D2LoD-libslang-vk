@@ -11,7 +11,6 @@
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "Fog/Archive.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"

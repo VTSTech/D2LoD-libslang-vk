@@ -2,7 +2,6 @@
 
 #include "Bnclient/Bnet.h"
 #include "Bnclient/Bnclient.h"
-#include "Fog/Debug.h"
 #include "Storm/Source/SSComp.h"
 #include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
@@ -48,7 +47,7 @@ void BnetLog_WriteLine(char * Format, ...) {
     va_start(__va, Format);
     char szBuf[512];
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00881860);
-    __vsnprintf(szBuf, 0x200, Format, __va);
+    vsnprintf(szBuf, 0x200, Format, __va);
     szBuf[0x1ff] = '\0';
     if (!(gbBnetLogInitialized & 1)) {
       gbBnetLogInitialized |= 1;

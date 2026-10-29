@@ -73,7 +73,6 @@
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
@@ -1085,8 +1084,8 @@ void __fastcall MONSTER_CorpseExplode(::SGAMEDATA * pGame, D2UnitStrc * pUnit, u
 
     if ((int)nDamageAdjusted > 0x100000) {
       if ((int)(nDamageAdjusted & -16) < 0x640) {
-        nDivResult = (int64_t)(int)nDamageAdjusted * 0x3c;
-        nDivResult = nDivResult / 100;
+        nDivResult = _allmul(nDamageAdjusted, (int)nDamageAdjusted >> 0x1f, 0x3c, 0);
+        nDivResult = _alldiv((uint32_t)nDivResult, (uint32_t)((uint64_t)nDivResult >> 0x20), 100, 0);
         iVar5 = (int)nDivResult;
       } else {
         iVar5 = (int)nDamageAdjusted / 100 * 0x3c;

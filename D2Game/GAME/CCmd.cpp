@@ -20,7 +20,6 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Net/Game/Server.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/SMem.h"
 #include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"

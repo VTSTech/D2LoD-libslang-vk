@@ -3,7 +3,6 @@
 #include "D2Net/Game/Server.h"
 #include "D2Net/SRC/Client.h"
 #include "D2Net/in_addr.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/D2Net.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/QServer/QServer.h"

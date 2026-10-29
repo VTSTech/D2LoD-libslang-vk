@@ -6,7 +6,6 @@
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"

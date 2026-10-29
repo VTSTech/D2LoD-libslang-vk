@@ -65,7 +65,6 @@
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UNIT/Missile.h"

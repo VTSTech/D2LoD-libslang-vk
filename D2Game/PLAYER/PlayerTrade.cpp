@@ -63,7 +63,6 @@
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Save.h"
@@ -905,7 +904,7 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
           pOutputEntry = pOutput;
           if ((int)uSourceFileIndex > 0x100000) {
             if ((int)(uSourceFileIndex & -16) < 0x640) {
-              nMulDivResult = (int64_t)(int)uSourceFileIndex * (int64_t)(int)nItemLevelClamped / 100;
+              nMulDivResult = _alldiv((uint32_t)((int64_t)(int)uSourceFileIndex * (int64_t)(int)nItemLevelClamped), (uint32_t)((uint64_t)((int64_t)(int)uSourceFileIndex * (int64_t)(int)nItemLevelClamped) >> 0x20), 100, 0);
               nOutItemLevel = (uint32_t)nMulDivResult;
               pOutputEntry = pOutput;
             } else {
@@ -914,7 +913,7 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
           } else {
             if (nItemLevelClamped >= 0x10001) {
               if ((nItemLevelClamped & -16) < 0x640) {
-                nMulDivResult = (int64_t)(int)uSourceFileIndex * (int64_t)(int)nItemLevelClamped / 100;
+                nMulDivResult = _alldiv((uint32_t)((int64_t)(int)uSourceFileIndex * (int64_t)(int)nItemLevelClamped), (uint32_t)((uint64_t)((int64_t)(int)uSourceFileIndex * (int64_t)(int)nItemLevelClamped) >> 0x20), 100, 0);
                 nOutItemLevel = (uint32_t)nMulDivResult;
                 pOutputEntry = pOutput;
               } else {
@@ -932,7 +931,7 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
           uVar3 = (uint32_t)pOutputEntry->nILvl;
           if ((int)nItemLevelClamped > 0x100000) {
             if ((int)(nItemLevelClamped & -16) < 0x640) {
-              nMulDivResult = (int64_t)(int)nItemLevelClamped * (int64_t)(int)uVar3 / 100;
+              nMulDivResult = _alldiv((uint32_t)((int64_t)(int)nItemLevelClamped * (int64_t)(int)uVar3), (uint32_t)((uint64_t)((int64_t)(int)nItemLevelClamped * (int64_t)(int)uVar3) >> 0x20), 100, 0);
               nAffixIdx = (int)nMulDivResult;
             } else {
               nAffixIdx = (int)nItemLevelClamped / 100 * uVar3;
@@ -940,7 +939,7 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
           } else {
             if (uVar3 >= 0x10001) {
               if ((uVar3 & -16) < 0x640) {
-                nMulDivResult = (int64_t)(int)nItemLevelClamped * (int64_t)(int)uVar3 / 100;
+                nMulDivResult = _alldiv((uint32_t)((int64_t)(int)nItemLevelClamped * (int64_t)(int)uVar3), (uint32_t)((uint64_t)((int64_t)(int)nItemLevelClamped * (int64_t)(int)uVar3) >> 0x20), 100, 0);
                 nAffixIdx = (int)nMulDivResult;
               } else {
                 nAffixIdx = uVar3 / 100 * nItemLevelClamped;

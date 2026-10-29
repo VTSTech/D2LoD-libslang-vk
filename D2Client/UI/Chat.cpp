@@ -1180,7 +1180,7 @@ static BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szComman
           for (pRoster = GAME::Roster::GetNextRosterPlayer(nullptr); pRoster; pRoster = GAME::Roster::GetNextRosterPlayer(pRoster)) {
             pScan = szTargetName;
             pdwMsgDst = GAME::Roster::GetRosterName(pRoster);
-            nTokenCount = __stricmp(pdwMsgDst, pScan);
+            nTokenCount = _stricmp(pdwMsgDst, pScan);
             if (!nTokenCount) {
               strncpy(sWhisperPacket.szMsg, szMessageText, 0xff);
               sWhisperPacket.szMsg[0xff] = '\0';
@@ -1264,24 +1264,24 @@ static void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * psz
     sChatPacket.nIMEMode = (uint8_t)gaIMECompositionBuffer;
     nInputOffset = (int32_t)pszInput;
     int nCompareResult;
-    nCompareResult = __stricmp(pszInput, "/fps");
+    nCompareResult = _stricmp(pszInput, "/fps");
     if (!nCompareResult) {
       GAME::Rendering::STATLIST_ResetIfNotUpdating();
       Draw::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
       return;
     }
 
-    nCompareResult = __stricmp(pszInput, "/framerate");
+    nCompareResult = _stricmp(pszInput, "/framerate");
     if (!nCompareResult) {
       GAME::Rendering::ResetStats();
       Draw::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
       return;
     }
 
-    nCompareResult = __strnicmp(pszInput, "/players", 8);
+    nCompareResult = _strnicmp(pszInput, "/players", 8);
     if (!nCompareResult && ((eGameType = GAME::Game::CLIENT_GetD2GSGameType() , eGameType == GAMETYPE_SINGLEPLAYER || (eGameType = GAME::Game::CLIENT_GetD2GSGameType() , eGameType == GAMETYPE_SINGLEPLAYER_UNCAPPED)) || (eGameType = GAME::Game::CLIENT_GetD2GSGameType() , eGameType == GAMETYPE_OBNET_HOST) || (eGameType = GAME::Game::CLIENT_GetD2GSGameType() , eGameType == GAMETYPE_LAN_HOST))) {
       DWORD nPlayerCount;
-      nPlayerCount = atol(pszInput + 8);
+      nPlayerCount = atoi(pszInput + 8);
       if ((int)nPlayerCount > 1) {
         if ((int)nPlayerCount >= 8) {
           nPlayerCount = 8;
@@ -1294,13 +1294,13 @@ static void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * psz
       sprintf(pszInput, "players set to %d", nPlayerCount);
     }
 
-    nCompareResult = __stricmp(pszInput, "/nopickup");
+    nCompareResult = _stricmp(pszInput, "/nopickup");
     if (!nCompareResult) {
       gbSuppressItemSelection = (uint32_t)!gbSuppressItemSelection;
       goto close_chatbox;
     }
 
-    nCompareResult = __stricmp(pszInput, "soundchaosdebug");
+    nCompareResult = _stricmp(pszInput, "soundchaosdebug");
     if (!nCompareResult) {
       Sound::SoundChaosDebug();
       goto close_chatbox;

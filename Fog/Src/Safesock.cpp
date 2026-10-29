@@ -5,7 +5,6 @@
 #include "D2Net/in_addr.h"
 #include "D2Net/sockaddr.h"
 #include "Fog/D2QSSocketStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
@@ -390,7 +389,7 @@ char * __fastcall inet_nameToIp(char * szText) {
     bool bDidStartUp;
     bDidStartUp = false;
     int nResult;
-    nResult = FID_conflict__sscanf(szText, "%d.%d.%d.%d", &__frame0.nOctet0, &__frame0.nOctets, &__frame0.nOctet2, &__frame0.nOctet3);
+    nResult = sscanf(szText, "%d.%d.%d.%d", &__frame0.nOctet0, &__frame0.nOctets, &__frame0.nOctet2, &__frame0.nOctet3);
     if (nResult == 4) {
       return szText;
     }

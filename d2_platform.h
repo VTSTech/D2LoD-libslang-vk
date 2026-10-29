@@ -171,6 +171,7 @@ typedef struct timeval TIMEVAL, *PTIMEVAL, *LPTIMEVAL;
 #  include <windows.h>
 #  include <winsock2.h>
 #  include <process.h>
+#  include <eh.h>
 #  include <shlobj.h>
 #  include <shellapi.h>
 #  include <tlhelp32.h>
@@ -432,10 +433,7 @@ typedef void (*GrProc)();
 extern "C" {
 double CRT_Floor(...);
 double CRT_Ceil(...);
-char* CRT_Strchr(...);
-unsigned int CRT_ClearFP(...);
 char* _strrev(char*);
-char* __strrev(char*);
 }
 
 
@@ -515,21 +513,21 @@ static inline int32_t FloatToLong(long double f) { return (int32_t)f; }
 static inline float LongToFloat(int32_t n) { return (float)n; }
 
 // MSVC 64-bit integer intrinsics
-static inline int64_t __alldiv(int64_t a, int64_t b) { return a / b; }
-static inline int64_t __alldiv(uint32_t lo1, uint32_t hi1, uint32_t lo2, int hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) / (int64_t)(lo2 | ((uint64_t)(uint32_t)hi2 << 32)); }
-static inline int64_t __allmul(int64_t a, int64_t b) { return a * b; }
-static inline int64_t __allmul(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) * (int64_t)(lo2 | ((uint64_t)hi2 << 32)); }
-static inline int64_t __allrem(int64_t a, int64_t b) { return a % b; }
-static inline int64_t __allrem(uint32_t lo1, uint32_t hi1, uint32_t lo2, int hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) % (int64_t)(lo2 | ((uint64_t)(uint32_t)hi2 << 32)); }
+static inline int64_t _alldiv(int64_t a, int64_t b) { return a / b; }
+static inline int64_t _alldiv(uint32_t lo1, uint32_t hi1, uint32_t lo2, int hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) / (int64_t)(lo2 | ((uint64_t)(uint32_t)hi2 << 32)); }
+static inline int64_t _allmul(int64_t a, int64_t b) { return a * b; }
+static inline int64_t _allmul(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) * (int64_t)(lo2 | ((uint64_t)hi2 << 32)); }
+static inline int64_t _allrem(int64_t a, int64_t b) { return a % b; }
+static inline int64_t _allrem(uint32_t lo1, uint32_t hi1, uint32_t lo2, int hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) % (int64_t)(lo2 | ((uint64_t)(uint32_t)hi2 << 32)); }
 struct LLDVRM_RESULT { uint64_t qwQuotient; uint64_t qwRemainder; };
-static inline LLDVRM_RESULT __alldvrm(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { int64_t a = (int64_t)(lo1 | ((uint64_t)hi1 << 32)), b = (int64_t)(lo2 | ((uint64_t)hi2 << 32)); LLDVRM_RESULT r; r.qwQuotient = (uint64_t)(a / b); r.qwRemainder = (uint64_t)(a % b); return r; }
-static inline int64_t __allshr(int64_t a, int n) { return a >> n; }
+static inline LLDVRM_RESULT _alldvrm(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { int64_t a = (int64_t)(lo1 | ((uint64_t)hi1 << 32)), b = (int64_t)(lo2 | ((uint64_t)hi2 << 32)); LLDVRM_RESULT r; r.qwQuotient = (uint64_t)(a / b); r.qwRemainder = (uint64_t)(a % b); return r; }
+static inline int64_t _allshr(int64_t a, int n) { return a >> n; }
 static inline int64_t __allshl(int64_t a, int n) { return a << n; }
-static inline uint64_t __aulldiv(uint64_t a, uint64_t b) { return a / b; }
-static inline uint64_t __aulldiv(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { return (lo1 | ((uint64_t)hi1 << 32)) / (lo2 | ((uint64_t)hi2 << 32)); }
+static inline uint64_t _aulldiv(uint64_t a, uint64_t b) { return a / b; }
+static inline uint64_t _aulldiv(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { return (lo1 | ((uint64_t)hi1 << 32)) / (lo2 | ((uint64_t)hi2 << 32)); }
 static inline uint64_t __aullrem(uint64_t a, uint64_t b) { return a % b; }
 static inline uint64_t __aullrem(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { return (lo1 | ((uint64_t)hi1 << 32)) % (lo2 | ((uint64_t)hi2 << 32)); }
-static inline uint64_t __aullshr(uint64_t a, unsigned int n) { return a >> n; }
+static inline uint64_t _aullshr(uint64_t a, unsigned int n) { return a >> n; }
 
 #ifndef _WIN32
 static inline LONG InterlockedIncrement(volatile LONG* p) { return ++(*p); }
@@ -730,24 +728,23 @@ struct D2SehScope { explicit D2SehScope(long) {} template <class F> explicit D2S
 // here with their real signatures and, where a real entry point exists, defined
 // as a forwarder to it.
 
-static inline int __vsnprintf(char* buf, size_t n, const char* fmt, va_list ap) { return _vsnprintf(buf, n, fmt, ap); }
 static inline wchar_t* builtin_wcsncpy(wchar_t* dst, const wchar_t* src, size_t n) { return wcsncpy(dst, src, n); }
-template <typename... Args> static inline int FID_conflict__sscanf(const char* src, const char* fmt, Args... args) { return sscanf(src, fmt, args...); }
 extern "C" uint32_t FID_conflict____CxxFrameHandler3(EHExceptionRecord* pExceptionRecord, EHRegistrationNode* pRegistrationNode, CONTEXT* pContext, void* pDispatcherContext, struct _s_FuncInfo* pFuncInfo);
-extern "C" int __except_handler4(struct _EXCEPTION_RECORD* pExceptionRecord, EH4_EXCEPTION_REGISTRATION* pRegistration, CONTEXT* pContext, void* pDispatcherContext);
-extern "C" void __global_unwind2(void* pRegistration);
-extern "C" void __local_unwind2(int nRegistration, uint32_t nStop, void* pFrame);
-extern "C" void __NLG_Notify(unsigned long nCode, uint32_t pTarget, void* pFrame);
-extern "C" uint32_t __ValidateEH3RN(void* pRegistration);
+extern "C" int _except_handler4(struct _EXCEPTION_RECORD* pExceptionRecord, EH4_EXCEPTION_REGISTRATION* pRegistration, CONTEXT* pContext, void* pDispatcherContext);
+extern "C" void _global_unwind2(void* pRegistration);
+extern "C" void _local_unwind2(int nRegistration, uint32_t nStop, void* pFrame);
+extern "C" void _NLG_Notify(unsigned long nCode, uint32_t pTarget, void* pFrame);
+extern "C" uint32_t _ValidateEH3RN(void* pRegistration);
+extern "C" void __fastcall __security_check_cookie(uintptr_t nCookie);
 extern "C" void ___report_gsfailure(void);
-extern "C" void _CallDestructExceptionObject(int* pExceptionObject);
-extern "C" void __purecall(void);
+extern "C" void CallDestructExceptionObject(int* pExceptionObject);
+extern "C" int _purecall(void);
 extern "C" void _eh_vector_constructor_iterator_(void* pArray, uint32_t nElementSize, int nCount, void (__fastcall *pfnConstructor)(void*), void (__fastcall *pfnDestructor)(void*));
 extern "C" void _eh_vector_destructor_iterator_(void* pArray, uint32_t nElementSize, int nCount, void (__fastcall *pfnDestructor)(void*));
 extern "C" uint64_t __ftol2(void);
 extern "C" long double __CIsqrt(long double x);
 extern "C" long double __sqrt_common(double dArg, bool bSpecial, long double x);
-static inline LLDVRM_RESULT __aulldvrm(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { uint64_t a = lo1 | ((uint64_t)hi1 << 32), b = lo2 | ((uint64_t)hi2 << 32); LLDVRM_RESULT r; r.qwQuotient = a / b; r.qwRemainder = a % b; return r; }
+static inline LLDVRM_RESULT _aulldvrm(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { uint64_t a = lo1 | ((uint64_t)hi1 << 32), b = lo2 | ((uint64_t)hi2 << 32); LLDVRM_RESULT r; r.qwQuotient = a / b; r.qwRemainder = a % b; return r; }
 extern "C" long double CRT_Pow(double x);
 extern "C" long double CRT_Pow10(void);
 extern "C" long double CRT_Log10(void);
@@ -757,12 +754,6 @@ extern "C" long double CRT_CILog(long double x);
 extern "C" long double CRT_CILog10(long double x);
 extern "C" long double CRT_CISin(long double x);
 extern "C" long double CRT_CICos(long double x);
-static inline void CRT_Srand(unsigned long nSeed) { srand((unsigned int)nSeed); }
-static inline char* CRT_Fgets(char* szText, int nMax, FILE* pFile) { return fgets(szText, nMax, pFile); }
-static inline unsigned int CRT_Fputc(unsigned int nChar, FILE* pFile) { return (unsigned int)fputc((int)nChar, pFile); }
-extern "C" int CRT_LocalTime_S(struct tm* pTm, unsigned int* pnTime);
-extern "C" int CRT_Vsprintf_L(FILE* pFile, int nParam, void* pArgList);
-extern "C" void* CRT_Encode_Secure_Pointer(void* pPointer);
 extern "C" uint32_t CRT_ReturnValue(uint32_t dwValue);
 extern "C" __stdcall void* SmackOpen(const char* szName, uint32_t dwFlags, uint32_t dwExtraBuf);
 extern "C" __stdcall void SmackClose(void* pSmack);
@@ -784,19 +775,14 @@ extern "C" __stdcall int32_t ijlFree(void* pJpegCoreProps);
 extern "C" __stdcall int32_t ijlWrite(void* pJpegCoreProps, int32_t nWriteOption);
 
 #ifdef _WIN32
-static inline int __strnicmp(const char* a, const char* b, size_t n) { return _strnicmp(a, b, n); }
-static inline char* __strlwr(char* s) { return _strlwr(s); }
-static inline char* __strupr(char* s) { return _strupr(s); }
-static inline char* __itoa(int v, char* buf, int radix) { return _itoa(v, buf, radix); }
-static inline char* __ultoa(unsigned long v, char* buf, int radix) { return _ultoa(v, buf, radix); }
-static inline char* __i64toa(long long v, char* buf, int radix) { return _i64toa(v, buf, radix); }
-static inline char* __ui64toa(unsigned long long v, char* buf, int radix) { return _ui64toa(v, buf, radix); }
-static inline char* __fullpath(char* absPath, const char* relPath, size_t maxLength) { return _fullpath(absPath, relPath, maxLength); }
-static inline FILE* __wfopen(const wchar_t* filename, const wchar_t* mode) { return _wfopen(filename, mode); }
-static inline FILE* __wfopen(const uint16_t* filename, const uint16_t* mode) { return _wfopen((const wchar_t*)filename, (const wchar_t*)mode); }
-static inline __time64_t __time64(__time64_t* destTime) { return _time64(destTime); }
+static inline FILE* _wfopen(const uint16_t* filename, const uint16_t* mode) { return _wfopen((const wchar_t*)filename, (const wchar_t*)mode); }
 static inline __time32_t FID_conflict___time32(__time32_t* destTime) { return _time32(destTime); }
-static inline uintptr_t __beginthreadex(void* security, unsigned stackSize, unsigned (__stdcall* startAddress)(void*), void* arglist, unsigned initflag, unsigned* thrdaddr) { return _beginthreadex(security, stackSize, startAddress, arglist, initflag, thrdaddr); }
+#ifdef _MSC_VER
+static inline void* _set_se_translator(void* pfnTranslator) { return (void*)::_set_se_translator((_se_translator_function)pfnTranslator); }
+#else
+extern "C" void* D2_SetSeTranslator(void* pfnTranslator);
+static inline void* _set_se_translator(void* pfnTranslator) { return D2_SetSeTranslator(pfnTranslator); }
+#endif
 extern "C" int _except_handler3(struct _EXCEPTION_RECORD* pExceptionRecord, EH3_EXCEPTION_REGISTRATION* pRegistration, CONTEXT* pContext, void* pDispatcherContext);
 extern "C" int ___init_ctype(threadlocinfo* _LocInfo);
 extern "C" int ___init_monetary(threadlocinfo* _LocInfo);

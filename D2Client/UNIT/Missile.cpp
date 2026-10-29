@@ -898,8 +898,8 @@ D2UnitStrc * __fastcall MakeMissile(D2SkillArgStrc * pSkillArg) {
     if (nVelocityRaw) {
       if ((int)nVelocityRaw > 0x100000) {
         if ((int)(nVelocityRaw & -16) < 0x640) {
-          ullVelDiv = (int64_t)(int)nVelocityRaw * 0x4b;
-          ullVelDiv = ullVelDiv / 100;
+          ullVelDiv = _allmul(nVelocityRaw, (int)nVelocityRaw >> 0x1f, 0x4b, 0);
+          ullVelDiv = _alldiv((uint32_t)ullVelDiv, (uint32_t)((uint64_t)ullVelDiv >> 0x20), 100, 0);
           nVelFinal = (uint32_t)ullVelDiv;
           nVelForPath = nVelFinal;
         } else {

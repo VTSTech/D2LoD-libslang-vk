@@ -5,7 +5,6 @@
 #include "Bnclient/Cache.h"
 #include "Bnclient/net_sid.h"
 #include "D2Client/D2IniConfigStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Engine/Application.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
@@ -45,7 +44,7 @@ char __fastcall D2FILE_VerifyFileSignature(LPCSTR szText) {
       bVar1 = D2FILE_GetSignerOrganization(szText, szSignerOrg, 0x200);
       cVar2 = '\0';
       if (bVar1) {
-        iVar3 = __strnicmp(szSignerOrg, gnFileSignatureResult, 0x200);
+        iVar3 = _strnicmp(szSignerOrg, gnFileSignatureResult, 0x200);
         cVar2 = '\x01' - (iVar3 != 0);
       }
     }

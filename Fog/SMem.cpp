@@ -2,7 +2,6 @@
 
 #include "Fog/SMem.h"
 #include "D2Client/mcp0x03data.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SSTR.h"
@@ -302,9 +301,9 @@ void __stdcall SMemInitPerfCounters() {
 
     LARGE_INTEGER liFrequency;
     /* LARGE_INTEGER * lpFrequency for QueryPerformanceFrequency */ QueryPerformanceFrequency(&liFrequency);
-    int64_t llDivResult = __alldiv(liFrequency.u.LowPart, liFrequency.u.HighPart, 1000, 0);
+    int64_t llDivResult = _alldiv(liFrequency.u.LowPart, liFrequency.u.HighPart, 1000, 0);
     gnSMemPerfTicksPerMillisecond = (uint32_t)llDivResult;
-    int64_t lVar1 = __alldiv(liFrequency.u.LowPart, liFrequency.u.HighPart, 1000000, 0);
+    int64_t lVar1 = _alldiv(liFrequency.u.LowPart, liFrequency.u.HighPart, 1000000, 0);
     gnSMemPerfTicksPerMicrosecond = (uint32_t)lVar1;
     memset(gaSMemHeapStats, 0, 0x18000);
     g_SMemLastTickCount = GetTickCount();
@@ -1085,7 +1084,7 @@ char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, 
         return szText;
       }
 
-      LVar1 = __alldvrm(nValueLo, nValueHi, 10, 0);
+      LVar1 = _alldvrm(nValueLo, nValueHi, 10, 0);
       nValueHi = *(uint32_t*)((char*)&LVar1.qwQuotient + 4);
       nValueLo = (uint32_t)LVar1.qwQuotient;
       *pcWrite2 = (char)LVar1.qwRemainder + '0';

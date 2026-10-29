@@ -31,7 +31,6 @@
 #include "D2Win/Src/D2WinMain.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/Engine/Application.h"
-#include "Storm/H/HeapManager.h"
 #include "Storm/H/stpl.h"
 #include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
@@ -37219,8 +37218,6 @@ D2DataTableTxtStrc sgtDataTable = {}; D2_GLOBAL_GUARD(sgtDataTable, "sgtDataTabl
 unsigned long long gpItemTypeTableContext = 0; D2_GLOBAL_GUARD(gpItemTypeTableContext, "gpItemTypeTableContext");
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0096d610 = {}; D2_GLOBAL_GUARD(lpCriticalSection_0096d610, "lpCriticalSection_0096d610");
-
-HeapManager gpHeapManager = {}; D2_GLOBAL_GUARD(gpHeapManager, "gpHeapManager");
 
 uint16_t g_Palette16Bit[256] = {}; D2_GLOBAL_GUARD(g_Palette16Bit, "g_Palette16Bit");
 

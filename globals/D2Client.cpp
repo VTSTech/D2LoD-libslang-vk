@@ -45608,7 +45608,7 @@ namespace D2Client::Warden::NWardenClient {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-void * vftable[7] = { (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall }; D2_GLOBAL_GUARD(vftable, "D2Client::Warden::NWardenClient::vftable");
+void * vftable[7] = { (void*)&_purecall, (void*)&_purecall, (void*)&_purecall, (void*)&_purecall, (void*)&_purecall, (void*)&_purecall, (void*)&_purecall }; D2_GLOBAL_GUARD(vftable, "D2Client::Warden::NWardenClient::vftable");
 
 } // namespace D2Client::Warden::NWardenClient
 
@@ -45629,18 +45629,18 @@ namespace D2Client::UI {
 // =============================================================================
 
 void * vftable[12] = {
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall
 }; D2_GLOBAL_GUARD(vftable, "D2Client::UI::vftable");
 
 } // namespace D2Client::UI

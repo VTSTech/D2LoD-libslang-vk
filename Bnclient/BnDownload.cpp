@@ -9,7 +9,6 @@
 #include "Bnclient/Debug.h"
 #include "D2Client/D2BNetGatewayAccessStr.h"
 #include "D2Net/sockaddr.h"
-#include "Fog/Debug.h"
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
@@ -595,15 +594,15 @@ void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut) {
                 pbArchivePath = __frame0.dwTmp2;
               }
 
-              bArchiveOpened = __strnicmp(__frame3.szLineBuffer, "delete ", 7);
+              bArchiveOpened = _strnicmp(__frame3.szLineBuffer, "delete ", 7);
               if (!bArchiveOpened) {
                 /* LPCSTR lpFileName for DeleteFileA */ DeleteFileA(&__frame3.cDestPathBuf);
               } else {
-                bArchiveOpened = __strnicmp(__frame3.szLineBuffer, "extract ", 8);
+                bArchiveOpened = _strnicmp(__frame3.szLineBuffer, "extract ", 8);
                 if (!bArchiveOpened) {
                   BNDOWNLOAD_ExtractFileFromArchive(&__frame2.szEntryName, __frame0.pArchiveHandle, &__frame3.cDestPathBuf);
                 } else {
-                  bArchiveOpened = __strnicmp(__frame3.szLineBuffer, "execute ", 8);
+                  bArchiveOpened = _strnicmp(__frame3.szLineBuffer, "execute ", 8);
                   if (!bArchiveOpened) {
                     uVar2 = Storm::Source::SSTR::SStrCopy(pVerifySigResult, &__frame3.cDestPathBuf, 0x7fffffff);
                     pVerifySigResult = pVerifySigResult + uVar2 + 1;
@@ -982,7 +981,7 @@ void __fastcall BNDOWNLOAD_InitiateFileDownload(D2BnetDownloadStateStrc * pDownl
     Storm::Source::SSTR::SStrCopy((char*)(pThreadCtx + 0x10), szBufferInput, 0x104);
     Storm::Source::SSTR::SStrCopy((char*)(pThreadCtx + 0x92), szText2, 0x104);
     /* LONG * lpAddend for InterlockedIncrement */ InterlockedIncrement((LONG*)&lpAddend_00881d5c);
-    HANDLE hObject = (HANDLE)__beginthreadex(nullptr, 0, BnetDownloadFile_II, pThreadCtx, 0, &__frame0.nThreadId);
+    HANDLE hObject = (HANDLE)_beginthreadex(nullptr, 0, BnetDownloadFile_II, pThreadCtx, 0, &__frame0.nThreadId);
     if (!hObject) {
       return;
     }
@@ -1055,7 +1054,7 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
       _Str1 = &gbBnetFtpFileTransferActive;
       byScanChar = gbBnetFtpFileTransferActive;
       while (byScanChar) {
-        bOpened = __stricmp((char*)_Str1, szDestPath);
+        bOpened = _stricmp((char*)_Str1, szDestPath);
         if (!bOpened) {
           pbFtpEntryEnd = _Str1;
           if (*_Str1) {
@@ -1322,7 +1321,7 @@ uintptr_t __fastcall BNDOWNLOAD_InitiatePatchDownload(BYTE * pbParam, size_t nSi
     Storm::Source::SSTR::SStrCopy((char*)(pThreadCtx + 0x10), (char*)pbParam, 0x104);
     Storm::Source::SSTR::SStrCopy((char*)(pThreadCtx + 0x92), "", 0x104);
     /* LONG * lpAddend for InterlockedIncrement */ InterlockedIncrement((LONG*)&lpAddend_00881d5c);
-    uintptr_t nThreadHandle = __beginthreadex(nullptr, 0, BnetDownloadFile_II, pThreadCtx, 0, &__frame0.nThreadId);
+    uintptr_t nThreadHandle = _beginthreadex(nullptr, 0, BnetDownloadFile_II, pThreadCtx, 0, &__frame0.nThreadId);
     return nThreadHandle;
 }
 

@@ -273,7 +273,7 @@ int __stdcall InitializeDebugSymbols() {
           *pLastBackslash = '\0';
         }
       } else {
-        _strncpy_s(szSymbolPath, 0x8000, szCustomSymbolSearchPath, -1);
+        strncpy_s(szSymbolPath, 0x8000, szCustomSymbolSearchPath, -1);
       }
       if (ghCurrentProcessHandle == (HANDLE)-1) {
         ghCurrentProcessHandle = GetCurrentProcess();
@@ -329,7 +329,7 @@ bool __stdcall GetModuleInfoForAddress(uint32_t dwQueryAddr, uint32_t * pdwModul
             *pdwModuleBase = (uint32_t)sModuleInfo.BaseOfImage;
           }
 
-          _strncpy_s(szModuleName, 0x100, sModuleInfo.ImageName, -1);
+          strncpy_s(szModuleName, 0x100, sModuleInfo.ImageName, -1);
           /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0098a6f0);
           bVar1 = true;
           ExceptionList = pPrevExceptionList;
@@ -384,7 +384,7 @@ bool __stdcall GetSymbolNameForAddress(DWORD dwQueryAddr, char * szSymbolName, u
           moduleInfo.SizeOfStruct = 0x680;
           bApiOk = (*pSymGetModuleInfo64)(ghCurrentProcessHandle, dwQueryAddr, 0, &moduleInfo);
           if (bApiOk && moduleInfo.SymType && moduleInfo.SymType != 4 && moduleInfo.SymType != 5) {
-            _strncpy_s(szSymbolName, 0x200, sSymbol.Name, -1);
+            strncpy_s(szSymbolName, 0x200, sSymbol.Name, -1);
             /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ *pdwSymDisplacement = local_ac0[0];
             LeaveCriticalSection(&lpCriticalSection_0098a6f0);
             bVar1 = true;
@@ -447,7 +447,7 @@ bool __stdcall GetSourceLineForAddress(uint32_t dwQueryAddr, char * szFileName, 
       sLineInfo.SizeOfStruct = 0x18;
       bGotLine = (*pSymGetLineFromAddr64)(ghCurrentProcessHandle, dwQueryAddr, 0, &__frame0.dwDisplacement, &sLineInfo);
       if (bGotLine) {
-        _strncpy_s(szFileName, 0x100, sLineInfo.FileName, -1);
+        strncpy_s(szFileName, 0x100, sLineInfo.FileName, -1);
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ *pdwLineNumber = sLineInfo.LineNumber;
         LeaveCriticalSection(&lpCriticalSection_0098a6f0);
         ExceptionList = __frame0.pPrevExceptionRecord;
@@ -501,7 +501,7 @@ void __fastcall SetSymbolSearchPath(char * szSearchPath) {
     ExceptionList = &pSehFrame;
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0098a6f0);
     nSehState = 0;
-    _strncpy_s(szCustomSymbolSearchPath, 0x8000, szSearchPath, -1);
+    strncpy_s(szCustomSymbolSearchPath, 0x8000, szSearchPath, -1);
     if (bDebugSymbolsInitialized == '\0') {
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0098a6f0);
       ExceptionList = pSehFrame;
@@ -1520,7 +1520,7 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
           __frame1.pBytesToDump = "unknown";
         }
 
-        iVar2 = __stricmp(__frame1.pBytesToDump, "`string\'");
+        iVar2 = _stricmp(__frame1.pBytesToDump, "`string\'");
         if (!iVar2 && !__frame0.nSymDisplacement) {
           pEscapedStr = SMem::SMemEscapeString(__frame1.aEscapedString, pAsciiOut, 0x50, 0);
           pBytesRemaining = "\n                           // 0x%08X - %s - %s=\'%s\'\n\n";
@@ -1653,7 +1653,7 @@ static int BuildSymbolSearchPath(char * szSearchPath) {
     nLen = GetCurrentDirectoryA(0x200, szCurrentDir);
     if (nLen) {
       if (szComponent[0] != '\0') {
-        nResult = __stricmp(szComponent, szCurrentDir);
+        nResult = _stricmp(szComponent, szCurrentDir);
         if (!nResult) {
           goto add_env_symbol_paths;
         }
@@ -1947,7 +1947,7 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
     CleanupSymbolsWithRefcount(0);
     nCycleSample = __frame2.nFrameIdx;
     uint32_t nCyclesLo = (uint32_t)qwModInfoCycles + (uint32_t)qwSymCycles + nCyclesAcc;
-    int64_t nAvgCycles = __alldiv(nCyclesLo + (uint32_t)qwFmtCycles, *(uint32_t*)((char*)&qwModInfoCycles + 4) + *(uint32_t*)((char*)&qwSymCycles + 4) + (uint32_t)((uint32_t)((uint32_t)qwModInfoCycles + (uint32_t)qwSymCycles) < (uint32_t)qwModInfoCycles) + nWalkCyclesHi + (uint32_t)((uint32_t)((uint32_t)((uint32_t)qwModInfoCycles + (uint32_t)qwSymCycles) + (uint32_t)nCyclesAcc) < (uint32_t)((uint32_t)qwModInfoCycles + (uint32_t)qwSymCycles)) + *(uint32_t*)((char*)&qwFmtCycles + 4) + (uint32_t)((uint32_t)((uint32_t)nCyclesLo + (uint32_t)qwFmtCycles) < (uint32_t)nCyclesLo), __frame2.nFrameIdx, (int)__frame2.nFrameIdx >> 0x1f);
+    int64_t nAvgCycles = _alldiv(nCyclesLo + (uint32_t)qwFmtCycles, *(uint32_t*)((char*)&qwModInfoCycles + 4) + *(uint32_t*)((char*)&qwSymCycles + 4) + (uint32_t)((uint32_t)((uint32_t)qwModInfoCycles + (uint32_t)qwSymCycles) < (uint32_t)qwModInfoCycles) + nWalkCyclesHi + (uint32_t)((uint32_t)((uint32_t)((uint32_t)qwModInfoCycles + (uint32_t)qwSymCycles) + (uint32_t)nCyclesAcc) < (uint32_t)((uint32_t)qwModInfoCycles + (uint32_t)qwSymCycles)) + *(uint32_t*)((char*)&qwFmtCycles + 4) + (uint32_t)((uint32_t)((uint32_t)nCyclesLo + (uint32_t)qwFmtCycles) < (uint32_t)nCyclesLo), __frame2.nFrameIdx, (int)__frame2.nFrameIdx >> 0x1f);
     Src::LogManager::LOGMANAGER_TraceToModuleLog(__frame1.szLogCategory, "QuickStackWalk: %d entries, %I64d+%I64d+%I64d+%I64d cycles, %I64d avg", nCycleSample, nCyclesAcc, nWalkCyclesHi, (uint32_t)qwSymCycles, *(uint32_t*)((char*)&qwSymCycles + 4), (uint32_t)qwModInfoCycles, *(uint32_t*)((char*)&qwModInfoCycles + 4), (uint32_t)qwFmtCycles, *(uint32_t*)((char*)&qwFmtCycles + 4), nAvgCycles);
     gnStackWalkInProgress--;
     return 1;
@@ -2296,7 +2296,7 @@ BOOL __stdcall DEBUG_LoadStackCrawlDbgHelp() {
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ InitializeCriticalSection(&lpCriticalSection_0075cfbc);
-    CRT_Encode_Secure_Pointer((void*)HandleExceptionWithStackDump);
+    _set_se_translator((void*)HandleExceptionWithStackDump);
     /* LPCSTR lpLibFileName for LoadLibraryA */ pDbgHelpOrImageHlp = LoadLibraryA(".\\dbghelp.dll");
     if (!pDbgHelpOrImageHlp) {
       /* LPCSTR lpLibFileName for LoadLibraryA */ pDbgHelpOrImageHlp = LoadLibraryA("dbghelp.dll");
@@ -2362,22 +2362,6 @@ void __fastcall TriggerManualStackDump(char * szCategory) {
     *(uint32_t*)((char*)&__frame0.context + 180) = (uint32_t)(uintptr_t)(uint8_t*)__builtin_frame_address(0);
     HANDLE hThread = GetCurrentThread();
     QuickStackWalkWithSymbols(__frame0.szCategorySpill, hThread, (CONTEXT*)__frame0.context);
-}
-
-// Security cookie check (MSVC /GS __security_check_cookie). Compares ECX against the stored security cookie and halts on mismatch. Touches no register, so the caller's return value in EAX (and EDX) survives the call; modelled with the __stdcall_noclobber convention.
-// [override: replace]
-void __stdcall GuardStack() {
-    // Hand-supplied body. Ghidra address 00681a48 (MSVC /GS __security_check_cookie).
-    //
-    //   00681a48  CMP ECX,[0x749de0]   ; the caller's [EBP-4] ^ EBP against the cookie
-    //   00681a4e  JNZ 00681a52 -> JMP ___report_gsfailure
-    //   00681a50  RET
-    //
-    // The check reads a cookie the caller's prologue stored in its own frame and passes in
-    // ECX. The rebuilt callers have no such slot and pass nothing, so there is no value to
-    // compare: the check is the rebuild compiler's own stack protector, and this body is
-    // the path every intact frame takes - return with every register untouched.
-    return;
 }
 
 // compiler-generated C++ EH handler; its frame is never registered with the OS

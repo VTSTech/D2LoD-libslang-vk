@@ -1218,7 +1218,7 @@ uint32_t __fastcall SKILLNEC_ApplySummonBuffs(::SGAMEDATA * pGame, D2UnitStrc * 
     uint32_t nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pSummon);
     if ((int)nMaxHp > 0x100000) {
       if ((int)(nMaxHp & -16) < 0x640) {
-        nDivResult = (int64_t)(int)nMaxHp * (int64_t)(int)nHpPct / 100;
+        nDivResult = _alldiv((uint32_t)((int64_t)(int)nMaxHp * (int64_t)(int)nHpPct), (uint32_t)((uint64_t)((int64_t)(int)nMaxHp * (int64_t)(int)nHpPct) >> 0x20), 100, 0);
         nHpBonus = (int)nDivResult;
       } else {
         nHpBonus = (int)nMaxHp / 100 * nHpPct;
@@ -1226,7 +1226,7 @@ uint32_t __fastcall SKILLNEC_ApplySummonBuffs(::SGAMEDATA * pGame, D2UnitStrc * 
     } else {
       if ((int)nHpPct > 0x10000) {
         if ((int)(nHpPct & -16) < 0x640) {
-          nDivResult = (int64_t)(int)nMaxHp * (int64_t)(int)nHpPct / 100;
+          nDivResult = _alldiv((uint32_t)((int64_t)(int)nMaxHp * (int64_t)(int)nHpPct), (uint32_t)((uint64_t)((int64_t)(int)nMaxHp * (int64_t)(int)nHpPct) >> 0x20), 100, 0);
           nHpBonus = (int)nDivResult;
         } else {
           nHpBonus = (int)nHpPct / 100 * nMaxHp;

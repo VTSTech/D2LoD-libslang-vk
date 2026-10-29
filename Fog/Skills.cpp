@@ -3,7 +3,6 @@
 #include "Fog/Skills.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Game/D2QuestDataStrc.h"
-#include "Fog/Debug.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E

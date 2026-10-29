@@ -4,7 +4,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Net/Game/Server.h"
 #include "Fog/D2QSSocketStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/D2QSQueue.h"
 #include "Fog/Src/ErrorManager.h"

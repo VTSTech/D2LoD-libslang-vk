@@ -307,8 +307,6 @@ BOOL __fastcall LoadPreviousCrashDump(uint8_t * pOutBuffer, int * pnBufferSize);
 void HandleExceptionWithStackDump(uint32_t dwUnused, struct _EXCEPTION_POINTERS * pExceptionPointers);
 BOOL __stdcall DEBUG_LoadStackCrawlDbgHelp();
 void __fastcall TriggerManualStackDump(char * szCategory);
-// Security cookie check (MSVC /GS __security_check_cookie). Compares ECX against the stored security cookie and halts on mismatch. Touches no register, so the caller's return value in EAX (and EDX) survives the call; modelled with the __stdcall_noclobber convention.
-void __stdcall GuardStack();
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca575(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca595(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca5b5(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);

@@ -12,7 +12,6 @@
 #include "D2Net/sockaddr.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/D2QServerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
@@ -24,6 +23,7 @@
 #include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 #include "D2Client/UI/MiniPanel.h"
+#include "Fog/Debug.h"
 #include "Fog/Fog.h"
 #include "Fog/QServer.h"
 

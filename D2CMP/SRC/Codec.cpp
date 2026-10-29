@@ -8,7 +8,6 @@
 #include "D2Common/Unit/Unit.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/AsyncData.h"

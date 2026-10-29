@@ -75,7 +75,6 @@
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Save.h"
@@ -327,7 +326,7 @@ D2UnitStrc * __fastcall SUNITNPC_GenerateNpcItems(D2UnitStrc * pUnit, uint32_t n
           if (nItemQuality == 1) {
             nItemQuality = D2Common::ITEMS::Items::ITEM_GetItemData_nFileIndex(pCreatedItem);
             szItemCodeStr = D2Common::DATATBLS::ItemTbls::TXT_LowQualityItems_GetLine(nItemQuality);
-            nItemQuality = __stricmp(szItemCodeStr->Name, "Cracked");
+            nItemQuality = _stricmp(szItemCodeStr->Name, "Cracked");
             if (!nItemQuality) {
               ITEMS::Items::Drop::ITEM_DeleteItemAndFreeUnit(pGame_00, pCreatedItem);
               pCreatedItem = 0;
@@ -2880,7 +2879,7 @@ eD2ServerIncomingStatus __fastcall SUNITNPC_SellItem(::SGAMEDATA * pGame, D2Unit
     if (eVar9 == 1) {
       eVar9 = D2Common::ITEMS::Items::ITEM_GetItemData_nFileIndex(pClonedItem);
       pLowQualityName = D2Common::DATATBLS::ItemTbls::TXT_LowQualityItems_GetLine(eVar9);
-      eVar9 = __stricmp(pLowQualityName->Name, "Cracked");
+      eVar9 = _stricmp(pLowQualityName->Name, "Cracked");
       if (!eVar9) {
         bCanRepurchase = 0;
       }

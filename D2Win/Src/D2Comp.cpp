@@ -1431,7 +1431,7 @@ void * __stdcall LoadTxt(D2PoolManagerStrc * pMemory, char * szTxtName, D2BinFie
       pArchive = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMemory, szFilePath, &nFileSize, ".\\Src\\D2Comp.cpp", 0x958);
     } else {
       int bIsCaseLevelDefs;
-      bIsCaseLevelDefs = __stricmp(szTxtName, "leveldefs");
+      bIsCaseLevelDefs = _stricmp(szTxtName, "leveldefs");
       if (!bIsCaseLevelDefs) {
         szTxtName = "levels";
       }

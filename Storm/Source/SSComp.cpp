@@ -2,7 +2,6 @@
 
 #include "Storm/Source/SSComp.h"
 #include "Fog/3rdparty/crashy.h"
-#include "Fog/Debug.h"
 #include "Fog/SMem.h"
 #include "Storm/3rdparty/zlib/deflate.h"
 #include "Storm/3rdparty/zlib/inflate.h"

@@ -4,7 +4,6 @@
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Launch/MainMenus.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
 #include "Storm/D2ArchiveStrc.h"

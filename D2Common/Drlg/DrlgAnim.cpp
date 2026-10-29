@@ -17,7 +17,6 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Drlg/RoomTile.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"

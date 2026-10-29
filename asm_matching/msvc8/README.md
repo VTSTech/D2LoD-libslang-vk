@@ -248,6 +248,12 @@ conflicting ones, which point at a wrong global or offset in the tree.
 original's CRT (`evidence/crtmap.tsv`), and the per-version split is what
 settled SP1 (`evidence/toolchain.md`).
 
+The audit summary's headline counts **Blizzard code only**: it leaves out of
+both the matched and the total every original function that is Microsoft's
+runtime - the libmap pairs, the run of library code they span, the linker's
+import thunks, and `evidence/runtime.tsv` (the functions Ghidra tags `runtime`,
+named there from this evidence). The whole-binary figures follow it.
+
 The runtime is code we link, not code the tree holds, and it is measured like
 the rest. `scripts/libmap.py` (`oracle libmap`, run by `oracle all` after
 `map`) pairs every original function the funcmap leaves unpaired with a

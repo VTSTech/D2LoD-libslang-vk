@@ -89,7 +89,6 @@
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Save.h"
@@ -1270,7 +1269,7 @@ void __fastcall Shrines_ShrineOfEnirhsFunction(D2ObjectOperateFnArg * pArguments
     }
 
     size_t nNameLen = 0x10;
-    char* szReversedName = __strrev(pPlayerData->szCharName);
+    char* szReversedName = _strrev(pPlayerData->szCharName);
     strncpy(pPlayerData->szCharName, szReversedName, nNameLen);
 }
 

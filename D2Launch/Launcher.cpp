@@ -36,7 +36,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
-#include "compiler/compiler.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Win/D2WinEditBox.h"

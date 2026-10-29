@@ -3,11 +3,9 @@
 #include "Bnclient/SRP.h"
 #include "Bnclient/SHA.h"
 #include "Bnclient/net_sid.h"
-#include "Fog/Debug.h"
 #include "Storm/D2Srp.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SSTR.h"
-#include "compiler/compiler.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -38,7 +36,7 @@ void __fastcall SRP_InitializeRandomState(D2Srp * pThis, uint32_t dwSeed) {
     uint32_t aShaCtx[23];
     _time32(&sSeedEntropy.tTime);
     sSeedEntropy.dwSeed = dwSeed;
-    CRT_Srand(dwSeed);
+    srand(dwSeed);
     sSeedEntropy.nRand = rand();
     SHA::SHA1_Init(aShaCtx);
     SHA::SHA1_Update(aShaCtx, &sSeedEntropy, 0xc);

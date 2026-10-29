@@ -5,7 +5,6 @@
 #include "D2Lang/Unicode/UNISYS.h"
 #include "Fog/Archive.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
@@ -411,7 +410,7 @@ void __fastcall STRTABLE_NormalizeLanguageCode(char * szText) {
     int nIndex = 0;
     do {
       int nCmp;
-      nCmp = __stricmp(szText, gaLanguageTable[nIndex].pszLangCode);
+      nCmp = _stricmp(szText, gaLanguageTable[nIndex].pszLangCode);
       if (!nCmp) {
         pcNormalized = gaLanguageTable[nIndex].pszLangCodeNormalized;
         do {
@@ -440,7 +439,7 @@ uint32_t __fastcall STRTABLE_GetLanguageId(char * szText) {
     int nIndex = 0;
     do {
       int nCmp;
-      nCmp = __stricmp(szText, gaLanguageTable[nIndex].pszLangCode);
+      nCmp = _stricmp(szText, gaLanguageTable[nIndex].pszLangCode);
       if (!nCmp) {
         return gaLanguageTable[nIndex].dwLangId;
       }
@@ -600,7 +599,7 @@ void __stdcall STRTABLE_FormatNumber(uint16_t * wszText, uint32_t nValue, int32_
       exit(-1);
     }
 
-    __ultoa(nValue, szDigits, 10);
+    _ultoa(nValue, szDigits, 10);
     char* pcDigit = szDigits;
     int nDigitCount = 0;
     pcDigit = pcDigit + strlen(pcDigit) + 1;
@@ -665,7 +664,7 @@ void __stdcall STRTABLE_FormatInt64(uint16_t * wszText, int32_t nParam1, int32_t
       nParam2 = -(nParam2 + (uint32_t)bNeedNeg);
     }
 
-    __i64toa((uint64_t)((uint64_t)(uint32_t)nParam2 << 32 | (uint64_t)(uint32_t)nParam1), szDigitBuf, 10);
+    _i64toa((uint64_t)((uint64_t)(uint32_t)nParam2 << 32 | (uint64_t)(uint32_t)nParam1), szDigitBuf, 10);
     char* pcDigit = szDigitBuf;
     pcDigit = pcDigit + strlen(pcDigit) + 1;
     int nDigitCount = (int)pcDigit - (int)(szDigitBuf + 1);
@@ -719,7 +718,7 @@ void __stdcall STRTABLE_FormatUInt64WithAbbrev(uint16_t * wszText, uint32_t dwPa
       exit(-1);
     }
 
-    __ui64toa((uint64_t)((uint64_t)(uint32_t)dwParam2 << 32 | (uint64_t)(uint32_t)dwParam1), szDigitBuf, 10);
+    _ui64toa((uint64_t)((uint64_t)(uint32_t)dwParam2 << 32 | (uint64_t)(uint32_t)dwParam1), szDigitBuf, 10);
     char* pcDigit;
     pcDigit = szDigitBuf;
     pcDigit = pcDigit + strlen(pcDigit) + 1;
@@ -921,19 +920,19 @@ int __fastcall TABLES_LoadStrings(D2PoolManagerStrc * pPoolManager, char * szTex
       TABLES_GetLangAbbreviation(l, 0);
     }
 
-    i = __stricmp(l, "JPN");
+    i = _stricmp(l, "JPN");
     if (!i) {
       memcpy(szFontDir, "JPN", 4);
     } else {
-      i = __stricmp(l, "KOR");
+      i = _stricmp(l, "KOR");
       if (!i) {
         memcpy(szFontDir, "KOR", 4);
       } else {
-        i = __stricmp(l, "POL");
+        i = _stricmp(l, "POL");
         if (!i) {
           memcpy(szFontDir, "LATIN2", 7);
         } else {
-          i = __stricmp(l, "RUS");
+          i = _stricmp(l, "RUS");
           if (!i) {
             memcpy(szFontDir, "CYR", 4);
           } else {

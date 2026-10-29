@@ -333,12 +333,12 @@ static void __stdcall FormatDebugOutput(uint8_t bFlags, va_list vaArgs, char * s
     if (bFlags & 4) {
       SYSTEMTIME sLocalTime;
       /* LPSYSTEMTIME lpSystemTime for GetLocalTime */ GetLocalTime(&sLocalTime);
-      __snprintf(szOutputBuffer, 0x1000, "%02d:%02d:%02d.%03d    ", (uint32_t)sLocalTime.wHour, (uint32_t)sLocalTime.wMinute, (uint32_t)sLocalTime.wSecond, (uint32_t)sLocalTime.wMilliseconds);
+      snprintf(szOutputBuffer, 0x1000, "%02d:%02d:%02d.%03d    ", (uint32_t)sLocalTime.wHour, (uint32_t)sLocalTime.wMinute, (uint32_t)sLocalTime.wSecond, (uint32_t)sLocalTime.wMilliseconds);
     }
 
     char* pScan = szOutputBuffer;
     pScan = pScan + strlen(pScan) + 1;
-    __vsnprintf(szOutputBuffer + ((int)pScan - (int)(szOutputBuffer + 1)), 0x1000 - ((int)pScan - (int)(szOutputBuffer + 1)), szText, vaArgs);
+    vsnprintf(szOutputBuffer + ((int)pScan - (int)(szOutputBuffer + 1)), 0x1000 - ((int)pScan - (int)(szOutputBuffer + 1)), szText, vaArgs);
     szOutputBuffer[0xfff] = '\0';
     if (!(bFlags & 2)) {
       /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA(szOutputBuffer);
@@ -359,7 +359,7 @@ void OutputDebugStringSimple(char * szText, ...) {
     char* pScan = szBuffer;
     szBuffer[0] = '\0';
     pScan = pScan + strlen(pScan) + 1;
-    __vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
+    vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
     uint8_t cNull = 0;
     OutputDebugStringA(szBuffer);
 }
@@ -376,7 +376,7 @@ void OutputDebugStringIfCapsLock(char * szText, ...) {
       pScan = szBuffer;
       szBuffer[0] = '\0';
       pScan = pScan + strlen(pScan) + 1;
-      __vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
+      vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
       /* LPCSTR lpOutputString for OutputDebugStringA */ cNull = 0;
       OutputDebugStringA(szBuffer);
     }
@@ -730,7 +730,7 @@ void __stdcall ShowUnrecoverableErrorDialog(int32_t nParam, char * szText, int n
       exit(-1);
     }
 
-    __vsnprintf(szFormattedMessageBuffer, 0x1000, szSourceFile, vaArgs);
+    vsnprintf(szFormattedMessageBuffer, 0x1000, szSourceFile, vaArgs);
     szFormattedMessageBuffer[0xfff] = '\0';
     if (szText) {
       pScan = szFormattedMessageBuffer;

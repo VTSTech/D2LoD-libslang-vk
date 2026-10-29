@@ -475,8 +475,8 @@ D2UnitStrc * __fastcall PLRMODES_CreateDeadBody(::SGAMEDATA * pGame, D2UnitStrc 
           if ((int)uVar1 > 0x100000) {
             iVar4 = (int)uVar1 >> 0x1f;
             if ((int)(uVar1 & -16) < 0x640) {
-              lExpTimes75 = __allmul(uVar1, iVar4, 0x4b, 0);
-              lExpTimes75 = lExpTimes75 / 100;
+              lExpTimes75 = _allmul(uVar1, iVar4, 0x4b, 0);
+              lExpTimes75 = _alldiv((uint32_t)lExpTimes75, (uint32_t)((uint64_t)lExpTimes75 >> 0x20), 100, 0);
             } else {
               nExpQuotient = (int)uVar1 / 100 + iVar4;
               lExpTimes75 = (uint64_t)((uint64_t)(uint32_t)nExpQuotient << 32 | (uint64_t)(uint32_t)((nExpQuotient - iVar4) * 0x4b));

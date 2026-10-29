@@ -1044,7 +1044,7 @@ void __fastcall SOUNDHDR_UpdateRegistryVersion(int32_t nSoundHeaderIndex) {
     __frame0.dwVersionBuild = 0x22;
     int32_t bReadOk = Storm::Source::SReg::SRegLoadString("Diablo II", "Aux Battle.net", 0, szVersionString, 100);
     if (bReadOk) {
-      FID_conflict__sscanf(szVersionString, "%d.%d.%d.%d", &__frame0.nVersionMajor, &__frame0.nVersionMinor, &__frame0.nVersionRevision, (int*)&__frame0.dwVersionBuild);
+      sscanf(szVersionString, "%d.%d.%d.%d", &__frame0.nVersionMajor, &__frame0.nVersionMinor, &__frame0.nVersionRevision, (int*)&__frame0.dwVersionBuild);
       if (__frame0.dwVersionBuild & 1) {
         byCurrentVersionFlag = 7;
       } else {

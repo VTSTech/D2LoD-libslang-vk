@@ -66,11 +66,9 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/BitBuffer.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SSTR.h"
-#include "compiler/compiler.h"
 #include "globals/globals.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
@@ -1023,7 +1021,7 @@ int32_t __fastcall PLAYERSAVE_ParseHeaderAndCreateUnit(::SGAMEDATA * pGame, D2Cl
       return 3;
     }
 
-    int nResult = __stricmp(szClientName, pSaveFile->szCharacterName);
+    int nResult = _stricmp(szClientName, pSaveFile->szCharacterName);
     if (nResult) {
       return 7;
     }

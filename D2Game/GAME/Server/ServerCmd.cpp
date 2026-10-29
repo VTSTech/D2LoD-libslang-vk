@@ -4,7 +4,6 @@
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Net/Game/Server.h"
 #include "Fog/BitBuffer.h"
-#include "Fog/Debug.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 

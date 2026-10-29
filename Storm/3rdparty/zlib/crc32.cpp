@@ -1745,7 +1745,7 @@ uint32_t __stdcall crc32_combine_(uint32_t dwCrc, uint32_t dwFinalXor, int32_t n
         }
       }
 
-      qwLength = __allshr(1, qwLength);
+      qwLength = _allshr(1, qwLength);
       if (!qwLength) {
         break;
       }
@@ -1779,7 +1779,7 @@ uint32_t __stdcall crc32_combine_(uint32_t dwCrc, uint32_t dwFinalXor, int32_t n
         }
       }
 
-      qwLength = __allshr(1, qwLength);
+      qwLength = _allshr(1, qwLength);
     } while (qwLength);
 
     return dwCrc ^ dwFinalXor;

@@ -8,6 +8,7 @@
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
+#include "Fog/3rdparty/crashy/Report.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -15,7 +16,7 @@
 namespace Fog::_3rdparty::crashy {
 
 void __fastcall CRT_LocalTime_Thunk(uint8_t * bParam, uint32_t * pnParam) {
-    /* MCP write-path test — safe to delete */ CRT_LocalTime_S((tm*)bParam, pnParam);
+    /* MCP write-path test — safe to delete */ _localtime64_s((tm*)bParam, (__time64_t*)pnParam);
 }
 
 bool __stdcall FILETOOLS_GetTempPath_UTF8(char * pSrc) {
@@ -173,7 +174,7 @@ char __stdcall SYSTEM_CaptureThreadContext(int * pnStackTop, DWORD dwThreadId, i
 
 bool __stdcall SYSTEM_GetThreadName(int32_t wThreadId, char * pBuffer) {
     if (dwCurrentThreadId == wThreadId) {
-      _strncpy_s(pBuffer, 0x80, "Main Thread", -1);
+      strncpy_s(pBuffer, 0x80, "Main Thread", -1);
       return true;
     }
 
@@ -354,7 +355,7 @@ void __stdcall DebugThread() {
     void* pSavedEsp;
     EH4_EXCEPTION_REGISTRATION tSehFrame;
     tSehFrame.TryLevel = -2;
-    tSehFrame.ExceptionHandler = __except_handler4;
+    tSehFrame.ExceptionHandler = _except_handler4;
     tSehFrame.Next = (EH4_EXCEPTION_REGISTRATION*)ExceptionList;
     tSehFrame.EncodedScopeTable = DEFAULT_SECURITY_COOKIE ^ 0x702290;
     ExceptionList = &tSehFrame;

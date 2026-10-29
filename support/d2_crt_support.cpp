@@ -2,8 +2,10 @@
 // Hand-written CRT / intrinsic support layer.
 //
 // Every definition here stands in for a function that IS in Game.exe but is
-// dropped before emission by `excludePatterns` (`/^compiler$/`, `/^_Wrappers$/`
-// in ghidra-reconstruct/run.ts). The generator never writes this file, so it
+// dropped before emission by `excludePatterns` (`/^compiler(::.*)?$/`,
+// `/^_Wrappers$/` in ghidra-reconstruct/run.ts) and that the target's own C
+// runtime does not supply under the name the tree calls. A libcmt function the
+// tree calls by its real name binds to that runtime instead and has no entry here. The generator never writes this file, so it
 // carries no merge risk and no debt (regen-workflow.md, option 3).
 //
 // Rules obeyed here, from docs/regen-workflow.md:
@@ -64,7 +66,7 @@ extern "C" long double CRT_CIPow(long double base, long double exponent) {
 
 #ifndef _MSC_VER
 // ---------------------------------------------------------------------------
-// Three CRT functions whose generated prototype in d2_platform.h is the
+// A CRT function whose generated prototype in d2_platform.h is the
 // emitter's unknown-signature fallback `T NAME(...)`. A variadic declaration
 // with no named parameter cannot be defined portably, and re-declaring the name
 // with a concrete signature in this TU would collide with the forced include.
@@ -82,74 +84,18 @@ extern "C" long double CRT_CIPow(long double base, long double exponent) {
 extern "C" double d2_CRT_Floor(double x) __asm__("_CRT_Floor");
 extern "C" double d2_CRT_Floor(double x) { return floor(x); }
 
-// 00687740 `char *CRT_Strchr(char *pszStr, char cChar)` __cdecl. The body is
-// the word-at-a-time strchr verbatim: the 0x7efefeff / 0x81010100 zero-byte
-// test, the 4-byte alignment prologue, the four per-byte compares. It is
-// strchr. `char` promotes to `int` through the variadic declaration, which is
-// exactly strchr's own second parameter type.
-extern "C" char* d2_CRT_Strchr(char* s, int c) __asm__("_CRT_Strchr");
-extern "C" char* d2_CRT_Strchr(char* s, int c) { return strchr(s, c); }
-
-// 006987d8 - NOT `_clearfp`, which takes no arguments. 22 bytes, __cdecl:
-//   MOV EAX,[ESP+8] / AND EAX,0x7ff00000 / CMP EAX,0x7ff00000 / JZ +1
-//   RET                       <- ZF clear
-//   MOV EAX,[ESP+8] / RET     <- ZF set
-// The two arguments are the low and high halves of one double at [ESP+4], and
-// EAX is the same value on both paths - the branch exists only to leave ZF set
-// when the exponent field is all ones (Inf/NaN). Its x87-CRT callers consume
-// that flag (00688701 calls it, then __cos_common at 0068871d branches on the
-// ZF it left). C has no spelling for a flag return, and every emitted call site
-// - D2Sound/Src/D2SoundSmp.cpp:1046, D2CMP/Draw.cpp:1164,
-// D2CMP/SRC/FastCmp.cpp:1591, D2Client/Utils.cpp:43/54/101 - discards the
-// result, so reproducing EAX is exactly faithful to what the tree observes.
-extern "C" unsigned int d2_CRT_ClearFP(unsigned int nLow,
-                                       unsigned int nHigh) __asm__("_CRT_ClearFP");
-extern "C" unsigned int d2_CRT_ClearFP(unsigned int nLow, unsigned int nHigh) {
-  (void)nLow;
-  return nHigh;
-}
-
 // ---------------------------------------------------------------------------
-// CRT functions whose generated prototype is already concrete.
+// Functions whose generated prototype is already concrete.
 // ---------------------------------------------------------------------------
 
-// 00685637 __cdecl, one statement:
-//   CRT_Output_L(CRT_Output_Printf, pFile, nParam, 0, dwParam)
-// i.e. the locale-explicit printf core with a null locale, a format string and
-// an argument list: `vfprintf(FILE*, const char*, va_list)`. Parameter 2 is
-// typed `int` by Ghidra but is the format pointer - the call site,
-// Fog/File.cpp:300, passes `(int)Format` and a va_list built from `&Format + 4`.
-extern "C" int CRT_Vsprintf_L(FILE* pFile, int nFormat, void* pArgList) {
-  return vfprintf(pFile, reinterpret_cast<const char*>(nFormat),
-                  static_cast<va_list>(pArgList));
-}
-
-// 006856e9 `errno_t CRT_LocalTime_S(tm *pTm, uint *pnParam)` __cdecl. The body
-// is _localtime64_s: memset(pTm, 0xff, 0x24), the __time64_t range check
-// against 0x93406fff, ___tzset, __get_dstbias, __isindst, and __gmtime64_s
-// against `(__time64_t *)pnParam` - so the second parameter is a pointer to a
-// 64-bit time, not a 32-bit one. Fog/File.cpp:85-86 agrees: it declares
-// `__time64_t tTime = __time64(nullptr)` and casts its address to uint32_t*.
-extern "C" int CRT_LocalTime_S(struct tm* pTm, unsigned int* pnTime) {
-  __time64_t tTime;
-  memcpy(&tTime, pnTime, sizeof(tTime));
-  return _localtime64_s(pTm, &tTime);
-}
-
-// 00684af3 - NOT `_encode_pointer`. The body is
-//   ptd = __getptd(); old = ptd->_translator;
-//   ptd = __getptd(); ptd->_translator = pParam; return old;
-// `_ptiddata::_translator` is the slot `_set_se_translator` writes, and the one
-// emitted call site is Fog/Debug.cpp:2731,
-// `CRT_Encode_Secure_Pointer((void*)HandleExceptionWithStackDump)`, inside Fog's
-// crash-handler installer. So this is `_set_se_translator`.
-//
-// mingw-GCC has no MSVC structured-exception translator, so the recorded
-// function is never invoked. The get/set/return-previous semantics and the
-// per-thread storage are reproduced exactly; the dispatch is not, and cannot be
-// without the MSVC SEH layer.
+// 00684af3 is libcmt's _set_se_translator (libmap lib-exact). The tree calls it
+// by that name; Visual C++ links libcmt's own. mingw's msvcrt import library
+// exports no _set_se_translator, and GCC code never reaches an MSVC translator
+// anyway, so here the platform header's `_set_se_translator` lands on this slot:
+// the get/set/return-previous semantics and the per-thread storage, without the
+// dispatch, which needs the MSVC SEH layer.
 static thread_local void* g_pSeTranslator = nullptr;
-extern "C" void* CRT_Encode_Secure_Pointer(void* pTranslator) {
+extern "C" void* D2_SetSeTranslator(void* pTranslator) {
   void* pPrevious = g_pSeTranslator;
   g_pSeTranslator = pTranslator;
   return pPrevious;
@@ -182,17 +128,10 @@ extern "C" unsigned int CRT_ReturnValue(unsigned int dwHResult) {
 // SEH and /GS.
 // ---------------------------------------------------------------------------
 
-// 006877fe, FID single match "__purecall", VS2005 Release. The body fetches the
-// unexpected handler, calls it if non-null, then __set_abort_behavior(0,1) and
-// _abort(). abort() is the faithful tail, not a placeholder. Referenced only as
-// data - twelve vftable slots in globals.D2Client.cpp:36280-36291 and seven in
-// globals.cpp:45235 - so it runs only if a pure virtual is actually called,
-// which is when the binary aborts too.
-extern "C" void __purecall(void) { D2Trace("ABORT: __purecall"); abort(); }
-
-// 00684f50, FID single match "__except_handler4", VS2005 Release. This is the
-// MSVC SEH frame handler; mingw-GCC does not provide it and there is no honest
-// reimplementation - it walks an MSVC scope table this tree does not build.
+// 00684f50, libcmt's _except_handler4 (libmap lib-exact). This is the MSVC SEH
+// frame handler; mingw-GCC does not provide it, and msvcrt.dll exports only
+// _except_handler4_common. There is no honest reimplementation - it walks an
+// MSVC scope table this tree does not build.
 //
 // It is referenced ONLY by address, never called: Fog/Debug.cpp:191,
 // Fog/Engine/Application.cpp:1516 and :1642, Fog/Src/LogManager.cpp:1880 all
@@ -202,7 +141,7 @@ extern "C" void __purecall(void) { D2Trace("ABORT: __purecall"); abort(); }
 //
 // STATED PLAINLY: this is a stub, not a handler. Any path that ever calls it
 // dies at the abort() below. It does not dispatch, unwind, or filter.
-extern "C" int __except_handler4(struct _EXCEPTION_RECORD* pRecord, EH4_EXCEPTION_REGISTRATION* pRegistration,
+extern "C" int _except_handler4(struct _EXCEPTION_RECORD* pRecord, EH4_EXCEPTION_REGISTRATION* pRegistration,
                                  CONTEXT* pContext, void* pDispatcherContext) {
   (void)pRecord;
   (void)pRegistration;
@@ -217,23 +156,11 @@ extern "C" int __except_handler4(struct _EXCEPTION_RECORD* pRecord, EH4_EXCEPTIO
 // CRT_ name above is that CRT function itself, the symbol resolves to libcmt's
 // own object: each alternatename applies only while the name is otherwise
 // undefined, and each target is call-compatible with the tree's declaration.
+// The runtime functions the tree calls by their libcmt names need none.
 // ---------------------------------------------------------------------------
 
 // 00683080: floor, SSE2 path and __floor_default fallback, as libcmt's floor.
 #pragma comment(linker, "/alternatename:_CRT_Floor=_floor")
-// 00687740: the word-at-a-time strchr.
-#pragma comment(linker, "/alternatename:_CRT_Strchr=_strchr")
-// 00685637: the printf core with a null locale on (FILE*, format, va_list),
-// which is vfprintf.
-#pragma comment(linker, "/alternatename:_CRT_Vsprintf_L=_vfprintf")
-// 006856e9: _localtime64_s(tm*, const __time64_t*).
-#pragma comment(linker, "/alternatename:_CRT_LocalTime_S=__localtime64_s")
-// 00684af3: _set_se_translator.
-#pragma comment(linker, "/alternatename:_CRT_Encode_Secure_Pointer=?_set_se_translator@@YAP6AXIPAU_EXCEPTION_POINTERS@@@ZP6AXI0@Z@Z")
-// 006877fe: _purecall. Referenced only from vftable slots.
-#pragma comment(linker, "/alternatename:___purecall=__purecall")
-// 00684f50: _except_handler4. Referenced only by address.
-#pragma comment(linker, "/alternatename:___except_handler4=__except_handler4")
 
 // 006b1a30: ATL's AtlThrow, which throws an ATL::CAtlException holding the
 // HRESULT. The toolchain has no ATL; the class is declared to the shape the

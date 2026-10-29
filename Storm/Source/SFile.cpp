@@ -501,7 +501,7 @@ static void __stdcall SFILE_ConvertRelativePathName(int32_t bStripDir, char * sz
     }
 
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szTmpPath, "%s%s", szSFileBasePath, szFileName);
-    __fullpath(szOutPath, szTmpPath, 0x104);
+    _fullpath(szOutPath, szTmpPath, 0x104);
 }
 
 static uint32_t __stdcall SFILE_FindFileOnDisk(uint8_t bSearchFlags, LPCSTR szOutPath, char * szFileName) {

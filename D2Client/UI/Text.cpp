@@ -5025,7 +5025,7 @@ D2TextLineStrc * __stdcall TEXT_ParseMultilineString(uint16_t * pwszInput, int *
         bIsFirstLine = true;
         if (nLineWStrLen <= 0) {
           D2Lang::WideCharToUTF8(szUtf8Buf, wszLineBuf, 100);
-          nScrollRate = atol(szUtf8Buf);
+          nScrollRate = atoi(szUtf8Buf);
           *pnScrollRate = (uint16_t)nScrollRate;
         } else {
           do {
@@ -5038,7 +5038,7 @@ D2TextLineStrc * __stdcall TEXT_ParseMultilineString(uint16_t * pwszInput, int *
 
           if (bIsFirstLine) {
             D2Lang::WideCharToUTF8(szUtf8Buf, wszLineBuf, 100);
-            nScrollRate = atol(szUtf8Buf);
+            nScrollRate = atoi(szUtf8Buf);
             *pnScrollRate = (uint16_t)nScrollRate;
           } else {
             /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szLogBuf, "line 0 of string does not contain scroll rate");
@@ -5395,7 +5395,7 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
     draw_if_on_screen:
     if (ptScreenPos2.y > 0 && ptScreenPos2.y < ScreenSizeY && ptScreenPos2.x > -100 && ptScreenPos2.x < ScreenSizeX + 100) {
       D2Common::Chat::TEXT_CopyHoverMessageString(pHover, (int32_t)szMessage);
-      if (szMessage[0] == -1 && szMessage[1] == -1 && ((nStringId = atol(szMessage + 2) , nStringId >= 0x42d && nStringId <= 0x50f) || nStringId >= 0x5587 && nStringId <= 0x5615 || nStringId == 0x2aa4 || nStringId == 0x5586)) {
+      if (szMessage[0] == -1 && szMessage[1] == -1 && ((nStringId = atoi(szMessage + 2) , nStringId >= 0x42d && nStringId <= 0x50f) || nStringId >= 0x5587 && nStringId <= 0x5615 || nStringId == 0x2aa4 || nStringId == 0x5586)) {
         wszString = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)nStringId);
         if (wszString) {
           Fog::File::CONTAINER_InitializeBuffer(wszLocaleString, 2, 200, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
@@ -5469,7 +5469,7 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
     draw_if_on_screen:
     if (ptScreenPos.y > 0 && ptScreenPos.y < ScreenSizeY && ptScreenPos.x > -100 && ptScreenPos.x < ScreenSizeX + 100) {
       D2Common::Chat::TEXT_CopyHoverMessageString(pHoverText, (int32_t)szMessage);
-      nStringId = atol(szMessage);
+      nStringId = atoi(szMessage);
       if (nStringId - 1U <= 0xfffd) {
         wszString = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)nStringId);
         if (wszString) {

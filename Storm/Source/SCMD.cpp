@@ -9,7 +9,6 @@
 #include "D2Game/Monster/MonsterAI.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/UNIT/sunitproxy.h"
-#include "Fog/Debug.h"
 #include "Storm/SCMD.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SErr.h"
@@ -349,7 +348,7 @@ static StormCmdArgDefStrc * __stdcall SCMD_FindFlagDef(StormCmdArgDefStrc * cmdL
         if (cmdList->nArgTypeFlags & 0x100) {
           nCmpResult = strncmp(cmdList->szName, str, nCmdLen);
         } else {
-          nCmpResult = __strnicmp(cmdList->szName, str, nCmdLen);
+          nCmpResult = _strnicmp(cmdList->szName, str, nCmdLen);
         }
         if (!nCmpResult) {
           uBestLen = cmdList->nTextLen;

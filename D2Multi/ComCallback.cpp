@@ -563,7 +563,7 @@ void __fastcall COMCALLBACK_FormatChatMessage(char * szText1, char * szText2, ch
     }
 
     for (; pCurNode; pCurNode = *(char**)(pCurNode + 0x44)) {
-      nCmpResult = __stricmp(pCurNode, szText1);
+      nCmpResult = _stricmp(pCurNode, szText1);
       if (!nCmpResult) {
         pUserListNode = (D2QuestDataA5Q2Strc*)gpChannelUserListHead;
         if (pCurNode) {
@@ -581,7 +581,7 @@ void __fastcall COMCALLBACK_FormatChatMessage(char * szText1, char * szText2, ch
       if (!pUserListNode) {
         continue;
       }
-      nUserCmp = __stricmp((char*)(pUserListNode->sQuestGUID.aPlayerGUID + 1), szText1);
+      nUserCmp = _stricmp((char*)(pUserListNode->sQuestGUID.aPlayerGUID + 1), szText1);
       if (!nUserCmp) {
         if (pUserListNode) {
           dwFlags = D2Win::Src::D2Comp::D2COMP_GetFlags((D2CharSelCompStrc*)pUserListNode->aBarricadePos[2].x);
@@ -1883,7 +1883,7 @@ D2ChannelUserStrc * __stdcall COMCALLBACK_CreateChannelUserEntry(char * szUserna
         D2Win::Src::D2Comp::D2COMP_SetAnimationSpeed(pNewUser->pComposite, 0);
         if (!gbChannelUserSeedInitialized) {
           dwTick = GetTickCount();
-          CRT_Srand(dwTick);
+          srand(dwTick);
           gbChannelUserSeedInitialized = 1;
         }
 
@@ -1923,12 +1923,12 @@ D2ChannelUserStrc * __stdcall COMCALLBACK_CreateChannelUserEntry(char * szUserna
       }
 
       pszNameScan = pNewUser->szUsername;
-      pStar = CRT_Strchr(pszNameScan, '*');
+      pStar = strchr(pszNameScan, 0x2a);
       if (pStar) {
         pszNameScan = pStar + 1;
       }
 
-      pStar = CRT_Strchr(szUsername, '*');
+      pStar = strchr(szUsername, 0x2a);
       pbScanName = (uint8_t*)szUsername;
       if (pStar) {
         pbScanName = (uint8_t*)(pStar + 1);
@@ -1992,12 +1992,12 @@ void __stdcall COMCALLBACK_RemoveChannelUser(char * szUsername) {
       }
 
       pszNameScan = pMemoryToFree->szUsername;
-      pStar = CRT_Strchr(pszNameScan, '*');
+      pStar = strchr(pszNameScan, 0x2a);
       if (pStar) {
         pszNameScan = pStar + 1;
       }
 
-      pStar = CRT_Strchr(szUsername, '*');
+      pStar = strchr(szUsername, 0x2a);
       pbScanName = (uint8_t*)szUsername;
       if (pStar) {
         pbScanName = (uint8_t*)(pStar + 1);

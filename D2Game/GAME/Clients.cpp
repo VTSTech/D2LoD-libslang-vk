@@ -62,7 +62,6 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Game/UNIT/sunitproxy.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Save.h"
@@ -1126,10 +1125,10 @@ void __fastcall SendPongByClientId(uint32_t nClientId, int32_t dwSendTick, int32
         dwNowTick = GetTickCount();
         nSamplesToAvg = pClient->tQServerExt.nHeartbeatSampleCount;
         if (nSamplesToAvg < 10) {
-          qwPingAccum = __allmul(nSamplesToAvg, 0, (uint32_t)pClient->tQServerExt.qwAveragePingTicks, *(int*)((uintptr_t)&pClient->tQServerExt.qwAveragePingTicks + 4));
+          qwPingAccum = _allmul(nSamplesToAvg, 0, (uint32_t)pClient->tQServerExt.qwAveragePingTicks, *(int*)((uintptr_t)&pClient->tQServerExt.qwAveragePingTicks + 4));
           qwPingAccum += (int)(dwNowTick - dwSendTick - dwClientTick);
           pClient->tQServerExt.nHeartbeatSampleCount = nSamplesToAvg + 1;
-          qwNewAvgPing = qwPingAccum / (nSamplesToAvg + 1);
+          qwNewAvgPing = _alldiv((uint32_t)qwPingAccum, (uint32_t)((uint64_t)qwPingAccum >> 0x20), nSamplesToAvg + 1, 0);
           pClient->tQServerExt.qwAveragePingTicks = qwNewAvgPing;
         }
 
@@ -1176,7 +1175,7 @@ void __fastcall SendPongByClientId(uint32_t nClientId, int32_t dwSendTick, int32
         } while (nRemaining);
       }
 
-      qwNewAvgPing = __aulldiv(nSampleCount, dwPingAccumHi, nSamplesToAvg, (int)nSamplesToAvg >> 0x1f);
+      qwNewAvgPing = _aulldiv(nSampleCount, dwPingAccumHi, nSamplesToAvg, (int)nSamplesToAvg >> 0x1f);
       pClient->tQServerExt.qwAveragePingTicks = qwNewAvgPing;
       SCmd::NET_D2GS_SERVER_Send_0x8F_HEARTBEAT_PING(pClient);
       pClient->dwTimeOut = dwNowTick;

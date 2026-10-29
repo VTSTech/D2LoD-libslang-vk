@@ -3,7 +3,6 @@
 #include "Bnclient/BNGatewayAccess.h"
 #include "Bnclient/Bnet.h"
 #include "D2Client/D2BNetGatewayAccessStr.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SFile.h"
@@ -339,7 +338,7 @@ char * __thiscall FindSection(D2BNetGatewayAccessStr * pThis, char * szText1, ch
         break;
       }
 
-      nCmp = __strnicmp(szText1 + 1, szText2, nSectionNameLen);
+      nCmp = _strnicmp(szText1 + 1, szText2, nSectionNameLen);
       if (!nCmp) {
         pIniCursor = SkipToEOL(szText1 + nSectionNameLen + 2, pBufEnd);
         pIniCursor = SkipEOL(pIniCursor, pBufEnd);
@@ -363,7 +362,7 @@ char * __stdcall FindKey(char * szText1, char * szText2) {
     char cCur = *szText1;
     while (cCur != '\0' && *szText1 != ']') {
       int nCmp;
-      nCmp = __strnicmp(szText1, szText2, (int)pSrc - (int)(szText2 + 1));
+      nCmp = _strnicmp(szText1, szText2, (int)pSrc - (int)(szText2 + 1));
       if (!nCmp) {
         return szText1 + ((int)pSrc - (int)(szText2 + 1)) + 1;
       }

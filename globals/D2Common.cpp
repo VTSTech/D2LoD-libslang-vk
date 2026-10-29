@@ -6453,17 +6453,17 @@ namespace D2Common::Chat::Ignorelist::ChatIgnoreList {
 // =============================================================================
 
 void * vftable[12] = {
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
     (void*)&D2Common::Chat::Ignorelist::ChatIgnoreList::ScalarDeletingDestructor
 }; D2_GLOBAL_GUARD(vftable, "D2Common::Chat::Ignorelist::ChatIgnoreList::vftable");
 

@@ -2,7 +2,6 @@
 
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/3rdparty/crashy.h"
-#include "Fog/Debug.h"
 #include "Fog/Engine/Application.h"
 #include "Fog/File.h"
 #include "globals/globals.h"
@@ -48,8 +47,8 @@ void __thiscall Destructor(::Report * pThis) {
 int8_t __thiscall Open(::Report * pThis, char * szFileName) {
     bool bGotPath;
     tm localTime;
-    __time64_t tTime = __time64(nullptr);
-    CRT_LocalTime_S(&localTime, (uint32_t*)&tTime);
+    __time64_t tTime = _time64(nullptr);
+    _localtime64_s(&localTime, &tTime);
     if (gszCrashLogTempDir[0] == '\0') {
       bool bVar1;
       bVar1 = File::FILETOOLS_GetTempPath_UTF8(gszCrashLogTempDir);
@@ -183,7 +182,7 @@ int8_t __thiscall AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToR
 int32_t Printf(::Report * pThis, char * szFormat, ...) {
     va_list __va;
     va_start(__va, szFormat);
-    int nWritten = CRT_Vsprintf_L(pThis->pFile, (int)szFormat, __va);
+    int nWritten = vfprintf(pThis->pFile, szFormat, __va);
     return nWritten;
 }
 

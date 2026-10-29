@@ -40,7 +40,6 @@
 #include "D2Lang/Unicode/UNISYS.h"
 #include "Fog/Archive.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Skills.h"
 #include "Fog/Source/SFile.h"
@@ -449,7 +448,7 @@ static void GetPlayerClassIdToName(int32_t nClassId, char * szResult, size_t nSi
       }
     }
 
-    __snprintf(szResult, nSize, "player %d", nClassId);
+    snprintf(szResult, nSize, "player %d", nClassId);
     szResult[nSize - 1] = '\0';
 }
 
@@ -468,7 +467,7 @@ static void GetMonsterClassIdToName(int32_t nClassId, char * szResult, size_t nS
       }
     }
 
-    __snprintf(szResult, nSize, "monster %d", nClassId);
+    snprintf(szResult, nSize, "monster %d", nClassId);
     szResult[nSize - 1] = '\0';
 }
 
@@ -484,7 +483,7 @@ static void GetObjectClassIdToName(int32_t nClassId, char * szResult, size_t nSi
       return;
     }
 
-    __snprintf(szResult, nSize, "object %d", nClassId);
+    snprintf(szResult, nSize, "object %d", nClassId);
     szResult[nSize - 1] = '\0';
 }
 
@@ -500,7 +499,7 @@ static void GetItemClassIdToName(int32_t nClassId, char * szResult, size_t nSize
       return;
     }
 
-    __snprintf(szResult, nSize, "item %d", nClassId);
+    snprintf(szResult, nSize, "item %d", nClassId);
     szResult[nSize - 1] = '\0';
 }
 
@@ -509,7 +508,7 @@ static void GetMissileClassIdToName(int32_t nClassId, char * szResult, size_t nS
       return;
     }
 
-    __snprintf(szResult, nSize, "missile %d", nClassId);
+    snprintf(szResult, nSize, "missile %d", nClassId);
     szResult[nSize - 1] = '\0';
 }
 
@@ -556,7 +555,7 @@ char * __stdcall GetNameByClassIdAndType(eD2UnitType eUnitType, int16_t nClassId
       return szResult;
       case UNIT_MISSILE:
         if ((int)nSize > 0) {
-          __snprintf(szResult, nSize, "missile %d", (int)nClassId);
+          snprintf(szResult, nSize, "missile %d", (int)nClassId);
           szResult[nSize - 1] = '\0';
           return szResult;
         }
@@ -608,7 +607,7 @@ void * __stdcall CompileTxt(D2PoolManagerStrc * pMemory, char * szTableName, D2B
     uint32_t nSize = 0;
     if (sgtDataTable.bUseTxt) {
       size_t sVar5;
-      nStrCmpResult = __stricmp(szTableName, "leveldefs");
+      nStrCmpResult = _stricmp(szTableName, "leveldefs");
       if (!nStrCmpResult) {
         nErrorLine = 0x8b9;
         szEffectiveName = "levels";
@@ -648,7 +647,7 @@ void * __stdcall CompileTxt(D2PoolManagerStrc * pMemory, char * szTableName, D2B
       D2_FREE_POOL_AT(nullptr, pDataTable, ".\\DATATBLS\\DataTbls.cpp", 0x8d6);
     }
     if (!gpaMiscTxtTables) {
-      nStrCmpResult = __stricmp(szTableName, "leveldefs");
+      nStrCmpResult = _stricmp(szTableName, "leveldefs");
       if (!nStrCmpResult) {
         nErrorLine = 0x8e2;
         szEffectiveName = ".txt";

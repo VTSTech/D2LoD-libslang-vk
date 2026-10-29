@@ -20,12 +20,6 @@
 
 namespace Fog::Src::DataArrays {
 
-void FOG_ClearStruct12Bytes(uint32_t * pdwParam) {
-    *pdwParam = 0;
-    pdwParam[1] = 0;
-    pdwParam[2] = 0;
-}
-
 // @sourcefile .\Src\DataArrays.cpp
 D2DataArrayStrc * __fastcall FOG_CreateDataArray(char * pszName, int numObjects, int nObjectSize) {
     D2DataArrayStrc* local_EAX_31 = (D2DataArrayStrc*)D2_ALLOC_AT(numObjects * nObjectSize + 0x120, ".\\Src\\DataArrays.cpp", 0x34);

@@ -268,7 +268,7 @@ int __thiscall GetValue(::EditBoxImplementation * pThis) {
     }
 
     D2Lang::WideCharToUTF8(szUtf8Buf, pThis->wszString, (uint32_t)pThis->nMaxLength);
-    uint32_t nResult = atol(szUtf8Buf);
+    uint32_t nResult = atoi(szUtf8Buf);
     return (int)nResult > pThis->nMaxValue ? 0 : nResult;
 }
 
@@ -431,7 +431,7 @@ int __thiscall OnChar(::EditBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) 
             if (pThis->bNumericOnly) {
               D2Lang::WideCharToUTF8(szUtf8Buf, pThis->wszString, (uint32_t)pThis->nMaxLength);
               nLimit = pThis->nMaxValue;
-              nTextLen = atol(szUtf8Buf);
+              nTextLen = atoi(szUtf8Buf);
               if (nTextLen > nLimit) {
                 sprintf(szUtf8Buf, "%d", nLimit);
                 memset(pThis->wszString, 0, (uint32_t)pThis->nMaxLength * 2);

@@ -51,7 +51,6 @@
 #include "D2Game/UNIT/sunitproxy.h"
 #include "Fog/BitBuffer.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Save.h"

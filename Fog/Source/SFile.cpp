@@ -457,7 +457,7 @@ char * ERRORMANAGER_SprintfToBuffer(char * szText1, char * szText2, ...) {
 char * ERRORMANAGER_SnprintfTerminated(char * szText1, size_t nSize, char * szText2, ...) {
     va_list __va;
     va_start(__va, szText2);
-    __vsnprintf(szText1, nSize, szText2, __va);
+    vsnprintf(szText1, nSize, szText2, __va);
     szText1[nSize - 1] = '\0';
     return szText1;
 }

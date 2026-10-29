@@ -131,8 +131,8 @@ uint32_t __stdcall TASK_GetTimestamp() {
     if (gbPerformanceCounterAvailable) {
       int64_t nPerfCountMs;
       /* LARGE_INTEGER * lpPerformanceCount for QueryPerformanceCounter */ QueryPerformanceCounter(&perfCount);
-      nPerfCountMs = __allmul(perfCount.u.LowPart, perfCount.u.HighPart, 1000, 0);
-      nPerfCountMs = __alldiv((uint32_t)nPerfCountMs, (uint32_t)((uint64_t)nPerfCountMs >> 0x20), gnPerformanceFrequency.u.LowPart, gnPerformanceFrequency.u.HighPart);
+      nPerfCountMs = _allmul(perfCount.u.LowPart, perfCount.u.HighPart, 1000, 0);
+      nPerfCountMs = _alldiv((uint32_t)nPerfCountMs, (uint32_t)((uint64_t)nPerfCountMs >> 0x20), gnPerformanceFrequency.u.LowPart, gnPerformanceFrequency.u.HighPart);
       return (uint32_t)nPerfCountMs;
     }
 

@@ -27,7 +27,6 @@
 #include "Storm/Source/SSignature.h"
 #include "Storm/Source/SSystem.h"
 #include "Storm/_unnamespaced.h"
-#include "compiler/compiler.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Game/Objects/ObjectsRgn.h"
@@ -1012,7 +1011,7 @@ DWORD __stdcall GetDnsResults(void * lpThreadParam) {
     Debug::DEBUG_UnusedDebugFunction("");
     Debug::DEBUG_UnusedDebugFunction("Scrambled servlist:");
     DWORD dwTickCount = GetTickCount();
-    CRT_Srand(dwTickCount);
+    srand(dwTickCount);
     int32_t nShuffleCount = nAddrCount - 1;
     nAddrCount = 0;
     int nLpThreadParam = nShuffleCount;
@@ -1370,7 +1369,7 @@ int32_t __fastcall NET_SID_CLIENT_Send(uint8_t nPacketId, char * pBytes, size_t 
 void __fastcall BNCLIENT_ParseAndEnqueueChatMessages(char * szMessageText) {
     size_t nChunkLen;
     char szChunk[288];
-    char* pCrPos = CRT_Strchr(szMessageText, '\r');
+    char* pCrPos = strchr(szMessageText, 0xd);
     while (pCrPos) {
       nChunkLen = (int)pCrPos - (int)szMessageText;
       if ((int)nChunkLen >= 0x11f) {
@@ -1385,7 +1384,7 @@ void __fastcall BNCLIENT_ParseAndEnqueueChatMessages(char * szMessageText) {
         szMessageText = pCrPos + 2;
       }
 
-      pCrPos = CRT_Strchr(szMessageText, '\r');
+      pCrPos = strchr(szMessageText, 0xd);
     }
 }
 

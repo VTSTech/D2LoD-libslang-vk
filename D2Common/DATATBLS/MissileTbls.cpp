@@ -12,7 +12,6 @@
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Skills.h"
 #include "Fog/Src/Excel.h"

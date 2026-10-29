@@ -115,7 +115,6 @@
 #include "Fog/Src/LogManager.h"
 #include "Storm/3rdparty/zlib/deflate.h"
 #include "Storm/3rdparty/zlib/trees.h"
-#include "Storm/H/HeapManager.h"
 #include "Storm/Source/SCMD.h"
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSystem.h"
@@ -468,7 +467,6 @@ struct GlFloorCacheNodeStrc;
 struct GlFloorCacheStrc;
 struct GlSubtileCacheNodeStrc;
 struct GlSubtileCacheStrc;
-struct HeapManager;
 struct IDirect3DDevice;
 struct IDirect3DInterface7;
 struct IDirect3DTexture2;
@@ -621,7 +619,6 @@ typedef uint32_t (__fastcall *fpProperties)(uint32_t param_1, D2UnitStrc * param
 typedef uint64_t (__stdcall *pfnSymGetModuleBase64)(HANDLE hProcess, DWORD qwAddrLow, DWORD qwAddrHigh);
 typedef uint64_t (__stdcall *pfnSymLoadModule64)(HANDLE hProcess, HANDLE hFile, char * ImageName, char * ModuleName, DWORD BaseOfDllLow, DWORD BaseOfDllHigh, DWORD SizeOfDll);
 typedef void (*RecordCleanupFn)();
-typedef void (*fnHeapFree)(void * pMem);
 typedef void (*fnLogWriteLine)(char * szFmt, ...);
 typedef void (*pfnUIConfigTabAction)();
 typedef void (__fastcall *AI_Init)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiParamStrc * pAiParam);
@@ -732,7 +729,6 @@ typedef void (__stdcall *pfnSFileOpenCallback)(char * szFileName, void * pUserPa
 typedef void (__stdcall *pfnSSystemShutdown)(uint32_t dwShutdownCode);
 typedef void (__stdcall *pfnUIMenuInstance)();
 typedef void (__stdcall *pfnVoidNoArgCallback)();
-typedef void * (*fnHeapAlloc)(uint32_t nSize);
 typedef void * (__fastcall *fnSendGetAdvListEx)(char * szName, char * szPass, uint32_t dw1, uint32_t dw2);
 typedef void * (__fastcall *fnSendLogonRealmEx)(char * szRealm, char * szPass);
 typedef void * (__stdcall *fnBnetLoadAndReturn)();
@@ -4250,7 +4246,6 @@ extern unsigned int gnFieldTableHalfWidth;
 extern unsigned int gnFieldTableHalfHeight;
 extern unsigned int gdwDrlgLevelPlacementFlags;
 extern unsigned int UINT_0096d6a8;
-extern HeapManager gpHeapManager;
 extern GUID gsD3DAdapterGuid;
 extern unsigned int g_nVideoMemoryTotal;
 extern unsigned int g_nVideoMemoryFree;

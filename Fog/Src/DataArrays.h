@@ -15,7 +15,6 @@ struct D2MissilesTxt;
 namespace Fog::Src::DataArrays {
 
 // Function declarations
-void FOG_ClearStruct12Bytes(uint32_t * pdwParam);
 // @sourcefile .\Src\DataArrays.cpp
 struct D2DataArrayStrc * __fastcall FOG_CreateDataArray(char * pszName, int numObjects, int nObjectSize);
 // @sourcefile .\Src\DataArrays.cpp

@@ -497,7 +497,7 @@ void __fastcall OBJECT_ShrineGloaming_ReversePlayerName(D2UnitStrc * pUnit, D2Un
     }
 
     size_t nMaxLen = 0x10;
-    char* szReversed = __strrev(pPlayerData->szCharName);
+    char* szReversed = _strrev(pPlayerData->szCharName);
     strncpy(pPlayerData->szCharName, szReversed, nMaxLen);
 }
 

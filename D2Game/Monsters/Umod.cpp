@@ -75,7 +75,7 @@ static void UMOD_IncreaseMonsterHp(uint32_t nUmodConstant, D2UnitStrc * pUnit) {
     }
 
     int64_t nDivResult;
-    nDivResult = (int64_t)(int)nBaseHp * (int64_t)(int)nUmodConstant / 100;
+    nDivResult = _alldiv((uint32_t)((int64_t)(int)nBaseHp * (int64_t)(int)nUmodConstant), (uint32_t)((uint64_t)((int64_t)(int)nBaseHp * (int64_t)(int)nUmodConstant) >> 0x20), 100, 0);
     nHpBonus = (int)nDivResult;
     apply_hp_bonus:
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxhp, nBaseHp + nHpBonus, 0);

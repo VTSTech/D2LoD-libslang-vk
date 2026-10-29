@@ -29,7 +29,6 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
@@ -1951,14 +1950,14 @@ void __stdcall TC_GenerateAutoItemTypeTreasureClasses() {
 
 static int32_t TC_ExtractNextIntModifier(char cParam, uint32_t * * pnParam) {
     uint32_t* pCurrent = *pnParam;
-    char* pSeparator = CRT_Strchr((char*)pCurrent, cParam);
+    char* pSeparator = strchr((char*)pCurrent, (int)cParam);
     *pnParam = (uint32_t*)pSeparator;
     if (pSeparator) {
       *pSeparator = '\0';
       *pnParam = (uint32_t*)((int)*pnParam + 1);
     }
 
-    long int lVar1 = atol((char*)pCurrent);
+    long int lVar1 = atoi((char*)pCurrent);
     return lVar1;
 }
 
@@ -1998,7 +1997,7 @@ static void __stdcall TC_ParseTreasureClassEntry(D2ParsedTreasureClassStrc * pPa
     }
 
     char* pScanPtr;
-    pScanPtr = CRT_Strchr(szItemCode, ',');
+    pScanPtr = strchr(szItemCode, 0x2c);
     if (pScanPtr) {
       *pScanPtr = '\0';
       pScanPtr++;
@@ -2070,7 +2069,7 @@ static void __stdcall TC_ParseTreasureClassEntry(D2ParsedTreasureClassStrc * pPa
       }
 
       pProb = pScanPtr;
-      pEqualsPos = CRT_Strchr(pScanPtr, '=');
+      pEqualsPos = strchr(pScanPtr, 0x3d);
       if (!pEqualsPos) {
         return;
       }
@@ -2097,14 +2096,14 @@ static void __stdcall TC_ParseTreasureClassEntry(D2ParsedTreasureClassStrc * pPa
 
       pParsedTC = szModValue;
       if (bModifierMatch) {
-        szModKey = CRT_Strchr((char*)szModValue, ',');
+        szModKey = strchr((char*)szModValue, 0x2c);
         pScanPtr = 0;
         if (szModKey) {
           *szModKey = '\0';
           pScanPtr = szModKey + 1;
         }
 
-        nParsedInt = atol((char*)szModValue);
+        nParsedInt = atoi((char*)szModValue);
         nModValue = (int16_t)nParsedInt;
         pTCEntry->nItemLinkNodeId = nModValue;
         continue;
@@ -2112,26 +2111,26 @@ static void __stdcall TC_ParseTreasureClassEntry(D2ParsedTreasureClassStrc * pPa
 
       bModifierMatch = !strcmp(pProb, "cu");
       if (bModifierMatch) {
-        szModKey = CRT_Strchr((char*)szModValue, ',');
+        szModKey = strchr((char*)szModValue, 0x2c);
         pScanPtr = 0;
         if (szModKey) {
           *szModKey = '\0';
           pScanPtr = szModKey + 1;
         }
 
-        nParsedInt = atol((char*)szModValue);
+        nParsedInt = atoi((char*)szModValue);
         pTCEntry->nUniqueMod = (int16_t)nParsedInt;
       } else {
         bModifierMatch = !strcmp(pProb, "cs");
         if (bModifierMatch) {
-          szModKey = CRT_Strchr((char*)szModValue, ',');
+          szModKey = strchr((char*)szModValue, 0x2c);
           pScanPtr = 0;
           if (szModKey) {
             *szModKey = '\0';
             pScanPtr = szModKey + 1;
           }
 
-          nParsedInt = atol((char*)szModValue);
+          nParsedInt = atoi((char*)szModValue);
           pTCEntry->nSetMod = (int16_t)nParsedInt;
         } else {
           bModifierMatch = !strcmp(pProb, "cr");
@@ -3747,7 +3746,7 @@ void __fastcall MONSTERTBLS_ParseMonSeqField(char * szText, char * pRecord, uint
     int nCodeLen = 0;
     while (true) {
       char* pszNextToken;
-      pszNextToken = CRT_Strchr(szText, ',');
+      pszNextToken = strchr(szText, 0x2c);
       if (pszNextToken) {
         *pszNextToken = '\0';
         pszNextToken++;

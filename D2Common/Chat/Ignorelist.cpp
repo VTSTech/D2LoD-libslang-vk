@@ -3,12 +3,12 @@
 #include "D2Common/Chat/Ignorelist.h"
 #include "D2Common/Chat/Ignorelist/IgnoreList.h"
 #include "Fog/3rdparty/crashy/Report.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "D2Common/Chat.h"
+#include "Fog/Debug.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

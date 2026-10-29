@@ -166,7 +166,7 @@ BOOL __stdcall CmdLine_SetAppMode(CMDPARAMS * pParams, char * szCmdLine) {
     do {
       CMDPARAMS* pEntry = pParams;
       if ((char*)gaClientModeHandlerTable[eAppMode]) {
-        nNameCmp = __stricmp((char*)gaClientModeHandlerTable[eAppMode], pEntry->uValue.szStringValue);
+        nNameCmp = _stricmp((char*)gaClientModeHandlerTable[eAppMode], pEntry->uValue.szStringValue);
         if (!nNameCmp) {
           gdwAppMode = eAppMode;
           return 1;

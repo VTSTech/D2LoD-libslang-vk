@@ -89,7 +89,7 @@ void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, D2CrashFrameStrc * aFra
     if (bIncludeStackInfo != '\0') {
       char cTmp;
       if (dwCurrentThreadId == dwThreadId) {
-        _strncpy_s(__frame0.szThreadName, 0x80, "Main Thread", -1);
+        strncpy_s(__frame0.szThreadName, 0x80, "Main Thread", -1);
       } else {
         __frame0.szThreadName[0] = '\0';
       }
@@ -268,76 +268,76 @@ static void CRASH_GetExceptionName(char * szText, DWORD dwExceptionCode) {
     DWORD nMsgLen;
     if (dwExceptionCode < 0xc0000006) {
       if (dwExceptionCode == 0xc0000005) {
-        _strncpy_s(szText, 0x100, "ACCESS_VIOLATION", -1);
+        strncpy_s(szText, 0x100, "ACCESS_VIOLATION", -1);
         return;
       }
 
       switch (dwExceptionCode) {
         case 0x80000001:
-          _strncpy_s(szText, 0x100, "GUARD_PAGE", -1);
+          strncpy_s(szText, 0x100, "GUARD_PAGE", -1);
         return;
         case 0x80000002:
-          _strncpy_s(szText, 0x100, "DATATYPE_MISALIGNMENT", -1);
+          strncpy_s(szText, 0x100, "DATATYPE_MISALIGNMENT", -1);
         return;
         case 0x80000003:
-          _strncpy_s(szText, 0x100, "BREAKPOINT", -1);
+          strncpy_s(szText, 0x100, "BREAKPOINT", -1);
         return;
         case 0x80000004:
-          _strncpy_s(szText, 0x100, "SINGLE_STEP", -1);
+          strncpy_s(szText, 0x100, "SINGLE_STEP", -1);
         return;
       }
     } else {
       switch (dwExceptionCode) {
         case 0xc0000006:
-          _strncpy_s(szText, 0x100, "IN_PAGE_ERROR", -1);
+          strncpy_s(szText, 0x100, "IN_PAGE_ERROR", -1);
         return;
         case 0xc0000008:
-          _strncpy_s(szText, 0x100, "INVALID_HANDLE", -1);
+          strncpy_s(szText, 0x100, "INVALID_HANDLE", -1);
         return;
         case 0xc000001d:
-          _strncpy_s(szText, 0x100, "ILLEGAL_INSTRUCTION", -1);
+          strncpy_s(szText, 0x100, "ILLEGAL_INSTRUCTION", -1);
         return;
         case 0xc0000025:
-          _strncpy_s(szText, 0x100, "NONCONTINUABLE_EXCEPTION", -1);
+          strncpy_s(szText, 0x100, "NONCONTINUABLE_EXCEPTION", -1);
         return;
         case 0xc0000026:
-          _strncpy_s(szText, 0x100, "INVALID_DISPOSITION", -1);
+          strncpy_s(szText, 0x100, "INVALID_DISPOSITION", -1);
         return;
         case 0xc000008c:
-          _strncpy_s(szText, 0x100, "ARRAY_BOUNDS_EXCEEDED", -1);
+          strncpy_s(szText, 0x100, "ARRAY_BOUNDS_EXCEEDED", -1);
         return;
         case 0xc000008d:
-          _strncpy_s(szText, 0x100, "FLT_DENORMAL_OPERAND", -1);
+          strncpy_s(szText, 0x100, "FLT_DENORMAL_OPERAND", -1);
         return;
         case 0xc000008e:
-          _strncpy_s(szText, 0x100, "FLT_DIVIDE_BY_ZERO", -1);
+          strncpy_s(szText, 0x100, "FLT_DIVIDE_BY_ZERO", -1);
         return;
         case 0xc000008f:
-          _strncpy_s(szText, 0x100, "FLT_INEXACT_RESULT", -1);
+          strncpy_s(szText, 0x100, "FLT_INEXACT_RESULT", -1);
         return;
         case 0xc0000090:
-          _strncpy_s(szText, 0x100, "FLT_INVALID_OPERATION", -1);
+          strncpy_s(szText, 0x100, "FLT_INVALID_OPERATION", -1);
         return;
         case 0xc0000091:
-          _strncpy_s(szText, 0x100, "FLT_OVERFLOW", -1);
+          strncpy_s(szText, 0x100, "FLT_OVERFLOW", -1);
         return;
         case 0xc0000092:
-          _strncpy_s(szText, 0x100, "FLT_STACK_CHECK", -1);
+          strncpy_s(szText, 0x100, "FLT_STACK_CHECK", -1);
         return;
         case 0xc0000093:
-          _strncpy_s(szText, 0x100, "FLT_UNDERFLOW", -1);
+          strncpy_s(szText, 0x100, "FLT_UNDERFLOW", -1);
         return;
         case 0xc0000094:
-          _strncpy_s(szText, 0x100, "INT_DIVIDE_BY_ZERO", -1);
+          strncpy_s(szText, 0x100, "INT_DIVIDE_BY_ZERO", -1);
         return;
         case 0xc0000095:
-          _strncpy_s(szText, 0x100, "INT_OVERFLOW", -1);
+          strncpy_s(szText, 0x100, "INT_OVERFLOW", -1);
         return;
         case 0xc0000096:
-          _strncpy_s(szText, 0x100, "PRIV_INSTRUCTION", -1);
+          strncpy_s(szText, 0x100, "PRIV_INSTRUCTION", -1);
         return;
         case 0xc00000fd:
-          _strncpy_s(szText, 0x100, "STACK_OVERFLOW", -1);
+          strncpy_s(szText, 0x100, "STACK_OVERFLOW", -1);
         return;
       }
     }
@@ -347,7 +347,7 @@ static void CRASH_GetExceptionName(char * szText, DWORD dwExceptionCode) {
       return;
     }
 
-    _strncpy_s(szText, 0x100, "unknown exception", -1);
+    strncpy_s(szText, 0x100, "unknown exception", -1);
 }
 
 // FOG top-level unhandled-exception filter (SetUnhandledExceptionFilter target) — shows the Blizzard "application encountered an unexpected error" crash dialog.
@@ -566,7 +566,7 @@ char * __stdcall STRING_AppendStringToString(char * szDest, int32_t nDestSize, c
 }
 
 int STRING_FormatVarArgs(char * szFormat, char * szDest, int32_t nDestSize, ...) {
-    int iVar1 = __vsnprintf(szDest, nDestSize - 1, szFormat, (va_list)((uint8_t*)&szFormat + 4));
+    int iVar1 = vsnprintf(szDest, nDestSize - 1, szFormat, (va_list)((uint8_t*)&szFormat + 4));
     szDest[nDestSize - 1] = '\0';
     return iVar1;
 }
@@ -630,7 +630,7 @@ FILE * __stdcall FILETOOLS_OpenFile_WriteMode_UTF8(LPCSTR lpMultiByteStr) {
     if (nConverted) {
       /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ nConverted = MultiByteToWideChar(0xfde9, 0, "w", -1, (LPWSTR)wszMode, 0x20);
       if (nConverted) {
-        pFVar1 = __wfopen(wszPath, wszMode);
+        pFVar1 = _wfopen(wszPath, wszMode);
         return pFVar1;
       }
     }

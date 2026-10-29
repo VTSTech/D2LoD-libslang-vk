@@ -21,7 +21,6 @@
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/Excel.h"
 #include "globals/globals.h"
@@ -91,12 +90,12 @@ static int32_t CUBE_TokenizeAndParseInt(char * szText, char * * ppszText) {
     if (**ppszText != '\0') {
       **ppszText = '\0';
       (*ppszText)++;
-      nParsedValue = atol(_Str);
+      nParsedValue = atoi(_Str);
       return nParsedValue;
     }
 
     *ppszText = 0;
-    nParsedValue = atol(_Str);
+    nParsedValue = atoi(_Str);
     return nParsedValue;
 }
 
@@ -153,7 +152,7 @@ static void __stdcall CUBE_ParseInputItem(char * pszField, D2CubeInputStrc * pIn
     pszFlagsBlock = pszFlagsBlock + strlen(pszFlagsBlock) + 1;
     if ((uint32_t)((int)pszFlagsBlock - (int)(pszField + 1)) <= 4) {
       int nCmpResult;
-      nCmpResult = __stricmp(pszField, (char*)&gaCubeRecipeItemTypeFlags_8);
+      nCmpResult = _stricmp(pszField, (char*)&gaCubeRecipeItemTypeFlags_8);
       if (!nCmpResult) {
         pInput->wFlagsAndUpgrade |= 1;
         pInput->nItemClassId = 0xffff;
@@ -235,12 +234,12 @@ static void __stdcall CUBE_ParseInputItem(char * pszField, D2CubeInputStrc * pIn
         if (*pszLiteralCursor != '\0') {
           *pszLiteralCursor = '\0';
           pszNextFlagsToken = pszLiteralCursor + 1;
-          nAtol = atol(pszCursor);
+          nAtol = atoi(pszCursor);
           pInput->nQuantity = (uint8_t)nAtol;
           pszFlagsCursor = pszNextFlagsToken;
         } else {
           pszNextFlagsToken = 0;
-          nAtol = atol(pszCursor);
+          nAtol = atoi(pszCursor);
           pInput->nQuantity = (uint8_t)nAtol;
           pszFlagsCursor = pszNextFlagsToken;
         }
@@ -404,16 +403,16 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
     char* szPaddedCode;
     szPaddedCode = pszCursor;
     int nTokenCmpLen;
-    nTokenCmpLen = __stricmp(pszField, "Cow Portal");
+    nTokenCmpLen = _stricmp(pszField, "Cow Portal");
     if (!nTokenCmpLen) {
       pOutputCopy->nType = 1;
     } else {
       D2ItemsTxt* pItemsTxt;
-      nTokenCmpLen = __stricmp(pszField, "Pandemonium Portal");
+      nTokenCmpLen = _stricmp(pszField, "Pandemonium Portal");
       if (!nTokenCmpLen) {
         pOutputCopy->nType = 2;
       } else {
-        nTokenCmpLen = __stricmp(pszField, "Pandemonium Finale Portal");
+        nTokenCmpLen = _stricmp(pszField, "Pandemonium Finale Portal");
         if (!nTokenCmpLen) {
           pOutputCopy->nType = 3;
         } else {
@@ -513,11 +512,11 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
           if (*pszCursor != '\0') {
             *pszCursor = '\0';
             szPaddedCode = pszCursor + 1;
-            nAtol = atol(pcVar2);
+            nAtol = atoi(pcVar2);
             pOutput->nQuantity = (uint8_t)nAtol;
           } else {
             szPaddedCode = 0;
-            nAtol = atol(pcVar2);
+            nAtol = atoi(pcVar2);
             pOutput->nQuantity = (uint8_t)nAtol;
           }
         } else {
@@ -532,7 +531,7 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
               szPaddedCode = 0;
             }
 
-            nAtol = atol(pcVar2);
+            nAtol = atoi(pcVar2);
             *(short int*)pszItemCodeField = (short int)nAtol;
             pszItemCodeField += 2;
           } else {
@@ -547,7 +546,7 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
                 szPaddedCode = 0;
               }
 
-              nAtol = atol(pcVar2);
+              nAtol = atoi(pcVar2);
               *(short int*)pszPadded = (short int)nAtol;
               pszPadded += 2;
             } else {
@@ -686,7 +685,7 @@ void __fastcall DATATBLS_LinkerItemStatCost(char * pszStatName, int32_t * pnStat
       return;
     }
     if (cFirstChar == '-' || '/' < cFirstChar && cFirstChar < ':') {
-      nStatIndex = atol(pszStatName);
+      nStatIndex = atoi(pszStatName);
     } else {
       if (!sgtDataTable.pTxtItemStatCostLink) {
         *pnStatId = 0;

@@ -115,10 +115,6 @@ FILE_PATCHES = {
     'd2_platform.h': [
         # The hook that runs right after the Windows headers: see vc8_after_windows.h.
         (r'^#  include <wintrust\.h>$', '#  include <wintrust.h>\n#  include <vc8_after_windows.h>'),
-        # A variadic forwarder to sscanf; VC8 has no variadic templates, and a
-        # function-like rename is the same call.
-        (r'^template <typename\.\.\. Args> static inline int FID_conflict__sscanf\(.*$',
-         '#define FID_conflict__sscanf sscanf'),
         # mingw lacks the MSVC names and maps them to C99's; VC8 has them, and the
         # reverse mapping in vc8_after_windows.h would make these loop.
         (r'^#define __snprintf snprintf$', '#define __snprintf _snprintf'),

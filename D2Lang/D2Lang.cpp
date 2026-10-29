@@ -2,7 +2,6 @@
 
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/Unicode/UNISYS.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 
@@ -36,7 +35,7 @@ void __stdcall UI_FormatNumberWithCommas(uint16_t * wszText, int32_t nParam1, in
       nParam1 = -nParam1;
     }
 
-    __itoa(nParam1, __frame0.aDigitBuffer, 10);
+    _itoa(nParam1, __frame0.aDigitBuffer, 10);
     char* pcDigitPtr = __frame0.aDigitBuffer;
     pcDigitPtr = pcDigitPtr + strlen(pcDigitPtr) + 1;
     int nDigitCount = (int)pcDigitPtr - (int)(__frame0.aDigitBuffer + 1);

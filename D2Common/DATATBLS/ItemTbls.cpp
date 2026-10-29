@@ -18,7 +18,6 @@
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Skills.h"
 #include "Fog/Src/ErrorManager.h"
@@ -1210,7 +1209,7 @@ void __fastcall ITEMTBLS_ParseSkillMonTypeOrStateId(char * szValue, char * pReco
       cFirstChar = *szValue;
       if (cFirstChar != '\0') {
         if (cFirstChar == '-' || '/' < cFirstChar && cFirstChar < ':') {
-          nId = atol(szValue);
+          nId = atoi(szValue);
           *(int32_t*)(pRecord + nOffset) = nId;
           return;
         }

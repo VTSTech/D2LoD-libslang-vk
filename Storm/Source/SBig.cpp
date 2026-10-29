@@ -42,7 +42,7 @@ static uint32_t __stdcall SBIG_Accumulator_AddWithCarry(ULONGLONG ullAddend, uin
 
     *pnAccum = pnAccum[1];
     pnAccum[1] = 0;
-    u64Carry = __allmul(uCarry, 0, 0, 1);
+    u64Carry = _allmul(uCarry, 0, 0, 1);
     uCarry = *pnAccum;
     *pnAccum += (uint32_t)u64Carry;
     pnAccum[1] = pnAccum[1] + (int)((uint64_t)u64Carry >> 0x20) + (uint32_t)((uint32_t)((uint32_t)uCarry + (uint32_t)u64Carry) < (uint32_t)uCarry);
@@ -53,7 +53,7 @@ static uint32_t __stdcall SBIG_Accumulator_AddWithCarry(ULONGLONG ullAddend, uin
 // @caution THE TAIL IS ACTIVELY MISLEADING and pass 6 deliberately did NOT rename it, because what it should be called is not established. There is no multiply-and-add here: the __allmul(lo, hi, 0, 1) call is a multiply by 2^32, i.e. a 32-bit word shift. No oracle counterpart exists. Read the body before trusting or reusing this name.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
 void __stdcall SBIG_Accumulator_MulAndAdd(uint32_t * pnParam, uint32_t nAddend) {
-    int64_t u64Product = __allmul(*pnParam, pnParam[1], 0, 1);
+    int64_t u64Product = _allmul(*pnParam, pnParam[1], 0, 1);
     *(uint64_t*)pnParam = u64Product + (uint64_t)nAddend;
 }
 
@@ -61,7 +61,7 @@ void __stdcall SBIG_Accumulator_MulAndAdd(uint32_t * pnParam, uint32_t nAddend) 
 // @caution THE TAIL IS ACTIVELY MISLEADING and pass 6 deliberately did NOT rename it. It computes no offset; it assembles a 64-bit value from a high and a low word, MAKE64(hi, lo). No oracle counterpart exists. Read the body before trusting this name.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
 int64_t __stdcall SBIG_Accumulator_ComputeOffset(uint32_t nMultiplicand, uint32_t nAddend) {
-    int64_t u64Product = __allmul(nMultiplicand, 0, 0, 1);
+    int64_t u64Product = _allmul(nMultiplicand, 0, 0, 1);
     return u64Product + (uint64_t)nAddend;
 }
 
@@ -1533,7 +1533,7 @@ static void __stdcall BigBuffer_Div_Ux(uint32_t * pRemainderOut, BigBuffer * pDi
         nWordValue = 0;
       }
 
-      nScaledRem = __allmul(nRemainder, nParam12, 0, 1);
+      nScaledRem = _allmul(nRemainder, nParam12, 0, 1);
       nRemainder = pQuotient->nStartWord + nWordIndex;
       if (nRemainder >= pQuotient->nCount) {
         nGranOrHi = nRemainder + 1;
@@ -1555,7 +1555,7 @@ static void __stdcall BigBuffer_Div_Ux(uint32_t * pRemainderOut, BigBuffer * pDi
         pQuotient->nCount = nGranOrHi;
       }
 
-      LVar1 = __aulldvrm((uint32_t)(nScaledRem + (uint64_t)nWordValue), (uint32_t)(nScaledRem + (uint64_t)nWordValue >> 0x20), nDivisorLo, nDivisorHi);
+      LVar1 = _aulldvrm((uint32_t)(nScaledRem + (uint64_t)nWordValue), (uint32_t)(nScaledRem + (uint64_t)nWordValue >> 0x20), nDivisorLo, nDivisorHi);
       nParam12 = *(uint32_t*)((char*)&LVar1.qwRemainder + 4);
       nRemainder = (uint32_t)LVar1.qwRemainder;
       pQuotient->pData[pQuotient->nStartWord + nWordIndex] = (uint32_t)LVar1.qwQuotient;
@@ -1625,7 +1625,7 @@ static void __stdcall BigBuffer_Mul_Ux(BigBuffer * pSource, uint32_t nMultiplier
         nCarry = 0;
       }
 
-      nProduct = __allmul(nCarry, 0, nMultiplierLo, nMultiplierHi);
+      nProduct = _allmul(nCarry, 0, nMultiplierLo, nMultiplierHi);
       nCarry = (uint32_t)(nProduct + nCarryExtended >> 0x20);
       nAbsIndex = pDest->nStartWord + i;
       if (nAbsIndex >= pDest->nCount) {
@@ -2988,10 +2988,10 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
           SBIG_GrowToIndex(nTopIndex, pResult);
           uBitIter = pResult->nStartWord;
           pTopWordData = pResult->pData;
-          nDividend64 = __allmul(pDividendData[nAlignChunk + nDivisorLen], 0, 0, 1);
+          nDividend64 = _allmul(pDividendData[nAlignChunk + nDivisorLen], 0, 0, 1);
           nDividend64 += (uint64_t)pTopWordData[uBitIter + nTopIndex];
           SBIG_GrowToIndex(0, pQuotient);
-          uAligned = (uint64_t)nDividend64 / nDivisorHigh;
+          uAligned = _aulldiv((uint32_t)nDividend64, (uint32_t)((uint64_t)nDividend64 >> 0x20), nDivisorHigh, 0);
           nAlignChunk = (uint32_t)uAligned;
         }
 

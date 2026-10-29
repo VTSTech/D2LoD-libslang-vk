@@ -2,7 +2,6 @@
 
 #include "D2CMP/Draw.h"
 #include "D2CMP/tagPALETTEENTRY.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SBMP.h"
 #include "Storm/Source/SSTR.h"

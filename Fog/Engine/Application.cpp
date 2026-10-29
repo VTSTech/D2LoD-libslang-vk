@@ -447,7 +447,7 @@ bool __fastcall DEBUG_EnumerateModulesViaPEB(int * pnParam) {
     void* pSavedEsp;
     EH4_EXCEPTION_REGISTRATION tSehFrame;
     tSehFrame.TryLevel = -2;
-    tSehFrame.ExceptionHandler = __except_handler4;
+    tSehFrame.ExceptionHandler = _except_handler4;
     tSehFrame.Next = (EH4_EXCEPTION_REGISTRATION*)ExceptionList;
     tSehFrame.EncodedScopeTable = DEFAULT_SECURITY_COOKIE ^ 0x702430;
     ExceptionList = &tSehFrame;
@@ -527,7 +527,7 @@ static uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, int32_t pModuleInf
       return bIsBadPtr & -256;
     }
 
-    _strncpy_s((char*)(pModuleInfo + 0x108), 0x100, (LPCSTR)((int)pDebugRecord + 0x10), -1);
+    strncpy_s((char*)(pModuleInfo + 0x108), 0x100, (LPCSTR)((int)pDebugRecord + 0x10), -1);
     *(uint32_t*)(pModuleInfo + 0x21c) = *(uint32_t*)((int)pDebugRecord + 0xc);
     *(uint32_t*)(pModuleInfo + 0x208) = *(uint32_t*)((int)pDebugRecord + 8);
     *(uint32_t*)(pModuleInfo + 0x20c) = 0;
@@ -548,7 +548,7 @@ static uint32_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInf
       return bIsBadPtr & -256;
     }
 
-    _strncpy_s((char*)(pModuleInfo + 0x108), 0x100, (LPCSTR)((int)pDebugRecord + 0x18), -1);
+    strncpy_s((char*)(pModuleInfo + 0x108), 0x100, (LPCSTR)((int)pDebugRecord + 0x18), -1);
     *(uint32_t*)(pModuleInfo + 0x21c) = *(uint32_t*)((int)pDebugRecord + 0x14);
     *(uint32_t*)(pModuleInfo + 0x20c) = *(uint32_t*)((int)pDebugRecord + 4);
     *(uint32_t*)(pModuleInfo + 0x210) = *(uint32_t*)((int)pDebugRecord + 8);
@@ -585,7 +585,7 @@ int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFram
     EH4_EXCEPTION_REGISTRATION tSehFrame;
     uint32_t* pNextEbp;
     tSehFrame.TryLevel = -2;
-    tSehFrame.ExceptionHandler = __except_handler4;
+    tSehFrame.ExceptionHandler = _except_handler4;
     tSehFrame.Next = (EH4_EXCEPTION_REGISTRATION*)ExceptionList;
     tSehFrame.EncodedScopeTable = DEFAULT_SECURITY_COOKIE ^ 0x7022b0;
     uint32_t uStack800;
@@ -725,7 +725,7 @@ bool __stdcall DEBUG_FormatAddressInfo(uint32_t nAddress, char * pOutput) {
         pSep = szModulePath;
       }
 
-      _strncpy_s(pOutput + 0x204, 0x40, pSep, -1);
+      strncpy_s(pOutput + 0x204, 0x40, pSep, -1);
     } else {
       pOutput[0x204] = '\0';
     }
@@ -753,7 +753,7 @@ bool __stdcall DEBUG_FormatAddressInfo(uint32_t nAddress, char * pOutput) {
       pSep = szModulePath;
     }
 
-    _strncpy_s(pSrcFileField, 0x100, pSep, -1);
+    strncpy_s(pSrcFileField, 0x100, pSep, -1);
     return true;
 }
 
@@ -1014,7 +1014,7 @@ void __fastcall MISC_ParseCommandLineAndPutIntoD2IniData(D2IniConfigStrc * pD2In
                   }
                 case 1:
                   {
-                    nConfigIdx = atol(szArgValue);
+                    nConfigIdx = atoi(szArgValue);
                     *(long int*)pCmdEnd = nConfigIdx;
                     break;
                   }
@@ -1124,10 +1124,10 @@ void __stdcall SystemSurvey_WriteProductLanugageToLocaleFile() {
       Source::SFile::SafeCreateDirectoryTree(__frame0.szLocaleFilePath);
       pLocaleFile = fopen(__frame0.szLocaleFilePath, "w");
       if (pLocaleFile) {
-        CRT_Fputc(__frame0.langInfo >> 0x18, pLocaleFile);
-        CRT_Fputc(__frame0.langInfo >> 0x10 & 0xff, pLocaleFile);
-        CRT_Fputc(__frame0.langInfo >> 8 & 0xff, pLocaleFile);
-        CRT_Fputc(__frame0.langInfo & 0xff, pLocaleFile);
+        fputc(__frame0.langInfo >> 0x18, pLocaleFile);
+        fputc(__frame0.langInfo >> 0x10 & 0xff, pLocaleFile);
+        fputc(__frame0.langInfo >> 8 & 0xff, pLocaleFile);
+        fputc(__frame0.langInfo & 0xff, pLocaleFile);
         fclose(pLocaleFile);
       }
 
@@ -1137,10 +1137,10 @@ void __stdcall SystemSurvey_WriteProductLanugageToLocaleFile() {
         Source::SFile::SafeCreateDirectoryTree(__frame0.szLocaleFilePath);
         pLocaleFile = fopen(__frame0.szLocaleFilePath, "w");
         if (pLocaleFile) {
-          CRT_Fputc(__frame0.langInfo >> 0x18, pLocaleFile);
-          CRT_Fputc(__frame0.langInfo >> 0x10 & 0xff, pLocaleFile);
-          CRT_Fputc(__frame0.langInfo >> 8 & 0xff, pLocaleFile);
-          CRT_Fputc(__frame0.langInfo & 0xff, pLocaleFile);
+          fputc(__frame0.langInfo >> 0x18, pLocaleFile);
+          fputc(__frame0.langInfo >> 0x10 & 0xff, pLocaleFile);
+          fputc(__frame0.langInfo >> 8 & 0xff, pLocaleFile);
+          fputc(__frame0.langInfo & 0xff, pLocaleFile);
           fclose(pLocaleFile);
         }
       }

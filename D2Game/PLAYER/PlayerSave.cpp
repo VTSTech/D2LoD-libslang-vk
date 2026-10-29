@@ -68,7 +68,6 @@
 #include "D2Win/DC6Block.h"
 #include "Fog/BitBuffer.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Save.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/ErrorManager.h"
@@ -1240,7 +1239,7 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
       sOldSaveHeader.byCharNamePad = 0;
       pGuildNameDst = GAME::Clients::GetCharName(pClient);
       pGuildNameDst[0xf] = '\0';
-      nCopyCount = __stricmp(pGuildNameDst, sOldSaveHeader.szCharNameClient);
+      nCopyCount = _stricmp(pGuildNameDst, sOldSaveHeader.szCharNameClient);
       pGameCopy = pGameLocal;
       if (nCopyCount) {
         *pBnetFlagOut = 0;

@@ -231,7 +231,7 @@ void __fastcall CHATDLG_DisplayTimestampedMessage(uint32_t nUnixTime, int32_t ps
       return;
     }
 
-    FILETIME utcFileTime = d2_bits_as<FILETIME>(__allmul(nUnixTime + 0xb6109100, (0x49ef6eff < nUnixTime) + 2, 10000000, 0));
+    FILETIME utcFileTime = d2_bits_as<FILETIME>(_allmul(nUnixTime + 0xb6109100, (0x49ef6eff < nUnixTime) + 2, 10000000, 0));
     /* LPFILETIME lpLocalFileTime for FileTimeToLocalFileTime */ /* FILETIME * lpFileTime for FileTimeToLocalFileTime */ FileTimeToLocalFileTime(&utcFileTime, &localFileTime);
     CHATDLG_FormatFileTimeToDate(&localFileTime, 0x40, szDateStr);
     StoreData((LPRECT)0x0, 0, szDateStr);
@@ -1591,7 +1591,7 @@ void __fastcall CHATDLG_HandleChatListClick(int32_t nStartRank, int32_t nRankCou
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearLineRow(g_pLadderBoardTextBox, nStartRank);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineColor(g_pLadderBoardTextBox, nStartRank, nCopyLen);
       nNextRank = nStartRank + 1;
-      __itoa(nNextRank, szNumBuf, 10);
+      _itoa(nNextRank, szNumBuf, 10);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, szNumBuf, nStartRank, 0);
       sRowBuf.szName[0] = '\0';
       pbCopySrc = D2Win::Src::D2WinSmack::D2WINSMACK_GetTitlePrefixIndexFromClass(dwCharStats & 0xf, dwCharStats >> 8 & 0x1f, dwCharStats & 0x20, dwCharStats & 0x40);
@@ -1604,7 +1604,7 @@ void __fastcall CHATDLG_HandleChatListClick(int32_t nStartRank, int32_t nRankCou
       strcat(sRowBuf.szName, (char*)pbEntry);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, sRowBuf.szName, nStartRank, 1);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, gaszPlayerClassTokens[dwCharStats & 0xf], nStartRank, 2);
-      __itoa((int)dwCharStats >> 0x10 & 0xff, szNumBuf, 10);
+      _itoa((int)dwCharStats >> 0x10 & 0xff, szNumBuf, 10);
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(g_pLadderBoardTextBox, szNumBuf, nStartRank, 3);
       pcScratch = &sRowBuf;
       for (nCmp = 0x80; nCmp; nCmp--) {

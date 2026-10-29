@@ -52,7 +52,6 @@
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
-#include "compiler/compiler.h"
 #include "globals/globals.h"
 #include "D2Launch/D2Launch.h"
 #include "D2Win/D2WinEditBox.h"
@@ -719,7 +718,7 @@ uint32_t __stdcall MAINMENU_CheckBattleNetIPFlag() {
     }
 
     __frame0.nOctet4 = 0x22;
-    FID_conflict__sscanf(szIPBuffer, "%ld.%ld.%ld.%ld", &__frame0.nOctet1, &__frame0.nOctet2, &__frame0.nOctet3, (long int*)&__frame0.nOctet4);
+    sscanf(szIPBuffer, "%ld.%ld.%ld.%ld", &__frame0.nOctet1, &__frame0.nOctet2, &__frame0.nOctet3, (long int*)&__frame0.nOctet4);
     if (__frame0.nOctet4 & 0x10) {
       return (uint32_t)((uint8_t)~(uint8_t)__frame0.nOctet4 >> 7);
     }
@@ -1874,7 +1873,7 @@ BOOL __stdcall MAINMENU_ShowCinematicsMenu(D2ControlMsg * pControlMsg) {
     int32_t nReadResult = Storm::Source::SReg::SRegLoadString("Diablo II", "Aux Battle.net", 0, szRegVersion, 100);
     if (nReadResult) {
       __frame0.nFlagsOrForm5 = (D2ControlStrc*)0x22;
-      FID_conflict__sscanf(szRegVersion, "%ld.%ld.%ld.%ld", &__frame0.nVerMajor, &__frame0.nVerMinor, (long int*)&__frame0.pForm4, (long int*)&__frame0.nFlagsOrForm5);
+      sscanf(szRegVersion, "%ld.%ld.%ld.%ld", &__frame0.nVerMajor, &__frame0.nVerMinor, (long int*)&__frame0.pForm4, (long int*)&__frame0.nFlagsOrForm5);
       if ((uint32_t)__frame0.nFlagsOrForm5 & 1) {
         byCineLevel = 7;
       } else {
@@ -2915,7 +2914,7 @@ void __stdcall MAINMENU_PlayExpansionIntro() {
     D2gfx::D2GFX::D2GFX_PlayCutScene(szVideoPath, nCutSceneFlags, nullptr);
     nCutSceneFlags = Storm::Source::SReg::SRegLoadString("Diablo II", "Aux Battle.net", 0, szRegValue, 100);
     if (nCutSceneFlags) {
-      FID_conflict__sscanf(szRegValue, "%ld.%ld.%ld.%ld", &__frame0.nVerA, &__frame0.nVerB, &__frame0.nVerC, (long int*)&__frame0.nVerD);
+      sscanf(szRegValue, "%ld.%ld.%ld.%ld", &__frame0.nVerA, &__frame0.nVerB, &__frame0.nVerC, (long int*)&__frame0.nVerD);
     }
 
     __frame0.nVerD |= 0x80;
@@ -3678,7 +3677,7 @@ BOOL __stdcall UIMENU_ConnectToServerCallback(D2ControlStrc * pUnusedArg) {
     strncpy(gszLastTcpIpAddress, acStack_414, 0xff);
     gszLastTcpIpAddress[0xff] = '\0';
     Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "LastTcpIp", 0, gszLastTcpIpAddress);
-    int nParsed = FID_conflict__sscanf(acStack_414, "%d.%d.%d.%d", &__frame0.nOctet1, &__frame0.nOctet2, &__frame0.nOctet3, &__frame0.nOctet4);
+    int nParsed = sscanf(acStack_414, "%d.%d.%d.%d", &__frame0.nOctet1, &__frame0.nOctet2, &__frame0.nOctet3, &__frame0.nOctet4);
     if (nParsed != 4) {
       pszResolvedIp = Fog::Src::Safesock::inet_nameToIp(acStack_414);
       if (!pszResolvedIp) {

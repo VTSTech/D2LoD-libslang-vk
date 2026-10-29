@@ -3,7 +3,6 @@
 #include "Bnclient/Cache.h"
 #include "Bnclient/Bnclient.h"
 #include "Bnclient/Bnet.h"
-#include "Fog/Debug.h"
 #include "Storm/SMem.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
@@ -374,7 +373,7 @@ BOOL __fastcall CACHE_ReadData(char * szKey, uint32_t * pCrc32Out, uint32_t * * 
 
           validate_and_read_entry:
           __frame0.entryHeader.dwHeaderCrc32 = nHashSlot;
-          nBlockTableOffset = __stricmp(szKey, __frame0.entryHeader.szKey);
+          nBlockTableOffset = _stricmp(szKey, __frame0.entryHeader.szKey);
           if (nBlockTableOffset) {
             __frame0.nCorruptReason = 2;
             szCorruptKey = szKey;

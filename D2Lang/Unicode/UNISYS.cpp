@@ -5,7 +5,6 @@
 #include "D2Lang/StrTable/strtable.h"
 #include "Fog/Archive.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/File.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
@@ -491,9 +490,9 @@ void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszDst, uint16_t * w
               wszNumBuf[0] = L'\0';
             memset(wszNumBuf + 1, 0, 14 * sizeof(wszNumBuf[0]));
             if (wszFmtBuf[2] == L'd') {
-              __itoa((int)pArgSave, szNumBuf, 10);
+              _itoa((int)pArgSave, szNumBuf, 10);
             } else {
-              __ultoa((uint32_t)pArgSave, szNumBuf, 10);
+              _ultoa((uint32_t)pArgSave, szNumBuf, 10);
             }
 
             UTF8_ConvertToWideChar(wszNumBuf, szNumBuf, 0xf);

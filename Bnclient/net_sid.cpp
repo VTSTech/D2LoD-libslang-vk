@@ -10,7 +10,6 @@
 #include "Bnclient/SRP.h"
 #include "D2Client/net_sid.h"
 #include "D2Lang/StrTable/strtable.h"
-#include "Fog/Debug.h"
 #include "Fog/Fog.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
@@ -22,7 +21,6 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
 #include "Storm/_unnamespaced.h"
-#include "compiler/compiler.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Game/Objects/ObjectsRgn.h"
@@ -1327,7 +1325,7 @@ int __stdcall NET_SID_CLIENT_Send_0x50_AuthInfo() {
     /* LPFILETIME lpFileTime for SystemTimeToFileTime */ /* SYSTEMTIME * lpSystemTime for SystemTimeToFileTime */ SystemTimeToFileTime(&stUtcTime, &ftUtc);
     /* LPFILETIME lpFileTime for SystemTimeToFileTime */ /* SYSTEMTIME * lpSystemTime for SystemTimeToFileTime */ SystemTimeToFileTime(&stLocalTime, &ftLocal);
     int64_t llTimeDiff;
-    llTimeDiff = __alldiv(ftUtc.dwLowDateTime - ftLocal.dwLowDateTime, ftUtc.dwHighDateTime - ftLocal.dwHighDateTime - (uint32_t)(ftUtc.dwLowDateTime < ftLocal.dwLowDateTime), 600000000, 0);
+    llTimeDiff = _alldiv(ftUtc.dwLowDateTime - ftLocal.dwLowDateTime, ftUtc.dwHighDateTime - ftLocal.dwHighDateTime - (uint32_t)(ftUtc.dwLowDateTime < ftLocal.dwLowDateTime), 600000000, 0);
     __frame0.sAuthInfoPacket.nTzBias = (int)llTimeDiff;
     __frame0.sAuthInfoPacket.dwLocaleId = GetUserDefaultLCID();
     HMODULE hKernel32;
@@ -1625,7 +1623,7 @@ void __fastcall NET_SID_CLIENT_BigNumMultiplyAccumulate(int32_t nWords, uint32_t
       pSrcWord = srcPtr - 1;
       srcPtr--;
       nWords--;
-      product64 = (int64_t)*pSrcWord * multiplier;
+      product64 = _allmul(*pSrcWord, 0, multiplier, 0);
       carryIn = (uint32_t)(product64 + carryExpanded >> 0x20);
       pOutWord--;
       *pOutWord = (uint32_t)(product64 + carryExpanded);
@@ -2077,7 +2075,7 @@ __time32_t __stdcall NET_SID_GetTime32_00522bb0(__time32_t * pTime) {
 }
 
 void __fastcall NET_SID_CLIENT_GenerateRandomString(int32_t szOutBuf, int32_t nLength) {
-    CRT_Srand(0x150b);
+    srand(0x150b);
     int nCharIdx = 0;
     if (nLength - 1 > 0) {
       int nRandByte;
@@ -2090,8 +2088,8 @@ void __fastcall NET_SID_CLIENT_GenerateRandomString(int32_t szOutBuf, int32_t nL
       } while (nCharIdx < nLength - 1);
     }
 
-    uint32_t nParam = _time32(nullptr);
-    CRT_Srand(nParam);
+    uint32_t _Seed = _time32(nullptr);
+    srand(_Seed);
     *(uint8_t*)(szOutBuf - 1 + nLength) = 0;
 }
 
@@ -2106,7 +2104,7 @@ void __fastcall NET_SID_CLIENT_EncodeCDKeyHash(int32_t pThis, int32_t nSeed) {
       exit(-1);
     }
 
-    CRT_Srand(0x4fa7);
+    srand(0x4fa7);
     uint8_t* pRandBufPos = hashWorkBuf;
     int nKeyCharOffset = 0x70;
     do {
@@ -2116,8 +2114,8 @@ void __fastcall NET_SID_CLIENT_EncodeCDKeyHash(int32_t pThis, int32_t nSeed) {
       pRandBufPos++;
     } while (nKeyCharOffset);
 
-    uint32_t nParam = _time32(nullptr);
-    CRT_Srand(nParam);
+    uint32_t nXorIdx = _time32(nullptr);
+    srand(nXorIdx);
     nKeyCharOffset = 0;
     nRandByte = 0;
     do {
@@ -2154,7 +2152,7 @@ void __fastcall NET_SID_CLIENT_EncodeCDKeyHash(int32_t pThis, int32_t nSeed) {
     NET_SID_CLIENT_InitSHAContext(0);
     NET_SID_CLIENT_SHA1Compress(0, (uint32_t*)(hashWorkBuf + 0x70), (uint32_t*)(hashWorkBuf + 0xb0));
     NET_SID_CLIENT_ClearSHAContexts();
-    uint32_t nXorIdx = 0;
+    nXorIdx = 0;
     do {
       pRandBufPos = hashWorkBuf + nXorIdx;
       *pRandBufPos ^= hashWorkBuf[nXorIdx % 0x14 + 0xb0];

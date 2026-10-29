@@ -5,7 +5,6 @@
 #include "D2Common/Chat/Ignorelist/MappingEntryNode.h"
 #include "D2Common/Chat/Ignorelist/StringEntryNode.h"
 #include "Fog/3rdparty/crashy/Report.h"
-#include "Fog/Debug.h"
 #include "Fog/Source/SFile.h"
 #include "Storm/H/stpl.h"
 #include "Storm/SMem.h"
@@ -15,6 +14,7 @@
 #include "globals/globals.h"
 #include "D2Common/Chat.h"
 #include "D2Common/Chat/Ignorelist/ChatIgnoreList.h"
+#include "Fog/Debug.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -343,7 +343,7 @@ void __thiscall LoadFromFile(::IgnoreList * pThis) {
       char* pszLine;
       szLineBuf[0] = '\0';
       memset(szLineBuf + 1, 0, 0xff);
-      pszLine = CRT_Fgets(szLineBuf, 0x100, pFile);
+      pszLine = fgets(szLineBuf, 0x100, pFile);
       while (pszLine) {
         pszIter = 0;
         uVar1 = Storm::Source::SSTR::SStrLen(szLineBuf);
@@ -366,7 +366,7 @@ void __thiscall LoadFromFile(::IgnoreList * pThis) {
         }
 
         pHashTable->New(pszLine, 0, 0);
-        pszLine = CRT_Fgets(szLineBuf, 0x100, pFile);
+        pszLine = fgets(szLineBuf, 0x100, pFile);
       }
 
       fclose(pFile);

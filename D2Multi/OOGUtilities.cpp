@@ -1377,7 +1377,7 @@ void __stdcall OOGMENU_RefreshGameListDisplay() {
         D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOOGGameListTextBox, (char*)(pwEntryPort - 0x18));
         nLastLineIndex = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetLastLineIndex(gpOOGGameListTextBox);
         if (bHasPeer) {
-          __itoa((uint32_t)*pwEntryPort, szPortText, 10);
+          _itoa((uint32_t)*pwEntryPort, szPortText, 10);
           D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineCellTextA(gpOOGGameListTextBox, szPortText, nLastLineIndex, 1);
         }
 
@@ -1635,14 +1635,14 @@ void __stdcall OOGUTIL_Unused3() {
     char szAscii[8];
     uint16_t* pwszValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUIGameListMaxPlayersEditBox->sControl);
     D2Lang::WideCharToUTF8(szAscii, pwszValue, 5);
-    atol(szAscii);
+    atoi(szAscii);
 }
 
 void __stdcall OOGUTIL_Unused4() {
     char szAscii[8];
     uint16_t* pwszValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUILevelRestrictionEditBox->sControl);
     D2Lang::WideCharToUTF8(szAscii, pwszValue, 5);
-    atol(szAscii);
+    atoi(szAscii);
 }
 
 // OnPress of the create-game max-players up button gUIGameListMaxPlayersUpButton: reads gUIGameListMaxPlayersEditBox, adds 1 while below 8 and writes it back through gszOogMaxPlayersText; returns 1.
@@ -1651,7 +1651,7 @@ BOOL __stdcall OOGUTIL_OnPressMaxPlayersUp(D2ControlMsg * pControlMsg) {
     char szValue[8];
     uint16_t* pwszValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUIGameListMaxPlayersEditBox->sControl);
     D2Lang::WideCharToUTF8(szValue, pwszValue, 5);
-    int nMaxPlayers = atol(szValue);
+    int nMaxPlayers = atoi(szValue);
     if (nMaxPlayers < 8) {
       nMaxPlayers++;
     }
@@ -1667,7 +1667,7 @@ BOOL __stdcall OOGUTIL_OnPressMaxPlayersDown(D2ControlMsg * pControlMsg) {
     char szValue[8];
     uint16_t* pwszValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUIGameListMaxPlayersEditBox->sControl);
     D2Lang::WideCharToUTF8(szValue, pwszValue, 5);
-    int nMaxPlayers = atol(szValue);
+    int nMaxPlayers = atoi(szValue);
     if (nMaxPlayers > 1) {
       nMaxPlayers--;
     }
@@ -1683,7 +1683,7 @@ BOOL __stdcall OOGUTIL_OnPressLevelRestrictionUp(D2ControlMsg * pControlMsg) {
     char szValue[8];
     uint16_t* pwszValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUILevelRestrictionEditBox->sControl);
     D2Lang::WideCharToUTF8(szValue, pwszValue, 5);
-    int nLevelRestriction = atol(szValue);
+    int nLevelRestriction = atoi(szValue);
     if (nLevelRestriction < 99) {
       nLevelRestriction++;
     }
@@ -1699,7 +1699,7 @@ BOOL __stdcall OOGUTIL_OnPressLevelRestrictionDown(D2ControlMsg * pControlMsg) {
     char szValue[8];
     uint16_t* pwszValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUILevelRestrictionEditBox->sControl);
     D2Lang::WideCharToUTF8(szValue, pwszValue, 5);
-    int nLevelRestriction = atol(szValue);
+    int nLevelRestriction = atoi(szValue);
     if (nLevelRestriction > 0) {
       nLevelRestriction--;
     }
@@ -1790,7 +1790,7 @@ void __stdcall OOGUTIL_RefreshGameList() {
       pszScan = pszScan + strlen(pszScan) + 1;
       if (pszScan != szValue + 1) {
         bSelectedValid = 1;
-        nGameCount = atol(szValue);
+        nGameCount = atoi(szValue);
         nClampedCount = bSelectedValid;
         if (0 < nGameCount) {
           if (nGameCount <= 8) {
@@ -1816,7 +1816,7 @@ void __stdcall OOGUTIL_RefreshGameList() {
       D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szValue, (uint16_t*)pwszValue, 3);
       pszScan = szValue;
       pszScan = pszScan + strlen(pszScan) + 1;
-      if (pszScan == szValue + 1 || (nClampedCount = atol(szValue) , nClampedCount < 0)) {
+      if (pszScan == szValue + 1 || (nClampedCount = atoi(szValue) , nClampedCount < 0)) {
         goto update_create_button;
       }
     }
@@ -3091,14 +3091,14 @@ BOOL __stdcall NET_MCP_CLIENT_PrepareGameCreatePacket(D2ControlStrc * pControl) 
       if (bCallResult) {
         pwszLevelRestriction = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUILevelRestrictionEditBox->sControl);
         D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szNumberBuffer, (uint16_t*)pwszLevelRestriction, 3);
-        nParsedValue = atol(szNumberBuffer);
+        nParsedValue = atoi(szNumberBuffer);
         sGameCreatePacket.nDifference = (char)nParsedValue;
       } else {
         sGameCreatePacket.nDifference = -1;
       }
 
       D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szNumberBuffer, (uint16_t*)*(uint32_t*)(char*)&szTempBuffer, 3);
-      nParsedValue = atol(szNumberBuffer);
+      nParsedValue = atoi(szNumberBuffer);
       sGameCreatePacket.nMaxPlayers = (char)nParsedValue;
     }
 
@@ -3156,7 +3156,7 @@ BOOL __stdcall NET_MCP_CLIENT_PrepareGameCreatePacket(D2ControlStrc * pControl) 
     } else {
       pwszGameName = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUIGameListMaxPlayersEditBox->sControl);
       D2Lang::WideCharToUTF8(szTempBuffer, pwszGameName, 5);
-      nParsedValue = atol(szTempBuffer);
+      nParsedValue = atoi(szTempBuffer);
       Storm::Source::SReg::SRegSaveValue("Diablo II", "MAX_PLAYER", 0, nParsedValue);
       Storm::Source::SReg::SRegSaveValue("Diablo II", "DIFF_LEVEL", 0, CreateGameDifflevel);
       bCallResult = D2Win::Src::D2WinButton::D2WINBUTTON_IsPressed(gUIGameListLevelRestrictionCheckbox);
@@ -3165,7 +3165,7 @@ BOOL __stdcall NET_MCP_CLIENT_PrepareGameCreatePacket(D2ControlStrc * pControl) 
       } else {
         pwszGameName = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUILevelRestrictionEditBox->sControl);
         D2Lang::WideCharToUTF8(szTempBuffer, pwszGameName, 5);
-        nParsedValue = atol(szTempBuffer);
+        nParsedValue = atoi(szTempBuffer);
       }
 
       Storm::Source::SReg::SRegSaveValue("Diablo II", "LVL_REST", 0, nParsedValue);
@@ -3678,7 +3678,8 @@ void __stdcall OOGUTIL_OpenCreateGameDialog() {
 }
 
 void OOGUTIL_Unused12(uint32_t * pnParam, char cParam) {
-    CRT_Strchr((char*)pnParam, cParam);
+    char _cParam;
+    strchr((char*)pnParam, _cParam);
 }
 
 // Returns the account part of a Battle.net user string "Character*Account": the text after '*', or szUserName itself when there is no '*' or nothing follows it.

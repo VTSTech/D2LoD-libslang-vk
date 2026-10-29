@@ -3563,7 +3563,7 @@ void __stdcall SKILLDESC_CalcElemDamageRange(D2UnitStrc * pUnit, int * pnParam1,
         if (nMasteryPct) {
           if ((int)nElemMinDmg > 0x100000) {
             if ((int)(nElemMinDmg & -16) < 0x640) {
-              nDivResult = (int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg / 100;
+              nDivResult = _alldiv((uint32_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg), (uint32_t)((uint64_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg) >> 0x20), 100, 0);
               nMasteryBonus = (int)nDivResult;
             } else {
               nMasteryBonus = (int)nElemMinDmg / 100 * nMasteryPct;
@@ -3571,7 +3571,7 @@ void __stdcall SKILLDESC_CalcElemDamageRange(D2UnitStrc * pUnit, int * pnParam1,
           } else {
             if ((int)nMasteryPct > 0x10000) {
               if ((int)(nMasteryPct & -16) < 0x640) {
-                nDivResult = (int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg / 100;
+                nDivResult = _alldiv((uint32_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg), (uint32_t)((uint64_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg) >> 0x20), 100, 0);
                 nMasteryBonus = (int)nDivResult;
               } else {
                 nMasteryBonus = (int)nMasteryPct / 100 * nElemMinDmg;
@@ -3584,7 +3584,7 @@ void __stdcall SKILLDESC_CalcElemDamageRange(D2UnitStrc * pUnit, int * pnParam1,
           nElemMinDmg += nMasteryBonus;
           if ((int)nElemMaxDmg > 0x100000) {
             if ((int)(nElemMaxDmg & -16) < 0x640) {
-              nDivResult = (int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg / 100;
+              nDivResult = _alldiv((uint32_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg), (uint32_t)((uint64_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg) >> 0x20), 100, 0);
               nMasteryBonus = (int)nDivResult;
             } else {
               nMasteryBonus = (int)nElemMaxDmg / 100 * nMasteryPct;
@@ -3592,7 +3592,7 @@ void __stdcall SKILLDESC_CalcElemDamageRange(D2UnitStrc * pUnit, int * pnParam1,
           } else {
             if ((int)nMasteryPct > 0x10000) {
               if ((int)(nMasteryPct & -16) < 0x640) {
-                nDivResult = (int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg / 100;
+                nDivResult = _alldiv((uint32_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg), (uint32_t)((uint64_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg) >> 0x20), 100, 0);
                 nMasteryBonus = (int)nDivResult;
               } else {
                 nMasteryBonus = (int)nMasteryPct / 100 * nElemMaxDmg;
@@ -3626,7 +3626,7 @@ void __stdcall SKILLDESC_CalcElemDamageRange(D2UnitStrc * pUnit, int * pnParam1,
       if (nMasteryPct) {
         if ((int)nElemMinDmg > 0x100000) {
           if ((int)(nElemMinDmg & -16) < 0x640) {
-            nDivResult = (int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg / 100;
+            nDivResult = _alldiv((uint32_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg), (uint32_t)((uint64_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg) >> 0x20), 100, 0);
             nMasteryBonus = (int)nDivResult;
           } else {
             nMasteryBonus = (int)nElemMinDmg / 100 * nMasteryPct;
@@ -3634,7 +3634,7 @@ void __stdcall SKILLDESC_CalcElemDamageRange(D2UnitStrc * pUnit, int * pnParam1,
         } else {
           if ((int)nMasteryPct > 0x10000) {
             if ((int)(nMasteryPct & -16) < 0x640) {
-              nDivResult = (int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg / 100;
+              nDivResult = _alldiv((uint32_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg), (uint32_t)((uint64_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMinDmg) >> 0x20), 100, 0);
               nMasteryBonus = (int)nDivResult;
             } else {
               nMasteryBonus = (int)nMasteryPct / 100 * nElemMinDmg;
@@ -3647,7 +3647,7 @@ void __stdcall SKILLDESC_CalcElemDamageRange(D2UnitStrc * pUnit, int * pnParam1,
         nElemMinDmg += nMasteryBonus;
         if ((int)nElemMaxDmg > 0x100000) {
           if ((int)(nElemMaxDmg & -16) < 0x640) {
-            nDivResult = (int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg / 100;
+            nDivResult = _alldiv((uint32_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg), (uint32_t)((uint64_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg) >> 0x20), 100, 0);
             nMasteryBonus = (int)nDivResult;
           } else {
             nMasteryBonus = (int)nElemMaxDmg / 100 * nMasteryPct;
@@ -3655,7 +3655,7 @@ void __stdcall SKILLDESC_CalcElemDamageRange(D2UnitStrc * pUnit, int * pnParam1,
         } else {
           if ((int)nMasteryPct > 0x10000) {
             if ((int)(nMasteryPct & -16) < 0x640) {
-              nDivResult = (int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg / 100;
+              nDivResult = _alldiv((uint32_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg), (uint32_t)((uint64_t)((int64_t)(int)nMasteryPct * (int64_t)(int)nElemMaxDmg) >> 0x20), 100, 0);
               nMasteryBonus = (int)nDivResult;
             } else {
               nMasteryBonus = (int)nMasteryPct / 100 * nElemMaxDmg;
@@ -5640,7 +5640,7 @@ static void __stdcall SKILLDESC_DescLine9_ElemDamage(D2UnitStrc * pUnit, uint16_
     nMaxScaled = nDamageRaw >> 8;
     if ((int)nMinScaled > 0x100000) {
       if ((int)(nMinScaled & -16) < 0x640) {
-        uDivResult = (int64_t)(int)nMinScaled * (int64_t)(int)nPercentBonus / 100;
+        uDivResult = _alldiv((uint32_t)((int64_t)(int)nMinScaled * (int64_t)(int)nPercentBonus), (uint32_t)((uint64_t)((int64_t)(int)nMinScaled * (int64_t)(int)nPercentBonus) >> 0x20), 100, 0);
         nMinFinal = (int)uDivResult;
       } else {
         nMinFinal = (int)nMinScaled / 100 * nPercentBonus;
@@ -5648,7 +5648,7 @@ static void __stdcall SKILLDESC_DescLine9_ElemDamage(D2UnitStrc * pUnit, uint16_
     } else {
       if ((int)nPercentBonus > 0x10000) {
         if ((int)(nPercentBonus & -16) < 0x640) {
-          uDivResult = (int64_t)(int)nMinScaled * (int64_t)(int)nPercentBonus / 100;
+          uDivResult = _alldiv((uint32_t)((int64_t)(int)nMinScaled * (int64_t)(int)nPercentBonus), (uint32_t)((uint64_t)((int64_t)(int)nMinScaled * (int64_t)(int)nPercentBonus) >> 0x20), 100, 0);
           nMinFinal = (int)uDivResult;
         } else {
           nMinFinal = (int)nPercentBonus / 100 * nMinScaled;
@@ -5661,7 +5661,7 @@ static void __stdcall SKILLDESC_DescLine9_ElemDamage(D2UnitStrc * pUnit, uint16_
     nMinFinal = nMinScaled + nMinFinal + nFlatBonus;
     if ((int)nMaxScaled > 0x100000) {
       if ((int)(nMaxScaled & -16) < 0x640) {
-        uDivResult = (int64_t)(int)nMaxScaled * (int64_t)(int)nPercentBonus / 100;
+        uDivResult = _alldiv((uint32_t)((int64_t)(int)nMaxScaled * (int64_t)(int)nPercentBonus), (uint32_t)((uint64_t)((int64_t)(int)nMaxScaled * (int64_t)(int)nPercentBonus) >> 0x20), 100, 0);
         iVar1 = (int)uDivResult;
       } else {
         iVar1 = (int)nMaxScaled / 100 * nPercentBonus;
@@ -5669,7 +5669,7 @@ static void __stdcall SKILLDESC_DescLine9_ElemDamage(D2UnitStrc * pUnit, uint16_
     } else {
       if ((int)nPercentBonus > 0x10000) {
         if ((int)(nPercentBonus & -16) < 0x640) {
-          uDivResult = (int64_t)(int)nMaxScaled * (int64_t)(int)nPercentBonus / 100;
+          uDivResult = _alldiv((uint32_t)((int64_t)(int)nMaxScaled * (int64_t)(int)nPercentBonus), (uint32_t)((uint64_t)((int64_t)(int)nMaxScaled * (int64_t)(int)nPercentBonus) >> 0x20), 100, 0);
           iVar1 = (int)uDivResult;
         } else {
           iVar1 = (int)nPercentBonus / 100 * nMaxScaled;
@@ -6043,7 +6043,7 @@ static void __stdcall SKILLDESC_DescLine27_SkillElemCalc(D2UnitStrc * pUnit, uin
       }
       if (sMonStats.nA1MinD > 0x100000) {
         if ((int)(sMonStats.nA1MinD & 0xfffffff0U) < 0x640) {
-          uDivResult = (int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MinD / 100;
+          uDivResult = _alldiv((uint32_t)((int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MinD), (uint32_t)((uint64_t)((int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MinD) >> 0x20), 100, 0);
           nMinDmgFinal = (int)uDivResult;
         } else {
           nMinDmgFinal = sMonStats.nA1MinD / 100 * uVar3;
@@ -6051,7 +6051,7 @@ static void __stdcall SKILLDESC_DescLine27_SkillElemCalc(D2UnitStrc * pUnit, uin
       } else {
         if ((int)uVar3 > 0x10000) {
           if ((int)(uVar3 & -16) < 0x640) {
-            uDivResult = (int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MinD / 100;
+            uDivResult = _alldiv((uint32_t)((int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MinD), (uint32_t)((uint64_t)((int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MinD) >> 0x20), 100, 0);
             nMinDmgFinal = (int)uDivResult;
           } else {
             nMinDmgFinal = (int)uVar3 / 100 * sMonStats.nA1MinD;
@@ -6064,7 +6064,7 @@ static void __stdcall SKILLDESC_DescLine27_SkillElemCalc(D2UnitStrc * pUnit, uin
       nMinDmgFinal = sMonStats.nA1MinD + nMinDmgFinal;
       if (sMonStats.nA1MaxD > 0x100000) {
         if ((int)(sMonStats.nA1MaxD & 0xfffffff0U) < 0x640) {
-          uDivResult = (int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MaxD / 100;
+          uDivResult = _alldiv((uint32_t)((int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MaxD), (uint32_t)((uint64_t)((int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MaxD) >> 0x20), 100, 0);
           nMaxDmgFinal = (int)uDivResult;
         } else {
           nMaxDmgFinal = sMonStats.nA1MaxD / 100 * uVar3;
@@ -6072,7 +6072,7 @@ static void __stdcall SKILLDESC_DescLine27_SkillElemCalc(D2UnitStrc * pUnit, uin
       } else {
         if ((int)uVar3 > 0x10000) {
           if ((int)(uVar3 & -16) < 0x640) {
-            uDivResult = (int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MaxD / 100;
+            uDivResult = _alldiv((uint32_t)((int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MaxD), (uint32_t)((uint64_t)((int64_t)(int)uVar3 * (int64_t)sMonStats.nA1MaxD) >> 0x20), 100, 0);
             nMaxDmgFinal = (int)uDivResult;
           } else {
             nMaxDmgFinal = (int)uVar3 / 100 * sMonStats.nA1MaxD;
@@ -6230,7 +6230,7 @@ void __stdcall SKILLDESC_DescLine22_SkillSynergies(D2UnitStrc * pUnit, uint16_t 
       }
       if ((int)uVar3 > 0x100000) {
         if ((int)(uVar3 & -16) < 0x640) {
-          uDivResult = (int64_t)(int)nElemPctBonus * (int64_t)(int)uVar3 / 100;
+          uDivResult = _alldiv((uint32_t)((int64_t)(int)nElemPctBonus * (int64_t)(int)uVar3), (uint32_t)((uint64_t)((int64_t)(int)nElemPctBonus * (int64_t)(int)uVar3) >> 0x20), 100, 0);
           nMonStatIdx = (int)uDivResult;
         } else {
           nMonStatIdx = (int)uVar3 / 100 * nElemPctBonus;
@@ -6238,7 +6238,7 @@ void __stdcall SKILLDESC_DescLine22_SkillSynergies(D2UnitStrc * pUnit, uint16_t 
       } else {
         if ((int)nElemPctBonus > 0x10000) {
           if ((int)(nElemPctBonus & -16) < 0x640) {
-            uDivResult = (int64_t)(int)nElemPctBonus * (int64_t)(int)uVar3 / 100;
+            uDivResult = _alldiv((uint32_t)((int64_t)(int)nElemPctBonus * (int64_t)(int)uVar3), (uint32_t)((uint64_t)((int64_t)(int)nElemPctBonus * (int64_t)(int)uVar3) >> 0x20), 100, 0);
             nMonStatIdx = (int)uDivResult;
           } else {
             nMonStatIdx = (int)nElemPctBonus / 100 * uVar3;
@@ -6251,7 +6251,7 @@ void __stdcall SKILLDESC_DescLine22_SkillSynergies(D2UnitStrc * pUnit, uint16_t 
       uVar3 += nMonStatIdx;
       if ((int)nMinDmgFinal > 0x100000) {
         if ((int)(nMinDmgFinal & -16) < 0x640) {
-          uDivResult = (int64_t)(int)nElemPctBonus * (int64_t)(int)nMinDmgFinal / 100;
+          uDivResult = _alldiv((uint32_t)((int64_t)(int)nElemPctBonus * (int64_t)(int)nMinDmgFinal), (uint32_t)((uint64_t)((int64_t)(int)nElemPctBonus * (int64_t)(int)nMinDmgFinal) >> 0x20), 100, 0);
           nMonStatIdx = (int)uDivResult;
         } else {
           nMonStatIdx = (int)nMinDmgFinal / 100 * nElemPctBonus;
@@ -6259,7 +6259,7 @@ void __stdcall SKILLDESC_DescLine22_SkillSynergies(D2UnitStrc * pUnit, uint16_t 
       } else {
         if ((int)nElemPctBonus > 0x10000) {
           if ((int)(nElemPctBonus & -16) < 0x640) {
-            uDivResult = (int64_t)(int)nElemPctBonus * (int64_t)(int)nMinDmgFinal / 100;
+            uDivResult = _alldiv((uint32_t)((int64_t)(int)nElemPctBonus * (int64_t)(int)nMinDmgFinal), (uint32_t)((uint64_t)((int64_t)(int)nElemPctBonus * (int64_t)(int)nMinDmgFinal) >> 0x20), 100, 0);
             nMonStatIdx = (int)uDivResult;
           } else {
             nMonStatIdx = (int)nElemPctBonus / 100 * nMinDmgFinal;

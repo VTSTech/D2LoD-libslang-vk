@@ -15,14 +15,6 @@
 #include "support/d2_trace.h"
 
 #ifndef _MSC_VER
-// __strrev: reverse in place, returns its argument.
-extern "C" char* __strrev(char* psz) {
-    if (!psz) return psz;
-    char* pEnd = psz + strlen(psz);
-    while (--pEnd > psz) { char c = *psz; *psz++ = *pEnd; *pEnd = c; }
-    return psz;
-}
-
 // The CRT's strlen behind Ghidra's _Wrappers name.
 namespace _Wrappers {
 uint32_t CRT_StrLen(char* pText) { return pText ? (uint32_t)strlen(pText) : 0u; }
@@ -31,18 +23,6 @@ uint32_t CRT_StrLen(char* pText) { return pText ? (uint32_t)strlen(pText) : 0u; 
 // state, which has no counterpart here.
 void CRT_SecurityCookieStub2(void) {}
 }  // namespace _Wrappers
-
-// __NLG_Notify is a debugger notification on longjmp/SEH transfer. It informs a
-// debugger and has no effect on program state, so doing nothing IS the behaviour.
-extern "C" void __NLG_Notify(unsigned long, uint32_t, void*) {}
-
-// Validates an EH3 registration node. Returning non-zero means "looks valid",
-// which is what the real one concludes for the records the game builds.
-extern "C" uint32_t __ValidateEH3RN(void*) { return 1; }
-
-// The stack cookie check failed: memory is already corrupt, so terminate rather
-// than unwind. The real one reports to WER first.
-extern "C" void ___report_gsfailure(void) { D2Trace("ABORT: __report_gsfailure (stack cookie)"); abort(); }
 
 // __ftol2 takes its argument on the x87 stack and returns it truncated toward
 // zero in EDX:EAX. That register contract cannot be written in portable C++, so
@@ -98,14 +78,10 @@ extern "C" void _eh_vector_destructor_iterator_(void* pArray, uint32_t nElementS
 
 #ifdef _MSC_VER
 // The Visual C++ 2005 build links the libcmt the original linked, so what is the
-// CRT's own function comes from there. __NLG_Notify, __ValidateEH3RN,
-// ___report_gsfailure and __ftol2 are libcmt's, and defining them here would
-// collide with it. The two vector iterators above stay ours: libcmt's are
+// CRT's own function comes from there. __ftol2 is libcmt's, and defining it
+// here would collide with it. The two vector iterators above stay ours: libcmt's are
 // `eh vector constructor iterator' (??_L) and `eh vector destructor iterator'
 // (??_M), __stdcall, while the tree declares and calls these cdecl.
-
-// _strrev, libcmt's own (strrev.obj).
-#pragma comment(linker, "/alternatename:___strrev=__strrev")
 
 // libcmt's __CIsqrt takes ST(0) and returns in it; the tree declares and calls
 // __CIsqrt as a cdecl function of a stack argument, a different symbol (one more

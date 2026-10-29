@@ -4,7 +4,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Net/Game/Server.h"
 #include "D2Net/sockaddr.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
 #include "Fog/Src/QServer/QServer.h"

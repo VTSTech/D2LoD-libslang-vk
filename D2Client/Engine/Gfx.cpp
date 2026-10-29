@@ -170,7 +170,7 @@ void * __stdcall GFX_FindTextureInCache(void * pTextureCache, char * szPath) {
     *(uint32_t*)(char*)&nFilenameWord0 &= -256;
     memset(nFilenameWord0 + 1, 0, 0x103);
     GFX_ExtractFilenameFromPath(szPath, nFilenameWord0);
-    __strlwr(nFilenameWord0);
+    _strlwr(nFilenameWord0);
     nHash = GFX_HashTextureName(nFilenameWord0);
     pEntry = *(uint32_t**)((int)pTextureCache + nHash * 4 + 0xc);
     while (true) {
@@ -201,7 +201,7 @@ void * __stdcall GFX_LoadCofFile(void * pTextureCache, char * szPath) {
     szFilename[0] = '\0';
     memset(szFilename + 1, 0, 0x103);
     GFX_ExtractFilenameFromPath(szPath, szFilename);
-    __strlwr(szFilename);
+    _strlwr(szFilename);
     void* nAddress = GFX_FindTextureInCache(pTextureCache, szFilename);
     if (!nAddress) {
       uint32_t* pEntry = (uint32_t*)D2_ALLOC_AT(0x1c, ".\\ENGINE\\Gfx.cpp", 0xdc);
