@@ -94,7 +94,8 @@ void __fastcall WALL2_InitUnitGfx(D2UnitStrc * pUnit) {
     D2GfxInfoStrc* pGfxInfo = Engine::GfxInfo::AllocGfxInfo();
     pUnit->pGfxInfo = pGfxInfo;
     if (!pGfxInfo) {
-      nLine = 0x16;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16);
+      exit(-1);
     } else {
       switch (pUnit->eUnitType) {
         case UNIT_PLAYER:
@@ -112,10 +113,10 @@ void __fastcall WALL2_InitUnitGfx(D2UnitStrc * pUnit) {
         default:
           nLine = 0x28;
       }
-    }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
-    exit(-1);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x28);
+      exit(-1);
+    }
 }
 
 // Debug visualisation: draws a screen-space diamond (4 lines, colour 0xFF blue) centred on pUnit's last-click screen coordinates, then renders a small solid rectangle at the unit's current world target position. Converts map coordinates to screen via CoordsMapToScreen and adjusts by world offsets. Halts with an internal error if pUnit is null.

@@ -42,6 +42,27 @@ compiling, renames) and is worth re-running after larger changes, since some
 of its tiers weigh code similarity. A full `oracle build` takes about six
 minutes on a Raspberry Pi 5; after an edit only the touched TUs recompile.
 
+After a tree change (a regen, a fix), the whole measurement in one step,
+doing only what changed:
+
+```sh
+asm_matching/msvc8/oracle quick            # build, map, libmap, audit; gained/lost MATCH
+asm_matching/msvc8/oracle quick --verify   # then the full run too, and diff the two
+```
+
+Each step is incremental without being approximate. A compile is stored in a
+content-addressed cache (`scripts/objcache.py`, `ORACLE_CACHE`, default
+`~/.cache/d2-msvc8-oracle`) under the hash of the compiler, the command line,
+the translated source and every header it included, so a TU compiles only
+when one of those changed - whichever build or checkout compiled it before
+(`recon/runs/build-vc8.sh` compiles into the same `build/`, so the exe and
+the oracle share one compile). Objects are decoded once per content. The map
+and the libmap are global - pairing reads neighbours, votes and the whole
+link - so they are derived whole, but only when an input changed, and what
+one pair of functions decides alone (aligned call votes, an audit verdict
+under the same callee addresses) is kept per pair (`ours.PairMemo`).
+`ORACLE_NOCACHE=1` reads none of it: the full run `--verify` diffs against.
+
 ## What `setup` does, and needs
 
 Needs: wine (here wine 9.17 run by box64 on aarch64; any x86 wine works),
@@ -102,7 +123,8 @@ edited for it. Instead `oracle build`:
    `support/d2_trace.h`, in which the tree's hand-added tracing calls compile
    to nothing - the original has none).
 3. **Compiles** each TU to `build/obj/<path>.obj`, four at a time,
-   incrementally (header dependencies from `/showIncludes`). Per TU it keeps
+   incrementally (by content: the compile cache above, header dependencies
+   from `/showIncludes`). Per TU it keeps
    the compiler's log and a row in `build/compile_status.tsv`.
 4. **Quarantines** what VC8 cannot compile at all - an internal compiler
    error, a GCC extension such as arithmetic on `void*` - one function at a

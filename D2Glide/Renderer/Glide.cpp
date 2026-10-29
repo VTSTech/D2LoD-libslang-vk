@@ -962,11 +962,10 @@ static int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * 
     char* pSrcPixelRow;
     GrTexInfo grTexInfo;
     char byPixel;
-    int32_t nErrorLine;
     int32_t iVar2 = nMode;
     DC6Block* nParam = pTexInfo->pSprite->pDC6Block;
     if (!nParam) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12d);
       exit(-1);
     }
 

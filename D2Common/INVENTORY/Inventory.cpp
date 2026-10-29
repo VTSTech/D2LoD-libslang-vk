@@ -4242,9 +4242,12 @@ static void __stdcall INVENTORY_UpdateCompositeWeaponGfx(int32_t nParam1, int32_
     D2ItemsTxt* pItemsTxt;
     int nLitClassId;
     int nWeaponClassOut;
-    uint32_t nErrorLine;
-    if (!pUnit || !pUnit2) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+    if (!pUnit) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13b3);
+      exit(-1);
+    }
+    if (!pUnit2) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13b4);
       exit(-1);
     }
 

@@ -1019,10 +1019,10 @@ void __fastcall DrawRect(uint8_t * pRect, int nPaletteIndex) {
     POINT nRight;
     POINT nTopX;
     POINT nTop;
-    int32_t dwErrorCode;
     nTop.x = *(LONG*)pRect;
     if (nTop.x > *(int*)(pRect + 8)) {
-      dwErrorCode = 0x126;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x126);
+      exit(-1);
     } else {
       uint32_t uHeight;
       nRight.y = *(LONG*)(pRect + 0xc);
@@ -1046,12 +1046,10 @@ void __fastcall DrawRect(uint8_t * pRect, int nPaletteIndex) {
         return;
       }
 
-      dwErrorCode = 0x127;
       nTop.y = nRight.y;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x127);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), dwErrorCode);
-    exit(-1);
 }
 
 void __fastcall DrawRectEx(uint8_t * pRect, int nPaletteIndex) {

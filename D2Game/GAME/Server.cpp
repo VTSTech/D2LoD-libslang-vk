@@ -268,21 +268,19 @@ int32_t __fastcall SERVER_IsTokenValid(uint16_t nToken) {
 }
 
 void __stdcall QSERVER_SetGlobalInstance(TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>* pQServerState, void * pInitState) {
-    int32_t nLine;
     if (!pQServerState) {
-      nLine = 0x15b;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15b);
+      exit(-1);
     } else {
       gpQServerGameState = pQServerState;
       if (pInitState) {
         return;
       }
 
-      nLine = 0x15d;
       gpQServerGameState = pQServerState;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15d);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
-    exit(-1);
 }
 
 void __stdcall SetupAsBnetServer(D2BattleNetEventCallbackTable * pBnetCallbacks) {
@@ -1780,10 +1778,9 @@ void __fastcall RemoveObject(D2ClientStrc * pClient, D2UnitStrc * pUnit) {
       return;
     }
 
-    int32_t nLine = 0x52dfca;
     D2RoomStrc* pUnitRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     if (!pClient->pRoom) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15be);
       exit(-1);
     }
 
@@ -2551,13 +2548,13 @@ int32_t __stdcall QSERVER_FindUnitsAndExportByServerId(uint16_t nServerId, int32
         pClassIds++;
       } while (nSearchIdx < nCount);
     }
-    if (!pGame->lpCriticalSection) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nUnitGUID);
+    if (pGame->lpCriticalSection) {
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(pGame->lpCriticalSection);
+      return _nServerId;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1064);
       exit(-1);
     }
-
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(pGame->lpCriticalSection);
-    return _nServerId;
 }
 
 // Aggregates unit statistics across all active games in the global token table. For each game, iterates all 128 unit buckets and counts: players (bucket-type 0, increments pBucketCountdown[3]) and objects/monsters at bucket offset 0x19 (increments pBucketCountdown[1]). Also increments pBucketCountdown[0] per game found. Used for server-capacity and monitoring queries.

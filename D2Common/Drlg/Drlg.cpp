@@ -5049,7 +5049,6 @@ int32_t __fastcall DRLGOUTDOOR_GetSecondaryBorderPresetFromLvlSub(D2DrlgLevelStr
     0xfffffffb
 }; D2_STATIC_GUARD(gaAct5BorderPresetTable, "D2Common::Drlg::DRLGOUTDOOR_GetSecondaryBorderPresetFromLvlSub::gaAct5BorderPresetTable");
 
-    int32_t nErrorCode;
     if (nBorderType == 0x30 || nBorderType == 0x31) {
       uint32_t* pLvlSubEntry;
       pLvlSubEntry = gaAct5BorderPresetTable;
@@ -5065,11 +5064,12 @@ int32_t __fastcall DRLGOUTDOOR_GetSecondaryBorderPresetFromLvlSub(D2DrlgLevelStr
         pLvlSubEntry += 5;
       } while ((int)pLvlSubEntry < (intptr_t)((char*)&gaAct5BorderPresetTable + sizeof(gaAct5BorderPresetTable)));
 
-      nErrorCode = 0x1a5;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1a5);
+      exit(-1);
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x184);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorCode);
-    exit(-1);
 }
 
 // Validates whether a secondary border preset can be placed at a grid cell.

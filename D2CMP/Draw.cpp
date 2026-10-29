@@ -722,7 +722,6 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
     double dHueWrapped;
     float fHueFloat;
     float fHueWrapped;
-    uint32_t nHueShift = 0x605f0d;
     uint32_t nTableIdx = 0;
     LPPALETTEENTRY pHSLSource = pHSLPalette + 0xc;
     LPPALETTEENTRY pDestEntry = pPalette + 0x14d40;
@@ -804,7 +803,7 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
     } while (nTableIdx < 0x18);
 
     nHSLSrcOffset = (int)pHSLPalette - (int)ahslBuffer;
-    nHueShift = 0;
+    uint32_t nHueShift = 0;
     pDestEntry = pPalette + 0x15340;
     do {
       fHueFloat = (float)(int)nHueShift;
@@ -1160,7 +1159,6 @@ LPPALETTEENTRY __stdcall DRAW_BuildAllPaletteTables(tagPALETTEENTRY * pPaletteEn
 
     int iEntry;
     D2HSLColorStrc ahslColors[256];
-    *(uint32_t*)((char*)&ahslColors[0xff].dLightness + 4) = 0x60693d;
     if (!pPaletteEntry) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ab);
       exit(-1);

@@ -156,8 +156,8 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     uint32_t dwSehUnused;
     _CERT_INFO sCertInfo;
     DWORD nMsgInfoSize;
+    uint32_t dwSehHandlerAddr;
     uint8_t* local_8 = gszFileSignerOrganizationAttribute;
-    uint32_t dwSehHandlerAddr = 0x517c3f;
     /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ if (!(szFilePath && *szFilePath != '\0')) {
       return false;
     }

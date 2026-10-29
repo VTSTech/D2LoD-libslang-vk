@@ -940,6 +940,9 @@ void __stdcall WALL2_DrawWallTilesWithAlpha(D2Wall2CellStrc * pWall2Cell, uint32
       }
 
       nErrLineOrAddr = 0xf9;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf3);
+      exit(-1);
     }
 
     void* nScreenX = Fog::Src::ErrorManager::GetInstructionPointer();

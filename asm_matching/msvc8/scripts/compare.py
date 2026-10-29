@@ -116,8 +116,10 @@ def _addend(f, off):
     return 0
 
 
-def our_view(f, sym_to_start):
-    """f: ours.OurFunc. sym_to_start: our symbol -> original start (funcmap)."""
+def our_view(f, sym_to_start, render=True):
+    """f: ours.OurFunc. sym_to_start: our symbol -> original start (funcmap).
+    render=False leaves text, key and line None: for callers that read only the
+    masked bytes, mnemonics and tokens (disassembling the text is most of the cost)."""
     by_off = {}
     for off, kind, tgt in f.refs:
         if kind in ('call', 'fptr'):
@@ -149,8 +151,8 @@ def our_view(f, sym_to_start):
         masked = bytearray(i.bytes)
         for off, size, _l, _b in fields:
             masked[off:off + size] = b'\0' * size
-        text, key = _render(i.bytes, i.addr, fields)
-        at = f.line_at(i.addr) if hasattr(f, 'line_at') else None
+        text, key = _render(i.bytes, i.addr, fields) if render else (None, None)
+        at = f.line_at(i.addr) if render and hasattr(f, 'line_at') else None
         out.append(NInsn(i.addr, bytes(masked), i.mnemonic, text, key, toks, at[1] if at else None))
     return out
 
@@ -178,8 +180,9 @@ def import_name(tgt):
     return m.group(1) if m else name
 
 
-def ref_view(start, model_entry):
-    """model_entry: (decoded function, refs) from refimage.Reference.model()."""
+def ref_view(start, model_entry, render=True):
+    """model_entry: (decoded function, refs) from refimage.Reference.model().
+    render: as our_view."""
     dec, refs = model_entry
     per_insn = {}
     for a, off, size, kind, tgt in refs:
@@ -202,7 +205,7 @@ def ref_view(start, model_entry):
             masked[off:off + size] = b'\0' * size
         # Rendered at its offset in the function, as our side is, so an internal
         # jump reads the same on both sides.
-        text, key = _render(i.bytes, i.addr - start, fields)
+        text, key = _render(i.bytes, i.addr - start, fields) if render else (None, None)
         out.append(NInsn(i.addr - start, bytes(masked), i.mnemonic, text, key, [t for _o, _s, t, _b in fields]))
     return out
 

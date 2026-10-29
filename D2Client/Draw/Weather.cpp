@@ -477,10 +477,9 @@ void __fastcall WEATHER_SpawnSplash(int nScreenX, int nScreenY, int nWorldX, int
     int32_t nRoll;
     int32_t nRange;
     int* pSplashSlot;
-    int32_t nErrLine;
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
     if (!pPlayer) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2d2);
       exit(-1);
     }
 
@@ -1195,7 +1194,6 @@ void __stdcall ENV_FreeClientSide_NoOp() {
 }
 
 void __fastcall WEATHER_TransitionState(uint32_t nState) {
-    int32_t nErrorLineReg;
     if (nState <= 3) {
       {
         D2UnitStrc* pPlayer;
@@ -1206,7 +1204,7 @@ void __fastcall WEATHER_TransitionState(uint32_t nState) {
         gnWeatherCurrentTransitionState = nState;
         pPlayer = UNIT::Player::GetPlayerUnit_UI();
         if (!pPlayer) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLineReg);
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x137);
           exit(-1);
         }
 

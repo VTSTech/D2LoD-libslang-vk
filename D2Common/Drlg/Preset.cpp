@@ -998,7 +998,6 @@ void __fastcall DRLGROOMEX_InitializePresetRoom(D2RoomExStrc * pRoomEx) {
     D2DrlgGridStrc pGrid;
     D2DrlgGridStrc pOtherGrid;
     D2DrlgGridStrc* pCurrentGrid;
-    D2DrlgGridStrc* pGridIter = (D2DrlgGridStrc*)0x666acd;
     RoomTile::DRLGROOMTILE_AllocRoomTileGrid(pRoomEx);
     D2PoolManagerStrc* pMemory = pRoomEx->pLevel->pDrlg->pMemoryPool;
     D2DrlgPresetRoomStrc* pDrlgRoomExDataPreset = pRoomEx->pRoomExData.pRoomExDataPreset;
@@ -1027,7 +1026,7 @@ void __fastcall DRLGROOMEX_InitializePresetRoom(D2RoomExStrc * pRoomEx) {
     D2DrlgFileStrc* pDrlgFile = pPresetRoom->pMap->pDrlgFile;
     int nWallLayers = pDrlgFile->nWallLayers;
     int nFloorLayers = pDrlgFile->nFloorLayers;
-    pGridIter = 0;
+    D2DrlgGridStrc* pGridIter = 0;
     if (nFloorLayers > 0) {
       do {
         if (!pGridIter && nFillBlanks) {

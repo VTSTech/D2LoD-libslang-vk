@@ -2467,10 +2467,9 @@ void __stdcall CLIENT_SendRoomUnitUpdates(D2RoomStrc * pRoom, D2ClientStrc * pCl
 void __fastcall UnusedUpdateFunctionForUnits(D2RoomStrc * pRoom, D2ClientStrc * pClient) {
     D2RoomStrc** ppAdjacentRooms;
     uint32_t nRoomCount;
-    int32_t nErrorLine;
     D2UnitStrc* pUnit;
     if (!pRoom) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x75);
       exit(-1);
     }
 

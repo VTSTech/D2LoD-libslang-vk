@@ -1804,10 +1804,10 @@ void __fastcall DrawRect(RECT * pRect, BYTE nColor) {
     POINT nMidX;
     POINT nRight;
     POINT nLeft;
-    int32_t nLine;
     nLeft.x = pRect->left;
     if (nLeft.x > pRect->right) {
-      nLine = 0x12d;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12d);
+      exit(-1);
     } else {
       uint32_t nWidth;
       nMidX.y = pRect->bottom;
@@ -1830,12 +1830,10 @@ void __fastcall DrawRect(RECT * pRect, BYTE nColor) {
         return;
       }
 
-      nLine = 0x12e;
       nLeft.y = nMidX.y;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12e);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
-    exit(-1);
 }
 
 void __fastcall DrawRectEx(RECT * pRect, BYTE nColor) {
@@ -1875,7 +1873,6 @@ void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex) {
     uint32_t byPaletteHigh;
     size_t nFillWidth;
     int nBottom;
-    int32_t nErrorLine;
     int nTop;
     int iVar1 = pRect->left;
     int nLeft = pRect->right;
@@ -1883,47 +1880,47 @@ void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex) {
       uint8_t* pRowDst;
       nTop = pRect->top;
       nBottom = pRect->bottom;
-      if (nTop <= nBottom) {
-        if (!(nLeft >= 0 && iVar1 < RENDERER_nWindowWidth && nBottom >= 0 && nTop < RENDERER_nWindowHeight)) {
-          return;
-        }
-        if (iVar1 < 0) {
-          pRect->left = 0;
-        }
-        if (nLeft >= RENDERER_nWindowWidth) {
-          pRect->right = RENDERER_nWindowWidth - 1;
-        }
-        if (nTop < 0) {
-          pRect->top = 0;
-        }
-        if (nBottom >= RENDERER_nWindowHeight) {
-          pRect->bottom = RENDERER_nWindowHeight - 1;
-        }
+      if (!(nTop <= nBottom)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x166);
+        exit(-1);
+      }
+      if (!(nLeft >= 0 && iVar1 < RENDERER_nWindowWidth && nBottom >= 0 && nTop < RENDERER_nWindowHeight)) {
+        return;
+      }
+      if (iVar1 < 0) {
+        pRect->left = 0;
+      }
+      if (nLeft >= RENDERER_nWindowWidth) {
+        pRect->right = RENDERER_nWindowWidth - 1;
+      }
+      if (nTop < 0) {
+        pRect->top = 0;
+      }
+      if (nBottom >= RENDERER_nWindowHeight) {
+        pRect->bottom = RENDERER_nWindowHeight - 1;
+      }
 
-        nFillWidth = pRect->right - pRect->left;
-        iVar1 = pRect->bottom - pRect->top;
-        if (!(nFillWidth && iVar1)) {
-          return;
-        }
-
-        pRowDst = gpRenderBackBufferBits + pRect->top * RENDERER_nWindowWidth + pRect->left;
-        do {
-          iVar1--;
-          if (nFillWidth > 0) {
-            memset(pRowDst, (uint32_t)((uint32_t)((uint32_t)byPaletteHigh & 0xffffffu) << 8 | (uint32_t)(uint8_t)nPaletteIndex), nFillWidth);
-          }
-
-          pRowDst += RENDERER_nWindowWidth;
-        } while (iVar1);
-
+      nFillWidth = pRect->right - pRect->left;
+      iVar1 = pRect->bottom - pRect->top;
+      if (!(nFillWidth && iVar1)) {
         return;
       }
 
-      nErrorLine = 0x166;
-    }
+      pRowDst = gpRenderBackBufferBits + pRect->top * RENDERER_nWindowWidth + pRect->left;
+      do {
+        iVar1--;
+        if (nFillWidth > 0) {
+          memset(pRowDst, (uint32_t)((uint32_t)((uint32_t)byPaletteHigh & 0xffffffu) << 8 | (uint32_t)(uint8_t)nPaletteIndex), nFillWidth);
+        }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
-    exit(-1);
+        pRowDst += RENDERER_nWindowWidth;
+      } while (iVar1);
+
+      return;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x165);
+      exit(-1);
+    }
 }
 
 void __fastcall DrawSolidSquare(POINT * pPoint, BYTE nSize, BYTE nPaletteIndex) {

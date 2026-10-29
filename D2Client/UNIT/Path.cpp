@@ -53,32 +53,32 @@ void __fastcall ConfirmTarget(D2UnitStrc * pUnit) {
     D2UnitStrc* pSetTargetUnit;
     int32_t nUnitGUID;
     eD2UnitType eUnitType;
-    int32_t nErrCode;
     if (pUnit) {
       D2DynamicPathStrc* pDynamicPath;
       pDynamicPath = pUnit->pPath.pDynamicPath;
-      if (pDynamicPath) {
-        pDataTargetUnit = D2Common::PATH::DynamicPath::GetTargetUnit(pDynamicPath);
-        if (!pDataTargetUnit) {
-          return;
-        }
+      if (!pDynamicPath) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a);
+        exit(-1);
+      }
 
-        D2Common::PATH::DynamicPath::GetTargetTypeAndGUID(pDynamicPath, &eUnitType, &nUnitGUID);
-        pDataTargetUnit = Player::UNITS_FindClientSideUnit(nUnitGUID, eUnitType);
-        pSetTargetUnit = D2Common::PATH::DynamicPath::GetTargetUnit(pDynamicPath);
-        if (pDataTargetUnit == pSetTargetUnit) {
-          return;
-        }
-
-        D2Common::PATH::DynamicPath::SetTarget(pDynamicPath, nullptr);
+      pDataTargetUnit = D2Common::PATH::DynamicPath::GetTargetUnit(pDynamicPath);
+      if (!pDataTargetUnit) {
         return;
       }
 
-      nErrCode = 0x2a;
-    }
+      D2Common::PATH::DynamicPath::GetTargetTypeAndGUID(pDynamicPath, &eUnitType, &nUnitGUID);
+      pDataTargetUnit = Player::UNITS_FindClientSideUnit(nUnitGUID, eUnitType);
+      pSetTargetUnit = D2Common::PATH::DynamicPath::GetTargetUnit(pDynamicPath);
+      if (pDataTargetUnit == pSetTargetUnit) {
+        return;
+      }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrCode);
-    exit(-1);
+      D2Common::PATH::DynamicPath::SetTarget(pDynamicPath, nullptr);
+      return;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26);
+      exit(-1);
+    }
 }
 
 void __fastcall thunk_PATH_SnapPositionToTile(D2UnitStrc * pUnit) {

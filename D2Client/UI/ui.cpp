@@ -1327,9 +1327,8 @@ uint32_t UI_HandleKeyInputAndDismiss(int32_t nKeyAction, int32_t nUIFlagToCheck)
     uint32_t bTextScrolling;
     BOOL bGotInteractGuid;
     int32_t nInteractGuid;
-    int32_t nLine;
     if (gnUIFlagCount != 0x26) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1397);
       exit(-1);
     }
 

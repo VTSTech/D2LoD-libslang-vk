@@ -218,47 +218,56 @@ int __fastcall D2WINTEXTBOX_SetLineCellTextW(::D2WinTextBox * pnTextBox, uint16_
 void __fastcall D2WINTEXTBOX_ClearLineRow(::D2WinTextBox * pnParam, int32_t nRow) {
     void* nErrorAddr;
     int pCurLineNode;
-    int32_t nErrorLine;
     int nLineCount;
-    if (pnParam && pnParam->sControl.neD2FormType == FORM_TextBox && nRow <= pnParam->sStyleControl.dwSizeX) {
-      int nCurNode;
-      pCurLineNode = pnParam->sStyleControl.dwState;
-      nCurNode = 0;
-      if (nRow > 0) {
-        do {
-          nLineCount = *(int*)(pCurLineNode + 0x1c);
-          if (!nLineCount) {
-            break;
-          }
-
-          nCurNode++;
-          pCurLineNode = nLineCount;
-        } while (nCurNode < nRow);
-      }
-      if (!pCurLineNode) {
-        nErrorLine = 0x229;
-      } else {
-        if (nCurNode == nRow) {
-          nCurNode = 0;
-          do {
-            nErrorAddr = *(void**)(pCurLineNode + nCurNode * 4);
-            if (nErrorAddr) {
-              D2_FREE_AT(nErrorAddr, ".\\Src\\D2WinTextBox.cpp", 0x231);
-              *(uint32_t*)(pCurLineNode + nCurNode * 4) = 0;
-            }
-
-            nCurNode++;
-          } while (nCurNode < 5);
-
-          return;
-        }
-
-        nErrorLine = 0x22a;
-      }
+    if (!pnParam) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x21d);
+      exit(-1);
+    }
+    if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x21e);
+      exit(-1);
+    }
+    if (!(nRow <= pnParam->sStyleControl.dwSizeX)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x21f);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
-    exit(-1);
+    int nCurNode;
+    pCurLineNode = pnParam->sStyleControl.dwState;
+    nCurNode = 0;
+    if (nRow > 0) {
+      do {
+        nLineCount = *(int*)(pCurLineNode + 0x1c);
+        if (!nLineCount) {
+          break;
+        }
+
+        nCurNode++;
+        pCurLineNode = nLineCount;
+      } while (nCurNode < nRow);
+    }
+    if (!pCurLineNode) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x229);
+      exit(-1);
+    } else {
+      if (nCurNode != nRow) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x22a);
+        exit(-1);
+      }
+
+      nCurNode = 0;
+      do {
+        nErrorAddr = *(void**)(pCurLineNode + nCurNode * 4);
+        if (nErrorAddr) {
+          D2_FREE_AT(nErrorAddr, ".\\Src\\D2WinTextBox.cpp", 0x231);
+          *(uint32_t*)(pCurLineNode + nCurNode * 4) = 0;
+        }
+
+        nCurNode++;
+      } while (nCurNode < 5);
+
+      return;
+    }
 }
 
 int32_t __fastcall D2WINTEXTBOX_GetLineCount(::D2WinTextBox * pnParam) {
@@ -436,40 +445,50 @@ uint16_t * __fastcall D2WINTEXTBOX_GetSelectedLineText(::D2WinTextBox * pnTextBo
 
 uint16_t * __fastcall D2WINTEXTBOX_GetLineCellValue(::D2WinTextBox * pnParam, int32_t nRow, int32_t nColIndex) {
     int nLineIndex;
-    int32_t nLine;
     int pNextLineNode;
-    if (pnParam && pnParam->sControl.neD2FormType == FORM_TextBox && nRow <= pnParam->sStyleControl.dwSizeX) {
-      int pCurLineNode;
-      if (nColIndex >= 5) {
-        nLine = 0x2c5;
-      } else {
-        pCurLineNode = pnParam->sStyleControl.dwState;
-        nLineIndex = 0;
-        if (nRow > 0) {
-          do {
-            pNextLineNode = *(int*)(pCurLineNode + 0x1c);
-            if (!pNextLineNode) {
-              break;
-            }
-
-            nLineIndex++;
-            pCurLineNode = pNextLineNode;
-          } while (nLineIndex < nRow);
-        }
-        if (!pCurLineNode) {
-          nLine = 0x2cf;
-        } else {
-          if (nLineIndex == nRow) {
-            return *(uint16_t**)(pCurLineNode + nColIndex * 4);
-          }
-
-          nLine = 0x2d0;
-        }
-      }
+    if (!pnParam) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c2);
+      exit(-1);
+    }
+    if (pnParam->sControl.neD2FormType != FORM_TextBox) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c3);
+      exit(-1);
+    }
+    if (!(nRow <= pnParam->sStyleControl.dwSizeX)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c4);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
-    exit(-1);
+    int pCurLineNode;
+    if (nColIndex >= 5) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c5);
+      exit(-1);
+    }
+
+    pCurLineNode = pnParam->sStyleControl.dwState;
+    nLineIndex = 0;
+    if (nRow > 0) {
+      do {
+        pNextLineNode = *(int*)(pCurLineNode + 0x1c);
+        if (!pNextLineNode) {
+          break;
+        }
+
+        nLineIndex++;
+        pCurLineNode = pNextLineNode;
+      } while (nLineIndex < nRow);
+    }
+    if (!pCurLineNode) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2cf);
+      exit(-1);
+    } else {
+      if (nLineIndex != nRow) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2d0);
+        exit(-1);
+      }
+
+      return *(uint16_t**)(pCurLineNode + nColIndex * 4);
+    }
 }
 
 void __fastcall D2WINTEXTBOX_SetColumnCount(::D2WinTextBox * pnParam, int32_t nColumnCount) {

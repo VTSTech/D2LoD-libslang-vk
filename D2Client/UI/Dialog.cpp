@@ -157,11 +157,10 @@ void __stdcall INPUT_DialogMouseDown(D2UIMouseMsgStrc * pMsg) {
     int32_t nMouseX;
     int32_t nMouseY;
     int32_t nMouseXStat;
-    int32_t nErrorCode;
     D2DialogStrc* pDialog;
     pDialog = gpDialogActual;
     if (!gpDialogActual) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorCode);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15b);
       exit(-1);
     }
 
@@ -899,7 +898,6 @@ void __fastcall DIALOG_DrawBackground(D2DialogStrc * pDialog) {
 
 void __fastcall DIALOG_SetSelectedLine(D2DialogStrc * pDialog, int32_t nSubIndex) {
     int32_t* piStringEntryPtr;
-    int32_t nLine;
     if (pDialog) {
       int iSubIndex;
       if (nSubIndex < pDialog->nSubCounter) {
@@ -927,14 +925,16 @@ void __fastcall DIALOG_SetSelectedLine(D2DialogStrc * pDialog, int32_t nSubIndex
           } while (iSubIndex < pDialog->nSubCounter);
         }
 
-        nLine = 0x513;
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x513);
+        exit(-1);
       } else {
-        nLine = 0x4ed;
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4ed);
+        exit(-1);
       }
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4e7);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
-    exit(-1);
 }
 
 // Sets D2DialogStrc::nHighlightStyle (0x5C): 1=text highlight color, 2=animated cursor icons flanking selected line

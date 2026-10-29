@@ -2003,9 +2003,8 @@ D2RoomStrc * __stdcall GetFreeCoordinates(D2RoomStrc * pRoom, POINT * pPoint, PO
     int nStepPos;
     int nSearchRadius;
     int nYTop;
-    int32_t nErrorLine;
     if (!pPoint) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x726);
       exit(-1);
     }
 

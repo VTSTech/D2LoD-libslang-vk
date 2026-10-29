@@ -467,37 +467,35 @@ void __fastcall SendMercForHireList(::SGAMEDATA * pGame, D2ClientStrc * pClient,
     nNpcClassIdOrErr = pGameNpc->unk0x10;
     D2HirelingTxt* pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingEntry(pGame->bExpansion, nLine, 0, 0);
     if (!pHirelingTxt) {
-      nLine = 0x1fb;
       *(volatile uint8_t*)0x0 = 0;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1fb);
+      exit(-1);
     } else {
       int nNameCount;
       nNameCount = (uint32_t)(uint16_t)pHirelingTxt->nNameLast - (uint32_t)(uint16_t)pHirelingTxt->nNameFirst + 1;
-      if (nNameCount != -1) {
-        if (nNameCount <= 0) {
-          return;
-        }
-
-        pSlotEntry = (int*)(nNpcClassIdOrErr + 8);
-        do {
-          if (pSlotEntry[1] && !*pSlotEntry) {
-            sMercHirePacket.nNameStringID = (short int)pSlotEntry[-2];
-            sMercHirePacket.nSeed = pSlotEntry[-1];
-            sMercHirePacket.nPacketId = 0x4e;
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x4E_ADDTOMERCENARYLIST(pClient, &sMercHirePacket);
-          }
-
-          pSlotEntry += 4;
-          nNameCount--;
-        } while (nNameCount);
-
+      if (nNameCount == -1) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x60);
+        exit(-1);
+      }
+      if (nNameCount <= 0) {
         return;
       }
 
-      nLine = 0x60;
-    }
+      pSlotEntry = (int*)(nNpcClassIdOrErr + 8);
+      do {
+        if (pSlotEntry[1] && !*pSlotEntry) {
+          sMercHirePacket.nNameStringID = (short int)pSlotEntry[-2];
+          sMercHirePacket.nSeed = pSlotEntry[-1];
+          sMercHirePacket.nPacketId = 0x4e;
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x4E_ADDTOMERCENARYLIST(pClient, &sMercHirePacket);
+        }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
-    exit(-1);
+        pSlotEntry += 4;
+        nNameCount--;
+      } while (nNameCount);
+
+      return;
+    }
 }
 
 // In Normal difficulty returns min(nLevel, {12,20,28,36,45}[npc act]); otherwise nLevel unchanged.
@@ -901,46 +899,43 @@ void __fastcall SUNITNPC_DeductGoldForPurchase(::SGAMEDATA * pGame, D2UnitStrc *
 // @sourcefile .\UNIT\SUNITNPC.CPP
 void __fastcall ResetNpcHireListIfEmpty(::SGAMEDATA * pGame, int32_t nNpcClassId, uint32_t nFilledSlots) {
     int nNameRange;
-    int32_t nLine;
     uint32_t pNpcData = nFilledSlots;
     int pHireSlotArray = *(int*)(nFilledSlots + 0x10);
     nFilledSlots = 0;
     D2HirelingTxt* pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingEntry(pGame->bExpansion, nNpcClassId, 0, 0);
     if (!pHirelingTxt) {
-      nLine = 0x632;
       *(volatile uint8_t*)0x0 = 0;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x632);
+      exit(-1);
     } else {
       int* pSlotEntry;
       nNameRange = (uint32_t)(uint16_t)pHirelingTxt->nNameLast - (uint32_t)(uint16_t)pHirelingTxt->nNameFirst + 1;
-      if (nNameRange != -1) {
-        if (nNameRange > 0) {
-          pSlotEntry = (int*)(pHireSlotArray + 8);
-          do {
-            if (pSlotEntry[1] && !*pSlotEntry) {
-              nFilledSlots++;
-            }
-
-            pSlotEntry += 4;
-            nNameRange--;
-          } while (nNameRange);
-
-          if (nFilledSlots) {
-            return;
+      if (nNameRange == -1) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x60);
+        exit(-1);
+      }
+      if (nNameRange > 0) {
+        pSlotEntry = (int*)(pHireSlotArray + 8);
+        do {
+          if (pSlotEntry[1] && !*pSlotEntry) {
+            nFilledSlots++;
           }
-        }
 
-        D2_FREE_POOL_AT(pGame->pMemoryPool, *(void**)(pNpcData + 0x10), ".\\UNIT\\SUNITNPC.CPP", 0x63d);
-        *(uint32_t*)(pNpcData + 0x10) = 0;
-        *(uint8_t*)(pNpcData + 0x21) = 0;
-        SUNITNPC_InitNpcInventory(pGame, nNpcClassId, pNpcData);
-        return;
+          pSlotEntry += 4;
+          nNameRange--;
+        } while (nNameRange);
+
+        if (nFilledSlots) {
+          return;
+        }
       }
 
-      nLine = 0x60;
+      D2_FREE_POOL_AT(pGame->pMemoryPool, *(void**)(pNpcData + 0x10), ".\\UNIT\\SUNITNPC.CPP", 0x63d);
+      *(uint32_t*)(pNpcData + 0x10) = 0;
+      *(uint8_t*)(pNpcData + 0x21) = 0;
+      SUNITNPC_InitNpcInventory(pGame, nNpcClassId, pNpcData);
+      return;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
-    exit(-1);
 }
 
 // Server-side handler for hiring a mercenary from a town NPC. Validates the NPC and that quest gates are met (Qualkehk/0x203 requires RescueOnMountArreat; Akara/0x96 requires SistersBurialGrounds before higher-cost mercs). Looks up the game NPC record and the requested merc by name id (range-checked against GetHirelingNamesAndSize), rolls the merc's stats/cost (RollMercStats), checks the player can afford it (CheckIfPlayerCanAffordCost), then spawns the merc monster (SpawnMonster) and binds it to the player (MERC_HireAndReplaceMerc). On success marks the hire slot taken, refreshes the for-hire list, and sends an NPC-transaction result (0x2A, code 5). On any failure sends 0x2A with an error code (9/0xb/0xc/0xf) and current gold. Side effects: spawns a unit, mutates NPC hire slots, sends packets to the player's client.

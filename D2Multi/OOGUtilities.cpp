@@ -126,8 +126,6 @@ int __stdcall OOGUTIL_OpenBrowserWithURL(D2ControlMsg * pControlMsg) {
     char* pcCopyDst;
     LPDWORD dwBytesRead;
     char cChar;
-    int local_8;
-    local_8 = 0x440ded;
     char* pszUrl;
     pszUrl = (char*)pNetworkUnknown->pfnSendQueryAdURL(ghBannerAdProcess);
     if (!pszUrl) {
@@ -136,6 +134,7 @@ int __stdcall OOGUTIL_OpenBrowserWithURL(D2ControlMsg * pControlMsg) {
 
     __frame0.szFileType = '\0';
     memset(__frame0.local_145f, 0, 0x7ff);
+    int local_8;
     local_8 = 0;
     HWND hWnd;
     hWnd = GetDesktopWindow();

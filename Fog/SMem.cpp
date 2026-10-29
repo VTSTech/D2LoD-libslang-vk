@@ -936,7 +936,6 @@ uint8_t * __fastcall SMemEscapeString(uint8_t * pbDst, uint8_t * pbSrc, size_t n
     uint8_t byHexDigit;
     int nRemaining2;
     int nRemaining;
-    int32_t nErrorCode;
     if (pbDst) {
       uint8_t bySrcByte;
       if (!pbSrc) {
@@ -1049,18 +1048,20 @@ uint8_t * __fastcall SMemEscapeString(uint8_t * pbDst, uint8_t * pbSrc, size_t n
       }
       *pbWrite2 = 0;
       if (nRemaining2 < 0) {
-        nErrorCode = 0x100;
+        Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x100);
+        exit(-1);
       } else {
-        if ((int)(pbWrite2 + (1 - (int)pbDst)) <= (int)nBufSize) {
-          return pbDst;
+        if (!((int)(pbWrite2 + (1 - (int)pbDst)) <= (int)nBufSize)) {
+          Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x101);
+          exit(-1);
         }
 
-        nErrorCode = 0x101;
+        return pbDst;
       }
+    } else {
+      Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0xc0);
+      exit(-1);
     }
-
-    Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), nErrorCode);
-    exit(-1);
 }
 
 char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, uint32_t nValueLo, uint32_t nValueHi) {

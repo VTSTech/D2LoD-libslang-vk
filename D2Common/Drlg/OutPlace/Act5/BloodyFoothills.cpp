@@ -24,28 +24,33 @@ void DRLGOUTPLACE_PlaceAct5SiegePresets(D2DrlgLevelStrc * pLevel) {
     int nX;
     int nY;
     D2DrlgLevelDataWildernessLevel* pLevelData;
-    int32_t nErrorCode;
-    if (pLevel && pLevel->eD2LevelId == 0x6f) {
-      D2LvlPrestTxt* pLvlPrest;
-      pLevelData = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData;
-      if (!pLevelData) {
-        nErrorCode = 0x273;
-      } else {
-        pLvlPrest = DATATBLS::LvlTbls::TXT_LvlPrest_GetLine(0x370);
-        if (pLvlPrest) {
-          nX = pLevelData->nGridCoordsWidth - pLvlPrest->SizeX / 8;
-          nY = pLevelData->nGridCoordsHeight - pLvlPrest->SizeY / 8;
-          Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nX, nY, 0x370, -1, 0);
-          Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nX, nY - 2, 0x380, -1, 0);
-          return;
-        }
-
-        nErrorCode = 0x277;
-      }
+    if (!pLevel) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26f);
+      exit(-1);
+    }
+    if (pLevel->eD2LevelId != 0x6f) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x270);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorCode);
-    exit(-1);
+    D2LvlPrestTxt* pLvlPrest;
+    pLevelData = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData;
+    if (!pLevelData) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x273);
+      exit(-1);
+    } else {
+      pLvlPrest = DATATBLS::LvlTbls::TXT_LvlPrest_GetLine(0x370);
+      if (!pLvlPrest) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x277);
+        exit(-1);
+      }
+
+      nX = pLevelData->nGridCoordsWidth - pLvlPrest->SizeX / 8;
+      nY = pLevelData->nGridCoordsHeight - pLvlPrest->SizeY / 8;
+      Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nX, nY, 0x370, -1, 0);
+      Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nX, nY - 2, 0x380, -1, 0);
+      return;
+    }
 }
 
 // Places the bridge/ramp presets spanning the Bloody Foothills. Iterates from the right edge leftward, spawning consecutive LvlPrest IDs (0x361+) at Y=0 to form the bridge structure, up to 15 segments.

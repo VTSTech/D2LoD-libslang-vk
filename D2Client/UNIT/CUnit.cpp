@@ -2572,9 +2572,8 @@ void __fastcall CleanupInventory(D2UnitStrc * pUnit, int32_t bCheckInventory) {
     uint32_t nItemGUID;
     uint32_t bInInventory;
     D2UnitStrc* pHashItem;
-    uint32_t nErrLine;
     if (!pUnit) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa80);
       exit(-1);
     }
 

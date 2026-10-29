@@ -266,47 +266,47 @@ uint32_t __stdcall STRTABLE_LookupString(uint8_t * pbParam, uint16_t * * ppwszTe
 
     uint32_t nBaseResult;
     uint16_t* pTranslated;
-    int32_t nErrorCode;
     if (gpStringTableBase) {
       uint16_t uVar1;
       if (!gpStringTablePatchD2) {
-        nErrorCode = 699;
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 699);
+        exit(-1);
       } else {
-        if (pbParam) {
-          if (!*pbParam) {
-            *ppwszText = (uint16_t*)&gwStrTableLanguageCode;
-            return (uint32_t)ppwszText & -65536;
-          }
+        if (!pbParam) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c0);
+          exit(-1);
+        }
+        if (!*pbParam) {
+          *ppwszText = (uint16_t*)&gwStrTableLanguageCode;
+          return (uint32_t)ppwszText & -65536;
+        }
 
-          uVar1 = STRTABLE_FindStringByKey(gpStringIndexPatchD2, pbParam, (int*)ppwszText, gpStringTablePatchD2);
+        uVar1 = STRTABLE_FindStringByKey(gpStringIndexPatchD2, pbParam, (int*)ppwszText, gpStringTablePatchD2);
+        if (uVar1 != 0xffff) {
+          return uVar1 + 10000;
+        }
+        if (gpStringTableExpansion) {
+          uVar1 = STRTABLE_FindStringByKey(gpStringIndexExpansion, pbParam, (int*)ppwszText, gpStringTableExpansion);
           if (uVar1 != 0xffff) {
-            return uVar1 + 10000;
+            return uVar1 + 20000;
           }
-          if (gpStringTableExpansion) {
-            uVar1 = STRTABLE_FindStringByKey(gpStringIndexExpansion, pbParam, (int*)ppwszText, gpStringTableExpansion);
-            if (uVar1 != 0xffff) {
-              return uVar1 + 20000;
-            }
-          }
+        }
 
-          uVar1 = STRTABLE_FindStringByKey(gpStringIndexBase, pbParam, (int*)ppwszText, gpStringTableBase);
-          nBaseResult = (uint32_t)uVar1;
-          if (uVar1 != 0xffff) {
-            return nBaseResult;
-          }
-
-          pTranslated = STRTABLE_GetTranslatedString(pbParam);
-          *ppwszText = pTranslated;
-          nBaseResult = (uint32_t)pTranslated & -65536;
+        uVar1 = STRTABLE_FindStringByKey(gpStringIndexBase, pbParam, (int*)ppwszText, gpStringTableBase);
+        nBaseResult = (uint32_t)uVar1;
+        if (uVar1 != 0xffff) {
           return nBaseResult;
         }
 
-        nErrorCode = 0x2c0;
+        pTranslated = STRTABLE_GetTranslatedString(pbParam);
+        *ppwszText = pTranslated;
+        nBaseResult = (uint32_t)pTranslated & -65536;
+        return nBaseResult;
       }
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ba);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorCode);
-    exit(-1);
 }
 
 uint16_t * __fastcall STRTABLE_GetStringByKey(uint8_t * pbParam) {
@@ -864,7 +864,7 @@ static uint16_t * __fastcall STRTABLE_LoadStringTableFile(char * szFileName) {
     }
     STRTABLE_CalculateCRC((uint16_t*)&wComputedCRC, (int32_t)pArchive, nCrcStartOffset, pArchive->dwFileSize);
     if ((uint16_t)wComputedCRC != pArchive->wCRC) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nCrcStartOffset);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xce);
       exit(-1);
     }
 

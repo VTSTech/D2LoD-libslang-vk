@@ -175,10 +175,9 @@ static BOOL CheckRoomIfInRange(D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32
 int32_t __stdcall GetTestedUnitsFromRoom(D2RoomStrc * pRoom, D2UnitStrc * * ppUnitList, UNITFINDTEST nfpUnitTest, D2UnitFindArgStrc * pUnitFindArg) {
     D2UnitStrc* pUnit = pRoom->pUnitList;
     int nCount = 0;
-    int32_t nLine = 0x65a7a7;
     BOOL bBadPtr = IsBadCodePtr((FARPROC)nfpUnitTest);
     if (bBadPtr) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x72);
       exit(-1);
     }
 
@@ -479,13 +478,12 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
 int32_t __stdcall UNITFINDS_FindCullRange(D2UnitFindDataStrc * pUnitFindData) {
     int iVar1;
     uint32_t nRoomIdx;
-    DWORD nLine;
     DWORD nRoomCount;
     D2UnitStrc* pNextUnit;
     D2UnitStrc* pUnit;
     D2UnitFindDataStrc* pFindData = pUnitFindData;
     if (!pUnitFindData) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int)Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x10a);
       exit(-1);
     }
 

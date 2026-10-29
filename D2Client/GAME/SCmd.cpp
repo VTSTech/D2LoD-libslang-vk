@@ -2752,13 +2752,12 @@ void __fastcall SCMD_ProcessIncomingPacketBuffer(D2UnitStrc * pUnit) {
     size_t nPacketSize;
     uint8_t* pBytes;
     uint16_t nVariableSize[2];
-    int32_t dwErrLine;
     D2ServerCmdStrc* pServerCmd = UNIT::CUnit::GetServerCmd(pUnit);
     if (!pServerCmd) {
       return;
     }
     if (pServerCmd->nUsedBuffersCount > pServerCmd->nBufferArraySize) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), dwErrLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1525);
       exit(-1);
     }
 

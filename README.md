@@ -72,12 +72,12 @@ joined an existing project; they did not start it.
 
 [`asm_matching/`](asm_matching/README.md) recompiles the tree with Visual C++ 2005 SP1, the
 compiler that built `Game.exe`, and compares every function with the shipped 1.14d binary.
-At this commit:
+At this commit, generated from version 1767 of the Ghidra database:
 
 |Measure|Byte-identical to the original|
 |-|-|
-|Functions|5,285 of 15,521 (34.1%)|
-|Code|384,103 of 2,678,537 bytes (14.34%)|
+|Functions|5,312 of 15,521 (34.2%)|
+|Code|385,795 of 2,678,537 bytes (14.40%)|
 
 The rest compiles and runs but differs somewhere in its instructions. Each difference
 that the same generator rule or database gap causes everywhere is fixed there, so the

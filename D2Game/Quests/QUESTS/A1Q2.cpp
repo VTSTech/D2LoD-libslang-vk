@@ -282,12 +282,11 @@ void __fastcall Q02_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 BOOL __fastcall Q02_SetRewardForNearbyPlayers(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2RoomStrc** pAdjacentRooms;
     uint32_t nAdjacentRoomCount;
-    int32_t nLine = 0x590c53;
     D2UnitStrc* pUnitLocal = pUnit;
     D2RoomStrc* pUnitRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_SistersBurialGrounds);
     if (!pQuestData) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x133);
       exit(-1);
     }
     if (!pQuestData->pQuestSpecificData.pA1Q2->bRewardGiven) {

@@ -1630,9 +1630,12 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
     size_t nLineCharCount;
     int nSelMax;
     char cCurChar;
-    int32_t nErrorLine;
-    if (!pEditBox || pEditBox->sControl.neD2FormType != FORM_EditBox) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+    if (!pEditBox) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x510);
+      exit(-1);
+    }
+    if (pEditBox->sControl.neD2FormType != FORM_EditBox) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x512);
       exit(-1);
     }
 

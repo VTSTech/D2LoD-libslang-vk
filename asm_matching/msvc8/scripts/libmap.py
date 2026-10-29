@@ -169,6 +169,7 @@ class LibMatcher:
     def __init__(self, model, paired, fns, linked):
         self.model = model
         self.starts = sorted(model)
+        self.memo = ourslib.PairMemo('libmap-votes', BUILD)
         self.index = {s: k for k, s in enumerate(self.starts)}
         self.taken = set(paired)            # original starts paired by the funcmap, or here
         self.fns = fns
@@ -265,18 +266,14 @@ class LibMatcher:
         by_sym = {k: v[0] for k, v in by_sym.items() if len(v) == 1}
         votes = collections.defaultdict(collections.Counter)
         for s, e, f in pairs:
-            ov = compare.our_view(f, {})
-            if not any(t[0] == 'fn?' and t[1] in by_sym for i in ov for t in i.tokens):
-                continue
-            rv = compare.ref_view_span(s, e, self.model)
-            sm = difflib.SequenceMatcher(None, [i.key for i in ov], [i.key for i in rv], autojunk=False)
-            for a, b, size in sm.get_matching_blocks():
-                for x, y in zip(ov[a:a + size], rv[b:b + size]):
-                    if x.mnemonic != 'call':
-                        continue
-                    for ta, tb in zip(x.tokens, y.tokens):
-                        if ta[0] == 'fn?' and ta[1] in by_sym and tb[0] == 'fn':
-                            votes[ta[1]][tb[1]] += 1
+            sites = self.memo.get(f, s, (e,))
+            if sites is None:
+                if not any(k in ('call', 'fptr') and t in by_sym for _o, k, t in f.refs):
+                    continue                    # no call that could vote: nothing to align
+                sites = self.memo.put(f, s, self.aligned_calls(f, s, e), (e,))
+            for sym, target in sites:
+                if sym in by_sym:
+                    votes[sym][target] += 1
         n = 0
         for sym, c in sorted(votes.items()):
             (t, k), total = c.most_common(1)[0], sum(c.values())
@@ -293,6 +290,23 @@ class LibMatcher:
                 continue
             n += self.take(f, t, e, 'lib-votes', '%d of %d call sites, %.2f' % (k, total, sim))
         return n
+
+    def aligned_calls(self, f, s, e):
+        """(our callee symbol, original target) of every call of an unmapped
+        symbol in the stretches f and the original's s..e align on: a
+        function of the two functions' code alone, so ours.PairMemo keeps it."""
+        ov = compare.our_view(f, {})
+        rv = compare.ref_view_span(s, e, self.model)
+        sm = difflib.SequenceMatcher(None, [i.key for i in ov], [i.key for i in rv], autojunk=False)
+        out = []
+        for a, b, size in sm.get_matching_blocks():
+            for x, y in zip(ov[a:a + size], rv[b:b + size]):
+                if x.mnemonic != 'call':
+                    continue
+                for ta, tb in zip(x.tokens, y.tokens):
+                    if ta[0] == 'fn?' and tb[0] == 'fn':
+                        out.append((ta[1], tb[1]))
+        return out
 
     def run_extent(self):
         """The original's run of library code: from the first to the last
@@ -429,10 +443,20 @@ def main():
     args = ap.parse_args()
     if EXPERIMENT and os.path.realpath(os.path.dirname(args.out)) == os.path.realpath(os.path.join(ORACLE, 'evidence')):
         sys.exit('libmap.py: not in an experiment - an A/B audit uses the baseline map (evidence/libmap.tsv)')
+    import objcache
+    linked = linked_symbols(args.exe_map)
+    # Everything the pairing reads: the funcmap, which library functions our
+    # image links, the libraries, our objects (and the reference, the scripts).
+    key = ourslib.stage_key('libmap', objcache.sha_file(args.funcmap), repr(sorted(linked)),
+                            repr([objcache.sha_file(os.path.join(lib_dir(), lib)) for lib in LIBS]),
+                            repr(ourslib.object_keys(os.path.join(BUILD, 'obj'))), args.exe_map)
+    outputs = [args.out, args.out + '.summary']
+    if ourslib.stage_reuse('libmap', BUILD, key, outputs):
+        print(open(args.out + '.summary').read(), end='')
+        return
     _ref, model = audit.load_context()
     paired = {r[0] for r in audit.load_funcmap(args.funcmap)}
     fns = load_lib_functions()
-    linked = linked_symbols(args.exe_map)
     m = LibMatcher(model, paired, fns, linked)
     m.by_exact()
     m.by_order()
@@ -449,6 +473,7 @@ def main():
         got += m.by_order()
         if not got:
             break
+    m.memo.save()
     rows = sorted((s, e, f.name, f.tu, f.symbol, method, detail)
                   for f in fns if f.key in m.map for (s, e, method, detail) in [m.map[f.key]])
     with open(args.out, 'w') as fh:
@@ -479,6 +504,7 @@ def main():
     with open(args.out + '.summary', 'w') as fh:
         fh.write('\n'.join(lines) + '\n')
     print('\n'.join(lines))
+    ourslib.stage_done('libmap', BUILD, key, outputs)
 
 
 if __name__ == '__main__':

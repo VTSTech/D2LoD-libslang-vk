@@ -2699,11 +2699,10 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
     IDirectDrawSurface7* pDestSurface;
     char cPixel;
     int iMipLevel;
-    int32_t nErrorLine;
     void* pMemPool;
     DC6Block* nParam = pTexInfo->pSprite->pDC6Block;
     if (!nParam) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11e);
       exit(-1);
     }
 
@@ -5179,7 +5178,7 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
     uint32_t nImgWidth;
     int nRowsRemaining;
     DWORD nFileSize;
-    uint16_t* pCurOutputRow = (uint16_t*)0x6ba01d;
+    uint16_t* pCurOutputRow;
     if (!gnRenderState) {
       if (!pSmackerDecodeBuffer) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);

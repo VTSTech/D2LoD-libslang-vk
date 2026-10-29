@@ -2013,95 +2013,99 @@ static BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAn
     uint8_t* pCofEntry;
     uint8_t byColorIdx;
     uint8_t byColorVariant;
-    int32_t nErrorLine;
     uint8_t* pCofDataBase;
     uint32_t nComponentTable;
     int nMonStatsTxt;
-    if (nWeaponClass && pCofFile) {
-      int32_t nMonStatsId;
-      pGfxData->nClassId = (int)*pComponentTable;
-      pGfxData->nMode = nAnimMode;
-      byColorIdx = pGfxData->nComponentType;
-      pGfxData->eUnitType = UNIT_MONSTER;
-      nOverlay = gTxtCompositTokens[byColorIdx];
-      pGfxData->nWeaponClass = nWeaponClass;
-      pGfxData->nCompositToken = nOverlay;
-      pGfxData->nArmorToken = 0x2074696c;
-      pGfxData->nUnitToken = *(int*)((int)pMonStatsTxt + 0x10);
-      pCofDataBase = *(uint8_t**)((int)pCofFile + 0x14);
-      if (pCofDataBase) {
-        nComponentIdx = 0;
-        pCofEntry = pCofDataBase + 0x1c;
-        if (*pCofDataBase <= 0) {
-          return 0;
-        }
+    if (!nWeaponClass) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3e2);
+      exit(-1);
+    }
+    if (!pCofFile) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3e3);
+      exit(-1);
+    }
 
-        do {
-          if (*pCofEntry >= 0x10) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x3fb);
-            exit(-1);
-          }
-          if (*pCofEntry == byColorIdx) {
-            nMonStatsId = pGfxData->nClassId;
-            pGfxData->nModeToken = gMonModeTokens[nAnimMode];
-            /* The pMonStatsTxt argument slot [EBP+0x10] is reused from here as the matched
+    int32_t nMonStatsId;
+    pGfxData->nClassId = (int)*pComponentTable;
+    pGfxData->nMode = nAnimMode;
+    byColorIdx = pGfxData->nComponentType;
+    pGfxData->eUnitType = UNIT_MONSTER;
+    nOverlay = gTxtCompositTokens[byColorIdx];
+    pGfxData->nWeaponClass = nWeaponClass;
+    pGfxData->nCompositToken = nOverlay;
+    pGfxData->nArmorToken = 0x2074696c;
+    pGfxData->nUnitToken = *(int*)((int)pMonStatsTxt + 0x10);
+    pCofDataBase = *(uint8_t**)((int)pCofFile + 0x14);
+    if (!pCofDataBase) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x3f0);
+      exit(-1);
+    }
+
+    nComponentIdx = 0;
+    pCofEntry = pCofDataBase + 0x1c;
+    if (*pCofDataBase <= 0) {
+      return 0;
+    }
+
+    do {
+      if (*pCofEntry >= 0x10) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x3fb);
+        exit(-1);
+      }
+      if (*pCofEntry == byColorIdx) {
+        nMonStatsId = pGfxData->nClassId;
+        pGfxData->nModeToken = gMonModeTokens[nAnimMode];
+        /* The pMonStatsTxt argument slot [EBP+0x10] is reused from here as the matched
                          COF layer entry (layer+5 is its weapon-class token), which is why the
                          parameter is void * rather than D2MonStatsTxt *.
                          U2 2026-10-21: asm MOV [EBP+0x10],EDI after the +0x10 Code read at 004dbbe6.
                           */ byColorVariant = *(uint8_t*)(nComponentRow * 0x10 + (uint32_t)byColorIdx + 4 + (int)pComponentTable);
-            nComponentTable = (uint32_t)((uint32_t)(uint8_t)byColorVariant << 24 | (uint32_t)((uint32_t)d2_load24((char*)&pComponentTable) & 0xffffffu));
-            nMonStatsTxt = (int)pCofEntry;
-            if (!nAnimMode || nAnimMode == 0xc) {
-              _bCompositeDeath = UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(nMonStatsId, compositeDeath);
-              if (_bCompositeDeath) {
-                nVariantIdx = nComponentTable >> 0x18;
-                nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
-                pGfxData->nArmorToken = nOverlay;
-              }
-            } else {
-              nVariantIdx = (uint32_t)byColorVariant;
-              nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
-              pGfxData->nArmorToken = nOverlay;
-            }
+        nComponentTable = (uint32_t)((uint32_t)(uint8_t)byColorVariant << 24 | (uint32_t)((uint32_t)d2_load24((char*)&pComponentTable) & 0xffffffu));
+        nMonStatsTxt = (int)pCofEntry;
+        if (!nAnimMode || nAnimMode == 0xc) {
+          _bCompositeDeath = UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(nMonStatsId, compositeDeath);
+          if (_bCompositeDeath) {
+            nVariantIdx = nComponentTable >> 0x18;
+            nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
+            pGfxData->nArmorToken = nOverlay;
+          }
+        } else {
+          nVariantIdx = (uint32_t)byColorVariant;
+          nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
+          pGfxData->nArmorToken = nOverlay;
+        }
 
-            nAnimMode = 0;
-            Engine::GfxUtil::GFXUTIL_PadTokenString((char*)(nMonStatsTxt + 5), (char*)&nAnimMode);
-            pGfxData->nWeaponClass = nAnimMode;
-            if (!pGfxData->nCompositToken) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x425);
-              exit(-1);
-            } else if (!pGfxData->nUnitToken) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x426);
-              exit(-1);
-            } else {
-              if (!nAnimMode) {
-                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x427);
-                exit(-1);
-              }
-              if (!pGfxData->nArmorToken) {
-                pGfxData->nArmorToken = 0x20787878;
-              }
-              if (pGfxData->nModeToken) {
-                return 1;
-              }
-
-              pGfxData->nModeToken = 0x20787878;
-              return 1;
-            }
+        nAnimMode = 0;
+        Engine::GfxUtil::GFXUTIL_PadTokenString((char*)(nMonStatsTxt + 5), (char*)&nAnimMode);
+        pGfxData->nWeaponClass = nAnimMode;
+        if (!pGfxData->nCompositToken) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x425);
+          exit(-1);
+        } else if (!pGfxData->nUnitToken) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x426);
+          exit(-1);
+        } else {
+          if (!nAnimMode) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x427);
+            exit(-1);
+          }
+          if (!pGfxData->nArmorToken) {
+            pGfxData->nArmorToken = 0x20787878;
+          }
+          if (pGfxData->nModeToken) {
+            return 1;
           }
 
-          nComponentIdx++;
-          pCofEntry += 9;
-        } while (nComponentIdx < *pCofDataBase);
-
-        return 0;
+          pGfxData->nModeToken = 0x20787878;
+          return 1;
+        }
       }
 
-      nErrorLine = 0x3f0;
-    }
+      nComponentIdx++;
+      pCofEntry += 9;
+    } while (nComponentIdx < *pCofDataBase);
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
-    exit(-1);
+    return 0;
 }
 
 int32_t __fastcall GFXUTIL_InitAndBuildMonsterCofParams(D2GfxDataStrc * pGfxData, int32_t nDirection, int32_t nFrameNumber, uint8_t nComponentType, int32_t nAnimMode, int32_t nWeaponClass, void * pCofFile, short * pComponentTable, D2MonStatsTxt * pMonStatsTxt, int32_t nComponentRow) {

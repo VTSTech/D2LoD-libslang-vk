@@ -1530,7 +1530,6 @@ BOOL __fastcall SERVER_SpawnPortal(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
     D2RoomStrc* pSpawnRoom;
     D2UnitStrc* pPortal;
     POINT ptSpawnPos;
-    int32_t nErrorLine;
     if (pRoom) {
       LONG nPosX;
       if (ppPortal) {
@@ -1547,43 +1546,44 @@ BOOL __fastcall SERVER_SpawnPortal(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
       eDestAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
       eLevel_00 = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
       eSrcAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel_00);
-      if (eDestAct == eSrcAct) {
-        ptSpawnPos.x = nX;
-        ptSpawnPos.y = nY;
-        if (!(bIgnoreFindSpawnLocationMaybe || (pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithFieldCoords(pRoom, &ptSpawnPos, &ptSpawnPos, 3, 0x3e01, 0xc01, 0) , pSpawnRoom != 0))) {
-          return 0;
-        }
-
-        nPosY = ptSpawnPos.y;
-        nPosX = ptSpawnPos.x;
-        pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, ptSpawnPos.x, ptSpawnPos.y);
-        if (!pSpawnRoom) {
-          return 0;
-        }
-
-        pPortal = UNIT::SUnit::CreateUnit(UNIT_OBJECT, nClassId, nPosX, nPosY, pGame, pSpawnRoom, 1, 1, nullptr);
-        if (ppPortal) {
-          *ppPortal = pPortal;
-        }
-
-        D2Common::Units::SetupUpdateFlag(pPortal, 1);
-        pPortal = LinkPortal(pGame, pPortal, (D2RoomStrc*)eLevel, eLevel_00);
-        if (!pPortal) {
-          return 0;
-        }
-
-        byPortalFlags = D2Common::Units::GetObjectPortalFlags(pPortal);
-        D2Common::Units::SetObjectPortalFlags(pPortal, byPortalFlags | 3);
-        D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pSpawnRoom, 0);
-        D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(D2Common::Units::UNITS_GetRoom(pPortal), 0);
-        return 1;
+      if (eDestAct != eSrcAct) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe5c);
+        exit(-1);
       }
 
-      nErrorLine = 0xe5c;
-    }
+      ptSpawnPos.x = nX;
+      ptSpawnPos.y = nY;
+      if (!(bIgnoreFindSpawnLocationMaybe || (pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithFieldCoords(pRoom, &ptSpawnPos, &ptSpawnPos, 3, 0x3e01, 0xc01, 0) , pSpawnRoom != 0))) {
+        return 0;
+      }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
-    exit(-1);
+      nPosY = ptSpawnPos.y;
+      nPosX = ptSpawnPos.x;
+      pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, ptSpawnPos.x, ptSpawnPos.y);
+      if (!pSpawnRoom) {
+        return 0;
+      }
+
+      pPortal = UNIT::SUnit::CreateUnit(UNIT_OBJECT, nClassId, nPosX, nPosY, pGame, pSpawnRoom, 1, 1, nullptr);
+      if (ppPortal) {
+        *ppPortal = pPortal;
+      }
+
+      D2Common::Units::SetupUpdateFlag(pPortal, 1);
+      pPortal = LinkPortal(pGame, pPortal, (D2RoomStrc*)eLevel, eLevel_00);
+      if (!pPortal) {
+        return 0;
+      }
+
+      byPortalFlags = D2Common::Units::GetObjectPortalFlags(pPortal);
+      D2Common::Units::SetObjectPortalFlags(pPortal, byPortalFlags | 3);
+      D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pSpawnRoom, 0);
+      D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(D2Common::Units::UNITS_GetRoom(pPortal), 0);
+      return 1;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe42);
+      exit(-1);
+    }
 }
 
 // Resolves the skill aim position into tile coordinates written to *pnOutX/*pnOutY. If the unit has a locked target, reads its static or dynamic path position. If no target, falls back to the unit's own SP1 (cursor/destination) position. Returns 1 if both coordinates are nonzero, 0 otherwise.
@@ -2535,11 +2535,10 @@ void __fastcall SKILLS_ForEachUnitInRangeCallback(::SGAMEDATA * pGame, int32_t n
     D2UnitFindArgStrc sUnitFindArg;
     D2UnitFindDataStrc sUnitFindData;
     uint32_t nCursorYPos;
-    uint32_t nErrorLine;
     D2UnitStrc* pUnit_00 = pUnit;
     ::SGAMEDATA* pGameCopy = pGame;
     if (!ppfnProc) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1047);
       exit(-1);
     }
 

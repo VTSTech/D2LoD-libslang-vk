@@ -541,7 +541,6 @@ static int32_t __stdcall PropertyFunc_SimpleStat(int32_t nParam1, D2UnitStrc * p
 int32_t __fastcall PropertyFunc_SimpleStatWithContext(int32_t nType, D2UnitStrc * pUnit, D2UnitStrc * pItemUnit, D2SetsTxtFStrc * pProperty, eD2UnitStat eStatCode, int32_t nParam2, int32_t nParam3, uint32_t nParam, int32_t nContext) {
     int nStatVal;
     int32_t nValue;
-    int32_t nErrorLine;
     eD2UnitStat eTargetStat = eStatCode;
     if (pProperty) {
       D2StatListExStrc* pStatList;
@@ -555,22 +554,23 @@ int32_t __fastcall PropertyFunc_SimpleStatWithContext(int32_t nType, D2UnitStrc 
 
       ITEMMOD_ScaleValueForStatType((int*)&pProperty, eTargetStat);
       pStatList = ITEMMOD_GetOrCreateStatList(pItemUnit, nParam3, nParam, pUnit);
-      if (pStatList) {
-        nValue = (int32_t)pProperty;
-        if (nParam2) {
-          nStatVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, eTargetStat, 0);
-          nValue = -nStatVal;
-        }
-
-        Stats::StatsEx::STATLIST_AddStatValue(pStatList, eTargetStat, nValue, 0);
-        return 1;
+      if (!pStatList) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2f0);
+        exit(-1);
       }
 
-      nErrorLine = 0x2f0;
-    }
+      nValue = (int32_t)pProperty;
+      if (nParam2) {
+        nStatVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, eTargetStat, 0);
+        nValue = -nStatVal;
+      }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
-    exit(-1);
+      Stats::StatsEx::STATLIST_AddStatValue(pStatList, eTargetStat, nValue, 0);
+      return 1;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e2);
+      exit(-1);
+    }
 }
 
 // Property function wrapper - delegates to ITEMMOD_ApplyRandomStatValue (normal mode).

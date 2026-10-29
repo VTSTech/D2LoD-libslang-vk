@@ -852,7 +852,7 @@ static void LIGHTMAP_ApplyCollisionOccludedLight(D2LightMapStrc * pLightMap) {
       return;
     }
 
-    int32_t nUnitX = 0x475174;
+    int32_t nUnitX;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     if (pRoom) {
       eCollisionFlags eCollision;
@@ -925,41 +925,42 @@ static void LIGHTMAP_ApplyCollisionOccludedLight(D2LightMapStrc * pLightMap) {
         } while (nCellRight <= nRadiusCells);
       }
       if (pLightMap->bPixelMapReady) {
-        nUnitX = 0x454;
-      } else {
-        pDstPixel = (uint32_t*)pLightMap->pPixelMap;
-        if (pDstPixel) {
-          if (nCellSpan >= 0) {
-            nCellSpan++;
-            pSrcCell = gLightMapBuffer + (0x20 - (pLightMap->nRadiusX >> 3)) * 0x41;
-            nRadiusCells = nCellSpan;
-            nYCopyLeft = nCellSpan;
-            pSrcRow = pSrcCell;
-            do {
-              do {
-                *pDstPixel = *pSrcCell;
-                pDstPixel++;
-                pSrcCell++;
-                nRadiusCells--;
-              } while (nRadiusCells);
-
-              pSrcCell = pSrcRow + 0x40;
-              nYCopyLeft--;
-              nRadiusCells = nCellSpan;
-              pSrcRow = pSrcCell;
-            } while (nYCopyLeft);
-          }
-
-          pLightMap->bPixelMapReady = 1;
-          return;
-        }
-
-        nUnitX = 0x455;
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x454);
+        exit(-1);
       }
-    }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nUnitX);
-    exit(-1);
+      pDstPixel = (uint32_t*)pLightMap->pPixelMap;
+      if (!pDstPixel) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x455);
+        exit(-1);
+      }
+      if (nCellSpan >= 0) {
+        nCellSpan++;
+        pSrcCell = gLightMapBuffer + (0x20 - (pLightMap->nRadiusX >> 3)) * 0x41;
+        nRadiusCells = nCellSpan;
+        nYCopyLeft = nCellSpan;
+        pSrcRow = pSrcCell;
+        do {
+          do {
+            *pDstPixel = *pSrcCell;
+            pDstPixel++;
+            pSrcCell++;
+            nRadiusCells--;
+          } while (nRadiusCells);
+
+          pSrcCell = pSrcRow + 0x40;
+          nYCopyLeft--;
+          nRadiusCells = nCellSpan;
+          pSrcRow = pSrcCell;
+        } while (nYCopyLeft);
+      }
+
+      pLightMap->bPixelMapReady = 1;
+      return;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x414);
+      exit(-1);
+    }
 }
 
 static void LIGHTMAP_ApplyLightWithPixelMap(D2LightMapStrc * pLightMap) {

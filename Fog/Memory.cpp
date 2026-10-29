@@ -804,54 +804,55 @@ void * __fastcall Alloc(D2PoolManagerStrc * pMemory, size_t MemSize, char * szFi
 
     D2PoolStrc* pPool = pMemory->pPools + nSizeClass;
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pPool->pSync);
-    nSizeClass = 0x40a10d;
     uint32_t nSlotIndex = FindOrCreateBlockWithFreeSlots((LPVOID*)&Line, (int32_t)pMemory, pPool);
     if ((int)nSlotIndex < (int)pPool->nBlocks) {
       int nBitmapByteOff;
       if (!Line) {
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pPool->pSync);
-        nSizeClass = 0x4f8;
+        Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x4f8);
+        exit(-1);
       } else {
         (*(int*)(Line + 8))++;
         nBitmapByteOff = ((int)nSlotIndex >> 5) * 4;
-        if (!(*(uint32_t*)(nBitmapByteOff + *(int*)(Line + 4)) & gadwBitMasks[nSlotIndex & 0x1f])) {
-          pBitmapWord = (uint32_t*)(nBitmapByteOff + *(int*)(Line + 4));
-          *pBitmapWord |= gadwBitMasks[nSlotIndex & 0x1f];
-          if (*(int*)(Line + 8) >= (int)pPool->nBlocks && *(int*)(Line + 0x10)) {
-            pNextBlock = *(D2PoolBlockStrc**)(Line + 0x10);
-            if ((int)pNextBlock->nBlocks < (int)pPool->nBlocks) {
-              if (!*(int*)(Line + 0xc)) {
-                pPool->pBlocks = pNextBlock;
-              } else {
-                *(D2PoolBlockStrc**)(*(int*)(Line + 0xc) + 0x10) = (D2PoolBlockStrc*)pNextBlock;
-              }
-              if (*(int*)(Line + 0x10)) {
-                *(uint32_t*)(*(int*)(Line + 0x10) + 0xc) = *(uint32_t*)(Line + 0xc);
-              }
-              if (!pPool->pTail) {
-                Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x50d);
-                exit(-1);
-              }
-
-              pPool->pTail->pNext = (D2PoolBlockStrc*)Line;
-              *(D2PoolBlockStrc**)(Line + 0xc) = pPool->pTail;
-              pPool->pTail = (D2PoolBlockStrc*)Line;
-              *(uint32_t*)(Line + 0x10) = 0;
-            }
-          }
-
-          nBlockSize = pPool->nBlockSize;
-          nBitmapByteOff = *(int*)Line;
-          /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pPool->pSync);
-          return (void*)(nBlockSize * nSlotIndex + nBitmapByteOff);
+        if (*(uint32_t*)(nBitmapByteOff + *(int*)(Line + 4)) & gadwBitMasks[nSlotIndex & 0x1f]) {
+          Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x4ff);
+          exit(-1);
         }
 
-        nSizeClass = 0x4ff;
-      }
-    }
+        pBitmapWord = (uint32_t*)(nBitmapByteOff + *(int*)(Line + 4));
+        *pBitmapWord |= gadwBitMasks[nSlotIndex & 0x1f];
+        if (*(int*)(Line + 8) >= (int)pPool->nBlocks && *(int*)(Line + 0x10)) {
+          pNextBlock = *(D2PoolBlockStrc**)(Line + 0x10);
+          if ((int)pNextBlock->nBlocks < (int)pPool->nBlocks) {
+            if (!*(int*)(Line + 0xc)) {
+              pPool->pBlocks = pNextBlock;
+            } else {
+              *(D2PoolBlockStrc**)(*(int*)(Line + 0xc) + 0x10) = (D2PoolBlockStrc*)pNextBlock;
+            }
+            if (*(int*)(Line + 0x10)) {
+              *(uint32_t*)(*(int*)(Line + 0x10) + 0xc) = *(uint32_t*)(Line + 0xc);
+            }
+            if (!pPool->pTail) {
+              Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x50d);
+              exit(-1);
+            }
 
-    Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), nSizeClass);
-    exit(-1);
+            pPool->pTail->pNext = (D2PoolBlockStrc*)Line;
+            *(D2PoolBlockStrc**)(Line + 0xc) = pPool->pTail;
+            pPool->pTail = (D2PoolBlockStrc*)Line;
+            *(uint32_t*)(Line + 0x10) = 0;
+          }
+        }
+
+        nBlockSize = pPool->nBlockSize;
+        nBitmapByteOff = *(int*)Line;
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pPool->pSync);
+        return (void*)(nBlockSize * nSlotIndex + nBitmapByteOff);
+      }
+    } else {
+      Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x4f3);
+      exit(-1);
+    }
 }
 
 void * __fastcall ReAlloc(D2PoolManagerStrc * pMemory, void * pMemoryToRealloc, size_t nAllocSize, char * szFile, int32_t nLine) {

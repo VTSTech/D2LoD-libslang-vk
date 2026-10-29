@@ -857,7 +857,7 @@ static void __stdcall D2WIN_SaveScreenshotToFile(uint8_t * pDibBytes, LPCSTR szF
     LPCSTR lpFileName;
     JPEG_CORE_PROPERTIES jpegProps;
     char szAutoFilename[252];
-    uint32_t dwReturnAddr = 0x4f9fbd;
+    uint32_t dwReturnAddr;
     while (true) {
       HANDLE hObject;
       sprintf(szAutoFilename, "Screenshot%03d.jpg", gnScreenshotSequenceIndex);

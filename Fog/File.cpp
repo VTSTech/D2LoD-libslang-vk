@@ -44,7 +44,6 @@ void __stdcall CONTAINER_InitializeBuffer(void * pBuffer, int32_t nTypeSize, int
 
 void __fastcall CRASH_DumpThreadContext(DWORD dwThreadId, void * pContext, fnCrashOutputLine pOutputCallback, ::Report * pReport, char bIncludeThreadName, char bIncludeStackInfo, uint32_t nMaxFrames) {
     D2CrashFrameStrc aFrames[128];
-    aFrames[0x7f].a14[3] = 0x40307d;
     int nFrameCountClamped = 0x7f;
     uint32_t* pFrameBufCursor = &aFrames[0].dw08;
     do {

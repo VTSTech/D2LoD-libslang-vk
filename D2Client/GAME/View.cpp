@@ -444,22 +444,23 @@ void __fastcall GetCenterXY(D2GameViewStrc * pGameView, int * nCenterX, int * nC
 }
 
 void __fastcall VIEW_ConvertViewCoordsToIsometric(D2GameViewStrc * pGameView, int32_t nOffsetX, int32_t nOffsetY, int * pOutX, int * pOutY) {
-    int32_t nErrLine;
     if (pGameView) {
       if (!pOutX) {
-        nErrLine = 0x1ce;
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ce);
+        exit(-1);
       } else {
-        if (pOutY) {
-          D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv32(pGameView->nCenterX + nOffsetX, pGameView->nCenterY + nOffsetY, pOutX, pOutY);
-          return;
+        if (!pOutY) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1cf);
+          exit(-1);
         }
 
-        nErrLine = 0x1cf;
+        D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv32(pGameView->nCenterX + nOffsetX, pGameView->nCenterY + nOffsetY, pOutX, pOutY);
+        return;
       }
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1cd);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrLine);
-    exit(-1);
 }
 
 void __fastcall GAMEVIEW_PrepareScene(D2GameViewStrc * pGameView, uint32_t nFlags) {

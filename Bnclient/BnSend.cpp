@@ -819,33 +819,38 @@ BOOL __fastcall NET_SID_CLIENT_Send_0x5A_ResetPassword(char * szText1, char * sz
     uint32_t _Size;
     uint32_t _Size_00;
     char szPacketBuf[512];
-    int32_t nErrorLine;
-    if (szText1 && *szText1 != '\0') {
-      uint32_t nLen1;
-      if (!szText2 || *szText2 == '\0') {
-        return 0;
-      }
-
-      nLen1 = Storm::Source::SSTR::SStrLen(szText1);
-      _Size_00 = nLen1 + 1;
-      if (_Size_00 > 0x100) {
-        nErrorLine = 0x581;
-      } else {
-        memcpy(szPacketBuf, szText1, _Size_00);
-        nLen2 = Storm::Source::SSTR::SStrLen(szText2);
-        _Size = nLen2 + 1;
-        if (_Size <= 0x100) {
-          memcpy(szPacketBuf + nLen1 + 1, szText2, _Size);
-          iVar1 = NET_SID_CLIENT_Send(0x5a, szPacketBuf, _Size + _Size_00);
-          return (uint32_t)(iVar1 >= 0);
-        }
-
-        nErrorLine = 0x588;
-      }
+    if (!szText1) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x578);
+      exit(-1);
+    }
+    if (*szText1 == '\0') {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x579);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
-    exit(-1);
+    uint32_t nLen1;
+    if (!szText2 || *szText2 == '\0') {
+      return 0;
+    }
+
+    nLen1 = Storm::Source::SSTR::SStrLen(szText1);
+    _Size_00 = nLen1 + 1;
+    if (_Size_00 > 0x100) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x581);
+      exit(-1);
+    }
+
+    memcpy(szPacketBuf, szText1, _Size_00);
+    nLen2 = Storm::Source::SSTR::SStrLen(szText2);
+    _Size = nLen2 + 1;
+    if (!(_Size <= 0x100)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x588);
+      exit(-1);
+    }
+
+    memcpy(szPacketBuf + nLen1 + 1, szText2, _Size);
+    iVar1 = NET_SID_CLIENT_Send(0x5a, szPacketBuf, _Size + _Size_00);
+    return (uint32_t)(iVar1 >= 0);
 }
 
 BOOL __fastcall NET_SID_CLIENT_Send_0x5B_ChangeEmail(char * szText1, char * szText2, char * szNewEmail) {
@@ -855,40 +860,46 @@ BOOL __fastcall NET_SID_CLIENT_Send_0x5B_ChangeEmail(char * szText1, char * szTe
     uint32_t _Size_00;
     uint32_t _Size_01;
     char szPacketBuf[768];
-    int32_t nErrorLine;
-    if (szText1 && *szText1 != '\0') {
-      uint32_t nLen1;
-      if (!szText2 || *szText2 == '\0' || !szNewEmail || *szNewEmail == '\0') {
-        return 0;
-      }
-
-      nLen1 = Storm::Source::SSTR::SStrLen(szText1);
-      _Size = nLen1 + 1;
-      if (_Size > 0x100) {
-        nErrorLine = 0x5a4;
-      } else {
-        memcpy(szPacketBuf, szText1, _Size);
-        nLen2 = Storm::Source::SSTR::SStrLen(szText2);
-        _Size_00 = nLen2 + 1;
-        if (_Size_00 > 0x100) {
-          nErrorLine = 0x5ac;
-        } else {
-          memcpy(szPacketBuf + nLen1 + 1, szText2, _Size_00);
-          nLen2 = Storm::Source::SSTR::SStrLen(szNewEmail);
-          _Size_01 = nLen2 + 1;
-          if (_Size_01 <= 0x100) {
-            memcpy(szPacketBuf + nLen1 + 1 + _Size_00, szNewEmail, _Size_01);
-            iVar1 = NET_SID_CLIENT_Send(0x5b, szPacketBuf, _Size_01 + _Size_00 + _Size);
-            return (uint32_t)(iVar1 >= 0);
-          }
-
-          nErrorLine = 0x5b4;
-        }
-      }
+    if (!szText1) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x599);
+      exit(-1);
+    }
+    if (*szText1 == '\0') {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x59a);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
-    exit(-1);
+    uint32_t nLen1;
+    if (!szText2 || *szText2 == '\0' || !szNewEmail || *szNewEmail == '\0') {
+      return 0;
+    }
+
+    nLen1 = Storm::Source::SSTR::SStrLen(szText1);
+    _Size = nLen1 + 1;
+    if (_Size > 0x100) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5a4);
+      exit(-1);
+    }
+
+    memcpy(szPacketBuf, szText1, _Size);
+    nLen2 = Storm::Source::SSTR::SStrLen(szText2);
+    _Size_00 = nLen2 + 1;
+    if (_Size_00 > 0x100) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5ac);
+      exit(-1);
+    }
+
+    memcpy(szPacketBuf + nLen1 + 1, szText2, _Size_00);
+    nLen2 = Storm::Source::SSTR::SStrLen(szNewEmail);
+    _Size_01 = nLen2 + 1;
+    if (!(_Size_01 <= 0x100)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5b4);
+      exit(-1);
+    }
+
+    memcpy(szPacketBuf + nLen1 + 1 + _Size_00, szNewEmail, _Size_01);
+    iVar1 = NET_SID_CLIENT_Send(0x5b, szPacketBuf, _Size_01 + _Size_00 + _Size);
+    return (uint32_t)(iVar1 >= 0);
 }
 
 void __stdcall NET_SID_CLIENT_Send_0x5D_ReportCrash() {

@@ -493,16 +493,20 @@ int32_t * __stdcall DRLGROOM_GetMinimapRect(uint32_t nLine, D2RoomStrc * dwParam
       Drlg::Transform::SizeMiniMapToScreen(pTopLeft->sCoords.sTileRect.right + pTopLeft->sCoords.sTileRect.left, pTopLeft->sCoords.sTileRect.top, (int32_t*)pParam3, (int32_t*)&dwParam2);
       Drlg::Transform::SizeMiniMapToScreen(pTopLeft->sCoords.sTileRect.right + pTopLeft->sCoords.sTileRect.left, pTopLeft->sCoords.sTileRect.top + pTopLeft->sCoords.sTileRect.bottom, (int32_t*)&dwParam2, pX + 3);
       if (*pY <= pX[3]) {
-        if (*pX <= *(int32_t*)pParam3) {
-          return (int32_t*)pParam3;
+        if (!(*pX <= *(int32_t*)pParam3)) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1db);
+          exit(-1);
         }
 
-        nLine = 0x1db;
+        return (int32_t*)pParam3;
+      } else {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1da);
+        exit(-1);
       }
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1d0);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
-    exit(-1);
 }
 
 void __stdcall GetSubtileRect(D2RoomStrc * pRoom, RECT * pRect) {
@@ -1610,33 +1614,33 @@ D2RoomStrc * __stdcall SpawnUnit(D2DrlgActStrc * pDrlgAct, eD2LevelId eLevel, in
     D2RoomStrc* pFreeCoordRoom;
     POINT ptSpawnCoord;
     int nLocalY;
-    int32_t nErrorLine;
     if (pDrlgAct) {
       D2DrlgStrc** ppDVar1;
       ppDVar1 = &pDrlgAct->pDrlg;
       pDrlgAct = 0;
       nLocalY = 0;
       pSpawnRoom = Drlg::DrlgRoom::DRLGSPAWN_FindSpawnLocationInLevel(*ppDVar1, eLevel, nParam, (int*)&pDrlgAct, &nLocalY);
-      if (!pSpawnRoom) {
-        return nullptr;
-      }
+      if (pSpawnRoom) {
+        Drlg::Transform::CoordsRoomToWorld((int32_t*)&pDrlgAct, &nLocalY);
+        ptSpawnCoord.x = (uintptr_t)&pDrlgAct->eLevelIdFirst + 3;
+        ptSpawnCoord.y = nLocalY + 3;
+        pFreeCoordRoom = Collision::GetFreeCoordinates_WithNeighboorRooms(pSpawnRoom, &ptSpawnCoord, nParam2, 0x1c09, 0);
+        if (!pFreeCoordRoom) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x238);
+          exit(-1);
+        }
 
-      Drlg::Transform::CoordsRoomToWorld((int32_t*)&pDrlgAct, &nLocalY);
-      ptSpawnCoord.x = (uintptr_t)&pDrlgAct->eLevelIdFirst + 3;
-      ptSpawnCoord.y = nLocalY + 3;
-      pFreeCoordRoom = Collision::GetFreeCoordinates_WithNeighboorRooms(pSpawnRoom, &ptSpawnCoord, nParam2, 0x1c09, 0);
-      if (pFreeCoordRoom) {
         *pnParam1 = ptSpawnCoord.x;
         *pnParam2 = ptSpawnCoord.y;
         pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pSpawnRoom, *pnParam1, ptSpawnCoord.y);
         return pSpawnRoom;
       }
 
-      nErrorLine = 0x238;
+      return nullptr;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x22c);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
-    exit(-1);
 }
 
 int32_t __stdcall GetGridIndex(D2RoomStrc * pRoom, int32_t nX, int32_t nY) {

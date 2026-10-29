@@ -122,9 +122,8 @@ void __fastcall FASTCMP_ConvertDCCWithPaletteRemap(DC6 * pDCC, DC6 * pDCCDest, p
     uint8_t* pbIndexOut;
     uint32_t nFrameFlags;
     uint32_t nCompressedSizeOut;
-    int32_t nErrorLine;
     if (!(pDCC->nFlags & 4)) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xce);
       exit(-1);
     }
 

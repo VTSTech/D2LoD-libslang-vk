@@ -83,7 +83,7 @@ void __fastcall CLIENT_WarpToAct(::SGAMEDATA * pGame, D2ClientStrc * pClient, eD
       return;
     }
 
-    int32_t nErrorLine = 0x53ace5;
+    int32_t nErrorLine;
     eAct eDestAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
     if (eDestAct != pClient->nAct) {
       D2DynamicPathStrc* pDynamicPath;
@@ -95,74 +95,74 @@ void __fastcall CLIENT_WarpToAct(::SGAMEDATA * pGame, D2ClientStrc * pClient, eD
       ppDVar1 = ppSpawnActOut;
       Clients::CLIENT_SetConnectionState(pClient, 5);
       pUnit = Clients::CLIENTS_GetControlUnit(pClient, 0);
-      if (pUnit) {
-        if (!pGameSave->bExpansion && pUnit->eUnitType == UNIT_PLAYER) {
-          PLAYER::PlayerPets::PETS_FreeAllPetsByType(pGameSave, pUnit);
-        }
-
-        D2Common::Skills::STATES_RemoveAllProgressiveStates(pUnit);
-        bIsArena = D2Common::Units::GetUnitSizeX(pUnit);
-        pSpawnRoom = D2Common::DUNGEON::Dungeon::SpawnUnit(*ppDVar1, eLevel, param_1, &nSpawnX, &nSpawnY, bIsArena);
-        if (!pSpawnRoom) {
-          return;
-        }
-
-        nSearchRadius = 5;
-        eCollisionFlag = 0x1c89;
-        ptSpawnPos.x = nSpawnX;
-        ptSpawnPos.y = nSpawnY;
-        nErrorLine = D2Common::Units::GetUnitSizeX(pUnit);
-        pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithIncrementValue(pSpawnRoom, &ptSpawnPos, nErrorLine, eCollisionFlag, nSearchRadius);
-        if (!pSpawnRoom) {
-          return;
-        }
-
-        nSpawnX = ptSpawnPos.x;
-        nSpawnY = ptSpawnPos.y;
-        pDynamicPath = pUnit->pPath.pDynamicPath;
-        pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-        bCollisionOk = D2Common::PATH::Path::PATH_GetCollisionMaskAt(pDynamicPath, pUnit, nullptr, 0, 0);
-        if (!bCollisionOk) {
-          nErrorLine = 0x1d1;
-        } else {
-          UNIT::SUnit::UNITS_UpdateRoomClientVisibility(pGameSave, pUnit, pRoom);
-          bCollisionOk = D2Common::PATH::Path::PATH_GetCollisionMaskAt(pDynamicPath, pUnit, pSpawnRoom, (uint16_t)nSpawnX, (uint16_t)nSpawnY);
-          if (bCollisionOk) {
-            Clients::CLIENT_SetRoom(pClient, nullptr);
-            SCmd::NET_D2GS_SERVER_SendStateCommand(pClient, 5);
-            Clients::CLIENT_SetAct(pClient, eDestAct);
-            pUnit->nAct = eDestAct;
-            pUnit->pDrlgAct = *ppSpawnActOut;
-            Clients::TellClientToLoadAct(pGameSave, pClient);
-            Clients::CLIENT_SetRoom(pClient, pSpawnRoom);
-            D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-            pGamePost = pGameSave;
-            pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
-            UNIT::SUnit::UNITS_UpdateRoomClientVisibility(pGameSave, pUnit, nullptr);
-            D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-            if (pUnit->eUnitType != UNIT_PLAYER) {
-              return;
-            }
-
-            nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-            wPosY = (uint16_t)nErrorLine;
-            PLAYER::PlayerPets::PETS_ManagePetsByType(pGamePost, pUnit, (uint16_t)D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), wPosY);
-            return;
-          }
-
-          nErrorLine = 0x1d6;
-        }
-
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      if (!pUnit) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1af);
         exit(-1);
+      }
+      if (!pGameSave->bExpansion && pUnit->eUnitType == UNIT_PLAYER) {
+        PLAYER::PlayerPets::PETS_FreeAllPetsByType(pGameSave, pUnit);
+      }
+
+      D2Common::Skills::STATES_RemoveAllProgressiveStates(pUnit);
+      bIsArena = D2Common::Units::GetUnitSizeX(pUnit);
+      pSpawnRoom = D2Common::DUNGEON::Dungeon::SpawnUnit(*ppDVar1, eLevel, param_1, &nSpawnX, &nSpawnY, bIsArena);
+      if (!pSpawnRoom) {
         return;
       }
 
-      nErrorLine = 0x1af;
-    }
+      nSearchRadius = 5;
+      eCollisionFlag = 0x1c89;
+      ptSpawnPos.x = nSpawnX;
+      ptSpawnPos.y = nSpawnY;
+      nErrorLine = D2Common::Units::GetUnitSizeX(pUnit);
+      pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithIncrementValue(pSpawnRoom, &ptSpawnPos, nErrorLine, eCollisionFlag, nSearchRadius);
+      if (!pSpawnRoom) {
+        return;
+      }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
-    exit(-1);
+      nSpawnX = ptSpawnPos.x;
+      nSpawnY = ptSpawnPos.y;
+      pDynamicPath = pUnit->pPath.pDynamicPath;
+      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+      bCollisionOk = D2Common::PATH::Path::PATH_GetCollisionMaskAt(pDynamicPath, pUnit, nullptr, 0, 0);
+      if (!bCollisionOk) {
+        nErrorLine = 0x1d1;
+      } else {
+        UNIT::SUnit::UNITS_UpdateRoomClientVisibility(pGameSave, pUnit, pRoom);
+        bCollisionOk = D2Common::PATH::Path::PATH_GetCollisionMaskAt(pDynamicPath, pUnit, pSpawnRoom, (uint16_t)nSpawnX, (uint16_t)nSpawnY);
+        if (bCollisionOk) {
+          Clients::CLIENT_SetRoom(pClient, nullptr);
+          SCmd::NET_D2GS_SERVER_SendStateCommand(pClient, 5);
+          Clients::CLIENT_SetAct(pClient, eDestAct);
+          pUnit->nAct = eDestAct;
+          pUnit->pDrlgAct = *ppSpawnActOut;
+          Clients::TellClientToLoadAct(pGameSave, pClient);
+          Clients::CLIENT_SetRoom(pClient, pSpawnRoom);
+          D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
+          pGamePost = pGameSave;
+          pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
+          UNIT::SUnit::UNITS_UpdateRoomClientVisibility(pGameSave, pUnit, nullptr);
+          D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
+          if (pUnit->eUnitType != UNIT_PLAYER) {
+            return;
+          }
+
+          nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+          wPosY = (uint16_t)nErrorLine;
+          PLAYER::PlayerPets::PETS_ManagePetsByType(pGamePost, pUnit, (uint16_t)D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), wPosY);
+          return;
+        }
+
+        nErrorLine = 0x1d6;
+      }
+
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      exit(-1);
+      return;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19f);
+      exit(-1);
+    }
 }
 
 // @sourcefile .\GAME\Level.cpp

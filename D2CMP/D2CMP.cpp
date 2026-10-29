@@ -38,40 +38,44 @@ void __fastcall SPRITECACHE_LRU_RemoveCacheEntryCallback(int pEntry) {
 }
 
 uint32_t __stdcall CELCMP_AllocateCelListKey(uint32_t nParam1, uint32_t nParam2, int * pdwParam, int32_t nParam) {
-    int32_t nErrorCode;
     uint32_t nFrameCount = nParam2;
     uint32_t nAllocatedKey = nParam1;
     uint32_t nBitShift1 = nParam2 >> 2 & 0x33333333;
     uint32_t nBitShift2 = nParam2 >> 1 & 0x77777777;
     uint32_t nBitCount = nParam2 >> 3 & 0x11111111;
-    if (((nParam2 - nBitShift2 - nBitShift1 - nBitCount >> 4) - nBitShift2 - nBitShift1 - nBitCount + nParam2 & 0xf0f0f0f) % 0xff == 1 && nParam2 <= 0x20) {
-      ::CELLIST* pCelEntry;
-      if ((int)nParam1 < 2) {
-        pCelEntry = gCelCmpCacheHandler.NewLock(&nParam1, (int32_t*)&nParam2);
-        pCelEntry->m_frames.Clear();
-        pCelEntry->nFormat = nAllocatedKey;
-        pCelEntry->nDirections = nFrameCount;
-        pCelEntry->nFrameCount = 0;
-        pCelEntry->dwFlags = 0;
-        if (nParam) {
-          pCelEntry->dwFlags = 4;
-          if (pdwParam) {
-            pCelEntry->pRawData = (void*)*pdwParam;
-          }
-        }
-        if (!nParam2) {
-          return nParam1;
-        }
-
-        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&gCelCmpCacheHandler.tSync.m_critsect);
-        return nParam1;
-      }
-
-      nErrorCode = 0x201;
+    if (((nParam2 - nBitShift2 - nBitShift1 - nBitCount >> 4) - nBitShift2 - nBitShift1 - nBitCount + nParam2 & 0xf0f0f0f) % 0xff != 1) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ff);
+      exit(-1);
+    }
+    if (!(nParam2 <= 0x20)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x200);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorCode);
-    exit(-1);
+    ::CELLIST* pCelEntry;
+    if (!((int)nParam1 < 2)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x201);
+      exit(-1);
+    }
+
+    pCelEntry = gCelCmpCacheHandler.NewLock(&nParam1, (int32_t*)&nParam2);
+    pCelEntry->m_frames.Clear();
+    pCelEntry->nFormat = nAllocatedKey;
+    pCelEntry->nDirections = nFrameCount;
+    pCelEntry->nFrameCount = 0;
+    pCelEntry->dwFlags = 0;
+    if (nParam) {
+      pCelEntry->dwFlags = 4;
+      if (pdwParam) {
+        pCelEntry->pRawData = (void*)*pdwParam;
+      }
+    }
+    if (!nParam2) {
+      return nParam1;
+    }
+
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&gCelCmpCacheHandler.tSync.m_critsect);
+    return nParam1;
 }
 
 uint32_t __stdcall TILEPROJECT_GetSoundIndexIndex(int32_t nParam) {

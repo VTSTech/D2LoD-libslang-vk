@@ -3917,7 +3917,6 @@ int __fastcall COMPRESS_EncodeBuffer(int32_t pBitStream, uint8_t * pbSrc, int32_
 void __fastcall SCOMP_HuffmanCompress(uint8_t * pBitStreamCtx, uint32_t * pnBytesWritten, uint8_t * pbSrc, int32_t nSrcLen, uint8_t * pbTableSel, uint32_t dwFlags) {
     D2CompressEncoderStrc aHuffCtx;
     D2BitStreamWriterStrc aBitStream;
-    aBitStream.nBitsHeld = 0x41f98d;
     SSystem::LINKEDLIST_InsertAfter(pBitStreamCtx, *pnBytesWritten, &aBitStream);
     HUFFMAN_InitContext(&aHuffCtx);
     int nBytesWritten = COMPRESS_EncodeBuffer((uintptr_t)&aBitStream, pbSrc, nSrcLen, (int**)(uint32_t)*pbTableSel, (uint32_t*)&aHuffCtx);
@@ -3929,7 +3928,6 @@ void __fastcall SCOMP_HuffmanCompress(uint8_t * pBitStreamCtx, uint32_t * pnByte
 void __fastcall SCOMP_HuffmanDecompress(uint8_t * pDst, int * pnDstSize, uint32_t * pBitStreamCtx, uint32_t dwFlags, uint32_t dwParam) {
     uint32_t aHuffCtx[3741];
     int sListHead[3];
-    sListHead[2] = 0x41f9ed;
     SSystem::LINKEDLIST_Unlink(pBitStreamCtx, sListHead);
     HUFFMAN_ConstructorWithTable((int32_t)aHuffCtx);
     int pBytesWritten = HUFFMAN_DecompressBlock(pDst, *pnDstSize, (uint16_t**)sListHead, aHuffCtx);

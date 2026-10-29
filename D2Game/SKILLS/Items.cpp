@@ -361,7 +361,6 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
     int nAffixIdx;
     int anCandidatePairs[1024];
     D2MagicAffixTxt* pAffixTable;
-    pAffixTable = (D2MagicAffixTxt*)0x5c12fd;
     D2MagicAffixTableStrc* pTableInfo;
     pTableInfo = D2Common::DATATBLS::ItemTbls::TXT_MagicAffixes_GetTableInfo();
     uint32_t nTotalAffixes;
@@ -541,8 +540,6 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
     int local_1024[1024];
     D2MagicAffixTxt* pCurAffixTxt;
     int bGroupExclusive;
-    D2MagicAffixTxt* pCandidateList;
-    pCandidateList = (D2MagicAffixTxt*)0x5c156d;
     D2MagicAffixTableStrc* pTableInfo;
     pTableInfo = D2Common::DATATBLS::ItemTbls::TXT_MagicAffixes_GetTableInfo();
     if (!pTableInfo) {
@@ -569,6 +566,7 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
 
     int nAffixBaseIdx;
     nAffixBaseIdx = ((int)pDVar4 - (int)pTableInfo->pTable) / 0x90;
+    D2MagicAffixTxt* pCandidateList;
     pCandidateList = 0;
     D2SeedStrc* pItemSeed;
     pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pItem);
@@ -767,7 +765,7 @@ uint32_t __fastcall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, D2UnitStrc * 
     D2RareAffixTxt* pAffixRangeStart;
     int nAffixRangeBytes;
     uint32_t apiStack4108[1024];
-    D2RareAffixTxt* pCurAffixEntry = (D2RareAffixTxt*)0x5c19ad;
+    D2RareAffixTxt* pCurAffixEntry;
     D2RareAffixTableStrc* pRareAffixTableInfo = D2Common::DATATBLS::ItemTbls::TXT_RareAffixes_GetTableInfo();
     if (pThis) {
       pAffixRangeStart = (D2RareAffixTxt*)pRareAffixTableInfo;
@@ -830,7 +828,7 @@ uint32_t __fastcall GetMaxToRoll(int32_t pThis, D2UnitStrc * pUnit) {
     D2RareAffixTxt* pAffixRangeStart;
     int nAffixRangeBytes;
     uint32_t apiStack4108[1024];
-    D2RareAffixTxt* pCurAffixEntry = (D2RareAffixTxt*)0x5c1abd;
+    D2RareAffixTxt* pCurAffixEntry;
     D2RareAffixTableStrc* pRareAffixTableInfo = D2Common::DATATBLS::ItemTbls::TXT_RareAffixes_GetTableInfo();
     if (pThis) {
       pAffixRangeStart = (D2RareAffixTxt*)pRareAffixTableInfo;

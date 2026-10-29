@@ -1,17 +1,17 @@
-tree 074195047-dirty; compiler sp1; flags /O2 /Oy- /Ob1 /EHsc /GS /MT /W1 /D WIN32 /D NDEBUG /D _WINDOWS; D2Client/ /GS-; D2DDraw/ /GS-; D2Direct3D/ /GS-; D2Gdi/ /GS-; D2Glide/ /GS-; D2Launch/ /GS-; D2Launch/Engine/ ; D2MCPClient/ /GS-; D2Multi/ /GS-; D2Sound/ /GS-; D2Win/ /GS-; D2gfx/ /GS-; Fog/3rdparty/crashy /Y- /DWINSOCK_API_LINKAGE=DECLSPEC_IMPORT
+tree 1e53dbdbe-dirty; compiler sp1; flags /O2 /Oy- /Ob1 /EHsc /GS /MT /W1 /D WIN32 /D NDEBUG /D _WINDOWS; D2Client/ /GS-; D2DDraw/ /GS-; D2Direct3D/ /GS-; D2Gdi/ /GS-; D2Glide/ /GS-; D2Launch/ /GS-; D2Launch/Engine/ ; D2MCPClient/ /GS-; D2Multi/ /GS-; D2Sound/ /GS-; D2Win/ /GS-; D2gfx/ /GS-; Fog/3rdparty/crashy /Y- /DWINSOCK_API_LINKAGE=DECLSPEC_IMPORT
 original functions: 15521 (2678537 bytes of code)
-mapped and compared: 13532
-  MATCH               5285
+mapped and compared: 13598
+  MATCH               5312
   REF_DIFF              15
-  INSN_MATCH           351
-  INSN_COUNT_MATCH    1415
-  OUR+-N              6466
+  INSN_MATCH           350
+  INSN_COUNT_MATCH    1436
+  OUR+-N              6485
   QUARANTINE             0
   MISSING                0
-matched code: 384103 bytes (14.34% of the original)
+matched code: 385795 bytes (14.40% of the original)
   of which the statically linked runtime (libmap.tsv): 419 compared (95123 bytes), 351 MATCH (50963 bytes)
-pairings by funcmap tier: sourcemap 10251, bracket 934, exact 762, votes 646, lib-exact 308, calls 260, refs 116, align 62, lib-order 58, string 48, lib-similar 39, name 23, lib-votes 14, import 11
-globals seen at aligned instructions: 2186, of which consistent 2117 (datamap.tsv)
+pairings by funcmap tier: sourcemap 10251, bracket 945, exact 771, votes 646, lib-exact 308, calls 272, refs 120, align 92, lib-order 58, string 48, lib-similar 39, name 23, lib-votes 14, import 11
+globals seen at aligned instructions: 2188, of which consistent 2119 (datamap.tsv)
 self-check, names carrying their own address: 199 agree, 2 elsewhere
   look at: D2Direct3D::Renderer::Catch_All_006b4c42 at 006b4770
   look at: D2Direct3D::Renderer::Catch_All_006b4c73 at 006b4900

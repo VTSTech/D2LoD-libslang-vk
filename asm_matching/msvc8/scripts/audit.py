@@ -132,6 +132,7 @@ def main():
     quarantined = load_quarantine(os.path.join(BUILD, 'quarantine.tsv'))
     out = []
     statuses = collections.Counter()
+    memo = ourslib.PairMemo('audit', BUILD)
     wiring = collections.defaultdict(collections.Counter)   # our global -> implied original address
     for s, e, name, tu, sym, method, _d in rows + librows:
         f = fns.get(tu + '|' + sym)
@@ -147,17 +148,26 @@ def main():
             continue
         # A library pair may join carved pieces (libmap.py); a funcmap row's
         # end is its carve's, which makes this ref_view.
-        r = compare.compare(compare.our_view(f, syms), compare.ref_view_span(s, e, model))
-        for sym, addr in r.wiring:
+        # A judgement depends on the two functions' code and on where the
+        # functions ours calls are mapped: kept across runs by exactly that.
+        extra = (e, tuple(syms.get(t) for _o, kind, t in f.refs if kind in ('call', 'fptr')))
+        v = memo.get(f, s, extra)
+        if v is None:
+            r = compare.compare(compare.our_view(f, syms), compare.ref_view_span(s, e, model))
+            v = memo.put(f, s, (r.ref_insns, r.our_insns, r.byte_diffs, r.similarity, r.status, r.ref_diffs,
+                                r.unverified, tuple(r.wiring)), extra)
+        ref_insns, our_insns, byte_diffs, similarity, status, ref_diffs, unverified, rwiring = v
+        for sym, addr in rwiring:
             wiring[sym][addr] += 1
         notes = []
-        if r.ref_diffs:
-            notes.append('%d refs differ' % r.ref_diffs)
-        if r.unverified:
-            notes.append('%d refs unverified' % r.unverified)
-        out.append((s, e, name, tu, method, r.ref_insns, r.our_insns, r.byte_diffs, r.similarity, r.status,
+        if ref_diffs:
+            notes.append('%d refs differ' % ref_diffs)
+        if unverified:
+            notes.append('%d refs unverified' % unverified)
+        out.append((s, e, name, tu, method, ref_insns, our_insns, byte_diffs, similarity, status,
                     '; '.join(notes)))
-        statuses[r.status if not r.status.startswith('OUR') else 'OUR+-N'] += 1
+        statuses[status if not status.startswith('OUR') else 'OUR+-N'] += 1
+    memo.save()
     out.sort()
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, 'w') as fh:

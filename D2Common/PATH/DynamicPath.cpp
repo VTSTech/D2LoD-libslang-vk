@@ -1330,13 +1330,12 @@ uint32_t __stdcall PATH_CalculatePath(D2DynamicPathStrc * pDynamicPath, D2UnitSt
     BOOL bCanProceed;
     D2PathTypeArg sPathTypeArg;
     uint32_t dwFlags;
-    int32_t nLine;
     D2DynamicPathStrc* pDynamicPath_00 = pDynamicPath;
     if (!pDynamicPath) {
       return 0;
     }
     if (pDynamicPath->pOwner != pUnit) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e8);
       exit(-1);
     }
     if (pDynamicPath->nFlags & 0x40000U) {

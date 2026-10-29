@@ -303,7 +303,7 @@ void __fastcall AttachCorrectAiFunctionToMonster(::SGAMEDATA * pGame, D2UnitStrc
     D2UnitStrc* pUnitOrErrCode = pUnit;
     eD2States eStateResult = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_uninterruptable);
     if (eStateResult != STATE_none) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), (int32_t)pUnitOrErrCode);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1a6);
       exit(-1);
     }
     if (!(pGame && pUnit && pMonsterAiGeneral && nFunctionId < 0x12 && pUnit->eUnitType == UNIT_MONSTER)) {
@@ -4630,15 +4630,16 @@ static uint32_t MONSTERAI_CalculateTrapDamage(uint32_t dwParam, uint32_t nParam1
       }
 
       pObjTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nClassId);
-      if (pObjTxt->Damage) {
-        return (uint32_t)(uint8_t)pObjTxt->Damage * (nDamageRoll + nParam2) / 100;
+      if (!pObjTxt->Damage) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b);
+        exit(-1);
       }
 
-      dwParam2 = 0x1b;
+      return (uint32_t)(uint8_t)pObjTxt->Damage * (nDamageRoll + nParam2) / 100;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x14);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), dwParam2);
-    exit(-1);
 }
 
 // Computes and applies a retaliatory/trap-style damage hit from pUnit against pVictim. No-ops in town or when a wall/door blocks the line. Derives min/max damage from victim hitpoints (>>3 and >>5), rolls a to-hit/chance value from victim level/dexterity/AC and the unit RNG seed; on a hit rolls trap damage via MONSTERAI_CalculateTrapDamage and fills a D2DamageStrc whose element (fire/lightning/cold) is selected by nDmgType (1/2/3). Sets uninterruptable-aware result flags, applies defensive reduction and damage to the victim.

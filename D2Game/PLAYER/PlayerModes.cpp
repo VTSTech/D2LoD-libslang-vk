@@ -1408,9 +1408,8 @@ void __fastcall PLRMODES_StartModeID(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2
     bool _bCanInterrupt;
     bool bCanInterrupt;
     int nCancelResult;
-    int32_t nLine;
     if (!pGame) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x835);
       exit(-1);
     }
 

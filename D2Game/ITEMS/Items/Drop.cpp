@@ -180,8 +180,6 @@ int32_t __fastcall ITEMDROP_RollExceptionalItemClass(::SGAMEDATA * pGame, D2Seed
     bool bPassesFilter;
     uint32_t nRandIndex;
     int aiCandidateIdxs[2048];
-    uint32_t nCandidateIdx;
-    nCandidateIdx = 0x555e7d;
     ::SGAMEDATA* pGameLocal;
     pGameLocal = pGame;
     D2SeedStrc* pSeedLocal;
@@ -194,6 +192,7 @@ int32_t __fastcall ITEMDROP_RollExceptionalItemClass(::SGAMEDATA * pGame, D2Seed
     nExceptionalStartIdx = ((int)pItemTxt - (int)pItemsTxtSizeArr->pItems) / 0x1a8;
     int nItemCount;
     nItemCount = ((int)pItemsTxtSizeArr->pMisc - (int)pItemTxt) / 0x1a8;
+    uint32_t nCandidateIdx;
     nCandidateIdx = 0;
     if (!pItemTxt) {
       return -1;
@@ -244,8 +243,6 @@ int32_t __fastcall ITEMDROP_RollNormalItemClass(::SGAMEDATA * pGame, D2SeedStrc 
     bool bPassesFilter;
     uint32_t nRandIndex;
     int aiCandidateIdxs[2048];
-    uint32_t nCandidateIdx;
-    nCandidateIdx = 0x555fbd;
     ::SGAMEDATA* pGameLocal;
     pGameLocal = pGame;
     D2SeedStrc* pSeedLocal;
@@ -258,6 +255,7 @@ int32_t __fastcall ITEMDROP_RollNormalItemClass(::SGAMEDATA * pGame, D2SeedStrc 
     nNormalStartIdx = ((int)pItemTxt - (int)pItemsTxtSizeArr->pItems) / 0x1a8;
     int nItemCount;
     nItemCount = ((int)pItemsTxtSizeArr->pArmor - (int)pItemTxt) / 0x1a8;
+    uint32_t nCandidateIdx;
     nCandidateIdx = 0;
     if (!pItemTxt) {
       return -1;
@@ -308,8 +306,6 @@ int32_t __fastcall ITEMDROP_RollEliteItemClass(::SGAMEDATA * pGame, D2SeedStrc *
     bool bPassesFilter;
     uint32_t nRandIndex;
     int aiCandidateArr[2048];
-    uint32_t nCandidateIdx;
-    nCandidateIdx = 0x5560fd;
     ::SGAMEDATA* pGameLocal;
     pGameLocal = pGame;
     D2SeedStrc* pSeedLocal;
@@ -324,6 +320,7 @@ int32_t __fastcall ITEMDROP_RollEliteItemClass(::SGAMEDATA * pGame, D2SeedStrc *
     nItemCount = (pItemsTxtSizeArr->nSize * 0x1a8 - (int)pItemTxt + (int)pItemsTxtSizeArr->pItems) / 0x1a8;
     uint32_t nCandidateCount;
     nCandidateCount = 0;
+    uint32_t nCandidateIdx;
     nCandidateIdx = 0;
     if (!pItemTxt) {
       return -1;
@@ -2641,7 +2638,7 @@ D2UnitStrc * __fastcall ITEM_CreateItemInstance(::SGAMEDATA * pGame, D2ItemGenCo
     D2ItemsTableStrc* pnItemsTableSize;
     pnItemsTableSize = D2Common::DATATBLS::ItemTbls::TXT_Items_GetSize();
     if (!pnItemsTableSize) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7f0);
       exit(-1);
     }
 

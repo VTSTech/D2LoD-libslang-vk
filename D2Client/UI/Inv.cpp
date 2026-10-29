@@ -7536,9 +7536,9 @@ void __fastcall ITEM_BuildSetItemTooltip(D2UnitStrc * pUnit) {
     int nReqDexFailColor;
     int anReqFailColors;
     int nAdjReqDex;
+    D2SetItemsTxt** ppSetItemsTxtEntry;
     int32_t nAdjReqStr;
     D2ItemsTxt* pItemsTxtCopy;
-    D2SetItemsTxt** ppSetItemsTxtEntry = (D2SetItemsTxt**)0x48d1dd;
     uint16_t* pwLocaleStr = wszWorkBuf;
     for (nSetItemLoopIdx = 0x200; nSetItemLoopIdx; nSetItemLoopIdx--) {
       pwLocaleStr[0] = L'\0';
@@ -7974,49 +7974,49 @@ void __stdcall INV_ShowTransmogrifyTooltip() {
       nCurrentItemClassId = pItemToDescribe->nClassId;
     }
 
-    iVar1 = 0x48dbd3;
     D2ItemsTxt* pTransmogItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nCurrentItemClassId);
     if (pTransmogItemsTxt) {
       uint16_t* pwString;
       aTextHeight[1] = 0;
       pTransmogItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(pTransmogItemsTxt->dwTMogType, aTextHeight + 1);
-      if (pTransmogItemsTxt) {
-        pwString = D2Lang::StrTable::strtable::GetLocaleString(0x150b);
-        D2Lang::Unicode::UNISYS::STRING_CopyWideString(__frame0.wszTextBuffer, pwString);
-        pwString = D2Lang::StrTable::strtable::GetLocaleString(pTransmogItemsTxt->wNameStr);
-        D2Lang::Unicode::UNISYS::STRING_CopyWideString(__frame0.wszTextBuffer, pwString);
-        D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwLineEnd);
-        pwString = D2Lang::StrTable::strtable::GetLocaleString(0x150b);
-        D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwString);
-        D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwLineEnd);
-        Fog::File::CONTAINER_InitializeBuffer(__frame0.wszItemName, 2, 0x80, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-        GetItemName(pItemToDescribe, __frame0.wszItemName, 0x80);
-        ui::MoveArgumentToEAX(__frame0.wszItemName);
-        D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, __frame0.wszItemName);
-        __frame0.wszFullTooltip = L'\0';
-        Fog::File::CONTAINER_InitializeBuffer(__frame0.local_110e, 2, 0x3ff, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-        if (g_nCurrentInventoryPage - 1U <= 8) {
-          INV_FormatItemTooltipWithCost(__frame0.wszTextBuffer, &__frame0.wszFullTooltip);
-        } else {
-          D2Lang::Unicode::UNISYS::STRING_CopyWideString(&__frame0.wszFullTooltip, __frame0.wszTextBuffer);
-        }
+      if (!pTransmogItemsTxt) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe64);
+        exit(-1);
+      }
 
-        ui::MoveArgumentToEAX(&__frame0.wszFullTooltip);
-        D2Win::Src::D2WinFont::TEXT_CalcTextDimensions(&__frame0.wszFullTooltip, &__frame0.iTextWidth, aTextHeight);
-        if (gaInventoryState == aTextHeight[0] || gaInventoryState - aTextHeight[0] < 0) {
-          D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(&__frame0.wszFullTooltip, nInventoryContextMode, pInventoryContextUi + aTextHeight[0], 0, 0);
-          return;
-        }
+      pwString = D2Lang::StrTable::strtable::GetLocaleString(0x150b);
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(__frame0.wszTextBuffer, pwString);
+      pwString = D2Lang::StrTable::strtable::GetLocaleString(pTransmogItemsTxt->wNameStr);
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(__frame0.wszTextBuffer, pwString);
+      D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwLineEnd);
+      pwString = D2Lang::StrTable::strtable::GetLocaleString(0x150b);
+      D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwString);
+      D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, pwLineEnd);
+      Fog::File::CONTAINER_InitializeBuffer(__frame0.wszItemName, 2, 0x80, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+      GetItemName(pItemToDescribe, __frame0.wszItemName, 0x80);
+      ui::MoveArgumentToEAX(__frame0.wszItemName);
+      D2Lang::Unicode::UNISYS::AppendToBuffer(__frame0.wszTextBuffer, __frame0.wszItemName);
+      __frame0.wszFullTooltip = L'\0';
+      Fog::File::CONTAINER_InitializeBuffer(__frame0.local_110e, 2, 0x3ff, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+      if (g_nCurrentInventoryPage - 1U <= 8) {
+        INV_FormatItemTooltipWithCost(__frame0.wszTextBuffer, &__frame0.wszFullTooltip);
+      } else {
+        D2Lang::Unicode::UNISYS::STRING_CopyWideString(&__frame0.wszFullTooltip, __frame0.wszTextBuffer);
+      }
 
-        D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(&__frame0.wszFullTooltip, gaInventoryItemSlots, gaInventoryState, 0, 0);
+      ui::MoveArgumentToEAX(&__frame0.wszFullTooltip);
+      D2Win::Src::D2WinFont::TEXT_CalcTextDimensions(&__frame0.wszFullTooltip, &__frame0.iTextWidth, aTextHeight);
+      if (gaInventoryState == aTextHeight[0] || gaInventoryState - aTextHeight[0] < 0) {
+        D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(&__frame0.wszFullTooltip, nInventoryContextMode, pInventoryContextUi + aTextHeight[0], 0, 0);
         return;
       }
 
-      iVar1 = 0xe64;
+      D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(&__frame0.wszFullTooltip, gaInventoryItemSlots, gaInventoryState, 0, 0);
+      return;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe61);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), iVar1);
-    exit(-1);
 }
 
 void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {

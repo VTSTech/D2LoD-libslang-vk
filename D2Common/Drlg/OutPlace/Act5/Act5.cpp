@@ -348,7 +348,6 @@ void DRLGOUTPLACE_PlaceAct5BloodyFoothillsRandomPresets(D2DrlgLevelStrc * pLevel
     uint32_t nStartX;
     int nPlacedCount;
     D2SeedStrc tNewSeed2;
-    int32_t nErrCode;
     uint32_t nSeedLowTmp;
     if (pLevel->eD2LevelId != 0x6f) {
       return;
@@ -438,15 +437,16 @@ void DRLGOUTPLACE_PlaceAct5BloodyFoothillsRandomPresets(D2DrlgLevelStrc * pLevel
           nAttempts++;
         } while (nAttempts < pLevelData->nGridCoordsHeight);
       }
-      if (nPlacedCount >= 3) {
-        return;
+      if (!(nPlacedCount >= 3)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x259);
+        exit(-1);
       }
 
-      nErrCode = 0x259;
+      return;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x234);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrCode);
-    exit(-1);
 }
 
 } // namespace D2Common::Drlg::OutPlace::Act5

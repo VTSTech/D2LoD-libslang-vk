@@ -233,10 +233,9 @@ void __fastcall SendUpdatedItemsToClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     D2InventoryToBeUpdatedStrc* pInventoryToBeUpdated;
     uint32_t dwItemGUID;
     D2UnitStrc* pSocketedItem;
-    int32_t nErrorLine;
     D2InventoryStrc* pActiveInventory = pUnit->pInventory;
     if (!pActiveInventory) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf4);
       exit(-1);
     }
     if (pInventory) {
