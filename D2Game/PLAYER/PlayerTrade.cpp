@@ -736,22 +736,23 @@ static BOOL __stdcall CUBE_ValidateRecipeInputs(::SGAMEDATA * pGame, D2CubeSetup
     bool _bInputMatched;
     bool bInputMatched;
     uint8_t aItemUsedFlags[192];
-    if (!(pInventory && pRecipe)) {
-      return 0;
+    if (pInventory && pRecipe) {
+      int nInputSlotIndex;
+      memset(aItemUsedFlags, 0, 0xc0);
+      nInputSlotIndex = 0;
+      do {
+        _bInputMatched = CUBE_MatchInputDescriptorToCubeItems(pGame, pInventory, pRecipe, nInputSlotIndex, pMatchedItems, (int32_t)aItemUsedFlags);
+        if (!_bInputMatched) {
+          return 0;
+        }
+
+        nInputSlotIndex++;
+      } while (nInputSlotIndex < 7);
+
+      return 1;
     }
 
-    memset(aItemUsedFlags, 0, 0xc0);
-    int nInputSlotIndex = 0;
-    do {
-      _bInputMatched = CUBE_MatchInputDescriptorToCubeItems(pGame, pInventory, pRecipe, nInputSlotIndex, pMatchedItems, (int32_t)aItemUsedFlags);
-      if (!_bInputMatched) {
-        return 0;
-      }
-
-      nInputSlotIndex++;
-    } while (nInputSlotIndex < 7);
-
-    return 1;
+    return 0;
 }
 
 // Two explicit GuardStack tails carrying a packed 16-bit item class id (aCandidateIds[nEndId]) on success, 0 on no-candidates-found. Own doc comment: "Returns class ID in EAX."
@@ -1736,9 +1737,9 @@ void __fastcall SendEventMsg(D2UnitStrc * pUnit, uint8_t nMessageType, char * sz
     memset(sEventPacket.szName1, 0, 16 * sizeof(sEventPacket.szName1[0]));
     memset(sEventPacket.szName2, 0, 16 * sizeof(sEventPacket.szName2[0]));
     sEventPacket.nPacketId = 'Z';
+    sEventPacket.nMessageType = nMessageType;
     sEventPacket.nColor = '\0';
     sEventPacket.nArg = 0;
-    sEventPacket.nMessageType = nMessageType;
     if (szName) {
       Storm::Source::SSTR::SStrCopy(sEventPacket.szName1, szName, 0x7fffffff);
       *(uint32_t*)((char*)&sEventPacket.szName1 + 12) &= 0xffffff;
@@ -2665,6 +2666,34 @@ eD2ServerIncomingStatus __fastcall ClickButton(::SGAMEDATA * pGame, D2UnitStrc *
       }
 
       goto send_trade_action;
+      case 8:
+        nCurrentGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
+      if (dwParam > nCurrentGold) {
+        bHasInteractInfo = UNIT::ITEM_HasPendingInventoryUpdates(pGame01, pUnit);
+        if (!bHasInteractInfo) {
+          bHasInteractInfo = UNIT::ITEM_HasPendingInventoryUpdates(pGame01, pTradePartner);
+          if (!bHasInteractInfo) {
+            PLRTRADE_CancelTradeAndCleanup(pGame01, pUnit, pTradePartner, pPlayerData, pPartnerData, 9);
+          }
+        }
+      } else {
+        pPartnerUnit = (D2UnitStrc*)D2Common::Units::GetInventoryGoldLimit(pTradePartner);
+        iVar2 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pTradePartner, UNITSTAT_gold, 0);
+        if ((D2UnitStrc*)(iVar2 + dwParam) > pPartnerUnit) {
+          dwParam = (int)pPartnerUnit - iVar2;
+        }
+        if (pPlayerData->pTradeCopyInventory) {
+          byGoldSide = '\0';
+          pPlayerData->pTradeCopyInventory->nTradeStatus = dwParam;
+          pClient = UNIT::SUnit::SUNIT_GetClient(pTradePartner, ".\\PLAYER\\PlrTrade.cpp", 0xbc3);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x79_TRADEGOLD(pClient, dwParam, byGoldSide);
+          nTradeId = '\x01';
+          pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PlrTrade.cpp", 0xbc4);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x79_TRADEGOLD(pClient, dwParam, nTradeId);
+        }
+      }
+
+      break;
       case 4:
         bHasInteractInfo = UNIT::ITEM_HasPendingInventoryUpdates(pGame01, pUnit);
       if (!bHasInteractInfo && (bHasInteractInfo = UNIT::ITEM_HasPendingInventoryUpdates(pGame01, pTradePartner) , !bHasInteractInfo)) {
@@ -2719,32 +2748,6 @@ eD2ServerIncomingStatus __fastcall ClickButton(::SGAMEDATA * pGame, D2UnitStrc *
       send_trade_action:
       GAME::SCmd::NET_D2GS_SERVER_Send_0x77_TRADEREQUEST(pClient, byTradeAction);
       break;
-      case 8:
-        nCurrentGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
-      if (dwParam > nCurrentGold) {
-        bHasInteractInfo = UNIT::ITEM_HasPendingInventoryUpdates(pGame01, pUnit);
-        if (!bHasInteractInfo) {
-          bHasInteractInfo = UNIT::ITEM_HasPendingInventoryUpdates(pGame01, pTradePartner);
-          if (!bHasInteractInfo) {
-            PLRTRADE_CancelTradeAndCleanup(pGame01, pUnit, pTradePartner, pPlayerData, pPartnerData, 9);
-          }
-        }
-      } else {
-        pPartnerUnit = (D2UnitStrc*)D2Common::Units::GetInventoryGoldLimit(pTradePartner);
-        iVar2 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pTradePartner, UNITSTAT_gold, 0);
-        if ((D2UnitStrc*)(iVar2 + dwParam) > pPartnerUnit) {
-          dwParam = (int)pPartnerUnit - iVar2;
-        }
-        if (pPlayerData->pTradeCopyInventory) {
-          byGoldSide = '\0';
-          pPlayerData->pTradeCopyInventory->nTradeStatus = dwParam;
-          pClient = UNIT::SUnit::SUNIT_GetClient(pTradePartner, ".\\PLAYER\\PlrTrade.cpp", 0xbc3);
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x79_TRADEGOLD(pClient, dwParam, byGoldSide);
-          nTradeId = '\x01';
-          pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PlrTrade.cpp", 0xbc4);
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x79_TRADEGOLD(pClient, dwParam, nTradeId);
-        }
-      }
     }
 
     return SERVERSTATUS_OK;
@@ -2968,24 +2971,6 @@ void __fastcall PLRTRADE_ProcessTradeStateTick(::SGAMEDATA * pGame, D2UnitStrc *
     }
 
     switch (nTradeState) {
-      case TRADESTATE_REFRESH_BEGIN:
-        pPlayerData->dwTradeState = 6;
-      GAME::Event::SetEvent(pGame, pUnit, 0xd, pGame->dwGameFrame + 1, 0, 0);
-      return;
-      case TRADESTATE_REFRESH_DONE:
-        pPlayerData->dwTradeState = 3;
-      break;
-      default:
-        return;
-      case TRADESTATE_CANCEL_BEGIN:
-        pPlayerData->dwTradeState = 10;
-      GAME::Event::SetEvent(pGame, pUnit, 0xd, pGame->dwGameFrame + 1, 0, 0);
-      return;
-      case TRADESTATE_CANCEL_DONE:
-
-      case TRADESTATE_ABORT_DONE:
-        pPlayerData->dwTradeState = 0;
-      break;
       case TRADESTATE_LOCK_WAIT:
         dwTick = GetTickCount();
       if ((uint32_t)pTradeCopy->field5_0x14 >= dwTick) {
@@ -3002,10 +2987,28 @@ void __fastcall PLRTRADE_ProcessTradeStateTick(::SGAMEDATA * pGame, D2UnitStrc *
       pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PlrTrade.cpp", 0xe95);
       GAME::SCmd::NET_D2GS_SERVER_Send_0x77_TRADEREQUEST(pClient, 0xf);
       return;
+      case TRADESTATE_CANCEL_BEGIN:
+        pPlayerData->dwTradeState = 10;
+      GAME::Event::SetEvent(pGame, pUnit, 0xd, pGame->dwGameFrame + 1, 0, 0);
+      return;
+      case TRADESTATE_REFRESH_BEGIN:
+        pPlayerData->dwTradeState = 6;
+      GAME::Event::SetEvent(pGame, pUnit, 0xd, pGame->dwGameFrame + 1, 0, 0);
+      return;
+      case TRADESTATE_REFRESH_DONE:
+        pPlayerData->dwTradeState = 3;
+      break;
+      default:
+        return;
       case TRADESTATE_ABORT_BEGIN:
         pPlayerData->dwTradeState = 0xd;
       GAME::Event::SetEvent(pGame, pUnit, 0xd, pGame->dwGameFrame + 4, 0, 0);
       return;
+      case TRADESTATE_CANCEL_DONE:
+
+      case TRADESTATE_ABORT_DONE:
+        pPlayerData->dwTradeState = 0;
+      break;
     }
 
     if (!pUnit) {

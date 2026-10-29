@@ -85,8 +85,8 @@ BOOL __fastcall Skills_CltDoFunc_Sor_LinearMissileCount(D2UnitStrc * pUnit, eD2S
     sSkillArg.nX = Units::GetXPosFromDynamicPathUnit(pUnit);
     sSkillArg.nY = Units::GetYPosFromDynamicPathUnit(pUnit);
     sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.fpFunction = SkillsMon::SKILLSMON_SetMissilePathLinear;
     sSkillArg.eSkillNo = eSkill;
+    sSkillArg.fpFunction = SkillsMon::SKILLSMON_SetMissilePathLinear;
     BOOL bGotCoords = Skills::GetCooordinates(pUnit, &sSkillArg.nUnitX, &sSkillArg.nUnitY);
     if (bGotCoords) {
       int nMissileIter;
@@ -323,6 +323,7 @@ BOOL __fastcall Skills_CltStFunc_CheckTargetInAuraRange(D2UnitStrc * pUnit, eD2S
 }
 
 BOOL __fastcall Skills_CltDoFunc_Sor_HomingMissileVelocity(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    int32_t nBonusVelocity;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -333,17 +334,19 @@ BOOL __fastcall Skills_CltDoFunc_Sor_HomingMissileVelocity(D2UnitStrc * pUnit, e
     }
 
     eMissilesId eMissileId = SkillsAss::SKILLSASS_GetCltMissileByAuraLevel(pUnit, eSkill);
-    if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
-    }
-    if (pUnit) {
-      pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
+    if ((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
+      int32_t nBaseVelocity;
+      if (pUnit) {
+        pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
+      }
+
+      nBaseVelocity = D2Common::DATATBLS::MissileTbls::MISSILETBLS_CalculateVelocity(eMissileId, nSkillLvl);
+      nBonusVelocity = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt[eSkill].cltcalc[0], eSkill, nSkillLvl);
+      Skills::SKILL_SpawnMissilesAtTarget(pUnit, pUnit, eMissileId, ~MISSILE_Arrow, eSkill, nSkillLvl, nBaseVelocity + nBonusVelocity);
+      return 1;
     }
 
-    int32_t nBaseVelocity = D2Common::DATATBLS::MissileTbls::MISSILETBLS_CalculateVelocity(eMissileId, nSkillLvl);
-    int32_t nBonusVelocity = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt[eSkill].cltcalc[0], eSkill, nSkillLvl);
-    Skills::SKILL_SpawnMissilesAtTarget(pUnit, pUnit, eMissileId, ~MISSILE_Arrow, eSkill, nSkillLvl, nBaseVelocity + nBonusVelocity);
-    return 1;
+    return 0;
 }
 
 // Client-side skill effect for Sorceress Frost Nova. Resolves the primary and sub-missile from SkillsTxt, fetches caster coordinates, validates collision and room, then spawns two perpendicular radial frost missiles (offset by 90 degrees from the caster-to-target vector) plus a centred sub-missile ring. Returns 0 if any prerequisite check fails.
@@ -389,7 +392,7 @@ BOOL __fastcall Skills_CltDoFunc_Sor_FrostNova(D2UnitStrc * pUnit, eD2Skills eSk
     }
 
     pRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nCoordsX, nTargetPosX);
-    if (!pSkillTxt->InTown) {
+    if (!(*((uint8_t*)pSkillTxt + 0x5) & (uint8_t)gadwBitMasks[0])) {
       bGotCoords = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
       if (bGotCoords) {
         return 0;
@@ -491,10 +494,10 @@ BOOL __fastcall Skills_CltDoFunc_Sor_OffsetMissileCount(D2UnitStrc * pUnit, eD2S
     nPosTmp2 = Units::GetXPosFromDynamicPathUnit(pUnit);
     sSkillArg.nX = nPosTmp2 + nOffsetX;
     nPosTmp2 = Units::GetYPosFromDynamicPathUnit(pUnit);
-    sSkillArg.nY = nPosTmp2 + nOffsetY;
-    sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.nMissileTxtNo = eMissileId;
     sSkillArg.eSkillNo = eSkill;
+    sSkillArg.nY = nPosTmp2 + nOffsetY;
+    sSkillArg.nMissileTxtNo = eMissileId;
+    sSkillArg.nSkillLevel = nSkillLvl;
     BOOL bGotCoords = Skills::GetCooordinates(pUnit, &sSkillArg.nUnitX, &sSkillArg.nUnitY);
     if (!(bGotCoords && sSkillArg.nUnitX && sSkillArg.nUnitY)) {
       return 0;
@@ -549,7 +552,7 @@ BOOL __fastcall Skills_CltStFunc_CheckCasterHasRoomNotInTown(D2UnitStrc * pUnit,
     if (!(pRoom && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
       return 0;
     }
-    if (sgptDataTable->pTxtSkills[eSkill].InTown) {
+    if (*((uint8_t*)&sgptDataTable->pTxtSkills[eSkill] + 0x5) & (uint8_t)gadwBitMasks[0]) {
       return 1;
     }
 
@@ -567,15 +570,17 @@ BOOL __fastcall Skills_CltDoFunc_Sor_SimpleMakeMissile(D2UnitStrc * pUnit, eD2Sk
     }
 
     eMissilesId eMissileId = SkillsAss::SKILLSASS_GetCltMissileByAuraLevel(pUnit, eSkill);
-    if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
-    }
-    if (pUnit) {
-      pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
+    if ((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
+      D2UnitStrc* pMissileUnit;
+      if (pUnit) {
+        pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
+      }
+
+      pMissileUnit = Skills::MakeMissileAtSkillTarget(pUnit, eMissileId, eSkill, nSkillLvl);
+      return (uint32_t)(pMissileUnit != 0);
     }
 
-    D2UnitStrc* pMissileUnit = Skills::MakeMissileAtSkillTarget(pUnit, eMissileId, eSkill, nSkillLvl);
-    return (uint32_t)(pMissileUnit != 0);
+    return 0;
 }
 
 // Client-side per-frame tick for the Sorceress Blaze skill. Called when the unit is moving (dynamic path flags non-zero) and has the STATE_blaze stat list active. Reads the skill ID and level from the blaze stat list, looks up the skill's client missile entries (cltmissilea/b/c), and spawns a Blaze trail missile at the unit's current tile position via MakeMissile, randomly selecting among missile variants when multiple are configured. Skips spawn in town rooms.
@@ -671,85 +676,92 @@ BOOL __fastcall Skills_CltDoFunc_Sor_Blizzard(D2UnitStrc * pUnit, eD2Skills eSki
     }
 
     D2UnitStrc* pTargetUnit = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
-    if (!(pTargetUnit && pUnit)) {
-      return 0;
-    }
+    if (pTargetUnit && pUnit) {
+      D2UnitStrc* pMissileUnit;
+      memset(&sSkillArg, 0, 0x5c);
+      sSkillArg.pOwner = pUnit;
+      sSkillArg.nFlags = 1;
+      sSkillArg.nX = Units::GetXPosFromDynamicPathUnit(pTargetUnit);
+      sSkillArg.nY = Units::GetYPosFromDynamicPathUnit(pTargetUnit);
+      sSkillArg.eSkillNo = eSkill;
+      sSkillArg.nSkillLevel = nSkillLvl;
+      sSkillArg.nMissileTxtNo = eMissileId;
+      pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
+      if (pMissileUnit) {
+        Engine::Particle::SetPosVectorShifted(pMissileUnit, 0, 0, 0x118);
+        Engine::Particle::SetOffsetVector(pMissileUnit, 0, 0, -0x28, 1);
+      }
 
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.nFlags = 1;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.nX = Units::GetXPosFromDynamicPathUnit(pTargetUnit);
-    sSkillArg.nY = Units::GetYPosFromDynamicPathUnit(pTargetUnit);
-    sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.nMissileTxtNo = eMissileId;
-    sSkillArg.eSkillNo = eSkill;
-    D2UnitStrc* pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
-    if (pMissileUnit) {
-      Engine::Particle::SetPosVectorShifted(pMissileUnit, 0, 0, 0x118);
-      Engine::Particle::SetOffsetVector(pMissileUnit, 0, 0, -0x28, 1);
-    }
+      Draw::Weather::WEATHER_InitBlizzardState(0);
+      if (pSkillTxt->prgoverlay <= 0) {
+        return 1;
+      }
 
-    Draw::Weather::WEATHER_InitBlizzardState(0);
-    if (pSkillTxt->prgoverlay <= 0) {
+      Engine::Gfx::GFX_AddOverlayToUnit(pTargetUnit, (int)pSkillTxt->prgoverlay, 2, 0, 0, 0, 0, 0);
       return 1;
     }
 
-    Engine::Gfx::GFX_AddOverlayToUnit(pTargetUnit, (int)pSkillTxt->prgoverlay, 2, 0, 0, 0, 0, 0);
-    return 1;
+    return 0;
 }
 
 // Client missile collision event callback for Sorceress Blizzard/Frozen Orb ice shard spawning. Fires only on nParam1==0 (hit event). Validates pUnit can interact with the missile owner, checks missile flags2 bit 1 (piercing/spawning flag), then spawns a cltmissilea sub-missile at the owner's position and adds the cltoverlaya overlay to the struck unit.
 int32_t __fastcall SKILLSSOR_StateCltEventFn01_ChillingArmor(int32_t nParam1, D2UnitStrc * pUnit, D2UnitStrc * pMissile, int32_t nUnused, eD2Skills eSkill, int32_t nParam2) {
+    uint32_t bCanInteract;
+    D2MissilesTxt* pMissileTxt;
+    D2SkillsTxt* pSkillTxt;
+    eMissilesId eMissileId;
     D2SkillArgStrc sSkillArg;
+    short int nOverlayId;
     if (nParam1) {
       return 0;
     }
-    if (!(pUnit && pMissile)) {
+    if (pUnit && pMissile) {
+      D2UnitStrc* pOwnerUnit;
+      pOwnerUnit = UNIT::Player::MISSILE_GetOwnerUnit(pMissile);
+      if (!pOwnerUnit) {
+        return 0;
+      }
+
+      bCanInteract = UNIT::CUnit::CanInteractWith(pUnit, pOwnerUnit);
+      if (!bCanInteract) {
+        return 0;
+      }
+
+      pMissileTxt = GetMissleById(pMissile->nClassId);
+      if (!(*((uint8_t*)pMissileTxt + 0x5) & (uint8_t)gadwBitMasks[1])) {
+        return 0;
+      }
+
+      pSkillTxt = GAME::SCmd::TXT_Skills_GetLine(eSkill);
+      if (!pSkillTxt) {
+        return 0;
+      }
+
+      eMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
+      if ((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
+        memset(&sSkillArg, 0, 0x5c);
+        sSkillArg.eSkillNo = eSkill;
+        sSkillArg.nFlags = 0x20;
+        sSkillArg.pOwner = pUnit;
+        sSkillArg.pMissile = pUnit;
+        sSkillArg.nSkillLevel = nParam2;
+        sSkillArg.nMissileTxtNo = eMissileId;
+        sSkillArg.nUnitX = Units::GetXPosFromDynamicPathUnit(pOwnerUnit);
+        sSkillArg.nUnitY = Units::GetYPosFromDynamicPathUnit(pOwnerUnit);
+        UNIT::Missile::MakeMissile(&sSkillArg);
+        nOverlayId = pSkillTxt->cltoverlaya;
+        if (!(nOverlayId >= 0 && (int)nOverlayId < sgptDataTable->nTxtOverlaySize)) {
+          return 1;
+        }
+
+        Engine::Gfx::GFX_AddOverlayToUnit(pUnit, (int)nOverlayId, 2, 0, 0, 0, 0, 0);
+        return 1;
+      }
+
       return 0;
     }
 
-    D2UnitStrc* pOwnerUnit = UNIT::Player::MISSILE_GetOwnerUnit(pMissile);
-    if (!pOwnerUnit) {
-      return 0;
-    }
-
-    uint32_t bCanInteract = UNIT::CUnit::CanInteractWith(pUnit, pOwnerUnit);
-    if (!bCanInteract) {
-      return 0;
-    }
-
-    D2MissilesTxt* pMissileTxt = GetMissleById(pMissile->nClassId);
-    if (!pMissileTxt->ReturnFire) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillTxt = GAME::SCmd::TXT_Skills_GetLine(eSkill);
-    if (!pSkillTxt) {
-      return 0;
-    }
-
-    eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
-    if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
-    }
-
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.eSkillNo = eSkill;
-    sSkillArg.nFlags = 0x20;
-    sSkillArg.nSkillLevel = nParam2;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.pMissile = pUnit;
-    sSkillArg.nMissileTxtNo = eMissileId;
-    sSkillArg.nUnitX = Units::GetXPosFromDynamicPathUnit(pOwnerUnit);
-    sSkillArg.nUnitY = Units::GetYPosFromDynamicPathUnit(pOwnerUnit);
-    UNIT::Missile::MakeMissile(&sSkillArg);
-    short int nOverlayId = pSkillTxt->cltoverlaya;
-    if (!(nOverlayId >= 0 && (int)nOverlayId < sgptDataTable->nTxtOverlaySize)) {
-      return 1;
-    }
-
-    Engine::Gfx::GFX_AddOverlayToUnit(pUnit, (int)nOverlayId, 2, 0, 0, 0, 0, 0);
-    return 1;
+    return 0;
 }
 
 // Client DoFunc for Sorceress skills that fire missiles at random positions within a radius on a timer (e.g. Frozen Orb bolt scatter). Reads fire interval from cltcalc[0], radius from cltcalc[1], duration from cltcalc[2]. Increments skill param1 each tick; fires one missile at a random offset within radius only when param1 % fireInterval == 0, using a random duration offset from cltcalc[2].

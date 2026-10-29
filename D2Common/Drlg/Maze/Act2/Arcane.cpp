@@ -396,7 +396,8 @@ void __fastcall PickSummonerLocation(D2DrlgLevelStrc * pLevel) {
 }; D2_STATIC_GUARD(AncientPickLocation, "D2Common::Drlg::Maze::Act2::Arcane::PickSummonerLocation::AncientPickLocation");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-    pLevel->sSeed = DVar1;
+    pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+    pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
     uint32_t nRoll = DVar1.nSeedLow & 3;
     ReplaceRoom(AncientPickLocation + nRoll, pLevel, &nRoll);
 }

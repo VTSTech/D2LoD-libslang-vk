@@ -661,15 +661,16 @@ void __fastcall BNDOWNLOAD_ProcessPrepatchList(uint32_t * pResultOut) {
 int __fastcall BNDOWNLOAD_ApplyPrepatch(uint32_t * pdwParam) {
     uint32_t* pResultLocal = pdwParam;
     BNDOWNLOAD_ProcessPrepatchList((uint32_t*)&pResultLocal);
-    if (!(pResultLocal && pResultLocal != (uint32_t*)0x1)) {
-      return 1;
-    }
-    if (pResultLocal != (uint32_t*)0x2) {
+    if (pResultLocal && pResultLocal != (uint32_t*)0x1) {
+      if (pResultLocal != (uint32_t*)0x2) {
+        return 0;
+      }
+
+      *pdwParam = 1;
       return 0;
     }
 
-    *pdwParam = 1;
-    return 0;
+    return 1;
 }
 
 uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
@@ -1039,39 +1040,6 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
     szDestPathSave = szDestPath;
     __frame1.archiveFileCtx = (D2MPQFileStrc*)nSize;
     switch (nOpcode) {
-      case -0x7fffffff:
-        Debug::DEBUG_UnusedDebugFunction("Processing Version file");
-      bOpened = (int)lpFileName_00881c58 - (int)szDestPath;
-      do {
-        cStrChar = *szDestPath;
-        szDestPath[bOpened] = cStrChar;
-        szDestPath++;
-      } while (cStrChar != '\0');
-
-      return;
-      case -0x7ffffffe:
-        /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00881f64);
-      _Str1 = &gbBnetFtpFileTransferActive;
-      byScanChar = gbBnetFtpFileTransferActive;
-      while (byScanChar) {
-        bOpened = _stricmp((char*)_Str1, szDestPath);
-        if (!bOpened) {
-          pbFtpEntryEnd = _Str1;
-          if (*_Str1) {
-            goto download_next_file;
-          }
-
-          break;
-        }
-
-        pbFtpEntryEnd = _Str1;
-        pbFtpEntryEnd = pbFtpEntryEnd + strlen((char*)pbFtpEntryEnd) + 1;
-        pbStrCursor = _Str1 + (int)(pbFtpEntryEnd + (1 - (int)(_Str1 + 1)));
-        _Str1 += (int)(pbFtpEntryEnd + (1 - (int)(_Str1 + 1)));
-        byScanChar = *pbStrCursor;
-      }
-
-      goto file_list_done;
       case -0x7ffffffd:
         __frame0.dwStackPad5 = eFileType;
       __frame0.dwStackPad4 = pModTime;
@@ -1129,14 +1097,38 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
       BNMESSQUEUE_EnqueueString(1, __frame1.szAdMessage);
       BNMESSQUEUE_EnqueueBytes(3, (char*)&__frame0.dwStackPad5, 0x18);
       return;
-      case -0x7ffffffc:
-        Debug::DEBUG_UnusedDebugFunction("Processing Bnserver.ini file");
-      uVar2 = Storm::Source::SSTR::SStrLen((char*)nSize);
-      pDestPtr = (char*)Storm::SMem::SMemAlloc(uVar2 + 1, ".\\BnDownload.cpp", 0x23f, 0);
-      Storm::Source::SSTR::SStrCopy(pDestPtr, (char*)__frame1.archiveFileCtx, uVar2 + 1);
-      BNGatewayAccess::UpdateGatewaysFromIni(&ActualRealmInfo, pDestPtr);
-      Storm::SMem::SMemFree(pDestPtr, ".\\BnDownload.cpp", 0x245, 0);
-      BNGatewayAccess::SaveAndUnload(&ActualRealmInfo);
+      case -0x7ffffffe:
+        /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00881f64);
+      _Str1 = &gbBnetFtpFileTransferActive;
+      byScanChar = gbBnetFtpFileTransferActive;
+      while (byScanChar) {
+        bOpened = _stricmp((char*)_Str1, szDestPath);
+        if (!bOpened) {
+          pbFtpEntryEnd = _Str1;
+          if (*_Str1) {
+            goto download_next_file;
+          }
+
+          break;
+        }
+
+        pbFtpEntryEnd = _Str1;
+        pbFtpEntryEnd = pbFtpEntryEnd + strlen((char*)pbFtpEntryEnd) + 1;
+        pbStrCursor = _Str1 + (int)(pbFtpEntryEnd + (1 - (int)(_Str1 + 1)));
+        _Str1 += (int)(pbFtpEntryEnd + (1 - (int)(_Str1 + 1)));
+        byScanChar = *pbStrCursor;
+      }
+
+      goto file_list_done;
+      case -0x7fffffff:
+        Debug::DEBUG_UnusedDebugFunction("Processing Version file");
+      bOpened = (int)lpFileName_00881c58 - (int)szDestPath;
+      do {
+        cStrChar = *szDestPath;
+        szDestPath[bOpened] = cStrChar;
+        szDestPath++;
+      } while (cStrChar != '\0');
+
       return;
       case -0x7ffffffb:
         {
@@ -1232,6 +1224,15 @@ void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode
         {
           return;
         }
+      case -0x7ffffffc:
+        Debug::DEBUG_UnusedDebugFunction("Processing Bnserver.ini file");
+      uVar2 = Storm::Source::SSTR::SStrLen((char*)nSize);
+      pDestPtr = (char*)Storm::SMem::SMemAlloc(uVar2 + 1, ".\\BnDownload.cpp", 0x23f, 0);
+      Storm::Source::SSTR::SStrCopy(pDestPtr, (char*)__frame1.archiveFileCtx, uVar2 + 1);
+      BNGatewayAccess::UpdateGatewaysFromIni(&ActualRealmInfo, pDestPtr);
+      Storm::SMem::SMemFree(pDestPtr, ".\\BnDownload.cpp", 0x245, 0);
+      BNGatewayAccess::SaveAndUnload(&ActualRealmInfo);
+      return;
     }
 
     download_next_file:

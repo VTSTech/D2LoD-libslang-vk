@@ -465,8 +465,8 @@ void __fastcall NET_MCP_CLIENT_Send_0x02_CharCreate(char * szCharName, DWORD dwC
     MCPSTATE_SetConnectionEstablished(0);
     char* pStrLen = 0;
     mcp0x02.nPacketId = '\x02';
-    mcp0x02.wCharFlags = (WORD)dwUnused;
     mcp0x02.dwCharClass = dwCharClassFlags;
+    mcp0x02.wCharFlags = (WORD)dwUnused;
     STRING_GetStringLength(szCharName, &pStrLen, (char*)0x400, (int32_t)mcp0x02.szCharName);
     if ((char*)0xfffe < pStrLen + 7) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x7e);
@@ -729,8 +729,8 @@ void __fastcall NET_MCP_CLIENT_Send_0x16_CharRank(char * szText, uint32_t dwFiel
     SetD2GSJoinResult(0);
     uint32_t nTextLength = 0;
     sPacket.nPacketId = 0x16;
-    sPacket.dwField2 = dwField2;
     sPacket.dwField1 = dwField1;
+    sPacket.dwField2 = dwField2;
     STRING_GetStringLength(szText, (char**)&nTextLength, (char*)0x400, (int32_t)sPacket.szData);
     if (nTextLength + 9 >= 0xffff) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27b);
@@ -943,8 +943,8 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x10(char * pBytes, size_t nSize) {
     int nResult = *(int*)(pBytes + 0xd);
     _struct_1227 sAddr = ((_union_1226*)(pBytes + 9))->S_un_b;
     SetD2GSJoinResult(nResult);
-    D2Client::Bnet::D2GSGameHash = dwGameHash;
     D2Client::MCP::D2GSGameToken = dwGameToken;
+    D2Client::Bnet::D2GSGameHash = dwGameHash;
     if (!sAddr) {
       if (nResult) {
         SetD2GSJoinResult(nResult);

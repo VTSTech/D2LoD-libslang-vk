@@ -98,21 +98,18 @@ namespace D2Game::GAME::Clients {
 
 void __stdcall QServerClearAll() {
     int nBucketIdx;
+    D2ClientStrc** pBucketEntry;
     /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ InitializeCriticalSection(&gQServerClientByIdCs);
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gQServerClientByIdCs);
-    D2ClientStrc** pBucketEntry = QServerClientBucketById;
-    for (nBucketIdx = 0x100; nBucketIdx; nBucketIdx--) {
-      *pBucketEntry = 0;
-      pBucketEntry++;
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ for (nBucketIdx = 0; nBucketIdx < 0x100; nBucketIdx++) {
+      QServerClientBucketById[nBucketIdx] = 0;
     }
 
     LeaveCriticalSection(&gQServerClientByIdCs);
     /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ InitializeCriticalSection(&gQServerClientByNameCs);
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gQServerClientByNameCs);
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pBucketEntry = QServerClientBucketByName;
-    for (nBucketIdx = 0x100; nBucketIdx; nBucketIdx--) {
-      *pBucketEntry = 0;
-      pBucketEntry++;
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ for (nBucketIdx = 0; nBucketIdx < 0x100; nBucketIdx++) {
+      QServerClientBucketByName[nBucketIdx] = 0;
     }
 
     LeaveCriticalSection(&gQServerClientByNameCs);
@@ -529,11 +526,11 @@ static void __stdcall CLIENT_PopulateVisibilityPacketBuffer(D2UnitProximityNodeS
       eVar3 = pDVar2->eUnitType;
       if (eVar3 == UNIT_OBJECT || (int)eVar3 > 3 && (int)eVar3 <= 5) {
         wCoord = (short int)pDVar2->pPath.pStaticPath->nPosX;
-      } else if (!pDVar2->pPath.pDynamicPath) {
-        wCoord = 0;
-      } else {
+      } else if (pDVar2->pPath.pDynamicPath) {
         nPos = D2Common::PATH::DynamicPath::GetXPos(pDVar2->pPath.pDynamicPath);
         wCoord = (short int)nPos;
+      } else {
+        wCoord = 0;
       }
 
       *(short int*)(pClient->nPad1AE + pClient->nPacketBuffer.nCount * 9 + 0x23) = wCoord;
@@ -541,11 +538,11 @@ static void __stdcall CLIENT_PopulateVisibilityPacketBuffer(D2UnitProximityNodeS
       eVar3 = pDVar2->eUnitType;
       if (eVar3 == UNIT_OBJECT || (int)eVar3 > 3 && (int)eVar3 <= 5) {
         nUnitTypeRaw = (uint16_t)pDVar2->pPath.pStaticPath->nPosY;
-      } else if (!pDVar2->pPath.pDynamicPath) {
-        nUnitTypeRaw = 0;
-      } else {
+      } else if (pDVar2->pPath.pDynamicPath) {
         nPos = D2Common::PATH::DynamicPath::GetYPos(pDVar2->pPath.pDynamicPath);
         nUnitTypeRaw = (uint16_t)nPos;
+      } else {
+        nUnitTypeRaw = 0;
       }
 
       *(uint16_t*)(pClient->nPad1AE + pClient->nPacketBuffer.nCount * 9 + 0x25) = nUnitTypeRaw;
@@ -1380,11 +1377,11 @@ BOOL __fastcall CLIENT_HasSaveData(D2ClientStrc * pClient) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb9e);
       exit(-1);
     }
-    if (!(pClient->fClientFlags & 0x10 && pClient->pSaveGame)) {
-      return 0;
+    if (pClient->fClientFlags & 0x10 && pClient->pSaveGame) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 void __fastcall GAMECLIENT_GetFlags0x20(D2ClientStrc * pClient) {
@@ -1881,59 +1878,64 @@ int32_t __fastcall CLIENT_LoadCharacterAndSendGameData(D2ClientStrc * pClient, :
 // Allocates and initializes D2ClientStrc (1304 bytes). Sets client ID, 180-second timeout, class (arena template override), char/account names, language. Initializes 16 hotkey slots to -1, zeroes packet lists. Inserts into game's client linked list and two hash tables (by ID and name). Max 8 clients per game. Returns new client or null if full.
 // @sourcefile .\GAME\Clients.cpp
 D2ClientStrc * __fastcall CreateClient(::SGAMEDATA * pGame, uint32_t nClientId, uint8_t nClass, char * pCharName, char * szAccountName, uint8_t * pClientContainer, uint8_t nLanguageId, uint32_t dwUnused1, uint32_t dwUnused2) {
+    DWORD dwTick;
+    uint32_t bIsArenaMode;
     uint32_t nArenaClass;
-    if (!(gQServerClientTablesInitialized && pGame && pGame->nClientsCount < 8)) {
-      return nullptr;
+    uint8_t* pHotkeySlot;
+    int nHotkeyIdx;
+    if (gQServerClientTablesInitialized && pGame && pGame->nClientsCount < 8) {
+      D2ClientStrc* pClient;
+      pClient = D2_NEW_POOL_AT(pGame->pMemoryPool, D2ClientStrc, ".\\GAME\\Clients.cpp", 0x347);
+      memset(pClient, 0, 0x518);
+      pClient->nClientNo = nClientId;
+      dwTick = GetTickCount();
+      pClient->dwTimeOut = dwTick + 180000;
+      pClient->pGame = pGame;
+      bIsArenaMode = Arena::ARENA_IsArenaMode(pGame);
+      if (bIsArenaMode) {
+        pClient->nCharTemplate = nClass;
+        nArenaClass = Arena::ARENA_GetTemplate(pGame);
+        nArenaClass = D2Common::DATATBLS::ArenaTbls::GetClassFromCharTemplateTxt((uint32_t)nClass, nArenaClass);
+        pClient->nClass = (uint8_t)nArenaClass;
+      } else {
+        pClient->nClass = nClass;
+      }
+
+      Storm::Source::SSTR::SStrCopy(pClient->szCharName, pCharName, 0x7fffffff);
+      Storm::Source::SSTR::SStrCopy(pClient->szAccName, szAccountName, 0x7fffffff);
+      pClient->pClientContainer = pClientContainer;
+      pClient->pRealm = 0;
+      pClient->dwLangId = (uint32_t)nLanguageId;
+      pClient->ConnectionState = 0;
+      pClient->pDispatchList = 0;
+      pClient->pPacketList = 0;
+      pClient->pEmpty = 0;
+      pHotkeySlot = &pClient->pHotKeys[0].byHand;
+      nHotkeyIdx = 0x10;
+      do {
+        ((D2ClientHotKeyStrc*)(pHotkeySlot - 2))->wSkillId = -1;
+        *pHotkeySlot = 0;
+        *(int*)(pHotkeySlot + 2) = -1;
+        pHotkeySlot += 8;
+        nHotkeyIdx--;
+      } while (nHotkeyIdx);
+
+      pClient->pNext = pGame->pClient;
+      /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ pGame->pClient = pClient;
+      EnterCriticalSection(&gQServerClientByIdCs);
+      pClient->pServerNext = QServerClientBucketById[nClientId & 0xff];
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ QServerClientBucketById[nClientId & 0xff] = pClient;
+      LeaveCriticalSection(&gQServerClientByIdCs);
+      nArenaClass = Fog::SMem::HashForName(pCharName);
+      /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gQServerClientByNameCs);
+      pClient->pNextInListByName = QServerClientBucketByName[nArenaClass & 0xff];
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ QServerClientBucketByName[nArenaClass & 0xff] = pClient;
+      LeaveCriticalSection(&gQServerClientByNameCs);
+      pGame->nClientsCount++;
+      return pClient;
     }
 
-    D2ClientStrc* pClient = D2_NEW_POOL_AT(pGame->pMemoryPool, D2ClientStrc, ".\\GAME\\Clients.cpp", 0x347);
-    memset(pClient, 0, 0x518);
-    pClient->nClientNo = nClientId;
-    DWORD dwTick = GetTickCount();
-    pClient->dwTimeOut = dwTick + 180000;
-    pClient->pGame = pGame;
-    uint32_t bIsArenaMode = Arena::ARENA_IsArenaMode(pGame);
-    if (bIsArenaMode) {
-      pClient->nCharTemplate = nClass;
-      nArenaClass = Arena::ARENA_GetTemplate(pGame);
-      nArenaClass = D2Common::DATATBLS::ArenaTbls::GetClassFromCharTemplateTxt((uint32_t)nClass, nArenaClass);
-      pClient->nClass = (uint8_t)nArenaClass;
-    } else {
-      pClient->nClass = nClass;
-    }
-
-    Storm::Source::SSTR::SStrCopy(pClient->szCharName, pCharName, 0x7fffffff);
-    Storm::Source::SSTR::SStrCopy(pClient->szAccName, szAccountName, 0x7fffffff);
-    pClient->pClientContainer = pClientContainer;
-    pClient->pRealm = 0;
-    pClient->dwLangId = (uint32_t)nLanguageId;
-    pClient->ConnectionState = 0;
-    pClient->pDispatchList = 0;
-    pClient->pPacketList = 0;
-    pClient->pEmpty = 0;
-    uint8_t* pHotkeySlot = &pClient->pHotKeys[0].byHand;
-    int nHotkeyIdx = 0x10;
-    do {
-      ((D2ClientHotKeyStrc*)(pHotkeySlot - 2))->wSkillId = -1;
-      *pHotkeySlot = 0;
-      *(int*)(pHotkeySlot + 2) = -1;
-      pHotkeySlot += 8;
-      nHotkeyIdx--;
-    } while (nHotkeyIdx);
-
-    pClient->pNext = pGame->pClient;
-    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ pGame->pClient = pClient;
-    EnterCriticalSection(&gQServerClientByIdCs);
-    pClient->pServerNext = QServerClientBucketById[nClientId & 0xff];
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ QServerClientBucketById[nClientId & 0xff] = pClient;
-    LeaveCriticalSection(&gQServerClientByIdCs);
-    nArenaClass = Fog::SMem::HashForName(pCharName);
-    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gQServerClientByNameCs);
-    pClient->pNextInListByName = QServerClientBucketByName[nArenaClass & 0xff];
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ QServerClientBucketByName[nArenaClass & 0xff] = pClient;
-    LeaveCriticalSection(&gQServerClientByNameCs);
-    pGame->nClientsCount++;
-    return pClient;
+    return nullptr;
 }
 
 // Serializes a client's character header/appearance block into the save/wire buffer pbParam (used in the player save & "exit game" cleanup path). Writes a 0x0E length tag, then the player's level, two SaveCharAppearance blobs (head+body, 0xFF-padded), class code (nClassId+1, wrapped), a level byte, char status (sets the death-flag bit 8 when dead and bit 4 set), guild flags, 3 guild-info bytes (0->0xFF), and the 4-byte guild tag. Returns (in the guarded value) the buffer pointer when the record is invalid (bad level/class/status or wrong length), having zeroed the first byte; otherwise null. __fastcall(pClient, pbParam).

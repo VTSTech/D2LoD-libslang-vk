@@ -68,21 +68,21 @@ void __thiscall Draw(::SpinnerImplementation * pThis) {
 BOOL __thiscall IsMouseOnUpButton(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     uint32_t uVar2 = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if (!((int)uVar1 > pThis->nUpButtonX && (int)uVar1 < pThis->nButtonWidth + pThis->nUpButtonX && (int)uVar2 > pThis->nUpButtonY - pThis->nButtonHeight && (int)uVar2 <= pThis->nUpButtonY)) {
-      return 0;
+    if ((int)uVar1 > pThis->nUpButtonX && (int)uVar1 < pThis->nButtonWidth + pThis->nUpButtonX && (int)uVar2 > pThis->nUpButtonY - pThis->nButtonHeight && (int)uVar2 <= pThis->nUpButtonY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 BOOL __thiscall IsMouseOnDownButton(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     uint32_t uVar2 = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if (!((int)uVar1 > pThis->nDownButtonX && (int)uVar1 < pThis->nButtonWidth + pThis->nDownButtonX && (int)uVar2 > pThis->nDownButtonY - pThis->nButtonHeight && (int)uVar2 < pThis->nDownButtonY)) {
-      return 0;
+    if ((int)uVar1 > pThis->nDownButtonX && (int)uVar1 < pThis->nButtonWidth + pThis->nDownButtonX && (int)uVar2 > pThis->nDownButtonY - pThis->nButtonHeight && (int)uVar2 < pThis->nDownButtonY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 int __thiscall GetValue(::SpinnerImplementation * pThis) {
@@ -173,17 +173,17 @@ int __thiscall OnMouseDown(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * p
 
     uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     uint32_t uVar2 = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if (!((int)uVar1 > pThis->nDownButtonX && (int)uVar1 < pThis->nButtonWidth + pThis->nDownButtonX && (int)uVar2 > pThis->nDownButtonY - pThis->nButtonHeight && (int)uVar2 < pThis->nDownButtonY)) {
-      return 0;
+    if ((int)uVar1 > pThis->nDownButtonX && (int)uVar1 < pThis->nButtonWidth + pThis->nDownButtonX && (int)uVar2 > pThis->nDownButtonY - pThis->nButtonHeight && (int)uVar2 < pThis->nDownButtonY) {
+      dwNow = GetTickCount();
+      pThis->dwPressStartTick = dwNow;
+      pThis->bDownPressed = 1;
+      pThis->bInRepeatAction = 1;
+      pThis->pfnRepeatAction();
+      pThis->bInRepeatAction = 0;
+      return 1;
     }
 
-    dwNow = GetTickCount();
-    pThis->dwPressStartTick = dwNow;
-    pThis->bDownPressed = 1;
-    pThis->bInRepeatAction = 1;
-    pThis->pfnRepeatAction();
-    pThis->bInRepeatAction = 0;
-    return 1;
+    return 0;
 }
 
 int __thiscall OnMouseUp(::SpinnerImplementation * pThis, D2UIMouseMsgStrc * pMsg) {

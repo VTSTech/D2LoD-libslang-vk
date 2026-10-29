@@ -388,7 +388,8 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
     pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
     D2SeedStrc sNewSeed;
     sNewSeed = D2_SEED_NEXT(*pItemSeed);
-    *pItemSeed = sNewSeed;
+    pItemSeed->nSeedHigh = sNewSeed.nSeedHigh;
+    pItemSeed->nSeedLow = sNewSeed.nSeedLow;
     uint16_t wItemVersion;
     wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     uint32_t nItemVersion;
@@ -571,7 +572,8 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
     pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pItem);
     D2SeedStrc DVar2;
     DVar2 = D2_SEED_NEXT(*pItemSeed);
-    *pItemSeed = DVar2;
+    pItemSeed->nSeedHigh = DVar2.nSeedHigh;
+    pItemSeed->nSeedLow = DVar2.nSeedLow;
     uint16_t wItemVersion;
     wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pItem);
     uint32_t nItemVersion;
@@ -917,20 +919,20 @@ static BOOL __stdcall ITEMMOD_GenerateRareAffixes(D2ItemGenContextStrc * pItemGe
     bPrefixExhausted = false;
     int16_t wItemVersion;
     wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!wItemVersion) {
-      nRolledGroup = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
-      *(uint16_t*)(char*)&nRarePrefixGroup = (short int)nRolledGroup;
-    } else {
+    if (wItemVersion) {
       nRarePrefixGroup = GetMaxToRoll(1, pUnit);
       *(uint16_t*)(char*)&nRarePrefixGroup = (short int)nRarePrefixGroup;
+    } else {
+      nRolledGroup = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
+      *(uint16_t*)(char*)&nRarePrefixGroup = (short int)nRolledGroup;
     }
 
     wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!wItemVersion) {
-      nRolledGroup = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
+    if (wItemVersion) {
+      nRolledGroup = GetMaxToRoll(0, pUnit);
       wRareSuffix = (short int)nRolledGroup;
     } else {
-      nRolledGroup = GetMaxToRoll(0, pUnit);
+      nRolledGroup = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
       wRareSuffix = (short int)nRolledGroup;
     }
     if (!((short int)nRarePrefixGroup && wRareSuffix)) {
@@ -1067,20 +1069,20 @@ static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2Uni
     D2SeedStrc seedState;
     int16_t sVar4;
     sVar4 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!sVar4) {
-      nMax = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
+    if (sVar4) {
+      nMax = GetMaxToRoll(1, pUnit);
       wRarePrefix = (short int)nMax;
     } else {
-      nMax = GetMaxToRoll(1, pUnit);
+      nMax = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
       wRarePrefix = (short int)nMax;
     }
 
     sVar4 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!sVar4) {
-      nMax = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
+    if (sVar4) {
+      nMax = GetMaxToRoll(0, pUnit);
       wRareSuffix = (short int)nMax;
     } else {
-      nMax = GetMaxToRoll(0, pUnit);
+      nMax = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
       wRareSuffix = (short int)nMax;
     }
     if (!(wRarePrefix && wRareSuffix)) {
@@ -1263,20 +1265,20 @@ BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc
     int32_t pExcludeAffixEntry;
     int16_t sVar5;
     sVar5 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!sVar5) {
-      nRarePrefixGroup = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
+    if (sVar5) {
+      nRarePrefixGroup = GetMaxToRoll(1, pUnit);
       wRarePrefix = (short int)nRarePrefixGroup;
     } else {
-      nRarePrefixGroup = GetMaxToRoll(1, pUnit);
+      nRarePrefixGroup = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
       wRarePrefix = (short int)nRarePrefixGroup;
     }
 
     sVar5 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!sVar5) {
-      nRarePrefixGroup = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
+    if (sVar5) {
+      nRarePrefixGroup = GetMaxToRoll(0, pUnit);
       wRareSuffix = (short int)nRarePrefixGroup;
     } else {
-      nRarePrefixGroup = GetMaxToRoll(0, pUnit);
+      nRarePrefixGroup = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
       wRareSuffix = (short int)nRarePrefixGroup;
     }
     if (!wRarePrefix || !wRareSuffix) {
@@ -1634,11 +1636,13 @@ BOOL __stdcall ITEMMOD_GenerateUniqueItem(D2UnitStrc * pItem) {
       uVar10 = 0;
     } else if (uVar12 & uVar12 - 1) {
       DVar3 = D2_SEED_NEXT(*pDVar5);
-      *pDVar5 = DVar3;
+      pDVar5->nSeedHigh = DVar3.nSeedHigh;
+      pDVar5->nSeedLow = DVar3.nSeedLow;
       uVar10 = DVar3.nSeedLow % uVar12;
     } else {
       DVar3 = D2_SEED_NEXT(*pDVar5);
-      *pDVar5 = DVar3;
+      pDVar5->nSeedHigh = DVar3.nSeedHigh;
+      pDVar5->nSeedLow = DVar3.nSeedLow;
       uVar10 = uVar12 - 1 & DVar3.nSeedLow;
     }
 
@@ -1729,11 +1733,13 @@ static BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenC
             nRandIdx = 0;
           } else if (nTableSize & nTableSize - 1) {
             DVar1 = D2_SEED_NEXT(*pDVar7);
-            *pDVar7 = DVar1;
+            pDVar7->nSeedHigh = DVar1.nSeedHigh;
+            pDVar7->nSeedLow = DVar1.nSeedLow;
             nRandIdx = (DWORD)(DVar1.nSeedLow % nTableSize);
           } else {
             DVar1 = D2_SEED_NEXT(*pDVar7);
-            *pDVar7 = DVar1;
+            pDVar7->nSeedHigh = DVar1.nSeedHigh;
+            pDVar7->nSeedLow = DVar1.nSeedLow;
             nRandIdx = nTableSize - 1 & DVar1.nSeedLow;
           }
         } while (aVisitedSlots[nRandIdx] != '\0');

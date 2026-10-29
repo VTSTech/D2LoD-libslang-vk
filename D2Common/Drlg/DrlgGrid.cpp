@@ -215,19 +215,19 @@ void __fastcall AndNegatedFlag(int * pFlag, int32_t nFlag) {
 
 // Returns 1 if grid pointer is non-null and has data.
 BOOL __fastcall DRLGGRID_IsGridValid(D2DrlgGridStrc * pDrlgGrid) {
-    if (!(pDrlgGrid && pDrlgGrid->pCellsFlags)) {
-      return 0;
+    if (pDrlgGrid && pDrlgGrid->pCellsFlags) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall IsPointInsideGridArea(D2DrlgGridStrc * pDrlgGrid, int32_t nX, int32_t nY) {
-    if (!(nX >= 0 && nX < pDrlgGrid->nWidth && nY >= 0 && nY < pDrlgGrid->nHeight)) {
-      return 0;
+    if (nX >= 0 && nX < pDrlgGrid->nWidth && nY >= 0 && nY < pDrlgGrid->nHeight) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Returns the address of a grid cell given X and Y coordinates. Computes the offset using the grid's row pointer array. Trivial accessor function in the DrlgGrid subsystem.

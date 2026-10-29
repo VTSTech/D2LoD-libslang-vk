@@ -77,7 +77,13 @@ BOOL __fastcall Skills_CltDoFunc_Pal_Zeal_DirOffsetMissile(D2UnitStrc * pUnit, e
     // Static local variables (originally global data)
     static int gnPaladinSkillOffsetTable[8] = { 0x2, 0x1, 0x0, -0x1, -0x2, -0x1, 0x0, 0x1 }; D2_STATIC_GUARD(gnPaladinSkillOffsetTable, "D2Client::SKILLS::SkillsPal::Skills_CltDoFunc_Pal_Zeal_DirOffsetMissile::gnPaladinSkillOffsetTable");
 
+    int32_t nVelocity;
+    uint32_t nRandOffset;
+    int32_t nYOffset;
     uint32_t nDirQuadrant;
+    uint32_t nDirIndex;
+    int nTableOffset;
+    int nXOffset;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -96,33 +102,33 @@ BOOL __fastcall Skills_CltDoFunc_Pal_Zeal_DirOffsetMissile(D2UnitStrc * pUnit, e
     }
 
     D2UnitStrc* pTargetUnit = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
-    if (!(pTargetUnit && pUnit->pPath.pDynamicPath)) {
-      return 0;
-    }
-
-    int32_t nVelocity = D2Common::PATH::DynamicPath::GetVelocity(pUnit->pPath.pDynamicPath);
-    if (nVelocity) {
+    if (pTargetUnit && pUnit->pPath.pDynamicPath) {
       uint8_t nDirection;
-      nDirection = D2Common::Units::GetDirection(pUnit);
-      nDirQuadrant = (uint32_t)(nDirection >> 3);
-    } else {
-      nDirQuadrant = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 8);
+      nVelocity = D2Common::PATH::DynamicPath::GetVelocity(pUnit->pPath.pDynamicPath);
+      if (nVelocity) {
+        nDirection = D2Common::Units::GetDirection(pUnit);
+        nDirQuadrant = (uint32_t)(nDirection >> 3);
+      } else {
+        nDirQuadrant = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 8);
+      }
+
+      nRandOffset = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 3);
+      nDirIndex = nRandOffset - 1 + (nDirQuadrant + 4 & 0x80000007) & 7;
+      nVelocity = Units::GetXPosFromDynamicPathUnit(pUnit);
+      nXOffset = gnPaladinSkillIndexTable[nDirIndex];
+      nYOffset = Units::GetYPosFromDynamicPathUnit(pUnit);
+      nTableOffset = gnPaladinSkillOffsetTable[nDirIndex];
+      nDirQuadrant = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->cltcalc[0], eSkill, nSkillLvl);
+      if ((int)nDirQuadrant > 0) {
+        nDirQuadrant = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, nDirQuadrant);
+        eMissileId += nDirQuadrant;
+      }
+
+      UNIT::Missile::MakeMissileAtXY(pUnit, eMissileId, nVelocity + nXOffset, nYOffset + nTableOffset, eSkill, nSkillLvl);
+      return 1;
     }
 
-    uint32_t nRandOffset = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 3);
-    uint32_t nDirIndex = nRandOffset - 1 + (nDirQuadrant + 4 & 0x80000007) & 7;
-    nVelocity = Units::GetXPosFromDynamicPathUnit(pUnit);
-    int nXOffset = gnPaladinSkillIndexTable[nDirIndex];
-    int32_t nYOffset = Units::GetYPosFromDynamicPathUnit(pUnit);
-    int nTableOffset = gnPaladinSkillOffsetTable[nDirIndex];
-    nDirQuadrant = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->cltcalc[0], eSkill, nSkillLvl);
-    if ((int)nDirQuadrant > 0) {
-      nDirQuadrant = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, nDirQuadrant);
-      eMissileId += nDirQuadrant;
-    }
-
-    UNIT::Missile::MakeMissileAtXY(pUnit, eMissileId, nVelocity + nXOffset, nYOffset + nTableOffset, eSkill, nSkillLvl);
-    return 1;
+    return 0;
 }
 
 // Client DoFunc for Paladin Charge skill. Sets UNITFLAG_SKSRVDOFUNC on the caster, resolves target coordinates, spawns a missile, then sets the missile path type to 0xE (charge path) and recalculates its path. Returns TRUE if the missile was created and has a valid dynamic path.
@@ -157,18 +163,17 @@ BOOL __fastcall Skills_CltDoFunc_Pal_ChargePathMissile(D2UnitStrc * pUnit, eD2Sk
     sSkillArg.nMissileTxtNo = eCltMissileId;
     sSkillArg.eSkillNo = eSkill;
     D2UnitStrc* pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
-    if (!pMissileUnit) {
-      return 0;
+    if (pMissileUnit) {
+      D2DynamicPathStrc* pDynamicPath;
+      pDynamicPath = pMissileUnit->pPath.pDynamicPath;
+      if (pDynamicPath) {
+        D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 0xe);
+        D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pMissileUnit, 0);
+        return 1;
+      }
     }
 
-    D2DynamicPathStrc* pDynamicPath = pMissileUnit->pPath.pDynamicPath;
-    if (!pDynamicPath) {
-      return 0;
-    }
-
-    D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 0xe);
-    D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pMissileUnit, 0);
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall Skills_CltDoFunc_Pal_FistOfHeavens(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
@@ -195,9 +200,9 @@ BOOL __fastcall Skills_CltDoFunc_Pal_FistOfHeavens(D2UnitStrc * pUnit, eD2Skills
     sSkillArg.pOwner = pUnit;
     sSkillArg.nX = Units::GetXPosFromDynamicPathUnit(pTarget);
     sSkillArg.nY = Units::GetYPosFromDynamicPathUnit(pTarget);
-    sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.nMissileTxtNo = eCltMissileId;
     sSkillArg.eSkillNo = eSkill;
+    sSkillArg.nSkillLevel = nSkillLvl;
     D2UnitStrc* pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
     if (!pMissileUnit) {
       return 0;
@@ -210,79 +215,79 @@ BOOL __fastcall Skills_CltDoFunc_Pal_FistOfHeavens(D2UnitStrc * pUnit, eD2Skills
 
 // Client-side do-function for Paladin aura skills that scatter missiles in a random radius field (e.g. Holy Fire/Freeze). Computes missile count scaled by aura radius squared, then for each missile picks a random (x,y) within the radius circle, spawns the aura's CltSubMissile there, and assigns a random direction. Returns 0 in town or if skill/missile data is invalid.
 BOOL __fastcall Skills_CltDoFunc_Pal_RandomRadiusMissileField(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    BOOL bIsTown;
+    eMissilesId eVar1;
+    int32_t nRadius;
+    int32_t nBaseRangeCalc;
+    uint32_t nRandSector;
+    int nCenterX;
+    int32_t nBaseRadius;
+    uint32_t nRandY;
     D2UnitStrc* pMissile;
+    D2SkillsTxt* pSkillTxt;
     int nOffsetX;
     D2SkillArgStrc sSkillArg;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    if (!pRoom) {
-      return 0;
-    }
+    if (pRoom) {
+      D2SeedStrc* pSeed;
+      bIsTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
+      if (!bIsTown) {
+        if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
+          pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
+          if (pSkillTxt) {
+            eVar1 = SkillsAss::SKILLSASS_GetCltMissileByAuraLevel(pUnit, eSkill);
+            if ((int)eVar1 >= 0 && (int)eVar1 < sgptDataTable->nTxtMissilesSize) {
+              nRadius = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->aurarangecalc, eSkill, nSkillLvl);
+              if (nRadius > 0) {
+                nBaseRangeCalc = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->aurarangecalc, eSkill, 1);
+                if (nBaseRangeCalc > 0) {
+                  pSeed = &pUnit->sSeed;
+                  nRandSector = Archive::UNIT_GetModuloFromSeed(pSeed, 0x12);
+                  nCenterX = nRadius * nRadius / (nBaseRangeCalc * nBaseRangeCalc) / (int)(nRandSector + 1);
+                  nBaseRangeCalc = Units::GetXPosFromDynamicPathUnit(pUnit);
+                  nBaseRadius = Units::GetYPosFromDynamicPathUnit(pUnit);
+                  memset(&sSkillArg, 0, 0x5c);
+                  sSkillArg.nFlags = 0x2001;
+                  sSkillArg.nSkillLevel = nSkillLvl;
+                  nSkillLvl = nCenterX;
+                  sSkillArg.pOwner = pUnit;
+                  sSkillArg.nMissileTxtNo = eVar1;
+                  sSkillArg.eSkillNo = eSkill;
+                  if (nCenterX <= 0) {
+                    return 1;
+                  }
 
-    BOOL bIsTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
-    if (bIsTown) {
-      return 0;
-    }
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return 0;
-    }
+                  do {
+                    nRandSector = nRadius * 2 + 1;
+                    nRandY = Archive::RANDOM_RandomNumberSelector(pSeed, nRandSector);
+                    nOffsetX = nRandY - nRadius;
+                    nRandSector = Archive::RANDOM_RandomNumberSelector(pSeed, nRandSector);
+                    nCenterX = nRandSector - nRadius;
+                    if (nCenterX * nCenterX + nOffsetX * nOffsetX < nRadius * nRadius) {
+                      sSkillArg.nX = nOffsetX + 2 + nBaseRangeCalc;
+                      sSkillArg.nY = nCenterX + 2 + nBaseRadius;
+                      pMissile = UNIT::Missile::MakeMissile(&sSkillArg);
+                      if (pMissile) {
+                        nRandSector = Archive::UNIT_GetModuloFromSeed(pSeed, 0x40);
+                        D2Common::PATH::DynamicPath::SetDirectionAndNewDirection(pMissile->pPath.pDynamicPath, (uint8_t)nRandSector);
+                      }
+                    }
 
-    D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!pSkillTxt) {
-      return 0;
-    }
+                    nSkillLvl--;
+                  } while (nSkillLvl);
 
-    eMissilesId eVar1 = SkillsAss::SKILLSASS_GetCltMissileByAuraLevel(pUnit, eSkill);
-    if (!((int)eVar1 >= 0 && (int)eVar1 < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
-    }
-
-    int32_t nRadius = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->aurarangecalc, eSkill, nSkillLvl);
-    if (nRadius <= 0) {
-      return 0;
-    }
-
-    int32_t nBaseRangeCalc = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->aurarangecalc, eSkill, 1);
-    if (nBaseRangeCalc <= 0) {
-      return 0;
-    }
-
-    D2SeedStrc* pSeed = &pUnit->sSeed;
-    uint32_t nRandSector = Archive::UNIT_GetModuloFromSeed(pSeed, 0x12);
-    int nCenterX = nRadius * nRadius / (nBaseRangeCalc * nBaseRangeCalc) / (int)(nRandSector + 1);
-    nBaseRangeCalc = Units::GetXPosFromDynamicPathUnit(pUnit);
-    int32_t nBaseRadius = Units::GetYPosFromDynamicPathUnit(pUnit);
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.nFlags = 0x2001;
-    sSkillArg.nSkillLevel = nSkillLvl;
-    nSkillLvl = nCenterX;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.nMissileTxtNo = eVar1;
-    sSkillArg.eSkillNo = eSkill;
-    if (nCenterX <= 0) {
-      return 1;
-    }
-
-    do {
-      uint32_t nRandY;
-      nRandSector = nRadius * 2 + 1;
-      nRandY = Archive::RANDOM_RandomNumberSelector(pSeed, nRandSector);
-      nOffsetX = nRandY - nRadius;
-      nRandSector = Archive::RANDOM_RandomNumberSelector(pSeed, nRandSector);
-      nCenterX = nRandSector - nRadius;
-      if (nCenterX * nCenterX + nOffsetX * nOffsetX < nRadius * nRadius) {
-        sSkillArg.nX = nOffsetX + 2 + nBaseRangeCalc;
-        sSkillArg.nY = nCenterX + 2 + nBaseRadius;
-        pMissile = UNIT::Missile::MakeMissile(&sSkillArg);
-        if (pMissile) {
-          nRandSector = Archive::UNIT_GetModuloFromSeed(pSeed, 0x40);
-          D2Common::PATH::DynamicPath::SetDirectionAndNewDirection(pMissile->pPath.pDynamicPath, (uint8_t)nRandSector);
+                  return 1;
+                }
+              }
+            }
+          }
         }
+
+        return 0;
       }
+    }
 
-      nSkillLvl--;
-    } while (nSkillLvl);
-
-    return 1;
+    return 0;
 }
 
 // Client-side particle FX: draws a fading trail of charge particles behind a moving unit (e.g. Charge/Leap). Gets the unit's current skill and screen velocity via PATH_GetScreenVelocity; bails if velocity Y sign doesn't match nDirectionFlag (selects above- vs below-ground trail half). Normalizes velocity to a length-15 step, walks SKILL_GetParam3 frames backward through the unit's animation frames, and at each step calls DRAW_WORLD_Unit_1 to render nParticleType at an interpolated offset (perspective-corrected when D2GFX perspective is active). Restores the unit's original gfx frame before returning.
@@ -709,7 +714,7 @@ void __fastcall SKILL_ExecuteItemCast(D2UnitStrc * pUnit, eD2Skills eSkill, shor
     } else {
       D2Common::PATH::DynamicPath::SetSP1(pUnit->pPath.pDynamicPath, nParam1, nParam2);
     }
-    if (pSkillTxt->ItemCltCheckStart) {
+    if (*((uint8_t*)pSkillTxt + 0x8) & (uint8_t)gadwBitMasks[2]) {
       int bTargetIsActive;
       bCorpseStateSet = false;
       if (pTargetUnit) {

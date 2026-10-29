@@ -229,11 +229,11 @@ uint32_t __stdcall OVERLAYTBLS_GetLightRadiusAndRGB(int32_t nOverlayId, int * pn
         *pbyRed = pOverlay->Red;
         *pbyGreen = pOverlay->Green;
         *pbyBlue = pOverlay->Blue;
-        if (!(!*pnRadius && !*pnInitRadius)) {
-          return 1;
+        if (!*pnRadius && !*pnInitRadius) {
+          return 0;
         }
 
-        return 0;
+        return 1;
       }
     }
 
@@ -263,19 +263,21 @@ uint32_t __stdcall OVERLAYTBLS_GetDir(int32_t nParam) {
 
 // 2022.01.09 - dzik
 uint32_t __stdcall GetComponentsData(D2UnitStrc * pUnit, uint32_t nIndex) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
-      return 0;
-    }
-    if (nIndex >= 0x10) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
+      D2MonStats2Txt* pMonStats2;
+      if (nIndex >= 0x10) {
+        return 0;
+      }
+
+      pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit->nClassId);
+      if (!pMonStats2) {
+        return 0;
+      }
+
+      return (uint32_t)pMonStats2->aComponents[nIndex];
     }
 
-    D2MonStats2Txt* pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit->nClassId);
-    if (!pMonStats2) {
-      return 0;
-    }
-
-    return (uint32_t)pMonStats2->aComponents[nIndex];
+    return 0;
 }
 
 // Resolves the graphic-component (DCC/COF token) for one of a monster's render components by index and variant. Validates the unit is a monster, reads its MonStats2 component table, bounds-checks the variant, and looks up the base comp-code via DATATBLS_GetCompCodeByIndex. For Act II monsters it may override the component from the gnOverlayTblsCount / gnOverlayTblsMaxId tables depending on the monster's validated base class id (special-cases base id 0xaa). Returns the resolved component token (cast as D2UnitStrc*), or NULL for non-monsters / out-of-range component or variant.

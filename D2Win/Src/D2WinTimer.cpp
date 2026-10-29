@@ -49,36 +49,39 @@ void __fastcall D2WINTIMER_Start(int * pTimer) {
 }
 
 BOOL __fastcall DrawEx(::D2WinTimer * pTimer) {
+    DWORD dwTickCount;
     D2ControlMsg sMsg;
+    OnPress pfnOnPress;
     if (pTimer->sControl.neD2FormType != FORM_Timer) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x52);
       exit(-1);
     }
 
-    uint32_t dwStateFlags = pTimer->sControl.dwState;
-    if (!(dwStateFlags & 4 && dwStateFlags & 1)) {
-      return 0;
-    }
+    uint32_t uVar1 = pTimer->sControl.dwState;
+    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
+      dwTickCount = GetTickCount();
+      if (!(dwTickCount / 1000 - (uint32_t)pTimer->nCreationTickCount / 1000 > (uint32_t)pTimer->nTimeoutInSeconds)) {
+        return 1;
+      }
 
-    DWORD dwTickCount = GetTickCount();
-    if (!(dwTickCount / 1000 - (uint32_t)pTimer->nCreationTickCount / 1000 > (uint32_t)pTimer->nTimeoutInSeconds)) {
+      pfnOnPress = pTimer->sControl.fpOnPress;
+      if (!pfnOnPress) {
+        return 1;
+      }
+
+      sMsg.pControl = &pTimer->sControl;
+      (*pfnOnPress)(&sMsg);
       return 1;
     }
 
-    OnPress pfnOnPress = pTimer->sControl.fpOnPress;
-    if (!pfnOnPress) {
-      return 1;
-    }
-
-    sMsg.pControl = &pTimer->sControl;
-    (*pfnOnPress)(&sMsg);
-    return 1;
+    return 0;
 }
 
 int __fastcall D2WINTIMER_GetElapsed(::D2WinTimer * pTimer) {
     // Static local variables (originally global data)
     static uint32_t gnTimerNextFireTick; D2_STATIC_GUARD_BSS(gnTimerNextFireTick, "D2Win::Src::D2WinTimer::D2WINTIMER_GetElapsed::gnTimerNextFireTick");
 
+    DWORD dwTickCount;
     D2ControlMsg pCallbackArg;
     if (pTimer->sControl.neD2FormType != FORM_Timer) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6a);
@@ -86,42 +89,44 @@ int __fastcall D2WINTIMER_GetElapsed(::D2WinTimer * pTimer) {
     }
 
     uint32_t uVar1 = pTimer->sControl.dwState;
-    if (!(uVar1 & 4 && uVar1 & 1)) {
-      return 0;
-    }
+    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
+      OnPress pOVar2;
+      dwTickCount = GetTickCount();
+      if (dwTickCount < gnTimerNextFireTick) {
+        return 1;
+      }
 
-    DWORD dwTickCount = GetTickCount();
-    if (dwTickCount < gnTimerNextFireTick) {
+      pOVar2 = pTimer->sControl.fpOnPress;
+      if (pOVar2) {
+        pCallbackArg.pControl = &pTimer->sControl;
+        (*pOVar2)(&pCallbackArg);
+      }
+
+      gnTimerNextFireTick = pTimer->nTimeoutInSeconds + dwTickCount;
       return 1;
     }
 
-    OnPress pOVar2 = pTimer->sControl.fpOnPress;
-    if (pOVar2) {
-      pCallbackArg.pControl = &pTimer->sControl;
-      (*pOVar2)(&pCallbackArg);
-    }
-
-    gnTimerNextFireTick = pTimer->nTimeoutInSeconds + dwTickCount;
-    return 1;
+    return 0;
 }
 
 BOOL __stdcall Key(D2ControlMsg * pTimer) {
+    OnPress pfnTimerCb;
     ::D2WinTimer* pControlRaw = (::D2WinTimer*)pTimer->pControl;
     if (pControlRaw->sControl.neD2FormType != FORM_Timer) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x82);
       exit(-1);
     }
-    if (!(pTimer->uMsg != 0x102 && pTimer->wParam == 0x20)) {
-      return 0;
-    }
+    if (pTimer->uMsg != 0x102 && pTimer->wParam == 0x20) {
+      pfnTimerCb = pControlRaw->sControl.fpOnPress;
+      if (!pfnTimerCb) {
+        return 1;
+      }
 
-    OnPress pfnTimerCb = pControlRaw->sControl.fpOnPress;
-    if (!pfnTimerCb) {
+      (*pfnTimerCb)(pTimer);
       return 1;
     }
 
-    (*pfnTimerCb)(pTimer);
-    return 1;
+    return 0;
 }
 
 // @sourcefile .\Src\D2WinTimer.cpp
@@ -131,8 +136,8 @@ BOOL __stdcall Key(D2ControlMsg * pTimer) {
     memset(pTimer, 0, 0x48);
     pTimer->sControl.neD2FormType = FORM_Timer;
     int* pDwState = &pTimer->sControl.dwState;
-    *pDwState |= 1;
-    pTimer->sControl.dwState |= 4;
+    *pDwState |= gadwBitMasks[0];
+    pTimer->sControl.dwState |= gadwBitMasks[2];
     pTimer->nTimeoutInSeconds = nTimeoutInSeconds;
     dwCreationTick = GetTickCount();
     pTimer->nCreationTickCount = dwCreationTick;

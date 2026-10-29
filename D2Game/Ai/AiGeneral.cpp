@@ -385,11 +385,11 @@ D2MonsterAiCmdStrc * __fastcall AI_CreateCmdIfNotExists(::SGAMEDATA * pGame, D2U
 }
 
 D2MapAIStrc * * __stdcall GetMonsterMapAi(D2UnitStrc * pMonster) {
-    if (!(pMonster && pMonster->eUnitType == UNIT_MONSTER && pMonster->pUnitData.pUnitDataMonster)) {
-      return (D2MapAIStrc**)0x38;
+    if (pMonster && pMonster->eUnitType == UNIT_MONSTER && pMonster->pUnitData.pUnitDataMonster) {
+      return &pMonster->pUnitData.pUnitDataMonster->pAiGeneral->pMapAi;
     }
 
-    return &pMonster->pUnitData.pUnitDataMonster->pAiGeneral->pMapAi;
+    return (D2MapAIStrc**)0x38;
 }
 
 void __fastcall AssignMinionOwner(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nOwnerGUID, eD2UnitType eOwnerType, int32_t nParam, BOOL bTransferBoss) {
@@ -793,11 +793,11 @@ void __fastcall RemoveMinionsFromAiIfFlag1Set2Not(D2UnitStrc * pUnit) {
 }
 
 int32_t __fastcall MONSTER_GetUnitData_AiGeneral_Offset0x3C(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
-      return *(volatile uint8_t*)0x3c;
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster) {
+      return pUnit->pUnitData.pUnitDataMonster->pAiGeneral->nGenericSpawnerSpecific;
     }
 
-    return pUnit->pUnitData.pUnitDataMonster->pAiGeneral->nGenericSpawnerSpecific;
+    return *(volatile uint8_t*)0x3c;
 }
 
 // Propagates an AI command (from pAiArguments) to every minion in pOwner's owner's pMinionList. For each resolved minion, allocates a D2MonsterAiCmdStrc via CreateAiCmdStrc, copies the 5 command args from pAiArguments, and sets the minion's pCmdCurrent to the new node. Effectively issues a coordinated AI command to all minions of the owner chain.

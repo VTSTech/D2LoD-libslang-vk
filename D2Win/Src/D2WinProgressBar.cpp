@@ -36,37 +36,40 @@ void __fastcall FORMS_DestroyD2WinProgressBar(::D2WinProgressBar * pProgressBar)
 }
 
 BOOL __fastcall Draw(::D2WinProgressBar * pProgressBar) {
+    int nXStart;
     int32_t dwState;
     int32_t pFloatToLongHighWord;
     int32_t nBarWidth64;
+    DWORD dwColor;
     if (pProgressBar->sControl.neD2FormType != FORM_ProgressBar) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4f);
       exit(-1);
     }
 
-    uint32_t dwCtrlState = pProgressBar->sControl.dwState;
-    if (!(dwCtrlState & 4 && dwCtrlState & 1)) {
-      return 0;
+    uint32_t uVar1 = pProgressBar->sControl.dwState;
+    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
+      int nYStart;
+      dwState = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
+      nYStart = pProgressBar->sControl.dwPosY;
+      nXStart = pProgressBar->sControl.dwPosX;
+      dwColor = (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pProgressBar >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)dwState);
+      D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nXStart, nYStart, (int)((float)pProgressBar->sControl.dwSizeX * pProgressBar->fCurrentProgress) + nXStart, pProgressBar->sControl.dwSizeY + nYStart, dwColor, DRAW_SOLID);
+      return 1;
     }
 
-    dwState = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
-    int nYStart = pProgressBar->sControl.dwPosY;
-    int nXStart = pProgressBar->sControl.dwPosX;
-    DWORD dwColor = (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pProgressBar >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)dwState);
-    D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nXStart, nYStart, (int)((float)pProgressBar->sControl.dwSizeX * pProgressBar->fCurrentProgress) + nXStart, pProgressBar->sControl.dwSizeY + nYStart, dwColor, DRAW_SOLID);
-    return 1;
+    return 0;
 }
 
 ::D2WinProgressBar * __fastcall D2WinProgressBar(int32_t dwPosX, int32_t dwPosY, int32_t dwSizeX, int32_t dwSizeY) {
-    uint32_t dwState;
+    uint32_t uVar1;
     ::D2WinProgressBar* pNewBar = D2_NEW_AT(::D2WinProgressBar, ".\\Src\\D2WinProgressBar.cpp", 0x1a);
     memset(pNewBar, 0, 0x44);
     pNewBar->sControl.neD2FormType = FORM_ProgressBar;
     int* pStateField = &pNewBar->sControl.dwState;
-    *pStateField |= 1;
-    dwState = pNewBar->sControl.dwState;
+    *pStateField |= gadwBitMasks[0];
+    uVar1 = pNewBar->sControl.dwState | gadwBitMasks[2];
     pNewBar->fCurrentProgress = 0.0;
-    pNewBar->sControl.dwState = dwState | 4;
+    pNewBar->sControl.dwState = uVar1;
     pNewBar->sControl.pDC6 = 0;
     pNewBar->sControl.dwPosX = dwPosX;
     pNewBar->sControl.dwPosY = dwPosY;

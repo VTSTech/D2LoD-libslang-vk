@@ -33,11 +33,8 @@ void __fastcall INV_SubstituteFormatToken(uint16_t * wszText, int32_t nTokenInde
     int nCopied;
     uint16_t wszWorkBuffer[400];
     uint16_t wTokenChar;
-    uint16_t* pClearCursor = wszWorkBuffer;
-    for (nCopied = 200; nCopied; nCopied--) {
-      pClearCursor[0] = L'\0';
-      pClearCursor[1] = L'\0';
-      pClearCursor += 2;
+    for (nCopied = 0; nCopied < 400; nCopied++) {
+      wszWorkBuffer[nCopied] = L'\0';
     }
 
     _wTokenChar = nTokenIndex + 0x30;
@@ -60,7 +57,7 @@ void __fastcall INV_SubstituteFormatToken(uint16_t * wszText, int32_t nTokenInde
 
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszWorkBuffer, wszReplacement);
     nTextLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszWorkBuffer);
-    pClearCursor = pDest;
+    uint16_t* pClearCursor = pDest;
     if (wszWorkBuffer[nTextLen - 1] != L' ' || (nWorkLen = nCopied + 3 , pDest[nCopied + 2] != L' ')) {
       nWorkLen = nCopied + 2;
     }

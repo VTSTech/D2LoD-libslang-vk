@@ -79,11 +79,11 @@ typedef void (__fastcall *fpSUnitIterateCallback)(::SGAMEDATA * pGame, D2UnitStr
 namespace D2Game::ITEMS::Items::Drop {
 
 D2ItemTypesTxt * __fastcall ItemTypes_GetLine(int32_t nParam) {
-    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtItemTypesSize)) {
-      return nullptr;
+    if (nParam >= 0 && nParam < sgptDataTable->nTxtItemTypesSize) {
+      return sgptDataTable->pTxtItemTypes + nParam;
     }
 
-    return sgptDataTable->pTxtItemTypes + nParam;
+    return nullptr;
 }
 
 void __fastcall ITEMDROP_AddToDropList(int * pnDropCount, int32_t pDropListArr, uint32_t dwItemTxtEntry, uint32_t dwWeightOffset) {
@@ -216,11 +216,13 @@ int32_t __fastcall ITEMDROP_RollExceptionalItemClass(::SGAMEDATA * pGame, D2Seed
       if ((int)nCandidateIdx > 0) {
         if (nCandidateIdx & nCandidateIdx - 1) {
           seedNext = D2_SEED_NEXT(*pSeedLocal);
-          *pSeedLocal = seedNext;
+          pSeedLocal->nSeedHigh = seedNext.nSeedHigh;
+          pSeedLocal->nSeedLow = seedNext.nSeedLow;
           nRandIndex = (uint32_t)(seedNext.nSeedLow % nCandidateIdx);
         } else {
           seedNext = D2_SEED_NEXT(*pSeedLocal);
-          *pSeedLocal = seedNext;
+          pSeedLocal->nSeedHigh = seedNext.nSeedHigh;
+          pSeedLocal->nSeedLow = seedNext.nSeedLow;
           nRandIndex = nCandidateIdx - 1 & seedNext.nSeedLow;
         }
 
@@ -279,11 +281,13 @@ int32_t __fastcall ITEMDROP_RollNormalItemClass(::SGAMEDATA * pGame, D2SeedStrc 
       if ((int)nCandidateIdx > 0) {
         if (nCandidateIdx & nCandidateIdx - 1) {
           seedNext = D2_SEED_NEXT(*pSeedLocal);
-          *pSeedLocal = seedNext;
+          pSeedLocal->nSeedHigh = seedNext.nSeedHigh;
+          pSeedLocal->nSeedLow = seedNext.nSeedLow;
           nRandIndex = (uint32_t)(seedNext.nSeedLow % nCandidateIdx);
         } else {
           seedNext = D2_SEED_NEXT(*pSeedLocal);
-          *pSeedLocal = seedNext;
+          pSeedLocal->nSeedHigh = seedNext.nSeedHigh;
+          pSeedLocal->nSeedLow = seedNext.nSeedLow;
           nRandIndex = nCandidateIdx - 1 & seedNext.nSeedLow;
         }
 
@@ -349,11 +353,13 @@ int32_t __fastcall ITEMDROP_RollEliteItemClass(::SGAMEDATA * pGame, D2SeedStrc *
       if ((int)nCandidateCount > 0) {
         if (nCandidateCount & nCandidateCount - 1) {
           seedNext = D2_SEED_NEXT(*pSeed);
-          *pSeed = seedNext;
+          pSeed->nSeedHigh = seedNext.nSeedHigh;
+          pSeed->nSeedLow = seedNext.nSeedLow;
           nRandIndex = (uint32_t)(seedNext.nSeedLow % nCandidateCount);
         } else {
           seedNext = D2_SEED_NEXT(*pSeed);
-          *pSeed = seedNext;
+          pSeed->nSeedHigh = seedNext.nSeedHigh;
+          pSeed->nSeedLow = seedNext.nSeedLow;
           nRandIndex = nCandidateCount - 1 & seedNext.nSeedLow;
         }
 
@@ -524,7 +530,7 @@ static BOOL __stdcall ITEM_MarkUniqueAsDropped(::SGAMEDATA * pGame, D2UnitStrc *
     if (!((int)nFileIndex >= 0 && (int)nFileIndex < sgptDataTable->nTxtUniqueItemsSize && sgptDataTable->pTxtUniqueItems + nFileIndex)) {
       return 0;
     }
-    if (sgptDataTable->pTxtUniqueItems[nFileIndex].nolimit) {
+    if (*((uint8_t*)&sgptDataTable->pTxtUniqueItems[nFileIndex] + 0x2c) & (uint8_t)gadwBitMasks[1]) {
       return 1;
     }
     if (pItemsTxt->bQuest == '\0') {
@@ -652,7 +658,7 @@ BOOL __stdcall ITEM_RollUniqueItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2It
           pUniqueEntryPtr = (uint8_t*)sgptDataTable->pTxtUniqueItems + 0x2c;
           pDataTable = sgptDataTable;
           do {
-            if ((*(uint16_t*)(pUniqueEntryPtr - 8) < 100 || 99 < wItemVersion) && *pUniqueEntryPtr & (uint8_t)1 && pItemsTxt->dwCode == *(int*)(pUniqueEntryPtr - 4) && (pGame->nGameType != SGAMETYPE_BNET_HOST || pGame->eGameType != GAMETYPE_SINGLEPLAYER || !(*pUniqueEntryPtr & (uint8_t)8))) {
+            if ((*(uint16_t*)(pUniqueEntryPtr - 8) < 100 || 99 < wItemVersion) && gadwBitMasks[0] & *pUniqueEntryPtr && pItemsTxt->dwCode == *(int*)(pUniqueEntryPtr - 4) && (pGame->nGameType != SGAMETYPE_BNET_HOST || pGame->eGameType != GAMETYPE_SINGLEPLAYER || !(gadwBitMasks[3] & *pUniqueEntryPtr))) {
               nRollResult = D2Common::ITEMS::Items::ITEM_GetItemData_nItemLevel(pUnit);
               pDataTable = sgptDataTable;
               if (*(short int*)(pUniqueEntryPtr + 8) <= nRollResult) {
@@ -738,7 +744,7 @@ BOOL __stdcall ITEM_RollUniqueItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2It
       }
 
       pUniqueEntryPtr = (uint8_t*)sgptDataTable->pTxtUniqueItems + 0x2c;
-      while (*(uint16_t*)(pUniqueEntryPtr - 8) >= 100 || !(*pUniqueEntryPtr & (uint8_t)1) || pGame->nGameType == SGAMETYPE_BNET_HOST && pGame->eGameType == GAMETYPE_SINGLEPLAYER && *pUniqueEntryPtr & (uint8_t)8 || pItemsTxt->dwCode != *(int*)(pUniqueEntryPtr - 4) || (bHasDurability = ITEM_CheckUniqueBitmask(bDurabilityCheck, pGame) , bHasDurability && pItemsTxt->bQuest == '\0')) {
+      while (*(uint16_t*)(pUniqueEntryPtr - 8) >= 100 || !(gadwBitMasks[0] & *pUniqueEntryPtr) || pGame->nGameType == SGAMETYPE_BNET_HOST && pGame->eGameType == GAMETYPE_SINGLEPLAYER && gadwBitMasks[3] & *pUniqueEntryPtr || pItemsTxt->dwCode != *(int*)(pUniqueEntryPtr - 4) || (bHasDurability = ITEM_CheckUniqueBitmask(bDurabilityCheck, pGame) , bHasDurability && pItemsTxt->bQuest == '\0')) {
         bDurabilityCheck++;
         pUniqueEntryPtr += 0x14c;
         if ((int)bDurabilityCheck >= nRarityWeight) {
@@ -956,6 +962,17 @@ static void __stdcall ITEM_ApplySpecialTypeProperties(D2UnitStrc * pUnit, ::SGAM
     int32_t nSuffixParam;
     eD2ItemTypes eItemType = D2Common::ITEMS::Items::ITEM_GetItemData_wType(pUnit);
     switch (eItemType) {
+      case ITEMTYPE_Charm:
+        ITEM_RollForcedMagicAffix(pItemGenContext, pUnit);
+      return;
+      case ITEMTYPE_BodyPart:
+        dwFileIndex_00 = pItemGenContext->dwFileIndex;
+      if (pItemGenContext->pUnit) {
+        dwFileIndex_00 = pItemGenContext->pUnit->nClassId;
+      }
+
+      D2Common::ITEMS::Items::ITEM_SetItemData_nFileIndex(pUnit, dwFileIndex_00);
+      return;
       case ITEMTYPE_PlayerBodyPart:
         dwFileIndex = pItemGenContext->dwFileIndex;
       if (pItemGenContext->pUnit) {
@@ -965,24 +982,13 @@ static void __stdcall ITEM_ApplySpecialTypeProperties(D2UnitStrc * pUnit, ::SGAM
       D2Common::ITEMS::Items::ITEM_SetItemData_nFileIndex(pUnit, dwFileIndex);
       D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pUnit, ITEMFLAG_BODYPART, 1);
       return;
-      case ITEMTYPE_Charm:
-        ITEM_RollForcedMagicAffix(pItemGenContext, pUnit);
-      return;
-      case ITEMTYPE_Book:
-        nIndex = 0;
-      D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (int16_t)SKILLS::Items::ITEMMOD_GetScrollBookIndex(pUnit, 0), nIndex);
-      return;
       case ITEMTYPE_Scroll:
         nSuffixParam = 0;
       D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (int16_t)SKILLS::Items::ITEMMOD_GetScrollBookIndex(pUnit, 1), nSuffixParam);
       return;
-      case ITEMTYPE_BodyPart:
-        dwFileIndex_00 = pItemGenContext->dwFileIndex;
-      if (pItemGenContext->pUnit) {
-        dwFileIndex_00 = pItemGenContext->pUnit->nClassId;
-      }
-
-      D2Common::ITEMS::Items::ITEM_SetItemData_nFileIndex(pUnit, dwFileIndex_00);
+      case ITEMTYPE_Book:
+        nIndex = 0;
+      D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (int16_t)SKILLS::Items::ITEMMOD_GetScrollBookIndex(pUnit, 0), nIndex);
       return;
     }
 
@@ -1117,31 +1123,6 @@ uint32_t __stdcall ITEM_RollItemQuality(D2UnitStrc * pUnit, D2ItemGenContextStrc
           nTierTableOffset = 0;
           do {
             switch ((uint32_t)gaItemQualityTierTable[nTierTableOffset]) {
-              case 2:
-                iVar1 = pQualityRatioRow->Normal;
-              nMFDivisorExp = nItemLevelAdj / pQualityRatioRow->NormalDivisor;
-              eResultQuality = 2;
-              break;
-              case 3:
-                iVar1 = pQualityRatioRow->HiQuality;
-              nMFDivisorExp = nItemLevelAdj / pQualityRatioRow->HiQualityDivisor;
-              eResultQuality = 3;
-              break;
-              case 4:
-                iVar1 = pQualityRatioRow->Magic;
-              nMFDivisorExp = nItemLevelAdj / pQualityRatioRow->MagicDivisor;
-              eResultQuality = 4;
-              break;
-              case 5:
-                iVar1 = pQualityRatioRow->Set;
-              nMFDivisorExp = nItemLevelAdj / pQualityRatioRow->SetDivisor;
-              eResultQuality = 5;
-              break;
-              case 6:
-                iVar1 = pQualityRatioRow->Rare;
-              nMFDivisorExp = nItemLevelAdj / pQualityRatioRow->RareDivisor;
-              eResultQuality = 6;
-              break;
               case 7:
                 iVar1 = pQualityRatioRow->Unique;
               nMFDivisorExp = nItemLevelAdj / pQualityRatioRow->UniqueDivisor;
@@ -1149,6 +1130,31 @@ uint32_t __stdcall ITEM_RollItemQuality(D2UnitStrc * pUnit, D2ItemGenContextStrc
               break;
               default:
                 goto roll_quality_tier;
+              case 6:
+                iVar1 = pQualityRatioRow->Rare;
+              nMFDivisorExp = nItemLevelAdj / pQualityRatioRow->RareDivisor;
+              eResultQuality = 6;
+              break;
+              case 5:
+                iVar1 = pQualityRatioRow->Set;
+              nMFDivisorExp = nItemLevelAdj / pQualityRatioRow->SetDivisor;
+              eResultQuality = 5;
+              break;
+              case 4:
+                iVar1 = pQualityRatioRow->Magic;
+              nMFDivisorExp = nItemLevelAdj / pQualityRatioRow->MagicDivisor;
+              eResultQuality = 4;
+              break;
+              case 3:
+                iVar1 = pQualityRatioRow->HiQuality;
+              nMFDivisorExp = nItemLevelAdj / pQualityRatioRow->HiQualityDivisor;
+              eResultQuality = 3;
+              break;
+              case 2:
+                iVar1 = pQualityRatioRow->Normal;
+              nMFDivisorExp = nItemLevelAdj / pQualityRatioRow->NormalDivisor;
+              eResultQuality = 2;
+              break;
             }
 
             nItemClassId = iVar1 - nMFDivisorExp;
@@ -1168,10 +1174,22 @@ uint32_t __stdcall ITEM_RollItemQuality(D2UnitStrc * pUnit, D2ItemGenContextStrc
           nTierTableOffset = 0;
           do {
             switch ((uint32_t)gaItemQualityTierTable[nTierTableOffset]) {
-              case 2:
-                nItemClassId = pQualityRatioRow->Normal;
-              nMFDivisor = nItemLevelAdj / pQualityRatioRow->NormalDivisor;
-              eResultQuality = 2;
+              case 7:
+                nItemClassId = pQualityRatioRow->Unique - nItemLevelAdj;
+              eResultQuality = 7;
+              break;
+              case 6:
+                nItemClassId = pQualityRatioRow->Rare - nItemLevelAdj;
+              eResultQuality = 6;
+              break;
+              case 5:
+                nItemClassId = pQualityRatioRow->Set - nItemLevelAdj;
+              eResultQuality = 5;
+              break;
+              case 4:
+                nItemClassId = pQualityRatioRow->Magic;
+              nMFDivisor = nItemLevelAdj / pQualityRatioRow->MagicDivisor;
+              eResultQuality = 4;
               nItemClassId -= nMFDivisor;
               break;
               case 3:
@@ -1180,23 +1198,12 @@ uint32_t __stdcall ITEM_RollItemQuality(D2UnitStrc * pUnit, D2ItemGenContextStrc
               eResultQuality = 3;
               nItemClassId -= nMFDivisor;
               break;
-              case 4:
-                nItemClassId = pQualityRatioRow->Magic;
-              nMFDivisor = nItemLevelAdj / pQualityRatioRow->MagicDivisor;
-              eResultQuality = 4;
+              case 2:
+                nItemClassId = pQualityRatioRow->Normal;
+              nMFDivisor = nItemLevelAdj / pQualityRatioRow->NormalDivisor;
+              eResultQuality = 2;
               nItemClassId -= nMFDivisor;
               break;
-              case 5:
-                nItemClassId = pQualityRatioRow->Set - nItemLevelAdj;
-              eResultQuality = 5;
-              break;
-              case 6:
-                nItemClassId = pQualityRatioRow->Rare - nItemLevelAdj;
-              eResultQuality = 6;
-              break;
-              case 7:
-                nItemClassId = pQualityRatioRow->Unique - nItemLevelAdj;
-              eResultQuality = 7;
             }
 
             if ((int)nItemClassId <= 0) {
@@ -2223,19 +2230,22 @@ void __fastcall RefreshQuantity(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 }
 
 static int32_t ITEM_GetTotalMagicFind(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType < UNIT_OBJECT)) {
-      return 0;
-    }
+    D2UnitStrc* pOwner;
+    int32_t nOwnerMagicFind;
+    if (pUnit && pUnit->eUnitType < UNIT_OBJECT) {
+      int32_t nMagicFind;
+      nMagicFind = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_magicbonus, 0);
+      pOwner = Ai::AiGeneral::GetOwnerUnit(pUnit);
+      if (!pOwner) {
+        return nMagicFind;
+      }
 
-    int32_t nMagicFind = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_magicbonus, 0);
-    D2UnitStrc* pOwner = Ai::AiGeneral::GetOwnerUnit(pUnit);
-    if (!pOwner) {
+      nOwnerMagicFind = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pOwner, UNITSTAT_item_magicbonus, 0);
+      nMagicFind += nOwnerMagicFind;
       return nMagicFind;
     }
 
-    int32_t nOwnerMagicFind = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pOwner, UNITSTAT_item_magicbonus, 0);
-    nMagicFind += nOwnerMagicFind;
-    return nMagicFind;
+    return 0;
 }
 
 int32_t __fastcall ITEMDROP_AdjustDrop(int32_t nParam1, int32_t nParam2, int32_t nMFAdjusted) {
@@ -2947,13 +2957,13 @@ void __fastcall DROP_SpawnExceptionalItem(::SGAMEDATA * pGame, D2RoomStrc * pRoo
         sItemGenCtx.pUnit = pSourceUnit;
         sItemGenCtx.nPosX = ptSpawnPos.x;
         sItemGenCtx.nPosY = ptSpawnPos.y;
+        sItemGenCtx.pGame = pGame;
         sItemGenCtx.nItemClassid = nRolledClassId;
         sItemGenCtx.dwMode = 3;
+        sItemGenCtx.pDrlgRoom = pSpawnRoom;
         sItemGenCtx.usually_one = 1;
         sItemGenCtx.eQuality = QUALITY_INVALID;
-        sItemGenCtx.pGame = pGame;
         sItemGenCtx.nItemLevel = nEffectiveItemLevel;
-        sItemGenCtx.pDrlgRoom = pSpawnRoom;
         ITEM_CreateItemInstance(pGame, &sItemGenCtx, 0);
         return;
       }
@@ -3078,8 +3088,8 @@ void __fastcall DROP_SpawnEliteItem(::SGAMEDATA * pGame, D2RoomStrc * pRoom, POI
     pCoordsIn = (POINT*)(ptCandidatePos.y + 3);
     D2RoomStrc* pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nOffsetX, (int32_t)pCoordsIn);
     if (pSpawnRoom) {
-      ptSpawnPos.y = (LONG)pCoordsIn;
       ptSpawnPos.x = nOffsetX;
+      ptSpawnPos.y = (LONG)pCoordsIn;
     } else {
       ptSpawnPos.x = ptCandidatePos.x;
       ptSpawnPos.y = ptCandidatePos.y;
@@ -3228,12 +3238,12 @@ D2UnitStrc * __fastcall ITEM_CreateFromTemplate(D2UnitStrc * pUnit, int32_t nIte
     sItemGenCtx.pDrlgRoom = 0;
     sItemGenCtx.eQuality = eQuality;
     sItemGenCtx.nFlags = sItemGenCtx.nFlags | (bIgnoreFlag ? ITEMFLAG_IGNORE : 0) | (bBoughtFlag ? ITEMFLAG_BOUGHT : 0);
+    sItemGenCtx.nItemClassid = nItemClassId;
+    sItemGenCtx.pUnit = pUnit;
     sItemGenCtx.pGame = pGame;
     sItemGenCtx.usually_one = 1;
     sItemGenCtx.nInitSeed = nInitSeed;
     sItemGenCtx.nModSeed = nModSeed;
-    sItemGenCtx.pUnit = pUnit;
-    sItemGenCtx.nItemClassid = nItemClassId;
     if (nItemLevel == -1) {
       D2RoomStrc* pRoom;
       if (pUnit) {
@@ -3847,11 +3857,13 @@ void __fastcall SERVER_ITEM_RollItemToDrop(::SGAMEDATA * pGame, D2UnitStrc * pUn
                 nSeedHighWide = (uint64_t)pUnit->sSeed.nSeedHigh;
                 if (nTCWeightSum & nTCWeightSum - 1) {
                   sNewSeed = (D2SeedStrc)((uint64_t)uVar18 * 0x6ac690c5 + nSeedHighWide);
-                  pUnit->sSeed = sNewSeed;
+                  pUnit->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+                  pUnit->sSeed.nSeedLow = sNewSeed.nSeedLow;
                   uVar18 = (uint32_t)(sNewSeed.nSeedLow % nTCWeightSum);
                 } else {
                   sNewSeed = (D2SeedStrc)((uint64_t)uVar18 * 0x6ac690c5 + nSeedHighWide);
-                  pUnit->sSeed = sNewSeed;
+                  pUnit->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+                  pUnit->sSeed.nSeedLow = sNewSeed.nSeedLow;
                   uVar18 = nTCWeightSum - 1 & sNewSeed.nSeedLow;
                 }
               }
@@ -4048,7 +4060,8 @@ void __fastcall SERVER_ITEM_RollItemToDrop(::SGAMEDATA * pGame, D2UnitStrc * pUn
                     local_550[1] = (int32_t)wTempMod;
                     if (wTempMod > 0) {
                       sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
-                      pUnit->sSeed = sNewSeed;
+                      pUnit->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+                      pUnit->sSeed.nSeedLow = sNewSeed.nSeedLow;
                       if ((sNewSeed.nSeedLow & 0x3ff) < (uint32_t)local_550[1]) {
                         nDropFlags |= 0x10;
                       }
@@ -4109,7 +4122,7 @@ void __fastcall SERVER_ITEM_RollItemAndGetTreasureClass(::SGAMEDATA * pGame, D2U
     if (pGame->bExpansion && (uint8_t)pGame->nDifficulty > 0 && pUnit && pUnit->eUnitType == UNIT_MONSTER) {
       D2MonStatsTxt* pMonStatsTxt;
       pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit->nClassId);
-      if (pMonStatsTxt && !pMonStatsTxt->noRatio && !pMonStatsTxt->boss) {
+      if (pMonStatsTxt && !(gadwBitMasks[2] & (uint8_t)*((uint8_t*)pMonStatsTxt + 0xc)) && !(gadwBitMasks[6] & (uint8_t)*((uint8_t*)pMonStatsTxt + 0xc))) {
         pnMonsterLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
       }
     }

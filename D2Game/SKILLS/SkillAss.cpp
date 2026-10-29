@@ -266,36 +266,38 @@ static void __stdcall SKILLASS_AddChargeUpStack(::SGAMEDATA * pGame, eD2Skills e
 }
 
 BOOL __fastcall Skills_SrvDoFunc_034_ChargeUpStackMelee(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    uint8_t* pCombatQueueEntry;
+    D2SkillsTxt* pSkillRecord;
     D2DamageStrc sDamage;
+    uint8_t bySrcDam;
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
     if (!pTarget) {
       return 0;
     }
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return 0;
+    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
+      uint32_t nHitResult;
+      pSkillRecord = sgptDataTable->pTxtSkills + eSkill;
+      if (pSkillRecord && -1 < pSkillRecord->aurastate && (int)pSkillRecord->aurastate < sgptDataTable->nTxtStatesSize && -1 < pSkillRecord->aurastat[0] && (int)pSkillRecord->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
+        memset(&sDamage, 0, 0x70);
+        nHitResult = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), 0, (eD2UnitType)pTarget);
+        sDamage.wResultFlags = (short int)nHitResult;
+        bySrcDam = pSkillRecord->SrcDam;
+        if (!bySrcDam) {
+          bySrcDam = 0x80;
+        }
+
+        UNIT::SUnitDmg::DAMAGE_CalculateAndApplyDamage(pGame, pUnit, pTarget, &sDamage, bySrcDam);
+        pCombatQueueEntry = (uint8_t*)UNIT::SUnitDmg::DAMAGE_FindCombatEntry(pUnit, pTarget);
+        if (pCombatQueueEntry && pCombatQueueEntry[4] & 1) {
+          SKILLASS_AddChargeUpStack(pGame, eSkill, nSkillLvl, (int)pSkillRecord->aurastate, (int)pSkillRecord->aurastat[0], pUnit);
+        }
+
+        UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pTarget, 0);
+        return 1;
+      }
     }
 
-    D2SkillsTxt* pSkillRecord = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillRecord && -1 < pSkillRecord->aurastate && (int)pSkillRecord->aurastate < sgptDataTable->nTxtStatesSize && -1 < pSkillRecord->aurastat[0] && (int)pSkillRecord->aurastat[0] < sgptDataTable->nTxtItemStatCostSize)) {
-      return 0;
-    }
-
-    memset(&sDamage, 0, 0x70);
-    uint32_t nHitResult = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), 0, (eD2UnitType)pTarget);
-    sDamage.wResultFlags = (short int)nHitResult;
-    uint8_t bySrcDam = pSkillRecord->SrcDam;
-    if (!bySrcDam) {
-      bySrcDam = 0x80;
-    }
-
-    UNIT::SUnitDmg::DAMAGE_CalculateAndApplyDamage(pGame, pUnit, pTarget, &sDamage, bySrcDam);
-    uint8_t* pCombatQueueEntry = (uint8_t*)UNIT::SUnitDmg::DAMAGE_FindCombatEntry(pUnit, pTarget);
-    if (pCombatQueueEntry && pCombatQueueEntry[4] & 1) {
-      SKILLASS_AddChargeUpStack(pGame, eSkill, nSkillLvl, (int)pSkillRecord->aurastate, (int)pSkillRecord->aurastat[0], pUnit);
-    }
-
-    UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pTarget, 0);
-    return 1;
+    return 0;
 }
 
 // Dragon Claw skill SrvDoFunc. Checks that the unit has two distinct non-broken weapons in both arm slots; if so, clears UNITFLAG_SKSRVDOFUNC and delegates to the ChargeUp/StackMelee handler. On odd animation frames with no valid dual-wield it sets the flag to suppress further processing. Returns 1 always.
@@ -632,7 +634,7 @@ int32_t __fastcall SKILLASS_GetChargeUpMissile(D2UnitStrc * pUnit, int32_t nSkil
     if (!pSkillTxt) {
       return -1;
     }
-    if (!pSkillTxt->progressive) {
+    if (!(*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[2])) {
       return (int)pSkillTxt->srvmissile[1];
     }
 
@@ -673,7 +675,7 @@ uint32_t __fastcall SKILLASS_GetChargeUpCalcValue(D2UnitStrc * pUnit, eD2Skills 
     if (!pSkillTxt) {
       return 0;
     }
-    if (pSkillTxt->progressive) {
+    if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[2]) {
       D2StatListExStrc* pStatList;
       eAuraState = pSkillTxt->aurastate;
       if (eAuraState < 0 || (int)eAuraState >= sgptDataTable->nTxtStatesSize) {
@@ -754,7 +756,8 @@ BOOL __fastcall Skills_SrvDoFunc_039_ChargeRelease_CircleSpawn(::SGAMEDATA * pGa
     uint32_t nTargetY;
     uint32_t nTargetX;
     D2SeedStrc sSeedAdvanced = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = sSeedAdvanced;
+    pUnit->sSeed.nSeedHigh = sSeedAdvanced.nSeedHigh;
+    pUnit->sSeed.nSeedLow = sSeedAdvanced.nSeedLow;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -783,9 +786,9 @@ BOOL __fastcall Skills_SrvDoFunc_039_ChargeRelease_CircleSpawn(::SGAMEDATA * pGa
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.nFlags = 1;
+    sSkillArg.pOwner = pUnit;
     sSkillArg.eSkillNo = eSkill;
     sSkillArg.nMissileTxtNo = eMissileId;
-    sSkillArg.pOwner = pUnit;
     D2Common::Seed::InitSeed_Param_666(&sSeedCopy, sSeedAdvanced.nSeedLow);
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     int iVar1 = nRadius * nRadius;
@@ -1265,7 +1268,8 @@ BOOL __fastcall Skills_SrvDoFunc_037_ChargeRelease_MultiElementScatter(::SGAMEDA
     uint32_t nTargetX;
     eD2Skills eSkillSaved = eSkill;
     D2SeedStrc DVar1 = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = DVar1;
+    pUnit->sSeed.nSeedHigh = DVar1.nSeedHigh;
+    pUnit->sSeed.nSeedLow = DVar1.nSeedLow;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -1299,7 +1303,8 @@ BOOL __fastcall Skills_SrvDoFunc_143_ChargeRelease_GroundStrike(::SGAMEDATA * pG
     uint32_t nTargetX;
     eD2Skills eSkillSaved = eSkill;
     D2SeedStrc DVar1 = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = DVar1;
+    pUnit->sSeed.nSeedHigh = DVar1.nSeedHigh;
+    pUnit->sSeed.nSeedLow = DVar1.nSeedLow;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -1415,6 +1420,9 @@ BOOL __fastcall Skills_SrvDoFunc_041_BladeFury(::SGAMEDATA * pGame, D2UnitStrc *
 
 // Server-side Assassin charge-up release: when a melee finishing-move combat entry fires (nCombatEntryParam flag bit 0 set) and a target is in melee range, scans the unit's active charge-up state stat-lists (pAllStatesDataTblFlag0x04). For each, reads the stored skill id and charge level, clamps charges to 1..3, and invokes the skill's per-charge srvprgfunc handlers (SKILLSRVDOFUNCS dispatch) up to the charge count, broadcasting a unit-message packet to the target. Consumes the charge by removing/freeing each charge-up stat-list afterward. Seed is rolled then restored to preserve determinism. No return.
 void __fastcall SKILLASS_ReleaseChargeUpAttack(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2DamageStrc * pDamage) {
+    // Static local variables (originally global data)
+    static uint32_t gnSkillAssSpinDamage_RingAngle = 0xbf; D2_STATIC_GUARD(gnSkillAssSpinDamage_RingAngle, "D2Game::SKILLS::SkillAss::SKILLASS_ReleaseChargeUpAttack::gnSkillAssSpinDamage_RingAngle");
+
     eD2States eState;
     D2StatListExStrc* pStatList;
     D2SkillsTxt* pDVar4;
@@ -1488,12 +1496,12 @@ void __fastcall SKILLASS_ReleaseChargeUpAttack(::SGAMEDATA * pGame, D2UnitStrc *
                   nRandRoll = Archive::RollRandomSeed(pSeed);
                   D2Common::Seed::SetSeed(pSeed, nSeedSaveLow, nSeedSaveHigh);
                   nChargeLvlMax = nChargeLvl - 1;
-                  if (pDVar4->prgstack) {
+                  if (*((uint8_t*)pDVar4 + 0x4) & (uint8_t)gadwBitMasks[7]) {
                     i = 0;
                     if (nChargeLvlMax > 0) {
                       pSrvPrgFunc = pDVar4->srvprgfunc;
                       do {
-                        if (*pSrvPrgFunc > 0 && *pSrvPrgFunc < 0xbf) {
+                        if (*pSrvPrgFunc > 0 && *pSrvPrgFunc < gnSkillAssSpinDamage_RingAngle) {
                           D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatListSaved, (int)pDVar4->aurastat[0], i + 1, 0);
                           if (SKILLSRVDOFUNCS[*pSrvPrgFunc]) {
                             (*SKILLSRVDOFUNCS[*pSrvPrgFunc])(pGameCopy, pUnit, eSkillId, nEffectiveSkillLvl);
@@ -1509,7 +1517,7 @@ void __fastcall SKILLASS_ReleaseChargeUpAttack(::SGAMEDATA * pGame, D2UnitStrc *
                   }
 
                   eAuraStat = pDVar4->srvprgfunc[nChargeLvl - 1];
-                  if (eAuraStat > 0 && eAuraStat < 0xbf && SKILLSRVDOFUNCS[eAuraStat]) {
+                  if (eAuraStat > 0 && eAuraStat < gnSkillAssSpinDamage_RingAngle && SKILLSRVDOFUNCS[eAuraStat]) {
                     (*SKILLSRVDOFUNCS[eAuraStat])(pGameCopy, pUnit, eSkillId, nEffectiveSkillLvl);
                   }
 
@@ -1652,11 +1660,13 @@ static void __stdcall SKILLBAR_ApplyWhirlwindDamage(::SGAMEDATA * pGame, D2Damag
       nMinDmg = pUnit2->sSeed.nSeedLow;
       if (nEnhDmgPctWork & nEnhDmgPctWork - 1) {
         DVar1 = D2_SEED_NEXT(pUnit2->sSeed);
-        pUnit2->sSeed = DVar1;
+        pUnit2->sSeed.nSeedHigh = DVar1.nSeedHigh;
+        pUnit2->sSeed.nSeedLow = DVar1.nSeedLow;
         nEnhDmgPctWork = DVar1.nSeedLow % nEnhDmgPctWork;
       } else {
         DVar1 = D2_SEED_NEXT(pUnit2->sSeed);
-        pUnit2->sSeed = DVar1;
+        pUnit2->sSeed.nSeedHigh = DVar1.nSeedHigh;
+        pUnit2->sSeed.nSeedLow = DVar1.nSeedLow;
         nEnhDmgPctWork = nEnhDmgPctWork - 1 & DVar1.nSeedLow;
       }
     }
@@ -2029,7 +2039,7 @@ D2UnitStrc * __fastcall SKILLASS_CreateSummon(::SGAMEDATA * pGame, D2UnitStrc * 
         nY = nSpawnY;
         pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
         pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
-        if (pRoom && (*(uint8_t*)(nParam1 + 5) & 1 || (_bHasPos = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom) , !_bHasPos))) {
+        if (pRoom && (*(uint8_t*)(nParam1 + 5) & (uint8_t)gadwBitMasks[0] || (_bHasPos = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom) , !_bHasPos))) {
           sSummonArgs.nMode = eAnimMode;
           sSummonArgs.nFunctionId = 0;
           sSummonArgs.nX = nX;
@@ -2400,34 +2410,35 @@ BOOL __fastcall Skills_SrvDoFunc_047_CloakOfShadows(::SGAMEDATA * pGame, D2UnitS
     D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_modifierlist_skill, eSkillOrig, 0);
     D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_modifierlist_level, nSkillLvl, 0);
     D2Common::DATATBLS::ItemStats::D2StatesTogglegfx(pUnitSaved, (int)pSkillTxt->aurastate, 1);
-    if (!(-1 < pSkillTxt->auratargetstate && (int)pSkillTxt->auratargetstate < sgptDataTable->nTxtStatesSize)) {
-      return 0;
+    if (-1 < pSkillTxt->auratargetstate && (int)pSkillTxt->auratargetstate < sgptDataTable->nTxtStatesSize) {
+      int nAuraStatIdx;
+      sCurseArgs.nSkillLvl = nSkillLvl;
+      sCurseArgs.nDurationFrames = sStateExpiryArgs.nDurationInFrames;
+      sCurseArgs.eSkill = eSkillOrig;
+      sCurseArgs.eTargetState = (eD2States)pSkillTxt->auratargetstate;
+      eSkill = (eD2Skills)pSkillTxt->aurastatcalc;
+      pStatPtr = pSkillTxt->aurastat;
+      nAuraStatIdx = 0;
+      do {
+        sCurseArgs.anStatIds[nAuraStatIdx] = (int)*pStatPtr;
+        sCurseArgs.anStatValues[nAuraStatIdx] = 0;
+        if (*pStatPtr >= 0) {
+          nCalcVal = D2Common::Skills::D2GetSkillCalc(pUnitSaved, *(int32_t*)eSkill, eSkillOrig, nSkillLvl);
+          sCurseArgs.anStatValues[nAuraStatIdx] = nCalcVal;
+        }
+
+        pAuraTarget = pUnitSaved;
+        eSkill += SKILL_LeftHandThrow;
+        nAuraStatIdx++;
+        pStatPtr++;
+      } while (nAuraStatIdx < 6);
+
+      nCalcVal = D2Common::Skills::D2GetSkillCalc(pUnitSaved, pSkillTxt->aurarangecalc, eSkillOrig, nSkillLvl);
+      SkillsServer::SKILLS_ApplyAreaEffect(pGameSaved, pAuraTarget, 0, 0, nCalcVal, pSkillTxt->aurafilter, SKILL_ApplyTimedStateWithCurseExpiry, &sCurseArgs, 1, ".\\SKILLS\\SkillAss.cpp", 0x874);
+      return 1;
     }
 
-    sCurseArgs.nSkillLvl = nSkillLvl;
-    sCurseArgs.nDurationFrames = sStateExpiryArgs.nDurationInFrames;
-    sCurseArgs.eSkill = eSkillOrig;
-    sCurseArgs.eTargetState = (eD2States)pSkillTxt->auratargetstate;
-    eSkill = (eD2Skills)pSkillTxt->aurastatcalc;
-    pStatPtr = pSkillTxt->aurastat;
-    int nAuraStatIdx = 0;
-    do {
-      sCurseArgs.anStatIds[nAuraStatIdx] = (int)*pStatPtr;
-      sCurseArgs.anStatValues[nAuraStatIdx] = 0;
-      if (*pStatPtr >= 0) {
-        nCalcVal = D2Common::Skills::D2GetSkillCalc(pUnitSaved, *(int32_t*)eSkill, eSkillOrig, nSkillLvl);
-        sCurseArgs.anStatValues[nAuraStatIdx] = nCalcVal;
-      }
-
-      pAuraTarget = pUnitSaved;
-      eSkill += SKILL_LeftHandThrow;
-      nAuraStatIdx++;
-      pStatPtr++;
-    } while (nAuraStatIdx < 6);
-
-    nCalcVal = D2Common::Skills::D2GetSkillCalc(pUnitSaved, pSkillTxt->aurarangecalc, eSkillOrig, nSkillLvl);
-    SkillsServer::SKILLS_ApplyAreaEffect(pGameSaved, pAuraTarget, 0, 0, nCalcVal, pSkillTxt->aurafilter, SKILL_ApplyTimedStateWithCurseExpiry, &sCurseArgs, 1, ".\\SKILLS\\SkillAss.cpp", 0x874);
-    return 1;
+    return 0;
 }
 
 // Server Do handler for Blade Sentinel (Assassin skill 48). Each call fires a charge-up missile toward the cursor if the per-charge cooldown (SKILL param1 frame counter) has elapsed, then advances the cooldown by the charge calc value. If the unit has STATE_inferno active, triggers an anim-timer event afterward. Returns TRUE only when a missile was actually created.
@@ -2608,11 +2619,13 @@ void __fastcall SKILLASS_EquipSummonItems(::SGAMEDATA * pGame, D2UnitStrc * nPar
         nSlotCount = (uint64_t)pUnit_00->sSeed.nSeedHigh;
         if (nRandEquipSlot & nRandEquipSlot - 1) {
           sNewSeed = (D2SeedStrc)((uint64_t)nSeedLowSave * 0x6ac690c5 + nSlotCount);
-          pUnit_00->sSeed = sNewSeed;
+          pUnit_00->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+          pUnit_00->sSeed.nSeedLow = sNewSeed.nSeedLow;
           nRandEquipSlot = (uint32_t)(sNewSeed.nSeedLow % nRandEquipSlot);
         } else {
           sNewSeed = (D2SeedStrc)((uint64_t)nSeedLowSave * 0x6ac690c5 + nSlotCount);
-          pUnit_00->sSeed = sNewSeed;
+          pUnit_00->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+          pUnit_00->sSeed.nSeedLow = sNewSeed.nSeedLow;
           nRandEquipSlot = nRandEquipSlot - 1 & sNewSeed.nSeedLow;
         }
 
@@ -2638,9 +2651,9 @@ void __fastcall SKILLASS_EquipSummonItems(::SGAMEDATA * pGame, D2UnitStrc * nPar
             pItemCodeOrPool = D2Common::ITEMS::Items::ITEM_GetItemsTxt_szCode(pExistingItem);
           }
 
-          sEquipEntry.nFlag = '\x01';
           sEquipEntry.dwItemCode = pItemCodeOrPool;
           sEquipEntry.nBodyLoc = bVar2;
+          sEquipEntry.nFlag = '\x01';
           Monster::MONSTER_CreateAndEquipItem(pGame, pUnit_00, &sEquipEntry, nParam3, (eD2ItemQuality)pUnit);
         }
       }

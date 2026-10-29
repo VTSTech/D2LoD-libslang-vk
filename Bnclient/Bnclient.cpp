@@ -338,8 +338,8 @@ LPFILETIME * CACHE_GetFileTime(uint32_t nParam) {
     /* LPFILETIME lpFileTime for SystemTimeToFileTime */ /* SYSTEMTIME * lpSystemTime for SystemTimeToFileTime */ SystemTimeToFileTime(&sSystemTime, (LPFILETIME)&lpFileTime_008818ac);
     int64_t llAdjustedFileTime = (uint64_t)nParam * 10000000 + (uint64_t)((uint64_t)(uint32_t)gnCacheFileTimeHigh << 32 | (uint64_t)(uint32_t)(uintptr_t)lpFileTime_008818ac);
     lpFileTime_008818ac = (LPFILETIME)llAdjustedFileTime;
-    gnCacheFileTimeHigh = (int)((uint64_t)llAdjustedFileTime >> 0x20);
     gnCacheLastFileTimeParam = nParam;
+    gnCacheFileTimeHigh = (int)((uint64_t)llAdjustedFileTime >> 0x20);
     gdwCacheLastTickCount = GetTickCount();
     return &lpFileTime_008818ac;
 }

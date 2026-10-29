@@ -161,17 +161,18 @@ int __fastcall SFILE_EnsurePathEndsWithBackslash(char * szText1, uint32_t nMaxLe
 
 int __fastcall SFILE_GetExecutableDirectory(char * szText, DWORD nSize) {
     DWORD dwLength = GetModuleFileNameA((HMODULE)0x0, szText, nSize);
-    if (!(dwLength && dwLength != nSize)) {
-      return 0;
-    }
+    if (dwLength && dwLength != nSize) {
+      char* pszLastSlash;
+      pszLastSlash = Storm::Source::SSTR::SStrChrR(szText, '\\');
+      if (!pszLastSlash) {
+        return 1;
+      }
 
-    char* pszLastSlash = Storm::Source::SSTR::SStrChrR(szText, '\\');
-    if (!pszLastSlash) {
+      pszLastSlash[1] = '\0';
       return 1;
     }
 
-    pszLastSlash[1] = '\0';
-    return 1;
+    return 0;
 }
 
 int __fastcall SFILE_GetInstallPath(LPSTR lpFilename, DWORD nSize) {
@@ -595,13 +596,6 @@ void __stdcall LOGFILE_StoreGameStartupInfo() {
       case 4:
         memcpy(__frame0.szOsName, "Windows .Net", 0xd);
       break;
-      default:
-        __frame0.szOsName[4] = 'o';
-      __frame0.szOsName[5] = 'w';
-      __frame0.szOsName[6] = 'n';
-      __frame0.szOsName[7] = '\0';
-      memcpy(__frame0.szOsName, "unkn", 4);
-      break;
       case 9:
         memcpy(__frame0.szOsName, "MacO", 4);
       __frame0.szOsName[4] = 'S';
@@ -609,6 +603,14 @@ void __stdcall LOGFILE_StoreGameStartupInfo() {
       break;
       case 10:
         memcpy(__frame0.szOsName, "MacOS X", 8);
+      break;
+      default:
+        __frame0.szOsName[4] = 'o';
+      __frame0.szOsName[5] = 'w';
+      __frame0.szOsName[6] = 'n';
+      __frame0.szOsName[7] = '\0';
+      memcpy(__frame0.szOsName, "unkn", 4);
+      break;
     }
 
     Src::LogManager::LOGFILE_WriteStringToFile("%s running under %s (Version %.3f)", "Diablo II", __frame0.szOsName, (double)(float)fGameVersion);

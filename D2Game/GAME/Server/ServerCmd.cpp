@@ -37,9 +37,9 @@ void thunk_NET_D2GS_SERVER_SendPacketToClient(char * szText, size_t nSize) {
 
 int __fastcall SERVERCMD_SendBufferToClient(int32_t nClientId, uint16_t wGuildFlags, uint16_t wUniqueCode, char * szPlayerName) {
     D2GSPacketSrv0xB2 sPacket;
+    sPacket.nGuildFlags = wGuildFlags;
     sPacket.nPacketId = 0xb2;
     sPacket.nUniqueCode = wUniqueCode;
-    sPacket.nGuildFlags = wGuildFlags;
     Storm::Source::SSTR::SStrCopy(sPacket.szPlayerName, szPlayerName, 0x10);
     int32_t iVar1 = D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(0, nClientId, (char*)&sPacket, 0x35);
     return iVar1;

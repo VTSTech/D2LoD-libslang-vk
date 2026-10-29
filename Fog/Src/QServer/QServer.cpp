@@ -873,13 +873,13 @@ static int PruneIpRateList(D2QServerStrc * pQServer) {
       D2QServerIpRateEntryStrc* pMemoryToFree;
       pMemoryToFree = pEntry->pNext;
       while (pMemoryToFree) {
-        if (dwNow - pMemoryToFree->dwLastAttemptTick <= 0x3a98) {
-          pEntry = pMemoryToFree;
-          pMemoryToFree = pMemoryToFree->pNext;
-        } else {
+        if (dwNow - pMemoryToFree->dwLastAttemptTick > 0x3a98) {
           pEntry->pNext = pMemoryToFree->pNext;
           D2_FREE_AT(pMemoryToFree, ".\\Src\\QServer\\QServer.cpp", 0x993);
           pMemoryToFree = pEntry->pNext;
+        } else {
+          pEntry = pMemoryToFree;
+          pMemoryToFree = pMemoryToFree->pNext;
         }
       }
     }
@@ -1605,16 +1605,17 @@ int __stdcall SendPacketByClientId(D2QServerStrc * pQServer, int nClientId, char
     }
 
     D2QServerClientConnectionStrc* pQServerClient = FindClientByClientId(pQServer, nClientId);
-    if (!(pQServerClient && !pQServerClient->bClosePending)) {
-      return 0;
-    }
-    if (pQServer->bUseNtLocalMode) {
-      nClientSendResult = QServer::QServerNT::SendToClientLocal(pQServer, pQServerClient, pBytes, nSize);
+    if (pQServerClient && !pQServerClient->bClosePending) {
+      if (pQServer->bUseNtLocalMode) {
+        nClientSendResult = QServer::QServerNT::SendToClientLocal(pQServer, pQServerClient, pBytes, nSize);
+        return nClientSendResult;
+      }
+
+      nClientSendResult = QServer::QServer98::SendToClientOnline(pQServer, pQServerClient, pBytes, nSize);
       return nClientSendResult;
     }
 
-    nClientSendResult = QServer::QServer98::SendToClientOnline(pQServer, pQServerClient, pBytes, nSize);
-    return nClientSendResult;
+    return 0;
 }
 
 void __fastcall CloseRemoteConnection(D2QServerStrc * pQServer, int nClientId, char * szFile, int nLine) {

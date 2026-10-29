@@ -615,12 +615,13 @@ uint16_t * __fastcall GetMercTypeString(uint32_t nIndex) {
     0xd2f
 }; D2_STATIC_GUARD(aMercTypeLocaleStringIds, "D2Common::Merc::GetMercTypeString::aMercTypeLocaleStringIds");
 
-    if (!((int)nIndex >= 0 && nIndex < 9 && aMercTypeLocaleStringIds[nIndex])) {
-      return nullptr;
+    if ((int)nIndex >= 0 && nIndex < 9 && aMercTypeLocaleStringIds[nIndex]) {
+      uint16_t* pszMercType;
+      pszMercType = D2Lang::StrTable::strtable::GetLocaleString(aMercTypeLocaleStringIds[nIndex]);
+      return pszMercType;
     }
 
-    uint16_t* pszMercType = D2Lang::StrTable::strtable::GetLocaleString(aMercTypeLocaleStringIds[nIndex]);
-    return pszMercType;
+    return nullptr;
 }
 
 // 2022.01.09 - dzik

@@ -47,7 +47,8 @@ uint32_t __fastcall RollRandomNumerUpToArgument(uint32_t nNumber) {
     uint64_t uSeedCalc = (uint64_t)pPlayerUnit_lcl->sSeed.nSeedHigh;
     if (nNumber & nNumber - 1) {
       seedResult = D2_SEED_NEXT(*pSeed);
-      *pSeed = seedResult;
+      pSeed->nSeedHigh = seedResult.nSeedHigh;
+      pSeed->nSeedLow = seedResult.nSeedLow;
       return (uint32_t)(seedResult.nSeedLow % nNumber);
     }
 

@@ -364,7 +364,7 @@ void __fastcall AttachCorrectAiFunctionToMonster(::SGAMEDATA * pGame, D2UnitStrc
 
 BOOL __fastcall MonsterNeedsToOpenDoor(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiParamStrc * pAiParam) {
     D2MonsterAiParameterStruct params;
-    /* Open Door */ if (!pAiParam->pMonStats->opendoors) {
+    /* Open Door */ if (!(*((uint8_t*)pAiParam->pMonStats + 0xc) & (uint8_t)gadwBitMasks[3])) {
       return 0;
     }
 
@@ -545,40 +545,37 @@ BOOL __fastcall CheckIfBossNeedsToTeleport(::SGAMEDATA * pGame, D2UnitStrc * pUn
     int32_t nPosY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
     D2RoomCoordListStrc* pRoomCoordList = D2Common::DUNGEON::Dungeon::DRLGROOM_GetCoordListFromSubtilePos(pRoom, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), nPosY);
     bIsDead = Monsters::Spawn::SPAWN_FindRandomPositionForMonster(pGame, pRoom, pRoomCoordList, nBaseMonId, &nSpawnX, (int*)&pAiGeneral, 0);
-    if (!bIsDead) {
-      return 0;
-    }
-
-    pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nSpawnX, (int32_t)pAiGeneral);
-    if (!pRoom) {
-      return 0;
-    }
-
-    bIsDead = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
     if (bIsDead) {
-      return 0;
-    }
-    if (nMaxHp < 0x1e) {
       eD2States eState;
-      nBaseMonId = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
-      if ((int)nBaseMonId < 0x19) {
-        eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_preventheal);
-        if (eState == STATE_none) {
-          nHealPerLevelScaled = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-          nHealPerLevelScaled *= 0x100;
-          nCurrentHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
-          nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
-          if (nCurrentHp + nHealPerLevelScaled > nMaxHp) {
-            nHealPerLevelScaled = nMaxHp - nCurrentHp;
+      pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nSpawnX, (int32_t)pAiGeneral);
+      if (pRoom) {
+        bIsDead = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
+        if (!bIsDead) {
+          if (nMaxHp < 0x1e) {
+            nBaseMonId = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
+            if ((int)nBaseMonId < 0x19) {
+              eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_preventheal);
+              if (eState == STATE_none) {
+                nHealPerLevelScaled = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
+                nHealPerLevelScaled *= 0x100;
+                nCurrentHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
+                nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
+                if (nCurrentHp + nHealPerLevelScaled > nMaxHp) {
+                  nHealPerLevelScaled = nMaxHp - nCurrentHp;
+                }
+
+                D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_hitpoints, nHealPerLevelScaled, 0);
+              }
+            }
           }
 
-          D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_hitpoints, nHealPerLevelScaled, 0);
+          SERVER_UNIT_CastSkill(pGame, pUnit, 4, SKILL_MonTeleport, nullptr, nSpawnX, (int32_t)pAiGeneral);
+          return 1;
         }
       }
     }
 
-    SERVER_UNIT_CastSkill(pGame, pUnit, 4, SKILL_MonTeleport, nullptr, nSpawnX, (int32_t)pAiGeneral);
-    return 1;
+    return 0;
 }
 
 // PATHFINDING PREREQS:
@@ -649,8 +646,8 @@ BOOL __fastcall DistanceAndCollisionChecks(::SGAMEDATA * pGame, D2UnitStrc * pUn
       return 0;
     }
 
-    sMonsterAiParam.nBestDistance = 0x7fffffff;
     sMonsterAiParam.pLOSFlagOrSecondary = pTarget;
+    sMonsterAiParam.nBestDistance = 0x7fffffff;
     ForEach(pGameSaved, pUnit, &sMonsterAiParam, nullptr, 0xb);
     if (!sMonsterAiParam.pBestUnit) {
       WalkRandomOffset(pGameCopy, pUnit, 4);
@@ -680,7 +677,8 @@ void __fastcall HirelingFarWander(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiP
     }
 
     D2SeedStrc sSeed = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = sSeed;
+    pUnit->sSeed.nSeedHigh = sSeed.nSeedHigh;
+    pUnit->sSeed.nSeedLow = sSeed.nSeedLow;
     if ((sSeed.nSeedLow & 0xff) < 0x4d) {
       WalkRandomOffset(pGame, pUnit, 4);
       return;
@@ -1721,11 +1719,11 @@ D2AiListStrc * __fastcall MONSTERAI_GetAiFunctionFromTable(D2UnitStrc * pUnit, i
     }
 
     short int wAiIndex = pMonStatsTxt->AI;
-    if (!(wAiIndex >= 0 && (uint16_t)wAiIndex < 148)) {
-      return arrGeneralAiList;
+    if (wAiIndex >= 0 && (uint16_t)wAiIndex < 148) {
+      return arrGeneralAiList + wAiIndex;
     }
 
-    return arrGeneralAiList + wAiIndex;
+    return arrGeneralAiList;
 }
 
 // TARGET SELECTION DISPATCH by AI type from MonStatsEx:
@@ -2247,12 +2245,12 @@ uint32_t __stdcall MONSTERAI_IsValidTarget(::SGAMEDATA * pGame, D2UnitStrc * pUn
     }
 
     BOOL bIsDead = UNIT::SUnit::CheckForModeZeroDeath(pUnit2);
-    if (!(!bIsDead && pUnit2->eUnitFlags >> 2 & 1)) {
-      return 0;
+    if (!bIsDead && pUnit2->eUnitFlags >> 2 & 1) {
+      _bCanAttack = UNIT::SUnit::UNITS_CheckIfCanAttackTarget(pGame, pUnit, pUnit2);
+      return _bCanAttack;
     }
 
-    _bCanAttack = UNIT::SUnit::UNITS_CheckIfCanAttackTarget(pGame, pUnit, pUnit2);
-    return _bCanAttack;
+    return 0;
 }
 
 // ForEach callback used during AI target scanning. For each candidate pOther unit: if it is a valid attackable player/monster (alive, TARGETABLE flag set, can-attack check passes), records it in ppResults as a preferred (threat>=2 → ppResults[0]/[1]) or secondary (ppResults[5]/[6]) target when within distance ppResults[3]/[6] respectively, skipping if already blocked by LOS (TestCollisionWithUnit). If the unit fails those checks but is an aligned monster with nAiFlags bit 3 set, checks grid index against ppResults[4] and clears ppResults[2] on match (pack-leader slot invalidation). Always returns 0.
@@ -2807,11 +2805,11 @@ uint32_t __fastcall CollisionWithWall(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
 
 BOOL __fastcall MONSTERAI_IsMonsterAttacking(D2UnitStrc * pUnit) {
     int nAiState = GetAiState(pUnit);
-    if (!(nAiState != 3 && nAiState != 0x13)) {
-      return 1;
+    if (nAiState != 3 && nAiState != 0x13) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 BOOL __fastcall MONSTERAI_HasSkillInSlots(D2UnitStrc * pUnit, int32_t nSkillId) {
@@ -2987,8 +2985,8 @@ static BOOL __stdcall MONSTERAI_ValidateSwitchTarget(D2UnitStrc * * ppUnit, int 
 
     int32_t nPathPoints = 7;
     D2MonsterAiParameterStruct* pAiParamsPtr = &sAiParams;
-    sAiParams.nBestDistance = 0x7fffffff;
     sAiParams.pBestUnit = pPrevTarget;
+    sAiParams.nBestDistance = 0x7fffffff;
     sAiParams.pLOSFlagOrSecondary = pSwitchTarget;
     ForEach(UNIT::SUnit::GetGamePointer(pUnit), pUnit, pAiParamsPtr, (fpMonsterAiForEach)pPrevTarget, nPathPoints);
     if (!sAiParams.pBestUnit) {
@@ -3037,6 +3035,12 @@ static BOOL __stdcall MONSTERAI_FindSwitchAiTarget(D2UnitStrc * pSwitchParam, in
         nTargetGUID = (uint32_t)(uintptr_t)MonsterAI::AI_GetSwitchAiParam2(pUnit);
       eTargetUnitType = UNIT_MONSTER;
       break;
+      case 4:
+        nTargetGUID = (uint32_t)(uintptr_t)MonsterAI::AI_GetSwitchAiParam2(pUnit);
+      eTargetUnitType = UNIT_MISSILE;
+      break;
+      default:
+        goto no_target;
       case 3:
         nAlignment = D2Common::Stats::StatsEx::STATSEX_GetAlignment(pUnit);
       nSavedAlignment = nAlignment;
@@ -3082,12 +3086,6 @@ static BOOL __stdcall MONSTERAI_FindSwitchAiTarget(D2UnitStrc * pSwitchParam, in
       pSwitchTarget = sAiParams.pBestUnit;
       UNIT::SUnit::SetAlignment(pUnit, (uint8_t)nSavedAlignment, 1);
       goto accept_live_target;
-      case 4:
-        nTargetGUID = (uint32_t)(uintptr_t)MonsterAI::AI_GetSwitchAiParam2(pUnit);
-      eTargetUnitType = UNIT_MISSILE;
-      break;
-      default:
-        goto no_target;
     }
 
     pSwitchTarget = UNIT::SUnit::FindUnitFromTable(pGame, eTargetUnitType, nTargetGUID);
@@ -3461,7 +3459,7 @@ D2UnitStrc * __fastcall MONSTERAI_FindNearestInteractNpc(::SGAMEDATA * pGame, D2
     }
 
     D2UnitStrc* pFoundTarget = (D2UnitStrc*)AI::GetDistance(pUnit, pPlayerCandidate);
-    if (!((int)pFoundTarget <= 0xf && (!pUnit || (nClassId = pUnit->nClassId , nClassId < 0) || nClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nClassId) || !sgptDataTable->pTxtMonStats[nClassId].interact || (nDistance = Quests::QUESTS::QUEST_NpcWantsInteract(pGame, pPlayerCandidate, (int32_t)pUnit) , nDistance && (int)pFoundTarget < (int)pSearchData[1])))) {
+    if (!((int)pFoundTarget <= 0xf && (!pUnit || (nClassId = pUnit->nClassId , nClassId < 0) || nClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nClassId) || !((uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nClassId] + 0xd) & gadwBitMasks[1]) || (nDistance = Quests::QUESTS::QUEST_NpcWantsInteract(pGame, pPlayerCandidate, (int32_t)pUnit) , nDistance && (int)pFoundTarget < (int)pSearchData[1])))) {
       return nullptr;
     }
 
@@ -3512,20 +3510,22 @@ int __fastcall MONSTERAI_CommandSkillAtPosition(::SGAMEDATA * pGame, D2UnitStrc 
 }
 
 int32_t __fastcall MONSTERAI_CommandSkillSequence(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, D2UnitStrc * pTarget, int32_t nX, int32_t nY) {
+    int32_t nResult;
     D2MonsterKillStrc local_24;
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return 0;
+    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
+      D2SkillStrc* pSkill;
+      GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, eD2MonsterAnimMode_ns::Sequence, &local_24);
+      pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, eSkill, -1);
+      D2Common::Units::SetCurrentSkill(pUnit, pSkill);
+      D2Common::PATH::DynamicPath::SetStepNum(pUnit->pPath.pDynamicPath, 1);
+      local_24.pAttacker = pTarget;
+      local_24.nTargetX = nX;
+      local_24.nTargetY = nY;
+      nResult = GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &local_24, 0);
+      return nResult;
     }
 
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, eD2MonsterAnimMode_ns::Sequence, &local_24);
-    D2SkillStrc* pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, eSkill, -1);
-    D2Common::Units::SetCurrentSkill(pUnit, pSkill);
-    D2Common::PATH::DynamicPath::SetStepNum(pUnit->pPath.pDynamicPath, 1);
-    local_24.pAttacker = pTarget;
-    local_24.nTargetX = nX;
-    local_24.nTargetY = nY;
-    int32_t nResult = GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &local_24, 0);
-    return nResult;
+    return 0;
 }
 
 void __fastcall PlanNextAiMove(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nFrames) {
@@ -3607,7 +3607,8 @@ int32_t __fastcall WalkRandomOffset(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uin
 
     D2SeedStrc* pSeed = &pUnit->sSeed;
     D2SeedStrc sSeedNext = D2_SEED_NEXT(pUnit->sSeed);
-    *pSeed = sSeedNext;
+    pSeed->nSeedHigh = sSeedNext.nSeedHigh;
+    pSeed->nSeedLow = sSeedNext.nSeedLow;
     if (sSeedNext.nSeedLow & 1) {
       nRadius &= 0xff;
       nWalkOffsetY = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nRadius);
@@ -3617,7 +3618,8 @@ int32_t __fastcall WalkRandomOffset(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uin
     }
 
     sSeedNext = D2_SEED_NEXT(*pSeed);
-    *pSeed = sSeedNext;
+    pSeed->nSeedHigh = sSeedNext.nSeedHigh;
+    pSeed->nSeedLow = sSeedNext.nSeedLow;
     if (sSeedNext.nSeedLow & 1) {
       nRadius = -nRadius;
     }
@@ -4214,67 +4216,72 @@ void __fastcall MONSTERAI_CommandRunToUnitMinStep(::SGAMEDATA * pGame, D2UnitStr
 
 // Commands a monster to walk toward a target unit, offset by nOffset tiles in the direction of approach. Resolves world positions for both pUnit and pTarget (handling static vs dynamic paths), computes the unit-step direction vector (nDeltaX, nDeltaY each -1/0/1), then calls StartMonsterMove in Walk mode to a destination of (targetX + nOffset*dX, targetY + nOffset*dY). If nOffset > 5, first applies combat/mon-stats via ApplyCombatAndMonStats. Returns the result of StartMonsterMove (non-zero on success).
 int32_t __fastcall WalkTowardsUnitOffset(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, uint8_t nOffset, int32_t bForce) {
-    int nTargetPosY;
+    int32_t nUnitPosX;
+    int nDeltaY;
+    int nDeltaX;
     int nUnitPosY;
+    eD2UnitType eVar1;
+    eD2UnitType eUnitType2;
     int nTarget;
     D2UnitStrc* pTargetUnit = pTarget;
     int nTargetPosX = 0;
-    if (!(pUnit && pTarget)) {
-      return 0;
+    if (pUnit && pTarget) {
+      int nTargetPosY;
+      eVar1 = pUnit->eUnitType;
+      if (eVar1 == UNIT_OBJECT || (int)eVar1 > 3 && (int)eVar1 <= 5) {
+        nTarget = pUnit->pPath.pStaticPath->nPosX;
+      } else if (pUnit->pPath.pDynamicPath) {
+        nTarget = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nTarget = 0x0;
+      }
+
+      eUnitType2 = pUnit->eUnitType;
+      if (eUnitType2 == UNIT_OBJECT || (int)eUnitType2 > 3 && (int)eUnitType2 <= 5) {
+        nUnitPosY = pUnit->pPath.pStaticPath->nPosY;
+      } else if (pUnit->pPath.pDynamicPath) {
+        nUnitPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nUnitPosY = 0;
+      }
+
+      eUnitType2 = pTargetUnit->eUnitType;
+      if (eUnitType2 == UNIT_OBJECT || (int)eUnitType2 > 3 && (int)eUnitType2 <= 5) {
+        nTargetPosX = pTargetUnit->pPath.pStaticPath->nPosX;
+      } else if (pTargetUnit->pPath.pDynamicPath) {
+        nTargetPosX = D2Common::PATH::DynamicPath::GetXPos(pTargetUnit->pPath.pDynamicPath);
+      }
+
+      eUnitType2 = pTargetUnit->eUnitType;
+      if (eUnitType2 == UNIT_OBJECT || (int)eUnitType2 > 3 && (int)eUnitType2 <= 5) {
+        nTargetPosY = pTargetUnit->pPath.pStaticPath->nPosY;
+      } else if (pTargetUnit->pPath.pDynamicPath) {
+        nTargetPosY = D2Common::PATH::DynamicPath::GetYPos(pTargetUnit->pPath.pDynamicPath);
+      } else {
+        nTargetPosY = 0;
+      }
+
+      nDeltaX = 0;
+      nDeltaY = 0;
+      if (nTargetPosX > nTarget) {
+        nDeltaX = -1;
+      } else if (nTargetPosX < nTarget) {
+        nDeltaX = 1;
+      }
+      if (nTargetPosY > nUnitPosY) {
+        nDeltaY = -1;
+      } else if (nTargetPosY < nUnitPosY) {
+        nDeltaY = 1;
+      }
+      if (nOffset > 5) {
+        ApplyCombatAndMonStats(pUnit, 0, 0, nOffset);
+      }
+
+      nUnitPosX = StartMonsterMove(pGame, pUnit, nullptr, Walk, (int32_t)(((D2UnitStrc*)nTarget)->unk0x19 + (uint32_t)nOffset * nDeltaX - 0x19), (uint32_t)nOffset * nDeltaY + nUnitPosY, '\x01', bForce ? 4 : 0);
+      return nUnitPosX;
     }
 
-    eD2UnitType eVar1 = pUnit->eUnitType;
-    if (eVar1 == UNIT_OBJECT || (int)eVar1 > 3 && (int)eVar1 <= 5) {
-      nTarget = pUnit->pPath.pStaticPath->nPosX;
-    } else if (pUnit->pPath.pDynamicPath) {
-      nTarget = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
-    } else {
-      nTarget = 0x0;
-    }
-
-    eD2UnitType eUnitType2 = pUnit->eUnitType;
-    if (eUnitType2 == UNIT_OBJECT || (int)eUnitType2 > 3 && (int)eUnitType2 <= 5) {
-      nUnitPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (pUnit->pPath.pDynamicPath) {
-      nUnitPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-    } else {
-      nUnitPosY = 0;
-    }
-
-    eUnitType2 = pTargetUnit->eUnitType;
-    if (eUnitType2 == UNIT_OBJECT || (int)eUnitType2 > 3 && (int)eUnitType2 <= 5) {
-      nTargetPosX = pTargetUnit->pPath.pStaticPath->nPosX;
-    } else if (pTargetUnit->pPath.pDynamicPath) {
-      nTargetPosX = D2Common::PATH::DynamicPath::GetXPos(pTargetUnit->pPath.pDynamicPath);
-    }
-
-    eUnitType2 = pTargetUnit->eUnitType;
-    if (eUnitType2 == UNIT_OBJECT || (int)eUnitType2 > 3 && (int)eUnitType2 <= 5) {
-      nTargetPosY = pTargetUnit->pPath.pStaticPath->nPosY;
-    } else if (pTargetUnit->pPath.pDynamicPath) {
-      nTargetPosY = D2Common::PATH::DynamicPath::GetYPos(pTargetUnit->pPath.pDynamicPath);
-    } else {
-      nTargetPosY = 0;
-    }
-
-    int nDeltaX = 0;
-    int nDeltaY = 0;
-    if (nTargetPosX > nTarget) {
-      nDeltaX = -1;
-    } else if (nTargetPosX < nTarget) {
-      nDeltaX = 1;
-    }
-    if (nTargetPosY > nUnitPosY) {
-      nDeltaY = -1;
-    } else if (nTargetPosY < nUnitPosY) {
-      nDeltaY = 1;
-    }
-    if (nOffset > 5) {
-      ApplyCombatAndMonStats(pUnit, 0, 0, nOffset);
-    }
-
-    int32_t nUnitPosX = StartMonsterMove(pGame, pUnit, nullptr, Walk, (int32_t)(((D2UnitStrc*)nTarget)->unk0x19 + (uint32_t)nOffset * nDeltaX - 0x19), (uint32_t)nOffset * nDeltaY + nUnitPosY, '\x01', bForce ? 4 : 0);
-    return nUnitPosX;
+    return 0;
 }
 
 // Tail-calls StartMonsterMove (already fixed to return int32_t) as its final statement, dropping the result.
@@ -4438,7 +4445,8 @@ int32_t __fastcall MONSTERAI_CommandWalkRandomOffset(::SGAMEDATA * pGame, D2Unit
 
     D2SeedStrc* pSeed = &pUnit->sSeed;
     D2SeedStrc sSeedResult = D2_SEED_NEXT(pUnit->sSeed);
-    *pSeed = sSeedResult;
+    pSeed->nSeedHigh = sSeedResult.nSeedHigh;
+    pSeed->nSeedLow = sSeedResult.nSeedLow;
     if (sSeedResult.nSeedLow & 1) {
       nRadius &= 0xff;
       nRandX = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nRadius);
@@ -4451,7 +4459,8 @@ int32_t __fastcall MONSTERAI_CommandWalkRandomOffset(::SGAMEDATA * pGame, D2Unit
 
     sSeedResult = D2_SEED_NEXT(*pSeed);
     uint32_t nRandY = sSeedResult.nSeedHigh;
-    *pSeed = sSeedResult;
+    pSeed->nSeedHigh = sSeedResult.nSeedHigh;
+    pSeed->nSeedLow = sSeedResult.nSeedLow;
     if (sSeedResult.nSeedLow & 1) {
       nRadius = -nRadius;
     }
@@ -4512,7 +4521,8 @@ int32_t __fastcall WalkRandomOffsetAroundUnit(::SGAMEDATA * pGame, D2UnitStrc * 
 
     pSeed = &pUnit->sSeed;
     sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
-    *pSeed = sNewSeed;
+    pSeed->nSeedHigh = sNewSeed.nSeedHigh;
+    pSeed->nSeedLow = sNewSeed.nSeedLow;
     if (sNewSeed.nSeedLow & 1) {
       nRandXOffset = nRadius & 0xff;
       nRadius = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nRandXOffset);
@@ -4523,7 +4533,8 @@ int32_t __fastcall WalkRandomOffsetAroundUnit(::SGAMEDATA * pGame, D2UnitStrc * 
 
     pUnit_00 = pUnitSaved;
     sNewSeed = D2_SEED_NEXT(*pSeed);
-    *pSeed = sNewSeed;
+    pSeed->nSeedHigh = sNewSeed.nSeedHigh;
+    pSeed->nSeedLow = sNewSeed.nSeedLow;
     if (sNewSeed.nSeedLow & 1) {
       nRandXOffset = -nRandXOffset;
     }
@@ -4577,11 +4588,13 @@ void __fastcall MONSTERAI_CastSkillAtRandomOffset(D2UnitStrc * pUnit, int32_t nR
       nRandom = pUnit->sSeed.nSeedLow;
       if (nDiameter & nDiameter - 1) {
         sSeedNext = D2_SEED_NEXT(pUnit->sSeed);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nRandom = (uint32_t)(sSeedNext.nSeedLow % nDiameter);
       } else {
         sSeedNext = D2_SEED_NEXT(pUnit->sSeed);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nRandom = nDiameter - 1 & sSeedNext.nSeedLow;
       }
     }
@@ -4603,11 +4616,13 @@ void __fastcall MONSTERAI_CastSkillAtRandomOffset(D2UnitStrc * pUnit, int32_t nR
       nRandom = pUnit->sSeed.nSeedHigh;
       if (nDiameter & nDiameter - 1) {
         sSeedNext = (D2SeedStrc)(nSeedProduct + (uint64_t)nRandom);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nDiameter = (uint32_t)(sSeedNext.nSeedLow % nDiameter);
       } else {
         sSeedNext = (D2SeedStrc)(nSeedProduct + (uint64_t)nRandom);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nDiameter = nDiameter - 1 & sSeedNext.nSeedLow;
       }
     }
@@ -4697,19 +4712,21 @@ void __fastcall MONSTERAI_CalculateCounterAttackDamage(::SGAMEDATA * pGame, D2Un
 
     memset(&sDamage, 0, 0x70);
     uint32_t uVar1 = sDamage.dwPhysDamage;
-    if (nDmgType == 1) {
-      sDamage.dwHitClass = 0x20;
-      sDamage.dwFireDmg = nTrapDamageRoll;
-    } else if (nDmgType != 2) {
-      uVar1 = nTrapDamageRoll;
-      if (nDmgType == 3) {
-        sDamage.dwHitClass = 0x30;
-        uVar1 = sDamage.dwPhysDamage;
-        sDamage.dwColdDmg = nTrapDamageRoll;
+    if (nDmgType != 1) {
+      if (nDmgType != 2) {
+        uVar1 = nTrapDamageRoll;
+        if (nDmgType == 3) {
+          sDamage.dwHitClass = 0x30;
+          uVar1 = sDamage.dwPhysDamage;
+          sDamage.dwColdDmg = nTrapDamageRoll;
+        }
+      } else {
+        sDamage.dwLtngDamage = nTrapDamageRoll;
+        sDamage.dwHitClass = 0x40;
       }
     } else {
-      sDamage.dwHitClass = 0x40;
-      sDamage.dwLtngDamage = nTrapDamageRoll;
+      sDamage.dwFireDmg = nTrapDamageRoll;
+      sDamage.dwHitClass = 0x20;
     }
 
     sDamage.dwPhysDamage = uVar1;
@@ -4806,10 +4823,10 @@ void __fastcall AI_Mephisto_SpawnDeathMissile(::SGAMEDATA * pGame, D2UnitStrc * 
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nFlags = 0x8000;
     sSkillArg.nMissileTxtNo = MISSILE_Mephistodeathcontrol;
-    sSkillArg.nSkillLevel = 1;
-    sSkillArg.nTotalFrames = 100;
     sSkillArg.pOwner = pUnit;
     sSkillArg.pMissile = pUnit;
+    sSkillArg.nSkillLevel = 1;
+    sSkillArg.nTotalFrames = 100;
     MISSILES::Missiles::CreatingMissile(pGame, &sSkillArg);
 }
 
@@ -6303,7 +6320,8 @@ void __fastcall HirelingRandomMoveCheck(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     uint32_t uVar1 = pUnit->sSeed.nSeedLow;
     if (pAiParam->bEngagedInCombat) {
       DVar2 = D2_SEED_NEXT(pUnit->sSeed);
-      pUnit->sSeed = DVar2;
+      pUnit->sSeed.nSeedHigh = DVar2.nSeedHigh;
+      pUnit->sSeed.nSeedLow = DVar2.nSeedLow;
       if ((int)(DVar2.nSeedLow % 100) < 0x5f) {
         pUnit->sSeed = D2_SEED_NEXT_VAL(DVar2);
         AI_ChangeModeAndTargetUnit(pGame, pUnit, 5, pTarget);
@@ -7968,7 +7986,7 @@ void __fastcall AI_Hireling_SelectAndCastSkill(::SGAMEDATA * pGame, D2UnitStrc *
         } else {
           pSkillTxt = 0;
         }
-        if (pSkillTxt->aura) {
+        if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[5]) {
           SKILLS::SkillsServer::Server_SelectSkill(pUnit, 0, eSkillId, -1);
           PlanNextAiMove(pGameLocal, pUnit, 10);
           return;
@@ -8734,17 +8752,19 @@ uint8_t __fastcall AI_GetRandomMonsterClassForLevel(::SGAMEDATA * pGame, D2UnitS
       uVar1 = pUnit->sSeed.nSeedLow;
       if (nRandMonIdx & nRandMonIdx - 1) {
         DVar2 = D2_SEED_NEXT(pUnit->sSeed);
-        pUnit->sSeed = DVar2;
+        pUnit->sSeed.nSeedHigh = DVar2.nSeedHigh;
+        pUnit->sSeed.nSeedLow = DVar2.nSeedLow;
         nRandMonIdx = DVar2.nSeedLow % nRandMonIdx;
       } else {
         DVar2 = D2_SEED_NEXT(pUnit->sSeed);
-        pUnit->sSeed = DVar2;
+        pUnit->sSeed.nSeedHigh = DVar2.nSeedHigh;
+        pUnit->sSeed.nSeedLow = DVar2.nSeedLow;
         nRandMonIdx = nRandMonIdx - 1 & DVar2.nSeedLow;
       }
     }
 
     int nClassId = (int)(short int)pMonsterRegion->pMonData[nRandMonIdx].nClassId;
-    if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && sgptDataTable->pTxtMonStats[nClassId].genericSpawn) {
+    if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nClassId] + 0xe) & gadwBitMasks[5]) {
       pAiGeneral->nFunctionId = nClassId;
       return '\x01';
     }
@@ -8754,7 +8774,7 @@ uint8_t __fastcall AI_GetRandomMonsterClassForLevel(::SGAMEDATA * pGame, D2UnitS
       pMonData = pMonsterRegion->pMonData;
       do {
         nFallbackClassId = (int)(short int)pMonData->nClassId;
-        if (nFallbackClassId >= 0 && nFallbackClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nFallbackClassId && sgptDataTable->pTxtMonStats[nFallbackClassId].genericSpawn) {
+        if (nFallbackClassId >= 0 && nFallbackClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nFallbackClassId && (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nFallbackClassId] + 0xe) & gadwBitMasks[5]) {
           pAiGeneral->nFunctionId = nFallbackClassId;
           return '\x01';
         }
@@ -9013,16 +9033,17 @@ void __fastcall AITHINK_Fn1_BloodRaven(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 // Seeds a monster's home position for the return-to-home AI. Returns a single byte: both exit paths write only AL (MOV AL,1 at 005e6843, XOR AL,AL at 005e684b), so the upper 24 bits of EAX are whatever the preceding call left there.
 bool __fastcall AI_Monster_InitializeHomePosition(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiParamStrc * pAiParam) {
     D2MonsterAiCmdStrc* pHomeCmd = Ai::AiGeneral::AI_CreateCmdIfNotExists(pGame, pUnit, 10, 0);
-    if (!(pHomeCmd && !pHomeCmd->nCmdArg[1] && !pHomeCmd->nCmdArg[2])) {
-      return false;
+    if (pHomeCmd && !pHomeCmd->nCmdArg[1] && !pHomeCmd->nCmdArg[2]) {
+      int32_t nPos;
+      nPos = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+      pHomeCmd->nCmdArg[1] = nPos;
+      nPos = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+      pHomeCmd->nCmdArg[2] = nPos;
+      PlanNextAiMove(pGame, pUnit, 0x14);
+      return true;
     }
 
-    int32_t nPos = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-    pHomeCmd->nCmdArg[1] = nPos;
-    nPos = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-    pHomeCmd->nCmdArg[2] = nPos;
-    PlanNextAiMove(pGame, pUnit, 0x14);
-    return true;
+    return false;
 }
 
 // Decides whether a monster should abandon its current target and walk back to its home position. Returns a single byte: every exit path writes only AL, so the upper 24 bits of EAX are whatever the preceding call left there.
@@ -9319,26 +9340,27 @@ bool __fastcall AI_Monster_ExecuteAiCommands(::SGAMEDATA * pGame, D2UnitStrc * p
 }
 
 bool __fastcall AI_Monster_WalkToStoredPosition(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwParam, int32_t nParam) {
+    D2MonsterAiCmdStrc* pWalkCmd;
     if (pUnit) {
-      if (!(nParam && *(int*)(nParam + 4) && *(int*)(nParam + 8))) {
-        return false;
-      }
+      if (nParam && *(int*)(nParam + 4) && *(int*)(nParam + 8)) {
+        int32_t nDistToStored;
+        nDistToStored = MONSTERAI_GetDistanceToCoords(pUnit, *(int*)(nParam + 4), *(int*)(nParam + 8));
+        if ((uint32_t)nDistToStored > 0) {
+          ApplyCombatAndMonStats(pUnit, 7, 0, '\0');
+          MONSTERAI_CommandWalkToCoordsImmediate(pGame, pUnit, *(int32_t*)(nParam + 4), *(int32_t*)(nParam + 8));
+          pWalkCmd = Ai::AiGeneral::AI_CreateCmdIfNotExists(pGame, pUnit, 4, 0);
+          if (!pWalkCmd) {
+            return true;
+          }
 
-      int32_t nDistToStored = MONSTERAI_GetDistanceToCoords(pUnit, *(int*)(nParam + 4), *(int*)(nParam + 8));
-      if ((uint32_t)nDistToStored > 0) {
-        D2MonsterAiCmdStrc* pWalkCmd;
-        ApplyCombatAndMonStats(pUnit, 7, 0, '\0');
-        MONSTERAI_CommandWalkToCoordsImmediate(pGame, pUnit, *(int32_t*)(nParam + 4), *(int32_t*)(nParam + 8));
-        pWalkCmd = Ai::AiGeneral::AI_CreateCmdIfNotExists(pGame, pUnit, 4, 0);
-        if (!pWalkCmd) {
+          pWalkCmd->nCmdArg[1] = *(int*)(nParam + 4);
+          pWalkCmd->nCmdArg[2] = *(int*)(nParam + 8);
+          pWalkCmd->nCmdArg[3] = 0xc;
+          pWalkCmd->nCmdArg[4] = 10;
           return true;
         }
 
-        pWalkCmd->nCmdArg[1] = *(int*)(nParam + 4);
-        pWalkCmd->nCmdArg[2] = *(int*)(nParam + 8);
-        pWalkCmd->nCmdArg[3] = 0xc;
-        pWalkCmd->nCmdArg[4] = 10;
-        return true;
+        return false;
       }
 
       return false;
@@ -9759,34 +9781,38 @@ void __fastcall AITHINK_Fn1_JarJar(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ai
 }
 
 uint32_t __fastcall AI_QuestNpc_InitializeQuestPhase(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiParamStrc * pAiParam) {
+    fpQuestNpcPhaseFn pfnStoreCoordsFunc;
+    BOOL bCoordsStored;
+    fpGameMechanicQuest pfnInitFunc;
     D2MonsterAiCmdStrc* pPhaseCmd = Ai::AiGeneral::AI_CreateCmdIfNotExists(pGame, pUnit, 3, 0);
-    if (!(pPhaseCmd && !pPhaseCmd->nCmdArg[1] && !pPhaseCmd->nCmdArg[2])) {
-      return 0;
-    }
-
-    int32_t nPos = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-    pPhaseCmd->nCmdArg[1] = nPos + 3;
-    nPos = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-    pPhaseCmd->nCmdArg[2] = nPos + 3;
-    fpQuestNpcPhaseFn pfnStoreCoordsFunc = Quests::QUESTS::A1Q4::Q04_StoreCairnStonesPosition;
-    fpGameMechanicQuest pfnInitFunc = Quests::QUESTS::A1Q4::Q04_InitializeTristramObjects;
-    if (pUnit && pUnit->nClassId == 0x20f) {
-      pfnInitFunc = Quests::QUESTS::A5Q3::Q33_StartAnyaRescuePhase;
-      pfnStoreCoordsFunc = Quests::QUESTS::A5Q3::Q33_StoreAnyaPosition;
-    }
-
-    BOOL bCoordsStored = (*pfnStoreCoordsFunc)(pGame, pUnit);
-    if (!bCoordsStored) {
-      (*pfnInitFunc)(pGame, pUnit);
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, 0, 0);
+    if (pPhaseCmd && !pPhaseCmd->nCmdArg[1] && !pPhaseCmd->nCmdArg[2]) {
+      int32_t nPos;
+      nPos = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+      pPhaseCmd->nCmdArg[1] = nPos + 3;
       nPos = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-      MONSTERAI_CommandSkillAtPosition(pGame, pUnit, 0xc, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), nPos);
+      pPhaseCmd->nCmdArg[2] = nPos + 3;
+      pfnStoreCoordsFunc = Quests::QUESTS::A1Q4::Q04_StoreCairnStonesPosition;
+      pfnInitFunc = Quests::QUESTS::A1Q4::Q04_InitializeTristramObjects;
+      if (pUnit && pUnit->nClassId == 0x20f) {
+        pfnInitFunc = Quests::QUESTS::A5Q3::Q33_StartAnyaRescuePhase;
+        pfnStoreCoordsFunc = Quests::QUESTS::A5Q3::Q33_StoreAnyaPosition;
+      }
+
+      bCoordsStored = (*pfnStoreCoordsFunc)(pGame, pUnit);
+      if (!bCoordsStored) {
+        (*pfnInitFunc)(pGame, pUnit);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, 0, 0);
+        nPos = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+        MONSTERAI_CommandSkillAtPosition(pGame, pUnit, 0xc, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), nPos);
+      }
+
+      pPhaseCmd->nCmdArg[3] = 1;
+      pPhaseCmd->nCmdArg[4] = 0;
+      PlanNextAiMove(pGame, pUnit, 1);
+      return 1;
     }
 
-    pPhaseCmd->nCmdArg[3] = 1;
-    pPhaseCmd->nCmdArg[4] = 0;
-    PlanNextAiMove(pGame, pUnit, 1);
-    return 1;
+    return 0;
 }
 
 // Server-side AI tick for quest NPCs that travel/act outside town (Cain rescue in A1Q4, frozen Anya rescue in A5Q3; branches on classId 0x20f=Anya). Runs the quest-phase state machine via AI_QuestNpc_InitializeQuestPhase, then drives the NPC: handles player interaction, walks toward quest target coords (cmd 3 args), invokes per-quest spawn/init callbacks (Q04_SpawnCainCage/Q33_SpawnPortalNearAnya etc.), and on arrival casts skill 0xc and zeroes the NPC's HP. Schedules the next AI move (delays 0x14/0x28) and returns.
@@ -10141,7 +10167,7 @@ void __fastcall AITHINK_Fn1_SpecialDimVision(::SGAMEDATA * pGame, D2UnitStrc * p
       uint32_t nMonFlag4;
       if (pUnit) {
         nClassId = pUnit->nClassId;
-        if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && sgptDataTable->pTxtMonStats[nClassId].interact) {
+        if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nClassId] + 0xd) & gadwBitMasks[1]) {
           goto wander_or_idle;
         }
       } else {
@@ -10362,8 +10388,8 @@ void __fastcall DiabloAi_ResetInfernoAndReattach(::SGAMEDATA * pGame, D2UnitStrc
     if (!pInfernoCommand && nHomePosX && nHomePosY) {
       D2AiCmdArgumentsStrc cmdArgs;
       cmdArgs.nCmdId = 10;
-      cmdArgs.nCmdArg2 = nHomePosY;
       cmdArgs.nCmdArg1 = nHomePosX;
+      cmdArgs.nCmdArg2 = nHomePosY;
       Ai::AiGeneral::CreateAiCmdAndFill(pGame, pUnit, &cmdArgs);
     }
 
@@ -10481,7 +10507,6 @@ int32_t __fastcall AI_Diablo_DecideAction(D2AiGeneralStrc * pDiabloAiCtx, D2Unit
     eD2Skills eSkillId;
     int nSkillLevel;
     eD2States eUnitState;
-    int i;
     int32_t* piVar5;
     int32_t* pWeightDst;
     bool bVar16;
@@ -10638,12 +10663,7 @@ int32_t __fastcall AI_Diablo_DecideAction(D2AiGeneralStrc * pDiabloAiCtx, D2Unit
       memset(aActionWeightTemplate + 9, 0, 8 * sizeof(aActionWeightTemplate[0]));
       piVar5 = aActionWeightTemplate;
       pWeightDst = aActionWeights;
-      for (i = 0x11; i; i--) {
-        *pWeightDst = *piVar5;
-        piVar5++;
-        pWeightDst++;
-      }
-
+      memcpy(pWeightDst, piVar5, 0x44);
       nWeightedDist = D2Common::Units::GetCurrentLifePercentage(pTargetEnemyUnit);
       if (nWeightedDist < 0x14) {
         aActionWeights[2] = 0x32;
@@ -10685,12 +10705,7 @@ int32_t __fastcall AI_Diablo_DecideAction(D2AiGeneralStrc * pDiabloAiCtx, D2Unit
         memset(aActionWeightTemplate + 13, 0, 4 * sizeof(aActionWeightTemplate[0]));
         piVar5 = aActionWeightTemplate;
         pWeightDst = aActionWeights;
-        for (i = 0x11; i; i--) {
-          *pWeightDst = *piVar5;
-          piVar5++;
-          pWeightDst++;
-        }
-
+        memcpy(pWeightDst, piVar5, 0x44);
         if (nChaosArenaRadius < 2) {
           aActionWeights[8] += -5;
           aActionWeights[6] = 0;
@@ -10736,12 +10751,7 @@ int32_t __fastcall AI_Diablo_DecideAction(D2AiGeneralStrc * pDiabloAiCtx, D2Unit
         memset(aActionWeightTemplate + 13, 0, 4 * sizeof(aActionWeightTemplate[0]));
         piVar5 = aActionWeightTemplate;
         pWeightDst = aActionWeights;
-        for (i = 0x11; i; i--) {
-          *pWeightDst = *piVar5;
-          piVar5++;
-          pWeightDst++;
-        }
-
+        memcpy(pWeightDst, piVar5, 0x44);
         nTotalWeightSum = AI::GetDistance(pDiabloUnit, pTargetEnemyUnit);
         if (nTotalWeightSum > 0x19) {
           aActionWeights[8] += -5;
@@ -10816,7 +10826,7 @@ int32_t __fastcall AI_Diablo_DecideAction(D2AiGeneralStrc * pDiabloAiCtx, D2Unit
 
     int* pWeightSrc = aActionWeights;
     nTotalWeightSum = 0;
-    i = 0x11;
+    int i = 0x11;
     do {
       nTotalWeightSum += *pWeightSrc;
       pWeightSrc++;
@@ -10828,11 +10838,13 @@ int32_t __fastcall AI_Diablo_DecideAction(D2AiGeneralStrc * pDiabloAiCtx, D2Unit
       nRandResult = pDiabloUnit->sSeed.nSeedLow;
       if (nTotalWeightSum & nTotalWeightSum - 1) {
         sNextSeed = D2_SEED_NEXT(pDiabloUnit->sSeed);
-        pDiabloUnit->sSeed = sNextSeed;
+        pDiabloUnit->sSeed.nSeedHigh = sNextSeed.nSeedHigh;
+        pDiabloUnit->sSeed.nSeedLow = sNextSeed.nSeedLow;
         nRandResult = sNextSeed.nSeedLow % nTotalWeightSum;
       } else {
         sNextSeed = D2_SEED_NEXT(pDiabloUnit->sSeed);
-        pDiabloUnit->sSeed = sNextSeed;
+        pDiabloUnit->sSeed.nSeedHigh = sNextSeed.nSeedHigh;
+        pDiabloUnit->sSeed.nSeedLow = sNextSeed.nSeedLow;
         nRandResult = nTotalWeightSum - 1 & sNextSeed.nSeedLow;
       }
     }
@@ -11146,6 +11158,13 @@ void __fastcall AITHINK_Fn1_Diablo(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ai
           return;
         }
       break;
+      case 0xd:
+        if (-1 < pMonStat->aSkill[5]) {
+          SERVER_UNIT_CastSkill(pGame, pUnit, pMonStat->aSkMode[5], (int)pMonStat->aSkill[5], pTarget, 0, 0);
+          pAiGeneral->dwArg0 = 0;
+          return;
+        }
+      break;
       case 9:
         nSkillId = pMonStat->aSkill[6];
       if (nSkillId >= 0) {
@@ -11170,13 +11189,6 @@ void __fastcall AITHINK_Fn1_Diablo(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ai
         SetCombatStateAndApproachTarget(pGame, pUnit, pTarget, 4, 0);
       pAiGeneral->dwArg0 = 0;
       return;
-      case 0xd:
-        if (-1 < pMonStat->aSkill[5]) {
-          SERVER_UNIT_CastSkill(pGame, pUnit, pMonStat->aSkMode[5], (int)pMonStat->aSkill[5], pTarget, 0, 0);
-          pAiGeneral->dwArg0 = 0;
-          return;
-        }
-      break;
       case 0xe:
         ApplyCombatAndMonStats(pUnit, 0, 0x32, 'd');
       pHomeCmdCopy = pMonAi;
@@ -11419,12 +11431,7 @@ int32_t __fastcall AI_BAAL_ChooseCombatAction(int nAiContext, D2UnitStrc * pUnit
       aActionWeightTemplate[8] = 0xf;
       piVar2 = aActionWeightTemplate;
       pWeightDst = aActionWeights;
-      for (i = 0x11; i; i--) {
-        *pWeightDst = *piVar2;
-        piVar2++;
-        pWeightDst++;
-      }
-
+      memcpy(pWeightDst, piVar2, 0x44);
       nPosYOrDist = D2Common::Units::GetCurrentLifePercentage(pTargetUnit);
       if (nPosYOrDist < 0x14) {
         aActionWeights[2] = 0x32;
@@ -11472,12 +11479,7 @@ int32_t __fastcall AI_BAAL_ChooseCombatAction(int nAiContext, D2UnitStrc * pUnit
         aActionWeightTemplate[0x10] = i;
         piVar2 = aActionWeightTemplate;
         pWeightDst = aActionWeights;
-        for (i = 0x11; i; i--) {
-          *pWeightDst = *piVar2;
-          piVar2++;
-          pWeightDst++;
-        }
-
+        memcpy(pWeightDst, piVar2, 0x44);
         if (nDifficultyContext < 2) {
           aActionWeights[8] += -5;
           aActionWeights[1] = 0x19;
@@ -11530,12 +11532,7 @@ int32_t __fastcall AI_BAAL_ChooseCombatAction(int nAiContext, D2UnitStrc * pUnit
         aActionWeightTemplate[10] = 10;
         piVar2 = aActionWeightTemplate;
         pWeightDst = aActionWeights;
-        for (i = 0x11; i; i--) {
-          *pWeightDst = *piVar2;
-          piVar2++;
-          pWeightDst++;
-        }
-
+        memcpy(pWeightDst, piVar2, 0x44);
         nDistToArenaCenterOrTotal = AI::GetDistance(pUnit, pTargetUnit);
         if (nDistToArenaCenterOrTotal > 0x19) {
           aActionWeights[8] += -5;
@@ -11620,11 +11617,13 @@ int32_t __fastcall AI_BAAL_ChooseCombatAction(int nAiContext, D2UnitStrc * pUnit
       nRandPick = pUnit->sSeed.nSeedLow;
       if (nDistToArenaCenterOrTotal & nDistToArenaCenterOrTotal - 1) {
         sNewSeed = (D2SeedStrc)((uint64_t)nRandPick * 0x6ac690c5 + nSeedHighWord);
-        pUnit->sSeed = sNewSeed;
+        pUnit->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sNewSeed.nSeedLow;
         nRandPick = (uint32_t)(sNewSeed.nSeedLow % nDistToArenaCenterOrTotal);
       } else {
         sNewSeed = (D2SeedStrc)((uint64_t)nRandPick * 0x6ac690c5 + nSeedHighWord);
-        pUnit->sSeed = sNewSeed;
+        pUnit->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sNewSeed.nSeedLow;
         nRandPick = nDistToArenaCenterOrTotal - 1 & sNewSeed.nSeedLow;
       }
     }
@@ -12078,11 +12077,13 @@ void __fastcall AITHINK_Fn1_InvisoPet(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
       nRandOffsetX = pUnit->sSeed.nSeedLow;
       if (nRandRange & nRandRange - 1) {
         sSeedNext = D2_SEED_NEXT(pUnit->sSeed);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nRandOffsetX = (uint32_t)(sSeedNext.nSeedLow % nRandRange);
       } else {
         sSeedNext = D2_SEED_NEXT(pUnit->sSeed);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nRandOffsetX = nRandRange - 1 & sSeedNext.nSeedLow;
       }
     }
@@ -12103,11 +12104,13 @@ void __fastcall AITHINK_Fn1_InvisoPet(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
       nRandOffsetX = pUnit->sSeed.nSeedHigh;
       if (nRandRange & nRandRange - 1) {
         sSeedNext = (D2SeedStrc)(nSeedProduct + (uint64_t)nRandOffsetX);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nRandRange = (uint32_t)(sSeedNext.nSeedLow % nRandRange);
       } else {
         sSeedNext = (D2SeedStrc)(nSeedProduct + (uint64_t)nRandOffsetX);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nRandRange = nRandRange - 1 & sSeedNext.nSeedLow;
       }
     }
@@ -12183,7 +12186,6 @@ void __fastcall AITHINK_Fn1_DeathSentry(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 
 // Checks whether a monster AI can summon a specific pet type identified by skill enum byPetTypeB. Validates skill entry in TxtSkills; returns false (0) if skill has no summon field. If the existing pet (byPetTypeA) already matches the summon class, returns false. Otherwise checks pettype field against the owner unit's active pet type count via GetOwnersPetType; returns false if the pet slot is already filled, true if summoning is allowed. Used by Shadow Master AI to gate skill mirroring.
 BOOL __fastcall MONSTERAI_CanSummonPetType(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit, D2PetStrc * byPetTypeA, int32_t byPetTypeB) {
-    int32_t nOwnerPetType;
     uint32_t nExistingPetClass;
     if (byPetTypeB < 0) {
       return 0;
@@ -12209,16 +12211,18 @@ BOOL __fastcall MONSTERAI_CanSummonPetType(::SGAMEDATA * pGameStrc, D2UnitStrc *
     }
 
     int nPetType = (int)pDVar1->pettype;
-    if (!(nPetType >= 0 && nPetType < sgptDataTable->nTxtPetTypeSize && pUnit)) {
-      return 1;
-    }
-    if (!byPetTypeA) {
-      nOwnerPetType = PLAYER::PlayerPets::GetOwnersPetType(pUnit, -1);
+    if (nPetType >= 0 && nPetType < sgptDataTable->nTxtPetTypeSize && pUnit) {
+      int32_t nOwnerPetType;
+      if (!byPetTypeA) {
+        nOwnerPetType = PLAYER::PlayerPets::GetOwnersPetType(pUnit, -1);
+        return (uint32_t)(nOwnerPetType != nPetType);
+      }
+
+      nOwnerPetType = PLAYER::PlayerPets::GetOwnersPetType(pUnit, byPetTypeA->pPetData.nNameId);
       return (uint32_t)(nOwnerPetType != nPetType);
     }
 
-    nOwnerPetType = PLAYER::PlayerPets::GetOwnersPetType(pUnit, byPetTypeA->pPetData.nNameId);
-    return (uint32_t)(nOwnerPetType != nPetType);
+    return 1;
 }
 
 // Validates whether a monster may cast a given skill at a candidate target right now; returns 1 if allowed, 0 otherwise. nParam points to a scan/context record (+0x18 = a mode/phase flag, +0x8 = a secondary unit). Bounds-checks nSkillId against the SkillsTxt table, confirms the pet-summon limit via MONSTERAI_CanSummonPetType, then branches on SkillsTxt.aitype: enforces that aura/buff types (4,0xD) only run when the context flag matches, rejects aura-type-1 skills whose aurastate is already active on the target (UNIT_GetUnitState), and for aura-type-2 rejects when either the target's aurastate or the secondary unit's auratargetstate is set. Finally, for flagged skills it rejects if the target already has the aura at a stacked value (>2 via STATLIST_GetBaseStatValue). Pure predicate, no side effects. With no secondary unit (context +0x8 null) the jump table at 005eac93 rejects aitypes 2, 4, 5, 0xb, 0xc and 0xd (reject_skill, return 0); aitypes 3 and 6..0xa go on to the aura checks.
@@ -12275,7 +12279,7 @@ int __fastcall MONSTERAI_ValidateSkillConditions(::SGAMEDATA * pGame, D2UnitStrc
           return 0;
       }
     }
-    if (!((pSkillTxt->aitype != '\x02' || (pSkillTxt->aurastate <= 0 || (eAuraStateResult = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pTargetUnit, (int)pSkillTxt->aurastate) , eAuraStateResult == STATE_none)) && (pSkillTxt->auratargetstate <= 0 || (eAuraStateResult = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pAuraStatList, (int)pSkillTxt->auratargetstate) , eAuraStateResult == STATE_none))) && (!pSkillTxt->progressive || pSkillTxt->aurastate <= 0 || (eAuraStateResult = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pTargetUnit, (int)pSkillTxt->aurastate) , eAuraStateResult == STATE_none) || (pStatList = D2Common::Stats::StatsEx::GetStatsByState(pTargetUnit, (int)pSkillTxt->aurastate) , !pStatList || (nCooldownOrSummonFlag = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, (int)pSkillTxt->aurastat[0], 0) , nCooldownOrSummonFlag < 3))))) {
+    if (!((pSkillTxt->aitype != '\x02' || (pSkillTxt->aurastate <= 0 || (eAuraStateResult = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pTargetUnit, (int)pSkillTxt->aurastate) , eAuraStateResult == STATE_none)) && (pSkillTxt->auratargetstate <= 0 || (eAuraStateResult = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pAuraStatList, (int)pSkillTxt->auratargetstate) , eAuraStateResult == STATE_none))) && (!(*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[2]) || pSkillTxt->aurastate <= 0 || (eAuraStateResult = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pTargetUnit, (int)pSkillTxt->aurastate) , eAuraStateResult == STATE_none) || (pStatList = D2Common::Stats::StatsEx::GetStatsByState(pTargetUnit, (int)pSkillTxt->aurastate) , !pStatList || (nCooldownOrSummonFlag = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, (int)pSkillTxt->aurastat[0], 0) , nCooldownOrSummonFlag < 3))))) {
       return 0;
     }
 
@@ -12692,7 +12696,7 @@ uint32_t __fastcall MONSTERAI_IsValidResurrectionTarget(D2UnitStrc * pUnit, D2Un
     }
 
     D2MonStatsTxt* pMonStats = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit2->nClassId);
-    if (!(pMonStats && !pMonStats->npc && pMonStats->killable)) {
+    if (!(pMonStats && !(gadwBitMasks[0] & (uint8_t)*((uint8_t*)pMonStats + 0xd)) && gadwBitMasks[7] & (uint8_t)*((uint8_t*)pMonStats + 0xd))) {
       return 0;
     }
     if (pUnit2->eUnitType == UNIT_PLAYER) {
@@ -12794,51 +12798,52 @@ uint32_t __fastcall AI_Baal_FindEnemyAndMinionCallback(::SGAMEDATA * pGame, D2Un
 
 // Returns non-zero if pUnit already has an active state belonging to the same state group as eState (as defined in StatesTxt.group). Iterates all entries in pTxtStates, skips eState itself, and calls UNIT_GetUnitState for any state sharing the same group value. Used to prevent applying conflicting status effects (e.g. two states from the same exclusive group) to a monster simultaneously.
 BOOL __fastcall MONSTERAI_HasConflictingStateInGroup(D2UnitStrc * pUnit, eD2States eState) {
-    int nStateTxtPtr;
     eD2States eFoundState;
+    D2DataTableTxtStrc* pDataTable;
+    eD2States eState_00;
+    BOOL bFound;
+    short int nStateGroup;
+    int nTxtStatesSize;
     int nStateTxtOffset = 0;
-    if ((int)eState < 0) {
-      return 0;
-    }
-
-    int nTxtStatesSize = sgptDataTable->nTxtStatesSize;
-    if (!((int)eState < nTxtStatesSize && sgptDataTable->pTxtStates + eState)) {
-      return 0;
-    }
-
-    short int nStateGroup = sgptDataTable->pTxtStates[eState].group;
-    if (!nStateGroup) {
-      return 0;
-    }
-
-    eD2States eState_00 = STATE_none;
-    BOOL bFound = 0;
-    D2DataTableTxtStrc* pDataTable = sgptDataTable;
-    if (0 >= nTxtStatesSize) {
-      return bFound;
-    }
-
-    do {
-      if (eState_00 != eState) {
-        if ((int)eState_00 < 0 || (int)eState_00 >= pDataTable->nTxtStatesSize) {
-          nStateTxtPtr = 0;
-        } else {
-          nStateTxtPtr = (int)pDataTable->pTxtStates->overlay + nStateTxtOffset - 2;
-        }
-        if (*(short int*)(nStateTxtPtr + 0x1e) == nStateGroup) {
-          eFoundState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, eState_00);
+    if ((int)eState >= 0) {
+      int nStateTxtPtr;
+      nTxtStatesSize = sgptDataTable->nTxtStatesSize;
+      if ((int)eState < nTxtStatesSize && sgptDataTable->pTxtStates + eState) {
+        nStateGroup = sgptDataTable->pTxtStates[eState].group;
+        if (nStateGroup) {
+          eState_00 = STATE_none;
+          bFound = 0;
           pDataTable = sgptDataTable;
-          if (eFoundState != STATE_none) {
-            bFound = 1;
+          if (0 >= nTxtStatesSize) {
+            return bFound;
           }
+
+          do {
+            if (eState_00 != eState) {
+              if ((int)eState_00 < 0 || (int)eState_00 >= pDataTable->nTxtStatesSize) {
+                nStateTxtPtr = 0;
+              } else {
+                nStateTxtPtr = (int)pDataTable->pTxtStates->overlay + nStateTxtOffset - 2;
+              }
+              if (*(short int*)(nStateTxtPtr + 0x1e) == nStateGroup) {
+                eFoundState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, eState_00);
+                pDataTable = sgptDataTable;
+                if (eFoundState != STATE_none) {
+                  bFound = 1;
+                }
+              }
+            }
+
+            eState_00 += STATE_freeze;
+            nStateTxtOffset += 0x3c;
+          } while ((int)eState_00 < nTxtStatesSize);
+
+          return bFound;
         }
       }
+    }
 
-      eState_00 += STATE_freeze;
-      nStateTxtOffset += 0x3c;
-    } while ((int)eState_00 < nTxtStatesSize);
-
-    return bFound;
+    return 0;
 }
 
 // Helper used by monster AIs to cast a skill on a target unit. Guards against self-targeting and invalid states. Resolves the skill struct via GetSkillByIdAndOwner; if the skill requires a melee weapon class and no pParam6 is provided, commands a run-to-unit approach instead. Otherwise calls SERVER_UNIT_CastSkill with the skill's mode. Skips cast if caster is in town. Returns 1 on successful cast/approach command, 0 if aborted.
@@ -13186,9 +13191,6 @@ void __fastcall AITHINK_Fn1_ShadowMaster(::SGAMEDATA * pGame, D2UnitStrc * pUnit
                 case ELEMENTAL_LIGHTNING:
                   eUnitStat = UNITSTAT_lightresist;
                 break;
-                case ELEMENTAL_MAGIC:
-                  eUnitStat = UNITSTAT_magicresist;
-                break;
                 case ELEMENTAL_COLD:
 
                 case ELEMENTAL_FREEZE:
@@ -13199,6 +13201,9 @@ void __fastcall AITHINK_Fn1_ShadowMaster(::SGAMEDATA * pGame, D2UnitStrc * pUnit
                 break;
                 default:
                   goto score_skill;
+                case ELEMENTAL_MAGIC:
+                  eUnitStat = UNITSTAT_magicresist;
+                break;
               }
 
               nCastResult = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pTarget, eUnitStat, 0);
@@ -13263,7 +13268,7 @@ void __fastcall AITHINK_Fn1_ShadowMaster(::SGAMEDATA * pGame, D2UnitStrc * pUnit
                   if (bEngagedInCombat || nDistToTarget <= 0x19) {
                     fCastResult += 10;
                   }
-                  if (pSkillTxt->progressive) {
+                  if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[2]) {
                     if (pSkillTxt->aurastate > 0) {
                       eVar4 = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnitCopy, (int)pSkillTxt->aurastate);
                       if (eVar4 != STATE_none) {
@@ -13394,7 +13399,7 @@ void __fastcall AITHINK_Fn1_ShadowMaster(::SGAMEDATA * pGame, D2UnitStrc * pUnit
                     if (bEngagedInCombat || nDistToTarget <= 0x19) {
                       fCastResult += 10;
                     }
-                    if (pSkillTxt->progressive && pSkillTxt->aurastate > 0) {
+                    if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[2] && pSkillTxt->aurastate > 0) {
                       eVar4 = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnitCopy, (int)pSkillTxt->aurastate);
                       if (eVar4 != STATE_none) {
                         pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnitCopy, (int)pSkillTxt->aurastate);
@@ -13468,7 +13473,8 @@ void __fastcall AITHINK_Fn1_ShadowMaster(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     do {
       nSkillCandidateCount--;
       sNewSeed = D2_SEED_NEXT(pTmpUnit->sSeed);
-      pTmpUnit->sSeed = sNewSeed;
+      pTmpUnit->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+      pTmpUnit->sSeed.nSeedLow = sNewSeed.nSeedLow;
       if (sNewSeed.nSeedLow & 3) {
         pFoundTarget = (D2UnitStrc*)pCandidateEntry[-6];
         eDistReached = pCandidateEntry[-5];
@@ -14435,7 +14441,8 @@ void __fastcall AITHINK_Fn1_NpcBarb(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2A
 
     uSeedCalc1 = (uint64_t)pUnit->sSeed.nSeedLow * 0x6ac690c5 + (uint64_t)pUnit->sSeed.nSeedHigh;
     newSeed = D2_SEED_NEXT_VAL(uSeedCalc1);
-    pUnit->sSeed = newSeed;
+    pUnit->sSeed.nSeedHigh = newSeed.nSeedHigh;
+    pUnit->sSeed.nSeedLow = newSeed.nSeedLow;
     bWalkResult = MONSTERAI_CommandWalkToCoords(pGame, pUnit, (int)uSeedCalc1 + (int)((uSeedCalc1 & 0xffffffff) / 0x14) * -0x14 - 10 + nPosX, ((uint32_t)!(nSeedCalc4 & 1) * 2 - 1) * -0x1e + (int)(newSeed.nSeedLow / 0x14) * -0x14 + newSeed.nSeedLow - 10 + nAiParam);
     if (bWalkResult) {
       return;
@@ -17152,7 +17159,7 @@ uint32_t __fastcall MONSTERAI_FindMonsterToResurrect(uint32_t dwUnused, D2UnitSt
         return 0;
       }
     } else {
-      if (!pMonStatTxt->lUndead) {
+      if (!(*((uint8_t*)pMonStatTxt + 0xd) & (uint8_t)gadwBitMasks[3])) {
         return 0;
       }
     }
@@ -19470,7 +19477,6 @@ void __fastcall AITHINK_Fn1_ZakarumZealot(::SGAMEDATA * pGame, D2UnitStrc * pUni
     uint32_t nRunSpeedRaw;
     D2RoomStrc* pRoom;
     eD2LevelId eLevel;
-    D2UnitDataPlayerStrc* pTargetPlayerData;
     BOOL bBlackenedTempleComplete;
     uint32_t nRandRoll;
     uint32_t nOwnerGUID;
@@ -19507,8 +19513,8 @@ void __fastcall AITHINK_Fn1_ZakarumZealot(::SGAMEDATA * pGame, D2UnitStrc * pUni
         eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
         eActNo = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
         if (eActNo == ACT_III) {
-          pTargetPlayerData = D2Common::Units::GetPlayerData(pTargetUnit);
-          bBlackenedTempleComplete = D2Common::QuestRecord::GetQuestState(pTargetPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_TheBlackenedTemple, QUESTSTATE_Completed);
+          D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pTargetUnit)->pQuestRecord[pGame->nDifficulty];
+          bBlackenedTempleComplete = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheBlackenedTemple, QUESTSTATE_Completed);
           if (bBlackenedTempleComplete) {
             ApplyCombatAndMonStats(pUnit, 0, eRunSpeedPct, '\0');
             bRanAway = MONSTERAI_CommandRunAwayFromUnit(pGame, pUnit, (int*)pTargetRaw, 8, 1);
@@ -20529,7 +20535,8 @@ void __fastcall AI_Fn1_Izual(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiParamS
     if (bEngagedInCombat) {
       if (pAiGeneral->dwArg2 <= 0) {
         DVar1 = D2_SEED_NEXT(pUnit->sSeed);
-        pUnit->sSeed = DVar1;
+        pUnit->sSeed.nSeedHigh = DVar1.nSeedHigh;
+        pUnit->sSeed.nSeedLow = DVar1.nSeedLow;
         if ((int)(DVar1.nSeedLow % 100) >= (int)pMonStats->aip[0][pGame->nDifficulty]) {
           pAiGeneral->dwArg2 = 0;
           if (pMonStats->aSkill[0] < 0 || (nRandRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100) , (int)nRandRoll >= (int)pMonStats->aip[3][pGame->nDifficulty])) {
@@ -20563,7 +20570,8 @@ void __fastcall AI_Fn1_Izual(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiParamS
     }
     if (pAiGeneral->dwArg2 <= 0) {
       DVar1 = D2_SEED_NEXT(pUnit->sSeed);
-      pUnit->sSeed = DVar1;
+      pUnit->sSeed.nSeedHigh = DVar1.nSeedHigh;
+      pUnit->sSeed.nSeedLow = DVar1.nSeedLow;
       if ((int)(DVar1.nSeedLow % 100) >= (int)pMonStats->aip[1][pGame->nDifficulty]) {
         if (nDistance > 0xa) {
           CastSkillWithDistanceOffset(pGame, pUnit, pAttacker, 6, 9);
@@ -21163,9 +21171,9 @@ void __fastcall AI_Fn1_FetishShaman(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2A
     summonSearchParams.pBestUnit = 0;
     summonSearchParams.nBestDistance = 0x7fffffff;
     nDistance = (int)pMonStats->aip[4][pGame->nDifficulty];
-    summonSearchParams.pLOSFlagOrSecondary = (D2UnitStrc*)(nDistance * nDistance);
     summonSearchParams.nMaxScanRadius = 0;
     summonSearchParams.pBestSwitchUnit = 0;
+    summonSearchParams.pLOSFlagOrSecondary = (D2UnitStrc*)(nDistance * nDistance);
     summonSearchParams.nGridIndex = 0x7fffffff;
     summonSearchParams.nBestSwitchDistance = (uint32_t)pMonStats->aip[1][pGame->nDifficulty];
     ForEach(pGame, pUnit, &summonSearchParams, (fpMonsterAiForEach)AI_Necromancer_FindOwnedSummonCallback, 1);
@@ -21787,7 +21795,8 @@ void __fastcall AI_Fn1_AbyssKnight(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ai
     }
     if (bEngagedInCombat) {
       DVar1 = D2_SEED_NEXT(*pSeed);
-      *pSeed = DVar1;
+      pSeed->nSeedHigh = DVar1.nSeedHigh;
+      pSeed->nSeedLow = DVar1.nSeedLow;
       if ((int)(DVar1.nSeedLow % 100) < (int)pMonStats->aip[2][pGame->nDifficulty]) {
         AI_ChangeModeAndTargetUnit(pGame, pUnit, 4, pAttacker);
         return;
@@ -22398,7 +22407,7 @@ uint32_t __fastcall AI_Monster_ValidateSkillAtPosition(::SGAMEDATA * pGame, D2Un
     if (!(pSkillTxt && nSkillId != 0xa7)) {
       return 0;
     }
-    if (pSkillTxt->TgtPlaceCheck) {
+    if (*((uint8_t*)pSkillTxt + 0x8) & (uint8_t)gadwBitMasks[0]) {
       if (!(pTargetUnit && pTargetUnit->eUnitFlags >> 1 & 1)) {
         return 0;
       }
@@ -22730,7 +22739,7 @@ int32_t __fastcall AI_Monster_CastItemEffectSkill(::SGAMEDATA * pGame, D2UnitStr
       }
     }
 
-    if (!pSkillTxt->ItemCheckStart || (_bStarted = SKILLS::SkillsServer::SKILLS_SrvStartSkill(pGame, pUnit, eSkill, nSubSkill, 1) , _bStarted != 0)) {
+    if (!(*((uint8_t*)pSkillTxt + 0x8) & (uint8_t)gadwBitMasks[1]) || (_bStarted = SKILLS::SkillsServer::SKILLS_SrvStartSkill(pGame, pUnit, eSkill, nSubSkill, 1) , _bStarted != 0)) {
       nUnit2 = SKILLS::SkillsServer::SKILL_SpawnMissileFunction(pGame, pUnit, eSkill, nSubSkill, 0, 1, nParam);
     }
 
@@ -22754,40 +22763,47 @@ int32_t __fastcall AI_Monster_CastItemEffectSkill(::SGAMEDATA * pGame, D2UnitStr
 // passes it through as its own result. p4 (pTarget, Stack[0x8]) is reused as the eD2UnitType
 // out-argument of AI_Monster_CastItemEffectSkill once its value is copied to EBX.
 BOOL __fastcall SKILL_CastOnTargetUnit(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSubSkill, D2UnitStrc * pTarget, int32_t nParam) {
+    eD2States eUnitState;
+    int32_t pSpawnedMissile;
+    eD2UnitType nPacketUnitType;
+    uint32_t dwParam;
     uint32_t nOutSP1X;
     uint32_t nOutSP1Y;
+    eD2Skills eSavedSkill;
+    uint32_t nOutGUID;
     D2UnitStrc* pTargetUnit = pTarget;
-    if (!(pUnit && pTarget)) {
-      return 0;
+    if (pUnit && pTarget) {
+      ::SGAMEDATA* pGame;
+      eSavedSkill = eSkill;
+      pGame = UNIT::SUnit::GetGamePointer(pUnit);
+      if (!pGame) {
+        return 0;
+      }
+
+      eUnitState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_uninterruptable);
+      if (eUnitState != STATE_none) {
+        return 0;
+      }
+
+      pTarget = (D2UnitStrc*)0x6;
+      nOutGUID = -1;
+      pSpawnedMissile = AI_Monster_CastItemEffectSkill(pGame, pUnit, eSavedSkill, nSubSkill, pTargetUnit, 0, 0, (eD2UnitType*)&pTarget, (int*)&nOutGUID, &nOutSP1X, &nOutSP1Y, nParam);
+      if (!pSpawnedMissile) {
+        return 0;
+      }
+
+      nPacketUnitType = (eD2UnitType)pTarget;
+      dwParam = nOutGUID;
+      if (pTarget == (D2UnitStrc*)0x6) {
+        nPacketUnitType = pTargetUnit->eUnitType;
+        dwParam = pTargetUnit->nUnitGUID;
+      }
+
+      UNIT::SUnitMsg::UnitQueuePacket0x99(pUnit, (uint16_t)eSavedSkill, (uint8_t)nSubSkill, (uint8_t)nPacketUnitType, dwParam, (uint8_t)nParam);
+      return 1;
     }
 
-    eD2Skills eSavedSkill = eSkill;
-    ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    if (!pGame) {
-      return 0;
-    }
-
-    eD2States eUnitState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_uninterruptable);
-    if (eUnitState != STATE_none) {
-      return 0;
-    }
-
-    pTarget = (D2UnitStrc*)0x6;
-    uint32_t nOutGUID = -1;
-    int32_t pSpawnedMissile = AI_Monster_CastItemEffectSkill(pGame, pUnit, eSavedSkill, nSubSkill, pTargetUnit, 0, 0, (eD2UnitType*)&pTarget, (int*)&nOutGUID, &nOutSP1X, &nOutSP1Y, nParam);
-    if (!pSpawnedMissile) {
-      return 0;
-    }
-
-    eD2UnitType nPacketUnitType = (eD2UnitType)pTarget;
-    uint32_t dwParam = nOutGUID;
-    if (pTarget == (D2UnitStrc*)0x6) {
-      nPacketUnitType = pTargetUnit->eUnitType;
-      dwParam = pTargetUnit->nUnitGUID;
-    }
-
-    UNIT::SUnitMsg::UnitQueuePacket0x99(pUnit, (uint16_t)eSavedSkill, (uint8_t)nSubSkill, (uint8_t)nPacketUnitType, dwParam, (uint8_t)nParam);
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall MONSTERAI_CastItemEffectSkill(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSubSkill, uint32_t nCoordX, uint32_t nCoordY, int32_t nParam2) {

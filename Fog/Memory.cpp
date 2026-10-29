@@ -663,7 +663,10 @@ void __stdcall InitializePoolSystem(D2PoolManagerStrc * * pPoolManager, char * s
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pGlobalPoolSystem.pSync);
-    if (!pGlobalPoolSystem.nFreeManagerIndex) {
+    if (pGlobalPoolSystem.nFreeManagerIndex) {
+      nManagerIndex = pGlobalPoolSystem.nManagerIndex[pGlobalPoolSystem.nFreeManagerIndex - 1];
+      pGlobalPoolSystem.nFreeManagerIndex--;
+    } else {
       if ((int)pGlobalPoolSystem.nManagers >= 8) {
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pGlobalPoolSystem.pSync);
         OutOfMemoryHandler("Insufficient pre-allocated pool systems");
@@ -673,9 +676,6 @@ void __stdcall InitializePoolSystem(D2PoolManagerStrc * * pPoolManager, char * s
 
       nManagerIndex = pGlobalPoolSystem.nManagers;
       pGlobalPoolSystem.nManagers++;
-    } else {
-      nManagerIndex = pGlobalPoolSystem.nManagerIndex[pGlobalPoolSystem.nFreeManagerIndex - 1];
-      pGlobalPoolSystem.nFreeManagerIndex--;
     }
 
     D2PoolManagerStrc* pNewManager = pGlobalPoolSystem.pManagers + nManagerIndex;

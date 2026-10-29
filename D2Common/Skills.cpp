@@ -202,13 +202,7 @@ int32_t __fastcall SKILLS_GetUnitStatValue(eD2UnitStat eUnitStat, int32_t nShift
     }
 
     D2UnitStrc* pUnit = *ppContext;
-    if (!pUnit) {
-      return 0;
-    }
-    if ((int)eUnitStat < 0) {
-      return 0;
-    }
-    if ((int)eUnitStat >= sgptDataTable->nTxtItemStatCostSize) {
+    if (!(pUnit && (int)eUnitStat >= 0 && (int)eUnitStat < sgptDataTable->nTxtItemStatCostSize)) {
       return 0;
     }
     if (eUnitStat == UNITSTAT_tohit) {
@@ -233,6 +227,8 @@ int32_t __fastcall SKILLS_GetUnitStatValue(eD2UnitStat eUnitStat, int32_t nShift
           return nStatValue;
         }
     }
+
+    return 0;
 }
 
 static D2SkillStrc * GetSkill(D2UnitStrc * pUnit, eD2Skills eSkill) {
@@ -252,11 +248,11 @@ static D2SkillStrc * GetSkill(D2UnitStrc * pUnit, eD2Skills eSkill) {
 }
 
 int __stdcall GetSkillMode(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
-    if (!(pUnit && pSkill)) {
-      return 0;
+    if (pUnit && pSkill) {
+      return pSkill->nMode;
     }
 
-    return pSkill->nMode;
+    return 0;
 }
 
 int32_t __stdcall SKILLS_GetSkillsTxtField0x14(int * pnParam) {
@@ -585,7 +581,9 @@ static int32_t __stdcall SKILLS_CheckItemTypeRequirement(D2UnitStrc * pUnit, D2U
     bool _bItemFlagSet;
     bool bItemFlagSet;
     uint32_t bIsOfType2;
+    int32_t nShootsType;
     int32_t nMagicArrowStat;
+    eD2ItemTypes eItemType;
     short int sTypeId;
     if (!pUnit) {
       uint32_t bIsOfType;
@@ -656,52 +654,50 @@ static int32_t __stdcall SKILLS_CheckItemTypeRequirement(D2UnitStrc * pUnit, D2U
     }
 
     _bItemFlagSet = ITEMS::Items::CheckItemFlag(pUnit, ITEMFLAG_DISABLED, 0x810, ".\\SKILLS\\Skills.cpp");
-    if (_bItemFlagSet) {
-      return (uint32_t)!*psSkillFields;
-    }
+    if (!_bItemFlagSet) {
+      _bItemFlagSet = ITEMS::Items::CheckItemFlag(pUnit, ITEMFLAG_BROKEN, 0x811, ".\\SKILLS\\Skills.cpp");
+      if (!_bItemFlagSet) {
+        nShootsType = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pUnit);
+        if (!(nShootsType && !(*(uint8_t*)(psSkillFields + 3) & (uint8_t)gadwBitMasks[0]))) {
+          return 1;
+        }
+        if (!*psSkillFields) {
+          nMagicArrowStat = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_magicarrow, 0);
+          if (nMagicArrowStat) {
+            return 1;
+          }
+        }
+        if (!pUnit2) {
+          return 0;
+        }
 
-    _bItemFlagSet = ITEMS::Items::CheckItemFlag(pUnit, ITEMFLAG_BROKEN, 0x811, ".\\SKILLS\\Skills.cpp");
-    if (_bItemFlagSet) {
-      return (uint32_t)!*psSkillFields;
-    }
+        eItemType = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pUnit);
+        bIsOfType2 = ITEMS::Items::ITEMS_IsA(pUnit2, eItemType);
+        if (!bIsOfType2) {
+          return 0;
+        }
+        if (!*psSkillFields) {
+          nMagicArrowStat = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit2, UNITSTAT_item_magicarrow, 0);
+          if (nMagicArrowStat) {
+            return 1;
+          }
+        }
 
-    int32_t nShootsType = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pUnit);
-    if (!(nShootsType && !(*(uint8_t*)(psSkillFields + 3) & 1))) {
-      return 1;
-    }
-    if (!*psSkillFields) {
-      nMagicArrowStat = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_magicarrow, 0);
-      if (nMagicArrowStat) {
-        return 1;
+        nMatchedTypeCount = ITEMS::Items::ITEM_GetMaxStack(pUnit2);
+        if (!nMatchedTypeCount) {
+          return 1;
+        }
+
+        nMatchedTypeCount = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_quantity, 0);
+        if (nMatchedTypeCount > 0) {
+          return 1;
+        }
+
+        return 0;
       }
     }
-    if (!pUnit2) {
-      return 0;
-    }
 
-    eD2ItemTypes eItemType = ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pUnit);
-    bIsOfType2 = ITEMS::Items::ITEMS_IsA(pUnit2, eItemType);
-    if (!bIsOfType2) {
-      return 0;
-    }
-    if (!*psSkillFields) {
-      nMagicArrowStat = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit2, UNITSTAT_item_magicarrow, 0);
-      if (nMagicArrowStat) {
-        return 1;
-      }
-    }
-
-    nMatchedTypeCount = ITEMS::Items::ITEM_GetMaxStack(pUnit2);
-    if (!nMatchedTypeCount) {
-      return 1;
-    }
-
-    nMatchedTypeCount = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_quantity, 0);
-    if (nMatchedTypeCount > 0) {
-      return 1;
-    }
-
-    return 0;
+    return (uint32_t)!*psSkillFields;
 }
 
 // Checks if the unit's equipped weapons satisfy a skill's weapon type requirements (itypea/etypea fields). Gets right and left arm items, handles throw/kick skill special case, then calls CheckItemTypeRequirement for both hands. Returns true if requirements are met.
@@ -937,12 +933,13 @@ int32_t __stdcall GetSkillBonus(D2UnitStrc * pUnit, eD2Skills eSkill) {
     }
 
     D2SkillStrc* pSkill = GetSkillByIdAndOwner(pUnit, eSkill, -1);
-    if (!(pSkill && pSkill->nOwnerGUID == -1)) {
-      return 0;
+    if (pSkill && pSkill->nOwnerGUID == -1) {
+      int32_t nBonus;
+      nBonus = SKILL_GetLevelBonus(pSkill, pUnit);
+      return nBonus;
     }
 
-    int32_t nBonus = SKILL_GetLevelBonus(pSkill, pUnit);
-    return nBonus;
+    return 0;
 }
 
 void __stdcall SetSkillMode(D2SkillStrc * pSkill, uint32_t nMode) {
@@ -1255,7 +1252,7 @@ uint32_t __stdcall SpendSkillPointOnSkill(D2UnitStrc * pUnit, eD2Skills eSkill) 
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillTxt && pSkillTxt->InGame)) {
+    if (!(pSkillTxt && *((uint8_t*)pSkillTxt + 0x5) & (uint8_t)gadwBitMasks[2])) {
       return 0;
     }
 
@@ -1607,11 +1604,11 @@ void __stdcall SKILL_SetQuantity(D2SkillStrc * pSkill, int32_t nQuantity) {
 }
 
 uint32_t __stdcall SKILLS_GetAnimModeIndex(int32_t nParam1, int32_t nParam2) {
-    if (!(nParam1 == 6 && nParam2 == 4)) {
-      return INT_ARRAY_006eb308[nParam2];
+    if (nParam1 == 6 && nParam2 == 4) {
+      return 0xc;
     }
 
-    return 0xc;
+    return INT_ARRAY_006eb308[nParam2];
 }
 
 // Validates that a monster supports a given animation mode, falling back to a supported substitute if not. Checks the monster's MonStats2 byModeFlags bitfield; if the requested mode is unsupported, maps it to a nearby fallback (e.g. modes 5/7→4, 6→3, 9-11→8, 15→2, default→1). Used before playing a skill animation on a monster to avoid unsupported mode crashes.
@@ -1835,11 +1832,11 @@ uint32_t __stdcall D2CheckIfCorpseIsConsumable(D2UnitStrc * pUnit, int32_t bChec
     if (!bCorpseSelFlag) {
       return 0;
     }
-    if (!(nMonStatsId >= 0 && nMonStatsId < sgptDataTable->nTxtMonStatsSize)) {
-      return (uint32_t)(*(volatile uint8_t*)0x32 != 0);
+    if (nMonStatsId >= 0 && nMonStatsId < sgptDataTable->nTxtMonStatsSize) {
+      return (uint32_t)(sgptDataTable->pTxtMonStats[nMonStatsId].Velocity != 0);
     }
 
-    return (uint32_t)(sgptDataTable->pTxtMonStats[nMonStatsId].Velocity != 0);
+    return (uint32_t)(*(volatile uint8_t*)0x32 != 0);
 }
 
 uint32_t __stdcall SKILLS_IsCorpseValidForRevive(D2UnitStrc * pUnit) {
@@ -2399,7 +2396,7 @@ uint32_t __stdcall SKILLS_CheckSkillFlagBit1(int32_t nSkillId) {
       return 0;
     }
 
-    return (uint8_t)*((uint8_t*)&sgptDataTable->pTxtSkills[nSkillId] + 0x6) & 2;
+    return (uint8_t)*((uint8_t*)&sgptDataTable->pTxtSkills[nSkillId] + 0x6) & gadwBitMasks[1];
 }
 
 // Strips all progressive (stackable/timed) states from a unit. Iterates sgptDataTable->pAllStatesDataTblFlag0x10 (states with flag 0x10 set), and for each state currently active on pUnit, removes the associated stat list via STATLIST_RemoveAndRecalc + FreeStatList and clears the state via SetState. Returns 1 if the unit type is eligible (ITEMSTATS_CheckItemStatCostFlag200Bit3), 0 otherwise.
@@ -2441,11 +2438,11 @@ BOOL __stdcall STATES_RemoveAllProgressiveStates(D2UnitStrc * pUnit) {
 
 eD2Skills __stdcall SKILLS_GetClassSkillByIndex(uint32_t nClassId, int32_t nSkillIndex) {
     if (nClassId <= 6) {
-      if (!(nSkillIndex >= 0 && nSkillIndex < (&sgptDataTable->pSkillsPerClassCounter->Amazon)[nClassId])) {
-        return ~SKILL_Attack;
+      if (nSkillIndex >= 0 && nSkillIndex < (&sgptDataTable->pSkillsPerClassCounter->Amazon)[nClassId]) {
+        return (int)sgptDataTable->pSkillsPerClassStrc[sgptDataTable->nSkillCountMaxPerClass * nClassId + nSkillIndex];
       }
 
-      return (int)sgptDataTable->pSkillsPerClassStrc[sgptDataTable->nSkillCountMaxPerClass * nClassId + nSkillIndex];
+      return ~SKILL_Attack;
     }
 
     return ~SKILL_Attack;
@@ -3500,7 +3497,7 @@ uint32_t __fastcall SKILLS_HasRequiredWeaponOrQuantity(D2SkillStrc * pSkill, D2U
 
     D2SkillsTxt* pDVar1 = pSkill->pRecord;
     D2InventoryStrc* pInventory = pUnit->pInventory;
-    if (!pDVar1 || !pDVar1->scroll) {
+    if (!pDVar1 || !(*((uint8_t*)pDVar1 + 0x8) & (uint8_t)gadwBitMasks[4])) {
       BOOL bGotWeaponInfo;
       nWeaponReqType = pDVar1->skill;
       if (nWeaponReqType != 2) {
@@ -3656,12 +3653,11 @@ static uint32_t __stdcall SKILL_IsDelayExpired(D2SkillStrc * pSkill, D2UnitStrc 
 
 // Validates whether pUnit can currently activate pSkill. Returns an error code: 0=ok/can use (via SKILL_IsDelayExpired returning non-zero producing 8), 1=not enough mana or start-mana check failed, 2=no item charges or missing required weapon/quantity, 3=skill record missing or flag2 bit2 clear (not usable), 4=restriction check failed, 5=skill flag bit4 set, 6=skill flag bit5 set, 7=skill level zero. Halts with an internal error if pSkill is null.
 int32_t __stdcall SKILLS_CanUseSkill(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
-    uint8_t* puVar1;
     if (!pSkill) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8e9);
       exit(-1);
     }
-    if (!pSkill->pRecord || !pSkill->pRecord->InGame) {
+    if (!pSkill->pRecord || !(*((uint8_t*)pSkill->pRecord + 0x5) & (uint8_t)gadwBitMasks[2])) {
       return 3;
     }
 
@@ -3669,10 +3665,12 @@ int32_t __stdcall SKILLS_CanUseSkill(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
     if (!nSkillLevel) {
       return 7;
     }
-    if (pSkill->pRecord->aura) {
+
+    uint32_t uVar1 = (uint32_t)(uint8_t)*((uint8_t*)pSkill->pRecord + 0x4);
+    if (gadwBitMasks[5] & uVar1) {
       return 6;
     }
-    if (pSkill->pRecord->passive) {
+    if (gadwBitMasks[4] & uVar1) {
       return 5;
     }
 
@@ -3811,7 +3809,7 @@ int32_t __stdcall SKILL_CalcMinDamage(D2UnitStrc * pUnit, int32_t nSkillId, int3
     if (!pSkillTxt) {
       return 1;
     }
-    if (pSkillTxt->Kick) {
+    if (*((uint8_t*)pSkillTxt + 0x5) & (uint8_t)gadwBitMasks[1]) {
       int nDexterity;
       if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
         nMinDmg = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
@@ -3874,7 +3872,7 @@ int32_t __stdcall SKILL_CalcMaxDamage(D2UnitStrc * pUnit, int32_t nSkillId, int3
     }
 
     int nMaxDmg = 0;
-    if (pSkillTxt->Kick) {
+    if (*((uint8_t*)pSkillTxt + 0x5) & (uint8_t)gadwBitMasks[1]) {
       nLevDamBonus = SKILLS_CalculateBaseDamageFromStats(0, pUnit);
       return nLevDamBonus;
     }

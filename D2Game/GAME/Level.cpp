@@ -250,7 +250,8 @@ int __stdcall LEVEL_CountRoomsInAct(::SGAMEDATA * pGame, uint8_t nAct) {
       exit(-1);
     }
 
-    D2RoomStrc* pDVar1 = D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomFromAct(pGame->pAct[nAct]);
+    D2DrlgActStrc* pAct = pGame->pAct[nAct];
+    D2RoomStrc* pDVar1 = D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomFromAct(pAct);
     int iVar2 = 0;
     for (; pDVar1; pDVar1 = pDVar1->pDrlgRoomNext) {
       iVar2++;

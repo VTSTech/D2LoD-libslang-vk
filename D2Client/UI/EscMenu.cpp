@@ -1006,8 +1006,8 @@ void __stdcall DRAW_EscMenu() {
       nTotalItemCount = gpEscMenuItemCount->nItemCount;
       nMenuCenterY = ScreenSizeY - 0x50;
       if (gnEscMenuLastMouseY != nMouseY || gnEscMenuLastMouseX != nMouseX) {
-        gnEscMenuLastMouseX = nMouseX;
         gnEscMenuLastMouseY = nMouseY;
+        gnEscMenuLastMouseX = nMouseX;
         if (gbEscMenuSliderDragging) {
           ESCMENU_HandleSliderDrag(nMouseY, nMouseX);
         } else {
@@ -1043,6 +1043,12 @@ void __stdcall DRAW_EscMenu() {
             nItemBottomY = gpEscMenuItemCount->nRowHeight + nMouseY;
             pCurrentTable[nItemIndex].nYPosition = nMouseY;
             switch ((int32_t)(uint32_t)pCurrentTable[nItemIndex].nMenuItemType) {
+              case -1:
+
+              case 0:
+                D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pCurrentTable[nItemIndex].pDC6Main, ScreenSizeX / 2, nItemBottomY, 1, eDrawMode, -1);
+              pCurrentTable = gpEscMenuCurrentTable;
+              break;
               case 1:
                 D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pCurrentTable[nItemIndex].pDC6Main, ScreenSizeX / 2 - 0xe6, nItemBottomY, 0, eDrawMode, -1);
               D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(gpEscMenuCurrentTable[nItemIndex].pDC6SubImages[gpEscMenuCurrentTable[nItemIndex].nImageIndex], ScreenSizeX / 2 + 0xe6, nItemBottomY, 2, eDrawMode, -1);
@@ -1056,11 +1062,6 @@ void __stdcall DRAW_EscMenu() {
               ESCMENU_DrawProgressBar(&pCurrentTable[nItemIndex], nMouseY, eDrawMode, (uint32_t)!pCurrentTable[nItemIndex].pDC6Main);
               pCurrentTable = gpEscMenuCurrentTable;
               break;
-              case -1:
-
-              case 0:
-                D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pCurrentTable[nItemIndex].pDC6Main, ScreenSizeX / 2, nItemBottomY, 1, eDrawMode, -1);
-              pCurrentTable = gpEscMenuCurrentTable;
             }
 
             nVisibleItemCount++;

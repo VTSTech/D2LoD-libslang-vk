@@ -46,7 +46,8 @@ void __fastcall MONUMOD_RollNameSeed(D2UnitStrc * pUnit, int32_t nIndex, BOOL bU
     }
 
     D2SeedStrc sSeedNext = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = sSeedNext;
+    pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+    pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
     if (!(pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
       return;
     }

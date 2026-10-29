@@ -674,9 +674,9 @@ static void WEATHER_SpawnParticle(D2SeedStrc * pSeed) {
     nLineIndex = sNextSeed.nSeedLow % 0xc;
     nTemp = D2Common::Environment::DRLGENV_GetPeriodOfDayFromAct(sgpDrlgAct, nullptr);
     switch (nTemp) {
-      case 0:
-        pParticleArray[nParticleSlotIndex].nColor = gWeatherPaletteDayColors[nLineIndex];
-      pParticleArray[nParticleSlotIndex].nAlpha = '\x7f';
+      case 2:
+        pParticleArray[nParticleSlotIndex].nColor = gWeatherPaletteMudDuskColors[nLineIndex];
+      pParticleArray[nParticleSlotIndex].nAlpha = 0xff;
       break;
       case 1:
 
@@ -684,9 +684,10 @@ static void WEATHER_SpawnParticle(D2SeedStrc * pSeed) {
         pParticleArray[nParticleSlotIndex].nColor = gWeatherPaletteRain1Colors[nLineIndex];
       pParticleArray[nParticleSlotIndex].nAlpha = 0xff;
       break;
-      case 2:
-        pParticleArray[nParticleSlotIndex].nColor = gWeatherPaletteMudDuskColors[nLineIndex];
-      pParticleArray[nParticleSlotIndex].nAlpha = 0xff;
+      case 0:
+        pParticleArray[nParticleSlotIndex].nColor = gWeatherPaletteDayColors[nLineIndex];
+      pParticleArray[nParticleSlotIndex].nAlpha = '\x7f';
+      break;
     }
 
     pParticleArray[nParticleSlotIndex].nLineIndex = 4 - (int)(fVar1 * -8.0);
@@ -1339,8 +1340,8 @@ void __stdcall WeatherEffects() {
     if (!bCanMud && WEATHER_bCanMud && pEnvironmentBubbles->nUsedCount) {
       Fog::Src::DataArrays::FOG_InitDataArray(pEnvironmentBubbles);
     }
-    WEATHER_bCanMud = bCanMud;
     WEATHER_bCanRain = bCanRain;
+    WEATHER_bCanMud = bCanMud;
     uint32_t nRecordingIndex = GAME::Game::gnRecordingIndex();
     pPlayer = UNIT::Player::GetPlayerUnit_UI();
     if (!pPlayer) {

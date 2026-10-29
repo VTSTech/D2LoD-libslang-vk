@@ -180,14 +180,6 @@ void __fastcall OBJECT_AddVisualOverlay(D2UnitStrc * pUnit) {
     if (uVar1 <= 0x18d) {
       if (uVar1 != 0x18d) {
         switch (uVar1) {
-          case 0x95:
-            if (pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral) {
-              return;
-            }
-          Engine::Gfx::GFX_AddOverlayToUnit(pUnit, OVERLAY_horadric_light, 3, 0, 0, 0, 0, 0);
-          return;
-          default:
-            return;
           case 0x98:
             Engine::Gfx::GFX_AddOverlayToUnit(pUnit, OVERLAY_horadric_light, 3, 0, 0, 0, 0, 0);
           return;
@@ -197,6 +189,14 @@ void __fastcall OBJECT_AddVisualOverlay(D2UnitStrc * pUnit) {
 
           case 0x164:
             break;
+          case 0x95:
+            if (pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral) {
+              return;
+            }
+          Engine::Gfx::GFX_AddOverlayToUnit(pUnit, OVERLAY_horadric_light, 3, 0, 0, 0, 0, 0);
+          return;
+          default:
+            return;
         }
       }
     } else {
@@ -547,8 +547,8 @@ void __fastcall OBJECT_SpawnFireballGrid(D2UnitStrc * pUnit, D2UnitStrc * pPlaye
           sSkillArg.nUnitY = nYNeg;
         }
 
-        sSkillArg.nMissileTxtNo = MISSILE_Fireball;
         sSkillArg.pOwner = pPlayer;
+        sSkillArg.nMissileTxtNo = MISSILE_Fireball;
         nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayer, UNITSTAT_level, 0);
         sSkillArg.nSkillLevel = nLevel / 5;
         if (sSkillArg.nSkillLevel < 1) {
@@ -611,10 +611,10 @@ void __fastcall OBJECT_SpawnExplosivePotionGrid(D2UnitStrc * pUnit, D2UnitStrc *
 
       sSkillArg.nUnitX = anYOffsets[nByteIdx] + sSkillArg.nX;
       sSkillArg.nUnitY = anYOffsets[nByteIdx + 6] + sSkillArg.nY;
-      sSkillArg.nParticleParam = 1;
-      sSkillArg.nMissileTxtNo = MISSILE_Explosivepotion;
       sSkillArg.pOwner = pPlayer;
       sSkillArg.pMissile = pUnit;
+      sSkillArg.nParticleParam = 1;
+      sSkillArg.nMissileTxtNo = MISSILE_Explosivepotion;
       nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayer, UNITSTAT_level, 0);
       sSkillArg.nSkillLevel = nLevel / 5;
       if (sSkillArg.nSkillLevel < 1) {
@@ -670,10 +670,10 @@ void __fastcall OBJECT_SpawnChokingGasGrid(D2UnitStrc * pUnit, D2UnitStrc * pPla
 
       sSkillArg.nUnitX = anYOffsets[nByteIdx] + sSkillArg.nX;
       sSkillArg.nUnitY = anYOffsets[nByteIdx + 6] + sSkillArg.nY;
-      sSkillArg.nParticleParam = 1;
-      sSkillArg.nMissileTxtNo = MISSILE_Chokinggaspoition;
       sSkillArg.pOwner = pPlayer;
       sSkillArg.pMissile = pUnit;
+      sSkillArg.nParticleParam = 1;
+      sSkillArg.nMissileTxtNo = MISSILE_Chokinggaspoition;
       nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayer, UNITSTAT_level, 0);
       sSkillArg.nSkillLevel = nLevel / 5;
       if (sSkillArg.nSkillLevel < 1) {
@@ -898,7 +898,8 @@ bool __fastcall OBJECT_ClientFn_TimedSpecial1Or2_23to33s(D2UnitStrc * pUnit) {
       pUnit->dwTickCount = iVar5 + DVar4;
       pUnit->nGfxCurrentFrame = (uint32_t)pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->Start[5];
       DVar3 = D2_SEED_NEXT(*pSeed);
-      *pSeed = DVar3;
+      pSeed->nSeedHigh = DVar3.nSeedHigh;
+      pSeed->nSeedLow = DVar3.nSeedLow;
       if (DVar3.nSeedLow & 1) {
         iVar5 = 3;
       } else {
@@ -1140,7 +1141,8 @@ bool __fastcall OBJECT_ClientFn_ZooKeeper(D2UnitStrc * pUnit) {
     }
 
     DVar1 = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = DVar1;
+    pUnit->sSeed.nSeedHigh = DVar1.nSeedHigh;
+    pUnit->sSeed.nSeedLow = DVar1.nSeedLow;
     DVar2 = GetTickCount();
     pUnit->dwTickCount = DVar2 + DVar1.nSeedLow % 0x3c * 1000;
     return true;

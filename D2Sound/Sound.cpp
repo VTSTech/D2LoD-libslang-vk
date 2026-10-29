@@ -249,9 +249,9 @@ void __fastcall SOUND_Initialize(uint32_t dwLanguageCode, HWND hWnd) {
     char szWindowsDir[260];
     uint32_t dwVerBuild;
     char* pszPath;
-    g_bSoundDriverScanComplete = 0;
-    g_hwndSoundWindow = hWnd;
     LanguageCode = dwLanguageCode;
+    g_hwndSoundWindow = hWnd;
+    g_bSoundDriverScanComplete = 0;
     DirectSoundEnumerateA(SOUND_DetectLegacySoundDrivers, 0);
     if (gbHasLegacyEMU10K1Driver) {
       /* UINT uSize for GetWindowsDirectoryA */ /* LPSTR lpBuffer for GetWindowsDirectoryA */ GetWindowsDirectoryA(szWindowsDir, 0x104);

@@ -82,7 +82,7 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
     if (nLine) {
       bRegFlagsOk = Storm::Source::SReg::SRegLoadValue(szRegKey, "dwFlags", 0, (int32_t*)&gdwDDrawInitFlags);
       if (bRegFlagsOk) {
-        if (gdwDDrawInitFlags & 1) {
+        if (gdwDDrawInitFlags & gadwBitMasks[0]) {
           return 1;
         }
 
@@ -94,6 +94,7 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
       }
     }
 
+    gdwDDrawInitFlags = gadwBitMasks[0];
     char* pSrc = "Fallback DirectDraw Device";
     char* pDst = gszRendererDeviceName;
     for (bRegFlagsOk = 6; bRegFlagsOk; bRegFlagsOk--) {
@@ -104,7 +105,6 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
 
     *(uint16_t*)pDst = *(uint16_t*)pSrc;
     pDst[2] = pSrc[2];
-    gdwDDrawInitFlags = 1;
     return 1;
 }
 
@@ -712,10 +712,10 @@ BOOL __stdcall InternalCutsceneWindow() {
     RENDERER_nWindowHeight = 0x1e0;
     gnDDrawSurfaceWidth = 0x1e0;
     DWORD nBitDepth = 0x10;
-    if (gdwDDrawInitFlags & 2) {
+    if (gadwBitMasks[1] & gdwDDrawInitFlags) {
       nBitDepth = 0x20;
     } else {
-      if (gdwDDrawInitFlags & 4) {
+      if (gadwBitMasks[2] & gdwDDrawInitFlags) {
         nBitDepth = 0x18;
       }
     }
@@ -1063,7 +1063,7 @@ BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc
     pD2GFXRenderedDataStrc = pSettings;
     D2GfxRendereInitFunctionsStrc = pHelpers;
     D2ddDebugFont_Alloc();
-    if (gdwDDrawInitFlags & 1) {
+    if (gdwDDrawInitFlags & gadwBitMasks[0]) {
       pGlideConfig = 0;
     } else {
       pGlideConfig = &gGlideOpenWindowConfig;
@@ -1133,11 +1133,11 @@ uint32_t __stdcall RENDERER_DDRAW_IsDC6OffScreen(int32_t nX, int32_t nY, int32_t
     }
 
     nWidth = D2CMP::SRC::CelCmp::GetDC6OffsetY(pDC6Block);
-    if (!(-1 < nY + nWidth && nY + nWidth - nHeight < RENDERER_nWindowHeight)) {
-      return 1;
+    if (-1 < nY + nWidth && nY + nWidth - nHeight < RENDERER_nWindowHeight) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 // DirectDraw renderer internal helpers for sprite visibility testing, clip rect computation, debug font rendering, shadow quality query, pixel/line drawing primitives, and smacker video frame blitting.
@@ -1169,29 +1169,29 @@ static BOOL __stdcall RENDERER_DDRAW_ComputeDC6ClipRect(int32_t nY, DC6Block * p
 
     nWidth = D2CMP::SRC::CelCmp::GetDC6OffsetY(pDC6Block);
     int nDrawBottom = nY + nWidth;
-    if (!(nDrawBottom >= (int)nClipTop && nDrawBottom - nHeight <= (int)nClipBottom)) {
-      return 1;
+    if (nDrawBottom >= (int)nClipTop && nDrawBottom - nHeight <= (int)nClipBottom) {
+      *pOutClipRect = nClipLeft;
+      pOutClipRect[1] = nClipRight;
+      if (!(nDrawBottom > (int)nClipBottom)) {
+        pOutClipRect[2] = 0;
+      } else {
+        pOutClipRect[2] = nDrawBottom - nClipBottom - 1;
+      }
+      if (!(nDrawBottom - nHeight < (int)nClipTop)) {
+        pOutClipRect[3] = nHeight - pOutClipRect[2];
+      } else {
+        pOutClipRect[3] = nDrawBottom - pOutClipRect[2] - nClipTop + 1;
+      }
+      if (!((int)pOutClipRect[3] > 0)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xab);
+        exit(-1);
+      }
+
+      return 0;
+      return 0;
     }
 
-    *pOutClipRect = nClipLeft;
-    pOutClipRect[1] = nClipRight;
-    if (!(nDrawBottom > (int)nClipBottom)) {
-      pOutClipRect[2] = 0;
-    } else {
-      pOutClipRect[2] = nDrawBottom - nClipBottom - 1;
-    }
-    if (!(nDrawBottom - nHeight < (int)nClipTop)) {
-      pOutClipRect[3] = nHeight - pOutClipRect[2];
-    } else {
-      pOutClipRect[3] = nDrawBottom - pOutClipRect[2] - nClipTop + 1;
-    }
-    if (!((int)pOutClipRect[3] > 0)) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xab);
-      exit(-1);
-    }
-
-    return 0;
-    return 0;
+    return 1;
 }
 
 BOOL __fastcall DrawImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, DWORD dwGamma, int32_t nDrawMode, BYTE * pPalette) {

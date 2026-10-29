@@ -216,12 +216,10 @@ int __thiscall GetVisibleItemCount(::ListBoxImplementation * pThis) {
 
 void __thiscall DrawTruncatedText(::ListBoxImplementation * pThis, uint16_t * wszText, int nX, int nY, int nColor) {
     int i;
+    uint16_t* pWcharClear;
     uint16_t wszWorkBuffer[1024];
-    uint16_t* pWcharClear = wszWorkBuffer;
-    for (i = 0x200; i; i--) {
-      pWcharClear[0] = L'\0';
-      pWcharClear[1] = L'\0';
-      pWcharClear += 2;
+    for (i = 0; i < 0x400; i++) {
+      wszWorkBuffer[i] = L'\0';
     }
 
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszWorkBuffer, wszText);
@@ -296,46 +294,45 @@ void __thiscall AddItem(::ListBoxImplementation * pThis, uint16_t * wszLine0, ui
 BOOL __thiscall IsMouseOnScrollUp(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     int32_t nMouseX = (int32_t)pMsg->uLParam.sMousePos.nMouseX;
     int32_t nMouseY = (int32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if (!(nMouseX > pThis->nScrollBarX && nMouseX < pThis->nScrollBarX + 0x10 && nMouseY > pThis->nScrollBarY - 0xc && nMouseY < pThis->nScrollBarY)) {
-      return 0;
+    if (nMouseX > pThis->nScrollBarX && nMouseX < pThis->nScrollBarX + 0x10 && nMouseY > pThis->nScrollBarY - 0xc && nMouseY < pThis->nScrollBarY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 BOOL __thiscall IsMouseOnScrollDown(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     int32_t nMouseX = (int32_t)pMsg->uLParam.sMousePos.nMouseX;
     int32_t nMouseY = (int32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if (!(nMouseX > pThis->nScrollBarX && nMouseX < pThis->nScrollBarX + 0x10)) {
-      return 0;
+    if (nMouseX > pThis->nScrollBarX && nMouseX < pThis->nScrollBarX + 0x10) {
+      int nScrollDownBtnBottom;
+      nScrollDownBtnBottom = pThis->nScrollBarY + pThis->field_0x180762 * 0xc;
+      if (nMouseY > nScrollDownBtnBottom - 0xc && nMouseY < nScrollDownBtnBottom) {
+        return 1;
+      }
     }
 
-    int nScrollDownBtnBottom = pThis->nScrollBarY + pThis->field_0x180762 * 0xc;
-    if (!(nMouseY > nScrollDownBtnBottom - 0xc && nMouseY < nScrollDownBtnBottom)) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 BOOL __thiscall IsMouseOnScrollTrack(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     int32_t nMouseX = (int32_t)pMsg->uLParam.sMousePos.nMouseX;
     int32_t nMouseY = (int32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if (!(nMouseX > pThis->nScrollBarX && nMouseX < pThis->nScrollBarX + 0x10 && nMouseY < (int)(pThis->nScrollBarY - 0xc + pThis->field_0x180762 * 0xc) && nMouseY > pThis->nScrollBarY)) {
-      return 0;
+    if (nMouseX > pThis->nScrollBarX && nMouseX < pThis->nScrollBarX + 0x10 && nMouseY < (int)(pThis->nScrollBarY - 0xc + pThis->field_0x180762 * 0xc) && nMouseY > pThis->nScrollBarY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 BOOL __thiscall IsMouseInBounds(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     uint32_t uVar2 = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if (!((int)uVar1 > pThis->nPosX && (int)uVar1 < pThis->nWidth + pThis->nPosX && (int)uVar2 > pThis->nPosY && (int)uVar2 < pThis->nHeight + pThis->nPosY)) {
-      return 0;
+    if ((int)uVar1 > pThis->nPosX && (int)uVar1 < pThis->nWidth + pThis->nPosX && (int)uVar2 > pThis->nPosY && (int)uVar2 < pThis->nHeight + pThis->nPosY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 int __thiscall OnMouseWheel(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
@@ -668,51 +665,51 @@ void __thiscall Draw(::ListBoxImplementation * pThis) {
 }
 
 int __thiscall HandleScrollTrackClick(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
+    int nPageSize;
     int32_t uMouseY = (int32_t)pMsg->uLParam.sMousePos.nMouseY;
     uint32_t uVisibleCount = (uint32_t)pThis->nItemCount;
     int nNewScrollPos = pThis->nScrollBarY;
-    if (!pThis->nItemCount) {
-      return 0;
-    }
-
-    int nPageSize = pThis->nVisibleRows;
-    if (!(nPageSize <= (int)uVisibleCount && uMouseY != nNewScrollPos && -1 < uMouseY - nNewScrollPos)) {
-      return 0;
-    }
-    if (pThis->field_0x180752 == pThis->field_0x180756) {
-      return 0;
-    }
-    if (uMouseY < (int)(nNewScrollPos + 0xd + pThis->field_0x180752 * 0xc)) {
+    if (pThis->nItemCount) {
       uint32_t uScrollTop;
-      uScrollTop = pThis->nSelectedIndex - nPageSize;
-      pThis->nSelectedIndex = (int)uScrollTop <= 0 ? 0 : uScrollTop;
-    } else {
-      if (uMouseY <= (int)(pThis->nScrollBarY + 0xd + pThis->field_0x180756 * 0xc)) {
-        return 0;
-      }
-
-      nNewScrollPos = pThis->nSelectedIndex + nPageSize;
-      if (nNewScrollPos >= (int)uVisibleCount) {
-        nNewScrollPos = uVisibleCount - 1;
-      }
-
-      pThis->nSelectedIndex = nNewScrollPos;
-      if ((int)(uVisibleCount - pThis->nSelectedIndex) < nPageSize) {
-        if (!((int)uVisibleCount < nPageSize)) {
-          pThis->nSelectedIndex = uVisibleCount - nPageSize;
-        } else {
-          pThis->nSelectedIndex = 0;
+      nPageSize = pThis->nVisibleRows;
+      if (nPageSize <= (int)uVisibleCount && uMouseY != nNewScrollPos && -1 < uMouseY - nNewScrollPos) {
+        if (pThis->field_0x180752 == pThis->field_0x180756) {
+          return 0;
         }
+        if (uMouseY < (int)(nNewScrollPos + 0xd + pThis->field_0x180752 * 0xc)) {
+          uScrollTop = pThis->nSelectedIndex - nPageSize;
+          pThis->nSelectedIndex = (int)uScrollTop <= 0 ? 0 : uScrollTop;
+        } else {
+          if (uMouseY <= (int)(pThis->nScrollBarY + 0xd + pThis->field_0x180756 * 0xc)) {
+            return 0;
+          }
+
+          nNewScrollPos = pThis->nSelectedIndex + nPageSize;
+          if (nNewScrollPos >= (int)uVisibleCount) {
+            nNewScrollPos = uVisibleCount - 1;
+          }
+
+          pThis->nSelectedIndex = nNewScrollPos;
+          if ((int)(uVisibleCount - pThis->nSelectedIndex) < nPageSize) {
+            if (!((int)uVisibleCount < nPageSize)) {
+              pThis->nSelectedIndex = uVisibleCount - nPageSize;
+            } else {
+              pThis->nSelectedIndex = 0;
+            }
+          }
+        }
+        if (pThis->nSelectedIndex >= 0x80) {
+          pThis->nSelectedIndex = (int)(uVisibleCount - 1) < 0 ? 0 : uVisibleCount - 1;
+        }
+
+        pThis->nFirstVisibleIndex = pThis->nSelectedIndex;
+        Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
+        EnsureSelectionVisible(pThis);
+        return 1;
       }
     }
-    if (pThis->nSelectedIndex >= 0x80) {
-      pThis->nSelectedIndex = (int)(uVisibleCount - 1) < 0 ? 0 : uVisibleCount - 1;
-    }
 
-    pThis->nFirstVisibleIndex = pThis->nSelectedIndex;
-    Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
-    EnsureSelectionVisible(pThis);
-    return 1;
+    return 0;
 }
 
 int __thiscall OnMouseDown(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMsg) {

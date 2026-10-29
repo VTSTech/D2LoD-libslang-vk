@@ -974,8 +974,8 @@ BOOL __fastcall Q26_PartyMember_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStr
 }
 
 BOOL __fastcall Q26_PartyMember_PlayCompleteSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pDVar1->pQuestRecord[pGame->nDifficulty], QUEST_TheFallenAngel, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheFallenAngel, QUESTSTATE_JustCompleted);
     if (!BVar2) {
       return 0;
     }
@@ -1018,8 +1018,8 @@ void __fastcall Q26_PartyMember_SetCompleted(::SGAMEDATA * pGame, D2UnitStrc * p
 }
 
 BOOL __fastcall Q26_PropagateCompletionToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pDVar1->pQuestRecord[pGame->nDifficulty], QUEST_TheFallenAngel, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheFallenAngel, QUESTSTATE_JustCompleted);
     if (!BVar2) {
       return 0;
     }
@@ -1125,8 +1125,8 @@ void __fastcall Q22_PartyMember_SetCompleted(::SGAMEDATA * pGame, D2UnitStrc * p
 }
 
 BOOL __fastcall Q22_PropagateCompletionToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pDVar1->pQuestRecord[pGame->nDifficulty], QUEST_TheBlackenedTemple, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheBlackenedTemple, QUESTSTATE_JustCompleted);
     if (!BVar2) {
       return 0;
     }
@@ -1159,8 +1159,8 @@ BOOL __fastcall Q22_PartyMember_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStr
 }
 
 BOOL __fastcall Q22_PartyMember_PlayCompleteSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pDVar1->pQuestRecord[pGame->nDifficulty], QUEST_TheBlackenedTemple, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheBlackenedTemple, QUESTSTATE_JustCompleted);
     if (!BVar2) {
       return 0;
     }

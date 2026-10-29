@@ -31,11 +31,11 @@ void __fastcall SetComponent(D2UnitStrc * pUnit, uint8_t nComponent, uint8_t nVa
 }
 
 D2AiGeneralStrc * __fastcall GetAiGeneral(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
-      return nullptr;
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer) {
+      return (D2AiGeneralStrc*)pUnit->pUnitData.pUnitDataPlayer->unk0x28;
     }
 
-    return (D2AiGeneralStrc*)pUnit->pUnitData.pUnitDataPlayer->unk0x28;
+    return nullptr;
 }
 
 } // namespace D2Game::UNIT::Monster

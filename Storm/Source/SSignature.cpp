@@ -31,11 +31,11 @@ void __fastcall SSIG_FreeBigNum(void * * pBigNum) {
 static BOOL __stdcall SSIG_FindSignatureMarker(int32_t nOffset, uint32_t nTotalSize, int32_t pBuffer, int * pnFoundOffset) {
     int nMarkerOffset = nTotalSize - nOffset - 4;
     *pnFoundOffset = nMarkerOffset;
-    if (!(nTotalSize >= nOffset + 4U && *(int*)(nMarkerOffset + pBuffer) == 0x5349474e)) {
-      return 0;
+    if (nTotalSize >= nOffset + 4U && *(int*)(nMarkerOffset + pBuffer) == 0x5349474e) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 static void __stdcall SSIG_HashData(uint32_t nDataLen, uint8_t * pData, int32_t pDigestOut) {
@@ -616,7 +616,8 @@ BigData * * __fastcall SSIGNATURE_RsaPowMod(BigData * * ppBase, BigData * * pnPa
 // Was SBIG_ExportBytesWithPadding. DESCRIPTIVE, not an oracle name. Body = SBigToBinaryBuffer into the caller's buffer, then zero-fill the remainder to the requested length - the exact tail of Crypt::RSA::Process. Zero callers: MSVC out-of-line COMDAT copy. Moved from SBig to SSignature.
 void * __fastcall SSIGNATURE_RsaExportZeroPadded(void * pOutBuf, uint32_t nParam, BigData * * pnParam) {
     uint32_t nOrigLen = nParam;
-    SBig::SBigToBinaryBuffer(*pnParam, pOutBuf, nParam, &nParam);
+    BigData* pnParamValue = *pnParam;
+    SBig::SBigToBinaryBuffer(pnParamValue, pOutBuf, nParam, &nParam);
     if (nParam >= nOrigLen) {
       return pOutBuf;
     }

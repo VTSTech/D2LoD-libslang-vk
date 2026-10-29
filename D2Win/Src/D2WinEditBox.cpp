@@ -200,11 +200,11 @@ static BOOL D2WINEDITBOX_HasSelection(::D2WinEditBox * pEditBox) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19a);
         exit(-1);
       }
-      if (!(pEditBox->nSelAnchor != -1 && pEditBox->nSelAnchor != pEditBox->nSelCursor)) {
-        return 0;
+      if (pEditBox->nSelAnchor != -1 && pEditBox->nSelAnchor != pEditBox->nSelCursor) {
+        return 1;
       }
 
-      return 1;
+      return 0;
     }
 }
 
@@ -335,11 +335,8 @@ static int32_t __stdcall D2WINEDITBOX_HandleMouseClick(int * pEditBox, short * p
         wszCursorChar[1] = L'\0';
         D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszCursorChar, szCursorChar, 2);
         nLine = D2WinFont::D2WINFONT_GetStringPixelWidth(wszCursorChar, 2);
-        pWideBufIter = wszLineBuffer;
-        for (nZeroCount = 0x80; nZeroCount; nZeroCount--) {
-          pWideBufIter[0] = L'\0';
-          pWideBufIter[1] = L'\0';
-          pWideBufIter += 2;
+        for (nZeroCount = 0; nZeroCount < 0x100; nZeroCount++) {
+          wszLineBuffer[nZeroCount] = L'\0';
         }
 
         D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szDecodedText, (uint16_t*)pszWideText, 0x100);
@@ -437,11 +434,8 @@ static void __stdcall D2WINEDITBOX_HandleTextSelection(int * pEditBox, int * pX,
     } else {
       char* pcVar1;
       if (*pEditBox == 1) {
-        pWideBufIter = wszEditText;
-        for (nLineWidth = 0x96; nLineWidth; nLineWidth--) {
-          pWideBufIter[0] = L'\0';
-          pWideBufIter[1] = L'\0';
-          pWideBufIter += 2;
+        for (nLineWidth = 0; nLineWidth < 0x12c; nLineWidth++) {
+          wszEditText[nLineWidth] = L'\0';
         }
 
         D2WinFont::SetAndReturnLastFont(pEditBox[0x9c]);
@@ -455,11 +449,8 @@ static void __stdcall D2WINEDITBOX_HandleTextSelection(int * pEditBox, int * pX,
         wszCursorChar[1] = L'\0';
         D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszCursorChar, szCursorChar, 2);
         nCursorWidth = D2WinFont::D2WINFONT_GetStringPixelWidth(wszCursorChar, 2);
-        pWideBufIter = wszLineWidthBuf;
-        for (nClampedY = 0x80; nClampedY; nClampedY--) {
-          pWideBufIter[0] = L'\0';
-          pWideBufIter[1] = L'\0';
-          pWideBufIter += 2;
+        for (nClampedY = 0; nClampedY < 0x100; nClampedY++) {
+          wszLineWidthBuf[nClampedY] = L'\0';
         }
 
         D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szEditText, (uint16_t*)(pEditBox + 0x17), 0x100);
@@ -647,10 +638,10 @@ BOOL __stdcall D2WINEDITBOX_CreateControl(D2ControlMsg * pControl, int eFormType
 
     uint32_t uVar1;
     uVar1 = pEditBox->sControl.dwState;
-    if (!(uVar1 & 4)) {
+    if (!(gadwBitMasks[2] & uVar1)) {
       return 0;
     }
-    if (!(uVar1 & 1)) {
+    if (!(gadwBitMasks[0] & uVar1)) {
       return 0;
     }
 
@@ -813,11 +804,11 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
 }
 
 int __stdcall D2WINEDITBOX_Unused_Placeholder_7(uint32_t dwUnused1, uint32_t dwUnused2, char * szText) {
-    if (!('/' < *szText && *szText < ':')) {
-      return 0;
+    if ('/' < *szText && *szText < ':') {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 uint32_t __stdcall D2WINEDITBOX_Unused_Placeholder_8(uint32_t dwUnused1, uint32_t dwUnused2, char * szText) {
@@ -833,6 +824,7 @@ static void D2WINEDITBOX_UpdateCursorPosition(::D2WinEditBox * pEditBox) {
     int nScrollStart;
     int nLoopCount;
     uint32_t nCursorPos;
+    uint16_t* pWideIter;
     uint16_t wszDisplayText[300];
     char szMaskChar[2];
     char szCursorChar[2];
@@ -842,11 +834,8 @@ static void D2WINEDITBOX_UpdateCursorPosition(::D2WinEditBox * pEditBox) {
     int nMaxLinePixels = pEditBox->sControl.dwSizeX + pEditBox->nInsetX * -2;
     uint32_t nTextLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pEditBox->wszText);
     uint32_t uVar1 = pEditBox->nFlags;
-    uint16_t* pWideIter = wszDisplayText;
-    for (nLoopCount = 0x96; nLoopCount; nLoopCount--) {
-      pWideIter[0] = L'\0';
-      pWideIter[1] = L'\0';
-      pWideIter += 2;
+    for (nLoopCount = 0; nLoopCount < 0x12c; nLoopCount++) {
+      wszDisplayText[nLoopCount] = L'\0';
     }
 
     if (uVar1 & 1) {
@@ -1003,18 +992,12 @@ static void D2WINEDITBOX_HandleDelete(::D2WinEditBox * pEditBox) {
         exit(-1);
       }
 
-      pWideZeroIter = wszBeforeDelete;
-      for (nTypeCheck = 0x80; nTypeCheck; nTypeCheck--) {
-        pWideZeroIter[0] = L'\0';
-        pWideZeroIter[1] = L'\0';
-        pWideZeroIter += 2;
+      for (nTypeCheck = 0; nTypeCheck < 0x100; nTypeCheck++) {
+        wszBeforeDelete[nTypeCheck] = L'\0';
       }
 
-      pWideZeroIter = wszAfterDelete;
-      for (nTypeCheck = 0x80; nTypeCheck; nTypeCheck--) {
-        pWideZeroIter[0] = L'\0';
-        pWideZeroIter[1] = L'\0';
-        pWideZeroIter += 2;
+      for (nTypeCheck = 0; nTypeCheck < 0x100; nTypeCheck++) {
+        wszAfterDelete[nTypeCheck] = L'\0';
       }
 
       nDelEnd = pEditBox->nSelAnchor;
@@ -1066,12 +1049,12 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyPress(::D2WinEditBox * pEditBox, uint8_t b
     int nHasText2;
     uint8_t* pbClipSrc;
     uint8_t* pbClipEnd;
-    uint8_t* pbVar1;
+    uint8_t* pbVar2;
     int nFilterResult;
     BOOL bHasCopySelection;
     BOOL bHasCutSelection;
     int32_t nCallbackResult;
-    int iVar2;
+    int iVar3;
     int32_t nCutStart;
     int32_t nSelStart;
     int32_t nSelEnd;
@@ -1087,8 +1070,8 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyPress(::D2WinEditBox * pEditBox, uint8_t b
       exit(-1);
     }
 
-    uint32_t nState = pEditBox->sControl.dwState;
-    if (!(nState & 4) || !(nState & 1)) {
+    uint32_t uVar1 = pEditBox->sControl.dwState;
+    if (!(gadwBitMasks[2] & uVar1) || !(gadwBitMasks[0] & uVar1)) {
       return 0;
     }
     if (bParam == 9 && pEditBox->nFlags & 4) {
@@ -1105,8 +1088,8 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyPress(::D2WinEditBox * pEditBox, uint8_t b
     __frame0.pbClipBuf = (uint8_t*)(uint32_t)((uint32_t)(uint16_t)*(uint16_t*)((char*)&__frame0.pbClipBuf + 2) << 16 | (uint32_t)(uint16_t)bParam);
     BOOL bFontCharValid = D2WinFont::D2WINFONT_IsFontCharacterValid(bParam);
     if (!bFontCharValid) {
-      nState = pEditBox->nFlags;
-      if ((!(nState & 0x20) || (nPasteLen = D2WINEDITBOX_GetTextLength((uint16_t*)&__frame0.pbClipBuf) , !nPasteLen)) && (!(nState & 8) || __frame0.abKeyBuffer[0] != 0xd) && (!(nState & 0x10) || __frame0.abKeyBuffer[0] != 0xe) && __frame0.abKeyBuffer[0] != 0x16 && __frame0.abKeyBuffer[0] != 3 && __frame0.abKeyBuffer[0] != 0x18 && __frame0.abKeyBuffer[0] != 1) {
+      uVar1 = pEditBox->nFlags;
+      if ((!(uVar1 & 0x20) || (nPasteLen = D2WINEDITBOX_GetTextLength((uint16_t*)&__frame0.pbClipBuf) , !nPasteLen)) && (!(uVar1 & 8) || __frame0.abKeyBuffer[0] != 0xd) && (!(uVar1 & 0x10) || __frame0.abKeyBuffer[0] != 0xe) && __frame0.abKeyBuffer[0] != 0x16 && __frame0.abKeyBuffer[0] != 3 && __frame0.abKeyBuffer[0] != 0x18 && __frame0.abKeyBuffer[0] != 1) {
         return 0;
       }
     }
@@ -1129,52 +1112,6 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyPress(::D2WinEditBox * pEditBox, uint8_t b
     nHasText2 = pEditBox->nCursorIndex;
     uint16_t* pwszCursor = __frame0.awszEditBuffer + nHasText2;
     switch (__frame0.abKeyBuffer[0]) {
-      case 1:
-        D2WINEDITBOX_SelectAll(pEditBox);
-      break;
-      default:
-        if (nCallbackResult >= (int)(pEditBox->nMaxLength - 1)) {
-          return 0;
-        }
-      if (nCallbackResult < 0xff) {
-        if (__frame0.abKeyBuffer[0] == 0xd) {
-          D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(__frame0.szConvertBuffer + 2, (uint16_t*)pwszCursor, 0x100);
-          __frame0.szConvertBuffer[0] = '\r';
-          __frame0.szConvertBuffer[1] = '\n';
-          D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(pwszCursor, __frame0.szConvertBuffer, 0x100);
-          pwszCursor = __frame0.awszEditBuffer + 2;
-        } else {
-          D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(__frame0.szConvertBuffer + 1, (uint16_t*)pwszCursor, 0x100);
-          __frame0.szConvertBuffer[0] = __frame0.abKeyBuffer[0];
-          D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(pwszCursor, __frame0.szConvertBuffer, 0x100);
-          pwszCursor = __frame0.awszEditBuffer + 1;
-        }
-
-        pwszCursor += nHasText2;
-        D2WINEDITBOX_ClearSelection(pEditBox);
-      }
-
-      break;
-      case 3:
-        bHasCopySelection = D2WINEDITBOX_HasSelection(pEditBox);
-      if (bHasCopySelection) {
-        nHasText2 = pEditBox->nSelAnchor;
-        iVar2 = pEditBox->nSelCursor;
-        nFilterResult = nHasText2;
-        if (nHasText2 < iVar2 || (nFilterResult = iVar2 , nHasText2 <= iVar2)) {
-          nHasText2 = iVar2;
-        }
-
-        nCallbackResult = nHasText2 - nFilterResult + 1;
-        if (nCallbackResult <= 2) {
-          nCallbackResult = 2;
-        }
-
-        D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(__frame0.szConvertBuffer, (uint16_t*)(__frame0.awszEditBuffer + nFilterResult), nCallbackResult);
-        D2WINEDITBOX_ValidateInput(__frame0.szConvertBuffer);
-      }
-
-      break;
       case 0x16:
         pbClipSrc = (uint8_t*)D2WINEDITBOX_GetTextBuffer();
       pbClipEnd = pbClipSrc;
@@ -1186,25 +1123,25 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyPress(::D2WinEditBox * pEditBox, uint8_t b
       __frame0.pbClipBuf = pbClipSrc;
       if (pEditBox->fpFilterCallback) {
         pbClipEnd = pbClipSrc + 1;
-        pbVar1 = pbClipSrc;
-        pbVar1 = pbVar1 + strlen((char*)pbVar1) + 1;
+        pbVar2 = pbClipSrc;
+        pbVar2 = pbVar2 + strlen((char*)pbVar2) + 1;
         nHasText2 = 0;
-        if ((int)pbVar1 - (int)pbClipEnd > 0) {
-          iVar2 = pEditBox->nCursorIndex - (int)pbClipSrc;
+        if ((int)pbVar2 - (int)pbClipEnd > 0) {
+          iVar3 = pEditBox->nCursorIndex - (int)pbClipSrc;
           do {
             bFontCharValid = D2WinFont::D2WINFONT_IsFontCharacterValid(*pbClipSrc);
             if (!bFontCharValid) {
               return 0;
             }
 
-            nFilterResult = pEditBox->fpFilterCallback(pEditBox, (int)(pbClipSrc + iVar2), (char*)pbClipSrc);
+            nFilterResult = pEditBox->fpFilterCallback(pEditBox, (int)(pbClipSrc + iVar3), (char*)pbClipSrc);
             if (!nFilterResult) {
               return 0;
             }
 
             nHasText2++;
             pbClipSrc++;
-          } while (nHasText2 < (int)pbVar1 - (int)pbClipEnd);
+          } while (nHasText2 < (int)pbVar2 - (int)pbClipEnd);
         }
       }
 
@@ -1262,14 +1199,34 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyPress(::D2WinEditBox * pEditBox, uint8_t b
       pbClipEnd = pbClipEnd + strlen((char*)pbClipEnd) + 1;
       pwszCursor = (uint16_t*)((int)pbClipEnd * 2 - 0x25e + nSelStart * 2 - (uintptr_t)((uint8_t*)&__frame0 + 2980));
       break;
+      case 3:
+        bHasCopySelection = D2WINEDITBOX_HasSelection(pEditBox);
+      if (bHasCopySelection) {
+        nHasText2 = pEditBox->nSelAnchor;
+        iVar3 = pEditBox->nSelCursor;
+        nFilterResult = nHasText2;
+        if (nHasText2 < iVar3 || (nFilterResult = iVar3 , nHasText2 <= iVar3)) {
+          nHasText2 = iVar3;
+        }
+
+        nCallbackResult = nHasText2 - nFilterResult + 1;
+        if (nCallbackResult <= 2) {
+          nCallbackResult = 2;
+        }
+
+        D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(__frame0.szConvertBuffer, (uint16_t*)(__frame0.awszEditBuffer + nFilterResult), nCallbackResult);
+        D2WINEDITBOX_ValidateInput(__frame0.szConvertBuffer);
+      }
+
+      break;
       case 0x18:
         bHasCutSelection = D2WINEDITBOX_HasSelection(pEditBox);
       if (bHasCutSelection) {
         nHasText2 = pEditBox->nSelAnchor;
-        iVar2 = pEditBox->nSelCursor;
+        iVar3 = pEditBox->nSelCursor;
         nCutStart = nHasText2;
-        if (nHasText2 < iVar2 || (nCutStart = iVar2 , nHasText2 <= iVar2)) {
-          nHasText2 = iVar2;
+        if (nHasText2 < iVar3 || (nCutStart = iVar3 , nHasText2 <= iVar3)) {
+          nHasText2 = iVar3;
         }
 
         nCallbackResult = nHasText2 - nCutStart + 1;
@@ -1284,11 +1241,39 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyPress(::D2WinEditBox * pEditBox, uint8_t b
         D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszString);
         D2Lang::Unicode::UNISYS::STRING_CopyWideString(__frame0.awszEditBuffer, wszString);
       }
+
+      break;
+      case 1:
+        D2WINEDITBOX_SelectAll(pEditBox);
+      break;
+      default:
+        if (nCallbackResult >= (int)(pEditBox->nMaxLength - 1)) {
+          return 0;
+        }
+      if (nCallbackResult < 0xff) {
+        if (__frame0.abKeyBuffer[0] == 0xd) {
+          D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(__frame0.szConvertBuffer + 2, (uint16_t*)pwszCursor, 0x100);
+          __frame0.szConvertBuffer[0] = '\r';
+          __frame0.szConvertBuffer[1] = '\n';
+          D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(pwszCursor, __frame0.szConvertBuffer, 0x100);
+          pwszCursor = __frame0.awszEditBuffer + 2;
+        } else {
+          D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(__frame0.szConvertBuffer + 1, (uint16_t*)pwszCursor, 0x100);
+          __frame0.szConvertBuffer[0] = __frame0.abKeyBuffer[0];
+          D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(pwszCursor, __frame0.szConvertBuffer, 0x100);
+          pwszCursor = __frame0.awszEditBuffer + 1;
+        }
+
+        pwszCursor += nHasText2;
+        D2WINEDITBOX_ClearSelection(pEditBox);
+      }
+
+      break;
     }
 
     nHasText2 = pEditBox->nInsetY;
-    iVar2 = pEditBox->sControl.dwSizeY;
-    if (!(!(pEditBox->nFlags & 8) || (nCallbackResult = D2WINEDITBOX_HandleMouseClick((int*)pEditBox, (short*)__frame0.awszEditBuffer) , nCallbackResult < iVar2 + nHasText2 * -2))) {
+    iVar3 = pEditBox->sControl.dwSizeY;
+    if (!(!(pEditBox->nFlags & 8) || (nCallbackResult = D2WINEDITBOX_HandleMouseClick((int*)pEditBox, (short*)__frame0.awszEditBuffer) , nCallbackResult < iVar3 + nHasText2 * -2))) {
       return 1;
     }
 
@@ -1328,7 +1313,7 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cP
 
     uint32_t bShiftHeld;
     bShiftHeld = pEditBox->sControl.dwState;
-    if (!(bShiftHeld & 4) || !(bShiftHeld & 1)) {
+    if (!(gadwBitMasks[2] & bShiftHeld) || !(gadwBitMasks[0] & bShiftHeld)) {
       return 0;
     }
 
@@ -1407,7 +1392,7 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cP
           }
 
           bShiftHeld = pNextControl->sControl.dwState;
-          if (!(!(bShiftHeld & 4) || !(bShiftHeld & 1))) {
+          if (!(!(gadwBitMasks[2] & bShiftHeld) || !(gadwBitMasks[0] & bShiftHeld))) {
             break;
           }
 
@@ -1430,7 +1415,7 @@ BOOL __fastcall D2WINEDITBOX_HandleKeyRelease(::D2WinEditBox * pEditBox, char cP
           }
 
           bShiftHeld = pNextControl->sControl.dwState;
-          if (bShiftHeld & 4 && bShiftHeld & 1) {
+          if (gadwBitMasks[2] & bShiftHeld && gadwBitMasks[0] & bShiftHeld) {
             break;
           }
 
@@ -1607,7 +1592,7 @@ int __fastcall D2WINEDITBOX_SetTextWide(::D2WinEditBox * pnParam, uint16_t * wsz
 }
 
 BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
-    bool bVar1;
+    bool bVar2;
     int nFontHeight;
     int nSelMin;
     size_t _Count;
@@ -1639,12 +1624,12 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
       exit(-1);
     }
 
-    uint32_t nState;
-    nState = pEditBox->sControl.dwState;
-    if (!(nState & 4)) {
+    uint32_t uVar1;
+    uVar1 = pEditBox->sControl.dwState;
+    if (!(gadwBitMasks[2] & uVar1)) {
       return 1;
     }
-    if (!(nState & 1)) {
+    if (!(gadwBitMasks[0] & uVar1)) {
       return 1;
     }
 
@@ -1667,9 +1652,9 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
     int nYEnd;
     nYEnd = nGlobalState + (pEditBox->sControl.dwPosY - pEditBox->sControl.dwSizeY) + pEditBox->nInsetY;
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszFullTextCopy, pEditBox->wszText);
-    int32_t iVar2;
-    iVar2 = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x40, 0x40, 0x40);
-    nSelBgColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nSelBgColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)iVar2);
+    int32_t iVar3;
+    iVar3 = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x40, 0x40, 0x40);
+    nSelBgColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nSelBgColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)iVar3);
     szCursorChar[0] = '_';
     szCursorChar[1] = '\0';
     Fog::File::CONTAINER_InitializeBuffer(wszCursorChar, 2, 2, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
@@ -1681,13 +1666,13 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
     if (pFocusedEditBox == pEditBox) {
       DWORD dwTick;
       dwTick = GetTickCount();
-      bVar1 = true;
+      bVar2 = true;
       if (dwTick / 0xfa & 1) {
         goto draw_text_lines;
       }
     }
 
-    bVar1 = false;
+    bVar2 = false;
     draw_text_lines:
     bCursorDrawn = 0;
     Fog::File::CONTAINER_InitializeBuffer(wszLineSegment, 2, 0x100, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
@@ -1697,12 +1682,12 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
     nGlobalState = D2WinFont::D2WINFONT_GetCurrentFontHeight();
     int nMaxDrawWidth;
     nMaxDrawWidth = pEditBox->sControl.dwSizeX + pEditBox->nInsetX * -2;
-    int iVar3;
-    iVar3 = pEditBox->sControl.dwSizeY + pEditBox->nInsetY * -2;
+    int iVar4;
+    iVar4 = pEditBox->sControl.dwSizeY + pEditBox->nInsetY * -2;
     int nYEnd_00;
     nYEnd_00 = nYEnd;
     if (szFullText[0] == '\0') {
-      if (!bVar1) {
+      if (!bVar2) {
         return 1;
       }
 
@@ -1714,7 +1699,7 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
     }
 
     do {
-      if (nYEnd_00 - nYEnd >= iVar3) {
+      if (nYEnd_00 - nYEnd >= iVar4) {
         return 1;
       }
 
@@ -1730,8 +1715,8 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
 
         szLineSegment[nLineCharCount] = cCurChar;
         D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszLineSegment, szLineSegment, 0x100);
-        iVar2 = D2WinFont::D2WINFONT_GetStringPixelWidth(wszLineSegment, nLineCharCount);
-        if (iVar2 + nCursorCharWidth > nMaxDrawWidth) {
+        iVar3 = D2WinFont::D2WINFONT_GetStringPixelWidth(wszLineSegment, nLineCharCount);
+        if (iVar3 + nCursorCharWidth > nMaxDrawWidth) {
           break;
         }
 
@@ -1811,13 +1796,13 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
       pcLineEnd[(int)(szLineSegment - (int)pcLineStart)] = '\0';
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszLineSegment, szLineSegment, 0x100);
       D2WinFont::DRAW_text(wszLineSegment, nX, nYEnd_00, pEditBox->nMaxValue, 0);
-      if (bVar1 && !bCursorDrawn) {
+      if (bVar2 && !bCursorDrawn) {
         pcLineStart = szFullText + (pEditBox->nCursorIndex - (int)pcLineStart);
         if ((int)pcLineStart >= 0 && (int)pcLineStart <= (int)nLineCharCount) {
           nSelMin = nX;
           if (pcLineStart) {
-            iVar2 = D2WinFont::D2WINFONT_GetStringPixelWidth(wszLineSegment, (int32_t)pcLineStart);
-            nSelMin = iVar2 + nX;
+            iVar3 = D2WinFont::D2WINFONT_GetStringPixelWidth(wszLineSegment, (int32_t)pcLineStart);
+            nSelMin = iVar3 + nX;
           }
 
           D2WinFont::DRAW_text(wszCursorChar, nSelMin, nYEnd_00, pEditBox->nMaxValue, 0);
@@ -1840,7 +1825,7 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
             pcLineEnd += 2;
             nSelMin += 2;
             nYEnd_00 += nGlobalState;
-            if (bVar1 && !bCursorDrawn && pEditBox->nCursorIndex == nSelMin && bLineWrapped < iVar3) {
+            if (bVar2 && !bCursorDrawn && pEditBox->nCursorIndex == nSelMin && bLineWrapped < iVar4) {
               D2WinFont::DRAW_text(wszCursorChar, nX, nYEnd_00, pEditBox->nMaxValue, 0);
             }
           } while (*pcLineEnd == '\r');
@@ -1850,7 +1835,7 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
             pcLineEnd++;
             nSelMin++;
             nYEnd_00 += nGlobalState;
-            if (bVar1 && !bCursorDrawn && pEditBox->nCursorIndex == nSelMin && bLineWrapped < iVar3) {
+            if (bVar2 && !bCursorDrawn && pEditBox->nCursorIndex == nSelMin && bLineWrapped < iVar4) {
               D2WinFont::DRAW_text(wszCursorChar, nX, nYEnd_00, pEditBox->nMaxValue, 0);
             }
           } while (*pcLineEnd == '\r');
@@ -1900,10 +1885,10 @@ BOOL __stdcall PushFlag0x8(D2ControlMsg * pControlMsg) {
 
     uint32_t nNewTextLen;
     nNewTextLen = pEditBox->sControl.dwState;
-    if (!(nNewTextLen & 4)) {
+    if (!(gadwBitMasks[2] & nNewTextLen)) {
       return 0;
     }
-    if (!(nNewTextLen & 1)) {
+    if (!(gadwBitMasks[0] & nNewTextLen)) {
       return 0;
     }
 
@@ -1997,8 +1982,8 @@ BOOL __stdcall PushFlag0x8(D2ControlMsg * pControlMsg) {
     record_click_and_notify:
     pOVar1 = pEditBox->sControl.fpOnPress;
     if (!pOVar1) {
-      gdwLastEditBoxClickTick = DVar2;
       gpLastClickedEditBoxControl = pEditBox;
+      gdwLastEditBoxClickTick = DVar2;
       return 0;
     }
 
@@ -2012,12 +1997,10 @@ BOOL __stdcall PushFlag0x8(D2ControlMsg * pControlMsg) {
 // Provenance: asm 004ffe10; callers pass edit boxes (e.g. gUILevelRestrictionEditBox at 00445387) and char buffers built by SStrPrintf/sprintf.
 void __fastcall D2WINEDITBOX_SetTextFromAnsi(::D2WinEditBox * pEditBox, char * szText) {
     int nZeroCount;
+    uint16_t* pwszBufPtr;
     uint16_t wszText[256];
-    uint16_t* pwszBufPtr = wszText;
-    for (nZeroCount = 0x80; nZeroCount; nZeroCount--) {
-      pwszBufPtr[0] = L'\0';
-      pwszBufPtr[1] = L'\0';
-      pwszBufPtr += 2;
+    for (nZeroCount = 0; nZeroCount < 0x100; nZeroCount++) {
+      wszText[nZeroCount] = L'\0';
     }
 
     D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszText, szText, 0x100);
@@ -2069,7 +2052,7 @@ BOOL __fastcall DrawFlag0x8(::D2WinEditBox * pEditBox) {
       }
 
       nVisibleLen = pEditBox->sControl.dwState;
-      if (!(nVisibleLen & 4 && nVisibleLen & 1)) {
+      if (!(gadwBitMasks[2] & nVisibleLen && gadwBitMasks[0] & nVisibleLen)) {
         return 1;
       }
 
@@ -2087,9 +2070,9 @@ BOOL __fastcall DrawFlag0x8(::D2WinEditBox * pEditBox) {
       pDC6Bg = pEditBox->sControl.pDC6;
       if (pDC6Bg) {
         memset(&sGfxData, 0, 0x48);
+        sGfxData.pDC6 = pDC6Bg;
         sGfxData.nDirection = 0;
         sGfxData.nFrameNumber = 0;
-        sGfxData.pDC6 = pDC6Bg;
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pEditBox->sControl.dwPosX, pEditBox->sControl.dwPosY - 1, -1, DRAW_SOLID, nullptr);
       }
 
@@ -2202,15 +2185,17 @@ BOOL __fastcall DrawFlag0x8(::D2WinEditBox * pEditBox) {
 
 // @sourcefile .\Src\D2WinEditBox.cpp
 ::D2WinEditBox * __fastcall D2WinEditBox(int32_t nPosX, int32_t nPosY, int32_t nSizeX, int32_t nSizeY, int32_t nInsetX, int32_t nInsetY, DC6 * pDC6, fpD2WinEditBoxSubmit pfnSubmit, OnPress pfnOnPress, uint32_t nFlags, uint32_t * pFontIds) {
+    uint32_t uVar1;
     ::Push pfnPush;
     ::Draw pfnDraw;
     ::D2WinEditBox* pNewEditBox = D2_NEW_AT(::D2WinEditBox, ".\\Src\\D2WinEditBox.cpp", 0x39);
     memset(pNewEditBox, 0, 0x284);
     pNewEditBox->sControl.neD2FormType = FORM_EditBox;
     int* pStateField = &pNewEditBox->sControl.dwState;
-    *pStateField |= 1;
+    *pStateField |= gadwBitMasks[0];
+    uVar1 = pNewEditBox->sControl.dwState | gadwBitMasks[2];
     pNewEditBox->sControl.pDC6 = pDC6;
-    pNewEditBox->sControl.dwState |= 4;
+    pNewEditBox->sControl.dwState = uVar1;
     pNewEditBox->sControl.dwSizeX = nSizeX;
     pNewEditBox->sControl.dwSizeY = nSizeY;
     pNewEditBox->sControl.dwPosX = nPosX;

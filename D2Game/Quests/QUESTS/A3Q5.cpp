@@ -73,7 +73,6 @@ namespace D2Game::Quests::QUESTS::A3Q5 {
 // State transitions: stateFlag 0->1, broadcast progress state 1.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q4.cpp
 void __fastcall Q21_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    BOOL bAlreadyCompleted;
     int32_t nDroppedItemGUID;
     ::SGAMEDATA* pGame;
     D2QuestArgStrc* pQuestArgsSaved = pQuestArgs;
@@ -83,11 +82,11 @@ void __fastcall Q21_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
     if (pQuestArgs->pPlayer) {
-      D2UnitDataPlayerStrc* pKillerPlayerData;
+      BOOL bAlreadyCompleted;
       pGame = pQuestData->pGame;
-      pKillerPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
       /* GetQuestState(nQuestIdReal=Golden Bird, Completed=0): bail if killer already
-                         finished the quest, to avoid a duplicate Jade Figurine drop */ bAlreadyCompleted = D2Common::QuestRecord::GetQuestState(pKillerPlayerData->pQuestRecord[pGame->nDifficulty], pQuestData->nQuestIdReal, QUESTSTATE_Completed);
+                         finished the quest, to avoid a duplicate Jade Figurine drop */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+      bAlreadyCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
       pQuestArgs = pQuestArgsSaved;
       if (bAlreadyCompleted) {
         return;
@@ -169,11 +168,11 @@ void __fastcall Q22_OnCouncilMemberKilled(D2QuestDataStrc * pQuestData, D2UnitSt
 // Q22_IsGoldenBirdQuestActive — returns 1 if the Golden Bird quest data exists and its bBloodRavenKilled-aliased flag is set. Cross-quest probe used by Blackened Temple flow; pure read of in-memory quest-specific data, no quest-record state calls.
 BOOL __fastcall Q22_IsGoldenBirdQuestActive(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheGoldenBird);
-    if (!(pQuestData && pQuestData->pQuestSpecificData.pA3Q4->bBirdDropped != '\0')) {
-      return 0;
+    if (pQuestData && pQuestData->pQuestSpecificData.pA3Q4->bBirdDropped != '\0') {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Q22_ClearGoldenBirdQuestFlag — clears the Golden Bird quest's in-memory flag (bBloodRavenKilled alias). Cross-quest reset helper; no quest-record state calls.
@@ -765,8 +764,9 @@ BOOL __fastcall Q22_PlayerCheckKhalimsWillItems(::SGAMEDATA * pGame, D2UnitStrc 
     }
 
     D2QuestDataA3Q5Strc* pA4Q2QuestData = pFlailItem->pQuestSpecificData.pA3Q5;
-    D2UnitDataPlayerStrc* pQuestData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestData->pQuestRecord[pGame->nDifficulty], QUEST_KhalimsWill, QUESTSTATE_Completed);
+    /* GetQuestState(Khalim's Will=0x12, Completed=0): only tally players who still
+                         need to do Khalim's Will */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_KhalimsWill, QUESTSTATE_Completed);
     if (!bQuestCompleted) {
       pPlayerData = ITEMS::Items::Drop::HasQuestItem(pGame, pUnit, 0x20316671);
       if (!pPlayerData) {

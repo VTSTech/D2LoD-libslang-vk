@@ -131,7 +131,6 @@ void __fastcall SendMercPackets(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, int32
 // Recomputes a hireling/mercenary's stats for a target level. Resolves the player's merc pet (PETTYPE_hireable) if pMerc is null; if nLevel==0 uses merc level+1. Sets UNITSTAT_level, looks up the hireling.txt row for the merc type/level, and derives nextexp/experience, str/dex (min 10), maxhp/hitpoints (min 0x2800), armorclass, secondary min/max damage, tohit, the four resistances, and hpregen by interpolating the txt base + per-level columns over (level - row.level). Finally grants up to 6 innate skills (clamped 1..0x20) gated by reqlevel/skill mode. Asserts pGame/pPlayer non-null and pPlayer is UNIT_PLAYER (halts otherwise).
 void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D2UnitStrc * pMerc, int32_t nLevel) {
     int nTmp;
-    D2PetDataStrc* pPetData;
     D2HirelingTxt* pHirelingTxt;
     int32_t nCalc;
     int nLevelDiff;
@@ -151,113 +150,116 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe2);
         exit(-1);
       }
-      if (!(pMerc || (pMerc = PLAYER::PlayerPets::SERVER_GetUnitPetByTypeId(pGame, pPlayer, PETTYPE_hireable, 0) , pMerc != 0))) {
-        return;
-      }
 
-      D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayer, UNITSTAT_level, 0);
-      nTmp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMerc, UNITSTAT_level, 0);
-      if (!nLevel) {
-        nLevel = nTmp + 1;
-      }
-
-      AI::SendNpcMessageOrHoverText(pGame, pMerc, pPlayer, 0xd7c, 1);
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_level, nLevel, 0);
-      pPetData = PLAYER::PlayerPets::GetPlayersPetData(pPlayer, pMerc->nUnitGUID);
-      pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, pPetData->nType, nLevel);
-      if (!pHirelingTxt) {
-        return;
-      }
-
-      nTmp = nLevel - pHirelingTxt->level;
-      nCalc = D2Common::DATATBLS::DataTbls::TXT_Experience_GetMaxLevel(0);
-      if (!(nLevel < nCalc - 1)) {
-        nCalc = 0;
-      } else {
-        nCalc = D2Common::Merc::GetBaseExperience(nLevel + 1, pHirelingTxt->expPerLvl);
-      }
-
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_nextexp, nCalc, 0);
-      nCalc = D2Common::Merc::GetBaseExperience(nLevel, pHirelingTxt->expPerLvl);
-      nLevelDiff = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMerc, UNITSTAT_experience, 0);
-      if (nLevelDiff < nCalc) {
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_experience, nCalc, 0);
-      }
-
-      nLevelDiff = pHirelingTxt->strPerlvl * nTmp;
-      nCalc = nLevelDiff / 8 + pHirelingTxt->str;
-      if (nCalc < 10) {
-        nCalc = 10;
-      }
-
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_strength, nCalc, 0);
-      nLevelDiff = pHirelingTxt->dexPerlvl * nTmp;
-      nCalc = nLevelDiff / 8 + pHirelingTxt->dex;
-      if (nCalc < 10) {
-        nCalc = 10;
-      }
-
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_dexterity, nCalc, 0);
-      nCalc = pHirelingTxt->hpPerlvl * 0x100 * nTmp + pHirelingTxt->hp * 0x100;
-      if (nCalc < 0x2800) {
-        nCalc = 0x2800;
-      }
-
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_maxhp, nCalc, 0);
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_hitpoints, nCalc, 0);
-      nUnsignedStatVal = pHirelingTxt->defPerlvl * nTmp + pHirelingTxt->defense;
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_armorclass, (int)nUnsignedStatVal < 0 ? 0 : nUnsignedStatVal, 0);
-      nLevelDiff = pHirelingTxt->dmgPerlvl * nTmp;
-      uVar1 = nLevelDiff / 8 + pHirelingTxt->dmgMin;
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_secondary_mindamage, (int)uVar1 < 0 ? 0 : uVar1, 0);
-      nLevelDiff = pHirelingTxt->dmgPerlvl * nTmp;
-      nCalc = nLevelDiff / 8 + pHirelingTxt->dmgMax;
-      if (nCalc < 1) {
-        nCalc = 1;
-      }
-
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_secondary_maxdamage, nCalc, 0);
-      uVar1 = pHirelingTxt->arPerlvl * nTmp + pHirelingTxt->ar;
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_tohit, (int)uVar1 < 0 ? 0 : uVar1, 0);
-      nLevelDiff = pHirelingTxt->resistPerlvl * nTmp;
-      uVar1 = nLevelDiff / 4 + pHirelingTxt->resist;
-      uVar1 = (int)uVar1 < 0 ? 0 : uVar1;
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_fireresist, uVar1, 0);
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_lightresist, uVar1, 0);
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_coldresist, uVar1, 0);
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_poisonresist, uVar1, 0);
-      nCalc = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_maxhp, 0);
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_hpregen, nCalc / 2000 < 0 ? 0 : nCalc / 2000, 0);
-      pSkillEntry = pHirelingTxt->nSkillId;
-      for (nLevelDiff = 0; nLevelDiff < 6; pSkillEntry++ , nLevelDiff++) {
-        eSkill = *pSkillEntry;
-        if ((int)eSkill <= 0) {
-          return;
-        }
-        if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
-          return;
-        }
-        if ('\x0f' < (char)pHirelingTxt->nSkillMode[nLevelDiff]) {
+      {
+        if (!(pMerc || (pMerc = PLAYER::PlayerPets::SERVER_GetUnitPetByTypeId(pGame, pPlayer, PETTYPE_hireable, 0) , pMerc != 0))) {
           return;
         }
 
-        pSkillTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine(eSkill);
-        if (pSkillTxt && nLevel >= pSkillTxt->reqlevel) {
-          uVar1 = ((char)pHirelingTxt->nSkillLvlPerLvl[nLevelDiff] * nTmp >> 5) + (int)(char)pHirelingTxt->nSkillLevel[nLevelDiff];
-          uVar1 = (int)uVar1 <= 0 ? 0 : uVar1;
-          if ((int)uVar1 < 0x20) {
-            if ((int)uVar1 <= 0) {
-              continue;
-            }
-          } else {
-            uVar1 = 0x20;
+        D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayer, UNITSTAT_level, 0);
+        nTmp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMerc, UNITSTAT_level, 0);
+        if (!nLevel) {
+          nLevel = nTmp + 1;
+        }
+
+        AI::SendNpcMessageOrHoverText(pGame, pMerc, pPlayer, 0xd7c, 1);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_level, nLevel, 0);
+        int nType = PLAYER::PlayerPets::GetPlayersPetData(pPlayer, pMerc->nUnitGUID)->nType;
+        pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, nType, nLevel);
+        if (!pHirelingTxt) {
+          return;
+        }
+
+        nTmp = nLevel - pHirelingTxt->level;
+        nCalc = D2Common::DATATBLS::DataTbls::TXT_Experience_GetMaxLevel(0);
+        if (!(nLevel < nCalc - 1)) {
+          nCalc = 0;
+        } else {
+          nCalc = D2Common::Merc::GetBaseExperience(nLevel + 1, pHirelingTxt->expPerLvl);
+        }
+
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_nextexp, nCalc, 0);
+        nCalc = D2Common::Merc::GetBaseExperience(nLevel, pHirelingTxt->expPerLvl);
+        nLevelDiff = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMerc, UNITSTAT_experience, 0);
+        if (nLevelDiff < nCalc) {
+          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_experience, nCalc, 0);
+        }
+
+        nLevelDiff = pHirelingTxt->strPerlvl * nTmp;
+        nCalc = nLevelDiff / 8 + pHirelingTxt->str;
+        if (nCalc < 10) {
+          nCalc = 10;
+        }
+
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_strength, nCalc, 0);
+        nLevelDiff = pHirelingTxt->dexPerlvl * nTmp;
+        nCalc = nLevelDiff / 8 + pHirelingTxt->dex;
+        if (nCalc < 10) {
+          nCalc = 10;
+        }
+
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_dexterity, nCalc, 0);
+        nCalc = pHirelingTxt->hpPerlvl * 0x100 * nTmp + pHirelingTxt->hp * 0x100;
+        if (nCalc < 0x2800) {
+          nCalc = 0x2800;
+        }
+
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_maxhp, nCalc, 0);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_hitpoints, nCalc, 0);
+        nUnsignedStatVal = pHirelingTxt->defPerlvl * nTmp + pHirelingTxt->defense;
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_armorclass, (int)nUnsignedStatVal < 0 ? 0 : nUnsignedStatVal, 0);
+        nLevelDiff = pHirelingTxt->dmgPerlvl * nTmp;
+        uVar1 = nLevelDiff / 8 + pHirelingTxt->dmgMin;
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_secondary_mindamage, (int)uVar1 < 0 ? 0 : uVar1, 0);
+        nLevelDiff = pHirelingTxt->dmgPerlvl * nTmp;
+        nCalc = nLevelDiff / 8 + pHirelingTxt->dmgMax;
+        if (nCalc < 1) {
+          nCalc = 1;
+        }
+
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_secondary_maxdamage, nCalc, 0);
+        uVar1 = pHirelingTxt->arPerlvl * nTmp + pHirelingTxt->ar;
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_tohit, (int)uVar1 < 0 ? 0 : uVar1, 0);
+        nLevelDiff = pHirelingTxt->resistPerlvl * nTmp;
+        uVar1 = nLevelDiff / 4 + pHirelingTxt->resist;
+        uVar1 = (int)uVar1 < 0 ? 0 : uVar1;
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_fireresist, uVar1, 0);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_lightresist, uVar1, 0);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_coldresist, uVar1, 0);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_poisonresist, uVar1, 0);
+        nCalc = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pMerc, UNITSTAT_maxhp, 0);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_hpregen, nCalc / 2000 < 0 ? 0 : nCalc / 2000, 0);
+        pSkillEntry = pHirelingTxt->nSkillId;
+        for (nLevelDiff = 0; nLevelDiff < 6; pSkillEntry++ , nLevelDiff++) {
+          eSkill = *pSkillEntry;
+          if ((int)eSkill <= 0) {
+            return;
+          }
+          if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
+            return;
+          }
+          if ('\x0f' < (char)pHirelingTxt->nSkillMode[nLevelDiff]) {
+            return;
           }
 
-          SKILLS::SkillsServer::SetSkill(pMerc, *pSkillEntry, uVar1, 0);
-        }
-      }
+          pSkillTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine(eSkill);
+          if (pSkillTxt && nLevel >= pSkillTxt->reqlevel) {
+            uVar1 = ((char)pHirelingTxt->nSkillLvlPerLvl[nLevelDiff] * nTmp >> 5) + (int)(char)pHirelingTxt->nSkillLevel[nLevelDiff];
+            uVar1 = (int)uVar1 <= 0 ? 0 : uVar1;
+            if ((int)uVar1 < 0x20) {
+              if ((int)uVar1 <= 0) {
+                continue;
+              }
+            } else {
+              uVar1 = 0x20;
+            }
 
-      return;
+            SKILLS::SkillsServer::SetSkill(pMerc, *pSkillEntry, uVar1, 0);
+          }
+        }
+
+        return;
+      }
     }
 }
 
@@ -551,16 +553,15 @@ void __fastcall NPC_BeginInteractionFromUnit(::SGAMEDATA * pGame, D2UnitStrc * p
 }
 
 static BOOL __stdcall UnitHasSwitchAiSet(D2UnitStrc * pMonster) {
-    if (!(pMonster && pMonster->eUnitType == UNIT_MONSTER)) {
-      return 0;
+    if (pMonster && pMonster->eUnitType == UNIT_MONSTER) {
+      int32_t nClassId;
+      nClassId = pMonster->nClassId;
+      if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nClassId] + 0xe) & gadwBitMasks[0]) {
+        return 1;
+      }
     }
 
-    int32_t nClassId = pMonster->nClassId;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && sgptDataTable->pTxtMonStats[nClassId].switchai)) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 // nParam arrives in EDX, survives the UnitHasSwitchAiSet call (that callee clobbers only EAX/ECX) and is stored to nAiRelated2.
@@ -570,34 +571,33 @@ BOOL __fastcall AI_SetSwitchAiTargetParams(D2UnitStrc * pUnit, int32_t nParam, u
     }
 
     BOOL bHasSwitchAi = UnitHasSwitchAiSet(pUnit);
-    if (!bHasSwitchAi) {
-      return 0;
+    if (bHasSwitchAi) {
+      D2UnitDataMonsterStrc* pMonsterData;
+      pMonsterData = pUnit->pUnitData.pUnitDataMonster;
+      if (pMonsterData) {
+        pMonsterData->nAiRelated2 = nParam;
+        pMonsterData->nAiRelated1 = nTargetGUID;
+        return 1;
+      }
     }
 
-    D2UnitDataMonsterStrc* pMonsterData = pUnit->pUnitData.pUnitDataMonster;
-    if (!pMonsterData) {
-      return 0;
-    }
-
-    pMonsterData->nAiRelated2 = nParam;
-    pMonsterData->nAiRelated1 = nTargetGUID;
-    return 1;
+    return 0;
 }
 
 D2UnitPlayerListStrc * __fastcall AI_GetSwitchAiParam1(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
-      return nullptr;
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer) {
+      return pUnit->pUnitData.pUnitDataPlayer->pPlayerList;
     }
 
-    return pUnit->pUnitData.pUnitDataPlayer->pPlayerList;
+    return nullptr;
 }
 
 D2UnitDataPlayerArenaStrc * __fastcall AI_GetSwitchAiParam2(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
-      return nullptr;
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer) {
+      return pUnit->pUnitData.pUnitDataPlayer->pArena;
     }
 
-    return pUnit->pUnitData.pUnitDataPlayer->pArena;
+    return nullptr;
 }
 
 void __fastcall AI_ClearSwitchAiTargetParams(D2UnitStrc * pUnit) {

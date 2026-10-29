@@ -40,6 +40,14 @@ void __fastcall Q37_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     short int nMessageIndex;
     nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     switch (nMonStatsId) {
+      case 0x94:
+        if (nMessageIndex != 0xb) {
+          bMsgMatch = nMessageIndex == 0xc;
+          goto check_msg_matched;
+        }
+      break;
+      default:
+        return;
       case 0x93:
         if (nMessageIndex != 0x2d) {
           bMsgMatch = nMessageIndex == 0x2e;
@@ -49,25 +57,18 @@ void __fastcall Q37_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
           }
         }
       break;
-      case 0x94:
-        if (nMessageIndex != 0xb) {
-          bMsgMatch = nMessageIndex == 0xc;
+      case 0x9a:
+        if (nMessageIndex != 0x24) {
+          bMsgMatch = nMessageIndex == 0x25;
           goto check_msg_matched;
         }
       break;
-      default:
-        return;
       case 0x96:
         if (nMessageIndex != 0x18) {
           bMsgMatch = nMessageIndex == 0x19;
           goto check_msg_matched;
         }
       break;
-      case 0x9a:
-        if (nMessageIndex != 0x24) {
-          bMsgMatch = nMessageIndex == 0x25;
-          goto check_msg_matched;
-        }
     }
 
     PLAYER::PlayerIntro::PLAYER_SetSpokenWithNPC(pQuestArgs->pPlayer, pQuestArgs->pGame, nMonStatsId);
@@ -92,9 +93,17 @@ void __fastcall Q37_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     switch (nMonStatsId) {
+      case 0x96:
+        nCharClass = 0;
+      break;
       case 0x93:
         nCharClass = 2;
       break;
+      case 0x9a:
+        nCharClass = 4;
+      break;
+      default:
+        return;
       case 0x94:
         nCharClass = 1;
       break;
@@ -105,14 +114,6 @@ void __fastcall Q37_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       case 0x98:
 
       case 0x99:
-        return;
-      case 0x96:
-        nCharClass = 0;
-      break;
-      case 0x9a:
-        nCharClass = 4;
-      break;
-      default:
         return;
     }
 
@@ -137,8 +138,8 @@ bool __fastcall Q37_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
 
 bool __fastcall Q37_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
     ::SGAMEDATA* pGame = pQuestData->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bQuestCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_DenOfEvil, QUESTSTATE_Completed);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_DenOfEvil, QUESTSTATE_Completed);
     if (!(bQuestCompleted != 1 && nTargetClassId == 0x94)) {
       return false;
     }

@@ -91,11 +91,11 @@ void GFXUTIL_PadTokenString(char * szText1, char * szText2) {
 }
 
 static uint8_t GFXUTIL_GetCompositePaletteIndex(D2UnitStrc * pUnit, uint8_t byComponent) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && byComponent < 0x10 && pUnit->pUnitData.pUnitDataMonster)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER && byComponent < 0x10 && pUnit->pUnitData.pUnitDataMonster) {
+      return pUnit->pUnitData.pUnitDataMonster->Components[byComponent];
     }
 
-    return pUnit->pUnitData.pUnitDataMonster->Components[byComponent];
+    return 0;
 }
 
 void __stdcall InitializeModeTokens() {
@@ -665,11 +665,11 @@ uint32_t __fastcall GFXUTIL_GetCofDrawOrder(uint8_t * pbParam, uint32_t nParam) 
 }
 
 int __fastcall GFXUTIL_IsValidUnitType(D2UnitStrc * pnParam) {
-    if (!(pnParam && (int)pnParam->eUnitType >= 0 && (int)pnParam->eUnitType <= 2)) {
-      return 0;
+    if (pnParam && (int)pnParam->eUnitType >= 0 && (int)pnParam->eUnitType <= 2) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 uint32_t __fastcall GFXUTIL_GetGfxInfoComponent(D2UnitStrc * pUnit, int32_t nParam) {

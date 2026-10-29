@@ -115,6 +115,23 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x77_TRADEREQUEST(char * pBytes) {
     DWORD dwSetUIFlagResult;
     BOOL bUIFlag;
     switch (pBytes[1]) {
+      case '\x15':
+        Inv::OpenCube();
+      return;
+      case '\x10':
+        Inv::CloseStash2();
+      return;
+      case '\x11':
+        Inv::CloseStash();
+      return;
+      case '\f':
+        g_nTradeWindowState = 0;
+      ui::UI_CloseTradeWindow(0);
+      return;
+      case '\r':
+        g_nTradeWindowState = 0;
+      ui::UI_CloseTradeWindow(1);
+      return;
       case '\0':
         if (!g_nTradeWindowState) {
           bUIFlag = ui::GetUIFlag(UI_MPTRADE);
@@ -134,6 +151,18 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x77_TRADEREQUEST(char * pBytes) {
           return;
         }
       break;
+      case '\t':
+        pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
+      UNIT::UnitSnd::UNITSND_PlayPlayerSound(pPlayerUnit_lcl, 0x17);
+      return;
+      case '\n':
+        pPlayerUnit_lcl = UNIT::Player::UNITS_FindClientSideUnit(gnTradeGoldUpdateBuffer, UNIT_PLAYER);
+      if (!pPlayerUnit_lcl) {
+        return;
+      }
+
+      UNIT::UnitSnd::UNITSND_PlayPlayerSound(pPlayerUnit_lcl, 0x17);
+      return;
       case '\x01':
         if (!g_nTradeWindowState) {
           pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
@@ -209,6 +238,19 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x77_TRADEREQUEST(char * pBytes) {
       gdwTradeThrottleTimestamp = -1;
       Inv::INV_InitTradeMode(1);
       switch (g_nTradeWindowState) {
+        case 7:
+          g_nTradeWindowState = 3;
+        case 3:
+          Inv::INV_PlayTradeStatusSound(0, 0);
+        return;
+        case 4:
+
+        case 5:
+
+        case 6:
+          Inv::INV_PlayTradeStatusSound(0, 0);
+        g_nTradeWindowState = 3;
+        return;
         case 1:
           gnTradeAcceptedFlags = 0;
         Inv::INV_PlayTradeStatusSound(0, 0);
@@ -221,56 +263,14 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x77_TRADEREQUEST(char * pBytes) {
         Dialog::FreeDialogStrc(Dialog::gpTradeCancelDialog);
         Dialog::gpTradeCancelDialog = 0;
         return;
-        case 4:
-
-        case 5:
-
-        case 6:
-          Inv::INV_PlayTradeStatusSound(0, 0);
-        g_nTradeWindowState = 3;
-        return;
-        case 7:
-          g_nTradeWindowState = 3;
-        case 3:
-          Inv::INV_PlayTradeStatusSound(0, 0);
-        return;
       }
 
       break;
-      case '\t':
-        pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-      UNIT::UnitSnd::UNITSND_PlayPlayerSound(pPlayerUnit_lcl, 0x17);
-      return;
-      case '\n':
-        pPlayerUnit_lcl = UNIT::Player::UNITS_FindClientSideUnit(gnTradeGoldUpdateBuffer, UNIT_PLAYER);
-      if (!pPlayerUnit_lcl) {
-        return;
-      }
-
-      UNIT::UnitSnd::UNITSND_PlayPlayerSound(pPlayerUnit_lcl, 0x17);
-      return;
-      case '\f':
-        g_nTradeWindowState = 0;
-      ui::UI_CloseTradeWindow(0);
-      return;
-      case '\r':
-        g_nTradeWindowState = 0;
-      ui::UI_CloseTradeWindow(1);
-      return;
       case '\x0e':
         Inv::INV_SetItemDescPending();
       return;
       case '\x0f':
         Inv::INV_ClearItemDescPending();
-      return;
-      case '\x10':
-        Inv::CloseStash2();
-      return;
-      case '\x11':
-        Inv::CloseStash();
-      return;
-      case '\x15':
-        Inv::OpenCube();
       return;
     }
 

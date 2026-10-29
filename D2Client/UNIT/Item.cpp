@@ -277,29 +277,32 @@ static D2UnitStrc * __stdcall ITEM_CreateItemFromBodyPacket(uint16_t nItemX, uin
 }
 
 int32_t __fastcall ITEM_CheckItemEquipRequirements(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+    D2UnitStrc* pWeaponSlot;
+    eD2ItemTypes eQuiverType;
+    uint32_t bQuiverTypeMatches;
+    D2InventoryStrc* pInventory;
     BOOL bMeetsEquipReq = D2Common::ITEMS::Items::ITEM_CheckEquipRequirements(pUnit2, pUnit, 0, nullptr, nullptr, nullptr);
-    if (!bMeetsEquipReq) {
-      return bMeetsEquipReq;
-    }
+    if (bMeetsEquipReq) {
+      int32_t bRequiresQuiver;
+      bRequiresQuiver = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pUnit2);
+      if (bRequiresQuiver) {
+        pInventory = pUnit->pInventory;
+        pWeaponSlot = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
+        if (pWeaponSlot == pUnit2) {
+          pWeaponSlot = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
+        }
+        if (!pWeaponSlot) {
+          return 0;
+        }
 
-    int32_t bRequiresQuiver = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pUnit2);
-    if (!bRequiresQuiver) {
-      return bMeetsEquipReq;
-    }
+        eQuiverType = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pUnit2);
+        bQuiverTypeMatches = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponSlot, eQuiverType);
+        if (!bQuiverTypeMatches) {
+          return 0;
+        }
 
-    D2InventoryStrc* pInventory = pUnit->pInventory;
-    D2UnitStrc* pWeaponSlot = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
-    if (pWeaponSlot == pUnit2) {
-      pWeaponSlot = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
-    }
-    if (!pWeaponSlot) {
-      return 0;
-    }
-
-    eD2ItemTypes eQuiverType = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pUnit2);
-    uint32_t bQuiverTypeMatches = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponSlot, eQuiverType);
-    if (!bQuiverTypeMatches) {
-      return 0;
+        return bMeetsEquipReq;
+      }
     }
 
     return bMeetsEquipReq;
@@ -721,6 +724,16 @@ void __fastcall ITEM_SetAnimModeAndPlace(D2UnitStrc * pUnit, D2RoomStrc * pRoom,
     pUnit->eAnimMode.ePlayerMode = nAnimMode;
     D2Common::Unit::DRLGROOM_ClearUnitRoomLink(pUnit);
     switch (pUnit->eAnimMode.ePlayerMode) {
+      case TownNeutral:
+        D2Common::Units::InitializeStaticPath(pUnit, pRoom, nX, nY);
+      D2Common::Units::BlockCollisionPath(pUnit, pRoom, nX, nY);
+      D2Common::Unit::DRLGROOM_AddUnitToRoom(pUnit, pRoom);
+      pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
+      D2Common::Units::InitAnimMode(pUnit);
+      ITEM_PlayItemDropSound(pUnit);
+      break;
+      default:
+        return;
       case eD2PlayerAnimMode_ns::Run:
         D2Common::Units::InitializeStaticPath(pUnit, pRoom, nX, nY);
       D2Common::Units::BlockCollisionPath(pUnit, pRoom, nX, nY);
@@ -739,16 +752,6 @@ void __fastcall ITEM_SetAnimModeAndPlace(D2UnitStrc * pUnit, D2RoomStrc * pRoom,
       case TownWalk:
         pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
       break;
-      case TownNeutral:
-        D2Common::Units::InitializeStaticPath(pUnit, pRoom, nX, nY);
-      D2Common::Units::BlockCollisionPath(pUnit, pRoom, nX, nY);
-      D2Common::Unit::DRLGROOM_AddUnitToRoom(pUnit, pRoom);
-      pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
-      D2Common::Units::InitAnimMode(pUnit);
-      ITEM_PlayItemDropSound(pUnit);
-      break;
-      default:
-        return;
     }
 
     pUnit->eUnitFlags = pUnit->eUnitFlags & ~(UNITFLAG_ISVALIDTARGET | UNITFLAG_CANBEATTACKED) | UNITFLAG_DRAWSHADOW;
@@ -802,6 +805,23 @@ void __fastcall ITEM_UpdateItemAnimation(D2UnitStrc * pUnit) {
     {
       uint32_t bAtEndOfCycle;
       switch (pUnit->eAnimMode.ePlayerMode) {
+        case TownNeutral:
+          bAtEndOfCycle = D2Common::Units::IsAtEndOfFrameCycle(pUnit);
+        if (!bAtEndOfCycle) {
+          D2Common::Units::UpdateFrame(pUnit);
+          return;
+        }
+
+        pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Run;
+        break;
+        case eD2PlayerAnimMode_ns::Run:
+          pUnit->eUnitFlags |= UNITFLAG_TARGETABLE;
+        bHasOverlay = Engine::GfxInfo::GFX_HasOverlayOfType(pUnit, 0x46);
+        if (bHasOverlay) {
+          return;
+        }
+
+        break;
         case Death:
 
         case eD2PlayerAnimMode_ns::Neutral:
@@ -813,23 +833,6 @@ void __fastcall ITEM_UpdateItemAnimation(D2UnitStrc * pUnit) {
         case TownWalk:
           pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
         return;
-        case eD2PlayerAnimMode_ns::Run:
-          pUnit->eUnitFlags |= UNITFLAG_TARGETABLE;
-        bHasOverlay = Engine::GfxInfo::GFX_HasOverlayOfType(pUnit, 0x46);
-        if (bHasOverlay) {
-          return;
-        }
-
-        break;
-        case TownNeutral:
-          bAtEndOfCycle = D2Common::Units::IsAtEndOfFrameCycle(pUnit);
-        if (!bAtEndOfCycle) {
-          D2Common::Units::UpdateFrame(pUnit);
-          return;
-        }
-
-        pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Run;
-        break;
         default:
           nLine = 0x362;
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x362);
@@ -1950,11 +1953,6 @@ void __fastcall HandleItemIndirectSwapBodyItem(uint8_t * pBytes) {
     D2UnitStrc* pOwnerUnit = pCharmItem;
     Units::IfPlayer(pCharmItem);
     switch (stItemDetails.nBodyLoc) {
-      case 4:
-
-      case 0xb:
-        nSwappedBodyLoc = 5;
-      break;
       case 5:
 
       case 0xc:
@@ -1972,6 +1970,11 @@ void __fastcall HandleItemIndirectSwapBodyItem(uint8_t * pBytes) {
         return;
       default:
         return;
+      case 4:
+
+      case 0xb:
+        nSwappedBodyLoc = 5;
+      break;
     }
 
     D2InventoryStrc* pInvTmp = pCharmItem->pInventory;
@@ -3038,7 +3041,7 @@ void __fastcall ITEM_HandleItemCursorAssign(D2GSPacketSrv0x3F * pPacket) {
     BOOL bInventoryOpen;
     D2UnitStrc* pItem;
     uint32_t nTypeIdx;
-    if (pPacket->nSkillId != -1) {
+    if (pPacket->nSkillId != 0xffff) {
       nTypeIdx = 0;
       if ((uint32_t)gnCursorAutoOpenInventoryTypeCount > 0) {
         do {

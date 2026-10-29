@@ -231,11 +231,11 @@ void __fastcall SPELLSEL_SetMouseHandFlag(uint32_t dwParam) {
 uint32_t __stdcall SPELLSEL_IsMouseInRect(int32_t nWidth, int32_t nHeight, int32_t nRectX, int32_t nRectY) {
     int nMouseX = ui::GetMouseX();
     int nMouseY = ui::GetMouseY();
-    if (!(nMouseX >= nRectX && nMouseX <= nRectX + nWidth && nMouseY >= nRectY - nHeight && nMouseY <= nRectY)) {
-      return 0;
+    if (nMouseX >= nRectX && nMouseX <= nRectX + nWidth && nMouseY >= nRectY - nHeight && nMouseY <= nRectY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 int32_t __fastcall SPELLSEL_GetSkillPalette(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
@@ -465,9 +465,9 @@ void __fastcall SPELLSEL_DrawSkillIconWithQuantity(DC6 * pDC6, short * pSkillId,
     }
 
     memset(&sGfxData, 0, 0x48);
+    sGfxData.pDC6 = pDC6;
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = (uint32_t)bVar1;
-    sGfxData.pDC6 = pDC6;
     D2gfx::D2GFX::D2GFX_DrawShiftedImage(&sGfxData, nSkillIdSlot, nIconX, -1, DRAW_SOLID, nGlobalPaletteShift);
     if (bIsLeftHand) {
       SPELLSEL_DrawKeyBindingsForLeftHand(nSkillId, pSkillId, nSkillIdSlot, nIconX);
@@ -751,7 +751,7 @@ void __stdcall SPELLSEL_ClearChargedSkillBindings() {
 
     do {
       pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill);
-      if (pSkillsTxt->scroll) {
+      if (*((uint8_t*)pSkillsTxt + 0x8) & (uint8_t)gadwBitMasks[4]) {
         nLine = D2Common::Skills::SKILL_GetQuantity(pSkill);
         SPELLSEL_ClearSkillBinding(&pSkillsTxt->skill, nLine);
       }
@@ -902,8 +902,8 @@ void __stdcall SPELLSEL_AutoBindNonChargedSkills() {
       pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(gSpellSelGridRegion.aLeftHandSlots[nGridIdx], pUnit);
       if (pSkill) {
         pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill);
-        if (pSkillsTxt && !pSkillsTxt->passive && nFreeSlot <= 0xf) {
-          SPELLSEL_AssignSkillToSlot((uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)_unused_ECX >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)0x10), nFreeSlot, nGridIdx);
+        if (pSkillsTxt && !(*((uint8_t*)pSkillsTxt + 0x4) & (uint8_t)gadwBitMasks[4]) && nFreeSlot <= 0xf) {
+          SPELLSEL_AssignSkillToSlot((uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)_unused_ECX >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gadwBitMasks[4]), nFreeSlot, nGridIdx);
           nFreeSlot++;
         }
       }
@@ -933,16 +933,13 @@ void __fastcall SPELLSEL_DrawSkillRequirementTooltip(short * pwSkillId, int32_t 
     }
 
     uint16_t* pWszSep = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
-    uint16_t* pWszStr = wszTooltip;
-    for (nMouseX = 0x80; nMouseX; nMouseX--) {
-      pWszStr[0] = L'\0';
-      pWszStr[1] = L'\0';
-      pWszStr += 2;
+    for (nMouseX = 0; nMouseX < 0x100; nMouseX++) {
+      wszTooltip[nMouseX] = L'\0';
     }
 
     uint16_t wStatName2Idx = SkillDesc::SKILLDESC_GetStatNameString((int)*pSkillId, 0);
     uint16_t wStatName1Idx = SkillDesc::SKILLDESC_GetStatNameString((int)*pSkillId, 1);
-    pWszStr = D2Lang::StrTable::strtable::GetLocaleString(wStatName1Idx);
+    uint16_t* pWszStr = D2Lang::StrTable::strtable::GetLocaleString(wStatName1Idx);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszTooltip, pWszStr);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszTooltip, pWszSep);
     pWszStr = D2Lang::StrTable::strtable::GetLocaleString(0x105c);
@@ -1010,7 +1007,7 @@ void __fastcall SPELLSEL_DrawSkillGrid(D2UnitStrc * pUnit, int32_t nGridStartX, 
             nSkillId = (int)sgptDataTable->pTxtSkills[nSkillId].skilldesc;
             if (-1 < nSkillId && nSkillId < sgptDataTable->nTxtSkillDescSize) {
               pSkillDescTxt = sgptDataTable->pTxtSkillDesc + nSkillId;
-              if (pSkillDescTxt && (!bWeaponSwap || pSkillsTxt->leftskill) && !pSkillsTxt->passive) {
+              if (pSkillDescTxt && (!bWeaponSwap || *((uint8_t*)pSkillsTxt + 0x7) & (uint8_t)gadwBitMasks[6]) && !(*((uint8_t*)pSkillsTxt + 0x4) & (uint8_t)gadwBitMasks[4])) {
                 dwSkillFlags = D2Common::Skills::SKILL_GetFlags(pCurSkill);
                 if (!(dwSkillFlags & 8)) {
                   nOwnerGUID = -1;
@@ -1019,7 +1016,7 @@ void __fastcall SPELLSEL_DrawSkillGrid(D2UnitStrc * pUnit, int32_t nGridStartX, 
                   bIsChargedOrValid = D2Common::Skills::SKILLS_GetSkillData(pCurSkill, &nOwnerGUID, nullptr, nullptr, &nChargesLeft);
                   if (!bWeaponSwap && !bIsChargedOrValid) {
                     nChargeQty = D2Common::Skills::SKILL_GetQuantity(pCurSkill);
-                    if (nChargeQty > 0 && pSkillsTxt->scroll) {
+                    if (nChargeQty > 0 && *((uint8_t*)pSkillsTxt + 0x8) & (uint8_t)gadwBitMasks[4]) {
                       bIsChargedOrValid = 1;
                     }
                   }
@@ -1545,11 +1542,11 @@ void __stdcall SKILLTREE_DrawBackground() {
 static BOOL __stdcall SKILLTREE_IsMouseOnSkillNode(int32_t nHitWidth, int32_t nHitHeight, int32_t nNodeScreenY, int32_t nNodeScreenX) {
     int nMouseX = ui::GetMouseX();
     int nMouseY = ui::GetMouseY();
-    if (!(nMouseX >= nNodeScreenX && nMouseX <= nNodeScreenX + nHitWidth && nMouseY >= nNodeScreenY - nHitHeight && nMouseY <= nNodeScreenY)) {
-      return 0;
+    if (nMouseX >= nNodeScreenX && nMouseX <= nNodeScreenX + nHitWidth && nMouseY >= nNodeScreenY - nHitHeight && nMouseY <= nNodeScreenY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 void __stdcall SKILLTREE_RenderSkillTree() {
@@ -1665,7 +1662,7 @@ void __stdcall INPUT_SkillTreeLeftClick(D2UIMouseMsgStrc * pMsg) {
             if (pSkillTxt) {
               pSkillDesc = DataTbls::GetSkillDescription(eSkill);
               if (pSkillDesc) {
-                if (nSkillTreeActiveTab == (char)pSkillDesc->skillpage && (nTmpResult = SPELLSEL_GetSkillTreeRowOffset(pSkillDesc->skillrow) , (int)nClickY > nTmpResult - 0x30 && (int)nClickY < nTmpResult) && (nTmpResult = SPELLSEL_GetSkillTreeColumnOffset(pSkillDesc->skillcolumn) , (int)nClickX > nTmpResult && (int)nClickX < nTmpResult + 0x30 && !gaSpellSelSkillTreeState[nPrevActiveTab] && !pSkillTxt->passive)) {
+                if (nSkillTreeActiveTab == (char)pSkillDesc->skillpage && (nTmpResult = SPELLSEL_GetSkillTreeRowOffset(pSkillDesc->skillrow) , (int)nClickY > nTmpResult - 0x30 && (int)nClickY < nTmpResult) && (nTmpResult = SPELLSEL_GetSkillTreeColumnOffset(pSkillDesc->skillcolumn) , (int)nClickX > nTmpResult && (int)nClickX < nTmpResult + 0x30 && !gaSpellSelSkillTreeState[nPrevActiveTab] && !(*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[4]))) {
                   GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x3c, (int)pSkillTxt->skill, -1);
                   Draw::SetUIFlag(UI_SKILLTREE, UI_RESET, 0);
                 } else {
@@ -1995,7 +1992,7 @@ void __stdcall SKILLTREE_DrawSkillNode(eD2Skills eSkill, D2SkillsTxt * pSkillTxt
     if (nMouseX > nColumnX && nMouseX < nColumnX + 0x30 && nMouseY > nRowY - 0x30 && nMouseY < nRowY) {
       nGlobalPaletteShift = PALETTE_BLUE;
     }
-    if (!pSkillTxt->InGame) {
+    if (!(*((uint8_t*)pSkillTxt + 0x5) & (uint8_t)gadwBitMasks[2])) {
       nGlobalPaletteShift = PALETTE_RED;
     }
 

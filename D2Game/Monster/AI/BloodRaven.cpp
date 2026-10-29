@@ -56,7 +56,8 @@ int32_t __fastcall AI_BloodRaven_MoveRandomNearTarget(::SGAMEDATA * pGame, D2Uni
 
     D2SeedStrc* pSeed = &pUnit->sSeed;
     D2SeedStrc sSeedNext = D2_SEED_NEXT(pUnit->sSeed);
-    *pSeed = sSeedNext;
+    pSeed->nSeedHigh = sSeedNext.nSeedHigh;
+    pSeed->nSeedLow = sSeedNext.nSeedLow;
     if (sSeedNext.nSeedLow & 1) {
       nOffsetX = nRadius & 0xff;
       nRadius = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nOffsetX);
@@ -67,7 +68,8 @@ int32_t __fastcall AI_BloodRaven_MoveRandomNearTarget(::SGAMEDATA * pGame, D2Uni
 
     D2UnitStrc* pSelf = pUnitSaved;
     sSeedNext = D2_SEED_NEXT(*pSeed);
-    *pSeed = sSeedNext;
+    pSeed->nSeedHigh = sSeedNext.nSeedHigh;
+    pSeed->nSeedLow = sSeedNext.nSeedLow;
     if (sSeedNext.nSeedLow & 1) {
       nOffsetX = -nOffsetX;
     }

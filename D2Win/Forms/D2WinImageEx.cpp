@@ -97,8 +97,8 @@ BOOL __fastcall Draw(::D2WinImageEx * pImageEx) {
     memset(pNewImageEx, 0, 0x54);
     pNewImageEx->sImage.sControl.neD2FormType = FORM_Image;
     int* pDwState = &pNewImageEx->sImage.sControl.dwState;
-    *pDwState |= 1;
-    pNewImageEx->sImage.sControl.dwState |= 4;
+    *pDwState |= gadwBitMasks[0];
+    pNewImageEx->sImage.sControl.dwState |= gadwBitMasks[2];
     pNewImageEx->sImage.sControl.pDC6 = pDC6;
     pNewImageEx->sImage.sControl.dwPosX = nPosX;
     pNewImageEx->sImage.sControl.dwSizeX = nSizeX;

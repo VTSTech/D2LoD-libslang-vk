@@ -144,7 +144,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
       if (pQuestDataTbl == gaQuestDescData_SevenTombs && !*(uint32_t*)(char*)&szNumberString) {
         if (!bStateResult) {
           bArcaneState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheArcaneSanctuary, QUESTSTATE_Completed);
-          if (!bArcaneState && (bArcaneState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheArcaneSanctuary, QUESTSTATE_JustCompleted) , !bArcaneState) || !(bool)bQuestActive) {
+          if (!bArcaneState && (bArcaneState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheArcaneSanctuary, QUESTSTATE_JustCompleted) , !bArcaneState) || (bool)bQuestActive != 1) {
             bArcaneState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x03);
             if (bArcaneState == 1) {
               pEntry->wTitleStringId = gaQuestDescData_SevenTombs[0];
@@ -508,16 +508,16 @@ static void QUESTLOG_SetActiveAct(int32_t nActIndex) {
     pQuestRecord = npcmenu::GetQuestInfo();
     bQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, eQuestId, eQuestState);
     if (bQuestCompleted) {
-      gQuestLog.nQuestLogSelectedIcon = -1;
       gQuestLog.nQuestLogActiveAct = -1;
+      gQuestLog.nQuestLogSelectedIcon = -1;
       memset(gQuestLog.aQuestLogIconFrame, 0, 6 * sizeof(gQuestLog.aQuestLogIconFrame[0]));
       memset(gQuestLog.aQuestLogIconLastTick, 0, 6 * sizeof(gQuestLog.aQuestLogIconLastTick[0]));
       gQuestLog.nQuestLogActiveAct_b = nActIndex;
       return;
     }
 
-    gQuestLog.nQuestLogSelectedIcon = -1;
     gQuestLog.nQuestLogActiveAct = -1;
+    gQuestLog.nQuestLogSelectedIcon = -1;
     memset(gQuestLog.aQuestLogIconFrame, 0, 6 * sizeof(gQuestLog.aQuestLogIconFrame[0]));
     memset(gQuestLog.aQuestLogIconLastTick, 0, 6 * sizeof(gQuestLog.aQuestLogIconLastTick[0]));
     gQuestLog.nQuestLogActiveAct_b = 0;
@@ -657,11 +657,11 @@ void __stdcall QUESTLOG_FreeQuestImages_Thunk() {
 
 static int32_t QUESTLOG_HitTestCloseButton(int32_t nParam1, int32_t nParam2) {
     uint32_t dwHitResult = (uint32_t)(nParam2 - 0xe6U >> 8) & 0xffffffu;
-    if (!(nParam2 - 0xe6U <= 0x1d && nParam1 - 0x187U <= 0x20)) {
-      return (uint32_t)dwHitResult << 8;
+    if (nParam2 - 0xe6U <= 0x1d && nParam1 - 0x187U <= 0x20) {
+      return (uint32_t)((uint32_t)((uint32_t)dwHitResult & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
     }
 
-    return (uint32_t)((uint32_t)((uint32_t)dwHitResult & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    return (uint32_t)dwHitResult << 8;
 }
 
 static int32_t QUESTLOG_HitTestQuestIcon(int32_t nX, int32_t nY) {
@@ -688,11 +688,11 @@ static int32_t QUESTLOG_HitTestQuestIcon(int32_t nX, int32_t nY) {
 
 static int32_t QUESTLOG_HitTestOpenButton(int32_t nParam1, int32_t nParam2) {
     uint32_t dwHitResult = (uint32_t)(nParam2 - 0x116U >> 8) & 0xffffffu;
-    if (!(nParam2 - 0x116U <= 0x23 && nParam1 - 0x188U <= 0x21)) {
-      return (uint32_t)dwHitResult << 8;
+    if (nParam2 - 0x116U <= 0x23 && nParam1 - 0x188U <= 0x21) {
+      return (uint32_t)((uint32_t)((uint32_t)dwHitResult & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
     }
 
-    return (uint32_t)((uint32_t)((uint32_t)dwHitResult & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    return (uint32_t)dwHitResult << 8;
 }
 
 int __stdcall CloseQuestLogWeird(DWORD dwParam) {
@@ -883,11 +883,11 @@ int __stdcall QUESTLOG_IsPointInQuestLog(int32_t nX, int32_t nY) {
     } else {
       nOffsetX2 = 0;
     }
-    if (!(nX > gaQuestLogPanelRects[nDrawPos].nLeft + nOffsetX && nX < gaQuestLogPanelRects[nDrawPos].nRight + nOffsetX2 && nY > gaQuestLogPanelRects[nDrawPos].nTop - 0x1e0 + ScreenSizeY && nY < gaQuestLogPanelRects[nDrawPos].nBottom - 0x1e0 + ScreenSizeY)) {
-      return 0;
+    if (nX > gaQuestLogPanelRects[nDrawPos].nLeft + nOffsetX && nX < gaQuestLogPanelRects[nDrawPos].nRight + nOffsetX2 && nY > gaQuestLogPanelRects[nDrawPos].nTop - 0x1e0 + ScreenSizeY && nY < gaQuestLogPanelRects[nDrawPos].nBottom - 0x1e0 + ScreenSizeY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 void __stdcall QUESTLOG_OnQuestLogMouseDown(D2UIMouseMsgStrc * pMsg) {
@@ -1031,6 +1031,12 @@ void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, D2GSPacketClt0
       byToggleFlags = pPacket->bToggle;
       if (byToggleFlags & 1) {
         switch (pPacket->nActionType) {
+          case 0xd:
+            Engine::Gfx::GFX_PrecacheMonsterAllModes(0xd3, 1);
+          return;
+          case 0x17:
+            GAME::Game::D2CLIENT_SetExitVar3ToTrue();
+          return;
           case 3:
             pText = D2Lang::StrTable::strtable::GetLocaleString(0xe7c);
           Text::TEXT_PrintGameString(pText, 0);
@@ -1040,18 +1046,12 @@ void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, D2GSPacketClt0
           return;
           default:
             return;
-          case 10:
-            GAME::Game::GAMEDATA_InitializeEclipseEnvironment();
-          return;
-          case 0xd:
-            Engine::Gfx::GFX_PrecacheMonsterAllModes(0xd3, 1);
-          return;
           case 0xf:
             pText = D2Lang::StrTable::strtable::GetLocaleString(0xe7e);
           Text::TEXT_PrintGameString(pText, 0);
           return;
-          case 0x17:
-            GAME::Game::D2CLIENT_SetExitVar3ToTrue();
+          case 10:
+            GAME::Game::GAMEDATA_InitializeEclipseEnvironment();
           return;
           case 0x21:
             Sound::SOUND_PlaySound(SOUND_ITEM_WOODSHIELD, nullptr, 0, 0, 0);
@@ -1060,22 +1060,6 @@ void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, D2GSPacketClt0
       }
       if (byToggleFlags & 2) {
         switch (pPacket->nActionType) {
-          case 4:
-            Sound::SOUND_PlaySound(SOUND_WEAPON_PUNCH_4, nullptr, 0, 0, 0);
-          return;
-          default:
-            return;
-          case 8:
-
-          case 0xf:
-
-          case 0x12:
-
-          case 0x16:
-
-          case 0x23:
-            Sound::SOUND_PlaySound(SOUND_CURSOR_LEVEL_UP, nullptr, 0, 0, 0);
-          return;
           case 0x17:
             {
               bQuestState = GAME::Game::CLIENT_CheckExpansion();
@@ -1088,11 +1072,27 @@ void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, D2GSPacketClt0
               INV_SetItemDescFlag();
               return;
             }
+          case 4:
+            Sound::SOUND_PlaySound(SOUND_WEAPON_PUNCH_4, nullptr, 0, 0, 0);
+          return;
+          default:
+            return;
           case 0x20:
             Sound::SOUND_PlaySound(SOUND_ITEM_KEY, nullptr, 0, 0, 0);
           return;
           case 0x21:
             Sound::SOUND_PlaySound(SOUND_WEAPON_KICK_2, nullptr, 0, 0, 0);
+          return;
+          case 8:
+
+          case 0xf:
+
+          case 0x12:
+
+          case 0x16:
+
+          case 0x23:
+            Sound::SOUND_PlaySound(SOUND_CURSOR_LEVEL_UP, nullptr, 0, 0, 0);
           return;
           case 0x24:
             GAME::Game::SetPendingExitCutsceneId(1);

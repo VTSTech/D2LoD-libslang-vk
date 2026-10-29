@@ -929,7 +929,7 @@ uint8_t __fastcall Q20_QuestUpdate(::SGAMEDATA * pGame, D2QuestDataStrc * pQuest
     D2QuestDataA1Q1Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q1;
     bool bVar1 = *(bool*)(pQuestSpecific->sQuestGUID.aPlayerGUID + 6);
     *(uint8_t*)((int)pQuestSpecific->sQuestGUID.aPlayerGUID + 5) = 0;
-    if (!(bVar1 && *(bool*)((int)pQuestSpecific->sQuestGUID.aPlayerGUID + 3) && !*(bool*)((int)pQuestSpecific->sQuestGUID.aPlayerGUID + 2) && pGame->pAct[2])) {
+    if (!(bVar1 == 1 && *(bool*)((int)pQuestSpecific->sQuestGUID.aPlayerGUID + 3) && !*(bool*)((int)pQuestSpecific->sQuestGUID.aPlayerGUID + 2) && pGame->pAct[2])) {
       return '\x01';
     }
 
@@ -1046,36 +1046,34 @@ BOOL __fastcall OBJOP_A3Q5_NihlathakPortalTrigger(D2ObjectOperateFnArg * pOperat
 // (and true) when the quest is in real play and the relevant flag is set; else false. Read-only.
 uint32_t __fastcall Q20_GetSerpentKillerGUID(::SGAMEDATA * pGame, int * pnParam) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_BladeOfTheOldReligion);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
-      return (uint32_t)pQuestData & -256;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      int nSerpentGUID;
+      pQuestData = (D2QuestDataStrc*)pQuestData->pQuestSpecificData.pA3Q3;
+      if (*(uint8_t*)((uintptr_t)&pQuestData->nQuestNoInternal + 2)) {
+        nSerpentGUID = pQuestData->sQuestGUID.aPlayerGUID[2];
+        *pnParam = nSerpentGUID;
+        return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nSerpentGUID >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+      }
     }
 
-    pQuestData = (D2QuestDataStrc*)pQuestData->pQuestSpecificData.pA3Q3;
-    if (!*(uint8_t*)((uintptr_t)&pQuestData->nQuestNoInternal + 2)) {
-      return (uint32_t)pQuestData & -256;
-    }
-
-    int nSerpentGUID = pQuestData->sQuestGUID.aPlayerGUID[2];
-    *pnParam = nSerpentGUID;
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nSerpentGUID >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    return (uint32_t)pQuestData & -256;
 }
 
 // A3Q3 "Khalim's Will" — accessor: when the serpent/orb-object "pending" flag (field_0x06) is set,
 // returns its location (field_0x10) and GUID into pdwParam[0..1] and 1; else 0. Read-only.
 BOOL __fastcall Q20_GetSerpentLocation(::SGAMEDATA * pGame, uint32_t * pdwParam) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_BladeOfTheOldReligion);
-    if (!pQuestData) {
-      return 0;
+    if (pQuestData) {
+      D2QuestDataA2Q3Strc* pA2Q3Data;
+      pA2Q3Data = pQuestData->pQuestSpecificData.pA2Q3;
+      if (pA2Q3Data->field_0x06) {
+        *pdwParam = (uint32_t)(uintptr_t)pA2Q3Data->pAltarRoom;
+        pdwParam[1] = pA2Q3Data->sPlayerGUID.aPlayerGUID[0];
+        return 1;
+      }
     }
 
-    D2QuestDataA2Q3Strc* pA2Q3Data = pQuestData->pQuestSpecificData.pA2Q3;
-    if (!pA2Q3Data->field_0x06) {
-      return 0;
-    }
-
-    *pdwParam = (uint32_t)(uintptr_t)pA2Q3Data->pAltarRoom;
-    pdwParam[1] = pA2Q3Data->sPlayerGUID.aPlayerGUID[0];
-    return 1;
+    return 0;
 }
 
 // A3Q3 "Khalim's Will" — activates the serpent/orb object: clears its pending flag, finds the stored

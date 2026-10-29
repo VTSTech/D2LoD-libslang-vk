@@ -101,11 +101,11 @@ typedef void (__fastcall *fnSkillUnitProc)(::SGAMEDATA * pGame, D2UnitStrc * pUn
 namespace D2Game::Monsters {
 
 D2MonLvlTxt * __fastcall GetMonLvlTxt(int32_t nMonLvlId) {
-    if (!(nMonLvlId >= 0 && nMonLvlId < sgptDataTable->nTxtMonLvlSize)) {
-      return nullptr;
+    if (nMonLvlId >= 0 && nMonLvlId < sgptDataTable->nTxtMonLvlSize) {
+      return sgptDataTable->pTxtMonLvl + nMonLvlId;
     }
 
-    return sgptDataTable->pTxtMonLvl + nMonLvlId;
+    return nullptr;
 }
 
 uint32_t __fastcall MONSTER_CheckMonTypeHasFlag(D2UnitStrc * pUnit, int32_t nMonTypeFlag) {
@@ -114,24 +114,23 @@ uint32_t __fastcall MONSTER_CheckMonTypeHasFlag(D2UnitStrc * pUnit, int32_t nMon
     }
 
     int nMonStatId = pUnit->nClassId;
-    if (!(nMonStatId >= 0 && nMonStatId < sgptDataTable->nTxtMonStatsSize)) {
-      return 0;
+    if (nMonStatId >= 0 && nMonStatId < sgptDataTable->nTxtMonStatsSize) {
+      D2MonStatsTxt* pMonStatsTxt;
+      pMonStatsTxt = sgptDataTable->pTxtMonStats + nMonStatId;
+      if (pMonStatsTxt && -1 < pMonStatsTxt->MonType && (int)pMonStatsTxt->MonType < sgptDataTable->nTxtMonTypeSize && nMonTypeFlag >= 0 && nMonTypeFlag < sgptDataTable->nTxtMonTypeSize) {
+        return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtMonTypeUnknown + (sgptDataTable->nMonTypeEquivRowDwords * nMonTypeFlag + ((int)pMonStatsTxt->MonType >> 5)) * 4) & gadwBitMasks[(int)pMonStatsTxt->MonType & 0x1f];
+      }
     }
 
-    D2MonStatsTxt* pMonStatsTxt = sgptDataTable->pTxtMonStats + nMonStatId;
-    if (!(pMonStatsTxt && -1 < pMonStatsTxt->MonType && (int)pMonStatsTxt->MonType < sgptDataTable->nTxtMonTypeSize && nMonTypeFlag >= 0 && nMonTypeFlag < sgptDataTable->nTxtMonTypeSize)) {
-      return 0;
-    }
-
-    return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtMonTypeUnknown + (sgptDataTable->nMonTypeEquivRowDwords * nMonTypeFlag + ((int)pMonStatsTxt->MonType >> 5)) * 4) & gadwBitMasks[(int)pMonStatsTxt->MonType & 0x1f];
+    return 0;
 }
 
 int32_t __fastcall GetUmodConstant(int32_t nUmodId) {
-    if (!(nUmodId >= 0 && nUmodId < sgptDataTable->nTxtMonUmodSize && sgptDataTable->pTxtMonUmod + nUmodId)) {
-      return 0;
+    if (nUmodId >= 0 && nUmodId < sgptDataTable->nTxtMonUmodSize && sgptDataTable->pTxtMonUmod + nUmodId) {
+      return sgptDataTable->pTxtMonUmod[nUmodId].constants;
     }
 
-    return sgptDataTable->pTxtMonUmod[nUmodId].constants;
+    return 0;
 }
 
 uint8_t * __fastcall GetMonUModList(D2UnitStrc * pUnit) {
@@ -261,19 +260,19 @@ uint32_t __fastcall CheckMonUModList(D2UnitStrc * pUnit) {
 }
 
 int32_t __fastcall MONSTER_GetBossNo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
-      return -1;
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
+      D2UnitDataMonsterStrc* pMonsterData;
+      pMonsterData = pUnit->pUnitData.pUnitDataMonster;
+      if (pMonsterData && pMonsterData->eMonsterType & 2) {
+        if (!(true && pMonsterData)) {
+          return -1;
+        }
+
+        return (int)pMonsterData->nBossNo;
+      }
     }
 
-    D2UnitDataMonsterStrc* pMonsterData = pUnit->pUnitData.pUnitDataMonster;
-    if (!(pMonsterData && pMonsterData->eMonsterType & 2)) {
-      return -1;
-    }
-    if (!(true && pMonsterData)) {
-      return -1;
-    }
-
-    return (int)pMonsterData->nBossNo;
+    return -1;
 }
 
 // Checks whether a MonUMod.txt unique modifier entry is eligible to be applied to pUnit. Rejects if disabled or version &gt; 99 in non-expansion mode. Rejects if the monster has any excluded monster type (exclude1/exclude2). Respects the fpick field: 1=boss-only, 2=excludes melee/no-multishot monsters, 3=requires a different boss flag. Returns 1 if eligible, 0 otherwise.
@@ -323,10 +322,10 @@ static BOOL __stdcall MONSTER_CanApplyUniqueModifier(D2MonUModTxt * pD2MonUModTx
           if (pUnit) {
             nExcludeIdx = pUnit->nClassId;
             if (nExcludeIdx >= 0) {
-              if (nExcludeIdx < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nExcludeIdx && sgptDataTable->pTxtMonStats[nExcludeIdx].isMelee) {
+              if (nExcludeIdx < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nExcludeIdx && (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nExcludeIdx] + 0xc) & gadwBitMasks[1]) {
                 return 0;
               }
-              if (nExcludeIdx >= 0 && nExcludeIdx < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nExcludeIdx && sgptDataTable->pTxtMonStats[nExcludeIdx].nomultishot) {
+              if (nExcludeIdx >= 0 && nExcludeIdx < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nExcludeIdx && (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nExcludeIdx] + 0xe) & gadwBitMasks[1]) {
                 return 0;
               }
             }
@@ -488,11 +487,13 @@ static int32_t __stdcall MONUMOD_RollRandomModifier(D2UnitStrc * pUnit, uint8_t 
         nRoll = pUnit->sSeed.nSeedLow;
         if (nTotalWeight & nTotalWeight - 1) {
           sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
-          pUnit->sSeed = sNewSeed;
+          pUnit->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+          pUnit->sSeed.nSeedLow = sNewSeed.nSeedLow;
           nRoll = (uint32_t)(sNewSeed.nSeedLow % nTotalWeight);
         } else {
           sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
-          pUnit->sSeed = sNewSeed;
+          pUnit->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+          pUnit->sSeed.nSeedLow = sNewSeed.nSeedLow;
           nRoll = nTotalWeight - 1 & sNewSeed.nSeedLow;
         }
       }
@@ -841,7 +842,7 @@ static void __stdcall MONSTER_SetElementalDamageFromLevel(D2UnitStrc * pUnit, eD
       if (!(sgptDataTable->pTxtMissiles + nLvlDamage)) {
         return;
       }
-      if (sgptDataTable->pTxtMissiles[nLvlDamage].NoUniqueMod) {
+      if (*((uint8_t*)&sgptDataTable->pTxtMissiles[nLvlDamage] + 0x5) & (uint8_t)gadwBitMasks[5]) {
         return;
       }
     }
@@ -1243,9 +1244,9 @@ void __fastcall MONSTER_LightningUniqueDeathBolts(::SGAMEDATA * pGame, D2UnitStr
       }
 
       eUnitType = pUnit->eUnitType;
+      sSkillArg.nSkillLevel = nSkillLevel;
       sSkillArg.nMissileTxtNo = MISSILE_Lightunique;
       sSkillArg.fpFunction = SKILLS::SkillSor::SKILL_InitChargedBoltPath;
-      sSkillArg.nSkillLevel = nSkillLevel;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         bShouldTrigger = pUnit->pPath.pStaticPath->nPosX;
       } else if (pUnit->pPath.pDynamicPath) {
@@ -1271,9 +1272,9 @@ void __fastcall MONSTER_LightningUniqueDeathBolts(::SGAMEDATA * pGame, D2UnitStr
         nDirY = gaMissileOffsets_LightningUniqueY[nDirLoopOffset];
         nMissileSpawnIdx = 0;
         do {
+          sSkillArg.nFunctionParam = nMissileSpawnIdx;
           sSkillArg.nUnitX = nSkillLevel + bShouldTrigger;
           sSkillArg.nUnitY = nDirY + nSpawnOriginY;
-          sSkillArg.nFunctionParam = nMissileSpawnIdx;
           MISSILES::Missiles::CreatingMissile(pGame, &sSkillArg);
           nMissileSpawnIdx++;
         } while (nMissileSpawnIdx < 2);
@@ -1482,9 +1483,9 @@ void __fastcall MONSTER_BugLightningDeathBolts(::SGAMEDATA * pGame, D2UnitStrc *
       nDirY = gaMissileOffsets_BugLightningY[nDirLoopIdx];
       nMissileSpawnIdx = 0;
       do {
+        sSkillArg.nFunctionParam = nMissileSpawnIdx;
         sSkillArg.nUnitX = nDirX + nPosX;
         sSkillArg.nUnitY = nDirY + nPosY;
-        sSkillArg.nFunctionParam = nMissileSpawnIdx;
         MISSILES::Missiles::CreatingMissile(pGame, &sSkillArg);
         nMissileSpawnIdx++;
       } while (nMissileSpawnIdx < 2);
@@ -1648,12 +1649,6 @@ void __fastcall MONSTER_DispatchSpecialDeath(::SGAMEDATA * pGame, D2UnitStrc * p
     }
 
     switch (nMonClassId) {
-      case MonsterUnitOverSeer:
-        if (!pUnit || pUnit->eAnimMode.ePlayerMode == Death) {
-          Monster::AI::MONSTERAI_ThinkRangedNormal(pGame, pUnit);
-          return;
-        }
-      break;
       case MonsterUnitTownguard2 | MonsterUnitHorror:
 
       case MonsterUnitTownguard2 | MonsterUnitZombie:
@@ -1661,6 +1656,12 @@ void __fastcall MONSTER_DispatchSpecialDeath(::SGAMEDATA * pGame, D2UnitStrc * p
       case MonsterUnitTownguard2 | MonsterUnitHungryDead:
         if (!pUnit || pUnit->eAnimMode.ePlayerMode == Death) {
           Monster::AI::MONSTERAI_Noop();
+          return;
+        }
+      break;
+      case MonsterUnitOverSeer:
+        if (!pUnit || pUnit->eAnimMode.ePlayerMode == Death) {
+          Monster::AI::MONSTERAI_ThinkRangedNormal(pGame, pUnit);
           return;
         }
       break;
@@ -1742,9 +1743,9 @@ void __fastcall MONSTER_QueenPoisonCloudDeath(::SGAMEDATA * pGame, D2UnitStrc * 
       nDirY = *(int*)((int)anOffsetTable + nDirY);
       nMissileSpawnIdx = 0;
       do {
+        sSkillArg.nFunctionParam = nMissileSpawnIdx;
         sSkillArg.nUnitX = nDirX + nPosX;
         sSkillArg.nUnitY = nDirY + nPosY;
-        sSkillArg.nFunctionParam = nMissileSpawnIdx;
         MISSILES::Missiles::CreatingMissile(pGameSaved, &sSkillArg);
         nMissileSpawnIdx++;
       } while (nMissileSpawnIdx < 2);
@@ -1768,7 +1769,7 @@ void __fastcall MONSTER_MissileSplitOnHit(::SGAMEDATA * pGame, D2UnitStrc * pUni
     eMissilesId eMissileId = nMissileId;
     D2UnitStrc* pMissileUnit = pUnit;
     D2UnitStrc* pOwnerUnit = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
-    if (!(pOwnerUnit && (int)nMissileId >= 0 && (int)nMissileId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nMissileId && !sgptDataTable->pTxtMissiles[nMissileId].NoMultiShot)) {
+    if (!(pOwnerUnit && (int)nMissileId >= 0 && (int)nMissileId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nMissileId && !(*((uint8_t*)&sgptDataTable->pTxtMissiles[nMissileId] + 0x5) & (uint8_t)gadwBitMasks[4]))) {
       return;
     }
 
@@ -2064,11 +2065,13 @@ void __fastcall MONSTER_AoEPhysicalDamage(::SGAMEDATA * pGame, D2UnitStrc * pUni
       nDmgRoll = pUnit->sSeed.nSeedLow;
       if (nDmgRange & nDmgRange - 1) {
         sSeedNext = D2_SEED_NEXT(pUnit->sSeed);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nDmgRoll = sSeedNext.nSeedLow % nDmgRange;
       } else {
         sSeedNext = D2_SEED_NEXT(pUnit->sSeed);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nDmgRoll = nDmgRange - 1 & sSeedNext.nSeedLow;
       }
     }
@@ -2163,11 +2166,13 @@ void __fastcall MONSTER_SuicideExplosion(::SGAMEDATA * pGame, D2UnitStrc * pUnit
       nSeedLow = pUnit->sSeed.nSeedLow;
       if (nDmgRange & nDmgRange - 1) {
         sSeedNext = (D2SeedStrc)((uint64_t)nSeedLow * 0x6ac690c5 + nDmgRollRaw);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nDmgRange = (uint32_t)(sSeedNext.nSeedLow % nDmgRange);
       } else {
         sSeedNext = (D2SeedStrc)((uint64_t)nSeedLow * 0x6ac690c5 + nDmgRollRaw);
-        pUnit->sSeed = sSeedNext;
+        pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+        pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
         nDmgRange = nDmgRange - 1 & sSeedNext.nSeedLow;
       }
     }
@@ -2434,22 +2439,8 @@ D2UnitStrc * __fastcall SERVER_SpawnMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
         D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_corpse_noselect, 1);
       Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_ForgottenTower);
       return pUnit;
-      case SUPERUNIQUE_ISMAIL_VILEHAND:
-
-      case SUPERUNIQUE_GELEB_FLAMEFINGER:
-
-      case SUPERUNIQUE_TOORC_ICEFIST:
-        Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_TheBlackenedTemple);
-      return pUnit;
-      case SUPERUNIQUE_INFECTOR_OF_SOULS:
-
-      case SUPERUNIQUE_LORD_DE_SEIS:
-
-      case SUPERUNIQUE_GRAND_VIZIER_OF_CHAOS:
-        Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_TerrorsEnd);
-      break;
-      case SUPERUNIQUE_THE_COW_KING:
-        Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_TheSearchForCain);
+      case SUPERUNIQUE_NIHLATHAK_BOSS:
+        Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_BetrayalOfHaggorath);
       return pUnit;
       case SUPERUNIQUE_SIEGE_BOSS:
         D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_corpse_noselect, 1);
@@ -2462,9 +2453,23 @@ D2UnitStrc * __fastcall SERVER_SpawnMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
       case SUPERUNIQUE_ANCIENT_BARBARIAN_3:
         Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_RiteOfPassage);
       return pUnit;
-      case SUPERUNIQUE_NIHLATHAK_BOSS:
-        Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_BetrayalOfHaggorath);
+      case SUPERUNIQUE_ISMAIL_VILEHAND:
+
+      case SUPERUNIQUE_GELEB_FLAMEFINGER:
+
+      case SUPERUNIQUE_TOORC_ICEFIST:
+        Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_TheBlackenedTemple);
       return pUnit;
+      case SUPERUNIQUE_THE_COW_KING:
+        Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_TheSearchForCain);
+      return pUnit;
+      case SUPERUNIQUE_INFECTOR_OF_SOULS:
+
+      case SUPERUNIQUE_LORD_DE_SEIS:
+
+      case SUPERUNIQUE_GRAND_VIZIER_OF_CHAOS:
+        Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_TerrorsEnd);
+      break;
     }
 
     return pUnit;
@@ -2743,18 +2748,6 @@ D2UnitStrc * __fastcall SPAWN_UniqueMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
       Monster::AI::AttachCorrectAiFunctionToMonster(pGame, pUnit, pMonsterAiGeneral, 0xd);
       InitUmods(pGame, pUnit, 0x16, 1);
       return pUnit;
-      case 10:
-        nBoneCount = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 5);
-      for (nGroupMin = nBoneCount + 2; nGroupMin; nGroupMin--) {
-        Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 4, eD2MonsterAnimMode_ns::Neutral, 4, 0x40);
-      }
-
-      Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 0x114, eD2MonsterAnimMode_ns::Neutral, 4, 0x40);
-      Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 0x17e, eD2MonsterAnimMode_ns::Neutral, 4, 0x40);
-      Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 0x181, eD2MonsterAnimMode_ns::Neutral, 4, 0x40);
-      Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 0x185, eD2MonsterAnimMode_ns::Neutral, 4, 0x40);
-      InitUmods(pGame, pUnit, 0x16, 1);
-      return pUnit;
       case 0x1a:
 
       case 0x1b:
@@ -2772,6 +2765,18 @@ D2UnitStrc * __fastcall SPAWN_UniqueMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
       return pUnit;
       case 0x27:
         Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_TheSearchForCain);
+      InitUmods(pGame, pUnit, 0x16, 1);
+      return pUnit;
+      case 10:
+        nBoneCount = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 5);
+      for (nGroupMin = nBoneCount + 2; nGroupMin; nGroupMin--) {
+        Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 4, eD2MonsterAnimMode_ns::Neutral, 4, 0x40);
+      }
+
+      Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 0x114, eD2MonsterAnimMode_ns::Neutral, 4, 0x40);
+      Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 0x17e, eD2MonsterAnimMode_ns::Neutral, 4, 0x40);
+      Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 0x181, eD2MonsterAnimMode_ns::Neutral, 4, 0x40);
+      Monster::Create::SpawnMonsterAtUnit(pGame, pUnit, 0x185, eD2MonsterAnimMode_ns::Neutral, 4, 0x40);
       InitUmods(pGame, pUnit, 0x16, 1);
       return pUnit;
       case 0x2a:
@@ -2810,11 +2815,11 @@ D2UnitStrc * __fastcall SPAWN_UniqueMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
 }
 
 int32_t __fastcall MONSTER_IsMonsterUnit(int * pnParam) {
-    if (!(pnParam && *pnParam == 1)) {
-      return 0;
+    if (pnParam && *pnParam == 1) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 void __fastcall SERVER_AwardKillExperience(D2UnitStrc * pUnit, D2UnitStrc * pVictim, ::SGAMEDATA * pGame) {
@@ -3175,11 +3180,11 @@ uint8_t __fastcall MONSTER_GetHpPercent128(D2UnitStrc * pUnit) {
     int nHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
     int32_t nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
     int nMaxHpShifted = nMaxHp >> 8;
-    if (!(nMaxHpShifted > 0 && nHp >> 8 < nMaxHpShifted)) {
-      return 0x80;
+    if (nMaxHpShifted > 0 && nHp >> 8 < nMaxHpShifted) {
+      return (uint8_t)((nHp >> 8 << 7) / nMaxHpShifted);
     }
 
-    return (uint8_t)((nHp >> 8 << 7) / nMaxHpShifted);
+    return 0x80;
 }
 
 } // namespace D2Game::Monsters

@@ -207,7 +207,6 @@ BOOL __fastcall Skills_CltDoFunc_Bar_SoftMonster_BloodParticles(D2UnitStrc * pUn
 
 // Client do-function for the Barbarian Whirlwind/Corpse Explosion skill action. Confirms the current target is a soft (corpse-explodable) monster, finds a free nearby coordinate, selects the appropriate size-based cltmissile (small/normal/large from MonStats2), and spawns both the size missile and a MISSILE_Corpseexplosion at that location. Sets UNITFLAG_SKSRVDOFUNC on the player unit.
 BOOL __fastcall Skills_CltDoFunc_Bar_Whirlwind_CorpseExplosion(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    D2SkillArgStrc sSkillArg;
     POINT nFreeCoordTmp;
     if ((int)eSkill < 0) {
       return 0;
@@ -258,29 +257,30 @@ BOOL __fastcall Skills_CltDoFunc_Bar_Whirlwind_CorpseExplosion(D2UnitStrc * pUni
     if (!pMonStats2) {
       return 0;
     }
-    if (pMonStats2->large) {
+    if (gadwBitMasks[3] & (uint8_t)*((uint8_t*)pMonStats2 + 0x5)) {
       eCorpseMissile = (eMissilesId)pSkillTxt->cltmissile[3];
     } else {
-      if (pMonStats2->isSmall) {
+      if (gadwBitMasks[2] & (uint8_t)*((uint8_t*)pMonStats2 + 0x5)) {
         eCorpseMissile = (eMissilesId)pSkillTxt->cltmissile[2];
       }
     }
-    if (!((int)eCorpseMissile >= 0 && (int)eCorpseMissile < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
+    if ((int)eCorpseMissile >= 0 && (int)eCorpseMissile < sgptDataTable->nTxtMissilesSize) {
+      D2SkillArgStrc sSkillArg;
+      memset(&sSkillArg, 0, 0x5c);
+      sSkillArg.pOwner = pUnitArg;
+      sSkillArg.eSkillNo = eSkillArg;
+      sSkillArg.nSkillLevel = nSkillLvl;
+      sSkillArg.nFlags = 0x2001;
+      sSkillArg.nX = nFreeCoordTmp.x;
+      sSkillArg.nY = nFreeCoordTmp.y;
+      sSkillArg.nMissileTxtNo = eCorpseMissile;
+      UNIT::Missile::MakeMissile(&sSkillArg);
+      sSkillArg.nMissileTxtNo = MISSILE_Corpseexplosion;
+      UNIT::Missile::MakeMissile(&sSkillArg);
+      return 1;
     }
 
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.pOwner = pUnitArg;
-    sSkillArg.eSkillNo = eSkillArg;
-    sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.nFlags = 0x2001;
-    sSkillArg.nX = nFreeCoordTmp.x;
-    sSkillArg.nY = nFreeCoordTmp.y;
-    sSkillArg.nMissileTxtNo = eCorpseMissile;
-    UNIT::Missile::MakeMissile(&sSkillArg);
-    sSkillArg.nMissileTxtNo = MISSILE_Corpseexplosion;
-    UNIT::Missile::MakeMissile(&sSkillArg);
-    return 1;
+    return 0;
 }
 
 // Resolves a valid teleport/move-skill landing tile for pUnit toward the requested destination (*pnParam1,*pnParam2). Clamps the destination to the skill's aurarangecalc max range, then probes up to 3 candidate tiles (the clamped point and two offsets), each requiring: a free collision coordinate in the room/neighbors, no blocking collision, line-of-sight from the unit, and distance within range. On success writes the accepted tile back into *pnParam1/*pnParam2 and returns 1. On failure plays the player's "cannot move there" sound (0x13) and returns 0. eSkill passed in EAX.
@@ -435,7 +435,7 @@ static BOOL __stdcall SKILL_CanUseAtLocation(D2UnitStrc * pUnit, int32_t nX, int
     if (!pRoom) {
       return 0;
     }
-    if (pSkillTxt[eSkill].InTown) {
+    if (*((uint8_t*)&pSkillTxt[eSkill] + 0x5) & (uint8_t)gadwBitMasks[0]) {
       return 1;
     }
 
@@ -1273,33 +1273,38 @@ BOOL __fastcall Skills_CltStFunc_CalcLeapDestViaPathfind(D2UnitStrc * pUnit, eD2
 }
 
 BOOL __fastcall Skills_CltDoFunc_Bar_Whirlwind_EndCollision(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    int32_t nY;
+    uint32_t nSkillFlags;
+    int eCollisionFlag;
+    bool bIsPlayer;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
-    if (!(pSkill && pDynamicPath)) {
-      return 0;
-    }
+    if (pSkill && pDynamicPath) {
+      int32_t nParam1X;
+      bIsPlayer = pUnit->eUnitType == UNIT_PLAYER;
+      eCollisionFlag = (bIsPlayer ? -128 : 0) + 0x100;
+      nParam1X = D2Common::Skills::SKILL_GetParam1(pSkill);
+      nY = D2Common::Skills::SKILL_GetParam2(pSkill);
+      nSkillFlags = D2Common::Skills::SKILL_GetFlags(pSkill);
+      if (((uint8_t)nSkillFlags & 3) == 3) {
+        D2Common::Collision::RemoveCollision_Type(D2Common::Units::UNITS_GetRoom(pUnit), nParam1X, nY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), eCollisionFlag);
+        D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, eCollisionFlag);
+        D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynamicPath, (bIsPlayer ? -8184 : 0) + 0x3c01);
+        D2Common::Skills::SKILL_SetFlags(pSkill, 0);
+        nParam1X = UNIT::UnitSnd::UNITSND_GetMissileSound(pUnit, 0x9e3);
+        Sound::SOUND_StopById(nParam1X);
+        return 1;
+      }
+      if (!(nSkillFlags & 1)) {
+        return 1;
+      }
 
-    bool bIsPlayer = pUnit->eUnitType == UNIT_PLAYER;
-    int32_t nParam1X = D2Common::Skills::SKILL_GetParam1(pSkill);
-    int32_t nY = D2Common::Skills::SKILL_GetParam2(pSkill);
-    uint32_t nSkillFlags = D2Common::Skills::SKILL_GetFlags(pSkill);
-    if (((uint8_t)nSkillFlags & 3) == 3) {
-      int eCollisionFlag = (bIsPlayer ? -128 : 0) + 0x100;
-      D2Common::Collision::RemoveCollision_Type(D2Common::Units::UNITS_GetRoom(pUnit), nParam1X, nY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), eCollisionFlag);
-      D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, eCollisionFlag);
-      D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynamicPath, (bIsPlayer ? -8184 : 0) + 0x3c01);
-      D2Common::Skills::SKILL_SetFlags(pSkill, 0);
-      nParam1X = UNIT::UnitSnd::UNITSND_GetMissileSound(pUnit, 0x9e3);
-      Sound::SOUND_StopById(nParam1X);
+      D2Common::Units::SetSequenceFrame(pUnit, 3);
+      pUnit->nFrameCount = 0x500;
       return 1;
     }
-    if (!(nSkillFlags & 1)) {
-      return 1;
-    }
 
-    D2Common::Units::SetSequenceFrame(pUnit, 3);
-    pUnit->nFrameCount = 0x500;
-    return 1;
+    return 0;
 }
 
 void __fastcall SKILL_StopAndClearSound(D2UnitStrc * pUnit, eD2Skills eSkill) {

@@ -307,11 +307,11 @@ BOOL __fastcall Skills_CltDoFunc_Ama_MultiShotArrows(D2UnitStrc * pUnit, eD2Skil
       nTargetY -= nDirY * nArrowCount / 2;
       memset(&sSkillArg, 0, 0x5c);
       sSkillArg.nFlags = 0x820;
-      sSkillArg.nSkillLevel = nSkillLvl;
-      sSkillArg.nMissileTxtNo = eCltMissileId;
       sSkillArg.pOwner = pUnit;
       sSkillArg.pMissile = pUnit;
       sSkillArg.eSkillNo = eSkill;
+      sSkillArg.nSkillLevel = nSkillLvl;
+      sSkillArg.nMissileTxtNo = eCltMissileId;
       sSkillArg.nActivateFrame = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[1], eSkill, nSkillLvl);
       if (nArrowCount <= 0) {
         return 1;
@@ -334,6 +334,8 @@ BOOL __fastcall Skills_CltDoFunc_Ama_MultiShotArrows(D2UnitStrc * pUnit, eD2Skil
 
 // Client DoFunc for Amazon Guided Arrow. Sets UNITFLAG_SKSRVDOFUNC, resolves target coords via GetCoordinates, selects missile via SKILLSASS_GetCltMissileByAuraLevel. If target present uses flag 0x20, otherwise 0x420 (no-lock). Spawns missile via MakeMissile, sets TargetX to mode 1 (locked) or 2 (free-flight), and encodes the relative target offset into TargetY as a packed short pair for the homing system.
 BOOL __fastcall Skills_CltDoFunc_Ama_GuidedArrow(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    D2UnitStrc* pMissileUnit;
+    int32_t nUnitPosY;
     D2SkillArgStrc sSkillArg;
     int nTargetY;
     int nTargetX;
@@ -351,43 +353,49 @@ BOOL __fastcall Skills_CltDoFunc_Ama_GuidedArrow(D2UnitStrc * pUnit, eD2Skills e
     }
 
     sSkillArg.nMissileTxtNo = SkillsAss::SKILLSASS_GetCltMissileByAuraLevel(pUnit, eSkill);
-    if (!((int)sSkillArg.nMissileTxtNo >= 0 && (int)sSkillArg.nMissileTxtNo < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
-    }
+    if ((int)sSkillArg.nMissileTxtNo >= 0 && (int)sSkillArg.nMissileTxtNo < sgptDataTable->nTxtMissilesSize) {
+      D2UnitStrc* pTarget;
+      pTarget = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
+      memset(&sSkillArg, 0, 0x5c);
+      sSkillArg.nUnitX = nTargetX;
+      sSkillArg.nFlags = 0x20;
+      sSkillArg.nUnitY = nTargetY;
+      sSkillArg.nSkillLevel = nSkillLvl;
+      if (!pTarget) {
+        sSkillArg.nFlags = 0x420;
+      }
 
-    D2UnitStrc* pTarget = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.nUnitX = nTargetX;
-    sSkillArg.nFlags = 0x20;
-    sSkillArg.nUnitY = nTargetY;
-    sSkillArg.nSkillLevel = nSkillLvl;
-    if (!pTarget) {
-      sSkillArg.nFlags = 0x420;
-    }
+      sSkillArg.pOwner = pUnit;
+      sSkillArg.pMissile = pUnit;
+      sSkillArg.pTarget = pTarget;
+      sSkillArg.eSkillNo = eSkill;
+      pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
+      if (!pMissileUnit) {
+        return 1;
+      }
+      if (pTarget) {
+        nTargetMode = 1;
+      } else {
+        nTargetMode = 2;
+      }
 
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.pMissile = pUnit;
-    sSkillArg.pTarget = pTarget;
-    sSkillArg.eSkillNo = eSkill;
-    D2UnitStrc* pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
-    if (!pMissileUnit) {
+      D2Common::Units::Missile::SetTargetX(pMissileUnit, nTargetMode);
+      nTargetMode = Units::GetXPosFromDynamicPathUnit(pUnit);
+      nUnitPosY = Units::GetYPosFromDynamicPathUnit(pUnit);
+      D2Common::Units::Missile::SetTargetY(pMissileUnit, (short int)((short int)nTargetY - (short int)nUnitPosY) * 0x10000 + (int)(short int)((short int)nTargetX - (short int)nTargetMode));
       return 1;
     }
-    if (pTarget) {
-      nTargetMode = 1;
-    } else {
-      nTargetMode = 2;
-    }
 
-    D2Common::Units::Missile::SetTargetX(pMissileUnit, nTargetMode);
-    nTargetMode = Units::GetXPosFromDynamicPathUnit(pUnit);
-    int32_t nUnitPosY = Units::GetYPosFromDynamicPathUnit(pUnit);
-    D2Common::Units::Missile::SetTargetY(pMissileUnit, (short int)((short int)nTargetY - (short int)nUnitPosY) * 0x10000 + (int)(short int)((short int)nTargetX - (short int)nTargetMode));
-    return 1;
+    return 0;
 }
 
 // Client DoFunc for Amazon linear missile spray skills (e.g. Multiple Shot variant). Validates skill/missile indices, resolves the confirmed target position, evaluates calc[0] for missile count, then fires that many missiles in a line from caster toward target using SKILLSMON_SetMissilePathLinear. Returns TRUE if any missiles were launched.
 BOOL __fastcall Skills_CltDoFunc_Ama_LinearMissileSpray(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    int32_t nTargetPosY;
+    int32_t nOwnerX;
+    int32_t nOwnerPosX;
+    int32_t nMissileCount;
+    int nMissileIdx;
     D2SkillArgStrc sSkillArg;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
@@ -404,37 +412,38 @@ BOOL __fastcall Skills_CltDoFunc_Ama_LinearMissileSpray(D2UnitStrc * pUnit, eD2S
     }
 
     sSkillArg.nMissileTxtNo = SkillsAss::SKILLSASS_GetCltMissileByAuraLevel(pUnit, eSkill);
-    if (!((int)sSkillArg.nMissileTxtNo >= 0 && (int)sSkillArg.nMissileTxtNo < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
-    }
+    if ((int)sSkillArg.nMissileTxtNo >= 0 && (int)sSkillArg.nMissileTxtNo < sgptDataTable->nTxtMissilesSize) {
+      int32_t nTargetX;
+      nTargetX = Units::GetXPosFromDynamicPathUnit(pConfirmedTarget);
+      nTargetPosY = Units::GetYPosFromDynamicPathUnit(pConfirmedTarget);
+      nOwnerX = Units::GetXPosFromDynamicPathUnit(pUnit);
+      nOwnerPosX = Units::GetYPosFromDynamicPathUnit(pUnit);
+      nMissileCount = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt[eSkill].calc[0], eSkill, nSkillLvl);
+      memset(&sSkillArg, 0, 0x5c);
+      nMissileIdx = 0;
+      sSkillArg.nUnitX = nTargetX * 2 - nOwnerX;
+      sSkillArg.pOwner = pUnit;
+      sSkillArg.nX = nTargetX;
+      sSkillArg.nY = nTargetPosY;
+      sSkillArg.nFlags = 0x21;
+      sSkillArg.nUnitY = nTargetPosY * 2 - nOwnerPosX;
+      sSkillArg.eSkillNo = eSkill;
+      sSkillArg.nSkillLevel = nSkillLvl;
+      sSkillArg.fpFunction = SkillsMon::SKILLSMON_SetMissilePathLinear;
+      if (nMissileCount <= 0) {
+        return 1;
+      }
 
-    int32_t nTargetX = Units::GetXPosFromDynamicPathUnit(pConfirmedTarget);
-    int32_t nTargetPosY = Units::GetYPosFromDynamicPathUnit(pConfirmedTarget);
-    int32_t nOwnerX = Units::GetXPosFromDynamicPathUnit(pUnit);
-    int32_t nOwnerPosX = Units::GetYPosFromDynamicPathUnit(pUnit);
-    int32_t nMissileCount = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt[eSkill].calc[0], eSkill, nSkillLvl);
-    memset(&sSkillArg, 0, 0x5c);
-    int nMissileIdx = 0;
-    sSkillArg.nFlags = 0x21;
-    sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.fpFunction = SkillsMon::SKILLSMON_SetMissilePathLinear;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.nX = nTargetX;
-    sSkillArg.nY = nTargetPosY;
-    sSkillArg.nUnitX = nTargetX * 2 - nOwnerX;
-    sSkillArg.nUnitY = nTargetPosY * 2 - nOwnerPosX;
-    sSkillArg.eSkillNo = eSkill;
-    if (nMissileCount <= 0) {
+      do {
+        sSkillArg.nFunctionParam = nMissileIdx;
+        UNIT::Missile::MakeMissile(&sSkillArg);
+        nMissileIdx++;
+      } while (nMissileIdx < nMissileCount);
+
       return 1;
     }
 
-    do {
-      sSkillArg.nFunctionParam = nMissileIdx;
-      UNIT::Missile::MakeMissile(&sSkillArg);
-      nMissileIdx++;
-    } while (nMissileIdx < nMissileCount);
-
-    return 1;
+    return 0;
 }
 
 // Client-side do-function for the Amazon Strafe skill. Each call fires one missile (cltmissilea or cltmissileb based on weapon class) toward the current or nearest valid target within aura range, decrements the remaining shot counter (SKILL_GetParam1), and if shots remain, finds the next closest target (excluding the one just shot), redirects the unit's dynamic path toward it, and updates the stored target GUID/type in skill params 2/3. Returns FALSE when no target or no shots left.
@@ -610,12 +619,12 @@ BOOL __fastcall Skills_CltDoFunc_Ama_PiercingShot(D2UnitStrc * pUnit, eD2Skills 
 
     nSearchRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[1], eSkill, nSkillLvl);
     memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.nFlags = 0x20;
-    sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.pOwner = pUnit;
-    sSkillArg.pMissile = pConfirmedTarget;
     sSkillArg.nMissileTxtNo = eCltMissileId;
+    sSkillArg.nFlags = 0x20;
+    sSkillArg.pMissile = pConfirmedTarget;
     sSkillArg.eSkillNo = eSkill;
+    sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.nUnitX = Units::GetXPosFromDynamicPathUnit(pSecondaryTarget);
     sSkillArg.nUnitY = Units::GetYPosFromDynamicPathUnit(pSecondaryTarget);
     pConfirmedTarget = UNIT::Missile::MakeMissile(&sSkillArg);

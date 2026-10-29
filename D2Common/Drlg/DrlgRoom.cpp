@@ -248,7 +248,8 @@ D2RoomExStrc * __fastcall DRLGSPAWN_GetRandomPresetSpawnPoint(int32_t nSpawnType
           nSeedLow = pLevel->sSeed.nSeedLow;
           if (nMatchingCount & nMatchingCount - 1) {
             sNextSeed = (D2SeedStrc)((uint64_t)nSeedLow * 0x6ac690c5 + nSeedHighU);
-            pLevel->sSeed = sNextSeed;
+            pLevel->sSeed.nSeedHigh = sNextSeed.nSeedHigh;
+            pLevel->sSeed.nSeedLow = sNextSeed.nSeedLow;
             nSelectedIdx = (int)(sNextSeed.nSeedLow % nMatchingCount) + 1;
           } else {
             sNextSeed = (D2SeedStrc)((uint64_t)nSeedLow * 0x6ac690c5 + nSeedHighU);
@@ -647,7 +648,8 @@ D2RoomExStrc * __fastcall DRLGROOMEX_AllocRoomEx(D2DrlgLevelStrc * pLevel, int n
     pLevel->sSeed = sNewSeed;
     Seed::InitSeed_Param_666(pSeed, sNewSeed.nSeedLow);
     sNewSeed = D2_SEED_NEXT(*pSeed);
-    *pSeed = sNewSeed;
+    pSeed->nSeedHigh = sNewSeed.nSeedHigh;
+    pSeed->nSeedLow = sNewSeed.nSeedLow;
     pRoomEx->nSeed = sNewSeed.nSeedLow;
     if (pLevel->dwFlags & 0x10) {
       pRoomEx->eRoomExFlags |= 0x40000;
@@ -876,11 +878,11 @@ BOOL __fastcall DRLGCOORDS_IsWithinDistance(D2DrlgCoordsStrc * pCoords, D2DrlgCo
     } else {
       *nY = nX1 - pCoords2->WorldSize.y - nX2;
     }
-    if (!(*nX < nSize && *nY < nSize)) {
-      return 1;
+    if (*nX < nSize && *nY < nSize) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 int __fastcall DRLGROOM_CoordsWithinDistance(D2DrlgCoordsStrc * pCoords1, D2DrlgCoordsStrc * pCoords2, int32_t nDistance) {
@@ -1045,14 +1047,14 @@ uint32_t __fastcall CheckLOSDraw(D2RoomExStrc * pRoomEx) {
 uint32_t __fastcall DRLGROOMEX_IsPresetWithOutdoorBorder(D2RoomExStrc * pRoomEx) {
     uint32_t bHasOutdoorBorder;
     switch (pRoomEx->nPresetType) {
-      default:
-        {
-          return 0;
-        }
       case 1:
         {
           bHasOutdoorBorder = DRLGOUTROOM_HasOutdoorBorderFlag(pRoomEx);
           return bHasOutdoorBorder;
+        }
+      default:
+        {
+          return 0;
         }
     }
 }
@@ -1112,12 +1114,13 @@ BOOL __fastcall HasWaypoint(D2RoomExStrc * pRoomEx) {
 }
 
 char * __fastcall GetPickedLevelPrestFilePathFromRoomEx(D2RoomExStrc * pRoomEx) {
-    if (pRoomEx->nPresetType != 2) {
-      return "None";
+    if (pRoomEx->nPresetType == 2) {
+      char* szFilePath;
+      szFilePath = Preset::DRLGPRESET_GetPickedFilePathFromRoomEx(pRoomEx);
+      return szFilePath;
     }
 
-    char* szFilePath = Preset::DRLGPRESET_GetPickedFilePathFromRoomEx(pRoomEx);
-    return szFilePath;
+    return "None";
 }
 
 static void ReorderNearRoomList(int nRoomCount, D2RoomStrc * * ppRoomList) {

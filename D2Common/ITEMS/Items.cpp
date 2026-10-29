@@ -156,11 +156,11 @@ void __stdcall ITEMDATA_Free(D2PoolManagerStrc * pMemory, D2UnitStrc * pUnit) {
 }
 
 eD2BodyLoc __stdcall GetBodyLocation(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return BODYLOC_NONE;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->eBodyLoc;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->eBodyLoc;
+    return BODYLOC_NONE;
 }
 
 void __stdcall SetBodyLoc(D2UnitStrc * pUnit, eD2BodyLoc eBodyLoc) {
@@ -172,11 +172,11 @@ void __stdcall SetBodyLoc(D2UnitStrc * pUnit, eD2BodyLoc eBodyLoc) {
 }
 
 D2SeedStrc * __stdcall GetItemSeed(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataPlayer)) {
-      return nullptr;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataPlayer) {
+      return (D2SeedStrc*)(pUnit->pUnitData.pUnitDataPlayer->szCharName + 4);
     }
 
-    return (D2SeedStrc*)(pUnit->pUnitData.pUnitDataPlayer->szCharName + 4);
+    return nullptr;
 }
 
 void __stdcall ResetItemSeed(D2UnitStrc * pUnit) {
@@ -188,11 +188,11 @@ void __stdcall ResetItemSeed(D2UnitStrc * pUnit) {
 }
 
 int32_t __stdcall GetModSeed(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->nModSeed;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->nModSeed;
+    return 0;
 }
 
 void __stdcall SetModSeed(D2UnitStrc * pUnit, int32_t nModSeed) {
@@ -215,11 +215,11 @@ void __stdcall SetModSeed(D2UnitStrc * pUnit, int32_t nModSeed) {
 
 // Returns nQuality from D2UnitDataItemStrc. Returns 2 (NORMAL) if unit is null, not an item, or has no item data. Thirty-seven bytes reading the unit from [EBP+8] and touching EAX only, so it preserves ECX; CalculateTransactionCost_Impl carries a magic-or-better flag there across this call.
 int __stdcall GetItemQuality(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataMonster)) {
-      return 2;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataMonster) {
+      return (int)pUnit->pUnitData.pUnitDataMonster->pMonStatsTxt;
     }
 
-    return (int)pUnit->pUnitData.pUnitDataMonster->pMonStatsTxt;
+    return 2;
 }
 
 void __stdcall SetItemQuality(D2UnitStrc * pUnit, eD2ItemQuality eItemQuality) {
@@ -231,11 +231,11 @@ void __stdcall SetItemQuality(D2UnitStrc * pUnit, eD2ItemQuality eItemQuality) {
 }
 
 int16_t __stdcall GetMagicPrefix(D2UnitStrc * pUnit, int32_t nIndex) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->wMagicPrefix[nIndex];
     }
 
-    return pUnit->pUnitData.pUnitDataItem->wMagicPrefix[nIndex];
+    return 0;
 }
 
 void __stdcall SetMagixPrefix(D2UnitStrc * pUnit, int16_t wMagicPrefix, int32_t nIndex) {
@@ -248,17 +248,16 @@ void __stdcall SetMagixPrefix(D2UnitStrc * pUnit, int16_t wMagicPrefix, int32_t 
 
 // Returns nAutoMagic (offset 0x36) from D2UnitDataItemStrc. Returns 0 if unit is null, not an item, or has no item data.
 int __stdcall GetAutoMagic(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-      return (uint32_t)pUnit & -65536;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM) {
+      D2UnitDataItemStrc* pDVar1;
+      pDVar1 = pUnit->pUnitData.pUnitDataItem;
+      pUnit = 0;
+      if (pDVar1) {
+        return (uint32_t)((uint32_t)(uint16_t)(short int)((uint32_t)pDVar1 >> 0x10) << 16 | (uint32_t)(uint16_t)pDVar1->wAutoMagic);
+      }
     }
 
-    D2UnitDataItemStrc* pDVar1 = pUnit->pUnitData.pUnitDataItem;
-    pUnit = 0;
-    if (!pDVar1) {
-      return (uint32_t)pUnit & -65536;
-    }
-
-    return (uint32_t)((uint32_t)(uint16_t)(short int)((uint32_t)pDVar1 >> 0x10) << 16 | (uint32_t)(uint16_t)pDVar1->wAutoMagic);
+    return (uint32_t)pUnit & -65536;
 }
 
 void __stdcall SetAutoMagic(D2UnitStrc * pUnit, int16_t wAutoMagic) {
@@ -271,17 +270,16 @@ void __stdcall SetAutoMagic(D2UnitStrc * pUnit, int16_t wAutoMagic) {
 
 // Returns magic suffix ID at nIndex (offset 0x3E + nIndex*2) from D2UnitDataItemStrc. Returns 0 if unit is null, not an item, or has no item data.
 int __stdcall GetMagicSuffix(D2UnitStrc * pUnit, int nIndex) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-      return (uint32_t)pUnit & -65536;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM) {
+      D2UnitDataItemStrc* pDVar1;
+      pDVar1 = pUnit->pUnitData.pUnitDataItem;
+      pUnit = 0;
+      if (pDVar1) {
+        return (uint32_t)((uint32_t)(uint16_t)(short int)((uint32_t)pDVar1 >> 0x10) << 16 | (uint32_t)(uint16_t)pDVar1->wMagicSuffix[nIndex]);
+      }
     }
 
-    D2UnitDataItemStrc* pDVar1 = pUnit->pUnitData.pUnitDataItem;
-    pUnit = 0;
-    if (!pDVar1) {
-      return (uint32_t)pUnit & -65536;
-    }
-
-    return (uint32_t)((uint32_t)(uint16_t)(short int)((uint32_t)pDVar1 >> 0x10) << 16 | (uint32_t)(uint16_t)pDVar1->wMagicSuffix[nIndex]);
+    return (uint32_t)pUnit & -65536;
 }
 
 void __stdcall SetMagicSuffix(D2UnitStrc * pUnit, int16_t wMagicSuffix, int32_t nIndex) {
@@ -293,11 +291,11 @@ void __stdcall SetMagicSuffix(D2UnitStrc * pUnit, int16_t wMagicSuffix, int32_t 
 }
 
 int16_t __stdcall GetRarePrefix(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->wRarePrefix;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->wRarePrefix;
+    return 0;
 }
 
 void __stdcall SetRarePrefix(D2UnitStrc * pUnit, int16_t wRarePrefix) {
@@ -309,11 +307,11 @@ void __stdcall SetRarePrefix(D2UnitStrc * pUnit, int16_t wRarePrefix) {
 }
 
 int16_t __stdcall GetRareSuffix(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->wRareSuffix;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->wRareSuffix;
+    return 0;
 }
 
 void __stdcall SetRareSuffix(D2UnitStrc * pUnit, int16_t wRareSuffix) {
@@ -325,11 +323,11 @@ void __stdcall SetRareSuffix(D2UnitStrc * pUnit, int16_t wRareSuffix) {
 }
 
 BOOL __stdcall CheckItemFlag(D2UnitStrc * pUnit, eD2ItemFlag neD2ItemFlag, int32_t nParam, char * szText) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->dwItemFlags & neD2ItemFlag;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->dwItemFlags & neD2ItemFlag;
+    return 0;
 }
 
 void __stdcall ITEM_EditItemData_eItemFlag(D2UnitStrc * pUnit, eD2ItemFlag eItemFlag, BOOL bSet) {
@@ -350,19 +348,19 @@ void __stdcall ITEM_EditItemData_eItemFlag(D2UnitStrc * pUnit, eD2ItemFlag eItem
 }
 
 eD2ItemFlag __stdcall ITEM_GetItemData_eD2ItemFlag(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD);
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->dwItemFlags;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->dwItemFlags;
+    return ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD);
 }
 
 uint32_t __stdcall ITEM_CheckItemData_eD2ItemCmd(D2UnitStrc * pUnit, eD2ItemCmd eItemCmd) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataMissile)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataMissile) {
+      return pUnit->pUnitData.pUnitDataMissile->dwMissileFlags & eItemCmd;
     }
 
-    return pUnit->pUnitData.pUnitDataMissile->dwMissileFlags & eItemCmd;
+    return 0;
 }
 
 void __stdcall ITEM_EditItemData_eD2ItemCmd(D2UnitStrc * pUnit, eD2ItemCmd eItemCmd, BOOL bRemove) {
@@ -383,28 +381,28 @@ void __stdcall ITEM_EditItemData_eD2ItemCmd(D2UnitStrc * pUnit, eD2ItemCmd eItem
 }
 
 eD2ItemCmd __stdcall ITEM_GetItemData_eD2ItemCmd(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->eItemCmd;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->eItemCmd;
+    return 0;
 }
 
 int32_t __stdcall ITEM_GetItemData_nItemLevel(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-      return 1;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM) {
+      D2UnitDataItemStrc* temp_5f060235c5;
+      temp_5f060235c5 = pUnit->pUnitData.pUnitDataItem;
+      if (temp_5f060235c5) {
+        if (temp_5f060235c5->nItemLevel >= 1) {
+          return temp_5f060235c5->nItemLevel;
+        }
+
+        temp_5f060235c5->nItemLevel = 1;
+        return temp_5f060235c5->nItemLevel;
+      }
     }
 
-    D2UnitDataItemStrc* temp_5f060235c5 = pUnit->pUnitData.pUnitDataItem;
-    if (!temp_5f060235c5) {
-      return 1;
-    }
-    if (temp_5f060235c5->nItemLevel >= 1) {
-      return temp_5f060235c5->nItemLevel;
-    }
-
-    temp_5f060235c5->nItemLevel = 1;
-    return temp_5f060235c5->nItemLevel;
+    return 1;
 }
 
 void __stdcall ITEM_SetItemData_nItemLevel(D2UnitStrc * pUnit, int32_t nLevel) {
@@ -419,11 +417,11 @@ void __stdcall ITEM_SetItemData_nItemLevel(D2UnitStrc * pUnit, int32_t nLevel) {
 }
 
 eInventoryPage __stdcall ITEM_GetContainingInventoryPage(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return INVPAGE_None;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->ePage;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->ePage;
+    return INVPAGE_None;
 }
 
 void __stdcall ITEM_SetItemData_ePage(D2UnitStrc * pUnit, eInventoryPage ePage) {
@@ -435,11 +433,11 @@ void __stdcall ITEM_SetItemData_ePage(D2UnitStrc * pUnit, eInventoryPage ePage) 
 }
 
 uint8_t __stdcall ITEM_GetItemData_eExchangePage(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return 0xff;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->eExchangePage;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->eExchangePage;
+    return 0xff;
 }
 
 void __stdcall ITEM_SetItemData_eExchangePage(D2UnitStrc * pUnit, uint8_t eExchangePage) {
@@ -451,11 +449,11 @@ void __stdcall ITEM_SetItemData_eExchangePage(D2UnitStrc * pUnit, uint8_t eExcha
 }
 
 uint8_t __stdcall ITEM_GetItemData_ePreviousPage(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return 0xff;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->ePreviousPage;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->ePreviousPage;
+    return 0xff;
 }
 
 void __stdcall ITEM_SetItemData_ePreviousPage(D2UnitStrc * pUnit, uint8_t ePreviousPage) {
@@ -467,11 +465,11 @@ void __stdcall ITEM_SetItemData_ePreviousPage(D2UnitStrc * pUnit, uint8_t ePrevi
 }
 
 char * __stdcall ITEM_GetItemData_szPlayerName(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return nullptr;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->szPlayerName;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->szPlayerName;
+    return nullptr;
 }
 
 void __stdcall ITEM_GetPlayerNameAkaNamedString(D2UnitStrc * pUnit, char * pCustomName) {
@@ -489,11 +487,11 @@ void __stdcall ITEM_GetPlayerNameAkaNamedString(D2UnitStrc * pUnit, char * pCust
 }
 
 uint8_t __stdcall ITEM_GetItemData_nEarLevel(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return '\x01';
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->nEarLevel;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->nEarLevel;
+    return '\x01';
 }
 
 void __stdcall ITEM_SetItemData_nEarLevel(D2UnitStrc * pUnit, uint8_t nEarLevel) {
@@ -505,17 +503,16 @@ void __stdcall ITEM_SetItemData_nEarLevel(D2UnitStrc * pUnit, uint8_t nEarLevel)
 }
 
 BOOL __stdcall ITEM_GetItemData_bVariant(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-      return (uint32_t)pUnit & -256;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM) {
+      D2UnitDataItemStrc* pDVar1;
+      pDVar1 = pUnit->pUnitData.pUnitDataItem;
+      pUnit = 0;
+      if (pDVar1) {
+        return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pDVar1 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pDVar1->bVariant);
+      }
     }
 
-    D2UnitDataItemStrc* pDVar1 = pUnit->pUnitData.pUnitDataItem;
-    pUnit = 0;
-    if (!pDVar1) {
-      return (uint32_t)pUnit & -256;
-    }
-
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pDVar1 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pDVar1->bVariant);
+    return (uint32_t)pUnit & -256;
 }
 
 void __stdcall ITEM_SetItemData_bVariant(D2UnitStrc * pUnit, bool bVariant) {
@@ -555,7 +552,8 @@ int32_t __stdcall ITEM_GetItemsTxt_dwWClass(D2UnitStrc * pUnit) {
       return 0;
     }
 
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+    int nClassId = pUnit->nClassId;
+    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
     if (pItemsTxt) {
       return pItemsTxt->dwWClass;
     }
@@ -572,7 +570,8 @@ int32_t __stdcall ITEM_GetItemsTxt_dw2HandedWClass(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x609);
       exit(-1);
     } else {
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (!pItemsTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x60c);
         exit(-1);
@@ -591,7 +590,8 @@ uint32_t __stdcall ITEM_GetItemsTxt_szCode(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x61b);
       exit(-1);
     } else {
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (!pItemsTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x61e);
         exit(-1);
@@ -610,7 +610,8 @@ int32_t __stdcall ITEM_GetItemsTxt_dwAlternateGfxIfExists(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x628);
       exit(-1);
     } else {
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (!pItemsTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x62b);
         exit(-1);
@@ -632,7 +633,8 @@ uint8_t __stdcall ITEM_GetItemsTxt_bComponent(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x635);
       exit(-1);
     } else {
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (!pItemsTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x638);
         exit(-1);
@@ -647,7 +649,8 @@ void __stdcall ITEM_GetItemsTxt_nWidthAndHeight(D2UnitStrc * pUnit, char * pWidt
       return;
     }
 
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+    int nClassId = pUnit->nClassId;
+    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
     if (!pItemsTxt) {
       return;
     }
@@ -676,7 +679,8 @@ uint8_t __stdcall ITEM_GetItemsTxt_nLevel(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x697);
       exit(-1);
     } else {
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (!pItemsTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x69a);
         exit(-1);
@@ -710,12 +714,15 @@ int32_t __stdcall IITEM_GetItemsTxt_dwNormCode(D2UnitStrc * pUnit) {
         exit(-1);
       }
 
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
-      if (pItemsTxt->dwNormCode) {
-        return pItemsTxt->dwNormCode;
-      }
+      {
+        int nClassId = pUnit->nClassId;
+        pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
+        if (pItemsTxt->dwNormCode) {
+          return pItemsTxt->dwNormCode;
+        }
 
-      return pItemsTxt->dwCode;
+        return pItemsTxt->dwCode;
+      }
     }
 }
 
@@ -746,21 +753,25 @@ BOOL __stdcall TXT_ItemTypes_CheckIfTypeIsThrowable(int32_t nItemType) {
 }
 
 uint32_t __stdcall ITEM_GetItemsTxt_wMissileType(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-      return -1;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM) {
+      D2ItemsTxt* pItemsTxt;
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
+      return (uint32_t)(uint16_t)pItemsTxt->wMissileType;
     }
 
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
-    return (uint32_t)(uint16_t)pItemsTxt->wMissileType;
+    return -1;
 }
 
 uint8_t __stdcall ITEM_GetItemsTxt_nRangeAdder(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM) {
+      D2ItemsTxt* pItemsTxt;
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
+      return (uint8_t)pItemsTxt->nRangeAdder;
     }
 
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
-    return (uint8_t)pItemsTxt->nRangeAdder;
+    return 0;
 }
 
 BOOL __stdcall TXT_Items_ConfirmWClass(uint32_t nClassId, int32_t dwWClass) {
@@ -775,12 +786,14 @@ BOOL __stdcall TXT_Items_ConfirmWClass(uint32_t nClassId, int32_t dwWClass) {
 }
 
 BOOL __stdcall HasWeaponClass(D2UnitStrc * pUnit, int32_t dwWClass) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM) {
+      BOOL bResult;
+      int nClassId = pUnit->nClassId;
+      bResult = TXT_Items_ConfirmWClass(nClassId, dwWClass);
+      return bResult;
     }
 
-    BOOL bResult = TXT_Items_ConfirmWClass(pUnit->nClassId, dwWClass);
-    return bResult;
+    return 0;
 }
 
 BOOL __stdcall TXT_Items_Getb2Handed(uint32_t nClassId) {
@@ -796,28 +809,32 @@ BOOL __stdcall TXT_Items_Getb2Handed(uint32_t nClassId) {
 
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 BOOL __stdcall IsTwoHanded(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM) {
+      BOOL BVar1;
+      int nClassId = pUnit->nClassId;
+      BVar1 = TXT_Items_Getb2Handed(nClassId);
+      return BVar1;
     }
 
-    BOOL BVar1 = TXT_Items_Getb2Handed(pUnit->nClassId);
-    return BVar1;
+    return 0;
 }
 
 // Returns bStackable from D2ItemsTxt for the given item unit. Halts if ItemsTxt lookup fails.
 BOOL __stdcall IsStackable(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM) {
+      D2ItemsTxt* pItemsTxt;
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
+      if (!pItemsTxt) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x922);
+        exit(-1);
+      }
+
+      return (uint32_t)pItemsTxt->bStackable;
+      return (uint32_t)pItemsTxt->bStackable;
     }
 
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
-    if (!pItemsTxt) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x922);
-      exit(-1);
-    }
-
-    return (uint32_t)pItemsTxt->bStackable;
-    return (uint32_t)pItemsTxt->bStackable;
+    return 0;
 }
 
 // Tests whether two item units are the "same kind" of potion for stacking/auto-fill purposes. Returns 1 immediately if the two items share a class id; otherwise looks up each item's ItemsTxt line and checks whether BOTH item codes appear together within the same potion-code group. Scans three configured code-group tables (health, mana, and a third group) held in UINT_ARRAY_00744660 (each preceded by a count); returns 1 if both items fall into any one group, else 0. Returns 0 if either unit pointer is null.
@@ -933,18 +950,20 @@ BOOL __stdcall INVENTORY_CheckIfItemCanBeAutoBelted(D2InventoryStrc * pInventory
 
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 int32_t __stdcall IsUseable(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM) {
+      D2ItemsTxt* pItemsTxt;
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
+      if (!pItemsTxt) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9c4);
+        exit(-1);
+      }
+
+      return (uint32_t)pItemsTxt->bUseable;
+      return (uint32_t)pItemsTxt->bUseable;
     }
 
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
-    if (!pItemsTxt) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9c4);
-      exit(-1);
-    }
-
-    return (uint32_t)pItemsTxt->bUseable;
-    return (uint32_t)pItemsTxt->bUseable;
+    return 0;
 }
 
 int32_t __stdcall IsUnique(D2UnitStrc * pUnit) {
@@ -956,7 +975,8 @@ int32_t __stdcall IsUnique(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9ce);
       exit(-1);
     } else {
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (!pItemsTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9d1);
         exit(-1);
@@ -975,7 +995,8 @@ int32_t __stdcall IsQuestItem(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9db);
       exit(-1);
     } else {
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (!pItemsTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9de);
         exit(-1);
@@ -1214,7 +1235,11 @@ static void __stdcall ITEMS_AddInventoryValueToTotal(int * pTotal1, int * pTotal
 
 // Computes the gold cost to gamble an item at a vendor. Resolves the item's normal-quality base via normcode, then looks up uber and ultra upgrade tiers. Weights each tier by how many levels above its minimum level requirement the player is (clamped to 0). Combines a level-scaled base formula with a weighted average of base/uber/ultra costs and stack size. Ring and amulet items ("rin " / "amu " codes) bypass the calculation and return the fixed GambleCost field directly.
 static int32_t __stdcall ITEMS_CalculateGamblePrice(int32_t nLevel, D2UnitStrc * pItem) {
+    int nAvgStack;
     D2ItemsTxt* pUberItemsTxt;
+    int nBaseCost;
+    uint8_t nBaseLevel;
+    uint32_t nWeightedBaseCost;
     uint32_t nItemClassId = IITEM_GetItemsTxt_dwNormCode(pItem);
     nItemClassId = DATATBLS::ItemTbls::TXT_Items_ConvertItemCodeToItemClassId(nItemClassId);
     D2ItemsTxt* pNormItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nItemClassId);
@@ -1230,46 +1255,46 @@ static int32_t __stdcall ITEMS_CalculateGamblePrice(int32_t nLevel, D2UnitStrc *
     int nUberWeight = 0;
     int nUberCost = 0;
     int nUltraCost = 0;
-    if (!(pNormItemsTxt->dwCode != 0x206e6972 && pNormItemsTxt->dwCode != 0x20756d61)) {
-      return pNormItemsTxt->dwGambleCost;
-    }
-
-    int nAvgStack = (pNormItemsTxt->dwMaxStack + pNormItemsTxt->dwMinStack) / 2;
-    if (nAvgStack < 1) {
-      nAvgStack = 1;
-    }
-
-    int nBaseCost = pNormItemsTxt->dwCost;
-    uint8_t nBaseLevel = pNormItemsTxt->nLevel;
-    if (pNormItemsTxt->dwUberCode && pNormItemsTxt->dwUberCode != 0x20202030) {
-      pUberItemsTxt = DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(pNormItemsTxt->dwUberCode, &nUltraClassId);
-      if (pUberItemsTxt) {
-        nUberWeight = (int)((nLevel - (uint32_t)(uint8_t)pUberItemsTxt->nLevel) * 100) / 2 + 1;
-        if (nUberWeight < 0) {
-          nUberWeight = 0;
-        }
-
-        nUberCost = pUberItemsTxt->dwCost;
+    if (pNormItemsTxt->dwCode != 0x206e6972 && pNormItemsTxt->dwCode != 0x20756d61) {
+      nAvgStack = (pNormItemsTxt->dwMaxStack + pNormItemsTxt->dwMinStack) / 2;
+      if (nAvgStack < 1) {
+        nAvgStack = 1;
       }
-    }
-    if (szUltraCode && pNormItemsTxt->dwUltraCode != 0x20202030) {
-      pNormItemsTxt = DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(szUltraCode, &nUberClassId);
-      if (pNormItemsTxt) {
-        nUltraWeight = (nLevel - (uint32_t)(uint8_t)pNormItemsTxt->nLevel) * 100;
-        nUltraWeight = nUltraWeight / 4 + 1;
-        if (nUltraWeight < 0) {
-          nUltraWeight = 0;
+
+      nBaseCost = pNormItemsTxt->dwCost;
+      nBaseLevel = pNormItemsTxt->nLevel;
+      if (pNormItemsTxt->dwUberCode && pNormItemsTxt->dwUberCode != 0x20202030) {
+        pUberItemsTxt = DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(pNormItemsTxt->dwUberCode, &nUltraClassId);
+        if (pUberItemsTxt) {
+          nUberWeight = (int)((nLevel - (uint32_t)(uint8_t)pUberItemsTxt->nLevel) * 100) / 2 + 1;
+          if (nUberWeight < 0) {
+            nUberWeight = 0;
+          }
+
+          nUberCost = pUberItemsTxt->dwCost;
         }
-
-        nUltraCost = pNormItemsTxt->dwCost;
       }
-    }
-    if (nLevel <= 5) {
-      nLevel = 5;
+      if (szUltraCode && pNormItemsTxt->dwUltraCode != 0x20202030) {
+        pNormItemsTxt = DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(szUltraCode, &nUberClassId);
+        if (pNormItemsTxt) {
+          nUltraWeight = (nLevel - (uint32_t)(uint8_t)pNormItemsTxt->nLevel) * 100;
+          nUltraWeight = nUltraWeight / 4 + 1;
+          if (nUltraWeight < 0) {
+            nUltraWeight = 0;
+          }
+
+          nUltraCost = pNormItemsTxt->dwCost;
+        }
+      }
+      if (nLevel <= 5) {
+        nLevel = 5;
+      }
+
+      nWeightedBaseCost = nBaseLevel - 0x2d;
+      return ((int)((((int)nWeightedBaseCost < 0 ? 0 : nWeightedBaseCost) - nBaseLevel / 2 + nLevel) * 0xfa) / 3 + ((10000 - nUltraWeight - nUberWeight) * nBaseCost * nAvgStack + nUltraCost * nUltraWeight + nUberCost * nUberWeight) / 10000) * ((nLevel * 2 + 1) / 3 + 0x14) / 0xf;
     }
 
-    uint32_t nWeightedBaseCost = nBaseLevel - 0x2d;
-    return ((int)((((int)nWeightedBaseCost < 0 ? 0 : nWeightedBaseCost) - nBaseLevel / 2 + nLevel) * 0xfa) / 3 + ((10000 - nUltraWeight - nUberWeight) * nBaseCost * nAvgStack + nUltraCost * nUltraWeight + nUberCost * nUberWeight) / 10000) * ((nLevel * 2 + 1) / 3 + 0x14) / 0xf;
+    return pNormItemsTxt->dwGambleCost;
 }
 
 int32_t __stdcall TXT_Items_GetMaxStack(uint32_t nItemClassId) {
@@ -1330,8 +1355,11 @@ int32_t __stdcall ITEM_GetItemsTxt_dwSpawnStack(D2UnitStrc * pUnit) {
         exit(-1);
       }
 
-      nLine = TXT_Items_GetSpawnStack(pUnit->nClassId);
-      return nLine;
+      {
+        int nClassId = pUnit->nClassId;
+        nLine = TXT_Items_GetSpawnStack(nClassId);
+        return nLine;
+      }
     }
 }
 
@@ -1357,8 +1385,11 @@ int32_t __stdcall ITEM_GetItemsTxt_dwMinStack(D2UnitStrc * pUnit) {
         exit(-1);
       }
 
-      nLine = TXT_Items_GetMinStack(pUnit->nClassId);
-      return nLine;
+      {
+        int nClassId = pUnit->nClassId;
+        nLine = TXT_Items_GetMinStack(nClassId);
+        return nLine;
+      }
     }
 }
 
@@ -1371,7 +1402,8 @@ uint32_t __stdcall TXT_Items_GetBitFieldAnd0x08(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd9e);
       exit(-1);
     } else {
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (!pItemsTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xda0);
         exit(-1);
@@ -1390,7 +1422,8 @@ bool __stdcall ITEM_GetItemsTxt_bDurWarning(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdc4);
       exit(-1);
     } else {
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (!pItemsTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdc6);
         exit(-1);
@@ -1409,7 +1442,8 @@ bool __stdcall ITEM_GetItemsTxt_bQntWarning(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdd0);
       exit(-1);
     } else {
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (!pItemsTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdd2);
         exit(-1);
@@ -1424,7 +1458,8 @@ int16_t __stdcall ITEM_GetItemsTxt_wStrBonus(D2UnitStrc * pUnit) {
       return 100;
     }
 
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+    int nClassId = pUnit->nClassId;
+    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
     if (!(pItemsTxt && pItemsTxt->nStrBonus != 1)) {
       return 100;
     }
@@ -1437,7 +1472,8 @@ int16_t __stdcall ITEM_GetItemsTxt_wDexBonus(D2UnitStrc * pUnit) {
       return 100;
     }
 
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+    int nClassId = pUnit->nClassId;
+    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
     if (!(pItemsTxt && pItemsTxt->nDexBonus != 1)) {
       return 100;
     }
@@ -1460,7 +1496,8 @@ int32_t __stdcall ITEM_GetItemsTxt_bHasInv(D2UnitStrc * pUnit) {
       return 0;
     }
 
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+    int nClassId = pUnit->nClassId;
+    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
     if (pItemsTxt) {
       return (uint32_t)pItemsTxt->bHasInv;
     }
@@ -1536,8 +1573,11 @@ uint32_t __stdcall ITEM_GetItemsTxt_bGemApplyType(D2UnitStrc * pUnit) {
         exit(-1);
       }
 
-      uVar1 = TXT_Items_GetGemApplyType(pUnit->nClassId);
-      return uVar1;
+      {
+        int nClassId = pUnit->nClassId;
+        uVar1 = TXT_Items_GetGemApplyType(nClassId);
+        return uVar1;
+      }
     }
 }
 
@@ -1560,46 +1600,47 @@ uint32_t __stdcall TXT_ItemTypes_CheckEquivalence(uint32_t nItemClassId, eD2Item
     }
 
     eD2ItemTypes eSecondaryType = (eD2ItemTypes)pItemsTxt->wType2;
-    if (!(eSecondaryType != ITEMTYPE_None1 && (int)eSecondaryType < sgptDataTable->nTxtItemTypesSize)) {
-      return 0;
+    if (eSecondaryType != ITEMTYPE_None1 && (int)eSecondaryType < sgptDataTable->nTxtItemTypesSize) {
+      return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eSecondaryType + ((int)eItemType >> 5)) * 4) & gadwBitMasks[eItemType & ITEMTYPE_Hammer];
     }
 
-    return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eSecondaryType + ((int)eItemType >> 5)) * 4) & gadwBitMasks[eItemType & ITEMTYPE_Hammer];
+    return 0;
 }
 
 uint32_t __stdcall ITEMS_CheckItemTypeEquivalence(eD2ItemTypes eItemType1, eD2ItemTypes eItemType2) {
-    if (!((int)eItemType1 >= 0 && (int)eItemType1 < sgptDataTable->nTxtItemTypesSize && (int)eItemType2 >= 0 && (int)eItemType2 < sgptDataTable->nTxtItemTypesSize)) {
-      return 0;
+    if ((int)eItemType1 >= 0 && (int)eItemType1 < sgptDataTable->nTxtItemTypesSize && (int)eItemType2 >= 0 && (int)eItemType2 < sgptDataTable->nTxtItemTypesSize) {
+      return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eItemType1 + ((int)eItemType2 >> 5)) * 4) & gadwBitMasks[eItemType2 & ITEMTYPE_Hammer];
     }
 
-    return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eItemType1 + ((int)eItemType2 >> 5)) * 4) & gadwBitMasks[eItemType2 & ITEMTYPE_Hammer];
+    return 0;
 }
 
 // @blizzard ITEMSIsA
 uint32_t __stdcall ITEMS_IsA(D2UnitStrc * pUnit, eD2ItemTypes eItemType) {
+    D2ItemsTxt* pItemsTxt;
+    short int eType2;
     if (!pUnit) {
       return 0;
     }
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize)) {
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize) {
+      eD2ItemTypes eItemType1;
+      eItemType1 = TXT_Items_GetType(pUnit->nClassId);
+      if (gadwBitMasks[eItemType & ITEMTYPE_Hammer] & *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eItemType1 + ((int)eItemType >> 5)) * 4)) {
+        return 1;
+      }
+
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      if (pItemsTxt) {
+        eType2 = pItemsTxt->wType2;
+        if (eType2 > 0 && (int)eType2 < sgptDataTable->nTxtItemTypesSize) {
+          return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * (int)eType2 + ((int)eItemType >> 5)) * 4) & gadwBitMasks[eItemType & ITEMTYPE_Hammer];
+        }
+      }
+
       return 0;
     }
 
-    eD2ItemTypes eItemType1 = TXT_Items_GetType(pUnit->nClassId);
-    if (gadwBitMasks[eItemType & ITEMTYPE_Hammer] & *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eItemType1 + ((int)eItemType >> 5)) * 4)) {
-      return 1;
-    }
-
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
-    if (!pItemsTxt) {
-      return 0;
-    }
-
-    short int eType2 = pItemsTxt->wType2;
-    if (!(eType2 > 0 && (int)eType2 < sgptDataTable->nTxtItemTypesSize)) {
-      return 0;
-    }
-
-    return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * (int)eType2 + ((int)eItemType >> 5)) * 4) & gadwBitMasks[eItemType & ITEMTYPE_Hammer];
+    return 0;
 }
 
 uint32_t __stdcall TXT_Items_GetBitFieldAnd0x01(uint32_t nItemClassId) {
@@ -1641,11 +1682,11 @@ uint32_t __stdcall TXT_Items_IsNotQuestOrHammerType(uint32_t nItemClassId) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x105e);
       exit(-1);
     }
-    if (!(pItemsTxt->bQuest == '\0' && pItemsTxt->wType != 0x27)) {
-      return 0;
+    if (pItemsTxt->bQuest == '\0' && pItemsTxt->wType != 0x27) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Returns dwFileIndex (offset 0x28) from D2UnitDataItemStrc. Halts if unit is null, not an item, or has no item data.
@@ -1856,24 +1897,26 @@ int32_t __stdcall ITEM_CheckItemsTxt_bTransmogrify(D2UnitStrc * pUnit) {
         exit(-1);
       }
 
-      BVar1 = TXT_Items_CheckTransmogrify(pUnit->nClassId);
-      return BVar1;
+      {
+        int nClassId = pUnit->nClassId;
+        BVar1 = TXT_Items_CheckTransmogrify(nClassId);
+        return BVar1;
+      }
     }
 }
 
 // Returns 1 when the unit is an item whose quality is Magic or better (quality in [4,9]), 0 otherwise.
 // Returns a FULL 32-bit value: the only two paths are MOV EAX,0x1 at 0062a113 and XOR EAX,EAX at 0062a11c.
 int32_t __stdcall ITEM_CheckItemData_ItemQualityIsMagicOrBetter(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      eD2ItemQuality nItemQuality;
+      nItemQuality = pUnit->pUnitData.pUnitDataItem->eQuality;
+      if (3 < (int)nItemQuality && (int)nItemQuality <= 9) {
+        return 1;
+      }
     }
 
-    eD2ItemQuality nItemQuality = pUnit->pUnitData.pUnitDataItem->eQuality;
-    if (!(3 < (int)nItemQuality && (int)nItemQuality <= 9)) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 BOOL __stdcall ITEM_CheckItemData_eD2ItemFlag_Monster(D2UnitStrc * pUnit) {
@@ -1905,7 +1948,8 @@ uint8_t __stdcall ITEM_GetItemsTxt_bHitClass(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1190);
       exit(-1);
     } else {
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+      int nClassId = pUnit->nClassId;
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (!pItemsTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1192);
         exit(-1);
@@ -1943,15 +1987,16 @@ int32_t __stdcall BARBARIAN_CheckItemData_b1or2Handed_isTrue(D2UnitStrc * pUnit,
 }
 
 static char ITEMS_ValidateItemQualityCode(uint32_t nQuality, int32_t nCode) {
-    if (!(nCode - 1U <= 7 && nQuality <= 0x14)) {
-      return '\0';
+    if (nCode - 1U <= 7 && nQuality <= 0x14) {
+      return (char)nCode * ' ' + ((uint8_t)nQuality & 0x1f);
     }
 
-    return (char)nCode * ' ' + ((uint8_t)nQuality & 0x1f);
+    return '\0';
 }
 
 static BOOL ITEMS_HasSocketedItems(D2UnitStrc * pItem) {
-    D2UnitStrc* pCurItem = INVENTORY::Inventory::INVENTORY_GetFirstItem(pItem->pInventory);
+    D2InventoryStrc* pInventory = pItem->pInventory;
+    D2UnitStrc* pCurItem = INVENTORY::Inventory::INVENTORY_GetFirstItem(pInventory);
     while (true) {
       D2UnitStrc* pSocketedItem;
       if (!pCurItem) {
@@ -1982,11 +2027,11 @@ static BOOL ITEMS_GetCompactSaveFlag(D2UnitStrc * pItem) {
 }
 
 static BOOL QualityCanHaveSockets(eD2ItemQuality eQuality) {
-    if (!(eQuality != QUALITY_INVALID && ((int)eQuality <= 3 || (int)eQuality > 9))) {
-      return 0;
+    if (eQuality != QUALITY_INVALID && ((int)eQuality <= 3 || (int)eQuality > 9)) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 BOOL __stdcall ITEM_ValidateItemQuantity(D2UnitStrc * pUnit) {
@@ -2077,19 +2122,19 @@ D2SetItemsTxt * __stdcall GetSetItemsLine(D2UnitStrc * pUnit) {
     }
 
     int nSetItemId = ITEM_GetItemData_nFileIndex(pUnit);
-    if (!(nSetItemId >= 0 && nSetItemId < sgptDataTable->nTxtSetItemsSize)) {
-      return nullptr;
+    if (nSetItemId >= 0 && nSetItemId < sgptDataTable->nTxtSetItemsSize) {
+      return sgptDataTable->pTxtSetItems + nSetItemId;
     }
 
-    return sgptDataTable->pTxtSetItems + nSetItemId;
+    return nullptr;
 }
 
 BOOL __stdcall ITEM_CheckIfItemIsNotBrokenAndNotDisabled(D2UnitStrc * pUnit) {
-    if (!(pUnit && (pUnit->eUnitType != UNIT_ITEM || (!pUnit->pUnitData.pUnitDataMissile || (pUnit->pUnitData.pUnitDataMissile->eOwnerType & ITEMFLAG_BROKEN) == UNIT_PLAYER) && (!pUnit->pUnitData.pUnitDataMissile || (pUnit->pUnitData.pUnitDataMissile->eOwnerType & ITEMFLAG_DISABLED) == UNIT_PLAYER)))) {
-      return 0;
+    if (pUnit && (pUnit->eUnitType != UNIT_ITEM || (!pUnit->pUnitData.pUnitDataMissile || (pUnit->pUnitData.pUnitDataMissile->eOwnerType & ITEMFLAG_BROKEN) == UNIT_PLAYER) && (!pUnit->pUnitData.pUnitDataMissile || (pUnit->pUnitData.pUnitDataMissile->eOwnerType & ITEMFLAG_DISABLED) == UNIT_PLAYER))) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Counts unidentified items in a player's inventory and equipped slots. Iterates all inventory slots; counts carried items on INVENTORY_GRID_TYPE_INVENTORY pages (INVPAGE_INVENTORY or INVPAGE_CUBE) and body-loc slots whose ITEMFLAG_IDENTIFIED is not set. Returns the count.
@@ -2097,7 +2142,8 @@ int32_t __stdcall PLAYER_GetUnidentifiedItemsCount(D2UnitStrc * pUnit) {
     int32_t iVar1;
     bool bOnValidPage;
     int32_t nCount = 0;
-    D2UnitStrc* pCurItem = INVENTORY::Inventory::INVENTORY_GetFirstItem(pUnit->pInventory);
+    D2InventoryStrc* pInventory = pUnit->pInventory;
+    D2UnitStrc* pCurItem = INVENTORY::Inventory::INVENTORY_GetFirstItem(pInventory);
     if (!pCurItem) {
       return nCount;
     }
@@ -2163,6 +2209,12 @@ int32_t __stdcall ITEMS_ModifyPotionSellValueByDifficulty(D2UnitStrc * pNpc, int
     }
 
     switch (pNpc->nClassId) {
+      case 1:
+
+      case 2:
+
+      case 5:
+        return nValue * 2;
       case 0:
 
       case 3:
@@ -2170,12 +2222,6 @@ int32_t __stdcall ITEMS_ModifyPotionSellValueByDifficulty(D2UnitStrc * pNpc, int
       case 6:
         nValue = (nValue >> 1) + nValue;
       break;
-      case 1:
-
-      case 2:
-
-      case 5:
-        return nValue * 2;
     }
 
     return nValue;
@@ -2316,11 +2362,11 @@ BOOL __stdcall ITEMS_CheckChargedSkillFullyCharged(D2UnitStrc * pItem, bool * pO
 }
 
 uint32_t __stdcall ITEM_GetItemData_eD2ItemFlag_IsEthereal(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
+      return pUnit->pUnitData.pUnitDataItem->dwItemFlags & ITEMFLAG_ETHEREAL;
     }
 
-    return pUnit->pUnitData.pUnitDataItem->dwItemFlags & ITEMFLAG_ETHEREAL;
+    return 0;
 }
 
 static int32_t ITEMS_CountContainerItems(D2UnitStrc * pItem) {
@@ -2546,13 +2592,6 @@ static void __stdcall ITEMS_DeserializeSingleStat(uint32_t nFileVersion, eD2Unit
           nSaveAdd = 0x14;
         }
       break;
-      case UNITSTAT_item_levelreq:
-
-      case UNITSTAT_item_levelreqpct:
-        if (nFileVersion < 0x5d) {
-          eUnitStat = UNITSTAT_item_fasterattackrate;
-        }
-      break;
       case UNITSTAT_item_fasterattackrate:
 
       case UNITSTAT_item_fastermovevelocity:
@@ -2564,6 +2603,13 @@ static void __stdcall ITEMS_DeserializeSingleStat(uint32_t nFileVersion, eD2Unit
       case UNITSTAT_item_fastercastrate:
         if (nFileVersion <= 0x57) {
           nSaveBits = 6;
+        }
+      break;
+      case UNITSTAT_item_levelreq:
+
+      case UNITSTAT_item_levelreqpct:
+        if (nFileVersion < 0x5d) {
+          eUnitStat = UNITSTAT_item_fasterattackrate;
         }
       break;
       case UNITSTAT_lastblockframe:
@@ -2906,11 +2952,11 @@ int32_t __stdcall ITEM_GetTxtSetItems_setIndex(D2UnitStrc * pUnit) {
     }
 
     int nFileIndex = ITEM_GetItemData_nFileIndex(pUnit);
-    if (!(nFileIndex >= 0 && nFileIndex < sgptDataTable->nTxtSetItemsSize && sgptDataTable->pTxtSetItems + nFileIndex)) {
-      return -1;
+    if (nFileIndex >= 0 && nFileIndex < sgptDataTable->nTxtSetItemsSize && sgptDataTable->pTxtSetItems + nFileIndex) {
+      return (int)sgptDataTable->pTxtSetItems[nFileIndex].setIndex;
     }
 
-    return (int)sgptDataTable->pTxtSetItems[nFileIndex].setIndex;
+    return -1;
 }
 
 eD2ItemTypes __stdcall ITEM_GetItemData_wType(D2UnitStrc * pUnit) {
@@ -2922,7 +2968,8 @@ eD2ItemTypes __stdcall ITEM_GetItemData_wType(D2UnitStrc * pUnit) {
       return ITEMTYPE_None1;
     }
 
-    eD2ItemTypes eItemType = TXT_Items_GetType(pUnit->nClassId);
+    int nClassId = pUnit->nClassId;
+    eD2ItemTypes eItemType = TXT_Items_GetType(nClassId);
     return eItemType;
 }
 
@@ -2987,8 +3034,11 @@ uint32_t __stdcall ITEM_ValidateAndGetClass(D2UnitStrc * pUnit) {
         exit(-1);
       }
 
-      uVar1 = ITEMS_CheckIfUpgradeable(pUnit->nClassId);
-      return uVar1;
+      {
+        int nClassId = pUnit->nClassId;
+        uVar1 = ITEMS_CheckIfUpgradeable(nClassId);
+        return uVar1;
+      }
     }
 }
 
@@ -3036,15 +3086,6 @@ uint32_t __fastcall ITEM_CalcRequiredLevel(D2UnitStrc * pUnit, D2UnitStrc * pUni
       nIdx = ITEMS_nullsub(nIdx, pSuffixTxt, pUnit2);
       nMaxLvlReqTmp = ITEMS_nullsub(nIdx, pAffixTxt, pUnit2);
       break;
-      case QUALITY_SET:
-        nIdx = ITEM_GetItemData_nFileIndex(pUnit);
-      pSetItemTxt = D2Client::DataTbls::GetSetItemsLine(nIdx);
-      if (!pSetItemTxt) {
-        goto apply_common_requirements;
-      }
-
-      nMaxLvlReqTmp = (uint32_t)pSetItemTxt->lvlReq;
-      goto use_lvlreq_if_valid;
       case QUALITY_RARE:
         nAffixByteOffset = 0x3e;
       do {
@@ -3108,36 +3149,6 @@ uint32_t __fastcall ITEM_CalcRequiredLevel(D2UnitStrc * pUnit, D2UnitStrc * pUni
       }
 
       break;
-      case QUALITY_UNIQUE:
-        nIdx = ITEM_GetItemData_nFileIndex(pUnit);
-      if (nIdx < 0) {
-        goto apply_common_requirements;
-      }
-
-      nIdx = ITEM_GetItemData_nFileIndex(pUnit);
-      pUniqueTxt = D2Client::DataTbls::INV_GetUniqueItemsTxtLine(nIdx);
-      if (!pUniqueTxt) {
-        goto apply_common_requirements;
-      }
-      if (!pUnit2) {
-        nMaxLvlReqTmp = (uint32_t)pUniqueTxt->lvlReq;
-      } else {
-        nClassId = D2Client::UNIT::Player::CheckFlagWithMask(pUnit2, 0x2000000);
-        if (!nClassId) {
-          wItemVersion = ITEM_GetItemData_wItemVersion(pUnit);
-          if (!wItemVersion) {
-            goto apply_common_requirements;
-          }
-        }
-
-        nMaxLvlReqTmp = (uint32_t)pUniqueTxt->lvlReq;
-      }
-
-      use_lvlreq_if_valid:
-      if ((int)nMaxLvlReqTmp < 0) {
-        goto apply_common_requirements;
-      }
-      break;
       case QUALITY_CRAFTED:
         nAffixByteOffset = 10;
       nIdx = 0x3e;
@@ -3196,6 +3207,45 @@ uint32_t __fastcall ITEM_CalcRequiredLevel(D2UnitStrc * pUnit, D2UnitStrc * pUni
       break;
       default:
         goto apply_common_requirements;
+      case QUALITY_UNIQUE:
+        nIdx = ITEM_GetItemData_nFileIndex(pUnit);
+      if (nIdx < 0) {
+        goto apply_common_requirements;
+      }
+
+      nIdx = ITEM_GetItemData_nFileIndex(pUnit);
+      pUniqueTxt = D2Client::DataTbls::INV_GetUniqueItemsTxtLine(nIdx);
+      if (!pUniqueTxt) {
+        goto apply_common_requirements;
+      }
+      if (!pUnit2) {
+        nMaxLvlReqTmp = (uint32_t)pUniqueTxt->lvlReq;
+      } else {
+        nClassId = D2Client::UNIT::Player::CheckFlagWithMask(pUnit2, 0x2000000);
+        if (!nClassId) {
+          wItemVersion = ITEM_GetItemData_wItemVersion(pUnit);
+          if (!wItemVersion) {
+            goto apply_common_requirements;
+          }
+        }
+
+        nMaxLvlReqTmp = (uint32_t)pUniqueTxt->lvlReq;
+      }
+
+      use_lvlreq_if_valid:
+      if ((int)nMaxLvlReqTmp < 0) {
+        goto apply_common_requirements;
+      }
+      break;
+      case QUALITY_SET:
+        nIdx = ITEM_GetItemData_nFileIndex(pUnit);
+      pSetItemTxt = D2Client::DataTbls::GetSetItemsLine(nIdx);
+      if (!pSetItemTxt) {
+        goto apply_common_requirements;
+      }
+
+      nMaxLvlReqTmp = (uint32_t)pSetItemTxt->lvlReq;
+      goto use_lvlreq_if_valid;
     }
 
     nMaxLvlReq = nMaxLvlReqTmp;
@@ -3284,11 +3334,11 @@ int32_t __stdcall ITEM_GetTxtItemTypes_throwable(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].throwable;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].throwable;
+    return 0;
 }
 
 int32_t __stdcall ITEM_GetTxtItemTypes_beltable(D2UnitStrc * pUnit) {
@@ -3297,11 +3347,11 @@ int32_t __stdcall ITEM_GetTxtItemTypes_beltable(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].beltable;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].beltable;
+    return 0;
 }
 
 // Returns the spell-icon index for a scroll or book item (used for skill-icon display). For scrolls/books reads the icon byte from the Books.txt entry indexed by wMagicSuffix[0]; for other item types returns bSpellIcon from Items.txt. Returns -1 when TXT_Books_GetLine fails (0062bbb3). Halts on null or non-item unit.
@@ -3353,11 +3403,11 @@ int32_t __stdcall ITEM_GetTxtItemTypes_staffmods(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 7;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].staffmods;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].staffmods;
+    return 7;
 }
 
 char __stdcall ITEM_GetMaxSockCount(D2UnitStrc * pUnit) {
@@ -3433,11 +3483,6 @@ void __stdcall ITEM_RollSocketCount(D2UnitStrc * pUnit, uint32_t nMaxSocksRandom
 
     nSocketArea = nMaxSocksRandom;
     switch (nQuality) {
-      case QUALITY_MAGIC:
-        if (3 < nMaxAllowed) {
-          nMaxAllowed = 4;
-        }
-      break;
       case QUALITY_SET:
 
       case QUALITY_UNIQUE:
@@ -3453,6 +3498,11 @@ void __stdcall ITEM_RollSocketCount(D2UnitStrc * pUnit, uint32_t nMaxSocksRandom
       case QUALITY_RARE:
         if (1 < nMaxAllowed) {
           nMaxAllowed = 2;
+        }
+      break;
+      case QUALITY_MAGIC:
+        if (3 < nMaxAllowed) {
+          nMaxAllowed = 4;
         }
       break;
       case QUALITY_CRAFTED:
@@ -3672,11 +3722,11 @@ int32_t __stdcall TXT_ItemTypes_CheckClass(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (uint32_t)((uint8_t)sgptDataTable->pTxtItemTypes[eItemType]._class < 7);
     }
 
-    return (uint32_t)((uint8_t)sgptDataTable->pTxtItemTypes[eItemType]._class < 7);
+    return 0;
 }
 
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
@@ -3792,35 +3842,6 @@ uint8_t * __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * 
         goto check_affix_color;
       }
       break;
-      case QUALITY_SET:
-        pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
-      if (!pItemsTxt) {
-        return nullptr;
-      }
-
-      nStateOrAffixIdx = ITEM_GetItemData_nFileIndex(pItem);
-      pSetItemTxt = D2Client::DataTbls::GetSetItemsLine(nStateOrAffixIdx);
-      if (!pSetItemTxt) {
-        return nullptr;
-      }
-      if (!nTransType) {
-        if (pSetItemTxt->chrtransform < '\0') {
-          return nullptr;
-        }
-
-        bValidColor = ITEMS_ValidateItemQualityCode((int)pSetItemTxt->chrtransform, (uint32_t)(uint8_t)pItemsTxt->bTransform);
-        *pColor = bValidColor;
-        pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bTransform, (int)pSetItemTxt->chrtransform);
-        return pPaletteResult;
-      }
-      if (pSetItemTxt->invtransform < '\0') {
-        return nullptr;
-      }
-
-      bValidColor = ITEMS_ValidateItemQualityCode((int)pSetItemTxt->chrtransform, (uint32_t)(uint8_t)pItemsTxt->bTransform);
-      *pColor = bValidColor;
-      pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bInvTrans, (int)pSetItemTxt->invtransform);
-      return pPaletteResult;
       case QUALITY_UNIQUE:
         pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
       if (!pItemsTxt) {
@@ -3854,6 +3875,35 @@ uint8_t * __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * 
       bValidColor = ITEMS_ValidateItemQualityCode((int)pUniqueTxt->chrtransform, (uint32_t)(uint8_t)pItemsTxt->bTransform);
       *pColor = bValidColor;
       pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bTransform, (int)pUniqueTxt->chrtransform);
+      return pPaletteResult;
+      case QUALITY_SET:
+        pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
+      if (!pItemsTxt) {
+        return nullptr;
+      }
+
+      nStateOrAffixIdx = ITEM_GetItemData_nFileIndex(pItem);
+      pSetItemTxt = D2Client::DataTbls::GetSetItemsLine(nStateOrAffixIdx);
+      if (!pSetItemTxt) {
+        return nullptr;
+      }
+      if (!nTransType) {
+        if (pSetItemTxt->chrtransform < '\0') {
+          return nullptr;
+        }
+
+        bValidColor = ITEMS_ValidateItemQualityCode((int)pSetItemTxt->chrtransform, (uint32_t)(uint8_t)pItemsTxt->bTransform);
+        *pColor = bValidColor;
+        pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bTransform, (int)pSetItemTxt->chrtransform);
+        return pPaletteResult;
+      }
+      if (pSetItemTxt->invtransform < '\0') {
+        return nullptr;
+      }
+
+      bValidColor = ITEMS_ValidateItemQualityCode((int)pSetItemTxt->chrtransform, (uint32_t)(uint8_t)pItemsTxt->bTransform);
+      *pColor = bValidColor;
+      pPaletteResult = D2CMP::Pallete::PALETTE_GetItemPalette((uint32_t)(uint8_t)pItemsTxt->bInvTrans, (int)pSetItemTxt->invtransform);
       return pPaletteResult;
       default:
         if (pItem->eUnitType != UNIT_ITEM || (pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId) , !pItemsTxt) || !pItemsTxt->bHasInv || (bValidColor = ITEM_GetMaxSockCount(pItem) , bValidColor == '\0')) {
@@ -4553,59 +4603,6 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
       }
 
       break;
-      case QUALITY_MAGIC:
-        if (nParam1 || (eItemFlags = ITEM_GetItemData_eD2ItemFlag(pUnit) , (eItemFlags & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
-          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xb);
-          wAffixAdj = 0;
-          if ((uint16_t)(short int)nBitVal > 0) {
-            wAffixAdj = (short int)nBitVal + (short int)(uintptr_t)pItemStatCostTxt;
-          }
-
-          SetMagixPrefix(pUnit, wAffixAdj, 0);
-          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xb);
-          SetMagicSuffix(pUnit, (int16_t)nBitVal, 0);
-        }
-      break;
-      case QUALITY_SET:
-        if (nParam1 || (eItemFlags = ITEM_GetItemData_eD2ItemFlag(pUnit) , (eItemFlags & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
-          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xc);
-          if (nParam2 <= 0x5c) {
-            pSetsTxt = D2Client::DataTbls::GetSetsLine(nBitVal);
-            if (!pSetsTxt) {
-              set_error:
-              bError = 1;
-            } else if (pSetsTxt->nTxtSetItemsCount > 0) {
-              ppSetItems = pSetsTxt->pTxtSetItems;
-              nStatVal = 0;
-              do {
-                if ((*ppSetItems)->dwItemCode == nStatListIdx) {
-                  if (nStatVal < 0) {
-                    goto set_item_not_found;
-                  }
-
-                  ITEM_SetItemData_nFileIndex(pUnit, (int)pSetsTxt->pTxtSetItems[nStatVal]->nId);
-                  goto read_runeword_index;
-                }
-
-                nStatVal++;
-                ppSetItems++;
-              } while (nStatVal < pSetsTxt->nTxtSetItemsCount);
-
-              bError = 1;
-            } else {
-              set_item_not_found:
-              bError = 1;
-            }
-          } else {
-            pSetItemsTxt = D2Client::DataTbls::GetSetItemsLine(nBitVal);
-            if (!pSetItemsTxt) {
-              goto set_error;
-            }
-
-            ITEM_SetItemData_nFileIndex(pUnit, (int)pSetItemsTxt->nId);
-          }
-        }
-      break;
       case QUALITY_RARE:
 
       case QUALITY_CRAFTED:
@@ -4656,6 +4653,29 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
       } while (nStatVal < 0x44);
 
       break;
+      case QUALITY_TAMPERED:
+        if (nParam1 || (eItemFlag = ITEM_GetItemData_eD2ItemFlag(pUnit) , (eItemFlag & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
+          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 8);
+          SetRarePrefix(pUnit, (int16_t)nBitVal);
+          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 8);
+          SetRareSuffix(pUnit, (int16_t)nBitVal);
+        }
+      break;
+      default:
+        goto set_error;
+      case QUALITY_MAGIC:
+        if (nParam1 || (eItemFlags = ITEM_GetItemData_eD2ItemFlag(pUnit) , (eItemFlags & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
+          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xb);
+          wAffixAdj = 0;
+          if ((uint16_t)(short int)nBitVal > 0) {
+            wAffixAdj = (short int)nBitVal + (short int)(uintptr_t)pItemStatCostTxt;
+          }
+
+          SetMagixPrefix(pUnit, wAffixAdj, 0);
+          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xb);
+          SetMagicSuffix(pUnit, (int16_t)nBitVal, 0);
+        }
+      break;
       case QUALITY_UNIQUE:
         if (nParam1 || (eItemFlags = ITEM_GetItemData_eD2ItemFlag(pUnit) , (eItemFlags & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
           dwFileIndex = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xc);
@@ -4669,16 +4689,46 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
           ITEM_SetItemData_nFileIndex(pUnit, dwFileIndex);
         }
       break;
-      case QUALITY_TAMPERED:
-        if (nParam1 || (eItemFlag = ITEM_GetItemData_eD2ItemFlag(pUnit) , (eItemFlag & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
-          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 8);
-          SetRarePrefix(pUnit, (int16_t)nBitVal);
-          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 8);
-          SetRareSuffix(pUnit, (int16_t)nBitVal);
+      case QUALITY_SET:
+        if (nParam1 || (eItemFlags = ITEM_GetItemData_eD2ItemFlag(pUnit) , (eItemFlags & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
+          nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xc);
+          if (nParam2 <= 0x5c) {
+            pSetsTxt = D2Client::DataTbls::GetSetsLine(nBitVal);
+            if (!pSetsTxt) {
+              set_error:
+              bError = 1;
+            } else if (pSetsTxt->nTxtSetItemsCount > 0) {
+              ppSetItems = pSetsTxt->pTxtSetItems;
+              nStatVal = 0;
+              do {
+                if ((*ppSetItems)->dwItemCode == nStatListIdx) {
+                  if (nStatVal < 0) {
+                    goto set_item_not_found;
+                  }
+
+                  ITEM_SetItemData_nFileIndex(pUnit, (int)pSetsTxt->pTxtSetItems[nStatVal]->nId);
+                  goto read_runeword_index;
+                }
+
+                nStatVal++;
+                ppSetItems++;
+              } while (nStatVal < pSetsTxt->nTxtSetItemsCount);
+
+              bError = 1;
+            } else {
+              set_item_not_found:
+              bError = 1;
+            }
+          } else {
+            pSetItemsTxt = D2Client::DataTbls::GetSetItemsLine(nBitVal);
+            if (!pSetItemsTxt) {
+              goto set_error;
+            }
+
+            ITEM_SetItemData_nFileIndex(pUnit, (int)pSetItemsTxt->nId);
+          }
         }
       break;
-      default:
-        goto set_error;
     }
 
     read_runeword_index:
@@ -5046,21 +5096,6 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
                 nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, (uint32_t)pStatCostTxt->saveBits[nStatIndex]);
               Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, eUnitStat, nBitVal - pStatCostTxt->saveAdd[nStatIndex], 0);
               break;
-              case UNITSTAT_energy:
-                nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, (uint32_t)pStatCostTxt->saveBits[nStatIndex]);
-              Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_energy, nBitVal - pStatCostTxt->saveAdd[nStatIndex], 0);
-              if (nParam2 <= 0x55) {
-                if (sgptDataTable->nTxtItemStatCostSize > 9) {
-                  pStatCostTxt = sgptDataTable->pTxtItemStatCost + 9;
-                } else {
-                  pStatCostTxt = 0;
-                }
-
-                nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, (uint32_t)pStatCostTxt->saveBits[nStatIndex]);
-                Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_maxmana, nBitVal - pStatCostTxt->saveAdd[nStatIndex], 0);
-              }
-
-              break;
               case UNITSTAT_vitality:
                 nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, (uint32_t)pStatCostTxt->saveBits[nStatIndex]);
               Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_vitality, nBitVal - pStatCostTxt->saveAdd[nStatIndex], 0);
@@ -5076,10 +5111,20 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               }
 
               break;
-              default:
-                deserialize_single_stat:
-                read_generic_stat:
-                ITEMS_DeserializeSingleStat(nParam2, eStatId, pBitBuffer, pStatsEx, (int32_t)pStatCostTxt, nStatIndex);
+              case UNITSTAT_energy:
+                nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, (uint32_t)pStatCostTxt->saveBits[nStatIndex]);
+              Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_energy, nBitVal - pStatCostTxt->saveAdd[nStatIndex], 0);
+              if (nParam2 <= 0x55) {
+                if (sgptDataTable->nTxtItemStatCostSize > 9) {
+                  pStatCostTxt = sgptDataTable->pTxtItemStatCost + 9;
+                } else {
+                  pStatCostTxt = 0;
+                }
+
+                nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, (uint32_t)pStatCostTxt->saveBits[nStatIndex]);
+                Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_maxmana, nBitVal - pStatCostTxt->saveAdd[nStatIndex], 0);
+              }
+
               break;
               case UNITSTAT_item_maxdamage_percent:
                 ITEM_ResolvePercentStatToBaseValue(UNITSTAT_item_maxdamage_percent, pUnit);
@@ -5202,6 +5247,14 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_poisonlength, nBitVal - pStatCostTxt->saveAdd[nStatIndex], 0);
               Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_poison_count, 1, 0);
               break;
+              case UNITSTAT_item_freeze:
+                if (nParam2 > 0x59) {
+                  eStatId = UNITSTAT_item_freeze;
+                  goto read_generic_stat;
+                }
+              Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x10);
+              Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_item_freeze, 1, 0);
+              break;
               case UNITSTAT_item_addclassskills:
                 if (nParam2 <= 0x5c) {
                   nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 3);
@@ -5242,60 +5295,6 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 3);
               Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_addclassskills, nBitVal, 4);
               break;
-              case UNITSTAT_item_singleskill:
-
-              case UNITSTAT_item_restinpeace:
-
-              case UNITSTAT_curse_resistance:
-
-              case UNITSTAT_fade:
-
-              case UNITSTAT_armor_override_percent:
-
-              case UNITSTAT_unused183:
-
-              case UNITSTAT_unused184:
-
-              case UNITSTAT_unused185:
-
-              case UNITSTAT_unused186:
-
-              case UNITSTAT_unused187:
-                if (nParam2 > 0x5c) {
-                  goto deserialize_single_stat;
-                }
-              nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xe);
-              ItemMods::ITEMMODS_GetQualityMinMax(nBitVal, &nSkillId, &nSkillLevel);
-              nStatVal = 7;
-              pStatCostTxt = D2Client::GAME::SCmd::TXT_ItemStatCost_GetLine(UNITSTAT_item_singleskill);
-              nBitVal = nSkillId;
-              if (pStatCostTxt) {
-                nStatVal = (1 << (pStatCostTxt->saveBits[0] & 0x1f)) - 1;
-              }
-              if ((int)nSkillLevel > 0 && (int)nSkillLevel <= nStatVal) {
-                bIsStackable = Stats::StatsEx::SKILLS_ValidateSkillDescIndex(nSkillId);
-                if (bIsStackable) {
-                  Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_singleskill, nSkillLevel, nBitVal);
-                }
-              }
-
-              break;
-              case UNITSTAT_item_elemskill:
-                if (nParam2 > 0x5c) {
-                  eStatId = UNITSTAT_item_elemskill;
-                  goto read_generic_stat;
-                }
-              nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 4);
-              Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_elemskill, nBitVal, 1);
-              break;
-              case UNITSTAT_item_freeze:
-                if (nParam2 > 0x59) {
-                  eStatId = UNITSTAT_item_freeze;
-                  goto read_generic_stat;
-                }
-              Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x10);
-              Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_item_freeze, 1, 0);
-              break;
               case UNITSTAT_attack_vs_montype:
                 if (nParam2 > 0x5c) {
                   eStatId = UNITSTAT_attack_vs_montype;
@@ -5333,6 +5332,52 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               }
 
               Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_addskill_tab, nSkillTabCount, nSkillTabIdx + nSkillTabGroup * 8);
+              break;
+              case UNITSTAT_item_elemskill:
+                if (nParam2 > 0x5c) {
+                  eStatId = UNITSTAT_item_elemskill;
+                  goto read_generic_stat;
+                }
+              nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 4);
+              Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_elemskill, nBitVal, 1);
+              break;
+              case UNITSTAT_item_singleskill:
+
+              case UNITSTAT_item_restinpeace:
+
+              case UNITSTAT_curse_resistance:
+
+              case UNITSTAT_fade:
+
+              case UNITSTAT_armor_override_percent:
+
+              case UNITSTAT_unused183:
+
+              case UNITSTAT_unused184:
+
+              case UNITSTAT_unused185:
+
+              case UNITSTAT_unused186:
+
+              case UNITSTAT_unused187:
+                if (nParam2 > 0x5c) {
+                  goto deserialize_single_stat;
+                }
+              nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xe);
+              ItemMods::ITEMMODS_GetQualityMinMax(nBitVal, &nSkillId, &nSkillLevel);
+              nStatVal = 7;
+              pStatCostTxt = D2Client::GAME::SCmd::TXT_ItemStatCost_GetLine(UNITSTAT_item_singleskill);
+              nBitVal = nSkillId;
+              if (pStatCostTxt) {
+                nStatVal = (1 << (pStatCostTxt->saveBits[0] & 0x1f)) - 1;
+              }
+              if ((int)nSkillLevel > 0 && (int)nSkillLevel <= nStatVal) {
+                bIsStackable = Stats::StatsEx::SKILLS_ValidateSkillDescIndex(nSkillId);
+                if (bIsStackable) {
+                  Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_singleskill, nSkillLevel, nBitVal);
+                }
+              }
+
               break;
               case UNITSTAT_item_skillonattack:
 
@@ -5402,6 +5447,12 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               ItemMods::ITEMMODS_GetQualityAllFields(nBitVal, &nChargeMax, (uint32_t*)nChargeBuf, &nChargeSkillLevel, &nChargeSkillId);
               nStatVal = nChargeMax << ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
               Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_charged_skill, (nChargeSkillLevel & 0xff) + nChargeSkillId * 0x100, (uint32_t)((uint32_t)(uint16_t)(short int)((uint32_t)nStatVal >> 0x10) << 16 | (uint32_t)(uint16_t)((short int)nStatVal + ((uint16_t)sgptDataTable->dwChargedSkillLevelMask & nChargeBuf[0]))));
+              break;
+              default:
+                deserialize_single_stat:
+                read_generic_stat:
+                ITEMS_DeserializeSingleStat(nParam2, eStatId, pBitBuffer, pStatsEx, (int32_t)pStatCostTxt, nStatIndex);
+              break;
             }
 
             eStatId = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 9);
@@ -5633,11 +5684,11 @@ int32_t __stdcall ITEM_GetTxtItemTypes_shoots(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (int)sgptDataTable->pTxtItemTypes[eItemType].shoots;
     }
 
-    return (int)sgptDataTable->pTxtItemTypes[eItemType].shoots;
+    return 0;
 }
 
 int32_t __stdcall ITEM_GetTxtItemTypes_quiver(D2UnitStrc * pUnit) {
@@ -5646,11 +5697,11 @@ int32_t __stdcall ITEM_GetTxtItemTypes_quiver(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (int)sgptDataTable->pTxtItemTypes[eItemType].quiver;
     }
 
-    return (int)sgptDataTable->pTxtItemTypes[eItemType].quiver;
+    return 0;
 }
 
 uint32_t __stdcall ITEM_GetTxtItemTypes_autostack(D2UnitStrc * pUnit) {
@@ -5659,11 +5710,11 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_autostack(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].autostack;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].autostack;
+    return 0;
 }
 
 uint32_t __stdcall ITEM_GetTxtItemTypes_reload(D2UnitStrc * pUnit) {
@@ -5672,11 +5723,11 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_reload(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].reload;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].reload;
+    return 0;
 }
 
 uint32_t __stdcall ITEM_GetTxtItemTypes_reequip(D2UnitStrc * pUnit) {
@@ -5685,11 +5736,11 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_reequip(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].reequip;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].reequip;
+    return 0;
 }
 
 uint8_t __stdcall ITEM_GetTxtItemTypes_storepage(D2UnitStrc * pUnit) {
@@ -5716,39 +5767,40 @@ uint8_t __stdcall ITEM_GetTxtItemTypes_varinvgfx(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return sgptDataTable->pTxtItemTypes[eItemType].varinvgfx;
     }
 
-    return sgptDataTable->pTxtItemTypes[eItemType].varinvgfx;
+    return 0;
 }
 
 D2Row_char_32 * __stdcall ITEM_GetTxtItemTypes_invgfx(D2UnitStrc * pUnit, uint32_t nParam) {
     // Static local variables (originally global data)
     static char * gpszItemNoInvGfx = (char *)&lpDefault_006cc837; D2_STATIC_GUARD(gpszItemNoInvGfx, "D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_invgfx::gpszItemNoInvGfx");
 
+    uint32_t nMaxGfxIdx;
+    uint32_t nClampedGfxIdx;
     if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
       return (D2Row_char_32*)(char (*)[32])gpszItemNoInvGfx;
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize)) {
-      return (D2Row_char_32*)(char (*)[32])gpszItemNoInvGfx;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize) {
+      D2ItemTypesTxt* pItemTypesTxt;
+      pItemTypesTxt = sgptDataTable->pTxtItemTypes + eItemType;
+      if (pItemTypesTxt) {
+        nMaxGfxIdx = (uint8_t)pItemTypesTxt->varinvgfx - 1;
+        nClampedGfxIdx = (int)nParam <= 0 ? 0 : nParam;
+        if ((int)nClampedGfxIdx >= (int)nMaxGfxIdx) {
+          return pItemTypesTxt->invgfx + nMaxGfxIdx;
+        }
+
+        nMaxGfxIdx = nClampedGfxIdx;
+        return pItemTypesTxt->invgfx + nMaxGfxIdx;
+      }
     }
 
-    D2ItemTypesTxt* pItemTypesTxt = sgptDataTable->pTxtItemTypes + eItemType;
-    if (!pItemTypesTxt) {
-      return (D2Row_char_32*)(char (*)[32])gpszItemNoInvGfx;
-    }
-
-    uint32_t nMaxGfxIdx = (uint8_t)pItemTypesTxt->varinvgfx - 1;
-    uint32_t nClampedGfxIdx = (int)nParam <= 0 ? 0 : nParam;
-    if ((int)nClampedGfxIdx >= (int)nMaxGfxIdx) {
-      return pItemTypesTxt->invgfx + nMaxGfxIdx;
-    }
-
-    nMaxGfxIdx = nClampedGfxIdx;
-    return pItemTypesTxt->invgfx + nMaxGfxIdx;
+    return (D2Row_char_32*)(char (*)[32])gpszItemNoInvGfx;
 }
 
 uint32_t __stdcall ITEM_GetTxtItemTypes_rare(D2UnitStrc * pUnit) {
@@ -5757,11 +5809,11 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_rare(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].rare;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].rare;
+    return 0;
 }
 
 uint32_t __stdcall ITEM_GetTxtItemTypes_magic(D2UnitStrc * pUnit) {
@@ -5770,11 +5822,11 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_magic(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].magic;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].magic;
+    return 0;
 }
 
 uint32_t __stdcall ITEM_GetTxtItemTypes_normal(D2UnitStrc * pUnit) {
@@ -5783,11 +5835,11 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_normal(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 1;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].normal;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].normal;
+    return 1;
 }
 
 void __stdcall ITEM_GetTxtItemTypes_BodyLoc1andBodyLoc2(D2UnitStrc * pUnit, eD2BodyLoc * nBodyLoc1, eD2BodyLoc * nBodyLoc2) {
@@ -5817,6 +5869,8 @@ BOOL __stdcall ITEM_CheckEquipRequirements(D2UnitStrc * pUnit, D2UnitStrc * pCha
     bool _bStrOk;
     bool _bDexOk;
     bool _bLevelOk;
+    eD2ItemTypes eItemType;
+    eD2PlayerClassIDDWORD eVar1;
     int nAdjustedReq;
     bool bLevelOk;
     int nSocketedStrSum;
@@ -5920,21 +5974,17 @@ BOOL __stdcall ITEM_CheckEquipRequirements(D2UnitStrc * pUnit, D2UnitStrc * pCha
     if (pnLevel) {
       *pnLevel = _bLevelOk;
     }
-    if (!(_bStrOk && _bDexOk && _bLevelOk && eItemFlags != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
-      return 0;
+    if (_bStrOk && _bDexOk && _bLevelOk && eItemFlags != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD)) {
+      eItemType = ITEM_GetItemData_wType(pUnit);
+      if (eItemType != ITEMTYPE_Book || (nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_quantity, 0) , nStatValue > 0)) {
+        eVar1 = TXT_ItemTypes_GetClass(pUnit);
+        if (eVar1 == CLASS_COUNT || pCharUnit && ((eUnitType = pCharUnit->eUnitType , eUnitType == UNIT_MONSTER && eVar1 == CLASS_BARBARIAN) && (nReqPercentMod = D2Client::UNIT::Player::ValidateClassId(pCharUnit->nClassId) , nReqPercentMod - 0x230U < 2) || eUnitType == UNIT_PLAYER && eVar1 == pCharUnit->nClassId)) {
+          return 1;
+        }
+      }
     }
 
-    eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!(eItemType != ITEMTYPE_Book || (nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_quantity, 0) , nStatValue > 0))) {
-      return 0;
-    }
-
-    eD2PlayerClassIDDWORD eVar1 = TXT_ItemTypes_GetClass(pUnit);
-    if (!(eVar1 == CLASS_COUNT || pCharUnit && ((eUnitType = pCharUnit->eUnitType , eUnitType == UNIT_MONSTER && eVar1 == CLASS_BARBARIAN) && (nReqPercentMod = D2Client::UNIT::Player::ValidateClassId(pCharUnit->nClassId) , nReqPercentMod - 0x230U < 2) || eUnitType == UNIT_PLAYER && eVar1 == pCharUnit->nClassId))) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 int32_t __stdcall ITEMS_CheckBodyLocationFit(D2UnitStrc * pItem, uint32_t eBodyLoc) {
@@ -6207,35 +6257,6 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
       }
       if (!false) {
         switch (eItemQuality) {
-          case QUALITY_LOW:
-            iVar7 = -(iVar1 / 2);
-          iVar6 = -(__frame0.nBuyPrice / 2);
-          __frame0.nQualityMod = -(__frame0.nRepairPrice / 2);
-          break;
-          case QUALITY_SUPERIOR:
-
-          case QUALITY_TAMPERED:
-            goto add_stat_costs;
-          case QUALITY_SET:
-            nAffixRepairDelta = ITEM_GetItemData_nFileIndex(pItem);
-          pSetItemsTxt = D2Client::DataTbls::GetSetItemsLine(nAffixRepairDelta);
-          if (pSetItemsTxt) {
-            if (iVar1 <= 0xffff || !pSetItemsTxt->costMult) {
-              nAffixRepairDelta = pSetItemsTxt->costMult;
-              iVar5 = pSetItemsTxt->costAdd;
-              iVar7 = iVar7 + nAffixRepairDelta * iVar1 / 1024 + iVar5;
-              iVar6 = iVar6 + nAffixRepairDelta * __frame0.nBuyPrice / 1024 + iVar5;
-              __frame0.nQualityMod = __frame0.nQualityMod + nAffixRepairDelta * __frame0.nRepairPrice / 1024 + iVar5;
-            } else {
-              nAffixRepairDelta = pSetItemsTxt->costAdd;
-              iVar5 = pSetItemsTxt->costMult;
-              iVar7 = iVar7 + ((int)(iVar1 + (uVar4 & 0x3ff)) >> 10) * iVar5 + nAffixRepairDelta;
-              iVar6 = iVar6 + __frame0.nBuyPrice / 1024 * iVar5 + nAffixRepairDelta;
-              __frame0.nQualityMod = __frame0.nQualityMod + __frame0.nRepairPrice / 1024 * iVar5 + nAffixRepairDelta;
-            }
-          }
-
-          break;
           case QUALITY_RARE:
 
           case QUALITY_CRAFTED:
@@ -6359,6 +6380,35 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
           }
 
           goto add_stat_costs;
+          case QUALITY_SET:
+            nAffixRepairDelta = ITEM_GetItemData_nFileIndex(pItem);
+          pSetItemsTxt = D2Client::DataTbls::GetSetItemsLine(nAffixRepairDelta);
+          if (pSetItemsTxt) {
+            if (iVar1 <= 0xffff || !pSetItemsTxt->costMult) {
+              nAffixRepairDelta = pSetItemsTxt->costMult;
+              iVar5 = pSetItemsTxt->costAdd;
+              iVar7 = iVar7 + nAffixRepairDelta * iVar1 / 1024 + iVar5;
+              iVar6 = iVar6 + nAffixRepairDelta * __frame0.nBuyPrice / 1024 + iVar5;
+              __frame0.nQualityMod = __frame0.nQualityMod + nAffixRepairDelta * __frame0.nRepairPrice / 1024 + iVar5;
+            } else {
+              nAffixRepairDelta = pSetItemsTxt->costAdd;
+              iVar5 = pSetItemsTxt->costMult;
+              iVar7 = iVar7 + ((int)(iVar1 + (uVar4 & 0x3ff)) >> 10) * iVar5 + nAffixRepairDelta;
+              iVar6 = iVar6 + __frame0.nBuyPrice / 1024 * iVar5 + nAffixRepairDelta;
+              __frame0.nQualityMod = __frame0.nQualityMod + __frame0.nRepairPrice / 1024 * iVar5 + nAffixRepairDelta;
+            }
+          }
+
+          break;
+          case QUALITY_LOW:
+            iVar7 = -(iVar1 / 2);
+          iVar6 = -(__frame0.nBuyPrice / 2);
+          __frame0.nQualityMod = -(__frame0.nRepairPrice / 2);
+          break;
+          case QUALITY_SUPERIOR:
+
+          case QUALITY_TAMPERED:
+            goto add_stat_costs;
         }
       }
 
@@ -6575,11 +6625,11 @@ uint32_t __fastcall ITEMS_GetRequiredBodyType(D2UnitStrc * pItem) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pItemUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
-      return 0;
+    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
+      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].body;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].body;
+    return 0;
 }
 
 // Computes the total gold cost to repair (and restock replenishable/charged items in) all 13 equipped slots of a player. For each slot item that needs repair, restocking, or recharging, calls CalculateTransactionCost with mode 3 and accumulates the sum. Invokes an optional pfnCallback after pricing each item. Returns total cost, or 0 if the player or inventory is null.
@@ -6965,70 +7015,6 @@ void __stdcall SerializeComplexItem(D2UnitStrc * pItemUnit, D2BitBufferStrc * pB
       write_3bit_quality_data:
       nErrLine = 3;
       goto write_quality_data;
-      default:
-        if (pItemUnit->eUnitType == UNIT_ITEM && (pUnitDataMissile = pItemUnit->pUnitData.pUnitDataMissile , pUnitDataMissile != 0) && pUnitDataMissile->unk0x00 != 2) {
-          if (true && pUnitDataMissile) {
-            pUnitDataMissile->unk0x00 = 2;
-          }
-
-          bResetModeOnExit = true;
-        }
-      bIsOfType = ITEMS_IsA(pItemUnit, ITEMTYPE_Charm);
-      if (bIsOfType && (pStatListEx || (eItemFlagsInner = ITEM_GetItemData_eD2ItemFlag(pItemUnit) , (eItemFlagsInner & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD)))) {
-        if (pItemUnit->eUnitType == UNIT_ITEM && pItemUnit->pUnitData.pUnitDataItem) {
-          nBitValue = (uint32_t)(uint16_t)pItemUnit->pUnitData.pUnitDataItem->wMagicPrefix[0];
-        } else {
-          nBitValue = 0;
-        }
-        if ((int)nBitValue > (int)uTmpBits) {
-          nBitValue -= uTmpBits;
-        }
-
-        Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, (uint32_t)((short int)nBitValue != 0), 1);
-        if (!(short int)nBitValue) {
-          nBitValue = GetMagicSuffix(pItemUnit, 0);
-        }
-
-        nBitValue = (nBitValue & 0xffff ? nBitValue : 0) & 0xffff;
-        if (nBitValue >= 0x7ff) {
-          nBitValue = 0x7ff;
-        }
-
-        Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nBitValue, 0xb);
-      }
-
-      uTmpBits = ITEMS_IsA(pItemUnit, ITEMTYPE_BodyPart);
-      if (uTmpBits) {
-        uTmpBits = ITEMS_IsA(pItemUnit, ITEMTYPE_PlayerBodyPart);
-        if (!uTmpBits) {
-          nBitValue = ITEM_GetItemData_nFileIndex(pItemUnit);
-          nBitValue = nBitValue ? nBitValue : 0;
-          if (nBitValue >= 0x3ff) {
-            nBitValue = 0x3ff;
-          }
-
-          Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nBitValue, 10);
-        }
-      }
-
-      uTmpBits = ITEMS_IsA(pItemUnit, ITEMTYPE_Scroll);
-      if (uTmpBits || (uTmpBits = ITEMS_IsA(pItemUnit, ITEMTYPE_Book) , uTmpBits != 0)) {
-        if (pItemUnit->eUnitType == UNIT_ITEM && pItemUnit->pUnitData.pUnitDataItem) {
-          nBitValue = (uint32_t)(uint16_t)pItemUnit->pUnitData.pUnitDataItem->wMagicSuffix[0];
-        } else {
-          nBitValue = 0;
-        }
-
-        nBitValue = nBitValue ? nBitValue : 0;
-        if (nBitValue >= 0x1f) {
-          nBitValue = 0x1f;
-        }
-
-        nErrLine = 5;
-        goto write_quality_data;
-      }
-
-      break;
       case 3:
         nBitValue = ITEM_GetItemData_nFileIndex(pItemUnit);
       nBitValue = nBitValue ? nBitValue : 0;
@@ -7040,48 +7026,6 @@ void __stdcall SerializeComplexItem(D2UnitStrc * pItemUnit, D2BitBufferStrc * pB
       nBitValue = 7;
       write_quality_data:
       Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nBitValue, nErrLine);
-      break;
-      case 4:
-        if (pStatListEx || (eItemFlagsInner = ITEM_GetItemData_eD2ItemFlag(pItemUnit) , (eItemFlagsInner & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
-          wAutoMagic = GetMagicPrefix(pItemUnit, 0);
-          nClampedValue = (uint32_t)wAutoMagic;
-          nBitValue = GetMagicSuffix(pItemUnit, 0);
-          if ((int)nClampedValue > (int)uTmpBits) {
-            nClampedValue -= uTmpBits;
-          }
-
-          nClampedValue = (nClampedValue & 0xffff ? nClampedValue : 0) & 0xffff;
-          if (nClampedValue >= 0x7ff) {
-            nClampedValue = 0x7ff;
-          }
-
-          Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nClampedValue, 0xb);
-          nBitValue = (nBitValue & 0xffff ? nBitValue : 0) & 0xffff;
-          if (nBitValue >= 0x7ff) {
-            nBitValue = 0x7ff;
-          }
-
-          nErrLine = 0xb;
-          goto write_quality_data;
-        }
-      break;
-      case 5:
-
-      case 7:
-        if (pStatListEx || (eItemFlagsInner = ITEM_GetItemData_eD2ItemFlag(pItemUnit) , (eItemFlagsInner & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
-          nBitValue = ITEM_GetItemData_nFileIndex(pItemUnit);
-          if ((int)nBitValue < 0) {
-            nBitValue = 0xfff;
-          }
-
-          nBitValue = nBitValue ? nBitValue : 0;
-          if (nBitValue >= 0xfff) {
-            nBitValue = 0xfff;
-          }
-
-          nErrLine = 0xc;
-          goto write_quality_data;
-        }
       break;
       case 6:
 
@@ -7163,6 +7107,113 @@ void __stdcall SerializeComplexItem(D2UnitStrc * pItemUnit, D2BitBufferStrc * pB
           nErrLine = 8;
           goto write_quality_data;
         }
+      break;
+      case 4:
+        if (pStatListEx || (eItemFlagsInner = ITEM_GetItemData_eD2ItemFlag(pItemUnit) , (eItemFlagsInner & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
+          wAutoMagic = GetMagicPrefix(pItemUnit, 0);
+          nClampedValue = (uint32_t)wAutoMagic;
+          nBitValue = GetMagicSuffix(pItemUnit, 0);
+          if ((int)nClampedValue > (int)uTmpBits) {
+            nClampedValue -= uTmpBits;
+          }
+
+          nClampedValue = (nClampedValue & 0xffff ? nClampedValue : 0) & 0xffff;
+          if (nClampedValue >= 0x7ff) {
+            nClampedValue = 0x7ff;
+          }
+
+          Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nClampedValue, 0xb);
+          nBitValue = (nBitValue & 0xffff ? nBitValue : 0) & 0xffff;
+          if (nBitValue >= 0x7ff) {
+            nBitValue = 0x7ff;
+          }
+
+          nErrLine = 0xb;
+          goto write_quality_data;
+        }
+      break;
+      case 5:
+
+      case 7:
+        if (pStatListEx || (eItemFlagsInner = ITEM_GetItemData_eD2ItemFlag(pItemUnit) , (eItemFlagsInner & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
+          nBitValue = ITEM_GetItemData_nFileIndex(pItemUnit);
+          if ((int)nBitValue < 0) {
+            nBitValue = 0xfff;
+          }
+
+          nBitValue = nBitValue ? nBitValue : 0;
+          if (nBitValue >= 0xfff) {
+            nBitValue = 0xfff;
+          }
+
+          nErrLine = 0xc;
+          goto write_quality_data;
+        }
+      break;
+      default:
+        if (pItemUnit->eUnitType == UNIT_ITEM && (pUnitDataMissile = pItemUnit->pUnitData.pUnitDataMissile , pUnitDataMissile != 0) && pUnitDataMissile->unk0x00 != 2) {
+          if (true && pUnitDataMissile) {
+            pUnitDataMissile->unk0x00 = 2;
+          }
+
+          bResetModeOnExit = true;
+        }
+      bIsOfType = ITEMS_IsA(pItemUnit, ITEMTYPE_Charm);
+      if (bIsOfType && (pStatListEx || (eItemFlagsInner = ITEM_GetItemData_eD2ItemFlag(pItemUnit) , (eItemFlagsInner & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD)))) {
+        if (pItemUnit->eUnitType == UNIT_ITEM && pItemUnit->pUnitData.pUnitDataItem) {
+          nBitValue = (uint32_t)(uint16_t)pItemUnit->pUnitData.pUnitDataItem->wMagicPrefix[0];
+        } else {
+          nBitValue = 0;
+        }
+        if ((int)nBitValue > (int)uTmpBits) {
+          nBitValue -= uTmpBits;
+        }
+
+        Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, (uint32_t)((short int)nBitValue != 0), 1);
+        if (!(short int)nBitValue) {
+          nBitValue = GetMagicSuffix(pItemUnit, 0);
+        }
+
+        nBitValue = (nBitValue & 0xffff ? nBitValue : 0) & 0xffff;
+        if (nBitValue >= 0x7ff) {
+          nBitValue = 0x7ff;
+        }
+
+        Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nBitValue, 0xb);
+      }
+
+      uTmpBits = ITEMS_IsA(pItemUnit, ITEMTYPE_BodyPart);
+      if (uTmpBits) {
+        uTmpBits = ITEMS_IsA(pItemUnit, ITEMTYPE_PlayerBodyPart);
+        if (!uTmpBits) {
+          nBitValue = ITEM_GetItemData_nFileIndex(pItemUnit);
+          nBitValue = nBitValue ? nBitValue : 0;
+          if (nBitValue >= 0x3ff) {
+            nBitValue = 0x3ff;
+          }
+
+          Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nBitValue, 10);
+        }
+      }
+
+      uTmpBits = ITEMS_IsA(pItemUnit, ITEMTYPE_Scroll);
+      if (uTmpBits || (uTmpBits = ITEMS_IsA(pItemUnit, ITEMTYPE_Book) , uTmpBits != 0)) {
+        if (pItemUnit->eUnitType == UNIT_ITEM && pItemUnit->pUnitData.pUnitDataItem) {
+          nBitValue = (uint32_t)(uint16_t)pItemUnit->pUnitData.pUnitDataItem->wMagicSuffix[0];
+        } else {
+          nBitValue = 0;
+        }
+
+        nBitValue = nBitValue ? nBitValue : 0;
+        if (nBitValue >= 0x1f) {
+          nBitValue = 0x1f;
+        }
+
+        nErrLine = 5;
+        goto write_quality_data;
+      }
+
+      break;
     }
 
     if (pItemUnit->eUnitType == UNIT_ITEM && pItemUnit->pUnitData.pUnitDataMissile) {

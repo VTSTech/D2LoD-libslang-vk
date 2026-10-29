@@ -2129,17 +2129,18 @@ static uint32_t AUTOMAP_GetUnitColor(D2UnitStrc * pUnit, uint8_t * pbColorOut) {
 
 void __stdcall AUTOMAP_DrawGamePassword() {
     int nY;
+    uint16_t* pZeroFill;
     uint16_t wszPasswordLine[50];
     char szPassUtf8[28];
     uint16_t wPassWide[26];
     BOOL bMultiLineCenter;
     int32_t dwColor;
-    memset(wPassWide, 0, 25 * sizeof(wPassWide[0]));
-    uint16_t* pZeroFill = wszPasswordLine;
-    for (nY = 0x19; nY; nY--) {
-      pZeroFill[0] = L'\0';
-      pZeroFill[1] = L'\0';
-      pZeroFill += 2;
+    for (int iFill = 0; iFill < 25; iFill++) {
+      wPassWide[iFill] = L'\0';
+    }
+
+    for (nY = 0; nY < 0x32; nY++) {
+      wszPasswordLine[nY] = L'\0';
     }
 
     char* szPassPart1 = ClientModeInGame::CLIENTMODE_GetGamePasswordPart1();
@@ -2181,14 +2182,11 @@ void __stdcall AUTOMAP_DrawGamePassword() {
 void __stdcall AUTOMAP_DrawExpansionTag() {
     int nY;
     uint16_t wText[50];
-    uint16_t* pZeroFill = wText;
-    for (nY = 0x19; nY; nY--) {
-      pZeroFill[0] = L'\0';
-      pZeroFill[1] = L'\0';
-      pZeroFill += 2;
+    for (nY = 0; nY < 0x32; nY++) {
+      wText[nY] = L'\0';
     }
 
-    /* EXPANSION */ pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(0x58ca);
+    uint16_t* pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(0x58ca);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wText, pZeroFill);
     BOOL bMultiLineCenter = 0;
     int32_t dwColor = 4;
@@ -2214,13 +2212,11 @@ void __stdcall AUTOMAP_DrawLevelName() {
 
 void __stdcall AUTOMAP_DrawVersion() {
     int i;
+    uint16_t* pZeroFill;
     uint16_t aWStack_130[100];
     char szVersionUtf8[100];
-    uint16_t* pZeroFill = aWStack_130;
-    for (i = 0x32; i; i--) {
-      pZeroFill[0] = L'\0';
-      pZeroFill[1] = L'\0';
-      pZeroFill += 2;
+    for (i = 0; i < 0x64; i++) {
+      aWStack_130[i] = L'\0';
     }
 
     Storm::Source::SSTR::SStrPrintf(szVersionUtf8, 100, "v %d.%d%c", 1, 0xe, 'd');
@@ -2232,13 +2228,11 @@ void __stdcall AUTOMAP_DrawVersion() {
 
 void __stdcall AUTOMAP_DrawServerIP() {
     int nY;
+    uint16_t* pZeroFill;
     uint16_t wIpWide[300];
     int32_t nTextWidth = 300;
-    uint16_t* pZeroFill = wIpWide;
-    for (nY = 0x96; nY; nY--) {
-      pZeroFill[0] = L'\0';
-      pZeroFill[1] = L'\0';
-      pZeroFill += 2;
+    for (nY = 0; nY < 0x12c; nY++) {
+      wIpWide[nY] = L'\0';
     }
 
     char* szLocalIp = Fog::Src::Safesock::NET_GetLocalIp();
@@ -2273,14 +2267,11 @@ void __stdcall AUTOMAP_DrawDifficulty() {
         }
     }
 
-    uint16_t* pZeroFill = wText;
-    for (nY = 0x96; nY; nY--) {
-      pZeroFill[0] = L'\0';
-      pZeroFill[1] = L'\0';
-      pZeroFill += 2;
+    for (nY = 0; nY < 0x12c; nY++) {
+      wText[nY] = L'\0';
     }
 
-    pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(nDiffStringId);
+    uint16_t* pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(nDiffStringId);
     int32_t nTextWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pZeroFill);
     pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(0x1057);
     int32_t nFormatLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pZeroFill);

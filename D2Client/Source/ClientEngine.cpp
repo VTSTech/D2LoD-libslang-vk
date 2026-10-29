@@ -118,10 +118,10 @@ void __stdcall DenOfEvilSpecific(D2RoomStrc * pRoom) {
 
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nFlags = 0x2003;
+    sSkillArg.pOwner = pPlayer;
     sSkillArg.eSkillNo = SKILL_Attack;
     sSkillArg.nSkillLevel = 1;
     sSkillArg.nMissileTxtNo = MISSILE_Denofevillight;
-    sSkillArg.pOwner = pPlayer;
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &sRoomCoords);
     int nMissilesPlaced = 0;
     int nAttempt = 0;
@@ -137,11 +137,13 @@ void __stdcall DenOfEvilSpecific(D2RoomStrc * pRoom) {
         nRandCoord = pPlayer->sSeed.nSeedLow;
         if (sRoomCoords.dwXSize & sRoomCoords.dwXSize - 1U) {
           sNewSeed = (D2SeedStrc)((uint64_t)nRandCoord * 0x6ac690c5 + nSeedHigh);
-          pPlayer->sSeed = sNewSeed;
+          pPlayer->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+          pPlayer->sSeed.nSeedLow = sNewSeed.nSeedLow;
           nRandCoord = (uint32_t)(sNewSeed.nSeedLow % (uint32_t)sRoomCoords.dwXSize);
         } else {
           sNewSeed = (D2SeedStrc)((uint64_t)nRandCoord * 0x6ac690c5 + nSeedHigh);
-          pPlayer->sSeed = sNewSeed;
+          pPlayer->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+          pPlayer->sSeed.nSeedLow = sNewSeed.nSeedLow;
           nRandCoord = sRoomCoords.dwXSize - 1U & sNewSeed.nSeedLow;
         }
       }
@@ -154,11 +156,13 @@ void __stdcall DenOfEvilSpecific(D2RoomStrc * pRoom) {
         nSeedHigh = (uint64_t)pPlayer->sSeed.nSeedHigh;
         if (sRoomCoords.dwYSize & sRoomCoords.dwYSize - 1U) {
           sNewSeed = (D2SeedStrc)((uint64_t)nRandCoord * 0x6ac690c5 + nSeedHigh);
-          pPlayer->sSeed = sNewSeed;
+          pPlayer->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+          pPlayer->sSeed.nSeedLow = sNewSeed.nSeedLow;
           nRandCoord = (uint32_t)(sNewSeed.nSeedLow % (uint32_t)sRoomCoords.dwYSize);
         } else {
           sNewSeed = (D2SeedStrc)((uint64_t)nRandCoord * 0x6ac690c5 + nSeedHigh);
-          pPlayer->sSeed = sNewSeed;
+          pPlayer->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+          pPlayer->sSeed.nSeedLow = sNewSeed.nSeedLow;
           nRandCoord = sRoomCoords.dwYSize - 1U & sNewSeed.nSeedLow;
         }
       }
@@ -525,9 +529,9 @@ void __fastcall CLIENT_BossDeath_BloodRaven(D2UnitStrc * pUnit) {
     D2SkillArgStrc sSkillArg;
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nMissileTxtNo = MISSILE_Brdeathcontrol;
-    sSkillArg.nSkillLevel = 1;
     sSkillArg.pOwner = pUnit;
     sSkillArg.pMissile = pUnit;
+    sSkillArg.nSkillLevel = 1;
     D2UnitStrc* pMissile = UNIT::Missile::MakeMissile(&sSkillArg);
     if (pMissile) {
       D2Common::Units::Missile::SetTargetX(pMissile, 0x32);
@@ -535,9 +539,9 @@ void __fastcall CLIENT_BossDeath_BloodRaven(D2UnitStrc * pUnit) {
 
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nMissileTxtNo = MISSILE_Brdeathspirits1;
-    sSkillArg.nSkillLevel = 1;
     sSkillArg.pOwner = pUnit;
     sSkillArg.pMissile = pUnit;
+    sSkillArg.nSkillLevel = 1;
     UNIT::Missile::MakeMissile(&sSkillArg);
     sSkillArg.nMissileTxtNo = MISSILE_Brdeathsmokes1;
     UNIT::Missile::MakeMissile(&sSkillArg);
@@ -595,11 +599,11 @@ void __fastcall CLIENT_SpawnTowerMistEffect(D2UnitStrc * pUnit) {
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nFlags = 0x420;
     sSkillArg.nMissileTxtNo = MISSILE_Towermist;
-    sSkillArg.nSkillLevel = 1;
     sSkillArg.pOwner = pUnit;
     sSkillArg.pMissile = pUnit;
     sSkillArg.nUnitX = nX;
     sSkillArg.nUnitY = nY;
+    sSkillArg.nSkillLevel = 1;
     UNIT::Missile::MakeMissile(&sSkillArg);
     pTarget = UNIT::Missile::CastAttack(pUnit, MISSILE_Towerchestspawner, nX, nY, SKILL_Attack, 1);
     if (!pTarget) {
@@ -662,10 +666,10 @@ void __fastcall CLIENT_SpawnOrbMistEffect(D2UnitStrc * pUnit) {
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nFlags = 0x420;
     sSkillArg.nMissileTxtNo = MISSILE_Orbmist;
-    sSkillArg.nUnitX = nX;
-    sSkillArg.nSkillLevel = 1;
     sSkillArg.pOwner = pUnit;
     sSkillArg.pMissile = pUnit;
+    sSkillArg.nUnitX = nX;
+    sSkillArg.nSkillLevel = 1;
     D2UnitStrc* pMissile = UNIT::Missile::MakeMissile(&sSkillArg);
     if (!(pMissile && pTarget)) {
       return;
@@ -678,9 +682,9 @@ void __fastcall CLIENT_BossDeath_Mephisto(D2UnitStrc * pUnit) {
     D2SkillArgStrc sSkillArg;
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nMissileTxtNo = MISSILE_Mephistodeathcontrol;
-    sSkillArg.nSkillLevel = 1;
     sSkillArg.pOwner = pUnit;
     sSkillArg.pMissile = pUnit;
+    sSkillArg.nSkillLevel = 1;
     D2UnitStrc* pMissile = UNIT::Missile::MakeMissile(&sSkillArg);
     if (pMissile) {
       D2Common::Units::Missile::SetTargetX(pMissile, 0x4b);
@@ -688,16 +692,16 @@ void __fastcall CLIENT_BossDeath_Mephisto(D2UnitStrc * pUnit) {
     }
 
     memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.nSkillLevel = 1;
-    sSkillArg.nMissileTxtNo = MISSILE_Mephistoholedelay;
     sSkillArg.pOwner = pUnit;
+    sSkillArg.nSkillLevel = 1;
     sSkillArg.pMissile = pUnit;
+    sSkillArg.nMissileTxtNo = MISSILE_Mephistoholedelay;
     UNIT::Missile::MakeMissile(&sSkillArg);
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nMissileTxtNo = MISSILE_Mephistodonotdraw;
-    sSkillArg.nSkillLevel = 1;
     sSkillArg.pOwner = pUnit;
     sSkillArg.pMissile = pUnit;
+    sSkillArg.nSkillLevel = 1;
     UNIT::Missile::MakeMissile(&sSkillArg);
 }
 
@@ -705,9 +709,9 @@ void __fastcall CLIENT_BossDeath_Andariel(D2UnitStrc * pUnit) {
     D2SkillArgStrc sSkillArg;
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nMissileTxtNo = MISSILE_Andycontrol0;
-    sSkillArg.nSkillLevel = 1;
     sSkillArg.pOwner = pUnit;
     sSkillArg.pMissile = pUnit;
+    sSkillArg.nSkillLevel = 1;
     UNIT::Missile::MakeMissile(&sSkillArg);
 }
 
@@ -791,9 +795,9 @@ void __fastcall CLIENT_BossDeath_Izual(D2UnitStrc * pUnit) {
     GAME::Wall2::WALL2_ScheduleSoundSequence(0x1253, 0, 0xfa, 0, 0, 0, 0);
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nMissileTxtNo = MISSILE_IzualControl;
-    sSkillArg.nSkillLevel = 1;
     sSkillArg.pOwner = pUnit;
     sSkillArg.pMissile = pUnit;
+    sSkillArg.nSkillLevel = 1;
     UNIT::Missile::MakeMissile(&sSkillArg);
 }
 
@@ -868,14 +872,14 @@ int __fastcall ROOM_GetLevelLightColor(D2RoomStrc * pRoom, char * pRed, char * p
     eD2LevelId eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     if (eLevelId != LEVEL_DenOfEvil) {
       if ((uint32_t)(eLevelId - LEVEL_RiverOfFlame) <= 1) {
-        if (!(gnDiabloSpawnLightActive && gnDiabloSpawnLightTimer == -1)) {
-          return 0;
+        if (gnDiabloSpawnLightActive && gnDiabloSpawnLightTimer == -1) {
+          *pRed = -1;
+          *pGreen = 64;
+          *pBlue = 48;
+          return 160;
         }
 
-        *pRed = -1;
-        *pGreen = 64;
-        *pBlue = 48;
-        return 160;
+        return 0;
       }
 
       *pRed = gRoomLightPulse.nLightRoomRed;
@@ -1004,14 +1008,11 @@ static void DRAW_Overlay_SecondsLeftToGame(D2QServerClientConnectionStrc * pQSer
     }
 
     int32_t nSecondsLeft = gnGameEndTime - nHighResTime;
-    uint16_t* pFormatStr = wszText;
-    for (nClearCount = 0x80; nClearCount; nClearCount--) {
-      pFormatStr[0] = L'\0';
-      pFormatStr[1] = L'\0';
-      pFormatStr += 2;
+    for (nClearCount = 0; nClearCount < 0x100; nClearCount++) {
+      wszText[nClearCount] = L'\0';
     }
 
-    pFormatStr = D2Lang::StrTable::strtable::GetLocaleString(0x13e9);
+    uint16_t* pFormatStr = D2Lang::StrTable::strtable::GetLocaleString(0x13e9);
     D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszText, pFormatStr, nSecondsLeft);
     int32_t nSavedFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
     int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszText);
@@ -1423,8 +1424,8 @@ static uint32_t __stdcall MONSTER_TryMoveTowardTarget(D2UnitStrc * pUnit, uint8_
       return 0;
     }
 
-    sMsg.nItemId = (uint32_t)bMoveStep * nStepY + local_c;
     sMsg.nSkillId = (uint32_t)bMoveStep * nStepX + nMonsterY;
+    sMsg.nItemId = (uint32_t)bMoveStep * nStepY + local_c;
     sMsg.nTargetUnitType = 0;
     sMsg.nTargetUnitId = D2Common::PATH::DynamicPath::GetPathType(pServerPath);
     sMsg.nSkillLvl = dwAnimMode;
@@ -1458,7 +1459,8 @@ static void __stdcall CLIENT_SendMonsterMoveToRandomNearbyPosMessage(uint32_t nO
 
     uint32_t nOffsetY = nOffsetRange & 0xff;
     D2SeedStrc sSeed = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = sSeed;
+    pUnit->sSeed.nSeedHigh = sSeed.nSeedHigh;
+    pUnit->sSeed.nSeedLow = sSeed.nSeedLow;
     uint32_t nOffsetX = nOffsetY;
     if (sSeed.nSeedLow & 1) {
       nOffsetX = -nOffsetY;
@@ -1484,9 +1486,9 @@ static void __stdcall CLIENT_SendMonsterMoveToRandomNearbyPosMessage(uint32_t nO
 static void __stdcall CLIENT_SendMonsterMoveToTargetMessage(int32_t nTargetX, int32_t nTargetY, int32_t nSenderId, int32_t nSkillLvl, D2UnitStrc * pUnit) {
     D2ServerMessageHandleStrc sMsg;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
-    sMsg.nTargetUnitType = 0;
     sMsg.nSkillId = nTargetX;
     sMsg.nItemId = nTargetY;
+    sMsg.nTargetUnitType = 0;
     sMsg.nTargetUnitId = D2Common::PATH::DynamicPath::GetPathType(pDynamicPath);
     sMsg.nSkillLvl = nSkillLvl;
     uint8_t byMaxDistance = D2Common::PATH::DynamicPath::GetMaxDistance(pDynamicPath);
@@ -1610,11 +1612,11 @@ static uint32_t CLIENT_CheckIfUnitPositionsMatch(D2UnitStrc * pnUnit1, D2UnitStr
     } else {
       nUnit2Y = 0;
     }
-    if (!(nUnit1X == nUnit2X && nUnit1Y == nUnit2Y)) {
-      return 0;
+    if (nUnit1X == nUnit2X && nUnit1Y == nUnit2Y) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 static void MONSTER_FindAndChaseNearestEnemy(D2UnitStrc * pUnit) {
@@ -1708,7 +1710,8 @@ static void CLIENT_MonsterIdleApproach(D2UnitStrc * pUnit) {
 
     *pnAiData = 1;
     D2SeedStrc sSeed = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = sSeed;
+    pUnit->sSeed.nSeedHigh = sSeed.nSeedHigh;
+    pUnit->sSeed.nSeedLow = sSeed.nSeedLow;
     if (sSeed.nSeedLow & 1) {
       sSeed = D2_SEED_NEXT_VAL(sSeed);
       pUnit->sSeed = sSeed;
@@ -1722,13 +1725,15 @@ static void CLIENT_MonsterIdleApproach(D2UnitStrc * pUnit) {
     }
 
     sSeed = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = sSeed;
+    pUnit->sSeed.nSeedHigh = sSeed.nSeedHigh;
+    pUnit->sSeed.nSeedLow = sSeed.nSeedLow;
     if (sSeed.nSeedLow & 1) {
       local_c = -local_c;
     }
 
     sSeed = D2_SEED_NEXT_VAL(sSeed);
-    pUnit->sSeed = sSeed;
+    pUnit->sSeed.nSeedHigh = sSeed.nSeedHigh;
+    pUnit->sSeed.nSeedLow = sSeed.nSeedLow;
     if (sSeed.nSeedLow & 1) {
       iVar4 = -iVar4;
     }
@@ -2016,7 +2021,8 @@ static void CLIENT_SpawnWorldstoneChipDebris(D2UnitStrc * pUnit) {
       }
     } else {
       sSeed1 = D2_SEED_NEXT(pUnit->sSeed);
-      pUnit->sSeed = sSeed1;
+      pUnit->sSeed.nSeedHigh = sSeed1.nSeedHigh;
+      pUnit->sSeed.nSeedLow = sSeed1.nSeedLow;
       if ((int)(sSeed1.nSeedLow % 100) < 5) {
         sSeed1 = D2_SEED_NEXT_VAL(sSeed1);
         pUnit->sSeed = sSeed1;
@@ -2046,7 +2052,8 @@ static void CLIENT_SpawnWorldstoneChipDebris(D2UnitStrc * pUnit) {
         if (pMissileOrPlayer) {
           sSeed1 = D2_SEED_NEXT(pUnit->sSeed);
           bDirFlag = !(sSeed1.nSeedLow & 1);
-          pUnit->sSeed = sSeed1;
+          pUnit->sSeed.nSeedHigh = sSeed1.nSeedHigh;
+          pUnit->sSeed.nSeedLow = sSeed1.nSeedLow;
           if (!bDirFlag) {
             Engine::Particle::SetPosVectorShifted(pMissileOrPlayer, 0, 0, -100);
             Engine::Particle::SetOffsetVector(pMissileOrPlayer, 0, 0, 6, 1);
@@ -2192,14 +2199,8 @@ void __fastcall CLIENT_DispatchMonsterAiBehavior(D2UnitStrc * pUnit) {
         return;
         default:
           goto send_wander;
-        case 0x97:
-
-        case 0x10d:
-
-        case 0x11b:
-
-        case 0x153:
-          CLIENT_MonsterAi_CorpseSeekerBehavior(nDistCopy, pTarget, pUnit);
+        case 0x9f:
+          CLIENT_MonsterAi_IdleWanderBehavior(pTarget, nDistCopy, pUnit);
         return;
         case 0x9d:
 
@@ -2207,9 +2208,6 @@ void __fastcall CLIENT_DispatchMonsterAiBehavior(D2UnitStrc * pUnit) {
 
         case 0x13f:
           CLIENT_MonsterIdleApproach(pUnit);
-        return;
-        case 0x9f:
-          CLIENT_MonsterAi_IdleWanderBehavior(pTarget, nDistCopy, pUnit);
         return;
         case 0xe3:
           CLIENT_MonsterThinkBehavior(pUnit, pTarget);
@@ -2224,6 +2222,15 @@ void __fastcall CLIENT_DispatchMonsterAiBehavior(D2UnitStrc * pUnit) {
 
         case 0x11a:
           goto done;
+        case 0x97:
+
+        case 0x10d:
+
+        case 0x11b:
+
+        case 0x153:
+          CLIENT_MonsterAi_CorpseSeekerBehavior(nDistCopy, pTarget, pUnit);
+        return;
         case 0x13e:
           CLIENT_MonsterAi_BasicChaseBehavior(nDistCopy, pTarget, pUnit);
         return;

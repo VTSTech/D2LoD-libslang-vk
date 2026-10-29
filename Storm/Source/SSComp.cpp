@@ -470,11 +470,11 @@ void __fastcall SCOMP_PkwareDecompress(void * pOutBuf, uint32_t * pdwOutLength, 
     PKWARE_STREAM Stream;
     TDcmpStruct* pWorkBuf = (TDcmpStruct*)SMem::SMemAlloc(0x3134, ".\\SOURCE\\SCOMP.CPP", 0x47b, 0);
     Stream.nOutLen = *pdwOutLength;
+    Stream.pOutBuf = pOutBuf;
     Stream.nOutPos = 0;
     Stream.pInBuf = pInBuf;
     Stream.nInPos = 0;
     Stream.nInLen = nInLen;
-    Stream.pOutBuf = pOutBuf;
     PKWARE_explode((pfnPkwareRead)SCOMP_PkwareBufferRead, (pfnPkwareWrite)SCOMP_PkwareBufferWrite, pWorkBuf, &Stream);
     SMem::SMemFree(pWorkBuf, ".\\SOURCE\\SCOMP.CPP", 0x48d, 0);
     *pdwOutLength = Stream.nOutPos;
@@ -4463,28 +4463,28 @@ uint8_t PKWARE_explode(pfnPkwareRead pfnRead, pfnPkwareWrite pfnWrite, TDcmpStru
     pWorkBuf->extra_bits = 0;
     *pBufByteCount = 3;
     uVar1 = pWorkBuf->dsize_bits;
-    if (!(uVar1 >= 4 && uVar1 <= 6)) {
-      return 1;
-    }
+    if (uVar1 >= 4 && uVar1 <= 6) {
+      pWorkBuf->dsize_mask = 0xffff >> (0x10U - (char)uVar1 & 0x1f);
+      if (pWorkBuf->ctype) {
+        if (pWorkBuf->ctype != 1) {
+          return 2;
+        }
 
-    pWorkBuf->dsize_mask = 0xffff >> (0x10U - (char)uVar1 & 0x1f);
-    if (pWorkBuf->ctype) {
-      if (pWorkBuf->ctype != 1) {
-        return 2;
+        PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->ChBitsAsc, (uint32_t*)gaCRT_PKWareLitLenBitsTableC, 0x100);
+        PKWARE_IterateItemData(pWorkBuf);
       }
 
-      PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->ChBitsAsc, (uint32_t*)gaCRT_PKWareLitLenBitsTableC, 0x100);
-      PKWARE_IterateItemData(pWorkBuf);
+      PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->LenBits, (uint32_t*)gaCRT_PKWareLitLenBitsTableA, 0x10);
+      PKWARE_CompareItemValues(0x10, pWorkBuf->LenBits, gaCRT_PKWareLitLenBaseTableA, (char*)pWorkBuf->LengthCodes);
+      PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->ExLenBits, (uint32_t*)gaCRT_PKWareDistBitsTable, 0x10);
+      PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->LenBase, (uint32_t*)gaCRT_PKWareDistBaseTable, 0x20);
+      PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->DistBits, (uint32_t*)gaCRT_PKWareLitLenBitsTableB, 0x40);
+      PKWARE_CompareItemValues(0x40, pWorkBuf->DistBits, gaCRT_PKWareLitLenBaseTableB, (char*)pWorkBuf->DistPosCodes);
+      uVar1 = PKWARE_ExplodeStream(pWorkBuf);
+      return uVar1 == 0x306 ? 4 : 0;
     }
 
-    PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->LenBits, (uint32_t*)gaCRT_PKWareLitLenBitsTableA, 0x10);
-    PKWARE_CompareItemValues(0x10, pWorkBuf->LenBits, gaCRT_PKWareLitLenBaseTableA, (char*)pWorkBuf->LengthCodes);
-    PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->ExLenBits, (uint32_t*)gaCRT_PKWareDistBitsTable, 0x10);
-    PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->LenBase, (uint32_t*)gaCRT_PKWareDistBaseTable, 0x20);
-    PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->DistBits, (uint32_t*)gaCRT_PKWareLitLenBitsTableB, 0x40);
-    PKWARE_CompareItemValues(0x40, pWorkBuf->DistBits, gaCRT_PKWareLitLenBaseTableB, (char*)pWorkBuf->DistPosCodes);
-    uVar1 = PKWARE_ExplodeStream(pWorkBuf);
-    return uVar1 == 0x306 ? 4 : 0;
+    return 1;
 }
 
 uint32_t PKWARE_ExplodeStream(TDcmpStruct * pItemData) {

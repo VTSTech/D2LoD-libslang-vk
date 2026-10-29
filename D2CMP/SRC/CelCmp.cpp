@@ -118,11 +118,11 @@ uint32_t __stdcall CELCMP_GetPaletteShiftValue(uint32_t nPaletteIndex, uint32_t 
 }
 
 BOOL __stdcall CELCMP_CanConvertFormat(int32_t nSrcFormat, int32_t nDstFormat) {
-    if (!(nSrcFormat != 4 && nSrcFormat == 8 && nDstFormat == 0x10)) {
-      return 0;
+    if (nSrcFormat != 4 && nSrcFormat == 8 && nDstFormat == 0x10) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 uint32_t __stdcall CELCMP_GetFrameDecodeHandlerForward(uint32_t nParam1, uint32_t nParam2) {

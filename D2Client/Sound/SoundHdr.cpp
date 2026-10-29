@@ -112,41 +112,41 @@ int __fastcall SOUNDHDR_GetSoundField0x60(int32_t nSoundId) {
     if (!pTxtSounds) {
       return 0;
     }
-    if (!(nSoundId >= 0 && nSoundId < nTxtSoundsSize)) {
-      return *(volatile uint8_t*)0x60;
+    if (nSoundId >= 0 && nSoundId < nTxtSoundsSize) {
+      return pTxtSounds[nSoundId].nGroupStartIndex;
     }
 
-    return pTxtSounds[nSoundId].nGroupStartIndex;
+    return *(volatile uint8_t*)0x60;
 }
 
 uint8_t __fastcall SOUNDHDR_GetSoundGroupSize(int32_t nSoundId) {
     if (!pTxtSounds) {
       return '\0';
     }
-    if (!(nSoundId >= 0 && nSoundId < nTxtSoundsSize)) {
-      return *(volatile uint8_t*)0x3d;
+    if (nSoundId >= 0 && nSoundId < nTxtSoundsSize) {
+      return pTxtSounds[nSoundId].Group_Size;
     }
 
-    return pTxtSounds[nSoundId].Group_Size;
+    return *(volatile uint8_t*)0x3d;
 }
 
 uint32_t __fastcall SOUNDHDR_GetSoundLoopFlag(int32_t nSoundId) {
     if (!pTxtSounds) {
       return 0;
     }
-    if (!(nSoundId >= 0 && nSoundId < nTxtSoundsSize)) {
-      return (uint32_t)*(volatile uint8_t*)0x3e;
+    if (nSoundId >= 0 && nSoundId < nTxtSoundsSize) {
+      return (uint32_t)pTxtSounds[nSoundId].Loop;
     }
 
-    return (uint32_t)pTxtSounds[nSoundId].Loop;
+    return (uint32_t)*(volatile uint8_t*)0x3e;
 }
 
 D2SoundEnvironTxt * __fastcall GetSoundEnvironLine(int32_t nSoundEnviron) {
-    if (!(pTxtSoundEnviron && nSoundEnviron >= 0 && nSoundEnviron < nTxtSoundEnvironSize)) {
-      return nullptr;
+    if (pTxtSoundEnviron && nSoundEnviron >= 0 && nSoundEnviron < nTxtSoundEnvironSize) {
+      return pTxtSoundEnviron + nSoundEnviron;
     }
 
-    return pTxtSoundEnviron + nSoundEnviron;
+    return nullptr;
 }
 
 // @sourcefile .\Sound\SoundHdr.cpp
@@ -1095,23 +1095,24 @@ void __fastcall SOUNDHDR_UpdateRegistryVersion(int32_t nSoundHeaderIndex) {
     }
 
     switch (byRequiredVersionFlag) {
-      case 2:
-        __frame0.dwVersionBuild = 0x26;
-      break;
-      case 3:
-        __frame0.dwVersionBuild = 0x62;
-      break;
-      case 4:
-        __frame0.dwVersionBuild = 0x2a;
+      case 7:
+        __frame0.dwVersionBuild = 0x23;
       break;
       case 5:
         __frame0.dwVersionBuild = 0xb2;
       break;
+      case 4:
+        __frame0.dwVersionBuild = 0x2a;
+      break;
+      case 3:
+        __frame0.dwVersionBuild = 0x62;
+      break;
+      case 2:
+        __frame0.dwVersionBuild = 0x26;
+      break;
       default:
         __frame0.dwVersionBuild = 0x22;
       break;
-      case 7:
-        __frame0.dwVersionBuild = 0x23;
     }
 
     sprintf(szVersionString, "%d.%d.%d.%d", 0xd8, 0x94, 0xf6, __frame0.dwVersionBuild);

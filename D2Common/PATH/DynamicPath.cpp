@@ -66,42 +66,41 @@ static int32_t PATH_GetCollisionPatternFromMonStats(D2UnitStrc * pUnit) {
     } else {
       pMonStatsTxt = sgptDataTable->pTxtMonStats + nMonStatsIdx;
     }
-    if (pMonStatsTxt->flying) {
+    if (*((uint8_t*)pMonStatsTxt + 0xd) & (uint8_t)gadwBitMasks[6]) {
       return 0x1804;
     }
 
-    return (pMonStatsTxt->opendoors ? -2048 : 0) + 0x3c01;
+    return (*((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[3] ? -2048 : 0) + 0x3c01;
 }
 
 int32_t __stdcall PATH_GetDynamicPathField(int32_t nMonStatsIdx) {
-    uint8_t* pUnused;
-    if (!(nMonStatsIdx >= 0 && nMonStatsIdx < sgptDataTable->nTxtMonStatsSize)) {
-      return 1;
-    }
+    D2MonStats2Txt* pMonStatsEx;
+    uint32_t uVar1;
+    if (nMonStatsIdx >= 0 && nMonStatsIdx < sgptDataTable->nTxtMonStatsSize) {
+      int nMonStatsExId;
+      nMonStatsExId = (int)sgptDataTable->pTxtMonStats[nMonStatsIdx].MonStatsEx;
+      if (nMonStatsExId >= 0 && nMonStatsExId < sgptDataTable->nTxtMonStatsExSize) {
+        pMonStatsEx = sgptDataTable->pTxtMonStatsEx + nMonStatsExId;
+        if (pMonStatsEx && (uint32_t)(int)pMonStatsEx->SizeX <= 3) {
+          uVar1 = (uint32_t)(uint8_t)*((uint8_t*)pMonStatsEx + 0x5);
+          nMonStatsExId = gaUnitTypeInteractSizes[pMonStatsEx->SizeX];
+          if (!((gadwBitMasks[0] & uVar1 || gadwBitMasks[2] & uVar1) && !(gadwBitMasks[1] & uVar1))) {
+            return nMonStatsExId;
+          }
+          if (nMonStatsExId != 1) {
+            if (nMonStatsExId == 2) {
+              return 4;
+            }
+          } else {
+            nMonStatsExId = 3;
+          }
 
-    int nMonStatsExId = (int)sgptDataTable->pTxtMonStats[nMonStatsIdx].MonStatsEx;
-    if (!(nMonStatsExId >= 0 && nMonStatsExId < sgptDataTable->nTxtMonStatsExSize)) {
-      return 1;
-    }
-
-    D2MonStats2Txt* pMonStatsEx = sgptDataTable->pTxtMonStatsEx + nMonStatsExId;
-    if (!(pMonStatsEx && (uint32_t)(int)pMonStatsEx->SizeX <= 3)) {
-      return 1;
-    }
-
-    nMonStatsExId = gaUnitTypeInteractSizes[pMonStatsEx->SizeX];
-    if (!((pMonStatsEx->revive || pMonStatsEx->isSmall) && !pMonStatsEx->isAtt)) {
-      return nMonStatsExId;
-    }
-    if (nMonStatsExId != 1) {
-      if (nMonStatsExId == 2) {
-        return 4;
+          return nMonStatsExId;
+        }
       }
-    } else {
-      nMonStatsExId = 3;
     }
 
-    return nMonStatsExId;
+    return 1;
 }
 
 int32_t __stdcall GetInteractSize(D2UnitStrc * pUnit, int32_t nSizeX) {
@@ -891,11 +890,11 @@ static uint32_t PATH_BuildDirectPathToTarget(D2DynamicPathStrc * pDynamicPath) {
       eUnitType = pTargetUnit->eUnitType;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         sTargetCoord = (short int)pTargetUnit->pPath.pStaticPath->nPosX;
-      } else if (!pTargetUnit->pPath.pDynamicPath) {
-        sTargetCoord = 0;
-      } else {
+      } else if (pTargetUnit->pPath.pDynamicPath) {
         nCoord = GetXPos(pTargetUnit->pPath.pDynamicPath);
         sTargetCoord = (short int)nCoord;
+      } else {
+        sTargetCoord = 0;
       }
 
       pTargetUnit = pDynamicPath->pTargetUnit;
@@ -903,11 +902,11 @@ static uint32_t PATH_BuildDirectPathToTarget(D2DynamicPathStrc * pDynamicPath) {
       eUnitType = pTargetUnit->eUnitType;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         sTargetY = (short int)pTargetUnit->pPath.pStaticPath->nPosY;
-      } else if (!pTargetUnit->pPath.pDynamicPath) {
-        sTargetY = 0;
-      } else {
+      } else if (pTargetUnit->pPath.pDynamicPath) {
         nRoomBound = GetYPos(pTargetUnit->pPath.pDynamicPath);
         sTargetY = (short int)nRoomBound;
+      } else {
+        sTargetY = 0;
       }
 
       pDynamicPath->nTargetY = sTargetY;
@@ -1214,22 +1213,22 @@ static uint8_t PATH_ResolveTargetPosition(D2PathTypeArg * pPathTypeArg, int32_t 
     eD2UnitType eUnitType = pTargetUnit->eUnitType;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       sCoord = (eCollisionFlags)pTargetUnit->pPath.pStaticPath->nPosX;
-    } else if (!pTargetUnit->pPath.pDynamicPath) {
-      sCoord = COLLIDE_NONE;
-    } else {
+    } else if (pTargetUnit->pPath.pDynamicPath) {
       nCoord = GetXPos(pTargetUnit->pPath.pDynamicPath);
       sCoord = (eCollisionFlags)nCoord;
+    } else {
+      sCoord = COLLIDE_NONE;
     }
 
     ((uD2UnitMode*)&pDynamicPath->nTargetX)->eMissileCollision = sCoord;
     eUnitType = pTargetUnit->eUnitType;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nTargetY = (short int)pTargetUnit->pPath.pStaticPath->nPosY;
-    } else if (!pTargetUnit->pPath.pDynamicPath) {
-      nTargetY = 0;
-    } else {
+    } else if (pTargetUnit->pPath.pDynamicPath) {
       nLine = GetYPos(pTargetUnit->pPath.pDynamicPath);
       nTargetY = (short int)nLine;
+    } else {
+      nTargetY = 0;
     }
 
     pDynamicPath->nTargetY = nTargetY;

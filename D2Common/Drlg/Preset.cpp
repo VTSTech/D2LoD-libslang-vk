@@ -825,10 +825,7 @@ static void DRLGPRESET_AddAndSetPresetUnits(D2RoomExStrc * pRoomEx) {
       }
 
       _bInside = DrlgRoom::AreXYInsideCoordinates(&roomCoords, pCurrent->nPosX, pCurrent->nPosY);
-      if (!_bInside) {
-        pNextPresetUnit = pCurrent->pPresetUnitNext;
-        pPrevPresetUnit = pCurrent;
-      } else {
+      if (_bInside) {
         pCurrent->nPosX -= nOffsetX;
         pCurrent->nPosY -= nOffsetY;
         if (pPrevPresetUnit) {
@@ -844,6 +841,9 @@ static void DRLGPRESET_AddAndSetPresetUnits(D2RoomExStrc * pRoomEx) {
         } else {
           pNextPresetUnit = *(D2PresetUnitStrc**)(pMapDataRaw + 0x38);
         }
+      } else {
+        pNextPresetUnit = pCurrent->pPresetUnitNext;
+        pPrevPresetUnit = pCurrent;
       }
     }
 }
@@ -1198,11 +1198,13 @@ D2DrlgMapStrc * __fastcall DRLGPRESET_AllocDrlgMap(D2DrlgLevelStrc * pLevel, int
       nFileSelector = 0;
     } else if (nFiles & nFiles - 1) {
       newSeed = D2_SEED_NEXT(*pSeed);
-      *pSeed = newSeed;
+      pSeed->nSeedHigh = newSeed.nSeedHigh;
+      pSeed->nSeedLow = newSeed.nSeedLow;
       nFileSelector = newSeed.nSeedLow % nFiles;
     } else {
       newSeed = D2_SEED_NEXT(*pSeed);
-      *pSeed = newSeed;
+      pSeed->nSeedHigh = newSeed.nSeedHigh;
+      pSeed->nSeedLow = newSeed.nSeedLow;
       nFileSelector = nFiles - 1 & newSeed.nSeedLow;
     }
 
@@ -1572,7 +1574,8 @@ void __fastcall DRLGPRESET_AddPresetUnitToDrlgMap(D2PoolManagerStrc * pMemory, D
         }
 
         newSeed = D2_SEED_NEXT(*pSeed);
-        *pSeed = newSeed;
+        pSeed->nSeedHigh = newSeed.nSeedHigh;
+        pSeed->nSeedLow = newSeed.nSeedLow;
         if (!(newSeed.nSeedLow & 1)) {
           goto add_preset_copy;
         }
@@ -1615,7 +1618,8 @@ void __fastcall DRLGPRESET_AddPresetUnitToDrlgMap(D2PoolManagerStrc * pMemory, D
             }
             if (nTableSize == 0x23) {
               newSeed = D2_SEED_NEXT(*pSeed);
-              *pSeed = newSeed;
+              pSeed->nSeedHigh = newSeed.nSeedHigh;
+              pSeed->nSeedLow = newSeed.nSeedLow;
               if (newSeed.nSeedLow & 3) {
                 continue;
               }

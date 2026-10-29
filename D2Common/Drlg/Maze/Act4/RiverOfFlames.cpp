@@ -95,7 +95,8 @@ void DRLGMAZE_GenerateRiverOfFlames(D2DrlgLevelStrc * pDrlgLevelStrc) {
     int nRoomPosX = pNewRoom->sCoords.WorldPosition.x;
     int nChaosLevelX = pChaosLevel->sCoordinatesAndSize.WorldPosition.x;
     D2SeedStrc DVar2 = D2_SEED_NEXT(pDrlgLevelStrc->sSeed);
-    pDrlgLevelStrc->sSeed = DVar2;
+    pDrlgLevelStrc->sSeed.nSeedHigh = DVar2.nSeedHigh;
+    pDrlgLevelStrc->sSeed.nSeedLow = DVar2.nSeedLow;
     ReplaceRoom(gaDrlgRiverOfFlamesReplacements + (DVar2.nSeedLow & 1), pDrlgLevelStrc, nullptr);
     DRLGMAZE_ExpandRoomsWithPresets(pDrlgLevelStrc, 0x344, pNewRoom);
     for (pNewRoom = pDrlgLevelStrc->pRoomExFirst; pNewRoom; pNewRoom = pNewRoom->pRoomExNext) {

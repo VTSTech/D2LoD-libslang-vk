@@ -384,8 +384,8 @@ void __fastcall QUEST_OnMonsterKilled(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
       }
     }
 
-    questArg2.nEvent = 8;
     questArg2.pGame = pGame;
+    questArg2.nEvent = 8;
     questArg2.pTarget = pUnit;
     if (!pEffectiveKiller || (questArg2.pPlayer = pEffectiveKiller , pEffectiveKiller->eUnitType != UNIT_PLAYER)) {
       questArg2.pPlayer = 0;
@@ -460,10 +460,10 @@ void __fastcall QUEST_OnPlayerEnteredArea(::SGAMEDATA * pGame, int32_t ePrevious
     // behaviour worth reproducing; a zero reaches the null guards and the broadcast is skipped.
     // Retire-When: the writes the decompiler dropped are recovered per call site.
     memset(&questArg, 0, sizeof(questArg));
+    questArg.pGame = pGame;
     questArg.nEvent = 3;
     questArg.sQuestArgs.sNpcActivate.nIndex = eEnteredLevelId;
     questArg.pPlayer = pUnit;
-    questArg.pGame = pGame;
     questArg.sQuestArgs.sLevelChange.nOldLevel = ePreviousLevelId;
     QUEST_DispatchBroadcast(true, '\0', &questArg);
 }
@@ -479,9 +479,9 @@ void __fastcall QUEST_OnPlayerDisconnect(::SGAMEDATA * pGame, D2UnitStrc * pPlay
     eD2QuestsInternal eQuestNoInternal;
     D2QuestDataStrc* pMatchedQuestData;
     D2QuestArgStrc questArg2;
-    questArg2.nEvent = 9;
-    questArg2.pGame = pGame;
     questArg2.pPlayer = pPlayer;
+    questArg2.pGame = pGame;
+    questArg2.nEvent = 9;
     D2UnitStrc* pUnit;
     pUnit = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pPlayer->pInventory);
     while (true) {
@@ -542,9 +542,9 @@ void __fastcall QUEST_OnPlayerDisconnect(::SGAMEDATA * pGame, D2UnitStrc * pPlay
 void __fastcall QUEST_OnUnitInteraction_Unused(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D2UnitStrc * pUnit) {
     D2QuestArgStrc questArg;
     memset(&questArg, 0, sizeof(questArg));
+    questArg.pGame = pGame;
     questArg.nEvent = 0;
     questArg.pTarget = pUnit;
-    questArg.pGame = pGame;
     questArg.pPlayer = pPlayer;
     QUEST_DispatchToUnit(nullptr, &questArg);
 }
@@ -556,8 +556,8 @@ void __fastcall QUEST_OnNpcInteraction(D2ClientStrc * pClient, D2UnitStrc * pUni
     questArg.pGame = GAME::Clients::CLIENT_GetGame(pClient);
     questArg.nEvent = 0;
     questArg.pTarget = pUnit;
-    questArg.sQuestArgs.sNpcActivate.pTextControl = pGSPacketSrv0x27_Text;
     questArg.pPlayer = pUnitStrc;
+    questArg.sQuestArgs.sNpcActivate.pTextControl = pGSPacketSrv0x27_Text;
     QUEST_DispatchBroadcast(true, '\x01', &questArg);
 }
 
@@ -569,19 +569,19 @@ void __fastcall QUEST_OnNpcInteraction(D2ClientStrc * pClient, D2UnitStrc * pUni
 // Declaring only the stack argument left pGame and pPlayer as uninitialised locals and split the struct into loose dwTmp slots, so the broadcast received a garbage game pointer and a garbage player.
 void __fastcall QUEST_OnNpcDeactivate(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D2UnitStrc * pTarget) {
     D2QuestArgStrc DStack_20;
-    DStack_20.pTarget = pTarget;
-    DStack_20.nEvent = 2;
     DStack_20.pGame = pGame;
+    DStack_20.pTarget = pTarget;
     DStack_20.pPlayer = pPlayer;
+    DStack_20.nEvent = 2;
     QUEST_DispatchBroadcast(true, '\x01', &DStack_20);
 }
 
 void __fastcall QUEST_OnItemPickedUp(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D2UnitStrc * pUnit) {
     D2QuestArgStrc questArg;
     memset(&questArg, 0, sizeof(questArg));
+    questArg.pGame = pGame;
     questArg.nEvent = 4;
     questArg.pTarget = pUnit;
-    questArg.pGame = pGame;
     questArg.pPlayer = pPlayer;
     QUEST_DispatchToUnit(nullptr, &questArg);
 }
@@ -589,9 +589,9 @@ void __fastcall QUEST_OnItemPickedUp(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
 void __fastcall QUEST_OnItemDropped(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D2UnitStrc * pUnit) {
     D2QuestArgStrc questArg;
     memset(&questArg, 0, sizeof(questArg));
+    questArg.pGame = pGame;
     questArg.nEvent = 5;
     questArg.pTarget = pUnit;
-    questArg.pGame = pGame;
     questArg.pPlayer = pPlayer;
     QUEST_DispatchToUnit(nullptr, &questArg);
 }
@@ -599,10 +599,10 @@ void __fastcall QUEST_OnItemDropped(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D
 void __fastcall QUEST_OnItemEvent_Unused(::SGAMEDATA * pGame, D2UnitStrc * pTarget) {
     D2QuestArgStrc questArg;
     memset(&questArg, 0, sizeof(questArg));
-    questArg.nEvent = 6;
-    questArg.pPlayer = 0;
     questArg.pGame = pGame;
+    questArg.nEvent = 6;
     questArg.pTarget = pTarget;
+    questArg.pPlayer = 0;
     QUEST_DispatchToUnit(nullptr, &questArg);
 }
 
@@ -890,10 +890,10 @@ void __fastcall QUEST_SetStateFlag(D2QuestDataStrc * pQuestData, int32_t nState,
 void __fastcall QUEST_OnNpcGossip(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, uint32_t nNpcGUID, uint32_t nGossipIndex) {
     D2QuestArgStrc questArg;
     memset(&questArg, 0, sizeof(questArg));
-    questArg.nEvent = 0xb;
-    questArg.sQuestArgs.sNpcActivate.pTextControl = 0;
     questArg.pGame = pGame;
+    questArg.nEvent = 0xb;
     questArg.pPlayer = pPlayer;
+    questArg.sQuestArgs.sNpcActivate.pTextControl = 0;
     if (nNpcGUID == -1) {
       questArg.pTarget = 0;
     } else {
@@ -995,7 +995,7 @@ uint32_t __fastcall QUEST_NpcWantsInteract(::SGAMEDATA * pGame, D2UnitStrc * pUn
     if (pUnit && pUnit->eUnitType == UNIT_PLAYER && nNpcClassId && *(int*)nNpcClassId == 1) {
       int nTargetClassId;
       nTargetClassId = *(int*)(nNpcClassId + 4);
-      if (nTargetClassId < 0 || nTargetClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nTargetClassId) || !sgptDataTable->pTxtMonStats[nTargetClassId].interact) {
+      if (nTargetClassId < 0 || nTargetClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nTargetClassId) || !((uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nTargetClassId] + 0xd) & gadwBitMasks[1])) {
         return 0;
       }
 
@@ -1370,18 +1370,6 @@ void __fastcall SetTimerByMonsterId(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       }
     } else {
       switch (nMonsterId) {
-        case 0x173:
-          if (pGame->pQuestControl && (pQuestData = pGame->pQuestControl->pQuestData , pQuestData != 0)) {
-            while (pQuestData->nQuestNoInternal != QUESTINT_ForgottenTower) {
-              pQuestData = pQuestData->pPrev;
-              if (!pQuestData) {
-                return;
-              }
-            }
-
-            A1Q5::Q05_TriggerCountessDeathEffect(pQuestData, pUnit);
-          }
-        break;
         case 0x178:
           if (pGame->pQuestControl && (pQuestDataB = pGame->pQuestControl->pQuestData , pQuestDataB != 0)) {
             do {
@@ -1396,15 +1384,6 @@ void __fastcall SetTimerByMonsterId(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
             return;
           }
         break;
-        case 0x1cb:
-          A5Q4::Q34_SpawnNihlathakPortalTimer(pGame, pUnit);
-        return;
-        case 0x1cc:
-          /* GreaterIceSpawn */ A5Q3::SpawnFrozenAnya(pGame, pUnit);
-        return;
-        case 0x1cd:
-          /* FanaticMinion */ A5Q3::Q33_KillAnyaMonsterTimer(pGame);
-        return;
         case 0x1da:
 
         case 0x1db:
@@ -1422,6 +1401,28 @@ void __fastcall SetTimerByMonsterId(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 
             return;
           }
+        break;
+        case 0x1cd:
+          /* FanaticMinion */ A5Q3::Q33_KillAnyaMonsterTimer(pGame);
+        return;
+        case 0x1cb:
+          A5Q4::Q34_SpawnNihlathakPortalTimer(pGame, pUnit);
+        return;
+        case 0x1cc:
+          /* GreaterIceSpawn */ A5Q3::SpawnFrozenAnya(pGame, pUnit);
+        return;
+        case 0x173:
+          if (pGame->pQuestControl && (pQuestData = pGame->pQuestControl->pQuestData , pQuestData != 0)) {
+            while (pQuestData->nQuestNoInternal != QUESTINT_ForgottenTower) {
+              pQuestData = pQuestData->pPrev;
+              if (!pQuestData) {
+                return;
+              }
+            }
+
+            A1Q5::Q05_TriggerCountessDeathEffect(pQuestData, pUnit);
+          }
+        break;
       }
     }
 }
@@ -1464,7 +1465,7 @@ void __fastcall QUEST_CheckGoldenBirdDrop(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
     pQuestData = 0;
     check_drop_conditions:
-    if (pUnit && (nMonClassId = pUnit->nClassId , nMonClassId >= 0) && nMonClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonClassId && pQuestData && pQuestData->bIsNotIntroduction == '\x01' && nMonClassId != 0x197 && !sgptDataTable->pTxtMonStats[nMonClassId].flying) {
+    if (pUnit && (nMonClassId = pUnit->nClassId , nMonClassId >= 0) && nMonClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonClassId && pQuestData && pQuestData->bIsNotIntroduction == '\x01' && nMonClassId != 0x197 && !(*((uint8_t*)&sgptDataTable->pTxtMonStats[nMonClassId] + 0xd) & (uint8_t)gadwBitMasks[6])) {
       A3Q5::Q21_CheckGoldenBirdDropConditions(pQuestData, pUnit);
       return;
     }
@@ -1928,10 +1929,10 @@ void __fastcall QUEST_SendNpcGossipPacket(::SGAMEDATA * pGame, D2UnitStrc * pUni
     D2GSPacketSrv0x27_TextStrc* pTxtMsg = D2Common::Game::STRUCT_AllocTxtMessageForPacket0x27(pGame->pMemoryPool);
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\QUESTS\\QUESTS.CPP", 0xd22);
     sQuestArgsBuf.pGame = GAME::Clients::CLIENT_GetGame(pClient);
+    sQuestArgsBuf.sQuestArgs.sNpcActivate.pTextControl = pTxtMsg;
     sQuestArgsBuf.nEvent = 0;
     sQuestArgsBuf.pTarget = pTarget;
     sQuestArgsBuf.pPlayer = pUnit;
-    sQuestArgsBuf.sQuestArgs.sNpcActivate.pTextControl = pTxtMsg;
     QUEST_DispatchBroadcast(true, '\x01', &sQuestArgsBuf);
     sPacket0x27Buf.nId = 0x27;
     if (!pTarget) {
@@ -2334,7 +2335,8 @@ void __fastcall AllocQuestControl(::SGAMEDATA * pGame) {
     D2Common::Seed::SEED_InitDefault(&pQuestControl->sSeed);
     D2SeedStrc sSeedNext = D2_SEED_NEXT(pGame->pGameSeed);
     int32_t nSeedLow = sSeedNext.nSeedLow;
-    pGame->pGameSeed = sSeedNext;
+    pGame->pGameSeed.nSeedHigh = sSeedNext.nSeedHigh;
+    pGame->pGameSeed.nSeedLow = sSeedNext.nSeedLow;
     D2Common::Seed::InitSeed_Param_666(&pQuestControl->sSeed, nSeedLow);
     pQuestControl->bExecuting = 0;
     D2BitBufferStrc* pQuestFlags = D2Common::QuestRecord::CreateBitBuffer(pGame->pMemoryPool);
@@ -2531,8 +2533,8 @@ void __fastcall QUEST_OnPlayerJoinGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
             exit(-1);
           }
 
-          sQuestArgs.nEvent = 14;
           sQuestArgs.pGame = pGame;
+          sQuestArgs.nEvent = 14;
           sQuestArgs.pPlayer = pUnit;
           (*pQuestDataIter->sStateFunctions.fpQuestStateHandler[0xe])(pQuestDataIter, &sQuestArgs);
         }
@@ -2644,8 +2646,8 @@ void __fastcall QUEST_OnPlayerJoinGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
           }
 
           sQuestArgs.pGame = uSavedGameOrPacket0x89.pGameSaved;
-          sQuestArgs.nEvent = 13;
           sQuestArgs.pPlayer = pUnit;
+          sQuestArgs.nEvent = 13;
           (*pQuestDataIter->sStateFunctions.fpQuestStateHandler[0xd])(pQuestDataIter, &sQuestArgs);
         }
       }
@@ -2851,10 +2853,10 @@ void __fastcall QUEST_ProcessActTransition(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
                 if (pQuestDataIter->bIsNotIntroduction != '\0') {
                   lpfn = pQuestDataIter->sStateFunctions.fpQuestStateHandler[3];
+                  pQuestCallback.pGame = pGame;
                   pQuestCallback.nEvent = 3;
                   pQuestCallback.sQuestArgs.sLevelChange.nOldLevel = 1;
                   pQuestCallback.sQuestArgs.sNpcActivate.nIndex = 0x28;
-                  pQuestCallback.pGame = pGame;
                   pQuestCallback.pPlayer = pUnit;
                   if (lpfn) {
                     /* FARPROC lpfn for IsBadCodePtr */ bQuestState = IsBadCodePtr((FARPROC)lpfn);
@@ -3175,11 +3177,11 @@ bool __fastcall QUEST_CheckJerhynShouldBlock(::SGAMEDATA * pGame) {
     }
 
     bool bVar1 = A2Q7::Q14_IsSevenTombsLessThanState4(pArcaneSanctuaryQuest->pGame);
-    if (!(!bVar1 && pArcaneSanctuaryQuest->bIsNotIntroduction == '\x01' && pArcaneSanctuaryQuest->nStateFlag < 2)) {
-      return true;
+    if (!bVar1 && pArcaneSanctuaryQuest->bIsNotIntroduction == '\x01' && pArcaneSanctuaryQuest->nStateFlag < 2) {
+      return false;
     }
 
-    return false;
+    return true;
 }
 
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).

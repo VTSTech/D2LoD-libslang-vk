@@ -90,6 +90,7 @@ void __thiscall Draw(::EditBoxImplementation * pThis) {
     D2TextLineStrc* pWrapNode;
     int nCursorPos;
     int nX;
+    uint16_t* pWcharBuf;
     uint16_t szLineBuf[200];
     int nLineCount;
     D2TextLineStrc* pNextWrapNode;
@@ -108,12 +109,8 @@ void __thiscall Draw(::EditBoxImplementation * pThis) {
     }
 
     D2Win::Src::D2WinFont::SetAndReturnLastFont(pThis->nFont);
-    uint16_t* pWcharBuf;
-    pWcharBuf = szLineBuf;
-    for (nCursorPos = 100; nCursorPos; nCursorPos--) {
-      pWcharBuf[0] = L'\0';
-      pWcharBuf[1] = L'\0';
-      pWcharBuf += 2;
+    for (nCursorPos = 0; nCursorPos < 200; nCursorPos++) {
+      szLineBuf[nCursorPos] = L'\0';
     }
 
     szCursorWchar[0] = L'\0';

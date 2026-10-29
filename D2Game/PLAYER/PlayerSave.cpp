@@ -717,7 +717,8 @@ int32_t __fastcall PLRSAVE_SerializeCorpseData(::SGAMEDATA * pGame, D2UnitStrc *
     uint32_t dwUninitSlot;
     D2UnitStrc* pCorpseUnit = 0;
     uint16_t wHasCorpse = 0;
-    D2CorpseStrc* pRoomCorpse = D2Common::INVENTORY::Inventory::INVENTORY_GetCorpse(pUnit->pInventory);
+    D2InventoryStrc* pInventory = pUnit->pInventory;
+    D2CorpseStrc* pRoomCorpse = D2Common::INVENTORY::Inventory::INVENTORY_GetCorpse(pInventory);
     if (pRoomCorpse) {
       uint32_t nCorpseGUID;
       nCorpseGUID = D2Common::INVENTORY::Inventory::ROOMCORPSE_GetGUID(pRoomCorpse);
@@ -1284,12 +1285,7 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
       GAME::Clients::SetGuildFlags(pClient, sOldSaveHeader.wGuildFlags);
       pGuildDataSrc = sOldSaveHeader.guildNameRaw;
       pGuildNameDst = szGuildName;
-      for (nCopyCount = 7; nCopyCount; nCopyCount--) {
-        *(uint32_t*)pGuildNameDst = *(uint32_t*)pGuildDataSrc;
-        pGuildDataSrc += 4;
-        pGuildNameDst += 4;
-      }
-
+      memcpy(pGuildNameDst, pGuildDataSrc, 28);
       dwGuildTag = (uint32_t)((uint32_t)(uint16_t)sOldSaveHeader.wGuildTagLo << 16 | (uint32_t)(uint16_t)sOldSaveHeader.wGuildTagHi) & 0xffffff;
       szGuildName[0x1b] = '\0';
       GAME::Clients::SetGuildTag(pClient, (char*)&dwGuildTag);
@@ -1421,23 +1417,17 @@ int __fastcall _oldSaveGameLoadingPart2(D2UnitStrc * pUnit, int * pnParam, uint3
 }
 
 int __fastcall _oldSaveGameLoadingPart3(D2UnitStrc * pUnit, uint32_t * pdwParam, uint32_t dwUnused, uint32_t * pnBytesConsumed) {
-    int nDiffIndex;
     uint8_t aWaypointBlock[80];
     int16_t wWaypointVersion;
     *pnBytesConsumed = 0;
     uint8_t* pCopyDst = aWaypointBlock;
-    for (nDiffIndex = 0x14; nDiffIndex; nDiffIndex--) {
-      *(uint32_t*)pCopyDst = *pdwParam;
-      pdwParam++;
-      pCopyDst += 4;
-    }
-
+    memcpy(pCopyDst, pdwParam, 0x50);
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     if (*(uint16_t*)(char*)&aWaypointBlock != 0x5357) {
       return 3;
     }
 
-    nDiffIndex = 0;
+    int nDiffIndex = 0;
     D2WaypointStrc** ppWaypoint = pPlayerData->pWaypoint;
     pCopyDst = aWaypointBlock + 8;
     while ((wWaypointVersion = *(int16_t*)pCopyDst , wWaypointVersion == 0x102 || wWaypointVersion == 0x101) || !wWaypointVersion) {
@@ -1455,21 +1445,15 @@ int __fastcall _oldSaveGameLoadingPart3(D2UnitStrc * pUnit, uint32_t * pdwParam,
 }
 
 int __fastcall _oldSaveGameLoadingPart4(D2UnitStrc * pUnit, uint32_t * pdwParam, uint32_t dwUnused, uint32_t * pnBytesConsumed) {
-    int nIntroOffset;
     uint8_t aIntroBlock[52];
     *pnBytesConsumed = 0;
     uint8_t* pCopyDst = aIntroBlock;
-    for (nIntroOffset = 0xd; nIntroOffset; nIntroOffset--) {
-      *(uint32_t*)pCopyDst = *pdwParam;
-      pdwParam++;
-      pCopyDst += 4;
-    }
-
+    memcpy(pCopyDst, pdwParam, 0x34);
     if (*(uint16_t*)(char*)&aIntroBlock != 0x7701) {
       return 0xb;
     }
 
-    nIntroOffset = 0x60;
+    int nIntroOffset = 0x60;
     uint32_t* pIntroBufPos = (uint32_t*)(aIntroBlock + 0x1c);
     do {
       D2UnitDataPlayerStrc* pPlayerData;

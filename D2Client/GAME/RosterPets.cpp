@@ -53,11 +53,11 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2RosterPetStrc) == 0x34, "D2_NEW_A
 namespace D2Client::GAME::RosterPets {
 
 D2PetTypeTxt * __fastcall GetPetTypeTxtById(int32_t nPetId) {
-    if (!(nPetId >= 0 && nPetId < sgptDataTable->nTxtPetTypeSize)) {
-      return nullptr;
+    if (nPetId >= 0 && nPetId < sgptDataTable->nTxtPetTypeSize) {
+      return sgptDataTable->pTxtPetType + nPetId;
     }
 
-    return sgptDataTable->pTxtPetType + nPetId;
+    return nullptr;
 }
 
 // @sourcefile .\GAME\RosterPets.cpp
@@ -246,7 +246,7 @@ int __fastcall ROSTER_GetPetOwnershipRelation(int32_t nRosterGUID) {
     }
 
     int nPlayerGUID = pPet->nSkillID;
-    if (nPlayerGUID < 0 || nPlayerGUID >= sgptDataTable->nTxtPetTypeSize || !(sgptDataTable->pTxtPetType + nPlayerGUID) || !sgptDataTable->pTxtPetType[nPlayerGUID].automap) {
+    if (nPlayerGUID < 0 || nPlayerGUID >= sgptDataTable->nTxtPetTypeSize || !(sgptDataTable->pTxtPetType + nPlayerGUID) || !(*((uint8_t*)&sgptDataTable->pTxtPetType[nPlayerGUID] + 0x4) & (uint8_t)gadwBitMasks[4])) {
       return 3;
     }
 

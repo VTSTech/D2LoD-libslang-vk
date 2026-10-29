@@ -200,17 +200,14 @@ static void __stdcall CHATDLG_FormatFileTimeToDate(FILETIME * pFileTime, int32_t
     int nZeroCount;
     uint16_t wszWideBuf[256];
     _SYSTEMTIME systemTime;
-    uint16_t* pwszWide = wszWideBuf;
-    for (nZeroCount = 0x80; nZeroCount; nZeroCount--) {
-      pwszWide[0] = L'\0';
-      pwszWide[1] = L'\0';
-      pwszWide += 2;
+    for (nZeroCount = 0; nZeroCount < 0x100; nZeroCount++) {
+      wszWideBuf[nZeroCount] = L'\0';
     }
 
     /* LPSYSTEMTIME lpSystemTime for FileTimeToSystemTime */ /* FILETIME * lpFileTime for FileTimeToSystemTime */ FileTimeToSystemTime(pFileTime, &systemTime);
     /* int cchDate for GetDateFormatA */ /* LPSTR lpDateStr for GetDateFormatA */ /* LPCSTR lpFormat for GetDateFormatA */ /* SYSTEMTIME * lpDate for GetDateFormatA */ /* DWORD dwFlags for GetDateFormatA */ /* LCID Locale for GetDateFormatA */ GetDateFormatA(0x400, 2, &systemTime, (LPCSTR)0x0, szText, nBufSize);
     int cchWideChar = 0x100;
-    pwszWide = wszWideBuf;
+    uint16_t* pwszWide = wszWideBuf;
     /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ nZeroCount = -1;
     DWORD dwFlags = 1;
     char* lpMultiByteStr = szText;
@@ -348,7 +345,7 @@ int32_t __stdcall someStrCompare(char * szText1, char * szText2) {
 }
 
 BOOL CHATDLG_HandleNotifyCommand(char * szCommand, char * szInput) {
-    int i;
+    uint16_t* pwszZeroFill;
     char* pszMsgDst;
     uint16_t wszMessage[256];
     char szMessage[256];
@@ -356,51 +353,52 @@ BOOL CHATDLG_HandleNotifyCommand(char * szCommand, char * szInput) {
     char* pcCmdEnd = szCommand;
     pcCmdEnd = pcCmdEnd + strlen(pcCmdEnd) + 1;
     int32_t nCmpResult = someStrCompare(szInput, szCommand);
-    if (!(!nCmpResult && (szInput[(int)pcCmdEnd - (int)(szCommand + 1)] == ' ' || szInput[(int)pcCmdEnd - (int)(szCommand + 1)] == '\0'))) {
-      return 0;
-    }
+    if (!nCmpResult && (szInput[(int)pcCmdEnd - (int)(szCommand + 1)] == ' ' || szInput[(int)pcCmdEnd - (int)(szCommand + 1)] == '\0')) {
+      int i;
+      nCmpResult = someStrCompare(szInput, szCommand);
+      if (nCmpResult) {
+        return 1;
+      }
 
-    nCmpResult = someStrCompare(szInput, szCommand);
-    if (nCmpResult) {
+      gnNotifyEnabled = (uint32_t)!gnNotifyEnabled;
+      pwszZeroFill = wszMessage;
+      for (i = 0x80; i; i--) {
+        pwszZeroFill[0] = L'\0';
+        pwszZeroFill[1] = L'\0';
+        pwszZeroFill += 2;
+      }
+
+      if (gnNotifyEnabled) {
+        pcCmdEnd = "Player entering/leaving notifications are enabled.";
+        pszMsgDst = szMessage;
+        for (i = 0xc; i; i--) {
+          *(uint32_t*)pszMsgDst = *(uint32_t*)pcCmdEnd;
+          pcCmdEnd += 4;
+          pszMsgDst += 4;
+        }
+
+        *(uint16_t*)pszMsgDst = *(uint16_t*)pcCmdEnd;
+        pszMsgDst[2] = pcCmdEnd[2];
+      } else {
+        pcCmdEnd = "Player entering/leaving notifications are disabled.";
+        pszMsgDst = szMessage;
+        for (i = 0xd; i; i--) {
+          *(uint32_t*)pszMsgDst = *(uint32_t*)pcCmdEnd;
+          pcCmdEnd += 4;
+          pszMsgDst += 4;
+        }
+      }
+
+      D2Lang::UTF8_ConvertToWideChar(wszMessage, szMessage, 0x200);
+      if (!gpChatMessagesTextBox) {
+        return 1;
+      }
+
+      D2Win::Src::D2WinTextBox::SetText(gpChatMessagesTextBox, wszMessage, 3, false, 1);
       return 1;
     }
 
-    gnNotifyEnabled = (uint32_t)!gnNotifyEnabled;
-    uint16_t* pwszZeroFill = wszMessage;
-    for (i = 0x80; i; i--) {
-      pwszZeroFill[0] = L'\0';
-      pwszZeroFill[1] = L'\0';
-      pwszZeroFill += 2;
-    }
-
-    if (gnNotifyEnabled) {
-      pcCmdEnd = "Player entering/leaving notifications are enabled.";
-      pszMsgDst = szMessage;
-      for (i = 0xc; i; i--) {
-        *(uint32_t*)pszMsgDst = *(uint32_t*)pcCmdEnd;
-        pcCmdEnd += 4;
-        pszMsgDst += 4;
-      }
-
-      *(uint16_t*)pszMsgDst = *(uint16_t*)pcCmdEnd;
-      pszMsgDst[2] = pcCmdEnd[2];
-    } else {
-      pcCmdEnd = "Player entering/leaving notifications are disabled.";
-      pszMsgDst = szMessage;
-      for (i = 0xd; i; i--) {
-        *(uint32_t*)pszMsgDst = *(uint32_t*)pcCmdEnd;
-        pcCmdEnd += 4;
-        pszMsgDst += 4;
-      }
-    }
-
-    D2Lang::UTF8_ConvertToWideChar(wszMessage, szMessage, 0x200);
-    if (!gpChatMessagesTextBox) {
-      return 1;
-    }
-
-    D2Win::Src::D2WinTextBox::SetText(gpChatMessagesTextBox, wszMessage, 3, false, 1);
-    return 1;
+    return 0;
 }
 
 BOOL __stdcall CHATDLG_FindSubstringMatch(int32_t nTargetHash, int32_t nWordLen, char * szText) {
@@ -599,9 +597,9 @@ void __fastcall CHATDLG_RequestLadderRank(char * szText, int32_t nParam, int32_t
       g_nLadderFilterMode = nParam ? 0 : 0x9;
     }
 
+    gnLadderCurrentFilterMode = g_nLadderFilterMode;
     gnLadderBoardSelectedRank = -1;
     gnLadderRequestedCharIndex = -1;
-    gnLadderCurrentFilterMode = g_nLadderFilterMode;
     D2MCPClient::McpConnect::NET_MCP_CLIENT_Send_0x16_CharRank(szText, nParam, nLadderRequestMode);
     DWORD dwTickCount = GetTickCount();
     gdwLadderRankRequestTimeout = dwTickCount + 1000;
@@ -987,17 +985,14 @@ BOOL __stdcall CHATDLG_OnPressChatCommandsOK(D2ControlMsg * pControlMsg) {
 void __stdcall CHATDLG_RefreshGameNameDisplay() {
     int nClearCount;
     BOOL bActive;
+    uint16_t* pwszClearCursor;
     uint16_t awszGameNames[512];
     char aszGameNames[512];
     char cCurrent;
     int nUsedLen;
     nUsedLen = 0;
-    uint16_t* pwszClearCursor;
-    pwszClearCursor = awszGameNames;
-    for (nClearCount = 0x100; nClearCount; nClearCount--) {
-      pwszClearCursor[0] = L'\0';
-      pwszClearCursor[1] = L'\0';
-      pwszClearCursor += 2;
+    for (nClearCount = 0; nClearCount < 0x200; nClearCount++) {
+      awszGameNames[nClearCount] = L'\0';
     }
 
     if (!pGameListCache) {
@@ -1537,18 +1532,12 @@ void __fastcall CHATDLG_HandleChatListClick(int32_t nStartRank, int32_t nRankCou
         pcScratch = (D2LadderRowBufStrc*)(pcScratch->wszCell + 2);
       }
 
-      pwszScratch = wszNamePart;
-      for (nCmp = 0x80; nCmp; nCmp--) {
-        pwszScratch[0] = L'\0';
-        pwszScratch[1] = L'\0';
-        pwszScratch += 2;
+      for (nCmp = 0; nCmp < 0x100; nCmp++) {
+        wszNamePart[nCmp] = L'\0';
       }
 
-      pwszScratch = wszEmptyMsg;
-      for (nCmp = 0x80; nCmp; nCmp--) {
-        pwszScratch[0] = L'\0';
-        pwszScratch[1] = L'\0';
-        pwszScratch += 2;
+      for (nCmp = 0; nCmp < 0x100; nCmp++) {
+        wszEmptyMsg[nCmp] = L'\0';
       }
 
       OOGUtilities::OOGUTIL_GetProfileCharacterName(sScratch);
@@ -1563,9 +1552,9 @@ void __fastcall CHATDLG_HandleChatListClick(int32_t nStartRank, int32_t nRankCou
     }
     if (gnLadderBoardSelectedRank == -1) {
       D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(g_pLadderBoardTextBox, nStartRank);
-      gnLadderBoardSelectedRank = nStartRank;
       gnLadderRequestedCharIndex = nStartRank;
       gnLadderScrollPos = nStartRank;
+      gnLadderBoardSelectedRank = nStartRank;
     }
 
     int nEndRank = nStartRank + nRankCount;

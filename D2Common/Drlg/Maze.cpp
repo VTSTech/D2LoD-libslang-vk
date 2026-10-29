@@ -132,11 +132,6 @@ D2RoomExStrc * __stdcall DRLGMAZE_PickRoomPreset(D2RoomExStrc * pRoomEx, int dwP
       case 4:
         nPresetIndex += 0x6c;
       break;
-      default:
-        {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
-          exit(-1);
-        }
       case 7:
         nPresetIndex += 0xa7;
       break;
@@ -194,9 +189,6 @@ D2RoomExStrc * __stdcall DRLGMAZE_PickRoomPreset(D2RoomExStrc * pRoomEx, int dwP
       case 0x1c:
         nPresetIndex += 0x344;
       break;
-      case 0x20:
-        nPresetIndex = gaMazePresetLookupExt[nPresetIndex][0];
-      break;
       case 0x21:
         _bIsSingleFile = DRLGMAZE_IsPresetSingleFile(pMap);
       if (!_bIsSingleFile) {
@@ -204,11 +196,20 @@ D2RoomExStrc * __stdcall DRLGMAZE_PickRoomPreset(D2RoomExStrc * pRoomEx, int dwP
       }
 
       break;
+      case 0x20:
+        nPresetIndex = gaMazePresetLookupExt[nPresetIndex][0];
+      break;
       case 0x22:
         nPresetIndex += 0x422;
       break;
       case 0x23:
         nPresetIndex = gaMazePresetLookupExt[nPresetIndex][1];
+      break;
+      default:
+        {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
+          exit(-1);
+        }
     }
 
     if (!nPresetIndex) {
@@ -530,11 +531,13 @@ D2RoomExStrc * __fastcall GetRandomRoomExFromLevel(D2DrlgLevelStrc * pLevel) {
       nSeedLowOld = pLevel->sSeed.nSeedLow;
       if (nSelectedRoom & nSelectedRoom - 1) {
         sSeed = (D2SeedStrc)((uint64_t)nSeedLowOld * 0x6ac690c5 + nSeedLowCopy);
-        pLevel->sSeed = sSeed;
+        pLevel->sSeed.nSeedHigh = sSeed.nSeedHigh;
+        pLevel->sSeed.nSeedLow = sSeed.nSeedLow;
         nSelectedRoom = (uint32_t)(sSeed.nSeedLow % nSelectedRoom);
       } else {
         sSeed = (D2SeedStrc)((uint64_t)nSeedLowOld * 0x6ac690c5 + nSeedLowCopy);
-        pLevel->sSeed = sSeed;
+        pLevel->sSeed.nSeedHigh = sSeed.nSeedHigh;
+        pLevel->sSeed.nSeedLow = sSeed.nSeedLow;
         nSelectedRoom = nSelectedRoom - 1 & sSeed.nSeedLow;
       }
     }

@@ -695,7 +695,7 @@ BOOL __fastcall MONSTER_OnDeathDispatch(::SGAMEDATA * pGame, D2MonsterKillStrc *
     }
 
     D2MonStatsTxt* pMonStats = sgptDataTable->pTxtMonStats + nClassId;
-    if (!(pMonStats && pMonStats->deathDmg)) {
+    if (!(pMonStats && (uint8_t)*((uint8_t*)pMonStats + 0xe) & gadwBitMasks[4])) {
       return 1;
     }
     if (pVictim->eUnitType == UNIT_MONSTER && nClassId >= 0) {
@@ -957,13 +957,13 @@ BOOL __fastcall DropHandlerGeneric(::SGAMEDATA * pGame, D2MonsterKillStrc * pMon
       iVar1 = D2Common::PATH::DynamicPath::GetPathPointsSize(pDynamicPath);
       if (!iVar1) {
         iVar1 = D2Client::UNIT::Player::TXT_MonStats_GetBaseId(pUnit);
-        if (!(iVar1 >= 0 && iVar1 < sgptDataTable->nTxtMonStatsSize && iVar1 == 0x6e)) {
-          return 0;
+        if (iVar1 >= 0 && iVar1 < sgptDataTable->nTxtMonStatsSize && iVar1 == 0x6e) {
+          D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
+          UNIT::SUnit::FreeCombatAndChangeAnimMode(pGame, pUnit, pMonsterKill->nUnitMode);
+          return 1;
         }
 
-        D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
-        UNIT::SUnit::FreeCombatAndChangeAnimMode(pGame, pUnit, pMonsterKill->nUnitMode);
-        return 1;
+        return 0;
       }
 
       D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
@@ -1784,7 +1784,7 @@ void __fastcall MonsterKilledBySystem(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       D2MonStats2Txt* pMonStats2;
       pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit->nClassId);
       byAnimMode2 = 'd';
-      if (pMonStats2 && pMonStats2->A1mv[1] & (uint8_t)1) {
+      if (pMonStats2 && pMonStats2->A1mv[1] & gadwBitMasks[0]) {
         byAnimMode2 = 'e';
       }
     }
@@ -1825,7 +1825,7 @@ void __fastcall MonsterKilledByTarget(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       D2MonStats2Txt* pMonStats2;
       pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit->nClassId);
       byAnimMode2 = 'd';
-      if (pMonStats2 && pMonStats2->A1mv[1] & (uint8_t)1) {
+      if (pMonStats2 && pMonStats2->A1mv[1] & gadwBitMasks[0]) {
         byAnimMode2 = 'e';
       }
     }

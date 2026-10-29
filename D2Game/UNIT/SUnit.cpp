@@ -152,7 +152,8 @@ void __fastcall SetSeed(D2UnitStrc * pUnit, D2SeedStrc * pSeed) {
       D2SeedStrc DVar1;
       DVar1 = D2_SEED_NEXT(*pSeed);
       nSeedLow = DVar1.nSeedLow;
-      *pSeed = DVar1;
+      pSeed->nSeedHigh = DVar1.nSeedHigh;
+      pSeed->nSeedLow = DVar1.nSeedLow;
       pUnit->nInitSeed = nSeedLow;
       D2Common::Seed::InitSeed_Param_666(pSeed_00, nSeedLow);
       return;
@@ -168,7 +169,8 @@ void __fastcall SetSeed(D2UnitStrc * pUnit, D2SeedStrc * pSeed) {
 void __fastcall SetItemSeeds(D2UnitStrc * pUnit, D2SeedStrc * pSeed) {
     D2Common::ITEMS::Items::ResetItemSeed(pUnit);
     D2SeedStrc DVar1 = D2_SEED_NEXT(*pSeed);
-    *pSeed = DVar1;
+    pSeed->nSeedHigh = DVar1.nSeedHigh;
+    pSeed->nSeedLow = DVar1.nSeedLow;
     D2Common::ITEMS::Items::SetModSeed(pUnit, DVar1.nSeedLow);
     int32_t nModSeedVal = D2Common::ITEMS::Items::GetModSeed(pUnit);
     D2SeedStrc* pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
@@ -368,12 +370,13 @@ void __fastcall SetClient(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
 
 // @blizzard UnitGetClient
 D2ClientStrc * __fastcall SUNIT_GetClient(D2UnitStrc * pUnit, char * szFile, int32_t nLine) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
-      return nullptr;
+    if (pUnit && pUnit->eUnitType == UNIT_PLAYER) {
+      D2UnitDataPlayerStrc* pPlayerData;
+      pPlayerData = D2Common::Units::GetPlayerData(pUnit);
+      return pPlayerData->pClient;
     }
 
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    return pPlayerData->pClient;
+    return nullptr;
 }
 
 void __fastcall UNITS_SendUnitUpdateToClient(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
@@ -421,6 +424,9 @@ void __fastcall UNITS_ResetUnitForReuse(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
         pUnit->eUnitFlags &= ~UNITFLAG_HASTXTMSG;
         GAME::Arena::ARENA_ClearScoreDirty(pGame, pUnit);
         return;
+        case UNIT_OBJECT:
+          pUnit->eUnitFlags &= ~UNITFLAG_HASTXTMSG;
+        return;
         case UNIT_MONSTER:
           pUnit->eUnitFlags &= ~UNITFLAG_HASTXTMSG;
         if (pUnit->eUnitFlags >> 0xb & 1) {
@@ -429,9 +435,6 @@ void __fastcall UNITS_ResetUnitForReuse(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
         }
 
         pUnit->eUnitFlagsEx &= ~UNITFLAGEX_TELEPORTED;
-        return;
-        case UNIT_OBJECT:
-          pUnit->eUnitFlags &= ~UNITFLAG_HASTXTMSG;
         return;
         case UNIT_ITEM:
           pUnit->eUnitFlags &= ~UNITFLAG_SENDREFRESHMSG;
@@ -1209,16 +1212,16 @@ uint32_t __fastcall UNITS_CheckIfCanAttackTarget(::SGAMEDATA * pGame, D2UnitStrc
 }
 
 BOOL __fastcall UNITS_CheckSkillTargetAlignment(::SGAMEDATA * pGameStrc, int * pnParam, D2UnitStrc * pTarget, eD2Skills eSkill) {
-    if (!(pnParam && pTarget && (!*pnParam || pTarget->eUnitType == UNIT_MONSTER) && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill && sgptDataTable->pTxtSkills[eSkill].TargetPet)) {
+    if (!(pnParam && pTarget && (!*pnParam || pTarget->eUnitType == UNIT_MONSTER) && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill && *((uint8_t*)&sgptDataTable->pTxtSkills[eSkill] + 0x7) & (uint8_t)gadwBitMasks[1])) {
       return 0;
     }
 
     Ai::AiGeneral::GetMonsterNameAndAi(pTarget, (uint32_t*)&eSkill, (int*)&pTarget);
-    if (!(!pTarget && eSkill == pnParam[3])) {
-      return 0;
+    if (!pTarget && eSkill == pnParam[3]) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 static void __stdcall UNITS_OnAlignmentChanged(int32_t nParam, int32_t pStatEx, D2UnitStrc * pUnit, int32_t nStatValue) {
@@ -1367,17 +1370,17 @@ D2RoomStrc * __fastcall UNITS_GetTargetRoom(::SGAMEDATA * pGame, D2UnitStrc * pU
 
 // 2022.01.09 - dzik
 uint16_t __fastcall GetPartyId(D2UnitStrc * pUnit) {
-    if (!pUnit) {
-      return 0xffff;
+    uint16_t nPartyId;
+    if (pUnit) {
+      ::SGAMEDATA* pGame;
+      pGame = pUnit->uSideData.pServerSide.pGame;
+      if (pGame && pUnit->eUnitType == UNIT_PLAYER) {
+        nPartyId = Party::GetPartyIdFromUnit(pGame, pUnit);
+        return nPartyId;
+      }
     }
 
-    ::SGAMEDATA* pGame = pUnit->uSideData.pServerSide.pGame;
-    if (!(pGame && pUnit->eUnitType == UNIT_PLAYER)) {
-      return 0xffff;
-    }
-
-    uint16_t nPartyId = Party::GetPartyIdFromUnit(pGame, pUnit);
-    return nPartyId;
+    return 0xffff;
 }
 
 // 2022.01.09 - dzik
@@ -1564,9 +1567,6 @@ void __fastcall UNITS_PlaceUnitInRoom(D2UnitStrc * pUnit, int32_t nY, int32_t nX
 
       D2Common::Unit::DRLGROOM_AddUnitToRoom(pUnit, pRoom);
       break;
-      case UNIT_MISSILE:
-        D2Common::PATH::DynamicPath::AllocDynamicPath(pGame->pMemoryPool, pRoom, nY, nX, pUnit, 0);
-      break;
       case UNIT_ITEM:
         if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Run) {
           D2Common::Units::InitializeStaticPath(pUnit, pRoom, nY, nX);
@@ -1575,6 +1575,9 @@ void __fastcall UNITS_PlaceUnitInRoom(D2UnitStrc * pUnit, int32_t nY, int32_t nX
             D2Common::Unit::DRLGROOM_AddUnitToRoomList(pUnit, pRoom, UNIT_PLAYER);
           }
         }
+      break;
+      case UNIT_MISSILE:
+        D2Common::PATH::DynamicPath::AllocDynamicPath(pGame->pMemoryPool, pRoom, nY, nX, pUnit, 0);
       break;
       case UNIT_WARP:
         D2Common::Units::InitializeStaticPath(pUnit, pRoom, nY, nX);
@@ -1666,11 +1669,6 @@ void __fastcall UNITS_RelocateUnitToRoom(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 
       D2Common::Unit::DRLGROOM_AddUnitToRoom(pUnit, pRoom);
       break;
-      case UNIT_MISSILE:
-        D2Common::PATH::Path::STRUCT_FreePath(pGame->pMemoryPool, pUnit->pPath.pStaticPath);
-      pUnit->pPath.pStaticPath = 0;
-      D2Common::PATH::DynamicPath::AllocDynamicPath(pGame->pMemoryPool, pRoom, nX, nY, pUnit, 0);
-      break;
       case UNIT_ITEM:
         if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Run) {
           D2Common::Units::InitializeStaticPath(pUnit, pRoom, nX, nY);
@@ -1679,6 +1677,11 @@ void __fastcall UNITS_RelocateUnitToRoom(::SGAMEDATA * pGame, D2UnitStrc * pUnit
           iVar1 = ITEMS::Items::Drop::ITEM_CalculateDespawnTimer(pGame, pUnit);
           pUnit->pUnitData.pUnitDataObject->nLinkedPortalY = iVar1;
         }
+      break;
+      case UNIT_MISSILE:
+        D2Common::PATH::Path::STRUCT_FreePath(pGame->pMemoryPool, pUnit->pPath.pStaticPath);
+      pUnit->pPath.pStaticPath = 0;
+      D2Common::PATH::DynamicPath::AllocDynamicPath(pGame->pMemoryPool, pRoom, nX, nY, pUnit, 0);
       break;
       case UNIT_WARP:
         D2Common::Units::InitializeStaticPath(pUnit, pRoom, nX, nY);
@@ -1742,7 +1745,7 @@ uint32_t __fastcall UNITS_CanUseSkillOnTarget(::SGAMEDATA * pGame, D2UnitStrc * 
 
     eD2UnitType eMonsterOwnerType = eTargetUnitType;
     D2SkillsTxt* pSkillsTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine(eSkill);
-    if (!(pSkillsTxt && pSkillsTxt->TargetAlly)) {
+    if (!(pSkillsTxt && *((uint8_t*)pSkillsTxt + 0x7) & (uint8_t)gadwBitMasks[2])) {
       return 0;
     }
 
@@ -2014,7 +2017,7 @@ D2UnitStrc * __fastcall CreateUnit(eD2UnitType eUnitType, int32_t nClassId, int3
         }
       default:
         {
-          if (eUnitType == UNIT_MONSTER && (nClassId < 0 || nClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nClassId) || !sgptDataTable->pTxtMonStats[nClassId].enabled)) {
+          if (eUnitType == UNIT_MONSTER && (nClassId < 0 || nClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nClassId) || !(*((uint8_t*)&sgptDataTable->pTxtMonStats[nClassId] + 0xf) & (uint8_t)gadwBitMasks[1]))) {
             return nullptr;
           }
         }
@@ -2087,11 +2090,6 @@ D2UnitStrc * __fastcall CreateUnit(eD2UnitType eUnitType, int32_t nClassId, int3
         D2Common::Units::AllocStaticPath(pAllocUnit);
         Objects::OBJECT_InitializeObject(pGame, pAllocUnit, (int32_t)pMonsterData, pRoom, nPosX, nPosY);
         break;
-        case UNIT_MISSILE:
-          /* Jump-table branch of CreateUnit for UNIT_MISSILE (dispatched via
-                         UNIT_FillFunctions[eUnitType]). */ pAllocUnit->eAnimMode.ePlayerMode = nInitialMode;
-        MISSILES::Missiles::STRUCT_FillDataMissile(pGame, pAllocUnit, (int32_t)pMonsterData);
-        break;
         case UNIT_ITEM:
           /* Jump-table branch of CreateUnit for UNIT_ITEM (dispatched via
                          UNIT_FillFunctions[eUnitType]). Sets initial anim mode, allocates a static
@@ -2100,6 +2098,11 @@ D2UnitStrc * __fastcall CreateUnit(eD2UnitType eUnitType, int32_t nClassId, int3
                          variants). */ pAllocUnit->eAnimMode.ePlayerMode = nInitialMode;
         D2Common::Units::AllocStaticPath(pAllocUnit);
         ITEMS::Items::Drop::ITEM_InitializeDroppedItem(pAllocUnit, pGame, (int32_t)pMonsterData, (uint32_t)pRoom);
+        break;
+        case UNIT_MISSILE:
+          /* Jump-table branch of CreateUnit for UNIT_MISSILE (dispatched via
+                         UNIT_FillFunctions[eUnitType]). */ pAllocUnit->eAnimMode.ePlayerMode = nInitialMode;
+        MISSILES::Missiles::STRUCT_FillDataMissile(pGame, pAllocUnit, (int32_t)pMonsterData);
         break;
         case UNIT_WARP:
           /* Jump-table branch of CreateUnit for UNIT_WARP (dispatched via

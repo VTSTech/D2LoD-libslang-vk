@@ -160,7 +160,8 @@ void __fastcall SpawnRandomPreset(D2DrlgLevelStrc * pLevel, int32_t nLevelPrestI
               pLevel->sSeed = sNewSeed;
             } else {
               sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
-              pLevel->sSeed = sNewSeed;
+              pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+              pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
               nRandIdxA = nTotalCells - 1 & sNewSeed.nSeedLow;
             }
           }

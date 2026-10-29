@@ -193,11 +193,11 @@ uint32_t __stdcall LOADER_PopupGameLoopCallback(uint32_t dwArg1) {
     GAME::Msg::NET_D2GS_CLIENT_Send_0x6D_PING();
     Engine::LOADER_DrawConnectionLostScreen(1);
     Sound::SoundHdr::DRAW_AfterDraw();
-    if (!(!gbCharScreenOkButtonConfirmed && !gbCharScreenCancelPressed)) {
-      return 1;
+    if (!gbCharScreenOkButtonConfirmed && !gbCharScreenCancelPressed) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 // SelectProc=1 handler: target must be a selectable corpse (type 2). Thunk that pushes pTargetUnit and calls SKILLS_IsSelectableCorpse2. pUnit (ECX) is the caster and is not read; pTargetUnit (EDX) is the unit under the cursor, which SKILL_CheckActiveSkillSelectProc puts in EDX (00464335) and SKILL_ExecuteSelectProc passes through to the CALL at 004642f1.
@@ -259,7 +259,8 @@ BOOL __fastcall ITEM_IsQuestItem(D2UnitStrc * pItem, D2UnitFindArgStrc * pUnitFi
       return 0;
     }
 
-    uint32_t uVar1 = D2Common::ITEMS::Items::TXT_Items_GetBitFieldAnd0x02(pItem->nClassId);
+    int nClassId = pItem->nClassId;
+    uint32_t uVar1 = D2Common::ITEMS::Items::TXT_Items_GetBitFieldAnd0x02(nClassId);
     if (uVar1) {
       return 1;
     }
@@ -808,15 +809,16 @@ void __stdcall CMD_ReleaseHoldAltAndClearSelection() {
 
 // Validates whether a command can be bound to mouse buttons (0x103-0x104). Returns false if command handler exists and button is left/right click, true otherwise. Used during key binding setup to prevent invalid mouse button assignments.
 BOOL CMD_ValidateMouseButtonBinding(int32_t nCmdIndex, uint16_t * pErrorCode, uint32_t nMouseButton) {
-    if (!((nMouseButton & 0xffff) - 0x103 <= 1 && gaCmdBindings[nCmdIndex].pfnAltHandler)) {
-      return 1;
-    }
-    if (!pErrorCode) {
+    if ((nMouseButton & 0xffff) - 0x103 <= 1 && gaCmdBindings[nCmdIndex].pfnAltHandler) {
+      if (!pErrorCode) {
+        return 0;
+      }
+
+      *pErrorCode = 0xf8a;
       return 0;
     }
 
-    *pErrorCode = 0xf8a;
-    return 0;
+    return 1;
 }
 
 int32_t SORT_CompareInts(int * pA, int * pB) {
@@ -899,11 +901,11 @@ void __stdcall CMD_RebuildDerivedBindings() {
 }
 
 D2MissilesTxt * __fastcall GetMissleById(int32_t nMissileId) {
-    if (!(nMissileId >= 0 && nMissileId < sgptDataTable->nTxtMissilesSize)) {
-      return nullptr;
+    if (nMissileId >= 0 && nMissileId < sgptDataTable->nTxtMissilesSize) {
+      return sgptDataTable->pTxtMissiles + nMissileId;
     }
 
-    return sgptDataTable->pTxtMissiles + nMissileId;
+    return nullptr;
 }
 
 // Update room light pulse using light map + sin table; reset when level changes or timer ends.
@@ -1024,7 +1026,10 @@ void __stdcall INPUT_HandleIMEComposition(D2UIMouseMsgStrc * pMsg) {
     HIMC hImc = ImmGetContext(hWnd);
     if (hImc) {
       DWORD dwBufLen;
-      memset(wszWide, 0, 32 * sizeof(wszWide[0]));
+      for (int iFill = 0; iFill < 32; iFill++) {
+        wszWide[iFill] = L'\0';
+      }
+
       if (pMsg->uLParam.nLParam & 0x800U) {
         /* DWORD dwBufLen for ImmGetCompositionStringA */ /* LPVOID lpBuf for ImmGetCompositionStringA */ /* DWORD param_2 for ImmGetCompositionStringA */ /* HIMC param_1 for ImmGetCompositionStringA */ dwBufLen = ImmGetCompositionStringA(hImc, 0x800, (LPVOID)0x0, 0);
         if (dwBufLen > 199) {
@@ -1502,27 +1507,27 @@ void __fastcall MONUNIQUE_DispatchDeathEffect(D2UnitStrc * pUnit, int32_t nUMod,
     if (uVar1 <= 0x100) {
       if (uVar1 != 0x100) {
         switch (uVar1) {
-          case 0x2d:
-            if (pUnit->eAnimMode.ePlayerMode == Death) {
-              Source::ClientEngine::CLIENT_SpawnTowerMistEffect(pUnit);
-              return;
-            }
-          break;
           case 0x9c:
             if (pUnit->eAnimMode.ePlayerMode == Death) {
               Source::ClientEngine::CLIENT_BossDeath_Andariel(pUnit);
               return;
             }
           break;
-          case 0xd3:
+          case 0x2d:
             if (pUnit->eAnimMode.ePlayerMode == Death) {
-              Source::ClientEngine::CLIENT_BossDeath_Duriel(pUnit);
+              Source::ClientEngine::CLIENT_SpawnTowerMistEffect(pUnit);
               return;
             }
           break;
           case 0xe5:
             if (pUnit->eAnimMode.ePlayerMode == Death) {
               Source::ClientEngine::CLIENT_BossDeath_Radament(pUnit);
+              return;
+            }
+          break;
+          case 0xd3:
+            if (pUnit->eAnimMode.ePlayerMode == Death) {
+              Source::ClientEngine::CLIENT_BossDeath_Duriel(pUnit);
               return;
             }
           break;
@@ -1717,11 +1722,14 @@ void __stdcall SHOP_CleanupAssets() {
 
 void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(D2GSPacketSrv0x50 * pPacket) {
     switch (pPacket->nMessageType) {
-      case 1:
-        UI::QuestLog::QUESTLOG_HandleSpecialPacket((int32_t)pPacket);
+      case 0x24:
+        UI::QuestLog::QUESTLOG_SetZooSpawnFlag((uint32_t)pPacket->aPayload[0]);
       return;
       case 2:
         UI::npcmenu::Merc::NPCMENU_SetSelectedMercIndex(pPacket->aPayload[0]);
+      return;
+      case 1:
+        UI::QuestLog::QUESTLOG_HandleSpecialPacket((int32_t)pPacket);
       return;
       case 3:
 
@@ -1738,9 +1746,6 @@ void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(D2GSPacketSrv0x50 * pPac
       ClientModeInGame::D2CLIENT_SetExitVar1(0);
       GAME::Game::D2CLIENT_SetExitVar2(1);
       GAME::Game::D2CLIENT_SetExitVar3ToTrue();
-      return;
-      case 0x24:
-        UI::QuestLog::QUESTLOG_SetZooSpawnFlag((uint32_t)pPacket->aPayload[0]);
       return;
     }
 }
@@ -1792,7 +1797,8 @@ int32_t __fastcall SEED_RollRange(D2SeedStrc * pSeed, int32_t nMin, int32_t nMax
     uint32_t nRangeWidth = nMax - nMin;
     if (nRangeWidth & nRangeWidth - 1) {
       dSeedResult = D2_SEED_NEXT(*pSeed);
-      *pSeed = dSeedResult;
+      pSeed->nSeedHigh = dSeedResult.nSeedHigh;
+      pSeed->nSeedLow = dSeedResult.nSeedLow;
       return (int)(dSeedResult.nSeedLow % nRangeWidth) + nMin;
     }
 
@@ -2178,8 +2184,8 @@ int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(D2UnitStrc * pUnit, int32_t pOve
     uint8_t byDirection = D2Common::Units::GetDirection(pUnit);
     sGfxData.nDirection = (int)byDirection;
     sGfxData.pDC6 = 0;
-    sGfxData.nComponentType = '\x01';
     sGfxData.nFrameNumber = nBuilt;
+    sGfxData.nComponentType = '\x01';
     BOOL nWeaponClass = Engine::GfxUtil::GFXUTIL_BuildCofParams(&sGfxData, nullptr, (D2UnitStrc*)-1, &nOutItemClassId);
     if (!nWeaponClass) {
       return 1;
@@ -2198,8 +2204,8 @@ void __fastcall GFXUTIL_GetOverlayDimensions(D2UnitStrc * pUnit, int nPaletteShi
     memset(&sGfxData, 0, 0x48);
     sGfxData.nFrameNumber = nAnimMode;
     sGfxData.pDC6 = 0;
-    sGfxData.nComponentType = '\x01';
     sGfxData.nDirection = nPaletteShift;
+    sGfxData.nComponentType = '\x01';
     BOOL nDimension = Engine::GfxUtil::GFXUTIL_BuildCofParams(&sGfxData, pUnit, (D2UnitStrc*)-1, (int*)&nAnimMode);
     if (!nDimension) {
       return;
@@ -2242,12 +2248,13 @@ uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(D2UnitStrc * pUnit, int32_t nPa
     }
 
     int nCofBuilt = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
-    if (!(nCofBuilt && sGfxData.pDC6Block)) {
-      return 0;
+    if (nCofBuilt && sGfxData.pDC6Block) {
+      uint32_t bOnScreen;
+      bOnScreen = Engine::GfxUtil::GFXUTIL_IsDC6BlockOnScreen(sGfxData.pDC6Block, nScreenX, nOriginY, 0);
+      return bOnScreen;
     }
 
-    uint32_t bOnScreen = Engine::GfxUtil::GFXUTIL_IsDC6BlockOnScreen(sGfxData.pDC6Block, nScreenX, nOriginY, 0);
-    return bOnScreen;
+    return 0;
 }
 
 void __stdcall DRAW_WORLD_SetWarpFadeTimer() {
@@ -2349,11 +2356,11 @@ BOOL __stdcall DFLOOR_IsPointInRect(RECT * pRect, int nX, int nY) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x76);
       exit(-1);
     }
-    if (!(nX >= pRect->left && nX < pRect->right && nY >= pRect->top && nY < pRect->bottom)) {
-      return 0;
+    if (nX >= pRect->left && nX < pRect->right && nY >= pRect->top && nY < pRect->bottom) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 int32_t __fastcall UI_GetDialogLineCount(int16_t nParam) {

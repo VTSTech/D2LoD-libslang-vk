@@ -381,12 +381,14 @@ void DRLGOUTPLACE_PlaceAct5BloodyFoothillsRandomPresets(D2DrlgLevelStrc * pLevel
         nSeedLowTmp = pLevel->sSeed.nSeedLow;
         if (nStartX & nStartX - 1) {
           DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-          pLevel->sSeed = DVar1;
+          pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+          pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
           nStartX = DVar1.nSeedLow % nStartX;
         } else {
           tNewSeed2 = D2_SEED_NEXT(pLevel->sSeed);
           nStartX = nStartX - 1 & tNewSeed2.nSeedLow;
-          pLevel->sSeed = tNewSeed2;
+          pLevel->sSeed.nSeedHigh = tNewSeed2.nSeedHigh;
+          pLevel->sSeed.nSeedLow = tNewSeed2.nSeedLow;
         }
       }
 
@@ -397,12 +399,14 @@ void DRLGOUTPLACE_PlaceAct5BloodyFoothillsRandomPresets(D2DrlgLevelStrc * pLevel
         nSeedLowTmp = pLevel->sSeed.nSeedLow;
         if (nStartY & nStartY - 1) {
           DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-          pLevel->sSeed = DVar1;
+          pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+          pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
           nStartY = DVar1.nSeedLow % nStartY;
         } else {
           DVar1 = D2_SEED_NEXT(pLevel->sSeed);
           nStartY = nStartY - 1 & DVar1.nSeedLow;
-          pLevel->sSeed = DVar1;
+          pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+          pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
         }
       }
 

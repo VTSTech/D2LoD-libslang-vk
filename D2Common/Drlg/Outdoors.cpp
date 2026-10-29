@@ -618,11 +618,13 @@ BOOL __fastcall SpawnPresetFarAway(D2DrlgLevelStrc * pLevel, D2DrlgCoordStrc * p
       nSeedLow = pLevel->sSeed.nSeedLow;
       if (nRangeX & nGridHeight - 3U) {
         newSeed = D2_SEED_NEXT(pLevel->sSeed);
-        pLevel->sSeed = newSeed;
+        pLevel->sSeed.nSeedHigh = newSeed.nSeedHigh;
+        pLevel->sSeed.nSeedLow = newSeed.nSeedLow;
         nRandOffsetY = newSeed.nSeedLow % nRangeX;
       } else {
         newSeed = D2_SEED_NEXT(pLevel->sSeed);
-        pLevel->sSeed = newSeed;
+        pLevel->sSeed.nSeedHigh = newSeed.nSeedHigh;
+        pLevel->sSeed.nSeedLow = newSeed.nSeedLow;
         nRandOffsetY = nGridHeight - 3U & newSeed.nSeedLow;
       }
     }
@@ -632,11 +634,13 @@ BOOL __fastcall SpawnPresetFarAway(D2DrlgLevelStrc * pLevel, D2DrlgCoordStrc * p
       nSeedLow = pLevel->sSeed.nSeedLow;
       if (nRangeY & nGridWidth - 3U) {
         newSeed = D2_SEED_NEXT(pLevel->sSeed);
-        pLevel->sSeed = newSeed;
+        pLevel->sSeed.nSeedHigh = newSeed.nSeedHigh;
+        pLevel->sSeed.nSeedLow = newSeed.nSeedLow;
         nRandOffsetX = newSeed.nSeedLow % nRangeY;
       } else {
         newSeed = D2_SEED_NEXT(pLevel->sSeed);
-        pLevel->sSeed = newSeed;
+        pLevel->sSeed.nSeedHigh = newSeed.nSeedHigh;
+        pLevel->sSeed.nSeedLow = newSeed.nSeedLow;
         nRandOffsetX = nGridWidth - 3U & newSeed.nSeedLow;
       }
     }
@@ -690,12 +694,12 @@ BOOL __fastcall SpawnPresetFarAway(D2DrlgLevelStrc * pLevel, D2DrlgCoordStrc * p
       nLoopY++;
     } while (nLoopY <= (int)nRangeY);
 
-    if (!(nBestX != -1 && nBestY != -1)) {
-      return 0;
+    if (nBestX != -1 && nBestY != -1) {
+      SpawnOutdoorLevelPresetEx(pLevel, nBestX, nBestY, nLvlPrestId, nRand, 0);
+      return 1;
     }
 
-    SpawnOutdoorLevelPresetEx(pLevel, nBestX, nBestY, nLvlPrestId, nRand, 0);
-    return 1;
+    return 0;
 }
 
 // Outdoor DRLG preset placement that tries cells in a fully randomized order: builds a shuffle table of every interior grid cell, Fisher-Yates-shuffles it using pLevel->sSeed, then walks the shuffled cells calling TestOutdoorLevelPreset and, on the first cell that passes, calls SpawnOutdoorLevelPresetEx and returns TRUE. Returns FALSE if no cell is valid. Mutates pLevel->sSeed. Contrast with SpawnPresetFarAway which picks the farthest valid cell instead of the first random one.
@@ -740,11 +744,13 @@ BOOL __fastcall SpawnOutdoorLevelPreset(D2DrlgLevelStrc * pLevel, int32_t nLevel
             nRandIdxA = pLevel->sSeed.nSeedLow;
             if (nTotalCells & nTotalCells - 1) {
               sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
-              pLevel->sSeed = sNewSeed;
+              pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+              pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
               nRandIdxA = (uint32_t)(sNewSeed.nSeedLow % nTotalCells);
             } else {
               sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
-              pLevel->sSeed = sNewSeed;
+              pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+              pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
               nRandIdxA = nTotalCells - 1 & sNewSeed.nSeedLow;
             }
           }
@@ -756,13 +762,15 @@ BOOL __fastcall SpawnOutdoorLevelPreset(D2DrlgLevelStrc * pLevel, int32_t nLevel
               llSeedProduct = (uint64_t)nRandIdxB * 0x6ac690c5;
               nSwapCellY = (int32_t)((uint64_t)llSeedProduct >> 0x20);
               sNewSeed = (D2SeedStrc)(llSeedProduct + (uint64_t)pLevel->sSeed.nSeedHigh);
-              pLevel->sSeed = sNewSeed;
+              pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+              pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
               nRandIdxB = sNewSeed.nSeedLow % nTotalCells;
             } else {
               llSeedProduct = (uint64_t)nRandIdxB * 0x6ac690c5;
               nSeedHighSpill = (int32_t)((uint64_t)llSeedProduct >> 0x20);
               sNewSeed = (D2SeedStrc)(llSeedProduct + (uint64_t)pLevel->sSeed.nSeedHigh);
-              pLevel->sSeed = sNewSeed;
+              pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+              pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
               nRandIdxB = nTotalCells - 1 & sNewSeed.nSeedLow;
             }
           }
@@ -851,11 +859,13 @@ BOOL __fastcall SpawnRandomOutdoorDS1(D2DrlgLevelStrc * pLevel, int32_t nLvlPres
             nRandIdxA = pLevel->sSeed.nSeedLow;
             if (nTotalCells & nTotalCells - 1) {
               DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-              pLevel->sSeed = DVar1;
+              pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+              pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
               nRandIdxA = (uint32_t)(DVar1.nSeedLow % nTotalCells);
             } else {
               DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-              pLevel->sSeed = DVar1;
+              pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+              pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
               nRandIdxA = nTotalCells - 1 & DVar1.nSeedLow;
             }
           }
@@ -867,13 +877,15 @@ BOOL __fastcall SpawnRandomOutdoorDS1(D2DrlgLevelStrc * pLevel, int32_t nLvlPres
               lSeedMulProduct = (uint64_t)nRandIdxB * 0x6ac690c5;
               nSeedHighTmp = (int32_t)((uint64_t)lSeedMulProduct >> 0x20);
               DVar1 = (D2SeedStrc)(lSeedMulProduct + (uint64_t)pLevel->sSeed.nSeedHigh);
-              pLevel->sSeed = DVar1;
+              pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+              pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
               nRandIdxB = DVar1.nSeedLow % nTotalCells;
             } else {
               lSeedMulProduct = (uint64_t)nRandIdxB * 0x6ac690c5;
               nSwapCellY = (int32_t)((uint64_t)lSeedMulProduct >> 0x20);
               DVar1 = (D2SeedStrc)(lSeedMulProduct + (uint64_t)pLevel->sSeed.nSeedHigh);
-              pLevel->sSeed = DVar1;
+              pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+              pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
               nRandIdxB = nTotalCells - 1 & DVar1.nSeedLow;
             }
           }
@@ -1028,11 +1040,13 @@ void __fastcall SpawnAct12Waypoint(D2DrlgLevelStrc * pLevel) {
             nShuffleIdxA = pLevel->sSeed.nSeedHigh;
             if (nGridHeight & nGridHeight - 1) {
               DVar2 = (D2SeedStrc)(lVar1 + (uint64_t)nShuffleIdxA);
-              pLevel->sSeed = DVar2;
+              pLevel->sSeed.nSeedHigh = DVar2.nSeedHigh;
+              pLevel->sSeed.nSeedLow = DVar2.nSeedLow;
               nShuffleIdxA = (uint32_t)(DVar2.nSeedLow % nGridHeight);
             } else {
               DVar2 = (D2SeedStrc)(lVar1 + (uint64_t)nShuffleIdxA);
-              pLevel->sSeed = DVar2;
+              pLevel->sSeed.nSeedHigh = DVar2.nSeedHigh;
+              pLevel->sSeed.nSeedLow = DVar2.nSeedLow;
               nShuffleIdxA = nGridHeight - 1 & DVar2.nSeedLow;
             }
           }
@@ -1044,13 +1058,15 @@ void __fastcall SpawnAct12Waypoint(D2DrlgLevelStrc * pLevel) {
               lVar1 = (uint64_t)nShuffleIdxB * 0x6ac690c5;
               dwOutdoorGridFlags = (int)((uint64_t)lVar1 >> 0x20);
               DVar2 = (D2SeedStrc)(lVar1 + (uint64_t)pLevel->sSeed.nSeedHigh);
-              pLevel->sSeed = DVar2;
+              pLevel->sSeed.nSeedHigh = DVar2.nSeedHigh;
+              pLevel->sSeed.nSeedLow = DVar2.nSeedLow;
               nShuffleIdxB = DVar2.nSeedLow % nGridHeight;
             } else {
               lVar1 = (uint64_t)nShuffleIdxB * 0x6ac690c5;
               dwWaypointDirMask = (uint32_t)((uint64_t)lVar1 >> 0x20);
               DVar2 = (D2SeedStrc)(lVar1 + (uint64_t)pLevel->sSeed.nSeedHigh);
-              pLevel->sSeed = DVar2;
+              pLevel->sSeed.nSeedHigh = DVar2.nSeedHigh;
+              pLevel->sSeed.nSeedLow = DVar2.nSeedLow;
               nShuffleIdxB = nGridHeight - 1 & DVar2.nSeedLow;
             }
           }
@@ -1137,11 +1153,13 @@ void __fastcall SpawnAct12Shrines(D2DrlgLevelStrc * pLevel, int32_t nShrines) {
             nRandIdxA = pLevel->sSeed.nSeedLow;
             if (nTotalCells & nTotalCells - 1) {
               sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
-              pLevel->sSeed = sNewSeed;
+              pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+              pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
               nRandIdxA = (uint32_t)(sNewSeed.nSeedLow % nTotalCells);
             } else {
               sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
-              pLevel->sSeed = sNewSeed;
+              pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+              pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
               nRandIdxA = nTotalCells - 1 & sNewSeed.nSeedLow;
             }
           }
@@ -1153,13 +1171,15 @@ void __fastcall SpawnAct12Shrines(D2DrlgLevelStrc * pLevel, int32_t nShrines) {
               lVar1 = (uint64_t)nRandIdxB * 0x6ac690c5;
               nGridY = (int32_t)((uint64_t)lVar1 >> 0x20);
               sNewSeed = (D2SeedStrc)(lVar1 + (uint64_t)pLevel->sSeed.nSeedHigh);
-              pLevel->sSeed = sNewSeed;
+              pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+              pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
               nRandIdxB = sNewSeed.nSeedLow % nTotalCells;
             } else {
               lVar1 = (uint64_t)nRandIdxB * 0x6ac690c5;
               nSeedHighSpill = (int32_t)((uint64_t)lVar1 >> 0x20);
               sNewSeed = (D2SeedStrc)(lVar1 + (uint64_t)pLevel->sSeed.nSeedHigh);
-              pLevel->sSeed = sNewSeed;
+              pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+              pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
               nRandIdxB = nTotalCells - 1 & sNewSeed.nSeedLow;
             }
           }

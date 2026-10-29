@@ -796,9 +796,9 @@ static void __stdcall MONUNIQUE_SpawnDirectionalMissiles(D2UnitStrc * pUnit, eMi
       nDirY = *(int*)((int)anDirOffsets + eMissileId);
       nMissileCopyIdx = 0;
       do {
+        sSkillArg.nFunctionParam = nMissileCopyIdx;
         sSkillArg.nUnitX = nDirX + nPosX;
         sSkillArg.nUnitY = nDirY + nPosY;
-        sSkillArg.nFunctionParam = nMissileCopyIdx;
         Missile::MakeMissile(&sSkillArg);
         nMissileCopyIdx++;
       } while (nMissileCopyIdx < 2);
@@ -857,7 +857,7 @@ void __fastcall MONUNIQUE_ApplyModifierNihlathak(D2UnitStrc * pUnit, int32_t nUM
     eMissilesId eMissileId = eMissileClass;
     D2UnitStrc* pMissileSelf = pUnit;
     D2UnitStrc* pOwnerUnit = Player::MISSILE_GetOwnerUnit(pUnit);
-    if (!(pOwnerUnit && (int)eMissileClass >= 0 && (int)eMissileClass < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + eMissileClass && !sgptDataTable->pTxtMissiles[eMissileClass].NoMultiShot)) {
+    if (!(pOwnerUnit && (int)eMissileClass >= 0 && (int)eMissileClass < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + eMissileClass && !(*((uint8_t*)&sgptDataTable->pTxtMissiles[eMissileClass] + 0x5) & (uint8_t)gadwBitMasks[4]))) {
       return;
     }
 

@@ -217,19 +217,17 @@ void __fastcall Q12_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
 
 // A2Q4 - CheckJournalState. Returns 1 if the Arcane Sanctuary entrance portal has been placed (A2Q4 sSub.nPortalGUID == 2), else 0. Used to gate whether the Palace-Cellar->Sanctuary portal already exists.
 BOOL __fastcall Q12_CheckJournalState(::SGAMEDATA * pGame) {
-    short int sVar1;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheArcaneSanctuary);
-    if (!pQuestData) {
-      return 0;
+    if (pQuestData) {
+      short int sVar1;
+      *(uint8_t*)(char*)&sVar1 = pQuestData->pQuestSpecificData.pA2Q4->nPortalPlacedStateLo;
+      *(uint8_t*)((char*)&sVar1 + 1) = pQuestData->pQuestSpecificData.pA2Q4->nPortalPlacedStateHi;
+      if (sVar1 == 2) {
+        return 1;
+      }
     }
 
-    *(uint8_t*)(char*)&sVar1 = pQuestData->pQuestSpecificData.pA2Q4->nPortalPlacedStateLo;
-    *(uint8_t*)((char*)&sVar1 + 1) = pQuestData->pQuestSpecificData.pA2Q4->nPortalPlacedStateHi;
-    if (sVar1 != 2) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 // A2Q4 - OnJournalActivate. Marks the quest journal entry as active (field_0xe=1) and sets the portal-placement substate to 2, then iterates players running UpdateQuestRecord to persist. If a tracked object exists, refreshes its update flag and removes its collision (opens the way). Called when the Cellar/staff path activates the Sanctuary entrance. Parameter 0 is the A2Q4 record and parameter 1 is the D2QuestDataStrc; they were recorded the wrong way round until 2026.08.30.
@@ -635,12 +633,12 @@ BOOL __fastcall Q12_CheckJerhynGateOpen(::SGAMEDATA * pGame) {
     }
 
     D2QuestDataA2Q4Strc* pDVar1 = pDVar2->pQuestSpecificData.pA2Q4;
-    if (!(pDVar1->bJerhynInitial == '\x01' && !pDVar1->bJerhynGateOpened)) {
-      return 0;
+    if (pDVar1->bJerhynInitial == '\x01' && !pDVar1->bJerhynGateOpened) {
+      pDVar1->bJerhynGateOpened = true;
+      return 1;
     }
 
-    pDVar1->bJerhynGateOpened = true;
-    return 1;
+    return 0;
 }
 
 // A2Q4 - BlockHaremRoomForPlayerAccess. Spawns a blocking object (classId 0x13e) just in front of the player to wall off the harem/palace room until the quest opens it. Tries player-pos offset, then a fallback offset; on success marks the substruct occupied and records the object GUID.
@@ -740,17 +738,17 @@ BOOL __fastcall Q14_CheckDurielProximity(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 // A2Q4 - IsSanctuaryComplete. Returns true if the Sanctuary objective is "done enough": true if quest data missing; else if the Summoner is neither killed nor in coords-fallback, returns whether the portal-placed substate field (0x40/0x41) == 2. Used as a completion predicate.
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 BOOL __fastcall Q12_IsSanctuaryComplete(::SGAMEDATA * pGame) {
-    short int sVar1;
     D2QuestDataStrc* pDVar3 = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheArcaneSanctuary);
     if (pDVar3) {
       D2QuestDataA2Q4Strc* pDVar2 = pDVar3->pQuestSpecificData.pA2Q4;
-      if (!(!pDVar2->bSummonerKilled && !pDVar2->bSummonerCoordsFallback)) {
-        return 0;
+      if (!pDVar2->bSummonerKilled && !pDVar2->bSummonerCoordsFallback) {
+        short int sVar1;
+        *(uint8_t*)(char*)&sVar1 = pDVar2->nPortalPlacedStateLo;
+        *(uint8_t*)((char*)&sVar1 + 1) = pDVar2->nPortalPlacedStateHi;
+        return (uint32_t)(sVar1 == 2);
       }
 
-      *(uint8_t*)(char*)&sVar1 = pDVar2->nPortalPlacedStateLo;
-      *(uint8_t*)((char*)&sVar1 + 1) = pDVar2->nPortalPlacedStateHi;
-      return (uint32_t)(sVar1 == 2);
+      return 0;
     }
 
     return 1;
@@ -781,8 +779,8 @@ BOOL __fastcall Q12_GetSummonerCoords(::SGAMEDATA * pGame, D2CoordStrc * pCoord)
 
 // A2Q4 - CheckJustCompleted. Per-player iterator: reads (queries, does not write) the JustCompleted(0xd) bit of the Sanctuary record for each player. Side-effect-free probe used during the staff-altar operate flow alongside CheckArcaneAndReward/SetCannotComplete.
 BOOL __fastcall Q12_CheckJustCompleted(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    D2Common::QuestRecord::GetQuestState(pDVar1->pQuestRecord[pGame->nDifficulty], QUEST_TheArcaneSanctuary, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheArcaneSanctuary, QUESTSTATE_JustCompleted);
     return 0;
 }
 

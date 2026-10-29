@@ -139,6 +139,9 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnve
       }
 
       break;
+      case 'm':
+        /* D2GS_PING */ Server::NET_SendPong(nClientId, pPacket->uMsg.sPing.nPingTime, pPacket->uMsg.sPing.nSeqNum, 0);
+      return;
       case 'h':
         /* D2GS_GAMELOGON_MULTI */ __frame0.dwJoinParam0 = 0;
       __frame0.dwJoinParam1 = 0;
@@ -198,9 +201,6 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnve
       }
 
       break;
-      case 'm':
-        /* D2GS_PING */ Server::NET_SendPong(nClientId, pPacket->uMsg.sPing.nPingTime, pPacket->uMsg.sPing.nSeqNum, 0);
-      return;
       case 'n':
         /* D2GS_FINDME_6E */ bFindMeCheckResult = Server::FindMe_6E_Handler(nClientId);
       if (bFindMeCheckResult) {

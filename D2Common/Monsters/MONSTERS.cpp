@@ -135,16 +135,14 @@ eMissilesId __stdcall MONSTER_GetMissileForAnimEvent(D2UnitStrc * pUnit, int32_t
     if (!pMissileTable) {
       return ~MISSILE_Arrow;
     }
-    if (!pMonster) {
-      return (int)*pMissileTable;
+    if (pMonster) {
+      nEventFrame = pMonster->nClassId;
+      if (nEventFrame >= 0 && nEventFrame < sgptDataTable->nTxtMonStatsSize) {
+        return (int)*(short int*)((int)pMissileTable + (int)(sgptDataTable->pTxtMonStats[nEventFrame].Code - 0x10));
+      }
     }
 
-    nEventFrame = pMonster->nClassId;
-    if (!(nEventFrame >= 0 && nEventFrame < sgptDataTable->nTxtMonStatsSize)) {
-      return (int)*pMissileTable;
-    }
-
-    return (int)*(short int*)((int)pMissileTable + (int)(sgptDataTable->pTxtMonStats[nEventFrame].Code - 0x10));
+    return (int)*pMissileTable;
 }
 
 uint32_t __stdcall MONSTERS_GetGfxOffsetTable1(uint8_t bParam) {
@@ -290,7 +288,6 @@ void __fastcall SetSuperUniqueName(D2UnitStrc * pUnit, uint16_t * wszText) {
 }
 
 uint32_t __fastcall MONSTER_IsBossOrChampion(D2UnitStrc * pUnit) {
-    uint8_t* puVar1;
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return 0;
     }
@@ -299,7 +296,9 @@ uint32_t __fastcall MONSTER_IsBossOrChampion(D2UnitStrc * pUnit) {
     if (!(pMonData >= 0 && pMonData < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonData)) {
       return 0;
     }
-    if (!(!sgptDataTable->pTxtMonStats[pMonData].npc && !sgptDataTable->pTxtMonStats[pMonData].inTown)) {
+
+    uint32_t uVar1 = (uint32_t)(uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[pMonData] + 0xd);
+    if (!(!(gadwBitMasks[0] & uVar1) && !(gadwBitMasks[2] & uVar1))) {
       return 1;
     }
 
@@ -316,11 +315,11 @@ BOOL __stdcall MONSTER_IsAndarielNormal(D2UnitStrc * pUnit, int32_t nParam) {
         nBaseId = (int)sgptDataTable->pTxtMonStats[nBaseId].BaseId;
       }
     }
-    if (!(nBaseId == (sgptDataTable->nTxtMonStatsSize > 0x4e ? 0x4e : -1) && !nParam)) {
-      return 0;
+    if (nBaseId == (sgptDataTable->nTxtMonStatsSize > 0x4e ? 0x4e : -1) && !nParam) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 uint32_t __stdcall IsDemon(D2UnitStrc * pUnit) {
@@ -333,17 +332,21 @@ uint32_t __stdcall IsDemon(D2UnitStrc * pUnit) {
       return 0;
     }
 
-    return (uint32_t)(sgptDataTable->pTxtMonStats[pMonStatsTxt].demon != 0);
+    return (uint32_t)((*((uint8_t*)&sgptDataTable->pTxtMonStats[pMonStatsTxt] + 0xd) & (uint8_t)gadwBitMasks[5]) != 0);
 }
 
 BOOL __stdcall MONSTER_IsMonsterUndead(D2UnitStrc * pUnit) {
-    uint8_t* puVar1;
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return 0;
     }
 
     int pMonStatsTxt = pUnit->nClassId;
-    if (!(pMonStatsTxt >= 0 && pMonStatsTxt < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonStatsTxt && (sgptDataTable->pTxtMonStats[pMonStatsTxt].lUndead || sgptDataTable->pTxtMonStats[pMonStatsTxt].hUndead))) {
+    if (!(pMonStatsTxt >= 0 && pMonStatsTxt < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonStatsTxt)) {
+      return 0;
+    }
+
+    uint32_t uVar1 = (uint32_t)(uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[pMonStatsTxt] + 0xd);
+    if (!(gadwBitMasks[3] & uVar1 || gadwBitMasks[4] & uVar1)) {
       return 0;
     }
 
@@ -352,11 +355,11 @@ BOOL __stdcall MONSTER_IsMonsterUndead(D2UnitStrc * pUnit) {
 
 uint32_t __stdcall UnitIsMarkedBoss(D2MonStatsTxt * pMonStatsTxt, D2UnitStrc * pUnit) {
     int nClassId;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && (pMonStatsTxt || (nClassId = pUnit->nClassId , nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize) && (pMonStatsTxt = sgptDataTable->pTxtMonStats + nClassId , pMonStatsTxt != 0)))) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER && (pMonStatsTxt || (nClassId = pUnit->nClassId , nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize) && (pMonStatsTxt = sgptDataTable->pTxtMonStats + nClassId , pMonStatsTxt != 0))) {
+      return (uint8_t)*((uint8_t*)pMonStatsTxt + 0xc) & gadwBitMasks[6];
     }
 
-    return (uint8_t)*((uint8_t*)pMonStatsTxt + 0xc) & 0x40;
+    return 0;
 }
 
 // 2022.01.09 - dzik
@@ -568,7 +571,7 @@ uint32_t __stdcall MONSTERS_CheckMonStatFlag0xc_Bit7(D2UnitStrc * pnParam) {
       return 0;
     }
 
-    return (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[pMonStatsTxt] + 0xc) & 0x80;
+    return (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[pMonStatsTxt] + 0xc) & gadwBitMasks[7];
 }
 
 // Retrieves the animation flags and valid-flags for a monster's upgrade tier by looking up its class id in the MonStats upgrade table. Writes the flags from gdwMonStatAnimFlagsTable into pdwAnimFlags and pdwValidFlags. Halts with a fatal error if the unit is not a monster or the upgrade index is out of range.
@@ -853,6 +856,18 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
       *pnPosY = nPosX;
       *pdwSpawnMode = 8;
       return;
+      case MonsterUnitIzual | MonsterUnitThornBeast:
+        if (!pUnit || pUnit->nClassId != 0x2c7) {
+          *pnMonId = sgptDataTable->nTxtMonStatsSize > 0x13 ? 0x13 : -1;
+        } else {
+          *pnMonId = sgptDataTable->nTxtMonStatsSize > 0x2c8 ? 0x2c8 : -1;
+        }
+      nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+      *pnPosX = nPosX;
+      nPosX = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
+      *pnPosY = nPosX;
+      *pdwSpawnMode = 1;
+      return;
       case MonsterUnitFleshSpawner1:
         if (!pUnit) {
           nErrorLine = -1;
@@ -867,18 +882,6 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
       *pnPosX = nPosJitter;
       nPosJitter = PATH::DynamicPath::GetYSP1(pDynamicPath);
       *pnPosY = nPosJitter;
-      *pdwSpawnMode = 1;
-      return;
-      case MonsterUnitIzual | MonsterUnitThornBeast:
-        if (!pUnit || pUnit->nClassId != 0x2c7) {
-          *pnMonId = sgptDataTable->nTxtMonStatsSize > 0x13 ? 0x13 : -1;
-        } else {
-          *pnMonId = sgptDataTable->nTxtMonStatsSize > 0x2c8 ? 0x2c8 : -1;
-        }
-      nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-      *pnPosX = nPosX;
-      nPosX = D2Client::Units::GetYPosFromDynamicPathUnit(pUnitIn);
-      *pnPosY = nPosX;
       *pdwSpawnMode = 1;
       return;
     }

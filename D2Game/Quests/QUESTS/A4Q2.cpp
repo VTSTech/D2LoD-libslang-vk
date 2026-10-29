@@ -104,19 +104,18 @@ void __fastcall Q26_CheckIzualProximity(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 BOOL __fastcall Q26_CheckIzualNearPlayer(::SGAMEDATA * pGame, int32_t nParam) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheFallenAngel);
-    if (!pQuestData) {
-      return 0;
+    if (pQuestData) {
+      D2QuestDataA3Q3Strc* pQuestSpecificData;
+      pQuestSpecificData = pQuestData->pQuestSpecificData.pA3Q3;
+      if (*(char*)((uintptr_t)&pQuestSpecificData->nSerpentSpawnY + 2) != '\0') {
+        pQuestSpecificData->bSerpentLocationValid = false;
+        pQuestSpecificData->nSerpentObjectY = nParam;
+        UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)Q26_CheckIzualProximity, pQuestSpecificData);
+        return (uint32_t)!pQuestSpecificData->bSerpentLocationValid;
+      }
     }
 
-    D2QuestDataA3Q3Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA3Q3;
-    if (*(char*)((uintptr_t)&pQuestSpecificData->nSerpentSpawnY + 2) == '\0') {
-      return 0;
-    }
-
-    pQuestSpecificData->bSerpentLocationValid = false;
-    pQuestSpecificData->nSerpentObjectY = nParam;
-    UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)Q26_CheckIzualProximity, pQuestSpecificData);
-    return (uint32_t)!pQuestSpecificData->bSerpentLocationValid;
+    return 0;
 }
 
 // [A4Q1 Izual helper] Plays the Izual-complete sound to every player/monster unit in the game.
@@ -449,8 +448,8 @@ BOOL __fastcall Q27_PartyMember_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStr
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q2.cpp
 BOOL __fastcall Q27_PlayerCheckCompletionSendState(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2GSPacketSrv0x5D aQuestStatePacket;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_TerrorsEnd, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TerrorsEnd, QUESTSTATE_JustCompleted);
     if (!bJustCompleted) {
       return 0;
     }
@@ -644,8 +643,8 @@ void __fastcall Q27_PartyMember_SetCompleted(::SGAMEDATA * pGame, D2UnitStrc * p
 
 // [A4Q3 Terror's End] If this player has QUEST_TerrorsEnd JustCompleted, propagate completion to every party member (ExecuteFunctionForEveryPartyMember -> Q27_PartyMember_SetCompleted).
 BOOL __fastcall Q27_PropagateCompletionToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pDVar1->pQuestRecord[pGame->nDifficulty], QUEST_TerrorsEnd, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TerrorsEnd, QUESTSTATE_JustCompleted);
     if (!BVar2) {
       return 0;
     }
@@ -681,14 +680,13 @@ BOOL __fastcall Q27_PlayerNotifyCompleted(::SGAMEDATA * pGame, D2UnitStrc * pUni
 // [A4Q3 Terror's End] Gossip-choice handler (callback slot 0x03). On dialog index 0x67 (when nStateFlag==2) or 0x6c: if not yet Completed, bump internal nStateFlag to 3 and, if step not previously set, transition to RewardAwaits (state 1) broadcasting Q27_PlayerNotifyCompleted; then push record states via Q27_PlayerUpdateTerrorsEndState. This is Tyrael describing/accepting the kill-Diablo task.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q2.cpp
 void __fastcall Q27_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    D2UnitDataPlayerStrc* pDVar2;
     BOOL BVar3;
     int nDialogIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
     if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x67 && pQuestData->nStateFlag == 2) {
       ::SGAMEDATA* pSVar1;
       pSVar1 = pQuestArgs->pGame;
-      pDVar2 = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-      BVar3 = D2Common::QuestRecord::GetQuestState(pDVar2->pQuestRecord[pSVar1->nDifficulty], pQuestData->nQuestIdReal, QUESTSTATE_Completed);
+      D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pSVar1->nDifficulty];
+      BVar3 = D2Common::QuestRecord::GetQuestState(pQuestRecord, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
       if (BVar3 == 1) {
         return;
       }
@@ -743,8 +741,8 @@ void __stdcall Q23_UnlockHarrogathWaypoint(::SGAMEDATA * pGame, D2UnitStrc * pUn
       return;
     }
 
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    D2Common::Waypoints::EnableWaypoint(pDVar1->pWaypoint[pGame->nDifficulty], nWaypointId);
+    D2WaypointStrc* pWaypoint = D2Common::Units::GetPlayerData(pUnit)->pWaypoint[pGame->nDifficulty];
+    D2Common::Waypoints::EnableWaypoint(pWaypoint, nWaypointId);
 }
 
 // [A4Q3 Terror's End — expansion] Callback slot 0x0e. Cleanup: if Step0x09 (Diablo portal/go-to-act5 flag) is set but QUEST_AbleGoToAct5 not yet Completed, clear Step0x09. Keeps the portal-state flag consistent.
@@ -932,7 +930,6 @@ static void __stdcall Q27_ActivateAllSealsKillChaos(int * pQuestSpecificData, ::
 void __fastcall Q27_Callback_08_KillHandler(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     D2RoomStrc* pDiabloRoom;
     DWORD dwKillTick;
-    D2UnitDataPlayerStrc* pPlayerData;
     BOOL bKillerCompleted;
     int iNotify;
     bool bKillerNotCompleted;
@@ -988,8 +985,8 @@ void __fastcall Q27_Callback_08_KillHandler(D2QuestDataStrc * pQuestData, D2Ques
           }
 
           pGame = pQuestArgs->pGame;
-          pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-          bKillerCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_TerrorsEnd, QUESTSTATE_Completed);
+          D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+          bKillerCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TerrorsEnd, QUESTSTATE_Completed);
           if (!bKillerCompleted) {
             bKillerNotCompleted = true;
           }

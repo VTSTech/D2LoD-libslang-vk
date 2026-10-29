@@ -372,7 +372,6 @@ static void __stdcall SUNITINACTIVE_RestoreMonsterStateFromInactive(::SGAMEDATA 
     int nBaseId;
     int32_t nArgNumber;
     uint8_t byAiArgByte;
-    uint8_t* pMonDataByte;
     int nMonStatsIdx;
     nMonStatsIdx = pnParam[1];
     if (nMonStatsIdx < 0 || nMonStatsIdx >= sgptDataTable->nTxtMonStatsSize) {
@@ -380,7 +379,10 @@ static void __stdcall SUNITINACTIVE_RestoreMonsterStateFromInactive(::SGAMEDATA 
     } else {
       pAiCmd = sgptDataTable->pTxtMonStats + nMonStatsIdx;
     }
-    if (pAiCmd->interact || pAiCmd->npc || pAiCmd->inTown) {
+
+    uint32_t uVar1;
+    uVar1 = (uint32_t)(uint8_t)*((uint8_t*)pAiCmd + 0xd);
+    if (gadwBitMasks[1] & uVar1 || gadwBitMasks[0] & uVar1 || gadwBitMasks[2] & uVar1) {
       D2MapAIStrc** ppMapAi;
       pAiCmdNpc = Ai::AiGeneral::AI_CreateCmdIfNotExists(pGame, (D2UnitStrc*)pnParam, 10, 0);
       if (pAiCmdNpc) {
@@ -459,7 +461,6 @@ static void SUNITINACTIVE_SaveMonsterStateToInactive(D2InactiveMonsterRecordStrc
     uint32_t dwSavedAiArg;
     int nBaseId;
     int32_t nArgNumber;
-    uint8_t* pMonDataByte;
     uint32_t pDeadMarker;
     pDeadMarker = gpInactiveMonsterStateFlagSentinel;
     int nMonStatsIdx;
@@ -477,7 +478,10 @@ static void SUNITINACTIVE_SaveMonsterStateToInactive(D2InactiveMonsterRecordStrc
       pInactiveMonsterRecord->nAiArgument = pDeadMarker;
       pInactiveMonsterRecord->nAiArgument2 |= gnMonsterStateFlagMask2;
     }
-    if (pAiCmd->interact || pAiCmd->npc || pAiCmd->inTown) {
+
+    uint32_t uVar1;
+    uVar1 = (uint32_t)(uint8_t)*((uint8_t*)pAiCmd + 0xd);
+    if (gadwBitMasks[1] & uVar1 || gadwBitMasks[0] & uVar1 || gadwBitMasks[2] & uVar1) {
       D2MapAIStrc** ppMapAi;
       pAiCmdNpc = Ai::AiGeneral::AI_CreateCmdIfNotExists(pGame, (D2UnitStrc*)pnParam, 10, 0);
       if (pAiCmdNpc && pAiCmdNpc->nCmdArg[1]) {
@@ -804,7 +808,7 @@ static void __stdcall SUNITINACTIVE_RoomInitMonsters(::SGAMEDATA * pGame, D2Room
             } else {
               pMonStatsTxt = sgptDataTable->pTxtMonStats + (int)pbyClassId;
             }
-            if (pMonStatsTxt->flying) {
+            if (*((uint8_t*)pMonStatsTxt + 0xd) & (uint8_t)gadwBitMasks[6]) {
               nSpawnFlags |= 0x80;
             }
 
@@ -1516,20 +1520,6 @@ void __fastcall SERVER_GAME_UNIT_method(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
     if (!false) {
       uint8_t bVar1;
       switch (eUnitType) {
-        case UNIT_PLAYER:
-          eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_playerbody);
-        if (eState != STATE_none) {
-          save_and_unlink:
-          GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ENDANIM, 0);
-          pUnit->eUnitFlagsEx |= UNITFLAGEX_HASBEENDELETED;
-          SUNITINACTIVE_SaveInactiveUnit(pGame, pUnit);
-          D2Common::Unit::DRLGROOM_ClearUnitRoomLink(pUnit);
-          return;
-        }
-
-        break;
-        default:
-          goto free_unit;
         case UNIT_OBJECT:
           if (nClassId == 0x3b || nClassId == 0x3c) {
             goto save_and_unlink;
@@ -1548,6 +1538,20 @@ void __fastcall SERVER_GAME_UNIT_method(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
 
         case UNIT_WARP:
           goto save_inactive;
+        case UNIT_PLAYER:
+          eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_playerbody);
+        if (eState != STATE_none) {
+          save_and_unlink:
+          GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ENDANIM, 0);
+          pUnit->eUnitFlagsEx |= UNITFLAGEX_HASBEENDELETED;
+          SUNITINACTIVE_SaveInactiveUnit(pGame, pUnit);
+          D2Common::Unit::DRLGROOM_ClearUnitRoomLink(pUnit);
+          return;
+        }
+
+        break;
+        default:
+          goto free_unit;
       }
 
       if (bShouldSave) {

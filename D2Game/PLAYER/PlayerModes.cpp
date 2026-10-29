@@ -228,7 +228,7 @@ int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, D2Un
         return 1;
       }
     }
-    if (pSkillTxt->interrupt) {
+    if (*((uint8_t*)pSkillTxt + 0x7) & (uint8_t)gadwBitMasks[7]) {
       D2StatListExStrc* pConcStatList;
       eStunState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_concentration);
       if (eStunState == STATE_none) {
@@ -624,18 +624,21 @@ static uint32_t __stdcall PLRMODES_IsCorpseOwnedByPlayer(::SGAMEDATA * pGame, D2
         exit(-1);
       }
 
-      nPartyFlags = D2Common::INVENTORY::Inventory::INVENTORY_GetCursorItemGUID(pCorpseUnitRaw->pInventory);
-      if (pUnit->nUnitGUID == nPartyFlags) {
-        return 1;
-      }
+      {
+        D2InventoryStrc* pInventory = pCorpseUnitRaw->pInventory;
+        nPartyFlags = D2Common::INVENTORY::Inventory::INVENTORY_GetCursorItemGUID(pInventory);
+        if (pUnit->nUnitGUID == nPartyFlags) {
+          return 1;
+        }
 
-      pCorpseOwner = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, nPartyFlags);
-      if (pCorpseOwner) {
-        nPartyFlags = UNIT::PlayerList::PLAYERLIST_GetFlagsMasked(pCorpseOwner, pUnit, 1);
-        return nPartyFlags;
-      }
+        pCorpseOwner = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, nPartyFlags);
+        if (pCorpseOwner) {
+          nPartyFlags = UNIT::PlayerList::PLAYERLIST_GetFlagsMasked(pCorpseOwner, pUnit, 1);
+          return nPartyFlags;
+        }
 
-      return 0;
+        return 0;
+      }
     }
 }
 
@@ -1161,11 +1164,11 @@ uint8_t PLRMODES_GetHpPercent128(D2UnitStrc * pUnit) {
     int nHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
     int32_t nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
     int nMaxHpShifted = nMaxHp >> 8;
-    if (!(nMaxHpShifted > 0 && nHp >> 8 < nMaxHpShifted)) {
-      return 0x80;
+    if (nMaxHpShifted > 0 && nHp >> 8 < nMaxHpShifted) {
+      return (uint8_t)((nHp >> 8 << 7) / nMaxHpShifted);
     }
 
-    return (uint8_t)((nHp >> 8 << 7) / nMaxHpShifted);
+    return 0x80;
 }
 
 // Per-tick HP regeneration tick for a player unit. Reads UNITSTAT_hpregen; if zero returns early. Adds regen to current HP capped at txt-max; if the max is exceeded and the player has a healthpot state-list, removes and frees it. Enforces a floor of 0x100. Writes the new HP via STATLIST_SetUnitStat, then computes a 7-bit HP-percent and sends packet 0xAB to the client only if the change exceeds 4 units from the last sent value.
@@ -1683,7 +1686,7 @@ void __fastcall PLRMODES_OnModeComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
       pSkill = D2Common::Units::GetCurrentSkill(pUnit);
       if (pSkill) {
         eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\PLAYER\\PlrModes.cpp", 0x779);
-        if ((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId && sgptDataTable->pTxtSkills[eSkillId].durability) {
+        if ((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId && *((uint8_t*)&sgptDataTable->pTxtSkills[eSkillId] + 0x6) & (uint8_t)gadwBitMasks[2]) {
           PLRMODES_CheckWeaponQuantityAndDurability(pGame, pUnit);
           PLRMODES_BreakZeroDurabilityWeapons(pGame, pUnit);
         }

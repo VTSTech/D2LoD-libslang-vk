@@ -668,16 +668,14 @@ bool __fastcall Q32_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     if (nTargetClassId == 0x203) {
       if (pQuestData->nStateFlag == 1) {
         bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-        if (bQuestState) {
-          return false;
+        if (!bQuestState) {
+          bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+          if (!bQuestState) {
+            return true;
+          }
         }
 
-        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-        if (bQuestState) {
-          return false;
-        }
-
-        return true;
+        return false;
       }
 
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
@@ -727,8 +725,8 @@ bool __fastcall Q32_SequenceFilter(D2QuestDataStrc * pQuestData) {
 // transient progress flag). Counterpart to where Step0x04 is set in Q32_OnBarricadeDestroyed.
 void __fastcall Q32_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-    D2Common::QuestRecord::UnsetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_RescueOnMountArreat, QUESTSTATE_Step0x04);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+    D2Common::QuestRecord::UnsetQuestState(pQuestRecord, QUEST_RescueOnMountArreat, QUESTSTATE_Step0x04);
 }
 
 // A5Q2 (Rescue on Mount Arreat) state-handler slot 0xd — join/load state restore. On player (re)join: first clears the transient Step0x04 bit. Then, if quest is not Completed, FinishedInPreviousGame, or RewardAwaits, rehydrates server stateFlag from persisted step bits: Step0x03 set → stateFlag=3 (stateFlagPrev=1); Step0x02 set → stateFlag=2 (stateFlagPrev=1). Restores in-progress quest progression when a game is created or joined.
@@ -891,8 +889,8 @@ void __fastcall Objects_InitFn62(D2ObjectInitFnArg * pInitArg) {
 // runs Q32_SetCompleteForPartyMember for every party member -- spreading rescue completion + reward tier to the
 // whole party. No-op for solo/non-just-completed players.
 BOOL __fastcall Q32_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
     if (!bJustCompleted) {
       return 0;
     }
@@ -910,8 +908,8 @@ BOOL __fastcall Q32_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * p
 // If the player's QuestRecord shows JustCompleted(0xd), plays the quest-completion sound/event (event sound 0x51,
 // SetupUpdateEvent_AttachEventSound) on that player. nParam = player unit (byte[0x6d]=nDifficulty for pQuestRecordPool index).
 BOOL __fastcall Q32_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
     if (!bJustCompleted) {
       return 0;
     }
@@ -931,11 +929,11 @@ BOOL __fastcall Q32_CheckWussieBarricade(::SGAMEDATA * pGame, int32_t nParam) {
     }
 
     int32_t nBarricadeGroup = Q32_FindBarricadeGroup(pQuestData, (D2UnitStrc*)nParam);
-    if (!(nBarricadeGroup >= 0 && pQuestData->pQuestSpecificData.pA1Q4->sQuestGUID1.aPlayerGUID[nBarricadeGroup + 0x18])) {
-      return 0;
+    if (nBarricadeGroup >= 0 && pQuestData->pQuestSpecificData.pA1Q4->sQuestGUID1.aPlayerGUID[nBarricadeGroup + 0x18]) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Q32_IncrementWussieKillCount (A5Q2 Rescue on Mount Arreat) -- bumps a barricade group's prisoner-kill count.

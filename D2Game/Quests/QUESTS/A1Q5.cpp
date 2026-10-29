@@ -215,7 +215,6 @@ BOOL __fastcall Q05_SyncQuestStepToPlayer(::SGAMEDATA * pGame, D2UnitStrc * pUni
 // Act 1 Quest 5 (The Forgotten Tower / Cairn Stones) quest message callback. Driven by pQuestArgs message/NPC indices: on the intro message (0x7f) advances the quest state machine and syncs the step to players (Q05_SyncQuestStepToPlayer); on the relevant NPC+message pairs, if the player has just completed Forgotten Tower it runs the quest sequence filter and bookkeeps the per-player Cairn-stone object GUID list in the A1Q4 quest-specific data (finds the player's stone slot, compacts the GUID array, updates tree-object counters). No return; side-effects quest state and broadcasts.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q5.cpp
 void __fastcall Q05_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    D2UnitDataPlayerStrc* pPlayerData;
     BOOL bResult;
     int iStoneIdx;
     int32_t* pStoneGUIDBase;
@@ -259,8 +258,8 @@ void __fastcall Q05_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     handle_town_npc_talk:
     if ((sVar2 == 0x9a || sVar2 == 0x96 || sVar2 == 0x109 || sVar2 == 0x9b || sVar2 == 0x94 || sVar2 == 0x93) && (sVar1 == 0x90 || sVar1 == 0x8c || sVar1 == 0x91 || sVar1 == 0x8d || sVar1 == 0x8f || sVar1 == 0x8e)) {
       pGame = pQuestArgs->pGame;
-      pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-      bResult = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_ForgottenTower, QUESTSTATE_JustCompleted);
+      D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+      bResult = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_ForgottenTower, QUESTSTATE_JustCompleted);
       if (bResult && pQuestSpecific->bQuestCompleted) {
         pQuestSpecific->bQuestCompleted = false;
         QUEST_SetStateFlag(pQuestData, 5, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x14c);
@@ -643,20 +642,19 @@ int __fastcall Q05_OnTowerComplete(::SGAMEDATA * pGame, D2QuestDataStrc * pQuest
 // A1Q5 "Tools of the Trade" (Horadric Malus) quest-state handler slot[3]. On dialog index 0x14: advances state 0->2 (sets flag); on index 0x19: advances toward state 3. Broadcasts the new quest state to all players via QUEST_SetStateAndBroadcast and re-syncs each player with Q05_SyncQuestStepToPlayer. In the non-intro path (pTextControl==1) at state 2 it finalizes once the player's quest record shows Completed, and at state 5 removes the player from the tracking list and deactivates the quest when no objects remain.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q5.cpp
 void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    BOOL bQuestState;
     D2QuestDataA1Q5Strc* pA1Q4Data;
     ::SGAMEDATA* pGame;
     D2QuestDataA1Q5Strc* pvVar2;
     int nIndex;
     nIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
     if (pQuestData->bIsNotIntroduction == '\0') {
-      D2UnitDataPlayerStrc* pPlayerData;
+      BOOL bQuestState;
       handle_left_town:
       if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x1) {
         if (pQuestData->nStateFlag == 2) {
           pGame = pQuestArgs->pGame;
-          pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-          bQuestState = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], pQuestData->nQuestIdReal, QUESTSTATE_Completed);
+          D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+          bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
           if (bQuestState != 1) {
             QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x28d);
             return;
@@ -804,8 +802,8 @@ BOOL __fastcall Q05_SetCannotCompleteInGame(::SGAMEDATA * pGame, D2UnitStrc * pU
 }
 
 BOOL __fastcall Q05_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_ForgottenTower, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_ForgottenTower, QUESTSTATE_JustCompleted);
     if (!bJustCompleted) {
       return 0;
     }

@@ -907,16 +907,14 @@ int32_t __fastcall DRLGPATH_GetApproxDistance(int32_t nY1, int32_t nY2, int32_t 
     }
 
     int nMin = nDx;
-    if (nDx < nDy) {
-      return nMin + nDy * 2;
+    if (nDx >= nDy) {
+      nMin = nDy;
+      if (nDy < nDx) {
+        return nDy + nDx * 2;
+      }
     }
 
-    nMin = nDy;
-    if (nDy >= nDx) {
-      return nMin + nDy * 2;
-    }
-
-    return nDy + nDx * 2;
+    return nMin + nDy * 2;
 }
 
 // Computes an approximate isometric distance between two packed coordinate points.
@@ -1387,11 +1385,11 @@ void __fastcall DRLGPATH_GetMissileTargetPosition(short * pOutPos, D2UnitStrc * 
       eUnitType = *pOwner;
       if (eUnitType == 2 || eUnitType > 3 && eUnitType <= 5) {
         nCoord = (short int)*(uint32_t*)(pOwner[0xb] + 0xc);
-      } else if (!(D2DynamicPathStrc*)pOwner[0xb]) {
-        nCoord = 0;
-      } else {
+      } else if ((D2DynamicPathStrc*)pOwner[0xb]) {
         nLine = PATH::DynamicPath::GetXPos((D2DynamicPathStrc*)pOwner[0xb]);
         nCoord = (short int)nLine;
+      } else {
+        nCoord = 0;
       }
 
       *pOutPos = nCoord;
@@ -1399,11 +1397,11 @@ void __fastcall DRLGPATH_GetMissileTargetPosition(short * pOutPos, D2UnitStrc * 
       eUnitType = *pOwner;
       if (eUnitType == 2 || eUnitType > 3 && eUnitType <= 5) {
         nCoord = (short int)*(uint32_t*)(pOwner[0xb] + 0x10);
-      } else if (!(D2DynamicPathStrc*)pOwner[0xb]) {
-        nCoord = 0;
-      } else {
+      } else if ((D2DynamicPathStrc*)pOwner[0xb]) {
         nLine = PATH::DynamicPath::GetYPos((D2DynamicPathStrc*)pOwner[0xb]);
         nCoord = (short int)nLine;
+      } else {
+        nCoord = 0;
       }
 
       pOutPos[1] = nCoord;
@@ -2183,16 +2181,15 @@ uint8_t * __stdcall DRLGPATH_GetDirectionDeltaTable(int32_t nParam1, int32_t nPa
 
 // Checks if a packed coordinate (X|Y) is within the bounding rectangle of the path search area. Returns 1 if inside bounds, 0 otherwise.
 uint32_t __fastcall DRLGPATH_IsPositionInBounds(int32_t pThis, uint32_t nPackedPos) {
-    if (!((uint16_t)nPackedPos >= *(uint16_t*)(pThis + 0x6278) && (uint16_t)nPackedPos <= *(uint16_t*)(pThis + 0x627c))) {
-      return 0;
+    if ((uint16_t)nPackedPos >= *(uint16_t*)(pThis + 0x6278) && (uint16_t)nPackedPos <= *(uint16_t*)(pThis + 0x627c)) {
+      uint16_t wPosY;
+      wPosY = (uint16_t)(nPackedPos >> 0x10);
+      if (wPosY >= *(uint16_t*)(pThis + 0x627a) && wPosY <= *(uint16_t*)(pThis + 0x627e)) {
+        return 1;
+      }
     }
 
-    uint16_t wPosY = (uint16_t)(nPackedPos >> 0x10);
-    if (!(wPosY >= *(uint16_t*)(pThis + 0x627a) && wPosY <= *(uint16_t*)(pThis + 0x627e))) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 // Advances a path node's direction by stepping through its direction delta table. Optionally applies a random perturbation from the seed. Used during A* node expansion.
@@ -2330,8 +2327,8 @@ int32_t __fastcall DRLGPATH_FindPathAStar(D2DrlgRoomCoordsStrc * pRoomCoords, D2
     uint16_t wInitialHCost = (short int)nMinDelta + (short int)nPathLength * 2;
     sStartNode.nGCost = 0;
     sStartNode.nHCost = wInitialHCost;
-    sStartNode.nFlags = -3;
     sStartNode.nFCost = wInitialHCost;
+    sStartNode.nFlags = -3;
     nCostLimit = DRLGPATH_GetPathDirectionPacked(*(uint32_t*)((char*)&sStartNode + 8), nCostLimit);
     sStartNode.nDirection = nCostLimit & 7;
     sStartNode.pNext = 0;

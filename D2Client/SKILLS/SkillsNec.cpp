@@ -110,8 +110,8 @@ BOOL __fastcall Skills_CltDoFunc_Nec_CurseCenter_StreamMissile(D2UnitStrc * pUni
     sSkillArg.nFlags = 1;
     sSkillArg.nX = nTargetX;
     sSkillArg.nY = nTargetY;
-    sSkillArg.nMissileTxtNo = MISSILE_Cursecenter;
     sSkillArg.eSkillNo = eSkill;
+    sSkillArg.nMissileTxtNo = MISSILE_Cursecenter;
     pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
     if (pMissileUnit) {
       D2LightMapStrc* pLightMap;
@@ -193,11 +193,11 @@ static uint32_t __stdcall SKILLSNEC_CltSetBoneWallGfx(eD2Skills eSkill, int32_t 
     sSkillArg.nMissileTxtNo = eMissileId;
     sSkillArg.nSkillLevel = nParam;
     sSkillArg.nFlags = 3;
+    sSkillArg.pOwner = pUnit;
+    sSkillArg.nX = nDirection + nDeltaY;
     sSkillArg.nY = nNormDeltaX * 2 / nDist + nUnitPosY;
     sSkillArg.nUnitX = nDeltaX * 5;
     sSkillArg.nUnitY = nNormDeltaX * 5;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.nX = nDirection + nDeltaY;
     D2UnitStrc* pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
     if (!pMissileUnit) {
       return 0;
@@ -209,17 +209,17 @@ static uint32_t __stdcall SKILLSNEC_CltSetBoneWallGfx(eD2Skills eSkill, int32_t 
 }
 
 BOOL __fastcall Skills_CltStFunc_SetBoneWallGraphics(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
-      return 0;
+    uint32_t bResult;
+    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill) {
+      eMissilesId eCltMissileC;
+      eCltMissileC = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissile[3];
+      if ((int)eCltMissileC >= 0 && (int)eCltMissileC < sgptDataTable->nTxtMissilesSize) {
+        bResult = SKILLSNEC_CltSetBoneWallGfx(eSkill, nSkillLvl, eCltMissileC, pUnit);
+        return bResult;
+      }
     }
 
-    eMissilesId eCltMissileC = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissile[3];
-    if (!((int)eCltMissileC >= 0 && (int)eCltMissileC < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
-    }
-
-    uint32_t bResult = SKILLSNEC_CltSetBoneWallGfx(eSkill, nSkillLvl, eCltMissileC, pUnit);
-    return bResult;
+    return 0;
 }
 
 BOOL __fastcall Skills_CltStFunc_CheckCorpseSetPositionParams(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
@@ -260,10 +260,10 @@ BOOL __fastcall Skills_CltDoFunc_Nec_TargetedMissileAtParam(D2UnitStrc * pUnit, 
       D2SkillArgStrc sSkillArg;
       memset(&sSkillArg, 0, 0x5c);
       sSkillArg.nFlags = 0x2001;
-      sSkillArg.nSkillLevel = nSkillLvl;
       sSkillArg.pOwner = pUnit;
-      sSkillArg.nMissileTxtNo = eVar1;
       sSkillArg.eSkillNo = eSkill;
+      sSkillArg.nSkillLevel = nSkillLvl;
+      sSkillArg.nMissileTxtNo = eVar1;
       sSkillArg.nX = D2Common::Skills::SKILL_GetParam1(pSkill);
       sSkillArg.nY = D2Common::Skills::SKILL_GetParam2(pSkill);
       UNIT::Missile::MakeMissile(&sSkillArg);
@@ -374,15 +374,15 @@ int __fastcall SKILLSNEC_CltCreateTeethMissiles(D2UnitStrc * pUnit, eD2Skills eS
     sSkillArg.nUnitY = nSeedMod - 1 + nParam1;
     sSkillArg.nX = nTargetX;
     sSkillArg.nY = nParam1;
+    sSkillArg.eSkillNo = eSkill;
     sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.nMissileTxtNo = eCltMissileId;
-    sSkillArg.eSkillNo = eSkill;
-    if (pMonStats2->isSmall) {
+    if (gadwBitMasks[2] & (uint8_t)*((uint8_t*)pMonStats2 + 0x5)) {
       nScatterMax = 1;
       nScatterMin = 0;
     } else {
       D2MissilesTxt* pMissileTxt;
-      if (pMonStats2->large) {
+      if (gadwBitMasks[3] & (uint8_t)*((uint8_t*)pMonStats2 + 0x5)) {
         Skills::SKILLS_CreateMissileScatter(pUnit, &sSkillArg, 3, 3);
         pMissileTxt = GetMissleById(eCltMissileId);
         nSubMissileId = pMissileTxt->SubMissile1;
@@ -449,6 +449,7 @@ BOOL __fastcall Skills_CltDoFunc_Nec_Teeth(D2UnitStrc * pUnit, eD2Skills eSkill,
 
 // Client helper that spawns the Bone Spear/Spirit missile on the caster side. Validates skill, primary missile (cltmissilea), and target monster class. Sets UNITFLAG_SKSRVDOFUNC, fires the primary missile, optionally fires a secondary cast-effect missile (cltmissilec), creates a radial burst (cltmissileb) on impact, and plays tgtsound if no confirmed target. Returns 1 on success.
 int __fastcall SKILLSNEC_CltCreateBoneSpearMissile(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl, int32_t nTargetX, int32_t nParam1, int32_t nParam2) {
+    D2UnitStrc* pConfirmedTarget;
     D2SkillArgStrc sSkillArg;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
@@ -463,44 +464,46 @@ int __fastcall SKILLSNEC_CltCreateBoneSpearMissile(D2UnitStrc * pUnit, eD2Skills
     if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize && nParam2 >= 0 && nParam2 < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nParam2)) {
       return 0;
     }
-    if (!(nTargetX && nParam1)) {
-      return 0;
-    }
-    if (pUnit) {
-      pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
-    }
+    if (nTargetX && nParam1) {
+      D2UnitStrc* pMissileUnit;
+      if (pUnit) {
+        pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
+      }
 
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.nFlags = 0x2001;
-    sSkillArg.nX = nTargetX;
-    sSkillArg.nY = nParam1;
-    sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.nMissileTxtNo = eMissileId;
-    sSkillArg.eSkillNo = eSkill;
-    D2UnitStrc* pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
-    eMissileId = (eMissilesId)pSkillTxt->cltmissile[3];
-    if ((int)eMissileId > 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
-      sSkillArg.nSkillLevel = 2;
+      memset(&sSkillArg, 0, 0x5c);
+      sSkillArg.pOwner = pUnit;
       sSkillArg.nMissileTxtNo = eMissileId;
-      UNIT::Missile::MakeMissile(&sSkillArg);
-    }
+      sSkillArg.nFlags = 0x2001;
+      sSkillArg.nX = nTargetX;
+      sSkillArg.nY = nParam1;
+      sSkillArg.eSkillNo = eSkill;
+      sSkillArg.nSkillLevel = nSkillLvl;
+      pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
+      eMissileId = (eMissilesId)pSkillTxt->cltmissile[3];
+      if ((int)eMissileId > 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
+        sSkillArg.nSkillLevel = 2;
+        sSkillArg.nMissileTxtNo = eMissileId;
+        UNIT::Missile::MakeMissile(&sSkillArg);
+      }
 
-    eMissileId = (eMissilesId)pSkillTxt->cltmissile[2];
-    if (!pMissileUnit) {
+      eMissileId = (eMissilesId)pSkillTxt->cltmissile[2];
+      if (!pMissileUnit) {
+        return 1;
+      }
+      if ((int)eMissileId > 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
+        UNIT::Missile::MISSILE_CreateRadialBurst(pMissileUnit, eMissileId, 0, 2, 0);
+      }
+
+      pConfirmedTarget = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
+      if (!(!pConfirmedTarget && pSkillTxt->tgtsound > 0)) {
+        return 1;
+      }
+
+      Sound::SOUND_PlaySound((int)pSkillTxt->tgtsound, pMissileUnit, 0, 0, 0);
       return 1;
     }
-    if ((int)eMissileId > 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
-      UNIT::Missile::MISSILE_CreateRadialBurst(pMissileUnit, eMissileId, 0, 2, 0);
-    }
 
-    D2UnitStrc* pConfirmedTarget = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
-    if (!(!pConfirmedTarget && pSkillTxt->tgtsound > 0)) {
-      return 1;
-    }
-
-    Sound::SOUND_PlaySound((int)pSkillTxt->tgtsound, pMissileUnit, 0, 0, 0);
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall Skills_CltDoFunc_Nec_BoneSpear(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
@@ -546,7 +549,7 @@ BOOL __fastcall Skills_CltStFunc_CheckCasterRoomNotInTownNec(D2UnitStrc * pUnit,
     if (!pRoom) {
       return 0;
     }
-    if (pSkillTxt[eSkill].InTown) {
+    if (*((uint8_t*)&pSkillTxt[eSkill] + 0x5) & (uint8_t)gadwBitMasks[0]) {
       return 1;
     }
 
@@ -586,7 +589,6 @@ BOOL __fastcall Skills_CltStFunc_CheckTargetIsUnclaimedGroundItem(D2UnitStrc * p
 
 // Client start-function for Necromancer Revive. Validates that the confirmed target is a revivable, consumable, convertible monster, then selects a missile type from the skill txt (cltmissilea/b/c) based on the monster's overlayHeight size class (1=medium, 3=large). Launches the selected missile with the corpse as target. Returns 1 on success, 0 if any check fails.
 BOOL __fastcall Skills_CltStFunc_SelectReviveMissileByMonsterSize(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    D2SkillArgStrc sSkillArg;
     if ((int)eSkill < 0) {
       return 0;
     }
@@ -632,19 +634,20 @@ BOOL __fastcall Skills_CltStFunc_SelectReviveMissileByMonsterSize(D2UnitStrc * p
     } else {
       eMissileId = (eMissilesId)pSkillTxt->cltmissile[2];
     }
-    if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
+    if ((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
+      D2SkillArgStrc sSkillArg;
+      memset(&sSkillArg, 0, 0x5c);
+      sSkillArg.nSkillLevel = nSkillLvl;
+      sSkillArg.nFlags = 0x2000;
+      sSkillArg.pOwner = pUnit;
+      sSkillArg.pMissile = pCorpse;
+      sSkillArg.eSkillNo = eSkill;
+      sSkillArg.nMissileTxtNo = eMissileId;
+      pCorpse = UNIT::Missile::MakeMissile(&sSkillArg);
+      return (uint32_t)(pCorpse != 0);
     }
 
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.nFlags = 0x2000;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.pMissile = pCorpse;
-    sSkillArg.nMissileTxtNo = eMissileId;
-    sSkillArg.eSkillNo = eSkill;
-    pCorpse = UNIT::Missile::MakeMissile(&sSkillArg);
-    return (uint32_t)(pCorpse != 0);
+    return 0;
 }
 
 } // namespace D2Client::SKILLS::SkillsNec

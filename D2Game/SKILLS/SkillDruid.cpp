@@ -462,8 +462,8 @@ BOOL __fastcall Skills_SrvDoFunc_117_Firestorm(::SGAMEDATA * pGame, D2UnitStrc *
 
       sSkillArg.nSkillLevel = nSkillLvl;
       sSkillArg.eSkillNo = eSkill;
-      sSkillArg.fpFunction = SkillSor::SKILL_InitChargedBoltPath;
       sSkillArg.nMissileTxtNo = nSrvMissle;
+      sSkillArg.fpFunction = SkillSor::SKILL_InitChargedBoltPath;
       _bHasTarget = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame, pUnit, (uint32_t*)&sSkillArg.nUnitX, (uint32_t*)&sSkillArg.nUnitY);
       if (!_bHasTarget) {
         return 1;
@@ -692,87 +692,81 @@ BOOL __fastcall SKILLDRUID_SrvStFn56_FeralRageMaul(::SGAMEDATA * pGame, D2UnitSt
 // Server DoFunc for Druid skill Feral Rage (skill 120). Validates the skill is active as the unit's current skill, marks the unit UNITFLAG_SKSRVDOFUNC, and processes any pending combat queue entry against the current target. If a hit occurred (nParam1 != 0): computes or retrieves the aura state stat-list, extends its timeout, increments the frenzy stack counter (UNITSTAT_skill_frenzy) up to the calc[1] cap, writes modifierlist_skill/level stats, and applies aura stats via D2SetAurastatsFromSkills. Refreshes the aura GFX toggle. Returns 1 on success, 0 if preconditions fail.
 // @sourcefile .\SKILLS\SkillDruid.cpp
 BOOL __fastcall Skills_SrvDoFunc_120_FeralRage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    eD2Skills eCurrentSkill;
+    D2UnitStrc* pTarget;
+    int32_t nFrenzyCount;
+    D2StatListExStrc* pStatsEx;
+    eD2UnitType eUnitType;
+    int nFrenzyStacks;
     int32_t nCurFrenzyStacks;
-    if ((int)eSkill < 0) {
-      return 0;
-    }
-    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
-      return 0;
-    }
+    int32_t nUnitGUID;
+    D2SkillsTxt* pSkillTxt;
+    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
+      D2SkillStrc* pSkill;
+      pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
+      if (pSkillTxt && pSkillTxt->aurastate >= 0 && (int)pSkillTxt->aurastate < sgptDataTable->nTxtStatesSize) {
+        pSkill = D2Common::Units::GetCurrentSkill(pUnit);
+        if (pSkill) {
+          eCurrentSkill = D2Common::Skills::GetSkillId(pSkill, ".\\SKILLS\\SkillDruid.cpp", 0x2af);
+          if (eCurrentSkill == eSkill) {
+            if (pUnit) {
+              pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
+            }
 
-    D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!pSkillTxt) {
-      return 0;
-    }
-    if (pSkillTxt->aurastate < 0) {
-      return 0;
-    }
-    if ((int)pSkillTxt->aurastate >= sgptDataTable->nTxtStatesSize) {
-      return 0;
-    }
+            pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
+            if (pTarget) {
+              UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pTarget, 0);
+            }
 
-    D2SkillStrc* pSkill = D2Common::Units::GetCurrentSkill(pUnit);
-    if (!pSkill) {
-      return 0;
-    }
+            nFrenzyCount = D2Common::Skills::SKILL_GetParam1(pSkill);
+            if (!nFrenzyCount) {
+              return 1;
+            }
 
-    eD2Skills eCurrentSkill = D2Common::Skills::GetSkillId(pSkill, ".\\SKILLS\\SkillDruid.cpp", 0x2af);
-    if (eCurrentSkill != eSkill) {
-      return 0;
-    }
-    if (pUnit) {
-      pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
-    }
+            nUnitGUID = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->auralencalc, eSkill, nSkillLvl);
+            nFrenzyStacks = pGame->dwGameFrame + nUnitGUID;
+            pStatsEx = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (int)pSkillTxt->aurastate);
+            if (!pStatsEx) {
+              if (!pUnit) {
+                nUnitGUID = -1;
+                eUnitType = UNIT_COUNT;
+              } else {
+                nUnitGUID = pUnit->nUnitGUID;
+                eUnitType = pUnit->eUnitType;
+              }
 
-    D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
-    if (pTarget) {
-      UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pTarget, 0);
-    }
+              pStatsEx = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(pGame->pMemoryPool, 2, nFrenzyStacks, eUnitType, nUnitGUID);
+              if (!pStatsEx) {
+                return 1;
+              }
 
-    int32_t nFrenzyCount = D2Common::Skills::SKILL_GetParam1(pSkill);
-    if (!nFrenzyCount) {
-      return 1;
-    }
+              D2Common::Stats::StatsEx::SetState(pStatsEx, (int)pSkillTxt->aurastate);
+              D2Common::Stats::StatsEx::STATLIST_SetExpireFunction(pStatsEx, SkillsServer::DefaultExpireFunction);
+              D2Common::Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit, pStatsEx, 1);
+              D2Common::DATATBLS::ItemStats::SetState(pUnit, (int)pSkillTxt->aurastate, 1);
+            }
 
-    int32_t nUnitGUID = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->auralencalc, eSkill, nSkillLvl);
-    int nFrenzyStacks = pGame->dwGameFrame + nUnitGUID;
-    D2StatListExStrc* pStatsEx = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (int)pSkillTxt->aurastate);
-    if (!pStatsEx) {
-      eD2UnitType eUnitType;
-      if (!pUnit) {
-        nUnitGUID = -1;
-        eUnitType = UNIT_COUNT;
-      } else {
-        nUnitGUID = pUnit->nUnitGUID;
-        eUnitType = pUnit->eUnitType;
+            D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatsEx, nFrenzyStacks);
+            GAME::Event::SetEvent(pGame, pUnit, 0xc, nFrenzyStacks, 0, 0);
+            D2Common::DATATBLS::ItemStats::D2StatesTogglegfx(pUnit, (int)pSkillTxt->aurastate, 1);
+            nUnitGUID = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[1], eSkill, nSkillLvl);
+            nFrenzyStacks = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_skill_frenzy, 0);
+            if (nUnitGUID >= nFrenzyStacks + 1) {
+              nCurFrenzyStacks = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_skill_frenzy, 0);
+              nUnitGUID = nCurFrenzyStacks + 1;
+            }
+
+            D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_skill_frenzy, nUnitGUID, 0);
+            D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_modifierlist_skill, eSkill, 0);
+            D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_modifierlist_level, nSkillLvl, 0);
+            D2SetAurastatsFromSkills(pUnit, pStatsEx, pSkillTxt, eSkill, nUnitGUID);
+            return 1;
+          }
+        }
       }
-
-      pStatsEx = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(pGame->pMemoryPool, 2, nFrenzyStacks, eUnitType, nUnitGUID);
-      if (!pStatsEx) {
-        return 1;
-      }
-
-      D2Common::Stats::StatsEx::SetState(pStatsEx, (int)pSkillTxt->aurastate);
-      D2Common::Stats::StatsEx::STATLIST_SetExpireFunction(pStatsEx, SkillsServer::DefaultExpireFunction);
-      D2Common::Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit, pStatsEx, 1);
-      D2Common::DATATBLS::ItemStats::SetState(pUnit, (int)pSkillTxt->aurastate, 1);
     }
 
-    D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatsEx, nFrenzyStacks);
-    GAME::Event::SetEvent(pGame, pUnit, 0xc, nFrenzyStacks, 0, 0);
-    D2Common::DATATBLS::ItemStats::D2StatesTogglegfx(pUnit, (int)pSkillTxt->aurastate, 1);
-    nUnitGUID = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[1], eSkill, nSkillLvl);
-    nFrenzyStacks = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_skill_frenzy, 0);
-    if (nUnitGUID >= nFrenzyStacks + 1) {
-      nCurFrenzyStacks = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_skill_frenzy, 0);
-      nUnitGUID = nCurFrenzyStacks + 1;
-    }
-
-    D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_skill_frenzy, nUnitGUID, 0);
-    D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_modifierlist_skill, eSkill, 0);
-    D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_modifierlist_level, nSkillLvl, 0);
-    D2SetAurastatsFromSkills(pUnit, pStatsEx, pSkillTxt, eSkill, nUnitGUID);
-    return 1;
+    return 0;
 }
 
 // Server StFunc for Druid skill index 57: validates the active skill matches eSkill and that the skill's auratarget state is active on the caster. Performs a to-hit check; on hit, evaluates damage calcs (calc[0], optional elemental calc[3]) and sets Param1=1. Aborts early (returns 0) if the required aura state is not present. Likely the follow-up hit step for a shapeshifter skill gated on an active buff.
@@ -915,9 +909,9 @@ static void __stdcall SKILLDRUID_CreateAuraMissile(::SGAMEDATA * pGame, D2UnitSt
     sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.nTotalFrames = nDuration;
     sSkillArg.nFlags = 0x8000;
+    sSkillArg.nMissileTxtNo = eMissileId;
     sSkillArg.pOwner = pTargetUnit;
     sSkillArg.pMissile = pTargetUnit;
-    sSkillArg.nMissileTxtNo = eMissileId;
     sSkillArg.eSkillNo = eSkill;
     D2UnitStrc* pMissile = MISSILES::Missiles::CreatingMissile(pGame, &sSkillArg);
     if (!pMissile) {
@@ -1182,7 +1176,7 @@ BOOL __fastcall Skills_SrvDoFunc_145_Hurricane(::SGAMEDATA * pGame, D2UnitStrc *
         if (nAuraStateId >= 0 && (int)nAuraStateId < sgptDataTable->nTxtStatesSize) {
           eActiveAuraState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, (int)nAuraStateId);
           if (eActiveAuraState != STATE_none) {
-            if (!pSkillTxt->InTown && (pRoom = D2Common::Units::UNITS_GetRoom(pUnit) , pRoom != 0) && (bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom) , bIsInTown != 0)) {
+            if (!(*((uint8_t*)pSkillTxt + 0x5) & (uint8_t)gadwBitMasks[0]) && (pRoom = D2Common::Units::UNITS_GetRoom(pUnit) , pRoom != 0) && (bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom) , bIsInTown != 0)) {
               pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (int)pSkillTxt->aurastate);
               if (pStatList) {
                 D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStatList);
@@ -1251,7 +1245,7 @@ BOOL __fastcall Skills_SrvDoFunc_146_CycloneArmor(::SGAMEDATA * pGame, D2UnitStr
         if (nAuraStateId >= 0 && (int)nAuraStateId < sgptDataTable->nTxtStatesSize) {
           eActiveAuraState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, (int)nAuraStateId);
           if (eActiveAuraState != STATE_none) {
-            if (!pSkillTxt->InTown && (pRoom = D2Common::Units::UNITS_GetRoom(pUnit) , pRoom != 0) && (bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom) , bIsInTown != 0)) {
+            if (!(*((uint8_t*)pSkillTxt + 0x5) & (uint8_t)gadwBitMasks[0]) && (pRoom = D2Common::Units::UNITS_GetRoom(pUnit) , pRoom != 0) && (bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom) , bIsInTown != 0)) {
               pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (int)pSkillTxt->aurastate);
               if (pStatList) {
                 D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStatList);
@@ -1347,6 +1341,7 @@ static int32_t SKILLDRUID_GetSummonHealthBonus(int * pnAbsorb, int32_t nAbsorbDe
 BOOL __fastcall ITEMEVENT_DruidSummonHpAura(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
     bool _bPctChanged;
     bool bPctChanged;
+    int nLastAbsorbPct;
     int32_t nAbsorbCtx0;
     int32_t nAbsorbCtx1;
     int32_t nAbsorbCtx2;
@@ -1384,42 +1379,42 @@ BOOL __fastcall ITEMEVENT_DruidSummonHpAura(::SGAMEDATA * pGame, uint32_t nUnitE
     uint32_t n100Percent = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, eAuraStat, 0);
     if ((int)n100Percent > 0) {
       eAuraStat = (eD2UnitStat)pSkillTxt->aurastat[0];
-      if (!((int)eAuraStat >= 0 && (int)eAuraStat < sgptDataTable->nTxtItemStatCostSize)) {
-        return 0;
-      }
-
-      int32_t nAbsorbCur = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, eAuraStat, 0);
-      if (nAbsorbCur) {
-        int nLastAbsorbPct;
-        if (pDamage->dwFireDmg > 0) {
-          nAbsorbCur = SKILLDRUID_GetSummonHealthBonus(&pDamage->dwFireDmg, nAbsorbCur);
-        }
-        if (pDamage->dwColdDmg > 0) {
-          nAbsorbCur = SKILLDRUID_GetSummonHealthBonus(&pDamage->dwColdDmg, nAbsorbCur);
-        }
-        if (pDamage->dwLtngDamage > 0) {
-          nAbsorbCur = SKILLDRUID_GetSummonHealthBonus(&pDamage->dwLtngDamage, nAbsorbCur);
-        }
-
-        D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatList, eAuraStat, nAbsorbCur, 0);
-        if (nAbsorbCur > 0) {
-          nAbsorbCur = D2Client::Stats::D2ApplyPercent(nAbsorbCur, 100, n100Percent);
-          nLastAbsorbPct = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_unsentparam1, 0);
-          _bPctChanged = (uint32_t)(nAbsorbCur - nLastAbsorbPct >= 5);
-          if (!_bPctChanged) {
-            return 1;
+      if ((int)eAuraStat >= 0 && (int)eAuraStat < sgptDataTable->nTxtItemStatCostSize) {
+        int32_t nAbsorbCur;
+        nAbsorbCur = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, eAuraStat, 0);
+        if (nAbsorbCur) {
+          if (pDamage->dwFireDmg > 0) {
+            nAbsorbCur = SKILLDRUID_GetSummonHealthBonus(&pDamage->dwFireDmg, nAbsorbCur);
+          }
+          if (pDamage->dwColdDmg > 0) {
+            nAbsorbCur = SKILLDRUID_GetSummonHealthBonus(&pDamage->dwColdDmg, nAbsorbCur);
+          }
+          if (pDamage->dwLtngDamage > 0) {
+            nAbsorbCur = SKILLDRUID_GetSummonHealthBonus(&pDamage->dwLtngDamage, nAbsorbCur);
           }
 
-          D2Common::DATATBLS::ItemStats::D2StatesTogglegfx(pUnit, (int)pSkillTxt->aurastate, 1);
-          D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatList, UNITSTAT_unsentparam1, nAbsorbCur, 0);
-          return 1;
+          D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatList, eAuraStat, nAbsorbCur, 0);
+          if (nAbsorbCur > 0) {
+            nAbsorbCur = D2Client::Stats::D2ApplyPercent(nAbsorbCur, 100, n100Percent);
+            nLastAbsorbPct = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_unsentparam1, 0);
+            _bPctChanged = (uint32_t)(nAbsorbCur - nLastAbsorbPct >= 5);
+            if (!_bPctChanged) {
+              return 1;
+            }
+
+            D2Common::DATATBLS::ItemStats::D2StatesTogglegfx(pUnit, (int)pSkillTxt->aurastate, 1);
+            D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatList, UNITSTAT_unsentparam1, nAbsorbCur, 0);
+            return 1;
+          }
         }
+
+        D2Common::DATATBLS::ItemStats::SetState(pUnit, (int)pSkillTxt->aurastate, 0);
+        D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStatList);
+        D2Common::Stats::StatsEx::FreeStatList(&pStatList->sStatList);
+        return 1;
       }
 
-      D2Common::DATATBLS::ItemStats::SetState(pUnit, (int)pSkillTxt->aurastate, 0);
-      D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStatList);
-      D2Common::Stats::StatsEx::FreeStatList(&pStatList->sStatList);
-      return 1;
+      return 0;
     }
 
     return 0;

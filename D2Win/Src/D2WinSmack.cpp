@@ -134,23 +134,25 @@ BOOL __fastcall Draw(::D2WinSmack * pSmack) {
       exit(-1);
     }
 
-    uint32_t dwState = pSmack->sControl.dwState;
-    if (!(dwState & 4 && dwState & 1)) {
-      return 0;
-    }
-    if (gbSmackerKeepTempFile) {
-      if (gpSmackerVideoBuffer[0] != '\0') {
-        D2WINSMACK_LoadAndDecodeSmacker(pSmack, gpSmackerVideoBuffer, (uint32_t)gbSmackerVideoFlags);
+    uint32_t uVar1 = pSmack->sControl.dwState;
+    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
+      if (gbSmackerKeepTempFile) {
+        if (gpSmackerVideoBuffer[0] != '\0') {
+          D2WINSMACK_LoadAndDecodeSmacker(pSmack, gpSmackerVideoBuffer, (uint32_t)gbSmackerVideoFlags);
+        }
+
+        gbSmackerKeepTempFile = 0;
       }
 
-      gbSmackerKeepTempFile = 0;
+      D2gfx::D2GFX::D2GFX_PlayerSmacker(&pSmack->sSmackerCtx);
+      return 1;
     }
 
-    D2gfx::D2GFX::D2GFX_PlayerSmacker(&pSmack->sSmackerCtx);
-    return 1;
+    return 0;
 }
 
 BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
+    BOOL bOnPressResult;
     ::D2WinSmack* pSmack = (::D2WinSmack*)pControlMsg->pControl;
     if (pSmack->sControl.neD2FormType != FORM_Smack) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc0);
@@ -158,28 +160,29 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
     }
 
     uint32_t uVar1 = pSmack->sControl.dwState;
-    if (!(uVar1 & 4 && uVar1 & 1)) {
-      return 0;
+    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
+      OnPress pOVar2;
+      pOVar2 = pSmack->sControl.fpOnPress;
+      if (pOVar2) {
+        bOnPressResult = (*pOVar2)(pControlMsg);
+        return bOnPressResult;
+      }
     }
 
-    OnPress pOVar2 = pSmack->sControl.fpOnPress;
-    if (!pOVar2) {
-      return 0;
-    }
-
-    BOOL bOnPressResult = (*pOVar2)(pControlMsg);
-    return bOnPressResult;
+    return 0;
 }
 
 // @sourcefile .\Src\D2WinSmack.cpp
 ::D2WinSmack * __fastcall D2WinSmack(int32_t nParam1, int32_t nParam2, int32_t nWidth, int32_t nHeight, OnPress pfnOnPress) {
+    uint32_t uVar1;
     ::D2WinSmack* pSmack = D2_NEW_AT(::D2WinSmack, ".\\Src\\D2WinSmack.cpp", 0x23);
     memset(pSmack, 0, 0x150);
     pSmack->sControl.neD2FormType = FORM_Smack;
     int* pState = &pSmack->sControl.dwState;
-    *pState |= 1;
+    *pState |= gadwBitMasks[0];
+    uVar1 = pSmack->sControl.dwState | gadwBitMasks[2];
     pSmack->sControl.dwSizeX = nWidth;
-    pSmack->sControl.dwState |= 4;
+    pSmack->sControl.dwState = uVar1;
     pSmack->sControl.pNext = 0;
     pSmack->sControl.fpMouse = 0;
     pSmack->sControl.fpListCheck = 0;

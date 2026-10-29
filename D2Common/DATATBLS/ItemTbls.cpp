@@ -1511,11 +1511,11 @@ D2MagicAffixTxt * __stdcall TXT_magicaffixes_GetLine(int32_t nAffixIndex) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c8);
       exit(-1);
     }
-    if (!(nAffixIndex <= gsMagicAffixTable.nSize && nAffixIndex > 0)) {
-      return nullptr;
+    if (nAffixIndex <= gsMagicAffixTable.nSize && nAffixIndex > 0) {
+      return gsMagicAffixTable.pTable + nAffixIndex - 1;
     }
 
-    return gsMagicAffixTable.pTable + nAffixIndex - 1;
+    return nullptr;
 }
 
 // Loads and compiles the rare-affix data tables. Defines the shared field schema (name, version, itype1-7, etype1-4 with itemtypes linker) and compiles both raresuffix.txt and rareprefix.txt via CompileTxt (row stride 0x48), then allocates one combined buffer (pTxtRareAffixes = suffix rows followed by prefix rows) and frees the temporaries. Finally resolves each row's name string into its string-table id (STRTABLE_LookupString) stored at row offset 0xc. Populates globals pTxtRareAffixes/pTxtRareSuffix/pTxtRarePrefix and nTxtRareAffixesSize.
@@ -1642,16 +1642,17 @@ D2RareAffixTableStrc * __stdcall TXT_RareAffixes_GetTableInfo() {
 
 // Returns rare affix group line for given 1-based index (72 bytes/entry). Used for rare item name generation (GetItemName).
 D2RareAffixTxt * __stdcall TXT_RareAffixes_GetLine(int32_t nIndex) {
-    if (!(nIndex <= gsRareAffixTable.nSize && nIndex > 0)) {
-      return nullptr;
-    }
-    if (!gsRareAffixTable.pTable) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 799);
-      exit(-1);
+    if (nIndex <= gsRareAffixTable.nSize && nIndex > 0) {
+      if (!gsRareAffixTable.pTable) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 799);
+        exit(-1);
+      }
+
+      return gsRareAffixTable.pTable + nIndex - 1;
+      return gsRareAffixTable.pTable + nIndex - 1;
     }
 
-    return gsRareAffixTable.pTable + nIndex - 1;
-    return gsRareAffixTable.pTable + nIndex - 1;
+    return nullptr;
 }
 
 // Loads and compiles uniqueitems.txt into sgtDataTable.pTxtUniqueItems (record stride 0x14C). Builds the column-binding descriptor: index, version, enabled/ladder/nolimit/carry1 bit flags, code (item base), rarity, lvl, lvl req, chr/inv transform colors, flippyfile/invfile graphics, cost mult/add, drop/use sounds, and the 12 prop/par/min/max modifier groups (props linked to the Properties table, par parsed via ITEMTBLS_ParseSkillMonTypeOrStateId). Creates the unique-items txt-link, calls CompileTxt, and error-halts if more than 0x7FFE rows. Then for each record: writes its sequential index, parses the index string field, and resolves the display-name string-table id (defaulting to 0x1507 if not found). __stdcall(void). Side effect: populates the global unique-items data table.
@@ -3692,7 +3693,7 @@ int SORT_ItemDescPriority(LPCVOID pParam1, LPCVOID pParam2) {
 // Builds the itemstatcost.txt field-descriptor array (52 columns) and compiles it into the in-memory ItemStatCost table via DataTbls::CompileTxt (record size 0x144), enforcing a max of 0x1FF stats (fatal error otherwise). Then post-processes op-relationships: clears each stat's aOpBaseDependents arrays to -1, derives the charged-skill-level bit count (clamped 1..8, default 6) and its mask, and for every stat with an op walks its op-base/op-stat references to populate the dependency graph (aOpBaseDependents, aOpRelations, bHasOpBaseDependencies/bHasOp4Or5Dependency flags) plus special-case stat flag bits. Finally collects stats with a nonzero descpriority, qsorts them via SORT_ItemDescPriority, and allocates/stores the sorted pItemStatCostDescPriority list. __fastcall, pMemory in ECX.
 // @sourcefile .\DATATBLS\ItemTbls.cpp
 void __fastcall TXT_AllocTxt_itemstatcost(D2PoolManagerStrc * pMemory) {
-    uint8_t bStatFlagBit;
+    uint8_t bVar2;
     int nDepSlotIdx;
     uint32_t nOpBaseStatId;
     uint8_t* pOpRelPtr;
@@ -4074,23 +4075,18 @@ void __fastcall TXT_AllocTxt_itemstatcost(D2PoolManagerStrc * pMemory) {
                 sgtDataTable.pTxtItemStatCost[nOpBaseStatId].aOpRelations[nStatCount].nOpBaseStat = *pOpBase;
                 sgtDataTable.pTxtItemStatCost[nOpBaseStatId].aOpRelations[nStatCount].nSourceOpParam = *pOpParam;
                 sgtDataTable.pTxtItemStatCost[nOpBaseStatId].bReferencedByOpStat = 1;
-                if (nStatByteOffset == 0x8e0 || nOpBaseStatId == 7) {
-                  bStatFlagBit = 0x40;
-                  sgtDataTable.pTxtItemStatCost->saveBits[nStatByteOffset - 0x19] |= bStatFlagBit;
+                bVar2 = (uint8_t)gadwBitMasks[6];
+                if (nStatByteOffset == 0x8e0 || nOpBaseStatId == 7 || (bVar2 = (uint8_t)gadwBitMasks[7] , nStatByteOffset == 0xb68) || nOpBaseStatId == 9) {
+                  sgtDataTable.pTxtItemStatCost->saveBits[nStatByteOffset - 0x19] |= bVar2;
                 } else {
-                  if (nStatByteOffset == 0xb68 || nOpBaseStatId == 9) {
-                    bStatFlagBit = 0x80;
-                    sgtDataTable.pTxtItemStatCost->saveBits[nStatByteOffset - 0x19] |= bStatFlagBit;
-                  } else {
-                    if (nStatByteOffset != 0xdf0 && nOpBaseStatId != 0xb) {
-                      break;
-                    }
-
-                    sgtDataTable.pTxtItemStatCost->saveBits[nStatByteOffset - 0x18] |= 1;
+                  if (nStatByteOffset != 0xdf0 && nOpBaseStatId != 0xb) {
+                    break;
                   }
+
+                  sgtDataTable.pTxtItemStatCost->saveBits[nStatByteOffset - 0x18] |= (uint8_t)gadwBitMasks[0];
                 }
 
-                sgtDataTable.pTxtItemStatCost->saveBits[nStatByteOffset - 0x19] |= 0x20;
+                sgtDataTable.pTxtItemStatCost->saveBits[nStatByteOffset - 0x19] |= (uint8_t)gadwBitMasks[5];
                 break;
               }
               if (!*pOpRelPtr) {

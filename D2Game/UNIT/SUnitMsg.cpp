@@ -413,7 +413,7 @@ void __fastcall PLAYER_SendStateListToClient(D2UnitStrc * pUnit, D2ClientStrc * 
             eState = nSetBitIdx + nStateBaseIdx;
             if ((int)eState < 0 || (int)eState >= sgptDataTable->nTxtStatesSize || !(sgptDataTable->pTxtStates + eState)) {
               nFlagDwordVal = *pFlagDword;
-            } else if (sgptDataTable->pTxtStates[eState].nosend) {
+            } else if (*((uint8_t*)&sgptDataTable->pTxtStates[eState] + 0x10) & (uint8_t)gadwBitMasks[0]) {
               nFlagDwordVal = *pFlagDword;
             } else {
               nBitPos = Fog::BitBuffer::GetNextPositon(&bitBuf);
@@ -442,7 +442,7 @@ void __fastcall PLAYER_SendStateListToClient(D2UnitStrc * pUnit, D2ClientStrc * 
                         if (bySendBits > 0) {
                           nValue = uVar1;
                           if (bySendBits < 0x20) {
-                            if (pItemStatCost->dwItemStatFlags & ITEMSTATCOSTFLAG_SIGNED) {
+                            if ((char)pItemStatCost->dwItemStatFlags & (uint8_t)gadwBitMasks[1]) {
                               nMaxVal = -1 << (bySendBits - 1 & 0x1f);
                               nClampedVal = uVar1;
                               if ((int)uVar1 <= (int)nMaxVal) {
@@ -563,7 +563,7 @@ void __fastcall PLAYER_SendStateDeltaToClient(D2UnitStrc * pUnit, D2ClientStrc *
             if ((int)eState_00 < 0 || (int)eState_00 >= sgptDataTable->nTxtStatesSize || !(sgptDataTable->pTxtStates + eState_00)) {
               nFlagDwordVal = *pCurFlagDword;
             } else {
-              if (sgptDataTable->pTxtStates[eState_00].nosend) {
+              if (*((uint8_t*)&sgptDataTable->pTxtStates[eState_00] + 0x10) & (uint8_t)gadwBitMasks[0]) {
                 nFlagDwordVal = *pCurFlagDword;
               } else {
                 eCurState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, eState_00);
@@ -592,7 +592,7 @@ void __fastcall PLAYER_SendStateDeltaToClient(D2UnitStrc * pUnit, D2ClientStrc *
                               if (bySendBits > 0) {
                                 nValue = uVar1;
                                 if (bySendBits < 0x20) {
-                                  if (pItemStatCost->dwItemStatFlags & ITEMSTATCOSTFLAG_SIGNED) {
+                                  if ((char)pItemStatCost->dwItemStatFlags & (uint8_t)gadwBitMasks[1]) {
                                     nMaxVal = -1 << (bySendBits - 1 & 0x1f);
                                     nClampedVal = uVar1;
                                     if ((int)uVar1 <= (int)nMaxVal) {
@@ -1122,14 +1122,6 @@ void __fastcall SERVER_UnitQueuePacketSend(D2UnitStrc * pUnit, D2ClientStrc * pC
     uint16_t wTargetGUIDLo;
     for (pMsg = pUnit->pMsgFirst; pMsg; pMsg = pMsg->pNext) {
       switch (pMsg->nOpcode) {
-        case '#':
-          DVar5 = pMsg->uArgs.s23.field_0x0;
-        wTargetX = pMsg->uArgs.s23.field_0x4;
-        nSkillSlot = pMsg->uArgs.s23.field_0x6;
-        dwUnitGUID = D2Client::UNIT::GetGUID(pUnit);
-        ePacketUnitType = D2Client::Units::GetType(pUnit);
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x23_SetSkill(pClient, (uint8_t)ePacketUnitType, dwUnitGUID, nSkillSlot, wTargetX, DVar5);
-        break;
         case 0x99:
           wTargetGUIDHi = (uint16_t)pMsg->uArgs.s99.field_0x8;
         bySendToTarget = pMsg->uArgs.s99.field_0x2;
@@ -1158,14 +1150,11 @@ void __fastcall SERVER_UnitQueuePacketSend(D2UnitStrc * pUnit, D2ClientStrc * pC
         case 0xa1:
           GAME::SCmd::NET_D2GS_SERVER_Send_0xA1_0xA2_0xA0_MercExperience(pClient, pUnit, (uint16_t)pMsg->uArgs.sA1.field_0x4, pMsg->uArgs.sA1.nOldValue, pMsg->uArgs.sA1.nNewValue);
         break;
-        case 0xa3:
-          GAME::SCmd::NET_D2GS_SERVER_Send_0xA3_PROGRESSIVE_SKILL(pClient, pMsg->uArgs.sA3.field_0x0, pMsg->uArgs.sA3.field_0x2, pMsg->uArgs.sA3.field_0x4, (uint8_t)pMsg->uArgs.sA3.eUnitType, pMsg->uArgs.sA3.nUnitGUID, (uint8_t)pMsg->uArgs.sA3.eTargetType, pMsg->uArgs.sA3.nTargetGUID, pMsg->uArgs.sA3.dwParam1, pMsg->uArgs.sA3.dwParam2);
-        break;
         case 0xa4:
           GAME::SCmd::NET_D2GS_SERVER_Send_0xA4_PRELOAD_MONSTER(pClient, pMsg->uArgs.sA4.nClassId);
         break;
-        case 0xa5:
-          GAME::SCmd::NET_D2GS_SERVER_Send_0xA5_FORCESTOPSKILL(pClient, pMsg->uArgs.sA5.nUnitType, pMsg->uArgs.sA5.nUnitGUID, pMsg->uArgs.sA5.field_0x8);
+        case 0xa3:
+          GAME::SCmd::NET_D2GS_SERVER_Send_0xA3_PROGRESSIVE_SKILL(pClient, pMsg->uArgs.sA3.field_0x0, pMsg->uArgs.sA3.field_0x2, pMsg->uArgs.sA3.field_0x4, (uint8_t)pMsg->uArgs.sA3.eUnitType, pMsg->uArgs.sA3.nUnitGUID, (uint8_t)pMsg->uArgs.sA3.eTargetType, pMsg->uArgs.sA3.nTargetGUID, pMsg->uArgs.sA3.dwParam1, pMsg->uArgs.sA3.dwParam2);
         break;
         case 0xab:
           dwTmp = D2Client::UNIT::CheckFlags(pUnit, UNITFLAG_UPGRLIFENHITCLASS);
@@ -1179,6 +1168,19 @@ void __fastcall SERVER_UnitQueuePacketSend(D2UnitStrc * pUnit, D2ClientStrc * pC
             }
           }
         }
+
+        break;
+        case 0xa5:
+          GAME::SCmd::NET_D2GS_SERVER_Send_0xA5_FORCESTOPSKILL(pClient, pMsg->uArgs.sA5.nUnitType, pMsg->uArgs.sA5.nUnitGUID, pMsg->uArgs.sA5.field_0x8);
+        break;
+        case '#':
+          DVar5 = pMsg->uArgs.s23.field_0x0;
+        wTargetX = pMsg->uArgs.s23.field_0x4;
+        nSkillSlot = pMsg->uArgs.s23.field_0x6;
+        dwUnitGUID = D2Client::UNIT::GetGUID(pUnit);
+        ePacketUnitType = D2Client::Units::GetType(pUnit);
+        GAME::SCmd::NET_D2GS_SERVER_Send_0x23_SetSkill(pClient, (uint8_t)ePacketUnitType, dwUnitGUID, nSkillSlot, wTargetX, DVar5);
+        break;
       }
     }
 }
@@ -1238,6 +1240,32 @@ void __fastcall SERVER_SendInitUnitPacket(::SGAMEDATA * pGame, D2UnitStrc * pUni
       case UNIT_PLAYER:
         GAME::SCmd::NET_D2GS_SERVER_Send_0x59_AssignPlayer(pClient, pUnit->nUnitGUID, (uint8_t)pUnit->nClassId, pUnit->pUnitData.pUnitDataPlayer->szCharName, wPosX, wPosY);
       break;
+      case UNIT_ITEM:
+        if (pUnit->eUnitFlags >> 4 & 1) {
+          if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Run && (dwTargetGUID = D2Client::UNIT::CheckFlags(pUnit, UNITFLAG_SENDREFRESHMSG) , dwTargetGUID != 0)) {
+            GAME::SCmd::Send0x9CItemDroppedToGround(pClient, pPlayerUnit_lcl, pUnit, ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD));
+          } else {
+            GAME::SCmd::Send0x9CItemAddToGround(pClient, pUnit, ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD));
+          }
+        }
+      break;
+      case UNIT_OBJECT:
+        GAME::SCmd::NET_D2GS_SERVER_Send_0x51_NEWOBJECT(pClient, 'Q', '\x02', pUnit->nUnitGUID, (uint16_t)pUnit->nClassId, wPosX, wPosY, *(uint8_t*)&pUnit->eAnimMode, pUnit->pUnitData.pUnitDataMonster->Components[0]);
+      if (pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->SubClass & 4U) {
+        GAME::SCmd::NET_D2GS_SERVER_Send_0x60_SETWARPDEST(pClient, pUnit);
+        pGame_00 = pGameSaved;
+        if ((short int)(uintptr_t)pMonSkillEntry == 0x3b) {
+          pPlayerUnit_lcl = SUnit::UNITS_FindPortalOwnerUnit(pGameSaved, pUnit);
+          dwTargetGUID = -1;
+          if (pPlayerUnit_lcl) {
+            dwTargetGUID = pPlayerUnit_lcl->nUnitGUID;
+          }
+
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x82_PortalOwnership(pGame_00, pClient, pUnit->nUnitGUID, dwTargetGUID);
+        }
+      }
+
+      break;
       case UNIT_MONSTER:
         BVar1 = SUnit::CheckForModeZeroDeath(pUnit);
       if (!BVar1 || (nSkillLevel = D2Common::DATATBLS::ItemStats::STATES_HasLightState(pUnit) , !nSkillLevel)) {
@@ -1275,35 +1303,9 @@ void __fastcall SERVER_SendInitUnitPacket(::SGAMEDATA * pGame, D2UnitStrc * pUni
       }
 
       break;
-      case UNIT_OBJECT:
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x51_NEWOBJECT(pClient, 'Q', '\x02', pUnit->nUnitGUID, (uint16_t)pUnit->nClassId, wPosX, wPosY, *(uint8_t*)&pUnit->eAnimMode, pUnit->pUnitData.pUnitDataMonster->Components[0]);
-      if (pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->SubClass & 4U) {
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x60_SETWARPDEST(pClient, pUnit);
-        pGame_00 = pGameSaved;
-        if ((short int)(uintptr_t)pMonSkillEntry == 0x3b) {
-          pPlayerUnit_lcl = SUnit::UNITS_FindPortalOwnerUnit(pGameSaved, pUnit);
-          dwTargetGUID = -1;
-          if (pPlayerUnit_lcl) {
-            dwTargetGUID = pPlayerUnit_lcl->nUnitGUID;
-          }
-
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x82_PortalOwnership(pGame_00, pClient, pUnit->nUnitGUID, dwTargetGUID);
-        }
-      }
-
-      break;
       case UNIT_MISSILE:
         nMiscVal = D2Common::PATH::DynamicPath::GetVelocity(pUnit->pPath.pDynamicPath);
       MISSILES::Missiles::MISSILES_SendMissilePacket(pClient, pGameSaved, pUnit, nMiscVal);
-      break;
-      case UNIT_ITEM:
-        if (pUnit->eUnitFlags >> 4 & 1) {
-          if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Run && (dwTargetGUID = D2Client::UNIT::CheckFlags(pUnit, UNITFLAG_SENDREFRESHMSG) , dwTargetGUID != 0)) {
-            GAME::SCmd::Send0x9CItemDroppedToGround(pClient, pPlayerUnit_lcl, pUnit, ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD));
-          } else {
-            GAME::SCmd::Send0x9CItemAddToGround(pClient, pUnit, ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD));
-          }
-        }
       break;
       default:
         GAME::SCmd::NET_D2GS_SERVER_Send_0x09_NEWUNIT(pClient, '\t', (char)pUnit->eUnitType, pUnit->nUnitGUID, (uint8_t)pUnit->nClassId, wPosX, wPosY);

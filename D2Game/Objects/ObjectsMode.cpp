@@ -862,18 +862,18 @@ BOOL __fastcall OBJOP_OpenTimedDoor(D2ObjectOperateFnArg * pOperation) {
 }
 
 BOOL __fastcall OBJOP_UseStairAlias(D2ObjectOperateFnArg * pOperation) {
+    BOOL bWaygateResult;
     D2UnitStrc* pVictimUnit = pOperation->sArg.pVictim;
-    if (!pVictimUnit) {
-      return 0;
+    if (pVictimUnit) {
+      eCollisionFlags eCollision;
+      eCollision = pVictimUnit->eAnimMode.eMissileCollision;
+      if (eCollision != COLLIDE_NONE && eCollision == COLLIDE_BLOCK_MISSILE) {
+        bWaygateResult = OBJOP_UseWaygate(pOperation);
+        return bWaygateResult;
+      }
     }
 
-    eCollisionFlags eCollision = pVictimUnit->eAnimMode.eMissileCollision;
-    if (!(eCollision != COLLIDE_NONE && eCollision == COLLIDE_BLOCK_MISSILE)) {
-      return 0;
-    }
-
-    BOOL bWaygateResult = OBJOP_UseWaygate(pOperation);
-    return bWaygateResult;
+    return 0;
 }
 
 // Object operate-fn for breakable containers (barrels, chests that shatter). Returns 1 early if the object is alive (not in Death mode). Otherwise marks the object updated, removes its collision, clears or sets UNITFLAG_TARGETABLE based on the txt Selectable flag for the current anim mode, and if Mode[2] is set schedules the opening animation frame event. Always returns 1.
@@ -963,8 +963,8 @@ void __fastcall OBJMODE_SpawnRandomMonsters(::SGAMEDATA * pGame, D2UnitStrc * pU
     D2SeedStrc seedNext = D2_SEED_NEXT(*sOperation.pSeed);
     *sOperation.pSeed = seedNext;
     int nSpawnCount = (seedNext.nSeedLow & 1) + 1;
-    sOperation.sArg.pGame = pGame;
     sOperation.sArg.pVictim = pUnit;
+    sOperation.sArg.pGame = pGame;
     int32_t nMonClassId = ObjectsRgn::OBJECT_HandleObjectMode(&sOperation.sArg);
     if (!(nMonClassId >= 0 && nMonClassId < sgptDataTable->nTxtMonStatsSize)) {
       return;
@@ -1311,10 +1311,7 @@ static BOOL __stdcall Shrines_GemShrine_SpawnGem(int32_t nItemClassId, D2UnitStr
     POINT* pNewPosition = &ptSpawnPos;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit2);
     D2UnitStrc* pSpawnedItem = (D2UnitStrc*)ITEMS::Items::Drop::FindBestSpotToSpawnItem(pRoom, &ptUnitCoords, pNewPosition, uSearchFlag, bSearchNeighbors);
-    if (!pSpawnedItem) {
-      BVar1 = 0;
-      pSpawnedItem = 0;
-    } else {
+    if (pSpawnedItem) {
       eInventoryPage ePreviousPage;
       memset(&sItemGenCtx, 0, 0x84);
       sItemGenCtx.pUnit = 0;
@@ -1348,6 +1345,9 @@ static BOOL __stdcall Shrines_GemShrine_SpawnGem(int32_t nItemClassId, D2UnitStr
         ITEMS::ItemMode::ITEMMODE_DeleteItemFromInventory(pGame, pUnit2, pUnit, 0);
         return 1;
       }
+    } else {
+      BVar1 = 0;
+      pSpawnedItem = 0;
     }
 
     return BVar1;
@@ -1398,7 +1398,8 @@ void __fastcall Shrines_GemShrineFunction(D2ObjectOperateFnArg * pArguments, D2S
 
     pGemItem = pArguments->pAttacker;
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pGemItem->sSeed);
-    pGemItem->sSeed = sNewSeed;
+    pGemItem->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+    pGemItem->sSeed.nSeedLow = sNewSeed.nSeedLow;
     switch (sNewSeed.nSeedLow % 6) {
       case 0:
         acItemCode = 0x20776367;
@@ -1603,13 +1604,15 @@ void __fastcall Shrines_ExplodingShrineFunction(D2ObjectOperateFnArg * pArgument
       lSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
       ptSpawnPos.y = (LONG)((uint64_t)lSeedProduct >> 0x20);
       sNewSeed = (D2SeedStrc)(lSeedProduct + (uint64_t)pCreatedItem->sSeed.nSeedHigh);
-      *pSeed = sNewSeed;
+      pSeed->nSeedHigh = sNewSeed.nSeedHigh;
+      pSeed->nSeedLow = sNewSeed.nSeedLow;
       uSeedHigh = sNewSeed.nSeedLow % uSeedHigh;
     } else {
       lSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
       ptSpawnPos.y = (LONG)((uint64_t)lSeedProduct >> 0x20);
       sNewSeed = (D2SeedStrc)(lSeedProduct + (uint64_t)pCreatedItem->sSeed.nSeedHigh);
-      *pSeed = sNewSeed;
+      pSeed->nSeedHigh = sNewSeed.nSeedHigh;
+      pSeed->nSeedLow = sNewSeed.nSeedLow;
       uSeedHigh = uSeedHigh - 1 & sNewSeed.nSeedLow;
     }
 
@@ -1736,13 +1739,15 @@ void __fastcall Shrines_PoisonShrineFunction(D2ObjectOperateFnArg * pArguments, 
       lSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
       ptSpawnPos.y = (LONG)((uint64_t)lSeedProduct >> 0x20);
       sNewSeed = (D2SeedStrc)(lSeedProduct + (uint64_t)pCreatedItem->sSeed.nSeedHigh);
-      *pSeed = sNewSeed;
+      pSeed->nSeedHigh = sNewSeed.nSeedHigh;
+      pSeed->nSeedLow = sNewSeed.nSeedLow;
       uSeedHigh = sNewSeed.nSeedLow % uSeedHigh;
     } else {
       lSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
       ptSpawnPos.y = (LONG)((uint64_t)lSeedProduct >> 0x20);
       sNewSeed = (D2SeedStrc)(lSeedProduct + (uint64_t)pCreatedItem->sSeed.nSeedHigh);
-      *pSeed = sNewSeed;
+      pSeed->nSeedHigh = sNewSeed.nSeedHigh;
+      pSeed->nSeedLow = sNewSeed.nSeedLow;
       uSeedHigh = uSeedHigh - 1 & sNewSeed.nSeedLow;
     }
 
@@ -1914,9 +1919,6 @@ static int32_t __stdcall OBJMODE_GetModifiedStatValueFromShrine(eD2UnitStat eUni
 
       case UNITSTAT_skill_armor_percent:
         return nParam;
-      default:
-        eUnitStat_00 = eUnitStat;
-      break;
       case UNITSTAT_tohit:
         pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, SKILL_Attack, -1);
       SKILL_GetAttackRateForWeapon(pSkill, pUnit, (int*)&eUnitStat, 1, pWeapon);
@@ -1928,6 +1930,11 @@ static int32_t __stdcall OBJMODE_GetModifiedStatValueFromShrine(eD2UnitStat eUni
       } else {
         eUnitStat_00 = UNITSTAT_secondary_mindamage;
       }
+
+      break;
+      default:
+        eUnitStat_00 = eUnitStat;
+      break;
     }
 
     eUnitStat = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eUnitStat_00, 0);
@@ -2194,7 +2201,8 @@ BOOL __fastcall OBJOP_SpawnQuestItemReward(D2ObjectOperateFnArg * pOperation) {
     pDVar2 = pOperation->pSeed;
     if ((int)(seedNext.nSeedLow % 0x14) > 0xc) {
       seedNext = D2_SEED_NEXT(*pDVar2);
-      *pDVar2 = seedNext;
+      pDVar2->nSeedHigh = seedNext.nSeedHigh;
+      pDVar2->nSeedLow = seedNext.nSeedLow;
       if (seedNext.nSeedLow & 1) {
         pOperation->sArg.pVictim->dwDropItemCode = 0x206b6269;
       } else {
@@ -2202,7 +2210,8 @@ BOOL __fastcall OBJOP_SpawnQuestItemReward(D2ObjectOperateFnArg * pOperation) {
       }
     } else {
       seedNext = D2_SEED_NEXT(*pDVar2);
-      *pDVar2 = seedNext;
+      pDVar2->nSeedHigh = seedNext.nSeedHigh;
+      pDVar2->nSeedLow = seedNext.nSeedLow;
       if (seedNext.nSeedLow & 1) {
         pOperation->sArg.pVictim->dwDropItemCode = 0x20637369;
       } else {
@@ -3680,28 +3689,28 @@ void __fastcall KillUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
         {
           byHitCount = pUnit->pUnitData.pUnitDataMonster->Components[0] + 1;
           pUnit->pUnitData.pUnitDataMonster->Components[0] = byHitCount;
-          if (byHitCount > 1) {
-            sOperation.pAttacker = 0;
-            sOperation.sArg.pGame = pGame;
-            sOperation.sArg.pVictim = pUnit;
+          if (byHitCount <= 1) {
             pDVar1 = D2Common::Units::UNITS_GetRoom(pUnit);
-            sOperation.pSeed = ObjectsRgn::GetObjectControlSeed(pGame, pDVar1);
-            sOperation.nObjectClassId = pUnit->nClassId;
-            ppDropResult = RollChestDrops(&sOperation, ITEMTYPE_None1);
-            if (ppDropResult) {
-              D2Common::Units::SetupUpdateFlag(pUnit, 3);
-              GAME::Event::SetEvent(pGame, pUnit, 9, (pTxtObjects->FrameCnt[3] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
-              return;
-            }
-
-            break;
+            ObjectsRgn::GetObjectControlSeed(pGame, pDVar1);
+            OBJMODE_TriggerProximityEffect(pGame, pUnit);
+            GAME::Event::SetEvent(pGame, pUnit, 9, pGame->dwGameFrame + 0x19, 0, 0);
+            return;
           }
 
+          sOperation.sArg.pGame = pGame;
+          sOperation.sArg.pVictim = pUnit;
+          sOperation.pAttacker = 0;
           pDVar1 = D2Common::Units::UNITS_GetRoom(pUnit);
-          ObjectsRgn::GetObjectControlSeed(pGame, pDVar1);
-          OBJMODE_TriggerProximityEffect(pGame, pUnit);
-          GAME::Event::SetEvent(pGame, pUnit, 9, pGame->dwGameFrame + 0x19, 0, 0);
-          return;
+          sOperation.pSeed = ObjectsRgn::GetObjectControlSeed(pGame, pDVar1);
+          sOperation.nObjectClassId = pUnit->nClassId;
+          ppDropResult = RollChestDrops(&sOperation, ITEMTYPE_None1);
+          if (ppDropResult) {
+            D2Common::Units::SetupUpdateFlag(pUnit, 3);
+            GAME::Event::SetEvent(pGame, pUnit, 9, (pTxtObjects->FrameCnt[3] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+            return;
+          }
+
+          break;
         }
       case Special1:
         {
@@ -4169,12 +4178,13 @@ D2UnitStrc ** __fastcall OBJMODE_RollChestDrops(D2ObjectOperateFnArg * pOperateA
     D2SeedStrc* pSeedPtr = pOperateArg->pSeed;
     D2SeedStrc seedNext = D2_SEED_NEXT(*pSeedPtr);
     *pSeedPtr = seedNext;
-    if (!(seedNext.nSeedLow % 100 <= 0x14)) {
-      return nullptr;
+    if (seedNext.nSeedLow % 100 <= 0x14) {
+      D2UnitStrc** ppItems;
+      ppItems = RollChestDrops(pOperateArg, ITEMTYPE_None1);
+      return ppItems;
     }
 
-    D2UnitStrc** ppItems = RollChestDrops(pOperateArg, ITEMTYPE_None1);
-    return ppItems;
+    return nullptr;
 }
 
 BOOL __fastcall OBJOP_OpenChestNoMonster(D2ObjectOperateFnArg * pOperation) {

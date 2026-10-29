@@ -21,53 +21,59 @@ namespace D2Client::Items::ItemMods {
 
 // Sets the socket count on an item unit. Computes the socket cap from the item's grid dimensions (width*height, max 6) and the item's own max socket limit, rolls a random socket count if none supplied, clamps to [1, cap], then sets ITEMFLAG_SOCKETED and UNITSTAT_item_numsockets on the item. Returns the final socket count, or 0 if the item is invalid or has zero area.
 uint32_t __fastcall ITEMPROP_SetSockets(uint32_t dwParam1, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, uint32_t nParam1, uint32_t dwParam2, int32_t nParam12, uint32_t dwParam3, uint32_t nParam2, int32_t nParam22, uint32_t nParam3, uint32_t dwParam4) {
+    uint32_t nDimProduct;
+    uint32_t uVar1;
+    uint32_t nSocketMin;
+    uint32_t nValue;
+    uint32_t nWidthOut;
     D2UnitStrc* pItemUnit2 = pUnit2;
     if (!nParam1) {
       return 0;
     }
-    if (!(pUnit2 && pUnit2->eUnitType == UNIT_ITEM)) {
-      return 0;
-    }
+    if (pUnit2 && pUnit2->eUnitType == UNIT_ITEM) {
+      uint8_t nMaxSockCap;
+      nWidthOut = dwParam1 & 0xffffff;
+      pUnit2 = (D2UnitStrc*)((uint32_t)pUnit2 & 0xffffff);
+      D2Common::ITEMS::Items::ITEM_GetItemsTxt_nWidthAndHeight(pItemUnit2, (char*)((uintptr_t)&nWidthOut + 3), (char*)((uintptr_t)&pUnit2 + 3), "d:\\diablo2\\Diablo2\\Source\\D2Common/CmnItems.h", 0x6dc);
+      nDimProduct = ((uint32_t)pUnit2 >> 0x18) * (nWidthOut >> 0x18);
+      nValue = 6;
+      if (nDimProduct < 7) {
+        nValue = nDimProduct;
+        if (!nDimProduct) {
+          return 0;
+        }
+      }
 
-    uint32_t nWidthOut = dwParam1 & 0xffffff;
-    pUnit2 = (D2UnitStrc*)((uint32_t)pUnit2 & 0xffffff);
-    D2Common::ITEMS::Items::ITEM_GetItemsTxt_nWidthAndHeight(pItemUnit2, (char*)((uintptr_t)&nWidthOut + 3), (char*)((uintptr_t)&pUnit2 + 3), "d:\\diablo2\\Diablo2\\Source\\D2Common/CmnItems.h", 0x6dc);
-    uint32_t nDimProduct = ((uint32_t)pUnit2 >> 0x18) * (nWidthOut >> 0x18);
-    uint32_t nValue = 6;
-    if (nDimProduct < 7) {
-      nValue = nDimProduct;
-      if (!nDimProduct) {
+      nMaxSockCap = D2Common::ITEMS::Items::ITEM_GetMaxSockCount(pItemUnit2);
+      if (nMaxSockCap <= nValue) {
+        nMaxSockCap = D2Common::ITEMS::Items::ITEM_GetMaxSockCount(pItemUnit2);
+        nValue = (uint32_t)nMaxSockCap;
+      }
+
+      uVar1 = nParam2;
+      if ((int)nParam2 <= 0) {
+        uVar1 = D2Common::ITEMS::ItemMods::ITEMMOD_RollRandomValue(pItemUnit2, *(int32_t*)(nParam1 + 8), *(int32_t*)(nParam1 + 0xc));
+        if ((int)uVar1 <= 0) {
+          uVar1 = *(uint32_t*)(nParam1 + 4);
+        }
+      }
+
+      nSocketMin = uVar1;
+      if ((int)uVar1 <= 1) {
+        nSocketMin = 1;
+      }
+      if ((int)nSocketMin < (int)nValue && (nValue = uVar1 , (int)uVar1 <= 1)) {
+        nValue = 1;
+      } else if ((int)nValue <= 0) {
         return 0;
       }
+
+      D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pItemUnit2, ITEMFLAG_SOCKETED, 1);
+      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pItemUnit2, UNITSTAT_item_numsockets, nValue, 0);
+      return nValue;
     }
 
-    uint8_t nMaxSockCap = D2Common::ITEMS::Items::ITEM_GetMaxSockCount(pItemUnit2);
-    if (nMaxSockCap <= nValue) {
-      nMaxSockCap = D2Common::ITEMS::Items::ITEM_GetMaxSockCount(pItemUnit2);
-      nValue = (uint32_t)nMaxSockCap;
-    }
-
-    uint32_t uVar1 = nParam2;
-    if ((int)nParam2 <= 0) {
-      uVar1 = D2Common::ITEMS::ItemMods::ITEMMOD_RollRandomValue(pItemUnit2, *(int32_t*)(nParam1 + 8), *(int32_t*)(nParam1 + 0xc));
-      if ((int)uVar1 <= 0) {
-        uVar1 = *(uint32_t*)(nParam1 + 4);
-      }
-    }
-
-    uint32_t nSocketMin = uVar1;
-    if ((int)uVar1 <= 1) {
-      nSocketMin = 1;
-    }
-    if ((int)nSocketMin < (int)nValue && (nValue = uVar1 , (int)uVar1 <= 1)) {
-      nValue = 1;
-    } else if ((int)nValue <= 0) {
-      return 0;
-    }
-
-    D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pItemUnit2, ITEMFLAG_SOCKETED, 1);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pItemUnit2, UNITSTAT_item_numsockets, nValue, 0);
-    return nValue;
+    return 0;
 }
 
 } // namespace D2Client::Items::ItemMods

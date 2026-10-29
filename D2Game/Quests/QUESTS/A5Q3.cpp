@@ -750,8 +750,8 @@ void __fastcall Q33_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // Q33_PropagateCompleteToParty (PrisonOfIce): iterator cb. If this player has JustCompleted set, propagate completion
 // to every party member via Q33_SetCompleteForPartyMember. Spreads the "Anya rescued" credit across the party.
 BOOL __fastcall Q33_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_PrisonOfIce, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_PrisonOfIce, QUESTSTATE_JustCompleted);
     if (!bJustCompleted) {
       return 0;
     }
@@ -1258,8 +1258,8 @@ static uint32_t Q33_CheckPartyHasScrollOfResistance(int32_t nParam, D2UnitStrc *
     }
 
     int32_t pnQuestSpecificData = *(int32_t*)(nParam + 0x18);
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 
@@ -1535,18 +1535,17 @@ void __fastcall Q33_AnyaTimerCallback(D2QuestDataStrc * pQuestData, D2UnitStrc *
 // running. Used to locate the rescue portal.
 uint32_t __thiscall Q33_GetAnyaCoordinates(void * pThis, int32_t * pOutCoords) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal((::SGAMEDATA*)pThis, QUESTINT_PrisonOfIce);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
-      return 0;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      D2QuestDataA5Q3Strc* pA5Q3Data;
+      pA5Q3Data = pQuestData->pQuestSpecificData.pA5Q3;
+      if (pA5Q3Data->bPortalSpawned && !pA5Q3Data->bAnyaCanRun) {
+        *pOutCoords = pA5Q3Data->nPortalSpawnX;
+        pOutCoords[1] = pA5Q3Data->nPortalSpawnY;
+        return 1;
+      }
     }
 
-    D2QuestDataA5Q3Strc* pA5Q3Data = pQuestData->pQuestSpecificData.pA5Q3;
-    if (!(pA5Q3Data->bPortalSpawned && !pA5Q3Data->bAnyaCanRun)) {
-      return 0;
-    }
-
-    *pOutCoords = pA5Q3Data->nPortalSpawnX;
-    pOutCoords[1] = pA5Q3Data->nPortalSpawnY;
-    return 1;
+    return 0;
 }
 
 // Q33_SpawnPortalNearAnya (PrisonOfIce): creates the town-portal OBJECT (classId 0xbd) at stored coords in a nearby

@@ -37,9 +37,9 @@ void __fastcall Q25_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     }
 
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     /* SetQuestState(record, 0x18=QUEST_SpokeToTyrael, 0=QUESTSTATE_Completed):
-                         closes the Speak-to-Tyrael quest after his dialog */ D2Common::QuestRecord::SetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_SpokeToTyrael, QUESTSTATE_Completed);
+                         closes the Speak-to-Tyrael quest after his dialog */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+    D2Common::QuestRecord::SetQuestState(pQuestRecord, QUEST_SpokeToTyrael, QUESTSTATE_Completed);
 }
 
 // Q25_Callback_00 (state-0 handler) — on interaction with Tyrael (pTarget->nClassId==0x16f): if QUEST_SpokeToTyrael not yet Completed, queue the gossip/quest dialog on the monster (AddGossipMessageOnMonster). No state change here; completion happens in Q25_Callback_11 when the player selects the dialog option.
@@ -49,8 +49,9 @@ void __fastcall Q25_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_SpokeToTyrael, QUESTSTATE_Completed);
+    /* GetQuestState(record, 0x18=QUEST_SpokeToTyrael, 0=QUESTSTATE_Completed): only
+                         offer Tyrael's gossip while quest not yet completed */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SpokeToTyrael, QUESTSTATE_Completed);
     if (bQuestState) {
       return;
     }

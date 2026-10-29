@@ -129,11 +129,11 @@ void __stdcall PALETTE_SetAct(int32_t nParam) {
 }
 
 uint8_t * __stdcall PALETTE_GetItemPalette(int32_t nPaletteSet, int32_t nRow) {
-    if (!(nPaletteSet < 9 && nRow < 0x15 && nPaletteSet && (nPaletteSet <= 2 || nPaletteSet > 4))) {
-      return nullptr;
+    if (nPaletteSet < 9 && nRow < 0x15 && nPaletteSet && (nPaletteSet <= 2 || nPaletteSet > 4)) {
+      return gaItemPaletteData + (nPaletteSet * 0x69 + nRow) * 0x100;
     }
 
-    return gaItemPaletteData + (nPaletteSet * 0x69 + nRow) * 0x100;
+    return nullptr;
 }
 
 uint32_t __stdcall PALETTE_GetColorShiftIndex(int32_t nParam, uint32_t nParam2) {

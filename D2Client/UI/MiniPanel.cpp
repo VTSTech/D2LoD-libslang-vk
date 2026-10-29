@@ -365,19 +365,6 @@ static void MINIPANEL_HandleButtonClick(int32_t nButtonId) {
         _bFlagActive = ui::GetUIFlag(UI_SKILLTREE);
       eUI = UI_SKILLTREE;
       goto toggle_panel;
-      case 3:
-        eGameType = GAME::Game::CLIENT_GetD2GSGameType();
-      if (eGameType != GAMETYPE_SINGLEPLAYER) {
-        _bFlagActive = ui::GetUIFlag(UI_PARTYSCREEN);
-        eUI = UI_PARTYSCREEN;
-        goto toggle_panel;
-      }
-
-      break;
-      case 4:
-        _bFlagActive = ui::GetUIFlag(UI_AUTOMAP);
-      eUI = UI_AUTOMAP;
-      goto toggle_panel;
       case 5:
         bFlagSet = ui::GetUIFlag(UI_BELTROWS);
       if (bFlagSet) {
@@ -393,6 +380,19 @@ static void MINIPANEL_HandleButtonClick(int32_t nButtonId) {
       }
       Draw::SetUIFlag(eUI, UI_RESET, 0);
       return;
+      case 3:
+        eGameType = GAME::Game::CLIENT_GetD2GSGameType();
+      if (eGameType != GAMETYPE_SINGLEPLAYER) {
+        _bFlagActive = ui::GetUIFlag(UI_PARTYSCREEN);
+        eUI = UI_PARTYSCREEN;
+        goto toggle_panel;
+      }
+
+      break;
+      case 4:
+        _bFlagActive = ui::GetUIFlag(UI_AUTOMAP);
+      eUI = UI_AUTOMAP;
+      goto toggle_panel;
       case 6:
         /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("Panel quest log toggle\n");
       QuestLog::QUESTLOG_ToggleQuestScreen(0);
@@ -648,11 +648,11 @@ void __stdcall MINIPANEL_Shutdown() {
 }
 
 BOOL __fastcall MINIPANEL_IsMouseInArea(int32_t nParam1, int32_t nParam2) {
-    if (!(nParam1 > ScreenSizeX / 2 - 0x4a && nParam1 < ScreenSizeX / 2 + 0x47 && nParam2 < ScreenSizeY - 0x32 && nParam2 > ScreenSizeY - 0x45)) {
-      return 0;
+    if (nParam1 > ScreenSizeX / 2 - 0x4a && nParam1 < ScreenSizeX / 2 + 0x47 && nParam2 < ScreenSizeY - 0x32 && nParam2 > ScreenSizeY - 0x45) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 void __stdcall SetupMiniPanel() {
@@ -693,11 +693,11 @@ BOOL __stdcall WAYPOINT_IsMouseInMiniPanel() {
     if (gbMiniPanelSinglePlayer) {
       nButtonCount = 7;
     }
-    if (!(nMouseX > nPanelX && nMouseX < nPanelX + nButtonCount * 0x14 && nMouseY > ScreenSizeY - 0x4c && nMouseY < ScreenSizeY - 0x32)) {
-      return 0;
+    if (nMouseX > nPanelX && nMouseX < nPanelX + nButtonCount * 0x14 && nMouseY > ScreenSizeY - 0x4c && nMouseY < ScreenSizeY - 0x32) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 static void __stdcall MINIPANEL_ShowTooltip(int32_t nX, int32_t nY, int32_t nButtonFrame) {
@@ -750,14 +750,11 @@ static void __stdcall MINIPANEL_ShowTooltip(int32_t nX, int32_t nY, int32_t nBut
         return;
     }
 
-    uint16_t* pLocaleStr = wszTooltip;
-    for (i = 100; i; i--) {
-      pLocaleStr[0] = L'\0';
-      pLocaleStr[1] = L'\0';
-      pLocaleStr += 2;
+    for (i = 0; i < 200; i++) {
+      wszTooltip[i] = L'\0';
     }
 
-    pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(nStringIndex);
+    uint16_t* pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(nStringIndex);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszTooltip, pLocaleStr);
     if (bHasCommand && nCommandId != 0x39) {
       uint16_t* pFormatStr;

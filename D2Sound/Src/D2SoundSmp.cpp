@@ -866,12 +866,12 @@ int * __fastcall SOUNDSMP_ParseWavHeader(int * pWavData, uint32_t * pDataSize, W
     pWavFormat->wBitsPerSample = pChunkData[7];
     pWavFormat->cbSize = 0;
     piVar1 = SOUNDSMP_FindWavChunk(pDataSize, &nChunkSize, 0x61746164, (int*)((int)pChunkData + nChunkSize));
-    if (!(piVar1 && *pDataSize >= nChunkSize)) {
-      return nullptr;
+    if (piVar1 && *pDataSize >= nChunkSize) {
+      *pDataSize = nChunkSize;
+      return piVar1;
     }
 
-    *pDataSize = nChunkSize;
-    return piVar1;
+    return nullptr;
 }
 
 void __fastcall SOUNDSMP_CalculateVolumeAndPan(uint32_t * pnVolume, uint32_t * pnPan, float fDeltaX, float fDeltaY, float fDeltaZ) {

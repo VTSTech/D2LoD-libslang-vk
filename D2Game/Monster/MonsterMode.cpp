@@ -60,11 +60,11 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2MonsterPathParamStrc) == 0x24, "D
 namespace D2Game::Monster::MonsterMode {
 
 D2MonsterPathParamStrc * __fastcall GetAiParamFromUnit(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
-      return nullptr;
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster) {
+      return pUnit->pUnitData.pUnitDataMonster->pPathParamOrName.pPathParam;
     }
 
-    return pUnit->pUnitData.pUnitDataMonster->pPathParamOrName.pPathParam;
+    return nullptr;
 }
 
 void __stdcall MONSTERMODE_ConsumeStoredPosition(int * pnParam1, int * pnParam2, char * szText, int32_t pMonData) {

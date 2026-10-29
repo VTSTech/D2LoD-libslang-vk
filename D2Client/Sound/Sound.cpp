@@ -952,10 +952,10 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
             SOUND_CalculateUnitDirection(pUnit_00, pChanEntry->nSoundId, &__frame0.fDir1);
             __frame0.fUnitDistSmooth = _Utils::CalculateHypotenusePowered(__frame0.fDir1, __frame0.fDirX2);
             if (!__frame0.pClosestUnit || __frame0.fUnitDistSmooth < __frame0.fClosestDist.fValue) {
+              __frame0.fClosestDist.fValue = __frame0.fUnitDistSmooth;
               afSoundDir[0] = __frame0.fDir1;
               afSoundDir[1] = __frame0.fDirX2;
               afSoundDir[2] = __frame0.fDirX3;
-              __frame0.fClosestDist.fValue = __frame0.fUnitDistSmooth;
               __frame0.pClosestUnit = pUnit_00;
             }
 

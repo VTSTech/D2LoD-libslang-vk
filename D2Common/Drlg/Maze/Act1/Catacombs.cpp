@@ -106,7 +106,8 @@ void __fastcall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t 
     }
 
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
-    pLevel->sSeed = sNewSeed;
+    pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+    pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
     if (!(sNewSeed.nSeedLow & 1)) {
       pNewRoom = DrlgRoom::DRLGROOMEX_AllocRoomEx(pStartRoom->pLevel, 2);
       pRoomSizeData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
@@ -242,7 +243,8 @@ void DRLGMAZE_ReplaceCatacombsRooms(D2DrlgLevelStrc * pDrlgLevelStrc) {
 }; D2_STATIC_GUARD(gaDrlgCatacombsReplacements_B, "D2Common::Drlg::Maze::Act1::Catacombs::DRLGMAZE_ReplaceCatacombsRooms::gaDrlgCatacombsReplacements_B");
 
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pDrlgLevelStrc->sSeed);
-    pDrlgLevelStrc->sSeed = sNewSeed;
+    pDrlgLevelStrc->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+    pDrlgLevelStrc->sSeed.nSeedLow = sNewSeed.nSeedLow;
     uint32_t nVariant = sNewSeed.nSeedLow & 3;
     ReplaceRoom(gaDrlgCatacombsReplacements_A + nVariant, pDrlgLevelStrc, &nVariant);
     if (pDrlgLevelStrc->eD2LevelId != 0x23) {

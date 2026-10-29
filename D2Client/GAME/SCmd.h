@@ -52,12 +52,12 @@ struct __attribute__((packed)) D2GSPacketSrv0x3F {
     D2GSPacketSrv0x3F() = default;
     D2GSPacketSrv0x3F(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2GSPacketSrv0x3F(uint8_t a0, uint8_t a1, uint32_t a2, int16_t a3) : nPacketId(a0), nItemSlot(a1), nUnitGUID(a2), nSkillId(a3) {}
+    D2GSPacketSrv0x3F(uint8_t a0, uint8_t a1, uint32_t a2, uint16_t a3) : nPacketId(a0), nItemSlot(a1), nUnitGUID(a2), nSkillId(a3) {}
 
     /* 0x00 */ uint8_t nPacketId;
     /* 0x01 */ uint8_t nItemSlot; // 0xff when the unit GUID is used
     /* 0x02 */ uint32_t nUnitGUID;
-    /* 0x06 */ int16_t nSkillId;
+    /* 0x06 */ uint16_t nSkillId;
 };
 
 struct __attribute__((packed)) D2GSPacketSrv0x40 {
@@ -321,6 +321,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x8B_PLAYERBUTTON(struct D2GSPacketSrv0x
 void __fastcall NET_D2GS_CLIENT_Incoming0x8C_PLAYERFLAGS(char * pBytes);
 void __fastcall NET_D2GS_CLIENT_Incoming0x8D_PLAYERPARTY(int32_t nParam);
 void __fastcall NET_D2GS_CLIENT_Incoming0x8E_LINKDEADBODY(struct D2GSPacketSrv0x8E * pBytes);
+// Packet 0x9B: hands the unsigned words at +1 and +3 to SetPlayersMercInfo.
 void __fastcall NET_D2GS_CLIENT_Incoming0x9B_DEAD_HIRELING(char * pBytes);
 void __fastcall NET_D2GS_CLIENT_Incoming0x9(char * pBytes);
 void __fastcall NET_D2GS_CLIENT_Incoming0x8F(char * pBytes);

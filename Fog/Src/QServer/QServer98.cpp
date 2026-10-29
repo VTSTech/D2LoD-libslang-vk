@@ -25,7 +25,8 @@ void __fastcall QSERVER_CloseAllConnections(D2QServerStrc * pQServer) {
 }
 
 BOOL __fastcall SendToClientOnline(D2QServerStrc * pQServer, D2QServerClientConnectionStrc * pQServerClient, char * pBytes, int nSize) {
-    int iVar1 = send(pQServerClient->socket, pBytes, nSize, 0);
+    /* int flags for send */ /* int len for send */ /* char * buf for send */ /* SOCKET s for send */ unsigned int socket = pQServerClient->socket;
+    int iVar1 = send(socket, pBytes, nSize, 0);
     if (iVar1 == -1) {
       WSAGetLastError();
       return 0;

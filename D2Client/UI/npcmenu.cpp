@@ -117,12 +117,13 @@ void __fastcall NPCMENU_ConvertQuestId(short * nInput, uint16_t * pResult) {
 }
 
 D2UnitStrc * __stdcall GetInteractedUnit() {
-    if (!_Interaction::bInteractingWithNpc) {
-      return nullptr;
+    if (_Interaction::bInteractingWithNpc) {
+      D2UnitStrc* pUnit;
+      pUnit = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
+      return pUnit;
     }
 
-    D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
-    return pUnit;
+    return nullptr;
 }
 
 void SetInteractedUnitInfo(D2UnitStrc * pUnit) {
@@ -166,11 +167,13 @@ void __stdcall NPCMENU_SelectRandomDialogOption(D2NPCSpeechStrc * pSpeech) {
         uVar2 = (uint64_t)pPlayerUnit_lcl->sSeed.nSeedHigh;
         if (nOptionCount & nOptionCount - 1) {
           sNewSeed = (D2SeedStrc)((uint64_t)nSeedLow * 0x6ac690c5 + uVar2);
-          pPlayerUnit_lcl->sSeed = sNewSeed;
+          pPlayerUnit_lcl->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+          pPlayerUnit_lcl->sSeed.nSeedLow = sNewSeed.nSeedLow;
           nOptionCount = (uint32_t)(sNewSeed.nSeedLow % nOptionCount);
         } else {
           sNewSeed = (D2SeedStrc)((uint64_t)nSeedLow * 0x6ac690c5 + uVar2);
-          pPlayerUnit_lcl->sSeed = sNewSeed;
+          pPlayerUnit_lcl->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+          pPlayerUnit_lcl->sSeed.nSeedLow = sNewSeed.nSeedLow;
           nOptionCount = nOptionCount - 1 & sNewSeed.nSeedLow;
         }
       }
@@ -342,11 +345,11 @@ static int32_t __stdcall NPCMENU_CheckQuestDependentCallbacks(D2NpcQuestCallback
 
 bool inline_NPC_IsInteractableSideNpc(int32_t nNpcClassId) {
     /* DeckardCain */ /* Drehya */ /* Ancient Statue 1 */ /* Ancient Statue 2 
-                          */ /* Ancient Statue 3 */ /* tyrael */ /* navi */ /* act2guard5 */ /* tyrael1 */ /* act2guard4 */ /* act2guard2 */ /* izualghost */ /* malachai */ if (!(nNpcClassId != 146 && nNpcClassId != 527 && nNpcClassId != 537 && nNpcClassId != 538 && nNpcClassId != 539 && nNpcClassId != 521 && nNpcClassId != 266 && nNpcClassId != 378 && nNpcClassId != 251 && nNpcClassId != 377 && nNpcClassId != 331 && nNpcClassId != 406 && nNpcClassId != 408)) {
-      return true;
+                          */ /* Ancient Statue 3 */ /* tyrael */ /* navi */ /* act2guard5 */ /* tyrael1 */ /* act2guard4 */ /* act2guard2 */ /* izualghost */ /* malachai */ if (nNpcClassId != 146 && nNpcClassId != 527 && nNpcClassId != 537 && nNpcClassId != 538 && nNpcClassId != 539 && nNpcClassId != 521 && nNpcClassId != 266 && nNpcClassId != 378 && nNpcClassId != 251 && nNpcClassId != 377 && nNpcClassId != 331 && nNpcClassId != 406 && nNpcClassId != 408) {
+      return false;
     }
 
-    return false;
+    return true;
 }
 
 int __stdcall NPCMENU_ShowSelectedDialogOption() {
@@ -755,7 +758,7 @@ void __fastcall NPCMENU_ValidateNpcForShop(D2UnitStrc * pUnit) {
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && sgptDataTable->pTxtMonStats[nClassId].npc)) {
+    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nClassId] + 0xd) & gadwBitMasks[0])) {
       return;
     }
 
@@ -1584,20 +1587,20 @@ int __stdcall NPCMENU_IsNpcMenuStateActive() {
     }
 
     D2UnitStrc* pNpcUnit = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
-    if (!(pNpcUnit && _Interaction::geNpcUiState == NPCUI_MENU)) {
-      return 0;
-    }
-
-    return 1;
-}
-
-// Returns 1 when any NPC menu dialog is open: transaction confirm, trade error, transaction wait, interaction, talk, action confirm, merc list or main menu. Otherwise 0.
-int __stdcall NPCMENU_IsAnyNpcDialogOpen() {
-    if (!(!Dialog::gpNpcTransactionConfirmDialog && !Dialog::gpNpcTradeErrorDialog && !Dialog::gpNpcTransactionWaitDialog && !Dialog::gpNpcInteractionDialog && !Dialog::gpNpcGossipDialog && !Dialog::gpNpcActionConfirmDialog && !Dialog::gpNpcMercListDialog && !Dialog::gpNpcMainMenuDialog)) {
+    if (pNpcUnit && _Interaction::geNpcUiState == NPCUI_MENU) {
       return 1;
     }
 
     return 0;
+}
+
+// Returns 1 when any NPC menu dialog is open: transaction confirm, trade error, transaction wait, interaction, talk, action confirm, merc list or main menu. Otherwise 0.
+int __stdcall NPCMENU_IsAnyNpcDialogOpen() {
+    if (!Dialog::gpNpcTransactionConfirmDialog && !Dialog::gpNpcTradeErrorDialog && !Dialog::gpNpcTransactionWaitDialog && !Dialog::gpNpcInteractionDialog && !Dialog::gpNpcGossipDialog && !Dialog::gpNpcActionConfirmDialog && !Dialog::gpNpcMercListDialog && !Dialog::gpNpcMainMenuDialog) {
+      return 0;
+    }
+
+    return 1;
 }
 
 // Returns gnNpcMenuShopMode.
@@ -2010,7 +2013,7 @@ void __fastcall NPCMENU_HandlePlayerInteractionEnd(D2UnitStrc * pUnit) {
     if (D2NPCSpeechCount > 0) {
       pCurrentSpeech = &D2NPCSpeech[0].field5_0x11;
       do {
-        if (*pCurrentSpeech) {
+        if (*pCurrentSpeech == 1) {
           *pCurrentSpeech = false;
           pPlayer = UNIT::Player::GetPlayerUnit_UI();
           if (!pPlayer) {
@@ -2511,12 +2514,8 @@ void __stdcall NPCMENU_OpenInteractionDialog() {
     NPCMENU_CalculateDialogPosition(&PStack_34);
     Dialog::gpNpcInteractionDialog = Dialog::AllocDialogStrc(PStack_34.x, PStack_34.y, NPCMENU_GambleDrawCallback, NPCMENU_GambleMouseCallback, 0, 0, 1, 0, 0, 0, 1);
     Dialog::DIALOG_SetHighlightStyle(Dialog::gpNpcInteractionDialog, 1);
-    uint16_t* pnOptionCallback;
-    pnOptionCallback = wszNpcName;
-    for (nMenuEntryIdx = 0x28; nMenuEntryIdx; nMenuEntryIdx--) {
-      pnOptionCallback[0] = L'\0';
-      pnOptionCallback[1] = L'\0';
-      pnOptionCallback += 2;
+    for (nMenuEntryIdx = 0; nMenuEntryIdx < 0x50; nMenuEntryIdx++) {
+      wszNpcName[nMenuEntryIdx] = L'\0';
     }
 
     if (_Interaction::bInteractingWithNpc) {
@@ -2525,6 +2524,7 @@ void __stdcall NPCMENU_OpenInteractionDialog() {
       pNpcUnit = 0;
     }
 
+    uint16_t* pnOptionCallback;
     pnOptionCallback = UNIT::CUnit::GetName(pNpcUnit);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszNpcName, pnOptionCallback);
     D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszNpcName);
@@ -2562,11 +2562,8 @@ void __stdcall NPCMENU_OpenInteractionDialog() {
         ppCurCallback = NPC::D2NpcMenuOptions[nMenuEntryIdx].nOptionCallback;
         pnOptionStringId = NPC::D2NpcMenuOptions[nMenuEntryIdx].nOptionStringId;
         do {
-          pnOptionCallback = wszOptionText;
-          for (iVar1 = 0x100; iVar1; iVar1--) {
-            pnOptionCallback[0] = L'\0';
-            pnOptionCallback[1] = L'\0';
-            pnOptionCallback += 2;
+          for (iVar1 = 0; iVar1 < 0x200; iVar1++) {
+            wszOptionText[iVar1] = L'\0';
           }
 
           nOptionStringId = *pnOptionStringId;
@@ -2698,11 +2695,8 @@ void __stdcall NPCMENU_ShowMainMenuDialog() {
         NPCMENU_CalculateDialogPosition(&nDialogPosX);
         Dialog::gpNpcMainMenuDialog = Dialog::AllocDialogStrc(nDialogPosX.x, nDialogPosX.y, NPCMENU_RepairDrawCallback, NPCMENU_RepairMouseCallback, 0, 0, 1, 0, 0, 0, 1);
         Dialog::DIALOG_SetHighlightStyle(Dialog::gpNpcMainMenuDialog, 1);
-        pszDialogPtr = wszNpcName;
-        for (nCharIdx = 0x28; nCharIdx; nCharIdx--) {
-          pszDialogPtr[0] = L'\0';
-          pszDialogPtr[1] = L'\0';
-          pszDialogPtr += 2;
+        for (nCharIdx = 0; nCharIdx < 0x50; nCharIdx++) {
+          wszNpcName[nCharIdx] = L'\0';
         }
 
         if (_Interaction::bInteractingWithNpc) {
@@ -2736,7 +2730,8 @@ void __stdcall NPCMENU_ShowMainMenuDialog() {
         nDialogPosY[4] = 0xd3e;
         pNpcUnit = UNIT::Player::GetPlayerUnit_UI();
         seedUpdated = D2_SEED_NEXT(pNpcUnit->sSeed);
-        pNpcUnit->sSeed = seedUpdated;
+        pNpcUnit->sSeed.nSeedHigh = seedUpdated.nSeedHigh;
+        pNpcUnit->sSeed.nSeedLow = seedUpdated.nSeedLow;
         iVar1 = 1;
         pfnOptionCallback = NPCMENU_TradeDrawCallback;
         Dialog::AddStringData(Dialog::gpNpcMainMenuDialog, D2Lang::StrTable::strtable::GetLocaleString(nDialogPosY[(int)(seedUpdated.nSeedLow % 5)]), 0xf, 0, 0, 1, pfnOptionCallback, iVar1);
@@ -3025,6 +3020,21 @@ void __stdcall NPCMENU_HandleTradeAccepted() {
     }
 
     switch (D2GSPacketSrv0x2A_007c0d87.nResult) {
+      case 0xf:
+        nErrorStringId = 0xd23;
+      break;
+      case 0x10:
+        nErrorStringId = 0xd1d;
+      break;
+      case 0xc:
+        nErrorStringId = 0xd22;
+      break;
+      case 10:
+        nErrorStringId = 0xd1c;
+      break;
+      case 0xb:
+        nErrorStringId = 0xd20;
+      break;
       case 7:
 
       case 8:
@@ -3033,20 +3043,6 @@ void __stdcall NPCMENU_HandleTradeAccepted() {
       default:
         nErrorStringId = 0xd21;
       break;
-      case 10:
-        nErrorStringId = 0xd1c;
-      break;
-      case 0xb:
-        nErrorStringId = 0xd20;
-      break;
-      case 0xc:
-        nErrorStringId = 0xd22;
-      break;
-      case 0xf:
-        nErrorStringId = 0xd23;
-      break;
-      case 0x10:
-        nErrorStringId = 0xd1d;
     }
 
     if (_Interaction::geNpcUiState == NPCUI_TRANSACTION_PENDING) {
@@ -3113,6 +3109,21 @@ void __stdcall NPCMENU_HandleTradeRejected() {
     if (D2GSPacketSrv0x2A_007c0d87.nResult != 5) {
       if (D2GSPacketSrv0x2A_007c0d87.nResult != 6 && D2GSPacketSrv0x2A_007c0d87.nResult != 3) {
         switch (D2GSPacketSrv0x2A_007c0d87.nResult) {
+          case 0xf:
+            nErrorStringId = 0xd23;
+          break;
+          case 0x10:
+            nErrorStringId = 0xd1d;
+          break;
+          case 0xc:
+            nErrorStringId = 0xd22;
+          break;
+          case 10:
+            nErrorStringId = 0xd1c;
+          break;
+          case 0xb:
+            nErrorStringId = 0xd20;
+          break;
           case 7:
 
           case 8:
@@ -3121,20 +3132,6 @@ void __stdcall NPCMENU_HandleTradeRejected() {
           default:
             nErrorStringId = 0xd21;
           break;
-          case 10:
-            nErrorStringId = 0xd1c;
-          break;
-          case 0xb:
-            nErrorStringId = 0xd20;
-          break;
-          case 0xc:
-            nErrorStringId = 0xd22;
-          break;
-          case 0xf:
-            nErrorStringId = 0xd23;
-          break;
-          case 0x10:
-            nErrorStringId = 0xd1d;
         }
 
         _Interaction::geNpcUiState = NPCUI_TRADE_REJECTED;
@@ -3450,11 +3447,8 @@ int __stdcall NPCMENU_BuildMercHireMenu() {
     Dialog::DIALOG_SetHighlightStyle(Dialog::gpNpcMercListDialog, 1);
     uint16_t nNameStringId = 0;
     eD2UnitStat eStatId = UNITSTAT_goldbank;
-    uint16_t* pszDialogPtr = wszGoldFmtBuf;
-    for (nLoopCounter = 0x96; nLoopCounter; nLoopCounter--) {
-      pszDialogPtr[0] = L'\0';
-      pszDialogPtr[1] = L'\0';
-      pszDialogPtr += 2;
+    for (nLoopCounter = 0; nLoopCounter < 0x12c; nLoopCounter++) {
+      wszGoldFmtBuf[nLoopCounter] = L'\0';
     }
 
     nLoopCounter = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(UNIT::Player::GetPlayerUnit_UI(), eStatId, nNameStringId);
@@ -3463,7 +3457,7 @@ int __stdcall NPCMENU_BuildMercHireMenu() {
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
     int nGoldOnBody = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayerUnit_lcl, eStatId, nNameStringId);
     int32_t nTotalGold = nLoopCounter + nGoldOnBody;
-    pszDialogPtr = D2Lang::StrTable::strtable::GetLocaleString(0xd24);
+    uint16_t* pszDialogPtr = D2Lang::StrTable::strtable::GetLocaleString(0xd24);
     D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(300, wszGoldFmtBuf, pszDialogPtr, nTotalGold);
     Dialog::AddStringData(Dialog::gpNpcMercListDialog, wszGoldFmtBuf, 0x15, 0, 4, 1, nullptr, 0);
     int32_t nMercSeed = 1;
@@ -3516,11 +3510,8 @@ int __stdcall NPCMENU_BuildMercHireMenu() {
           return 0;
         }
 
-        pszDialogPtr = wszMercDesc;
-        for (nLoopCounter = 0x4b; nLoopCounter; nLoopCounter--) {
-          pszDialogPtr[0] = L'\0';
-          pszDialogPtr[1] = L'\0';
-          pszDialogPtr += 2;
+        for (nLoopCounter = 0; nLoopCounter < 0x96; nLoopCounter++) {
+          wszMercDesc[nLoopCounter] = L'\0';
         }
 
         pszDialogPtr = wszMercDesc2;
@@ -3545,7 +3536,10 @@ int __stdcall NPCMENU_BuildMercHireMenu() {
         pszDialogPtr = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
         D2Lang::Unicode::UNISYS::AppendToBuffer(wszMercDesc, pszDialogPtr);
         nLabelMaxLen = 0x14;
-        memset(wszLabelBuf, 0, 20 * sizeof(wszLabelBuf[0]));
+        for (int iFill = 0; iFill < 20; iFill++) {
+          wszLabelBuf[iFill] = L'\0';
+        }
+
         memset(wNumCharBuf, 0, 10 * sizeof(wNumCharBuf[0]));
         pszDialogPtr = D2Lang::StrTable::strtable::GetLocaleString(0xd28);
         D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszLabelBuf, pszDialogPtr, nLabelMaxLen);
@@ -3682,6 +3676,7 @@ int __stdcall NPCMENU_EnableKashyaHireOption() {
 
 // bAddTradeOption: 0 removes the trade option from the NPC's menu, nonzero inserts it (before the hire option).
 static BOOL __stdcall NPCMENU_ConfigureMenuOption(BOOL bAddTradeOption, int32_t nNpcMenuOptionId) {
+    uint32_t* puVar1;
     int nOptionsCount;
     D2NpcMenuOptionFunc* pnCallbackSlot;
     int nOptionIdx;
@@ -3689,107 +3684,105 @@ static BOOL __stdcall NPCMENU_ConfigureMenuOption(BOOL bAddTradeOption, int32_t 
     uint16_t* puVar2;
     short int* pnOptionStringIdSlot;
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
-    if (!bIsExpansion) {
-      return 0;
-    }
+    if (bIsExpansion) {
+      bIsExpansion = GAME::Game::CLIENT_CheckExpansion();
+      if (bIsExpansion) {
+        if (bAddTradeOption) {
+          nOptionsCount = NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount;
+          nOptionIdx = 0;
+          if (nOptionsCount > 0) {
+            ppfnCallback = NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback;
+            do {
+              if (*ppfnCallback == NPCMENU_OpenTradeWithNpc) {
+                return 1;
+              }
 
-    bIsExpansion = GAME::Game::CLIENT_CheckExpansion();
-    if (!bIsExpansion) {
-      return 0;
-    }
-    if (bAddTradeOption) {
-      uint32_t* puVar1;
-      nOptionsCount = NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount;
-      nOptionIdx = 0;
-      if (nOptionsCount > 0) {
-        ppfnCallback = NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback;
-        do {
-          if (*ppfnCallback == NPCMENU_OpenTradeWithNpc) {
-            return 1;
+              nOptionIdx++;
+              ppfnCallback++;
+            } while (nOptionIdx < nOptionsCount);
           }
 
-          nOptionIdx++;
-          ppfnCallback++;
-        } while (nOptionIdx < nOptionsCount);
-      }
-
-      nOptionIdx = 0;
-      if (nOptionsCount > 0) {
-        ppfnCallback = NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback;
-        do {
-          if (*ppfnCallback == NPCMENU_BuildMercHireMenu) {
-            nOptionsCount--;
-            if (nOptionsCount >= nOptionIdx) {
-              puVar2 = (uint16_t*)&NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionStringId[nOptionsCount + 1];
-              puVar1 = (uint32_t*)&NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback[nOptionsCount + 1];
-              nOptionsCount = nOptionsCount - nOptionIdx + 1;
-              do {
-                *puVar1 = puVar1[-1];
-                *puVar2 = puVar2[-1];
-                puVar1--;
-                puVar2--;
+          nOptionIdx = 0;
+          if (nOptionsCount > 0) {
+            ppfnCallback = NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback;
+            do {
+              if (*ppfnCallback == NPCMENU_BuildMercHireMenu) {
                 nOptionsCount--;
-              } while (nOptionsCount);
-            }
+                if (nOptionsCount >= nOptionIdx) {
+                  puVar2 = (uint16_t*)&NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionStringId[nOptionsCount + 1];
+                  puVar1 = (uint32_t*)&NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback[nOptionsCount + 1];
+                  nOptionsCount = nOptionsCount - nOptionIdx + 1;
+                  do {
+                    *puVar1 = puVar1[-1];
+                    *puVar2 = puVar2[-1];
+                    puVar1--;
+                    puVar2--;
+                    nOptionsCount--;
+                  } while (nOptionsCount);
+                }
 
-            NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount++;
-            NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback[nOptionIdx] = NPCMENU_OpenTradeWithNpc;
-            NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionStringId[nOptionIdx] = 0x1507;
-            return 1;
+                NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount++;
+                NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback[nOptionIdx] = NPCMENU_OpenTradeWithNpc;
+                NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionStringId[nOptionIdx] = 0x1507;
+                return 1;
+              }
+
+              nOptionIdx++;
+              ppfnCallback++;
+            } while (nOptionIdx < nOptionsCount);
           }
 
-          nOptionIdx++;
-          ppfnCallback++;
-        } while (nOptionIdx < nOptionsCount);
-      }
+          nOptionsCount--;
+          puVar2 = (uint16_t*)&NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionStringId[nOptionsCount + 1];
+          puVar1 = (uint32_t*)&NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback[nOptionsCount + 1];
+          nOptionIdx = 1;
+          do {
+            *puVar1 = puVar1[-1];
+            *puVar2 = puVar2[-1];
+            puVar1--;
+            puVar2--;
+            nOptionIdx--;
+          } while (nOptionIdx);
 
-      nOptionsCount--;
-      puVar2 = (uint16_t*)&NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionStringId[nOptionsCount + 1];
-      puVar1 = (uint32_t*)&NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback[nOptionsCount + 1];
-      nOptionIdx = 1;
-      do {
-        *puVar1 = puVar1[-1];
-        *puVar2 = puVar2[-1];
-        puVar1--;
-        puVar2--;
-        nOptionIdx--;
-      } while (nOptionIdx);
+          NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount++;
+          NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback[nOptionsCount] = NPCMENU_OpenTradeWithNpc;
+          NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionStringId[nOptionsCount] = 0x1507;
+        } else {
+          nOptionsCount = NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount;
+          nOptionIdx = 0;
+          if (nOptionsCount > 0) {
+            ppfnCallback = NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback;
+            do {
+              if (*ppfnCallback == NPCMENU_OpenTradeWithNpc) {
+                if (nOptionIdx < nOptionsCount - 1) {
+                  pnOptionStringIdSlot = &NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionStringId[nOptionIdx];
+                  pnCallbackSlot = &NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback[nOptionIdx];
+                  do {
+                    *pnCallbackSlot = pnCallbackSlot[1];
+                    *pnOptionStringIdSlot = pnOptionStringIdSlot[1];
+                    nOptionIdx++;
+                    pnCallbackSlot++;
+                    pnOptionStringIdSlot++;
+                  } while (nOptionIdx < NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount - 1);
+                }
 
-      NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount++;
-      NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback[nOptionsCount] = NPCMENU_OpenTradeWithNpc;
-      NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionStringId[nOptionsCount] = 0x1507;
-    } else {
-      nOptionsCount = NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount;
-      nOptionIdx = 0;
-      if (nOptionsCount > 0) {
-        ppfnCallback = NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback;
-        do {
-          if (*ppfnCallback == NPCMENU_OpenTradeWithNpc) {
-            if (nOptionIdx < nOptionsCount - 1) {
-              pnOptionStringIdSlot = &NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionStringId[nOptionIdx];
-              pnCallbackSlot = &NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionCallback[nOptionIdx];
-              do {
-                *pnCallbackSlot = pnCallbackSlot[1];
-                *pnOptionStringIdSlot = pnOptionStringIdSlot[1];
-                nOptionIdx++;
-                pnCallbackSlot++;
-                pnOptionStringIdSlot++;
-              } while (nOptionIdx < NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount - 1);
-            }
+                NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount--;
+                return 1;
+              }
 
-            NPC::D2NpcMenuOptions[nNpcMenuOptionId].nOptionsCount--;
+              nOptionIdx++;
+              ppfnCallback++;
+            } while (nOptionIdx < nOptionsCount);
+
             return 1;
           }
-
-          nOptionIdx++;
-          ppfnCallback++;
-        } while (nOptionIdx < nOptionsCount);
+        }
 
         return 1;
       }
     }
 
-    return 1;
+    return 0;
 }
 
 // Warriv (monstats 155) menu row 13: adds option string 3382 (WarrivMenu1b, "Go East") with callback 004b5140.
@@ -4065,10 +4058,10 @@ void __stdcall NPCMENU_HandleMenuSelection(int32_t nParam, D2UnitStrc * pUnit) {
     gnNpcMenuNpcClassId = 0;
 }
 
-void __fastcall SetPlayersMercInfo(int16_t nParam, int32_t nParam2) {
+void __fastcall SetPlayersMercInfo(uint16_t nParam, int32_t nParam2) {
     nMercNameId = nParam;
     D2Client::Merc::nMercReviveCost = nParam2;
-    if (nParam != -1) {
+    if (nParam != 0xffff) {
       return;
     }
 

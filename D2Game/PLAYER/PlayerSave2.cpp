@@ -526,7 +526,7 @@ BOOL __fastcall SaveStats(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD * pStar
                 if (byCsvBitWidth > 0) {
                   nClampedValue = nRawStatValue;
                   if (byCsvBitWidth < 0x20) {
-                    if (pStatCostTxt->dwItemStatFlags & ITEMSTATCOSTFLAG_CSVSIGNED) {
+                    if (*(uint8_t*)((uintptr_t)&pStatCostTxt->dwItemStatFlags + 1) & (uint8_t)gadwBitMasks[5]) {
                       nClampMask = -1 << (byCsvBitWidth - 1 & 0x1f);
                       nClamped = nRawStatValue;
                       if ((int)nRawStatValue <= (int)nClampMask) {
@@ -626,7 +626,6 @@ int __fastcall SaveCorpseItems(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t
     D2UnitStrc* pDVar3;
     D2UnitStrc* pFirstItem;
     D2UnitStrc* pCarriedItem;
-    D2UnitDataPlayerStrc* pPlayerData;
     int32_t nItemCount;
     int32_t nCorpseY;
     int nSaveItemsResult;
@@ -657,8 +656,8 @@ int __fastcall SaveCorpseItems(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t
               pCarriedItem = D2Common::INVENTORY::Inventory::GetCarriedItem(pFirstItem);
               nCorpseGUID = D2Common::ITEMS::Items::ITEMS_IsA(pCarriedItem, ITEMTYPE_Gold);
               if (!nCorpseGUID) {
-                pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-                nItemCount = D2Common::ITEMS::Items::CalculateTransactionCost_Thunk(pUnit, pCarriedItem, 3, pPlayerData->pQuestRecord[pGame->nDifficulty], 0x201, 0);
+                D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+                nItemCount = D2Common::ITEMS::Items::CalculateTransactionCost_Thunk(pUnit, pCarriedItem, 3, pQuestRecord, 0x201, 0);
                 nTotalCost += nItemCount;
               }
 
@@ -1215,7 +1214,7 @@ static int __fastcall ReadStatsLong(D2UnitStrc * pUnit, short * * ppReadPos, sho
       }
 
       byCsvBitWidth = pStatCostTxt->csvbits;
-      if (byCsvBitWidth < 0x20 && pStatCostTxt->dwItemStatFlags & ITEMSTATCOSTFLAG_CSVSIGNED) {
+      if (byCsvBitWidth < 0x20 && *(uint8_t*)((uintptr_t)&pStatCostTxt->dwItemStatFlags + 1) & (uint8_t)gadwBitMasks[5]) {
         nValue = Fog::BitBuffer::ReadSigned(&bitBuf, (uint32_t)byCsvBitWidth);
       } else {
         nValue = Fog::BitBuffer::ReadUnsigned(&bitBuf, (uint32_t)byCsvBitWidth);

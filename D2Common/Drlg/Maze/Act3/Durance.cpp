@@ -99,7 +99,8 @@ void ReplaceRooms(D2DrlgLevelStrc * pLevel) {
 }; D2_STATIC_GUARD(DRLG_DURA_EXIT, "D2Common::Drlg::Maze::Act3::Durance::ReplaceRooms::DRLG_DURA_EXIT");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-    pLevel->sSeed = DVar1;
+    pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+    pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
     uint32_t nRoll = DVar1.nSeedLow & 3;
     ReplaceRoom(DRLG_DURA_ENTRY + nRoll, pLevel, &nRoll);
     if (pLevel->eD2LevelId == 0x65) {

@@ -403,7 +403,7 @@ void __stdcall CHARSEL_InitCharSelScreen() {
     BOOL bIsExpansion;
     ::D2WinTextBox* pExpansionIcon;
     MainMenus::FORMS_DestroyLists();
-    MainMenus::D2GFX_SetPaletteForDraw("palette\\sky\\pal.dat", "palette\\sky\\pal.pl2");
+    MainMenus::D2GFX_SetPaletteForDraw(gaFrontEndPaletteFiles[2], gaFrontEndPaletteFiles[3]);
     nCharacterSelectionIndex = 1;
     D2Client::CharScreen::TotalCurrentChars = 0;
     g_nCharSelNavigationIndex = 0;
@@ -490,7 +490,7 @@ void __stdcall UIMENU_CharacterSelectAllGameTypes() {
 
     MainMenus::FORMS_DestroyLists();
     D2Win::Src::D2WinMain::D2WINMAIN_SetBackgroundDC6(DC6_CharSelect_charselectbckg);
-    MainMenus::D2GFX_SetPaletteForDraw("palette\\sky\\pal.dat", "palette\\sky\\pal.pl2");
+    MainMenus::D2GFX_SetPaletteForDraw(gaFrontEndPaletteFiles[2], gaFrontEndPaletteFiles[3]);
     if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET) {
       MainMenus::MAINMENU_QueryAndBuildRealmList();
       nSlotIndex = MainMenus::MAINMENU_GetRealmCount();
@@ -871,31 +871,23 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     int nTitleStrId;
     int nPopupType;
     uint16_t nBodyStrId;
+    uint16_t* pwszClearCursor;
     uint16_t awszCharName[512];
     uint16_t awszFooter[512];
     uint16_t awszTitle[512];
     uint16_t awszBody[512];
     size_t cchBufferSize;
     eOogErrorCode eVar1 = pErrorData->eErrorCode;
-    uint16_t* pwszClearCursor = awszBody;
-    for (nTitleStrId = 0x100; nTitleStrId; nTitleStrId--) {
-      pwszClearCursor[0] = L'\0';
-      pwszClearCursor[1] = L'\0';
-      pwszClearCursor += 2;
+    for (nTitleStrId = 0; nTitleStrId < 0x200; nTitleStrId++) {
+      awszBody[nTitleStrId] = L'\0';
     }
 
-    pwszClearCursor = awszFooter;
-    for (nTitleStrId = 0x100; nTitleStrId; nTitleStrId--) {
-      pwszClearCursor[0] = L'\0';
-      pwszClearCursor[1] = L'\0';
-      pwszClearCursor += 2;
+    for (nTitleStrId = 0; nTitleStrId < 0x200; nTitleStrId++) {
+      awszFooter[nTitleStrId] = L'\0';
     }
 
-    pwszClearCursor = awszTitle;
-    for (nTitleStrId = 0x100; nTitleStrId; nTitleStrId--) {
-      pwszClearCursor[0] = L'\0';
-      pwszClearCursor[1] = L'\0';
-      pwszClearCursor += 2;
+    for (nTitleStrId = 0; nTitleStrId < 0x200; nTitleStrId++) {
+      awszTitle[nTitleStrId] = L'\0';
     }
 
     int bDisconnectOnClose = 1;
@@ -969,56 +961,6 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
       nBodyStrId = 0x1445;
       nPopupType = 2;
       break;
-      case OOG_ERROR_MAIN_MENU:
-        nTitleStrId = 0x147c;
-      nBodyStrId = 0x1458;
-      nPopupType = 1;
-      bDisconnectOnClose = 0;
-      pfnOnClose = MainMenus::UIMENU_MainMenuAgain;
-      break;
-      case OOG_ERROR_BNET_ACCOUNT_CHECK:
-        nErrorAddress = Storm::Source::SSTR::SStrCmp(gszOogLastIniStringCache, D2IniData_launcher->szLastBnetAccount, 0x7fffffff);
-      if (!nErrorAddress) {
-        gnBnetAccountLoginFailCount++;
-      } else {
-        gnBnetAccountLoginFailCount = 1;
-        Storm::Source::SSTR::SStrCopy(gszOogLastIniStringCache, D2IniData_launcher->szLastBnetAccount, 0x10);
-      }
-
-      nTitleStrId = 0x147c;
-      nPopupType = 1;
-      bDisconnectOnClose = 0;
-      pfnOnClose = MainMenus::UIMENU_MainMenuAgain;
-      if (gnBnetAccountLoginFailCount >= 2) {
-        nBodyStrId = 0x2b63;
-        MainMenus::MAINMENU_SetGlobalValue3(1);
-      } else {
-        nBodyStrId = 0x1457;
-      }
-
-      break;
-      case OOG_ERROR_15:
-        nTitleStrId = 0x147c;
-      nBodyStrId = 0x1459;
-      nPopupType = 1;
-      bDisconnectOnClose = 0;
-      pfnOnClose = MainMenus::UIMENU_MainMenuAgain;
-      break;
-      case OOG_ERROR_CONNECT_16:
-        nTitleStrId = 0x1480;
-      nBodyStrId = 0x14e5;
-      nPopupType = 1;
-      break;
-      case OOG_ERROR_CONNECT_17:
-        nTitleStrId = 0x1480;
-      nBodyStrId = 0x14ea;
-      nPopupType = 1;
-      break;
-      case OOG_ERROR_CONNECT_18:
-        nTitleStrId = 0x1480;
-      nBodyStrId = 0x14e3;
-      nPopupType = 1;
-      break;
       case OOG_ERROR_CREATE_ACCOUNT_1:
         nTitleStrId = 0x1481;
       nBodyStrId = 0x146f;
@@ -1075,6 +1017,56 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
       pfnOnClose = MainMenus::UIMENU_CreateBattleNetAccount;
       bDisconnectOnClose = 0;
       break;
+      case OOG_ERROR_MAIN_MENU:
+        nTitleStrId = 0x147c;
+      nBodyStrId = 0x1458;
+      nPopupType = 1;
+      bDisconnectOnClose = 0;
+      pfnOnClose = MainMenus::UIMENU_MainMenuAgain;
+      break;
+      case OOG_ERROR_BNET_ACCOUNT_CHECK:
+        nErrorAddress = Storm::Source::SSTR::SStrCmp(gszOogLastIniStringCache, D2IniData_launcher->szLastBnetAccount, 0x7fffffff);
+      if (!nErrorAddress) {
+        gnBnetAccountLoginFailCount++;
+      } else {
+        gnBnetAccountLoginFailCount = 1;
+        Storm::Source::SSTR::SStrCopy(gszOogLastIniStringCache, D2IniData_launcher->szLastBnetAccount, 0x10);
+      }
+
+      nTitleStrId = 0x147c;
+      nPopupType = 1;
+      bDisconnectOnClose = 0;
+      pfnOnClose = MainMenus::UIMENU_MainMenuAgain;
+      if (gnBnetAccountLoginFailCount >= 2) {
+        nBodyStrId = 0x2b63;
+        MainMenus::MAINMENU_SetGlobalValue3(1);
+      } else {
+        nBodyStrId = 0x1457;
+      }
+
+      break;
+      case OOG_ERROR_15:
+        nTitleStrId = 0x147c;
+      nBodyStrId = 0x1459;
+      nPopupType = 1;
+      bDisconnectOnClose = 0;
+      pfnOnClose = MainMenus::UIMENU_MainMenuAgain;
+      break;
+      case OOG_ERROR_CONNECT_16:
+        nTitleStrId = 0x1480;
+      nBodyStrId = 0x14e5;
+      nPopupType = 1;
+      break;
+      case OOG_ERROR_CONNECT_17:
+        nTitleStrId = 0x1480;
+      nBodyStrId = 0x14ea;
+      nPopupType = 1;
+      break;
+      case OOG_ERROR_CONNECT_18:
+        nTitleStrId = 0x1480;
+      nBodyStrId = 0x14e3;
+      nPopupType = 1;
+      break;
       case OOG_ERROR_CUSTOM_MESSAGE:
         D2Lang::Unicode::UNISYS::STRING_ConvertCharToWchar(awszBody, (char*)pErrorData->pCustomData, 0x200);
       cchBufferSize = 0x200;
@@ -1114,8 +1106,8 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
 
 static void __fastcall LAUNCHER_ShowOogErrorDialog_ForEnterEmail(eOogErrorCode eErrorCode, void * pCustomData) {
     D2OogErrorDataStrc sErrorData;
-    sErrorData.eErrorCode = eErrorCode;
     sErrorData.pCustomData = pCustomData;
+    sErrorData.eErrorCode = eErrorCode;
     ShowOogErrorDialog(&sErrorData);
 }
 
@@ -1348,7 +1340,7 @@ void __stdcall UIMENU_MainMenuWithoutMenuButWithDiabloLogo() {
     MainMenus::FORMS_CreateAnyFormFromListExEx(8);
     MainMenus::FORMS_CreateAnyFormFromListExEx(6);
     MainMenus::FORMS_CreateAnyFormFromListExEx(7);
-    MainMenus::D2GFX_SetPaletteForDraw("palette\\sky\\pal.dat", "palette\\sky\\pal.pl2");
+    MainMenus::D2GFX_SetPaletteForDraw(gaFrontEndPaletteFiles[2], gaFrontEndPaletteFiles[3]);
     MainMenus::MAINMENU_AdjustFormsForKorean();
 }
 

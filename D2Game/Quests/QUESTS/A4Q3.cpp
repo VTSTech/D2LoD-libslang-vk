@@ -260,7 +260,8 @@ void __fastcall Objects_InitFn48(D2ObjectInitFnArg * pInitArg) {
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q3.cpp
 void __fastcall Q28_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pGame = pQuestData->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
+    D2UnitStrc* pPlayer = pQuestArgs->pPlayer;
+    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_Completed);
     if (bQuestState) {
@@ -473,11 +474,11 @@ bool __fastcall Q28_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_RewardAwaits);
-    if (!(!bQuestState && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag == 1 && !pQuestData->pQuestSpecificData.pA4Q3->bGotHammer)) {
-      return false;
+    if (!bQuestState && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag == 1 && !pQuestData->pQuestSpecificData.pA4Q3->bGotHammer) {
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // A4Q3 Hell's Forge — Q28_SequenceFilter (fpSequenceFilter): quest-chain sequencer. If not yet started but introduced, sets internal stateFlag 1. If finished (stateFlag==5) or not introduced, looks up the next quest in the chain (nSequenceQuestId = QUEST_AbleGoToAct4) and invokes ITS sequence filter (with an IsBadCodePtr guard). Propagates quest unlocks down the Act4 chain. No QuestRecord writes.
@@ -974,22 +975,6 @@ void __fastcall Q28_TimerCallback_DropForgeRunes(D2QuestDataStrc * pQuestData, D
     do {
       D2UnitStrc* pDroppedGem;
       switch (pQuestSpecificData->nGemQuality) {
-        case 1:
-          pSeed = GetQuestControlSeed(pQuestData->pGame);
-        sSeedNext = D2_SEED_NEXT(*pSeed);
-        nRngMod = (int)((uint64_t)sSeedNext.nSeedLow * 0x24924925 >> 0x20);
-        *pSeed = sSeedNext;
-        aRuneCode = Q28_aForgeRuneCodesAct3[((sSeedNext.nSeedLow - nRngMod >> 1) + nRngMod >> 2) * -7 + sSeedNext.nSeedLow];
-        break;
-        case 2:
-
-        case 3:
-          pSeed = GetQuestControlSeed(pQuestData->pGame);
-        sSeedNext = D2_SEED_NEXT(*pSeed);
-        nRngMod = (int)((uint64_t)sSeedNext.nSeedLow * 0x24924925 >> 0x20);
-        *pSeed = sSeedNext;
-        aRuneCode = Q28_aForgeRuneCodesAct2[((sSeedNext.nSeedLow - nRngMod >> 1) + nRngMod >> 2) * -7 + sSeedNext.nSeedLow];
-        break;
         case 4:
           pSeed = GetQuestControlSeed(pQuestData->pGame);
         sSeedNext = D2_SEED_NEXT(*pSeed);
@@ -999,6 +984,22 @@ void __fastcall Q28_TimerCallback_DropForgeRunes(D2QuestDataStrc * pQuestData, D
         break;
         default:
           return;
+        case 2:
+
+        case 3:
+          pSeed = GetQuestControlSeed(pQuestData->pGame);
+        sSeedNext = D2_SEED_NEXT(*pSeed);
+        nRngMod = (int)((uint64_t)sSeedNext.nSeedLow * 0x24924925 >> 0x20);
+        *pSeed = sSeedNext;
+        aRuneCode = Q28_aForgeRuneCodesAct2[((sSeedNext.nSeedLow - nRngMod >> 1) + nRngMod >> 2) * -7 + sSeedNext.nSeedLow];
+        break;
+        case 1:
+          pSeed = GetQuestControlSeed(pQuestData->pGame);
+        sSeedNext = D2_SEED_NEXT(*pSeed);
+        nRngMod = (int)((uint64_t)sSeedNext.nSeedLow * 0x24924925 >> 0x20);
+        *pSeed = sSeedNext;
+        aRuneCode = Q28_aForgeRuneCodesAct3[((sSeedNext.nSeedLow - nRngMod >> 1) + nRngMod >> 2) * -7 + sSeedNext.nSeedLow];
+        break;
       }
 
       pUnit->dwDropItemCode = aRuneCode;

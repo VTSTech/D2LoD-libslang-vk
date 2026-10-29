@@ -304,8 +304,8 @@ BOOL __fastcall Q01_SetCannotCompleteInGame(::SGAMEDATA * pGame, D2UnitStrc * pU
 
 // A1Q1 (Den of Evil) -- completion-sound callback (Q01_PlayCompletionSound), an IteratePlayerOrMonsterUnits callback run when the Den is cleared. If this player's QUEST_DenOfEvil record has QUESTSTATE_JustCompleted, plays the quest-complete sound/event (event sound 0x23) on that player.
 BOOL __fastcall Q01_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bIsJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_DenOfEvil, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bIsJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_DenOfEvil, QUESTSTATE_JustCompleted);
     if (!bIsJustCompleted) {
       return 0;
     }
@@ -349,8 +349,8 @@ void __fastcall Q01_SetPartyMemberRewardStates(int32_t nParam, D2UnitStrc * pUni
 
 // A1Q1 (Den of Evil) -- reward propagation (Q01_PropagateRewardToParty), an IteratePlayerOrMonsterUnits callback run when the Den is cleared. For each player whose QUEST_DenOfEvil record has QUESTSTATE_JustCompleted, fans the reward out to that player's whole party via ExecuteFunctionForEveryPartyMember(Q01_SetPartyMemberRewardStates), so all party members in Act I get JustCompleted+RewardAwaits.
 BOOL __fastcall Q01_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bIsJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_DenOfEvil, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bIsJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_DenOfEvil, QUESTSTATE_JustCompleted);
     if (!bIsJustCompleted) {
       return 0;
     }

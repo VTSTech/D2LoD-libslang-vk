@@ -580,11 +580,8 @@ void __stdcall UIMENU_CantTestItBeacuseItCrash() {
     } while ((int)ppCtlSlot <= (intptr_t)((char*)&gpCtlLobbyChat + 4));
 
     gpCtlConfirmDialog = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x13);
-    uint16_t* pwszLocaleStr = wszClassName;
-    for (nDifficultyDone = 0x32; nDifficultyDone; nDifficultyDone--) {
-      pwszLocaleStr[0] = L'\0';
-      pwszLocaleStr[1] = L'\0';
-      pwszLocaleStr += 2;
+    for (nDifficultyDone = 0; nDifficultyDone < 0x64; nDifficultyDone++) {
+      wszClassName[nDifficultyDone] = L'\0';
     }
 
     sLevelLineText.szNameAndTitle[0] = '\0';
@@ -614,7 +611,7 @@ void __stdcall UIMENU_CantTestItBeacuseItCrash() {
 
     sprintf(sLevelLineText.szNameAndTitle, " %d ", uVar1);
     D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszLevelStr, sLevelLineText.szNameAndTitle, 9);
-    /* Level */ pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0xfd9);
+    uint16_t* pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0xfd9);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(sLevelLineText.wszLevelLine, pwszLocaleStr);
     D2Lang::Unicode::UNISYS::AppendToBuffer(sLevelLineText.wszLevelLine, wszLevelStr);
     D2Lang::Unicode::UNISYS::AppendToBuffer(sLevelLineText.wszLevelLine, wszClassName);

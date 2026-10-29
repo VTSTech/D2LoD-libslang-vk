@@ -268,7 +268,8 @@ static void __stdcall SKILLSCLT_CreateMultiMissileDirected(int32_t nParam1, eD2S
         }
       } else {
         seedNext = D2_SEED_NEXT(*pSeed);
-        *pSeed = seedNext;
+        pSeed->nSeedHigh = seedNext.nSeedHigh;
+        pSeed->nSeedLow = seedNext.nSeedLow;
         if (seedNext.nSeedLow & 1) {
           goto spawn_selected_missile;
         }
@@ -528,10 +529,10 @@ void __fastcall SKILLSCLT_CreateMissileWithGfx(D2UnitStrc * pUnit, uint32_t nSee
     int local_8 = nDeltaY;
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nFlags = 1;
+    sSkillArg.pOwner = pUnit;
     sSkillArg.eSkillNo = eSkill;
     sSkillArg.nSkillLevel = nSkillLevel;
     sSkillArg.nMissileTxtNo = (eMissilesId)pMissileId;
-    sSkillArg.pOwner = pUnit;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     D2SeedStrc ullSeed = ullSeedPair;
     nSkillLevel = nDeltaY;
@@ -1924,7 +1925,7 @@ BOOL __fastcall Skills_CltDoFunc_AuraState_OverlayOnTarget(D2UnitStrc * pUnit, e
     if (!pTargetUnit) {
       return 0;
     }
-    if (pSkillTxt->progressive) {
+    if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[2]) {
       D2StatListExStrc* pStatListEx;
       sAuraState = pSkillTxt->aurastate;
       if (sAuraState >= 0 && (int)sAuraState < sgptDataTable->nTxtStatesSize && -1 < pSkillTxt->aurastat[0] && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
@@ -1972,7 +1973,7 @@ BOOL __fastcall Skills_CltDoFunc_AuraState_OverlayOnCaster(D2UnitStrc * pUnit, e
     if (!pSkillTxt) {
       return 0;
     }
-    if (pSkillTxt->progressive) {
+    if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[2]) {
       D2StatListExStrc* pStatListEx;
       sAuraState = pSkillTxt->aurastate;
       if (sAuraState >= 0 && (int)sAuraState < sgptDataTable->nTxtStatesSize && -1 < pSkillTxt->aurastat[0] && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {

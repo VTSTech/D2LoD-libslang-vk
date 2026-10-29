@@ -149,11 +149,11 @@ D2UnitStrc * __stdcall FindUnitInNeighboredRooms(D2RoomStrc * pRoom, eD2UnitType
 static BOOL CheckRoomIfNotInRange(D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t nDistance) {
     D2DrlgRoomCoordsStrc pCoords;
     DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &pCoords);
-    if (!(nX - nDistance > pCoords.dwXStart && nY - nDistance > pCoords.dwYStart && nX + nDistance < pCoords.dwXSize + pCoords.dwXStart && nY + nDistance < pCoords.dwYSize + pCoords.dwYStart)) {
-      return 1;
+    if (nX - nDistance > pCoords.dwXStart && nY - nDistance > pCoords.dwYStart && nX + nDistance < pCoords.dwXSize + pCoords.dwXStart && nY + nDistance < pCoords.dwYSize + pCoords.dwYStart) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 static BOOL CheckRoomIfInRange(D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t nDistance) {
@@ -425,7 +425,7 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
       if (!pMissileTxt) {
         return 0;
       }
-      if (pMissileTxt->Explosion) {
+      if (*((uint8_t*)pMissileTxt + 0x4) & (uint8_t)gadwBitMasks[1]) {
         return 0;
       }
 

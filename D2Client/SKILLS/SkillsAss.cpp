@@ -61,12 +61,13 @@ BOOL __fastcall Skills_CltStFunc_CheckTargetLivingAndOutOfTown(D2UnitStrc * pUni
 
     pRoom = D2Common::Units::UNITS_GetRoom(pUnit_00);
     bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
-    if (!(!bIsInTown && pUnit_00->eUnitType < UNIT_OBJECT)) {
-      return 0;
+    if (!bIsInTown && pUnit_00->eUnitType < UNIT_OBJECT) {
+      uint32_t bCanInteract;
+      bCanInteract = UNIT::CUnit::CanInteractWith(pUnit, pUnit_00);
+      return (uint32_t)(bCanInteract != 0);
     }
 
-    uint32_t bCanInteract = UNIT::CUnit::CanInteractWith(pUnit, pUnit_00);
-    return (uint32_t)(bCanInteract != 0);
+    return 0;
 }
 
 BOOL __fastcall Skills_CltDoFunc_Ass_Melee_TargetValidate(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
@@ -154,7 +155,7 @@ int32_t __fastcall SKILLSASS_GetCltMissileByAuraLevel(D2UnitStrc * pUnit, int32_
     if (!pSkillTxt) {
       return -1;
     }
-    if (!pSkillTxt->progressive) {
+    if (!(*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[2])) {
       return (int)pSkillTxt->cltmissile[1];
     }
 
@@ -195,7 +196,7 @@ uint32_t __fastcall SKILLSASS_GetPrgCalcByAuraLevel(D2UnitStrc * pUnit, eD2Skill
     if (!pSkillTxt) {
       return 0;
     }
-    if (pSkillTxt->progressive) {
+    if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[2]) {
       D2StatListExStrc* pStatListEx;
       sAuraState = pSkillTxt->aurastate;
       if (sAuraState < 0 || (int)sAuraState >= sgptDataTable->nTxtStatesSize) {
@@ -253,17 +254,17 @@ BOOL __fastcall Skills_CltDoFunc_Ass_AuraLevel_SpawnMissileRandom(D2UnitStrc * p
 }
 
 BOOL __fastcall Skills_CltStFunc_CheckAuraStateInactive(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
-      return 0;
+    short int sAuraState;
+    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill) {
+      eD2States eState;
+      sAuraState = sgptDataTable->pTxtSkills[eSkill].aurastate;
+      if (sAuraState >= 0 && (int)sAuraState < sgptDataTable->nTxtStatesSize) {
+        eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, (int)sAuraState);
+        return (uint32_t)(eState == STATE_none);
+      }
     }
 
-    short int sAuraState = sgptDataTable->pTxtSkills[eSkill].aurastate;
-    if (!(sAuraState >= 0 && (int)sAuraState < sgptDataTable->nTxtStatesSize)) {
-      return 0;
-    }
-
-    eD2States eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, (int)sAuraState);
-    return (uint32_t)(eState == STATE_none);
+    return 0;
 }
 
 // Client-side function that initialises or refreshes the Assassin charge-up state (STATE_inferno) on a unit. On first charge: plays the skill's progress overlay and sound, allocates a permanent stat list, attaches it with SKILLSASS_StatExpireCallback_ClearState as the expire callback, and sets STATE_inferno. On subsequent charges: advances the sequence frame (seqinput - 1), resets the frame counter to 0x800, and refreshes the stat list timeout to 7 frames. Returns 1 on success, 0 if the skill txt entry is missing or alloc fails.

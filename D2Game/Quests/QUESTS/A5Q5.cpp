@@ -370,7 +370,6 @@ BOOL __fastcall Q35_UpdateQuestStep(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q5.cpp
 void __fastcall Q35_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     BOOL BVar1;
-    D2UnitDataPlayerStrc* pPlayerData;
     D2BitBufferStrc* pBitBuffer;
     int* pStatueModeEntry;
     eD2QuestState eQuestState;
@@ -434,9 +433,9 @@ void __fastcall Q35_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       }
       if (nMessageIndex == 0x4ec9) {
         pGame = pQuestData->pGame;
-        pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
         /* SetQuestState(RiteOfPassage, Step0x04) — altar query 0x4ec9: marks the
-                         post-completion "Worldstone portal revealed" record bit */ D2Common::QuestRecord::SetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_RiteOfPassage, QUESTSTATE_Step0x04);
+                         post-completion "Worldstone portal revealed" record bit */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+        D2Common::QuestRecord::SetQuestState(pQuestRecord, QUEST_RiteOfPassage, QUESTSTATE_Step0x04);
         return;
       }
     }
@@ -448,6 +447,13 @@ void __fastcall Q35_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         }
       eQuestState = QUESTSTATE_Step0x05;
       break;
+      case 0x208:
+        if (nMessageIndex != 0x4ec5) {
+          return;
+        }
+      nQuestId = pQuestData->nQuestIdReal;
+      eQuestState = QUESTSTATE_Step0x06;
+      goto set_npc_told_step;
       case 0x200:
         if (nMessageIndex != 0x4ec6) {
           return;
@@ -469,13 +475,6 @@ void __fastcall Q35_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         }
       eQuestState = QUESTSTATE_Step0x09;
       break;
-      case 0x208:
-        if (nMessageIndex != 0x4ec5) {
-          return;
-        }
-      nQuestId = pQuestData->nQuestIdReal;
-      eQuestState = QUESTSTATE_Step0x06;
-      goto set_npc_told_step;
     }
 
     nQuestId = pQuestData->nQuestIdReal;
@@ -532,6 +531,10 @@ void __fastcall Q35_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         eQuestState = QUESTSTATE_Step0x05;
       nQuestId = pQuestData->nQuestIdReal;
       break;
+      case MonsterUnitDeckardCain6:
+        nQuestId = pQuestData->nQuestIdReal;
+      eQuestState = QUESTSTATE_Step0x06;
+      break;
       case MonsterUnitDrehya1:
         nQuestId = pQuestData->nQuestIdReal;
       eQuestState = QUESTSTATE_Step0x07;
@@ -546,9 +549,6 @@ void __fastcall Q35_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         nQuestId = pQuestData->nQuestIdReal;
       eQuestState = QUESTSTATE_Step0x09;
       break;
-      case MonsterUnitDeckardCain6:
-        nQuestId = pQuestData->nQuestIdReal;
-      eQuestState = QUESTSTATE_Step0x06;
     }
 
     BOOL bNpcTalkFlagSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, nQuestId, eQuestState);
@@ -879,7 +879,6 @@ void __fastcall Q35_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 // [A5Q5 = Rite of Passage] Q35_Callback_03 (sub-handler idx 3): level-entry/intro handler for the Arreat Summit. On first scroll-read (text id 0x6d) and not Completed, sets nStateFlag 3 and broadcasts 1(RewardAwaits)+syncs records. On entering LEVEL_ArreatSummit advances nStateFlag to 2/3 with broadcasts and re-syncs the Ancients-statue display.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q5.cpp
 void __fastcall Q35_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    BOOL bIsCompleted;
     D2UnitStrc* pAncientAlive;
     ::SGAMEDATA* pGame;
     int nLevelId;
@@ -887,15 +886,15 @@ void __fastcall Q35_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     D2QuestDataA5Q5Strc* pQuestSpecificData;
     pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
     if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x6d) {
-      D2UnitDataPlayerStrc* pPlayerData;
+      BOOL bIsCompleted;
       QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
       if (pQuestData->bIsNotIntroduction == '\0') {
         return;
       }
       if (pQuestData->nStateFlag == 2) {
         pGame = pQuestArgs->pGame;
-        pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-        bIsCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], pQuestData->nQuestIdReal, QUESTSTATE_Completed);
+        D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+        bIsCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
         if (bIsCompleted == 1) {
           return;
         }
@@ -936,12 +935,13 @@ void __fastcall Q35_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 
 // [A5Q5 = Rite of Passage] Q35_ActiveFilter: predicate for the Ancients altar (classId 0x203). Returns true (quest interactable) iff the altar is in-play (nStateFlag set) and RiteOfPassage is not yet Completed.
 bool __fastcall Q35_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    if (!(nTargetClassId == 0x203 && pQuestData->nStateFlag == 1)) {
-      return false;
+    if (nTargetClassId == 0x203 && pQuestData->nStateFlag == 1) {
+      BOOL bIsCompleted;
+      bIsCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
+      return !bIsCompleted;
     }
 
-    BOOL bIsCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-    return !bIsCompleted;
+    return false;
 }
 
 // [A5Q5 = Rite of Passage] Q35_SequenceFilter: quest-chain gate. While nStateFlag != 5 (Ancients not dead), parks the quest at nStateFlag 1; once finished, chains into the next quest (nSequenceQuestId = RescueOnMountArreat) sequence filter. No quest-record writes.
@@ -1085,21 +1085,21 @@ void __stdcall Q35_Noop() {
 // [A5Q5 = Rite of Passage] Q35_IsAncientsActive: returns 1 if the Ancients fight is currently engaged (field_0x11). No quest-state writes.
 BOOL __fastcall Q35_IsAncientsActive(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RiteOfPassage);
-    if (!(pQuestData && pQuestData->pQuestSpecificData.pA5Q5->bAncientsFightStarted)) {
-      return 0;
+    if (pQuestData && pQuestData->pQuestSpecificData.pA5Q5->bAncientsFightStarted) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // [A5Q5 = Rite of Passage] Q35_AreAncientsReadyToFight: returns 1 if Ancients were spawned but none remain alive (i.e. all defeated). No quest-state writes.
 uint32_t __fastcall Q35_AreAncientsReadyToFight(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RiteOfPassage);
-    if (!(pQuestData && pQuestData->pQuestSpecificData.pA5Q5->bAncientsSpawned && !pQuestData->pQuestSpecificData.pA5Q5->nAncientsAlive)) {
-      return 0;
+    if (pQuestData && pQuestData->pQuestSpecificData.pA5Q5->bAncientsSpawned && !pQuestData->pQuestSpecificData.pA5Q5->nAncientsAlive) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // [A5Q5 = Rite of Passage] Q35_FindAncientByClassId: looks up a live spawned Ancient unit by classId among the tracked GUIDs. No quest-state writes.
@@ -1165,7 +1165,8 @@ static void Q35_SetStatueAnimMode(uint32_t dwParam, D2QuestDataA5Q5Strc * pQuest
         }
       case 0x1dc:
         {
-          D2Common::Units::SetupUpdateFlag(pUnit, pQuestData->anStatueMode[2]);
+          int anStatueMode = pQuestData->anStatueMode[2];
+          D2Common::Units::SetupUpdateFlag(pUnit, anStatueMode);
           return;
         }
     }
@@ -1446,15 +1447,15 @@ BOOL __fastcall OBJOP_A5Q5_AncientsQuestStateQuery(D2ObjectOperateFnArg * pOpera
     bool _bQuestCompleted;
     bool bQuestCompleted;
     ::SGAMEDATA* pGame = pOperation->sArg.pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pOperation->pAttacker);
-    _bQuestCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_RiteOfPassage, QUESTSTATE_Completed);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pOperation->pAttacker)->pQuestRecord[pGame->nDifficulty];
+    _bQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_RiteOfPassage, QUESTSTATE_Completed);
     if (!_bQuestCompleted) {
       return 0;
     }
 
     ::SGAMEDATA* pGame2 = pOperation->sArg.pGame;
-    D2UnitDataPlayerStrc* pPlayerData2 = D2Common::Units::GetPlayerData(pOperation->pAttacker);
-    _bQuestCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData2->pQuestRecord[pGame2->nDifficulty], QUEST_RiteOfPassage, QUESTSTATE_Step0x04);
+    D2BitBufferStrc* pQuestRecord2 = D2Common::Units::GetPlayerData(pOperation->pAttacker)->pQuestRecord[pGame2->nDifficulty];
+    _bQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord2, QUEST_RiteOfPassage, QUESTSTATE_Step0x04);
     if (_bQuestCompleted) {
       return 0;
     }

@@ -263,8 +263,8 @@ void __fastcall D2GFX_DrawGroundTileWithPerspective(int32_t nClipOriginX, int32_
 }
 
 void __fastcall D2GFX_FillYBufferFast(int32_t nScreenWidth, int32_t nScreenHeight) {
-    gnTileViewportXOffset = 0;
     gnTileClipBottom = nScreenHeight - 0x2f;
+    gnTileViewportXOffset = 0;
     if (gnGfxOverlayMode == 1) {
       nScreenWidth -= nScreenWidth / 2;
     } else if (gnGfxOverlayMode == 2) {

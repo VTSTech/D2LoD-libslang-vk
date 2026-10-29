@@ -152,12 +152,10 @@ void __fastcall D2WIN_UnregisterWindowHandlerArray(int32_t hHandle, void * pHand
 // Adds list item from narrow character string. Converts szCharName to wide string (max 256 chars), forwards to AddListItem.
 void __fastcall D2WINLIST_AddListItemFromCharName(::D2WinList * pList, char * szCharName, fpListEntryCallback nItemData, uint8_t bItemFlags, int32_t nUserData, int32_t bPrepend, int32_t bSelect) {
     int nStrLen;
+    uint16_t* pWideStrBuf;
     uint16_t local_204[256];
-    uint16_t* pWideStrBuf = local_204;
-    for (nStrLen = 0x80; nStrLen; nStrLen--) {
-      pWideStrBuf[0] = L'\0';
-      pWideStrBuf[1] = L'\0';
-      pWideStrBuf += 2;
+    for (nStrLen = 0; nStrLen < 0x100; nStrLen++) {
+      local_204[nStrLen] = L'\0';
     }
 
     D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(local_204, szCharName, 0x100);

@@ -103,11 +103,11 @@ void __fastcall Q09_AICallback_GreaterMummy(::SGAMEDATA * pGame, D2UnitStrc * pU
 // Gate used so The Horadric Staff dialog/flow only proceeds once Radament is dealt with.
 bool __fastcall Q10_IsRadamentCompleted(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RadamentsLair);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
-      return true;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      return pQuestData->nStateFlag == 5;
     }
 
-    return pQuestData->nStateFlag == 5;
+    return true;
 }
 
 // Q10_CheckHoradricStaffState. Reads QuestRecord bits for QUEST_TheHoradricStaff.
@@ -276,8 +276,8 @@ BOOL __fastcall Q10_OnScrollPickup(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void
 // ('msf ') drop path. For each player not yet Completed who holds neither 'msf ' nor
 // 'tsh ' (Staff of Kings), bumps the A2Q2 drop counter. No QuestRecord writes.
 BOOL __fastcall Q10_OnStaffOrViperPickup(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pQuestData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bCompleted = D2Common::QuestRecord::GetQuestState(pQuestData->pQuestRecord[pGame->nDifficulty], QUEST_TheHoradricStaff, QUESTSTATE_Completed);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheHoradricStaff, QUESTSTATE_Completed);
     if (bCompleted) {
       return 0;
     }
@@ -471,8 +471,8 @@ void __fastcall Q10_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
     uint32_t nItemClassId = !pQuestArgs->pTarget ? -1 : pQuestArgs->pTarget->nClassId;
     D2ItemsTxt* pItemTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nItemClassId);
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-    BOOL bStep0x03Set = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_TheHoradricStaff, QUESTSTATE_Step0x03);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+    BOOL bStep0x03Set = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheHoradricStaff, QUESTSTATE_Step0x03);
     pQuestData->nQuestPacketFlags = '\0';
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pQuestArgs->pPlayer);
     eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);

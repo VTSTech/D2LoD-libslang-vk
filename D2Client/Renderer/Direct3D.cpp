@@ -27,7 +27,7 @@ void __fastcall UpdateScaleFactor(int nScaleFactor) {
 }
 
 int CheckGamma() {
-    return D2Direct3D::Renderer::gnD3DTextureCapFlags & 0x10;
+    return gadwBitMasks[4] & D2Direct3D::Renderer::gnD3DTextureCapFlags;
 }
 
 BOOL EndScene2() {

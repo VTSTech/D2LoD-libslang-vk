@@ -129,8 +129,9 @@ BOOL __fastcall Q11_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 // run Q11_SetTaintedSunRewardOnPartyMember across the player's whole party so partymates also get the
 // RewardAwaits credit. Read-only on the quest record; the write happens in the party callback.
 BOOL __fastcall Q11_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pDVar1->pQuestRecord[pGame->nDifficulty], QUEST_TheTaintedSun, QUESTSTATE_JustCompleted);
+    /* GetQuestState(buf, A2Q3, 0xd=JustCompleted) - only propagate reward if self
+                         player just completed it */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheTaintedSun, QUESTSTATE_JustCompleted);
     if (!BVar2) {
       return 0;
     }
@@ -510,8 +511,9 @@ BOOL __fastcall Q11_CheckViperAmuletRoomComplete(::SGAMEDATA * pGame, D2UnitStrc
 // A2Q3 - per-unit iterator cb (Q11_PlayCompletionSound): if this player's record is JustCompleted, fire the
 // quest-complete sound/event (SetupUpdateEvent_AttachEventSound id 0x34). Read-only on the quest record.
 BOOL __fastcall Q11_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pDVar1->pQuestRecord[pGame->nDifficulty], QUEST_TheTaintedSun, QUESTSTATE_JustCompleted);
+    /* GetQuestState(buf, A2Q3, 0xd=JustCompleted) - play complete sound only on the
+                         just-finished tick */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheTaintedSun, QUESTSTATE_JustCompleted);
     if (!BVar2) {
       return 0;
     }
@@ -534,8 +536,10 @@ BOOL __fastcall Q11_OnStaffViperPickup(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
       return 0;
     }
 
-    D2UnitDataPlayerStrc* pQuestItem = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bCompleted = D2Common::QuestRecord::GetQuestState(pQuestItem->pQuestRecord[pGame->nDifficulty], QUEST_TheHoradricStaff, QUESTSTATE_Completed);
+    /* GetQuestState(buf, questId 0xa=QUEST_TheHoradricStaff/A2Q2, 0=Completed) -
+                         NOTE: checks the *Horadric Staff* quest, not A2Q3; only count reward if A2Q2
+                         not yet done */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheHoradricStaff, QUESTSTATE_Completed);
     if (bCompleted) {
       return 0;
     }
@@ -728,11 +732,11 @@ BOOL __fastcall OBJOP_A2Q3_ActivateHoradricStaffAltar(D2ObjectOperateFnArg * pOp
 // (i.e. altar destroyed / quest finished), or true if quest data missing / intro not started. Read-only.
 bool __fastcall Q11_IsTaintedSunComplete(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheTaintedSun);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
-      return true;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      return pQuestData->nStateFlag >= 4;
     }
 
-    return pQuestData->nStateFlag >= 4;
+    return true;
 }
 
 // A2Q3 - Q11_InitTaintedSunForAct: on Act 2 (re)load, if the quest is mid-darkening (pending flag at +3 set),

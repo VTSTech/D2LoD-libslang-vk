@@ -382,8 +382,8 @@ void __stdcall DRAW_ConfigControlsMenu() {
     nMouseY = nTmpY;
     ui::UI_InitializeStatDescriptionPointers();
     if (gnUICtrlConfigLastMouseX != nTmpX || gnUICtrlConfigLastMouseY != nTmpY || gnUICtrlConfigMouseButtonState) {
-      gnUICtrlConfigLastMouseY = nTmpY;
       gnUICtrlConfigLastMouseX = nTmpX;
+      gnUICtrlConfigLastMouseY = nTmpY;
       UI_UpdateConfigControlsState(nTmpX, nTmpY);
     }
 

@@ -139,15 +139,15 @@ static BOOL __stdcall DRLGROOMTILE_CreateExitWarp(uint32_t nTileFlags, int32_t n
 
     nX = nXTileId - pRoomEx->sCoords.WorldPosition.x;
     int nY = nYTileId - pRoomEx->sCoords.WorldPosition.y;
-    if (!(nX != pRoomEx->sCoords.WorldSize.x && nY != pRoomEx->sCoords.WorldSize.y)) {
-      return 0;
+    if (nX != pRoomEx->sCoords.WorldSize.x && nY != pRoomEx->sCoords.WorldSize.y) {
+      Transform::CoordsRoomToWorld(&nX, &nY);
+      nX += pWarpInfo->OffsetX;
+      nY += pWarpInfo->OffsetY;
+      DrlgRoom::AllocPresetUnit(pRoomEx, pRoomEx->pLevel->pDrlg->pMemoryPool, UNIT_WARP, pWarpInfo->Id, 0, nX, nY);
+      return 1;
     }
 
-    Transform::CoordsRoomToWorld(&nX, &nY);
-    nX += pWarpInfo->OffsetX;
-    nY += pWarpInfo->OffsetY;
-    DrlgRoom::AllocPresetUnit(pRoomEx, pRoomEx->pLevel->pDrlg->pMemoryPool, UNIT_WARP, pWarpInfo->Id, 0, nX, nY);
-    return 1;
+    return 0;
 }
 
 // NOTE: Callee-saved register params inferred (medium confidence): pRoomExStrc (EDI): D2RoomExStrc*
@@ -582,6 +582,15 @@ static void __stdcall DRLGROOMTILE_ProcessTile(eD2GridCellFlags nFlags, D2RoomEx
     }
     if ((nFlags & CELLFLAGS_0x80000000) != CELLFLAGS_NONE) {
       switch (nOtherFlags) {
+        case CELLFLAGS_0x08 | CELLFLAGS_0x02:
+
+        case CELLFLAGS_0x08 | CELLFLAGS_0x02 | CELLFLAGS_0x01:
+          if (nMainIndex >= 8) {
+            return;
+          }
+        DRLGROOMTILE_CreateExitWarp(nFlags, nX, nOtherFlags, nSizeMaybe, pRoom);
+        DRLGROOMTILE_InitWarpCacheTiles(nFlags, pRoom, nX, nSizeMaybe, nOtherFlags);
+        return;
         case CELLFLAGS_0x08:
 
         case CELLFLAGS_0x08 | CELLFLAGS_0x01:
@@ -592,15 +601,6 @@ static void __stdcall DRLGROOMTILE_ProcessTile(eD2GridCellFlags nFlags, D2RoomEx
         }
 
         break;
-        case CELLFLAGS_0x08 | CELLFLAGS_0x02:
-
-        case CELLFLAGS_0x08 | CELLFLAGS_0x02 | CELLFLAGS_0x01:
-          if (nMainIndex >= 8) {
-            return;
-          }
-        DRLGROOMTILE_CreateExitWarp(nFlags, nX, nOtherFlags, nSizeMaybe, pRoom);
-        DRLGROOMTILE_InitWarpCacheTiles(nFlags, pRoom, nX, nSizeMaybe, nOtherFlags);
-        return;
       }
     }
     if ((nFlags & CELLFLAGS_0x04) != CELLFLAGS_NONE) {

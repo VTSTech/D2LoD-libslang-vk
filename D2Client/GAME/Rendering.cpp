@@ -165,9 +165,9 @@ void __stdcall DRAW_UI_FPSStats() {
       gnFPSFrameCounter++;
       gnFPSFrameCounterAccum++;
     } else {
+      gdwFPSLastSecondTick = dwTick;
       fps = gnFPSFrameCounter;
       gnFPSFrameCounter = 0;
-      gdwFPSLastSecondTick = dwTick;
     }
     if (gbFPSStatsEnabled) {
       int32_t nStat;
@@ -184,9 +184,6 @@ void __stdcall DRAW_UI_FPSStats() {
         case RENDERER_Windowed:
           szRendererName = "Software";
         break;
-        case RENDERER_Unused2:
-          szRendererName = "Software";
-        break;
         case RENDERED_DirectDraw:
           szRendererName = "DirectDraw";
         break;
@@ -198,6 +195,9 @@ void __stdcall DRAW_UI_FPSStats() {
         break;
         case RENDERER_Direct3D:
           szRendererName = "Direct3D";
+        break;
+        case RENDERER_Unused2:
+          szRendererName = "Software";
         break;
         case RENDERER_COUNT:
           szRendererName = "RAVE";

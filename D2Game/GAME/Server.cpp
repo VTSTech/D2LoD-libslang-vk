@@ -375,7 +375,8 @@ void __stdcall RollSeed(::SGAMEDATA * pGamee) {
       nRandSeed = D2Common::Seed::SEED_GenerateRandomSeed(local_c.u.LowPart);
       D2Common::Seed::InitSeed_Param_666(pSeed, nRandSeed);
       seedResult = D2_SEED_NEXT(*pSeed);
-      *pSeed = seedResult;
+      pSeed->nSeedHigh = seedResult.nSeedHigh;
+      pSeed->nSeedLow = seedResult.nSeedLow;
       nRandSeed = D2Common::Seed::SEED_GenerateRandomSeed(seedResult.nSeedLow);
       pGamee->pInitSeed.nSeedLow = nRandSeed;
       return;
@@ -912,6 +913,28 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_System(char * pBytes, int32
       nClientId = *(int32_t*)pBytes;
       if (!false) {
         switch (pBytes[5]) {
+          case -6:
+            D2Net::Game::Server::NET_QServer_FindIpAddressByClientIdForQServer(nClientId, szSendBuffer + 0x10, 0x10);
+          /* LONG * lpAddend for InterlockedIncrement */ InterlockedIncrement((LONG*)&lpAddend_00883d64);
+          nSize = 0x10;
+          pSendBuffer = szSendBuffer;
+          szSendBuffer[0] = -6;
+          D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(2, nClientId, pSendBuffer, nSize);
+          break;
+          case -5:
+            D2Net::Game::Server::NET_QServer_FindIpAddressByClientIdForQServer(nClientId, szSendBuffer + 0x10, 0x10);
+          szSendBuffer[0] = -5;
+          D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(2, nClientId, szSendBuffer, 0x10);
+          D2Net::Game::Server::QSERVER_KillConnection(nClientId);
+          /* LONG * lpAddend for InterlockedDecrement */ InterlockedDecrement((LONG*)&lpAddend_00883d64);
+          return;
+          case -4:
+            D2Net::Game::Server::NET_QServer_FindIpAddressByClientIdForQServer(nClientId, szSendBuffer + 0x10, 0x10);
+          nSize = 0x10;
+          pSendBuffer = szSendBuffer;
+          szSendBuffer[0] = -4;
+          D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(2, nClientId, pSendBuffer, nSize);
+          break;
           case '\x01':
 
           case -3:
@@ -941,12 +964,7 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_System(char * pBytes, int32
               *(uint32_t*)((char*)&sPacketFF01.sHead + 185) = sSystemInfo.dw0xC0;
               /* Input Data */ /* Destination */ pSrcInts = sSystemInfo.aSomeInts;
               pDstInts = sPacketFF01.aSomeInts;
-              /* Set Array length */ /* Copy operation */ for (nCopyCount = 8; nCopyCount; nCopyCount--) {
-                *pDstInts = *pSrcInts;
-                pSrcInts++;
-                pDstInts++;
-              }
-
+              /* Set Array length */ /* Copy operation */ memcpy(pDstInts, pSrcInts, 32);
               *(uint32_t*)((char*)&sPacketFF01 + 225) = sSystemInfo.dw0x110;
               *(uint32_t*)((char*)&sPacketFF01 + 229) = sSystemInfo.dw0xC4;
               sPacketFF01.field14_0xe9 = sSystemInfo.dw0xC8;
@@ -973,27 +991,6 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_System(char * pBytes, int32
               break;
             }
           break;
-          case -6:
-            D2Net::Game::Server::NET_QServer_FindIpAddressByClientIdForQServer(nClientId, szSendBuffer + 0x10, 0x10);
-          /* LONG * lpAddend for InterlockedIncrement */ InterlockedIncrement((LONG*)&lpAddend_00883d64);
-          nSize = 0x10;
-          pSendBuffer = szSendBuffer;
-          szSendBuffer[0] = -6;
-          D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(2, nClientId, pSendBuffer, nSize);
-          break;
-          case -5:
-            D2Net::Game::Server::NET_QServer_FindIpAddressByClientIdForQServer(nClientId, szSendBuffer + 0x10, 0x10);
-          szSendBuffer[0] = -5;
-          D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(2, nClientId, szSendBuffer, 0x10);
-          D2Net::Game::Server::QSERVER_KillConnection(nClientId);
-          /* LONG * lpAddend for InterlockedDecrement */ InterlockedDecrement((LONG*)&lpAddend_00883d64);
-          return;
-          case -4:
-            D2Net::Game::Server::NET_QServer_FindIpAddressByClientIdForQServer(nClientId, szSendBuffer + 0x10, 0x10);
-          nSize = 0x10;
-          pSendBuffer = szSendBuffer;
-          szSendBuffer[0] = -4;
-          D2Net::Game::Server::NET_D2GS_SERVER_SendPacketToClient(2, nClientId, pSendBuffer, nSize);
         }
       }
     }

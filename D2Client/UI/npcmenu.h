@@ -251,7 +251,7 @@ int __stdcall NPCMENU_EnableQualKehkHireOption();
 // NPC quest table entry 8: quest 28, state flag 0.
 int __stdcall NPCMENU_EnableTyraelTravelToHarrogathOption();
 void __stdcall NPCMENU_HandleMenuSelection(int32_t nParam, struct D2UnitStrc * pUnit);
-void __fastcall SetPlayersMercInfo(int16_t nParam, int32_t nParam2);
+void __fastcall SetPlayersMercInfo(uint16_t nParam, int32_t nParam2);
 void __stdcall NPCMENU_RefreshMenuDialog();
 int __fastcall NPCMENU_OnScrollComplete(void * dwParam, int32_t nParam, int32_t nScrollState);
 // "talk" (3381 TalkMenu) option callback: slot 0 of every NPC menu row that has a talk option; also used by NPCMENU_OpenInteractionDialog.

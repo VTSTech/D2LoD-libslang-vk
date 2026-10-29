@@ -266,12 +266,13 @@ int * __fastcall SOUND_FindPlayingByIdSafe(int32_t nId) {
 }
 
 uint32_t __fastcall SOUND_GetPlaybackStatus(int * * ppnParam) {
-    if (!(ppnParam && (D2SoundSmpStrc*)*ppnParam)) {
-      return 0;
+    if (ppnParam && (D2SoundSmpStrc*)*ppnParam) {
+      uint32_t nStatus;
+      nStatus = D2Sound::Src::D2SoundSmp::SOUNDSMP_GetStatus((D2SoundSmpStrc*)*ppnParam);
+      return nStatus;
     }
 
-    uint32_t nStatus = D2Sound::Src::D2SoundSmp::SOUNDSMP_GetStatus((D2SoundSmpStrc*)*ppnParam);
-    return nStatus;
+    return 0;
 }
 
 void __stdcall SOUND_ShutdownAudio() {

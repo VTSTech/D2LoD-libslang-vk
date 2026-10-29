@@ -73,7 +73,8 @@ void DungeonRoll(D2DrlgLevelStrc * pLevel) {
 }; D2_STATIC_GUARD(DRLG_ACT3_DUNGEON_PRESETS2, "D2Common::Drlg::Maze::Act3::DungeonRoll::DRLG_ACT3_DUNGEON_PRESETS2");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-    pLevel->sSeed = DVar1;
+    pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+    pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
     uint32_t nRoll = DVar1.nSeedLow & 3;
     ReplaceRoom(DRLG_ACT3_DUNGEON_PRESETS + nRoll, pLevel, &nRoll);
     ReplaceRoom(DRLG_ACT3_DUNGEON_PRESETS2 + nRoll, pLevel, &nRoll);

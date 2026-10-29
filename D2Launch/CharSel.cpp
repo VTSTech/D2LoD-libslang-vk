@@ -321,6 +321,11 @@ void __stdcall DRAW_LocalCharsInSelectionScreen() {
         D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gaCharSelScreenSlotControls[nCharacterIndex]);
         nLanguageCode = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
         switch (nLanguageCode) {
+          case 7:
+            nTextLine = -7;
+          break;
+          default:
+            continue;
           case 6:
 
           case 9:
@@ -328,11 +333,6 @@ void __stdcall DRAW_LocalCharsInSelectionScreen() {
           case 10:
             nTextLine = -2;
           break;
-          case 7:
-            nTextLine = -7;
-          break;
-          default:
-            continue;
         }
 
         D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLinePadding(gaCharSelScreenSlotControls[nCharacterIndex], -1, nTextLine);
@@ -355,12 +355,14 @@ void __stdcall DRAW_LocalCharsInSelectionScreen() {
         D2Win::Src::D2Comp::D2COMP_SetScreenY(pDVar1->pCharSelCompStrc, nSlotBoxY);
         wCharFlags = pDVar1->nCharacterFlags;
         if (wCharFlags & 8) {
-          nLanguageCode = 0x11;
+          dwCompFlags = gadwBitMasks[4] | 1;
         } else {
-          nLanguageCode = 1;
+          dwCompFlags = gadwInvBitMasks[4] & 1;
         }
         if (wCharFlags & 4) {
-          nLanguageCode |= 0x20;
+          nLanguageCode = dwCompFlags | gadwBitMasks[5];
+        } else {
+          nLanguageCode = dwCompFlags & gadwInvBitMasks[5];
         }
 
         D2Win::Src::D2Comp::D2COMP_SetFlags((D2CharSelStrc*)pDVar1->pCharSelCompStrc, nLanguageCode);
@@ -398,11 +400,8 @@ void __stdcall DRAW_LocalCharsInSelectionScreen() {
 
           D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsi(gaCharSelScreenSlotControls[nCharacterIndex], szNameBuf, (wCharFlags & 4 ? -3 : 0) + 4);
           CHARSEL_GetClassNameString((uint32_t)pDVar1->ePlayerClassID, wszClassName);
-          pwVar3 = wszLineBuf;
-          for (nTextArg0 = 0x32; nTextArg0; nTextArg0--) {
-            pwVar3[0] = L'\0';
-            pwVar3[1] = L'\0';
-            pwVar3 += 2;
+          for (nTextArg0 = 0; nTextArg0 < 0x64; nTextArg0++) {
+            wszLineBuf[nTextArg0] = L'\0';
           }
 
           memset(wszLevelStr, 0, 10 * sizeof(wszLevelStr[0]));
@@ -562,12 +561,14 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
         } else {
           wCharFlags = pCharEntry->nCharacterFlags;
           if (wCharFlags & 8) {
-            nLanguageCode = 0x11;
+            dwCompFlags = gadwBitMasks[4] | 1;
           } else {
-            nLanguageCode = 1;
+            dwCompFlags = gadwInvBitMasks[4] & 1;
           }
           if (wCharFlags & 4) {
-            nLanguageCode |= 0x20;
+            nLanguageCode = dwCompFlags | gadwBitMasks[5];
+          } else {
+            nLanguageCode = dwCompFlags & gadwInvBitMasks[5];
           }
 
           D2Win::Src::D2Comp::D2COMP_SetFlags((D2CharSelStrc*)pCharEntry->pCharSelCompStrc, nLanguageCode);
@@ -733,11 +734,11 @@ BOOL __stdcall SAVEFILE_ParseSaveData(char * szRealmName, char * szCharacterName
     Storm::Source::SSTR::SStrCopy(pNewCharSel->szCharname, szCharacterName, 0x7fffffff);
     char* pDestination;
     pDestination = pNewCharSel->szCommandStringTable;
-    if (!szRealmName) {
+    if (szRealmName) {
+      D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize((uint16_t*)pDestination, szRealmName, 0xff);
+    } else {
       pDestination[0] = '\0';
       pDestination[1] = '\0';
-    } else {
-      D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize((uint16_t*)pDestination, szRealmName, 0xff);
     }
 
     int nEquipIndex;
@@ -1053,6 +1054,7 @@ BOOL __stdcall CHARSEL_UpdateSelectedCharDisplay() {
     D2CharSelCompStrc* pCharSelComp;
     uint8_t* pbEquipPtr;
     uint32_t dwCompFlags;
+    uint32_t dwFlags;
     char* pszText;
     uint16_t wLocaleStrId;
     ::D2WinImage* pCharSelControl;
@@ -1186,18 +1188,22 @@ BOOL __stdcall CHARSEL_UpdateSelectedCharDisplay() {
         D2Win::Src::D2Comp::D2COMP_SetScreenY(gpCharSelPendingEntry->pCharSelCompStrc, 0x172);
         wCharFlags = gpCharSelPendingEntry->nCharacterFlags;
         if (wCharFlags & 8) {
-          dwCompFlags = 0x15;
+          dwCompFlags = gadwBitMasks[4] | 5;
         } else {
-          dwCompFlags = 5;
+          dwCompFlags = gadwInvBitMasks[4] & 5;
         }
         if (wCharFlags & 4) {
-          dwCompFlags |= 0x20;
+          dwCompFlags |= gadwBitMasks[5];
+        } else {
+          dwCompFlags &= gadwInvBitMasks[5];
         }
         if (wCharFlags & 0x20) {
-          dwCompFlags |= 0x1000;
+          dwFlags = dwCompFlags | gadwBitMasks[0xc];
+        } else {
+          dwFlags = dwCompFlags & gadwInvBitMasks[0xc];
         }
 
-        D2Win::Src::D2Comp::D2COMP_SetFlags((D2CharSelStrc*)gpCharSelPendingEntry->pCharSelCompStrc, dwCompFlags);
+        D2Win::Src::D2Comp::D2COMP_SetFlags((D2CharSelStrc*)gpCharSelPendingEntry->pCharSelCompStrc, dwFlags);
         Fog::File::CONTAINER_InitializeBuffer(wszClassName, 2, 100, MainMenus::STRING_ZeroOneWCHAR);
         D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpaCharSelectDisplay);
         pszText = gpCharSelPendingEntry->szGuildTag;
@@ -1484,31 +1490,34 @@ BOOL __stdcall CHARSEL_HandleKeyNavExpansion(int32_t pKeyMsg) {
     }
 
     switch (*(uint32_t*)(pKeyMsg + 8)) {
-      case 0x23:
-        if (D2Client::CharScreen::TotalCurrentChars > gnCharSelScreenSlotCount) {
-          g_nCharSelNavigationIndex = D2Client::CharScreen::TotalCurrentChars - gnCharSelScreenSlotCount;
-        }
-      D2Client::CharScreen::nSelectedCharIndex = D2Client::CharScreen::TotalCurrentChars - 1;
-      break;
-      case 0x24:
-        D2Client::CharScreen::nSelectedCharIndex = 0;
-      g_nCharSelNavigationIndex = 0;
-      break;
-      case 0x25:
-        if ((int)D2Client::CharScreen::nSelectedCharIndex <= 0) {
-          break;
-        }
-      nNewSelectedIndex = D2Client::CharScreen::nSelectedCharIndex & 0x80000001;
-      bIsEvenColumn = !nNewSelectedIndex;
-      if ((int)nNewSelectedIndex < 0) {
-        bIsEvenColumn = (nNewSelectedIndex - 1 | -2) == -1;
-      }
-      if (bIsEvenColumn) {
-        break;
-      }
+      case 0x28:
+        if ((int)D2Client::CharScreen::nSelectedCharIndex < D2Client::CharScreen::TotalCurrentChars - 1 && (nNewSelectedIndex = D2Client::CharScreen::nSelectedCharIndex + 2 , (int)nNewSelectedIndex <= D2Client::CharScreen::TotalCurrentChars - 1)) {
+          D2Client::CharScreen::nSelectedCharIndex = nNewSelectedIndex;
+          if ((int)nNewSelectedIndex < g_nCharSelNavigationIndex) {
+            goto scroll_view_to;
+          }
+          if ((int)nNewSelectedIndex > gnCharSelScreenSlotCount - 1 + g_nCharSelNavigationIndex) {
+            nCandidateIndex = nNewSelectedIndex & 0x80000001;
+            bIsEvenColumn = !nCandidateIndex;
+            if ((int)nCandidateIndex < 0) {
+              bIsEvenColumn = (nCandidateIndex - 1 | -2) == -1;
+            }
+            if (bIsEvenColumn) {
+              g_nCharSelNavigationIndex = nNewSelectedIndex - gnCharSelScreenSlotCount + 2;
+              CHARSEL_ScrollCharList(1);
+              DRAW_LocalCharsInSelectionScreen0();
+              CHARSEL_UpdateSelectedCharDisplay();
+              return 1;
+            }
 
-      nNewSelectedIndex = D2Client::CharScreen::nSelectedCharIndex - 1;
-      goto select_and_scroll_into_view;
+            g_nCharSelNavigationIndex = nNewSelectedIndex - gnCharSelScreenSlotCount + 1;
+            CHARSEL_ScrollCharList(1);
+            DRAW_LocalCharsInSelectionScreen0();
+            CHARSEL_UpdateSelectedCharDisplay();
+            return 1;
+          }
+        }
+      break;
       case 0x26:
         if ((int)D2Client::CharScreen::nSelectedCharIndex <= 0 || (nCandidateIndex = D2Client::CharScreen::nSelectedCharIndex - 2 , (int)nCandidateIndex < 0)) {
           break;
@@ -1570,33 +1579,31 @@ BOOL __stdcall CHARSEL_HandleKeyNavExpansion(int32_t pKeyMsg) {
       }
 
       break;
-      case 0x28:
-        if ((int)D2Client::CharScreen::nSelectedCharIndex < D2Client::CharScreen::TotalCurrentChars - 1 && (nNewSelectedIndex = D2Client::CharScreen::nSelectedCharIndex + 2 , (int)nNewSelectedIndex <= D2Client::CharScreen::TotalCurrentChars - 1)) {
-          D2Client::CharScreen::nSelectedCharIndex = nNewSelectedIndex;
-          if ((int)nNewSelectedIndex < g_nCharSelNavigationIndex) {
-            goto scroll_view_to;
-          }
-          if ((int)nNewSelectedIndex > gnCharSelScreenSlotCount - 1 + g_nCharSelNavigationIndex) {
-            nCandidateIndex = nNewSelectedIndex & 0x80000001;
-            bIsEvenColumn = !nCandidateIndex;
-            if ((int)nCandidateIndex < 0) {
-              bIsEvenColumn = (nCandidateIndex - 1 | -2) == -1;
-            }
-            if (bIsEvenColumn) {
-              g_nCharSelNavigationIndex = nNewSelectedIndex - gnCharSelScreenSlotCount + 2;
-              CHARSEL_ScrollCharList(1);
-              DRAW_LocalCharsInSelectionScreen0();
-              CHARSEL_UpdateSelectedCharDisplay();
-              return 1;
-            }
-
-            g_nCharSelNavigationIndex = nNewSelectedIndex - gnCharSelScreenSlotCount + 1;
-            CHARSEL_ScrollCharList(1);
-            DRAW_LocalCharsInSelectionScreen0();
-            CHARSEL_UpdateSelectedCharDisplay();
-            return 1;
-          }
+      case 0x25:
+        if ((int)D2Client::CharScreen::nSelectedCharIndex <= 0) {
+          break;
         }
+      nNewSelectedIndex = D2Client::CharScreen::nSelectedCharIndex & 0x80000001;
+      bIsEvenColumn = !nNewSelectedIndex;
+      if ((int)nNewSelectedIndex < 0) {
+        bIsEvenColumn = (nNewSelectedIndex - 1 | -2) == -1;
+      }
+      if (bIsEvenColumn) {
+        break;
+      }
+
+      nNewSelectedIndex = D2Client::CharScreen::nSelectedCharIndex - 1;
+      goto select_and_scroll_into_view;
+      case 0x24:
+        D2Client::CharScreen::nSelectedCharIndex = 0;
+      g_nCharSelNavigationIndex = 0;
+      break;
+      case 0x23:
+        if (D2Client::CharScreen::TotalCurrentChars > gnCharSelScreenSlotCount) {
+          g_nCharSelNavigationIndex = D2Client::CharScreen::TotalCurrentChars - gnCharSelScreenSlotCount;
+        }
+      D2Client::CharScreen::nSelectedCharIndex = D2Client::CharScreen::TotalCurrentChars - 1;
+      break;
     }
 
     DRAW_LocalCharsInSelectionScreen0();
@@ -1617,29 +1624,6 @@ BOOL __stdcall CHARSEL_HandleKeyNavClassic(int32_t pKeyMsg) {
     }
     if (!false) {
       switch (*(uint32_t*)(pKeyMsg + 8)) {
-        case 0x23:
-          if (D2Client::CharScreen::TotalCurrentChars > gnCharSelScreenSlotCount) {
-            g_nCharSelNavigationIndex = D2Client::CharScreen::TotalCurrentChars - gnCharSelScreenSlotCount;
-          }
-        D2Client::CharScreen::nSelectedCharIndex = D2Client::CharScreen::TotalCurrentChars - 1;
-        break;
-        case 0x24:
-          D2Client::CharScreen::nSelectedCharIndex = 0;
-        g_nCharSelNavigationIndex = 0;
-        break;
-        case 0x26:
-          if (D2Client::CharScreen::nSelectedCharIndex <= 0) {
-            break;
-          }
-        D2Client::CharScreen::nSelectedCharIndex--;
-        if (D2Client::CharScreen::nSelectedCharIndex < g_nCharSelNavigationIndex) {
-          g_nCharSelNavigationIndex = D2Client::CharScreen::nSelectedCharIndex;
-          DRAW_LocalCharsInSelectionScreen0();
-          CHARSEL_UpdateSelectedCharDisplay();
-          return 1;
-        }
-
-        goto scroll_if_below_view;
         case 0x28:
           if (D2Client::CharScreen::nSelectedCharIndex >= D2Client::CharScreen::TotalCurrentChars - 1) {
             break;
@@ -1659,6 +1643,30 @@ BOOL __stdcall CHARSEL_HandleKeyNavClassic(int32_t pKeyMsg) {
           CHARSEL_UpdateSelectedCharDisplay();
           return 1;
         }
+        break;
+        case 0x26:
+          if (D2Client::CharScreen::nSelectedCharIndex <= 0) {
+            break;
+          }
+        D2Client::CharScreen::nSelectedCharIndex--;
+        if (D2Client::CharScreen::nSelectedCharIndex < g_nCharSelNavigationIndex) {
+          g_nCharSelNavigationIndex = D2Client::CharScreen::nSelectedCharIndex;
+          DRAW_LocalCharsInSelectionScreen0();
+          CHARSEL_UpdateSelectedCharDisplay();
+          return 1;
+        }
+
+        goto scroll_if_below_view;
+        case 0x24:
+          D2Client::CharScreen::nSelectedCharIndex = 0;
+        g_nCharSelNavigationIndex = 0;
+        break;
+        case 0x23:
+          if (D2Client::CharScreen::TotalCurrentChars > gnCharSelScreenSlotCount) {
+            g_nCharSelNavigationIndex = D2Client::CharScreen::TotalCurrentChars - gnCharSelScreenSlotCount;
+          }
+        D2Client::CharScreen::nSelectedCharIndex = D2Client::CharScreen::TotalCurrentChars - 1;
+        break;
       }
     }
 

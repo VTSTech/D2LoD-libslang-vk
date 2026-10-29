@@ -667,7 +667,10 @@ bool __fastcall UNICODE_CheckTrailingPunctuation(char * szSourceFile, uint16_t *
     uint32_t nGuardRetVal;
     uint16_t wszTable[20];
     int i = 0;
-    memset(wszTable, 0, 20 * sizeof(wszTable[0]));
+    for (int iFill = 0; iFill < 20; iFill++) {
+      wszTable[iFill] = L'\0';
+    }
+
     do {
       if (!szSourceFile[i]) {
         break;
@@ -728,7 +731,10 @@ bool __fastcall UNICODE_CheckTrailingPunctuation(char * szSourceFile, uint16_t *
 static bool UNICODE_CheckLeadingPunctuation(char * pszTable, uint16_t * wszText) {
     uint16_t wszTable[21];
     int i = 0;
-    memset(wszTable + 1, 0, 20 * sizeof(wszTable[0]));
+    for (int iFill = 1; iFill < 21; iFill++) {
+      wszTable[iFill] = L'\0';
+    }
+
     do {
       if (!pszTable[i]) {
         break;
@@ -890,12 +896,6 @@ void __fastcall UNICODE_FormatPossessiveName(uint16_t * wszText1, uint16_t * wsz
         pszSuffix = szSuffix;
         pszSuffix = pszSuffix + strlen(pszSuffix) + 1;
         goto append_possessive_suffix;
-        case 1:
-          STRING_CopyWideString(wszText1, wszSuffix);
-        memcpy(szSuffix, " de ", 5);
-        pszSuffix = szSuffix;
-        pszSuffix = pszSuffix + strlen(pszSuffix) + 1;
-        break;
         case 2:
           STRING_CopyWideString(wszText1, wszText2);
         bIsPunct = UNICODE_CheckLeadingPunctuation((char*)&gnUIMinWidth, wszText2);
@@ -917,6 +917,12 @@ void __fastcall UNICODE_FormatPossessiveName(uint16_t * wszText1, uint16_t * wsz
         append_joiner:
         AppendToBuffer(wszText1, pWszSuffix);
         goto append_last_part;
+        case 1:
+          STRING_CopyWideString(wszText1, wszSuffix);
+        memcpy(szSuffix, " de ", 5);
+        pszSuffix = szSuffix;
+        pszSuffix = pszSuffix + strlen(pszSuffix) + 1;
+        break;
         case 3:
           STRING_CopyWideString(wszText1, wszSuffix);
         bIsPunct = UNICODE_CheckTrailingPunctuation("aeiou", (uint16_t*)wszText2);
@@ -979,11 +985,11 @@ void __thiscall UNICODE_ReadByteRange(void * pThis, uint8_t * pByteRange) {
 }
 
 uint32_t __thiscall UNICODE_CheckByteInRange(void * pThis, uint8_t byValue) {
-    if (!(*(uint8_t*)pThis <= byValue && byValue <= *(uint8_t*)((int)pThis + 1))) {
-      return 0;
+    if (*(uint8_t*)pThis <= byValue && byValue <= *(uint8_t*)((int)pThis + 1)) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 static int32_t __stdcall UNICODE_IsControlChar(uint8_t byChar) {

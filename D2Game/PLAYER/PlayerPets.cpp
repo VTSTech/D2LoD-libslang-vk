@@ -113,7 +113,7 @@ static void KillHandlerPet(DWORD nUid, ::SGAMEDATA * pGame) {
 
     int32_t nClassId = pUnit->nClassId;
     pUnit->eUnitFlags |= UNITFLAG_NOXP;
-    if (nClassId < 0 || nClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nClassId) || !sgptDataTable->pTxtMonStats[nClassId].killable) {
+    if (nClassId < 0 || nClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nClassId) || !((uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nClassId] + 0xd) & gadwBitMasks[7])) {
       GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, Death, &killData);
       killData.pAttacker = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
       GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &killData, 1);
@@ -133,11 +133,11 @@ static void KillHandlerPet(DWORD nUid, ::SGAMEDATA * pGame) {
 }
 
 static D2PetListStrc * __stdcall GetPetListFromId(D2UnitDataPlayerPetsStrc * pPet, int32_t nMinionId) {
-    if (!(nMinionId >= 0 && nMinionId < sgptDataTable->nTxtPetTypeSize)) {
-      return nullptr;
+    if (nMinionId >= 0 && nMinionId < sgptDataTable->nTxtPetTypeSize) {
+      return pPet->pPetList + nMinionId;
     }
 
-    return pPet->pPetList + nMinionId;
+    return nullptr;
 }
 
 // Iterates a player's pet list performing free or kill operations on each entry. If nParam1==0 calls KillHandlerPet (kill path); otherwise locates the pet monster, broadcasts a 0x7A summon-log packet, removes it from the DRLG room, and either frees the server unit (nParam2==0) or executes a Death lifecycle transition and sends a 0x9B merc-revive-cost packet to the client. Decrements nPets2/nMax and frees the D2PetStrc node from the game memory pool on removal.
@@ -943,7 +943,7 @@ static void __stdcall PETS_RemoveDistantPets(::SGAMEDATA * pGame, D2UnitStrc * p
 void __fastcall PETS_ManagePetsByType(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint16_t wPosX, uint16_t wPosY) {
     D2PetListStrc* ppPetListHead;
     char* pTxtPetTypeEntry;
-    uint8_t byPetTypeFlags;
+    uint32_t uVar1;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2UnitDataPlayerPetsStrc* pPets = pPlayerData->pPets;
     if (!pPets) {
@@ -964,11 +964,11 @@ void __fastcall PETS_ManagePetsByType(::SGAMEDATA * pGame, D2UnitStrc * pUnit, u
         if (ppPetListHead) {
           pTxtPetTypeEntry = sgptDataTable->pTxtPetType->baseicon + nTxtPetTypeStride - 0xf;
           if (pTxtPetTypeEntry) {
-            byPetTypeFlags = pTxtPetTypeEntry[4];
-            if (byPetTypeFlags & (uint8_t)1) {
+            uVar1 = (uint32_t)(uint8_t)pTxtPetTypeEntry[4];
+            if (gadwBitMasks[0] & uVar1) {
               ROOM_SpawnPetsFromSaveData(pRoom, wPosX, pGame, (uint8_t**)ppPetListHead, wPosY);
             } else {
-              if (byPetTypeFlags & (uint8_t)2) {
+              if (gadwBitMasks[1] & uVar1) {
                 PETS_RemoveDistantPets(pGame, pUnit, 0x640, (uint8_t**)ppPetListHead);
               } else {
                 PLAYERPETS_FreeAllPetsInList(ppPetListHead, pGame);
@@ -1050,7 +1050,7 @@ void __fastcall SendAllyInfo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
         pPetListEntry = (D2PetStrc*)&pPets->pPetList[nPetTypeIdx].pPets;
         if (pPetListEntry) {
           pTxtPetTypeEntry = pDataTable->pTxtPetType->baseicon + nTxtPetTypeStride - 0xf;
-          if (pTxtPetTypeEntry && pTxtPetTypeEntry[4] & 4U) {
+          if (pTxtPetTypeEntry && pTxtPetTypeEntry[4] & (uint8_t)gadwBitMasks[2]) {
             for (pPetNode = *(uint8_t**)pPetListEntry; pPetNode; pPetNode = *(uint8_t**)(pPetNode + 0x14)) {
               if (!(*pPetNode & 1)) {
                 pAllyUnit = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, *(uint32_t*)(pPetNode + 4));
@@ -1522,7 +1522,7 @@ uint32_t __fastcall GetCarry1FlagOfitem(D2UnitStrc * pUnit) {
     nFileIndex = D2Common::ITEMS::Items::ITEM_GetItemData_nFileIndex(pUnit);
     D2UniqueItemsTxt* pUniqueItemTxt = D2Client::DataTbls::INV_GetUniqueItemsTxtLine(nFileIndex);
     if (pUniqueItemTxt) {
-      return (uint32_t)(pUniqueItemTxt->carry1 != 0);
+      return (uint32_t)((*((uint8_t*)pUniqueItemTxt + 0x2c) & (uint8_t)gadwBitMasks[2]) != 0);
     }
 
     return 0;

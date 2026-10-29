@@ -35,11 +35,13 @@ void __stdcall PlacePresetVariants(D2DrlgLevelStrc * pLevel, D2LvlPrestId * pLev
       nRandVariantIdx = pLevel->sSeed.nSeedLow;
       if (nVariants & nVariants - 1) {
         DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-        pLevel->sSeed = DVar1;
+        pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+        pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
         nRandVariantIdx = (uint32_t)(DVar1.nSeedLow % nVariants);
       } else {
         DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-        pLevel->sSeed = DVar1;
+        pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+        pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
         nRandVariantIdx = nVariants - 1 & DVar1.nSeedLow;
       }
     }

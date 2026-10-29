@@ -217,11 +217,11 @@ BOOL __fastcall WARP_IsPointInClickArea(D2UnitStrc * pUnit, int32_t nClickX, int
     D2Common::Drlg::Transform::CoordsMapToScreen(&nPosX, &nPosY);
     int iVar1 = pShadowBounds->SelectX + nPosX;
     int iVar2 = pShadowBounds->SelectY + nPosY;
-    if (!(nClickX >= iVar1 && nClickY >= iVar2 && nClickX <= pShadowBounds->SelectDX + iVar1 && nClickY <= pShadowBounds->SelectDY + iVar2)) {
-      return 0;
+    if (nClickX >= iVar1 && nClickY >= iVar2 && nClickX <= pShadowBounds->SelectDX + iVar1 && nClickY <= pShadowBounds->SelectDY + iVar2) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 static uint32_t __stdcall CUNIT_IsClickInSpriteBounds(int32_t nClickY, int * pUnit, D2ObjectsTxt * pObjectsTxt, int32_t nClickX) {
@@ -248,11 +248,11 @@ static uint32_t __stdcall CUNIT_IsClickInSpriteBounds(int32_t nClickY, int * pUn
     D2Common::Drlg::Transform::CoordsMapToScreen(&nPosX, &nPosY);
     nScreenX = pObjectsTxt->Left + nPosX;
     int nScreenY = pObjectsTxt->Top + nPosY;
-    if (!(nClickX >= nScreenX && nClickY >= nScreenY && nClickX <= pObjectsTxt->Width + nScreenX && nClickY <= pObjectsTxt->Height + nScreenY)) {
-      return 0;
+    if (nClickX >= nScreenX && nClickY >= nScreenY && nClickX <= pObjectsTxt->Width + nScreenX && nClickY <= pObjectsTxt->Height + nScreenY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Computes the screen-space bounding rectangle [left, top, right, bottom] for a unit's sprite at the given animation frame and mode. Loads the DC6 cel via SPRITECACHE_GetOrLoadSprite, reads DC6 offset/width/height, maps to target-screen coords, enforces a minimum 32x32 extent, and applies particle-system offsets. Returns 1 on success, 0 if the anim mode is absent or the sprite cannot be loaded.
@@ -401,11 +401,11 @@ BOOL __fastcall CUNIT_IsPlayerOrMonster(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x793);
       exit(-1);
     }
-    if (!(pUnit->eUnitType != UNIT_PLAYER && pUnit->eUnitType != UNIT_MONSTER)) {
-      return 1;
+    if (pUnit->eUnitType != UNIT_PLAYER && pUnit->eUnitType != UNIT_MONSTER) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 void __fastcall SetTargetByTypeAndGUID(D2UnitStrc * pUnit, eD2UnitType eUnitType, int32_t nTargetGUID) {
@@ -703,18 +703,6 @@ int32_t __fastcall IsAlive(D2UnitStrc * pUnit) {
 
     eD2ObjectAnimMode nAnimMode = pUnit->eAnimMode.eObjectMode;
     switch (pUnit->eUnitType) {
-      case UNIT_PLAYER:
-        if (nAnimMode == 0x11) {
-          return 1;
-        }
-      break;
-      case UNIT_MONSTER:
-        _bIsUnflatDead = Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(pUnit->nClassId, unflatDead);
-      if (!_bIsUnflatDead && nAnimMode == 0xc) {
-        return 1;
-      }
-
-      break;
       case UNIT_OBJECT:
         pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pUnit->nClassId);
       if (pObjectsTxt->DrawUnder & 2U || nAnimMode == Opened && pObjectsTxt->DrawUnder & 1U) {
@@ -722,13 +710,25 @@ int32_t __fastcall IsAlive(D2UnitStrc * pUnit) {
       }
 
       break;
+      case UNIT_ITEM:
+        return (uint32_t)(nAnimMode == Special1);
+      case UNIT_MONSTER:
+        _bIsUnflatDead = Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(pUnit->nClassId, unflatDead);
+      if (!_bIsUnflatDead && nAnimMode == 0xc) {
+        return 1;
+      }
+
+      break;
+      case UNIT_PLAYER:
+        if (nAnimMode == 0x11) {
+          return 1;
+        }
+      break;
       case UNIT_MISSILE:
         if (pUnit->eUnitFlags & UNITFLAG_ISDEAD) {
           return 1;
         }
       break;
-      case UNIT_ITEM:
-        return (uint32_t)(nAnimMode == Special1);
     }
 
     return 0;
@@ -833,16 +833,6 @@ uint16_t * __fastcall GetName(D2UnitStrc * pUnit) {
     }
 
     switch (pUnit->eUnitType) {
-      case UNIT_MONSTER:
-        pwszName = (uint16_t*)Player::PLAYER_GetMonsterOwnerId(pUnit);
-      nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszName);
-      if (nLine) {
-        return pwszName;
-      }
-
-      pMonStatsTxt = DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit->nClassId);
-      pwszName = D2Lang::StrTable::strtable::GetLocaleString(pMonStatsTxt->NameStr);
-      return pwszName;
       case UNIT_OBJECT:
         if (pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->OpenWarp && pUnit->eAnimMode.ePlayerMode == Walk) {
           pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
@@ -878,12 +868,12 @@ uint16_t * __fastcall GetName(D2UnitStrc * pUnit) {
         }
 
         pObjectsTxt = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
-        if (!(pObjectsTxt->Lockable && pUnit->pUnitData.pUnitDataObject->nShrineId & 0x80)) {
-          return pObjectsTxt->NameWideString;
+        if (pObjectsTxt->Lockable && pUnit->pUnitData.pUnitDataObject->nShrineId & 0x80) {
+          pwszName = D2Lang::StrTable::strtable::GetLocaleString(0xcbe);
+          return pwszName;
         }
 
-        pwszName = D2Lang::StrTable::strtable::GetLocaleString(0xcbe);
-        return pwszName;
+        return pObjectsTxt->NameWideString;
       }
 
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
@@ -901,6 +891,16 @@ uint16_t * __fastcall GetName(D2UnitStrc * pUnit) {
       }
 
       pwszName = D2Lang::StrTable::strtable::GetLocaleString(0xc9c);
+      return pwszName;
+      case UNIT_MONSTER:
+        pwszName = (uint16_t*)Player::PLAYER_GetMonsterOwnerId(pUnit);
+      nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszName);
+      if (nLine) {
+        return pwszName;
+      }
+
+      pMonStatsTxt = DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit->nClassId);
+      pwszName = D2Lang::StrTable::strtable::GetLocaleString(pMonStatsTxt->NameStr);
       return pwszName;
       case UNIT_ITEM:
         pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
@@ -1049,7 +1049,7 @@ uint32_t __fastcall SKILL_IsTargetOwnedPet(D2UnitStrc * pUnit, int * pnSkillPara
     if (pSkill) {
       eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\CUnit.cpp", 0xb4a);
       pSkillsTxt = GAME::SCmd::TXT_Skills_GetLine(eSkillId);
-      if (pSkillsTxt && pSkillsTxt->TargetPet) {
+      if (pSkillsTxt && *((uint8_t*)pSkillsTxt + 0x7) & (uint8_t)gadwBitMasks[1]) {
         bHasPetSkill = true;
       }
     }
@@ -1058,7 +1058,7 @@ uint32_t __fastcall SKILL_IsTargetOwnedPet(D2UnitStrc * pUnit, int * pnSkillPara
     if (pSkill) {
       eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\CUnit.cpp", 0xb55);
       pSkillsTxt = GAME::SCmd::TXT_Skills_GetLine(eSkillId);
-      if (pSkillsTxt && pSkillsTxt->TargetPet) {
+      if (pSkillsTxt && *((uint8_t*)pSkillsTxt + 0x7) & (uint8_t)gadwBitMasks[1]) {
         nOwnerGUID = GAME::RosterPets::GetRosterOwnerGUID(pnSkillParams[3]);
         return (uint32_t)(nOwnerGUID == pUnit->nUnitGUID);
       }
@@ -1089,13 +1089,13 @@ uint32_t __fastcall SKILL_IsTargetAlliedUnit(D2UnitStrc * pUnit, int * pnSkillPa
     D2SkillStrc* pSkill = D2Common::Units::GetLeftSkill(pUnit);
     if (pSkill) {
       eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\CUnit.cpp", 0xb7f);
-      if ((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId && sgptDataTable->pTxtSkills[eSkillId].TargetAlly) {
+      if ((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId && *((uint8_t*)&sgptDataTable->pTxtSkills[eSkillId] + 0x7) & (uint8_t)gadwBitMasks[2]) {
         bHasAlliedSkill = true;
       }
     }
 
     pSkill = D2Common::Units::GetRightSkill(pUnit);
-    if ((!pSkill || (eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\CUnit.cpp", 0xb88) , (int)eSkillId < 0) || (int)eSkillId >= sgptDataTable->nTxtSkillsCount || !(sgptDataTable->pTxtSkills + eSkillId) || !sgptDataTable->pTxtSkills[eSkillId].TargetAlly) && !bHasAlliedSkill) {
+    if ((!pSkill || (eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\CUnit.cpp", 0xb88) , (int)eSkillId < 0) || (int)eSkillId >= sgptDataTable->nTxtSkillsCount || !(sgptDataTable->pTxtSkills + eSkillId) || !(*((uint8_t*)&sgptDataTable->pTxtSkills[eSkillId] + 0x7) & (uint8_t)gadwBitMasks[2])) && !bHasAlliedSkill) {
       return 0;
     }
 
@@ -1270,20 +1270,6 @@ void __fastcall CLIENT_SyncPathFromServer(D2DynamicPathStrc * pDynamicPath) {
       case 0:
         {
           switch (nAnimMode) {
-            case eD2PlayerAnimMode_ns::Neutral:
-
-            case TownNeutral:
-              if (eNewMode < Walk || eNewMode > eD2PlayerAnimMode_ns::Run && eNewMode != TownWalk) {
-                goto clear_path_flag;
-              }
-            pRoom = D2Common::Units::UNITS_GetRoom((D2UnitStrc*)pDynamicPath);
-            bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
-            if (!bIsInTown) {
-              goto LAB_004652e8;
-            }
-
-            nAnimMode = TownNeutral;
-            break;
             case Walk:
 
             case TownWalk:
@@ -1303,6 +1289,20 @@ void __fastcall CLIENT_SyncPathFromServer(D2DynamicPathStrc * pDynamicPath) {
                 goto clear_path_flag;
               }
             nAnimMode = eD2PlayerAnimMode_ns::Run;
+            break;
+            case eD2PlayerAnimMode_ns::Neutral:
+
+            case TownNeutral:
+              if (eNewMode < Walk || eNewMode > eD2PlayerAnimMode_ns::Run && eNewMode != TownWalk) {
+                goto clear_path_flag;
+              }
+            pRoom = D2Common::Units::UNITS_GetRoom((D2UnitStrc*)pDynamicPath);
+            bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
+            if (!bIsInTown) {
+              goto LAB_004652e8;
+            }
+
+            nAnimMode = TownNeutral;
             break;
             default:
               if (eNewMode != KnockBack) {
@@ -1334,12 +1334,13 @@ void __fastcall CLIENT_SyncPathFromServer(D2DynamicPathStrc * pDynamicPath) {
 }
 
 int16_t __fastcall GetPlayerUnitPartyId(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
-      return -1;
+    if (pUnit && pUnit->eUnitType == UNIT_PLAYER) {
+      int16_t nPartyId;
+      nPartyId = GAME::Roster::GetUnitPartyId(pUnit);
+      return nPartyId;
     }
 
-    int16_t nPartyId = GAME::Roster::GetUnitPartyId(pUnit);
-    return nPartyId;
+    return -1;
 }
 
 D2RoomStrc * __fastcall FindRoom(int32_t nX, int32_t nY) {
@@ -1425,7 +1426,7 @@ void __fastcall CLIENT_TeleportUnitToPosition(D2UnitStrc * pUnit, int32_t nX, in
         pCurrentRoom = D2Common::Units::UNITS_GetRoom(pUnit);
         if (pCurrentRoom) {
           pSkill = D2Common::Units::GetCurrentSkill(pUnit);
-          if (!pSkill || (pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt) || !pSkillsTxt->warp) {
+          if (!pSkill || (pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill) , !pSkillsTxt) || !(*((uint8_t*)pSkillsTxt + 0x8) & (uint8_t)gadwBitMasks[6])) {
             if (bWarpFade) {
               if (pUnit->eUnitType != UNIT_PLAYER) {
                 Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x17d);
@@ -1586,6 +1587,11 @@ static void FreeAny(D2UnitStrc * pUnit) {
       Monster::FreeMonster(pUnit);
       UnitSnd::IterateUnitSfxData(pUnit, 1);
       break;
+      case UNIT_ITEM:
+        ITEM_FreeItemUnit(pUnit);
+      D2Common::ITEMS::Items::ITEMDATA_Free(nullptr, pUnit);
+      D2Common::Units::FreeStaticPath(pUnit);
+      break;
       case UNIT_OBJECT:
         if (pUnit->pHoverText) {
           UI::Text::TEXT_FreeHoverText(pUnit->pHoverText);
@@ -1597,11 +1603,6 @@ static void FreeAny(D2UnitStrc * pUnit) {
       break;
       case UNIT_MISSILE:
         Missile::MISSILE_FreeClientMissile(pUnit);
-      break;
-      case UNIT_ITEM:
-        ITEM_FreeItemUnit(pUnit);
-      D2Common::ITEMS::Items::ITEMDATA_Free(nullptr, pUnit);
-      D2Common::Units::FreeStaticPath(pUnit);
       break;
       case UNIT_WARP:
         if (sgpDrlgAct) {
@@ -1979,7 +1980,8 @@ static D2UnitStrc * __stdcall InitCommonData(D2UnitStrc * pUnit, int32_t nUnitGU
     if (pRoom) {
       sNextSeed = D2_SEED_NEXT(pRoom->sSeed);
       nNewSeed = sNextSeed.nSeedLow;
-      pRoom->sSeed = sNextSeed;
+      pRoom->sSeed.nSeedHigh = sNextSeed.nSeedHigh;
+      pRoom->sSeed.nSeedLow = sNextSeed.nSeedLow;
       pUnit->nInitSeed = nNewSeed;
       D2Common::Seed::InitSeed_Param_666(&pUnit->sSeed, nNewSeed);
     }
@@ -1996,12 +1998,12 @@ static D2UnitStrc * __stdcall InitCommonData(D2UnitStrc * pUnit, int32_t nUnitGU
         D2Common::Units::AllocStaticPath(pUnit);
       Object::AllocObjectData(pUnit, pRoom, nX, nY, nClassId, nObjectAnimMode);
       break;
-      case UNIT_MISSILE:
-        Missile::MISSILE_InitMissileUnit(pUnit, pRoom, nX, nY, nClassId);
-      break;
       case UNIT_ITEM:
         D2Common::Units::AllocStaticPath(pUnit);
       ITEM_SetAnimModeAndPlace(pUnit, pRoom, nX, nY, nItemAnimMode, 1);
+      break;
+      case UNIT_MISSILE:
+        Missile::MISSILE_InitMissileUnit(pUnit, pRoom, nX, nY, nClassId);
       break;
       case UNIT_WARP:
         D2Common::Units::AllocStaticPath(pUnit);
@@ -2076,7 +2078,8 @@ D2UnitStrc * __fastcall UNIT_CreatePlayer(int32_t nUnitGuid, int32_t nClassId, i
     if (pRoom) {
       sNextSeed = D2_SEED_NEXT(pRoom->sSeed);
       nNewSeed = sNextSeed.nSeedLow;
-      pRoom->sSeed = sNextSeed;
+      pRoom->sSeed.nSeedHigh = sNextSeed.nSeedHigh;
+      pRoom->sSeed.nSeedLow = sNextSeed.nSeedLow;
       pUnit->nInitSeed = nNewSeed;
       D2Common::Seed::InitSeed_Param_666(&pUnit->sSeed, nNewSeed);
     }
@@ -2175,7 +2178,8 @@ D2UnitStrc * __fastcall UNIT_CreateMonster(D2CreateMonsterUnitStrc * pCreateData
     D2Common::Seed::SEED_InitDefault(&pUnit->sSeed);
     if (pRoom) {
       nSeedLow = D2_SEED_NEXT(pRoom->sSeed);
-      pRoom->sSeed = nSeedLow;
+      pRoom->sSeed.nSeedHigh = nSeedLow.nSeedHigh;
+      pRoom->sSeed.nSeedLow = nSeedLow.nSeedLow;
       pUnit->nInitSeed = nSeedLow.nSeedLow;
     }
 
@@ -2447,7 +2451,7 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
         goto check_gfx_bounds;
       case UNIT_MONSTER:
         pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
-      if (pMonStats2->noGfxHitTest) {
+      if (*((uint8_t*)pMonStats2 + 0x4) & (uint8_t)gadwBitMasks[0]) {
         rcBounds.left = pMonStats2->nHtLeft + nScreenX;
         rcBounds.right = pMonStats2->nHtWidth + rcBounds.left;
         rcBounds.top = pMonStats2->nHtTop + nOriginY;

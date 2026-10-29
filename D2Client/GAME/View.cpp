@@ -499,11 +499,13 @@ void __stdcall VIEW_GenerateRandomViewParams(int32_t nStarIndex, int32_t bRespaw
       nYPos = 0;
     } else if (nWindowHeight & nWindowHeight - 1U) {
       seed = D2_SEED_NEXT(*pStarSeed);
-      *pStarSeed = seed;
+      pStarSeed->nSeedHigh = seed.nSeedHigh;
+      pStarSeed->nSeedLow = seed.nSeedLow;
       nYPos = (uint32_t)(seed.nSeedLow % (uint32_t)nWindowHeight);
     } else {
       seed = D2_SEED_NEXT(*pStarSeed);
-      *pStarSeed = seed;
+      pStarSeed->nSeedHigh = seed.nSeedHigh;
+      pStarSeed->nSeedLow = seed.nSeedLow;
       nYPos = nWindowHeight - 1U & seed.nSeedLow;
     }
 
@@ -543,14 +545,16 @@ void __stdcall DRAW_Overlay_ArcaneStars() {
         i = nBrightness / 7 + 0x80;
         seed = D2_SEED_NEXT(*gpArcaneStarsSeed);
         nRed = (seed.nSeedLow & 0x3f) - 0x20 + i;
-        *gpArcaneStarsSeed = seed;
+        gpArcaneStarsSeed->nSeedHigh = seed.nSeedHigh;
+        gpArcaneStarsSeed->nSeedLow = seed.nSeedLow;
         if (nRed > 0xff) {
           nRed = 0xff;
         }
 
         seed = D2_SEED_NEXT_VAL(seed);
         nGreen = (seed.nSeedLow & 0x3f) - 0x20 + i;
-        *pDVar1 = seed;
+        pDVar1->nSeedHigh = seed.nSeedHigh;
+        pDVar1->nSeedLow = seed.nSeedLow;
         if (nGreen > 0xff) {
           nGreen = 0xff;
         }
@@ -683,8 +687,8 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
     pSummitDC6 = gpAncientsBgDC6;
     memset(&sGfxData, 0, 0x48);
     if (pSummitDC6) {
-      sGfxData.nFrameNumber = nCloudFrame;
       sGfxData.pDC6 = pSummitDC6;
+      sGfxData.nFrameNumber = nCloudFrame;
       D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset, 0x100, -1, DRAW_SOLID, nullptr);
       nTileFrameX = nCloudFrame + 1 & 0x80000003;
       if ((int)nTileFrameX < 0) {
@@ -857,9 +861,9 @@ void __fastcall SetShake(int32_t nAmplitude, int32_t nArg3, int32_t nArg1, int32
     }
 
     SHAKE_StartTickcount = GetTickCount();
+    SHAKE_Arg3 = nArg3;
     SHAKE_Arg1 = nArg1;
     SHAKE_Arg2 = nArg2;
-    SHAKE_Arg3 = nArg3;
     SHAKE_Amplitude = nAmplitude;
 }
 
@@ -984,18 +988,18 @@ void __fastcall ViewDraw2(D2GameViewStrc * pGameView) {
         gnDrawBackgroundRenderOffset = 0;
       }
     }
-    if (pGameView->sWall2.dwWall2PassMask & 1) {
+    if (pGameView->sWall2.dwWall2PassMask & gadwBitMasks[0]) {
       Draw::DRAW_WORLD_UnderFloor(pGameView);
     }
 
     Draw::dFloorDraw(pGameView);
     D2Client::Draw::Weather::DRAW_WORLD_RainEffectOnFloor();
-    if (pGameView->sWall2.dwWall2PassMask & 8) {
+    if (pGameView->sWall2.dwWall2PassMask & gadwBitMasks[3]) {
       Draw::dShadowPass(pGameView);
     }
 
     Draw::dWallPass(pGameView);
-    if (pGameView->sWall2.dwWall2PassMask & 2) {
+    if (pGameView->sWall2.dwWall2PassMask & gadwBitMasks[1]) {
       Draw::dRoofDraw(pGameView);
     }
     if (gnFrameDrawCounter) {

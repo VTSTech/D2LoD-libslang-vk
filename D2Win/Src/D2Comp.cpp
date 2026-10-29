@@ -412,11 +412,11 @@ uint8_t * __fastcall D2COMP_GetPaletteTransformTable(uint32_t nPaletteShift) {
     if (!nTransformGroup) {
       return gaItemPaletteTransformData + (nColorIndex + 0x348) * 0x100;
     }
-    if (!(-1 < nTransformGroup && nTransformGroup < 9 && (nTransformGroup <= 2 || nTransformGroup > 4))) {
-      return nullptr;
+    if (-1 < nTransformGroup && nTransformGroup < 9 && (nTransformGroup <= 2 || nTransformGroup > 4)) {
+      return gaItemPaletteTransformData + (nTransformGroup * 0x69 + nColorIndex) * 0x100;
     }
 
-    return gaItemPaletteTransformData + (nTransformGroup * 0x69 + nColorIndex) * 0x100;
+    return nullptr;
 }
 
 static uint32_t __stdcall D2COMP_ValidateComponentType(uint32_t dwComponentMask, uint8_t bComponentType) {
@@ -911,9 +911,9 @@ static int32_t __stdcall D2COMP_LoadLayerSpritesAndCalcHeight(uint8_t * pbLayerC
       }
 
       memset(&sGfxData, 0, 0x48);
-      sGfxData.nDirection = (int)bPaletteShift;
       sGfxData.nFrameNumber = nFrameNumber;
       sGfxData.pDC6 = 0;
+      sGfxData.nDirection = (int)bPaletteShift;
       sGfxData.nComponentType = byComponentType;
       D2COMP_PopulateComponentFromCOF(nCOFContext, &sGfxData);
       sGfxData.dwRenderFlags |= 2;
@@ -948,7 +948,7 @@ void __fastcall D2COMP_DrawUnitShadow(uint32_t * pCompUnit) {
     uint8_t* pCOFLayerData;
     if (pCompUnit) {
       uint32_t nPositionY;
-      if (!(*pCompUnit & 1) || !(*pCompUnit & 4)) {
+      if (!(gadwBitMasks[0] & *pCompUnit) || !(gadwBitMasks[2] & *pCompUnit)) {
         return;
       }
 
@@ -1035,10 +1035,10 @@ void __fastcall D2COMP_DrawCompositeUnit(uint32_t * pCompUnit, int32_t nDrawColo
     int32_t nDrawColorSaved = nDrawColor;
     if (pCompUnit) {
       int* pCOFEntry;
-      if (!(*pCompUnit & 1)) {
+      if (!(gadwBitMasks[0] & *pCompUnit)) {
         return;
       }
-      if (*pCompUnit & 0x400) {
+      if (gadwBitMasks[10] & *pCompUnit) {
         if (!gpPentaSpinCursorDC6) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5fe);
           exit(-1);
@@ -1056,10 +1056,10 @@ void __fastcall D2COMP_DrawCompositeUnit(uint32_t * pCompUnit, int32_t nDrawColo
         sPalShift.abyRemap[1] = (uint8_t)pCompUnit[0x30];
         sPalShift.abyRemap[2] = *(uint8_t*)((int)pCompUnit + 0xc1);
         memset(&sGfxData, 0, 0x48);
+        sGfxData.pDC6 = pUniqueCursorDC6;
         sGfxData.nDirection = 0;
         sGfxData.nFrameNumber = 0;
         sGfxData.bLoaded = 1;
-        sGfxData.pDC6 = pUniqueCursorDC6;
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pCompUnit[5] - 0x14, pCompUnit[6] - 0x3c, -1, DRAW_SOLID, &sPalShift);
       }
       if (!(int**)pCompUnit[0x2e]) {
@@ -1086,7 +1086,7 @@ void __fastcall D2COMP_DrawCompositeUnit(uint32_t * pCompUnit, int32_t nDrawColo
           }
 
           nUnitFlags = *pCompUnit;
-          if (nUnitFlags & 0x20 && nUnitFlags & 0x10 || (eDrawMode = DRAW_SOLID , (nUnitFlags & 0x2000) != 0)) {
+          if (gadwBitMasks[5] & nUnitFlags && gadwBitMasks[4] & nUnitFlags || (eDrawMode = DRAW_SOLID , (gadwBitMasks[0xd] & nUnitFlags) != 0)) {
             eDrawMode = DRAW_TRANSPARENT;
           }
 
@@ -1097,9 +1097,9 @@ void __fastcall D2COMP_DrawCompositeUnit(uint32_t * pCompUnit, int32_t nDrawColo
               memset(&sGfxData, 0, 0x48);
               nPaletteShift = D2COMP_ValidateComponentType((uint32_t)*(uint8_t*)((int)pCompUnit + 5), (uint8_t)pCompUnit[1]);
               nUnitFlags = nComponentType;
-              sGfxData.nDirection = nPaletteShift & 0xff;
               sGfxData.nFrameNumber = nWeaponClass;
               sGfxData.pDC6 = 0;
+              sGfxData.nDirection = nPaletteShift & 0xff;
               sGfxData.nComponentType = (uint8_t)nComponentType;
               D2COMP_PopulateComponentFromCOF((int32_t)pCompUnit, &sGfxData);
               nUnitFlags = (uint32_t)*(uint8_t*)((int)pCompUnit + nUnitFlags + 0x28);
@@ -1133,7 +1133,7 @@ void __fastcall D2COMP_DrawCompositeUnit(uint32_t * pCompUnit, int32_t nDrawColo
               gnPentaSpinCursorFrame = 0;
             }
           }
-          if (!(*pCompUnit & 0x200)) {
+          if (!(*pCompUnit & gadwBitMasks[9])) {
             return;
           }
           if (!gpUniqueCursorDC6) {
@@ -1944,12 +1944,12 @@ void __stdcall D2COMP_CreateCompositeUnit(uint32_t * pCompUnit, uint32_t nPlayer
       }
 
       pCompUnit[8] = nAnimMode;
-      *pCompUnit |= 1;
-      nWeaponClass = *pCompUnit;
+      *pCompUnit |= gadwBitMasks[0];
+      nWeaponClass = *pCompUnit | gadwBitMasks[1];
       nSlot = 0;
-      *pCompUnit = nWeaponClass | 2;
+      *pCompUnit = nWeaponClass;
       pSlotCode = pCompUnit + 0xe;
-      *pCompUnit = nWeaponClass | 6;
+      *pCompUnit = nWeaponClass | gadwBitMasks[2];
       do {
         pSlotCode[0x10] = 1;
         if (*pbyEquipSlots <= 0 || *pbyEquipSlots == 0xff) {
@@ -2415,9 +2415,9 @@ int __fastcall D2COMP_DrawUnitNameAndTitle(uint32_t * pnParam) {
       exit(-1);
     }
 
-    uint32_t dwFlags = *pnParam;
+    uint32_t uVar1 = *pnParam;
     int bDrawn = 0;
-    if (!(dwFlags & 2)) {
+    if (!(gadwBitMasks[1] & uVar1)) {
       return bDrawn;
     }
 
@@ -2439,26 +2439,23 @@ int __fastcall D2COMP_DrawUnitNameAndTitle(uint32_t * pnParam) {
     } else if (dwGameType == 0x12) {
       nDrawColor = 3;
       bDrawShadow = 1;
-    } else if (dwFlags & 0x20) {
+    } else if (gadwBitMasks[5] & uVar1) {
       nDrawColor = 1;
     }
-    if (dwFlags & 0x100) {
+    if (gadwBitMasks[8] & uVar1) {
       bDrawn = nCharClass + 0x15;
     }
-    if (!(dwFlags & 0x40) && !(dwFlags & 0x80)) {
-      dwFlags = pnParam[0x8c];
-      if (dwFlags == 0x44324456 || dwFlags == 0x44325354 || dwFlags == 0x44325850) {
+    if (!(gadwBitMasks[6] & uVar1) && !(gadwBitMasks[7] & uVar1)) {
+      uVar1 = pnParam[0x8c];
+      if (uVar1 == 0x44324456 || uVar1 == 0x44325354 || uVar1 == 0x44325850) {
         D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszTitleText, (uint16_t*)(pnParam + 0x53));
       } else {
         D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszTitleText, (uint16_t*)(pnParam + 0x33));
       }
     } else {
-      szTitlePrefix = D2COMP_GetTitlePrefix(dwGameType, (dwFlags >> 5 & 1) * 3 + (dwFlags >> 7 & 1) * 2 + (dwFlags >> 6 & 1), dwFlags >> 0xc & 1);
-      pWCharClear = wszTitlePrefix;
-      for (j = 0x80; j; j--) {
-        pWCharClear[0] = L'\0';
-        pWCharClear[1] = L'\0';
-        pWCharClear += 2;
+      szTitlePrefix = D2COMP_GetTitlePrefix(dwGameType, (uVar1 >> 5 & 1) * 3 + (uVar1 >> 7 & 1) * 2 + (uVar1 >> 6 & 1), uVar1 >> 0xc & 1);
+      for (j = 0; j < 0x100; j++) {
+        wszTitlePrefix[j] = L'\0';
       }
 
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszTitlePrefix, szTitlePrefix, 0xff);
@@ -2467,11 +2464,8 @@ int __fastcall D2COMP_DrawUnitNameAndTitle(uint32_t * pnParam) {
       D2Lang::Unicode::UNISYS::AppendToBuffer(wszTitleText, (uint16_t*)(pnParam + 0x53));
     }
 
-    pWCharClear = wszTempAppend;
-    for (j = 0x80; j; j--) {
-      pWCharClear[0] = L'\0';
-      pWCharClear[1] = L'\0';
-      pWCharClear += 2;
+    for (j = 0; j < 0x100; j++) {
+      wszTempAppend[j] = L'\0';
     }
 
     nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength((uint16_t*)(pnParam + 0x73));
@@ -2527,18 +2521,15 @@ void __fastcall DRAW_OOG_ChannelPlayers(D2QuestDataA3Q6Strc * pA3Q6Data) {
     __frame0.nMaxLineWidth = 0x505a8d;
     if (pA3Q6Data) {
       BOOL bMouseInRect;
-      pWideStr = wszLineText;
-      for (nIconAnchorY = 0x80; nIconAnchorY; nIconAnchorY--) {
-        pWideStr[0] = L'\0';
-        pWideStr[1] = L'\0';
-        pWideStr += 2;
+      for (nIconAnchorY = 0; nIconAnchorY < 0x100; nIconAnchorY++) {
+        wszLineText[nIconAnchorY] = L'\0';
       }
 
       *(uint8_t*)(char*)&dwPlayerInfo = pA3Q6Data->bQuestTimerActive;
       *(uint8_t*)((char*)&dwPlayerInfo + 1) = pA3Q6Data->bBridgeObjectValid;
       *(uint8_t*)((char*)&dwPlayerInfo + 2) = pA3Q6Data->bBridge2Valid;
       *(uint8_t*)((char*)&dwPlayerInfo + 3) = pA3Q6Data->bAcceptedQuest;
-      if (!(dwPlayerInfo & 8)) {
+      if (!(dwPlayerInfo & gadwBitMasks[3])) {
         return;
       }
 
@@ -2576,7 +2567,7 @@ void __fastcall DRAW_OOG_ChannelPlayers(D2QuestDataA3Q6Strc * pA3Q6Data) {
           *(uint8_t*)((char*)&dwPlayerInfoCopy + 1) = pA3Q6Data->bBridgeObjectValid;
           *(uint8_t*)((char*)&dwPlayerInfoCopy + 2) = pA3Q6Data->bBridge2Valid;
           *(uint8_t*)((char*)&dwPlayerInfoCopy + 3) = pA3Q6Data->bAcceptedQuest;
-          if (dwPlayerInfoCopy & 0x20) {
+          if (dwPlayerInfoCopy & gadwBitMasks[5]) {
             pnTotalWidthArg = &__frame0.nTotalWidth;
             pnMaxWidthArg = &__frame0.nMaxLineWidth;
             pnLineCountArg = &__frame0.nLineCount;
@@ -3015,14 +3006,14 @@ void __stdcall D2COMP_AllocTxt_EverythingItems() {
 }
 
 D2CharSelCompStrc * __stdcall AllocCharSelectComponent(uint32_t nPlayerClassId, int32_t nClassicExpansion, uint8_t * pbyEquipSlots, char * szText) {
+    D2CharSelCompFlags DVar1;
     char* pTransformByte;
-    BOOL BVar1;
+    BOOL BVar2;
     uint32_t nComponentSlot;
     int* pComponentCode;
-    int iVar2;
+    int iVar3;
     uint8_t bComponentIndex;
     char cTransform;
-    D2CharSelCompFlags eFlagsCopy;
     int32_t nErrorLine;
     D2CharSelCompStrc* pCharSelComp = D2_NEW_AT(D2CharSelCompStrc, ".\\Src\\D2Comp.cpp", 0xc70);
     if (!pCharSelComp) {
@@ -3047,12 +3038,12 @@ D2CharSelCompStrc * __stdcall AllocCharSelectComponent(uint32_t nPlayerClassId, 
         }
 
         pCharSelComp->nAnimMode = nClassicExpansion;
-        pCharSelComp->nFlags |= 1;
-        eFlagsCopy = pCharSelComp->nFlags;
+        pCharSelComp->nFlags |= gadwBitMasks[0];
+        DVar1 = pCharSelComp->nFlags | gadwBitMasks[1];
         nComponentSlot = 0;
-        pCharSelComp->nFlags = eFlagsCopy | 2;
+        pCharSelComp->nFlags = DVar1;
         pComponentCode = pCharSelComp->dwComponentCodes;
-        pCharSelComp->nFlags = eFlagsCopy | CHARSELCOMPFLAG_DRAW_SHADOW | CHARSELCOMPFLAG_DRAW_NAME_TITLE;
+        pCharSelComp->nFlags = DVar1 | gadwBitMasks[2];
         do {
           pComponentCode[0x10] = 1;
           bComponentIndex = *pbyEquipSlots;
@@ -3070,7 +3061,7 @@ D2CharSelCompStrc * __stdcall AllocCharSelectComponent(uint32_t nPlayerClassId, 
         } while (nComponentSlot < 0x10);
 
         pTransformByte = pCharSelComp->nComponentTransforms + 1;
-        iVar2 = 4;
+        iVar3 = 4;
         do {
           cTransform = *szText;
           pTransformByte[-1] = cTransform;
@@ -3098,13 +3089,13 @@ D2CharSelCompStrc * __stdcall AllocCharSelectComponent(uint32_t nPlayerClassId, 
 
           pTransformByte += 4;
           szText += 4;
-          iVar2--;
-        } while (iVar2);
+          iVar3--;
+        } while (iVar3);
 
-        BVar1 = D2COMP_ValidateAndLoadCOFForUnit(pCharSelComp);
-        if (BVar1) {
-          BVar1 = D2COMP_SetAnimationMode(pCharSelComp, nClassicExpansion);
-          if (!BVar1) {
+        BVar2 = D2COMP_ValidateAndLoadCOFForUnit(pCharSelComp);
+        if (BVar2) {
+          BVar2 = D2COMP_SetAnimationMode(pCharSelComp, nClassicExpansion);
+          if (!BVar2) {
             return nullptr;
           }
         }

@@ -146,7 +146,7 @@ uint32_t __stdcall COMPOSIT_ResolveWeaponClass(D2UnitStrc * pUnit, int32_t nUnit
                   *pnParam = nHandedness;
                   return 0x20687468;
                 }
-                if (nMode && nMode != 0xc || pMonStats2->compositeDeath) {
+                if (nMode && nMode != 0xc || *((uint8_t*)pMonStats2 + 0x6) & (uint8_t)gadwBitMasks[0]) {
                   nHandedness = COMPOSIT_GetItemTypeIndex(pMonStats2->BaseW);
                   *pnParam = nHandedness;
                   return pMonStats2->BaseW;
@@ -308,11 +308,11 @@ uint32_t __stdcall COMPOSIT_GetWeaponClassWithTransform(D2UnitStrc * pUnit, D2In
 }
 
 BOOL __stdcall DoesBodyHaveAppearanceColors(int32_t nBodyIndex) {
-    if (!(nBodyIndex != 1 && nBodyIndex != 2 && nBodyIndex != 3 && nBodyIndex != 4 && nBodyIndex != 8 && nBodyIndex != 9)) {
-      return 1;
+    if (nBodyIndex != 1 && nBodyIndex != 2 && nBodyIndex != 3 && nBodyIndex != 4 && nBodyIndex != 8 && nBodyIndex != 9) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 // @sourcefile .\COMPOSIT\Composit.cpp
@@ -329,11 +329,11 @@ BOOL __stdcall COMPOSIT_HasWeaponDrawn(D2UnitStrc * pUnit) {
     }
 
     COMPOSIT_ResolveWeaponClass(pOrigUnit, eUnitType, (int32_t)pUnit, nAnimMode, pInventory, &nWeaponClassIndex);
-    if (!(nWeaponClassIndex != 1 && nWeaponClassIndex != 7)) {
-      return 1;
+    if (nWeaponClassIndex != 1 && nWeaponClassIndex != 7) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 uint32_t __stdcall COMPOSIT_GetBodyPartTransform(eD2BodyLocDWORD nBodyIndex, uint8_t * pbParam) {

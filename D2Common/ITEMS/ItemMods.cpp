@@ -1361,6 +1361,7 @@ int32_t __fastcall ITEMMOD_ApplyTripleStat(int32_t nType, D2UnitStrc * pUnit, D2
 // Property function for +X to Skill Y bonus. Reads skill ID from pPropEntry+4 and rolls level value from pPropEntry+8/C range (inclusive upper bound for expansion items). Adds UNITSTAT_item_singleskill with skill ID as layer to the item's stat list. Returns 0 if skill ID out of range or stat list unavailable.
 int32_t __fastcall PropertyFunc_SingleSkillBonus(int32_t nType, D2UnitStrc * pUnit, D2UnitStrc * pItemUnit, D2SetsTxtFStrc * pProperty, eD2UnitStat eStatCode, int32_t nParam2, int32_t nParam3, uint32_t nParam, int32_t nContext) {
     D2SeedStrc* pSeed;
+    D2StatListExStrc* pStatsEx;
     int32_t nExistingValue;
     int nRangeLow;
     uint32_t nSkillId;
@@ -1390,21 +1391,20 @@ int32_t __fastcall PropertyFunc_SingleSkillBonus(int32_t nType, D2UnitStrc * pUn
     }
 
     int32_t nParam_00 = (int32_t)pProperty->fparam;
-    if (!(nParam_00 >= 0 && nParam_00 < sgptDataTable->nTxtSkillsCount)) {
-      return 0;
+    if (nParam_00 >= 0 && nParam_00 < sgptDataTable->nTxtSkillsCount) {
+      pStatsEx = ITEMMOD_GetOrCreateStatList(pItemUnit, nParam3, nParam, pUnit);
+      if (pStatsEx) {
+        if (nParam2) {
+          nExistingValue = Stats::StatsEx::thunk_STATLIST_GetStatFromBaseArray(pStatsEx, UNITSTAT_item_singleskill, nParam_00);
+          nValue = -nExistingValue;
+        }
+
+        Stats::StatsEx::STATLIST_AddStatValue(pStatsEx, UNITSTAT_item_singleskill, nValue, (uint16_t)nParam_00);
+        return 1;
+      }
     }
 
-    D2StatListExStrc* pStatsEx = ITEMMOD_GetOrCreateStatList(pItemUnit, nParam3, nParam, pUnit);
-    if (!pStatsEx) {
-      return 0;
-    }
-    if (nParam2) {
-      nExistingValue = Stats::StatsEx::thunk_STATLIST_GetStatFromBaseArray(pStatsEx, UNITSTAT_item_singleskill, nParam_00);
-      nValue = -nExistingValue;
-    }
-
-    Stats::StatsEx::STATLIST_AddStatValue(pStatsEx, UNITSTAT_item_singleskill, nValue, (uint16_t)nParam_00);
-    return 1;
+    return 0;
 }
 
 // Property function for +X to Elemental Skills bonus (e.g. +2 to Fire Skills). Rolls value from property min/max range (inclusive for expansion items), then adds UNITSTAT_item_elemskill with hardcoded layer 1 to the item's stat list. Returns 0 if rolled value is zero or stat list unavailable.
@@ -1769,11 +1769,13 @@ void __stdcall ITEMMOD_RollGemRuneType(D2UnitStrc * pUnit) {
       nTableSize = 0;
     } else if (nTableSize & nTableSize - 1) {
       seedAdvanced = D2_SEED_NEXT(*pSeed);
-      *pSeed = seedAdvanced;
+      pSeed->nSeedHigh = seedAdvanced.nSeedHigh;
+      pSeed->nSeedLow = seedAdvanced.nSeedLow;
       nTableSize = (uint32_t)(seedAdvanced.nSeedLow % nTableSize);
     } else {
       seedAdvanced = D2_SEED_NEXT(*pSeed);
-      *pSeed = seedAdvanced;
+      pSeed->nSeedHigh = seedAdvanced.nSeedHigh;
+      pSeed->nSeedLow = seedAdvanced.nSeedLow;
       nTableSize = nTableSize - 1 & seedAdvanced.nSeedLow;
     }
 
@@ -1785,7 +1787,8 @@ void __stdcall ITEMMOD_RollGemRuneType(D2UnitStrc * pUnit) {
 
     pSeed = Items::GetItemSeed(pUnit);
     seedAdvanced = D2_SEED_NEXT(*pSeed);
-    *pSeed = seedAdvanced;
+    pSeed->nSeedHigh = seedAdvanced.nSeedHigh;
+    pSeed->nSeedLow = seedAdvanced.nSeedLow;
     Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_value, ((seedAdvanced.nSeedLow & 3) + 1) * 0x100, 0);
 }
 

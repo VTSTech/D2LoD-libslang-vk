@@ -753,7 +753,7 @@ BOOL __fastcall Draw(::D2WinTextBox * pTextBox) {
       }
 
       uBgColor = pTextBox->sControl.dwState;
-      if (!(uBgColor & 4) || !(uBgColor & 1)) {
+      if (!(gadwBitMasks[2] & uBgColor) || !(gadwBitMasks[0] & uBgColor)) {
         return 0;
       }
 
@@ -761,9 +761,9 @@ BOOL __fastcall Draw(::D2WinTextBox * pTextBox) {
       pBgDC6 = pTextBox->sControl.pDC6;
       if (pBgDC6) {
         memset(&sGfxData, 0, 0x48);
+        sGfxData.pDC6 = pBgDC6;
         sGfxData.nDirection = 0;
         sGfxData.nFrameNumber = 0;
-        sGfxData.pDC6 = pBgDC6;
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pTextBox->sControl.dwPosX, pTextBox->sControl.dwPosY - 1, -1, DRAW_SOLID, nullptr);
       }
 
@@ -868,11 +868,8 @@ BOOL __fastcall Draw(::D2WinTextBox * pTextBox) {
                 }
               }
 
-              pCellText = local_87c;
-              for (nLineStride = 0x200; nLineStride; nLineStride--) {
-                pCellText[0] = L'\0';
-                pCellText[1] = L'\0';
-                pCellText += 2;
+              for (nLineStride = 0; nLineStride < 0x400; nLineStride++) {
+                local_87c[nLineStride] = L'\0';
               }
 
               D2Lang::Unicode::UNISYS::STRING_CopyWideString(local_87c, (uint16_t*)pCurLine[nColIndex]);
@@ -947,7 +944,7 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
       }
 
       uVar1 = pTextBox->sControl.dwState;
-      if (!(uVar1 & 4 && uVar1 & 1 && 0 < pTextBox->sStyleControl.dwSizeX)) {
+      if (!(gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1 && 0 < pTextBox->sStyleControl.dwSizeX)) {
         return 0;
       }
       if ((uint32_t)pTextBox->sStyleControl.fpDraw & 1) {
@@ -997,10 +994,10 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
 
     uint32_t uVar1;
     uVar1 = pTextBox->sControl.dwState;
-    if (!(uVar1 & 4)) {
+    if (!(gadwBitMasks[2] & uVar1)) {
       return 0;
     }
-    if (!(uVar1 & 1)) {
+    if (!(gadwBitMasks[0] & uVar1)) {
       return 0;
     }
     if (pTextBox->sStyleControl.dwSizeX < 1) {
@@ -1063,14 +1060,6 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
         }
 
         break;
-        case 0x23:
-          uNewScrollTop = (::DrawEx)(nLineCount - nVisibleLines);
-        uCurSel = (::DrawEx)(nLineCount - 1);
-        break;
-        case 0x24:
-          uNewScrollTop = 0;
-        uCurSel = 0;
-        break;
         case 0x26:
           if ((int)uScrollTop <= 0) {
             break;
@@ -1090,6 +1079,16 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
             uNewScrollTop = (::DrawEx)((uint8_t*)uCurSel + (1 - nVisibleLines));
           }
         }
+
+        break;
+        case 0x24:
+          uNewScrollTop = 0;
+        uCurSel = 0;
+        break;
+        case 0x23:
+          uNewScrollTop = (::DrawEx)(nLineCount - nVisibleLines);
+        uCurSel = (::DrawEx)(nLineCount - 1);
+        break;
       }
     }
 
@@ -1242,6 +1241,7 @@ int __fastcall D2WINTEXTBOX_GetScrollbarStyle(::D2WinTextBox * pTextBox) {
 
 // @sourcefile .\Src\D2WinTextBox.cpp
 ::D2WinTextBox * __fastcall D2WinTextBox(int32_t nParam1, int32_t nParam2, int32_t nWidth, int32_t nHeight, int32_t nParam3, int32_t nParam4, DC6 * pDC6, OnPress pOnPress, uint32_t nParam, int * pnParam1, int * pnParam2) {
+    uint32_t uVar1;
     ::D2WinScrollbar* pScrollbar;
     int32_t nScrollPageSize;
     int nScrollbarPosX;
@@ -1257,10 +1257,11 @@ int __fastcall D2WINTEXTBOX_GetScrollbarStyle(::D2WinTextBox * pTextBox) {
 
     pNew->sControl.neD2FormType = FORM_TextBox;
     int* pnStateFlags = &pNew->sControl.dwState;
-    *pnStateFlags |= 1;
+    *pnStateFlags |= gadwBitMasks[0];
+    uVar1 = pNew->sControl.dwState | gadwBitMasks[2];
     pNew->sControl.dwPosX = nParam1;
     pNew->sControl.dwSizeY = nHeight;
-    pNew->sControl.dwState |= 4;
+    pNew->sControl.dwState = uVar1;
     pNew->sControl.dwPosY = nParam2;
     pNew->sControl.pDC6 = pDC6;
     pNew->sStyleControl.neD2FormType = nParam3;
@@ -1534,12 +1535,10 @@ int __fastcall D2WINTEXTBOX_AddLines(::D2WinTextBox * pnParam, uint16_t * wszTex
 
 void __fastcall D2WINTEXTBOX_SetLineCellTextA(::D2WinTextBox * pnParam, char * szText, int32_t nRowIndex, int32_t nColIndex) {
     int nClearCount;
+    uint16_t* pBufCursor;
     uint16_t wszWorkBuf[1024];
-    uint16_t* pBufCursor = wszWorkBuf;
-    for (nClearCount = 0x200; nClearCount; nClearCount--) {
-      pBufCursor[0] = L'\0';
-      pBufCursor[1] = L'\0';
-      pBufCursor += 2;
+    for (nClearCount = 0; nClearCount < 0x400; nClearCount++) {
+      wszWorkBuf[nClearCount] = L'\0';
     }
 
     D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszWorkBuf, szText, 0x400);

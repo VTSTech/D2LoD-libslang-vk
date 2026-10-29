@@ -373,14 +373,14 @@ void __stdcall DRAW_DrawRoomWallTiles(D2RoomStrc * pRoom) {
               rect.bottom = rect.top + 0x10;
               D2gfx::D2GFX::D2GFX_DrawRect(&rect, 'x');
             } else {
-              if (!(pTile[2] & 0x800U)) {
-                byColor = 0xff;
-                nTmp = nScreenX;
-                nScreenYArg = nScreenY;
-              } else {
+              if (pTile[2] & 0x800U) {
                 byColor = 'x';
                 nTmp = nScreenX + 0x10;
                 nScreenYArg = nScreenY + 8;
+              } else {
+                byColor = 0xff;
+                nTmp = nScreenX;
+                nScreenYArg = nScreenY;
               }
 
               DEBUG_DrawRoomBoundsRect(nTmp, nScreenYArg, byColor);

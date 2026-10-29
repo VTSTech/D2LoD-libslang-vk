@@ -28,11 +28,11 @@ int32_t __fastcall uncompress(uint8_t * dest, int * destLen, uint8_t * source, i
     nZlibResult = inflate::inflate(&sZStream, 4);
     if (nZlibResult != 1) {
       inflate::inflateEnd(&sZStream);
-      if (!(nZlibResult != 2 && (nZlibResult != -5 || sZStream.avail_in))) {
-        return -3;
+      if (nZlibResult != 2 && (nZlibResult != -5 || sZStream.avail_in)) {
+        return nZlibResult;
       }
 
-      return nZlibResult;
+      return -3;
     }
 
     *destLen = sZStream.total_out;

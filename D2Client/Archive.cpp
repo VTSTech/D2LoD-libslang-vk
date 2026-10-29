@@ -469,7 +469,8 @@ uint32_t __fastcall UNIT_GetModuloFromSeed(D2SeedStrc * pSeed, uint32_t nModulo)
     int64_t lVar1 = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
     if (nModulo & nModulo - 1) {
       DVar2 = (D2SeedStrc)(lVar1 + (uint64_t)pSeed->nSeedHigh);
-      *pSeed = DVar2;
+      pSeed->nSeedHigh = DVar2.nSeedHigh;
+      pSeed->nSeedLow = DVar2.nSeedLow;
       return (uint32_t)(DVar2.nSeedLow % nModulo);
     }
 
@@ -485,7 +486,8 @@ uint32_t __fastcall RANDOM_RandomNumberSelector(D2SeedStrc * pSeed, uint32_t nMo
     }
     if (nModulo & nModulo - 1) {
       DVar1 = D2_SEED_NEXT(*pSeed);
-      *pSeed = DVar1;
+      pSeed->nSeedHigh = DVar1.nSeedHigh;
+      pSeed->nSeedLow = DVar1.nSeedLow;
       return (uint32_t)(DVar1.nSeedLow % nModulo);
     }
 

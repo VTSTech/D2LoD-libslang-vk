@@ -397,13 +397,13 @@ static BOOL __stdcall PATH_ComputeDirectMovementVector(int * pVelOut, int * pDyn
         nMaxVelComponent = -nAbsVelYCopy;
       }
     }
-    if (!(nAbsDeltaX <= nMaxVelComponent && nAbsDeltaY <= nMaxVelComponent)) {
-      return 0;
+    if (nAbsDeltaX <= nMaxVelComponent && nAbsDeltaY <= nMaxVelComponent) {
+      *pVelOut = nDeltaX;
+      pVelOut[1] = nTargetXfp - pDynamicPath[1];
+      return 1;
     }
 
-    *pVelOut = nDeltaX;
-    pVelOut[1] = nTargetXfp - pDynamicPath[1];
-    return 1;
+    return 0;
 }
 
 // Traces a straight-line path from the dynamic path's current position by (nStartX, nStartY) fixed-point steps, checking collision at each cell transition via PATH_CheckCollisionOnStep. On collision writes the last valid cell centre into pFinalCoords and step count into pNumStepsTraced and returns 1; if the endpoint is reached without collision returns 0 with the full target coords. Optionally records each crossed cell in pDynamicPath->SaveCoords (flag 0x20000).
@@ -554,12 +554,12 @@ static uint32_t PATH_CheckIfTargetReached(D2DynamicPathStrc * pDynamicPath) {
 
     D2UnitStrc* pUnit = pDynamicPath->pOwner;
     if (!pDynamicPath->pTargetUnit) {
-      if (!(pDynamicPath->nPathPointIndex >= pDynamicPath->dwPathPoints && (pDynamicPath->Coords.tSubtile.nPosX != pDynamicPath->nSavedTargetX || pDynamicPath->Coords.tSubtile.nPosY != pDynamicPath->nSavedTargetY))) {
-        return 1;
+      if (pDynamicPath->nPathPointIndex >= pDynamicPath->dwPathPoints && (pDynamicPath->Coords.tSubtile.nPosX != pDynamicPath->nSavedTargetX || pDynamicPath->Coords.tSubtile.nPosY != pDynamicPath->nSavedTargetY)) {
+        bResult = PATH_RecalculatePath(pUnit, 0);
+        return bResult;
       }
 
-      bResult = PATH_RecalculatePath(pUnit, 0);
-      return bResult;
+      return 1;
     }
 
     int32_t nInteractDist = Collision::GetDistanceBetweenUnits(pDynamicPath->pTargetUnit, pUnit);

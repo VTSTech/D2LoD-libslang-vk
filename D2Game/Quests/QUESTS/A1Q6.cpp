@@ -543,8 +543,8 @@ BOOL __fastcall Q06_SetCannotCompleteInGame(::SGAMEDATA * pGame, D2UnitStrc * pU
 
 // A1Q6 per-player callback: if this player's record has JustCompleted set and they are in a party, runs Q06_RegisterActIPlayerForCompletion over every party member to propagate quest credit/reward across the party. Read-only on quest state (gate); writes happen in the per-member callback.
 BOOL __fastcall Q06_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_SistersToTheSlaughter, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SistersToTheSlaughter, QUESTSTATE_JustCompleted);
     if (!bJustCompleted) {
       return 0;
     }
@@ -615,7 +615,6 @@ void __fastcall Q06_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     static uint32_t gaNpcGossipData_Q37[7] = { 0x20766367, 0x20726367, 0x20626367, 0x20796367, 0x20676367, 0x20776367, 0x20636b73 }; D2_STATIC_GUARD(gaNpcGossipData_Q37, "D2Game::Quests::QUESTS::A1Q6::Q06_Callback08_MonsterKilled::gaNpcGossipData_Q37");
     static uint32_t gaNpcGossipData_Q06[7] = { 0x20767367, 0x20727367, 0x20627367, 0x20797367, 0x20677367, 0x20777367, 0x20756b73 }; D2_STATIC_GUARD(gaNpcGossipData_Q06, "D2Game::Quests::QUESTS::A1Q6::Q06_Callback08_MonsterKilled::gaNpcGossipData_Q06");
 
-    BOOL bQuestState;
     D2UnitDataPlayerStrc* pPlayerData2nd;
     D2SeedStrc* pQuestSeed;
     int32_t nAndarielGUID;
@@ -628,11 +627,11 @@ void __fastcall Q06_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     D2QuestDataA1Q6Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q6;
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = (QUESTCALLBACKFN)0x0;
     if (bIsIntroduced != '\0') {
-      D2UnitDataPlayerStrc* pKillerPlayerData;
+      BOOL bQuestState;
       if (pQuestArgs->pPlayer) {
         pGame = pQuestData->pGame;
-        pKillerPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-        bQuestState = D2Common::QuestRecord::GetQuestState(pKillerPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_SistersToTheSlaughter, QUESTSTATE_Completed);
+        D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+        bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SistersToTheSlaughter, QUESTSTATE_Completed);
         if (!bQuestState) {
           pGame2 = pQuestData->pGame;
           pPlayerData2nd = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);

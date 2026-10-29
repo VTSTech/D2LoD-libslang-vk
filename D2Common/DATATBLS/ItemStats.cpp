@@ -40,17 +40,17 @@ void __stdcall SetState(D2UnitStrc * pUnit, eD2States eState, int32_t nParam) {
 
 // No register arguments: ECX is loaded from pUnit [EBP+8] at 00639df3 before any use (1.14d asm).
 eD2States __stdcall UNIT_GetUnitState(D2UnitStrc * pUnit, eD2States eState) {
-    if (!pUnit) {
-      return STATE_none;
+    eD2UnitType eUnitType;
+    if (pUnit) {
+      eD2States eStateResult;
+      eUnitType = pUnit->eUnitType;
+      if ((int)eUnitType >= 0 && ((int)eUnitType <= 1 || eUnitType == UNIT_MISSILE) && (int)eState >= 0 && (int)eState < sgptDataTable->nTxtStatesSize) {
+        eStateResult = Stats::StatsEx::GetStateBitFlag(pUnit, eState);
+        return eStateResult;
+      }
     }
 
-    eD2UnitType eUnitType = pUnit->eUnitType;
-    if (!((int)eUnitType >= 0 && ((int)eUnitType <= 1 || eUnitType == UNIT_MISSILE) && (int)eState >= 0 && (int)eState < sgptDataTable->nTxtStatesSize)) {
-      return STATE_none;
-    }
-
-    eD2States eStateResult = Stats::StatsEx::GetStateBitFlag(pUnit, eState);
-    return eStateResult;
+    return STATE_none;
 }
 
 void __stdcall D2StatesTogglegfx(D2UnitStrc * pUnit, uint32_t nParam, int32_t nParam2) {
@@ -253,11 +253,11 @@ void __stdcall STATES_MoveToGfxFlags(D2UnitStrc * pUnit, uint32_t * pMaskWords) 
 }
 
 uint32_t __stdcall ITEMSTATS_CheckStateFlagArray1(eD2States eState) {
-    if (!((int)eState >= 0 && (int)eState < sgptDataTable->nTxtStatesSize)) {
-      return 0;
+    if ((int)eState >= 0 && (int)eState < sgptDataTable->nTxtStatesSize) {
+      return sgptDataTable->pSingleStateDataTbl[1]->nStateBitmask[(int)eState >> 5] & gadwBitMasks[eState & STATE_venomclaws];
     }
 
-    return sgptDataTable->pSingleStateDataTbl[1]->nStateBitmask[(int)eState >> 5] & gadwBitMasks[eState & STATE_venomclaws];
+    return 0;
 }
 
 BOOL __stdcall STATES_HasHideState(D2UnitStrc * pUnit) {
@@ -266,11 +266,11 @@ BOOL __stdcall STATES_HasHideState(D2UnitStrc * pUnit) {
 }
 
 uint32_t __stdcall ITEMSTATS_CheckStateFlagArray4(eD2States eState) {
-    if (!((int)eState >= 0 && (int)eState < sgptDataTable->nTxtStatesSize)) {
-      return 0;
+    if ((int)eState >= 0 && (int)eState < sgptDataTable->nTxtStatesSize) {
+      return sgptDataTable->pSingleStateDataTbl[4]->nStateBitmask[(int)eState >> 5] & gadwBitMasks[eState & STATE_venomclaws];
     }
 
-    return sgptDataTable->pSingleStateDataTbl[4]->nStateBitmask[(int)eState >> 5] & gadwBitMasks[eState & STATE_venomclaws];
+    return 0;
 }
 
 BOOL __stdcall STATES_HasTransformState(D2UnitStrc * pUnit) {
@@ -331,30 +331,30 @@ BOOL __stdcall UNITS_IsShapeshifted(D2UnitStrc * pUnit) {
 }
 
 uint32_t __stdcall ITEMSTATS_CheckStateFlagArray11(eD2States eState) {
-    if (!((int)eState >= 0 && (int)eState < sgptDataTable->nTxtStatesSize)) {
-      return 0;
+    if ((int)eState >= 0 && (int)eState < sgptDataTable->nTxtStatesSize) {
+      return sgptDataTable->pSingleStateDataTbl[0xb]->nStateBitmask[(int)eState >> 5] & gadwBitMasks[eState & STATE_venomclaws];
     }
 
-    return sgptDataTable->pSingleStateDataTbl[0xb]->nStateBitmask[(int)eState >> 5] & gadwBitMasks[eState & STATE_venomclaws];
+    return 0;
 }
 
 uint32_t __stdcall ITEMSTATS_CheckStateFlagArray12(uint32_t nParam) {
-    if (!((int)nParam >= 0 && (int)nParam < sgptDataTable->nTxtStatesSize)) {
-      return 0;
+    if ((int)nParam >= 0 && (int)nParam < sgptDataTable->nTxtStatesSize) {
+      return sgptDataTable->pSingleStateDataTbl[0xc]->nStateBitmask[(int)nParam >> 5] & gadwBitMasks[nParam & 0x1f];
     }
 
-    return sgptDataTable->pSingleStateDataTbl[0xc]->nStateBitmask[(int)nParam >> 5] & gadwBitMasks[nParam & 0x1f];
+    return 0;
 }
 
 uint32_t __stdcall STATES_IsStateActive(D2UnitStrc * pUnit, uint32_t nParam) {
     if ((int)nParam < 0 || (int)nParam >= sgptDataTable->nTxtStatesSize) {
       return 0;
     }
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
-      return sgptDataTable->pSingleStateDataTbl[0xd]->nStateBitmask[(int)nParam >> 5] & gadwBitMasks[nParam & 0x1f];
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
+      return sgptDataTable->pSingleStateDataTbl[0xe]->nStateBitmask[(int)nParam >> 5] & gadwBitMasks[nParam & 0x1f];
     }
 
-    return sgptDataTable->pSingleStateDataTbl[0xe]->nStateBitmask[(int)nParam >> 5] & gadwBitMasks[nParam & 0x1f];
+    return sgptDataTable->pSingleStateDataTbl[0xd]->nStateBitmask[(int)nParam >> 5] & gadwBitMasks[nParam & 0x1f];
 }
 
 BOOL __fastcall STATES_HasPoisonState(D2UnitStrc * pUnit) {
@@ -423,11 +423,11 @@ BOOL __stdcall STATES_HasCurseState(D2UnitStrc * pUnit) {
 }
 
 uint32_t __stdcall ITEMSTATS_CheckStateFlagArray30(uint32_t nParam) {
-    if (!((int)nParam >= 0 && (int)nParam < sgptDataTable->nTxtStatesSize)) {
-      return 0;
+    if ((int)nParam >= 0 && (int)nParam < sgptDataTable->nTxtStatesSize) {
+      return sgptDataTable->pSingleStateDataTbl[0x1e]->nStateBitmask[(int)nParam >> 5] & gadwBitMasks[nParam & 0x1f];
     }
 
-    return sgptDataTable->pSingleStateDataTbl[0x1e]->nStateBitmask[(int)nParam >> 5] & gadwBitMasks[nParam & 0x1f];
+    return 0;
 }
 
 BOOL __stdcall STATES_HasMaxState(D2UnitStrc * pUnit) {
@@ -436,11 +436,11 @@ BOOL __stdcall STATES_HasMaxState(D2UnitStrc * pUnit) {
 }
 
 uint32_t __stdcall ITEMSTATS_CheckStateFlagArray31(uint32_t nParam) {
-    if (!((int)nParam >= 0 && (int)nParam < sgptDataTable->nTxtStatesSize)) {
-      return 0;
+    if ((int)nParam >= 0 && (int)nParam < sgptDataTable->nTxtStatesSize) {
+      return sgptDataTable->pSingleStateDataTbl[0x1f]->nStateBitmask[(int)nParam >> 5] & gadwBitMasks[nParam & 0x1f];
     }
 
-    return sgptDataTable->pSingleStateDataTbl[0x1f]->nStateBitmask[(int)nParam >> 5] & gadwBitMasks[nParam & 0x1f];
+    return 0;
 }
 
 BOOL __stdcall STATES_HasProgressiveState(D2UnitStrc * pUnit) {
@@ -459,12 +459,13 @@ BOOL __stdcall STATES_HasDisguiseState(D2UnitStrc * pUnit) {
 }
 
 BOOL __stdcall ITEMSTATS_CheckUnitHasStateFlagIndex(D2UnitStrc * pUnit, uint32_t nFlagArrayIdx) {
-    if (!(pUnit && nFlagArrayIdx <= 0x27)) {
-      return 0;
+    if (pUnit && nFlagArrayIdx <= 0x27) {
+      uint32_t fHasStateFlagCheck;
+      fHasStateFlagCheck = STATES_HasMatchingStateFlag(pUnit, sgptDataTable->pSingleStateDataTbl[nFlagArrayIdx]);
+      return fHasStateFlagCheck;
     }
 
-    uint32_t fHasStateFlagCheck = STATES_HasMatchingStateFlag(pUnit, sgptDataTable->pSingleStateDataTbl[nFlagArrayIdx]);
-    return fHasStateFlagCheck;
+    return 0;
 }
 
 } // namespace D2Common::DATATBLS::ItemStats

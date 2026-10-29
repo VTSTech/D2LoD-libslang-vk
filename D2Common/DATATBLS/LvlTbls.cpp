@@ -866,35 +866,35 @@ void __fastcall TXT_AllocTxt_levels(D2PoolManagerStrc * pMemory) {
 }
 
 D2LevelsTxt * __stdcall TXT_Levels_GetLine(eD2LevelId eLevel) {
-    if (!((int)eLevel > 0 && (int)eLevel < sgptDataTable->nTxtLevelsSize)) {
-      return nullptr;
+    if ((int)eLevel > 0 && (int)eLevel < sgptDataTable->nTxtLevelsSize) {
+      return sgptDataTable->pTxtLevels + eLevel;
     }
 
-    return sgptDataTable->pTxtLevels + eLevel;
+    return nullptr;
 }
 
 uint8_t __stdcall LEVEL_CanHaveRain(eD2LevelId eLevel) {
-    if (!((int)eLevel > 0 && (int)eLevel < sgptDataTable->nTxtLevelsSize)) {
-      return '\0';
+    if ((int)eLevel > 0 && (int)eLevel < sgptDataTable->nTxtLevelsSize) {
+      return sgptDataTable->pTxtLevels[eLevel].Rain;
     }
 
-    return sgptDataTable->pTxtLevels[eLevel].Rain;
+    return '\0';
 }
 
 uint32_t __stdcall LVLTBLS_GetNoPer(uint32_t nParam) {
-    if (!((int)nParam > 0 && (int)nParam < sgptDataTable->nTxtLevelsSize)) {
-      return nParam & -256;
+    if ((int)nParam > 0 && (int)nParam < sgptDataTable->nTxtLevelsSize) {
+      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(nParam * 0x220 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)sgptDataTable->pTxtLevels[nParam].NoPer);
     }
 
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(nParam * 0x220 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)sgptDataTable->pTxtLevels[nParam].NoPer);
+    return nParam & -256;
 }
 
 uint8_t __stdcall LEVEL_CanHaveMud(eD2LevelId eLevel) {
-    if (!((int)eLevel > 0 && (int)eLevel < sgptDataTable->nTxtLevelsSize)) {
-      return '\0';
+    if ((int)eLevel > 0 && (int)eLevel < sgptDataTable->nTxtLevelsSize) {
+      return sgptDataTable->pTxtLevels[eLevel].Mud;
     }
 
-    return sgptDataTable->pTxtLevels[eLevel].Mud;
+    return '\0';
 }
 
 void __stdcall LVLTBLS_FreeLevelsTxt() {
@@ -1215,11 +1215,11 @@ void __stdcall LVLTBLS_FreeLevelDefsTxt() {
 }
 
 D2LevelDefsTxt * __fastcall TXT_LevelDefs_GetLine(eD2LevelId eLevel) {
-    if (!((int)eLevel >= 0 && (int)eLevel < sgptDataTable->nTxtLevelsSize)) {
-      return nullptr;
+    if ((int)eLevel >= 0 && (int)eLevel < sgptDataTable->nTxtLevelsSize) {
+      return sgtDataTable.pTxtLevelDefs + eLevel;
     }
 
-    return sgtDataTable.pTxtLevelDefs + eLevel;
+    return nullptr;
 }
 
 // Converts all forward slashes '/' in a level path string to backslashes '\\' in-place, then prepends the data directory prefix via wsprintfA. Used to normalize DS1/DT1 file paths loaded from level text tables to Windows path format.
@@ -1474,11 +1474,11 @@ BOOL __stdcall TXT_LvlTypes_CheckIfTypeIsAssignedToAct(int32_t nLvlTypeId, char 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x251);
       exit(-1);
     }
-    if (!(pTxtLvlTypes + nLvlTypeId && pTxtLvlTypes[nLvlTypeId].Act == nAct)) {
-      return 0;
+    if (pTxtLvlTypes + nLvlTypeId && pTxtLvlTypes[nLvlTypeId].Act == nAct) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 void __stdcall LVLTBLS_GetLvlTypeFilename(int32_t nParam1, int32_t nParam2, uint8_t * pParam) {
@@ -1706,11 +1706,11 @@ void __stdcall TXT_LvlTbls_Free() {
 }
 
 D2LvlPrestTxt * __stdcall TXT_LvlPrest_GetLine(int32_t nLvlPrestId) {
-    if (!(nLvlPrestId >= 0 && nLvlPrestId < sgptDataTable->nTxtLvlPrestSize)) {
-      return nullptr;
+    if (nLvlPrestId >= 0 && nLvlPrestId < sgptDataTable->nTxtLvlPrestSize) {
+      return sgtDataTable.pTxtLvlPrest + nLvlPrestId;
     }
 
-    return sgtDataTable.pTxtLvlPrest + nLvlPrestId;
+    return nullptr;
 }
 
 D2LvlPrestTxt * __fastcall TXT_LvlPrest_FindLineByLevelId(eD2LevelId eLevel) {

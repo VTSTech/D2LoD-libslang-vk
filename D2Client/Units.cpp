@@ -40,30 +40,32 @@ eD2UnitType __fastcall GetType(D2UnitStrc * pUnit) {
 
 int32_t __fastcall GetXPosFromDynamicPathUnit(D2UnitStrc * pUnit) {
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (!(eUnitType != UNIT_OBJECT && ((int)eUnitType <= 3 || (int)eUnitType > 5))) {
-      return pUnit->pPath.pStaticPath->nPosX;
-    }
-    if (pUnit->pPath.pDynamicPath) {
+    if (eUnitType != UNIT_OBJECT && ((int)eUnitType <= 3 || (int)eUnitType > 5)) {
       int32_t nXPos;
-      nXPos = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
-      return nXPos;
+      if (pUnit->pPath.pDynamicPath) {
+        nXPos = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+        return nXPos;
+      }
+
+      return 0;
     }
 
-    return 0;
+    return pUnit->pPath.pStaticPath->nPosX;
 }
 
 int32_t __fastcall GetYPosFromDynamicPathUnit(D2UnitStrc * pUnit) {
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (!(eUnitType != UNIT_OBJECT && ((int)eUnitType <= 3 || (int)eUnitType > 5))) {
-      return pUnit->pPath.pStaticPath->nPosY;
-    }
-    if (pUnit->pPath.pDynamicPath) {
+    if (eUnitType != UNIT_OBJECT && ((int)eUnitType <= 3 || (int)eUnitType > 5)) {
       int32_t nYPos;
-      nYPos = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-      return nYPos;
+      if (pUnit->pPath.pDynamicPath) {
+        nYPos = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+        return nYPos;
+      }
+
+      return 0;
     }
 
-    return 0;
+    return pUnit->pPath.pStaticPath->nPosY;
 }
 
 void __fastcall IfPlayer(D2UnitStrc * pUnit) {
@@ -140,7 +142,7 @@ BOOL __fastcall GFXUTIL_UnitHasAnimMode(D2UnitStrc * pUnit, uint32_t nMode) {
       break;
       case UNIT_OBJECT:
         pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nClassId);
-      if (pObjectsTxt && pObjectsTxt->Mode[nMode + 0x12]) {
+      if (pObjectsTxt && pObjectsTxt->Mode[nMode + 0x12] == 1) {
         return 1;
       }
 

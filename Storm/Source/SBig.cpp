@@ -1488,11 +1488,11 @@ static int32_t __stdcall BigBuffer_Compare_Ui(uint32_t nValue, BigBuffer * pBigI
     if (pBigIntArray->nCount - uVar1 > 1) {
       return 1;
     }
-    if (!(uVar1 < pBigIntArray->nCount && pBigIntArray->pData[uVar1])) {
-      return 0;
+    if (uVar1 < pBigIntArray->nCount && pBigIntArray->pData[uVar1]) {
+      return nValue < pBigIntArray->pData[uVar1] ? 0x1 : -0x1;
     }
 
-    return nValue < pBigIntArray->pData[uVar1] ? 0x1 : -0x1;
+    return 0;
 }
 
 // @renamed-from SBIG_DivModValue64 (2026-08-28, Storm PowerPC oracle pass 4)
@@ -1590,11 +1590,11 @@ static void BigBuffer_IsOdd(BigBuffer * pBignum) {
 static BOOL BigBuffer_IsOne(BigBuffer * pBignum) {
     SBIG_TrimLeadingZeros(pBignum);
     uint32_t uVar1 = pBignum->nStartWord;
-    if (!(pBignum->nCount - uVar1 == 1 && uVar1 < pBignum->nCount && pBignum->pData[uVar1] == 1)) {
-      return 0;
+    if (pBignum->nCount - uVar1 == 1 && uVar1 < pBignum->nCount && pBignum->pData[uVar1] == 1) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // @renamed-from SBIG_IsZero (2026-08-28, Storm PowerPC oracle pass 4)

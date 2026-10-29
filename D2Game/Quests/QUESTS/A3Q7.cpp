@@ -277,8 +277,10 @@ void __fastcall Objects_InitFn43(D2ObjectInitFnArg * pInitArg) {
 // A3Q7 secondary slot QUESTINT_UnknownDuplicate1. Q24_Callback_13: quest state-handler installed at sStateFunctions[0xd] (the JustCompleted slot) by Q24_InitData. Reads the firing player's per-difficulty QuestRecord: if QUEST_UnknownDuplicate1 is Completed in the record, promote the live quest to JustCompleted and clear bQuestCompleted (one-shot completion latch syncing record->live state).
 void __fastcall Q24_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_UnknownDuplicate1, QUESTSTATE_Completed);
+    /* QuestRecord::GetQuestState(record, QUEST_UnknownDuplicate1=0x20, state
+                         0x0=QUESTSTATE_Completed). Tests whether self player's saved record has the
+                         duplicate quest marked Completed. */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_UnknownDuplicate1, QUESTSTATE_Completed);
     if (bQuestState != 1) {
       return;
     }
@@ -361,7 +363,8 @@ uint8_t __fastcall Q24_TimerCallback_SpawnPortals(::SGAMEDATA * pGame, D2QuestDa
       D2SeedStrc DVar1;
       pSeed = GetQuestControlSeed(pGame);
       DVar1 = D2_SEED_NEXT(*pSeed);
-      *pSeed = DVar1;
+      pSeed->nSeedHigh = DVar1.nSeedHigh;
+      pSeed->nSeedLow = DVar1.nSeedLow;
       pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
       D2Common::Units::GetCoords(pUnit, &ptUnitPos);
       pGameSaved = pSpawnRoom;

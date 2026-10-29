@@ -273,8 +273,9 @@ BOOL __fastcall Q14_UpdateQuestRecordStep(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
 // A2Q6 "The Seven Tombs" — per-player completion-sound callback. If the player's TheSevenTombs record is JustCompleted(0xd), attaches/plays the quest-complete sound event (id 0x36) on that unit. Read-only on quest state.
 BOOL __fastcall Q14_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pDVar1->pQuestRecord[pGame->nDifficulty], QUEST_TheSevenTombs, QUESTSTATE_JustCompleted);
+    /* GetQuestState(TheSevenTombs, 0xd=JustCompleted) — play complete sound only
+                         for just-completed */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheSevenTombs, QUESTSTATE_JustCompleted);
     if (!BVar2) {
       return 0;
     }
@@ -627,10 +628,6 @@ void __fastcall Q14_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     }
 
     switch (nMessageIndex) {
-      case 0x1bc:
-        /* SetQuestState(TheSevenTombs, 9=Step0x09) — msg 0x1bc: post-win NPC talked
-                         bit (Warriv 0xca) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x09);
-      return;
       case 0x1bd:
         /* SetQuestState(TheSevenTombs, 6=Step0x06) — msg 0x1bd: mark "post-win NPC
                          talked" bit (Meshif 0xb0) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x06);
@@ -639,18 +636,22 @@ void __fastcall Q14_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         /* SetQuestState(TheSevenTombs, 7=Step0x07) — msg 0x1be: post-win NPC talked
                          bit (Geglash 0xaf) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x07);
       return;
-      case 0x1bf:
-        /* SetQuestState(TheSevenTombs, 0xb=Step0x11) — msg 0x1bf: post-win NPC talked
-                         bit (Fara 0xb2) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x11);
-      break;
       case 0x1c1:
         /* SetQuestState(TheSevenTombs, 8=Step0x08) — msg 0x1c1: post-win NPC talked
                          bit (Tyrael 0xb1) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x08);
+      return;
+      case 0x1bc:
+        /* SetQuestState(TheSevenTombs, 9=Step0x09) — msg 0x1bc: post-win NPC talked
+                         bit (Warriv 0xca) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x09);
       return;
       case 0x1c4:
         /* SetQuestState(TheSevenTombs, 0xa=Step0x10) — msg 0x1c4: post-win NPC talked
                          bit (Lysander 0xf4) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x10);
       return;
+      case 0x1bf:
+        /* SetQuestState(TheSevenTombs, 0xb=Step0x11) — msg 0x1bf: post-win NPC talked
+                         bit (Fara 0xb2) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x11);
+      break;
     }
 }
 
@@ -1021,9 +1022,9 @@ bool __fastcall Q14_SequenceFilter(D2QuestDataStrc * pQuestData) {
 // A2Q6 "The Seven Tombs" — handler slot 0xe: on this event, clears the player's TheHoradricStaff record Step0x09 bit (cross-quest cleanup tying staff completion into the tombs quest).
 void __fastcall Q14_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     /* UnsetQuestState(TheHoradricStaff=0xa, 9=Step0x09) — cross-quest cleanup:
-                         clear staff sub-step */ D2Common::QuestRecord::UnsetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_TheHoradricStaff, QUESTSTATE_Step0x09);
+                         clear staff sub-step */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+    D2Common::QuestRecord::UnsetQuestState(pQuestRecord, QUEST_TheHoradricStaff, QUESTSTATE_Step0x09);
 }
 
 // A2Q6 "The Seven Tombs" — handler slot 0xd: on-player-join state reconstruction. Clears TheHoradricStaff Step0x09; if staff Completed, arms Jerhyn AI + spawn flags. If TheSevenTombs record is Completed or FinishedInPreviousGame -> mark bCompletedPlayerJoined and bail. Else rebuild live nStateFlag/nStateFlagPrev from the record: Step0x02 -> (prev1,flag2); Step0x03 -> (prev5,flag5); Step0x04 -> (prev6,flag5). Restores in-progress quest state for a joining player from their saved record.

@@ -22,7 +22,8 @@ int32_t __fastcall RollBetweenMinAndMax(D2SeedStrc * pSeed, int32_t nMin, uint32
     }
     if (nMax & nMax - 1) {
       sNewSeed = D2_SEED_NEXT(*pSeed);
-      *pSeed = sNewSeed;
+      pSeed->nSeedHigh = sNewSeed.nSeedHigh;
+      pSeed->nSeedLow = sNewSeed.nSeedLow;
       return (int)(sNewSeed.nSeedLow % nMax) + nMin;
     }
 

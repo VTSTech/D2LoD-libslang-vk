@@ -1073,11 +1073,11 @@ void __stdcall UIMENU_BackgroundAndExpansionText() {
 
 int16_t __stdcall MAINMENU_FilterNewlineKey(int16_t nParam) {
     uint8_t byHighByte = (uint8_t)((uint16_t)nParam >> 8);
-    if (!(nParam != 0xd && nParam != 10)) {
-      return (uint16_t)((uint16_t)(uint8_t)byHighByte << 8 | (uint16_t)(uint8_t)1);
+    if (nParam != 0xd && nParam != 10) {
+      return (uint16_t)byHighByte << 8;
     }
 
-    return (uint16_t)byHighByte << 8;
+    return (uint16_t)((uint16_t)(uint8_t)byHighByte << 8 | (uint16_t)(uint8_t)1);
 }
 
 int __stdcall MAINMENU_PollRevisionCheckPump(int nFrameIndex) {
@@ -1699,11 +1699,8 @@ int __stdcall MAINMENU_DisplayCredits() {
             break;
           }
 
-          bCopied1 = awCol1;
-          for (i = 0x80; i; i--) {
-            bCopied1[0] = L'\0';
-            bCopied1[1] = L'\0';
-            bCopied1 += 2;
+          for (i = 0; i < 0x100; i++) {
+            awCol1[i] = L'\0';
           }
 
           bCopied1 = awCol2;
@@ -2095,28 +2092,19 @@ void __stdcall UIMENU_ShowRealmNameOnButton() {
     uint16_t awButtonText[256];
     D2BNetGatewayAccessStr* pGateway = (D2BNetGatewayAccessStr*)gpBNetCallbacks->pfnBnetLoadAndReturn();
     Storm::Source::SSTR::SStrCopy(szGateway, Bnclient::BNGatewayAccess::Name(pGateway, pGateway->nCurGatewayIdx), 0x100);
-    uint16_t* pwScratch = awGatewayW;
-    for (i = 0x80; i; i--) {
-      pwScratch[0] = L'\0';
-      pwScratch[1] = L'\0';
-      pwScratch += 2;
+    for (i = 0; i < 0x100; i++) {
+      awGatewayW[i] = L'\0';
     }
 
     D2Lang::UTF8_ConvertToWideChar(awGatewayW, szGateway, 0x100);
-    pwScratch = awFormat;
-    for (i = 0x80; i; i--) {
-      pwScratch[0] = L'\0';
-      pwScratch[1] = L'\0';
-      pwScratch += 2;
+    for (i = 0; i < 0x100; i++) {
+      awFormat[i] = L'\0';
     }
 
-    pwScratch = D2Lang::StrTable::strtable::GetLocaleString(0x2b29);
+    uint16_t* pwScratch = D2Lang::StrTable::strtable::GetLocaleString(0x2b29);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(awFormat, pwScratch);
-    pwScratch = awButtonText;
-    for (i = 0x80; i; i--) {
-      pwScratch[0] = L'\0';
-      pwScratch[1] = L'\0';
-      pwScratch += 2;
+    for (i = 0; i < 0x100; i++) {
+      awButtonText[i] = L'\0';
     }
 
     memset(awButtonText, 0, 0x100);
@@ -2736,15 +2724,12 @@ int __stdcall MAINMENU_PollMCPCreateGamePump(int nFrameIndex) {
 static int __stdcall MAINMENU_SetMultilineText(uint16_t * wszText, ::D2WinTextBox * pTextBox, int32_t nColor, uint8_t bCentered) {
     int nClearCount;
     uint16_t wszBuffer[1024];
-    uint16_t* pwszLineStart = wszBuffer;
-    for (nClearCount = 0x200; nClearCount; nClearCount--) {
-      pwszLineStart[0] = L'\0';
-      pwszLineStart[1] = L'\0';
-      pwszLineStart += 2;
+    for (nClearCount = 0; nClearCount < 0x400; nClearCount++) {
+      wszBuffer[nClearCount] = L'\0';
     }
 
     D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszBuffer, wszText, 0x400);
-    pwszLineStart = wszBuffer;
+    uint16_t* pwszLineStart = wszBuffer;
     uint16_t* pwszCursor = pwszLineStart;
     if (wszBuffer[0] == L'\0') {
       return 1;
@@ -3224,17 +3209,17 @@ int __stdcall ClickOnClassCreate(D2ControlMsg * pControlMsg) {
         case 0:
           pszSoundFile = "data\\global\\sfx\\cursor\\intro\\amazon deselect.wav";
         break;
-        case 1:
-          pszSoundFile = "data\\global\\sfx\\cursor\\intro\\sorceress deselect.wav";
-        break;
-        case 2:
-          pszSoundFile = "data\\global\\sfx\\cursor\\intro\\necromancer deselect.wav";
+        case 4:
+          pszSoundFile = "data\\global\\sfx\\cursor\\intro\\barbarian deselect.wav";
         break;
         case 3:
           pszSoundFile = "data\\global\\sfx\\cursor\\intro\\paladin deselect.wav";
         break;
-        case 4:
-          pszSoundFile = "data\\global\\sfx\\cursor\\intro\\barbarian deselect.wav";
+        case 2:
+          pszSoundFile = "data\\global\\sfx\\cursor\\intro\\necromancer deselect.wav";
+        break;
+        case 1:
+          pszSoundFile = "data\\global\\sfx\\cursor\\intro\\sorceress deselect.wav";
         break;
         case 5:
           pszSoundFile = "data\\global\\sfx\\cursor\\intro\\druid deselect.wav";
@@ -3282,23 +3267,24 @@ int __stdcall ClickOnClassCreate(D2ControlMsg * pControlMsg) {
         case 0:
           D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\intro\\amazon select.wav");
         break;
-        case 1:
-          D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\intro\\sorceress select.wav");
-        break;
-        case 2:
-          D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\intro\\necromancer select.wav");
+        case 4:
+          D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\intro\\barbarian select.wav");
         break;
         case 3:
           D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\intro\\paladin select.wav");
         break;
-        case 4:
-          D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\intro\\barbarian select.wav");
+        case 2:
+          D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\intro\\necromancer select.wav");
+        break;
+        case 1:
+          D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\intro\\sorceress select.wav");
+        break;
+        case 6:
+          D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\intro\\assassin select.wav");
         break;
         case 5:
           D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\intro\\druid select.wav");
         break;
-        case 6:
-          D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\intro\\assassin select.wav");
       }
 
       gnClassDescriptionTooltipState = nNewClassId;
@@ -5612,12 +5598,13 @@ uint32_t __fastcall MAINMENU_GetFlagBits8To12(uint32_t dwFlags) {
 // Provenance: asm 00437a00..00437a12; unreferenced in 1.14d.
 char * __stdcall MAINMENU_GetRealmNameIfValid(int nIndex) {
     int iVar1 = MAINMENU_GetRealmCount();
-    if (nIndex >= iVar1) {
-      return nullptr;
+    if (nIndex < iVar1) {
+      char* pcVar2;
+      pcVar2 = MAINMENU_GetRealmName(nIndex);
+      return pcVar2;
     }
 
-    char* pcVar2 = MAINMENU_GetRealmName(nIndex);
-    return pcVar2;
+    return nullptr;
 }
 
 uint32_t CHARSEL_FindRealmByName(char * szText) {

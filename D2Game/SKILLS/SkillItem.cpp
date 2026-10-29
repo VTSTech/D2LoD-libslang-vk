@@ -206,11 +206,13 @@ void __stdcall SEED_RollChampionPack(D2SeedStrc * pSeed, D2MonsterRegionFieldStr
                       byCompVariant = 0;
                     } else if (nBytesToCompare & nBytesToCompare - 1) {
                       sSeedNext = D2_SEED_NEXT(*pSeed);
-                      *pSeed = sSeedNext;
+                      pSeed->nSeedHigh = sSeedNext.nSeedHigh;
+                      pSeed->nSeedLow = sSeedNext.nSeedLow;
                       byCompVariant = (uint8_t)(sSeedNext.nSeedLow % nBytesToCompare);
                     } else {
                       sSeedNext = D2_SEED_NEXT(*pSeed);
-                      *pSeed = sSeedNext;
+                      pSeed->nSeedHigh = sSeedNext.nSeedHigh;
+                      pSeed->nSeedLow = sSeedNext.nSeedLow;
                       byCompVariant = byCompVariant - 1 & (uint8_t)sSeedNext.nSeedLow;
                     }
 
@@ -222,11 +224,13 @@ void __stdcall SEED_RollChampionPack(D2SeedStrc * pSeed, D2MonsterRegionFieldStr
                         byCompVariant = 0;
                       } else if (nBytesToCompare & nBytesToCompare - 1) {
                         sSeedNext = D2_SEED_NEXT(*pSeed);
-                        *pSeed = sSeedNext;
+                        pSeed->nSeedHigh = sSeedNext.nSeedHigh;
+                        pSeed->nSeedLow = sSeedNext.nSeedLow;
                         byCompVariant = (uint8_t)(sSeedNext.nSeedLow % nBytesToCompare);
                       } else {
                         sSeedNext = D2_SEED_NEXT(*pSeed);
-                        *pSeed = sSeedNext;
+                        pSeed->nSeedHigh = sSeedNext.nSeedHigh;
+                        pSeed->nSeedLow = sSeedNext.nSeedLow;
                         byCompVariant = byCompVariant - 1 & (uint8_t)sSeedNext.nSeedLow;
                       }
 
@@ -353,7 +357,7 @@ int32_t __fastcall MONREGION_RollRandomMonsterType(::SGAMEDATA * pGame, D2Monste
       nRarityBucket = (int)(short int)nClassId;
       if (nRarityBucket >= 0 && nRarityBucket < sgptDataTable->nTxtMonStatsSize) {
         pMonStatsTxt = sgptDataTable->pTxtMonStats + nRarityBucket;
-        if (pMonStatsTxt && -1 < pMonStatsTxt->spawn && pMonStatsTxt->placespawn) {
+        if (pMonStatsTxt && -1 < pMonStatsTxt->spawn && *((uint8_t*)pMonStatsTxt + 0xe) & (uint8_t)gadwBitMasks[7]) {
           DVar1 = D2_SEED_NEXT(*pSeed);
           *pSeed = DVar1;
           if ((int)(DVar1.nSeedLow % 100) > (int)(uint32_t)bParam) {
@@ -480,7 +484,7 @@ static void SKILLITEM_ClearCursorFlagAndNotifyClient(D2UnitStrc * pUnit) {
     D2UnitStrc* pUnitTmp;
     BOOL bHasCursorFlag;
     int32_t nParam;
-    int16_t nSkillId;
+    uint16_t nSkillId;
     if (!pUnit->pInventory) {
       return;
     }
@@ -491,7 +495,7 @@ static void SKILLITEM_ClearCursorFlagAndNotifyClient(D2UnitStrc * pUnit) {
       bHasCursorFlag = D2Common::ITEMS::Items::CheckItemFlag(pUnitTmp2, ITEMFLAG_CURSOR, 0x77, ".\\SKILLS\\SkillItem.cpp");
       if (bHasCursorFlag) {
         D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pUnitTmp2, ITEMFLAG_CURSOR, 0);
-        nSkillId = -1;
+        nSkillId = 0xffff;
         nParam = 0;
         bHasCursorFlag = 1;
         GAME::SCmd::NET_D2GS_SERVER_Send_0x3F_SETSPELLICON(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x7a), pUnitTmp2, 0xff, bHasCursorFlag, nParam, nSkillId);
@@ -1450,14 +1454,14 @@ void __fastcall SKILL_ProcessPeriodicAuraTick(::SGAMEDATA * pGame, D2UnitStrc * 
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillTxt && pSkillTxt->aura && -1 < pSkillTxt->aurastate && (int)pSkillTxt->aurastate < sgptDataTable->nTxtStatesSize)) {
+    if (!(pSkillTxt && *((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[5] && -1 < pSkillTxt->aurastate && (int)pSkillTxt->aurastate < sgptDataTable->nTxtStatesSize)) {
       return;
     }
 
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_PERIODICSTATS, param_1);
     int32_t pNextFrame = SkillsServer::SKILLS_CalcPerDelayInterval(pGame, pUnit, pSkillTxt, eSkill, nParam);
     GAME::Event::SetEvent(pGame, pUnit, 9, pNextFrame, param_1, eSkill);
-    if (!pSkillTxt->immediate) {
+    if (!(*((uint8_t*)pSkillTxt + 0x5) & (uint8_t)gadwBitMasks[7])) {
       return;
     }
 
@@ -1470,7 +1474,7 @@ void __fastcall SKILL_DeactivateAura(::SGAMEDATA * pGame, D2UnitStrc * pUnit, in
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillTxt && pSkillTxt->aura)) {
+    if (!(pSkillTxt && *((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[5])) {
       return;
     }
 
@@ -1593,10 +1597,10 @@ BOOL __fastcall ITEMEVENT_CrushingBlowChance(::SGAMEDATA * pGame, uint32_t nUnit
       D2MonStats2Txt* pMonStats2;
       pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pTarget->nClassId);
       if (pMonStats2) {
-        if (pMonStats2->large) {
+        if (gadwBitMasks[3] & (uint8_t)*((uint8_t*)pMonStats2 + 0x5)) {
           nSizeThreshMask = 0x20;
         } else {
-          if (pMonStats2->isSmall) {
+          if (gadwBitMasks[2] & (uint8_t)*((uint8_t*)pMonStats2 + 0x5)) {
             nSizeThreshMask = 0x80;
           }
         }
@@ -2118,7 +2122,7 @@ BOOL __fastcall ITEMEVENT_CastOnAttack(::SGAMEDATA * pGame, uint32_t nUnitEvent,
     if (!pSkillsTxt) {
       return 0;
     }
-    if (pSkillsTxt->ItemTgtDo) {
+    if (*((uint8_t*)pSkillsTxt + 0x7) & (uint8_t)gadwBitMasks[5]) {
       if (pTarget) {
         Monster::AI::SKILL_CastOnTargetUnit(pTarget, eProcSkill, eSkillLevel, pTarget, 0);
         return 1;
@@ -2212,12 +2216,12 @@ BOOL __fastcall ITEMEVENT_CastOnDeath(::SGAMEDATA * pGame, uint32_t nUnitEvent, 
 }
 
 BOOL __fastcall ITEMEVENT_SetRestInPeace(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!(pUnit && pTarget)) {
-      return 0;
+    if (pUnit && pTarget) {
+      D2Common::DATATBLS::ItemStats::SetState(pTarget, STATE_restinpeace, 1);
+      return 1;
     }
 
-    D2Common::DATATBLS::ItemStats::SetState(pTarget, STATE_restinpeace, 1);
-    return 1;
+    return 0;
 }
 
 // Server-side Necromancer Revive handler: validates the corpse (consumable check, MonStats bounds), removes its collision, spawns a monster of class eSkill in a nearby room, sets ISREVIVE flags and STATE_revive, attaches minion AI, assigns the owner (GUID in nSkillLvl) and schedules AI-think and expiry events. Returns 1 on success, 0 on any validation failure.
@@ -2359,7 +2363,7 @@ BOOL __fastcall ITEMEVENT_LaunchMissileOnOwner(::SGAMEDATA * pGame, uint32_t nUn
     }
 
     D2MissilesTxt* pMissileTxt = D2Client::GetMissleById(pTarget->nClassId);
-    if (pMissileTxt->ReturnFire) {
+    if (*((uint8_t*)pMissileTxt + 0x5) & (uint8_t)gadwBitMasks[1]) {
       D2SkillArgStrc sSkillArg;
       memset(&sSkillArg, 0, 0x5c);
       sSkillArg.nSkillLevel = nUnit;

@@ -430,11 +430,11 @@ void __stdcall PARTICLE_SetStopped(D2UnitStrc * pUnit) {
 
 BOOL __stdcall PARTICLE_IsStopped(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!(pParticle && pParticle->nFlags & 1)) {
-      return 0;
+    if (pParticle && pParticle->nFlags & 1) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 void __stdcall PARTICLE_SetStoppedWithFade(D2UnitStrc * pUnit) {
@@ -448,11 +448,11 @@ void __stdcall PARTICLE_SetStoppedWithFade(D2UnitStrc * pUnit) {
 
 BOOL __stdcall PARTICLE_IsStoppedOrFading(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!(pParticle && pParticle->nFlags & 1U && !(pParticle->nFlags & 8U))) {
-      return 1;
+    if (pParticle && pParticle->nFlags & 1U && !(pParticle->nFlags & 8U)) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 void __fastcall PARTICLE_SetReverseDirection(D2UnitStrc * pUnit, BOOL bReset) {

@@ -31,26 +31,6 @@ void __fastcall Q38_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     short int wMessageIndex;
     wMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     switch (nMonStatsId) {
-      case MonsterUnitWarrivAct2:
-        bNpcMatch = wMessageIndex == 0xd7;
-      break;
-      default:
-        return;
-      case MonsterUnitDrognan:
-        if (wMessageIndex != 0x11e) {
-          bNpcMatch = wMessageIndex == 0x11d;
-          break;
-        }
-      goto mark_spoken;
-      case MonsterUnitFara:
-        if (wMessageIndex == 0x108) {
-          goto mark_spoken;
-        }
-      bNpcMatch = wMessageIndex == 0x107;
-      break;
-      case MonsterUnitGreiz:
-        bNpcMatch = wMessageIndex == 0xbe;
-      break;
       case MonsterUnitElzix:
         if (wMessageIndex == 0xcc) {
           goto mark_spoken;
@@ -63,14 +43,35 @@ void __fastcall Q38_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         }
       bNpcMatch = wMessageIndex == 0xe6;
       break;
-      case MonsterUnitLysander:
-        bNpcMatch = wMessageIndex == 0x112;
-      break;
       case MonsterUnitMeshif:
         if (wMessageIndex == 0xf2) {
           goto mark_spoken;
         }
       bNpcMatch = wMessageIndex == 0xf1;
+      break;
+      case MonsterUnitFara:
+        if (wMessageIndex == 0x108) {
+          goto mark_spoken;
+        }
+      bNpcMatch = wMessageIndex == 0x107;
+      break;
+      case MonsterUnitDrognan:
+        if (wMessageIndex != 0x11e) {
+          bNpcMatch = wMessageIndex == 0x11d;
+          break;
+        }
+      goto mark_spoken;
+      case MonsterUnitGreiz:
+        bNpcMatch = wMessageIndex == 0xbe;
+      break;
+      case MonsterUnitWarrivAct2:
+        bNpcMatch = wMessageIndex == 0xd7;
+      break;
+      default:
+        return;
+      case MonsterUnitLysander:
+        bNpcMatch = wMessageIndex == 0x112;
+      break;
     }
 
     if (!bNpcMatch) {

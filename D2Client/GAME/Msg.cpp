@@ -160,8 +160,8 @@ void __stdcall NET_D2GS_CLIENT_Send_0x6D_PING() {
     gdwLastPingSentTick = dwTick;
     packet.nTickCount = GetTickCount();
     uint32_t nGameDataDelay = Game::GAME_GetAveragePing();
-    packet.nWardenOrZero = nWardenChecksum * -0x49bf21bf;
     packet.nDelay = nGameDataDelay >> 1;
+    packet.nWardenOrZero = nWardenChecksum * -0x49bf21bf;
     D2Net::SRC::Client::NET_D2GS_CLIENT_SendPacketAfterChecks(0xd, 0, (char*)&packet);
     gnD2GSBytesSentTotal += 0xd;
     gnD2GSPacketsSentTotal++;
@@ -547,28 +547,28 @@ void __fastcall NET_D2GS_CLIENT_Send_SHORT(uint8_t nPacketId, short nArg1) {
 
 void __fastcall NET_D2GS_CLIENT_Send_SHORT_SHORT(uint8_t nPacketId, int16_t nTargetX, int16_t nTargetY) {
     D2GSPacketClt_CMD_SHORT_SHORT packet;
-    packet.nArg2 = nTargetY;
     packet.nId = nPacketId;
     packet.nArg1 = nTargetX;
+    packet.nArg2 = nTargetY;
     NET_D2GS_CLIENT_Send(&packet.nId, 5);
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_SHORT_SHORT_SHORT(uint8_t nPacketId, int16_t nButtonId, int16_t nGoldHi, int16_t nGoldLow) {
     D2GSPacketClt_CMD_SHORT_SHORT_SHORT packet;
+    packet.nArg1 = nButtonId;
+    packet.nId = nPacketId;
     packet.nArg2 = nGoldHi;
     packet.nArg3 = nGoldLow;
-    packet.nId = nPacketId;
-    packet.nArg1 = nButtonId;
     NET_D2GS_CLIENT_Send(&packet.nId, 7);
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_SHORT_SHORT_SHORT_SHORT(uint8_t nPacketId, int16_t nArg1, int16_t nArg2, int16_t nArg3, int16_t nArg4) {
     D2GSPacketClt_CMD_SHORT_SHORT_SHORT_SHORT packet;
     packet.nArg2 = nArg2;
-    packet.nArg3 = nArg3;
-    packet.nArg4 = nArg4;
     packet.nId = nPacketId;
     packet.nArg1 = nArg1;
+    packet.nArg3 = nArg3;
+    packet.nArg4 = nArg4;
     NET_D2GS_CLIENT_Send(&packet.nId, 9);
 }
 
@@ -581,28 +581,28 @@ void __fastcall NET_D2GS_CLIENT_Send_INT(uint8_t nId, int32_t nParam) {
 
 void __fastcall NET_D2GS_CLIENT_Send_INT_INT(uint8_t nPacketId, int32_t nArg1, int32_t nArg2) {
     D2GSPacketClt_CMD_INT_INT local_10;
-    local_10.nArg2 = nArg2;
     local_10.nId = nPacketId;
     local_10.nArg1 = nArg1;
+    local_10.nArg2 = nArg2;
     NET_D2GS_CLIENT_Send(&local_10.nId, 9);
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_INT_INT_INT(uint8_t nPacketId, int32_t nArg1, int32_t nArg2, int32_t nArg3) {
     D2GSPacketClt_CMD_INT_INT_INT local_14;
+    local_14.nArg1 = nArg1;
+    local_14.nId = nPacketId;
     local_14.nArg2 = nArg2;
     local_14.nArg3 = nArg3;
-    local_14.nId = nPacketId;
-    local_14.nArg1 = nArg1;
     NET_D2GS_CLIENT_Send(&local_14.nId, 0xd);
 }
 
 void __fastcall NET_D2GS_CLIENT_Send_INT_INT_INT_INT(uint8_t nPacketId, int32_t nUnitType, int32_t nUnitGUID, int32_t nTargetX, int32_t nTargetY) {
     D2GSPacketClt_CMD_INT_INT_INT_INT packet;
     packet.nArg2 = nUnitGUID;
-    packet.nArg3 = nTargetX;
-    packet.nArg4 = nTargetY;
     packet.nId = nPacketId;
     packet.nArg1 = nUnitType;
+    packet.nArg3 = nTargetX;
+    packet.nArg4 = nTargetY;
     NET_D2GS_CLIENT_Send(&packet.nId, 0x11);
 }
 

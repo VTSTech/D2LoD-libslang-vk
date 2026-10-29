@@ -492,7 +492,7 @@ static void __stdcall ROSTER_MoveRosterPlayerToFrontOfParty(int16_t nPartyId, in
 // @sourcefile .\GAME\Roster.cpp
 void __stdcall ROSTER_GroupPlayersIntoParties() {
     D2RosterPartyListStrc* pRosterPartyList;
-    short int nPartyId;
+    uint16_t nPartyId;
     D2RosterPartyListStrc* pPartyListHead;
     pPartyListHead = Roster::pRosterPartyList;
     do {
@@ -582,7 +582,7 @@ static void ROSTER_MoveRosterPlayerToFront(int32_t nRosterGUID) {
 
 void __stdcall ROSTER_RebuildPlayerParty() {
     int nRosterGUID;
-    short int nPartyId;
+    uint16_t nPartyId;
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
     if (!pPlayerUnit_lcl) {
       nRosterGUID = -1;
@@ -594,7 +594,7 @@ void __stdcall ROSTER_RebuildPlayerParty() {
     if (pRoster) {
       nPartyId = pRoster->nPartyId;
     } else {
-      nPartyId = -1;
+      nPartyId = 0xffff;
     }
 
     ROSTER_GroupPlayersIntoParties();
@@ -602,7 +602,7 @@ void __stdcall ROSTER_RebuildPlayerParty() {
     ROSTER_MoveRosterPlayerToFrontOfParty(nPartyId, nRosterGUID);
     ROSTER_FlattenPartyListsIntoSingleRosterChain();
     FreeRosterPartyList();
-    if (nPartyId != -1) {
+    if (nPartyId != 0xffff) {
       return;
     }
 
@@ -881,9 +881,6 @@ void __fastcall ClickParty_i(D2RosterStrc * pRoster) {
       case 2:
         nActionType = 8;
       break;
-      case 3:
-        nActionType = 9;
-      break;
       case 4:
         pRoster->nPartyState = 0;
       Msg::NET_D2GS_CLIENT_Send_0x5E(7, pRoster->nRosterGUID);
@@ -892,6 +889,9 @@ void __fastcall ClickParty_i(D2RosterStrc * pRoster) {
       return;
       default:
         goto send_party_action;
+      case 3:
+        nActionType = 9;
+      break;
     }
 
     pRoster->nPartyState = 1;
@@ -916,7 +916,7 @@ D2RosterStrc * __stdcall ROSTER_LeaveParty() {
       exit(-1);
     }
 
-    pRoster->nPartyId = -1;
+    pRoster->nPartyId = 0xffff;
     pRoster->nPartyState = 1;
     ROSTER_RebuildPlayerParty();
     UI::Party::ResetPartyUi();
@@ -949,7 +949,7 @@ void __fastcall ROSTER_ToggleHostileAndSend(D2RosterStrc * pRoster) {
     bIsHostile = UNIT::PlayerList::GetFlag(nUnitGUID, pRoster->nRosterGUID, 8);
     Msg::NET_D2GS_CLIENT_Send_0x5D(4, pRoster->nRosterGUID, bIsHostile);
     bIsHostile = UNIT::PlayerList::GetFlag(nUnitGUID, pRoster->nRosterGUID, 8);
-    if (!(bIsHostile && pRoster->nPartyId != -1)) {
+    if (!(bIsHostile && pRoster->nPartyId != 0xffff)) {
       return;
     }
 
@@ -967,7 +967,7 @@ uint32_t __fastcall CheckRostersArePartied(int32_t nRoster1GUID, int32_t nRoster
     if (!pRoster1 || !pRoster2) {
       return 1;
     }
-    if (pRoster1->nPartyId == pRoster2->nPartyId && pRoster1->nPartyId != -1) {
+    if (pRoster1->nPartyId == pRoster2->nPartyId && pRoster1->nPartyId != 0xffff) {
       return 0;
     }
 
@@ -1141,8 +1141,8 @@ BOOL __fastcall CheckIfUnitHasPartiedRosters(D2UnitStrc * pUnit) {
       nGUID = pUnit->nUnitGUID;
     }
 
-    int16_t nPartyId = UNIT::CUnit::GetPlayerUnitPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::CUnit::GetPlayerUnitPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 
@@ -1301,11 +1301,11 @@ BOOL __fastcall ROSTER_CheckPlayerCanLoot(int32_t nLooterGUID, int32_t nOwnerGUI
 BOOL __fastcall ROSTER_CheckPlayersInSameParty(int32_t nRoster1GUID, int32_t nRoster2GUID) {
     D2RosterStrc* pRoster1 = GetRosterPlayerByGUID(nRoster1GUID);
     D2RosterStrc* pRoster2 = GetRosterPlayerByGUID(nRoster2GUID);
-    if (!(pRoster1 && pRoster2 && pRoster1->nPartyId == pRoster2->nPartyId && pRoster1->nPartyId != -1)) {
-      return 0;
+    if (pRoster1 && pRoster2 && pRoster1->nPartyId == pRoster2->nPartyId && pRoster1->nPartyId != 0xffff) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 BOOL __stdcall ROSTER_CheckAnyPlayerHostileToMe() {
@@ -1393,16 +1393,15 @@ BOOL __fastcall ROSTER_HasOutgoingLoot(D2RosterStrc * pRoster) {
 }
 
 BOOL __fastcall RosterIsFemale(D2RosterStrc * pRoster) {
-    if (!pRoster) {
-      return 1;
+    if (pRoster) {
+      int nCharType;
+      nCharType = pRoster->nCharType;
+      if (nCharType >= 0 && (nCharType <= 1 || nCharType == 6)) {
+        return 0;
+      }
     }
 
-    int nCharType = pRoster->nCharType;
-    if (!(nCharType >= 0 && (nCharType <= 1 || nCharType == 6))) {
-      return 1;
-    }
-
-    return 0;
+    return 1;
 }
 
 void __fastcall SetRosterPlayerHpPercent(int32_t nRosterGUID, uint8_t nHpPercent) {
@@ -1423,11 +1422,11 @@ int32_t __fastcall GetRosterPlayerHpPercent(int32_t nRosterGUID) {
     } else {
       nMyGUID = pPlayerUnit_lcl->nUnitGUID;
     }
-    if (!(nRosterGUID != nMyGUID && pRosterEntry)) {
-      return 0;
+    if (nRosterGUID != nMyGUID && pRosterEntry) {
+      return pRosterEntry->nHpPercent;
     }
 
-    return pRosterEntry->nHpPercent;
+    return 0;
 }
 
 // Adds or refreshes a player entry in gpRosterPlayers. Looks up the player by name/GUID; if absent, allocates a new D2RosterStrc (recycling from gpRosterOther if available), attaches a fresh player list, populates fields via ROSTER_InitializeFields, and prepends to gpRosterPlayers. If the player already exists, only refreshes fields. Always rebuilds the party list and resets the party UI afterward.

@@ -630,11 +630,8 @@ void __stdcall TEXT_DrawChatMessages() {
         pwszLine = pMessage->apwszLines[(int)pPrevMessage];
         if (pwszLine) {
           if (bWordWrap) {
-            pwszClear = awszBuffer;
-            for (nScreenY = 200; nScreenY; nScreenY--) {
-              pwszClear[0] = L'\0';
-              pwszClear[1] = L'\0';
-              pwszClear += 2;
+            for (nScreenY = 0; nScreenY < 400; nScreenY++) {
+              awszBuffer[nScreenY] = L'\0';
             }
 
             D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszBuffer, pwszLine);
@@ -1199,12 +1196,12 @@ D2UnitStrc * __stdcall TEXT_GetOverheadSpeakerUnit() {
       pUnit = UNIT::Player::UNITS_FindClientSideUnit(gnTextNpcGuid, UNIT_MONSTER);
       return pUnit;
     }
-    if (!gbTextScrollBoxActive) {
-      return nullptr;
+    if (gbTextScrollBoxActive) {
+      pUnit = UNIT::Player::UNITS_FindClientSideUnit(gpOverHeadUnitGUID, UNIT_OBJECT);
+      return pUnit;
     }
 
-    pUnit = UNIT::Player::UNITS_FindClientSideUnit(gpOverHeadUnitGUID, UNIT_OBJECT);
-    return pUnit;
+    return nullptr;
 }
 
 static BOOL TEXT_FormatEventMessage(int32_t pEventData, uint16_t * wszText) {
@@ -1347,6 +1344,36 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
     }
 
     switch (pMessageCtx->nMessageType) {
+      case '\n':
+        if (*pszName != '\0') {
+          D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszName, pszName, 0x10);
+          D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, awszName);
+          pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x1026);
+          D2Lang::Unicode::UNISYS::AppendToBuffer(awszMessage, pwszLocale);
+          TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
+          return;
+        }
+      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x1027);
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, pwszLocale);
+      TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
+      return;
+      case '\x10':
+        pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x2a38);
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, pwszLocale);
+      TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
+      return;
+      case '\t':
+        pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xfcf);
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, pwszLocale);
+      TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
+      return;
+      case '\b':
+        D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszName, pszName, 0x10);
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, awszName);
+      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xfcc);
+      D2Lang::Unicode::UNISYS::AppendToBuffer(awszMessage, pwszLocale);
+      TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
+      return;
       case '\0':
         pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xe37);
       nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszLocale);
@@ -1454,6 +1481,20 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
 
       nLine = 0x1178;
       break;
+      case '\r':
+        pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xe44);
+      nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszLocale);
+      if (nLine < 0x104) {
+        D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszName, pszName, 0x10);
+        D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, awszName);
+        pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xe44);
+        D2Lang::Unicode::UNISYS::AppendToBuffer(awszMessage, pwszLocale);
+        TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
+        return;
+      }
+
+      nLine = 0x117e;
+      break;
       case '\x05':
         pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xe3e);
       nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszLocale);
@@ -1544,31 +1585,6 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
 
       TEXT_PrintPartyMessage(awszMessage, pMessageCtx->nColor);
       return;
-      case '\b':
-        D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszName, pszName, 0x10);
-      D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, awszName);
-      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xfcc);
-      D2Lang::Unicode::UNISYS::AppendToBuffer(awszMessage, pwszLocale);
-      TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
-      return;
-      case '\t':
-        pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xfcf);
-      D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, pwszLocale);
-      TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
-      return;
-      case '\n':
-        if (*pszName != '\0') {
-          D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszName, pszName, 0x10);
-          D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, awszName);
-          pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x1026);
-          D2Lang::Unicode::UNISYS::AppendToBuffer(awszMessage, pwszLocale);
-          TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
-          return;
-        }
-      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x1027);
-      D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, pwszLocale);
-      TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
-      return;
       case '\v':
         D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszName, pszName, 0x10);
       pwszLocale = awszName;
@@ -1578,29 +1594,10 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
       return;
       default:
         return;
-      case '\r':
-        pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xe44);
-      nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszLocale);
-      if (nLine < 0x104) {
-        D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszName, pszName, 0x10);
-        D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, awszName);
-        pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xe44);
-        D2Lang::Unicode::UNISYS::AppendToBuffer(awszMessage, pwszLocale);
-        TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
-        return;
-      }
-
-      nLine = 0x117e;
-      break;
       case '\x0f':
         pnFmtArg = pMessageCtx->nArg;
       pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0xe43);
       D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x132, awszMessage, pwszLocale, pnFmtArg);
-      TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
-      return;
-      case '\x10':
-        pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x2a38);
-      D2Lang::Unicode::UNISYS::STRING_CopyWideString(awszMessage, pwszLocale);
       TEXT_PrintGameString(awszMessage, pMessageCtx->nColor);
       return;
       case '\x11':
@@ -1674,6 +1671,7 @@ void __fastcall TEXT_ProcessChatMessage(MessageStrc * pMessage) {
     uint16_t* pszLocaleStr;
     char* pbNameScan;
     int i;
+    uint16_t* pszWideOut;
     uint16_t* pWVar2;
     uint16_t wszMsgBuf[612];
     uint16_t wcWideStart[256];
@@ -1715,11 +1713,8 @@ void __fastcall TEXT_ProcessChatMessage(MessageStrc * pMessage) {
       }
     }
 
-    uint16_t* pszWideOut = wszMessage;
-    for (i = 0x80; i; i--) {
-      pszWideOut[0] = L'\0';
-      pszWideOut[1] = L'\0';
-      pszWideOut += 2;
+    for (i = 0; i < 0x100; i++) {
+      wszMessage[i] = L'\0';
     }
 
     pszName = pMessage->message;
@@ -4032,9 +4027,9 @@ void __stdcall TEXT_DrawScrollBackground() {
 
     DC6* pScrollBgImage = gpQuestScrollImageBg;
     memset(&sGfxData, 0, 0x48);
+    sGfxData.pDC6 = pScrollBgImage;
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = 0;
-    sGfxData.pDC6 = pScrollBgImage;
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX, gnPanelOffsetY - 0x6d + ScreenSizeY, -1, DRAW_SOLID, nullptr);
     sGfxData.nFrameNumber = 1;
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x100, gnPanelOffsetY - 0x6d + ScreenSizeY, -1, DRAW_SOLID, nullptr);
@@ -5585,9 +5580,9 @@ void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t nParam, uint32_t
     int32_t nVolume;
     RECT nExclusionXOff;
     int32_t nHandlers;
-    gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;
     gnTextScrollBoxHeight = 0;
     gnScrollingTextBoxTopY = 0xc;
+    gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;
     gpTextScrollBoxImage = 0;
     GAME::Game::UI_ResetInputState();
     if (gpTextScrollBoxDC6 != SOUND_NONE) {

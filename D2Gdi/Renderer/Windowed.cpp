@@ -94,12 +94,12 @@ static void __stdcall RENDERER_WINDOWED_AllocateDIBSection(int nResolutionMode) 
     RENDERER_nWindowWidth = iVar2;
     RENDERER_nWindowHeight = iVar1;
     memset(&sBitmapInfo, 0, 0x428);
-    sBitmapInfo.bmiHeader.biHeight = -iVar1;
     /* HWND hWnd for GetDC */ sBitmapInfo.bmiHeader.biSize = 0x28;
+    sBitmapInfo.bmiHeader.biWidth = iVar2;
+    sBitmapInfo.bmiHeader.biHeight = -iVar1;
     sBitmapInfo.bmiHeader.biPlanes = 1;
     sBitmapInfo.bmiHeader.biBitCount = 8;
     sBitmapInfo.bmiHeader.biCompression = 0;
-    sBitmapInfo.bmiHeader.biWidth = iVar2;
     HDC hdc = GetDC((HWND)0x0);
     /* DWORD offset for CreateDIBSection */ /* HANDLE hSection for CreateDIBSection */ /* void * * ppvBits for CreateDIBSection */ /* UINT usage for CreateDIBSection */ /* BITMAPINFO * lpbmi for CreateDIBSection */ /* HDC hdc for CreateDIBSection */ RENDERER_WINDOWED_hDIBitmap = CreateDIBSection(hdc, (BITMAPINFO*)&sBitmapInfo, 0, (void**)&gpRenderBackBufferBits, (HANDLE)0x0, 0);
     /* HDC hDC for ReleaseDC */ /* HWND hWnd for ReleaseDC */ ReleaseDC((HWND)0x0, hdc);
@@ -496,29 +496,29 @@ static int __fastcall RENDERER_WINDOWED_CalculateCropRect(uint32_t * pCropRect, 
 
     nSpriteWidth = D2CMP::SRC::CelCmp::GetDC6OffsetY(pDC6Block);
     int nOffsetY = nPosY + nSpriteWidth;
-    if (!(nOffsetY >= (int)uClampedBottom && nOffsetY - nOffsetX <= (int)uClampedTop)) {
-      return 1;
+    if (nOffsetY >= (int)uClampedBottom && nOffsetY - nOffsetX <= (int)uClampedTop) {
+      *pOutput = uClampedLeft;
+      pOutput[1] = nClippedRight;
+      if (!(nOffsetY > (int)uClampedTop)) {
+        pOutput[2] = 0;
+      } else {
+        pOutput[2] = nOffsetY - uClampedTop - 1;
+      }
+      if (!(nOffsetY - nOffsetX < (int)uClampedBottom)) {
+        pOutput[3] = nOffsetX - pOutput[2];
+      } else {
+        pOutput[3] = nOffsetY - pOutput[2] - uClampedBottom + 1;
+      }
+      if (!((int)pOutput[3] > 0)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd1);
+        exit(-1);
+      }
+
+      return 0;
+      return 0;
     }
 
-    *pOutput = uClampedLeft;
-    pOutput[1] = nClippedRight;
-    if (!(nOffsetY > (int)uClampedTop)) {
-      pOutput[2] = 0;
-    } else {
-      pOutput[2] = nOffsetY - uClampedTop - 1;
-    }
-    if (!(nOffsetY - nOffsetX < (int)uClampedBottom)) {
-      pOutput[3] = nOffsetX - pOutput[2];
-    } else {
-      pOutput[3] = nOffsetY - pOutput[2] - uClampedBottom + 1;
-    }
-    if (!((int)pOutput[3] > 0)) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd1);
-      exit(-1);
-    }
-
-    return 0;
-    return 0;
+    return 1;
 }
 
 BOOL __fastcall DrawImage(D2GfxDataStrc * pData, int nPosX, int nPosY, DWORD dwGamma, int nDrawMode, BYTE * pPalette) {

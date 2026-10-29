@@ -1189,8 +1189,8 @@ int __stdcall LIGHTMAP_GetQualityLevel() {
       }
     }
 
-    gnLightmapQualityLevel = iVar1;
     gdwLightmapQualityLastCheck = dwTickCount;
+    gnLightmapQualityLevel = iVar1;
     return nQualityLevel;
 }
 
@@ -1228,8 +1228,8 @@ void __stdcall dLightMapUpdate() {
       nQualityLevel = 0;
     }
 
-    gnLightmapBufferState = nQualityLevel - 0x18;
     gnLightmapWorldRefreshFlag = nPlayerX - 0x18;
+    gnLightmapBufferState = nQualityLevel - 0x18;
     gnLightmapWorldMaxX = nPlayerX + 0x18;
     gnLightmapWorldMaxY = nQualityLevel + 0x18;
     LIGHTMAP_InitFromPlayerAndRooms(0);

@@ -152,7 +152,8 @@ void Caves(D2DrlgLevelStrc * pLevel) {
 
     D2DrlgReplaceRoomStrc* pReplaceTable;
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
-    pLevel->sSeed = sNewSeed;
+    pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+    pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
     uint32_t nRoll = sNewSeed.nSeedLow & 3;
     ReplaceRoom(gaDrlgCavesReplacements_A + nRoll, pLevel, &nRoll);
     if (pLevel->eD2LevelId == 8) {
@@ -281,7 +282,8 @@ void Crypt(D2DrlgLevelStrc * pLevel) {
 }; D2_STATIC_GUARD(gaDrlgCryptReplacements_D, "D2Common::Drlg::Maze::Act1::Crypt::gaDrlgCryptReplacements_D");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-    pLevel->sSeed = DVar1;
+    pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+    pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
     uint32_t nRoll = DVar1.nSeedLow & 3;
     ReplaceRoom(gaDrlgCryptReplacements_A + nRoll, pLevel, &nRoll);
     if (pLevel->eD2LevelId == 0x12) {

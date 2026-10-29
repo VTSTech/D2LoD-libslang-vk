@@ -904,7 +904,8 @@ void __fastcall RollStonesOrder(D2QuestDataA1Q4Strc * pQuestSpecificData) {
     D2SeedStrc* pSeed = GetQuestControlSeed(pQuestSpecificData->pGame);
     do {
       sNextSeed = D2_SEED_NEXT(*pSeed);
-      *pSeed = sNextSeed;
+      pSeed->nSeedHigh = sNextSeed.nSeedHigh;
+      pSeed->nSeedLow = sNextSeed.nSeedLow;
       nRandomStoneSlot = (int)(sNextSeed.nSeedLow % 5);
       if (!pSubData->aStones[nRandomStoneSlot]) {
         sprintf(szDebugBuf, "stone %d is class %d", nRandomStoneSlot, aStoneClassIds[nStonesPlaced]);
@@ -1205,7 +1206,7 @@ void __fastcall MakeTownPortalFromScroolTree(::SGAMEDATA * pGame, D2UnitStrc * p
 // yields the Scroll of Inifuss and advances the quest.
 BOOL __fastcall OBJOP_A1Q4_ActivateInifussTree(D2ObjectOperateFnArg * pOperation) {
     bool _bQuestState;
-    int16_t nPartyId;
+    uint16_t nPartyId;
     bool bQuestState;
     D2ObjectsTxt* pPlayerData;
     int32_t nAttackerGUID;
@@ -1246,7 +1247,7 @@ BOOL __fastcall OBJOP_A1Q4_ActivateInifussTree(D2ObjectOperateFnArg * pOperation
         D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSearchForCain, QUESTSTATE_RewardAwaits);
         QUEST_SendQuestInfoToUnit(pOperation->sArg.pGame, pOperation->pAttacker);
         nPartyId = UNIT::SUnit::GetPartyId(pOperation->pAttacker);
-        if (nPartyId != -1) {
+        if (nPartyId != 0xffff) {
           UNIT::Party::ExecuteFunctionForEveryPartyMember(pOperation->sArg.pGame, nPartyId, (::fpExecuteOnUnitFunction)Q04_AutoCompleteForActIPlayer, 0);
           return 0;
         }
@@ -1758,10 +1759,10 @@ BOOL __fastcall Q04_SetSecretCowLevelDiscovered(::SGAMEDATA * pGame, D2UnitStrc 
       return 0;
     }
 
-    D2UnitDataPlayerStrc* pUnitPlayerData = D2Common::Units::GetPlayerData(pUnit);
     /* SetQuestState(Step0x10=10): Secret Cow Level "discovered" flag — Cow Level
                          state is stored in the A1Q4 (Search for Cain) quest record, not its own quest
-                          */ D2Common::QuestRecord::SetQuestState(pUnitPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_TheSearchForCain, QUESTSTATE_Step0x10);
+                          */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    D2Common::QuestRecord::SetQuestState(pQuestRecord, QUEST_TheSearchForCain, QUESTSTATE_Step0x10);
     return 0;
 }
 
@@ -2098,18 +2099,17 @@ void __fastcall Q33_UpdateFrozenAnyaNpcState(D2QuestDataStrc * pQuestData, D2Uni
 // set, and not suppressed. Returns 1 on success, 0 otherwise. Getter.
 BOOL __thiscall Q04_GetCainPortalCoordinates(void * pThis, uint32_t * pOutCoords) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal((::SGAMEDATA*)pThis, QUESTINT_TheSearchForCain);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
-      return 0;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      D2QuestDataA1Q4Strc* pQuestSpecific;
+      pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q4;
+      if (*(char*)((uintptr_t)&pQuestSpecific->sSub.field_0x7C + 2) != '\0' && !pQuestSpecific->sSub.field_0x7A) {
+        *pOutCoords = pQuestSpecific->nPortalX;
+        pOutCoords[1] = pQuestSpecific->nPortalY;
+        return 1;
+      }
     }
 
-    D2QuestDataA1Q4Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q4;
-    if (!(*(char*)((uintptr_t)&pQuestSpecific->sSub.field_0x7C + 2) != '\0' && !pQuestSpecific->sSub.field_0x7A)) {
-      return 0;
-    }
-
-    *pOutCoords = pQuestSpecific->nPortalX;
-    pOutCoords[1] = pQuestSpecific->nPortalY;
-    return 1;
+    return 0;
 }
 
 // A1Q4 — Q04_SpawnCainCage: spawns the Cain cage/gibbet object (object classId 0xbd)
@@ -2210,8 +2210,8 @@ void __fastcall Q04_InitializeTristramObjects(::SGAMEDATA * pGame, D2UnitStrc * 
       return;
     }
 
-    sInitArgGame.pGame = pGame;
     sInitArgGame.pObject = pFoundUnit;
+    sInitArgGame.pGame = pGame;
     sInitArgGame.pRoom = D2Common::Units::UNITS_GetRoom(pFoundUnit);
     sInitArgGame.nX = D2Client::Units::GetXPosFromDynamicPathUnit(pFoundUnit);
     sInitArgGame.nY = D2Client::Units::GetYPosFromDynamicPathUnit(pFoundUnit);

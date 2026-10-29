@@ -248,7 +248,10 @@ static void __stdcall GetAndDrawHirelingName(int32_t nX, int32_t nY, int32_t nPe
 
 static void __fastcall UI_DrawHirelingNameFromString(char * szText, int32_t nX, int32_t nY) {
     uint16_t szString[32];
-    memset(szString, 0, 32 * sizeof(szString[0]));
+    for (int iFill = 0; iFill < 32; iFill++) {
+      szString[iFill] = L'\0';
+    }
+
     D2Lang::UTF8_ConvertToWideChar(szString, szText, 0x20);
     DrawHirelingName(nX, nY, 0, szString);
 }
@@ -260,8 +263,14 @@ void __stdcall UI_DrawHirelingGoldCost(int nGoldCost, int32_t nDrawPositionX) {
     char szGoldCostStr[32];
     uint16_t wszConverted[32];
     uint16_t wszGoldText[32];
-    memset(wszConverted, 0, 32 * sizeof(wszConverted[0]));
-    memset(wszGoldText, 0, 32 * sizeof(wszGoldText[0]));
+    for (int iFill = 0; iFill < 32; iFill++) {
+      wszConverted[iFill] = L'\0';
+    }
+
+    for (int iFill2 = 0; iFill2 < 32; iFill2++) {
+      wszGoldText[iFill2] = L'\0';
+    }
+
     sprintf(szGoldCostStr, "%d", nGoldCost);
     memset(wszGoldText, 0, 0x40);
     D2Lang::UTF8_ConvertToWideChar(wszConverted, szGoldCostStr, 0x20);
@@ -296,7 +305,7 @@ DC6 * __fastcall GetRosterIcon(D2UnitStrc * pUnit, int32_t nSkillId, int32_t * p
       return nullptr;
     }
     if (pFlagOut) {
-      *pFlagOut = (uint8_t)*((uint8_t*)pPetType + 0x4) & 0x20;
+      *pFlagOut = (uint8_t)*((uint8_t*)pPetType + 0x4) & gadwBitMasks[5];
     }
 
     int32_t nSkillIdSaved = nSkillId;
@@ -789,23 +798,23 @@ static BOOL __stdcall UI_DrawPartyMembersHirelingIcons(int * pnY, int * pnYOffse
             case 1:
               pClassIcon = ClassIcons[1];
             break;
-            case 2:
-              pClassIcon = ClassIcons[4];
+            case 4:
+              pClassIcon = ClassIcons[2];
             break;
             case 3:
               pClassIcon = ClassIcons[3];
             break;
-            case 4:
-              pClassIcon = ClassIcons[2];
-            break;
-            case 5:
-              pClassIcon = ClassIcons[6];
+            case 2:
+              pClassIcon = ClassIcons[4];
             break;
             case 6:
               pClassIcon = ClassIcons[5];
             break;
             default:
               continue;
+            case 5:
+              pClassIcon = ClassIcons[6];
+            break;
           }
 
           if (pClassIcon) {
@@ -982,8 +991,8 @@ void __stdcall UI_DrawHireableIcons() {
     D2UnitStrc* pPlayerSaved = pPlayer;
     uint32_t nPetTypeIdx = Path::DRAW_GetTypeOfBorder();
     if (nPetTypeIdx == 3 || nPetTypeIdx == 2 || (bResult = ui::GetUIFlag(UI_ESCMENU) , bResult != 0) || (bResult = ui::GetUIFlag(UI_CONFIG) , bResult || gnHireDisplayMode == 2)) {
-      gnHireIconHoverY = 0;
       gnHireIconHoverX = 0;
+      gnHireIconHoverY = 0;
       return;
     }
 

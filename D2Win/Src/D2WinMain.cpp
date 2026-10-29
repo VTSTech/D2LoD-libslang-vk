@@ -174,7 +174,7 @@ void __stdcall D2WINMAIN_FreeLeadingFormControls() {
       return;
     }
 
-    while (!(D2Client::Forms::pFormUnknown->dwState & 1U)) {
+    while (!(D2Client::Forms::pFormUnknown->dwState & gadwBitMasks[0])) {
       pDVar1 = D2Client::Forms::pFormUnknown->pNext;
       D2_FREE_AT(D2Client::Forms::pFormUnknown, ".\\Src\\D2WinMain.cpp", 0x25a);
       D2Client::Forms::pFormUnknown = pDVar1;
@@ -184,7 +184,7 @@ void __stdcall D2WINMAIN_FreeLeadingFormControls() {
     }
 
     do {
-      if (D2Client::Forms::pFormUnknown->dwState & 2U) {
+      if (D2Client::Forms::pFormUnknown->dwState & gadwBitMasks[1]) {
         return;
       }
 
@@ -256,6 +256,9 @@ D2ControlStrc * __stdcall FORMS_CreateAnyForm(FORMS_PredefinedFormStrc * pForm) 
     void* pAccountList;
     DC6* pBackgroundDC6 = !pForm->pDC6 ? 0 : *pForm->pDC6;
     switch (pForm->neD2FormType) {
+      case FORM_TextBox:
+        pTextBox = D2WinTextBox::D2WinTextBox(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pForm->nExtraParam, pForm->nLabelAsLocaleStringId, pBackgroundDC6, pForm->fpOnPressCallback, pForm->nFlagsOrType, (int*)pForm->pTypeArg2, (int*)pForm->pTypeArg1);
+      return (D2ControlStrc*)pTextBox;
       case FORM_EditBox:
         pEditBox = D2WinEditBox::D2WinEditBox(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pForm->nExtraParam, pForm->nLabelAsLocaleStringId, pBackgroundDC6, (fpD2WinEditBoxSubmit)pForm->pTypeArg1, pForm->fpOnPressCallback, pForm->nFlagsOrType, (uint32_t*)pForm->pTypeArg2);
       return (D2ControlStrc*)pEditBox;
@@ -265,9 +268,9 @@ D2ControlStrc * __stdcall FORMS_CreateAnyForm(FORMS_PredefinedFormStrc * pForm) 
       case FORM_AnimImage:
         pAnimImage = D2WinAnimImage(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pBackgroundDC6, pForm->nExtraParam, pForm->fpOnPressCallback, (FORMS_AnimFrameStrc*)pForm->pTypeArg1, pForm->nLabelAsLocaleStringId, (fpD2WinAnimImageNotify)pForm->pTypeArg2);
       return (D2ControlStrc*)pAnimImage;
-      case FORM_TextBox:
-        pTextBox = D2WinTextBox::D2WinTextBox(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pForm->nExtraParam, pForm->nLabelAsLocaleStringId, pBackgroundDC6, pForm->fpOnPressCallback, pForm->nFlagsOrType, (int*)pForm->pTypeArg2, (int*)pForm->pTypeArg1);
-      return (D2ControlStrc*)pTextBox;
+      case FORM_ImageEx:
+        pImageEx = Forms::D2WinImageEx(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pBackgroundDC6, pForm->nExtraParam, pForm->nLabelAsLocaleStringId);
+      return (D2ControlStrc*)pImageEx;
       case FORM_Scrollbar:
         pScrollbar = D2WinScrollbar::D2WinScrollbar(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pBackgroundDC6, pForm->fpOnPressCallback);
       return (D2ControlStrc*)pScrollbar;
@@ -289,9 +292,6 @@ D2ControlStrc * __stdcall FORMS_CreateAnyForm(FORMS_PredefinedFormStrc * pForm) 
       case FORM_AccountList:
         pAccountList = D2WinAccountList::D2WinAccountList(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pForm->nFlagsOrType, (uint32_t*)pForm->pTypeArg2);
       return (D2ControlStrc*)pAccountList;
-      case FORM_ImageEx:
-        pImageEx = Forms::D2WinImageEx(pForm->aParams[0], pForm->aParams[1], pForm->aParams[2], pForm->aParams[3], pBackgroundDC6, pForm->nExtraParam, pForm->nLabelAsLocaleStringId);
-      return (D2ControlStrc*)pImageEx;
     }
 
     return nullptr;
@@ -309,6 +309,10 @@ void __stdcall FORMS_DestroyAnyForm(D2ControlStrc * * pForm) {
     }
 
     switch (pWinEditBox_00->sControl.neD2FormType) {
+      case FORM_TextBox:
+        D2WinTextBox::FORMS_DestroyD2WinTextBox((::D2WinTextBox*)pWinEditBox_00);
+      *pForm = 0;
+      return;
       case FORM_EditBox:
         D2WinEditBox::FORMS_DestroyD2WinEditBox(pWinEditBox_00);
       *pForm = 0;
@@ -317,12 +321,12 @@ void __stdcall FORMS_DestroyAnyForm(D2ControlStrc * * pForm) {
         D2WinImage::FORMS_DestroyD2WinImage((::D2WinImage*)pWinEditBox_00);
       *pForm = 0;
       return;
-      case FORM_AnimImage:
-        FORMS_DestroyD2WinAnimImage((::D2WinAnimImage*)pWinEditBox_00);
+      case FORM_ImageEx:
+        D2WinImage::FORMS_DestroyD2WinImageEx((::D2WinImageEx*)pWinEditBox_00);
       *pForm = 0;
       return;
-      case FORM_TextBox:
-        D2WinTextBox::FORMS_DestroyD2WinTextBox((::D2WinTextBox*)pWinEditBox_00);
+      case FORM_AnimImage:
+        FORMS_DestroyD2WinAnimImage((::D2WinAnimImage*)pWinEditBox_00);
       *pForm = 0;
       return;
       case FORM_Scrollbar:
@@ -353,10 +357,6 @@ void __stdcall FORMS_DestroyAnyForm(D2ControlStrc * * pForm) {
         D2WinAccountList::FORMS_DestroyD2WinAccountList((::D2WinAccountList*)pWinEditBox_00);
       *pForm = 0;
       return;
-      case FORM_ImageEx:
-        D2WinImage::FORMS_DestroyD2WinImageEx((::D2WinImageEx*)pWinEditBox_00);
-      *pForm = 0;
-      return;
     }
 
     *pForm = 0;
@@ -368,11 +368,11 @@ void __fastcall D2WINMAIN_SetControlVisible(D2ControlStrc * pControl, BOOL bVisi
       return;
     }
     if (bVisible) {
-      pControl->dwState |= 1;
+      pControl->dwState |= gadwBitMasks[0];
       return;
     }
 
-    pControl->dwState &= -2;
+    pControl->dwState &= gadwInvBitMasks[0];
 }
 
 // Returns bit 0 of control flags (offset +8), checking visibility/enabled state. Halts on null pointer.
@@ -382,8 +382,8 @@ BOOL __fastcall D2WINMAIN_GetControlVisible(D2ControlStrc * pControl) {
       exit(-1);
     }
 
-    return pControl->dwState & 1;
-    return pControl->dwState & 1;
+    return pControl->dwState & gadwBitMasks[0];
+    return pControl->dwState & gadwBitMasks[0];
 }
 
 // Sets (bActive != 0) or clears bit 2 (gadwBitMasks[2] = 4) of pControl->dwState (+0x8); halts (line 844) on NULL.
@@ -395,11 +395,11 @@ void __fastcall D2WINMAIN_SetControlActive(D2ControlStrc * pControl, BOOL bActiv
       exit(-1);
     }
     if (bActive) {
-      pControl->dwState |= 4;
+      pControl->dwState |= gadwBitMasks[2];
       return;
     }
 
-    pControl->dwState &= -5;
+    pControl->dwState &= gadwInvBitMasks[2];
 }
 
 // Returns pControl->dwState & gadwBitMasks[2], the active bit D2WINMAIN_SetControlActive sets; halts (line 858) on NULL.
@@ -410,8 +410,8 @@ BOOL __fastcall D2WINMAIN_IsControlActive(D2ControlStrc * pControl) {
       exit(-1);
     }
 
-    return pControl->dwState & 4;
-    return pControl->dwState & 4;
+    return pControl->dwState & gadwBitMasks[2];
+    return pControl->dwState & gadwBitMasks[2];
 }
 
 // Tests if current mouse position (D2Client::Mouse::nPosX/Y) is inside the specified RECT using PtInRect
@@ -524,7 +524,7 @@ void __stdcall RENDERER_DrawOutOfGameScene() {
       }
 
       for (; pForm; pForm = pForm->pNext) {
-        if (pForm->fpDraw && !(pForm->dwState & 8U)) {
+        if (pForm->fpDraw && !(pForm->dwState & gadwBitMasks[3])) {
           pForm->fpDraw(pForm);
         }
       }
@@ -537,7 +537,7 @@ void __stdcall RENDERER_DrawOutOfGameScene() {
       }
 
       for (; pForm; pForm = pForm->pNext) {
-        if (pForm->fpDraw && pForm->dwState & 8U) {
+        if (pForm->fpDraw && pForm->dwState & gadwBitMasks[3]) {
           pForm->fpDraw(pForm);
         }
       }
@@ -880,9 +880,9 @@ static void __stdcall D2WIN_SaveScreenshotToFile(uint8_t * pDibBytes, LPCSTR szF
 
     memset(&jpegProps, 0, 0x4e40);
     ijlInit(&jpegProps);
-    jpegProps.DIBPadBytes = (nWidth * 3 + 3U & -4) + nWidth * -3;
     jpegProps.DIBBytes = pDibBytes;
     jpegProps.DIBColor = 1;
+    jpegProps.DIBPadBytes = (nWidth * 3 + 3U & -4) + nWidth * -3;
     jpegProps.JPGFile = (char*)szFileName;
     if (!szFileName) {
       jpegProps.JPGFile = szAutoFilename;
@@ -1021,10 +1021,10 @@ int32_t __stdcall D2WIN_FindClosestControlToMouse(D2ControlStrc * pControl1, D2C
 }
 
 void __stdcall INPUT_FormMouseWheel(D2UIMouseMsgStrc * pMsg) {
+    int32_t nMaxValue;
     ::D2WinScrollbar* pControl;
     ::D2WinScrollbar* pClosestScrollbar;
     D2ControlStrc* pActiveForm;
-    uint32_t dwState;
     int nWheelDelta;
     nWheelDelta = (int)*(short int*)((uintptr_t)&pMsg->nWParam + 2) / 0x78;
     BOOL bHandled;
@@ -1038,13 +1038,13 @@ void __stdcall INPUT_FormMouseWheel(D2UIMouseMsgStrc * pMsg) {
       pActiveForm = D2Client::Forms::pFormsList;
     }
     if (pActiveForm) {
-      int32_t nMaxValue;
+      uint32_t uVar1;
       pClosestScrollbar = 0;
       pControl = (::D2WinScrollbar*)pActiveForm;
       do {
         if (pControl->sControl.neD2FormType == FORM_Scrollbar) {
-          dwState = pControl->sControl.dwState;
-          if (dwState & 4 && dwState & 1) {
+          uVar1 = pControl->sControl.dwState;
+          if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
             nMaxValue = D2WinScrollbar::D2WINSCROLLBAR_GetMaxValue(pControl);
             if (nMaxValue > 0) {
               pClosestScrollbar = (::D2WinScrollbar*)D2WIN_FindClosestControlToMouse(&pClosestScrollbar->sControl, &pControl->sControl);
@@ -1078,11 +1078,11 @@ void __stdcall D2WINMAIN_SetCursorVisible(BOOL bVisible) {
 
 void __stdcall SetUnsetFlag0x08(D2ControlStrc * pControl, int32_t nParam) {
     if (nParam) {
-      pControl->dwState |= 8;
+      pControl->dwState |= gadwBitMasks[3];
       return;
     }
 
-    pControl->dwState &= -9;
+    pControl->dwState &= gadwInvBitMasks[3];
 }
 
 // Sets pFormFourth global to the specified control

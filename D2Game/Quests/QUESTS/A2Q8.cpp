@@ -48,9 +48,9 @@ void __fastcall Q16_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     }
 
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     /* SetQuestState(QUEST_Act2Guard5Gossip, QUESTSTATE_Completed): record that self
-                         guard's gossip line has been spoken (won't re-offer) */ D2Common::QuestRecord::SetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_Act2Guard5Gossip, QUESTSTATE_Completed);
+                         guard's gossip line has been spoken (won't re-offer) */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+    D2Common::QuestRecord::SetQuestState(pQuestRecord, QUEST_Act2Guard5Gossip, QUESTSTATE_Completed);
 }
 
 // Q16_Callback_00 - A2Q8 gossip OFFER handler (state-fn slot 0). When player interacts with NPC 0x17a (Act2 guard), queues gossip line 0x12f via AddGossipMessageOnMonster ONLY in the window: Seven Tombs not yet past step1 (active, stateFlag<2) AND Tainted Sun finished/absent (no longer in-progress) AND Seven Tombs reward NOT awaiting AND NOT completed. I.e. guard gossips only after Tainted Sun is done but before you finish the Seven Tombs / kill Duriel.

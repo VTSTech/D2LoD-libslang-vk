@@ -62,11 +62,11 @@ namespace D2Client::Engine {
 BOOL __stdcall UI_IsMouseInRect(int32_t nRectLeftX, int32_t nRectBottomY, int32_t nRectWidth, int32_t nRectHeight) {
     int nMouseX = UI::ui::GetMouseX();
     int nMouseY = UI::ui::GetMouseY();
-    if (!(nMouseX >= nRectLeftX && nMouseX <= nRectLeftX + nRectWidth && nMouseY >= nRectBottomY - nRectHeight && nMouseY <= nRectBottomY)) {
-      return 0;
+    if (nMouseX >= nRectLeftX && nMouseX <= nRectLeftX + nRectWidth && nMouseY >= nRectBottomY - nRectHeight && nMouseY <= nRectBottomY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 void __stdcall DrawPopupOk(int32_t nParam) {

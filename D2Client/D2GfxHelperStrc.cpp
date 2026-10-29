@@ -521,9 +521,9 @@ void __fastcall fpFillYBufferTable(void * ppvBits, int32_t nWidth, int32_t nHeig
     static uint32_t gnFillYBufferCookie; D2_STATIC_GUARD_BSS(gnFillYBufferCookie, "D2Client::fpFillYBufferTable::gnFillYBufferCookie");
     static uint32_t gnLastRenderBufferWidth; D2_STATIC_GUARD_BSS(gnLastRenderBufferWidth, "D2Client::fpFillYBufferTable::gnLastRenderBufferWidth");
 
+    pRenderSurfaceBuffer = (uint32_t)ppvBits;
     gnRenderSurfaceHeight = nHeight;
     gnFillYBufferCookie = a4;
-    pRenderSurfaceBuffer = (uint32_t)ppvBits;
     gRenderBufferPitch = nWidth;
     if (nWidth != gnLastRenderBufferWidth) {
       gnLastRenderBufferWidth = nWidth;

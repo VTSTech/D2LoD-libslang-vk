@@ -147,21 +147,21 @@ uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassId(D2QuestDataStrc * pQuestD
 // Q14 predicate (used as a quest-display/state filter): true if The Seven Tombs is NOT yet started (no quest record, or introduced and stateFlag < 2). nStateFlag<2 == still in step 0/1.
 uint8_t __fastcall Q14_IsSevenTombsNotStarted(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pDVar1 = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pDVar1 && pDVar1->bIsNotIntroduction != '\0' && pDVar1->nStateFlag < 2)) {
-      return '\x01';
+    if (pDVar1 && pDVar1->bIsNotIntroduction != '\0' && pDVar1->nStateFlag < 2) {
+      return '\0';
     }
 
-    return '\0';
+    return '\x01';
 }
 
 // Q14 predicate: true if The Seven Tombs is introduced and stateFlag != 0 (any progress made).
 uint8_t __fastcall Q14_IsSevenTombsAtState1(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag == 1)) {
-      return '\0';
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag == 1) {
+      return '\x01';
     }
 
-    return '\x01';
+    return '\0';
 }
 
 // Q14 predicate: returns false (0) whenever The Seven Tombs is introduced (the inner test is a decompiler tautology bVar1||!bVar1). Effectively: true (1) only if quest data missing or not introduced. Used as a "not active yet" gate.
@@ -186,22 +186,23 @@ int __fastcall Q14_IsSevenTombsProgressed(::SGAMEDATA * pGame) {
 // and then 0059d720. A wrapper that supplies the quest record.
 uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassIdForGame(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!pQuestData) {
-      return 0x133;
+    if (pQuestData) {
+      uint32_t uVar1;
+      uVar1 = A2Q6_GetNextFalseTombPortalClassId(pQuestData);
+      return uVar1;
     }
 
-    uint32_t uVar1 = A2Q6_GetNextFalseTombPortalClassId(pQuestData);
-    return uVar1;
+    return 0x133;
 }
 
 // Q14 accessor: returns the "town/Duriel portal already created" flag from A2Q6 data (field_0x0B). Returns 1 (treat as created) if quest not introduced. Used to gate the stairs-to-tombs operate and portal creation.
 uint8_t __fastcall Q14_GetPortalCreatedFlag(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
-      return 1;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      return pQuestData->pQuestSpecificData.pA2Q6->bPortalCreated;
     }
 
-    return pQuestData->pQuestSpecificData.pA2Q6->bPortalCreated;
+    return 1;
 }
 
 // A2Q7 (The Tainted Sun) timer callback that creates the two warp portals after the Horadric Staff is placed. If the pending-create flag (offset +0xd) is set: waits for the orifice object to reach Death/open anim and fires its open event; spawns the red town-portal object (class 100) in a nearby room and toggles HasPortal flags on both rooms. On success sets portal-created flag (+0xb=1) and clears the pending flag. No quest-record state change.
@@ -354,11 +355,11 @@ void __fastcall Objects_InitFn38(D2ObjectInitFnArg * pInitArg) {
 // Q14 predicate: true if The Seven Tombs is introduced AND the Duriel/town portal has NOT yet been created (!field_0x0B). Inverse of Q14_GetPortalCreatedFlag.
 BOOL __fastcall Q14_IsPortalNotCreated(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
-      return 0;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      return (uint32_t)!pQuestData->pQuestSpecificData.pA2Q6->bPortalCreated;
     }
 
-    return (uint32_t)!pQuestData->pQuestSpecificData.pA2Q6->bPortalCreated;
+    return 0;
 }
 
 // Q14 object InitFn (Objects_InitFn21): orifice/Tal Rasha chamber object init. Records GUID, marks present. If the staff has been used (state byte [3]) but portal not yet created ([0xb]==0), schedules the Q14_TimerCreatePortal timer to spawn the portals and marks timer-armed. Sets object hidden(2). No quest-record state change.
@@ -596,11 +597,11 @@ BOOL __fastcall Q14_IsNpcStationary(::SGAMEDATA * pGame, D2UnitStrc * pNpc) {
 // Q14 predicate: true if The Seven Tombs is introduced and stateFlag < 4 (not yet at the Duriel-killed/Tyrael step).
 bool __fastcall Q14_IsSevenTombsLessThanState4(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pDVar1 = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pDVar1 && pDVar1->bIsNotIntroduction != '\0' && pDVar1->nStateFlag < 4)) {
-      return true;
+    if (pDVar1 && pDVar1->bIsNotIntroduction != '\0' && pDVar1->nStateFlag < 4) {
+      return false;
     }
 
-    return false;
+    return true;
 }
 
 // Q14: compute Tyrael's post-Duriel spawn coordinates. Only if the portal-spawn-in-progress flag is set: picks a spot in Lut Gholein (LEVEL_LutGholein) near object class 0xc, finds free WARP-collision coords, writes x/y into pPoint and the room into *pdwParam. Returns 1 on success, 0 otherwise.

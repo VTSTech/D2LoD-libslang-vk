@@ -443,25 +443,25 @@ uint32_t __fastcall SKILL_GetPhoenixBoltCount(D2SkillCallbackContextStrc * pCont
 }
 
 BOOL __fastcall Skills_SrvDoFunc_006_PhoenixStrikeAreaBolt(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    D2SkillsTxt* pSkillsTxt;
     D2SkillAuraTargetArgStrc sAuraArgs;
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
-      return 0;
+    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
+      int32_t nAuraRange;
+      pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
+      if (pSkillsTxt && -1 < pSkillsTxt->auratargetstate && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize && -1 < pSkillsTxt->aurastat[0] && (int)pSkillsTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
+        sAuraArgs.eSkill = eSkill;
+        sAuraArgs.nSkillLvl = nSkillLvl;
+        sAuraArgs.nDuration = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->auralencalc, eSkill, nSkillLvl);
+        sAuraArgs.eAuraTargetState = (eD2States)pSkillsTxt->auratargetstate;
+        sAuraArgs.nAuraStat = (int32_t)pSkillsTxt->aurastat[0];
+        sAuraArgs.nAuraStatValue = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->aurastatcalc[0], eSkill, nSkillLvl);
+        nAuraRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->aurarangecalc, eSkill, nSkillLvl);
+        SkillsServer::SKILLS_ApplyAreaEffect(pGame, pUnit, 0, 0, nAuraRange, pSkillsTxt->aurafilter, SKILL_GetPhoenixBoltCount, &sAuraArgs, 1, ".\\SKILLS\\SkillAma.cpp", 0x20f);
+        return 1;
+      }
     }
 
-    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillsTxt && -1 < pSkillsTxt->auratargetstate && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize && -1 < pSkillsTxt->aurastat[0] && (int)pSkillsTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize)) {
-      return 0;
-    }
-
-    sAuraArgs.eSkill = eSkill;
-    sAuraArgs.nSkillLvl = nSkillLvl;
-    sAuraArgs.nDuration = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->auralencalc, eSkill, nSkillLvl);
-    sAuraArgs.eAuraTargetState = (eD2States)pSkillsTxt->auratargetstate;
-    sAuraArgs.nAuraStat = (int32_t)pSkillsTxt->aurastat[0];
-    sAuraArgs.nAuraStatValue = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->aurastatcalc[0], eSkill, nSkillLvl);
-    int32_t nAuraRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->aurarangecalc, eSkill, nSkillLvl);
-    SkillsServer::SKILLS_ApplyAreaEffect(pGame, pUnit, 0, 0, nAuraRange, pSkillsTxt->aurafilter, SKILL_GetPhoenixBoltCount, &sAuraArgs, 1, ".\\SKILLS\\SkillAma.cpp", 0x20f);
-    return 1;
+    return 0;
 }
 
 // Power Strike do-func: performs the melee hit resolution for the skill. Calculates ToHit, recalculates monster combat stats if caster is UNIT_PLAYER (type==1), applies hit check, sets enhanced-damage (calc[0]) and elemental conversion (calc[3]/EType), calls SetDamageOnEvent, applies damage, then processes the combat queue entry to deliver the hit result.
@@ -591,11 +591,11 @@ BOOL __fastcall Skills_SrvDoFunc_008_MultipleShot(::SGAMEDATA * pGame, D2UnitStr
 
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nFlags = 0x820;
+    sSkillArg.pOwner = pUnit;
+    sSkillArg.pMissile = pUnit;
     sSkillArg.eSkillNo = eSkill;
     sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.nMissileTxtNo = eMissileId;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.pMissile = pUnit;
     sSkillArg.nActivateFrame = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[1], eSkill, nSkillLvl);
     sSkillArg.nFlags |= 0x10000;
     nSideCount = (int)(nArrowSpread - nCenterCount) / 2;
@@ -653,6 +653,7 @@ void __fastcall SKILLS_AmazonDamagePercentCallback(D2UnitStrc * pUnit, int nDama
 
 // Server SrvDoFunc for Guided Arrow (skill 010). Sets UNITFLAG_SKSRVDOFUNC on the caster, selects srvmissilea or srvmissileb depending on weapon class, then spawns the Guided Arrow missile. If a damage-percent calc value is present, attaches the AmazonDamagePercentCallback. Encodes the direction delta (cursor minus caster position) into the missile's TargetY field for homing.
 BOOL __fastcall Skills_SrvDoFunc_010_GuidedArrowLaunch(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    int32_t nUnitY;
     D2SkillArgStrc sSkillArg;
     uint32_t nCursorY;
     uint32_t nCursorX;
@@ -681,43 +682,44 @@ BOOL __fastcall Skills_SrvDoFunc_010_GuidedArrowLaunch(::SGAMEDATA * pGame, D2Un
     if (nWeaponClass != 1 && -1 < pSkillTxt->srvmissile[2]) {
       eMissileId = (eMissilesId)pSkillTxt->srvmissile[2];
     }
-    if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
-    }
+    if ((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
+      D2UnitStrc* pDamagePctMissile;
+      memset(&sSkillArg, 0, 0x5c);
+      sSkillArg.eSkillNo = eSkill;
+      sSkillArg.nUnitY = nCursorY;
+      sSkillArg.nFlags = 0x20;
+      sSkillArg.nSkillLevel = nSkillLvl;
+      sSkillArg.nUnitX = nCursorX;
+      if (nUnitX) {
+        sSkillArg.fpFunction = SKILLS_AmazonDamagePercentCallback;
+      }
+      if (!pInitTarget) {
+        sSkillArg.nFlags = 0x420;
+      }
 
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.eSkillNo = eSkill;
-    sSkillArg.nUnitY = nCursorY;
-    sSkillArg.nFlags = 0x20;
-    sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.nUnitX = nCursorX;
-    if (nUnitX) {
-      sSkillArg.fpFunction = SKILLS_AmazonDamagePercentCallback;
-    }
-    if (!pInitTarget) {
-      sSkillArg.nFlags = 0x420;
-    }
+      sSkillArg.pOwner = pUnit;
+      sSkillArg.pMissile = pUnit;
+      sSkillArg.pTarget = pInitTarget;
+      sSkillArg.nMissileTxtNo = eMissileId;
+      sSkillArg.nFunctionParam = nUnitX;
+      pDamagePctMissile = MISSILES::Missiles::CreatingMissile(pGameSave, &sSkillArg);
+      if (!pDamagePctMissile) {
+        return 1;
+      }
+      if (pInitTarget) {
+        nUnitX = 1;
+      } else {
+        nUnitX = 2;
+      }
 
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.pMissile = pUnit;
-    sSkillArg.pTarget = pInitTarget;
-    sSkillArg.nMissileTxtNo = eMissileId;
-    sSkillArg.nFunctionParam = nUnitX;
-    D2UnitStrc* pDamagePctMissile = MISSILES::Missiles::CreatingMissile(pGameSave, &sSkillArg);
-    if (!pDamagePctMissile) {
+      D2Common::Units::Missile::SetTargetX(pDamagePctMissile, nUnitX);
+      nUnitX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
+      nUnitY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+      D2Common::Units::Missile::SetTargetY(pDamagePctMissile, (short int)((short int)nCursorY - (short int)nUnitY) * 0x10000 + (int)(short int)((short int)nCursorX - (short int)nUnitX));
       return 1;
     }
-    if (pInitTarget) {
-      nUnitX = 1;
-    } else {
-      nUnitX = 2;
-    }
 
-    D2Common::Units::Missile::SetTargetX(pDamagePctMissile, nUnitX);
-    nUnitX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-    int32_t nUnitY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-    D2Common::Units::Missile::SetTargetY(pDamagePctMissile, (short int)((short int)nCursorY - (short int)nUnitY) * 0x10000 + (int)(short int)((short int)nCursorX - (short int)nUnitX));
-    return 1;
+    return 0;
 }
 
 // Server-side do-function for Amazon Charged Strike (skill 11). Sets UNITFLAG_SKSRVDOFUNC on the caster, retrieves the current target, applies melee combat damage via DAMAGE_ProcessCombatQueueEntry, computes the number of charged bolts from skills.txt calc[0], then reads the charged-bolt missile type accumulated from prior Charge Up hits (SKILLASS_GetChargeUpMissile). If valid, spawns that many charged bolt missiles from the target position outward, each initialised with SKILL_InitChargedBoltPath. Returns 1 on success.
@@ -786,32 +788,33 @@ BOOL __fastcall Skills_SrvDoFunc_011_ChargedStrike(::SGAMEDATA * pGame, D2UnitSt
     }
 
     sSkillArg.nMissileTxtNo = SkillAss::SKILLASS_GetChargeUpMissile(pUnit, eSkill);
-    if (!((int)sSkillArg.nMissileTxtNo >= 0 && (int)sSkillArg.nMissileTxtNo < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
-    }
+    if ((int)sSkillArg.nMissileTxtNo >= 0 && (int)sSkillArg.nMissileTxtNo < sgptDataTable->nTxtMissilesSize) {
+      int iVar1;
+      memset(&sSkillArg, 0, 0x5c);
+      sSkillArg.nX = nX;
+      sSkillArg.nY = nY;
+      sSkillArg.nUnitY = nY * 2 - nUnitY;
+      iVar1 = 0;
+      sSkillArg.pOwner = pUnit;
+      sSkillArg.nFlags = 0x21;
+      sSkillArg.nUnitX = nX * 2 - nSrcX;
+      sSkillArg.eSkillNo = eSkill;
+      sSkillArg.nSkillLevel = nSkillLvl;
+      sSkillArg.fpFunction = SkillSor::SKILL_InitChargedBoltPath;
+      if (nChargedBoltCount <= 0) {
+        return 1;
+      }
 
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.nUnitY = nY * 2 - nUnitY;
-    sSkillArg.nX = nX;
-    sSkillArg.nY = nY;
-    int iVar1 = 0;
-    sSkillArg.nFlags = 0x21;
-    sSkillArg.eSkillNo = eSkill;
-    sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.fpFunction = SkillSor::SKILL_InitChargedBoltPath;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.nUnitX = nX * 2 - nSrcX;
-    if (nChargedBoltCount <= 0) {
+      do {
+        sSkillArg.nFunctionParam = iVar1;
+        MISSILES::Missiles::CreatingMissile(pGame, &sSkillArg);
+        iVar1++;
+      } while (iVar1 < nChargedBoltCount);
+
       return 1;
     }
 
-    do {
-      sSkillArg.nFunctionParam = iVar1;
-      MISSILES::Missiles::CreatingMissile(pGame, &sSkillArg);
-      iVar1++;
-    } while (iVar1 < nChargedBoltCount);
-
-    return 1;
+    return 0;
 }
 
 // Server do-function continuation for the Amazon Strafe skill (func 012). Each invocation fires one strafe arrow missile toward the current or nearest valid target in the strafe radius, decrements the remaining arrow count (param1), and picks the next target via SKILLS_FindNextUnitInAreaByGUID. Applies AmazonDamagePercentCallback for per-arrow damage scaling. Returns 0 when arrows are exhausted or no target is found.
@@ -1019,27 +1022,28 @@ BOOL __fastcall Skills_SrvDoFunc_014_LightningStrike(::SGAMEDATA * pGame, D2Unit
     }
 
     eMissilesId eMissileId = SkillAss::SKILLASS_GetChargeUpMissile(pUnit, eSkill);
-    if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
-    }
+    if ((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
+      int32_t nMissileTargetX;
+      nMissileTargetX = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[1], eSkill, nSkillLvl);
+      memset(&sSkillArg, 0, 0x5c);
+      sSkillArg.eSkillNo = eSkill;
+      sSkillArg.nFlags = 0x20;
+      sSkillArg.pOwner = pUnit;
+      sSkillArg.pMissile = pTarget;
+      sSkillArg.nSkillLevel = nSkillLvl;
+      sSkillArg.nMissileTxtNo = eMissileId;
+      sSkillArg.nUnitX = D2Client::Units::GetXPosFromDynamicPathUnit(pAreaHitUnit);
+      sSkillArg.nUnitY = D2Client::Units::GetYPosFromDynamicPathUnit(pAreaHitUnit);
+      pTarget = MISSILES::Missiles::CreatingMissile(pGame, &sSkillArg);
+      if (!pTarget) {
+        return 1;
+      }
 
-    int32_t nMissileTargetX = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[1], eSkill, nSkillLvl);
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.eSkillNo = eSkill;
-    sSkillArg.nFlags = 0x20;
-    sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.pOwner = pUnit;
-    sSkillArg.pMissile = pTarget;
-    sSkillArg.nMissileTxtNo = eMissileId;
-    sSkillArg.nUnitX = D2Client::Units::GetXPosFromDynamicPathUnit(pAreaHitUnit);
-    sSkillArg.nUnitY = D2Client::Units::GetYPosFromDynamicPathUnit(pAreaHitUnit);
-    pTarget = MISSILES::Missiles::CreatingMissile(pGame, &sSkillArg);
-    if (!pTarget) {
+      D2Common::Units::Missile::SetTargetX(pTarget, nMissileTargetX);
       return 1;
     }
 
-    D2Common::Units::Missile::SetTargetX(pTarget, nMissileTargetX);
-    return 1;
+    return 0;
 }
 
 // Server do-function for Amazon skill 0x0F (Decoy). Looks up the monster class to summon via SKILLS_GetSummonMonsterClassId, spawns it with SKILL_CreateSummon, sets its owner, copies a percentage of the caster's max HP as decoy HP (via calc[2]), copies the caster's level, applies revive/buff logic, schedules a despawn event (calc[1] frames), attaches the unit to the target node table, and sets overlay 0xAB. Returns 1 on success.

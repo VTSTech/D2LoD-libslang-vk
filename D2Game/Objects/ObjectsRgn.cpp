@@ -378,16 +378,14 @@ int32_t __fastcall QUEST_GetLevelQuestStatus(::SGAMEDATA * pGame, eD2LevelId eLe
 uint32_t __fastcall OBJECTRGN_CheckDensityThreshold(::SGAMEDATA * pGame, eD2LevelId eLevel) {
     D2ObjectControlStrc* pObjectControl = pGame->pObjectControl;
     D2ObjectRngStrc* pLevelRng = pObjectControl->aLevelsRng[eLevel];
-    if (pLevelRng->nMinDistance <= 0) {
-      return (uint32_t)pObjectControl & -256;
+    if (pLevelRng->nMinDistance > 0) {
+      pObjectControl = (D2ObjectControlStrc*)((pLevelRng->pad_0x4 << 7) / pLevelRng->nMinDistance);
+      if ((int)pObjectControl > 0x60 && !pLevelRng->pad_0x10) {
+        return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pObjectControl >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+      }
     }
 
-    pObjectControl = (D2ObjectControlStrc*)((pLevelRng->pad_0x4 << 7) / pLevelRng->nMinDistance);
-    if (!((int)pObjectControl > 0x60 && !pLevelRng->pad_0x10)) {
-      return (uint32_t)pObjectControl & -256;
-    }
-
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pObjectControl >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    return (uint32_t)pObjectControl & -256;
 }
 
 int32_t __fastcall OBJECTRGN_CheckPointsCapacity(::SGAMEDATA * pGame, eD2LevelId eLevel) {

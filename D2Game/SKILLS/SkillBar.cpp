@@ -339,13 +339,13 @@ BOOL __fastcall Skills_SrvDoFunc_068_WarCry(::SGAMEDATA * pGame, D2UnitStrc * pU
     }
 
     eMissilesId eMissileId = SkillAss::SKILLASS_GetChargeUpMissile(pUnit, eSkill);
-    if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
+    if ((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
+      SkillsServer::SKILLS_CreateMissileRing(pGame, pUnit, pUnit, eMissileId, eSkill, nSkillLvl, 0);
+      SKILLBAR_ApplyWarCryBuff(pGame, pUnit, pUnit, eSkill, nSkillLvl);
+      return 1;
     }
 
-    SkillsServer::SKILLS_CreateMissileRing(pGame, pUnit, pUnit, eMissileId, eSkill, nSkillLvl, 0);
-    SKILLBAR_ApplyWarCryBuff(pGame, pUnit, pUnit, eSkill, nSkillLvl);
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall Skills_SrvDoFunc_070_DoubleSwing(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
@@ -464,7 +464,7 @@ BOOL __fastcall Skills_SrvDoFunc_071_IronMaiden_GenericCurse(::SGAMEDATA * pGame
       if (!pItemStat) {
         break;
       }
-      if (pItemStat->dwItemStatFlags & ITEMSTATCOSTFLAG_UPDATEANIMRATE) {
+      if (*(uint8_t*)((uintptr_t)&pItemStat->dwItemStatFlags + 1) & (uint8_t)gadwBitMasks[1]) {
         sCurseArgs.bUpdateAnimSpeed = 1;
       }
 
@@ -561,6 +561,8 @@ BOOL __fastcall Skills_SrvDoFunc_072_FindItem(::SGAMEDATA * pGame, D2UnitStrc * 
 
 // Server do-func for Barbarian Double Throw (skill 74). Gets the active throwing weapon, reads its missile type, and spawns a missile via CreatingAMissile (or SKILLS_CreateMissileFromUnit for potion-type weapons). Applies to-hit (UNITSTAT_tohit) and damage-percent bonus (calc[0], UNITSTAT_damagepercent) stats to the created missile unit.
 BOOL __fastcall Skills_SrvDoFunc_074_DoubleThrow(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    int32_t nValue;
+    int16_t nLayer;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -576,30 +578,30 @@ BOOL __fastcall Skills_SrvDoFunc_074_DoubleThrow(::SGAMEDATA * pGame, D2UnitStrc
     }
 
     eMissilesId eMissileType = D2Common::ITEMS::Items::ITEM_GetItemsTxt_wMissileType(pWeaponOrMissile);
-    if (!((int)eMissileType > 0 && (int)eMissileType < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
-    }
+    if ((int)eMissileType > 0 && (int)eMissileType < sgptDataTable->nTxtMissilesSize) {
+      uint32_t bIsPotion;
+      bIsPotion = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponOrMissile, ITEMTYPE_MissilePotion);
+      if (bIsPotion) {
+        pWeaponOrMissile = SkillsServer::SKILLS_CreateMissileFromUnit(pGame, eMissileType, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 1);
+      } else {
+        pWeaponOrMissile = SkillsServer::CreatingAMissile(pGame, eMissileType, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 1);
+      }
+      if (!pWeaponOrMissile) {
+        return 1;
+      }
 
-    uint32_t bIsPotion = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponOrMissile, ITEMTYPE_MissilePotion);
-    if (bIsPotion) {
-      pWeaponOrMissile = SkillsServer::SKILLS_CreateMissileFromUnit(pGame, eMissileType, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 1);
-    } else {
-      pWeaponOrMissile = SkillsServer::CreatingAMissile(pGame, eMissileType, pUnit, eSkill, nSkillLvl, 0, 0, 0, 0, 1);
-    }
-    if (!pWeaponOrMissile) {
+      nLayer = 0;
+      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pWeaponOrMissile, UNITSTAT_tohit, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), nLayer);
+      nValue = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt[eSkill].calc[0], eSkill, nSkillLvl);
+      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pWeaponOrMissile, UNITSTAT_damagepercent, nValue, 0);
       return 1;
     }
 
-    int16_t nLayer = 0;
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pWeaponOrMissile, UNITSTAT_tohit, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), nLayer);
-    int32_t nValue = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt[eSkill].calc[0], eSkill, nSkillLvl);
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pWeaponOrMissile, UNITSTAT_damagepercent, nValue, 0);
-    return 1;
+    return 0;
 }
 
 // Server-side do-function for Grim Ward (skill 75). Finds the Barbarian's current target corpse, validates it as revivable, locates a collision-free position near it, then selects the ward missile type based on MonStats2 size flags (large=srvmissilec, small=srvmissileb, normal=srvmissilea). Spawns the ward missile via CreatingMissile and marks the corpse with STATE_corpse_nodraw + STATE_corpse_noselect, adding it to the room update list.
 BOOL __fastcall Skills_SrvDoFunc_075_GrimWard(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    D2SkillArgStrc sSkillArg;
     POINT local_14;
     if ((int)eSkill < 0) {
       return 0;
@@ -647,30 +649,31 @@ BOOL __fastcall Skills_SrvDoFunc_075_GrimWard(::SGAMEDATA * pGame, D2UnitStrc * 
     if (!pMonStats2) {
       return 0;
     }
-    if (pMonStats2->large) {
+    if (gadwBitMasks[3] & (uint8_t)*((uint8_t*)pMonStats2 + 0x5)) {
       eMissileId = (eMissilesId)pSkillsTxt->srvmissile[3];
     } else {
-      if (pMonStats2->isSmall) {
+      if (gadwBitMasks[2] & (uint8_t)*((uint8_t*)pMonStats2 + 0x5)) {
         eMissileId = (eMissilesId)pSkillsTxt->srvmissile[2];
       }
     }
-    if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
-      return 0;
+    if ((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
+      D2SkillArgStrc sSkillArg;
+      memset(&sSkillArg, 0, 0x5c);
+      sSkillArg.pOwner = pUnitSave;
+      sSkillArg.eSkillNo = eSkill;
+      sSkillArg.nSkillLevel = nSkillLvl;
+      sSkillArg.nX = local_14.x;
+      sSkillArg.nFlags = 1;
+      sSkillArg.nY = local_14.y;
+      sSkillArg.nMissileTxtNo = eMissileId;
+      MISSILES::Missiles::CreatingMissile(pGameSave, &sSkillArg);
+      D2Common::DATATBLS::ItemStats::SetState(pUnit_00, STATE_corpse_nodraw, 1);
+      D2Common::DATATBLS::ItemStats::SetState(pUnit_00, STATE_corpse_noselect, 1);
+      D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit_00);
+      return 1;
     }
 
-    memset(&sSkillArg, 0, 0x5c);
-    sSkillArg.pOwner = pUnitSave;
-    sSkillArg.eSkillNo = eSkill;
-    sSkillArg.nSkillLevel = nSkillLvl;
-    sSkillArg.nX = local_14.x;
-    sSkillArg.nFlags = 1;
-    sSkillArg.nY = local_14.y;
-    sSkillArg.nMissileTxtNo = eMissileId;
-    MISSILES::Missiles::CreatingMissile(pGameSave, &sSkillArg);
-    D2Common::DATATBLS::ItemStats::SetState(pUnit_00, STATE_corpse_nodraw, 1);
-    D2Common::DATATBLS::ItemStats::SetState(pUnit_00, STATE_corpse_noselect, 1);
-    D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit_00);
-    return 1;
+    return 0;
 }
 
 // Generic server-side melee attack handler used by multiple Barbarian skills. Sets the target unit, calculates to-hit via SKILLS_CalcToHit, resolves hit/miss via DAMAGE_CalculateHitCheck, applies elemental damage conversion (EType/ConvPct from skills.txt), builds a D2DamageStrc, then calls DAMAGE_CalculateAndApplyDamage and DAMAGE_ProcessCombatQueueEntry. Stores hit result (1=hit, 0=miss) in skill param1.
@@ -1460,7 +1463,7 @@ static BOOL __stdcall SKILLBAR_CanTargetPosition(D2UnitStrc * pUnit, int32_t nPa
     if (!pRoom) {
       return 0;
     }
-    if (pSkillsTxtBase[nParam3].InTown) {
+    if (*((uint8_t*)&pSkillsTxtBase[nParam3] + 0x5) & (uint8_t)gadwBitMasks[0]) {
       return 1;
     }
 

@@ -150,7 +150,8 @@ void __fastcall SUNITNPC_InitNpcInventory(::SGAMEDATA * pGame, int32_t nParam, u
 
         *(short int*)(pSlotEntry - 2) = (short int)nNpcUnit + (short int)nSlotCount;
         DVar1 = D2_SEED_NEXT(*pNpcControl);
-        *pNpcControl = DVar1;
+        pNpcControl->nSeedHigh = DVar1.nSeedHigh;
+        pNpcControl->nSeedLow = DVar1.nSeedLow;
         pSlotEntry[-1] = DVar1.nSeedLow;
         nSlotCount++;
         *pSlotEntry = 0;
@@ -516,16 +517,14 @@ int32_t __fastcall SUNITNPC_GetActCappedLevel(::SGAMEDATA * pGame, D2UnitStrc * 
     aActLevels[2] = L'\x1c';
     aActLevels[3] = 36;
     aActLevels[4] = 45;
-    if (bVar1 >= 5) {
-      return nEffectiveLevel;
+    if (bVar1 < 5) {
+      nEffectiveLevel = aActLevels[bVar1];
+      if (nEffectiveLevel >= nLevel) {
+        return nLevel;
+      }
     }
 
-    nEffectiveLevel = aActLevels[bVar1];
-    if (nEffectiveLevel < nLevel) {
-      return nEffectiveLevel;
-    }
-
-    return nLevel;
+    return nEffectiveLevel;
 }
 
 // Rolls the quality of a store item: advances pSeed, takes roll = seed % 100, and returns QUALITY_LOW (1) for item level < 5 and roll > 90, QUALITY_SUPERIOR (3) for level 5..9 and roll > 85 or level >= 10 and roll > 74, else QUALITY_NORMAL (2).
@@ -1100,11 +1099,11 @@ void __fastcall SUNITNPC_ValidateGambleItem(::SGAMEDATA * pGame, D2UnitStrc * pU
     eD2UnitType eUnitType = pUnit->eUnitType;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       wPosY = (uint16_t)pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      wPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       iVar1 = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
       wPosY = (uint16_t)iVar1;
+    } else {
+      wPosY = 0;
     }
 
     eUnitType = pUnit->eUnitType;
@@ -1701,7 +1700,6 @@ void __fastcall NPC_ValidateAndProcessMercHire(::SGAMEDATA * pGame, D2UnitStrc *
 // @sourcefile .\UNIT\SUNITNPC.CPP
 void __fastcall SUNITNPC_ProcessGamble(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD nNpcGUID, DWORD nItemGUID, uint32_t dwParam, uint32_t nParam) {
     int nCurDurability;
-    D2UnitDataPlayerStrc* pPlayerData;
     BOOL bCanAfford;
     D2BitBufferStrc* pQuestBitBuffer;
     int nChargedSkillResult;
@@ -1744,8 +1742,8 @@ void __fastcall SUNITNPC_ProcessGamble(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     }
     if (nParam & 0x80000000) {
       nTransactionResult = pGame->nDifficulty;
-      pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-      nCost = D2Common::ITEMS::Items::ITEMS_CalculateRepairAllCost(pGame, pUnit, pNpcUnit->nClassId, (uint32_t)nTransactionResult, pPlayerData->pQuestRecord[nTransactionResult], nullptr);
+      D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[nTransactionResult];
+      nCost = D2Common::ITEMS::Items::ITEMS_CalculateRepairAllCost(pGame, pUnit, pNpcUnit->nClassId, (uint32_t)nTransactionResult, pQuestRecord, nullptr);
       if (!nCost) {
         bSuccess = 1;
         nErrorLine = -1;
@@ -2019,11 +2017,11 @@ static BOOL __stdcall UnitHasItemInInventory(int32_t guid, D2UnitStrc * pUnit) {
     }
 
     D2UnitStrc* pDVar1 = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pUnit->pInventory);
-    if (!(pDVar1 && pDVar1->nUnitGUID == guid)) {
-      return 0;
+    if (pDVar1 && pDVar1->nUnitGUID == guid) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // @sourcefile .\UNIT\SUNITNPC.CPP
@@ -2166,7 +2164,8 @@ void __fastcall GAMBLE_GenerateGambleInventory(::SGAMEDATA * pGame, D2UnitStrc *
     do {
       nSeedState = D2_SEED_NEXT(*pSeed);
       pPlayerUnit = (D2UnitStrc*)(nSeedState.nSeedLow % 10 - 5 + nPlayerLevel);
-      *pSeed = nSeedState;
+      pSeed->nSeedHigh = nSeedState.nSeedHigh;
+      pSeed->nSeedLow = nSeedState.nSeedLow;
       if ((int)pPlayerUnit > 5) {
         if ((int)pPlayerUnit >= 0x63) {
           pPlayerUnit = (D2UnitStrc*)0x63;
@@ -2180,11 +2179,13 @@ void __fastcall GAMBLE_GenerateGambleInventory(::SGAMEDATA * pGame, D2UnitStrc *
         nItemTableIdx = 0;
       } else if (nItemTableIdx & nItemTableIdx - 1) {
         nSeedState = D2_SEED_NEXT_VAL(nSeedState);
-        *pSeed = nSeedState;
+        pSeed->nSeedHigh = nSeedState.nSeedHigh;
+        pSeed->nSeedLow = nSeedState.nSeedLow;
         nItemTableIdx = (uint32_t)(nSeedState.nSeedLow % nItemTableIdx);
       } else {
         nSeedState = D2_SEED_NEXT_VAL(nSeedState);
-        *pSeed = nSeedState;
+        pSeed->nSeedHigh = nSeedState.nSeedHigh;
+        pSeed->nSeedLow = nSeedState.nSeedLow;
         nItemTableIdx = nItemTableIdx - 1 & nSeedState.nSeedLow;
       }
 
@@ -3105,21 +3106,21 @@ void __fastcall SUNITNPC_ProcessSellConfirmation(::SGAMEDATA * pGame, D2UnitStrc
     eMonsterType = pUnit->eUnitType;
     if (eMonsterType == UNIT_OBJECT || (int)eMonsterType > 3 && (int)eMonsterType <= 5) {
       wPosY = (uint16_t)pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      wPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosTemp = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
       wPosY = (uint16_t)nPosTemp;
+    } else {
+      wPosY = 0;
     }
 
     eMonsterType = pUnit->eUnitType;
     if (eMonsterType == UNIT_OBJECT || (int)eMonsterType > 3 && (int)eMonsterType <= 5) {
       nPosX = (uint16_t)pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosTemp = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
       nPosX = (uint16_t)nPosTemp;
+    } else {
+      nPosX = 0;
     }
 
     PLAYER::PlayerPets::PETS_ManagePetsByType(pGame, pUnit, nPosX, wPosY);
@@ -3255,7 +3256,7 @@ int __fastcall UseMenu(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2QuestState pQ
     eD2QuestState eQuestState;
     D2UnitStrc* pClonedItem;
     pClonedItem = SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, guid);
-    if (!pClonedItem || !pUnit || (sUseMenuPkt.y = pClonedItem->nClassId , sUseMenuPkt.y < 0) || sUseMenuPkt.y >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + sUseMenuPkt.y) || !sgptDataTable->pTxtMonStats[sUseMenuPkt.y].interact || pClonedItem->eUnitType != UNIT_MONSTER || !pClonedItem->pUnitData.pUnitDataMonster || (pMonsterAI = pClonedItem->pUnitData.pUnitDataMonster->pMonsterAi , !pMonsterAI)) {
+    if (!pClonedItem || !pUnit || (sUseMenuPkt.y = pClonedItem->nClassId , sUseMenuPkt.y < 0) || sUseMenuPkt.y >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + sUseMenuPkt.y) || !((uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[sUseMenuPkt.y] + 0xd) & gadwBitMasks[1]) || pClonedItem->eUnitType != UNIT_MONSTER || !pClonedItem->pUnitData.pUnitDataMonster || (pMonsterAI = pClonedItem->pUnitData.pUnitDataMonster->pMonsterAi , !pMonsterAI)) {
       return 0;
     }
 

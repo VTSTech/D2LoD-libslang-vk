@@ -1551,7 +1551,7 @@ BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bI
 
     uint32_t nChampionIdx = (uint32_t)(bIsChampion != 0);
     if (nStatFlags & 1) {
-      if (pMonStatsTxt->noRatio) {
+      if (*((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[2]) {
         pOutStats->nMinHP = (int)pMonStatsTxt->aMinHP[nClampedDiff];
         pOutStats->nMaxHP = (int)pMonStatsTxt->aMaxHP[nClampedDiff];
       } else {
@@ -1562,7 +1562,7 @@ BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bI
       }
     }
     if (nStatFlags & 2) {
-      if (pMonStatsTxt->noRatio) {
+      if (*((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[2]) {
         pOutStats->nAC = (int)pMonStatsTxt->aAC[nClampedDiff];
       } else {
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->AC[nClampedDiff + nChampionIdx * 3], (int)pMonStatsTxt->aAC[nClampedDiff], 100);
@@ -1570,7 +1570,7 @@ BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bI
       }
     }
     if (nStatFlags & 4) {
-      if (pMonStatsTxt->noRatio) {
+      if (*((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[2]) {
         pOutStats->nExp = (int)pMonStatsTxt->aExp[nClampedDiff];
       } else {
         nScaledStat = D2Client::Stats::D2ApplyPercent(pMonLvlEntry->XP[nChampionIdx * 3 + nClampedDiff], (int)pMonStatsTxt->aExp[nClampedDiff], 100);
@@ -1578,7 +1578,7 @@ BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bI
       }
     }
     if (nStatFlags & 8) {
-      if (pMonStatsTxt->noRatio) {
+      if (*((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[2]) {
         pOutStats->nTH = (int)pMonStatsTxt->aA1TH[nClampedDiff];
         pOutStats->nA1MinD = (int)pMonStatsTxt->aA1MinD[nClampedDiff];
         pOutStats->nA1MaxD = (int)pMonStatsTxt->aA1MaxD[nClampedDiff];
@@ -1592,7 +1592,7 @@ BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bI
       }
     }
     if (nStatFlags & 0x10) {
-      if (pMonStatsTxt->noRatio) {
+      if (*((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[2]) {
         pOutStats->nTH = (int)pMonStatsTxt->aA2TH[nClampedDiff];
         pOutStats->nA2MinD = (int)pMonStatsTxt->aA2MinD[nClampedDiff];
         pOutStats->nA2MaxD = (int)pMonStatsTxt->aA2MaxD[nClampedDiff];
@@ -1606,7 +1606,7 @@ BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bI
       }
     }
     if (nStatFlags & 0x20) {
-      if (pMonStatsTxt->noRatio) {
+      if (*((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[2]) {
         pOutStats->nTH = (int)pMonStatsTxt->aS1TH[nClampedDiff];
         pOutStats->nS1MinD = (int)pMonStatsTxt->aS1MinD[nClampedDiff];
         pOutStats->nS1MaxD = (int)pMonStatsTxt->aS1MaxD[nClampedDiff];
@@ -1620,7 +1620,7 @@ BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bI
       }
     }
     if (nStatFlags & 0x40) {
-      if (pMonStatsTxt->noRatio) {
+      if (*((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[2]) {
         pOutStats->nS1MinD = (int)pMonStatsTxt->aEl1MinD[nClampedDiff];
         pOutStats->nS1MaxD = (int)pMonStatsTxt->aEl1MaxD[nClampedDiff];
       } else {
@@ -1633,7 +1633,7 @@ BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bI
       pOutStats->nElDur = (int)pMonStatsTxt->aEl1Dur[nClampedDiff];
     }
     if (nStatFlags & 0x80) {
-      if (pMonStatsTxt->noRatio) {
+      if (*((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[2]) {
         pOutStats->nS1MinD = (int)pMonStatsTxt->aEl2MinD[nClampedDiff];
         pOutStats->nS1MaxD = (int)pMonStatsTxt->aEl2MaxD[nClampedDiff];
       } else {
@@ -1648,7 +1648,7 @@ BOOL __stdcall MONSTER_CalculateLevelScaledStats(int32_t nMonStatsId, int32_t bI
     if (!(nStatFlags & 0x100)) {
       return 1;
     }
-    if (pMonStatsTxt->noRatio) {
+    if (*((uint8_t*)pMonStatsTxt + 0xc) & (uint8_t)gadwBitMasks[2]) {
       pOutStats->nS1MinD = (int)pMonStatsTxt->aEl3MinD[nClampedDiff];
       pOutStats->nS1MaxD = (int)pMonStatsTxt->aEl3MaxD[nClampedDiff];
     } else {
@@ -2431,32 +2431,34 @@ D2ParsedTreasureClassStrc * __stdcall TC_LookupTreasureClassByName(char * szText
 
 // TC level-variant selector. TCs with same nGroup form a chain, select best match where TC.nLevel <= nLevel. Linear scan through variants, returns highest applicable TC or base TC if no variants.
 D2ParsedTreasureClassStrc * __stdcall TC_GetParsedTreasureClassByLevel(uint16_t nTreasureClassId, int32_t nLevel) {
+    D2ParsedTreasureClassStrc* pBestTC;
     D2ParsedTreasureClassStrc* pLookAheadTC;
-    if (!(nTreasureClassId > 0 && (int)(uint32_t)nTreasureClassId < sgtDataTable.nParsedTreasureClassSize)) {
-      return nullptr;
-    }
-
-    D2ParsedTreasureClassStrc* pBestTC = sgtDataTable.pParsedTreasureClass + nTreasureClassId;
-    if (!(nLevel > 0 && pBestTC->nGroup)) {
-      return pBestTC;
-    }
-
-    D2ParsedTreasureClassStrc* pIterTC = pBestTC;
-    if (pBestTC[1].nGroup != pBestTC->nGroup) {
-      return pBestTC;
-    }
-
-    do {
-      pBestTC = pIterTC + 1;
-      if (pIterTC[1].nLevel > nLevel) {
-        return pIterTC;
+    if (nTreasureClassId > 0 && (int)(uint32_t)nTreasureClassId < sgtDataTable.nParsedTreasureClassSize) {
+      D2ParsedTreasureClassStrc* pIterTC;
+      pBestTC = sgtDataTable.pParsedTreasureClass + nTreasureClassId;
+      if (!(nLevel > 0 && pBestTC->nGroup)) {
+        return pBestTC;
       }
 
-      pLookAheadTC = pIterTC + 2;
       pIterTC = pBestTC;
-    } while (pLookAheadTC->nGroup == pBestTC->nGroup);
+      if (pBestTC[1].nGroup != pBestTC->nGroup) {
+        return pBestTC;
+      }
 
-    return pBestTC;
+      do {
+        pBestTC = pIterTC + 1;
+        if (pIterTC[1].nLevel > nLevel) {
+          return pIterTC;
+        }
+
+        pLookAheadTC = pIterTC + 2;
+        pIterTC = pBestTC;
+      } while (pLookAheadTC->nGroup == pBestTC->nGroup);
+
+      return pBestTC;
+    }
+
+    return nullptr;
 }
 
 D2ParsedTreasureClassStrc * __stdcall RollTreasureClass(int32_t nDifficulty, int32_t nAct, int32_t nLevel) {
@@ -3681,24 +3683,23 @@ void __fastcall TXT_AllocTxt_monsounds(D2PoolManagerStrc * pMemory) {
 }
 
 D2MonSoundsTxt * __stdcall TxtGetMonSoundsLine(int32_t nSoundId) {
-    if (!(sgtDataTable.pTxtMonSounds && nSoundId >= 0 && nSoundId < sgtDataTable.nTxtMonSoundsSize)) {
-      return nullptr;
+    if (sgtDataTable.pTxtMonSounds && nSoundId >= 0 && nSoundId < sgtDataTable.nTxtMonSoundsSize) {
+      return sgtDataTable.pTxtMonSounds + nSoundId;
     }
 
-    return sgtDataTable.pTxtMonSounds + nSoundId;
+    return nullptr;
 }
 
 D2MonSoundsTxt * __stdcall MONSTERTBLS_GetMonSoundsTxtRecord(int32_t nParam) {
-    if (!(sgtDataTable.pTxtMonSounds && sgtDataTable.pTxtMonStats && nParam < sgtDataTable.nTxtMonStatsSize)) {
-      return nullptr;
+    if (sgtDataTable.pTxtMonSounds && sgtDataTable.pTxtMonStats && nParam < sgtDataTable.nTxtMonStatsSize) {
+      int nMonSoundId;
+      nMonSoundId = (int)sgtDataTable.pTxtMonStats[nParam].MonSound;
+      if (nMonSoundId >= 0 && nMonSoundId < sgtDataTable.nTxtMonSoundsSize) {
+        return sgtDataTable.pTxtMonSounds + nMonSoundId;
+      }
     }
 
-    int nMonSoundId = (int)sgtDataTable.pTxtMonStats[nParam].MonSound;
-    if (!(nMonSoundId >= 0 && nMonSoundId < sgtDataTable.nTxtMonSoundsSize)) {
-      return nullptr;
-    }
-
-    return sgtDataTable.pTxtMonSounds + nMonSoundId;
+    return nullptr;
 }
 
 // Parses one comma-separated component-code field of a MonSeq/monster txt row into the row's compiled code table. For sequence slot nSeqSlot (<0x10) it clears the slot's count byte and three code entries, strips surrounding quotes, then tokenizes the input string on commas; each <=4-char token is packed into a 4-char code (space-padded), resolved to a class id via Excel GetClassIdFromName against pTxtCompCodeLink, and stored as a byte. Writes the resolved code count back to offset 0x15+nSeqSlot (max 12 codes). On the final slot (0xf) it sums frame counts across the parsed component groups and stores the clamped (<=0xfe) total at offset 0x25. Pure table-build side effects; no return.
@@ -5472,11 +5473,11 @@ void __stdcall MONSTERTBLS_FreeMonPropTxt() {
 
 // 2022.01.09 - dzik
 D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTableByIndex(int32_t nIndex) {
-    if (!(nIndex >= 0 && nIndex < sgtDataTable.nMonSeqMonsterTblsSize)) {
-      return nullptr;
+    if (nIndex >= 0 && nIndex < sgtDataTable.nMonSeqMonsterTblsSize) {
+      return sgtDataTable.pMonSeqMonsterTbls + nIndex;
     }
 
-    return sgtDataTable.pMonSeqMonsterTbls + nIndex;
+    return nullptr;
 }
 
 // Loads and compiles the MonEquip.txt data table at startup. Declares the column schema (monster link, level, oninit, three item/loc/mod triplets with BodyLocs/Items excel linkers) and calls CompileTxt to allocate sgtDataTable.pTxtMonEquip (record size 0x1c). Halts with fatal error 0xd1c if the row count overflows 0x7fff. Post-processes: back-links each MonStats row to its first MonEquip row (nMonEquipId) and validates each equipment slot's loc and item code (blanks slots whose item name isn't a valid excel class id). Side effects only; no return.

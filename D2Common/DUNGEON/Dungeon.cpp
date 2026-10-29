@@ -355,11 +355,11 @@ BOOL __stdcall AreTileCoordinatesInsideRoom(D2RoomStrc * pRoom, int32_t nX, int3
     }
 
     nRectEdge = pRoom->sCoords.sTileRect.top;
-    if (!(nY >= nRectEdge && nY < pRoom->sCoords.sTileRect.bottom + nRectEdge)) {
-      return 0;
+    if (nY >= nRectEdge && nY < pRoom->sCoords.sTileRect.bottom + nRectEdge) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Determines the shape/orientation of a room based on its tile coordinates. Returns 0 (invalid), 1 (zero width), 2 (mirrored width), 3 (zero height), or 4 (normal).
@@ -576,11 +576,11 @@ BOOL __fastcall AreSubtileCoordinatesInsideRoom(D2DrlgCoordsStrc * pDrlgCoords, 
     }
 
     nEdgePos = pDrlgCoords->WorldPosition.y;
-    if (!(nY >= nEdgePos && nY < pDrlgCoords->WorldSize.y + nEdgePos)) {
-      return 0;
+    if (nY >= nEdgePos && nY < pDrlgCoords->WorldSize.y + nEdgePos) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 D2RoomStrc * __stdcall FindActSpawnLocation(D2DrlgActStrc * pDrlgAct, eD2LevelId eLevel, int32_t a3, int * pX, int * pY) {
@@ -2044,11 +2044,11 @@ D2RoomStrc * __fastcall DRLGROOMEX_GetCurrentSubA0(D2DrlgStrc * pDrlg) {
 // Gets the ActMiscSubA0 for a specific RoomEx within its Drlg context. Checks the RoomEx's field_0x44 priority and linked list position to determine the correct SubA0 entry. Returns NULL if at sentinel.
 D2RoomStrc * __fastcall DRLGROOMEX_GetSubA0ForRoom(D2DrlgStrc * pDrlg, D2RoomExStrc * pRoomEx) {
     D2RoomExStrc* pStatusNext = pRoomEx->pStatusNext;
-    if (!((pRoomEx->fRoomStatus != '\0' || pStatusNext != pDrlg->aSubA0 || (pStatusNext = pDrlg->aSubA0[1].pStatusNext , pStatusNext != pDrlg->aSubA0 + 1)) && pStatusNext)) {
-      return nullptr;
+    if ((pRoomEx->fRoomStatus != '\0' || pStatusNext != pDrlg->aSubA0 || (pStatusNext = pDrlg->aSubA0[1].pStatusNext , pStatusNext != pDrlg->aSubA0 + 1)) && pStatusNext) {
+      return pStatusNext->pRoom;
     }
 
-    return pStatusNext->pRoom;
+    return nullptr;
 }
 
 // Reads cached DrlgActMisc state from the static data table (sgtDataTable). Outputs field_0x8 and field_0x468 values for both client-side (A) and server-side (B) actmisc instances.

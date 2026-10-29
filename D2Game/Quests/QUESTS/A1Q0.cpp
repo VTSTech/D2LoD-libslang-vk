@@ -38,10 +38,11 @@ void __fastcall Q00_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     }
 
     ::SGAMEDATA* pGameData = pQuestData->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
+    D2UnitStrc* pPlayer = pQuestArgs->pPlayer;
     /* SetQuestState(QUEST_SpokeToWarriv, QUESTSTATE_Completed): set the one-shot
                          "already greeted Warriv" bit after Warriv's intro dialog. Reused as a flag,
-                         not a rewarded completion. */ D2Common::QuestRecord::SetQuestState(pPlayerData->pQuestRecord[pGameData->nDifficulty], QUEST_SpokeToWarriv, QUESTSTATE_Completed);
+                         not a rewarded completion. */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pPlayer)->pQuestRecord[pGameData->nDifficulty];
+    D2Common::QuestRecord::SetQuestState(pQuestRecord, QUEST_SpokeToWarriv, QUESTSTATE_Completed);
 }
 
 // Q00_Callback_00 (QUEST_SpokeToWarriv, state-handler slot 0x00). NPC-interact handler for Warriv (target class 0x9b). If the "spoke to Warriv" flag is NOT yet set, queues Warriv's first-greeting gossip line (Paladin gets a unique line, msg id 1; everyone else id 0). Reads but does not write quest state.
@@ -51,8 +52,9 @@ void __fastcall Q00_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     ::SGAMEDATA* pGameData = pQuestData->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-    BOOL bQuestState0 = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGameData->nDifficulty], QUEST_SpokeToWarriv, QUESTSTATE_Completed);
+    /* GetQuestState(QUEST_SpokeToWarriv, QUESTSTATE_Completed): test the "already
+                         greeted Warriv" bit; if clear (0), queue the first-greeting gossip line. */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGameData->nDifficulty];
+    BOOL bQuestState0 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SpokeToWarriv, QUESTSTATE_Completed);
     if (bQuestState0) {
       return;
     }

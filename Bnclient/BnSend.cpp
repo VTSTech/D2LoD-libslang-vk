@@ -652,8 +652,8 @@ void __stdcall NET_SID_CLIENT_Send_0x12_LocaleInfo() {
 
 int __fastcall NET_SID_CLIENT_Send_0x16_ClickAd(uint32_t dwParam, int32_t nParam) {
     SID_C2S_ClickAd sPacket;
-    sPacket.dwRequestType = (uint32_t)(nParam != 0);
     sPacket.dwAdId = dwParam;
+    sPacket.dwRequestType = (uint32_t)(nParam != 0);
     NET_SID_CLIENT_Send(0x16, (char*)&sPacket, 8);
     return 1;
 }
@@ -758,38 +758,41 @@ uint32_t __fastcall NET_SID_CLIENT_Send_0x26_ReadUserData(char * szAccount, uint
 
 // Retrieves stored user data from previous SID_READUSERDATA (0x26) response. Copies string array data into output buffers.
 int __fastcall BNSEND_GetStoredReadUserData(int32_t nKeyCount, int32_t nRequestId, char * * ppszOutBufs, int32_t pnMaxLens) {
+    int nMaxLensOffset;
+    char** ppszOutBuf;
+    char* pszSrcData;
     BOOL bHasAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x26);
     if (!bHasAnswer) {
       return 0;
     }
-    if (!(g_pBNetReadUserData && *(int*)g_pBNetReadUserData == 1 && *(int*)((int)g_pBNetReadUserData + 4) == nKeyCount && *(int*)((int)g_pBNetReadUserData + 8) == nRequestId)) {
-      return 0;
-    }
+    if (g_pBNetReadUserData && *(int*)g_pBNetReadUserData == 1 && *(int*)((int)g_pBNetReadUserData + 4) == nKeyCount && *(int*)((int)g_pBNetReadUserData + 8) == nRequestId) {
+      uint32_t pNextSrc;
+      pszSrcData = (char*)((int)g_pBNetReadUserData + 0xc);
+      if ((uint32_t)nKeyCount <= 0) {
+        return 1;
+      }
 
-    char* pszSrcData = (char*)((int)g_pBNetReadUserData + 0xc);
-    if ((uint32_t)nKeyCount <= 0) {
+      nMaxLensOffset = pnMaxLens - (int)ppszOutBufs;
+      ppszOutBuf = ppszOutBufs;
+      ppszOutBufs = (char**)nKeyCount;
+      do {
+        if (*pszSrcData != '\0') {
+          strncpy(*ppszOutBuf, pszSrcData, *(size_t*)(nMaxLensOffset + (int)ppszOutBuf));
+          (*ppszOutBuf)[*(int*)(nMaxLensOffset + (int)ppszOutBuf)] = '\0';
+        } else {
+          **ppszOutBuf = '\0';
+        }
+
+        pNextSrc = Storm::Source::SSTR::SStrLen(pszSrcData);
+        ppszOutBuf++;
+        ppszOutBufs = (char**)((int)ppszOutBufs - 1);
+        pszSrcData = pszSrcData + pNextSrc + 1;
+      } while (ppszOutBufs);
+
       return 1;
     }
 
-    int nMaxLensOffset = pnMaxLens - (int)ppszOutBufs;
-    char** ppszOutBuf = ppszOutBufs;
-    ppszOutBufs = (char**)nKeyCount;
-    do {
-      uint32_t pNextSrc;
-      if (*pszSrcData != '\0') {
-        strncpy(*ppszOutBuf, pszSrcData, *(size_t*)(nMaxLensOffset + (int)ppszOutBuf));
-        (*ppszOutBuf)[*(int*)(nMaxLensOffset + (int)ppszOutBuf)] = '\0';
-      } else {
-        **ppszOutBuf = '\0';
-      }
-
-      pNextSrc = Storm::Source::SSTR::SStrLen(pszSrcData);
-      ppszOutBuf++;
-      ppszOutBufs = (char**)((int)ppszOutBufs - 1);
-      pszSrcData = pszSrcData + pNextSrc + 1;
-    } while (ppszOutBufs);
-
-    return 1;
+    return 0;
 }
 
 void __fastcall NET_SID_CLIENT_Send_0x59_SetEmail(char * szText) {
@@ -1197,14 +1200,14 @@ BOOL __fastcall BNCLIENT_WaitForCreateAccountResponse(uint32_t * pOutResponseCou
           bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x3d);
           return bGotAnswer;
         }
-      default:
-        {
-          return 0;
-        }
       case 1:
         {
           bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x52);
           return bGotAnswer;
+        }
+      default:
+        {
+          return 0;
         }
     }
 }
@@ -1243,14 +1246,14 @@ BOOL __fastcall BNCLIENT_WaitForChangePasswordResponse(uint32_t * pOutResponseCo
           bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x31);
           return bGotAnswer;
         }
-      default:
-        {
-          return 0;
-        }
       case 1:
         {
           bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x56);
           return bGotAnswer;
+        }
+      default:
+        {
+          return 0;
         }
     }
 }
@@ -3055,8 +3058,8 @@ int __fastcall BNSEND_SendString(char * szString) {
 
 void __fastcall NET_SID_CLIENT_Send_0x33_GetFileTime(char * szText, uint32_t dwRequestId) {
     SID_C2S_GetFileTime dwFileTimeParam;
-    dwFileTimeParam.dwUnknown = 0;
     dwFileTimeParam.dwRequestId = dwRequestId;
+    dwFileTimeParam.dwUnknown = 0;
     uint32_t nTextLen = Storm::Source::SSTR::SStrCopy(dwFileTimeParam.szFilename, szText, 0x104);
     NET_SID_CLIENT_Send(0x33, (char*)&dwFileTimeParam, (uintptr_t)&dwFileTimeParam + (nTextLen - (uintptr_t)&dwFileTimeParam) + 9);
 }

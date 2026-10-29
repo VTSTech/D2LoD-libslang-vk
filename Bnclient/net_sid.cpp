@@ -227,16 +227,14 @@ uint32_t __stdcall NET_SID_CLIENT_GetResponseCount1() {
 
 int __stdcall SID_InitializeProtocolState() {
     int nCount;
-    uint32_t* pResponseFlag = g_SIDPacketResponseFlags;
-    for (nCount = 0x5e; nCount; nCount--) {
-      *pResponseFlag = 0;
-      pResponseFlag++;
+    uint32_t* pResponseFlag;
+    BOOL* pRequireAnswer;
+    for (nCount = 0; nCount < 0x5e; nCount++) {
+      g_SIDPacketResponseFlags[nCount] = 0;
     }
 
-    BOOL* pRequireAnswer = NET_SID_INCOMING_CLIENT_PacketRequireAnswer;
-    for (nCount = 0x5e; nCount; nCount--) {
-      *pRequireAnswer = 0;
-      pRequireAnswer++;
+    for (nCount = 0; nCount < 0x5e; nCount++) {
+      NET_SID_INCOMING_CLIENT_PacketRequireAnswer[nCount] = 0;
     }
 
     g_nRealmLogonResult = 0xff;
@@ -469,17 +467,17 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_CDKey3(char * pBytes, size_t nSize) {
       case 3:
         SID_SetStateFlag1(3);
       return 1;
+      case 6:
+        SID_SetStateFlag1(5);
+      return 1;
+      case 5:
+        SID_SetStateFlag1(4);
+      return 1;
       case 4:
         SID_SetStateFlag1(6);
       Storm::Source::SSTR::SStrCopy(gszCDKeyInUseByUsername, pBytes + 4, 0x100);
       SID_SetStateFlag2((uint32_t)gszCDKeyInUseByUsername);
       break;
-      case 5:
-        SID_SetStateFlag1(4);
-      return 1;
-      case 6:
-        SID_SetStateFlag1(5);
-      return 1;
     }
 
     return 1;
@@ -536,21 +534,23 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_GetFileTime(char * pBytes, size_t nSize)
 // BATTLE.NET SID_CHECKAD (0x15) HANDLER
 // Receives banner ad info containing: DWORD ad_id, DWORD file_extension, FILETIME(8) file_time, null-terminated filename, null-terminated URL. Checks if the ad_id differs from the last cached ad (g_dwLastAdId), and if both filename and URL are non-empty, initiates asynchronous download via BNDOWNLOAD_InitiateFileDownload with the ad's file timestamp and URL.
 BOOL __fastcall NET_SID_CLIENT_Incoming_CheckAd(char * pBytes, size_t nSize) {
+    char* szFilenameScan;
     char cChar;
     uint32_t dwAdIdReg = *(uint32_t*)pBytes;
-    if (!(nSize >= 0x11 && dwAdIdReg != g_dwLastAdId)) {
+    if (nSize >= 0x11 && dwAdIdReg != g_dwLastAdId) {
+      char* szText1;
+      szText1 = pBytes + 0x10;
+      szFilenameScan = szText1;
+      szFilenameScan = szFilenameScan + strlen(szFilenameScan) + 1;
+      g_dwLastAdId = dwAdIdReg;
+      if (!(*szText1 != '\0' && szText1[(int)(szFilenameScan + (1 - (int)(pBytes + 0x11)))] != '\0')) {
+        return 1;
+      }
+
+      BnDownload::BNDOWNLOAD_InitiateFileDownload((D2BnetDownloadStateStrc*)0x80000003, 5, dwAdIdReg, *(uint32_t*)(pBytes + 4), (FILETIME*)(pBytes + 8), szText1, szText1 + (int)(szFilenameScan + (1 - (int)(pBytes + 0x11))));
       return 1;
     }
 
-    char* szText1 = pBytes + 0x10;
-    char* szFilenameScan = szText1;
-    szFilenameScan = szFilenameScan + strlen(szFilenameScan) + 1;
-    g_dwLastAdId = dwAdIdReg;
-    if (!(*szText1 != '\0' && szText1[(int)(szFilenameScan + (1 - (int)(pBytes + 0x11)))] != '\0')) {
-      return 1;
-    }
-
-    BnDownload::BNDOWNLOAD_InitiateFileDownload((D2BnetDownloadStateStrc*)0x80000003, 5, dwAdIdReg, *(uint32_t*)(pBytes + 4), (FILETIME*)(pBytes + 8), szText1, szText1 + (int)(szFilenameScan + (1 - (int)(pBytes + 0x11))));
     return 1;
 }
 
@@ -775,10 +775,6 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountCreate(char * pPacketData, si
         g_nSIDResponseCount2 = 0;
       szErrorMessage = "Account created";
       break;
-      default:
-        szErrorMessage = "Create failed: unknown result";
-      g_nSIDResponseCount2 = 4;
-      break;
       case 4:
         szErrorMessage = "Create failed: Name is in use";
       g_nSIDResponseCount2 = 4;
@@ -806,6 +802,11 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountCreate(char * pPacketData, si
       case 0xc:
         g_nSIDResponseCount2 = 8;
       szErrorMessage = "Create failed: Name contains too much punctuation";
+      break;
+      default:
+        szErrorMessage = "Create failed: unknown result";
+      g_nSIDResponseCount2 = 4;
+      break;
     }
 
     Debug::DEBUG_UnusedDebugFunction(szErrorMessage);
@@ -2223,11 +2224,7 @@ int32_t __fastcall NET_SID_CLIENT_DecodeCDKeyHash(int * pnParam, uint32_t nParam
         } else {
           pEncBuf = (uint32_t*)abEncBlock;
           pDecBuf = (uint32_t*)abDecBlock;
-          for (nLoopIdx = 0x10; nLoopIdx; nLoopIdx--) {
-            *pDecBuf = *pEncBuf;
-            pEncBuf++;
-            pDecBuf++;
-          }
+          memcpy(pDecBuf, pEncBuf, 0x40);
         }
 
         nKeyByteIdx = 0x3e;
@@ -2353,11 +2350,7 @@ void __fastcall NET_SID_CLIENT_EncodeBuffer(uint32_t * pdwParam, uint32_t nParam
         } else {
           pSrcBlock = (uint32_t*)abEncBlock;
           pDstBlock = (uint32_t*)abPlainBlock;
-          for (nCopyCount = 0x10; nCopyCount; nCopyCount--) {
-            *pDstBlock = *pSrcBlock;
-            pSrcBlock++;
-            pDstBlock++;
-          }
+          memcpy(pDstBlock, pSrcBlock, 0x40);
         }
 
         puVar1 = pdwParam + 0x10;

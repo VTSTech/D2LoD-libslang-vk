@@ -658,11 +658,6 @@ D2UnitStrc * __stdcall CallCollisionFunction(D2RoomStrc * pRoom, int32_t nX, int
               }
 
               switch (nUnitSizeX - 1 + nWidth) {
-                case 0:
-                  if (nX != nCandidatePosX || nY != nCandidatePosY) {
-                    break;
-                  }
-                goto try_candidate;
                 case 1:
 
                 case 3:
@@ -737,6 +732,12 @@ D2UnitStrc * __stdcall CallCollisionFunction(D2RoomStrc * pRoom, int32_t nX, int
                     iVar1 = nCandidatePosY + 2;
                     goto test_y_upper_bound;
                   }
+                break;
+                case 0:
+                  if (nX != nCandidatePosX || nY != nCandidatePosY) {
+                    break;
+                  }
+                goto try_candidate;
               }
             }
           }
@@ -1019,11 +1020,11 @@ static eCollisionFlags __stdcall COLLISN_CheckCellMask_RegArgs(D2RoomStrc * pRoo
     }
 
     D2RoomCollisionGridStrc* pCollisionMap = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pBetterRoom);
-    if (!(pCollisionMap && pCollisionMap->pMapStart)) {
-      return COLLISION_INVALID;
+    if (pCollisionMap && pCollisionMap->pMapStart) {
+      return pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & (eCollisionFlags)eCollisionFlag;
     }
 
-    return pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & (eCollisionFlags)eCollisionFlag;
+    return COLLISION_INVALID;
 }
 
 static void __stdcall RemoveCollision_Vector1(D2RoomStrc * pRoom, int32_t nX, int32_t nY, eCollisionFlags eCollisionFlag) {
@@ -1063,11 +1064,11 @@ eCollisionFlags __stdcall CheckCollision_BlockPlayerMissile(D2RoomStrc * pRoom, 
     }
 
     D2RoomCollisionGridStrc* pCollisionMap = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pBetterRoom);
-    if (!(pCollisionMap && pCollisionMap->pMapStart)) {
-      return COLLISION_INVALID;
+    if (pCollisionMap && pCollisionMap->pMapStart) {
+      return pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & eCollisionFlag;
     }
 
-    return pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & eCollisionFlag;
+    return COLLISION_INVALID;
 }
 
 void __stdcall AddCollision(D2RoomStrc * pRoom, int32_t nX, int32_t nY, eCollisionFlags eCollisionFlag) {
@@ -1390,72 +1391,78 @@ D2BoundingBoxStrc * __fastcall BoundingBox(D2BoundingBoxStrc * pBox, int32_t nX,
 
 // ORs the collision flags of the center cell plus its four cardinal neighbours (N/S/E/W) at (nX,nY) in the room collision grid, masked by eCollisionFlag. Handles edge/boundary cases by fetching adjacent-room flags via CheckCollision_BlockPlayerMissile_Internal1 when any neighbour lies outside the current room grid. Returns the combined masked flags, or eCollisionFlag if the room/grid is missing.
 static eCollisionFlags __stdcall CheckCollision_Cross(D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t eCollisionFlag) {
-    eCollisionFlags eAdjacentResult;
     eCollisionFlags eAdjacentResult2;
     eCollisionFlags eAdjacentFlags1;
     eCollisionFlags eAdjacentFlags2;
+    D2RoomCollisionGridStrc* pCollisionGrid;
+    int nYp1;
     uint8_t byEdgeMask;
+    char cEdgeCase;
+    int nGridStride;
+    int nXStart;
+    int nXp1;
+    int nYStart;
+    eCollisionFlags* pCellBase;
     D2RoomStrc* pRoom_00 = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
     eCollisionFlags eFlagMask = (eCollisionFlags)eCollisionFlag;
-    if (!pRoom_00) {
-      return eFlagMask;
-    }
+    if (pRoom_00) {
+      eCollisionFlags eAdjacentResult;
+      pCollisionGrid = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pRoom_00);
+      if (pCollisionGrid && pCollisionGrid->pMapStart) {
+        nXStart = pCollisionGrid->sCoords.dwXStart;
+        cEdgeCase = nXStart >= nX;
+        if (pCollisionGrid->sCoords.dwYStart >= nY) {
+          cEdgeCase += '\x02';
+        }
 
-    D2RoomCollisionGridStrc* pCollisionGrid = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pRoom_00);
-    if (!(pCollisionGrid && pCollisionGrid->pMapStart)) {
-      return eFlagMask;
-    }
+        nGridStride = pCollisionGrid->sCoords.dwXSize;
+        nXp1 = nX + 1;
+        if (nXStart + nGridStride <= nXp1) {
+          cEdgeCase += '\x04';
+        }
 
-    int nXStart = pCollisionGrid->sCoords.dwXStart;
-    char cEdgeCase = nXStart >= nX;
-    if (pCollisionGrid->sCoords.dwYStart >= nY) {
-      cEdgeCase += '\x02';
-    }
+        nYStart = pCollisionGrid->sCoords.dwYStart;
+        nYp1 = nY + 1;
+        if (pCollisionGrid->sCoords.dwYSize + nYStart <= nYp1) {
+          cEdgeCase += '\b';
+        }
 
-    int nGridStride = pCollisionGrid->sCoords.dwXSize;
-    int nXp1 = nX + 1;
-    if (nXStart + nGridStride <= nXp1) {
-      cEdgeCase += '\x04';
-    }
+        pCellBase = pCollisionGrid->pMapStart + ((nY - nYStart) * nGridStride - nXStart) + nX;
+        switch (cEdgeCase) {
+          case '\0':
+            return (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
+          case '\x01':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
+          return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask;
+          case '\x02':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
+          return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
+          case '\x03':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
+          eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
+          return eAdjacentResult2 | (pCellBase[nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask | eAdjacentResult;
+          case '\x04':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
+          return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask;
+          case '\x06':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
+          eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
+          return eAdjacentResult2 | (pCellBase[nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask | eAdjacentResult;
+          case '\b':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
+          return eAdjacentResult | (pCellBase[-nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
+          case '\t':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
+          eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
+          return eAdjacentResult2 | (pCellBase[-nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask | eAdjacentResult;
+          case '\f':
+            eAdjacentFlags1 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
+          eAdjacentFlags2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
+          return eAdjacentFlags2 | (pCellBase[-nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask | eAdjacentFlags1;
+        }
 
-    int nYStart = pCollisionGrid->sCoords.dwYStart;
-    int nYp1 = nY + 1;
-    if (pCollisionGrid->sCoords.dwYSize + nYStart <= nYp1) {
-      cEdgeCase += '\b';
-    }
-
-    eCollisionFlags* pCellBase = pCollisionGrid->pMapStart + ((nY - nYStart) * nGridStride - nXStart) + nX;
-    switch (cEdgeCase) {
-      case '\0':
-        return (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
-      case '\x01':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
-      return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask;
-      case '\x02':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
-      return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
-      case '\x03':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
-      eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
-      return eAdjacentResult2 | (pCellBase[nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask | eAdjacentResult;
-      case '\x04':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
-      return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask;
-      case '\x06':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
-      eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
-      return eAdjacentResult2 | (pCellBase[nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask | eAdjacentResult;
-      case '\b':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
-      return eAdjacentResult | (pCellBase[-nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
-      case '\t':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
-      eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
-      return eAdjacentResult2 | (pCellBase[-nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask | eAdjacentResult;
-      case '\f':
-        eAdjacentFlags1 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
-      eAdjacentFlags2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
-      return eAdjacentFlags2 | (pCellBase[-nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask | eAdjacentFlags1;
+        return eFlagMask;
+      }
     }
 
     return eFlagMask;
@@ -1469,11 +1476,11 @@ static int32_t __stdcall COLLISN_CheckCellMaskOrBlocked(D2RoomStrc * pRoom, int3
     }
 
     D2RoomCollisionGridStrc* pCollisionMap = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pBetterRoom);
-    if (!(pCollisionMap && pCollisionMap->pMapStart)) {
-      return 0b00100111;
+    if (pCollisionMap && pCollisionMap->pMapStart) {
+      return (uint32_t)(pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & eCollisionFlag);
     }
 
-    return (uint32_t)(pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & eCollisionFlag);
+    return 0b00100111;
 }
 
 static eCollisionFlags __stdcall CheckCollision_BoundingBox1(D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t eCollisionFlag) {

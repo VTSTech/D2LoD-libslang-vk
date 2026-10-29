@@ -102,18 +102,17 @@ void __fastcall Objects_InitFn49(D2ObjectInitFnArg * pInitArg) {
 // Q17_GetHratliCoords — (QUEST_SpokeToHratli helper, not Lam Esen). Reads SpokeToHratli quest-specific data and, if the reward was given and the quest accepted, exports two values (notify-completion flag + cached monster/Blood-Raven GUID) through the out param. Returns 1 on success, 0 otherwise. Pure read; no quest-state mutation.
 uint32_t __fastcall Q17_GetHratliCoords(::SGAMEDATA * pGame, int32_t * pdwParam) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_SpokeToHratli);
-    if (!pQuestData) {
-      return 0;
+    if (pQuestData) {
+      D2QuestDataA3Q0Strc* pA1Q2Data;
+      pA1Q2Data = pQuestData->pQuestSpecificData.pA3Q0;
+      if (pA1Q2Data->bHratliCoordsValid == '\x01' && pA1Q2Data->bHasHratliCoords) {
+        *pdwParam = pA1Q2Data->nHratliX;
+        pdwParam[1] = pA1Q2Data->nHratliY;
+        return 1;
+      }
     }
 
-    D2QuestDataA3Q0Strc* pA1Q2Data = pQuestData->pQuestSpecificData.pA3Q0;
-    if (!(pA1Q2Data->bHratliCoordsValid == '\x01' && pA1Q2Data->bHasHratliCoords)) {
-      return 0;
-    }
-
-    *pdwParam = pA1Q2Data->nHratliX;
-    pdwParam[1] = pA1Q2Data->nHratliY;
-    return 1;
+    return 0;
 }
 
 // Objects_InitFn50 — (QUEST_SpokeToHratli helper, not Lam Esen). Second-stage init for the Q17 monster: records Charsi-notified flag + monster GUIDs, then — only if record state 0xd (JustCompleted) IS set and the monster was not yet taken — spawns the unique monster (monstats 0xfd), flags it ISRESURRECT|ISINIT, and transplants the DRLG preset map-AI file onto it. Reads SpokeToHratli record state; writes only the quest-specific struct, not the player quest record.
@@ -585,8 +584,8 @@ BOOL __fastcall OBJOP_A3Q1_KhalimsRelicAltar(D2ObjectOperateFnArg * pOperation) 
     }
 
     ::SGAMEDATA* pGame = pOperation->sArg.pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pOperation->pAttacker);
-    BOOL bQuestCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_LamEsensTome, QUESTSTATE_Completed);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pOperation->pAttacker)->pQuestRecord[pGame->nDifficulty];
+    BOOL bQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_LamEsensTome, QUESTSTATE_Completed);
     if (bQuestCompleted == 1) {
       UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
       return 0;

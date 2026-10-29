@@ -488,11 +488,11 @@ bool __stdcall DEBUG_EnumerateModules(int * pModuleList) {
     }
 
     bVar1 = DEBUG_EnumerateModulesViaToolhelp32(pModuleList);
-    if (bVar1) {
+    if (!bVar1) {
+      bVar1 = DEBUG_EnumerateModulesViaPEB(pModuleList);
       return bVar1;
     }
 
-    bVar1 = DEBUG_EnumerateModulesViaPEB(pModuleList);
     return bVar1;
 }
 
@@ -600,29 +600,7 @@ int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFram
     hOpenedThread = (HANDLE)0x0;
     uint32_t local_20;
     local_20 = uStack800;
-    if (!pContext) {
-      dwThreadIdOrSuspend = GetCurrentThreadId();
-      threadContext.ContextFlags = 0x10001;
-      if (dwThreadIdOrSuspend == dwThreadId) {
-        RtlCaptureContext(&threadContext);
-        goto walk_stack;
-      }
-
-      /* DWORD dwThreadId for OpenThread */ /* BOOL bInheritHandle for OpenThread */ /* DWORD dwDesiredAccess for OpenThread */ hThread = OpenThread(0x4a, 0, dwThreadId);
-      hOpenedThread = hThread;
-      /* HANDLE hThread for SuspendThread */ if (hThread) {
-        dwThreadIdOrSuspend = SuspendThread(hThread);
-        if (dwThreadIdOrSuspend != -1) {
-          /* LPCONTEXT lpContext for GetThreadContext */ /* HANDLE hThread for GetThreadContext */ bGetContextOk = GetThreadContext(hThread, &threadContext);
-          if (bGetContextOk) {
-            goto walk_stack;
-          }
-
-          /* HANDLE hThread for ResumeThread */ ResumeThread(hThread);
-          /* HANDLE hObject for CloseHandle */ CloseHandle(hThread);
-        }
-      }
-    } else {
+    if (pContext) {
       pCtxCopy = &threadContext;
       pSavedEsp = &uStack800;
       for (nCtxCopyCount = 0xb3; nCtxCopyCount; nCtxCopyCount--) {
@@ -682,6 +660,28 @@ int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFram
       if (hOpenedThread) {
         /* HANDLE hThread for ResumeThread */ ResumeThread(hThread);
         /* HANDLE hObject for CloseHandle */ CloseHandle(hThread);
+      }
+    } else {
+      dwThreadIdOrSuspend = GetCurrentThreadId();
+      threadContext.ContextFlags = 0x10001;
+      if (dwThreadIdOrSuspend == dwThreadId) {
+        RtlCaptureContext(&threadContext);
+        goto walk_stack;
+      }
+
+      /* DWORD dwThreadId for OpenThread */ /* BOOL bInheritHandle for OpenThread */ /* DWORD dwDesiredAccess for OpenThread */ hThread = OpenThread(0x4a, 0, dwThreadId);
+      hOpenedThread = hThread;
+      /* HANDLE hThread for SuspendThread */ if (hThread) {
+        dwThreadIdOrSuspend = SuspendThread(hThread);
+        if (dwThreadIdOrSuspend != -1) {
+          /* LPCONTEXT lpContext for GetThreadContext */ /* HANDLE hThread for GetThreadContext */ bGetContextOk = GetThreadContext(hThread, &threadContext);
+          if (bGetContextOk) {
+            goto walk_stack;
+          }
+
+          /* HANDLE hThread for ResumeThread */ ResumeThread(hThread);
+          /* HANDLE hObject for CloseHandle */ CloseHandle(hThread);
+        }
       }
     }
 
@@ -1367,11 +1367,11 @@ uint32_t __stdcall PATH_GetKnownFolderPath(LPSTR szOutPath, int32_t nBufferSize)
     BOOL bUsedDefaultChar = 0;
     int nWideConverted = WideCharToMultiByte(0, 0x400, pwszKnownPath, -1, szOutPath, nBufferSize, (LPCSTR)0x0, &bUsedDefaultChar);
     /* LPVOID pv for CoTaskMemFree */ CoTaskMemFree(pwszKnownPath);
-    if (!(nWideConverted && !bUsedDefaultChar)) {
-      return 0;
+    if (nWideConverted && !bUsedDefaultChar) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 } // namespace Fog::Engine::Application

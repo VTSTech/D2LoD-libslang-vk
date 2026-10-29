@@ -115,7 +115,7 @@ static void __stdcall CalculatePierce(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     }
 
     D2MissilesTxt* pMissileTxt = D2Client::GetMissleById(pUnit->nClassId);
-    if (!pMissileTxt->Pierce) {
+    if (!(*((uint8_t*)pMissileTxt + 0x4) & (uint8_t)gadwBitMasks[2])) {
       return;
     }
 
@@ -219,7 +219,7 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
       nVelocity = nTmpY / 8 + (uint32_t)(uint8_t)pMissileTxt->Vel;
       nVelocity <<= 8;
     }
-    if (pMissileTxt->CanSlow) {
+    if (*((uint8_t*)pMissileTxt + 0x4) & (uint8_t)gadwBitMasks[3]) {
       eD2States eSlowMissileState;
       eSlowMissileState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pArgs->pOwner, STATE_slowmissiles);
       if (eSlowMissileState != STATE_none) {
@@ -326,7 +326,7 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
 
     D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, nOwnerX);
     D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynamicPath, gaMissileSrvDoFuncTable[(uint8_t)pMissileTxt->CollideType].nFlags);
-    if (pMissileTxt->CanDestroy) {
+    if (*((uint8_t*)pMissileTxt + 0x4) & (uint8_t)gadwBitMasks[4]) {
       pUnit->eUnitFlags |= UNITFLAG_CANBEATTACKED;
     }
     if (nVelocity) {
@@ -388,7 +388,7 @@ void __fastcall MISSILES_SendMissilePacket(D2ClientStrc * pClient, ::SGAMEDATA *
     }
 
     int nMissileClassId = pUnit->nClassId;
-    if (!(nMissileClassId >= 0 && nMissileClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nMissileClassId && sgptDataTable->pTxtMissiles[nMissileClassId].ClientSend)) {
+    if (!(nMissileClassId >= 0 && nMissileClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nMissileClassId && *((uint8_t*)&sgptDataTable->pTxtMissiles[nMissileClassId] + 0x4) & (uint8_t)gadwBitMasks[5])) {
       return;
     }
 

@@ -118,11 +118,11 @@ typedef void (__fastcall *pfnPartyMemberFilter)(::SGAMEDATA * pGame, D2UnitStrc 
 namespace D2Game::UNIT::SUnitDmg {
 
 uint32_t __fastcall DAMAGE_CheckMonsterTypeVsMonsterType(uint32_t nMonTypeA, int32_t nMonTypeB) {
-    if (!((int)nMonTypeA > 0 && (int)nMonTypeA < sgptDataTable->nTxtMonTypeSize && nMonTypeB > 0 && nMonTypeB < sgptDataTable->nTxtMonTypeSize)) {
-      return 0;
+    if ((int)nMonTypeA > 0 && (int)nMonTypeA < sgptDataTable->nTxtMonTypeSize && nMonTypeB > 0 && nMonTypeB < sgptDataTable->nTxtMonTypeSize) {
+      return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtMonTypeUnknown + (sgptDataTable->nMonTypeEquivRowDwords * nMonTypeB + ((int)nMonTypeA >> 5)) * 4) & gadwBitMasks[nMonTypeA & 0x1f];
     }
 
-    return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtMonTypeUnknown + (sgptDataTable->nMonTypeEquivRowDwords * nMonTypeB + ((int)nMonTypeA >> 5)) * 4) & gadwBitMasks[nMonTypeA & 0x1f];
+    return 0;
 }
 
 static uint32_t __stdcall DAMAGE_RollPhysicalDamageRange(int32_t nDamageRange, int32_t nMinPctBonus, D2UnitStrc * pUnit, int32_t nDamageMin, int32_t nRangePctBonus, uint32_t nDamageAccum) {
@@ -422,16 +422,15 @@ static void __stdcall DAMAGE_ApplyBurning(D2UnitStrc * pUnit, int32_t nParam1, i
 }
 
 int32_t __fastcall DAMAGE_GetMonsterDelayByDifficulty(D2UnitStrc * pUnit, D2UnitStrc * pMonster) {
-    if (!(pMonster && pMonster->eUnitType == UNIT_MONSTER)) {
-      return -0x32;
+    if (pMonster && pMonster->eUnitType == UNIT_MONSTER) {
+      int nVictimClassId;
+      nVictimClassId = pMonster->nClassId;
+      if (nVictimClassId >= 0 && nVictimClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nVictimClassId) {
+        return (int)sgptDataTable->pTxtMonStats[nVictimClassId].aColdEffect[*(uint8_t*)((uintptr_t)&pUnit->uSideData + 9)];
+      }
     }
 
-    int nVictimClassId = pMonster->nClassId;
-    if (!(nVictimClassId >= 0 && nVictimClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nVictimClassId)) {
-      return -0x32;
-    }
-
-    return (int)sgptDataTable->pTxtMonStats[nVictimClassId].aColdEffect[*(uint8_t*)((uintptr_t)&pUnit->uSideData + 9)];
+    return -0x32;
 }
 
 // Applies cold slow to pUnit2 for nParam frames, sourced from attacker pUnit. Looks up MonStats ColdEffect per difficulty; divides duration for cold-immune monsters. Creates or extends STATE_cold stat list (velocity/attack/anim rate penalties), schedules expiry event, and probabilistically sets STATE_shatter on eligible monsters.
@@ -1755,7 +1754,7 @@ void __fastcall DAMAGE_ApplyDamageToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     pRoom = D2Common::Units::UNITS_GetRoom(pVictim);
     BOOL bIsInTownOrKillable;
     bIsInTownOrKillable = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
-    if (bIsInTownOrKillable && (!pUnit || pUnit->eUnitType != UNIT_MONSTER || (pMonStats = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit->nClassId) , !pMonStats || !pMonStats->inTown))) {
+    if (bIsInTownOrKillable && (!pUnit || pUnit->eUnitType != UNIT_MONSTER || (pMonStats = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit->nClassId) , !pMonStats || !(*((uint8_t*)pMonStats + 0xd) & (uint8_t)gadwBitMasks[2])))) {
       pDamage->wResultFlags &= 0xfffd;
       return;
     }
@@ -1953,9 +1952,6 @@ BOOL __stdcall DAMAGE_CheckKnockbackThreshold(D2UnitStrc * pUnit, D2DamageStrc *
 
     int32_t nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
     switch (pDamage2) {
-      default:
-        nKbDivisor = 0x10;
-      break;
       case ELEMENTAL_LIGHTNING:
 
       case ELEMENTAL_LIFEDRAIN:
@@ -1972,6 +1968,10 @@ BOOL __stdcall DAMAGE_CheckKnockbackThreshold(D2UnitStrc * pUnit, D2DamageStrc *
       break;
       case ELEMENTAL_POISON:
         nKbDivisor = 0x40;
+      break;
+      default:
+        nKbDivisor = 0x10;
+      break;
     }
 
     if (!(pDamage1->dwDmgTotal >= nMaxHp / (int)nKbDivisor && (pDamage1->dwDmgTotal >= nMaxHp / (int)(nKbDivisor / 2) || (uRandRoll = D2Client::Seed::RNG_GetRandomInRange(&pUnit->sSeed.nSeedLow, 2) , uRandRoll != 0)) && (pDamage1->dwDmgTotal >= nMaxHp / ((int)nKbDivisor >> 2) || (uRandRoll2 = D2Client::Seed::RNG_GetRandomInRange(&pUnit->sSeed.nSeedLow, 4) , uRandRoll2 != 0)) && (!pUnit || pUnit->eUnitType != UNIT_MONSTER || (uRandRoll2 = D2Client::Source::ClientEngine::GetSomeMonsterStatFlag(pUnit->nClassId, 3) , uRandRoll2 != 0)))) {
@@ -2215,7 +2215,7 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
         if (!pMonStats) {
           return;
         }
-        if (!pMonStats->inTown) {
+        if (!(*((uint8_t*)pMonStats + 0xd) & (uint8_t)gadwBitMasks[2])) {
           return;
         }
       }
@@ -2605,35 +2605,36 @@ void __fastcall DAMAGE_ProcessCombatQueueEntry(::SGAMEDATA * pGame, D2UnitStrc *
 D2DamageStrc * __fastcall DAMAGE_FindCombatEntry(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     int32_t nGUID;
     int32_t nDefenderGUID;
-    if (!(pUnit && pUnit2)) {
-      return nullptr;
-    }
-
-    D2CombatEntryStrc* pCombatEntry = (D2CombatEntryStrc*)pUnit->pCombat;
-    while (true) {
+    D2CombatEntryStrc* pCombatEntry;
+    if (pUnit && pUnit2) {
       eD2UnitType eUnitType;
-      if (!pCombatEntry) {
-        return nullptr;
-      }
+      pCombatEntry = (D2CombatEntryStrc*)pUnit->pCombat;
+      while (true) {
+        if (!pCombatEntry) {
+          return nullptr;
+        }
 
-      eUnitType = D2Client::Units::GetType(pUnit);
-      if (pCombatEntry->eAttackerType == eUnitType) {
-        nGUID = D2Client::UNIT::GetGUID(pUnit);
-        if (pCombatEntry->nAttackerGUID == nGUID) {
-          eUnitType = D2Client::Units::GetType(pUnit2);
-          if (pCombatEntry->eDefenderType == eUnitType) {
-            nDefenderGUID = D2Client::UNIT::GetGUID(pUnit2);
-            if (pCombatEntry->nDefenderGUID == nDefenderGUID) {
-              break;
+        eUnitType = D2Client::Units::GetType(pUnit);
+        if (pCombatEntry->eAttackerType == eUnitType) {
+          nGUID = D2Client::UNIT::GetGUID(pUnit);
+          if (pCombatEntry->nAttackerGUID == nGUID) {
+            eUnitType = D2Client::Units::GetType(pUnit2);
+            if (pCombatEntry->eDefenderType == eUnitType) {
+              nDefenderGUID = D2Client::UNIT::GetGUID(pUnit2);
+              if (pCombatEntry->nDefenderGUID == nDefenderGUID) {
+                break;
+              }
             }
           }
         }
+
+        pCombatEntry = pCombatEntry->pNext;
       }
 
-      pCombatEntry = pCombatEntry->pNext;
+      return &pCombatEntry->sDamage;
     }
 
-    return &pCombatEntry->sDamage;
+    return nullptr;
 }
 
 uint32_t __stdcall DAMAGE_RollMinMaxDamageRange(int32_t nParam, uint32_t * pnParam1, uint32_t * pnParam2) {
@@ -2975,7 +2976,8 @@ uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, D2UnitStrc 
       return uBlockResult;
     }
 
-    int nBlockRate = D2Common::Units::GetBlockRate(pDefUnit, pGame->bExpansion);
+    int bExpansion = pGame->bExpansion;
+    int nBlockRate = D2Common::Units::GetBlockRate(pDefUnit, bExpansion);
     if (nBlockRate <= 0) {
       uBlockResult = D2Common::Unit::SUnitDmg::DAMAGE_CheckDefenseEvasion(nAttackRating, pDefUnit, pUnit);
       return uBlockResult;
@@ -3026,10 +3028,10 @@ void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, D2UnitStrc *
     }
 
     memset(&sUnitFindArg, 0, 0x38);
+    sUnitFindArg.nFlags = nUnitFlags;
     sUnitFindArg.nDistance = nRadius;
     sUnitFindArg.nY = nCenterY;
     sUnitFindArg.nX = nCenterX;
-    sUnitFindArg.nFlags = nUnitFlags;
     D2Common::Units::UnitFinds::InitializeUnitFindData(pGame->pMemoryPool, &sUnitFindData, pBestRoom, nCenterX, nCenterY, nRadius, nullptr, &sUnitFindArg);
     D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&sUnitFindData);
     D2UnitStrc* pUnit_00 = SUnit::GetOwnerUnit(pGame, pUnit);
@@ -3197,6 +3199,9 @@ static int32_t __stdcall XP_ApplyLevelExpRatio(int32_t nLevel, int32_t nParam) {
 
 // Calculates the experience cap for a mercenary gaining XP. If pUnit is a player, returns nBaseXp unchanged. If pUnit is a player-owned pet/merc, caps the award to 1/64 of the XP needed for the merc's current level (from HirelingTxt expPerLvl). Returns 0 if no valid hireling record is found (non-player-owned unit).
 static uint32_t __stdcall CALC_Experience(::SGAMEDATA * pGame, uint32_t nBaseXp, D2UnitStrc * pUnit, int32_t nMercLevel) {
+    int32_t nBaseXpCur;
+    int32_t nBaseXpNext;
+    uint32_t nXpPerLevel;
     int nMercGUID;
     if (pUnit && pUnit->eUnitType == UNIT_PLAYER) {
       return nBaseXp;
@@ -3213,23 +3218,22 @@ static uint32_t __stdcall CALC_Experience(::SGAMEDATA * pGame, uint32_t nBaseXp,
     }
 
     D2PetDataStrc* pPetData = PLAYER::PlayerPets::GetPlayersPetData(pUnit_00, nMercGUID);
-    if (!pPetData) {
-      return 0;
+    if (pPetData) {
+      D2HirelingTxt* pHirelingTxt;
+      pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, pPetData->nType, nMercLevel);
+      if (pHirelingTxt) {
+        nBaseXpCur = D2Common::Merc::GetBaseExperience(nMercLevel, pHirelingTxt->expPerLvl);
+        nBaseXpNext = D2Common::Merc::GetBaseExperience(nMercLevel + 1, pHirelingTxt->expPerLvl);
+        nXpPerLevel = (uint32_t)(nBaseXpNext - nBaseXpCur) >> 6;
+        if (nBaseXp > nXpPerLevel) {
+          return nXpPerLevel;
+        }
+
+        return nBaseXp;
+      }
     }
 
-    D2HirelingTxt* pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, pPetData->nType, nMercLevel);
-    if (!pHirelingTxt) {
-      return 0;
-    }
-
-    int32_t nBaseXpCur = D2Common::Merc::GetBaseExperience(nMercLevel, pHirelingTxt->expPerLvl);
-    int32_t nBaseXpNext = D2Common::Merc::GetBaseExperience(nMercLevel + 1, pHirelingTxt->expPerLvl);
-    uint32_t nXpPerLevel = (uint32_t)(nBaseXpNext - nBaseXpCur) >> 6;
-    if (nBaseXp > nXpPerLevel) {
-      return nXpPerLevel;
-    }
-
-    return nBaseXp;
+    return 0;
 }
 
 static uint32_t __stdcall SERVER_CalculateExperienceForUnit(::SGAMEDATA * pGame, int32_t nKillerLevel, int32_t baseExperience, D2UnitStrc * pUnit, int32_t nPlayerLevel) {
@@ -3425,11 +3429,11 @@ static D2UnitStrc * __stdcall SERVER_GetOwnerFromMonsterUnit(::SGAMEDATA * pGame
             nOwnerGUID = D2Common::Stats::StatsEx::GetOwnerGUID(pStatList);
             pMonsterOwner = SUnit::FindUnitFromTable(pGame, eUnitType_00, nOwnerGUID);
           }
-          if (!(pMonsterOwner && pMonsterOwner->eUnitType == UNIT_PLAYER)) {
-            return nullptr;
+          if (pMonsterOwner && pMonsterOwner->eUnitType == UNIT_PLAYER) {
+            return pMonsterOwner;
           }
 
-          return pMonsterOwner;
+          return nullptr;
         }
       default:
         {

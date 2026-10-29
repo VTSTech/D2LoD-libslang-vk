@@ -335,8 +335,8 @@ int __stdcall OOGUTIL_HandleChannelListDoubleClick(D2ControlMsg * pControlMsg) {
         return 0;
       }
     } else {
-      gdwLastChannelListClickTick = dwTickNow;
       gaOOGUtilChannelListLangNames = pLastSelectedLine;
+      gdwLastChannelListClickTick = dwTickNow;
       pwszEditInput = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetSelectedLineText(gpCtlChannelList);
       if (pwszEditInput) {
         D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetTextWide(gpCtlChannelNameEditBox, pwszEditInput);
@@ -465,6 +465,59 @@ int __stdcall JoinOrCreateGame(DWORD dwParam) {
             if (nGSRequestId && nGSRequestId == LastGameRequestId) {
               nResult = D2MCPClient::McpConnect::GetD2GSJoinResult();
               switch (nResult) {
+                case 0x2a:
+                  /* Game does not exist. */ nErrorStrId = 0x1427;
+                break;
+                case 0x29:
+                  /* Game name and password don't match. */ nErrorStrId = 0x1428;
+                break;
+                case 0x2b:
+                  /* Game is Full. */ nErrorStrId = 0x1429;
+                break;
+                case 0x2c:
+                  /* You do not meet the level restrictions for self game. */ nErrorStrId = 0x142a;
+                break;
+                case 0x73:
+                  if (!(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Expansion)) {
+                    /* Unable to enter game. Your character must kill Diablo to play in a Nightmare
+                         game. */ nErrorStrId = 0x14f4;
+                  } else {
+                    /* Unable to enter game. Your character must kill Baal to play in a Nightmare
+                         game. */ nErrorStrId = 0x5522;
+                  }
+                break;
+                case 0x74:
+                  if (!(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Expansion)) {
+                    /* Unable to enter game. Your character must kill Diablo in Nightmare difficulty
+                         to play in a Hell game. */ nErrorStrId = 0x14f3;
+                  } else {
+                    /* Unable to enter game. Your character must kill Baal in Nightmare difficulty
+                         to play in a Hell game. */ nErrorStrId = 0x5521;
+                  }
+                break;
+                case 0x7d:
+                  if (!D2IniData_multiplayer->isLadder) {
+                    /* Unable to enter game. A Ladder character cannot join a game created by a
+                         Non-Ladder character. */ nErrorStrId = 0x2ab2;
+                  } else {
+                    /* Unable to enter game. A Non-Ladder character cannot join a game created by a
+                         Ladder character. */ nErrorStrId = 0x2ab1;
+                  }
+                break;
+                case 0x71:
+                  /* Hardcore and Normal Characters may not be in the same game. */ nErrorStrId = 0x1426;
+                break;
+                case 0x78:
+                  /* Unable to enter game. A Diablo II character cannot join a game created by a
+                         Diablo II Expansion character. */ nErrorStrId = 0x2775;
+                break;
+                case 0x79:
+                  /* Unable to enter game. A Diablo II Expansion character cannot join a game
+                         created by a Diablo II character. */ nErrorStrId = 0x2776;
+                break;
+                default:
+                  /* Join Failed */ nErrorStrId = 0x1415;
+                break;
                 case 0:
                   D2IniData_multiplayer->nGAMETYPE = GAMETYPE_BNET;
                 nResult = D2MCPClient::McpConnect::GetD2GSGameToken();
@@ -485,58 +538,6 @@ int __stdcall JoinOrCreateGame(DWORD dwParam) {
                 D2Win::Src::D2WinMain::D2WINMAIN_SetCursorDC6(nullptr);
                 D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
                 return 1;
-                default:
-                  /* Join Failed */ nErrorStrId = 0x1415;
-                break;
-                case 0x29:
-                  /* Game name and password don't match. */ nErrorStrId = 0x1428;
-                break;
-                case 0x2a:
-                  /* Game does not exist. */ nErrorStrId = 0x1427;
-                break;
-                case 0x2b:
-                  /* Game is Full. */ nErrorStrId = 0x1429;
-                break;
-                case 0x2c:
-                  /* You do not meet the level restrictions for self game. */ nErrorStrId = 0x142a;
-                break;
-                case 0x71:
-                  /* Hardcore and Normal Characters may not be in the same game. */ nErrorStrId = 0x1426;
-                break;
-                case 0x73:
-                  if (!(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Expansion)) {
-                    /* Unable to enter game. Your character must kill Diablo to play in a Nightmare
-                         game. */ nErrorStrId = 0x14f4;
-                  } else {
-                    /* Unable to enter game. Your character must kill Baal to play in a Nightmare
-                         game. */ nErrorStrId = 0x5522;
-                  }
-                break;
-                case 0x74:
-                  if (!(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Expansion)) {
-                    /* Unable to enter game. Your character must kill Diablo in Nightmare difficulty
-                         to play in a Hell game. */ nErrorStrId = 0x14f3;
-                  } else {
-                    /* Unable to enter game. Your character must kill Baal in Nightmare difficulty
-                         to play in a Hell game. */ nErrorStrId = 0x5521;
-                  }
-                break;
-                case 0x78:
-                  /* Unable to enter game. A Diablo II character cannot join a game created by a
-                         Diablo II Expansion character. */ nErrorStrId = 0x2775;
-                break;
-                case 0x79:
-                  /* Unable to enter game. A Diablo II Expansion character cannot join a game
-                         created by a Diablo II character. */ nErrorStrId = 0x2776;
-                break;
-                case 0x7d:
-                  if (!D2IniData_multiplayer->isLadder) {
-                    /* Unable to enter game. A Ladder character cannot join a game created by a
-                         Non-Ladder character. */ nErrorStrId = 0x2ab2;
-                  } else {
-                    /* Unable to enter game. A Non-Ladder character cannot join a game created by a
-                         Ladder character. */ nErrorStrId = 0x2ab1;
-                  }
               }
 
               gpChatFormList = 0;
@@ -563,9 +564,6 @@ int __stdcall JoinOrCreateGame(DWORD dwParam) {
                 LastGameRequestId = CreateJoinGameRequestId;
                 pNetworkUnknown->pfnSendStartAdvEx3(D2IniData_multiplayer->szGAMENAME, D2IniData_multiplayer->szGamePassword, "", 0);
                 goto run_periodic_polls;
-                default:
-                  /* Error Creating Game */ nErrorStrId = 0x1414;
-                break;
                 case 0x1e:
                   /* Invalid Game Name */ nErrorStrId = 0x1411;
                 break;
@@ -574,6 +572,10 @@ int __stdcall JoinOrCreateGame(DWORD dwParam) {
                 break;
                 case 0x20:
                   /* Server Down */ nErrorStrId = 0x1413;
+                break;
+                default:
+                  /* Error Creating Game */ nErrorStrId = 0x1414;
+                break;
               }
 
               gpChatFormList = 0;
@@ -918,6 +920,7 @@ int32_t __fastcall fAPPMODE_multiplayer_ReturnAppMode_Caller(D2IniConfigStrc * p
 
 // Handles the /reply command for out-of-game chat. Parses the reply target from gszOogReplyCommandBuffer, validates token count is exactly 2 (command + message), and formats a whisper message ("/w *target message") to send via the network interface. Shows error messages if no reply target exists or if command syntax is incorrect.
 static uint32_t OOGUTIL_HandleReplyCommand(char * szText1, char * szText2) {
+    BOOL BVar1;
     int nTokenCount;
     uint16_t* pwszErrorMsg;
     char szCommandBuffer[256];
@@ -929,65 +932,65 @@ static uint32_t OOGUTIL_HandleReplyCommand(char * szText1, char * szText2) {
     char* pcScan = szText1;
     pcScan = pcScan + strlen(pcScan) + 1;
     int32_t nCmdCmp = ChatDlg::someStrCompare(szText2, szText1);
-    if (!(!nCmdCmp && (szText2[(int)pcScan - (int)(szText1 + 1)] == ' ' || szText2[(int)pcScan - (int)(szText1 + 1)] == '\0'))) {
-      return 0;
-    }
+    if (!nCmdCmp && (szText2[(int)pcScan - (int)(szText1 + 1)] == ' ' || szText2[(int)pcScan - (int)(szText1 + 1)] == '\0')) {
+      char* pcEnd;
+      pcScan = gszOogReplyCommandBuffer;
+      pcEnd = pcScan + strlen(pcScan);
+      pcScan = pcEnd + 1;
+      if (pcEnd == gszOogReplyCommandBuffer) {
+        pwszErrorMsg = wszOutputBuffer;
+        for (nTokenCount = 0x80; nTokenCount; nTokenCount--) {
+          pwszErrorMsg[0] = L'\0';
+          pwszErrorMsg[1] = L'\0';
+          pwszErrorMsg += 2;
+        }
 
-    pcScan = gszOogReplyCommandBuffer;
-    char* pcEnd = pcScan + strlen(pcScan);
-    pcScan = pcEnd + 1;
-    if (pcEnd == gszOogReplyCommandBuffer) {
-      pwszErrorMsg = wszOutputBuffer;
-      for (nTokenCount = 0x80; nTokenCount; nTokenCount--) {
-        pwszErrorMsg[0] = L'\0';
-        pwszErrorMsg[1] = L'\0';
-        pwszErrorMsg += 2;
-      }
+        sprintf(szMessageBuffer, "Nobody to reply to!");
+      } else {
+        sprintf(szCommandBuffer, "%s ", szText1);
+        pcScan = szText2;
+        do {
+          cVar1 = *pcScan;
+          pcScan[(int)(szTokenBuffer - (int)szText2)] = cVar1;
+          pcScan++;
+        } while (cVar1 != '\0');
 
-      sprintf(szMessageBuffer, "Nobody to reply to!");
-    } else {
-      BOOL BVar1;
-      sprintf(szCommandBuffer, "%s ", szText1);
-      pcScan = szText2;
-      do {
-        cVar1 = *pcScan;
-        pcScan[(int)(szTokenBuffer - (int)szText2)] = cVar1;
-        pcScan++;
-      } while (cVar1 != '\0');
+        szDelimiter[0] = ' ';
+        szDelimiter[1] = '\0';
+        pcScan = strtok(szTokenBuffer, szDelimiter);
+        nTokenCount = 0;
+        while (pcScan) {
+          nTokenCount++;
+          if (nTokenCount == 2) {
+            BVar1 = pNetworkUnknown->pfnIsSocketConnected();
+            if (!BVar1) {
+              pwszErrorMsg = D2Lang::StrTable::strtable::GetLocaleString(0x14e7);
+              ChatDlg::UIMENU_DrawTitleOnCenterSmaller(pwszErrorMsg, OOG::OOGUTIL_DrawCallback_SetModeAndClearMsgLoop);
+              return 1;
+            }
 
-      szDelimiter[0] = ' ';
-      szDelimiter[1] = '\0';
-      pcScan = strtok(szTokenBuffer, szDelimiter);
-      nTokenCount = 0;
-      while (pcScan) {
-        nTokenCount++;
-        if (nTokenCount == 2) {
-          BVar1 = pNetworkUnknown->pfnIsSocketConnected();
-          if (!BVar1) {
-            pwszErrorMsg = D2Lang::StrTable::strtable::GetLocaleString(0x14e7);
-            ChatDlg::UIMENU_DrawTitleOnCenterSmaller(pwszErrorMsg, OOG::OOGUTIL_DrawCallback_SetModeAndClearMsgLoop);
+            sprintf(szMessageBuffer, "/w *%s %s", gszOogReplyCommandBuffer, szText2 + ((int)pcScan - (int)szTokenBuffer));
+            pNetworkUnknown->pfnSendChatCommand((uint8_t*)szMessageBuffer);
             return 1;
           }
 
-          sprintf(szMessageBuffer, "/w *%s %s", gszOogReplyCommandBuffer, szText2 + ((int)pcScan - (int)szTokenBuffer));
-          pNetworkUnknown->pfnSendChatCommand((uint8_t*)szMessageBuffer);
-          return 1;
+          pcScan = strtok(nullptr, szDelimiter);
         }
 
-        pcScan = strtok(nullptr, szDelimiter);
+        Fog::File::CONTAINER_InitializeBuffer(wszOutputBuffer, 2, 0x100, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+        sprintf(szMessageBuffer, "Correct usage is: %s (message)", szText1);
       }
 
-      Fog::File::CONTAINER_InitializeBuffer(wszOutputBuffer, 2, 0x100, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-      sprintf(szMessageBuffer, "Correct usage is: %s (message)", szText1);
-    }
+      D2Lang::UTF8_ConvertToWideChar(wszOutputBuffer, szMessageBuffer, 0x100);
+      if (!gpChatMessagesTextBox) {
+        return 1;
+      }
 
-    D2Lang::UTF8_ConvertToWideChar(wszOutputBuffer, szMessageBuffer, 0x100);
-    if (!gpChatMessagesTextBox) {
+      D2Win::Src::D2WinTextBox::SetText(gpChatMessagesTextBox, wszOutputBuffer, 1, false, 1);
       return 1;
     }
 
-    D2Win::Src::D2WinTextBox::SetText(gpChatMessagesTextBox, wszOutputBuffer, 1, false, 1);
-    return 1;
+    return 0;
 }
 
 void __fastcall OOGUTIL_HandleChatCommands(char * szText) {
@@ -1292,11 +1295,11 @@ uint32_t __fastcall OOGUTIL_CheckCharacterLevel(uint8_t * pszLevelChars) {
     uint8_t byLevelDigit = *pszLevelChars;
     int nMaxLevelDiff = (D2IniData_multiplayer->eCTEMP_eD2PlayerStatus >> 8 & 0x1f) / 5 + 1;
     if (D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Hardcore) {
-      if (!((int)(byLevelDigit - 0x33) <= nMaxLevelDiff && byLevelDigit >= 0x33)) {
-        return 1;
+      if ((int)(byLevelDigit - 0x33) <= nMaxLevelDiff && byLevelDigit >= 0x33) {
+        return 0;
       }
 
-      return 0;
+      return 1;
     }
 
     return (uint32_t)((int)(byLevelDigit - 0x30) > nMaxLevelDiff);
@@ -1736,19 +1739,19 @@ BOOL __stdcall OOGUTIL_SendPasswordPacket(DWORD dwParam1, DWORD dwParam2, char *
 }
 
 BOOL __stdcall OOGUTIL_Unused9(DWORD dwParam1, DWORD dwParam2, char * szText) {
-    if (!('\x1f' < *szText && *szText <= '\x7f')) {
-      return 0;
+    if ('\x1f' < *szText && *szText <= '\x7f') {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 BOOL __stdcall OOGUTIL_Unused10(DWORD dwParam1, DWORD dwParam2, char * szText) {
-    if (!('\x1f' < *szText && *szText <= '\x7f')) {
-      return 0;
+    if ('\x1f' < *szText && *szText <= '\x7f') {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 void __stdcall OOGUTIL_RefreshGameList() {
@@ -2788,8 +2791,8 @@ int __stdcall OOGUTIL_HandleGameCreation(D2ControlMsg * pControlMsg) {
       }
     }
 
-    gdwLastGameListClickTick = dwTick;
     gaOOGUtilGameCreationLangNames = bHasPeerName;
+    gdwLastGameListClickTick = dwTick;
     bHasPeerName = D2MCPClient::McpConnect::HasPeerName();
     if (bHasPeerName) {
       uint16_t* pwszLineText;
@@ -2949,18 +2952,12 @@ void __stdcall UIMENU_WaitInLine() {
     pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(0x2b0f);
     D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextW(gpCtlGameNameLabelOrQueueStatus, pwszClearCursor);
     D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsi(gpCtlGameNameLabelOrQueueStatus, " ", 0);
-    pwszClearCursor = wszMessageBuffer;
-    for (nClearIter = 100; nClearIter; nClearIter--) {
-      pwszClearCursor[0] = L'\0';
-      pwszClearCursor[1] = L'\0';
-      pwszClearCursor += 2;
+    for (nClearIter = 0; nClearIter < 200; nClearIter++) {
+      wszMessageBuffer[nClearIter] = L'\0';
     }
 
-    pwszClearCursor = wszPositionString;
-    for (nClearIter = 0x32; nClearIter; nClearIter--) {
-      pwszClearCursor[0] = L'\0';
-      pwszClearCursor[1] = L'\0';
-      pwszClearCursor += 2;
+    for (nClearIter = 0; nClearIter < 0x64; nClearIter++) {
+      wszPositionString[nClearIter] = L'\0';
     }
 
     uint32_t uVar2 = D2MCPClient::McpConnect::MCPSTATE_GetJoinTimestamp();
@@ -3822,12 +3819,10 @@ void __stdcall OOGUTIL_AppendChatText(uint16_t * wszText) {
 
 int __fastcall OOGUTIL_ValidateStringFilter(DWORD dwUnused, char * szText) {
     int nClearCount;
+    uint16_t* pwszClear;
     uint16_t wszNewsText[576];
-    uint16_t* pwszClear = wszNewsText;
-    for (nClearCount = 0x120; nClearCount; nClearCount--) {
-      pwszClear[0] = L'\0';
-      pwszClear[1] = L'\0';
-      pwszClear += 2;
+    for (nClearCount = 0; nClearCount < 0x240; nClearCount++) {
+      wszNewsText[nClearCount] = L'\0';
     }
 
     D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszNewsText, szText, 0x240);

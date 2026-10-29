@@ -279,16 +279,16 @@ void __fastcall RENDERER_GLIDE_SetTextureMode(int32_t nParam) {
 void __fastcall RENDERER_GLIDE_SetColorCombine(int32_t nParam) {
     int nPrevMode;
     if (!gnGlideColorCombineMode || (nPrevMode = gnGlideColorCombineMode , nParam != gnGlideColorCombineMode)) {
-      if (nParam == 1) {
-        (*GLIDEDLL_grColorCombine_20)(3, 1, 0, 1, 0);
-        nPrevMode = nParam;
-      } else {
+      if (nParam != 1) {
         nPrevMode = nParam;
         if (nParam == 2) {
           (*GLIDEDLL_grColorCombine_20)(1, 0, 1, 2, 0);
           gnGlideColorCombineMode = nParam;
           return;
         }
+      } else {
+        (*GLIDEDLL_grColorCombine_20)(3, 1, 0, 1, 0);
+        nPrevMode = nParam;
       }
     }
 
@@ -1240,12 +1240,6 @@ static void RENDERER_GLIDE_SetDrawMode(int32_t nParam) {
     }
 
     switch (nParam) {
-      case 3:
-        nBlendModeArg = 2;
-      break;
-      case 4:
-        nBlendModeArg = 3;
-      break;
       case 5:
 
       case 7:
@@ -1253,6 +1247,12 @@ static void RENDERER_GLIDE_SetDrawMode(int32_t nParam) {
       return;
       default:
         goto default_case;
+      case 3:
+        nBlendModeArg = 2;
+      break;
+      case 4:
+        nBlendModeArg = 3;
+      break;
     }
 
     RENDERER_GLIDE_SetAlphaBlendMode(nBlendModeArg);
@@ -1661,8 +1661,8 @@ void __stdcall RENDERER_GLIDE_InitSpriteCache() {
     gpGlideSpriteBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4c);
     gpGlideSpritePixelBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4d);
     D2CMP::SRC::CelCmp::CELCMP_SetPixelDataFreeCallback(GLIDE_PixelDataFreeCallback_ClearCacheNodes);
-    gnGlideTMUIndex = (uint32_t)(gnGlideTextureMemoryUsed > 1);
     gnGlideSpriteSecondaryTMUEnabled = 0;
+    gnGlideTMUIndex = (uint32_t)(gnGlideTextureMemoryUsed > 1);
     if (gnGlideTextureMemoryUsed <= 1) {
       return;
     }
@@ -1838,9 +1838,9 @@ static LPINT __stdcall RENDERER_GLIDE_DrawDebugChar(int32_t nParam1, int32_t nPa
     if ((uint8_t)(cParam - 0x20U) <= 0x5f) {
       gfGlideDebugFontVertex0X = (float)nParam1;
       gfGlideDebugFontVertex0Y = (float)nParam2;
+      gfGlideDebugFontVertex1X = gfGlideDebugFontVertex0X;
       gfGlideDebugFontVertex1Y = (float)(nParam2 + 0x10);
       gfGlideDebugFontVertex3S = (float)(nParam1 + 8);
-      gfGlideDebugFontVertex1X = gfGlideDebugFontVertex0X;
       gfGlideDebugFontVertex2T = gfGlideDebugFontVertex1Y;
       gfGlideDebugFontVertex3X = gfGlideDebugFontVertex3S;
       gfGlideDebugFontVertex3T = gfGlideDebugFontVertex0Y;
@@ -3042,13 +3042,13 @@ void __stdcall RENDERER_GLIDE_BuildPerspectiveLUT() {
     uint32_t* pLutEntry = (uint32_t*)gpPerspectiveLookupTable;
     do {
       int nClampedZ;
-      if (nZ <= -0xbb7) {
-        nClampedZ = -2999;
-      } else {
+      if (nZ > -0xbb7) {
         nClampedZ = nZ;
         if (nZ >= 0xbb7) {
           nClampedZ = 2999;
         }
+      } else {
+        nClampedZ = -2999;
       }
 
       nZ++;

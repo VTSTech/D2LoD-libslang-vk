@@ -279,6 +279,54 @@ static BOOL SPRITECACHE_FindOrLoad(char * szText, D2GfxDataStrc * pGfxData) {
     int nSpriteCmpId;
     if (!false) {
       switch (pGfxData->eUnitType) {
+        case UNIT_ITEM:
+          pWriteCursor = pGfxData->szFilename;
+        if (pWriteCursor) {
+          do {
+            cCurrent = *pWriteCursor;
+            *szText = cCurrent;
+            pWriteCursor++;
+            szText++;
+          } while (cCurrent != '\0');
+
+          return 1;
+        }
+
+        break;
+        case UNIT_MISSILE:
+          pWriteCursor = pGfxData->szFilename;
+        if (pWriteCursor) {
+          if (bUseCompressedData) {
+            pGfxData->dwRenderFlags |= 1;
+          }
+
+          do {
+            cCurrent = *pWriteCursor;
+            *szText = cCurrent;
+            pWriteCursor++;
+            szText++;
+          } while (cCurrent != '\0');
+
+          return 1;
+        }
+
+        break;
+        case UNIT_COUNT:
+          if (pGfxData->dwFlags & 2 && (pWriteCursor = pGfxData->szFilename , pWriteCursor != 0)) {
+            if (pGfxData->nOverlayId != 0x7a && bUseCompressedData) {
+              pGfxData->dwRenderFlags |= 1;
+            }
+
+            do {
+              cCurrent = *pWriteCursor;
+              *szText = cCurrent;
+              pWriteCursor++;
+              szText++;
+            } while (cCurrent != '\0');
+
+            return 1;
+          }
+        break;
         case UNIT_PLAYER:
 
         case UNIT_MONSTER:
@@ -425,53 +473,6 @@ static BOOL SPRITECACHE_FindOrLoad(char * szText, D2GfxDataStrc * pGfxData) {
         }
 
         return 1;
-        case UNIT_MISSILE:
-          pWriteCursor = pGfxData->szFilename;
-        if (pWriteCursor) {
-          if (bUseCompressedData) {
-            pGfxData->dwRenderFlags |= 1;
-          }
-
-          do {
-            cCurrent = *pWriteCursor;
-            *szText = cCurrent;
-            pWriteCursor++;
-            szText++;
-          } while (cCurrent != '\0');
-
-          return 1;
-        }
-
-        break;
-        case UNIT_ITEM:
-          pWriteCursor = pGfxData->szFilename;
-        if (pWriteCursor) {
-          do {
-            cCurrent = *pWriteCursor;
-            *szText = cCurrent;
-            pWriteCursor++;
-            szText++;
-          } while (cCurrent != '\0');
-
-          return 1;
-        }
-
-        break;
-        case UNIT_COUNT:
-          if (pGfxData->dwFlags & 2 && (pWriteCursor = pGfxData->szFilename , pWriteCursor != 0)) {
-            if (pGfxData->nOverlayId != 0x7a && bUseCompressedData) {
-              pGfxData->dwRenderFlags |= 1;
-            }
-
-            do {
-              cCurrent = *pWriteCursor;
-              *szText = cCurrent;
-              pWriteCursor++;
-              szText++;
-            } while (cCurrent != '\0');
-
-            return 1;
-          }
       }
     }
 
@@ -849,16 +850,17 @@ static DC6Block * __stdcall SPRITECACHE_FindFrameBlock(D2GfxDataStrc * pGfxData,
 // Waits for the cache block's async load, copies nFramesPerDir into pGfxData->nFrameCount and returns
 // SPRITECACHE_FindFrameBlock over the loaded buffer. No hash is involved.
 static DC6Block * SPRITECACHE_GetFrameBlock(D2CelCacheBlockStrc * pCacheBlock, D2GfxDataStrc * pGfxData) {
-    if (!(pCacheBlock && pCacheBlock->tDecode.pAsyncData)) {
-      return nullptr;
-    }
+    DC6Block* pFrameBlock;
+    if (pCacheBlock && pCacheBlock->tDecode.pAsyncData) {
+      uint8_t* pAsyncResult;
+      pAsyncResult = (uint8_t*)Fog::Src::AsyncData::ASYNCDATA_GetResult(pCacheBlock->tDecode.pAsyncData);
+      if (pAsyncResult) {
+        pGfxData->nFrameCount = (uint32_t)pCacheBlock->tDecode.nFramesPerDir;
+        pFrameBlock = SPRITECACHE_FindFrameBlock(pGfxData, pAsyncResult, &pCacheBlock->tDecode);
+        return pFrameBlock;
+      }
 
-    uint8_t* pAsyncResult = (uint8_t*)Fog::Src::AsyncData::ASYNCDATA_GetResult(pCacheBlock->tDecode.pAsyncData);
-    if (pAsyncResult) {
-      DC6Block* pFrameBlock;
-      pGfxData->nFrameCount = (uint32_t)pCacheBlock->tDecode.nFramesPerDir;
-      pFrameBlock = SPRITECACHE_FindFrameBlock(pGfxData, pAsyncResult, &pCacheBlock->tDecode);
-      return pFrameBlock;
+      return nullptr;
     }
 
     return nullptr;
