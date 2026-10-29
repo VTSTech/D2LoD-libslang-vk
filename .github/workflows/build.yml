@@ -86,3 +86,63 @@ jobs:
           name: glide3x-dll-${{ steps.shortsha.outputs.short }}
           path: stage/*
           if-no-files-found: error
+
+  # Route-B Stage 0 (ROUTE-B.md): the compute rasterizer's bit-exactness gate.
+  # The same deterministic corpus is rasterized twice — by the production CPU
+  # raster (spike/raster_regress cpu) and by spike/routeb.comp on Lavapipe —
+  # and the per-frame hashes must diff clean. Also asserts the kernel's
+  # `precise` qualifiers survived compilation (NoContraction decorations:
+  # without them a driver may FMA-contract the edge math and break bit-
+  # exactness silently). A red run here means the kernel or the corpus
+  # changed behavior — fix the kernel, never "re-pin" the corpus casually.
+  routeb:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the tools (compiler, Vulkan loader + Lavapipe, glslang)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq g++ libvulkan-dev mesa-vulkan-drivers \
+            glslang-tools spirv-tools
+
+      - name: Compile the kernel to SPIR-V
+        run: glslangValidator -V spike/routeb.comp -o routeb.comp.spv
+
+      - name: Assert NoContraction survived (the precise-qualifier check)
+        run: |
+          spirv-dis routeb.comp.spv -o /tmp/routeb.dis
+          n=$(grep -c 'NoContraction' /tmp/routeb.dis || true)
+          echo "NoContraction decorations: $n"
+          test "$n" -gt 0 || { echo "precise qualifiers lost — FMA contraction risk"; exit 1; }
+
+      - name: Build the parity harness (CPU + GPU modes)
+        run: |
+          g++ -O2 -std=c++17 -DROUTEB_HAVE_GPU -I spike/fakewin -I src \
+              -I vendor/volk -I vendor/Vulkan-Headers/include \
+              spike/raster_regress.cpp spike/routeb_gpu.cpp src/g3x_frame.cpp \
+              vendor/volk/volk.c -ldl -lpthread -o raster_regress
+
+      - name: CPU pin (the production raster, vs the committed Stage-0 pin)
+        run: |
+          ./raster_regress cpu | tee cpu.txt
+          if ! diff -u spike/raster_hashes_stage0.txt cpu.txt; then
+            echo "the CPU raster drifted from the committed Stage-0 pin"
+            echo "(a deliberate corpus/raster change re-pins the file — with the field log quoted)"
+            exit 1
+          fi
+
+      - name: GPU run (the kernel on Lavapipe)
+        run: |
+          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+          export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+          ./raster_regress gpu routeb.comp.spv | tee gpu.txt
+
+      - name: Bit-exactness gate (CPU == GPU, frame by frame)
+        run: |
+          if ! diff -u cpu.txt gpu.txt; then
+            echo "ROUTE-B: the kernel diverged from the CPU raster"
+            exit 1
+          fi
+          echo "ROUTE-B Stage 0: $(wc -l < gpu.txt) frames bit-identical"
+

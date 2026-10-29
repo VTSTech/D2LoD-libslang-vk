@@ -1,0 +1,333 @@
+// routeb.comp — the Route-B Stage 0 compute rasterizer (spike).
+//
+// The GLSL rendering of src/g3x_raster_core.h's raster_tri + fill_span, for
+// ONE (triangle, row) per invocation: identical expressions in identical
+// order, so every float result is bit-identical (IEEE single both sides; the
+// `precise` qualifiers forbid FMA contraction and reassociation — glslang
+// emits NoContraction for them, ROUTE-B.md §2).
+//
+// Stage 0 shape (binless, non-overlapping corpus — ROUTE-B.md §3.2): one
+// invocation per (triangle, row); rows outside the tri's clamped bbox
+// early-out. Ordering within a pixel is irrelevant while no two triangles
+// share a pixel; Stage 1 adds tile binning for the painter's-order guarantee.
+//
+// Mirrors, line-for-line (CPU side -> kernel):
+//   blend_class_of        -> blend_class_of
+//   const_fill_rgb        -> fill_src from rec[10]
+//   blend_px / blend_gen  -> blend_px (switch) / blend_gen
+//   owns_edge/inside_exact-> same bodies
+//   tex_space_lod         -> host-precomputed tsx/tsy in the record
+//   fill_span             -> the per-row pixel loop
+//   raster_tri row loop   -> the invocation body (y = the invocation's row)
+// Deviations (value-identical, noted):
+//   - minx/maxx via ternaries exactly as C++ (not min()/max() builtins)
+//   - 565 texels compose from BYTES (the byte heap; LE compose == the CPU's
+//     uint16 load on little-endian, and needs no alignment)
+//   - the uniform-VC path computes the pal_mult LUT-entry formula inline
+//     with the exact vertex dword (vr/vg/vb) — the CPU memoizes the same
+//     formula, so the bits agree by construction
+#version 460
+precision highp float;
+precision highp int;
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 0) readonly buffer VXYUV { vec4  v_xyuv[];  };
+layout(std430, binding = 1) readonly buffer VARGB { uint  v_argb[];  };
+layout(std430, binding = 2) readonly buffer TRIS   { uvec4 tris[];   };
+// 13 words per record: sf df const_alpha color_fill chroma_on tex_off
+// tex_w tex_h tex_lod tex_bpp fill_rgb tsx tsy (tsx/tsy are float bits)
+layout(std430, binding = 3) readonly buffer RECS   { uint  recs[][13]; };
+layout(std430, binding = 4) readonly buffer HEAP   { uint  heap[];    };
+layout(std430, binding = 5) readonly buffer PAL    { uint  pal[];     };
+layout(std430, binding = 6) readonly buffer CHROMA { uint  chroma[];  };
+layout(std430, binding = 7) buffer OUT   { uint  out_px[];  };
+
+layout(push_constant) uniform PC { uvec2 dims; } pc;
+
+uint byte_at(uint i) { return (heap[i >> 2] >> ((i & 3u) * 8u)) & 0xFFu; }
+
+struct V { float x, y, u, v; uint argb; };
+V load_v(uint i) {
+    vec4 f = v_xyuv[i];
+    V r;
+    r.x = f.x; r.y = f.y; r.u = f.z; r.v = f.w;
+    r.argb = v_argb[i];
+    return r;
+}
+
+uint blend_class_of(uint sf, uint df) {
+    if      (sf == 4u && df == 0u) return 0u;   // BC_OPAQUE
+    else if (sf == 4u && df == 4u) return 1u;   // BC_ADD
+    else if (sf == 1u && df == 5u) return 2u;   // BC_LERP
+    else if (sf == 0u && df == 2u) return 3u;   // BC_MUL
+    else                           return 4u;   // BC_GEN
+}
+
+// blend_gen — the generic fallback, verbatim (g3xrc::blend_gen).
+uint blend_gen(uint sf, uint df, uint ca, uint dst, uint src) {
+    uint s[3] = { src & 0xFFu, (src >> 8) & 0xFFu, (src >> 16) & 0xFFu };
+    uint d[3] = { dst & 0xFFu, (dst >> 8) & 0xFFu, (dst >> 16) & 0xFFu };
+    uint outv[3];
+    for (int i = 0; i < 3; ++i) {
+        uint sc, dc;
+        if      (sf == 0u) sc = 0u;
+        else if (sf == 1u) sc = ca;
+        else if (sf == 2u) sc = s[i];
+        else if (sf == 4u) sc = 255u;
+        else if (sf == 5u) sc = 255u - ca;
+        else               sc = 255u;
+        if      (df == 0u) dc = 0u;
+        else if (df == 1u) dc = ca;
+        else if (df == 2u) dc = s[i];
+        else if (df == 3u) dc = (dst >> 24) & 0xFFu;
+        else if (df == 4u) dc = 255u;
+        else if (df == 5u) dc = 255u - ca;
+        else               dc = 0u;
+        uint v = (s[i] * sc + 255u) >> 8;
+        v += (d[i] * dc + 255u) >> 8;
+        outv[i] = v > 255u ? 255u : v;
+    }
+    return outv[0] | (outv[1] << 8) | (outv[2] << 16) | 0xFF000000u;
+}
+
+// blend_px — the five-class switch, verbatim (g3xrc::blend_px).
+uint blend_px(uint cls, uint sf, uint df, uint ca, uint dst, uint src) {
+    if (cls == 0u) {                                   // BC_OPAQUE
+        return src | 0xFF000000u;
+    } else if (cls == 1u) {                            // BC_ADD
+        uint b = (dst & 0xFFu) + (src & 0xFFu);
+        uint g = ((dst >> 8) & 0xFFu) + ((src >> 8) & 0xFFu);
+        uint r = ((dst >> 16) & 0xFFu) + ((src >> 16) & 0xFFu);
+        if (b > 255u) b = 255u;
+        if (g > 255u) g = 255u;
+        if (r > 255u) r = 255u;
+        return 0xFF000000u | (r << 16) | (g << 8) | b;
+    } else if (cls == 2u) {                            // BC_LERP
+        uint a = ca, ia = 255u - a;
+        uint b = (((src & 0xFFu) * a + 255u) >> 8) + (((dst & 0xFFu) * ia + 255u) >> 8);
+        uint g = ((((src >> 8) & 0xFFu) * a + 255u) >> 8) + ((((dst >> 8) & 0xFFu) * ia + 255u) >> 8);
+        uint r = ((((src >> 16) & 0xFFu) * a + 255u) >> 8) + ((((dst >> 16) & 0xFFu) * ia + 255u) >> 8);
+        if (b > 255u) b = 255u;
+        if (g > 255u) g = 255u;
+        if (r > 255u) r = 255u;
+        return 0xFF000000u | (r << 16) | (g << 8) | b;
+    } else if (cls == 3u) {                            // BC_MUL
+        uint b = ((dst & 0xFFu) * (src & 0xFFu) + 255u) >> 8;
+        uint g = (((dst >> 8) & 0xFFu) * ((src >> 8) & 0xFFu) + 255u) >> 8;
+        uint r = (((dst >> 16) & 0xFFu) * ((src >> 16) & 0xFFu) + 255u) >> 8;
+        return 0xFF000000u | (r << 16) | (g << 8) | b;
+    } else {                                           // BC_GEN
+        return blend_gen(sf, df, ca, dst, src);
+    }
+}
+
+// owns_edge — verbatim (g3xrc::owns_edge).
+bool owns_edge(V p, V q) {
+    float dy = q.y - p.y;
+    if (dy != 0.0) return dy < 0.0;
+    return (q.x - p.x) > 0.0;
+}
+
+// inside_exact — verbatim (g3xrc::inside_exact).
+bool inside_exact(int x, float py, V A, V B, V C, float inv,
+                  bool own0, bool own1, bool own2,
+                  out float wa, out float wb, out float wc) {
+    float px = float(x) + 0.5;
+    wa = ((C.x - B.x) * (py - B.y) - (C.y - B.y) * (px - B.x)) * inv;
+    wb = ((A.x - C.x) * (py - C.y) - (A.y - C.y) * (px - C.x)) * inv;
+    wc = ((B.x - A.x) * (py - A.y) - (B.y - A.y) * (px - A.x)) * inv;
+    if (wa < 0.0 || wb < 0.0 || wc < 0.0) return false;
+    if ((wa == 0.0 && !own1) || (wb == 0.0 && !own2) || (wc == 0.0 && !own0)) return false;
+    return true;
+}
+
+void main() {
+    const uint pw = pc.dims.x, ph = pc.dims.y;
+    const uint tri_i = gl_GlobalInvocationID.x;
+    const int  y     = int(gl_GlobalInvocationID.y);
+
+    const uvec4 T   = tris[tri_i];
+    const V A0 = load_v(T.x), B0 = load_v(T.y), C0 = load_v(T.z);
+    const uint r0 = T.w * 13u;
+
+    const uint sf        = recs[r0][0];
+    const uint df        = recs[r0][1];
+    const uint ca        = recs[r0][2];
+    const uint color_fill= recs[r0][3];
+    const uint chroma_on = recs[r0][4];
+    const uint tex_off   = recs[r0][5];
+    const uint tw        = recs[r0][6];
+    const uint th        = recs[r0][7];
+    const uint bpp       = recs[r0][9];
+    const uint fill_rgb  = recs[r0][10];
+    const precise float tsx = uintBitsToFloat(recs[r0][11]);
+    const precise float tsy = uintBitsToFloat(recs[r0][12]);
+    const uint cls = blend_class_of(sf, df);
+
+    precise float area = (B0.x - A0.x) * (C0.y - A0.y) - (B0.y - A0.y) * (C0.x - A0.x);
+    if (area == 0.0) return;
+    V A = A0, B = B0, C = C0;
+    const bool swapped = area < 0.0;
+    if (swapped) { B = C0; C = B0; area = -area; }
+    const precise float inv = 1.0 / area;
+    const bool textured = (color_fill == 0u);   // corpus: non-fill draws bind
+    if (!textured && color_fill == 0u) return;
+
+    precise float minx = A.x < B.x ? (A.x < C.x ? A.x : C.x) : (B.x < C.x ? B.x : C.x);
+    precise float miny = A.y < B.y ? (A.y < C.y ? A.y : C.y) : (B.y < C.y ? B.y : C.y);
+    precise float maxx = A.x > B.x ? (A.x > C.x ? A.x : C.x) : (B.x > C.x ? B.x : C.x);
+    precise float maxy = A.y > B.y ? (A.y > C.y ? A.y : C.y) : (B.y > C.y ? B.y : C.y);
+    int bx0 = int(minx);     if (bx0 < 0) bx0 = 0;
+    int by0 = int(miny);     if (by0 < 0) by0 = 0;
+    int bx1 = int(maxx) + 1; if (bx1 > int(pw)) bx1 = int(pw);
+    int by1 = int(maxy) + 1; if (by1 > int(ph)) by1 = int(ph);
+    if (bx0 >= bx1 || by0 >= by1) return;
+    if (y < by0 || y >= by1) return;            // the CPU row loop's range
+
+    bool own0 = owns_edge(A, B);
+    bool own1 = owns_edge(B, C);
+    bool own2 = owns_edge(C, A);
+    if (swapped) { own0 = !own0; own1 = !own1; own2 = !own2; }
+
+    const uint fill_src = fill_rgb;
+
+    const bool uniform_vc = (A.argb == B.argb && B.argb == C.argb);
+    float ac[3] = { float(A.argb & 0xFFu), float((A.argb >> 8) & 0xFFu), float((A.argb >> 16) & 0xFFu) };
+    float bc[3] = { float(B.argb & 0xFFu), float((B.argb >> 8) & 0xFFu), float((B.argb >> 16) & 0xFFu) };
+    float cc[3] = { float(C.argb & 0xFFu), float((C.argb >> 8) & 0xFFu), float((C.argb >> 16) & 0xFFu) };
+    const precise float dudx = (A.u * (B.y - C.y) + B.u * (C.y - A.y) + C.u * (A.y - B.y)) * inv;
+    const precise float dvdx = (A.v * (B.y - C.y) + B.v * (C.y - A.y) + C.v * (A.y - B.y)) * inv;
+    precise float dvc[3] = {
+        (ac[0] * (B.y - C.y) + bc[0] * (C.y - A.y) + cc[0] * (A.y - B.y)) * inv,
+        (ac[1] * (B.y - C.y) + bc[1] * (C.y - A.y) + cc[1] * (A.y - B.y)) * inv,
+        (ac[2] * (B.y - C.y) + bc[2] * (C.y - A.y) + cc[2] * (A.y - B.y)) * inv,
+    };
+
+    // ---- the row body (the CPU's per-row loop, y fixed) ----------------------
+    const precise float py = float(y) + 0.5;
+    precise float lo = -3.0e38, hi = 3.0e38;
+    bool empty = false;
+    {
+        const precise float dy = B.y - A.y;
+        if (dy > 0.0)      { const precise float xc = A.x + (B.x - A.x) * ((py - A.y) / dy); if (xc < hi) hi = xc; }
+        else if (dy < 0.0) { const precise float xc = A.x + (B.x - A.x) * ((py - A.y) / dy); if (xc > lo) lo = xc; }
+        else {
+            const precise float e = (B.x - A.x) * (py - A.y);
+            if (e < 0.0 || (e == 0.0 && !own0)) empty = true;
+        }
+    }
+    {
+        const precise float dy = C.y - B.y;
+        if (dy > 0.0)      { const precise float xc = B.x + (C.x - B.x) * ((py - B.y) / dy); if (xc < hi) hi = xc; }
+        else if (dy < 0.0) { const precise float xc = B.x + (C.x - B.x) * ((py - B.y) / dy); if (xc > lo) lo = xc; }
+        else {
+            const precise float e = (C.x - B.x) * (py - B.y);
+            if (e < 0.0 || (e == 0.0 && !own1)) empty = true;
+        }
+    }
+    {
+        const precise float dy = A.y - C.y;
+        if (dy > 0.0)      { const precise float xc = C.x + (A.x - C.x) * ((py - C.y) / dy); if (xc < hi) hi = xc; }
+        else if (dy < 0.0) { const precise float xc = C.x + (A.x - C.x) * ((py - C.y) / dy); if (xc > lo) lo = xc; }
+        else {
+            const precise float e = (A.x - C.x) * (py - C.y);
+            if (e < 0.0 || (e == 0.0 && !own2)) empty = true;
+        }
+    }
+    if (empty || lo > hi) return;
+
+    int sx = int(ceil(lo - 0.5)) - 1;
+    int ex = int(ceil(hi - 0.5)) + 2;
+    if (sx < bx0) sx = bx0;
+    if (ex > bx1) ex = bx1;
+
+    float wa, wb, wc, t1, t2, t3;
+    bool ok = false;
+    for (int k = 0; k < 3 && sx < ex; ++k) {
+        if (inside_exact(sx, py, A, B, C, inv, own0, own1, own2, wa, wb, wc)) { ok = true; break; }
+        ++sx;
+    }
+    if (!ok) return;
+    for (int k = 0; k < 3 && sx > bx0; ++k) {
+        if (!inside_exact(sx - 1, py, A, B, C, inv, own0, own1, own2, t1, t2, t3)) break;
+        --sx; wa = t1; wb = t2; wc = t3;
+    }
+    for (int k = 0; k < 3 && ex > sx; ++k) {
+        if (inside_exact(ex - 1, py, A, B, C, inv, own0, own1, own2, t1, t2, t3)) break;
+        --ex;
+    }
+    if (ex <= sx) return;
+    for (int k = 0; k < 3 && ex < bx1; ++k) {
+        if (!inside_exact(ex, py, A, B, C, inv, own0, own1, own2, t1, t2, t3)) break;
+        ++ex;
+    }
+
+    float vc0[3] = {
+        ac[0] * wa + bc[0] * wb + cc[0] * wc,
+        ac[1] * wa + bc[1] * wb + cc[1] * wc,
+        ac[2] * wa + bc[2] * wb + cc[2] * wc,
+    };
+    const precise float u0 = A.u * wa + B.u * wb + C.u * wc;
+    const precise float v0 = A.v * wa + B.v * wb + C.v * wc;
+
+    // ---- fill_span for this row ----------------------------------------------
+    const bool chm    = (chroma_on == 1u) && (bpp == 1u);
+    const bool vary = (!uniform_vc) && (color_fill == 0u);
+    precise float u = u0, v = v0;
+    precise float cr = vc0[0], cg = vc0[1], cb = vc0[2];
+    // the CPU's uniform-VC LUT multipliers, exact from the vertex dword
+    const uint vc = A.argb & 0x00FFFFFFu;
+    const uint vr = vc & 0xFFu, vg = (vc >> 8) & 0xFFu, vb2 = (vc >> 16) & 0xFFu;
+
+    for (int x = sx; x < ex; ++x) {
+        uint src;
+        if (!textured) {
+            src = fill_src;
+        } else if (bpp == 1u) {
+            uint tx = uint(int(u * tsx + 4096.0)) & (tw - 1u);
+            uint ty = uint(int(v * tsy + 4096.0)) & (th - 1u);
+            uint idx = byte_at(tex_off + ty * tw + tx);
+            if (chm && chroma[idx] == 1u) {
+                u += dudx; v += dvdx;
+                if (vary) { cr += dvc[0]; cg += dvc[1]; cb += dvc[2]; }
+                continue;
+            }
+            if (vary) {
+                uint q = uint(0.5 + cr); if (q > 255u) q = 255u;
+                uint g8 = uint(0.5 + cg); if (g8 > 255u) g8 = 255u;
+                uint b8 = uint(0.5 + cb); if (b8 > 255u) b8 = 255u;
+                const uint p = pal[idx];
+                src = (((p & 0xFFu) * q + 255u) >> 8)
+                    | (((((p >> 8) & 0xFFu) * g8 + 255u) >> 8) << 8)
+                    | (((((p >> 16) & 0xFFu) * b8 + 255u) >> 8) << 16);
+            } else {
+                const uint p = pal[idx];
+                src = 0xFF000000u
+                    | ((((p & 0xFFu) * vr + 255u) >> 8))
+                    | (((((p >> 8) & 0xFFu) * vg + 255u) >> 8) << 8)
+                    | (((((p >> 16) & 0xFFu) * vb2 + 255u) >> 8) << 16);
+            }
+        } else if (bpp == 2u) {
+            uint tx = uint(int(u * tsx + 4096.0)) & (tw - 1u);
+            uint ty = uint(int(v * tsy + 4096.0)) & (th - 1u);
+            const uint ti = tex_off + 2u * (ty * tw + tx);
+            const uint p5 = byte_at(ti) | (byte_at(ti + 1u) << 8);
+            const uint r5 = (p5 >> 11) & 0x1Fu;
+            const uint g6 = (p5 >> 5) & 0x3Fu;
+            const uint b5 = p5 & 0x1Fu;
+            src = 0xFF000000u
+                | ((r5 << 3 | r5 >> 2) << 16)
+                | ((g6 << 2 | g6 >> 4) << 8)
+                | (b5 << 3 | b5 >> 2);
+        } else {
+            src = 0xFF000000u;
+        }
+
+        const uint di = uint(y) * pw + uint(x);
+        const uint dst = out_px[di];       // single-writer corpus (Stage 0)
+        out_px[di] = blend_px(cls, sf, df, ca, dst, src);
+        u += dudx; v += dvdx;
+        if (vary) { cr += dvc[0]; cg += dvc[1]; cb += dvc[2]; }
+    }
+}

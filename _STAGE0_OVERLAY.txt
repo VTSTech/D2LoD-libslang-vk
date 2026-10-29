@@ -1,0 +1,63 @@
+Glide3xVK - Route-B Stage 0 overlay
+===================================
+Commit : 43cfb9e "Route-B Stage 0: compute-rasterizer spike, bit-exactness gates in CI"
+Applies on top of: 8c7495d (ROUTE-B.md design doc) - the tree you already pushed.
+This file (_STAGE0_OVERLAY.txt) is NOT part of the repo - delete it after extracting.
+
+Files in this overlay (extract at repo root, paths are relative to it):
+
+  src/g3x_raster_core.h           [new]  The P2.x raster math (edge tests, row
+                                         intervals, texel fetch, palette multiply,
+                                         five blend classes, fill-rect shape/exec)
+                                         extracted verbatim from g3x_frame.cpp into
+                                         a host-agnostic header. Zero Vulkan, zero
+                                         windows.h.
+
+  src/g3x_frame.cpp               [mod]  Keeps all state; feeds the core through
+                                         a ~20-line FrameHost accessor struct.
+                                         Behavior pinned byte-identical (below).
+
+  spike/routeb.comp               [new]  The compute kernel, mirroring the core
+                                         expression-for-expression (header comment
+                                         maps each function to its kernel
+                                         counterpart); precise on all edge/interval
+                                         math -> 132 NoContraction decorations.
+
+  spike/routeb_corpus.h           [new]  Deterministic 12-frame synthetic corpus
+                                         (fans/strips/565 quads, palette, chroma).
+
+  spike/routeb_gpu.cpp            [new]  Vulkan runner: packs the corpus into
+                                         SSBOs, dispatches the kernel, reads back
+                                         (volk; runs on Lavapipe or any compute
+                                         device).
+
+  spike/raster_regress.cpp        [new]  Parity harness. Modes:
+                                           raster_regress cpu  - production CPU
+                                             raster over the corpus, per-frame hash
+                                           raster_regress gpu <spv> - kernel over
+                                             the same corpus, per-frame hash
+
+  spike/raster_hashes_stage0.txt  [new]  The committed CPU pin (12 frames).
+
+  spike/fakewin/windows.h         [new]  Minimal windows.h shim so the harness can
+                                         compile src/g3x_frame.cpp on Linux.
+
+  .github/workflows/build.yml     [mod]  Adds the `routeb` CI job: glslangValidator
+                                         -> NoContraction assert -> CPU pin diff ->
+                                         Lavapipe GPU run -> CPU==GPU diff must be
+                                         empty.
+
+  ROUTE-B.md                      [mod]  Section 3/4/6/7 updated to the as-built
+                                         Stage 0 (spike/ layout, verification
+                                         protocol, stage table).
+
+Verify locally (Linux, host g++ - no Vulkan needed for the CPU gate):
+
+  g++ -O2 -std=c++17 -I spike/fakewin -I src \
+      spike/raster_regress.cpp src/g3x_frame.cpp -o raster_regress
+  ./raster_regress cpu
+  # must print the 12 frame hashes of spike/raster_hashes_stage0.txt
+
+The GPU half (kernel vs CPU on Lavapipe) runs in the new `routeb` CI job on
+ubuntu-24.04 (mesa-vulkan-drivers); exit criterion per ROUTE-B.md section 7:
+CI hash == CPU hash, frame for frame.

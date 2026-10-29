@@ -4,6 +4,7 @@
 #include "g3x_overlay.h"
 #include "g3x_slang.h"
 #include "g3x_shot.h"
+#include "g3x_raster_core.h"
 
 #include <cstring>
 #include <cstdio>
@@ -48,96 +49,16 @@ bool     s_color_fill = false;       // colorCombine mode 2 = constant fill
 uint8_t  s_gamma_lut[3][256];        // per channel; identity until set_gamma
 bool     s_gamma_identity = true;
 
-// Constant fill source. The game builds grConstantColorValue as
-// ScalePaletteValue(v) | alpha = palette_entry << 8 | alpha, and a palette
-// entry is 0xFFRRGGBB — so the constant dword is [R:24-31][G:16-23][B:8-15]
-// [alpha:0-7]. Shifting right by 8 lands R,G,B exactly in this framebuffer's
-// 0xAARRGGBB lanes (gray constants are unchanged from the P2.2 decode; colored
-// ones — e.g. the menu fire glow 0xf4c04cc0 = orange — now decode correctly).
-inline uint32_t const_fill_rgb() {
-    return (s_constant >> 8) & 0x00FFFFFFu;
-}
-
-// ---- blend ----------------------------------------------------------------
-// The five GR_BLEND pairs D2 actually submits, hoisted out of the inner loops
-// (P2.5). Fast-path lane math is PROVEN equal to the P2.1 shade_blend:
-//   (x*255+255)>>8 == x for all x in 0..255, so ONE/ZERO terms collapse;
-//   the LERP/MUL forms keep the exact (x*y+255)>>8 rounding the fxtest pins.
-enum BlendClass { BC_OPAQUE, BC_ADD, BC_LERP, BC_MUL, BC_GEN };
-BlendClass s_blend_class = BC_OPAQUE;
+// Route-B Stage 0: the fill-source decode, the five blend classes and all
+// the raster math now live in g3x_raster_core.h — a host-agnostic header the
+// compute kernel (spike/routeb.comp) mirrors expression-for-expression. This
+// TU keeps the STATE (palette, chroma, blend pair, texture cache) and feeds
+// the core through FrameHost below; behavior is pinned byte-identical by
+// spike/raster_regress (CPU pin) — see ROUTE-B.md §4/§6.
+g3xrc::BlendClass s_blend_class = g3xrc::BC_OPAQUE;
 
 static void blend_reclass() {
-    if      (s_blend_sf == 4 && s_blend_df == 0) s_blend_class = BC_OPAQUE;
-    else if (s_blend_sf == 4 && s_blend_df == 4) s_blend_class = BC_ADD;
-    else if (s_blend_sf == 1 && s_blend_df == 5) s_blend_class = BC_LERP;
-    else if (s_blend_sf == 0 && s_blend_df == 2) s_blend_class = BC_MUL;
-    else                                         s_blend_class = BC_GEN;
-}
-
-// Generic fallback — the P2.1 shade_blend body, verbatim.
-inline uint32_t blend_gen(uint32_t dst, uint32_t src) {
-    const unsigned sf = s_blend_sf, df = s_blend_df;
-    const unsigned s[3] = { src & 0xFF, (src >> 8) & 0xFF, (src >> 16) & 0xFF };
-    const unsigned d[3] = { dst & 0xFF, (dst >> 8) & 0xFF, (dst >> 16) & 0xFF };
-    unsigned out[3];
-    for (int i = 0; i < 3; ++i) {
-        unsigned sc, dc;
-        switch (sf) {
-            case 0:  sc = 0; break;                          // ZERO
-            case 1:  sc = s_const_alpha; break;              // SRC_ALPHA
-            case 2:  sc = s[i]; break;                       // SRC_COLOR
-            case 4:  sc = 255; break;                        // ONE
-            case 5:  sc = 255 - s_const_alpha; break;        // ONE_MINUS_SRC_ALPHA
-            default: sc = 255; break;
-        }
-        switch (df) {
-            case 0:  dc = 0; break;                          // ZERO
-            case 1:  dc = s_const_alpha; break;              // SRC_ALPHA
-            case 2:  dc = s[i]; break;                       // SRC_COLOR (dst * src)
-            case 3:  dc = (dst >> 24) & 0xFF; break;         // DST_ALPHA
-            case 4:  dc = 255; break;                        // ONE
-            case 5:  dc = 255 - s_const_alpha; break;
-            default: dc = 0; break;
-        }
-        unsigned v = (s[i] * sc + 255) >> 8;
-        v += (d[i] * dc + 255) >> 8;
-        out[i] = v > 255 ? 255 : v;
-    }
-    return out[0] | (out[1] << 8) | (out[2] << 16) | 0xFF000000u;
-}
-
-inline uint32_t blend_px(uint32_t dst, uint32_t src) {
-    switch (s_blend_class) {
-        case BC_OPAQUE:
-            return src | 0xFF000000u;
-        case BC_ADD: {
-            unsigned b = (dst & 0xFFu) + (src & 0xFFu);
-            unsigned g = ((dst >> 8) & 0xFFu) + ((src >> 8) & 0xFFu);
-            unsigned r = ((dst >> 16) & 0xFFu) + ((src >> 16) & 0xFFu);
-            if (b > 255u) b = 255u;
-            if (g > 255u) g = 255u;
-            if (r > 255u) r = 255u;
-            return 0xFF000000u | (r << 16) | (g << 8) | b;
-        }
-        case BC_LERP: {
-            const unsigned a = s_const_alpha, ia = 255u - a;
-            unsigned b = (((src & 0xFFu) * a + 255u) >> 8) + (((dst & 0xFFu) * ia + 255u) >> 8);
-            unsigned g = ((((src >> 8) & 0xFFu) * a + 255u) >> 8) + ((((dst >> 8) & 0xFFu) * ia + 255u) >> 8);
-            unsigned r = ((((src >> 16) & 0xFFu) * a + 255u) >> 8) + ((((dst >> 16) & 0xFFu) * ia + 255u) >> 8);
-            if (b > 255u) b = 255u;
-            if (g > 255u) g = 255u;
-            if (r > 255u) r = 255u;
-            return 0xFF000000u | (r << 16) | (g << 8) | b;
-        }
-        case BC_MUL: {
-            unsigned b = ((dst & 0xFFu) * (src & 0xFFu) + 255u) >> 8;
-            unsigned g = (((dst >> 8) & 0xFFu) * ((src >> 8) & 0xFFu) + 255u) >> 8;
-            unsigned r = (((dst >> 16) & 0xFFu) * ((src >> 16) & 0xFFu) + 255u) >> 8;
-            return 0xFF000000u | (r << 16) | (g << 8) | b;
-        }
-        default:
-            return blend_gen(dst, src);
-    }
+    s_blend_class = g3xrc::blend_class_of(s_blend_sf, s_blend_df);
 }
 
 // ---- chroma ---------------------------------------------------------------
@@ -283,8 +204,37 @@ static unsigned s_n_vc0 = 0;          // P2.8: textured quads with (near-)unifor
                                       // class; opaque-black rects unless chroma
                                       // punches their transparent texels
 
-// ---- raster ---------------------------------------------------------------
-struct RVert { float x, y, u, v; uint32_t argb; };
+// ---- raster (math in g3x_raster_core.h; this TU keeps state + conversion) --
+using RVert    = g3xrc::RVert;
+using TexSpace = g3xrc::TexSpace;
+
+// The Host adapter: exposes the frame module's statics under the core's
+// contract (g3x_raster_core.h header comment). Zero behavior — accessors only.
+struct FrameHost {
+    unsigned width() const        { return s_w; }
+    unsigned height() const       { return s_h; }
+    uint32_t* px() const          { return s_px; }
+    uint32_t constant() const     { return s_constant; }
+    unsigned const_alpha() const  { return s_const_alpha; }
+    bool color_fill() const       { return s_color_fill; }
+    unsigned blend_sf() const     { return s_blend_sf; }
+    unsigned blend_df() const     { return s_blend_df; }
+    g3xrc::BlendClass blend_class() const { return s_blend_class; }
+    bool chroma_on() const        { return s_chroma_on; }
+    const uint8_t* chroma_hit() const { return s_chroma_hit; }
+    const uint32_t* palette() const   { return s_palette; }
+    const uint32_t* pal_mult() const  { return s_pal_mult; }
+    void ensure_pal_mult(uint32_t vc) {
+        if (s_pal_mult_epoch != s_palette_epoch || s_pal_mult_vc != vc)
+            pal_mult_build(vc);
+    }
+    bool has_tex() const          { return s_cur >= 0; }
+    g3xrc::TexView tex_view() const {
+        const Tex& t = s_tex[s_cur];
+        return g3xrc::TexView{ t.data, t.w, t.h, t.lod, t.bpp };
+    }
+};
+static FrameHost& g3xrc_host() { static FrameHost h; return h; }
 
 // The D2 glide vertex: x,y @0 (f32), PARGB @8, oow @12, s,t @16/20 (0x1C stride).
 inline void read_vert(RVert& out, const uint8_t* p) {
@@ -295,276 +245,22 @@ inline void read_vert(RVert& out, const uint8_t* p) {
     memcpy(&out.v,    p + 20, 4);   // t @20
 }
 
-// Top-left ownership rule (uniform form, y-down, interior = f>0 side): a pixel
-// exactly on an edge belongs to the triangle whose interior is below/right of
-// it — otherwise shared fan diagonals get drawn twice (visible with additive
-// blend) or not at all (hairline seams with opaque).
-inline bool owns_edge(const RVert& p, const RVert& q) {
-    const float dy = q.y - p.y;
-    if (dy != 0.0f) return dy < 0.0f;
-    return (q.x - p.x) > 0.0f;
-}
-
-// Exact per-pixel inside test — the P2.1 semantics, verbatim. Only the span
-// boundary pixels run this (see raster_tri); the interior is covered by the
-// row interval math, so the per-pixel cost of the old full barycentric test
-// disappears while tie/ownership behavior stays bit-identical.
-inline bool inside_exact(int x, float py, const RVert& A, const RVert& B, const RVert& C,
-                         float inv, bool own0, bool own1, bool own2,
-                         float& wa, float& wb, float& wc) {
-    const float px = (float)x + 0.5f;
-    wa = ((C.x - B.x) * (py - B.y) - (C.y - B.y) * (px - B.x)) * inv;
-    wb = ((A.x - C.x) * (py - C.y) - (A.y - C.y) * (px - C.x)) * inv;
-    wc = ((B.x - A.x) * (py - A.y) - (B.y - A.y) * (px - A.x)) * inv;
-    if (wa < 0.0f || wb < 0.0f || wc < 0.0f) return false;
-    if ((wa == 0.0f && !own1) || (wb == 0.0f && !own2) || (wc == 0.0f && !own0)) return false;
-    return true;
-}
-
-// Row fill for pixels [sx, ex). Vertex attributes are interpolated along the
-// row from the exact values at sx (computed by the boundary fixup); texel
-// sampling floor-WRAPS both axes via the +4096 trick: 4096 is a multiple of
-// every texture dim (<= 256), and (int)(x + 4096) == floor(x) + 4096 for all
-// x > -4096, so truncation equals floor and the mask is unaffected — this
-// replaces two floorf() calls per pixel (the P2.1-P2.4 inner loop's worst
-// scalar cost) with one float add and an int truncation.
-static void fill_span(uint32_t* row, int sx, int ex,
-                      float u, float v, float dudx, float dvdx,
-                      bool textured, const Tex& t,
-                      bool varying_vc,
-                      const float* vc0, const float* dvc,
-                      uint32_t fill_src, float tsx, float tsy) {
-    const bool chroma = s_chroma_on && t.bpp == 1;
-    const uint8_t* hit = s_chroma_hit;
-    const uint32_t* pmult = s_pal_mult;
-    const uint8_t* tdata = t.data;
-    const unsigned tw = t.w, th = t.h;
-    float cr = vc0[0], cg = vc0[1], cb = vc0[2];
-
-    for (int x = sx; x < ex; ++x) {
-        uint32_t src;
-        if (!textured) {
-            src = fill_src;
-        } else if (t.bpp == 1 && tdata) {
-            const unsigned tx = (unsigned)(int)(u * tsx + 4096.0f) & (tw - 1);
-            const unsigned ty = (unsigned)(int)(v * tsy + 4096.0f) & (th - 1);
-            const unsigned idx = tdata[(size_t)ty * tw + tx];
-            if (chroma && hit[idx]) {
-                u += dudx; v += dvdx;
-                if (varying_vc) { cr += dvc[0]; cg += dvc[1]; cb += dvc[2]; }
-                continue;
-            }
-            if (varying_vc) {
-                // colorCombine SCALE_OTHER x LOCAL: texel * interpolated color
-                unsigned vr = (unsigned)(0.5f + cr); if (vr > 255u) vr = 255u;
-                unsigned vg = (unsigned)(0.5f + cg); if (vg > 255u) vg = 255u;
-                unsigned vb = (unsigned)(0.5f + cb); if (vb > 255u) vb = 255u;
-                const uint32_t p = s_palette[idx];
-                src = (((p & 0xFFu) * vr + 255u) >> 8)
-                    | (((((p >> 8) & 0xFFu) * vg + 255u) >> 8) << 8)
-                    | (((((p >> 16) & 0xFFu) * vb + 255u) >> 8) << 16);
-            } else {
-                src = pmult[idx];
-            }
-        } else if (t.bpp == 2 && tdata) {
-            // GR_TEXFMT_RGB_565 (format 0xa) — the in-game Smacker video quads
-            // (GLSMACK_DrawSmackerQuad via gTexInfoBlocks0/1Glide, 256x64).
-            // P2.5 and earlier sampled every non-P_8 texel as black.
-            const unsigned tx = (unsigned)(int)(u * tsx + 4096.0f) & (tw - 1);
-            const unsigned ty = (unsigned)(int)(v * tsy + 4096.0f) & (th - 1);
-            const uint16_t p5 = ((const uint16_t*)tdata)[(size_t)ty * tw + tx];
-            const unsigned r5 = (p5 >> 11) & 0x1Fu;
-            const unsigned g6 = (p5 >> 5) & 0x3Fu;
-            const unsigned b5 = p5 & 0x1Fu;
-            src = 0xFF000000u
-                | ((r5 << 3 | r5 >> 2) << 16)
-                | ((g6 << 2 | g6 >> 4) << 8)
-                | (b5 << 3 | b5 >> 2);
-        } else {
-            src = 0xFF000000u;   // other formats: still black, no chroma
-        }
-        row[x] = blend_px(row[x], src);
-        u += dudx; v += dvdx;
-        if (varying_vc) { cr += dvc[0]; cg += dvc[1]; cb += dvc[2]; }
-    }
-}
-
-// P2.5 scanline triangle: the three directed edges confine the interior to
-// E(x,y) >= 0 where E is the P2.1 cross form; along a scanline each E is
-// affine in px, so the row's coverage is one px interval per edge. The
-// interval endpoints are found by solving E=0 (one division per slanted
-// edge), the interior is filled without any per-pixel edge test, and only the
-// boundary pixels run the exact P2.1 test (inside_exact) so tie pixels and
-// shared-edge ownership stay identical to P2.1-P2.4.
-//
-// Winding: the P2.1 barycentric test was orientation-agnostic (the sign of
-// inv flips with the edge signs), and D2's fan quads ARE negative-area in
-// y-down terms (fan#1: (0,0)(0,256)(256,256)(256,0)). So negative-area
-// triangles are NOT skipped — B/C are swapped to normalize, which leaves
-// every weight value bit-identical (E and inv both negate). Ownership ties
-// however were decided on the ORIGINAL directed edges by P2.1-P2.4, so the
-// swap inverts all three ownership flags — that reproduces the old decision
-// per triangle exactly (shared diagonals still covered exactly once, by the
-// same triangle as before; strips pre-normalize upstream and never swap).
-static void raster_tri(const RVert& A0, const RVert& B0, const RVert& C0,
-                       float tsx, float tsy) {
-    if (!s_px) return;
-    float area = (B0.x - A0.x) * (C0.y - A0.y) - (B0.y - A0.y) * (C0.x - A0.x);
-    if (area == 0.0f) return;
-    RVert A = A0, B = B0, C = C0;
-    const bool swapped = area < 0.0f;
-    if (swapped) { B = C0; C = B0; area = -area; }
-    const float inv = 1.0f / area;
-    const bool textured = !s_color_fill && s_cur >= 0;
-    if (!textured && !s_color_fill) return;
-
-    const Tex* t = textured ? &s_tex[s_cur] : nullptr;
-
-    float minx = A.x < B.x ? (A.x < C.x ? A.x : C.x) : (B.x < C.x ? B.x : C.x);
-    float miny = A.y < B.y ? (A.y < C.y ? A.y : C.y) : (B.y < C.y ? B.y : C.y);
-    float maxx = A.x > B.x ? (A.x > C.x ? A.x : C.x) : (B.x > C.x ? B.x : C.x);
-    float maxy = A.y > B.y ? (A.y > C.y ? A.y : C.y) : (B.y > C.y ? B.y : C.y);
-    int bx0 = (int)minx;     if (bx0 < 0) bx0 = 0;
-    int by0 = (int)miny;     if (by0 < 0) by0 = 0;
-    int bx1 = (int)maxx + 1; if (bx1 > (int)s_w) bx1 = (int)s_w;
-    int by1 = (int)maxy + 1; if (by1 > (int)s_h) by1 = (int)s_h;
-    if (bx0 >= bx1 || by0 >= by1) return;
-
-    bool own0 = owns_edge(A, B);         // wc == 0 -> pixel on edge A->B
-    bool own1 = owns_edge(B, C);         // wa == 0 -> pixel on edge B->C
-    bool own2 = owns_edge(C, A);         // wb == 0 -> pixel on edge C->A
-    if (swapped) { own0 = !own0; own1 = !own1; own2 = !own2; }
-
-    // constant-fill source (colorCombine mode 2)
-    const uint32_t fill_src = const_fill_rgb();
-
-    // vertex-color mode: uniform (multiplied-palette LUT) or per-pixel interp
-    const bool uniform_vc = (A.argb == B.argb && B.argb == C.argb);
-    if (textured && uniform_vc && !s_color_fill) {
-        const uint32_t vc = A.argb & 0x00FFFFFFu;
-        if (s_pal_mult_epoch != s_palette_epoch || s_pal_mult_vc != vc) pal_mult_build(vc);
-    }
-    float ac[3] = { (float)(A.argb & 0xFFu), (float)((A.argb >> 8) & 0xFFu), (float)((A.argb >> 16) & 0xFFu) };
-    float bc[3] = { (float)(B.argb & 0xFFu), (float)((B.argb >> 8) & 0xFFu), (float)((B.argb >> 16) & 0xFFu) };
-    float cc[3] = { (float)(C.argb & 0xFFu), (float)((C.argb >> 8) & 0xFFu), (float)((C.argb >> 16) & 0xFFu) };
-    // per-px +x slope of each interpolated quantity (d(wa)/dpx etc. — affine)
-    const float dudx = (A.u * (B.y - C.y) + B.u * (C.y - A.y) + C.u * (A.y - B.y)) * inv;
-    const float dvdx = (A.v * (B.y - C.y) + B.v * (C.y - A.y) + C.v * (A.y - B.y)) * inv;
-    float dvc[3] = {
-        (ac[0] * (B.y - C.y) + bc[0] * (C.y - A.y) + cc[0] * (A.y - B.y)) * inv,
-        (ac[1] * (B.y - C.y) + bc[1] * (C.y - A.y) + cc[1] * (A.y - B.y)) * inv,
-        (ac[2] * (B.y - C.y) + bc[2] * (C.y - A.y) + cc[2] * (A.y - B.y)) * inv,
-    };
-
-    for (int y = by0; y < by1; ++y) {
-        const float py = (float)y + 0.5f;
-        float lo = -3.0e38f, hi = 3.0e38f;
-        bool empty = false;
-        // edge A->B  (its zero weight is wc)
-        {
-            const float dy = B.y - A.y;
-            if (dy > 0.0f)      { const float xc = A.x + (B.x - A.x) * ((py - A.y) / dy); if (xc < hi) hi = xc; }
-            else if (dy < 0.0f) { const float xc = A.x + (B.x - A.x) * ((py - A.y) / dy); if (xc > lo) lo = xc; }
-            else {
-                const float e = (B.x - A.x) * (py - A.y);
-                if (e < 0.0f || (e == 0.0f && !own0)) empty = true;
-            }
-        }
-        // edge B->C  (wa)
-        {
-            const float dy = C.y - B.y;
-            if (dy > 0.0f)      { const float xc = B.x + (C.x - B.x) * ((py - B.y) / dy); if (xc < hi) hi = xc; }
-            else if (dy < 0.0f) { const float xc = B.x + (C.x - B.x) * ((py - B.y) / dy); if (xc > lo) lo = xc; }
-            else {
-                const float e = (C.x - B.x) * (py - B.y);
-                if (e < 0.0f || (e == 0.0f && !own1)) empty = true;
-            }
-        }
-        // edge C->A  (wb)
-        {
-            const float dy = A.y - C.y;
-            if (dy > 0.0f)      { const float xc = C.x + (A.x - C.x) * ((py - C.y) / dy); if (xc < hi) hi = xc; }
-            else if (dy < 0.0f) { const float xc = C.x + (A.x - C.x) * ((py - C.y) / dy); if (xc > lo) lo = xc; }
-            else {
-                const float e = (A.x - C.x) * (py - C.y);
-                if (e < 0.0f || (e == 0.0f && !own2)) empty = true;
-            }
-        }
-        if (empty || lo > hi) continue;
-
-        // candidate window: the rounded interval plus one pixel of slack per
-        // side (division rounding is ~1e-4 px; the exact fixups below pin the
-        // true boundary). [sx, ex) candidates, ex exclusive.
-        int sx = (int)ceilf(lo - 0.5f) - 1;
-        int ex = (int)ceilf(hi - 0.5f) + 2;
-        if (sx < bx0) sx = bx0;
-        if (ex > bx1) ex = bx1;
-
-        float wa, wb, wc, t1, t2, t3;
-        bool ok = false;
-        for (int k = 0; k < 3 && sx < ex; ++k) {          // advance to first inside
-            if (inside_exact(sx, py, A, B, C, inv, own0, own1, own2, wa, wb, wc)) { ok = true; break; }
-            ++sx;
-        }
-        if (!ok) continue;
-        for (int k = 0; k < 3 && sx > bx0; ++k) {         // retreat if rounded in too far
-            if (!inside_exact(sx - 1, py, A, B, C, inv, own0, own1, own2, t1, t2, t3)) break;
-            --sx; wa = t1; wb = t2; wc = t3;
-        }
-        for (int k = 0; k < 3 && ex > sx; ++k) {          // shrink to last inside
-            if (inside_exact(ex - 1, py, A, B, C, inv, own0, own1, own2, t1, t2, t3)) break;
-            --ex;
-        }
-        if (ex <= sx) continue;
-        for (int k = 0; k < 3 && ex < bx1; ++k) {         // extend if rounded out early
-            if (!inside_exact(ex, py, A, B, C, inv, own0, own1, own2, t1, t2, t3)) break;
-            ++ex;
-        }
-
-        // attributes at the first covered pixel, then +slope per pixel
-        float vc0[3] = {
-            ac[0] * wa + bc[0] * wb + cc[0] * wc,
-            ac[1] * wa + bc[1] * wb + cc[1] * wc,
-            ac[2] * wa + bc[2] * wb + cc[2] * wc,
-        };
-        const float u0 = A.u * wa + B.u * wb + C.u * wc;
-        const float v0 = A.v * wa + B.v * wb + C.v * wc;
-        static const Tex k_no_tex = {};   // fill mode: hoists read it, never use it
-        fill_span(s_px + (size_t)y * s_w, sx, ex, u0, v0, dudx, dvdx,
-                  textured, textured ? *t : k_no_tex,
-                  !uniform_vc && !s_color_fill, vc0, dvc, fill_src, tsx, tsy);
-    }
-}
-
 // Fast path (P2.4, kept): axis-aligned constant-fill quads (fades, dim rects,
 // loading screens — DrawSolidRectEx/DrawSolidRectAlpha) run FULL-SCREEN at
 // 800x600; detect the rect shape at the quad level and fill scanlines
 // directly. Blending applies per pixel through the hoisted blend class.
-//
-// P2.7 fill diagnostic: the round-9 field log shows ~14 black (constant RGB 0)
-// LERP-alpha fills per in-game frame (constantColor=0x40/0x80/0xc0 = the
-// SetDrawMode 0/1/2 dim family) and the user still reports "black bars" —
-// log the first fill of each distinct (src, blend) class WITH its screen
-// rect so the round-10 log pins exactly which rects those are.
+// The geometry test + the pixel fill live in g3x_raster_core.h
+// (fill_rect_shape / fill_rect_exec); this wrapper keeps the P2.7 stats and
+// the fill diagnostic.
 bool fill_rect_fast(unsigned count, const RVert* v) {
-    if (!s_color_fill || count != 4 || !s_px) return false;
-    float xa = v[0].x, xb = v[0].x, ya = v[0].y, yb = v[0].y;
-    bool two_x = false, two_y = false;
-    for (unsigned i = 1; i < 4; ++i) {
-        if (v[i].x != xa && v[i].x != xb) { if (two_x) return false; xb = v[i].x; two_x = true; }
-        if (v[i].y != ya && v[i].y != yb) { if (two_y) return false; yb = v[i].y; two_y = true; }
-    }
-    if (!two_x || !two_y) return false;   // degenerate line
-    for (unsigned i = 0; i < 4; ++i) {    // every vertex must sit on a corner
-        if (v[i].x != xa && v[i].x != xb) return false;
-        if (v[i].y != ya && v[i].y != yb) return false;
-    }
+    if (!s_color_fill || !s_px) return false;
+    float xa, xb, ya, yb;
+    if (!g3xrc::fill_rect_shape(v, count, xa, xb, ya, yb)) return false;
     ++s_n_fill;
-    const uint32_t fill_src = const_fill_rgb();
     {
         struct FillKey { uint32_t src; unsigned sf, df; };
         static FillKey s_seen[12]; static unsigned s_n = 0;
-        const FillKey key = { fill_src, s_blend_sf, s_blend_df };
+        const FillKey key = { (s_constant >> 8) & 0x00FFFFFFu, s_blend_sf, s_blend_df };
         bool seen = false;
         for (unsigned k = 0; k < s_n; ++k) {
             if (s_seen[k].src == key.src && s_seen[k].sf == key.sf && s_seen[k].df == key.df) { seen = true; break; }
@@ -573,21 +269,10 @@ bool fill_rect_fast(unsigned count, const RVert* v) {
             s_seen[s_n++] = key;
             g3x_log("fill#%u: rect(%.0f,%.0f)..(%.0f,%.0f) src=0x%06x alpha=%u blend=(%u,%u)",
                     s_n, xa < xb ? xa : xb, ya < yb ? ya : yb, xa > xb ? xa : xb, ya > yb ? ya : yb,
-                    fill_src, s_const_alpha, s_blend_sf, s_blend_df);
+                    key.src, s_const_alpha, s_blend_sf, s_blend_df);
         }
     }
-    const float minx = xa < xb ? xa : xb, maxx = xa > xb ? xa : xb;
-    const float miny = ya < yb ? ya : yb, maxy = ya > yb ? ya : yb;
-    // pixel centers strictly inside [min,max) — same coverage as the
-    // barycentric path's top-left rule for axis-aligned integer rects
-    int x0 = (int)ceilf(minx - 0.5f); if (x0 < 0) x0 = 0;
-    int y0 = (int)ceilf(miny - 0.5f); if (y0 < 0) y0 = 0;
-    int x1 = (int)ceilf(maxx - 0.5f); if (x1 > (int)s_w) x1 = (int)s_w;
-    int y1 = (int)ceilf(maxy - 0.5f); if (y1 > (int)s_h) y1 = (int)s_h;
-    for (int y = y0; y < y1; ++y) {
-        uint32_t* row = s_px + (size_t)y * s_w;
-        for (int x = x0; x < x1; ++x) row[x] = blend_px(row[x], fill_src);
-    }
+    g3xrc::fill_rect_exec(g3xrc_host(), xa, xb, ya, yb);
     return true;
 }
 
@@ -610,10 +295,8 @@ bool fill_rect_fast(unsigned count, const RVert* v) {
 // mini-panel to half height (quad#12), 16x128 sprites to an eighth width
 // (quad#14), 32x128/16x32/16x64 similarly. All 14 round-9 field quad classes
 // pin 2^lod/256 on both axes with 1:1 texel:pixel mapping.
-struct TexSpace { float sx, sy; };
 TexSpace tex_space(const RVert* /*v*/, unsigned /*n*/, const Tex& t) {
-    const float sc = (float)(1u << t.lod) / 256.0f;
-    return { sc, sc };
+    return g3xrc::tex_space_lod(t.lod);   // (1u << lod) / 256.0f on both axes
 }
 
 // Field diagnostic (round 10): the first quads per distinct (dims) class,
@@ -961,7 +644,7 @@ void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
         ++s_dumped;
     }
     for (unsigned i = 1; i + 1 < count; ++i) {
-        raster_tri(verts[0], verts[i], verts[i + 1], tsx, tsy);
+        g3xrc::raster_tri(g3xrc_host(), verts[0], verts[i], verts[i + 1], tsx, tsy);
     }
 }
 
@@ -1005,7 +688,7 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
     if (mode == G3X_GR_TRIANGLE_FAN) {
         ++s_n_parr_fan;
         for (unsigned i = 1; i + 1 < count; ++i) {
-            raster_tri(verts[0], verts[i], verts[i + 1], tsx, tsy);
+            g3xrc::raster_tri(g3xrc_host(), verts[0], verts[i], verts[i + 1], tsx, tsy);
         }
     } else if (mode == G3X_GR_TRIANGLE_STRIP) {
         ++s_n_parr_strip;
@@ -1019,8 +702,8 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
             const RVert& b = verts[i + 1];
             const RVert& c = verts[i + 2];
             const float area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-            if (area >= 0.0f) raster_tri(a, b, c, tsx, tsy);
-            else              raster_tri(a, c, b, tsx, tsy);
+            if (area >= 0.0f) g3xrc::raster_tri(g3xrc_host(), a, b, c, tsx, tsy);
+            else              g3xrc::raster_tri(g3xrc_host(), a, c, b, tsx, tsy);
         }
     }
     // other primitives: counted by the caller, not rasterized (as before)
@@ -1037,7 +720,8 @@ void g3x_frame_draw_point(float x, float y) {
     const int px = (int)(x + 0.5f), py = (int)(y + 0.5f);
     if (px < 0 || py < 0 || px >= (int)s_w || py >= (int)s_h) return;
     uint32_t* row = s_px + (size_t)py * s_w;
-    row[px] = blend_px(row[px], const_fill_rgb());
+    auto& h = g3xrc_host();
+    row[px] = g3xrc::blend_px(h, row[px], g3xrc::const_fill_rgb(h));
 }
 
 void g3x_frame_draw_line(float x0, float y0, float x1, float y1) {
@@ -1048,11 +732,12 @@ void g3x_frame_draw_line(float x0, float y0, float x1, float y1) {
     int dy = yb - ya; if (dy < 0) dy = -dy;
     const int sx = xa < xb ? 1 : -1, sy = ya < yb ? 1 : -1;
     int err = dx - dy;
-    const uint32_t src = const_fill_rgb();
+    auto& h = g3xrc_host();
+    const uint32_t src = g3xrc::const_fill_rgb(h);
     for (;;) {
         if ((unsigned)xa < s_w && (unsigned)ya < s_h) {
             uint32_t* row = s_px + (size_t)ya * s_w;
-            row[xa] = blend_px(row[xa], src);
+            row[xa] = g3xrc::blend_px(h, row[xa], src);
         }
         if (xa == xb && ya == yb) break;
         const int e2 = err * 2;
