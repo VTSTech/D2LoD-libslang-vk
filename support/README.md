@@ -92,7 +92,7 @@ with **no `PUSH`**, and `FCHS`/`FSTP float[ESI+0x1c]` consumes the result from `
 
 ## Ordinary CRT with a genuine equivalent
 
-Three of these are declared in the generated `d2_platform.h` with the emitter's unknown-signature
+One of these is declared in the generated `d2_platform.h` with the emitter's unknown-signature
 fallback `T NAME(...)`. A variadic declaration with no named parameter cannot be defined portably,
 and re-declaring the name concretely in the same TU collides with the forced include. Both problems
 are avoided by giving the real definition a private C++ name plus an **asm label** carrying the exact
@@ -109,38 +109,16 @@ single match); the SSE2 path at `006830c0` loads `qword[ESP+4]` and does exponen
 member of this family that is *not* an `__CI*` intrinsic: normal stack argument. Both call sites,
 `Fog/Source/SFile.cpp:614-615` inside the Julian-day-number computation, discard the result.
 
-### `CRT_Strchr` -> `strchr` @ `00687740`
+### Runtime functions the tree calls by their libcmt names - no shim
 
-Ghidra: `char *CRT_Strchr(char *pszStr, char cChar)` `__cdecl`. The decompiled body is the
-word-at-a-time `strchr` verbatim - the 4-byte alignment prologue, the `0x7efefeff` / `0x81010100`
-zero-byte test, the broadcast of `cChar` into all four lanes, the four per-byte compares returning
-`pszStr+0..3`. `char` promotes to `int` through the variadic declaration, which is exactly `strchr`'s
-own second parameter type, so the shim is `char* (char*, int)`.
-
-### `CRT_ClearFP` - **not `_clearfp`** @ `006987d8`
-
-`_clearfp` takes no arguments. This takes two, and is 22 bytes:
-
-```
-006987d8  MOV EAX, dword ptr [ESP + 0x8]
-006987dc  AND EAX, 0x7ff00000
-006987e1  CMP EAX, 0x7ff00000
-006987e6  JZ  006987e9
-006987e8  RET                                <- ZF clear
-006987e9  MOV EAX, dword ptr [ESP + 0x8]
-006987ed  RET                                <- ZF set
-```
-
-The two arguments are the low and high halves of one `double` at `[ESP+4]`, and **EAX is the same
-value on both paths**. The branch exists only to leave `ZF` set when the exponent field is all ones,
-i.e. Inf/NaN. Its x87-CRT callers consume the flag, not EAX: `CRT_CICos` does `FST double[ESP]` /
-`CALL 006987d8` at `006886fe`, and `__cos_common` at `0068871d` then branches on the `ZF` it left.
-
-C has no spelling for a flag return. Every emitted call site discards the result -
-`D2Sound/Src/D2SoundSmp.cpp:1046`, `D2CMP/Draw.cpp:1164`, `D2CMP/SRC/FastCmp.cpp:1591`,
-`D2Client/Utils.cpp:43`, `:54`, `:101` - so returning the high dword is exactly faithful to
-everything this tree can observe. The name is wrong and should be retired by a naming lane; it is
-kept because it is what the call sites spell.
+The statically linked libcmt is named in Ghidra from the VC8 `libcmt.lib` evidence
+(`asm_matching/msvc8/evidence/libmap.tsv`), each function under its undecorated C name in the
+`compiler` namespace and tagged `runtime`. The tree therefore calls `strchr`, `vfprintf`,
+`_localtime64_s`, `_purecall`, `_strrev` and the rest by the names the target's C runtime exports:
+mingw binds them to msvcrt, Visual C++ 2005 to libcmt. The former shims `CRT_Strchr`,
+`CRT_ClearFP` (it is libcmt's `_checkTOS_withFB`, which nothing in the tree calls),
+`CRT_Vsprintf_L` (`vfprintf`), `CRT_LocalTime_S` (`_localtime64_s`), `__purecall` and `__strrev`,
+and their `/alternatename` lines, are gone.
 
 ### `compiler::_fprintf` @ `00684c94` - no shim
 
@@ -149,41 +127,14 @@ unlock: MSVC's `fprintf`. Ghidra types it `int (FILE*, char*, ...)` (v1049), so 
 carries its format arguments and the generated `#define _fprintf fprintf` binds `<cstdio>`
 directly. It used to be named `CRT_Fgetc`, typed fixed-arity, and shimmed here; that shim is gone.
 
-### `CRT_Vsprintf_L` -> `vfprintf` @ `00685637`
+### `_set_se_translator` @ `00684af3` - mingw only
 
-`__cdecl`, one statement:
-`compiler::CRT_Output_L(compiler::CRT_Output_Printf, pFile, nParam, 0, dwParam)` - the
-locale-explicit `printf` core, with a **null locale**, a format pointer and an argument list. So the
-`_l` variant degenerates to plain `vfprintf(FILE*, const char*, va_list)`. Parameter 2 is typed
-`int` by Ghidra but is the format pointer; `Fog/File.cpp:300` passes `(int)Format` and a `va_list`
-built from `(uint8_t*)&Format + 4`, which agrees.
-
-### `CRT_LocalTime_S` -> `_localtime64_s` @ `006856e9`
-
-`errno_t CRT_LocalTime_S(tm *pTm, uint *pnParam)` `__cdecl`. The body is `_localtime64_s`:
-`memset(pTm, 0xff, 0x24)`, the `__time64_t` range check against `0x93406fff`, `___tzset`,
-`__get_dstbias`, `__isindst`, and `__gmtime64_s(pTm, (__time64_t *)pnParam)`. The second parameter is
-therefore a pointer to a **64-bit** time, not a 32-bit one - which the call site confirms:
-`Fog/File.cpp:85-86` declares `__time64_t tTime = __time64(nullptr)` and casts its address to
-`uint32_t*`. The shim copies 8 bytes out and calls mingw's `_localtime64_s`.
-
-### `CRT_Encode_Secure_Pointer` - **it is `_set_se_translator`** @ `00684af3`
-
-Not `_encode_pointer`. The body is:
-
-```
-ptd = __getptd();  old = ptd->_translator;
-ptd = __getptd();  ptd->_translator = pParam;  return old;
-```
-
-`_ptiddata::_translator` is the per-thread slot `_set_se_translator` writes, and the one emitted
-call site is `Fog/Debug.cpp:2731`,
-`CRT_Encode_Secure_Pointer((void*)HandleExceptionWithStackDump)`, inside Fog's crash-handler
-installer, immediately after `InitializeCriticalSection`.
-
-mingw-GCC has no MSVC structured-exception translator, so the shim reproduces the get / set /
-return-previous semantics and the per-thread storage (`thread_local`) exactly, and **nothing else**.
-The recorded function is never invoked, because there is no MSVC SEH layer to invoke it.
+libcmt's `_set_se_translator` (libmap lib-exact; Ghidra once called it `CRT_Encode_Secure_Pointer`).
+The one call site, inside Fog's crash-handler installer, passes the handler as a `void*`; the
+platform header's overload converts it. Visual C++ links libcmt's own. mingw's msvcrt import library
+exports no `_set_se_translator`, so there the overload calls `D2_SetSeTranslator`, which reproduces
+the get / set / return-previous semantics and the per-thread storage (`thread_local`) and **nothing
+else**: GCC code has no MSVC SEH layer to invoke a translator.
 
 ### `CRT_ReturnValue` - **it is ATL's `AtlThrow`** @ `006b1a30`
 
@@ -210,19 +161,12 @@ binary's own "does not return".
 
 ## SEH and /GS
 
-### `__purecall` @ `006877fe` - abort, and that is faithful
+### `_except_handler4` @ `00684f50` - **a stub that dies, stated plainly** (mingw only)
 
-FID single match `__purecall`, Visual Studio 2005 Release. The body fetches the unexpected handler,
-calls it if non-null, then `__set_abort_behavior(0,1)` and `_abort()`. `abort()` is the faithful
-tail, not a placeholder. Referenced only as data - twelve vftable slots at
-`globals.D2Client.cpp:36280-36291` and seven at `globals.cpp:45235` - so it runs only when a pure
-virtual is actually called, which is when the binary aborts too.
-
-### `__except_handler4` @ `00684f50` - **a stub that dies, stated plainly**
-
-FID single match `__except_handler4`, Visual Studio 2005 Release, 406 bytes, `__cdecl(int*, PVOID,
-undefined4)`. This is the MSVC SEH frame handler. mingw-GCC does not provide it and there is no
-honest reimplementation: it walks an MSVC scope table this tree does not build.
+libcmt's `_except_handler4` (libmap lib-exact), 406 bytes, the MSVC SEH frame handler. Visual C++
+links libcmt's own. mingw-GCC does not provide it, msvcrt.dll exports only
+`_except_handler4_common`, and there is no honest reimplementation: it walks an MSVC scope table
+this tree does not build.
 
 **It is a stub. Any code path that reaches its body dies at `abort()`. It does not dispatch, unwind,
 or filter, and no plausible-looking handler has been written in its place.**

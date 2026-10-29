@@ -107,6 +107,37 @@ def sym_map(rows, librows=None):
 
 
 LIBMAP = os.path.join(ORACLE, 'evidence', 'libmap.tsv')
+RUNTIME = os.path.join(ORACLE, 'evidence', 'runtime.tsv')
+
+
+def runtime_starts(model, librows, path=RUNTIME):
+    """The original functions that are Microsoft's runtime, not Blizzard's code.
+
+    Four sources, each evidence on its own: the functions libmap.tsv pairs with
+    a libcmt.lib function; everything in the run of library code those pairs
+    span (the linker lays the library objects out after the game's); the import
+    thunks the linker writes (jmp [__imp_X]); and runtime.tsv, the runtime
+    functions Ghidra places outside that run (the database's `runtime` tag:
+    libcmt code the linker put first, and what only the runtime reaches).
+    """
+    import libmap
+    out = set()
+    lo = hi = None
+    for s, e, *_rest in librows:
+        out.add(s)
+        lo = s if lo is None else min(lo, s)
+        hi = e if hi is None else max(hi, e)
+    if lo is not None:
+        out.update(s for s in model if lo <= s < hi)
+    out.update(s for s in model if libmap.is_import_thunk(model[s]))
+    if os.path.exists(path):
+        for line in open(path):
+            if line.startswith('start\t') or not line.strip():
+                continue
+            s = int(line.split('\t', 1)[0], 16)
+            if s in model:
+                out.add(s)
+    return out, (lo or 0, hi or 0)
 
 
 def main():
@@ -188,6 +219,21 @@ def main():
              'mapped and compared: %d' % len(out)]
     for k in ('MATCH', 'REF_DIFF', 'INSN_MATCH', 'INSN_COUNT_MATCH', 'OUR+-N', 'QUARANTINE', 'MISSING'):
         lines.append('  %-17s %6d' % (k, statuses.get(k, 0)))
+    # The headline: Blizzard's code alone. The statically linked runtime is
+    # Microsoft's, linked rather than reconstructed, so it is out of both the
+    # matched and the total; the whole binary follows as the second figure.
+    runtime, (rlo, rhi) = runtime_starts(model, librows)
+    game = [s for s in model if s not in runtime]
+    game_bytes = sum(model[s][0].end - s for s in game)
+    game_out = [r for r in out if r[0] not in runtime]
+    game_match = [r for r in game_out if r[9] == 'MATCH']
+    game_match_bytes = sum(r[1] - r[0] for r in game_match)
+    lines[1:1] = ['Blizzard code only: %d of %d functions MATCH (%.2f%%), %d of %d bytes (%.2f%%)' % (
+        len(game_match), len(game), 100.0 * len(game_match) / max(1, len(game)),
+        game_match_bytes, game_bytes, 100.0 * game_match_bytes / max(1, game_bytes)),
+        '  runtime left out: %d functions (%d bytes): libmap pairs, the library run %08x..%08x, import thunks, %s' % (
+        len(runtime), ref_bytes - game_bytes, rlo, rhi, os.path.basename(RUNTIME)),
+        'whole binary:']
     lines.append('matched code: %d bytes (%.2f%% of the original)' % (match_bytes, 100.0 * match_bytes / ref_bytes))
     libtus = {r[3] for r in librows}
     lib = [r for r in out if r[3] in libtus]
